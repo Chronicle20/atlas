@@ -10,117 +10,29 @@ When asked to understand or plan something, DO NOT start implementing code chang
 
 ## Build & Verification
 
-Before claiming a branch is "done," "ready for PR," or invoking `superpowers:finishing-a-development-branch`, verify the affected services this way:
+Before claiming a branch is "done," "ready for PR," or invoking
+`superpowers:finishing-a-development-branch`:
 
-1. `go test -race ./...` clean in every changed module.
-2. `go vet ./...` clean in every changed module.
-3. `go build ./...` clean in every changed service.
-4. **`docker buildx bake atlas-<svc>` from the worktree root for every service whose `go.mod` was touched.** This is mandatory, not optional. The shared `Dockerfile` at the repo root is parameterized by `ARG SERVICE`; `docker-bake.hcl` enumerates one target per Go service driven by `.github/config/services.json` (single source of truth). `go build`/`go test` against the workspace `go.work` will NOT catch a missing `COPY libs/...` line in the shared Dockerfile — only `docker buildx bake` will. CI catches it too, but each round-trip wastes a CI cycle and turns "verified" into a lie.
+```sh
+tools/verify.sh          # flagless, must exit 0. --quick is the inner loop only.
+```
 
-To build everything locally: `docker buildx bake all-go-services` (or `tools/build-services.sh` — a thin wrapper).
+Only the **flagless** invocation counts as verified. `--quick` and `--no-docker`
+also exit 0 — they print a caveat and skip the bake and `-race` — so "verify.sh
+exited 0" is not a pass unless it ran with no flags.
 
-Adding a new shared lib requires appending two `COPY` lines to the repo-root `Dockerfile` (one in the mod-only block, one in the source block) and one `./libs/<name>` line to `go.work`. That's it — no per-service edits.
+It mirrors `.github/workflows/pr-validation.yml`: per-module `go build`/`vet`/
+`test -race`, `docker buildx bake atlas-<svc>` for every service whose `go.mod`
+was touched, every repo guard, and `tools/lint.sh --check`. Change-gated the
+same way CI is.
 
-**Adding a new service:** follow [`docs/adding-a-new-service.md`](docs/adding-a-new-service.md) in full — it enumerates every hand-maintained list a service must be registered in (CI, docker-bake, go.work, k8s base, BOTH kustomize overlays, databases, ingress) and the silent-failure traps (unpinned `:latest` image, `behavior: replace` configmap key drops, unsuffixed Kafka topic fallback). `tools/service-registration-guard.sh` machine-checks the lists (also a CI job); run it plus the doc's Verification section before opening the PR.
+**Never claim verified from a subset.** The bake step in particular is not
+optional — `go build` against `go.work` cannot catch a missing `COPY libs/...`
+in the shared Dockerfile.
 
-For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the bake step.
-5. **`tools/redis-key-guard.sh` clean from the repo root.** Bans keyed Redis
-   commands on the raw `go-redis` client outside `libs/atlas-redis` (FR-1.5,
-   task-045). Runs alongside `go vet ./...`.
-6. **`tools/goroutine-guard.sh` clean from the repo root.** Bans bare `go`
-   statements outside `libs/atlas-routine` and justified
-   `//goroutine-guard:allow` sites (RR-6, task-115) — every goroutine must be
-   spawned via `routine.Go`. Runs alongside `go vet ./...`.
-7. **`tools/service-registration-guard.sh` clean from the repo root** whenever
-   services.json, deploy/k8s, docker-bake.hcl, go.work, or tools/db-bootstrap.sh
-   changed. Cross-checks every hand-maintained service-registration list
-   (see [`docs/adding-a-new-service.md`](docs/adding-a-new-service.md)).
-8. **`tools/lint.sh --check` clean from the repo root.** The shared lint &
-   format guard (task-171): golangci-lint v2 formatters (gofumpt + goimports,
-   tree-wide) and `standard` linters (rev-gated to new code) across every Go
-   module, plus Prettier + ESLint for atlas-ui. Fix mode (`tools/lint.sh`,
-   no flags) rewrites files in place — run it before committing. Item 2's
-   standalone `go vet` is intentionally retained (it runs full-module;
-   the guard's govet is diff-gated).
-9. **`tools/template-opcode-order-guard.sh` clean from the repo root** whenever
-   a tenant socket-config template under
-   `services/atlas-configurations/seed-data/templates/` changed. Enforces
-   strictly ascending `opCode` order for both the `handlers` and `writers`
-   arrays — new entries go at their sorted position, never appended next to a
-   semantically-related entry. See
-   [`docs/packets/TEMPLATE_CONVENTIONS.md`](docs/packets/TEMPLATE_CONVENTIONS.md).
-9a. **`tools/template-duplicate-binding-guard.sh` clean from the repo root**
-    whenever a tenant socket-config template under
-    `services/atlas-configurations/seed-data/templates/` changed. Bans binding
-    the same `(implementation name, numeric opCode)` pair twice — the
-    leading-zero-padding duplicate (`0xB8` and `0x0B8`) that made the dispatch
-    map's last-write-wins behaviour decide which entry's options survive
-    (task-194). A name bound to several *distinct* opcodes is legitimate and
-    untouched.
-10. **`tools/skill-job-id-guard.sh` clean from the repo root.** Bans raw
-    `==`/`!=`/`case`/`Is(`/`IsA(` comparisons against the job/skill `…Id` wire
-    constants that task-187's multi-boundary audit identified as
-    version-divergent (e.g. `job.GmId` (500) means Gm at v0.48 but Pirate at
-    v0.61+) outside the version-aware resolver
-    (`constants.For(region,major,minor).Job.Resolve`/`.Skill.Resolve`). The
-    banned const list is derived from
-    `docs/tasks/task-187-version-aware-id-semantics/audit/divergences.csv`,
-    so it grows automatically as future audit passes add divergent ids.
-11. **`tools/buff-duration-guard.sh` clean from the repo root.** Bans
-    seconds→milliseconds scaling in the `duration` fields of
-    `COMMAND_TOPIC_CHARACTER_BUFF` command bodies (task-190 FR-3.2). The unit
-    contract is owned by
-    `services/atlas-buffs/atlas.com/buffs/kafka/message/character/kafka.go`
-    (`ApplyCommandBody.Duration` — milliseconds); it has been flipped three
-    times in prose alone. Fingerprints json tag sets, not type names, because
-    the body struct is duplicated under seven local names. Escape hatch:
-    `//buffdurationguard:allow <justification>`. Runs alongside `go vet ./...`.
-12. **`tools/template-movement-types-guard.sh` clean from the repo root** whenever
-    a tenant socket-config template under
-    `services/atlas-configurations/seed-data/templates/` changed. Every move
-    handler (`CharacterMoveHandle`, `MonsterMovementHandle`, `PetMovementHandle`,
-    `SummonMoveHandle`, `NPCActionHandle`) must carry a non-empty
-    `options.types`; all such arrays within one template must be byte-identical;
-    every `Type` must be one of the seven the decoder recognizes; at most one
-    entry may be named `FALL_DOWN`. A missing table makes every movement
-    fragment decode as a 3-byte stub (loud: "Code [N] not configured for use
-    in movement"); a typo'd `Type` does the same for one index, silently. See
-    [`docs/packets/TEMPLATE_CONVENTIONS.md`](docs/packets/TEMPLATE_CONVENTIONS.md).
-13. **`tools/trade-contract-mirror-guard.sh` clean from the repo root** whenever
-    either copy of the trade Kafka contract changed. atlas-trades owns
-    `kafka/message/trade/kafka.go`; atlas-channel carries a mirror, and the two
-    live in separate Go modules, so a field name or json tag changed in one and
-    not the other fails no build — it decodes into a zero-valued body at
-    runtime, silently. The guard diffs the two files from their `package`
-    clause onward; only the leading doc comment, which names the mirror
-    direction, may differ.
-14. **`tools/mist-contract-mirror-guard.sh` clean from the repo root** whenever
-    either copy of the mist Kafka contract changed. atlas-maps owns
-    `kafka/message/mist/kafka.go`; atlas-channel carries a mirror, and the two
-    live in separate Go modules, so a field name or json tag changed in one and
-    not the other fails no build — it decodes into a zero-valued body at
-    runtime, silently: a mist with no bounds, no lifetime, or no recovery
-    magnitude and no party scope (task-218). The guard diffs the two files from
-    their `package` clause onward; only the leading doc comment, which names the
-    mirror direction, may differ.
-15. **`tools/npc-shop-contract-mirror-guard.sh` clean from the repo root** whenever
-    any copy of the npc-shop Kafka contract changed. atlas-npc-shops owns
-    `kafka/message/shops/kafka.go`; atlas-channel and atlas-saga-orchestrator
-    carry mirrors in separate Go modules, so a field name or json tag changed in
-    one and not the others fails no build — it decodes into a zero-valued body at
-    runtime, silently. The guard diffs all three from their `package` clause
-    onward; only the leading doc comment, which names the mirror direction, may
-    differ.
-16. **`tools/npc-conversation-contract-mirror-guard.sh` clean from the repo root**
-    whenever either copy of the npc-conversation Kafka contract changed.
-    atlas-npc-conversations owns `kafka/message/npc/kafka.go`;
-    atlas-saga-orchestrator carries a mirror in a separate Go module, so a field
-    name or json tag changed in one and not the other fails no build — it
-    decodes into a zero-valued body at runtime, silently: a conversation start
-    with no item id, no avatar, or no transactionId, so the awaiting saga step
-    never completes (task-230). The guard diffs the two files from their
-    `package` clause onward; only the leading doc comment, which names the
-    mirror direction, may differ.
+Rationale, per-guard invariants, escape hatches, and the known CI drift:
+[`docs/verification.md`](docs/verification.md). Adding a service:
+[`docs/adding-a-new-service.md`](docs/adding-a-new-service.md).
 
 ## Code Patterns
 
@@ -175,28 +87,44 @@ When updating TODO.md or other tracking docs, always use `Glob` or `Grep` to fin
 ## Code Review Before PR
 
 - Always run the code-review step before opening a PR. Do not skip even when the task plan looks complete.
+- **A green `tools/verify.sh` does not mean the branch is correct.** Every module can build, vet, test and bake clean while the branch carries blocking defects, because each service is self-consistent in isolation. The gate cannot see: a seam between two services (producer empties a compartment the consumer still reads), a new saga action with no step handler in the orchestrator, or a class of missing emits that existing tests actively pin as the old behavior. When a change crosses a service boundary, trace the event into its consumers by hand and check that a test asserts the NEW contract, not the old silent drop.
 
-## Verification Over Memory
+## Grounding, Verification & Finishing
 
-- For game data values (props, item IDs, skill effects, WZ data), always verify against local WZ data or repo source. Do not cite values from general MapleStory knowledge or memory.
-- When uncertain about packet encoding, protocol details, or service ownership, read the source rather than speculating.
+**Never invent.** Values, names, opcodes, command output, behavior — if it is
+not verified from source, WZ data, IDA, or live output, say "unknown /
+unverified." Do not fill the gap with a plausible guess. "I think it's X" is a
+lead to check, not a finding. Quote the actual tool output before drawing a
+conclusion; do not paraphrase numbers from memory.
+
+**Verify, don't recall.** For game data (props, item IDs, skill effects, WZ
+data), packet encoding, protocol details, and service ownership: read the local
+WZ data or repo source. General MapleStory knowledge is not a source.
+
+**Confirm the version first.** Before investigating any bug, confirm the exact
+server/tenant version being tested (v83 vs v87 …). The wrong version sends the
+whole investigation down the wrong path.
+
+**Sweep, don't spot-check.** A spot-check presented as a full sweep is a false
+"verified," and live PATCHes built on it get rejected at validation time.
+State findings as hypotheses until confirmed against real evidence — diffs,
+logs, live k8s state.
+
+**Finish producible work.** Do not declare a "documented gap," "follow-up
+task," or "out of scope" when the blocker is a prerequisite you can produce
+yourself: an unnamed IDB function → name it; an unrouted template → wire it; a
+missing export → generate it. Do not split work into a new task to avoid
+finishing this one — keep triage and fix on the same branch, and produce the
+clean PR branch by rebase at PR time. No `// TODO`, stubbed handlers, or 501s
+in landed commits.
+
+A genuine external blocker, an ambiguous design decision, or an unresolved
+packet-audit fname is different — surface it and ask. The bar is "can I produce
+this myself right now?" If yes, do it.
 
 ## Test Helper Pattern
 
 - Use the project's Builder pattern for test setup. Do not create `*_testhelpers.go` files with test-only constructors.
-
-## Grounding & Honesty (No Inventing)
-
-- Never invent values, names, opcodes, command output, or behavior. If something is not verified from source, WZ data, IDA, or live output, say "unknown / unverified" — do not fill the gap with a plausible guess.
-- When reading tool output (e.g. `top`, pod metrics, decompiled code), quote the actual values before drawing a conclusion. Do not paraphrase numbers from memory or infer them — misreading and then asserting is worse than saying "let me re-check."
-- "I think it's X" is not a finding. Either verify X and state it plainly, or flag it as unverified and say what you'd need to confirm it.
-
-## No Deferring Producible Work
-
-- Do not declare a "documented gap," "follow-up task," or "out of scope" when the blocker is a prerequisite you can produce yourself (an unnamed IDB function → name it; an unrouted template → wire it; a missing export/report → generate it). Attempt the unblock before calling it terminal. The user should not have to prod you to finish bounded work.
-- Do not split work into a new task to avoid completing the current one. Keep triage and fix on the same branch/worktree; produce the clean PR branch via rebase at PR-time, not by forking partway through.
-- No `// TODO`, stubbed handlers, or 501s in landed commits. Finish the bounded work or escalate explicitly — never leave a silent stub.
-- Genuine stop-and-ask cases (a true external blocker, an ambiguous design decision, an unresolved packet-audit fname) are different: surface them and ask. The bar is "can I produce this myself right now?" — if yes, do it.
 
 ## File Writing / Conventions
 
@@ -223,23 +151,29 @@ Every task type's leaf step — promoting one packet × version matrix cell to `
 
 - Before planning or designing a task, first verify the task is not already planned/implemented, and that its task number does not collide with an in-flight task. Use `tools/task-numbers.sh next` and search both `docs/tasks/` and `.worktrees/*/docs/tasks/`.
 
-## Debugging / Verification
-
-- When asked to verify or fix something, confirm the exact server/tenant version the user is testing (e.g. v83 vs v87) before investigating. Do not assume — ask or check, because the wrong version sends the whole investigation down the wrong path.
-- Do a full sweep, not spot-checking, unless explicitly told otherwise. A spot-check presented as a full sweep is a false "verified" — and live PATCHes built on it get rejected at validation time.
-- Always verify hypotheses against actual live evidence (diffs, logs, live k8s state) before making claims or taking destructive action. State findings as hypotheses until confirmed — "I think it's X" is not a conclusion, it's a lead to check.
-
 ## Debugging / Kubernetes
 
 - For diagnosing wedged deploys or runtime failures, read the relevant pod logs early (e.g. `atlas-character-factory`, `atlas-world`) via `mcp__kubernetes__pods_log` rather than starting at packet-level fixes or bare pod listings. The logs usually name the real root cause directly.
 
 ## Git Operations
 
+- **Never commit or push directly to `main`.** Branch protection blocks the push, so a commit made on local `main` is stranded and never reaches the remote. Check the branch before every `git commit`. Setup work that must precede a feature branch still goes *on* the feature branch — create it first; it branches from the same HEAD. Recovery from a stray main commit: preserve the content on a branch (cherry-pick if needed), then `git fetch origin main && git reset --hard origin/main`.
 - After completing a rebase/merge/history-rewrite, always push (force-push when history was rewritten) so the PR reflects the resolved state. Do not stop at local-only completion — a rebase resolved only locally leaves the PR still showing conflicts.
+- A plain push to a task branch DOES trigger the PR workflows and the `atlas-pr-<N>` ephemeral rollout. Do not merge `origin/main` as a routine build-triggering ritual. The one exception: when the branch **conflicts with main**, the push does not start the build — merge `origin/main`, resolve, push the merge commit. The merge is the conflict resolution, not the trigger.
+- Run `gh` with the token env explicitly cleared so it uses stored `hosts.yml` auth (account `Chronicle20`): `env -u GH_TOKEN -u GITHUB_TOKEN gh …`. Do NOT source `~/.config/atlas/gh.env` — its `GH_TOKEN` is expired and takes precedence, causing 401s. Never echo the token.
+
+## Interaction
+
+- Text emitted before an `AskUserQuestion` in the same turn does not render reliably in this user's terminal. Send substantive content (findings, proposals, designs) as its own text-only message, then ask the question in a following turn.
+- Do not proactively pitch paid features (`/schedule`, remote/cloud agents, `/ultrareview`, scheduled routines). If one is genuinely the right tool, lead with what is known and unknown about how it bills before mentioning it. End-of-turn suggestions should be free/local actions.
 
 ## Model & Cost Preferences
 
-- Do not use expensive models (e.g. Fable) for background/review workflows; default to the standard model unless explicitly told otherwise. See [[feedback_review_workflows_use_cheaper_model]] — pin code-review/verify subagents to Sonnet/Haiku.
+- Pass an explicit `model` on **every** Agent/Task dispatch. Unspecified inherits Opus, and an Opus subagent turn costs ~7x a Sonnet one.
+- The pin follows the **job**, not the `subagent_type`. Any dispatch whose job is review / verify / audit runs `sonnet`, always — including ad-hoc `general-purpose` agents carrying a review prompt, which frontmatter pins do not cover. Scans and inventories run `haiku`. Implementers run `sonnet` unless the plan task is tagged `model: opus`. Full table: `.claude/commands/execute-task.md` Step 4a.
+- Never use Fable for background/review workflows.
+- Long agents are the cost: context grows with turn count and every turn re-reads all of it, so one 600-turn agent costs far more than the same work split across fresh contexts. The implementer budget is **120 tool calls**, warned at 100 — enforced by `.claude/hooks/turn-budget.sh` and contracted in `.claude/agents/atlas-implementer.md`. At the cap an implementer commits and reports `PARTIAL`; the controller dispatches a continuation. The number lives in the hook — change it there only.
+- Implementers do not run repo-wide verification. `tools/verify.sh`, `tools/lint.sh`, `-race`, and docker bake belong to the `atlas-verifier` agent in its own clean context; a `--quick` run inside a 400k-token implementer costs a large multiple of the same run in a 20k one. Implementers run module-local `go build ./... && go test ./...` and nothing more.
 
 ## Shell & Editing Conventions
 

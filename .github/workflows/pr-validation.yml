@@ -339,7 +339,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/golangci-lint
+            .cache/golangci-lint
             .cache/tools/bin
           key: lint-tools-${{ runner.os }}-${{ hashFiles('tools/lint.versions') }}
 

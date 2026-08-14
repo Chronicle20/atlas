@@ -37,6 +37,7 @@ const NameTagLayer = byte(0)
 // ownerId + slot are the upstream prefix CUser::OnPetPacket reads before
 // dispatching to the per-op leaf; every pet codec in this package carries them
 // and v61_test.go byte-verifies the framing for the whole family.
+// packet-audit:fname CPet::OnNameChanged
 type NameChanged struct {
 	ownerId uint32
 	slot    int8

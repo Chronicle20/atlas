@@ -33,6 +33,7 @@ import (
 // updateTimeFirst mirrors ItemUse.UpdateTimeFirst: GMS <= v84 trails
 // update_time after the sub-body (this arm falls through to the shared tail at
 // loc_A0E9EC), GMS v87+ and JMS lead it in the header.
+// packet-audit:fname CWvsContext::SendConsumeCashItemUseRequest
 type ItemUsePetNameTag struct {
 	name            string
 	updateTime      uint32

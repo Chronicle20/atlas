@@ -2342,6 +2342,28 @@
   ida:
     address: 6091406
   note: 'COutPacket(15); v83 VAC=15 (d0).'
+- op: NAME_TRANSFER
+  direction: serverbound
+  opcode: 16
+  fname: CCashShop::SendCheckNameChangePossiblePacket
+  provenance: ida-discovered
+  ida:
+    address: 4640190
+  note: 'task-227: @0x46cdbe builds COutPacket(16) then Encode4+Encode4. Reached only
+    from CCashShop::OnBuyNameChange @0x469c74, which CCashShop::ProcessBuy @0x46cc61
+    selects on item id 5400000 (cmp against offset loc_5265BC+4). Previously absent from
+    the registry, so the matrix graded the v79 cell blank as if the op did not exist.'
+- op: WORLD_TRANSFER
+  direction: serverbound
+  opcode: 18
+  fname: CCashShop::SendCheckTransferWorldPossiblePacket
+  provenance: ida-discovered
+  ida:
+    address: 4640656
+  note: 'task-227: formerly unnamed sub_46CF90; @0x46cf90 builds COutPacket(18) then
+    Encode4+Encode4. Reached only from CCashShop::OnBuyTransferWorldItem @0x469dd6
+    (ProcessBuy item id 5401000 = offset loc_5269A8) after CCashShop::CheckTransferWorldPossible
+    @0x46ced9 passes. Previously absent from the registry.'
 - op: PLAYER_LOGGEDIN
   direction: serverbound
   opcode: 20

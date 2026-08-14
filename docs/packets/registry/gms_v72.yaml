@@ -1878,11 +1878,13 @@
 - op: CASHSHOP_CHECK_NAME_CHANGE
   direction: clientbound
   opcode: 293
-  fname: sub_473519
+  fname: CCashShop::OnCheckDuplicatedIDResult
   provenance: ida-discovered
   ida:
     address: 4666649
-  note: 'v72 sub_473519 = CCashShop::OnCheckDuplicatedIDResult (CASHSHOP_CHECK_NAME_CHANGE): DecodeStr+Decode1+Notice. v79=305.'
+  note: 'task-227: formerly unnamed sub_473519, now named CCashShop::OnCheckDuplicatedIDResult
+    in the v72 IDB. Body is DecodeStr(sName) + Decode1(nResult) + Notice (SP 520 ok /
+    519 duplicate / 3546 unknown). v79=305.'
 - op: CASHSHOP_GACHAPON_STAMP_RESULT
   direction: clientbound
   opcode: 294
@@ -2043,6 +2045,28 @@
   ida:
     address: 5981076
   note: 'v72 COutPacket(15) verified via global COutPacket-ctor harvest @0x5b4394; Δ+0 vs v79 op 15 (login Δ0).'
+- op: NAME_TRANSFER
+  direction: serverbound
+  opcode: 16
+  fname: CCashShop::SendCheckNameChangePossiblePacket
+  provenance: ida-discovered
+  ida:
+    address: 4635719
+  note: 'task-227: @0x46bc47 builds COutPacket(16) then Encode4+Encode4. Reached only
+    from CCashShop::OnBuyNameChange @0x468a2b, which CCashShop::ProcessBuy @0x46ba37
+    selects on item id 5400000 (cmp against offset loc_5265C0). Previously absent from
+    the registry, so the matrix graded the v72 cell blank as if the op did not exist.'
+- op: WORLD_TRANSFER
+  direction: serverbound
+  opcode: 18
+  fname: CCashShop::SendCheckTransferWorldPossiblePacket
+  provenance: ida-discovered
+  ida:
+    address: 4636185
+  note: 'task-227: formerly unnamed sub_46BE19; @0x46be19 builds COutPacket(18) then
+    Encode4+Encode4. Reached only from CCashShop::OnBuyTransferWorldItem @0x468b93
+    (ProcessBuy item id 5401000 = offset loc_5269A6+2) after CCashShop::CheckTransferWorldPossible
+    @0x46bd62 passes. Previously absent from the registry.'
 - op: CHAR_SELECT
   direction: serverbound
   opcode: 19

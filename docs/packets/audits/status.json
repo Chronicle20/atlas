@@ -1984,63 +1984,6 @@
     },
     {
       "kind": "op",
-      "op": "NAME_TRANSFER",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CCashShop::SendCheckNameChangePossiblePacket"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 16
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 16
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 16
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 16
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 16
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 9
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "PLAYER_LOGGEDIN",
       "packet": "socket/serverbound/ChannelConnect",
       "direction": "serverbound",
@@ -2378,53 +2321,57 @@
     },
     {
       "kind": "op",
-      "op": "WORLD_TRANSFER",
+      "op": "NAME_TRANSFER",
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
-        "CCashShop::SendCheckTransferWorldPossiblePacket"
+        "CCashShop::SendCheckNameChangePossiblePacket"
       ],
       "cells": {
         "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 18
         },
         "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 16
         },
         "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 16
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 16
         },
         "gms_v83": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 18
+          "opcode": 16
         },
         "gms_v84": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 18
+          "opcode": 16
         },
         "gms_v87": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 18
+          "opcode": 16
         },
         "gms_v92": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 18
+          "opcode": 16
         },
         "gms_v95": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 18
+          "opcode": 16
         },
         "jms_v185": {
           "state": "n-a",
@@ -2651,6 +2598,67 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "WORLD_TRANSFER",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CCashShop::SendCheckTransferWorldPossiblePacket"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 20
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 18
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 18
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 18
+        },
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 18
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 18
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 18
+        },
+        "gms_v92": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 18
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 18
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 9
         }
       }
     },
@@ -37926,11 +37934,7 @@
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
-        "CCashShop::OnCheckDuplicatedIDResult",
-        "CCashShop::OnCheckNameChangePossibleResult",
-        "sub_455A7F",
-        "sub_463900",
-        "sub_473519"
+        "CCashShop::OnCheckDuplicatedIDResult"
       ],
       "cells": {
         "gms_v48": {

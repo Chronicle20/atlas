@@ -406,7 +406,7 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashBuyFailed (T1) |  | ⬜ | 0x0FF | ✅ | 0x123 | ✅ | 0x12F | ✅ | 0x145 | ✅ | 0x14C | ✅ | 0x156 | ✅ | 0x178 | ❌ | 0x180 | ✅ | 0x164 | ✅ |
 | IDA_0X0FF | CCashShop::OnOneADay |  | 0x0FF | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | CASHSHOP_CASH_ITEM_RESULT | CCashShop::OnCashItemResult | cash/clientbound/CashBuyFailed (T1) | 0x100 | ✅ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult; CCashShop::OnCheckNameChangePossibleResult; sub_455A7F; sub_463900; sub_473519 |  | 0x102 | ❌ | 0x101 | ❌ | 0x125 | ❌ | 0x131 | ❌ | 0x148 | ❌ | 0x14F | ❌ | 0x159 | ❌ | 0x17B | ❌ | 0x183 | ❌ |  | ⬜ |
+| CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult |  | 0x102 | ❌ | 0x101 | ❌ | 0x125 | ❌ | 0x131 | ❌ | 0x148 | ❌ | 0x14F | ❌ | 0x159 | ❌ | 0x17B | ❌ | 0x183 | ❌ |  | ⬜ |
 | CASHSHOP_GACHAPON_STAMP_RESULT | CCashShop::OnCashShopGachaponStampResult |  | 0x103 | ❌ | 0x102 | ❌ | 0x126 | ❌ | 0x135 | ❌ | 0x14C | ❌ | 0x153 | ❌ | 0x15D | ❌ | 0x17F | ❌ | 0x187 | ❌ | 0x16B | ❌ |
 | SNOWBALL_STATE | CField_SnowBall::OnSnowBallState | field/clientbound/FieldSnowballState (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x103 | ✅ | 0x119 | ✅ | 0x120 | ✅ | 0x12A | ✅ | 0x14A | ❌ | 0x152 | ✅ | 0x131 | ✅ |
 | HIT_SNOWBALL | CField_SnowBall::OnSnowBallHit | field/clientbound/FieldSnowballHit (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x104 | ✅ | 0x11A | ✅ | 0x121 | ✅ | 0x12B | ✅ | 0x14B | 🟡ᶠ | 0x153 | ✅ | 0x132 | ✅ |
@@ -525,11 +525,11 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | PICK_ALL_CHAR | CLogin::SendSelectCharPacketByVAC; sub_500254 | login/serverbound/AllCharacterListSelect | 0x00D | ❌ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ❌ | 0x00E | ✅ |  | ⬜ |
 | VAC | CLogin::MakeVACDlg; CLogin::ResetVAC; sub_50273F | login/serverbound/AllCharacterListPong | 0x00E | ❌ | 0x00F | 🟡ᵈ | 0x00F | 🟡ᵈ | 0x00F | 🟡ᵈ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ❌ | 0x00F | ✅ |  | ⬜ |
 | CHAR_SELECT | CLogin::SendSelectCharPacket; sub_500174 | login/serverbound/CharacterSelect | 0x00F | ❌ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ❌ | 0x013 | ✅ | 0x006 | ✅ |
-| NAME_TRANSFER | CCashShop::SendCheckNameChangePossiblePacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x009 | ❌ |
 | PLAYER_LOGGEDIN | CClientSocket::OnConnect | socket/serverbound/ChannelConnect | 0x010 | ❌ | 0x014 | ❌ | 0x014 | ❌ | 0x014 | ❌ | 0x014 | ✅ | 0x014 | ❌ | 0x014 | ✅ | 0x014 | ❌ | 0x014 | ✅ | 0x007 | ✅ |
 | CHECK_CHAR_NAME | CCashShop::SendCheckDuplicateIDPacket; CLogin::SendCheckDuplicateIDPacket; sub_500693; sub_565537 | character/serverbound/CheckName (T1) | 0x011 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | 🟡ᶠ | 0x015 | ✅ | 0x008 | ✅ |
 | UNNAMED_R18 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ |  | ⬜ |
-| WORLD_TRANSFER | CCashShop::SendCheckTransferWorldPossiblePacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ |  | ⬜ |
+| NAME_TRANSFER | CCashShop::SendCheckNameChangePossiblePacket |  | 0x012 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ |  | ⬜ |
+| WORLD_TRANSFER | CCashShop::SendCheckTransferWorldPossiblePacket |  | 0x014 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x009 | ❌ |
 | CREATE_CHAR | CLogin::SendNewCharPacket; sub_500545; sub_5653E9 | character/serverbound/CreateCharacter (T1) | 0x015 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ❌ | 0x016 | ✅ | 0x00B | ✅ |
 | DELETE_CHAR | CLogin::SendDeleteCharPacket; sub_50043F; sub_5652E3 | character/serverbound/DeleteCharacter (T1) | 0x016 | ✅ | 0x017 | ✅ | 0x018 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x018 | 🟡ᶠ | 0x018 | ✅ | 0x00D | ✅ |
 | CREATE_CHAR_IN_CS | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x017 | ❌ | 0x017 | ✅ |  | ⬜ |
@@ -1055,10 +1055,10 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 205 | 0 | 19 | 195 | 600 | 0 | 48.9% |
-| v61 | 268 | 0 | 56 | 234 | 461 | 0 | 48.0% |
-| v72 | 284 | 0 | 69 | 248 | 418 | 0 | 47.3% |
-| v79 | 329 | 0 | 68 | 245 | 377 | 0 | 51.2% |
+| v48 | 205 | 0 | 19 | 197 | 598 | 0 | 48.7% |
+| v61 | 268 | 0 | 56 | 236 | 459 | 0 | 47.9% |
+| v72 | 284 | 0 | 69 | 250 | 416 | 0 | 47.1% |
+| v79 | 329 | 0 | 68 | 247 | 375 | 0 | 51.1% |
 | v83 | 449 | 0 | 0 | 342 | 228 | 0 | 56.8% |
 | v84 | 424 | 0 | 0 | 348 | 247 | 0 | 54.9% |
 | v87 | 458 | 0 | 0 | 371 | 190 | 0 | 55.2% |

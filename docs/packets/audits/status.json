@@ -10,7 +10,7 @@
     "gms_v87": "ae1b3647aa0b0d8de93a589a462e01a59a08f132a22fb0e90b8975d4f4f821b9",
     "gms_v92": "f6d4b36885a904ecffa4b2adf2ffaf0908afcadd7966941a7fe68a88cdcab6e4",
     "gms_v95": "afdbda133ede44a3a6f3431ead49b3954ea4fa0e4961ffa8ff2d3da6896b9d69",
-    "jms_v185": "0d054f727c883d0fea10da9ffa4da21c07a549f34caa8369f0ac44ee4f581a0b"
+    "jms_v185": "4deecd5b67f64c5a42269cd1431b96647157ba8ba34e96c56f24e319feb2928a"
   },
   "rows": [
     {
@@ -10381,8 +10381,7 @@
           "opcode": 81
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 67
         }
       }
@@ -11892,8 +11891,7 @@
           "opcode": 92
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 77
         }
       }

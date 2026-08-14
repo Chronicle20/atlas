@@ -3,14 +3,20 @@ package handler
 import (
 	"atlas-channel/cashshop"
 	"atlas-channel/cashshop/wishlist"
+	"atlas-channel/character"
+	"atlas-channel/data/commodity"
+	"atlas-channel/pendingchange"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
+	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
@@ -184,17 +190,171 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyNameChange) {
 			sp := &cashsb.ShopOperationBuyNameChange{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] requesting purchase name change from [%s] to [%s] via item [%d].", s.CharacterId(), sp.OldName(), sp.NewName(), sp.SerialNumber())
+			handleBuyNameChange(l, ctx, wp)(s, sp)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyWorldTransfer) {
 			sp := &cashsb.ShopOperationBuyWorldTransfer{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] requesting purchase world transfer for [%d] via item [%d].", s.CharacterId(), sp.TargetWorld(), sp.SerialNumber())
+			handleBuyWorldTransfer(l, ctx, wp)(s, sp)
 			return
 		}
 		l.Warnf("Unhandled Cash Shop Operation [%d] issued by character [%d].", op, s.CharacterId())
 	}
+}
+
+// handleBuyNameChange implements BUY_NAME_CHANGE (mode 46): it turns the
+// client's purchase-with-name request into a pending-change record in
+// atlas-character — the same record the item-use/cancel arm (Task 24) can
+// later cancel. It does not charge currency or move the coupon item:
+// ShopOperationBuyNameChange carries no isPoints/currency fields, unlike
+// every currency-charging BUY_* sibling in this handler (ShopOperationBuy,
+// ShopOperationIncreaseInventory, ShopOperationIncreaseStorage,
+// ShopOperationIncreaseCharacterSlot all decode isPoints+currency), so there
+// is nothing on the wire to charge with here — fulfillment (charging,
+// consuming the owned coupon) belongs to the pending-change's own execution
+// saga, not this handler.
+//
+// The client has no NAME_CHANGE_FAILED arm (every other BUY_* has a
+// *_FAILED sibling constant in shop_operation_body.go; name-change does
+// not), so every rejection here goes out as pink text (FR-5.1), the same
+// route the expiration-extender arm in character_cash_item_use.go uses.
+func handleBuyNameChange(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, sp *cashsb.ShopOperationBuyNameChange) {
+	return func(s session.Model, sp *cashsb.ShopOperationBuyNameChange) {
+		characterId := s.CharacterId()
+
+		c, err := character.NewProcessor(l, ctx).GetById()(characterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve character [%d] to validate name change request.", characterId)
+			announceCashShopRejection(l, ctx, wp)(s, "Unable to process your name change request.")
+			return
+		}
+		// Never trust the client's OldName() — refuse if it disagrees with
+		// the session character's actual current name.
+		if c.Name() != sp.OldName() {
+			l.Warnf("Character [%d] requested name change claiming old name [%s] but session character is [%s]; refusing.", characterId, sp.OldName(), c.Name())
+			announceCashShopRejection(l, ctx, wp)(s, "Unable to process your name change request.")
+			return
+		}
+
+		com, err := commodity.NewProcessor(l, ctx).GetById(sp.SerialNumber())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to resolve commodity [%d] to a template id for character [%d] name change request.", sp.SerialNumber(), characterId)
+			announceCashShopRejection(l, ctx, wp)(s, "Unable to process your name change request.")
+			return
+		}
+
+		_, err = pendingchange.NewProcessor(l, ctx).RequestNameChange(characterId, sp.NewName(), com.ItemId)
+		if err != nil {
+			l.WithError(err).Warnf("Name change request rejected for character [%d].", characterId)
+			announceCashShopRejection(l, ctx, wp)(s, nameChangeRejectionMessage(err))
+			return
+		}
+
+		item := cashcb.CashInventoryItem{
+			AccountId:   s.AccountId(),
+			CharacterId: characterId,
+			TemplateId:  com.ItemId,
+			CommodityId: sp.SerialNumber(),
+			Quantity:    1,
+		}
+		if err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopNameChangeBuyDoneBody(item))(s); err != nil {
+			l.WithError(err).Errorf("Unable to announce name change purchase success to character [%d].", characterId)
+		}
+	}
+}
+
+// handleBuyWorldTransfer implements BUY_WORLD_TRANSFER (mode 49). Same
+// division of responsibility as handleBuyNameChange: ShopOperationBuyWorldTransfer
+// carries no isPoints/currency either, so this handler only records the
+// pending change; it does not charge currency or move the coupon. Unlike
+// name-change, a real client failure arm exists here
+// (CashShopTransferWorldFailedBody / TRANSFER_WORLD_FAILED,
+// shop_operation_body.go:454), so rejections use it instead of pink text.
+func handleBuyWorldTransfer(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, sp *cashsb.ShopOperationBuyWorldTransfer) {
+	return func(s session.Model, sp *cashsb.ShopOperationBuyWorldTransfer) {
+		characterId := s.CharacterId()
+
+		com, err := commodity.NewProcessor(l, ctx).GetById(sp.SerialNumber())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to resolve commodity [%d] to a template id for character [%d] world transfer request.", sp.SerialNumber(), characterId)
+			announceTransferWorldFailure(l, ctx, wp)(s, "unknown_error")
+			return
+		}
+
+		destinationWorldId := world.Id(sp.TargetWorld())
+		_, err = pendingchange.NewProcessor(l, ctx).RequestWorldTransfer(characterId, destinationWorldId, com.ItemId)
+		if err != nil {
+			l.WithError(err).Warnf("World transfer request rejected for character [%d].", characterId)
+			announceTransferWorldFailure(l, ctx, wp)(s, worldTransferRejectionReason(err))
+			return
+		}
+
+		item := cashcb.CashInventoryItem{
+			AccountId:   s.AccountId(),
+			CharacterId: characterId,
+			TemplateId:  com.ItemId,
+			CommodityId: sp.SerialNumber(),
+			Quantity:    1,
+		}
+		if err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopTransferWorldDoneBody(item))(s); err != nil {
+			l.WithError(err).Errorf("Unable to announce world transfer purchase success to character [%d].", characterId)
+		}
+	}
+}
+
+// announceCashShopRejection is the FR-5.1 pink-text fallback for arms with
+// no dedicated failure body — the same route the expiration-extender arm
+// (character_cash_item_use.go) uses.
+func announceCashShopRejection(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, message string) {
+	return func(s session.Model, message string) {
+		if err := session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody(message))(s); err != nil {
+			l.WithError(err).Errorf("Unable to announce cash shop rejection to character [%d].", s.CharacterId())
+		}
+	}
+}
+
+// announceTransferWorldFailure emits the real TRANSFER_WORLD_FAILED arm.
+// reason is a key into the tenant's "errors" code table (same convention as
+// every other *_FAILED body in this family, e.g. CashShopBuyFailedBody),
+// not display text.
+func announceTransferWorldFailure(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, reason string) {
+	return func(s session.Model, reason string) {
+		if err := session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopTransferWorldFailedBody(reason))(s); err != nil {
+			l.WithError(err).Errorf("Unable to announce world transfer failure to character [%d].", s.CharacterId())
+		}
+	}
+}
+
+// nameChangeRejectionMessage maps a pendingchange rejection to player-facing
+// pink text. There is no NAME_CHANGE_FAILED arm to carry a coded reason (see
+// handleBuyNameChange doc), so the text itself is the whole payload — never
+// leak the raw machine reason key (e.g. "name_reserved") verbatim.
+func nameChangeRejectionMessage(err error) string {
+	var re *pendingchange.RejectedError
+	if !errors.As(err, &re) {
+		return "Unable to process your name change request."
+	}
+	switch re.Reason {
+	case "already_pending":
+		return "You already have a pending name change request."
+	case "name_reserved":
+		return "That name is already in use."
+	default:
+		return "Unable to process your name change request."
+	}
+}
+
+// worldTransferRejectionReason maps a pendingchange rejection to an "errors"
+// table key for CashShopTransferWorldFailedBody. Falls back to a generic key
+// when the processor did not decode a specific reason (the empty-detail
+// already-terminal case) or the failure was infrastructural.
+func worldTransferRejectionReason(err error) string {
+	var re *pendingchange.RejectedError
+	if errors.As(err, &re) && re.Reason != "" {
+		return re.Reason
+	}
+	return "unknown_error"
 }
 
 func isCashShopOperation(l logrus.FieldLogger) func(options map[string]interface{}, op byte, key string) bool {

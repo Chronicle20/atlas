@@ -1,16 +1,16 @@
 {
-  "toolSha": "5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395",
+  "toolSha": "830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1",
   "exportHashes": {
     "gms_v48": "59a1fa209a3202a733d73a7d5104ed541906c7c006e2aa7f1cefed7f2a4342a1",
-    "gms_v61": "d589e6b13a9c58bb3bfeaf234f01c42d5695cc54ef3957eb628a02d6042152b3",
-    "gms_v72": "4189e1f4ac661033cba983e87c29923ad2b7de949f3396611e71b574f38f35de",
-    "gms_v79": "87f07e503dcb18d536c9dfd12823ce42176db76e668d2eb31f72e1c621185752",
-    "gms_v83": "9cd6b47ebdb40d54b0358dc7227c985002145c7dc88e27e95175cb0207736bdb",
-    "gms_v84": "621cfa32bb7f86b729136b5c30cfdee02bbed10a2e00d2f5a88d03edeec4a76d",
-    "gms_v87": "b3298f99a86c3b7c391563abd8f7d6346d7683b39e2a7b02478a1e23cbd6c8bb",
-    "gms_v92": "40ba7a1118430cd74154fbf601fd9210e55cc61995a4ac73f290bb881634d012",
-    "gms_v95": "67cc150ed60812f7fd87bdd727371358184dd01880542d2225088b8a3945636f",
-    "jms_v185": "86593392498422c216d41791815924dac6642caea385f2e75b490659cc6769a7"
+    "gms_v61": "0532e86e0ce45f5c898626409c98e28c8a1804d42c28406fcac1b5c379b71be0",
+    "gms_v72": "01445ed400a216f7f219cc2831653cb421c26c43fd50676b11510550fa1a94af",
+    "gms_v79": "a956db8ff64a8df29fbf11e19b158d3191dec51bb246ffd0848a721ea43409df",
+    "gms_v83": "9cfa0c4f248d94baf255babc9b95417e59806be4cbd96e0b98951be03c74352e",
+    "gms_v84": "53992af04beff72106d1fb79de956139aa824617b1d92b08ef9a3a064b710e6a",
+    "gms_v87": "f029b556b8d373a02e60e6df0c210ce143d111a960e06601bfae23cd59d11d4f",
+    "gms_v92": "9e15fb249bbecd7db73f0bb5ff144bf3b419b69283c89e18d7e940bae65f6794",
+    "gms_v95": "f15eb92b0b367981984ef68303fecd197d8735bcc0ce7e603b3003509a717355",
+    "jms_v185": "0d054f727c883d0fea10da9ffa4da21c07a549f34caa8369f0ac44ee4f581a0b"
   },
   "rows": [
     {
@@ -14876,8 +14876,9 @@
     {
       "kind": "op",
       "op": "MACRO_SYS_DATA_INIT",
+      "packet": "character/clientbound/CharacterSkillMacro",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::OnMacroSysDataInit"
       ],
@@ -14887,48 +14888,39 @@
           "opcode": -1
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 91
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 113
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 117
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 124
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 127
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 132
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 139
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 140
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 122
         }
       }
@@ -17093,6 +17085,59 @@
     },
     {
       "kind": "op",
+      "op": "SKILL_MACRO",
+      "packet": "character/serverbound/CharacterSkillMacroHandle",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CMacroSysMan::FlushToSvr",
+        "sub_59746C"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 101
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 109
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 108
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 110
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 110
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 113
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 121
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 122
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 105
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "USE_INNER_PORTAL",
       "direction": "serverbound",
       "tier1": false,
@@ -17750,66 +17795,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 104
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "SKILL_MACRO",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CMacroSysMan::FlushToSvr",
-        "sub_6022DB"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 109
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 108
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 110
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 110
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 113
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 121
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 122
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 105
         }
       }
     },

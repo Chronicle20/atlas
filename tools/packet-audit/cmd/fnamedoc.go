@@ -88,7 +88,7 @@ func fnameDocRun(o fnameDocOpts, stdout, stderr io.Writer) int {
 		out := string(src)
 		changed := false
 		for _, st := range structs {
-			fname, ok := writerToFName[title(fam)+st]
+			fname, ok := writerToFName.resolveFName(title(fam)+st, filepath.ToSlash(f))
 			if !ok {
 				unresolved = append(unresolved, fmt.Sprintf("%s:%s", fam, st))
 				continue
@@ -248,9 +248,28 @@ var fnamedocOrder = []string{"gms_v95", "gms_v83", "gms_v84", "gms_v87", "gms_v7
 // have overwritten the hand-verified, arm-suffixed
 // "CWvsContext::SendConsumeCashItemUseRequest#VegaScroll" comment (task-130,
 // IDA-verified per-version CUIVega send sites) with a weaker, unsuffixed one.
-func loadReportFNames(auditsDir string) (map[string]string, error) {
+//
+// task-226: the WriterName key is Title(family)+Struct, which carries no
+// direction — so a codec whose clientbound and serverbound structs share BOTH
+// family and struct name (character SkillMacro is the first such pair, since
+// Atlas names both structs literally "SkillMacro") resolves to whichever
+// direction's report happened to load first, and the other direction's file
+// reads as DRIFT against its sibling's fname. Reports carry their own
+// AtlasFile, which IS direction-distinct, so the loader also indexes
+// WriterName→AtlasFile and AtlasFile→IDAName; resolveFName consults those only
+// when the WriterName hit names a DIFFERENT file than the one being scanned.
+// Reports whose WriterName already carries the serverbound "Handle" suffix
+// (SummonMoveHandle) never collide and are unaffected.
+func loadReportFNames(auditsDir string) (*reportFNames, error) {
 	order := fnamedocOrder
 	out := map[string]string{}
+	idx := &reportFNames{
+		fname:         out,
+		writerFile:    map[string]string{},
+		fileFName:     map[string]string{},
+		fileAmbiguous: map[string]bool{},
+	}
+	writerFile, fileFName, fileAmbiguous := idx.writerFile, idx.fileFName, idx.fileAmbiguous
 	for _, v := range order {
 		matches, _ := filepath.Glob(filepath.Join(auditsDir, v, "*.json"))
 		for _, p := range matches {
@@ -259,8 +278,8 @@ func loadReportFNames(auditsDir string) (map[string]string, error) {
 				return nil, err
 			}
 			var r struct {
-				WriterName, IDAName string
-				Rows                []struct{ Verdict int }
+				WriterName, IDAName, AtlasFile string
+				Rows                           []struct{ Verdict int }
 			}
 			if json.Unmarshal(raw, &r) != nil {
 				continue
@@ -274,9 +293,53 @@ func loadReportFNames(auditsDir string) (map[string]string, error) {
 			if _, ok := out[r.WriterName]; !ok {
 				out[r.WriterName] = r.IDAName
 			}
+			if _, ok := writerFile[r.WriterName]; !ok {
+				writerFile[r.WriterName] = r.AtlasFile
+			}
+			if r.AtlasFile != "" {
+				if prev, seen := fileFName[r.AtlasFile]; !seen {
+					fileFName[r.AtlasFile] = r.IDAName
+				} else if prev != r.IDAName {
+					// More than one distinct fname claims this file — it cannot
+					// disambiguate anything, so retire it as a tiebreaker.
+					fileAmbiguous[r.AtlasFile] = true
+				}
+			}
 		}
 	}
-	return out, nil
+	return idx, nil
+}
+
+// reportFNames is the resolved audit-report index: the flat WriterName→IDAName
+// map plus the AtlasFile side-indexes that disambiguate a WriterName claimed by
+// codecs in two directions (see loadReportFNames).
+type reportFNames struct {
+	fname         map[string]string
+	writerFile    map[string]string
+	fileFName     map[string]string
+	fileAmbiguous map[string]bool
+}
+
+// resolveFName returns the fname to cite for struct `writer` as found in the
+// packet-lib file `file` (a repo-relative path, matching the reports'
+// AtlasFile). It prefers the WriterName hit, and falls back to the file-scoped
+// fname only when that hit belongs to a different file — the cross-direction
+// collision case.
+func (r *reportFNames) resolveFName(writer, file string) (string, bool) {
+	fname, ok := r.fname[writer]
+	if !ok {
+		// No report claims this WriterName. A helper struct sharing a file with
+		// a real codec (SkillMacroEntry beside SkillMacro) stays unresolved —
+		// the file-scoped fname is NOT its fname.
+		return "", false
+	}
+	if r.writerFile[writer] == file {
+		return fname, true
+	}
+	if ff, fok := r.fileFName[file]; fok && !r.fileAmbiguous[file] {
+		return ff, true
+	}
+	return fname, true
 }
 
 // reportHasUnresolvedRow reports whether any row carries diff.VerdictUnresolved.

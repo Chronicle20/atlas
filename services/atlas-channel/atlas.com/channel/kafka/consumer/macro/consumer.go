@@ -19,8 +19,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -77,12 +76,12 @@ func announceMacros(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 				sort.Slice(sorted, func(i, j int) bool {
 					return sorted[i].Id < sorted[j].Id
 				})
-				mms := make([]packetmodel.Macro, 0, len(sorted))
+				ems := make([]charcb.SkillMacroEntry, 0, len(sorted))
 				for _, sm := range sorted {
-					mms = append(mms, packetmodel.NewMacro(sm.Name, sm.Shout, skill2.Id(sm.SkillId1), skill2.Id(sm.SkillId2), skill2.Id(sm.SkillId3)))
+					ems = append(ems, charcb.NewSkillMacroEntry(sm.Name, sm.Shout, skill2.Id(sm.SkillId1), skill2.Id(sm.SkillId2), skill2.Id(sm.SkillId3)))
 				}
-				macros := packetmodel.NewMacros(mms...)
-				return session.Announce(l)(ctx)(wp)(charpkt.CharacterSkillMacroWriter)(macros.Encode)
+				macros := charcb.NewSkillMacro(ems...)
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterSkillMacroWriter)(macros.Encode)
 			}
 		}
 	}

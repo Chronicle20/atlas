@@ -88,7 +88,6 @@ import (
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
 	channelCB "github.com/Chronicle20/atlas/libs/atlas-packet/channel/clientbound"
 	channelSB "github.com/Chronicle20/atlas/libs/atlas-packet/channel/serverbound"
-	character2 "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	mbcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound/monsterbook"
 	charsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound"
@@ -727,7 +726,7 @@ func produceWriters() []string {
 		petcb.PetChatWriter,
 		charcb.CharacterItemUpgradeWriter,
 		charcb.CharacterSkillLearnItemResultWriter,
-		character2.CharacterSkillMacroWriter,
+		charcb.CharacterSkillMacroWriter,
 		petcb.PetExcludeResponseWriter,
 		petcb.PetCashFoodResultWriter,
 		charcb.CharacterKeyMapAutoHpWriter,
@@ -940,7 +939,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[charsb.CharacterItemCancelHandle] = handler.CharacterItemCancelHandleFunc
 	handlerMap[invsb.CharacterItemUseTownScrollHandle] = handler.CharacterItemUseTownScrollHandleFunc
 	handlerMap[invsb.CharacterItemUseScrollHandle] = handler.CharacterItemUseScrollHandleFunc
-	handlerMap[character2.CharacterSkillMacroHandle] = handler.CharacterSkillMacroHandleFunc
+	handlerMap[charsb.CharacterSkillMacroHandle] = handler.CharacterSkillMacroHandleFunc
 	handlerMap[petsb.PetItemExcludeHandle] = handler.PetItemExcludeHandleFunc
 	handlerMap[petsb.PetItemUseHandle] = handler.PetItemUseHandleFunc
 	handlerMap[cashsb.CashShopOperationHandle] = handler.CashShopOperationHandleFunc

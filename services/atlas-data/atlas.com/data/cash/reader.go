@@ -78,6 +78,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m.ProtectTime = uint32(i.GetIntegerWithDefault("protectTime", 0))
 			m.AddTime = uint32(i.GetIntegerWithDefault("addTime", 0))
 			m.MaxDays = uint32(i.GetIntegerWithDefault("maxDays", 0))
+			m.Life = uint32(i.GetIntegerWithDefault("life", 0))
 			// 0520 meso sacks: the flat award amount. Absent node => 0, which the
 			// channel handler treats as "reject, consume nothing" (FR-1.2/FR-2.4).
 			// Deliberately NOT a Spec entry — Spec is the consumable effect map and

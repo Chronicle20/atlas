@@ -12,7 +12,8 @@ description: |
   `packet-audit dispatcher-lint` (plus matrix/fname-doc/operations --check) and
   show exit 0 before claiming the family done. Dispatched once per family;
   serialize, never run two in parallel (shared run.go / families.yaml / global
-  IDA instance).
+  IDA instance). It carries a 120 tool-call budget with a PARTIAL hand-back, so
+  a many-armed family splits across fresh contexts rather than one long agent.
 
   <example>
   Context: party is the next dispatcher family to migrate off the baseline.
@@ -25,7 +26,7 @@ description: |
   user: "Do the guild result family the right way this time."
   assistant: "Dispatching dispatcher-family-implementer for CWvsContext::OnGuildResult."
   </example>
-model: inherit
+model: sonnet
 ---
 
 You implement exactly ONE mode-prefix dispatcher family, end to end, the way
@@ -42,6 +43,36 @@ of this agent is to not repeat those failures. The single most important fact:
 > `dispatcher-lint` and the checklist, not the matrix. A green matrix cell with a
 > mode-byte-only stub, a hard-coded mode literal, or a shared-by-shape struct is a
 > **false pass**. Do not produce one.
+
+## Tool-call budget
+
+**Your budget is 120 tool calls.** A `PostToolUse` hook
+(`.claude/hooks/turn-budget.sh`) warns you at 100 and again at 120; the number
+lives in that file and nowhere else.
+
+Context cost scales with turn count — every turn re-reads everything before it —
+so one agent doing 400 turns costs far more than the same work split across
+fresh contexts. Splitting is the designed outcome, not a failure. A family with
+many arms is the normal reason to split.
+
+- **At ~100:** stop starting new modes. Finish the mode you are on, run
+  `dispatcher-lint` plus the three `--check` gates, commit.
+- **At 120:** commit whatever passes and report `PARTIAL`. Do not push through.
+  Do not start "just one more mode."
+- **Report `PARTIAL` with:** the modes already implemented and committed (with
+  the sha and their matrix cells); the modes that remain, in yaml order; the
+  exact next step; and what the continuation needs — the config-resolved mode
+  byte source, the struct shape you settled on, the IDA session names you
+  resolved, and whether the family is still in `dispatcher-lint-baseline.yaml`.
+
+A `PARTIAL` at the cap is a correct, expected outcome; the controller dispatches
+a continuation with fresh context and your report as its memory. Because the
+family shares `run.go` / `families.yaml`, a continuation is still serialized —
+never run it alongside another family.
+
+If you can see before you start that the family's arm count cannot fit in the
+budget, say so in your first message and report `BLOCKED` with a proposed split
+by mode range. That is cheaper than discovering it at call 119.
 
 ## Procedure
 
@@ -101,5 +132,6 @@ Walk the "Family complete" checklist in DISPATCHER_FAMILY.md and tick every box.
 `<family>: <N> modes implemented, all gates exit 0, commit <sha>` — followed by
 the per-mode table (mode → struct → op-row state per version) and the four
 `--check` exit codes verbatim. Or `BLOCKED at step <n>: <reason>` (e.g. wrong IDB
-loaded, unresolved mode set, an arm whose body can't be derived). Never report a
+loaded, unresolved mode set, an arm whose body can't be derived). Or `PARTIAL` at
+the tool-call cap, in the shape the budget section above specifies. Never report a
 family done on a `matrix ✅` alone — dispatcher-lint exit 0 is the gate.

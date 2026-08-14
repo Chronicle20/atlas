@@ -33,6 +33,7 @@ const (
 	CommandChangeTemplate    = "CHANGE_TEMPLATE"
 	CommandSetOwner          = "SET_OWNER"
 	CommandApplyLock         = "APPLY_LOCK"
+	CommandExtendExpiration  = "EXTEND_EXPIRATION"
 )
 
 type Command[E any] struct {
@@ -186,6 +187,18 @@ type SetOwnerCommandBody struct {
 type ApplyLockCommandBody struct {
 	Slot       int16     `json:"slot"`
 	Expiration time.Time `json:"expiration"` // zero time = permanent lock
+}
+
+// ExtendExpirationCommandBody extends a time-limited asset's expiration
+// WITHOUT touching its flags. Expiration is absolute, not a duration, so a
+// redelivered command is a no-op rather than a second extension.
+// ExtenderTemplateId names the consumed item-expiration extender so this
+// service can re-derive the maxDays cap itself — the channel is not a trust
+// boundary.
+type ExtendExpirationCommandBody struct {
+	Slot               int16     `json:"slot"`
+	Expiration         time.Time `json:"expiration"`
+	ExtenderTemplateId uint32    `json:"extenderTemplateId"`
 }
 
 const (

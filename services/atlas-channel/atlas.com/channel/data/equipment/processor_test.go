@@ -53,6 +53,45 @@ func TestGetById_DecodesPetAbilities(t *testing.T) {
 	}
 }
 
+// TestGetByIdReadsNotExtend pins the wire json tag "notExtend" (matching
+// atlas-data's producer field-for-field) so a drift between the two services'
+// tags fails loudly here instead of silently decoding to false at runtime.
+func TestGetByIdReadsNotExtend(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{"data":{"type":"statistics","id":"1402046","attributes":{"notExtend":true}}}`))
+	}))
+	defer srv.Close()
+	t.Setenv("DATA_SERVICE_URL", srv.URL+"/")
+
+	m, err := NewProcessor(logrus.New(), context.Background()).GetById(1402046)
+	if err != nil {
+		t.Fatalf("GetById returned error: %v", err)
+	}
+	if !m.NotExtend() {
+		t.Error("NotExtend = false, want true")
+	}
+}
+
+// TestGetById_NotExtendDefaultsFalse asserts an equip with no notExtend
+// attribute decodes to false, matching the WZ default (extendable).
+func TestGetById_NotExtendDefaultsFalse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{"data":{"type":"statistics","id":"1302000","attributes":{}}}`))
+	}))
+	defer srv.Close()
+	t.Setenv("DATA_SERVICE_URL", srv.URL+"/")
+
+	m, err := NewProcessor(logrus.New(), context.Background()).GetById(1302000)
+	if err != nil {
+		t.Fatalf("GetById returned error: %v", err)
+	}
+	if m.NotExtend() {
+		t.Error("NotExtend = true, want false")
+	}
+}
+
 // TestGetById_NoAbilities asserts an equip with no pet-ability attributes
 // decodes to an empty (non-nil-required) abilities slice, matching the
 // omitempty JSON tag on the wire.

@@ -271,12 +271,13 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 		return c.compensatePetEvolution(s, failedStep)
 	}
 
-	// Cash-item-use reverse-walk (Task 10; remote_merchant added task-221).
-	// A failed item_tag_use / sealing_lock_use / incubator_use /
+	// Cash-item-use reverse-walk (Task 10; expiration_extender_use added
+	// task-222, remote_merchant added task-221). A failed item_tag_use /
+	// sealing_lock_use / incubator_use / expiration_extender_use /
 	// remote_merchant must refund the already-completed consume steps (the
-	// tagged/sealed/incubated item) and undo any awarded result — or close
-	// any opened shop — rather than only compensating the failed step.
-	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse || s.SagaType() == RemoteMerchant {
+	// tagged/sealed/incubated/extender item) and undo any awarded result — or
+	// close any opened shop — rather than only compensating the failed step.
+	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse || s.SagaType() == ExpirationExtenderUse || s.SagaType() == RemoteMerchant {
 		return c.compensateCashItemUse(s, failedStep)
 	}
 

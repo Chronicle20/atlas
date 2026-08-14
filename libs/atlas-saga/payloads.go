@@ -1113,6 +1113,21 @@ type ApplyAssetLockPayload struct {
 	Expiration    time.Time `json:"expiration"`    // Expiration time to apply to the asset
 }
 
+// ExtendAssetExpirationPayload represents the payload required to extend the expiration of a time-limited asset in a specific inventory slot.
+//
+// Expiration is ABSOLUTE, never a duration: Kafka delivery here is
+// at-least-once, and a duration-shaped payload would stack a second extension
+// on redelivery. ExtenderTemplateId names the item-expiration extender being
+// consumed so atlas-inventory can independently re-derive the maxDays cap
+// rather than trusting the channel-computed timestamp.
+type ExtendAssetExpirationPayload struct {
+	CharacterId        uint32    `json:"characterId"`        // CharacterId associated with the action
+	InventoryType      byte      `json:"inventoryType"`      // Type of inventory (1=equip, 2=use, 3=setup, 4=etc, 5=cash)
+	Slot               int16     `json:"slot"`               // Slot of the asset to extend (negative for equipped slots, positive for inventory slots)
+	Expiration         time.Time `json:"expiration"`         // Absolute expiration to set on the asset
+	ExtenderTemplateId uint32    `json:"extenderTemplateId"` // Template id of the extender being consumed, for server-side cap re-derivation
+}
+
 // IncubatorResultPayload represents the payload required to deliver the result of an incubator use to a character.
 type IncubatorResultPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action

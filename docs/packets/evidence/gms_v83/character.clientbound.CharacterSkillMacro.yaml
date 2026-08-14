@@ -1,0 +1,10 @@
+packet: character/clientbound/CharacterSkillMacro
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnMacroSysDataInit
+    address: "0xa290f8"
+    decompile_sha256: 54d7ad43c033738b4f1dea532ee226fcf077f9f095f792a1a6f5954cd6c41c50
+verifies:
+    - libs/atlas-packet/character/clientbound/skill_macro_test.go#TestSkillMacroByteOutput

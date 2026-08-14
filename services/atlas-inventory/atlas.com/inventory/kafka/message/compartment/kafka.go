@@ -12,28 +12,29 @@ import (
 )
 
 const (
-	EnvCommandTopic          = "COMMAND_TOPIC_COMPARTMENT"
-	CommandEquip             = "EQUIP"
-	CommandUnequip           = "UNEQUIP"
-	CommandMove              = "MOVE"
-	CommandDrop              = "DROP"
-	CommandRequestReserve    = "REQUEST_RESERVE"
-	CommandConsume           = "CONSUME"
-	CommandDestroy           = "DESTROY"
-	CommandCancelReservation = "CANCEL_RESERVATION"
-	CommandIncreaseCapacity  = "INCREASE_CAPACITY"
-	CommandCreateAsset       = "CREATE_ASSET"
-	CommandRecharge          = "RECHARGE"
-	CommandMerge             = "MERGE"
-	CommandSort              = "SORT"
-	CommandAccept            = "ACCEPT"
-	CommandRelease           = "RELEASE"
-	CommandExpire            = "EXPIRE"
-	CommandModifyEquipment   = "MODIFY_EQUIPMENT"
-	CommandChangeTemplate    = "CHANGE_TEMPLATE"
-	CommandSetOwner          = "SET_OWNER"
-	CommandApplyLock         = "APPLY_LOCK"
-	CommandExtendExpiration  = "EXTEND_EXPIRATION"
+	EnvCommandTopic           = "COMMAND_TOPIC_COMPARTMENT"
+	CommandEquip              = "EQUIP"
+	CommandUnequip            = "UNEQUIP"
+	CommandMove               = "MOVE"
+	CommandDrop               = "DROP"
+	CommandRequestReserve     = "REQUEST_RESERVE"
+	CommandConsume            = "CONSUME"
+	CommandDestroy            = "DESTROY"
+	CommandCancelReservation  = "CANCEL_RESERVATION"
+	CommandIncreaseCapacity   = "INCREASE_CAPACITY"
+	CommandCreateAsset        = "CREATE_ASSET"
+	CommandRecharge           = "RECHARGE"
+	CommandMerge              = "MERGE"
+	CommandSort               = "SORT"
+	CommandAccept             = "ACCEPT"
+	CommandRelease            = "RELEASE"
+	CommandExpire             = "EXPIRE"
+	CommandModifyEquipment    = "MODIFY_EQUIPMENT"
+	CommandChangeTemplate     = "CHANGE_TEMPLATE"
+	CommandSetOwner           = "SET_OWNER"
+	CommandApplyLock          = "APPLY_LOCK"
+	CommandExtendExpiration   = "EXTEND_EXPIRATION"
+	CommandResetPetExpiration = "RESET_PET_EXPIRATION"
 )
 
 type Command[E any] struct {
@@ -199,6 +200,24 @@ type ExtendExpirationCommandBody struct {
 	Slot               int16     `json:"slot"`
 	Expiration         time.Time `json:"expiration"`
 	ExtenderTemplateId uint32    `json:"extenderTemplateId"`
+}
+
+// ResetPetExpirationCommandBody sets a dried-up pet asset's expiration to an
+// absolute instant. The asset is resolved by (CharacterId, PetId) — never by
+// slot — mirroring ChangeTemplateCommandBody. SourceTemplateId names the
+// consumed Water of Life so this service can re-derive the ceiling itself; the
+// caller is not a trust boundary. Absolute (not a duration) so a redelivered
+// command is a no-op rather than a second grant.
+//
+// MIRROR: this struct is duplicated in
+// services/atlas-pets/.../kafka/message/compartment/kafka.go (the producer).
+// The two live in separate Go modules, so a field name or json tag changed in
+// one and not the other fails no build — it decodes into a zero-valued body at
+// runtime: a pet revived to the zero time, i.e. still a doll.
+type ResetPetExpirationCommandBody struct {
+	PetId            uint32    `json:"petId"`
+	Expiration       time.Time `json:"expiration"`
+	SourceTemplateId uint32    `json:"sourceTemplateId"`
 }
 
 const (

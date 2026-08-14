@@ -101,6 +101,8 @@ type Processor interface {
 	ApplyAssetLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
 	ExtendAssetExpirationAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error
 	ExtendAssetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error
+	ResetPetExpirationAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error
+	ResetPetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -2107,6 +2109,74 @@ func (p *ProcessorImpl) ChangeTemplate(mb *message.Buffer) func(transactionId uu
 			for _, a := range c.Assets() {
 				if a.IsPet() && a.PetId() == petId {
 					return cp.assetProcessor.ChangeTemplate(mb)(transactionId, characterId, a.Id(), newTemplateId)
+				}
+			}
+			return fmt.Errorf("pet [%d] asset not found in cash compartment for character [%d]", petId, characterId)
+		})
+	}
+}
+
+func (p *ProcessorImpl) ResetPetExpirationAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).ResetPetExpiration(mb)(transactionId, characterId, petId, expiration, sourceTemplateId)
+		})
+	})
+}
+
+// ResetPetExpiration sets a dried-up pet asset's expiration to an absolute
+// instant, rejecting the request outright if it exceeds a cap this service
+// re-derives itself.
+//
+// atlas-pets computes the expiration, but it is NOT a trust boundary: a forged
+// COMMAND_TOPIC_COMPARTMENT message could otherwise set an arbitrary
+// expiration. The cap is re-derived here from the consumed Water of Life's own
+// cash data (info/life, in days), anchored to now. A request beyond that cap is
+// REJECTED, not clamped — the same reasoning as ExtendAssetExpiration: by the
+// time this runs the water has already been consumed by the saga's first step,
+// and rejecting produces a full refund via the compensator rather than a
+// silent, unauditable partial grant.
+//
+// EXTEND_EXPIRATION is deliberately NOT reused: it hard-rejects maxDays == 0,
+// and 0518.img has no maxDays node at all. Relaxing that guard to accept a
+// second cap source would make one command mean two things and weaken the
+// extender's own ceiling.
+func (p *ProcessorImpl) ResetPetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+		p.l.Debugf("Character [%d] resetting expiration of pet [%d] asset with source [%d].", characterId, petId, sourceTemplateId)
+
+		cd, err := p.cashProcessor.GetById(sourceTemplateId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to resolve source [%d] cash data; refusing to reset pet expiration.", characterId, sourceTemplateId)
+			return err
+		}
+		if cd.Life() == 0 {
+			p.l.Errorf("Character [%d] source [%d] has no info/life; refusing to reset pet expiration.", characterId, sourceTemplateId)
+			return errors.New("source item grants no lifespan")
+		}
+		serverCap := time.Now().Add(time.Duration(cd.Life()) * 24 * time.Hour)
+		if expiration.After(serverCap) {
+			p.l.Warnf("Character [%d] requested pet expiration [%s] beyond the server-derived cap [%s] for source [%d]; rejecting.", characterId, expiration, serverCap, sourceTemplateId)
+			return errors.New("requested expiration exceeds the source item's server-derived cap")
+		}
+
+		invLock := LockRegistry().Get(characterId, inventory.TypeValueCash)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			cp := p.WithTransaction(tx).WithAssetProcessor(asset.NewProcessor(p.l, p.ctx, tx))
+			c, err := cp.GetByCharacterAndType(characterId)(inventory.TypeValueCash)
+			if err != nil {
+				return err
+			}
+			c, err = cp.DecorateAsset(c)
+			if err != nil {
+				return err
+			}
+			for _, a := range c.Assets() {
+				if a.IsPet() && a.PetId() == petId {
+					return cp.assetProcessor.ExtendExpiration(mb)(transactionId, characterId)(a, expiration)
 				}
 			}
 			return fmt.Errorf("pet [%d] asset not found in cash compartment for character [%d]", petId, characterId)

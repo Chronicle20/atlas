@@ -7,41 +7,59 @@ for the evidence chain, not as an open question.
 
 ## Current state
 
-- **User ruling: OPTION A — build it properly.** `BUY_*` routes through
-  `cashshop.RequestPurchase` so a real cash asset exists; the done body is emitted
-  from the purchase-outcome consumer with the real `AssetId`. Ordering is
-  **insert-first**.
-- **Currency blocker: RESOLVED, verdict DERIVED** —
-  [`buy-currency-derivation.md`](buy-currency-derivation.md). The client hard-codes
-  **NX Prepaid** for both ops (v95 PDB resolves the gating field by name to
-  `CCashShop::m_nPrepaidNXCash`). Pass `isPoints=false`, `currency=0`. There is no
-  wallet selector on the wire for these ops, and that is architectural, not an
-  oversight — the generic `BUY` op does carry one.
-- **The rework is now planned**, as **plan.md Phase H, Tasks 37/38/39**:
-  37 = correlation id on the purchase command + both outcome events (cross-service
-  wire change, no behaviour change); 38 = `BUY_*` charges via `RequestPurchase`,
-  insert-first; 39 = the purchase-outcome consumer answers the client with a real
-  `CashId` and releases the PENDING row on failure. Task 25's fabricated emit is
-  deleted in Task 39 Step 2.
-- **plan.md Task 28 was REWRITTEN** (controller ruling). Its original property was
-  proven false by `4a5d9ff65`; the narrowed, true property is *"the OPERATOR cancel
-  route is not reachable from any socket handler"*. See the task's own preamble.
-- **User ruling: commit `4a5d9ff65` (client cancel path) is DEFERRED to the
-  branch-end whole-branch review** rather than reviewed now. It remains unreviewed
-  and unverified until then; its claimed red run (cross-character operator DELETE
-  returned 204, expected 404) has not been independently re-confirmed.
-- **Task 26 dispatched** with a controller addendum adding the `produceWriters()`
-  registration the plan omitted. Verified at dispatch: `main.go:637-641` registers
-  five cash writers, while `libs/atlas-packet/cash/clientbound/` defines five MORE
-  that are registered nowhere and emitted nowhere. Task 26 takes the three `Check*`
-  writers; **the two `Cancel*ResultWriter` constants are Task 27's.**
-- Remaining: Tasks 26, 27, 28 (rewritten), 29–36, then 37–39. Flagless
-  `tools/verify.sh` still owed at branch end (Task 35).
+**Updated end of controller session 3.** Ledger
+`.superpowers/sdd/plan/progress.md` (git-ignored but it HAS survived two clears) is
+the authority on per-task state; this file is the narrative.
 
-The controller ledger `.superpowers/sdd/plan/progress.md` SURVIVED the earlier
-clear and is the authority on per-task state; this file is the narrative.
+### Landed this session
+- `7183e75aa` docs — currency derivation, plan Phase H, Task 28 rewrite
+- `5f69feac0` docs — plan Phase I (the pre-v95 credential)
+- `ce5b8e246` **code** — Task 40: birth date in atlas-account + atlas-channel mirror.
+  `tools/verify.sh --quick` PASS (exit 0, 86 modules, all guards). Task review was
+  in flight at handoff — **check the ledger for its verdict before assuming clean.**
+
+### Resolved blockers (do not relitigate)
+- **Currency: DERIVED.** Client hard-codes NX Prepaid for both buy ops; pass
+  `isPoints=false`, `currency=0`. Evidence in `buy-currency-derivation.md`.
+- **User ruling: Option A** — `BUY_*` routes through `RequestPurchase`, insert-first,
+  done body emitted from the purchase-outcome consumer with the real `AssetId`.
+  Planned as Phase H, Tasks 37/38/39.
+- **User ruling: add a birth date to atlas-account** for the pre-v95 credential.
+  Planned as Phase I; Task 40 is DONE, Task 41 folded into Task 26 (see ordering).
+
+### Controller ruling on ordering — READ BEFORE RESUMING
+**Task 40 runs before Task 26, and Task 41 is folded INTO Task 26.** As originally
+planned, Task 26 would have had to answer availability checks with no working
+pre-v95 credential comparison, landing either a security hole or a stub — both
+forbidden. Task 40 is now done, so **Task 26 must implement BOTH version paths in
+one commit**: `Spw()` vs `PIC()` on v95/jms, `BirthDate()` vs the new stored birth
+date on v48–v92, fail-closed when the stored value is unset.
+
+### Next action
+Resume at **Task 26**, using `.superpowers/sdd/plan/task-26-brief-cont.md` PLUS
+the Task 41 content now folded in. **Note the continuation brief contains one
+error of mine**: it says to compare `.PIC()` against the decoded SPW, which is
+correct ONLY on v95/jms. Correct that when you re-brief. Two prior Task 26
+dispatches produced NO code — both were aborted by the turn-budget hook bug, not
+by real problems.
+
+### The turn-budget hook — THE USER OWNS THIS FIX
+Do NOT touch `.claude/hooks/turn-budget.sh` in either tree. The registered hook is
+the MAIN repo's copy (`$CLAUDE_PROJECT_DIR` resolves to the main repo even for
+worktree sessions). Until the user's fix lands, the controller MUST zero the counter
+immediately before every dispatch:
+`printf '0' > /tmp/claude-turn-budget/<YOUR session id>` — read your own session id
+from your scratchpad path; do not reuse a previous session's.
+
+### Still outstanding
+Tasks 26, 27, 28 (rewritten), 29–36, 37–39. Flagless `tools/verify.sh` owed at
+branch end (Task 35). Commit `4a5d9ff65` (client cancel path) remains UNREVIEWED by
+user ruling — deferred to the branch-end whole-branch review.
 
 ---
+
+## Historical: the blocker as first written
+
 
 ## Historical: the blocker as first written
 

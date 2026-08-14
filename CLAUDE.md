@@ -103,6 +103,14 @@ For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the b
     magnitude and no party scope (task-218). The guard diffs the two files from
     their `package` clause onward; only the leading doc comment, which names the
     mirror direction, may differ.
+15. **`tools/npc-shop-contract-mirror-guard.sh` clean from the repo root** whenever
+    any copy of the npc-shop Kafka contract changed. atlas-npc-shops owns
+    `kafka/message/shops/kafka.go`; atlas-channel and atlas-saga-orchestrator
+    carry mirrors in separate Go modules, so a field name or json tag changed in
+    one and not the others fails no build — it decodes into a zero-valued body at
+    runtime, silently. The guard diffs all three from their `package` clause
+    onward; only the leading doc comment, which names the mirror direction, may
+    differ.
 
 ## Code Patterns
 

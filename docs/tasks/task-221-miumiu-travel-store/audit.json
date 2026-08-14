@@ -1,0 +1,74 @@
+{
+  "backendGuidelinesAudit": {
+    "service": "task-221-miumiu-travel-store (multi-service)",
+    "path": "libs/atlas-saga, services/atlas-channel/atlas.com/channel, services/atlas-npc-shops/atlas.com/npc, services/atlas-saga-orchestrator/atlas.com/saga-orchestrator, services/atlas-data/atlas.com/data, libs/atlas-packet",
+    "date": "2026-08-13",
+    "diffRange": "6496b9c87..HEAD",
+    "build": "pass",
+    "testsPassed": 0,
+    "testsFailed": 0,
+    "overallStatus": "pass",
+    "modules": [
+      {
+        "name": "libs/atlas-saga",
+        "build": "pass",
+        "tests": "pass",
+        "checks": [
+          { "id": "unmarshal-case", "name": "OpenNpcShop unmarshal case wired", "status": "pass", "evidence": "libs/atlas-saga/unmarshal.go:318-319" }
+        ]
+      },
+      {
+        "name": "services/atlas-channel/atlas.com/channel",
+        "build": "pass",
+        "tests": "pass",
+        "checks": [
+          { "id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "remotemerchant/registry.go, socket/handler/character_cash_item_use_remote_merchant.go, kafka/consumer/npc/shop/consumer.go each carry a single responsibility" },
+          { "id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "pass", "evidence": "socket/handler/character_cash_item_use.go:511 uses item.ClassificationRemoteMerchant (libs/atlas-constants/item/constants.go:106)" },
+          { "id": "DOM-21-observation", "name": "InventoryType literal matches TypeValueCash", "status": "warn", "evidence": "socket/handler/character_cash_item_use_remote_merchant.go:149 (InventoryType: 5, // cash) vs libs/atlas-constants/inventory/constants.go:16 TypeValueCash; pre-existing byte-typed payload field, not a new type/const duplication" },
+          { "id": "DOM-23", "name": "Kafka topic naming convention", "status": "pass", "evidence": "no new topics; COMMAND_TOPIC_NPC_SHOP / EVENT_TOPIC_NPC_SHOP_STATUS pre-exist in deploy/k8s/base/env-configmap.yaml:59,147" },
+          { "id": "DOM-24", "name": "Kafka producer stubbed in tests that emit", "status": "pass", "evidence": "socket/handler/character_cash_item_use_remote_merchant_test.go injects remoteMerchantSagaCreateFunc seam; kafka/consumer/npc/shop/consumer_test.go exercises no emit path" },
+          { "id": "DOM-26", "name": "Goroutines spawned via routine.Go", "status": "pass", "evidence": "kafka/consumer/npc/shop/consumer.go:264 routine.Go(...); tools/goroutine-guard.sh exit 0" },
+          { "id": "mirror-guard", "name": "npc-shop-contract-mirror-guard.sh", "status": "pass", "evidence": "tools/npc-shop-contract-mirror-guard.sh -> OK all three copies identical" }
+        ]
+      },
+      {
+        "name": "services/atlas-npc-shops/atlas.com/npc",
+        "build": "pass",
+        "tests": "pass",
+        "checks": [
+          { "id": "FILE-01", "name": "Enter/EnterAndEmit in processor.go", "status": "pass", "evidence": "services/atlas-npc-shops/atlas.com/npc/shops/processor.go:271-306" },
+          { "id": "DOM-24", "name": "Kafka producer stubbed in tests that emit", "status": "pass", "evidence": "processor_enter_test.go:78,120,150 exercises pure Enter(mb) form only, never EnterAndEmit" }
+        ]
+      },
+      {
+        "name": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator",
+        "build": "pass",
+        "tests": "pass",
+        "checks": [
+          { "id": "DOM-24", "name": "Kafka producer stubbed in tests that emit", "status": "pass", "evidence": "kafka/consumer/npcshop/testmain_test.go:10-13 producertest.InstallNoop(), no t.Cleanup(producer.ResetInstance); saga/remote_merchant_compensation_test.go:35-38 SetEmitNpcShopExitForTest seam" },
+          { "id": "handler-placement", "name": "Handler/Producer/Compensator changes in correct files", "status": "pass", "evidence": "saga/handler.go:1178-1203 handleOpenNpcShop; saga/producer.go:360-399 NpcShopEnterCommandProvider/NpcShopExitCommandProvider/EmitNpcShopExit; saga/compensator.go:1489-1499 OpenNpcShop reverse-walk case" }
+        ]
+      },
+      {
+        "name": "services/atlas-data/atlas.com/data",
+        "build": "pass",
+        "tests": "pass",
+        "checks": [
+          { "id": "FILE-02", "name": "RestModel field addition in rest.go", "status": "pass", "evidence": "cash/rest.go:44 Npc field" }
+        ]
+      },
+      {
+        "name": "libs/atlas-packet",
+        "build": "pass",
+        "tests": "pass",
+        "checks": [
+          { "id": "DOM-25", "name": "Version-gate boundary change is not a client wire-value literal", "status": "pass", "evidence": "npc/clientbound/shop_list.go:58,115 >=95 -> >=92 boundary (IDA-verified structural field-layout gate, not a table-resolvable dispatcher code)" }
+        ]
+      }
+    ],
+    "blocking": [],
+    "nonBlocking": [
+      "DOM-21 (observation, non-blocking): services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use_remote_merchant.go:149 uses the bare literal 5 for InventoryType instead of inventory.TypeValueCash; pre-existing byte-typed payload field and codebase-wide convention, not a regression introduced by this diff."
+    ]
+  }
+}

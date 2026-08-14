@@ -51,15 +51,18 @@ type RestModel struct {
 	AddTime uint32 `json:"addTime,omitempty"`
 	// MaxDays is info/maxDays in DAYS — the ceiling, anchored to now, past
 	// which an extender may not push a target's expiration.
-	MaxDays         uint32             `json:"maxDays,omitempty"`
-	Meso            uint32             `json:"meso,omitempty"` // 0520 meso sacks: info/meso award amount
-	StateChangeItem uint32             `json:"stateChangeItem,omitempty"`
-	BgmPath         string             `json:"bgmPath,omitempty"`
-	Spec            map[SpecType]int32 `json:"spec"`
-	TimeWindows     []TimeWindow       `json:"timeWindows,omitempty"` // Active time windows from info/time
-	PetSkills       []string           `json:"petSkills,omitempty"`
-	PetSkillAdd     bool               `json:"petSkillAdd,omitempty"`
-	TradeBlock      bool               `json:"tradeBlock"`
+	MaxDays         uint32 `json:"maxDays,omitempty"`
+	Meso            uint32 `json:"meso,omitempty"` // 0520 meso sacks: info/meso award amount
+	StateChangeItem uint32 `json:"stateChangeItem,omitempty"`
+	// Npc is the WZ info/npc value: the NPC template a remote-merchant cash
+	// item (classification 545) opens. 0 when the item targets no NPC.
+	Npc         uint32             `json:"npc,omitempty"`
+	BgmPath     string             `json:"bgmPath,omitempty"`
+	Spec        map[SpecType]int32 `json:"spec"`
+	TimeWindows []TimeWindow       `json:"timeWindows,omitempty"` // Active time windows from info/time
+	PetSkills   []string           `json:"petSkills,omitempty"`
+	PetSkillAdd bool               `json:"petSkillAdd,omitempty"`
+	TradeBlock  bool               `json:"tradeBlock"`
 }
 
 func (r RestModel) GetName() string {

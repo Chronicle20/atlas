@@ -43,6 +43,10 @@ const (
 	PointReset            Type = "point_reset"
 	MegaphoneUse          Type = "megaphone_use"
 	MesoSackUse           Type = "meso_sack_use"
+	// RemoteMerchant is the classification-545 cash item flow: open an NPC's
+	// shop from anywhere, then consume the item — never the other way round
+	// (task-221).
+	RemoteMerchant Type = "remote_merchant"
 )
 
 // Status represents the status of a saga step
@@ -139,6 +143,9 @@ const (
 	ReleaseFromCharacter Action = "release_from_character"
 	AcceptToCharacter    Action = "accept_to_character"
 	ReleaseFromStorage   Action = "release_from_storage"
+
+	// NPC shop actions
+	OpenNpcShop Action = "open_npc_shop"
 
 	// Trade actions (task-205). trade_settlement is a COMPOSITE: the
 	// orchestrator expands it into release_from_character / accept_to_character /

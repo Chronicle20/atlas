@@ -49,6 +49,9 @@ type (
 	// Point-reset payload types
 	TransferAPPayload = sharedsaga.TransferAPPayload
 	TransferSPPayload = sharedsaga.TransferSPPayload
+
+	// Remote-merchant payload types
+	OpenNpcShopPayload = sharedsaga.OpenNpcShopPayload
 )
 
 // Re-export constants from atlas-saga shared library
@@ -68,6 +71,7 @@ const (
 	MegaphoneUse          = sharedsaga.MegaphoneUse
 	NoteSend              = sharedsaga.NoteSend
 	MesoSackUse           = sharedsaga.MesoSackUse
+	RemoteMerchant        = sharedsaga.RemoteMerchant
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -105,6 +109,7 @@ const (
 	EmitMegaphone         = sharedsaga.EmitMegaphone
 	EnqueueWorldBroadcast = sharedsaga.EnqueueWorldBroadcast
 	CreateNote            = sharedsaga.CreateNote
+	OpenNpcShop           = sharedsaga.OpenNpcShop
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

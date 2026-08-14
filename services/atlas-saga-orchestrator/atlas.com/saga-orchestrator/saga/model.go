@@ -48,6 +48,7 @@ const (
 	MtsOperation          = sharedsaga.MtsOperation
 	NoteSend              = sharedsaga.NoteSend
 	SkillBookUse          = sharedsaga.SkillBookUse
+	RemoteMerchant        = sharedsaga.RemoteMerchant
 )
 
 // Status constants
@@ -139,6 +140,9 @@ const (
 	ReleaseFromCharacter = sharedsaga.ReleaseFromCharacter
 	AcceptToCharacter    = sharedsaga.AcceptToCharacter
 	ReleaseFromStorage   = sharedsaga.ReleaseFromStorage
+
+	// NPC shop actions (task-221)
+	OpenNpcShop = sharedsaga.OpenNpcShop
 
 	// Trade actions (task-205). trade_settlement is a COMPOSITE expanded by
 	// expandTradeSettlement into release_from_character / accept_to_character /
@@ -278,6 +282,7 @@ type (
 	SpawnMonsterPayload                 = sharedsaga.SpawnMonsterPayload
 	SpawnReactorDropsPayload            = sharedsaga.SpawnReactorDropsPayload
 	ShowStoragePayload                  = sharedsaga.ShowStoragePayload
+	OpenNpcShopPayload                  = sharedsaga.OpenNpcShopPayload
 	DepositToStoragePayload             = sharedsaga.DepositToStoragePayload
 	UpdateStorageMesosPayload           = sharedsaga.UpdateStorageMesosPayload
 	TransferToStoragePayload            = sharedsaga.TransferToStoragePayload
@@ -1320,6 +1325,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ShowStorage:
 		var payload ShowStoragePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case OpenNpcShop:
+		var payload OpenNpcShopPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

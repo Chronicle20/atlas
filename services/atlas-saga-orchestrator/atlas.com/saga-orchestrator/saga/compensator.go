@@ -108,10 +108,12 @@ type Compensator interface {
 	DispatchNoteSendRollbacks(s Saga)
 
 	// DispatchCashItemUseRollbacks reverse-walks the completed steps of a
-	// cash-item-use saga (ItemTagUse/SealingLockUse/IncubatorUse), re-creating
-	// every consumed item (DestroyAsset/DestroyAssetFromSlot → CreateItem) and
-	// destroying every awarded result (AwardAsset → DestroyItem). No lifecycle
-	// transitions, no Failed emission, no cache eviction — callers handle those.
+	// cash-item-use saga (ItemTagUse/SealingLockUse/IncubatorUse/
+	// RemoteMerchant), re-creating every consumed item
+	// (DestroyAsset/DestroyAssetFromSlot → CreateItem), destroying every
+	// awarded result (AwardAsset → DestroyItem), and closing every opened
+	// shop (OpenNpcShop → EXIT). No lifecycle transitions, no Failed
+	// emission, no cache eviction — callers handle those.
 	DispatchCashItemUseRollbacks(s Saga)
 
 	// DispatchPointResetRollbacks reverse-walks the completed steps of a
@@ -269,12 +271,13 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 		return c.compensatePetEvolution(s, failedStep)
 	}
 
-	// Cash-item-use reverse-walk (Task 10). A failed item_tag_use /
-	// sealing_lock_use / incubator_use / expiration_extender_use must refund
-	// the already-completed consume steps (the tagged/sealed/incubated/
-	// extender item) and undo any awarded result rather than only
-	// compensating the failed step.
-	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse || s.SagaType() == ExpirationExtenderUse {
+	// Cash-item-use reverse-walk (Task 10; expiration_extender_use added
+	// task-222, remote_merchant added task-221). A failed item_tag_use /
+	// sealing_lock_use / incubator_use / expiration_extender_use /
+	// remote_merchant must refund the already-completed consume steps (the
+	// tagged/sealed/incubated/extender item) and undo any awarded result — or
+	// close any opened shop — rather than only compensating the failed step.
+	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse || s.SagaType() == ExpirationExtenderUse || s.SagaType() == RemoteMerchant {
 		return c.compensateCashItemUse(s, failedStep)
 	}
 
@@ -1377,12 +1380,14 @@ func (c *CompensatorImpl) DispatchSkillBookUseRollbacks(s Saga) {
 }
 
 // compensateCashItemUse is the reverse-walk compensator for cash-item-use
-// sagas (ItemTagUse/SealingLockUse/IncubatorUse — Task 10). On a failed step
-// (e.g. the terminal incubator_result emit) it walks the saga's completed
-// steps in reverse, re-creating consumed items and destroying awarded
-// results, emits exactly one StatusEventTypeFailed, cancels the Phase-4
-// timer, and evicts the saga. The FAILED event is what triggers the channel's
-// INCUBATOR_RESULT(0) announcement.
+// sagas (ItemTagUse/SealingLockUse/IncubatorUse — Task 10; RemoteMerchant —
+// task-221). On a failed step (e.g. the terminal incubator_result emit, or
+// consume_remote_merchant_item) it walks the saga's completed steps in
+// reverse, re-creating consumed items, destroying awarded results, and
+// closing any opened shop, emits exactly one StatusEventTypeFailed, cancels
+// the Phase-4 timer, and evicts the saga. The FAILED event is what triggers
+// the channel's INCUBATOR_RESULT(0) announcement (or, for remote_merchant,
+// the shop's already-dispatched EXIT).
 //
 // Double-emission is prevented by TryTransition(Compensating → Failed): if the
 // timer already emitted Failed, the transition is refused and this function
@@ -1442,6 +1447,9 @@ func (c *CompensatorImpl) compensateCashItemUse(s Saga, failedStep Step[any]) er
 //   - AwardAsset (a granted result, e.g. the incubator's produced item)  →
 //     DestroyItem (mirrors DispatchCharacterCreationRollbacks's AwardAsset
 //     inverse).
+//   - OpenNpcShop (a remote-merchant shop opened before the consume step —
+//     task-221 FR-4.5) → EXIT, via EmitNpcShopExit, so the player is not
+//     left standing in a shop they did not pay for.
 //
 // An error refunding one step does not abort the chain.
 func (c *CompensatorImpl) DispatchCashItemUseRollbacks(s Saga) {
@@ -1495,6 +1503,19 @@ func (c *CompensatorImpl) DispatchCashItemUseRollbacks(s Saga) {
 						"step_id":        step.StepId(),
 						"template_id":    payload.Item.TemplateId,
 					}).Error("Reverse-walk: AwardAsset -> DestroyItem dispatch failed; continuing chain.")
+				}
+			}
+		case OpenNpcShop:
+			// The inverse of "opened a shop" is "close it". Without this a
+			// failed destroy step leaves the player standing in a shop they
+			// did not pay for (task-221 FR-4.5).
+			if payload, ok := step.Payload().(OpenNpcShopPayload); ok {
+				if err := EmitNpcShopExit(c.l, c.ctx, s.TransactionId(), payload.CharacterId); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+					}).Error("Reverse-walk: OpenNpcShop -> EXIT dispatch failed; continuing chain.")
 				}
 			}
 		}

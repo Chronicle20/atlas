@@ -52,6 +52,7 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.TransferAP, sharedsaga.TransferSP,
 	sharedsaga.CreateNote,
 	sharedsaga.EmitMegaphone, sharedsaga.EnqueueWorldBroadcast,
+	sharedsaga.OpenNpcShop,
 }
 
 // TestAcceptanceTable_EveryActionRepresented asserts every Action constant
@@ -115,6 +116,7 @@ func TestStepAcceptsEvent_KnownSuccessKinds(t *testing.T) {
 		// teleport-rock consume_rock DestroyAsset (task-124) — actually runs.
 		// Without this the warp step never completes and the next step is stranded.
 		{sharedsaga.WarpToRandomPortal, EventKindCharacterMapChanged},
+		{sharedsaga.OpenNpcShop, EventKindNpcShopEntered},
 	}
 	for _, tc := range cases {
 		if !StepAcceptsEvent(tc.action, tc.kind) {

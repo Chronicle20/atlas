@@ -24,8 +24,8 @@ import (
 // The op is ABSENT from gms_v12, gms_v48, and gms_v61 (design §1.1 absence
 // evidence: dense Send*ItemUseRequest export sets with no SendScriptRunItemRequest).
 //
-// packet-audit:verify markers are added per cell in the verification task; this
-// round-trip alone is NOT a verification.
+// Per-cell verify markers (the packet-audit "verify" annotation) are added in
+// the verification task; this round-trip alone is NOT a verification.
 func TestScriptedItemRoundTrip(t *testing.T) {
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {

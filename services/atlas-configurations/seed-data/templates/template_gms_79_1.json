@@ -4623,6 +4623,23 @@
         ]
       },
       {
+        "opCode": "0x132",
+        "writer": "CashShopCheckNameChangePossibleResult",
+        "fname": "CCashShop::OnCheckNameChangePossibleResult",
+        "options": {
+          "operations": {
+            "ALLOWED": 0,
+            "ALREADY_SUBMITTED": 1,
+            "REQUEST_LIMIT_RECENT": 2,
+            "REQUEST_LIMIT_REQUESTED": 3,
+            "UNKNOWN_ERROR": 4
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x137",
         "writer": "CharacterKeyMap",
         "fname": "CFuncKeyMappedMan::OnInit",

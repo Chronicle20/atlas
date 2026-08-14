@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `d20b821c8642736e8540ad282b70f101e0d92aa181ba660e78e5f74c9ca63eed`
+Tool: `0aadf918e1944d02c0ce45d2e5221ba9dc97e771e5bb158fc3cd8de4a0c5cce3`
 
 - export gms_v48: `cff2865cc6a2d42a868425fc202c52fc0ef4c0d739e59c43062f428bce7f9bf1`
 - export gms_v61: `d91729f938997cb9ae61a45b86b14eab0d533ae554df9ba12e1614659482a458`
 - export gms_v72: `2c32fd333b3409b74ad26df4035a1690226d1dbe40fed311a0b06a31e4dd84b8`
 - export gms_v79: `4d24c56e9c561ec29bd9a4afc2b6d2ff05cb6bd117ad74ba8a2903191a2f1ebd`
-- export gms_v83: `4646644c24890c614920dd46d90b6895c9f498db6965d23e17bac5f3ae652667`
-- export gms_v84: `dabb91d0658643d95fae0b99087c2e0a9ec606cadcd505df31e487148ef46739`
-- export gms_v87: `2b798744553b6f042660c897fd251f07b46199c7e3457cb023ed0e801301d518`
-- export gms_v92: `dc7cceb5a2d4ee15065079ecca85e3dd88a322a9e27d08992110adb012934901`
-- export gms_v95: `547de87c73d018fe603fdfe30f5d9e0b118ae382f9efd044bfeaf75618c876c0`
+- export gms_v83: `235d65929ec1d072e2983adf3716032dcf8f1732c46fc7849efad62dc400cd67`
+- export gms_v84: `96e9d83657a4ebc7af3653d48b478bd55cb353332bb2f2ad636ee3afd80754b3`
+- export gms_v87: `d6954bcc46f338742aa9930c393b143edf77a2db246d1d9a22c66e9b51e01fde`
+- export gms_v92: `16932a48c07f3fefa6edc8631c4ae7304c04d742d137714b4f1992c57362629a`
+- export gms_v95: `b69618ecc76d114c9f47c83da994bf414f00a6665350ffd2aa41c9c2bdec8e3d`
 - export jms_v185: `c9d015fd3f14af222f213d5e787a24e90fbfada701bf943f24e57c8db42a252f`
 
 ## Clientbound
@@ -473,7 +473,7 @@ Tool: `d20b821c8642736e8540ad282b70f101e0d92aa181ba660e78e5f74c9ca63eed`
 | CHARGE_PARAM_RESULT | CCashShop::OnChargeParamResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x12D | ❌ | 0x143 | ❌ | 0x14A | ❌ | 0x154 | ❌ | 0x176 | ❌ | 0x17E | ❌ | 0x161 | ❌ |
 | QUERY_CASH_RESULT | CCashShop::OnQueryCashResult | cash/clientbound/CashQueryResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x12E | 🟡ᶠ | 0x144 | ✅ | 0x14B | ✅ | 0x155 | ✅ | 0x177 | 🟡ᶠ | 0x17F | ✅ | 0x163 | ✅ |
 | CASHSHOP_PURCHASE_EXP_CHANGED | CCashShop::OnPurchaseExpChanged |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x130 | ❌ | 0x146 | ❌ | 0x14D | ❌ | 0x157 | ❌ | 0x179 | ❌ | 0x181 | ❌ | 0x165 | ❌ |
-| CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT | CCashShop::OnCheckNameChangePossibleResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x132 | ❌ | 0x149 | ❌ | 0x150 | ❌ | 0x15A | ❌ | 0x17C | ❌ | 0x184 | ❌ |  | ⬜ |
+| CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT | CCashShop::OnCheckNameChangePossibleResult | cash/clientbound/CashCheckNameChangePossibleResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x132 | ✅ | 0x149 | ✅ | 0x150 | ✅ | 0x15A | ✅ | 0x17C | ✅ | 0x184 | ✅ |  | ⬜ |
 | MTS_OPERATION2 | CField::OnCharacterSale; CITC::OnQueryCashResult | field/clientbound/FieldMtsOperation2 (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x143 | ✅ | 0x15B | ✅ | 0x15B | ✅ | 0x170 | ✅ | 0x192 | ❌ | 0x19B | ✅ |  | ⬜ |
 | MTS_OPERATION | CField::OnCharacterSale; CITC::OnNormalItemResult | field/clientbound/FieldMtsResultBidAuctionFailed (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x144 | ✅ | 0x15C | ✅ | 0x15C | ✅ | 0x171 | ✅ | 0x193 | ❌ | 0x19C | ✅ |  | ⬜ |
 | OPEN_GATE_CREATED | COpenGatePool::OnOpenGateCreated |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x144 | ❌ | 0x14C | ❌ |  | ⬜ |
@@ -1058,12 +1058,12 @@ Tool: `d20b821c8642736e8540ad282b70f101e0d92aa181ba660e78e5f74c9ca63eed`
 | v48 | 207 | 0 | 19 | 195 | 598 | 0 | 49.2% |
 | v61 | 270 | 0 | 56 | 234 | 459 | 0 | 48.2% |
 | v72 | 286 | 0 | 69 | 248 | 416 | 0 | 47.4% |
-| v79 | 331 | 0 | 68 | 245 | 375 | 0 | 51.4% |
-| v83 | 451 | 0 | 0 | 340 | 228 | 0 | 57.0% |
-| v84 | 426 | 0 | 0 | 346 | 247 | 0 | 55.2% |
-| v87 | 460 | 0 | 0 | 369 | 190 | 0 | 55.5% |
-| v92 | 31 | 0 | 151 | 696 | 141 | 0 | 3.5% |
-| v95 | 485 | 0 | 0 | 428 | 106 | 0 | 53.1% |
+| v79 | 332 | 0 | 68 | 244 | 375 | 0 | 51.6% |
+| v83 | 452 | 0 | 0 | 339 | 228 | 0 | 57.1% |
+| v84 | 427 | 0 | 0 | 345 | 247 | 0 | 55.3% |
+| v87 | 461 | 0 | 0 | 368 | 190 | 0 | 55.6% |
+| v92 | 32 | 0 | 151 | 695 | 141 | 0 | 3.6% |
+| v95 | 486 | 0 | 0 | 427 | 106 | 0 | 53.2% |
 | JMS185 | 432 | 0 | 0 | 390 | 197 | 0 | 52.6% |
 
 ## Conflicts

@@ -4824,6 +4824,23 @@
         ]
       },
       {
+        "opCode": "0x149",
+        "writer": "CashShopCheckNameChangePossibleResult",
+        "fname": "CCashShop::OnCheckNameChangePossibleResult",
+        "options": {
+          "operations": {
+            "ALLOWED": 0,
+            "ALREADY_SUBMITTED": 1,
+            "REQUEST_LIMIT_RECENT": 2,
+            "REQUEST_LIMIT_REQUESTED": 3,
+            "UNKNOWN_ERROR": 4
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x14D",
         "writer": "CashItemGachaponResult",
         "fname": "CCashShop::OnCashItemGachaponResult",

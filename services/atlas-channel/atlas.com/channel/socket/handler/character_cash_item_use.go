@@ -612,6 +612,35 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
+		// No sub-body: CWvsContext::SendConsumeCashItemUseRequest's cases 52/53
+		// (gms_v83 @0xa0b1b4/@0xa0b294) and 53/54 (gms_v95 @0x9ec299/@0x9ec384)
+		// carry no name and no target world -- only an optional, hard-coded
+		// confirmation byte (Encode1, value fixed at 0 or 1 depending on which
+		// of two chained CUICancelCharacterCouponRequests::DoModal dialogs the
+		// client took), which is the LAST field on the wire and carries no
+		// domain data, so there is nothing here worth decoding off r.
+		//
+		// task-227 plan defect (Task 24 brief, "THE CENTRAL WARNING"): the new
+		// name / target world this flow would need to create a pending change
+		// do not exist on this packet. They arrive on the BUY_NAME_CHANGE /
+		// BUY_TRANSFER_WORLD cash-shop purchase ops instead
+		// (ShopOperationBuyNameChange.NewName / ShopOperationBuyWorldTransfer.
+		// TargetWorld, both libs/atlas-packet/cash/serverbound), which are
+		// Task 25's. Task 24 therefore cannot create a complete pending-change
+		// from this arm alone; it only unlocks the client (FR-5.3) so the
+		// coupon's item-use click is never a dead click while the excl-request
+		// lock is armed.
+		if it == nameChangeCashSlotItemType(t) {
+			l.Warnf("Character [%d] consumed name-change coupon [%d]; item-use carries no new name (task-227 plan defect, see Task 24 report). Pending-change creation belongs to the BUY_NAME_CHANGE purchase-time handler.", s.CharacterId(), itemId)
+			_ = enableActions(l)(ctx)(wp)(s)
+			return
+		}
+		if it == worldTransferCashSlotItemType(t) {
+			l.Warnf("Character [%d] consumed world-transfer coupon [%d]; item-use carries no target world (task-227 plan defect, see Task 24 report). Pending-change creation belongs to the BUY_TRANSFER_WORLD purchase-time handler.", s.CharacterId(), itemId)
+			_ = enableActions(l)(ctx)(wp)(s)
+			return
+		}
+
 		// Classification-FIRST dispatch (design §1.1): cash-slot type 12
 		// collides with teleport rock (task-124), type 42 with pet evolution,
 		// so megaphone/avatar-megaphone routing must branch on classification
@@ -875,6 +904,33 @@ func viciousHammerCashSlotItemType(t tenant.Model) CashSlotItemType {
 	return CashSlotItemTypeViciousHammer
 }
 
+// nameChangeCashSlotItemType returns the version-scoped CashSlotItemType for
+// the name-change coupon (item id prefix 5400). task-227 derivation.md §3
+// settles the prefix->flow assignment from the client's own ProcessBuy/
+// get_cashslot_item_type arms: 5400000 is name change on every GMS version
+// v48-v95 (v83 -> 52, v95 -> 53). Do not reorder against
+// worldTransferCashSlotItemType without re-reading §3 -- jms_v185 has no
+// 5400000 at all (§1.5), so this value is never produced there in practice,
+// but the helper still returns a value distinct from the world-transfer one.
+func nameChangeCashSlotItemType(t tenant.Model) CashSlotItemType {
+	if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+		return CashSlotItemType(53)
+	}
+	return CashSlotItemType(52)
+}
+
+// worldTransferCashSlotItemType returns the version-scoped CashSlotItemType
+// for the world-transfer coupon (item id prefix 5401). task-227
+// derivation.md §3: 5401000 is world transfer on every GMS version v48-v95
+// (v83 -> 53, v95 -> 54) and on jms_v185, which maps 5401000 to this flow
+// despite lacking a name-change item at all (§1.5).
+func worldTransferCashSlotItemType(t tenant.Model) CashSlotItemType {
+	if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+		return CashSlotItemType(54)
+	}
+	return CashSlotItemType(53)
+}
+
 func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 	return func(itemId item.Id) CashSlotItemType {
 		category := item.GetClassification(itemId)
@@ -1120,13 +1176,6 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 					return CashSlotItemType(53)
 				} else {
 					return CashSlotItemType(52)
-				}
-			}
-			if itemId/1000 == 5401 {
-				if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-					return CashSlotItemType(54)
-				} else {
-					return CashSlotItemType(53)
 				}
 			}
 			if itemId/1000 == 5401 {

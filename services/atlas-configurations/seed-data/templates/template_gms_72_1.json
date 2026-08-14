@@ -570,7 +570,7 @@
         "opCode": "0x4A",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseSummonBagHandle",
-        "fname": "sub_955499",
+        "fname": "sub_904154",
         "services": [
           "channel"
         ]

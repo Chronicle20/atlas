@@ -2338,11 +2338,11 @@
 - op: USE_SUMMON_BAG
   direction: serverbound
   opcode: 74
-  fname: sub_955499
+  fname: sub_904154
   provenance: ida-discovered
   ida:
     address: 9453908
-  note: 'v72 COutPacket(74) verified via global COutPacket-ctor harvest @0x904154; Δ+1 vs v79 op 73 (mid/field/social Δ+1).'
+  note: 'v72 COutPacket(74) verified via global COutPacket-ctor harvest @0x904154; Δ+1 vs v79 op 73 (mid/field/social Δ+1). task-229 verify-pass CORRECTION: fname previously read sub_955499, copy-pasted from the v79 entry (whose real address IS 0x955499); v72''s own dummy name is sub_904154 (its own address, confirmed via IDA lookup_funcs/disasm and a probe-rename that proved IDA coerces sub_XXXXXX names back to the address they encode) — sub_955499 mis-resolves to an unrelated function (_ceil @0x95548e) when harvested for this version. Function left unnamed (bare dummy sub_ form) per the sub_-fname-preservation rule; only the digits were corrected to match its real address.'
   packet: inventory/serverbound/InventorySummonBagItemUse
 - op: PET_FOOD
   direction: serverbound

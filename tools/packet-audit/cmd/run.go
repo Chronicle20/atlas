@@ -2208,10 +2208,19 @@ func candidatesFromFName(fname string) []candidate {
 	case "CWvsContext::SendMobSummonItemUseRequest":
 		return []candidate{{name: "SummonBagItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "sub_955499":
-		// USE_SUMMON_BAG on gms_v72 (@0x904154) and gms_v79 (@0x9555b0): the
-		// summon-bag sender is UNNAMED in both IDBs and both registries carry
-		// sub_955499 as the primary fname (the v79 IDB additionally mislabels the
-		// function as SendEngagementRequest — opcode read from the body).
+		// USE_SUMMON_BAG on gms_v79 (@0x9555b0): the summon-bag sender is UNNAMED
+		// in the IDB and the registry carries sub_955499 (its own dummy name —
+		// address 0x955499) as the primary fname (the v79 IDB additionally
+		// mislabels the function as SendEngagementRequest — opcode read from the
+		// body).
+		return []candidate{{name: "SummonBagItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_904154":
+		// USE_SUMMON_BAG on gms_v72 (@0x904154): the summon-bag sender is UNNAMED
+		// in the IDB; its dummy name is its own address, sub_904154. task-229
+		// verify-pass CORRECTION: the registry previously carried sub_955499
+		// (copy-pasted from the v79 entry) — IDA's dummy-name convention ties
+		// sub_XXXXXX names to their own address, so that literal mis-resolves to
+		// an unrelated function (_ceil @0x95548e) when harvested against v72.
 		return []candidate{{name: "SummonBagItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendPortalScrollUseRequest":
 		return []candidate{{name: "ReturnScrollItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}

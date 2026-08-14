@@ -1291,3 +1291,33 @@ func TestExpirationExtenderUseSagaTypeValue(t *testing.T) {
 		t.Fatalf("ExpirationExtenderUse = %q, want %q", ExpirationExtenderUse, "expiration_extender_use")
 	}
 }
+
+func TestPetReviveSagaTypeValue(t *testing.T) {
+	if PetRevive != Type("pet_revive") {
+		t.Fatalf("PetRevive = %q, want %q", PetRevive, "pet_revive")
+	}
+}
+
+func TestRevivePetActionValue(t *testing.T) {
+	if RevivePet != Action("revive_pet") {
+		t.Fatalf("RevivePet = %q, want %q", RevivePet, "revive_pet")
+	}
+}
+
+func TestUnmarshalRevivePetPayload(t *testing.T) {
+	raw := []byte(`{"stepId":"revive_pet","status":"pending","action":"revive_pet",` +
+		`"payload":{"characterId":42,"petId":7,"sourceTemplateId":5180000}}`)
+
+	var s Step[any]
+	if err := json.Unmarshal(raw, &s); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	p, ok := s.Payload.(RevivePetPayload)
+	if !ok {
+		t.Fatalf("payload type = %T, want RevivePetPayload", s.Payload)
+	}
+	want := RevivePetPayload{CharacterId: 42, PetId: 7, SourceTemplateId: 5180000}
+	if p != want {
+		t.Fatalf("payload = %+v, want %+v", p, want)
+	}
+}

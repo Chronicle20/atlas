@@ -295,6 +295,16 @@ type EvolvePetPayload struct {
 	PetId       uint32 `json:"petId"`
 }
 
+// RevivePetPayload drives a Water of Life pet revive. It deliberately carries
+// NO expiration: atlas-pets derives the new lifespan from the consumed item's
+// own WZ info/life, so a forged saga step cannot dictate one. SourceTemplateId
+// names the consumed Water of Life (classification 518).
+type RevivePetPayload struct {
+	CharacterId      uint32 `json:"characterId"`
+	PetId            uint32 `json:"petId"`
+	SourceTemplateId uint32 `json:"sourceTemplateId"`
+}
+
 // ValidateCharacterStatePayload represents the payload required to validate a character's state.
 type ValidateCharacterStatePayload struct {
 	CharacterId uint32                     `json:"characterId"` // CharacterId associated with the action

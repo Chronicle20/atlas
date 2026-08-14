@@ -9,13 +9,28 @@ You are starting Phase 4 of the Atlas four-phase development workflow. Argument:
 
 ### Step 1 — Resolve the task
 
-Same fuzzy-match algorithm as `/design-task` Step 1:
+Same as `/design-task` Step 1 — run the resolver, do NOT glob for the folder
+yourself:
 
-1. Glob `docs/tasks/task-*` (main) and `.worktrees/*/docs/tasks/task-*` (sibling worktrees).
-2. Match `$ARGUMENTS` against folder names — exact, number-only (`54`/`054`/`task-54`/`task-054`), or slug fragment.
-3. Zero matches → ask for correction. Multiple matches → list and let the user pick.
-4. If the task lives only on main with no worktree, stop and tell the user the task needs a worktree.
-5. Resolve to `<worktree>/docs/tasks/<id>/`.
+```sh
+tools/task-resolve.sh "$ARGUMENTS"
+```
+
+It prints one tab-separated line: `<task-id>\t<task-dir>\t<worktree>`, and
+accepts exact, number-only (`54`/`054`/`task-54`/`task-054`), or slug-fragment
+identifiers.
+
+**Never glob `.worktrees/*/docs/tasks/task-*`** — every worktree carries a full
+copy of `docs/tasks/`, so that pattern returns thousands of mostly-duplicate
+paths into context to resolve one ID.
+
+Exit codes: **3** → no match, ask for correction. **4** → ambiguous, the
+candidates are on stderr; list them and let the user pick. If `<worktree>` is
+the main repo root the task has no worktree — stop and tell the user it needs
+one.
+
+Do NOT create a new worktree — the worktree was created by `/spec-task` and
+must be reused so phase artifacts stay co-located.
 
 ### Step 2 — Ensure we're in the right worktree
 
@@ -81,11 +96,29 @@ If the user explicitly requests inline mode this session (rare), invoke `superpo
 
 ### Step 4b — Check the brief carries its file inventory
 
-`scripts/task-brief` extracts the plan's task section verbatim, so a plan task
-written per `/plan-task` already carries a `### Files` block naming every file
-the task touches plus the patterns to copy. That block is what removes the
-implementer's discovery phase — the phase that inflates context before a
-single edit happens.
+Generate each brief with the repo's own script:
+
+```sh
+tools/task-brief.sh <worktree>/docs/tasks/<id>/plan.md <N>
+```
+
+It extracts the plan's task section verbatim and prints the path it wrote
+(default: `<repo-root>/.superpowers/sdd/<plan-basename>/task-<N>-brief.md`).
+
+Use this path, **not** `scripts/task-brief` — that path does not exist in this
+repo. The superpowers plugin ships an equivalent script, but only under a
+version-pinned cache path that breaks on every plugin upgrade. `tools/task-brief.sh`
+is the vendored, stable equivalent and writes to the same workspace, so it is
+interchangeable with the plugin's.
+
+This matters because the failure is silent-ish and expensive: when the brief
+command fails, the fallback is assembling briefs by hand out of the full
+`plan.md` — which is exactly the context bloat the brief exists to prevent.
+
+Because the brief is the plan's task section verbatim, a plan task written per
+`/plan-task` already carries a `### Files` block naming every file the task
+touches plus the patterns to copy. That block is what removes the implementer's
+discovery phase — the phase that inflates context before a single edit happens.
 
 **Before each dispatch, check the generated brief for a `### Files` section.**
 If it is missing (an older plan, or a task the planner under-specified),

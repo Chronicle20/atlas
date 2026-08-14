@@ -35,6 +35,12 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEvolvedEvent))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRevivedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleReviveFailedEvent))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -91,4 +97,50 @@ func handleEvolvedEvent(l logrus.FieldLogger, ctx context.Context, e pet2.Status
 	}).Debug("Pet evolved successfully, marking saga step as completed")
 
 	_ = p.StepCompleted(e.Body.TransactionId, true)
+}
+
+func handleRevivedEvent(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.RevivedStatusEventBody]) {
+	if e.Type != pet2.StatusEventTypeRevived {
+		return
+	}
+	if e.Body.TransactionId == uuid.Nil {
+		return
+	}
+
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindPetRevived); !ok {
+		return
+	}
+
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.Body.TransactionId.String(),
+		"pet_id":         e.PetId,
+		"owner_id":       e.OwnerId,
+		"expiration":     e.Body.Expiration,
+	}).Debug("Pet revived successfully, marking saga step as completed")
+
+	_ = p.StepCompleted(e.Body.TransactionId, true)
+}
+
+func handleReviveFailedEvent(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.ReviveFailedStatusEventBody]) {
+	if e.Type != pet2.StatusEventTypeReviveFailed {
+		return
+	}
+	if e.Body.TransactionId == uuid.Nil {
+		return
+	}
+
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindPetReviveFailed); !ok {
+		return
+	}
+
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.Body.TransactionId.String(),
+		"pet_id":         e.PetId,
+		"owner_id":       e.OwnerId,
+		"reason":         e.Body.Reason,
+	}).Warn("Pet revive failed, failing saga step so the Water of Life is refunded.")
+
+	_ = p.StepCompleted(e.Body.TransactionId, false)
 }

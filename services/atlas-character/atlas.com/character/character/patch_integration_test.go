@@ -1667,14 +1667,86 @@ func TestWorldChangedEventEmission(t *testing.T) {
 	}
 }
 
-func TestWorldUnchangedEmitsNoEvent(t *testing.T) {
+// TestWorldSameValueEmitsNoEvent is the actual proof of the `input.WorldId !=
+// c.WorldId()` conjunct in the Update guard. The character is created at a
+// NON-ZERO world and PATCHed with that SAME non-zero value, so the only thing
+// that can suppress the event is the equality comparison — with the "zero
+// means absent" short-circuit out of the picture, this test goes red if the
+// equality conjunct is dropped (verified below in the fix report).
+func TestWorldSameValueEmitsNoEvent(t *testing.T) {
 	// Setup test database
 	db := testDatabase(t)
 	tenantModel := testTenant()
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	// Create a character to update
+	// Create a character to update, at a non-zero world.
+	originalCharacter := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(world.Id(3)).
+		SetName("OriginalName").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		Build()
+
+	processor := character.NewProcessor(logger, tctx, db)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
+	if err != nil {
+		t.Fatalf("Failed to create character for testing: %v", err)
+	}
+
+	buf := message.NewBuffer()
+
+	// PATCH with the SAME non-zero world the character already has.
+	updatePayload := character.RestModel{
+		Id:      createdCharacter.Id(),
+		WorldId: world.Id(3),
+	}
+
+	err = processor.Update(buf)(uuid.New(), createdCharacter.Id(), updatePayload)
+	if err != nil {
+		t.Fatalf("Failed to update character: %v", err)
+	}
+
+	updatedCharacter, err := processor.GetById()(createdCharacter.Id())
+	if err != nil {
+		t.Fatalf("Failed to get updated character: %v", err)
+	}
+	if updatedCharacter.WorldId() != world.Id(3) {
+		t.Errorf("Expected world ID to remain 3, got %d", updatedCharacter.WorldId())
+	}
+
+	for _, msg := range buf.GetAll()[character2.EnvEventTopicCharacterStatus] {
+		var probe character2.StatusEvent[character2.StatusEventWorldChangedBody]
+		if err := json.Unmarshal(msg.Value, &probe); err == nil && probe.Type == character2.StatusEventTypeWorldChanged {
+			t.Error("WORLD_CHANGED must not be emitted when the PATCH world equals the current world")
+		}
+	}
+}
+
+// TestWorldZeroMeansAbsentAndEmitsNoEvent proves the separate "absent field"
+// convention: WorldId's zero value means "no change requested" (mirroring
+// Hair/Face/SkinColor), NOT "transfer to world 0". This is a different
+// property from TestWorldSameValueEmitsNoEvent and does not, on its own,
+// exercise the `!= c.WorldId()` conjunct.
+func TestWorldZeroMeansAbsentAndEmitsNoEvent(t *testing.T) {
+	// Setup test database
+	db := testDatabase(t)
+	tenantModel := testTenant()
+	tctx := tenant.WithContext(context.Background(), tenantModel)
+	logger := testLogger()
+
+	// Create a character to update.
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
@@ -1701,9 +1773,7 @@ func TestWorldUnchangedEmitsNoEvent(t *testing.T) {
 
 	buf := message.NewBuffer()
 
-	// A PATCH that doesn't change the world (same worldId as current, and a
-	// zero-value WorldId that means "no change requested") must not emit
-	// WORLD_CHANGED.
+	// A PATCH that omits WorldId (zero value) must not emit WORLD_CHANGED.
 	updatePayload := character.RestModel{
 		Id:      createdCharacter.Id(),
 		WorldId: world.Id(0),
@@ -1725,7 +1795,7 @@ func TestWorldUnchangedEmitsNoEvent(t *testing.T) {
 	for _, msg := range buf.GetAll()[character2.EnvEventTopicCharacterStatus] {
 		var probe character2.StatusEvent[character2.StatusEventWorldChangedBody]
 		if err := json.Unmarshal(msg.Value, &probe); err == nil && probe.Type == character2.StatusEventTypeWorldChanged {
-			t.Error("WORLD_CHANGED must not be emitted when the world is unchanged")
+			t.Error("WORLD_CHANGED must not be emitted when WorldId is absent (zero value)")
 		}
 	}
 }

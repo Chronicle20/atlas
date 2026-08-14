@@ -12875,6 +12875,11 @@
         }
       ]
     },
+    "CWvsContext::SendWaterOfLife": {
+      "address": "0x9c6f90",
+      "direction": "serverbound",
+      "calls": []
+    },
     "CWvsContext::TryRecovery": {
       "address": "",
       "direction": "serverbound",

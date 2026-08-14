@@ -172,7 +172,8 @@ Every task type's leaf step — promoting one packet × version matrix cell to `
 - Pass an explicit `model` on **every** Agent/Task dispatch. Unspecified inherits Opus, and an Opus subagent turn costs ~7x a Sonnet one.
 - The pin follows the **job**, not the `subagent_type`. Any dispatch whose job is review / verify / audit runs `sonnet`, always — including ad-hoc `general-purpose` agents carrying a review prompt, which frontmatter pins do not cover. Scans and inventories run `haiku`. Implementers run `sonnet` unless the plan task is tagged `model: opus`. Full table: `.claude/commands/execute-task.md` Step 4a.
 - Never use Fable for background/review workflows.
-- Long agents are the cost: keep any one subagent under ~150 turns. Past that, split the task — context grows with turn count and every turn re-reads all of it.
+- Long agents are the cost: context grows with turn count and every turn re-reads all of it, so one 600-turn agent costs far more than the same work split across fresh contexts. The implementer budget is **120 tool calls**, warned at 100 — enforced by `.claude/hooks/turn-budget.sh` and contracted in `.claude/agents/atlas-implementer.md`. At the cap an implementer commits and reports `PARTIAL`; the controller dispatches a continuation. The number lives in the hook — change it there only.
+- Implementers do not run repo-wide verification. `tools/verify.sh`, `tools/lint.sh`, `-race`, and docker bake belong to the `atlas-verifier` agent in its own clean context; a `--quick` run inside a 400k-token implementer costs a large multiple of the same run in a 20k one. Implementers run module-local `go build ./... && go test ./...` and nothing more.
 
 ## Shell & Editing Conventions
 

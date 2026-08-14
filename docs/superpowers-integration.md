@@ -13,6 +13,21 @@ This document is the quick-reference companion to `CLAUDE.md`. It tells you whic
 
 Run `/clear` between phases. Each command consumes only the prior phase's documented artifacts.
 
+### Phase 4 context budget
+
+Three Atlas-specific controls keep implementer contexts small. They are the
+reason Phase 4 uses project agents rather than the plugin's generic dispatch:
+
+| Control | Where it lives | What it does |
+|---|---|---|
+| Tool-call cap | `.claude/hooks/turn-budget.sh` (the number) + `atlas-implementer` (the contract) | Warns at 100 calls, caps at 120. The implementer commits and reports `PARTIAL`; the controller dispatches a continuation with fresh context |
+| Verification split | `atlas-verifier` agent + `/execute-task` Step 4c | `tools/verify.sh --quick` runs in a clean ~20k context, not inside the implementer. Implementers run module-local `go build`/`go test` only |
+| Front-loaded file inventory | `/plan-task` Step 5a (`### Files` per task) + `/execute-task` Step 4b backstop | The brief names every file and the patterns to copy, so the implementer never opens a discovery phase |
+
+`atlas-implementer` replaces `general-purpose` for every Phase 4
+implementation dispatch. Its contracts override the plugin's
+`implementer-prompt.md` where they disagree.
+
 ## Code Review
 
 Invoke `superpowers:requesting-code-review` after completing a logical chunk of work. The skill dispatches the relevant subset of these agents in parallel:

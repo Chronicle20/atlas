@@ -25,6 +25,15 @@
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/format-on-write.sh"
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/turn-budget.sh"
+          }
+        ]
       }
     ],
     "SessionStart": [

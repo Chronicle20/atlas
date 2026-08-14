@@ -17,6 +17,7 @@ import (
 // the per-version verification tasks; this round-trip covers every tenant
 // variant.
 // packet-audit:verify packet=inventory/serverbound/InventorySummonBagItemUse version=gms_v83 ida=0xa0977b
+// packet-audit:verify packet=inventory/serverbound/InventorySummonBagItemUse version=gms_v61 ida=0x831c83
 func TestSummonBagItemUseRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

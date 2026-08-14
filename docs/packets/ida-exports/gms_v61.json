@@ -18923,6 +18923,48 @@
           "comment": ""
         }
       ]
+    },
+    "CWvsContext::SendMobSummonItemUseRequest": {
+      "address": "0x831c83",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        }
+      ]
+    },
+    "sub_841AA5": {
+      "address": "0x841aa5",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime; COutPacket::COutPacket(&pkt,78) at 0x841cb8",
+          "guard": "sub_837C80(a3) && sub_4BDB9F(500,0) && success-path (LABEL_21) after WZ Return Scroll prop reads (StringPool ids 2276/2277/2279 via IWzProperty::Getitem), no RunMapTransferItem call"
+        },
+        {
+          "op": "Decode2",
+          "comment": "useSlot (a2)",
+          "guard": "sub_837C80(a3) && sub_4BDB9F(500,0) && success-path (LABEL_21)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "targetMap/itemId (a3)",
+          "guard": "sub_837C80(a3) && sub_4BDB9F(500,0) && success-path (LABEL_21)"
+        }
+      ]
     }
   }
 }

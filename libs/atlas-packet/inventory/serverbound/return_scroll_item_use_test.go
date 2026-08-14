@@ -12,6 +12,7 @@ import (
 // atlas-channel keeps decoding the shared ItemUse directly. See task-229 and
 // docs/packets/audits/VERIFYING_A_PACKET.md "Shared-model ops".
 // packet-audit:verify packet=inventory/serverbound/InventoryReturnScrollItemUse version=gms_v83 ida=0xa1e1ce
+// packet-audit:verify packet=inventory/serverbound/InventoryReturnScrollItemUse version=gms_v61 ida=0x841aa5
 func TestReturnScrollItemUseRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

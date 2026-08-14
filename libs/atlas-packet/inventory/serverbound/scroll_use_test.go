@@ -25,6 +25,7 @@ import (
 // @0x903cc6 + Encode2(bWhiteScroll=a4)@0x903cd1 + Encode1(legendarySpirit=a5)@0x903cdc —
 // identical to v79. No version gate on the codec.
 // packet-audit:verify packet=inventory/serverbound/InventoryScrollUse version=gms_v72 ida=0x903c75
+// packet-audit:verify packet=inventory/serverbound/InventoryScrollUse version=gms_v92 ida=0x9ab2f0
 func TestScrollUseBytesV72(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 72, 1)
 	got := pt.Encode(t, ctx, ScrollUse{updateTime: 12345, scrollSlot: 3, equipSlot: -5, bWhiteScroll: 2, legendarySpirit: true}.Encode, nil)

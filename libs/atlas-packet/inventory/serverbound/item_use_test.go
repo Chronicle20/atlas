@@ -11,6 +11,7 @@ import (
 // packet-audit:verify packet=inventory/serverbound/InventoryItemUse version=gms_v83 ida=0xa092fb
 // packet-audit:verify packet=inventory/serverbound/InventoryItemUse version=jms_v185 ida=0xaedea5
 // packet-audit:verify packet=inventory/serverbound/InventoryItemUse version=gms_v84 ida=0xa5360f
+// packet-audit:verify packet=inventory/serverbound/InventoryItemUse version=gms_v92 ida=0x9b3600
 func TestItemUseRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

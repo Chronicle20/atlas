@@ -1,5 +1,5 @@
 {
-  "toolSha": "830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1",
+  "toolSha": "4b1762007f443c4a4f6120c14f76b8a8e9770de8d0f697c494096e96e2f9c957",
   "exportHashes": {
     "gms_v48": "255cf90dfe7d4851b445be1de39b5a18529ed242779c558a4188df2b073e1b6e",
     "gms_v61": "0532e86e0ce45f5c898626409c98e28c8a1804d42c28406fcac1b5c379b71be0",
@@ -8647,8 +8647,7 @@
           "opcode": 79
         },
         "gms_v92": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 83
         },
         "gms_v95": {
@@ -9598,8 +9597,7 @@
           "opcode": 75
         },
         "gms_v92": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 79
         },
         "gms_v95": {
@@ -9761,8 +9759,7 @@
           "opcode": 89
         },
         "gms_v92": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 93
         },
         "gms_v95": {

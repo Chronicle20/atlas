@@ -513,6 +513,40 @@ type OpenNpcShopPayload struct {
 	NpcTemplateId uint32     `json:"npcTemplateId"` // NPC template whose shop to open
 }
 
+// StartItemConversationPayload opens a scripted item's own dialogue (the
+// 243xxxx family). Like OpenNpcShop this step is NOT self-completing: it waits
+// for EVENT_TOPIC_NPC_CONVERSATION_STATUS to report STARTED or START_ERROR,
+// which is what lets the following destroy step consume the item only once the
+// dialogue actually opened.
+//
+// The ordering matters more here than for a shop: an item with no authored
+// conversation must survive, and with conversation-first that falls out of the
+// ordering instead of needing a rollback.
+type StartItemConversationPayload struct {
+	CharacterId   uint32     `json:"characterId"`   // CharacterId the dialogue opens for
+	AccountId     uint32     `json:"accountId"`     // AccountId, carried into the conversation context
+	ItemId        uint32     `json:"itemId"`        // Scripted item template id; the conversation lookup key
+	NpcTemplateId uint32     `json:"npcTemplateId"` // Avatar the dialogue renders with (WZ spec/npc)
+	Slot          int16      `json:"slot"`          // Source inventory slot, so this step and the destroy step describe one asset
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
+}
+
+// StartNpcConversationPayload opens an NPC's own conversation from anywhere
+// (the 239xxxx family, conversation branch — the shop branch uses
+// OpenNpcShopPayload). Also NOT self-completing, for the same reason.
+type StartNpcConversationPayload struct {
+	CharacterId   uint32     `json:"characterId"`
+	AccountId     uint32     `json:"accountId"`
+	NpcTemplateId uint32     `json:"npcTemplateId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
+}
+
 // DepositToStoragePayload represents the payload required to deposit an item to account storage.
 type DepositToStoragePayload struct {
 	CharacterId   uint32    `json:"characterId"`   // CharacterId initiating the deposit

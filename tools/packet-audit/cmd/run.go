@@ -2514,6 +2514,15 @@ func candidatesFromFName(fname string) []candidate {
 	// above — the struct is CashItemGachaponButton (already "Cash"-prefixed).
 	case "CUICashItemGachapon::OnButtonClicked":
 		return []candidate{{name: "CashItemGachaponButton", dir: csvpkg.DirServerbound, pkg: "cash", reportName: "CashItemGachaponButton"}}
+	// Serverbound NAME_TRANSFER (task-227): the cash shop's "may this character
+	// be renamed?" request, sent from the 5400000 name-change purchase arm of
+	// CCashShop::ProcessBuy. Standalone opcode (gms_v48 0x012, gms_v61..v95
+	// 0x010), no leading mode byte, so it is a bare-fname candidate rather than
+	// an OnCashItemResult "#" arm. Absent from jms_v185 — that client has no
+	// name-change feature; its 0x009 is WORLD_TRANSFER
+	// (docs/tasks/task-227-cash-name-change-world-transfer/derivation.md §1.5).
+	case "CCashShop::SendCheckNameChangePossiblePacket":
+		return []candidate{{name: "CheckNameChangePossible", dir: csvpkg.DirServerbound, pkg: "cash"}}
 	// Vega's Spell result dialog — single mode byte (task-130 §2.2). v83 opcode
 	// 0x166 via CUIVega::OnPacket; v95 0x1AD.
 	case "CUIVega::OnVegaResult":

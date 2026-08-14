@@ -3,6 +3,20 @@
   "md5": "",
   "generated_at": "2026-07-02T05:12:39Z",
   "functions": {
+    "CCashShop::SendCheckNameChangePossiblePacket": {
+      "address": "0x45cd72",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
     "CTradingRoomDlg::OnPutItem": {
       "address": "0x68b37f",
       "direction": "clientbound",

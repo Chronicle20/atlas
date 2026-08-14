@@ -2233,6 +2233,14 @@ func candidatesFromFName(fname string) []candidate {
 			// nothing else (jms_v185 @0xaf1a42, entry 0xaf16df) — see
 			// item_use_pet_skill_test.go for the full decompile trail.
 			{name: "ItemUsePetSkill", dir: csvpkg.DirServerbound, pkg: "cash"},
+			// Pet Name Tag (task-224 fix round 1, cash-slot type 17):
+			// jumptable case-17 arm entry @0xa0ba15 collects the new name via a
+			// CUtilDlgEx input dialog, then does exactly ONE COutPacket::EncodeStr
+			// @0xa0bcb5 before falling through (jmp loc_A0E9EC) to the shared
+			// dispatcher tail — the same "one sub-body encode, shared trailing
+			// update_time" shape as every other sibling in this list. See
+			// item_use_pet_name_tag_test.go for the byte fixtures.
+			{name: "ItemUsePetNameTag", dir: csvpkg.DirServerbound, pkg: "cash"},
 		}
 	// Item Megaphone (cash-slot type 14): the REAL send function, separate
 	// from the main dispatcher above (task-123 phase 19, gms_v95

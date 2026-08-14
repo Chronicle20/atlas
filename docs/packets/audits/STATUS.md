@@ -4,7 +4,7 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
+Tool: `77a4ee2fbbda2f1f549bf5a3df97b7884b1002f9bcd0cb1d235f035796584b09`
 
 - export gms_v48: `9609dce8a1e4764c418403e833c48fe80f774339ff740a4cdaddc524c2b835fa`
 - export gms_v61: `68373e75d9a60d68d234159b749716d8c028b0ca1f2a50649c8a739c129b34e7`
@@ -839,6 +839,7 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | cash/serverbound/CashItemUseItemMegaphone (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseMapleTV (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
+| cash/serverbound/CashItemUsePetNameTag (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUsePetSkill (T1) |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ✅ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -1055,16 +1056,16 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 205 | 0 | 19 | 194 | 601 | 0 | 49.0% |
-| v61 | 267 | 0 | 56 | 234 | 462 | 0 | 47.9% |
-| v72 | 283 | 0 | 69 | 249 | 418 | 0 | 47.1% |
-| v79 | 328 | 0 | 68 | 246 | 377 | 0 | 51.1% |
-| v83 | 448 | 0 | 0 | 343 | 228 | 0 | 56.6% |
-| v84 | 423 | 0 | 0 | 349 | 247 | 0 | 54.8% |
-| v87 | 456 | 0 | 0 | 373 | 190 | 0 | 55.0% |
-| v92 | 25 | 0 | 151 | 702 | 141 | 0 | 2.8% |
-| v95 | 481 | 0 | 0 | 432 | 106 | 0 | 52.7% |
-| JMS185 | 430 | 0 | 0 | 392 | 197 | 0 | 52.3% |
+| v48 | 205 | 0 | 19 | 195 | 601 | 0 | 48.9% |
+| v61 | 267 | 0 | 56 | 235 | 462 | 0 | 47.8% |
+| v72 | 283 | 0 | 69 | 250 | 418 | 0 | 47.0% |
+| v79 | 328 | 0 | 68 | 247 | 377 | 0 | 51.0% |
+| v83 | 449 | 0 | 0 | 343 | 228 | 0 | 56.7% |
+| v84 | 423 | 0 | 0 | 350 | 247 | 0 | 54.7% |
+| v87 | 456 | 0 | 0 | 374 | 190 | 0 | 54.9% |
+| v92 | 25 | 0 | 151 | 703 | 141 | 0 | 2.8% |
+| v95 | 481 | 0 | 0 | 433 | 106 | 0 | 52.6% |
+| JMS185 | 430 | 0 | 0 | 393 | 197 | 0 | 52.2% |
 
 ## Conflicts
 

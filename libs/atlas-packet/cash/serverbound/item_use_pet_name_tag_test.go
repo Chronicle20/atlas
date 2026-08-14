@@ -8,10 +8,18 @@ import (
 )
 
 // The GMS v83 case-17 arm of CWvsContext::SendConsumeCashItemUseRequest
-// (arm entry @0xa0ba15) performs exactly ONE encode — COutPacket::EncodeStr
-// @0xa0bcb5 — and then falls through to the shared tail at loc_A0E9EC, which
-// appends update_time on the builds that trail it.
-// packet-audit:verify packet=cash/serverbound/ItemUsePetNameTag version=gms_v83 ida=0xa0bcb5
+// (fn entry @0xa0a63f; jumptable arm entry @0xa0ba15) performs exactly ONE
+// encode — COutPacket::EncodeStr @0xa0bcb5 (re-derived directly against the
+// v83 IDB, MapleStory_dump.exe.i64, task-224 fix round 1) — and then falls
+// through (jmp loc_A0E9EC @0xa0bce5) to the shared dispatcher tail, which
+// appends update_time on the builds that trail it. The `ida=` marker below
+// cites the FUNCTION ENTRY address (0xa0a63f), matching every sibling
+// candidate of this shared multi-arm sender (see the CashItemUseMegaphone /
+// CashItemUseTeleportRock / etc. markers in this package) — evidence and the
+// audit report are pinned at the function level, not the specific call site,
+// since candidatesFromFName resolves ALL of this sender's sub-arms to the
+// same export entry.
+// packet-audit:verify packet=cash/serverbound/CashItemUsePetNameTag version=gms_v83 ida=0xa0a63f
 func TestItemUsePetNameTagBytesTrailingUpdateTime(t *testing.T) {
 	m := ItemUsePetNameTag{name: "Fluffy", updateTime: 0x01020304, updateTimeFirst: false}
 	got := m.Encode(nil, nil)(nil)

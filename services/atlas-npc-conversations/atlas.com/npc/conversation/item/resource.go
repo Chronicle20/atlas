@@ -11,16 +11,18 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	itemconst "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 )
 
-// itemIdRangeMin and itemIdRangeMax bound the scripted-item family per PRD §5.
-const (
-	itemIdRangeMin = 2430000
-	itemIdRangeMax = 2439999
-)
+// isScriptedItem reports whether an item id belongs to the scripted-item family
+// (PRD §5). The bound lives in libs/atlas-constants rather than a local range
+// so it stays in step with the classification the channel handler gates on.
+func isScriptedItem(itemId uint32) bool {
+	return itemconst.GetClassification(itemconst.Id(itemId)) == itemconst.ClassificationConsumableScriptedItem
+}
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
@@ -99,8 +101,8 @@ func GetConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext) h
 // CreateConversationHandler handles POST /items/conversations
 func CreateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if rm.ItemId < itemIdRangeMin || rm.ItemId > itemIdRangeMax {
-			d.Logger().Errorf("Item conversation for item [%d] is outside the scripted-item range %d-%d.", rm.ItemId, itemIdRangeMin, itemIdRangeMax)
+		if !isScriptedItem(rm.ItemId) {
+			d.Logger().Errorf("Item conversation for item [%d] is not a scripted item (classification %d).", rm.ItemId, itemconst.ClassificationConsumableScriptedItem)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -141,8 +143,8 @@ func CreateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 func UpdateConversationHandler(d *rest.HandlerDependency, c *rest.HandlerContext, rm RestModel) http.HandlerFunc {
 	return rest.ParseConversationId(d.Logger(), func(conversationId uuid.UUID) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			if rm.ItemId < itemIdRangeMin || rm.ItemId > itemIdRangeMax {
-				d.Logger().Errorf("Item conversation for item [%d] is outside the scripted-item range %d-%d.", rm.ItemId, itemIdRangeMin, itemIdRangeMax)
+			if !isScriptedItem(rm.ItemId) {
+				d.Logger().Errorf("Item conversation for item [%d] is not a scripted item (classification %d).", rm.ItemId, itemconst.ClassificationConsumableScriptedItem)
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}

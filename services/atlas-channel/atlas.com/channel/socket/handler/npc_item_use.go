@@ -244,7 +244,7 @@ func handleRemoteMerchantItemUse(l logrus.FieldLogger, ctx context.Context, s se
 				Action: saga.DestroyAssetFromSlot,
 				Payload: saga.DestroyAssetFromSlotPayload{
 					CharacterId:   s.CharacterId(),
-					InventoryType: 5, // cash
+					InventoryType: byte(inventory.TypeValueCash),
 					Slot:          p.Source(),
 					Quantity:      1,
 					ShowEffect:    false,

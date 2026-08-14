@@ -64,23 +64,33 @@ func handleStartConversationCommand(db *gorm.DB) message.Handler[npc2.Command[np
 			return
 		}
 		f := field.NewBuilder(c.Body.WorldId, c.Body.ChannelId, c.Body.MapId).SetInstance(c.Body.Instance).Build()
-		err := conversation.NewProcessor(l, ctx, db).Start(f, c.NpcId, c.CharacterId, c.Body.AccountId)
+		err := conversation.NewProcessor(l, ctx, db).Start(f, c.NpcId, c.CharacterId, c.Body.AccountId, c.TransactionId)
 
 		// uuid.Nil = the ordinary NPC-talk path, which has no saga awaiting it
 		// and must stay exactly as it was. Only a saga-driven start reports.
 		if c.TransactionId == uuid.Nil {
 			return
 		}
-		if err != nil {
-			l.WithError(err).WithFields(logrus.Fields{
-				"transaction_id":  c.TransactionId.String(),
-				"character_id":    c.CharacterId,
-				"npc_template_id": c.NpcId,
-			}).Warn("Unable to start saga-driven NPC conversation.")
-			emitNpcStartError(l, ctx, c, npc2.StartErrorInternal)
-			return
+
+		fields := logrus.Fields{
+			"transaction_id":  c.TransactionId.String(),
+			"character_id":    c.CharacterId,
+			"npc_template_id": c.NpcId,
 		}
-		emitNpcStarted(l, ctx, c)
+
+		switch {
+		case err == nil:
+			emitNpcStarted(l, ctx, c)
+		case errors.Is(err, conversation.ErrAlreadyStartedByThisTransaction):
+			// Kafka redelivery of this very command. The dialogue is already
+			// open; re-emit success so the awaiting step completes rather than
+			// compensating a conversation the player is legitimately in.
+			l.WithFields(fields).Debug("Redelivered start command; re-emitting STARTED.")
+			emitNpcStarted(l, ctx, c)
+		default:
+			l.WithError(err).WithFields(fields).Warn("Unable to start saga-driven NPC conversation.")
+			emitNpcStartError(l, ctx, c, npc2.StartErrorInternal)
+		}
 	}
 }
 

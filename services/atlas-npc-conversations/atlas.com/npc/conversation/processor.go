@@ -30,8 +30,11 @@ var ErrConversationInProgress = errors.New("another conversation exists")
 var ErrAlreadyStartedByThisTransaction = errors.New("conversation already started by this transaction")
 
 type Processor interface {
-	// Start starts a conversation with an NPC
-	Start(field field.Model, npcId uint32, characterId uint32, accountId uint32) error
+	// Start starts a conversation with an NPC. originTransactionId is the saga
+	// transaction awaiting the STARTED/START_ERROR status event; it is stamped
+	// into the context so a redelivered command is recognised as its own.
+	// uuid.Nil is the ordinary NPC-talk path, which has no saga awaiting it.
+	Start(field field.Model, npcId uint32, characterId uint32, accountId uint32, originTransactionId uuid.UUID) error
 
 	// StartQuest starts a quest conversation with the provided state machine
 	// The caller is responsible for selecting the correct state machine (start or end) based on quest status
@@ -113,14 +116,24 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint32, accountId uint32) error {
+func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint32, accountId uint32, originTransactionId uuid.UUID) error {
 	p.l.Debugf("Starting conversation with NPC [%d] with character [%d] in map [%d].", npcId, characterId, field.MapId())
 
-	// Check if there's already a conversation in progress
-	_, err := GetRegistry().GetPreviousContext(p.ctx, characterId)
+	// Redelivery guard, mirroring StartItem. A live context stamped with this
+	// same transaction id is this command's own earlier delivery, not a
+	// conflict — Kafka is at-least-once and START_ERROR here would fail a saga
+	// step that already succeeded, driving a compensation that force-ends a
+	// conversation the player is legitimately in. uuid.Nil (the ordinary
+	// NPC-talk path) never matches, so that path keeps its previous behaviour.
+	prev, err := GetRegistry().GetPreviousContext(p.ctx, characterId)
 	if err == nil {
+		if originTransactionId != uuid.Nil &&
+			prev.OriginTransactionId() != nil && *prev.OriginTransactionId() == originTransactionId {
+			p.l.Debugf("Conversation with NPC [%d] for character [%d] was already started by transaction [%s]; treating redelivery as success.", npcId, characterId, originTransactionId.String())
+			return ErrAlreadyStartedByThisTransaction
+		}
 		p.l.Debugf("Previous conversation for character [%d] exists, avoiding starting new conversation with NPC [%d].", characterId, npcId)
-		return errors.New("another conversation exists")
+		return ErrConversationInProgress
 	}
 
 	// Get the conversation for this NPC
@@ -143,6 +156,13 @@ func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint3
 		SetNpcId(npcId).
 		SetCurrentState(startStateId).
 		SetConversation(conversation)
+
+	// Only a saga-driven start carries a transaction. Stamping uuid.Nil would
+	// leave the ordinary NPC-talk path with a non-nil OriginTransactionId,
+	// which reads as "saga-driven" to anything testing that pointer.
+	if originTransactionId != uuid.Nil {
+		builder.SetOriginTransactionId(originTransactionId)
+	}
 
 	// Add worldId and channelId to context for use in conditions
 	if field.WorldId() > 0 {

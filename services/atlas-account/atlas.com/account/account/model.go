@@ -13,6 +13,7 @@ type Model struct {
 	password    string
 	pin         string
 	pic         string
+	birthDate   uint32
 	pinAttempts int
 	picAttempts int
 	state       State
@@ -55,6 +56,10 @@ func (a Model) Pin() string {
 
 func (a Model) Pic() string {
 	return a.pic
+}
+
+func (a Model) BirthDate() uint32 {
+	return a.birthDate
 }
 
 func (a Model) PinAttempts() int {

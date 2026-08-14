@@ -18,6 +18,7 @@ type Entity struct {
 	Password    string    `gorm:"not null"`
 	PIN         string
 	PIC         string
+	BirthDate   uint32
 	PinAttempts int  `gorm:"not null;default=0"`
 	PicAttempts int  `gorm:"not null;default=0"`
 	Gender      byte `gorm:"not null;default=0"`

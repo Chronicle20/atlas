@@ -64,6 +64,7 @@ func TestBuilderAllSetters(t *testing.T) {
 		SetPassword("password").
 		SetPin("1234").
 		SetPic("5678").
+		SetBirthDate(19900101).
 		SetState(StateLoggedIn).
 		SetGender(1).
 		SetTOS(true).
@@ -82,6 +83,10 @@ func TestBuilderAllSetters(t *testing.T) {
 
 	if m.Pic() != "5678" {
 		t.Errorf("Pic mismatch. Expected 5678, got %v", m.Pic())
+	}
+
+	if m.BirthDate() != 19900101 {
+		t.Errorf("BirthDate mismatch. Expected 19900101, got %v", m.BirthDate())
 	}
 
 	if m.State() != StateLoggedIn {

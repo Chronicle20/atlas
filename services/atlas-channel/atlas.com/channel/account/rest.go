@@ -8,6 +8,7 @@ type RestModel struct {
 	Password       string `json:"password"`
 	Pin            string `json:"pin"`
 	Pic            string `json:"pic"`
+	BirthDate      uint32 `json:"birthDate"`
 	LoggedIn       byte   `json:"loggedIn"`
 	LastLogin      uint64 `json:"lastLogin"`
 	Gender         byte   `json:"gender"`
@@ -42,6 +43,7 @@ func Extract(body RestModel) (Model, error) {
 		SetPassword(body.Password).
 		SetPin(body.Pin).
 		SetPic(body.Pic).
+		SetBirthDate(body.BirthDate).
 		SetLoggedIn(int(body.LoggedIn)).
 		SetLastLogin(body.LastLogin).
 		SetGender(body.Gender).

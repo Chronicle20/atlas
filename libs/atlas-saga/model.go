@@ -42,6 +42,7 @@ const (
 	PointReset          Type = "point_reset"
 	MegaphoneUse        Type = "megaphone_use"
 	MesoSackUse         Type = "meso_sack_use"
+	PetNameTagUse       Type = "pet_name_tag_use"
 )
 
 // Status represents the status of a saga step
@@ -91,6 +92,7 @@ const (
 	IncreaseBuddyCapacity  Action = "increase_buddy_capacity"
 	GainCloseness          Action = "gain_closeness"
 	EvolvePet              Action = "evolve_pet"
+	RenamePet              Action = "rename_pet"
 	TransferAP             Action = "transfer_ap"
 	TransferSP             Action = "transfer_sp"
 

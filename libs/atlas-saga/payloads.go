@@ -295,6 +295,17 @@ type EvolvePetPayload struct {
 	PetId       uint32 `json:"petId"`
 }
 
+// RenamePetPayload drives a pet rename. PreviousName is captured by the
+// initiating service BEFORE the rename (atlas-channel already reads the pet to
+// resolve the target, so this costs no extra round trip) and exists solely so
+// the compensator can revert the name if a later step fails.
+type RenamePetPayload struct {
+	CharacterId  uint32 `json:"characterId"`
+	PetId        uint32 `json:"petId"`
+	Name         string `json:"name"`
+	PreviousName string `json:"previousName"`
+}
+
 // ValidateCharacterStatePayload represents the payload required to validate a character's state.
 type ValidateCharacterStatePayload struct {
 	CharacterId uint32                     `json:"characterId"` // CharacterId associated with the action

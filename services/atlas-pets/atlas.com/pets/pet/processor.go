@@ -417,6 +417,10 @@ func (p *ProcessorImpl) SpawnAndEmit(petId uint32, actorId uint32, lead bool) er
 var (
 	ErrTooManySpawnedPets = errors.New("too many pets spawned")
 	ErrNeedMultiPetSkill  = errors.New("need multi pet skill")
+	// ErrPetExpired: a pet whose lifespan has run out is a dried-up doll. It
+	// keeps its inventory slot (see atlas-asset-expiration's IsReapable) but
+	// cannot be summoned until a Water of Life revives it (task-228).
+	ErrPetExpired = errors.New("pet expired")
 )
 
 func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(lead bool) error {
@@ -431,6 +435,10 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorI
 					}
 					if pe.OwnerId() != actorId {
 						return errors.New("pet not owned by character")
+					}
+
+					if !pe.Expiration().IsZero() && time.Now().After(pe.Expiration()) {
+						return ErrPetExpired
 					}
 
 					// Egg hatch-on-summon: if the template is an egg, hatch into

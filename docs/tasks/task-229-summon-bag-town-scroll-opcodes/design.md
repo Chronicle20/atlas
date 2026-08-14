@@ -138,11 +138,35 @@ in-repo precedent: discrete struct, its own `packet-audit:fname` marker, one
 `packet-audit:verify` line per version in `lottery_item_use_test.go`, one evidence
 record per version.
 
-*Option C — full audit reports (Path A).* Generate per-version reports for the two
-senders by running the analyzer to a temp `-output` and copying the reports in
-(`VERIFYING_A_PACKET.md:115-126`). Strictly more work than Option B for the same
-outcome, and reports still require the harvest of F2. **Not recommended standalone**;
-it remains available if a report happens to fall out of the harvest.
+*Option C — full audit reports (Path A), **on top of** Option B — **selected**.*
+Generate per-version reports for the two senders by running the analyzer to a temp
+`-output` and copying the reports into `docs/packets/audits/<version>/`
+(`VERIFYING_A_PACKET.md:115-126`), in addition to the wrappers, fixtures and evidence.
+
+Path A is **not** an alternative to Option B — it presupposes it. Report generation
+locates a codec by `type <name> struct` from the `candidatesFromFName` candidate
+(`cmd/run.go:3649-3667`), and the report's packet id is `dir(AtlasFile) + WriterName`
+(`internal/matrix/load.go:62-68`). Without a new struct, all three ops resolve to the
+same file and the same `WriterName` — one packet id, one evidence key per version,
+pinned to one function — which is Option A's manufactured `✅` with extra steps. With
+the wrappers in place each op yields a distinct report, distinct packet id and distinct
+evidence key:
+
+```
+candidatesFromFName("CWvsContext::SendMobSummonItemUseRequest")
+  -> {name: "SummonBagItemUse", pkg: "inventory", dir: serverbound}
+locateAtlasFile finds  type SummonBagItemUse struct
+  in inventory/serverbound/summon_bag_item_use.go
+=> report   docs/packets/audits/<v>/InventorySummonBagItemUse.json
+=> packetID inventory/serverbound/InventorySummonBagItemUse
+=> evidence own key, own decompile_sha256
+```
+
+With a report present, Path A resolves the linkage on its own and the registry `packet:`
+field becomes belt-and-braces rather than load-bearing — keep it anyway, so a future
+report regeneration cannot silently unlink the row. Reports also feed
+`doc-freshness --check` and give the next reader the decompiled read order beside the
+codec, which the evidence record alone does not.
 
 ### Recommended shape (Option B, concretely)
 
@@ -301,6 +325,7 @@ including the mandatory sibling cross-check, into `docs/packets/feature-na-evide
 | `…/*_item_use_test.go` | byte fixtures + one `packet-audit:verify` line per verified version | `libs/atlas-packet/test` (`Variants` includes GMS v48/61/72/79/83/84/86/87/92/95 and JMS v185) | new |
 | `tools/packet-audit/cmd/run.go` | fname → codec candidate mapping | — | 2 cases (+1 per unnamed-sub version, e.g. v48) |
 | `docs/packets/registry/<v>.yaml` | op → opcode/fname/packet | — | `packet:` on 2 ops × N versions; v48 gains `USE_SUMMON_BAG` (+ `USE_RETURN_SCROLL` iff D5 finds it) |
+| `docs/packets/audits/<v>/Inventory{SummonBag,ReturnScroll}ItemUse.{json,md}` | per-version audit report (Path A linkage + decompiled read order) | wrapper struct + export | new, generated to a temp `-output` and copied in |
 | `docs/packets/ida-exports/<v>.json` | decompile corpus evidence hashes against | IDBs | **surgical splice only** — never regenerate |
 | `docs/packets/evidence/<v>/*.yaml` | pinned per-op-per-version proof | export | new records |
 | `services/atlas-configurations/seed-data/templates/*.json` | tenant socket routing | registry opcodes | 2–5 handler entries on 4–5 templates |
@@ -310,16 +335,17 @@ including the mandatory sibling cross-check, into `docs/packets/feature-na-evide
 
 ## 4. Expected matrix delta
 
+Under D4 (all applicable columns) and D3 (pet food included):
+
 | op | v48 | v61 | v72 | v79 | v83 | v84 | v87 | v92 | v95 | jms |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `USE_SUMMON_BAG` (now: `n-a`, rest `incomplete`) | ✅ or evidenced `n-a` | ext | ext | ext | ext | ext | ✅ | ✅ | ✅ | ✅ |
-| `USE_RETURN_SCROLL` (now: `n-a`, rest `incomplete`) | ✅ or evidenced `n-a` | ext | ext | ext | ext | ext | ✅ | ✅ | ✅ | ✅ |
+| `USE_SUMMON_BAG` (now: `n-a`, rest `incomplete`) | ✅ or evidenced `n-a` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `USE_RETURN_SCROLL` (now: `n-a`, rest `incomplete`) | ✅ or evidenced `n-a` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `USE_ITEM` (v92 `partial`) | — | — | — | — | — | — | — | ✅ | — | — |
 | `USE_UPGRADE_SCROLL` (v92 `partial`) | — | — | — | — | — | — | — | ✅ | — | — |
-| `PET_FOOD` (v92 `partial`, if D3 accepted) | — | — | — | — | — | — | — | ✅ | — | — |
+| `PET_FOOD` (v92 `partial`) | — | — | — | — | — | — | — | ✅ | — | — |
 
-`ext` = promoted only if D4's extension is accepted; otherwise those cells stay
-`incomplete` and the two rows remain mixed. The three v92 `partial` rows are
+Both op-rows finish complete — no mixed row left behind. The three v92 `partial` rows are
 `"tier-1: needs byte-fixture test to verify"` (`grade.go:251`) — a fixture + pinned
 evidence for the v92 column promotes them; they need no new codec.
 
@@ -365,12 +391,29 @@ at execution time before skipping it.
 
 ---
 
-## 7. Open items for sign-off
+## 7. Decisions (signed off 2026-08-14)
 
-- **D1** — per-op wrapper structs (recommended) vs registry aliasing. Accepting D1
-  means the PRD's "no Go code changes" becomes "no Go *behaviour* changes": two new
-  audit-only codecs plus two `candidatesFromFName` cases.
-- **D3** — include `PetFoodHandle` on gms_92 (recommended).
-- **D4** — extend verification to gms_v61/72/79/83/84 (recommended; ~doubles harvest).
-- **D5** — v48 identification work is in-task, not deferred; the return-scroll answer
-  may still land as an evidenced `n-a`.
+- **D1 — ACCEPTED: per-op wrapper structs *plus* generated audit reports (Option B + C).**
+  Two audit-only codecs (`SummonBagItemUse`, `ReturnScrollItemUse`) embedding `ItemUse`,
+  two `candidatesFromFName` cases, a per-version report copied into
+  `docs/packets/audits/<version>/`, a `packet:` field in each registry entry, plus the
+  fixture and pinned evidence per cell. The PRD's "no Go code changes" is superseded by
+  "no Go *behaviour* changes" — `character_item_use.go` and `atlas-consumables` stay
+  untouched, and `item_use.go`'s wire body is not modified. Aliasing (Option A) and
+  reports-without-structs are both rejected: they collapse three ops onto one evidence
+  key pinned to the potion sender.
+- **D2 — the harvest stands as the cost centre.** Per op × version: locate the send site
+  by `COutPacket::COutPacket(&pkt, <opcode>)`, name it in the IDB, splice-only into the
+  committed export, then report + fixture + pin.
+- **D3 — ACCEPTED: bind `PetFoodHandle` on gms_92 (`0x53`)** alongside the four FR-2
+  entries. `ShopScannerItemUseHandle`, `CharacterItemUseLotteryHandle` and gms_12 remain
+  out of scope.
+- **D4 — ACCEPTED: verify all applicable columns.** gms_v48/87/92/95/jms_185 (PRD scope)
+  **plus** gms_v61/72/79/83/84. Both op-rows finish complete rather than mixed;
+  ~20 cells total, and the harvest count roughly doubles versus PRD scope.
+- **D5 — ACCEPTED: gms_48 is resolved in-task.** Confirm `0x3B` by structural comparison
+  against v61's named twin, name `sub_70DDAA` in the IDB, backfill `USE_SUMMON_BAG` into
+  `gms_v48.yaml`, and search for a return-scroll sender by opcode-construction
+  invariant. The return-scroll answer may legitimately land as an evidenced `n-a` in
+  `docs/packets/feature-na-evidence.yaml` — never a silent absence. Not split into a
+  follow-up task.

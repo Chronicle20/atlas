@@ -2,6 +2,7 @@ package pending_change
 
 import (
 	"atlas-character/character"
+	"atlas-character/configuration"
 	"atlas-character/kafka/message"
 	"context"
 	"errors"
@@ -24,10 +25,12 @@ import (
 )
 
 // DefaultExpiry is how long a pending request survives before the sweep
-// expires and refunds it (design §5.5). Task 8 replaces this with a per-tenant
-// read from the imprint-configs resource; until then every tenant gets 7 days,
-// which is the documented default the configuration resource itself will carry.
-const DefaultExpiry = 168 * time.Hour
+// expires and refunds it (design §5.5) when a tenant has no imprint-configs
+// resource. NewProcessor now reads the tenant-configurable expiry from
+// configuration.GetRegistry() (FR-2.6); this constant is what that registry's
+// own DefaultConfig() carries, and processor_test.go still asserts against it
+// directly since an unseeded test tenant resolves to the same value.
+const DefaultExpiry = configuration.DefaultPendingExpiry
 
 // ErrIneligible is the sentinel every request rejection wraps, so a caller that
 // does not care which gate failed can still branch on the class. The concrete
@@ -85,7 +88,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		ctx:    ctx,
 		db:     db,
 		t:      tenant.MustFromContext(ctx),
-		expiry: DefaultExpiry,
+		expiry: configuration.GetRegistry().Get(l, ctx).PendingExpiry(),
 	}
 }
 

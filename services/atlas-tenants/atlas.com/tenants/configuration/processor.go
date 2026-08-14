@@ -188,6 +188,28 @@ type Processor interface {
 	// KiteConfigProvider returns a provider for the kite-configs configuration
 	KiteConfigProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}]
 
+	// Imprint config operations (FR-2.6 pending-change expiry; see imprint_handler.go)
+	// CreateImprintConfig creates a new imprint config configuration
+	CreateImprintConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(config map[string]interface{}) (Model, error)
+	// CreateImprintConfigAndEmit creates a new imprint config configuration and emits events
+	CreateImprintConfigAndEmit(tenantId uuid.UUID, config map[string]interface{}) (Model, error)
+	// UpdateImprintConfig updates an existing imprint config configuration
+	UpdateImprintConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(configID string) func(config map[string]interface{}) (Model, error)
+	// UpdateImprintConfigAndEmit updates an existing imprint config configuration and emits events
+	UpdateImprintConfigAndEmit(tenantId uuid.UUID, configID string, config map[string]interface{}) (Model, error)
+	// DeleteImprintConfig deletes an imprint config configuration
+	DeleteImprintConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(configID string) error
+	// DeleteImprintConfigAndEmit deletes an imprint config configuration and emits events
+	DeleteImprintConfigAndEmit(tenantId uuid.UUID, configID string) error
+	// GetImprintConfigById gets an imprint config by ID
+	GetImprintConfigById(tenantId uuid.UUID, configID string) (map[string]interface{}, error)
+	// GetAllImprintConfigs gets all imprint configs for a tenant
+	GetAllImprintConfigs(tenantId uuid.UUID) ([]map[string]interface{}, error)
+	// ImprintConfigByIdProvider returns a provider for an imprint config by ID
+	ImprintConfigByIdProvider(tenantId uuid.UUID, configID string) model.Provider[map[string]interface{}]
+	// AllImprintConfigsProvider returns a provider for all imprint configs for a tenant
+	AllImprintConfigsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
+
 	// Seed operations
 	// SeedRpsRewards clears existing rps-rewards for a tenant and loads them from seed files
 	SeedRpsRewards(tenantId uuid.UUID) (SeedResult, error)
@@ -195,6 +217,8 @@ type Processor interface {
 	SeedMtsConfigs(tenantId uuid.UUID) (SeedResult, error)
 	// SeedTradeConfigs clears existing trade configs for a tenant and loads them from seed files
 	SeedTradeConfigs(tenantId uuid.UUID) (SeedResult, error)
+	// SeedImprintConfigs clears existing imprint configs for a tenant and loads them from seed files
+	SeedImprintConfigs(tenantId uuid.UUID) (SeedResult, error)
 }
 
 // ProcessorImpl implements the Processor interface

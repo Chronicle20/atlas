@@ -121,3 +121,72 @@ const sagaInitiator = "atlas-character/pending_change"
 func sagaCommandProvider(s sharedsaga.Saga) model.Provider[[]kafka.Message] {
 	return producer.SingleMessageProvider([]byte(s.TransactionId.String()), &s)
 }
+
+// --- The world-transfer saga (design §3.11) --------------------------------
+
+const sagaPurposeWorldTransfer = "pending_change:world_transfer"
+
+// The five step ids. Fixed order, and the compensations are keyed off the step
+// payload types, so the order here IS the reverse-walk order.
+const (
+	stepValidateWorldTransfer   = "validate_world_transfer"
+	stepLeaveGuildForTransfer   = "leave_guild_for_transfer"
+	stepLeavePartyForTransfer   = "leave_party_for_transfer"
+	stepSeverBuddiesForTransfer = "sever_buddies_for_transfer"
+	stepChangeCharacterWorld    = "change_character_world"
+)
+
+// worldTransferCommandProvider builds the five-step WorldTransfer saga in the
+// fixed order validate -> leave_guild -> leave_party -> sever_buddies ->
+// change_character_world.
+//
+// change_character_world is LAST on purpose: it is a single-row update, so a
+// failure anywhere leaves the character in the source world with only
+// recoverable severances applied — which is the whole of FR-4.8.
+//
+// guildTitle and buddyIds are snapshot values captured by the caller BEFORE
+// any severance runs. They exist solely so the compensations can be exact: a
+// guild re-join is not a client-driveable recovery, and the severed buddy ids
+// cannot be re-read once deleted. Passing them through the payload is not
+// redundancy — it is the only copy that survives the severance.
+//
+// SourceWorldId comes from the record rather than being re-read, exactly as
+// design §4 intends ("character_pending_changes.source_world_id exists
+// precisely so compensation does not have to reconstruct where the character
+// came from").
+func worldTransferCommandProvider(m Model, guildId uint32, guildTitle byte, partyId uint32, buddyIds []uint32) model.Provider[[]kafka.Message] {
+	s := sharedsaga.NewBuilder().
+		SetTransactionId(sagaTransactionId(m, sagaPurposeWorldTransfer)).
+		SetSagaType(sharedsaga.WorldTransfer).
+		SetInitiatedBy(sagaInitiator).
+		AddStep(stepValidateWorldTransfer, sharedsaga.Pending, sharedsaga.ValidateWorldTransfer, sharedsaga.ValidateWorldTransferPayload{
+			CharacterId:        m.CharacterId(),
+			SourceWorldId:      m.SourceWorldId(),
+			DestinationWorldId: m.DestinationWorldId(),
+			PendingChangeId:    m.Id(),
+		}).
+		AddStep(stepLeaveGuildForTransfer, sharedsaga.Pending, sharedsaga.LeaveGuildForTransfer, sharedsaga.LeaveGuildForTransferPayload{
+			CharacterId: m.CharacterId(),
+			WorldId:     m.SourceWorldId(),
+			GuildId:     guildId,
+			Title:       guildTitle,
+		}).
+		AddStep(stepLeavePartyForTransfer, sharedsaga.Pending, sharedsaga.LeavePartyForTransfer, sharedsaga.LeavePartyForTransferPayload{
+			CharacterId: m.CharacterId(),
+			WorldId:     m.SourceWorldId(),
+			PartyId:     partyId,
+		}).
+		AddStep(stepSeverBuddiesForTransfer, sharedsaga.Pending, sharedsaga.SeverBuddiesForTransfer, sharedsaga.SeverBuddiesForTransferPayload{
+			CharacterId: m.CharacterId(),
+			WorldId:     m.SourceWorldId(),
+			BuddyIds:    buddyIds,
+		}).
+		AddStep(stepChangeCharacterWorld, sharedsaga.Pending, sharedsaga.ChangeCharacterWorld, sharedsaga.ChangeCharacterWorldPayload{
+			CharacterId:        m.CharacterId(),
+			SourceWorldId:      m.SourceWorldId(),
+			DestinationWorldId: m.DestinationWorldId(),
+			PendingChangeId:    m.Id(),
+		}).
+		Build()
+	return sagaCommandProvider(s)
+}

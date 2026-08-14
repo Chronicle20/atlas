@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 
@@ -324,4 +325,134 @@ func mtsHoldingOpen(l logrus.FieldLogger, ctx context.Context, characterId uint3
 		return false, err
 	}
 	return len(listings) > 0, nil
+}
+
+// --- World-transfer severance snapshot ------------------------------------
+//
+// The five-step WorldTransfer saga (design §3.11) needs the character's guild,
+// party and buddy state captured BEFORE any severance runs, because the
+// compensations are built from the saga payloads and nothing else: the guild
+// re-add needs the exact prior Title, and the buddy restore needs the ids that
+// are about to be deleted. Reading them after the fact is impossible.
+//
+// Every helper below distinguishes "no membership" from "lookup failed". A
+// zero GuildId/PartyId is a LEGITIMATE skip signal the handlers act on
+// (handleLeaveGuildForTransfer self-completes on GuildId == 0), so a failed
+// lookup must never degrade into a zero — it would silently skip a real
+// severance and leave the character in a guild in the world they just left.
+// Errors propagate; the saga is not dispatched at all.
+
+// guildMembership resolves the character's guild id and the rank they hold.
+// found == false means the character is genuinely in no guild.
+func guildMembership(l logrus.FieldLogger, ctx context.Context, characterId uint32) (uint32, byte, bool, error) {
+	gs, err := requestGuildsByMember(characterId)(l, ctx)
+	if err != nil {
+		return 0, 0, false, err
+	}
+	for _, g := range gs {
+		for _, m := range g.Members {
+			if m.CharacterId != characterId {
+				continue
+			}
+			id, convErr := strconv.ParseUint(g.Id, 10, 32)
+			if convErr != nil {
+				// A membership we cannot address is worse than none: the saga
+				// would emit a LEAVE against guild 0. Fail the dispatch.
+				return 0, 0, false, fmt.Errorf("guild id [%s] for character [%d] is not numeric: %w", g.Id, characterId, convErr)
+			}
+			return uint32(id), m.Title, true, nil
+		}
+	}
+	return 0, 0, false, nil
+}
+
+// partyRestModel is the minimal projection of atlas-parties' GET
+// /parties?filter[members.id]={characterId}
+// (services/atlas-parties/atlas.com/parties/party/resource.go:36 — the exact
+// query shape services/atlas-channel/atlas.com/channel/party/requests.go
+// already uses). Members are a JSON:API relationship on this resource, not a
+// plain attribute, so the reference stubs are required for unmarshalling; only
+// the id is read.
+type partyRestModel struct {
+	Id string `json:"-"`
+}
+
+func (r partyRestModel) GetName() string                                   { return "parties" }
+func (r partyRestModel) GetID() string                                     { return r.Id }
+func (r *partyRestModel) SetID(id string) error                            { r.Id = id; return nil }
+func (r *partyRestModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (r *partyRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
+func partyBaseUrl() string { return requests.RootUrl("PARTIES") }
+
+func requestPartiesByMember(characterId uint32) requests.Request[[]partyRestModel] {
+	return requests.GetRequest[[]partyRestModel](fmt.Sprintf(partyBaseUrl()+"parties?filter[members.id]=%d", characterId))
+}
+
+// partyMembership resolves the character's party id. found == false means the
+// character is genuinely in no party.
+func partyMembership(l logrus.FieldLogger, ctx context.Context, characterId uint32) (uint32, bool, error) {
+	ps, err := requestPartiesByMember(characterId)(l, ctx)
+	if err != nil {
+		return 0, false, err
+	}
+	for _, p := range ps {
+		id, convErr := strconv.ParseUint(p.Id, 10, 32)
+		if convErr != nil {
+			return 0, false, fmt.Errorf("party id [%s] for character [%d] is not numeric: %w", p.Id, characterId, convErr)
+		}
+		return uint32(id), true, nil
+	}
+	return 0, false, nil
+}
+
+// buddyEntryRestModel mirrors atlas-buddies' buddy.RestModel
+// (services/atlas-buddies/atlas.com/buddies/buddy/rest.go:7). Only the id is
+// read; Pending distinguishes a live buddy from an unaccepted invite.
+type buddyEntryRestModel struct {
+	CharacterId uint32 `json:"characterId"`
+	Pending     bool   `json:"pending"`
+}
+
+// buddyListRestModel is the minimal projection of atlas-buddies' GET
+// /characters/{characterId}/buddy-list
+// (services/atlas-buddies/atlas.com/buddies/list/resource.go:36). Buddies are
+// a plain JSON attribute array on this resource, not a relationship.
+type buddyListRestModel struct {
+	Id      string                `json:"-"`
+	Buddies []buddyEntryRestModel `json:"buddies"`
+}
+
+func (r buddyListRestModel) GetName() string        { return "buddy-list" }
+func (r buddyListRestModel) GetID() string          { return r.Id }
+func (r *buddyListRestModel) SetID(id string) error { r.Id = id; return nil }
+
+func buddyBaseUrl() string { return requests.RootUrl("BUDDIES") }
+
+func requestBuddyList(characterId uint32) requests.Request[buddyListRestModel] {
+	return requests.GetRequest[buddyListRestModel](fmt.Sprintf(buddyBaseUrl()+"characters/%d/buddy-list", characterId))
+}
+
+// buddyIds captures every id the sever step must remove, in both directions.
+// A character with no buddy list at all (404) genuinely has no buddies; any
+// other error propagates. Pending entries are excluded: they are unaccepted
+// invites, not mutual relationships, so REQUEST_DELETE has nothing symmetric
+// to remove and the compensation would restore a relationship that never
+// existed.
+func buddyIds(l logrus.FieldLogger, ctx context.Context, characterId uint32) ([]uint32, error) {
+	bl, err := requestBuddyList(characterId)(l, ctx)
+	if err != nil {
+		if errors.Is(err, requests.ErrNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	ids := make([]uint32, 0, len(bl.Buddies))
+	for _, b := range bl.Buddies {
+		if b.Pending {
+			continue
+		}
+		ids = append(ids, b.CharacterId)
+	}
+	return ids, nil
 }

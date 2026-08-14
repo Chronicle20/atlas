@@ -93,7 +93,59 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		t:      tenant.MustFromContext(ctx),
 		expiry: configuration.GetRegistry().Get(l, ctx).PendingExpiry(),
 		gates:  productionGateDeps(),
+		// The starter defaults to the production dispatcher for the same
+		// reason gates defaults to productionGateDeps: ApplyForCharacter is
+		// reached from a Kafka consumer that builds its own processor
+		// (kafka/consumer/character/consumer.go), so wiring the starter only
+		// at a main.go construction site would leave the LOGOUT apply path —
+		// the ONLY path a world transfer ever takes — with a nil starter and
+		// the "no world-transfer saga dispatcher wired" error. That is exactly
+		// the state this service shipped in until task-227 Task 14.
+		// WithWorldTransferStarter remains the override seam for tests.
+		worldTransferStarter: productionWorldTransferStarter,
 	}
+}
+
+// productionWorldTransferStarter builds and emits the five-step WorldTransfer
+// saga (design §3.11).
+//
+// It snapshots the character's guild rank, party and buddy ids FIRST, because
+// every one of those is destroyed by the severance steps and the compensations
+// have no other source for them.
+//
+// Every lookup failure aborts the dispatch. A zero GuildId or PartyId is a
+// legitimate "no membership, skip this step" signal that the orchestrator's
+// handlers act on directly, so degrading a failed lookup into a zero would
+// silently skip a REAL severance — leaving the character holding a guild seat
+// in a world they no longer inhabit, with no record that it was ever meant to
+// be removed. Failing loudly leaves the record PENDING, which the expiry sweep
+// refunds.
+func productionWorldTransferStarter(l logrus.FieldLogger, ctx context.Context, mb *message.Buffer, m Model) error {
+	guildId, guildTitle, _, err := guildMembership(l, ctx, m.CharacterId())
+	if err != nil {
+		return fmt.Errorf("unable to read guild membership for character [%d] ahead of world transfer: %w", m.CharacterId(), err)
+	}
+	partyId, _, err := partyMembership(l, ctx, m.CharacterId())
+	if err != nil {
+		return fmt.Errorf("unable to read party membership for character [%d] ahead of world transfer: %w", m.CharacterId(), err)
+	}
+	buddies, err := buddyIds(l, ctx, m.CharacterId())
+	if err != nil {
+		return fmt.Errorf("unable to read buddy list for character [%d] ahead of world transfer: %w", m.CharacterId(), err)
+	}
+
+	l.WithFields(logrus.Fields{
+		"character_id":      m.CharacterId(),
+		"pending_change_id": m.Id().String(),
+		"source_world_id":   m.SourceWorldId(),
+		"destination_world": m.DestinationWorldId(),
+		"guild_id":          guildId,
+		"guild_title":       guildTitle,
+		"party_id":          partyId,
+		"buddy_count":       len(buddies),
+	}).Info("Dispatching world-transfer saga.")
+
+	return mb.Put(sagamsg.EnvCommandTopic, worldTransferCommandProvider(m, guildId, guildTitle, partyId, buddies))
 }
 
 var _ Processor = (*ProcessorImpl)(nil)

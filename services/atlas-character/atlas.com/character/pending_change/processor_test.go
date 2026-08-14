@@ -235,7 +235,13 @@ func TestApplyForCharacterDispatchesTheWorldTransferAndLeavesItPending(t *testin
 		t.Fatalf("CreateAndEmit: %v", err)
 	}
 
-	if err := base.ApplyForCharacter(characterId); err == nil {
+	// The nil starter must be requested EXPLICITLY. NewProcessor now defaults
+	// it to productionWorldTransferStarter (task-227 Task 14 fix round 1) —
+	// before that fix this line was redundant and the assertion below passed
+	// against the production constructor, which was precisely the bug: every
+	// real WORLD_TRANSFER apply took this failure branch.
+	unwired := base.WithWorldTransferStarter(nil)
+	if err := unwired.ApplyForCharacter(characterId); err == nil {
 		t.Fatal("expected an unwired world-transfer dispatcher to fail loudly")
 	}
 

@@ -30,24 +30,26 @@ type (
 
 // Saga type constants
 const (
-	InventoryTransaction = sharedsaga.InventoryTransaction
-	QuestReward          = sharedsaga.QuestReward
-	TradeTransaction     = sharedsaga.TradeTransaction
-	TradeStaging         = sharedsaga.TradeStaging
-	CharacterCreation    = sharedsaga.CharacterCreation
-	StorageOperation     = sharedsaga.StorageOperation
-	CharacterRespawn     = sharedsaga.CharacterRespawn
-	GachaponTransaction  = sharedsaga.GachaponTransaction
-	PetEvolution         = sharedsaga.PetEvolution
-	ItemTagUse           = sharedsaga.ItemTagUse
-	SealingLockUse       = sharedsaga.SealingLockUse
-	IncubatorUse         = sharedsaga.IncubatorUse
-	PointReset           = sharedsaga.PointReset
-	MesoSackUse          = sharedsaga.MesoSackUse
-	MtsOperation         = sharedsaga.MtsOperation
-	NoteSend             = sharedsaga.NoteSend
-	SkillBookUse         = sharedsaga.SkillBookUse
-	PetNameTagUse        = sharedsaga.PetNameTagUse
+	InventoryTransaction  = sharedsaga.InventoryTransaction
+	QuestReward           = sharedsaga.QuestReward
+	TradeTransaction      = sharedsaga.TradeTransaction
+	TradeStaging          = sharedsaga.TradeStaging
+	CharacterCreation     = sharedsaga.CharacterCreation
+	StorageOperation      = sharedsaga.StorageOperation
+	CharacterRespawn      = sharedsaga.CharacterRespawn
+	GachaponTransaction   = sharedsaga.GachaponTransaction
+	PetEvolution          = sharedsaga.PetEvolution
+	ItemTagUse            = sharedsaga.ItemTagUse
+	SealingLockUse        = sharedsaga.SealingLockUse
+	IncubatorUse          = sharedsaga.IncubatorUse
+	ExpirationExtenderUse = sharedsaga.ExpirationExtenderUse
+	PointReset            = sharedsaga.PointReset
+	MesoSackUse           = sharedsaga.MesoSackUse
+	MtsOperation          = sharedsaga.MtsOperation
+	NoteSend              = sharedsaga.NoteSend
+	SkillBookUse          = sharedsaga.SkillBookUse
+	PetNameTagUse         = sharedsaga.PetNameTagUse
+	RemoteMerchant        = sharedsaga.RemoteMerchant
 )
 
 // Status constants
@@ -141,6 +143,9 @@ const (
 	AcceptToCharacter    = sharedsaga.AcceptToCharacter
 	ReleaseFromStorage   = sharedsaga.ReleaseFromStorage
 
+	// NPC shop actions (task-221)
+	OpenNpcShop = sharedsaga.OpenNpcShop
+
 	// Trade actions (task-205). trade_settlement is a COMPOSITE expanded by
 	// expandTradeSettlement into release_from_character / accept_to_character /
 	// award_mesos steps.
@@ -223,6 +228,9 @@ const (
 	SetAssetOwner   = sharedsaga.SetAssetOwner
 	ApplyAssetLock  = sharedsaga.ApplyAssetLock
 	IncubatorResult = sharedsaga.IncubatorResult
+
+	// Expiration extender actions
+	ExtendAssetExpiration = sharedsaga.ExtendAssetExpiration
 )
 
 // Re-exported payload types from shared library
@@ -277,6 +285,7 @@ type (
 	SpawnMonsterPayload                 = sharedsaga.SpawnMonsterPayload
 	SpawnReactorDropsPayload            = sharedsaga.SpawnReactorDropsPayload
 	ShowStoragePayload                  = sharedsaga.ShowStoragePayload
+	OpenNpcShopPayload                  = sharedsaga.OpenNpcShopPayload
 	DepositToStoragePayload             = sharedsaga.DepositToStoragePayload
 	UpdateStorageMesosPayload           = sharedsaga.UpdateStorageMesosPayload
 	TransferToStoragePayload            = sharedsaga.TransferToStoragePayload
@@ -330,6 +339,7 @@ type (
 	ApplyAssetLockPayload               = sharedsaga.ApplyAssetLockPayload
 	IncubatorResultPayload              = sharedsaga.IncubatorResultPayload
 	CreateNotePayload                   = sharedsaga.CreateNotePayload
+	ExtendAssetExpirationPayload        = sharedsaga.ExtendAssetExpirationPayload
 	// Megaphone / world broadcast payload types
 	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
 	EnqueueWorldBroadcastPayload = sharedsaga.EnqueueWorldBroadcastPayload
@@ -1322,6 +1332,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
 		s.payload = any(payload).(T)
+	case OpenNpcShop:
+		var payload OpenNpcShopPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
 	case AcceptToStorage:
 		var payload AcceptToStoragePayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
@@ -1618,6 +1634,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ApplyAssetLock:
 		var payload ApplyAssetLockPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ExtendAssetExpiration:
+		var payload ExtendAssetExpirationPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

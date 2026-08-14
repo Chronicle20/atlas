@@ -77,6 +77,62 @@ func legacyGmsNoRangedBulletCoords(t tenant.Model) bool {
 	return t.Region() == "GMS" && t.MajorVersion() < 61
 }
 
+// gmsAttackDrBlocks reports whether the serverbound attack head carries the
+// damage-randomizer / anti-hack blocks at all. GMS v84+.
+//
+// v83's magic sender (@0x956da2) writes fieldKey, the numAttacked/damage mask,
+// skillId, the two skill-data CRCs and then goes straight to mask1 -- no dr
+// words anywhere. v84's (@0x9942f3) inserts dr0/dr1 after fieldKey, dr2/dr3
+// after the mask, and randomDr/crc32 after skillId.
+func gmsAttackDrBlocks(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() >= 84
+}
+
+// gmsMagicSecondaryDrBlock reports whether a MAGIC attack carries a SECOND
+// damage-randomizer block (2dr0..2dr3, 2rnd, 2crc -- six uint32s, 24 bytes)
+// immediately after the primary randomDr/crc32 pair.
+//
+// It is present on every GMS client that carries the primary block, i.e. the
+// two travel together and this predicate is deliberately the same boundary as
+// gmsAttackDrBlocks rather than an independent one. IDA-verified per version,
+// reading the magic sender's Encode sequence from its COutPacket ctor:
+//
+//	v83 @0x956da2 — absent (no dr block of any kind)
+//	v84 @0x9942f3 — PRESENT: Encode4 ×4 @0x99442c/0x994440/0x994454/0x994468,
+//	                Random ×2 → Encode4 @0x9944c4, GetCrc32 → Encode4 @0x9944eb
+//	v87 @0x9d8656 — PRESENT: Encode4 ×4 @0x9d878f/0x9d87a3/0x9d87b7/0x9d87cb,
+//	                Random ×2 → Encode4 @0x9d8827, GetCrc32 → Encode4 @0x9d884e
+//	v92 @0x9086e4 — PRESENT: Encode4 ×4 @0x9087db/0x9087ef/0x908803/0x908817,
+//	                Random ×2 → Encode4 @0x90883a, GetCrc32 → Encode4 @0x908861
+//	v95           — PRESENT (the version this read was originally written for)
+//
+// This REPLACES a `>= 95` gate whose comment asserted "the v84 magic sender
+// (30 Encode tokens) is shorter than v84 melee and carries no second dr-block,
+// so this must NOT read for v84..94". The v84 sender above disproves the
+// premise. The cost of the wrong gate was 24 unread bytes on every v84/v87/v92
+// magic attack: skillDataCrc onward decoded from the middle of the secondary
+// block, so the per-mob damage loop read garbage monster object ids and
+// atlas-monsters dropped every one of them ("Unable to get monster [N]" for
+// ids far outside the live range) -- magic attacks dealt no damage at all.
+func gmsMagicSecondaryDrBlock(t tenant.Model) bool {
+	return gmsAttackDrBlocks(t)
+}
+
+// gmsMagicTrailingWord reports whether a MAGIC attack writes one extra uint32
+// between attackTime and the per-mob damage loop. GMS v92+.
+//
+// IDA-verified by reading what follows the attackTime Encode4 in each magic
+// sender. v84 @0x994678 and v87 @0x9d89db are followed directly by the per-mob
+// block (mob id Encode4 @0x99470d / @0x9d8a70, then the Encode1 run and the
+// five Encode2s). v92 writes TWO Encode4s there -- attackTime @0x9089e9 then
+// this word @0x9089f8 -- before its per-mob block at @0x908b26. v95 matches
+// v92, which is the version the original `>= 95` gate was written against.
+//
+// So v92 was short by a further 4 bytes on top of the secondary-dr-block gap.
+func gmsMagicTrailingWord(t tenant.Model) bool {
+	return t.Region() == "GMS" && t.MajorVersion() >= 92
+}
+
 type AttackInfo struct {
 	attackType           AttackType
 	fieldKey             byte
@@ -127,10 +183,13 @@ type AttackInfo struct {
 }
 
 // Encode is the symmetric mirror of Decode: it serializes the client->server
-// attack request. Every version gate here MUST match Decode field-for-field
-// (the dr-block is GMS v84+, the magic 2dr block / skillLevel / anotherCrc /
-// per-type ints are GMS v95+). The AttackInfo round-trip test relies on this
-// symmetry — any drift surfaces as unconsumed bytes for the affected version.
+// attack request. Every version gate here MUST match Decode field-for-field:
+// the primary dr-block and the magic secondary dr-block are GMS v84+
+// (gmsAttackDrBlocks / gmsMagicSecondaryDrBlock), the magic trailing word is
+// GMS v92+ (gmsMagicTrailingWord), and skillLevel / anotherCrc / the melee and
+// ranged per-type ints are GMS v95+. The AttackInfo round-trip test relies on
+// this symmetry — any drift surfaces as unconsumed bytes for the affected
+// version.
 func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
@@ -141,12 +200,12 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		isMesoExplosion := skill.Id(m.skillId) == skill.ChiefBanditMesoExplosionId
 		w := response.NewWriter(l)
 		w.WriteByte(m.fieldKey)
-		if t.Region() == "GMS" && t.MajorVersion() >= 84 { // primary dr-block (v84+)
+		if gmsAttackDrBlocks(t) { // primary dr-block (v84+)
 			w.WriteInt(m.dr0)
 			w.WriteInt(m.dr1)
 		}
 		w.WriteByte((m.hits & 0xF) | byte((m.damage&0xF)<<4))
-		if t.Region() == "GMS" && t.MajorVersion() >= 84 { // primary dr-block (v84+)
+		if gmsAttackDrBlocks(t) { // primary dr-block (v84+)
 			w.WriteInt(m.dr2)
 			w.WriteInt(m.dr3)
 		}
@@ -154,20 +213,19 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			w.WriteByte(m.skillLevel) // nCombatOrders
 		}
-		if t.Region() == "GMS" && t.MajorVersion() >= 84 { // randomDr/crc32 complete the primary dr-block (v84+)
+		if gmsAttackDrBlocks(t) { // randomDr/crc32 complete the primary dr-block (v84+)
 			w.WriteInt(m.randomDr)
 			w.WriteInt(m.crc32)
 		}
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			if m.attackType == AttackTypeMagic {
-				// Secondary dr-block for magic attacks (v95+; absent in v84 magic).
-				w.WriteInt(0) // 2dr0
-				w.WriteInt(0) // 2dr1
-				w.WriteInt(0) // 2dr2
-				w.WriteInt(0) // 2dr3
-				w.WriteInt(0) // 2rnd
-				w.WriteInt(0) // 2crc
-			}
+		if m.attackType == AttackTypeMagic && gmsMagicSecondaryDrBlock(t) {
+			// Secondary dr-block for magic attacks — GMS v84+, see the
+			// predicate for the per-version IDA evidence.
+			w.WriteInt(0) // 2dr0
+			w.WriteInt(0) // 2dr1
+			w.WriteInt(0) // 2dr2
+			w.WriteInt(0) // 2dr3
+			w.WriteInt(0) // 2rnd
+			w.WriteInt(0) // 2crc
 		}
 		// The head skill-data CRC block. The very-legacy pre-72 GMS client (v61)
 		// writes NO CRC at all (sub_7A45F1 @0x7a5bc3→@0x7a5d3d: skillId then
@@ -221,7 +279,8 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 				w.WriteInt(m.bulletItemId)
 			}
 		} else if m.attackType == AttackTypeMagic {
-			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			// GMS v92+ — see gmsMagicTrailingWord. v87 omits it.
+			if gmsMagicTrailingWord(t) {
 				w.WriteInt(0)
 			}
 		}
@@ -246,7 +305,7 @@ func (m *AttackInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 			w.WriteShort(m.bulletY)
 		}
 
-		if skill.Id(m.skillId) == skill.NightWalkerStage3PoisonBombId {
+		if skill.IsGrenadeSkill(skill.Id(m.skillId)) {
 			w.WriteShort(m.grenadeX)
 			w.WriteShort(m.grenadeY)
 		} else if skill.Id(m.skillId) == skill.ThunderBreakerStage3SparkId {
@@ -272,14 +331,15 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.fieldKey = r.ReadByte()
-		// Primary damage-randomizer (dr/crc anti-hack) block. Present GMS v84+,
-		// NOT v95+ (off-by-one). CONFIRMED via the client attack senders: v83
-		// melee (sub @0x66… in v83) writes no dr-block, while the v84, v87, and
-		// v95 melee senders all insert dr0/dr1 here (after fieldKey), dr2/dr3
-		// after the numAttacked mask, and randomDr/crc32 after skillId — exactly
-		// +6 uint32 vs v83. The v84 magic sender is +6 only (no secondary
-		// dr-block), so the magic 2dr block below stays v95+.
-		if t.Region() == "GMS" && t.MajorVersion() >= 84 {
+		// Primary damage-randomizer (dr/crc anti-hack) block — GMS v84+, see
+		// gmsAttackDrBlocks. v83 writes no dr words at all; v84/v87/v92/v95
+		// insert dr0/dr1 here (after fieldKey), dr2/dr3 after the numAttacked
+		// mask, and randomDr/crc32 after skillId.
+		//
+		// The magic secondary dr-block below is the SAME boundary, not v95+:
+		// the claim that "the v84 magic sender is +6 only" was wrong and cost
+		// v84/v87/v92 every magic attack (gmsMagicSecondaryDrBlock).
+		if gmsAttackDrBlocks(t) {
 			m.dr0 = r.ReadUint32()
 			m.dr1 = r.ReadUint32()
 		}
@@ -287,7 +347,7 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 		m.hits = numAttackedAndDamageMask & 0xF
 		m.damage = uint32((numAttackedAndDamageMask >> 4) & 0xF)
 
-		if t.Region() == "GMS" && t.MajorVersion() >= 84 { // primary dr-block (v84+, see above)
+		if gmsAttackDrBlocks(t) { // primary dr-block (v84+, see above)
 			m.dr2 = r.ReadUint32()
 			m.dr3 = r.ReadUint32()
 		}
@@ -302,23 +362,22 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 			m.skillLevel = r.ReadByte() // nCombatOrders
 		}
 
-		if t.Region() == "GMS" && t.MajorVersion() >= 84 { // randomDr/crc32 complete the primary dr-block (v84+, see above)
+		if gmsAttackDrBlocks(t) { // randomDr/crc32 complete the primary dr-block (v84+, see above)
 			m.randomDr = r.ReadUint32()
 			m.crc32 = r.ReadUint32()
 		}
 
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			if m.attackType == AttackTypeMagic {
-				// Secondary dr-block for magic attacks. v95+ only: the v84 magic
-				// sender (30 Encode tokens) is shorter than v84 melee and carries
-				// no second dr-block, so this must NOT read for v84..94.
-				_ = r.ReadUint32() // 2dr0
-				_ = r.ReadUint32() // 2dr1
-				_ = r.ReadUint32() // 2dr2
-				_ = r.ReadUint32() // 2dr3
-				_ = r.ReadUint32() // 2rnd
-				_ = r.ReadUint32() // 2crc
-			}
+		if m.attackType == AttackTypeMagic && gmsMagicSecondaryDrBlock(t) {
+			// Secondary dr-block for magic attacks — see the predicate for the
+			// per-version IDA evidence. Skipping it on v84/v87/v92 left the
+			// decode 24 bytes short and turned every magic attack's mob ids
+			// into garbage.
+			_ = r.ReadUint32() // 2dr0
+			_ = r.ReadUint32() // 2dr1
+			_ = r.ReadUint32() // 2dr2
+			_ = r.ReadUint32() // 2dr3
+			_ = r.ReadUint32() // 2rnd
+			_ = r.ReadUint32() // 2crc
 		}
 
 		if !legacyGmsNoSkillDataCrc(t) {
@@ -391,7 +450,11 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 				m.bulletItemId = r.ReadUint32()
 			}
 		} else if m.attackType == AttackTypeMagic {
-			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			// One trailing word between attackTime and the per-mob loop, GMS
+			// v92+ — see gmsMagicTrailingWord for the per-version evidence.
+			// v87 does NOT write it, so the previous `>= 95` gate was right for
+			// v87 and wrong for v92.
+			if gmsMagicTrailingWord(t) {
 				_ = r.ReadUint32()
 			}
 		}
@@ -424,7 +487,7 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 			m.bulletY = r.ReadUint16()
 		}
 
-		if skill.Id(m.skillId) == skill.NightWalkerStage3PoisonBombId {
+		if skill.IsGrenadeSkill(skill.Id(m.skillId)) {
 			m.grenadeX = r.ReadUint16()
 			m.grenadeY = r.ReadUint16()
 		} else if skill.Id(m.skillId) == skill.ThunderBreakerStage3SparkId {
@@ -518,6 +581,45 @@ func (m *AttackInfo) BulletY() uint16 {
 	return m.bulletY
 }
 
+// CharacterX / CharacterY report the caster's own position as the client
+// recorded it AT THE MOMENT OF THE ATTACK, from the trailing coordinate pair
+// every attack carries.
+//
+// This is the authoritative anchor for anything the server places at the
+// caster's feet. The alternative -- reading the position back from
+// atlas-character -- is asynchronous: the client's MOVE packet reaches that
+// service over Kafka (atlas-channel movement.ProcessorImpl.ForCharacter emits
+// COMMAND_CHARACTER_MOVEMENT from a detached goroutine), so a REST read taken
+// while handling the attack can easily observe a pre-move position. Anchoring a
+// mist that way put it where the caster had been on an earlier cast (task-218
+// field report #2: "cast it once, don't see the effect; cast again and it shows
+// up where I cast it previously").
+func (m *AttackInfo) CharacterX() uint16 {
+	return m.characterX
+}
+
+func (m *AttackInfo) CharacterY() uint16 {
+	return m.characterY
+}
+
+// GrenadeX / GrenadeY report the landing point of a thrown-grenade attack --
+// the trailing coordinate pair the client appends for the grenade skills (see
+// Decode's skill.IsGrenadeSkill arm). It is the point the BOMB lands
+// on, which is a function of how long the key was held, and is NOT the
+// caster's own position: a server-side effect anchored at the caster instead
+// of here lands in the wrong place by the whole throw distance (task-218
+// field report #4).
+//
+// Zero for every attack that carries no grenade block, so callers must gate on
+// the skill rather than on the value.
+func (m *AttackInfo) GrenadeX() uint16 {
+	return m.grenadeX
+}
+
+func (m *AttackInfo) GrenadeY() uint16 {
+	return m.grenadeY
+}
+
 // ExplodedMesoDrops returns the drop object ids listed by a meso-explosion
 // attack. Empty for every other attack (FR-3).
 func (m *AttackInfo) ExplodedMesoDrops() []uint32 {
@@ -582,6 +684,22 @@ func (m *AttackInfo) SetKeydown(keydown uint32) *AttackInfo {
 func (m *AttackInfo) SetBulletPosition(bulletX uint16, bulletY uint16) *AttackInfo {
 	m.bulletX = bulletX
 	m.bulletY = bulletY
+	return m
+}
+
+// SetCharacterPosition sets the caster's own position, the trailing coordinate
+// pair every attack carries.
+func (m *AttackInfo) SetCharacterPosition(characterX uint16, characterY uint16) *AttackInfo {
+	m.characterX = characterX
+	m.characterY = characterY
+	return m
+}
+
+// SetGrenadePosition sets the thrown-grenade landing point. Only encoded for
+// the grenade skills (see Encode/Decode).
+func (m *AttackInfo) SetGrenadePosition(grenadeX uint16, grenadeY uint16) *AttackInfo {
+	m.grenadeX = grenadeX
+	m.grenadeY = grenadeY
 	return m
 }
 

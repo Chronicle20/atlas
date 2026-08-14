@@ -4,13 +4,65 @@ import (
 	shop "atlas-npc/kafka/message/shops"
 	"atlas-npc/shops"
 	"atlas-npc/test"
+	"encoding/json"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
+
+// TestHandleEnterCommand_PropagatesTransactionId asserts the enter command's
+// transaction id survives the wire round trip. It is the only correlation key
+// the saga orchestrator has (task-221 design delta D2).
+func TestHandleEnterCommand_PropagatesTransactionId(t *testing.T) {
+	txn := uuid.New()
+	cmd := shop.Command[shop.CommandShopEnterBody]{
+		TransactionId: txn,
+		CharacterId:   1234,
+		Type:          shop.CommandShopEnter,
+		Body:          shop.CommandShopEnterBody{NpcTemplateId: 9090000},
+	}
+
+	b, err := json.Marshal(cmd)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var round shop.Command[shop.CommandShopEnterBody]
+	if err := json.Unmarshal(b, &round); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if round.TransactionId != txn {
+		t.Errorf("TransactionId = %s, want %s", round.TransactionId, txn)
+	}
+}
+
+// TestStatusEvent_EnterErrorRoundTrips locks the ENTER_ERROR shape. It must be
+// distinct from StatusEventTypeError: the channel writes NPCShopOperation for
+// ERROR, and that packet with no outstanding request disconnects the client
+// (producer.go:36-51).
+func TestStatusEvent_EnterErrorRoundTrips(t *testing.T) {
+	txn := uuid.New()
+	e := shop.StatusEvent[shop.StatusEventEnterErrorBody]{
+		TransactionId: txn,
+		CharacterId:   1234,
+		Type:          shop.StatusEventTypeEnterError,
+		Body:          shop.StatusEventEnterErrorBody{NpcTemplateId: 9090000, Reason: shop.EnterErrorShopNotFound},
+	}
+	b, err := json.Marshal(e)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var round shop.StatusEvent[shop.StatusEventEnterErrorBody]
+	if err := json.Unmarshal(b, &round); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if round.TransactionId != txn || round.Type != "ENTER_ERROR" || round.Body.Reason != "SHOP_NOT_FOUND" {
+		t.Errorf("round-trip mismatch: %+v", round)
+	}
+}
 
 func setupTestRegistry(t *testing.T) {
 	t.Helper()

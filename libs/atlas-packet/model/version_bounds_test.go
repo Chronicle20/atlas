@@ -26,14 +26,27 @@ func TestNormalElementMovementVersionBoundary(t *testing.T) {
 		return pt.Encode(t, ctx, m.Encode, nil)
 	}
 	v83 := encode(83)
-	// v84..87 are all on the pre-XOffset side (encode gates >87 == v88+).
-	for _, major := range []uint16{84, 85, 86, 87} {
+	// v84..v86 are on the pre-XOffset side. v84 is IDA-verified: its
+	// CMovePath::Decode @0x6a0fd0 has no XOffset/YOffset read at all (the
+	// per-element tail is Decode1 + Decode2 and nothing else).
+	for _, major := range []uint16{84, 85, 86} {
 		if got := encode(major); !bytes.Equal(got, v83) {
-			t.Errorf("NormalElement v%d encode differs from v83 (len %d vs %d); v84..87 must match v83 (XOffset is >87)", major, len(got), len(v83))
+			t.Errorf("NormalElement v%d encode differs from v83 (len %d vs %d); v84..86 must match v83", major, len(got), len(v83))
 		}
 	}
-	if v95 := encode(95); bytes.Equal(v95, v83) {
-		t.Errorf("NormalElement v95 must carry XOffset/YOffset, not equal v83")
+	// v87 DOES carry the pair — CMovePath::Encode @0x6c70fe / Decode @0x6c6e86,
+	// and eight live v87 frames only parse end-to-end with it present. This
+	// boundary used to be v88, shared with StartVx/StartVy; that conflation
+	// desynced every v87 movement packet (task-218 #3/#5).
+	v87 := encode(87)
+	if bytes.Equal(v87, v83) {
+		t.Fatalf("NormalElement v87 must carry XOffset/YOffset (+4 bytes), got the v83 layout")
+	}
+	if len(v87) != len(v83)+4 {
+		t.Errorf("v87 NormalElement is %d bytes, want v83 (%d) + 4 for XOffset/YOffset", len(v87), len(v83))
+	}
+	if v95 := encode(95); !bytes.Equal(v95, v87) {
+		t.Errorf("NormalElement v95 must match v87 — both carry XOffset/YOffset")
 	}
 
 	// Decode must mirror Encode exactly: a v84 buffer (no XOffset) round-trips

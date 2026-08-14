@@ -8649,112 +8649,124 @@
       ]
     },
     "CShopDlg::OnPacket#GenericError": {
-      "address": "",
+      "address": "0x5b7a38",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "CONFIRM_SHOP_TRANSACTION GENERIC_ERROR arm (v4==14, Decode1()==0). v48 CShopDlg::OnPacket@0x5b7a38 case 14 falls to the catch-all @0x5b7b96-0x5b7ba5 (notice 777) when the secondary Decode1 flag reads 0 -- same mechanism as v83's case 17 !Decode1() branch. Atlas ShopOperationGenericError writes Byte(mode)+Bool(false). Derivation: gms48-shop-operations.md.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (generic-error sub-op)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasReason flag (0 for plain GENERIC_ERROR; no reason string follows)"
         }
       ]
     },
     "CShopDlg::OnPacket#GenericErrorWithReason": {
-      "address": "",
+      "address": "0x5b7a38",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "CONFIRM_SHOP_TRANSACTION GENERIC_ERROR_WITH_REASON arm (v4==14, Decode1()!=0). v48 CShopDlg::OnPacket@0x5b7a38 case 14, 0x5b7bbd-0x5b7bd9: Decode1(flag)!=0 -> CInPacket::DecodeStr(reason) -- same mechanism as v83's case 17 Decode1()!=0 branch. Atlas ShopOperationGenericErrorWithReason writes Byte(mode)+Bool(true)+AsciiString(reason). Derivation: gms48-shop-operations.md.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (generic-error-with-reason sub-op)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasReason flag (1 -> reason string follows)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "reason (DecodeStr @0x5b7bbd-0x5b7bd9)"
         }
       ]
     },
     "CShopDlg::OnPacket#InventoryFull": {
-      "address": "",
+      "address": "0x5b7a38",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "CONFIRM_SHOP_TRANSACTION INVENTORY_FULL arm (v4==3). v48 CShopDlg::OnPacket@0x5b7a38 case 3 (0x5b7b04) -> fixed sub_5D75AF notice 775. Derivation: gms48-shop-operations.md.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
         }
       ]
     },
     "CShopDlg::OnPacket#NeedMoreItems": {
-      "address": "",
+      "address": "0x5b7a38",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "CONFIRM_SHOP_TRANSACTION NEED_MORE_ITEMS arm (v4==13). v48 CShopDlg::OnPacket@0x5b7a38 case 13 (0x5b7c0d) -> fixed sub_5D75AF notice 3626. Derivation: gms48-shop-operations.md.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
         }
       ]
     },
     "CShopDlg::OnPacket#NotEnoughMoney": {
-      "address": "",
+      "address": "0x5b7a38",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "CONFIRM_SHOP_TRANSACTION NOT_ENOUGH_MONEY arm (v4==2, shared with 10). v48 CShopDlg::OnPacket@0x5b7a38 case 2/10 -> fixed sub_5D75AF notice 263 (LABEL_37 @0x5b7c24). Derivation: gms48-shop-operations.md.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
         }
       ]
     },
     "CShopDlg::OnPacket#NotEnoughMoney2": {
-      "address": "",
+      "address": "0x5b7a38",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "CONFIRM_SHOP_TRANSACTION NOT_ENOUGH_MONEY_2 arm (v4==10, shares the 2/10 fixed-notice target). v48 CShopDlg::OnPacket@0x5b7a38. Derivation: gms48-shop-operations.md.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
         }
       ]
     },
     "CShopDlg::OnPacket#Ok": {
-      "address": "",
+      "address": "0x5b7a38",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "CONFIRM_SHOP_TRANSACTION OK arm (v4==0). v48 CShopDlg::OnPacket@0x5b7a38 case 0 (0x5b7b09-0x5b7b6a): tab/scroll UI update, no notice call -- identical to v83 case 0. Derivation: docs/tasks/task-221-miumiu-travel-store/gms48-shop-operations.md.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
         }
       ]
     },
     "CShopDlg::OnPacket#OutOfStock": {
-      "address": "",
+      "address": "0x5b7a38",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "CONFIRM_SHOP_TRANSACTION OUT_OF_STOCK arm (v4==1, shared with 5/9). v48 CShopDlg::OnPacket@0x5b7a38 case 1/5/9 -> fixed sub_5D75AF notice 774 (LABEL_39 @0x5b7c42). Derivation: gms48-shop-operations.md.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
         }
       ]
     },
     "CShopDlg::OnPacket#OutOfStock2": {
-      "address": "",
+      "address": "0x5b7a38",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "CONFIRM_SHOP_TRANSACTION OUT_OF_STOCK_2 arm (v4==5, shares the 1/5/9 fixed-notice target). v48 CShopDlg::OnPacket@0x5b7a38. Derivation: gms48-shop-operations.md.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
         }
       ]
     },
     "CShopDlg::OnPacket#OutOfStock3": {
-      "address": "",
+      "address": "0x5b7a38",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "CONFIRM_SHOP_TRANSACTION OUT_OF_STOCK_3 arm (v4==9, shares the 1/5/9 fixed-notice target). v48 CShopDlg::OnPacket@0x5b7a38. Derivation: gms48-shop-operations.md.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
         }
       ]
     },
@@ -8770,13 +8782,13 @@
       ]
     },
     "CShopDlg::OnPacket#TradeLimit": {
-      "address": "",
+      "address": "0x5b7a38",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "CONFIRM_SHOP_TRANSACTION TRADE_LIMIT arm (v4==16). v48 CShopDlg::OnPacket@0x5b7a38 -- falls through the un-tested subtraction chain to the shared default-notice call @0x5b7ba5 (notice 777), same target as GENERIC_ERROR's flag==0 branch; matches the v61/v72/v79 precedent of binding TRADE_LIMIT to the version's default-bucket address. Derivation: gms48-shop-operations.md round-2 correction.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode1",
+          "comment": "mode (sub-op discriminator; mode-only arm)"
         }
       ]
     },
@@ -8825,13 +8837,37 @@
       ]
     },
     "CShopDlg::SetShopDlg": {
-      "address": "",
+      "address": "0x5b430a",
       "direction": "clientbound",
-      "unresolved": true,
+      "notes": "OPEN_NPC_SHOP (v48 opcode 0xE5/229). sub_5B430A@0x5b430a (unnamed in the v48 IDB; identified structurally as CShopDlg::SetShopDlg by the same npcTemplateId+count+per-item loop shape as v61/v79/v83/v87/v95). Decode4 npcTemplateId@0x5b4325, Decode2 count@0x5b4338, then per item Decode4 itemId@0x5b435b, Decode4 mesoPrice@0x5b436b, conditional DecodeBuffer(8) unitPrice@0x5b4397 (rechargeable, itemId/10000==207), Decode2 quantity@0x5b43af -- NO trailing maxPerSlot short (added between v48 and v61). Atlas ShopList's MajorVersion()<61 branch matches exactly (see shop_list.go, shop_list_v48_test.go).",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "Decode4",
+          "comment": "npcTemplateId @0x5b4325"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count @0x5b4338"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId @0x5b435b",
+          "guard": "count"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mesoPrice @0x5b436b",
+          "guard": "count"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "unitPrice (rechargeable only) @0x5b4397",
+          "guard": "count"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity @0x5b43af (no trailing maxPerSlot)",
+          "guard": "count"
         }
       ]
     },

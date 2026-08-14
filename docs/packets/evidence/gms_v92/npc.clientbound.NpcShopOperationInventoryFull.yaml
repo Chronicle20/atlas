@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcShopOperationInventoryFull
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#InventoryFull
+    address: "0x6e0390"
+    decompile_sha256: 24ac35a57edf999897592fa14498f3c5f69e8beca82528575fec4dc890a10126

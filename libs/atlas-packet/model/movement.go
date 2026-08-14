@@ -24,6 +24,47 @@ type MovementCodec interface {
 	packet.Codec
 	EncodeType(w *response.Writer)
 }
+
+// gmsMovementElementOffsets reports whether a NORMAL movement fragment carries
+// the trailing XOffset/YOffset pair. GMS v87+, and every non-GMS region.
+//
+// This was previously v88+, sharing a boundary with Movement's StartVx/StartVy
+// on the assumption that one client rework introduced both. It did not, and the
+// conflation cost the whole "Code [253/254/255] not configured for use in
+// movement" flood on v87 — thousands per minute, with the server's own log
+// warning it would crash the client (task-218 field reports #3/#5).
+//
+// The two fields have DIFFERENT boundaries:
+//
+//   - StartVx/StartVy: v87 CMovePath::Encode @0x6c70fe writes Encode2(x),
+//     Encode2(y), Encode1(count) and nothing else, so v87 does NOT have them.
+//     That gate correctly stays at 88 (see Movement.Decode).
+//   - XOffset/YOffset: v87 writes them per element. v83 @0x68a563 and v84
+//     @0x6a0fd0 have no such read/write at all; v87 @0x6c70fe (Encode) and
+//     @0x6c6e86 (Decode) both carry the pair.
+//
+// Confirmed empirically as well as by disassembly, which is what settled it:
+// eight distinct live v87 monster-move frames captured by
+// logUnconfiguredMovementCode were replayed against both element-size models.
+// With the pair present all 8 parse cleanly end-to-end as all-NORMAL elements;
+// without it, 1 of 8 parses and that one only coincidentally. The failure
+// signature in the field was every EVEN element failing at an exact 18-byte
+// stride: 18 == 1 type + 10 coords + 4 offsets + 3 tail, i.e. the decoder read
+// 14 for a real 18-byte element and then consumed the 4-byte remainder as a
+// phantom element, re-syncing on every second one.
+//
+// CAVEAT, deliberately recorded rather than hidden: in the client this pair is
+// gated on CClientOptMan::GetOpt(..., 2) — a RUNTIME option, not a version. A
+// server cannot observe it, so a version gate is the best available
+// approximation and matches what every client Atlas serves actually does. The
+// same option also gates three extra Decode4 (a move-rand seed) in
+// CMobPool::OnMobChangeController @0x6b52c3, which Atlas does NOT send; that
+// packet nonetheless works in the field, so the option's exact scope is not
+// fully understood. Do not "fix" the control packet to match without evidence.
+func gmsMovementElementOffsets(t tenant.Model) bool {
+	return !t.IsRegion("GMS") || t.MajorAtLeast(87)
+}
+
 type Movement struct {
 	StartX int16
 	StartY int16
@@ -68,6 +109,14 @@ func (m *Movement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 		for i := byte(0); i < numElems; i++ {
 			var elem MovementCodec
 			elemType := r.ReadByte()
+
+			// One resolution per element, purely to decide whether to report a
+			// misalignment. The dispatch below re-asks per candidate kind, which
+			// is cheap and keeps the existing structure; what must NOT happen is
+			// the lookup logging on every one of those asks.
+			if _, _, ok := resolveMovementPathAttr(elemType, options); !ok {
+				logUnconfiguredMovementCode(l, r, elemType, i, numElems)
+			}
 
 			if isMovementType(l)(elemType, options, TypeNormal) {
 				elem = &NormalElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
@@ -154,10 +203,10 @@ func (m *NormalElement) Decode(l logrus.FieldLogger, ctx context.Context) func(r
 		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			m.FhFallStart = r.ReadInt16()
 		}
-		// XOffset/YOffset are v88+ on NORMAL elements (delta §3.1.8). This decode
-		// MUST match the encode boundary (>87 == MajorAtLeast(88)) exactly, or Atlas
-		// corrupts its own movement packets. v84..87 read 5 Int16 like v83.
-		if !t.IsRegion("GMS") || t.MajorAtLeast(88) {
+		// XOffset/YOffset on NORMAL elements — see gmsMovementElementOffsets.
+		// MUST stay textually identical to Encode or Atlas corrupts its own
+		// movement packets.
+		if gmsMovementElementOffsets(t) {
 			m.XOffset = r.ReadInt16()
 			m.YOffset = r.ReadInt16()
 		}
@@ -255,9 +304,8 @@ func (m *NormalElement) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			w.WriteInt16(m.FhFallStart)
 		}
-		// XOffset/YOffset are v88+ on NORMAL elements (delta §3.1.8). Paired with the
-		// Decode boundary (MajorAtLeast(88)); the two MUST stay textually identical.
-		if !t.IsRegion("GMS") || t.MajorAtLeast(88) {
+		// Paired with the Decode boundary; the two MUST stay textually identical.
+		if gmsMovementElementOffsets(t) {
 			w.WriteInt16(m.XOffset)
 			w.WriteInt16(m.YOffset)
 		}
@@ -318,34 +366,74 @@ func (m *StatChangeElement) Encode(l logrus.FieldLogger, _ context.Context) func
 	}
 }
 
-func movementPathAttrFromOptions(l logrus.FieldLogger) func(attr byte, options map[string]interface{}) (string, string) {
+// movementPathAttrFromOptions resolves a movement fragment's type code against
+// the tenant's configured `types` table, reporting whether the lookup succeeded.
+//
+// It deliberately does NOT log. Decode asks this question up to six times per
+// element (once per candidate element kind) plus once more for the FALL_DOWN
+// name check, so logging here turned ONE unconfigured code into six or seven
+// identical lines and buried the only fact worth having — the bytes. Decode now
+// resolves once per element and calls logUnconfiguredMovementCode on failure.
+func movementPathAttrFromOptions(_ logrus.FieldLogger) func(attr byte, options map[string]interface{}) (string, string) {
 	return func(attr byte, options map[string]interface{}) (string, string) {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["types"]; !ok {
-			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
-			return "NOT_FOUND", "DEFAULT"
-		}
-
-		var codes []interface{}
-		if codes, ok = genericCodes.([]interface{}); !ok {
-			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
-			return "NOT_FOUND", "DEFAULT"
-		}
-
-		if len(codes) == 0 || attr < 0 || attr >= byte(len(codes)) {
-			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
-			return "NOT_FOUND", "DEFAULT"
-		}
-
-		var theType map[string]interface{}
-		if theType, ok = codes[attr].(map[string]interface{}); !ok {
-			l.Errorf("Code [%d] not configured for use in movement. Defaulting to 99 which will likely cause a client crash.", attr)
-			return "NOT_FOUND", "DEFAULT"
-		}
-
-		return theType["Name"].(string), theType["Type"].(string)
+		name, kind, _ := resolveMovementPathAttr(attr, options)
+		return name, kind
 	}
+}
+
+func resolveMovementPathAttr(attr byte, options map[string]interface{}) (string, string, bool) {
+	genericCodes, ok := options["types"]
+	if !ok {
+		return "NOT_FOUND", "DEFAULT", false
+	}
+
+	codes, ok := genericCodes.([]interface{})
+	if !ok {
+		return "NOT_FOUND", "DEFAULT", false
+	}
+
+	if len(codes) == 0 || int(attr) >= len(codes) {
+		return "NOT_FOUND", "DEFAULT", false
+	}
+
+	theType, ok := codes[attr].(map[string]interface{})
+	if !ok {
+		return "NOT_FOUND", "DEFAULT", false
+	}
+
+	return theType["Name"].(string), theType["Type"].(string), true
+}
+
+// movementDiagnosticDumpLimit caps the hex dump below. A movement packet is a
+// few hundred bytes at most; the cap only guards against an absurd frame.
+const movementDiagnosticDumpLimit = 512
+
+// logUnconfiguredMovementCode reports a movement fragment whose type code is not
+// in the tenant's table, WITH the bytes needed to diagnose it.
+//
+// A code outside the table is almost never a genuinely unknown fragment type —
+// the client only emits codes it has arms for. It means the reader is no longer
+// on a fragment boundary, i.e. some earlier field was decoded at the wrong
+// width for this client version. Diagnosing that needs the frame, the offset
+// the reader had reached, and which element of how many failed; without them
+// the message says only that something drifted, which is what made the GMS v87
+// occurrence (task-218 field reports #3/#5) unactionable for so long.
+func logUnconfiguredMovementCode(l logrus.FieldLogger, r *request.Reader, attr byte, index byte, count byte) {
+	buf := r.GetBuffer()
+	truncated := ""
+	if len(buf) > movementDiagnosticDumpLimit {
+		buf = buf[:movementDiagnosticDumpLimit]
+		truncated = " (truncated)"
+	}
+	l.WithFields(logrus.Fields{
+		"movement.code":          attr,
+		"movement.elementIndex":  index,
+		"movement.elementCount":  count,
+		"movement.readerOffset":  r.Position(),
+		"movement.bytesRemained": r.Available(),
+	}).Errorf("Code [%d] not configured for use in movement (element %d of %d, reader at offset %d). "+
+		"This is a decode misalignment, not an unknown fragment type: the client only sends codes it has arms for. "+
+		"Frame%s: %x", attr, index+1, count, r.Position(), truncated, buf)
 }
 
 func isMovementType(l logrus.FieldLogger) func(reference byte, options map[string]interface{}, movementType string) bool {

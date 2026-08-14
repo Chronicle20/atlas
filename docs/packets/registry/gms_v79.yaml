@@ -3050,7 +3050,7 @@
 - op: SKILL_MACRO
   direction: serverbound
   opcode: 108
-  fname: sub_6022DB
+  fname: CMacroSysMan::FlushToSvr
   provenance: ida-discovered
   ida:
     address: 6300379

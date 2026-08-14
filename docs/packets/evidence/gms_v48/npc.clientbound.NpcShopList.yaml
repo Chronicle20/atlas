@@ -3,8 +3,6 @@ direction: clientbound
 version: gms_v48
 category: TIER1-FIXTURE
 ida:
-    function: sub_5B430A
+    function: CShopDlg::SetShopDlg
     address: "0x5b430a"
-    decompile_sha256: f3c78a137931fc9669bf231415524d02b65eb675d48f84cf5b1e41d9e14c0274
-verifies:
-  - libs/atlas-packet/npc/clientbound/shop_list_v48_test.go#TestNPCShopListV48
+    decompile_sha256: 7e42bad85a74520b9322d89ff6ff0a8bb87f6ab1906cfe8a7b2ea56c1a7e8a5f

@@ -804,7 +804,7 @@
         "opCode": "0x6D",
         "validator": "LoggedInValidator",
         "handler": "CharacterSkillMacroHandle",
-        "fname": "sub_6022DB",
+        "fname": "CMacroSysMan::FlushToSvr",
         "services": [
           "channel"
         ]

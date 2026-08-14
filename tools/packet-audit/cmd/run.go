@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/atlaspacket"
@@ -256,15 +257,27 @@ func orderedExportFNames(fnames []string) []string {
 }
 
 // selectCandidates resolves the deterministic winning FName for each
-// (pkg, name) candidate produced by the export's FNames. The first FName (in
-// orderedExportFNames order) to claim a given pkg::name key wins; later FNames
-// mapping to the same key are skipped.
+// (pkg, name, dir) candidate produced by the export's FNames. The first FName
+// (in orderedExportFNames order) to claim a given pkg::name::dir key wins;
+// later FNames mapping to the same key are skipped.
+//
+// task-226: dir was added to the key. Every pre-existing dual-direction pair
+// (e.g. summon SummonMove/Move) already avoided collision by using a
+// direction-distinct `name` (clientbound "SummonMove" vs serverbound "Move",
+// pkg="summon" only on the serverbound side) — so this is additive, not a
+// behavior change for any existing candidate. SkillMacro is the first pair to
+// share the SAME pkg ("character") and the SAME name ("SkillMacro") on both
+// directions (Atlas's clientbound and serverbound structs are both literally
+// named SkillMacro); without dir in the key, selectCandidates silently
+// dropped whichever direction's FName sorted second in
+// orderedExportFNames, and report-gen only ever produced one of the two
+// macro reports.
 func selectCandidates(fnames []string) []selectedCandidate {
 	seen := map[string]bool{}
 	var out []selectedCandidate
 	for _, fname := range orderedExportFNames(fnames) {
 		for _, c := range candidatesFromFName(fname) {
-			key := c.pkg + "::" + c.name
+			key := c.pkg + "::" + c.name + "::" + strconv.Itoa(int(c.dir))
 			if seen[key] {
 				continue
 			}
@@ -420,6 +433,18 @@ func candidatesFromFName(fname string) []candidate {
 		// (character/clientbound/monsterbook; writer = "MonsterBookSetCard"). Decode1
 		// (added flag) + Decode4 cardId + Decode4 count. Same layout across versions.
 		return []candidate{{name: "SetCard", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnMacroSysDataInit":
+		// task-226: MACRO_SYS_DATA_INIT — the server hands the client its whole
+		// macro list. qualifiedWriterName("character","SkillMacro") =
+		// CharacterSkillMacro, matching the template writer binding name.
+		return []candidate{{name: "SkillMacro", pkg: "character", dir: csvpkg.DirClientbound}}
+	case "CMacroSysMan::FlushToSvr":
+		// task-226: SKILL_MACRO — the client flushes its macro list. Both
+		// directions derive "CharacterSkillMacro" from qualifiedWriterName, which
+		// would collide on the flat, writerName-keyed audit dir; the serverbound
+		// side overrides to CharacterSkillMacroHandle (the SummonMoveHandle
+		// precedent, run.go ~1137).
+		return []candidate{{name: "SkillMacro", pkg: "character", dir: csvpkg.DirServerbound, reportName: "CharacterSkillMacroHandle"}}
 	case "CWvsContext::OnMonsterBookSetCover":
 		// task-092 Cluster-C: MONSTER_BOOK_SET_COVER — atlas SetCover
 		// (character/clientbound/monsterbook; writer = "MonsterBookSetCover"). Single

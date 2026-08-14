@@ -19,6 +19,11 @@ func TestExtractCharacterId_WarpToSavedLocationPayload(t *testing.T) {
 	assert.Equal(t, uint32(777), ExtractCharacterId(step))
 }
 
+func TestExtractCharacterId_OpenNpcShop(t *testing.T) {
+	step := NewStep[any]("s1", Pending, OpenNpcShop, OpenNpcShopPayload{CharacterId: 4242, NpcTemplateId: 9090000})
+	assert.Equal(t, uint32(4242), ExtractCharacterId(step))
+}
+
 func TestExtractCharacterId_UnknownPayloadIsZero(t *testing.T) {
 	step := NewStep[any]("s1", Pending, WarpToPortal, struct{ Foo string }{Foo: "bar"})
 	assert.Equal(t, uint32(0), ExtractCharacterId(step),

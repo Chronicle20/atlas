@@ -2,13 +2,16 @@ package mist
 
 import (
 	mist2 "atlas-channel/kafka/message/mist"
+	protectionmist "atlas-channel/mist"
 	"atlas-channel/server"
 	"atlas-channel/socket/writer"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
 
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -319,4 +322,121 @@ func TestMistDestroyed_WrongType_DoesNotBroadcast(t *testing.T) {
 	if *removedCalls != 0 {
 		t.Fatalf("wrong-type event: want 0 broadcasts, got %d", *removedCalls)
 	}
+}
+
+// A PROTECTION mist must land in the channel's registry with its ABSOLUTE
+// rect (origin + offsets) so the damage path can test a character's position
+// against it directly.
+func TestHandleMistCreated_RegistersProtectionMistWithAbsoluteRect(t *testing.T) {
+	reg := protectionmist.NewTestProtectionRegistry()
+	orig := protectionRegistry
+	t.Cleanup(func() { protectionRegistry = orig })
+	protectionRegistry = reg
+
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, _, _, _, _ := withRecordingBroadcasters(t)
+	defer restore()
+
+	mistId := uuid.New()
+	h := handleMistCreated(sc, nil)
+	h(logrus.New(), ctx, mist2.Event[mist2.CreatedBody]{
+		Tenant:    tm.Id(),
+		WorldId:   sc.WorldId(),
+		ChannelId: sc.ChannelId(),
+		MapId:     100000000,
+		Instance:  uuid.Nil,
+		MistId:    mistId,
+		Type:      mist2.EventTypeCreated,
+		Body: mist2.CreatedBody{
+			OwnerType:  "CHARACTER",
+			OwnerId:    1001,
+			EffectKind: mist2.EffectKindProtection,
+			Type:       2,
+			OriginX:    500, OriginY: 300,
+			LtX: -110, LtY: -82, RbX: 110, RbY: 83,
+			Duration: 31000,
+		},
+	})
+
+	f := field.NewBuilder(sc.WorldId(), sc.ChannelId(), 100000000).Build()
+	// origin 500,300 + lt(-110,-82)..rb(110,83) => (390,218)..(610,383)
+	require.Len(t, reg.Covering(tm, f, 500, 300, time.Now()), 1)
+	require.Len(t, reg.Covering(tm, f, 390, 218, time.Now()), 1)
+	require.Empty(t, reg.Covering(tm, f, 389, 300, time.Now()))
+	require.Equal(t, uint32(1001), reg.Covering(tm, f, 500, 300, time.Now())[0].OwnerId())
+}
+
+// Non-protection mists must NOT enter the registry -- a Poison Mist that
+// shielded its caster would be a silent invulnerability.
+func TestHandleMistCreated_IgnoresNonProtectionMists(t *testing.T) {
+	reg := protectionmist.NewTestProtectionRegistry()
+	orig := protectionRegistry
+	t.Cleanup(func() { protectionRegistry = orig })
+	protectionRegistry = reg
+
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, _, _, _, _ := withRecordingBroadcasters(t)
+	defer restore()
+
+	h := handleMistCreated(sc, nil)
+	h(logrus.New(), ctx, mist2.Event[mist2.CreatedBody]{
+		Tenant:    tm.Id(),
+		WorldId:   sc.WorldId(),
+		ChannelId: sc.ChannelId(),
+		MapId:     100000000,
+		Instance:  uuid.Nil,
+		MistId:    uuid.New(),
+		Type:      mist2.EventTypeCreated,
+		Body: mist2.CreatedBody{
+			OwnerType:  "CHARACTER",
+			OwnerId:    1001,
+			EffectKind: mist2.EffectKindDamageOverTime,
+			OriginX:    500, OriginY: 300,
+			LtX: -110, LtY: -82, RbX: 110, RbY: 83,
+			Duration: 40000,
+		},
+	})
+
+	f := field.NewBuilder(sc.WorldId(), sc.ChannelId(), 100000000).Build()
+	require.Empty(t, reg.Covering(tm, f, 500, 300, time.Now()))
+}
+
+// FR-4.3: protection ends on expiry AND on cancellation.
+func TestHandleMistDestroyed_EvictsTheProtection(t *testing.T) {
+	reg := protectionmist.NewTestProtectionRegistry()
+	orig := protectionRegistry
+	t.Cleanup(func() { protectionRegistry = orig })
+	protectionRegistry = reg
+
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	sc := newTestServer(t, tm)
+
+	restore, _, _, _, _ := withRecordingBroadcasters(t)
+	defer restore()
+
+	f := field.NewBuilder(sc.WorldId(), sc.ChannelId(), 100000000).Build()
+	mistId := uuid.New()
+	reg.Add(tm, protectionmist.NewProtectionBuilder(mistId, f).
+		SetOwnerId(1001).SetRect(390, 218, 610, 383).
+		SetExpiresAt(time.Now().Add(time.Minute)).Build())
+
+	h := handleMistDestroyed(sc, nil)
+	h(logrus.New(), ctx, mist2.Event[mist2.DestroyedBody]{
+		Tenant:    tm.Id(),
+		WorldId:   sc.WorldId(),
+		ChannelId: sc.ChannelId(),
+		MapId:     100000000,
+		MistId:    mistId,
+		Type:      mist2.EventTypeDestroyed,
+		Body:      mist2.DestroyedBody{Reason: mist2.ReasonCancelled},
+	})
+
+	require.Empty(t, reg.Covering(tm, f, 500, 300, time.Now()))
 }

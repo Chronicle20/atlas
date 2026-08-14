@@ -21,28 +21,33 @@ const (
 	// TradeTransaction would send a staging failure through the swap's
 	// pairing logic, find no paired accept, and silently skip the re-grant —
 	// destroying the item (task-205 design §5A.4).
-	TradeStaging        Type = "trade_staging"
-	CharacterCreation   Type = "character_creation"
-	StorageOperation    Type = "storage_operation"
-	CashShopOperation   Type = "cash_shop_operation"
-	CharacterRespawn    Type = "character_respawn"
-	GachaponTransaction Type = "gachapon_transaction"
-	MtsOperation        Type = "mts_operation"
-	FieldEffectUse      Type = "field_effect_use"
-	TeleportRockUse     Type = "teleport_rock_use"
-	QuestStart          Type = "quest_start"
-	QuestComplete       Type = "quest_complete"
-	QuestRestoreItem    Type = "quest_restore_item"
-	PetEvolution        Type = "pet_evolution"
-	NoteSend            Type = "note_send"
-	SkillBookUse        Type = "skill_book_use"
-	ItemTagUse          Type = "item_tag_use"
-	SealingLockUse      Type = "sealing_lock_use"
-	IncubatorUse        Type = "incubator_use"
-	PointReset          Type = "point_reset"
-	MegaphoneUse        Type = "megaphone_use"
-	MesoSackUse         Type = "meso_sack_use"
-	PetNameTagUse       Type = "pet_name_tag_use"
+	TradeStaging          Type = "trade_staging"
+	CharacterCreation     Type = "character_creation"
+	StorageOperation      Type = "storage_operation"
+	CashShopOperation     Type = "cash_shop_operation"
+	CharacterRespawn      Type = "character_respawn"
+	GachaponTransaction   Type = "gachapon_transaction"
+	MtsOperation          Type = "mts_operation"
+	FieldEffectUse        Type = "field_effect_use"
+	TeleportRockUse       Type = "teleport_rock_use"
+	QuestStart            Type = "quest_start"
+	QuestComplete         Type = "quest_complete"
+	QuestRestoreItem      Type = "quest_restore_item"
+	PetEvolution          Type = "pet_evolution"
+	NoteSend              Type = "note_send"
+	SkillBookUse          Type = "skill_book_use"
+	ItemTagUse            Type = "item_tag_use"
+	SealingLockUse        Type = "sealing_lock_use"
+	IncubatorUse          Type = "incubator_use"
+	ExpirationExtenderUse Type = "expiration_extender_use"
+	PointReset            Type = "point_reset"
+	MegaphoneUse          Type = "megaphone_use"
+	MesoSackUse           Type = "meso_sack_use"
+	PetNameTagUse         Type = "pet_name_tag_use"
+	// RemoteMerchant is the classification-545 cash item flow: open an NPC's
+	// shop from anywhere, then consume the item — never the other way round
+	// (task-221).
+	RemoteMerchant Type = "remote_merchant"
 )
 
 // Status represents the status of a saga step
@@ -141,6 +146,9 @@ const (
 	AcceptToCharacter    Action = "accept_to_character"
 	ReleaseFromStorage   Action = "release_from_storage"
 
+	// NPC shop actions
+	OpenNpcShop Action = "open_npc_shop"
+
 	// Trade actions (task-205). trade_settlement is a COMPOSITE: the
 	// orchestrator expands it into release_from_character / accept_to_character /
 	// award_mesos steps (see expandTradeSettlement). atlas-trades never
@@ -219,9 +227,14 @@ const (
 	CreateNote Action = "create_note"
 
 	// Item tag / sealing lock / incubator actions
-	SetAssetOwner   Action = "set_asset_owner"
-	ApplyAssetLock  Action = "apply_asset_lock"
-	IncubatorResult Action = "incubator_result"
+	SetAssetOwner  Action = "set_asset_owner"
+	ApplyAssetLock Action = "apply_asset_lock"
+	// ExtendAssetExpiration pushes a time-limited asset's expiration out. It
+	// is deliberately NOT ApplyAssetLock: that action stamps FlagLock and
+	// rejects an unlocked asset carrying a non-zero expiration, which is
+	// exactly this action's only valid target.
+	ExtendAssetExpiration Action = "extend_asset_expiration"
+	IncubatorResult       Action = "incubator_result"
 
 	// Megaphone / world broadcast actions
 	EmitMegaphone         Action = "emit_megaphone"

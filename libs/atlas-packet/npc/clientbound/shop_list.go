@@ -55,7 +55,15 @@ func (m ShopList) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 			if t.Region() == "GMS" && t.MajorVersion() >= 87 {
 				w.WriteByte(c.DiscountRate)
 			}
-			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			// v92 CShopDlg::SetShopDlg@0x6df6c0 reads FOUR Decode4 calls between the
+			// discount-rate byte and the ammo/quantity branch (v97/v98/v99/v100 in the
+			// decompile), one more than v87's THREE (nTokenItemID/nItemPeriod/
+			// nLevelLimited @0x79e558-0x79e565) — v92 already carries tokenTemplateId,
+			// v87 does not. v87 and v92 are adjacent columns in the coverage matrix
+			// (no IDB exists for the intervening 88-91 range), so >=92 is the precise,
+			// evidence-supported boundary; the >=95 boundary this gate previously used
+			// was never verified against a v88-94 IDB. task-221 task-16.
+			if t.Region() == "GMS" && t.MajorVersion() >= 92 {
 				w.WriteInt(c.TokenTemplateId)
 			}
 			// GMS v79 CShopDlg::SetShopDlg@0x6d3459 reads only itemId, mesoPrice,
@@ -104,7 +112,10 @@ func (m *ShopList) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 			if t.Region() == "GMS" && t.MajorVersion() >= 87 {
 				m.commodities[i].DiscountRate = r.ReadByte()
 			}
-			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			// See the matching Encode-side comment: v92 verified to already carry
+			// tokenTemplateId (v87 verified not to); >=92 is the evidence-supported
+			// boundary, not the previous unverified >=95.
+			if t.Region() == "GMS" && t.MajorVersion() >= 92 {
 				m.commodities[i].TokenTemplateId = r.ReadUint32()
 			}
 			// GMS v79 omits tokenPrice/period/levelLimit (SetShopDlg@0x6d3459).

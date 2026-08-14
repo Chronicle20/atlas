@@ -13545,8 +13545,14 @@
     },
     "CWvsContext::OnMacroSysDataInit": {
       "address": "0x92126b",
-      "direction": "",
-      "calls": null
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "task-226 harvest: CWvsContext::OnMacroSysDataInit calls CMacroSysMan::Reset(instance) (no packet arg, omitted) then CMacroSysMan::SetMacro(instance, a2); no direct CInPacket::DecodeN(...) call of its own, so the alias-seed regex never fires. Hand-spliced after verifying the call by decompile.",
+          "ref": "CMacroSysMan::SetMacro"
+        }
+      ]
     },
     "CWvsContext::OnMapTransferResult": {
       "address": "0x91d41a",
@@ -20113,6 +20119,96 @@
         {
           "op": "Decode4",
           "comment": "hit-mob object id (FindHitMobInRect)"
+        }
+      ]
+    },
+    "CMacroSysMan::FlushToSvr": {
+      "address": "0x5e39e0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "task-226 harvest: CMacroSysMan::FlushToSvr constructs the COutPacket locally then hands the entire write off to MACROSYSDATA::Encode as a single call; the harvester's alias-seed regex only fires on a literal COutPacket::EncodeN(...) call inside the SAME function body, so this function's own text yields zero matches even though it fully implements the wire write via delegation. Hand-spliced after verifying the call by decompile (VERIFYING_A_PACKET.md \u00a710).",
+          "ref": "MACROSYSDATA::Encode"
+        }
+      ]
+    },
+    "CMacroSysMan::SetMacro": {
+      "address": "0x5e39bf",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "task-226 harvest: CMacroSysMan::SetMacro forwards its CInPacket arg wholesale to MACROSYSDATA::Decode with no direct CInPacket::DecodeN(...) call of its own, so the alias-seed regex never fires inside this function. Hand-spliced after verifying the call by decompile.",
+          "ref": "MACROSYSDATA::Decode"
+        }
+      ]
+    },
+    "MACROSYSDATA::Encode": {
+      "address": "0x4d366f",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v3 > 0",
+          "ref": "sub_4D35CB"
+        }
+      ]
+    },
+    "MACROSYSDATA::Decode": {
+      "address": "0x4d36b4",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v1 > 0",
+          "ref": "sub_4D361C"
+        }
+      ]
+    },
+    "sub_4D35CB": {
+      "address": "0x4d35cb",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "sub_4D361C": {
+      "address": "0x4d361c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     }

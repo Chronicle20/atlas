@@ -6,6 +6,7 @@ import (
 	"atlas-saga-orchestrator/kafka/message/gachapon"
 	"atlas-saga-orchestrator/kafka/message/incubator"
 	"atlas-saga-orchestrator/kafka/message/megaphone"
+	npcshop "atlas-saga-orchestrator/kafka/message/npcshop"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"context"
 
@@ -367,6 +368,49 @@ func IncubatorResultEventProvider(payload IncubatorResultPayload) model.Provider
 		EggId:       payload.EggId,
 	}
 	return producer.SingleMessageProvider(key, value)
+}
+
+// NpcShopEnterCommandProvider builds the COMMAND_TOPIC_NPC_SHOP ENTER command
+// for an open_npc_shop step. Keyed by character id, matching every other
+// producer on this topic (atlas-channel's npc/shops/producer.go).
+func NpcShopEnterCommandProvider(transactionId uuid.UUID, payload OpenNpcShopPayload) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(payload.CharacterId))
+	value := &npcshop.Command[npcshop.CommandShopEnterBody]{
+		TransactionId: transactionId,
+		CharacterId:   payload.CharacterId,
+		Type:          npcshop.CommandShopEnter,
+		Body: npcshop.CommandShopEnterBody{
+			NpcTemplateId: payload.NpcTemplateId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// NpcShopExitCommandProvider builds the COMMAND_TOPIC_NPC_SHOP EXIT command
+// used to compensate an open_npc_shop step whose saga later failed, so the
+// player is not left standing in a shop they did not pay for (FR-4.5).
+func NpcShopExitCommandProvider(transactionId uuid.UUID, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &npcshop.Command[npcshop.CommandShopExitBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		Type:          npcshop.CommandShopExit,
+		Body:          npcshop.CommandShopExitBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// EmitNpcShopExit emits the EXIT compensation command for an open_npc_shop
+// step. Indirected through a package var so compensator tests can observe it
+// without a broker (same seam shape as emitConversationRewardNoticeFn).
+func EmitNpcShopExit(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32) error {
+	return emitNpcShopExitFn(l, ctx, transactionId, characterId)
+}
+
+var emitNpcShopExitFn = emitNpcShopExitImpl
+
+func emitNpcShopExitImpl(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32) error {
+	return producer.ProviderImpl(l)(ctx)(npcshop.EnvCommandTopic)(NpcShopExitCommandProvider(transactionId, characterId))
 }
 
 // MegaphoneBroadcastEventProvider builds the megaphone.BroadcastEvent for the

@@ -28,6 +28,7 @@ type (
 	FieldEffectWeatherPayload    = sharedsaga.FieldEffectWeatherPayload
 	SetAssetOwnerPayload         = sharedsaga.SetAssetOwnerPayload
 	ApplyAssetLockPayload        = sharedsaga.ApplyAssetLockPayload
+	ExtendAssetExpirationPayload = sharedsaga.ExtendAssetExpirationPayload
 	IncubatorResultPayload       = sharedsaga.IncubatorResultPayload
 	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
 	CreateNotePayload            = sharedsaga.CreateNotePayload
@@ -49,25 +50,30 @@ type (
 	// Point-reset payload types
 	TransferAPPayload = sharedsaga.TransferAPPayload
 	TransferSPPayload = sharedsaga.TransferSPPayload
+
+	// Remote-merchant payload types
+	OpenNpcShopPayload = sharedsaga.OpenNpcShopPayload
 )
 
 // Re-export constants from atlas-saga shared library
 const (
 	// Saga types
-	InventoryTransaction = sharedsaga.InventoryTransaction
-	StorageOperation     = sharedsaga.StorageOperation
-	CashShopOperation    = sharedsaga.CashShopOperation
-	CharacterRespawn     = sharedsaga.CharacterRespawn
-	FieldEffectUse       = sharedsaga.FieldEffectUse
-	TeleportRockUse      = sharedsaga.TeleportRockUse
-	ItemTagUse           = sharedsaga.ItemTagUse
-	SealingLockUse       = sharedsaga.SealingLockUse
-	IncubatorUse         = sharedsaga.IncubatorUse
-	PointReset           = sharedsaga.PointReset
-	MegaphoneUse         = sharedsaga.MegaphoneUse
-	NoteSend             = sharedsaga.NoteSend
-	MesoSackUse          = sharedsaga.MesoSackUse
-	PetNameTagUse        = sharedsaga.PetNameTagUse
+	InventoryTransaction  = sharedsaga.InventoryTransaction
+	StorageOperation      = sharedsaga.StorageOperation
+	CashShopOperation     = sharedsaga.CashShopOperation
+	CharacterRespawn      = sharedsaga.CharacterRespawn
+	FieldEffectUse        = sharedsaga.FieldEffectUse
+	TeleportRockUse       = sharedsaga.TeleportRockUse
+	ItemTagUse            = sharedsaga.ItemTagUse
+	SealingLockUse        = sharedsaga.SealingLockUse
+	ExpirationExtenderUse = sharedsaga.ExpirationExtenderUse
+	IncubatorUse          = sharedsaga.IncubatorUse
+	PointReset            = sharedsaga.PointReset
+	MegaphoneUse          = sharedsaga.MegaphoneUse
+	NoteSend              = sharedsaga.NoteSend
+	MesoSackUse           = sharedsaga.MesoSackUse
+	PetNameTagUse         = sharedsaga.PetNameTagUse
+	RemoteMerchant        = sharedsaga.RemoteMerchant
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -97,6 +103,7 @@ const (
 	ApplyConsumableEffect = sharedsaga.ApplyConsumableEffect
 	SetAssetOwner         = sharedsaga.SetAssetOwner
 	ApplyAssetLock        = sharedsaga.ApplyAssetLock
+	ExtendAssetExpiration = sharedsaga.ExtendAssetExpiration
 	IncubatorResult       = sharedsaga.IncubatorResult
 	DestroyAssetFromSlot  = sharedsaga.DestroyAssetFromSlot
 	TransferAP            = sharedsaga.TransferAP
@@ -105,6 +112,7 @@ const (
 	EnqueueWorldBroadcast = sharedsaga.EnqueueWorldBroadcast
 	CreateNote            = sharedsaga.CreateNote
 	RenamePet             = sharedsaga.RenamePet
+	OpenNpcShop           = sharedsaga.OpenNpcShop
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

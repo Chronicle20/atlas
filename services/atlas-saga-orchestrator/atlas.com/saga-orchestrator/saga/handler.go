@@ -17,6 +17,7 @@ import (
 	gachapon2 "atlas-saga-orchestrator/kafka/message/gachapon"
 	incubator2 "atlas-saga-orchestrator/kafka/message/incubator"
 	megaphone2 "atlas-saga-orchestrator/kafka/message/megaphone"
+	npcshop "atlas-saga-orchestrator/kafka/message/npcshop"
 	questmessage "atlas-saga-orchestrator/kafka/message/quest"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
@@ -175,6 +176,8 @@ type Handler interface {
 	handleEmitMegaphone(s Saga, st Step[any]) error
 	handleEnqueueWorldBroadcast(s Saga, st Step[any]) error
 	handleCreateNote(s Saga, st Step[any]) error
+	handleOpenNpcShop(s Saga, st Step[any]) error
+	handleExtendAssetExpiration(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -851,6 +854,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAwardFame, true
 	case ShowStorage:
 		return h.handleShowStorage, true
+	case OpenNpcShop:
+		return h.handleOpenNpcShop, true
 	case AcceptToStorage:
 		return h.handleAcceptToStorage, true
 	case ReleaseFromCharacter:
@@ -951,6 +956,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSetAssetOwner, true
 	case ApplyAssetLock:
 		return h.handleApplyAssetLock, true
+	case ExtendAssetExpiration:
+		return h.handleExtendAssetExpiration, true
 	case IncubatorResult:
 		return h.handleIncubatorResult, true
 	case EmitMegaphone:
@@ -1152,6 +1159,20 @@ func (h *HandlerImpl) handleApplyAssetLock(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handleExtendAssetExpiration handles the ExtendAssetExpiration action
+func (h *HandlerImpl) handleExtendAssetExpiration(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ExtendAssetExpirationPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := h.compP.RequestExtendExpiration(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Expiration, payload.ExtenderTemplateId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to extend asset expiration.")
+		return err
+	}
+	return nil
+}
+
 // handleIncubatorResult handles the IncubatorResult action by emitting the
 // EVENT_TOPIC_INCUBATOR_RESULT event for the channel to announce via packet.
 // Fire-and-forget: the channel consumer only announces a packet, no response
@@ -1170,6 +1191,34 @@ func (h *HandlerImpl) handleIncubatorResult(s Saga, st Step[any]) error {
 
 	// Fire-and-forget: mark step complete immediately
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleOpenNpcShop handles the OpenNpcShop action.
+//
+// Deliberately NOT self-completing (contrast handleShowStorage): the step stays
+// Pending until the npc-shop status consumer reports ENTERED or ENTER_ERROR.
+// That is the whole point of the remote-merchant saga — the following
+// destroy_asset_from_slot step must not run unless the shop actually opened
+// (task-221 FR-4.3, FR-4.4).
+func (h *HandlerImpl) handleOpenNpcShop(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(OpenNpcShopPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := producer.ProviderImpl(h.l)(h.ctx)(npcshop.EnvCommandTopic)(NpcShopEnterCommandProvider(s.TransactionId(), payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to emit npc shop enter command.")
+		return err
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id":  s.TransactionId().String(),
+		"character_id":    payload.CharacterId,
+		"npc_template_id": payload.NpcTemplateId,
+	}).Debug("Dispatched npc shop ENTER; awaiting ENTERED/ENTER_ERROR.")
 
 	return nil
 }

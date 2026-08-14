@@ -4,6 +4,7 @@ import (
 	"atlas-maps/kafka/message"
 	mistKafka "atlas-maps/kafka/message/mist"
 	"context"
+	"errors"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -56,6 +57,25 @@ func NewProcessorWithRegistry(l logrus.FieldLogger, ctx context.Context, p produ
 	}
 }
 
+// ErrUnknownKind is returned by Create when a command names a target or
+// effect kind this service does not implement. FR-2.5: rejecting is the
+// correct behaviour -- silently falling back to DISEASE would apply the
+// wrong effect to the wrong targets, which is worse than creating no mist.
+var ErrUnknownKind = errors.New("unknown mist target or effect kind")
+
+func knownTargetKind(k string) bool {
+	return k == mistKafka.TargetKindCharacter || k == mistKafka.TargetKindMonster
+}
+
+func knownEffectKind(k string) bool {
+	switch k {
+	case mistKafka.EffectKindDisease, mistKafka.EffectKindDamageOverTime,
+		mistKafka.EffectKindProtection, mistKafka.EffectKindRecovery:
+		return true
+	}
+	return false
+}
+
 // Create materialises a Mist from body, registers it under the resolved
 // tenant, and emits MIST_CREATED. On emit failure the registry insert is
 // rolled back so the registry stays in lockstep with downstream observers.
@@ -73,6 +93,15 @@ func (p *ProcessorImpl) Create(body mistKafka.CreateCommandBody) (Mist, error) {
 		effectKind = mistKafka.EffectKindDisease
 	}
 
+	if !knownTargetKind(targetKind) {
+		p.l.Warnf("Mist create rejected: unknown targetKind [%s] from owner [%s:%d] on map [%d].", body.TargetKind, body.OwnerType, body.OwnerId, body.MapId)
+		return Mist{}, ErrUnknownKind
+	}
+	if !knownEffectKind(effectKind) {
+		p.l.Warnf("Mist create rejected: unknown effectKind [%s] from owner [%s:%d] on map [%d].", body.EffectKind, body.OwnerType, body.OwnerId, body.MapId)
+		return Mist{}, ErrUnknownKind
+	}
+
 	id := uuid.New()
 	f := field.NewBuilder(body.WorldId, body.ChannelId, body.MapId).SetInstance(body.Instance).Build()
 	m := NewBuilder(id, f).
@@ -80,6 +109,7 @@ func (p *ProcessorImpl) Create(body mistKafka.CreateCommandBody) (Mist, error) {
 		SetOrigin(body.OriginX, body.OriginY).
 		SetBounds(body.LtX, body.LtY, body.RbX, body.RbY).
 		SetDisease(body.Disease, body.DiseaseValue, time.Duration(body.DiseaseDuration)*time.Millisecond).
+		SetRecovery(body.RecoveryMp, body.PartyMemberIds).
 		SetDuration(time.Duration(body.Duration)*time.Millisecond).
 		SetTickInterval(time.Duration(body.TickIntervalMs)*time.Millisecond).
 		SetSource(body.SourceSkillId, body.SourceSkillLevel).
@@ -87,7 +117,7 @@ func (p *ProcessorImpl) Create(body mistKafka.CreateCommandBody) (Mist, error) {
 		// AffectedAreaTypeFor. Leaving it at the zero value marks the mist as
 		// a MOB disease cloud, which makes the client damage any player
 		// standing in it, including the caster of a player-cast mist.
-		SetType(AffectedAreaTypeFor(body.OwnerType)).
+		SetType(AffectedAreaTypeFor(body.OwnerType, effectKind)).
 		SetKinds(targetKind, effectKind).
 		Build()
 

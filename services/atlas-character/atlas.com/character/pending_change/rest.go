@@ -82,3 +82,26 @@ func (r *CreateInputRestModel) SetID(id string) error {
 	r.Id = id
 	return nil
 }
+
+// EligibilityRestModel is the read-only response of GET
+// .../transfer-eligibility. Id is the characterId the check was run for, so
+// the response is addressable JSON:API, but the caller (atlas-channel) only
+// ever reads Eligible/Reason.
+type EligibilityRestModel struct {
+	Id       string `json:"-"`
+	Eligible bool   `json:"eligible"`
+	Reason   string `json:"reason,omitempty"`
+}
+
+func (r EligibilityRestModel) GetName() string {
+	return "transfer-eligibilities"
+}
+
+func (r EligibilityRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *EligibilityRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}

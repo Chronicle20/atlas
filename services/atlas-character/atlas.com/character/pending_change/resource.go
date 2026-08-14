@@ -13,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
@@ -25,6 +26,13 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", registerGet("get_pending_changes", handleGetPendingChanges)).Methods(http.MethodGet)
 			r.HandleFunc("", rest.RegisterInputHandler[CreateInputRestModel](l)(db)(si)("create_pending_change", handleCreatePendingChange)).Methods(http.MethodPost)
 			r.HandleFunc("/{id}", registerGet("cancel_pending_change", handleCancelPendingChange)).Methods(http.MethodDelete)
+
+			// This route deliberately sits OUTSIDE the /pending-changes
+			// subrouter's prefix — it is the synchronous availability check
+			// (design §3.5) atlas-channel calls before it ever POSTs a
+			// WORLD_TRANSFER pending-change request, so it is not itself a
+			// pending-changes resource.
+			router.HandleFunc("/characters/{characterId}/transfer-eligibility", registerGet("get_transfer_eligibility", handleGetTransferEligibility)).Methods(http.MethodGet)
 		}
 	}
 }
@@ -48,6 +56,41 @@ func handleGetPendingChanges(d *rest.HandlerDependency, c *rest.HandlerContext) 
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
+}
+
+// handleGetTransferEligibility runs the full 11-gate table with no side
+// effect and reports the result, so atlas-channel can render the client's
+// WORLD_TRANSFER availability response without ever creating a pending
+// change (design §3.5).
+func handleGetTransferEligibility(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			destStr := r.URL.Query().Get("destinationWorldId")
+			destVal, err := strconv.ParseUint(destStr, 10, 8)
+			if err != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid or missing destinationWorldId")
+				return
+			}
+			destinationWorldId := world.Id(destVal)
+
+			eligible, reason, err := NewProcessor(d.Logger(), d.Context(), d.DB()).
+				CheckTransferEligibility(characterId, destinationWorldId)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Checking transfer eligibility for character [%d] to world [%d].", characterId, destinationWorldId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			res := EligibilityRestModel{
+				Id:       strconv.FormatUint(uint64(characterId), 10),
+				Eligible: eligible,
+				Reason:   reason,
+			}
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[EligibilityRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }

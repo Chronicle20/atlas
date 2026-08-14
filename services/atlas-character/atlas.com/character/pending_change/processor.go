@@ -69,8 +69,10 @@ type Processor interface {
 	GetByCharacterId(characterId uint32) ([]Model, error)
 	GetById(id uuid.UUID) (Model, error)
 	NameReserved(name string) (bool, error)
+	CheckTransferEligibility(characterId uint32, destinationWorldId world.Id) (bool, string, error)
 	WithTransaction(tx *gorm.DB) Processor
 	WithWorldTransferStarter(f WorldTransferStarterFunc) Processor
+	withTransferEligibilityGates(g gateDeps) Processor
 }
 
 type ProcessorImpl struct {
@@ -80,6 +82,7 @@ type ProcessorImpl struct {
 	t                    tenant.Model
 	expiry               time.Duration
 	worldTransferStarter WorldTransferStarterFunc
+	gates                gateDeps
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -89,6 +92,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		db:     db,
 		t:      tenant.MustFromContext(ctx),
 		expiry: configuration.GetRegistry().Get(l, ctx).PendingExpiry(),
+		gates:  productionGateDeps(),
 	}
 }
 
@@ -102,6 +106,7 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		t:                    p.t,
 		expiry:               p.expiry,
 		worldTransferStarter: p.worldTransferStarter,
+		gates:                p.gates,
 	}
 }
 
@@ -113,6 +118,7 @@ func (p *ProcessorImpl) WithWorldTransferStarter(f WorldTransferStarterFunc) Pro
 		t:                    p.t,
 		expiry:               p.expiry,
 		worldTransferStarter: f,
+		gates:                p.gates,
 	}
 }
 
@@ -431,39 +437,4 @@ func (p *ProcessorImpl) NameReserved(name string) (bool, error) {
 		return false, err
 	}
 	return true, nil
-}
-
-// evaluateTransferEligibility applies the design §3.6 / §1.6 gate table in the
-// documented order — cheapest and most local first, so an obviously-invalid
-// request never fans out. The gates implemented here are the three that need no
-// network call; the remaining eight (destination world capacity, character
-// slots, bans, guild mastery, family, open trade, hired merchant, live MTS
-// listings) each need a narrow REST client and are added in the same evaluation
-// order behind gate 5.
-func (p *ProcessorImpl) evaluateTransferEligibility(c character.Model, destinationWorldId world.Id) (string, bool) {
-	// Gate 1: a transfer to the world you are already in is not a transfer.
-	if destinationWorldId == c.WorldId() {
-		return "world_same", false
-	}
-	// Gate 2: the v83 client's own CCashShop::CheckTransferWorldPossible
-	// refuses to send the request for a GM, so a server that permits it
-	// produces a state the client considers impossible.
-	if c.GM() != 0 {
-		return "is_gm", false
-	}
-	// Gate 5: the name must be free in the destination. Name uniqueness for a
-	// pending change is already tenant-wide (FR-3.2), so a tenant-scoped check
-	// subsumes the per-world one and cannot under-report.
-	cs, err := character.NewProcessor(p.l, p.ctx, p.db).GetForName()(c.Name())
-	if err != nil {
-		p.l.WithError(err).Errorf("Unable to check name availability for character [%d] transferring to world [%d].", c.Id(), destinationWorldId)
-		return "name_taken", false
-	}
-	for _, other := range cs {
-		if other.Id() != c.Id() {
-			return "name_taken", false
-		}
-	}
-
-	return "", true
 }

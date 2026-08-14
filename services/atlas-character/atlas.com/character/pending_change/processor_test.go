@@ -229,7 +229,7 @@ func TestApplyForCharacterDispatchesTheWorldTransferAndLeavesItPending(t *testin
 	l, ctx := testLogger(t), testContext(t)
 	characterId := seedCharacter(t, db, "Papa", world.Id(0))
 
-	base := NewProcessor(l, ctx, db)
+	base := NewProcessor(l, ctx, db).withTransferEligibilityGates(passingGateDeps())
 	m, err := base.CreateAndEmit(uuid.New(), characterId, TypeWorldTransfer, "", world.Id(1), nil)
 	if err != nil {
 		t.Fatalf("CreateAndEmit: %v", err)
@@ -269,7 +269,7 @@ func TestRenotifyRoutesOnTheCurrentWorldNotTheSourceWorld(t *testing.T) {
 	l, ctx := testLogger(t), testContext(t)
 	characterId := seedCharacter(t, db, "Quebec", world.Id(0))
 
-	p := NewProcessor(l, ctx, db)
+	p := NewProcessor(l, ctx, db).withTransferEligibilityGates(passingGateDeps())
 	m, err := p.CreateAndEmit(uuid.New(), characterId, TypeWorldTransfer, "", world.Id(4), nil)
 	if err != nil {
 		t.Fatalf("CreateAndEmit: %v", err)

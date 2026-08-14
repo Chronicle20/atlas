@@ -134,7 +134,7 @@ func TestPurchasePathResolutionEmitsNoAssetRefund(t *testing.T) {
 	db := newProcessorTestDB(t)
 	characterId := seedCharacter(t, db, "India", world.Id(0))
 
-	p := NewProcessor(testLogger(t), testContext(t), db)
+	p := NewProcessor(testLogger(t), testContext(t), db).withTransferEligibilityGates(passingGateDeps())
 	m, err := p.CreateAndEmit(uuid.New(), characterId, TypeWorldTransfer, "", world.Id(2), nil)
 	if err != nil {
 		t.Fatalf("CreateAndEmit: %v", err)

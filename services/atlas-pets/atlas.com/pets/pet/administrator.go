@@ -7,6 +7,8 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/google/uuid"
+
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -103,6 +105,27 @@ func updateOnEvolve(db *gorm.DB) func(petId uint32, templateId uint32, expiratio
 		}
 		if result.RowsAffected == 0 {
 			return errors.New("no entity found to evolve")
+		}
+		return nil
+	}
+}
+
+// updateOnRevive writes ONLY the expiration and the revive transaction id.
+// Deliberately not updateOnEvolve: that function also rewrites template_id,
+// and a revive must never touch the pet's template.
+func updateOnRevive(db *gorm.DB) func(petId uint32, expiration time.Time, transactionId uuid.UUID) error {
+	return func(petId uint32, expiration time.Time, transactionId uuid.UUID) error {
+		result := db.Model(&Entity{}).
+			Where("id = ?", petId).
+			Updates(map[string]interface{}{
+				"expiration":            expiration,
+				"revive_transaction_id": transactionId,
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("no entity found to revive")
 		}
 		return nil
 	}

@@ -59,6 +59,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEvolveCommand(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleReviveCommand(db)))); err != nil {
+				return err
+			}
 			t, _ = topic.EnvProvider(l)(pet2.EnvCommandTopicMovement)()
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand(db)))); err != nil {
 				return err
@@ -160,6 +163,18 @@ func handleEvolveCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.EvolveCo
 		err := pet.NewProcessor(l, ctx, db).EvolveAndEmit(c.TransactionId, c.PetId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to evolve pet [%d].", c.PetId)
+		}
+	}
+}
+
+func handleReviveCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.ReviveCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c pet2.Command[pet2.ReviveCommandBody]) {
+		if c.Type != pet2.CommandPetRevive {
+			return
+		}
+		err := pet.NewProcessor(l, ctx, db).ReviveAndEmit(c.TransactionId, c.ActorId, c.PetId, c.Body.SourceTemplateId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to revive pet [%d].", c.PetId)
 		}
 	}
 }

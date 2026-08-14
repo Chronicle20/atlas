@@ -29,6 +29,12 @@ type Entity struct {
 	Excludes   []exclude.Entity `gorm:"foreignkey:PetId"`
 	Flag       uint16           `gorm:"not null;default:0"`
 	PurchaseBy uint32           `gorm:"not null;default:0"`
+	// ReviveTransactionId is the saga transaction of the last successful Water
+	// of Life revive. It is what distinguishes a Kafka REDELIVERY (same id =>
+	// replay, no second grant) from a genuine SECOND water used on an
+	// already-revived pet (different id => reject and refund). Neither
+	// "reject if alive" nor "no-op if alive" alone can tell those apart.
+	ReviveTransactionId *uuid.UUID `gorm:"type:uuid"`
 }
 
 func (e Entity) TableName() string {
@@ -49,5 +55,6 @@ func Make(e Entity) (Model, error) {
 		SetExcludes(es).
 		SetFlag(e.Flag).
 		SetPurchaseBy(e.PurchaseBy).
+		SetReviveTransactionId(e.ReviveTransactionId).
 		Build()
 }

@@ -47,6 +47,8 @@ type ProcessorMock struct {
 	AwardLevelFunc                           func(mb *message.Buffer) func(petId uint32) func(amount byte) error
 	EvolveAndEmitFunc                        func(transactionId uuid.UUID, petId uint32) error
 	EvolveFunc                               func(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32) error
+	ReviveAndEmitFunc                        func(transactionId uuid.UUID, actorId uint32, petId uint32, sourceTemplateId uint32) error
+	ReviveFunc                               func(mb *message.Buffer) func(transactionId uuid.UUID, actorId uint32, petId uint32, sourceTemplateId uint32) error
 	SetExcludeAndEmitFunc                    func(petId uint32, items []uint32) error
 	SetExcludeFunc                           func(mb *message.Buffer) func(petId uint32) func(items []uint32) error
 	SetSkillAndEmitFunc                      func(petId uint32, skillKey string, enabled bool) error
@@ -353,6 +355,22 @@ func (m *ProcessorMock) Evolve(mb *message.Buffer) func(transactionId uuid.UUID,
 		return m.EvolveFunc(mb)
 	}
 	return func(transactionId uuid.UUID, petId uint32) error {
+		return nil
+	}
+}
+
+func (m *ProcessorMock) ReviveAndEmit(transactionId uuid.UUID, actorId uint32, petId uint32, sourceTemplateId uint32) error {
+	if m.ReviveAndEmitFunc != nil {
+		return m.ReviveAndEmitFunc(transactionId, actorId, petId, sourceTemplateId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) Revive(mb *message.Buffer) func(transactionId uuid.UUID, actorId uint32, petId uint32, sourceTemplateId uint32) error {
+	if m.ReviveFunc != nil {
+		return m.ReviveFunc(mb)
+	}
+	return func(transactionId uuid.UUID, actorId uint32, petId uint32, sourceTemplateId uint32) error {
 		return nil
 	}
 }

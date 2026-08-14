@@ -2544,6 +2544,18 @@ func candidatesFromFName(fname string) []candidate {
 	// (docs/tasks/task-227-cash-name-change-world-transfer/derivation.md §2.4, §4.1).
 	case "CCashShop::OnCheckNameChangePossibleResult":
 		return []candidate{{name: "CheckNameChangePossibleResult", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Clientbound CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT (task-227): the
+	// server's answer to the WORLD_TRANSFER request above. Routed by
+	// CCashShop::OnPacket as its own case, NOT by the OnCashItemResult mode
+	// dispatcher. Body is Decode4 (character id, discarded) + Decode1
+	// (nResult) + Decode4 (nBirthDate, GMS only) + Decode1 (bHasWorldList) +
+	// optional Decode4 count + count x DecodeStr on every version v48..v95 and
+	// jms_v185 (jms drops nBirthDate); nResult selects only which
+	// dialog/notice renders, never a different field layout, so this is not a
+	// dispatcher family either
+	// (docs/tasks/task-227-cash-name-change-world-transfer/derivation.md §2.5, §4.2).
+	case "CCashShop::OnCheckTransferWorldPossibleResult":
+		return []candidate{{name: "CheckTransferWorldPossibleResult", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Vega's Spell result dialog — single mode byte (task-130 §2.2). v83 opcode
 	// 0x166 via CUIVega::OnPacket; v95 0x1AD.
 	case "CUIVega::OnVegaResult":

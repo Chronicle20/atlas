@@ -3,6 +3,38 @@
   "md5": "",
   "generated_at": "2026-07-01T15:41:36Z",
   "functions": {
+    "CCashShop::OnCheckTransferWorldPossibleResult": {
+      "address": "0x4737ca",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a2)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a2) && count > 0"
+        }
+      ]
+    },
     "CCashShop::SendCheckTransferWorldPossiblePacket": {
       "address": "0x46be19",
       "direction": "serverbound",
@@ -1158,17 +1190,6 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "CCashShop::OnCheckTransferWorldPossibleResult": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "decompilation failed; hand-trace"
         }
       ]
     },

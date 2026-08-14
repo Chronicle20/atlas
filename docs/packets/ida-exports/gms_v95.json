@@ -3,6 +3,38 @@
   "md5": "3c71fd8872d5efbe16183ae8c51f887d",
   "generated_at": "2026-05-13T00:00:00Z",
   "functions": {
+    "CCashShop::OnCheckTransferWorldPossibleResult": {
+      "address": "0x4980b0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(iPacket)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "CInPacket::Decode1(iPacket) && count > 0"
+        }
+      ]
+    },
     "CCashShop::OnCheckNameChangePossibleResult": {
       "address": "0x495470",
       "direction": "clientbound",

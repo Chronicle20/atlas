@@ -8,14 +8,14 @@ Tool: `0aadf918e1944d02c0ce45d2e5221ba9dc97e771e5bb158fc3cd8de4a0c5cce3`
 
 - export gms_v48: `cff2865cc6a2d42a868425fc202c52fc0ef4c0d739e59c43062f428bce7f9bf1`
 - export gms_v61: `d91729f938997cb9ae61a45b86b14eab0d533ae554df9ba12e1614659482a458`
-- export gms_v72: `2c32fd333b3409b74ad26df4035a1690226d1dbe40fed311a0b06a31e4dd84b8`
+- export gms_v72: `28fcc6e5da5698109af67099af6cdc0bc2eac124fcb0f8d57dc2a71d7d035697`
 - export gms_v79: `4d24c56e9c561ec29bd9a4afc2b6d2ff05cb6bd117ad74ba8a2903191a2f1ebd`
-- export gms_v83: `235d65929ec1d072e2983adf3716032dcf8f1732c46fc7849efad62dc400cd67`
-- export gms_v84: `96e9d83657a4ebc7af3653d48b478bd55cb353332bb2f2ad636ee3afd80754b3`
-- export gms_v87: `d6954bcc46f338742aa9930c393b143edf77a2db246d1d9a22c66e9b51e01fde`
-- export gms_v92: `16932a48c07f3fefa6edc8631c4ae7304c04d742d137714b4f1992c57362629a`
-- export gms_v95: `b69618ecc76d114c9f47c83da994bf414f00a6665350ffd2aa41c9c2bdec8e3d`
-- export jms_v185: `c9d015fd3f14af222f213d5e787a24e90fbfada701bf943f24e57c8db42a252f`
+- export gms_v83: `d0809b7ac2a3ca00f9926e2dedb314a70da0e4cc11152c754012772caacfec9f`
+- export gms_v84: `4ce6c65d76232dbd0eb1e014fdb36c7cb2b78c3255e6302113becc45ffe194ff`
+- export gms_v87: `fef44e6b40cd49a30b1410a5638b8ac9bd67f30a7367a61ddee1aa9952dcc0e1`
+- export gms_v92: `5a2e9f1b7bb7909ae0eaba6129ef8515ce0af5c967cc371d658f2a980f29cc35`
+- export gms_v95: `6ae5ab802a688f49720d321ac0265145558cc3cd50f4b513af4f09b753edb959`
+- export jms_v185: `2671210ed72c2116f3913da353a4c26a49067d82f1de2e7cf790bb0c6733a3f8`
 
 ## Clientbound
 
@@ -410,7 +410,7 @@ Tool: `0aadf918e1944d02c0ce45d2e5221ba9dc97e771e5bb158fc3cd8de4a0c5cce3`
 | CASHSHOP_GACHAPON_STAMP_RESULT | CCashShop::OnCashShopGachaponStampResult |  | 0x103 | ❌ | 0x102 | ❌ | 0x126 | ❌ | 0x135 | ❌ | 0x14C | ❌ | 0x153 | ❌ | 0x15D | ❌ | 0x17F | ❌ | 0x187 | ❌ | 0x16B | ❌ |
 | SNOWBALL_STATE | CField_SnowBall::OnSnowBallState | field/clientbound/FieldSnowballState (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x103 | ✅ | 0x119 | ✅ | 0x120 | ✅ | 0x12A | ✅ | 0x14A | ❌ | 0x152 | ✅ | 0x131 | ✅ |
 | HIT_SNOWBALL | CField_SnowBall::OnSnowBallHit | field/clientbound/FieldSnowballHit (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x104 | ✅ | 0x11A | ✅ | 0x121 | ✅ | 0x12B | ✅ | 0x14B | 🟡ᶠ | 0x153 | ✅ | 0x132 | ✅ |
-| CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT | CCashShop::OnCheckTransferWorldPossibleResult |  | 0x105 | ❌ | 0x104 | ❌ | 0x128 | ❌ | 0x134 | ❌ | 0x14B | ❌ | 0x152 | ❌ | 0x15C | ❌ | 0x17E | ❌ | 0x186 | ❌ | 0x16C | ❌ |
+| CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT | CCashShop::OnCheckTransferWorldPossibleResult | cash/clientbound/CashCheckTransferWorldPossibleResult (T1) | 0x105 | ✅ | 0x104 | ✅ | 0x128 | ✅ | 0x134 | ✅ | 0x14B | ✅ | 0x152 | ✅ | 0x15C | ✅ | 0x17E | ✅ | 0x186 | ✅ | 0x16C | ✅ |
 | MOB_SKILL_DELAY | CMob::OnMobSkillDelay | monster/clientbound/MonsterMobSkillDelay (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x105 | ✅ | 0x10F | ✅ | 0x127 | 🟡ᶠ | 0x12F | ✅ | 0x10F | ✅ |
 | SNOWBALL_MESSAGE | CField_SnowBall::OnSnowBallMsg | field/clientbound/FieldSnowballMessage (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x105 | ✅ | 0x11B | ✅ | 0x122 | ✅ | 0x12C | ✅ | 0x14C | 🟡ᶠ | 0x154 | ✅ | 0x133 | ✅ |
 | KEYMAP | CFuncKeyMappedMan::OnInit | character/clientbound/CharacterKeyMap (T1) |  | ⬜ | 0x106 | ✅ | 0x12A | ✅ | 0x137 | ✅ | 0x14F | ✅ | 0x158 | ✅ | 0x163 | ✅ | 0x185 | 🟡ᶠ | 0x18E | ✅ | 0x170 | ✅ |
@@ -1055,16 +1055,16 @@ Tool: `0aadf918e1944d02c0ce45d2e5221ba9dc97e771e5bb158fc3cd8de4a0c5cce3`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 207 | 0 | 19 | 195 | 598 | 0 | 49.2% |
-| v61 | 270 | 0 | 56 | 234 | 459 | 0 | 48.2% |
-| v72 | 286 | 0 | 69 | 248 | 416 | 0 | 47.4% |
-| v79 | 332 | 0 | 68 | 244 | 375 | 0 | 51.6% |
-| v83 | 452 | 0 | 0 | 339 | 228 | 0 | 57.1% |
-| v84 | 427 | 0 | 0 | 345 | 247 | 0 | 55.3% |
-| v87 | 461 | 0 | 0 | 368 | 190 | 0 | 55.6% |
-| v92 | 32 | 0 | 151 | 695 | 141 | 0 | 3.6% |
-| v95 | 486 | 0 | 0 | 427 | 106 | 0 | 53.2% |
-| JMS185 | 432 | 0 | 0 | 390 | 197 | 0 | 52.6% |
+| v48 | 208 | 0 | 19 | 194 | 598 | 0 | 49.4% |
+| v61 | 271 | 0 | 56 | 233 | 459 | 0 | 48.4% |
+| v72 | 287 | 0 | 69 | 247 | 416 | 0 | 47.6% |
+| v79 | 333 | 0 | 68 | 243 | 375 | 0 | 51.7% |
+| v83 | 453 | 0 | 0 | 338 | 228 | 0 | 57.3% |
+| v84 | 428 | 0 | 0 | 344 | 247 | 0 | 55.4% |
+| v87 | 462 | 0 | 0 | 367 | 190 | 0 | 55.7% |
+| v92 | 33 | 0 | 151 | 694 | 141 | 0 | 3.8% |
+| v95 | 487 | 0 | 0 | 426 | 106 | 0 | 53.3% |
+| JMS185 | 433 | 0 | 0 | 389 | 197 | 0 | 52.7% |
 
 ## Conflicts
 

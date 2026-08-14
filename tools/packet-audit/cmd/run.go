@@ -1292,6 +1292,10 @@ func candidatesFromFName(fname string) []candidate {
 	case "CPet::SendDropPickUpRequest":
 		// CSV: PET_LOOT — atlas DropPickUp.
 		return []candidate{{name: "DropPickUp", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendWaterOfLife":
+		// CSV: WATER_OF_LIFE — atlas WaterOfLife. Empty body on every applicable
+		// version (task-228): COutPacket(op) + SendPacket, zero Encode* calls.
+		return []candidate{{name: "WaterOfLife", pkg: "pet", dir: csvpkg.DirServerbound}}
 	case "sub_6E5BD6":
 		// MOVE_PET (serverbound) in gms_v48: CVecCtrlPet::EndUpdateActive is UNNAMED
 		// — sub_6E5BD6 @0x6e5bd6, COutPacket(113)+CMovePath::Flush (no leading petId,

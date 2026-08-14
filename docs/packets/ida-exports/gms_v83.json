@@ -15826,6 +15826,11 @@
           "comment": ""
         }
       ]
+    },
+    "CWvsContext::SendWaterOfLife": {
+      "address": "0xa1dce6",
+      "direction": "serverbound",
+      "calls": []
     }
   }
 }

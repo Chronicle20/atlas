@@ -1050,7 +1050,7 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 			}
 			return CashSlotItemType(17)
 		}
-		if category == 518 {
+		if category == item.ClassificationWaterOfLife {
 			return CashSlotItemType(5)
 		}
 		if category == item.ClassificationPetSkill {

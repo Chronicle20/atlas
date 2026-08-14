@@ -88,3 +88,12 @@ func TestClassificationExpirationExtender(t *testing.T) {
 		t.Fatalf("GetClassification(5500001) = %d, want %d", got, ClassificationExpirationExtender)
 	}
 }
+
+func TestClassificationWaterOfLife(t *testing.T) {
+	if ClassificationWaterOfLife != Classification(518) {
+		t.Fatalf("ClassificationWaterOfLife = %d, want 518", ClassificationWaterOfLife)
+	}
+	if got := GetClassification(Id(5180000)); got != ClassificationWaterOfLife {
+		t.Fatalf("GetClassification(5180000) = %d, want %d", got, ClassificationWaterOfLife)
+	}
+}

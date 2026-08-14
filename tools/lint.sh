@@ -63,6 +63,21 @@ done
 TOOLS_BIN="$ROOT/.cache/tools/bin"
 GOLANGCI="$TOOLS_BIN/golangci-lint-$GOLANGCI_LINT_VERSION"
 
+# Per-tree lint cache. The default (~/.cache/golangci-lint) is shared by every
+# worktree, and golangci-lint replays cached issues by package path — so linting
+# libs/atlas-model in the main repo surfaced stale findings recorded from
+# .worktrees/task-NNN/libs/atlas-model, whose files no longer exist:
+#   "failed to parse file: .worktrees/.../processor_test.go: no such file or directory"
+# Keying the cache to $ROOT gives each worktree its own and removes the crosstalk.
+#
+# NOTE: this does NOT make concurrent golangci-lint runs safe. The tool takes an
+# exclusive lock that separate cache directories do not isolate — a second run
+# exits non-zero with "parallel golangci-lint is running" and "0 issues", which
+# is a spurious failure. The per-module loop below is therefore deliberately
+# SEQUENTIAL; do not parallelize it. Run only one lint.sh per machine at a time.
+export GOLANGCI_LINT_CACHE="${GOLANGCI_LINT_CACHE:-$ROOT/.cache/golangci-lint}"
+mkdir -p "$GOLANGCI_LINT_CACHE"
+
 GO_RC=0
 UI_RC=0
 FAILED=()

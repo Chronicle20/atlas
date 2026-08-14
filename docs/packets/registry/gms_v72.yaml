@@ -796,6 +796,7 @@
   direction: clientbound
   opcode: 112
   fname: CWvsContext::OnCancelNameChangebyOther
+  packet: character/clientbound/CancelNameChangeByOther
   provenance: ida-discovered
   ida:
     address: 9446856

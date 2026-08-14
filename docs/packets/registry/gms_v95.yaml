@@ -657,6 +657,7 @@
   direction: clientbound
   opcode: 124
   fname: CWvsContext::OnCancelNameChangebyOther
+  packet: character/clientbound/CancelNameChangeByOther
   provenance: csv-import
 - op: SET_EXTRA_PENDANT_SLOT
   direction: clientbound

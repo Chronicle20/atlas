@@ -2750,6 +2750,14 @@
         ]
       },
       {
+        "opCode": "0x72",
+        "writer": "CancelNameChangeByOther",
+        "fname": "CWvsContext::OnCancelNameChangebyOther",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x74",
         "writer": "ScriptProgress",
         "fname": "sub_95F0D4",

@@ -2718,6 +2718,14 @@
         ]
       },
       {
+        "opCode": "0x70",
+        "writer": "CancelNameChangeByOther",
+        "fname": "CWvsContext::OnCancelNameChangebyOther",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x71",
         "writer": "CharacterSkillMacro",
         "fname": "CWvsContext::OnMacroSysDataInit",

@@ -2123,6 +2123,14 @@
         ]
       },
       {
+        "opCode": "0x7D",
+        "writer": "CancelNameChangeByOther",
+        "fname": "CWvsContext::OnCancelNameChangebyOther",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x80",
         "writer": "ScriptProgress",
         "fname": "CWvsContext::OnScriptProgressMessage",

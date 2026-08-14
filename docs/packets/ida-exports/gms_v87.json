@@ -15888,6 +15888,11 @@
         }
       ]
     },
+    "CWvsContext::OnCancelNameChangebyOther": {
+      "address": "0xac2482",
+      "direction": "clientbound",
+      "calls": []
+    },
     "CWvsContext::OnCancelTransferWorldResult": {
       "address": "0xac24c9",
       "direction": "clientbound",

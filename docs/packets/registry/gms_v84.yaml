@@ -818,6 +818,7 @@
   direction: clientbound
   opcode: 123
   fname: CWvsContext::OnCancelNameChangebyOther
+  packet: character/clientbound/CancelNameChangeByOther
   provenance: ida-discovered
   ida:
     address: 10820816

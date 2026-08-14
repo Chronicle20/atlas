@@ -10,11 +10,11 @@ Tool: `bb6605bfa76ecf5733e143cadf1af9285251b91a276fd45ab32b56371cfdba32`
 - export gms_v61: `4c8571b72e950048c4bcf2fd7d03b8eadb3590bc03b6f9e9de7d8977404c1142`
 - export gms_v72: `bb8c82c53879da099ba32d14bbce1d3a8b463b3fffe5c3ca8f9f5f1bb950e50a`
 - export gms_v79: `4d24c56e9c561ec29bd9a4afc2b6d2ff05cb6bd117ad74ba8a2903191a2f1ebd`
-- export gms_v83: `22d692920c94f35dcb3486c71f4c14ef64325d82f7ba06df65bdf7c2b9a5e3ae`
-- export gms_v84: `2816145bbff8ece6498dc2f8524839d4c6ced0b55208ecf5e7c2099d71de3467`
-- export gms_v87: `409f614ab359f917b412761a7980e1fd34644f703e0cf82ee88d52d9c4301b5d`
-- export gms_v92: `71de687470ba8e468ce06daad3cfd1b893a4c0a71ffb631c5320aeadf1c09005`
-- export gms_v95: `1a3e4edebb9d6c039ec5196fde4872b973df36b9b6d1a762ecbebd48aa9a0b44`
+- export gms_v83: `de21aade1259afd569a725f36f4ec0f8dd87478f3b0aefa3a6d0f1dbb5c4e88c`
+- export gms_v84: `91336b6582b4714ebc60042385378e56617da8615fbf91bafc4da5aa77ea0320`
+- export gms_v87: `bb3f92ea5f1e5df44f0ab119cba350062377989b4bcad91f905c2525964a39d8`
+- export gms_v92: `5d751756340101651e47b7d75bd5c8cbb04aeb587be94a0d180509a5020eb7ba`
+- export gms_v95: `6d6356eb98c27505a7f9d73643228ed0adb879296efebc01b4cffb22e6047ea9`
 - export jms_v185: `2671210ed72c2116f3913da353a4c26a49067d82f1de2e7cf790bb0c6733a3f8`
 
 ## Clientbound
@@ -201,7 +201,7 @@ Tool: `bb6605bfa76ecf5733e143cadf1af9285251b91a276fd45ab32b56371cfdba32`
 | SPAWN_PET | CUser::OnPetPacket; CUser::OnPetPacket_Spawn |  | 0x06D | ❌ | 0x07F | ❌ | 0x099 | ❌ | 0x09D | ❌ | 0x0A8 | ❌ | 0x0AB | ❌ | 0x0B4 | ❌ | 0x0C3 | ❌ | 0x0C6 | ❌ | 0x0AD | ❌ |
 | NEW_YEAR_CARD_RES | CWvsContext::OnNewYearCardRes |  |  | ⬜ |  | ⬜ | 0x06E | ❌ | 0x070 | ❌ | 0x076 | ❌ | 0x079 | ❌ | 0x079 | ❌ | 0x07B | ❌ | 0x07A | ❌ |  | ⬜ |
 | RANDOM_MORPH_RES | CWvsContext::OnRandomMorphRes |  |  | ⬜ |  | ⬜ | 0x06F | ❌ | 0x071 | ❌ | 0x077 | ❌ | 0x07A | ❌ | 0x07A | ❌ | 0x07C | ❌ | 0x07B | ❌ |  | ⬜ |
-| CANCEL_NAME_CHANGE_BY_OTHER | CWvsContext::OnCancelNameChangebyOther |  |  | ⬜ |  | ⬜ | 0x070 | ❌ | 0x072 | ❌ | 0x078 | ❌ | 0x07B | ❌ | 0x07B | ❌ | 0x07D | ❌ | 0x07C | ❌ |  | ⬜ |
+| CANCEL_NAME_CHANGE_BY_OTHER | CWvsContext::OnCancelNameChangebyOther |  |  | ⬜ |  | ⬜ | 0x070 | ✅ | 0x072 | ✅ | 0x078 | ✅ | 0x07B | ✅ | 0x07B | ✅ | 0x07D | ✅ | 0x07C | ✅ |  | ⬜ |
 | IDA_0X073 | sub_AF7C61 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ |
 | SET_EXTRA_PENDANT_SLOT | CWvsContext::OnSetBuyEquipExt; sub_95EE37 |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ | 0x079 | ❌ | 0x07C | ❌ | 0x07C | ❌ | 0x07E | ❌ | 0x07D | ❌ |  | ⬜ |
 | IDA_0X074 | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ |
@@ -1057,13 +1057,13 @@ Tool: `bb6605bfa76ecf5733e143cadf1af9285251b91a276fd45ab32b56371cfdba32`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 209 | 0 | 19 | 193 | 598 | 0 | 49.6% |
 | v61 | 274 | 0 | 56 | 230 | 459 | 0 | 48.9% |
-| v72 | 290 | 0 | 69 | 244 | 416 | 0 | 48.1% |
-| v79 | 336 | 0 | 68 | 240 | 375 | 0 | 52.2% |
-| v83 | 456 | 0 | 0 | 335 | 228 | 0 | 57.6% |
-| v84 | 431 | 0 | 0 | 341 | 247 | 0 | 55.8% |
-| v87 | 465 | 0 | 0 | 364 | 190 | 0 | 56.1% |
-| v92 | 36 | 0 | 151 | 691 | 141 | 0 | 4.1% |
-| v95 | 490 | 0 | 0 | 423 | 106 | 0 | 53.7% |
+| v72 | 291 | 0 | 69 | 243 | 416 | 0 | 48.3% |
+| v79 | 337 | 0 | 68 | 239 | 375 | 0 | 52.3% |
+| v83 | 457 | 0 | 0 | 334 | 228 | 0 | 57.8% |
+| v84 | 432 | 0 | 0 | 340 | 247 | 0 | 56.0% |
+| v87 | 466 | 0 | 0 | 363 | 190 | 0 | 56.2% |
+| v92 | 37 | 0 | 151 | 690 | 141 | 0 | 4.2% |
+| v95 | 491 | 0 | 0 | 422 | 106 | 0 | 53.8% |
 | JMS185 | 433 | 0 | 0 | 389 | 197 | 0 | 52.7% |
 
 ## Conflicts

@@ -16995,6 +16995,48 @@
         }
       ]
     },
+    "sub_955499": {
+      "address": "0x955499",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        }
+      ]
+    },
+    "CWvsContext::SendReturnScrollUseRequest": {
+      "address": "0x968c52",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v44 == (void *)999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v44 == (void *)999999999"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v44 == (void *)999999999"
+        }
+      ]
+    },
     "CWvsContext::SendStatChangeItemUseRequestByPetQ": {
       "address": "0x9552d0",
       "direction": "serverbound",

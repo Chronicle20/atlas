@@ -43,6 +43,7 @@ type Processor interface {
 	RequestSetOwner(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error
 	RequestApplyLock(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error
 	RequestApplyKarma(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, scissorsKarma int32, clear bool) error
+	RequestExtendExpiration(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time, extenderTemplateId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -134,4 +135,8 @@ func (p *ProcessorImpl) RequestApplyLock(transactionId uuid.UUID, characterId ui
 
 func (p *ProcessorImpl) RequestApplyKarma(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, scissorsKarma int32, clear bool) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestApplyKarmaCommandProvider(transactionId, characterId, inventoryType, slot, scissorsKarma, clear))
+}
+
+func (p *ProcessorImpl) RequestExtendExpiration(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time, extenderTemplateId uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestExtendExpirationCommandProvider(transactionId, characterId, inventoryType, slot, expiration, extenderTemplateId))
 }

@@ -99,6 +99,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyKarmaCommand(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleExtendExpirationCommand(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -425,6 +428,29 @@ func handleApplyKarmaCommand(db *gorm.DB) message.Handler[compartment2.Command[c
 		)
 		if err != nil {
 			l.WithError(err).Errorf("Failed to apply karma to asset in slot [%d] for character [%d].", c.Body.Slot, c.CharacterId)
+		}
+	}
+}
+
+func handleExtendExpirationCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ExtendExpirationCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ExtendExpirationCommandBody]) {
+		if c.Type != compartment2.CommandExtendExpiration {
+			return
+		}
+
+		l.Debugf("Received EXTEND_EXPIRATION command for character [%d], slot [%d], extender [%d].",
+			c.CharacterId, c.Body.Slot, c.Body.ExtenderTemplateId)
+
+		err := compartment.NewProcessor(l, ctx, db).ExtendAssetExpirationAndEmit(
+			c.TransactionId,
+			c.CharacterId,
+			inventory.Type(c.InventoryType),
+			c.Body.Slot,
+			c.Body.Expiration,
+			c.Body.ExtenderTemplateId,
+		)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to extend expiration of asset in slot [%d] for character [%d].", c.Body.Slot, c.CharacterId)
 		}
 	}
 }

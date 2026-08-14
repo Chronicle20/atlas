@@ -8,6 +8,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	npc2 "github.com/Chronicle20/atlas/libs/atlas-packet/npc/serverbound"
@@ -30,7 +31,7 @@ func NPCStartConversationHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		sp := shops.NewProcessor(l, ctx)
 		_, err = sp.GetShop(n.Template())
 		if err == nil {
-			err = sp.EnterShop(s.CharacterId(), n.Template())
+			err = sp.EnterShop(uuid.Nil, s.CharacterId(), n.Template())
 			if err != nil {
 				l.WithError(err).Errorf("Failed to send shop enter command for character [%d] and NPC [%d].", s.CharacterId(), n.Template())
 			}

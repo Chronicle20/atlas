@@ -5,6 +5,7 @@ import (
 	"atlas-saga-orchestrator/kafka/message/broadcast"
 	incubator2 "atlas-saga-orchestrator/kafka/message/incubator"
 	"atlas-saga-orchestrator/kafka/message/megaphone"
+	npcshop "atlas-saga-orchestrator/kafka/message/npcshop"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"encoding/json"
 	"testing"
@@ -273,4 +274,36 @@ func TestWorldBroadcastEnqueueCommandProvider_MessageShape(t *testing.T) {
 	require.Equal(t, payload.ReceiverName, cmd.ReceiverName)
 	require.NotNil(t, cmd.ReceiverLook)
 	require.Equal(t, payload.ReceiverLook.Face, cmd.ReceiverLook.Face)
+}
+
+// TestNpcShopEnterCommandProvider asserts the ENTER command carries the saga's
+// transaction id — the orchestrator's only correlation key when the ENTERED
+// event comes back (task-221 design delta D2).
+func TestNpcShopEnterCommandProvider(t *testing.T) {
+	txn := uuid.New()
+	msgs, err := NpcShopEnterCommandProvider(txn, OpenNpcShopPayload{
+		CharacterId:   1234,
+		WorldId:       world.Id(0),
+		ChannelId:     channel.Id(1),
+		NpcTemplateId: 9090000,
+	})()
+	if err != nil {
+		t.Fatalf("provider: %v", err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("len(msgs) = %d, want 1", len(msgs))
+	}
+	var cmd npcshop.Command[npcshop.CommandShopEnterBody]
+	if err := json.Unmarshal(msgs[0].Value, &cmd); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if cmd.TransactionId != txn {
+		t.Errorf("TransactionId = %s, want %s", cmd.TransactionId, txn)
+	}
+	if cmd.Type != npcshop.CommandShopEnter {
+		t.Errorf("Type = %q, want %q", cmd.Type, npcshop.CommandShopEnter)
+	}
+	if cmd.CharacterId != 1234 || cmd.Body.NpcTemplateId != 9090000 {
+		t.Errorf("unexpected command: %+v", cmd)
+	}
 }

@@ -1409,6 +1409,22 @@
   ida:
     address: 5993506
   note: 'BODY-VERIFIED. Mode-prefix NPC_SHOP (CShopDlg) dispatcher, all arms COutPacket(48)+Encode1(mode): sub_5B7422 BUY arm Encode1(0)+Encode2(slot=this[55])+Encode4(itemId=TSecType::GetData(commodity))+Encode2(count) — meso-affordability check (charData meso fuse +149/+153, "not enough mesos" notice 263); sub_5B7693 SELL arm Encode1(1)+Encode2(slot)+Encode4(itemId)+Encode2(count) — reads inventory GetItem(invType,slot); sub_5B4B82 CLOSE arm Encode1(3)+dialog-close sub_4B7230. Enc1(mode 0=buy/1=sell/2=recharge/3=close)+per-mode body = exact v61 NPC_SHOP (sub_6744D9 mode-prefix dispatcher). v61 NPC_SHOP=60.'
+- op: OPEN_NPC_SHOP
+  direction: clientbound
+  opcode: 229
+  fname: CShopDlg::SetShopDlg
+  provenance: ida-discovered
+  ida:
+    address: 5980938
+  note: 'task-221 task-16: sub_5B430A@0x5b430a (unnamed in the v48 IDB; identified structurally as CShopDlg::SetShopDlg by the same npcTemplateId+count+per-item loop shape as v61/v79/v83/v87/v92/v95, and by design.md §1.2''s CShopDlg::OnPacket nType==229 -> SetShopDlg dispatch). Decode4 npcTemplateId@0x5b4325, Decode2 count@0x5b4338, per item Decode4 itemId@0x5b435b, Decode4 mesoPrice@0x5b436b, conditional DecodeBuffer(8) unitPrice@0x5b4397 (rechargeable), Decode2 quantity@0x5b43af — NO trailing maxPerSlot short (added between v48 and v61). Matches Atlas ShopList''s MajorVersion()<61 branch exactly (libs/atlas-packet/npc/clientbound/shop_list.go, shop_list_v48_test.go).'
+- op: CONFIRM_SHOP_TRANSACTION
+  direction: clientbound
+  opcode: 230
+  fname: CShopDlg::OnPacket
+  provenance: ida-discovered
+  ida:
+    address: 5995064
+  note: 'task-221 task-16: CShopDlg::OnPacket@0x5b7a38 (nType==230), mode-prefix notice dispatcher. Mode table derived case-by-case against known-good v83 in docs/tasks/task-221-miumiu-travel-store/gms48-shop-operations.md: OK=0, OUT_OF_STOCK=1/5/9, NOT_ENOUGH_MONEY=2/10, INVENTORY_FULL=3, NEED_MORE_ITEMS=13, GENERIC_ERROR=14 (Decode1()==0), GENERIC_ERROR_WITH_REASON=14 (Decode1()!=0, then DecodeStr), TRADE_LIMIT=16 (shares the mode-14-adjacent default-notice bucket, per the round-2 correction in gms48-shop-operations.md). OVER_LEVEL_REQUIREMENT/UNDER_LEVEL_REQUIREMENT are VERSION-ABSENT (no Decode4-driven numeric-level arm anywhere in the 227-instruction function).'
 - op: STORAGE
   direction: serverbound
   opcode: 52

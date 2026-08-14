@@ -5,10 +5,12 @@ import (
 	mist2 "atlas-channel/kafka/message/mist"
 	"atlas-channel/listener"
 	_map "atlas-channel/map"
+	"atlas-channel/mist"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -86,6 +88,16 @@ var affectedAreaRemovedBroadcaster = func(l logrus.FieldLogger, ctx context.Cont
 // which omit the field entirely.
 const mistPhase = int32(0)
 
+// protectionRegistry is the channel-local index of live PROTECTION
+// (Smokescreen) mists, consulted by the damage path. Held as a package var so
+// tests can point it at an isolated registry.
+//
+// A protection mist is recognised by its EffectKind rather than by the
+// client-facing `Type` (nType 2): nType is a render detail, and inferring the
+// domain concept from it would couple channel logic to the client's value
+// table -- exactly what AffectedAreaTypeFor's doc comment exists to prevent.
+var protectionRegistry = mist.GetProtectionRegistry()
+
 func handleMistCreated(sc server.Model, wp writer.Producer) message.Handler[mist2.Event[mist2.CreatedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e mist2.Event[mist2.CreatedBody]) {
 		if e.Type != mist2.EventTypeCreated {
@@ -109,6 +121,19 @@ func handleMistCreated(sc server.Model, wp writer.Producer) message.Handler[mist
 			mistPhase,
 		)
 		affectedAreaCreatedBroadcaster(l, ctx, wp, f, body)
+
+		if e.Body.EffectKind == mist2.EffectKindProtection {
+			protectionRegistry.Add(tenant.MustFromContext(ctx),
+				mist.NewProtectionBuilder(e.MistId, f).
+					SetOwnerId(e.Body.OwnerId).
+					// Absolute world rect: the event carries the origin
+					// and the lt/rb OFFSETS, and the damage path tests a
+					// character's absolute position.
+					SetRect(e.Body.OriginX+e.Body.LtX, e.Body.OriginY+e.Body.LtY,
+						e.Body.OriginX+e.Body.RbX, e.Body.OriginY+e.Body.RbY).
+					SetExpiresAt(time.Now().Add(time.Duration(e.Body.Duration)*time.Millisecond)).
+					Build())
+		}
 	}
 }
 
@@ -123,5 +148,10 @@ func handleMistDestroyed(sc server.Model, wp writer.Producer) message.Handler[mi
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		body := fieldpkt.NewAffectedAreaRemoved(e.MistId, 0)
 		affectedAreaRemovedBroadcaster(l, ctx, wp, f, body)
+
+		// Unconditional: removing an id that was never a protection mist
+		// is a no-op, and this way a PROTECTION mist can never survive
+		// its own destruction because of a kind check that drifted.
+		protectionRegistry.Remove(tenant.MustFromContext(ctx), e.MistId)
 	}
 }

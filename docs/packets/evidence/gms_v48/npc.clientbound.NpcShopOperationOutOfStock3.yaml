@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcShopOperationOutOfStock3
+direction: clientbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#OutOfStock3
+    address: "0x5b7a38"
+    decompile_sha256: 2dea89878ecc4f218563752c47bdf85616717f75eb78c01556b3fde4d293ca5f

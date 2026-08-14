@@ -6,7 +6,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -63,7 +62,12 @@ type SkillEntry struct {
 	Level       uint32
 	Expiration  int64
 	MasterLevel uint32
-	FourthJob   bool
+	// NeedsMasterLevel mirrors the client's is_skill_need_master_level for this
+	// skill id. It is derived, never supplied: both Encode and Decode recompute
+	// it from Id via skill.NeedsMasterLevel so the two cannot disagree, and so a
+	// caller cannot reintroduce the per-JOB approximation that closed the client
+	// with error 38 on a preset Evan (task-218).
+	NeedsMasterLevel bool
 }
 
 type CooldownEntry struct {
@@ -653,7 +657,11 @@ func (m *CharacterData) encodeSkills(w *response.Writer, t tenant.Model) {
 		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 			w.WriteInt64(s.Expiration)
 		}
-		if s.FourthJob {
+		// The master level is per-SKILL, not per-job: the client asks
+		// is_skill_need_master_level(nSkillID) here. Deriving it from the id
+		// rather than trusting s.NeedsMasterLevel keeps Encode and Decode on one
+		// authority. See skill.NeedsMasterLevel.
+		if skill.NeedsMasterLevel(skill.Id(s.Id), t.Region() == "GMS") {
 			w.WriteInt(s.MasterLevel)
 		}
 	}
@@ -677,9 +685,10 @@ func (m *CharacterData) decodeSkills(r *request.Reader, t tenant.Model) {
 		if (t.Region() == "GMS" && t.MajorAtLeast(83)) || t.Region() == "JMS" {
 			m.Skills[i].Expiration = r.ReadInt64()
 		}
-		jobId := job.IdFromSkillId(skill.Id(m.Skills[i].Id))
-		m.Skills[i].FourthJob = job.IsFourthJob(jobId)
-		if m.Skills[i].FourthJob {
+		// Mirror of encodeSkills — see skill.NeedsMasterLevel for the client
+		// rule and its per-version evidence.
+		m.Skills[i].NeedsMasterLevel = skill.NeedsMasterLevel(skill.Id(m.Skills[i].Id), t.Region() == "GMS")
+		if m.Skills[i].NeedsMasterLevel {
 			m.Skills[i].MasterLevel = r.ReadUint32()
 		}
 	}

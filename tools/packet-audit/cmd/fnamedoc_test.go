@@ -118,11 +118,49 @@ func TestLoadReportFNamesSkipsUnresolvedReport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("loadReportFNames: %v", err)
 	}
-	if got, ok := out["CashItemUseVegaScroll"]; ok {
+	if got, ok := out.fname["CashItemUseVegaScroll"]; ok {
 		t.Errorf("CashItemUseVegaScroll should have been skipped (unresolved row), but resolved to %q", got)
 	}
-	if got, want := out["Ping"], "CClientSocket::OnAliveReq"; got != want {
+	if got, want := out.fname["Ping"], "CClientSocket::OnAliveReq"; got != want {
 		t.Errorf("Ping fname = %q, want %q", got, want)
+	}
+}
+
+// task-226: two codecs that share a family AND a struct name across the two
+// directions ("character"+"SkillMacro") collapse to one WriterName key. Each
+// direction must still resolve to its OWN report's fname, disambiguated by the
+// reports' AtlasFile — otherwise whichever report loads first wins and the
+// other file reads as permanent DRIFT. A helper struct sharing the file must
+// stay unresolved rather than inheriting the file's fname.
+func TestResolveFNamePrefersOwnFileOnCrossDirectionCollision(t *testing.T) {
+	dir := t.TempDir()
+	const cb = "libs/atlas-packet/character/clientbound/skill_macro.go"
+	const sb = "libs/atlas-packet/character/serverbound/skill_macro.go"
+	writeRawAuditReport(t, dir, "gms_v95", "CharacterSkillMacro.json", `{
+		"WriterName": "CharacterSkillMacro",
+		"IDAName": "CWvsContext::OnMacroSysDataInit",
+		"AtlasFile": "`+cb+`",
+		"Rows": [{"Verdict": 0}]
+	}`)
+	writeRawAuditReport(t, dir, "gms_v95", "CharacterSkillMacroHandle.json", `{
+		"WriterName": "CharacterSkillMacroHandle",
+		"IDAName": "CMacroSysMan::FlushToSvr",
+		"AtlasFile": "`+sb+`",
+		"Rows": [{"Verdict": 0}]
+	}`)
+
+	out, err := loadReportFNames(dir)
+	if err != nil {
+		t.Fatalf("loadReportFNames: %v", err)
+	}
+	if got, ok := out.resolveFName("CharacterSkillMacro", cb); !ok || got != "CWvsContext::OnMacroSysDataInit" {
+		t.Errorf("clientbound SkillMacro = %q (ok=%v), want CWvsContext::OnMacroSysDataInit", got, ok)
+	}
+	if got, ok := out.resolveFName("CharacterSkillMacro", sb); !ok || got != "CMacroSysMan::FlushToSvr" {
+		t.Errorf("serverbound SkillMacro = %q (ok=%v), want CMacroSysMan::FlushToSvr", got, ok)
+	}
+	if got, ok := out.resolveFName("CharacterSkillMacroEntry", sb); ok {
+		t.Errorf("helper struct sharing the file must stay unresolved, got %q", got)
 	}
 }
 

@@ -47,8 +47,8 @@ type Processor interface {
 	RemoveCommodity(id uuid.UUID) error
 	DeleteAllCommoditiesByNpcId(npcId uint32) error
 	DeleteAllShops() error
-	EnterAndEmit(characterId uint32, npcId uint32) error
-	Enter(mb *message.Buffer) func(characterId uint32) func(npcId uint32) error
+	EnterAndEmit(transactionId uuid.UUID, characterId uint32, npcId uint32) error
+	Enter(mb *message.Buffer) func(transactionId uuid.UUID) func(characterId uint32) func(npcId uint32) error
 	ExitAndEmit(characterId uint32) error
 	Exit(mb *message.Buffer) func(characterId uint32) error
 	BuyAndEmit(characterId uint32, slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error
@@ -268,21 +268,40 @@ func (p *ProcessorImpl) UpdateShop(npcId uint32, recharger bool, commodities []c
 	return shop, nil
 }
 
-func (p *ProcessorImpl) EnterAndEmit(characterId uint32, npcId uint32) error {
-	return message.Emit(p.kp)(model.Flip(model.Flip(p.Enter)(characterId))(npcId))
+func (p *ProcessorImpl) EnterAndEmit(transactionId uuid.UUID, characterId uint32, npcId uint32) error {
+	return message.Emit(p.kp)(func(mb *message.Buffer) error {
+		return p.Enter(mb)(transactionId)(characterId)(npcId)
+	})
 }
 
-func (p *ProcessorImpl) Enter(mb *message.Buffer) func(characterId uint32) func(npcId uint32) error {
-	return func(characterId uint32) func(npcId uint32) error {
-		return func(npcId uint32) error {
-			p.l.Debugf("Character [%d] attempting to enter shop [%d].", characterId, npcId)
-			_, err := p.GetByNpcId(p.CommodityDecorator)(npcId)
-			if err != nil {
-				p.l.WithError(err).Errorf("Cannot locate shop [%d] character [%d] is attempting to enter.", npcId, characterId)
-				return err
+func (p *ProcessorImpl) Enter(mb *message.Buffer) func(transactionId uuid.UUID) func(characterId uint32) func(npcId uint32) error {
+	return func(transactionId uuid.UUID) func(characterId uint32) func(npcId uint32) error {
+		return func(characterId uint32) func(npcId uint32) error {
+			return func(npcId uint32) error {
+				p.l.Debugf("Character [%d] attempting to enter shop [%d].", characterId, npcId)
+
+				// The shop must exist. Reporting this on the topic rather than
+				// returning it is what lets a saga step fail (and a remote
+				// merchant item survive) instead of hanging until the saga
+				// timer expires — task-221 design delta D3.
+				_, err := p.GetByNpcId(p.CommodityDecorator)(npcId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Cannot locate shop [%d] character [%d] is attempting to enter.", npcId, characterId)
+					return mb.Put(shops.EnvStatusEventTopic, enterErrorEventProvider(transactionId, characterId, npcId, shops.EnterErrorShopNotFound))
+				}
+
+				// One exclusive dialog at a time. AddCharacter overwrites, so
+				// without this guard a second ENTER silently re-enters and a
+				// remote-merchant saga would consume the item for a shop the
+				// player is already standing in (PRD FR-2.3, delta D4).
+				if existing, inShop := GetRegistry().GetShop(p.ctx, characterId); inShop {
+					p.l.Warnf("Character [%d] attempted to enter shop [%d] while already in shop [%d]; rejecting.", characterId, npcId, existing)
+					return mb.Put(shops.EnvStatusEventTopic, enterErrorEventProvider(transactionId, characterId, npcId, shops.EnterErrorAlreadyInShop))
+				}
+
+				GetRegistry().AddCharacter(p.ctx, characterId, npcId)
+				return mb.Put(shops.EnvStatusEventTopic, enteredEventProvider(transactionId, characterId, npcId))
 			}
-			GetRegistry().AddCharacter(p.ctx, characterId, npcId)
-			return mb.Put(shops.EnvStatusEventTopic, enteredEventProvider(characterId, npcId))
 		}
 	}
 }

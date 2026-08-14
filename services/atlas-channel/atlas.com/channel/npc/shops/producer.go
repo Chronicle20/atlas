@@ -3,17 +3,19 @@ package shops
 import (
 	shops2 "atlas-channel/kafka/message/npc/shop"
 
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-func ShopEnterCommandProvider(characterId uint32, npcTemplateId uint32) model.Provider[[]kafka.Message] {
+func ShopEnterCommandProvider(transactionId uuid.UUID, characterId uint32, npcTemplateId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &shops2.Command[shops2.CommandShopEnterBody]{
-		CharacterId: characterId,
-		Type:        shops2.CommandShopEnter,
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		Type:          shops2.CommandShopEnter,
 		Body: shops2.CommandShopEnterBody{
 			NpcTemplateId: npcTemplateId,
 		},

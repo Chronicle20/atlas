@@ -30,9 +30,14 @@ const (
 	// EffectKind selects what the mist's per-tick effect does. An empty value
 	// means DISEASE. DISEASE applies a named character status via
 	// COMMAND_TOPIC_CHARACTER_BUFF; DAMAGE_OVER_TIME applies a damage-bearing
-	// monster status via COMMAND_TOPIC_MONSTER APPLY_STATUS.
+	// monster status via COMMAND_TOPIC_MONSTER APPLY_STATUS; RECOVERY restores
+	// MP to the party members inside via COMMAND_TOPIC_CHARACTER CHANGE_MP;
+	// PROTECTION shields the owner's party from damage and is evaluated in
+	// atlas-channel on the damage path -- it has no atlas-maps tick at all.
 	EffectKindDisease        = "DISEASE"
 	EffectKindDamageOverTime = "DAMAGE_OVER_TIME"
+	EffectKindProtection     = "PROTECTION"
+	EffectKindRecovery       = "RECOVERY"
 )
 
 // Command is the envelope for mist commands published to EnvCommandTopic.
@@ -67,6 +72,15 @@ type CreateCommandBody struct {
 	TargetKind string `json:"targetKind"`
 	// EffectKind is "DISEASE" or "DAMAGE_OVER_TIME"; empty means DISEASE.
 	EffectKind string `json:"effectKind"`
+	// RecoveryMp is the per-tick MP restored by a RECOVERY mist. Unlike
+	// DiseaseValue -- which is target-derived and overwritten downstream by
+	// atlas-monsters -- this magnitude is caster-derived and authoritative,
+	// so it gets its own field rather than overloading DiseaseValue.
+	RecoveryMp int32 `json:"recoveryMp"`
+	// PartyMemberIds scopes a RECOVERY mist to the caster's party, snapshot
+	// at cast time by the atlas-channel handler (atlas-maps has no party
+	// client). Always includes the caster. Ignored by every other kind.
+	PartyMemberIds []uint32 `json:"partyMemberIds"`
 }
 
 // CancelCommandBody requests cancellation of an existing mist by id.
@@ -105,6 +119,11 @@ type CreatedBody struct {
 	// `nType` -- do not add a second key for it.
 	ElemAttr   int32 `json:"elemAttr"`
 	SkillDelay int16 `json:"skillDelay"`
+	// EffectKind lets atlas-channel recognise a PROTECTION mist without
+	// inferring it from the client-facing `Type` (nType) value. Carrying the
+	// domain concept keeps nType a pure render detail -- see
+	// mist.AffectedAreaTypeFor's doc comment.
+	EffectKind string `json:"effectKind"`
 }
 
 // DestroyedBody describes a mist that was just destroyed.

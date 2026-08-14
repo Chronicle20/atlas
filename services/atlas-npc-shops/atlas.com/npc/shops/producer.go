@@ -3,19 +3,37 @@ package shops
 import (
 	"atlas-npc/kafka/message/shops"
 
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-func enteredEventProvider(characterId uint32, npcId uint32) model.Provider[[]kafka.Message] {
+func enteredEventProvider(transactionId uuid.UUID, characterId uint32, npcId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &shops.StatusEvent[shops.StatusEventEnteredBody]{
-		CharacterId: characterId,
-		Type:        shops.StatusEventTypeEntered,
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		Type:          shops.StatusEventTypeEntered,
 		Body: shops.StatusEventEnteredBody{
 			NpcTemplateId: npcId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// enterErrorEventProvider reports a failed ENTER. See StatusEventTypeEnterError
+// for why this is not errorEventProvider.
+func enterErrorEventProvider(transactionId uuid.UUID, characterId uint32, npcId uint32, reason string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &shops.StatusEvent[shops.StatusEventEnterErrorBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		Type:          shops.StatusEventTypeEnterError,
+		Body: shops.StatusEventEnterErrorBody{
+			NpcTemplateId: npcId,
+			Reason:        reason,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

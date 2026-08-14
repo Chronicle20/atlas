@@ -2,6 +2,7 @@ package compartment
 
 import (
 	"atlas-inventory/asset"
+	"atlas-inventory/data/cash"
 	"atlas-inventory/data/equipment"
 	"atlas-inventory/data/tradeability"
 	"atlas-inventory/drop"
@@ -39,6 +40,7 @@ type Processor interface {
 	WithTransaction(db *gorm.DB) *ProcessorImpl
 	WithAssetProcessor(ap asset.Processor) *ProcessorImpl
 	WithTradeabilityProcessor(tp tradeability.Processor) *ProcessorImpl
+	WithCashProcessor(cp cash.Processor) *ProcessorImpl
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	GetById(id uuid.UUID) (Model, error)
 	ByCharacterIdProvider(characterId uint32) model.Provider[[]Model]
@@ -101,6 +103,8 @@ type Processor interface {
 	ApplyAssetLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
 	ApplyAssetKarmaAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error
 	ApplyAssetKarma(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error
+	ExtendAssetExpirationAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error
+	ExtendAssetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -112,6 +116,7 @@ type ProcessorImpl struct {
 	dropProcessor         drop.Processor
 	equipmentProcessor    equipment.Processor
 	tradeabilityProcessor tradeability.Processor
+	cashProcessor         cash.Processor
 	producer              producer.Provider
 }
 
@@ -125,6 +130,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		dropProcessor:         drop.NewProcessor(l, ctx),
 		equipmentProcessor:    equipment.NewProcessor(l, ctx),
 		tradeabilityProcessor: tradeability.NewProcessor(l, ctx),
+		cashProcessor:         cash.NewProcessor(l, ctx),
 		producer:              producer.ProviderImpl(l)(ctx),
 	}
 	return p
@@ -142,6 +148,7 @@ func (p *ProcessorImpl) WithTransaction(db *gorm.DB) *ProcessorImpl {
 		dropProcessor:         p.dropProcessor,
 		equipmentProcessor:    p.equipmentProcessor,
 		tradeabilityProcessor: p.tradeabilityProcessor,
+		cashProcessor:         p.cashProcessor,
 		producer:              p.producer,
 	}
 }
@@ -156,6 +163,7 @@ func (p *ProcessorImpl) WithAssetProcessor(ap asset.Processor) *ProcessorImpl {
 		dropProcessor:         p.dropProcessor,
 		equipmentProcessor:    p.equipmentProcessor,
 		tradeabilityProcessor: p.tradeabilityProcessor,
+		cashProcessor:         p.cashProcessor,
 		producer:              p.producer,
 	}
 }
@@ -170,6 +178,22 @@ func (p *ProcessorImpl) WithTradeabilityProcessor(tp tradeability.Processor) *Pr
 		dropProcessor:         p.dropProcessor,
 		equipmentProcessor:    p.equipmentProcessor,
 		tradeabilityProcessor: tp,
+		cashProcessor:         p.cashProcessor,
+		producer:              p.producer,
+	}
+}
+
+func (p *ProcessorImpl) WithCashProcessor(cp cash.Processor) *ProcessorImpl {
+	return &ProcessorImpl{
+		l:                     p.l,
+		ctx:                   p.ctx,
+		db:                    p.db,
+		t:                     p.t,
+		assetProcessor:        p.assetProcessor,
+		dropProcessor:         p.dropProcessor,
+		equipmentProcessor:    p.equipmentProcessor,
+		tradeabilityProcessor: p.tradeabilityProcessor,
+		cashProcessor:         cp,
 		producer:              p.producer,
 	}
 }
@@ -1150,6 +1174,69 @@ func (p *ProcessorImpl) ApplyAssetKarma(mb *message.Buffer) func(transactionId u
 			return err
 		}
 		p.l.Debugf("Character [%d] applied karma to asset [%d] in inventory [%d] slot [%d].", characterId, a.Id(), inventoryType, slot)
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) ExtendAssetExpirationAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ExtendAssetExpiration(buf)(transactionId, characterId, inventoryType, slot, expiration, extenderTemplateId)
+		})
+	})
+}
+
+// ExtendAssetExpiration extends a time-limited asset's expiration, rejecting
+// the request outright if it exceeds a cap this service re-derives itself.
+//
+// The channel computes the expiration, but the channel is NOT a trust
+// boundary: a forged COMMAND_TOPIC_COMPARTMENT message could otherwise set an
+// arbitrary expiration. The cap is re-derived here from the consumed
+// extender's own cash data (maxDays), anchored to now — the same anchor the
+// client uses (CDraggableItem::ModifyEquipItem compares against
+// GetCorrectTime() + maxDays). A request beyond that cap is REJECTED, not
+// clamped: by the time this runs, the sandglass has already been consumed by
+// the saga's earlier step, and the saga's compensator refunds it by
+// TemplateId on failure, so rejecting produces a full refund rather than
+// silently granting a partial (and unverifiable) extension.
+func (p *ProcessorImpl) ExtendAssetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error {
+		p.l.Debugf("Character [%d] attempting to extend expiration of asset in inventory [%d] slot [%d] with extender [%d].", characterId, inventoryType, slot, extenderTemplateId)
+
+		cd, err := p.cashProcessor.GetById(extenderTemplateId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to resolve extender [%d] cash data; refusing to extend expiration.", characterId, extenderTemplateId)
+			return err
+		}
+		if cd.MaxDays() == 0 {
+			p.l.Errorf("Character [%d] extender [%d] has no maxDays ceiling; refusing to extend expiration.", characterId, extenderTemplateId)
+			return errors.New("extender has no maxDays ceiling")
+		}
+		serverCap := time.Now().Add(time.Duration(cd.MaxDays()) * 24 * time.Hour)
+		if expiration.After(serverCap) {
+			p.l.Warnf("Character [%d] requested expiration [%s] beyond the server-derived cap [%s] for extender [%d]; rejecting.", characterId, expiration, serverCap, extenderTemplateId)
+			return errors.New("requested expiration exceeds the extender's server-derived cap")
+		}
+
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+		if err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to extend expiration of asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return err
+		}
+		a, err := p.assetProcessor.WithTransaction(p.db).GetBySlot(c.Id(), slot)
+		if err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to extend expiration of asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return err
+		}
+		if err := p.assetProcessor.WithTransaction(p.db).ExtendExpiration(mb)(transactionId, characterId)(a, expiration); err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to extend expiration of asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return err
+		}
+		p.l.Debugf("Character [%d] extended expiration of asset [%d] in inventory [%d] slot [%d] to [%s].", characterId, a.Id(), inventoryType, slot, expiration)
 		return nil
 	}
 }

@@ -3,6 +3,7 @@ package mock
 import (
 	"atlas-inventory/asset"
 	"atlas-inventory/compartment"
+	"atlas-inventory/data/cash"
 	"atlas-inventory/data/tradeability"
 	"atlas-inventory/kafka/message"
 	dropMsg "atlas-inventory/kafka/message/drop"
@@ -20,6 +21,7 @@ type ProcessorMock struct {
 	WithTransactionFunc               func(db *gorm.DB) *compartment.ProcessorImpl
 	WithAssetProcessorFunc            func(ap asset.Processor) *compartment.ProcessorImpl
 	WithTradeabilityProcessorFunc     func(tp tradeability.Processor) *compartment.ProcessorImpl
+	WithCashProcessorFunc             func(cp cash.Processor) *compartment.ProcessorImpl
 	ByIdProviderFunc                  func(id uuid.UUID) model.Provider[compartment.Model]
 	GetByIdFunc                       func(id uuid.UUID) (compartment.Model, error)
 	ByCharacterIdProviderFunc         func(characterId uint32) model.Provider[[]compartment.Model]
@@ -58,6 +60,8 @@ type ProcessorMock struct {
 	ApplyAssetLockFunc                func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
 	ApplyAssetKarmaAndEmitFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error
 	ApplyAssetKarmaFunc               func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error
+	ExtendAssetExpirationAndEmitFunc  func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error
+	ExtendAssetExpirationFunc         func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error
 	CreateAssetAndLockFunc            func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
 	CreateAssetFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
 	AttemptEquipmentPickUpAndEmitFunc func(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, templateId uint32, ed dropMsg.EquipmentData) error
@@ -99,6 +103,13 @@ func (m *ProcessorMock) WithAssetProcessor(ap asset.Processor) *compartment.Proc
 func (m *ProcessorMock) WithTradeabilityProcessor(tp tradeability.Processor) *compartment.ProcessorImpl {
 	if m.WithTradeabilityProcessorFunc != nil {
 		return m.WithTradeabilityProcessorFunc(tp)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) WithCashProcessor(cp cash.Processor) *compartment.ProcessorImpl {
+	if m.WithCashProcessorFunc != nil {
+		return m.WithCashProcessorFunc(cp)
 	}
 	return nil
 }
@@ -401,6 +412,22 @@ func (m *ProcessorMock) ApplyAssetKarma(mb *message.Buffer) func(transactionId u
 		return m.ApplyAssetKarmaFunc(mb)
 	}
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error {
+		return nil
+	}
+}
+
+func (m *ProcessorMock) ExtendAssetExpirationAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error {
+	if m.ExtendAssetExpirationAndEmitFunc != nil {
+		return m.ExtendAssetExpirationAndEmitFunc(transactionId, characterId, inventoryType, slot, expiration, extenderTemplateId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) ExtendAssetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error {
+	if m.ExtendAssetExpirationFunc != nil {
+		return m.ExtendAssetExpirationFunc(mb)
+	}
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error {
 		return nil
 	}
 }

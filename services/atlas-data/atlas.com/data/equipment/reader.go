@@ -113,6 +113,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			TimeLimited:    info.GetBool("timeLimited", false),
 			TradeBlock:     info.GetBool("tradeBlock", false),
 			TradeAvailable: info.GetIntegerWithDefault("tradeAvailable", 0),
+			NotExtend:      info.GetBool("notExtend", false),
 			ReplaceItemId:  replaceItemId,
 			ReplaceMessage: replaceMessage,
 			BonusExp:       bonusExpTiers,

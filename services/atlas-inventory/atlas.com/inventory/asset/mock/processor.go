@@ -35,6 +35,7 @@ type ProcessorMock struct {
 	ChangeTemplateFunc               func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, newTemplateId uint32) error
 	UpdateOwnerFunc                  func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, owner string) error
 	ApplyLockFunc                    func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, expiration time.Time) error
+	ExtendExpirationFunc             func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, expiration time.Time) error
 	ClearLockFunc                    func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model) error
 	ApplyKarmaFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, scissorsKarma int32, d tradeability.Model) error
 	ClearKarmaFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model) error
@@ -221,6 +222,16 @@ func (m *ProcessorMock) ApplyLock(mb *message.Buffer) func(transactionId uuid.UU
 		return func(a asset.Model, expiration time.Time) error {
 			return nil
 		}
+	}
+}
+
+// ExtendExpiration is a mock implementation of the asset.Processor.ExtendExpiration method
+func (m *ProcessorMock) ExtendExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) func(a asset.Model, expiration time.Time) error {
+	if m.ExtendExpirationFunc != nil {
+		return m.ExtendExpirationFunc(mb)
+	}
+	return func(_ uuid.UUID, _ uint32) func(asset.Model, time.Time) error {
+		return func(asset.Model, time.Time) error { return nil }
 	}
 }
 

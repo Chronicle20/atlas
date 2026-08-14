@@ -149,9 +149,9 @@ func TestMistTick_MonsterTarget_EmitsApplyStatusPerMonster(t *testing.T) {
 	tt := mkTickTenant()
 	reg := mist.NewTestRegistry()
 	rec := newRecordingProducer()
-	mt := newTestMistTick(t, reg, rec, func(context.Context, uint32) (int16, int16, error) {
+	mt := newTestMistTick(t, reg, rec, func(context.Context, uint32) (int16, int16, uint16, error) {
 		t.Fatal("character position lookup must not run for a MONSTER mist")
-		return 0, 0, nil
+		return 0, 0, 0, nil
 	})
 
 	m := mkMonsterMist(t)

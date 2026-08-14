@@ -47,7 +47,12 @@ type RestModel struct {
 	// BUNDLEITEM/EQUIPITEM+0x14. It is an INT, not a bool: the v87+ client tests
 	// it for EQUALITY against the scissors' own info/karma type, so two scissors
 	// variants gate two different target sets. Absent => 0 => not karma-applicable.
-	TradeAvailable int32           `json:"tradeAvailable"`
+	TradeAvailable int32 `json:"tradeAvailable"`
+	// NotExtend is info/notExtend — when set, an item-expiration extender
+	// (Magical Sandglass) may not be applied to this equip. The client
+	// enforces it via CItemInfo::IsNotExtendItem; the server re-checks so a
+	// crafted request cannot bypass it.
+	NotExtend      bool            `json:"notExtend"`
 	ReplaceItemId  uint32          `json:"replaceItemId,omitempty"`
 	ReplaceMessage string          `json:"replaceMessage,omitempty"`
 	BonusExp       []BonusExpTier  `json:"bonusExp,omitempty"` // Time-based EXP bonus tiers

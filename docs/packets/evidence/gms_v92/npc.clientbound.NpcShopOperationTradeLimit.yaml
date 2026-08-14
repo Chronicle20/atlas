@@ -1,0 +1,8 @@
+packet: npc/clientbound/NpcShopOperationTradeLimit
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CShopDlg::OnPacket#TradeLimit
+    address: "0x6e0390"
+    decompile_sha256: 67318e0628cdff2519e5d9387395b0c3bc374e193b12b7ad987c08a3172fe38f

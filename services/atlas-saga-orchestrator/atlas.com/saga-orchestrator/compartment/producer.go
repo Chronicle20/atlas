@@ -146,3 +146,19 @@ func RequestApplyKarmaCommandProvider(transactionId uuid.UUID, characterId uint3
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func RequestExtendExpirationCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time, extenderTemplateId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.ExtendExpirationCommandBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		InventoryType: inventoryType,
+		Type:          compartment.CommandExtendExpiration,
+		Body: compartment.ExtendExpirationCommandBody{
+			Slot:               slot,
+			Expiration:         expiration,
+			ExtenderTemplateId: extenderTemplateId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

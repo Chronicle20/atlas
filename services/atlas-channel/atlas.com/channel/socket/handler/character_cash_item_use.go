@@ -5,6 +5,7 @@ import (
 	character2 "atlas-channel/character"
 	"atlas-channel/consumable"
 	cashData "atlas-channel/data/cash"
+	equipmentData "atlas-channel/data/equipment"
 	"atlas-channel/data/tradeability"
 	"atlas-channel/incubator"
 	"atlas-channel/kite"
@@ -203,7 +204,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}
 		}
 		if it == CashSlotItemTypeItemTag {
-			sp := cashsb.NewItemUseItemTag(updateTimeFirst)
+			sp := cashsb.NewItemUseTargetSlot(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
 			targetSlot := sp.Slot()
 			if targetSlot >= 0 {
@@ -451,6 +452,107 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			})
 			return
 		}
+		if it == expirationExtenderCashSlotItemType(t) {
+			// Sub-body: a bare int16 equip position, shared verbatim with the
+			// Item Tag arm (the client uses one jump-table target for both --
+			// gms_v83 SendConsumeCashItemUseRequest @0xA0CAE0, "cases 25,61").
+			// No inventory type is on the wire: the client hard-codes EQUIP
+			// (CharacterData::GetItem(charData, 1, -hitTestResult)), so the
+			// compartment is EQUIP unconditionally and the slot is negative.
+			sp := cashsb.NewItemUseTargetSlot(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			targetSlot := sp.Slot()
+
+			// Every rejection below MUST unlock the client before returning.
+			// CWvsContext::SendConsumeCashItemUseRequest is the sole caller of
+			// SetExclRequestSent (gms_v83 @0xa0ea6f -> @0xa0ebbc), so the excl
+			// lock is already armed by the time this arm runs; it mutates
+			// nothing and does not warp, so only an explicit EnableActions
+			// clears it, and the client has no timeout.
+			target, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), inventory.TypeValueEquip, targetSlot)()
+			if err != nil {
+				// Reachable only by double-clicking the extender in the CASH
+				// tab: CDraggableItem::OnDoubleClicked (gms_v83 @0x4efd25)
+				// falls through get_cashslot_item_type 61 into the
+				// get_consume_cash_item_type allow-list (@0x4863d5) and sends
+				// the request with a hard-coded nEPOS of 0 and an empty string
+				// (@0x4f05a6), having asked the player for no target at all.
+				// The supported flow is the drag-drop one --
+				// CDraggableItem::ModifyEquipItem (@0x4f4bb7), which hit-tests
+				// the target and runs the client's own confirm/reject dialogs
+				// -- so tell the player that rather than leaving a dead click.
+				l.Warnf("Character [%d] attempted to use expiration extender [%d] on empty equip slot [%d].", s.CharacterId(), itemId, targetSlot)
+				_ = session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody("Drag the item onto the equipment you want to extend."))(s)
+				_ = enableActions(l)(ctx)(wp)(s)
+				return
+			}
+
+			cd, err := cashData.NewProcessor(l, ctx).GetById(uint32(itemId))
+			if err != nil {
+				l.WithError(err).Warnf("Character [%d] unable to resolve cash item data for expiration extender [%d].", s.CharacterId(), itemId)
+				_ = enableActions(l)(ctx)(wp)(s)
+				return
+			}
+
+			ed, err := equipmentData.NewProcessor(l, ctx).GetById(target.TemplateId())
+			if err != nil {
+				l.WithError(err).Warnf("Character [%d] unable to resolve equipment data for extender target [%d] in slot [%d].", s.CharacterId(), target.TemplateId(), targetSlot)
+				_ = enableActions(l)(ctx)(wp)(s)
+				return
+			}
+
+			outcome := evaluateExpirationExtension(time.Now(), extensionTarget{
+				Expiration: target.Expiration(),
+				Locked:     target.Locked(),
+				CashId:     target.CashId(),
+				NotExtend:  ed.NotExtend(),
+			}, cd.AddTime, cd.MaxDays)
+			if outcome.Reason != "" {
+				l.Warnf("Character [%d] expiration extender [%d] rejected on equip slot [%d] target [%d]: %s.", s.CharacterId(), itemId, targetSlot, target.TemplateId(), outcome.Reason)
+				_ = enableActions(l)(ctx)(wp)(s)
+				return
+			}
+
+			// No EnableActions on the accepted path: this arm mutates inventory
+			// without warping, and the non-silent inventory change carries the
+			// unlock itself, matching the sealing-lock and kite arms.
+			transactionId := uuid.New()
+			now := time.Now()
+			_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
+				TransactionId: transactionId,
+				SagaType:      saga.ExpirationExtenderUse,
+				InitiatedBy:   "CASH_ITEM_USE",
+				Steps: []saga.Step{
+					{
+						StepId: "consume_expiration_extender",
+						Status: saga.Pending,
+						Action: saga.DestroyAsset,
+						Payload: saga.DestroyAssetPayload{
+							CharacterId: s.CharacterId(),
+							TemplateId:  uint32(itemId),
+							Quantity:    1,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "extend_asset_expiration",
+						Status: saga.Pending,
+						Action: saga.ExtendAssetExpiration,
+						Payload: saga.ExtendAssetExpirationPayload{
+							CharacterId:        s.CharacterId(),
+							InventoryType:      byte(inventory.TypeValueEquip),
+							Slot:               targetSlot,
+							Expiration:         outcome.Expiration,
+							ExtenderTemplateId: uint32(itemId),
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				},
+			})
+			return
+		}
 		if it == CashSlotItemTypeIncubator {
 			sp := cashsb.NewItemUseIncubator(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
@@ -636,6 +738,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		// so megaphone/avatar-megaphone routing must branch on classification
 		// before any cash-slot-type sub-switch, never the other way around.
 		category := item.GetClassification(itemId)
+		// Classification-FIRST, same reason as the megaphone branch below: the
+		// cash-slot type byte collides (37 is also the wedding-ticket bucket,
+		// 59/60 are also triple-megaphone buckets — GetCashSlotItemType).
+		if category == item.ClassificationRemoteMerchant {
+			handleRemoteMerchantUse(l, ctx, wp)(s, t, itemId, source, it)
+			return
+		}
 		if category == item.ClassificationMegaphones || category == item.ClassificationAvatarMegaphone {
 			// Legacy GMS (v48/61/72/79, MajorVersion < 83) item-loss guard.
 			// task-123 legacy-phase-1 (.superpowers/sdd/legacy-megaphone-protocol.md)
@@ -832,12 +941,14 @@ const (
 	// type 24. The type byte therefore CANNOT distinguish AP-vs-SP — the labels
 	// below name only which numeric bucket each is. The arm matches on either
 	// bucket and then dispatches by item id (design §2.4), never by this type.
-	CashSlotItemTypePointResetShared = CashSlotItemType(23) // AP Reset + SP Reset tiers 2-4
-	CashSlotItemTypePointResetTier1  = CashSlotItemType(24) // SP Reset tier 1 only
-	CashSlotItemTypeVegasSpellPre95  = CashSlotItemType(68)
-	CashSlotItemTypeVegasSpell95     = CashSlotItemType(71)
-	CashSlotItemTypeViciousHammer    = CashSlotItemType(66) // GMS < 95
-	CashSlotItemTypeViciousHammerV95 = CashSlotItemType(67) // GMS >= 95
+	CashSlotItemTypePointResetShared      = CashSlotItemType(23) // AP Reset + SP Reset tiers 2-4
+	CashSlotItemTypePointResetTier1       = CashSlotItemType(24) // SP Reset tier 1 only
+	CashSlotItemTypeVegasSpellPre95       = CashSlotItemType(68)
+	CashSlotItemTypeVegasSpell95          = CashSlotItemType(71)
+	CashSlotItemTypeViciousHammer         = CashSlotItemType(66) // GMS < 95
+	CashSlotItemTypeViciousHammerV95      = CashSlotItemType(67) // GMS >= 95
+	CashSlotItemTypeExpirationExtender    = CashSlotItemType(61) // GMS < 95, JMS
+	CashSlotItemTypeExpirationExtenderV95 = CashSlotItemType(62) // GMS >= 95
 	// CashSlotItemTypeTeleportRock (enum 12) is shared with some megaphones
 	// (GetCashSlotItemType's ClassificationMegaphones branch, otherCategory==1)
 	// — the handler gates on item.ClassificationTeleportRock (504) before
@@ -1281,7 +1392,7 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 				return CashSlotItemType(58)
 			}
 		}
-		if category == 550 {
+		if category == item.ClassificationExpirationExtender {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 				return CashSlotItemType(62)
 			} else {

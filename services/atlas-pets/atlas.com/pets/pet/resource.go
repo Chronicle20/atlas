@@ -2,7 +2,10 @@ package pet
 
 import (
 	"atlas-pets/rest"
+	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -193,16 +196,27 @@ func handleUpdate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel
 			p := NewProcessor(d.Logger(), d.Context(), d.DB())
 			existing, err := p.GetById(petId)
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Unable to locate pet [%d].", petId)
+				d.Logger().WithError(err).Warnf("Unable to locate pet [%d].", petId)
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					writeNotFound(d.Logger(), w, "pet not found")
+					return
+				}
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
 			// The owner is taken from the stored row, never from the request:
 			// the processor's ownership check would otherwise be trivially
-			// satisfiable by a caller supplying whatever ownerId it liked.
+			// satisfiable by a caller supplying whatever ownerId it liked. This
+			// makes the check near-tautological through this handler -- it is
+			// reachable only if the pet's owner changes between this read and
+			// the processor's re-read inside its own transaction.
 			if err = p.RenameAndEmit(uuid.New(), petId, existing.OwnerId(), name); err != nil {
-				d.Logger().WithError(err).Errorf("Unable to rename pet [%d].", petId)
+				d.Logger().WithError(err).Warnf("Unable to rename pet [%d].", petId)
+				if errors.Is(err, ErrNotOwner) {
+					writeForbidden(d.Logger(), w, "pet is not owned by character")
+					return
+				}
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
@@ -224,4 +238,50 @@ func handleUpdate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel
 			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
+}
+
+// operatorErrorObject / operatorErrorBody mirror atlas-rest/server's
+// unexported JSON:API error shape ({"errors":[{"status","title","detail"}]}).
+// handleUpdate is the operator PATCH surface this branch introduced; it needs
+// 404 (pet not found) and 403 (rename rejected for non-ownership) status
+// codes that server.WriteErrorResponse does not produce -- that helper only
+// distinguishes transient-503 from 500, and installing a not-found classifier
+// there would change error mapping for every service in the repo. Kept local
+// to this handler rather than touching libs/atlas-rest or any other handler
+// in this file (see docs/tasks/task-224-pet-name-tag/audit-backend-guidelines.md).
+type operatorErrorObject struct {
+	Status string `json:"status"`
+	Title  string `json:"title"`
+	Detail string `json:"detail"`
+}
+
+type operatorErrorBody struct {
+	Errors []operatorErrorObject `json:"errors"`
+}
+
+func writeOperatorError(l logrus.FieldLogger, w http.ResponseWriter, status int, title string, detail string) {
+	body, err := json.Marshal(operatorErrorBody{Errors: []operatorErrorObject{{
+		Status: strconv.Itoa(status),
+		Title:  title,
+		Detail: detail,
+	}}})
+	if err != nil {
+		l.WithError(err).Errorf("Unable to marshal error response.")
+		body = []byte(`{"errors":[{"status":"` + strconv.Itoa(status) + `","title":"` + title + `"}]}`)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if _, err := w.Write(body); err != nil {
+		l.WithError(err).Errorf("Unable to write error response.")
+	}
+}
+
+// writeNotFound writes a JSON:API error object with HTTP 404.
+func writeNotFound(l logrus.FieldLogger, w http.ResponseWriter, detail string) {
+	writeOperatorError(l, w, http.StatusNotFound, "Not Found", detail)
+}
+
+// writeForbidden writes a JSON:API error object with HTTP 403.
+func writeForbidden(l logrus.FieldLogger, w http.ResponseWriter, detail string) {
+	writeOperatorError(l, w, http.StatusForbidden, "Forbidden", detail)
 }

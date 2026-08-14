@@ -1875,8 +1875,15 @@ func TestRenameRejectsNonOwner(t *testing.T) {
 		t.Fatalf("Failed to create pet: %v", err)
 	}
 
-	if err := p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId()+1, "Renamed"); err == nil {
+	err = p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId()+1, "Renamed")
+	if err == nil {
 		t.Fatal("RenameAndEmit by non-owner = nil, want error")
+	}
+	// The handler in resource.go's operator PATCH endpoint distinguishes this
+	// failure from other rename errors via errors.Is to map it to 403; that
+	// only works if the sentinel actually survives the wrap.
+	if !errors.Is(err, pet.ErrNotOwner) {
+		t.Fatalf("RenameAndEmit by non-owner = %v, want errors.Is(err, pet.ErrNotOwner)", err)
 	}
 	got, _ := p.GetById(created.Id())
 	if got.Name() != "Original" {

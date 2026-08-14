@@ -107,6 +107,31 @@ func TestPatchPetRenamesPet(t *testing.T) {
 	}
 }
 
+// TestPatchPetNotFound drives PATCH /pets/{petId} against a petId that was
+// never seeded, and expects 404 -- not the generic 500 that
+// server.WriteErrorResponse produces for every unclassified error.
+func TestPatchPetNotFound(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration, exclude.Migration, outboxlib.Migration)
+	tenantId := uuid.New()
+
+	srv := httptest.NewServer(setupPetRouter(db))
+	defer srv.Close()
+
+	body, err := jsonapi.Marshal(RestModel{Id: 999999, Name: "Rexxo"})
+	require.NoError(t, err)
+
+	url := fmt.Sprintf("%s/pets/%d", srv.URL, 999999)
+	req := patchPetRequest(url, tenantId, body)
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusNotFound)
+	}
+}
+
 func TestCreatePetExpiration(t *testing.T) {
 	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	// A zero/epoch expiration (the bare inventory/award path) defaults to

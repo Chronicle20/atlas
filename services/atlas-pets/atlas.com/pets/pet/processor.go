@@ -962,6 +962,12 @@ func (p *ProcessorImpl) RenameAndEmit(transactionId uuid.UUID, petId uint32, act
 	})
 }
 
+// ErrNotOwner is returned by Rename when the acting character does not own
+// the pet. Distinguishing this from other rename failures lets callers (e.g.
+// the operator PATCH handler in resource.go) map it to 403 rather than a
+// generic 500.
+var ErrNotOwner = errors.New("pet is not owned by character")
+
 // Rename applies a new pet name and emits NAME_CHANGED.
 //
 // Idempotent by construction (PRD FR-5.5): the pre-read proves the row exists,
@@ -988,7 +994,7 @@ func (p *ProcessorImpl) Rename(mb *message.Buffer) func(transactionId uuid.UUID,
 				return err
 			}
 			if pe.OwnerId() != actorId {
-				return fmt.Errorf("pet [%d] is not owned by character [%d]", petId, actorId)
+				return fmt.Errorf("pet [%d] is not owned by character [%d]: %w", petId, actorId, ErrNotOwner)
 			}
 			previousName = pe.Name()
 

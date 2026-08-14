@@ -64,6 +64,13 @@ func handleBuddyCapacityChangedEvent(l logrus.FieldLogger, ctx context.Context, 
 	_ = p.StepCompleted(e.Body.TransactionId, true)
 }
 
+// handleBuddyRemovedEvent advances a sever_buddies_for_transfer step. N
+// buddies means 2N in-flight REQUEST_DELETE commands (one per direction per
+// buddy — see handleSeverBuddiesForTransfer in saga/handler.go), so this
+// single ack must NOT complete the step on its own: it only reports one of
+// the 2N severances landing. saga.AcknowledgeSeverance is the single source
+// of truth for "have all of them landed" — StepCompleted is only called once
+// it returns true.
 func handleBuddyRemovedEvent(l logrus.FieldLogger, ctx context.Context, e buddylist2.StatusEvent[buddylist2.BuddyRemovedStatusEventBody]) {
 	if e.Type != buddylist2.StatusEventTypeBuddyRemoved {
 		return
@@ -79,5 +86,18 @@ func handleBuddyRemovedEvent(l logrus.FieldLogger, ctx context.Context, e buddyl
 		return
 	}
 
-	_ = p.StepCompleted(e.Body.TransactionId, true)
+	if !saga.AcknowledgeSeverance(e.Body.TransactionId, uint32(e.CharacterId), uint32(e.Body.CharacterId)) {
+		l.WithFields(logrus.Fields{
+			"transaction_id": e.Body.TransactionId.String(),
+			"character_id":   e.CharacterId,
+			"buddy_id":       e.Body.CharacterId,
+		}).Debug("Buddy severance acknowledged; step remains pending other severances.")
+		return
+	}
+
+	if err := p.StepCompleted(e.Body.TransactionId, true); err != nil {
+		l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": e.Body.TransactionId.String(),
+		}).Error("All buddy severances acknowledged but step completion failed.")
+	}
 }

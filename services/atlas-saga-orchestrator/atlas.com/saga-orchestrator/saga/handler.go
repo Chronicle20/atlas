@@ -1429,7 +1429,10 @@ func (h *HandlerImpl) handleValidateWorldTransfer(s Saga, st Step[any]) error {
 		return err
 	}
 
-	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+	if err := NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true); err != nil {
+		h.logActionError(s, st, err, "Unable to self-complete world transfer validation step.")
+		return err
+	}
 	return nil
 }
 
@@ -1446,7 +1449,10 @@ func (h *HandlerImpl) handleLeaveGuildForTransfer(s Saga, st Step[any]) error {
 	}
 
 	if payload.GuildId == 0 {
-		_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+		if err := NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true); err != nil {
+			h.logActionError(s, st, err, "Unable to self-complete guildless world transfer step.")
+			return err
+		}
 		return nil
 	}
 
@@ -1469,7 +1475,10 @@ func (h *HandlerImpl) handleLeavePartyForTransfer(s Saga, st Step[any]) error {
 	}
 
 	if payload.PartyId == 0 {
-		_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+		if err := NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true); err != nil {
+			h.logActionError(s, st, err, "Unable to self-complete partyless world transfer step.")
+			return err
+		}
 		return nil
 	}
 
@@ -1484,9 +1493,18 @@ func (h *HandlerImpl) handleLeavePartyForTransfer(s Saga, st Step[any]) error {
 
 // handleSeverBuddiesForTransfer emits a REQUEST_DELETE for every id in
 // BuddyIds, once in each direction (FR-4.3 requires severance to be mutual —
-// atlas-buddies only removes the caller's own list entry per command). An
-// empty BuddyIds means the character has no buddies to sever: the step
-// self-completes, matching the guild/party skip branches.
+// atlas-buddies only removes the caller's own list entry per command), so N
+// buddies means 2N in-flight severances. The step must not complete on the
+// first BUDDY_REMOVED ack — the other 2N-1 would still be in flight, and a
+// failure among them would never be observed by the saga, landing the
+// character in the destination world while still holding buddy rows that
+// point at characters in the world it left. RegisterSeveranceTracker records
+// the full expected set BEFORE any command is emitted (so a fast ack can
+// never race ahead of registration); handleBuddyRemovedEvent
+// (kafka/consumer/buddylist/consumer.go) only completes the step once every
+// pair has been observed via AcknowledgeSeverance. An empty BuddyIds means
+// the character has no buddies to sever: no tracker is needed, and the step
+// self-completes immediately, matching the guild/party skip branches.
 func (h *HandlerImpl) handleSeverBuddiesForTransfer(s Saga, st Step[any]) error {
 	payload, ok := st.Payload().(SeverBuddiesForTransferPayload)
 	if !ok {
@@ -1494,9 +1512,14 @@ func (h *HandlerImpl) handleSeverBuddiesForTransfer(s Saga, st Step[any]) error 
 	}
 
 	if len(payload.BuddyIds) == 0 {
-		_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+		if err := NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true); err != nil {
+			h.logActionError(s, st, err, "Unable to self-complete buddyless world transfer step.")
+			return err
+		}
 		return nil
 	}
+
+	RegisterSeveranceTracker(s.TransactionId(), payload.CharacterId, payload.BuddyIds)
 
 	for _, buddyId := range payload.BuddyIds {
 		if err := h.buddyListP.RequestDeleteAndEmit(s.TransactionId(), payload.CharacterId, payload.WorldId, buddyId); err != nil {

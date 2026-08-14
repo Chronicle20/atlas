@@ -18951,18 +18951,18 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "updateTime; COutPacket::COutPacket(&pkt,78) at 0x841cb8",
-          "guard": "sub_837C80(a3) && sub_4BDB9F(500,0) && success-path (LABEL_21) after WZ Return Scroll prop reads (StringPool ids 2276/2277/2279 via IWzProperty::Getitem), no RunMapTransferItem call"
+          "comment": "",
+          "guard": "v36 == (void *)999999999"
         },
         {
           "op": "Decode2",
-          "comment": "useSlot (a2)",
-          "guard": "sub_837C80(a3) && sub_4BDB9F(500,0) && success-path (LABEL_21)"
+          "comment": "",
+          "guard": "v36 == (void *)999999999"
         },
         {
           "op": "Decode4",
-          "comment": "targetMap/itemId (a3)",
-          "guard": "sub_837C80(a3) && sub_4BDB9F(500,0) && success-path (LABEL_21)"
+          "comment": "",
+          "guard": "v36 == (void *)999999999"
         }
       ]
     }

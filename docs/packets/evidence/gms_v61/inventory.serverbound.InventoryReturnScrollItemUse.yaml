@@ -5,6 +5,6 @@ category: TIER1-FIXTURE
 ida:
     function: sub_841AA5
     address: "0x841aa5"
-    decompile_sha256: ddcc082fb366cff95c3c4bfce09756a92f6c54d0eba7b78dd5c211287e19279f
+    decompile_sha256: 958f4d9930e2a24301a26e59c2c342dc01433410270bb74c345596210e7990d0
 verifies:
     - libs/atlas-packet/inventory/serverbound/return_scroll_item_use_test.go#TestReturnScrollItemUseRoundTrip

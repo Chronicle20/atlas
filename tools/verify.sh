@@ -283,6 +283,12 @@ else
     skip "npc-shop contract mirror guard (contract unchanged)"
 fi
 
+if touched '^tools/task-(resolve|brief)(_test)?\.sh$'; then
+    step "task resolve/brief tests" ./tools/task-resolve_test.sh
+else
+    skip "task resolve/brief tests (task tooling unchanged)"
+fi
+
 if touched '^(deploy/|tools/gen-lb-ports\.sh|.*versions\.json)'; then
     step "LB port drift"       ./tools/gen-lb-ports.sh --check
     step "version coverage"    ./tools/check-version-coverage.sh

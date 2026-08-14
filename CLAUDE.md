@@ -49,7 +49,7 @@ The canonical flow for any non-trivial change is four phases. **`/spec-task` cre
 3. `/clear`, then `/plan-task <task-id>` — invokes `superpowers:writing-plans`. Output: `plan.md` + `context.md` (committed).
 4. `/clear`, then `/execute-task <task-id>` — invokes `superpowers:subagent-driven-development`. Reuses the existing worktree; never creates a new one.
 
-Phase commands accept fuzzy task identifiers: `task-054-slug`, `task-054`, `054`, or `54` all resolve to the same folder. They search both `docs/tasks/` (main) and `.worktrees/*/docs/tasks/` to locate the task.
+Phase commands accept fuzzy task identifiers: `task-054-slug`, `task-054`, `054`, or `54` all resolve to the same folder. They resolve it with `tools/task-resolve.sh <identifier>`, which prints `<task-id>\t<task-dir>\t<worktree>`. Never glob `.worktrees/*/docs/tasks/task-*` to find a task — every worktree carries a full copy of `docs/tasks/` from its branch point, so that pattern returns (tasks × worktrees) mostly-duplicate paths into context to resolve a single ID.
 
 Skip `/spec-task` only for trivial fixes that don't warrant a PRD; document those directly via a brainstorming session.
 
@@ -149,7 +149,7 @@ Every task type's leaf step — promoting one packet × version matrix cell to `
 
 ## Task Workflow
 
-- Before planning or designing a task, first verify the task is not already planned/implemented, and that its task number does not collide with an in-flight task. Use `tools/task-numbers.sh next` and search both `docs/tasks/` and `.worktrees/*/docs/tasks/`.
+- Before planning or designing a task, first verify the task is not already planned/implemented, and that its task number does not collide with an in-flight task. Use `tools/task-numbers.sh next` to pick the number and `tools/task-resolve.sh --list` to see every existing task (one row per task, already deduplicated across worktrees).
 
 ## Debugging / Kubernetes
 
@@ -174,8 +174,55 @@ Every task type's leaf step — promoting one packet × version matrix cell to `
 - Never use Fable for background/review workflows.
 - Long agents are the cost: context grows with turn count and every turn re-reads all of it, so one 600-turn agent costs far more than the same work split across fresh contexts. The implementer budget is **120 tool calls**, warned at 100 — enforced by `.claude/hooks/turn-budget.sh` and contracted in `.claude/agents/atlas-implementer.md`. At the cap an implementer commits and reports `PARTIAL`; the controller dispatches a continuation. The number lives in the hook — change it there only.
 - Implementers do not run repo-wide verification. `tools/verify.sh`, `tools/lint.sh`, `-race`, and docker bake belong to the `atlas-verifier` agent in its own clean context; a `--quick` run inside a 400k-token implementer costs a large multiple of the same run in a 20k one. Implementers run module-local `go build ./... && go test ./...` and nothing more.
+- Fan out with **fresh-context agents, not `subagent_type: "fork"`.** A fork inherits the parent's entire conversation and re-reads it on every turn, so a forked child that runs 70+ turns costs several times a briefed agent doing the same job. Default to a named agent type plus an explicit brief. Fork only to continue an interactive debugging thread whose brief would be longer than the context it saves — and say so, because `.claude/hooks/fork-dispatch-guard.sh` requires the justification inline.
+- The same arithmetic binds the **controller**, which is the one context that lives for a whole plan — every wake-up re-reads it. During `/execute-task`, hand off to a fresh session past ~250k tokens with tasks remaining: the SDD ledger (`.superpowers/sdd/<plan>/progress.md`) is the resume point, so the cost is one plan re-read. Procedure: `.claude/commands/execute-task.md` Step 4e.
+
+## Context Handoff
+
+The unit of work is a **briefable task, not a conversation.** Context cost scales
+with turn count × context size, so 50 turns carried at 190k cost roughly ten times
+the same 50 turns at 19k — regardless of what they accomplish.
+
+**At every durable boundary — a commit landing, a verification gate returning, a
+fan-out of agents reporting — ask one question: does the next unit of work depend
+materially on this conversation's history, or only on repository state?**
+
+If it can be resumed from repo state + the task's own reports + a short written
+diagnosis, hand off. Do not wait for a context threshold; a high threshold is a
+backstop, not the trigger. The signal is dependency, not size.
+
+- **Handing off means delegating, not clearing.** `/clear` is a user action —
+  you cannot clear yourself. Dispatch the next unit to a fresh agent with a brief
+  (`atlas-implementer` + `atlas-verifier` for code work). Only when the next unit
+  is genuinely controller-shaped should you instead write the diagnosis down, tell
+  the user this is a clean handoff point, and let them `/clear`.
+- **The diagnosis must be written before the handoff, not carried in your head.**
+  One paragraph into the task folder — what was found, what it means, what the
+  next step is. One turn to write; it is what makes the handoff lossless. A
+  handoff whose reasoning survives only in conversation is not a handoff.
+- **There is a floor as well as a backstop.** Below roughly 60k a fresh agent
+  re-discovers files you already hold, and you pay for that discovery twice.
+  Under ~40 tool calls, prefer continuing. `.claude/hooks/commit-boundary.sh`
+  encodes this floor and raises the question at commits past it. The backstop at
+  the other end is ~250k for a controller — see `/execute-task` Step 4e, which is
+  this same rule in its threshold form, with the measured numbers behind it.
+- **The pattern already exists — reuse it.** `/execute-task` Step 4d (`PARTIAL`
+  → continuation brief beside the original → same report file as the persistent
+  memory across the split → fresh implementer) and Step 4e (controller → SDD
+  ledger → fresh session) are both exactly this handoff, and both already carry a
+  durable artifact: `task-N-report.md` and
+  `.superpowers/sdd/<plan>/progress.md`. Neither is special to `/execute-task` —
+  apply the same shape in any session, and where a canonical ledger already
+  exists, write there rather than inventing a second artifact. Generate briefs
+  with `tools/task-brief.sh`, never by hand out of `plan.md`.
+
+The failure this prevents: one session doing four unrelated jobs — resolve a merge,
+verify packet cells, run reviews, then fix a service bug — where the last job needed
+exactly one sentence from the first three but re-read all of them on all 57 of its
+turns.
 
 ## Shell & Editing Conventions
 
 - Prefer portable POSIX shell in Bash commands; avoid zsh/direnv-specific constructs and batch patch loops that can produce garbled or unapplied output. When a multi-file edit is needed, prefer per-file Edit/Write over a shell patch loop.
 - Preserve line endings when editing (do not normalize CRLF→LF as a side effect) — it inflates diffs with spurious changes.
+- **Never spend inference turns waiting for a process.** Launch it once with a bound — `run_in_background: true`, or `Monitor` with an until-loop — and do something else or hand back. Repeated `sleep` / `ps aux | grep` / `echo waiting` / `for i in $(seq …); do sleep` Bash calls are the anti-pattern: each one re-reads the whole context to learn nothing, and they cluster late in a session where that is most expensive. If the process exceeds its bound, kill it and fall back; do not keep polling. When a tool has a known hang mode, the fallback belongs in that tool's agent doc, not in a longer wait.

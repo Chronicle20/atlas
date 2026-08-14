@@ -112,7 +112,7 @@
 
 Packet id derivation: `qualifiedWriterName(pkg, name)` = TitleCase(pkg) + struct name, so pkg `inventory` + `SummonBagItemUse` → `InventorySummonBagItemUse`, and the marker path is `inventory/serverbound/InventorySummonBagItemUse`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `libs/atlas-packet/inventory/serverbound/summon_bag_item_use_test.go`:
 
@@ -243,7 +243,7 @@ func TestReturnScrollItemUseMatchesSharedBody(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd libs/atlas-packet && go test ./inventory/serverbound/ -run 'SummonBagItemUse|ReturnScrollItemUse' -v
@@ -251,7 +251,7 @@ cd libs/atlas-packet && go test ./inventory/serverbound/ -run 'SummonBagItemUse|
 
 Expected: FAIL — `undefined: SummonBagItemUse`, `undefined: ReturnScrollItemUse`.
 
-- [ ] **Step 3: Write the wrapper codecs**
+- [x] **Step 3: Write the wrapper codecs**
 
 `libs/atlas-packet/inventory/serverbound/summon_bag_item_use.go`:
 
@@ -308,7 +308,7 @@ func NewReturnScrollItemUse() ReturnScrollItemUse {
 
 Note: `Operation()`, `Encode()`, `Decode()`, `String()` and the getters are all promoted from the embedded `ItemUse` — do not redeclare them.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 cd libs/atlas-packet && go test ./inventory/serverbound/ -run 'SummonBagItemUse|ReturnScrollItemUse' -v
@@ -316,7 +316,7 @@ cd libs/atlas-packet && go test ./inventory/serverbound/ -run 'SummonBagItemUse|
 
 Expected: PASS, one subtest per entry in `pt.Variants` (GMS v28/v83/v87/v95/v84/v86/v48/v61/v72/v79/v92 and JMS v185).
 
-- [ ] **Step 5: Run the full module test + vet**
+- [x] **Step 5: Run the full module test + vet**
 
 ```bash
 cd libs/atlas-packet && go test -race ./... && go vet ./...
@@ -324,7 +324,7 @@ cd libs/atlas-packet && go test -race ./... && go vet ./...
 
 Expected: PASS / no output.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add libs/atlas-packet/inventory/serverbound/summon_bag_item_use.go \
@@ -348,7 +348,7 @@ git commit -m "feat(task-229): audit-only SummonBagItemUse and ReturnScrollItemU
 
 Why this is needed: `locateAtlasFile` finds a codec by `type <name> struct` inside `<pkg>/serverbound/`, and the candidate comes from this switch keyed on the registry's **primary** `fname`. Without a case, report generation cannot find the struct and the report is never written (`VERIFYING_A_PACKET.md` §9 "Linkage").
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tools/packet-audit/cmd/disambiguation_test.go`:
 
@@ -389,7 +389,7 @@ func TestCandidatesItemUseFamilyWrappers(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd tools/packet-audit && go test ./cmd/ -run TestCandidatesItemUseFamilyWrappers -v
@@ -397,7 +397,7 @@ cd tools/packet-audit && go test ./cmd/ -run TestCandidatesItemUseFamilyWrappers
 
 Expected: FAIL — five subtests report `no candidates` (only `SendStatChangeItemUseRequest` passes).
 
-- [ ] **Step 3: Add the switch cases**
+- [x] **Step 3: Add the switch cases**
 
 In `tools/packet-audit/cmd/run.go`, immediately after the existing
 `case "CWvsContext::SendUpgradeItemUseRequest":` arm (~line 2200), insert:
@@ -431,7 +431,7 @@ In `tools/packet-audit/cmd/run.go`, immediately after the existing
 		return []candidate{{name: "ReturnScrollItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 ```bash
 cd tools/packet-audit && go test ./... && go vet ./...
@@ -439,7 +439,7 @@ cd tools/packet-audit && go test ./... && go vet ./...
 
 Expected: all packages PASS (including the new subtests).
 
-- [ ] **Step 5: Confirm the matrix is still clean**
+- [x] **Step 5: Confirm the matrix is still clean**
 
 ```bash
 go run ./tools/packet-audit matrix --check >/dev/null 2>&1; echo "EXIT=$?"
@@ -447,7 +447,7 @@ go run ./tools/packet-audit matrix --check >/dev/null 2>&1; echo "EXIT=$?"
 
 Expected: `EXIT=0`. (Nothing should move yet — the registry has no `packet:` link and no evidence exists.)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add tools/packet-audit/cmd/run.go tools/packet-audit/cmd/disambiguation_test.go
@@ -467,7 +467,7 @@ git commit -m "feat(task-229): key summon-bag and return-scroll fnames to their 
 
 For each of the nine files, add exactly one line to the `USE_SUMMON_BAG` (serverbound) entry and one to the `USE_RETURN_SCROLL` (serverbound) entry. Keep the existing key order; append `packet:` after `provenance:`/`ida:`/`note:`.
 
-- [ ] **Step 1: Add the `packet:` key to both ops in all nine registries**
+- [x] **Step 1: Add the `packet:` key to both ops in all nine registries**
 
 For each file, the `USE_SUMMON_BAG` serverbound entry gains:
 
@@ -495,7 +495,7 @@ Use per-file `Edit` calls (one edit per entry, anchored on the surrounding lines
 | `gms_v95.yaml` | 2582 | 2643 |
 | `jms_v185.yaml` | 2307 | 2363 |
 
-- [ ] **Step 2: Verify all eighteen edits landed**
+- [x] **Step 2: Verify all eighteen edits landed**
 
 ```bash
 grep -c "InventorySummonBagItemUse\|InventoryReturnScrollItemUse" docs/packets/registry/gms_v61.yaml docs/packets/registry/gms_v72.yaml docs/packets/registry/gms_v79.yaml docs/packets/registry/gms_v83.yaml docs/packets/registry/gms_v84.yaml docs/packets/registry/gms_v87.yaml docs/packets/registry/gms_v92.yaml docs/packets/registry/gms_v95.yaml docs/packets/registry/jms_v185.yaml
@@ -503,7 +503,7 @@ grep -c "InventorySummonBagItemUse\|InventoryReturnScrollItemUse" docs/packets/r
 
 Expected: `2` for every file.
 
-- [ ] **Step 3: Verify the registry still parses and the matrix is unchanged**
+- [x] **Step 3: Verify the registry still parses and the matrix is unchanged**
 
 ```bash
 cd tools/packet-audit && go test ./... && cd ../..
@@ -512,7 +512,7 @@ go run ./tools/packet-audit matrix --check >/dev/null 2>&1; echo "EXIT=$?"
 
 Expected: tests PASS, `EXIT=0`. The two rows stay `incomplete` — a `packet:` link with no evidence promotes nothing.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/packets/registry
@@ -542,7 +542,7 @@ Every new entry has exactly this shape (matching the gms_83 reference entries):
 
 **Insert each entry at its strictly-ascending sorted position in the `handlers` array** — never appended next to a semantically-related entry (`tools/template-opcode-order-guard.sh`). `LoggedInValidator` is already declared in all five templates; a handler naming a missing validator is silently dropped at load time.
 
-- [ ] **Step 1: gms_87 — two entries**
+- [x] **Step 1: gms_87 — two entries**
 
 | opCode | handler | fname |
 |---|---|---|
@@ -551,7 +551,7 @@ Every new entry has exactly this shape (matching the gms_83 reference entries):
 
 Both with `"validator": "LoggedInValidator"`, `"services": ["channel"]`.
 
-- [ ] **Step 2: gms_92 — five entries**
+- [x] **Step 2: gms_92 — five entries**
 
 | opCode | handler | fname |
 |---|---|---|
@@ -563,25 +563,25 @@ Both with `"validator": "LoggedInValidator"`, `"services": ["channel"]`.
 
 All with `"validator": "LoggedInValidator"`, `"services": ["channel"]`. (gms_92's entire item-use block below `0x54` was unrouted — ordinary potion use, scroll use and pet food were all dead on that column, not just the two target ops. `PetFoodHandle` is design decision D3.)
 
-- [ ] **Step 3: gms_95 — two entries**
+- [x] **Step 3: gms_95 — two entries**
 
 | opCode | handler | fname |
 |---|---|---|
 | `0x51` | `CharacterItemUseSummonBagHandle` | `CWvsContext::SendMobSummonItemUseRequest` |
 | `0x5C` | `CharacterItemUseTownScrollHandle` | `CWvsContext::SendPortalScrollUseRequest` |
 
-- [ ] **Step 4: jms_185 — two entries**
+- [x] **Step 4: jms_185 — two entries**
 
 | opCode | handler | fname |
 |---|---|---|
 | `0x43` | `CharacterItemUseSummonBagHandle` | `CWvsContext::SendMobSummonItemUseRequest` |
 | `0x4D` | `CharacterItemUseTownScrollHandle` | `CWvsContext::SendPortalScrollUseRequest` |
 
-- [ ] **Step 5: gms_48 — make NO change in this task**
+- [x] **Step 5: gms_48 — make NO change in this task**
 
 `template_gms_48_1.json` already binds `CharacterItemUseSummonBagHandle` at `0x3B`, but that entry has **no `fname` key** while every sibling item-use entry does. Filling it in requires a symbol resolved from the v48 IDB, which is Task 15's job — do not guess one here. This step is deliberately a no-op; leave `template_gms_48_1.json` untouched and move on.
 
-- [ ] **Step 6: Run the template guards**
+- [x] **Step 6: Run the template guards**
 
 ```bash
 tools/template-opcode-order-guard.sh; echo "ORDER=$?"
@@ -591,7 +591,7 @@ tools/template-movement-types-guard.sh; echo "MOVE=$?"
 
 Expected: `ORDER=0 DUP=0 MOVE=0`.
 
-- [ ] **Step 7: Confirm the untouched templates really are untouched**
+- [x] **Step 7: Confirm the untouched templates really are untouched**
 
 ```bash
 git diff --stat services/atlas-configurations/seed-data/templates/
@@ -599,7 +599,7 @@ git diff --stat services/atlas-configurations/seed-data/templates/
 
 Expected: exactly four files changed (`template_gms_87_1.json`, `template_gms_92_1.json`, `template_gms_95_1.json`, `template_jms_185_1.json`). If `template_gms_61_1.json`, `_72_`, `_79_`, `_83_` or `_84_` appears, revert it — that is a defect.
 
-- [ ] **Step 8: Confirm the matrix stays clean**
+- [x] **Step 8: Confirm the matrix stays clean**
 
 ```bash
 go run ./tools/packet-audit matrix --check 2>&1 | tail -20; go run ./tools/packet-audit matrix --check >/dev/null 2>&1; echo "EXIT=$?"
@@ -607,7 +607,7 @@ go run ./tools/packet-audit matrix --check 2>&1 | tail -20; go run ./tools/packe
 
 Expected: `EXIT=0`. Routing alone promotes nothing — evidence is still missing — but a newly-routed opcode must not introduce a conflict anywhere.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add services/atlas-configurations/seed-data/templates
@@ -639,11 +639,11 @@ Export addresses (read from `gms_v92.json`, 2026-08-14):
 | `CWvsContext::SendUpgradeItemUseRequest` | `0x9ab2f0` |
 | `CWvsContext::SendPetFoodItemUseRequest` | `0x9afa50` |
 
-- [ ] **Step 1: Confirm the read order in the v92 IDB before pinning**
+- [x] **Step 1: Confirm the read order in the v92 IDB before pinning**
 
 Resolve the gms_v92 session (`idb_list` → `GMS_v92_1_DEVM.exe.i64`) and decompile each of the three addresses. Confirm each builds `COutPacket::COutPacket(&pkt, <opcode>)` with the opcode from the table (79 / 93 / 83 respectively) and that the field order matches the committed codec. **If an address or opcode disagrees, stop and report — do not pin.**
 
-- [ ] **Step 2: Pin the three evidence records**
+- [x] **Step 2: Pin the three evidence records**
 
 ```bash
 go run ./tools/packet-audit evidence pin \
@@ -664,7 +664,7 @@ go run ./tools/packet-audit evidence pin \
 
 If a `--verifies` test name does not exist, read the file and use the real one — do not invent it. Each command prints `pinned <path>`.
 
-- [ ] **Step 3: Add the three verify markers**
+- [x] **Step 3: Add the three verify markers**
 
 Append to the existing marker block above the round-trip test in each file:
 
@@ -680,7 +680,7 @@ Append to the existing marker block above the round-trip test in each file:
 // packet-audit:verify packet=pet/serverbound/PetFood version=gms_v92 ida=0x9afa50
 ```
 
-- [ ] **Step 4: Regenerate the matrix and confirm all three promoted**
+- [x] **Step 4: Regenerate the matrix and confirm all three promoted**
 
 ```bash
 go run ./tools/packet-audit matrix
@@ -696,7 +696,7 @@ go run ./tools/packet-audit matrix --check >/dev/null 2>&1; echo "EXIT=$?"
 
 Expected: each prints `{'state': 'verified', 'opcode': …}`, and `EXIT=0`. Anything else is a failure to report, not to narrate around.
 
-- [ ] **Step 5: Run the packet tests**
+- [x] **Step 5: Run the packet tests**
 
 ```bash
 cd libs/atlas-packet && go test -race ./... && cd ../..
@@ -704,7 +704,7 @@ cd libs/atlas-packet && go test -race ./... && cd ../..
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add libs/atlas-packet docs/packets/evidence/gms_v92 docs/packets/audits/STATUS.md docs/packets/audits/status.json
@@ -721,7 +721,7 @@ Tasks 6 through 14 are **the same nine steps run against a different IDB**. They
 
 Let `<V>` be the version key (e.g. `gms_v83`), `<SESSION>` the session id resolved from `idb_list` by filename, `<EXPORT>` the export path (`docs/packets/ida-exports/<V>.json`, except jms_v185 → `gms_jms_185.json`), `<SB_OP>` and `<RS_OP>` the decimal `USE_SUMMON_BAG` / `USE_RETURN_SCROLL` opcodes from the Global Constraints table, and `<SB_FNAME>` / `<RS_FNAME>` the registry primary fnames from the fname table.
 
-- [ ] **Step A: Resolve the session**
+- [x] **Step A: Resolve the session**
 
 ```
 mcp__ida-pro__idb_list
@@ -729,7 +729,7 @@ mcp__ida-pro__idb_list
 
 Match the target binary by `filename`. Record the `session_id`. Never reuse a session id from this document.
 
-- [ ] **Step B: Locate both send sites by the opcode-construction invariant**
+- [x] **Step B: Locate both send sites by the opcode-construction invariant**
 
 Search the IDB for `COutPacket::COutPacket(&pkt, <SB_OP>)` and `COutPacket::COutPacket(&pkt, <RS_OP>)` using `mcp__ida-pro__find_bytes` with the pattern `6A <op-hex> 8D 8D` and `6A <op-hex> 8D 4D`, then decompile each hit. The correct site is the one whose body is `Encode4(updateTime) + Encode2(slot) + Encode4(itemId)` under a `CanSendExclRequest`-style guard, and whose item-category / WZ-prop gate matches the feature:
 - **summon bag** — the mob-summon gate; structural twin is gms_v61 `CWvsContext::SendMobSummonItemUseRequest` @`0x832003` (registry `ida.address: 8592515`).
@@ -737,11 +737,11 @@ Search the IDB for `COutPacket::COutPacket(&pkt, <SB_OP>)` and `COutPacket::COut
 
 Do not accept a function because its name looks right. Record the decompiled read order and the address for both.
 
-- [ ] **Step C: Name the senders in the IDB if unnamed**
+- [x] **Step C: Name the senders in the IDB if unnamed**
 
 If either function is a `sub_XXXXXX`, rename it with `mcp__ida-pro__rename` to the registry's primary fname for that version, then `mcp__ida-pro__idb_save`. If the registry's primary fname IS the `sub_XXXXXX` form (v72/v79 summon bag, v61 return scroll), **keep the `sub_` name** — the registry, the `candidatesFromFName` case and the export all key on it, and renaming it would break all three.
 
-- [ ] **Step D: Harvest the two functions to a scratch file**
+- [x] **Step D: Harvest the two functions to a scratch file**
 
 Write a one-off roster containing just the two fnames (the harvester scrapes fname-shaped tokens out of any markdown):
 
@@ -760,7 +760,7 @@ go run ./tools/packet-audit export \
   -output "$SCRATCH/harvest-<V>.json"
 ```
 
-- [ ] **Step E: Cross-check the harvest, then hand-splice it into the committed export**
+- [x] **Step E: Cross-check the harvest, then hand-splice it into the committed export**
 
 ```bash
 python3 - <<EOF
@@ -783,7 +783,7 @@ git diff --stat <EXPORT>
 
 Expected: one file changed, and inspecting `git diff <EXPORT>` shows only the two added entries.
 
-- [ ] **Step F: Generate the two audit reports**
+- [x] **Step F: Generate the two audit reports**
 
 ```bash
 go run ./tools/packet-audit \
@@ -802,7 +802,7 @@ cp "$SCRATCH/rpt-<V>/<V>/InventorySummonBagItemUse.json" \
 
 If a report is not written, the linkage failed — re-check the Task 2 switch case matches the registry's primary fname for THIS version exactly, and that the export entry key matches too.
 
-- [ ] **Step G: Pin evidence and add the verify markers**
+- [x] **Step G: Pin evidence and add the verify markers**
 
 ```bash
 go run ./tools/packet-audit evidence pin \
@@ -828,7 +828,7 @@ Then append one marker line to each test file's doc-comment block, using the add
 
 The marker's `ida=` address must match the evidence record's `ida.address`, or `matrix --check` reports an orphan marker.
 
-- [ ] **Step H: Regenerate the matrix and confirm both cells promoted**
+- [x] **Step H: Regenerate the matrix and confirm both cells promoted**
 
 ```bash
 go run ./tools/packet-audit matrix
@@ -844,7 +844,7 @@ go run ./tools/packet-audit matrix --check >/dev/null 2>&1; echo "EXIT=$?"
 
 Expected: `<V>` reads `verified` for both ops; `EXIT=0`. A cell that did not move is a failure — report it with the `matrix --check` stderr, do not proceed to the next version.
 
-- [ ] **Step I: Test and commit**
+- [x] **Step I: Test and commit**
 
 ```bash
 cd libs/atlas-packet && go test -race ./... && go vet ./... && cd ../..
@@ -973,7 +973,7 @@ Current state: `docs/packets/registry/gms_v48.yaml` has **neither** op. `templat
 
 Design-phase probe already done (GMS_v48_1_DEVM.exe.i64): the only `COutPacket::COutPacket(&pkt, 59)` site in the binary is inside `sub_70DDAA`, sending `Encode4(updateTime) + Encode2(slot) + Encode4(itemId)` after a `sub_4A2518(200, 0)` excl-request guard, gated on `sub_713039(itemId)` (`CWvsContext::IsAbleToConsume`) and a field-limit bit `(*((_DWORD *)get_field() + 58) >> 2) & 1` guarding a `CUtilDlg::Notice` (string 270). **Established:** `0x3B` is a real item-use-shaped send site, so the template binding is not a typo. **Not established:** that it is the mob-summon sender specifically.
 
-- [ ] **Step 1: Confirm `0x3B` is the summon-bag sender**
+- [x] **Step 1: Confirm `0x3B` is the summon-bag sender**
 
 Resolve the gms_v48 session (`GMS_v48_1_DEVM.exe.i64`), decompile `sub_70DDAA`, and compare it structurally against the v61 `CWvsContext::SendMobSummonItemUseRequest` decompile you recorded in Task 7 — same guard shape, same field order, same category/WZ-prop gate role. Also enumerate every other `COutPacket::COutPacket(&pkt, N)` site in the v48 item-use neighbourhood so you can say what `0x38` and `0x3B` each are.
 
@@ -981,7 +981,7 @@ Do NOT reason from opcode position: v48's serverbound table is **not** a shifted
 
 If the comparison fails — if `sub_70DDAA` is some other item-use op — say so explicitly, correct the template binding to whatever the IDB proves, and record the correction in the registry note and the PR body.
 
-- [ ] **Step 2: Search for a v48 return-scroll sender**
+- [x] **Step 2: Search for a v48 return-scroll sender**
 
 Enumerate item-use-shaped send sites across the whole v48 binary by the opcode-construction invariant, not by symbol name. The lead worth chasing first is already recorded in the registry: `gms_v48.yaml:978` notes that the `USE_ITEM` sender `sub_719DD9` (opcode 65) itself performs a **"return-scroll target-map check (sub_71E860, notice 2678)"** — i.e. v48 may route return scrolls through the generic item-use op rather than a dedicated one. Confirm or refute that by decompiling `sub_71E860` and tracing which send sites reach it.
 
@@ -990,7 +990,7 @@ The mandatory checks before concluding absence (`VERIFYING_A_PACKET.md` "Is this
 2. Sibling cross-check: decompile the clientbound receive side of the same feature on v48. If the receive side handles the feature, the send side exists somewhere — keep looking.
 3. Expect the era's `SendMapTransferItemUseRequest`-style symbol to be a mislabel for the teleport-rock sender, exactly as `gms_v72.yaml:2414` and `gms_v79.yaml:2798` record.
 
-- [ ] **Step 3a (branch: the sender EXISTS) — register, bind, verify**
+- [x] **Step 3a (branch: the sender EXISTS) — register, bind, verify**
 
 1. Name it in the IDB and `idb_save`.
 2. Add a `USE_RETURN_SCROLL` entry to `docs/packets/registry/gms_v48.yaml` at its sorted position, with the resolved opcode, `fname`, `provenance: ida-discovered`, `ida: {address: <decimal>}`, `packet: inventory/serverbound/InventoryReturnScrollItemUse`, and a `note:` recording the send site and read order.
@@ -998,7 +998,7 @@ The mandatory checks before concluding absence (`VERIFYING_A_PACKET.md` "Is this
 4. Bind `CharacterItemUseTownScrollHandle` in `template_gms_48_1.json` at that opcode, `validator: "LoggedInValidator"`, the resolved `fname`, `services: ["channel"]`, at its sorted position.
 5. Run Steps D–I of the per-version procedure for `gms_v48` for both ops.
 
-- [ ] **Step 3b (branch: the sender is ABSENT) — record positive absence**
+- [x] **Step 3b (branch: the sender is ABSENT) — record positive absence**
 
 Add an entry to `docs/packets/feature-na-evidence.yaml` in the existing shape:
 
@@ -1016,7 +1016,7 @@ Add an entry to `docs/packets/feature-na-evidence.yaml` in the existing shape:
 
 Leave the registry without a `USE_RETURN_SCROLL` entry so the cell stays `n-a`. Note that neither op is currently a member of any family in `docs/packets/feature-families.yaml`, so this entry is not yet *consumed* by the n-a consistency gate — it is recorded so the claim is auditable and so the gate has proof the moment an `item_use` family is declared. Do not add the family in this task.
 
-- [ ] **Step 4: Register `USE_SUMMON_BAG` for gms_v48 regardless of branch**
+- [x] **Step 4: Register `USE_SUMMON_BAG` for gms_v48 regardless of branch**
 
 Add to `docs/packets/registry/gms_v48.yaml`, at its sorted position:
 
@@ -1034,7 +1034,7 @@ Add to `docs/packets/registry/gms_v48.yaml`, at its sorted position:
 
 Add the matching `candidatesFromFName` case for that fname, plus a case in `TestCandidatesItemUseFamilyWrappers`. Then backfill the `fname` on the existing `CharacterItemUseSummonBagHandle` entry in `template_gms_48_1.json` (opCode `0x3B`) so it matches its siblings.
 
-- [ ] **Step 5: Verify**
+- [x] **Step 5: Verify**
 
 ```bash
 cd tools/packet-audit && go test ./... && cd ../..
@@ -1048,7 +1048,7 @@ go run ./tools/packet-audit matrix --check >/dev/null 2>&1; echo "EXIT=$?"
 
 Expected: `ORDER=0 DUP=0 EXIT=0`, `USE_SUMMON_BAG × gms_v48` reads `verified` (no longer `n-a`), and `USE_RETURN_SCROLL × gms_v48` reads either `verified` or `n-a` with the evidence entry recorded.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add docs/packets services/atlas-configurations/seed-data/templates/template_gms_48_1.json \
@@ -1068,7 +1068,7 @@ git commit -m "verify(task-229): resolve USE_SUMMON_BAG and USE_RETURN_SCROLL on
 - Consumes: everything from Tasks 1–15.
 - Produces: a green branch and a PR-ready summary.
 
-- [ ] **Step 1: Confirm the final matrix state**
+- [x] **Step 1: Confirm the final matrix state**
 
 ```bash
 go run ./tools/packet-audit matrix
@@ -1085,7 +1085,7 @@ EOF
 
 Expected: `USE_SUMMON_BAG` and `USE_RETURN_SCROLL` carry their packet ids and read `verified` on all ten columns (gms_v48 `USE_RETURN_SCROLL` may legitimately read `n-a`); the three v92 rows read `verified`. Any residual `incomplete`/`partial`/`conflict` is a failure to report by name.
 
-- [ ] **Step 2: Run every CI gate**
+- [x] **Step 2: Run every CI gate**
 
 ```bash
 cd tools/packet-audit && go test ./... && cd ../..
@@ -1099,7 +1099,7 @@ go run ./tools/packet-audit matrix --check >/dev/null 2>&1; echo "MATRIX=$?"
 
 Expected: all `0`.
 
-- [ ] **Step 3: Run the module builds, tests and repo guards**
+- [x] **Step 3: Run the module builds, tests and repo guards**
 
 ```bash
 cd libs/atlas-packet && go build ./... && go test -race ./... && go vet ./... && cd ../..
@@ -1116,7 +1116,7 @@ Expected: all `0`. `tools/lint.sh --check` needs nvm on PATH for the atlas-ui ha
 
 No service `go.mod` was touched, so `docker buildx bake` has no target here — confirm with `git diff --name-only main... | grep 'go.mod'` returning nothing before skipping it.
 
-- [ ] **Step 4: Assert the no-regression constraints**
+- [x] **Step 4: Assert the no-regression constraints**
 
 ```bash
 git diff --stat main... -- services/atlas-configurations/seed-data/templates/
@@ -1126,18 +1126,18 @@ git diff --stat main... -- services/atlas-channel services/atlas-consumables
 
 Expected: templates show only `template_gms_48_1.json`, `_87_`, `_92_`, `_95_`, `template_jms_185_1.json`; the other two commands produce **no output at all**.
 
-- [ ] **Step 5: Code review**
+- [x] **Step 5: Code review**
 
 Invoke `superpowers:requesting-code-review` from the worktree. It dispatches `plan-adherence-reviewer` and `backend-guidelines-reviewer` (Go files changed; no atlas-ui changes, so no frontend reviewer). Pin the reviewer subagents to a cheaper model per the project's model preference. Ensure they operate inside this worktree and write `audit.md` here, not into the main repo. Address findings before opening the PR.
 
-- [ ] **Step 6: Commit the regenerated matrix and any review fixes**
+- [x] **Step 6: Commit the regenerated matrix and any review fixes**
 
 ```bash
 git add docs/packets/audits/STATUS.md docs/packets/audits/status.json docs/tasks/task-229-summon-bag-town-scroll-opcodes/audit.md
 git commit -m "chore(task-229): regenerate coverage matrix and record review findings"
 ```
 
-- [ ] **Step 7: PR body must call out the operational gap**
+- [x] **Step 7: PR body must call out the operational gap**
 
 The PR body must state: these are **seed-template** changes. Tenants already provisioned from an earlier template revision do not pick up the new bindings until they are reseeded or their live socket configuration is PATCHed. Whether that happens by reseed or by PATCH is the deployer's call and is out of scope for this task (PRD §2, §10).
 

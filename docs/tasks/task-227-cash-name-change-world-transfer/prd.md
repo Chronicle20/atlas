@@ -47,7 +47,8 @@ Primary goals:
   Cash/0540 world-transfer item or the cash-shop `BUY_WORLD_TRANSFER` purchase.
 - Both flows expose a pre-commit availability check so the client can tell the
   player "that name is taken" / "you cannot transfer to that world" before spending.
-- Both flows are cancellable while pending, and cancelling refunds the consumed item.
+- Both flows are cancellable while pending — by an **operator**, from atlas-ui —
+  and cancelling refunds the consumed item and notifies the player in-game.
 - The client's name-change and world-transfer packet family is implemented and
   **verified** (matrix `✅`) on every version where it is not `⬜ n-a`.
 - The transfer leaves no dangling cross-world state: guild/party/buddy memberships
@@ -60,8 +61,12 @@ Non-goals:
 - Moving account storage between worlds (see FR-4.6 — storage never moves).
 - Migrating a character to a world that belongs to a different client version /
   socket configuration than the source (out of scope; see §9).
-- Any admin/GM console for renaming or transferring. REST endpoints exist as the
-  service contract, but no atlas-ui surface is in scope.
+- A **player-facing** cancel surface. The game client has no cancel packet to send
+  (§4.2.1), and atlas-ui is an administrative SPA, not a player portal. A player
+  web portal is well outside this task.
+- An atlas-ui surface for *initiating* a rename or transfer. The operator surface in
+  scope is read + cancel only (FR-2.10); operators do not grant renames or transfers
+  from the console.
 - Cash-shop pricing/commodity authoring for the 540 items (that is data, seeded
   separately).
 - `Cash/0543` Maple Life character-creation items, which share the "character
@@ -73,10 +78,16 @@ Non-goals:
   it is available, so that I do not waste a cash item on a taken name.
 - As a player, I want to use my Name Change coupon and have my character renamed,
   so that my new name shows in the character list, on the map, and to other players.
-- As a player, I want to cancel a pending name change before it applies and get my
-  coupon back, so that a mistyped name is not permanent.
 - As a player, I want to be told when my pending name change was invalidated because
   someone else took that name first, so that I know why nothing happened.
+- As a player whose pending request was cancelled by staff, I want to be told in-game
+  and get my coupon back, so that a cancellation is never a silent loss.
+- As an operator, I want to see a character's pending name change or world transfer
+  in atlas-ui, so that I can answer a support ticket without querying the database.
+- As an operator, I want to cancel a player's pending request from atlas-ui and have
+  the coupon refunded automatically, so that a mistyped name or a
+  wrong-world request is recoverable — this is the only cancel path that exists,
+  since the game client cannot send a cancel.
 - As a player, I want to move my character to a world where my friends play, so that
   I can play with them without re-levelling.
 - As a player transferring worlds, I want to be warned before I commit if I am the
@@ -138,8 +149,30 @@ Non-goals:
   character is not present in any channel — i.e. at character-select/world-select
   time on the login path, or on the character's logout, whichever comes first.
   Application MUST NOT mutate a character that is live in a channel.
-- **FR-2.5** A `PENDING` request MAY be cancelled by the player until it is applied.
-  Cancellation moves it to `CANCELLED` and triggers the refund (FR-2.8).
+
+#### 4.2.1 Who can cancel — and why it is not the player
+
+The three cancel packets in this family are **clientbound receivers only**:
+`CWvsContext::OnCancelNameChangeResult`, `CWvsContext::OnCancelTransferWorldResult`,
+`CWvsContext::OnCancelNameChangebyOther` (`docs/packets/audits/STATUS.md` 157, 161,
+204). The client's entire cash-shop send surface, across every version's export index
+(`docs/packets/audits/status.json`), is `SendBuyAvatarPacket`,
+`SendBuyNameChangeItemPacket`, `SendBuyTransferWorldItemPacket`,
+`SendChangeMaplePoint`, `SendCheckDuplicateIDPacket`,
+`SendCheckNameChangePossiblePacket`, `SendCheckTransferWorldPossiblePacket`,
+`SendGiftsPacket`, `SendTransferFieldPacket` — there is **no `SendCancel*` of any
+kind**. The client can buy and can check availability; it can never ask the server to
+cancel. The `CANCEL_*` packets are therefore one-way server→client *notifications*
+that a pending request was cancelled or invalidated. In GMS the player-initiated
+cancel lived on the account-management website, outside the game client.
+
+Atlas has no player portal, so the cancel path in this task is **operator-initiated
+from atlas-ui**, and the `CANCEL_*` packets deliver the outcome to the player.
+
+- **FR-2.5** A `PENDING` request MAY be cancelled by an **operator** via the
+  atlas-character REST endpoint (§5), surfaced in atlas-ui (FR-2.10). Cancellation
+  moves the request to `CANCELLED` and triggers the refund (FR-2.8). There is no
+  player-initiated cancel, in-game or otherwise.
 - **FR-2.6** A pending request has a configurable expiry (default 7 days). On expiry
   it moves to `EXPIRED` and is refunded identically to a cancellation.
 - **FR-2.7** If application-time re-validation fails (name taken in the interim,
@@ -152,6 +185,26 @@ Non-goals:
   asset to the character's cash inventory. Refund MUST be idempotent — a redelivered
   cancel event must not mint a second item (see the known Kafka at-least-once
   redelivery failure mode).
+- **FR-2.9** Every non-`APPLIED` terminal transition MUST notify the player through
+  the version-appropriate clientbound packet: `CANCEL_NAME_CHANGE_RESULT` /
+  `CANCEL_TRANSFER_WORLD_RESULT` for an operator cancellation or an expiry, and
+  `CANCEL_NAME_CHANGE_BY_OTHER` when a name change was invalidated by another
+  character taking the name. If the character is **offline** when the transition
+  occurs, the notification MUST be deferred and delivered on their next login — an
+  unread notification is not discarded, because otherwise the coupon reappears in the
+  cash inventory with no explanation.
+- **FR-2.10** atlas-ui MUST surface pending changes on the existing
+  `CharacterDetailPage` (`services/atlas-ui/src/pages/CharacterDetailPage.tsx`):
+  - a panel listing the character's pending-change records with type, requested value
+    (new name / destination world), status, created and expiry timestamps;
+  - a **Cancel** action on a `PENDING` record, behind a confirmation dialog that
+    names the character and the requested value, calling the DELETE endpoint of §5;
+  - the resolved history (`APPLIED` / `CANCELLED` / `REJECTED` / `EXPIRED`) with its
+    reason, so an operator can answer "what happened to my coupon?" from the console;
+  - React Query cache invalidation on success so the panel reflects the new state
+    without a manual reload.
+  The operator surface is **read + cancel only** — it MUST NOT be able to create a
+  rename or transfer request, nor edit a requested value.
 
 ### 4.3 Name change
 
@@ -254,7 +307,8 @@ New REST resources follow JSON:API via api2go, tenant-scoped through
   Errors: `409` request already pending; `422` validation failure (invalid name,
   name taken, ineligible destination); `404` unknown character.
 - `DELETE /characters/{characterId}/pending-changes/{id}` — cancel a pending
-  request. Errors: `409` if already terminal.
+  request. **Operator-facing** — this is the only cancel path in the system (§4.2.1);
+  no game-client packet reaches it. Errors: `409` if already terminal.
 - `GET /characters/name-availability?name={name}` — tenant-wide availability check
   backing FR-3.5. Response distinguishes `available`, `taken`, `reserved`, `invalid`.
 
@@ -335,6 +389,7 @@ beyond a possible index.
 | **atlas-configurations** | Handler/writer registration for the new opcodes in every applicable seed template. |
 | **libs/atlas-packet** | New codecs for the check and cancel families; `cash/serverbound` purchase codecs unchanged. |
 | **libs/atlas-constants** | Any new shared reason-code or slot-item-type constants; reuse existing `ClassificationCharacterImprints`. |
+| **atlas-ui** | Pending-changes panel + cancel action on `CharacterDetailPage.tsx` (FR-2.10); new `pendingChanges.service.ts` alongside the existing `characters.service.ts`, typed against the JSON:API envelope; Vitest coverage for the panel and the confirm-dialog cancel path. |
 
 ## 8. Non-Functional Requirements
 
@@ -360,7 +415,13 @@ beyond a possible index.
   within the client's cash-shop interaction budget; it is issued interactively per
   keystroke-batch by the client.
 - **Security:** the requested world and asset are validated server-side; a client may
-  not transfer a character it does not own, nor spend an asset it does not hold.
+  not transfer a character it does not own, nor spend an asset it does not hold. The
+  cancel endpoint is operator-only and is never reachable from a game-client packet
+  path — no handler may be wired to it.
+- **Frontend:** the atlas-ui panel follows the FE-* guidelines — JSON:API-typed
+  responses, tenant context from the existing provider (never a hard-coded tenant),
+  TanStack React Query for fetch + invalidation, shadcn/ui dialog for the destructive
+  confirm, and no `any` in the service layer.
 
 ## 9. Open Questions
 
@@ -388,6 +449,16 @@ beyond a possible index.
   `CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT` and
   `CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT` — derive from the IDB during codec
   implementation, per version.
+- **OQ-8:** FR-2.9's deferred notification needs a delivery mechanism for a player
+  who was offline when their request resolved. A grep for an offline/deferred
+  notification pattern across atlas-channel and atlas-notes found nothing, so this is
+  likely new machinery — decide in design whether it is a flag on the pending-change
+  record drained at login, or reuse of an existing queue.
+- **OQ-9:** whether `CWvsContext::OnCancelNameChangeResult` and friends are accepted
+  by the client at login/field-enter time or only in a specific UI context. If the
+  client ignores them outside the cash shop, FR-2.9's delivery falls back to a
+  pink-text world message and the packets serve only the in-cash-shop case. Verify
+  against the IDB during codec implementation.
 
 ## 10. Acceptance Criteria
 
@@ -403,8 +474,17 @@ Feature behaviour:
       the tenant and for a name held by an active pending reservation.
 - [ ] A second pending request of the same type for one character is rejected with a
       distinct reason (enforced by the partial unique index, proven by a test).
+- [ ] An operator can see a character's pending and resolved changes on
+      `CharacterDetailPage` in atlas-ui, including the rejection reason.
+- [ ] An operator can cancel a `PENDING` request from atlas-ui behind a confirmation
+      dialog; the panel reflects `CANCELLED` without a manual reload.
 - [ ] Cancelling a pending request refunds the item exactly once, including under a
       redelivered cancel event.
+- [ ] An operator cancellation reaches the player as `CANCEL_NAME_CHANGE_RESULT` /
+      `CANCEL_TRANSFER_WORLD_RESULT` while they are online, and is deferred to their
+      next login when they are offline.
+- [ ] No serverbound handler is wired to the cancel endpoint — cancel is reachable
+      only from the operator REST path (§4.2.1).
 - [ ] A pending name change applies at the next safe point; the character's name
       changes, `NAME_CHANGED` is emitted, and guild/party/buddy name copies update.
 - [ ] A name change whose name was taken in the interim resolves to `REJECTED`,
@@ -445,4 +525,8 @@ Build & verification gates (per CLAUDE.md):
       `tools/template-duplicate-binding-guard.sh`,
       `tools/template-movement-types-guard.sh`, and `tools/skill-job-id-guard.sh`
       all clean from the repo root.
-- [ ] Code review (`superpowers:requesting-code-review`) run before the PR.
+- [ ] `npm run build` (which type-checks tests) and `npm run test` clean in
+      `services/atlas-ui` — a passing Vitest run alone is not sufficient verification
+      for this repo's UI changes.
+- [ ] Code review (`superpowers:requesting-code-review`) run before the PR —
+      including `frontend-guidelines-reviewer`, since atlas-ui TS files changed.

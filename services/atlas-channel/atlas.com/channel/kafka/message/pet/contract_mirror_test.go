@@ -15,7 +15,7 @@ import (
 // if this side drifts, the assertions below go red.
 func TestNameChangedStatusEventBodyDecodesOwnerWire(t *testing.T) {
 	txn := uuid.MustParse("11111111-2222-3333-4444-555555555555")
-	wire := []byte(`{"petId":7,"ownerId":42,"type":"NAME_CHANGED","body":{"slot":0,"name":"Renamed","previousName":"Original","transactionId":"11111111-2222-3333-4444-555555555555"}}`)
+	wire := []byte(`{"petId":7,"ownerId":42,"type":"NAME_CHANGED","body":{"slot":3,"name":"Renamed","previousName":"Original","transactionId":"11111111-2222-3333-4444-555555555555"}}`)
 
 	var e StatusEvent[NameChangedStatusEventBody]
 	if err := json.Unmarshal(wire, &e); err != nil {
@@ -25,7 +25,7 @@ func TestNameChangedStatusEventBodyDecodesOwnerWire(t *testing.T) {
 	if e.PetId != 7 || e.OwnerId != 42 || e.Type != StatusEventTypeNameChanged {
 		t.Fatalf("envelope drifted: %+v", e)
 	}
-	if e.Body.Slot != 0 || e.Body.Name != "Renamed" || e.Body.PreviousName != "Original" || e.Body.TransactionId != txn {
+	if e.Body.Slot != 3 || e.Body.Name != "Renamed" || e.Body.PreviousName != "Original" || e.Body.TransactionId != txn {
 		t.Fatalf("body drifted: %+v", e.Body)
 	}
 }

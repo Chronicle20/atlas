@@ -1,0 +1,37 @@
+{
+  "data": {
+    "attributes": {
+      "itemId": 2430013,
+      "npcId": 9010000,
+      "scriptName": "item_2430013",
+      "startState": "intro",
+      "states": [
+        {
+          "id": "intro",
+          "type": "dialogue",
+          "dialogue": {
+            "dialogueType": "sendNext",
+            "text": "A Peng Peng Popsicle! It's so cold it makes your teeth ache just looking at it.",
+            "choices": [
+              { "nextState": "outro", "text": "Next" },
+              { "nextState": null, "text": "Exit" }
+            ]
+          }
+        },
+        {
+          "id": "outro",
+          "type": "dialogue",
+          "dialogue": {
+            "dialogueType": "sendOk",
+            "text": "You finish it in three bites and immediately regret how fast that went.",
+            "choices": [
+              { "nextState": null, "text": "OK" }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "2430013",
+    "type": "item-conversation"
+  }
+}

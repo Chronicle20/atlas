@@ -1,0 +1,48 @@
+{
+  "data": {
+    "attributes": {
+      "itemId": 2430008,
+      "npcId": 2084002,
+      "scriptName": "compassUse",
+      "startState": "intro",
+      "states": [
+        {
+          "id": "intro",
+          "type": "listSelection",
+          "listSelection": {
+            "title": "The Golden Compass needle spins lazily, then settles. What would you like to do?",
+            "choices": [
+              { "nextState": "readNeedle", "text": "Read the needle." },
+              { "nextState": "shakeIt", "text": "Give it a shake." },
+              { "nextState": null, "text": "Put it away." }
+            ]
+          }
+        },
+        {
+          "id": "readNeedle",
+          "type": "dialogue",
+          "dialogue": {
+            "dialogueType": "sendOk",
+            "text": "North. Reliably, stubbornly north. The compass is very pleased with itself.",
+            "choices": [
+              { "nextState": null, "text": "OK" }
+            ]
+          }
+        },
+        {
+          "id": "shakeIt",
+          "type": "dialogue",
+          "dialogue": {
+            "dialogueType": "sendOk",
+            "text": "The needle wobbles, spins twice, and points north again. It was never going to be anything else.",
+            "choices": [
+              { "nextState": null, "text": "OK" }
+            ]
+          }
+        }
+      ]
+    },
+    "id": "2430008",
+    "type": "item-conversation"
+  }
+}

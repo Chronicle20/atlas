@@ -2199,6 +2199,32 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendUpgradeItemUseRequest":
 		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// task-229 — USE_SUMMON_BAG / USE_RETURN_SCROLL. Same 3-field wire body as
+	// USE_ITEM (Encode4 updateTime + Encode2 slot + Encode4 itemId) but distinct
+	// client send sites, so each keys to its own audit-only wrapper struct in
+	// inventory/serverbound. One wrapper per op = one packet id / report /
+	// evidence key per op; see docs/packets/audits/VERIFYING_A_PACKET.md
+	// "Shared-model ops".
+	case "CWvsContext::SendMobSummonItemUseRequest":
+		return []candidate{{name: "SummonBagItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_955499":
+		// USE_SUMMON_BAG on gms_v72 (@0x904154) and gms_v79 (@0x9555b0): the
+		// summon-bag sender is UNNAMED in both IDBs and both registries carry
+		// sub_955499 as the primary fname (the v79 IDB additionally mislabels the
+		// function as SendEngagementRequest — opcode read from the body).
+		return []candidate{{name: "SummonBagItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "CWvsContext::SendPortalScrollUseRequest":
+		return []candidate{{name: "ReturnScrollItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "CWvsContext::SendReturnScrollUseRequest":
+		// gms_v72 / gms_v79 primary fname. Renamed live in those IDBs on task-124
+		// away from the inherited SendMapTransferItemUseRequest mislabel — that
+		// symbol is the teleport-rock sender, a different op.
+		return []candidate{{name: "ReturnScrollItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_841AA5":
+		// USE_RETURN_SCROLL on gms_v61 (send site @0x841cb8): unnamed in the IDB;
+		// reads the Return Scroll WZ props (StringPool 2276/2277/2279) and is
+		// distinct from USE_TELEPORT_ROCK (opcode 77 / sub_8327DB).
+		return []candidate{{name: "ReturnScrollItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	// Reward-box ("lottery") use (task-131). Struct LotteryItemUse in
 	// inventory/serverbound; body slot(int16) + itemId(int32). Opcode + codec
 	// exist from v72 up; v48/v61 lack the opcode (generic item-use path).

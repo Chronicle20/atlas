@@ -177,3 +177,38 @@ func TestCandidatesQualifyCollidingNames(t *testing.T) {
 		})
 	}
 }
+
+// task-229: USE_SUMMON_BAG and USE_RETURN_SCROLL share their wire body with
+// USE_ITEM but have distinct client send sites, so each keys to its own audit
+// wrapper struct in inventory/serverbound. The fnames below are the PRIMARY
+// fnames those ops carry in docs/packets/registry/*.yaml — they differ per
+// version (v72/v79 summon-bag is an unnamed sub; v61 return-scroll is an unnamed
+// sub; v72/v79 return-scroll was renamed away from the SendMapTransferItemUse
+// mislabel).
+func TestCandidatesItemUseFamilyWrappers(t *testing.T) {
+	cases := []struct {
+		fname    string
+		wantPkg  string
+		wantName string
+	}{
+		{"CWvsContext::SendMobSummonItemUseRequest", "inventory", "SummonBagItemUse"},
+		{"sub_955499", "inventory", "SummonBagItemUse"},
+		{"CWvsContext::SendPortalScrollUseRequest", "inventory", "ReturnScrollItemUse"},
+		{"CWvsContext::SendReturnScrollUseRequest", "inventory", "ReturnScrollItemUse"},
+		{"sub_841AA5", "inventory", "ReturnScrollItemUse"},
+		// Regression guard: the potion sender must still key to the shared body.
+		{"CWvsContext::SendStatChangeItemUseRequest", "inventory", "ItemUse"},
+	}
+	for _, c := range cases {
+		t.Run(c.fname, func(t *testing.T) {
+			cands := candidatesFromFName(c.fname)
+			if len(cands) == 0 {
+				t.Fatalf("%s: no candidates", c.fname)
+			}
+			if cands[0].pkg != c.wantPkg || cands[0].name != c.wantName {
+				t.Errorf("%s: got pkg=%q name=%q, want pkg=%q name=%q",
+					c.fname, cands[0].pkg, cands[0].name, c.wantPkg, c.wantName)
+			}
+		})
+	}
+}

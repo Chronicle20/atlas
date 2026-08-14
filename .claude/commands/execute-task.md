@@ -81,6 +81,7 @@ that is the hole this rule closes.
 | Scan, inventory, doc sweep, file-finding | `haiku` | |
 | Run the verification gate (`atlas-verifier`) | `haiku` | Frontmatter pin; it runs one command and quotes the output |
 | Implement a plan task (`atlas-implementer`) | `sonnet` | Default; frontmatter pin |
+| Implement a packet codec (`packet-implementer`) or dispatcher family (`dispatcher-family-implementer`) | `sonnet` | Frontmatter pin; both also carry the 120-call PARTIAL budget |
 | Implement a plan task tagged `model: opus` in plan.md | `opus` | Opt-in only — see below; pass `model: opus` on the dispatch to override the frontmatter |
 
 A plan task may be tagged `model: opus` in `plan.md` when it is genuinely

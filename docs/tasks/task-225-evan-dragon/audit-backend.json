@@ -1,0 +1,100 @@
+{
+  "service": "atlas-dragons + atlas-channel (dragon feature)",
+  "path": "services/atlas-dragons/atlas.com/dragons, services/atlas-channel/atlas.com/channel (dragon-related), libs/atlas-packet/dragon",
+  "date": "2026-08-13",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "note": "Build/test not re-run by this audit per task instructions; controller reported clean go build/test/vet/race plus all repo guards and docker buildx bake atlas-dragons.",
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-dragons/dragon",
+      "type": "domain (Redis-backed, no DB)",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "pass", "evidence": "services/atlas-dragons/atlas.com/dragons/dragon/builder.go:19-49"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "dragon/processor.go:45"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "dragon/resource.go:32"},
+        {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "dragon/resource.go:38-42"},
+        {"id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "dragon/resource.go (no matches)"},
+        {"id": "DOM-14", "name": "Handlers don't call providers/registry directly", "status": "pass", "evidence": "dragon/resource.go:32-33"},
+        {"id": "DOM-17", "name": "Domain error to HTTP status mapping", "status": "fail", "evidence": "dragon/resource.go:33-36 maps every processor error to 404, not just atlasredis.ErrNotFound (libs/atlas-redis/registry.go:39-51 distinguishes ErrNotFound from wrapped transient errors)"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "no bare go statements found under services/atlas-dragons"},
+        {"id": "DOM-27", "name": "Transient DB errors to 503", "status": "n/a", "evidence": "service has no database"},
+        {"id": "SWALLOW-01", "name": "Destroy swallows non-not-found Get errors", "status": "fail", "evidence": "dragon/processor.go:120-124 treats every Get error as no-op success; same defect present in claimed precedent atlas-summons/summon/processor.go:416-420"},
+        {"id": "SWALLOW-02", "name": "Registry.Put/Remove discard fieldIdx.Remove errors", "status": "warn", "evidence": "dragon/registry.go:131,210 `_ = r.fieldIdx.Remove(...)`; self-healing via stale-entry skip at registry.go:171-175 but zero logging"}
+      ]
+    },
+    {
+      "name": "atlas-dragons/character",
+      "type": "support / external-http-client",
+      "checks": [
+        {"id": "FILE-05", "name": "Builder in builder.go", "status": "fail", "evidence": "character/model.go:1-43 contains both Model and Builder; no builder.go in package"},
+        {"id": "FILE-02", "name": "RestModel/Extract in rest.go", "status": "pass", "evidence": "character/rest.go:9-32"},
+        {"id": "FILE-03", "name": "Request funcs in requests.go", "status": "pass", "evidence": "character/requests.go:17-23"},
+        {"id": "EXT-01", "name": "Relationship interfaces on RestModel", "status": "fail", "evidence": "character/rest.go:9-28 has no SetToOneReferenceID/SetToManyReferenceIDs"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no *_test.go under services/atlas-dragons/atlas.com/dragons/character/"},
+        {"id": "EXT-03", "name": "404 vs other errors distinguished", "status": "pass", "evidence": "dragon/processor.go:76 errors.Is(err, requests.ErrNotFound)"},
+        {"id": "EXT-04", "name": "URL via RootUrl, not hardcoded", "status": "pass", "evidence": "character/requests.go:18 requests.RootUrl(\"CHARACTERS\")"}
+      ]
+    },
+    {
+      "name": "atlas-dragons/kafka/consumer/dragon",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic delegated to processor", "status": "pass", "evidence": "consumer.go:44-70 all call dragonstate.NewProcessor(...)"},
+        {"id": "TEST-COVERAGE", "name": "Consumer handlers under test", "status": "fail", "evidence": "no *_test.go under services/atlas-dragons/atlas.com/dragons/kafka/"}
+      ]
+    },
+    {
+      "name": "atlas-dragons/kafka/consumer/character",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic delegated to processor", "status": "pass", "evidence": "consumer.go:64-130 all call dragonstate.NewProcessor(...)"},
+        {"id": "TEST-COVERAGE", "name": "Consumer handlers under test", "status": "fail", "evidence": "no *_test.go under services/atlas-dragons/atlas.com/dragons/kafka/"},
+        {"id": "MIRROR-GUARD", "name": "Cross-module contract drift protection", "status": "fail", "evidence": "no pinned/literal test protects kafka.go against atlas-maps/kafka/message/character/kafka.go drift, unlike the dragon contract's kafka_test.go"}
+      ]
+    },
+    {
+      "name": "atlas-channel/dragon",
+      "type": "support / external-http-client / kafka-producer",
+      "checks": [
+        {"id": "FILE-02", "name": "RestModel/Extract in rest.go", "status": "fail", "evidence": "services/atlas-channel/atlas.com/channel/dragon/model.go:1-57 holds Model, RestModel, GetName/GetID/SetID, and Extract together; no rest.go in package"},
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "dragon/processor.go:15-57"},
+        {"id": "EXT-01", "name": "Relationship interfaces on RestModel", "status": "fail", "evidence": "dragon/model.go:27-47 has no SetToOneReferenceID/SetToManyReferenceIDs"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no *_test.go under services/atlas-channel/atlas.com/channel/dragon/"},
+        {"id": "EXT-04", "name": "URL via RootUrl, not hardcoded", "status": "pass", "evidence": "dragon/requests.go:12-13 requests.RootUrl(\"DRAGONS\")"}
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/consumer/dragon",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "TEST-QUALITY", "name": "Tests exercise actual handler wiring", "status": "fail", "evidence": "consumer_test.go tests excludesOwner/handles (consumer.go:30-43), which handleStatusEventCreated/Moved/Destroyed (consumer.go:85-143) never call; handlers hardcode ForSessionsInMap/ForOtherSessionsInMap inline, so a swap between the two would not fail any test"},
+        {"id": "MULTITENANCY", "name": "Tenant-scoped broadcast", "status": "pass", "evidence": "consumer.go:90,109,128 sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) gates every handler"}
+      ]
+    },
+    {
+      "name": "atlas-channel/socket/handler + socket/writer (dragon)",
+      "type": "support (packet glue)",
+      "checks": [
+        {"id": "SWALLOW-03", "name": "MOVE command emit error discarded silently", "status": "warn", "evidence": "socket/handler/dragon_move.go:29 `_ = dragoncmd.NewProcessor(l, ctx).Move(...)` with zero logging, unlike Create/Destroy paths which log on error; matches existing socket/handler/summon_move.go:29 idiom"}
+      ]
+    }
+  ],
+  "blocking": [
+    "FILE-02: atlas-channel/dragon/model.go collapses Model+RestModel+Extract+JSON:API methods, no rest.go in package",
+    "EXT-01: neither atlas-dragons/character/rest.go nor atlas-channel/dragon/model.go RestModel implements SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-02: no httptest-backed integration test for either REST client package",
+    "DOM-17: dragon/resource.go handleGetDragonByCharacterId maps every processor error to 404, masking transient Redis failures as 'no dragon'",
+    "dragon/processor.go Destroy swallows all registry Get errors (not just not-found) as silent no-op success, leaking orphaned registry/field-index state on transient failures",
+    "Zero test coverage for atlas-dragons/kafka/consumer/dragon and atlas-dragons/kafka/consumer/character",
+    "atlas-channel/kafka/consumer/dragon tests exercise orphaned excludesOwner/handles helpers, not the actual handler wiring; no regression net against a ForSessionsInMap/ForOtherSessionsInMap swap",
+    "FILE-05: atlas-dragons/character/model.go combines Model and Builder with no builder.go"
+  ],
+  "nonBlocking": [
+    "dragon/registry.go Put/Remove silently discard fieldIdx.Remove errors with no logging (self-healing but zero visibility)",
+    "socket/handler/dragon_move.go discards the MOVE command's Kafka-emit error with no log line at all",
+    "No mechanical structural guard (only prose + partial literal-JSON pin) protects either cross-module Kafka contract from silent drift; character-status mirror has no test protection at all"
+  ]
+}

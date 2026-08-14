@@ -34,6 +34,26 @@ func TestSelectRevivableTargetPicksLatestPastExpiration(t *testing.T) {
 	}
 }
 
+func TestSelectRevivableTargetPicksLatestPastExpirationRegardlessOfOrder(t *testing.T) {
+	now := time.Now()
+	// Same trio as above, but the most-recently-expired pet is NOT last in the
+	// input slice. A buggy implementation that just returned the last
+	// surviving candidate (candidates[len(candidates)-1]) without comparing
+	// expirations would pick "older" here and fail -- this pins the primary
+	// sort key, not just the tiebreak.
+	older := buildPet(t, 1, now.Add(-72*time.Hour))
+	newer := buildPet(t, 2, now.Add(-1*time.Hour))
+	live := buildPet(t, 3, now.Add(24*time.Hour))
+
+	got, ok := selectRevivableTarget([]pet.Model{newer, older, live}, now)
+	if !ok {
+		t.Fatal("expected a target")
+	}
+	if got.Id() != 2 {
+		t.Fatalf("selected pet %d, want 2 (latest past expiration)", got.Id())
+	}
+}
+
 func TestSelectRevivableTargetTieBreaksOnLowestId(t *testing.T) {
 	now := time.Now()
 	exp := now.Add(-1 * time.Hour)

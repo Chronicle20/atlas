@@ -1100,6 +1100,8 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Movement", pkg: "pet", dir: csvpkg.DirClientbound}}
 	case "CPet::OnAction":
 		return []candidate{{name: "Chat", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CPet::OnNameChanged":
+		return []candidate{{name: "NameChanged", pkg: "pet", dir: csvpkg.DirClientbound}}
 	case "CPet::OnActionCommand":
 		return []candidate{{name: "CommandResponse", pkg: "pet", dir: csvpkg.DirClientbound}}
 	case "CPet::OnLoadExceptionList":

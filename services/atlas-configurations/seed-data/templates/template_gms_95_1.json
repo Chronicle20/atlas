@@ -3292,6 +3292,14 @@
         ]
       },
       {
+        "opCode": "0xCB",
+        "writer": "PetNameChanged",
+        "fname": "CPet::OnNameChanged",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xCC",
         "writer": "PetExcludeResponse",
         "fname": "CPet::OnLoadExceptionList",

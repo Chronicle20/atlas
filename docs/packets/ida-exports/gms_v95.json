@@ -3,6 +3,20 @@
   "md5": "3c71fd8872d5efbe16183ae8c51f887d",
   "generated_at": "2026-05-13T00:00:00Z",
   "functions": {
+    "CPet::OnNameChanged": {
+      "address": "0x6a11f0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "name-tag decoration layer selector -> this->m_pTemplate->nNameTag (CLife::MakeNameTag)"
+        }
+      ]
+    },
     "CUserLocal::RequestIncCombo": {
       "address": "0x909070",
       "direction": "serverbound",

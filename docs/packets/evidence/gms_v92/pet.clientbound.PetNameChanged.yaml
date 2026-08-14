@@ -1,0 +1,10 @@
+packet: pet/clientbound/PetNameChanged
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CPet::OnNameChanged
+    address: "0x6967c0"
+    decompile_sha256: 43ea80c365e7417c18b24317c4d70591bff206236e7552a78d38f8bc889a0a36
+verifies:
+    - libs/atlas-packet/pet/clientbound/name_changed_test.go#TestPetNameChangedBytesV92

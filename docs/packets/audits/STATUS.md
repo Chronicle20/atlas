@@ -6,16 +6,16 @@
 
 Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 
-- export gms_v48: `59a1fa209a3202a733d73a7d5104ed541906c7c006e2aa7f1cefed7f2a4342a1`
-- export gms_v61: `d589e6b13a9c58bb3bfeaf234f01c42d5695cc54ef3957eb628a02d6042152b3`
-- export gms_v72: `4189e1f4ac661033cba983e87c29923ad2b7de949f3396611e71b574f38f35de`
-- export gms_v79: `87f07e503dcb18d536c9dfd12823ce42176db76e668d2eb31f72e1c621185752`
-- export gms_v83: `9cd6b47ebdb40d54b0358dc7227c985002145c7dc88e27e95175cb0207736bdb`
-- export gms_v84: `621cfa32bb7f86b729136b5c30cfdee02bbed10a2e00d2f5a88d03edeec4a76d`
-- export gms_v87: `b3298f99a86c3b7c391563abd8f7d6346d7683b39e2a7b02478a1e23cbd6c8bb`
-- export gms_v92: `40ba7a1118430cd74154fbf601fd9210e55cc61995a4ac73f290bb881634d012`
-- export gms_v95: `67cc150ed60812f7fd87bdd727371358184dd01880542d2225088b8a3945636f`
-- export jms_v185: `86593392498422c216d41791815924dac6642caea385f2e75b490659cc6769a7`
+- export gms_v48: `9609dce8a1e4764c418403e833c48fe80f774339ff740a4cdaddc524c2b835fa`
+- export gms_v61: `68373e75d9a60d68d234159b749716d8c028b0ca1f2a50649c8a739c129b34e7`
+- export gms_v72: `431da81382c61a6c0d1f79ff960238a431c49cb83c05a50a9b754ede6c9f4a85`
+- export gms_v79: `b1b1216254c623d1ac58a69a4835113043f081a4170c887ee1a5e9c251a226f2`
+- export gms_v83: `4f146aa5a7999b77ca36093cf569c8d243102493f754de155a556ca5a38a0f51`
+- export gms_v84: `0a97d20f2f1432ca097776129ad9f9442bb4e7997597c0b49ac0488f65f32fe9`
+- export gms_v87: `2b1f3a08d1bf79b35db755574ccdfe1c73a2ee859b83e30802709679db4e81aa`
+- export gms_v92: `8b6627563237f01ad2bd023a0573efc4f55b4c9d0c4edc8d3c700363886bba2f`
+- export gms_v95: `4a4768232be46839c2fb0b139060ed55ce51251aa9978fef581ac2498edada5a`
+- export jms_v185: `d118d45a367737c0a55bfeb4b1190806d67704d1e7031d9ea8371228b535b632`
 
 ## Clientbound
 
@@ -202,6 +202,7 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | NEW_YEAR_CARD_RES | CWvsContext::OnNewYearCardRes |  |  | ⬜ |  | ⬜ | 0x06E | ❌ | 0x070 | ❌ | 0x076 | ❌ | 0x079 | ❌ | 0x079 | ❌ | 0x07B | ❌ | 0x07A | ❌ |  | ⬜ |
 | RANDOM_MORPH_RES | CWvsContext::OnRandomMorphRes |  |  | ⬜ |  | ⬜ | 0x06F | ❌ | 0x071 | ❌ | 0x077 | ❌ | 0x07A | ❌ | 0x07A | ❌ | 0x07C | ❌ | 0x07B | ❌ |  | ⬜ |
 | CANCEL_NAME_CHANGE_BY_OTHER | CWvsContext::OnCancelNameChangebyOther |  |  | ⬜ |  | ⬜ | 0x070 | ❌ | 0x072 | ❌ | 0x078 | ❌ | 0x07B | ❌ | 0x07B | ❌ | 0x07D | ❌ | 0x07C | ❌ |  | ⬜ |
+| PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 | pet/clientbound/PetNameChanged (T1) | 0x071 | ✅ | 0x083 | ✅ | 0x09D | ✅ | 0x0A1 | ✅ | 0x0AC | ✅ | 0x0B0 | ✅ | 0x0B9 | ✅ | 0x0C8 | ✅ | 0x0CB | ✅ | 0x0B2 | ✅ |
 | IDA_0X073 | sub_AF7C61 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ |
 | SET_EXTRA_PENDANT_SLOT | CWvsContext::OnSetBuyEquipExt; sub_95EE37 |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ | 0x079 | ❌ | 0x07C | ❌ | 0x07C | ❌ | 0x07E | ❌ | 0x07D | ❌ |  | ⬜ |
 | IDA_0X074 | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ |
@@ -230,7 +231,6 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 | CLEAR_BACK_EFFECT | CMapLoadable::OnClearBackEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x082 | ❌ | 0x085 | ❌ | 0x08A | ❌ | 0x091 | ❌ | 0x092 | ❌ | 0x080 | ❌ |
 | PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) |  | ⬜ | 0x082 | ✅ | 0x09C | ✅ | 0x0A0 | ✅ | 0x0AB | ✅ | 0x0AF | ✅ | 0x0B8 | ✅ | 0x0C7 | ❌ | 0x0CA | ✅ | 0x0B1 | ✅ |
 | FIND_FRIEND | CWvsContext::OnFindFirend |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x083 | ❌ | 0x086 | ❌ | 0x086 | ❌ |  | ⬜ |
-| PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 |  |  | ⬜ | 0x083 | ❌ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B9 | ❌ | 0x0C8 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) |  | ⬜ | 0x084 | ✅ | 0x09E | ✅ | 0x0A2 | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0C9 | ❌ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | WILD_HUNTER_INFO | CWvsContext::OnWildHunterInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x084 | ❌ |  | ⬜ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) |  | ⬜ | 0x085 | ✅ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CA | ❌ | 0x0CD | ✅ | 0x0B4 | ✅ |
@@ -1055,16 +1055,16 @@ Tool: `5b84269969662e35e53432d2e073cc679c94a07aaa02ee73ccb7e1f06a62c395`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 204 | 0 | 19 | 194 | 602 | 0 | 48.9% |
-| v61 | 266 | 0 | 56 | 235 | 462 | 0 | 47.8% |
-| v72 | 282 | 0 | 69 | 250 | 418 | 0 | 46.9% |
-| v79 | 327 | 0 | 68 | 247 | 377 | 0 | 50.9% |
-| v83 | 447 | 0 | 0 | 344 | 228 | 0 | 56.5% |
-| v84 | 422 | 0 | 0 | 350 | 247 | 0 | 54.7% |
-| v87 | 455 | 0 | 0 | 374 | 190 | 0 | 54.9% |
-| v92 | 24 | 0 | 151 | 703 | 141 | 0 | 2.7% |
-| v95 | 480 | 0 | 0 | 433 | 106 | 0 | 52.6% |
-| JMS185 | 429 | 0 | 0 | 393 | 197 | 0 | 52.2% |
+| v48 | 205 | 0 | 19 | 194 | 601 | 0 | 49.0% |
+| v61 | 267 | 0 | 56 | 234 | 462 | 0 | 47.9% |
+| v72 | 283 | 0 | 69 | 249 | 418 | 0 | 47.1% |
+| v79 | 328 | 0 | 68 | 246 | 377 | 0 | 51.1% |
+| v83 | 448 | 0 | 0 | 343 | 228 | 0 | 56.6% |
+| v84 | 423 | 0 | 0 | 349 | 247 | 0 | 54.8% |
+| v87 | 456 | 0 | 0 | 373 | 190 | 0 | 55.0% |
+| v92 | 25 | 0 | 151 | 702 | 141 | 0 | 2.8% |
+| v95 | 481 | 0 | 0 | 432 | 106 | 0 | 52.7% |
+| JMS185 | 430 | 0 | 0 | 392 | 197 | 0 | 52.3% |
 
 ## Conflicts
 

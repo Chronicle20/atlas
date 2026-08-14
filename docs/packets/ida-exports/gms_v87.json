@@ -15775,6 +15775,11 @@
           "comment": ""
         }
       ]
+    },
+    "CWvsContext::SendWaterOfLife": {
+      "address": "0xab501c",
+      "direction": "serverbound",
+      "calls": []
     }
   }
 }

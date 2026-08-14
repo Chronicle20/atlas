@@ -59,6 +59,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEvolveCommand(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRenameCommand(db)))); err != nil {
+				return err
+			}
 			t, _ = topic.EnvProvider(l)(pet2.EnvCommandTopicMovement)()
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand(db)))); err != nil {
 				return err
@@ -160,6 +163,18 @@ func handleEvolveCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.EvolveCo
 		err := pet.NewProcessor(l, ctx, db).EvolveAndEmit(c.TransactionId, c.PetId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to evolve pet [%d].", c.PetId)
+		}
+	}
+}
+
+func handleRenameCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.RenameCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c pet2.Command[pet2.RenameCommandBody]) {
+		if c.Type != pet2.CommandPetRename {
+			return
+		}
+		err := pet.NewProcessor(l, ctx, db).RenameAndEmit(c.TransactionId, c.PetId, c.ActorId, c.Body.Name)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to rename pet [%d] for character [%d].", c.PetId, c.ActorId)
 		}
 	}
 }

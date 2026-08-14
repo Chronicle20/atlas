@@ -47,6 +47,8 @@ type ProcessorMock struct {
 	AwardLevelFunc                           func(mb *message.Buffer) func(petId uint32) func(amount byte) error
 	EvolveAndEmitFunc                        func(transactionId uuid.UUID, petId uint32) error
 	EvolveFunc                               func(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32) error
+	RenameAndEmitFunc                        func(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error
+	RenameFunc                               func(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error
 	SetExcludeAndEmitFunc                    func(petId uint32, items []uint32) error
 	SetExcludeFunc                           func(mb *message.Buffer) func(petId uint32) func(items []uint32) error
 	SetSkillAndEmitFunc                      func(petId uint32, skillKey string, enabled bool) error
@@ -353,6 +355,22 @@ func (m *ProcessorMock) Evolve(mb *message.Buffer) func(transactionId uuid.UUID,
 		return m.EvolveFunc(mb)
 	}
 	return func(transactionId uuid.UUID, petId uint32) error {
+		return nil
+	}
+}
+
+func (m *ProcessorMock) RenameAndEmit(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error {
+	if m.RenameAndEmitFunc != nil {
+		return m.RenameAndEmitFunc(transactionId, petId, actorId, name)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) Rename(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error {
+	if m.RenameFunc != nil {
+		return m.RenameFunc(mb)
+	}
+	return func(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error {
 		return nil
 	}
 }

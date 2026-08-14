@@ -203,3 +203,19 @@ func evolvedEventProvider(m Model, oldTemplateId uint32, transactionId uuid.UUID
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func nameChangedEventProvider(m Model, previousName string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.OwnerId()))
+	value := &pet.StatusEvent[pet.NameChangedStatusEventBody]{
+		PetId:   m.Id(),
+		OwnerId: m.OwnerId(),
+		Type:    pet.StatusEventTypeNameChanged,
+		Body: pet.NameChangedStatusEventBody{
+			Slot:          m.Slot(),
+			Name:          m.Name(),
+			PreviousName:  previousName,
+			TransactionId: transactionId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

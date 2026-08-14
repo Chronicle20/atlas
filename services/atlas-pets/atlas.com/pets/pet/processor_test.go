@@ -1774,3 +1774,76 @@ func TestProcessor_SetSkill(t *testing.T) {
 		t.Errorf("Flag after unknown key = %d, want 256", m.Flag())
 	}
 }
+
+func TestRenameAppliesAndEmits(t *testing.T) {
+	// Arrange: use the same DB + context setup the sibling tests in this file use.
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+	created, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Original", 1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	// Act
+	err = p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId(), "Renamed")
+	// Assert
+	if err != nil {
+		t.Fatalf("RenameAndEmit = %v", err)
+	}
+	got, err := p.GetById(created.Id())
+	if err != nil {
+		t.Fatalf("GetById = %v", err)
+	}
+	if got.Name() != "Renamed" {
+		t.Fatalf("Name() = %q, want %q", got.Name(), "Renamed")
+	}
+}
+
+// FR-5.5: Kafka is at-least-once. A redelivered RENAME whose value is already
+// applied must complete, not error — the orchestrator's rename_pet step
+// completes on the re-emitted event.
+func TestRenameIsIdempotent(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+	created, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Original", 1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	if err := p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId(), "Renamed"); err != nil {
+		t.Fatalf("first rename = %v", err)
+	}
+	if err := p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId(), "Renamed"); err != nil {
+		t.Fatalf("second (redelivered) rename = %v, want nil", err)
+	}
+}
+
+// FR-5.6: atlas-pets does not trust atlas-channel to have validated.
+func TestRenameRejectsInvalidName(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+	created, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Original", 1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	for _, bad := range []string{"", "abc", "abcdefghijklm"} {
+		if err := p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId(), bad); err == nil {
+			t.Fatalf("RenameAndEmit(%q) = nil, want validation error", bad)
+		}
+	}
+	got, _ := p.GetById(created.Id())
+	if got.Name() != "Original" {
+		t.Fatalf("name mutated to %q on a rejected rename", got.Name())
+	}
+}
+
+// FR-3.3 defence in depth: a rename requested by a non-owner is rejected.
+func TestRenameRejectsNonOwner(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+	created, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Original", 1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	if err := p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId()+1, "Renamed"); err == nil {
+		t.Fatal("RenameAndEmit by non-owner = nil, want error")
+	}
+}

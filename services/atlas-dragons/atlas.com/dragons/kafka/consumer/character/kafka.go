@@ -18,9 +18,14 @@ const (
 	StatusEventTypeJobChanged     = "JOB_CHANGED"
 )
 
-// StatusEvent mirrors the atlas-character EVENT_TOPIC_CHARACTER_STATUS envelope
-// (services/atlas-character/.../kafka/message/character/kafka.go). Bodies are
-// decoded faithfully to avoid Kafka parse errors even where a field is unused.
+// StatusEvent mirrors the EVENT_TOPIC_CHARACTER_STATUS envelope, whose types
+// have two distinct producers, not one: atlas-character emits LOGIN, LOGOUT,
+// and JOB_CHANGED (services/atlas-character/.../character/producer.go), while
+// atlas-maps is the sole emitter of MAP_CHANGED and CHANNEL_CHANGED
+// (services/atlas-maps/.../character/warp/processor.go and
+// .../kafka/consumer/character/channel_change_request.go) — atlas-character
+// declares neither of those two types. Bodies are decoded faithfully to avoid
+// Kafka parse errors even where a field is unused.
 type StatusEvent[E any] struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	WorldId       world.Id  `json:"worldId"`

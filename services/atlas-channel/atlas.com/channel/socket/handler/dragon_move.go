@@ -26,6 +26,11 @@ func DragonMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		_ = dragoncmd.NewProcessor(l, ctx).Move(s.Field(), s.CharacterId(), p.StartX(), p.StartY(), 0, p.RawMovement())
+		if err := dragoncmd.NewProcessor(l, ctx).Move(s.Field(), s.CharacterId(), p.StartX(), p.StartY(), 0, p.RawMovement()); err != nil {
+			// Non-fatal: a failed move relay must not kill the session. Logged
+			// so a persistent failure (e.g. Redis errors surfaced from
+			// atlas-dragons) is visible instead of silently dropped.
+			l.WithError(err).Errorf("Unable to relay dragon move for character [%d].", s.CharacterId())
+		}
 	}
 }

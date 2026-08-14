@@ -11,6 +11,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -120,7 +121,13 @@ func (p *ProcessorImpl) Create(f field.Model, characterId uint32) error {
 func (p *ProcessorImpl) Destroy(characterId uint32) error {
 	m, err := GetRegistry().Get(p.ctx, p.t, characterId)
 	if err != nil {
-		return nil // no dragon; nothing to do
+		if errors.Is(err, atlasredis.ErrNotFound) {
+			return nil // no dragon; nothing to do
+		}
+		// A real Redis error, not "no dragon": propagating it lets the caller
+		// retry instead of silently believing the (unperformed) cleanup
+		// succeeded, leaving the dragon and its field-index entry orphaned.
+		return err
 	}
 	existed, err := GetRegistry().Remove(p.ctx, p.t, characterId)
 	if err != nil {
@@ -133,20 +140,37 @@ func (p *ProcessorImpl) Destroy(characterId uint32) error {
 	return p.emit(EnvEventTopicDragonStatus, destroyedEventProvider(m))
 }
 
-// Move updates the dragon's position/stance and relays the raw movement blob.
-// It never creates a dragon as a side effect: a move from a character with no
+// Move updates the dragon's position and relays the raw movement blob. It
+// never creates a dragon as a side effect: a move from a character with no
 // dragon is dropped with a warning and no event (FR-4.4).
+//
+// stance is intentionally NOT persisted here. DragonMoveHandleFunc
+// (atlas-channel) passes a hardcoded 0 for it: the CMovePath blob the client
+// sends is opaque, and no stance is decoded from it (parsing one would need a
+// full move-path codec, well beyond this scope). If that 0 were written
+// through to the registry, the dragon's stored stance would go to 0 after its
+// first move and stay there forever, so spawnDragonForSession would replay
+// stance 0 to every late-entering player. Leaving the last known spawn
+// stance in place is strictly better than zeroing it, so Move only updates
+// position; the stance parameter is accepted (it is part of the Kafka
+// contract, MoveCommandBody.Stance) but deliberately unused for persistence.
 //
 // Since the serverbound packet carries no identity field, "does this sender own
 // the named dragon" is unrepresentable — the only check left is "does this
 // sender have a dragon at all", which is this lookup.
 func (p *ProcessorImpl) Move(characterId uint32, startX int16, startY int16, stance byte, rawMovement []byte) error {
 	if _, err := GetRegistry().Get(p.ctx, p.t, characterId); err != nil {
+		if !errors.Is(err, atlasredis.ErrNotFound) {
+			// A real Redis error, not "no dragon": say so, don't let it read
+			// as the ordinary dragonless-character case.
+			p.l.WithError(err).Errorf("Move for character [%d]: lookup failed.", characterId)
+			return err
+		}
 		p.l.Warnf("Move for character [%d] with no dragon; dropped.", characterId)
 		return nil
 	}
 	m, err := GetRegistry().Update(p.ctx, p.t, characterId, func(cur Model) Model {
-		return cur.Move(int32(startX), int32(startY), stance)
+		return cur.Move(int32(startX), int32(startY))
 	})
 	if err != nil {
 		return err

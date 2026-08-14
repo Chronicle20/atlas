@@ -13,6 +13,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -40,6 +41,17 @@ func handles(eventType string) bool {
 		return true
 	}
 	return false
+}
+
+// broadcast is the single call site that turns excludesOwner into the actual
+// recipient set: every handler routes through here instead of hardcoding
+// ForSessionsInMap/ForOtherSessionsInMap inline, so excludesOwner's policy
+// (and the test pinning it) is load-bearing rather than decorative.
+func broadcast(mp _map.Processor, f field.Model, ownerCharacterId uint32, eventType string, o model2.Operator[session.Model]) error {
+	if excludesOwner(eventType) {
+		return mp.ForOtherSessionsInMap(f, ownerCharacterId, o)
+	}
+	return mp.ForSessionsInMap(f, o)
 }
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model2.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -91,8 +103,9 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 		// Map-wide INCLUDING the owner (FR-3.1): the owner has not rendered its
-		// own dragon locally.
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance),
+		// own dragon locally. Recipient set is decided by excludesOwner via
+		// broadcast, not hardcoded here.
+		err := broadcast(_map.NewProcessor(l, ctx), sc.Field(e.MapId, e.Instance), e.OwnerCharacterId, e.Type,
 			session.Announce(l)(ctx)(wp)(dragonpkt.DragonSpawnWriter)(
 				writer.DragonSpawnBody(e.OwnerCharacterId, e.Body.X, e.Body.Y, e.Body.Stance, e.Body.JobId)))
 		if err != nil {
@@ -110,8 +123,9 @@ func handleStatusEventMoved(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 		// OTHER sessions only (FR-4.3): the owner's client already rendered the
-		// motion locally, so re-sending would double-apply it.
-		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.OwnerCharacterId,
+		// motion locally, so re-sending would double-apply it. Recipient set is
+		// decided by excludesOwner via broadcast, not hardcoded here.
+		err := broadcast(_map.NewProcessor(l, ctx), sc.Field(e.MapId, e.Instance), e.OwnerCharacterId, e.Type,
 			session.Announce(l)(ctx)(wp)(dragonpkt.DragonMoveWriter)(
 				writer.DragonMoveBody(e.OwnerCharacterId, e.Body.RawMovement)))
 		if err != nil {
@@ -132,8 +146,9 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 		// handler arm for the opcode. The dragon actually disappears because the
 		// owner's CUser is destroyed when they leave the field, which the
 		// character-removal path already does. This broadcast is correct to send
-		// and is not the mechanism.
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance),
+		// and is not the mechanism. Recipient set is decided by excludesOwner via
+		// broadcast, not hardcoded here.
+		err := broadcast(_map.NewProcessor(l, ctx), sc.Field(e.MapId, e.Instance), e.OwnerCharacterId, e.Type,
 			session.Announce(l)(ctx)(wp)(dragonpkt.DragonRemoveWriter)(
 				writer.DragonRemoveBody(e.OwnerCharacterId)))
 		if err != nil {

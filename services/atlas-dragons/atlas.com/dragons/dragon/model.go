@@ -31,9 +31,11 @@ func (m Model) Y() int32                 { return m.y }
 func (m Model) Stance() byte             { return m.stance }
 func (m Model) JobId() job.Id            { return m.jobId }
 
-// Move returns a copy at the new position/stance.
-func (m Model) Move(x int32, y int32, stance byte) Model {
-	return Clone(m).SetX(x).SetY(y).SetStance(stance).Build()
+// Move returns a copy at the new position. Stance is deliberately untouched:
+// see the doc comment on ProcessorImpl.Move for why the caller must not pass
+// a stance derived from a MOVE command through to this method.
+func (m Model) Move(x int32, y int32) Model {
+	return Clone(m).SetX(x).SetY(y).Build()
 }
 
 // HasDragon reports whether wireJobId resolves, on this tenant's client version,

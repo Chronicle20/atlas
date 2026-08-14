@@ -2,6 +2,7 @@ package dragon
 
 import (
 	"atlas-dragons/rest"
+	"errors"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -9,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
@@ -23,16 +25,23 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 
 // handleGetDragonByCharacterId returns 404 for a character with no dragon.
 // THAT IS THE NORMAL ANSWER for the overwhelming majority of characters —
-// every non-Evan in the game. Consumers must treat requests.ErrNotFound as
-// "no dragon" and continue; a consumer that logs it as a fetch failure emits
-// one error line per non-Evan character.
+// every non-Evan in the game. Consumers must treat atlasredis.ErrNotFound as
+// "no dragon" and continue. A genuine infrastructure failure (e.g. Redis
+// unreachable) is a different case entirely: it must NOT collapse into the
+// same 404, or an outage on this endpoint produces zero signal. It is logged
+// and returned as 500.
 func handleGetDragonByCharacterId(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			p := NewProcessor(d.Logger(), d.Context())
 			m, err := p.GetByCharacterId(characterId)
 			if err != nil {
-				w.WriteHeader(http.StatusNotFound)
+				if errors.Is(err, atlasredis.ErrNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Retrieving dragon for character [%d].", characterId)
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			res, err := model.Map(Transform)(model.FixedProvider(m))()

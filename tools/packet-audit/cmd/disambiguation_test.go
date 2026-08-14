@@ -193,6 +193,7 @@ func TestCandidatesItemUseFamilyWrappers(t *testing.T) {
 	}{
 		{"CWvsContext::SendMobSummonItemUseRequest", "inventory", "SummonBagItemUse"},
 		{"sub_955499", "inventory", "SummonBagItemUse"},
+		{"sub_904154", "inventory", "SummonBagItemUse"},
 		{"CWvsContext::SendPortalScrollUseRequest", "inventory", "ReturnScrollItemUse"},
 		{"CWvsContext::SendReturnScrollUseRequest", "inventory", "ReturnScrollItemUse"},
 		{"sub_841AA5", "inventory", "ReturnScrollItemUse"},

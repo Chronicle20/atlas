@@ -20,6 +20,7 @@ import (
 // packet-audit:verify packet=inventory/serverbound/InventoryReturnScrollItemUse version=jms_v185 ida=0xb04d24
 // packet-audit:verify packet=inventory/serverbound/InventoryReturnScrollItemUse version=gms_v72 ida=0x917221
 // packet-audit:verify packet=inventory/serverbound/InventoryReturnScrollItemUse version=gms_v79 ida=0x968c52
+// packet-audit:verify packet=inventory/serverbound/InventoryReturnScrollItemUse version=gms_v48 ida=0x719dd9
 func TestReturnScrollItemUseRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

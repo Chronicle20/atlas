@@ -2185,12 +2185,15 @@ func candidatesFromFName(fname string) []candidate {
 		// (inventoryType)+Encode2(src)+Encode2(dst)+Encode2(count). The v48 registry
 		// primary fname is sub_70D8DE, so it keys to the same inventory.Move codec.
 		return []candidate{{name: "Move", dir: csvpkg.DirServerbound, pkg: "inventory"}}
-	case "sub_719DD9":
-		// USE_ITEM (serverbound) in gms_v48: CWvsContext::SendStatChangeItemUseRequest
-		// is UNNAMED — sub_719DD9 @0x719dd9, COutPacket(65)+Encode4(updateTime)+Encode2
-		// (slot)+Encode4(itemId). The v48 registry primary fname is sub_719DD9, so it
-		// keys to the same inventory.ItemUse codec.
-		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// task-229 CORRECTION: a "sub_719DD9" case previously lived here, claiming
+	// that address was the UNNAMED CWvsContext::SendStatChangeItemUseRequest
+	// (USE_ITEM). Re-decompile proved that wrong: 0x719dd9 is already named
+	// CWvsContext::SendPortalScrollUseRequest in the v48 IDB — the
+	// USE_RETURN_SCROLL sender (case below), not USE_ITEM. The genuine v48
+	// USE_ITEM sender is CWvsContext::SendStatChangeItemUseRequest @0x70db3c,
+	// which is already named and keys via the case at line ~2198. No
+	// candidatesFromFName case is needed for sub_719DD9 any more since the
+	// registry now uses the real, already-named fnames for both ops.
 	case "CWvsContext::SendGatherItemRequest":
 		return []candidate{{name: "CompartmentMergeRequest", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendSortItemRequest":

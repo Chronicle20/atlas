@@ -465,6 +465,15 @@
         ]
       },
       {
+        "opCode": "0x38",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseHandle",
+        "fname": "CWvsContext::SendStatChangeItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x39",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemCancelHandle",
@@ -486,6 +495,7 @@
         "opCode": "0x3B",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseSummonBagHandle",
+        "fname": "CWvsContext::SendMobSummonItemUseRequest",
         "services": [
           "channel"
         ]
@@ -538,8 +548,8 @@
       {
         "opCode": "0x41",
         "validator": "LoggedInValidator",
-        "handler": "CharacterItemUseHandle",
-        "fname": "sub_719DD9",
+        "handler": "CharacterItemUseTownScrollHandle",
+        "fname": "CWvsContext::SendPortalScrollUseRequest",
         "services": [
           "channel"
         ]

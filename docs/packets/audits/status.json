@@ -1,7 +1,7 @@
 {
   "toolSha": "59bde3367527be50128d62acb916df68378e5d96b51024d95040df4c5929a0c6",
   "exportHashes": {
-    "gms_v48": "255cf90dfe7d4851b445be1de39b5a18529ed242779c558a4188df2b073e1b6e",
+    "gms_v48": "eac096b3ad03902b5d0433cfd147a8d7f1d8419e3209fada1ba917f3f6eb10f6",
     "gms_v61": "26042fe9649c39c9f917bf62b63dd90f09bf0654814db107fda2e41dddcf8ca3",
     "gms_v72": "ec8af6e63ac5553577d35193711ff07524eaca8b04a85c7d51bd80771bfe0572",
     "gms_v79": "81443af5d011b0d02d5c674e4f04fd0963ac1c7b93125aaa2cc51536666634a6",
@@ -8176,6 +8176,61 @@
     },
     {
       "kind": "op",
+      "op": "USE_ITEM",
+      "packet": "inventory/serverbound/InventoryItemUse",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CWvsContext::SendStatChangeItemUseRequest"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 56
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
+          "opcode": 67
+        },
+        "gms_v72": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 71
+        },
+        "gms_v79": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 70
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 72
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 72
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 75
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 79
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 78
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 64
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "CANCEL_ITEM_EFFECT",
       "packet": "character/serverbound/ItemCancel",
       "direction": "serverbound",
@@ -8497,6 +8552,59 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 51
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "USE_SUMMON_BAG",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CWvsContext::SendMobSummonItemUseRequest",
+        "sub_904154",
+        "sub_955499"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 59
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 70
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 74
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 73
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 75
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 75
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 78
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 82
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 81
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 67
         }
       }
     },
@@ -9556,13 +9664,13 @@
     },
     {
       "kind": "op",
-      "op": "USE_ITEM",
-      "packet": "inventory/serverbound/InventoryItemUse",
+      "op": "USE_RETURN_SCROLL",
       "direction": "serverbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
-        "CWvsContext::SendStatChangeItemUseRequest",
-        "sub_719DD9"
+        "CWvsContext::SendPortalScrollUseRequest",
+        "CWvsContext::SendReturnScrollUseRequest",
+        "sub_841AA5"
       ],
       "cells": {
         "gms_v48": {
@@ -9570,43 +9678,40 @@
           "opcode": 65
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": 67
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 71
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 70
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 72
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 72
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 75
-        },
-        "gms_v92": {
-          "state": "verified",
-          "opcode": 79
-        },
-        "gms_v95": {
           "state": "verified",
           "opcode": 78
         },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 84
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 83
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 85
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 85
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 88
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 92
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 92
+        },
         "jms_v185": {
           "state": "verified",
-          "opcode": 64
+          "opcode": 77
         }
       }
     },
@@ -10328,59 +10433,6 @@
         "jms_v185": {
           "state": "incomplete",
           "note": "no audit report",
-          "opcode": 67
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "USE_SUMMON_BAG",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::SendMobSummonItemUseRequest",
-        "sub_904154",
-        "sub_955499"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "verified",
-          "opcode": 70
-        },
-        "gms_v72": {
-          "state": "verified",
-          "opcode": 74
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 73
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 75
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 75
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 78
-        },
-        "gms_v92": {
-          "state": "verified",
-          "opcode": 82
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 81
-        },
-        "jms_v185": {
-          "state": "verified",
           "opcode": 67
         }
       }
@@ -11837,59 +11889,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 70
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "USE_RETURN_SCROLL",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::SendPortalScrollUseRequest",
-        "CWvsContext::SendReturnScrollUseRequest",
-        "sub_841AA5"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "verified",
-          "opcode": 78
-        },
-        "gms_v72": {
-          "state": "verified",
-          "opcode": 84
-        },
-        "gms_v79": {
-          "state": "verified",
-          "opcode": 83
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 85
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 85
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 88
-        },
-        "gms_v92": {
-          "state": "verified",
-          "opcode": 92
-        },
-        "gms_v95": {
-          "state": "verified",
-          "opcode": 92
-        },
-        "jms_v185": {
-          "state": "verified",
-          "opcode": 77
         }
       }
     },

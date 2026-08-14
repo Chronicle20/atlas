@@ -18433,6 +18433,69 @@
       "direction": "",
       "calls": null
     },
+    "CWvsContext::SendMobSummonItemUseRequest": {
+      "address": "0x70ddaa",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime",
+          "guard": "<default> && result == 6 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot",
+          "guard": "<default> && result == 6 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId",
+          "guard": "<default> && result == 6 && result"
+        }
+      ]
+    },
+    "CWvsContext::SendPortalScrollUseRequest": {
+      "address": "0x719dd9",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime",
+          "guard": "v33 == (unsigned int *)999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot",
+          "guard": "v33 == (unsigned int *)999999999"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId",
+          "guard": "v33 == (unsigned int *)999999999"
+        }
+      ]
+    },
+    "CWvsContext::SendStatChangeItemUseRequest": {
+      "address": "0x70db3c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime",
+          "guard": "result && !result && !*(_DWORD *)(dword_80C898 + 6440) && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot",
+          "guard": "result && !result && !*(_DWORD *)(dword_80C898 + 6440) && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId",
+          "guard": "result && !result && !*(_DWORD *)(dword_80C898 + 6440) && result"
+        }
+      ]
+    },
     "CWvsContext::OnSkillLearnItemResult": {
       "address": "0x71a135",
       "direction": "clientbound",

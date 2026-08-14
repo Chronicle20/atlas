@@ -205,6 +205,7 @@ func TestStartItemConversation_EmitsConversationInProgressOnConflict(t *testing.
 		Type:          npc2.CommandTypeStartItemConversation,
 		Body:          npc2.CommandItemConversationStartBody{ItemId: 2430013, Slot: 5},
 	}
+	install(t, &captured{})                                                // throwaway sink: the seed call must not reach the real producer
 	handleStartItemConversationCommand(db)(testLogger(t), testCtx(t), cmd) // occupies the character
 
 	install(t, &c) // only observe the SECOND command
@@ -234,6 +235,7 @@ func TestStartItemConversation_RedeliveryReemitsStarted(t *testing.T) {
 		Type:          npc2.CommandTypeStartItemConversation,
 		Body:          npc2.CommandItemConversationStartBody{ItemId: 2430013, Slot: 5},
 	}
+	install(t, &captured{}) // throwaway sink: the seed call must not reach the real producer
 	handleStartItemConversationCommand(db)(testLogger(t), testCtx(t), cmd)
 
 	install(t, &c) // only observe the redelivery

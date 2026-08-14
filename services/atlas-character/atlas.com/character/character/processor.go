@@ -1928,6 +1928,19 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				})
 			}
 
+			// World validation and update
+			if input.WorldId != 0 && input.WorldId != c.WorldId() {
+				oldWorldId := c.WorldId()
+				newWorldId := input.WorldId
+				changes = append(changes, fieldChange{
+					updateFunc:  SetWorldId(input.WorldId),
+					shouldApply: true,
+					eventFunc: func() error {
+						return mb.Put(character2.EnvEventTopicCharacterStatus, worldChangedEventProvider(transactionId, characterId, oldWorldId, newWorldId))
+					},
+				})
+			}
+
 			// Hair validation and update
 			if input.Hair != 0 && input.Hair != c.Hair() {
 				if !p.isValidHair(input.Hair) {

@@ -125,6 +125,27 @@ jobs:
         run: ./tools/npc-shop-contract-mirror-guard.sh
 
   # ============================================
+  # NPC Conversation Contract Mirror Guard
+  # Diffs the COMMAND_TOPIC_NPC / EVENT_TOPIC_NPC_CONVERSATION_STATUS contract
+  # across its two separate-module copies (atlas-npc-conversations owner,
+  # atlas-saga-orchestrator mirror). A field name or json tag changed in one
+  # copy and not the other fails no build — it decodes into a zero-valued
+  # body at runtime, silently. task-230.
+  # ============================================
+  npc-conversation-contract-mirror-guard:
+    name: NPC Conversation Contract Mirror Guard
+    needs: detect-changes
+    if: needs.detect-changes.outputs.deploy-only != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: npc-conversation contract mirror guard
+        run: ./tools/npc-conversation-contract-mirror-guard.sh
+
+  # ============================================
   # Outbox Guard
   # Builds tools/outboxguard (go/analysis analyzer)
   # and runs it over every Go service module. Fails
@@ -830,7 +851,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, npc-shop-contract-mirror-guard, outbox-guard, goroutine-guard, buff-duration-guard, gen-lb-ports, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, npc-shop-contract-mirror-guard, npc-conversation-contract-mirror-guard, outbox-guard, goroutine-guard, buff-duration-guard, gen-lb-ports, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
     if: always()
     runs-on: ubuntu-latest
 
@@ -849,6 +870,7 @@ jobs:
           OVERLAY_RESULT="${{ needs.update-pr-overlay.result }}"
           GUARD_RESULT="${{ needs.redis-key-guard.result }}"
           NPC_SHOP_CONTRACT_GUARD_RESULT="${{ needs.npc-shop-contract-mirror-guard.result }}"
+          NPC_CONVERSATION_CONTRACT_GUARD_RESULT="${{ needs.npc-conversation-contract-mirror-guard.result }}"
           OUTBOX_GUARD_RESULT="${{ needs.outbox-guard.result }}"
           GOROUTINE_GUARD_RESULT="${{ needs.goroutine-guard.result }}"
           BUFF_DURATION_GUARD_RESULT="${{ needs.buff-duration-guard.result }}"
@@ -871,6 +893,7 @@ jobs:
           echo "| Resolve PR overlay | $OVERLAY_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Redis Key Guard | $GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| NPC Shop Contract Mirror Guard | $NPC_SHOP_CONTRACT_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| NPC Conversation Contract Mirror Guard | $NPC_CONVERSATION_CONTRACT_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Outbox Guard | $OUTBOX_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Goroutine Guard | $GOROUTINE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Buff Duration Guard | $BUFF_DURATION_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
@@ -903,7 +926,7 @@ jobs:
           # but never to fail outright. Comparing against "failure" (not
           # against "success") is what makes a skip pass. That tolerance
           # is only safe because detect-changes was verified above.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$BUFF_DURATION_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$NPC_CONVERSATION_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$BUFF_DURATION_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

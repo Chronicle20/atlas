@@ -111,6 +111,16 @@ For large refactors expect multiple fix-and-rebuild cycles. Don't shortcut the b
     runtime, silently. The guard diffs all three from their `package` clause
     onward; only the leading doc comment, which names the mirror direction, may
     differ.
+16. **`tools/npc-conversation-contract-mirror-guard.sh` clean from the repo root**
+    whenever either copy of the npc-conversation Kafka contract changed.
+    atlas-npc-conversations owns `kafka/message/npc/kafka.go`;
+    atlas-saga-orchestrator carries a mirror in a separate Go module, so a field
+    name or json tag changed in one and not the other fails no build — it
+    decodes into a zero-valued body at runtime, silently: a conversation start
+    with no item id, no avatar, or no transactionId, so the awaiting saga step
+    never completes (task-230). The guard diffs the two files from their
+    `package` clause onward; only the leading doc comment, which names the
+    mirror direction, may differ.
 
 ## Code Patterns
 

@@ -396,14 +396,15 @@ func partyMembership(l logrus.FieldLogger, ctx context.Context, characterId uint
 	if err != nil {
 		return 0, false, err
 	}
-	for _, p := range ps {
-		id, convErr := strconv.ParseUint(p.Id, 10, 32)
-		if convErr != nil {
-			return 0, false, fmt.Errorf("party id [%s] for character [%d] is not numeric: %w", p.Id, characterId, convErr)
-		}
-		return uint32(id), true, nil
+	if len(ps) == 0 {
+		return 0, false, nil
 	}
-	return 0, false, nil
+	p := ps[0]
+	id, convErr := strconv.ParseUint(p.Id, 10, 32)
+	if convErr != nil {
+		return 0, false, fmt.Errorf("party id [%s] for character [%d] is not numeric: %w", p.Id, characterId, convErr)
+	}
+	return uint32(id), true, nil
 }
 
 // buddyEntryRestModel mirrors atlas-buddies' buddy.RestModel

@@ -14,6 +14,14 @@ const (
 	CommandTypeIncreaseCapacity = "INCREASE_CAPACITY"
 	// CommandTypeRequestDelete is the command type for requesting to delete a buddy
 	CommandTypeRequestDelete = "REQUEST_DELETE"
+	// CommandTypeRestore is the command type for restoring a buddy entry a
+	// server-issued REQUEST_DELETE removed, in ONE direction and without the
+	// invite handshake REQUEST_ADD performs. Mirrors atlas-buddies'
+	// CommandTypeRestore. It is the exact inverse of CommandTypeRequestDelete
+	// and is emitted twice per pair by the world-transfer saga's compensation
+	// (task-227 FR-4.8), matching the 2N REQUEST_DELETEs the severance step
+	// sent.
+	CommandTypeRestore = "RESTORE"
 
 	// Buddy list status event constants
 	EnvEventTopicBuddyListStatus       = "EVENT_TOPIC_BUDDY_LIST_STATUS"
@@ -39,6 +47,13 @@ type IncreaseCapacityCommandBody struct {
 
 // RequestDeleteBuddyCommandBody represents the body of a request to delete a buddy.
 type RequestDeleteBuddyCommandBody struct {
+	CharacterId character.Id `json:"characterId"`
+}
+
+// RestoreBuddyCommandBody mirrors atlas-buddies' RestoreBuddyCommandBody
+// exactly (field names and json tags): the buddy to put back on the commanded
+// character's list.
+type RestoreBuddyCommandBody struct {
 	CharacterId character.Id `json:"characterId"`
 }
 

@@ -18,6 +18,14 @@ const (
 	CommandTypeRequestDelete = "REQUEST_DELETE"
 	// CommandTypeIncreaseCapacity is the command type for increasing buddy list capacity
 	CommandTypeIncreaseCapacity = "INCREASE_CAPACITY"
+	// CommandTypeRestore re-adds a buddy entry that a server-issued
+	// REQUEST_DELETE removed, in ONE direction, without the invite handshake
+	// REQUEST_ADD performs. It exists for the world-transfer saga's
+	// compensation (task-227 FR-4.8): the severance was forced on the player,
+	// so its undo must not require the player (or the buddy, who may be
+	// offline) to accept anything. Idempotent — an entry that is already
+	// present is left alone.
+	CommandTypeRestore = "RESTORE"
 )
 
 type Command[E any] struct {
@@ -39,6 +47,15 @@ type RequestAddBuddyCommandBody struct {
 }
 
 type RequestDeleteBuddyCommandBody struct {
+	CharacterId character.Id `json:"characterId"`
+}
+
+// RestoreBuddyCommandBody names the buddy to put back on the commanded
+// character's list. Deliberately the same shape as
+// RequestDeleteBuddyCommandBody: RESTORE is that command's exact inverse, one
+// direction at a time, so a mutual severance of N buddies is undone by 2N
+// RESTOREs exactly as it was applied by 2N REQUEST_DELETEs.
+type RestoreBuddyCommandBody struct {
 	CharacterId character.Id `json:"characterId"`
 }
 

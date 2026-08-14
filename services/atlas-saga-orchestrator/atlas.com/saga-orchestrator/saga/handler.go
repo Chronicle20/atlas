@@ -85,6 +85,13 @@ type Handler interface {
 	WithPartyQuestProcessor(party_quest.Processor) Handler
 	WithReactorProcessor(reactor.Processor) Handler
 	WithNoteProcessor(note.Processor) Handler
+	// WithPartyProcessor and WithPendingChangeProcessor are the injector
+	// seams for the five world-transfer handlers (task-227 Task 13). Without
+	// them no test can reach those handlers' bodies — only their dispatch and
+	// payload typing — so a handler calling the wrong endpoint would ship
+	// green.
+	WithPartyProcessor(party.Processor) Handler
+	WithPendingChangeProcessor(pending_change.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -764,6 +771,18 @@ func (h *HandlerImpl) WithReactorProcessor(reactorP reactor.Processor) Handler {
 		partyQuestP:    h.partyQuestP,
 		reactorP:       reactorP,
 	}
+}
+
+func (h *HandlerImpl) WithPartyProcessor(partyP party.Processor) Handler {
+	c := *h
+	c.partyP = partyP
+	return &c
+}
+
+func (h *HandlerImpl) WithPendingChangeProcessor(pendingChangeP pending_change.Processor) Handler {
+	c := *h
+	c.pendingChangeP = pendingChangeP
+	return &c
 }
 
 func (h *HandlerImpl) WithNoteProcessor(noteP note.Processor) Handler {

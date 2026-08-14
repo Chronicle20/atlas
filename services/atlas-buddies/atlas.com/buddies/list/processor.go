@@ -24,6 +24,12 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// DefaultGroup is the buddy group a restored entry lands in. It matches the
+// literal the mutual-add path and buddy.Builder already use; the severance
+// step does not capture the prior group, so a restore cannot reproduce a
+// custom one.
+const DefaultGroup = "Default Group"
+
 type Processor interface {
 	WithTransaction(*gorm.DB) Processor
 	ByCharacterIdProvider(characterId uint32) model.Provider[Model]
@@ -33,6 +39,14 @@ type Processor interface {
 	Delete(mb *message.Buffer) func(characterId uint32, worldId world.Id) error
 	RequestAddBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32, group string) error
 	RequestAddBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32, group string) error
+	// RestoreBuddyAndEmit re-adds targetId to characterId's list in ONE
+	// direction, without the invite handshake RequestAddBuddy performs, and
+	// without touching targetId's list. It is the exact inverse of
+	// RequestDeleteBuddy and backs the world-transfer saga's compensation
+	// (task-227 FR-4.8). Idempotent: an entry that is already present is a
+	// no-op, so an at-least-once redelivery cannot duplicate a buddy row.
+	RestoreBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32) error
+	RestoreBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32) error
 	RequestDeleteBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32, transactionId uuid.UUID) error
 	RequestDeleteBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32, transactionId uuid.UUID) error
 	AcceptInviteAndEmit(characterId uint32, worldId world.Id, targetId uint32) error
@@ -270,6 +284,90 @@ func (p *ProcessorImpl) RequestAddBuddy(mb *message.Buffer) func(characterId uin
 		for t, ms := range innerMb.GetAll() {
 			if err := mb.Put(t, model.FixedProvider(ms)); err != nil {
 				return err
+			}
+		}
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) RestoreBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).RestoreBuddy(buf)(characterId, worldId, targetId)
+		})
+	})
+}
+
+// RestoreBuddy puts targetId back on characterId's buddy list at the standard
+// group, NOT pending, and emits BUDDY_ADDED for characterId only. It does not
+// create an invite and does not touch targetId's list — the caller
+// (the world-transfer compensator) issues the mirror-direction RESTORE itself,
+// which is what makes the undo symmetric with the 2N REQUEST_DELETEs that
+// applied the severance.
+//
+// Two conditions return cleanly rather than erroring, because both mean the
+// desired end state already holds: the entry is already present (redelivery),
+// and the list is at capacity only if something else filled it since — that
+// one IS an error, since silently dropping a restore would leave the player
+// permanently short a buddy.
+func (p *ProcessorImpl) RestoreBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32) error {
+	return func(characterId uint32, worldId world.Id, targetId uint32) error {
+		innerMb := message.NewBuffer()
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			cbl, err := p.WithTransaction(tx).GetByCharacterId(characterId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] having a buddy restored.", characterId)
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+				return err
+			}
+
+			for _, b := range cbl.Buddies() {
+				if b.CharacterId() == targetId {
+					p.l.Debugf("Buddy [%d] is already on character [%d] list; RESTORE is a no-op.", targetId, characterId)
+					return nil
+				}
+			}
+
+			if byte(len(cbl.Buddies()))+1 > cbl.Capacity() {
+				p.l.Errorf("Cannot restore buddy [%d] to character [%d]: list is at capacity.", targetId, characterId)
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorListFull))
+				return errors.New("buddy list is at capacity")
+			}
+
+			tc, err := p.cp.GetById(targetId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to retrieve character [%d] information for buddy restore.", targetId)
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorCharacterNotFound))
+				return err
+			}
+
+			if err = addBuddy(tx, characterId, targetId, tc.Name(), DefaultGroup, false); err != nil {
+				p.l.WithError(err).Errorf("Unable to restore buddy [%d] to buddy list for character [%d].", targetId, characterId)
+				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
+				return err
+			}
+
+			p.l.Infof("Restored buddy [%d] to character [%d] buddy list.", targetId, characterId)
+			_ = innerMb.Put(list2.EnvStatusEventTopic, list3.BuddyAddedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId), tc.Name(), -1, DefaultGroup))
+			return nil
+		})
+		if txErr != nil {
+			// D7: the inner tx rolled back, so innerMb holds only a rejection
+			// event reflecting no committed state change. Fire it on the
+			// direct producer path rather than the outbox-bound mb.
+			_ = message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+				for t, ms := range innerMb.GetAll() {
+					if putErr := buf.Put(t, model.FixedProvider(ms)); putErr != nil {
+						return putErr
+					}
+				}
+				return nil
+			})
+			return txErr
+		}
+		for t, ms := range innerMb.GetAll() {
+			if putErr := mb.Put(t, model.FixedProvider(ms)); putErr != nil {
+				return putErr
 			}
 		}
 		return nil

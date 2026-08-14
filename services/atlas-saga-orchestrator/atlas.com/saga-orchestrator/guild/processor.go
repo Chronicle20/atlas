@@ -22,6 +22,13 @@ type Processor interface {
 	// require — used by the world-transfer saga (task-227), which must
 	// guarantee the severance rather than wait on player confirmation.
 	RequestLeave(transactionId uuid.UUID, characterId uint32, guildId uint32, force bool) error
+	// RequestRejoin emits a REJOIN command that puts characterId back in
+	// guildId at title. It is the inverse of RequestLeave and exists solely
+	// for the world-transfer saga's compensation (task-227 FR-4.8): the
+	// forced leave is not something the player can undo themselves, so the
+	// rank has to be restored exactly, from the payload the leave step
+	// carried.
+	RequestRejoin(transactionId uuid.UUID, characterId uint32, guildId uint32, title byte) error
 }
 
 type ProcessorImpl struct {
@@ -61,4 +68,9 @@ func (p *ProcessorImpl) RequestCapacityIncrease(transactionId uuid.UUID, ch chan
 func (p *ProcessorImpl) RequestLeave(transactionId uuid.UUID, characterId uint32, guildId uint32, force bool) error {
 	p.l.Debugf("Character [%d] leaving guild [%d]. Forced? [%t].", characterId, guildId, force)
 	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestLeaveProvider(transactionId, characterId, guildId, force))
+}
+
+func (p *ProcessorImpl) RequestRejoin(transactionId uuid.UUID, characterId uint32, guildId uint32, title byte) error {
+	p.l.Debugf("Character [%d] rejoining guild [%d] at title [%d].", characterId, guildId, title)
+	return producer.ProviderImpl(p.l)(p.ctx)(guild.EnvCommandTopic)(RequestRejoinProvider(transactionId, characterId, guildId, title))
 }

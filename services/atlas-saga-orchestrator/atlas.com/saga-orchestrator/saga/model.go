@@ -49,6 +49,7 @@ const (
 	NoteSend              = sharedsaga.NoteSend
 	SkillBookUse          = sharedsaga.SkillBookUse
 	RemoteMerchant        = sharedsaga.RemoteMerchant
+	WorldTransfer         = sharedsaga.WorldTransfer
 )
 
 // Status constants

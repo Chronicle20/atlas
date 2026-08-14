@@ -24,6 +24,13 @@ type Processor interface {
 	// world-transfer saga (task-227) to sever both directions.
 	RequestDeleteAndEmit(transactionId uuid.UUID, characterId uint32, worldId world.Id, targetId uint32) error
 	RequestDelete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, worldId world.Id, targetId uint32) error
+	// RestoreAndEmit puts targetId back on characterId's buddy list (one
+	// direction only), the exact inverse of RequestDeleteAndEmit. Used twice
+	// per pair by the world-transfer saga's compensation (task-227 FR-4.8) to
+	// undo both directions of a severance the player never asked for and
+	// cannot re-establish while the buddy is offline.
+	RestoreAndEmit(transactionId uuid.UUID, characterId uint32, worldId world.Id, targetId uint32) error
+	Restore(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, worldId world.Id, targetId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -65,5 +72,17 @@ func (p *ProcessorImpl) RequestDeleteAndEmit(transactionId uuid.UUID, characterI
 func (p *ProcessorImpl) RequestDelete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, worldId world.Id, targetId uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, worldId world.Id, targetId uint32) error {
 		return mb.Put(buddylist2.EnvCommandTopic, RequestDeleteProvider(transactionId, character.Id(characterId), worldId, character.Id(targetId)))
+	}
+}
+
+func (p *ProcessorImpl) RestoreAndEmit(transactionId uuid.UUID, characterId uint32, worldId world.Id, targetId uint32) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.Restore(mb)(transactionId, characterId, worldId, targetId)
+	})
+}
+
+func (p *ProcessorImpl) Restore(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, worldId world.Id, targetId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, worldId world.Id, targetId uint32) error {
+		return mb.Put(buddylist2.EnvCommandTopic, RestoreProvider(transactionId, character.Id(characterId), worldId, character.Id(targetId)))
 	}
 }

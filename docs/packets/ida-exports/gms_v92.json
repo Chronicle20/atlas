@@ -12631,6 +12631,27 @@
       "direction": "serverbound",
       "calls": null
     },
+    "CWvsContext::SendMobSummonItemUseRequest": {
+      "address": "0x9b3b80",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime",
+          "guard": "result >= 200"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (a2)",
+          "guard": "result >= 200"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (a3)",
+          "guard": "result >= 200"
+        }
+      ]
+    },
     "CWvsContext::SendPetFoodItemUseRequest": {
       "address": "0x9afa50",
       "direction": "serverbound",
@@ -12646,6 +12667,27 @@
         {
           "op": "Decode4",
           "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::SendPortalScrollUseRequest": {
+      "address": "0x9d15c0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime",
+          "guard": "result >= 500"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (a2)",
+          "guard": "result >= 500"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (a3)",
+          "guard": "result >= 500"
         }
       ]
     },

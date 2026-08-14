@@ -39,7 +39,9 @@ func getCharacterBaseRequest() string {
 
 func (c *NameValidityClientImpl) Check(ctx context.Context, name string, worldId byte) (NameValidityResult, error) {
 	base := getCharacterBaseRequest()
-	u := fmt.Sprintf("%s%s?name=%s&worldId=%d", base, nameValidityPath, url.QueryEscape(name), worldId)
+	// scope=WORLD is explicit: creation's uniqueness scope is a stated choice
+	// rather than a default it silently inherits from the endpoint.
+	u := fmt.Sprintf("%s%s?name=%s&worldId=%d&scope=WORLD", base, nameValidityPath, url.QueryEscape(name), worldId)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {

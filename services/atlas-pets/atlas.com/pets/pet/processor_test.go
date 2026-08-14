@@ -1802,7 +1802,8 @@ func TestRenameAppliesAndEmits(t *testing.T) {
 // applied must complete, not error — the orchestrator's rename_pet step
 // completes on the re-emitted event.
 func TestRenameIsIdempotent(t *testing.T) {
-	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+	db := testDatabase(t)
+	p := pet.NewProcessor(testLogger(), testContext(), db)
 	created, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Original", 1)))
 	if err != nil {
 		t.Fatalf("Failed to create pet: %v", err)
@@ -1813,6 +1814,37 @@ func TestRenameIsIdempotent(t *testing.T) {
 	}
 	if err := p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId(), "Renamed"); err != nil {
 		t.Fatalf("second (redelivered) rename = %v, want nil", err)
+	}
+
+	// FR-5.5's actual requirement is not merely "no error" — it is that the
+	// redelivered call RE-EMITS NAME_CHANGED, because that re-emission is
+	// what completes the orchestrator's rename_pet step on the duplicate. A
+	// future "short-circuit if the name already matches" optimization could
+	// keep the assertions above green while silently dropping this. Prove
+	// the emission by reading the outbox rows both AndEmit calls persisted
+	// (p.Create above used a bare message.Buffer, not CreateAndEmit, so it
+	// wrote nothing to outbox_entries — only the two renames did).
+	//
+	// testDatabase(t) opens "file::memory:?cache=shared", so the sqlite
+	// backing store — and outbox_entries with it — is shared across every
+	// test in this binary, not just this one; filter by this test's own
+	// petId rather than counting every row in the table.
+	var entries []outboxlib.Entity
+	if err := db.Where("topic = ?", pet2.EnvStatusEventTopic).Find(&entries).Error; err != nil {
+		t.Fatalf("querying outbox_entries: %v", err)
+	}
+	nameChanged := 0
+	for _, e := range entries {
+		var se pet2.StatusEvent[pet2.NameChangedStatusEventBody]
+		if err := json.Unmarshal(e.MessageValue, &se); err != nil {
+			t.Fatalf("unmarshal outbox entry: %v", err)
+		}
+		if se.Type == pet2.StatusEventTypeNameChanged && se.PetId == created.Id() {
+			nameChanged++
+		}
+	}
+	if nameChanged != 2 {
+		t.Fatalf("NAME_CHANGED outbox entries for pet [%d] = %d, want 2 (one per RenameAndEmit call, including the redelivered one)", created.Id(), nameChanged)
 	}
 }
 
@@ -1845,5 +1877,9 @@ func TestRenameRejectsNonOwner(t *testing.T) {
 
 	if err := p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId()+1, "Renamed"); err == nil {
 		t.Fatal("RenameAndEmit by non-owner = nil, want error")
+	}
+	got, _ := p.GetById(created.Id())
+	if got.Name() != "Original" {
+		t.Fatalf("name mutated to %q on a non-owner rename", got.Name())
 	}
 }

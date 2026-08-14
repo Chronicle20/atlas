@@ -1556,17 +1556,22 @@ func TestGmAbsentMeansNoChange(t *testing.T) {
 	}
 }
 
-func TestWorldChangedEventEmission(t *testing.T) {
-	// Setup test database
+// TestChangeWorldToWorldZeroEmitsWorldChanged is the controller-ruling proof:
+// world.Id is a byte and world 0 is a real, commonly-used world (character
+// tests seed SetWorldId(0) throughout), so ChangeWorld/ChangeWorldAndEmit must
+// treat 0 as a reachable destination rather than a "field absent" sentinel —
+// unlike the removed input.WorldId arm on Update, which could never move a
+// character TO world 0. The character starts at a NON-ZERO world so the
+// assertion actually exercises a real transfer, not a same-world no-op.
+func TestChangeWorldToWorldZeroEmitsWorldChanged(t *testing.T) {
 	db := testDatabase(t)
 	tenantModel := testTenant()
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	// Create a character to update
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
-		SetWorldId(world.Id(0)).
+		SetWorldId(world.Id(3)).
 		SetName("OriginalName").
 		SetLevel(1).
 		SetStrength(4).
@@ -1588,99 +1593,30 @@ func TestWorldChangedEventEmission(t *testing.T) {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
 
-	// Create message buffer to capture events
-	buf := message.NewBuffer()
-
-	// Test world change with message buffer
-	updatePayload := character.RestModel{
-		Id:      createdCharacter.Id(),
-		WorldId: world.Id(1),
-	}
-
 	transactionId := uuid.New()
-	err = processor.Update(buf)(transactionId, createdCharacter.Id(), updatePayload)
-	if err != nil {
-		t.Fatalf("Failed to update character: %v", err)
+	if err := processor.ChangeWorldAndEmit(transactionId, createdCharacter.Id(), world.Id(0)); err != nil {
+		t.Fatalf("ChangeWorldAndEmit: %v", err)
 	}
 
-	// Verify the character was updated in the database
 	updatedCharacter, err := processor.GetById()(createdCharacter.Id())
 	if err != nil {
 		t.Fatalf("Failed to get updated character: %v", err)
 	}
-
-	if updatedCharacter.WorldId() != world.Id(1) {
-		t.Errorf("Expected world ID 1, got %d", updatedCharacter.WorldId())
-	}
-
-	// Verify WORLD_CHANGED event was buffered
-	bufferedMessages := buf.GetAll()
-	statusMessages, exists := bufferedMessages[character2.EnvEventTopicCharacterStatus]
-	if !exists || len(statusMessages) == 0 {
-		t.Fatal("Expected WORLD_CHANGED event to be buffered to character status topic")
-	}
-
-	// Should have exactly one WORLD_CHANGED event
-	if len(statusMessages) != 1 {
-		t.Fatalf("Expected 1 WORLD_CHANGED event, got %d", len(statusMessages))
-	}
-
-	eventMessage := statusMessages[0]
-	if eventMessage.Key == nil {
-		t.Error("WORLD_CHANGED event should have a key")
-	}
-
-	if eventMessage.Value == nil {
-		t.Error("WORLD_CHANGED event should have a value")
-	}
-
-	var eventValue character2.StatusEvent[character2.StatusEventWorldChangedBody]
-	err = json.Unmarshal(eventMessage.Value, &eventValue)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal event value: %v", err)
-	}
-
-	if eventValue.Type != character2.StatusEventTypeWorldChanged {
-		t.Errorf("Expected event type '%s', got '%s'", character2.StatusEventTypeWorldChanged, eventValue.Type)
-	}
-
-	if eventValue.CharacterId != createdCharacter.Id() {
-		t.Errorf("Expected character ID %d, got %d", createdCharacter.Id(), eventValue.CharacterId)
-	}
-
-	// Routing WorldId must be the NEW world — consumers route on it and the
-	// character now lives there.
-	if eventValue.WorldId != world.Id(1) {
-		t.Errorf("Expected routing world ID 1, got %d", eventValue.WorldId)
-	}
-
-	if eventValue.TransactionId != transactionId {
-		t.Errorf("Expected transaction ID %s, got %s", transactionId, eventValue.TransactionId)
-	}
-
-	if eventValue.Body.OldWorldId != world.Id(0) {
-		t.Errorf("Expected old world ID 0, got %d", eventValue.Body.OldWorldId)
-	}
-
-	if eventValue.Body.NewWorldId != world.Id(1) {
-		t.Errorf("Expected new world ID 1, got %d", eventValue.Body.NewWorldId)
+	if updatedCharacter.WorldId() != world.Id(0) {
+		t.Errorf("Expected world ID 0, got %d", updatedCharacter.WorldId())
 	}
 }
 
-// TestWorldSameValueEmitsNoEvent is the actual proof of the `input.WorldId !=
-// c.WorldId()` conjunct in the Update guard. The character is created at a
-// NON-ZERO world and PATCHed with that SAME non-zero value, so the only thing
-// that can suppress the event is the equality comparison — with the "zero
-// means absent" short-circuit out of the picture, this test goes red if the
-// equality conjunct is dropped (verified below in the fix report).
-func TestWorldSameValueEmitsNoEvent(t *testing.T) {
-	// Setup test database
+// TestChangeWorldEmitsExactlyOneWorldChangedWithNewWorldRouting drives
+// ChangeWorld directly (rather than *AndEmit) so the buffered event can be
+// inspected, proving the row moved, exactly one WORLD_CHANGED was buffered,
+// and its routing WorldId + body carry the NEW world (0), not the old one.
+func TestChangeWorldEmitsExactlyOneWorldChangedWithNewWorldRouting(t *testing.T) {
 	db := testDatabase(t)
 	tenantModel := testTenant()
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	// Create a character to update, at a non-zero world.
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(3)).
@@ -1706,47 +1642,60 @@ func TestWorldSameValueEmitsNoEvent(t *testing.T) {
 	}
 
 	buf := message.NewBuffer()
-
-	// PATCH with the SAME non-zero world the character already has.
-	updatePayload := character.RestModel{
-		Id:      createdCharacter.Id(),
-		WorldId: world.Id(3),
-	}
-
-	err = processor.Update(buf)(uuid.New(), createdCharacter.Id(), updatePayload)
-	if err != nil {
-		t.Fatalf("Failed to update character: %v", err)
+	transactionId := uuid.New()
+	if err := processor.ChangeWorld(buf)(transactionId, createdCharacter.Id(), world.Id(0)); err != nil {
+		t.Fatalf("ChangeWorld: %v", err)
 	}
 
 	updatedCharacter, err := processor.GetById()(createdCharacter.Id())
 	if err != nil {
 		t.Fatalf("Failed to get updated character: %v", err)
 	}
-	if updatedCharacter.WorldId() != world.Id(3) {
-		t.Errorf("Expected world ID to remain 3, got %d", updatedCharacter.WorldId())
+	if updatedCharacter.WorldId() != world.Id(0) {
+		t.Errorf("Expected world ID 0, got %d", updatedCharacter.WorldId())
 	}
 
-	for _, msg := range buf.GetAll()[character2.EnvEventTopicCharacterStatus] {
-		var probe character2.StatusEvent[character2.StatusEventWorldChangedBody]
-		if err := json.Unmarshal(msg.Value, &probe); err == nil && probe.Type == character2.StatusEventTypeWorldChanged {
-			t.Error("WORLD_CHANGED must not be emitted when the PATCH world equals the current world")
-		}
+	statusMessages := buf.GetAll()[character2.EnvEventTopicCharacterStatus]
+	if len(statusMessages) != 1 {
+		t.Fatalf("Expected exactly 1 WORLD_CHANGED event, got %d", len(statusMessages))
+	}
+
+	var eventValue character2.StatusEvent[character2.StatusEventWorldChangedBody]
+	if err := json.Unmarshal(statusMessages[0].Value, &eventValue); err != nil {
+		t.Fatalf("Failed to unmarshal event value: %v", err)
+	}
+	if eventValue.Type != character2.StatusEventTypeWorldChanged {
+		t.Errorf("Expected event type '%s', got '%s'", character2.StatusEventTypeWorldChanged, eventValue.Type)
+	}
+	if eventValue.CharacterId != createdCharacter.Id() {
+		t.Errorf("Expected character ID %d, got %d", createdCharacter.Id(), eventValue.CharacterId)
+	}
+	// Routing WorldId must be the NEW world (0) — consumers route on it and
+	// the character now lives there.
+	if eventValue.WorldId != world.Id(0) {
+		t.Errorf("Expected routing world ID 0, got %d", eventValue.WorldId)
+	}
+	if eventValue.TransactionId != transactionId {
+		t.Errorf("Expected transaction ID %s, got %s", transactionId, eventValue.TransactionId)
+	}
+	if eventValue.Body.OldWorldId != world.Id(3) {
+		t.Errorf("Expected old world ID 3, got %d", eventValue.Body.OldWorldId)
+	}
+	if eventValue.Body.NewWorldId != world.Id(0) {
+		t.Errorf("Expected new world ID 0, got %d", eventValue.Body.NewWorldId)
 	}
 }
 
-// TestWorldZeroMeansAbsentAndEmitsNoEvent proves the separate "absent field"
-// convention: WorldId's zero value means "no change requested" (mirroring
-// Hair/Face/SkinColor), NOT "transfer to world 0". This is a different
-// property from TestWorldSameValueEmitsNoEvent and does not, on its own,
-// exercise the `!= c.WorldId()` conjunct.
-func TestWorldZeroMeansAbsentAndEmitsNoEvent(t *testing.T) {
-	// Setup test database
+// TestChangeWorldSameValueIsANoOpAndEmitsNoEvent proves ChangeWorld's no-op
+// guard is an explicit equality check, not a zero-value check: a character
+// already at world 0, "changed" to world 0 again, gets no row update and no
+// emission.
+func TestChangeWorldSameValueIsANoOpAndEmitsNoEvent(t *testing.T) {
 	db := testDatabase(t)
 	tenantModel := testTenant()
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	// Create a character to update.
 	originalCharacter := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
@@ -1772,16 +1721,8 @@ func TestWorldZeroMeansAbsentAndEmitsNoEvent(t *testing.T) {
 	}
 
 	buf := message.NewBuffer()
-
-	// A PATCH that omits WorldId (zero value) must not emit WORLD_CHANGED.
-	updatePayload := character.RestModel{
-		Id:      createdCharacter.Id(),
-		WorldId: world.Id(0),
-	}
-
-	err = processor.Update(buf)(uuid.New(), createdCharacter.Id(), updatePayload)
-	if err != nil {
-		t.Fatalf("Failed to update character: %v", err)
+	if err := processor.ChangeWorld(buf)(uuid.New(), createdCharacter.Id(), world.Id(0)); err != nil {
+		t.Fatalf("ChangeWorld: %v", err)
 	}
 
 	updatedCharacter, err := processor.GetById()(createdCharacter.Id())
@@ -1792,10 +1733,7 @@ func TestWorldZeroMeansAbsentAndEmitsNoEvent(t *testing.T) {
 		t.Errorf("Expected world ID to remain 0, got %d", updatedCharacter.WorldId())
 	}
 
-	for _, msg := range buf.GetAll()[character2.EnvEventTopicCharacterStatus] {
-		var probe character2.StatusEvent[character2.StatusEventWorldChangedBody]
-		if err := json.Unmarshal(msg.Value, &probe); err == nil && probe.Type == character2.StatusEventTypeWorldChanged {
-			t.Error("WORLD_CHANGED must not be emitted when WorldId is absent (zero value)")
-		}
+	if got := len(buf.GetAll()[character2.EnvEventTopicCharacterStatus]); got != 0 {
+		t.Errorf("Expected no WORLD_CHANGED event on a same-world no-op, got %d", got)
 	}
 }

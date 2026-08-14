@@ -22,7 +22,7 @@ import (
 
 func buildNameValidityServer(db *gorm.DB) *httptest.Server {
 	r := mux.NewRouter()
-	ri := character.InitResource(GetServer())(db)
+	ri := character.InitResource(GetServer())(db)(nil)
 	ri(r, testLogger())
 	return httptest.NewServer(r)
 }

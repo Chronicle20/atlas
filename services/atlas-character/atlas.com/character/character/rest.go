@@ -162,3 +162,28 @@ func derefOrZero(v *int) int {
 	}
 	return *v
 }
+
+// WorldChangeInputRestModel is the POST body for the dedicated world-change
+// route:
+// {data:{type:"characters",attributes:{newWorldId}}}. It exists separately
+// from RestModel/Update because world.Id is a byte and world 0 is a real
+// destination — a PATCH field using RestModel's "zero means absent"
+// convention could never express a transfer to world 0 (task-227 controller
+// ruling). This is the route the world-transfer saga (Task 13) calls.
+type WorldChangeInputRestModel struct {
+	Id         string   `json:"-"`
+	NewWorldId world.Id `json:"newWorldId"`
+}
+
+func (r WorldChangeInputRestModel) GetName() string {
+	return "characters"
+}
+
+func (r WorldChangeInputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *WorldChangeInputRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}

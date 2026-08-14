@@ -148,6 +148,8 @@ type Processor interface {
 	ProcessJobChange(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error
 	UpdateAndEmit(transactionId uuid.UUID, characterId uint32, input RestModel) error
 	Update(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, input RestModel) error
+	ChangeWorldAndEmit(transactionId uuid.UUID, characterId uint32, newWorldId world.Id) error
+	ChangeWorld(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, newWorldId world.Id) error
 	ResetStatsAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	RebalanceAPAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []RebalanceTarget) error
@@ -1983,19 +1985,6 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				})
 			}
 
-			// World validation and update
-			if input.WorldId != 0 && input.WorldId != c.WorldId() {
-				oldWorldId := c.WorldId()
-				newWorldId := input.WorldId
-				changes = append(changes, fieldChange{
-					updateFunc:  SetWorldId(input.WorldId),
-					shouldApply: true,
-					eventFunc: func() error {
-						return mb.Put(character2.EnvEventTopicCharacterStatus, worldChangedEventProvider(transactionId, characterId, oldWorldId, newWorldId))
-					},
-				})
-			}
-
 			// Hair validation and update
 			if input.Hair != 0 && input.Hair != c.Hair() {
 				if !p.isValidHair(input.Hair) {
@@ -2099,6 +2088,43 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 			}
 
 			return nil
+		})
+	}
+}
+
+// ChangeWorldAndEmit is the transactional/emitting counterpart to ChangeWorld
+// (Method(mb)/MethodAndEmit() convention). It exists as a dedicated pair
+// rather than a PATCH field because world.Id is a byte and world 0 is a real,
+// commonly-used world id: a zero-value-means-absent PATCH field (as Update's
+// other fields use) cannot express "transfer to world 0" (task-227 controller
+// ruling). This is the route the world-transfer saga (Task 13) calls.
+func (p *ProcessorImpl) ChangeWorldAndEmit(transactionId uuid.UUID, characterId uint32, newWorldId world.Id) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeWorld(buf)(transactionId, characterId, newWorldId)
+		})
+	})
+}
+
+// ChangeWorld moves a character to newWorldId and emits WORLD_CHANGED with the
+// routing WorldId set to the NEW world. It is a no-op (no row update, no
+// emission) when the character is already in newWorldId — explicit equality,
+// not a zero-value check, so world 0 is a valid, reachable destination.
+func (p *ProcessorImpl) ChangeWorld(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, newWorldId world.Id) error {
+	return func(transactionId uuid.UUID, characterId uint32, newWorldId world.Id) error {
+		return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+			if newWorldId == c.WorldId() {
+				return nil
+			}
+			oldWorldId := c.WorldId()
+			if err := dynamicUpdate(tx)(SetWorldId(newWorldId))(c); err != nil {
+				return err
+			}
+			return mb.Put(character2.EnvEventTopicCharacterStatus, worldChangedEventProvider(transactionId, characterId, oldWorldId, newWorldId))
 		})
 	}
 }

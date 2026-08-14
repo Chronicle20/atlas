@@ -124,7 +124,7 @@ func main() {
 		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
-		AddRouteInitializer(character.InitResource(GetServer())(db)).
+		AddRouteInitializer(character.InitResource(GetServer())(db)(pending_change.NameReservedFor(db))).
 		AddRouteInitializer(history.InitResource(GetServer())(db)).
 		AddRouteInitializer(saved_location.InitResource(GetServer())(db)).
 		AddRouteInitializer(teleport_rock.InitResource(GetServer())(db)(func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (world.Id, error) {
@@ -134,6 +134,7 @@ func main() {
 			}
 			return m.WorldId(), nil
 		})).
+		AddRouteInitializer(pending_change.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

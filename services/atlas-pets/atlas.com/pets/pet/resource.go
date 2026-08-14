@@ -5,11 +5,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	petconst "github.com/Chronicle20/atlas/libs/atlas-constants/pet"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
@@ -25,6 +27,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r = router.PathPrefix("/pets").Subrouter()
 			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("create", handleCreate)).Methods(http.MethodPost)
 			r.HandleFunc("/{petId}", registerGet("get_pet", handleGetPet)).Methods(http.MethodGet)
+			r.HandleFunc("/{petId}", rest.RegisterInputHandler[RestModel](l)(db)(si)("update_pet", handleUpdate)).Methods(http.MethodPatch)
 		}
 	}
 }
@@ -170,4 +173,55 @@ func handleCreate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel
 		queryParams := jsonapi.ParseQueryFields(&query)
 		server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 	}
+}
+
+// handleUpdate is the operator surface for correcting a pet name without a
+// direct DB write. The gameplay rename path is the RENAME Kafka command driven
+// by the pet_name_tag_use saga -- atlas-channel never calls this endpoint
+// (PRD §5.1). `name` is the only writable attribute; every other field on the
+// inbound RestModel is ignored.
+func handleUpdate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
+	return rest.ParsePetId(d.Logger(), func(petId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			name := petconst.NormalizeName(i.Name)
+			if err := petconst.ValidateName(name); err != nil {
+				d.Logger().WithError(err).Warnf("Rejecting PATCH of pet [%d]: invalid name [%s].", petId, i.Name)
+				server.WriteBadRequest(d.Logger(), w, err.Error())
+				return
+			}
+
+			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+			existing, err := p.GetById(petId)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to locate pet [%d].", petId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			// The owner is taken from the stored row, never from the request:
+			// the processor's ownership check would otherwise be trivially
+			// satisfiable by a caller supplying whatever ownerId it liked.
+			if err = p.RenameAndEmit(uuid.New(), petId, existing.OwnerId(), name); err != nil {
+				d.Logger().WithError(err).Errorf("Unable to rename pet [%d].", petId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			updated, err := p.GetById(petId)
+			if err != nil {
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+			res, err := model.Map(Transform(d.Context()))(model.FixedProvider(updated))()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
 }

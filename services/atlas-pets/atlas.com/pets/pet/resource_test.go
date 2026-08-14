@@ -1,9 +1,111 @@
 package pet
 
 import (
+	"atlas-pets/pet/exclude"
+	"bytes"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/stretchr/testify/require"
+
+	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
+
+// patchPetRequest builds a PATCH request carrying a JSON:API document body,
+// reusing requestPetsWithTenant (from resource_paginate_test.go, same
+// package) for the tenant headers and adding a request body -- PATCH is the
+// one method that needs one.
+func patchPetRequest(url string, tenantId uuid.UUID, body []byte) *http.Request {
+	req := requestPetsWithTenant(http.MethodPatch, url, tenantId)
+	req.Body = io.NopCloser(bytes.NewReader(body))
+	req.ContentLength = int64(len(body))
+	return req
+}
+
+// TestPatchPetRejectsInvalidName drives PATCH /pets/{petId} through the real
+// resource router with a name shorter than petconst's 4-character minimum,
+// and expects 400 (not a 500 or a silent no-op write).
+func TestPatchPetRejectsInvalidName(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration, exclude.Migration, outboxlib.Migration)
+	tenantId := uuid.New()
+	ctx := databasetest.TenantContext(tenantId)
+
+	pm := seedPet(t, db, ctx, 1, 5000017)
+
+	srv := httptest.NewServer(setupPetRouter(db))
+	defer srv.Close()
+
+	body, err := jsonapi.Marshal(RestModel{Id: pm.Id(), Name: "ab"})
+	require.NoError(t, err)
+
+	url := fmt.Sprintf("%s/pets/%d", srv.URL, pm.Id())
+	req := patchPetRequest(url, tenantId, body)
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusBadRequest)
+	}
+}
+
+// TestPatchPetRenamesPet drives PATCH /pets/{petId} with a valid name and
+// confirms the pet is actually renamed -- both in the response body and on
+// a subsequent GET -- and that a caller-supplied ownerId in the payload is
+// ignored (the owner used for the processor's ownership check comes from the
+// stored row, not the request).
+func TestPatchPetRenamesPet(t *testing.T) {
+	db := databasetest.NewInMemoryTenantDB(t, Migration, exclude.Migration, outboxlib.Migration)
+	tenantId := uuid.New()
+	ctx := databasetest.TenantContext(tenantId)
+
+	pm := seedPet(t, db, ctx, 1, 5000017)
+
+	srv := httptest.NewServer(setupPetRouter(db))
+	defer srv.Close()
+
+	// ownerId on the payload deliberately does not match the stored owner (1);
+	// if the handler used it instead of the stored row, RenameAndEmit's
+	// ownership check would reject the rename.
+	body, err := jsonapi.Marshal(RestModel{Id: pm.Id(), Name: "Rexxo", OwnerId: 999})
+	require.NoError(t, err)
+
+	url := fmt.Sprintf("%s/pets/%d", srv.URL, pm.Id())
+	req := patchPetRequest(url, tenantId, body)
+
+	resp, err := (&http.Client{}).Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want %d", resp.StatusCode, http.StatusOK)
+	}
+
+	respBody, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	var respModel RestModel
+	require.NoError(t, jsonapi.Unmarshal(respBody, &respModel))
+	if respModel.Name != "Rexxo" {
+		t.Fatalf("response Name = %q, want %q", respModel.Name, "Rexxo")
+	}
+
+	updated, err := NewProcessor(testPaginateLogger(), ctx, db).GetById(pm.Id())
+	require.NoError(t, err)
+	if updated.Name() != "Rexxo" {
+		t.Fatalf("Name() = %q, want %q", updated.Name(), "Rexxo")
+	}
+	if updated.OwnerId() != 1 {
+		t.Fatalf("OwnerId() = %d, want %d (unchanged; payload ownerId must be ignored)", updated.OwnerId(), 1)
+	}
+}
 
 func TestCreatePetExpiration(t *testing.T) {
 	now := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)

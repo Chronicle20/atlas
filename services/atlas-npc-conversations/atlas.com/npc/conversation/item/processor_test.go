@@ -187,19 +187,29 @@ func TestProcessorImpl_CRUD(t *testing.T) {
 	}
 }
 
-// TestProcessorImpl_DeleteAllForTenant verifies tenant-scoped bulk delete.
+// TestProcessorImpl_DeleteAllForTenant verifies tenant-scoped bulk delete: it
+// must remove only the calling tenant's rows. A single-tenant setup would
+// pass identically against a broken deleteAllItemConversations that deleted
+// every tenant's rows, so this seeds two tenants and asserts both that
+// tenant A's rows are gone AND that tenant B's rows survive untouched.
 func TestProcessorImpl_DeleteAllForTenant(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
-	te := countTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), te)
+	teA := countTestTenant(t)
+	teB := countTestTenant(t)
+	ctxA := tenant.WithContext(context.Background(), teA)
+	ctxB := tenant.WithContext(context.Background(), teB)
 	db := test.SetupTestDB(t, MigrateTable)
 	defer test.CleanupTestDB(t, db)
 
-	p := NewProcessor(l, ctx, db)
-	insertCountRow(t, p, 2430010)
-	insertCountRow(t, p, 2430011)
+	pA := NewProcessor(l, ctxA, db)
+	pB := NewProcessor(l, ctxB, db)
 
-	n, err := p.DeleteAllForTenant()
+	insertCountRow(t, pA, 2430010)
+	insertCountRow(t, pA, 2430011)
+	insertCountRow(t, pB, 2430012)
+	insertCountRow(t, pB, 2430013)
+
+	n, err := pA.DeleteAllForTenant()
 	if err != nil {
 		t.Fatalf("DeleteAllForTenant: %v", err)
 	}
@@ -207,11 +217,26 @@ func TestProcessorImpl_DeleteAllForTenant(t *testing.T) {
 		t.Errorf("DeleteAllForTenant: got %d want 2", n)
 	}
 
-	count, _, err := p.Count()
+	countA, _, err := pA.Count()
 	if err != nil {
-		t.Fatalf("Count() after delete: %v", err)
+		t.Fatalf("Count() for tenant A after delete: %v", err)
 	}
-	if count != 0 {
-		t.Errorf("Count() after delete: got %d want 0", count)
+	if countA != 0 {
+		t.Errorf("Count() for tenant A after delete: got %d want 0", countA)
+	}
+
+	countB, _, err := pB.Count()
+	if err != nil {
+		t.Fatalf("Count() for tenant B after tenant A's delete: %v", err)
+	}
+	if countB != 2 {
+		t.Errorf("tenant B rows should survive tenant A's DeleteAllForTenant: got count %d want 2", countB)
+	}
+
+	if _, err := pB.ByItemIdProvider(2430012)(); err != nil {
+		t.Errorf("tenant B item 2430012 should survive: %v", err)
+	}
+	if _, err := pB.ByItemIdProvider(2430013)(); err != nil {
+		t.Errorf("tenant B item 2430013 should survive: %v", err)
 	}
 }

@@ -50,7 +50,7 @@ func GetAllConversationsHandler(d *rest.HandlerDependency, c *rest.HandlerContex
 		paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).AllProvider(page)()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Retrieving item conversations.")
-			w.WriteHeader(http.StatusInternalServerError)
+			server.WriteErrorResponse(d.Logger())(w)(err)
 			return
 		}
 

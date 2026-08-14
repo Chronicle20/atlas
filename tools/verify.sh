@@ -93,7 +93,13 @@ if [ "$ALL" -eq 1 ]; then
     echo "verify.sh: --all — running every check"
 else
     if base="$(resolve_base)"; then
-        CHANGED="$(git diff --name-only "$base"...HEAD; git diff --name-only; git ls-files --others --exclude-standard)"
+        # `git diff --name-only` with no rev compares worktree-vs-INDEX, so a
+        # file that has been `git add`ed but not committed shows up in none of
+        # these three sources — not the committed range, not the unstaged diff,
+        # and not --others (staging makes it tracked). Running the gate after
+        # `git add -p` would then skip that file's module, bake target and
+        # guards and still exit 0. Diff against HEAD to cover staged + unstaged.
+        CHANGED="$(git diff --name-only "$base"...HEAD; git diff --name-only HEAD; git ls-files --others --exclude-standard)"
         CHANGED="$(printf '%s\n' "$CHANGED" | sort -u | sed '/^$/d')"
         echo "verify.sh: change base $(git rev-parse --short "$base") — $(printf '%s\n' "$CHANGED" | sed '/^$/d' | wc -l) changed path(s)"
     else
@@ -112,7 +118,7 @@ touched() {
 
 all_modules() {
     find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
-        | xargs -0 -n1 dirname | sort -u
+        | xargs -0 -r -n1 dirname | sort -u
 }
 
 changed_modules() {
@@ -196,9 +202,22 @@ else
     if [ "$ALL" -eq 1 ]; then
         TARGETS=(all-go-services)
     else
-        while IFS= read -r t; do [ -n "$t" ] && TARGETS+=("$t"); done < <(bake_targets)
+        # Fail CLOSED. Consuming bake_targets through `< <(...)` discards its
+        # exit status, so a missing python3 or an unparseable services.json
+        # would yield zero targets and read as "no go.mod touched" — silently
+        # downgrading the one mandatory check into a green pass.
+        bake_out=""
+        if ! bake_out="$(bake_targets)"; then
+            BAKE_RESOLVE_FAILED=1
+            FAILED+=("docker bake target resolution (services.json/python3)")
+            printf '\033[31m✗ could not resolve bake targets — refusing to report a skip\033[0m\n'
+            bake_out=""
+        fi
+        while IFS= read -r t; do [ -n "$t" ] && TARGETS+=("$t"); done <<<"$bake_out"
     fi
-    if [ "${#TARGETS[@]}" -eq 0 ]; then
+    if [ "${BAKE_RESOLVE_FAILED:-0}" -eq 1 ]; then
+        : # already recorded as a failure above; never report this as a skip
+    elif [ "${#TARGETS[@]}" -eq 0 ]; then
         skip "docker buildx bake (no go.mod touched)"
     else
         for t in "${TARGETS[@]}"; do
@@ -301,6 +320,29 @@ elif [ "$UI_CHANGED" -eq 1 ]; then
     step "lint & format guard (atlas-ui)" ./tools/lint.sh --check --ui
 else
     skip "lint & format guard, UI layer (atlas-ui unchanged)"
+fi
+
+# ----------------------------------------------------------------- ui tests
+#
+# CI's test-ui job runs .github/actions/node-test, which is lint + `npm test` +
+# `npm run build`. lint.sh --ui covers only the first of the three, and the
+# build is what type-checks the test files — so a UI change with a failing
+# vitest or a broken build passed this gate green and then failed CI.
+
+ui_test_layer() {
+    (
+        cd "$ROOT/services/atlas-ui"
+        # Same two commands node-test runs. `npm test` is already `vitest run`.
+        npm test && npm run build
+    )
+}
+
+if [ "$NO_UI" -eq 1 ] || [ "$QUICK" -eq 1 ]; then
+    skip "atlas-ui tests + build (--no-ui/--quick)"
+elif [ "$UI_CHANGED" -eq 1 ]; then
+    step "atlas-ui tests + build" ui_test_layer
+else
+    skip "atlas-ui tests + build (atlas-ui unchanged)"
 fi
 
 # ------------------------------------------------------------------ summary

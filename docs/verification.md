@@ -148,14 +148,19 @@ Known footguns:
 
 ## Known drift between this gate and CI
 
-Tracked here so it is visible rather than folklore. `tools/verify.sh` is the
-superset; CI is the authority for everything it does run.
+Tracked here so it is visible rather than folklore. Neither side is a strict
+superset of the other; CI is the authority for everything it does run.
 
 - CI has **no** job for `trade-contract-mirror-guard.sh`,
   `mist-contract-mirror-guard.sh`, or `template-duplicate-binding-guard.sh`.
   The gate runs all three. A drifted trade or mist contract will pass CI today.
 - CI's `atlas-constants-drift-guard` (generator output drift) has no local
   equivalent in the gate; `go test` in `libs/atlas-constants` covers most of it.
+- Neither side covers the Go modules under `tools/` — CI's `detect-changes`
+  matrix enumerates `services/` and `libs/` only, and the gate mirrors that.
+  The analyzer guards' own sources are compiled as a side effect of building
+  each guard, and `goroutineguard`/`buffdurationguard` self-test on every run;
+  `rediskeyguard` and `outboxguard` have no test pass anywhere.
 
 Closing the first gap means adding three CI jobs; until then, running the gate
 locally is the only thing standing between a drifted mirror and production.

@@ -53,9 +53,16 @@ analyzer_guard_main() {
     fi
 
     # Content-keyed binary: rebuild only when the analyzer source changes.
+    #
+    # Hash NAMES as well as contents (sha256sum prints both), and fold in the
+    # toolchain version. Digesting concatenated bodies alone would keep the
+    # cached binary when code merely moves between files in the package, when a
+    # file is renamed, or when Go itself is upgraded — the guard would then go
+    # on enforcing the pre-change rules while looking like it ran.
     local hash
-    hash="$(find "$src" -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \
-        | LC_ALL=C sort | xargs cat 2>/dev/null | sha256sum | cut -c1-16)"
+    hash="$( { find "$src" \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) -print0 \
+        | LC_ALL=C sort -z | xargs -0 -r sha256sum; go version; } \
+        | sha256sum | cut -c1-16)"
     local bin="$bindir/${GUARD}vet-$hash"
 
     if [ ! -x "$bin" ] || [ "${GUARD_NOCACHE:-0}" -eq 1 ]; then
@@ -73,7 +80,7 @@ analyzer_guard_main() {
 
     local mods
     mods="$(find "${SCAN_ROOTS[@]}" -name go.mod -not -path '*/node_modules/*' \
-        -not -path '*/.worktrees/*' -print0 | xargs -0 -n1 dirname | LC_ALL=C sort -u)"
+        -not -path '*/.worktrees/*' -print0 | xargs -0 -r -n1 dirname | LC_ALL=C sort -u)"
 
     local count
     count="$(printf '%s\n' "$mods" | sed '/^$/d' | wc -l)"

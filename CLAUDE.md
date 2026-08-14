@@ -14,8 +14,12 @@ Before claiming a branch is "done," "ready for PR," or invoking
 `superpowers:finishing-a-development-branch`:
 
 ```sh
-tools/verify.sh          # must exit 0. Use --quick for the inner loop.
+tools/verify.sh          # flagless, must exit 0. --quick is the inner loop only.
 ```
+
+Only the **flagless** invocation counts as verified. `--quick` and `--no-docker`
+also exit 0 — they print a caveat and skip the bake and `-race` — so "verify.sh
+exited 0" is not a pass unless it ran with no flags.
 
 It mirrors `.github/workflows/pr-validation.yml`: per-module `go build`/`vet`/
 `test -race`, `docker buildx bake atlas-<svc>` for every service whose `go.mod`

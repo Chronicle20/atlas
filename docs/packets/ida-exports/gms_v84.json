@@ -8014,7 +8014,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId (dispatcher-prefix pattern — consumed by CUserPool::OnUserRemotePacket Decode4 before OnShowUpgradeTombEffect)"
+          "comment": "characterId (dispatcher-prefix pattern \u2014 consumed by CUserPool::OnUserRemotePacket Decode4 before OnShowUpgradeTombEffect)"
         },
         {
           "op": "Decode4",
@@ -22714,7 +22714,7 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "itemId — hard-coded 0x541370 (5510000)"
+          "comment": "itemId \u2014 hard-coded 0x541370 (5510000)"
         },
         {
           "op": "Encode4",
@@ -29075,6 +29075,20 @@
         },
         {
           "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCheckDuplicatedIDResult": {
+      "address": "0x47ec88",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
           "comment": ""
         }
       ]

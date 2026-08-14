@@ -2593,15 +2593,15 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "itemId — hard-coded 5510000 (0x541370)"
+          "comment": "itemId \u2014 hard-coded 5510000 (0x541370)"
         },
         {
           "op": "Encode4",
-          "comment": "x — m_ptRevive.x"
+          "comment": "x \u2014 m_ptRevive.x"
         },
         {
           "op": "Encode4",
-          "comment": "y — m_ptRevive.y"
+          "comment": "y \u2014 m_ptRevive.y"
         }
       ]
     },
@@ -8564,7 +8564,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch (case 221/0xDD)"
+          "comment": "characterId \u2014 read by CUserPool::OnUserRemotePacket before dispatch (case 221/0xDD)"
         },
         {
           "op": "Decode4",
@@ -16885,6 +16885,20 @@
         },
         {
           "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCheckDuplicatedIDResult": {
+      "address": "0x497fb0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
           "comment": ""
         }
       ]

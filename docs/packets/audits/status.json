@@ -1,15 +1,15 @@
 {
-  "toolSha": "0aadf918e1944d02c0ce45d2e5221ba9dc97e771e5bb158fc3cd8de4a0c5cce3",
+  "toolSha": "5f7edf54e545e39dadc6f03f20447ce249ee0f37d0bce34e6115696941820fde",
   "exportHashes": {
-    "gms_v48": "cff2865cc6a2d42a868425fc202c52fc0ef4c0d739e59c43062f428bce7f9bf1",
-    "gms_v61": "d91729f938997cb9ae61a45b86b14eab0d533ae554df9ba12e1614659482a458",
-    "gms_v72": "28fcc6e5da5698109af67099af6cdc0bc2eac124fcb0f8d57dc2a71d7d035697",
+    "gms_v48": "cd4a628c498b9827b7e0178c4c499bbd8fc00b074e6e418c1b7a9e230c32ee21",
+    "gms_v61": "4c8571b72e950048c4bcf2fd7d03b8eadb3590bc03b6f9e9de7d8977404c1142",
+    "gms_v72": "bb8c82c53879da099ba32d14bbce1d3a8b463b3fffe5c3ca8f9f5f1bb950e50a",
     "gms_v79": "4d24c56e9c561ec29bd9a4afc2b6d2ff05cb6bd117ad74ba8a2903191a2f1ebd",
-    "gms_v83": "d0809b7ac2a3ca00f9926e2dedb314a70da0e4cc11152c754012772caacfec9f",
-    "gms_v84": "4ce6c65d76232dbd0eb1e014fdb36c7cb2b78c3255e6302113becc45ffe194ff",
-    "gms_v87": "fef44e6b40cd49a30b1410a5638b8ac9bd67f30a7367a61ddee1aa9952dcc0e1",
-    "gms_v92": "5a2e9f1b7bb7909ae0eaba6129ef8515ce0af5c967cc371d658f2a980f29cc35",
-    "gms_v95": "6ae5ab802a688f49720d321ac0265145558cc3cd50f4b513af4f09b753edb959",
+    "gms_v83": "ea39a98c8ef47761a2021b2c88772cd77ce805302ed287f1bdc467d77827c00f",
+    "gms_v84": "fb74057a153f4834d6969018a693a4cb4ac95b911bdbb835ff68b315b671cfb9",
+    "gms_v87": "1e82c0758e4d84e2d745e8b6a4e2deb2af9bab5458a89aa714f3b9a4b114c75c",
+    "gms_v92": "eeee0d1bd7b8eb1a4ca5c0ac25798f68f2f7584f8011269b2e7bae81c08b1527",
+    "gms_v95": "dd8fa1eb55b57b47ee53974de12b8365d82e6c8f0c446c349e3624028f9c507e",
     "jms_v185": "2671210ed72c2116f3913da353a4c26a49067d82f1de2e7cf790bb0c6733a3f8"
   },
   "rows": [
@@ -37914,55 +37914,47 @@
     {
       "kind": "op",
       "op": "CASHSHOP_CHECK_NAME_CHANGE",
+      "packet": "cash/clientbound/CashCheckNameChange",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CCashShop::OnCheckDuplicatedIDResult"
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 258
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 257
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 293
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 305
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 328
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 335
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 345
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 379
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 387
         },
         "jms_v185": {

@@ -4627,6 +4627,21 @@
         ]
       },
       {
+        "opCode": "0x183",
+        "writer": "CashShopCheckNameChange",
+        "fname": "CCashShop::OnCheckDuplicatedIDResult",
+        "options": {
+          "operations": {
+            "AVAILABLE": 0,
+            "TAKEN": 1,
+            "UNKNOWN_ERROR": 255
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x184",
         "writer": "CashShopCheckNameChangePossibleResult",
         "fname": "CCashShop::OnCheckNameChangePossibleResult",

@@ -15904,6 +15904,20 @@
           "comment": ""
         }
       ]
+    },
+    "CCashShop::OnCheckDuplicatedIDResult": {
+      "address": "0x47baea",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
     }
   }
 }

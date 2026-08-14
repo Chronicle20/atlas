@@ -3308,6 +3308,21 @@
         ]
       },
       {
+        "opCode": "0x102",
+        "writer": "CashShopCheckNameChange",
+        "fname": "CCashShop::OnCheckDuplicatedIDResult",
+        "options": {
+          "operations": {
+            "AVAILABLE": 0,
+            "TAKEN": 1,
+            "UNKNOWN_ERROR": 255
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x105",
         "writer": "CashShopCheckTransferWorldPossibleResult",
         "fname": "CCashShop::OnCheckTransferWorldPossibleResult",

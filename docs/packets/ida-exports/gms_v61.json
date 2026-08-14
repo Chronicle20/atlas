@@ -1054,13 +1054,16 @@
       ]
     },
     "CCashShop::OnCheckDuplicatedIDResult": {
-      "address": "",
+      "address": "0x463900",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },

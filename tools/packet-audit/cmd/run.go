@@ -2544,6 +2544,17 @@ func candidatesFromFName(fname string) []candidate {
 	// (docs/tasks/task-227-cash-name-change-world-transfer/derivation.md §2.4, §4.1).
 	case "CCashShop::OnCheckNameChangePossibleResult":
 		return []candidate{{name: "CheckNameChangePossibleResult", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Clientbound CASHSHOP_CHECK_NAME_CHANGE (task-227): the per-name duplicate
+	// answer for the cash-shop rename dialog. Routed by CCashShop::OnPacket as
+	// its own case (v83 0x148), NOT by the OnCashItemResult mode dispatcher, so
+	// it is a bare-fname candidate rather than a "#" arm. Body is DecodeStr
+	// (sName) + Decode1 (nResult, SIGNED: >0 taken, ==0 available, <0 unknown
+	// error) on every version v48..v95; nResult selects only which
+	// dialog/notice renders, never a different field layout, so this is not a
+	// dispatcher family either
+	// (docs/tasks/task-227-cash-name-change-world-transfer/derivation.md §2.3, §4.4, §5).
+	case "CCashShop::OnCheckDuplicatedIDResult":
+		return []candidate{{name: "CheckNameChange", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Clientbound CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT (task-227): the
 	// server's answer to the WORLD_TRANSFER request above. Routed by
 	// CCashShop::OnPacket as its own case, NOT by the OnCashItemResult mode

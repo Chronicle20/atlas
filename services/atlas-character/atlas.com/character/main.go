@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-character/character"
 	"atlas-character/kafka/consumer/drop"
+	"atlas-character/pending_change"
 	"atlas-character/saved_location"
 	"atlas-character/service"
 	"atlas-character/session"
@@ -69,7 +70,7 @@ func main() {
 	session.InitRegistry(rc)
 	character.InitTemporalRegistry(rc)
 
-	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration, teleport_rock.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration, teleport_rock.Migration, pending_change.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.

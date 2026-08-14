@@ -2300,11 +2300,15 @@
     address: 8592515
   note: 'task-212 correction (v61 IDB session 415bf585, GMS_v61.1_U_DEVM.exe):
     sub_831C83@0x831c83 is named CWvsContext::SendMobSummonItemUseRequest;
-    decompile emits COutPacket(70)+Encode4(updateTime)+Encode1+Encode2 (no mob
-    id) — the real USE_SUMMON_BAG. Supersedes the prior send-site-harvest
-    ITEM_MOVE mislabel at this opcode (shared placeholder ctor-site address
-    0x5ffc4f = 6291023, not the function''s own address). The real ITEM_MOVE
-    sender is relocated to opcode 66 (see below).'
+    decompile emits COutPacket(70)+Encode4(updateTime)+Encode2(slot)+Encode4(itemId)
+    (no mob id) — the real USE_SUMMON_BAG. task-229 correction: the call
+    sequence above was corrected from a stale "Encode1+Encode2" reading;
+    re-decompiled at 415bf585 and confirmed there is no Encode1 call in the
+    function — the body is Encode4+Encode2+Encode4 as stated. Supersedes the
+    prior send-site-harvest ITEM_MOVE mislabel at this opcode (shared
+    placeholder ctor-site address 0x5ffc4f = 6291023, not the function''s own
+    address). The real ITEM_MOVE sender is relocated to opcode 66 (see
+    below).'
   packet: inventory/serverbound/InventorySummonBagItemUse
 - op: USE_ITEM
   direction: serverbound

@@ -2894,7 +2894,7 @@
   fname: CWvsContext::SendMobSummonItemUseRequest
   provenance: ida-discovered
   ida:
-    address: 0xa53b5d
+    address: 10828637
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083
     found v84 byte-identical to v83. Corrected by discover-ops against the v84
     IDB. task-229: live decompile of the v84 IDB (GMS_v84.1_U_DEVM.i64, session
@@ -2971,7 +2971,7 @@
   fname: CWvsContext::SendPortalScrollUseRequest
   provenance: ida-discovered
   ida:
-    address: 0xa6946d
+    address: 10916973
   note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083
     found v84 byte-identical to v83. Corrected by discover-ops against the v84
     IDB. task-229: live decompile of the v84 IDB (GMS_v84.1_U_DEVM.i64, session

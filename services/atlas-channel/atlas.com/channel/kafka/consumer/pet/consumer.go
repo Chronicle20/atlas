@@ -9,6 +9,7 @@ import (
 	"atlas-channel/pet"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	socketHandler "atlas-channel/socket/handler"
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
@@ -90,6 +91,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleFlagChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleReviveFailed(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -465,5 +471,33 @@ func handleFlagChanged(sc server.Model, wp writer.Producer) message.Handler[pet2
 		// Re-announce the pet's cash asset so the client's GW_ItemSlotPet
 		// usPetSkill short refreshes — there is no dedicated skill packet.
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId, announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId))
+	}
+}
+
+// handleReviveFailed announces an asynchronous Water of Life revive failure.
+// atlas-pets rejects the revive only after the saga's first step already
+// destroyed the item; the saga compensates by refunding it, so this handler's
+// only job is to tell the player why nothing happened. The event carries no
+// world/channel, so IfPresentByCharacterId on this channel IS the routing --
+// a character connected to another channel simply hears nothing, which is
+// correct.
+func handleReviveFailed(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.ReviveFailedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.ReviveFailedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeReviveFailed {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		l.Warnf("Pet [%d] revive failed for character [%d]: %s.", e.PetId, e.OwnerId, e.Body.Reason)
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId,
+			session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationSystemMessageBody(socketHandler.WaterOfLifeFailedMessage)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce revive failure to character [%d].", e.OwnerId)
+		}
 	}
 }

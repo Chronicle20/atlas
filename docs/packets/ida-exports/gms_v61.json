@@ -18834,6 +18834,21 @@
         }
       ]
     },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0x83778d",
+      "direction": "serverbound",
+      "note": "task-230: NPC_ITEM_USE_REQUEST (opcode 102 / 0x066). COutPacket(102) @0x837851, Encode2(a2=source) @0x837863, Encode4(a3=itemId) @0x83786e. No leading updateTime. Two refusal arms (field flag bit 18; CUniqueModeless open) send nothing. Confirmed via live decompile (mcp__ida-pro__decompile) against IDA session 415bf585 (GMS_v61.1_U_DEVM.exe.i64).",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "source (nPOS / a2), int16 slot"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID / a3)"
+        }
+      ]
+    },
     "CMacroSysMan::SetMacro": {
       "address": "0x59744b",
       "direction": "clientbound",

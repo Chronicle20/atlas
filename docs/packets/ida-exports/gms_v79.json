@@ -270,6 +270,40 @@
         }
       ]
     },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0x955840",
+      "direction": "serverbound",
+      "note": "task-230 verification pass. IDB already carried the correct mangled symbol (?SendScriptRunItemRequest@CWvsContext@@QAEXJJ@Z) but Hex-Rays displayed sub_955840 for lack of a demangled label; renamed via mcp__ida-pro__rename to the demangled form so the name resolves. Opcode 76 decimal = 0x4C, gate a3/10000==243 (scripted-item item-class prefix).",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "updateTime (get_update_time() result, v6)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "source slot (nPOS, a2)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (nItemID, a3); gated a3/10000==243"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0x95b96c",
+      "direction": "serverbound",
+      "note": "task-230 verification pass. Already named in this IDB (no rename needed). Opcode 109 decimal = 0x6D. Gate (a3/10000==545 || a3/10000==239) && get_update_time(...); two refusal arms (field flag bit 18 set; CUniqueModeless dialog open) return without sending. No leading updateTime -- contrast the sibling SendScriptRunItemRequest.",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "source slot (nPOS, a2)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (nItemID, a3); gated (a3/10000==545||a3/10000==239)"
+        }
+      ]
+    },
     "CITC::OnChargeParamResult": {
       "address": "0x57f3d7",
       "direction": "clientbound",

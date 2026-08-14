@@ -3,6 +3,41 @@
   "md5": "2e692f3ab5078e04138d264f8ea1e668",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0xa9f3d2",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time())",
+          "guard": "CWvsContext::IsAbleToConsume(this, arg4, 1)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "source (nPOS)",
+          "guard": "CWvsContext::IsAbleToConsume(this, arg4, 1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)",
+          "guard": "CWvsContext::IsAbleToConsume(this, arg4, 1)"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0xaa5a85",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "source (nPOS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)"
+        }
+      ]
+    },
     "CUserLocal::RequestIncCombo": {
       "address": "0x9e37bc",
       "direction": "serverbound",

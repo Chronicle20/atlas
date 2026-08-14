@@ -15078,6 +15078,40 @@
           "comment": ""
         }
       ]
+    },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0xaee7ce",
+      "region": "JMS",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "get_update_time()"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0xaf43ee",
+      "region": "JMS",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID"
+        }
+      ]
     }
   }
 }

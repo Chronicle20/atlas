@@ -20197,6 +20197,43 @@
           "comment": ""
         }
       ]
+    },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0x9044d8",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time())",
+          "guard": "a3 / 10000 == 243 && sub_4DBE16(500, 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "source (a2, inventory slot)",
+          "guard": "a3 / 10000 == 243 && sub_4DBE16(500, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (a3)",
+          "guard": "a3 / 10000 == 243 && sub_4DBE16(500, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0x90a5ac",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "source (a2, inventory slot)",
+          "guard": "(a3 / 10000 == 545 || a3 / 10000 == 239) && sub_4DBE16(200, 0) && !flag18 && !dword_A9F430"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (a3)",
+          "guard": "(a3 / 10000 == 545 || a3 / 10000 == 239) && sub_4DBE16(200, 0) && !flag18 && !dword_A9F430"
+        }
+      ]
     }
   }
 }

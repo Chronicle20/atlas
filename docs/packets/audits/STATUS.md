@@ -4,18 +4,18 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `f9284e1128f55d16dccd7f9e2e21c74e2339892b9df57cad45b69e49f858d593`
+Tool: `d20b821c8642736e8540ad282b70f101e0d92aa181ba660e78e5f74c9ca63eed`
 
-- export gms_v48: `24d301fc399fcaa6e5eff9dba02acdb4132ddc2d150e558588a6e727d1a894b8`
-- export gms_v61: `8a2dd512cf16c32f2a7bdc146053b0ca7a86f2ea500c47080b636135fc49974c`
-- export gms_v72: `b164fdea7f54f706fabbb252acfad115af96ebae8168ec630f55755dbcce47bf`
-- export gms_v79: `67bab40a431b3a3326c03b9fa362e3e2b5b43deeb6b9244d9465627d26318bc1`
-- export gms_v83: `96fba86a7e676561ca39111e96779e76891ed9e09b852c3162181b176eed1d28`
-- export gms_v84: `50319a1c5817ea4db94de8e5fafa7b87005826d6f8e9d9c2de78e5b8452c8a27`
-- export gms_v87: `351b30ad832ad9d77ccb42b85f3216f28e9cc33ef25dbf80095416d602e9d9f3`
-- export gms_v92: `e5ee9b0e736284fe699c1a1d3a2624f9c8977ac94f69f615ad8073b05d65a129`
-- export gms_v95: `5e0362bc796394bca74a812b983f9cdd66f9772f2d6f37bb8a74157cbe1ed84a`
-- export jms_v185: `0d054f727c883d0fea10da9ffa4da21c07a549f34caa8369f0ac44ee4f581a0b`
+- export gms_v48: `cff2865cc6a2d42a868425fc202c52fc0ef4c0d739e59c43062f428bce7f9bf1`
+- export gms_v61: `d91729f938997cb9ae61a45b86b14eab0d533ae554df9ba12e1614659482a458`
+- export gms_v72: `2c32fd333b3409b74ad26df4035a1690226d1dbe40fed311a0b06a31e4dd84b8`
+- export gms_v79: `4d24c56e9c561ec29bd9a4afc2b6d2ff05cb6bd117ad74ba8a2903191a2f1ebd`
+- export gms_v83: `4646644c24890c614920dd46d90b6895c9f498db6965d23e17bac5f3ae652667`
+- export gms_v84: `dabb91d0658643d95fae0b99087c2e0a9ec606cadcd505df31e487148ef46739`
+- export gms_v87: `2b798744553b6f042660c897fd251f07b46199c7e3457cb023ed0e801301d518`
+- export gms_v92: `dc7cceb5a2d4ee15065079ecca85e3dd88a322a9e27d08992110adb012934901`
+- export gms_v95: `547de87c73d018fe603fdfe30f5d9e0b118ae382f9efd044bfeaf75618c876c0`
+- export jms_v185: `c9d015fd3f14af222f213d5e787a24e90fbfada701bf943f24e57c8db42a252f`
 
 ## Clientbound
 
@@ -529,7 +529,7 @@ Tool: `f9284e1128f55d16dccd7f9e2e21c74e2339892b9df57cad45b69e49f858d593`
 | CHECK_CHAR_NAME | CCashShop::SendCheckDuplicateIDPacket; CLogin::SendCheckDuplicateIDPacket; sub_500693; sub_565537 | character/serverbound/CheckName (T1) | 0x011 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | 🟡ᶠ | 0x015 | ✅ | 0x008 | ✅ |
 | UNNAMED_R18 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ |  | ⬜ |
 | NAME_TRANSFER | CCashShop::SendCheckNameChangePossiblePacket | cash/serverbound/CashCheckNameChangePossible (T1) | 0x012 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ |  | ⬜ |
-| WORLD_TRANSFER | CCashShop::SendCheckTransferWorldPossiblePacket |  | 0x014 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x009 | ❌ |
+| WORLD_TRANSFER | CCashShop::SendCheckTransferWorldPossiblePacket | cash/serverbound/CashCheckTransferWorldPossible (T1) | 0x014 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x009 | ✅ |
 | CREATE_CHAR | CLogin::SendNewCharPacket; sub_500545; sub_5653E9 | character/serverbound/CreateCharacter (T1) | 0x015 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ❌ | 0x016 | ✅ | 0x00B | ✅ |
 | DELETE_CHAR | CLogin::SendDeleteCharPacket; sub_50043F; sub_5652E3 | character/serverbound/DeleteCharacter (T1) | 0x016 | ✅ | 0x017 | ✅ | 0x018 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x018 | 🟡ᶠ | 0x018 | ✅ | 0x00D | ✅ |
 | CREATE_CHAR_IN_CS | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x017 | ❌ | 0x017 | ✅ |  | ⬜ |
@@ -1055,16 +1055,16 @@ Tool: `f9284e1128f55d16dccd7f9e2e21c74e2339892b9df57cad45b69e49f858d593`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 206 | 0 | 19 | 196 | 598 | 0 | 48.9% |
-| v61 | 269 | 0 | 56 | 235 | 459 | 0 | 48.0% |
-| v72 | 285 | 0 | 69 | 249 | 416 | 0 | 47.3% |
-| v79 | 330 | 0 | 68 | 246 | 375 | 0 | 51.2% |
-| v83 | 450 | 0 | 0 | 341 | 228 | 0 | 56.9% |
-| v84 | 425 | 0 | 0 | 347 | 247 | 0 | 55.1% |
-| v87 | 459 | 0 | 0 | 370 | 190 | 0 | 55.4% |
-| v92 | 30 | 0 | 151 | 697 | 141 | 0 | 3.4% |
-| v95 | 484 | 0 | 0 | 429 | 106 | 0 | 53.0% |
-| JMS185 | 431 | 0 | 0 | 391 | 197 | 0 | 52.4% |
+| v48 | 207 | 0 | 19 | 195 | 598 | 0 | 49.2% |
+| v61 | 270 | 0 | 56 | 234 | 459 | 0 | 48.2% |
+| v72 | 286 | 0 | 69 | 248 | 416 | 0 | 47.4% |
+| v79 | 331 | 0 | 68 | 245 | 375 | 0 | 51.4% |
+| v83 | 451 | 0 | 0 | 340 | 228 | 0 | 57.0% |
+| v84 | 426 | 0 | 0 | 346 | 247 | 0 | 55.2% |
+| v87 | 460 | 0 | 0 | 369 | 190 | 0 | 55.5% |
+| v92 | 31 | 0 | 151 | 696 | 141 | 0 | 3.5% |
+| v95 | 485 | 0 | 0 | 428 | 106 | 0 | 53.1% |
+| JMS185 | 432 | 0 | 0 | 390 | 197 | 0 | 52.6% |
 
 ## Conflicts
 

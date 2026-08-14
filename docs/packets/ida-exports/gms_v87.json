@@ -3,6 +3,20 @@
   "md5": "2e692f3ab5078e04138d264f8ea1e668",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CCashShop::SendCheckTransferWorldPossiblePacket": {
+      "address": "0x47df1a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
     "CCashShop::SendCheckNameChangePossiblePacket": {
       "address": "0x47dd48",
       "direction": "serverbound",

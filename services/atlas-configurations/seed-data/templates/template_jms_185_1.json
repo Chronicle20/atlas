@@ -60,6 +60,15 @@
         ]
       },
       {
+        "opCode": "0x09",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCheckTransferWorldPossibleHandle",
+        "fname": "CCashShop::SendCheckTransferWorldPossiblePacket",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x0A",
         "validator": "LoggedInValidator",
         "handler": "CharacterViewAllHandle",

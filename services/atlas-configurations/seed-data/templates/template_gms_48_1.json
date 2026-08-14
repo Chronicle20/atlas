@@ -150,6 +150,15 @@
         ]
       },
       {
+        "opCode": "0x14",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCheckTransferWorldPossibleHandle",
+        "fname": "CCashShop::SendCheckTransferWorldPossiblePacket",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x15",
         "validator": "LoggedInValidator",
         "handler": "CreateCharacterHandle",

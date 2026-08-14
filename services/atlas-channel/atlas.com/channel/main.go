@@ -947,6 +947,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[cashsb.CashItemGachaponHandle] = handler.CashItemGachaponHandleFunc
 	handlerMap[cashsb.CashShopCouponCodeHandle] = handler.CashShopCouponCodeHandleFunc
 	handlerMap[cashsb.CashShopCheckNameChangePossibleHandle] = handler.CashShopCheckNameChangePossibleHandleFunc
+	handlerMap[cashsb.CashShopCheckTransferWorldPossibleHandle] = handler.CashShopCheckTransferWorldPossibleHandleFunc
 	handlerMap[npcsb.NPCShopHandle] = handler.NPCShopHandleFunc
 	handlerMap[invsb.CompartmentMergeRequestHandle] = handler.CompartmentMergeHandleFunc
 	handlerMap[invsb.CompartmentSortRequestHandle] = handler.CompartmentSortHandleFunc

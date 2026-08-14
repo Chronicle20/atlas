@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -1296,6 +1297,12 @@ func (f *fakeInventoryProcessor) ChangeTemplate(mb *message.Buffer) func(transac
 		f.petId = petId
 		f.newTemplateId = newTemplateId
 		return nil
+	}
+}
+
+func (f *fakeInventoryProcessor) ResetPetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+		return errors.New("not implemented")
 	}
 }
 

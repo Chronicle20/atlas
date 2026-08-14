@@ -175,6 +175,7 @@ Every task type's leaf step — promoting one packet × version matrix cell to `
 - Long agents are the cost: context grows with turn count and every turn re-reads all of it, so one 600-turn agent costs far more than the same work split across fresh contexts. The implementer budget is **120 tool calls**, warned at 100 — enforced by `.claude/hooks/turn-budget.sh` and contracted in `.claude/agents/atlas-implementer.md`. At the cap an implementer commits and reports `PARTIAL`; the controller dispatches a continuation. The number lives in the hook — change it there only.
 - Implementers do not run repo-wide verification. `tools/verify.sh`, `tools/lint.sh`, `-race`, and docker bake belong to the `atlas-verifier` agent in its own clean context; a `--quick` run inside a 400k-token implementer costs a large multiple of the same run in a 20k one. Implementers run module-local `go build ./... && go test ./...` and nothing more.
 - Fan out with **fresh-context agents, not `subagent_type: "fork"`.** A fork inherits the parent's entire conversation and re-reads it on every turn, so a forked child that runs 70+ turns costs several times a briefed agent doing the same job. Default to a named agent type plus an explicit brief. Fork only to continue an interactive debugging thread whose brief would be longer than the context it saves — and say so, because `.claude/hooks/fork-dispatch-guard.sh` requires the justification inline.
+- The same arithmetic binds the **controller**, which is the one context that lives for a whole plan — every wake-up re-reads it. During `/execute-task`, hand off to a fresh session past ~250k tokens with tasks remaining: the SDD ledger (`.superpowers/sdd/<plan>/progress.md`) is the resume point, so the cost is one plan re-read. Procedure: `.claude/commands/execute-task.md` Step 4e.
 
 ## Context Handoff
 
@@ -202,11 +203,17 @@ backstop, not the trigger. The signal is dependency, not size.
 - **There is a floor as well as a backstop.** Below roughly 60k a fresh agent
   re-discovers files you already hold, and you pay for that discovery twice.
   Under ~40 tool calls, prefer continuing. `.claude/hooks/commit-boundary.sh`
-  encodes this floor and raises the question at commits past it.
+  encodes this floor and raises the question at commits past it. The backstop at
+  the other end is ~250k for a controller — see `/execute-task` Step 4e, which is
+  this same rule in its threshold form, with the measured numbers behind it.
 - **The pattern already exists — reuse it.** `/execute-task` Step 4d (`PARTIAL`
   → continuation brief beside the original → same report file as the persistent
-  memory across the split → fresh implementer) is exactly this handoff. It is not
-  special to `/execute-task`; apply the same shape in any session. Generate briefs
+  memory across the split → fresh implementer) and Step 4e (controller → SDD
+  ledger → fresh session) are both exactly this handoff, and both already carry a
+  durable artifact: `task-N-report.md` and
+  `.superpowers/sdd/<plan>/progress.md`. Neither is special to `/execute-task` —
+  apply the same shape in any session, and where a canonical ledger already
+  exists, write there rather than inventing a second artifact. Generate briefs
   with `tools/task-brief.sh`, never by hand out of `plan.md`.
 
 The failure this prevents: one session doing four unrelated jobs — resolve a merge,

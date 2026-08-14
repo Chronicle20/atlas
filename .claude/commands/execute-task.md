@@ -195,6 +195,46 @@ Two `PARTIAL`s on one task means the plan under-decomposed it. Rule on a
 split, ledger the ruling, and carry it forward — the plan task was too big,
 which is information `/plan-task` sizing should have caught.
 
+### Step 4e — Hand off your own context
+
+Steps 4a-4d bound every subagent's context. Nothing bounds yours, and you are
+the one context that survives the entire plan: every implementer report, every
+review, every fix ruling, every task-notification wake-up accumulates in it,
+and each wake-up re-reads all of it. By the twelfth plan task that is 300k+
+tokens billed to tick a checkbox.
+
+Measured on a real 18-task run: the controller finished at 402k tokens having
+produced only 165KB of its own tool output across 157 calls. Its last 42 turns
+— a self-contained segment sharing no state with the preceding tasks — ran at
+360-400k each. In a fresh session those same turns would have run at ~80k.
+
+**After completing any plan task, if your context exceeds ~250k tokens and two
+or more plan tasks remain, hand off:**
+
+1. Confirm `<workspace>/progress.md` records every finished task, its commit
+   range, and any ruling you made that is not already in a `task-N-report.md`.
+2. Tell the user: "Controller context is ~<N>k with <M> tasks remaining.
+   `/clear` and re-run `/execute-task <task-id>` — it resumes from the ledger."
+3. Stop. Do not start the next task.
+
+This is safe because the ledger is already the recovery map the skill designs
+for: it resumes at the first task with no `Task <N>: complete` line, and the
+workspace (briefs, reports, review packages) lives on disk, git-ignored, not in
+your context. A fresh controller re-reads the plan once (~15k) and resumes at
+~40k instead of 300k+. Handing off mid-plan is cheaper than finishing it large,
+and it costs nothing in implementation quality — implementer contexts are
+untouched either way.
+
+Hand off unconditionally, regardless of remaining task count, when the next
+task is a self-contained detour from the rest of the plan — a tooling
+investigation, a packet/IDA derivation, a docs sweep. Those share no state with
+what you are carrying, so they pay full freight for none of it.
+
+**Batch the ledger update with the next dispatch.** Editing `progress.md` and
+the following brief/dispatch call are independent — issue them in one message.
+A standalone turn for a 200-byte checkbox costs the same 250-400k as a turn
+that does real work, and there are one or two of them per plan task.
+
 ### Step 5 — On completion
 
 After all plan tasks complete and verify, the chosen skill hands off to `superpowers:finishing-a-development-branch`. Honor that handoff. Then suggest:
@@ -207,6 +247,7 @@ After all plan tasks complete and verify, the chosen skill hands off to `superpo
 - Implementers are `atlas-implementer`, never `general-purpose`.
 - Never run `tools/verify.sh` inside an implementer — that is `atlas-verifier`'s job (Step 4c).
 - Never dispatch a brief with no `### Files` section (Step 4b).
+- Never carry the controller past ~250k tokens with tasks remaining — hand off to a fresh session via the ledger (Step 4e).
 - Never start implementation outside the task worktree.
 - Follow plan steps exactly; stop and ask when blocked rather than guessing.
 - Run the verification commands the plan specifies; don't claim completion based on assumption.

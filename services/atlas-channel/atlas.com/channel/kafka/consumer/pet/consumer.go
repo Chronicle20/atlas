@@ -94,6 +94,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleNameChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -448,6 +453,37 @@ func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[p
 			}
 			return session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(p.OwnerId(), p.Slot(), p.SerialNumber(), excludeIds).Encode)(s)
 		})
+	}
+}
+
+func handleNameChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.NameChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.NameChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeNameChanged {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(e.OwnerId)
+		if err != nil {
+			return
+		}
+
+		// ForSessionsInMap includes the owner, so one call reaches both the
+		// renaming player and every observer. The callback closes over
+		// immutable values only — the iteration is PARALLEL
+		// (bug_channel_foreachinmap_parallel_shared_state), so nothing shared
+		// may be mutated inside it.
+		//
+		// Observers who enter the map LATER get the new name from the
+		// PetActivated spawn body instead; both codecs write the same
+		// NameTagLayer, so the decoration does not flicker between the two.
+		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(),
+			session.Announce(l)(ctx)(wp)(petpkt.PetNameChangedWriter)(
+				petpkt.NewPetNameChanged(e.OwnerId, e.Body.Slot, e.Body.Name).Encode))
 	}
 }
 

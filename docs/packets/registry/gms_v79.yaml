@@ -750,6 +750,7 @@
   direction: clientbound
   opcode: 107
   fname: CWvsContext::OnCancelNameChangeResult
+  packet: cash/clientbound/CashCancelNameChangeResult
   provenance: ida-discovered
   ida:
     address: 9779200

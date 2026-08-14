@@ -2720,6 +2720,21 @@
         ]
       },
       {
+        "opCode": "0x6B",
+        "writer": "CashShopCancelNameChangeResult",
+        "fname": "CWvsContext::OnCancelNameChangeResult",
+        "options": {
+          "operations": {
+            "CANCELLED": 0,
+            "CANCELLED_ALT": 255,
+            "FAILED": 1
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x74",
         "writer": "ScriptProgress",
         "fname": "sub_95F0D4",

@@ -615,6 +615,7 @@
   direction: clientbound
   opcode: 118
   fname: CWvsContext::OnCancelNameChangeResult
+  packet: cash/clientbound/CashCancelNameChangeResult
   provenance: csv-import
 - op: CANCEL_TRANSFER_WORLD_RESULT
   direction: clientbound

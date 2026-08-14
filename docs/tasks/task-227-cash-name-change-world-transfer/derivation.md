@@ -483,6 +483,34 @@ Resulting matrix rows:
 
 ---
 
+## 6a. OQ-9 — does the client accept `CANCEL_*` outside the cash-shop UI?
+
+**Answer: yes, unconditionally.** `CWvsContext::OnCancelNameChangeResult` was
+re-decompiled directly during Task 20 on two versions eight opcode-table
+revisions apart — v61 `0x84ace9` and v83 `0xa2a677` — and both bodies are
+identical in shape and both begin executing on the very first instruction,
+`CInPacket::Decode1(a2)`, with no preceding check of any kind. There is:
+
+- no read of a cash-shop-open flag or any `CCashShop::` member/singleton
+  access anywhere in either decompiled body;
+- no early return before the `Decode1` / branch;
+- no guard clause of any kind — the three-way switch (`0x00` / `0xFF` /
+  otherwise) executes unconditionally on whatever byte is next on the wire.
+
+`CWvsContext` is the always-live per-session context singleton — the same
+class every other account-level notification packet in this family targets
+(`CANCEL_NAME_CHANGE_BY_OTHER`, `CANCEL_TRANSFER_WORLD_RESULT` per §2.7/§2.8)
+— not a UI-scoped dialog controller gated on the cash-shop window being open.
+`CWvsContext::OnPacket` dispatches to this handler purely by opcode; the
+packet is processed identically whether the cash-shop UI is open, closed, or
+was never opened this session.
+
+This does not change any behaviour in this task or in Task 26/27's consumer:
+design §3.9's pink-text belt-and-braces sends alongside the packet regardless
+of the answer. It closes the open question rather than leaving it deferred.
+
+---
+
 ## 7. Hazards for the downstream tasks
 
 1. **The plan's cell count was 59; it is now 67.** The serverbound rows gained

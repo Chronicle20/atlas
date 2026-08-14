@@ -15867,6 +15867,26 @@
           "comment": ""
         }
       ]
+    },
+    "CWvsContext::OnCancelNameChangeResult": {
+      "address": "0xac2313",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nResult"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bHasMessage",
+          "guard": "nResult != 0x00 && nResult != 0xFF"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sMessage",
+          "guard": "nResult != 0x00 && nResult != 0xFF && bHasMessage"
+        }
+      ]
     }
   }
 }

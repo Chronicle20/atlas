@@ -2093,6 +2093,21 @@
         ]
       },
       {
+        "opCode": "0x76",
+        "writer": "CashShopCancelNameChangeResult",
+        "fname": "CWvsContext::OnCancelNameChangeResult",
+        "options": {
+          "operations": {
+            "CANCELLED": 0,
+            "CANCELLED_ALT": 255,
+            "FAILED": 1
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x80",
         "writer": "ScriptProgress",
         "fname": "CWvsContext::OnScriptProgressMessage",

@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `5f7edf54e545e39dadc6f03f20447ce249ee0f37d0bce34e6115696941820fde`
+Tool: `bb6605bfa76ecf5733e143cadf1af9285251b91a276fd45ab32b56371cfdba32`
 
 - export gms_v48: `cd4a628c498b9827b7e0178c4c499bbd8fc00b074e6e418c1b7a9e230c32ee21`
 - export gms_v61: `4c8571b72e950048c4bcf2fd7d03b8eadb3590bc03b6f9e9de7d8977404c1142`
 - export gms_v72: `bb8c82c53879da099ba32d14bbce1d3a8b463b3fffe5c3ca8f9f5f1bb950e50a`
 - export gms_v79: `4d24c56e9c561ec29bd9a4afc2b6d2ff05cb6bd117ad74ba8a2903191a2f1ebd`
-- export gms_v83: `ea39a98c8ef47761a2021b2c88772cd77ce805302ed287f1bdc467d77827c00f`
-- export gms_v84: `fb74057a153f4834d6969018a693a4cb4ac95b911bdbb835ff68b315b671cfb9`
-- export gms_v87: `1e82c0758e4d84e2d745e8b6a4e2deb2af9bab5458a89aa714f3b9a4b114c75c`
-- export gms_v92: `eeee0d1bd7b8eb1a4ca5c0ac25798f68f2f7584f8011269b2e7bae81c08b1527`
-- export gms_v95: `dd8fa1eb55b57b47ee53974de12b8365d82e6c8f0c446c349e3624028f9c507e`
+- export gms_v83: `d4792659be3cd49073ada9eee43a41475c9f995f907260e7d17c16a18125a459`
+- export gms_v84: `e162770382eb6af081defbc047bed29f5e9f618cdf0f50ea0e069783433215ba`
+- export gms_v87: `7f82d21a4730021ce39823d3226438c7e6c29d93c20aae10c1ebcc3699a3d787`
+- export gms_v92: `f57263967cc54f58d31de8d0f935a77820eaa8b0f1463d17a900ebc45c5a0a32`
+- export gms_v95: `c53cdcdade20172230314e8c40ee7ea4946602ab6caa237d0727a2f1161b3202`
 - export jms_v185: `2671210ed72c2116f3913da353a4c26a49067d82f1de2e7cf790bb0c6733a3f8`
 
 ## Clientbound
@@ -154,7 +154,7 @@ Tool: `5f7edf54e545e39dadc6f03f20447ce249ee0f37d0bce34e6115696941820fde`
 | BLOW_WEATHER | CField::OnBlowWeather; sub_4C930A; sub_4ED39C; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x055 | ✅ | 0x06A | ❌ | 0x082 | 🟡ᶠ | 0x086 | 🟡ᶠ | 0x08E | ✅ | 0x091 | ✅ | 0x096 | ✅ | 0x09D | 🟡ᶠ | 0x09E | ✅ | 0x08B | ✅ |
 | BONUS_EXP_CHANGED | CWvsContext::OnBonusExpRateChanged |  |  | ⬜ |  | ⬜ | 0x055 | ❌ | 0x056 | ❌ | 0x05D | ❌ | 0x05F | ❌ | 0x05F | ❌ | 0x061 | ❌ | 0x060 | ❌ | 0x064 | ❌ |
 | CLEAR_AVATAR_MEGAPHONE | CWvsContext::OnClearAvatarMegaphone | chat/clientbound/ChatClearAvatarMegaphone |  | ⬜ | 0x055 | ❌ | 0x068 | ❌ | 0x06A | ❌ | 0x070 | ✅ | 0x073 | ✅ | 0x073 | ✅ | 0x075 | ❌ | 0x074 | ✅ | 0x05B | ✅ |
-| CANCEL_NAME_CHANGE_RESULT | CWvsContext::OnCancelNameChangeResult |  |  | ⬜ | 0x056 | ❌ | 0x069 | ❌ | 0x06B | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x074 | ❌ | 0x076 | ❌ | 0x075 | ❌ |  | ⬜ |
+| CANCEL_NAME_CHANGE_RESULT | CWvsContext::OnCancelNameChangeResult |  |  | ⬜ | 0x056 | ✅ | 0x069 | ✅ | 0x06B | ✅ | 0x071 | ✅ | 0x074 | ✅ | 0x074 | ✅ | 0x076 | ✅ | 0x075 | ✅ |  | ⬜ |
 | PLAY_JUKEBOX | CField::OnPlayJukeBox; sub_4C95F2 | field/clientbound/FieldPlayJukebox (T1) | 0x056 | 🟡ᶠ |  | ⬜ | 0x083 | 🟡ᶠ | 0x087 | 🟡ᶠ | 0x08F | ✅ | 0x092 | ✅ | 0x097 | ✅ | 0x09E | 🟡ᶠ | 0x09F | ✅ | 0x08C | ✅ |
 | POTION_DISCOUNT_RATE_CHANGED | CWvsContext::OnPotionDiscountRateChanged |  |  | ⬜ |  | ⬜ | 0x056 | ❌ | 0x057 | ❌ |  | ⬜ | 0x060 | ❌ | 0x060 | ❌ | 0x062 | ❌ | 0x061 | ❌ |  | ⬜ |
 | ADMIN_RESULT | CField::OnAdminResult; sub_57255F | field/clientbound/FieldAdminResult (T1) | 0x057 | ✅ | 0x06B | 🟡ᶠ | 0x084 | 🟡ᶠ | 0x088 | ✅ | 0x090 | ✅ | 0x093 | ✅ | 0x098 | ✅ | 0x09F | ❌ | 0x0A0 | ✅ | 0x08D | ✅ |
@@ -1056,14 +1056,14 @@ Tool: `5f7edf54e545e39dadc6f03f20447ce249ee0f37d0bce34e6115696941820fde`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 209 | 0 | 19 | 193 | 598 | 0 | 49.6% |
-| v61 | 272 | 0 | 56 | 232 | 459 | 0 | 48.6% |
-| v72 | 288 | 0 | 69 | 246 | 416 | 0 | 47.8% |
-| v79 | 334 | 0 | 68 | 242 | 375 | 0 | 51.9% |
-| v83 | 454 | 0 | 0 | 337 | 228 | 0 | 57.4% |
-| v84 | 429 | 0 | 0 | 343 | 247 | 0 | 55.6% |
-| v87 | 463 | 0 | 0 | 366 | 190 | 0 | 55.9% |
-| v92 | 34 | 0 | 151 | 693 | 141 | 0 | 3.9% |
-| v95 | 488 | 0 | 0 | 425 | 106 | 0 | 53.5% |
+| v61 | 273 | 0 | 56 | 231 | 459 | 0 | 48.8% |
+| v72 | 289 | 0 | 69 | 245 | 416 | 0 | 47.9% |
+| v79 | 335 | 0 | 68 | 241 | 375 | 0 | 52.0% |
+| v83 | 455 | 0 | 0 | 336 | 228 | 0 | 57.5% |
+| v84 | 430 | 0 | 0 | 342 | 247 | 0 | 55.7% |
+| v87 | 464 | 0 | 0 | 365 | 190 | 0 | 56.0% |
+| v92 | 35 | 0 | 151 | 692 | 141 | 0 | 4.0% |
+| v95 | 489 | 0 | 0 | 424 | 106 | 0 | 53.6% |
 | JMS185 | 433 | 0 | 0 | 389 | 197 | 0 | 52.7% |
 
 ## Conflicts

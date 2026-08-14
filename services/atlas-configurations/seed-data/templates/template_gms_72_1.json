@@ -2688,6 +2688,21 @@
         ]
       },
       {
+        "opCode": "0x69",
+        "writer": "CashShopCancelNameChangeResult",
+        "fname": "CWvsContext::OnCancelNameChangeResult",
+        "options": {
+          "operations": {
+            "CANCELLED": 0,
+            "CANCELLED_ALT": 255,
+            "FAILED": 1
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x71",
         "writer": "CharacterSkillMacro",
         "fname": "CWvsContext::OnMacroSysDataInit",

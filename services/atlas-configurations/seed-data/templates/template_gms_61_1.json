@@ -2547,6 +2547,21 @@
         ]
       },
       {
+        "opCode": "0x56",
+        "writer": "CashShopCancelNameChangeResult",
+        "fname": "CWvsContext::OnCancelNameChangeResult",
+        "options": {
+          "operations": {
+            "CANCELLED": 0,
+            "CANCELLED_ALT": 255,
+            "FAILED": 1
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x5B",
         "writer": "CharacterSkillMacro",
         "fname": "CWvsContext::OnMacroSysDataInit",

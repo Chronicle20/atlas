@@ -2232,6 +2232,7 @@
   opcode: 75
   fname: CWvsContext::SendMobSummonItemUseRequest
   provenance: csv-import
+  packet: inventory/serverbound/InventorySummonBagItemUse
 - op: PET_FOOD
   direction: serverbound
   opcode: 76
@@ -2291,6 +2292,7 @@
   opcode: 85
   fname: CWvsContext::SendPortalScrollUseRequest
   provenance: csv-import
+  packet: inventory/serverbound/InventoryReturnScrollItemUse
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 86

@@ -9,20 +9,35 @@ You are starting Phase 2 of the Atlas four-phase development workflow. Argument:
 
 ### Step 1 — Resolve the task
 
-1. **Fuzzy-match the task folder name** by globbing across both the main repo and all sibling worktrees:
-   - Main repo: `docs/tasks/task-*`
-   - Worktrees: `.worktrees/*/docs/tasks/task-*`
+Run the resolver — do NOT glob for the task folder yourself:
 
-   Match `$ARGUMENTS` against folder names with these patterns (in order):
-   - Exact: `task-NNN-slug` matches `task-NNN-slug`
-   - Number-only: `54` or `054` or `task-54` or `task-054` matches any folder named `task-054-*`
-   - Slug fragment: `effect-duration` matches `task-NNN-effect-duration-units`
+```sh
+tools/task-resolve.sh "$ARGUMENTS"
+```
 
-2. If zero matches: stop and ask the user for a corrected identifier.
-3. If multiple matches: list them and ask the user to pick.
-4. If the resolved task lives in `docs/tasks/` (main) but NOT in any worktree, that's an error state — the four-phase workflow requires a task worktree. Stop and tell the user:
-   > Task `<id>` exists on main but has no worktree. The current workflow expects every task to have its own worktree (created by `/spec-task`). Either move the task into a worktree or run `/spec-task` from scratch.
-5. Otherwise, the resolved location is `<worktree>/docs/tasks/<id>/`. Record `<worktree>` as the absolute path you'll use for all subsequent operations.
+It prints one tab-separated line: `<task-id>\t<task-dir>\t<worktree>`.
+
+It handles all three identifier forms (exact `task-NNN-slug`, number-only
+`54`/`054`/`task-54`/`task-054`, and slug fragment `effect-duration`) and
+returns each task exactly once.
+
+**Never glob `.worktrees/*/docs/tasks/task-*`.** Every worktree carries a full
+copy of `docs/tasks/` from its branch point, so that pattern returns
+(tasks × worktrees) paths — thousands of them, most of which are duplicate
+copies of the same task — and dumps all of it into context to resolve one ID.
+The resolver applies the ownership rule from `tools/task-numbers.sh`: a
+worktree owns only the task matching its own directory name.
+
+Handle the exit code:
+
+- **0** — resolved. Use the three fields as `<id>`, `<task-dir>`, `<worktree>`.
+- **3** — no match. Stop and ask the user for a corrected identifier.
+- **4** — ambiguous. The candidates are listed on stderr; show them and ask the user to pick.
+
+If `<worktree>` equals the main repo root, the task has no worktree. That's an
+error state — the four-phase workflow requires one. Stop and tell the user:
+
+> Task `<id>` exists on main but has no worktree. The current workflow expects every task to have its own worktree (created by `/spec-task`). Either move the task into a worktree or run `/spec-task` from scratch.
 
 ### Step 2 — Ensure we're in the right worktree
 

@@ -49,7 +49,7 @@ The canonical flow for any non-trivial change is four phases. **`/spec-task` cre
 3. `/clear`, then `/plan-task <task-id>` — invokes `superpowers:writing-plans`. Output: `plan.md` + `context.md` (committed).
 4. `/clear`, then `/execute-task <task-id>` — invokes `superpowers:subagent-driven-development`. Reuses the existing worktree; never creates a new one.
 
-Phase commands accept fuzzy task identifiers: `task-054-slug`, `task-054`, `054`, or `54` all resolve to the same folder. They search both `docs/tasks/` (main) and `.worktrees/*/docs/tasks/` to locate the task.
+Phase commands accept fuzzy task identifiers: `task-054-slug`, `task-054`, `054`, or `54` all resolve to the same folder. They resolve it with `tools/task-resolve.sh <identifier>`, which prints `<task-id>\t<task-dir>\t<worktree>`. Never glob `.worktrees/*/docs/tasks/task-*` to find a task — every worktree carries a full copy of `docs/tasks/` from its branch point, so that pattern returns (tasks × worktrees) mostly-duplicate paths into context to resolve a single ID.
 
 Skip `/spec-task` only for trivial fixes that don't warrant a PRD; document those directly via a brainstorming session.
 
@@ -149,7 +149,7 @@ Every task type's leaf step — promoting one packet × version matrix cell to `
 
 ## Task Workflow
 
-- Before planning or designing a task, first verify the task is not already planned/implemented, and that its task number does not collide with an in-flight task. Use `tools/task-numbers.sh next` and search both `docs/tasks/` and `.worktrees/*/docs/tasks/`.
+- Before planning or designing a task, first verify the task is not already planned/implemented, and that its task number does not collide with an in-flight task. Use `tools/task-numbers.sh next` to pick the number and `tools/task-resolve.sh --list` to see every existing task (one row per task, already deduplicated across worktrees).
 
 ## Debugging / Kubernetes
 

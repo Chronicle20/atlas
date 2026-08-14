@@ -252,7 +252,7 @@ func TestNameValidity_InvalidScope(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Request failed: %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected 400, got %d", resp.StatusCode)
 	}

@@ -165,6 +165,12 @@ type Processor interface {
 	// translate the wire's uint32 serial into the UUID-keyed listing for the
 	// cancel/buy/bid flows.
 	GetBySerial(worldId world.Id, sn uint32) (Model, error)
+	// ByCharacterActivePagedProvider returns one page of a seller's ACTIVE
+	// listings across worlds. Backs GET /characters/{characterId}/mts/listings
+	// (task-227 gate 11) — mirrors holding.Processor.ByCharacterPagedProvider's
+	// shape exactly, scoped to StateActive since a settled/cancelled/expired
+	// listing has already left escrow (or become a holding).
+	ByCharacterActivePagedProvider(sellerId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	Create(m Model) (Model, error)
 	Browse(worldId world.Id, state State, f BrowseFilter) ([]Model, error)
 	CountBrowse(worldId world.Id, state State, f BrowseFilter) (int64, error)
@@ -316,6 +322,12 @@ func (p *ProcessorImpl) GetById(id string) (Model, error) {
 // GetBySerial resolves a listing by its per-(tenant, world) ITC serial.
 func (p *ProcessorImpl) GetBySerial(worldId world.Id, sn uint32) (Model, error) {
 	return GetBySerial(worldId, sn)(p.db.WithContext(p.ctx))()
+}
+
+// ByCharacterActivePagedProvider returns one page of a seller's ACTIVE listings
+// across worlds, mirroring holding.Processor.ByCharacterPagedProvider's shape.
+func (p *ProcessorImpl) ByCharacterActivePagedProvider(sellerId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(modelFromEntity)(getBySellerStatePaged(sellerId, StateActive, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // Create persists a new listing and returns the stored Model (with its assigned

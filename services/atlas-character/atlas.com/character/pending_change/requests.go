@@ -283,11 +283,45 @@ func requestCharacterHoldings(characterId uint32) requests.Request[[]mtsHoldingR
 	return requests.GetRequest[[]mtsHoldingRestModel](fmt.Sprintf(mtsBaseUrl()+"characters/%d/mts/holding", characterId))
 }
 
-// mtsHoldingOpen implements gateDeps.mtsHolding.
+// mtsListingRestModel is the minimal projection of atlas-mts's GET
+// /characters/{characterId}/mts/listings — a seller's ACTIVE listings across
+// worlds (services/atlas-mts/atlas.com/mts/listing/resource.go, route
+// "get_character_active_listings"). No relationships block.
+//
+// This is a SEPARATE endpoint from the holding one above and deliberately so:
+// a listing becomes a holding only on cancel/expiry (Cancel/Expire in
+// services/atlas-mts/atlas.com/mts/listing/processor.go), so an ACTIVE
+// listing never shows up as a holding. Checking holdings alone let a
+// character with a live, un-settled auction pass this gate and transfer,
+// stranding the listing in the world they just left — the fix-round-1
+// finding this type exists to close.
+type mtsListingRestModel struct {
+	Id string `json:"-"`
+}
+
+func (r mtsListingRestModel) GetName() string        { return "listings" }
+func (r mtsListingRestModel) GetID() string          { return r.Id }
+func (r *mtsListingRestModel) SetID(id string) error { r.Id = id; return nil }
+
+func requestCharacterActiveListings(characterId uint32) requests.Request[[]mtsListingRestModel] {
+	return requests.GetRequest[[]mtsListingRestModel](fmt.Sprintf(mtsBaseUrl()+"characters/%d/mts/listings", characterId))
+}
+
+// mtsHoldingOpen implements gateDeps.mtsHolding. It blocks on EITHER a live
+// holding OR an active listing — the two are mutually exclusive states of the
+// same escrowed item, and either one is exactly the un-reversible-by-
+// compensation situation gate 11 exists to catch (design §3.6).
 func mtsHoldingOpen(l logrus.FieldLogger, ctx context.Context, characterId uint32) (bool, error) {
-	rs, err := requestCharacterHoldings(characterId)(l, ctx)
+	holdings, err := requestCharacterHoldings(characterId)(l, ctx)
 	if err != nil {
 		return false, err
 	}
-	return len(rs) > 0, nil
+	if len(holdings) > 0 {
+		return true, nil
+	}
+	listings, err := requestCharacterActiveListings(characterId)(l, ctx)
+	if err != nil {
+		return false, err
+	}
+	return len(listings) > 0, nil
 }

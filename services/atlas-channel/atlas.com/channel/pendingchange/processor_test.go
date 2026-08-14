@@ -141,6 +141,112 @@ func TestRequestNameChange(t *testing.T) {
 	}
 }
 
+// TestCancelPendingChange covers the client-cancel addendum's channel-side
+// call, mirroring TestRequestNameChange's table shape.
+func TestCancelPendingChange(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		body       any
+		rawBody    string
+		wantErr    *RejectedError
+		wantOK     bool
+	}{
+		{
+			name:       "200 success",
+			statusCode: http.StatusOK,
+			body: map[string]any{
+				"data": map[string]any{
+					"type": "pending-changes",
+					"id":   "1",
+					"attributes": map[string]any{
+						"characterId": 1,
+						"type":        TypeNameChange,
+						"status":      "CANCELLED",
+						"reason":      "player_cancelled",
+					},
+				},
+			},
+			wantOK: true,
+		},
+		{
+			// The discriminating case: a 404 (nothing pending) must be
+			// reported as a typed *RejectedError, not swallowed into a
+			// generic infrastructure error, so the caller can treat it as
+			// "nothing to cancel" rather than a failure.
+			name:       "404 nothing pending",
+			statusCode: http.StatusNotFound,
+			body:       jsonAPIErrorBody("404", "Not Found", ""),
+			wantErr:    &RejectedError{Status: http.StatusNotFound, Reason: "not_pending"},
+		},
+		{
+			name:       "409 already terminal",
+			statusCode: http.StatusConflict,
+			body:       jsonAPIErrorBody("409", "Conflict", ""),
+			wantErr:    &RejectedError{Status: http.StatusConflict, Reason: ""},
+		},
+		{
+			name:       "non-JSON body on non-2xx",
+			statusCode: http.StatusInternalServerError,
+			rawBody:    "not json at all {{{",
+			wantErr:    nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotPath string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
+				w.WriteHeader(tc.statusCode)
+				if tc.rawBody != "" {
+					_, _ = w.Write([]byte(tc.rawBody))
+					return
+				}
+				if tc.body != nil {
+					_ = json.NewEncoder(w).Encode(tc.body)
+				}
+			}))
+			defer server.Close()
+
+			withCharactersServiceURL(t, server.URL)
+
+			p := newTestProcessor()
+			result, err := p.CancelPendingChange(1, TypeNameChange)
+
+			if gotPath != "/characters/1/pending-changes/cancel" {
+				t.Fatalf("expected cancel sub-route, got path %q", gotPath)
+			}
+
+			if tc.wantOK {
+				if err != nil {
+					t.Fatalf("expected no error, got %v", err)
+				}
+				if result.Type != TypeNameChange {
+					t.Fatalf("expected RestModel populated, got %+v", result)
+				}
+				return
+			}
+
+			if err == nil {
+				t.Fatalf("expected an error, got nil")
+			}
+
+			if tc.wantErr == nil {
+				return
+			}
+
+			rejected, ok := err.(*RejectedError)
+			if !ok {
+				t.Fatalf("expected *RejectedError, got %T: %v", err, err)
+			}
+			if rejected.Status != tc.wantErr.Status || rejected.Reason != tc.wantErr.Reason {
+				t.Fatalf("expected %+v, got %+v", tc.wantErr, rejected)
+			}
+		})
+	}
+}
+
 func jsonAPIErrorBody(status, title, detail string) map[string]any {
 	return map[string]any{
 		"errors": []any{

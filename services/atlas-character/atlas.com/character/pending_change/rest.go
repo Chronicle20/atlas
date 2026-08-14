@@ -83,6 +83,30 @@ func (r *CreateInputRestModel) SetID(id string) error {
 	return nil
 }
 
+// CancelInputRestModel is the POST body of the self-scoped cancel route:
+// {data:{type:"pending-changes",attributes:{type}}}. Unlike DELETE
+// .../pending-changes/{id}, the caller carries no record id -- the wire
+// packet that drives this route (task-227 client-cancel addendum) has none,
+// so the record is looked up by (characterId, type) instead. See
+// handleCancelPendingChangeForCharacter.
+type CancelInputRestModel struct {
+	Id   string `json:"-"`
+	Type string `json:"type"`
+}
+
+func (r CancelInputRestModel) GetName() string {
+	return "pending-changes"
+}
+
+func (r CancelInputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *CancelInputRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
 // EligibilityRestModel is the read-only response of GET
 // .../transfer-eligibility. Id is the characterId the check was run for, so
 // the response is addressable JSON:API, but the caller (atlas-channel) only

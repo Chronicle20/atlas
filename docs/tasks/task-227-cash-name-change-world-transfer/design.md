@@ -539,14 +539,47 @@ Any saga step failure → compensations run, `REJECTED`, refund, notify. The cha
 never in two worlds and never in none, because `change_character_world` is a single-row
 update and is the last step.
 
-### 5.4 Operator cancel
+### 5.4 Operator cancel, and the client cancel path (revised)
 
-`DELETE /characters/{id}/pending-changes/{pcId}` → transition `PENDING` → `CANCELLED`
-(409 if already terminal) → refund + notify, both driven by the transition (§3.10).
+This section originally asserted the cancel path was operator-only REST, on the strength
+of "no `SendCancel*` function exists on any version." That literal claim is true but
+misleading: the request is multiplexed onto the generic cash item-use op instead of a
+dedicated send function, and a direct-disassembly derivation (task-227 client-cancel
+addendum, user-ruled-in after IDA review) confirmed the client DOES have a real cancel
+path. Two documents settle it and are the wire authority — do not re-derive:
+`docs/tasks/task-227-cash-name-change-world-transfer/cancel-entry-point.md` and
+`cancel-confirm-semantics.md`.
 
-No serverbound handler is wired to this route. An explicit test asserts the route appears
-in no socket-config template and in no `socket/handler` registration — the PRD lists this
-as an acceptance criterion and it deserves a machine check, not an eyeball.
+**The client path.** `CWvsContext::SendConsumeCashItemUseRequest`'s name-change (case
+52/53) and world-transfer (case 53/54) arms build a two-dialog `CANCELREQUESTS_*`
+confirmation chain. Dismissing either dialog sends nothing at all — confirmed by direct
+disassembly on v83 AND v95, `SendPacket` sits behind the confirm branch only — so receipt
+of this arm IS necessarily the confirmed cancel; there is no tail-less variant to
+disambiguate. The trailing confirmation byte is always `1` on both versions (v83 sets it
+once via `push 1 / pop edi` at function entry, never reassigned; v95 encodes a literal
+`1`), so it is invariant and carries no domain data — atlas-channel does not decode it.
+
+Server side, atlas-character exposes a NEW self-scoped route,
+`POST /characters/{id}/pending-changes/cancel`, because the wire packet carries no
+pending-change id: reusing the id-based DELETE would force atlas-channel into a racy
+GET-then-DELETE round trip. It resolves the caller's own pending record by
+`(characterId, type)` — ownership holds by construction, not by a check — and delegates to
+the same `ResolveAndEmit` transition guard every other terminal transition uses, with a
+new, distinct reason: `player_cancelled` (§6), so the operator panel and REST callers can
+still tell who cancelled. atlas-channel's socket handler resolves `characterId` from the
+session, never the client, and calls this route from the item-use arm.
+
+**Operator cancel is unchanged.** `DELETE /characters/{id}/pending-changes/{pcId}` →
+transition `PENDING` → `CANCELLED` (409 if already terminal) → refund + notify, reason
+`operator_cancelled`, still driven by the same transition (§3.10). It now also checks that
+the loaded record's `characterId` matches the path segment (404 on mismatch) — a gap that
+was harmless while the only caller was a trusted operator panel, and stopped being
+harmless once the client-driven route above exists beside it.
+
+**plan.md Task 28 is invalid as written.** Its guard would machine-enforce "no client send
+op maps to a CANCEL_* receiver" / "the cancel route appears in no socket-config template
+and no `socket/handler` registration" — both now false by design. The controller re-scopes
+Task 28; this section does not attempt to write that guard.
 
 ### 5.5 Expiry
 
@@ -564,7 +597,11 @@ time (OQ-7). They are not free text.
 `name_invalid_length` · `name_invalid_charset` · `name_taken` · `name_reserved` ·
 `already_pending` · `world_same` · `world_unknown` · `world_full` · `no_character_slot` ·
 `banned` · `is_guild_master` · `is_gm` · `in_family` · `trade_open` · `merchant_open` ·
-`mts_listings_open` · `operator_cancelled` · `expired` · `saga_failed`
+`mts_listings_open` · `operator_cancelled` · `player_cancelled` · `expired` · `saga_failed`
+
+`player_cancelled` (task-227 client-cancel addendum, §5.4) is deliberately distinct from
+`operator_cancelled`: REST and the operator panel are the only surfaces that distinguish
+reasons at all, so collapsing the two would destroy the audit trail of *who* cancelled.
 
 Every rejection path returns one of these (FR-5.1). A path that would return none is a bug,
 and the test suite asserts exhaustiveness over the enum.
@@ -583,7 +620,10 @@ and the test suite asserts exhaustiveness over the enum.
   back.
 - **Offline notification:** resolve while offline, assert `notified_at` null, then emit
   `LOGIN` and assert re-emission.
-- **Cancel unreachability:** assert no handler and no template binds the cancel route.
+- **Cross-character cancel:** neither cancel route (the id-based operator DELETE or the
+  new self-scoped POST) lets one character cancel another's pending record. For the
+  DELETE route this is a real ownership-check regression test (§5.4): it must be seen
+  failing before the fix and passing after.
 - **Name scope regression:** character creation still uses `NameScopeWorld` and still
   permits a cross-world duplicate; name change does not.
 - **Packet:** byte fixtures per cell with `packet-audit:verify` markers, per the playbook.
@@ -598,7 +638,9 @@ and the test suite asserts exhaustiveness over the enum.
   requesting session's tenant, so a cross-tenant transfer is not representable.
 - **Security:** the SPW field (§1.7) is validated and never logged — the decoded struct's
   `String()` redacts it. Ownership of the character and of the asset is verified
-  server-side; the cancel endpoint is operator-only.
+  server-side on every cancel path (§5.4): the client-driven route resolves by the
+  session's own `characterId`, never a client-supplied one, and the operator DELETE route
+  now checks the loaded record's `characterId` against the path segment.
 - **Versioning:** new gates use `MajorAtLeast`; mode bytes come from `operations`.
 - **Observability:** every transition logs tenant, character, type, from→to status, and
   reason. Saga compensations log what they undid.
@@ -631,8 +673,10 @@ and the test suite asserts exhaustiveness over the enum.
 - atlas-merchant blacklist / visit-log name rewriting on rename (§3.8) — a moderation
   policy question, not a name-propagation bug.
 - Auto-settling trades, hired merchants, and MTS listings (§3.6) — blocked instead.
-- `Cash/0543` Maple Life character creation, cross-tenant transfer, storage migration,
-  a player-facing cancel surface, and commodity pricing — all per PRD §2.
+- `Cash/0543` Maple Life character creation, cross-tenant transfer, storage migration, and
+  commodity pricing — all per PRD §2. (A player-facing cancel surface WAS out of scope at
+  design time; task-227's client-cancel addendum, §5.4, ruled it back in after an IDA
+  derivation established the client has a real cancel path.)
 - Rewriting the ~40 sibling `MajorVersion() >= 95` branches in `GetCashSlotItemType`
   (§1.1). New code uses `MajorAtLeast`; the existing block is not in this task's blast
   radius.

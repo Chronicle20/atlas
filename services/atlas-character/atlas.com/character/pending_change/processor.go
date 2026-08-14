@@ -63,6 +63,7 @@ type Processor interface {
 	CreateAndEmit(transactionId uuid.UUID, characterId uint32, changeType string, requestedName string, destinationWorldId world.Id, assetId *uint32) (Model, error)
 	Resolve(mb *message.Buffer) func(id uuid.UUID, status string, reason string) (Model, bool, error)
 	ResolveAndEmit(id uuid.UUID, status string, reason string) (Model, bool, error)
+	CancelForCharacterAndType(characterId uint32, changeType string) (Model, bool, error)
 	ApplyForCharacter(characterId uint32) error
 	RenotifyForCharacter(characterId uint32) error
 	Sweep(now time.Time) error
@@ -322,6 +323,33 @@ func (p *ProcessorImpl) ResolveAndEmit(id uuid.UUID, status string, reason strin
 		return Model{}, false, txErr
 	}
 	return out, moved, nil
+}
+
+// CancelForCharacterAndType cancels the CALLING character's own PENDING
+// record of the given type, so ownership holds by construction rather than
+// by a check a caller could forget (design §5.4 addendum, task-227 client-
+// cancel: docs/tasks/task-227-cash-name-change-world-transfer/cancel-entry-point.md
+// and cancel-confirm-semantics.md). It is the server side of the client's
+// item-use cancel-confirm arm.
+//
+// A zero-value Model with moved == false and err == nil means "nothing of
+// this type is pending" -- a normal race against the sweeper or an operator
+// cancel, not an error condition; the REST layer maps it to 404. Delegating
+// to ResolveAndEmit keeps this on the one write path that already carries the
+// transition guard, the refund mint, and the idempotency tests
+// (refund_idempotency_test.go) -- there is deliberately no second write path
+// to the entity here.
+func (p *ProcessorImpl) CancelForCharacterAndType(characterId uint32, changeType string) (Model, bool, error) {
+	ms, err := getPendingByCharacterId(p.db.WithContext(p.ctx), p.t.Id(), characterId)
+	if err != nil {
+		return Model{}, false, err
+	}
+	for _, m := range ms {
+		if m.Type() == changeType {
+			return p.ResolveAndEmit(m.Id(), StatusCancelled, "player_cancelled")
+		}
+	}
+	return Model{}, false, nil
 }
 
 // ApplyForCharacter runs every pending request the character holds. It is

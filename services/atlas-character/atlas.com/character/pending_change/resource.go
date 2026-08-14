@@ -27,6 +27,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", rest.RegisterInputHandler[CreateInputRestModel](l)(db)(si)("create_pending_change", handleCreatePendingChange)).Methods(http.MethodPost)
 			r.HandleFunc("/{id}", registerGet("cancel_pending_change", handleCancelPendingChange)).Methods(http.MethodDelete)
 			r.HandleFunc("/{id}/resolve", rest.RegisterInputHandler[ResolveInputRestModel](l)(db)(si)("resolve_pending_change", handleResolvePendingChange)).Methods(http.MethodPost)
+			r.HandleFunc("/cancel", rest.RegisterInputHandler[CancelInputRestModel](l)(db)(si)("cancel_pending_change_for_character", handleCancelPendingChangeForCharacter)).Methods(http.MethodPost)
 
 			// This route deliberately sits OUTSIDE the /pending-changes
 			// subrouter's prefix — it is the synchronous availability check
@@ -126,12 +127,17 @@ func handleCreatePendingChange(d *rest.HandlerDependency, c *rest.HandlerContext
 	})
 }
 
-// handleCancelPendingChange is the ONLY cancel path in the system. The game
-// client has no SendCancel* of any kind on any version (design §4.2.1), so this
-// route is operator-facing and MUST NOT be reachable from a socket handler. The
-// cancel-unreachability test in atlas-channel asserts that machine-checkably.
+// handleCancelPendingChange is the operator-facing cancel route: DELETE by
+// record id, reason operator_cancelled. It now checks ownership -- the record
+// loaded by {id} must belong to the path's {characterId} -- because it no
+// longer has the field to itself: task-227's client-cancel addendum added a
+// second, self-scoped cancel route (handleCancelPendingChangeForCharacter)
+// reachable from a socket handler, and this route's id-only lookup had no
+// ownership check at all before that (design §5.4 addendum). A mismatch is
+// reported as 404, the same as an unknown id, so this route does not leak
+// whether a given id exists under a different character.
 func handleCancelPendingChange(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseCharacterId(d.Logger(), func(_ uint32) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			id, err := uuid.Parse(mux.Vars(r)["id"])
 			if err != nil {
@@ -139,7 +145,23 @@ func handleCancelPendingChange(d *rest.HandlerDependency, _ *rest.HandlerContext
 				return
 			}
 
-			_, moved, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ResolveAndEmit(id, StatusCancelled, "operator_cancelled")
+			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+			existing, err := p.GetById(id)
+			if err != nil {
+				if status, reason, ok := statusForError(err); ok {
+					writeReasonError(w, status, reason)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Loading pending change [%s].", id)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+			if existing.CharacterId() != characterId {
+				writeReasonError(w, http.StatusNotFound, "")
+				return
+			}
+
+			_, moved, err := p.ResolveAndEmit(id, StatusCancelled, "operator_cancelled")
 			if err != nil {
 				if status, reason, ok := statusForError(err); ok {
 					writeReasonError(w, status, reason)
@@ -154,6 +176,55 @@ func handleCancelPendingChange(d *rest.HandlerDependency, _ *rest.HandlerContext
 				return
 			}
 			w.WriteHeader(http.StatusNoContent)
+		}
+	})
+}
+
+// handleCancelPendingChangeForCharacter is the player-initiated cancel route
+// (task-227 client-cancel addendum): POST .../pending-changes/cancel with the
+// type in the body. It exists because the wire packet that drives it (the
+// double-confirmed CANCELREQUESTS_* dialog chain riding the generic cash
+// item-use op, see docs/tasks/task-227-cash-name-change-world-transfer/
+// cancel-entry-point.md and cancel-confirm-semantics.md) carries no
+// pending-change id -- reusing the id-based DELETE route would force
+// atlas-channel into a racy GET-then-DELETE round trip. Ownership holds by
+// construction here: the record is looked up by (characterId, type), not by
+// id, so there is nothing to check.
+//
+// No pending record of the requested type is a normal race (the sweeper or
+// an operator got there first), not an error -- it maps to 404, and the
+// caller (atlas-channel) treats that as "nothing to cancel," not a failure.
+func handleCancelPendingChangeForCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, input CancelInputRestModel) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			m, moved, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CancelForCharacterAndType(characterId, input.Type)
+			if err != nil {
+				if status, reason, ok := statusForError(err); ok {
+					writeReasonError(w, status, reason)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Cancelling pending [%s] change for character [%d].", input.Type, characterId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+			if !moved {
+				if m.Id() == uuid.Nil {
+					writeReasonError(w, http.StatusNotFound, "")
+					return
+				}
+				writeReasonError(w, http.StatusConflict, "")
+				return
+			}
+
+			res, err := model.Map(Transform)(model.FixedProvider(m))()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	})
 }

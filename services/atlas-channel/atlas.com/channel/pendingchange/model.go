@@ -61,3 +61,27 @@ func (r *CreateInputRestModel) SetID(id string) error {
 	r.Id = id
 	return nil
 }
+
+// CancelInputRestModel is the POST body atlas-character's self-scoped
+// POST /characters/{characterId}/pending-changes/cancel expects:
+// {data:{type:"pending-changes",attributes:{type}}}. It carries no record
+// id -- the wire packet that drives this call has none (task-227
+// client-cancel addendum); atlas-character resolves the record by
+// (characterId, type) instead.
+type CancelInputRestModel struct {
+	Id   string `json:"-"`
+	Type string `json:"type"`
+}
+
+func (r CancelInputRestModel) GetName() string {
+	return "pending-changes"
+}
+
+func (r CancelInputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *CancelInputRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}

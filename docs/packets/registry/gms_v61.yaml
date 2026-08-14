@@ -2108,6 +2108,14 @@
   ida:
     address: 5862508
   note: 'task-226 FR-2.2: corrected from n-a. Located via the full 391-site COutPacket-ctor xref enumeration (xref_query, paginated) by proximity to the already-named receive-side CMacroSysMan::SetMacro (0x59744b) — CMacroSysMan::FlushToSvr sits 0x21 bytes after it, unnamed until this task, now renamed and idb_save''d. COutPacket(101); delegates whole encode to sub_4B7928 (renamed MACROSYSDATA::Encode) which does Encode1(count clamped<=5) then a 29-byte-stride loop calling sub_4B7884 (renamed SINGLEMACRO::Encode, EncodeStr(name)+Encode1(shout)+3xEncode4(skillId)) — exact match to the confirmed cross-version send shape and adjacent to SINGLEMACRO::Decode (0x4b78d5) as hinted by harvest-log.md. No serverbound opcode 101 collision in this registry (101 is otherwise only used clientbound, for WHISPER).'
+- op: NPC_ITEM_USE_REQUEST
+  direction: serverbound
+  opcode: 102
+  fname: CWvsContext::SendSelectNpcItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 8615821
+  note: 'task-230: sender confirmed at 0x83778d (GMS_v61.1_U_DEVM.exe). COutPacket(102)+Encode2(slot)+Encode4(itemId), no leading updateTime.'
 - op: SPOUSE_CHAT
   direction: serverbound
   opcode: 109

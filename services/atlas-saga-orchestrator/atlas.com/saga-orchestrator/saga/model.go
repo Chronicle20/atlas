@@ -96,6 +96,14 @@ const (
 	GainCloseness          = sharedsaga.GainCloseness
 	EvolvePet              = sharedsaga.EvolvePet
 
+	// World transfer actions (task-227). See the WorldTransfer Type doc
+	// comment in libs/atlas-saga/model.go for the fixed step order.
+	ValidateWorldTransfer   = sharedsaga.ValidateWorldTransfer
+	LeaveGuildForTransfer   = sharedsaga.LeaveGuildForTransfer
+	LeavePartyForTransfer   = sharedsaga.LeavePartyForTransfer
+	SeverBuddiesForTransfer = sharedsaga.SeverBuddiesForTransfer
+	ChangeCharacterWorld    = sharedsaga.ChangeCharacterWorld
+
 	// Skill actions
 	CreateSkill = sharedsaga.CreateSkill
 	UpdateSkill = sharedsaga.UpdateSkill
@@ -263,6 +271,11 @@ type (
 	IncreaseBuddyCapacityPayload        = sharedsaga.IncreaseBuddyCapacityPayload
 	GainClosenessPayload                = sharedsaga.GainClosenessPayload
 	EvolvePetPayload                    = sharedsaga.EvolvePetPayload
+	ValidateWorldTransferPayload        = sharedsaga.ValidateWorldTransferPayload
+	LeaveGuildForTransferPayload        = sharedsaga.LeaveGuildForTransferPayload
+	LeavePartyForTransferPayload        = sharedsaga.LeavePartyForTransferPayload
+	SeverBuddiesForTransferPayload      = sharedsaga.SeverBuddiesForTransferPayload
+	ChangeCharacterWorldPayload         = sharedsaga.ChangeCharacterWorldPayload
 	CompleteQuestPayload                = sharedsaga.CompleteQuestPayload
 	StartQuestPayload                   = sharedsaga.StartQuestPayload
 	ForfeitQuestPayload                 = sharedsaga.ForfeitQuestPayload
@@ -1139,6 +1152,36 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case IncreaseBuddyCapacity:
 		var payload IncreaseBuddyCapacityPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ValidateWorldTransfer:
+		var payload ValidateWorldTransferPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case LeaveGuildForTransfer:
+		var payload LeaveGuildForTransferPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case LeavePartyForTransfer:
+		var payload LeavePartyForTransferPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case SeverBuddiesForTransfer:
+		var payload SeverBuddiesForTransferPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ChangeCharacterWorld:
+		var payload ChangeCharacterWorldPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

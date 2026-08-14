@@ -40,14 +40,15 @@ func BuddyAddedStatusEventProvider(characterId character.Id, worldId world.Id, b
 	return producer.SingleMessageProvider(key, value)
 }
 
-func BuddyRemovedStatusEventProvider(characterId character.Id, worldId world.Id, buddyId character.Id) model.Provider[[]kafka.Message] {
+func BuddyRemovedStatusEventProvider(characterId character.Id, worldId world.Id, buddyId character.Id, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &list2.StatusEvent[list2.BuddyRemovedStatusEventBody]{
 		CharacterId: characterId,
 		WorldId:     worldId,
 		Type:        list2.StatusEventTypeBuddyRemoved,
 		Body: list2.BuddyRemovedStatusEventBody{
-			CharacterId: buddyId,
+			CharacterId:   buddyId,
+			TransactionId: transactionId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

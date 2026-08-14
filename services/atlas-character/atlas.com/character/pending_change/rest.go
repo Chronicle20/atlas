@@ -105,3 +105,32 @@ func (r *EligibilityRestModel) SetID(id string) error {
 	r.Id = id
 	return nil
 }
+
+// ResolveInputRestModel is the POST body of the generic (non-cancel) resolve
+// route:
+// {data:{type:"pending-changes",attributes:{status,reason}}}. It is the
+// world-transfer saga's (task-227 Task 13/14) way to move a record to
+// APPLIED on saga success or REJECTED on saga failure — the terminal event
+// the record's own package comment describes as "what drives Resolve"
+// (pending_change/processor.go's startWorldTransfer). Status is restricted
+// to StatusApplied/StatusRejected at the handler: StatusCancelled already has
+// its own dedicated DELETE route, and StatusExpired is only ever reached by
+// the sweep ticker.
+type ResolveInputRestModel struct {
+	Id     string `json:"-"`
+	Status string `json:"status"`
+	Reason string `json:"reason,omitempty"`
+}
+
+func (r ResolveInputRestModel) GetName() string {
+	return "pending-changes"
+}
+
+func (r ResolveInputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *ResolveInputRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}

@@ -24,6 +24,7 @@ const (
 	EventKindCharacterMesoError         EventKind = "character.meso_error"
 	EventKindCharacterApTransferError   EventKind = "character.ap_transfer_error"
 	EventKindCharacterDeleted           EventKind = "character.deleted"
+	EventKindCharacterWorldChanged      EventKind = "character.world_changed"
 
 	// Asset subsystem.
 	EventKindAssetCreated         EventKind = "asset.created"
@@ -46,6 +47,17 @@ const (
 
 	// Buddy list.
 	EventKindBuddyCapacityChanged EventKind = "buddy.capacity_changed"
+	EventKindBuddyDeleted         EventKind = "buddy.deleted"
+
+	// Guild (world-transfer severance; task-227).
+	EventKindGuildMemberLeft EventKind = "guild.member_left"
+
+	// Party (world-transfer severance; task-227). PartyDisbanded covers the
+	// alternate outcome atlas-parties emits instead of MemberLeft when the
+	// leaving character is the party leader (see
+	// kafka/message/party/kafka.go's StatusEventDisbandBody doc comment).
+	EventKindPartyMemberLeft EventKind = "party.member_left"
+	EventKindPartyDisbanded  EventKind = "party.disbanded"
 
 	// Consumable.
 	EventKindConsumableEffectApplied EventKind = "consumable.effect_applied"
@@ -152,6 +164,18 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.IncreaseBuddyCapacity:  {EventKindBuddyCapacityChanged},
 	sharedsaga.GainCloseness:          {EventKindPetClosenessChanged},
 	sharedsaga.EvolvePet:              {EventKindPetEvolved},
+
+	// World transfer (task-227). ValidateWorldTransfer is read-only and
+	// self-completing (handleValidateWorldTransfer calls StepCompleted
+	// directly, matching handleValidateCharacterState/handleSendMessage).
+	// LeavePartyForTransfer accepts both PartyMemberLeft and PartyDisbanded:
+	// atlas-parties disbands instead of emitting LEFT when the leaving
+	// character is the party leader (see kafka/message/party/kafka.go).
+	sharedsaga.ValidateWorldTransfer:   {},
+	sharedsaga.LeaveGuildForTransfer:   {EventKindGuildMemberLeft},
+	sharedsaga.LeavePartyForTransfer:   {EventKindPartyMemberLeft, EventKindPartyDisbanded},
+	sharedsaga.SeverBuddiesForTransfer: {EventKindBuddyDeleted},
+	sharedsaga.ChangeCharacterWorld:    {EventKindCharacterWorldChanged},
 
 	// Skills.
 	sharedsaga.CreateSkill: {EventKindSkillCreated},
@@ -334,6 +358,7 @@ var outcomeTable = map[EventKind]EventOutcome{
 	EventKindCharacterApTransferError:   OutcomeFailure,
 	EventKindCharacterMesoError:         OutcomeFailure,
 	EventKindCharacterDeleted:           OutcomeSuccess,
+	EventKindCharacterWorldChanged:      OutcomeSuccess,
 
 	// Asset subsystem.
 	EventKindAssetCreated:         OutcomeSuccess,
@@ -356,6 +381,14 @@ var outcomeTable = map[EventKind]EventOutcome{
 
 	// Buddy list.
 	EventKindBuddyCapacityChanged: OutcomeSuccess,
+	EventKindBuddyDeleted:         OutcomeSuccess,
+
+	// Guild (world-transfer severance).
+	EventKindGuildMemberLeft: OutcomeSuccess,
+
+	// Party (world-transfer severance).
+	EventKindPartyMemberLeft: OutcomeSuccess,
+	EventKindPartyDisbanded:  OutcomeSuccess,
 
 	// Consumable.
 	EventKindConsumableEffectApplied: OutcomeSuccess,

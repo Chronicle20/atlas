@@ -13,6 +13,7 @@ const (
 	CommandTypeRequestEmblem           = "REQUEST_EMBLEM"
 	CommandTypeRequestDisband          = "REQUEST_DISBAND"
 	CommandTypeRequestCapacityIncrease = "REQUEST_CAPACITY_INCREASE"
+	CommandTypeLeave                   = "LEAVE"
 )
 
 type Command[E any] struct {
@@ -40,6 +41,11 @@ type RequestDisbandBody struct {
 type RequestCapacityIncreaseBody struct {
 	WorldId   world.Id   `json:"worldId"`
 	ChannelId channel.Id `json:"channelId"`
+}
+
+type LeaveBody struct {
+	GuildId uint32 `json:"guildId"`
+	Force   bool   `json:"force"`
 }
 
 const (

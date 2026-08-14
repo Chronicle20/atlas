@@ -245,7 +245,11 @@ func handleDeleteCharacter(d *rest.HandlerDependency, _ *rest.HandlerContext) ht
 func handleChangeCharacterWorld(d *rest.HandlerDependency, _ *rest.HandlerContext, input WorldChangeInputRestModel) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			err := NewProcessor(d.Logger(), d.Context(), d.DB()).ChangeWorldAndEmit(uuid.New(), characterId, input.NewWorldId)
+			transactionId := input.TransactionId
+			if transactionId == uuid.Nil {
+				transactionId = uuid.New()
+			}
+			err := NewProcessor(d.Logger(), d.Context(), d.DB()).ChangeWorldAndEmit(transactionId, characterId, input.NewWorldId)
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)

@@ -195,7 +195,7 @@ func TestLeave_SuccessScenarios(t *testing.T) {
 			buffer := message.NewBuffer()
 
 			// Execute leave
-			result, err := processor.Leave(buffer)(partyId, tc.leaveCharacter)
+			result, err := processor.Leave(buffer)(partyId, tc.leaveCharacter, uuid.Nil)
 
 			// Verify error expectation
 			if tc.expectError != nil {
@@ -278,7 +278,7 @@ func TestLeave_ErrorScenarios(t *testing.T) {
 			buffer := message.NewBuffer()
 
 			// Execute
-			_, err := processor.Leave(buffer)(tc.partyId, characterId)
+			_, err := processor.Leave(buffer)(tc.partyId, characterId, uuid.Nil)
 
 			// Verify error
 			if tc.expectError != nil {
@@ -306,7 +306,7 @@ func TestLeaveAndEmit_Integration(t *testing.T) {
 
 		// LeaveAndEmit should work without explicit buffer
 		// Note: This will fail to emit due to no real Kafka broker, but the Leave logic should work
-		_, err := processor.LeaveAndEmit(party.Id(), leaderId)
+		_, err := processor.LeaveAndEmit(party.Id(), leaderId, uuid.Nil)
 		// We expect an error due to Kafka connection failure, but the party leave logic should complete
 		if err != nil {
 			t.Logf("Expected Kafka connection error: %v", err)
@@ -365,7 +365,7 @@ func TestLeaderLeaveDisbandEventIncludesLeader(t *testing.T) {
 	buffer := message.NewBuffer()
 
 	// Leader leaves → party disbands
-	_, err := processor.Leave(buffer)(party.Id(), leaderId)
+	_, err := processor.Leave(buffer)(party.Id(), leaderId, uuid.Nil)
 	assert.NoError(t, err)
 
 	// DISBAND event members must include BOTH the leader and the remaining member
@@ -405,7 +405,7 @@ func TestPartyStateTransitions(t *testing.T) {
 		buffer := message.NewBuffer()
 
 		// Member 1 leaves
-		result1, err1 := processor.Leave(buffer)(party.Id(), member1Id)
+		result1, err1 := processor.Leave(buffer)(party.Id(), member1Id, uuid.Nil)
 		assert.NoError(t, err1)
 		assert.Equal(t, 2, len(result1.Members())) // Leader + member2
 		assert.Contains(t, result1.Members(), leaderId)
@@ -413,7 +413,7 @@ func TestPartyStateTransitions(t *testing.T) {
 		assert.NotContains(t, result1.Members(), member1Id)
 
 		// Leader leaves (should disband)
-		_, err2 := processor.Leave(buffer)(party.Id(), leaderId)
+		_, err2 := processor.Leave(buffer)(party.Id(), leaderId, uuid.Nil)
 		assert.NoError(t, err2)
 
 		// Verify party no longer exists

@@ -12,10 +12,13 @@ const (
 	EnvCommandTopic = "COMMAND_TOPIC_BUDDY_LIST"
 	// CommandTypeIncreaseCapacity is the command type for increasing buddy list capacity
 	CommandTypeIncreaseCapacity = "INCREASE_CAPACITY"
+	// CommandTypeRequestDelete is the command type for requesting to delete a buddy
+	CommandTypeRequestDelete = "REQUEST_DELETE"
 
 	// Buddy list status event constants
 	EnvEventTopicBuddyListStatus       = "EVENT_TOPIC_BUDDY_LIST_STATUS"
 	StatusEventTypeBuddyCapacityUpdate = "CAPACITY_CHANGE"
+	StatusEventTypeBuddyRemoved        = "BUDDY_REMOVED"
 	StatusEventTypeError               = "ERROR"
 )
 
@@ -34,6 +37,11 @@ type IncreaseCapacityCommandBody struct {
 	NewCapacity byte `json:"newCapacity"`
 }
 
+// RequestDeleteBuddyCommandBody represents the body of a request to delete a buddy.
+type RequestDeleteBuddyCommandBody struct {
+	CharacterId character.Id `json:"characterId"`
+}
+
 // StatusEvent represents a buddy list status event from atlas-buddies
 type StatusEvent[E any] struct {
 	WorldId     world.Id     `json:"worldId"`
@@ -46,4 +54,10 @@ type StatusEvent[E any] struct {
 type BuddyCapacityChangeStatusEventBody struct {
 	Capacity      byte      `json:"capacity"`
 	TransactionId uuid.UUID `json:"transactionId,omitempty"`
+}
+
+// BuddyRemovedStatusEventBody represents the body of a buddy removed event
+type BuddyRemovedStatusEventBody struct {
+	CharacterId   character.Id `json:"characterId"`
+	TransactionId uuid.UUID    `json:"transactionId,omitempty"`
 }

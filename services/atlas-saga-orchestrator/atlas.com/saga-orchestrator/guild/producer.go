@@ -53,6 +53,20 @@ func RequestDisbandProvider(transactionId uuid.UUID, ch channel.Model, character
 	return producer.SingleMessageProvider(key, value)
 }
 
+func RequestLeaveProvider(transactionId uuid.UUID, characterId uint32, guildId uint32, force bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &guild.Command[guild.LeaveBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		Type:          guild.CommandTypeLeave,
+		Body: guild.LeaveBody{
+			GuildId: guildId,
+			Force:   force,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func RequestCapacityIncreaseProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &guild.Command[guild.RequestCapacityIncreaseBody]{

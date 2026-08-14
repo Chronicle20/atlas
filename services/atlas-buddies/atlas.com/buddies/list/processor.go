@@ -33,8 +33,8 @@ type Processor interface {
 	Delete(mb *message.Buffer) func(characterId uint32, worldId world.Id) error
 	RequestAddBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32, group string) error
 	RequestAddBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32, group string) error
-	RequestDeleteBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32) error
-	RequestDeleteBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32) error
+	RequestDeleteBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32, transactionId uuid.UUID) error
+	RequestDeleteBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32, transactionId uuid.UUID) error
 	AcceptInviteAndEmit(characterId uint32, worldId world.Id, targetId uint32) error
 	AcceptInvite(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32) error
 	DeleteBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32) error
@@ -132,7 +132,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(characterId uint32, worl
 					return err
 				}
 
-				_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyRemovedStatusEventProvider(character2.Id(b.CharacterId()), worldId, character2.Id(characterId)))
+				_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyRemovedStatusEventProvider(character2.Id(b.CharacterId()), worldId, character2.Id(characterId), uuid.Nil))
 			}
 			return deleteEntityWithBuddies(tx, characterId)
 		})
@@ -276,16 +276,16 @@ func (p *ProcessorImpl) RequestAddBuddy(mb *message.Buffer) func(characterId uin
 	}
 }
 
-func (p *ProcessorImpl) RequestDeleteBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32) error {
+func (p *ProcessorImpl) RequestDeleteBuddyAndEmit(characterId uint32, worldId world.Id, targetId uint32, transactionId uuid.UUID) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
-			return p.WithTransaction(tx).RequestDeleteBuddy(buf)(characterId, worldId, targetId)
+			return p.WithTransaction(tx).RequestDeleteBuddy(buf)(characterId, worldId, targetId, transactionId)
 		})
 	})
 }
 
-func (p *ProcessorImpl) RequestDeleteBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32) error {
-	return func(characterId uint32, worldId world.Id, targetId uint32) error {
+func (p *ProcessorImpl) RequestDeleteBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32, transactionId uuid.UUID) error {
+	return func(characterId uint32, worldId world.Id, targetId uint32, transactionId uuid.UUID) error {
 		// innerMb is a scratch buffer for this call's events; see the
 		// comment in RequestAddBuddy for why (D7: failed/rolled-back tx
 		// rejection events must not ride into the outbox-bound mb).
@@ -331,7 +331,7 @@ func (p *ProcessorImpl) RequestDeleteBuddy(mb *message.Buffer) func(characterId 
 				return err
 			}
 
-			_ = innerMb.Put(list2.EnvStatusEventTopic, list3.BuddyRemovedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId)))
+			_ = innerMb.Put(list2.EnvStatusEventTopic, list3.BuddyRemovedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId), transactionId))
 
 			if update {
 				_ = innerMb.Put(list2.EnvStatusEventTopic, list3.BuddyChannelChangeStatusEventProvider(character2.Id(targetId), worldId, character2.Id(characterId), -1))
@@ -494,7 +494,7 @@ func (p *ProcessorImpl) DeleteBuddy(mb *message.Buffer) func(characterId uint32,
 				return err
 			}
 
-			_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyRemovedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId)))
+			_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyRemovedStatusEventProvider(character2.Id(characterId), worldId, character2.Id(targetId), uuid.Nil))
 
 			if update {
 				_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyChannelChangeStatusEventProvider(character2.Id(targetId), worldId, character2.Id(characterId), -1))

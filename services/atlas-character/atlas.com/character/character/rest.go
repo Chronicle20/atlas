@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
@@ -173,6 +174,11 @@ func derefOrZero(v *int) int {
 type WorldChangeInputRestModel struct {
 	Id         string   `json:"-"`
 	NewWorldId world.Id `json:"newWorldId"`
+	// TransactionId, when supplied, is threaded through to WORLD_CHANGED so a
+	// caller (the world-transfer saga, task-227 Task 13) can correlate the
+	// resulting status event back to its own step. A zero value falls back to
+	// a freshly generated id, preserving non-saga callers' behavior.
+	TransactionId uuid.UUID `json:"transactionId,omitempty"`
 }
 
 func (r WorldChangeInputRestModel) GetName() string {

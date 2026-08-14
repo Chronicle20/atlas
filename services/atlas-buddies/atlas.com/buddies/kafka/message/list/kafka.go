@@ -96,7 +96,8 @@ type BuddyAddedStatusEventBody struct {
 }
 
 type BuddyRemovedStatusEventBody struct {
-	CharacterId character.Id `json:"characterId"`
+	CharacterId   character.Id `json:"characterId"`
+	TransactionId uuid.UUID    `json:"transactionId,omitempty"`
 }
 
 type BuddyUpdatedStatusEventBody struct {

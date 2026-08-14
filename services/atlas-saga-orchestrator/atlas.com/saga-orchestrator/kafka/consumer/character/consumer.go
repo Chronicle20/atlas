@@ -61,6 +61,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterDeletedEvent))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterWorldChangedEvent))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -76,6 +79,17 @@ func handleCharacterMapChangedEvent(l logrus.FieldLogger, ctx context.Context, e
 	// that step (task-184 FR-1.3).
 	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterMapChanged,
 		saga.ForCharacter(e.CharacterId)); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
+}
+
+func handleCharacterWorldChangedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventWorldChangedBody]) {
+	if e.Type != character2.StatusEventTypeWorldChanged {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterWorldChanged); !ok {
 		return
 	}
 	_ = p.StepCompleted(e.TransactionId, true)

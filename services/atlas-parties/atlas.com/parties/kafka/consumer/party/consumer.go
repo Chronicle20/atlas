@@ -77,7 +77,7 @@ func handleLeave(l logrus.FieldLogger, ctx context.Context, c commandEvent[leave
 			return
 		}
 	} else {
-		_, err := party.NewProcessor(l, ctx).LeaveAndEmit(c.Body.PartyId, c.ActorId)
+		_, err := party.NewProcessor(l, ctx).LeaveAndEmit(c.Body.PartyId, c.ActorId, c.TransactionId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to leave party [%d].", c.Body.PartyId)
 			return

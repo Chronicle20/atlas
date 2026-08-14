@@ -75,7 +75,7 @@ func handleRequestBuddyDeleteCommand(db *gorm.DB) message.Handler[list2.Command[
 		if c.Type != list2.CommandTypeRequestDelete {
 			return
 		}
-		err := list.NewProcessor(l, ctx, db).RequestDeleteBuddyAndEmit(uint32(c.CharacterId), c.WorldId, uint32(c.Body.CharacterId))
+		err := list.NewProcessor(l, ctx, db).RequestDeleteBuddyAndEmit(uint32(c.CharacterId), c.WorldId, uint32(c.Body.CharacterId), c.TransactionId)
 		if err != nil {
 			l.WithError(err).Errorf("Error attempting to delete [%d] to character [%d] buddy list.", c.Body.CharacterId, c.CharacterId)
 		}

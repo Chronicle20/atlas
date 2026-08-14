@@ -32,6 +32,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBuddyCapacityChangedEvent))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBuddyRemovedEvent))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -57,6 +60,24 @@ func handleBuddyCapacityChangedEvent(l logrus.FieldLogger, ctx context.Context, 
 		"character_id":   e.CharacterId,
 		"new_capacity":   e.Body.Capacity,
 	}).Debug("Buddy capacity changed successfully, marking saga step as completed")
+
+	_ = p.StepCompleted(e.Body.TransactionId, true)
+}
+
+func handleBuddyRemovedEvent(l logrus.FieldLogger, ctx context.Context, e buddylist2.StatusEvent[buddylist2.BuddyRemovedStatusEventBody]) {
+	if e.Type != buddylist2.StatusEventTypeBuddyRemoved {
+		return
+	}
+
+	if e.Body.TransactionId == uuid.Nil {
+		l.Debugf("Buddy removed event for character [%d] has no transaction ID, skipping saga completion", e.CharacterId)
+		return
+	}
+
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindBuddyDeleted); !ok {
+		return
+	}
 
 	_ = p.StepCompleted(e.Body.TransactionId, true)
 }

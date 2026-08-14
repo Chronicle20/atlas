@@ -26,6 +26,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", registerGet("get_pending_changes", handleGetPendingChanges)).Methods(http.MethodGet)
 			r.HandleFunc("", rest.RegisterInputHandler[CreateInputRestModel](l)(db)(si)("create_pending_change", handleCreatePendingChange)).Methods(http.MethodPost)
 			r.HandleFunc("/{id}", registerGet("cancel_pending_change", handleCancelPendingChange)).Methods(http.MethodDelete)
+			r.HandleFunc("/{id}/resolve", rest.RegisterInputHandler[ResolveInputRestModel](l)(db)(si)("resolve_pending_change", handleResolvePendingChange)).Methods(http.MethodPost)
 
 			// This route deliberately sits OUTSIDE the /pending-changes
 			// subrouter's prefix — it is the synchronous availability check
@@ -145,6 +146,43 @@ func handleCancelPendingChange(d *rest.HandlerDependency, _ *rest.HandlerContext
 					return
 				}
 				d.Logger().WithError(err).Errorf("Cancelling pending change [%s].", id)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+			if !moved {
+				writeReasonError(w, http.StatusConflict, "")
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		}
+	})
+}
+
+// handleResolvePendingChange is the world-transfer saga's terminal-outcome
+// callback (task-227 Task 13/14): APPLIED on saga success, REJECTED on saga
+// failure. It reuses the same transition guard as the operator cancel route,
+// so a redelivered resolve is idempotent (design §3.10) — the second call
+// sees moved == false and emits nothing.
+func handleResolvePendingChange(d *rest.HandlerDependency, _ *rest.HandlerContext, input ResolveInputRestModel) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(_ uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			id, err := uuid.Parse(mux.Vars(r)["id"])
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			if input.Status != StatusApplied && input.Status != StatusRejected {
+				server.WriteBadRequest(d.Logger(), w, "status must be APPLIED or REJECTED")
+				return
+			}
+
+			_, moved, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ResolveAndEmit(id, input.Status, input.Reason)
+			if err != nil {
+				if status, reason, ok := statusForError(err); ok {
+					writeReasonError(w, status, reason)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Resolving pending change [%s] to [%s].", id, input.Status)
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}

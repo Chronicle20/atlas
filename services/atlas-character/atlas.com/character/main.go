@@ -143,5 +143,9 @@ func main() {
 		tasks.Register(l, rt.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000)))
 	})
 
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(pending_change.NewExpiry(l, db, time.Minute*15))
+	})
+
 	rt.Wait()
 }

@@ -46,6 +46,47 @@ Use the Skill tool to invoke `superpowers:writing-plans`. Pass:
 
 Run the `writing-plans` skill's self-review (placeholder scan, type consistency, spec coverage) before saving.
 
+### Step 5a — Atlas plan-task format (required)
+
+Phase 4 extracts each task section verbatim into the implementer's brief
+(`scripts/task-brief` is an awk slice of the `## Task N` heading and its
+body). Whatever you write into a task section IS the brief. Two rules follow
+from that.
+
+**Every task carries a `### Files` block.** You are reading the code to write
+the plan; the implementer should not have to rediscover what you already
+found. Naming the files removes the implementer's discovery phase — the phase
+that inflates context before any editing starts.
+
+```markdown
+### Files
+
+- `services/atlas-x/atlas.com/x/foo/processor.go` — add the Bar method here
+- `services/atlas-x/atlas.com/x/foo/processor_test.go` — new test cases
+- `libs/atlas-constants/item/id.go` — read-only; the constant to use
+
+Patterns to copy: `services/atlas-y/atlas.com/y/baz/processor.go:88` (same shape)
+```
+
+Paths must be repo-relative and must exist (or be explicitly marked `new
+file`). Mark read-only references as such so the implementer does not edit
+them. Include the module root the task's `go build`/`go test` runs from when
+it is not obvious from the paths.
+
+**Size tasks to the implementer budget.** Implementers stop at 120 tool calls
+and hand back `PARTIAL`; the controller then splits the task anyway, at a
+worse moment and a higher cost. Split at plan time instead:
+
+- A task touching **more than ~6 files**, or **more than one service**, gets
+  split — unless the edits are the same mechanical change repeated, which
+  batches fine.
+- A task whose acceptance needs a new REST surface *and* a new Kafka consumer
+  *and* their tests is three tasks.
+- Prefer several small tasks over one large one. The review loop is per task,
+  so smaller tasks also mean tighter review surfaces.
+
+Note in `context.md` any task you deliberately left large, and why.
+
 ### Step 6 — Commit and summarize
 
 ```

@@ -372,12 +372,20 @@ func (p *ProcessorImpl) RenotifyForCharacter(characterId uint32) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			for _, m := range ms {
-				if err := buf.Put(pendingchange2.EnvEventTopic, resolvedEventProviderForWorld(m, currentWorldId)); err != nil {
+				// The mark-then-emit order (reversed from a naive emit-then-mark)
+				// is the fix: getResolvedUnnotified above is a plain SELECT outside
+				// any transaction, so two concurrent LOGIN deliveries can both see
+				// this row unnotified. Only the delivery whose UPDATE actually moves
+				// the row (moved == true) may emit; the loser's UPDATE is a no-op and
+				// it must not mint a second notification.
+				moved, err := markNotified(tx, p.t.Id(), m.Id(), now)
+				if err != nil {
 					return err
 				}
-				// Stamped in the same transaction as the emission, so a crash
-				// between the two re-delivers rather than silently drops.
-				if err := markNotified(tx, p.t.Id(), m.Id(), now); err != nil {
+				if !moved {
+					continue
+				}
+				if err := buf.Put(pendingchange2.EnvEventTopic, resolvedEventProviderForWorld(m, currentWorldId)); err != nil {
 					return err
 				}
 				p.l.Infof("Re-emitted resolution of pending change [%s] to character [%d] on world [%d].", m.Id(), characterId, currentWorldId)

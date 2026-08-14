@@ -87,8 +87,20 @@ func transition(db *gorm.DB, tenantId uuid.UUID, id uuid.UUID, status string, re
 	return m, res.RowsAffected == 1, nil
 }
 
-func markNotified(db *gorm.DB, tenantId uuid.UUID, id uuid.UUID, at time.Time) error {
-	return db.Model(&entity{}).
+// markNotified stamps notified_at exactly once. Like transition, the returned
+// bool is the idempotency signal: it is derived from RowsAffected rather than
+// merely the absence of an error, because the WHERE clause's "notified_at IS
+// NULL" guard makes a losing concurrent update a no-op UPDATE, not an error.
+// Two LOGIN deliveries for the same character can race getResolvedUnnotified
+// (a plain SELECT outside any transaction) and both see the row unnotified;
+// only the delivery whose UPDATE actually moved a row may go on to emit the
+// catch-up notification, or the pair mints it twice.
+func markNotified(db *gorm.DB, tenantId uuid.UUID, id uuid.UUID, at time.Time) (bool, error) {
+	res := db.Model(&entity{}).
 		Where("tenant_id = ? AND id = ? AND notified_at IS NULL", tenantId, id).
-		Update("notified_at", at).Error
+		Update("notified_at", at)
+	if res.Error != nil {
+		return false, res.Error
+	}
+	return res.RowsAffected == 1, nil
 }

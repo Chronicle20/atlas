@@ -181,8 +181,10 @@ func TestReadsAreTenantScoped(t *testing.T) {
 	}
 
 	// getExpired / getResolvedUnnotified must also stay tenant-scoped.
-	if err := markNotified(db, tidA, mB.Id(), time.Now()); err != nil {
+	if moved, err := markNotified(db, tidA, mB.Id(), time.Now()); err != nil {
 		t.Fatalf("markNotified under tenant A: %v", err)
+	} else if moved {
+		t.Fatal("expected tenant A's markNotified call against tenant B's id to be a no-op")
 	}
 	resolvedB, err := getResolvedUnnotified(db, tidB, characterId)
 	if err != nil {

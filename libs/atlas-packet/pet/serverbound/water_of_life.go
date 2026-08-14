@@ -22,6 +22,7 @@ const WaterOfLifeHandle = "WaterOfLifeHandle"
 //
 // Every operand is derived server-side: the target pet and the consumed Water
 // of Life are resolved by atlas-channel, not named on the wire.
+// packet-audit:fname CWvsContext::SendWaterOfLife
 type WaterOfLife struct{}
 
 func (m WaterOfLife) Operation() string {

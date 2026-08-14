@@ -32,6 +32,7 @@ type (
 	IncubatorResultPayload       = sharedsaga.IncubatorResultPayload
 	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
 	CreateNotePayload            = sharedsaga.CreateNotePayload
+	RevivePetPayload             = sharedsaga.RevivePetPayload
 
 	// Megaphone / world broadcast payload types
 	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
@@ -72,6 +73,7 @@ const (
 	NoteSend              = sharedsaga.NoteSend
 	MesoSackUse           = sharedsaga.MesoSackUse
 	RemoteMerchant        = sharedsaga.RemoteMerchant
+	PetRevive             = sharedsaga.PetRevive
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -110,6 +112,7 @@ const (
 	EnqueueWorldBroadcast = sharedsaga.EnqueueWorldBroadcast
 	CreateNote            = sharedsaga.CreateNote
 	OpenNpcShop           = sharedsaga.OpenNpcShop
+	RevivePet             = sharedsaga.RevivePet
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

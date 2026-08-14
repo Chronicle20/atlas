@@ -25,6 +25,12 @@ type RestModel struct {
 	// Npc is the WZ info/npc value served by atlas-data: the NPC template a
 	// remote-merchant cash item (classification 545) opens. 0 when none.
 	Npc uint32 `json:"npc"`
+	// Life is info/life in DAYS served by atlas-data: the lifespan a Water of
+	// Life (classification 518) grants a revived pet. 0 or absent means the WZ
+	// node is missing, which the handler treats as "reject, consume nothing".
+	// The channel reads it ONLY as a pre-flight check -- the authoritative
+	// derivation happens in atlas-pets and is re-bounded in atlas-inventory.
+	Life uint32 `json:"life,omitempty"`
 }
 
 func (r RestModel) GetName() string {

@@ -967,6 +967,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[mbsb.MonsterBookCoverHandler] = handler.MonsterBookCoverHandleFunc
 	handlerMap[trsb.TeleportRockAddMapHandle] = handler.TeleportRockAddMapHandleFunc
 	handlerMap[trsb.TeleportRockUseHandle] = handler.TeleportRockUseHandleFunc
+	handlerMap[invsb.ScriptedItemHandle] = handler.ScriptedItemHandleFunc
 	return handlerMap
 }
 

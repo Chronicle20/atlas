@@ -1,8 +1,49 @@
 # task-227 — resume state
 
-Written at a deliberate pause. Session was cleared and `main` merged after this
-point. The controller ledger `.superpowers/sdd/plan/progress.md` is gitignored
-and will NOT survive — **this file is the durable handoff.** Read it first.
+**Updated 2026-08-14, controller session 3.** The blocker this file previously
+opened with is RESOLVED — both of its sub-blockers were answered and the user
+ruled. Read "Current state" first; the historical blocker narrative below is kept
+for the evidence chain, not as an open question.
+
+## Current state
+
+- **User ruling: OPTION A — build it properly.** `BUY_*` routes through
+  `cashshop.RequestPurchase` so a real cash asset exists; the done body is emitted
+  from the purchase-outcome consumer with the real `AssetId`. Ordering is
+  **insert-first**.
+- **Currency blocker: RESOLVED, verdict DERIVED** —
+  [`buy-currency-derivation.md`](buy-currency-derivation.md). The client hard-codes
+  **NX Prepaid** for both ops (v95 PDB resolves the gating field by name to
+  `CCashShop::m_nPrepaidNXCash`). Pass `isPoints=false`, `currency=0`. There is no
+  wallet selector on the wire for these ops, and that is architectural, not an
+  oversight — the generic `BUY` op does carry one.
+- **The rework is now planned**, as **plan.md Phase H, Tasks 37/38/39**:
+  37 = correlation id on the purchase command + both outcome events (cross-service
+  wire change, no behaviour change); 38 = `BUY_*` charges via `RequestPurchase`,
+  insert-first; 39 = the purchase-outcome consumer answers the client with a real
+  `CashId` and releases the PENDING row on failure. Task 25's fabricated emit is
+  deleted in Task 39 Step 2.
+- **plan.md Task 28 was REWRITTEN** (controller ruling). Its original property was
+  proven false by `4a5d9ff65`; the narrowed, true property is *"the OPERATOR cancel
+  route is not reachable from any socket handler"*. See the task's own preamble.
+- **User ruling: commit `4a5d9ff65` (client cancel path) is DEFERRED to the
+  branch-end whole-branch review** rather than reviewed now. It remains unreviewed
+  and unverified until then; its claimed red run (cross-character operator DELETE
+  returned 204, expected 404) has not been independently re-confirmed.
+- **Task 26 dispatched** with a controller addendum adding the `produceWriters()`
+  registration the plan omitted. Verified at dispatch: `main.go:637-641` registers
+  five cash writers, while `libs/atlas-packet/cash/clientbound/` defines five MORE
+  that are registered nowhere and emitted nowhere. Task 26 takes the three `Check*`
+  writers; **the two `Cancel*ResultWriter` constants are Task 27's.**
+- Remaining: Tasks 26, 27, 28 (rewritten), 29–36, then 37–39. Flagless
+  `tools/verify.sh` still owed at branch end (Task 35).
+
+The controller ledger `.superpowers/sdd/plan/progress.md` SURVIVED the earlier
+clear and is the authority on per-task state; this file is the narrative.
+
+---
+
+## Historical: the blocker as first written
 
 ## Where the plan stands
 

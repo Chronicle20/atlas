@@ -2490,69 +2490,96 @@ git add services/atlas-channel/ services/atlas-configurations/seed-data/template
 git commit -m "feat(task-227): deliver pending-change resolutions as CANCEL_* plus pink text"
 ```
 
-### Task 28: The cancel-unreachability guard
+### Task 28: The operator-cancel-unreachability guard
 
-The PRD lists this as an acceptance criterion; design §5.4 says it deserves a machine check, not an eyeball. The property: the operator cancel route is reachable **only** from REST, and no serverbound handler is wired to it. It is a security property (§8) — the cancel endpoint is operator-only and no game-client packet path may reach it.
+> **REWRITTEN by controller ruling, 2026-08-14. Do not restore the previous text.**
+> The original task built a guard asserting *"no client cancel path exists — the
+> cancel route is operator-only REST."* **That property is now proven FALSE.**
+> Commit `4a5d9ff65` landed a real client-initiated cancel path, on the strength of
+> two IDA derivations committed in this task folder:
+> [`cancel-entry-point.md`](cancel-entry-point.md) and
+> [`cancel-confirm-semantics.md`](cancel-confirm-semantics.md). The client's
+> name-change/world-transfer coupon item-use arm builds a double-confirm
+> `CANCELREQUESTS_*` dialog chain and, only on full confirmation, appends an
+> invariant trailing byte to the generic cash item-use packet.
+>
+> A green guard asserting a falsehood is worse than no guard: it manufactures
+> confidence in a property the code does not have. The **security intent** of the
+> original task is real and worth keeping, so the property is narrowed rather than
+> dropped — see below.
+
+**The property this guard actually enforces:** the **operator** cancel route is not
+reachable from any socket handler. There are two distinct cancel routes, and only
+one of them is operator-privileged (verified at rewrite time):
+
+| Route | Reason emitted | Who may reach it |
+|---|---|---|
+| `POST /characters/{id}/pending-changes/cancel` (self-scoped; resolves the caller's own PENDING record by `(characterId, type)`) | `player_cancelled` — `services/atlas-character/atlas.com/character/pending_change/processor.go:349` | the game client, via the coupon item-use arm. **Legitimate.** |
+| `DELETE` on the id-based operator route | `operator_cancelled` — `services/atlas-character/atlas.com/character/pending_change/resource.go:131,164` | operators over REST **only**. Never a socket handler. |
+
+The security property (design §8) is that a game-client packet path may never reach
+the *second* row. The first row is the feature working as derived.
 
 **Files:**
-- Create: `tools/cancel-path-guard.sh`
-- Create: `services/atlas-channel/atlas.com/channel/socket/handler/cancel_unreachable_test.go`
+- Create: `tools/operator-cancel-path-guard.sh`
+- Create: `services/atlas-channel/atlas.com/channel/socket/handler/operator_cancel_unreachable_test.go`
 - Modify: `CLAUDE.md` (register the guard as build-verification item 16)
 
-- [ ] **Step 1: Write the failing guard test**
+Patterns to copy: an existing repo guard under `tools/` for the shell script's
+shape and exit-code convention; `tools/template-duplicate-binding-guard.sh` for
+template-walking.
 
-```go
-// Design §4.2.1: the client has NO SendCancel* of any kind on any version. The
-// cancel path is operator-only REST. This test fails if any socket handler or any
-// tenant socket-config template ever binds it.
-func TestNoSocketHandlerReachesTheCancelPath(t *testing.T) {
-	root := repoRoot(t)
+- [ ] **Step 1: Write the guard test**
 
-	// (a) No Go file under socket/handler may reference the cancel processor call.
-	hits := grepTree(t, filepath.Join(root, "services/atlas-channel/atlas.com/channel/socket/handler"),
-		`CancelPendingChange|pending-changes/.*DELETE`)
-	if len(hits) != 0 {
-		t.Fatalf("socket handlers reference the cancel path: %v", hits)
-	}
+Assert BOTH halves, and scope each to the operator route only:
 
-	// (b) No template may bind a handler whose name contains CancelPendingChange
-	// or CancelNameChange/CancelTransferWorld as a *handler* (they are writers only).
-	for _, tpl := range templatePaths(t, root) {
-		for _, h := range templateHandlers(t, tpl) {
-			if strings.Contains(h.Handler, "CancelPendingChange") ||
-				strings.Contains(h.Handler, "CancelNameChange") ||
-				strings.Contains(h.Handler, "CancelTransferWorld") {
-				t.Fatalf("%s binds %q as a serverbound handler; the cancel family is clientbound-only", tpl, h.Handler)
-			}
-		}
-	}
-}
-```
+  (a) **No Go file under `services/atlas-channel/atlas.com/channel/socket/handler/`
+      may reference the operator route or its reason.** Match on the
+      `operator_cancelled` reason string and on an id-bearing `DELETE` against
+      `pending-changes`. It must NOT match the legitimate self-scoped
+      `POST .../pending-changes/cancel` or the `player_cancelled` reason — add an
+      explicit positive test that a handler using the self-scoped route passes the
+      guard, so a future tightening cannot silently re-ban the real feature.
 
-- [ ] **Step 2: Run it and confirm it passes on a clean tree, then confirm it can fail**
+  (b) **No tenant socket-config template may bind an operator-cancel handler.**
+      Walk the templates as `tools/template-duplicate-binding-guard.sh` does.
+      Note the `Cancel*ResultWriter` constants in
+      `libs/atlas-packet/cash/clientbound/` are **clientbound writers**; a template
+      naming one as a *handler* is the defect this catches.
 
-Run: `go test ./socket/handler/ -run TestNoSocketHandlerReaches -v` → PASS.
-Then temporarily add a `CancelNameChangeHandle` entry to one template, re-run → FAIL. Revert the template.
-A guard that cannot fail is not a guard; prove it before landing it.
+Cite both derivation docs by path in the test file's header comment and in the
+shell script's header, with one line on why the original property was withdrawn.
+Nobody should be able to "restore" the old assertion without reading why it fell.
 
-- [ ] **Step 3: Write `tools/cancel-path-guard.sh`**
+- [ ] **Step 2: Prove the guard can fail**
 
-A portable POSIX shell script performing the same two checks tree-wide, so the property is enforced in CI and not only in one module's test run. Exit non-zero with the offending file and line.
+Run it on the clean tree → PASS. Then temporarily introduce a violation of each
+half (an `operator_cancelled` reference in a handler file; a template binding an
+operator-cancel handler), re-run → FAIL each time. Revert both. **A guard that
+cannot fail is not a guard** — and this task exists precisely because the previous
+version of it could only ever pass. Record both red runs in your report.
+
+- [ ] **Step 3: Write `tools/operator-cancel-path-guard.sh`**
+
+Portable POSIX shell, same two checks tree-wide so the property holds in CI and not
+only in one module's test run. Exit non-zero with the offending file and line.
 
 - [ ] **Step 4: Register it in CLAUDE.md**
 
-Add as build-verification item 16, in the same style as items 13–15: what it bans, why the failure is silent otherwise, and when to run it (whenever `socket/handler` or a template changed).
+Add as build-verification item 16, in the same style as items 13–15: what it bans,
+why the failure is silent otherwise, and when to run it (whenever `socket/handler`
+or a template changed). State the narrowed property, not the withdrawn one.
 
 - [ ] **Step 5: Run the guard**
 
-Run: `tools/cancel-path-guard.sh`
+Run: `tools/operator-cancel-path-guard.sh`
 Expected: exit 0.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add tools/cancel-path-guard.sh CLAUDE.md services/atlas-channel/
-git commit -m "test(task-227): machine-check that the cancel path is REST-only"
+git add tools/operator-cancel-path-guard.sh CLAUDE.md services/atlas-channel/
+git commit -m "test(task-227): machine-check that the OPERATOR cancel route is unreachable from socket handlers"
 ```
 
 ---
@@ -3081,3 +3108,186 @@ Every PRD §10 acceptance criterion has a test named in the task that owns it. T
 **Open questions.** OQ-2, OQ-3, OQ-4, OQ-6 were resolved in design and are recorded as such in the Deviations section and in `context.md`. OQ-1, OQ-7, OQ-9 are resolved by Task 1's derivation, which is why Task 1 blocks everything. OQ-5 is resolved by design's choice of a query-level tenant-wide check with no new index on `characters` (Task 5, Step 3) — correct whether or not live duplicates exist. OQ-8 is resolved by the `notified_at` column (Tasks 2, 6, 9).
 
 **Risks.** R1 is Task 1, scheduled first and blocking. R2 has two independent evidence routes (Task 1, Step 6) and stops with a BLOCKED report rather than a guess if neither answers. R3 is decomposed into eight per-op tasks with per-cell `packet-verifier` fan-out, never one task. R4 is smaller than stated — the consumer already exists (Task 9, Step 5 verifies the group id). R5 is a stated departure from FR-4.4 with its reasoning in Task 11's preamble; if the intent was genuinely auto-settlement, that is the decision to revisit before Task 11 begins.
+
+---
+
+## Phase H — Option A rework of Task 25's done-body emit
+
+**Added by controller ruling, 2026-08-14.** Task 25 (`98213d81e`) shipped
+`BUY_NAME_CHANGE` / `BUY_WORLD_TRANSFER` arms that emit a done body carrying a
+`CashInventoryItem` with `CashId = 0`. That is **confirmed unsafe** — see
+[`cash-inventory-item-zero-fields.md`](cash-inventory-item-zero-fields.md): the
+client `DecodeBuffer`s the item into its locker array (v83 `0x47bccb`, `0x47bfa2`),
+and `CCSWnd_Locker::OnMouseButton` (`0x4b053b`) later reads the clicked slot's
+`CashId` and echoes it back on the locker-withdraw op, which our
+`MoveFromCashInventory` consumes as the serial number. Two `CashId == 0` entries
+make that withdraw ambiguous, and in every case a fabricated id crosses the wire.
+
+Nothing in this codebase fabricates a `CashId`; every sibling site resolves a real
+`asset.Model` and reads `.CashId()`. These two arms cannot, because the flow as
+designed (design §3.1/§5.1) **never creates a cash asset at all**. Task 25
+implemented the design faithfully — the design is what is wrong.
+
+**The user ruled Option A: build it properly.** Route `BUY_*` through
+`cashshop.RequestPurchase` so a real asset exists, and emit the done body from the
+purchase-success consumer using the real `AssetId`.
+
+### Two resolved blockers — do not relitigate these
+
+**Currency: DERIVED, not a guess.** See
+[`buy-currency-derivation.md`](buy-currency-derivation.md). The client HARD-CODES
+NX Prepaid for both ops. `CCashShop::OnBuyNameChange` (v83 `0x47031e`, v87
+`0x47ab57`, v95 `0x491200`) and `CCashShop::OnBuyTransferWorld` (v83 `0x470480`)
+build a confirmation dialog from the hard-coded literal
+`"You will spend %d NX Prepaid.\r\nWould you like to proceed?"`, gated on a fixed
+balance field which on the PDB-backed v95 IDB resolves **by name** to
+`CCashShop::m_nPrepaidNXCash`. The send paths (v83 `0x47342f`, `0x473601`) carry no
+currency field, matching our decoders exactly. The generic `BUY` op
+(`CCashShop::OnBuy`) genuinely *does* decode `isPoints` + `currency` off the wire —
+the two op families differ architecturally; this is not an oversight.
+=> **Call `RequestPurchase` with `isPoints = false` and `currency = 0`.** Zero is
+neither 1 nor 2, so `services/atlas-cashshop/atlas.com/cashshop/wallet/model.go:37-58`
+falls through to prepaid. Do not invent a wallet selector on the wire.
+
+**Ordering: INSERT-FIRST. Purchase-first is not available.** `Resolve()` mints a
+refund only when `status != StatusApplied && m.HasAsset()`
+(`pending_change/processor.go:287-306`), and `HasAsset()` is **false on the purchase
+path by construction** (`entity.go:69-74`). atlas-cashshop has **no void/refund
+command at all** — its full command set is RequestPurchase,
+RequestInventory/Storage/CharacterSlot Increase*, Expire, OpenSurprise,
+RequestCouponRedemption (`consumer.go:34-65`), and `Expire` deletes the asset
+without ever crediting the wallet. So purchase-first plus a name-taken 409 leaves
+the player charged with nothing to show, reversible only by building new refund
+machinery. Insert-first plus a purchase failure releases the unpaid PENDING row via
+the already-tested cancel path, minting no spurious refund.
+
+### Task 37: A correlation id on the purchase command and its two outcome events
+
+Today `handleStatusEventPurchase` keys only off `CharacterId` and **cannot tell a
+name-change buy from any other concurrent BUY**; `ErrorEventBody` is equally
+op-blind. Moving the done body to the consumer therefore requires a correlation
+carrier. This is a cross-service wire-format change — the first on this branch —
+so it lands as its own task, with no behaviour change, so the diff is reviewable in
+isolation.
+
+Precedent to copy: `OpenSurpriseCommandBody.TransactionId uuid.UUID`
+(`kafka/message/cashshop/kafka.go:57-64` in **both** services) — an opaque UUID
+minted by the caller. Note its success event does **not** echo it back; that is the
+gap this task closes for the purchase family.
+
+**Files:**
+- Modify: `services/atlas-cashshop/atlas.com/cashshop/kafka/message/cashshop/kafka.go` (`RequestPurchaseCommandBody`, `PurchaseEventBody`, `ErrorEventBody`)
+- Modify: `services/atlas-channel/atlas.com/channel/kafka/message/cashshop/kafka.go` — the **mirror** of the same three bodies
+- Modify: `services/atlas-cashshop/atlas.com/cashshop/kafka/producer/cashshop/producer.go` (`PurchaseStatusEventProvider`, ~line 39, and the error-event provider beside it)
+- Modify: `services/atlas-cashshop/atlas.com/cashshop/cashshop/processor.go` (`RequestPurchase`, ~lines 98-127) — thread the id from command to outcome
+- Modify: `services/atlas-cashshop/atlas.com/cashshop/kafka/consumer/cashshop/consumer.go` — the RequestPurchase arm
+- Tests beside each changed file.
+
+Patterns to copy: `OpenSurpriseCommandBody` for the field shape and its doc comment
+style; `producer.go:39-51` for the provider signature convention.
+
+- [ ] **Step 1: Write the failing round-trip tests**
+
+Assert the id survives command → processor → **both** outcome events, and that two
+concurrent purchases for the SAME character are distinguishable by it. Assert the
+zero UUID is accepted and means "no correlation" (every existing caller), so this
+change is backward compatible on the wire.
+
+- [ ] **Step 2: Add the field to all six struct definitions**
+
+`TransactionId uuid.UUID \`json:"transactionId,omitempty"\`` on
+`RequestPurchaseCommandBody`, `PurchaseEventBody` and `ErrorEventBody`, in **both**
+services. The two services' copies are hand-mirrored, not generated — a field added
+to one and not the other is silently dropped at the JSON boundary.
+
+> **Verified at authoring time, and a live example of exactly that failure:**
+> channel-side `PurchaseEventBody` already declares `ItemId uint32` (`kafka.go:128`)
+> which the cashshop producer **never sets** (`producer.go:44-49`) and the channel
+> consumer **never reads**. It is dead on both sides today, so leave it alone — but
+> it is the proof that this mirror drifts silently. Add the new field to both.
+
+- [ ] **Step 3: Thread it through the producer and processor**
+
+`PurchaseStatusEventProvider` and the error provider take the id and set it. The
+processor carries it from the command body to whichever outcome it emits. **Both**
+arms — a failure that drops the correlation is the same defect as never adding it.
+
+- [ ] **Step 4: Run the tests, then commit**
+
+`go build ./... && go test ./... && go vet ./...` in each changed module.
+`git commit -m "feat(task-227): correlate cash purchase outcomes with a transaction id"`
+
+### Task 38: `BUY_*` charges the player through `RequestPurchase` (insert-first)
+
+**Files:**
+- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/cash_shop_operation.go` — `handleBuyNameChange`, `handleBuyWorldTransfer`
+- Modify: the channel-side cashshop processor that issues `RequestPurchase`
+- Tests beside them.
+
+- [ ] **Step 1: Write the failing tests**
+
+Assert, for each of the two arms, in this order: (a) the PENDING record is inserted
+**before** the purchase command is emitted; (b) the emitted command carries
+`isPoints = false`, `currency = 0`, the right `serialNumber`, and a **non-zero**
+`TransactionId`; (c) that id is recorded against the PENDING record so the consumer
+can resolve back to it; (d) **no done body is written from the handler** — the
+client is answered by the consumer now. Assert (d) explicitly: it is the whole
+point of the rework and the easiest thing to leave behind.
+
+- [ ] **Step 2: Implement**
+
+Insert-first, then emit. Mint the `TransactionId` at the handler. Do **not** await
+the outcome — `RequestPurchase` is fully async; the handler discards the return and
+every outcome arrives as a status event.
+
+- [ ] **Step 3: Run the tests, then commit**
+
+### Task 39: The purchase-outcome consumer answers the client
+
+**Files:**
+- Modify: `services/atlas-channel/atlas.com/channel/kafka/consumer/cashshop/consumer.go` — `handleStatusEventPurchase` and the error arm
+- Modify: `services/atlas-channel/atlas.com/channel/main.go` — register any writer this consumer newly emits, per the standing "registration follows whoever EMITS" rule
+- Tests beside them.
+
+- [ ] **Step 1: Write the failing tests**
+
+  (a) **Success:** a purchase event whose `TransactionId` resolves to a PENDING
+      name-change record emits the done body built from the event's **real
+      `AssetId`** — mirroring `consumer.go:135-142`, which resolves an
+      `asset.Model` and reads `.CashId()`. Assert the emitted `CashId` is
+      non-zero and equals the resolved asset's. **A test asserting `CashId != 0`
+      is the regression gate for the whole defect** — name it so.
+  (b) **Success, unrelated buy:** a purchase event with a zero or unknown
+      `TransactionId` takes the pre-existing path unchanged. No name-change done
+      body is emitted. This is the concurrency case the old code could not tell apart.
+  (c) **Failure:** an error event whose `TransactionId` resolves to a PENDING
+      record **releases that record via the existing self-scoped cancel path**
+      (reason `player_cancelled`, `pending_change/processor.go:349`) and answers
+      the client with the failure packet. Assert **no refund is minted** —
+      `HasAsset()` is false on this path, and a spurious refund here is the
+      failure mode insert-first exists to prevent.
+  (d) `Expiration` on the emitted `CashInventoryItem` is **UNVERIFIED** — no
+      client read path was found for it, which is not proof it is unused. Use
+      whatever the resolved asset carries rather than a literal, and note it in
+      the report. Do not fabricate a value.
+
+- [ ] **Step 2: Implement, then delete the fabricated emit**
+
+Remove the `CashId = 0` done-body construction Task 25 left in the handlers. Grep
+the tree afterward and confirm no construction site remains that sets a `CashId`
+from anything but a resolved `asset.Model`.
+
+- [ ] **Step 3: Run the tests, then commit**
+
+### Note on the unrelated pre-existing hole
+
+`pending_change/processor.go:250-256` states the purchase path's entitlement is
+consumed by atlas-cashshop off the `PENDING_CHANGE_CREATED` event. **That consumer
+does not exist** — grep for `PENDING_CHANGE_CREATED` / `PendingChangeCreated`
+across `services/atlas-cashshop/` returns nothing, and `TransactionId` is minted
+inside atlas-character and never returned (the channel-side `pendingchange.RestModel`
+has no such field). That is a *different* unbuilt design from the channel-driven
+shape these three tasks build. It is **out of scope here** — but the stale comment
+is not: whichever task last touches that file must correct it to describe what the
+code actually does, or the next reader inherits the same false map that produced
+this rework.

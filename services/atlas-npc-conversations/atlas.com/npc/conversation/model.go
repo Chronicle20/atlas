@@ -2216,6 +2216,10 @@ type ConversationType string
 const (
 	NpcConversationType   ConversationType = "npc"
 	QuestConversationType ConversationType = "quest"
+	// ItemConversationType is a scripted item's own dialogue (the 243xxxx
+	// family). SourceId carries the item id; NpcId carries only the avatar the
+	// dialogue renders with.
+	ItemConversationType ConversationType = "item"
 )
 
 // ConversationContext represents the current state of a conversation
@@ -2229,6 +2233,15 @@ type ConversationContext struct {
 	pendingSagaId    *uuid.UUID
 	conversationType ConversationType
 	sourceId         uint32
+	// originTransactionId is the saga transaction that started this
+	// conversation, when one did. It exists so a redelivered start command can
+	// be recognised as its own: Kafka is at-least-once, and re-emitting
+	// START_ERROR for a conversation this very transaction already opened would
+	// fail a saga that had already succeeded.
+	//
+	// Deliberately NOT folded into the registry's sagaIndex, which is keyed by
+	// sagas a conversation INITIATED — the opposite direction.
+	originTransactionId *uuid.UUID
 }
 
 // Field returns the field
@@ -2294,17 +2307,24 @@ func (c ConversationContext) SourceId() uint32 {
 	return c.sourceId
 }
 
+// OriginTransactionId returns the saga transaction that started this
+// conversation, or nil for a conversation not started by a saga.
+func (c ConversationContext) OriginTransactionId() *uuid.UUID {
+	return c.originTransactionId
+}
+
 // ConversationContextBuilder is a builder for ConversationContext
 type ConversationContextBuilder struct {
-	field            field.Model
-	characterId      uint32
-	npcId            uint32
-	currentState     string
-	conversation     StateContainer
-	context          map[string]string
-	pendingSagaId    *uuid.UUID
-	conversationType ConversationType
-	sourceId         uint32
+	field               field.Model
+	characterId         uint32
+	npcId               uint32
+	currentState        string
+	conversation        StateContainer
+	context             map[string]string
+	pendingSagaId       *uuid.UUID
+	conversationType    ConversationType
+	sourceId            uint32
+	originTransactionId *uuid.UUID
 }
 
 // NewConversationContextBuilder creates a new ConversationContextBuilder
@@ -2374,6 +2394,13 @@ func (b *ConversationContextBuilder) SetSourceId(sourceId uint32) *ConversationC
 	return b
 }
 
+// SetOriginTransactionId records the saga transaction that started this
+// conversation.
+func (b *ConversationContextBuilder) SetOriginTransactionId(id uuid.UUID) *ConversationContextBuilder {
+	b.originTransactionId = &id
+	return b
+}
+
 // Build builds the ConversationContext
 func (b *ConversationContextBuilder) Build() ConversationContext {
 	// Default to NPC conversation type if not set
@@ -2389,14 +2416,15 @@ func (b *ConversationContextBuilder) Build() ConversationContext {
 	}
 
 	return ConversationContext{
-		characterId:      b.characterId,
-		npcId:            b.npcId,
-		field:            b.field,
-		currentState:     b.currentState,
-		conversation:     b.conversation,
-		context:          b.context,
-		pendingSagaId:    b.pendingSagaId,
-		conversationType: conversationType,
-		sourceId:         sourceId,
+		characterId:         b.characterId,
+		npcId:               b.npcId,
+		field:               b.field,
+		currentState:        b.currentState,
+		conversation:        b.conversation,
+		context:             b.context,
+		pendingSagaId:       b.pendingSagaId,
+		conversationType:    conversationType,
+		sourceId:            sourceId,
+		originTransactionId: b.originTransactionId,
 	}
 }

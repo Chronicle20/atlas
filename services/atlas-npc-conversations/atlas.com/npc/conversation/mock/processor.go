@@ -3,6 +3,8 @@ package mock
 import (
 	"atlas-npc-conversations/conversation"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
@@ -13,6 +15,9 @@ type ProcessorMock struct {
 
 	// StartQuestFunc is a function field for the StartQuest method
 	StartQuestFunc func(field field.Model, questId uint32, npcId uint32, characterId uint32, stateMachine conversation.StateContainer) error
+
+	// StartItemFunc is a function field for the StartItem method
+	StartItemFunc func(f field.Model, itemId uint32, npcId uint32, characterId uint32, accountId uint32, scriptName string, originTransactionId uuid.UUID, stateMachine conversation.StateContainer) error
 
 	// ContinueFunc is a function field for the Continue method
 	ContinueFunc func(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error
@@ -34,6 +39,15 @@ func (m *ProcessorMock) Start(field field.Model, npcId uint32, characterId uint3
 func (m *ProcessorMock) StartQuest(field field.Model, questId uint32, npcId uint32, characterId uint32, stateMachine conversation.StateContainer) error {
 	if m.StartQuestFunc != nil {
 		return m.StartQuestFunc(field, questId, npcId, characterId, stateMachine)
+	}
+	// Default implementation returns nil (success)
+	return nil
+}
+
+// StartItem is a mock implementation of the conversation.Processor.StartItem method
+func (m *ProcessorMock) StartItem(f field.Model, itemId uint32, npcId uint32, characterId uint32, accountId uint32, scriptName string, originTransactionId uuid.UUID, stateMachine conversation.StateContainer) error {
+	if m.StartItemFunc != nil {
+		return m.StartItemFunc(f, itemId, npcId, characterId, accountId, scriptName, originTransactionId, stateMachine)
 	}
 	// Default implementation returns nil (success)
 	return nil

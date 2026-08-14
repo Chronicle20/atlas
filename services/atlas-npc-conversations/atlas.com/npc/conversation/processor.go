@@ -19,6 +19,16 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// ErrConversationInProgress means a DIFFERENT conversation is already live for
+// this character. The caller maps it to START_ERROR reason
+// "conversation_in_progress".
+var ErrConversationInProgress = errors.New("another conversation exists")
+
+// ErrAlreadyStartedByThisTransaction means the live conversation was started by
+// this very saga transaction — a Kafka redelivery, not a conflict. The caller
+// re-emits STARTED rather than START_ERROR.
+var ErrAlreadyStartedByThisTransaction = errors.New("conversation already started by this transaction")
+
 type Processor interface {
 	// Start starts a conversation with an NPC
 	Start(field field.Model, npcId uint32, characterId uint32, accountId uint32) error
@@ -26,6 +36,13 @@ type Processor interface {
 	// StartQuest starts a quest conversation with the provided state machine
 	// The caller is responsible for selecting the correct state machine (start or end) based on quest status
 	StartQuest(field field.Model, questId uint32, npcId uint32, characterId uint32, stateMachine StateContainer) error
+
+	// StartItem starts a scripted item's own conversation (the 243xxxx family).
+	// Resolution is by item id; npcId selects only the avatar the dialogue
+	// renders with. originTransactionId is the saga transaction awaiting the
+	// STARTED/START_ERROR status event; it is stamped into the context so a
+	// redelivered command is recognised as its own.
+	StartItem(f field.Model, itemId uint32, npcId uint32, characterId uint32, accountId uint32, scriptName string, originTransactionId uuid.UUID, stateMachine StateContainer) error
 
 	// Continue continues a conversation with an NPC
 	Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error
@@ -213,6 +230,67 @@ func (p *ProcessorImpl) StartQuest(f field.Model, questId uint32, npcId uint32, 
 		cont, err = p.ProcessState(ctx)
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to process state [%s] for character [%d] and quest [%d]", startStateId, characterId, questId)
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *ProcessorImpl) StartItem(f field.Model, itemId uint32, npcId uint32, characterId uint32, accountId uint32, scriptName string, originTransactionId uuid.UUID, stateMachine StateContainer) error {
+	p.l.Debugf("Starting item [%d] conversation with NPC [%d] for character [%d] in map [%d].", itemId, npcId, characterId, f.MapId())
+
+	// Redelivery guard. A live context stamped with this same transaction id is
+	// this command's own earlier delivery, not a conflict — Kafka is
+	// at-least-once and START_ERROR here would fail a saga that succeeded.
+	if prev, err := GetRegistry().GetPreviousContext(p.ctx, characterId); err == nil {
+		if prev.OriginTransactionId() != nil && *prev.OriginTransactionId() == originTransactionId {
+			p.l.Debugf("Item [%d] conversation for character [%d] was already started by transaction [%s]; treating redelivery as success.", itemId, characterId, originTransactionId.String())
+			return ErrAlreadyStartedByThisTransaction
+		}
+		p.l.Debugf("Previous conversation for character [%d] exists, avoiding starting item [%d] conversation.", characterId, itemId)
+		return ErrConversationInProgress
+	}
+
+	startStateId := stateMachine.StartState()
+
+	builder := NewConversationContextBuilder().
+		SetField(f).
+		SetCharacterId(characterId).
+		SetNpcId(npcId).
+		SetCurrentState(startStateId).
+		SetConversation(stateMachine).
+		SetConversationType(ItemConversationType).
+		SetSourceId(itemId).
+		SetOriginTransactionId(originTransactionId)
+
+	builder.AddContextValue("itemId", strconv.FormatUint(uint64(itemId), 10))
+	if scriptName != "" {
+		builder.AddContextValue("scriptName", scriptName)
+	}
+	if f.WorldId() > 0 {
+		builder.AddContextValue("worldId", strconv.Itoa(int(f.WorldId())))
+	}
+	if f.ChannelId() > 0 {
+		builder.AddContextValue("channelId", strconv.Itoa(int(f.ChannelId())))
+	}
+	if accountId > 0 {
+		builder.AddContextValue("accountId", strconv.Itoa(int(accountId)))
+	}
+
+	ctx := builder.Build()
+	GetRegistry().SetContext(p.ctx, ctx.CharacterId(), ctx)
+
+	cont := true
+	var err error
+	for cont {
+		ctx, err = GetRegistry().GetPreviousContext(p.ctx, characterId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
+			return errors.New("conversation context not found")
+		}
+		cont, err = p.ProcessState(ctx)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to process state [%s] for character [%d] and item [%d]", startStateId, characterId, itemId)
 			return err
 		}
 	}

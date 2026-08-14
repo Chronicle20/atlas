@@ -41,6 +41,31 @@ func (e Entity) TableName() string {
 	return "pets"
 }
 
+// ToEntity is the inverse of Make: it projects the immutable Model into the
+// GORM entity used for persistence. Id is deliberately left zero — it is
+// assigned by the auto-increment on insert. Excludes are NOT carried across:
+// they are owned by their own table and written through setExcludes, so
+// populating the association here would make GORM cascade-insert them on
+// every create.
+func (m Model) ToEntity(tenantId uuid.UUID) Entity {
+	s := m.slot
+	return Entity{
+		TenantId:            tenantId,
+		OwnerId:             m.ownerId,
+		CashId:              m.cashId,
+		TemplateId:          m.templateId,
+		Name:                m.name,
+		Level:               m.level,
+		Closeness:           m.closeness,
+		Fullness:            m.fullness,
+		Expiration:          m.expiration,
+		Slot:                &s,
+		Flag:                m.flag,
+		PurchaseBy:          m.purchaseBy,
+		ReviveTransactionId: m.reviveTransactionId,
+	}
+}
+
 func Make(e Entity) (Model, error) {
 	es, err := model.SliceMap(exclude.Make)(model.FixedProvider(e.Excludes))(model.ParallelMap())()
 	if err != nil {

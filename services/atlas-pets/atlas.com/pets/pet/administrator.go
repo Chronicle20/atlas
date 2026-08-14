@@ -14,27 +14,14 @@ import (
 
 func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, error) {
 	return func(t tenant.Model, ownerId uint32, m Model) (Model, error) {
-		s := m.Slot()
-		e := &Entity{
-			TenantId:   t.Id(),
-			OwnerId:    ownerId,
-			CashId:     m.CashId(),
-			TemplateId: m.TemplateId(),
-			Name:       m.Name(),
-			Level:      m.Level(),
-			Closeness:  m.Closeness(),
-			Fullness:   m.Fullness(),
-			Expiration: m.Expiration(),
-			Slot:       &s,
-			Flag:       m.Flag(),
-			PurchaseBy: m.PurchaseBy(),
-		}
+		e := m.ToEntity(t.Id())
+		e.OwnerId = ownerId
 
-		err := db.Create(e).Error
+		err := db.Create(&e).Error
 		if err != nil {
 			return Model{}, err
 		}
-		return Make(*e)
+		return Make(e)
 	}
 }
 

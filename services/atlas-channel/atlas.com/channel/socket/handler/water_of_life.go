@@ -104,7 +104,10 @@ func WaterOfLifeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 
 		transactionId := uuid.New()
 		now := time.Now()
-		_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
+		// A failure here means no step ran, so the Water of Life was NOT consumed
+		// — but the player also gets no feedback unless we send it. Reject rather
+		// than leave the click a silent no-op.
+		if err := saga.NewProcessor(l, ctx).Create(saga.Saga{
 			TransactionId: transactionId,
 			SagaType:      saga.PetRevive,
 			InitiatedBy:   "WATER_OF_LIFE",
@@ -134,7 +137,11 @@ func WaterOfLifeHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 					UpdatedAt: now,
 				},
 			},
-		})
+		}); err != nil {
+			l.WithError(err).Errorf("Unable to create Water of Life revive saga [%s] for character [%d].", transactionId, s.CharacterId())
+			reject(waterOfLifeNoEffectMessage)
+			return
+		}
 	}
 }
 

@@ -36,9 +36,9 @@ func modelFromEntity(e entity) (Model, error) {
 	return b.Build(), nil
 }
 
-func getById(db *gorm.DB, id uuid.UUID) (Model, error) {
+func getById(db *gorm.DB, tenantId uuid.UUID, id uuid.UUID) (Model, error) {
 	var e entity
-	err := db.Where("id = ?", id).First(&e).Error
+	err := db.Where("tenant_id = ? AND id = ?", tenantId, id).First(&e).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return Model{}, ErrNotFound
@@ -48,9 +48,9 @@ func getById(db *gorm.DB, id uuid.UUID) (Model, error) {
 	return modelFromEntity(e)
 }
 
-func getByCharacterId(db *gorm.DB, characterId uint32) ([]Model, error) {
+func getByCharacterId(db *gorm.DB, tenantId uuid.UUID, characterId uint32) ([]Model, error) {
 	var es []entity
-	if err := db.Where("character_id = ?", characterId).Find(&es).Error; err != nil {
+	if err := db.Where("tenant_id = ? AND character_id = ?", tenantId, characterId).Find(&es).Error; err != nil {
 		return nil, err
 	}
 	ms := make([]Model, 0, len(es))
@@ -64,9 +64,9 @@ func getByCharacterId(db *gorm.DB, characterId uint32) ([]Model, error) {
 	return ms, nil
 }
 
-func getPendingByNameLower(db *gorm.DB, nameLower string) (Model, error) {
+func getPendingByNameLower(db *gorm.DB, tenantId uuid.UUID, nameLower string) (Model, error) {
 	var e entity
-	err := db.Where("status = ? AND type = ? AND requested_name_lower = ?", StatusPending, TypeNameChange, nameLower).First(&e).Error
+	err := db.Where("tenant_id = ? AND status = ? AND type = ? AND requested_name_lower = ?", tenantId, StatusPending, TypeNameChange, nameLower).First(&e).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return Model{}, ErrNotFound
@@ -76,9 +76,9 @@ func getPendingByNameLower(db *gorm.DB, nameLower string) (Model, error) {
 	return modelFromEntity(e)
 }
 
-func getExpired(db *gorm.DB, now time.Time) ([]Model, error) {
+func getExpired(db *gorm.DB, tenantId uuid.UUID, now time.Time) ([]Model, error) {
 	var es []entity
-	if err := db.Where("status = ? AND expires_at < ?", StatusPending, now).Find(&es).Error; err != nil {
+	if err := db.Where("tenant_id = ? AND status = ? AND expires_at < ?", tenantId, StatusPending, now).Find(&es).Error; err != nil {
 		return nil, err
 	}
 	ms := make([]Model, 0, len(es))
@@ -92,9 +92,9 @@ func getExpired(db *gorm.DB, now time.Time) ([]Model, error) {
 	return ms, nil
 }
 
-func getResolvedUnnotified(db *gorm.DB, characterId uint32) ([]Model, error) {
+func getResolvedUnnotified(db *gorm.DB, tenantId uuid.UUID, characterId uint32) ([]Model, error) {
 	var es []entity
-	if err := db.Where("character_id = ? AND resolved_at IS NOT NULL AND notified_at IS NULL", characterId).Find(&es).Error; err != nil {
+	if err := db.Where("tenant_id = ? AND character_id = ? AND resolved_at IS NOT NULL AND notified_at IS NULL", tenantId, characterId).Find(&es).Error; err != nil {
 		return nil, err
 	}
 	ms := make([]Model, 0, len(es))
@@ -108,9 +108,9 @@ func getResolvedUnnotified(db *gorm.DB, characterId uint32) ([]Model, error) {
 	return ms, nil
 }
 
-func getPendingByCharacterId(db *gorm.DB, characterId uint32) ([]Model, error) {
+func getPendingByCharacterId(db *gorm.DB, tenantId uuid.UUID, characterId uint32) ([]Model, error) {
 	var es []entity
-	if err := db.Where("character_id = ? AND status = ?", characterId, StatusPending).Find(&es).Error; err != nil {
+	if err := db.Where("tenant_id = ? AND character_id = ? AND status = ?", tenantId, characterId, StatusPending).Find(&es).Error; err != nil {
 		return nil, err
 	}
 	ms := make([]Model, 0, len(es))

@@ -73,22 +73,22 @@ func mapUniqueViolation(err error) error {
 // the idempotency signal for the whole refund path (design §3.10): callers emit
 // the refund and the resolved notification ONLY when it is true, so a
 // redelivered Kafka command mints nothing.
-func transition(db *gorm.DB, id uuid.UUID, status string, reason string, at time.Time) (Model, bool, error) {
+func transition(db *gorm.DB, tenantId uuid.UUID, id uuid.UUID, status string, reason string, at time.Time) (Model, bool, error) {
 	res := db.Model(&entity{}).
-		Where("id = ? AND status = ?", id, StatusPending).
+		Where("tenant_id = ? AND id = ? AND status = ?", tenantId, id, StatusPending).
 		Updates(map[string]interface{}{"status": status, "reason": reason, "resolved_at": at})
 	if res.Error != nil {
 		return Model{}, false, res.Error
 	}
-	m, err := getById(db, id)
+	m, err := getById(db, tenantId, id)
 	if err != nil {
 		return Model{}, false, err
 	}
 	return m, res.RowsAffected == 1, nil
 }
 
-func markNotified(db *gorm.DB, id uuid.UUID, at time.Time) error {
+func markNotified(db *gorm.DB, tenantId uuid.UUID, id uuid.UUID, at time.Time) error {
 	return db.Model(&entity{}).
-		Where("id = ? AND notified_at IS NULL", id).
+		Where("tenant_id = ? AND id = ? AND notified_at IS NULL", tenantId, id).
 		Update("notified_at", at).Error
 }

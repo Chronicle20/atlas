@@ -15887,6 +15887,26 @@
           "guard": "nResult != 0x00 && nResult != 0xFF && bHasMessage"
         }
       ]
+    },
+    "CWvsContext::OnCancelTransferWorldResult": {
+      "address": "0xac24c9",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nResult"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bHasMessage",
+          "guard": "nResult != 0x00 && nResult != 0x01"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sMessage",
+          "guard": "nResult != 0x00 && nResult != 0x01 && bHasMessage"
+        }
+      ]
     }
   }
 }

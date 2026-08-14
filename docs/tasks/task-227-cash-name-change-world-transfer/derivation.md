@@ -509,6 +509,25 @@ This does not change any behaviour in this task or in Task 26/27's consumer:
 design §3.9's pink-text belt-and-braces sends alongside the packet regardless
 of the answer. It closes the open question rather than leaving it deferred.
 
+**Correction (Task 21 pass):** Task 20's report (`.superpowers/sdd/plan/task-20-report.md`)
+additionally claimed direct re-decompiles of `OnCancelNameChangeResult` on
+v84 `0xa75e3a`, v87 `0xac2313`, v92 `0x9d64a0` and v95 `0xa01b10`, but this
+section originally cited only v61/v83 as evidence — an overclaim relative to
+what this file backed. Task 21 re-decompiled all four during its own pass and
+confirms the report's claim was in fact true: all four bodies are
+structurally identical to v61/v83 (same three-way `0x00`/`0xFF`/otherwise
+switch, same no-guard unconditional execution from the first instruction).
+This file now carries the citation the report always needed: v61 `0x84ace9`,
+v83 `0xa2a677`, v84 `0xa75e3a`, v87 `0xac2313`, v92 `0x9d64a0`, v95 `0xa01b10`
+— six of the eight applicable versions directly decompiled for OQ-9 (v72/v79
+rely on the §2.6 structural match already established from their own
+receiver decompiles, not a separate OQ-9-specific pass).
+
+The sibling `CANCEL_TRANSFER_WORLD_RESULT` (§2.7) was independently
+decompiled for the same question during Task 21 on v61 `0x84ae56`, v83
+`0xa2a82d`, v92 `0x9d6680` and v95 `0xa01cf0`: same finding — no cash-shop
+guard, unconditional execution from `Decode1`.
+
 ---
 
 ## 7. Hazards for the downstream tasks

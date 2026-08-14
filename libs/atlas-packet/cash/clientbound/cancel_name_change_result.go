@@ -73,7 +73,9 @@ const (
 // byte-exactness independent of Encode.
 //
 // Body, IDENTICAL on every applicable version — v61, v72, v79, v83, v84, v87,
-// v92, v95 (derivation.md §2.6, re-decompiled this pass on v61 and v83):
+// v92, v95 (derivation.md §2.6, re-decompiled directly on v61, v83, v84, v87,
+// v92 and v95 across Task 20 and Task 21 — see derivation.md §6a's Task 21
+// correction for the full citation):
 //
 //	Decode1  nResult
 //	  0x00 -> CUICancelCharacterCouponResults(0), modal, no further read
@@ -95,10 +97,11 @@ const (
 //
 // OQ-9 (does the client accept this packet outside the cash-shop UI?):
 // answered NO evidence of any state guard. CWvsContext::OnCancelNameChangeResult
-// (v83 @0xa2a677, v61 @0x84ace9) opens its modal / renders its Notice
+// (v61 @0x84ace9, v83 @0xa2a677, v84 @0xa75e3a, v87 @0xac2313, v92 @0x9d64a0,
+// v95 @0xa01b10 — derivation.md §6a) opens its modal / renders its Notice
 // unconditionally — there is no read of a cash-shop-open flag, no early
 // return, and no CCashShop member access anywhere in the decompiled body on
-// either version checked. CWvsContext is the always-live session-context
+// any version checked. CWvsContext is the always-live session-context
 // singleton (the same class CANCEL_NAME_CHANGE_BY_OTHER and every other
 // account-notification packet targets), not a UI-scoped dialog controller, so
 // the packet is processed whenever CWvsContext::OnPacket dispatches it,

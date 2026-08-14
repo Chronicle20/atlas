@@ -10,11 +10,11 @@ Tool: `bb6605bfa76ecf5733e143cadf1af9285251b91a276fd45ab32b56371cfdba32`
 - export gms_v61: `4c8571b72e950048c4bcf2fd7d03b8eadb3590bc03b6f9e9de7d8977404c1142`
 - export gms_v72: `bb8c82c53879da099ba32d14bbce1d3a8b463b3fffe5c3ca8f9f5f1bb950e50a`
 - export gms_v79: `4d24c56e9c561ec29bd9a4afc2b6d2ff05cb6bd117ad74ba8a2903191a2f1ebd`
-- export gms_v83: `d4792659be3cd49073ada9eee43a41475c9f995f907260e7d17c16a18125a459`
-- export gms_v84: `e162770382eb6af081defbc047bed29f5e9f618cdf0f50ea0e069783433215ba`
-- export gms_v87: `7f82d21a4730021ce39823d3226438c7e6c29d93c20aae10c1ebcc3699a3d787`
-- export gms_v92: `f57263967cc54f58d31de8d0f935a77820eaa8b0f1463d17a900ebc45c5a0a32`
-- export gms_v95: `c53cdcdade20172230314e8c40ee7ea4946602ab6caa237d0727a2f1161b3202`
+- export gms_v83: `22d692920c94f35dcb3486c71f4c14ef64325d82f7ba06df65bdf7c2b9a5e3ae`
+- export gms_v84: `2816145bbff8ece6498dc2f8524839d4c6ced0b55208ecf5e7c2099d71de3467`
+- export gms_v87: `409f614ab359f917b412761a7980e1fd34644f703e0cf82ee88d52d9c4301b5d`
+- export gms_v92: `71de687470ba8e468ce06daad3cfd1b893a4c0a71ffb631c5320aeadf1c09005`
+- export gms_v95: `1a3e4edebb9d6c039ec5196fde4872b973df36b9b6d1a762ecbebd48aa9a0b44`
 - export jms_v185: `2671210ed72c2116f3913da353a4c26a49067d82f1de2e7cf790bb0c6733a3f8`
 
 ## Clientbound
@@ -158,7 +158,7 @@ Tool: `bb6605bfa76ecf5733e143cadf1af9285251b91a276fd45ab32b56371cfdba32`
 | PLAY_JUKEBOX | CField::OnPlayJukeBox; sub_4C95F2 | field/clientbound/FieldPlayJukebox (T1) | 0x056 | 🟡ᶠ |  | ⬜ | 0x083 | 🟡ᶠ | 0x087 | 🟡ᶠ | 0x08F | ✅ | 0x092 | ✅ | 0x097 | ✅ | 0x09E | 🟡ᶠ | 0x09F | ✅ | 0x08C | ✅ |
 | POTION_DISCOUNT_RATE_CHANGED | CWvsContext::OnPotionDiscountRateChanged |  |  | ⬜ |  | ⬜ | 0x056 | ❌ | 0x057 | ❌ |  | ⬜ | 0x060 | ❌ | 0x060 | ❌ | 0x062 | ❌ | 0x061 | ❌ |  | ⬜ |
 | ADMIN_RESULT | CField::OnAdminResult; sub_57255F | field/clientbound/FieldAdminResult (T1) | 0x057 | ✅ | 0x06B | 🟡ᶠ | 0x084 | 🟡ᶠ | 0x088 | ✅ | 0x090 | ✅ | 0x093 | ✅ | 0x098 | ✅ | 0x09F | ❌ | 0x0A0 | ✅ | 0x08D | ✅ |
-| CANCEL_TRANSFER_WORLD_RESULT | CWvsContext::OnCancelTransferWorldResult |  |  | ⬜ | 0x057 | ❌ | 0x06A | ❌ | 0x06C | ❌ | 0x072 | ❌ | 0x075 | ❌ | 0x075 | ❌ | 0x077 | ❌ | 0x076 | ❌ |  | ⬜ |
+| CANCEL_TRANSFER_WORLD_RESULT | CWvsContext::OnCancelTransferWorldResult |  |  | ⬜ | 0x057 | ✅ | 0x06A | ✅ | 0x06C | ✅ | 0x072 | ✅ | 0x075 | ✅ | 0x075 | ✅ | 0x077 | ✅ | 0x076 | ✅ |  | ⬜ |
 | CONSULT_AUTHKEY_UPDATE | CWvsContext::OnConsultAuthkeyUpdate |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x057 | ❌ | 0x059 | ❌ | 0x059 | ❌ | 0x05B | ❌ | 0x05A | ❌ | 0x05E | ❌ |
 | FAMILY_CHART_RESULT | CWvsContext::OnFamilyChartResult |  |  | ⬜ |  | ⬜ | 0x057 | ❌ | 0x058 | ❌ | 0x05E | ❌ | 0x061 | ❌ | 0x061 | ❌ | 0x063 | ❌ | 0x062 | ❌ | 0x065 | ❌ |
 | CLASS_COMPETITION_AUTHKEY_UPDATE | CWvsContext::OnClassCompetitionAuthkeyUpdate |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x058 | ❌ | 0x05A | ❌ | 0x05A | ❌ | 0x05C | ❌ | 0x05B | ❌ | 0x05F | ❌ |
@@ -1056,14 +1056,14 @@ Tool: `bb6605bfa76ecf5733e143cadf1af9285251b91a276fd45ab32b56371cfdba32`
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 209 | 0 | 19 | 193 | 598 | 0 | 49.6% |
-| v61 | 273 | 0 | 56 | 231 | 459 | 0 | 48.8% |
-| v72 | 289 | 0 | 69 | 245 | 416 | 0 | 47.9% |
-| v79 | 335 | 0 | 68 | 241 | 375 | 0 | 52.0% |
-| v83 | 455 | 0 | 0 | 336 | 228 | 0 | 57.5% |
-| v84 | 430 | 0 | 0 | 342 | 247 | 0 | 55.7% |
-| v87 | 464 | 0 | 0 | 365 | 190 | 0 | 56.0% |
-| v92 | 35 | 0 | 151 | 692 | 141 | 0 | 4.0% |
-| v95 | 489 | 0 | 0 | 424 | 106 | 0 | 53.6% |
+| v61 | 274 | 0 | 56 | 230 | 459 | 0 | 48.9% |
+| v72 | 290 | 0 | 69 | 244 | 416 | 0 | 48.1% |
+| v79 | 336 | 0 | 68 | 240 | 375 | 0 | 52.2% |
+| v83 | 456 | 0 | 0 | 335 | 228 | 0 | 57.6% |
+| v84 | 431 | 0 | 0 | 341 | 247 | 0 | 55.8% |
+| v87 | 465 | 0 | 0 | 364 | 190 | 0 | 56.1% |
+| v92 | 36 | 0 | 151 | 691 | 141 | 0 | 4.1% |
+| v95 | 490 | 0 | 0 | 423 | 106 | 0 | 53.7% |
 | JMS185 | 433 | 0 | 0 | 389 | 197 | 0 | 52.7% |
 
 ## Conflicts

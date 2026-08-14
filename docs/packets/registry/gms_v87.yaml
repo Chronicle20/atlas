@@ -613,6 +613,7 @@
   direction: clientbound
   opcode: 117
   fname: CWvsContext::OnCancelTransferWorldResult
+  packet: cash/clientbound/CashCancelTransferWorldResult
   provenance: csv-import
 - op: DESTROY_SHOP_RESULT
   direction: clientbound

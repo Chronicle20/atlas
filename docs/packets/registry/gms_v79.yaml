@@ -758,6 +758,7 @@
   direction: clientbound
   opcode: 108
   fname: CWvsContext::OnCancelTransferWorldResult
+  packet: cash/clientbound/CashCancelTransferWorldResult
   provenance: ida-discovered
   ida:
     address: 9779200

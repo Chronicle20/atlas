@@ -3006,6 +3006,21 @@
         ]
       },
       {
+        "opCode": "0x76",
+        "writer": "CashShopCancelTransferWorldResult",
+        "fname": "CWvsContext::OnCancelTransferWorldResult",
+        "options": {
+          "operations": {
+            "CANCELLED": 0,
+            "CANCELLED_ALT": 1,
+            "FAILED": 2
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x7F",
         "writer": "ScriptProgress",
         "fname": "CWvsContext::OnScriptProgressMessage",

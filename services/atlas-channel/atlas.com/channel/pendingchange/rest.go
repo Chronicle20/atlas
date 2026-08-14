@@ -78,7 +78,7 @@ func postCreate(l logrus.FieldLogger, ctx context.Context) func(url string, inpu
 			l.WithError(err).Warnf("Failed calling [%s] on [%s].", http.MethodPost, url)
 			return result, err
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {

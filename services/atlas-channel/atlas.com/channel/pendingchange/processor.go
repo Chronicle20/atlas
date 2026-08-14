@@ -60,11 +60,15 @@ func (p *ProcessorImpl) request(characterId uint32, input CreateInputRestModel) 
 	if se, ok := asStatusError(err); ok {
 		switch se.StatusCode {
 		case http.StatusConflict:
-			return result, &RejectedError{Status: http.StatusConflict, Reason: "already_pending"}
+			return result, &RejectedError{Status: http.StatusConflict, Reason: se.Detail}
 		case http.StatusUnprocessableEntity:
 			return result, &RejectedError{Status: http.StatusUnprocessableEntity, Reason: se.Detail}
 		case http.StatusNotFound:
-			return result, &RejectedError{Status: http.StatusNotFound, Reason: "unknown_character"}
+			reason := se.Detail
+			if reason == "" {
+				reason = "unknown_character"
+			}
+			return result, &RejectedError{Status: http.StatusNotFound, Reason: reason}
 		}
 	}
 	return result, err

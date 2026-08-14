@@ -11,6 +11,7 @@ import (
 // InventoryItemUse's (which pins the *potion* sender). The production handler in
 // atlas-channel keeps decoding the shared ItemUse directly. See task-229 and
 // docs/packets/audits/VERIFYING_A_PACKET.md "Shared-model ops".
+// packet-audit:verify packet=inventory/serverbound/InventoryReturnScrollItemUse version=gms_v83 ida=0xa1e1ce
 func TestReturnScrollItemUseRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

@@ -1238,3 +1238,52 @@ type EnqueueWorldBroadcastPayload struct {
 	ReceiverName    string          `json:"receiverName"`
 	ReceiverLook    *AvatarSnapshot `json:"receiverLook,omitempty"`
 }
+
+// ValidateWorldTransferPayload represents the payload required to validate a
+// pending world transfer before any severance step runs.
+type ValidateWorldTransferPayload struct {
+	CharacterId        uint32    `json:"characterId"`        // CharacterId to transfer
+	SourceWorldId      world.Id  `json:"sourceWorldId"`      // WorldId the character currently resides in
+	DestinationWorldId world.Id  `json:"destinationWorldId"` // WorldId the character is transferring to
+	PendingChangeId    uuid.UUID `json:"pendingChangeId"`    // PendingChangeId of the eligibility record backing this transfer
+}
+
+// LeaveGuildForTransferPayload represents the payload required to remove a
+// character from their guild ahead of a world transfer.
+type LeaveGuildForTransferPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId leaving the guild
+	WorldId     world.Id `json:"worldId"`     // WorldId the character currently resides in
+	GuildId     uint32   `json:"guildId"`     // GuildId the character is leaving
+	// Title is recorded so the compensation can re-add the member at the rank
+	// they held. A guild re-join is not a client-driveable recovery, so this
+	// is the one severance whose compensation must be exact.
+	Title byte `json:"title"`
+}
+
+// LeavePartyForTransferPayload represents the payload required to remove a
+// character from their party ahead of a world transfer.
+type LeavePartyForTransferPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId leaving the party
+	WorldId     world.Id `json:"worldId"`     // WorldId the character currently resides in
+	PartyId     uint32   `json:"partyId"`     // PartyId the character is leaving
+}
+
+// SeverBuddiesForTransferPayload represents the payload required to sever a
+// character's buddy relationships ahead of a world transfer.
+type SeverBuddiesForTransferPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId being severed from its buddies
+	WorldId     world.Id `json:"worldId"`     // WorldId the character currently resides in
+	// BuddyIds is captured before severance so the compensation can restore
+	// entries in both directions.
+	BuddyIds []uint32 `json:"buddyIds"`
+}
+
+// ChangeCharacterWorldPayload represents the payload required to move a
+// character's world assignment. This is the final, single-row-update step of
+// a world transfer: it runs only after every severance step has succeeded.
+type ChangeCharacterWorldPayload struct {
+	CharacterId        uint32    `json:"characterId"`        // CharacterId being moved
+	SourceWorldId      world.Id  `json:"sourceWorldId"`      // WorldId the character currently resides in
+	DestinationWorldId world.Id  `json:"destinationWorldId"` // WorldId the character is transferring to
+	PendingChangeId    uuid.UUID `json:"pendingChangeId"`    // PendingChangeId of the eligibility record backing this transfer
+}

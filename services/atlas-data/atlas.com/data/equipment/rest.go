@@ -14,34 +14,39 @@ type BonusExpTier struct {
 }
 
 type RestModel struct {
-	Id             uint32          `json:"-"`
-	Strength       uint16          `json:"strength"`
-	Dexterity      uint16          `json:"dexterity"`
-	Intelligence   uint16          `json:"intelligence"`
-	Luck           uint16          `json:"luck"`
-	Hp             uint16          `json:"hp"`
-	Mp             uint16          `json:"mp"`
-	WeaponAttack   uint16          `json:"weaponAttack"`
-	MagicAttack    uint16          `json:"magicAttack"`
-	WeaponDefense  uint16          `json:"weaponDefense"`
-	MagicDefense   uint16          `json:"magicDefense"`
-	Accuracy       uint16          `json:"accuracy"`
-	Avoidability   uint16          `json:"avoidability"`
-	Speed          uint16          `json:"speed"`
-	Jump           uint16          `json:"jump"`
-	Slots          uint16          `json:"slots"`
-	ReqLevel       uint16          `json:"reqLevel"`
-	ReqJob         uint16          `json:"reqJob"`
-	ReqStr         uint16          `json:"reqStr"`
-	ReqDex         uint16          `json:"reqDex"`
-	ReqInt         uint16          `json:"reqInt"`
-	ReqLuk         uint16          `json:"reqLuk"`
-	ReqPop         uint16          `json:"reqPop"`
-	ReqFame        uint16          `json:"reqFame"`
-	Cash           bool            `json:"cash"`
-	Price          uint32          `json:"price"`
-	TimeLimited    bool            `json:"timeLimited"`
-	TradeBlock     bool            `json:"tradeBlock"`
+	Id            uint32 `json:"-"`
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	Hp            uint16 `json:"hp"`
+	Mp            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
+	Slots         uint16 `json:"slots"`
+	ReqLevel      uint16 `json:"reqLevel"`
+	ReqJob        uint16 `json:"reqJob"`
+	ReqStr        uint16 `json:"reqStr"`
+	ReqDex        uint16 `json:"reqDex"`
+	ReqInt        uint16 `json:"reqInt"`
+	ReqLuk        uint16 `json:"reqLuk"`
+	ReqPop        uint16 `json:"reqPop"`
+	ReqFame       uint16 `json:"reqFame"`
+	Cash          bool   `json:"cash"`
+	Price         uint32 `json:"price"`
+	TimeLimited   bool   `json:"timeLimited"`
+	TradeBlock    bool   `json:"tradeBlock"`
+	// NotExtend is info/notExtend — when set, an item-expiration extender
+	// (Magical Sandglass) may not be applied to this equip. The client
+	// enforces it via CItemInfo::IsNotExtendItem; the server re-checks so a
+	// crafted request cannot bypass it.
+	NotExtend      bool            `json:"notExtend"`
 	ReplaceItemId  uint32          `json:"replaceItemId,omitempty"`
 	ReplaceMessage string          `json:"replaceMessage,omitempty"`
 	BonusExp       []BonusExpTier  `json:"bonusExp,omitempty"` // Time-based EXP bonus tiers

@@ -116,15 +116,16 @@ const (
 // (event_acceptance_test.go) catches missing entries before runtime.
 var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	// Asset actions.
-	sharedsaga.AwardAsset:           {EventKindAssetCreated, EventKindAssetQuantityChanged},
-	sharedsaga.DestroyAsset:         {EventKindAssetDeleted, EventKindAssetQuantityChanged},
-	sharedsaga.DestroyAssetFromSlot: {EventKindAssetDeleted, EventKindAssetQuantityChanged},
-	sharedsaga.EquipAsset:           {EventKindAssetMoved},
-	sharedsaga.UnequipAsset:         {EventKindAssetMoved},
-	sharedsaga.CreateAndEquipAsset:  {EventKindAssetCreated},
-	sharedsaga.SetAssetOwner:        {EventKindAssetUpdated},
-	sharedsaga.ApplyAssetLock:       {EventKindAssetUpdated},
-	sharedsaga.IncubatorResult:      {},
+	sharedsaga.AwardAsset:            {EventKindAssetCreated, EventKindAssetQuantityChanged},
+	sharedsaga.DestroyAsset:          {EventKindAssetDeleted, EventKindAssetQuantityChanged},
+	sharedsaga.DestroyAssetFromSlot:  {EventKindAssetDeleted, EventKindAssetQuantityChanged},
+	sharedsaga.EquipAsset:            {EventKindAssetMoved},
+	sharedsaga.UnequipAsset:          {EventKindAssetMoved},
+	sharedsaga.CreateAndEquipAsset:   {EventKindAssetCreated},
+	sharedsaga.SetAssetOwner:         {EventKindAssetUpdated},
+	sharedsaga.ApplyAssetLock:        {EventKindAssetUpdated},
+	sharedsaga.ExtendAssetExpiration: {EventKindAssetUpdated},
+	sharedsaga.IncubatorResult:       {},
 
 	// Character/stat actions.
 	sharedsaga.AwardExperience:        {EventKindCharacterExperienceChanged},

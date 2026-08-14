@@ -5,6 +5,11 @@ import "strconv"
 type RestModel struct {
 	Id           uint32   `json:"-"`
 	PetAbilities []string `json:"petAbilities,omitempty"`
+	// NotExtend is info/notExtend — when set, an item-expiration extender
+	// (Magical Sandglass) may not be applied to this equip. The client
+	// enforces it via CItemInfo::IsNotExtendItem; the server re-checks so a
+	// crafted request cannot bypass it.
+	NotExtend bool `json:"notExtend"`
 }
 
 func (r RestModel) GetName() string {
@@ -41,5 +46,6 @@ func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:           rm.Id,
 		petAbilities: rm.PetAbilities,
+		notExtend:    rm.NotExtend,
 	}, nil
 }

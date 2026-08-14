@@ -48,6 +48,7 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.BroadcastPqMessage, sharedsaga.StageClearAttemptPq, sharedsaga.FieldEffectWeather,
 	sharedsaga.StartRPSGame,
 	sharedsaga.SetAssetOwner, sharedsaga.ApplyAssetLock, sharedsaga.IncubatorResult,
+	sharedsaga.ExtendAssetExpiration,
 	sharedsaga.TransferAP, sharedsaga.TransferSP,
 	sharedsaga.CreateNote,
 	sharedsaga.EmitMegaphone, sharedsaga.EnqueueWorldBroadcast,
@@ -119,6 +120,21 @@ func TestStepAcceptsEvent_KnownSuccessKinds(t *testing.T) {
 		if !StepAcceptsEvent(tc.action, tc.kind) {
 			t.Errorf("StepAcceptsEvent(%q, %q) = false; want true", tc.action, tc.kind)
 		}
+	}
+}
+
+// TestExtendAssetExpirationIsAcceptanceMapped locks in ExtendAssetExpiration's
+// acceptanceTable entry (task-222). A missing/wrong entry here default-denies
+// every event in StepAcceptsEvent, so the step would never complete and the
+// saga would sit until timeout — this is the load-bearing test the plan
+// calls out for that failure mode.
+func TestExtendAssetExpirationIsAcceptanceMapped(t *testing.T) {
+	kinds, ok := acceptanceTable[sharedsaga.ExtendAssetExpiration]
+	if !ok {
+		t.Fatal("ExtendAssetExpiration missing from acceptanceTable; the step would default-deny every event and time out")
+	}
+	if len(kinds) != 1 || kinds[0] != EventKindAssetUpdated {
+		t.Fatalf("acceptance kinds = %v, want [%v]", kinds, EventKindAssetUpdated)
 	}
 }
 

@@ -589,3 +589,26 @@ func TestEventTimestamps(t *testing.T) {
 	elapsed := time.Since(now)
 	assert.Less(t, elapsed, time.Second, "Event processing should be fast")
 }
+
+func TestExtendExpirationCommandBodyWireShape(t *testing.T) {
+	// This body is mirrored in atlas-inventory
+	// (kafka/message/compartment/kafka.go). The two live in separate Go
+	// modules, so a tag changed on one side and not the other decodes into a
+	// zero-valued body at runtime rather than failing a build. Pin the tags.
+	body := ExtendExpirationCommandBody{
+		Slot:               -11,
+		Expiration:         time.Date(2026, 9, 12, 0, 0, 0, 0, time.UTC),
+		ExtenderTemplateId: 5500001,
+	}
+	b, err := json.Marshal(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"slot":-11,"expiration":"2026-09-12T00:00:00Z","extenderTemplateId":5500001}`
+	if string(b) != want {
+		t.Fatalf("marshalled = %s, want %s", b, want)
+	}
+	if CommandExtendExpiration != "EXTEND_EXPIRATION" {
+		t.Fatalf("CommandExtendExpiration = %q, want EXTEND_EXPIRATION", CommandExtendExpiration)
+	}
+}

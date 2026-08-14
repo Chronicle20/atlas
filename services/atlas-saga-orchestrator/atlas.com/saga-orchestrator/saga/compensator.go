@@ -270,10 +270,11 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	}
 
 	// Cash-item-use reverse-walk (Task 10). A failed item_tag_use /
-	// sealing_lock_use / incubator_use must refund the already-completed
-	// consume steps (the tagged/sealed/incubated item) and undo any awarded
-	// result rather than only compensating the failed step.
-	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse {
+	// sealing_lock_use / incubator_use / expiration_extender_use must refund
+	// the already-completed consume steps (the tagged/sealed/incubated/
+	// extender item) and undo any awarded result rather than only
+	// compensating the failed step.
+	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse || s.SagaType() == ExpirationExtenderUse {
 		return c.compensateCashItemUse(s, failedStep)
 	}
 

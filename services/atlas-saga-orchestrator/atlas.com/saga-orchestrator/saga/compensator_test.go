@@ -1171,3 +1171,95 @@ func TestStagingReverseWalkReversesItsMesoDebit(t *testing.T) {
 		t.Errorf("reversal amount: got %d, want +5000 negating the -5000 debit", awarded[0])
 	}
 }
+
+// TestExpirationExtenderUseRefundsConsumedExtender verifies that a failed
+// ExpirationExtenderUse saga refunds the already-consumed sandglass by
+// re-creating it via RequestCreateItem carrying its TemplateId. This is the
+// path that makes atlas-inventory's REJECT-not-clamp behavior for an
+// over-cap extension safe (Task 8): the sandglass was already destroyed by
+// the consume_expiration_extender step before the reject came back on
+// extend_asset_expiration, and the compensator must put it back rather than
+// let it vanish.
+func TestExpirationExtenderUseRefundsConsumedExtender(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	ctx := context.Background()
+	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tctx := tenant.WithContext(ctx, te)
+
+	const (
+		testCharId    = uint32(12345)
+		extenderId    = uint32(5500001)
+		inventoryType = byte(1)
+		slot          = int16(-11)
+	)
+
+	var createdTemplate uint32
+	var createdQty uint32
+	compP := &compmock.ProcessorMock{
+		RequestCreateItemFunc: func(_ uuid.UUID, _ uint32, templateId uint32, quantity uint32, _ time.Time) error {
+			createdTemplate = templateId
+			createdQty = quantity
+			return nil
+		},
+	}
+
+	s, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(ExpirationExtenderUse).
+		SetInitiatedBy("expiration-extender-use-compensation-test").
+		AddStep("consume_expiration_extender", Completed, DestroyAsset, DestroyAssetPayload{
+			CharacterId: testCharId,
+			TemplateId:  extenderId,
+			Quantity:    1,
+		}).
+		AddStep("extend_asset_expiration", Failed, ExtendAssetExpiration, ExtendAssetExpirationPayload{
+			CharacterId:        testCharId,
+			InventoryType:      inventoryType,
+			Slot:               slot,
+			ExtenderTemplateId: extenderId,
+		}).
+		Build()
+	if err != nil {
+		t.Fatalf("build saga: %v", err)
+	}
+
+	compensator := NewCompensator(logger, tctx).WithCompartmentProcessor(compP)
+	compensator.DispatchCashItemUseRollbacks(s)
+
+	if createdTemplate != extenderId {
+		t.Errorf("refunded template = %d, want %d", createdTemplate, extenderId)
+	}
+	if createdQty != 1 {
+		t.Errorf("refunded quantity = %d, want 1", createdQty)
+	}
+}
+
+// TestExpirationExtenderUseIsTimerClassified verifies that ExpirationExtenderUse
+// appears in BOTH reverseWalkSagaTypes and allSagaTypes. Missing the first
+// leaves a timed-out saga with no reverse walk at all — the sandglass stays
+// consumed and the target's expiration is never extended, a silent item loss.
+// Missing the second fails TestEverySagaTypeIsClassified, the safety net that
+// exists precisely because a type omitted from a list is invisible to a test
+// that only iterates that list.
+func TestExpirationExtenderUseIsTimerClassified(t *testing.T) {
+	inReverse := false
+	for _, ty := range reverseWalkSagaTypes {
+		if ty == ExpirationExtenderUse {
+			inReverse = true
+		}
+	}
+	if !inReverse {
+		t.Error("ExpirationExtenderUse missing from reverseWalkSagaTypes: a timed-out saga would leave the extender consumed with no extension")
+	}
+	inAll := false
+	for _, ty := range allSagaTypes {
+		if ty == ExpirationExtenderUse {
+			inAll = true
+		}
+	}
+	if !inAll {
+		t.Error("ExpirationExtenderUse missing from allSagaTypes")
+	}
+}

@@ -14,7 +14,7 @@ Tool: `8f20b0b54b4f2952dd0a99724e6cdb8a082c6ccbbbefbd5288a6ddef4bdbac3e`
 - export gms_v84: `c6e0ce15c0d18b3c1ecc8f280b1f44158ab04cb31a154ea878fc89ab09e6ae88`
 - export gms_v87: `ae1b3647aa0b0d8de93a589a462e01a59a08f132a22fb0e90b8975d4f4f821b9`
 - export gms_v92: `f6d4b36885a904ecffa4b2adf2ffaf0908afcadd7966941a7fe68a88cdcab6e4`
-- export gms_v95: `f15eb92b0b367981984ef68303fecd197d8735bcc0ce7e603b3003509a717355`
+- export gms_v95: `afdbda133ede44a3a6f3431ead49b3954ea4fa0e4961ffa8ff2d3da6896b9d69`
 - export jms_v185: `0d054f727c883d0fea10da9ffa4da21c07a549f34caa8369f0ac44ee4f581a0b`
 
 ## Clientbound
@@ -599,7 +599,7 @@ Tool: `8f20b0b54b4f2952dd0a99724e6cdb8a082c6ccbbbefbd5288a6ddef4bdbac3e`
 | DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest; sub_71CD00; sub_8457EE | character/serverbound/DistributeAp (T1) | 0x043 | ✅ | 0x050 | ✅ | 0x056 | ✅ | 0x055 | ✅ | 0x057 | ✅ | 0x057 | ✅ | 0x05B | ✅ | 0x061 | ❌ | 0x062 | ✅ | 0x052 | ✅ |
 | ADMIN_SHOP | CAdminShopDlg::OnPacket; CAdminShopDlg::SendTradeRequest; CAdminShopDlg::SetRet; CUIAdminShopWishList::SendRegisterPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x044 | ❌ | 0x044 | ❌ | 0x047 | ❌ | 0x04B | ❌ | 0x04A | ❌ | 0x03C | ❌ |
 | HEAL_OVER_TIME | CWvsContext::SendStatChangeRequest | character/serverbound/HealOverTime (T1) | 0x044 | ✅ | 0x051 | ✅ | 0x058 | ✅ | 0x057 | ✅ | 0x059 | ✅ | 0x059 | ✅ | 0x05C | ✅ | 0x063 | 🟡ᶠ | 0x064 | ✅ | 0x054 | ✅ |
-| USE_SUMMON_BAG | CWvsContext::SendMobSummonItemUseRequest; sub_955499 |  |  | ⬜ | 0x046 | ✅ | 0x04A | ❌ | 0x049 | ❌ | 0x04B | ✅ | 0x04B | ✅ | 0x04E | ✅ | 0x052 | ✅ | 0x051 | ❌ | 0x043 | ❌ |
+| USE_SUMMON_BAG | CWvsContext::SendMobSummonItemUseRequest; sub_955499 |  |  | ⬜ | 0x046 | ✅ | 0x04A | ❌ | 0x049 | ❌ | 0x04B | ✅ | 0x04B | ✅ | 0x04E | ✅ | 0x052 | ✅ | 0x051 | ✅ | 0x043 | ❌ |
 | CANCEL_BUFF | CUserLocal::SendSkillCancelRequest | character/serverbound/BuffCancelRequest (T1) | 0x047 | ✅ | 0x054 | 🟡ᶠ | 0x05B | 🟡ᶠ | 0x05A | 🟡ᶠ | 0x05C | ✅ | 0x05C | ✅ | 0x05F | ✅ | 0x067 | ❌ | 0x068 | ✅ | 0x057 | ✅ |
 | SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare; sub_6ADD4C | character/serverbound/CharacterSkillPrepare (T1) | 0x048 | ✅ | 0x055 | ✅ | 0x05C | ✅ | 0x05B | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x068 | ❌ | 0x069 | ✅ | 0x058 | ✅ |
 | USER_EFFECT_LOCAL | CUserLocal::SendSkillEffectRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x048 | ❌ | 0x047 | ❌ |  | ⬜ |
@@ -610,7 +610,7 @@ Tool: `8f20b0b54b4f2952dd0a99724e6cdb8a082c6ccbbbefbd5288a6ddef4bdbac3e`
 | USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest; sub_8327DB; sub_904D5E; sub_9560C6 | teleportrock/serverbound/Use (T1) |  | ⬜ | 0x04D | ✅ | 0x053 | ✅ | 0x052 | ✅ | 0x054 | ✅ | 0x054 | ✅ | 0x057 | ✅ | 0x05B | ❌ | 0x05B | ✅ | 0x04C | ✅ |
 | CANCEL_DEBUFF | CWvsContext::CheckTemporaryStatDuration | character/serverbound/CancelDebuff (T1) | 0x04E | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x061 | ✅ | 0x063 | ✅ | 0x063 | ✅ | 0x066 | ✅ | 0x06E | ❌ | 0x06F | ✅ | 0x05E | ✅ |
 | SCRIPTED_ITEM | CWvsContext::SendScriptRunItemRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04E | ❌ | 0x04E | ❌ | 0x051 | ❌ | 0x055 | ❌ | 0x054 | ❌ | 0x046 | ❌ |
-| USE_RETURN_SCROLL | CWvsContext::SendPortalScrollUseRequest; CWvsContext::SendReturnScrollUseRequest; sub_841AA5 |  |  | ⬜ | 0x04E | ✅ | 0x054 | ❌ | 0x053 | ❌ | 0x055 | ✅ | 0x055 | ✅ | 0x058 | ✅ | 0x05C | ✅ | 0x05C | ❌ | 0x04D | ❌ |
+| USE_RETURN_SCROLL | CWvsContext::SendPortalScrollUseRequest; CWvsContext::SendReturnScrollUseRequest; sub_841AA5 |  |  | ⬜ | 0x04E | ✅ | 0x054 | ❌ | 0x053 | ❌ | 0x055 | ✅ | 0x055 | ✅ | 0x058 | ✅ | 0x05C | ✅ | 0x05C | ✅ | 0x04D | ❌ |
 | DESTROY_PET_ITEM_REQUEST | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ | 0x050 | ❌ | 0x053 | ✅ | 0x057 | ❌ | 0x056 | ✅ | 0x048 | ✅ |
 | TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest; sub_71E7F3; sub_8478EA; sub_91E33E; sub_970286 | teleportrock/serverbound/AddMap | 0x051 | ✅ | 0x05E | ✅ | 0x065 | ✅ | 0x064 | ✅ | 0x066 | ✅ | 0x066 | ✅ | 0x069 | ✅ | 0x071 | 🟡ᵈ | 0x072 | ✅ | 0x061 | ✅ |
 | ANTI_MACRO_RESULT | CUIAdminAntiMacro::SetRet; CUIAntiMacro::SetRet; sub_5F9718; sub_69C480 |  | 0x053 | ❌ | 0x060 | ❌ |  | ⬜ |  | ⬜ | 0x069 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x074 | ❌ | 0x075 | ❌ | 0x064 | ❌ |
@@ -1063,7 +1063,7 @@ Tool: `8f20b0b54b4f2952dd0a99724e6cdb8a082c6ccbbbefbd5288a6ddef4bdbac3e`
 | v84 | 426 | 0 | 0 | 346 | 247 | 0 | 55.2% |
 | v87 | 460 | 0 | 0 | 369 | 190 | 0 | 55.5% |
 | v92 | 34 | 0 | 148 | 696 | 141 | 0 | 3.9% |
-| v95 | 483 | 0 | 0 | 430 | 106 | 0 | 52.9% |
+| v95 | 485 | 0 | 0 | 428 | 106 | 0 | 53.1% |
 | JMS185 | 431 | 0 | 0 | 391 | 197 | 0 | 52.4% |
 
 ## Conflicts

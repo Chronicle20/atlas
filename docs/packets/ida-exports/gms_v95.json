@@ -15365,6 +15365,48 @@
         }
       ]
     },
+    "CWvsContext::SendMobSummonItemUseRequest": {
+      "address": "0x9de580",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && CUtilDlg::YesNo(v13, v14, v15, v16, v17) == 6"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "<default> && CUtilDlg::YesNo(v13, v14, v15, v16, v17) == 6"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "<default> && CUtilDlg::YesNo(v13, v14, v15, v16, v17) == 6"
+        }
+      ]
+    },
+    "CWvsContext::SendPortalScrollUseRequest": {
+      "address": "0x9fca70",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::IsAbleToConsume(this, nItemID, 1"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "CWvsContext::IsAbleToConsume(this, nItemID, 1"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::IsAbleToConsume(this, nItemID, 1"
+        }
+      ]
+    },
     "CWvsContext::SendMapTransferRequest": {
       "address": "0x9f3b90",
       "direction": "serverbound",

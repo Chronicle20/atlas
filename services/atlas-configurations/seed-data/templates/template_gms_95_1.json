@@ -876,6 +876,15 @@
         ]
       },
       {
+        "opCode": "0x81",
+        "validator": "LoggedInValidator",
+        "handler": "WaterOfLifeHandle",
+        "fname": "CWvsContext::SendWaterOfLife",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x8B",
         "validator": "LoggedInValidator",
         "handler": "AdminChat",

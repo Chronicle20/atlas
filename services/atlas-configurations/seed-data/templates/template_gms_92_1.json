@@ -668,6 +668,15 @@
         ]
       },
       {
+        "opCode": "0x80",
+        "validator": "LoggedInValidator",
+        "handler": "WaterOfLifeHandle",
+        "fname": "CWvsContext::SendWaterOfLife",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x8C",
         "validator": "LoggedInValidator",
         "handler": "MessengerOperationHandle",

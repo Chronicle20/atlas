@@ -53,6 +53,7 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.CreateNote,
 	sharedsaga.EmitMegaphone, sharedsaga.EnqueueWorldBroadcast,
 	sharedsaga.OpenNpcShop,
+	sharedsaga.StartItemConversation, sharedsaga.StartNpcConversation,
 }
 
 // TestAcceptanceTable_EveryActionRepresented asserts every Action constant

@@ -6,6 +6,7 @@ import (
 	"atlas-saga-orchestrator/kafka/message/gachapon"
 	"atlas-saga-orchestrator/kafka/message/incubator"
 	"atlas-saga-orchestrator/kafka/message/megaphone"
+	"atlas-saga-orchestrator/kafka/message/npc"
 	npcshop "atlas-saga-orchestrator/kafka/message/npcshop"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"context"
@@ -406,6 +407,79 @@ var emitNpcShopExitFn = emitNpcShopExitImpl
 
 func emitNpcShopExitImpl(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32) error {
 	return producer.ProviderImpl(l)(ctx)(npcshop.EnvCommandTopic)(NpcShopExitCommandProvider(transactionId, characterId))
+}
+
+// NpcConversationStartItemCommandProvider builds the COMMAND_TOPIC_NPC
+// START_ITEM_CONVERSATION command for a start_item_conversation step. Keyed by
+// character id, matching every other producer on this topic.
+func NpcConversationStartItemCommandProvider(transactionId uuid.UUID, payload StartItemConversationPayload) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(payload.CharacterId))
+	value := &npc.Command[npc.CommandItemConversationStartBody]{
+		TransactionId: transactionId,
+		NpcId:         payload.NpcTemplateId,
+		CharacterId:   payload.CharacterId,
+		Type:          npc.CommandTypeStartItemConversation,
+		Body: npc.CommandItemConversationStartBody{
+			WorldId:   payload.WorldId,
+			ChannelId: payload.ChannelId,
+			MapId:     payload.MapId,
+			Instance:  payload.Instance,
+			AccountId: payload.AccountId,
+			ItemId:    payload.ItemId,
+			Slot:      payload.Slot,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// NpcConversationStartNpcCommandProvider builds the COMMAND_TOPIC_NPC
+// START_CONVERSATION command for a start_npc_conversation step. It reuses the
+// existing command type — the transactionId is what makes it saga-driven, and
+// a uuid.Nil one is the ordinary NPC-talk path that emits no status.
+func NpcConversationStartNpcCommandProvider(transactionId uuid.UUID, payload StartNpcConversationPayload) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(payload.CharacterId))
+	value := &npc.Command[npc.CommandConversationStartBody]{
+		TransactionId: transactionId,
+		NpcId:         payload.NpcTemplateId,
+		CharacterId:   payload.CharacterId,
+		Type:          npc.CommandTypeStartConversation,
+		Body: npc.CommandConversationStartBody{
+			WorldId:   payload.WorldId,
+			ChannelId: payload.ChannelId,
+			MapId:     payload.MapId,
+			Instance:  payload.Instance,
+			AccountId: payload.AccountId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// NpcConversationEndCommandProvider builds the END_CONVERSATION command used to
+// compensate a conversation-start step whose saga later failed, so a player is
+// never left standing in a dialogue for an item they still hold.
+func NpcConversationEndCommandProvider(transactionId uuid.UUID, characterId uint32, npcTemplateId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &npc.Command[npc.CommandConversationEndBody]{
+		TransactionId: transactionId,
+		NpcId:         npcTemplateId,
+		CharacterId:   characterId,
+		Type:          npc.CommandTypeEndConversation,
+		Body:          npc.CommandConversationEndBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// EmitNpcConversationEnd emits the END_CONVERSATION compensation command for a
+// conversation-start step. Indirected through a package var so compensator
+// tests can observe it without a broker (same seam shape as EmitNpcShopExit).
+func EmitNpcConversationEnd(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32, npcTemplateId uint32) error {
+	return emitNpcConversationEndFn(l, ctx, transactionId, characterId, npcTemplateId)
+}
+
+var emitNpcConversationEndFn = emitNpcConversationEndImpl
+
+func emitNpcConversationEndImpl(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32, npcTemplateId uint32) error {
+	return producer.ProviderImpl(l)(ctx)(npc.EnvCommandTopic)(NpcConversationEndCommandProvider(transactionId, characterId, npcTemplateId))
 }
 
 // MegaphoneBroadcastEventProvider builds the megaphone.BroadcastEvent for the

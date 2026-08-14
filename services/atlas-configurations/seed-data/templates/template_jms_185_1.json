@@ -534,6 +534,15 @@
         ]
       },
       {
+        "opCode": "0x46",
+        "validator": "LoggedInValidator",
+        "handler": "ScriptedItemHandle",
+        "fname": "CWvsContext::SendScriptRunItemRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x47",
         "validator": "LoggedInValidator",
         "handler": "CharacterCashItemUseHandle",
@@ -709,6 +718,15 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterSkillMacroHandle",
         "fname": "CMacroSysMan::FlushToSvr",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x6A",
+        "validator": "LoggedInValidator",
+        "handler": "NpcItemUseHandle",
+        "fname": "CWvsContext::SendSelectNpcItemUseRequest",
         "services": [
           "channel"
         ]

@@ -3291,3 +3291,109 @@ shape these three tasks build. It is **out of scope here** — but the stale com
 is not: whichever task last touches that file must correct it to describe what the
 code actually does, or the next reader inherits the same false map that produced
 this rework.
+
+---
+
+## Phase I — the pre-v95 account credential
+
+**Added by controller ruling, 2026-08-14, on a defect found during Task 26.**
+
+Design §1.7 says the check packets "carry the account's second password" and must be
+"validated against the account's stored PIC/SPW". **That is true only on v95 and
+jms_v185.** Verified in source — the credential is version-gated in **wire type**,
+not merely in format
+(`libs/atlas-packet/cash/serverbound/check_transfer_world_possible.go:68-89,148-164`;
+`check_name_change_possible.go:39,62-63`):
+
+```
+gms_v48 … gms_v92  (INCLUDING gms_v83, this repo's BASELINE):  Encode4  nBirthDate  (uint32)
+gms_v95 / jms_v185                                          :  EncodeStr spw        (string)
+```
+
+`account.Model.PIC()` is a single `string`. **On the baseline version there is no PIC
+on the wire at all**, and
+`grep -rni "birthday|birthdate|dateOfBirth|dob" services/atlas-account/` returns
+nothing — atlas-account stores no birth date, so `nBirthDate` currently has nothing
+to be validated against.
+
+> **Do not use design.md §1.7 to settle any part of this.** It claims v83
+> `CCashShop::OnBuyNameChange (@0x470480)` calls `ask_SPW()`, and it is wrong twice
+> over: the codec above shows v83 sends `nBirthDate`, and
+> [`buy-currency-derivation.md`](buy-currency-derivation.md) places
+> `OnBuyNameChange` at `0x47031e` — `0x470480` is `OnBuyTransferWorld`.
+
+**User ruling: add a birth date to atlas-account** and validate the pre-v95
+credential against it, mirroring how the PIC is validated on v95.
+
+### Task 40: atlas-account stores and exposes a birth date
+
+**Files:**
+- Modify: `services/atlas-account/atlas.com/account/account/entity.go` — new column
+- Modify: `services/atlas-account/atlas.com/account/account/model.go` — field, builder setter, accessor
+- Modify: `services/atlas-account/atlas.com/account/account/rest.go` — the `RestModel` field (beside `Pic`, line 28) and `Extract`
+- Modify: `services/atlas-account/atlas.com/account/account/resource.go` — an update route, mirroring the PIC's
+- Modify: `services/atlas-channel/atlas.com/channel/account/rest.go` + `model.go` — the channel-side **mirror**; the channel performs the comparison
+- A migration for the new column, following this repo's existing convention — find it, do not invent one.
+- Tests beside each changed file.
+
+Patterns to copy: the `Pic` field end to end — `entity.go` → `model.go` → `rest.go`
+→ `resource.go` — is the exact shape to follow.
+
+- [ ] **Step 1: Write the failing tests**
+
+Round-trip the birth date through entity → model → REST → the channel's `Extract`.
+Assert the channel-side mirror decodes it — the two services' REST models are
+hand-mirrored and drift silently (Phase H Task 37 documents a live instance of that
+drift in `PurchaseEventBody`).
+
+- [ ] **Step 2: Implement, including the migration**
+
+Store it as the same `uint32` the wire carries — `nBirthDate` is an 8-digit
+`YYYYMMDD` packed into a uint32, per the codec's own doc comment at
+`check_transfer_world_possible.go:81-83`. Storing the wire form avoids a lossy date
+conversion on a value that exists only to be compared for equality.
+
+- [ ] **Step 3: Run the tests, then commit**
+
+### Task 41: the pre-v95 credential comparison, fail-closed
+
+**Files:**
+- Modify: the two check handlers from Task 26
+- Tests beside them.
+
+- [ ] **Step 1: Write the failing tests**
+
+  (a) **v95 / jms_v185:** compare the decoded `Spw()` against `account.Model.PIC()`.
+  (b) **v48 … v92, including v83:** compare the decoded `BirthDate()` against the
+      account's stored birth date from Task 40. Assert the handler does **not**
+      consult `PIC()` on these versions, and does not consult the birth date on v95.
+  (c) **Unset stored birth date → the check FAILS.** Assert this explicitly; it is
+      the state every existing account is in today. See the ruling below.
+  (d) The credential **never reaches a log line**, on either version path.
+  (e) The attempt is recorded through the same lockout counter Task 26 wired up, on
+      both outcomes and both version paths.
+
+- [ ] **Step 2: Implement**
+
+- [ ] **Step 3: Run the tests, then commit**
+
+### Ruling: an unset birth date fails the check. It does not pass it.
+
+The alternative — treating an unset stored value as "accept whatever the client
+sent", or as "accept it and store it" — is **trust-on-first-use**, and it would make
+this credential worthless for **every account that exists today**, since none has a
+birth date. An attacker would simply be the first to submit one. A credential anyone
+can set by asking is not a credential, and design §8 is explicit that this field is a
+security control.
+
+**The cost of this ruling is real and must not be buried:** until an account has a
+birth date populated, **name change and world transfer are unusable on v83 and every
+other pre-v95 version.** The value must arrive through account provisioning — the
+account-creation path or an operator update via Task 40's route — not through the
+game client, because no pre-v95 client packet registers one (unlike the PIC, which
+has `character_view_all_selected_pic_register.go`).
+
+If that consequence is unacceptable, the decision to revisit is **this ruling**, not
+the fail-closed default: the honest alternatives are to ship the feature v95-only, or
+to backfill birth dates during provisioning. Do not resolve it by weakening the
+comparison.

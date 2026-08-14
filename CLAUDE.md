@@ -174,8 +174,48 @@ Every task type's leaf step — promoting one packet × version matrix cell to `
 - Never use Fable for background/review workflows.
 - Long agents are the cost: context grows with turn count and every turn re-reads all of it, so one 600-turn agent costs far more than the same work split across fresh contexts. The implementer budget is **120 tool calls**, warned at 100 — enforced by `.claude/hooks/turn-budget.sh` and contracted in `.claude/agents/atlas-implementer.md`. At the cap an implementer commits and reports `PARTIAL`; the controller dispatches a continuation. The number lives in the hook — change it there only.
 - Implementers do not run repo-wide verification. `tools/verify.sh`, `tools/lint.sh`, `-race`, and docker bake belong to the `atlas-verifier` agent in its own clean context; a `--quick` run inside a 400k-token implementer costs a large multiple of the same run in a 20k one. Implementers run module-local `go build ./... && go test ./...` and nothing more.
+- Fan out with **fresh-context agents, not `subagent_type: "fork"`.** A fork inherits the parent's entire conversation and re-reads it on every turn, so a forked child that runs 70+ turns costs several times a briefed agent doing the same job. Default to a named agent type plus an explicit brief. Fork only to continue an interactive debugging thread whose brief would be longer than the context it saves — and say so, because `.claude/hooks/fork-dispatch-guard.sh` requires the justification inline.
+
+## Context Handoff
+
+The unit of work is a **briefable task, not a conversation.** Context cost scales
+with turn count × context size, so 50 turns carried at 190k cost roughly ten times
+the same 50 turns at 19k — regardless of what they accomplish.
+
+**At every durable boundary — a commit landing, a verification gate returning, a
+fan-out of agents reporting — ask one question: does the next unit of work depend
+materially on this conversation's history, or only on repository state?**
+
+If it can be resumed from repo state + the task's own reports + a short written
+diagnosis, hand off. Do not wait for a context threshold; a high threshold is a
+backstop, not the trigger. The signal is dependency, not size.
+
+- **Handing off means delegating, not clearing.** `/clear` is a user action —
+  you cannot clear yourself. Dispatch the next unit to a fresh agent with a brief
+  (`atlas-implementer` + `atlas-verifier` for code work). Only when the next unit
+  is genuinely controller-shaped should you instead write the diagnosis down, tell
+  the user this is a clean handoff point, and let them `/clear`.
+- **The diagnosis must be written before the handoff, not carried in your head.**
+  One paragraph into the task folder — what was found, what it means, what the
+  next step is. One turn to write; it is what makes the handoff lossless. A
+  handoff whose reasoning survives only in conversation is not a handoff.
+- **There is a floor as well as a backstop.** Below roughly 60k a fresh agent
+  re-discovers files you already hold, and you pay for that discovery twice.
+  Under ~40 tool calls, prefer continuing. `.claude/hooks/commit-boundary.sh`
+  encodes this floor and raises the question at commits past it.
+- **The pattern already exists — reuse it.** `/execute-task` Step 4d (`PARTIAL`
+  → continuation brief beside the original → same report file as the persistent
+  memory across the split → fresh implementer) is exactly this handoff. It is not
+  special to `/execute-task`; apply the same shape in any session. Generate briefs
+  with `tools/task-brief.sh`, never by hand out of `plan.md`.
+
+The failure this prevents: one session doing four unrelated jobs — resolve a merge,
+verify packet cells, run reviews, then fix a service bug — where the last job needed
+exactly one sentence from the first three but re-read all of them on all 57 of its
+turns.
 
 ## Shell & Editing Conventions
 
 - Prefer portable POSIX shell in Bash commands; avoid zsh/direnv-specific constructs and batch patch loops that can produce garbled or unapplied output. When a multi-file edit is needed, prefer per-file Edit/Write over a shell patch loop.
 - Preserve line endings when editing (do not normalize CRLF→LF as a side effect) — it inflates diffs with spurious changes.
+- **Never spend inference turns waiting for a process.** Launch it once with a bound — `run_in_background: true`, or `Monitor` with an until-loop — and do something else or hand back. Repeated `sleep` / `ps aux | grep` / `echo waiting` / `for i in $(seq …); do sleep` Bash calls are the anti-pattern: each one re-reads the whole context to learn nothing, and they cluster late in a session where that is most expensive. If the process exceeds its bound, kill it and fall back; do not keep polling. When a tool has a known hang mode, the fallback belongs in that tool's agent doc, not in a longer wait.

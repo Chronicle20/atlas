@@ -13,6 +13,7 @@ type Entity struct {
 	Region       string    `gorm:"not null"`
 	MajorVersion uint16    `gorm:"not null"`
 	MinorVersion uint16    `gorm:"not null"`
+	Environment  string    `gorm:"not null;default:''"`
 }
 
 // TableName overrides the table name

@@ -364,6 +364,35 @@ func TestFromModel(t *testing.T) {
 	}
 }
 
+func TestTenantEnvironmentRoundTrips(t *testing.T) {
+	processor, cleanup := setupTestProcessor(t)
+	defer cleanup()
+
+	m, err := tenant.NewModelBuilder().
+		SetName("Test Tenant").
+		SetRegion("GMS").
+		SetMajorVersion(83).
+		SetMinorVersion(1).
+		SetEnvironment("pr-123").
+		Build()
+	if err != nil {
+		t.Fatalf("Build() unexpected error: %v", err)
+	}
+
+	e := tenant.FromModel(m)
+	if err := tenant.CreateTenant(processor.db, e); err != nil {
+		t.Fatalf("CreateTenant: %v", err)
+	}
+
+	got, err := processor.getById(m.Id())
+	if err != nil {
+		t.Fatalf("getById: %v", err)
+	}
+	if got.Environment() != "pr-123" {
+		t.Fatalf("Environment() = %q, want \"pr-123\"", got.Environment())
+	}
+}
+
 func TestMake(t *testing.T) {
 	id := uuid.New()
 	entity := tenant.NewEntityBuilder().

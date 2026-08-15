@@ -54,6 +54,7 @@ func main() {
 		configuration.MigrateEntities,
 		outboxlib.Migration,
 		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
+		tenant.EnvironmentMigration,
 	))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.

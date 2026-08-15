@@ -90,6 +90,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(name string, region stri
 			m.Region(),
 			m.MajorVersion(),
 			m.MinorVersion(),
+			m.Environment(),
 		))
 		if err != nil {
 			return Model{}, err
@@ -140,6 +141,7 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uuid.UUID, name strin
 			SetRegion(region).
 			SetMajorVersion(majorVersion).
 			SetMinorVersion(minorVersion).
+			SetEnvironment(e.Environment).
 			Build()
 
 		err = UpdateTenant(p.db, e)
@@ -160,6 +162,7 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uuid.UUID, name strin
 			m.Region(),
 			m.MajorVersion(),
 			m.MinorVersion(),
+			m.Environment(),
 		))
 		if err != nil {
 			return Model{}, err
@@ -222,6 +225,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uuid.UUID) error {
 			m.Region(),
 			m.MajorVersion(),
 			m.MinorVersion(),
+			m.Environment(),
 		))
 		if err != nil {
 			return err

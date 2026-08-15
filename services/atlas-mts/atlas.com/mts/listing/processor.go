@@ -259,6 +259,10 @@ type Processor interface {
 	// of SettleMove): it soft-deletes the deterministic buyer holding and transitions
 	// the listing sold->active in one tx.
 	RestoreFromHolding(listingId string, buyerId uint32) error
+	// RenameSeller renames seller_name on EVERY listing row for sellerId,
+	// regardless of State (task-227 NAME_CHANGED consumption). Returns rows
+	// affected (0 = the seller has no listings, not an error).
+	RenameSeller(sellerId uint32, newName string) (int64, error)
 }
 
 // ReleasedOffer describes one losing want-ad offer that ReleaseSiblingOffers
@@ -365,6 +369,12 @@ func (p *ProcessorImpl) TransitionState(id string, from State, to State) (bool, 
 // the optional end time). Used by the bid path.
 func (p *ProcessorImpl) UpdateAuction(id string, currentBid uint32, highBidderId uint32, endsAt *time.Time) error {
 	return UpdateAuction(p.db.WithContext(p.ctx), id, currentBid, highBidderId, endsAt)
+}
+
+// RenameSeller renames seller_name on every listing row for sellerId,
+// regardless of State — see updateSellerName for the rationale.
+func (p *ProcessorImpl) RenameSeller(sellerId uint32, newName string) (int64, error) {
+	return updateSellerName(p.db.WithContext(p.ctx), sellerId, newName)
 }
 
 // CancelResult reports the outcome of a Cancel attempt. Won is true iff this

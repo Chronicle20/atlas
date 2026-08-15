@@ -21,6 +21,7 @@ resources:
   - atlas-drop-information.yaml
   - atlas-drops.yaml
   - atlas-effective-stats.yaml
+  - atlas-events.yaml
   - atlas-expressions.yaml
   - atlas-fame.yaml
   - atlas-reward-pools.yaml

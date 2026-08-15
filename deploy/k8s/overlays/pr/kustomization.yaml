@@ -273,6 +273,7 @@ configMapGenerator:
       - EVENT_TOPIC_DOOR_STATUS=EVENT_TOPIC_DOOR_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_DROP_STATUS=EVENT_TOPIC_DROP_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_EQUIP_CHANGED=EVENT_TOPIC_EQUIP_CHANGED-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_EVENT_VISUAL=EVENT_TOPIC_EVENT_VISUAL-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_EXPRESSION=EVENT_TOPIC_EXPRESSION-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_FAME_STATUS=EVENT_TOPIC_FAME_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_FAMILY_ERRORS=EVENT_TOPIC_FAMILY_ERRORS-PLACEHOLDER_ATLAS_ENV
@@ -334,7 +335,7 @@ configMapGenerator:
       - EVENT_TOPIC_WORLD_RATE=EVENT_TOPIC_WORLD_RATE-PLACEHOLDER_ATLAS_ENV
   - name: atlas-db-names
     literals:
-      - ATLAS_DB_NAMES=atlas-accounts atlas-bans atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-reward-pools atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-mini-games atlas-monster-book atlas-mounts atlas-mts atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-rankings atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants atlas-trades
+      - ATLAS_DB_NAMES=atlas-accounts atlas-bans atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-events atlas-fame atlas-reward-pools atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-mini-games atlas-monster-book atlas-mounts atlas-mts atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-rankings atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants atlas-trades
   - name: atlas-pr-bootstrap-tenant
     literals:
       - TENANT_ID=00000000-0000-0000-0000-000000000001
@@ -402,6 +403,8 @@ images:
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-effective-stats/atlas-effective-stats
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-events/atlas-events
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-expressions/atlas-expressions
     newTag: latest

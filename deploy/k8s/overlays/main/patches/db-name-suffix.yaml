@@ -106,6 +106,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-events
+spec:
+  template:
+    spec:
+      containers:
+        - name: events
+          env:
+            - name: DB_NAME
+              value: "atlas-events-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-fame
 spec:
   template:

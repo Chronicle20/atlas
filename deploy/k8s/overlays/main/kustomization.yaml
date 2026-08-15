@@ -149,6 +149,7 @@ configMapGenerator:
       - EVENT_TOPIC_DOOR_STATUS=EVENT_TOPIC_DOOR_STATUS-main
       - EVENT_TOPIC_DROP_STATUS=EVENT_TOPIC_DROP_STATUS-main
       - EVENT_TOPIC_EQUIP_CHANGED=EVENT_TOPIC_EQUIP_CHANGED-main
+      - EVENT_TOPIC_EVENT_VISUAL=EVENT_TOPIC_EVENT_VISUAL-main
       - EVENT_TOPIC_EXPRESSION=EVENT_TOPIC_EXPRESSION-main
       - EVENT_TOPIC_FAME_STATUS=EVENT_TOPIC_FAME_STATUS-main
       - EVENT_TOPIC_FAMILY_ERRORS=EVENT_TOPIC_FAMILY_ERRORS-main
@@ -244,6 +245,8 @@ images:
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops
     newTag: main-d23dffc
   - name: ghcr.io/chronicle20/atlas-effective-stats/atlas-effective-stats
+    newTag: main-d23dffc
+  - name: ghcr.io/chronicle20/atlas-events/atlas-events
     newTag: main-d23dffc
   - name: ghcr.io/chronicle20/atlas-expressions/atlas-expressions
     newTag: main-d23dffc

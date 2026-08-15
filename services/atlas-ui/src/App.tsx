@@ -68,6 +68,11 @@ const RewardPoolDetailPage = lazyWithReload(() =>
 const CouponsPage = lazyWithReload(() =>
   import("@/pages/CouponsPage").then((m) => ({ default: m.CouponsPage })),
 );
+const EventDefinitionsPage = lazyWithReload(() =>
+  import("@/pages/EventDefinitionsPage").then((m) => ({
+    default: m.EventDefinitionsPage,
+  })),
+);
 const CouponDetailPage = lazyWithReload(() =>
   import("@/pages/CouponDetailPage").then((m) => ({
     default: m.CouponDetailPage,
@@ -301,6 +306,10 @@ export function App() {
                     <Route
                       path="/coupons/:couponId"
                       element={<CouponDetailPage />}
+                    />
+                    <Route
+                      path="/events/definitions"
+                      element={<EventDefinitionsPage />}
                     />
                     <Route path="/reward-pools" element={<RewardPoolsPage />} />
                     <Route

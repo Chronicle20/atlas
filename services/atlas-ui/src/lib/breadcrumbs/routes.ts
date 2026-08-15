@@ -291,6 +291,13 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     entityType: "coupon",
   },
 
+  // Event routes
+  {
+    pattern: "/events/definitions",
+    label: "Definitions",
+    parent: "/",
+  },
+
   // Reward pool routes
   {
     pattern: "/reward-pools",
@@ -660,6 +667,7 @@ export const ROUTE_PATTERNS = {
   PACKET_MATRIX: "/packet-matrix",
   COUPONS: "/coupons",
   COUPON_DETAIL: "/coupons/[id]",
+  EVENT_DEFINITIONS: "/events/definitions",
   REWARD_POOLS: "/reward-pools",
   REWARD_POOL_DETAIL: "/reward-pools/[id]",
   SETUP: "/setup",

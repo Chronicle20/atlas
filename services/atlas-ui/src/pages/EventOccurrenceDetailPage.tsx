@@ -1,12 +1,17 @@
 /**
- * Event occurrence detail: header summary, the per-type panel (FR-UI8), and
- * the full transition history (FR-UI7).
+ * Event occurrence detail: header summary, the owning definition, the
+ * per-type panel (FR-UI8), the full context (FR-UI7), and the full
+ * transition history (FR-UI7).
  *
  * Backed by atlas-events (task-231 Tasks 13/16, event/occurrence/resource.go):
  *   GET /api/events/occurrences/{occurrenceId}
+ *   GET /api/events/definitions/{definitionId}
  *
  * `eventsService.getOccurrence` (Task 35) side-loads the occurrence's
- * `event-occurrence-transitions` and flattens them onto `.transitions`.
+ * `event-occurrence-transitions` and flattens them onto `.transitions`, and
+ * (fix round 1) surfaces the `definition` to-one relationship's id onto
+ * `.definitionId` — the definition resource itself is never side-loaded, so
+ * its name is fetched separately via `getDefinition`.
  */
 
 import type { ComponentType } from "react";
@@ -60,6 +65,16 @@ export function EventOccurrenceDetailPage() {
     queryFn: () => eventsService.getOccurrence(id),
   });
 
+  // Definition is a to-one relationship, not a side-loaded resource (only
+  // its id travels with the occurrence) — fetched separately, hooks called
+  // unconditionally ahead of the loading/error early-returns below.
+  const definitionId = occurrenceQuery.data?.definitionId;
+  const definitionQuery = useQuery({
+    queryKey: ["events", "definition", definitionId],
+    queryFn: () => eventsService.getDefinition(definitionId as string),
+    enabled: definitionId !== undefined,
+  });
+
   if (occurrenceQuery.isLoading) return <PageLoader />;
   if (occurrenceQuery.error || !occurrenceQuery.data) {
     return (
@@ -78,6 +93,7 @@ export function EventOccurrenceDetailPage() {
 
   // Component lookup with a generic fallback (FR-X3) — a third event type
   // needs no edit here, only an optional new entry in detailPanels.
+  const isRegisteredType = attrs.type in detailPanels;
   const Panel = detailPanels[attrs.type] ?? GenericContextPanel;
 
   return (
@@ -95,7 +111,13 @@ export function EventOccurrenceDetailPage() {
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 text-sm">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-5 text-sm">
+        <div>
+          <div className="text-muted-foreground">Definition</div>
+          <div>
+            {definitionQuery.data?.attributes.name ?? definitionId ?? "—"}
+          </div>
+        </div>
         <div>
           <div className="text-muted-foreground">Started</div>
           <div>{formatDate(attrs.startedAt) ?? "—"}</div>
@@ -115,6 +137,15 @@ export function EventOccurrenceDetailPage() {
       </div>
 
       <Panel occurrence={occurrence} />
+      {/*
+       * FR-UI7 (full context) and FR-UI8 (per-type interpretation) are
+       * separate requirements — a bespoke panel supplements the raw context,
+       * it does not replace it. `Panel` above already IS
+       * `GenericContextPanel` for an unregistered type (the FR-X3 fallback),
+       * so only render it again here for a registered type, to avoid a
+       * duplicate `occurrence-context-json` node.
+       */}
+      {isRegisteredType && <GenericContextPanel occurrence={occurrence} />}
 
       <Card>
         <CardHeader>

@@ -35,6 +35,23 @@ export const EVENT_OCCURRENCE_TRANSITION_TYPE = "event-occurrence-transitions";
 /** The raw list-endpoint shape — `transitions` is only ever side-loaded on the detail route. */
 type EventOccurrenceResource = Omit<EventOccurrence, "transitions">;
 
+/**
+ * The `definition` to-one relationship as api2go/jsonapi serializes it
+ * (event/occurrence/rest.go `GetReferences`) — `data.relationships.definition
+ * .data.id`. Not part of `EventOccurrenceResource`/`EventOccurrence` (those
+ * model the flattened client shape); this is only the raw wire shape used to
+ * extract `definitionId` below.
+ */
+interface OccurrenceRelationships {
+  definition?: { data?: { id: string } | null };
+}
+
+function extractDefinitionId(resource: {
+  relationships?: OccurrenceRelationships | undefined;
+}): string | undefined {
+  return resource.relationships?.definition?.data?.id;
+}
+
 function definitionQueryString(filters?: EventDefinitionFilters): string {
   const params = new URLSearchParams();
   if (filters?.type) params.append("filter[type]", filters.type);
@@ -116,10 +133,28 @@ export const eventsService = {
   ): Promise<PagedResult<EventOccurrence>> {
     const url = `${OCCURRENCES_PATH}${occurrenceQueryString(filters)}`;
     const paged = page
-      ? await fetchPaged<EventOccurrenceResource>(url, page)
-      : { data: await api.getList<EventOccurrenceResource>(url), meta: null };
+      ? await fetchPaged<
+          EventOccurrenceResource & { relationships?: OccurrenceRelationships }
+        >(url, page)
+      : {
+          data: await api.getList<
+            EventOccurrenceResource & {
+              relationships?: OccurrenceRelationships;
+            }
+          >(url),
+          meta: null,
+        };
     return {
-      data: paged.data.map((resource) => ({ ...resource, transitions: [] })),
+      data: paged.data.map(({ relationships: _relationships, ...resource }) => {
+        const definitionId = extractDefinitionId({
+          relationships: _relationships,
+        });
+        return {
+          ...resource,
+          transitions: [],
+          ...(definitionId !== undefined && { definitionId }),
+        };
+      }),
       meta: paged.meta,
     };
   },
@@ -131,12 +166,20 @@ export const eventsService = {
    */
   async getOccurrence(id: string): Promise<EventOccurrence> {
     const doc = await api.get<{
-      data: EventOccurrenceResource;
+      data: EventOccurrenceResource & {
+        relationships?: OccurrenceRelationships;
+      };
       included?: JsonApiResource[];
     }>(`${OCCURRENCES_PATH}/${id}`);
     const transitions = (doc.included ?? [])
       .filter((resource) => resource.type === EVENT_OCCURRENCE_TRANSITION_TYPE)
       .map(mapTransition);
-    return { ...doc.data, transitions };
+    const definitionId = extractDefinitionId(doc.data);
+    const { relationships: _relationships, ...resource } = doc.data;
+    return {
+      ...resource,
+      transitions,
+      ...(definitionId !== undefined && { definitionId }),
+    };
   },
 };

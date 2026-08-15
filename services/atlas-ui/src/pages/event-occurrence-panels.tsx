@@ -189,10 +189,13 @@ export function AnniversaryPanel({ occurrence }: EventTypePanelProps) {
 }
 
 /**
- * Fallback for any occurrence type with no bespoke panel above — the raw
- * context, formatted as JSON. This is why adding a third event type needs no
- * edit to EventOccurrenceDetailPage: an unrecognized `type` still renders
- * something useful.
+ * The raw context, formatted as JSON — used two ways by
+ * EventOccurrenceDetailPage:
+ *   - as the FR-X3 fallback for any occurrence type with no bespoke panel
+ *     above, so an unrecognized `type` still renders something useful;
+ *   - as the always-present FR-UI7 "full context" view for a REGISTERED
+ *     type too, since a bespoke panel (FR-UI8) supplements the raw context
+ *     rather than replacing it.
  */
 export function GenericContextPanel({ occurrence }: EventTypePanelProps) {
   return (

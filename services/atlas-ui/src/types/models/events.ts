@@ -61,12 +61,21 @@ export interface EventOccurrenceAttributes {
  * eventsService.getOccurrence (the single-resource GET) — getOccurrences
  * (list) results carry an empty array since the backend only side-loads
  * transitions on the detail route.
+ *
+ * `definitionId` is the occurrence's to-one `definition` relationship
+ * (event/occurrence/rest.go `GetReferences`/`GetReferencedIDs` —
+ * `data.relationships.definition.data.id`; the definition resource itself is
+ * never side-loaded, only its id — `GetReferencedStructs` returns only
+ * transitions). Present on both getOccurrence and getOccurrences results
+ * since the relationship is serialized on every RestModel marshal, not just
+ * the detail route.
  */
 export interface EventOccurrence {
   id: string;
   type: string;
   attributes: EventOccurrenceAttributes;
   transitions: EventOccurrenceTransition[];
+  definitionId?: string;
 }
 
 /** GET /events/occurrences query narrowings (event/occurrence/resource.go#parseListFilters). */

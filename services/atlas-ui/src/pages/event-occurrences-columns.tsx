@@ -12,6 +12,7 @@
  */
 
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import type { EventOccurrence } from "@/types/models/events";
 import { formatDate } from "@/lib/utils/coupons";
 
@@ -45,7 +46,12 @@ export const occurrenceColumns: OccurrenceColumn[] = [
   {
     header: "Id",
     cell: (occ) => (
-      <span className="font-mono text-xs">{occ.id.slice(0, 8)}</span>
+      <Link
+        to={`/events/occurrences/${occ.id}`}
+        className="font-mono text-xs hover:underline"
+      >
+        {occ.id.slice(0, 8)}
+      </Link>
     ),
   },
   {

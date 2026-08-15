@@ -93,6 +93,23 @@ describe("EventOccurrencesPage", () => {
     expect(active.className).not.toEqual(historical.className);
   });
 
+  // Fix round 1, finding 3: the list must link to the detail page — nothing
+  // reached /events/occurrences/:id without a hand-typed URL otherwise.
+  it("links each occurrence's id to its detail page", async () => {
+    vi.mocked(eventsService.getOccurrences).mockResolvedValue({
+      data: [completedBalrogOccurrence],
+      meta: null,
+    });
+    renderPage();
+    const link = await screen.findByRole("link", {
+      name: completedBalrogOccurrence.id.slice(0, 8),
+    });
+    expect(link).toHaveAttribute(
+      "href",
+      `/events/occurrences/${completedBalrogOccurrence.id}`,
+    );
+  });
+
   // FR-UI6: filterable by type, state, active-vs-historical, date range, world
   // and channel. There is no backend "active vs historical" filter — the
   // distinction is expressed through filter[state].

@@ -20,6 +20,10 @@ type Builder struct {
 	attempts     int
 	lastError    string
 	dedupeKey    string
+	tenantId     uuid.UUID
+	tenantRegion string
+	tenantMajor  uint16
+	tenantMinor  uint16
 }
 
 // NewBuilder creates a new builder with the required parameters. State
@@ -84,6 +88,18 @@ func (b *Builder) SetDedupeKey(dedupeKey string) *Builder {
 	return b
 }
 
+// SetTenant sets the owning tenant's full identity — id, region, and
+// major/minor version — not just its id, so a cross-tenant reader (the
+// poller) can rebuild a tenant.Model for this one row without a separate
+// lookup (design §4.2).
+func (b *Builder) SetTenant(id uuid.UUID, region string, major, minor uint16) *Builder {
+	b.tenantId = id
+	b.tenantRegion = region
+	b.tenantMajor = major
+	b.tenantMinor = minor
+	return b
+}
+
 // Build validates invariants and constructs the final immutable model.
 func (b *Builder) Build() (Model, error) {
 	if b.definitionId == uuid.Nil {
@@ -115,6 +131,10 @@ func (b *Builder) Build() (Model, error) {
 		attempts:     b.attempts,
 		lastError:    b.lastError,
 		dedupeKey:    b.dedupeKey,
+		tenantId:     b.tenantId,
+		tenantRegion: b.tenantRegion,
+		tenantMajor:  b.tenantMajor,
+		tenantMinor:  b.tenantMinor,
 	}, nil
 }
 
@@ -131,5 +151,9 @@ func (m Model) Builder() *Builder {
 		attempts:     m.attempts,
 		lastError:    m.lastError,
 		dedupeKey:    m.dedupeKey,
+		tenantId:     m.tenantId,
+		tenantRegion: m.tenantRegion,
+		tenantMajor:  m.tenantMajor,
+		tenantMinor:  m.tenantMinor,
 	}
 }

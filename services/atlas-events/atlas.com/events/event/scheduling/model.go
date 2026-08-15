@@ -24,6 +24,11 @@ const (
 
 // Model is an immutable representation of a single unit of scheduled event
 // work — a row in scheduled_event_work.
+//
+// TenantId/TenantRegion/TenantMajor/TenantMinor carry the owning tenant's
+// full identity, not just its id — the poller claims work across every
+// tenant (design §4.2) and must rebuild a tenant.Model for a single claimed
+// row before invoking any handler, which a bare id cannot do.
 type Model struct {
 	id           uuid.UUID
 	definitionId uuid.UUID
@@ -35,6 +40,10 @@ type Model struct {
 	attempts     int
 	lastError    string
 	dedupeKey    string
+	tenantId     uuid.UUID
+	tenantRegion string
+	tenantMajor  uint16
+	tenantMinor  uint16
 }
 
 func (m Model) Id() uuid.UUID            { return m.id }
@@ -47,3 +56,7 @@ func (m Model) State() string            { return m.state }
 func (m Model) Attempts() int            { return m.attempts }
 func (m Model) LastError() string        { return m.lastError }
 func (m Model) DedupeKey() string        { return m.dedupeKey }
+func (m Model) TenantId() uuid.UUID      { return m.tenantId }
+func (m Model) TenantRegion() string     { return m.tenantRegion }
+func (m Model) TenantMajor() uint16      { return m.tenantMajor }
+func (m Model) TenantMinor() uint16      { return m.tenantMinor }

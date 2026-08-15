@@ -211,7 +211,7 @@ func TestOnConflictDoNothingSignalsViaRowsAffected(t *testing.T) {
 
 	defId := uuid.New()
 	winner := mustBuild(t, defId, "race-key")
-	winnerEntity, err := ToEntity(winner, testTenantId(t, ctx))
+	winnerEntity, err := ToEntity(winner, testTenant(t, ctx))
 	if err != nil {
 		t.Fatalf("ToEntity(winner): %v", err)
 	}
@@ -220,7 +220,7 @@ func TestOnConflictDoNothingSignalsViaRowsAffected(t *testing.T) {
 	}
 
 	loser := mustBuild(t, defId, "race-key")
-	loserEntity, err := ToEntity(loser, testTenantId(t, ctx))
+	loserEntity, err := ToEntity(loser, testTenant(t, ctx))
 	if err != nil {
 		t.Fatalf("ToEntity(loser): %v", err)
 	}
@@ -240,11 +240,11 @@ func TestOnConflictDoNothingSignalsViaRowsAffected(t *testing.T) {
 	}
 }
 
-func testTenantId(t *testing.T, ctx context.Context) uuid.UUID {
+func testTenant(t *testing.T, ctx context.Context) tenant.Model {
 	t.Helper()
-	id, err := tenant.FromContext(ctx)()
+	tm, err := tenant.FromContext(ctx)()
 	if err != nil {
 		t.Fatalf("no tenant in context: %v", err)
 	}
-	return id.Id()
+	return tm
 }

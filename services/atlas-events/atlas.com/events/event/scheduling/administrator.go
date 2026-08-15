@@ -81,7 +81,7 @@ func (a *Administrator) Schedule(m Model) (Model, bool, error) {
 		if err != nil {
 			return err
 		}
-		entity, err := ToEntity(toInsert, a.t.Id())
+		entity, err := ToEntity(toInsert, a.t)
 		if err != nil {
 			return err
 		}

@@ -6,6 +6,8 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Entity is the GORM persistence record for one unit of scheduled event
@@ -18,8 +20,18 @@ import (
 // does not block a legitimate retry of the same key, and an empty key opts a
 // row out of dedup entirely.
 type Entity struct {
-	ID                uuid.UUID  `gorm:"primaryKey;column:id;type:uuid"`
-	TenantID          uuid.UUID  `gorm:"column:tenant_id;type:uuid;not null"`
+	ID       uuid.UUID `gorm:"primaryKey;column:id;type:uuid"`
+	TenantID uuid.UUID `gorm:"column:tenant_id;type:uuid;not null"`
+	// TenantRegion/TenantMajor/TenantMinor denormalize the claiming tenant's
+	// identity onto the row, mirroring
+	// services/atlas-saga-orchestrator/.../saga/entity.go. The poller reads
+	// across every tenant (design §4.2, database.WithoutTenantFilter) and must
+	// re-enter a tenant-scoped context per claimed row before invoking any
+	// handler — TenantID alone cannot rebuild a tenant.Model, so region/major/
+	// minor travel with the row instead of requiring a separate tenant lookup.
+	TenantRegion      string     `gorm:"column:tenant_region;not null;default:''"`
+	TenantMajor       uint16     `gorm:"column:tenant_major;not null;default:0"`
+	TenantMinor       uint16     `gorm:"column:tenant_minor;not null;default:0"`
 	EventDefinitionID uuid.UUID  `gorm:"column:event_definition_id;type:uuid;not null"`
 	EventOccurrenceID *uuid.UUID `gorm:"column:event_occurrence_id;type:uuid"`
 	Type              string     `gorm:"column:type;not null"`
@@ -52,7 +64,8 @@ func Make(e Entity) (Model, error) {
 		SetState(e.State).
 		SetAttempts(e.Attempts).
 		SetLastError(e.LastError).
-		SetDedupeKey(e.DedupeKey)
+		SetDedupeKey(e.DedupeKey).
+		SetTenant(e.TenantID, e.TenantRegion, e.TenantMajor, e.TenantMinor)
 	if e.EventOccurrenceID != nil {
 		b.SetOccurrenceId(*e.EventOccurrenceID)
 	}
@@ -61,8 +74,10 @@ func Make(e Entity) (Model, error) {
 }
 
 // ToEntity converts a domain Model into a persistence Entity, stamping the
-// tenant id.
-func ToEntity(m Model, tenantId uuid.UUID) (Entity, error) {
+// full tenant identity (id, region, major/minor version) so a cross-tenant
+// reader — the poller — can rebuild a tenant.Model for a single claimed row
+// without a separate lookup (design §4.2).
+func ToEntity(m Model, t tenant.Model) (Entity, error) {
 	cfg := m.Context()
 	if cfg == nil {
 		cfg = json.RawMessage("{}")
@@ -76,7 +91,10 @@ func ToEntity(m Model, tenantId uuid.UUID) (Entity, error) {
 
 	return Entity{
 		ID:                m.Id(),
-		TenantID:          tenantId,
+		TenantID:          t.Id(),
+		TenantRegion:      t.Region(),
+		TenantMajor:       t.MajorVersion(),
+		TenantMinor:       t.MinorVersion(),
 		EventDefinitionID: m.DefinitionId(),
 		EventOccurrenceID: occurrenceId,
 		Type:              m.Type(),

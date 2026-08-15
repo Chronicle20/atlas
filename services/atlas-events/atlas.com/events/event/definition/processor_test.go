@@ -146,6 +146,34 @@ func TestSetEnabledTogglesOnly(t *testing.T) {
 	}
 }
 
+// A nonexistent id must surface gorm.ErrRecordNotFound from the setEnabled
+// administrator itself, not silently no-op with a nil error. This calls the
+// unexported administrator directly (bypassing Processor.SetEnabled's
+// follow-up GetById read) so the assertion pins the administrator's own
+// contract rather than an accidental side effect of the processor's next
+// call.
+func TestAdministratorSetEnabledReturnsRecordNotFoundForMissingId(t *testing.T) {
+	db := newTestDB(t)
+
+	err := setEnabled(db)(uuid.New())(true)
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		t.Fatalf("setEnabled on a missing id = %v, want gorm.ErrRecordNotFound", err)
+	}
+}
+
+// Processor.SetEnabled must propagate that same not-found error to its
+// caller — the REST layer's errors.Is(err, gorm.ErrRecordNotFound) check
+// depends on it.
+func TestSetEnabledReturnsRecordNotFoundForMissingId(t *testing.T) {
+	registryReset(t)
+	db := newTestDB(t)
+	p := NewProcessor(testLogger(t), testCtx(t), db)
+
+	if _, err := p.SetEnabled(uuid.New(), true); !errors.Is(err, gorm.ErrRecordNotFound) {
+		t.Fatalf("SetEnabled on a missing id = %v, want gorm.ErrRecordNotFound", err)
+	}
+}
+
 func TestGetByIdReturnsRecordNotFoundForMissingRow(t *testing.T) {
 	registryReset(t)
 	db := newTestDB(t)

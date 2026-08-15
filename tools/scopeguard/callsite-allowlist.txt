@@ -42,8 +42,11 @@ atlas-saga-orchestrator/saga/store.go:241 # GetTimedOut — timeout-reaper sweep
 atlas-marriages/scheduler/proposal_expiry.go:115 # getTenantsWithProposals — discovers which tenants have pending proposals so processExpiredProposals can loop per tenant, reconstructing tenantCtx before every write (proposal_expiry.go:126-129, comment "// Process each tenant"). query-scope-audit.md §4.1 row 3.
 atlas-marriages/scheduler/ceremony_timeout.go:116 # getTenantsWithActiveCeremonies — identical shape to proposal_expiry.go's getTenantsWithProposals; processActiveCeremonies reconstructs tenantCtx per tenant before every write. query-scope-audit.md §4.1 row 4.
 
-# --- atlas-data: resolved-partition reads, not in query-scope-audit.md's
-# fleet table (atlas-data was not one of the 27 services swept by §1/§3) ---
+# --- atlas-data: resolved-partition reads. Documented in query-scope-audit.md
+# §1 rows 75-77 and 80 (search indexes, spawn indexes) and the §3 disposition
+# table lines 808/810; graded SCOPED there for the same reason given per entry
+# below. Allowlisted here because the call sites bypass the automatic callback
+# and the guard cannot see the compensating explicit `tenant_id = ?`. ---
 # Verified directly at source (task-232/15): every one of these bypasses the
 # automatic tenant filter only to immediately re-apply an explicit
 # `tenant_id = ?` WHERE against a tenant id resolved by

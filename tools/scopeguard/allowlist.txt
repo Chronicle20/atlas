@@ -15,8 +15,10 @@
 # (TestAllowlistEntriesHaveReasons).
 #
 # Seeded from query-scope-audit.md's FORCES-ISOLATED rows — there are none
-# (confirmed: grep -c "FORCES-ISOLATED" finds zero table rows; see §1 notes
-# at lines 227 and 281). The one entry below is not a FORCES-ISOLATED row:
+# (confirmed: grep -c "FORCES-ISOLATED" finds 3 occurrences, but all 3 are
+# prose, not table rows — the taxonomy definition at line 14 and two "No
+# FORCES-ISOLATED rows in this third" negations at lines 227 and 281). The
+# one entry below is not a FORCES-ISOLATED row:
 # it is dead code the audit separately flagged as N/A (row at line 132),
 # verified at source, not a live query path at all.
 

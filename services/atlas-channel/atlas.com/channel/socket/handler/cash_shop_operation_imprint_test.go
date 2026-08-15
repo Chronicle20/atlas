@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
@@ -265,6 +266,99 @@ func TestBuyWorldTransferCreatesAPendingRequest(t *testing.T) {
 	// (d)
 	if rec.calls != 0 {
 		t.Fatalf("handler announced %d packets directly, want 0 -- the consumer answers the client now (writer=%q)", rec.calls, rec.lastName)
+	}
+}
+
+// newBuyHandlerTestServerWithInvalidTransactionId stands in for
+// atlas-character with a pending-change POST that reports success but
+// returns a non-UUID Id -- the (unreachable in practice, but not handled
+// until this fix round) case Finding 2 covers. It also records whether the
+// self-scoped cancel route (".../pending-changes/cancel") was called, so a
+// test can assert the record was cancelled instead of silently orphaned.
+func newBuyHandlerTestServerWithInvalidTransactionId(t *testing.T, characterName string, templateId uint32, changeType string) (srv *httptest.Server, cancelCalled *bool) {
+	t.Helper()
+	cancelCalled = new(bool)
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && bytes.Contains([]byte(r.URL.Path), []byte("pending-changes/cancel")):
+			*cancelCalled = true
+			w.WriteHeader(http.StatusOK)
+		case r.Method == http.MethodPost && bytes.Contains([]byte(r.URL.Path), []byte("pending-changes")):
+			w.WriteHeader(http.StatusCreated)
+			_, _ = w.Write(jsonAPIAttrs("pending-changes", "not-a-valid-uuid", map[string]any{"characterId": uint32(0), "type": changeType, "status": "PENDING"}))
+		case bytes.Contains([]byte(r.URL.Path), []byte("/commodity/items/")):
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(jsonAPIAttrs("commodities", "1", map[string]any{"itemId": templateId}))
+		default:
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(jsonAPIAttrs("characters", "1", map[string]any{"name": characterName}))
+		}
+	}))
+	return srv, cancelCalled
+}
+
+// TestBuyNameChangeAbortsPurchaseWhenTransactionIdInvalid pins Finding 2 of
+// task-227 task 38's fix round 1: a pending-change record whose Id fails to
+// parse as a UUID must NOT result in a purchase being charged (uuid.Nil is
+// "no correlation", not a safe fallback to charge against), and the
+// just-created record must be cancelled rather than left orphaned.
+func TestBuyNameChangeAbortsPurchaseWhenTransactionIdInvalid(t *testing.T) {
+	const characterId = uint32(22345)
+	captured, restore := installCapturingProducer()
+	defer restore()
+
+	srv, cancelCalled := newBuyHandlerTestServerWithInvalidTransactionId(t, "Romeo", 5990000, "NAME_CHANGE")
+	defer srv.Close()
+	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
+	t.Setenv("DATA_SERVICE_URL", srv.URL+"/")
+
+	s, ctx, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	rec := &gaugeProducerRecorder{}
+	CashShopOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, buyNameChangePacket(t, "Romeo", "Sierra", 22345), cashShopOperationsOptions())
+
+	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	if len(msgs) != 0 {
+		t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 0 -- a transaction id parse failure must not charge the player", len(msgs))
+	}
+	if !*cancelCalled {
+		t.Fatal("pending-change cancel route was not called -- the just-created record is orphaned")
+	}
+	if rec.calls != 1 || rec.lastName != chatpkt.WorldMessageWriter {
+		t.Fatalf("announced calls=%d name=%q, want 1 pink-text rejection", rec.calls, rec.lastName)
+	}
+}
+
+// TestBuyWorldTransferAbortsPurchaseWhenTransactionIdInvalid mirrors
+// TestBuyNameChangeAbortsPurchaseWhenTransactionIdInvalid for the
+// world-transfer arm, whose rejection route is TRANSFER_WORLD_FAILED rather
+// than pink text.
+func TestBuyWorldTransferAbortsPurchaseWhenTransactionIdInvalid(t *testing.T) {
+	const characterId = uint32(22346)
+	captured, restore := installCapturingProducer()
+	defer restore()
+
+	srv, cancelCalled := newBuyHandlerTestServerWithInvalidTransactionId(t, "Romeo", 5990001, "WORLD_TRANSFER")
+	defer srv.Close()
+	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
+	t.Setenv("DATA_SERVICE_URL", srv.URL+"/")
+
+	s, ctx, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	rec := &gaugeProducerRecorder{}
+	CashShopOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, buyWorldTransferPacket(t, 2, 22346), cashShopOperationsOptions())
+
+	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	if len(msgs) != 0 {
+		t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 0 -- a transaction id parse failure must not charge the player", len(msgs))
+	}
+	if !*cancelCalled {
+		t.Fatal("pending-change cancel route was not called -- the just-created record is orphaned")
+	}
+	if rec.calls != 1 || rec.lastName != cashcb.CashShopOperationWriter {
+		t.Fatalf("announced calls=%d name=%q, want 1 TRANSFER_WORLD_FAILED", rec.calls, rec.lastName)
 	}
 }
 

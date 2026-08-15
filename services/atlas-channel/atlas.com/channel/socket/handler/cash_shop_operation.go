@@ -218,10 +218,19 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 // task-227 task 38): the purchase outcome event can otherwise reach the
 // consumer before this handler has finished, and the consumer resolves it
 // back to the pending record via the transactionId minted here from the
-// record's own Id. RequestPurchase is fully async — its error return is
-// discarded, and every outcome (success or failure) now arrives at the
-// consumer as a status event; this handler no longer answers the client
-// itself (task 39 wires that consumer-side answer up).
+// record's own Id. If that Id fails to parse as a UUID (unreachable in
+// practice -- RestModel.Id is always a uuid.UUID's own String() -- but not
+// handled if it somehow happened), the purchase is never requested: the
+// just-created pending record is cancelled and the rejection route fires
+// instead, so a parse failure can never charge the player for a purchase no
+// consumer can resolve. RequestPurchase is fully async; a producer error
+// does not prove non-delivery, so a failed emit is logged (for an operator
+// to find the possibly-orphaned pending record) but the record is left
+// alone rather than cancelled -- cancelling here risks a worse
+// double-fault if the message actually got through. Every outcome (success
+// or failure) that does reach the consumer arrives as a status event; this
+// handler no longer answers the client itself for that path (task 39 wires
+// that consumer-side answer up).
 //
 // The client has no NAME_CHANGE_FAILED arm (every other BUY_* has a
 // *_FAILED sibling constant in shop_operation_body.go; name-change does
@@ -261,10 +270,16 @@ func handleBuyNameChange(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 
 		transactionId, err := uuid.Parse(rm.Id)
 		if err != nil {
-			l.WithError(err).Errorf("Pending change record [%s] for character [%d] is not a valid UUID; purchase will not correlate.", rm.Id, characterId)
-			transactionId = uuid.Nil
+			l.WithError(err).Errorf("Pending change record [%s] for character [%d] is not a valid UUID; aborting purchase and cancelling the record.", rm.Id, characterId)
+			if _, cancelErr := pendingchange.NewProcessor(l, ctx).CancelPendingChange(characterId, pendingchange.TypeNameChange); cancelErr != nil {
+				l.WithError(cancelErr).Errorf("Unable to cancel pending name change record [%s] for character [%d] after transaction id parse failure.", rm.Id, characterId)
+			}
+			announceCashShopRejection(l, ctx, wp)(s, "Unable to process your name change request.")
+			return
 		}
-		_ = cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId)
+		if err := cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId); err != nil {
+			l.WithError(err).Errorf("Unable to request purchase for character [%d] serial number [%d] transaction [%s]; pending name change record [%s] may be orphaned.", characterId, sp.SerialNumber(), transactionId, rm.Id)
+		}
 	}
 }
 
@@ -273,11 +288,11 @@ func handleBuyNameChange(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 // carries no isPoints/currency either, so the purchase is requested with
 // isPoints=false, currency=0. The pending record is inserted BEFORE the
 // purchase is requested (insert-first, task-227 task 38) — see
-// handleBuyNameChange's doc for why the ordering matters and how the
-// transactionId correlates back to the record. RequestPurchase is fully
-// async — its error return is discarded, and every outcome now arrives at
-// the consumer as a status event; this handler no longer answers the client
-// itself (task 39 wires that consumer-side answer up). Unlike name-change, a
+// handleBuyNameChange's doc for why the ordering matters, how the
+// transactionId correlates back to the record, and why a transactionId
+// parse failure cancels the record and aborts the purchase while a
+// discarded RequestPurchase emit error is only logged, never cancelled.
+// Unlike name-change, a
 // real client failure arm exists here (CashShopTransferWorldFailedBody /
 // TRANSFER_WORLD_FAILED, shop_operation_body.go:454), so pending-change
 // rejections use it instead of pink text.
@@ -302,10 +317,16 @@ func handleBuyWorldTransfer(l logrus.FieldLogger, ctx context.Context, wp writer
 
 		transactionId, err := uuid.Parse(rm.Id)
 		if err != nil {
-			l.WithError(err).Errorf("Pending change record [%s] for character [%d] is not a valid UUID; purchase will not correlate.", rm.Id, characterId)
-			transactionId = uuid.Nil
+			l.WithError(err).Errorf("Pending change record [%s] for character [%d] is not a valid UUID; aborting purchase and cancelling the record.", rm.Id, characterId)
+			if _, cancelErr := pendingchange.NewProcessor(l, ctx).CancelPendingChange(characterId, pendingchange.TypeWorldTransfer); cancelErr != nil {
+				l.WithError(cancelErr).Errorf("Unable to cancel pending world transfer record [%s] for character [%d] after transaction id parse failure.", rm.Id, characterId)
+			}
+			announceTransferWorldFailure(l, ctx, wp)(s, "unknown_error")
+			return
 		}
-		_ = cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId)
+		if err := cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId); err != nil {
+			l.WithError(err).Errorf("Unable to request purchase for character [%d] serial number [%d] transaction [%s]; pending world transfer record [%s] may be orphaned.", characterId, sp.SerialNumber(), transactionId, rm.Id)
+		}
 	}
 }
 

@@ -212,6 +212,23 @@ func TestSuccessfulEvaluationSeedsTheCorrectScope(t *testing.T) {
 	if got[200090011] {
 		t.Fatalf("cabin must NOT be visual (FR-B13)")
 	}
+
+	// The generic dispatch path (event/scheduling and event/occurrence
+	// processors) copies Seed.ConcurrencyKey verbatim and never calls
+	// h.ConcurrencyKey itself — Evaluate is the only place that fills it in
+	// (evaluate.go). An empty key would silently defeat the single-occurrence
+	// guarantee, so pin it against the handler's own ConcurrencyKey contract
+	// rather than merely asserting non-empty.
+	wantKey, err := f.handler().ConcurrencyKey(f.ctx, f.work.Context)
+	if err != nil {
+		t.Fatalf("ConcurrencyKey: %v", err)
+	}
+	if wantKey == "" {
+		t.Fatalf("test setup produced an empty concurrency key")
+	}
+	if seed.ConcurrencyKey != wantKey {
+		t.Fatalf("seed.ConcurrencyKey = %q, want %q (from h.ConcurrencyKey)", seed.ConcurrencyKey, wantKey)
+	}
 }
 
 // An unreachable dependency must RETRY, not be read as a negative answer. This

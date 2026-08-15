@@ -12,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
@@ -32,7 +33,7 @@ type OccurrenceContext struct {
 	ChannelId       channel.Id   `json:"channelId"`
 	AttackMaps      []AttackMap  `json:"attackMaps"`
 	RelatedMapIds   []_map.Id    `json:"relatedMapIds"`
-	MonsterId       uint32       `json:"monsterId"`
+	MonsterId       monster.Id   `json:"monsterId"`
 	MonsterCount    uint32       `json:"monsterCount"`
 	BackgroundMusic string       `json:"backgroundMusic"`
 	Visual          VisualConfig `json:"visual"`

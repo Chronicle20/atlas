@@ -14,6 +14,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
@@ -59,7 +60,7 @@ type Config struct {
 	TriggerDelay       Duration     `json:"triggerDelay"`
 	TriggerDelayJitter Duration     `json:"triggerDelayJitter"`
 	AttackProbability  float64      `json:"attackProbability"`
-	MonsterId          uint32       `json:"monsterId"`
+	MonsterId          monster.Id   `json:"monsterId"`
 	MonsterCount       uint32       `json:"monsterCount"`
 	AttackMaps         []AttackMap  `json:"attackMaps"`
 	RelatedMapIds      []_map.Id    `json:"relatedMapIds"`

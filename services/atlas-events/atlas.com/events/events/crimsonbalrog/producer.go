@@ -9,6 +9,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	monsterconst "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -60,7 +61,7 @@ func hideVisualEventProvider(occurrenceId uuid.UUID, worldId world.Id, channelId
 // tagged with the occurrence's provenance (FR-B22) so DESTROY_BY_SOURCE
 // (Task 27) can later clean up exactly what this occurrence spawned. Keyed on
 // the map id, same as the visual, so a map's spawns land on one partition.
-func spawnFieldCommandProvider(worldId world.Id, channelId channel.Id, mapId _map.Id, monsterId uint32, pos Position, occurrenceId uuid.UUID) model.Provider[[]kafka.Message] {
+func spawnFieldCommandProvider(worldId world.Id, channelId channel.Id, mapId _map.Id, monsterId monsterconst.Id, pos Position, occurrenceId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(mapId))
 	value := &monster.FieldCommand[monster.SpawnFieldCommandBody]{
 		WorldId:   worldId,
@@ -68,7 +69,7 @@ func spawnFieldCommandProvider(worldId world.Id, channelId channel.Id, mapId _ma
 		MapId:     mapId,
 		Type:      monster.CommandTypeSpawnField,
 		Body: monster.SpawnFieldCommandBody{
-			MonsterId:       monsterId,
+			MonsterId:       uint32(monsterId),
 			X:               pos.X,
 			Y:               pos.Y,
 			SpawnSourceType: monsterSourceEvent,

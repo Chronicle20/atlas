@@ -13,9 +13,10 @@ import (
 // projectionConfig and Projection are defined in projection.go (Task 5).
 
 type bootstrapConfig struct {
-	tracer     bool
-	gates      []func() bool
-	projection *projectionConfig
+	tracer      bool
+	gates       []func() bool
+	projection  *projectionConfig
+	envRegistry *envRegistryConfig
 }
 
 // Option configures Bootstrap.
@@ -40,6 +41,7 @@ type Runtime struct {
 	shuttingDown atomic.Bool
 	gates        []func() bool
 	projection   Projection
+	envCaughtUp  *envCaughtUp
 }
 
 // Bootstrap owns the fleet-canonical startup sequence: logger, teardown
@@ -74,6 +76,10 @@ func Bootstrap(serviceName string, opts ...Option) *Runtime {
 		rt.shuttingDown.Store(true)
 		l.Info("Flipped /readyz to not-ready for graceful shutdown.")
 	})
+
+	if cfg.envRegistry != nil {
+		rt.startEnvironmentRegistry(cfg.envRegistry)
+	}
 
 	if cfg.projection != nil {
 		rt.startProjection(cfg.projection)

@@ -30,6 +30,11 @@ same way CI is.
 optional — `go build` against `go.work` cannot catch a missing `COPY libs/...`
 in the shared Dockerfile.
 
+Running the gate **per task** on a long branch? Pass `--base <last-gated-commit>`
+so the change set is the increment, not the accumulated branch — one `libs/`
+commit otherwise fans every later run out to all 86 modules (~11 min instead of
+~1). Launch it in the background and keep working; never idle waiting on it.
+
 Rationale, per-guard invariants, escape hatches, and the known CI drift:
 [`docs/verification.md`](docs/verification.md). Adding a service:
 [`docs/adding-a-new-service.md`](docs/adding-a-new-service.md).

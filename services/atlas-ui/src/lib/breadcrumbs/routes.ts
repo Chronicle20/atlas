@@ -297,6 +297,11 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     label: "Definitions",
     parent: "/",
   },
+  {
+    pattern: "/events/occurrences",
+    label: "Occurrences",
+    parent: "/",
+  },
 
   // Reward pool routes
   {
@@ -668,6 +673,7 @@ export const ROUTE_PATTERNS = {
   COUPONS: "/coupons",
   COUPON_DETAIL: "/coupons/[id]",
   EVENT_DEFINITIONS: "/events/definitions",
+  EVENT_OCCURRENCES: "/events/occurrences",
   REWARD_POOLS: "/reward-pools",
   REWARD_POOL_DETAIL: "/reward-pools/[id]",
   SETUP: "/setup",

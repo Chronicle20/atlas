@@ -54,7 +54,10 @@ export const sidebarItems: SidebarGroupItem[] = [
     title: "Events",
     url: "#",
     icon: CalendarClock,
-    children: [{ title: "Definitions", url: "/events/definitions" }],
+    children: [
+      { title: "Definitions", url: "/events/definitions" },
+      { title: "Occurrences", url: "/events/occurrences" },
+    ],
   },
   {
     title: "Security",

@@ -6,16 +6,16 @@
 
 Tool: `43783835b26580ebb08f662194a84aa112d6be2b3ee303ac63bdac8d14b038a9`
 
-- export gms_v48: `255cf90dfe7d4851b445be1de39b5a18529ed242779c558a4188df2b073e1b6e`
-- export gms_v61: `edb8ac50f8a23383b2f42b56244067082a850177055ec87b6e7048886fbec2a3`
-- export gms_v72: `c04bdd09496fcefc11aed65c2ef83436e267f6f67c5f2468c081c8823449c6e3`
-- export gms_v79: `84812b5deb3fb3832e59c067a3e504c46fcb18cfe45f0cc984e150be5ffd8fab`
-- export gms_v83: `01e573723e255d9fb89e4f36fc98482237446c6484905d53b18b7d0d6be61003`
-- export gms_v84: `7e9aa7c0e7093a42dd2721bd21e3f33d360b4225c5bbdad2794c6f284a1ce4bf`
-- export gms_v87: `b699ad81b872e7c2bb8bcae4294d76664e052182dcbda80efa78c644ab0012dd`
-- export gms_v92: `4f1f229c94a92c3d87b61800bb25639f571c1e909ca60cef2ce4ea8bc3b2f558`
-- export gms_v95: `76f84520ed625c59d7a912c6d8496e37890a8c27b7d2f625ac8331c602b6e8b9`
-- export jms_v185: `00855c3fb2158017b277c061aead5420f012ed7038b497d564add5c6d711d0f9`
+- export gms_v48: `df18357a89e5e0506c9be3ca0beef22a11aa9a3c3050e60a2c28c7fbdfc77b04`
+- export gms_v61: `bf60cb22d8af5e2551c1e29f1b8b82debd7328238bb64ab92e658d64ac15c8df`
+- export gms_v72: `30cb8f5ed33853ba29448be5f2fecdaebd17dc23570cb6b0107fd371cfcabbed`
+- export gms_v79: `79c25b50f10f6a966e90d3cd006195f96bea11146e46b73807c31ef06c5210f0`
+- export gms_v83: `dea4319be65f2cbcd1f20a960afb0a3380844b08fa522bdc5db57a70f278793f`
+- export gms_v84: `11301e90188eb1f8680469a95c1e477f96be84c117ddf76d428d3ee5446e3347`
+- export gms_v87: `d8febf4d7636b2069e74d8e1ae42a8f1438be3ef89895a1e6a7d165417091cc9`
+- export gms_v92: `bbdd7f70111967e66c30c5ff378cbd51d3b0cdf07c7b3b33543d6adb0aea5fa1`
+- export gms_v95: `1a2bffa9022e6a659ad61059688ea4cf80685c21ad4270026d2e54a84a04686a`
+- export jms_v185: `6e2d572d813c4a608f447308d5335ed69dd1da15380d9a0b2f133a2d532f0098`
 
 ## Clientbound
 
@@ -202,6 +202,7 @@ Tool: `43783835b26580ebb08f662194a84aa112d6be2b3ee303ac63bdac8d14b038a9`
 | NEW_YEAR_CARD_RES | CWvsContext::OnNewYearCardRes |  |  | ⬜ |  | ⬜ | 0x06E | ❌ | 0x070 | ❌ | 0x076 | ❌ | 0x079 | ❌ | 0x079 | ❌ | 0x07B | ❌ | 0x07A | ❌ |  | ⬜ |
 | RANDOM_MORPH_RES | CWvsContext::OnRandomMorphRes |  |  | ⬜ |  | ⬜ | 0x06F | ❌ | 0x071 | ❌ | 0x077 | ❌ | 0x07A | ❌ | 0x07A | ❌ | 0x07C | ❌ | 0x07B | ❌ |  | ⬜ |
 | CANCEL_NAME_CHANGE_BY_OTHER | CWvsContext::OnCancelNameChangebyOther |  |  | ⬜ |  | ⬜ | 0x070 | ❌ | 0x072 | ❌ | 0x078 | ❌ | 0x07B | ❌ | 0x07B | ❌ | 0x07D | ❌ | 0x07C | ❌ |  | ⬜ |
+| PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 | pet/clientbound/PetNameChanged (T1) | 0x071 | ✅ | 0x083 | ✅ | 0x09D | ✅ | 0x0A1 | ✅ | 0x0AC | ✅ | 0x0B0 | ✅ | 0x0B9 | ✅ | 0x0C8 | ✅ | 0x0CB | ✅ | 0x0B2 | ✅ |
 | IDA_0X073 | sub_AF7C61 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ |
 | SET_EXTRA_PENDANT_SLOT | CWvsContext::OnSetBuyEquipExt; sub_95EE37 |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ | 0x079 | ❌ | 0x07C | ❌ | 0x07C | ❌ | 0x07E | ❌ | 0x07D | ❌ |  | ⬜ |
 | IDA_0X074 | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ |
@@ -230,7 +231,6 @@ Tool: `43783835b26580ebb08f662194a84aa112d6be2b3ee303ac63bdac8d14b038a9`
 | CLEAR_BACK_EFFECT | CMapLoadable::OnClearBackEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x082 | ❌ | 0x085 | ❌ | 0x08A | ❌ | 0x091 | ❌ | 0x092 | ❌ | 0x080 | ❌ |
 | PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) |  | ⬜ | 0x082 | ✅ | 0x09C | ✅ | 0x0A0 | ✅ | 0x0AB | ✅ | 0x0AF | ✅ | 0x0B8 | ✅ | 0x0C7 | ❌ | 0x0CA | ✅ | 0x0B1 | ✅ |
 | FIND_FRIEND | CWvsContext::OnFindFirend |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x083 | ❌ | 0x086 | ❌ | 0x086 | ❌ |  | ⬜ |
-| PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 |  |  | ⬜ | 0x083 | ❌ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B9 | ❌ | 0x0C8 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) |  | ⬜ | 0x084 | ✅ | 0x09E | ✅ | 0x0A2 | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0C9 | ❌ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | WILD_HUNTER_INFO | CWvsContext::OnWildHunterInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x084 | ❌ |  | ⬜ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) |  | ⬜ | 0x085 | ✅ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CA | ❌ | 0x0CD | ✅ | 0x0B4 | ✅ |
@@ -839,6 +839,7 @@ Tool: `43783835b26580ebb08f662194a84aa112d6be2b3ee303ac63bdac8d14b038a9`
 | cash/serverbound/CashItemUseItemMegaphone (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseMapleTV (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
+| cash/serverbound/CashItemUsePetNameTag (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUsePetSkill (T1) |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ✅ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -1055,16 +1056,16 @@ Tool: `43783835b26580ebb08f662194a84aa112d6be2b3ee303ac63bdac8d14b038a9`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 205 | 0 | 19 | 195 | 600 | 0 | 48.9% |
-| v61 | 269 | 0 | 56 | 234 | 460 | 0 | 48.1% |
-| v72 | 286 | 0 | 69 | 248 | 416 | 0 | 47.4% |
-| v79 | 331 | 0 | 68 | 245 | 375 | 0 | 51.4% |
-| v83 | 451 | 0 | 0 | 340 | 228 | 0 | 57.0% |
-| v84 | 426 | 0 | 0 | 346 | 247 | 0 | 55.2% |
-| v87 | 460 | 0 | 0 | 369 | 190 | 0 | 55.5% |
-| v92 | 31 | 0 | 151 | 696 | 141 | 0 | 3.5% |
-| v95 | 485 | 0 | 0 | 428 | 106 | 0 | 53.1% |
-| JMS185 | 433 | 0 | 0 | 389 | 197 | 0 | 52.7% |
+| v48 | 206 | 0 | 19 | 196 | 599 | 0 | 48.9% |
+| v61 | 270 | 0 | 56 | 234 | 460 | 0 | 48.2% |
+| v72 | 287 | 0 | 69 | 248 | 416 | 0 | 47.5% |
+| v79 | 332 | 0 | 68 | 245 | 375 | 0 | 51.5% |
+| v83 | 453 | 0 | 0 | 339 | 228 | 0 | 57.2% |
+| v84 | 427 | 0 | 0 | 346 | 247 | 0 | 55.2% |
+| v87 | 461 | 0 | 0 | 369 | 190 | 0 | 55.5% |
+| v92 | 32 | 0 | 151 | 696 | 141 | 0 | 3.6% |
+| v95 | 486 | 0 | 0 | 428 | 106 | 0 | 53.2% |
+| JMS185 | 434 | 0 | 0 | 389 | 197 | 0 | 52.7% |
 
 ## Conflicts
 

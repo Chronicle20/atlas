@@ -23,6 +23,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	petconst "github.com/Chronicle20/atlas/libs/atlas-constants/pet"
 	petskill "github.com/Chronicle20/atlas/libs/atlas-constants/pet/skill"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -79,6 +80,8 @@ type Processor interface {
 	AwardLevel(mb *message.Buffer) func(petId uint32) func(amount byte) error
 	EvolveAndEmit(transactionId uuid.UUID, petId uint32) error
 	Evolve(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32) error
+	RenameAndEmit(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error
+	Rename(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error
 	SetExcludeAndEmit(petId uint32, items []uint32) error
 	SetExclude(mb *message.Buffer) func(petId uint32) func(items []uint32) error
 	SetSkillAndEmit(petId uint32, skillKey string, enabled bool) error
@@ -947,6 +950,69 @@ func (p *ProcessorImpl) Evolve(mb *message.Buffer) func(transactionId uuid.UUID,
 			}
 		}
 		p.l.Infof("Evolved pet [%d]: [%d] -> [%d].", petId, oldTemplateId, newTemplateId)
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) RenameAndEmit(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).Rename(mb)(transactionId, petId, actorId, name)
+		})
+	})
+}
+
+// ErrNotOwner is returned by Rename when the acting character does not own
+// the pet. Distinguishing this from other rename failures lets callers (e.g.
+// the operator PATCH handler in resource.go) map it to 403 rather than a
+// generic 500.
+var ErrNotOwner = errors.New("pet is not owned by character")
+
+// Rename applies a new pet name and emits NAME_CHANGED.
+//
+// Idempotent by construction (PRD FR-5.5): the pre-read proves the row exists,
+// so updateName's zero-rows-affected case is a no-op rather than an error, and
+// the status event is emitted on EVERY delivery — that re-emission is required,
+// not incidental, because it is how a redelivered command still completes the
+// orchestrator's rename_pet step.
+func (p *ProcessorImpl) Rename(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error {
+	return func(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error {
+		p.l.Debugf("Renaming pet [%d] to [%s].", petId, name)
+
+		// Re-validate here rather than trusting the caller: atlas-channel
+		// validates too, but anything can publish to this topic (PRD FR-5.6).
+		normalized := petconst.NormalizeName(name)
+		if err := petconst.ValidateName(normalized); err != nil {
+			p.l.WithError(err).Warnf("Rejecting rename of pet [%d] to [%s]: invalid name.", petId, name)
+			return err
+		}
+
+		var previousName string
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			pe, err := p.With(WithTransaction(tx)).GetById(petId)
+			if err != nil {
+				return err
+			}
+			if pe.OwnerId() != actorId {
+				return fmt.Errorf("pet [%d] is not owned by character [%d]: %w", petId, actorId, ErrNotOwner)
+			}
+			previousName = pe.Name()
+
+			updated, err := Clone(pe).SetName(normalized).Build()
+			if err != nil {
+				return err
+			}
+			if err = updateName(tx)(petId, normalized); err != nil {
+				return err
+			}
+			return mb.Put(pet.EnvStatusEventTopic, nameChangedEventProvider(updated, previousName, transactionId))
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Unable to rename pet [%d].", petId)
+			return txErr
+		}
+
+		p.l.Infof("Renamed pet [%d]: [%s] -> [%s].", petId, previousName, normalized)
 		return nil
 	}
 }

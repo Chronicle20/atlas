@@ -28,10 +28,12 @@ type (
 	FieldEffectWeatherPayload    = sharedsaga.FieldEffectWeatherPayload
 	SetAssetOwnerPayload         = sharedsaga.SetAssetOwnerPayload
 	ApplyAssetLockPayload        = sharedsaga.ApplyAssetLockPayload
+	ApplyAssetKarmaPayload       = sharedsaga.ApplyAssetKarmaPayload
 	ExtendAssetExpirationPayload = sharedsaga.ExtendAssetExpirationPayload
 	IncubatorResultPayload       = sharedsaga.IncubatorResultPayload
 	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
 	CreateNotePayload            = sharedsaga.CreateNotePayload
+	RenamePetPayload             = sharedsaga.RenamePetPayload
 
 	// Megaphone / world broadcast payload types
 	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
@@ -69,12 +71,14 @@ const (
 	TeleportRockUse       = sharedsaga.TeleportRockUse
 	ItemTagUse            = sharedsaga.ItemTagUse
 	SealingLockUse        = sharedsaga.SealingLockUse
+	KarmaScissorsUse      = sharedsaga.KarmaScissorsUse
 	ExpirationExtenderUse = sharedsaga.ExpirationExtenderUse
 	IncubatorUse          = sharedsaga.IncubatorUse
 	PointReset            = sharedsaga.PointReset
 	MegaphoneUse          = sharedsaga.MegaphoneUse
 	NoteSend              = sharedsaga.NoteSend
 	MesoSackUse           = sharedsaga.MesoSackUse
+	PetNameTagUse         = sharedsaga.PetNameTagUse
 	RemoteMerchant        = sharedsaga.RemoteMerchant
 	ScriptedItemUse       = sharedsaga.ScriptedItemUse
 	RemoteNpcUse          = sharedsaga.RemoteNpcUse
@@ -107,6 +111,7 @@ const (
 	ApplyConsumableEffect = sharedsaga.ApplyConsumableEffect
 	SetAssetOwner         = sharedsaga.SetAssetOwner
 	ApplyAssetLock        = sharedsaga.ApplyAssetLock
+	ApplyAssetKarma       = sharedsaga.ApplyAssetKarma
 	ExtendAssetExpiration = sharedsaga.ExtendAssetExpiration
 	IncubatorResult       = sharedsaga.IncubatorResult
 	DestroyAssetFromSlot  = sharedsaga.DestroyAssetFromSlot
@@ -115,6 +120,7 @@ const (
 	EmitMegaphone         = sharedsaga.EmitMegaphone
 	EnqueueWorldBroadcast = sharedsaga.EnqueueWorldBroadcast
 	CreateNote            = sharedsaga.CreateNote
+	RenamePet             = sharedsaga.RenamePet
 	OpenNpcShop           = sharedsaga.OpenNpcShop
 	StartItemConversation = sharedsaga.StartItemConversation
 	StartNpcConversation  = sharedsaga.StartNpcConversation

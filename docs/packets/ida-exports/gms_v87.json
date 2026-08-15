@@ -38,6 +38,20 @@
         }
       ]
     },
+    "CPet::OnNameChanged": {
+      "address": "0x7484e0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "name-tag decoration layer selector (CLife::MakeNameTag)"
+        }
+      ]
+    },
     "CUserLocal::RequestIncCombo": {
       "address": "0x9e37bc",
       "direction": "serverbound",

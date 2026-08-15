@@ -57,6 +57,7 @@ jobs:
       has-go-workspace-changes: ${{ steps.detect.outputs.has-go-workspace-changes }}
       has-workflow-changes: ${{ steps.detect.outputs.has-workflow-changes }}
       deploy-only: ${{ steps.detect.outputs.deploy-only }}
+      has-guard-tooling-changes: ${{ steps.detect.outputs.has-guard-tooling-changes }}
       all-go-services: ${{ steps.detect.outputs.all-go-services }}
       all-go-libraries: ${{ steps.detect.outputs.all-go-libraries }}
       go-services-matrix: ${{ steps.detect.outputs.go-services-matrix }}
@@ -76,19 +77,63 @@ jobs:
           force-all: ${{ github.event.inputs.force-all }}
 
   # ============================================
-  # Redis Key Guard
-  # Builds the rediskeyguard analyzer and runs it
-  # over every Go service module. Fails if any
-  # service calls raw go-redis keyed commands
-  # outside libs/atlas-redis (FR-1.5, task-045).
+  # Go Analyzer Guards
+  #
+  # One job carrying all four go/analysis guards:
+  #   rediskeyguard      raw go-redis keyed commands outside libs/atlas-redis
+  #                      (FR-1.5, task-045)
+  #   outboxguard        producer.ProviderImpl inside a DB transaction closure,
+  #                      directly or through a concrete (statically-resolvable)
+  #                      helper call. Interface-dispatched emits are the DI seam
+  #                      and out of scope. Must route through atlas-outbox so
+  #                      the Kafka enqueue is atomic with the domain write
+  #                      (task-114 outbox adoption).
+  #   goroutineguard     bare go statements outside libs/atlas-routine or a
+  #                      justified //goroutine-guard:allow marker (RR-6,
+  #                      task-115)
+  #   buffdurationguard  seconds→ms scaling in a COMMAND_TOPIC_CHARACTER_BUFF
+  #                      duration field (task-190 FR-3.2)
+  #
+  # These were four separate jobs until they became the slowest thing on a
+  # docs-only PR. Run 31889679664 changed six files — three .claude/*.md,
+  # CLAUDE.md, docs/verification.md and tools/verify.sh, zero Go — and the four
+  # guards burned 376s, 384s, 359s and 285s while every test job correctly
+  # skipped. That was the entire 7-minute run. Three things were wrong:
+  #
+  #   1. The gate. `deploy-only != 'true'` is true for any change set that
+  #      isn't confined to deploy/ — including one with no Go in it at all. The
+  #      gate is now the affected-module matrices, the same signal lint-go
+  #      already used to skip that run correctly, plus has-guard-tooling-changes
+  #      so a change to an analyzer itself still forces a full sweep.
+  #
+  #   2. The cache. `actions/setup-go` defaults to cache: true but looks for
+  #      go.sum in the working directory. This is a go.work repo with 85
+  #      per-module go.sum files and none at the root, so every one of these
+  #      jobs logged "Restore cache failed: Dependencies file is not found" and
+  #      ran with a cold GOMODCACHE *and* a cold GOCACHE. The whole reason the
+  #      guards drive `go vet -vettool=` is that the go command caches analysis
+  #      facts per package in GOCACHE — that optimization had never once taken
+  #      effect in CI. cache-dependency-path fixes it.
+  #
+  #   3. The duplication. Four runners each cold-compiled the same dependency
+  #      graph to analyze the same 64 modules. Type-checking, not analysis, is
+  #      where the time went. tools/go-analyzer-guards.sh links every analyzer
+  #      into one unitchecker binary, so the tree is type-checked once and the
+  #      marginal cost of guards 2..4 is near zero.
+  #
+  # What each guard DETECTS and what each guard SCANS are both unchanged; see
+  # tools/atlasguards/guards.go for the services-only vs services+libs split.
   # ============================================
-  redis-key-guard:
-    name: Redis Key Guard
-    # Input surface is services/**/*.go + libs/**/*.go only — a change set
-    # confined to deploy/ (the automated main-overlay bump PR) cannot alter
-    # this verdict. See detect-changes' deploy-only output.
+  go-analyzer-guards:
+    name: Go Analyzer Guards
+    # Input surface is services/**, libs/** and the analyzers' own source under
+    # tools/. A change set confined to deploy/ — or to docs, or to .claude/ —
+    # cannot alter this verdict.
     needs: detect-changes
-    if: needs.detect-changes.outputs.deploy-only != 'true'
+    if: |
+      needs.detect-changes.outputs.go-services-matrix != '[]' ||
+      needs.detect-changes.outputs.go-libraries-matrix != '[]' ||
+      needs.detect-changes.outputs.has-guard-tooling-changes == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -99,9 +144,54 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          # Without this the restore silently no-ops: setup-go looks for go.sum
+          # in the working directory and this repo has none at the root. Naming
+          # the per-module sums plus go.work.sum keys the cache on the actual
+          # dependency set, so GOMODCACHE and GOCACHE both come back warm and
+          # `go vet -vettool=`'s per-package fact cache does its job.
+          cache-dependency-path: |
+            go.work.sum
+            **/go.sum
 
-      - name: redis key guard
-        run: ./tools/redis-key-guard.sh
+      - name: Scope the sweep to affected modules
+        id: scope
+        env:
+          SERVICES: ${{ needs.detect-changes.outputs.go-services-matrix }}
+          GUARD_TOOLING: ${{ needs.detect-changes.outputs.has-guard-tooling-changes }}
+        run: |
+          set -euo pipefail
+          # A change to an analyzer, its shared driver, or a guard wrapper moves
+          # the verdict on code that did not change — sweep everything.
+          if [ "$GUARD_TOOLING" = "true" ]; then
+            echo "guard tooling changed — full services/ sweep"
+            echo "service-modules=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Otherwise the affected-module matrix is the scope. It is the
+          # changed services plus everything cideps says depends on them, which
+          # is what these analyzers need: outboxguard in particular propagates
+          # facts across module boundaries, so a libs/ edit can flip a verdict
+          # in a service whose own source never moved. cideps already fans a
+          # libs/ change out to its dependents.
+          MODULES=$(jq -r --arg ws "$GITHUB_WORKSPACE" \
+            '.[] | $ws + "/" + .module_path' <<<"$SERVICES")
+          echo "Scoped services/ sweep to $(wc -l <<<"$MODULES") module(s)"
+          {
+            echo "service-modules<<EOF"
+            echo "$MODULES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: go analyzer guards
+        env:
+          # services/ is scoped to the affected set; libs/ is deliberately left
+          # unscoped. .github/config/services.json lists 9 of the 22 Go modules
+          # under libs/, so scoping that pass to the libraries matrix would drop
+          # 13 modules from goroutineguard and buffdurationguard coverage. The
+          # libs modules are small and the services pass has already warmed
+          # them in GOCACHE.
+          GUARD_SERVICE_MODULES: ${{ steps.scope.outputs.service-modules }}
+        run: ./tools/go-analyzer-guards.sh
 
   # ============================================
   # NPC Shop Contract Mirror Guard
@@ -145,101 +235,6 @@ jobs:
       - name: npc-conversation contract mirror guard
         run: ./tools/npc-conversation-contract-mirror-guard.sh
 
-  # ============================================
-  # Outbox Guard
-  # Builds tools/outboxguard (go/analysis analyzer)
-  # and runs it over every Go service module. Fails
-  # if any service constructs producer.ProviderImpl
-  # inside a DB transaction closure — directly, or
-  # transitively through a concrete (statically-
-  # resolvable) helper call (Facts-based). Interface-
-  # dispatched emits are the DI seam and out of scope.
-  # Such a call must route through the atlas-outbox lib
-  # so the Kafka enqueue is atomic with the domain
-  # write (task-114 outbox adoption).
-  # ============================================
-  outbox-guard:
-    name: Outbox Guard
-    # Input surface is services/**/*.go + libs/**/*.go only — a change set
-    # confined to deploy/ (the automated main-overlay bump PR) cannot alter
-    # this verdict. See detect-changes' deploy-only output.
-    needs: detect-changes
-    if: needs.detect-changes.outputs.deploy-only != 'true'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: outbox guard
-        run: ./tools/outbox-guard.sh
-
-  # ============================================
-  # Goroutine Guard
-  # Self-tests + builds the goroutineguard
-  # analyzer and runs it over every Go module
-  # under services/ and libs/. Fails on any bare
-  # go statement outside libs/atlas-routine or a
-  # justified //goroutine-guard:allow marker
-  # (RR-6, task-115).
-  # ============================================
-  goroutine-guard:
-    name: Goroutine Guard
-    # Input surface is services/**/*.go + libs/**/*.go only — a change set
-    # confined to deploy/ (the automated main-overlay bump PR) cannot alter
-    # this verdict. See detect-changes' deploy-only output.
-    needs: detect-changes
-    if: needs.detect-changes.outputs.deploy-only != 'true'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: goroutine guard
-        run: ./tools/goroutine-guard.sh
-
-  # ============================================
-  # Buff Duration Guard
-  # Self-tests + builds the buffdurationguard
-  # analyzer and runs it over every Go module
-  # under services/ and libs/. Fails on any
-  # seconds→ms scaling in a
-  # COMMAND_TOPIC_CHARACTER_BUFF duration field
-  # (task-190 FR-3.2).
-  # ============================================
-  buff-duration-guard:
-    name: Buff Duration Guard
-    # Input surface is services/**/*.go + libs/**/*.go only — a change set
-    # confined to deploy/ (the automated main-overlay bump PR) cannot alter
-    # this verdict. See detect-changes' deploy-only output.
-    needs: detect-changes
-    if: needs.detect-changes.outputs.deploy-only != 'true'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: buff duration guard
-        run: ./tools/buff-duration-guard.sh
-
-  # ============================================
   # LB Port Drift Guard
   # Regenerates the per-version login/channel LB
   # socket port manifests from versions.json and
@@ -334,6 +329,16 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          # Same silent no-op the analyzer guards hit: setup-go looks for go.sum
+          # in the working directory, this repo has none at the root, and the
+          # restore failed with "Dependencies file is not found" on every run.
+          # This job lints up to 63 modules from a cold GOMODCACHE/GOCACHE and
+          # is the longest single job in a full PR run (1045s on run
+          # 31845173943) — golangci-lint type-checks every package it lints, so
+          # a warm build cache is most of the cost.
+          cache-dependency-path: |
+            go.work.sum
+            **/go.sum
 
       - name: Cache lint tooling
         uses: actions/cache@v4
@@ -851,7 +856,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, redis-key-guard, npc-shop-contract-mirror-guard, npc-conversation-contract-mirror-guard, outbox-guard, goroutine-guard, buff-duration-guard, gen-lb-ports, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, go-analyzer-guards, npc-shop-contract-mirror-guard, npc-conversation-contract-mirror-guard, gen-lb-ports, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
     if: always()
     runs-on: ubuntu-latest
 
@@ -868,12 +873,9 @@ jobs:
           UI_RESULT="${{ needs.test-ui.result }}"
           DOCKER_RESULT="${{ needs.build-docker.result }}"
           OVERLAY_RESULT="${{ needs.update-pr-overlay.result }}"
-          GUARD_RESULT="${{ needs.redis-key-guard.result }}"
+          ANALYZER_GUARDS_RESULT="${{ needs.go-analyzer-guards.result }}"
           NPC_SHOP_CONTRACT_GUARD_RESULT="${{ needs.npc-shop-contract-mirror-guard.result }}"
           NPC_CONVERSATION_CONTRACT_GUARD_RESULT="${{ needs.npc-conversation-contract-mirror-guard.result }}"
-          OUTBOX_GUARD_RESULT="${{ needs.outbox-guard.result }}"
-          GOROUTINE_GUARD_RESULT="${{ needs.goroutine-guard.result }}"
-          BUFF_DURATION_GUARD_RESULT="${{ needs.buff-duration-guard.result }}"
           LBPORTS_RESULT="${{ needs.gen-lb-ports.result }}"
           SVC_REG_GUARD_RESULT="${{ needs.service-registration-guard.result }}"
           TMPL_ORDER_GUARD_RESULT="${{ needs.template-opcode-order-guard.result }}"
@@ -891,12 +893,9 @@ jobs:
           echo "| UI | $UI_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Docker Builds | $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Resolve PR overlay | $OVERLAY_RESULT |" >> $GITHUB_STEP_SUMMARY
-          echo "| Redis Key Guard | $GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Go Analyzer Guards (redis/outbox/goroutine/buff-duration) | $ANALYZER_GUARDS_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| NPC Shop Contract Mirror Guard | $NPC_SHOP_CONTRACT_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| NPC Conversation Contract Mirror Guard | $NPC_CONVERSATION_CONTRACT_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
-          echo "| Outbox Guard | $OUTBOX_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
-          echo "| Goroutine Guard | $GOROUTINE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
-          echo "| Buff Duration Guard | $BUFF_DURATION_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| LB Port Drift Guard | $LBPORTS_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Service Registration Guard | $SVC_REG_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Template Opcode Order Guard | $TMPL_ORDER_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
@@ -926,7 +925,7 @@ jobs:
           # but never to fail outright. Comparing against "failure" (not
           # against "success") is what makes a skip pass. That tolerance
           # is only safe because detect-changes was verified above.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$GUARD_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$NPC_CONVERSATION_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$OUTBOX_GUARD_RESULT" == "failure" ] || [ "$GOROUTINE_GUARD_RESULT" == "failure" ] || [ "$BUFF_DURATION_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$ANALYZER_GUARDS_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$NPC_CONVERSATION_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

@@ -110,6 +110,16 @@ its role, plus the patterns to copy. The planner already knew them.
   back to a repo sweep — that is exactly the phase this contract removes, and
   the controller can supply the inventory far more cheaply than you can
   derive it.
+- **To read a dependency's source, ask the toolchain for its path — never
+  search for it.** `go list -m -f '{{.Dir}}' <module>` prints the directory in
+  ~0.02s and is correct whether the module resolves to the module cache or to a
+  local `replace`. `go doc <pkg> [symbol]` reads it without a path at all.
+  `find /` costs ~2 minutes per call on WSL2: one task-227 implementer and its
+  reviewer spent **6 minutes across five whole-filesystem sweeps** looking for
+  `atlas-rest`, which `go.mod` had `replace`d to `libs/atlas-rest` inside the
+  worktree they were already in. If you catch yourself guessing at module-cache
+  case-escaping (`!chronicle20`), that is the signal — run `go list` instead.
+  Never root a `find` at `/`.
 
 ## Your Job
 

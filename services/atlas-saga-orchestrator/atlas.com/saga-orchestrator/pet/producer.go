@@ -33,3 +33,17 @@ func EvolveProvider(transactionId uuid.UUID, petId uint32) model.Provider[[]kafk
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func RenameProvider(transactionId uuid.UUID, petId uint32, characterId uint32, name string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(petId))
+	value := &pet2.Command[pet2.RenameCommandBody]{
+		TransactionId: transactionId,
+		ActorId:       characterId,
+		PetId:         petId,
+		Type:          pet2.CommandPetRename,
+		Body: pet2.RenameCommandBody{
+			Name: name,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -90,6 +90,26 @@ func updateLevel(db *gorm.DB) func(petId uint32, level byte) error {
 	}
 }
 
+func updateName(db *gorm.DB) func(petId uint32, name string) error {
+	return func(petId uint32, name string) error {
+		result := db.Model(&Entity{}).
+			Where("id = ?", petId).
+			Update("name", name)
+
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Deliberately NOT treating RowsAffected == 0 as an error, unlike the
+		// sibling update functions above. Kafka is at-least-once: a redelivered
+		// RENAME whose value is already applied updates zero rows, and erroring
+		// there would fail the orchestrator's rename_pet step on a duplicate
+		// that changed nothing (PRD FR-5.5). Existence is proven by the caller's
+		// pre-read inside the same transaction.
+		return nil
+	}
+}
+
 func updateOnEvolve(db *gorm.DB) func(petId uint32, templateId uint32, expiration time.Time) error {
 	return func(petId uint32, templateId uint32, expiration time.Time) error {
 		result := db.Model(&Entity{}).

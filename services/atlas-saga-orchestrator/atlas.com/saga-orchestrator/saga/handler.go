@@ -116,6 +116,7 @@ type Handler interface {
 	handleIncreaseBuddyCapacity(s Saga, st Step[any]) error
 	handleGainCloseness(s Saga, st Step[any]) error
 	handleEvolvePet(s Saga, st Step[any]) error
+	handleRenamePet(s Saga, st Step[any]) error
 	handleSpawnMonster(s Saga, st Step[any]) error
 	handleSpawnReactorDrops(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
@@ -830,6 +831,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleGainCloseness, true
 	case EvolvePet:
 		return h.handleEvolvePet, true
+	case RenamePet:
+		return h.handleRenamePet, true
 	case SpawnMonster:
 		return h.handleSpawnMonster, true
 	case SpawnReactorDrops:
@@ -960,6 +963,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSetAssetOwner, true
 	case ApplyAssetLock:
 		return h.handleApplyAssetLock, true
+	case ApplyAssetKarma:
+		return h.handleApplyAssetKarma, true
 	case ExtendAssetExpiration:
 		return h.handleExtendAssetExpiration, true
 	case IncubatorResult:
@@ -1158,6 +1163,26 @@ func (h *HandlerImpl) handleApplyAssetLock(s Saga, st Step[any]) error {
 	err := h.compP.RequestApplyLock(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Expiration)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to apply asset lock.")
+		return err
+	}
+	return nil
+}
+
+// handleApplyAssetKarma handles the ApplyAssetKarma action.
+//
+// The scissors' own karma type rides on the payload and is forwarded onto the
+// Kafka command body, because atlas-inventory — the owning service and the
+// authority — re-runs the eligibility predicate, and the EQUALITY half of that
+// predicate is meaningless without it. Forwarding 0 would silently degrade the
+// v87+ equality model to the v83 non-zero model.
+func (h *HandlerImpl) handleApplyAssetKarma(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ApplyAssetKarmaPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := h.compP.RequestApplyKarma(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.ScissorsKarma, false)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to apply asset karma.")
 		return err
 	}
 	return nil
@@ -1471,6 +1496,21 @@ func (h *HandlerImpl) handleEvolvePet(s Saga, st Step[any]) error {
 	err := h.petP.EvolveAndEmit(s.TransactionId(), payload.PetId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to evolve pet.")
+		return err
+	}
+
+	return nil
+}
+
+func (h *HandlerImpl) handleRenamePet(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(RenamePetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.petP.RenameAndEmit(s.TransactionId(), payload.PetId, payload.CharacterId, payload.Name)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to rename pet.")
 		return err
 	}
 

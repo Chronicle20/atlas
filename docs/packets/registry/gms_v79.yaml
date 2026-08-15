@@ -1131,7 +1131,8 @@
   fname: CPet::OnNameChanged
   provenance: ida-discovered
   ida:
-    address: 8987764
+    address: 6885247
+  note: 'task-224 correction: prior address 8987764 (0x892474) was CUser::OnPetPacket, the shared dispatcher (copy-pasted across the PET_MOVE/PET_CHAT/PET_NAMECHANGE siblings), not the leaf handler. Re-read CPet::OnNameChanged itself at 0x690f7f: DecodeStr(name) then Decode1 selects the CLife::MakeNameTag layer, same str+byte shape as the rest of the family.'
 - op: PET_EXCEPTION_LIST
   direction: clientbound
   opcode: 162

@@ -348,6 +348,7 @@ func (h fakeHandler) ConcurrencyKey(context.Context, json.RawMessage) (string, e
 	return "", nil
 }
 
+func (h fakeHandler) ConcurrencyKeyIsConstant() bool { return false }
 func (h fakeHandler) Evaluate(ctx context.Context, d registry.Definition, w registry.Work) (*registry.Seed, error) {
 	if h.evaluate != nil {
 		return h.evaluate(ctx, d, w)

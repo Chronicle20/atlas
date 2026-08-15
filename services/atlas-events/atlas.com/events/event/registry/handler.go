@@ -90,6 +90,19 @@ type Handler interface {
 	// (tenant, definition, key). Empty string means unlimited.
 	ConcurrencyKey(ctx context.Context, workContext json.RawMessage) (string, error)
 
+	// ConcurrencyKeyIsConstant reports whether ConcurrencyKey's result never
+	// varies with workContext — i.e. this handler's occurrences are scoped to
+	// a single, per-type gameplay slot rather than one per voyage/world/
+	// channel/etc. This cannot be discovered by probing ConcurrencyKey with
+	// distinct payloads and comparing (FR-UI4's original approach,
+	// event/definition/processor.go's singleOccurrence): json.Unmarshal
+	// silently ignores unknown fields, so a handler that decodes the probe
+	// into a typed struct (e.g. CRIMSON_BALROG's WorkContext) gets the SAME
+	// zero value back for every unrecognized probe payload — collapsing two
+	// distinct probes to equal keys and misreporting a varying handler as
+	// constant (task-231 R33-4). The handler must simply declare the answer.
+	ConcurrencyKeyIsConstant() bool
+
 	// Evaluate decides whether a TRIGGER_EVALUATION should produce an
 	// occurrence. Returning (nil, nil) is the ordinary "no occurrence" outcome
 	// (FR-B7, FR-B8), not an error.

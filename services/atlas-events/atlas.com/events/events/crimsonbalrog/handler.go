@@ -69,6 +69,12 @@ func (h *Handler) ConcurrencyKey(_ context.Context, workContext json.RawMessage)
 	return fmt.Sprintf("%s|%d|%d", wc.VoyageId, wc.WorldId, wc.ChannelId), nil
 }
 
+// ConcurrencyKeyIsConstant is false: the key varies per voyage/world/channel,
+// so several CRIMSON_BALROG occurrences can be active at once (R33-4). The
+// UI must link out to the filtered occurrence list rather than render live
+// single-occurrence state on the definition row.
+func (h *Handler) ConcurrencyKeyIsConstant() bool { return false }
+
 // Evaluate decides whether a TRIGGER_EVALUATION should produce an occurrence.
 // Implemented in evaluate.go (Task 24).
 

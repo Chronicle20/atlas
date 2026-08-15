@@ -52,6 +52,7 @@ func (h rejectingHandler) ConcurrencyKey(context.Context, json.RawMessage) (stri
 	return "", nil
 }
 
+func (h rejectingHandler) ConcurrencyKeyIsConstant() bool { return false }
 func (h rejectingHandler) Evaluate(context.Context, registry.Definition, registry.Work) (*registry.Seed, error) {
 	return nil, nil
 }
@@ -74,6 +75,7 @@ func (h acceptingHandler) ConcurrencyKey(context.Context, json.RawMessage) (stri
 	return "", nil
 }
 
+func (h acceptingHandler) ConcurrencyKeyIsConstant() bool { return false }
 func (h acceptingHandler) Evaluate(context.Context, registry.Definition, registry.Work) (*registry.Seed, error) {
 	return nil, nil
 }
@@ -248,8 +250,13 @@ func TestGetByTypeAndGetEnabledByType(t *testing.T) {
 	}
 }
 
-// FR-UI4: a handler whose concurrency key does not vary with the work context
-// is a constant slot; a handler whose key embeds the probe is not.
+// FR-UI4/R33-4: singleOccurrence now asks the handler directly via
+// ConcurrencyKeyIsConstant rather than probing ConcurrencyKey with two
+// payloads and comparing — the constantKeyHandler/varyingKeyHandler stubs
+// below express constancy through that method, not through
+// probe-branching ConcurrencyKey bodies (a real handler never branches on
+// probe content, which was exactly what made the old double-probe unsound —
+// see registry.Handler.ConcurrencyKeyIsConstant's doc comment).
 func TestSingleOccurrenceDerivation(t *testing.T) {
 	registryReset(t)
 	registry.Register(constantKeyHandler{t: "CONST"})
@@ -273,6 +280,7 @@ func (h constantKeyHandler) ValidateConfiguration(json.RawMessage) error { retur
 func (h constantKeyHandler) ConcurrencyKey(context.Context, json.RawMessage) (string, error) {
 	return "constant", nil
 }
+func (h constantKeyHandler) ConcurrencyKeyIsConstant() bool { return true }
 
 func (h constantKeyHandler) Evaluate(context.Context, registry.Definition, registry.Work) (*registry.Seed, error) {
 	return nil, nil
@@ -293,6 +301,7 @@ func (h varyingKeyHandler) ValidateConfiguration(json.RawMessage) error { return
 func (h varyingKeyHandler) ConcurrencyKey(_ context.Context, workContext json.RawMessage) (string, error) {
 	return string(workContext), nil
 }
+func (h varyingKeyHandler) ConcurrencyKeyIsConstant() bool { return false }
 
 func (h varyingKeyHandler) Evaluate(context.Context, registry.Definition, registry.Work) (*registry.Seed, error) {
 	return nil, nil

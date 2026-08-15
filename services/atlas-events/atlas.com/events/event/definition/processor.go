@@ -3,7 +3,6 @@ package definition
 import (
 	"atlas-events/event/registry"
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -102,24 +101,24 @@ func (p *ProcessorImpl) SetEnabled(id uuid.UUID, enabled bool) (Model, error) {
 
 // singleOccurrence reports whether theType's registered handler names a
 // concurrency key that is a per-type constant rather than one that varies
-// with the work context (FR-UI4). It is derived here, in the processor, by
-// calling the handler's ConcurrencyKey with two distinct probe contexts and
-// comparing the results — equal ⇒ constant ⇒ at most one occurrence can ever
+// with the work context (FR-UI4): true ⇒ at most one occurrence can ever
 // exist, so the UI may render live occurrence state directly on the
-// definition row. An unregistered type, or a handler that cannot resolve a
-// key from a probe context, is treated as "varies" (false) — the safe
-// default is to link out to the filtered occurrence list rather than imply a
-// single state that may not hold.
-func singleOccurrence(ctx context.Context, theType string) bool {
+// definition row.
+//
+// This asks the handler directly (registry.Handler.ConcurrencyKeyIsConstant)
+// rather than probing ConcurrencyKey with two distinct payloads and comparing
+// results, which R33-4 found unsound: json.Unmarshal silently ignores
+// unknown fields, so a handler that decodes the probe into a typed struct
+// (e.g. CRIMSON_BALROG's WorkContext) gets the SAME zero value back for every
+// unrecognized probe — collapsing two distinct probes to equal keys and
+// misreporting a varying handler as constant. An unregistered type is
+// treated as "varies" (false) — the safe default is to link out to the
+// filtered occurrence list rather than imply a single state that may not
+// hold.
+func singleOccurrence(_ context.Context, theType string) bool {
 	h, ok := registry.Get(theType)
 	if !ok {
 		return false
 	}
-
-	k1, err1 := h.ConcurrencyKey(ctx, json.RawMessage(`{"probe":"a"}`))
-	k2, err2 := h.ConcurrencyKey(ctx, json.RawMessage(`{"probe":"b"}`))
-	if err1 != nil || err2 != nil {
-		return false
-	}
-	return k1 == k2
+	return h.ConcurrencyKeyIsConstant()
 }

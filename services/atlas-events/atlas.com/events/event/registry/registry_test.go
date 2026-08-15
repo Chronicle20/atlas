@@ -13,6 +13,7 @@ func (h stubHandler) ValidateConfiguration(json.RawMessage) error { return nil }
 func (h stubHandler) ConcurrencyKey(context.Context, json.RawMessage) (string, error) {
 	return "", nil
 }
+func (h stubHandler) ConcurrencyKeyIsConstant() bool                            { return false }
 func (h stubHandler) Evaluate(context.Context, Definition, Work) (*Seed, error) { return nil, nil }
 func (h stubHandler) Start(context.Context, Occurrence) (Progress, error)       { return Progress{}, nil }
 func (h stubHandler) Advance(context.Context, Occurrence, Work) (Progress, error) {

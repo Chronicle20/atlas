@@ -66,6 +66,7 @@ func (h resourceTestHandler) ConcurrencyKey(context.Context, json.RawMessage) (s
 	return "slot", nil
 }
 
+func (h resourceTestHandler) ConcurrencyKeyIsConstant() bool { return true }
 func (h resourceTestHandler) Evaluate(context.Context, registry.Definition, registry.Work) (*registry.Seed, error) {
 	return nil, nil
 }

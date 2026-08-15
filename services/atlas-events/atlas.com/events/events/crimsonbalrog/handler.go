@@ -2,25 +2,44 @@ package crimsonbalrog
 
 import (
 	"atlas-events/event/registry"
+	"atlas-events/external/maps"
+	"atlas-events/external/transports"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
+
+	"github.com/sirupsen/logrus"
 )
 
 // ErrNotImplemented marks a Handler method filled in later in Phase E (Tasks
 // 24, 25, 27). No caller may treat it as a normal outcome.
 var ErrNotImplemented = errors.New("crimsonbalrog: not implemented")
 
-// Handler is the CRIMSON_BALROG registry.Handler. This task writes only the
-// static half (Type, ValidateConfiguration, ConcurrencyKey); Evaluate, Start,
-// Advance and Complete are filled in by Tasks 24, 25 and 27 within the same
-// phase and branch.
-type Handler struct{}
+// Handler is the CRIMSON_BALROG registry.Handler.
+//
+// roll and the two client constructors are fields, not direct calls, so a
+// test can pin the roll and fake the atlas-transports/atlas-maps clients
+// (Task 24's evaluate_test.go) without a network dependency; NewHandler
+// wires the real ones.
+type Handler struct {
+	roll       func() float64
+	transports func(ctx context.Context) transports.Processor
+	maps       func(ctx context.Context) maps.Processor
+}
 
 // NewHandler constructs the CRIMSON_BALROG handler.
 func NewHandler() registry.Handler {
-	return &Handler{}
+	return &Handler{
+		roll: rand.Float64,
+		transports: func(ctx context.Context) transports.Processor {
+			return transports.NewProcessor(logrus.StandardLogger(), ctx)
+		},
+		maps: func(ctx context.Context) maps.Processor {
+			return maps.NewProcessor(logrus.StandardLogger(), ctx)
+		},
+	}
 }
 
 // compile-time assertion
@@ -53,10 +72,7 @@ func (h *Handler) ConcurrencyKey(_ context.Context, workContext json.RawMessage)
 }
 
 // Evaluate decides whether a TRIGGER_EVALUATION should produce an occurrence.
-// Filled in by Task 24.
-func (h *Handler) Evaluate(_ context.Context, _ registry.Definition, _ registry.Work) (*registry.Seed, error) {
-	return nil, fmt.Errorf("Evaluate: %w", ErrNotImplemented)
-}
+// Implemented in evaluate.go (Task 24).
 
 // Start orchestrates the side effects of a newly created occurrence.
 // Filled in by Task 25.

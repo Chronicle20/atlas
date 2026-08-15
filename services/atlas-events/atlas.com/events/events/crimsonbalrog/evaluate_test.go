@@ -1,0 +1,235 @@
+package crimsonbalrog
+
+import (
+	"atlas-events/event/registry"
+	"atlas-events/external/maps"
+	"atlas-events/external/transports"
+	"context"
+	"encoding/json"
+	"errors"
+	"testing"
+
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+)
+
+// fakes assembles a Handler wired to in-memory stand-ins for the
+// atlas-transports/atlas-maps clients and the probability roll, plus the
+// default definition/work-context pair every gate would ACCEPT. Each test
+// mutates exactly the field(s) that should flip one gate.
+type fakes struct {
+	t *testing.T
+
+	ctx        context.Context
+	definition registry.Definition
+	work       registry.Work
+	voyageId   uuid.UUID
+
+	route    transports.RestModel
+	routeErr error
+
+	charactersByMap map[_map.Id][]uint32
+	charactersErr   error
+
+	roll func() float64
+}
+
+// newFakes returns a fakes where every FR-B5 gate passes: the voyage is
+// underway on the expected voyage, the definition is enabled, the roll
+// undercuts the configured probability, and someone is aboard an attack map.
+func newFakes(t *testing.T) *fakes {
+	t.Helper()
+
+	voyageId := uuid.New()
+
+	// Grounded configuration values, from
+	// deploy/seed/shared/all/events/definitions/event-crimson-balrog.json.
+	cfg := Config{
+		ApplicableRouteIds: []string{"boat-ellinia-orbis", "boat-orbis-ellinia"},
+		AttackProbability:  0.42,
+		MonsterId:          8150000,
+		MonsterCount:       2,
+		AttackMaps: []AttackMap{
+			{MapId: 200090010, SpawnPositions: []Position{{X: 339, Y: 148}, {X: 339, Y: 148}}},
+			{MapId: 200090000, SpawnPositions: []Position{{X: -538, Y: 143}, {X: -538, Y: 143}}},
+		},
+		RelatedMapIds:   []_map.Id{200090011, 200090001},
+		BackgroundMusic: "Bgm04/ArabPirate",
+		Visual: VisualConfig{
+			Name:         "CONTI_MOVE",
+			ShowState:    10,
+			ShowSubState: 4,
+			HideState:    10,
+			HideSubState: 5,
+		},
+	}
+	cfgRaw, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatalf("marshal config: %v", err)
+	}
+
+	wc := WorkContext{
+		VoyageId:  voyageId,
+		RouteId:   uuid.New(),
+		WorldId:   world.Id(1),
+		ChannelId: channel.Id(4),
+	}
+	wcRaw, err := json.Marshal(wc)
+	if err != nil {
+		t.Fatalf("marshal work context: %v", err)
+	}
+
+	return &fakes{
+		t:   t,
+		ctx: context.Background(),
+		definition: registry.Definition{
+			Id:            uuid.New(),
+			Type:          TypeName,
+			Name:          "Crimson Balrog",
+			Enabled:       true,
+			Configuration: cfgRaw,
+		},
+		work: registry.Work{
+			Id:      uuid.New(),
+			Type:    "TRIGGER_EVALUATION",
+			Context: wcRaw,
+		},
+		voyageId: voyageId,
+		route: transports.RestModel{
+			State:    "in_transit",
+			VoyageID: voyageId.String(),
+		},
+		charactersByMap: map[_map.Id][]uint32{200090010: {42}},
+		roll:            func() float64 { return 0 },
+	}
+}
+
+func (f *fakes) handler() *Handler {
+	return &Handler{
+		roll: f.roll,
+		transports: func(context.Context) transports.Processor {
+			return fakeTransportsProcessor{route: f.route, err: f.routeErr}
+		},
+		maps: func(context.Context) maps.Processor {
+			return fakeMapsProcessor{byMap: f.charactersByMap, err: f.charactersErr}
+		},
+	}
+}
+
+type fakeTransportsProcessor struct {
+	route transports.RestModel
+	err   error
+}
+
+func (f fakeTransportsProcessor) GetRoute(uuid.UUID) (transports.RestModel, error) {
+	return f.route, f.err
+}
+
+var _ transports.Processor = fakeTransportsProcessor{}
+
+type fakeMapsProcessor struct {
+	byMap map[_map.Id][]uint32
+	err   error
+}
+
+func (f fakeMapsProcessor) CharacterIdsInMap(fm field.Model) ([]uint32, error) {
+	if f.err != nil {
+		return nil, f.err
+	}
+	return f.byMap[fm.MapId()], nil
+}
+
+var _ maps.Processor = fakeMapsProcessor{}
+
+// Each rejection path asserts NO occurrence is seeded — that is what preserves
+// the occurrence table's meaning as a history of real events (§4).
+func TestEvaluateRejectionPaths(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		setup func(*fakes)
+	}{
+		{"voyage already arrived", func(f *fakes) { f.route.State = "awaiting_return" }},
+		{"voyage replaced by the next trip", func(f *fakes) { f.route.VoyageID = uuid.New().String() }},
+		{"definition disabled since departure", func(f *fakes) { f.definition.Enabled = false }},
+		{"probability roll failed", func(f *fakes) { f.roll = func() float64 { return 0.99 } }},
+		{"nobody aboard", func(f *fakes) { f.charactersByMap = map[_map.Id][]uint32{} }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newFakes(t)
+			tc.setup(f)
+			seed, err := f.handler().Evaluate(f.ctx, f.definition, f.work)
+			if err != nil {
+				t.Fatalf("rejection must not be an error: %v", err)
+			}
+			if seed != nil {
+				t.Fatalf("expected no occurrence, got %+v", seed)
+			}
+		})
+	}
+}
+
+// FR-B6: "aboard" is the UNION of attack maps and related maps — a character in
+// the cabin counts.
+func TestCharacterInTheCabinCountsAsAboard(t *testing.T) {
+	f := newFakes(t)
+	f.charactersByMap = map[_map.Id][]uint32{200090011: {42}} // cabin only
+
+	seed, err := f.handler().Evaluate(f.ctx, f.definition, f.work)
+	if err != nil {
+		t.Fatalf("Evaluate: %v", err)
+	}
+	if seed == nil {
+		t.Fatalf("cabin occupancy must count as aboard (FR-B6)")
+	}
+}
+
+// FR-B9/FR-B10/FR-API8: attack maps are visual, related maps are not.
+func TestSuccessfulEvaluationSeedsTheCorrectScope(t *testing.T) {
+	f := newFakes(t)
+	f.charactersByMap = map[_map.Id][]uint32{200090010: {42}}
+
+	seed, err := f.handler().Evaluate(f.ctx, f.definition, f.work)
+	if err != nil || seed == nil {
+		t.Fatalf("Evaluate: seed=%v err=%v", seed, err)
+	}
+	if seed.Stage != StageAttacking {
+		t.Fatalf("stage = %q, want %q", seed.Stage, StageAttacking)
+	}
+	if seed.WorldId != 1 || seed.ChannelId != 4 || seed.VoyageId != f.voyageId {
+		t.Fatalf("scope = %d/%d/%s", seed.WorldId, seed.ChannelId, seed.VoyageId)
+	}
+	got := map[_map.Id]bool{}
+	for _, ms := range seed.Maps {
+		got[ms.MapId] = ms.Visual
+	}
+	if !got[200090010] {
+		t.Fatalf("attack map must be visual")
+	}
+	if got[200090011] {
+		t.Fatalf("cabin must NOT be visual (FR-B13)")
+	}
+}
+
+// An unreachable dependency must RETRY, not be read as a negative answer. This
+// is the difference between "nobody was aboard" and "we could not tell".
+func TestUnreachableDependenciesReturnErrors(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		setup func(*fakes)
+	}{
+		{"transports down", func(f *fakes) { f.routeErr = errors.New("connection refused") }},
+		{"maps down", func(f *fakes) { f.charactersErr = errors.New("connection refused") }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newFakes(t)
+			tc.setup(f)
+			if _, err := f.handler().Evaluate(f.ctx, f.definition, f.work); err == nil {
+				t.Fatalf("expected an error so the work row retries")
+			}
+		})
+	}
+}

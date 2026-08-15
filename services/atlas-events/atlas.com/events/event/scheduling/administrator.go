@@ -3,11 +3,14 @@ package scheduling
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -38,18 +41,27 @@ func NewAdministrator(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *A
 // be a no-op, not a second row and not an error (FR-B4/FR-S8). An empty
 // DedupeKey opts a row out of dedup entirely.
 //
-// The dedupe check reads-then-inserts inside a transaction. The authoritative
-// guard is the partial unique index ux_sew_dedupe added in Task 19 — if a
-// concurrent Schedule races past the read here, the resulting insert
-// conflict is treated the same as a dedupe hit rather than surfaced as an
-// error.
+// The dedupe check reads-then-inserts inside a transaction, then the insert
+// itself uses `ON CONFLICT DO NOTHING` (no target) rather than letting a
+// conflicting insert fail: on Postgres — the production driver
+// (libs/atlas-database/connection.go) — a failed statement poisons the rest
+// of the transaction ("current transaction is aborted"), so a naive
+// insert-then-catch-and-requery would fail its re-read on the very same
+// handle once Task 19 adds the partial unique index ux_sew_dedupe. GORM
+// signals a losing conflict via RowsAffected == 0 instead of a driver error,
+// so the transaction stays live and the re-read below succeeds. This is the
+// same idiom event/occurrence's createFromSeed already uses for its own
+// concurrency-key race (event/occurrence/administrator.go). Until Task 19
+// adds the index, no constraint exists to conflict with, so this clause is
+// inert and the app-level pre-check above is the only guard — Task 19 needs
+// to add nothing beyond the index itself.
 func (a *Administrator) Schedule(m Model) (Model, bool, error) {
 	db := a.db.WithContext(a.ctx)
 
 	var result Model
 	var created bool
 
-	err := db.Transaction(func(tx *gorm.DB) error {
+	err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 		if m.DedupeKey() != "" {
 			if existing, ok, err := findActiveDedupe(tx, m.DedupeKey()); err != nil {
 				return err
@@ -74,15 +86,24 @@ func (a *Administrator) Schedule(m Model) (Model, bool, error) {
 			return err
 		}
 
-		if err := tx.Create(&entity).Error; err != nil {
-			if m.DedupeKey() != "" {
-				if existing, ok, reErr := findActiveDedupe(tx, m.DedupeKey()); reErr == nil && ok {
-					result = existing
-					created = false
-					return nil
-				}
+		res := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&entity)
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			// Lost the race: some other Schedule call won the dedupe key
+			// between our pre-check and this insert. Re-read the winner on
+			// this SAME (still-live) transaction handle.
+			existing, ok, err := findActiveDedupe(tx, m.DedupeKey())
+			if err != nil {
+				return err
 			}
-			return err
+			if !ok {
+				return fmt.Errorf("scheduling: insert conflicted but no active dedupe row for key [%s]", m.DedupeKey())
+			}
+			result = existing
+			created = false
+			return nil
 		}
 
 		made, err := Make(entity)
@@ -147,16 +168,14 @@ func (a *Administrator) SetState(id uuid.UUID, newState string, lastError string
 // CancelPendingForDefinition cancels every PENDING row belonging to
 // definitionId — e.g. an Anniversary definition whose start time is edited
 // before it fires (FR-S10). A row already PROCESSING belongs to a claimer
-// and is left alone. It returns the number of rows cancelled.
-func (a *Administrator) CancelPendingForDefinition(definitionId uuid.UUID) (int64, error) {
-	db := a.db.WithContext(a.ctx)
-
-	result := db.Model(&Entity{}).
-		Where("event_definition_id = ? AND state = ?", definitionId, StatePending).
-		Update("state", StateCancelled)
-	if result.Error != nil {
-		a.l.WithError(result.Error).Errorf("Failed to cancel pending event work for definition [%s].", definitionId)
-		return 0, result.Error
+// and is left alone. It returns the number of rows cancelled; zero is a
+// legitimate result (a bulk predicate cancel, not a lookup by id), so unlike
+// SetState it does not check RowsAffected against gorm.ErrRecordNotFound.
+func CancelPendingForDefinition(db *gorm.DB) func(definitionId uuid.UUID) (int64, error) {
+	return func(definitionId uuid.UUID) (int64, error) {
+		result := db.Model(&Entity{}).
+			Where("event_definition_id = ? AND state = ?", definitionId, StatePending).
+			Update("state", StateCancelled)
+		return result.RowsAffected, result.Error
 	}
-	return result.RowsAffected, nil
 }

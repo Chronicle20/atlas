@@ -10,8 +10,10 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func newTestDB(t *testing.T) *gorm.DB {
@@ -123,7 +125,8 @@ func TestEmptyDedupeKeyAllowsMany(t *testing.T) {
 func TestCancelPendingForDefinitionLeavesClaimedWorkAlone(t *testing.T) {
 	defId := uuid.New()
 	db := newTestDB(t)
-	a := NewAdministrator(testLogger(t), testCtx(t), db)
+	ctx := testCtx(t)
+	a := NewAdministrator(testLogger(t), ctx, db)
 
 	pending, _, err := a.Schedule(mustBuild(t, defId, "pending"))
 	if err != nil {
@@ -137,7 +140,7 @@ func TestCancelPendingForDefinitionLeavesClaimedWorkAlone(t *testing.T) {
 		t.Fatalf("SetState: %v", err)
 	}
 
-	cancelled, err := a.CancelPendingForDefinition(defId)
+	cancelled, err := CancelPendingForDefinition(db.WithContext(ctx))(defId)
 	if err != nil {
 		t.Fatalf("CancelPendingForDefinition: %v", err)
 	}
@@ -180,4 +183,68 @@ func TestSetStateReturnsRecordNotFoundForMissingId(t *testing.T) {
 	if _, err := a.SetState(uuid.New(), StateCompleted, ""); !errors.Is(err, gorm.ErrRecordNotFound) {
 		t.Fatalf("SetState on a missing id = %v, want gorm.ErrRecordNotFound", err)
 	}
+}
+
+// TestOnConflictDoNothingSignalsViaRowsAffected proves the mechanism
+// Schedule's insert-race fallback depends on: once a unique index exists on
+// dedupe_key (added by Task 19 as ux_sew_dedupe), `Clauses(clause.OnConflict{
+// DoNothing: true}).Create(...)` reports a losing insert via
+// RowsAffected == 0 — not a driver error — so a caller can re-read the
+// winning row on the SAME transaction handle without ever having issued a
+// failed SQL statement.
+//
+// It cannot prove Postgres's transaction-abort behavior: SQLite has no such
+// semantics, so this test would also pass if Schedule instead caught a
+// failed INSERT's error and re-queried afterward — the exact shape this fix
+// replaced. What it DOES prove is that the ON CONFLICT clause and the
+// RowsAffected==0 signal it depends on are wired correctly here, using the
+// same idiom event/occurrence's createFromSeed already relies on
+// (event/occurrence/administrator.go) for its own concurrency-key race.
+func TestOnConflictDoNothingSignalsViaRowsAffected(t *testing.T) {
+	db := newTestDB(t)
+	ctx := testCtx(t)
+	scoped := db.WithContext(ctx)
+
+	if err := db.Exec(`CREATE UNIQUE INDEX ux_sew_dedupe_test ON scheduled_event_work (dedupe_key) WHERE state IN ('PENDING','PROCESSING')`).Error; err != nil {
+		t.Fatalf("create test index: %v", err)
+	}
+
+	defId := uuid.New()
+	winner := mustBuild(t, defId, "race-key")
+	winnerEntity, err := ToEntity(winner, testTenantId(t, ctx))
+	if err != nil {
+		t.Fatalf("ToEntity(winner): %v", err)
+	}
+	if err := scoped.Create(&winnerEntity).Error; err != nil {
+		t.Fatalf("insert winner: %v", err)
+	}
+
+	loser := mustBuild(t, defId, "race-key")
+	loserEntity, err := ToEntity(loser, testTenantId(t, ctx))
+	if err != nil {
+		t.Fatalf("ToEntity(loser): %v", err)
+	}
+
+	res := scoped.Clauses(clause.OnConflict{DoNothing: true}).Create(&loserEntity)
+	if res.Error != nil {
+		t.Fatalf("ON CONFLICT DO NOTHING surfaced a driver error instead of RowsAffected==0: %v", res.Error)
+	}
+	if res.RowsAffected != 0 {
+		t.Fatalf("RowsAffected = %d, want 0 (the losing insert must be silently absorbed)", res.RowsAffected)
+	}
+
+	var count int64
+	scoped.Model(&Entity{}).Where("dedupe_key = ?", "race-key").Count(&count)
+	if count != 1 {
+		t.Fatalf("row count = %d, want 1 (loser must not have been inserted)", count)
+	}
+}
+
+func testTenantId(t *testing.T, ctx context.Context) uuid.UUID {
+	t.Helper()
+	id, err := tenant.FromContext(ctx)()
+	if err != nil {
+		t.Fatalf("no tenant in context: %v", err)
+	}
+	return id.Id()
 }

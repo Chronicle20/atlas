@@ -1,19 +1,28 @@
 package main
 
 import (
+	"atlas-events/event/definition"
+	"atlas-events/event/occurrence"
+	"atlas-events/event/scheduling"
+	"atlas-events/event/transition"
+	"context"
 	"os"
 
 	"gorm.io/gorm"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	seeder "github.com/Chronicle20/atlas/libs/atlas-seeder"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
 )
 
 const serviceName = "atlas-events"
+
+var consumerGroupId = consumergroup.Resolve("Events Service")
 
 type Server struct {
 	baseUrl string
@@ -28,10 +37,13 @@ func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(func(db *gorm.DB) error {
-		return db.AutoMigrate(&seeder.SeedState{})
-	}))
-	_ = db
+	db := database.Connect(l, database.SetMigrations(
+		definition.MigrateTable,
+		occurrence.MigrateTable,
+		transition.MigrateTable,
+		scheduling.MigrateTable,
+		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
+	))
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {
 		if database.IsTransientConnectionError(err) {
@@ -44,11 +56,22 @@ func main() {
 	_ = consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
+	// The poller is the only in-memory component, and it is stateless: every
+	// correctness-critical fact is a row (FR-N1). Interval, lease, batch size
+	// and max attempts are configuration (FR-N16).
+	pollerCfg := scheduling.ConfigFromEnv()
+	routine.Go(l, rt.Context(), func(ctx context.Context) {
+		scheduling.NewPoller(l, ctx, db, pollerCfg).Run(ctx)
+	})
+
 	server.New(l).
 		WithContext(rt.Context()).
 		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(definition.InitResource(GetServer())(db)).
+		AddRouteInitializer(definition.InitSeedResource(GetServer())(db)).
+		AddRouteInitializer(occurrence.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

@@ -40,6 +40,16 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: DB_PASSWORD
+        - name: EVENTS_POLL_INTERVAL
+          value: "5s"
+        - name: EVENTS_WORK_LEASE
+          value: "5m"
+        - name: EVENTS_POLL_BATCH_SIZE
+          value: "50"
+        - name: EVENTS_WORK_MAX_ATTEMPTS
+          value: "5"
+        - name: EVENTS_WORK_BACKOFF
+          value: "30s"
 ---
 apiVersion: v1
 kind: Service

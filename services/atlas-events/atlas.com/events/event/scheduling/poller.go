@@ -3,6 +3,7 @@ package scheduling
 import (
 	"context"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -94,6 +95,46 @@ func NewPoller(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, cfg Confi
 		cfg:        cfg,
 		stop:       make(chan struct{}),
 	}
+}
+
+// ConfigFromEnv reads the poller's tunables from the environment (FR-N16,
+// Task 20). Each var falls back to its production default (withDefaults)
+// when unset or unparseable, matching the atlas-saga-orchestrator reaper's
+// os.LookupEnv + best-effort-parse idiom:
+//
+//   - EVENTS_POLL_INTERVAL     time.Duration string, e.g. "5s" (default 5s)
+//   - EVENTS_WORK_LEASE        time.Duration string, e.g. "5m" (default 5m)
+//   - EVENTS_POLL_BATCH_SIZE   integer (default 50)
+//   - EVENTS_WORK_MAX_ATTEMPTS integer (default 5)
+//   - EVENTS_WORK_BACKOFF      time.Duration string, e.g. "30s" (default 30s)
+func ConfigFromEnv() Config {
+	var cfg Config
+	if v, ok := os.LookupEnv("EVENTS_POLL_INTERVAL"); ok {
+		if parsed, err := time.ParseDuration(v); err == nil {
+			cfg.Interval = parsed
+		}
+	}
+	if v, ok := os.LookupEnv("EVENTS_WORK_LEASE"); ok {
+		if parsed, err := time.ParseDuration(v); err == nil {
+			cfg.Lease = parsed
+		}
+	}
+	if v, ok := os.LookupEnv("EVENTS_POLL_BATCH_SIZE"); ok {
+		if parsed, err := strconv.Atoi(v); err == nil {
+			cfg.BatchSize = parsed
+		}
+	}
+	if v, ok := os.LookupEnv("EVENTS_WORK_MAX_ATTEMPTS"); ok {
+		if parsed, err := strconv.Atoi(v); err == nil {
+			cfg.MaxAttempts = parsed
+		}
+	}
+	if v, ok := os.LookupEnv("EVENTS_WORK_BACKOFF"); ok {
+		if parsed, err := time.ParseDuration(v); err == nil {
+			cfg.Backoff = parsed
+		}
+	}
+	return cfg.withDefaults()
 }
 
 // instanceId names this replica for ClaimBatch's claimed_by column.

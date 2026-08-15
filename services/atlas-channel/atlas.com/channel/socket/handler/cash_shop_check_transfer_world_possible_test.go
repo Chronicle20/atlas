@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"atlas-channel/character"
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -109,6 +111,62 @@ func TestTransferWorldPossibleLockoutReusesUnknownError(t *testing.T) {
 
 	if got := env.lastAnnouncedResultByte(); got != 0x2F {
 		t.Fatalf("result byte = 0x%02X, want UNKNOWN_ERROR 0x2F", got)
+	}
+}
+
+// FR-4.7: when the transferring character is the account's LAST character
+// in the source world, the check must ALSO write a pink-text storage
+// warning -- and the result must still be answered ALLOWED (the warning is
+// advisory, never a gate). This is the original brief's
+// TestWorldTransferCheckWarnsWhenStrandingStorage, asserting both halves.
+func TestWorldTransferCheckWarnsWhenStrandingStorage(t *testing.T) {
+	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
+	env.withAccount(buildAccount("s3cr3t", 0))
+	env.withCharactersInWorld(character.NewModelBuilder().SetId(checkPossibleTestCharacterId).MustBuild())
+	env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
+
+	if got := env.lastAnnouncedResultByte(); got != 0x20 {
+		t.Fatalf("result byte = 0x%02X, want ALLOWED 0x20", got)
+	}
+	if !env.pinkTextWasAnnounced() {
+		t.Fatal("expected the storage-stranding pink-text warning to be written")
+	}
+}
+
+// FR-4.7: when the account has ANOTHER character left behind in the source
+// world, storage is not stranded (it stays reachable through the sibling),
+// so no warning is due -- and the result is unaffected.
+func TestWorldTransferCheckNoWarningWhenAnotherCharacterRemains(t *testing.T) {
+	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
+	env.withAccount(buildAccount("s3cr3t", 0))
+	env.withCharactersInWorld(
+		character.NewModelBuilder().SetId(checkPossibleTestCharacterId).MustBuild(),
+		character.NewModelBuilder().SetId(checkPossibleTestCharacterId+1).MustBuild(),
+	)
+	env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
+
+	if got := env.lastAnnouncedResultByte(); got != 0x20 {
+		t.Fatalf("result byte = 0x%02X, want ALLOWED 0x20", got)
+	}
+	if env.pinkTextWasAnnounced() {
+		t.Fatal("no warning is due when another character remains in the source world")
+	}
+}
+
+// FR-4.7 ruling 2: the warning FAILS OPEN. A failed last-character lookup
+// must never reject the check or fail the handler -- it must simply skip
+// the courtesy warning and answer normally.
+func TestWorldTransferCheckLookupErrorFailsOpen(t *testing.T) {
+	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
+	env.withAccount(buildAccount("s3cr3t", 0))
+	env.withCharactersInWorldErr(errors.New("atlas-character unavailable"))
+	env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
+
+	if got := env.lastAnnouncedResultByte(); got != 0x20 {
+		t.Fatalf("result byte = 0x%02X, want ALLOWED 0x20 (a courtesy lookup failure must not block a legitimate transfer)", got)
+	}
+	if env.pinkTextWasAnnounced() {
+		t.Fatal("a failed lookup must not emit the warning")
 	}
 }
 

@@ -21,6 +21,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
@@ -38,6 +39,8 @@ type Processor interface {
 	GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model]
 	ByNameProvider(name string) model.Provider[[]Model]
 	GetByName(name string) (Model, error)
+	ForAccountInWorldProvider(accountId uint32, worldId world.Id) model.Provider[[]Model]
+	GetForAccountInWorld(accountId uint32, worldId world.Id) ([]Model, error)
 	RequestDistributeAp(f field.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error
 	RequestDropMeso(f field.Model, characterId uint32, amount uint32) error
 	RequestChangeMeso(f field.Model, characterId uint32, actorId uint32, actorType string, amount int32) error
@@ -231,6 +234,22 @@ func (p *ProcessorImpl) ByNameProvider(name string) model.Provider[[]Model] {
 
 func (p *ProcessorImpl) GetByName(name string) (Model, error) {
 	return model.FirstProvider(p.ByNameProvider(name), model.Filters[Model]())()
+}
+
+// ForAccountInWorldProvider fetches the complete set of characters an
+// account owns in a world (atlas-character resource.go's
+// "get_characters_for_account_in_world", GET /characters?accountId=..&worldId=..).
+// That endpoint is served by a PAGED provider (GetForAccountInWorldProvider),
+// so the response is a paged JSON:API document; this drains every page the
+// same way note.ProcessorImpl.ByCharacterProvider does, since a caller
+// counting an account's characters in a world needs the whole set, not one
+// page of it.
+func (p *ProcessorImpl) ForAccountInWorldProvider(accountId uint32, worldId world.Id) model.Provider[[]Model] {
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(accountInWorldUrl(accountId, worldId), 100, Extract, model.Filters[Model]())
+}
+
+func (p *ProcessorImpl) GetForAccountInWorld(accountId uint32, worldId world.Id) ([]Model, error) {
+	return p.ForAccountInWorldProvider(accountId, worldId)()
 }
 
 type DistributePacket struct {

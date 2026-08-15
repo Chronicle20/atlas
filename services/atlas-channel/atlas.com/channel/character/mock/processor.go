@@ -8,6 +8,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -106,6 +107,26 @@ func (m *MockProcessor) GetByName(name string) (character.Model, error) {
 		return character.Model{}, errors.New("character not found")
 	}
 	return c, nil
+}
+
+// ForAccountInWorldProvider filters the mock's Characters by worldId (the
+// mock has no separate accountId index, so it does not additionally filter
+// by accountId -- callers that need accountId-scoped behavior should seed
+// Characters accordingly).
+func (m *MockProcessor) ForAccountInWorldProvider(_ uint32, worldId world.Id) model.Provider[[]character.Model] {
+	return func() ([]character.Model, error) {
+		out := make([]character.Model, 0)
+		for _, c := range m.Characters {
+			if c.WorldId() == worldId {
+				out = append(out, c)
+			}
+		}
+		return out, nil
+	}
+}
+
+func (m *MockProcessor) GetForAccountInWorld(accountId uint32, worldId world.Id) ([]character.Model, error) {
+	return m.ForAccountInWorldProvider(accountId, worldId)()
 }
 
 func (m *MockProcessor) RequestDistributeAp(_ field.Model, _ uint32, _ uint32, _ []character.DistributePacket) error {

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/account"
+	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"bytes"
@@ -18,6 +19,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
+	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	swriter "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
@@ -45,6 +47,12 @@ type checkPossibleHandlerEnv struct {
 	picAttempts  []bool
 	limitReached bool
 	recordPicErr error
+
+	// charactersInWorld / charactersInWorldErr feed
+	// checkPossibleAccountCharactersInWorldFunc (FR-4.7's storage-warning
+	// seam, cash_shop_check_transfer_world_possible.go).
+	charactersInWorld    []character.Model
+	charactersInWorldErr error
 }
 
 // newCheckPossibleHandlerEnv builds a session for the given tenant and
@@ -102,6 +110,12 @@ func newCheckPossibleHandlerEnv(t *testing.T, region string, major uint16, minor
 	}
 	t.Cleanup(func() { checkPossibleRecordPicAttemptFunc = origRecord })
 
+	origCharsInWorld := checkPossibleAccountCharactersInWorldFunc
+	checkPossibleAccountCharactersInWorldFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id) ([]character.Model, error) {
+		return env.charactersInWorld, env.charactersInWorldErr
+	}
+	t.Cleanup(func() { checkPossibleAccountCharactersInWorldFunc = origCharsInWorld })
+
 	return env
 }
 
@@ -123,6 +137,13 @@ func checkPossibleWriterOptions(writerName string) map[string]interface{} {
 			},
 		}
 	}
+	if writerName == chatpkt.WorldMessageWriter {
+		return map[string]interface{}{
+			"operations": map[string]interface{}{
+				string(writer.WorldMessagePinkText): float64(0x05),
+			},
+		}
+	}
 	return map[string]interface{}{
 		"operations": map[string]interface{}{
 			cashcb.CheckNameChangePossibleAllowed:               float64(0x10),
@@ -139,6 +160,31 @@ func (e *checkPossibleHandlerEnv) withAccount(a account.Model) *checkPossibleHan
 	return e
 }
 
+// withCharactersInWorld sets the account's characters in the source world,
+// consumed by checkPossibleAccountCharactersInWorldFunc (FR-4.7's
+// storage-warning lookup).
+func (e *checkPossibleHandlerEnv) withCharactersInWorld(chars ...character.Model) *checkPossibleHandlerEnv {
+	e.charactersInWorld = chars
+	return e
+}
+
+func (e *checkPossibleHandlerEnv) withCharactersInWorldErr(err error) *checkPossibleHandlerEnv {
+	e.charactersInWorldErr = err
+	return e
+}
+
+// pinkTextWasAnnounced reports whether a WORLD_MESSAGE write occurred (the
+// storage-stranding warning is the only pink-text write either check handler
+// ever performs).
+func (e *checkPossibleHandlerEnv) pinkTextWasAnnounced() bool {
+	for _, a := range e.announced {
+		if a.writer == chatpkt.WorldMessageWriter {
+			return true
+		}
+	}
+	return false
+}
+
 func (e *checkPossibleHandlerEnv) handleNameChange(r *request.Reader) {
 	e.t.Helper()
 	CashShopCheckNameChangePossibleHandleFunc(e.l, e.ctx, e.wp)(e.s, r, map[string]interface{}{})
@@ -149,16 +195,24 @@ func (e *checkPossibleHandlerEnv) handleWorldTransfer(r *request.Reader) {
 	CashShopCheckTransferWorldPossibleHandleFunc(e.l, e.ctx, e.wp)(e.s, r, map[string]interface{}{})
 }
 
+// lastAnnouncedResultByte returns the result byte of the last CHECK_*_RESULT
+// write, skipping over any WORLD_MESSAGE (pink-text storage warning) write --
+// FR-4.7's warning is emitted alongside the result, not instead of it, and
+// may be announced after it, so it must not be mistaken for the result here.
 func (e *checkPossibleHandlerEnv) lastAnnouncedResultByte() byte {
 	e.t.Helper()
-	if len(e.announced) == 0 {
-		e.t.Fatal("nothing was announced")
+	for i := len(e.announced) - 1; i >= 0; i-- {
+		a := e.announced[i]
+		if a.writer == chatpkt.WorldMessageWriter {
+			continue
+		}
+		if len(a.body) < 5 {
+			e.t.Fatalf("announced body length %d, want at least 5 (characterId + result)", len(a.body))
+		}
+		return a.body[4]
 	}
-	b := e.announced[len(e.announced)-1].body
-	if len(b) < 5 {
-		e.t.Fatalf("announced body length %d, want at least 5 (characterId + result)", len(b))
-	}
-	return b[4]
+	e.t.Fatal("no check result was announced")
+	return 0
 }
 
 func (e *checkPossibleHandlerEnv) logOutput() string { return e.logs.String() }
@@ -289,6 +343,26 @@ func TestNameChangePossibleLockoutAndSuccessRecording(t *testing.T) {
 			t.Fatalf("pic attempts = %v, want exactly one successful attempt", env.picAttempts)
 		}
 	})
+}
+
+// FR-4.7 (Task 26 fix round 2, Ruling 1): the storage warning is
+// WORLD_TRANSFER-only. A name change never moves the character between
+// worlds, so storage is never stranded, and the name-change handler must
+// write no pink-text warning even when the account has only one character
+// in the world (the condition that WOULD trigger the warning on the
+// world-transfer handler).
+func TestNameChangePossibleWritesNoStorageWarning(t *testing.T) {
+	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
+	env.withAccount(buildAccount("s3cr3t", 0))
+	env.withCharactersInWorld(character.NewModelBuilder().SetId(checkPossibleTestCharacterId).MustBuild())
+	env.handleNameChange(nameChangePossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
+
+	if got := env.lastAnnouncedResultByte(); got != 0x10 {
+		t.Fatalf("result byte = 0x%02X, want ALLOWED 0x10", got)
+	}
+	if env.pinkTextWasAnnounced() {
+		t.Fatal("the name-change handler must never write a storage warning")
+	}
 }
 
 // The credential must never reach a log line, on either version path.

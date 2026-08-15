@@ -1,86 +1,61 @@
 # task-227 — resume state
 
-**Rewritten end of controller session 4.** The previous version of this file was
-written at the end of session 3 and had gone stale — it said "resume at Task 26"
-long after Tasks 26, 27 and 28 had landed. Everything below is current as of
-session 4's last commit.
+**Rewritten end of controller session 5.** Session 4's version said "start Task 33";
+Phase G is now done. Everything below is current as of session 5's last commit.
 
-`.superpowers/sdd/plan/progress.md` (git-ignored, but it has survived three
+`.superpowers/sdd/plan/progress.md` (git-ignored, but it has survived four
 `/clear`s) remains the authority on per-task state. This file is the narrative.
 
 ## Where the plan stands
 
-**Done:** plan Tasks 1–30, 32, and 40. Task 41 was folded into Task 26.
-**Skipped by user ruling:** Task 31 — see below.
-**Remaining:** 33, 34 (Phase G, atlas-ui), 37, 38, 39 (Phase H, the purchase path),
-then 35 (flagless gate) and 36 (branch review).
+**Done:** plan Tasks 1–30, 32, 33, 34, and 40. Task 41 was folded into Task 26.
+**Skipped by user ruling:** Task 31 — see session 4's reasoning, preserved below.
+**Remaining:** 37, 38, 39 (Phase H, the purchase path), then 35 (flagless gate)
+and 36 (whole-branch review).
 
-### Landed in session 4
+### Landed in session 5
 
 | Commit | What |
 |---|---|
-| `085b52068` | docs — Task 26 + Task 27 review reports (written in session 3, never committed) |
-| `41a2d7e98` | **Task 29** — atlas-guilds consumes `NAME_CHANGED` |
-| `e05fafd17` | docs — Task 29 review |
-| `4586d78b2` | **Task 30** — atlas-buddies consumes `NAME_CHANGED`, emits `BUDDY_UPDATED` |
-| `25eb4d3bd` | docs — Task 30 review |
-| `8e7ad6c3d` | Task 30 fix round — pin "a redelivered event emits no second `BUDDY_UPDATED`" |
-| `6f00b9014` | docs — record Task 31 as skipped |
-| `526a3b50b` | **Task 32** — atlas-mts consumes `NAME_CHANGED` |
+| `4dfd4df1d` | **Task 33** — atlas-ui pending-changes service + React Query hooks |
+| `f184386cb` | **Task 34** — operator pending-changes panel, confirm dialog, page wiring |
+| `d636d6598` | Task 34 fix round 1 — thread `characterName` into the cancel dialog |
 
-Every one of Tasks 29, 30 and 32 passed `tools/verify.sh --quick` (exit 0) and a
-read-only review with no blocking findings. **Phase F is complete.**
+Both tasks passed `tools/verify.sh --quick` and a read-only review. **Phase G is
+complete.**
 
 ## Next action
 
-Start **Task 33** (atlas-ui service layer + React Query hooks), then Task 34 (the
-panel, confirm dialog and page wiring). Phase G is scoped by FR-2.10 to **read +
-cancel only** — the operator console must not be able to create a rename or transfer
-request, nor edit a requested value.
+Start **Task 37** (Phase H, the purchase path). This is Go/Kafka backend work —
+the `backend-dev-guidelines` skill and `backend-guidelines-reviewer` agent apply
+again, not the frontend ones.
 
-Generate the brief with `tools/task-brief.sh docs/tasks/task-227-cash-name-change-world-transfer/plan.md 33`.
-**Check it for a `### Files` section and expect it to be wrong or absent** — see the
-standing rule below. Phase G is the first frontend work on this branch, so the
-`frontend-dev-guidelines` skill and the `frontend-guidelines-reviewer` agent apply
-rather than the backend ones.
+Generate the brief with `tools/task-brief.sh docs/tasks/task-227-cash-name-change-world-transfer/plan.md 37`.
+**Check it for a `### Files` section and expect it to be wrong or absent** — see
+standing rule 1. Session 5 hit this on both its tasks.
 
-## Rulings made in session 4 — do not relitigate
+## Rulings made in session 5 — do not relitigate
 
-- **Task 31 (atlas-rankings) is SKIPPED**, by explicit user choice from three
-  presented options. `plan.md` Task 31 and `design.md:89` both carry the full
-  reasoning. Short version: `ranking/processor.go:123` +
-  `ranking/administrator.go:33-41` already restamp `name` on every recompute cycle,
-  and the service has no Kafka stack at all (no `kafka/` tree, no consumer manager,
-  `atlas-kafka` only a `go.mod` replace line). Accepted residual: the rankings table
-  is stale for at most one recompute tick (~1 min) after a rename. If that window
-  ever becomes unacceptable, the fix is Task 31 as originally written.
-- **Emit-or-not is decided per service, and came out differently in all three.**
-  atlas-guilds emits nothing (no suitable event type exists). atlas-buddies emits
-  `BUDDY_UPDATED` (the event, its body carrying `CharacterName`, and a live
-  registered consumer in atlas-channel all already existed). atlas-mts emits nothing
-  (request/response; no push path). Do not generalise from any one of them.
-- **atlas-merchant is not a missing Phase F task.** `design.md`'s table lists five
-  services but `plan.md:2602` already excludes it by decision (design §3.8, §10):
-  `blacklists.name` / `merchant_visits.name` are name-**keyed** rows, and rewriting a
-  blacklist entry on rename is a moderation product question.
-- **atlas-mts renames every listing row for the seller regardless of `State`.**
-  Verified that nothing anywhere treats `seller_name` as a point-in-time record.
-
-## Corrections to earlier sessions' notes
-
-- **The turn-budget hook bug is FIXED** (main-repo commit `c17f8ccad` — the counter
-  is now keyed on `agent_id`, not `session_id`). The old instruction in this file to
-  hand-zero `/tmp/claude-turn-budget/<session>` before every dispatch is **obsolete;
-  do not do it.** That bug is what produced session 3's two spurious Task 26
-  PARTIALs.
-- **Explicit `tenant_id` predicates are not required.** An earlier session note
-  called atlas-guilds' `updateStatus`/`updateTitle` filtering on `character_id`
-  alone "a pre-existing gap". That was wrong: `libs/atlas-database` registers an
-  automatic tenant scope on any `*gorm.DB` carrying a tenant context (see
-  `libs/atlas-database/tenant_scope_test.go`, and `list/provider_test.go:58-70`
-  which uses `db.Unscoped()` specifically to bypass it). Task 29's explicit
-  predicate is harmless belt-and-braces; Task 30's and Task 32's absence of one is
-  correct. Do not "fix" either.
+- **The services barrel exports pending-changes TYPES ONLY; import the service and
+  hooks directly.** The Task 33 reviewer flagged the types-only export as "a shape
+  with no existing precedent," on the premise that every other barrel entry also
+  exports an instance. That premise is false, and checking it settled the question:
+  the barrel does **not** export `teleportRocksService` — the very reference file
+  Task 33 was told to copy — and across `src/`, direct
+  `@/services/api/<name>.service` imports outnumber barrel imports **237 to 13**.
+  Cost if wrong: one export line plus a one-line import change.
+- **The `unwrap` helper is conditional, not mandatory.** Task 33's brief said to
+  reproduce `teleport-rocks.service.ts`'s `unwrap` verbatim. With only `getList` and
+  a bodyless 204 `delete`, there is nothing to normalize; a dead helper added to
+  satisfy prose is a review finding. Cost if wrong: three lines when a write path
+  is added.
+- **`CancelPendingChangeDialog`'s `Character ${characterId}` fallback is dead code
+  at the shipped call site** and was deliberately left in place. `character` is
+  narrowed non-null by the early-return guard at `CharacterDetailPage.tsx:109-117`,
+  and `Character.attributes.name` (`types/models/character.ts:12`) is a required
+  `string`. The `string | undefined` widening on the prop is an
+  `exactOptionalPropertyTypes` accommodation for the test helper, not a real runtime
+  gap. Do not "fix" either.
 
 ## Open items carried forward
 
@@ -90,41 +65,74 @@ rather than the backend ones.
   it. It claims a cross-character red run — expected 404, actual 204 before the fix.
   **Re-verify that claim** at Task 36; it has never been independently checked.
 - **Flagless `tools/verify.sh`** (docker bake + `-race`) is still owed at branch end
-  (Task 35). Only the flagless run counts as verified; every gate run so far on this
-  branch has been `--quick`.
+  (Task 35). Every gate run on this branch so far has been `--quick`, which prints
+  "All checks passed, but docker bake was skipped — not a pre-PR pass."
+- **Two deferred minors for Task 36 triage:**
+  - Task 33 — `PendingChangeAttributes` / `PendingChange` are written out twice in
+    `pending-changes.service.ts:11-33` rather than `Omit<PendingChange, "id">`. A
+    dormant drift hazard: a field added to one and not the other still type-checks.
+  - Task 34 — `PendingChangesPanel`'s loading state uses plain text where every
+    self-fetching sibling in `components/features/characters/` (`SkillWidget`,
+    `SkillsSection`, `AttributesPanel`, `MonsterBookWidget`) uses `Skeleton`.
 - **A pre-existing defect in atlas-buddies, surfaced but deliberately not fixed:**
   `buddy/entity.go:24` makes `character_id` the sole primary key of the `buddies`
-  table, so two owners cannot both hold the same buddy. The service's own
-  `list/processor.go:618` `UpdateBuddyChannel` loops over multiple owners as though
-  they could. Out of scope for task-227 (it is a schema migration on a shared table)
-  and reported to the user. Task 30's `updateBuddyName` queries the buddy's own
-  `character_id` column, so it stays correct if the defect is ever fixed.
+  table, so two owners cannot both hold the same buddy, while the service's own
+  `list/processor.go:618` loops over multiple owners as though they could. Out of
+  scope (schema migration on a shared table) and already reported to the user.
 
 ## Standing rules earned on this branch — do not relearn these
 
-1. **The plan's `Files:` blocks are unreliable; verify every one against source
-   before dispatching.** Session 4 hit this on all three of its tasks: Task 29's
-   block named a file to *create* that already existed, named a `kafka.go` that does
-   not exist, and said to modify a `main.go` that needed no change; Tasks 30 and 32
-   were prose-only with no `### Files` block at all; and every one of the three test
-   snippets invented a `newTestDB` helper the service does not have. One controller
-   inventory pass costs a fraction of the same discovery inside a large implementer.
+1. **The plan's `Files:` blocks and test snippets are unreliable; verify every one
+   against source before dispatching.** Session 5 hit this on both tasks. Task 33's
+   block named the wrong test extension (`.ts` for a JSX file), typed three
+   `omitempty` fields as nullable rather than optional, and copied `api.getOne` for
+   an endpoint that returns an array. Task 34's paths were all correct, but its test
+   snippet invented five helpers **and** spied on a service that this repo's
+   hook-mocking pattern never reaches — an assertion that could not have passed as
+   written. One controller inventory pass costs a fraction of the same discovery
+   inside a large implementer.
 2. **Never two `atlas-verifier`s at once** — concurrent golangci-lint produces
    `parallel golangci-lint is running` and phantom failures in unrelated modules.
-3. **Dispatch the verifier with an explicit background+Monitor instruction.** A
-   foreground Bash timeout killed one gate at 10 minutes (exit 137) and it reported a
-   false ERROR. Per `/execute-task` Step 4c, ERROR is never PASS — re-run it.
-4. **Verifier must report EVERY failing module**, not just the first block. A second
-   failure has hidden behind the first on this branch.
-5. **Serialize implementers** — one at a time in this worktree. Do not run an
-   implementer while a gate is running either; a mid-run edit produces phantom
-   build failures you then have to disambiguate.
-6. **Treat briefs and reports as claims, not authority.** Twenty-two instances on
-   this branch where prose contradicted source. Several were introduced by the
-   controller, not the implementers — including two in session 4 (a wrong
-   `updateBuddyName` signature, caught by the implementer; and the tenant-scoping
-   claim corrected above). What catches it: deriving from source and demanding
-   red/green evidence.
+3. **Never run an implementer while a gate is running.** Session 5 made this mistake
+   and had to kill a 10-minute gate rather than trust a verdict read off a tree being
+   edited underneath it.
+4. **Verifier must report EVERY failing module**, not just the first block.
+5. **Serialize implementers** — one at a time in this worktree.
+6. **Treat briefs and reports as claims, not authority.** Twenty-plus instances on
+   this branch where prose contradicted source, several introduced by the controller.
+   What catches it: deriving from source and demanding red/green evidence.
 7. **Writer registration follows whoever EMITS.**
 8. `pendingchange`'s `assetId` param **is an item TEMPLATE id** — passing
    `com.ItemId` is CORRECT. Do not "fix" it.
+9. **The gate needs Node 22 sourced or atlas-ui lint false-FAILs.**
+   `tools/verify.sh` DOES cover `services/atlas-ui`, but it does not source nvm and
+   this machine defaults to Node 24. Any agent or shell running the gate must use:
+   `export NVM_DIR="$HOME/.nvm" && . "$NVM_DIR/nvm.sh" && nvm use 22 && tools/verify.sh ...`
+   in the SAME call. This cost session 5 a full false-FAIL cycle
+   (`lint.sh: ERROR — node v24 found, need v22`, exit 1, with all 75 other checks
+   passing). **It will hit Task 35's flagless run identically.**
+10. **Run the gate as a bounded background Bash call from the controller, not via
+    `atlas-verifier` on haiku.** Session 5's verifier returned four times with
+    "still running" and no exit status, then finally the false FAIL above —
+    ~1200s of wall clock and four round trips for a verdict the controller got in
+    one call. If delegating, pin a model that can hold a single blocking wait.
+11. **`pgrep -f <pattern>` self-matches the shell running it.** Session 5 twice
+    read a phantom "process still alive" that was its own `pgrep` command line.
+    Use a bracket class — `pgrep -f "golangci-lint-v[2]"` — or check `etime`;
+    `00:00` means you are looking at yourself.
+
+## Method note worth carrying into Phase H
+
+Task 34's two findings are the shape to expect. Finding 1 was a one-line wiring
+miss (the page never passed `characterName`). Finding 2 — found independently by
+the reviewer — was that the test *titled* "names the character and the requested
+value in the confirm dialog" asserted only the requested value, so it passed with
+the prop deleted entirely. **That is why six green tests did not catch a real
+wiring bug.**
+
+On a branch with this much invented-test-helper history, the question that finds
+real defects is "does this test fail if the behaviour is removed?" Demanding the
+implementer actually run that mutation — revert, observe a genuine failure,
+restore, confirm green — and then having the re-reviewer independently check the
+assertion is not circular (i.e. that it reaches real rendered output rather than
+echoing a prop the test itself supplied) is what closed it.

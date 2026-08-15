@@ -33,7 +33,7 @@ func (t *Timeout) Run() {
 	sctx, span := otel.GetTracerProvider().Tracer("atlas-guilds").Start(context.Background(), TimeoutTask)
 	defer span.End()
 
-	gs, err := coordinator.GetRegistry().GetExpired(t.timeout)
+	gs, err := coordinator.GetRegistry().GetExpiredAcrossTenants(t.timeout)
 	if err != nil {
 		return
 	}

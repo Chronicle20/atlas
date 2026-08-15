@@ -76,6 +76,31 @@ Confirmed against `character_registry.go` (`NewTenantHash`, `chars.Set`/`Get`/
 `Del`/`Exists`) and `instance_registry.go` (`NewTenantSet`, `NewTenantRegistry`,
 `NewTenantKeyedHash`, `storeMetadata`/`loadMetadata`/`filterInstances`).
 
+## Task 9D additions
+
+Task 9D closed the two `atlas-guilds` DATA-PLANE gaps `rediskeyguard` found
+in `coordinator/registry.go`: an env-global `Set` (`active`, holding pending
+guild-creation agreement-id strings) and an env-global `Registry`
+(`agreements`, agreement-id → `Model`). Not colliding today only because
+`agreementId` is a fresh `uuid.New()` — luck, not design; `charAgree`
+(`coordinator:char`, characterId → agreement-id) was already a
+`TenantRegistry` before this task and is unchanged. `atlas-guilds` *does*
+have Postgres (the `guild`/`member`/`title` tables), but the `coordinator`
+package that owns these two namespaces imports no `gorm`/database dependency
+at all (verified: no `gorm`/`.db` reference anywhere under
+`coordinator/*.go`) — the in-flight guild-creation agreement is pure Redis
+state, distinct from the guild itself, which is Postgres-backed once
+created. Both rows below are Redis-only.
+
+| Namespace | Service | Format changed | State class | Orphaning impact |
+|---|---|---|---|---|
+| `coordinator:active` | atlas-guilds | yes: `atlas:coordinator:active` (one env-global `Set` of agreement-id strings) → `atlas:coordinator:active:<tenantId>:<region>:<major>.<minor>` (one `TenantSet` per tenant) | live state, `active.Add`/`active.Remove` (no TTL), no DB | an in-flight guild-creation agreement's id becomes unreachable via the old key. Its `active` entry was only ever a write-path index (added alongside `agreements` in `Initiate`, removed alongside it in `Respond`'s disagree branch) — `GetExpiredAcrossTenants` no longer reads this Set at all (see next row), so the practical effect is limited to any future code that might scan `active` directly; today nothing does |
+| `coordinator:agreement` | atlas-guilds | yes: `atlas:coordinator:agreement:<agreementId>` (env-global `Registry[uuid.UUID,Model]`) → `atlas:coordinator:agreement:<tenantId>:<region>:<major>.<minor>:<agreementId>` (`TenantRegistry[uuid.UUID,Model]`) | live in-flight guild-creation agreement (members, responses, age), `agreements.Put` (no TTL), no DB | an agreement in progress at deploy time becomes unreachable under the old key: `Respond` (a member accepting/declining) fails with "agreement not found" (`registry.go:84-87`), and the expiration ticker's `GetExpiredAcrossTenants` sweep (reading `agreements` directly via `GetAllAcrossTenants`, not `active`) never sees it either since it too scans only the new key shape — it can never expire the stranded agreement to unblock its members. This does **not** self-heal: `charAgree` (`coordinator:char`, already tenant-scoped and unaffected by this cutover) keeps pointing each affected member at the now-orphaned agreement id, so `Initiate`'s "already attempting guild creation" guard (`registry.go:41-45`) keeps rejecting a fresh guild-creation attempt from that member, while `Respond` can never clear the `charAgree` entry because it errors out at the `agreements.Get` not-found check (`registry.go:84-87`) before it ever reaches the code that resets `charAgree` to `uuid.Nil` (`registry.go:96-100`). The affected members (at most the ones mid-agreement at the moment of deploy) are stuck unable to initiate or join a new guild-creation attempt until an operator manually deletes their stale `coordinator:char:<tenantId>:<region>:<major>.<minor>:<characterId>` key — no corruption or cross-tenant leak, just a manual-cleanup dependency, and the blast radius is bounded to whoever had a pending agreement at the exact deploy instant |
+
+Confirmed against `coordinator/registry.go` (`NewTenantSet`, `NewTenantRegistry`,
+`Initiate`/`Respond`/`GetExpiredAcrossTenants`) and `guild/task.go` (the
+expiration ticker, `context.Background()`, no tenant in context).
+
 ## What to expect on the deploy that lands Tasks 4-7
 
 A brief, one-time world-state reset limited to the "live state, no TTL, no DB"

@@ -119,6 +119,19 @@ leading doc comment, which names the mirror direction, may differ.
 | `mist-contract-mirror-guard.sh` | atlas-maps `kafka/message/mist/kafka.go` | atlas-channel — a drifted mirror yields a mist with no bounds, no lifetime, no recovery magnitude and no party scope (task-218) |
 | `npc-shop-contract-mirror-guard.sh` | atlas-npc-shops `kafka/message/shops/kafka.go` | atlas-channel, atlas-saga-orchestrator |
 
+**Operator cancel path** — path-gated on
+`services/atlas-channel/atlas.com/channel/socket/handler/*.go` or a tenant
+socket-config template changing. The property was narrowed from an earlier,
+disproven "no client cancel path exists" assertion — see
+`docs/tasks/task-227-cash-name-change-world-transfer/cancel-entry-point.md`
+and `cancel-confirm-semantics.md`. The legitimate self-scoped route (`POST
+.../pending-changes/cancel`, reason `"player_cancelled"`, task-227
+client-cancel addendum) is unaffected by this guard.
+
+| Guard | What it bans | Why the failure is silent otherwise |
+|---|---|---|
+| `operator-cancel-path-guard.sh` | A socket handler file referencing the reason string `"operator_cancelled"` or combining an HTTP DELETE call with the `pending-changes` resource path; a template binding the clientbound writer `CashShopCancelNameChangeResult` or `CashShopCancelTransferWorldResult` as a `handler` | Either would make the id-based, operator-only pending-change cancel route (`pending_change/resource.go:164`) reachable from a game-client packet — the route's own ownership check only verifies the id belongs to the calling `{characterId}` path segment, not that the caller is an operator, so a socket handler that reached it would work, just with the wrong actor |
+
 **Deploy / versions** — `gen-lb-ports.sh --check` and `check-version-coverage.sh`,
 when `deploy/`, `tools/gen-lb-ports.sh`, or a `versions.json` changed. A new
 client version needs LB socket ports; without them the version is unreachable
@@ -152,8 +165,10 @@ Tracked here so it is visible rather than folklore. Neither side is a strict
 superset of the other; CI is the authority for everything it does run.
 
 - CI has **no** job for `trade-contract-mirror-guard.sh`,
-  `mist-contract-mirror-guard.sh`, or `template-duplicate-binding-guard.sh`.
-  The gate runs all three. A drifted trade or mist contract will pass CI today.
+  `mist-contract-mirror-guard.sh`, `template-duplicate-binding-guard.sh`, or
+  `operator-cancel-path-guard.sh`. The gate runs all four. A drifted trade or
+  mist contract, or a socket handler that regains the operator cancel path,
+  will pass CI today.
 - CI's `atlas-constants-drift-guard` (generator output drift) has no local
   equivalent in the gate; `go test` in `libs/atlas-constants` covers most of it.
 - Neither side covers the Go modules under `tools/` — CI's `detect-changes`

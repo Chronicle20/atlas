@@ -141,7 +141,7 @@ Postgres tables at all (state lives elsewhere, e.g. Redis, or is transient).
 
 Confirmed via `grep -rl "gorm.io/gorm\|\*gorm.DB"` returning empty across the
 whole module for each, and no `entity.go` found by the Step 1 enumeration:
-**atlas-invites, atlas-login, atlas-messages, atlas-messengers,
+**atlas-invites, atlas-kites, atlas-login, atlas-messages, atlas-messengers,
 atlas-monster-death, atlas-monsters, atlas-parties, atlas-portals**. Nothing
 to classify for FR-8.1 — these services carry no Postgres tables at all.
 
@@ -198,8 +198,8 @@ No `FORCES-ISOLATED` or `TRANSITIVE` rows in this third — none of the 27
 services' entities were found to require isolation escalation or route
 exclusively through a `SCOPED` parent with no `TenantId` of their own; every
 entity in this third carries its own `TenantId`/`TenantID` column. No
-`CONTROL` rows either — every service in this third is data-plane. Eight
-services in this third (`atlas-invites, atlas-login, atlas-messages,
-atlas-messengers, atlas-monster-death, atlas-monsters, atlas-parties,
-atlas-portals`) have no Postgres persistence at all — see the "no rows"
-section above.
+`CONTROL` rows either — every service in this third is data-plane. Nine
+services in this third (`atlas-invites, atlas-kites, atlas-login,
+atlas-messages, atlas-messengers, atlas-monster-death, atlas-monsters,
+atlas-parties, atlas-portals`) have no Postgres persistence at all — see the
+"no rows" section above.

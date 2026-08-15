@@ -150,7 +150,7 @@ func updateDefinitionHandler(db *gorm.DB) server.GetHandler {
 					server.WriteBadRequest(d.Logger(), w, "unable to read request body")
 					return
 				}
-				defer r.Body.Close()
+				defer func() { _ = r.Body.Close() }()
 
 				var env patchEnvelope
 				if err := json.Unmarshal(body, &env); err != nil {

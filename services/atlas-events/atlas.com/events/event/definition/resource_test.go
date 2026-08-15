@@ -114,7 +114,7 @@ func TestGetAllDefinitionsPaginates(t *testing.T) {
 
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -132,7 +132,7 @@ func TestGetAllDefinitionsPaginates(t *testing.T) {
 
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
@@ -161,7 +161,7 @@ func TestGetDefinitionHandler(t *testing.T) {
 
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var doc jsonapi.Document
@@ -182,7 +182,7 @@ func TestGetDefinitionHandler(t *testing.T) {
 
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 }
@@ -212,7 +212,7 @@ func TestPatchDefinitionHandler(t *testing.T) {
 
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var doc jsonapi.Document
@@ -231,7 +231,7 @@ func TestPatchDefinitionHandler(t *testing.T) {
 
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 
@@ -242,7 +242,7 @@ func TestPatchDefinitionHandler(t *testing.T) {
 
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 }

@@ -53,7 +53,7 @@ func TestApplyHyperBodyMarksTrackedBerserkDirty(t *testing.T) {
 		berserk.NewBuilder(world.Id(0), 42, 10).SetChannel(channel.Id(1)).Build()))
 
 	changes := []stat.Model{stat.NewStat(string(constants.TemporaryStatTypeHyperBodyHP), 60)}
-	assert.NoError(t, NewProcessor(l, ctx).Apply(world.Id(0), channel.Id(1), 42, 42, 1301007, 30, 10, changes, false, false))
+	assert.NoError(t, NewProcessor(l, ctx).Apply(world.Id(0), channel.Id(1), 42, 42, 1301007, 30, 10, changes, false, false, ""))
 
 	m, err := berserk.GetRegistry().Get(ctx, 42)
 	assert.NoError(t, err)
@@ -73,7 +73,7 @@ func TestCancelHyperBodyMarksTrackedBerserkDirty(t *testing.T) {
 
 	changes := []stat.Model{stat.NewStat(string(constants.TemporaryStatTypeHyperBodyHP), 60)}
 	p := NewProcessor(l, ctx)
-	assert.NoError(t, p.Apply(world.Id(0), channel.Id(1), 42, 42, 1301007, 30, 10, changes, false, false))
+	assert.NoError(t, p.Apply(world.Id(0), channel.Id(1), 42, 42, 1301007, 30, 10, changes, false, false, ""))
 
 	// Clear the apply-time dirty mark so the cancel effect is observable.
 	assert.NoError(t, berserk.GetRegistry().StoreEvaluation(ctx, 42, false, 100, time.Now()))
@@ -97,7 +97,7 @@ func TestApplyNonMaxHpBuffDoesNotMarkDirty(t *testing.T) {
 		berserk.NewBuilder(world.Id(0), 42, 10).SetChannel(channel.Id(1)).Build()))
 
 	changes := []stat.Model{stat.NewStat("STR", 10)}
-	assert.NoError(t, NewProcessor(l, ctx).Apply(world.Id(0), channel.Id(1), 42, 42, 2001001, 30, 10, changes, false, false))
+	assert.NoError(t, NewProcessor(l, ctx).Apply(world.Id(0), channel.Id(1), 42, 42, 2001001, 30, 10, changes, false, false, ""))
 
 	m, err := berserk.GetRegistry().Get(ctx, 42)
 	assert.NoError(t, err)

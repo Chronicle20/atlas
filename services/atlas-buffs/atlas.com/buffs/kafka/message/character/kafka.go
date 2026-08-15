@@ -64,6 +64,10 @@ type ApplyCommandBody struct {
 	// NoExpiry marks an explicitly non-expiring buff (task-167 FR-2). When set,
 	// Duration MUST be 0; the consumer rejects the command otherwise.
 	NoExpiry bool `json:"noExpiry,omitempty"`
+	// CorrelationId identifies what granted this buff, for cancel-by-correlation
+	// (FR-A12). Opaque to atlas-buffs. Optional — omitting it leaves every
+	// existing producer's bytes unchanged.
+	CorrelationId string `json:"correlationId,omitempty"`
 }
 
 type StatChange struct {

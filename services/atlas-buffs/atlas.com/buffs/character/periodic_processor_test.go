@@ -91,7 +91,7 @@ func changeHPCommands(t *testing.T) []character2.CharacterCommand[character2.Cha
 // buff.Model.Expired() reads the real wall clock.
 func applyBuff(t *testing.T, ctx context.Context, characterId uint32, sourceId int32, changes ...stat.Model) {
 	t.Helper()
-	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(1), characterId, sourceId, 1, 600000, changes, false, false)
+	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(1), characterId, sourceId, 1, 600000, changes, false, false, "")
 	require.NoError(t, err)
 }
 
@@ -380,7 +380,7 @@ func TestPeriodicTickClearedOnRemoval(t *testing.T) {
 				duration = 1
 			}
 			_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(1), characterId, sourceId, 1, duration,
-				[]stat.Model{stat.NewStat("DRAGON_BLOOD", 48)}, false, false)
+				[]stat.Model{stat.NewStat("DRAGON_BLOOD", 48)}, false, false, "")
 			require.NoError(t, err)
 			if expiring {
 				time.Sleep(10 * time.Millisecond)

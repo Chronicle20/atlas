@@ -17,6 +17,7 @@
 import type { ComponentType } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useTenant } from "@/context/tenant-context";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -57,12 +58,15 @@ const detailPanels: Record<string, ComponentType<EventTypePanelProps>> = {
 };
 
 export function EventOccurrenceDetailPage() {
+  const { activeTenant } = useTenant();
   const params = useParams();
   const id = params.id as string;
+  const tenantId = activeTenant?.id ?? "no-tenant";
 
   const occurrenceQuery = useQuery({
-    queryKey: ["events", "occurrence", id],
+    queryKey: ["events", "occurrence", tenantId, id] as const,
     queryFn: () => eventsService.getOccurrence(id),
+    enabled: !!activeTenant,
   });
 
   // Definition is a to-one relationship, not a side-loaded resource (only
@@ -70,9 +74,9 @@ export function EventOccurrenceDetailPage() {
   // unconditionally ahead of the loading/error early-returns below.
   const definitionId = occurrenceQuery.data?.definitionId;
   const definitionQuery = useQuery({
-    queryKey: ["events", "definition", definitionId],
+    queryKey: ["events", "definition", tenantId, definitionId] as const,
     queryFn: () => eventsService.getDefinition(definitionId as string),
-    enabled: definitionId !== undefined,
+    enabled: !!activeTenant && definitionId !== undefined,
   });
 
   if (occurrenceQuery.isLoading) return <PageLoader />;

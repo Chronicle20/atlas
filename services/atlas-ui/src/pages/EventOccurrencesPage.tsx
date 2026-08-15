@@ -16,6 +16,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useTenant } from "@/context/tenant-context";
 import {
   Table,
   TableBody,
@@ -82,6 +83,7 @@ function toEventOccurrenceFilters(
 }
 
 export function EventOccurrencesPage() {
+  const { activeTenant } = useTenant();
   const [searchParams] = useSearchParams();
   const definitionId = searchParams.get("definitionId");
   const [form, setForm] = useState<FilterFormState>(EMPTY_FILTERS);
@@ -92,8 +94,14 @@ export function EventOccurrencesPage() {
   );
 
   const occurrencesQuery = useQuery({
-    queryKey: ["events", "occurrences", filters],
+    queryKey: [
+      "events",
+      "occurrences",
+      activeTenant?.id ?? "no-tenant",
+      filters,
+    ] as const,
     queryFn: () => eventsService.getOccurrences(filters),
+    enabled: !!activeTenant,
   });
 
   const occurrences = occurrencesQuery.data?.data ?? [];

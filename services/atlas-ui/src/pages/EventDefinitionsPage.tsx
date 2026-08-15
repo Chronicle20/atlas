@@ -11,6 +11,7 @@ import { useMemo, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTenant } from "@/context/tenant-context";
 import { Button } from "@/components/ui/button";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { PageLoader } from "@/components/common/PageLoader";
@@ -23,15 +24,16 @@ import { cn } from "@/lib/utils";
 /** Mirrors atlas-events' occurrence.StateActive (event/occurrence/model.go). */
 const ACTIVE_STATE = "ACTIVE";
 
-const DEFINITIONS_QUERY_KEY = ["events", "definitions"] as const;
-
 export function EventDefinitionsPage() {
+  const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
   const [pendingToggleId, setPendingToggleId] = useState<string | null>(null);
+  const tenantId = activeTenant?.id ?? "no-tenant";
 
   const definitionsQuery = useQuery({
-    queryKey: DEFINITIONS_QUERY_KEY,
+    queryKey: ["events", "definitions", tenantId] as const,
     queryFn: () => eventsService.getDefinitions(),
+    enabled: !!activeTenant,
   });
 
   const definitions = useMemo(
@@ -45,12 +47,19 @@ export function EventDefinitionsPage() {
   // `json:"-"`), so there is no bulk-fetch shortcut.
   const activeCountQueries = useQueries({
     queries: definitions.map((def) => ({
-      queryKey: ["events", "occurrences", "active-count", def.id],
+      queryKey: [
+        "events",
+        "occurrences",
+        "active-count",
+        tenantId,
+        def.id,
+      ] as const,
       queryFn: () =>
         eventsService.getOccurrences({
           definitionId: def.id,
           state: ACTIVE_STATE,
         }),
+      enabled: !!activeTenant,
     })),
   });
 
@@ -73,7 +82,9 @@ export function EventDefinitionsPage() {
     try {
       await eventsService.setDefinitionEnabled(id, next);
       toast.success(`${name} is now ${next ? "enabled" : "disabled"}`);
-      await queryClient.invalidateQueries({ queryKey: DEFINITIONS_QUERY_KEY });
+      await queryClient.invalidateQueries({
+        queryKey: ["events", "definitions", tenantId] as const,
+      });
     } catch (e) {
       toast.error(createErrorFromUnknown(e).message);
     } finally {

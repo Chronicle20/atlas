@@ -102,6 +102,16 @@ vi.mock("@/services/api/events.service", () => ({
   },
 }));
 
+const useTenantMock = vi.hoisted(() => vi.fn());
+vi.mock("@/context/tenant-context", () => ({
+  useTenant: useTenantMock,
+}));
+
+const ACTIVE_TENANT = {
+  id: "test-tenant",
+  attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+};
+
 function renderAt(id: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -121,9 +131,24 @@ function renderAt(id: string) {
 describe("EventOccurrenceDetailPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useTenantMock.mockReturnValue({ activeTenant: ACTIVE_TENANT });
     vi.mocked(eventsService.getDefinition).mockResolvedValue(
       crimsonBalrogDefinition,
     );
+  });
+
+  // FE-09: a direct navigation before TenantProvider resolves the active
+  // tenant must not fire a request with no tenant headers, for either the
+  // occurrence query or the lazy definition-name query it feeds.
+  it("does not fetch the occurrence or definition before the tenant resolves", async () => {
+    useTenantMock.mockReturnValue({ activeTenant: null });
+    vi.mocked(eventsService.getOccurrence).mockResolvedValue(
+      completedBalrogOccurrence,
+    );
+    renderAt("o2");
+    await Promise.resolve();
+    expect(eventsService.getOccurrence).not.toHaveBeenCalled();
+    expect(eventsService.getDefinition).not.toHaveBeenCalled();
   });
 
   // FR-UI7

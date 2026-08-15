@@ -46,6 +46,16 @@ vi.mock("@/services/api/events.service", () => ({
   },
 }));
 
+const useTenantMock = vi.hoisted(() => vi.fn());
+vi.mock("@/context/tenant-context", () => ({
+  useTenant: useTenantMock,
+}));
+
+const ACTIVE_TENANT = {
+  id: "test-tenant",
+  attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
+};
+
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -60,6 +70,20 @@ function renderPage() {
 describe("EventOccurrencesPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useTenantMock.mockReturnValue({ activeTenant: ACTIVE_TENANT });
+  });
+
+  // FE-09: a direct navigation before TenantProvider resolves the active
+  // tenant must not fire a request with no tenant headers.
+  it("does not fetch occurrences before the tenant resolves", async () => {
+    useTenantMock.mockReturnValue({ activeTenant: null });
+    vi.mocked(eventsService.getOccurrences).mockResolvedValue({
+      data: [completedBalrogOccurrence],
+      meta: null,
+    });
+    renderPage();
+    await Promise.resolve();
+    expect(eventsService.getOccurrences).not.toHaveBeenCalled();
   });
 
   // FR-UI5: id, name/type, state, stage, scope, start, completion, reason.

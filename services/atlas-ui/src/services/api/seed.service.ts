@@ -50,6 +50,11 @@ export interface QuestConversationsSeedStatus {
   updatedAt: string | null;
 }
 
+export interface ItemConversationsSeedStatus {
+  conversationCount: number;
+  updatedAt: string | null;
+}
+
 export interface NpcShopsSeedStatus {
   shopCount: number;
   commodityCount: number;
@@ -231,6 +236,10 @@ class SeedService {
     return api.post<SeedResult>("/api/quests/conversations/seed", {});
   }
 
+  async seedItemConversations(): Promise<SeedResult> {
+    return api.post<SeedResult>("/api/items/conversations/seed", {});
+  }
+
   async seedNpcShops(): Promise<SeedResult> {
     return api.post<SeedResult>("/api/shops/seed", {});
   }
@@ -373,6 +382,19 @@ class SeedService {
     );
     return {
       conversationCount: subdomainCount(s, "quest.conversation"),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
+  }
+
+  async getItemConversationsSeedStatus(
+    tenant: Tenant,
+  ): Promise<ItemConversationsSeedStatus> {
+    const s = await fetchSeedStatus(
+      "/api/items/conversations/seed/status",
+      tenant,
+    );
+    return {
+      conversationCount: subdomainCount(s, "item.conversation"),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }

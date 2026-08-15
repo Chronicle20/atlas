@@ -10,6 +10,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
@@ -136,7 +138,7 @@ func (p *ProcessorImpl) UpdateRouteAndEmit(route Model) error {
 func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error {
 	return func(route Model) error {
 		now := time.Now()
-		r, changed, err := route.UpdateState(now)
+		r, changed, tr, err := route.UpdateStateWithTransition(now)
 		if err != nil {
 			p.l.WithError(err).Errorf("Error updating state for route [%s].", route.Id())
 			return err
@@ -159,6 +161,10 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 						return err
 					}
 				}
+				if err = p.emitVoyageEvent(mb)(r, tr, VoyageArrivedStatusEventProvider); err != nil {
+					p.l.WithError(err).Errorf("Error sending voyage arrival event for route [%s].", r.Id())
+					return err
+				}
 			}
 			if r.State() == OpenEntry {
 				err = mb.Put(transport.EnvEventTopicStatus, ArrivedStatusEventProvider(r.Id(), r.ObservationMapId()))
@@ -179,6 +185,10 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 					p.l.WithError(err).Errorf("Error warping characters from staging map [%d] to enroute map.", r.StagingMapId())
 					return err
 				}
+				if err = p.emitVoyageEvent(mb)(r, tr, VoyageDepartedStatusEventProvider); err != nil {
+					p.l.WithError(err).Errorf("Error sending voyage departure event for route [%s].", r.Id())
+					return err
+				}
 				err = mb.Put(transport.EnvEventTopicStatus, DepartedStatusEventProvider(r.Id(), r.ObservationMapId()))
 				if err != nil {
 					p.l.WithError(err).Errorf("Error sending status event for route [%s].", r.Id())
@@ -197,6 +207,29 @@ func (p *ProcessorImpl) warpTo(mb *message.Buffer) func(fromField field.Model, t
 			p.l.Infof("Warping character [%d] from map [%d] to map [%d].", characterId, ff.MapId(), tf.MapId())
 			return p.charP.WarpRandom(mb)(characterId)(tf.Id())
 		})
+	}
+}
+
+// emitVoyageEvent puts one voyage event per channel on mb. atlas-events has no
+// channel identity of its own, so unlike the observation-deck ARRIVED/DEPARTED
+// pair these must be per (world, channel) — the same fan-out shape the warp
+// loops in this function already use (design G1).
+func (p *ProcessorImpl) emitVoyageEvent(mb *message.Buffer) func(r Model, tr Transition, provider func(uuid.UUID, transport.VoyageStatusEventBody) model.Provider[[]kafka.Message]) error {
+	return func(r Model, tr Transition, provider func(uuid.UUID, transport.VoyageStatusEventBody) model.Provider[[]kafka.Message]) error {
+		t := tenant.MustFromContext(p.ctx)
+		voyageId := VoyageId(t, r.Id(), tr.TripId, tr.DepartedAt)
+		return model.ForEachSlice(model.FixedProvider(p.chanP.GetAll()), func(c channel2.Model) error {
+			return mb.Put(transport.EnvEventTopicStatus, provider(r.Id(), transport.VoyageStatusEventBody{
+				VoyageId:         voyageId,
+				WorldId:          c.WorldId(),
+				ChannelId:        c.Id(),
+				StagingMapId:     r.StagingMapId(),
+				EnRouteMapIds:    r.EnRouteMapIds(),
+				DestinationMapId: r.DestinationMapId(),
+				ObservationMapId: r.ObservationMapId(),
+				DepartedAt:       tr.DepartedAt,
+			}))
+		}, model.ParallelExecute())
 	}
 }
 

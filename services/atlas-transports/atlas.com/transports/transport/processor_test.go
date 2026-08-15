@@ -1,11 +1,15 @@
 package transport
 
 import (
+	channelmock "atlas-transports/channel/mock"
 	"atlas-transports/character"
 	charactermock "atlas-transports/character/mock"
 	"atlas-transports/kafka/message"
+	"atlas-transports/kafka/message/transport"
+	_map2 "atlas-transports/map"
 	"bytes"
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -16,8 +20,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -480,4 +487,180 @@ func TestWarpToRouteStartMapOnLogout_NoRoutes_NoError(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.False(t, warpCalled, "Should not warp when no routes exist")
+}
+
+// noopMapProcessor is a _map.Processor that reports no characters present in
+// any map, so UpdateRoute's warp loops have nothing to do.
+type noopMapProcessor struct{}
+
+func (noopMapProcessor) CharacterIdsInMapProvider(_ field.Model) model.Provider[[]uint32] {
+	return model.FixedProvider[[]uint32](nil)
+}
+
+var _ _map2.Processor = noopMapProcessor{}
+
+// channelSpec names one channel a fake channel.Processor should report.
+type channelSpec struct {
+	world   byte
+	channel byte
+}
+
+// newProcessorWithChannels builds a ProcessorImpl wired to a fake
+// channel.Processor reporting exactly the given channels, a working
+// message.Buffer to inspect emitted events against, and a no-op map
+// processor so the warp loops UpdateRoute runs are inert.
+func newProcessorWithChannels(t *testing.T, specs []channelSpec) (*ProcessorImpl, *message.Buffer, []channel2.Model) {
+	t.Helper()
+	setupTransportTestRegistry(t)
+	tenantModel, ctx := newTestTenantContext(t)
+
+	chans := make([]channel2.Model, 0, len(specs))
+	for _, s := range specs {
+		chans = append(chans, channel2.NewModel(world.Id(s.world), channel2.Id(s.channel)))
+	}
+
+	mockChanP := &channelmock.ProcessorMock{
+		GetAllFunc: func() []channel2.Model {
+			return chans
+		},
+	}
+
+	l := logrus.New()
+	l.SetOutput(&bytes.Buffer{})
+
+	p := &ProcessorImpl{
+		l:     l,
+		ctx:   ctx,
+		t:     tenantModel,
+		chanP: mockChanP,
+		charP: &charactermock.ProcessorMock{},
+		mp:    noopMapProcessor{},
+	}
+	return p, message.NewBuffer(), chans
+}
+
+// voyageEvents decodes every StatusEvent[VoyageStatusEventBody] of the given
+// type off the buffer's transport-status topic.
+func voyageEvents(t *testing.T, mb *message.Buffer, eventType string) []transport.StatusEvent[transport.VoyageStatusEventBody] {
+	t.Helper()
+	var out []transport.StatusEvent[transport.VoyageStatusEventBody]
+	for _, msg := range mb.GetAll()[transport.EnvEventTopicStatus] {
+		var ev transport.StatusEvent[transport.VoyageStatusEventBody]
+		if err := json.Unmarshal(msg.Value, &ev); err != nil {
+			t.Fatalf("failed to decode voyage event: %v", err)
+		}
+		if ev.Type == eventType {
+			out = append(out, ev)
+		}
+	}
+	return out
+}
+
+// countEvents counts messages on the transport-status topic whose envelope
+// Type matches eventType, without decoding a specific body shape.
+func countEvents(t *testing.T, mb *message.Buffer, eventType string) int {
+	t.Helper()
+	count := 0
+	for _, msg := range mb.GetAll()[transport.EnvEventTopicStatus] {
+		var ev struct {
+			Type string `json:"type"`
+		}
+		if err := json.Unmarshal(msg.Value, &ev); err != nil {
+			t.Fatalf("failed to decode event envelope: %v", err)
+		}
+		if ev.Type == eventType {
+			count++
+		}
+	}
+	return count
+}
+
+// routeWithSchedule and tod are defined in evaluate_test.go and reused here.
+
+// inTransitRouteAboutToArrive returns a route persisted as InTransit whose
+// selected trip's arrival has already passed relative to real wall-clock
+// time and whose boarding for the same trip's next cycle has not yet opened,
+// so UpdateRoute (which evaluates against time.Now()) observes the
+// AwaitingReturn transition ("the ferry has arrived and is waiting to board
+// again").
+func inTransitRouteAboutToArrive(t *testing.T) Model {
+	t.Helper()
+	routeId := uuid.New()
+	tripId := uuid.New()
+	now := time.Now()
+	boardingOpen := now.Add(2 * time.Minute)
+	boardingClosed := boardingOpen.Add(5 * time.Minute)
+	departure := boardingClosed.Add(2 * time.Minute)
+	arrival := departure.Add(10 * time.Minute)
+	trip := NewTripScheduleModel(tripId, routeId, boardingOpen, boardingClosed, departure, arrival)
+	m := routeWithSchedule(t, routeId, []TripScheduleModel{trip})
+	updated, err := m.Builder().SetState(InTransit).Build()
+	require.NoError(t, err)
+	return updated
+}
+
+// openEntryRouteAboutToDepart returns a route persisted as OpenEntry whose
+// selected trip's departure is a moment in the past relative to real
+// wall-clock time, so UpdateRoute observes the InTransit transition.
+func openEntryRouteAboutToDepart(t *testing.T) Model {
+	t.Helper()
+	routeId := uuid.New()
+	tripId := uuid.New()
+	now := time.Now()
+	departure := now.Add(-1 * time.Minute)
+	arrival := now.Add(10 * time.Minute)
+	trip := NewTripScheduleModel(tripId, routeId,
+		departure.Add(-10*time.Minute), departure.Add(-1*time.Minute), departure, arrival)
+	m := routeWithSchedule(t, routeId, []TripScheduleModel{trip})
+	updated, err := m.Builder().SetState(OpenEntry).Build()
+	require.NoError(t, err)
+	return updated
+}
+
+// FR-V3/FR-V4: InTransit -> AwaitingReturn emits VOYAGE_ARRIVED, once per
+// channel, with the full scope. Before this task that transition emitted
+// nothing at all (PRD F1).
+func TestArrivalEmitsVoyageArrivedPerChannel(t *testing.T) {
+	p, mb, chans := newProcessorWithChannels(t, []channelSpec{{world: 1, channel: 1}, {world: 1, channel: 2}})
+	_ = chans
+
+	route := inTransitRouteAboutToArrive(t)
+	if err := p.UpdateRoute(mb)(route); err != nil {
+		t.Fatalf("UpdateRoute: %v", err)
+	}
+
+	msgs := voyageEvents(t, mb, transport.EventStatusVoyageArrived)
+	if len(msgs) != 2 {
+		t.Fatalf("expected one VOYAGE_ARRIVED per channel, got %d", len(msgs))
+	}
+	if msgs[0].Body.VoyageId == uuid.Nil {
+		t.Fatalf("voyage id not populated")
+	}
+	if msgs[0].Body.VoyageId != msgs[1].Body.VoyageId {
+		t.Fatalf("per-channel events must share one voyage id")
+	}
+	if msgs[0].Body.ChannelId == msgs[1].Body.ChannelId {
+		t.Fatalf("expected distinct channels, both %d", msgs[0].Body.ChannelId)
+	}
+	if msgs[0].Body.DestinationMapId != route.DestinationMapId() {
+		t.Fatalf("scope not carried")
+	}
+}
+
+// FR-V6 / acceptance 20.4: the existing ARRIVED and DEPARTED emits are
+// unchanged — same count, same single-emit shape, same body.
+func TestDepartureStillEmitsOneDepartedAndOneVoyageDepartedPerChannel(t *testing.T) {
+	p, mb, _ := newProcessorWithChannels(t, []channelSpec{{world: 1, channel: 1}, {world: 1, channel: 2}})
+
+	route := openEntryRouteAboutToDepart(t)
+	if err := p.UpdateRoute(mb)(route); err != nil {
+		t.Fatalf("UpdateRoute: %v", err)
+	}
+
+	if got := countEvents(t, mb, transport.EventStatusDeparted); got != 1 {
+		t.Fatalf("DEPARTED emitted %d times, want exactly 1 (unchanged)", got)
+	}
+	if got := len(voyageEvents(t, mb, transport.EventStatusVoyageDeparted)); got != 2 {
+		t.Fatalf("VOYAGE_DEPARTED emitted %d times, want one per channel", got)
+	}
 }

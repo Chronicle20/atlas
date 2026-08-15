@@ -73,7 +73,13 @@ func TestConsumableCache_TenantIsolation(t *testing.T) {
 	c := setupTestCache(t)
 	l, _ := test.NewNullLogger()
 	ten1 := newTestTenant(t)
-	ten2 := newTestTenant(t)
+	// ten2 differs from ten1 in region AND version, not just UUID — this pins
+	// the tenant-scoped key SHAPE (TenantKey embeds region/version), not
+	// merely "two distinct tenants stay separate".
+	ten2, err := tenant.Create(uuid.New(), "JMS", 62, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
 	ctx := context.Background()
 
 	models1 := []consumable.Model{}

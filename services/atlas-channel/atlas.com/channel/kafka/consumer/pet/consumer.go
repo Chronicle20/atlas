@@ -266,6 +266,20 @@ func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(
 	}
 }
 
+// petAssetRefresher re-announces the owner's cash pet asset so the client's
+// GW_ItemSlotPet — the record the INVENTORY slot renders from — picks up the
+// pet's current data. The in-world packets (name tag, effects, spawn body)
+// only repaint the spawned pet; none of them touch the inventory item. Without
+// this the slot keeps stale data until some unrelated full inventory re-send
+// (entering or leaving the cash shop) happens to refresh it.
+//
+// It is a package-level var so tests can record the call without a live
+// character REST backend, mirroring the reportAnnouncer seam in
+// kafka/consumer/report.
+var petAssetRefresher = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, sc server.Model, petId uint32, ownerId uint32) {
+	_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(ownerId, announcePetStatUpdate(l)(ctx)(wp)(petId, ownerId))
+}
+
 func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.ClosenessChangedStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.ClosenessChangedStatusEventBody]) {
 		if e.Type != pet2.StatusEventTypeClosenessChanged {
@@ -277,7 +291,7 @@ func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId, announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId))
+		petAssetRefresher(l, ctx, wp, sc, e.PetId, e.OwnerId)
 	}
 }
 
@@ -472,6 +486,15 @@ func handleNameChanged(sc server.Model, wp writer.Producer) message.Handler[pet2
 			return
 		}
 
+		// The name lives in TWO client-side records and PetNameChanged only
+		// updates one of them. It repaints the name tag over the SPAWNED pet;
+		// the INVENTORY slot renders from GW_ItemSlotPet.sPetName, which no
+		// pet packet touches. Refresh the owner's cash asset too, or the item
+		// keeps the old name until an unrelated full inventory re-send (cash
+		// shop entry/exit) happens to correct it. Owner-only by construction:
+		// nobody else can see that item.
+		petAssetRefresher(l, ctx, wp, sc, e.PetId, e.OwnerId)
+
 		// ForSessionsInMap includes the owner, so one call reaches both the
 		// renaming player and every observer. The callback closes over
 		// immutable values only — the iteration is PARALLEL
@@ -500,6 +523,6 @@ func handleFlagChanged(sc server.Model, wp writer.Producer) message.Handler[pet2
 
 		// Re-announce the pet's cash asset so the client's GW_ItemSlotPet
 		// usPetSkill short refreshes — there is no dedicated skill packet.
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId, announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId))
+		petAssetRefresher(l, ctx, wp, sc, e.PetId, e.OwnerId)
 	}
 }

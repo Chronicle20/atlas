@@ -185,8 +185,18 @@ client                 atlas-channel                 orchestrator            atl
   │                        │        AcceptEvent → step 1 Completed
   │                        │        step 2 consume_pet_name_tag (DestroyAsset)
   │◄─ PET_NAMECHANGE (map broadcast, driven by NAME_CHANGED) ─┤
+  │◄─ INVENTORY_OPERATION (owner-only cash-asset re-announce)  │
   │◄─ INVENTORY_OPERATION (consume; clears the excl-request gate)
 ```
+
+The name lives in two client-side records and `PET_NAMECHANGE` only updates one.
+It repaints the name tag over the *spawned* pet; the *inventory slot* renders
+from `GW_ItemSlotPet.sPetName`, which no pet packet writes. The `NAME_CHANGED`
+consumer therefore also re-announces the owner's cash pet asset — the same
+`petAssetRefresher` seam every other pet status handler
+(closeness/fullness/level/flag) uses. Without it the renamed item keeps the old
+name until an unrelated full inventory re-send (cash shop entry/exit) corrects
+it.
 
 On a `consume_pet_name_tag` failure the compensator reverse-walks the completed
 `rename_pet` step by issuing a second `RENAME` carrying `previousName`, then emits

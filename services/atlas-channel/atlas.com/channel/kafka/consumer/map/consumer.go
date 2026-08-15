@@ -356,23 +356,7 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		})
 
 		routine.Go(l, ctx, func(_ context.Context) {
-			vs, verr := events.NewProcessor(l, ctx).ActiveVisualsInMap(f)
-			if verr != nil {
-				// Fail open (FR-B16, FR-N15): the character entered the map;
-				// an unreachable atlas-events costs the visual, not the entry.
-				l.WithError(verr).Debugf("SpawnForSelf: unable to retrieve active event visuals for map [%d].", f.MapId())
-				return
-			}
-			for _, v := range vs {
-				if v.Visual != event2.VisualContiMove {
-					l.Debugf("SpawnForSelf: unrecognized event visual [%s] for map [%d]; no writer for it.", v.Visual, f.MapId())
-					continue
-				}
-				_ = session.Announce(l)(ctx)(wp)(fieldcb.ContiMoveWriter)(writer.ContiMoveBody(v.State, v.SubState))(s)
-				if v.Bgm != "" {
-					_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectBackgroundMusicBody(v.Bgm))(s)
-				}
-			}
+			announceActiveVisuals(l, ctx, wp, f, s)
 		})
 
 		return nil
@@ -741,6 +725,33 @@ func spawnReactorsForSession(l logrus.FieldLogger) func(ctx context.Context) fun
 // writerName and body.
 var doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, writerName string, enc packet.Encode, s session.Model) error {
 	return session.Announce(l)(ctx)(wp)(writerName)(enc)(s)
+}
+
+// announceActiveVisuals looks up the event visuals currently active on f
+// and, for each recognized visual, announces it to the entering session s.
+// Extracted from SpawnForSelf's routine.Go block so it is directly
+// unit-testable via the doorAnnounce seam (the same package-level
+// session.Announce seam used by spawnDoorsForSession) without a real socket
+// writer.
+//
+// Fail open (FR-B16, FR-N15): the character entered the map; an unreachable
+// atlas-events costs the visual, not the entry.
+func announceActiveVisuals(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, s session.Model) {
+	vs, verr := events.NewProcessor(l, ctx).ActiveVisualsInMap(f)
+	if verr != nil {
+		l.WithError(verr).Debugf("SpawnForSelf: unable to retrieve active event visuals for map [%d].", f.MapId())
+		return
+	}
+	for _, v := range vs {
+		if v.Visual != event2.VisualContiMove {
+			l.Debugf("SpawnForSelf: unrecognized event visual [%s] for map [%d]; no writer for it.", v.Visual, f.MapId())
+			continue
+		}
+		_ = doorAnnounce(l, ctx, wp, fieldcb.ContiMoveWriter, writer.ContiMoveBody(v.State, v.SubState), s)
+		if v.Bgm != "" {
+			_ = doorAnnounce(l, ctx, wp, fieldcb.FieldEffectWriter, fieldpkt.FieldEffectBackgroundMusicBody(v.Bgm), s)
+		}
+	}
 }
 
 // spawnDoorsForSession returns a door.Model operator that announces the

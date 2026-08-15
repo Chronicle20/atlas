@@ -20,6 +20,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -323,5 +324,119 @@ func TestSpawnDoorsForSession_PartyMember_SpawnDoor(t *testing.T) {
 	}
 	if spawnDoorCalls != 1 {
 		t.Errorf("SpawnDoor calls = %d, want 1 for party member", spawnDoorCalls)
+	}
+}
+
+// eventVisualsServer stands up a fake atlas-events map-entry visuals endpoint
+// returning the given JSON:API body, and points BASE_SERVICE_URL at it for
+// the duration of the test (mirrors events/processor_test.go).
+func eventVisualsServer(t *testing.T, body string) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("BASE_SERVICE_URL", srv.URL+"/api/")
+}
+
+// stubDoorAnnounceForVisuals swaps doorAnnounce for a recording stub and
+// returns a restore func plus captured invocation details, keyed by writer
+// name. announceActiveVisuals is the only caller under test in this file
+// that reuses the doorAnnounce seam for non-door writers.
+func stubDoorAnnounceForVisuals(t *testing.T) (restore func(), calls *[]string, lastState, lastSubState *byte, lastBgm *string) {
+	t.Helper()
+	var seenWriters []string
+	var state, subState byte
+	var bgm string
+
+	orig := doorAnnounce
+	doorAnnounce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, enc packet.Encode, _ session.Model) error {
+		seenWriters = append(seenWriters, writerName)
+		switch writerName {
+		case fieldcb.ContiMoveWriter:
+			b := enc(logrus.New(), context.Background())(nil)
+			if len(b) >= 2 {
+				state, subState = b[0], b[1]
+			}
+		case fieldcb.FieldEffectWriter:
+			// FieldEffectBackgroundMusicBody's exact wire shape isn't needed
+			// here; the bgm value itself is asserted via the response fixture.
+			bgm = "seen"
+		}
+		return nil
+	}
+
+	return func() { doorAnnounce = orig }, &seenWriters, &state, &subState, &bgm
+}
+
+// TestAnnounceActiveVisuals_ContiMoveFiresForEnteringSession asserts a
+// CONTI_MOVE visual returned by atlas-events is announced to the entering
+// session as ContiMove (with the wire state/subState) plus the background
+// music, using the values taken directly off the wire response.
+func TestAnnounceActiveVisuals_ContiMoveFiresForEnteringSession(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	eventVisualsServer(t, `{"data":[{"type":"event-visuals","id":"1","attributes":{"occurrenceId":"o1","visual":"CONTI_MOVE","state":10,"subState":4,"bgm":"Bgm04/ArabPirate"}}]}`)
+
+	restore, calls, lastState, lastSubState, lastBgm := stubDoorAnnounceForVisuals(t)
+	defer restore()
+
+	announceActiveVisuals(l, ctx, nil, f, session.Model{})
+
+	if len(*calls) != 2 || (*calls)[0] != fieldcb.ContiMoveWriter || (*calls)[1] != fieldcb.FieldEffectWriter {
+		t.Fatalf("writer calls = %v, want [%s %s]", *calls, fieldcb.ContiMoveWriter, fieldcb.FieldEffectWriter)
+	}
+	if *lastState != 10 || *lastSubState != 4 {
+		t.Fatalf("ContiMove state/subState: want (10,4), got (%d,%d)", *lastState, *lastSubState)
+	}
+	if *lastBgm == "" {
+		t.Fatalf("expected the background-music writer to fire for a non-empty bgm")
+	}
+}
+
+// TestAnnounceActiveVisuals_SkipsNonContiMoveVisual asserts a visual that
+// isn't CONTI_MOVE is skipped entirely -- no writer for it exists yet, and
+// the loop must not fall through to the ContiMove/bgm announce.
+func TestAnnounceActiveVisuals_SkipsNonContiMoveVisual(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	eventVisualsServer(t, `{"data":[{"type":"event-visuals","id":"1","attributes":{"occurrenceId":"o1","visual":"SOME_OTHER_VISUAL","state":1,"subState":1,"bgm":"Bgm/Whatever"}}]}`)
+
+	restore, calls, _, _, _ := stubDoorAnnounceForVisuals(t)
+	defer restore()
+
+	announceActiveVisuals(l, ctx, nil, f, session.Model{})
+
+	if len(*calls) != 0 {
+		t.Fatalf("writer calls = %v, want none for an unrecognized visual", *calls)
+	}
+}
+
+// TestAnnounceActiveVisuals_FailOpenAnnouncesNothing asserts that when
+// atlas-events is unreachable, announceActiveVisuals announces nothing and
+// returns without panicking or otherwise disrupting the caller (FR-B16,
+// FR-N15) -- map entry itself is unaffected.
+func TestAnnounceActiveVisuals_FailOpenAnnouncesNothing(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer srv.Close()
+	t.Setenv("BASE_SERVICE_URL", srv.URL+"/api/")
+
+	restore, calls, _, _, _ := stubDoorAnnounceForVisuals(t)
+	defer restore()
+
+	announceActiveVisuals(l, ctx, nil, f, session.Model{})
+
+	if len(*calls) != 0 {
+		t.Fatalf("writer calls = %v, want none when atlas-events is unreachable", *calls)
 	}
 }

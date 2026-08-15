@@ -33,6 +33,7 @@ type (
 	IncubatorResultPayload       = sharedsaga.IncubatorResultPayload
 	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
 	CreateNotePayload            = sharedsaga.CreateNotePayload
+	RenamePetPayload             = sharedsaga.RenamePetPayload
 
 	// Megaphone / world broadcast payload types
 	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
@@ -73,6 +74,7 @@ const (
 	MegaphoneUse          = sharedsaga.MegaphoneUse
 	NoteSend              = sharedsaga.NoteSend
 	MesoSackUse           = sharedsaga.MesoSackUse
+	PetNameTagUse         = sharedsaga.PetNameTagUse
 	RemoteMerchant        = sharedsaga.RemoteMerchant
 
 	// Status constants
@@ -112,6 +114,7 @@ const (
 	EmitMegaphone         = sharedsaga.EmitMegaphone
 	EnqueueWorldBroadcast = sharedsaga.EnqueueWorldBroadcast
 	CreateNote            = sharedsaga.CreateNote
+	RenamePet             = sharedsaga.RenamePet
 	OpenNpcShop           = sharedsaga.OpenNpcShop
 )
 

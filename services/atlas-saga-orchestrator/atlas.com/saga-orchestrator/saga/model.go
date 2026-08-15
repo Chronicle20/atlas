@@ -49,6 +49,7 @@ const (
 	MtsOperation          = sharedsaga.MtsOperation
 	NoteSend              = sharedsaga.NoteSend
 	SkillBookUse          = sharedsaga.SkillBookUse
+	PetNameTagUse         = sharedsaga.PetNameTagUse
 	RemoteMerchant        = sharedsaga.RemoteMerchant
 )
 
@@ -96,6 +97,7 @@ const (
 	IncreaseBuddyCapacity  = sharedsaga.IncreaseBuddyCapacity
 	GainCloseness          = sharedsaga.GainCloseness
 	EvolvePet              = sharedsaga.EvolvePet
+	RenamePet              = sharedsaga.RenamePet
 
 	// Skill actions
 	CreateSkill = sharedsaga.CreateSkill
@@ -265,6 +267,7 @@ type (
 	IncreaseBuddyCapacityPayload        = sharedsaga.IncreaseBuddyCapacityPayload
 	GainClosenessPayload                = sharedsaga.GainClosenessPayload
 	EvolvePetPayload                    = sharedsaga.EvolvePetPayload
+	RenamePetPayload                    = sharedsaga.RenamePetPayload
 	CompleteQuestPayload                = sharedsaga.CompleteQuestPayload
 	StartQuestPayload                   = sharedsaga.StartQuestPayload
 	ForfeitQuestPayload                 = sharedsaga.ForfeitQuestPayload
@@ -1406,6 +1409,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case EvolvePet:
 		var payload EvolvePetPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case RenamePet:
+		var payload RenamePetPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

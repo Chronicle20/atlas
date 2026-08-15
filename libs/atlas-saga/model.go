@@ -44,6 +44,7 @@ const (
 	PointReset            Type = "point_reset"
 	MegaphoneUse          Type = "megaphone_use"
 	MesoSackUse           Type = "meso_sack_use"
+	PetNameTagUse         Type = "pet_name_tag_use"
 	// RemoteMerchant is the classification-545 cash item flow: open an NPC's
 	// shop from anywhere, then consume the item — never the other way round
 	// (task-221).
@@ -97,6 +98,7 @@ const (
 	IncreaseBuddyCapacity  Action = "increase_buddy_capacity"
 	GainCloseness          Action = "gain_closeness"
 	EvolvePet              Action = "evolve_pet"
+	RenamePet              Action = "rename_pet"
 	TransferAP             Action = "transfer_ap"
 	TransferSP             Action = "transfer_sp"
 

@@ -62,6 +62,11 @@ func (b *ModelBuilder) SetTemplateId(templateId uint32) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetName(name string) *ModelBuilder {
+	b.name = name
+	return b
+}
+
 func (b *ModelBuilder) SetCloseness(closeness uint16) *ModelBuilder {
 	b.closeness = closeness
 	return b

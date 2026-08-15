@@ -710,6 +710,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
+		if it == CashSlotItemTypePetNameTag {
+			sp := cashsb.NewItemUsePetNameTag(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			handlePetNameTagUse(l, ctx, wp)(s, itemId, sp.Name())
+			return
+		}
+
 		if it == CashSlotItemTypeCurrencySack {
 			// No sub-body: the classification-520 arm of
 			// CWvsContext::SendConsumeCashItemUseRequest encodes nothing beyond
@@ -954,6 +961,13 @@ const (
 	// — the handler gates on item.ClassificationTeleportRock (504) before
 	// routing into the use-flow, so aliased megaphones are unaffected.
 	CashSlotItemTypeTeleportRock = CashSlotItemType(12)
+
+	// CashSlotItemTypePetNameTag is classification 517 (Pet Name Tag, 5170000).
+	// No other classification maps to 17 in GetCashSlotItemType — meso sacks
+	// return 19 on every version by deliberate Atlas policy (see
+	// CashSlotItemTypeCurrencySack above) even though the v48 client's own
+	// table says 17 — so gating the arm on `it` alone is unambiguous.
+	CashSlotItemTypePetNameTag = CashSlotItemType(17)
 )
 
 // cashItemInSlotFunc is a test seam for the cash-inventory ownership check
@@ -1240,10 +1254,16 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 			return CashSlotItemType(6)
 		}
 		if category == item.ClassificationPetImprints {
-			if 10000*itemId/10000 != itemId {
+			// get_cashslot_item_type @0x48645b, case 517:
+			//   return a1 % 10000 != 0 ? 0 : 17;
+			// The previous spelling of this was `10000*itemId/10000 != itemId`,
+			// which OVERFLOWS: item.Id is uint32, so 10000 * 5170000 wraps to
+			// 160,392,448 and the branch returned 0 for the one item id it was
+			// supposed to admit. The Pet Name Tag never reached a handler.
+			if itemId%10000 != 0 {
 				return CashSlotItemType(0)
 			}
-			return CashSlotItemType(17)
+			return CashSlotItemTypePetNameTag
 		}
 		if category == 518 {
 			return CashSlotItemType(5)

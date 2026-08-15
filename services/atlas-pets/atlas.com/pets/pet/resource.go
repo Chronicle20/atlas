@@ -2,14 +2,19 @@ package pet
 
 import (
 	"atlas-pets/rest"
+	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	petconst "github.com/Chronicle20/atlas/libs/atlas-constants/pet"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
@@ -25,6 +30,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r = router.PathPrefix("/pets").Subrouter()
 			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("create", handleCreate)).Methods(http.MethodPost)
 			r.HandleFunc("/{petId}", registerGet("get_pet", handleGetPet)).Methods(http.MethodGet)
+			r.HandleFunc("/{petId}", rest.RegisterInputHandler[RestModel](l)(db)(si)("update_pet", handleUpdate)).Methods(http.MethodPatch)
 		}
 	}
 }
@@ -170,4 +176,112 @@ func handleCreate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel
 		queryParams := jsonapi.ParseQueryFields(&query)
 		server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 	}
+}
+
+// handleUpdate is the operator surface for correcting a pet name without a
+// direct DB write. The gameplay rename path is the RENAME Kafka command driven
+// by the pet_name_tag_use saga -- atlas-channel never calls this endpoint
+// (PRD §5.1). `name` is the only writable attribute; every other field on the
+// inbound RestModel is ignored.
+func handleUpdate(d *rest.HandlerDependency, c *rest.HandlerContext, i RestModel) http.HandlerFunc {
+	return rest.ParsePetId(d.Logger(), func(petId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			name := petconst.NormalizeName(i.Name)
+			if err := petconst.ValidateName(name); err != nil {
+				d.Logger().WithError(err).Warnf("Rejecting PATCH of pet [%d]: invalid name [%s].", petId, i.Name)
+				server.WriteBadRequest(d.Logger(), w, err.Error())
+				return
+			}
+
+			p := NewProcessor(d.Logger(), d.Context(), d.DB())
+			existing, err := p.GetById(petId)
+			if err != nil {
+				d.Logger().WithError(err).Warnf("Unable to locate pet [%d].", petId)
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					writeNotFound(d.Logger(), w, "pet not found")
+					return
+				}
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			// The owner is taken from the stored row, never from the request:
+			// the processor's ownership check would otherwise be trivially
+			// satisfiable by a caller supplying whatever ownerId it liked. This
+			// makes the check near-tautological through this handler -- it is
+			// reachable only if the pet's owner changes between this read and
+			// the processor's re-read inside its own transaction.
+			if err = p.RenameAndEmit(uuid.New(), petId, existing.OwnerId(), name); err != nil {
+				d.Logger().WithError(err).Warnf("Unable to rename pet [%d].", petId)
+				if errors.Is(err, ErrNotOwner) {
+					writeForbidden(d.Logger(), w, "pet is not owned by character")
+					return
+				}
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			updated, err := p.GetById(petId)
+			if err != nil {
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+			res, err := model.Map(Transform(d.Context()))(model.FixedProvider(updated))()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
+}
+
+// operatorErrorObject / operatorErrorBody mirror atlas-rest/server's
+// unexported JSON:API error shape ({"errors":[{"status","title","detail"}]}).
+// handleUpdate is the operator PATCH surface this branch introduced; it needs
+// 404 (pet not found) and 403 (rename rejected for non-ownership) status
+// codes that server.WriteErrorResponse does not produce -- that helper only
+// distinguishes transient-503 from 500, and installing a not-found classifier
+// there would change error mapping for every service in the repo. Kept local
+// to this handler rather than touching libs/atlas-rest or any other handler
+// in this file (see docs/tasks/task-224-pet-name-tag/audit-backend-guidelines.md).
+type operatorErrorObject struct {
+	Status string `json:"status"`
+	Title  string `json:"title"`
+	Detail string `json:"detail"`
+}
+
+type operatorErrorBody struct {
+	Errors []operatorErrorObject `json:"errors"`
+}
+
+func writeOperatorError(l logrus.FieldLogger, w http.ResponseWriter, status int, title string, detail string) {
+	body, err := json.Marshal(operatorErrorBody{Errors: []operatorErrorObject{{
+		Status: strconv.Itoa(status),
+		Title:  title,
+		Detail: detail,
+	}}})
+	if err != nil {
+		l.WithError(err).Errorf("Unable to marshal error response.")
+		body = []byte(`{"errors":[{"status":"` + strconv.Itoa(status) + `","title":"` + title + `"}]}`)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if _, err := w.Write(body); err != nil {
+		l.WithError(err).Errorf("Unable to write error response.")
+	}
+}
+
+// writeNotFound writes a JSON:API error object with HTTP 404.
+func writeNotFound(l logrus.FieldLogger, w http.ResponseWriter, detail string) {
+	writeOperatorError(l, w, http.StatusNotFound, "Not Found", detail)
+}
+
+// writeForbidden writes a JSON:API error object with HTTP 403.
+func writeForbidden(l logrus.FieldLogger, w http.ResponseWriter, detail string) {
+	writeOperatorError(l, w, http.StatusForbidden, "Forbidden", detail)
 }

@@ -3,6 +3,21 @@
   "md5": "af6652ff9b7c549341f35e3569d7564a",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CPet::OnNameChanged": {
+      "address": "0x76a5de",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Delegate",
+          "comment": "branches on this client-state query (sub_768D82(this)), NOT a wire read -- no Decode1 here, unlike GMS. JMS body is one byte shorter than GMS (no trailing name-tag flag byte).",
+          "ref": "sub_768D82"
+        }
+      ]
+    },
     "CUserLocal::RequestIncCombo": {
       "address": "0xa2d435",
       "direction": "serverbound",
@@ -9263,6 +9278,11 @@
     },
     "sub_4067E3": {
       "address": "0x4067e3",
+      "direction": "",
+      "calls": null
+    },
+    "sub_768D82": {
+      "address": "0x768d82",
       "direction": "",
       "calls": null
     },

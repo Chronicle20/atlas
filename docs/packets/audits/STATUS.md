@@ -4,18 +4,18 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
+Tool: `e9af7698319b63966f4c5a71299960eb5cb490452f0713ded649df2fc45455e6`
 
-- export gms_v48: `255cf90dfe7d4851b445be1de39b5a18529ed242779c558a4188df2b073e1b6e`
-- export gms_v61: `0532e86e0ce45f5c898626409c98e28c8a1804d42c28406fcac1b5c379b71be0`
-- export gms_v72: `01445ed400a216f7f219cc2831653cb421c26c43fd50676b11510550fa1a94af`
-- export gms_v79: `a956db8ff64a8df29fbf11e19b158d3191dec51bb246ffd0848a721ea43409df`
-- export gms_v83: `9cfa0c4f248d94baf255babc9b95417e59806be4cbd96e0b98951be03c74352e`
-- export gms_v84: `53992af04beff72106d1fb79de956139aa824617b1d92b08ef9a3a064b710e6a`
-- export gms_v87: `f029b556b8d373a02e60e6df0c210ce143d111a960e06601bfae23cd59d11d4f`
-- export gms_v92: `0d675dac446741930ce0dabfdc5b2c54ab5417175d9b57341ed97dda046001f6`
-- export gms_v95: `f15eb92b0b367981984ef68303fecd197d8735bcc0ce7e603b3003509a717355`
-- export jms_v185: `0d054f727c883d0fea10da9ffa4da21c07a549f34caa8369f0ac44ee4f581a0b`
+- export gms_v48: `df18357a89e5e0506c9be3ca0beef22a11aa9a3c3050e60a2c28c7fbdfc77b04`
+- export gms_v61: `042eb33099ca46a47c9156a3762a64ba6bfc15927c2a16771f84132b74d9529e`
+- export gms_v72: `b1fa87e583006de18239d95519a882752ca5ab710bdb57954c19926a7e0885eb`
+- export gms_v79: `503eb2f98d8f9f64cd2725bc28b5884cd4b05a0dfd8613139da63f54a8b8bf4c`
+- export gms_v83: `a52ac19ad9f67650ae90be986dd16b6a64a7a00e425f84f086ed0a0eb621f1c5`
+- export gms_v84: `4af3524de4bec50573925274f230bf749efec4dfabaeefd2b4705bdfef7b0e19`
+- export gms_v87: `f6efe2c21dcb46161a7c76c7581d27ff3014752e47f79d0ddb0483de29280341`
+- export gms_v92: `3708342230a85906ff2442a02189fb2f5e619cf2617fb382f9ebb3d1f3860e38`
+- export gms_v95: `d08a263d63a2b2f5f3aa91fed5d5338ad33e85f0d8fea70e35c1ea0e18274f5f`
+- export jms_v185: `7215c28c5237bdb065c80cf376356cea87b37babc5547e6e4cb0dcd45dfe983d`
 
 ## Clientbound
 
@@ -202,6 +202,7 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | NEW_YEAR_CARD_RES | CWvsContext::OnNewYearCardRes |  |  | ⬜ |  | ⬜ | 0x06E | ❌ | 0x070 | ❌ | 0x076 | ❌ | 0x079 | ❌ | 0x079 | ❌ | 0x07B | ❌ | 0x07A | ❌ |  | ⬜ |
 | RANDOM_MORPH_RES | CWvsContext::OnRandomMorphRes |  |  | ⬜ |  | ⬜ | 0x06F | ❌ | 0x071 | ❌ | 0x077 | ❌ | 0x07A | ❌ | 0x07A | ❌ | 0x07C | ❌ | 0x07B | ❌ |  | ⬜ |
 | CANCEL_NAME_CHANGE_BY_OTHER | CWvsContext::OnCancelNameChangebyOther |  |  | ⬜ |  | ⬜ | 0x070 | ❌ | 0x072 | ❌ | 0x078 | ❌ | 0x07B | ❌ | 0x07B | ❌ | 0x07D | ❌ | 0x07C | ❌ |  | ⬜ |
+| PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 | pet/clientbound/PetNameChanged (T1) | 0x071 | ✅ | 0x083 | ✅ | 0x09D | ✅ | 0x0A1 | ✅ | 0x0AC | ✅ | 0x0B0 | ✅ | 0x0B9 | ✅ | 0x0C8 | ✅ | 0x0CB | ✅ | 0x0B2 | ✅ |
 | IDA_0X073 | sub_AF7C61 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ |
 | SET_EXTRA_PENDANT_SLOT | CWvsContext::OnSetBuyEquipExt; sub_95EE37 |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ | 0x079 | ❌ | 0x07C | ❌ | 0x07C | ❌ | 0x07E | ❌ | 0x07D | ❌ |  | ⬜ |
 | IDA_0X074 | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ |
@@ -230,7 +231,6 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | CLEAR_BACK_EFFECT | CMapLoadable::OnClearBackEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x082 | ❌ | 0x085 | ❌ | 0x08A | ❌ | 0x091 | ❌ | 0x092 | ❌ | 0x080 | ❌ |
 | PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) |  | ⬜ | 0x082 | ✅ | 0x09C | ✅ | 0x0A0 | ✅ | 0x0AB | ✅ | 0x0AF | ✅ | 0x0B8 | ✅ | 0x0C7 | ❌ | 0x0CA | ✅ | 0x0B1 | ✅ |
 | FIND_FRIEND | CWvsContext::OnFindFirend |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x083 | ❌ | 0x086 | ❌ | 0x086 | ❌ |  | ⬜ |
-| PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 |  |  | ⬜ | 0x083 | ❌ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B9 | ❌ | 0x0C8 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) |  | ⬜ | 0x084 | ✅ | 0x09E | ✅ | 0x0A2 | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0C9 | ❌ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | WILD_HUNTER_INFO | CWvsContext::OnWildHunterInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x084 | ❌ |  | ⬜ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) |  | ⬜ | 0x085 | ✅ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CA | ❌ | 0x0CD | ✅ | 0x0B4 | ✅ |
@@ -839,6 +839,7 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | cash/serverbound/CashItemUseItemMegaphone (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseMapleTV (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
+| cash/serverbound/CashItemUsePetNameTag (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUsePetSkill (T1) |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ✅ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -1055,16 +1056,16 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 205 | 0 | 19 | 195 | 600 | 0 | 48.9% |
-| v61 | 268 | 0 | 56 | 234 | 461 | 0 | 48.0% |
-| v72 | 284 | 0 | 69 | 248 | 418 | 0 | 47.3% |
-| v79 | 329 | 0 | 68 | 245 | 377 | 0 | 51.2% |
-| v83 | 449 | 0 | 0 | 342 | 228 | 0 | 56.8% |
-| v84 | 424 | 0 | 0 | 348 | 247 | 0 | 54.9% |
-| v87 | 458 | 0 | 0 | 371 | 190 | 0 | 55.2% |
-| v92 | 29 | 0 | 151 | 698 | 141 | 0 | 3.3% |
-| v95 | 483 | 0 | 0 | 430 | 106 | 0 | 52.9% |
-| JMS185 | 431 | 0 | 0 | 391 | 197 | 0 | 52.4% |
+| v48 | 206 | 0 | 19 | 196 | 599 | 0 | 48.9% |
+| v61 | 269 | 0 | 56 | 234 | 461 | 0 | 48.1% |
+| v72 | 285 | 0 | 69 | 248 | 418 | 0 | 47.3% |
+| v79 | 330 | 0 | 68 | 245 | 377 | 0 | 51.3% |
+| v83 | 451 | 0 | 0 | 341 | 228 | 0 | 56.9% |
+| v84 | 425 | 0 | 0 | 348 | 247 | 0 | 55.0% |
+| v87 | 459 | 0 | 0 | 371 | 190 | 0 | 55.3% |
+| v92 | 30 | 0 | 151 | 698 | 141 | 0 | 3.4% |
+| v95 | 484 | 0 | 0 | 430 | 106 | 0 | 53.0% |
+| JMS185 | 432 | 0 | 0 | 391 | 197 | 0 | 52.5% |
 
 ## Conflicts
 

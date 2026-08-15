@@ -11,6 +11,17 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
+// Spawn provenance types (FR-P1). The set is open — atlas-monsters never
+// interprets these beyond equality, so a new producer may introduce a value
+// without a change here. CYCLIC is the normalization target for an absent or
+// empty value, applied once at the Kafka consumer boundary.
+const (
+	SpawnSourceTypeCyclic = "CYCLIC"
+	SpawnSourceTypeEvent  = "EVENT"
+	SpawnSourceTypeScript = "SCRIPT"
+	SpawnSourceTypeGM     = "GM"
+)
+
 // nextSkillDecision is the picker's decision for the next skill (if any) the
 // monster should fire on the controller's next tick. Held in-memory only;
 // not persisted to Redis. Zero value is the sentinel "no skill, no scheduled

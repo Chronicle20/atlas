@@ -92,12 +92,19 @@ type useBasicAttackCommandBody struct {
 
 type destroyFieldCommandBody struct{}
 
+// spawnFieldCommandBody carries optional spawn provenance (FR-P1). Both field
+// names are absent from every sibling body on this shared, fan-to-every-handler
+// topic, so adding them cannot produce a spurious unmarshal error the way a
+// type-mismatched name would (see killCommandBody's note). omitempty keeps an
+// omitting producer's bytes identical to today (FR-P5).
 type spawnFieldCommandBody struct {
-	MonsterId uint32 `json:"monsterId"`
-	X         int16  `json:"x"`
-	Y         int16  `json:"y"`
-	Fh        int16  `json:"fh"`
-	Team      int8   `json:"team"`
+	MonsterId       uint32 `json:"monsterId"`
+	X               int16  `json:"x"`
+	Y               int16  `json:"y"`
+	Fh              int16  `json:"fh"`
+	Team            int8   `json:"team"`
+	SpawnSourceType string `json:"spawnSourceType,omitempty"`
+	SpawnSourceId   string `json:"spawnSourceId,omitempty"`
 }
 
 type drainMpCommandBody struct {

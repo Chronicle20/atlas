@@ -32,6 +32,8 @@ type RestModel struct {
 	StatusEffects          []StatusEffectEntry `json:"statusEffects"`
 	ControllerHasAggro     bool                `json:"controllerHasAggro"`
 	NextEligibleRepickAtMs int64               `json:"nextEligibleRepickAtMs,omitempty"`
+	SpawnSourceType        string              `json:"spawnSourceType,omitempty"`
+	SpawnSourceId          string              `json:"spawnSourceId,omitempty"`
 }
 
 type StatusEffectEntry struct {
@@ -96,6 +98,8 @@ func Transform(m Model) (RestModel, error) {
 		StatusEffects:          ses,
 		ControllerHasAggro:     m.controllerHasAggro,
 		NextEligibleRepickAtMs: m.nextSkillDecision.nextEligibleRepickAtMs,
+		SpawnSourceType:        m.spawnSourceType,
+		SpawnSourceId:          m.spawnSourceId,
 	}, nil
 }
 

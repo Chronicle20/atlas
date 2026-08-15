@@ -221,8 +221,7 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	// wired to the command body in Task 2
-	m := GetMonsterRegistry().CreateMonster(p.ctx, p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.Hp(), ma.Mp(), "", "")
+	m := GetMonsterRegistry().CreateMonster(p.ctx, p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.Hp(), ma.Mp(), input.SpawnSourceType, input.SpawnSourceId)
 
 	// FR-2.1: Only fire the spawn picker when the freshly-created monster
 	// already has aggro. In practice this is always false at spawn (no damage

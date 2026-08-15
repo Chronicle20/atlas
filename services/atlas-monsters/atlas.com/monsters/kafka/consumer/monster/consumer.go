@@ -336,6 +336,17 @@ func handleUseSkillFieldCommand(l logrus.FieldLogger, ctx context.Context, c fie
 	}
 }
 
+// normalizeSpawnSourceType is the single enforcement point for FR-P1's
+// backward-compatibility rule: an absent or empty spawnSourceType means the
+// legacy cyclic spawn path. Doing it here means no read site downstream has to
+// handle the empty case.
+func normalizeSpawnSourceType(s string) string {
+	if s == "" {
+		return monster.SpawnSourceTypeCyclic
+	}
+	return s
+}
+
 func handleSpawnFieldCommand(l logrus.FieldLogger, ctx context.Context, c fieldCommand[spawnFieldCommandBody]) {
 	if c.Type != CommandTypeSpawnField {
 		return
@@ -344,11 +355,13 @@ func handleSpawnFieldCommand(l logrus.FieldLogger, ctx context.Context, c fieldC
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
 	p := monster.NewProcessor(l, ctx)
 	_, err := p.Create(f, monster.RestModel{
-		MonsterId: c.Body.MonsterId,
-		X:         c.Body.X,
-		Y:         c.Body.Y,
-		Fh:        c.Body.Fh,
-		Team:      c.Body.Team,
+		MonsterId:       c.Body.MonsterId,
+		X:               c.Body.X,
+		Y:               c.Body.Y,
+		Fh:              c.Body.Fh,
+		Team:            c.Body.Team,
+		SpawnSourceType: normalizeSpawnSourceType(c.Body.SpawnSourceType),
+		SpawnSourceId:   c.Body.SpawnSourceId,
 	})
 	if err != nil {
 		l.WithError(err).Errorf("SPAWN_FIELD failed for template [%d] in field [%s].", c.Body.MonsterId, f.Id())

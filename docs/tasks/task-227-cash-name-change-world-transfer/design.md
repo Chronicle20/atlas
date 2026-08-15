@@ -86,7 +86,7 @@ Persisted denormalised name copies, found by grepping `entity.go` across every s
 |---|---|---|
 | atlas-guilds | `members.name` | `services/atlas-guilds/atlas.com/guilds/guild/member/entity.go:16` |
 | atlas-buddies | `buddy.character_name` | `services/atlas-buddies/atlas.com/buddies/buddy/entity.go:28` |
-| atlas-rankings | `ranking.name` | `services/atlas-rankings/atlas.com/rankings/ranking/entity.go:23` |
+| atlas-rankings | `ranking.name` | `services/atlas-rankings/atlas.com/rankings/ranking/entity.go:23` — **no consumer built; see plan.md Task 31 (SKIPPED)**. The recompute upsert (`ranking/processor.go:123`, `ranking/administrator.go:33-41`) already restamps `name` every cycle, so the rename propagates within ~1 recompute tick without Kafka. |
 | atlas-mts | `listing.seller_name` | `services/atlas-mts/atlas.com/mts/listing/entity.go:47` |
 | atlas-merchant | `blacklists.name`, `merchant_visits.name` | `.../blacklist/entity.go:17`, `.../visit/entity.go:17` |
 

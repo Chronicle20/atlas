@@ -2713,11 +2713,39 @@ func TestNameChangedUpdatesEveryOwnersCopyOfTheBuddyName(t *testing.T) {
 
 Verify with `go test -race ./... && go vet ./...` and commit as `feat(task-227): atlas-buddies consumes NAME_CHANGED`.
 
-### Task 31: atlas-rankings consumes `NAME_CHANGED`
+### Task 31: atlas-rankings consumes `NAME_CHANGED` — **SKIPPED (user ruling)**
 
-Same six-step shape, updating `ranking.name` (`services/atlas-rankings/atlas.com/rankings/ranking/entity.go:23`).
+**Not implemented. This is a recorded decision, not an omission.**
 
-A ranking row may not exist for a character yet — assert the no-op case explicitly, as in Task 29's third test. Commit as `feat(task-227): atlas-rankings consumes NAME_CHANGED`.
+As originally written this task read: "Same six-step shape, updating `ranking.name`
+(`services/atlas-rankings/atlas.com/rankings/ranking/entity.go:23`)." Two facts
+found in source during Phase F make that framing wrong.
+
+**1. The name is already refreshed without any consumer.**
+`ranking/processor.go:123` builds each row's `Name` from the character REST fetch,
+and `ranking/administrator.go:33-41` upserts on `(tenant_id, character_id)` with
+`"name"` in its `DoUpdates` column list. The leader-elected recompute task re-runs
+on `baseTick` (`main.go`, one minute) and restamps every row. A rename therefore
+propagates to the rankings table on its own.
+
+**2. atlas-rankings has no Kafka consumer infrastructure at all.** No `kafka/`
+directory, no consumer manager in `main.go` (REST plus the recompute ticker only),
+and `atlas-kafka` appears in its `go.mod` solely as a `replace` line. Unlike Tasks
+29, 30 and 32 — each of which adds one handler to a subscription the service
+already owns — this task would require standing up the whole stack: message
+package, per-service consumer config helper, consumer package, `main.go` bootstrap,
+a `go.mod` require, and broker plus topic environment across all four deploy files.
+
+So the cost is a new Kafka dependency in a service that has deliberately stayed
+free of one, and the benefit is bounded: it shrinks the staleness window, it does
+not create the propagation.
+
+**Residual behaviour, accepted:** after a rename, a character's name in the rankings
+table is stale for at most one recompute cycle (~1 minute). Every other Phase F
+consumer updates immediately.
+
+If this window ever becomes unacceptable, the fix is this task as originally
+written — not a workaround elsewhere.
 
 ### Task 32: atlas-mts consumes `NAME_CHANGED`
 

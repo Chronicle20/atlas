@@ -42,6 +42,12 @@ type RestModel struct {
 	Price         uint32 `json:"price"`
 	TimeLimited   bool   `json:"timeLimited"`
 	TradeBlock    bool   `json:"tradeBlock"`
+	// TradeAvailable is WZ info/tradeAvailable — the item's APPLICABLE KARMA
+	// TYPE, read by CItemInfo::GetAppliableKarmaType (gms_v95 @0x5C09F0) off
+	// BUNDLEITEM/EQUIPITEM+0x14. It is an INT, not a bool: the v87+ client tests
+	// it for EQUALITY against the scissors' own info/karma type, so two scissors
+	// variants gate two different target sets. Absent => 0 => not karma-applicable.
+	TradeAvailable int32 `json:"tradeAvailable"`
 	// NotExtend is info/notExtend — when set, an item-expiration extender
 	// (Magical Sandglass) may not be applied to this equip. The client
 	// enforces it via CItemInfo::IsNotExtendItem; the server re-checks so a

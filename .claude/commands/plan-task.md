@@ -9,13 +9,25 @@ You are starting Phase 3 of the Atlas four-phase development workflow. Argument:
 
 ### Step 1 — Resolve the task
 
-Same fuzzy-match algorithm as `/design-task` Step 1:
+Same as `/design-task` Step 1 — run the resolver, do NOT glob for the folder
+yourself:
 
-1. Glob `docs/tasks/task-*` (main) and `.worktrees/*/docs/tasks/task-*` (sibling worktrees).
-2. Match `$ARGUMENTS` against folder names — exact, number-only (`54`/`054`/`task-54`/`task-054`), or slug fragment.
-3. Zero matches → ask for correction. Multiple matches → list and let the user pick.
-4. If the task lives only on main with no worktree, stop and tell the user the task needs a worktree.
-5. Resolve to `<worktree>/docs/tasks/<id>/`.
+```sh
+tools/task-resolve.sh "$ARGUMENTS"
+```
+
+It prints one tab-separated line: `<task-id>\t<task-dir>\t<worktree>`, and
+accepts exact, number-only (`54`/`054`/`task-54`/`task-054`), or slug-fragment
+identifiers.
+
+**Never glob `.worktrees/*/docs/tasks/task-*`** — every worktree carries a full
+copy of `docs/tasks/`, so that pattern returns thousands of mostly-duplicate
+paths into context to resolve one ID.
+
+Exit codes: **3** → no match, ask for correction. **4** → ambiguous, the
+candidates are on stderr; list them and let the user pick. If `<worktree>` is
+the main repo root the task has no worktree — stop and tell the user it needs
+one.
 
 ### Step 2 — Ensure we're in the right worktree
 
@@ -45,6 +57,47 @@ Use the Skill tool to invoke `superpowers:writing-plans`. Pass:
 - Do NOT auto-invoke execution.
 
 Run the `writing-plans` skill's self-review (placeholder scan, type consistency, spec coverage) before saving.
+
+### Step 5a — Atlas plan-task format (required)
+
+Phase 4 extracts each task section verbatim into the implementer's brief
+(`tools/task-brief.sh` is an awk slice of the `## Task N` heading and its
+body). Whatever you write into a task section IS the brief. Two rules follow
+from that.
+
+**Every task carries a `### Files` block.** You are reading the code to write
+the plan; the implementer should not have to rediscover what you already
+found. Naming the files removes the implementer's discovery phase — the phase
+that inflates context before any editing starts.
+
+```markdown
+### Files
+
+- `services/atlas-x/atlas.com/x/foo/processor.go` — add the Bar method here
+- `services/atlas-x/atlas.com/x/foo/processor_test.go` — new test cases
+- `libs/atlas-constants/item/id.go` — read-only; the constant to use
+
+Patterns to copy: `services/atlas-y/atlas.com/y/baz/processor.go:88` (same shape)
+```
+
+Paths must be repo-relative and must exist (or be explicitly marked `new
+file`). Mark read-only references as such so the implementer does not edit
+them. Include the module root the task's `go build`/`go test` runs from when
+it is not obvious from the paths.
+
+**Size tasks to the implementer budget.** Implementers stop at 120 tool calls
+and hand back `PARTIAL`; the controller then splits the task anyway, at a
+worse moment and a higher cost. Split at plan time instead:
+
+- A task touching **more than ~6 files**, or **more than one service**, gets
+  split — unless the edits are the same mechanical change repeated, which
+  batches fine.
+- A task whose acceptance needs a new REST surface *and* a new Kafka consumer
+  *and* their tests is three tasks.
+- Prefer several small tasks over one large one. The review loop is per task,
+  so smaller tasks also mean tighter review surfaces.
+
+Note in `context.md` any task you deliberately left large, and why.
 
 ### Step 6 — Commit and summarize
 

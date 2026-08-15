@@ -1,16 +1,16 @@
 {
-  "toolSha": "d88e152b881fdc68332142911b36edd93bbd4e3dfabcea5ffac7cf6ae39dc799",
+  "toolSha": "fc32c33ebd310c68c5c221e8a4c95c281f34fe8f01ad539378cc6b6e4bd9e2be",
   "exportHashes": {
-    "gms_v48": "eac096b3ad03902b5d0433cfd147a8d7f1d8419e3209fada1ba917f3f6eb10f6",
-    "gms_v61": "26042fe9649c39c9f917bf62b63dd90f09bf0654814db107fda2e41dddcf8ca3",
-    "gms_v72": "ec8af6e63ac5553577d35193711ff07524eaca8b04a85c7d51bd80771bfe0572",
-    "gms_v79": "81443af5d011b0d02d5c674e4f04fd0963ac1c7b93125aaa2cc51536666634a6",
-    "gms_v83": "6ed340588b4537e1017af39b9e01d1b55e51193f2c2589123c724422382d8ff5",
-    "gms_v84": "c6e0ce15c0d18b3c1ecc8f280b1f44158ab04cb31a154ea878fc89ab09e6ae88",
-    "gms_v87": "ae1b3647aa0b0d8de93a589a462e01a59a08f132a22fb0e90b8975d4f4f821b9",
-    "gms_v92": "f6d4b36885a904ecffa4b2adf2ffaf0908afcadd7966941a7fe68a88cdcab6e4",
-    "gms_v95": "afdbda133ede44a3a6f3431ead49b3954ea4fa0e4961ffa8ff2d3da6896b9d69",
-    "jms_v185": "4deecd5b67f64c5a42269cd1431b96647157ba8ba34e96c56f24e319feb2928a"
+    "gms_v48": "569ba97c736e27918337dec3acdbf1c2ee77981dce06cfa3ab958115ccc359f8",
+    "gms_v61": "fed399d448a192a21f5b8d77a096759b3d6fc08b2ef4ace3c0de4f406a32fc1b",
+    "gms_v72": "742f43342bf6a8eaf57196aac45b4ae5d3ef8f06a2db01e95f78cad6a9b2ae36",
+    "gms_v79": "f241e1d05efb8df5d129f730819457d2d49b277e0fef9053ba3e9aba03efd3d4",
+    "gms_v83": "85e29231ea6d62a24ad6b25ec3e22c515e8935dc73939ac07006d437c6bacc13",
+    "gms_v84": "3f59d58534f6090da8aa6612001a5142b42e9f4d3722a561b2f6d008916632dd",
+    "gms_v87": "92b6dfdccf1f6ae2386f0c21448f5fddbec27f9f981e57635c697a7477a6d3f3",
+    "gms_v92": "03e38f61431d8db3ad9e5dc60dd74027df970a2866d735d5c43e740080b6bfef",
+    "gms_v95": "0d4471b8c2a9d67bfb7f69a181eda79dc75bdfc2541bc4448d876c0e2df7560c",
+    "jms_v185": "a28507ce6427a45f8e54c78c526f012872d3a7b1602700f982f93f4f35816a1d"
   },
   "rows": [
     {
@@ -18346,6 +18346,59 @@
     },
     {
       "kind": "op",
+      "op": "PET_NAMECHANGE",
+      "packet": "pet/clientbound/PetNameChanged",
+      "direction": "clientbound",
+      "tier1": true,
+      "fnames": [
+        "CPet::OnNameChanged",
+        "CPet__OnNameChanged_recv_0xB0"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 113
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 131
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 157
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 161
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 172
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 176
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 185
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 200
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 203
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 178
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "PET_CHAT",
       "packet": "pet/serverbound/PetChatRequest",
       "direction": "serverbound",
@@ -21076,67 +21129,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 126
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "PET_NAMECHANGE",
-      "direction": "clientbound",
-      "tier1": false,
-      "fnames": [
-        "CPet::OnNameChanged",
-        "CPet__OnNameChanged_recv_0xB0"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 131
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 157
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 161
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 172
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 176
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 185
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 200
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 203
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 178
         }
       }
     },
@@ -44489,6 +44481,62 @@
         },
         "jms_v185": {
           "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "cash/serverbound/CashItemUsePetNameTag",
+      "tier1": true,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v92": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": -1
         }
       }

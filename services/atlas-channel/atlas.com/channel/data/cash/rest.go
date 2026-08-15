@@ -22,6 +22,10 @@ type RestModel struct {
 	// Meso is the 0520 meso-sack award amount (atlas-data info/meso). Absent
 	// or 0 means "no payout" and the type-19 handler rejects the use.
 	Meso uint32 `json:"meso"`
+	// Karma is the SCISSORS' OWN WZ info/karma type (atlas-data cash/rest.go).
+	// Absent or 0 means untyped scissors, under which the eligibility predicate
+	// reduces to "is the target karma-applicable at all" — the gms_v83 model.
+	Karma int32 `json:"karma"`
 	// Npc is the WZ info/npc value served by atlas-data: the NPC template a
 	// remote-merchant cash item (classification 545) opens. 0 when none.
 	Npc uint32 `json:"npc"`

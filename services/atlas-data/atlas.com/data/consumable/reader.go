@@ -59,7 +59,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m.Create = uint32(i.GetIntegerWithDefault("create", 0))
 			m.MasterLevel = uint32(i.GetIntegerWithDefault("masterLevel", 0))
 			m.ReqSkillLevel = uint32(i.GetIntegerWithDefault("reqSkillLevel", 0))
-			m.TradeAvailable = i.GetBool("tradeAvailable", false)
+			m.TradeAvailable = i.GetIntegerWithDefault("tradeAvailable", 0)
 			m.NoCancelMouse = i.GetBool("noCancelMouse", false)
 			m.Pquest = i.GetBool("pquest", false)
 			m.Left = i.GetIntegerWithDefault("left", 0)

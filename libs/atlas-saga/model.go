@@ -38,11 +38,13 @@ const (
 	SkillBookUse          Type = "skill_book_use"
 	ItemTagUse            Type = "item_tag_use"
 	SealingLockUse        Type = "sealing_lock_use"
+	KarmaScissorsUse      Type = "karma_scissors_use"
 	IncubatorUse          Type = "incubator_use"
 	ExpirationExtenderUse Type = "expiration_extender_use"
 	PointReset            Type = "point_reset"
 	MegaphoneUse          Type = "megaphone_use"
 	MesoSackUse           Type = "meso_sack_use"
+	PetNameTagUse         Type = "pet_name_tag_use"
 	// RemoteMerchant is the classification-545 cash item flow: open an NPC's
 	// shop from anywhere, then consume the item — never the other way round
 	// (task-221).
@@ -96,6 +98,7 @@ const (
 	IncreaseBuddyCapacity  Action = "increase_buddy_capacity"
 	GainCloseness          Action = "gain_closeness"
 	EvolvePet              Action = "evolve_pet"
+	RenamePet              Action = "rename_pet"
 	TransferAP             Action = "transfer_ap"
 	TransferSP             Action = "transfer_sp"
 
@@ -225,8 +228,9 @@ const (
 	CreateNote Action = "create_note"
 
 	// Item tag / sealing lock / incubator actions
-	SetAssetOwner  Action = "set_asset_owner"
-	ApplyAssetLock Action = "apply_asset_lock"
+	SetAssetOwner   Action = "set_asset_owner"
+	ApplyAssetLock  Action = "apply_asset_lock"
+	ApplyAssetKarma Action = "apply_asset_karma"
 	// ExtendAssetExpiration pushes a time-limited asset's expiration out. It
 	// is deliberately NOT ApplyAssetLock: that action stamps FlagLock and
 	// rejects an unlocked asset carrying a non-zero expiration, which is

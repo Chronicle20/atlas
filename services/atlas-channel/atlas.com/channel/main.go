@@ -729,6 +729,7 @@ func produceWriters() []string {
 		charcb.CharacterSkillMacroWriter,
 		petcb.PetExcludeResponseWriter,
 		petcb.PetCashFoodResultWriter,
+		petcb.PetNameChangedWriter,
 		charcb.CharacterKeyMapAutoHpWriter,
 		charcb.CharacterKeyMapAutoMpWriter,
 		npccb.NPCShopWriter,

@@ -4,6 +4,7 @@ import (
 	"atlas-inventory/asset"
 	"atlas-inventory/data/cash"
 	"atlas-inventory/data/equipment"
+	"atlas-inventory/data/tradeability"
 	"atlas-inventory/drop"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/compartment"
@@ -38,6 +39,7 @@ import (
 type Processor interface {
 	WithTransaction(db *gorm.DB) *ProcessorImpl
 	WithAssetProcessor(ap asset.Processor) *ProcessorImpl
+	WithTradeabilityProcessor(tp tradeability.Processor) *ProcessorImpl
 	WithCashProcessor(cp cash.Processor) *ProcessorImpl
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	GetById(id uuid.UUID) (Model, error)
@@ -99,33 +101,37 @@ type Processor interface {
 	SetAssetOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error
 	ApplyAssetLockAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
 	ApplyAssetLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
+	ApplyAssetKarmaAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error
+	ApplyAssetKarma(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error
 	ExtendAssetExpirationAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error
 	ExtendAssetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error
 }
 
 type ProcessorImpl struct {
-	l                  logrus.FieldLogger
-	ctx                context.Context
-	db                 *gorm.DB
-	t                  tenant.Model
-	assetProcessor     asset.Processor
-	dropProcessor      drop.Processor
-	equipmentProcessor equipment.Processor
-	cashProcessor      cash.Processor
-	producer           producer.Provider
+	l                     logrus.FieldLogger
+	ctx                   context.Context
+	db                    *gorm.DB
+	t                     tenant.Model
+	assetProcessor        asset.Processor
+	dropProcessor         drop.Processor
+	equipmentProcessor    equipment.Processor
+	tradeabilityProcessor tradeability.Processor
+	cashProcessor         cash.Processor
+	producer              producer.Provider
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	p := &ProcessorImpl{
-		l:                  l,
-		ctx:                ctx,
-		db:                 db,
-		t:                  tenant.MustFromContext(ctx),
-		assetProcessor:     asset.NewProcessor(l, ctx, db),
-		dropProcessor:      drop.NewProcessor(l, ctx),
-		equipmentProcessor: equipment.NewProcessor(l, ctx),
-		cashProcessor:      cash.NewProcessor(l, ctx),
-		producer:           producer.ProviderImpl(l)(ctx),
+		l:                     l,
+		ctx:                   ctx,
+		db:                    db,
+		t:                     tenant.MustFromContext(ctx),
+		assetProcessor:        asset.NewProcessor(l, ctx, db),
+		dropProcessor:         drop.NewProcessor(l, ctx),
+		equipmentProcessor:    equipment.NewProcessor(l, ctx),
+		tradeabilityProcessor: tradeability.NewProcessor(l, ctx),
+		cashProcessor:         cash.NewProcessor(l, ctx),
+		producer:              producer.ProviderImpl(l)(ctx),
 	}
 	return p
 }
@@ -134,43 +140,61 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) WithTransaction(db *gorm.DB) *ProcessorImpl {
 	return &ProcessorImpl{
-		l:                  p.l,
-		ctx:                p.ctx,
-		db:                 db,
-		t:                  p.t,
-		assetProcessor:     p.assetProcessor,
-		dropProcessor:      p.dropProcessor,
-		equipmentProcessor: p.equipmentProcessor,
-		cashProcessor:      p.cashProcessor,
-		producer:           p.producer,
+		l:                     p.l,
+		ctx:                   p.ctx,
+		db:                    db,
+		t:                     p.t,
+		assetProcessor:        p.assetProcessor,
+		dropProcessor:         p.dropProcessor,
+		equipmentProcessor:    p.equipmentProcessor,
+		tradeabilityProcessor: p.tradeabilityProcessor,
+		cashProcessor:         p.cashProcessor,
+		producer:              p.producer,
 	}
 }
 
 func (p *ProcessorImpl) WithAssetProcessor(ap asset.Processor) *ProcessorImpl {
 	return &ProcessorImpl{
-		l:                  p.l,
-		ctx:                p.ctx,
-		db:                 p.db,
-		t:                  p.t,
-		assetProcessor:     ap,
-		dropProcessor:      p.dropProcessor,
-		equipmentProcessor: p.equipmentProcessor,
-		cashProcessor:      p.cashProcessor,
-		producer:           p.producer,
+		l:                     p.l,
+		ctx:                   p.ctx,
+		db:                    p.db,
+		t:                     p.t,
+		assetProcessor:        ap,
+		dropProcessor:         p.dropProcessor,
+		equipmentProcessor:    p.equipmentProcessor,
+		tradeabilityProcessor: p.tradeabilityProcessor,
+		cashProcessor:         p.cashProcessor,
+		producer:              p.producer,
+	}
+}
+
+func (p *ProcessorImpl) WithTradeabilityProcessor(tp tradeability.Processor) *ProcessorImpl {
+	return &ProcessorImpl{
+		l:                     p.l,
+		ctx:                   p.ctx,
+		db:                    p.db,
+		t:                     p.t,
+		assetProcessor:        p.assetProcessor,
+		dropProcessor:         p.dropProcessor,
+		equipmentProcessor:    p.equipmentProcessor,
+		tradeabilityProcessor: tp,
+		cashProcessor:         p.cashProcessor,
+		producer:              p.producer,
 	}
 }
 
 func (p *ProcessorImpl) WithCashProcessor(cp cash.Processor) *ProcessorImpl {
 	return &ProcessorImpl{
-		l:                  p.l,
-		ctx:                p.ctx,
-		db:                 p.db,
-		t:                  p.t,
-		assetProcessor:     p.assetProcessor,
-		dropProcessor:      p.dropProcessor,
-		equipmentProcessor: p.equipmentProcessor,
-		cashProcessor:      cp,
-		producer:           p.producer,
+		l:                     p.l,
+		ctx:                   p.ctx,
+		db:                    p.db,
+		t:                     p.t,
+		assetProcessor:        p.assetProcessor,
+		dropProcessor:         p.dropProcessor,
+		equipmentProcessor:    p.equipmentProcessor,
+		tradeabilityProcessor: p.tradeabilityProcessor,
+		cashProcessor:         cp,
+		producer:              p.producer,
 	}
 }
 
@@ -1094,6 +1118,62 @@ func (p *ProcessorImpl) ApplyAssetLock(mb *message.Buffer) func(transactionId uu
 			return err
 		}
 		p.l.Debugf("Character [%d] applied lock to asset [%d] in inventory [%d] slot [%d].", characterId, a.Id(), inventoryType, slot)
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) ApplyAssetKarmaAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ApplyAssetKarma(buf)(transactionId, characterId, inventoryType, slot, scissorsKarma, clear)
+		})
+	})
+}
+
+// ApplyAssetKarma resolves the asset addressed by (inventoryType, slot) and
+// applies — or, when clear is set, removes — its karma mark. The clear path is
+// the saga compensator's; it runs no gates and reads no item data.
+func (p *ProcessorImpl) ApplyAssetKarma(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error {
+		p.l.Debugf("Character [%d] attempting to apply karma (clear [%t]) to asset in inventory [%d] slot [%d].", characterId, clear, inventoryType, slot)
+		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock.Lock()
+		defer invLock.Unlock()
+
+		c, err := p.GetByCharacterAndType(characterId)(inventoryType)
+		if err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to apply karma to asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return err
+		}
+		a, err := p.assetProcessor.WithTransaction(p.db).GetBySlot(c.Id(), slot)
+		if err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to apply karma to asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return err
+		}
+
+		if clear {
+			if err := p.assetProcessor.WithTransaction(p.db).ClearKarma(mb)(transactionId, characterId)(a); err != nil {
+				p.l.WithError(err).Errorf("Character [%d] unable to clear karma on asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+				return err
+			}
+			p.l.Debugf("Character [%d] cleared karma on asset [%d] in inventory [%d] slot [%d].", characterId, a.Id(), inventoryType, slot)
+			return nil
+		}
+
+		// Gates 2 and 4 need item data. An unreadable lookup is a REFUSAL, never
+		// a permissive default — the same contract atlas-trades holds itself to
+		// for tradeBlock.
+		d, err := p.tradeabilityProcessor.Get(inventoryType, item.Id(a.TemplateId()))
+		if err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to read item data for template [%d]; refusing the karma mark rather than assuming eligibility.", characterId, a.TemplateId())
+			return err
+		}
+
+		if err := p.assetProcessor.WithTransaction(p.db).ApplyKarma(mb)(transactionId, characterId)(a, scissorsKarma, d); err != nil {
+			p.l.WithError(err).Errorf("Character [%d] unable to apply karma to asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
+			return err
+		}
+		p.l.Debugf("Character [%d] applied karma to asset [%d] in inventory [%d] slot [%d].", characterId, a.Id(), inventoryType, slot)
 		return nil
 	}
 }

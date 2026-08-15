@@ -57,6 +57,12 @@ type Processor interface {
 	UpdateBuddyChannel(mb *message.Buffer) func(characterId uint32, worldId world.Id, channelId int8) error
 	UpdateBuddyShopStatusAndEmit(characterId uint32, worldId world.Id, inShop bool) error
 	UpdateBuddyShopStatus(mb *message.Buffer) func(characterId uint32, worldId world.Id, inShop bool) error
+	// UpdateBuddyNameAndEmit propagates a character's new name to every
+	// owner who holds that character as a buddy, emitting BUDDY_UPDATED per
+	// affected owner (task-227). It only writes/emits for owners whose
+	// buddy list actually has this row and whose stored name differs.
+	UpdateBuddyNameAndEmit(characterId uint32, worldId world.Id, name string) error
+	UpdateBuddyName(mb *message.Buffer) func(characterId uint32, worldId world.Id, name string) error
 	// IncreaseCapacityAndEmit increases buddy list capacity and emits appropriate status events.
 	// This method validates the new capacity and updates the database in a transaction.
 	// On success, emits a CAPACITY_CHANGE event. On failure, emits an ERROR event.
@@ -691,6 +697,36 @@ func (p *ProcessorImpl) UpdateBuddyShopStatus(mb *message.Buffer) func(character
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Unable to update buddy shop status for character [%d].", characterId)
+			return txErr
+		}
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) UpdateBuddyNameAndEmit(characterId uint32, worldId world.Id, name string) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).UpdateBuddyName(buf)(characterId, worldId, name)
+		})
+	})
+}
+
+func (p *ProcessorImpl) UpdateBuddyName(mb *message.Buffer) func(characterId uint32, worldId world.Id, name string) error {
+	return func(characterId uint32, worldId world.Id, name string) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			updates, err := updateBuddyName(tx, characterId, name)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to update name to [%s] for character [%d] across buddy lists.", name, characterId)
+				return err
+			}
+
+			for _, u := range updates {
+				_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyUpdatedStatusEventProvider(character2.Id(u.OwnerId), worldId, character2.Id(characterId), u.Group, name, u.ChannelId, u.InShop))
+			}
+			return nil
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Unable to update buddy name for character [%d].", characterId)
 			return txErr
 		}
 		return nil

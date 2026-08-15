@@ -8,6 +8,8 @@ tools/verify.sh              # full gate — what you run before opening a PR
 tools/verify.sh --quick      # inner loop: build/vet/guards, no docker, no -race
 tools/verify.sh --all        # ignore change detection, run everything
 tools/verify.sh --no-docker  # everything except the bake
+
+tools/verify.sh --quick --base <rev>   # iteration gate: only the increment
 ```
 
 The script mirrors the jobs in `.github/workflows/pr-validation.yml`. **CI is the
@@ -20,12 +22,36 @@ second copy of it in `CLAUDE.md` or anywhere else.
 
 ---
 
+## The iteration gate
+
+The default change base is the merge base with `origin/main` — the **whole
+branch**. That is right for the pre-PR gate and wrong for a per-task gate run
+twenty times on the same branch, because a single `libs/` commit fans every
+later run out to all 86 modules (see below). On task-227 that made each
+`--quick` run ~11 minutes instead of ~1, for 24 hours, silently.
+
+For a gate you run per task, scope it to the increment:
+
+```sh
+tools/verify.sh --quick --base <last-commit-you-already-gated>
+```
+
+Measured on the task-227 branch: `--quick` resolved **86 changed Go modules**;
+`--quick --base HEAD~1` resolved **2**. The script now prints a warning when
+the fan-out happens on an un-narrowed base, so this can no longer be silent.
+
+The narrowing is safe only because every commit in the range gets gated by
+*some* run — the increment's base must be the last commit that actually passed,
+not blindly `HEAD~1`. The flagless pre-PR run always uses the merge base and
+covers the branch as a whole regardless.
+
 ## The Go layer
 
 Per changed module: `go build ./...`, `go vet ./...`, `go test -race ./...`.
 
 A change to `go.work` or a shared lib fans out to every module, and the script
-expands the set accordingly.
+expands the set accordingly: services consume libs through the workspace, so a
+lib edit can break a service with no changed file of its own.
 
 `go vet` runs full-module here on purpose. The lint guard's `govet` is
 diff-gated (`--new-from-rev`), so it will not see a pre-existing vet failure in
@@ -72,7 +98,24 @@ Analyzer- and script-backed invariants. Each exists because the failure it
 catches is silent — no build error, no test failure, just wrong behavior at
 runtime.
 
-### Always run
+### Go analyzer guards
+
+Gated on "a Go module was affected." Locally that is `tools/verify.sh`'s
+`.go`-touched check; in CI it is the affected-module matrices, plus a
+`tools/`-changed signal so that editing an analyzer still forces a full sweep of
+code that did not change. An analyzer cannot find a new violation in a diff that
+contains no Go.
+
+CI runs all four through a single job (`go-analyzer-guards`) driving
+`tools/go-analyzer-guards.sh`, which links every analyzer into one `unitchecker`
+binary. They were four jobs until a six-file docs-only PR spent its entire
+7-minute run on them: four runners each cold-compiling the same dependency graph
+to analyze the same 64 modules, because type-checking — not analysis — is where
+the time goes. What each guard detects and what each guard scans are unchanged;
+`tools/atlasguards/guards.go` holds the services-only vs services+libs split.
+
+The per-guard `tools/<name>-guard.sh` entry points below remain the local
+iteration path and the single-guard escape hatch.
 
 | Guard | Invariant | Silent failure it prevents |
 |---|---|---|
@@ -80,7 +123,17 @@ runtime.
 | `goroutine-guard.sh` | No bare `go` statements outside `libs/atlas-routine` | Unsupervised goroutine, lost panic (RR-6, task-115). Escape hatch: `//goroutine-guard:allow` |
 | `outbox-guard.sh` | Outbox write discipline | Event published outside the transaction |
 | `buff-duration-guard.sh` | No seconds→ms scaling in `COMMAND_TOPIC_CHARACTER_BUFF` `duration` fields | The unit contract has been flipped three times in prose alone. Owned by `services/atlas-buffs/.../kafka/message/character/kafka.go` (`ApplyCommandBody.Duration` — **milliseconds**). Fingerprints json tag sets, not type names, because the body struct is duplicated under seven local names. Escape hatch: `//buffdurationguard:allow <justification>` (task-190 FR-3.2) |
-| `skill-job-id-guard.sh` | No raw `==`/`!=`/`case`/`Is(`/`IsA(` against version-divergent job/skill `…Id` constants | `job.GmId` (500) means Gm at v0.48 but Pirate at v0.61+. Use the version-aware resolver `constants.For(region,major,minor).Job.Resolve` / `.Skill.Resolve`. The banned list is derived from `docs/tasks/task-187-version-aware-id-semantics/audit/divergences.csv`, so it grows as future audit passes add divergent ids |
+
+### Always run
+
+`skill-job-id-guard.sh` — no raw `==`/`!=`/`case`/`Is(`/`IsA(` against
+version-divergent job/skill `…Id` constants. `job.GmId` (500) means Gm at v0.48
+but Pirate at v0.61+; use the version-aware resolver
+`constants.For(region,major,minor).Job.Resolve` / `.Skill.Resolve`. The banned
+list is derived from
+`docs/tasks/task-187-version-aware-id-semantics/audit/divergences.csv`, so it
+grows as future audit passes add divergent ids. Pure shell + python3 — it greps
+rather than type-checks, so it is seconds, not minutes, and is not worth gating.
 
 ### Path-gated
 
@@ -118,6 +171,7 @@ leading doc comment, which names the mirror direction, may differ.
 | `trade-contract-mirror-guard.sh` | atlas-trades `kafka/message/trade/kafka.go` | atlas-channel |
 | `mist-contract-mirror-guard.sh` | atlas-maps `kafka/message/mist/kafka.go` | atlas-channel — a drifted mirror yields a mist with no bounds, no lifetime, no recovery magnitude and no party scope (task-218) |
 | `npc-shop-contract-mirror-guard.sh` | atlas-npc-shops `kafka/message/shops/kafka.go` | atlas-channel, atlas-saga-orchestrator |
+| `npc-conversation-contract-mirror-guard.sh` | atlas-npc-conversations `kafka/message/npc/kafka.go` | atlas-saga-orchestrator — a drifted mirror yields a conversation start with no item id, no avatar, or no transactionId, so the awaiting saga step never completes (task-230) |
 
 **Deploy / versions** — `gen-lb-ports.sh --check` and `check-version-coverage.sh`,
 when `deploy/`, `tools/gen-lb-ports.sh`, or a `versions.json` changed. A new
@@ -161,6 +215,14 @@ superset of the other; CI is the authority for everything it does run.
   The analyzer guards' own sources are compiled as a side effect of building
   each guard, and `goroutineguard`/`buffdurationguard` self-test on every run;
   `rediskeyguard` and `outboxguard` have no test pass anywhere.
+- `.github/config/services.json` lists **9 of the 22 Go modules under `libs/`**
+  (it covers `services/` exactly, 64 of 64). Everything CI drives off the
+  libraries matrix — `test-go-libraries`, `lint-go` — therefore does not see the
+  other 13 at all. The gate's `changed_modules()` discovers modules with `find`
+  and does cover them, so this is a CI-side hole, not a local one. It is also
+  why `go-analyzer-guards` scopes its `services/` pass to the matrix but always
+  sweeps all of `libs/`: scoping that pass to the matrix would have quietly
+  narrowed `goroutineguard` and `buffdurationguard` coverage by 13 modules.
 
 Closing the first gap means adding three CI jobs; until then, running the gate
 locally is the only thing standing between a drifted mirror and production.

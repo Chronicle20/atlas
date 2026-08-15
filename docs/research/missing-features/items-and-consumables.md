@@ -32,12 +32,11 @@ Legend for scope: S = one handler/branch, M = handler + service logic + events, 
 - **Atlas absence:** grep `water.?of.?life|WaterOfLife` over `services/`+`libs/`: zero. STATUS.md `WATER_OF_LIFE` ❌ (613). Scope: **S/M** (atlas-pets has expiration already).
 
 ### 7. Remaining one-off cash types
-All mapped in `GetCashSlotItemType` but unimplemented (fall to warn); Cosmic `UseCashItemHandler` branch given in parentheses. (Transformation/morph coupons, formerly the first row here, are implemented — see Present-but-partial #6.)
+All mapped in `GetCashSlotItemType` but unimplemented (fall to warn); Cosmic `UseCashItemHandler` branch given in parentheses. (Transformation/morph coupons, formerly the first row here, are implemented — see Present-but-partial #6. Pet name tag, formerly a row here, is implemented — see Present-but-partial #7.)
 | Feature | Item(s) (v83 WZ) | Cosmic branch | Scope |
 |---|---|---|---|
 | Meso sacks | `Cash/0520.img.xml` (3) | 520 (gainMeso) | S |
 | Congratulatory song / jukebox trigger | `Cash/0510` (1) | 510 (musicChange broadcast) — Atlas `PLAY_JUKEBOX` writer ✅ (STATUS 192) but grep `PlayJukebox`: no emitter | S |
-| Pet name tag | 5170000 (`Cash/0517`) | 517 | S/M |
 | Pet skill items (add/remove pet loot skills) | category 519 | Cosmic petSkill flags | M |
 | Duey quick-delivery item | `Cash/0533` (1) | 533 | S (duey itself is economy theme) |
 | Name change / world transfer *items* | `Cash/0540` | 540 | M (note: cash-shop *purchase* codecs exist: `libs/atlas-packet/cash/serverbound/shop_operation_buy_name_change.go`, `..._buy_world_transfer.go`) |
@@ -126,6 +125,9 @@ Works: success/curse rolls, stat lines, slot/level bookkeeping, white scroll pro
 `CharacterCashItemUseHandle` now routes classification-530 items (`Cash/0530.img.xml`) into `ConsumeMorphCoupon` (task-219): `atlas-data`'s cash reader parses `spec/morph`+`spec/hp`, and `atlas-consumables` applies the morph plus an HP heal through the existing effect pipeline wherever the tenant's cash WZ carries a `Cash/0530` item with `spec/morph`. Two caveats keep it from being unconditionally live:
 - **Inert on gms_12** — `template_gms_12_1.json` does not register `CharacterCashItemUseHandle` at all, the same pre-existing gap that already affects the whole cash-item-use family (Present-but-partial #1); not a regression from this task.
 - **Inert for any tenant whose cash WZ was ingested before this change** — the reader change materialises `morph`/`hp` only for newly ingested data, so a pre-existing tenant's stored `5300000`-family items still lack those spec fields until re-ingested. Tracked as an operational follow-up in `docs/TODO.md` ("task-219 follow-up: cash WZ re-ingest for morph-coupon `spec/morph`/`spec/hp`"); until that runs, a coupon use on an un-reingested tenant consumes the item and applies nothing.
+
+### 7. Pet name tag: implemented in task-224, across all ten GMS/JMS templates
+`CharacterCashItemUseHandle` now routes classification-517 items (`Cash/0517.img.xml`, item `5170000`) into a rename saga (`PetNameTagUse`): the client-supplied name is validated (4–12 characters, trimmed), the lead pet's name is updated via atlas-pets' `RENAME` command, and `pet/clientbound/PetNameChanged` (`libs/atlas-packet/pet/clientbound/name_changed.go`) broadcasts the new name to the map. Unlike the morph coupon (#6), this feature reads no WZ `spec` value at all — `Cash/0517.img.xml` carries only `z`/`slotMax`/`cash`/icon canvases — so there is no ingest-order caveat. `PetNameChanged` is registered in all ten seed templates that carry a `PET_NAMECHANGE` matrix column (`gms_48`, `gms_61`, `gms_72`, `gms_79`, `gms_83`, `gms_84`, `gms_87`, `gms_92`, `gms_95`, `jms_185` — `gms_12` is outside this feature's version set entirely, unrelated to the separate gms_12 `CharacterCashItemUseHandle` gap in Present-but-partial #1). `PET_NAMECHANGE` is ✅ on all ten matrix columns (STATUS.md row 205) — including `gms_48`, where the opcode is present in the client (`CUser::OnPetPacket` case `'q'` / opcode 0x071 → `CPet::OnNameChanged`), contrary to an earlier plan-time assumption that v48 lacked it. See `docs/tasks/task-224-pet-name-tag/rollout.md` for the required live-tenant socket-config reconciliation step before enabling this on any existing tenant.
 
 ---
 

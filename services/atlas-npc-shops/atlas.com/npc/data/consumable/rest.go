@@ -28,7 +28,7 @@ type RestModel struct {
 	Create          uint32             `json:"create"`
 	MasterLevel     uint32             `json:"masterLevel"`
 	ReqSkillLevel   uint32             `json:"reqSkillLevel"`
-	TradeAvailable  bool               `json:"tradeAvailable"`
+	TradeAvailable  int32              `json:"tradeAvailable"`
 	NoCancelMouse   bool               `json:"noCancelMouse"`
 	Pquest          bool               `json:"pquest"`
 	Left            int32              `json:"left"`

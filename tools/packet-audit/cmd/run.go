@@ -1125,6 +1125,8 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Movement", pkg: "pet", dir: csvpkg.DirClientbound}}
 	case "CPet::OnAction":
 		return []candidate{{name: "Chat", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CPet::OnNameChanged":
+		return []candidate{{name: "NameChanged", pkg: "pet", dir: csvpkg.DirClientbound}}
 	case "CPet::OnActionCommand":
 		return []candidate{{name: "CommandResponse", pkg: "pet", dir: csvpkg.DirClientbound}}
 	case "CPet::OnLoadExceptionList":
@@ -2208,6 +2210,17 @@ func candidatesFromFName(fname string) []candidate {
 	// exist from v72 up; v48/v61 lack the opcode (generic item-use path).
 	case "CWvsContext::SendLotteryItemUseRequest":
 		return []candidate{{name: "LotteryItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// Scripted items (task-230). Struct ScriptedItem in inventory/serverbound;
+	// body updateTime(uint32) + slot(int16) + itemId(int32). Opcode exists v72
+	// through jms_v185; v12/v48/v61 lack the sender entirely.
+	case "CWvsContext::SendScriptRunItemRequest":
+		return []candidate{{name: "ScriptedItem", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// Remote-NPC item use (task-230), covering the 239xxxx and 545xxxx
+	// families. Struct NpcItemUse in inventory/serverbound; body slot(int16) +
+	// itemId(int32) with NO leading updateTime. Opcode exists v61 through
+	// jms_v185; v12/v48 lack it.
+	case "CWvsContext::SendSelectNpcItemUseRequest":
+		return []candidate{{name: "NpcItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	// USE_SKILL_BOOK (task-125): CWvsContext::SendSkillLearnItemUseRequest,
 	// v83 @0xa0a1b2 IDA-verified (already named in the IDB, opcode 0x52 via
 	// COutPacket::COutPacket(&pkt, 0x52)). Body: Encode4 updateTime +
@@ -2260,6 +2273,14 @@ func candidatesFromFName(fname string) []candidate {
 			// nothing else (jms_v185 @0xaf1a42, entry 0xaf16df) — see
 			// item_use_pet_skill_test.go for the full decompile trail.
 			{name: "ItemUsePetSkill", dir: csvpkg.DirServerbound, pkg: "cash"},
+			// Pet Name Tag (task-224 fix round 1, cash-slot type 17):
+			// jumptable case-17 arm entry @0xa0ba15 collects the new name via a
+			// CUtilDlgEx input dialog, then does exactly ONE COutPacket::EncodeStr
+			// @0xa0bcb5 before falling through (jmp loc_A0E9EC) to the shared
+			// dispatcher tail — the same "one sub-body encode, shared trailing
+			// update_time" shape as every other sibling in this list. See
+			// item_use_pet_name_tag_test.go for the byte fixtures.
+			{name: "ItemUsePetNameTag", dir: csvpkg.DirServerbound, pkg: "cash"},
 		}
 	// Item Megaphone (cash-slot type 14): the REAL send function, separate
 	// from the main dispatcher above (task-123 phase 19, gms_v95

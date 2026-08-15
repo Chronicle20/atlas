@@ -763,6 +763,15 @@
         ]
       },
       {
+        "opCode": "0x66",
+        "validator": "LoggedInValidator",
+        "handler": "NpcItemUseHandle",
+        "fname": "CWvsContext::SendSelectNpcItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x68",
         "validator": "LoggedInValidator",
         "handler": "SueCharacter",
@@ -2911,6 +2920,14 @@
         "opCode": "0x82",
         "writer": "PetChat",
         "fname": "CPet::OnAction",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x83",
+        "writer": "PetNameChanged",
+        "fname": "CPet::OnNameChanged",
         "services": [
           "channel"
         ]

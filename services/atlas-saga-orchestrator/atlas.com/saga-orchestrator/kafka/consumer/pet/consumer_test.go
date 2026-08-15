@@ -100,3 +100,75 @@ func TestHandleClosenessChangedEvent_DoesNotCompleteAwardAssetStep(t *testing.T)
 
 	assertDebugReason(t, hook, saga.SkipReasonActionMismatch)
 }
+
+// buildRenamePetSaga returns a pending pet_name_tag_use saga with a rename_pet
+// step, matching the shape TestRenamePetStepCompletesOnMatchingTransaction
+// (saga/pet_name_tag_accept_event_test.go) builds for the same action.
+func buildRenamePetSaga(t *testing.T, tx uuid.UUID) saga.Saga {
+	t.Helper()
+	s, err := saga.NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(saga.PetNameTagUse).
+		SetInitiatedBy("test").
+		AddStep("rename_pet", saga.Pending, saga.RenamePet, saga.RenamePetPayload{
+			CharacterId: 1, PetId: 4242, Name: "Renamed", PreviousName: "Original",
+		}).
+		Build()
+	require.NoError(t, err)
+	return s
+}
+
+// TestHandleNameChangedEvent_IgnoresWrongEventType verifies the leading type
+// guard in handleNameChangedEvent (consumer.go): a StatusEvent whose Type is
+// not NAME_CHANGED must not touch the saga at all, even when the body's
+// TransactionId matches a pending rename_pet step.
+func TestHandleNameChangedEvent_IgnoresWrongEventType(t *testing.T) {
+	logger, _ := logtest.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+	ctx := mustTenantCtx(t)
+
+	tx := uuid.New()
+	putTestSaga(t, ctx, buildRenamePetSaga(t, tx))
+
+	handleNameChangedEvent(logger, ctx, pet2.StatusEvent[pet2.NameChangedStatusEventBody]{
+		Type:    pet2.StatusEventTypeClosenessChanged,
+		PetId:   4242,
+		OwnerId: 1,
+		Body:    pet2.NameChangedStatusEventBody{Name: "Renamed", PreviousName: "Original", TransactionId: tx},
+	})
+
+	got, err := saga.NewProcessor(logger, ctx).GetById(tx)
+	require.NoError(t, err)
+	assert.Equal(t, saga.Pending, got.Steps()[0].Status(), "rename_pet step must not be completed by a non-NAME_CHANGED event type")
+}
+
+// TestHandleNameChangedEvent_IgnoresNilTransactionId verifies the second
+// guard in handleNameChangedEvent: a NAME_CHANGED event with a nil
+// TransactionId (a non-saga rename, e.g. an admin/GM rename via the operator
+// PATCH endpoint) must not attempt saga completion.
+func TestHandleNameChangedEvent_IgnoresNilTransactionId(t *testing.T) {
+	logger, hook := logtest.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+	ctx := mustTenantCtx(t)
+
+	tx := uuid.New()
+	putTestSaga(t, ctx, buildRenamePetSaga(t, tx))
+
+	handleNameChangedEvent(logger, ctx, pet2.StatusEvent[pet2.NameChangedStatusEventBody]{
+		Type:    pet2.StatusEventTypeNameChanged,
+		PetId:   4242,
+		OwnerId: 1,
+		Body:    pet2.NameChangedStatusEventBody{Name: "Renamed", PreviousName: "Original", TransactionId: uuid.Nil},
+	})
+
+	got, err := saga.NewProcessor(logger, ctx).GetById(tx)
+	require.NoError(t, err)
+	assert.Equal(t, saga.Pending, got.Steps()[0].Status(), "rename_pet step must not be completed by a nil-TransactionId event")
+
+	for _, e := range hook.AllEntries() {
+		if e.Message == "Pet name changed event for pet [4242] has no transaction ID, skipping saga completion" {
+			return
+		}
+	}
+	t.Fatalf("expected the nil-TransactionId debug log; got: %+v", hook.AllEntries())
+}

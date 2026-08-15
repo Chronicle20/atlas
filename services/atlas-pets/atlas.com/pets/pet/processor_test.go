@@ -1795,3 +1795,119 @@ func TestProcessor_SetSkill(t *testing.T) {
 		t.Errorf("Flag after unknown key = %d, want 256", m.Flag())
 	}
 }
+
+func TestRenameAppliesAndEmits(t *testing.T) {
+	// Arrange: use the same DB + context setup the sibling tests in this file use.
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+	created, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Original", 1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	// Act
+	err = p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId(), "Renamed")
+	// Assert
+	if err != nil {
+		t.Fatalf("RenameAndEmit = %v", err)
+	}
+	got, err := p.GetById(created.Id())
+	if err != nil {
+		t.Fatalf("GetById = %v", err)
+	}
+	if got.Name() != "Renamed" {
+		t.Fatalf("Name() = %q, want %q", got.Name(), "Renamed")
+	}
+}
+
+// FR-5.5: Kafka is at-least-once. A redelivered RENAME whose value is already
+// applied must complete, not error — the orchestrator's rename_pet step
+// completes on the re-emitted event.
+func TestRenameIsIdempotent(t *testing.T) {
+	db := testDatabase(t)
+	p := pet.NewProcessor(testLogger(), testContext(), db)
+	created, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Original", 1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	if err := p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId(), "Renamed"); err != nil {
+		t.Fatalf("first rename = %v", err)
+	}
+	if err := p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId(), "Renamed"); err != nil {
+		t.Fatalf("second (redelivered) rename = %v, want nil", err)
+	}
+
+	// FR-5.5's actual requirement is not merely "no error" — it is that the
+	// redelivered call RE-EMITS NAME_CHANGED, because that re-emission is
+	// what completes the orchestrator's rename_pet step on the duplicate. A
+	// future "short-circuit if the name already matches" optimization could
+	// keep the assertions above green while silently dropping this. Prove
+	// the emission by reading the outbox rows both AndEmit calls persisted
+	// (p.Create above used a bare message.Buffer, not CreateAndEmit, so it
+	// wrote nothing to outbox_entries — only the two renames did).
+	//
+	// testDatabase(t) opens "file::memory:?cache=shared", so the sqlite
+	// backing store — and outbox_entries with it — is shared across every
+	// test in this binary, not just this one; filter by this test's own
+	// petId rather than counting every row in the table.
+	var entries []outboxlib.Entity
+	if err := db.Where("topic = ?", pet2.EnvStatusEventTopic).Find(&entries).Error; err != nil {
+		t.Fatalf("querying outbox_entries: %v", err)
+	}
+	nameChanged := 0
+	for _, e := range entries {
+		var se pet2.StatusEvent[pet2.NameChangedStatusEventBody]
+		if err := json.Unmarshal(e.MessageValue, &se); err != nil {
+			t.Fatalf("unmarshal outbox entry: %v", err)
+		}
+		if se.Type == pet2.StatusEventTypeNameChanged && se.PetId == created.Id() {
+			nameChanged++
+		}
+	}
+	if nameChanged != 2 {
+		t.Fatalf("NAME_CHANGED outbox entries for pet [%d] = %d, want 2 (one per RenameAndEmit call, including the redelivered one)", created.Id(), nameChanged)
+	}
+}
+
+// FR-5.6: atlas-pets does not trust atlas-channel to have validated.
+func TestRenameRejectsInvalidName(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+	created, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Original", 1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	for _, bad := range []string{"", "abc", "abcdefghijklm"} {
+		if err := p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId(), bad); err == nil {
+			t.Fatalf("RenameAndEmit(%q) = nil, want validation error", bad)
+		}
+	}
+	got, _ := p.GetById(created.Id())
+	if got.Name() != "Original" {
+		t.Fatalf("name mutated to %q on a rejected rename", got.Name())
+	}
+}
+
+// FR-3.3 defence in depth: a rename requested by a non-owner is rejected.
+func TestRenameRejectsNonOwner(t *testing.T) {
+	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t))
+	created, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Original", 1)))
+	if err != nil {
+		t.Fatalf("Failed to create pet: %v", err)
+	}
+
+	err = p.RenameAndEmit(uuid.New(), created.Id(), created.OwnerId()+1, "Renamed")
+	if err == nil {
+		t.Fatal("RenameAndEmit by non-owner = nil, want error")
+	}
+	// The handler in resource.go's operator PATCH endpoint distinguishes this
+	// failure from other rename errors via errors.Is to map it to 403; that
+	// only works if the sentinel actually survives the wrap.
+	if !errors.Is(err, pet.ErrNotOwner) {
+		t.Fatalf("RenameAndEmit by non-owner = %v, want errors.Is(err, pet.ErrNotOwner)", err)
+	}
+	got, _ := p.GetById(created.Id())
+	if got.Name() != "Original" {
+		t.Fatalf("name mutated to %q on a non-owner rename", got.Name())
+	}
+}

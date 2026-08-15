@@ -669,6 +669,15 @@
         ]
       },
       {
+        "opCode": "0x54",
+        "validator": "LoggedInValidator",
+        "handler": "ScriptedItemHandle",
+        "fname": "CWvsContext::SendScriptRunItemRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x55",
         "validator": "LoggedInValidator",
         "handler": "CharacterCashItemUseHandle",
@@ -853,6 +862,15 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterSkillMacroHandle",
         "fname": "CMacroSysMan::FlushToSvr",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x7B",
+        "validator": "LoggedInValidator",
+        "handler": "NpcItemUseHandle",
+        "fname": "CWvsContext::SendSelectNpcItemUseRequest",
         "services": [
           "channel"
         ]
@@ -3348,6 +3366,14 @@
         "opCode": "0xCA",
         "writer": "PetChat",
         "fname": "CPet::OnAction",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xCB",
+        "writer": "PetNameChanged",
+        "fname": "CPet::OnNameChanged",
         "services": [
           "channel"
         ]

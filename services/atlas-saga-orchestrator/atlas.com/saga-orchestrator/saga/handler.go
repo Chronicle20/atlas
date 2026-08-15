@@ -17,6 +17,7 @@ import (
 	gachapon2 "atlas-saga-orchestrator/kafka/message/gachapon"
 	incubator2 "atlas-saga-orchestrator/kafka/message/incubator"
 	megaphone2 "atlas-saga-orchestrator/kafka/message/megaphone"
+	"atlas-saga-orchestrator/kafka/message/npc"
 	npcshop "atlas-saga-orchestrator/kafka/message/npcshop"
 	questmessage "atlas-saga-orchestrator/kafka/message/quest"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
@@ -116,6 +117,7 @@ type Handler interface {
 	handleGainCloseness(s Saga, st Step[any]) error
 	handleEvolvePet(s Saga, st Step[any]) error
 	handleRevivePet(s Saga, st Step[any]) error
+	handleRenamePet(s Saga, st Step[any]) error
 	handleSpawnMonster(s Saga, st Step[any]) error
 	handleSpawnReactorDrops(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
@@ -178,6 +180,8 @@ type Handler interface {
 	handleCreateNote(s Saga, st Step[any]) error
 	handleOpenNpcShop(s Saga, st Step[any]) error
 	handleExtendAssetExpiration(s Saga, st Step[any]) error
+	handleStartItemConversation(s Saga, st Step[any]) error
+	handleStartNpcConversation(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -830,6 +834,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleEvolvePet, true
 	case RevivePet:
 		return h.handleRevivePet, true
+	case RenamePet:
+		return h.handleRenamePet, true
 	case SpawnMonster:
 		return h.handleSpawnMonster, true
 	case SpawnReactorDrops:
@@ -856,6 +862,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleShowStorage, true
 	case OpenNpcShop:
 		return h.handleOpenNpcShop, true
+	case StartItemConversation:
+		return h.handleStartItemConversation, true
+	case StartNpcConversation:
+		return h.handleStartNpcConversation, true
 	case AcceptToStorage:
 		return h.handleAcceptToStorage, true
 	case ReleaseFromCharacter:
@@ -956,6 +966,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSetAssetOwner, true
 	case ApplyAssetLock:
 		return h.handleApplyAssetLock, true
+	case ApplyAssetKarma:
+		return h.handleApplyAssetKarma, true
 	case ExtendAssetExpiration:
 		return h.handleExtendAssetExpiration, true
 	case IncubatorResult:
@@ -1159,6 +1171,26 @@ func (h *HandlerImpl) handleApplyAssetLock(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handleApplyAssetKarma handles the ApplyAssetKarma action.
+//
+// The scissors' own karma type rides on the payload and is forwarded onto the
+// Kafka command body, because atlas-inventory — the owning service and the
+// authority — re-runs the eligibility predicate, and the EQUALITY half of that
+// predicate is meaningless without it. Forwarding 0 would silently degrade the
+// v87+ equality model to the v83 non-zero model.
+func (h *HandlerImpl) handleApplyAssetKarma(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ApplyAssetKarmaPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := h.compP.RequestApplyKarma(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.ScissorsKarma, false)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to apply asset karma.")
+		return err
+	}
+	return nil
+}
+
 // handleExtendAssetExpiration handles the ExtendAssetExpiration action
 func (h *HandlerImpl) handleExtendAssetExpiration(s Saga, st Step[any]) error {
 	payload, ok := st.Payload().(ExtendAssetExpirationPayload)
@@ -1219,6 +1251,63 @@ func (h *HandlerImpl) handleOpenNpcShop(s Saga, st Step[any]) error {
 		"character_id":    payload.CharacterId,
 		"npc_template_id": payload.NpcTemplateId,
 	}).Debug("Dispatched npc shop ENTER; awaiting ENTERED/ENTER_ERROR.")
+
+	return nil
+}
+
+// handleStartItemConversation handles the StartItemConversation action.
+//
+// Deliberately NOT self-completing (contrast handleShowStorage): the step stays
+// Pending until the conversation status consumer reports STARTED or
+// START_ERROR. That is the whole point of the scripted-item saga — the
+// following destroy_asset_from_slot step must not run unless the dialogue
+// actually opened, so an item with no authored conversation survives.
+func (h *HandlerImpl) handleStartItemConversation(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(StartItemConversationPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := producer.ProviderImpl(h.l)(h.ctx)(npc.EnvCommandTopic)(NpcConversationStartItemCommandProvider(s.TransactionId(), payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to emit item conversation start command.")
+		return err
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id":  s.TransactionId().String(),
+		"character_id":    payload.CharacterId,
+		"item_id":         payload.ItemId,
+		"npc_template_id": payload.NpcTemplateId,
+	}).Debug("Dispatched item conversation START; awaiting STARTED/START_ERROR.")
+
+	return nil
+}
+
+// handleStartNpcConversation handles the StartNpcConversation action.
+//
+// Deliberately NOT self-completing, for the same reason as
+// handleStartItemConversation: the step stays Pending until the conversation
+// status consumer reports STARTED or START_ERROR, so a following
+// destroy_asset_from_slot step (if any) never runs against a dialogue that
+// never opened.
+func (h *HandlerImpl) handleStartNpcConversation(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(StartNpcConversationPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := producer.ProviderImpl(h.l)(h.ctx)(npc.EnvCommandTopic)(NpcConversationStartNpcCommandProvider(s.TransactionId(), payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to emit npc conversation start command.")
+		return err
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id":  s.TransactionId().String(),
+		"character_id":    payload.CharacterId,
+		"npc_template_id": payload.NpcTemplateId,
+	}).Debug("Dispatched npc conversation START; awaiting STARTED/START_ERROR.")
 
 	return nil
 }
@@ -1425,6 +1514,21 @@ func (h *HandlerImpl) handleRevivePet(s Saga, st Step[any]) error {
 	err := h.petP.ReviveAndEmit(s.TransactionId(), payload.CharacterId, payload.PetId, payload.SourceTemplateId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to revive pet.")
+		return err
+	}
+
+	return nil
+}
+
+func (h *HandlerImpl) handleRenamePet(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(RenamePetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.petP.RenameAndEmit(s.TransactionId(), payload.PetId, payload.CharacterId, payload.Name)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to rename pet.")
 		return err
 	}
 

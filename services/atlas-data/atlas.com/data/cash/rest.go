@@ -68,6 +68,15 @@ type RestModel struct {
 	PetSkills   []string           `json:"petSkills,omitempty"`
 	PetSkillAdd bool               `json:"petSkillAdd,omitempty"`
 	TradeBlock  bool               `json:"tradeBlock"`
+	// TradeAvailable is WZ info/tradeAvailable; see equipment/rest.go.
+	TradeAvailable int32 `json:"tradeAvailable"`
+	// Karma is WZ info/karma — the SCISSORS' OWN karma type, read by
+	// CItemInfo::RegisterKarmaScissorsItem (gms_v95 @0x5A1120) into
+	// KARMASCISSORSITEM.nKarmaType. Parsed for every cash item and left 0 for
+	// non-scissors: absence already yields 0, so no classification filter is
+	// needed. The v83 corpus carries no `karma` node at all, which is why the
+	// eligibility predicate treats 0 as "untyped scissors" (design §3.2).
+	Karma int32 `json:"karma"`
 }
 
 func (r RestModel) GetName() string {

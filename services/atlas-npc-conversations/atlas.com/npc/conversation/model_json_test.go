@@ -3,6 +3,8 @@ package conversation
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 // TestRPSActionState_JSONRoundTrip verifies that a StateModel built with an
@@ -64,5 +66,41 @@ func TestRPSActionState_JSONRoundTrip(t *testing.T) {
 	}
 	if got.FailureState() != "noMeso" {
 		t.Errorf("FailureState() = %q, want %q", got.FailureState(), "noMeso")
+	}
+}
+
+// originTransactionId must survive the Redis round-trip. The registry stores
+// ConversationContext as JSON; a field missing from the marshal pair is
+// silently dropped, and the redelivery guard in StartItem would never fire.
+func TestConversationContextOriginTransactionIdSurvivesJSON(t *testing.T) {
+	txn := uuid.New()
+	in := NewConversationContextBuilder().
+		SetCharacterId(42).
+		SetNpcId(9010000).
+		SetCurrentState("intro").
+		SetConversationType(ItemConversationType).
+		SetSourceId(2430013).
+		SetOriginTransactionId(txn).
+		Build()
+
+	b, err := json.Marshal(in)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var out ConversationContext
+	if err := json.Unmarshal(b, &out); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if out.OriginTransactionId() == nil {
+		t.Fatal("originTransactionId lost in JSON round-trip")
+	}
+	if *out.OriginTransactionId() != txn {
+		t.Errorf("originTransactionId: got %s want %s", *out.OriginTransactionId(), txn)
+	}
+	if out.ConversationType() != ItemConversationType {
+		t.Errorf("conversationType: got %q want %q", out.ConversationType(), ItemConversationType)
+	}
+	if out.SourceId() != 2430013 {
+		t.Errorf("sourceId: got %d want 2430013", out.SourceId())
 	}
 }

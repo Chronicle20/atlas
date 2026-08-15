@@ -729,6 +729,7 @@ func produceWriters() []string {
 		charcb.CharacterSkillMacroWriter,
 		petcb.PetExcludeResponseWriter,
 		petcb.PetCashFoodResultWriter,
+		petcb.PetNameChangedWriter,
 		charcb.CharacterKeyMapAutoHpWriter,
 		charcb.CharacterKeyMapAutoMpWriter,
 		npccb.NPCShopWriter,
@@ -968,6 +969,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[mbsb.MonsterBookCoverHandler] = handler.MonsterBookCoverHandleFunc
 	handlerMap[trsb.TeleportRockAddMapHandle] = handler.TeleportRockAddMapHandleFunc
 	handlerMap[trsb.TeleportRockUseHandle] = handler.TeleportRockUseHandleFunc
+	handlerMap[invsb.ScriptedItemHandle] = handler.ScriptedItemHandleFunc
+	handlerMap[invsb.NpcItemUseHandle] = handler.NpcItemUseHandleFunc
 	return handlerMap
 }
 

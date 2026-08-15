@@ -44,6 +44,16 @@ const (
 	ClassificationConsumableStoreSearch    = Classification(231)
 	ClassificationBullet                   = Classification(233)
 	ClassificationConsumableMonsterCard    = Classification(238)
+	// 239xxxx — remote-NPC summons. The item names an NPC in its info/npc node
+	// and opens that NPC's own shop or conversation from anywhere
+	// (CWvsContext::SendSelectNpcItemUseRequest). Distinct from 243: the item
+	// does not carry its own dialogue.
+	ClassificationConsumableRemoteNpc = Classification(239)
+	// 243xxxx — scripted items. The item carries its own dialogue, keyed by
+	// item id, rendered with the avatar named in its spec/npc node
+	// (CWvsContext::SendScriptRunItemRequest, gated client-side on
+	// itemId/10000 == 243).
+	ClassificationConsumableScriptedItem = Classification(243)
 
 	// MonsterBookCardBase is the item-id base for monster-book cards. A card's
 	// wire index in the CharacterData monster-book block is (cardId - this base);
@@ -108,6 +118,7 @@ const (
 	ClassificationPetMultiConsumable       = Classification(546)
 	ClassificationRemoteStore              = Classification(547)
 	ClassificationExpirationExtender       = Classification(550)
+	ClassificationKarmaScissors            = Classification(552)
 	ClassificationViciousHammer            = Classification(557)
 
 	WeaponTypeOneHandedSword = WeaponType(0)

@@ -15,6 +15,8 @@ const (
 	CommandPetEvolve = "EVOLVE"
 	// CommandPetRevive is the command type for reviving a dried-up pet
 	CommandPetRevive = "REVIVE"
+	// CommandPetRename is the command type for renaming a pet
+	CommandPetRename = "RENAME"
 
 	// Pet status event constants
 	EnvEventTopicPetStatus          = "EVENT_TOPIC_PET_STATUS"
@@ -22,6 +24,7 @@ const (
 	StatusEventTypeEvolved          = "EVOLVED"
 	StatusEventTypeRevived          = "REVIVED"
 	StatusEventTypeReviveFailed     = "REVIVE_FAILED"
+	StatusEventTypeNameChanged      = "NAME_CHANGED"
 )
 
 type Command[E any] struct {
@@ -50,6 +53,14 @@ type EvolveCommandBody struct{}
 // ActorId and PetId, so the body needs nothing else.
 type ReviveCommandBody struct {
 	SourceTemplateId uint32 `json:"sourceTemplateId"`
+}
+
+// RenameCommandBody carries the new pet name. It is ALREADY normalized by the
+// caller, but atlas-pets re-validates it regardless (PRD FR-5.6) — the channel
+// is not trusted to have validated, and a crafted producer could publish
+// straight to this topic.
+type RenameCommandBody struct {
+	Name string `json:"name"`
 }
 
 // StatusEvent represents a pet status event from atlas-pets
@@ -92,5 +103,17 @@ type RevivedStatusEventBody struct {
 // immediately.
 type ReviveFailedStatusEventBody struct {
 	Reason        string    `json:"reason"`
+	TransactionId uuid.UUID `json:"transactionId"`
+}
+
+// NameChangedStatusEventBody drives two consumers. atlas-channel needs Slot to
+// address the clientbound PET_NAMECHANGE packet (the packet carries no pet id —
+// it is routed by ownerId+slot). The orchestrator needs TransactionId to
+// complete the rename_pet step. PreviousName is what the compensator re-applies
+// if the consume step later fails.
+type NameChangedStatusEventBody struct {
+	Slot          int8      `json:"slot"`
+	Name          string    `json:"name"`
+	PreviousName  string    `json:"previousName"`
 	TransactionId uuid.UUID `json:"transactionId"`
 }

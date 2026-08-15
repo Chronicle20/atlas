@@ -97,3 +97,20 @@ func TestClassificationWaterOfLife(t *testing.T) {
 		t.Fatalf("GetClassification(5180000) = %d, want %d", got, ClassificationWaterOfLife)
 	}
 }
+
+// The two item families task-230 routes. 243xxxx is the scripted-item family
+// (Consume/0243.img — 23 items, each with spec/script + spec/npc); 239xxxx is
+// the remote-NPC family (verified names "Athena Pierce's Marble",
+// "Traveling Tommy's Ticket"), which resolves an NPC from info/npc and opens
+// that NPC's own shop or conversation.
+func TestScriptedItemAndRemoteNpcClassifications(t *testing.T) {
+	if got := GetClassification(Id(2430008)); got != ClassificationConsumableScriptedItem {
+		t.Errorf("2430008: got %d, want %d", got, ClassificationConsumableScriptedItem)
+	}
+	if got := GetClassification(Id(2390001)); got != ClassificationConsumableRemoteNpc {
+		t.Errorf("2390001: got %d, want %d", got, ClassificationConsumableRemoteNpc)
+	}
+	if ClassificationConsumableScriptedItem == ClassificationConsumableRemoteNpc {
+		t.Fatal("the two classifications must be distinct")
+	}
+}

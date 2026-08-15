@@ -11,7 +11,9 @@
 # do not restate its contents in CLAUDE.md.
 #
 # Change detection: guards whose CI job is path-gated only run when the
-# relevant paths changed against the merge base. `--all` forces everything.
+# relevant paths changed against the merge base. `--all` forces everything;
+# `--base <rev>` narrows the change set to an increment, which is what a
+# per-task iteration gate wants — see docs/verification.md, "Iteration gate".
 #
 # Every check runs even after an earlier one fails, so one pass gives the
 # complete picture. Exit status is non-zero if any check failed.
@@ -32,7 +34,10 @@ usage() {
 usage: tools/verify.sh [options]
 
   --base <rev>   diff base for change detection (default: merge-base with
-                 origin/main, falling back to main)
+                 origin/main, falling back to main). For a per-task iteration
+                 gate pass the last commit you already gated — the default
+                 whole-branch diff makes one libs/ commit fan every later run
+                 out to all modules.
   --all          run every check regardless of what changed
   --no-docker    skip `docker buildx bake` (fast inner loop; NOT sufficient
                  before a PR when a go.mod was touched)
@@ -130,7 +135,25 @@ changed_modules() {
     # through the workspace, so a lib edit can break a service that has no
     # changed file of its own. Conservative on purpose — use --quick to skip
     # the -race pass while iterating.
-    if printf '%s\n' "$CHANGED" | grep -qE '^(go\.work|libs/)'; then
+    #
+    # The trap this fan-out sets: CHANGED is the whole branch against its merge
+    # base, so ONE libs/ commit makes every later run on that branch a full
+    # 86-module build, forever. On a long branch that is ~10 minutes per run
+    # instead of ~1. Say so out loud, and name the remedy — an iteration gate
+    # should pass --base <last-gated-commit> so the change set is the increment
+    # under test, not the accumulated branch.
+    local fanout
+    fanout="$(printf '%s\n' "$CHANGED" | grep -E '^(go\.work|libs/)' || true)"
+    if [ -n "$fanout" ]; then
+        if [ -z "$BASE" ]; then
+            printf '\033[33mverify.sh: shared-lib change fans out to ALL modules (%s path(s) under go.work/libs/).\n' \
+                "$(printf '%s\n' "$fanout" | wc -l | tr -d ' ')" >&2
+            printf '           first: %s\n' "$(printf '%s\n' "$fanout" | head -1)" >&2
+            printf '           This is the whole-branch diff. For a per-task iteration gate pass\n' >&2
+            printf '           --base <last-gated-commit> to scope it to the increment under test.\033[0m\n' >&2
+        else
+            echo "verify.sh: shared-lib change in this increment — fanning out to all modules"
+        fi
         all_modules
         return
     fi
@@ -228,22 +251,38 @@ fi
 
 # ------------------------------------------------------------------- guards
 #
-# CI runs these unconditionally. Locally they are the whole cost of a gate run
-# (~45s each): every one rebuilds its analyzer into a temp dir and then walks
-# ~60 service modules SEQUENTIALLY with a standalone go/analysis driver, which
-# type-checks from source each time. Standalone drivers do not consult Go's
-# vet-fact cache — only `go vet -vettool=` does — so a warm run costs exactly
-# what a cold one does (measured: 46.4s then 47.5s back to back).
+# Gate the analyzer guards on "a .go file actually changed": a Go analyzer
+# cannot find a new violation in a diff that contains no Go. CI is gated the
+# same way now (on its affected-module matrices, plus a tools/-changed signal),
+# and still runs them on every PR that touches Go.
 #
-# Gate them on "a .go file actually changed": a Go analyzer cannot find a new
-# violation in a diff that contains no Go. CI stays the authority and still
-# runs them every time.
+# All four analyzers run in ONE sweep. Each used to rebuild its analyzer into a
+# temp dir and walk ~60 modules with a standalone go/analysis driver that
+# type-checks from source every time (measured: 46.4s then 47.5s back to back).
+# They now share a single `go vet -vettool=` binary, so the tree is type-checked
+# once and Go's per-package fact cache does the rest. Run one on its own with
+# tools/<name>-guard.sh when iterating on that analyzer.
+
+go_analyzer_guards() {
+    # Scope the sweep to the modules this run already identified as changed.
+    # An empty list means "sweep that root entirely", which is what we want in
+    # the two cases that produce one: --all, and a .go change that lives
+    # outside services/ and libs/ (an analyzer's own source under tools/,
+    # where the verdict on unchanged code can move).
+    local svc="" lib="" m
+    if [ "$ALL" -eq 0 ]; then
+        for m in ${MODULES[@]+"${MODULES[@]}"}; do
+            case "$m" in
+                "$ROOT"/services/*) svc="$svc$m"$'\n' ;;
+                "$ROOT"/libs/*)     lib="$lib$m"$'\n' ;;
+            esac
+        done
+    fi
+    GUARD_SERVICE_MODULES="$svc" GUARD_LIB_MODULES="$lib" ./tools/go-analyzer-guards.sh
+}
 
 if [ "$ALL" -eq 1 ] || touched '\.go$'; then
-    step "redis key guard"        ./tools/redis-key-guard.sh
-    step "goroutine guard"        ./tools/goroutine-guard.sh
-    step "outbox guard"           ./tools/outbox-guard.sh
-    step "buff duration guard"    ./tools/buff-duration-guard.sh
+    step "go analyzer guards"     go_analyzer_guards
     step "skill/job id guard"     ./tools/skill-job-id-guard.sh
 else
     skip "Go analyzer guards (no .go file changed)"
@@ -281,6 +320,18 @@ if touched 'kafka/message/shops/kafka\.go'; then
     step "npc-shop contract mirror guard" ./tools/npc-shop-contract-mirror-guard.sh
 else
     skip "npc-shop contract mirror guard (contract unchanged)"
+fi
+
+if touched 'kafka/message/npc/kafka\.go'; then
+    step "npc-conversation contract mirror guard" ./tools/npc-conversation-contract-mirror-guard.sh
+else
+    skip "npc-conversation contract mirror guard (contract unchanged)"
+fi
+
+if touched '^tools/task-(resolve|brief)(_test)?\.sh$'; then
+    step "task resolve/brief tests" ./tools/task-resolve_test.sh
+else
+    skip "task resolve/brief tests (task tooling unchanged)"
 fi
 
 if touched '^(deploy/|tools/gen-lb-ports\.sh|.*versions\.json)'; then

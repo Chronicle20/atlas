@@ -174,11 +174,13 @@ var reverseWalkSagaTypes = []Type{
 	ItemTagUse,
 	SealingLockUse,
 	IncubatorUse,
+	KarmaScissorsUse,
 	ExpirationExtenderUse,
 	PointReset,
 	NoteSend,
 	SkillBookUse,
 	MesoSackUse,
+	PetNameTagUse,
 }
 
 // noReverseWalkSagaTypes are the saga types that deliberately have NO reverse
@@ -204,8 +206,9 @@ var noReverseWalkSagaTypes = []Type{
 var allSagaTypes = []Type{
 	InventoryTransaction, QuestReward, TradeTransaction, TradeStaging,
 	CharacterCreation, StorageOperation, CharacterRespawn, GachaponTransaction,
-	PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse, PointReset,
-	MtsOperation, NoteSend, SkillBookUse, MesoSackUse,
+	PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse,
+	KarmaScissorsUse, PointReset,
+	MtsOperation, NoteSend, SkillBookUse, MesoSackUse, PetNameTagUse,
 }
 
 // dispatchTimeoutRollbacks fires the reverse walk for a timed-out saga and
@@ -236,8 +239,8 @@ func dispatchTimeoutRollbacks(l logrus.FieldLogger, ctx context.Context, s Saga)
 		c.DispatchTradeStagingRollbacks(s)
 	case PetEvolution:
 		c.DispatchPetEvolutionRollbacks(s)
-	case ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse:
-		// The four share one compensator, exactly as CompensateFailedStep
+	case ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse, KarmaScissorsUse:
+		// The five share one compensator, exactly as CompensateFailedStep
 		// routes them.
 		c.DispatchCashItemUseRollbacks(s)
 	case PointReset:
@@ -250,6 +253,11 @@ func dispatchTimeoutRollbacks(l logrus.FieldLogger, ctx context.Context, s Saga)
 		// Without this a timed-out sack use is pure loss: consume_meso_sack
 		// completed, award_mesos never landed, and nothing puts the sack back.
 		c.DispatchMesoSackRollbacks(s)
+	case PetNameTagUse:
+		// Without this a timed-out rename leaves the new name applied while the
+		// tag was never consumed — or, on the other ordering, the player's pet
+		// keeps a name they were told failed.
+		c.DispatchPetNameTagRollbacks(s)
 	default:
 		return false
 	}

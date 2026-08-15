@@ -1131,7 +1131,8 @@
   fname: CPet::OnNameChanged
   provenance: ida-discovered
   ida:
-    address: 8987764
+    address: 6885247
+  note: 'task-224 correction: prior address 8987764 (0x892474) was CUser::OnPetPacket, the shared dispatcher (copy-pasted across the PET_MOVE/PET_CHAT/PET_NAMECHANGE siblings), not the leaf handler. Re-read CPet::OnNameChanged itself at 0x690f7f: DecodeStr(name) then Decode1 selects the CLife::MakeNameTag layer, same str+byte shape as the rest of the family.'
 - op: PET_EXCEPTION_LIST
   direction: clientbound
   opcode: 162
@@ -2924,6 +2925,14 @@
   ida:
     address: 9787265
   note: 'v79 sub_955781 COutPacket(75); push 4Bh;a2 @0x9557cf (taming-mob food). v83 USE_MOUNT_FOOD=0x4d=77 (d-2). delta doc serverbound (ida-read). fname corrected from un-demangled placeholder "sub_955781" (which was v79''s own address, not mismatched) to the confirmed-named symbol CWvsContext::SendTamingMobFoodItemUseRequest so the matrix can resolve the audit report to this op (task-138 Task 6 re-verification).'
+- op: SCRIPTED_ITEM
+  direction: serverbound
+  opcode: 76
+  fname: CWvsContext::SendScriptRunItemRequest
+  provenance: ida-discovered
+  ida:
+    address: 9787456
+  note: 'task-230: sender confirmed at 0x955840 (GMS_v79 IDB). COutPacket(76)+Encode4(updateTime)+Encode2(slot)+Encode4(itemId).'
 - op: USE_CASH_ITEM
   direction: serverbound
   opcode: 77
@@ -3054,6 +3063,14 @@
   ida:
     address: 6300379
   note: 'v79 sub_6022DB COutPacket(108); COutPacket(108)+encode(macros via sub_4DB93F)+Send (CMacroSysMan::FlushToSvr). v83 SKILL_MACRO=0x6e=110 (d-2). delta doc serverbound (ida-read).'
+- op: NPC_ITEM_USE_REQUEST
+  direction: serverbound
+  opcode: 109
+  fname: CWvsContext::SendSelectNpcItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9812332
+  note: 'task-230: sender confirmed at 0x95b96c (GMS_v79 IDB). COutPacket(109)+Encode2(slot)+Encode4(itemId), no leading updateTime.'
 - op: LOTTERY_ITEM_USE_REQUEST
   direction: serverbound
   opcode: 110

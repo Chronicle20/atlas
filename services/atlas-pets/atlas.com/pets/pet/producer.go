@@ -232,3 +232,19 @@ func reviveFailedEventProvider(petId uint32, ownerId uint32, reason string, tran
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func nameChangedEventProvider(m Model, previousName string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.OwnerId()))
+	value := &pet.StatusEvent[pet.NameChangedStatusEventBody]{
+		PetId:   m.Id(),
+		OwnerId: m.OwnerId(),
+		Type:    pet.StatusEventTypeNameChanged,
+		Body: pet.NameChangedStatusEventBody{
+			Slot:          m.Slot(),
+			Name:          m.Name(),
+			PreviousName:  previousName,
+			TransactionId: transactionId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

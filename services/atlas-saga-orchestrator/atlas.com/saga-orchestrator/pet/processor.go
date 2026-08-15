@@ -20,6 +20,8 @@ type Processor interface {
 	Evolve(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32) error
 	ReviveAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, sourceTemplateId uint32) error
 	Revive(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, sourceTemplateId uint32) error
+	RenameAndEmit(transactionId uuid.UUID, petId uint32, characterId uint32, name string) error
+	Rename(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, characterId uint32, name string) error
 }
 
 type ProcessorImpl struct {
@@ -73,5 +75,17 @@ func (p *ProcessorImpl) ReviveAndEmit(transactionId uuid.UUID, characterId uint3
 func (p *ProcessorImpl) Revive(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, sourceTemplateId uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, petId uint32, sourceTemplateId uint32) error {
 		return mb.Put(pet2.EnvCommandTopic, ReviveProvider(transactionId, characterId, petId, sourceTemplateId))
+	}
+}
+
+func (p *ProcessorImpl) RenameAndEmit(transactionId uuid.UUID, petId uint32, characterId uint32, name string) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.Rename(mb)(transactionId, petId, characterId, name)
+	})
+}
+
+func (p *ProcessorImpl) Rename(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, characterId uint32, name string) error {
+	return func(transactionId uuid.UUID, petId uint32, characterId uint32, name string) error {
+		return mb.Put(pet2.EnvCommandTopic, RenameProvider(transactionId, petId, characterId, name))
 	}
 }

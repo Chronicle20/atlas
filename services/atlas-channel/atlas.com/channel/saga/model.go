@@ -28,11 +28,13 @@ type (
 	FieldEffectWeatherPayload    = sharedsaga.FieldEffectWeatherPayload
 	SetAssetOwnerPayload         = sharedsaga.SetAssetOwnerPayload
 	ApplyAssetLockPayload        = sharedsaga.ApplyAssetLockPayload
+	ApplyAssetKarmaPayload       = sharedsaga.ApplyAssetKarmaPayload
 	ExtendAssetExpirationPayload = sharedsaga.ExtendAssetExpirationPayload
 	IncubatorResultPayload       = sharedsaga.IncubatorResultPayload
 	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
 	CreateNotePayload            = sharedsaga.CreateNotePayload
 	RevivePetPayload             = sharedsaga.RevivePetPayload
+	RenamePetPayload             = sharedsaga.RenamePetPayload
 
 	// Megaphone / world broadcast payload types
 	EmitMegaphonePayload         = sharedsaga.EmitMegaphonePayload
@@ -53,6 +55,10 @@ type (
 
 	// Remote-merchant payload types
 	OpenNpcShopPayload = sharedsaga.OpenNpcShopPayload
+
+	// NPC conversation payload types
+	StartItemConversationPayload = sharedsaga.StartItemConversationPayload
+	StartNpcConversationPayload  = sharedsaga.StartNpcConversationPayload
 )
 
 // Re-export constants from atlas-saga shared library
@@ -66,14 +72,18 @@ const (
 	TeleportRockUse       = sharedsaga.TeleportRockUse
 	ItemTagUse            = sharedsaga.ItemTagUse
 	SealingLockUse        = sharedsaga.SealingLockUse
+	KarmaScissorsUse      = sharedsaga.KarmaScissorsUse
 	ExpirationExtenderUse = sharedsaga.ExpirationExtenderUse
 	IncubatorUse          = sharedsaga.IncubatorUse
 	PointReset            = sharedsaga.PointReset
 	MegaphoneUse          = sharedsaga.MegaphoneUse
 	NoteSend              = sharedsaga.NoteSend
 	MesoSackUse           = sharedsaga.MesoSackUse
+	PetNameTagUse         = sharedsaga.PetNameTagUse
 	RemoteMerchant        = sharedsaga.RemoteMerchant
 	PetRevive             = sharedsaga.PetRevive
+	ScriptedItemUse       = sharedsaga.ScriptedItemUse
+	RemoteNpcUse          = sharedsaga.RemoteNpcUse
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -103,6 +113,7 @@ const (
 	ApplyConsumableEffect = sharedsaga.ApplyConsumableEffect
 	SetAssetOwner         = sharedsaga.SetAssetOwner
 	ApplyAssetLock        = sharedsaga.ApplyAssetLock
+	ApplyAssetKarma       = sharedsaga.ApplyAssetKarma
 	ExtendAssetExpiration = sharedsaga.ExtendAssetExpiration
 	IncubatorResult       = sharedsaga.IncubatorResult
 	DestroyAssetFromSlot  = sharedsaga.DestroyAssetFromSlot
@@ -111,8 +122,11 @@ const (
 	EmitMegaphone         = sharedsaga.EmitMegaphone
 	EnqueueWorldBroadcast = sharedsaga.EnqueueWorldBroadcast
 	CreateNote            = sharedsaga.CreateNote
+	RenamePet             = sharedsaga.RenamePet
 	OpenNpcShop           = sharedsaga.OpenNpcShop
 	RevivePet             = sharedsaga.RevivePet
+	StartItemConversation = sharedsaga.StartItemConversation
+	StartNpcConversation  = sharedsaga.StartNpcConversation
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

@@ -158,3 +158,214 @@ func (r *ResolveInputRestModel) SetID(id string) error {
 	r.Id = id
 	return nil
 }
+
+// --- Remote-service projections used by requests.go's gate clients and
+// task.go's tenant fetcher. Each is the minimal deserialization target for
+// one cross-service GET; see requests.go/task.go for the request functions
+// and task-11-report.md for the file:line citation of each owning service's
+// resource.go.
+
+// worldRestModel is the minimal projection of atlas-world's GET
+// /worlds/{worldId} (services/atlas-world/atlas.com/world/world/resource.go:306,
+// rest.go:13). The server's RestModel also carries a "channels"
+// relationship, so the no-op stubs are required even though this client
+// never reads it (libs/atlas-rest CLAUDE.md).
+type worldRestModel struct {
+	Id             string `json:"-"`
+	CapacityStatus uint16 `json:"capacityStatus"`
+}
+
+func (r worldRestModel) GetName() string                                   { return "worlds" }
+func (r worldRestModel) GetID() string                                     { return r.Id }
+func (r *worldRestModel) SetID(id string) error                            { r.Id = id; return nil }
+func (r *worldRestModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (r *worldRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
+// accountRestModel is the minimal projection of atlas-account's GET
+// /accounts/{accountId}
+// (services/atlas-account/atlas.com/account/account/resource.go:35,
+// rest.go:23). No relationships block.
+type accountRestModel struct {
+	Id             string `json:"-"`
+	CharacterSlots int16  `json:"characterSlots"`
+}
+
+func (r accountRestModel) GetName() string        { return "accounts" }
+func (r accountRestModel) GetID() string          { return r.Id }
+func (r *accountRestModel) SetID(id string) error { r.Id = id; return nil }
+
+// banCheckRestModel is the minimal projection of atlas-ban's GET
+// /bans/check?accountId={id}
+// (services/atlas-ban/atlas.com/ban/ban/resource.go:28,186; rest.go:64 —
+// the exact query shape atlas-account's own ban client uses,
+// services/atlas-account/atlas.com/account/ban/requests.go). No
+// relationships block.
+type banCheckRestModel struct {
+	Id     string `json:"-"`
+	Banned bool   `json:"banned"`
+}
+
+func (r banCheckRestModel) GetName() string        { return "ban-checks" }
+func (r banCheckRestModel) GetID() string          { return r.Id }
+func (r *banCheckRestModel) SetID(id string) error { r.Id = id; return nil }
+
+// guildMemberRestModel mirrors atlas-guilds' member.RestModel
+// (services/atlas-guilds/atlas.com/guilds/guild/member — same shape as the
+// atlas-channel guild/member client). Title == 1 is the guild master.
+type guildMemberRestModel struct {
+	CharacterId uint32 `json:"characterId"`
+	Title       byte   `json:"title"`
+}
+
+// guildRestModel is the minimal projection of atlas-guilds' GET
+// /guilds?filter[members.id]={characterId}
+// (services/atlas-guilds/atlas.com/guilds/guild/resource.go:23). Members are
+// a plain JSON attribute array in this response, not a JSON:API
+// relationship, so no relationship stubs are needed (matches
+// services/atlas-channel/atlas.com/channel/guild/rest.go).
+type guildRestModel struct {
+	Id      string                 `json:"-"`
+	Members []guildMemberRestModel `json:"members"`
+}
+
+func (r guildRestModel) GetName() string        { return "guilds" }
+func (r guildRestModel) GetID() string          { return r.Id }
+func (r *guildRestModel) SetID(id string) error { r.Id = id; return nil }
+
+// familyMemberRestModel is the minimal projection of atlas-families' GET
+// /families/tree/{characterId}
+// (services/atlas-families/atlas.com/family/family/resource.go:28). A 404
+// (ErrMemberNotFound) means the character has no family member row at all;
+// any other success means it does, even a solo tree of just itself. No
+// relationships block.
+type familyMemberRestModel struct {
+	Id string `json:"-"`
+}
+
+func (r familyMemberRestModel) GetName() string        { return "family-tree-members" }
+func (r familyMemberRestModel) GetID() string          { return r.Id }
+func (r *familyMemberRestModel) SetID(id string) error { r.Id = id; return nil }
+
+// tradeRoomRestModel is the minimal projection of atlas-trades' GET
+// /trades/rooms?filter[characterId]={id}
+// (services/atlas-trades/atlas.com/trades/trade/resource.go:51 — the exact
+// query shape services/atlas-channel/atlas.com/channel/trade/requests.go
+// already uses; the filter matches either side of the room). No
+// relationships block.
+type tradeRoomRestModel struct {
+	Id string `json:"-"`
+}
+
+func (r tradeRoomRestModel) GetName() string        { return "rooms" }
+func (r tradeRoomRestModel) GetID() string          { return r.Id }
+func (r *tradeRoomRestModel) SetID(id string) error { r.Id = id; return nil }
+
+// merchantShopRestModel is the minimal projection of atlas-merchant's GET
+// /characters/{characterId}/merchants
+// (services/atlas-merchant/atlas.com/merchant/shop/resource.go:40). The
+// server's shop RestModel carries a "listings" relationship, so the no-op
+// stubs are required even though this client never reads it.
+type merchantShopRestModel struct {
+	Id string `json:"-"`
+}
+
+func (r merchantShopRestModel) GetName() string                                   { return "merchants" }
+func (r merchantShopRestModel) GetID() string                                     { return r.Id }
+func (r *merchantShopRestModel) SetID(id string) error                            { r.Id = id; return nil }
+func (r *merchantShopRestModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (r *merchantShopRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
+// mtsHoldingRestModel is the minimal projection of atlas-mts's GET
+// /characters/{characterId}/mts/holding
+// (services/atlas-mts/atlas.com/mts/holding/resource.go:36 — the exact
+// route services/atlas-channel/atlas.com/channel/mts/holding/requests.go
+// already uses). No relationships block.
+type mtsHoldingRestModel struct {
+	Id string `json:"-"`
+}
+
+func (r mtsHoldingRestModel) GetName() string        { return "holdings" }
+func (r mtsHoldingRestModel) GetID() string          { return r.Id }
+func (r *mtsHoldingRestModel) SetID(id string) error { r.Id = id; return nil }
+
+// mtsListingRestModel is the minimal projection of atlas-mts's GET
+// /characters/{characterId}/mts/listings — a seller's ACTIVE listings across
+// worlds (services/atlas-mts/atlas.com/mts/listing/resource.go, route
+// "get_character_active_listings"). No relationships block.
+//
+// This is a SEPARATE endpoint from the holding one above and deliberately so:
+// a listing becomes a holding only on cancel/expiry (Cancel/Expire in
+// services/atlas-mts/atlas.com/mts/listing/processor.go), so an ACTIVE
+// listing never shows up as a holding. Checking holdings alone let a
+// character with a live, un-settled auction pass this gate and transfer,
+// stranding the listing in the world they just left — the fix-round-1
+// finding this type exists to close.
+type mtsListingRestModel struct {
+	Id string `json:"-"`
+}
+
+func (r mtsListingRestModel) GetName() string        { return "listings" }
+func (r mtsListingRestModel) GetID() string          { return r.Id }
+func (r *mtsListingRestModel) SetID(id string) error { r.Id = id; return nil }
+
+// partyRestModel is the minimal projection of atlas-parties' GET
+// /parties?filter[members.id]={characterId}
+// (services/atlas-parties/atlas.com/parties/party/resource.go:36 — the exact
+// query shape services/atlas-channel/atlas.com/channel/party/requests.go
+// already uses). Members are a JSON:API relationship on this resource, not a
+// plain attribute, so the reference stubs are required for unmarshalling; only
+// the id is read.
+type partyRestModel struct {
+	Id string `json:"-"`
+}
+
+func (r partyRestModel) GetName() string                                   { return "parties" }
+func (r partyRestModel) GetID() string                                     { return r.Id }
+func (r *partyRestModel) SetID(id string) error                            { r.Id = id; return nil }
+func (r *partyRestModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (r *partyRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
+// buddyEntryRestModel mirrors atlas-buddies' buddy.RestModel
+// (services/atlas-buddies/atlas.com/buddies/buddy/rest.go:7). Only the id is
+// read; Pending distinguishes a live buddy from an unaccepted invite.
+type buddyEntryRestModel struct {
+	CharacterId uint32 `json:"characterId"`
+	Pending     bool   `json:"pending"`
+}
+
+// buddyListRestModel is the minimal projection of atlas-buddies' GET
+// /characters/{characterId}/buddy-list
+// (services/atlas-buddies/atlas.com/buddies/list/resource.go:36). Buddies are
+// a plain JSON attribute array on this resource, not a relationship.
+type buddyListRestModel struct {
+	Id      string                `json:"-"`
+	Buddies []buddyEntryRestModel `json:"buddies"`
+}
+
+func (r buddyListRestModel) GetName() string        { return "buddy-list" }
+func (r buddyListRestModel) GetID() string          { return r.Id }
+func (r *buddyListRestModel) SetID(id string) error { r.Id = id; return nil }
+
+// tenantRestModel is the minimal JSON:API shape needed to unmarshal
+// GET /tenants/{tenantId} from atlas-tenants -- just region and version, the
+// two fields tenant.Create needs beyond the id already known from the query
+// above (task.go's expiredTenantIds). Downstream Kafka consumers of the
+// refund/notification events Processor.Sweep emits rely on the real tenant
+// region/version reaching them via the envelope headers, so a placeholder
+// tenant.Model here would corrupt those headers for every other service
+// reading the topic.
+type tenantRestModel struct {
+	Id           string `json:"-"`
+	Region       string `json:"region"`
+	MajorVersion uint16 `json:"majorVersion"`
+	MinorVersion uint16 `json:"minorVersion"`
+}
+
+func (r tenantRestModel) GetName() string { return "tenants" }
+
+func (r tenantRestModel) GetID() string { return r.Id }
+
+func (r *tenantRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}

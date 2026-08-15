@@ -115,29 +115,6 @@ func expiredTenantIds(db *gorm.DB, now time.Time) ([]uuid.UUID, error) {
 	return ids, nil
 }
 
-// tenantRestModel is the minimal JSON:API shape needed to unmarshal
-// GET /tenants/{tenantId} from atlas-tenants -- just region and version, the
-// two fields tenant.Create needs beyond the id already known from the query
-// above. Downstream Kafka consumers of the refund/notification events
-// Processor.Sweep emits rely on the real tenant region/version reaching them
-// via the envelope headers, so a placeholder tenant.Model here would corrupt
-// those headers for every other service reading the topic.
-type tenantRestModel struct {
-	Id           string `json:"-"`
-	Region       string `json:"region"`
-	MajorVersion uint16 `json:"majorVersion"`
-	MinorVersion uint16 `json:"minorVersion"`
-}
-
-func (r tenantRestModel) GetName() string { return "tenants" }
-
-func (r tenantRestModel) GetID() string { return r.Id }
-
-func (r *tenantRestModel) SetID(id string) error {
-	r.Id = id
-	return nil
-}
-
 // fetchTenant is the default tenantFetcher: GET /tenants/{tenantId} against
 // atlas-tenants.
 func fetchTenant(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) (tenant.Model, error) {

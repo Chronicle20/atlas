@@ -37,6 +37,15 @@ const (
 // completion reason rather than inventing its own string.
 const ReasonMonstersEliminated = "MONSTERS_ELIMINATED"
 
+// ReasonVesselArrived is the CompletionReason for an occurrence completed
+// because the voyage it was scoped to reached its destination
+// (transport.EventStatusVoyageArrived) before every spawned monster was
+// eliminated. Declared here, beside ReasonMonstersEliminated, for the same
+// reason: it names one of the (possibly several) generic ways any
+// voyage-scoped occurrence can complete, not something specific to one
+// event type's package.
+const ReasonVesselArrived = "VESSEL_ARRIVED"
+
 // Model is an immutable representation of a single live event occurrence.
 type Model struct {
 	id               uuid.UUID

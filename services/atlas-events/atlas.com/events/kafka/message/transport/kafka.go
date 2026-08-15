@@ -19,9 +19,15 @@ const (
 	EnvEventTopicStatus = "EVENT_TOPIC_TRANSPORT_STATUS"
 
 	// EventStatusVoyageDeparted names a concrete trip in a concrete channel
-	// and carries its whole scope (FR-V3, FR-V4). This is the only status
-	// event type this service currently consumes.
+	// and carries its whole scope (FR-V3, FR-V4).
 	EventStatusVoyageDeparted = "VOYAGE_DEPARTED"
+
+	// EventStatusVoyageArrived is the terminal status event for a voyage
+	// (source of truth:
+	// services/atlas-transports/atlas.com/transports/kafka/message/transport/kafka.go).
+	// Consumed by events/crimsonbalrog's ArrivalProcessor (Task 27) to
+	// complete any still-ACTIVE occurrence scoped to the arriving voyage.
+	EventStatusVoyageArrived = "VOYAGE_ARRIVED"
 )
 
 // StatusEvent is the envelope every transport status event arrives in.

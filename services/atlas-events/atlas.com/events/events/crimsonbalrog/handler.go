@@ -6,16 +6,11 @@ import (
 	"atlas-events/external/transports"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
 
 	"github.com/sirupsen/logrus"
 )
-
-// ErrNotImplemented marks a Handler method filled in later in Phase E (Tasks
-// 24, 25, 27). No caller may treat it as a normal outcome.
-var ErrNotImplemented = errors.New("crimsonbalrog: not implemented")
 
 // Handler is the CRIMSON_BALROG registry.Handler.
 //
@@ -80,12 +75,27 @@ func (h *Handler) ConcurrencyKey(_ context.Context, workContext json.RawMessage)
 // Start orchestrates the side effects of a newly created occurrence.
 // Implemented in start.go (Task 25).
 
-// Advance handles a due OCCURRENCE_TRANSITION row. Filled in by Task 27.
-func (h *Handler) Advance(_ context.Context, _ registry.Occurrence, _ registry.Work) (registry.Progress, error) {
-	return registry.Progress{}, fmt.Errorf("Advance: %w", ErrNotImplemented)
+// Advance handles a due OCCURRENCE_TRANSITION row. CRIMSON_BALROG never
+// schedules one (FR-B17: completion is externally driven by monster
+// elimination or voyage arrival, not by a timed transition — start.go's
+// Start always returns a nil NextTransitionAt). A row of this work type for
+// this occurrence type is therefore a bug — a stray scheduled transition, or
+// a future code path that started scheduling one without updating this
+// handler — and must surface loudly as a FAILED work row with a named
+// reason (event/scheduling/processor.go's applyOutcome), not be swallowed as
+// a silent no-op.
+func (h *Handler) Advance(_ context.Context, o registry.Occurrence, w registry.Work) (registry.Progress, error) {
+	return registry.Progress{}, fmt.Errorf("crimsonbalrog: unexpected %s work for occurrence %s", w.Type, o.Id)
 }
 
-// Complete is cleanup for a terminal transition. Filled in by Task 27.
-func (h *Handler) Complete(_ context.Context, _ registry.Occurrence, _ string) error {
-	return fmt.Errorf("Complete: %w", ErrNotImplemented)
+// Complete is cleanup for a terminal transition (FR-B18, FR-B19, FR-A15),
+// driven by the generic scheduling layer rather than by this package's own
+// consumers (arrival.go's ArrivalProcessor, monsters.go's MonsterProcessor).
+// It delegates to the same emitCleanup (arrival.go) those two paths use, so
+// a completion driven by the generic layer produces identical wire traffic
+// to one driven by the consumer — no second, divergent HIDE/DESTROY_BY_SOURCE
+// shape (ruling 4). reason is unused: emitCleanup's wire traffic does not
+// depend on WHY the occurrence completed, only on what it owns.
+func (h *Handler) Complete(ctx context.Context, o registry.Occurrence, _ string) error {
+	return emitCleanup(h.l, ctx, o.Id, o.Context)
 }

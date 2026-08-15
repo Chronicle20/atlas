@@ -71,7 +71,29 @@ func spawnFieldCommandProvider(worldId world.Id, channelId channel.Id, mapId _ma
 			MonsterId:       monsterId,
 			X:               pos.X,
 			Y:               pos.Y,
-			SpawnSourceType: "EVENT",
+			SpawnSourceType: monsterSourceEvent,
+			SpawnSourceId:   occurrenceId.String(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// destroyBySourceCommandProvider asks atlas-monsters to despawn every field
+// monster carrying this occurrence's provenance (FR-B22), on voyage-arrival
+// cleanup (Task 27). Issued unconditionally per attack map rather than gated
+// on a tally: the tally can only be stale by the time this runs, and issuing
+// the command against zero survivors costs one harmless message. Keyed on
+// the map id, same as the spawn/visual pair, so it cannot be reordered
+// against them across partitions.
+func destroyBySourceCommandProvider(worldId world.Id, channelId channel.Id, mapId _map.Id, occurrenceId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := &monster.FieldCommand[monster.DestroyBySourceCommandBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MapId:     mapId,
+		Type:      monster.CommandTypeDestroyBySource,
+		Body: monster.DestroyBySourceCommandBody{
+			SpawnSourceType: monsterSourceEvent,
 			SpawnSourceId:   occurrenceId.String(),
 		},
 	}

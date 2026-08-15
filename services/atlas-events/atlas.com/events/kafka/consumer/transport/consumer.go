@@ -37,6 +37,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleVoyageDeparted(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleVoyageArrived(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -49,6 +52,21 @@ func handleVoyageDeparted(db *gorm.DB) message.Handler[transport2.StatusEvent[tr
 		}
 		if err := crimsonbalrog.NewTriggerProcessor(l, ctx, db).OnVoyageDeparted(e); err != nil {
 			l.WithError(err).Errorf("Unable to schedule Crimson Balrog trigger evaluation for voyage [%s].", e.Body.VoyageId)
+		}
+	}
+}
+
+// handleVoyageArrived completes any still-ACTIVE CRIMSON_BALROG occurrence
+// scoped to the arriving voyage (Task 27, FR-B17/FR-B19). Registered on the
+// same topic as handleVoyageDeparted, so both handlers see every message and
+// each type-guards independently.
+func handleVoyageArrived(db *gorm.DB) message.Handler[transport2.StatusEvent[transport2.VoyageStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e transport2.StatusEvent[transport2.VoyageStatusEventBody]) {
+		if e.Type != transport2.EventStatusVoyageArrived {
+			return
+		}
+		if err := crimsonbalrog.NewArrivalProcessor(l, ctx, db).OnVoyageArrived(e); err != nil {
+			l.WithError(err).Errorf("Unable to complete Crimson Balrog occurrence for arriving voyage [%s].", e.Body.VoyageId)
 		}
 	}
 }

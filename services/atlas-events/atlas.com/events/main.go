@@ -3,8 +3,10 @@ package main
 import (
 	"atlas-events/event/definition"
 	"atlas-events/event/occurrence"
+	"atlas-events/event/registry"
 	"atlas-events/event/scheduling"
 	"atlas-events/event/transition"
+	"atlas-events/events/crimsonbalrog"
 	monsterStatusConsumer "atlas-events/kafka/consumer/monsterstatus"
 	transportConsumer "atlas-events/kafka/consumer/transport"
 	"context"
@@ -38,6 +40,14 @@ func GetServer() Server             { return Server{baseUrl: "", prefix: "/api/"
 func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
+
+	// registry.Register makes each event type's handler resolvable by
+	// definition type (event/definition/processor.go, event/scheduling/
+	// processor.go's dispatch). Until this runs, CRIMSON_BALROG's handler is
+	// never constructed at all and the entire feature is unreachable at
+	// runtime — a definition of this type would fail every dispatch with
+	// "no handler for type CRIMSON_BALROG".
+	registry.Register(crimsonbalrog.NewHandler())
 
 	db := database.Connect(l, database.SetMigrations(
 		definition.MigrateTable,

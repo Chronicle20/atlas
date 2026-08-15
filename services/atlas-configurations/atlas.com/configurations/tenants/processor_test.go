@@ -36,10 +36,11 @@ func (testEntity) TableName() string {
 
 // testHistoryEntity is a SQLite-compatible version of HistoryEntity for testing
 type testHistoryEntity struct {
-	Id        uuid.UUID       `gorm:"type:text;primaryKey"`
-	TenantId  uuid.UUID       `gorm:"type:text"`
-	Data      json.RawMessage `gorm:"type:text;not null"`
-	CreatedAt time.Time       `gorm:"not null"`
+	Id          uuid.UUID       `gorm:"type:text;primaryKey"`
+	TenantId    uuid.UUID       `gorm:"type:text"`
+	Data        json.RawMessage `gorm:"type:text;not null"`
+	CreatedAt   time.Time       `gorm:"not null"`
+	Environment string          `gorm:"not null;default:''"`
 }
 
 func (testHistoryEntity) TableName() string {

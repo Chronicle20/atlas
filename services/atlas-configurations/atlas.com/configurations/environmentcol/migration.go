@@ -14,7 +14,7 @@ import (
 // environment to the baseline. Idempotent: rows already carrying an
 // environment are untouched, so re-running a migration is safe.
 func BackfillEnvironment(db *gorm.DB, baseline string) error {
-	for _, table := range []string{"tenants", "templates", "services", "service_history"} {
+	for _, table := range []string{"tenants", "tenant_history", "templates", "services", "service_history"} {
 		if err := db.Exec(
 			"UPDATE "+table+" SET environment = ? WHERE environment = '' OR environment IS NULL",
 			baseline,

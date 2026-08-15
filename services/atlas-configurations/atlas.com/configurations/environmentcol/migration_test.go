@@ -30,6 +30,16 @@ type testTenantEntity struct {
 
 func (testTenantEntity) TableName() string { return "tenants" }
 
+type testTenantHistoryEntity struct {
+	Id          uuid.UUID       `gorm:"type:text;primaryKey"`
+	TenantId    uuid.UUID       `gorm:"type:text"`
+	Data        json.RawMessage `gorm:"type:text;not null"`
+	CreatedAt   time.Time       `gorm:"not null"`
+	Environment string          `gorm:"not null;default:''"`
+}
+
+func (testTenantHistoryEntity) TableName() string { return "tenant_history" }
+
 type testTemplateEntity struct {
 	Id           uuid.UUID       `gorm:"type:text;primaryKey"`
 	Region       string          `gorm:"not null"`
@@ -82,7 +92,7 @@ func testDatabase(t *testing.T) *gorm.DB {
 		_ = sqlDB.Close()
 	})
 
-	if err := db.AutoMigrate(&testTenantEntity{}, &testTemplateEntity{}, &testServiceEntity{}, &testServiceHistoryEntity{}); err != nil {
+	if err := db.AutoMigrate(&testTenantEntity{}, &testTenantHistoryEntity{}, &testTemplateEntity{}, &testServiceEntity{}, &testServiceHistoryEntity{}); err != nil {
 		t.Fatalf("Failed to migrate test database: %v", err)
 	}
 
@@ -94,6 +104,7 @@ func TestBackfillAssignsExistingRowsToTheBaseline(t *testing.T) {
 
 	// A row written before the column existed has the zero value.
 	db.Exec(`INSERT INTO templates (id, region, major_version, minor_version, data, environment) VALUES (?, 'GMS', 83, 1, '{}', '')`, uuid.New())
+	db.Exec(`INSERT INTO tenant_history (id, tenant_id, data, created_at, environment) VALUES (?, ?, '{}', ?, '')`, uuid.New(), uuid.New(), time.Now())
 
 	if err := BackfillEnvironment(db, "main"); err != nil {
 		t.Fatalf("BackfillEnvironment: %v", err)
@@ -104,6 +115,12 @@ func TestBackfillAssignsExistingRowsToTheBaseline(t *testing.T) {
 	if got != "main" {
 		t.Fatalf("environment = %q, want \"main\"", got)
 	}
+
+	var gotHistory string
+	db.Raw(`SELECT environment FROM tenant_history LIMIT 1`).Scan(&gotHistory)
+	if gotHistory != "main" {
+		t.Fatalf("tenant_history environment = %q, want \"main\"", gotHistory)
+	}
 }
 
 func TestBackfillIsIdempotent(t *testing.T) {
@@ -113,6 +130,9 @@ func TestBackfillIsIdempotent(t *testing.T) {
 	// second (or first) backfill run untouched.
 	id := uuid.New()
 	db.Exec(`INSERT INTO templates (id, region, major_version, minor_version, data, environment) VALUES (?, 'GMS', 83, 1, '{}', 'pr-42')`, id)
+
+	historyId := uuid.New()
+	db.Exec(`INSERT INTO tenant_history (id, tenant_id, data, created_at, environment) VALUES (?, ?, '{}', ?, 'pr-42')`, historyId, uuid.New(), time.Now())
 
 	if err := BackfillEnvironment(db, "main"); err != nil {
 		t.Fatalf("BackfillEnvironment (first run): %v", err)
@@ -125,5 +145,11 @@ func TestBackfillIsIdempotent(t *testing.T) {
 	db.Raw(`SELECT environment FROM templates WHERE id = ?`, id).Scan(&got)
 	if got != "pr-42" {
 		t.Fatalf("environment = %q, want unchanged \"pr-42\"", got)
+	}
+
+	var gotHistory string
+	db.Raw(`SELECT environment FROM tenant_history WHERE id = ?`, historyId).Scan(&gotHistory)
+	if gotHistory != "pr-42" {
+		t.Fatalf("tenant_history environment = %q, want unchanged \"pr-42\"", gotHistory)
 	}
 }

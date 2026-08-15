@@ -160,7 +160,6 @@ func getOccurrenceHandler(db *gorm.DB) server.GetHandler {
 		return server.ParseUUIDId(d.Logger(), "occurrenceId", func(occurrenceId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				ctx := d.Context()
-				scopedDB := db.WithContext(ctx)
 
 				m, err := NewProcessor(d.Logger(), ctx, db).GetById(occurrenceId)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -174,15 +173,9 @@ func getOccurrenceHandler(db *gorm.DB) server.GetHandler {
 				}
 
 				// FR-API5: transitions come back as an included relationship.
-				transEntities, err := transition.ByOccurrenceProvider(occurrenceId)(scopedDB)()
+				transModels, err := transition.NewProcessor(d.Logger(), ctx, db).GetByOccurrenceId(occurrenceId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Retrieving transitions for event occurrence [%s].", occurrenceId)
-					server.WriteErrorResponse(d.Logger())(w)(err)
-					return
-				}
-				transModels, err := model.SliceMap(transition.Make)(model.FixedProvider(transEntities))(model.ParallelMap())()
-				if err != nil {
-					d.Logger().WithError(err).Errorf("Creating transition model.")
 					server.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}

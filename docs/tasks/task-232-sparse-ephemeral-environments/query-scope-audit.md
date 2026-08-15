@@ -898,3 +898,107 @@ still outside a `services/`-rooted ticker inventory and worth its own
 routing decision on the cross-environment (not cross-tenant) axis. No third
 `libs/`-resident ticker reaching Postgres was found; `atlas-redis` and
 `atlas-lock`'s tickers never reach Postgres at all.
+
+## 4. UNSCOPED dispositions
+
+Task 4A. Derives its row inventory mechanically from §1 and §3:
+
+```
+$ grep -n "| UNSCOPED |" docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit.md
+```
+
+(§1 rows 55, 57, 100, 101, 102, 103, 109, 114, 115, 139, 146, 148 — twelve
+rows — plus the §3 first-class finding `libs/atlas-database/idempotency.go:143`,
+recorded at line 834 of the reconciliation table but never given a §1 row
+because it is shared-library code with no single owning service. Thirteen
+rows total.)
+
+Every row was traced to its query builder and read for a stated intent
+(source comment, `git log`/blame, or domain semantics) before disposition.
+No code was changed anywhere in this task — every row below classified
+`INTENDED-GLOBAL` on direct evidence; none reached `TENANT-DEFECT` or
+`UNDECIDED`. Per Step 4 of the brief: **Step 4 (fix every `TENANT-DEFECT`
+row) is skipped — there are none.** A task that correctly changes no code is
+the outcome here, not a shortfall.
+
+### 4.1 Row-by-row disposition
+
+| # | Service | Table(s) | Entry point (file:line) | Shape | Disposition | Evidence |
+|---|---|---|---|---|---|---|
+| 1 | atlas-ban | `bans` | `ban/task.go:28` `ExpiredBanCleanup.Run`, wired `main.go:94` (5 min) | bulk-write | `INTENDED-GLOBAL` | Source comment, `ban/task.go:26-28`: *"Run deletes all expired temporary bans across all tenants. This intentionally bypasses the processor layer and operates without tenant context, performing a single global sweep rather than iterating per-tenant."* |
+| 2 | atlas-ban | `login_history` | `ban/history/task.go:28` `HistoryPurge.Run`, wired `main.go:97` (24 h) | bulk-write | `INTENDED-GLOBAL` | Source comment, `ban/history/task.go:27-29`: *"Run deletes all login history records older than RetentionDays across all tenants. This intentionally bypasses the processor layer and operates without tenant context, performing a single global sweep rather than iterating per-tenant."* |
+| 3 | atlas-marriages | `proposals` | `scheduler/proposal_expiry.go:112` `getTenantsWithProposals`, wired `main.go:58-59` (5 min ticker) | discovery-read | `INTENDED-GLOBAL` | Structural design, not incidental: `processExpiredProposals` (`proposal_expiry.go:~100-107`) explicitly enumerates `tenantIds` then loops `for _, tenantId := range tenantIds { s.processExpiredProposalsForTenant(tenantId) }` (comment `// Process each tenant`), and `processExpiredProposalsForTenant` reconstructs a fresh `tenant.Model`/`tenantCtx` per id (`proposal_expiry.go:126-129`) before touching `marriage.NewProcessor`. The discovery query exists specifically to drive that per-tenant loop — this is the documented pattern of a background scheduler that discovers-then-iterates every tenant in one deployment, not an accidentally-unfiltered lookup. |
+| 4 | atlas-marriages | `ceremonies` | `scheduler/ceremony_timeout.go:108` `getTenantsWithActiveCeremonies`, wired `main.go:62-63` (1 min ticker) | discovery-read | `INTENDED-GLOBAL` | Identical structure to row 3: `processActiveCeremonies` enumerates `tenantIds` (comment `// Process each tenant`, `ceremony_timeout.go:~102`) then loops per tenant id, reconstructing `tenantCtx` in `processActiveCeremoniesForTenant` before any write. |
+| 5 | atlas-merchant | `frederick_items`, `frederick_mesos` | `frederick/task.go:29` `CleanupTask.Run` (`cleanupExpiredItems`/`cleanupExpiredMesos`, `administrator.go:111,141`), wired via `NewCleanupTask` | bulk-write | `INTENDED-GLOBAL` | No direct source comment on `CleanupTask.Run` or `cleanupExpiredItems`/`cleanupExpiredMesos` themselves — checked `git log -p --follow -- frederick/administrator.go` and `frederick/task.go`; commit subjects are generic refactors ("Refactor atlas-merchant to align with backend developer guidelines", "Rename atlas-* modules...", lint pass) with no discussion of tenant scope. Disposition rests on domain semantics: this is a custody-expiry reaper (deletes Frederick-held items/mesos past a 100-day retention cutoff) — structurally identical (`WithoutTenantFilter` + `Where(cutoff).Delete`, no per-row re-derivation) to rows 1/2/9/13 above/below, which carry explicit "deliberate global sweep" comments for the same reaper shape in the same codebase. Recorded honestly: evidence here is domain-semantics + architectural-consistency, not a direct comment — weaker than rows 1/2/9/13 but not absent. |
+| 6 | atlas-merchant | `frederick_notifications` | `frederick/notification_task.go:36` `NotificationTask.Run` (`Find`, `notification_task.go:39-41`), wired via `NewNotificationTask` | discovery-read | `INTENDED-GLOBAL` | No comment on the query itself, but the loop body (`notification_task.go:58-79`) reconstructs `ten, _ := tenant.Create(n.TenantId, n.TenantRegion, n.TenantMajor, n.TenantMinor)` and `tctx := tenant.WithContext(t.ctx, ten)` per row before the Kafka emit, and every subsequent write (`advanceNotification`/`deleteNotification`) is addressed by the row's own `Id` — the identical discover-then-restore-per-row shape as rows 3/4/7/8/10/11/12, all of which are `INTENDED-GLOBAL`. Domain semantics: a due-notification sweep across a single deployment's tenants is exactly the class of job this architecture assigns to a background ticker. |
+| 7 | atlas-merchant | `shops` | `shop/task.go:29` `ExpirationTask.Run` (`getExpired`, `shop/provider.go:135-144`), wired via `NewExpirationTask` | discovery-read | `INTENDED-GLOBAL` | Source comment, `shop/task.go:30-32`: *"Single source of truth for the expiry predicate (incl. Draft — a hired merchant abandoned during setup must still be reaped at its 24h expiry); run cross-tenant so one task instance sweeps every tenant."* |
+| 8 | atlas-mts | `listings` | `task/periodic.go:106` `Sweep` (`CountExpiredActive`/`GetExpiredActive`, `listing/administrator.go:54-58,63-65`), wired via the periodic sweep loop | discovery-read | `INTENDED-GLOBAL` | Source comment, `task/periodic.go:91-101` (`Sweep`'s own doc comment): *"it discovers active auction listings whose ends_at has passed (across ALL tenants)... Tenant context reconstruction (THE crux): the listings table stores only a tenant_id uuid — no region/version — so a full tenant.Model cannot be rebuilt... Instead the sweep runs cross-tenant... the expire transition takes the holding's tenant_id from the listing ROW itself... Each listing is addressed by its unique surrogate uuid."* |
+| 9 | atlas-mts | `wish_entries` | `task/periodic.go:106` sweep context feeds `wish/administrator.go:139` `DeleteExpiredWanted` | bulk-write | `INTENDED-GLOBAL` | Source comment, `wish/administrator.go:132-136`: *"The periodic sweep calls this under a WithoutTenantFilter handle so it removes expired want-ads across every tenant."* |
+| 10 | atlas-saga-orchestrator | `sagas` | `saga/store.go:228` `GetAllActive` (recovery) and `saga/store.go:239` `GetTimedOut` (reaper), wired `main.go:182` `recoverSagas` and `main.go:238-` `startReaper`/`reapTimedOutSagas` | discovery-read | `INTENDED-GLOBAL` | `GetAllActive` carries its own doc comment, `saga/store.go:227`: *"GetAllActive returns all active and compensating sagas across all tenants (for startup recovery)"*. `GetTimedOut` (`store.go:238`) has no separate comment but is the identical shape in the same store, called from `reapTimedOutSagas` (`main.go:267`), and both callers reconstruct `t, _ := tenant.Create(e.TenantId, ...)` / `ctx := tenant.WithContext(...)` per returned row (`main.go:222-223`, `main.go:~275`) before `processor.Step`. Boot-time recovery and a timeout reaper both plausibly need a whole-deployment view by domain semantics (there is no tenant to scope a startup scan to). |
+| 11 | atlas-trades | `trade_escrow_items`, `trade_escrow_mesos` (+ `trade_escrow_meso_stakes`/`trade_escrow_meso_refunds` via the same entity family) | `escrow/provider.go:175` `AllItems`, `:190` `AllMesos`, called only from `trade/settlement.go:1311` `ReconcileEscrow` | discovery-read | `INTENDED-GLOBAL` | Source comment on `AllItems`, `escrow/provider.go:167-173`: *"Deliberately un-scoped: startup reconciliation runs before any request has supplied a tenant, and each row carries the tenant quad needed to restore one... This and AllMesos are the ONLY queries in the package that cross tenants, and both are reachable only from the boot path and the retry ticker."* Caller comment, `settlement.go:1300-1309` (`ReconcileEscrow`): *"It runs with NO tenant in context and restores each row's own tenant, the same shape as Reconcile. A failure for one tenant does not stop the others."* `AllMesoStakes` (`escrow/provider.go:156-158`) carries the identical comment and shape but **no production caller** (`grep -rn "AllMesoStakes"` finds only `escrow/migration_test.go`) — dead code, not a live gap; not a candidate for any fix regardless of disposition. |
+| 12 | atlas-trades | `trade_settlements`, `trade_settlement_sides`, `trade_settlement_items` | `settlement/provider.go:72` `allUnresolved`, exposed via `settlement/processor.go:79` `Unresolved`, boot-path caller | discovery-read | `INTENDED-GLOBAL` | Source comment, `settlement/processor.go:73-77`: *"Unresolved returns every unfinished settlement across every tenant, oldest first, for startup reconciliation. It is a package function rather than a Processor method because there is no tenant to construct a Processor with at boot: each returned Model carries the tenant it belongs to, and the caller restores it per row via Model.Tenant()."* |
+| 13 | `libs/atlas-database` (shared; consumed live by atlas-cashshop, atlas-storage, atlas-inventory) | `idempotency_keys` | `libs/atlas-database/idempotency.go:143` `sweepCtx := WithoutTenantFilter(rctx)` inside `StartIdempotencySweeper`, wired at each consumer's `main.go` boot (`atlas-cashshop/main.go:66`, `atlas-storage/main.go:72`, `atlas-inventory/main.go:61`) | bulk-write | `INTENDED-GLOBAL` | Source comment, `idempotency.go:139`: *"// The sweep is cross-tenant, so it runs with tenant filtering disabled"*. Shared-library code raises the bar for a fix (any change alters behavior for all three consumers at once per the brief), but the comment is unambiguous and the row does not reach that bar in the first place — no fix is being considered. |
+
+### 4.2 Summary
+
+- 13/13 rows: `INTENDED-GLOBAL`.
+- 0/13 rows: `TENANT-DEFECT`. **Step 4 (fix every `TENANT-DEFECT` row) does
+  not apply — no code was changed by this task.**
+- 0/13 rows: `UNDECIDED`. Row 5 (`frederick_items`/`frederick_mesos`) has the
+  weakest direct evidence of the thirteen — no source comment or informative
+  commit message was found on the query builders themselves — but domain
+  semantics (a custody-expiry reaper, structurally identical to three other
+  rows that do carry explicit "deliberate global sweep" comments for the same
+  shape) is evidence the brief names as legitimate, and no evidence points
+  the other way. Recorded as `INTENDED-GLOBAL` with that caveat rather than
+  escalated as `UNDECIDED`, since "genuinely ambiguous" does not describe a
+  row where every available signal points one direction and none points the
+  other.
+
+The pattern across all thirteen: every row is a background/periodic loop
+whose cross-tenant read exists to discover work items (or, for the four
+bulk-write rows, to delete by a time predicate) once per deployment, not once
+per tenant. Under today's per-environment-owns-its-database model this is
+correct. It becomes wrong only once environments stop owning separate
+databases (decision D1) — at that point a sparse PR environment's sweep
+reaches `main`'s rows, which is an environment-isolation defect, not a
+tenant-scope defect. That conversion is explicitly out of scope for this
+task and belongs to Tasks 41–42.
+
+### 4.3 Task 42 hand-off list
+
+Task 42 builds `ticker-dispositions.md` from ticker files under `services/`
+and converts each `INTENDED-GLOBAL` entry point to per-environment iteration.
+The following entry points are the precise conversion targets, one per row
+above (dead-code paths and comment-only citations excluded):
+
+1. `services/atlas-ban/atlas.com/ban/ban/task.go:28` — `ExpiredBanCleanup.Run`
+2. `services/atlas-ban/atlas.com/ban/history/task.go:28` — `HistoryPurge.Run`
+3. `services/atlas-marriages/atlas.com/marriages/scheduler/proposal_expiry.go:112` — `getTenantsWithProposals` (and its caller `processExpiredProposals`)
+4. `services/atlas-marriages/atlas.com/marriages/scheduler/ceremony_timeout.go:108` — `getTenantsWithActiveCeremonies` (and its caller `processActiveCeremonies`)
+5. `services/atlas-merchant/atlas.com/merchant/frederick/task.go:29` — `CleanupTask.Run`
+6. `services/atlas-merchant/atlas.com/merchant/frederick/notification_task.go:36` — `NotificationTask.Run`
+7. `services/atlas-merchant/atlas.com/merchant/shop/task.go:29` — `ExpirationTask.Run`
+8. `services/atlas-mts/atlas.com/mts/task/periodic.go:106` — `Sweep` (feeds both `listings` and `wish_entries`)
+9. `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/main.go:182` (`recoverSagas`, via `store.go:228` `GetAllActive`) and `main.go:238-` (`startReaper`/`reapTimedOutSagas`, via `store.go:239` `GetTimedOut`)
+10. `services/atlas-trades/atlas.com/trades/trade/settlement.go:1311` — `ReconcileEscrow` (via `escrow/provider.go:175,190` `AllItems`/`AllMesos`)
+11. `services/atlas-trades/atlas.com/trades/settlement/processor.go:79` — `Unresolved` (via `settlement/provider.go:72` `allUnresolved`)
+
+**Outside Task 42's `services/`-rooted ticker inventory — carry explicitly,
+per the controller's brief context (verified facts, not re-derived here):**
+
+12. `libs/atlas-database/idempotency.go:141` — `StartIdempotencySweeper`
+    (feeds `idempotency_keys`, row 13 above). Shared-library ticker consumed
+    live by `atlas-cashshop`, `atlas-storage`, `atlas-inventory` — a
+    conversion here changes behavior for all three consumers in one change,
+    unlike the eleven service-owned entry points above.
+13. `libs/atlas-outbox/drainer.go:81` (`Run`) and `:200` (`runSweeper`),
+    draining `outbox_entries` — **not a tenant-scope finding** (per §3: the
+    `Entity` has no `TenantId` column at all, so there is no tenant filter to
+    evade; the fleet callback never applies to it). It is nonetheless a
+    `libs/`-resident ticker outside the `services/`-rooted inventory, and its
+    cross-*environment* exposure (whether one environment's drainer can pick
+    up another environment's `outbox_entries` rows once per-PR Postgres
+    isolation is removed) is a live open question on a different axis than
+    tenant scoping, unevaluated by this audit. Consumed by 27 services via
+    `outboxlib.NewDrainer`.

@@ -77,7 +77,10 @@ func TestRegistryIsTenantScoped(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ten2, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	// ten2 differs from ten1 in region AND version, not just UUID — this pins
+	// the tenant-scoped key SHAPE (TenantKey embeds region/version), not
+	// merely "two distinct tenants stay separate".
+	ten2, err := tenant.Create(uuid.New(), "JMS", 62, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

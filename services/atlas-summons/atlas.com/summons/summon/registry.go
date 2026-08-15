@@ -164,16 +164,6 @@ type Registry struct {
 	// tenant-scoped the same way.
 	fieldIdx *atlasredis.TenantKeyedSet[string]
 	ownerIdx *atlasredis.TenantKeyedSet[string]
-	// scan is a bare (non-tenant-scoped) registry pointed at the SAME
-	// client/namespace as reg. It observes exactly the keys reg writes:
-	// tenantEntityKey(ns, t, suffix) joins [prefix, ns, TenantKey(t), suffix]
-	// with ":", and a bare Registry with an identity keyFn scanning the whole
-	// namespace (no key filter) sees the identical keys. It exists ONLY for
-	// GetAll — the periodic sweep tasks (expiry_task.go, beholder_task.go)
-	// have no tenant to loop over; they need every tenant with live summon
-	// data. Do not reach for it where a tenant.Model is already in hand — use
-	// reg instead.
-	scan *atlasredis.Registry[string, storedSummon]
 }
 
 var (
@@ -186,7 +176,6 @@ func newRegistry(rc *goredis.Client) *Registry {
 		reg:      atlasredis.NewTenantRegistry[uint32, storedSummon](rc, "summon", func(id uint32) string { return strconv.FormatUint(uint64(id), 10) }),
 		fieldIdx: atlasredis.NewTenantKeyedSet[string](rc, "summon-map", func(s string) string { return s }),
 		ownerIdx: atlasredis.NewTenantKeyedSet[string](rc, "summon-owner", func(s string) string { return s }),
-		scan:     atlasredis.NewRegistry[string, storedSummon](rc, "summon", func(s string) string { return s }),
 	}
 }
 
@@ -288,11 +277,12 @@ func (r *Registry) Remove(ctx context.Context, t tenant.Model, id uint32) error 
 // GetAll returns every stored summon grouped by tenant. The tenant is rebuilt
 // from the fields embedded in each stored value (mirroring atlas-monsters'
 // Registry.GetMonsters), so sweep tasks can construct a tenant-scoped context
-// per group. Undecodable entries are skipped. Uses the bare scan registry
-// (see the Registry.scan field comment) since TenantRegistry has no
-// cross-tenant enumeration method.
+// per group. Undecodable entries are skipped. Uses the deliberate,
+// explicitly-named cross-tenant TenantRegistry.GetAllAcrossTenants sibling
+// (D7) — the periodic sweep tasks (expiry_task.go, beholder_task.go) have no
+// tenant to loop over; they need every tenant with live summon data.
 func (r *Registry) GetAll(ctx context.Context) (map[tenant.Model][]Model, error) {
-	stored, err := r.scan.GetAll(ctx)
+	stored, err := r.reg.GetAllAcrossTenants(ctx)
 	if err != nil {
 		return nil, err
 	}

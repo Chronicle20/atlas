@@ -5,6 +5,7 @@ import (
 	"atlas-events/event/occurrence"
 	"atlas-events/event/scheduling"
 	"atlas-events/event/transition"
+	monsterStatusConsumer "atlas-events/kafka/consumer/monsterstatus"
 	transportConsumer "atlas-events/kafka/consumer/transport"
 	"context"
 	"os"
@@ -58,6 +59,10 @@ func main() {
 	transportConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := transportConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatalf("Unable to register transport status event handlers.")
+	}
+	monsterStatusConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := monsterStatusConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatalf("Unable to register monster status event handlers.")
 	}
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 

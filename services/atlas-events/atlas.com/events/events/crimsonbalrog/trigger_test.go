@@ -5,6 +5,7 @@ import (
 	"atlas-events/event/occurrence"
 	"atlas-events/event/registry"
 	"atlas-events/event/scheduling"
+	"atlas-events/event/transition"
 	transport "atlas-events/kafka/message/transport"
 	"context"
 	"encoding/json"
@@ -36,7 +37,7 @@ const (
 
 func newTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
-	return databasetest.NewInMemoryTenantDB(t, definition.MigrateTable, occurrence.MigrateTable, scheduling.MigrateTable)
+	return databasetest.NewInMemoryTenantDB(t, definition.MigrateTable, occurrence.MigrateTable, scheduling.MigrateTable, transition.MigrateTable)
 }
 
 func testLogger(t *testing.T) logrus.FieldLogger {

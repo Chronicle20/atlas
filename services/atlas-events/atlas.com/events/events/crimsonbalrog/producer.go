@@ -35,6 +35,27 @@ func showVisualEventProvider(occurrenceId uuid.UUID, worldId world.Id, channelId
 	return producer.SingleMessageProvider(key, value)
 }
 
+// hideVisualEventProvider retires the boat-attack visual for one map, on
+// elimination (FR-B18/FR-B20). Keyed on the map id, same as the SHOW, so the
+// pair cannot be reordered across partitions. It does not restore the BGM
+// (design §15.4: atlas-data exposes no Map.wz info/bgm default to restore).
+func hideVisualEventProvider(occurrenceId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, visual string, state byte, subState byte) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := &event.VisualEvent[event.HideVisualBody]{
+		OccurrenceId: occurrenceId,
+		WorldId:      worldId,
+		ChannelId:    channelId,
+		MapId:        mapId,
+		Type:         event.VisualTypeHide,
+		Body: event.HideVisualBody{
+			Visual:   visual,
+			State:    state,
+			SubState: subState,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // spawnFieldCommandProvider asks atlas-monsters to spawn one monster at pos,
 // tagged with the occurrence's provenance (FR-B22) so DESTROY_BY_SOURCE
 // (Task 27) can later clean up exactly what this occurrence spawned. Keyed on

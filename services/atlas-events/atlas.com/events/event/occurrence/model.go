@@ -28,6 +28,15 @@ const (
 	StateFailed    = "FAILED"
 )
 
+// ReasonMonstersEliminated is the CompletionReason for an occurrence whose
+// monster SET (MonsterTally) reached "every spawned monster accounted for
+// and none alive" (FR-B18). Declared here, not in a specific event type's
+// package, because the monster-tracking primitives it completes
+// (ObserveMonsterSpawned/ObserveMonsterGone/MonsterTally) are themselves
+// generic to this package — any event type that spawns monsters shares this
+// completion reason rather than inventing its own string.
+const ReasonMonstersEliminated = "MONSTERS_ELIMINATED"
+
 // Model is an immutable representation of a single live event occurrence.
 type Model struct {
 	id               uuid.UUID

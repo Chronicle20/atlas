@@ -16,7 +16,6 @@ import (
 )
 
 type Registry struct {
-	active     *atlas.TenantSet                        // agreement-id strings
 	agreements *atlas.TenantRegistry[uuid.UUID, Model] // agreement-id -> Model
 	charAgree  *atlas.TenantRegistry[uint32, string]   // characterId -> agreement-id string
 }
@@ -25,7 +24,6 @@ var registry *Registry
 
 func InitRegistry(client *goredis.Client) {
 	registry = &Registry{
-		active:     atlas.NewTenantSet(client, "coordinator:active"),
 		agreements: atlas.NewTenantRegistry[uuid.UUID, Model](client, "coordinator:agreement", func(id uuid.UUID) string { return id.String() }),
 		charAgree:  atlas.NewTenantRegistry[uint32, string](client, "coordinator:char", func(id uint32) string { return strconv.FormatUint(uint64(id), 10) }),
 	}
@@ -67,7 +65,7 @@ func (r *Registry) Initiate(ctx context.Context, ch channel.Model, name string, 
 	if err := r.agreements.Put(ctx, t, agreementId, mdl); err != nil {
 		return fmt.Errorf("store agreement: %w", err)
 	}
-	return r.active.Add(ctx, t, agreementId.String())
+	return nil
 }
 
 func (r *Registry) Respond(ctx context.Context, characterId uint32, agree bool) (Model, error) {
@@ -94,7 +92,6 @@ func (r *Registry) Respond(ctx context.Context, characterId uint32, agree bool) 
 
 	// Disagreed — delete the agreement and clear character mappings.
 	_ = r.agreements.Remove(ctx, t, agreementId)
-	_ = r.active.Remove(ctx, t, agreementId.String())
 	for _, m := range g.requests {
 		_ = r.charAgree.Put(ctx, t, m, uuid.Nil.String())
 	}
@@ -104,12 +101,9 @@ func (r *Registry) Respond(ctx context.Context, characterId uint32, agree bool) 
 // GetExpiredAcrossTenants sweeps every tenant's pending agreements for ones
 // older than timeout. Explicitly cross-tenant: its caller (the expiration
 // ticker, guild/task.go) runs on context.Background() with no tenant in
-// context, so there is no per-tenant context to loop over. Active and
-// agreement entries are always written and removed together (Initiate,
-// Respond-disagree), so enumerating r.agreements directly across tenants
-// yields exactly the same set r.active would index — and each Model already
-// carries its own tenant (Model.tenant), which is what the caller recovers
-// from afterward.
+// context, so there is no per-tenant context to loop over. Each returned
+// Model already carries its own tenant (Model.tenant), which is what the
+// caller recovers from afterward.
 func (r *Registry) GetExpiredAcrossTenants(timeout time.Duration) ([]Model, error) {
 	ctx := context.Background()
 	all, err := r.agreements.GetAllAcrossTenants(ctx)

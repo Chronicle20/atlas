@@ -703,7 +703,14 @@ have caught all four of this round's findings:
    `*gorm.DB` query-builder function with zero non-test callers in its
    module — would have caught `AllMesoStakes` and `GetDistinctTenants`.
 
-### Fix round 2: `status.go:148` disposition and fleet-wide reconciliation
+### Fix rounds 2–3: `status.go:148` disposition and fleet-wide reconciliation
+
+Fix round 2 covered the `status.go:148` disposition and a
+`WithoutTenantFilter` reconciliation rooted at `services/` only (a scoping
+error in that round's brief, not its execution). Fix round 3 widens the
+root to the whole repo (`services/ libs/`), which surfaces one additional
+live finding — `libs/atlas-database/idempotency.go:143` — folded into the
+same reconciliation table below rather than kept as a separate pass.
 
 **`status.go:148` — `SCOPED`.**
 `services/atlas-data/atlas.com/data/data/status.go:148` — `handleGetStatus`
@@ -720,16 +727,68 @@ as §1 rows 75–81 (`reactor_search_index`, `npc_search_index`,
 `npc_spawn_index`, `monster_search_index`, `monster_spawn_index`,
 `documents`, `map_search_index`).
 
-**Fleet-wide `WithoutTenantFilter` reconciliation.** Thirds 1–2's sweep
-(above) never actually ran this grep across the whole fleet — it was scoped
-to thirds 1–2's file list. Run properly, fleet-wide:
+**`libs/atlas-database/idempotency.go:143` — `UNSCOPED` (bulk write, no
+per-row tenant discrimination — blocking).** First-class row, not folded
+into an existing one: this is a shared-library ticker
+(`StartIdempotencySweeper`), not a service-owned one, wired live from three
+services.
+
+- Service: `libs/atlas-database (shared)` — consuming services:
+  `atlas-cashshop` (`services/atlas-cashshop/atlas.com/cashshop/main.go:66`),
+  `atlas-storage` (`services/atlas-storage/atlas.com/storage/main.go:72`),
+  `atlas-inventory` (`services/atlas-inventory/atlas.com/inventory/main.go:61`)
+  — all three call `database.StartIdempotencySweeper(l, rt.Context(), db,
+  database.DefaultIdempotencyRetention, database.DefaultIdempotencySweep)`
+  at boot, each passing its own runtime-root `rt.Context()`.
+- Table: `idempotency_keys` (`IdempotencyEntity`,
+  `libs/atlas-database/idempotency.go:31-40`, composite PK
+  `(tenant_id, key)`).
+- Read at source: `StartIdempotencySweeper`
+  (`libs/atlas-database/idempotency.go:141-157`) starts a `routine.Go` loop
+  holding a `time.NewTicker(interval)`; on every tick it calls
+  `SweepIdempotency(sweepCtx, db, retention)` where `sweepCtx :=
+  WithoutTenantFilter(rctx)` (line 143) is computed once, outside the loop,
+  from the boot-time `rctx` — never refreshed per tenant. `SweepIdempotency`
+  (lines 100-105) runs `db.WithContext(ctx).Where("created_at < ?",
+  cutoff).Delete(&IdempotencyEntity{}).Error` — the only predicate is the
+  retention cutoff; there is no `tenant_id` anywhere in the query, and no
+  per-row tenant re-derivation before or after the delete (unlike the
+  `atlas-merchant` shop/`atlas-mts` listings discovery-read shape, which
+  reconstructs a `tenant.Model` per row before its compensating write). The
+  code comment confirms this is deliberate:
+  `// The sweep is cross-tenant, so it runs with tenant filtering disabled`
+  (line 139).
+- Shape: **bulk write, no per-row tenant discrimination — blocking**, same
+  class as `atlas-ban` `bans`/`login_history` and `atlas-mts`
+  `wish_entries`: one tick deletes every tenant's expired idempotency claim
+  rows past retention in a single statement, across all three consuming
+  services. After per-PR DB isolation is removed, one environment's hourly
+  sweep (`DefaultIdempotencySweep = time.Hour`,
+  `libs/atlas-database/idempotency.go:134`) deletes another environment's
+  idempotency rows once they're older than the 7-day retention
+  (`DefaultIdempotencyRetention`, line 133).
+
+**Fleet-wide `WithoutTenantFilter` reconciliation, widened root.** The
+prior fix round's grep was scoped to `services/` only — an error in that
+round's brief, not in its execution. Re-run with the root widened to the
+whole repo:
 
 ```
-$ grep -rn "WithoutTenantFilter" services/ --include="*.go" | wc -l
-38
+$ grep -rn "WithoutTenantFilter" --include="*.go" . | wc -l
+42
 ```
 
-Every one of the 38 hits, reconciled:
+38 under `services/` (unchanged from fix round 2) plus 4 under `libs/`:
+
+```
+$ grep -rn "WithoutTenantFilter" --include="*.go" libs/
+libs/atlas-database/tenant_scope_test.go:106:	ctx := WithoutTenantFilter(tenantContext(tid1))
+libs/atlas-database/idempotency.go:143:		sweepCtx := WithoutTenantFilter(rctx)
+libs/atlas-database/tenant_scope.go:20:// WithoutTenantFilter returns a context that disables automatic tenant filtering.
+libs/atlas-database/tenant_scope.go:22:func WithoutTenantFilter(ctx context.Context) context.Context {
+```
+
+Every one of the 42 hits, reconciled:
 
 | `file:line` | Accounted for in | Verdict |
 |---|---|---|
@@ -771,9 +830,71 @@ Every one of the 38 hits, reconciled:
 | `services/atlas-mts/atlas.com/mts/testsupport/resource.go:416` | Comment, not a call site — describes test-helper tenant scoping | N/A — comment |
 | `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/store.go:230` | §1 row 139 (`sagas`) — `GetAllActive` | UNSCOPED |
 | `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/store.go:241` | §1 row 139 (`sagas`) — `GetTimedOut` | UNSCOPED |
+| `libs/atlas-database/tenant_scope_test.go:106` | Test setup for `libs/atlas-database`'s own callback tests | Test path |
+| `libs/atlas-database/idempotency.go:143` | This entry (new, above) — `idempotency_keys`, `libs/atlas-database (shared)` | UNSCOPED |
+| `libs/atlas-database/tenant_scope.go:20` | Comment (doc-comment on `WithoutTenantFilter`'s own definition), not a call site | N/A — comment |
+| `libs/atlas-database/tenant_scope.go:22` | The definition of `WithoutTenantFilter` itself, not a call site | N/A — definition |
 
-Result: every one of the 38 fleet-wide `WithoutTenantFilter` hits resolves to
-an already-recorded §1 row (UNSCOPED or explicitly-filtered SCOPED), the new
-`status.go` SCOPED entry above, a doc comment that is not a call site, or a
-test-setup path. **No new UNSCOPED finding.** The fleet UNSCOPED count from
-fix round 1 (12) is unchanged.
+Result: every one of the 42 fleet-wide `WithoutTenantFilter` hits (38 under
+`services/`, 4 under `libs/`) resolves to an already-recorded §1 row
+(UNSCOPED or explicitly-filtered SCOPED), the new `status.go` SCOPED entry,
+the new `idempotency_keys` UNSCOPED entry, a doc comment/definition site
+that is not a call site, or a test-setup path. **One new UNSCOPED finding**
+(`libs/atlas-database` `idempotency_keys`, consumed by `atlas-cashshop`,
+`atlas-storage`, `atlas-inventory`). Fleet-wide `UNSCOPED` total after this
+round: **13** (12 from fix round 1 + 1 from `idempotency_keys`).
+
+**Other `libs/`-resident background loops reaching a query.** Per the
+brief's routing question: swept `libs/` for every `time.NewTicker`/
+`time.Tick`/cron construction site and checked each for Postgres
+reachability —
+
+```
+$ grep -rlnE 'time\.NewTicker|time\.Tick\(|"github.com/robfig/cron|cron\.New' libs/ --include="*.go"
+libs/atlas-redis/coalesced.go
+libs/atlas-redis/tenant_coalesced.go
+libs/atlas-outbox/drainer.go
+libs/atlas-database/idempotency.go
+libs/atlas-lock/leader.go
+```
+
+- `libs/atlas-redis/coalesced.go`, `libs/atlas-redis/tenant_coalesced.go`,
+  `libs/atlas-lock/leader.go` — none imports `gorm.io/gorm` or references a
+  `*gorm.DB`/`*sql.DB` (`grep -l "gorm\|\*sql\.DB"` over the three returns
+  nothing). Redis/distributed-lock only; never reaches Postgres. Not a
+  finding.
+- `libs/atlas-outbox/drainer.go` — **is** a `libs/`-resident ticker reaching
+  Postgres: `Run` (line 81, `time.NewTicker(d.cfg.pollInterval)`) and
+  `runSweeper` (line 200, `time.NewTicker(d.cfg.sweeperInterval)`) both
+  drive `d.db.WithContext(ctx)` queries against `outbox_entries`
+  (`SweepOnce`, `libs/atlas-outbox/drainer.go:185-188`, `Where("sent_at IS
+  NOT NULL AND sent_at < ?", cutoff).Delete(...)`, no tenant predicate).
+  Read `libs/atlas-outbox/entity.go:9-21`: `Entity` (`outbox_entries`) has
+  **no `TenantId` field at all** — `ID`, `Topic`, `MessageKey`,
+  `MessageValue`, `Headers`, `EnqueuedAt`, `SentAt`, `Attempts`,
+  `LastError`, nothing else. The fleet callback
+  (`libs/atlas-database/tenant_scope.go`) keys off a `TenantId` field via
+  reflection; a struct that never declares one is not a
+  tenant-partitioned table in the first place, so this audit's method (does
+  a query bypass or evade the automatic per-row tenant filter) does not
+  apply to it — there is no tenant filter to evade. It is one relay queue
+  shared by every tenant in a service's database by design (each row's
+  tenant identity lives inside `MessageValue`'s serialized envelope, not as
+  a queryable column), wired per-service (`outboxlib.NewDrainer(l, db,
+  publisher, ...)`, e.g. `services/atlas-cashshop/atlas.com/cashshop/main.go:76`
+  and 26 other services). **Not a tenant-scope finding under this audit's
+  method** — but flagged here because it is still a `libs/`-resident ticker
+  outside a `services/`-rooted ticker inventory, and its cross-*environment*
+  exposure surface (if per-PR Postgres isolation is removed, whether
+  `outbox_entries` rows from different environments can collide or be
+  drained by the wrong environment's Kafka publisher) is a different axis
+  than tenant scoping and was not evaluated here.
+
+**Answer to the routing question:** one other `libs/`-resident background
+loop of this shape exists — `libs/atlas-outbox/drainer.go` — but it does not
+belong to the `idempotency_keys` finding class: it operates on a table with
+no `tenant_id` column, so there is no tenant filter for it to omit. It is
+still outside a `services/`-rooted ticker inventory and worth its own
+routing decision on the cross-environment (not cross-tenant) axis. No third
+`libs/`-resident ticker reaching Postgres was found; `atlas-redis` and
+`atlas-lock`'s tickers never reach Postgres at all.

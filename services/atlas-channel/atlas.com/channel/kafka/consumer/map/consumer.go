@@ -10,8 +10,10 @@ import (
 	npc2 "atlas-channel/data/npc"
 	"atlas-channel/door"
 	"atlas-channel/drop"
+	"atlas-channel/events"
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
+	event2 "atlas-channel/kafka/message/event"
 	_map3 "atlas-channel/kafka/message/map"
 	"atlas-channel/kite"
 	"atlas-channel/listener"
@@ -350,6 +352,26 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			}
 			if ci.StateChangeItem > 0 {
 				applyConsumableEffectSaga(l, saga.NewProcessor(l, ctx), s.CharacterId(), f, ci.StateChangeItem)
+			}
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			vs, verr := events.NewProcessor(l, ctx).ActiveVisualsInMap(f)
+			if verr != nil {
+				// Fail open (FR-B16, FR-N15): the character entered the map;
+				// an unreachable atlas-events costs the visual, not the entry.
+				l.WithError(verr).Debugf("SpawnForSelf: unable to retrieve active event visuals for map [%d].", f.MapId())
+				return
+			}
+			for _, v := range vs {
+				if v.Visual != event2.VisualContiMove {
+					l.Debugf("SpawnForSelf: unrecognized event visual [%s] for map [%d]; no writer for it.", v.Visual, f.MapId())
+					continue
+				}
+				_ = session.Announce(l)(ctx)(wp)(fieldcb.ContiMoveWriter)(writer.ContiMoveBody(v.State, v.SubState))(s)
+				if v.Bgm != "" {
+					_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectBackgroundMusicBody(v.Bgm))(s)
+				}
 			}
 		})
 

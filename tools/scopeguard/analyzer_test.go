@@ -37,12 +37,21 @@ func TestAnalyzer(t *testing.T) {
 // entry — this is the test that would have caught the smuggle the reviewer
 // found in the allowlist-only version of this check, and is what stops it
 // regressing.
+//
+// atlas-configurations/testfileaudit is the fix-round-2 smuggle probe: the
+// same audit-row shape, but declared in an entity_test.go file instead of
+// entity.go, added after the real environments/processor_test.go's
+// testEntity needed its own allowlist entry keyed off a _test.go file name.
+// It proves entityAllowlistKey's file-based derivation (any declaring file
+// name, not hardcoded to "entity.go") does not accidentally exempt
+// everything in a _test.go file — hasUniqueNaturalKey still gates it.
 func TestAnalyzerAllowlisted(t *testing.T) {
 	origEntity, origCallsite := EntityAllowlist, CallsiteAllowlist
 	EntityAllowlist = map[string]string{
-		"atlas-allowedsvc/widget/entity.go":         "test fixture — see analyzer_test.go",
-		"atlas-configurations/envfixture/entity.go": "test fixture — see analyzer_test.go (task-232 Task 19 control-plane allowlist exception)",
-		"atlas-configurations/auditrow/entity.go":   "test fixture — see analyzer_test.go (task-232 Task 19 fix round 1 smuggle probe; must still be flagged)",
+		"atlas-allowedsvc/widget/entity.go":                 "test fixture — see analyzer_test.go",
+		"atlas-configurations/envfixture/entity.go":         "test fixture — see analyzer_test.go (task-232 Task 19 control-plane allowlist exception)",
+		"atlas-configurations/auditrow/entity.go":           "test fixture — see analyzer_test.go (task-232 Task 19 fix round 1 smuggle probe; must still be flagged)",
+		"atlas-configurations/testfileaudit/entity_test.go": "test fixture — see analyzer_test.go (task-232 Task 19 fix round 2 smuggle probe; a _test.go declaration must still be flagged with no unique natural key)",
 	}
 	CallsiteAllowlist = map[string]string{
 		"atlas-callsite-allowed/task/task.go:14": "test fixture — see analyzer_test.go",
@@ -57,6 +66,7 @@ func TestAnalyzerAllowlisted(t *testing.T) {
 		"atlas-allowedsvc/widget",
 		"atlas-configurations/envfixture",
 		"atlas-configurations/auditrow",
+		"atlas-configurations/testfileaudit",
 		"atlas-callsite-allowed/task",
 	)
 }

@@ -51,3 +51,22 @@ atlas-trades/escrow/migration_test.go # legacyItemEntity (services/atlas-trades/
 # "registry" shape the analyzer's own test fixture documents at
 # tools/scopeguard/testdata/src/atlas-tenants/registry/entity.go.
 atlas-configurations/environments/entity.go # environments.Entity is the environment registry row itself (Name/Baseline/Namespace/Tenant/Overrides/Phase) — no TenantId is possible (not tenant data) and no Environment is possible (the row IS the environment), exactly as atlas-tenants' tenant registry row is scoped by Environment because it sits one level below, and atlas-configurations' own tenants.Entity is scoped by Environment for the same reason. See design/PRD §3.5's category argument, cited in task-19-brief.md Step 3.
+
+# task-232 Task 19 fix round 2: environments/processor_test.go declares
+# testEntity, a SQLite-compatible copy of environments.Entity (the
+# production Entity's `default:uuid_generate_v4()` tag is a postgres-only
+# function SQLite's CREATE TABLE cannot express — the same reason
+# tenants/processor_test.go and services/processor_test.go keep their own
+# SQLite-compatible copies, except those siblings' copies carry an
+# Environment column since Task 11 added one to those five entities, and
+# this one correctly does not). entityAllowlistKey is derived from the
+# declaring file's own base name (see analyzer.go's entityAllowlistKey),
+# not hardcoded to "entity.go", so a _test.go declaration is excusable on
+# the same terms as any other file — gated on hasUniqueNaturalKey exactly
+# like the real entity.go entry above. testEntity's Name field carries
+# `gorm:"not null;uniqueIndex"`, satisfying that gate. See the pinned
+# "testfileaudit" fixture (tools/scopeguard/testdata/src/atlas-configurations/
+# testfileaudit/entity_test.go) proving a _test.go declaration with an
+# allowlist entry but NO unique natural key is still flagged — this line
+# alone does not create a blanket _test.go exemption.
+atlas-configurations/environments/processor_test.go # testEntity (SQLite-compatible copy of environments.Entity for unit tests) is the same scoping-dimension row as the real entity.go — no Environment is possible because the row IS the environment. hasUniqueNaturalKey(st) is satisfied by testEntity's Name field (`gorm:"not null;uniqueIndex"`), so this is gated the same as the real entry, not a bare prose exemption.

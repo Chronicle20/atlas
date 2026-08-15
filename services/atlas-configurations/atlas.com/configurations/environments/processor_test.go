@@ -3,6 +3,7 @@ package environments
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"reflect"
 	"testing"
 
@@ -139,6 +140,17 @@ func TestCreatingAnEnvironmentEnqueuesAnOutboxEnvelope(t *testing.T) {
 		envelope.Config.Overrides["atlas-channel"] != "atlas-pr-123" {
 		t.Fatalf("envelope config incomplete = %+v", envelope.Config)
 	}
+
+	// Read back the persisted row directly, rather than trusting the
+	// caller's validated input: a create() that silently persisted an
+	// empty Name would still pass every assertion above.
+	persisted, err := p.GetByName("pr-123")
+	if err != nil {
+		t.Fatalf("GetByName: %v", err)
+	}
+	if persisted.Name != "pr-123" {
+		t.Fatalf("persisted name = %q, want \"pr-123\"", persisted.Name)
+	}
 }
 
 func TestCreatingAnEnvironmentRejectsAMalformedName(t *testing.T) {
@@ -211,4 +223,155 @@ func TestRepublishReemitsTheUnchangedRecord(t *testing.T) {
 	if second.Config.Namespace != "atlas" || second.Config.Overrides["atlas-login"] != "atlas" {
 		t.Fatalf("republished record incomplete = %+v", second.Config)
 	}
+}
+
+// TestCreatingAnEnvironmentRejectsAnInvalidPhase pins the outbox side of
+// ErrInvalidPhase: a junk phase must not merely fail Create, it must never
+// reach the outbox. The phase is published on a compacted topic and decoded
+// by every Task 20 subscriber, so an enqueued junk value poisons every pod's
+// registry projection until the key is overwritten.
+func TestCreatingAnEnvironmentRejectsAnInvalidPhase(t *testing.T) {
+	db := testDatabase(t)
+	p := NewProcessor(testLogger(t), envContext(t, "main"), db)
+
+	_, err := p.Create(NewBuilder().
+		SetName("pr-9").
+		SetBaseline("main").
+		SetNamespace("x").
+		SetPhase("banana").
+		Build())
+	if !errors.Is(err, ErrInvalidPhase) {
+		t.Fatalf("err = %v, want ErrInvalidPhase", err)
+	}
+
+	rows := readOutbox(t, db)
+	if len(rows) != 0 {
+		t.Fatalf("rejected create still enqueued %d outbox row(s)", len(rows))
+	}
+}
+
+// TestUpdatingAnEnvironmentRejectsAnInvalidPhase mirrors the create-path
+// test for UpdateByName: an update to a junk phase must fail with
+// ErrInvalidPhase and must not enqueue an additional outbox row beyond the
+// one from the initial valid create.
+func TestUpdatingAnEnvironmentRejectsAnInvalidPhase(t *testing.T) {
+	db := testDatabase(t)
+	p := NewProcessor(testLogger(t), envContext(t, "main"), db)
+
+	created, err := p.Create(NewBuilder().
+		SetName("pr-10").
+		SetBaseline("main").
+		SetNamespace("x").
+		SetPhase(env.PhaseProvisioning).
+		Build())
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	_, err = p.UpdateByName("pr-10", NewBuilder().
+		SetName(created.Name).
+		SetBaseline(created.Baseline).
+		SetNamespace(created.Namespace).
+		SetPhase("banana").
+		Build())
+	if !errors.Is(err, ErrInvalidPhase) {
+		t.Fatalf("err = %v, want ErrInvalidPhase", err)
+	}
+
+	rows := readOutbox(t, db)
+	if len(rows) != 1 {
+		t.Fatalf("outbox has %d rows, want 1 (create only)", len(rows))
+	}
+}
+
+// TestUpdatingAnEnvironmentRejectsAnIllegalPhaseTransition pins PRD FR-5.1's
+// literal chain (PROVISIONING -> ACTIVE -> DEACTIVATING -> DELETED): no
+// skip-ahead, no reverting. It also asserts the no-op transition (X -> X)
+// is still ACCEPTED, since the heartbeat path re-PATCHes the same phase - a
+// validator that rejected every transition, including the no-op, would pass
+// the skip/revert cases here but silently break the heartbeat.
+func TestUpdatingAnEnvironmentRejectsAnIllegalPhaseTransition(t *testing.T) {
+	create := func(t *testing.T, db *gorm.DB, p Processor, name, phase string) RestModel {
+		t.Helper()
+		created, err := p.Create(NewBuilder().
+			SetName(name).
+			SetBaseline("main").
+			SetNamespace("x").
+			SetPhase(phase).
+			Build())
+		if err != nil {
+			t.Fatalf("Create: %v", err)
+		}
+		return created
+	}
+
+	t.Run("skips two steps", func(t *testing.T) {
+		db := testDatabase(t)
+		p := NewProcessor(testLogger(t), envContext(t, "main"), db)
+		created := create(t, db, p, "pr-11", env.PhaseProvisioning)
+
+		_, err := p.UpdateByName("pr-11", NewBuilder().
+			SetName(created.Name).
+			SetBaseline(created.Baseline).
+			SetNamespace(created.Namespace).
+			SetPhase(env.PhaseDeleted).
+			Build())
+		if !errors.Is(err, ErrIllegalPhaseTransition) {
+			t.Fatalf("err = %v, want ErrIllegalPhaseTransition", err)
+		}
+	})
+
+	t.Run("reverts", func(t *testing.T) {
+		db := testDatabase(t)
+		p := NewProcessor(testLogger(t), envContext(t, "main"), db)
+		created := create(t, db, p, "pr-12", env.PhaseActive)
+
+		_, err := p.UpdateByName("pr-12", NewBuilder().
+			SetName(created.Name).
+			SetBaseline(created.Baseline).
+			SetNamespace(created.Namespace).
+			SetPhase(env.PhaseProvisioning).
+			Build())
+		if !errors.Is(err, ErrIllegalPhaseTransition) {
+			t.Fatalf("err = %v, want ErrIllegalPhaseTransition", err)
+		}
+	})
+
+	t.Run("noop is accepted", func(t *testing.T) {
+		db := testDatabase(t)
+		p := NewProcessor(testLogger(t), envContext(t, "main"), db)
+		created := create(t, db, p, "pr-13", env.PhaseActive)
+
+		updated, err := p.UpdateByName("pr-13", NewBuilder().
+			SetName(created.Name).
+			SetBaseline(created.Baseline).
+			SetNamespace(created.Namespace).
+			SetPhase(env.PhaseActive).
+			Build())
+		if err != nil {
+			t.Fatalf("noop transition (ACTIVE -> ACTIVE) rejected: %v", err)
+		}
+		if updated.Phase != env.PhaseActive {
+			t.Fatalf("phase = %q, want %q", updated.Phase, env.PhaseActive)
+		}
+	})
+
+	t.Run("advances one step", func(t *testing.T) {
+		db := testDatabase(t)
+		p := NewProcessor(testLogger(t), envContext(t, "main"), db)
+		created := create(t, db, p, "pr-14", env.PhaseProvisioning)
+
+		updated, err := p.UpdateByName("pr-14", NewBuilder().
+			SetName(created.Name).
+			SetBaseline(created.Baseline).
+			SetNamespace(created.Namespace).
+			SetPhase(env.PhaseActive).
+			Build())
+		if err != nil {
+			t.Fatalf("legal one-step transition (PROVISIONING -> ACTIVE) rejected: %v", err)
+		}
+		if updated.Phase != env.PhaseActive {
+			t.Fatalf("phase = %q, want %q", updated.Phase, env.PhaseActive)
+		}
+	})
 }

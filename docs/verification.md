@@ -8,6 +8,8 @@ tools/verify.sh              # full gate — what you run before opening a PR
 tools/verify.sh --quick      # inner loop: build/vet/guards, no docker, no -race
 tools/verify.sh --all        # ignore change detection, run everything
 tools/verify.sh --no-docker  # everything except the bake
+
+tools/verify.sh --quick --base <rev>   # iteration gate: only the increment
 ```
 
 The script mirrors the jobs in `.github/workflows/pr-validation.yml`. **CI is the
@@ -20,12 +22,36 @@ second copy of it in `CLAUDE.md` or anywhere else.
 
 ---
 
+## The iteration gate
+
+The default change base is the merge base with `origin/main` — the **whole
+branch**. That is right for the pre-PR gate and wrong for a per-task gate run
+twenty times on the same branch, because a single `libs/` commit fans every
+later run out to all 86 modules (see below). On task-227 that made each
+`--quick` run ~11 minutes instead of ~1, for 24 hours, silently.
+
+For a gate you run per task, scope it to the increment:
+
+```sh
+tools/verify.sh --quick --base <last-commit-you-already-gated>
+```
+
+Measured on the task-227 branch: `--quick` resolved **86 changed Go modules**;
+`--quick --base HEAD~1` resolved **2**. The script now prints a warning when
+the fan-out happens on an un-narrowed base, so this can no longer be silent.
+
+The narrowing is safe only because every commit in the range gets gated by
+*some* run — the increment's base must be the last commit that actually passed,
+not blindly `HEAD~1`. The flagless pre-PR run always uses the merge base and
+covers the branch as a whole regardless.
+
 ## The Go layer
 
 Per changed module: `go build ./...`, `go vet ./...`, `go test -race ./...`.
 
 A change to `go.work` or a shared lib fans out to every module, and the script
-expands the set accordingly.
+expands the set accordingly: services consume libs through the workspace, so a
+lib edit can break a service with no changed file of its own.
 
 `go vet` runs full-module here on purpose. The lint guard's `govet` is
 diff-gated (`--new-from-rev`), so it will not see a pre-existing vet failure in

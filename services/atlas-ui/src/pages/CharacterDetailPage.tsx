@@ -34,6 +34,7 @@ import { InventoryGrid } from "@/components/features/characters/InventoryGrid";
 import { SkillsSection } from "@/components/features/characters/SkillsSection";
 import { MonsterBookWidget } from "@/components/features/characters/MonsterBookWidget";
 import { TeleportRockListCard } from "@/components/features/characters/TeleportRockListCard";
+import { PendingChangesPanel } from "@/components/features/characters/PendingChangesPanel";
 import { QuestStatusTabs } from "@/components/features/quests";
 import { ErrorDisplay } from "@/components/common";
 import { CharacterDetailSkeleton } from "@/components/common/skeletons/CharacterDetailSkeleton";
@@ -278,6 +279,8 @@ export function CharacterDetailPage() {
           />
         </div>
       )}
+
+      <PendingChangesPanel characterId={String(id)} />
 
       <Toaster richColors />
 

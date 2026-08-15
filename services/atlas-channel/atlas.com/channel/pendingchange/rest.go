@@ -1,170 +1,87 @@
 package pendingchange
 
 import (
-	"bytes"
-	"context"
-	"encoding/json"
-	"errors"
-	"io"
-	"net/http"
 	"time"
 
-	"github.com/jtumidanski/api2go/jsonapi"
-	"github.com/sirupsen/logrus"
-
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-// httpClient mirrors the default client used elsewhere in this package's
-// dependency (libs/atlas-rest/requests) for consistent timeout behavior.
-var httpClient = &http.Client{Timeout: 15 * time.Second}
-
-// errorObject / errorDocument decode the JSON:API error shape written by
-// atlas-character's pending_change resource (writeReasonError in
-// services/atlas-character/atlas.com/character/pending_change/resource.go).
-type errorObject struct {
-	Status string `json:"status"`
-	Title  string `json:"title"`
-	Detail string `json:"detail,omitempty"`
+// RestModel is the read-side JSON:API projection of a pending change record,
+// as produced by atlas-character (services/atlas-character/atlas.com/character/pending_change/rest.go).
+type RestModel struct {
+	Id                 string     `json:"-"`
+	CharacterId        uint32     `json:"characterId"`
+	Type               string     `json:"type"`
+	Status             string     `json:"status"`
+	RequestedName      string     `json:"requestedName,omitempty"`
+	DestinationWorldId world.Id   `json:"destinationWorldId"`
+	SourceWorldId      world.Id   `json:"sourceWorldId"`
+	Reason             string     `json:"reason,omitempty"`
+	CreatedAt          time.Time  `json:"createdAt"`
+	ExpiresAt          time.Time  `json:"expiresAt"`
+	ResolvedAt         *time.Time `json:"resolvedAt,omitempty"`
 }
 
-type errorDocument struct {
-	Errors []errorObject `json:"errors"`
+func (r RestModel) GetName() string {
+	return "pending-changes"
 }
 
-// StatusError carries the HTTP status code and, when present, the JSON:API
-// error document's detail string from a non-2xx response. Unlike
-// requests.MakePostRequest's backing createOrUpdate, it preserves the body
-// on a 422 so the caller can read the rejection reason (libs/atlas-rest's
-// createOrUpdate discards the body and returns a bare "unknown error" for
-// any status outside 200/201/202/204/400/404/409).
-type StatusError struct {
-	StatusCode int
-	Detail     string
+func (r RestModel) GetID() string {
+	return r.Id
 }
 
-func (e *StatusError) Error() string {
-	if e.Detail != "" {
-		return e.Detail
-	}
-	return http.StatusText(e.StatusCode)
+func (r *RestModel) SetID(id string) error {
+	r.Id = id
+	return nil
 }
 
-// postCreate issues the pending-change creation POST directly via net/http
-// (rather than requests.MakePostRequest) so a 422 response body can be read
-// for its `detail` reason. Header parity with the shared helper is
-// preserved via requests.TenantHeaderDecorator and requests.SpanHeaderDecorator.
-func postCreate(l logrus.FieldLogger, ctx context.Context) func(url string, input CreateInputRestModel) (RestModel, error) {
-	return func(url string, input CreateInputRestModel) (RestModel, error) {
-		var result RestModel
-
-		jsonReq, err := jsonapi.Marshal(input)
-		if err != nil {
-			return result, err
-		}
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonReq))
-		if err != nil {
-			l.WithError(err).Errorf("Error creating request.")
-			return result, err
-		}
-
-		requests.TenantHeaderDecorator(ctx)(req.Header)
-		requests.SpanHeaderDecorator(ctx)(req.Header)
-
-		l.Debugf("Issuing [%s] request to [%s].", http.MethodPost, req.URL)
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			l.WithError(err).Warnf("Failed calling [%s] on [%s].", http.MethodPost, url)
-			return result, err
-		}
-		defer func() { _ = resp.Body.Close() }()
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			l.WithError(err).Warnf("Failed reading response from [%s] on [%s].", http.MethodPost, url)
-			return result, err
-		}
-
-		if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusAccepted {
-			if len(body) == 0 {
-				return result, nil
-			}
-			if err := jsonapi.Unmarshal(body, &result); err != nil {
-				return result, err
-			}
-			return result, nil
-		}
-
-		detail := ""
-		var doc errorDocument
-		if len(body) > 0 && json.Unmarshal(body, &doc) == nil && len(doc.Errors) > 0 {
-			detail = doc.Errors[0].Detail
-		}
-		return result, &StatusError{StatusCode: resp.StatusCode, Detail: detail}
-	}
+// CreateInputRestModel is the POST body atlas-character's
+// POST /characters/{characterId}/pending-changes expects:
+// {data:{type:"pending-changes",attributes:{type,requestedName,destinationWorldId,assetId}}}.
+//
+// AssetId is an item TEMPLATE id, not an instance id (task-6/task-7 seam;
+// see the atlas-character doc comment on the same field).
+type CreateInputRestModel struct {
+	Id                 string   `json:"-"`
+	Type               string   `json:"type"`
+	RequestedName      string   `json:"requestedName,omitempty"`
+	DestinationWorldId world.Id `json:"destinationWorldId,omitempty"`
+	AssetId            *uint32  `json:"assetId,omitempty"`
 }
 
-// postCancel issues the self-scoped cancel POST, mirroring postCreate's
-// direct net/http use (rather than requests.MakePostRequest) so a non-2xx
-// response body can be read for its `detail` reason -- including the 404
-// "nothing pending" case, which is not an infrastructure failure.
-func postCancel(l logrus.FieldLogger, ctx context.Context) func(url string, input CancelInputRestModel) (RestModel, error) {
-	return func(url string, input CancelInputRestModel) (RestModel, error) {
-		var result RestModel
-
-		jsonReq, err := jsonapi.Marshal(input)
-		if err != nil {
-			return result, err
-		}
-
-		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonReq))
-		if err != nil {
-			l.WithError(err).Errorf("Error creating request.")
-			return result, err
-		}
-
-		requests.TenantHeaderDecorator(ctx)(req.Header)
-		requests.SpanHeaderDecorator(ctx)(req.Header)
-
-		l.Debugf("Issuing [%s] request to [%s].", http.MethodPost, req.URL)
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			l.WithError(err).Warnf("Failed calling [%s] on [%s].", http.MethodPost, url)
-			return result, err
-		}
-		defer func() { _ = resp.Body.Close() }()
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			l.WithError(err).Warnf("Failed reading response from [%s] on [%s].", http.MethodPost, url)
-			return result, err
-		}
-
-		if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated || resp.StatusCode == http.StatusAccepted {
-			if len(body) == 0 {
-				return result, nil
-			}
-			if err := jsonapi.Unmarshal(body, &result); err != nil {
-				return result, err
-			}
-			return result, nil
-		}
-
-		detail := ""
-		var doc errorDocument
-		if len(body) > 0 && json.Unmarshal(body, &doc) == nil && len(doc.Errors) > 0 {
-			detail = doc.Errors[0].Detail
-		}
-		return result, &StatusError{StatusCode: resp.StatusCode, Detail: detail}
-	}
+func (r CreateInputRestModel) GetName() string {
+	return "pending-changes"
 }
 
-// asStatusError unwraps a *StatusError from err, if any.
-func asStatusError(err error) (*StatusError, bool) {
-	var se *StatusError
-	if errors.As(err, &se) {
-		return se, true
-	}
-	return nil, false
+func (r CreateInputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *CreateInputRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+// CancelInputRestModel is the POST body atlas-character's self-scoped
+// POST /characters/{characterId}/pending-changes/cancel expects:
+// {data:{type:"pending-changes",attributes:{type}}}. It carries no record
+// id -- the wire packet that drives this call has none (task-227
+// client-cancel addendum); atlas-character resolves the record by
+// (characterId, type) instead.
+type CancelInputRestModel struct {
+	Id   string `json:"-"`
+	Type string `json:"type"`
+}
+
+func (r CancelInputRestModel) GetName() string {
+	return "pending-changes"
+}
+
+func (r CancelInputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *CancelInputRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
 }

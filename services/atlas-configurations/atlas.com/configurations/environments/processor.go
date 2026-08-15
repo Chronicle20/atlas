@@ -34,6 +34,59 @@ var ErrNameRequired = errors.New("environments: name is required")
 // (task-232 P2 ingest validation).
 var ErrInvalidName = errors.New("environments: name is not a well-formed environment id")
 
+// ErrInvalidPhase is returned when Create/Update is called with a phase
+// that is not one of the four PRD FR-5.1 values. The phase is published on
+// the compacted topic and decoded by every Task 20 subscriber, so an
+// unvalidated value would poison every pod's registry projection until the
+// key is overwritten - it must be rejected here, before persistence, not
+// merely at the point something downstream fails to parse it.
+var ErrInvalidPhase = errors.New("environments: phase must be one of PROVISIONING, ACTIVE, DEACTIVATING, DELETED")
+
+// ErrIllegalPhaseTransition is returned when Update would move a record's
+// phase somewhere other than forward-by-one (or a no-op) along PRD FR-5.1's
+// literal chain: PROVISIONING -> ACTIVE -> DEACTIVATING -> DELETED. Neither
+// design.md nor prd.md defines any additional transition rule (branching,
+// abort-from-PROVISIONING-direct-to-DELETED, etc.) beyond that chain
+// (task-232 fix round 1) - this enforces exactly what FR-5.1 states and
+// nothing more.
+var ErrIllegalPhaseTransition = errors.New("environments: phase transition is not legal (PRD FR-5.1: PROVISIONING -> ACTIVE -> DEACTIVATING -> DELETED, no skipping, no reverting)")
+
+// phaseOrder is PRD FR-5.1's lifecycle, literally in the order the
+// requirement states it.
+var phaseOrder = []string{
+	envlib.PhaseProvisioning,
+	envlib.PhaseActive,
+	envlib.PhaseDeactivating,
+	envlib.PhaseDeleted,
+}
+
+func phaseIndex(phase string) int {
+	for i, p := range phaseOrder {
+		if p == phase {
+			return i
+		}
+	}
+	return -1
+}
+
+func validatePhase(phase string) error {
+	if phaseIndex(phase) == -1 {
+		return ErrInvalidPhase
+	}
+	return nil
+}
+
+// validatePhaseTransition allows only a no-op (re-PATCHing the same phase)
+// or advancing exactly one step along phaseOrder. from/to are assumed
+// already validatePhase-checked.
+func validatePhaseTransition(from, to string) error {
+	fi, ti := phaseIndex(from), phaseIndex(to)
+	if ti == fi || ti == fi+1 {
+		return nil
+	}
+	return ErrIllegalPhaseTransition
+}
+
 func environmentOutboxKey(name string) []byte {
 	return []byte("environment:" + name)
 }
@@ -141,6 +194,9 @@ func (p *ProcessorImpl) Create(input RestModel) (RestModel, error) {
 	if err := validateName(input.Name); err != nil {
 		return RestModel{}, err
 	}
+	if err := validatePhase(input.Phase); err != nil {
+		return RestModel{}, err
+	}
 
 	overrides, err := json.Marshal(input.Overrides)
 	if err != nil {
@@ -164,6 +220,16 @@ func (p *ProcessorImpl) Create(input RestModel) (RestModel, error) {
 
 func (p *ProcessorImpl) UpdateByName(name string, input RestModel) (RestModel, error) {
 	if err := validateName(name); err != nil {
+		return RestModel{}, err
+	}
+	if err := validatePhase(input.Phase); err != nil {
+		return RestModel{}, err
+	}
+	existing, err := p.GetByName(name)
+	if err != nil {
+		return RestModel{}, err
+	}
+	if err := validatePhaseTransition(existing.Phase, input.Phase); err != nil {
 		return RestModel{}, err
 	}
 	// The record's own name field always follows the URL/path identity, not

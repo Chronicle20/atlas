@@ -35,6 +35,13 @@ func parseName(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.Ha
 	return server.ParseStringId(l, "name", next)
 }
 
+// isValidationError reports whether err is one of the processor's 400-worthy
+// input errors, as opposed to a persistence/lookup failure.
+func isValidationError(err error) bool {
+	return errors.Is(err, ErrNameRequired) || errors.Is(err, ErrInvalidName) ||
+		errors.Is(err, ErrInvalidPhase) || errors.Is(err, ErrIllegalPhaseTransition)
+}
+
 func handleGetConfigurationEnvironments(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +89,7 @@ func handleCreateConfigurationEnvironment(db *gorm.DB) rest.InputHandler[RestMod
 		return func(w http.ResponseWriter, r *http.Request) {
 			rm, err := NewProcessor(d.Logger(), d.Context(), db).Create(input)
 			if err != nil {
-				if errors.Is(err, ErrNameRequired) || errors.Is(err, ErrInvalidName) {
+				if isValidationError(err) {
 					server.WriteBadRequest(d.Logger(), w, err.Error())
 					return
 				}
@@ -107,7 +114,7 @@ func handleUpdateConfigurationEnvironment(db *gorm.DB) rest.InputHandler[RestMod
 			return func(w http.ResponseWriter, r *http.Request) {
 				rm, err := NewProcessor(d.Logger(), d.Context(), db).UpdateByName(name, input)
 				if err != nil {
-					if errors.Is(err, ErrNameRequired) || errors.Is(err, ErrInvalidName) {
+					if isValidationError(err) {
 						server.WriteBadRequest(d.Logger(), w, err.Error())
 						return
 					}

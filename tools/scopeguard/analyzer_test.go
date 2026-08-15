@@ -19,7 +19,7 @@ func TestAnalyzer(t *testing.T) {
 		"atlas-example/scoped",       // Rule 1: data-plane, has TenantId — passes
 		"atlas-example/lowerentity",  // Rule 1: lowercase `entity` name, no TenantId — fails (fix round 2)
 		"atlas-trades/itementity",    // Rule 1: `Entity`-suffixed name (ItemEntity), has TenantId — passes (fix round 2)
-		"atlas-configurations/thing", // Rule 2: control-plane, no Environment, no allowlist entry for this key — fails
+		"atlas-configurations/thing", // Rule 2: control-plane, no Environment, no allowlist entry, no unique natural key — fails
 		"atlas-tenants/registry",     // Rule 2: control-plane, has Environment — passes
 		"atlas-tenants/config",       // has TenantId despite living in a control-plane service — passes (mirrors real configuration.Entity)
 		"atlas-callsite/scheduler",   // Rule 2 call-site: the atlas-marriages shape — one violation, one clean call site, in the same package
@@ -29,11 +29,20 @@ func TestAnalyzer(t *testing.T) {
 // TestAnalyzerAllowlisted substitutes a fixture allowlist so the guard's
 // exemption path is exercised without polluting the real fleet allowlist
 // files with test-only entries.
+//
+// atlas-configurations/auditrow is the fix-round-1 smuggle probe: it gets
+// an allowlist entry here exactly like envfixture does, but its Entity has
+// no uniquely-constrained natural key (see its own doc comment). Its
+// testdata `// want` annotation asserts it is STILL flagged despite the
+// entry — this is the test that would have caught the smuggle the reviewer
+// found in the allowlist-only version of this check, and is what stops it
+// regressing.
 func TestAnalyzerAllowlisted(t *testing.T) {
 	origEntity, origCallsite := EntityAllowlist, CallsiteAllowlist
 	EntityAllowlist = map[string]string{
 		"atlas-allowedsvc/widget/entity.go":         "test fixture — see analyzer_test.go",
 		"atlas-configurations/envfixture/entity.go": "test fixture — see analyzer_test.go (task-232 Task 19 control-plane allowlist exception)",
+		"atlas-configurations/auditrow/entity.go":   "test fixture — see analyzer_test.go (task-232 Task 19 fix round 1 smuggle probe; must still be flagged)",
 	}
 	CallsiteAllowlist = map[string]string{
 		"atlas-callsite-allowed/task/task.go:14": "test fixture — see analyzer_test.go",
@@ -44,7 +53,12 @@ func TestAnalyzerAllowlisted(t *testing.T) {
 	}()
 
 	testdata := analysistest.TestData()
-	analysistest.Run(t, testdata, Analyzer, "atlas-allowedsvc/widget", "atlas-configurations/envfixture", "atlas-callsite-allowed/task")
+	analysistest.Run(t, testdata, Analyzer,
+		"atlas-allowedsvc/widget",
+		"atlas-configurations/envfixture",
+		"atlas-configurations/auditrow",
+		"atlas-callsite-allowed/task",
+	)
 }
 
 // TestParseAllowlistRequiresReason pins the allowlist file's own lint rule:

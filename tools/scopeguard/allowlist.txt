@@ -7,6 +7,17 @@
 # allowlist fallback — except for the one "the row IS the scoping
 # dimension" shape (analyzer.go's checkEntity), which is listed here too.
 #
+# IMPORTANT (task-232 Task 19 fix round 1): a line in this file is NOT
+# sufficient by itself to excuse a control-plane entity from the Environment
+# requirement. checkEntity also requires hasUniqueNaturalKey(st) — the
+# struct must declare a non-surrogate field with a `gorm:"...uniqueIndex..."`
+# (or `unique`) tag, proving it structurally owns its own identity as a
+# real DB constraint, not just a comment an entity author controls. A
+# control-plane entity added here without such a field stays flagged
+# regardless of the reason text — see the pinned smuggle-probe fixture at
+# tools/scopeguard/testdata/src/atlas-configurations/auditrow/entity.go and
+# TestAnalyzerAllowlisted in analyzer_test.go.
+#
 # Format: <pkg import path>/<entity.go base name> # <reason>
 # (pass.Pkg.Path() + "/" + filepath.Base(file) — see entityAllowlistKey in
 # analyzer.go. Keyed off the package's Go import path, not a filesystem

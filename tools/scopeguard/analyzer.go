@@ -13,8 +13,13 @@
 //     reason in allowlist.txt, but only for the "the row IS the scoping
 //     dimension" shape (a data-plane entity that IS the tenant, or the one
 //     control-plane entity that IS the environment list itself —
-//     atlas-configurations/environments.Entity, task-232 Task 19); an
-//     entity that merely forgot its scoping column is not excusable.
+//     atlas-configurations/environments.Entity, task-232 Task 19). That
+//     exception is gated on a STRUCTURAL precondition too
+//     (hasUniqueNaturalKey), not the allowlist line alone: fix round 1 on
+//     Task 19 proved an allowlist-only gate is smuggleable — any entity
+//     author can add a prose-justified line for an entity that is not
+//     actually the scoping dimension. An entity that merely forgot its
+//     scoping column, or fails the structural check, is not excusable.
 //
 //  2. Call-site-level (per call, fleet-wide over services/ AND libs/): the
 //     two unscoping mechanisms the audit's §3 "second-mechanism sweep"
@@ -41,6 +46,7 @@ package scopeguard
 import (
 	"go/ast"
 	"go/token"
+	"reflect"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -125,15 +131,24 @@ func checkEntity(pass *analysis.Pass, ts *ast.TypeSpec) {
 		if hasField(st, "Environment") {
 			return
 		}
-		// A control-plane entity IS the environment list itself (e.g.
+		// A control-plane entity that IS the environment list itself (e.g.
 		// atlas-configurations/environments.Entity) has nothing above
 		// "environment" to scope by — the same shape as a data-plane entity
 		// that IS the tenant and so carries no TenantId. That is the one
-		// allowlist-able exception to Rule 1's control-plane branch; every
-		// other control-plane entity without Environment is a real gap and
-		// stays hard-denied (see "atlas-configurations/thing" in
-		// analyzer_test.go).
-		if reason, ok := EntityAllowlist[key]; ok {
+		// allowlist-able exception to Rule 1's control-plane branch, and it
+		// is gated on BOTH an allowlist entry AND a structural precondition
+		// (hasUniqueNaturalKey): an allowlist line alone is just prose an
+		// entity author controls, so it is not sufficient by itself — fix
+		// round 1 on task-232 Task 19 proved that by smuggling a plain
+		// audit-row entity (no scoping field, no natural key) past an
+		// allowlist-only version of this check. The entity must also
+		// declare its own identity as a uniquely-constrained, non-surrogate
+		// column: that is what "the row IS the environment" cashes out to
+		// mechanically. Every other control-plane entity without
+		// Environment is a real gap and stays hard-denied regardless of
+		// what allowlist.txt says (see "atlas-configurations/thing" and the
+		// pinned smuggle-probe fixture in analyzer_test.go).
+		if reason, ok := EntityAllowlist[key]; ok && hasUniqueNaturalKey(st) {
 			_ = reason
 			return
 		}
@@ -181,6 +196,41 @@ func hasField(st *ast.StructType, name string) bool {
 	for _, f := range st.Fields.List {
 		for _, n := range f.Names {
 			if n.Name == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// hasUniqueNaturalKey reports whether st declares a non-surrogate field
+// carrying a `gorm:"...uniqueIndex..."` (or plain `unique`) tag — an
+// actually-enforced database uniqueness constraint on a business-meaningful
+// column, not a generated primary key. This is the structural precondition
+// Rule 1's control-plane allowlist exception requires (task-232 Task 19 fix
+// round 1): "the row IS the scoping dimension" cashes out to "this entity
+// declares its OWN identity as a uniquely-constrained natural key," which a
+// bare allowlist.txt line cannot prove by itself — an entity author fully
+// controls that file's prose. A field literally named Id/ID is excluded
+// even if tagged uniqueIndex, since that is the surrogate-PK convention
+// every entity in the fleet already carries (`gorm:"type:uuid;default:
+// uuid_generate_v4()"` etc.) and proves nothing about being a scoping
+// dimension — see environments.Entity's Name field (task-19-brief.md Step
+// 3) for the shape this is meant to recognize.
+func hasUniqueNaturalKey(st *ast.StructType) bool {
+	if st.Fields == nil {
+		return false
+	}
+	for _, f := range st.Fields.List {
+		if f.Tag == nil {
+			continue
+		}
+		tag := reflect.StructTag(strings.Trim(f.Tag.Value, "`")).Get("gorm")
+		if !strings.Contains(tag, "uniqueIndex") && !strings.Contains(tag, "unique") {
+			continue
+		}
+		for _, n := range f.Names {
+			if n.Name != "Id" && n.Name != "ID" {
 				return true
 			}
 		}

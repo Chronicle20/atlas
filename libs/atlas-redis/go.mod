@@ -3,6 +3,7 @@ module github.com/Chronicle20/atlas/libs/atlas-redis
 go 1.25.5
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-env v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/google/uuid v1.6.0
@@ -25,6 +26,8 @@ require (
 )
 
 replace github.com/Chronicle20/atlas/libs/atlas-tenant => ../atlas-tenant
+
+replace github.com/Chronicle20/atlas/libs/atlas-env => ../atlas-env
 
 replace github.com/Chronicle20/atlas/libs/atlas-model => ../atlas-model
 

@@ -19,6 +19,7 @@ import (
 	clientrest "k8s.io/client-go/rest"
 	"sigs.k8s.io/yaml"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
@@ -41,9 +42,9 @@ const jobTemplateConfigMapKey = "job.yaml"
 // is therefore nil (PRD FR-4.5).
 type IngestRegistries struct {
 	// Job holds the job-name and :updatedAt heartbeat keys.
-	Job *redis.Registry[string, string]
+	Job *redis.EnvironmentRegistry[string, string]
 	// Run holds the per-run progress record.
-	Run *redis.Registry[string, ingestrun.Record]
+	Run *redis.EnvironmentRegistry[string, ingestrun.Record]
 }
 
 // NewIngestRegistries builds both ingest registries over one Redis client.
@@ -90,12 +91,13 @@ type JobCreator struct {
 	K8s       kubernetes.Interface
 	Namespace string
 	Template  *batchv1.JobTemplateSpec
-	// Registry is the env-prefixed store for ingest job heartbeat keys.
+	// Registry is the environment-scoped store for ingest job heartbeat keys.
 	// Nil means heartbeat publishing is disabled (compose / test paths).
-	Registry *redis.Registry[string, string]
-	// RunRegistry is the env-prefixed store for per-run progress records.
-	// Nil means run-record publishing is disabled (compose / test paths).
-	RunRegistry *redis.Registry[string, ingestrun.Record]
+	Registry *redis.EnvironmentRegistry[string, string]
+	// RunRegistry is the environment-scoped store for per-run progress
+	// records. Nil means run-record publishing is disabled (compose / test
+	// paths).
+	RunRegistry *redis.EnvironmentRegistry[string, ingestrun.Record]
 	// ControllerImage is the container image the running atlas-data pod uses.
 	// Rendered Jobs inherit it so MODE=ingest binaries match the code that
 	// rendered them. Empty string falls back to the template's image (intended
@@ -144,8 +146,8 @@ func NewJobCreatorInClusterWithRedis(rdb *goredis.Client) (*JobCreator, error) {
 		_ = ierr
 	}
 	regs := NewIngestRegistries(rdb)
-	var jobReg *redis.Registry[string, string]
-	var runReg *redis.Registry[string, ingestrun.Record]
+	var jobReg *redis.EnvironmentRegistry[string, string]
+	var runReg *redis.EnvironmentRegistry[string, ingestrun.Record]
 	if regs != nil {
 		jobReg, runReg = regs.Job, regs.Run
 	}
@@ -237,8 +239,8 @@ func (j *JobCreator) Create(ctx context.Context, scope, region string, major, mi
 	}
 	suffix := ingestrun.KeySuffix(scope, region, major, minor)
 	if j.Registry != nil {
-		_ = j.Registry.PutWithTTL(ctx, suffix, created.Name, time.Hour)
-		_ = j.Registry.PutWithTTL(ctx, suffix+ingestrun.HeartbeatKeySuffix, time.Now().UTC().Format(time.RFC3339), time.Hour)
+		_ = j.Registry.PutWithTTL(ctx, env.Self(), suffix, created.Name, time.Hour)
+		_ = j.Registry.PutWithTTL(ctx, env.Self(), suffix+ingestrun.HeartbeatKeySuffix, time.Now().UTC().Format(time.RFC3339), time.Hour)
 	}
 	if j.RunRegistry != nil {
 		// Initialise (or reset) the record here so a run that dies before the
@@ -250,7 +252,7 @@ func (j *JobCreator) Create(ctx context.Context, scope, region string, major, mi
 			fmt.Sprintf("%d.%d", major, minor), tenantId,
 			time.Now().UTC(), workers.RegisteredNames(),
 		)
-		_ = j.RunRegistry.PutWithTTL(ctx, suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL)
+		_ = j.RunRegistry.PutWithTTL(ctx, env.Self(), suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL)
 	}
 	return created.Name, nil
 }

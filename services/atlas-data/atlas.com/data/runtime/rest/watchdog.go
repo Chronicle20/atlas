@@ -11,6 +11,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
@@ -94,7 +95,7 @@ func (w Watchdog) jobIsStuck(ctx context.Context, j *batchv1.Job, cutoff time.Ti
 	ref := j.CreationTimestamp.Time
 	if reg := w.jobRegistry(); reg != nil {
 		if suffix := ingestJobKeySuffixFromLabels(j); suffix != "" {
-			if ts, err := reg.Get(ctx, suffix+ingestrun.HeartbeatKeySuffix); err == nil && ts != "" {
+			if ts, err := reg.Get(ctx, env.Self(), suffix+ingestrun.HeartbeatKeySuffix); err == nil && ts != "" {
 				if t, perr := time.Parse(time.RFC3339, ts); perr == nil {
 					ref = t
 				}
@@ -117,8 +118,8 @@ func (w Watchdog) deleteStuckJob(ctx context.Context, j *batchv1.Job) {
 	}
 	if reg := w.jobRegistry(); reg != nil {
 		if suffix := ingestJobKeySuffixFromLabels(j); suffix != "" {
-			_ = reg.Remove(ctx, suffix)
-			_ = reg.Remove(ctx, suffix+ingestrun.HeartbeatKeySuffix)
+			_ = reg.Remove(ctx, env.Self(), suffix)
+			_ = reg.Remove(ctx, env.Self(), suffix+ingestrun.HeartbeatKeySuffix)
 		}
 	}
 	if rr := w.runRegistry(); rr != nil {
@@ -130,7 +131,7 @@ func (w Watchdog) deleteStuckJob(ctx context.Context, j *batchv1.Job) {
 			// the worker still `running` when the watchdog fired is the whole
 			// diagnostic value, and marking it failed would assert something we
 			// do not know.
-			_, err := rr.UpdateWithTTL(ctx, suffix+ingestrun.RunKeySuffix, ingestrun.RecordTTL,
+			_, err := rr.UpdateWithTTL(ctx, env.Self(), suffix+ingestrun.RunKeySuffix, ingestrun.RecordTTL,
 				func(rec ingestrun.Record) ingestrun.Record {
 					// Guarded exactly like every ingest-pod write (see
 					// runtime/ingest/progress.go's guardedUpdate): a sweep that
@@ -172,7 +173,7 @@ func ingestRunIdFromJob(j *batchv1.Job) string {
 
 // jobRegistry is a convenience accessor that returns the JobCreator's Registry,
 // or nil if either the JobCreator or its Registry is absent.
-func (w Watchdog) jobRegistry() *redis.Registry[string, string] {
+func (w Watchdog) jobRegistry() *redis.EnvironmentRegistry[string, string] {
 	if w.JobCreator == nil {
 		return nil
 	}
@@ -181,7 +182,7 @@ func (w Watchdog) jobRegistry() *redis.Registry[string, string] {
 
 // runRegistry returns the JobCreator's run-record Registry, or nil if either
 // the JobCreator or its registry is absent.
-func (w Watchdog) runRegistry() *redis.Registry[string, ingestrun.Record] {
+func (w Watchdog) runRegistry() *redis.EnvironmentRegistry[string, ingestrun.Record] {
 	if w.JobCreator == nil {
 		return nil
 	}

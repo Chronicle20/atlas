@@ -9,6 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
@@ -34,12 +35,12 @@ const heartbeatTTL = time.Hour
 //
 // Returns when ctx is cancelled. The first heartbeat fires immediately; we
 // don't wait a full interval to refresh the timestamp the REST pod wrote.
-func runHeartbeat(ctx context.Context, l logrus.FieldLogger, reg *redis.Registry[string, string], suffix string) {
+func runHeartbeat(ctx context.Context, l logrus.FieldLogger, reg *redis.EnvironmentRegistry[string, string], suffix string) {
 	if reg == nil || suffix == "" {
 		return
 	}
 	tick := func() {
-		err := reg.PutWithTTL(ctx, suffix+":updatedAt", time.Now().UTC().Format(time.RFC3339), heartbeatTTL)
+		err := reg.PutWithTTL(ctx, env.Self(), suffix+":updatedAt", time.Now().UTC().Format(time.RFC3339), heartbeatTTL)
 		if err != nil && ctx.Err() == nil {
 			l.WithError(err).Warnf("ingest heartbeat write failed (suffix=%s)", suffix)
 		}

@@ -67,7 +67,11 @@ var bannedConstructors = map[string]bool{
 // allowlist entry is permanent and invisible, and this guard is the only
 // thing that will ever re-examine it.
 //
-// Two shapes, both confirmed at task-232/9B:
+// Two shapes, both confirmed at task-232/9B. A third shape — atlas-data's
+// ingestrun, whose key suffix embedded the tenant discriminator by hand —
+// was removed at task-232/8: ingestrun now uses NewEnvironmentRegistry,
+// which is environment-scoped (not tenant-scoped) and therefore not one of
+// bannedConstructors at all, so it needs no allowlist entry.
 //
 //  1. "_tenants" enumeration indexes — a bare atlas.Set holding *which
 //     tenants have data in this registry*, so a background sweep (cleanup,
@@ -131,31 +135,6 @@ var bareConstructorAllowlist = map[string]string{
 		"\"<atlas.TenantKey(t)>:<id>\" via allSetMember/parseTenantFromKey, the same " +
 		"cross-tenant-index shape as atlas-drops/drop; deliberately cross-tenant " +
 		"(confirmed registry.go:42,74-76,217,248).",
-
-	// Shape 3: hand-rolled tenant discriminator embedded in the key suffix
-	// itself, rather than in a *Tenant-scoped registry's internal keying.
-	"atlas-data/ingestrun": "data-ingest:<suffix> (NewJobRegistry/NewRunRegistry, both " +
-		"identity-keyFn'd so every caller supplies the whole suffix) — every " +
-		"caller builds that suffix through ingestrun.KeySuffix(scope, region, " +
-		"major, minor) (ingestrun.go:107-109) or, for the Watchdog's Job-label " +
-		"path, ingestJobKeySuffixFromLabels (runtime/rest/jobs.go:67, pinned " +
-		"identical-shape by jobs_test.go:106-132) or ingestJobSuffixFromEnv " +
-		"(runtime/ingest/heartbeat.go:68-82, itself routed through KeySuffix). " +
-		"scope is \"tenants/<tenantId>\" or \"shared\", produced exclusively by " +
-		"wzinput.ResolveScope (wzinput/scope.go:21-32): the tenant branch always " +
-		"embeds the real tenant.Model.Id(), and \"shared\" is a deliberate, " +
-		"operator-gated cross-tenant mode requiring the X-Atlas-Operator header, " +
-		"not a default anyone reaches by accident. region/major/minor come from " +
-		"the real tenant (t.Region(), t.MajorVersion(), t.MinorVersion() — " +
-		"runtime/rest/resource.go:65-67,102). So the rendered suffix already " +
-		"carries the same tenant+region+version discriminator libs/atlas-redis's " +
-		"TenantKey renders, just with a literal \"tenants/\" prefix where TenantKey " +
-		"has none; TestKeySuffixIsDiscriminating (ingestrun_test.go) pins that this " +
-		"stays true. Migrating to *Tenant-scoped constructors would mean reshaping " +
-		"20+ call sites across runtime/rest and runtime/ingest to arrive at a key " +
-		"discriminating by the same three fields it already discriminates by, " +
-		"while breaking the shared/tenant dual-mode design and the label " +
-		"round-trip jobs_test.go pins — cost with no isolation benefit.",
 }
 
 var Analyzer = &analysis.Analyzer{

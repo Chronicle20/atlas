@@ -287,7 +287,15 @@ func TestEnablingSchedulesTheStart(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			db := newTestDB(t)
-			d := seedDefinition(t, db, TypeName, window(tc.start, tc.end))
+			// enabled(true): OnDefinitionEnabled itself never reads d.Enabled()
+			// (schedule.go's scheduleStart only decodes Configuration), so the
+			// flag does not gate this assertion. It is set anyway because the
+			// real caller (orchestration.SetEnabled) always flips the
+			// definition to enabled BEFORE invoking the scheduling side effect
+			// this test drives directly — seeding it enabled keeps the fixture
+			// representative of that precondition instead of an unreachable
+			// still-disabled state.
+			d := seedDefinition(t, db, TypeName, window(tc.start, tc.end), enabled(true))
 
 			must(t, NewScheduler(testLogger(t), testCtx(t), db).OnDefinitionEnabled(d))
 

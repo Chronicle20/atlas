@@ -38,6 +38,24 @@ func (s Server) GetBaseURL() string { return s.baseUrl }
 func (s Server) GetPrefix() string  { return s.prefix }
 func GetServer() Server             { return Server{baseUrl: "", prefix: "/api/"} }
 
+// init wires the FR-A2 seam — event/definition's PATCH handler resolves
+// enabled-toggles through event/orchestration.SetEnabled, so a false->true
+// transition also schedules the TRIGGER_EVALUATION row (task-231 R33-3).
+// event/definition cannot wire this itself without importing
+// event/scheduling, which would cycle back through event/scheduling's own
+// import of event/definition (event/definition/resource.go's
+// EnabledOrchestrator doc comment).
+//
+// This lives in init(), not func main(), specifically so main_test.go can
+// pin it: go test runs package init unconditionally, so a test asserting
+// definition.EnabledOrchestrator != nil fails if this assignment is ever
+// removed, without needing to invoke — or be able to invoke — main() itself
+// (task-231 fix-round-1 finding 2: deleting this line used to compile and
+// pass `go test ./...` clean while silently dropping FR-A2 in production).
+func init() {
+	definition.EnabledOrchestrator = orchestration.SetEnabled
+}
+
 func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
@@ -49,13 +67,6 @@ func main() {
 	// runtime — a definition of this type would fail every dispatch with
 	// "no handler for type CRIMSON_BALROG".
 	registry.Register(crimsonbalrog.NewHandler())
-
-	// Routes the definitions PATCH handler's enabled-toggle through
-	// event/orchestration so a false->true transition also schedules the
-	// FR-A2 TRIGGER_EVALUATION (task-231 R33-3). event/definition cannot wire
-	// this itself without importing event/scheduling, which would cycle back
-	// through event/scheduling's own import of event/definition.
-	definition.EnabledOrchestrator = orchestration.SetEnabled
 
 	db := database.Connect(l, database.SetMigrations(
 		definition.MigrateTable,

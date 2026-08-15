@@ -20,6 +20,7 @@ const (
 	CommandTypeCancelStatusField = "CANCEL_STATUS_FIELD"
 	CommandTypeUseSkillField     = "USE_SKILL_FIELD"
 	CommandTypeDestroyField      = "DESTROY_FIELD"
+	CommandTypeDestroyBySource   = "DESTROY_BY_SOURCE"
 	CommandTypeSpawnField        = "SPAWN_FIELD"
 	CommandTypeDrainMp           = "DRAIN_MP"
 	CommandTypeAddPuppet         = "ADD_PUPPET"
@@ -91,6 +92,17 @@ type useBasicAttackCommandBody struct {
 }
 
 type destroyFieldCommandBody struct{}
+
+// destroyBySourceCommandBody despawns every monster in the field matching the
+// provenance pair. Field-scoped by design (design §15.6): Registry has a
+// map index but no source index, so a global variant would need a new secondary
+// index maintained on every spawn and death. Both field names are shared with
+// spawnFieldCommandBody at the identical type, which is what keeps this safe on
+// the fan-to-every-handler command topic.
+type destroyBySourceCommandBody struct {
+	SpawnSourceType string `json:"spawnSourceType"`
+	SpawnSourceId   string `json:"spawnSourceId"`
+}
 
 // spawnFieldCommandBody carries optional spawn provenance (FR-P1). Both field
 // names are absent from every sibling body on this shared, fan-to-every-handler

@@ -2588,3 +2588,82 @@ func TestRestoreCandidacyOnRevealRemovesFromSetAndSweeps(t *testing.T) {
 		t.Fatalf("reveal sweep must elect the revealed character, got %d", m.ControlCharacterId())
 	}
 }
+
+// ctxFor returns a bare background context for DestroyBySource tests. Kept
+// separate from tenantFor so both compose the same way the file's other
+// direct-struct-literal ProcessorImpl constructions do (tenant.WithContext
+// wraps it where a tenant needs to travel with the context).
+func ctxFor(t *testing.T) context.Context {
+	t.Helper()
+	return context.Background()
+}
+
+// tenantFor derives a stable per-test tenant so repeated calls within the
+// same test (one per CreateMonster call site) resolve to the identical
+// tenant partition instead of scattering monsters across unrelated tenants.
+func tenantFor(t *testing.T) tenant.Model {
+	t.Helper()
+	id := uuid.NewSHA1(uuid.NameSpaceOID, []byte(t.Name()))
+	ten, err := tenant.Create(id, "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+	return ten
+}
+
+// newTestProcessor builds a ProcessorImpl for the given test's tenant,
+// following the file's established direct-struct-literal construction
+// convention (see newRecordingProcessor, testProcessorWithHidden).
+func newTestProcessor(t *testing.T) *ProcessorImpl {
+	t.Helper()
+	ten := tenantFor(t)
+	return &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: tenant.WithContext(ctxFor(t), ten),
+		t:   ten,
+		emit: func(_ string, provider model.Provider[[]kafka.Message]) error {
+			_, err := provider()
+			return err
+		},
+	}
+}
+
+// FR-P4 / FR-B20: destroying by a source that matches nothing is success, not
+// an error — arrival cleanup runs routinely after every monster was already
+// killed.
+func TestDestroyBySourceMatchingNothingSucceeds(t *testing.T) {
+	p := newTestProcessor(t)
+	f := field.NewBuilder(1, 4, 200090010).Build()
+
+	if err := p.DestroyBySource(f, SpawnSourceTypeEvent, "no-such-occurrence"); err != nil {
+		t.Fatalf("expected success for zero matches, got %v", err)
+	}
+}
+
+// Only monsters matching BOTH halves of the pair are destroyed; a cyclic
+// monster sharing the map is untouched.
+func TestDestroyBySourceMatchesOnBothHalves(t *testing.T) {
+	p := newTestProcessor(t)
+	f := field.NewBuilder(1, 4, 200090010).Build()
+	ten := tenantFor(t)
+
+	mine := GetMonsterRegistry().CreateMonster(ctxFor(t), ten, f, 8150000, 0, 0, 0, 5, 0, 100, 0, SpawnSourceTypeEvent, "occ-1")
+	other := GetMonsterRegistry().CreateMonster(ctxFor(t), ten, f, 8150000, 0, 0, 0, 5, 0, 100, 0, SpawnSourceTypeEvent, "occ-2")
+	cyclic := GetMonsterRegistry().CreateMonster(ctxFor(t), ten, f, 100100, 0, 0, 0, 5, 0, 100, 0, SpawnSourceTypeCyclic, "")
+
+	if err := p.DestroyBySource(f, SpawnSourceTypeEvent, "occ-1"); err != nil {
+		t.Fatalf("DestroyBySource: %v", err)
+	}
+
+	left := GetMonsterRegistry().GetMonstersInMap(ten, f)
+	ids := map[uint32]bool{}
+	for _, m := range left {
+		ids[m.UniqueId()] = true
+	}
+	if ids[mine.UniqueId()] {
+		t.Fatalf("matching monster survived")
+	}
+	if !ids[other.UniqueId()] || !ids[cyclic.UniqueId()] {
+		t.Fatalf("non-matching monsters were destroyed")
+	}
+}

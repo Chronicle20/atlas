@@ -75,6 +75,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyFieldCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyBySourceCommand))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnFieldCommand))); err != nil {
 			return err
 		}
@@ -315,6 +318,17 @@ func handleDestroyFieldCommand(l logrus.FieldLogger, ctx context.Context, c fiel
 	err := p.DestroyInField(f)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to destroy monsters in field.")
+	}
+}
+
+func handleDestroyBySourceCommand(l logrus.FieldLogger, ctx context.Context, c fieldCommand[destroyBySourceCommandBody]) {
+	if c.Type != CommandTypeDestroyBySource {
+		return
+	}
+
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	if err := monster.NewProcessor(l, ctx).DestroyBySource(f, normalizeSpawnSourceType(c.Body.SpawnSourceType), c.Body.SpawnSourceId); err != nil {
+		l.WithError(err).Errorf("DESTROY_BY_SOURCE failed for source [%s/%s] in field [%s].", c.Body.SpawnSourceType, c.Body.SpawnSourceId, f.Id())
 	}
 }
 

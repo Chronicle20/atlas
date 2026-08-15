@@ -702,3 +702,78 @@ have caught all four of this round's findings:
 3. (Carried from the first pass, cheaper but narrower) flag any exported
    `*gorm.DB` query-builder function with zero non-test callers in its
    module — would have caught `AllMesoStakes` and `GetDistinctTenants`.
+
+### Fix round 2: `status.go:148` disposition and fleet-wide reconciliation
+
+**`status.go:148` — `SCOPED`.**
+`services/atlas-data/atlas.com/data/data/status.go:148` — `handleGetStatus`
+builds `ctx := database.WithoutTenantFilter(d.Context())` and passes it to
+`queryStatus`, which filters `documents` by `Where("tenant_id = ?",
+tenantId)`. `tenantId` comes from `resolveStatusTenantId`: either the
+request tenant's own id (default / `scope=tenant`) or the version-scoped
+canonical shared-content id (`canonical.TenantId(region, major, minor)`,
+`scope=shared`, gated behind an `X-Atlas-Operator` header check). The bypass
+exists so an operator's `scope=shared` read is not AND-ed with their own
+`tenant_id` and made to miss the canonical rows. Every generated query still
+carries an explicit `tenant_id = ?` bound to one resolved id — same pattern
+as §1 rows 75–81 (`reactor_search_index`, `npc_search_index`,
+`npc_spawn_index`, `monster_search_index`, `monster_spawn_index`,
+`documents`, `map_search_index`).
+
+**Fleet-wide `WithoutTenantFilter` reconciliation.** Thirds 1–2's sweep
+(above) never actually ran this grep across the whole fleet — it was scoped
+to thirds 1–2's file list. Run properly, fleet-wide:
+
+```
+$ grep -rn "WithoutTenantFilter" services/ --include="*.go" | wc -l
+38
+```
+
+Every one of the 38 hits, reconciled:
+
+| `file:line` | Accounted for in | Verdict |
+|---|---|---|
+| `services/atlas-ban/atlas.com/ban/history/task.go:32` | §3 Finding 1 → §1 row 57 (`login_history`) | UNSCOPED |
+| `services/atlas-ban/atlas.com/ban/ban/task.go:30` | §3 Finding 1 → §1 row 55 (`bans`) | UNSCOPED |
+| `services/atlas-data/atlas.com/data/data/status.go:148` | This entry (new, above) | SCOPED |
+| `services/atlas-data/atlas.com/data/reactor/search_test.go:48` | Test setup for §1 row 75 (`reactor_search_index`) | Test path |
+| `services/atlas-data/atlas.com/data/searchindex/searchindex.go:95` | Comment (doc-comment on `ResolvePartitionTenantId`), not a call site | N/A — comment |
+| `services/atlas-data/atlas.com/data/searchindex/searchindex.go:99` | `ResolvePartitionTenantId` — feeds §1 rows 75/76/79/81; explicit `Where("tenant_id = ?", t.Id())` bound to the request tenant before resolving the partition | SCOPED |
+| `services/atlas-data/atlas.com/data/searchindex/searchindex.go:138` | §1 row 75 Notes (cited directly) — `Search` | SCOPED |
+| `services/atlas-data/atlas.com/data/searchindex/searchindex.go:235` | §1 row 75 Notes (cited directly) — `SearchWithFilter` | SCOPED |
+| `services/atlas-data/atlas.com/data/searchindex/searchindex.go:264` | §1 row 75 Notes (cited directly) — `Count` | SCOPED |
+| `services/atlas-data/atlas.com/data/searchindex/searchindex.go:304` | §1 row 75 Notes (cited directly) — `CountWithFilter` | SCOPED |
+| `services/atlas-data/atlas.com/data/searchindex/searchindex_test.go:61` | Test setup for §1 rows 75/76/79/81 | Test path |
+| `services/atlas-data/atlas.com/data/searchindex/searchindex_test.go:324` | Test setup for §1 rows 75/76/79/81 | Test path |
+| `services/atlas-data/atlas.com/data/npc/search_test.go:53` | Test setup for §1 row 76 (`npc_search_index`) | Test path |
+| `services/atlas-data/atlas.com/data/npc/spawn_index.go:40` | §1 row 77 (`npc_spawn_index`) Notes (cited directly) — `SpawnMapsFor` | SCOPED |
+| `services/atlas-data/atlas.com/data/monster/search_test.go:48` | Test setup for §1 row 79 (`monster_search_index`) | Test path |
+| `services/atlas-data/atlas.com/data/monster/spawn_index.go:46` | §1 row 80 (`monster_spawn_index`) Notes (cited directly) — `SpawnMapsFor` | SCOPED |
+| `services/atlas-data/atlas.com/data/map/search_test.go:27` | Test setup for §1 row 81 (`map_search_index`) | Test path |
+| `services/atlas-data/atlas.com/data/item/string_search_test.go:92` | Test setup — `item` string search/registry has no §1 row of its own (indexes are Redis/in-memory per §1's item-search disposition); no Postgres `WithoutTenantFilter` production call site in this package | Test path |
+| `services/atlas-data/atlas.com/data/item/string_registry_test.go:57` | Test setup, same package as above | Test path |
+| `services/atlas-merchant/atlas.com/merchant/frederick/task.go:31` | §1 row 102 (`frederick_items`, `frederick_mesos`) | UNSCOPED |
+| `services/atlas-merchant/atlas.com/merchant/frederick/notification_task.go:36` | §1 row 103 (`frederick_notifications`) | UNSCOPED |
+| `services/atlas-merchant/atlas.com/merchant/shop/task.go:29` | §1 row 109 (`shops`) | UNSCOPED |
+| `services/atlas-mts/atlas.com/mts/listing/administrator.go:53` | Comment, not a call site — describes the sweep context consumed by §1 row 114 (`listings`) | N/A — comment |
+| `services/atlas-mts/atlas.com/mts/listing/provider.go:207` | Comment, not a call site — same sweep, §1 row 114 | N/A — comment |
+| `services/atlas-mts/atlas.com/mts/listing/processor.go:586` | Comment, not a call site — same sweep, §1 row 114 | N/A — comment |
+| `services/atlas-mts/atlas.com/mts/wish/administrator.go:136` | Comment, not a call site — describes the sweep context consumed by §1 row 115 (`wish_entries`) | N/A — comment |
+| `services/atlas-mts/atlas.com/mts/task/periodic.go:99` | Comment, not a call site — describes `sweepCtx` below | N/A — comment |
+| `services/atlas-mts/atlas.com/mts/task/periodic.go:106` | §1 row 114 (`listings`) and row 115 (`wish_entries`) — `sweepCtx` feeds both `CountExpiredActive`/`GetExpiredActive` and `DeleteExpiredWanted` | UNSCOPED |
+| `services/atlas-mts/atlas.com/mts/task/periodic.go:123` | Comment, not a call site | N/A — comment |
+| `services/atlas-mts/atlas.com/mts/task/periodic.go:199` | Comment, not a call site | N/A — comment |
+| `services/atlas-mts/atlas.com/mts/task/periodic_test.go:40` | Comment in test file | N/A — comment |
+| `services/atlas-mts/atlas.com/mts/task/periodic_test.go:62` | Test setup for §1 rows 114/115 | Test path |
+| `services/atlas-mts/atlas.com/mts/task/periodic_test.go:71` | Test setup for §1 rows 114/115 | Test path |
+| `services/atlas-mts/atlas.com/mts/task/periodic_test.go:82` | Test setup for §1 rows 114/115 | Test path |
+| `services/atlas-mts/atlas.com/mts/task/periodic_test.go:200` | Test setup for §1 rows 114/115 | Test path |
+| `services/atlas-mts/atlas.com/mts/testsupport/resource.go:416` | Comment, not a call site — describes test-helper tenant scoping | N/A — comment |
+| `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/store.go:230` | §1 row 139 (`sagas`) — `GetAllActive` | UNSCOPED |
+| `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/store.go:241` | §1 row 139 (`sagas`) — `GetTimedOut` | UNSCOPED |
+
+Result: every one of the 38 fleet-wide `WithoutTenantFilter` hits resolves to
+an already-recorded §1 row (UNSCOPED or explicitly-filtered SCOPED), the new
+`status.go` SCOPED entry above, a doc comment that is not a call site, or a
+test-setup path. **No new UNSCOPED finding.** The fleet UNSCOPED count from
+fix round 1 (12) is unchanged.

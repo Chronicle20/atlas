@@ -53,7 +53,7 @@ func TestDamageLeaderOverAggregatedEntries(t *testing.T) {
 
 func TestModel_NextSkillDecision(t *testing.T) {
 	zero := nextSkillDecision{}
-	m := NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50)
+	m := NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	if m.NextSkillDecision() != zero {
 		t.Fatalf("default decision should be sentinel zero, got %+v", m.NextSkillDecision())
 	}
@@ -70,7 +70,7 @@ func TestModel_NextSkillDecision(t *testing.T) {
 }
 
 func TestModel_LastDamageTakenMsRoundTrip(t *testing.T) {
-	m := NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50)
+	m := NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	if m.LastDamageTakenMs() != 0 {
 		t.Errorf("expected zero initial lastDamageTakenMs; got %d", m.LastDamageTakenMs())
 	}

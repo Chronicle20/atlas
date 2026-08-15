@@ -221,7 +221,8 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	m := GetMonsterRegistry().CreateMonster(p.ctx, p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.Hp(), ma.Mp())
+	// wired to the command body in Task 2
+	m := GetMonsterRegistry().CreateMonster(p.ctx, p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.Hp(), ma.Mp(), "", "")
 
 	// FR-2.1: Only fire the spawn picker when the freshly-created monster
 	// already has aggro. In practice this is always false at spawn (no damage
@@ -1701,7 +1702,7 @@ func (p *ProcessorImpl) DrainMp(f field.Model, uniqueId uint32, characterId uint
 		// on the envelope are not consulted for this Reason. Build via
 		// NewMonster so the Model carries the kafka envelope's field —
 		// the only piece the provider needs.
-		post = NewMonster(f, uniqueId, 0, 0, 0, 0, 0, 0, 0, 0)
+		post = NewMonster(f, uniqueId, 0, 0, 0, 0, 0, 0, 0, 0, "", "")
 	}
 
 	return p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, characterId, skillId, MpChangeReasonMpEater, requestedAmount))

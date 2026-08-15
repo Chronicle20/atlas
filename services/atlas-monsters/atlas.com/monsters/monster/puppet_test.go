@@ -37,7 +37,7 @@ func TestAddPuppetBiasesController(t *testing.T) {
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
 	// Monster at (100,100).
-	m := r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 5, 0, 100, 50, "", "")
 
 	// Default candidate (least-controlled) would be char 1 (it controls
 	// nothing yet, neither does char 2 — first iterated wins by tie).
@@ -66,11 +66,11 @@ func TestRemovePuppetClearsBias(t *testing.T) {
 	pr.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 5, 0, 100, 50, "", "")
 
 	// Make char 2 already control a monster so the least-controlled fallback is
 	// deterministically char 1 (map iteration over equal counts is unordered).
-	other := r.CreateMonster(ctx, ten, f, 9300018, 500, 500, 0, 5, 0, 100, 50)
+	other := r.CreateMonster(ctx, ten, f, 9300018, 500, 500, 0, 5, 0, 100, 50, "", "")
 	_, _ = r.ControlMonster(ten, other.UniqueId(), 2)
 
 	puppetOwner := uint32(2)
@@ -101,11 +101,11 @@ func TestPuppetOutOfVicinityNoBias(t *testing.T) {
 	pr.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
 
 	// Make char 2 already control a monster so the least-controlled fallback is
 	// deterministically char 1 (map iteration over equal counts is unordered).
-	other := r.CreateMonster(ctx, ten, f, 9300018, 500, 500, 0, 5, 0, 100, 50)
+	other := r.CreateMonster(ctx, ten, f, 9300018, 500, 500, 0, 5, 0, 100, 50, "", "")
 	_, _ = r.ControlMonster(ten, other.UniqueId(), 2)
 
 	// Puppet far away: (1000,0) -> distanceSq=1_000_000 > 177777.

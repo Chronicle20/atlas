@@ -17,7 +17,7 @@ func TestPickerSweep_RepicksOnlyEligibleMonsters(t *testing.T) {
 	tctx := tenant.WithContext(ctx, tm)
 
 	// Monster A: nextEligibleRepickAtMs in the past — should be repicked.
-	a := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	a := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	_, _ = r.SetNextSkillDecision(tm, a.UniqueId(), nextSkillDecision{
 		nextEligibleRepickAtMs: time.Now().Add(-time.Second).UnixMilli(),
 	})
@@ -33,10 +33,10 @@ func TestPickerSweep_RepicksOnlyEligibleMonsters(t *testing.T) {
 	})
 
 	// Monster B: nextEligibleRepickAtMs sentinel zero — should be skipped.
-	_ = r.CreateMonster(tctx, tm, testField(), 9000000, 1, 1, 0, 0, 0, 100, 50)
+	_ = r.CreateMonster(tctx, tm, testField(), 9000000, 1, 1, 0, 0, 0, 100, 50, "", "")
 
 	// Monster C: nextEligibleRepickAtMs in the future — should be skipped.
-	c := r.CreateMonster(tctx, tm, testField(), 9000000, 2, 2, 0, 0, 0, 100, 50)
+	c := r.CreateMonster(tctx, tm, testField(), 9000000, 2, 2, 0, 0, 0, 100, 50, "", "")
 	_, _ = r.SetNextSkillDecision(tm, c.UniqueId(), nextSkillDecision{
 		nextEligibleRepickAtMs: time.Now().Add(time.Hour).UnixMilli(),
 	})
@@ -80,7 +80,7 @@ func TestPickerSweep_SkipsMonstersWithNoSkills(t *testing.T) {
 	tm := newTestTenant(t)
 	tctx := tenant.WithContext(ctx, tm)
 
-	a := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	a := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	_, _ = r.SetNextSkillDecision(tm, a.UniqueId(), nextSkillDecision{
 		nextEligibleRepickAtMs: time.Now().Add(-time.Second).UnixMilli(),
 	})
@@ -109,7 +109,7 @@ func TestPickerSweep_SkipsWhenAggroFalse(t *testing.T) {
 	tm := newTestTenant(t)
 	tctx := tenant.WithContext(ctx, tm)
 
-	a := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	a := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	_, _ = r.SetNextSkillDecision(tm, a.UniqueId(), nextSkillDecision{
 		nextEligibleRepickAtMs: time.Now().Add(-time.Second).UnixMilli(),
 	})
@@ -139,7 +139,7 @@ func TestPickerSweep_RepicksWhenAggroTrue(t *testing.T) {
 	tm := newTestTenant(t)
 	tctx := tenant.WithContext(ctx, tm)
 
-	a := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	a := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	if _, err := r.ControlMonster(tm, a.UniqueId(), 99); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
 	}

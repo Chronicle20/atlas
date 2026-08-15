@@ -75,7 +75,7 @@ func newPoisonTestProcessor(t *testing.T, hp uint32) (*ProcessorImpl, tenant.Mod
 	}
 	t.Cleanup(func() { testInformationLookup = prevHook })
 
-	m := r.CreateMonster(ctx, tm, testField(), 7130002, 0, 0, 0, 0, 0, hp, 120)
+	m := r.CreateMonster(ctx, tm, testField(), 7130002, 0, 0, 0, 0, 0, hp, 120, "", "")
 
 	p := &ProcessorImpl{
 		l:    logrus.New(),
@@ -127,7 +127,7 @@ func TestApplyStatusEffect_RejectsPoisonAtOneHp(t *testing.T) {
 // the server applies can drift apart.
 func TestCalculatePoisonDamage_UsesResolvedMagnitude(t *testing.T) {
 	task := &StatusExpirationTask{l: logrus.New()}
-	m := NewMonster(testField(), 1, 7130002, 0, 0, 0, 0, 0, beetleMaxHp, 120)
+	m := NewMonster(testField(), 1, 7130002, 0, 0, 0, 0, 0, beetleMaxHp, 120, "", "")
 
 	resolved := NewStatusEffect(SourceTypePlayerSkill, 1, 2111003, 30,
 		map[string]int32{StatusPoison: 380}, 40*time.Second, time.Second)
@@ -150,7 +150,7 @@ func TestCalculatePoisonDamage_UsesResolvedMagnitude(t *testing.T) {
 // question; reading its last element as "the damage" reports a cumulative
 // figure that grows with every hit.
 func TestDamagedStatusEventProvider_DamageIsNotCumulative(t *testing.T) {
-	m := NewMonster(testField(), 1, 7130002, 0, 0, 0, 0, 0, beetleMaxHp, 120)
+	m := NewMonster(testField(), 1, 7130002, 0, 0, 0, 0, 0, beetleMaxHp, 120, "", "")
 	summary := []entry{{CharacterId: 1, Damage: 10_800, LastHitMs: 1}}
 
 	msgs, err := damagedStatusEventProvider(m, 1, 1, false, DamageSourceDamageOverTime, 380, summary)()

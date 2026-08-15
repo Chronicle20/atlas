@@ -77,7 +77,7 @@ func TestAggroDecayTaskFullClearEmitsAggroChanged(t *testing.T) {
 	ctx := context.Background()
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	if _, err := r.ControlMonster(ten, m.UniqueId(), 42); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestAggroDecayTaskNoEmitWhenNoAggroToFlip(t *testing.T) {
 	ctx := context.Background()
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	// No controller -> ApplyDamage cannot flip aggro on.
 	if _, err := r.ApplyDamage(ten, 1, 1, m.UniqueId(), 0); err != nil {
 		t.Fatalf("ApplyDamage: %v", err)
@@ -146,7 +146,7 @@ func TestAggroDecayTaskBossExemption(t *testing.T) {
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 	bossTemplate := uint32(8800000)
-	m := r.CreateMonster(ctx, ten, f, bossTemplate, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, bossTemplate, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	if _, err := r.ControlMonster(ten, m.UniqueId(), 42); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
 	}
@@ -181,12 +181,12 @@ func TestAggroDecayTaskBossCacheHitsLookupOncePerTemplate(t *testing.T) {
 
 	// 3 monsters of the same template, plus 1 of a different template.
 	for i := 0; i < 3; i++ {
-		m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+		m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 		if _, err := r.ApplyDamage(ten, 1, 100, m.UniqueId(), 0); err != nil {
 			t.Fatalf("seed: %v", err)
 		}
 	}
-	other := r.CreateMonster(ctx, ten, f, 9300019, 0, 0, 0, 5, 0, 1000, 50)
+	other := r.CreateMonster(ctx, ten, f, 9300019, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	if _, err := r.ApplyDamage(ten, 1, 100, other.UniqueId(), 0); err != nil {
 		t.Fatalf("seed: %v", err)
 	}
@@ -209,7 +209,7 @@ func TestAggroDecayTaskNoOpWhenAllFresh(t *testing.T) {
 	ctx := context.Background()
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	if _, err := r.ControlMonster(ten, m.UniqueId(), 42); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
 	}

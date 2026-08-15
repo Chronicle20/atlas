@@ -35,6 +35,8 @@ func Clone(m Model) *ModelBuilder {
 		statusEffects:      effects,
 		nextSkillDecision:  m.nextSkillDecision,
 		lastDamageTakenMs:  m.lastDamageTakenMs,
+		spawnSourceType:    m.spawnSourceType,
+		spawnSourceId:      m.spawnSourceId,
 	}
 }
 
@@ -61,6 +63,8 @@ type ModelBuilder struct {
 	statusEffects      []StatusEffect
 	nextSkillDecision  nextSkillDecision
 	lastDamageTakenMs  int64
+	spawnSourceType    string
+	spawnSourceId      string
 }
 
 // SetX sets the X coordinate.
@@ -122,6 +126,13 @@ func (b *ModelBuilder) SetNextSkillDecision(d nextSkillDecision) *ModelBuilder {
 // recovery task's HP-regen idle gate.
 func (b *ModelBuilder) SetLastDamageTakenMs(v int64) *ModelBuilder {
 	b.lastDamageTakenMs = v
+	return b
+}
+
+// SetSpawnSource sets the opaque spawn provenance pair.
+func (b *ModelBuilder) SetSpawnSource(sourceType string, sourceId string) *ModelBuilder {
+	b.spawnSourceType = sourceType
+	b.spawnSourceId = sourceId
 	return b
 }
 
@@ -216,5 +227,7 @@ func (b *ModelBuilder) Build() Model {
 		statusEffects:      b.statusEffects,
 		nextSkillDecision:  b.nextSkillDecision,
 		lastDamageTakenMs:  b.lastDamageTakenMs,
+		spawnSourceType:    b.spawnSourceType,
+		spawnSourceId:      b.spawnSourceId,
 	}
 }

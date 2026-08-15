@@ -6,7 +6,7 @@ import (
 )
 
 func emptyBuilder() *ModelBuilder {
-	return Clone(NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50))
+	return Clone(NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50, "", ""))
 }
 
 func mkVenomEffect(duration time.Duration) StatusEffect {

@@ -35,15 +35,6 @@ var testOperations = map[string]interface{}{
 	cashcb.CancelNameChangeResultCancelled: float64(0x00),
 }
 
-// discardConn is a net.Conn whose Write swallows the encrypted frame.
-// session.Model.announceEncrypted writes straight to the socket; the tests
-// capture the packet at the writer seam instead, so the socket only has to
-// not panic.
-type discardConn struct{ net.Conn }
-
-func (discardConn) Write(b []byte) (int, error) { return len(b), nil }
-func (discardConn) Close() error                { return nil }
-
 // announcement records one session.Announce call: which writer it went to
 // and the encoded body bytes.
 type announcement struct {

@@ -100,7 +100,10 @@ func TestPuppetRegistryIsTenantScoped(t *testing.T) {
 	pr.Clear(ctx)
 
 	t1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	t2, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	// t2 differs from t1 in region AND version, not just UUID — this pins the
+	// tenant-scoped key SHAPE (TenantKey embeds region/version), not merely
+	// "two distinct tenants stay separate".
+	t2, _ := tenant.Create(uuid.New(), "JMS", 62, 1)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
 	pr.Add(ctx, t1, f, 2, 110, 110)

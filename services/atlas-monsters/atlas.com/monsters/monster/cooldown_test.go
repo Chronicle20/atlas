@@ -135,7 +135,13 @@ func TestCooldown_IsTenantScoped(t *testing.T) {
 	defer mr.Close()
 	ctx := context.Background()
 	t1 := newTestTenant(t)
-	t2 := newTestTenant(t)
+	// t2 differs from t1 in region AND version, not just UUID — this pins the
+	// tenant-scoped key SHAPE (TenantKey embeds region/version), not merely
+	// "two distinct tenants stay separate".
+	t2, err := tenant.Create(uuid.New(), "JMS", 62, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create t2: %v", err)
+	}
 
 	r.SetCooldown(ctx, t1, 100, byte(42), 5*time.Second)
 

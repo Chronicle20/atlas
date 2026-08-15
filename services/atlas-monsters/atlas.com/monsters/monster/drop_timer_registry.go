@@ -2,7 +2,7 @@ package monster
 
 import (
 	"context"
-	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -47,14 +47,13 @@ type storedDropTimer struct {
 	LastHitAtMs        int64       `json:"lastHitAtMs"`
 }
 
-// dropTimerSuffix returns the registry key suffix for a drop timer entry:
-// "<tenantId>:<uniqueId>" — identical to the tail of the old dropTimerKey.
-func dropTimerSuffix(t tenant.Model, uniqueId uint32) string {
-	return fmt.Sprintf("%s:%d", t.Id().String(), uniqueId)
-}
-
+// DropTimerRegistry is tenant-scoped (D7): the stored key is
+// atlas:drop-timer:<tenantId>:<region>:<major>.<minor>:<uniqueId>. GetAll is
+// the one genuine cross-tenant operation — the periodic sweep task has no
+// tenant to loop over, it needs every tenant's live drop timers — and uses
+// the explicit TenantRegistry.GetAllAcrossTenants sibling (D7).
 type DropTimerRegistry struct {
-	reg *atlasredis.Registry[string, storedDropTimer]
+	reg *atlasredis.TenantRegistry[uint32, storedDropTimer]
 }
 
 var (
@@ -64,7 +63,7 @@ var (
 
 func InitDropTimerRegistry(rc *goredis.Client) {
 	dropTimerOnce.Do(func() {
-		reg := atlasredis.NewRegistry[string, storedDropTimer](rc, "drop-timer", func(s string) string { return s })
+		reg := atlasredis.NewTenantRegistry[uint32, storedDropTimer](rc, "drop-timer", func(id uint32) string { return strconv.FormatUint(uint64(id), 10) })
 		dropTimerRegistry = &DropTimerRegistry{reg: reg}
 	})
 }
@@ -88,22 +87,22 @@ func (r *DropTimerRegistry) Register(ctx context.Context, t tenant.Model, unique
 		LastDropAtMs:       e.lastDropAt.UnixMilli(),
 		LastHitAtMs:        timeToMillis(e.lastHitAt),
 	}
-	_ = r.reg.Put(ctx, dropTimerSuffix(t, uniqueId), sd)
+	_ = r.reg.Put(ctx, t, uniqueId, sd)
 }
 
 func (r *DropTimerRegistry) Unregister(ctx context.Context, t tenant.Model, uniqueId uint32) {
-	_ = r.reg.Remove(ctx, dropTimerSuffix(t, uniqueId))
+	_ = r.reg.Remove(ctx, t, uniqueId)
 }
 
 func (r *DropTimerRegistry) RecordHit(ctx context.Context, t tenant.Model, uniqueId uint32, hitTime time.Time) {
-	_, _ = r.reg.Update(ctx, dropTimerSuffix(t, uniqueId), func(sd storedDropTimer) storedDropTimer {
+	_, _ = r.reg.Update(ctx, t, uniqueId, func(sd storedDropTimer) storedDropTimer {
 		sd.LastHitAtMs = hitTime.UnixMilli()
 		return sd
 	})
 }
 
 func (r *DropTimerRegistry) UpdateLastDrop(ctx context.Context, t tenant.Model, uniqueId uint32, dropTime time.Time) {
-	_, _ = r.reg.Update(ctx, dropTimerSuffix(t, uniqueId), func(sd storedDropTimer) storedDropTimer {
+	_, _ = r.reg.Update(ctx, t, uniqueId, func(sd storedDropTimer) storedDropTimer {
 		sd.LastDropAtMs = dropTime.UnixMilli()
 		return sd
 	})
@@ -111,7 +110,7 @@ func (r *DropTimerRegistry) UpdateLastDrop(ctx context.Context, t tenant.Model, 
 
 func (r *DropTimerRegistry) GetAll(ctx context.Context) map[MonsterKey]DropTimerEntry {
 	result := make(map[MonsterKey]DropTimerEntry)
-	items, err := r.reg.GetAll(ctx)
+	items, err := r.reg.GetAllAcrossTenants(ctx)
 	if err != nil {
 		return result
 	}

@@ -32,9 +32,8 @@ type storedPuppet struct {
 // reg + mapIdx pairing: a tenant-scoped value Registry keyed by (field, owner)
 // for the {ownerCharacterId, x, y} payload, plus a tenant-scoped per-field SET
 // index of owner ids so puppets can be enumerated and removed by owner. Clear
-// additionally keeps a bare pair (scan/scanFieldIdx) purely for the
-// test-only full-namespace wipe — see the Registry.scan field comment in
-// registry.go for why (no tenant-scoped equivalent for a blanket wipe exists).
+// uses the cross-tenant GetAllAcrossTenants/ClearAllAcrossTenants sibling
+// methods (D7) for the test-only full-namespace wipe.
 type PuppetRegistry struct {
 	// reg backs the puppet payload store, tenant-scoped: the stored key is
 	// atlas:monster-puppet:<tenantId>:<region>:<major>.<minor>:<world>:<channel>:<map>:<instance>:<owner>.
@@ -43,8 +42,6 @@ type PuppetRegistry struct {
 	// tenant-scoped: the SET key is
 	// atlas:monster-puppet-field:<tenantId>:<region>:<major>.<minor>:<world>:<channel>:<map>:<instance>.
 	fieldIdx *atlasredis.TenantKeyedSet[string]
-	scan     *atlasredis.Registry[string, storedPuppet]
-	scanIdx  *atlasredis.KeyedSet[string]
 }
 
 var (
@@ -57,8 +54,6 @@ func InitPuppetRegistry(rc *goredis.Client) {
 		puppetRegistry = &PuppetRegistry{
 			reg:      atlasredis.NewTenantRegistry[string, storedPuppet](rc, "monster-puppet", func(s string) string { return s }),
 			fieldIdx: atlasredis.NewTenantKeyedSet[string](rc, "monster-puppet-field", func(s string) string { return s }),
-			scan:     atlasredis.NewRegistry[string, storedPuppet](rc, "monster-puppet", func(s string) string { return s }),
-			scanIdx:  atlasredis.NewKeyedSet[string](rc, "monster-puppet-field", func(s string) string { return s }),
 		}
 	})
 }
@@ -138,8 +133,8 @@ func (r *PuppetRegistry) VicinityOwner(ctx context.Context, t tenant.Model, f fi
 }
 
 // Clear removes all puppet state (payloads + field indexes) across every
-// tenant. Test-only; see the Registry.scan field comment in registry.go.
+// tenant. Test-only.
 func (r *PuppetRegistry) Clear(ctx context.Context) {
-	_, _ = r.scan.Clear(ctx)
-	_, _ = r.scanIdx.ClearAll(ctx)
+	_, _ = r.reg.ClearAllAcrossTenants(ctx)
+	_, _ = r.fieldIdx.ClearAllAcrossTenants(ctx)
 }

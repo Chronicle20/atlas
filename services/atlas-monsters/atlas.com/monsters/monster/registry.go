@@ -268,20 +268,6 @@ type Registry struct {
 	// mapIdx backs the per-field membership SET, tenant-scoped: the SET key is
 	// atlas:monster-map:<tenantId>:<region>:<major>.<minor>:<world>:<channel>:<map>:<instance>.
 	mapIdx *atlasredis.TenantKeyedSet[string]
-	// scan and scanMapIdx are bare (non-tenant-scoped) registries pointed at
-	// the SAME client/namespace as reg/mapIdx. They observe exactly the keys
-	// reg/mapIdx write: tenantEntityKey(ns, t, suffix) joins
-	// [prefix, ns, TenantKey(t), suffix] with ":", and a bare Registry/KeyedSet
-	// with an identity keyFn fed the pre-joined "TenantKey(t):suffix" string
-	// produces the identical final key. They exist ONLY for the two operations
-	// the tenant-scoped API has no equivalent for: GetMonsters() (the periodic
-	// sweep tasks have no tenant to loop over — they need every tenant with
-	// live monster data) and Clear()/ClaimMonster's atomic delete-if-exists
-	// (Clear is a test-only full-namespace wipe; TenantRegistry.Clear requires
-	// a specific tenant). Do not reach for these where a tenant.Model is
-	// already in hand — use reg/mapIdx instead.
-	scan       *atlasredis.Registry[string, storedMonster]
-	scanMapIdx *atlasredis.KeyedSet[string]
 }
 
 var (
@@ -292,10 +278,8 @@ var (
 func InitMonsterRegistry(rc *goredis.Client) {
 	once.Do(func() {
 		registry = &Registry{
-			reg:        atlasredis.NewTenantRegistry[uint32, storedMonster](rc, "monster", func(id uint32) string { return strconv.FormatUint(uint64(id), 10) }),
-			mapIdx:     atlasredis.NewTenantKeyedSet[string](rc, "monster-map", func(s string) string { return s }),
-			scan:       atlasredis.NewRegistry[string, storedMonster](rc, "monster", func(s string) string { return s }),
-			scanMapIdx: atlasredis.NewKeyedSet[string](rc, "monster-map", func(s string) string { return s }),
+			reg:    atlasredis.NewTenantRegistry[uint32, storedMonster](rc, "monster", func(id uint32) string { return strconv.FormatUint(uint64(id), 10) }),
+			mapIdx: atlasredis.NewTenantKeyedSet[string](rc, "monster-map", func(s string) string { return s }),
 		}
 	})
 }
@@ -309,12 +293,6 @@ func GetMonsterRegistry() *Registry {
 // Retained for tests that seed raw blobs directly into Redis.
 func monsterKey(t tenant.Model, uniqueId uint32) string {
 	return fmt.Sprintf("%s:monster:%s:%d", atlasredis.KeyPrefix(), atlasredis.TenantKey(t), uniqueId)
-}
-
-// claimKey reproduces reg's entity key for uniqueId under tenant t, for use
-// with scan.RemoveExisting (see the Registry.scan field comment).
-func claimKey(t tenant.Model, uniqueId uint32) string {
-	return atlasredis.TenantKey(t) + ":" + strconv.FormatUint(uint64(uniqueId), 10)
 }
 
 // mapIndexKey is the tenant-scoped map-index SET's entity key: the tenant
@@ -609,7 +587,7 @@ func (r *Registry) ClaimMonster(ctx context.Context, t tenant.Model, uniqueId ui
 		return Model{}, false, err
 	}
 
-	claimed, err := r.scan.RemoveExisting(ctx, claimKey(t, uniqueId))
+	claimed, err := r.reg.RemoveExisting(ctx, t, uniqueId)
 	if err != nil {
 		return Model{}, false, err
 	}
@@ -689,7 +667,7 @@ func (r *Registry) GetMonsters() map[tenant.Model][]Model {
 	ctx := context.Background()
 	result := make(map[tenant.Model][]Model)
 
-	all, err := r.scan.GetAll(ctx)
+	all, err := r.reg.GetAllAcrossTenants(ctx)
 	if err != nil {
 		return result
 	}
@@ -704,8 +682,8 @@ func (r *Registry) GetMonsters() map[tenant.Model][]Model {
 }
 
 func (r *Registry) Clear(ctx context.Context) {
-	_, _ = r.scan.Clear(ctx)
-	_, _ = r.scanMapIdx.ClearAll(ctx)
+	_, _ = r.reg.ClearAllAcrossTenants(ctx)
+	_, _ = r.mapIdx.ClearAllAcrossTenants(ctx)
 }
 
 // DecaySummary is returned by DecayDamageEntries. AggroFlippedOff is true when

@@ -21,6 +21,7 @@ import (
 	"atlas-channel/kafka/consumer/conversation_reward_notice"
 	doorConsumer "atlas-channel/kafka/consumer/door"
 	"atlas-channel/kafka/consumer/drop"
+	eventConsumer "atlas-channel/kafka/consumer/event"
 	"atlas-channel/kafka/consumer/expression"
 	"atlas-channel/kafka/consumer/fame"
 	"atlas-channel/kafka/consumer/gachapon"
@@ -251,6 +252,7 @@ func main() {
 	reportstatus.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
+	eventConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	rpsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	instance_transport.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
@@ -552,6 +554,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(route.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(eventConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(rpsConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {

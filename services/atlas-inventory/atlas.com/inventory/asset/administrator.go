@@ -69,6 +69,10 @@ func updateFlagAndExpiration(db *gorm.DB, id uint32, flag uint16, expiration tim
 	}).Error
 }
 
+func updateFlag(db *gorm.DB, id uint32, flag uint16) error {
+	return db.Model(&Entity{}).Where("id = ?", id).Update("flag", flag).Error
+}
+
 func updateQuantity(db *gorm.DB, id uint32, quantity uint32) error {
 	return db.Model(&Entity{Id: id}).Select("Quantity").Updates(&Entity{Quantity: quantity}).Error
 }

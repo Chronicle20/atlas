@@ -81,6 +81,7 @@ that is the hole this rule closes.
 | Scan, inventory, doc sweep, file-finding | `haiku` | |
 | Run the verification gate (`atlas-verifier`) | `haiku` | Frontmatter pin; it runs one command and quotes the output |
 | Implement a plan task (`atlas-implementer`) | `sonnet` | Default; frontmatter pin |
+| Implement a packet codec (`packet-implementer`) or dispatcher family (`dispatcher-family-implementer`) | `sonnet` | Frontmatter pin; both also carry the 120-call PARTIAL budget |
 | Implement a plan task tagged `model: opus` in plan.md | `opus` | Opt-in only — see below; pass `model: opus` on the dispatch to override the frontmatter |
 
 A plan task may be tagged `model: opus` in `plan.md` when it is genuinely
@@ -151,22 +152,59 @@ those in a 400k-token implementer context cost a large multiple of the same
 run in a clean 20k one, and their output is the biggest avoidable consumer of
 an implementer's window.
 
-After an implementer reports `DONE` / `DONE_WITH_CONCERNS`, and before the
-task reviewer:
+**The gate runs concurrently with the next task. Never idle waiting for it.**
 
-1. Dispatch `atlas-verifier` (`model: haiku`) with the worktree path and
-   `tools/verify.sh --quick`.
-2. **PASS** → proceed to the task review as normal.
-3. **FAIL** → the quoted failing block becomes a review finding. Feed it into
-   the existing fix loop (resume the implementer for rounds 1-3), then
-   re-dispatch `atlas-verifier` for the fix commit. Never fix it yourself in
-   the controller session.
-4. **ERROR** → the gate did not run. Resolve it (wrong tree, timeout) and
-   re-dispatch. Never treat ERROR as PASS.
+A gate checks a commit, and commits are immutable — task N's verdict is equally
+valid whenever it lands. Blocking on it is pure wall clock: measured on
+task-227, one controller session spent **48 of 109 minutes idle** waiting for
+backgrounded gates it had already launched, while 3 tasks took 109 minutes that
+contained only 47 minutes of actual subagent work.
+
+After an implementer reports `DONE` / `DONE_WITH_CONCERNS`:
+
+1. **Launch** the gate for the range `<last-gated-commit>..HEAD`:
+
+   ```sh
+   tools/verify.sh --quick --base <last-gated-commit> > "$CLAUDE_JOB_DIR/tmp/gate-<N>.log" 2>&1
+   ```
+
+   with `run_in_background: true`. Pass `--base` — without it the whole-branch
+   diff makes each run ~10× longer once any `libs/` file has been touched
+   (docs/verification.md, "Iteration gate"). Ledger the commit you gated from.
+2. **Keep going immediately** — do not poll, do not wait. Run the task review,
+   then Step 4b's inventory for task N+1, then dispatch task N+1's implementer.
+   The gate runs underneath all of it.
+3. **Reconcile when it lands**, at the next natural pause (the notification
+   from the next subagent). Read the log, ledger PASS or the failing block, and
+   record the new last-gated commit.
+4. **At most one gate in flight.** If task N+1 finishes while N's gate is still
+   running, do not start a second — its commits join the next gate's range.
+   The gate covers a *range*, not a task, which is why `--base` is the last
+   gated commit rather than `HEAD~1`.
+
+On a verdict:
+
+- **PASS** → ledger it; the range is clean.
+- **FAIL** → the quoted failing block becomes a review finding. Feed it into
+  the existing fix loop (resume the implementer for rounds 1-3). Never fix it
+  yourself in the controller session. **Do not gate the fix round separately** —
+  the fix commit joins the next gate's range. Gating a one-line `gofmt` fix on
+  its own cost 22 of those 48 idle minutes on task-227.
+- **ERROR** → the gate did not run. Resolve it (wrong tree, timeout) and
+  re-launch. Never treat ERROR as PASS.
+
+A FAIL means one already-dispatched task started on a base that was not yet
+green. That is cheap and expected: the fix is a scoped commit on top, the same
+as any review finding. It is not a reason to serialize.
 
 The flagless `tools/verify.sh` still runs exactly once, at branch end, in
-`superpowers:finishing-a-development-branch`. `--quick` per task is the inner
-loop, not the gate — per CLAUDE.md only the flagless run counts as verified.
+`superpowers:finishing-a-development-branch`, against the full merge base.
+`--quick --base` per task is the inner loop, not the gate — per CLAUDE.md only
+the flagless run counts as verified.
+
+You may dispatch `atlas-verifier` (`model: haiku`) instead of launching the
+gate yourself when you want the verdict summarized rather than reading the log.
+The concurrency rule is unchanged: dispatch it and move on, reconcile later.
 
 ### Step 4d — Handle `PARTIAL`
 

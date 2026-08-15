@@ -1034,8 +1034,9 @@ func (p *ProcessorImpl) PurchaseBundle(mb *message.Buffer) func(buyerCharacterId
 			return result, err
 		}
 
-		// Grant items to buyer.
-		ad := result.ItemSnapshot.WithQuantity(uint32(result.BundleSize) * uint32(result.BundlesPurchased))
+		// Grant items to buyer. A completed sale is a transfer of ownership, so
+		// it CONSUMES any karma mark (task-223 FR-7.4).
+		ad := clearKarmaFromAssetData(result.ItemId, result.ItemSnapshot.WithQuantity(uint32(result.BundleSize)*uint32(result.BundlesPurchased)))
 		invType, ok := inventory.TypeFromItemId(item.Id(result.ItemId))
 		if ok {
 			itemTransactionId := uuid.New()

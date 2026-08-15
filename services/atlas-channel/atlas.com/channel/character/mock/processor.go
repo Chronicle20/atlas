@@ -21,6 +21,11 @@ type MockProcessor struct {
 	// Errors can be set to simulate failures
 	GetByIdError   error
 	GetByNameError error
+	// GetItemInSlotFunc lets a test control the target-item lookup used by,
+	// e.g., the karma scissors handler arm (task-223), which needs the full
+	// asset (locked, flag, template id) rather than just a resolved template
+	// id. Defaults to the pre-existing "not implemented" error when unset.
+	GetItemInSlotFunc func(characterId uint32, inventoryType inventory2.Type, slot int16) (asset.Model, error)
 }
 
 // NewMockProcessor creates a new MockProcessor instance
@@ -81,7 +86,10 @@ func (m *MockProcessor) GetEquipableInSlot(_ uint32, _ int16) model.Provider[ass
 	return model.ErrorProvider[asset.Model](errors.New("not implemented in mock"))
 }
 
-func (m *MockProcessor) GetItemInSlot(_ uint32, _ inventory2.Type, _ int16) model.Provider[asset.Model] {
+func (m *MockProcessor) GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model] {
+	if m.GetItemInSlotFunc != nil {
+		return func() (asset.Model, error) { return m.GetItemInSlotFunc(characterId, inventoryType, slot) }
+	}
 	return model.ErrorProvider[asset.Model](errors.New("not implemented in mock"))
 }
 

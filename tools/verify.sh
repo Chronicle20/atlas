@@ -11,7 +11,9 @@
 # do not restate its contents in CLAUDE.md.
 #
 # Change detection: guards whose CI job is path-gated only run when the
-# relevant paths changed against the merge base. `--all` forces everything.
+# relevant paths changed against the merge base. `--all` forces everything;
+# `--base <rev>` narrows the change set to an increment, which is what a
+# per-task iteration gate wants — see docs/verification.md, "Iteration gate".
 #
 # Every check runs even after an earlier one fails, so one pass gives the
 # complete picture. Exit status is non-zero if any check failed.
@@ -32,7 +34,10 @@ usage() {
 usage: tools/verify.sh [options]
 
   --base <rev>   diff base for change detection (default: merge-base with
-                 origin/main, falling back to main)
+                 origin/main, falling back to main). For a per-task iteration
+                 gate pass the last commit you already gated — the default
+                 whole-branch diff makes one libs/ commit fan every later run
+                 out to all modules.
   --all          run every check regardless of what changed
   --no-docker    skip `docker buildx bake` (fast inner loop; NOT sufficient
                  before a PR when a go.mod was touched)
@@ -130,7 +135,25 @@ changed_modules() {
     # through the workspace, so a lib edit can break a service that has no
     # changed file of its own. Conservative on purpose — use --quick to skip
     # the -race pass while iterating.
-    if printf '%s\n' "$CHANGED" | grep -qE '^(go\.work|libs/)'; then
+    #
+    # The trap this fan-out sets: CHANGED is the whole branch against its merge
+    # base, so ONE libs/ commit makes every later run on that branch a full
+    # 86-module build, forever. On a long branch that is ~10 minutes per run
+    # instead of ~1. Say so out loud, and name the remedy — an iteration gate
+    # should pass --base <last-gated-commit> so the change set is the increment
+    # under test, not the accumulated branch.
+    local fanout
+    fanout="$(printf '%s\n' "$CHANGED" | grep -E '^(go\.work|libs/)' || true)"
+    if [ -n "$fanout" ]; then
+        if [ -z "$BASE" ]; then
+            printf '\033[33mverify.sh: shared-lib change fans out to ALL modules (%s path(s) under go.work/libs/).\n' \
+                "$(printf '%s\n' "$fanout" | wc -l | tr -d ' ')" >&2
+            printf '           first: %s\n' "$(printf '%s\n' "$fanout" | head -1)" >&2
+            printf '           This is the whole-branch diff. For a per-task iteration gate pass\n' >&2
+            printf '           --base <last-gated-commit> to scope it to the increment under test.\033[0m\n' >&2
+        else
+            echo "verify.sh: shared-lib change in this increment — fanning out to all modules"
+        fi
         all_modules
         return
     fi

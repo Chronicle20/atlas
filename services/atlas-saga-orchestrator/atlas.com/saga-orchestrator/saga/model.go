@@ -43,6 +43,7 @@ const (
 	SealingLockUse        = sharedsaga.SealingLockUse
 	IncubatorUse          = sharedsaga.IncubatorUse
 	ExpirationExtenderUse = sharedsaga.ExpirationExtenderUse
+	KarmaScissorsUse      = sharedsaga.KarmaScissorsUse
 	PointReset            = sharedsaga.PointReset
 	MesoSackUse           = sharedsaga.MesoSackUse
 	MtsOperation          = sharedsaga.MtsOperation
@@ -234,6 +235,7 @@ const (
 	// Item tag / sealing lock / incubator actions
 	SetAssetOwner   = sharedsaga.SetAssetOwner
 	ApplyAssetLock  = sharedsaga.ApplyAssetLock
+	ApplyAssetKarma = sharedsaga.ApplyAssetKarma
 	IncubatorResult = sharedsaga.IncubatorResult
 
 	// Expiration extender actions
@@ -348,6 +350,7 @@ type (
 	ExperienceDistributions             = sharedsaga.ExperienceDistributions
 	SetAssetOwnerPayload                = sharedsaga.SetAssetOwnerPayload
 	ApplyAssetLockPayload               = sharedsaga.ApplyAssetLockPayload
+	ApplyAssetKarmaPayload              = sharedsaga.ApplyAssetKarmaPayload
 	IncubatorResultPayload              = sharedsaga.IncubatorResultPayload
 	CreateNotePayload                   = sharedsaga.CreateNotePayload
 	ExtendAssetExpirationPayload        = sharedsaga.ExtendAssetExpirationPayload
@@ -1669,6 +1672,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ApplyAssetLock:
 		var payload ApplyAssetLockPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ApplyAssetKarma:
+		var payload ApplyAssetKarmaPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

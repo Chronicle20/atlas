@@ -33,6 +33,7 @@ const (
 	CommandChangeTemplate    = "CHANGE_TEMPLATE"
 	CommandSetOwner          = "SET_OWNER"
 	CommandApplyLock         = "APPLY_LOCK"
+	CommandApplyKarma        = "APPLY_KARMA"
 	CommandExtendExpiration  = "EXTEND_EXPIRATION"
 )
 
@@ -187,6 +188,24 @@ type SetOwnerCommandBody struct {
 type ApplyLockCommandBody struct {
 	Slot       int16     `json:"slot"`
 	Expiration time.Time `json:"expiration"` // zero time = permanent lock
+}
+
+// ApplyKarmaCommandBody applies (or, when Clear is set, removes) the
+// one-free-trade karma mark on the asset at Slot.
+//
+// ScissorsKarma is the SCISSORS' OWN WZ info/karma type, forwarded from the
+// channel arm so atlas-inventory can re-run the equality half of the eligibility
+// predicate without knowing which scissors were used. 0 means "untyped scissors"
+// (the v83-era model), under which the predicate reduces to "is the target
+// karma-applicable at all".
+//
+// Clear is the compensation discriminator. It exists here rather than as a
+// second saga action so the saga's action and event-acceptance tables stay one
+// entry wide (libs/atlas-saga ApplyAssetKarmaPayload).
+type ApplyKarmaCommandBody struct {
+	Slot          int16 `json:"slot"`
+	ScissorsKarma int32 `json:"scissorsKarma"`
+	Clear         bool  `json:"clear"`
 }
 
 // ExtendExpirationCommandBody extends a time-limited asset's expiration

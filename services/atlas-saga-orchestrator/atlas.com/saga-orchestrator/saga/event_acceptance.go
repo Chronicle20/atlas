@@ -140,6 +140,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.CreateAndEquipAsset:   {EventKindAssetCreated},
 	sharedsaga.SetAssetOwner:         {EventKindAssetUpdated},
 	sharedsaga.ApplyAssetLock:        {EventKindAssetUpdated},
+	sharedsaga.ApplyAssetKarma:       {EventKindAssetUpdated},
 	sharedsaga.ExtendAssetExpiration: {EventKindAssetUpdated},
 	sharedsaga.IncubatorResult:       {},
 

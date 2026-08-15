@@ -19,7 +19,16 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
+
+// routeAnnounce is the session.Announce seam for transport route status
+// broadcasts, extracted as a package-level var so tests can stub it without a
+// real socket writer. Structurally the same seam as doorAnnounce in
+// kafka/consumer/map/consumer.go.
+var routeAnnounce = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, writerName string, enc packet.Encode) model.Operator[session.Model] {
+	return session.Announce(l)(ctx)(wp)(writerName)(enc)
+}
 
 // InitConsumers initializes the route status event consumers
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -69,7 +78,7 @@ func handleStatusEventArrived(sc server.Model, wp writer.Producer) message.Handl
 
 		// Broadcast to all characters in the map across all instances
 		err := _map.NewProcessor(l, ctx).ForSessionsInMapAllInstances(sc.WorldId(), sc.ChannelId(), mapId,
-			session.Announce(l)(ctx)(wp)(fieldcb.FieldTransportStateWriter)(fieldcb.NewFieldTransport(fieldcb.TransportStateEnter1, false).Encode))
+			routeAnnounce(l, ctx, wp, fieldcb.FieldTransportStateWriter, fieldcb.NewFieldTransport(fieldcb.TransportStateEnter1, false).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast transport arrival to characters in map [%d].", mapId)
 		}
@@ -89,7 +98,7 @@ func handleStatusEventDeparted(sc server.Model, wp writer.Producer) message.Hand
 
 		// Broadcast to all characters in the map across all instances
 		err := _map.NewProcessor(l, ctx).ForSessionsInMapAllInstances(sc.WorldId(), sc.ChannelId(), mapId,
-			session.Announce(l)(ctx)(wp)(fieldcb.FieldTransportStateWriter)(fieldcb.NewFieldTransport(fieldcb.TransportStateMove1, false).Encode))
+			routeAnnounce(l, ctx, wp, fieldcb.FieldTransportStateWriter, fieldcb.NewFieldTransport(fieldcb.TransportStateMove1, false).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast transport departure to characters in map [%d].", mapId)
 		}

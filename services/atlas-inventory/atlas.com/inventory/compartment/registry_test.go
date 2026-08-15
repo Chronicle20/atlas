@@ -122,6 +122,40 @@ func TestTwoMutexesMutualExclusion(t *testing.T) {
 	}
 }
 
+// TestLockTenantIsolation verifies that two distinct tenants requesting a
+// lock for the SAME characterId/inventoryType pair do not contend: the Get
+// key must be tenant-scoped (lock_registry.go:71), so tenant B's mutex must
+// be able to acquire while tenant A still holds its own. If the Redis key
+// were built from characterId/inventoryType alone (no tenant segment), both
+// mutexes would map to the same key and tenant B would block behind tenant
+// A's lock.
+func TestLockTenantIsolation(t *testing.T) {
+	reg := compartment.LockRegistry()
+	require.NotNil(t, reg)
+
+	tenantA := testTenant()
+	tenantB := testTenant()
+
+	mA := reg.Get(tenantA, 9004, inventory.TypeValueEquip)
+	mA.Lock()
+	defer mA.Unlock()
+
+	mB := reg.Get(tenantB, 9004, inventory.TypeValueEquip)
+	done := make(chan struct{})
+	go func() {
+		mB.Lock()
+		mB.Unlock()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		// correct: tenant B acquired its own lock while tenant A held theirs
+	case <-time.After(2 * time.Second):
+		t.Fatal("tenant B's lock blocked behind tenant A's lock for the same characterId/inventoryType — key is not tenant-scoped")
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Reservation registry tests
 // ---------------------------------------------------------------------------

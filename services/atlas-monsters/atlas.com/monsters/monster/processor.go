@@ -1701,6 +1701,7 @@ func (p *ProcessorImpl) DrainMp(f field.Model, uniqueId uint32, characterId uint
 		// on the envelope are not consulted for this Reason. Build via
 		// NewMonster so the Model carries the kafka envelope's field —
 		// the only piece the provider needs.
+		// Synthetic model, never persisted — no spawn provenance to carry.
 		post = NewMonster(f, uniqueId, 0, 0, 0, 0, 0, 0, 0, 0, "", "")
 	}
 

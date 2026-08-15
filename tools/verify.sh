@@ -152,7 +152,7 @@ changed_modules() {
             printf '           This is the whole-branch diff. For a per-task iteration gate pass\n' >&2
             printf '           --base <last-gated-commit> to scope it to the increment under test.\033[0m\n' >&2
         else
-            echo "verify.sh: shared-lib change in this increment — fanning out to all modules"
+            echo "verify.sh: shared-lib change in this increment — fanning out to all modules" >&2
         fi
         all_modules
         return

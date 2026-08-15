@@ -34,15 +34,21 @@ func escrowItem(escrowId uuid.UUID, assetId uint32, templateId uint32, quantity 
 		InventoryType: inventory.Type(inventoryType),
 		AssetId:       asset.Id(assetId),
 		Snapshot: AssetSnapshot{
-			Slot:           3,
-			TemplateId:     templateId,
-			Quantity:       quantity,
-			Expiration:     escrowItemExpiration,
-			CashId:         4815162342,
-			Rechargeable:   200,
-			WeaponAttack:   17,
-			Slots:          7,
-			Flag:           2,
+			Slot:         3,
+			TemplateId:   templateId,
+			Quantity:     quantity,
+			Expiration:   escrowItemExpiration,
+			CashId:       4815162342,
+			Rechargeable: 200,
+			WeaponAttack: 17,
+			Slots:        7,
+			// 0x04 (FlagCold) deliberately, not 0x02: 0x02 is the BUNDLE karma
+			// bit (task-223, libs/atlas-constants/asset.FlagKarmaUse), and this
+			// fixture is shared by both an equip-class item (1302000) and a
+			// bundle-class one (2000000). A generic pass-through flag must not
+			// collide with a bit clearKarmaFromSnapshot inspects, or settlement
+			// would legitimately strip it.
+			Flag:           4,
 			Owner:          "Chronicle",
 			LevelType:      1,
 			Level:          4,
@@ -290,7 +296,7 @@ func TestExpandTradeSettlementKeepsTheSnapshotStats(t *testing.T) {
 		require.True(t, ok)
 		require.Equal(t, uint16(17), pl.AssetData.WeaponAttack)
 		require.Equal(t, uint16(7), pl.AssetData.Slots)
-		require.Equal(t, uint16(2), pl.AssetData.Flag)
+		require.Equal(t, uint16(4), pl.AssetData.Flag)
 		require.Equal(t, "Chronicle", pl.AssetData.Owner)
 		seen = true
 	}

@@ -144,11 +144,18 @@ func (b *ModelBuilder) SetSpikes(v bool) *ModelBuilder {
 	return b
 }
 
+// SetKarmaUsed sets or clears the slot-class-correct karma bit, touching NO
+// other bit. On an equip the bundle karma bit (0x02) is FlagSpikes, so a
+// hand-picked constant here would render spikes on every karma'd equip.
 func (b *ModelBuilder) SetKarmaUsed(v bool) *ModelBuilder {
+	f, ok := af.KarmaFlagFor(b.templateId)
+	if !ok {
+		return b
+	}
 	if v {
-		b.flag = af.SetFlag(b.flag, af.FlagKarmaEquip)
+		b.flag = af.SetFlag(b.flag, f)
 	} else {
-		b.flag = af.ClearFlag(b.flag, af.FlagKarmaEquip)
+		b.flag = af.ClearFlag(b.flag, f)
 	}
 	return b
 }

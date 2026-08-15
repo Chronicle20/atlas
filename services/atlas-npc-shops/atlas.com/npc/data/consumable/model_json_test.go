@@ -25,7 +25,7 @@ func TestModelJSONRoundTrip(t *testing.T) {
 		create:          42,
 		masterLevel:     3,
 		reqSkillLevel:   1,
-		tradeAvailable:  true,
+		tradeAvailable:  1,
 		noCancelMouse:   true,
 		pquest:          true,
 		left:            -100,

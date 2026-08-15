@@ -5,12 +5,14 @@ import (
 )
 
 type RestModel struct {
-	Id             uint32 `json:"-"`
-	Price          uint32 `json:"price"`
-	SlotMax        uint32 `json:"slotMax"`
-	RecoveryHP     uint32 `json:"recoveryHP"`
-	RecoveryMP     uint32 `json:"recoveryMP"`
-	TradeBlock     bool   `json:"tradeBlock"`
+	Id         uint32 `json:"-"`
+	Price      uint32 `json:"price"`
+	SlotMax    uint32 `json:"slotMax"`
+	RecoveryHP uint32 `json:"recoveryHP"`
+	RecoveryMP uint32 `json:"recoveryMP"`
+	TradeBlock bool   `json:"tradeBlock"`
+	// TradeAvailable is WZ info/tradeAvailable; see equipment/rest.go for the derivation.
+	TradeAvailable int32  `json:"tradeAvailable"`
 	NotSale        bool   `json:"notSale"`
 	ReqLevel       uint32 `json:"reqLevel"`
 	DistanceX      uint32 `json:"distanceX"`

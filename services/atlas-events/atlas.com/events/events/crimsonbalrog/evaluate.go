@@ -77,6 +77,16 @@ func (h *Handler) Evaluate(ctx context.Context, d registry.Definition, w registr
 		return nil, err
 	}
 
+	// Enabling a definition schedules one generic TRIGGER_EVALUATION with an
+	// empty work context (event/orchestration.SetEnabled). CRIMSON_BALROG is
+	// externally triggered by VOYAGE_DEPARTED (trigger.go) — an
+	// enable-triggered evaluation carries no voyage and means nothing here.
+	// Not an error: the work row completes normally, same as any other
+	// ordinary "no occurrence" outcome (FR-B7, FR-B8).
+	if wc.VoyageId == uuid.Nil {
+		return nil, nil
+	}
+
 	// 1. Is the voyage still underway?
 	route, err := h.transports(ctx).GetRoute(wc.RouteId)
 	if err != nil {

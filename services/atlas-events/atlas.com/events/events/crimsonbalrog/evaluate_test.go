@@ -255,3 +255,20 @@ func TestUnreachableDependenciesReturnErrors(t *testing.T) {
 		})
 	}
 }
+
+// Enabling a definition schedules one generic TRIGGER_EVALUATION with an
+// empty work context. For an externally-triggered event that means "nothing
+// to do" — not an error, and certainly not an occurrence with a zero voyage
+// id.
+func TestCrimsonBalrogEvaluateIgnoresAnEmptyWorkContext(t *testing.T) {
+	f := newFakes(t)
+	f.work.Context = json.RawMessage(`{}`)
+
+	seed, err := f.handler().Evaluate(f.ctx, f.definition, f.work)
+	if err != nil {
+		t.Fatalf("an enable-triggered evaluation must not error: %v", err)
+	}
+	if seed != nil {
+		t.Fatalf("created an occurrence with no voyage: %+v", seed)
+	}
+}

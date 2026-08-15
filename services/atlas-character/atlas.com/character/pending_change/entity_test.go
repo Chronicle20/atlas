@@ -6,11 +6,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
 // newTestDB starts a disposable Postgres container and returns a connected
@@ -19,6 +21,15 @@ import (
 // behind FR-2.3 and FR-3.3; SQLite's partial-index support does not reject
 // these violations the same way Postgres does, so these tests need the real
 // engine, mirroring libs/atlas-outbox/notify_test.go's container setup.
+//
+// database.RegisterTenantCallbacks is registered here to mirror what
+// database.Connect does in production, matching the sibling packages'
+// test-DB setup (e.g. teleport_rock's testDatabase). This package's own
+// queries (provider.go/administrator.go) additionally filter on an explicit
+// tenant_id parameter rather than relying on the callback's context-derived
+// injection (see TestReadsAreTenantScoped) — that explicit predicate is what
+// this package's correctness actually depends on and is tested for, so the
+// callback registration here is defense-in-depth, not a behavior change.
 func newTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 	ctx := context.Background()
@@ -36,6 +47,8 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("connect: %v", err)
 	}
+	l, _ := test.NewNullLogger()
+	database.RegisterTenantCallbacks(l, db)
 	return db
 }
 

@@ -157,117 +157,108 @@ func TestEligibilityGate5NameTaken(t *testing.T) {
 	}
 }
 
-func TestEligibilityGate6Banned(t *testing.T) {
-	db := newProcessorTestDB(t)
-	deps := passingGateDeps()
-	deps.banned = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
-		return true, nil
+// TestEligibilityRemoteGates covers gates 6-11: each overrides exactly one
+// gateDeps field to trip (or, for the guild-member case, to deliberately NOT
+// trip) while every other gate stays passing. Table-driven because every
+// case shares the identical shape — mutate one dependency, evaluate, assert
+// (ok, reason) — and only the mutation and expectation differ.
+func TestEligibilityRemoteGates(t *testing.T) {
+	tests := []struct {
+		name       string
+		mutate     func(deps *gateDeps)
+		character  string
+		wantOk     bool
+		wantReason string
+	}{
+		{
+			name: "Gate6Banned",
+			mutate: func(deps *gateDeps) {
+				deps.banned = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+					return true, nil
+				}
+			},
+			character:  "Hotel",
+			wantReason: "banned",
+		},
+		{
+			name: "Gate7IsGuildMaster",
+			mutate: func(deps *gateDeps) {
+				deps.guildTitle = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (byte, bool, error) {
+					return guildMasterTitle, true, nil
+				}
+			},
+			character:  "India",
+			wantReason: "is_guild_master",
+		},
+		{
+			// A non-master guild member is severed by the saga, not blocked
+			// (design §3.6) — every other gate stays passing, so the request
+			// is eligible.
+			name: "GuildMemberIsNotBlocked",
+			mutate: func(deps *gateDeps) {
+				deps.guildTitle = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (byte, bool, error) {
+					return 3, true, nil
+				}
+			},
+			character: "Juliett",
+			wantOk:    true,
+		},
+		{
+			name: "Gate8InFamily",
+			mutate: func(deps *gateDeps) {
+				deps.inFamily = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+					return true, nil
+				}
+			},
+			character:  "Kilo",
+			wantReason: "in_family",
+		},
+		{
+			name: "Gate9TradeOpen",
+			mutate: func(deps *gateDeps) {
+				deps.tradeOpen = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+					return true, nil
+				}
+			},
+			character:  "Lima",
+			wantReason: "trade_open",
+		},
+		{
+			name: "Gate10MerchantOpen",
+			mutate: func(deps *gateDeps) {
+				deps.merchantOpen = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+					return true, nil
+				}
+			},
+			character:  "Mike",
+			wantReason: "merchant_open",
+		},
+		{
+			name: "Gate11MtsListingsOpen",
+			mutate: func(deps *gateDeps) {
+				deps.mtsHolding = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+					return true, nil
+				}
+			},
+			character:  "November",
+			wantReason: "mts_listings_open",
+		},
 	}
-	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
-		withTransferEligibilityGates(deps).(*ProcessorImpl)
 
-	c := buildCharacter(1, 1000, world.Id(0), "Hotel", 0)
-	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
-	if ok || reason != "banned" {
-		t.Fatalf("got ok=%v reason=%s, want banned", ok, reason)
-	}
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newProcessorTestDB(t)
+			deps := passingGateDeps()
+			tt.mutate(&deps)
+			p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
+				withTransferEligibilityGates(deps).(*ProcessorImpl)
 
-func TestEligibilityGate7IsGuildMaster(t *testing.T) {
-	db := newProcessorTestDB(t)
-	deps := passingGateDeps()
-	deps.guildTitle = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (byte, bool, error) {
-		return guildMasterTitle, true, nil
-	}
-	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
-		withTransferEligibilityGates(deps).(*ProcessorImpl)
-
-	c := buildCharacter(1, 1000, world.Id(0), "India", 0)
-	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
-	if ok || reason != "is_guild_master" {
-		t.Fatalf("got ok=%v reason=%s, want is_guild_master", ok, reason)
-	}
-}
-
-// A non-master guild member is severed by the saga, not blocked (design
-// §3.6) — every other gate stays passing, so the request is eligible.
-func TestEligibilityGuildMemberIsNotBlocked(t *testing.T) {
-	db := newProcessorTestDB(t)
-	deps := passingGateDeps()
-	deps.guildTitle = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (byte, bool, error) {
-		return 3, true, nil
-	}
-	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
-		withTransferEligibilityGates(deps).(*ProcessorImpl)
-
-	c := buildCharacter(1, 1000, world.Id(0), "Juliett", 0)
-	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
-	if !ok || reason != "" {
-		t.Fatalf("expected a rank-3 guild member to be eligible, got ok=%v reason=%s", ok, reason)
-	}
-}
-
-func TestEligibilityGate8InFamily(t *testing.T) {
-	db := newProcessorTestDB(t)
-	deps := passingGateDeps()
-	deps.inFamily = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
-		return true, nil
-	}
-	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
-		withTransferEligibilityGates(deps).(*ProcessorImpl)
-
-	c := buildCharacter(1, 1000, world.Id(0), "Kilo", 0)
-	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
-	if ok || reason != "in_family" {
-		t.Fatalf("got ok=%v reason=%s, want in_family", ok, reason)
-	}
-}
-
-func TestEligibilityGate9TradeOpen(t *testing.T) {
-	db := newProcessorTestDB(t)
-	deps := passingGateDeps()
-	deps.tradeOpen = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
-		return true, nil
-	}
-	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
-		withTransferEligibilityGates(deps).(*ProcessorImpl)
-
-	c := buildCharacter(1, 1000, world.Id(0), "Lima", 0)
-	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
-	if ok || reason != "trade_open" {
-		t.Fatalf("got ok=%v reason=%s, want trade_open", ok, reason)
-	}
-}
-
-func TestEligibilityGate10MerchantOpen(t *testing.T) {
-	db := newProcessorTestDB(t)
-	deps := passingGateDeps()
-	deps.merchantOpen = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
-		return true, nil
-	}
-	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
-		withTransferEligibilityGates(deps).(*ProcessorImpl)
-
-	c := buildCharacter(1, 1000, world.Id(0), "Mike", 0)
-	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
-	if ok || reason != "merchant_open" {
-		t.Fatalf("got ok=%v reason=%s, want merchant_open", ok, reason)
-	}
-}
-
-func TestEligibilityGate11MtsListingsOpen(t *testing.T) {
-	db := newProcessorTestDB(t)
-	deps := passingGateDeps()
-	deps.mtsHolding = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
-		return true, nil
-	}
-	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
-		withTransferEligibilityGates(deps).(*ProcessorImpl)
-
-	c := buildCharacter(1, 1000, world.Id(0), "November", 0)
-	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
-	if ok || reason != "mts_listings_open" {
-		t.Fatalf("got ok=%v reason=%s, want mts_listings_open", ok, reason)
+			c := buildCharacter(1, 1000, world.Id(0), tt.character, 0)
+			reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
+			if ok != tt.wantOk || reason != tt.wantReason {
+				t.Fatalf("got ok=%v reason=%s, want ok=%v reason=%s", ok, reason, tt.wantOk, tt.wantReason)
+			}
+		})
 	}
 }
 

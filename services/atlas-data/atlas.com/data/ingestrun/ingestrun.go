@@ -110,12 +110,22 @@ func KeySuffix(scope, region string, major, minor uint16) string {
 
 // NewJobRegistry returns the env-global Registry for the job-name and
 // heartbeat keys. The keyFn is the identity so callers supply the full suffix.
+//
+// This is a bare (non-Tenant-scoped) libs/atlas-redis constructor, allowlisted
+// in tools/rediskeyguard's bareConstructorAllowlist under "atlas-data/ingestrun"
+// (D7): every caller builds its suffix through KeySuffix, which embeds the
+// tenant id/region/version discriminator directly in the key, so the bare
+// constructor is tenant-independent only at the type level, not at the key
+// level. TestKeySuffixIsDiscriminating (ingestrun_test.go) pins that property;
+// do not remove or weaken it without re-checking the allowlist reason.
 func NewJobRegistry(rdb *goredis.Client) *redis.Registry[string, string] {
 	return redis.NewRegistry[string, string](rdb, Namespace, func(s string) string { return s })
 }
 
 // NewRunRegistry returns the env-global Registry for run records. Values are
 // JSON-marshalled by the Registry itself.
+//
+// Same allowlist reasoning as NewJobRegistry — see its doc comment.
 func NewRunRegistry(rdb *goredis.Client) *redis.Registry[string, Record] {
 	return redis.NewRegistry[string, Record](rdb, Namespace, func(s string) string { return s })
 }

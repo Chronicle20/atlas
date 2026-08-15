@@ -1,8 +1,8 @@
 package ingest
 
 import (
+	"atlas-data/ingestrun"
 	"context"
-	"fmt"
 	"os"
 	"strconv"
 	"time"
@@ -58,7 +58,11 @@ func runHeartbeat(ctx context.Context, l logrus.FieldLogger, reg *redis.Registry
 }
 
 // ingestJobSuffixFromEnv reconstructs the Watchdog's per-Job key suffix from
-// the ingest pod's env vars. Shape matches ingestrun.KeySuffix.
+// the ingest pod's env vars, via ingestrun.KeySuffix — the single producer of
+// this namespace's key suffix (see tools/rediskeyguard's bareConstructorAllowlist
+// entry for ingestrun.NewJobRegistry/NewRunRegistry: every derivation of a key
+// in this namespace must go through KeySuffix or ingestJobKeySuffixFromLabels
+// for that allowlist entry to stay sound).
 // Returns "" if any required env is missing so callers can skip heartbeating
 // (e.g. unit-test / compose runs without the REST pod's key in Redis).
 func ingestJobSuffixFromEnv() string {
@@ -75,7 +79,7 @@ func ingestJobSuffixFromEnv() string {
 	if err != nil {
 		return ""
 	}
-	return fmt.Sprintf("%s:%s:%d.%d", scope, region, major, minor)
+	return ingestrun.KeySuffix(scope, region, uint16(major), uint16(minor))
 }
 
 // ingestRunIdFromEnv returns the run identity JobCreator injected into the

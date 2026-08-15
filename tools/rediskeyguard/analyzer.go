@@ -27,33 +27,111 @@ var bannedMethods = map[string]bool{
 }
 
 // bannedConstructors are libs/atlas-redis's env-global ("bare") type
-// constructors — confirmed from source at libs/atlas-redis/registry.go:25,
-// set.go:27, hash.go:16,58, keyed_set.go:20, keyed_hash.go (bare KeyedHash,
-// not TenantKeyedHash), coalesced.go:64, ttl.go:23, index.go:21,74,
-// id.go:21,29. Each has a Tenant-scoped sibling (NewTenantRegistry,
-// NewTenantSet, NewTenantKeyedSet, NewTenantKeyedHash,
-// NewTenantCoalescedRegistry, ...). Per D7, calling a bare constructor
-// outside libs/atlas-redis itself reintroduces state that Redis cannot
-// isolate between sparse environments sharing main's keyspace.
+// constructors that have a genuine Tenant-scoped sibling a caller could
+// switch to — confirmed from source at libs/atlas-redis/registry.go:25
+// (NewRegistry / NewTenantRegistry), set.go:27 (NewSet / NewTenantSet),
+// hash.go:16 (NewHash — no tenant-scoped sibling exists, see below),
+// keyed_set.go:20 (NewKeyedSet / NewTenantKeyedSet), hash.go:58 and
+// keyed_hash.go:21 (bare KeyedHash vs TenantKeyedHash), coalesced.go:64 /
+// tenant_coalesced.go:48 (NewCoalescedRegistry / NewTenantCoalescedRegistry).
+// Per D7, calling a bare constructor outside libs/atlas-redis itself
+// reintroduces state that Redis cannot isolate between sparse environments
+// sharing main's keyspace.
 //
-// Deliberately excluded: NewLock/NewLockWithTTL (distributed locks, not
-// tenant data) and NewGlobalIDGenerator (explicitly cross-tenant by name/
-// design) — these have no tenant-scoped sibling because the state they guard
-// is not per-tenant.
+// Deliberately excluded, and NOT in this set:
+//
+//   - NewLock/NewLockWithTTL (distributed locks, not tenant data) and
+//     NewGlobalIDGenerator (explicitly cross-tenant by name/design) — no
+//     tenant-scoped sibling exists because the state they guard is not
+//     per-tenant.
+//   - NewIndex/NewUint32Index (index.go:21,74), NewIDGenerator/
+//     NewIDGeneratorWithStart (id.go:21,29), and NewTTLRegistry (ttl.go:23) —
+//     these have a "New..." name shaped like the banned ones, but there is no
+//     bare/tenant-scoped split to migrate off of: every method on Index,
+//     Uint32Index and IDGenerator already takes a tenant.Model parameter and
+//     keys through tenantEntityKey (index.go:29, id.go:37), and
+//     NewTTLRegistry literally wraps NewTenantRegistry internally
+//     (ttl.go:23-26). Flagging them is a false positive — there is no
+//     tenant-scoped sibling for a caller to switch to, because they already
+//     are tenant-scoped.
 var bannedConstructors = map[string]bool{
 	"NewRegistry": true, "NewSet": true, "NewHash": true, "NewKeyedSet": true,
-	"NewKeyedHash": true, "NewCoalescedRegistry": true, "NewTTLRegistry": true,
-	"NewIndex": true, "NewUint32Index": true,
-	"NewIDGenerator": true, "NewIDGeneratorWithStart": true,
+	"NewKeyedHash": true, "NewCoalescedRegistry": true,
 }
 
 // bareConstructorAllowlist names packages permitted to call a bare
-// constructor, keyed by import path, with a written reason. Empty as of
-// task-232/9: every fleet call site was migrated to the tenant-scoped
-// equivalent rather than allowlisted. Add an entry here — never merely in a
-// report or commit message — for any future bare-constructor use that is
-// genuinely tenant-independent; this map is the only place the guard checks.
-var bareConstructorAllowlist = map[string]string{}
+// constructor, keyed by import path, with a written reason. Add an entry
+// here — never merely in a report or commit message — for any future
+// bare-constructor use that is genuinely tenant-independent; this map is the
+// only place the guard checks. Verify against source before adding: an
+// allowlist entry is permanent and invisible, and this guard is the only
+// thing that will ever re-examine it.
+//
+// Two shapes, both confirmed at task-232/9B:
+//
+//  1. "_tenants" enumeration indexes — a bare atlas.Set holding *which
+//     tenants have data in this registry*, so a background sweep (cleanup,
+//     TTL expiry, cross-tenant broadcast) can fan out over them. The set
+//     itself necessarily spans every tenant sharing the environment; scoping
+//     it per-tenant is incoherent — there would be nothing to enumerate.
+//     Each site pairs the bare set with a Tenants()/GetTenants() accessor
+//     that hands callers tenant.Model values to then scope their real,
+//     per-tenant Redis calls with.
+//  2. Deliberate cross-tenant indexes whose VALUES encode the tenant — the
+//     set member itself is "<atlas.TenantKey(t)>:<id>", parsed back to a
+//     tenant.Model by an unexported parseTenantFromKey. This is the same
+//     shape as *AcrossTenants (task-232/9): the bare constructor is correct
+//     because the index is deliberately cross-tenant, and every member still
+//     carries its owning tenant.
+var bareConstructorAllowlist = map[string]string{
+	// Shape 1: "_tenants" enumeration indexes.
+	"atlas-account/account": "account-session:_tenants — bare atlas.Set enumerating which " +
+		"tenants have an active session registry, fanned out by Registry.Tenants(); " +
+		"the set is deliberately cross-tenant by design (confirmed registry.go:60,260).",
+	"atlas-buffs/berserk": "buffs:_tenants — bare atlas.Set shared with atlas-buffs/character, " +
+		"enumerating tenants with active berserk state, fanned out by " +
+		"Registry.GetTenants(); deliberately cross-tenant (confirmed registry.go:22,36,78).",
+	"atlas-buffs/character": "buffs:_tenants — bare atlas.Set enumerating tenants with active " +
+		"buff state, fanned out by Registry.GetTenants(); deliberately cross-tenant " +
+		"(confirmed registry.go:39,131).",
+	"atlas-character/session": "character-session:_tenants — bare atlas.Set enumerating " +
+		"tenants with active character sessions; deliberately cross-tenant " +
+		"(confirmed registry.go:29).",
+	"atlas-expressions/expression": "expression:_tenants — bare atlas.Set enumerating tenants " +
+		"with tracked expressions, fanned out by Registry.getTrackedTenants(); " +
+		"deliberately cross-tenant (confirmed registry.go:30,89).",
+	"atlas-invites/invite": "invite:active-tenants — bare atlas.Set enumerating tenants with " +
+		"active invites, fanned out by Registry.GetActiveTenants(); deliberately " +
+		"cross-tenant (confirmed registry.go:40,56).",
+	"atlas-mounts/mount": "mount-active:_tenants — bare atlas.Set enumerating tenants with " +
+		"active mounts; deliberately cross-tenant (confirmed registry.go:44).",
+	"atlas-pets/character": "pet-character:_tenants — bare atlas.Set enumerating tenants " +
+		"with tracked pet-bearing characters; deliberately cross-tenant " +
+		"(confirmed registry.go:32).",
+	"atlas-rps/game": "rps:_tenants — bare atlas.Set enumerating tenants with active RPS " +
+		"games, fanned out by Registry.getTrackedTenants(); deliberately " +
+		"cross-tenant (confirmed registry.go:34,88).",
+	"atlas-skills/skill": "cooldown:_tenants — bare atlas.Set enumerating tenants with " +
+		"tracked skill cooldowns; deliberately cross-tenant (confirmed " +
+		"cooldown_registry.go:29-30).",
+	"atlas-world/channel": "channel:tenants — bare atlas.Set enumerating tenants with " +
+		"registered channels, fanned out by Registry.Tenants(); deliberately " +
+		"cross-tenant (confirmed registry.go:33,79).",
+	"atlas-world/broadcast": "world-broadcast:tenants — bare atlas.Set enumerating tenants " +
+		"with broadcast state, fanned out by Registry.Tenants(); deliberately " +
+		"cross-tenant (confirmed registry.go:34,121).",
+
+	// Shape 2: cross-tenant indexes whose values encode the tenant.
+	"atlas-drops/drop": "drops:all — bare atlas.Set whose members are " +
+		"\"<atlas.TenantKey(t)>:<id>\", reconstructed via parseTenantFromKey; " +
+		"deliberately cross-tenant so GetAllDrops can enumerate every drop " +
+		"across tenants without an external tenant registry (confirmed " +
+		"registry.go:38,55-70).",
+	"atlas-reactors/reactor": "reactors:all — bare atlas.Set whose members are " +
+		"\"<atlas.TenantKey(t)>:<id>\" via allSetMember/parseTenantFromKey, the same " +
+		"cross-tenant-index shape as atlas-drops/drop; deliberately cross-tenant " +
+		"(confirmed registry.go:42,74-76,217,248).",
+}
 
 var Analyzer = &analysis.Analyzer{
 	Name:     "rediskeyguard",

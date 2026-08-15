@@ -21,3 +21,15 @@ func bad(client *goredis.Client) {
 func good(client *goredis.Client) {
 	_ = atlasredis.NewTenantRegistry[string, string](client, "ns", func(k string) string { return k })
 }
+
+// The five constructors below are bare-shaped by name but have no
+// bare/tenant-scoped split to migrate off of — every method they expose
+// already takes a tenant.Model. Flagging them is a false positive; none of
+// these are in bannedConstructors, so none should be reported.
+func alreadyTenantScoped(client *goredis.Client) {
+	_ = atlasredis.NewIndex(client, "ns", "idx")
+	_ = atlasredis.NewUint32Index(client, "ns", "idx")
+	_ = atlasredis.NewIDGenerator(client, "ns")
+	_ = atlasredis.NewIDGeneratorWithStart(client, "ns", 1000)
+	_ = atlasredis.NewTTLRegistry[string, string](client, "ns", func(k string) string { return k }, 0)
+}

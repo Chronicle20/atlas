@@ -57,6 +57,24 @@ func visualsInMapProvider(worldId world.Id, channelId channel.Id, mapId _map.Id)
 	}
 }
 
+// monsterCounts answers the SET-derived counts backing MonsterTally (design
+// §9.5): total observed, and how many remain alive.
+func monsterCounts(db *gorm.DB) func(occurrenceId uuid.UUID) (int, int, error) {
+	return func(occurrenceId uuid.UUID) (int, int, error) {
+		var total int64
+		if err := db.Model(&MonsterEntity{}).Where("occurrence_id = ?", occurrenceId).Count(&total).Error; err != nil {
+			return 0, 0, err
+		}
+
+		var alive int64
+		if err := db.Model(&MonsterEntity{}).Where("occurrence_id = ? AND alive = ?", occurrenceId, true).Count(&alive).Error; err != nil {
+			return 0, 0, err
+		}
+
+		return int(total), int(alive), nil
+	}
+}
+
 // ListFilters narrows the GET /events/occurrences collection query (FR-API6).
 // The zero value of every field means "no filter" for that dimension.
 type ListFilters struct {

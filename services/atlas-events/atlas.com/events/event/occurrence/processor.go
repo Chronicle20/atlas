@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -217,42 +216,23 @@ func (p *ProcessorImpl) ListPaged(page model.Page, f ListFilters) (model.Paged[M
 // no ordering guarantee across partitions, so this is a real case (design
 // §9.5).
 func (p *ProcessorImpl) ObserveMonsterSpawned(occurrenceId uuid.UUID, uniqueId uint32, monsterId uint32) error {
-	return p.db.WithContext(p.ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "occurrence_id"}, {Name: "unique_id"}},
-		DoNothing: true,
-	}).
-		Create(&MonsterEntity{
-			OccurrenceID: occurrenceId, UniqueID: uniqueId, MonsterID: monsterId,
-			Alive: true, ObservedAt: time.Now(),
-		}).Error
+	return observeMonsterSpawned(p.db.WithContext(p.ctx))(MonsterEntity{
+		OccurrenceID: occurrenceId, UniqueID: uniqueId, MonsterID: monsterId,
+		Alive: true, ObservedAt: time.Now(),
+	})
 }
 
 // ObserveMonsterGone is an UPSERT to alive=false: idempotent by construction,
 // and correct whether or not CREATED was seen first.
 func (p *ProcessorImpl) ObserveMonsterGone(occurrenceId uuid.UUID, uniqueId uint32, monsterId uint32) error {
-	return p.db.WithContext(p.ctx).Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "occurrence_id"}, {Name: "unique_id"}},
-		DoUpdates: clause.Assignments(map[string]any{"alive": false, "observed_at": time.Now()}),
-	}).Create(&MonsterEntity{
+	return observeMonsterGone(p.db.WithContext(p.ctx))(MonsterEntity{
 		OccurrenceID: occurrenceId, UniqueID: uniqueId, MonsterID: monsterId,
 		Alive: false, ObservedAt: time.Now(),
-	}).Error
+	})
 }
 
 // MonsterTally reports the current SET-derived counts: total observed, and
 // how many remain alive (design §9.5).
 func (p *ProcessorImpl) MonsterTally(occurrenceId uuid.UUID) (int, int, error) {
-	db := p.db.WithContext(p.ctx)
-
-	var total int64
-	if err := db.Model(&MonsterEntity{}).Where("occurrence_id = ?", occurrenceId).Count(&total).Error; err != nil {
-		return 0, 0, err
-	}
-
-	var alive int64
-	if err := db.Model(&MonsterEntity{}).Where("occurrence_id = ? AND alive = ?", occurrenceId, true).Count(&alive).Error; err != nil {
-		return 0, 0, err
-	}
-
-	return int(total), int(alive), nil
+	return monsterCounts(p.db.WithContext(p.ctx))(occurrenceId)
 }

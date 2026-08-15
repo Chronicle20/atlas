@@ -102,6 +102,31 @@ func applyProgress(db *gorm.DB) func(entity Entity, trans transition.Entity, ter
 	}
 }
 
+// observeMonsterSpawned is INSERT-IF-ABSENT, deliberately not an upsert: a
+// KILLED that arrived before its CREATED already wrote a dead row, and the
+// late CREATED must not resurrect it. The two events share a topic but have
+// no ordering guarantee across partitions, so this is a real case (design
+// §9.5, FR-B18).
+func observeMonsterSpawned(db *gorm.DB) func(entity MonsterEntity) error {
+	return func(entity MonsterEntity) error {
+		return db.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "occurrence_id"}, {Name: "unique_id"}},
+			DoNothing: true,
+		}).Create(&entity).Error
+	}
+}
+
+// observeMonsterGone is an UPSERT to alive=false: idempotent by construction,
+// and correct whether or not CREATED was seen first.
+func observeMonsterGone(db *gorm.DB) func(entity MonsterEntity) error {
+	return func(entity MonsterEntity) error {
+		return db.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "occurrence_id"}, {Name: "unique_id"}},
+			DoUpdates: clause.Assignments(map[string]any{"alive": false, "observed_at": entity.ObservedAt}),
+		}).Create(&entity).Error
+	}
+}
+
 // complete is a GUARDED update, not a lock: the completion decision itself is
 // the WHERE state = 'ACTIVE' predicate on the UPDATE below, not the SELECT.
 // RowsAffected == 0 means another path completed this occurrence first; the

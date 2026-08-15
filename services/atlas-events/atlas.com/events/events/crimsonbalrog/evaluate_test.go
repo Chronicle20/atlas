@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -117,6 +118,10 @@ func (f *fakes) handler() *Handler {
 		maps: func(context.Context) maps.Processor {
 			return fakeMapsProcessor{byMap: f.charactersByMap, err: f.charactersErr}
 		},
+		// l is only exercised by Start (Task 25), via message.Emit; every
+		// Evaluate test path is silent on it. A discarding logger keeps test
+		// output pristine regardless.
+		l: logrus.New(),
 	}
 }
 

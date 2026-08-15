@@ -22,11 +22,13 @@ var ErrNotImplemented = errors.New("crimsonbalrog: not implemented")
 // roll and the two client constructors are fields, not direct calls, so a
 // test can pin the roll and fake the atlas-transports/atlas-maps clients
 // (Task 24's evaluate_test.go) without a network dependency; NewHandler
-// wires the real ones.
+// wires the real ones. l is the logger Start (Task 25) threads into
+// message.Emit for the visual event and spawn commands.
 type Handler struct {
 	roll       func() float64
 	transports func(ctx context.Context) transports.Processor
 	maps       func(ctx context.Context) maps.Processor
+	l          logrus.FieldLogger
 }
 
 // NewHandler constructs the CRIMSON_BALROG handler.
@@ -39,6 +41,7 @@ func NewHandler() registry.Handler {
 		maps: func(ctx context.Context) maps.Processor {
 			return maps.NewProcessor(logrus.StandardLogger(), ctx)
 		},
+		l: logrus.StandardLogger(),
 	}
 }
 
@@ -75,12 +78,9 @@ func (h *Handler) ConcurrencyKey(_ context.Context, workContext json.RawMessage)
 // Implemented in evaluate.go (Task 24).
 
 // Start orchestrates the side effects of a newly created occurrence.
-// Filled in by Task 25.
-func (h *Handler) Start(_ context.Context, _ registry.Occurrence) (registry.Progress, error) {
-	return registry.Progress{}, fmt.Errorf("Start: %w", ErrNotImplemented)
-}
+// Implemented in start.go (Task 25).
 
-// Advance handles a due OCCURRENCE_TRANSITION row. Filled in by Task 25.
+// Advance handles a due OCCURRENCE_TRANSITION row. Filled in by Task 27.
 func (h *Handler) Advance(_ context.Context, _ registry.Occurrence, _ registry.Work) (registry.Progress, error) {
 	return registry.Progress{}, fmt.Errorf("Advance: %w", ErrNotImplemented)
 }

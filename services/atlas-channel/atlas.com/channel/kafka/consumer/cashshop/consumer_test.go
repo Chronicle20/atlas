@@ -975,13 +975,18 @@ func TestPurchaseSuccessWithPendingWorldTransferCashIdIsNonZero(t *testing.T) {
 // case the old code (keyed only on CharacterId) could not tell apart: a
 // purchase whose TransactionId is the zero UUID (every ordinary buy) must
 // take the generic PURCHASE_SUCCESS path, never a name-change/world-transfer
-// DONE arm. No CHARACTERS_SERVICE_URL fixture is stood up here at all --
-// resolvePendingChange must short-circuit on the zero id without making the
-// remote call, or this test would fail hard on an unreachable URL.
+// DONE arm. A pendingChangeFixtureServer IS stood up here -- with no records,
+// so any call it receives is itself the finding -- to pin the actual
+// mechanism: resolvePendingChange must short-circuit on the zero id and never
+// call atlas-character at all. (requests.RootUrl falls back to an empty
+// BASE_SERVICE_URL rather than panicking when no fixture is stood up, so an
+// unreachable-URL assertion alone would not catch a deleted guard -- see
+// consumer.go:38.)
 func TestPurchaseSuccessUnrelatedBuyTakesPreExistingPath(t *testing.T) {
 	env := newConsumerEnv(t)
 	assetId := uint32(603)
 	env.seedAsset(env.compartment, assetId)
+	calls := pendingChangeFixtureServer(t, testCharacterId, nil)
 
 	handleStatusEventPurchase(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.PurchaseEventBody]{
 		CharacterId: testCharacterId,
@@ -993,6 +998,9 @@ func TestPurchaseSuccessUnrelatedBuyTakesPreExistingPath(t *testing.T) {
 		},
 	})
 
+	if len(*calls) != 0 {
+		t.Fatalf("calls = %v, want none -- resolvePendingChange must short-circuit on the zero TransactionId without calling atlas-character", *calls)
+	}
 	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
 		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
 	}
@@ -1101,9 +1109,16 @@ func TestErrorWithPendingWorldTransferCancelsRecordAndAnswersFailedArm(t *testin
 // TestErrorUnrelatedFailureTakesPreExistingPath pins that an ordinary
 // purchase failure (zero TransactionId) still takes the generic
 // INVENTORY_CAPACITY_INCREASE_FAILED fallback unchanged, and never touches
-// atlas-character at all -- no CHARACTERS_SERVICE_URL fixture is stood up.
+// atlas-character at all. A pendingChangeFixtureServer IS stood up here --
+// with no records, so any call it receives is itself the finding -- to pin
+// the actual mechanism: resolvePendingChange must short-circuit on the zero
+// id and never call atlas-character. (requests.RootUrl falls back to an
+// empty BASE_SERVICE_URL rather than panicking when no fixture is stood up,
+// so an unreachable-URL assertion alone would not catch a deleted guard --
+// see consumer.go:38.)
 func TestErrorUnrelatedFailureTakesPreExistingPath(t *testing.T) {
 	env := newConsumerEnv(t)
+	calls := pendingChangeFixtureServer(t, testCharacterId, nil)
 
 	handleStatusEventError(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.ErrorEventBody]{
 		CharacterId: testCharacterId,
@@ -1114,6 +1129,9 @@ func TestErrorUnrelatedFailureTakesPreExistingPath(t *testing.T) {
 		},
 	})
 
+	if len(*calls) != 0 {
+		t.Fatalf("calls = %v, want none -- resolvePendingChange must short-circuit on the zero TransactionId without calling atlas-character", *calls)
+	}
 	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
 		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
 	}

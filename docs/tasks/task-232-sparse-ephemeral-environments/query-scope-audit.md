@@ -1002,3 +1002,105 @@ per the controller's brief context (verified facts, not re-derived here):**
     isolation is removed) is a live open question on a different axis than
     tenant scoping, unevaluated by this audit. Consumed by 27 services via
     `outboxlib.NewDrainer`.
+
+## 5. Deliberately-global Redis resources (Task 10)
+
+Numbered `## 5` rather than the brief's literal `## 3` — this document already
+grew a `## 3` (Second-mechanism sweep) and `## 4` (UNSCOPED dispositions)
+section since the brief text was written; appending as the next free number
+keeps the document's existing structure intact rather than colliding with it.
+
+`NewGlobalIDGenerator`, `NewLock`, `NewLockWithTTL` are global *by
+construction* — the Go-level object is a single process-wide singleton with
+no tenant or environment parameter. Under D1 ("global" now means "global
+across environments", since sparse mode collapses the per-environment
+`ATLAS_ENV` Redis key prefix for data-plane resources — see §2's "Redis key
+prefix" row), a singleton whose *acquired keys* do not separately encode
+tenant identity would serialise or collide across every environment sharing
+that Redis instance and that service's single sparse-mode process. The
+question for each site is therefore not "is the constructor global" (all of
+them are) but "does every key actually passed to the singleton at the call
+site carry the tenant" — that is what was read from the surrounding code
+below, not inferred from the constructor's name.
+
+### Sweep
+
+Root: repo root (`services` and `libs`), i.e. the same two trees the brief's
+grep names. Patterns swept, beyond the brief's literal three-token grep:
+
+```sh
+grep -rn "NewGlobalIDGenerator\|NewLockWithTTL\|NewLock(" services libs
+grep -rn "GlobalIDGenerator" services libs                    # broader than the constructor name alone
+grep -rln "atlas-redis" services | xargs grep -n "atlas-redis\""  # every import of the package, to catch aliasing
+grep -rn "func New" libs/atlas-redis/*.go                     # confirm no local wrapper re-exports NewLock/NewLockWithTTL/NewGlobalIDGenerator under another name
+```
+
+The brief's literal grep is a substring match on `NewLock(` / `NewLockWithTTL`
+/ `NewGlobalIDGenerator`, which is import-alias-proof by construction — it
+matches regardless of whether the call site imports the package as `atlas`,
+`redis`, `atlasredis`, or `redislib` (all four aliases are in live use across
+the fleet, confirmed by the import sweep above). The broader `GlobalIDGenerator`
+grep and the `libs/atlas-redis/*.go` `func New` sweep found nothing the
+brief's pattern would have missed: no wrapper function re-exports any of the
+three constructors under a different name, and `NewGlobalIDGenerator` has no
+production call site anywhere in `services/` or `libs/` — its only callers
+are `libs/atlas-redis/registry_test.go` (the library's own unit tests). It is
+therefore not classified below: there is no live call site to classify, and
+the definition itself (`libs/atlas-redis/id.go:66`) is read-only per the
+brief.
+
+`NewLock`/`NewLockWithTTL` have exactly four production call sites, all
+already caught by the brief's literal grep:
+
+| # | Call site | Constructor | Verdict | Justification |
+|---|---|---|---|---|
+| 1 | `services/atlas-messengers/atlas.com/messengers/messenger/processor.go:69` (`InitLock`) | `NewLockWithTTL(client, "messenger-create", 10*time.Second)` | `GLOBAL-CORRECT` | The `*atlas.Lock` object is a process-wide singleton, but the only key ever passed to it (`acquireCreateLock`, `processor.go:74-89`) is `fmt.Sprintf("%s:%d", atlas.TenantKey(t), characterId)` — every acquired Redis key already carries the caller's `tenant.Model` via `TenantKey`. Two different tenants' "create messenger" calls for the same `characterId` therefore acquire different Redis keys regardless of how many environments share the process; the singleton wrapper is a Go-level convenience, not a shared resource. No conversion needed. |
+| 2 | `services/atlas-kites/atlas.com/kites/kite/registry.go:52` (`InitRegistry`) | `NewLock(client, "kite-cap")` | `GLOBAL-CORRECT` | Same shape: the singleton `lock` field is only ever addressed through `fieldLockKey(t, f)` (`registry.go:129-131`), which the file's own comment states plainly — *"fieldLockKey includes the tenant because atlas.Lock is NOT tenant-scoped — it namespaces by the constructor's namespace only"* — and prepends `t.Id().String()`. `AcquireFieldLock`/`ReleaseFieldLock` (`registry.go:138-144`) always derive `t` via `tenant.MustFromContext(ctx)` before building the key. No conversion needed. |
+| 3 | `services/atlas-inventory/atlas.com/inventory/compartment/lock_registry.go:54` (`InitLockRegistry`) | `NewLockWithTTL(client, "inventory", lockTTL)` | `SHOULD-BE-SCOPED (tenant, converted here)` | Unlike the two rows above, `lockRegistry.Get` built its key as `fmt.Sprintf("%d:%d", characterId, inventoryType)` with **no tenant segment at all** — `characterId` is a per-tenant auto-incrementing id (`libs/atlas-redis/id.go` `IDGenerator`/tenant-scoped counters elsewhere in the fleet), so two different tenants can and do have a character with the same numeric id. Under sparse mode, one `atlas-inventory` process serving multiple tenants would let tenant A's character #9001 equip-lock contend with tenant B's character #9001 equip-lock on the identical Redis key — a correctness bug (false mutual exclusion / possible cross-tenant compartment corruption if the fallback `ForceAcquire` steals a lock still legitimately held by the other tenant), not merely a throughput coupling. Converted in this task: see below. |
+| 4 | `services/atlas-portal-actions/atlas.com/portal/dedupe/gate.go:70` (`InitGate`) | `NewLock(client, lockNamespace)` | `GLOBAL-CORRECT` | Already tenant-scoped by design and documented as such: `redisKey(t, k)` (`gate.go:87-95`) composes `atlas.TenantKey(t)` as the first segment via `atlas.CompositeKey`, and the file's own doc comment on `redisKey` (`gate.go:82-86`) states *"Lock is not tenant-aware... so the tenant is composed into the caller-supplied key using the library's own TenantKey and CompositeKey helpers"* — this was a deliberate task-184 design decision (design §5.1), not an incidental correctness fix. No conversion needed. |
+
+None of the four sites needed an **environment**-scoped conversion — every
+site that needed scoping at all needed tenant scoping (the resource each
+protects is data-plane state addressed by tenant + characterId), so the
+`SHOULD-BE-SCOPED (environment) — blocked on Task 8` bucket has zero rows.
+No site was left unclassified.
+
+### Conversion (row 3)
+
+`services/atlas-inventory/atlas.com/inventory/compartment/lock_registry.go`:
+`lockRegistry.Get` now takes a `tenant.Model` as its first parameter and
+composes the Redis key as `atlas.CompositeKey(atlas.TenantKey(t),
+fmt.Sprintf("%d:%d", characterId, inventoryType))` — the same
+`TenantKey`/`CompositeKey` idiom used at row 4 above, not a new helper. All
+24 call sites in `services/atlas-inventory/atlas.com/inventory/compartment/processor.go`
+(`ProcessorImpl` methods, which already carry `p.t tenant.Model` set at
+construction and propagated through `WithTransaction`) now pass `p.t` as the
+new first argument. `compartment/registry_test.go`'s three lock tests
+(`TestLockUnlock`, `TestUnlockNonHolder`, `TestTwoMutexesMutualExclusion`)
+were updated to pass a `tenant.Model` obtained from the existing
+`testTenant()` helper (`processor_test.go:132`, already shared by the
+reservation-registry tests in the same package) — each test captures **one**
+tenant value into a local `tm` and reuses it across every `Get` call within
+that test, since `testTenant()` mints a fresh random tenant UUID per call and
+the tests require the *same* key to exercise mutual exclusion.
+
+Module-local verification (`services/atlas-inventory/atlas.com/inventory`):
+
+```
+$ go build ./...
+$ go test ./...
+ok  	atlas-inventory/asset	(cached)
+ok  	atlas-inventory/compartment	0.502s
+ok  	atlas-inventory/data/cash	(cached)
+ok  	atlas-inventory/data/consumable	(cached)
+ok  	atlas-inventory/data/tradeability	(cached)
+ok  	atlas-inventory/drop	(cached)
+ok  	atlas-inventory/inventory	(cached)
+ok  	atlas-inventory/kafka/consumer/compartment	(cached)
+ok  	atlas-inventory/kafka/message/compartment	(cached)
+```
+
+The three `GLOBAL-CORRECT` sites received a one-line intent comment at their
+construction call site (not a behavior change) — `atlas-messengers`,
+`atlas-kites`, `atlas-portal-actions` — each verified independently with
+module-local `go build ./... && go test ./...` (all green, no new failures).

@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // ---------------------------------------------------------------------------
@@ -23,17 +22,19 @@ func TestLockUnlock(t *testing.T) {
 	reg := compartment.LockRegistry()
 	require.NotNil(t, reg)
 
-	m := reg.Get(9001, inventory.TypeValueEquip)
+	tm := testTenant()
+	m := reg.Get(tm, 9001, inventory.TypeValueEquip)
 	m.Lock()
 	m.Unlock()
 
-	// A second mutex for the same (characterId, inventoryType) must be able to
-	// acquire after the first holder unlocked. If Unlock did not release, Lock
-	// would spin for the full 10 s timeout — too slow for a unit test, so we
-	// verify via ReleaseToken semantics: reconstruct a fresh mutex and confirm
-	// Lock returns without blocking (Lock sets a fresh token every call, so
-	// after m.Unlock() the key is gone and the new mutex's SetNX wins at once).
-	m2 := reg.Get(9001, inventory.TypeValueEquip)
+	// A second mutex for the same (tenant, characterId, inventoryType) must be
+	// able to acquire after the first holder unlocked. If Unlock did not
+	// release, Lock would spin for the full 10 s timeout — too slow for a unit
+	// test, so we verify via ReleaseToken semantics: reconstruct a fresh mutex
+	// and confirm Lock returns without blocking (Lock sets a fresh token every
+	// call, so after m.Unlock() the key is gone and the new mutex's SetNX wins
+	// at once).
+	m2 := reg.Get(tm, 9001, inventory.TypeValueEquip)
 	done := make(chan struct{})
 	go func() {
 		m2.Lock()
@@ -54,20 +55,21 @@ func TestUnlockNonHolder(t *testing.T) {
 	reg := compartment.LockRegistry()
 	require.NotNil(t, reg)
 
-	holder := reg.Get(9002, inventory.TypeValueUse)
+	tm := testTenant()
+	holder := reg.Get(tm, 9002, inventory.TypeValueUse)
 	holder.Lock()
 	defer holder.Unlock()
 
 	// A second mutex pointing at the same key; calling Unlock on it without
 	// first calling Lock means its token is empty — ReleaseToken("") should
 	// not match the holder's token.
-	nonHolder := reg.Get(9002, inventory.TypeValueUse)
+	nonHolder := reg.Get(tm, 9002, inventory.TypeValueUse)
 	nonHolder.Unlock() // must be a no-op CAS miss, not an unconditional DEL
 
 	// Holder should still hold the lock: a fresh mutex for the same key should
 	// block immediately (SetNX fails). We verify by checking that a goroutine
 	// waiting for it does NOT finish within 200 ms.
-	challenger := reg.Get(9002, inventory.TypeValueUse)
+	challenger := reg.Get(tm, 9002, inventory.TypeValueUse)
 	done := make(chan struct{})
 	go func() {
 		challenger.Lock()
@@ -88,12 +90,13 @@ func TestTwoMutexesMutualExclusion(t *testing.T) {
 	reg := compartment.LockRegistry()
 	require.NotNil(t, reg)
 
-	m1 := reg.Get(9003, inventory.TypeValueSetup)
+	tm := testTenant()
+	m1 := reg.Get(tm, 9003, inventory.TypeValueSetup)
 	m1.Lock()
 
 	acquired := make(chan struct{})
 	go func() {
-		m2 := reg.Get(9003, inventory.TypeValueSetup)
+		m2 := reg.Get(tm, 9003, inventory.TypeValueSetup)
 		m2.Lock()
 		close(acquired)
 		m2.Unlock()
@@ -122,18 +125,14 @@ func TestTwoMutexesMutualExclusion(t *testing.T) {
 // ---------------------------------------------------------------------------
 // Reservation registry tests
 // ---------------------------------------------------------------------------
-
-func testReservationTenant() tenant.Model {
-	tm, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	return tm
-}
+// testTenant is defined in processor_test.go (same package).
 
 // TestAddAndGetReservedQuantity verifies the basic add→get round-trip.
 func TestAddAndGetReservedQuantity(t *testing.T) {
 	reg := compartment.GetReservationRegistry()
 	require.NotNil(t, reg)
 
-	tm := testReservationTenant()
+	tm := testTenant()
 	txId := uuid.New()
 	characterId := uint32(1001)
 	invType := inventory.TypeValueEquip
@@ -154,7 +153,7 @@ func TestRemoveReservation(t *testing.T) {
 	reg := compartment.GetReservationRegistry()
 	require.NotNil(t, reg)
 
-	tm := testReservationTenant()
+	tm := testTenant()
 	characterId := uint32(1002)
 	invType := inventory.TypeValueUse
 	slot := int16(2)
@@ -186,7 +185,7 @@ func TestSwapReservation(t *testing.T) {
 	reg := compartment.GetReservationRegistry()
 	require.NotNil(t, reg)
 
-	tm := testReservationTenant()
+	tm := testTenant()
 	characterId := uint32(1003)
 	invType := inventory.TypeValueSetup
 	slotA := int16(3)
@@ -215,7 +214,7 @@ func TestExpiredReservationFilteredOut(t *testing.T) {
 	reg := compartment.GetReservationRegistry()
 	require.NotNil(t, reg)
 
-	tm := testReservationTenant()
+	tm := testTenant()
 	characterId := uint32(1004)
 	invType := inventory.TypeValueETC
 	slot := int16(1)

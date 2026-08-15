@@ -105,16 +105,50 @@ Planning Time: 0.058 ms
 Execution Time: 0.026 ms
 ```
 
-Index-served. No sequential scan on `event_occurrence`. The planner chose the
+Index-served. No sequential scan on `event_occurrence`. For this specific
+query — `state = 'ACTIVE'` explicit in the predicate — the planner chose the
 partial `ix_occ_active_scope` (tenant/world/channel/state) over the
-non-partial `ix_occ_type_state` (tenant/type/state) for this row set — both
-indexes cover the query with an index-only tenant lookup plus a residual
-`type` filter, and Postgres correctly judged `ix_occ_active_scope` cheaper
-given `state = 'ACTIVE'` is in both predicates and the seeded data has only
-one `ACTIVE` row for this tenant/world/channel. `ix_occ_type_state` remains
-useful for tenants/queries that filter by `type` without a world/channel/
-ACTIVE scope (e.g. a query across all states for a type), which
-`ix_occ_active_scope` cannot serve since it is partial on `state = 'ACTIVE'`.
+non-partial `ix_occ_type_state` (tenant/type/state): both indexes cover the
+query with an index-only tenant lookup plus a residual `type` filter, and
+Postgres judged `ix_occ_active_scope` cheaper given the seeded data has only
+one `ACTIVE` row for this tenant/world/channel.
+
+That does not mean `ix_occ_type_state` is unused, and task-19 review F2
+asked for the call site that actually selects it rather than asserted prose:
+`listPagedProvider` (`event/occurrence/provider.go:77-111`) backs
+`GET /events/occurrences` (FR-API6) and applies `type` and `state` as two
+INDEPENDENT optional filters — `Type` set with `State` left empty is a real,
+reachable request shape (list every occurrence of a type regardless of
+state). `ix_occ_active_scope` cannot serve that query at all: it is partial
+on `state = 'ACTIVE'`, and a partial index is usable only when the query's
+predicate implies the index's predicate, which an absent `state` filter does
+not. Captured below with 5,020 rows seeded — 5,000 split across two noise
+types (`PIRATE_INVASION`, `SILVER_MINE_COLLAPSE`) and 20 `ANNIVERSARY` rows
+in mixed states (10 `ACTIVE`, 10 `COMPLETED`) — same tenant, same image,
+same testcontainers pattern, `ANALYZE` run after seeding:
+
+```sql
+EXPLAIN ANALYZE
+SELECT * FROM event_occurrence
+WHERE tenant_id = '07e7748a-7d5c-4a48-b332-7d4a8e75c354' AND type = 'ANNIVERSARY'
+```
+
+```
+Index Scan using ix_occ_type_state on event_occurrence  (cost=0.28..38.43 rows=20 width=127) (actual time=0.012..0.014 rows=20 loops=1)
+  Index Cond: ((tenant_id = '07e7748a-7d5c-4a48-b332-7d4a8e75c354'::uuid) AND (type = 'ANNIVERSARY'::text))
+Planning Time: 0.391 ms
+Execution Time: 0.027 ms
+```
+
+`ix_occ_type_state` is selected with no residual filter — `type` is part of
+the index condition, not a post-scan `Filter:` — confirming the index earns
+its place at `listPagedProvider`'s type-only filter shape, distinct from the
+FR-API7 query above. Harness: the same throwaway
+`//go:build explaintool`-tagged test pattern as the rest of this file
+(`event/occurrence/zz_explain_temp_test.go`,
+`TestCaptureExplainPlanForTypeAcrossStates`, run via
+`go test -tags explaintool ./event/occurrence/... -run TestCaptureExplainPlanForTypeAcrossStates -v`),
+not committed, deleted after capturing this evidence.
 
 ## Summary
 

@@ -61,6 +61,56 @@ func TestConcurrencyKeyRejectsASecondActiveOccurrence(t *testing.T) {
 	}
 }
 
+// task-19 review F1: a COMPLETED occurrence's concurrency key must be
+// reusable — the stale ux_event_occurrence_concurrency_key index (no state
+// predicate) blocked this forever under Postgres's untargeted
+// ON CONFLICT DO NOTHING; SQLite's ON CONFLICT semantics differ, so this
+// version of the test cannot itself prove the defect (see
+// concurrency_key_integration_test.go, TestConcurrencyKeyIsReusableAfterCompletionOnPostgres,
+// for the live Postgres reproduction), but it still pins the correct
+// behavior under the default gate.
+func TestConcurrencyKeyIsReusableAfterCompletion(t *testing.T) {
+	db := newTestDB(t)
+	p := NewProcessor(testLogger(t), testCtx(t), db)
+	d := testDefinition(t, "CRIMSON_BALROG")
+	seed := registry.Seed{Stage: "ATTACKING", ConcurrencyKey: "v1|1|4", WorldId: 1, ChannelId: 4}
+
+	first, err := p.CreateFromSeed(d, seed, "work-1")
+	if err != nil {
+		t.Fatalf("first create: %v", err)
+	}
+	if _, err := p.Complete(first.Id(), "MONSTERS_ELIMINATED", transition.TriggerTypeMonsterKilled, "work-1"); err != nil {
+		t.Fatalf("complete: %v", err)
+	}
+
+	second, err := p.CreateFromSeed(d, seed, "work-2")
+	if err != nil {
+		t.Fatalf("re-create after completion: %v, want success", err)
+	}
+	if second.Id() == first.Id() {
+		t.Fatalf("re-create returned the same occurrence id")
+	}
+}
+
+// task-19 review F1: the old index was also wrong on columns — it omitted
+// event_definition_id, so two different definitions sharing a concurrency
+// key would collide with each other. ux_occ_concurrency includes
+// event_definition_id, so both may hold the same key concurrently.
+func TestDifferentDefinitionsMayShareAConcurrencyKey(t *testing.T) {
+	db := newTestDB(t)
+	p := NewProcessor(testLogger(t), testCtx(t), db)
+	d1 := testDefinition(t, "CRIMSON_BALROG")
+	d2 := testDefinition(t, "GOLDEN_BALROG")
+	seed := registry.Seed{Stage: "ATTACKING", ConcurrencyKey: "v1|1|4", WorldId: 1, ChannelId: 4}
+
+	if _, err := p.CreateFromSeed(d1, seed, "work-1"); err != nil {
+		t.Fatalf("first definition create: %v", err)
+	}
+	if _, err := p.CreateFromSeed(d2, seed, "work-2"); err != nil {
+		t.Fatalf("second definition create: %v, want success", err)
+	}
+}
+
 // An empty concurrency key opts out of the constraint entirely.
 func TestEmptyConcurrencyKeyAllowsMany(t *testing.T) {
 	db := newTestDB(t)

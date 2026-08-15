@@ -2,8 +2,10 @@ package occurrence
 
 import (
 	"atlas-events/event/definition"
+	"atlas-events/event/registry"
 	"atlas-events/event/transition"
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -50,4 +52,71 @@ func testDefinition(t *testing.T, theType string) definition.Model {
 		t.Fatalf("testDefinition: %v", err)
 	}
 	return m
+}
+
+// design §686: both completion paths — Complete() and a terminal
+// ApplyProgress — converge on ONE guarded transition. A terminal
+// ApplyProgress against an occurrence Complete() already completed must NOT
+// overwrite the first completion's reason/timestamp, and must surface
+// ErrAlreadyCompleted (distinct from "no such occurrence") rather than
+// silently winning the race.
+func TestTerminalApplyProgressLosesToAnEarlierComplete(t *testing.T) {
+	db := newTestDB(t)
+	p := NewProcessor(testLogger(t), testCtx(t), db)
+	o, err := p.CreateFromSeed(testDefinition(t, "CRIMSON_BALROG"),
+		registry.Seed{Stage: "ATTACKING", ConcurrencyKey: "k"}, "w")
+	if err != nil {
+		t.Fatalf("CreateFromSeed: %v", err)
+	}
+
+	won, err := p.Complete(o.Id(), "MONSTERS_ELIMINATED", transition.TriggerTypeMonsterKilled, "u1")
+	if err != nil || !won {
+		t.Fatalf("Complete: won=%v err=%v, want true/nil", won, err)
+	}
+
+	_, err = p.ApplyProgress(o, registry.Progress{
+		Stage:            "DONE",
+		Terminal:         true,
+		CompletionReason: "WINDOW_ELAPSED",
+	}, transition.TriggerTypeScheduledWork, "poll-1")
+	if !errors.Is(err, ErrAlreadyCompleted) {
+		t.Fatalf("terminal ApplyProgress err = %v, want ErrAlreadyCompleted", err)
+	}
+
+	final, err := p.GetById(o.Id())
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if final.CompletionReason() != "MONSTERS_ELIMINATED" {
+		t.Fatalf("completion reason = %q, want %q (must not be overwritten by the losing racer)",
+			final.CompletionReason(), "MONSTERS_ELIMINATED")
+	}
+
+	var trans int64
+	db.Model(&transition.Entity{}).Where("occurrence_id = ?", o.Id()).Count(&trans)
+	// OCCURRENCE_CREATED + the winning Complete() transition. The losing
+	// ApplyProgress must write no transition of its own.
+	if trans != 2 {
+		t.Fatalf("expected 2 transition rows, got %d", trans)
+	}
+}
+
+// The non-terminal path is unaffected by the terminal guard: a progress
+// update that does not complete the occurrence must still succeed.
+func TestNonTerminalApplyProgressStillSucceeds(t *testing.T) {
+	db := newTestDB(t)
+	p := NewProcessor(testLogger(t), testCtx(t), db)
+	o, err := p.CreateFromSeed(testDefinition(t, "CRIMSON_BALROG"),
+		registry.Seed{Stage: "ATTACKING", ConcurrencyKey: "k"}, "w")
+	if err != nil {
+		t.Fatalf("CreateFromSeed: %v", err)
+	}
+
+	updated, err := p.ApplyProgress(o, registry.Progress{Stage: "FLEEING"}, transition.TriggerTypeScheduledWork, "poll-1")
+	if err != nil {
+		t.Fatalf("ApplyProgress: %v", err)
+	}
+	if updated.Stage() != "FLEEING" || updated.State() != StateActive {
+		t.Fatalf("updated = %s/%s, want FLEEING/ACTIVE", updated.State(), updated.Stage())
+	}
 }

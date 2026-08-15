@@ -120,7 +120,13 @@ func (p *ProcessorImpl) CreateFromSeed(d definition.Model, s registry.Seed, trig
 
 // ApplyProgress settles an occurrence into p (the result of a handler's
 // Start/Advance) and writes the paired transition row in one transaction
-// (FR-O6/FR-T2). p.Terminal completes the occurrence in the same write.
+// (FR-O6/FR-T2). p.Terminal completes the occurrence in the same write, using
+// the SAME guarded UPDATE (WHERE state = 'ACTIVE') that Complete uses — both
+// completion paths converge on one guarded transition (design §686). A
+// terminal call that loses the race returns ErrAlreadyCompleted, distinct
+// from "no such occurrence" (gorm.ErrRecordNotFound), and writes no
+// transition row. The non-terminal path is unchanged: it only requires the
+// row to exist, since it is not deciding completion.
 func (p *ProcessorImpl) ApplyProgress(o Model, prog registry.Progress, triggerType, triggerRef string) (Model, error) {
 	b := o.Builder().
 		SetStage(prog.Stage).
@@ -151,7 +157,7 @@ func (p *ProcessorImpl) ApplyProgress(o Model, prog registry.Progress, triggerTy
 		return Model{}, err
 	}
 
-	result, err := applyProgress(p.db.WithContext(p.ctx))(entity, transEntity)
+	result, err := applyProgress(p.db.WithContext(p.ctx))(entity, transEntity, prog.Terminal)
 	if err != nil {
 		return Model{}, err
 	}
@@ -161,26 +167,27 @@ func (p *ProcessorImpl) ApplyProgress(o Model, prog registry.Progress, triggerTy
 // Complete is the guarded completion (FR-B20): the first return reports
 // whether THIS call won the race. A losing caller gets (false, nil) and must
 // skip its cleanup — the winner already ran it.
+//
+// FromStage is built INSIDE the same transaction as the guarded UPDATE (via
+// buildTrans, called by complete() after its SELECT ... FOR UPDATE), so the
+// recorded value is the stage that was actually true at write time rather
+// than one read here, before the transaction, and possibly stale by the time
+// the guarded UPDATE runs.
 func (p *ProcessorImpl) Complete(id uuid.UUID, reason string, triggerType, triggerRef string) (bool, error) {
-	current, err := p.GetById(id)
-	if err != nil {
-		return false, err
-	}
-
 	at := time.Now()
-	tm, err := transition.NewBuilder(id, transitionStage("", StateCompleted)).
-		SetFromStage(current.Stage()).
-		SetTrigger(triggerType, triggerRef).
-		Build()
-	if err != nil {
-		return false, err
-	}
-	transEntity, err := transition.ToEntity(tm, p.t.Id())
-	if err != nil {
-		return false, err
+	tenantId := p.t.Id()
+	buildTrans := func(fromStage string) (transition.Entity, error) {
+		tm, err := transition.NewBuilder(id, transitionStage("", StateCompleted)).
+			SetFromStage(fromStage).
+			SetTrigger(triggerType, triggerRef).
+			Build()
+		if err != nil {
+			return transition.Entity{}, err
+		}
+		return transition.ToEntity(tm, tenantId)
 	}
 
-	return complete(p.db.WithContext(p.ctx))(id, reason, at, transEntity)
+	return complete(p.db.WithContext(p.ctx))(id, reason, at, buildTrans)
 }
 
 func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {

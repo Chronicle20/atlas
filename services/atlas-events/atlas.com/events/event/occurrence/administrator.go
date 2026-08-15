@@ -19,6 +19,12 @@ import (
 // constraint and never produces this error.
 var ErrConcurrencyKeyTaken = errors.New("occurrence: concurrency key already claimed by an active occurrence")
 
+// ErrAlreadyCompleted is returned by applyProgress (terminal branch) and
+// signals that a losing racer must be told "already completed" rather than
+// "not found" — the two completion paths (ApplyProgress's terminal branch and
+// complete()) converge on the same guarded UPDATE and share this outcome.
+var ErrAlreadyCompleted = errors.New("occurrence: already completed")
+
 // createFromSeed inserts the occurrence, its map scope rows and the
 // OCCURRENCE_CREATED transition in ONE transaction. There is no path by which
 // the administrator can write an occurrence without its transition (FR-O6).
@@ -53,10 +59,17 @@ func createFromSeed(db *gorm.DB) func(entity Entity, maps []MapEntity, trans tra
 
 // applyProgress updates the occurrence's state/stage/context/next-transition
 // (and, when terminal, completion) and writes the paired transition row in ONE
-// transaction (FR-O6/FR-T2). A nonexistent id surfaces gorm.ErrRecordNotFound
-// rather than silently no-oping.
-func applyProgress(db *gorm.DB) func(entity Entity, trans transition.Entity) (Entity, error) {
-	return func(entity Entity, trans transition.Entity) (Entity, error) {
+// transaction (FR-O6/FR-T2).
+//
+// terminal selects the guard: a non-terminal write only needs the row to
+// exist (WHERE id = ?), and a nonexistent id surfaces gorm.ErrRecordNotFound.
+// A terminal write (this call is completing the occurrence) uses the SAME
+// guarded UPDATE complete() uses — WHERE id = ? AND state = 'ACTIVE' — so it
+// converges on the one guarded completion transition (design §686). A losing
+// racer (RowsAffected == 0) is reported as ErrAlreadyCompleted, distinct from
+// "no such occurrence", and writes no transition row.
+func applyProgress(db *gorm.DB) func(entity Entity, trans transition.Entity, terminal bool) (Entity, error) {
+	return func(entity Entity, trans transition.Entity, terminal bool) (Entity, error) {
 		err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 			updates := map[string]interface{}{
 				"state":              entity.State,
@@ -66,11 +79,18 @@ func applyProgress(db *gorm.DB) func(entity Entity, trans transition.Entity) (En
 				"completed_at":       entity.CompletedAt,
 				"completion_reason":  entity.CompletionReason,
 			}
-			res := tx.Model(&Entity{}).Where("id = ?", entity.ID).Updates(updates)
+			q := tx.Model(&Entity{}).Where("id = ?", entity.ID)
+			if terminal {
+				q = q.Where("state = ?", StateActive)
+			}
+			res := q.Updates(updates)
 			if res.Error != nil {
 				return res.Error
 			}
 			if res.RowsAffected == 0 {
+				if terminal {
+					return ErrAlreadyCompleted
+				}
 				return gorm.ErrRecordNotFound
 			}
 			return tx.Create(&trans).Error
@@ -82,15 +102,32 @@ func applyProgress(db *gorm.DB) func(entity Entity, trans transition.Entity) (En
 	}
 }
 
-// complete is a GUARDED update, not a lock. RowsAffected == 0 means another
-// path completed this occurrence first; the caller must then skip its cleanup
-// and return success. This is FR-B20 expressed as a database predicate. The
-// transition row is written ONLY on the winning path — the loser makes no
-// state change, so it must write no transition (FR-O6/FR-T2).
-func complete(db *gorm.DB) func(id uuid.UUID, reason string, at time.Time, trans transition.Entity) (bool, error) {
-	return func(id uuid.UUID, reason string, at time.Time, trans transition.Entity) (bool, error) {
+// complete is a GUARDED update, not a lock: the completion decision itself is
+// the WHERE state = 'ACTIVE' predicate on the UPDATE below, not the SELECT.
+// RowsAffected == 0 means another path completed this occurrence first; the
+// caller must then skip its cleanup and return success. This is FR-B20
+// expressed as a database predicate. The transition row is written ONLY on
+// the winning path — the loser makes no state change, so it must write no
+// transition (FR-O6/FR-T2).
+//
+// The row is read once, with a SELECT ... FOR UPDATE, before the guarded
+// UPDATE, so the transition's FromStage records the stage that was actually
+// true at write time rather than one read outside — and possibly stale by —
+// the transaction (buildTrans receives it). SELECT ... FOR UPDATE is a no-op
+// under the SQLite test driver (it does not support row locking) and under
+// Postgres it holds the row for the remainder of this transaction, so the
+// stage buildTrans sees cannot change again before the guarded UPDATE
+// commits. A nonexistent id surfaces gorm.ErrRecordNotFound from the SELECT.
+func complete(db *gorm.DB) func(id uuid.UUID, reason string, at time.Time, buildTrans func(fromStage string) (transition.Entity, error)) (bool, error) {
+	return func(id uuid.UUID, reason string, at time.Time, buildTrans func(fromStage string) (transition.Entity, error)) (bool, error) {
 		var won bool
 		err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+			var current Entity
+			if err := tx.Clauses(clause.Locking{Strength: clause.LockingStrengthUpdate}).
+				Where("id = ?", id).First(&current).Error; err != nil {
+				return err
+			}
+
 			res := tx.Model(&Entity{}).
 				Where("id = ? AND state = ?", id, StateActive).
 				Updates(map[string]any{
@@ -106,6 +143,10 @@ func complete(db *gorm.DB) func(id uuid.UUID, reason string, at time.Time, trans
 				return nil
 			}
 			won = true
+			trans, err := buildTrans(current.Stage)
+			if err != nil {
+				return err
+			}
 			return tx.Create(&trans).Error
 		})
 		return won, err

@@ -1,235 +1,130 @@
 # task-227 — resume state
 
-**Updated 2026-08-14, controller session 3.** The blocker this file previously
-opened with is RESOLVED — both of its sub-blockers were answered and the user
-ruled. Read "Current state" first; the historical blocker narrative below is kept
-for the evidence chain, not as an open question.
+**Rewritten end of controller session 4.** The previous version of this file was
+written at the end of session 3 and had gone stale — it said "resume at Task 26"
+long after Tasks 26, 27 and 28 had landed. Everything below is current as of
+session 4's last commit.
 
-## Current state
-
-**Updated end of controller session 3.** Ledger
-`.superpowers/sdd/plan/progress.md` (git-ignored but it HAS survived two clears) is
-the authority on per-task state; this file is the narrative.
-
-### Landed this session
-- `7183e75aa` docs — currency derivation, plan Phase H, Task 28 rewrite
-- `5f69feac0` docs — plan Phase I (the pre-v95 credential)
-- `ce5b8e246` **code** — Task 40: birth date in atlas-account + atlas-channel mirror.
-  `tools/verify.sh --quick` PASS (exit 0, 86 modules, all guards). Task review was
-  in flight at handoff — **check the ledger for its verdict before assuming clean.**
-
-### Resolved blockers (do not relitigate)
-- **Currency: DERIVED.** Client hard-codes NX Prepaid for both buy ops; pass
-  `isPoints=false`, `currency=0`. Evidence in `buy-currency-derivation.md`.
-- **User ruling: Option A** — `BUY_*` routes through `RequestPurchase`, insert-first,
-  done body emitted from the purchase-outcome consumer with the real `AssetId`.
-  Planned as Phase H, Tasks 37/38/39.
-- **User ruling: add a birth date to atlas-account** for the pre-v95 credential.
-  Planned as Phase I; Task 40 is DONE, Task 41 folded into Task 26 (see ordering).
-
-### Controller ruling on ordering — READ BEFORE RESUMING
-**Task 40 runs before Task 26, and Task 41 is folded INTO Task 26.** As originally
-planned, Task 26 would have had to answer availability checks with no working
-pre-v95 credential comparison, landing either a security hole or a stub — both
-forbidden. Task 40 is now done, so **Task 26 must implement BOTH version paths in
-one commit**: `Spw()` vs `PIC()` on v95/jms, `BirthDate()` vs the new stored birth
-date on v48–v92, fail-closed when the stored value is unset.
-
-### Next action
-Resume at **Task 26**, using `.superpowers/sdd/plan/task-26-brief-cont.md` PLUS
-the Task 41 content now folded in. **Note the continuation brief contains one
-error of mine**: it says to compare `.PIC()` against the decoded SPW, which is
-correct ONLY on v95/jms. Correct that when you re-brief. Two prior Task 26
-dispatches produced NO code — both were aborted by the turn-budget hook bug, not
-by real problems.
-
-### The turn-budget hook — THE USER OWNS THIS FIX
-Do NOT touch `.claude/hooks/turn-budget.sh` in either tree. The registered hook is
-the MAIN repo's copy (`$CLAUDE_PROJECT_DIR` resolves to the main repo even for
-worktree sessions). Until the user's fix lands, the controller MUST zero the counter
-immediately before every dispatch:
-`printf '0' > /tmp/claude-turn-budget/<YOUR session id>` — read your own session id
-from your scratchpad path; do not reuse a previous session's.
-
-### Still outstanding
-Tasks 26, 27, 28 (rewritten), 29–36, 37–39. Flagless `tools/verify.sh` owed at
-branch end (Task 35). Commit `4a5d9ff65` (client cancel path) remains UNREVIEWED by
-user ruling — deferred to the branch-end whole-branch review.
-
----
-
-## Historical: the blocker as first written
-
-
-## Historical: the blocker as first written
+`.superpowers/sdd/plan/progress.md` (git-ignored, but it has survived three
+`/clear`s) remains the authority on per-task state. This file is the narrative.
 
 ## Where the plan stands
 
-plan.md Tasks 1–25 are complete and committed. Plus one out-of-plan task the
-user ruled in (the client cancel path). Branch head at pause: `4a5d9ff65`.
+**Done:** plan Tasks 1–30, 32, and 40. Task 41 was folded into Task 26.
+**Skipped by user ruling:** Task 31 — see below.
+**Remaining:** 33, 34 (Phase G, atlas-ui), 37, 38, 39 (Phase H, the purchase path),
+then 35 (flagless gate) and 36 (branch review).
+
+### Landed in session 4
 
 | Commit | What |
 |---|---|
-| `972ff8f3a` | Task 23 + deploy-notes.md |
-| `420cf2573`, `6de1ae5b7` | Task 24 (pendingchange REST client) |
-| `ceb6639ba` | fix: preserve decoded reason on 409 |
-| `7ea605251` | fix: SA4004 in atlas-character |
-| `98213d81e` | Task 25 (BUY_* handlers) |
-| `723f60ab8` | docs: cancel-path IDA derivations |
-| `4a5d9ff65` | client cancel path (out of plan, user-ruled) |
+| `085b52068` | docs — Task 26 + Task 27 review reports (written in session 3, never committed) |
+| `41a2d7e98` | **Task 29** — atlas-guilds consumes `NAME_CHANGED` |
+| `e05fafd17` | docs — Task 29 review |
+| `4586d78b2` | **Task 30** — atlas-buddies consumes `NAME_CHANGED`, emits `BUDDY_UPDATED` |
+| `25eb4d3bd` | docs — Task 30 review |
+| `8e7ad6c3d` | Task 30 fix round — pin "a redelivered event emits no second `BUDDY_UPDATED`" |
+| `6f00b9014` | docs — record Task 31 as skipped |
+| `526a3b50b` | **Task 32** — atlas-mts consumes `NAME_CHANGED` |
 
-Last gate run: `tools/verify.sh --quick` **PASS, exit 0** — but that was at
-`98213d81e`. `--quick` skips docker bake and `-race`, so it is NOT a pre-PR pass.
-The flagless run is still owed (plan Task 35).
+Every one of Tasks 29, 30 and 32 passed `tools/verify.sh --quick` (exit 0) and a
+read-only review with no blocking findings. **Phase F is complete.**
 
-## BLOCKING — decision needed before any further implementation
+## Next action
 
-### The defect
+Start **Task 33** (atlas-ui service layer + React Query hooks), then Task 34 (the
+panel, confirm dialog and page wiring). Phase G is scoped by FR-2.10 to **read +
+cancel only** — the operator console must not be able to create a rename or transfer
+request, nor edit a requested value.
 
-Task 25's `BUY_NAME_CHANGE` / `BUY_WORLD_TRANSFER` arms emit a done body
-containing a `CashInventoryItem` with `CashId = 0`. **This is confirmed unsafe**,
-by IDA derivation (`cash-inventory-item-zero-fields.md`, committed):
+Generate the brief with `tools/task-brief.sh docs/tasks/task-227-cash-name-change-world-transfer/plan.md 33`.
+**Check it for a `### Files` section and expect it to be wrong or absent** — see the
+standing rule below. Phase G is the first frontend work on this branch, so the
+`frontend-dev-guidelines` skill and the `frontend-guidelines-reviewer` agent apply
+rather than the backend ones.
 
-- Both done-body handlers `DecodeBuffer` the item into the client's cash locker
-  array at `this+290` (v83: `0x47bccb`, `0x47bfa2`).
-- `CCSWnd_Locker::OnMouseButton` (`0x4b053b`) reads the clicked slot's `CashId`
-  and passes it to `CCashShop::OnMoveCashItemLtoS` (`0x472632`), which re-resolves
-  the slot by **scanning the locker for a CashId match** and **echoes that CashId
-  back to the server** on the locker-withdraw op.
-- Our own code closes the loop: `MoveFromCashInventory` →
-  `saga.WithdrawFromCashShopPayload{CashId: serialNumber}`.
+## Rulings made in session 4 — do not relitigate
 
-So two `CashId == 0` items coexisting in the locker make the withdraw ambiguous,
-and in all cases a fabricated id is echoed. `Expiration = 0` is **UNVERIFIED** —
-no read path was found, which is not the same as proof it is unused.
+- **Task 31 (atlas-rankings) is SKIPPED**, by explicit user choice from three
+  presented options. `plan.md` Task 31 and `design.md:89` both carry the full
+  reasoning. Short version: `ranking/processor.go:123` +
+  `ranking/administrator.go:33-41` already restamp `name` on every recompute cycle,
+  and the service has no Kafka stack at all (no `kafka/` tree, no consumer manager,
+  `atlas-kafka` only a `go.mod` replace line). Accepted residual: the rankings table
+  is stale for at most one recompute tick (~1 min) after a rename. If that window
+  ever becomes unacceptable, the fix is Task 31 as originally written.
+- **Emit-or-not is decided per service, and came out differently in all three.**
+  atlas-guilds emits nothing (no suitable event type exists). atlas-buddies emits
+  `BUDDY_UPDATED` (the event, its body carrying `CharacterName`, and a live
+  registered consumer in atlas-channel all already existed). atlas-mts emits nothing
+  (request/response; no push path). Do not generalise from any one of them.
+- **atlas-merchant is not a missing Phase F task.** `design.md`'s table lists five
+  services but `plan.md:2602` already excludes it by decision (design §3.8, §10):
+  `blacklists.name` / `merchant_visits.name` are name-**keyed** rows, and rewriting a
+  blacklist entry on rename is a moderation product question.
+- **atlas-mts renames every listing row for the seller regardless of `State`.**
+  Verified that nothing anywhere treats `seller_name` as a point-in-time record.
 
-There is no small fix: **nothing in the codebase fabricates a CashId.** Every
-sibling site (`cash_shop_entry.go:86-95`, `kafka/consumer/cashshop/consumer.go`
-:135-142, :181-188, :274-281) resolves a real `asset.Model` and reads
-`.CashId()`. These two arms cannot, because **this flow never creates a cash
-asset at all.**
+## Corrections to earlier sessions' notes
 
-Root cause is design.md §3.1/§5.1, which route `BUY_*` straight to the
-pending-change record with no asset creation. **Task 25 implemented the design
-faithfully.**
+- **The turn-budget hook bug is FIXED** (main-repo commit `c17f8ccad` — the counter
+  is now keyed on `agent_id`, not `session_id`). The old instruction in this file to
+  hand-zero `/tmp/claude-turn-budget/<session>` before every dispatch is **obsolete;
+  do not do it.** That bug is what produced session 3's two spurious Task 26
+  PARTIALs.
+- **Explicit `tenant_id` predicates are not required.** An earlier session note
+  called atlas-guilds' `updateStatus`/`updateTitle` filtering on `character_id`
+  alone "a pre-existing gap". That was wrong: `libs/atlas-database` registers an
+  automatic tenant scope on any `*gorm.DB` carrying a tenant context (see
+  `libs/atlas-database/tenant_scope_test.go`, and `list/provider_test.go:58-70`
+  which uses `db.Unscoped()` specifically to bypass it). Task 29's explicit
+  predicate is harmless belt-and-braces; Task 30's and Task 32's absence of one is
+  correct. Do not "fix" either.
 
-### The user's ruling, and why it stalled
+## Open items carried forward
 
-User chose: route `BUY_*` through `cashshop.RequestPurchase` so a real asset
-exists, then emit the done body from the purchase-success consumer using the real
-`AssetId` — mirroring `consumer.go:135-142`.
-
-A source investigation then found **the chosen shape cannot be built as drawn.**
-The user picked it believing it matched the sibling pattern; it does not. Three
-findings, all file:line confirmed:
-
-1. **Currency is undeterminable — a genuine blocker.**
-   `RequestPurchase(characterId, serialNumber uint32, isPoints bool, currency uint32, zero uint32)`
-   treats currency strictly as a client-declared wallet selector
-   (`atlas-cashshop cashshop/processor.go:98-127`; `wallet/model.go:37-40` maps
-   1→credit, 2→points, else prepaid). Neither `BUY_*` codec carries a currency
-   field, and **no commodity record carries one** — atlas-cashshop's
-   `commodity.Model` has `Price` but no wallet type. No server-side rule infers
-   it anywhere. Needs an IDA derivation of real client behaviour, or an explicit
-   product decision. **Do not let an implementer guess this.**
-
-2. **No correlation carrier exists.** Moving the done body to the consumer means
-   `requestedName` / `targetWorld` must cross the async boundary. Today:
-   `RequestPurchaseCommandBody{Currency, SerialNumber}`,
-   `PurchaseEventBody{TemplateId, Price, CompartmentId, AssetId, ItemId}`,
-   `StatusEvent{WorldId, CharacterId, Type, Body}` — no transaction id, no op
-   tag. `handleStatusEventPurchase` keys only off `CharacterId` and cannot tell a
-   name-change buy from any other concurrent BUY. `ErrorEventBody{Error,
-   CashItemId}` is equally op-blind. Closest precedent
-   (`OpenSurpriseCommandBody.TransactionId`) carries an opaque UUID and its
-   success event does not echo it back. `session.Model` has no attribute bag.
-   => requires **new fields on three message bodies** — a cross-service
-   wire-format change, the first of its kind here.
-
-3. **Ordering: insert-first is the only option that reuses existing machinery.**
-   `Resolve()` mints a refund only when `status != StatusApplied && m.HasAsset()`
-   (`pending_change/processor.go:287-306`), and `HasAsset()` is **false on the
-   purchase path by construction** (`entity.go:69-74`). atlas-cashshop has **no
-   void/refund command at all** (`Expire` deletes the asset and never credits the
-   wallet). So purchase-first + a name-taken 409 = player charged with nothing,
-   reversible only by building new refund machinery. Insert-first + purchase
-   failure = release the unpaid PENDING row via the already-tested cancel path,
-   minting no spurious refund.
-   *(Correction: an earlier controller note claimed the refund machinery already
-   supported purchase-first. That was wrong — it was inferred from
-   `refund_idempotency_test.go` without checking `HasAsset()`.)*
-
-**Also discovered: a pre-existing hole unrelated to this fix.**
-`pending_change/processor.go:250-256` states the purchase path's entitlement is
-consumed by atlas-cashshop off the `PENDING_CHANGE_CREATED` event. **That
-consumer does not exist** — grep for `PENDING_CHANGE_CREATED` /
-`PendingChangeCreated` across `services/atlas-cashshop/` returns nothing. And
-`TransactionId` is minted inside atlas-character and never returned (channel-side
-`pendingchange.RestModel` has no such field). This is a *different* unbuilt
-design from the user's chosen channel-driven shape.
-
-### Options to put to the user on resume
-
-- **A — build it properly**: insert-first, add a correlation id to the three
-  message bodies, new consumer arm, plus a currency decision. Authentic, but new
-  cross-service surface.
-- **B — minimal safe**: stop emitting the `CashInventoryItem`-bearing done body.
-  No fabricated CashId reaches the client; player sees no locker entry (likely
-  inauthentic). Small, safe, unblocks the branch.
-- **C — reconcile with design.md's own shape** (atlas-cashshop consumes
-  `PENDING_CHANGE_CREATED`) rather than the channel-driven shape. Also unbuilt;
-  larger; but it is what the design document actually says.
-
-Currency (blocker 1) must be resolved for A regardless of ordering.
-
-## Also outstanding
-
-- **plan.md Task 28 must be REWRITTEN before it is executed.** As written it
-  builds `cancel-path-guard.sh` asserting "no client cancel path exists" — now
-  proven **false**. A green guard asserting a falsehood is worse than none.
-  Replacement property (true, checkable, preserves the original security intent):
-  *"the OPERATOR cancel route is not reachable from any socket handler"* — assert
-  no file under `services/atlas-channel/.../socket/handler/` references the
-  operator DELETE path or the `operator_cancelled` reason. Cite both derivation
-  docs in the guard's header so nobody "restores" the old property.
-  `4a5d9ff65` already flagged this in design.md but did **not** touch plan.md.
-- **`4a5d9ff65` is UNREVIEWED and UNVERIFIED.** Its implementer was stopped
-  immediately after committing, before writing its report — so
-  `.superpowers/sdd/plan/client-cancel-report.md` does not exist. The commit
-  message is detailed and self-describing (read it). It claims the
-  cross-character red run was captured: expected 404, **actual 204** before the
-  fix — confirming the operator DELETE route's missing ownership check was a real
-  hole, not theoretical. **Re-verify that claim**; it was not independently
-  reviewed. Run a review + `atlas-verifier` on this commit on resume.
-- Plan Tasks 26, 27, 29–36 not started. **Task 26 must register the three
-  check-result writers in `produceWriters()`** (`atlas-channel/.../main.go:629`)
-  — six clientbound writers added in Phase D are still absent from it, so those
-  codecs are verified in the matrix but no code path can emit them.
-- Flagless `tools/verify.sh` (bake + `-race`) owed at branch end.
+- **Commit `4a5d9ff65` (the client cancel path) remains UNREVIEWED**, by earlier user
+  ruling, deferred to the branch-end whole-branch review (Task 36). Its implementer
+  was stopped before writing a report, so the commit message is the only account of
+  it. It claims a cross-character red run — expected 404, actual 204 before the fix.
+  **Re-verify that claim** at Task 36; it has never been independently checked.
+- **Flagless `tools/verify.sh`** (docker bake + `-race`) is still owed at branch end
+  (Task 35). Only the flagless run counts as verified; every gate run so far on this
+  branch has been `--quick`.
+- **A pre-existing defect in atlas-buddies, surfaced but deliberately not fixed:**
+  `buddy/entity.go:24` makes `character_id` the sole primary key of the `buddies`
+  table, so two owners cannot both hold the same buddy. The service's own
+  `list/processor.go:618` `UpdateBuddyChannel` loops over multiple owners as though
+  they could. Out of scope for task-227 (it is a schema migration on a shared table)
+  and reported to the user. Task 30's `updateBuddyName` queries the buddy's own
+  `character_id` column, so it stays correct if the defect is ever fixed.
 
 ## Standing rules earned on this branch — do not relearn these
 
-1. **Never two `atlas-verifier`s at once** — concurrent golangci-lint produces
+1. **The plan's `Files:` blocks are unreliable; verify every one against source
+   before dispatching.** Session 4 hit this on all three of its tasks: Task 29's
+   block named a file to *create* that already existed, named a `kafka.go` that does
+   not exist, and said to modify a `main.go` that needed no change; Tasks 30 and 32
+   were prose-only with no `### Files` block at all; and every one of the three test
+   snippets invented a `newTestDB` helper the service does not have. One controller
+   inventory pass costs a fraction of the same discovery inside a large implementer.
+2. **Never two `atlas-verifier`s at once** — concurrent golangci-lint produces
    `parallel golangci-lint is running` and phantom failures in unrelated modules.
-   Cost a full round already.
-2. **Verifier must report EVERY failing module**, not just the first block. Grep
-   the log for all `LINT FAIL` markers. A second failure in another module hid
-   behind the first and shipped.
-3. **Serialize implementers** — one at a time in this worktree. Two committing to
-   one branch is a hand-untangle.
-4. **Treat briefs and reports as claims, not authority.** Ten instances on this
-   branch where prose contradicted source; twice it would have inverted runtime
-   behaviour. Several were introduced by the controller, not the implementers.
-   What catches it: deriving from source/IDA and demanding red/green evidence.
-   What fails: prose copied plan → report → brief with nobody opening the file.
-5. **Writer registration follows whoever EMITS** (supersedes the earlier "Tasks
-   26 and 27 own all six together").
-6. `pendingchange`'s `assetId` param **is an item TEMPLATE id** — passing
-   `com.ItemId` is CORRECT. One agent flagged this as a bug by inferring from the
-   parameter name; the doc comment and Tasks 6/7 settle it. Do not "fix" it.
-
-## Phase F warning (Tasks 29–32)
-
-Four services mirror `NAME_CHANGED` by hand. Highest-risk remaining surface for
-the seam class the verify gate cannot see. Brief it as **"enumerate consumers
-from source, do not sample."**
+3. **Dispatch the verifier with an explicit background+Monitor instruction.** A
+   foreground Bash timeout killed one gate at 10 minutes (exit 137) and it reported a
+   false ERROR. Per `/execute-task` Step 4c, ERROR is never PASS — re-run it.
+4. **Verifier must report EVERY failing module**, not just the first block. A second
+   failure has hidden behind the first on this branch.
+5. **Serialize implementers** — one at a time in this worktree. Do not run an
+   implementer while a gate is running either; a mid-run edit produces phantom
+   build failures you then have to disambiguate.
+6. **Treat briefs and reports as claims, not authority.** Twenty-two instances on
+   this branch where prose contradicted source. Several were introduced by the
+   controller, not the implementers — including two in session 4 (a wrong
+   `updateBuddyName` signature, caught by the implementer; and the tenant-scoping
+   claim corrected above). What catches it: deriving from source and demanding
+   red/green evidence.
+7. **Writer registration follows whoever EMITS.**
+8. `pendingchange`'s `assetId` param **is an item TEMPLATE id** — passing
+   `com.ItemId` is CORRECT. Do not "fix" it.

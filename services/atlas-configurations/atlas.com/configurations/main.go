@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-configurations/environmentcol"
+	"atlas-configurations/environments"
 	"atlas-configurations/seeder"
 	"atlas-configurations/services"
 	"atlas-configurations/templates"
@@ -46,6 +47,7 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(
 		templates.Migration, tenants.Migration, services.Migration, outboxlib.Migration,
+		environments.Migration,
 		environmentcol.Migration, // must run last: it backfills the columns the three above create
 	))
 
@@ -71,6 +73,8 @@ func main() {
 		drainer.Stop()
 		publisher.Close()
 	})
+
+	environments.StartHeartbeat(l, rt.Context(), environments.NewProcessor(l, rt.Context(), db))
 
 	// Run seed import
 	seedConfig := seeder.DefaultConfig()
@@ -103,6 +107,7 @@ func main() {
 		AddRouteInitializer(templates.InitResource(GetServer())(db)).
 		AddRouteInitializer(tenants.InitResource(GetServer())(db)).
 		AddRouteInitializer(services.InitResource(GetServer())(db)).
+		AddRouteInitializer(environments.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 

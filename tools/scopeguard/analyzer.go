@@ -9,9 +9,12 @@
 //     primary `Entity` struct must carry a scoping column — `TenantId` for a
 //     data-plane entity, `Environment` for a control-plane one (the two
 //     services that host the tenant/environment registries themselves:
-//     atlas-configurations, atlas-tenants). A data-plane entity without
-//     TenantId may be excused with a reason in allowlist.txt; a control-plane
-//     entity without Environment may not.
+//     atlas-configurations, atlas-tenants). Either may be excused with a
+//     reason in allowlist.txt, but only for the "the row IS the scoping
+//     dimension" shape (a data-plane entity that IS the tenant, or the one
+//     control-plane entity that IS the environment list itself —
+//     atlas-configurations/environments.Entity, task-232 Task 19); an
+//     entity that merely forgot its scoping column is not excusable.
 //
 //  2. Call-site-level (per call, fleet-wide over services/ AND libs/): the
 //     two unscoping mechanisms the audit's §3 "second-mechanism sweep"
@@ -116,15 +119,28 @@ func checkEntity(pass *analysis.Pass, ts *ast.TypeSpec) {
 		return
 	}
 
+	key := entityAllowlistKey(pass, ts.Pos())
+
 	if controlPlaneServices[svc] {
 		if hasField(st, "Environment") {
+			return
+		}
+		// A control-plane entity IS the environment list itself (e.g.
+		// atlas-configurations/environments.Entity) has nothing above
+		// "environment" to scope by — the same shape as a data-plane entity
+		// that IS the tenant and so carries no TenantId. That is the one
+		// allowlist-able exception to Rule 1's control-plane branch; every
+		// other control-plane entity without Environment is a real gap and
+		// stays hard-denied (see "atlas-configurations/thing" in
+		// analyzer_test.go).
+		if reason, ok := EntityAllowlist[key]; ok {
+			_ = reason
 			return
 		}
 		pass.Reportf(ts.Pos(), "control-plane entity without Environment")
 		return
 	}
 
-	key := entityAllowlistKey(pass, ts.Pos())
 	if reason, ok := EntityAllowlist[key]; ok {
 		_ = reason
 		return

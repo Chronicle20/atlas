@@ -1,9 +1,11 @@
 # scopeguard entity-level allowlist (Rule 1).
 #
 # One entry per exempted services/**/entity.go primary `Entity` struct that
-# has no TenantId field and is not one of the two control-plane services
-# (atlas-configurations, atlas-tenants — those go through Rule 2 instead,
-# which carries no allowlist).
+# has no TenantId field. Entities in the two control-plane services
+# (atlas-configurations, atlas-tenants) go through Rule 1's control-plane
+# branch instead, which normally requires an Environment column with no
+# allowlist fallback — except for the one "the row IS the scoping
+# dimension" shape (analyzer.go's checkEntity), which is listed here too.
 #
 # Format: <pkg import path>/<entity.go base name> # <reason>
 # (pass.Pkg.Path() + "/" + filepath.Base(file) — see entityAllowlistKey in
@@ -29,3 +31,12 @@ atlas-quest/quest/medal/entity.go # quest_medal_maps (medal.Entity) has no Tenan
 # all, but a _test.go carrying a struct that legitimately matches the
 # widened predicate.
 atlas-trades/escrow/migration_test.go # legacyItemEntity (services/atlas-trades/atlas.com/trades/escrow/migration_test.go:12) is a test-only fixture reproducing the pre-snapshot row shape from before TenantId existed on this table, per its own doc comment at migration_test.go:10-11 ("kept only in this test so the migration can be driven against a table that actually has the stale columns"). TestMigrationDropsStaleColumns drives Migration() against it and asserts the stale (pre-TenantId) columns are dropped — the struct is deliberately unscoped, not a live query path. The sibling legacyMesoEntity in the same file already carries TenantId and needs no exemption.
+
+# task-232 Task 19: atlas-configurations' fourth resource is the environment
+# list itself (services/atlas-configurations/atlas.com/configurations/environments/entity.go).
+# It carries no Environment column because it IS the environment list, the
+# same shape as the tenant table being the tenant list — there is nothing
+# above "environment" to scope this row by. Mirrors the control-plane
+# "registry" shape the analyzer's own test fixture documents at
+# tools/scopeguard/testdata/src/atlas-tenants/registry/entity.go.
+atlas-configurations/environments/entity.go # environments.Entity is the environment registry row itself (Name/Baseline/Namespace/Tenant/Overrides/Phase) — no TenantId is possible (not tenant data) and no Environment is possible (the row IS the environment), exactly as atlas-tenants' tenant registry row is scoped by Environment because it sits one level below, and atlas-configurations' own tenants.Entity is scoped by Environment for the same reason. See design/PRD §3.5's category argument, cited in task-19-brief.md Step 3.

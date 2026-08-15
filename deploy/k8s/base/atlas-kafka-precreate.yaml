@@ -62,7 +62,7 @@ spec:
                       continue
                   fi
                   case "$var" in
-                      EVENT_TOPIC_CONFIGURATION_TENANT_STATUS|EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS)
+                      EVENT_TOPIC_CONFIGURATION_TENANT_STATUS|EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS|EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS)
                           printf '%s\n' "$topic" >> "$compact_topics"
                           ;;
                       *)

@@ -5,6 +5,7 @@ go 1.25.5
 require (
 	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-database v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-env v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-opcodes v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-outbox v0.0.0-00010101000000-000000000000
@@ -87,6 +88,8 @@ replace github.com/Chronicle20/atlas/libs/atlas-rest => ../../../../libs/atlas-r
 replace github.com/Chronicle20/atlas/libs/atlas-tenant => ../../../../libs/atlas-tenant
 
 replace github.com/Chronicle20/atlas/libs/atlas-database => ../../../../libs/atlas-database
+
+replace github.com/Chronicle20/atlas/libs/atlas-env => ../../../../libs/atlas-env
 
 replace github.com/Chronicle20/atlas/libs/atlas-service => ../../../../libs/atlas-service
 

@@ -138,6 +138,98 @@ func TestGetAllDefinitionsPaginates(t *testing.T) {
 	})
 }
 
+func TestGetAllDefinitionsFilters(t *testing.T) {
+	registryReset(t)
+	registry.Register(resourceTestHandler{t: "RES"})
+	registry.Register(resourceTestHandler{t: "OTHER"})
+
+	db := newTestDB(t)
+	tenantId := uuid.New()
+	te, err := tenant.Create(tenantId, "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), te)
+
+	p := NewProcessor(testLogger(t), ctx, db)
+	resEnabled, err := p.Create(testDefinition("RES", "Enabled RES"))
+	require.NoError(t, err)
+	resEnabled, err = p.SetEnabled(resEnabled.Id(), true)
+	require.NoError(t, err)
+	require.True(t, resEnabled.Enabled())
+
+	resDisabled, err := p.Create(testDefinition("RES", "Disabled RES"))
+	require.NoError(t, err)
+	require.False(t, resDisabled.Enabled())
+
+	otherEnabled, err := p.Create(testDefinition("OTHER", "Enabled OTHER"))
+	require.NoError(t, err)
+	otherEnabled, err = p.SetEnabled(otherEnabled.Id(), true)
+	require.NoError(t, err)
+	require.True(t, otherEnabled.Enabled())
+
+	srv := httptest.NewServer(setupDefinitionRouter(db))
+	defer srv.Close()
+
+	decodeIds := func(t *testing.T, resp *http.Response) []string {
+		var doc jsonapi.Document
+		require.NoError(t, json.NewDecoder(resp.Body).Decode(&doc))
+		require.NotNil(t, doc.Data)
+		ids := make([]string, 0, len(doc.Data.DataArray))
+		for _, d := range doc.Data.DataArray {
+			ids = append(ids, d.ID)
+		}
+		return ids
+	}
+
+	t.Run("FilterByTypeReturnsOnlyThatType", func(t *testing.T) {
+		url := fmt.Sprintf("%s/events/definitions?filter[type]=RES", srv.URL)
+		req := requestWithTenant(http.MethodGet, url, nil, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		ids := decodeIds(t, resp)
+		assert.ElementsMatch(t, []string{resEnabled.Id().String(), resDisabled.Id().String()}, ids)
+	})
+
+	t.Run("FilterByTypeAndEnabledReturnsOnlyEnabledSubset", func(t *testing.T) {
+		url := fmt.Sprintf("%s/events/definitions?filter[type]=RES&filter[enabled]=true", srv.URL)
+		req := requestWithTenant(http.MethodGet, url, nil, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		ids := decodeIds(t, resp)
+		assert.ElementsMatch(t, []string{resEnabled.Id().String()}, ids)
+	})
+
+	t.Run("FilterEnabledWithoutTypeIsBadRequest", func(t *testing.T) {
+		url := fmt.Sprintf("%s/events/definitions?filter[enabled]=true", srv.URL)
+		req := requestWithTenant(http.MethodGet, url, nil, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("UnfilteredReturnsEverything", func(t *testing.T) {
+		url := fmt.Sprintf("%s/events/definitions?page[size]=10", srv.URL)
+		req := requestWithTenant(http.MethodGet, url, nil, tenantId)
+
+		resp, err := (&http.Client{}).Do(req)
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		ids := decodeIds(t, resp)
+		assert.ElementsMatch(t, []string{resEnabled.Id().String(), resDisabled.Id().String(), otherEnabled.Id().String()}, ids)
+	})
+}
+
 func TestGetDefinitionHandler(t *testing.T) {
 	registryReset(t)
 	registry.Register(resourceTestHandler{t: "RES"})

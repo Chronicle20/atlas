@@ -5,6 +5,7 @@ import (
 	"atlas-events/event/occurrence"
 	"atlas-events/event/scheduling"
 	"atlas-events/event/transition"
+	transportConsumer "atlas-events/kafka/consumer/transport"
 	"context"
 	"os"
 
@@ -12,6 +13,7 @@ import (
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
@@ -20,6 +22,8 @@ import (
 )
 
 const serviceName = "atlas-events"
+
+var consumerGroupId = consumergroup.Resolve("Events Service")
 
 type Server struct {
 	baseUrl string
@@ -50,7 +54,11 @@ func main() {
 		return false
 	})
 
-	_ = consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
+	transportConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := transportConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatalf("Unable to register transport status event handlers.")
+	}
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	// The poller is the only in-memory component, and it is stateless: every

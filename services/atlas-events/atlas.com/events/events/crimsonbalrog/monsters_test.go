@@ -68,11 +68,7 @@ func seedActiveOccurrence(t *testing.T, db *gorm.DB, opts ...occurrenceOption) o
 		MonsterCount:    1,
 		BackgroundMusic: "Bgm04/ArabPirate",
 		Visual: VisualConfig{
-			Name:         "CONTI_MOVE",
-			ShowState:    10,
-			ShowSubState: 4,
-			HideState:    10,
-			HideSubState: 5,
+			Name: "CONTI_MOVE",
 		},
 	}
 	for _, opt := range opts {
@@ -242,8 +238,8 @@ func TestEliminationCleanupHidesTheVisualAndLeavesTheMusic(t *testing.T) {
 	if len(hides) != 1 || hides[0].MapId != 200090010 {
 		t.Fatalf("HIDE = %+v", hides)
 	}
-	if hides[0].Body.State != 10 || hides[0].Body.SubState != 5 {
-		t.Fatalf("hide visual = %+v, want CONTI_MOVE(10,5)", hides[0].Body)
+	if hides[0].Body.Visual != "CONTI_MOVE" {
+		t.Fatalf("hide visual = %+v, want CONTI_MOVE", hides[0].Body)
 	}
 	if len(f.emitted(monster.EnvCommandTopic, monster.CommandTypeDestroyBySource)) != 0 {
 		t.Fatalf("elimination must not issue DESTROY_BY_SOURCE — nothing is left")

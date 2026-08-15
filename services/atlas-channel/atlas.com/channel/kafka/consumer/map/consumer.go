@@ -747,7 +747,11 @@ func announceActiveVisuals(l logrus.FieldLogger, ctx context.Context, wp writer.
 			l.Debugf("SpawnForSelf: unrecognized event visual [%s] for map [%d]; no writer for it.", v.Visual, f.MapId())
 			continue
 		}
-		_ = doorAnnounce(l, ctx, wp, fieldcb.ContiMoveWriter, writer.ContiMoveBody(v.State, v.SubState), s)
+		// ActiveVisualsInMap returns only visuals currently shown -- a
+		// hidden visual is never active -- so this site always resolves the
+		// SHOW pair. State/subState are client wire bytes resolved from the
+		// tenant's ContiMove writer options table (DOM-25), not read off v.
+		_ = doorAnnounce(l, ctx, wp, fieldcb.ContiMoveWriter, writer.ContiMoveBody(writer.ContiMoveShow), s)
 		if v.Bgm != "" {
 			_ = doorAnnounce(l, ctx, wp, fieldcb.FieldEffectWriter, fieldpkt.FieldEffectBackgroundMusicBody(v.Bgm), s)
 		}

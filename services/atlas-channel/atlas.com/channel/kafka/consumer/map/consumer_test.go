@@ -343,18 +343,31 @@ func eventVisualsServer(t *testing.T, body string) {
 // returns a restore func plus captured invocation details, keyed by writer
 // name. announceActiveVisuals is the only caller under test in this file
 // that reuses the doorAnnounce seam for non-door writers.
+//
+// The ContiMove state/subState bytes are no longer read off the wire
+// response (DOM-25) -- the writer resolves them from the tenant's ContiMove
+// writer options table, so the stub invokes enc with a fixture options map
+// (the same shape RegisterTenantWriterOptions/TenantWriterOptions produce)
+// to demonstrate the resolution actually happens.
 func stubDoorAnnounceForVisuals(t *testing.T) (restore func(), calls *[]string, lastState, lastSubState *byte, lastBgm *string) {
 	t.Helper()
 	var seenWriters []string
 	var state, subState byte
 	var bgm string
 
+	contiMoveOptions := map[string]interface{}{
+		"operations": map[string]interface{}{
+			"SHOW_STATE":     float64(10),
+			"SHOW_SUB_STATE": float64(4),
+		},
+	}
+
 	orig := doorAnnounce
 	doorAnnounce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, enc packet.Encode, _ session.Model) error {
 		seenWriters = append(seenWriters, writerName)
 		switch writerName {
 		case fieldcb.ContiMoveWriter:
-			b := enc(logrus.New(), context.Background())(nil)
+			b := enc(logrus.New(), context.Background())(contiMoveOptions)
 			if len(b) >= 2 {
 				state, subState = b[0], b[1]
 			}
@@ -371,14 +384,17 @@ func stubDoorAnnounceForVisuals(t *testing.T) (restore func(), calls *[]string, 
 
 // TestAnnounceActiveVisuals_ContiMoveFiresForEnteringSession asserts a
 // CONTI_MOVE visual returned by atlas-events is announced to the entering
-// session as ContiMove (with the wire state/subState) plus the background
-// music, using the values taken directly off the wire response.
+// session as ContiMove, with the wire state/subState resolved from the
+// tenant's ContiMove writer options table (DOM-25) -- not read off the
+// atlas-events response, which no longer needs to carry them for this to
+// work (the endpoint only ever returns currently-active visuals, so this
+// site always resolves the SHOW pair).
 func TestAnnounceActiveVisuals_ContiMoveFiresForEnteringSession(t *testing.T) {
 	l := logrus.New()
 	ctx := newTestCtx(t)
 	f := newTestField()
 
-	eventVisualsServer(t, `{"data":[{"type":"event-visuals","id":"1","attributes":{"occurrenceId":"o1","visual":"CONTI_MOVE","state":10,"subState":4,"bgm":"Bgm04/ArabPirate"}}]}`)
+	eventVisualsServer(t, `{"data":[{"type":"event-visuals","id":"1","attributes":{"occurrenceId":"o1","visual":"CONTI_MOVE","bgm":"Bgm04/ArabPirate"}}]}`)
 
 	restore, calls, lastState, lastSubState, lastBgm := stubDoorAnnounceForVisuals(t)
 	defer restore()
@@ -389,7 +405,7 @@ func TestAnnounceActiveVisuals_ContiMoveFiresForEnteringSession(t *testing.T) {
 		t.Fatalf("writer calls = %v, want [%s %s]", *calls, fieldcb.ContiMoveWriter, fieldcb.FieldEffectWriter)
 	}
 	if *lastState != 10 || *lastSubState != 4 {
-		t.Fatalf("ContiMove state/subState: want (10,4), got (%d,%d)", *lastState, *lastSubState)
+		t.Fatalf("ContiMove state/subState: want the tenant-configured (10,4), got (%d,%d)", *lastState, *lastSubState)
 	}
 	if *lastBgm == "" {
 		t.Fatalf("expected the background-music writer to fire for a non-empty bgm")
@@ -404,7 +420,7 @@ func TestAnnounceActiveVisuals_SkipsNonContiMoveVisual(t *testing.T) {
 	ctx := newTestCtx(t)
 	f := newTestField()
 
-	eventVisualsServer(t, `{"data":[{"type":"event-visuals","id":"1","attributes":{"occurrenceId":"o1","visual":"SOME_OTHER_VISUAL","state":1,"subState":1,"bgm":"Bgm/Whatever"}}]}`)
+	eventVisualsServer(t, `{"data":[{"type":"event-visuals","id":"1","attributes":{"occurrenceId":"o1","visual":"SOME_OTHER_VISUAL","bgm":"Bgm/Whatever"}}]}`)
 
 	restore, calls, _, _, _ := stubDoorAnnounceForVisuals(t)
 	defer restore()

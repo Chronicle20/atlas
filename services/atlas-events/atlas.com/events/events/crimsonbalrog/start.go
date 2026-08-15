@@ -12,9 +12,10 @@ import (
 // Start orchestrates the side effects of a newly created occurrence, in the
 // attack maps of THIS channel only (FR-B11). Order matters: the visual first,
 // so a player sees the enemy ship before its monsters materialize. atlas-events
-// constructs no packets here (FR-B12) — the visual name and the state/subState
-// bytes ride on the event as gameplay content; atlas-channel turns them into
-// ContiMoveBody. Spawns go to the attack map only (FR-B13); the related
+// constructs no packets here (FR-B12) — only the visual name and SHOW/HIDE
+// ride on the event; the state/subState client wire bytes are resolved
+// tenant-side by atlas-channel's ContiMove writer options table (DOM-25),
+// not carried here. Spawns go to the attack map only (FR-B13); the related
 // (cabin) maps got their non-visual scope row already, in Evaluate.
 func (h *Handler) Start(ctx context.Context, o registry.Occurrence) (registry.Progress, error) {
 	oc, err := DecodeOccurrenceContext(o.Context)
@@ -26,7 +27,7 @@ func (h *Handler) Start(ctx context.Context, o registry.Occurrence) (registry.Pr
 		for _, am := range oc.AttackMaps {
 			if err := buf.Put(event.EnvEventTopicEventVisual, showVisualEventProvider(
 				o.Id, oc.WorldId, oc.ChannelId, am.MapId,
-				oc.Visual.Name, oc.Visual.ShowState, oc.Visual.ShowSubState, oc.BackgroundMusic,
+				oc.Visual.Name, oc.BackgroundMusic,
 			)); err != nil {
 				return err
 			}

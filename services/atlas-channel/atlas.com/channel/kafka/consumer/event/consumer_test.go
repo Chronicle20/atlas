@@ -23,19 +23,23 @@ import (
 // use this to assert the ContiMove / background-music wire effect of the
 // event-visual consumer without standing up a REST mock for
 // _map.ForSessionsInMap.
-func withRecordingBroadcasters(t *testing.T) (restore func(), contiMoveCalls *int, lastContiMoveState, lastContiMoveSubState *byte, bgmCalls *int, lastBgm *string) {
+//
+// contiMoveBroadcaster now carries a writer.ContiMoveKey (SHOW/HIDE) rather
+// than raw state/subState bytes -- those are client wire bytes resolved
+// tenant-side from the ContiMove writer options table (DOM-25), not carried
+// on the event. The recording stub captures the key instead.
+func withRecordingBroadcasters(t *testing.T) (restore func(), contiMoveCalls *int, lastContiMoveKey *writer.ContiMoveKey, bgmCalls *int, lastBgm *string) {
 	t.Helper()
 	contiMoveN, bgmN := 0, 0
-	var capturedState, capturedSubState byte
+	var capturedKey writer.ContiMoveKey
 	var capturedBgm string
 
 	origContiMove := contiMoveBroadcaster
 	origBgm := backgroundMusicBroadcaster
 
-	contiMoveBroadcaster = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ field.Model, state byte, subState byte) {
+	contiMoveBroadcaster = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ field.Model, key writer.ContiMoveKey) {
 		contiMoveN++
-		capturedState = state
-		capturedSubState = subState
+		capturedKey = key
 	}
 	backgroundMusicBroadcaster = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, _ field.Model, bgm string) {
 		bgmN++
@@ -45,7 +49,7 @@ func withRecordingBroadcasters(t *testing.T) (restore func(), contiMoveCalls *in
 	return func() {
 		contiMoveBroadcaster = origContiMove
 		backgroundMusicBroadcaster = origBgm
-	}, &contiMoveN, &capturedState, &capturedSubState, &bgmN, &capturedBgm
+	}, &contiMoveN, &capturedKey, &bgmN, &capturedBgm
 }
 
 func newTestTenant(t *testing.T) tenant.Model {
@@ -71,7 +75,7 @@ func TestShowVisualBroadcastsContiMoveToTheMap(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm, 1, 4)
 
-	restore, contiMoveCalls, lastState, lastSubState, bgmCalls, lastBgm := withRecordingBroadcasters(t)
+	restore, contiMoveCalls, lastKey, bgmCalls, lastBgm := withRecordingBroadcasters(t)
 	defer restore()
 
 	handleVisualShow(sc, nil)(logrus.New(), ctx, event2.VisualEvent[event2.ShowVisualBody]{
@@ -81,18 +85,16 @@ func TestShowVisualBroadcastsContiMoveToTheMap(t *testing.T) {
 		MapId:        _map.Id(200090010),
 		Type:         event2.VisualTypeShow,
 		Body: event2.ShowVisualBody{
-			Visual:   event2.VisualContiMove,
-			State:    10,
-			SubState: 4,
-			Bgm:      "Bgm04/ArabPirate",
+			Visual: event2.VisualContiMove,
+			Bgm:    "Bgm04/ArabPirate",
 		},
 	})
 
 	if *contiMoveCalls != 1 {
 		t.Fatalf("ContiMove broadcast %d times, want 1", *contiMoveCalls)
 	}
-	if *lastState != 10 || *lastSubState != 4 {
-		t.Fatalf("ContiMove state/subState: want (10,4), got (%d,%d)", *lastState, *lastSubState)
+	if *lastKey != writer.ContiMoveShow {
+		t.Fatalf("ContiMove key: want %q, got %q", writer.ContiMoveShow, *lastKey)
 	}
 	if *bgmCalls != 1 {
 		t.Fatalf("FieldEffect (bgm) broadcast %d times, want 1", *bgmCalls)
@@ -109,7 +111,7 @@ func TestShowVisualIgnoresOtherChannels(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm, 1, 4)
 
-	restore, contiMoveCalls, _, _, bgmCalls, _ := withRecordingBroadcasters(t)
+	restore, contiMoveCalls, _, bgmCalls, _ := withRecordingBroadcasters(t)
 	defer restore()
 
 	handleVisualShow(sc, nil)(logrus.New(), ctx, event2.VisualEvent[event2.ShowVisualBody]{
@@ -119,9 +121,7 @@ func TestShowVisualIgnoresOtherChannels(t *testing.T) {
 		MapId:        _map.Id(200090010),
 		Type:         event2.VisualTypeShow,
 		Body: event2.ShowVisualBody{
-			Visual:   event2.VisualContiMove,
-			State:    10,
-			SubState: 4,
+			Visual: event2.VisualContiMove,
 		},
 	})
 
@@ -138,7 +138,7 @@ func TestShowVisualWithoutBgmSendsOnlyTheVisual(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm, 1, 4)
 
-	restore, contiMoveCalls, _, _, bgmCalls, _ := withRecordingBroadcasters(t)
+	restore, contiMoveCalls, _, bgmCalls, _ := withRecordingBroadcasters(t)
 	defer restore()
 
 	handleVisualShow(sc, nil)(logrus.New(), ctx, event2.VisualEvent[event2.ShowVisualBody]{
@@ -148,10 +148,8 @@ func TestShowVisualWithoutBgmSendsOnlyTheVisual(t *testing.T) {
 		MapId:        _map.Id(200090010),
 		Type:         event2.VisualTypeShow,
 		Body: event2.ShowVisualBody{
-			Visual:   event2.VisualContiMove,
-			State:    10,
-			SubState: 4,
-			Bgm:      "",
+			Visual: event2.VisualContiMove,
+			Bgm:    "",
 		},
 	})
 
@@ -171,7 +169,7 @@ func TestHideVisualBroadcastsContiMove(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm, 1, 4)
 
-	restore, contiMoveCalls, lastState, lastSubState, bgmCalls, _ := withRecordingBroadcasters(t)
+	restore, contiMoveCalls, lastKey, bgmCalls, _ := withRecordingBroadcasters(t)
 	defer restore()
 
 	handleVisualHide(sc, nil)(logrus.New(), ctx, event2.VisualEvent[event2.HideVisualBody]{
@@ -181,17 +179,15 @@ func TestHideVisualBroadcastsContiMove(t *testing.T) {
 		MapId:        _map.Id(200090010),
 		Type:         event2.VisualTypeHide,
 		Body: event2.HideVisualBody{
-			Visual:   event2.VisualContiMove,
-			State:    10,
-			SubState: 5,
+			Visual: event2.VisualContiMove,
 		},
 	})
 
 	if *contiMoveCalls != 1 {
 		t.Fatalf("ContiMove broadcast %d times, want 1", *contiMoveCalls)
 	}
-	if *lastState != 10 || *lastSubState != 5 {
-		t.Fatalf("ContiMove state/subState: want (10,5), got (%d,%d)", *lastState, *lastSubState)
+	if *lastKey != writer.ContiMoveHide {
+		t.Fatalf("ContiMove key: want %q, got %q", writer.ContiMoveHide, *lastKey)
 	}
 	if *bgmCalls != 0 {
 		t.Fatalf("HIDE must never touch the music, got %d bgm broadcasts", *bgmCalls)
@@ -205,7 +201,7 @@ func TestShowVisualWrongTypeDoesNotBroadcast(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm, 1, 4)
 
-	restore, contiMoveCalls, _, _, bgmCalls, _ := withRecordingBroadcasters(t)
+	restore, contiMoveCalls, _, bgmCalls, _ := withRecordingBroadcasters(t)
 	defer restore()
 
 	handleVisualShow(sc, nil)(logrus.New(), ctx, event2.VisualEvent[event2.ShowVisualBody]{
@@ -228,7 +224,7 @@ func TestShowVisualUnknownVisualIsIgnored(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tm)
 	sc := newTestServer(t, tm, 1, 4)
 
-	restore, contiMoveCalls, _, _, bgmCalls, _ := withRecordingBroadcasters(t)
+	restore, contiMoveCalls, _, bgmCalls, _ := withRecordingBroadcasters(t)
 	defer restore()
 
 	handleVisualShow(sc, nil)(logrus.New(), ctx, event2.VisualEvent[event2.ShowVisualBody]{

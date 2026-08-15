@@ -17,8 +17,10 @@ import (
 
 // showVisualEventProvider announces the boat-attack visual for one map. Keyed
 // on the map id so a SHOW and its later HIDE for the same map land on one
-// partition and cannot be reordered.
-func showVisualEventProvider(occurrenceId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, visual string, state byte, subState byte, bgm string) model.Provider[[]kafka.Message] {
+// partition and cannot be reordered. Carries no state/subState bytes -- those
+// are client wire bytes atlas-channel resolves per tenant from the ContiMove
+// writer options table (DOM-25), not free-form config from this event.
+func showVisualEventProvider(occurrenceId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, visual string, bgm string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(mapId))
 	value := &event.VisualEvent[event.ShowVisualBody]{
 		OccurrenceId: occurrenceId,
@@ -27,10 +29,8 @@ func showVisualEventProvider(occurrenceId uuid.UUID, worldId world.Id, channelId
 		MapId:        mapId,
 		Type:         event.VisualTypeShow,
 		Body: event.ShowVisualBody{
-			Visual:   visual,
-			State:    state,
-			SubState: subState,
-			Bgm:      bgm,
+			Visual: visual,
+			Bgm:    bgm,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -40,7 +40,8 @@ func showVisualEventProvider(occurrenceId uuid.UUID, worldId world.Id, channelId
 // elimination (FR-B18/FR-B20). Keyed on the map id, same as the SHOW, so the
 // pair cannot be reordered across partitions. It does not restore the BGM
 // (design §15.4: atlas-data exposes no Map.wz info/bgm default to restore).
-func hideVisualEventProvider(occurrenceId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, visual string, state byte, subState byte) model.Provider[[]kafka.Message] {
+// Carries no state/subState bytes -- see showVisualEventProvider.
+func hideVisualEventProvider(occurrenceId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, visual string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(mapId))
 	value := &event.VisualEvent[event.HideVisualBody]{
 		OccurrenceId: occurrenceId,
@@ -49,9 +50,7 @@ func hideVisualEventProvider(occurrenceId uuid.UUID, worldId world.Id, channelId
 		MapId:        mapId,
 		Type:         event.VisualTypeHide,
 		Body: event.HideVisualBody{
-			Visual:   visual,
-			State:    state,
-			SubState: subState,
+			Visual: visual,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

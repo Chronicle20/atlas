@@ -61,9 +61,14 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 // can swap in a recording stub without standing up a REST mock for
 // _map.ForSessionsInMap. The default preserves the production behaviour of
 // announcing through wp + session.Announce via _map.ForSessionsInMap.
-var contiMoveBroadcaster = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, state byte, subState byte) {
+//
+// key selects SHOW vs HIDE; the actual state/subState wire bytes are
+// resolved from the tenant's ContiMove writer options table inside
+// writer.ContiMoveBody (DOM-25) -- atlas-events names the visual and
+// whether it is being shown or hidden, it does not carry the wire bytes.
+var contiMoveBroadcaster = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, key writer.ContiMoveKey) {
 	err := _map.NewProcessor(l, ctx).ForSessionsInMap(f,
-		session.Announce(l)(ctx)(wp)(fieldcb.ContiMoveWriter)(writer.ContiMoveBody(state, subState)))
+		session.Announce(l)(ctx)(wp)(fieldcb.ContiMoveWriter)(writer.ContiMoveBody(key)))
 	if err != nil {
 		l.WithError(err).Errorf("Unable to broadcast event visual to map [%d].", f.MapId())
 	}
@@ -98,7 +103,7 @@ func handleVisualShow(sc server.Model, wp writer.Producer) message.Handler[event
 		}
 
 		f := sc.Field(e.MapId, uuid.Nil)
-		contiMoveBroadcaster(l, ctx, wp, f, e.Body.State, e.Body.SubState)
+		contiMoveBroadcaster(l, ctx, wp, f, writer.ContiMoveShow)
 
 		if e.Body.Bgm == "" {
 			return
@@ -124,6 +129,6 @@ func handleVisualHide(sc server.Model, wp writer.Producer) message.Handler[event
 		}
 
 		f := sc.Field(e.MapId, uuid.Nil)
-		contiMoveBroadcaster(l, ctx, wp, f, e.Body.State, e.Body.SubState)
+		contiMoveBroadcaster(l, ctx, wp, f, writer.ContiMoveHide)
 	}
 }

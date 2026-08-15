@@ -36,14 +36,14 @@ type AttackMap struct {
 	SpawnPositions []Position `json:"spawnPositions"`
 }
 
-// VisualConfig names the show/hide state pair the client uses to render the
-// Balrog's boat-shake visual effect.
+// VisualConfig names the visual the client uses to render the Balrog's
+// boat-shake effect. It carries no state/subState bytes: those are client
+// wire bytes, resolved per tenant by atlas-channel's ContiMove writer
+// options table (DOM-25) -- this repo already litigated (task-102/task-103)
+// that such values are not carried as free-form event config, even when
+// version-stable per the IDB.
 type VisualConfig struct {
-	Name         string `json:"name"`
-	ShowState    byte   `json:"showState"`
-	ShowSubState byte   `json:"showSubState"`
-	HideState    byte   `json:"hideState"`
-	HideSubState byte   `json:"hideSubState"`
+	Name string `json:"name"`
 }
 
 // Config is the CRIMSON_BALROG definition's configuration.

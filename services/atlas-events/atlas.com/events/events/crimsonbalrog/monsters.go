@@ -125,7 +125,7 @@ func (p *MonsterProcessorImpl) hideVisuals(o occurrence.Model, oc OccurrenceCont
 		for _, am := range oc.AttackMaps {
 			if err := buf.Put(event.EnvEventTopicEventVisual, hideVisualEventProvider(
 				o.Id(), oc.WorldId, oc.ChannelId, am.MapId,
-				oc.Visual.Name, oc.Visual.HideState, oc.Visual.HideSubState,
+				oc.Visual.Name,
 			)); err != nil {
 				return err
 			}

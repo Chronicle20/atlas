@@ -141,11 +141,7 @@ func activeOccurrence(t *testing.T, opts ...occurrenceOption) registry.Occurrenc
 		MonsterCount:    2,
 		BackgroundMusic: "Bgm04/ArabPirate",
 		Visual: VisualConfig{
-			Name:         "CONTI_MOVE",
-			ShowState:    10,
-			ShowSubState: 4,
-			HideState:    10,
-			HideSubState: 5,
+			Name: "CONTI_MOVE",
 		},
 	}
 	for _, opt := range opts {
@@ -251,7 +247,7 @@ func TestStartEmitsTheVisualForTheAttackMapOnly(t *testing.T) {
 	if vs[0].MapId != 200090010 {
 		t.Fatalf("SHOW sent to map %d, want the attack map", vs[0].MapId)
 	}
-	if vs[0].Body.Visual != "CONTI_MOVE" || vs[0].Body.State != 10 || vs[0].Body.SubState != 4 {
+	if vs[0].Body.Visual != "CONTI_MOVE" {
 		t.Fatalf("visual = %+v", vs[0].Body)
 	}
 	if vs[0].Body.Bgm != "Bgm04/ArabPirate" {

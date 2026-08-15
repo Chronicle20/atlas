@@ -61,11 +61,7 @@ func newFakes(t *testing.T) *fakes {
 		RelatedMapIds:   []_map.Id{200090011, 200090001},
 		BackgroundMusic: "Bgm04/ArabPirate",
 		Visual: VisualConfig{
-			Name:         "CONTI_MOVE",
-			ShowState:    10,
-			ShowSubState: 4,
-			HideState:    10,
-			HideSubState: 5,
+			Name: "CONTI_MOVE",
 		},
 	}
 	cfgRaw, err := json.Marshal(cfg)

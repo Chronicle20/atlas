@@ -22,8 +22,11 @@ const (
 	VisualTypeHide           = "HIDE"
 
 	// VisualContiMove is the enemy-ship visual. The name selects the writer on
-	// the channel side; the state/subState bytes are gameplay content carried
-	// in the body, so a future visual needs no new event type.
+	// the channel side, which resolves the client wire state/subState bytes
+	// from the tenant's ContiMove writer options table (DOM-25) -- they are
+	// not carried on this event. atlas-events names the visual and whether
+	// it is being shown or hidden (Type); the wire bytes are per-tenant
+	// config the channel side alone resolves.
 	VisualContiMove = "CONTI_MOVE"
 )
 
@@ -37,14 +40,10 @@ type VisualEvent[E any] struct {
 }
 
 type ShowVisualBody struct {
-	Visual   string `json:"visual"`
-	State    byte   `json:"state"`
-	SubState byte   `json:"subState"`
-	Bgm      string `json:"bgm,omitempty"`
+	Visual string `json:"visual"`
+	Bgm    string `json:"bgm,omitempty"`
 }
 
 type HideVisualBody struct {
-	Visual   string `json:"visual"`
-	State    byte   `json:"state"`
-	SubState byte   `json:"subState"`
+	Visual string `json:"visual"`
 }

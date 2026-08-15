@@ -30,11 +30,7 @@
         "relatedMapIds": [200090011, 200090001],
         "backgroundMusic": "Bgm04/ArabPirate",
         "visual": {
-          "name": "CONTI_MOVE",
-          "showState": 10,
-          "showSubState": 4,
-          "hideState": 10,
-          "hideSubState": 5
+          "name": "CONTI_MOVE"
         }
       }
     }

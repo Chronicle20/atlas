@@ -112,3 +112,40 @@ func TestIsRateStatType_PoisonNotMapped(t *testing.T) {
 		t.Errorf("IsRateStatType(%q) = true, want false", character.TemporaryStatTypePoison)
 	}
 }
+
+// FR-A1/FR-A10: a configured multiplier of 2.0 is carried as amount = 200 and
+// must read back as exactly 2.0x. ConversionDirect is amount/100.0, so the
+// mapping is exactly invertible, which is what lets the multiplier live in
+// configuration and still be displayed in the UI (FR-UI8).
+func TestAnniversaryStatsConvertDirectly(t *testing.T) {
+	for _, tc := range []struct {
+		stat     character.TemporaryStatType
+		rateType string
+	}{
+		{character.TemporaryStatTypeExpBuffRate, "exp"},
+		{character.TemporaryStatTypeItemUpByItem, "item_drop"},
+	} {
+		m, ok := GetRateMapping(tc.stat)
+		if !ok {
+			t.Fatalf("%s has no rate mapping", tc.stat)
+		}
+		if m.RateType != tc.rateType {
+			t.Fatalf("%s -> %q, want %q", tc.stat, m.RateType, tc.rateType)
+		}
+		if m.Conversion != ConversionDirect {
+			t.Fatalf("%s conversion = %v, want ConversionDirect", tc.stat, m.Conversion)
+		}
+		if got := CalculateMultiplier(200, m); got != 2.0 {
+			t.Fatalf("%s: amount 200 -> %vx, want 2.0x", tc.stat, got)
+		}
+	}
+}
+
+// EVENT_RATE is deliberately NOT mapped: it is a member of the JMS
+// movement-affecting stat set, so buffing it would interact with the client's
+// movement filter for no gameplay benefit over EXP_BUFF_RATE (design §10.3).
+func TestEventRateIsNotMapped(t *testing.T) {
+	if IsRateStatType(character.TemporaryStatTypeEventRate) {
+		t.Fatalf("EVENT_RATE must not be mapped — see design §10.3")
+	}
+}

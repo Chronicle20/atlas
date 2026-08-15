@@ -47,7 +47,7 @@ func TestActiveVisualsInMapFailsOpen(t *testing.T) {
 
 func TestActiveVisualsInMapDecodesTheProjection(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`{"data":[{"type":"event-visuals","id":"1","attributes":{"occurrenceId":"o1","visual":"CONTI_MOVE","state":10,"subState":4,"bgm":"Bgm04/ArabPirate"}}]}`))
+		_, _ = w.Write([]byte(`{"data":[{"type":"event-visuals","id":"1","attributes":{"occurrenceId":"o1","visual":"CONTI_MOVE","bgm":"Bgm04/ArabPirate"}}]}`))
 	}))
 	defer srv.Close()
 	t.Setenv("BASE_SERVICE_URL", srv.URL+"/api/")
@@ -56,7 +56,7 @@ func TestActiveVisualsInMapDecodesTheProjection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ActiveVisualsInMap: %v", err)
 	}
-	if len(vs) != 1 || vs[0].State != 10 || vs[0].SubState != 4 || vs[0].Bgm != "Bgm04/ArabPirate" {
+	if len(vs) != 1 || vs[0].Visual != "CONTI_MOVE" || vs[0].Bgm != "Bgm04/ArabPirate" {
 		t.Fatalf("decoded %+v", vs)
 	}
 }

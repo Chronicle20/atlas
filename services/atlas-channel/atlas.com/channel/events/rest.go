@@ -4,12 +4,16 @@ package events
 // visuals resource (event/occurrence/visual_rest.go VisualRestModel in
 // atlas-events). Field names and the resource type below must match that
 // server-side model exactly.
+//
+// No State/SubState: since B6 (commit d19237c1e), ContiMove's wire
+// state/subState bytes are resolved on this side from the tenant
+// writer-options table (socket/writer.ContiMoveBody), keyed off the visual
+// Type (SHOW/HIDE) — announceActiveVisuals only ever resolves SHOW here, so
+// there was never a per-visual value to carry.
 type RestModel struct {
 	Id           string `json:"-"`
 	OccurrenceId string `json:"occurrenceId"`
 	Visual       string `json:"visual"`
-	State        byte   `json:"state"`
-	SubState     byte   `json:"subState"`
 	Bgm          string `json:"bgm"`
 }
 

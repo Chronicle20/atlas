@@ -90,7 +90,12 @@ func TestVisualsProjectionExcludesNonVisualMaps(t *testing.T) {
 	p := NewProcessor(testLogger(t), testCtx(t), db)
 	o, err := p.CreateFromSeed(testDefinition(t, "CRIMSON_BALROG"), registry.Seed{
 		Stage: "ATTACKING", WorldId: 1, ChannelId: 4, ConcurrencyKey: "k",
-		Context: json.RawMessage(`{"visual":"CONTI_MOVE","state":10,"subState":4,"bgm":"Bgm04/ArabPirate"}`),
+		// Shape matches what CRIMSON_BALROG actually writes
+		// (events/crimsonbalrog/config.go OccurrenceContext): `visual` is an
+		// object, and the music key is `backgroundMusic` (no state/subState
+		// since B6 — those bytes are resolved per-tenant on the channel
+		// side).
+		Context: json.RawMessage(`{"visual":{"name":"CONTI_MOVE"},"backgroundMusic":"Bgm04/ArabPirate"}`),
 		Maps: []registry.MapScope{
 			{MapId: 200090010, Visual: true},
 			{MapId: 200090011, Visual: false},
@@ -102,7 +107,7 @@ func TestVisualsProjectionExcludesNonVisualMaps(t *testing.T) {
 	if len(deck) != 1 || deck[0].OccurrenceId != o.Id().String() {
 		t.Fatalf("deck returned %d visuals, want 1", len(deck))
 	}
-	if deck[0].State != 10 || deck[0].SubState != 4 || deck[0].Bgm != "Bgm04/ArabPirate" {
+	if deck[0].Visual != "CONTI_MOVE" || deck[0].Bgm != "Bgm04/ArabPirate" {
 		t.Fatalf("projection = %+v", deck[0])
 	}
 
@@ -118,7 +123,7 @@ func TestVisualsProjectionExcludesCompletedOccurrences(t *testing.T) {
 	p := NewProcessor(testLogger(t), testCtx(t), db)
 	o, err := p.CreateFromSeed(testDefinition(t, "CRIMSON_BALROG"), registry.Seed{
 		Stage: "ATTACKING", WorldId: 1, ChannelId: 4, ConcurrencyKey: "k",
-		Context: json.RawMessage(`{"visual":"CONTI_MOVE","state":10,"subState":4,"bgm":"Bgm04/ArabPirate"}`),
+		Context: json.RawMessage(`{"visual":{"name":"CONTI_MOVE"},"backgroundMusic":"Bgm04/ArabPirate"}`),
 		Maps: []registry.MapScope{
 			{MapId: 200090010, Visual: true},
 		},

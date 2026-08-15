@@ -1,0 +1,351 @@
+// Package scopeguard implements FR-8.5: a `go vet`-driven analyzer that
+// keeps the query-scope audit (docs/tasks/task-232-sparse-ephemeral-environments/
+// query-scope-audit.md) from rotting while Phases B-F of task-232 are still
+// in flight.
+//
+// It enforces two independent rules, at two different granularities:
+//
+//  1. Entity-level (per file): a `services/**/entity.go`-shaped file's
+//     primary `Entity` struct must carry a scoping column — `TenantId` for a
+//     data-plane entity, `Environment` for a control-plane one (the two
+//     services that host the tenant/environment registries themselves:
+//     atlas-configurations, atlas-tenants). A data-plane entity without
+//     TenantId may be excused with a reason in allowlist.txt; a control-plane
+//     entity without Environment may not.
+//
+//  2. Call-site-level (per call, fleet-wide over services/ AND libs/): the
+//     two unscoping mechanisms the audit's §3 "second-mechanism sweep"
+//     found, confirmed at `libs/atlas-database/tenant_scope.go`:
+//
+//     - explicit opt-out: any call to `...WithoutTenantFilter(...)`, the
+//     one function that turns off the fleet-wide GORM tenant callback,
+//     outside libs/atlas-database itself;
+//     - the silent-no-op path: a GORM query verb invoked on a struct field
+//     literally named `db` or `DB` whose call chain never reaches a
+//     `.WithContext(` — which collapses the callback's context lookup to
+//     `context.Background()` and it silently skips the tenant filter
+//     (tenant_scope.go:60,69-73). This is the exact shape that let
+//     atlas-marriages' two schedulers evade the first (per-service
+//     aggregate) sweep: `s.db.Model(...).Where(...).Pluck(...)` sits next
+//     to correctly-wrapped `provider.go` call sites in the same service.
+//
+// Both call-site findings may be excused via callsite-allowlist.txt, keyed
+// by package import path + call site line, with a written reason — the
+// fleet currently carries thirteen genuine INTENDED-GLOBAL background-sweep
+// call sites (§4 of the audit), each with its own source-comment evidence.
+package scopeguard
+
+import (
+	"go/ast"
+	"go/token"
+	"strings"
+
+	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/analysis/passes/inspect"
+	"golang.org/x/tools/go/ast/inspector"
+)
+
+// controlPlaneServices host the tenant/environment registries themselves —
+// their primary role is to enumerate tenants/environments, not to be
+// per-tenant data. Confirmed at query-scope-audit.md rows 72-74, 144-145.
+var controlPlaneServices = map[string]bool{
+	"atlas-configurations": true,
+	"atlas-tenants":        true,
+}
+
+// gormVerbs are the GORM query-builder methods the audit's §3 struct-field
+// scan grepped for (tenant_scope.go's callback only fires on these).
+var gormVerbs = map[string]bool{
+	"Model": true, "Where": true, "Find": true, "First": true,
+	"Create": true, "Save": true, "Delete": true, "Updates": true,
+	"Update": true, "Pluck": true, "Count": true, "Exec": true, "Raw": true,
+	"FirstOrCreate": true,
+}
+
+const libDatabasePkgSuffix = "libs/atlas-database"
+
+var Analyzer = &analysis.Analyzer{
+	Name:     "scopeguard",
+	Doc:      "FR-8.5: flags entity.go structs missing their scoping column, and call sites that bypass the fleet-wide tenant-scope GORM callback",
+	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Run:      run,
+}
+
+func run(pass *analysis.Pass) (interface{}, error) {
+	insp := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
+
+	insp.Preorder([]ast.Node{(*ast.TypeSpec)(nil)}, func(n ast.Node) {
+		checkEntity(pass, n.(*ast.TypeSpec))
+	})
+
+	if !strings.HasSuffix(pass.Pkg.Path(), libDatabasePkgSuffix) {
+		checkCallSites(pass, insp)
+	}
+
+	return nil, nil
+}
+
+// --- Rule 1: entity-level ---
+
+func checkEntity(pass *analysis.Pass, ts *ast.TypeSpec) {
+	if ts.Name.Name != "Entity" {
+		return
+	}
+	st, ok := ts.Type.(*ast.StructType)
+	if !ok {
+		return
+	}
+
+	svc, ok := serviceFromPkgPath(pass.Pkg.Path())
+	if !ok {
+		// Not a services/atlas-<name> module at all (libs/, tools/) — the
+		// entity-level rule is scoped to services/**/entity.go per the
+		// brief; skip.
+		return
+	}
+
+	// Both spellings are live in the fleet: most services use `TenantId`,
+	// but atlas-map-actions/npc-conversations/party-quests/portal-actions/
+	// reactor-actions use the Go-initialism-correct `TenantID` (confirmed at
+	// e.g. services/atlas-map-actions/.../script/entity.go:17 — both map to
+	// the same `tenant_id` DB column the callback matches on by column name,
+	// not Go field name; tenant_scope.go:31-37).
+	if hasField(st, "TenantId") || hasField(st, "TenantID") {
+		// Scoped by the fleet-wide GORM callback (tenant_scope.go:75-79) —
+		// data-plane, correctly scoped, regardless of service.
+		return
+	}
+
+	if controlPlaneServices[svc] {
+		if hasField(st, "Environment") {
+			return
+		}
+		pass.Reportf(ts.Pos(), "control-plane entity without Environment")
+		return
+	}
+
+	key := entityAllowlistKey(pass, ts.Pos())
+	if reason, ok := EntityAllowlist[key]; ok {
+		_ = reason
+		return
+	}
+	pass.Reportf(ts.Pos(), "data-plane entity without TenantId")
+}
+
+func hasField(st *ast.StructType, name string) bool {
+	if st.Fields == nil {
+		return false
+	}
+	for _, f := range st.Fields.List {
+		for _, n := range f.Names {
+			if n.Name == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// serviceFromPkgPath extracts the atlas-<name> service module from a Go
+// import path. Every services/atlas-<name>/... module in the fleet is
+// declared `module atlas-<name>` (bare, unqualified) — confirmed at
+// services/atlas-{ban,quest,configurations,tenants}/.../go.mod — so the
+// package path's own first segment IS the service name for every service
+// module, and never for a libs/ or tools/ one (those are fully qualified
+// under github.com/Chronicle20/atlas/...). Import path is stable across
+// `go vet` invocation styles (relative-cwd vs. absolute file paths); a file
+// path is not, which is why this keys off Pkg.Path() rather than a
+// filesystem path — the same reason callsiteKey below does.
+func serviceFromPkgPath(pkgPath string) (string, bool) {
+	svc, _, _ := strings.Cut(pkgPath, "/")
+	if !strings.HasPrefix(svc, "atlas-") {
+		return "", false
+	}
+	return svc, true
+}
+
+// entityAllowlistKey is pkg.Path() + the entity.go base file name — stable
+// regardless of the driver's working directory. See serviceFromPkgPath.
+func entityAllowlistKey(pass *analysis.Pass, pos token.Pos) string {
+	filename := pass.Fset.Position(pos).Filename
+	base := filename
+	if idx := strings.LastIndexAny(base, "/\\"); idx >= 0 {
+		base = base[idx+1:]
+	}
+	return pass.Pkg.Path() + "/" + base
+}
+
+// --- Rule 2: call-site level ---
+
+func checkCallSites(pass *analysis.Pass, insp *inspector.Inspector) {
+	// Pass 1: mark every CallExpr that is itself the receiver of another
+	// call further out in the same chain — those are never the "terminal"
+	// call of a chain and are skipped, so one query chain (however many
+	// verbs it contains) is reported exactly once, at its outermost call.
+	chained := map[*ast.CallExpr]bool{}
+	insp.Preorder([]ast.Node{(*ast.CallExpr)(nil)}, func(n ast.Node) {
+		call := n.(*ast.CallExpr)
+		sel, ok := call.Fun.(*ast.SelectorExpr)
+		if !ok {
+			return
+		}
+		if inner, ok := sel.X.(*ast.CallExpr); ok {
+			chained[inner] = true
+		}
+	})
+
+	insp.Preorder([]ast.Node{(*ast.CallExpr)(nil)}, func(n ast.Node) {
+		call := n.(*ast.CallExpr)
+		checkWithoutTenantFilter(pass, call)
+		if chained[call] {
+			return
+		}
+		checkUnwrappedDbCall(pass, call)
+	})
+}
+
+// checkWithoutTenantFilter flags every call site of the fleet-wide opt-out,
+// outside libs/atlas-database itself. Purely syntactic (matches the audit's
+// own "WithoutTenantFilter fleet grep", method 2 of §3) — a call site that
+// explicitly opts out of the callback is unscoped by construction regardless
+// of how the tenant-less context arrived.
+func checkWithoutTenantFilter(pass *analysis.Pass, call *ast.CallExpr) {
+	sel, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return
+	}
+	if sel.Sel.Name != "WithoutTenantFilter" {
+		return
+	}
+	pos := pass.Fset.Position(call.Pos())
+	if isTestFile(pos) {
+		// Test fixtures legitimately seed data across tenants with
+		// WithoutTenantFilter (e.g. services/atlas-mts/.../task/
+		// periodic_test.go:62) — not a production query path. The audit's
+		// own raw-SQL sweep excludes _test.go for the same reason.
+		return
+	}
+	key := callsiteKey(pass, pos)
+	if reason, ok := CallsiteAllowlist[key]; ok {
+		_ = reason
+		return
+	}
+	pass.Reportf(call.Pos(), "call site opts out of tenant scoping (WithoutTenantFilter) with no allowlist entry")
+}
+
+// checkUnwrappedDbCall flags a terminal GORM-verb call chain rooted at a
+// struct field literally named `db`/`DB` that never reaches a
+// `.WithContext(` — the "silent-no-op" mechanism (tenant_scope.go:60,69-73).
+// Deliberately field-name-syntactic rather than type-checked, matching the
+// audit's own method: a `db *gorm.DB` struct field is exactly the shape the
+// audit's struct-held db+ctx field scan targeted, and type-checking would
+// require carrying a gorm stub package with no additional discriminating
+// power over the field name.
+func checkUnwrappedDbCall(pass *analysis.Pass, call *ast.CallExpr) {
+	sel, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok || !gormVerbs[sel.Sel.Name] {
+		return
+	}
+	if chainHasWithContext(call) {
+		return
+	}
+	if !chainRootIsDbField(call) {
+		return
+	}
+	pos := pass.Fset.Position(call.Pos())
+	if isTestFile(pos) {
+		return
+	}
+	key := callsiteKey(pass, pos)
+	if reason, ok := CallsiteAllowlist[key]; ok {
+		_ = reason
+		return
+	}
+	pass.Reportf(call.Pos(), "GORM call on a db field with no .WithContext in its chain — collapses to context.Background() and silently skips tenant scoping")
+}
+
+func chainHasWithContext(expr ast.Expr) bool {
+	for {
+		call, ok := expr.(*ast.CallExpr)
+		if !ok {
+			return false
+		}
+		sel, ok := call.Fun.(*ast.SelectorExpr)
+		if !ok {
+			return false
+		}
+		if sel.Sel.Name == "WithContext" {
+			return true
+		}
+		expr = sel.X
+	}
+}
+
+func chainRootIsDbField(expr ast.Expr) bool {
+	for {
+		switch e := expr.(type) {
+		case *ast.CallExpr:
+			sel, ok := e.Fun.(*ast.SelectorExpr)
+			if !ok {
+				return false
+			}
+			expr = sel.X
+		case *ast.SelectorExpr:
+			if e.Sel.Name == "db" || e.Sel.Name == "DB" {
+				return true
+			}
+			expr = e.X
+		default:
+			return false
+		}
+	}
+}
+
+// callsiteKey identifies one call site stably across the module-relative or
+// absolute paths different `go vet` invocations may report: the package's
+// own import path plus the file's base name and line number. Package import
+// path is stable regardless of the driver's working directory (it comes
+// from module resolution, not the filesystem path reported for the
+// position) — the same reason tools/rediskeyguard keys its allowlist off
+// `pass.Pkg.Path()` rather than a file path.
+// isTestFile reports whether pos falls in a _test.go file — excluded from
+// both call-site rules, matching the audit's own methodology (its raw-SQL
+// bypass grep explicitly excludes _test.go). Test fixtures legitimately
+// seed cross-tenant data or call query helpers without a request-scoped
+// context; that is not a production tenant-scope defect.
+func isTestFile(pos token.Position) bool {
+	return strings.HasSuffix(pos.Filename, "_test.go")
+}
+
+func callsiteKey(pass *analysis.Pass, pos token.Position) string {
+	base := pos.Filename
+	if idx := strings.LastIndexByte(base, '/'); idx >= 0 {
+		base = base[idx+1:]
+	}
+	if idx := strings.LastIndexByte(base, '\\'); idx >= 0 {
+		base = base[idx+1:]
+	}
+	return pass.Pkg.Path() + "/" + base + ":" + itoa(pos.Line)
+}
+
+func itoa(n int) string {
+	if n == 0 {
+		return "0"
+	}
+	neg := n < 0
+	if neg {
+		n = -n
+	}
+	var buf [20]byte
+	i := len(buf)
+	for n > 0 {
+		i--
+		buf[i] = byte('0' + n%10)
+		n /= 10
+	}
+	if neg {
+		i--
+		buf[i] = '-'
+	}
+	return string(buf[i:])
+}

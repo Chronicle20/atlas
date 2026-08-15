@@ -1,0 +1,87 @@
+// Internal test package (not scopeguard_test): TestAnalyzerAllowlisted needs
+// to substitute a fixture allowlist for EntityAllowlist/CallsiteAllowlist
+// without touching the real checked-in allowlist.txt/callsite-allowlist.txt.
+package scopeguard
+
+import (
+	"testing"
+
+	"golang.org/x/tools/go/analysis/analysistest"
+)
+
+// TestAnalyzer exercises both rules' failing and passing shapes against the
+// real checked-in allowlist.txt/callsite-allowlist.txt (both effectively
+// empty for these fixture packages, since none of their keys appear there).
+func TestAnalyzer(t *testing.T) {
+	testdata := analysistest.TestData()
+	analysistest.Run(t, testdata, Analyzer,
+		"atlas-example/widget",       // Rule 1: data-plane, no TenantId — fails
+		"atlas-example/scoped",       // Rule 1: data-plane, has TenantId — passes
+		"atlas-configurations/thing", // Rule 2: control-plane, no Environment — fails, no allowlist possible
+		"atlas-tenants/registry",     // Rule 2: control-plane, has Environment — passes
+		"atlas-tenants/config",       // has TenantId despite living in a control-plane service — passes (mirrors real configuration.Entity)
+		"atlas-callsite/scheduler",   // Rule 2 call-site: the atlas-marriages shape — one violation, one clean call site, in the same package
+	)
+}
+
+// TestAnalyzerAllowlisted substitutes a fixture allowlist so the guard's
+// exemption path is exercised without polluting the real fleet allowlist
+// files with test-only entries.
+func TestAnalyzerAllowlisted(t *testing.T) {
+	origEntity, origCallsite := EntityAllowlist, CallsiteAllowlist
+	EntityAllowlist = map[string]string{
+		"atlas-allowedsvc/widget/entity.go": "test fixture — see analyzer_test.go",
+	}
+	CallsiteAllowlist = map[string]string{
+		"atlas-callsite-allowed/task/task.go:14": "test fixture — see analyzer_test.go",
+	}
+	defer func() {
+		EntityAllowlist = origEntity
+		CallsiteAllowlist = origCallsite
+	}()
+
+	testdata := analysistest.TestData()
+	analysistest.Run(t, testdata, Analyzer, "atlas-allowedsvc/widget", "atlas-callsite-allowed/task")
+}
+
+// TestParseAllowlistRequiresReason pins the allowlist file's own lint rule:
+// an entry with a key but no reason is a parse error, never silently
+// admitted. This is what TestAllowlistEntriesHaveReasons (checking the real
+// files parsed cleanly at package init, implicitly, since init would have
+// panicked otherwise) depends on actually being enforced.
+func TestParseAllowlistRequiresReason(t *testing.T) {
+	cases := []struct {
+		name    string
+		raw     string
+		wantErr bool
+	}{
+		{"empty file", "", false},
+		{"comment only", "# just a comment\n", false},
+		{"valid entry", "some/path/entity.go # a real reason\n", false},
+		{"no hash at all", "some/path/entity.go\n", true},
+		{"hash but empty reason", "some/path/entity.go #\n", true},
+		{"hash but whitespace reason", "some/path/entity.go #   \n", true},
+		{"duplicate key", "a # r1\na # r2\n", true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, err := parseAllowlist(c.raw)
+			if (err != nil) != c.wantErr {
+				t.Fatalf("parseAllowlist(%q) error = %v, wantErr %v", c.raw, err, c.wantErr)
+			}
+		})
+	}
+}
+
+// TestAllowlistEntriesHaveReasons re-parses the real, checked-in allowlist
+// files directly (rather than relying on package init having already
+// succeeded) so a future malformed entry fails this test with a clear
+// message instead of a cryptic init panic during `go test`.
+func TestAllowlistEntriesHaveReasons(t *testing.T) {
+	if _, err := parseAllowlist(allowlistRaw); err != nil {
+		t.Fatalf("allowlist.txt: %v", err)
+	}
+	if _, err := parseAllowlist(callsiteAllowlistRaw); err != nil {
+		t.Fatalf("callsite-allowlist.txt: %v", err)
+	}
+}

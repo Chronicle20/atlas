@@ -288,6 +288,17 @@ else
     skip "Go analyzer guards (no .go file changed)"
 fi
 
+# FR-8.5 (task-232): keeps the query-scope audit from rotting while
+# Phases B-F are still in flight — a newly-added unscoped entity.go struct
+# or call site must fail CI. Gated separately from go_analyzer_guards above
+# (rather than folded into the shared vettool) so a scopeguard-only change
+# doesn't force a rebuild/re-run of the other three analyzers, and vice versa.
+if [ "$ALL" -eq 1 ] || touched '^services/.*/entity\.go$|^tools/scopeguard/'; then
+    step "scope guard" ./tools/scope-guard.sh
+else
+    skip "scope guard (no entity changed)"
+fi
+
 # Path-gated in CI.
 
 if touched '^(\.github/config/services\.json|deploy/k8s/|docker-bake\.hcl|go\.work|tools/db-bootstrap\.sh)'; then

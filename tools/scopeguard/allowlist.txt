@@ -1,0 +1,23 @@
+# scopeguard entity-level allowlist (Rule 1).
+#
+# One entry per exempted services/**/entity.go primary `Entity` struct that
+# has no TenantId field and is not one of the two control-plane services
+# (atlas-configurations, atlas-tenants — those go through Rule 2 instead,
+# which carries no allowlist).
+#
+# Format: <pkg import path>/<entity.go base name> # <reason>
+# (pass.Pkg.Path() + "/" + filepath.Base(file) — see entityAllowlistKey in
+# analyzer.go. Keyed off the package's Go import path, not a filesystem
+# path, because that is stable regardless of the `go vet` driver's working
+# directory; a service module's import path root segment is always its bare
+# `atlas-<name>` module name, e.g. `atlas-quest/quest/medal/entity.go`.)
+# An entry with no reason is a lint failure of this file itself
+# (TestAllowlistEntriesHaveReasons).
+#
+# Seeded from query-scope-audit.md's FORCES-ISOLATED rows — there are none
+# (confirmed: grep -c "FORCES-ISOLATED" finds zero table rows; see §1 notes
+# at lines 227 and 281). The one entry below is not a FORCES-ISOLATED row:
+# it is dead code the audit separately flagged as N/A (row at line 132),
+# verified at source, not a live query path at all.
+
+atlas-quest/quest/medal/entity.go # quest_medal_maps (medal.Entity) has no TenantId and no Migration registration — services/atlas-quest/atlas.com/quest/main.go:52 registers quest.Migration, progress.Migration, outboxlib.Migration only, so this table is never created. grep -rn "medal\." across services/atlas-quest (excluding entity/model files) finds no provider, administrator, or caller anywhere — dead code with no live query path at all, not a live TRANSITIVE access. query-scope-audit.md row at line 132.

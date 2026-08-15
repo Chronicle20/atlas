@@ -32,6 +32,22 @@ atlas-summons/atlas-npc-shops, `bffd89034` atlas-doors) and the key-builder in
 `libs/atlas-redis/keys.go` (`namespacedKey`, `tenantEntityKey`, `TenantKey`).
 No row required correction against the reviewer's original table.
 
+## Task 9 additions
+
+Task 9 closed the last three bare-constructor call sites the analyzer would
+otherwise have had to allowlist (`rediskeyguard-analyzer.md` step 1-2
+decisions).
+
+| Namespace | Service | Format changed | State class | Orphaning impact |
+|---|---|---|---|---|
+| `drop-timer` | atlas-monsters | yes: hand-built `atlas:drop-timer:<tenantId>:<uniqueId>` (bare `Registry[string,...]`) → `atlas:drop-timer:<tenantId>:<region>:<major>.<minor>:<uniqueId>` (`TenantRegistry[uint32,...]`) | live per-monster drop-rate-limit state, `reg.Put` (no TTL), no DB | one monster's next-drop timer resets; re-armed on its next hit/spawn cycle, per `drop_timer_registry.go`'s own doc comment |
+| `hidden-character` | atlas-monsters | yes: hand-built `atlas:hidden-character:<tenantId>:<characterId>` (bare `Registry[string,...]`) → `atlas:hidden-character:<tenantId>:<region>:<major>.<minor>:<characterId>` (`TenantRegistry[uint32,...]`) | live GM-hide flag, `reg.Put` (no TTL), no DB | a GM-hidden character reverts to visible until re-hidden; self-corrects on the reconciliation sweep (`GetAllAcrossTenants`) or the next `Add` call |
+| `maps:spawn` | atlas-maps | yes: `atlas:maps:spawn:<tenantId>:<world>:<channel>:<map>:<instance>` (bare `KeyedHash`, tenant UUID hand-embedded in the key fn) → `atlas:maps:spawn:<tenantId>:<region>:<major>.<minor>:<world>:<channel>:<map>:<instance>` (`TenantKeyedHash`) | live spawn-point cooldown state, `initializeScript`/`reserveEligibleScript` Lua (no TTL), no DB — cooldowns are derived from static template data via `dp.GetSpawnableSpawnPoints`, not persisted | `InitializeForMap`'s `EXISTS`-gated Lua script re-seeds the map's spawn points fresh (`NextSpawnAt` = now) on the first read after deploy — points become immediately spawnable rather than honoring their pre-deploy cooldown, self-corrects within one spawn cycle |
+
+Confirmed against `drop_timer_registry.go` (`NewTenantRegistry`, `r.Register`),
+`character/hidden/registry.go` (`NewTenantRegistry`, `r.Add`), and
+`map/monster/registry.go` (`NewTenantKeyedHash`, `InitializeForMap`).
+
 ## What to expect on the deploy that lands Tasks 4-7
 
 A brief, one-time world-state reset limited to the "live state, no TTL, no DB"

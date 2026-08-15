@@ -96,15 +96,6 @@ func (m Model) Builder() *Builder {
 		SetCycleInterval(m.cycleInterval)
 }
 
-func (m Model) UpdateState(now time.Time) (Model, bool, error) {
-	newState := m.processStateChange(now)
-	updated, err := m.Builder().SetState(newState).Build()
-	if err != nil {
-		return Model{}, false, err
-	}
-	return updated, m.State() != newState, nil
-}
-
 // Transition is the result of evaluating a route's schedule against a moment
 // in time: the state the route is in now, the state it moves to next, and the
 // absolute instant of that move.
@@ -120,6 +111,14 @@ type Transition struct {
 	State     RouteState
 	NextState RouteState
 	NextAt    time.Time
+	// TripId names the trip Evaluate selected, and DepartedAt is that trip's
+	// departure time-of-day materialized onto the calendar day it actually
+	// departed — the previous day when a midnight-crossing trip is observed
+	// after midnight. Together with the route id and the tenant they are the
+	// inputs to VoyageId (design §7.1). Both are zero when State is
+	// OutOfService, where there is no selected trip.
+	TripId     uuid.UUID
+	DepartedAt time.Time
 }
 
 // timeOfDay strips the date from t, leaving only a comparable time of day.
@@ -138,6 +137,22 @@ func materializeBoundary(now time.Time, boundary time.Time) time.Time {
 		now.Location())
 	if !at.After(now) {
 		at = at.Add(24 * time.Hour)
+	}
+	return at
+}
+
+// materializeDeparture projects a trip's departure time-of-day onto the
+// calendar day the trip actually departed, relative to now. For a same-day
+// trip that is now's date. For a midnight-crossing trip observed after the
+// crossing (now's time-of-day is before the departure time-of-day), the
+// departure was yesterday — which is exactly the case that would otherwise
+// make VOYAGE_ARRIVED derive a different voyage id than VOYAGE_DEPARTED did.
+func materializeDeparture(now time.Time, departure time.Time) time.Time {
+	at := time.Date(now.Year(), now.Month(), now.Day(),
+		departure.Hour(), departure.Minute(), departure.Second(), departure.Nanosecond(),
+		now.Location())
+	if at.After(now) {
+		at = at.Add(-24 * time.Hour)
 	}
 	return at
 }
@@ -196,7 +211,13 @@ func (m Model) Evaluate(now time.Time) Transition {
 	}
 
 	to := func(state RouteState, next RouteState, boundary time.Time) Transition {
-		return Transition{State: state, NextState: next, NextAt: materializeBoundary(now, boundary)}
+		return Transition{
+			State:      state,
+			NextState:  next,
+			NextAt:     materializeBoundary(now, boundary),
+			TripId:     nextTrip.TripId(),
+			DepartedAt: materializeDeparture(now, timeOfDay(nextTrip.Departure())),
+		}
 	}
 
 	boardingOpen := timeOfDay(nextTrip.BoardingOpen())
@@ -205,8 +226,15 @@ func (m Model) Evaluate(now time.Time) Transition {
 	arrival := timeOfDay(nextTrip.Arrival())
 
 	if arrival.Before(departure) {
-		// Midnight-crossing trip.
-		if nowTimeOfDay.Before(boardingOpen) && nowTimeOfDay.After(arrival) {
+		// Midnight-crossing trip. `arrival` sits on the low side of the
+		// zero-date axis (e.g. 00:30) while boardingOpen/Closed/departure sit
+		// on the high side (e.g. 22:30-23:30), so a post-midnight observation
+		// (e.g. 00:10) numerically precedes boardingClosed/departure too - it
+		// must be classified against `arrival` first, or it is misread as
+		// pre-boarding on the wrong side of the crossing.
+		if nowTimeOfDay.Before(arrival) {
+			return to(InTransit, AwaitingReturn, arrival)
+		} else if nowTimeOfDay.Before(boardingOpen) {
 			return to(AwaitingReturn, OpenEntry, boardingOpen)
 		} else if nowTimeOfDay.Before(boardingClosed) {
 			return to(OpenEntry, LockedEntry, boardingClosed)
@@ -230,6 +258,24 @@ func (m Model) Evaluate(now time.Time) Transition {
 
 func (m Model) processStateChange(now time.Time) RouteState {
 	return m.Evaluate(now).State
+}
+
+// UpdateStateWithTransition is UpdateState plus the Transition the new state
+// was derived from. processStateChange already computes and discards everything
+// but State; callers that need the trip identity (voyage events) read it here
+// rather than calling Evaluate a second time with a slightly different `now`.
+func (m Model) UpdateStateWithTransition(now time.Time) (Model, bool, Transition, error) {
+	tr := m.Evaluate(now)
+	updated, err := m.Builder().SetState(tr.State).Build()
+	if err != nil {
+		return Model{}, false, Transition{}, err
+	}
+	return updated, m.State() != tr.State, tr, nil
+}
+
+func (m Model) UpdateState(now time.Time) (Model, bool, error) {
+	updated, changed, _, err := m.UpdateStateWithTransition(now)
+	return updated, changed, err
 }
 
 func (m Model) State() RouteState {

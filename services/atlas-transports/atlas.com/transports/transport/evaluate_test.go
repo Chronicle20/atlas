@@ -183,6 +183,83 @@ func TestEvaluate_StateMatchesProcessStateChange(t *testing.T) {
 	}
 }
 
+// tod returns a time-of-day value in the same zero-date frame timeOfDay uses.
+func tod(h, m int) time.Time {
+	return time.Date(0, 1, 1, h, m, 0, 0, time.UTC)
+}
+
+// routeWithSchedule builds a route whose id and schedule are the only fields
+// under test.
+func routeWithSchedule(t *testing.T, routeId uuid.UUID, schedule []TripScheduleModel) Model {
+	t.Helper()
+	m, err := NewBuilder("Voyage Route").
+		SetId(routeId).
+		SetStartMapId(_map.Id(100)).
+		SetStagingMapId(_map.Id(101)).
+		SetEnRouteMapIds([]_map.Id{_map.Id(102)}).
+		SetDestinationMapId(_map.Id(103)).
+		SetObservationMapId(_map.Id(104)).
+		SetBoardingWindowDuration(5 * time.Minute).
+		SetPreDepartureDuration(2 * time.Minute).
+		SetTravelDuration(10 * time.Minute).
+		SetCycleInterval(30 * time.Minute).
+		SetSchedule(schedule).
+		Build()
+	require.NoError(t, err)
+	return m
+}
+
+// The departure instant a VOYAGE_ARRIVED must report is the departure of the
+// trip that is arriving — which, for a midnight-crossing trip observed after
+// midnight, is on the PREVIOUS calendar day. Getting this wrong makes the
+// arrival derive a different voyage id than the departure did, and a Balrog
+// occurrence never completes on arrival (design §18, risk 1).
+func TestEvaluateReportsSelectedTripAndDepartureInstant(t *testing.T) {
+	routeId := uuid.New()
+	tripId := uuid.New()
+
+	// Midnight-crossing trip: departs 23:30, arrives 00:30.
+	trip := NewTripScheduleModel(tripId, routeId,
+		tod(22, 30), tod(23, 20), tod(23, 30), tod(0, 30))
+	m := routeWithSchedule(t, routeId, []TripScheduleModel{trip})
+
+	// Observed at 23:40 on the 15th — in transit, departed today.
+	tr := m.Evaluate(time.Date(2026, 8, 15, 23, 40, 0, 0, time.UTC))
+	if tr.State != InTransit {
+		t.Fatalf("state = %v, want InTransit", tr.State)
+	}
+	if tr.TripId != tripId {
+		t.Fatalf("TripId = %s, want %s", tr.TripId, tripId)
+	}
+	want := time.Date(2026, 8, 15, 23, 30, 0, 0, time.UTC)
+	if !tr.DepartedAt.Equal(want) {
+		t.Fatalf("DepartedAt = %s, want %s", tr.DepartedAt, want)
+	}
+
+	// Observed at 00:10 on the 16th — still the same voyage, departed YESTERDAY.
+	tr = m.Evaluate(time.Date(2026, 8, 16, 0, 10, 0, 0, time.UTC))
+	if tr.State != InTransit {
+		t.Fatalf("state = %v, want InTransit", tr.State)
+	}
+	if !tr.DepartedAt.Equal(want) {
+		t.Fatalf("post-midnight DepartedAt = %s, want %s (previous day)", tr.DepartedAt, want)
+	}
+}
+
+// A same-day trip's departure materializes onto today.
+func TestEvaluateDepartureInstantForSameDayTrip(t *testing.T) {
+	routeId := uuid.New()
+	tripId := uuid.New()
+	trip := NewTripScheduleModel(tripId, routeId, tod(12, 0), tod(12, 50), tod(13, 0), tod(13, 30))
+	m := routeWithSchedule(t, routeId, []TripScheduleModel{trip})
+
+	tr := m.Evaluate(time.Date(2026, 8, 15, 13, 10, 0, 0, time.UTC))
+	want := time.Date(2026, 8, 15, 13, 0, 0, 0, time.UTC)
+	if tr.State != InTransit || !tr.DepartedAt.Equal(want) {
+		t.Fatalf("state=%v DepartedAt=%s, want InTransit at %s", tr.State, tr.DepartedAt, want)
+	}
+}
+
 // TestEvaluate_NextAtIsAlwaysInTheFuture guards the materialization rule.
 func TestEvaluate_NextAtIsAlwaysInTheFuture(t *testing.T) {
 	routeId := uuid.New()

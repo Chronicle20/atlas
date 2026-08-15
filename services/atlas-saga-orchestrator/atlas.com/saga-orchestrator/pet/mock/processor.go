@@ -15,6 +15,8 @@ type ProcessorMock struct {
 	EvolveFunc               func(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32) error
 	RenameAndEmitFunc        func(transactionId uuid.UUID, petId uint32, characterId uint32, name string) error
 	RenameFunc               func(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, characterId uint32, name string) error
+	ReviveAndEmitFunc        func(transactionId uuid.UUID, characterId uint32, petId uint32, sourceTemplateId uint32) error
+	ReviveFunc               func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, sourceTemplateId uint32) error
 }
 
 var _ pet.Processor = (*ProcessorMock)(nil)
@@ -65,4 +67,20 @@ func (m *ProcessorMock) Rename(mb *message.Buffer) func(transactionId uuid.UUID,
 		return m.RenameFunc(mb)
 	}
 	return func(uuid.UUID, uint32, uint32, string) error { return nil }
+}
+
+// ReviveAndEmit is a mock implementation of the pet.Processor.ReviveAndEmit method
+func (m *ProcessorMock) ReviveAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, sourceTemplateId uint32) error {
+	if m.ReviveAndEmitFunc != nil {
+		return m.ReviveAndEmitFunc(transactionId, characterId, petId, sourceTemplateId)
+	}
+	return nil
+}
+
+// Revive is a mock implementation of the pet.Processor.Revive method
+func (m *ProcessorMock) Revive(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, sourceTemplateId uint32) error {
+	if m.ReviveFunc != nil {
+		return m.ReviveFunc(mb)
+	}
+	return func(uuid.UUID, uint32, uint32, uint32) error { return nil }
 }

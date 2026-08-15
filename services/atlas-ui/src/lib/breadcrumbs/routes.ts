@@ -302,6 +302,16 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     label: "Occurrences",
     parent: "/",
   },
+  {
+    // No `entityType`: occurrences have no name of their own to resolve
+    // (unlike accounts/npcs/etc, whose EntityType resolvers live in
+    // resolvers.ts) — a static crumb, same pattern as "/reports/[reportId]"
+    // below. Registering an entityType with no matching resolver in
+    // resolvers.ts would mark the crumb `dynamic` and resolve to "Unknown".
+    pattern: "/events/occurrences/[id]",
+    label: "Occurrence",
+    parent: "/events/occurrences",
+  },
 
   // Reward pool routes
   {
@@ -674,6 +684,7 @@ export const ROUTE_PATTERNS = {
   COUPON_DETAIL: "/coupons/[id]",
   EVENT_DEFINITIONS: "/events/definitions",
   EVENT_OCCURRENCES: "/events/occurrences",
+  EVENT_OCCURRENCE_DETAIL: "/events/occurrences/[id]",
   REWARD_POOLS: "/reward-pools",
   REWARD_POOL_DETAIL: "/reward-pools/[id]",
   SETUP: "/setup",

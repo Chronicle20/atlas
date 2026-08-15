@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func restTestRoute(t *testing.T) Model {
@@ -31,7 +33,7 @@ func restTestRoute(t *testing.T) Model {
 }
 
 func TestTransform_PopulatesSecondsFields(t *testing.T) {
-	rm, err := Transform(restTestRoute(t))
+	rm, err := Transform(context.Background(), restTestRoute(t))
 	require.NoError(t, err)
 
 	assert.Equal(t, uint32(300), rm.BoardingWindowSeconds)
@@ -45,7 +47,7 @@ func TestTransform_PopulatesSecondsFields(t *testing.T) {
 
 func TestExtract_RoundTripsDurations(t *testing.T) {
 	original := restTestRoute(t)
-	rm, err := Transform(original)
+	rm, err := Transform(context.Background(), original)
 	require.NoError(t, err)
 
 	back, err := Extract(rm)
@@ -99,7 +101,7 @@ func TestTransform_PopulatesNextTransition(t *testing.T) {
 		Build()
 	require.NoError(t, err)
 
-	rm, err := Transform(m)
+	rm, err := Transform(context.Background(), m)
 	require.NoError(t, err)
 
 	assert.Equal(t, string(OpenEntry), rm.NextState)
@@ -111,10 +113,41 @@ func TestTransform_PopulatesNextTransition(t *testing.T) {
 func TestTransform_OutOfServiceHasNoTransition(t *testing.T) {
 	pinTimeNow(t, time.Date(2026, 8, 6, 12, 0, 0, 0, time.UTC))
 
-	rm, err := Transform(restTestRoute(t))
+	rm, err := Transform(context.Background(), restTestRoute(t))
 	require.NoError(t, err)
 
 	assert.Equal(t, string(OutOfService), rm.State)
 	assert.Equal(t, "", rm.NextState)
 	assert.Equal(t, "", rm.NextTransitionAt)
+}
+
+func TestTransformPopulatesVoyageIdOnlyWhenInTransit(t *testing.T) {
+	routeId := uuid.New()
+	tripId := uuid.New()
+	trip := NewTripScheduleModel(tripId, routeId, tod(12, 0), tod(12, 50), tod(13, 0), tod(13, 30))
+	m := routeWithSchedule(t, routeId, []TripScheduleModel{trip})
+
+	ctx := tenant.WithContext(context.Background(), voyageTenant(t))
+	now := time.Date(2026, 8, 15, 13, 10, 0, 0, time.UTC)
+
+	rm, err := TransformAt(ctx, m, now)
+	if err != nil {
+		t.Fatalf("TransformAt: %v", err)
+	}
+	if rm.State != "in_transit" {
+		t.Fatalf("state = %q", rm.State)
+	}
+	want := VoyageId(voyageTenant(t), routeId, tripId, time.Date(2026, 8, 15, 13, 0, 0, 0, time.UTC)).String()
+	if rm.VoyageID != want {
+		t.Fatalf("voyageId = %q, want %q", rm.VoyageID, want)
+	}
+
+	// Boarding window: not in transit, so no voyage.
+	rm, err = TransformAt(ctx, m, time.Date(2026, 8, 15, 12, 10, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("TransformAt: %v", err)
+	}
+	if rm.VoyageID != "" {
+		t.Fatalf("voyageId = %q, want empty outside transit", rm.VoyageID)
+	}
 }

@@ -31,7 +31,8 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func GetRouteHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseRouteId(d.Logger(), func(routeId uuid.UUID) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			rm, err := model.Map(Transform)(NewProcessor(d.Logger(), d.Context()).ByIdProvider(routeId))()
+			ctx := d.Context()
+			rm, err := model.Map(func(m Model) (RestModel, error) { return Transform(ctx, m) })(NewProcessor(d.Logger(), ctx).ByIdProvider(routeId))()
 			if err != nil {
 				d.Logger().WithError(err).Errorln("Error retrieving route")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -68,9 +69,10 @@ func GetAllRoutesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http
 		query := r.URL.Query()
 		startMapIdFilter := query.Get("filter[startMapId]")
 
-		transformer := TransformSummary
+		ctx := d.Context()
+		transformer := func(m Model) (RestModel, error) { return TransformSummary(ctx, m) }
 		if wantsSchedule(query.Get("include")) {
-			transformer = Transform
+			transformer = func(m Model) (RestModel, error) { return Transform(ctx, m) }
 		}
 
 		page, perr := paginate.ParseParams(query, paginate.DefaultPageSize, paginate.MaxPageSize)

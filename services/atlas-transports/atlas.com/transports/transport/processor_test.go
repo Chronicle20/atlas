@@ -508,8 +508,11 @@ type channelSpec struct {
 // newProcessorWithChannels builds a ProcessorImpl wired to a fake
 // channel.Processor reporting exactly the given channels, a working
 // message.Buffer to inspect emitted events against, and a no-op map
-// processor so the warp loops UpdateRoute runs are inert.
-func newProcessorWithChannels(t *testing.T, specs []channelSpec) (*ProcessorImpl, *message.Buffer, []channel2.Model) {
+// processor so the warp loops UpdateRoute runs are inert. now is pinned via
+// SetNow so UpdateRoute's state evaluation is deterministic - not sensitive
+// to when in real time (including a UTC midnight rollover, which
+// Evaluate's timeOfDay() strips the date around) the test happens to run.
+func newProcessorWithChannels(t *testing.T, specs []channelSpec, now time.Time) (*ProcessorImpl, *message.Buffer, []channel2.Model) {
 	t.Helper()
 	setupTransportTestRegistry(t)
 	tenantModel, ctx := newTestTenantContext(t)
@@ -535,6 +538,7 @@ func newProcessorWithChannels(t *testing.T, specs []channelSpec) (*ProcessorImpl
 		chanP: mockChanP,
 		charP: &charactermock.ProcessorMock{},
 		mp:    noopMapProcessor{},
+		now:   func() time.Time { return now },
 	}
 	return p, message.NewBuffer(), chans
 }
@@ -577,54 +581,51 @@ func countEvents(t *testing.T, mb *message.Buffer, eventType string) int {
 
 // routeWithSchedule and tod are defined in evaluate_test.go and reused here.
 
-// inTransitRouteAboutToArrive returns a route persisted as InTransit whose
-// selected trip's arrival has already passed relative to real wall-clock
-// time and whose boarding for the same trip's next cycle has not yet opened,
-// so UpdateRoute (which evaluates against time.Now()) observes the
-// AwaitingReturn transition ("the ferry has arrived and is waiting to board
-// again").
-func inTransitRouteAboutToArrive(t *testing.T) Model {
+// inTransitRouteAboutToArrive returns a route persisted as InTransit and a
+// pinned `now` at which its selected trip's arrival has already passed and
+// boarding for the same trip's next cycle has not yet opened, so
+// UpdateRoute(now) observes the AwaitingReturn transition ("the ferry has
+// arrived and is waiting to board again"). now is a fixed instant, not
+// time.Now() - see newProcessorWithChannels for why.
+func inTransitRouteAboutToArrive(t *testing.T) (Model, time.Time) {
 	t.Helper()
 	routeId := uuid.New()
 	tripId := uuid.New()
-	now := time.Now()
-	boardingOpen := now.Add(2 * time.Minute)
-	boardingClosed := boardingOpen.Add(5 * time.Minute)
-	departure := boardingClosed.Add(2 * time.Minute)
-	arrival := departure.Add(10 * time.Minute)
-	trip := NewTripScheduleModel(tripId, routeId, boardingOpen, boardingClosed, departure, arrival)
+	// Boards 12:30, closes 12:35, departs 12:37, arrives 12:47 - the same
+	// boundaries TestEvaluate_Branches already pins as AwaitingReturn at
+	// 12:00 (before boarding opens).
+	trip := NewTripScheduleModel(tripId, routeId, tod(12, 30), tod(12, 35), tod(12, 37), tod(12, 47))
 	m := routeWithSchedule(t, routeId, []TripScheduleModel{trip})
 	updated, err := m.Builder().SetState(InTransit).Build()
 	require.NoError(t, err)
-	return updated
+	now := time.Date(2026, 8, 15, 12, 0, 0, 0, time.UTC)
+	return updated, now
 }
 
-// openEntryRouteAboutToDepart returns a route persisted as OpenEntry whose
-// selected trip's departure is a moment in the past relative to real
-// wall-clock time, so UpdateRoute observes the InTransit transition.
-func openEntryRouteAboutToDepart(t *testing.T) Model {
+// openEntryRouteAboutToDepart returns a route persisted as OpenEntry and a
+// pinned `now` at which its selected trip's departure has already passed, so
+// UpdateRoute(now) observes the InTransit transition. now is fixed, not
+// time.Now().
+func openEntryRouteAboutToDepart(t *testing.T) (Model, time.Time) {
 	t.Helper()
 	routeId := uuid.New()
 	tripId := uuid.New()
-	now := time.Now()
-	departure := now.Add(-1 * time.Minute)
-	arrival := now.Add(10 * time.Minute)
-	trip := NewTripScheduleModel(tripId, routeId,
-		departure.Add(-10*time.Minute), departure.Add(-1*time.Minute), departure, arrival)
+	trip := NewTripScheduleModel(tripId, routeId, tod(12, 30), tod(12, 35), tod(12, 37), tod(12, 47))
 	m := routeWithSchedule(t, routeId, []TripScheduleModel{trip})
 	updated, err := m.Builder().SetState(OpenEntry).Build()
 	require.NoError(t, err)
-	return updated
+	now := time.Date(2026, 8, 15, 12, 40, 0, 0, time.UTC)
+	return updated, now
 }
 
 // FR-V3/FR-V4: InTransit -> AwaitingReturn emits VOYAGE_ARRIVED, once per
 // channel, with the full scope. Before this task that transition emitted
 // nothing at all (PRD F1).
 func TestArrivalEmitsVoyageArrivedPerChannel(t *testing.T) {
-	p, mb, chans := newProcessorWithChannels(t, []channelSpec{{world: 1, channel: 1}, {world: 1, channel: 2}})
+	route, now := inTransitRouteAboutToArrive(t)
+	p, mb, chans := newProcessorWithChannels(t, []channelSpec{{world: 1, channel: 1}, {world: 1, channel: 2}}, now)
 	_ = chans
 
-	route := inTransitRouteAboutToArrive(t)
 	if err := p.UpdateRoute(mb)(route); err != nil {
 		t.Fatalf("UpdateRoute: %v", err)
 	}
@@ -650,9 +651,9 @@ func TestArrivalEmitsVoyageArrivedPerChannel(t *testing.T) {
 // FR-V6 / acceptance 20.4: the existing ARRIVED and DEPARTED emits are
 // unchanged — same count, same single-emit shape, same body.
 func TestDepartureStillEmitsOneDepartedAndOneVoyageDepartedPerChannel(t *testing.T) {
-	p, mb, _ := newProcessorWithChannels(t, []channelSpec{{world: 1, channel: 1}, {world: 1, channel: 2}})
+	route, now := openEntryRouteAboutToDepart(t)
+	p, mb, _ := newProcessorWithChannels(t, []channelSpec{{world: 1, channel: 1}, {world: 1, channel: 2}}, now)
 
-	route := openEntryRouteAboutToDepart(t)
 	if err := p.UpdateRoute(mb)(route); err != nil {
 		t.Fatalf("UpdateRoute: %v", err)
 	}
@@ -662,5 +663,49 @@ func TestDepartureStillEmitsOneDepartedAndOneVoyageDepartedPerChannel(t *testing
 	}
 	if got := len(voyageEvents(t, mb, transport.EventStatusVoyageDeparted)); got != 2 {
 		t.Fatalf("VOYAGE_DEPARTED emitted %d times, want one per channel", got)
+	}
+}
+
+// TestArrivalAcrossMidnightUsesDepartureDayVoyageId is the fix-round
+// regression case: a midnight-crossing trip (departs 23:30, arrives 00:30)
+// observed well after its arrival, at 00:40 the following calendar day. The
+// governing boundaries here (boardingOpen 22:30 .. arrival 00:30) straddle
+// midnight exactly the way naive offset-from-time.Now() arithmetic risked
+// producing by accident (see fix-round report) - this test pins the clock
+// explicitly instead, and checks the VOYAGE_ARRIVED body's VoyageId is
+// derived from the PREVIOUS day's departure instant, matching what
+// VOYAGE_DEPARTED would have carried when the same trip departed. Getting
+// this wrong (e.g. deriving today's 23:30 instead of yesterday's) would
+// silently mint a different voyage id and desynchronize atlas-events'
+// consumer from the departure it already recorded.
+func TestArrivalAcrossMidnightUsesDepartureDayVoyageId(t *testing.T) {
+	routeId := uuid.New()
+	tripId := uuid.New()
+	trip := NewTripScheduleModel(tripId, routeId, tod(22, 30), tod(23, 20), tod(23, 30), tod(0, 30))
+	m := routeWithSchedule(t, routeId, []TripScheduleModel{trip})
+	route, err := m.Builder().SetState(InTransit).Build()
+	require.NoError(t, err)
+
+	now := time.Date(2026, 8, 16, 0, 40, 0, 0, time.UTC)
+	p, mb, chans := newProcessorWithChannels(t, []channelSpec{{world: 1, channel: 1}, {world: 1, channel: 2}}, now)
+	_ = chans
+
+	if err := p.UpdateRoute(mb)(route); err != nil {
+		t.Fatalf("UpdateRoute: %v", err)
+	}
+
+	msgs := voyageEvents(t, mb, transport.EventStatusVoyageArrived)
+	if len(msgs) != 2 {
+		t.Fatalf("expected one VOYAGE_ARRIVED per channel, got %d", len(msgs))
+	}
+
+	wantDepartedAt := time.Date(2026, 8, 15, 23, 30, 0, 0, time.UTC)
+	wantVoyageId := VoyageId(p.t, routeId, tripId, wantDepartedAt)
+	if msgs[0].Body.VoyageId != wantVoyageId {
+		t.Fatalf("VoyageId = %s, want %s (derived from previous day's departure at %s)",
+			msgs[0].Body.VoyageId, wantVoyageId, wantDepartedAt)
+	}
+	if !msgs[0].Body.DepartedAt.Equal(wantDepartedAt) {
+		t.Fatalf("DepartedAt = %s, want %s", msgs[0].Body.DepartedAt, wantDepartedAt)
 	}
 }

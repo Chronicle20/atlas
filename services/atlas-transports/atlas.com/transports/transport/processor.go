@@ -46,11 +46,32 @@ type ProcessorImpl struct {
 	chanP channel.Processor
 	charP character.Processor
 	mp    _map.Processor
+	// now supplies the instant UpdateRoute evaluates state against. Nil means
+	// "use the real wall clock" (see nowFunc) - the zero value of a struct
+	// literal built outside NewProcessor (as tests do) must keep production
+	// behavior, not silently freeze at time.Time{}.
+	now func() time.Time
+}
+
+// ProcessorOption configures a ProcessorImpl at construction. The only
+// current use is SetNow, letting tests pin the clock UpdateRoute evaluates
+// against instead of depending on the real wall clock.
+type ProcessorOption func(*ProcessorImpl)
+
+// SetNow overrides the clock UpdateRoute uses to evaluate route state.
+// Production callers never need this - NewProcessor already defaults to
+// time.Now. It exists so tests can pin a fixed instant and stop being
+// sensitive to when (in real time, including near a UTC midnight rollover)
+// they happen to run.
+func SetNow(now func() time.Time) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.now = now
+	}
 }
 
 // NewProcessor creates a new processor implementation
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	return &ProcessorImpl{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, opts ...ProcessorOption) Processor {
+	p := &ProcessorImpl{
 		l:     l,
 		ctx:   ctx,
 		t:     tenant.MustFromContext(ctx),
@@ -58,10 +79,26 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		chanP: channel.NewProcessor(l, ctx),
 		charP: character.NewProcessor(l, ctx),
 		mp:    _map.NewProcessor(l, ctx),
+		now:   time.Now,
 	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
+
+// nowFunc returns the clock UpdateRoute evaluates against, falling back to
+// the real wall clock when the processor was built as a bare struct literal
+// (as several pre-existing tests in this package do) rather than through
+// NewProcessor.
+func (p *ProcessorImpl) nowFunc() time.Time {
+	if p.now != nil {
+		return p.now()
+	}
+	return time.Now()
+}
 
 func (p *ProcessorImpl) AddTenant(distinctRoutes []Model, sharedVessels []SharedVesselModel) error {
 	p.l.Debugf("Adding [%d] routes for tenant [%s].", len(distinctRoutes), p.t.Id())
@@ -137,7 +174,7 @@ func (p *ProcessorImpl) UpdateRouteAndEmit(route Model) error {
 
 func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error {
 	return func(route Model) error {
-		now := time.Now()
+		now := p.nowFunc()
 		r, changed, tr, err := route.UpdateStateWithTransition(now)
 		if err != nil {
 			p.l.WithError(err).Errorf("Error updating state for route [%s].", route.Id())

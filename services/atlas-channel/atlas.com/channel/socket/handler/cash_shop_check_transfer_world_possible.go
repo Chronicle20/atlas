@@ -1,13 +1,16 @@
 package handler
 
 import (
+	"atlas-channel/account"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 
 	"github.com/sirupsen/logrus"
 
+	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
@@ -19,13 +22,40 @@ import (
 // leading mode byte, so it is registered by name in main.go like any other
 // standalone handler.
 //
-// This handler decodes and logs. Answering the request means emitting
-// CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT, whose codec does not exist yet
-// (that clientbound op is its own packet-phase task); until then there is no
-// reply this channel could send that the client would understand. Registering
-// the decode now is what stops the client's request from landing as an
-// "unhandled message op" and lets the route be verified on every version.
-func CashShopCheckTransferWorldPossibleHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+// The body carries characterId (absent on jms_v185 — that region identifies
+// the character from session state, see
+// cashsb.CheckTransferWorldPossible.CharacterId's doc comment; this handler
+// falls back to s.CharacterId() when the wire field is not present) and the
+// account's second-password credential (an 8-digit birthday code pre-v95, a
+// string SPW on v95+/jms_v185 — cashsb.TransferCredentialIsString).
+//
+// This op does NOT carry a destination world — BUY_WORLD_TRANSFER supplies
+// that later — so the destination-dependent gates of atlas-character's
+// transfer-eligibility endpoint (world_same, world_unknown/world_full,
+// no_character_slot, name_taken) cannot be evaluated here, and that endpoint
+// has no destination-agnostic form (services/atlas-character/atlas.com/character/pending_change/resource.go
+// handleGetTransferEligibility requires destinationWorldId on every call, and
+// pending_change.CheckTransferEligibility's own gate 1 compares it against
+// the character's current world). The remaining destination-independent gates
+// (is_gm, banned, is_guild_master, in_family, trade_open, merchant_open,
+// mts_listings_open) are evaluated by the SAME endpoint's SAME gate table, so
+// they cannot be split out without inventing a second entry point on
+// atlas-character that this task's brief does not authorize. Per task-227
+// Task 26 ruling 5, this is reported as a genuine design gap rather than
+// invented: this handler validates the credential and the PIC-attempt
+// lockout only, exactly as the sibling name-change handler does, and answers
+// ALLOWED on a valid credential with no further gate evaluation. The real
+// per-purchase eligibility gates already run when the pending-change record
+// is created (pendingchange.RequestWorldTransfer, wired in Task 25's
+// BUY_WORLD_TRANSFER handler), which is the first point a destination world
+// is known.
+//
+// The world-name list (cashcb.CheckTransferWorldPossibleResult.WorldNames) is
+// likewise left empty here: atlas-channel's world package
+// (services/atlas-channel/atlas.com/channel/world) has no "list all worlds"
+// lookup today, only GetById(worldId). Populating the list needs a new
+// atlas-world REST client this task's brief does not list either.
+func CashShopCheckTransferWorldPossibleHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		p := cashsb.CheckTransferWorldPossible{}
 		p.Decode(l, ctx)(r, readerOptions)
@@ -33,5 +63,63 @@ func CashShopCheckTransferWorldPossibleHandleFunc(l logrus.FieldLogger, ctx cont
 		// second password / birthday code). Never log p.Spw() or
 		// p.BirthDate().
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+
+		characterId := p.CharacterId()
+		if !cashsb.TransferBodyHasCharacterId(ctx) {
+			characterId = s.CharacterId()
+		}
+
+		a, err := checkPossibleAccountGetByIdFunc(l, ctx, s.AccountId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve account [%d] for world-transfer credential validation.", s.AccountId())
+			announceTransferWorldPossible(l, ctx, wp, s, cashcb.CheckTransferWorldPossibleResultBody(characterId, cashcb.CheckTransferWorldPossibleUnknownError, 0, nil))
+			return
+		}
+
+		ipAddress := remoteIpAddress(s)
+
+		if !transferWorldCredentialMatches(ctx, p, a) {
+			l.Debugf("Incorrect world-transfer credential for account [%d].", s.AccountId())
+			_, _, rErr := checkPossibleRecordPicAttemptFunc(l, ctx, s.AccountId(), false, ipAddress)
+			if rErr != nil {
+				l.WithError(rErr).Errorf("Unable to record PIC attempt for account [%d].", s.AccountId())
+			}
+			// Neither a bare credential mismatch nor a tripped lockout has a
+			// dedicated arm on this op (only IN_FAMILY, arm 8, has
+			// independently confirmed text — see the result codec's doc
+			// comment); UNKNOWN_ERROR is the existing rejection path reused
+			// for both, per task-227 Task 26 ruling 4.
+			announceTransferWorldPossible(l, ctx, wp, s, cashcb.CheckTransferWorldPossibleResultBody(characterId, cashcb.CheckTransferWorldPossibleUnknownError, 0, nil))
+			return
+		}
+
+		if _, _, rErr := checkPossibleRecordPicAttemptFunc(l, ctx, s.AccountId(), true, ipAddress); rErr != nil {
+			l.WithError(rErr).Errorf("Unable to record PIC attempt for account [%d].", s.AccountId())
+		}
+
+		announceTransferWorldPossible(l, ctx, wp, s, cashcb.CheckTransferWorldPossibleResultAllowedBody(characterId, a.BirthDate(), nil))
+	}
+}
+
+// transferWorldCredentialMatches mirrors nameChangeCredentialMatches (see
+// cash_shop_check_name_change_possible.go) for the WORLD_TRANSFER op's own
+// version gate, cashsb.TransferCredentialIsString — which, unlike the
+// name-change gate, also covers jms_v185 (task-227 Task 26 ruling 2's JMS
+// arm).
+func transferWorldCredentialMatches(ctx context.Context, p cashsb.CheckTransferWorldPossible, a account.Model) bool {
+	if cashsb.TransferCredentialIsString(ctx) {
+		return p.Spw() == a.PIC()
+	}
+	if a.BirthDate() == 0 {
+		return false
+	}
+	return p.BirthDate() == a.BirthDate()
+}
+
+// announceTransferWorldPossible writes
+// CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT.
+func announceTransferWorldPossible(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, body packet.Encode) {
+	if err := session.Announce(l)(ctx)(wp)(cashcb.CashShopCheckTransferWorldPossibleResultWriter)(body)(s); err != nil {
+		l.WithError(err).Errorf("Unable to write world-transfer-possible result for character [%d].", s.CharacterId())
 	}
 }

@@ -103,6 +103,13 @@ func (m CheckTransferWorldPossible) String() string {
 	return fmt.Sprintf("characterId [%d], credential [REDACTED]", m.characterId)
 }
 
+// TransferBodyHasCharacterId is the exported alias of transferBodyHasCharacterId
+// for external callers (task-227 Task 26 ruling 2) — see that function's doc
+// comment for the derivation.
+func TransferBodyHasCharacterId(ctx context.Context) bool {
+	return transferBodyHasCharacterId(ctx)
+}
+
 // transferBodyHasCharacterId reports whether this version prefixes the body
 // with Encode4 dwCharacterID. Every GMS version v48…v95 does. jms_v185 does
 // NOT: its send is a single EncodeStr, proven by `retn 4` @0x485035 (one stack
@@ -136,6 +143,15 @@ func transferCredentialIsString(ctx context.Context) bool {
 		return true
 	}
 	return t.MajorAtLeast(95)
+}
+
+// TransferCredentialIsString is the exported alias of
+// transferCredentialIsString for external callers (task-227 Task 26 ruling
+// 2) — atlas-channel's handler drives this SAME predicate rather than
+// re-deriving a MajorAtLeast(95) check that would miss the JMS arm. See
+// transferCredentialIsString's doc comment for the derivation.
+func TransferCredentialIsString(ctx context.Context) bool {
+	return transferCredentialIsString(ctx)
 }
 
 func (m CheckTransferWorldPossible) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

@@ -639,6 +639,8 @@ func produceWriters() []string {
 		cashcb.CashQueryResultWriter,
 		cashcb.CashItemGachaponResultWriter,
 		cashcb.VegaScrollWriter,
+		cashcb.CashShopCheckNameChangePossibleResultWriter,
+		cashcb.CashShopCheckTransferWorldPossibleResultWriter,
 		monstercb.MonsterSpawnWriter,
 		monstercb.MonsterDestroyWriter,
 		monstercb.MonsterControlWriter,

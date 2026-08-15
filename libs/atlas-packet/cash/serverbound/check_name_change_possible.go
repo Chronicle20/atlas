@@ -94,7 +94,7 @@ func (m CheckNameChangePossible) String() string {
 	return fmt.Sprintf("characterId [%d], credential [REDACTED]", m.characterId)
 }
 
-// credentialIsString reports whether this version puts the credential on the
+// CredentialIsString reports whether this version puts the credential on the
 // wire as a length-prefixed string (EncodeStr sSPW) rather than as a uint32
 // birthday code (Encode4 nBirthDate). Derived per version: gms_v48 through
 // gms_v92 encode the integer (two Encode4 sites in the send path);
@@ -107,6 +107,19 @@ func (m CheckNameChangePossible) String() string {
 // claimed and no jms fixture exists. It falls on the string side here only
 // because its major version is 185; the jms behaviour of this codec is
 // unverified and unused.
+//
+// Exported so atlas-channel's handler can drive the SAME predicate that
+// decoded the body when deciding which stored account credential
+// (account.Model.PIC() vs account.Model.BirthDate()) to compare against — a
+// second, independently-written gate in the handler could drift from this one
+// and validate a field the decoder never populated (task-227 Task 26 ruling
+// 2).
+func CredentialIsString(ctx context.Context) bool {
+	return credentialIsString(ctx)
+}
+
+// credentialIsString is the unexported implementation Encode/Decode call
+// directly; CredentialIsString is its exported alias for external callers.
 func credentialIsString(ctx context.Context) bool {
 	t := tenant.MustFromContext(ctx)
 	return t.MajorAtLeast(95)

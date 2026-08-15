@@ -7,7 +7,9 @@ import (
 	"atlas-events/event/registry"
 	"atlas-events/event/scheduling"
 	"atlas-events/event/transition"
+	"atlas-events/events/anniversary"
 	"atlas-events/events/crimsonbalrog"
+	characterStatusConsumer "atlas-events/kafka/consumer/characterstatus"
 	monsterStatusConsumer "atlas-events/kafka/consumer/monsterstatus"
 	transportConsumer "atlas-events/kafka/consumer/transport"
 	"context"
@@ -76,6 +78,11 @@ func main() {
 		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
 	))
 
+	// registry.Register(anniversary.NewHandler(db)) needs db, so it runs here
+	// rather than beside crimsonbalrog's above — see that call's doc comment
+	// for why unregistered leaves the definition type entirely unreachable.
+	registry.Register(anniversary.NewHandler(db))
+
 	server.RegisterTransientErrorClassifier(func(err error) bool {
 		if database.IsTransientConnectionError(err) {
 			database.CountTransient(err)
@@ -92,6 +99,10 @@ func main() {
 	monsterStatusConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := monsterStatusConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatalf("Unable to register monster status event handlers.")
+	}
+	characterStatusConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := characterStatusConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatalf("Unable to register character status event handlers.")
 	}
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 

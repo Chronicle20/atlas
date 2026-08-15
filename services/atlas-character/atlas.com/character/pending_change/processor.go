@@ -253,8 +253,13 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 			return Model{}, err
 		}
 		// Consumption is at request acceptance (FR-2.8). The purchase path has
-		// no asset to destroy — atlas-cashshop consumes the entitlement off the
-		// PENDING_CHANGE_CREATED event instead.
+		// no asset to destroy here: atlas-channel (task-227 task 38) inserts
+		// this record FIRST, then separately emits a REQUEST_PURCHASE command
+		// carrying the record's own Id as TransactionId, which drives
+		// atlas-cashshop's normal Purchase flow (charging the currency) on its
+		// own outcome-event round trip (task 39) — not anything keyed off this
+		// package's own PENDING_CHANGE_CREATED event, which atlas-cashshop
+		// does not consume.
 		if m.HasAsset() {
 			if err := mb.Put(sagamsg.EnvCommandTopic, destroyAssetCommandProvider(m)); err != nil {
 				return Model{}, err

@@ -6,11 +6,13 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	cashshop2 "atlas-channel/kafka/message/cashshop"
 	"atlas-channel/listener"
+	"atlas-channel/pendingchange"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
@@ -20,9 +22,34 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	cashpkt "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
+	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+// resolvePendingChange resolves a purchase-outcome event's TransactionId to
+// its correlated PENDING name-change / world-transfer record, if any. The
+// zero UUID means "no correlation" (every non-name-change/world-transfer
+// purchase, per task-227 task 37) and is rejected up front without a remote
+// call. A non-zero id that does not match any of the character's PENDING
+// records (already resolved, or a stale/foreign id) is also "no
+// correlation" -- the caller falls back to its pre-existing behavior.
+func resolvePendingChange(l logrus.FieldLogger, ctx context.Context, characterId uint32, transactionId uuid.UUID) (pendingchange.RestModel, bool) {
+	if transactionId == uuid.Nil {
+		return pendingchange.RestModel{}, false
+	}
+	pcs, err := pendingchange.NewProcessor(l, ctx).GetByCharacterId(characterId)
+	if err != nil {
+		l.WithError(err).Warnf("Unable to list pending changes for character [%d] while resolving transaction [%s].", characterId, transactionId)
+		return pendingchange.RestModel{}, false
+	}
+	for _, pc := range pcs {
+		if pc.Status == pendingchange.StatusPending && pc.Id == transactionId.String() {
+			return pc, true
+		}
+	}
+	return pendingchange.RestModel{}, false
+}
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -131,7 +158,6 @@ func handleStatusEventPurchase(sc server.Model, wp writer.Producer) message.Hand
 				return err
 			}
 
-			// Announce the purchase success to the character session
 			item := cashpkt.CashInventoryItem{
 				CashId:      a.Item().CashId(),
 				AccountId:   s.AccountId(),
@@ -142,6 +168,32 @@ func handleStatusEventPurchase(sc server.Model, wp writer.Producer) message.Hand
 				GiftFrom:    "",
 				Expiration:  packetmodel.MsTime(a.Expiration()),
 			}
+
+			// A TransactionId correlating to a PENDING name-change /
+			// world-transfer record means this purchase is the paid leg of
+			// that flow -- answer with the record's own DONE arm (task-227
+			// task 39) instead of the generic purchase-success body, which
+			// is a different mode byte the client does not expect for
+			// either op. An unrelated buy carries the zero UUID (or an id
+			// that resolves to nothing) and falls through unchanged.
+			if pc, ok := resolvePendingChange(l, ctx, e.CharacterId, e.Body.TransactionId); ok {
+				switch pc.Type {
+				case pendingchange.TypeNameChange:
+					if err = session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopNameChangeBuyDoneBody(item))(s); err != nil {
+						l.WithError(err).Errorf("Unable to announce name change success to character [%d].", e.CharacterId)
+						return err
+					}
+					return nil
+				case pendingchange.TypeWorldTransfer:
+					if err = session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopTransferWorldDoneBody(item))(s); err != nil {
+						l.WithError(err).Errorf("Unable to announce world transfer success to character [%d].", e.CharacterId)
+						return err
+					}
+					return nil
+				}
+			}
+
+			// Announce the purchase success to the character session
 			err = session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopCashInventoryPurchaseSuccessBody(item))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce cash shop purchase success to character [%d].", e.CharacterId)
@@ -244,6 +296,37 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 		t := tenant.MustFromContext(ctx)
 		if !t.Is(sc.Tenant()) {
 			return
+		}
+
+		// A TransactionId correlating to a PENDING name-change /
+		// world-transfer record means the paid leg of that flow failed
+		// (task-227 task 39): release the record via the existing
+		// self-scoped cancel path (reason player_cancelled,
+		// pending_change/processor.go:349) -- there is no committed asset
+		// on this path (HasAsset() is false), so this releases the
+		// reservation without minting any refund -- and answer with the
+		// record's own failure arm instead of the generic capacity-increase
+		// fallback below. An unrelated failure carries the zero UUID (or an
+		// id that resolves to nothing) and falls through unchanged.
+		if pc, ok := resolvePendingChange(l, ctx, e.CharacterId, e.Body.TransactionId); ok {
+			if _, cancelErr := pendingchange.NewProcessor(l, ctx).CancelPendingChange(e.CharacterId, pc.Type); cancelErr != nil {
+				l.WithError(cancelErr).Errorf("Unable to cancel pending [%s] change for character [%d] after failed purchase [%s].", pc.Type, e.CharacterId, e.Body.TransactionId)
+			}
+
+			switch pc.Type {
+			case pendingchange.TypeNameChange:
+				// No NAME_CHANGE_FAILED arm exists on the wire (see
+				// handleBuyNameChange's doc in socket/handler/cash_shop_operation.go);
+				// pink text is the same fallback the synchronous rejection
+				// path uses.
+				op := session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody("Unable to process your name change request."))
+				_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
+				return
+			case pendingchange.TypeWorldTransfer:
+				op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopTransferWorldFailedBody(e.Body.Error))
+				_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
+				return
+			}
 		}
 
 		// Use the generic error handler

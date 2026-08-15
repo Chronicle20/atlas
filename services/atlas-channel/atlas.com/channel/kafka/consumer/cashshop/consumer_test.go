@@ -1,10 +1,12 @@
 package cashshop
 
 import (
+	"atlas-channel/pendingchange"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -22,6 +24,7 @@ import (
 
 	channelconst "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	cashpkt "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
+	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	socketwriter "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
@@ -408,11 +411,21 @@ var testOperations = map[string]interface{}{
 	cashpkt.CashShopOperationInventoryCapacityIncreaseFailed:  float64(87),
 	cashpkt.CashShopOperationInventoryCapacityIncreaseSuccess: float64(86),
 	cashpkt.CashShopOperationPurchaseSuccess:                  float64(66),
+	cashpkt.CashShopOperationNameChangeBuyDone:                float64(70),
+	cashpkt.CashShopOperationTransferWorldDone:                float64(71),
+	cashpkt.CashShopOperationTransferWorldFailed:              float64(72),
+	// POP_UP is the WorldMessageMode key handleStatusEventError's name-change
+	// pink-text fallback resolves (socket/writer/world_message.go's
+	// getWorldMessageMode), not a CashShopOperation* key.
+	"POP_UP": float64(73),
 }
 
 var testErrors = map[string]interface{}{
 	"COUPON_EXPIRED":      float64(178),
 	"INVALID_COUPON_CODE": float64(176),
+	// deliberately no UNKNOWN_ERROR key -- see
+	// TestCouponFailedUnknownErrorFallsThroughToTheDefaultNotice.
+	"WORLD_TRANSFER_UNAVAILABLE": float64(181),
 }
 
 // announcement records one session.Announce call: which writer it went to and
@@ -598,6 +611,119 @@ func (e *consumerEnv) decodeUseCouponDone(t *testing.T) cashpkt.UseCouponDone {
 	return cashpkt.UseCouponDone{}
 }
 
+// decodeNameChangeBuyDone decodes the last announced CashShopOperation body
+// as a NAME_CHANGE_BUY_DONE arm.
+func (e *consumerEnv) decodeNameChangeBuyDone(t *testing.T) cashpkt.NameChangeBuyDone {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.NameChangeBuyDone{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
+// decodeTransferWorldDone decodes the last announced CashShopOperation body
+// as a TRANSFER_WORLD_SUCCESS arm.
+func (e *consumerEnv) decodeTransferWorldDone(t *testing.T) cashpkt.TransferWorldDone {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.TransferWorldDone{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
+// decodeTransferWorldFailed decodes the last announced CashShopOperation body
+// as a TRANSFER_WORLD_FAILED arm.
+func (e *consumerEnv) decodeTransferWorldFailed(t *testing.T) cashpkt.TransferWorldFailed {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.TransferWorldFailed{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
+// decodeCashInventoryPurchaseSuccess decodes the last announced
+// CashShopOperation body as the generic PURCHASE_SUCCESS arm.
+func (e *consumerEnv) decodeCashInventoryPurchaseSuccess(t *testing.T) cashpkt.CashShopPurchaseSuccess {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.CashShopPurchaseSuccess{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
+// pendingChangeRecordFixture is one row a pendingChangeFixtureServer's GET
+// .../pending-changes response reports.
+type pendingChangeRecordFixture struct {
+	id     string
+	typ    string
+	status string
+}
+
+// pendingChangeFixtureServer stands in for atlas-character's pending-changes
+// resource: GET .../pending-changes lists records (how the purchase-outcome
+// consumer resolves a TransactionId to a PENDING record, task-227 task 39),
+// and POST .../pending-changes/cancel resolves the self-scoped release. It
+// records every request path -- for the error-arm tests, the whole of what
+// the CHANNEL side can prove about "no refund minted" is that its own call
+// graph is exactly one cancel POST and nothing else; refund-minting itself is
+// atlas-character's Resolve() and is out of this task's file inventory.
+func pendingChangeFixtureServer(t *testing.T, characterId uint32, records []pendingChangeRecordFixture) *[]string {
+	t.Helper()
+	var calls []string
+	listPath := fmt.Sprintf("/characters/%d/pending-changes", characterId)
+	cancelPath := listPath + "/cancel"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls = append(calls, r.Method+" "+r.URL.Path)
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == listPath:
+			items := make([]map[string]any, 0, len(records))
+			for _, rec := range records {
+				items = append(items, map[string]any{
+					"type": "pending-changes",
+					"id":   rec.id,
+					"attributes": map[string]any{
+						"characterId": characterId,
+						"type":        rec.typ,
+						"status":      rec.status,
+					},
+				})
+			}
+			b, _ := json.Marshal(map[string]any{"data": items})
+			w.Header().Set("Content-Type", "application/vnd.api+json")
+			_, _ = w.Write(b)
+		case r.Method == http.MethodPost && r.URL.Path == cancelPath:
+			w.Header().Set("Content-Type", "application/vnd.api+json")
+			w.WriteHeader(http.StatusOK)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+			_, _ = w.Write([]byte(`{"errors":[{"status":"404","title":"Not Found"}]}`))
+		}
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
+	return &calls
+}
+
 // reservedReasonBytes is the union of every version's reason bytes that change
 // client state instead of showing a notice. Sourced from
 // docs/tasks/task-206-cash-shop-coupon-codes/derivation.md:
@@ -771,5 +897,227 @@ func TestCouponFailedUnknownErrorDoesNotLogAtErrorLevel(t *testing.T) {
 		if strings.Contains(e.Message, "will likely cause a client crash") {
 			t.Errorf("UNKNOWN_ERROR must not fall through ResolveCode's generic crash-warning fallback, got: %q", e.Message)
 		}
+	}
+}
+
+// TestPurchaseSuccessWithPendingNameChangeCashIdIsNonZero is the regression
+// gate for the whole defect task-227 exists to fix: a name-change purchase's
+// success announcement must carry the resolved asset's REAL cash serial, not
+// the CashId=0 the pre-task-38 handler fabricated.
+func TestPurchaseSuccessWithPendingNameChangeCashIdIsNonZero(t *testing.T) {
+	env := newConsumerEnv(t)
+	assetId := uint32(601)
+	env.seedAsset(env.compartment, assetId)
+	txId := uuid.New()
+	pendingChangeFixtureServer(t, testCharacterId, []pendingChangeRecordFixture{
+		{id: txId.String(), typ: pendingchange.TypeNameChange, status: pendingchange.StatusPending},
+	})
+
+	handleStatusEventPurchase(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.PurchaseEventBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypePurchase,
+		Body: cashshop2.PurchaseEventBody{
+			CompartmentId: env.compartment,
+			AssetId:       assetId,
+			TransactionId: txId,
+		},
+	})
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	body := env.decodeNameChangeBuyDone(t)
+	if body.Mode() != env.modeFor(cashpkt.CashShopOperationNameChangeBuyDone) {
+		t.Errorf("mode = %d, want the NAME_CHANGE_BUY_DONE mode %d", body.Mode(), env.modeFor(cashpkt.CashShopOperationNameChangeBuyDone))
+	}
+	if body.Item().CashId == 0 {
+		t.Fatal("CashId = 0 -- this is the exact regression this phase exists to fix: the client cannot bind the purchased item without the asset's real cash serial")
+	}
+	if body.Item().CashId != 9001 {
+		t.Errorf("CashId = %d, want the seeded asset's real cash id 9001", body.Item().CashId)
+	}
+}
+
+// TestPurchaseSuccessWithPendingWorldTransferCashIdIsNonZero mirrors the
+// name-change regression gate for the world-transfer arm.
+func TestPurchaseSuccessWithPendingWorldTransferCashIdIsNonZero(t *testing.T) {
+	env := newConsumerEnv(t)
+	assetId := uint32(602)
+	env.seedAsset(env.compartment, assetId)
+	txId := uuid.New()
+	pendingChangeFixtureServer(t, testCharacterId, []pendingChangeRecordFixture{
+		{id: txId.String(), typ: pendingchange.TypeWorldTransfer, status: pendingchange.StatusPending},
+	})
+
+	handleStatusEventPurchase(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.PurchaseEventBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypePurchase,
+		Body: cashshop2.PurchaseEventBody{
+			CompartmentId: env.compartment,
+			AssetId:       assetId,
+			TransactionId: txId,
+		},
+	})
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	body := env.decodeTransferWorldDone(t)
+	if body.Mode() != env.modeFor(cashpkt.CashShopOperationTransferWorldDone) {
+		t.Errorf("mode = %d, want the TRANSFER_WORLD_SUCCESS mode %d", body.Mode(), env.modeFor(cashpkt.CashShopOperationTransferWorldDone))
+	}
+	if body.Item().CashId == 0 {
+		t.Fatal("CashId = 0 -- this is the exact regression this phase exists to fix")
+	}
+}
+
+// TestPurchaseSuccessUnrelatedBuyTakesPreExistingPath pins the concurrency
+// case the old code (keyed only on CharacterId) could not tell apart: a
+// purchase whose TransactionId is the zero UUID (every ordinary buy) must
+// take the generic PURCHASE_SUCCESS path, never a name-change/world-transfer
+// DONE arm. No CHARACTERS_SERVICE_URL fixture is stood up here at all --
+// resolvePendingChange must short-circuit on the zero id without making the
+// remote call, or this test would fail hard on an unreachable URL.
+func TestPurchaseSuccessUnrelatedBuyTakesPreExistingPath(t *testing.T) {
+	env := newConsumerEnv(t)
+	assetId := uint32(603)
+	env.seedAsset(env.compartment, assetId)
+
+	handleStatusEventPurchase(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.PurchaseEventBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypePurchase,
+		Body: cashshop2.PurchaseEventBody{
+			CompartmentId: env.compartment,
+			AssetId:       assetId,
+			TransactionId: uuid.Nil,
+		},
+	})
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	body := env.decodeCashInventoryPurchaseSuccess(t)
+	if body.Mode() != env.modeFor(cashpkt.CashShopOperationPurchaseSuccess) {
+		t.Errorf("mode = %d, want the generic PURCHASE_SUCCESS mode %d -- an unrelated buy must not take a name-change/world-transfer DONE arm", body.Mode(), env.modeFor(cashpkt.CashShopOperationPurchaseSuccess))
+	}
+}
+
+// TestErrorWithPendingNameChangeCancelsRecordAndAnswersPinkText pins Step
+// 1(c) for the name-change arm: an error event whose TransactionId resolves
+// to a PENDING record releases it via the existing self-scoped cancel path
+// and answers the client -- name-change has no dedicated failure arm, so it
+// falls back to pink text, mirroring the synchronous rejection route
+// (socket/handler/cash_shop_operation.go's announceCashShopRejection).
+//
+// The call list asserts the "no refund minted" absence check as far as the
+// CHANNEL side can prove it: exactly one GET (resolve) and one POST
+// (cancel), nothing else -- the channel never mints anything itself, so a
+// call graph bigger than that would be the first sign of a spurious grant.
+// Refund-minting itself is atlas-character's Resolve() (HasAsset()-gated)
+// and is outside this task's file inventory.
+func TestErrorWithPendingNameChangeCancelsRecordAndAnswersPinkText(t *testing.T) {
+	env := newConsumerEnv(t)
+	txId := uuid.New()
+	calls := pendingChangeFixtureServer(t, testCharacterId, []pendingChangeRecordFixture{
+		{id: txId.String(), typ: pendingchange.TypeNameChange, status: pendingchange.StatusPending},
+	})
+
+	handleStatusEventError(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.ErrorEventBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypeError,
+		Body: cashshop2.ErrorEventBody{
+			Error:         "NOT_ENOUGH_CASH",
+			TransactionId: txId,
+		},
+	})
+
+	wantCalls := []string{
+		fmt.Sprintf("GET /characters/%d/pending-changes", testCharacterId),
+		fmt.Sprintf("POST /characters/%d/pending-changes/cancel", testCharacterId),
+	}
+	if !reflect.DeepEqual(*calls, wantCalls) {
+		t.Fatalf("calls = %v, want exactly %v -- the channel side must release the record and mint nothing else", *calls, wantCalls)
+	}
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{chatpkt.WorldMessageWriter}) {
+		t.Fatalf("announced %v, want exactly [%s] -- name-change has no dedicated failure arm", got, chatpkt.WorldMessageWriter)
+	}
+	a := env.lastAnnounced()
+	m := chatpkt.WorldMessageSimple{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(env.logger, env.ctx)(&r, nil)
+	if m.Mode() != env.modeFor("POP_UP") {
+		t.Errorf("mode = %d, want resolved POP_UP mode %d", m.Mode(), env.modeFor("POP_UP"))
+	}
+	if !strings.Contains(m.Message(), "name change") {
+		t.Errorf("message = %q, want it to mention the name change request", m.Message())
+	}
+}
+
+// TestErrorWithPendingWorldTransferCancelsRecordAndAnswersFailedArm mirrors
+// the name-change case for world-transfer, which DOES have a dedicated
+// TRANSFER_WORLD_FAILED arm and must use it (not the generic
+// INVENTORY_CAPACITY_INCREASE_FAILED fallback).
+func TestErrorWithPendingWorldTransferCancelsRecordAndAnswersFailedArm(t *testing.T) {
+	env := newConsumerEnv(t)
+	txId := uuid.New()
+	calls := pendingChangeFixtureServer(t, testCharacterId, []pendingChangeRecordFixture{
+		{id: txId.String(), typ: pendingchange.TypeWorldTransfer, status: pendingchange.StatusPending},
+	})
+
+	handleStatusEventError(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.ErrorEventBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypeError,
+		Body: cashshop2.ErrorEventBody{
+			Error:         "WORLD_TRANSFER_UNAVAILABLE",
+			TransactionId: txId,
+		},
+	})
+
+	wantCalls := []string{
+		fmt.Sprintf("GET /characters/%d/pending-changes", testCharacterId),
+		fmt.Sprintf("POST /characters/%d/pending-changes/cancel", testCharacterId),
+	}
+	if !reflect.DeepEqual(*calls, wantCalls) {
+		t.Fatalf("calls = %v, want exactly %v -- the channel side must release the record and mint nothing else", *calls, wantCalls)
+	}
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	body := env.decodeTransferWorldFailed(t)
+	if body.Mode() != env.modeFor(cashpkt.CashShopOperationTransferWorldFailed) {
+		t.Errorf("mode = %d, want the TRANSFER_WORLD_FAILED mode %d, not the generic capacity-increase-failed fallback", body.Mode(), env.modeFor(cashpkt.CashShopOperationTransferWorldFailed))
+	}
+	if body.Mode() == env.modeFor(cashpkt.CashShopOperationInventoryCapacityIncreaseFailed) {
+		t.Errorf("mode = %d collides with the generic capacity-increase-failed fallback", body.Mode())
+	}
+	if body.ErrorCode() != env.errorByteFor("WORLD_TRANSFER_UNAVAILABLE") {
+		t.Errorf("errorCode = %d, want %d", body.ErrorCode(), env.errorByteFor("WORLD_TRANSFER_UNAVAILABLE"))
+	}
+}
+
+// TestErrorUnrelatedFailureTakesPreExistingPath pins that an ordinary
+// purchase failure (zero TransactionId) still takes the generic
+// INVENTORY_CAPACITY_INCREASE_FAILED fallback unchanged, and never touches
+// atlas-character at all -- no CHARACTERS_SERVICE_URL fixture is stood up.
+func TestErrorUnrelatedFailureTakesPreExistingPath(t *testing.T) {
+	env := newConsumerEnv(t)
+
+	handleStatusEventError(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.ErrorEventBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypeError,
+		Body: cashshop2.ErrorEventBody{
+			Error:         "UNKNOWN_ERROR",
+			TransactionId: uuid.Nil,
+		},
+	})
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	if got := env.lastAnnouncedMode(); got != env.modeFor(cashpkt.CashShopOperationInventoryCapacityIncreaseFailed) {
+		t.Errorf("mode = %d, want the generic capacity-increase-failed mode %d", got, env.modeFor(cashpkt.CashShopOperationInventoryCapacityIncreaseFailed))
 	}
 }

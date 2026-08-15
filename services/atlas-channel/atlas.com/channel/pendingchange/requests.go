@@ -24,3 +24,12 @@ func requestCreateUrl(characterId uint32) string {
 func requestCancelUrl(characterId uint32) string {
 	return fmt.Sprintf(getBaseRequest()+Resource+"/cancel", characterId)
 }
+
+// requestByCharacterId lists a character's pending-change records (task-227
+// Task 39): the purchase-outcome consumer resolves a cash event's
+// TransactionId to a PENDING record via this GET rather than any new
+// atlas-character route -- GET /characters/{characterId}/pending-changes
+// already exists (pending_change/resource.go's handleGetPendingChanges).
+func requestByCharacterId(characterId uint32) requests.Request[[]RestModel] {
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
+}

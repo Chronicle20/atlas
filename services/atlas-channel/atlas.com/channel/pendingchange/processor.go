@@ -7,12 +7,20 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 const (
 	TypeNameChange    = "NAME_CHANGE"
 	TypeWorldTransfer = "WORLD_TRANSFER"
 )
+
+// StatusPending mirrors atlas-character's pending_change.StatusPending. Only
+// this one status is meaningful to atlas-channel today: the purchase-outcome
+// consumer (task-227 task 39) uses it to confirm a TransactionId match is
+// still live, not an already-resolved record from the list.
+const StatusPending = "PENDING"
 
 // Processor defines the operations atlas-channel uses to create pending
 // changes (name change / world transfer) in atlas-character. It is
@@ -23,6 +31,7 @@ type Processor interface {
 	RequestNameChange(characterId uint32, requestedName string, assetId uint32) (RestModel, error)
 	RequestWorldTransfer(characterId uint32, destinationWorldId world.Id, assetId uint32) (RestModel, error)
 	CancelPendingChange(characterId uint32, changeType string) (RestModel, error)
+	GetByCharacterId(characterId uint32) ([]RestModel, error)
 }
 
 type ProcessorImpl struct {
@@ -32,6 +41,21 @@ type ProcessorImpl struct {
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{l: l, ctx: ctx}
+}
+
+// GetByCharacterId lists a character's pending-change records (task-227 Task
+// 39). It is how the purchase-outcome consumer resolves an event's
+// TransactionId to a PENDING record -- by listing and matching Id, since
+// atlas-character exposes no GET-by-id-alone route for this resource today.
+func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]RestModel, error) {
+	return requests.SliceProvider[RestModel, RestModel](p.l, p.ctx)(requestByCharacterId(characterId), identityRestModel, model.Filters[RestModel]())()
+}
+
+// identityRestModel satisfies model.Transformer[RestModel, RestModel]: this
+// resource has no separate domain Model type (unlike e.g.
+// cashshop/inventory/asset), so the wire shape is the return shape.
+func identityRestModel(r RestModel) (RestModel, error) {
+	return r, nil
 }
 
 func (p *ProcessorImpl) RequestNameChange(characterId uint32, requestedName string, assetId uint32) (RestModel, error) {

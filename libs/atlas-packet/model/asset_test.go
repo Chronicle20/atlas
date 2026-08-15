@@ -372,6 +372,12 @@ func TestAssetPetSerialNumber(t *testing.T) {
 //  1. dateDead comes from the pet's own life clock (SetPetDeadDate), never
 //     from the cash item's Expiration.
 //  2. an unset dead date encodes as 0, not as the -1 sentinel.
+//  3. a dead date still in the future encodes as its own MsTime (the client
+//     renders "Water of life dries up on <date>").
+//  4. a dead date that has ALREADY ELAPSED encodes as PetDriedUpFileTime, not
+//     as its own MsTime. The client compares dateDead against the threshold,
+//     never against the current time, so an elapsed date sent literally reads
+//     as alive and the pet stays summonable.
 func TestAssetPetCashItemDeadDate(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := test.CreateContext("GMS", 83, 1)
@@ -390,7 +396,11 @@ func TestAssetPetCashItemDeadDate(t *testing.T) {
 	}
 
 	itemExpiration := time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
-	petDeath := time.Date(2026, 11, 6, 0, 7, 41, 0, time.UTC)
+	// Relative to now, not absolute: which branch a stored date takes depends
+	// on the clock, so a fixed literal would silently change meaning the day it
+	// elapsed.
+	petDeath := time.Now().Add(720 * time.Hour)
+	elapsedPetDeath := time.Now().Add(-1 * time.Hour)
 
 	base := NewAsset(true, 0, 5000012, itemExpiration).
 		SetCashId(123).
@@ -422,6 +432,21 @@ func TestAssetPetCashItemDeadDate(t *testing.T) {
 	}
 	if got >= permanentThreshold {
 		t.Fatalf("dateDead = %d reads as dried up (>= %d)", got, permanentThreshold)
+	}
+
+	// 3. An elapsed dead date is the dried-up STATE, and only the threshold
+	// expresses it. Sending the elapsed date literally is the regression: it
+	// sits below the threshold, so the client reads the doll as a live pet.
+	elapsed := base.SetPetDeadDate(elapsedPetDeath)
+	driedUp := read(elapsed.Encode(l, ctx)(map[string]interface{}{}))
+	if driedUp != PetDriedUpFileTime {
+		t.Fatalf("elapsed dateDead = %d, want the dried-up marker %d", driedUp, PetDriedUpFileTime)
+	}
+	if driedUp < permanentThreshold {
+		t.Fatalf("elapsed dateDead = %d reads as alive (< %d)", driedUp, permanentThreshold)
+	}
+	if driedUp == MsTime(elapsedPetDeath) {
+		t.Fatal("elapsed dateDead must not encode as its own MsTime; the client would read the pet as alive")
 	}
 }
 

@@ -19,9 +19,10 @@ import (
 
 // testEntity is a SQLite-compatible version of Entity for testing
 type testEntity struct {
-	Id   uuid.UUID       `gorm:"type:text;primaryKey"`
-	Type ServiceType     `gorm:"type:varchar"`
-	Data json.RawMessage `gorm:"type:text;not null"`
+	Id          uuid.UUID       `gorm:"type:text;primaryKey"`
+	Type        ServiceType     `gorm:"type:varchar"`
+	Data        json.RawMessage `gorm:"type:text;not null"`
+	Environment string          `gorm:"not null;default:''"`
 }
 
 func (testEntity) TableName() string {

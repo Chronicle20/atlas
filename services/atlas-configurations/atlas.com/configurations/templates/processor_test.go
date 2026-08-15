@@ -25,6 +25,7 @@ type testEntity struct {
 	MajorVersion uint16          `gorm:"not null"`
 	MinorVersion uint16          `gorm:"not null"`
 	Data         json.RawMessage `gorm:"type:text;not null"`
+	Environment  string          `gorm:"not null;default:''"`
 }
 
 func (testEntity) TableName() string {

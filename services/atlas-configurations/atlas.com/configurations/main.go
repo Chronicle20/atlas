@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-configurations/environmentcol"
 	"atlas-configurations/seeder"
 	"atlas-configurations/services"
 	"atlas-configurations/templates"
@@ -43,7 +44,10 @@ func main() {
 	rt := service.Bootstrap(serviceName)
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(templates.Migration, tenants.Migration, services.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(
+		templates.Migration, tenants.Migration, services.Migration, outboxlib.Migration,
+		environmentcol.Migration, // must run last: it backfills the columns the three above create
+	))
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {
 		if database.IsTransientConnectionError(err) {

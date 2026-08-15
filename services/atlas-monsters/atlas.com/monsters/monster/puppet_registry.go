@@ -29,18 +29,22 @@ type storedPuppet struct {
 
 // PuppetRegistry tracks the live puppets per field so the monster controller
 // picker can prefer a nearby puppet's owner. It mirrors the monster Registry's
-// reg + mapIdx pairing: a value Registry keyed by (field, owner) for the
-// {ownerCharacterId, x, y} payload, plus a per-field SET index of owner ids so
-// puppets can be enumerated and removed by owner.
+// reg + mapIdx pairing: a tenant-scoped value Registry keyed by (field, owner)
+// for the {ownerCharacterId, x, y} payload, plus a tenant-scoped per-field SET
+// index of owner ids so puppets can be enumerated and removed by owner. Clear
+// additionally keeps a bare pair (scan/scanFieldIdx) purely for the
+// test-only full-namespace wipe — see the Registry.scan field comment in
+// registry.go for why (no tenant-scoped equivalent for a blanket wipe exists).
 type PuppetRegistry struct {
-	// reg backs the puppet payload store. namespace "monster-puppet", identity
-	// keyFn, so the stored key is
-	// atlas:monster-puppet:<tenantId>:<world>:<channel>:<map>:<instance>:<owner>.
-	reg *atlasredis.Registry[string, storedPuppet]
-	// fieldIdx backs the per-field membership SET of owner character ids.
-	// namespace "monster-puppet-field", identity keyFn, so the SET key is
-	// atlas:monster-puppet-field:<tenantId>:<world>:<channel>:<map>:<instance>.
-	fieldIdx *atlasredis.KeyedSet[string]
+	// reg backs the puppet payload store, tenant-scoped: the stored key is
+	// atlas:monster-puppet:<tenantId>:<region>:<major>.<minor>:<world>:<channel>:<map>:<instance>:<owner>.
+	reg *atlasredis.TenantRegistry[string, storedPuppet]
+	// fieldIdx backs the per-field membership SET of owner character ids,
+	// tenant-scoped: the SET key is
+	// atlas:monster-puppet-field:<tenantId>:<region>:<major>.<minor>:<world>:<channel>:<map>:<instance>.
+	fieldIdx *atlasredis.TenantKeyedSet[string]
+	scan     *atlasredis.Registry[string, storedPuppet]
+	scanIdx  *atlasredis.KeyedSet[string]
 }
 
 var (
@@ -51,8 +55,10 @@ var (
 func InitPuppetRegistry(rc *goredis.Client) {
 	puppetOnce.Do(func() {
 		puppetRegistry = &PuppetRegistry{
-			reg:      atlasredis.NewRegistry[string, storedPuppet](rc, "monster-puppet", func(s string) string { return s }),
-			fieldIdx: atlasredis.NewKeyedSet[string](rc, "monster-puppet-field", func(s string) string { return s }),
+			reg:      atlasredis.NewTenantRegistry[string, storedPuppet](rc, "monster-puppet", func(s string) string { return s }),
+			fieldIdx: atlasredis.NewTenantKeyedSet[string](rc, "monster-puppet-field", func(s string) string { return s }),
+			scan:     atlasredis.NewRegistry[string, storedPuppet](rc, "monster-puppet", func(s string) string { return s }),
+			scanIdx:  atlasredis.NewKeyedSet[string](rc, "monster-puppet-field", func(s string) string { return s }),
 		}
 	})
 }
@@ -61,36 +67,37 @@ func GetPuppetRegistry() *PuppetRegistry {
 	return puppetRegistry
 }
 
-// puppetFieldSuffix reproduces the per-field SET key tail:
-// <tenantId>:<world>:<channel>:<map>:<instance>.
-func puppetFieldSuffix(t tenant.Model, f field.Model) string {
-	return fmt.Sprintf("%s:%d:%d:%d:%s", t.Id().String(), byte(f.WorldId()), byte(f.ChannelId()), uint32(f.MapId()), f.Instance().String())
+// puppetFieldKey is the tenant-scoped field-index SET's entity key: the
+// tenant segment is supplied by TenantKeyedSet, so this carries only the
+// field coordinates: <world>:<channel>:<map>:<instance>.
+func puppetFieldKey(f field.Model) string {
+	return fmt.Sprintf("%d:%d:%d:%s", byte(f.WorldId()), byte(f.ChannelId()), uint32(f.MapId()), f.Instance().String())
 }
 
-// puppetSuffix reproduces the per-(field, owner) payload key tail.
-func puppetSuffix(t tenant.Model, f field.Model, ownerCharacterId uint32) string {
-	return fmt.Sprintf("%s:%d", puppetFieldSuffix(t, f), ownerCharacterId)
+// puppetKey is the tenant-scoped payload Registry's entity key.
+func puppetKey(f field.Model, ownerCharacterId uint32) string {
+	return fmt.Sprintf("%s:%d", puppetFieldKey(f), ownerCharacterId)
 }
 
 // Add records (or replaces) the puppet for ownerCharacterId in field f at (x,y).
 func (r *PuppetRegistry) Add(ctx context.Context, t tenant.Model, f field.Model, ownerCharacterId uint32, x int16, y int16) {
-	_ = r.reg.Put(ctx, puppetSuffix(t, f, ownerCharacterId), storedPuppet{
+	_ = r.reg.Put(ctx, t, puppetKey(f, ownerCharacterId), storedPuppet{
 		OwnerCharacterId: ownerCharacterId,
 		X:                x,
 		Y:                y,
 	})
-	_ = r.fieldIdx.Add(ctx, puppetFieldSuffix(t, f), strconv.FormatUint(uint64(ownerCharacterId), 10))
+	_ = r.fieldIdx.Add(ctx, t, puppetFieldKey(f), strconv.FormatUint(uint64(ownerCharacterId), 10))
 }
 
 // Remove deletes the puppet for ownerCharacterId in field f.
 func (r *PuppetRegistry) Remove(ctx context.Context, t tenant.Model, f field.Model, ownerCharacterId uint32) {
-	_ = r.reg.Remove(ctx, puppetSuffix(t, f, ownerCharacterId))
-	_ = r.fieldIdx.Remove(ctx, puppetFieldSuffix(t, f), strconv.FormatUint(uint64(ownerCharacterId), 10))
+	_ = r.reg.Remove(ctx, t, puppetKey(f, ownerCharacterId))
+	_ = r.fieldIdx.Remove(ctx, t, puppetFieldKey(f), strconv.FormatUint(uint64(ownerCharacterId), 10))
 }
 
 // GetInField returns every puppet currently registered in field f.
 func (r *PuppetRegistry) GetInField(ctx context.Context, t tenant.Model, f field.Model) []storedPuppet {
-	members, err := r.fieldIdx.Members(ctx, puppetFieldSuffix(t, f))
+	members, err := r.fieldIdx.Members(ctx, t, puppetFieldKey(f))
 	if err != nil || len(members) == 0 {
 		return nil
 	}
@@ -100,7 +107,7 @@ func (r *PuppetRegistry) GetInField(ctx context.Context, t tenant.Model, f field
 		if perr != nil {
 			continue
 		}
-		sp, gerr := r.reg.Get(ctx, puppetSuffix(t, f, uint32(ownerId)))
+		sp, gerr := r.reg.Get(ctx, t, puppetKey(f, uint32(ownerId)))
 		if gerr != nil {
 			continue
 		}
@@ -130,8 +137,9 @@ func (r *PuppetRegistry) VicinityOwner(ctx context.Context, t tenant.Model, f fi
 	return best, found
 }
 
-// Clear removes all puppet state (payloads + field indexes).
+// Clear removes all puppet state (payloads + field indexes) across every
+// tenant. Test-only; see the Registry.scan field comment in registry.go.
 func (r *PuppetRegistry) Clear(ctx context.Context) {
-	_, _ = r.reg.Clear(ctx)
-	_, _ = r.fieldIdx.ClearAll(ctx)
+	_, _ = r.scan.Clear(ctx)
+	_, _ = r.scanIdx.ClearAll(ctx)
 }

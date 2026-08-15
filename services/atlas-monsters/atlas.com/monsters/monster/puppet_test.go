@@ -90,6 +90,29 @@ func TestRemovePuppetClearsBias(t *testing.T) {
 	}
 }
 
+// TestPuppetRegistryIsTenantScoped asserts both puppet namespaces carry the
+// tenant: "monster-puppet" (the payload) and "monster-puppet-field" (the
+// per-field owner-id SET). t1 places a puppet for owner 2 in field f; t2 must
+// see nothing in the identical field for the identical owner.
+func TestPuppetRegistryIsTenantScoped(t *testing.T) {
+	pr := GetPuppetRegistry()
+	ctx := context.Background()
+	pr.Clear(ctx)
+
+	t1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	t2, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	pr.Add(ctx, t1, f, 2, 110, 110)
+
+	if got := pr.GetInField(ctx, t2, f); len(got) != 0 {
+		t.Fatalf("tenant 2 saw %d of tenant 1's puppets in the same field, want 0", len(got))
+	}
+	if owner, found := pr.VicinityOwner(ctx, t2, f, 100, 100); found {
+		t.Fatalf("tenant 2 resolved tenant 1's puppet owner [%d] via VicinityOwner", owner)
+	}
+}
+
 // TestPuppetOutOfVicinityNoBias verifies a puppet beyond the vicinity threshold
 // does not bias the pick.
 func TestPuppetOutOfVicinityNoBias(t *testing.T) {

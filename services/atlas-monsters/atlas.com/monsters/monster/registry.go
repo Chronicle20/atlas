@@ -262,15 +262,26 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 var errMonsterNotFound = errors.New("monster not found")
 
 type Registry struct {
-	// reg backs the monster store. namespace "monster", identity keyFn, so the
-	// stored key is atlas:monster:<tenantId>:<uniqueId> — byte-identical to the
-	// pre-migration fmt.Sprintf("%s:monster:%s:%d", ...) shape.
-	reg *atlasredis.Registry[string, storedMonster]
-	// mapIdx backs the per-field membership SET. namespace "monster-map",
-	// identity keyFn, so the SET key is
-	// atlas:monster-map:<tenantId>:<world>:<channel>:<map>:<instance> —
-	// byte-identical to the pre-migration shape.
-	mapIdx *atlasredis.KeyedSet[string]
+	// reg backs the monster store via the tenant-scoped API (D7): the stored
+	// key is atlas:monster:<tenantId>:<region>:<major>.<minor>:<uniqueId>.
+	reg *atlasredis.TenantRegistry[uint32, storedMonster]
+	// mapIdx backs the per-field membership SET, tenant-scoped: the SET key is
+	// atlas:monster-map:<tenantId>:<region>:<major>.<minor>:<world>:<channel>:<map>:<instance>.
+	mapIdx *atlasredis.TenantKeyedSet[string]
+	// scan and scanMapIdx are bare (non-tenant-scoped) registries pointed at
+	// the SAME client/namespace as reg/mapIdx. They observe exactly the keys
+	// reg/mapIdx write: tenantEntityKey(ns, t, suffix) joins
+	// [prefix, ns, TenantKey(t), suffix] with ":", and a bare Registry/KeyedSet
+	// with an identity keyFn fed the pre-joined "TenantKey(t):suffix" string
+	// produces the identical final key. They exist ONLY for the two operations
+	// the tenant-scoped API has no equivalent for: GetMonsters() (the periodic
+	// sweep tasks have no tenant to loop over — they need every tenant with
+	// live monster data) and Clear()/ClaimMonster's atomic delete-if-exists
+	// (Clear is a test-only full-namespace wipe; TenantRegistry.Clear requires
+	// a specific tenant). Do not reach for these where a tenant.Model is
+	// already in hand — use reg/mapIdx instead.
+	scan       *atlasredis.Registry[string, storedMonster]
+	scanMapIdx *atlasredis.KeyedSet[string]
 }
 
 var (
@@ -281,8 +292,10 @@ var (
 func InitMonsterRegistry(rc *goredis.Client) {
 	once.Do(func() {
 		registry = &Registry{
-			reg:    atlasredis.NewRegistry[string, storedMonster](rc, "monster", func(s string) string { return s }),
-			mapIdx: atlasredis.NewKeyedSet[string](rc, "monster-map", func(s string) string { return s }),
+			reg:        atlasredis.NewTenantRegistry[uint32, storedMonster](rc, "monster", func(id uint32) string { return strconv.FormatUint(uint64(id), 10) }),
+			mapIdx:     atlasredis.NewTenantKeyedSet[string](rc, "monster-map", func(s string) string { return s }),
+			scan:       atlasredis.NewRegistry[string, storedMonster](rc, "monster", func(s string) string { return s }),
+			scanMapIdx: atlasredis.NewKeyedSet[string](rc, "monster-map", func(s string) string { return s }),
 		}
 	})
 }
@@ -291,40 +304,40 @@ func GetMonsterRegistry() *Registry {
 	return registry
 }
 
-// monsterSuffix reproduces the entity-key tail of the legacy monster key. The
-// full Redis key is namespacedKey("monster", monsterSuffix(t, uniqueId)) =
-// atlas:monster:<tenantId>:<uniqueId> — byte-identical to the old shape.
-func monsterSuffix(t tenant.Model, uniqueId uint32) string {
-	return fmt.Sprintf("%s:%d", t.Id().String(), uniqueId)
-}
-
-// monsterKey returns the full Redis key for a monster. Retained for tests that
-// seed raw blobs into Redis; equals namespacedKey("monster", monsterSuffix(...)).
+// monsterKey returns the full Redis key for a monster under the tenant-scoped
+// layout: atlas:monster:<tenantId>:<region>:<major>.<minor>:<uniqueId>.
+// Retained for tests that seed raw blobs directly into Redis.
 func monsterKey(t tenant.Model, uniqueId uint32) string {
-	return fmt.Sprintf("%s:monster:%s", atlasredis.KeyPrefix(), monsterSuffix(t, uniqueId))
+	return fmt.Sprintf("%s:monster:%s:%d", atlasredis.KeyPrefix(), atlasredis.TenantKey(t), uniqueId)
 }
 
-// mapIndexSuffix reproduces the entity-key tail of the legacy map-index SET key.
-// The full Redis key is namespacedKey("monster-map", mapIndexSuffix(...)) =
-// atlas:monster-map:<tenantId>:<world>:<channel>:<map>:<instance>.
-func mapIndexSuffix(t tenant.Model, worldId byte, channelId byte, mapId uint32, instance string) string {
-	return fmt.Sprintf("%s:%d:%d:%d:%s", t.Id().String(), worldId, channelId, mapId, instance)
+// claimKey reproduces reg's entity key for uniqueId under tenant t, for use
+// with scan.RemoveExisting (see the Registry.scan field comment).
+func claimKey(t tenant.Model, uniqueId uint32) string {
+	return atlasredis.TenantKey(t) + ":" + strconv.FormatUint(uint64(uniqueId), 10)
 }
 
-func mapIndexSuffixFromField(t tenant.Model, f field.Model) string {
-	return mapIndexSuffix(t, byte(f.WorldId()), byte(f.ChannelId()), uint32(f.MapId()), f.Instance().String())
+// mapIndexKey is the tenant-scoped map-index SET's entity key: the tenant
+// segment is supplied by TenantKeyedSet, so this carries only the field
+// coordinates.
+func mapIndexKey(worldId byte, channelId byte, mapId uint32, instance string) string {
+	return fmt.Sprintf("%d:%d:%d:%s", worldId, channelId, mapId, instance)
 }
 
-func mapIndexSuffixFromModel(t tenant.Model, m Model) string {
-	return mapIndexSuffix(t, byte(m.worldId), byte(m.channelId), uint32(m.mapId), m.instance.String())
+func mapIndexKeyFromField(f field.Model) string {
+	return mapIndexKey(byte(f.WorldId()), byte(f.ChannelId()), uint32(f.MapId()), f.Instance().String())
+}
+
+func mapIndexKeyFromModel(m Model) string {
+	return mapIndexKey(byte(m.worldId), byte(m.channelId), uint32(m.mapId), m.instance.String())
 }
 
 func (r *Registry) storeMonster(ctx context.Context, t tenant.Model, m Model) error {
-	return r.reg.Put(ctx, monsterSuffix(t, m.uniqueId), toStored(t, m))
+	return r.reg.Put(ctx, t, m.uniqueId, toStored(t, m))
 }
 
 func (r *Registry) loadMonster(ctx context.Context, t tenant.Model, uniqueId uint32) (Model, error) {
-	sm, err := r.reg.Get(ctx, monsterSuffix(t, uniqueId))
+	sm, err := r.reg.Get(ctx, t, uniqueId)
 	if errors.Is(err, atlasredis.ErrNotFound) {
 		return Model{}, errMonsterNotFound
 	}
@@ -339,7 +352,7 @@ func (r *Registry) loadMonster(ctx context.Context, t tenant.Model, uniqueId uin
 // does Watch+GET+fn+TxPipelined(SET) with retry on contention). fn must be pure
 // in its observable effects — it may run multiple times under retry.
 func (r *Registry) atomicUpdate(ctx context.Context, t tenant.Model, uniqueId uint32, fn func(m Model) Model) (Model, error) {
-	sm, err := r.reg.Update(ctx, monsterSuffix(t, uniqueId), func(cur storedMonster) storedMonster {
+	sm, err := r.reg.Update(ctx, t, uniqueId, func(cur storedMonster) storedMonster {
 		_, m, derr := fromStored(cur)
 		if derr != nil {
 			// Cannot decode current state; leave it untouched. The decode error
@@ -363,8 +376,8 @@ func (r *Registry) CreateMonster(ctx context.Context, t tenant.Model, f field.Mo
 	m := NewMonster(f, uniqueId, monsterId, x, y, fh, stance, team, hp, mp)
 
 	// The old pipeline issued Set+SAdd ignoring errors; sequential calls match.
-	_ = r.reg.Put(ctx, monsterSuffix(t, uniqueId), toStored(t, m))
-	_ = r.mapIdx.Add(ctx, mapIndexSuffixFromField(t, f), strconv.FormatUint(uint64(uniqueId), 10))
+	_ = r.reg.Put(ctx, t, uniqueId, toStored(t, m))
+	_ = r.mapIdx.Add(ctx, t, mapIndexKeyFromField(f), strconv.FormatUint(uint64(uniqueId), 10))
 
 	return m
 }
@@ -375,7 +388,7 @@ func (r *Registry) GetMonster(tenant tenant.Model, uniqueId uint32) (Model, erro
 
 func (r *Registry) GetMonstersInMap(tenant tenant.Model, f field.Model) []Model {
 	ctx := context.Background()
-	members, err := r.mapIdx.Members(ctx, mapIndexSuffixFromField(tenant, f))
+	members, err := r.mapIdx.Members(ctx, tenant, mapIndexKeyFromField(f))
 	if err != nil || len(members) == 0 {
 		return nil
 	}
@@ -386,7 +399,7 @@ func (r *Registry) GetMonstersInMap(tenant tenant.Model, f field.Model) []Model 
 		if perr != nil {
 			continue
 		}
-		sm, gerr := r.reg.Get(ctx, monsterSuffix(tenant, uint32(uid)))
+		sm, gerr := r.reg.Get(ctx, tenant, uint32(uid))
 		if gerr != nil {
 			continue
 		}
@@ -440,7 +453,7 @@ func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32
 	ctx := context.Background()
 
 	var wasFirstHit bool
-	sm, err := r.reg.Update(ctx, monsterSuffix(t, uniqueId), func(cur storedMonster) storedMonster {
+	sm, err := r.reg.Update(ctx, t, uniqueId, func(cur storedMonster) storedMonster {
 		hp := cur.Hp
 		// actual = hp - max(hp - damage, 0): clamp at 0, never below.
 		var actual uint32
@@ -510,7 +523,7 @@ func (r *Registry) ApplyRecovery(t tenant.Model, uniqueId uint32, hpRecovery, mp
 	ctx := context.Background()
 
 	var hpApplied, mpApplied bool
-	sm, err := r.reg.Update(ctx, monsterSuffix(t, uniqueId), func(cur storedMonster) storedMonster {
+	sm, err := r.reg.Update(ctx, t, uniqueId, func(cur storedMonster) storedMonster {
 		hpApplied = false
 		mpApplied = false
 
@@ -554,7 +567,7 @@ func (r *Registry) ApplyRecovery(t tenant.Model, uniqueId uint32, hpRecovery, mp
 }
 
 func (r *Registry) RemoveMonster(ctx context.Context, t tenant.Model, uniqueId uint32) (Model, error) {
-	sm, err := r.reg.Get(ctx, monsterSuffix(t, uniqueId))
+	sm, err := r.reg.Get(ctx, t, uniqueId)
 	if errors.Is(err, atlasredis.ErrNotFound) {
 		return Model{}, errMonsterNotFound
 	}
@@ -567,8 +580,8 @@ func (r *Registry) RemoveMonster(ctx context.Context, t tenant.Model, uniqueId u
 	}
 
 	// Old pipeline issued Del+SRem ignoring errors; sequential calls match.
-	_ = r.reg.Remove(ctx, monsterSuffix(t, uniqueId))
-	_ = r.mapIdx.Remove(ctx, mapIndexSuffixFromModel(t, m), strconv.FormatUint(uint64(uniqueId), 10))
+	_ = r.reg.Remove(ctx, t, uniqueId)
+	_ = r.mapIdx.Remove(ctx, t, mapIndexKeyFromModel(m), strconv.FormatUint(uint64(uniqueId), 10))
 
 	GetIdAllocator().Release(ctx, t, uniqueId)
 	return m, nil
@@ -584,7 +597,7 @@ func (r *Registry) RemoveMonster(ctx context.Context, t tenant.Model, uniqueId u
 // The map-index removal and id release run ONLY for the winner, so a loser
 // cannot recycle an id the winner still owns.
 func (r *Registry) ClaimMonster(ctx context.Context, t tenant.Model, uniqueId uint32) (Model, bool, error) {
-	sm, err := r.reg.Get(ctx, monsterSuffix(t, uniqueId))
+	sm, err := r.reg.Get(ctx, t, uniqueId)
 	if errors.Is(err, atlasredis.ErrNotFound) {
 		return Model{}, false, nil
 	}
@@ -596,7 +609,7 @@ func (r *Registry) ClaimMonster(ctx context.Context, t tenant.Model, uniqueId ui
 		return Model{}, false, err
 	}
 
-	claimed, err := r.reg.RemoveExisting(ctx, monsterSuffix(t, uniqueId))
+	claimed, err := r.scan.RemoveExisting(ctx, claimKey(t, uniqueId))
 	if err != nil {
 		return Model{}, false, err
 	}
@@ -604,7 +617,7 @@ func (r *Registry) ClaimMonster(ctx context.Context, t tenant.Model, uniqueId ui
 		return Model{}, false, nil
 	}
 
-	_ = r.mapIdx.Remove(ctx, mapIndexSuffixFromModel(t, m), strconv.FormatUint(uint64(uniqueId), 10))
+	_ = r.mapIdx.Remove(ctx, t, mapIndexKeyFromModel(m), strconv.FormatUint(uint64(uniqueId), 10))
 	GetIdAllocator().Release(ctx, t, uniqueId)
 	return m, true, nil
 }
@@ -676,7 +689,7 @@ func (r *Registry) GetMonsters() map[tenant.Model][]Model {
 	ctx := context.Background()
 	result := make(map[tenant.Model][]Model)
 
-	all, err := r.reg.GetAll(ctx)
+	all, err := r.scan.GetAll(ctx)
 	if err != nil {
 		return result
 	}
@@ -691,8 +704,8 @@ func (r *Registry) GetMonsters() map[tenant.Model][]Model {
 }
 
 func (r *Registry) Clear(ctx context.Context) {
-	_, _ = r.reg.Clear(ctx)
-	_, _ = r.mapIdx.ClearAll(ctx)
+	_, _ = r.scan.Clear(ctx)
+	_, _ = r.scanMapIdx.ClearAll(ctx)
 }
 
 // DecaySummary is returned by DecayDamageEntries. AggroFlippedOff is true when
@@ -718,7 +731,7 @@ func (r *Registry) DecayDamageEntries(t tenant.Model, uniqueId uint32, nowMs int
 
 	var aggroFlippedOff bool
 	var controllerCharacterId uint32
-	sm, err := r.reg.Update(ctx, monsterSuffix(t, uniqueId), func(cur storedMonster) storedMonster {
+	sm, err := r.reg.Update(ctx, t, uniqueId, func(cur storedMonster) storedMonster {
 		aggroFlippedOff = false
 
 		kept := make([]storedDamageEntry, 0, len(cur.DamageEntries))
@@ -794,7 +807,7 @@ func (r *Registry) ClearDamageEntries(t tenant.Model, uniqueId uint32) (ClearSum
 
 	var aggroFlippedOff bool
 	var controllerCharacterId uint32
-	sm, err := r.reg.Update(ctx, monsterSuffix(t, uniqueId), func(cur storedMonster) storedMonster {
+	sm, err := r.reg.Update(ctx, t, uniqueId, func(cur storedMonster) storedMonster {
 		aggroFlippedOff = false
 
 		cur.DamageEntries = make([]storedDamageEntry, 0, len(cur.DamageEntries))

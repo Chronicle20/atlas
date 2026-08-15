@@ -1588,7 +1588,7 @@ func TestUseBasicAttack_HappyPath_DeductsMpAndRegistersCooldown(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewTenantRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -1633,7 +1633,7 @@ func TestUseBasicAttack_OnCooldown_Skips(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewTenantRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -1670,7 +1670,7 @@ func TestUseBasicAttack_InsufficientMp_Skips(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewTenantRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -1707,7 +1707,7 @@ func TestUseBasicAttack_NoAttackInfo_Skips(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewTenantRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -1741,7 +1741,7 @@ func TestUseBasicAttack_ZeroConMpAndZeroAttackAfter_NoOp(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewTenantRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -1778,7 +1778,7 @@ func TestUseBasicAttack_DeadMonster_Skips(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewTenantRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -2097,7 +2097,7 @@ func TestUseBasicAttack_Deduct_EmitsMpChanged(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewTenantRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -2147,7 +2147,7 @@ func TestUseBasicAttack_NoDeduct_NoMpChanged(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevAttackReg := attackCooldownReg
-	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
+	attackCooldownReg = &attackCooldownRegistry{reg: atlasredis.NewTenantRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s })}
 	defer func() { attackCooldownReg = prevAttackReg }()
 
 	prevHook := testInformationLookup
@@ -2184,7 +2184,7 @@ func TestUseSkill_Deduct_EmitsMpChanged(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevCooldown := cooldownReg
-	cooldownReg = &cooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-cooldown", func(s string) string { return s })}
+	cooldownReg = &cooldownRegistry{reg: atlasredis.NewTenantRegistry[string, int64](rc, "monster-cooldown", func(s string) string { return s })}
 	defer func() { cooldownReg = prevCooldown }()
 
 	// Skill 126 (Slow) maps to SkillCategoryDebuff; with inFieldFn returning
@@ -2249,7 +2249,7 @@ func TestUseSkill_ZeroMpCon_NoMpChanged(t *testing.T) {
 	defer mr.Close()
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	prevCooldown := cooldownReg
-	cooldownReg = &cooldownRegistry{reg: atlasredis.NewRegistry[string, int64](rc, "monster-cooldown", func(s string) string { return s })}
+	cooldownReg = &cooldownRegistry{reg: atlasredis.NewTenantRegistry[string, int64](rc, "monster-cooldown", func(s string) string { return s })}
 	defer func() { cooldownReg = prevCooldown }()
 
 	prevSkill := testMobSkillLookup

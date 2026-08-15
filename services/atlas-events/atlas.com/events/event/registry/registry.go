@@ -48,3 +48,8 @@ func reset() {
 	defer mu.Unlock()
 	handlers = map[string]Handler{}
 }
+
+// ResetForTest clears the registry. Production registers once at startup; this
+// exists so a package that resolves handlers can test both the found and
+// not-found branches.
+func ResetForTest() { reset() }

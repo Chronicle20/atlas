@@ -1,0 +1,10 @@
+{
+  "data": {
+    "attributes": {
+      "type": "ANNIVERSARY",
+      "name": "Anniversary",
+      "enabled": false,
+      "configuration": {}
+    }
+  }
+}

@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-guilds/guild"
+	"atlas-guilds/guild/member"
 	consumer2 "atlas-guilds/kafka/consumer"
 	character2 "atlas-guilds/kafka/message/character"
 	"context"
@@ -15,6 +16,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -37,6 +39,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterNameChanged(db)))); err != nil {
 				return err
 			}
 			return nil
@@ -87,5 +92,26 @@ func handleStatusEventLogout(db *gorm.DB) func(l logrus.FieldLogger, ctx context
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process logout for character [%d].", e.CharacterId)
 		}
+	}
+}
+
+func handleCharacterNameChanged(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.StatusEventNameChangedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventNameChangedBody]) {
+		if e.Type != character2.EventCharacterStatusTypeNameChanged {
+			return
+		}
+
+		err := member.NewProcessor(l, ctx, db).UpdateName(e.CharacterId, e.Body.NewName)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to update guild roster name for character [%d] from [%s] to [%s].", e.CharacterId, e.Body.OldName, e.Body.NewName)
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		l.WithFields(logrus.Fields{
+			"tenant":      t.Id(),
+			"characterId": e.CharacterId,
+			"oldName":     e.Body.OldName,
+			"newName":     e.Body.NewName,
+		}).Infof("Updated guild roster name for character [%d].", e.CharacterId)
 	}
 }

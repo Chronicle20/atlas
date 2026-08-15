@@ -22,16 +22,16 @@ type mockConsumableCache struct {
 }
 
 // GetConsumables returns the rechargeable consumables for a tenant
-func (c *mockConsumableCache) GetConsumables(_ logrus.FieldLogger, _ context.Context, tenantId uuid.UUID) []consumable.Model {
-	if consumables, ok := c.consumables[tenantId]; ok {
+func (c *mockConsumableCache) GetConsumables(_ logrus.FieldLogger, _ context.Context, t tenant.Model) []consumable.Model {
+	if consumables, ok := c.consumables[t.Id()]; ok {
 		return consumables
 	}
 	return []consumable.Model{}
 }
 
 // SetConsumables sets the rechargeable consumables for a tenant
-func (c *mockConsumableCache) SetConsumables(tenantId uuid.UUID, consumables []consumable.Model) {
-	c.consumables[tenantId] = consumables
+func (c *mockConsumableCache) SetConsumables(t tenant.Model, consumables []consumable.Model) {
+	c.consumables[t.Id()] = consumables
 }
 
 // originalCache stores the original cache instance

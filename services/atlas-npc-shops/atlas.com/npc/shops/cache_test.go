@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupTestCache(t *testing.T) *ConsumableCache {
@@ -20,16 +21,25 @@ func setupTestCache(t *testing.T) *ConsumableCache {
 	mr := miniredis.RunT(t)
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	return &ConsumableCache{
-		reg: atlasredis.NewRegistry[uuid.UUID, []consumable.Model](rc, "npc-shop:consumables", func(id uuid.UUID) string {
-			return id.String()
+		reg: atlasredis.NewTenantRegistry[string, []consumable.Model](rc, "npc-shop:consumables", func(s string) string {
+			return s
 		}),
 	}
+}
+
+func newTestTenant(t *testing.T) tenant.Model {
+	t.Helper()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ten
 }
 
 func TestConsumableCache_SetAndGet(t *testing.T) {
 	c := setupTestCache(t)
 	l, _ := test.NewNullLogger()
-	tenantId := uuid.New()
+	ten := newTestTenant(t)
 	ctx := context.Background()
 
 	models := []consumable.Model{}
@@ -42,9 +52,9 @@ func TestConsumableCache_SetAndGet(t *testing.T) {
 	})
 	_ = json.Unmarshal(data, &models)
 
-	c.SetConsumables(tenantId, models)
+	c.SetConsumables(ten, models)
 
-	result := c.GetConsumables(l, ctx, tenantId)
+	result := c.GetConsumables(l, ctx, ten)
 
 	assert.Len(t, result, 2)
 	assert.Equal(t, uint32(2070000), result[0].Id())
@@ -53,11 +63,17 @@ func TestConsumableCache_SetAndGet(t *testing.T) {
 	assert.Equal(t, uint32(1000), result[1].Price())
 }
 
+// TestConsumableCache_TenantIsolation writes under tenant 1 and reads under
+// tenant 2 against the same cache instance, using the SAME entity key
+// (consumableCacheKey is a package constant — there is only one key per
+// tenant in this namespace, so any two tenants necessarily collide on it).
+// If the tenant segment were dropped from the key, tenant 2 would read
+// tenant 1's data instead of missing.
 func TestConsumableCache_TenantIsolation(t *testing.T) {
 	c := setupTestCache(t)
 	l, _ := test.NewNullLogger()
-	tenant1 := uuid.New()
-	tenant2 := uuid.New()
+	ten1 := newTestTenant(t)
+	ten2 := newTestTenant(t)
 	ctx := context.Background()
 
 	models1 := []consumable.Model{}
@@ -72,11 +88,11 @@ func TestConsumableCache_TenantIsolation(t *testing.T) {
 	}{{Id: 2}, {Id: 3}})
 	_ = json.Unmarshal(data, &models2)
 
-	c.SetConsumables(tenant1, models1)
-	c.SetConsumables(tenant2, models2)
+	c.SetConsumables(ten1, models1)
+	c.SetConsumables(ten2, models2)
 
-	result1 := c.GetConsumables(l, ctx, tenant1)
-	result2 := c.GetConsumables(l, ctx, tenant2)
+	result1 := c.GetConsumables(l, ctx, ten1)
+	result2 := c.GetConsumables(l, ctx, ten2)
 
 	assert.Len(t, result1, 1)
 	assert.Equal(t, uint32(1), result1[0].Id())
@@ -87,11 +103,11 @@ func TestConsumableCache_TenantIsolation(t *testing.T) {
 func TestConsumableCache_EmptyOnMiss(t *testing.T) {
 	c := setupTestCache(t)
 	l, _ := test.NewNullLogger()
-	tenantId := uuid.New()
+	ten := newTestTenant(t)
 	ctx := context.Background()
 
 	// Cache miss with no data service will return empty slice
-	result := c.GetConsumables(l, ctx, tenantId)
+	result := c.GetConsumables(l, ctx, ten)
 
 	assert.Empty(t, result)
 }

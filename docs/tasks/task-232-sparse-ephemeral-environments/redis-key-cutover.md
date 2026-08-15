@@ -48,6 +48,34 @@ Confirmed against `drop_timer_registry.go` (`NewTenantRegistry`, `r.Register`),
 `character/hidden/registry.go` (`NewTenantRegistry`, `r.Add`), and
 `map/monster/registry.go` (`NewTenantKeyedHash`, `InitializeForMap`).
 
+## Task 9C additions
+
+Task 9C closed the two `atlas-transports` DATA-PLANE gaps the `rediskeyguard`
+analyzer found once its Task 9B worktree-detection fix started actually
+running: `character_registry.go`'s env-global `Hash` (a live cross-tenant
+collision — tenant A's character 12345 and tenant B's character 12345 wrote
+the same hash field) and `instance_registry.go`'s three env-global
+`Set`/`Registry`/`KeyedHash` fields, which made every sweep
+(`GetExpiredBoarding`/`GetExpiredTransit`/`GetAllActive`/`GetStuck`)
+cross-tenant even though `instanceId` is a fresh random UUID and never
+collided. `atlas-transports` has no Postgres persistence anywhere in the
+service (verified: no `gorm`/`database/sql` import in the module) — every row
+below is Redis-only state.
+
+| Namespace | Service | Format changed | State class | Orphaning impact |
+|---|---|---|---|---|
+| `transport:characters` | atlas-transports | yes: `atlas:transport:characters` (one env-global `Hash`, field = bare `characterId`) → `atlas:transport:characters:<tenantId>:<region>:<major>.<minor>` (one `TenantHash` per tenant, field still bare `characterId`) | live state, `chars.Set` (no TTL), no DB | a character mid-boarding/mid-transit at deploy time loses its `IsInTransport`/`GetInstanceForCharacter` lookup; the old hash's field can no longer be reached under the new key. The stranding self-heals on their next `HandleMapEnter`/`HandleLogout` (the character registry no longer reports them in transport, so those handlers treat them as not-in-transport and no-op) — worst case the player keeps whatever transit-map buff was applied until it naturally expires; there is no re-entrant morph or duplicate boarding, since `StartTransport`'s double-transport guard (`cr.IsInTransport`) also reads the same (now-empty) hash and allows a fresh `StartTransport` |
+| `transport:instances` | atlas-transports | yes: `atlas:transport:instances` (one env-global `Set` of instance ids, `all`) → `atlas:transport:instances:<tenantId>:<region>:<major>.<minor>` (one `TenantSet` per tenant) | live state, `all.Add`/`all.Remove` (no TTL), no DB | the four sweep methods (`GetExpiredBoarding`, `GetExpiredTransit`, `GetAllActive`, `GetStuck`) stop finding pre-deploy instance ids in the new per-tenant Set, so an instance already in flight at deploy time is never ticked to completion/cancellation by `TickBoardingExpiration`/`TickArrival`/`TickStuckTimeout`/`GracefulShutdown` — its boarding characters are stuck (see `transport:characters` row above for their self-heal path) until an operator manually clears them, since nothing re-adds a pre-existing instance id to the new Set |
+| `transport:instance` | atlas-transports | yes: `atlas:transport:instance:<instanceId>` (env-global `Registry`, keyed only by instance id) → `atlas:transport:instance:<tenantId>:<region>:<major>.<minor>:<instanceId>` (`TenantRegistry`) | live per-instance metadata (route, state, timestamps), `meta.Put` (no TTL), no DB | same instance is now unreachable under the old key; `loadMetadata`/`GetInstance` return not-found for it post-deploy. Same self-heal path as `transport:instances` above — the instance's own characters fall out of transport tracking rather than being warped anywhere incorrect |
+| `transport:instance:chars` | atlas-transports | yes: `atlas:transport:instance:chars:<instanceId>` (env-global `KeyedHash`, one hash per instance) → `atlas:transport:instance:chars:<tenantId>:<region>:<major>.<minor>:<instanceId>` (`TenantKeyedHash`) | live per-instance character roster, `chars.Set`/`chars.Del` (no TTL), no DB | the character roster for an in-flight instance becomes unreachable under the old key; `AddCharacter`/`RemoveCharacter`/`loadCharacters` for that instance id see an empty roster post-deploy. Combined with the `transport:instance` row, an in-flight instance effectively vanishes rather than corrupting into another tenant's — there is no cross-tenant leak at any point in the cutover, only a one-time loss of in-flight-transport tracking that clears itself as each affected character's own session events (map enter/exit, logout) run |
+
+`transport:route` (`routes`, the per-route `TenantKeyedSet[uuid.UUID]`) was
+already tenant-scoped before Task 9C and is unchanged by this task.
+
+Confirmed against `character_registry.go` (`NewTenantHash`, `chars.Set`/`Get`/
+`Del`/`Exists`) and `instance_registry.go` (`NewTenantSet`, `NewTenantRegistry`,
+`NewTenantKeyedHash`, `storeMetadata`/`loadMetadata`/`filterInstances`).
+
 ## What to expect on the deploy that lands Tasks 4-7
 
 A brief, one-time world-state reset limited to the "live state, no TTL, no DB"

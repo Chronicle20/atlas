@@ -62,6 +62,9 @@ func (DefinitionSubdomain) BulkCreate(db *gorm.DB, models []Model) error {
 
 	tenantId := extractDefinitionTenantId(db)
 	for _, m := range models {
+		if err := validateConfiguration(m); err != nil {
+			return fmt.Errorf("definition.event: %w", err)
+		}
 		entity, err := ToEntity(m, tenantId)
 		if err != nil {
 			return fmt.Errorf("definition.event: to entity %s: %w", m.Type(), err)

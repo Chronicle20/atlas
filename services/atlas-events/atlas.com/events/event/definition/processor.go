@@ -63,19 +63,30 @@ func (p *ProcessorImpl) GetEnabledByType(theType string) ([]Model, error) {
 	return model.SliceMap(Make)(getEnabledByTypeProvider(theType)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 }
 
-// Create resolves the handler registered for m.Type() and asks it to validate
-// m.Configuration() before the row is ever written (FR-D6). A type with no
-// registered handler is rejected the same way — there is no path by which an
-// unvalidatable definition reaches the table to fail later at trigger time.
+// validateConfiguration resolves the handler registered for m.Type() and asks
+// it to validate m.Configuration() (FR-D6). A type with no registered handler
+// is rejected the same way. This is the single place the FR-D6 rule lives —
+// every path that can create an event definition (the HTTP Processor.Create
+// and the seeder's DefinitionSubdomain.BulkCreate) must call it before the
+// row is ever written, so there is no path by which an unvalidatable
+// definition reaches the table to fail later at trigger time.
+func validateConfiguration(m Model) error {
+	h, ok := registry.Get(m.Type())
+	if !ok {
+		return fmt.Errorf("no handler registered for event type [%s]", m.Type())
+	}
+	if err := h.ValidateConfiguration(m.Configuration()); err != nil {
+		return fmt.Errorf("configuration rejected for event type [%s]: %w", m.Type(), err)
+	}
+	return nil
+}
+
+// Create validates m.Configuration() (FR-D6) before persisting it.
 func (p *ProcessorImpl) Create(m Model) (Model, error) {
 	p.l.Debugf("Creating event definition [%s] of type [%s].", m.Name(), m.Type())
 
-	h, ok := registry.Get(m.Type())
-	if !ok {
-		return Model{}, fmt.Errorf("no handler registered for event type [%s]", m.Type())
-	}
-	if err := h.ValidateConfiguration(m.Configuration()); err != nil {
-		return Model{}, fmt.Errorf("configuration rejected for event type [%s]: %w", m.Type(), err)
+	if err := validateConfiguration(m); err != nil {
+		return Model{}, err
 	}
 
 	result, err := create(p.db.WithContext(p.ctx))(p.t.Id())(m)

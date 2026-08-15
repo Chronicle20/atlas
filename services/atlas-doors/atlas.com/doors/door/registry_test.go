@@ -181,3 +181,85 @@ func TestSoloNonCollisionInTownPartyIndex(t *testing.T) {
 	_ = r.Remove(ctx, ten, 2_000_001)
 	_ = r.Remove(ctx, ten, 3_000_001)
 }
+
+// TestRegistryIsTenantScoped writes identical key material (same
+// areaDoorId, same field, same townMapId/party/owner) under two tenants
+// against the SAME registry instance (same Redis backing) and asserts
+// tenant 2 sees a miss on all four namespaces (door, door-field, door-owner,
+// door-town). If the tenant segment were dropped from any of the four keys,
+// tenant 2's reads would collide with tenant 1's writes and the
+// corresponding sub-test would fail.
+func TestRegistryIsTenantScoped(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(mr.Close)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	r := newRegistry(rc)
+
+	ten1, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ten2, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	townMap := _map.Id(104000000)
+	m := NewBuilder().
+		SetAreaDoorId(9_000_001).
+		SetTownDoorId(9_000_002).
+		SetOwnerCharacterId(77).
+		SetPartyId(0).
+		SetField(f).
+		SetTownMapId(townMap).
+		SetSlot(0).
+		SetTownPortalId(0x90).
+		SetDeployTime(time.Unix(9000, 0)).
+		SetExpiresAt(time.Unix(9120, 0)).
+		Build()
+
+	if err := r.Put(ctx, ten1, m); err != nil {
+		t.Fatalf("Put ten1: %v", err)
+	}
+
+	t.Run("door", func(t *testing.T) {
+		if _, err := r.Get(ctx, ten2, m.AreaDoorId()); err == nil {
+			t.Fatalf("tenant 2 read tenant 1's door by id")
+		}
+		if got, err := r.Get(ctx, ten1, m.AreaDoorId()); err != nil || got.AreaDoorId() != m.AreaDoorId() {
+			t.Fatalf("tenant 1 lost its own door: %v %+v", err, got)
+		}
+	})
+
+	t.Run("door-field", func(t *testing.T) {
+		if inField, err := r.GetInField(ctx, ten2, f); err != nil || len(inField) != 0 {
+			t.Fatalf("tenant 2 saw tenant 1's door via field index: %v %+v", err, inField)
+		}
+		if inField, err := r.GetInField(ctx, ten1, f); err != nil || len(inField) != 1 {
+			t.Fatalf("tenant 1 lost its own field index entry: %v %+v", err, inField)
+		}
+	})
+
+	t.Run("door-owner", func(t *testing.T) {
+		if byOwner, err := r.GetByOwner(ctx, ten2, m.OwnerCharacterId()); err != nil || len(byOwner) != 0 {
+			t.Fatalf("tenant 2 saw tenant 1's door via owner index: %v %+v", err, byOwner)
+		}
+		if byOwner, err := r.GetByOwner(ctx, ten1, m.OwnerCharacterId()); err != nil || len(byOwner) != 1 {
+			t.Fatalf("tenant 1 lost its own owner index entry: %v %+v", err, byOwner)
+		}
+	})
+
+	t.Run("door-town", func(t *testing.T) {
+		if inTown, err := r.GetInTownParty(ctx, ten2, f, townMap, 0, m.OwnerCharacterId()); err != nil || len(inTown) != 0 {
+			t.Fatalf("tenant 2 saw tenant 1's door via town index: %v %+v", err, inTown)
+		}
+		if inTown, err := r.GetInTownParty(ctx, ten1, f, townMap, 0, m.OwnerCharacterId()); err != nil || len(inTown) != 1 {
+			t.Fatalf("tenant 1 lost its own town index entry: %v %+v", err, inTown)
+		}
+	})
+}

@@ -11,12 +11,19 @@ import (
 )
 
 const (
-	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply           = "APPLY"
-	CommandTypeCancel          = "CANCEL"
-	CommandTypeCancelAll       = "CANCEL_ALL"
-	CommandTypeCancelByTypes   = "CANCEL_BY_TYPES"
-	CommandTypeUpdateStatValue = "UPDATE_STAT_VALUE"
+	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER_BUFF"
+	CommandTypeApply         = "APPLY"
+	CommandTypeCancel        = "CANCEL"
+	CommandTypeCancelAll     = "CANCEL_ALL"
+	CommandTypeCancelByTypes = "CANCEL_BY_TYPES"
+	// CommandTypeCancelByCorrelation sweeps the WHOLE TENANT and cancels every
+	// buff carrying a given CorrelationId, regardless of which character or
+	// world holds it. ONE command rather than one per affected character, so
+	// an event occurrence's completion cost does not scale with the online
+	// population (FR-A15). Emitters send characterId 0 in the envelope — the
+	// consumer ignores it, as does WorldId/ChannelId.
+	CommandTypeCancelByCorrelation = "CANCEL_BY_CORRELATION"
+	CommandTypeUpdateStatValue     = "UPDATE_STAT_VALUE"
 	// CommandTypeExpire asks for ONE character's buffs to be re-evaluated and
 	// whatever has genuinely lapsed announced. Emitted by atlas-channel's
 	// CANCEL_DEBUFF handler (task-190 FR-2.6.1). Named EXPIRE rather than
@@ -83,6 +90,13 @@ type CancelAllCommandBody struct{}
 
 type CancelByTypesCommandBody struct {
 	Types []string `json:"types"`
+}
+
+// CancelByCorrelationCommandBody names the occurrence (or other correlated
+// grant) whose buffs should be swept tenant-wide. CorrelationId is opaque to
+// atlas-buffs — it only echoes what buff.Model.CorrelationId() stored.
+type CancelByCorrelationCommandBody struct {
+	CorrelationId string `json:"correlationId"`
 }
 
 // ExpireCommandBody is deliberately empty: CANCEL_DEBUFF carries no payload, so

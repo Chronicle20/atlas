@@ -4,12 +4,14 @@ import (
 	"atlas-buffs/buff/stat"
 	character2 "atlas-buffs/kafka/message/character"
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -370,4 +372,105 @@ func TestProcessor_ExpireBuffs_StillSweepsFleetWide(t *testing.T) {
 
 	assert.Empty(t, GetRegistry().GetExpired(ctx, charA))
 	assert.Empty(t, GetRegistry().GetExpired(ctx, charB))
+}
+
+// TestCancelByCorrelationSweepsEveryCharacter — FR-A15: one command cancels
+// the occurrence's buff for every affected online character, without waiting
+// for logout or expiry.
+func TestCancelByCorrelationSweepsEveryCharacter(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+	changes := setupProcessorTestChanges()
+
+	assert.NoError(t, processor.Apply(world.Id(1), channel.Id(4), 100, 0, 9000, 1, 60000, changes, false, false, "occ-1"))
+	assert.NoError(t, processor.Apply(world.Id(2), channel.Id(5), 200, 0, 9000, 1, 60000, changes, false, false, "occ-1"))
+	assert.NoError(t, processor.Apply(world.Id(1), channel.Id(4), 300, 0, 9001, 1, 60000, changes, false, false, "occ-2"))
+	assert.NoError(t, processor.Apply(world.Id(1), channel.Id(4), 400, 0, 1004, 1, 60000, changes, false, false, ""))
+
+	assert.NoError(t, processor.CancelByCorrelation("occ-1"))
+
+	m100, err := GetRegistry().Get(ctx, 100)
+	assert.NoError(t, err)
+	assert.Empty(t, m100.Buffs())
+
+	m200, err := GetRegistry().Get(ctx, 200)
+	assert.NoError(t, err)
+	assert.Empty(t, m200.Buffs())
+
+	m300, err := GetRegistry().Get(ctx, 300)
+	assert.NoError(t, err)
+	assert.Len(t, m300.Buffs(), 1)
+
+	m400, err := GetRegistry().Get(ctx, 400)
+	assert.NoError(t, err)
+	assert.Len(t, m400.Buffs(), 1)
+}
+
+// TestCancelByCorrelationEmitsExpiredPerRemovedBuff — one EXPIRED per removed
+// buff, carrying that character's OWN world. The command envelope's world is
+// not authoritative for a tenant-wide sweep, so the two correlated characters
+// are seeded on DIFFERENT worlds: if the implementation used a single
+// (envelope) world for every emission, one of these assertions would fail.
+func TestCancelByCorrelationEmitsExpiredPerRemovedBuff(t *testing.T) {
+	processor, _, _ := setupProcessorTest(t)
+	emitted.Reset()
+	changes := setupProcessorTestChanges()
+
+	worldA := world.Id(1)
+	worldB := world.Id(2)
+	assert.NoError(t, processor.Apply(worldA, channel.Id(4), 100, 0, 9000, 1, 60000, changes, false, false, "occ-1"))
+	assert.NoError(t, processor.Apply(worldB, channel.Id(5), 200, 0, 9000, 1, 60000, changes, false, false, "occ-1"))
+
+	emitted.Reset()
+	assert.NoError(t, processor.CancelByCorrelation("occ-1"))
+
+	byCharacter := make(map[uint32]character2.StatusEvent[character2.ExpiredStatusEventBody])
+	for _, msg := range emitted.Messages(character2.EnvEventStatusTopic) {
+		var evt character2.StatusEvent[character2.ExpiredStatusEventBody]
+		require.NoError(t, json.Unmarshal(msg.Value, &evt))
+		if evt.Type != character2.EventStatusTypeBuffExpired {
+			continue
+		}
+		byCharacter[evt.CharacterId] = evt
+	}
+
+	require.Contains(t, byCharacter, uint32(100))
+	require.Contains(t, byCharacter, uint32(200))
+	assert.Equal(t, worldA, byCharacter[100].WorldId)
+	assert.Equal(t, worldB, byCharacter[200].WorldId)
+}
+
+// TestCancelByEmptyCorrelationMatchesNothing — an empty correlation id
+// matches nothing, rather than cancelling every uncorrelated buff in the
+// tenant.
+func TestCancelByEmptyCorrelationMatchesNothing(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+	changes := setupProcessorTestChanges()
+
+	assert.NoError(t, processor.Apply(world.Id(1), channel.Id(4), 100, 0, 1004, 1, 60000, changes, false, false, ""))
+
+	assert.NoError(t, processor.CancelByCorrelation(""))
+
+	m, err := GetRegistry().Get(ctx, 100)
+	assert.NoError(t, err)
+	assert.Len(t, m.Buffs(), 1)
+}
+
+// TestCancelByCorrelationIsIdempotent — re-issuing the command after the
+// sweep is a no-op (FR-N4).
+func TestCancelByCorrelationIsIdempotent(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+	changes := setupProcessorTestChanges()
+
+	assert.NoError(t, processor.Apply(world.Id(1), channel.Id(4), 100, 0, 9000, 1, 60000, changes, false, false, "occ-1"))
+
+	assert.NoError(t, processor.CancelByCorrelation("occ-1"))
+	m, err := GetRegistry().Get(ctx, 100)
+	assert.NoError(t, err)
+	assert.Empty(t, m.Buffs())
+
+	// Second sweep: nothing left to cancel, no error, no panic.
+	assert.NoError(t, processor.CancelByCorrelation("occ-1"))
+	m, err = GetRegistry().Get(ctx, 100)
+	assert.NoError(t, err)
+	assert.Empty(t, m.Buffs())
 }

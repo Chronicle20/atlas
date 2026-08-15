@@ -25,6 +25,7 @@ type Processor interface {
 	Cancel(worldId world.Id, characterId uint32, sourceId int32) error
 	CancelAll(worldId world.Id, characterId uint32) error
 	CancelByStatTypes(worldId world.Id, characterId uint32, types []string) error
+	CancelByCorrelation(correlationId string) error
 	UpdateStatValue(worldId world.Id, channelId channel.Id, characterId uint32, u StatValueUpdate) error
 	ExpireBuffs() error
 	ExpireForCharacter(worldId world.Id, characterId uint32) error
@@ -182,6 +183,47 @@ func (p *ProcessorImpl) CancelByStatTypes(worldId world.Id, characterId uint32, 
 	GetRegistry().ClearPeriodicTicksFor(p.ctx, characterId, sets...)
 	markBerserkDirtyOnMaxHpChange(p.l, p.ctx, characterId, sets...)
 	return nil
+}
+
+// CancelByCorrelation removes every buff in the tenant carrying correlationId,
+// across all worlds and channels, and emits one EXPIRED per removed buff so
+// each client clears its icon. It is ONE command rather than one per
+// character (FR-A15), so an event's completion cost does not scale with the
+// online population.
+//
+// An empty correlationId matches NOTHING. Guarding here rather than in the
+// registry query is deliberate: an accidental empty id would otherwise cancel
+// every uncorrelated buff on the server.
+func (p *ProcessorImpl) CancelByCorrelation(correlationId string) error {
+	if correlationId == "" {
+		return nil
+	}
+	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
+		for _, c := range GetRegistry().GetCharacters(p.ctx) {
+			cancelled, err := GetRegistry().CancelByCorrelation(p.ctx, c.Id(), correlationId)
+			if err != nil {
+				return err
+			}
+			if len(cancelled) == 0 {
+				continue
+			}
+			for _, b := range cancelled {
+				// c.WorldId(), not a command envelope's: the sweep is
+				// tenant-wide and each character's own world is
+				// authoritative.
+				if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(c.WorldId(), c.Id(), b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt(), b.NoExpiry())); err != nil {
+					return err
+				}
+			}
+			sets := make([][]stat.Model, 0, len(cancelled))
+			for _, b := range cancelled {
+				sets = append(sets, b.Changes())
+			}
+			GetRegistry().ClearPeriodicTicksFor(p.ctx, c.Id(), sets...)
+			markBerserkDirtyOnMaxHpChange(p.l, p.ctx, c.Id(), sets...)
+		}
+		return nil
+	})
 }
 
 // UpdateStatValue applies a stat-value mutation to an existing buff — or, with

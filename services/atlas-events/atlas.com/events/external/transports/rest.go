@@ -24,3 +24,12 @@ func (r *RestModel) SetID(idStr string) error {
 func (r RestModel) GetName() string {
 	return "routes"
 }
+
+// SetToOneReferenceID and SetToManyReferenceIDs are required by api2go
+// (jsonapi.Unmarshal) because the upstream transport.RestModel unconditionally
+// declares a to-many "schedule" relationship in GetReferences(), so every
+// real response carries a relationships.schedule.data array -- even though
+// this client doesn't care about the relationship payload. See
+// libs/atlas-rest/CLAUDE.md.
+func (r *RestModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }

@@ -17,6 +17,8 @@ func TestAnalyzer(t *testing.T) {
 	analysistest.Run(t, testdata, Analyzer,
 		"atlas-example/widget",       // Rule 1: data-plane, no TenantId — fails
 		"atlas-example/scoped",       // Rule 1: data-plane, has TenantId — passes
+		"atlas-example/lowerentity",  // Rule 1: lowercase `entity` name, no TenantId — fails (fix round 2)
+		"atlas-trades/itementity",    // Rule 1: `Entity`-suffixed name (ItemEntity), has TenantId — passes (fix round 2)
 		"atlas-configurations/thing", // Rule 2: control-plane, no Environment — fails, no allowlist possible
 		"atlas-tenants/registry",     // Rule 2: control-plane, has Environment — passes
 		"atlas-tenants/config",       // has TenantId despite living in a control-plane service — passes (mirrors real configuration.Entity)

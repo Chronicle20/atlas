@@ -88,7 +88,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 // --- Rule 1: entity-level ---
 
 func checkEntity(pass *analysis.Pass, ts *ast.TypeSpec) {
-	if ts.Name.Name != "Entity" {
+	if !isEntityTypeName(ts.Name.Name) {
 		return
 	}
 	st, ok := ts.Type.(*ast.StructType)
@@ -130,6 +130,32 @@ func checkEntity(pass *analysis.Pass, ts *ast.TypeSpec) {
 		return
 	}
 	pass.Reportf(ts.Pos(), "data-plane entity without TenantId")
+}
+
+// isEntityTypeName reports whether a struct's type name matches Rule 1's
+// entity-shape convention. The fleet carries three live spellings, confirmed
+// by grep across services/ (query-scope-audit.md follow-up, fix round 2):
+//
+//   - the plain, exact `Entity` — the majority convention;
+//   - the plain, exact lowercase `entity` — atlas-monster-book/card,
+//     atlas-reward-pools/item, atlas-cashshop/surprise/opening,
+//     atlas-drop-information (reactor/drop, continent/drop, monster/drop),
+//     atlas-monster-book/collection, atlas-reward-pools/gachapon,
+//     atlas-keys/key, atlas-maps/character/location;
+//   - an `Entity`-suffixed PascalCase name — ItemEntity/MesoEntity (atlas-
+//     trades/escrow), HistoryEntity (atlas-configurations), CycleEntity
+//     (atlas-rankings/ranking), SearchIndexEntity (atlas-data reactor/npc/
+//     monster/map).
+//
+// Deliberately excluded: a bare `Entity`-suffix match on the lowercase form
+// (e.g. a hypothetical `itementity`) — no such name exists fleet-wide, and
+// matching it would risk flagging an unrelated struct that merely ends in
+// the substring "entity" by coincidence (Go identifiers rarely do this
+// case-insensitively; the risk is asymmetric only for the lowercase form
+// since PascalCase "Entity" as a suffix is not a common English-word
+// collision).
+func isEntityTypeName(name string) bool {
+	return name == "entity" || strings.HasSuffix(name, "Entity")
 }
 
 func hasField(st *ast.StructType, name string) bool {
@@ -281,6 +307,20 @@ func chainHasWithContext(expr ast.Expr) bool {
 	}
 }
 
+// chainRootIsDbField reports whether a call chain's root is a `db`/`DB`
+// struct field selector (e.g. `s.db.Model(...)`).
+//
+// Known limitation (fix round 2, MINOR): this only recognizes a struct field
+// literally named `db`/`DB`. A package-level `var db *gorm.DB` (an
+// *ast.Ident root, not a *ast.SelectorExpr) or an accessor like `getDB()`
+// (a *ast.CallExpr root whose Fun is not itself a chained GORM verb) both
+// evade this check — the chain root never matches the SelectorExpr shape
+// below. No such occurrence exists fleet-wide as of fix round 2 (every
+// db-holding struct found uses a `db`/`DB` field per query-scope-audit.md),
+// so this is a documented gap rather than a live defect. Widening to cover
+// package-level vars or accessor calls is deferred: doing so without type
+// information risks false positives on unrelated identifiers/functions
+// named `db`/`getDB` that have nothing to do with GORM.
 func chainRootIsDbField(expr ast.Expr) bool {
 	for {
 		switch e := expr.(type) {

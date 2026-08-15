@@ -23,3 +23,9 @@
 # verified at source, not a live query path at all.
 
 atlas-quest/quest/medal/entity.go # quest_medal_maps (medal.Entity) has no TenantId and no Migration registration — services/atlas-quest/atlas.com/quest/main.go:52 registers quest.Migration, progress.Migration, outboxlib.Migration only, so this table is never created. grep -rn "medal\." across services/atlas-quest (excluding entity/model files) finds no provider, administrator, or caller anywhere — dead code with no live query path at all, not a live TRANSITIVE access. query-scope-audit.md row at line 132.
+
+# Added fix round 2, after widening Rule 1 to also match Entity-suffixed
+# names (ItemEntity, MesoEntity, etc.) — this file is not an entity.go at
+# all, but a _test.go carrying a struct that legitimately matches the
+# widened predicate.
+atlas-trades/escrow/migration_test.go # legacyItemEntity (services/atlas-trades/atlas.com/trades/escrow/migration_test.go:12) is a test-only fixture reproducing the pre-snapshot row shape from before TenantId existed on this table, per its own doc comment at migration_test.go:10-11 ("kept only in this test so the migration can be driven against a table that actually has the stale columns"). TestMigrationDropsStaleColumns drives Migration() against it and asserts the stale (pre-TenantId) columns are dropped — the struct is deliberately unscoped, not a live query path. The sibling legacyMesoEntity in the same file already carries TenantId and needs no exemption.

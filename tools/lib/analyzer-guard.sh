@@ -23,6 +23,14 @@
 # same Analyzer value, so what the guard *detects* is identical. Only the
 # driver differs.
 #
+# Point (2) is worth stating plainly, because it is load-bearing and it is the
+# thing that silently stopped working in CI: the per-package fact cache lives in
+# GOCACHE. A job that starts with a cold GOCACHE re-type-checks every package
+# from source and pays full price. `actions/setup-go` restores GOCACHE only when
+# it can find a dependency file — see the `cache-dependency-path` in
+# .github/workflows/pr-validation.yml, without which the restore silently
+# no-ops in a go.work repo that has no root go.sum.
+#
 # Usage (from tools/<name>-guard.sh):
 #
 #     ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -33,66 +41,153 @@
 #     FAIL_MSG=("rediskeyguard: FAIL — ...")
 #     analyzer_guard_main
 #
+# The individual entry points above remain the local/dev interface and the
+# single-guard escape hatch. CI drives all four through
+# tools/go-analyzer-guards.sh, which builds ONE vettool carrying every analyzer
+# and type-checks the tree once instead of four times; the functions below are
+# the shared pieces both paths use.
+#
 # Env:
-#   GUARD_JOBS   override the parallelism (default: nproc, capped at 8)
+#   GUARD_JOBS       override the parallelism (default: nproc, capped at 8)
 #   GUARD_NOCACHE=1  force a rebuild of the analyzer binary
+#   GUARD_MODULES    newline/space-separated module dirs to analyze, replacing
+#                    the SCAN_ROOTS discovery walk. Callers that already know
+#                    the affected module set (CI's change detection,
+#                    tools/verify.sh) pass it here rather than re-analyzing
+#                    all 86 modules. Empty/unset means "discover everything".
 
 set -euo pipefail
 
+# analyzer_guard_jobs — parallelism for the module walk.
+analyzer_guard_jobs() {
+    local jobs="${GUARD_JOBS:-}"
+    if [ -z "$jobs" ]; then
+        jobs="$(nproc 2>/dev/null || echo 4)"
+        [ "$jobs" -gt 8 ] && jobs=8
+    fi
+    printf '%s\n' "$jobs"
+}
+
+# analyzer_guard_hash <src-dir>... — content key over analyzer sources.
+#
+# Hash NAMES as well as contents (sha256sum prints both), and fold in the
+# toolchain version. Digesting concatenated bodies alone would keep the cached
+# binary when code merely moves between files in the package, when a file is
+# renamed, or when Go itself is upgraded — the guard would then go on enforcing
+# the pre-change rules while looking like it ran.
+analyzer_guard_hash() {
+    { find "$@" \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) -print0 \
+        | LC_ALL=C sort -z | xargs -0 -r sha256sum; go version; } \
+        | sha256sum | cut -c1-16
+}
+
+# analyzer_guard_build <bin-name> <build-dir> <pkg> <src-dir>...
+#
+# Builds <pkg> (from <build-dir>, with the workspace off) into
+# .cache/tools/bin/<bin-name>-<hash>, where <hash> keys every <src-dir>.
+# Rebuilds only when that key moves. Prints the binary path on stdout; all
+# progress chatter goes to stderr so the path stays capturable.
+analyzer_guard_build() {
+    local name="$1" builddir="$2" pkg="$3"
+    shift 3
+
+    local bindir="$ROOT/.cache/tools/bin"
+    mkdir -p "$bindir"
+
+    local hash bin
+    hash="$(analyzer_guard_hash "$@")"
+    bin="$bindir/${name}-${hash}"
+
+    if [ ! -x "$bin" ] || [ "${GUARD_NOCACHE:-0}" -eq 1 ]; then
+        echo "building ${name} (vettool)..." >&2
+        ( cd "$builddir" && GOWORK=off go build -o "$bin" "$pkg" ) >&2
+        # drop older builds of this binary so .cache/tools/bin cannot grow forever
+        find "$bindir" -maxdepth 1 -name "${name}-*" ! -name "$(basename "$bin")" -delete 2>/dev/null || true
+    fi
+
+    printf '%s\n' "$bin"
+}
+
+# analyzer_guard_discover <root>... — every Go module directory under <root>s.
+analyzer_guard_discover() {
+    find "$@" -name go.mod -not -path '*/node_modules/*' \
+        -not -path '*/.worktrees/*' -print0 \
+        | xargs -0 -r -n1 dirname | LC_ALL=C sort -u
+}
+
+# analyzer_guard_scope <root>... — the module set to analyze under <root>s.
+#
+# GUARD_MODULES, when set, replaces the discovery walk — but is still filtered
+# to the given roots, so a caller passing one repo-wide affected-module list can
+# hand the same list to a services-only guard and to a services+libs one and get
+# the right subset each time. Filtering (rather than trusting the caller) is
+# also what keeps a guard's scope from silently widening: rediskeyguard must not
+# start reporting on libs/ just because a caller included libs/ in the list.
+analyzer_guard_scope() {
+    if [ -z "${GUARD_MODULES:-}" ]; then
+        analyzer_guard_discover "$@"
+        return
+    fi
+
+    local discovered
+    discovered="$(analyzer_guard_discover "$@")"
+
+    # Intersect the caller's list with what actually exists under the roots.
+    # Both sides are absolute, sorted, de-duplicated module directories.
+    LC_ALL=C comm -12 \
+        <(printf '%s\n' "$discovered") \
+        <(printf '%s\n' "$GUARD_MODULES" | tr ' \t' '\n\n' | sed '/^$/d' | LC_ALL=C sort -u)
+}
+
+# analyzer_guard_vet <bin> <label> — module dirs on stdin.
+#
+# Runs `go vet -vettool=<bin> ./...` in each module, in parallel. Returns 1 if
+# any module reported a diagnostic; the analyzer's own output is echoed to
+# stderr under the offending module path.
+analyzer_guard_vet() {
+    local bin="$1" label="$2"
+
+    local mods
+    mods="$(cat | sed '/^$/d')"
+
+    local count
+    count="$(printf '%s\n' "$mods" | sed '/^$/d' | wc -l | tr -d ' ')"
+    if [ "$count" -eq 0 ]; then
+        echo "$label: no module in scope — nothing to analyze"
+        return 0
+    fi
+
+    local jobs
+    jobs="$(analyzer_guard_jobs)"
+    echo "$label: $count module(s), $jobs parallel"
+
+    if ! printf '%s\n' "$mods" \
+        | VETTOOL="$bin" GUARD_NAME="$label" xargs -P "$jobs" -I{} \
+            sh -c 'cd "$1" || exit 1; out="$(go vet -vettool="$VETTOOL" ./... 2>&1)" || { printf "%s: %s\n%s\n" "$GUARD_NAME" "$1" "$out" >&2; exit 1; }' _ {}
+    then
+        return 1
+    fi
+    return 0
+}
+
+# analyzer_guard_main — the single-guard entry point used by
+# tools/<name>-guard.sh.
 analyzer_guard_main() {
     : "${GUARD:?analyzer-guard: GUARD must be set}"
     : "${ROOT:?analyzer-guard: ROOT must be set}"
 
     local src="$ROOT/tools/$GUARD"
-    local bindir="$ROOT/.cache/tools/bin"
-    mkdir -p "$bindir"
 
     if [ "${SELFTEST:-0}" -eq 1 ]; then
         echo "self-testing $GUARD..."
         ( cd "$src" && GOWORK=off go test ./... )
     fi
 
-    # Content-keyed binary: rebuild only when the analyzer source changes.
-    #
-    # Hash NAMES as well as contents (sha256sum prints both), and fold in the
-    # toolchain version. Digesting concatenated bodies alone would keep the
-    # cached binary when code merely moves between files in the package, when a
-    # file is renamed, or when Go itself is upgraded — the guard would then go
-    # on enforcing the pre-change rules while looking like it ran.
-    local hash
-    hash="$( { find "$src" \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) -print0 \
-        | LC_ALL=C sort -z | xargs -0 -r sha256sum; go version; } \
-        | sha256sum | cut -c1-16)"
-    local bin="$bindir/${GUARD}vet-$hash"
-
-    if [ ! -x "$bin" ] || [ "${GUARD_NOCACHE:-0}" -eq 1 ]; then
-        echo "building $GUARD (vettool)..."
-        ( cd "$src" && GOWORK=off go build -o "$bin" "./cmd/${GUARD}vet" )
-        # drop older builds of this guard so .cache/tools/bin cannot grow forever
-        find "$bindir" -maxdepth 1 -name "${GUARD}vet-*" ! -name "$(basename "$bin")" -delete 2>/dev/null || true
-    fi
-
-    local jobs="${GUARD_JOBS:-}"
-    if [ -z "$jobs" ]; then
-        jobs="$(nproc 2>/dev/null || echo 4)"
-        [ "$jobs" -gt 8 ] && jobs=8
-    fi
-
-    local mods
-    mods="$(find "${SCAN_ROOTS[@]}" -name go.mod -not -path '*/node_modules/*' \
-        -not -path '*/.worktrees/*' -print0 | xargs -0 -r -n1 dirname | LC_ALL=C sort -u)"
-
-    local count
-    count="$(printf '%s\n' "$mods" | sed '/^$/d' | wc -l)"
-    echo "$GUARD: $count module(s), $jobs parallel"
+    local bin
+    bin="$(analyzer_guard_build "${GUARD}vet" "$src" "./cmd/${GUARD}vet" "$src")"
 
     local rc=0
-    if ! printf '%s\n' "$mods" | sed '/^$/d' \
-        | VETTOOL="$bin" GUARD_NAME="$GUARD" xargs -P "$jobs" -I{} \
-            sh -c 'cd "$1" || exit 1; out="$(go vet -vettool="$VETTOOL" ./... 2>&1)" || { printf "%s: %s\n%s\n" "$GUARD_NAME" "$1" "$out" >&2; exit 1; }' _ {}
-    then
-        rc=1
-    fi
+    analyzer_guard_scope "${SCAN_ROOTS[@]}" | analyzer_guard_vet "$bin" "$GUARD" || rc=1
 
     if [ "$rc" -ne 0 ]; then
         local line

@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-events/event/definition"
 	"atlas-events/event/occurrence"
+	"atlas-events/event/orchestration"
 	"atlas-events/event/registry"
 	"atlas-events/event/scheduling"
 	"atlas-events/event/transition"
@@ -48,6 +49,13 @@ func main() {
 	// runtime — a definition of this type would fail every dispatch with
 	// "no handler for type CRIMSON_BALROG".
 	registry.Register(crimsonbalrog.NewHandler())
+
+	// Routes the definitions PATCH handler's enabled-toggle through
+	// event/orchestration so a false->true transition also schedules the
+	// FR-A2 TRIGGER_EVALUATION (task-231 R33-3). event/definition cannot wire
+	// this itself without importing event/scheduling, which would cycle back
+	// through event/scheduling's own import of event/definition.
+	definition.EnabledOrchestrator = orchestration.SetEnabled
 
 	db := database.Connect(l, database.SetMigrations(
 		definition.MigrateTable,

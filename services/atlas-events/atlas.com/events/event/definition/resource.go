@@ -1,6 +1,7 @@
 package definition
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -16,6 +17,16 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 )
+
+// EnabledOrchestrator, when non-nil, replaces the plain toggle-only
+// Processor.SetEnabled for the PATCH handler's write, so a false->true
+// transition can also schedule the FR-A2 TRIGGER_EVALUATION. event/definition
+// cannot import event/scheduling (or a package that does) directly —
+// event/scheduling already imports event/definition to resolve a claimed
+// row's definition, so the reverse import would cycle (task-231 R33-3).
+// main.go wires this to event/orchestration.SetEnabled at startup; leaving it
+// nil (this package's own tests) exercises only the FR-D5 toggle.
+var EnabledOrchestrator func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) func(id uuid.UUID, enabled bool) (Model, error)
 
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
@@ -172,7 +183,11 @@ func updateDefinitionHandler(db *gorm.DB) server.GetHandler {
 					return
 				}
 
-				updated, err := NewProcessor(d.Logger(), d.Context(), db).SetEnabled(definitionId, enabled)
+				setEnabled := NewProcessor(d.Logger(), d.Context(), db).SetEnabled
+				if EnabledOrchestrator != nil {
+					setEnabled = EnabledOrchestrator(d.Logger(), d.Context(), db)
+				}
+				updated, err := setEnabled(definitionId, enabled)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)
 					return

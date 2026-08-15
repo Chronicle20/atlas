@@ -47,7 +47,7 @@ Every task's requirements implicitly include this section.
 | **C — Services** | 30–41 | 62 Go services wire the registry; the 18 ticker-bearing loops classified and converted |
 | **D — Deployment** | 42–48 | Per-service `NS_*` ingress routing; the sparse overlay; consumer-offset seeding; bootstrap create-own-row (C2); teardown ordering |
 | **E — Mode selection** | 49–51 | Affected-service determination, escalation, PR reporting |
-| **F — Enable and prove** | 52–54 | `env-bootstrap-guard` flips green, sparse becomes the default, the §17 proof is executed |
+| **F — Enable and prove** | 52–55 | `env-bootstrap-guard` flips green, the Kafka fan-out cost is measured, sparse becomes the default, the §17 proof is executed |
 
 ---
 # Phase A — Prerequisites (FR-8, blocking)
@@ -1126,8 +1126,10 @@ split by row kind (design §8.1): **strict** for `services` and `tenants`,
 - Modify: `services/atlas-configurations/atlas.com/configurations/services/provider.go` and `services/administrator.go` — same
 - Modify: `services/atlas-configurations/atlas.com/configurations/templates/provider.go` — my environment's row if present, else the baseline's
 - Modify: `services/atlas-configurations/atlas.com/configurations/templates/administrator.go` — strict write
-- Create: `services/atlas-configurations/atlas.com/configurations/scope/scope.go` — `ErrCrossEnvironmentWrite` and the shared filter helpers
+- Create: `services/atlas-configurations/atlas.com/configurations/scope/scope.go` — `ErrCrossEnvironmentWrite`, `Strict`, `AuthorizeWrite`
 - Create: `services/atlas-configurations/atlas.com/configurations/scope/scope_test.go`
+- Create: `services/atlas-configurations/atlas.com/configurations/templates/overlay.go` — the key-aware template overlay (Step 4a)
+- Create: `services/atlas-configurations/atlas.com/configurations/templates/overlay_test.go`
 - Modify: `services/atlas-configurations/atlas.com/configurations/rest/handler.go` — surface `ErrCrossEnvironmentWrite` as a 403
 - Read-only: `libs/atlas-env/env.go` (Task 17) — `env.FromContext`
 - Read-only: `libs/atlas-rest/server/register.go` — where the environment lands on the request context (Task 22)
@@ -1147,13 +1149,47 @@ Module root: `services/atlas-configurations/atlas.com/configurations`.
   // and applies no filter (FR-1.8).
   func Strict(db *gorm.DB, e env.Id) *gorm.DB
 
-  // WithBaselineFallback returns rows for e, falling back to baseline rows
-  // for keys e has no row for (design V3, templates only).
-  func WithBaselineFallback(db *gorm.DB, e env.Id, baseline env.Id) *gorm.DB
-
   // AuthorizeWrite returns ErrCrossEnvironmentWrite when target != caller.
   func AuthorizeWrite(caller env.Id, target env.Id) error
   ```
+  and, in the `templates` package (not `scope` — the overlay key is
+  templates-specific):
+  ```go
+  // OverlaySingle scopes a lookup of ONE version key: e's row if present,
+  // else the baseline's.
+  func OverlaySingle(db *gorm.DB, e env.Id, baseline env.Id) *gorm.DB
+
+  // OverlayCollection scopes a Find/paged read to e's rows PLUS the baseline
+  // rows whose version key e has no row for. An anti-join, not an ORDER BY.
+  func OverlayCollection(db *gorm.DB, e env.Id, baseline env.Id) *gorm.DB
+
+  // VisibleById scopes a UUID lookup to rows e may read: its own or its
+  // baseline's. A UUID is unique, so there is nothing to fall back to.
+  func VisibleById(db *gorm.DB, e env.Id, baseline env.Id) *gorm.DB
+  ```
+
+**Why the fallback is not a generic GORM scope.** A `CASE`-based `ORDER BY`
+resolves a `First()` on one exact `(region, major_version, minor_version)`
+key, and nothing else. Applied to a collection read it returns the union, not
+the overlay:
+
+```
+main:    GMS 83.1, GMS 95.1
+pr-123:  GMS 83.1
+
+union   -> 3 rows: main/83.1, main/95.1, pr-123/83.1   ← wrong
+overlay -> 2 rows: pr-123/83.1, main/95.1              ← required
+```
+
+The three read paths in `templates/provider.go` are distinct and each needs
+its own treatment. Read the file first — these are the only paths, so the API
+above is complete rather than open-ended:
+
+| Provider | Query | Treatment |
+|---|---|---|
+| `byRegionVersionEntityProvider` | `WHERE region=? AND major_version=? AND minor_version=?` → `First()` | `OverlaySingle` |
+| `getAll` | `database.PagedQuery[Entity]` | `OverlayCollection` (anti-join) |
+| `byIdEntityProvider` | `WHERE id=?` → `First()` | `VisibleById` |
 
 - [ ] **Step 1: Write the failing scope tests**
 
@@ -1231,6 +1267,79 @@ func TestTemplatesPreferTheOwnEnvironmentRow(t *testing.T) {
 		t.Fatalf("got environment %q, want pr-123's own row to win", got.Environment)
 	}
 }
+
+func TestTemplateCollectionIsAnOverlayNotAUnion(t *testing.T) {
+	// The case an ORDER BY cannot express. main ships two versions; pr-123
+	// overrides one of them. The collection read must return pr-123's 83.1
+	// and main's 95.1 — two rows, not three.
+	db := testDatabase(t)
+	seedTemplate(t, db, "main", "GMS", 83, 1)
+	seedTemplate(t, db, "main", "GMS", 95, 1)
+	seedTemplate(t, db, "pr-123", "GMS", 83, 1)
+
+	got, err := templates.NewProcessor(testLogger(t), envContext(t, "pr-123"), db).
+		GetAll(model.Page{Number: 1, Size: 50})
+	if err != nil {
+		t.Fatalf("GetAll: %v", err)
+	}
+	if len(got.Items) != 2 {
+		t.Fatalf("got %d rows, want 2 (overlay, not union): %+v", len(got.Items), got.Items)
+	}
+	byVersion := map[string]string{}
+	for _, e := range got.Items {
+		byVersion[fmt.Sprintf("%s%d.%d", e.Region, e.MajorVersion, e.MinorVersion)] = e.Environment
+	}
+	if byVersion["GMS83.1"] != "pr-123" {
+		t.Fatalf("GMS83.1 came from %q, want pr-123's overriding row", byVersion["GMS83.1"])
+	}
+	if byVersion["GMS95.1"] != "main" {
+		t.Fatalf("GMS95.1 came from %q, want the inherited baseline row", byVersion["GMS95.1"])
+	}
+}
+
+func TestTemplateCollectionOnMainIsUnchanged(t *testing.T) {
+	// NG6/NFR-7: the baseline's own collection read must be byte-identical to
+	// today's — it inherits from nothing and must not see other environments.
+	db := testDatabase(t)
+	seedTemplate(t, db, "main", "GMS", 83, 1)
+	seedTemplate(t, db, "main", "GMS", 95, 1)
+	seedTemplate(t, db, "pr-123", "GMS", 83, 1)
+
+	got, err := templates.NewProcessor(testLogger(t), envContext(t, "main"), db).
+		GetAll(model.Page{Number: 1, Size: 50})
+	if err != nil {
+		t.Fatalf("GetAll: %v", err)
+	}
+	if len(got.Items) != 2 {
+		t.Fatalf("main saw %d rows, want its own 2", len(got.Items))
+	}
+	for _, e := range got.Items {
+		if e.Environment != "main" {
+			t.Fatalf("main's collection read returned a %q row", e.Environment)
+		}
+	}
+}
+
+func TestTemplateByIdRejectsAnotherEnvironmentsRow(t *testing.T) {
+	// A UUID is unique, so there is nothing to fall back to. pr-123 may read
+	// its own rows and its baseline's (templates are a shared read-only
+	// source), and nothing else.
+	db := testDatabase(t)
+	mine := seedTemplate(t, db, "pr-123", "GMS", 83, 1)
+	inherited := seedTemplate(t, db, "main", "GMS", 95, 1)
+	foreign := seedTemplate(t, db, "pr-999", "GMS", 83, 1)
+
+	p := templates.NewProcessor(testLogger(t), envContext(t, "pr-123"), db)
+	if _, err := p.GetById(mine.Id); err != nil {
+		t.Fatalf("own row: %v", err)
+	}
+	if _, err := p.GetById(inherited.Id); err != nil {
+		t.Fatalf("baseline row: %v", err)
+	}
+	if _, err := p.GetById(foreign.Id); err == nil {
+		t.Fatal("read another environment's template by id; want not-found")
+	}
+}
 ```
 
 - [ ] **Step 3: Run to verify they fail**
@@ -1248,16 +1357,6 @@ func Strict(db *gorm.DB, e env.Id) *gorm.DB {
 	return db.Where("environment = ?", string(e))
 }
 
-func WithBaselineFallback(db *gorm.DB, e env.Id, baseline env.Id) *gorm.DB {
-	if e == "" || e == baseline {
-		return Strict(db, e)
-	}
-	// Rows for e win; baseline rows fill the keys e has none for. ORDER BY
-	// puts e's row first so a DISTINCT ON / first-row read picks it.
-	return db.Where("environment IN (?, ?)", string(e), string(baseline)).
-		Order(gorm.Expr("CASE WHEN environment = ? THEN 0 ELSE 1 END", string(e)))
-}
-
 func AuthorizeWrite(caller env.Id, target env.Id) error {
 	if caller == target {
 		return nil
@@ -1266,15 +1365,80 @@ func AuthorizeWrite(caller env.Id, target env.Id) error {
 }
 ```
 
-The `templates` provider composes `WithBaselineFallback` and takes the first
-row per `(region, major, minor)`. Read the existing provider before editing —
-if it already returns a single row for a version key, the `Order` above plus
-`First(...)` is the whole change.
+- [ ] **Step 4a: Implement the templates overlay**
+
+`services/atlas-configurations/atlas.com/configurations/templates/overlay.go`.
+Note this lives in `templates`, not `scope`: the overlay is defined in terms
+of the template version key, which no other table shares.
+
+```go
+// overlayKey is the identity a template row is unique on. Fallback is
+// defined ONLY in terms of this key: a baseline row is visible to e exactly
+// when e has no row with the same key. Templates are keyed by a VERSION, not
+// by an environment, and the PR bootstrap already treats them as a shared
+// read-only source it clones from (design V3).
+var overlayKey = []string{"region", "major_version", "minor_version"}
+
+// OverlaySingle scopes a lookup of one version key. e's row wins; the
+// baseline's fills in when e has none.
+func OverlaySingle(db *gorm.DB, e env.Id, baseline env.Id) *gorm.DB {
+	if e == "" || e == baseline {
+		return scope.Strict(db, e)
+	}
+	return db.Where("environment IN (?, ?)", string(e), string(baseline)).
+		Order(clause.Expr{
+			SQL:  "CASE WHEN environment = ? THEN 0 ELSE 1 END",
+			Vars: []interface{}{string(e)},
+		})
+}
+
+// OverlayCollection scopes a Find/paged read: e's rows, plus the baseline
+// rows whose version key e has no row for. This is an anti-join — an ORDER BY
+// cannot express it, because a collection read returns every matching row
+// rather than the first.
+//
+// NOT EXISTS rather than DISTINCT ON: it composes with database.PagedQuery's
+// LIMIT/OFFSET, and it runs on both Postgres and the sqlite test harness.
+func OverlayCollection(db *gorm.DB, e env.Id, baseline env.Id) *gorm.DB {
+	if e == "" || e == baseline {
+		return scope.Strict(db, e)
+	}
+	anti := `environment = ? OR (environment = ? AND NOT EXISTS (
+	           SELECT 1 FROM templates o
+	           WHERE o.environment = ?
+	             AND o.region = templates.region
+	             AND o.major_version = templates.major_version
+	             AND o.minor_version = templates.minor_version))`
+	return db.Where(anti, string(e), string(baseline), string(e))
+}
+
+// VisibleById scopes a UUID lookup. A UUID is unique, so there is nothing to
+// fall back to — this is a visibility rule, not an overlay: e may read its
+// own rows and its baseline's, and nothing else.
+func VisibleById(db *gorm.DB, e env.Id, baseline env.Id) *gorm.DB {
+	if e == "" || e == baseline {
+		return scope.Strict(db, e)
+	}
+	return db.Where("environment IN (?, ?)", string(e), string(baseline))
+}
+```
+
+Verify the table name in the anti-join matches `Entity.TableName()`
+(`"templates"`) and that GORM does not alias it in the paged query — if
+`database.PagedQuery` introduces an alias, the correlated reference must use
+that alias instead. Check by logging the generated SQL in the test, not by
+assuming.
+
+Wire each provider to its matching helper per the table in the Interfaces
+block. `templates/administrator.go` stays **strict** on every write: a PR
+overrides a template by inserting its own row, never by updating the
+baseline's.
 
 - [ ] **Step 5: Apply the filters at every read and write path**
 
 Every function in the four `provider.go` / `administrator.go` files that
-builds a query goes through `scope.Strict` or `scope.WithBaselineFallback`;
+builds a query goes through `scope.Strict` (or, in `templates` only, the
+matching overlay helper from Step 4a);
 every write calls `scope.AuthorizeWrite(callerEnv, targetEnv)` first and sets
 `Environment: string(callerEnv)` on insert. The caller's environment comes
 from `env.FromContext(ctx)` — never from a request body.
@@ -1337,7 +1501,7 @@ ephemeral tenant it does not own.
 - Modify: `services/atlas-tenants/atlas.com/tenants/tenant/processor.go` — `GetAll` gains the filter
 - Modify: `services/atlas-tenants/atlas.com/tenants/configuration/provider.go` and `configuration/administrator.go` — same treatment
 - Modify: `services/atlas-tenants/atlas.com/tenants/rest/handler.go` — 403 mapping
-- Read-only: `services/atlas-configurations/atlas.com/configurations/scope/scope.go` (Task 13) — copy the three helpers into this service rather than importing across a service boundary
+- Read-only: `services/atlas-configurations/atlas.com/configurations/scope/scope.go` (Task 13) — copy the two helpers into this service rather than importing across a service boundary
 
 Module root: `services/atlas-tenants/atlas.com/tenants`.
 
@@ -1391,9 +1555,10 @@ Expected: FAIL — the first test returns 2.
 
 - [ ] **Step 3: Copy `scope.go` into this service and apply it**
 
-Create `services/atlas-tenants/atlas.com/tenants/scope/scope.go` with the
-same three functions as Task 13 Step 4 (no `WithBaselineFallback` — nothing
-in `atlas-tenants` falls back). Apply `Strict` to every read and
+Create `services/atlas-tenants/atlas.com/tenants/scope/scope.go` with
+`ErrCrossEnvironmentWrite`, `Strict` and `AuthorizeWrite`, copied from Task 13
+Step 4. No overlay helpers: nothing in `atlas-tenants` falls back — a tenant
+belongs to exactly one environment (FR-7.1). Apply `Strict` to every read and
 `AuthorizeWrite` + `Environment:` to every write.
 
 - [ ] **Step 4: Run the module tests**
@@ -1781,7 +1946,13 @@ Module root: `libs/atlas-env`.
   }
 
   type Registry interface {
-      Namespace(e Id, service string) (string, error) // FR-1.2 (M3 needs the namespace, not a deployment name)
+      // EnvironmentNamespace is the environment's OWN namespace — where its
+      // own ingress lives. Never falls back to the baseline.
+      EnvironmentNamespace(e Id) (string, error)
+      // ServiceNamespace is the namespace of the effective implementation of
+      // service for e: the override's namespace if e overrides it, else the
+      // baseline's namespace. FR-1.2.
+      ServiceNamespace(e Id, service string) (string, error)
       EnvironmentsOwnedBy(service string) []Id        // FR-1.3
       IsOwner(e Id, service string) bool              // FR-1.4
       IsActive(e Id) bool                             // FR-1.4
@@ -1797,6 +1968,28 @@ Module root: `libs/atlas-env`.
   func CurrentRegistry() Registry // never nil; a legacy no-op registry before SetRegistry
   ```
 - The `PhaseActive` etc. constants live in `record.go`.
+
+**Two namespace queries, not one — this distinction is load-bearing.**
+`EnvironmentNamespace` and `ServiceNamespace` answer different questions and
+must not be collapsed:
+
+| Query | `pr-123` (overrides `atlas-character` only) |
+|---|---|
+| `EnvironmentNamespace("pr-123")` | `atlas-pr-123` — always, override or not |
+| `ServiceNamespace("pr-123", "atlas-character")` | `atlas-pr-123` |
+| `ServiceNamespace("pr-123", "atlas-monsters")` | `atlas-main` |
+
+Task 23's outbound REST resolution uses **`EnvironmentNamespace`**, because
+every sparse environment deploys its own ingress and the per-service
+override/baseline decision is made *inside* that ingress by the `NS_*`
+routing table (Task 43). Using `ServiceNamespace(e, "atlas-ingress")` there
+would be a bug: `pr-123` does not override `atlas-ingress` in its record's
+`overrides` map, so the query would fall back to `atlas-main` and a baseline
+pod handling a `pr-123` operation would send its next call into `main` —
+exactly the leak this project exists to close.
+
+`ServiceNamespace` exists for the ingress-configuration generation and for
+diagnostics. Nothing on the REST hot path calls it.
 
 **Design notes bound into the implementation:**
 - `EnvironmentsOwnedBy` takes only the service name; a process only ever asks
@@ -1839,41 +2032,79 @@ func TestLegacyEnvironmentResolvesToTheLocalDeployment(t *testing.T) {
 	}
 }
 
-func TestNamespaceFallsBackToTheBaseline(t *testing.T) {
+func TestServiceNamespaceFallsBackToTheBaseline(t *testing.T) {
 	r := NewMapRegistry(Id("main"), time.Now)
 	r.Apply(active("main", "main", "atlas-main", nil))
 	r.Apply(active("pr-123", "main", "atlas-pr-123", map[string]string{
 		"atlas-character": "atlas-pr-123",
 	}))
 
-	got, err := r.Namespace(Id("pr-123"), "atlas-character")
+	got, err := r.ServiceNamespace(Id("pr-123"), "atlas-character")
 	if err != nil || got != "atlas-pr-123" {
 		t.Fatalf("override: got (%q, %v), want (\"atlas-pr-123\", nil)", got, err)
 	}
-	got, err = r.Namespace(Id("pr-123"), "atlas-monsters")
+	got, err = r.ServiceNamespace(Id("pr-123"), "atlas-monsters")
 	if err != nil || got != "atlas-main" {
 		t.Fatalf("fallback: got (%q, %v), want (\"atlas-main\", nil)", got, err)
 	}
 }
 
-func TestNamespaceNeverHardCodesMain(t *testing.T) {
+func TestEnvironmentNamespaceNeverFallsBackToTheBaseline(t *testing.T) {
+	// The bug this test exists to prevent: an environment's OWN namespace is
+	// where its OWN ingress lives. It is not subject to the per-service
+	// override/baseline decision, because the record's `overrides` map does
+	// not (and must not) list atlas-ingress. If this returned the baseline's
+	// namespace, a baseline pod handling a pr-123 operation would send its
+	// next REST call into main and the operation would silently change
+	// environment mid-flight (G4).
+	r := NewMapRegistry(Id("main"), time.Now)
+	r.Apply(active("main", "main", "atlas-main", nil))
+	r.Apply(active("pr-123", "main", "atlas-pr-123", map[string]string{
+		"atlas-character": "atlas-pr-123", // note: no atlas-ingress entry
+	}))
+
+	got, err := r.EnvironmentNamespace(Id("pr-123"))
+	if err != nil || got != "atlas-pr-123" {
+		t.Fatalf("got (%q, %v), want (\"atlas-pr-123\", nil)", got, err)
+	}
+
+	// And the contrast, stated explicitly so a future refactor that collapses
+	// the two queries fails here rather than in production.
+	svcNs, err := r.ServiceNamespace(Id("pr-123"), "atlas-ingress")
+	if err != nil {
+		t.Fatalf("ServiceNamespace: %v", err)
+	}
+	if svcNs == got {
+		t.Fatal("ServiceNamespace(e, \"atlas-ingress\") happens to equal EnvironmentNamespace(e); " +
+			"the fixture no longer distinguishes the two queries — fix the fixture, not the assertion")
+	}
+}
+
+func TestNamespaceQueriesNeverHardCodeMain(t *testing.T) {
 	// FR-1.5: a second baseline must require no code change.
 	r := NewMapRegistry(Id("staging"), time.Now)
 	r.Apply(active("staging", "staging", "atlas-staging", nil))
 	r.Apply(active("pr-9", "staging", "atlas-pr-9", nil))
 
-	got, err := r.Namespace(Id("pr-9"), "atlas-monsters")
+	got, err := r.ServiceNamespace(Id("pr-9"), "atlas-monsters")
 	if err != nil || got != "atlas-staging" {
-		t.Fatalf("got (%q, %v), want (\"atlas-staging\", nil)", got, err)
+		t.Fatalf("ServiceNamespace: got (%q, %v), want (\"atlas-staging\", nil)", got, err)
+	}
+	got, err = r.EnvironmentNamespace(Id("pr-9"))
+	if err != nil || got != "atlas-pr-9" {
+		t.Fatalf("EnvironmentNamespace: got (%q, %v), want (\"atlas-pr-9\", nil)", got, err)
 	}
 }
 
-func TestNamespaceOfAnUnknownEnvironmentErrors(t *testing.T) {
+func TestNamespaceQueriesOfAnUnknownEnvironmentError(t *testing.T) {
 	r := NewMapRegistry(Id("main"), time.Now)
 	r.Apply(active("main", "main", "atlas-main", nil))
 
-	if _, err := r.Namespace(Id("pr-999"), "atlas-monsters"); err == nil {
-		t.Fatal("unknown environment resolved; want an error (D4 fail closed)")
+	if _, err := r.ServiceNamespace(Id("pr-999"), "atlas-monsters"); err == nil {
+		t.Fatal("ServiceNamespace resolved an unknown environment; want an error (D4 fail closed)")
+	}
+	if _, err := r.EnvironmentNamespace(Id("pr-999")); err == nil {
+		t.Fatal("EnvironmentNamespace resolved an unknown environment; want an error (D4 fail closed)")
 	}
 }
 
@@ -2015,7 +2246,8 @@ import (
 const StaleAfter = 120 * time.Second
 
 type Registry interface {
-	Namespace(e Id, service string) (string, error)
+	EnvironmentNamespace(e Id) (string, error)
+	ServiceNamespace(e Id, service string) (string, error)
 	EnvironmentsOwnedBy(service string) []Id
 	IsOwner(e Id, service string) bool
 	IsActive(e Id) bool
@@ -2072,9 +2304,32 @@ func (r *MapRegistry) Stale() bool {
 	return r.now().Sub(r.lastSeen) > StaleAfter
 }
 
-func (r *MapRegistry) Namespace(e Id, service string) (string, error) {
+// EnvironmentNamespace is the environment's OWN namespace — where its own
+// ingress lives. It NEVER falls back to the baseline: every environment
+// deploys its own ingress, and the per-service override/baseline decision is
+// made inside that ingress by its NS_* routing table (Task 43). Falling back
+// here would send a baseline pod's downstream call for pr-123 into main.
+func (r *MapRegistry) EnvironmentNamespace(e Id) (string, error) {
 	if e == "" {
 		return "", nil // legacy: caller keeps its own BASE_SERVICE_URL
+	}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	rec, ok := r.records[e]
+	if !ok {
+		return "", fmt.Errorf("environment %q is not in the registry", e)
+	}
+	return rec.Namespace, nil
+}
+
+// ServiceNamespace is the namespace of the effective implementation of
+// service for e: e's own namespace when e overrides the service, otherwise
+// e's baseline's namespace (FR-1.2). Used to generate the ingress routing
+// table and for diagnostics — NOT on the REST hot path, which wants
+// EnvironmentNamespace.
+func (r *MapRegistry) ServiceNamespace(e Id, service string) (string, error) {
+	if e == "" {
+		return "", nil
 	}
 	r.mu.RLock()
 	defer r.mu.RUnlock()
@@ -2151,7 +2406,8 @@ func (r *MapRegistry) EnvironmentsOwnedBy(service string) []Id {
 // migrated behaves exactly as it does today (FR-1.8).
 type legacyRegistry struct{}
 
-func (legacyRegistry) Namespace(Id, string) (string, error)  { return "", nil }
+func (legacyRegistry) EnvironmentNamespace(Id) (string, error)      { return "", nil }
+func (legacyRegistry) ServiceNamespace(Id, string) (string, error)  { return "", nil }
 func (legacyRegistry) EnvironmentsOwnedBy(string) []Id       { return []Id{""} }
 func (legacyRegistry) IsOwner(Id, string) bool               { return true }
 func (legacyRegistry) IsActive(Id) bool                      { return true }
@@ -3000,6 +3256,35 @@ func TestRootUrlForTargetsTheEnvironmentsIngress(t *testing.T) {
 	}
 }
 
+func TestRootUrlForANonOverriddenServiceStillTargetsTheEnvironmentsIngress(t *testing.T) {
+	// The regression this whole mechanism turns on. pr-123 overrides only
+	// atlas-character. A call to atlas-monsters must STILL leave through
+	// pr-123's ingress — that ingress's NS_ATLAS_MONSTERS then points at
+	// atlas-main, so the request reaches the baseline pod WITH the
+	// ENVIRONMENT header intact. Resolving the upstream namespace here
+	// instead would strip the environment from the operation.
+	t.Setenv("BASE_SERVICE_URL", "http://atlas-ingress.atlas-main.svc.cluster.local:80/api/")
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	reg.Apply(env.Record{Name: "main", Baseline: "main",
+		Namespace: "atlas-main", Phase: env.PhaseActive})
+	reg.Apply(env.Record{Name: "pr-123", Baseline: "main", Namespace: "atlas-pr-123",
+		Overrides: map[string]string{"atlas-character": "atlas-pr-123"},
+		Phase:     env.PhaseActive})
+	env.SetRegistry(reg)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	ctx := env.WithContext(context.Background(), env.Id("pr-123"))
+	got, err := RootUrlFor(ctx, "monsters")
+	if err != nil {
+		t.Fatalf("RootUrlFor: %v", err)
+	}
+	want := "http://atlas-ingress.atlas-pr-123.svc.cluster.local:80/api/"
+	if got != want {
+		t.Fatalf("got %q, want %q — a non-overridden service must not be "+
+			"resolved to the baseline's ingress", got, want)
+	}
+}
+
 func TestRootUrlForAnUnknownEnvironmentErrorsAndNeverFallsBack(t *testing.T) {
 	// G4 / FR-3.5: an operation must never silently transition to main.
 	t.Setenv("BASE_SERVICE_URL", "http://atlas-ingress.atlas-main.svc.cluster.local:80/api/")
@@ -3062,7 +3347,12 @@ func RootUrlFor(ctx context.Context, domain string) (string, error) {
 	if e == "" {
 		return base, nil // legacy: byte-identical to RootUrl
 	}
-	ns, err := env.CurrentRegistry().Namespace(e, ingressService)
+	// EnvironmentNamespace, NOT ServiceNamespace(e, "atlas-ingress"): every
+	// environment deploys its own ingress, and the record's `overrides` map
+	// does not list it. ServiceNamespace would therefore fall back to the
+	// baseline and send this call into main — the exact leak M3 exists to
+	// close. See Task 18's TestEnvironmentNamespaceNeverFallsBackToTheBaseline.
+	ns, err := env.CurrentRegistry().EnvironmentNamespace(e)
 	if err != nil {
 		return "", fmt.Errorf("resolving ingress for environment %q: %w", e, err)
 	}
@@ -3075,12 +3365,6 @@ func RootUrlFor(ctx context.Context, domain string) (string, error) {
 	}
 	return rewritten, nil
 }
-
-// ingressService is the service key the registry answers namespaces for.
-// The ingress is per-environment by construction, so this resolves to the
-// environment's own namespace when it has one and to its baseline's
-// otherwise — which is exactly the semantics an override needs.
-const ingressService = "atlas-ingress"
 
 // replaceNamespace rewrites the namespace label of a cluster-local URL:
 //
@@ -3692,10 +3976,31 @@ Module root: `libs/atlas-service`.
   type TenantLister func(ctx context.Context) ([]tenant.Model, error)
 
   // ForEachOwnedEnvironment runs body once per (environment, tenant) this
-  // deployment owns, resolving BOTH dimensions fresh on every call.
+  // deployment owns, SERIALLY, resolving BOTH dimensions fresh on every call.
   func ForEachOwnedEnvironment(l logrus.FieldLogger, ctx context.Context,
       service string, tenants TenantLister, body func(context.Context))
+
+  // ForEachOwnedEnvironmentConcurrently is the same iteration with each
+  // (environment, tenant) body in its own goroutine. Use it ONLY in a loop
+  // that already ran its tenants concurrently.
+  func ForEachOwnedEnvironmentConcurrently(l logrus.FieldLogger, ctx context.Context,
+      service string, tenants TenantLister, body func(context.Context))
   ```
+
+**Serial by default — this is a deliberate constraint, not an oversight.**
+Every class-1 loop today is `for _, t := range tenants { work }`: sequential.
+Making the helper concurrent would turn a one-second ticker into a burst of
+goroutines across every tenant of every environment — a behavioural change
+with real blast radius (connection-pool pressure, downstream fan-out, tick
+overlap) that has nothing to do with environment isolation. This task adds
+the environment dimension and **preserves each loop's existing concurrency
+shape**. The concurrent variant exists for the loops that already
+parallelised their tenants; Task 41/42 must state, per loop, which one it
+used and why.
+
+Fault isolation (FR-6.5) is obtained from a per-iteration `recover`, not from
+a goroutine. Panic recovery and concurrency are separate concerns and
+`routine.Go` happens to bundle them.
 
 - [ ] **Step 1: Write the failing iteration tests**
 
@@ -3707,17 +4012,43 @@ func TestForEachOwnedEnvironmentRunsOncePerTenantPerOwnedEnvironment(t *testing.
 	env.SetRegistry(r)
 	t.Cleanup(func() { env.SetRegistry(nil) })
 
-	var mu sync.Mutex
 	seen := map[string]int{}
 	ForEachOwnedEnvironment(testLogger(t), context.Background(), "atlas-monsters",
 		twoTenantsPerEnvironment(t), func(ctx context.Context) {
-			mu.Lock()
-			defer mu.Unlock()
 			seen[string(env.MustFromContext(ctx))]++
 		})
 
 	if seen["main"] != 2 || seen["pr-123"] != 2 {
 		t.Fatalf("seen = %v, want 2 iterations each for main and pr-123", seen)
+	}
+}
+
+func TestForEachOwnedEnvironmentRunsSerially(t *testing.T) {
+	// The helper must preserve each loop's existing shape: today every
+	// class-1 loop is `for _, t := range tenants { work }`. An unsynchronised
+	// counter is the assertion — this test is run under -race, so a
+	// concurrent implementation fails it rather than passing flakily.
+	r := env.NewMapRegistry(env.Id("main"), time.Now)
+	r.Apply(env.Record{Name: "main", Baseline: "main", Namespace: "atlas-main", Phase: env.PhaseActive})
+	r.Apply(env.Record{Name: "pr-123", Baseline: "main", Namespace: "atlas-pr-123", Phase: env.PhaseActive})
+	env.SetRegistry(r)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	inFlight := 0
+	maxInFlight := 0
+	ForEachOwnedEnvironment(testLogger(t), context.Background(), "atlas-monsters",
+		twoTenantsPerEnvironment(t), func(context.Context) {
+			inFlight++
+			if inFlight > maxInFlight {
+				maxInFlight = inFlight
+			}
+			time.Sleep(time.Millisecond)
+			inFlight--
+		})
+
+	if maxInFlight != 1 {
+		t.Fatalf("maxInFlight = %d, want 1 — the default helper must not "+
+			"parallelise tenants that the caller's loop ran serially", maxInFlight)
 	}
 }
 
@@ -3731,12 +4062,9 @@ func TestForEachOwnedEnvironmentSkipsEnvironmentsThisDeploymentDoesNotOwn(t *tes
 	env.SetRegistry(r)
 	t.Cleanup(func() { env.SetRegistry(nil) })
 
-	var mu sync.Mutex
 	seen := map[string]int{}
 	ForEachOwnedEnvironment(testLogger(t), context.Background(), "atlas-monsters",
 		oneTenantPerEnvironment(t), func(ctx context.Context) {
-			mu.Lock()
-			defer mu.Unlock()
 			seen[string(env.MustFromContext(ctx))]++
 		})
 
@@ -3771,21 +4099,42 @@ func TestForEachOwnedEnvironmentIsolatesFaults(t *testing.T) {
 	env.SetRegistry(r)
 	t.Cleanup(func() { env.SetRegistry(nil) })
 
-	var mu sync.Mutex
 	completed := 0
 	ForEachOwnedEnvironment(testLogger(t), context.Background(), "atlas-monsters",
 		oneTenantPerEnvironment(t), func(ctx context.Context) {
 			if env.MustFromContext(ctx) == env.Id("main") {
 				panic("boom")
 			}
-			mu.Lock()
 			completed++
-			mu.Unlock()
 		})
 
 	if completed != 1 {
 		t.Fatalf("completed = %d; a panic in one environment stopped another", completed)
 	}
+}
+
+func TestForEachOwnedEnvironmentConcurrentlyRunsBodiesInParallel(t *testing.T) {
+	// The opt-in variant, for loops that ALREADY parallelised their tenants.
+	r := env.NewMapRegistry(env.Id("main"), time.Now)
+	r.Apply(env.Record{Name: "main", Baseline: "main", Namespace: "atlas-main", Phase: env.PhaseActive})
+	r.Apply(env.Record{Name: "pr-123", Baseline: "main", Namespace: "atlas-pr-123", Phase: env.PhaseActive})
+	env.SetRegistry(r)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	started := make(chan struct{}, 4)
+	release := make(chan struct{})
+	go func() {
+		for i := 0; i < 4; i++ {
+			<-started
+		}
+		close(release)
+	}()
+
+	ForEachOwnedEnvironmentConcurrently(testLogger(t), context.Background(), "atlas-monsters",
+		twoTenantsPerEnvironment(t), func(context.Context) {
+			started <- struct{}{}
+			<-release // deadlocks unless all four run concurrently
+		})
 }
 
 func TestForEachOwnedEnvironmentReresolvesOwnershipEveryCall(t *testing.T) {
@@ -3798,9 +4147,8 @@ func TestForEachOwnedEnvironmentReresolvesOwnershipEveryCall(t *testing.T) {
 
 	count := func() int {
 		n := 0
-		var mu sync.Mutex
 		ForEachOwnedEnvironment(testLogger(t), context.Background(), "atlas-monsters",
-			oneTenantPerEnvironment(t), func(context.Context) { mu.Lock(); n++; mu.Unlock() })
+			oneTenantPerEnvironment(t), func(context.Context) { n++ })
 		return n
 	}
 
@@ -3830,34 +4178,85 @@ Expected: FAIL — `undefined: ForEachOwnedEnvironment`.
 // loaded the tenant list once before the ticker and closed over the slice
 // (design C4) — do not reintroduce that shape.
 //
-// Each (environment, tenant) body runs under routine.Go's panic recovery so
-// one environment's fault does not stop another's (FR-6.5). The call blocks
-// until every iteration completes, so a ticker's next tick does not overlap
-// the previous one.
+// Iteration is SERIAL, preserving the shape of the loops it replaces — every
+// class-1 loop today is `for _, t := range tenants { work }`. Adding
+// concurrency here would be a behavioural change unrelated to environment
+// isolation, so it is opt-in via ForEachOwnedEnvironmentConcurrently.
+//
+// Each (environment, tenant) body runs under its own recover so one
+// environment's fault does not stop another's (FR-6.5). Recovery does NOT
+// require a goroutine; routine.Go merely bundles the two.
 func ForEachOwnedEnvironment(l logrus.FieldLogger, ctx context.Context,
 	service string, tenants TenantLister, body func(context.Context)) {
 
+	eachOwned(l, ctx, service, tenants, func(el logrus.FieldLogger, c context.Context) {
+		safely(el, c, body)
+	})
+}
+
+// ForEachOwnedEnvironmentConcurrently runs each (environment, tenant) body in
+// its own goroutine and blocks until all complete. Use it ONLY where the loop
+// being converted already ran its tenants concurrently — otherwise a
+// one-second ticker becomes a burst of goroutines across every tenant of
+// every environment.
+func ForEachOwnedEnvironmentConcurrently(l logrus.FieldLogger, ctx context.Context,
+	service string, tenants TenantLister, body func(context.Context)) {
+
 	var wg sync.WaitGroup
+	eachOwned(l, ctx, service, tenants, func(el logrus.FieldLogger, c context.Context) {
+		wg.Add(1)
+		routine.Go(el, c, func(gc context.Context) {
+			defer wg.Done()
+			body(gc)
+		})
+	})
+	wg.Wait()
+}
+
+// eachOwned resolves the (environment, tenant) pairs this deployment owns and
+// hands each to visit. BOTH dimensions are resolved fresh on every call
+// (FR-6.4): a tenant provisioned after this pod started must be picked up
+// without a restart, because a baseline pod cannot be redeployed to serve an
+// ephemeral environment (G7, NG6). The pre-existing pattern this replaces
+// loaded the tenant list once before the ticker and closed over the slice
+// (design C4) — do not reintroduce that shape.
+func eachOwned(l logrus.FieldLogger, ctx context.Context, service string,
+	tenants TenantLister, visit func(logrus.FieldLogger, context.Context)) {
+
 	for _, e := range env.CurrentRegistry().EnvironmentsOwnedBy(service) {
 		ectx := env.WithContext(ctx, e)
+		el := l.WithField("environment", string(e))
 		ts, err := tenants(ectx)
 		if err != nil {
-			l.WithError(err).WithField("environment", string(e)).
-				Error("Unable to list tenants; skipping this environment's iteration.")
+			el.WithError(err).Error("Unable to list tenants; skipping this environment's iteration.")
 			continue
 		}
 		for _, t := range ts {
-			tctx := tenant.WithContext(ectx, t)
-			wg.Add(1)
-			routine.Go(l.WithField("environment", string(e)), tctx, func(c context.Context) {
-				defer wg.Done()
-				body(c)
-			})
+			visit(el, tenant.WithContext(ectx, t))
 		}
 	}
-	wg.Wait()
+}
+
+// safely runs body with panic recovery, on the CALLING goroutine. It is
+// deliberately not routine.Go: fault isolation and concurrency are separate
+// concerns, and this helper needs only the first.
+func safely(l logrus.FieldLogger, ctx context.Context, body func(context.Context)) {
+	defer func() {
+		if r := recover(); r != nil {
+			l.WithField("panic", fmt.Sprintf("%v", r)).
+				WithField("stack", string(debug.Stack())).
+				Error("Recovered panic in a per-environment iteration.")
+		}
+	}()
+	body(ctx)
 }
 ```
+
+`tools/goroutine-guard.sh` enforces DOM-25 (background goroutines go through
+`routine.Go`, never a bare `go`). `safely` spawns nothing, so it does not
+trip the guard; `ForEachOwnedEnvironmentConcurrently` uses `routine.Go` as
+required. Confirm the guard passes rather than assuming:
+`./tools/goroutine-guard.sh`.
 
 A tenant whose environment is not in the registry is never reached at all —
 `EnvironmentsOwnedBy` only yields environments the registry knows, and the
@@ -3865,10 +4264,12 @@ tenant lister is already environment-filtered by Task 14. That is the
 skip-on-unknown rule design §7.1 requires, obtained structurally rather than
 as a check.
 
-- [ ] **Step 4: Run the tests**
+- [ ] **Step 4: Run the tests, including under `-race`**
 
-Run: `cd libs/atlas-service && go build ./... && go test ./...`
-Expected: PASS.
+Run: `cd libs/atlas-service && go build ./... && go test ./... && go test -race ./...`
+Expected: PASS. `-race` matters here: `TestForEachOwnedEnvironmentRunsSerially`
+uses unsynchronised counters on purpose, so a concurrent implementation fails
+loudly instead of passing intermittently.
 
 - [ ] **Step 5: Commit**
 
@@ -5495,6 +5896,13 @@ routine.Go(l, rt.Context(), func(_ context.Context) {
 })
 ```
 
+`ForEachOwnedEnvironment` — the **serial** variant — is correct here because
+the loop it replaces is serial (`for _, t := range tenants`). Record in the
+task report, for each of the four loops in this task, which variant you used
+and what the pre-existing loop's concurrency shape was. Reaching for
+`ForEachOwnedEnvironmentConcurrently` on a loop that was serial is a
+behavioural change unrelated to this project and must not happen silently.
+
 The **startup reconciliation** at `main.go:100-107` and the **graceful
 shutdown** loop at `main.go:145-151` iterate the same cached slice and get
 the same treatment: both become `service.ForEachOwnedEnvironment` calls with
@@ -5568,7 +5976,9 @@ how it is spelled.
 
 - [ ] **Step 2: Convert the four remaining class-1 loops**
 
-Same shape as Task 41 Step 3. `atlas-saga-orchestrator`'s loop is a
+Same shape as Task 41 Step 3, including the concurrency-shape record: name
+the variant used per loop and the pre-existing loop's shape.
+`atlas-saga-orchestrator`'s loop is a
 **persisted-work path**: its sweeper reads saga rows and must reconstruct the
 environment from the tenant on the row (design §8.3), not from `env.Self()`.
 `ForEachOwnedEnvironment` gives it that for free — the tenant lister is
@@ -5879,7 +6289,7 @@ afterwards.
 Fill `PLACEHOLDER_DELETE_BLOCK` with delete patches for every Deployment
 except `atlas-ingress`, `atlas-login`, `atlas-channel` and
 `atlas-character`, rebuild, and assert exactly 4 Deployments remain. This is
-the mechanical half of the §17 proof and must pass before Task 54 relies on it.
+the mechanical half of the §17 proof and must pass before Task 55 relies on it.
 
 - [ ] **Step 6: Commit**
 
@@ -6284,7 +6694,7 @@ do_deactivate() {
 The 35 s settle is one heartbeat interval plus margin, not the 120 s
 staleness bound: the projection is push-based, so a phase change propagates
 in the time it takes one Kafka message to reach every consumer. State that
-reasoning in a comment. If measurement during Task 54 shows it is
+reasoning in a comment. If measurement during Task 55 shows it is
 insufficient, raise it there rather than guessing higher now.
 
 - [ ] **Step 4: Implement `do_drop_control_plane`**
@@ -6705,7 +7115,128 @@ git commit -m "feat(tools): enforce env-bootstrap-guard — every service wires 
 
 ---
 
-### Task 53: Make sparse the default mode
+### Task 53: Measure the Kafka fan-out cost before enabling sparse by default
+
+The ownership gate is logically sound but it is **not free**. Sparse
+environments consume the unsuffixed baseline topics (FR-4.8), so every
+override consumer group reads the service's *entire* topic and gate-drops the
+traffic belonging to other environments. With ten concurrent environments
+overriding `atlas-character`, there are eleven consumer groups
+(`atlas-character-main` plus ten `atlas-character-pr-N`) each seeing
+essentially all character messages.
+
+The trade is:
+
+```
+before:  60 pods × environment
+after:   topic traffic × (number of overrides of that service)
+```
+
+That is very likely still a large win — a dropped message costs a header
+parse and two map lookups, not a domain handler — but "very likely" is not a
+measurement, and the cost is superlinear in the one dimension the project is
+designed to increase. This task measures it before Task 54 makes sparse the
+default. **If the numbers are bad, the remedy is a design change** (per-service
+topic partitioning by environment, or reinstating topic suffixing for
+high-volume services in sparse mode), which is far cheaper to discover here
+than after the flip.
+
+**Files:**
+- Create: `docs/tasks/task-232-sparse-ephemeral-environments/kafka-fanout-measurement.md` — the measured result
+- Modify: `docs/runbooks/sparse-environments.md` — the concurrency ceiling this establishes, and the symptom to watch for
+- Read-only: `libs/atlas-kafka/consumer/gate.go` (Task 26) — the three counters that make the drop rate observable
+- Read-only: `libs/atlas-kafka/consumer/manager.go` — `Snapshot()` / the `/debug/consumers` handler, for per-consumer lag
+
+**Interfaces:**
+- Consumes: a live cluster with the Phase D deployment machinery working.
+- Produces: `kafka-fanout-measurement.md` with four numbers per configuration
+  and a stated verdict. Task 54 Step 1 cites it.
+
+- [ ] **Step 1: Pick the highest-volume service and establish its baseline**
+
+Identify the service with the highest message rate on `main`, from the
+existing Kafka metrics rather than by assumption:
+
+```promql
+topk(5, sum by (topic) (rate(kafka_server_brokertopicmetrics_messagesin_total[15m])))
+```
+
+Record, for `main` alone: broker ingress bytes/s for that topic, the
+consumer group's CPU (`rate(container_cpu_usage_seconds_total[5m])` for the
+pod), resident memory, and consumer lag. These four are the baseline row.
+
+- [ ] **Step 2: Deploy 5 concurrent sparse environments overriding that one service**
+
+Five PRs, each overriding only the chosen service. All five plus `main`
+consume the same unsuffixed topic. Re-record the same four numbers, per
+group and in total, after a 15-minute soak under representative load.
+
+- [ ] **Step 3: Scale to 10 and re-record**
+
+Ten is the MetalLB `pr-pool` ceiling established in Task 46 (20 addresses,
+two per environment), so it is the real upper bound on concurrency — measure
+at the ceiling, not at a comfortable point below it.
+
+- [ ] **Step 4: Record the drop ratio**
+
+```
+atlas_kafka_gate_skipped_not_owner_total / atlas_kafka_gate_processed_total
+```
+
+per group. With N environments and traffic concentrated in `main`, an
+override group's ratio should approach `(N-1)/1` — i.e. it discards almost
+everything it reads. Confirm the observed ratio matches that prediction; a
+large divergence means the gate is not seeing the traffic you think it is,
+and the measurement is invalid.
+
+- [ ] **Step 5: Write the verdict**
+
+`kafka-fanout-measurement.md`:
+
+```markdown
+# Kafka fan-out under concurrent sparse environments
+
+Measured <date>, on <cluster>, against `<service>` / `<topic>`.
+
+| Environments | Broker egress (MB/s) | Consumer CPU (cores, total) | Peak lag (msgs) | Drop ratio |
+|---|---|---|---|---|
+| 1 (main only, baseline) | | | | n/a |
+| 6 (main + 5 overrides) | | | | |
+| 11 (main + 10 overrides) | | | | |
+
+**Verdict:** <acceptable | needs mitigation>
+
+**Threshold used:** <state it — e.g. total consumer CPU across all groups
+must stay under X cores, and no group's lag may exceed Y at steady state>
+
+**If mitigation is needed**, the options in preference order are:
+1. Restrict sparse mode for this specific service — escalate PRs touching it
+   to isolated (a one-line addition to Task 50's escalation table).
+2. Reinstate topic suffixing for the identified high-volume topics in sparse
+   mode, accepting per-environment topics for those alone.
+3. Partition the topic by environment and assign partitions by ownership.
+```
+
+State the threshold **before** reading the numbers, and record it in the
+document. A threshold chosen after seeing the result is not a threshold.
+
+- [ ] **Step 6: If the verdict is "needs mitigation", stop and raise it**
+
+Do not proceed to Task 54. Mitigation option 1 is a plan edit this task can
+make itself (add the service's path to Task 50's escalation table); options 2
+and 3 are design changes and need sign-off. Report which applies.
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add docs/tasks/task-232-sparse-ephemeral-environments/kafka-fanout-measurement.md \
+        docs/runbooks/sparse-environments.md
+git commit -m "docs(task-232): measured Kafka fan-out cost under concurrent sparse environments"
+```
+
+---
+
+### Task 54: Make sparse the default mode
 
 **Files:**
 - Modify: `tools/mode-select.sh` — the default when no escalation trigger fires becomes `sparse`
@@ -6728,6 +7259,11 @@ Before flipping, each of these must hold. Check them, do not assume them:
 ```
 
 Expected: all exit 0. Paste the outputs into the task report.
+
+Also confirm Task 53's verdict is **acceptable**. Quote the table from
+`kafka-fanout-measurement.md` here — a fan-out cost that has not been
+measured is not a reason to flip the default, and the cost grows with exactly
+the concurrency this change is meant to encourage.
 
 Also re-check the NetworkPolicy risk (design §16): cross-namespace ingress
 calls are what M3 depends on, and a future NetworkPolicy would break it
@@ -6760,7 +7296,7 @@ git commit -m "feat(ci): sparse is now the default ephemeral environment mode"
 
 ---
 
-### Task 54: The §17 proof — environment is not deployment
+### Task 55: The §17 proof — environment is not deployment
 
 The PRD's acceptance criteria, executed against a real cluster. Every item
 below is a **measurement**, not an inspection; a claim without pasted output
@@ -6911,10 +7447,18 @@ mandatory-floor change needed, recorded in 44/46; C4 → 27, 41–42;
 §8 control plane → 11–14; §9 Redis → 4–10; §10 guards → 9, 15, 24, 28, 52;
 §11 deviations V1–V4 → carried in the Global Constraints and in Tasks 20, 26,
 13, 11 respectively; §12 sequencing → the phase map; §13 mode selection →
-50–51; §14 observability → 29; §15 testing → the TDD steps plus 54;
+50–51; §14 observability → 29; §15 testing → the TDD steps plus 55;
 §16 risks → 47 (C2), 1–3 (sweep), 49 (teardown), 20/26 (registry outage), 45
-(offset seeding), 53 Step 1 (NetworkPolicy), 52 (migration drift);
+(offset seeding), 54 Step 1 (NetworkPolicy), 52 (migration drift);
 §17 open items → decisions P1–P4 in the Global Constraints.
+
+One cost the design does not bound and this plan adds a task for: sparse
+environments consume the unsuffixed baseline topics (FR-4.8), so every
+override consumer group reads its service's whole topic and gate-drops other
+environments' traffic — superlinear in the concurrency the project exists to
+increase. **Task 53** measures broker egress, consumer CPU, lag and drop
+ratio at 1 / 6 / 11 concurrent environments against a pre-stated threshold,
+and gates Task 54.
 
 PRD requirements with no design mechanism and therefore no task: none found.
 PRD FR-5.4 is implemented as design's V2 refinement (at most one owner ever;
@@ -6932,12 +7476,24 @@ right shape for an audit.
 `env.Self()`, `env.Reconcile`, `env.Mismatched`, `service.WithEnvironmentRegistry`,
 `service.ForEachOwnedEnvironment`, `service.TenantLister`,
 `requests.RootUrlFor`, `requests.EnvHeaderDecorator`, `producer.EnvHeaderDecorator`,
-`consumer.EnvHeaderParser`, `scope.Strict`, `scope.WithBaselineFallback`,
-`scope.AuthorizeWrite`, `scope.ErrCrossEnvironmentWrite` are each defined in
-exactly one task and used with the same spelling everywhere after it.
-`Registry.Namespace` deliberately replaces the PRD's
-`Resolve(environment, service) → deployment`: M3 needs a namespace, and
-Deployment names are identical across namespaces in Atlas (design §4.4).
+`consumer.EnvHeaderParser`, `scope.Strict`, `scope.AuthorizeWrite`,
+`scope.ErrCrossEnvironmentWrite`, and `templates.{OverlaySingle,
+OverlayCollection, VisibleById}` are each defined in exactly one task and used
+with the same spelling everywhere after it.
+
+Two API shapes deliberately depart from the PRD/design wording, and the
+departure is recorded at the point of definition:
+
+- `Registry.EnvironmentNamespace` / `Registry.ServiceNamespace` replace the
+  PRD's single `Resolve(environment, service) → deployment`. M3 needs a
+  namespace rather than a Deployment name (Deployment names are identical
+  across namespaces in Atlas — design §4.4), and the two questions have
+  different answers: the outbound REST path wants the environment's own
+  ingress namespace, which must never fall back to the baseline.
+- The V3 template fallback is expressed as three key-aware helpers in the
+  `templates` package rather than one generic GORM scope, because a
+  collection read needs an anti-join and an `ORDER BY` only resolves a
+  single-key `First()`.
 
 
 

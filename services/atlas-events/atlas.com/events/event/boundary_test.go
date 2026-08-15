@@ -26,11 +26,34 @@ var knownEventTypes = []string{"CRIMSON_BALROG", "ANNIVERSARY"}
 // 10 is comfortably below that while still catching "the walk saw nothing."
 const minInspectedFiles = 10
 
+// eventPackageImportPrefix is the import path prefix of the concrete event
+// type packages (events/crimsonbalrog, events/anniversary, ...). No package
+// under event/ may import anything under this prefix — that import is the
+// generic layer naming a concrete event type just as surely as a string
+// literal would, and it is the more realistic violation shape: an
+// IDENTIFIER or SELECTOR reference to an imported package's exported
+// constant is invisible to a check that only inspects *ast.BasicLit STRING
+// nodes.
+const eventPackageImportPrefix = "atlas-events/events/"
+
 // TestGenericLayerNeverNamesAnEventType walks the source of every package
 // under event/ (definition, occurrence, transition, scheduling,
-// orchestration, registry) with go/parser and fails if any non-test file
-// contains a string literal naming a known event type. Reach event behavior
-// through registry.Handler instead.
+// orchestration, registry) with go/parser and asserts two independent things
+// about FR-X3, the "generic layer never names a concrete event type" rule:
+//
+//  1. No non-test file contains a string literal naming a known event type
+//     (knownEventTypes) — catches a bare `const` or raw-backtick literal
+//     switching on a type discriminator.
+//  2. No non-test file imports anything under events/... (eventPackageImportPrefix)
+//     — catches a generic package importing a concrete event package and
+//     naming its exported constant by IDENTIFIER or SELECTOR, which (1)
+//     cannot see because that reference is not a *ast.BasicLit STRING node.
+//
+// What this guard does NOT catch: a type name built by concatenation or by
+// fmt.Sprintf (e.g. "CRIMSON" + "_BALROG", or fmt.Sprintf("%s_BALROG",
+// "CRIMSON")) is invisible to both checks — they only see literal ASTs, not
+// runtime string construction. Reach event behavior through
+// registry.Handler instead.
 func TestGenericLayerNeverNamesAnEventType(t *testing.T) {
 	root := "."
 	inspected := 0
@@ -50,6 +73,16 @@ func TestGenericLayerNeverNamesAnEventType(t *testing.T) {
 		if perr != nil {
 			return perr
 		}
+
+		for _, imp := range f.Imports {
+			importPath := strings.Trim(imp.Path.Value, `"`)
+			if strings.HasPrefix(importPath, eventPackageImportPrefix) {
+				t.Errorf("%s: the generic layer imports %s (FR-X3). "+
+					"Reach event behavior through registry.Handler instead.",
+					fset.Position(imp.Pos()), importPath)
+			}
+		}
+
 		ast.Inspect(f, func(n ast.Node) bool {
 			bl, ok := n.(*ast.BasicLit)
 			if !ok || bl.Kind != token.STRING {

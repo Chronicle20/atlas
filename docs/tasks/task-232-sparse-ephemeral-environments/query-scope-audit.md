@@ -128,6 +128,26 @@ task's section rather than given rows — there is nothing to classify.
 | atlas-pets | excludes (`exclude.Entity`) | Data | SCOPED | `services/atlas-pets/atlas.com/pets/pet/exclude/entity.go:26` (TenantId); `libs/atlas-database/tenant_scope.go:75-79`; write at `services/atlas-pets/atlas.com/pets/pet/administrator.go:153-172` (`setExcludes`) | Package has no `provider.go`/`administrator.go` of its own — its only query builder is `pet.setExcludes`, cited above (ambiguity rule). The `db.Exec` at `exclude/entity.go:15` is one-time `Migration` DDL (tenant_id backfill from the parent `pets` row), not a live query. `TenantId` is left zero in the `Create` struct literal (`administrator.go:161-166`) and injected by the automatic create callback (`tenant_scope.go:83-133`). |
 | atlas-portal-actions | portal_scripts (`script.Entity`) | Data | SCOPED | `services/atlas-portal-actions/atlas.com/portal/script/entity.go:17` (`TenantID`, column `tenant_id`); `libs/atlas-database/tenant_scope.go:31-37,75-79`; reads at `services/atlas-portal-actions/atlas.com/portal/script/provider.go:12,23,35`; writes at `services/atlas-portal-actions/atlas.com/portal/script/administrator.go:11,32,74,82` | No raw SQL; no `WithoutTenantFilter`. |
 
+| atlas-quest | quest_statuses (`quest.Entity`) | Data | SCOPED | `services/atlas-quest/atlas.com/quest/quest/entity.go:16` (TenantId, indexed); `libs/atlas-database/tenant_scope.go:75-79`; reads at `services/atlas-quest/atlas.com/quest/quest/provider.go:11,27,33,44,61`; writes at `services/atlas-quest/atlas.com/quest/quest/administrator.go:13,30,55,74,96,134,156,178` | No raw SQL; no `WithoutTenantFilter`. |
+| atlas-quest | quest_progress (`progress.Entity`) | Data | SCOPED | `services/atlas-quest/atlas.com/quest/quest/progress/entity.go:13` (TenantId, indexed); `libs/atlas-database/tenant_scope.go:75-79` | No provider/administrator of its own — read via `quest.Entity.Progress` foreignKey preload (`quest/entity.go:26`) and written through `quest/administrator.go:96` (`setProgress`, takes `tenantId` explicitly). Own `TenantId` column, independently callback-scoped. |
+| atlas-quest | quest_medal_maps (`medal.Entity`) | Data | N/A — orphaned | `services/atlas-quest/atlas.com/quest/quest/medal/entity.go:14-18` (no TenantId column, no FK annotation) | Brief pre-identified this as expected `TRANSITIVE` through the tenant-scoped quest-status parent; **not confirmed at source**. `medal.Migration` is never registered — `services/atlas-quest/atlas.com/quest/main.go:52` calls `database.SetMigrations(quest.Migration, progress.Migration, outboxlib.Migration)` only, so the `quest_medal_maps` table is never created. `grep -rn "medal\." services/atlas-quest --include=*.go` (excluding the entity/model files themselves) finds no provider, administrator, or caller anywhere in the service — the package is dead code with no live query path at all, not a live TRANSITIVE access reachable through a join. No verdict from the defined taxonomy fits an access path that does not exist; flagged for the controller rather than forced into TRANSITIVE. |
+| atlas-rankings | character_rankings (`ranking.Entity`) | Data | SCOPED | `services/atlas-rankings/atlas.com/rankings/ranking/entity.go:20` (TenantId, uniqueIndex w/ character); explicit `tenant_id`/context-derived filters throughout `services/atlas-rankings/atlas.com/rankings/ranking/administrator.go:23-42,60-65` (`upsertBatch`, `pruneBefore`) | `pruneBefore` (`administrator.go:60-65`) is the one bulk-delete-by-predicate (`computed_at < ?`) in this third; its own comment documents it as "the highest-risk operation in this package" and it fails closed by calling `tenant.FromContext(db.Statement.Context)` itself before issuing the DELETE, rather than trusting the automatic callback alone (`administrator.go:44-59`). No raw SQL, no `WithoutTenantFilter`. |
+| atlas-rankings | ranking_cycles (`ranking.CycleEntity`) | Data | SCOPED | `services/atlas-rankings/atlas.com/rankings/ranking/entity.go:50` (TenantId, uniqueIndex); explicit `tenantId` param at `services/atlas-rankings/atlas.com/rankings/ranking/administrator.go:72,87` (`startCycle`/`completeCycle`) | No raw SQL, no `WithoutTenantFilter`. |
+| atlas-reactor-actions | reactor_scripts (`script.Entity`) | Data | SCOPED | `services/atlas-reactor-actions/atlas.com/reactor/script/entity.go:17` (`TenantID`, column `tenant_id`, composite index w/ reactor_id); `libs/atlas-database/tenant_scope.go:31-37,75-79` | No raw SQL; no `WithoutTenantFilter`. |
+| atlas-reward-pools | gachapons (`gachapon.entity`) | Data | SCOPED | `services/atlas-reward-pools/atlas.com/reward-pools/gachapon/entity.go:131` (TenantId, uniqueIndex w/ slug id); `libs/atlas-database/tenant_scope.go:75-79`; reads at `services/atlas-reward-pools/atlas.com/reward-pools/gachapon/provider.go:11,17` | The `tx.Exec` calls at `entity.go:72` are inside `migrateToSurrogatePK` — one-time structural DDL (PK migration to a tenant-scoped surrogate key, documented in the function's own comment), not a live query. No `WithoutTenantFilter`. |
+| atlas-reward-pools | global_gachapon_items (`global.entity`) | Data | SCOPED | `services/atlas-reward-pools/atlas.com/reward-pools/global/entity.go:13` (TenantId); `libs/atlas-database/tenant_scope.go:75-79`; reads at `services/atlas-reward-pools/atlas.com/reward-pools/global/provider.go:11,17,23` | No raw SQL; no `WithoutTenantFilter`. |
+| atlas-reward-pools | gachapon_items (`item.entity`) | Data | SCOPED | `services/atlas-reward-pools/atlas.com/reward-pools/item/entity.go:13` (TenantId); `libs/atlas-database/tenant_scope.go:75-79`; reads at `services/atlas-reward-pools/atlas.com/reward-pools/item/provider.go:11,19,25,31` | No raw SQL; no `WithoutTenantFilter`. |
+| atlas-saga-orchestrator | sagas (`saga.Entity`) | Data | UNSCOPED | `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/entity.go:16` (TenantId, indexed); request-path reads/writes are `SCOPED` via `libs/atlas-database/tenant_scope.go:75-79` (`store.go:53-97,101-225,253-265,303-330,334-350`); but `GetAllActive` (`store.go:228-236`) and `GetTimedOut` (`store.go:239-250`) both run `database.WithoutTenantFilter(ctx)` with no tenant predicate | Blocking per this audit's verdict, but same shape as the "cross-tenant discovery `SELECT` followed by per-row write addressed by the row's own id/derived tenant" group from part 2: both are startup/recovery reads (`main.go:215` `recoverSagas`, `main.go:268` `reapTimedOutSagas`) that reconstruct `tenant.Model` per row (`main.go:223-224,275-276`) before any subsequent `processor.Step`/`MarkEarliestPendingStep` write, which is addressed by `transactionId` — the mutation cannot cross tenants, but the discovery read does. |
+| atlas-skills | macros (`macro.Entity`) | Data | SCOPED | `services/atlas-skills/atlas.com/skills/macro/entity.go:15` (TenantId); `libs/atlas-database/tenant_scope.go:75-79`; reads at `services/atlas-skills/atlas.com/skills/macro/provider.go:11,22`; writes at `services/atlas-skills/atlas.com/skills/macro/administrator.go:10,14` | No raw SQL; no `WithoutTenantFilter`. |
+| atlas-skills | skills (`skill.Entity`) | Data | SCOPED | `services/atlas-skills/atlas.com/skills/skill/entity.go:23` (TenantId, part of composite PK); `libs/atlas-database/tenant_scope.go:75-79`; reads at `services/atlas-skills/atlas.com/skills/skill/provider.go:11,17`; writes at `services/atlas-skills/atlas.com/skills/skill/administrator.go:14,33,49,85,92` | No raw SQL; no `WithoutTenantFilter`. |
+| atlas-storage | storage_assets (`asset.Entity`) | Data | SCOPED | `services/atlas-storage/atlas.com/storage/asset/entity.go:14` (TenantId, indexed); `libs/atlas-database/tenant_scope.go:75-79`; reads at `services/atlas-storage/atlas.com/storage/asset/provider.go:8,32,43,59`; writes at `services/atlas-storage/atlas.com/storage/asset/administrator.go:9,56,62,68,76` | The `db.Exec` at `entity.go:63` (`Migration`) is one-time flag-bitmask backfill DDL, not a live query. No `WithoutTenantFilter`. |
+| atlas-storage | storages (`storage.Entity`) | Data | SCOPED | `services/atlas-storage/atlas.com/storage/storage/entity.go:11` (TenantId, uniqueIndex w/ world+account); `libs/atlas-database/tenant_scope.go:75-79`; reads at `services/atlas-storage/atlas.com/storage/storage/provider.go:12,37`; writes at `services/atlas-storage/atlas.com/storage/storage/administrator.go:12,30,39,48` | No raw SQL; no `WithoutTenantFilter`. `storage/projection/provider.go` composes `asset.Model`/`storage.Model` in memory (`BuildProjection`) — no `entity.go` of its own, not a separate query path. |
+| atlas-tenants | tenants (`tenant.Entity`) | Control | CONTROL | `services/atlas-tenants/atlas.com/tenants/tenant/entity.go:9-16` (no TenantId column — this table IS the tenant registry) | Confirmed at source per brief: no tenant-scoping column exists or could exist (the row *is* the tenant). Same disposition as `atlas-configurations`' `tenants` table — scoped by `environment` under Task 10/11, not by `tenant_id`. |
+| atlas-tenants | configurations (`configuration.Entity`) | Data | SCOPED | `services/atlas-tenants/atlas.com/tenants/configuration/entity.go:14` (TenantId); explicit `"tenant_id": tenantID` filter at `services/atlas-tenants/atlas.com/tenants/configuration/provider.go:17-20`, threaded through every `GetBy*`/`GetAll*Provider` in the file (lines 15-448) | Explicit `tenant_id = ?` in every read (defense-in-depth on top of the automatic callback). No raw SQL, no `WithoutTenantFilter`. |
+| atlas-trades | trade_escrow_items, trade_escrow_mesos, trade_escrow_meso_stakes, trade_escrow_meso_refunds (`ItemEntity`/`MesoEntity`/`MesoStakeEntity`/`MesoRefundEntity`) | Data | UNSCOPED | `services/atlas-trades/atlas.com/trades/escrow/entity.go:61,201` (+ MesoStakeEntity/MesoRefundEntity, all own TenantId); request-path reads/writes are `SCOPED`, explicit `tenantId` param throughout `provider.go:15-145` and `administrator.go`; but `AllItems`/`AllMesos` (`provider.go:175-190`) call `db.Find(...)` with no `WithContext` and no tenant filter | Blocking per this verdict, same "cross-tenant discovery read, per-row tenant re-derivation" shape as the group below: both are called only from `trade/settlement.go:1311-1316` (`ReconcileEscrow`), whose own comment states "It runs with NO tenant in context and restores each row's own tenant" (`settlement.go:1309-1310`) — reachable only from the boot path and retry ticker per `provider.go:173-174`. `AllMesoStakes` (`provider.go:158-164`) has the identical shape but **no production caller** — `grep -rn "AllMesoStakes"` finds only `escrow/migration_test.go:131,146`; it is exported, unscoped, and currently dead code, not a live gap. |
+| atlas-trades | trade_ledger_entries, trade_ledger_sides, trade_ledger_items (`ledger.Entry`/`Side`/`ItemRow`) | Data | SCOPED | `services/atlas-trades/atlas.com/trades/ledger/entity.go:42,64` (TenantId); explicit `tenantId` param threaded through every function in `services/atlas-trades/atlas.com/trades/ledger/provider.go:22-144` and `administrator.go:52,107` | No cross-tenant `AllX`-style function exists in this package (unlike `escrow` and `settlement`). No raw SQL, no `WithoutTenantFilter`. |
+| atlas-trades | trade_settlements, trade_settlement_sides, trade_settlement_items (`settlement.Entry`/`Side`/`ItemRow`) | Data | UNSCOPED | `services/atlas-trades/atlas.com/trades/settlement/entity.go:61,87` (TenantId); request-path reads/writes are `SCOPED`, explicit `tenantId` param throughout `provider.go:17-49` and `administrator.go`; but `allUnresolved` (`provider.go:72-80`) runs unfiltered and unscoped | Blocking per this verdict, same shape: called only from `settlement/processor.go:79-81` (`Unresolved`, package function "because there is no tenant to construct a Processor with at boot"), whose caller restores each row's tenant via `Model.Tenant()` per the doc comment at `processor.go:76-78`. Boot-path reconciliation only. |
+
 ### Services in this third with no Postgres persistence (no rows)
 
 Confirmed via `grep -rl "gorm.io/gorm\|\*gorm.DB"` returning empty across the
@@ -144,6 +164,17 @@ whole module for each, and no `entity.go` found by the Step 1 enumeration:
 **atlas-invites, atlas-kites, atlas-login, atlas-messages, atlas-messengers,
 atlas-monster-death, atlas-monsters, atlas-parties, atlas-portals**. Nothing
 to classify for FR-8.1 — these services carry no Postgres tables at all.
+
+### Services in this third with no Postgres persistence (no rows)
+
+Confirmed via `grep -rl "gorm.io/gorm"` returning empty across the whole
+module for each, and no `entity.go` found by the Step 1 enumeration:
+**atlas-query-aggregator, atlas-rates, atlas-reactors, atlas-renders,
+atlas-rps, atlas-summons, atlas-transports, atlas-world**. Nothing to
+classify for FR-8.1 — these services carry no Postgres tables at all.
+`atlas-saga-orchestrator` was checked against this same grep and does NOT
+belong on this list — `saga/entity.go` and `saga/store.go` both import
+`gorm.io/gorm`, so it gets a row above instead.
 
 ### Findings
 
@@ -203,3 +234,116 @@ services in this third (`atlas-invites, atlas-kites, atlas-login,
 atlas-messages, atlas-messengers, atlas-monster-death, atlas-monsters,
 atlas-parties, atlas-portals`) have no Postgres persistence at all — see the
 "no rows" section above.
+
+### Findings (part 3 of 3)
+
+Three `UNSCOPED` rows in this third, all the same "cross-tenant discovery
+`SELECT` at boot/on a ticker, followed by a per-row write addressed by the
+row's own unique id with the tenant reconstructed per row" shape as the
+second group in part 2 — none is a bulk delete filtered only by a
+non-tenant predicate:
+
+- `atlas-saga-orchestrator` `sagas` — `GetAllActive`/`GetTimedOut`
+  (`saga/store.go:228-236,239-250`), both `database.WithoutTenantFilter`,
+  feeding `recoverSagas`/`reapTimedOutSagas` (`main.go:202-236,267-294`),
+  which reconstruct `tenant.Model` per row before any write.
+- `atlas-trades` `trade_escrow_items`/`trade_escrow_mesos` — `AllItems`/
+  `AllMesos` (`escrow/provider.go:166-190`), unfiltered `db.Find`, called only
+  from `ReconcileEscrow` (`trade/settlement.go:1300-1319`), whose own comment
+  states it "runs with NO tenant in context and restores each row's own
+  tenant."
+- `atlas-trades` `trade_settlements`/`trade_settlement_sides`/
+  `trade_settlement_items` — `allUnresolved` (`settlement/provider.go:61-80`),
+  unfiltered `db.Find`, called only from `settlement.Unresolved`
+  (`settlement/processor.go:73-81`), whose caller restores each row's tenant
+  via `Model.Tenant()`.
+
+A fourth candidate, `atlas-trades` `AllMesoStakes` (`escrow/provider.go:156-164`),
+has the identical unfiltered shape but is called only from
+`escrow/migration_test.go` — no production caller exists. It is exported,
+dead, and unscoped; not counted as a live finding, but flagged here so a
+future caller does not wire it up assuming it is already tenant-safe.
+
+One entity, `atlas-quest` `quest_medal_maps` (`medal.Entity`,
+`quest/medal/entity.go`), does not fit the five-verdict taxonomy at all: the
+brief expected it to confirm as `TRANSITIVE` through the tenant-scoped
+`quest_statuses` parent, but at source the table is never migrated
+(`medal.Migration` is not in `main.go:52`'s `SetMigrations` call) and has no
+provider/administrator anywhere in the service — there is no live query path
+to classify, TRANSITIVE or otherwise. See that row's Notes; this needs the
+controller's attention rather than a forced verdict.
+
+Two entities were confirmed exactly as the brief pre-identified:
+`atlas-tenants` `tenant.Entity` is `CONTROL` (no tenant-scoping column
+exists or could exist — the row *is* the tenant registry, same as
+`atlas-configurations`' `tenants` table); no medal-shaped TRANSITIVE row
+exists in this third given the finding above.
+
+No `FORCES-ISOLATED` rows in this third. Eight services in this third
+(`atlas-query-aggregator, atlas-rates, atlas-reactors, atlas-renders,
+atlas-rps, atlas-summons, atlas-transports, atlas-world`) have no Postgres
+persistence at all — see the "no rows" section above.
+
+### Counts (part 3 of 3, mechanically derived)
+
+Total row count in the document (cumulative across Tasks 1–3, one running
+table):
+
+```
+$ grep -c '^| atlas-' docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit.md
+95
+```
+
+Per-service row count for the 9 services in this third that carry rows:
+
+```
+$ grep '^| atlas-' docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit.md | awk -F'|' '{print $2}' | sed 's/^ *//;s/ *$//' | sort | uniq -c | grep -E '^\s*[0-9]+ atlas-(query-aggregator|quest|rankings|rates|reactor-actions|reactors|renders|reward-pools|rps|saga-orchestrator|skills|storage|summons|tenants|trades|transports|world)$'
+      3 atlas-quest
+      2 atlas-rankings
+      1 atlas-reactor-actions
+      3 atlas-reward-pools
+      1 atlas-saga-orchestrator
+      2 atlas-skills
+      2 atlas-storage
+      2 atlas-tenants
+      3 atlas-trades
+```
+
+That is 19 rows (3+2+1+3+1+2+2+2+3) across 9 services with persistence. The
+`atlas-trades` count of 3 rows covers 6 tables total (the first row groups
+4 escrow tables — `trade_escrow_items`/`mesos`/`meso_stakes`/`meso_refunds` —
+matching part 2's `frederick_items`/`frederick_mesos` grouping convention;
+the other two rows are ledger and settlement, 3 tables each collapsed to one
+row per package as done throughout this document).
+
+8 services in this third carry no Postgres persistence — explicit count:
+
+```
+$ printf '%s\n' atlas-query-aggregator atlas-rates atlas-reactors atlas-renders atlas-rps atlas-summons atlas-transports atlas-world | wc -l
+8
+```
+
+9 (with rows) + 8 (no persistence) = 17, matching the count of services this
+task's `### Files` section lists:
+
+```
+$ diff <(printf '%s\n' query-aggregator quest rankings rates reactor-actions reactors renders reward-pools rps saga-orchestrator skills storage summons tenants trades transports world | sort) \
+       <(printf '%s\n' quest rankings reactor-actions reward-pools saga-orchestrator skills storage tenants trades query-aggregator rates reactors renders rps summons transports world | sort)
+(no output — identical sets; every service named in the brief's ### Files got either a row group or a no-persistence line, none silently omitted)
+```
+
+## 2. Non-Postgres deployment-scoped resources (FR-8.6)
+
+Every resource whose isolation currently depends on deployment identity, with
+a disposition: **scope it**, or **forces isolated mode**.
+
+| Resource | Where | Current isolation | Disposition |
+|---|---|---|---|
+| Redis key prefix | `libs/atlas-redis/keys.go:15` | `ATLAS_ENV` package-level var | Scoped: data plane → tenant-scoped API (Tasks 4–8); prefix stays load-bearing for isolated mode only |
+| Kafka topic names | `overlays/pr/scripts/gen-topic-config.sh` | `-<ATLAS_ENV>` suffix | Scoped: sparse consumes unsuffixed topics + ownership gate (Task 25) |
+| Postgres DB names | `overlays/pr/scripts/gen-db-name-suffix.sh` | `<db>-<ATLAS_ENV>` | Scoped: sparse shares `main`'s databases (D1) |
+| Consumer group ids | `libs/atlas-kafka/consumergroup/resolver.go` | runtime-resolved | Already correct; no change |
+| Object id allocation | `libs/atlas-object-id` | Redis keys `<prefix>:oid:<tenantId>:next` / `:free` (`allocator.go:104-110`) | Scoped: the key already incorporates `tenant.Model.Id()` directly (`counterKey`/`freeKey`, `allocator.go:104-110`) — allocation is tenant-scoped independent of environment. The `<prefix>` component is the same `atlasredis.KeyPrefix()` (`ATLAS_ENV`-derived) as the Redis key prefix row above and follows that row's disposition, not a separate one. |
+| Outbox advisory lock | `libs/atlas-outbox/lock.go` | single constant key per DB | Deliberately global; now serialises drainers across environments — throughput coupling, not correctness (design §8.4) |
+| MinIO canonical objects | `services/atlas-pr-bootstrap/scripts/reconcile-minio.sh` | Objects keyed `tenants/<tenantId>/...` (or `shared/`, operator-gated) — already tenant-scoped, not environment-scoped (`services/atlas-data/atlas.com/data/wzinput/scope.go:21-33`, `.../tenantpurge/purge.go:46`, `.../minioreconcile/reconcile.go:86`) | Scoped: the object *keys* need no change — they were never environment-scoped. What is environment-shaped today is the reconcile **script's discovery mechanism**: `reconcile-minio.sh:24-46` builds its keep-list by enumerating tenants per-namespace across every `atlas-pr-*` + `atlas-main` k8s namespace. Under sparse, most per-PR namespaces disappear, so this discovery step should instead query the `atlas-tenants` `tenant.Entity` registry (CONTROL, environment-scoped per Task 10/11) for the live-tenant set of a given environment, rather than enumerating namespaces. Flagged here so the Task 50 implementer does not have to re-derive this — the object model is already correct, only the script's tenant-discovery source needs to change. |
+| Login/channel ports + advertised IP | `tools/gen-lb-ports.sh`, `services/atlas-pr-bootstrap/scripts/version-ports.sh` | per-namespace LoadBalancer | Scoped in Task 46 |

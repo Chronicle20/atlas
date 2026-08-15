@@ -79,24 +79,15 @@ func (p *testProcessor) getAll() ([]tenant.Model, error) {
 	return paged.Items, nil
 }
 
+// update exercises the real tenant.ProcessorImpl.Update via the base
+// (buffer-taking) method, using a throwaway message.Buffer instead of the
+// Kafka-emitting UpdateAndEmit wrapper. mb.Put only appends to an in-memory
+// map (see kafka/message/message.go), so no Kafka producer is needed - this
+// is the actual production update path, not a stand-in.
 func (p *testProcessor) update(id uuid.UUID, name, region string, majorVersion, minorVersion uint16) (tenant.Model, error) {
-	provider := tenant.GetByIdProvider(id)(p.db)
-	e, err := provider()
-	if err != nil {
-		return tenant.Model{}, err
-	}
-
-	e.Name = name
-	e.Region = region
-	e.MajorVersion = majorVersion
-	e.MinorVersion = minorVersion
-
-	err = tenant.UpdateTenant(p.db, e)
-	if err != nil {
-		return tenant.Model{}, err
-	}
-
-	return tenant.Make(e)
+	mb := message.NewBuffer()
+	processor := tenant.NewProcessor(p.l, context.Background(), p.db)
+	return processor.Update(mb)(id, name, region, majorVersion, minorVersion)
 }
 
 func (p *testProcessor) delete(id uuid.UUID) error {
@@ -230,6 +221,46 @@ func TestUpdate_Success(t *testing.T) {
 	}
 	if updated.MinorVersion() != 2 {
 		t.Errorf("updated.MinorVersion() = %d, want 2", updated.MinorVersion())
+	}
+}
+
+func TestUpdate_PreservesEnvironment(t *testing.T) {
+	processor, cleanup := setupTestProcessor(t)
+	defer cleanup()
+
+	m, err := tenant.NewModelBuilder().
+		SetName("Original Name").
+		SetRegion("GMS").
+		SetMajorVersion(83).
+		SetMinorVersion(1).
+		SetEnvironment("pr-123").
+		Build()
+	if err != nil {
+		t.Fatalf("Build() unexpected error: %v", err)
+	}
+	e := tenant.FromModel(m)
+	if err := tenant.CreateTenant(processor.db, e); err != nil {
+		t.Fatalf("CreateTenant: %v", err)
+	}
+
+	// Update does not mention Environment; it must be carried forward
+	// unchanged rather than zeroed by the rebuild in ProcessorImpl.Update.
+	updated, err := processor.update(m.Id(), "Updated Name", "EMS", 90, 2)
+	if err != nil {
+		t.Fatalf("update() unexpected error: %v", err)
+	}
+	if updated.Environment() != "pr-123" {
+		t.Errorf("updated.Environment() = %q, want %q", updated.Environment(), "pr-123")
+	}
+
+	// Confirm the persisted row also carries the environment forward, not
+	// just the in-memory return value.
+	found, err := processor.getById(m.Id())
+	if err != nil {
+		t.Fatalf("getById() unexpected error: %v", err)
+	}
+	if found.Environment() != "pr-123" {
+		t.Errorf("found.Environment() = %q, want %q", found.Environment(), "pr-123")
 	}
 }
 

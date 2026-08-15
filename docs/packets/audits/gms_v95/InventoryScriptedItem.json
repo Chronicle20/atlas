@@ -1,0 +1,39 @@
+{
+  "WriterName": "InventoryScriptedItem",
+  "IDAName": "CWvsContext::SendScriptRunItemRequest",
+  "Address": "0x9de7a0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/inventory/serverbound/scripted_item.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "update_time (get_update_time(); COutPacket::Encode4 at 0x9de857; task-230 verify gms_v95)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nPOS source slot (COutPacket::Encode2 at 0x9de865; task-230 verify gms_v95)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nItemID (COutPacket::Encode4 at 0x9de86f; opcode 84/0x54 from COutPacket::COutPacket(\u0026oPacket, 84) at 0x9de840; task-230 verify gms_v95)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

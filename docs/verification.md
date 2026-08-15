@@ -171,6 +171,7 @@ leading doc comment, which names the mirror direction, may differ.
 | `trade-contract-mirror-guard.sh` | atlas-trades `kafka/message/trade/kafka.go` | atlas-channel |
 | `mist-contract-mirror-guard.sh` | atlas-maps `kafka/message/mist/kafka.go` | atlas-channel — a drifted mirror yields a mist with no bounds, no lifetime, no recovery magnitude and no party scope (task-218) |
 | `npc-shop-contract-mirror-guard.sh` | atlas-npc-shops `kafka/message/shops/kafka.go` | atlas-channel, atlas-saga-orchestrator |
+| `npc-conversation-contract-mirror-guard.sh` | atlas-npc-conversations `kafka/message/npc/kafka.go` | atlas-saga-orchestrator — a drifted mirror yields a conversation start with no item id, no avatar, or no transactionId, so the awaiting saga step never completes (task-230) |
 
 **Deploy / versions** — `gen-lb-ports.sh --check` and `check-version-coverage.sh`,
 when `deploy/`, `tools/gen-lb-ports.sh`, or a `versions.json` changed. A new

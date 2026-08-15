@@ -5,6 +5,7 @@ import (
 	"atlas-saga-orchestrator/kafka/message/broadcast"
 	incubator2 "atlas-saga-orchestrator/kafka/message/incubator"
 	"atlas-saga-orchestrator/kafka/message/megaphone"
+	"atlas-saga-orchestrator/kafka/message/npc"
 	npcshop "atlas-saga-orchestrator/kafka/message/npcshop"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"encoding/json"
@@ -305,5 +306,111 @@ func TestNpcShopEnterCommandProvider(t *testing.T) {
 	}
 	if cmd.CharacterId != 1234 || cmd.Body.NpcTemplateId != 9090000 {
 		t.Errorf("unexpected command: %+v", cmd)
+	}
+}
+
+// TestNpcConversationStartItemCommandProvider asserts the START_ITEM_CONVERSATION
+// command carries the saga's transaction id, the item id, slot, and account id
+// (task-230) — the orchestrator's only correlation key when STARTED/START_ERROR
+// comes back.
+func TestNpcConversationStartItemCommandProvider(t *testing.T) {
+	txn := uuid.New()
+	msgs, err := NpcConversationStartItemCommandProvider(txn, StartItemConversationPayload{
+		CharacterId:   1234,
+		AccountId:     77,
+		ItemId:        2430008,
+		NpcTemplateId: 2084002,
+		Slot:          5,
+		ChannelId:     1,
+		MapId:         100000000,
+	})()
+	if err != nil {
+		t.Fatalf("provider: %v", err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("messages: got %d, want 1", len(msgs))
+	}
+
+	var c npc.Command[npc.CommandItemConversationStartBody]
+	if err := json.Unmarshal(msgs[0].Value, &c); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if c.Type != npc.CommandTypeStartItemConversation {
+		t.Errorf("type: got %q", c.Type)
+	}
+	if c.TransactionId != txn {
+		t.Errorf("transactionId: got %s want %s", c.TransactionId, txn)
+	}
+	if c.NpcId != 2084002 {
+		t.Errorf("npcId (the avatar): got %d want 2084002", c.NpcId)
+	}
+	if c.Body.ItemId != 2430008 || c.Body.Slot != 5 || c.Body.AccountId != 77 {
+		t.Errorf("body: %+v", c.Body)
+	}
+}
+
+// TestNpcConversationStartNpcCommandProvider asserts the START_CONVERSATION
+// command reuses the ordinary conversation command type while still carrying
+// the saga's transaction id (task-230) — the transaction id is what makes it
+// saga-driven, distinct from the ordinary NPC-talk path's uuid.Nil.
+func TestNpcConversationStartNpcCommandProvider(t *testing.T) {
+	txn := uuid.New()
+	msgs, err := NpcConversationStartNpcCommandProvider(txn, StartNpcConversationPayload{
+		CharacterId:   4243,
+		AccountId:     77,
+		NpcTemplateId: 9090002,
+		ChannelId:     1,
+		MapId:         100000000,
+	})()
+	if err != nil {
+		t.Fatalf("provider: %v", err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("messages: got %d, want 1", len(msgs))
+	}
+
+	var c npc.Command[npc.CommandConversationStartBody]
+	if err := json.Unmarshal(msgs[0].Value, &c); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if c.Type != npc.CommandTypeStartConversation {
+		t.Errorf("type: got %q", c.Type)
+	}
+	if c.TransactionId != txn {
+		t.Errorf("transactionId: got %s want %s", c.TransactionId, txn)
+	}
+	if c.NpcId != 9090002 {
+		t.Errorf("npcId: got %d want 9090002", c.NpcId)
+	}
+	if c.Body.AccountId != 77 {
+		t.Errorf("body: %+v", c.Body)
+	}
+}
+
+// TestNpcConversationEndCommandProvider asserts the END_CONVERSATION
+// compensation command carries the saga's transaction id, character id, and
+// npc template id (task-230).
+func TestNpcConversationEndCommandProvider(t *testing.T) {
+	txn := uuid.New()
+	msgs, err := NpcConversationEndCommandProvider(txn, 1234, 2084002)()
+	if err != nil {
+		t.Fatalf("provider: %v", err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("messages: got %d, want 1", len(msgs))
+	}
+
+	var c npc.Command[npc.CommandConversationEndBody]
+	if err := json.Unmarshal(msgs[0].Value, &c); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if c.Type != npc.CommandTypeEndConversation {
+		t.Errorf("type: got %q", c.Type)
+	}
+	if c.TransactionId != txn {
+		t.Errorf("transactionId: got %s want %s", c.TransactionId, txn)
+	}
+	if c.CharacterId != 1234 || c.NpcId != 2084002 {
+		t.Errorf("unexpected command: %+v", c)
 	}
 }

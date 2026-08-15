@@ -6,9 +6,9 @@
 
 | ✅ verified | 🧩 family | 🟡 partial | ❌ incomplete | ⬜ n-a | 🟥 conflict | verified% |
 |-----------|----------|-----------|--------------|-------|------------|-----------|
-| 240 | 0 | 73 | 219 | 426 | 0 | 45.1% |
+| 286 | 0 | 69 | 248 | 416 | 0 | 47.4% |
 
-Verified 240 of 532 applicable (non-n-a) cells.
+Verified 286 of 603 applicable (non-n-a) cells.
 
 ## Conflicts (🟥)
 
@@ -23,7 +23,14 @@ None.
 | sub-struct | buddy/serverbound/BuddyOperationAccept |  |  | partial | tier-1: needs byte-fixture test to verify |
 | sub-struct | buddy/serverbound/BuddyOperationAdd |  |  | incomplete | no audit report |
 | sub-struct | buddy/serverbound/BuddyOperationDelete |  |  | incomplete | no audit report |
+| sub-struct | cash/serverbound/CashItemUseAvatarMegaphone |  |  | incomplete | no audit report |
+| sub-struct | cash/serverbound/CashItemUseMapleTV |  |  | incomplete | no audit report |
+| sub-struct | cash/serverbound/CashItemUseMegaphone |  |  | incomplete | no audit report |
 | sub-struct | cash/serverbound/CashItemUsePointReset |  |  | incomplete | no audit report |
+| sub-struct | cash/serverbound/CashItemUseSuperMegaphone |  |  | incomplete | no audit report |
+| sub-struct | cash/serverbound/CashItemUseTeleportRock |  |  | incomplete | no audit report |
+| sub-struct | cash/serverbound/CashItemUseTripleMegaphone |  |  | incomplete | no audit report |
+| sub-struct | cash/serverbound/CashItemUseVegaScroll |  |  | incomplete | no audit report |
 | sub-struct | cash/serverbound/CashShopOperationBuyNameChange |  |  | incomplete | tier-1 without fixture; verdict ❌ |
 | sub-struct | cash/serverbound/CashShopOperationBuyNormal |  |  | incomplete | tier-1 without fixture; verdict 🔍 |
 | sub-struct | cash/serverbound/CashShopOperationBuyWorldTransfer |  |  | incomplete | tier-1 without fixture; verdict ❌ |
@@ -36,11 +43,56 @@ None.
 | sub-struct | channel/serverbound/ChannelChangeRequest |  |  | incomplete | no audit report |
 | sub-struct | character/serverbound/ChairPortable |  |  | incomplete | no audit report |
 | sub-struct | character/serverbound/ChalkboardClose |  |  | incomplete | no audit report |
+| sub-struct | character/serverbound/CharacterAranComboCounterRequest |  |  | incomplete | no audit report |
 | sub-struct | character/serverbound/ExpressionRequest |  |  | incomplete | no audit report |
+| sub-struct | character/serverbound/KeyMapChange |  |  | incomplete | no audit report |
 | sub-struct | character/serverbound/Move |  |  | incomplete | no audit report |
+| sub-struct | character/serverbound/monsterbook/CharacterCover |  |  | incomplete | no audit report |
+| sub-struct | chat/serverbound/ChatWhisper |  |  | incomplete | no audit report |
 | sub-struct | fame/serverbound/Change |  |  | incomplete | verdict ⚠️ |
 | sub-struct | field/clientbound/FieldEffectWeather |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldFieldObstacleAllReset |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsOperation2 |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultBidAuctionFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultBuyItemDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultBuyItemFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultBuyWishDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultBuyWishFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultBuyZzimItemDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultBuyZzimItemFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultCancelSaleItemDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultCancelSaleItemFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultCancelWishDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultCancelWishFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultDeleteZzimDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultDeleteZzimFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultGetItcListDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultGetItcListFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultGetSearchItcListDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultGetSearchItcListFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultGetUserPurchaseItemDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultGetUserPurchaseItemFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultGetUserSaleItemDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultGetUserSaleItemFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultLoadWishSaleListDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultLoadWishSaleListFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultMoveItcPurchaseItemLtoSDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultMoveItcPurchaseItemLtoSFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultNotifyCancelWishResult |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultRegisterSaleEntryDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultRegisterSaleEntryFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultRegisterWishItemDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultRegisterWishItemFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultSaleCurrentItemToWishDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultSaleCurrentItemToWishFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultSetZzimDone |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultSetZzimFailed |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldMtsResultSuccessBidInfo |  |  | incomplete | no audit report |
+| sub-struct | field/clientbound/FieldWitchTowerScoreUpdate |  |  | incomplete | no audit report |
 | sub-struct | field/serverbound/FieldChange |  |  | incomplete | no audit report |
+| sub-struct | guild/clientbound/GuildBBSEntryNotFound |  |  | incomplete | no audit report |
+| sub-struct | guild/clientbound/GuildBBSThread |  |  | incomplete | no audit report |
+| sub-struct | guild/clientbound/GuildBBSThreadList |  |  | incomplete | no audit report |
 | sub-struct | guild/serverbound/GuildAgreementResponse |  |  | partial | tier-1: needs byte-fixture test to verify |
 | sub-struct | guild/serverbound/GuildBBSListThreads |  |  | incomplete | no audit report |
 | sub-struct | guild/serverbound/GuildInviteRequest |  |  | partial | tier-1: needs byte-fixture test to verify |
@@ -49,8 +101,6 @@ None.
 | sub-struct | guild/serverbound/GuildSetEmblem |  |  | partial | tier-1: needs byte-fixture test to verify |
 | sub-struct | interaction/serverbound/InteractionOperationMerchantAddToBlackList |  |  | incomplete | no audit report |
 | sub-struct | interaction/serverbound/InteractionOperationMerchantRemoveFromBlackList |  |  | incomplete | no audit report |
-| sub-struct | inventory/serverbound/InventoryItemUse |  |  | incomplete | no audit report |
-| sub-struct | inventory/serverbound/InventoryMove |  |  | incomplete | no audit report |
 | sub-struct | login/clientbound/AuthLoginFailed |  |  | incomplete | no audit report |
 | sub-struct | login/clientbound/AuthPermanentBan |  |  | incomplete | no audit report |
 | sub-struct | login/clientbound/AuthSuccess |  |  | incomplete | no audit report |
@@ -80,8 +130,6 @@ None.
 | sub-struct | messenger/serverbound/MessengerOperationInvite |  |  | incomplete | tier-1 without fixture; verdict 🚫 |
 | sub-struct | monster/carnival/serverbound/MonsterCarnival |  |  | incomplete | no audit report |
 | sub-struct | note/serverbound/NoteOperation |  |  | partial | tier-1: needs byte-fixture test to verify |
-| sub-struct | note/serverbound/NoteOperationDiscard |  |  | incomplete | no audit report |
-| sub-struct | note/serverbound/NoteOperationSend |  |  | incomplete | tier-1 without fixture; verdict ❌ |
 | sub-struct | npc/clientbound/NpcAskMemberShopAvatarConversationDetail |  |  | incomplete | no audit report |
 | sub-struct | npc/clientbound/NpcAskPetConversationDetail |  |  | incomplete | tier-1 without fixture; verdict ❌ |
 | sub-struct | npc/clientbound/NpcAskSlideMenuConversationDetail |  |  | incomplete | tier-1 without fixture; verdict 🔍 |
@@ -92,7 +140,6 @@ None.
 | sub-struct | party/serverbound/PartyOperationInvite |  |  | partial | tier-1: needs byte-fixture test to verify |
 | sub-struct | party/serverbound/PartyOperationJoin |  |  | incomplete | no audit report |
 | sub-struct | pet/clientbound/PetActivated |  |  | incomplete | tier-1 without fixture; verdict 🔍 |
-| sub-struct | pet/serverbound/PetFood |  |  | incomplete | no audit report |
 | sub-struct | portal/serverbound/PortalScript |  |  | partial | tool ✅ without byte-test |
 | sub-struct | quest/clientbound/ScriptProgress |  |  | incomplete | verdict 🚫 |
 | sub-struct | quest/serverbound/Action |  |  | incomplete | verdict ❌ |
@@ -101,8 +148,11 @@ None.
 | sub-struct | storage/serverbound/StorageOperationMeso |  |  | incomplete | no audit report |
 | sub-struct | storage/serverbound/StorageOperationRetrieveAsset |  |  | incomplete | no audit report |
 | sub-struct | storage/serverbound/StorageOperationStoreAsset |  |  | incomplete | no audit report |
+| sub-struct | summon/clientbound/SummonRemove |  |  | incomplete | no audit report |
+| sub-struct | summon/clientbound/SummonSpawn |  |  | incomplete | no audit report |
 | sub-struct | summon/serverbound/SummonAttackHandle |  |  | incomplete | no audit report |
 | sub-struct | summon/serverbound/SummonMoveHandle |  |  | incomplete | verdict ❌ |
+| sub-struct | tv/clientbound/TvTvSendMessageResult |  |  | incomplete | no audit report |
 | sub-struct | ui/clientbound/Disable |  |  | incomplete | verdict 🚫 |
 | sub-struct | ui/clientbound/Lock |  |  | incomplete | no audit report |
 | op | GUEST_ID_LOGIN | clientbound | 0x001 | incomplete | no audit report |
@@ -122,25 +172,16 @@ None.
 | op | SKILL_USE_RESULT | clientbound | 0x022 | incomplete | no audit report |
 | op | FAME_RESPONSE | clientbound | 0x023 | incomplete | verdict 🚫 |
 | op | OPEN_FULL_CLIENT_DOWNLOAD_LINK | clientbound | 0x025 | incomplete | no audit report |
-| op | MAP_TRANSFER_RESULT | clientbound | 0x027 | incomplete | no audit report |
 | op | WEDDING_PHOTO | clientbound | 0x028 | incomplete | no audit report |
-| op | CLAIM_RESULT | clientbound | 0x02A | incomplete | no audit report |
-| op | CLAIM_AVAILABLE_TIME | clientbound | 0x02B | incomplete | no audit report |
-| op | CLAIM_STATUS_CHANGED | clientbound | 0x02C | incomplete | no audit report |
 | op | SET_TAMING_MOB_INFO | clientbound | 0x02D | partial | tier-1: needs byte-fixture test to verify |
 | op | QUEST_CLEAR | clientbound | 0x02E | incomplete | no audit report |
 | op | ENTRUSTED_SHOP_CHECK_RESULT | clientbound | 0x02F | incomplete | verdict ❌ |
-| op | SKILL_LEARN_ITEM_RESULT | clientbound | 0x030 | incomplete | no audit report |
 | op | GATHER_ITEM_RESULT | clientbound | 0x031 | partial | tier-1: needs byte-fixture test to verify |
 | op | SORT_ITEM_RESULT | clientbound | 0x032 | partial | tier-1: needs byte-fixture test to verify |
-| op | SUE_CHARACTER_RESULT | clientbound | 0x034 | incomplete | no audit report |
 | op | TRADE_MONEY_LIMIT | clientbound | 0x036 | incomplete | no audit report |
 | op | SET_GENDER | clientbound | 0x037 | incomplete | no audit report |
 | op | ALLIANCE_OPERATION | clientbound | 0x03F | incomplete | no audit report |
 | op | SPAWN_PORTAL | clientbound | 0x040 | incomplete | verdict ❌ |
-| op | INCUBATOR_RESULT | clientbound | 0x042 | incomplete | no audit report |
-| op | SHOP_SCANNER_RESULT | clientbound | 0x043 | incomplete | no audit report |
-| op | SHOP_LINK_RESULT | clientbound | 0x044 | incomplete | no audit report |
 | op | MARRIAGE_REQUEST | clientbound | 0x045 | incomplete | no audit report |
 | op | MARRIAGE_RESULT | clientbound | 0x046 | incomplete | no audit report |
 | op | WEDDING_GIFT_RESULT | clientbound | 0x047 | incomplete | no audit report |
@@ -148,7 +189,6 @@ None.
 | op | CASH_PET_FOOD_RESULT | clientbound | 0x049 | partial | tier-1: needs byte-fixture test to verify |
 | op | SET_WEEK_EVENT_MESSAGE | clientbound | 0x04A | incomplete | no audit report |
 | op | SET_POTION_DISCOUNT_RATE | clientbound | 0x04B | incomplete | no audit report |
-| op | BRIDLE_MOB_CATCH_FAIL | clientbound | 0x04C | partial | tier-1: needs byte-fixture test to verify |
 | op | IMITATED_NPC_RESULT | clientbound | 0x04D | incomplete | no audit report |
 | op | IMITATED_NPC_DATA | clientbound | 0x04E | incomplete | no audit report |
 | op | MONSTER_BOOK_SET_CARD | clientbound | 0x04F | partial | tier-1: needs byte-fixture test to verify |
@@ -174,7 +214,6 @@ None.
 | op | NOTIFY_MARRIAGE | clientbound | 0x063 | incomplete | no audit report |
 | op | MAPLE_TV_USE_RES | clientbound | 0x065 | incomplete | no audit report |
 | op | AVATAR_MEGAPHONE_RESULT | clientbound | 0x066 | incomplete | no audit report |
-| op | SET_AVATAR_MEGAPHONE | clientbound | 0x067 | incomplete | no audit report |
 | op | CLEAR_AVATAR_MEGAPHONE | clientbound | 0x068 | incomplete | no audit report |
 | op | CANCEL_NAME_CHANGE_RESULT | clientbound | 0x069 | incomplete | no audit report |
 | op | CANCEL_TRANSFER_WORLD_RESULT | clientbound | 0x06A | incomplete | no audit report |
@@ -184,7 +223,6 @@ None.
 | op | NEW_YEAR_CARD_RES | clientbound | 0x06E | incomplete | no audit report |
 | op | RANDOM_MORPH_RES | clientbound | 0x06F | incomplete | no audit report |
 | op | CANCEL_NAME_CHANGE_BY_OTHER | clientbound | 0x070 | incomplete | no audit report |
-| op | MACRO_SYS_DATA_INIT | clientbound | 0x071 | incomplete | no audit report |
 | op | SET_BACK_EFFECT | clientbound | 0x075 | incomplete | no audit report |
 | op | SET_MAP_OBJECT_VISIBLE | clientbound | 0x076 | incomplete | no audit report |
 | op | BLOCKED_MAP | clientbound | 0x077 | partial | tier-1: needs byte-fixture test to verify |
@@ -207,13 +245,11 @@ None.
 | op | REMOVE_PLAYER_FROM_MAP | clientbound | 0x092 | partial | tier-1: needs byte-fixture test to verify |
 | op | CHATTEXT | clientbound | 0x093 | incomplete | verdict ❌ |
 | op | CHATTEXT1 | clientbound | 0x094 | incomplete | verdict ❌ |
-| op | UPDATE_CHAR_BOX | clientbound | 0x096 | incomplete | no audit report |
 | op | SHOW_CONSUME_EFFECT | clientbound | 0x097 | incomplete | no audit report |
 | op | SPAWN_PET | clientbound | 0x099 | incomplete | no audit report |
 | op | EVOLVE_PET | clientbound | 0x09A | incomplete | no audit report |
 | op | PET_NAMECHANGE | clientbound | 0x09D | incomplete | no audit report |
 | op | SHOW_ITEM_EFFECT | clientbound | 0x0B0 | incomplete | no audit report |
-| op | SHOW_UPGRADE_TOMB_EFFECT | clientbound | 0x0B1 | incomplete | no audit report |
 | op | CANCEL_FOREIGN_BUFF | clientbound | 0x0B6 | partial | tier-1: needs byte-fixture test to verify |
 | op | THROW_GRENADE | clientbound | 0x0BA | incomplete | no audit report |
 | op | DOJO_WARP_UP | clientbound | 0x0BD | incomplete | no audit report |
@@ -233,7 +269,6 @@ None.
 | op | COOLDOWN | clientbound | 0x0CE | partial | tier-1: needs byte-fixture test to verify |
 | op | RESET_MONSTER_ANIMATION | clientbound | 0x0D8 | partial | tier-1: needs byte-fixture test to verify |
 | op | MOB_AFFECTED | clientbound | 0x0D9 | partial | tier-1: needs byte-fixture test to verify |
-| op | CATCH_MONSTER_WITH_ITEM | clientbound | 0x0E0 | partial | tier-1: needs byte-fixture test to verify |
 | op | MOB_ATTACKED_BY_MOB | clientbound | 0x0E1 | partial | tier-1: needs byte-fixture test to verify |
 | op | SPAWN_NPC | clientbound | 0x0E3 | partial | tier-1: needs byte-fixture test to verify |
 | op | REMOVE_NPC | clientbound | 0x0E4 | incomplete | no audit report |
@@ -241,14 +276,10 @@ None.
 | op | UPDATE_LIMITED_INFO | clientbound | 0x0E7 | incomplete | no audit report |
 | op | NPC_SPECIAL_ACTION | clientbound | 0x0E8 | incomplete | no audit report |
 | op | SET_NPC_SCRIPTABLE | clientbound | 0x0E9 | incomplete | no audit report |
-| op | SPAWN_HIRED_MERCHANT | clientbound | 0x0EB | incomplete | no audit report |
-| op | DESTROY_HIRED_MERCHANT | clientbound | 0x0EC | incomplete | no audit report |
-| op | UPDATE_HIRED_MERCHANT | clientbound | 0x0ED | incomplete | no audit report |
 | op | DROP_ITEM_FROM_MAPOBJECT | clientbound | 0x0EE | partial | tool ✅ without byte-test |
 | op | CANNOT_SPAWN_KITE | clientbound | 0x0F0 | partial | tier-1: needs byte-fixture test to verify |
 | op | SPAWN_KITE | clientbound | 0x0F1 | partial | tier-1: needs byte-fixture test to verify |
 | op | REMOVE_KITE | clientbound | 0x0F2 | partial | tier-1: needs byte-fixture test to verify |
-| op | REMOVE_MIST | clientbound | 0x0F4 | partial | tier-1: needs byte-fixture test to verify |
 | op | REMOVE_DOOR | clientbound | 0x0F6 | partial | tool ✅ without byte-test |
 | op | REACTOR_HIT | clientbound | 0x0F7 | partial | tool ✅ without byte-test |
 | op | REACTOR_SPAWN | clientbound | 0x0F9 | incomplete | verdict ❌ |
@@ -260,11 +291,9 @@ None.
 | op | ADMIN_SHOP | clientbound | 0x112 | incomplete | no audit report |
 | op | FREDRICK_MESSAGE | clientbound | 0x114 | incomplete | no audit report |
 | op | FREDRICK | clientbound | 0x115 | incomplete | no audit report |
-| op | RPS_GAME | clientbound | 0x116 | incomplete | no audit report |
 | op | PARCEL | clientbound | 0x120 | incomplete | no audit report |
 | op | CASHSHOP_NOTICE_FREE_CASH_ITEM | clientbound | 0x121 | incomplete | no audit report |
 | op | CASHSHOP_ONE_A_DAY | clientbound | 0x122 | incomplete | no audit report |
-| op | CASHSHOP_CASH_ITEM_GACHAPON_RESULT | clientbound | 0x124 | incomplete | no audit report |
 | op | CASHSHOP_CHECK_NAME_CHANGE | clientbound | 0x125 | incomplete | no audit report |
 | op | CASHSHOP_GACHAPON_STAMP_RESULT | clientbound | 0x126 | incomplete | no audit report |
 | op | CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT | clientbound | 0x128 | incomplete | no audit report |
@@ -294,19 +323,15 @@ None.
 | op | USE_ITEM | serverbound | 0x047 | partial | tier-1: needs byte-fixture test to verify |
 | op | USE_SUMMON_BAG | serverbound | 0x04A | incomplete | no audit report |
 | op | PET_FOOD | serverbound | 0x04B | partial | tier-1: needs byte-fixture test to verify |
-| op | USE_MOUNT_FOOD | serverbound | 0x04C | incomplete | no audit report |
-| op | USE_CASH_ITEM | serverbound | 0x04E | incomplete | no audit report |
 | op | USE_RETURN_SCROLL | serverbound | 0x054 | incomplete | no audit report |
 | op | SPECIAL_MOVE | serverbound | 0x05A | incomplete | no audit report |
 | op | CANCEL_BUFF | serverbound | 0x05B | partial | tier-1: needs byte-fixture test to verify |
 | op | GIVE_FAME | serverbound | 0x05E | incomplete | no audit report |
 | op | CHANGE_MAP_SPECIAL | serverbound | 0x063 | incomplete | no audit report |
 | op | QUEST_ACTION | serverbound | 0x06A | incomplete | verdict ❌ |
-| op | SKILL_MACRO | serverbound | 0x06D | incomplete | no audit report |
 | op | PLAYER_INTERACTION | serverbound | 0x079 | incomplete | no audit report |
 | op | PARTY_OPERATION | serverbound | 0x07A | partial | tier-1: needs byte-fixture test to verify |
 | op | BUDDYLIST_MODIFY | serverbound | 0x080 | partial | tier-1: needs byte-fixture test to verify |
-| op | PET_AUTO_POT | serverbound | 0x0A5 | partial | tier-1: needs byte-fixture test to verify |
 | op | MOVE_SUMMON | serverbound | 0x0A9 | incomplete | no audit report |
 | op | DAMAGE_REACTOR | serverbound | 0x0C3 | incomplete | tier-1 without fixture; verdict 🔍 |
 | op | MONSTER_CARNIVAL | serverbound | 0x0D0 | incomplete | tier-1 without fixture; verdict ❌ |
@@ -315,6 +340,8 @@ None.
 
 | Kind | Name | Dir | Opcode | State | Note |
 |------|------|-----|--------|-------|------|
+| sub-struct | cash/serverbound/CashItemUsePetSkill |  |  | n-a | disposition: version-absent (n-a, see _unimplemented.json) |
+| sub-struct | interaction/serverbound/InteractionOperationTransaction |  |  | n-a | disposition: version-absent (n-a, see _unimplemented.json) |
 | op | ACCOUNT_INFO | clientbound |  | n-a |  |
 | op | ACCOUNT_MORE_INFO | clientbound |  | n-a |  |
 | op | ARIANT_ARENA_SHOW_RESULT | clientbound |  | n-a |  |
@@ -324,6 +351,7 @@ None.
 | op | BUFFZONE_EFFECT/SAY_IMAGE | clientbound |  | n-a |  |
 | op | CAKE_PIE_EVENT_RESULT | clientbound |  | n-a |  |
 | op | CASHSHOP_CASH_GACHAPON_OPEN_RESULT | clientbound |  | n-a |  |
+| op | CASHSHOP_CASH_ITEM_GACHAPON_RESULT | clientbound |  | n-a |  |
 | op | CASHSHOP_CASH_ITEM_RESULT | clientbound |  | n-a |  |
 | op | CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT | clientbound |  | n-a |  |
 | op | CASHSHOP_GIFT_INFO_RESULT | clientbound |  | n-a |  |
@@ -363,11 +391,10 @@ None.
 | op | IDA_0X015 | clientbound |  | n-a |  |
 | op | IDA_0X019 | clientbound |  | n-a |  |
 | op | IDA_0X01A | clientbound |  | n-a |  |
-| op | IDA_0X02B | clientbound |  | n-a |  |
+| op | IDA_0X01C | clientbound |  | n-a |  |
 | op | IDA_0X02E | clientbound |  | n-a |  |
 | op | IDA_0X02F | clientbound |  | n-a |  |
 | op | IDA_0X038 | clientbound |  | n-a |  |
-| op | IDA_0X039 | clientbound |  | n-a |  |
 | op | IDA_0X03A | clientbound |  | n-a |  |
 | op | IDA_0X03B | clientbound |  | n-a |  |
 | op | IDA_0X03C | clientbound |  | n-a |  |
@@ -396,6 +423,7 @@ None.
 | op | IDA_0X078 | clientbound |  | n-a |  |
 | op | IDA_0X079 | clientbound |  | n-a |  |
 | op | IDA_0X07E | clientbound |  | n-a |  |
+| op | IDA_0X07F | clientbound |  | n-a |  |
 | op | IDA_0X098 | clientbound |  | n-a |  |
 | op | IDA_0X0A4 | clientbound |  | n-a |  |
 | op | IDA_0X0A6 | clientbound |  | n-a |  |
@@ -413,6 +441,7 @@ None.
 | op | IDA_0X0E4 | clientbound |  | n-a |  |
 | op | IDA_0X0E6 | clientbound |  | n-a |  |
 | op | IDA_0X0E8 | clientbound |  | n-a |  |
+| op | IDA_0X0EA | clientbound |  | n-a |  |
 | op | IDA_0X0EC | clientbound |  | n-a |  |
 | op | IDA_0X0ED | clientbound |  | n-a |  |
 | op | IDA_0X0EE | clientbound |  | n-a |  |
@@ -434,6 +463,7 @@ None.
 | op | IDA_0X10B | clientbound |  | n-a |  |
 | op | IDA_0X10C | clientbound |  | n-a |  |
 | op | IDA_0X10D | clientbound |  | n-a |  |
+| op | IDA_0X10E | clientbound |  | n-a |  |
 | op | IDA_0X10F | clientbound |  | n-a |  |
 | op | IDA_0X110 | clientbound |  | n-a |  |
 | op | IDA_0X111 | clientbound |  | n-a |  |
@@ -559,19 +589,16 @@ None.
 | op | BEANS_UPDATE | serverbound |  | n-a |  |
 | op | BEHOLDER | serverbound |  | n-a |  |
 | op | BOOBY_TRAP_ALERT | serverbound |  | n-a |  |
-| op | CANCEL_DEBUFF | serverbound |  | n-a |  |
 | op | CASHSHOP_SURPRISE | serverbound |  | n-a |  |
 | op | CASH_GACHAPON_BUTTON | serverbound |  | n-a |  |
 | op | CASH_ITEM_GACHAPON_BUTTON | serverbound |  | n-a |  |
 | op | CHANGE_FAMILY_MESSAGE | serverbound |  | n-a |  |
 | op | CHANGE_QUICKSLOT | serverbound |  | n-a |  |
 | op | CHAR_SELECT_WITH_PIC | serverbound |  | n-a |  |
-| op | CLAIM_REQUEST | serverbound |  | n-a |  |
 | op | CLICK_GUIDE | serverbound |  | n-a |  |
 | op | CLIENT_ERROR | serverbound |  | n-a |  |
 | op | CLIENT_START | serverbound |  | n-a |  |
 | op | CLOSE_ITEMUI | serverbound |  | n-a |  |
-| op | COUPON_CODE | serverbound |  | n-a |  |
 | op | CREATE_CHAR_IN_CS | serverbound |  | n-a |  |
 | op | DENY_ALLIANCE_REQUEST | serverbound |  | n-a |  |
 | op | DESTROY_PET_ITEM_REQUEST | serverbound |  | n-a |  |
@@ -595,7 +622,6 @@ None.
 | op | JMS_CLOGIN_CLOGIN | serverbound |  | n-a |  |
 | op | JMS_CONSUME_ITEM | serverbound |  | n-a |  |
 | op | JMS_SLASH_COMMAND | serverbound |  | n-a |  |
-| op | LOTTERY_ITEM_USE_REQUEST | serverbound |  | n-a |  |
 | op | MAKER_SKILL | serverbound |  | n-a |  |
 | op | MOB_ESCORT_COLLISION | serverbound |  | n-a |  |
 | op | MOB_ESCORT_STOP_END_REQUEST | serverbound |  | n-a |  |
@@ -608,7 +634,6 @@ None.
 | op | NAME_TRANSFER | serverbound |  | n-a |  |
 | op | NEW_YEAR_CARD_REQUEST | serverbound |  | n-a |  |
 | op | NEXON_PASSPORT | serverbound |  | n-a |  |
-| op | NPC_ITEM_USE_REQUEST | serverbound |  | n-a |  |
 | op | NPC_SPECIAL_ACTION | serverbound |  | n-a |  |
 | op | ON_LOGOUT_GIFT | serverbound |  | n-a |  |
 | op | OPEN_FAMILY | serverbound |  | n-a |  |
@@ -617,7 +642,6 @@ None.
 | op | OPEN_ITEMUI | serverbound |  | n-a |  |
 | op | OP_BOARD_HAS_NEW | serverbound |  | n-a |  |
 | op | OWL_ACTION | serverbound |  | n-a |  |
-| op | OWL_WARP | serverbound |  | n-a |  |
 | op | PACKET_ERROR | serverbound |  | n-a |  |
 | op | PARTY_RESULT | serverbound |  | n-a |  |
 | op | PARTY_SEARCH_START | serverbound |  | n-a |  |
@@ -638,17 +662,13 @@ None.
 | op | REQUEST_FOOTHOLD_INFO | serverbound |  | n-a |  |
 | op | REQUEST_SESSION_VALUE | serverbound |  | n-a |  |
 | op | RING_ACTION | serverbound |  | n-a |  |
-| op | RPS_ACTION | serverbound |  | n-a |  |
-| op | SCRIPTED_ITEM | serverbound |  | n-a |  |
 | op | SECURE_PASSWORD | serverbound |  | n-a |  |
 | op | SEPARATE_FAMILY_BY_JUNIOR | serverbound |  | n-a |  |
 | op | SEPARATE_FAMILY_BY_SENIOR | serverbound |  | n-a |  |
 | op | SLIDE_REQUEST | serverbound |  | n-a |  |
-| op | STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST | serverbound |  | n-a |  |
 | op | STRANGE_DATA | serverbound |  | n-a |  |
 | op | SUMMON_REMOVE | serverbound |  | n-a |  |
 | op | TOUCHING_REACTOR | serverbound |  | n-a |  |
-| op | TROCK_ADD_MAP | serverbound |  | n-a |  |
 | op | UI_OPEN_ITEM_USE_REQUEST | serverbound |  | n-a |  |
 | op | UNNAMED_R149 | serverbound |  | n-a |  |
 | op | UNNAMED_R18 | serverbound |  | n-a |  |
@@ -720,8 +740,6 @@ None.
 | op | USER_EFFECT_LOCAL | serverbound |  | n-a |  |
 | op | USER_QUEST_RECORD_SET_STATE | serverbound |  | n-a |  |
 | op | USE_BACKGROUND_MUSIC_ITEM | serverbound |  | n-a |  |
-| op | USE_CATCH_ITEM | serverbound |  | n-a |  |
-| op | USE_DEATHITEM | serverbound |  | n-a |  |
 | op | USE_FAMILY | serverbound |  | n-a |  |
 | op | USE_GACHAPON_BOX_ITEM | serverbound |  | n-a |  |
 | op | USE_GACHA_EXP | serverbound |  | n-a |  |
@@ -731,11 +749,8 @@ None.
 | op | USE_MAPLELIFE | serverbound |  | n-a |  |
 | op | USE_PAMS_SONG_REQUEST | serverbound |  | n-a |  |
 | op | USE_REMOTE | serverbound |  | n-a |  |
-| op | USE_SHOP_SCANNER_ITEM | serverbound |  | n-a |  |
-| op | USE_SKILL_BOOK | serverbound |  | n-a |  |
 | op | USE_SKILL_RESET_BOOK | serverbound |  | n-a |  |
 | op | USE_SOLOMON_ITEM | serverbound |  | n-a |  |
-| op | USE_TELEPORT_ROCK | serverbound |  | n-a |  |
 | op | VIEW_ALL_PIC_REGISTER | serverbound |  | n-a |  |
 | op | VIEW_ALL_WITH_PIC | serverbound |  | n-a |  |
 | op | WATER_OF_LIFE | serverbound |  | n-a |  |

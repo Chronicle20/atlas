@@ -112,12 +112,14 @@ type Compensator interface {
 
 	// DispatchCashItemUseRollbacks reverse-walks the completed steps of a
 	// cash-item-use saga (ItemTagUse/SealingLockUse/IncubatorUse/
-	// KarmaScissorsUse/RemoteMerchant), re-creating every consumed item
-	// (DestroyAsset/DestroyAssetFromSlot → CreateItem), destroying every
-	// awarded result (AwardAsset → DestroyItem), clearing every applied karma
-	// mark (ApplyAssetKarma → clear), and closing every opened shop
-	// (OpenNpcShop → EXIT). No lifecycle transitions, no Failed emission, no
-	// cache eviction — callers handle those.
+	// KarmaScissorsUse/RemoteMerchant/ScriptedItemUse/RemoteNpcUse), re-creating
+	// every consumed item (DestroyAsset/DestroyAssetFromSlot → CreateItem),
+	// destroying every awarded result (AwardAsset → DestroyItem), clearing every
+	// applied karma mark (ApplyAssetKarma → clear), closing every opened shop
+	// (OpenNpcShop → EXIT), and ending every opened dialogue
+	// (StartItemConversation/StartNpcConversation → END_CONVERSATION). No
+	// lifecycle transitions, no Failed emission, no cache eviction — callers
+	// handle those.
 	DispatchCashItemUseRollbacks(s Saga)
 
 	// DispatchPointResetRollbacks reverse-walks the completed steps of a
@@ -297,13 +299,15 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 
 	// Cash-item-use reverse-walk (Task 10; expiration_extender_use added
 	// task-222, remote_merchant added task-221, karma_scissors_use added
-	// task-223). A failed item_tag_use / sealing_lock_use / incubator_use /
-	// expiration_extender_use / remote_merchant / karma_scissors_use must
-	// refund the already-completed consume steps (the
-	// tagged/sealed/incubated/extender item, or the destroyed scissors) and
-	// undo any awarded result or applied karma mark — or close any opened
-	// shop — rather than only compensating the failed step.
-	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse || s.SagaType() == ExpirationExtenderUse || s.SagaType() == RemoteMerchant || s.SagaType() == KarmaScissorsUse {
+	// task-223, scripted_item_use/remote_npc_use added task-230). A failed
+	// item_tag_use / sealing_lock_use / incubator_use /
+	// expiration_extender_use / remote_merchant / karma_scissors_use /
+	// scripted_item_use / remote_npc_use must refund the already-completed
+	// consume steps (the tagged/sealed/incubated/extender item, or the
+	// destroyed scissors) and undo any awarded result or applied karma mark —
+	// or close any opened shop, or end any opened dialogue — rather than only
+	// compensating the failed step.
+	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse || s.SagaType() == ExpirationExtenderUse || s.SagaType() == RemoteMerchant || s.SagaType() == KarmaScissorsUse || s.SagaType() == ScriptedItemUse || s.SagaType() == RemoteNpcUse {
 		return c.compensateCashItemUse(s, failedStep)
 	}
 
@@ -1486,6 +1490,11 @@ func (c *CompensatorImpl) compensateCashItemUse(s Saga, failedStep Step[any]) er
 //   - OpenNpcShop (a remote-merchant shop opened before the consume step —
 //     task-221 FR-4.5) → EXIT, via EmitNpcShopExit, so the player is not
 //     left standing in a shop they did not pay for.
+//   - StartItemConversation / StartNpcConversation (a scripted-item or
+//     remote-npc dialogue opened before the destroy step — task-230) →
+//     END_CONVERSATION, via EmitNpcConversationEnd. The destroy step is the
+//     last step for these sagas, so the only path reaching this arm is
+//     "dialogue opened, destroy failed" — a UI teardown, not an item restore.
 //
 // An error refunding one step does not abort the chain.
 func (c *CompensatorImpl) DispatchCashItemUseRollbacks(s Saga) {
@@ -1560,6 +1569,32 @@ func (c *CompensatorImpl) DispatchCashItemUseRollbacks(s Saga) {
 						"step_id":        step.StepId(),
 						"character_id":   payload.CharacterId,
 					}).Error("Reverse-walk: OpenNpcShop -> EXIT dispatch failed; continuing chain.")
+				}
+			}
+		case StartItemConversation:
+			// The inverse of "opened a dialogue" is "close it". Because the
+			// destroy is the LAST step, the only path that reaches here is
+			// "conversation opened, destroy failed" — rare, and its
+			// compensation is a UI teardown rather than an item restore. That
+			// asymmetry is the point of the conversation-first ordering.
+			if payload, ok := step.Payload().(StartItemConversationPayload); ok {
+				if err := EmitNpcConversationEnd(c.l, c.ctx, s.TransactionId(), payload.CharacterId, payload.NpcTemplateId); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+						"item_id":        payload.ItemId,
+					}).Error("Reverse-walk: StartItemConversation -> END_CONVERSATION dispatch failed; continuing chain.")
+				}
+			}
+		case StartNpcConversation:
+			if payload, ok := step.Payload().(StartNpcConversationPayload); ok {
+				if err := EmitNpcConversationEnd(c.l, c.ctx, s.TransactionId(), payload.CharacterId, payload.NpcTemplateId); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+					}).Error("Reverse-walk: StartNpcConversation -> END_CONVERSATION dispatch failed; continuing chain.")
 				}
 			}
 		}

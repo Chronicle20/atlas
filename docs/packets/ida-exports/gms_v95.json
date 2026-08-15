@@ -16824,6 +16824,38 @@
           "comment": ""
         }
       ]
+    },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0x9de7a0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time(); COutPacket::Encode4 at 0x9de857; task-230 verify gms_v95)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nPOS source slot (COutPacket::Encode2 at 0x9de865; task-230 verify gms_v95)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID (COutPacket::Encode4 at 0x9de86f; opcode 84/0x54 from COutPacket::COutPacket(&oPacket, 84) at 0x9de840; task-230 verify gms_v95)"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0x9da430",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "nPOS source slot (COutPacket::Encode2 at 0x9da5cd; task-230 verify gms_v95)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID (v4/nItemID; COutPacket::Encode4 at 0x9da5d7; opcode 123/0x7B from COutPacket::COutPacket(&oPacket, 123) at 0x9da5b7; task-230 verify gms_v95)"
+        }
+      ]
     }
   }
 }

@@ -13264,6 +13264,43 @@
           "comment": "task-226: hand-added -- Hex-Rays emits this as an inlined manual buffer write (direct pointer store + ZArray growth), not a textual COutPacket::Encode4(...) call, so the regex parser cannot see it; verified by decompile against the 3x uint32 skill-id fields (matches the DecodeStr/Decode1/Decode4 shape of every sibling version's SINGLEMACRO::Encode/Decode)."
         }
       ]
+    },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0x9b3da0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 500 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 500 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 500 && result"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0x9aff40",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 200 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 200 && <default>"
+        }
+      ]
     }
   }
 }

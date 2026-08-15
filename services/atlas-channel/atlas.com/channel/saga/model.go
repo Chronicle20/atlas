@@ -54,6 +54,10 @@ type (
 
 	// Remote-merchant payload types
 	OpenNpcShopPayload = sharedsaga.OpenNpcShopPayload
+
+	// NPC conversation payload types
+	StartItemConversationPayload = sharedsaga.StartItemConversationPayload
+	StartNpcConversationPayload  = sharedsaga.StartNpcConversationPayload
 )
 
 // Re-export constants from atlas-saga shared library
@@ -76,6 +80,8 @@ const (
 	MesoSackUse           = sharedsaga.MesoSackUse
 	PetNameTagUse         = sharedsaga.PetNameTagUse
 	RemoteMerchant        = sharedsaga.RemoteMerchant
+	ScriptedItemUse       = sharedsaga.ScriptedItemUse
+	RemoteNpcUse          = sharedsaga.RemoteNpcUse
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -116,6 +122,8 @@ const (
 	CreateNote            = sharedsaga.CreateNote
 	RenamePet             = sharedsaga.RenamePet
 	OpenNpcShop           = sharedsaga.OpenNpcShop
+	StartItemConversation = sharedsaga.StartItemConversation
+	StartNpcConversation  = sharedsaga.StartNpcConversation
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

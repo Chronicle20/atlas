@@ -322,6 +322,12 @@ else
     skip "npc-shop contract mirror guard (contract unchanged)"
 fi
 
+if touched 'kafka/message/npc/kafka\.go'; then
+    step "npc-conversation contract mirror guard" ./tools/npc-conversation-contract-mirror-guard.sh
+else
+    skip "npc-conversation contract mirror guard (contract unchanged)"
+fi
+
 if touched '^tools/task-(resolve|brief)(_test)?\.sh$'; then
     step "task resolve/brief tests" ./tools/task-resolve_test.sh
 else

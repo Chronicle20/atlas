@@ -2206,6 +2206,17 @@ func candidatesFromFName(fname string) []candidate {
 	// exist from v72 up; v48/v61 lack the opcode (generic item-use path).
 	case "CWvsContext::SendLotteryItemUseRequest":
 		return []candidate{{name: "LotteryItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// Scripted items (task-230). Struct ScriptedItem in inventory/serverbound;
+	// body updateTime(uint32) + slot(int16) + itemId(int32). Opcode exists v72
+	// through jms_v185; v12/v48/v61 lack the sender entirely.
+	case "CWvsContext::SendScriptRunItemRequest":
+		return []candidate{{name: "ScriptedItem", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// Remote-NPC item use (task-230), covering the 239xxxx and 545xxxx
+	// families. Struct NpcItemUse in inventory/serverbound; body slot(int16) +
+	// itemId(int32) with NO leading updateTime. Opcode exists v61 through
+	// jms_v185; v12/v48 lack it.
+	case "CWvsContext::SendSelectNpcItemUseRequest":
+		return []candidate{{name: "NpcItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	// USE_SKILL_BOOK (task-125): CWvsContext::SendSkillLearnItemUseRequest,
 	// v83 @0xa0a1b2 IDA-verified (already named in the IDB, opcode 0x52 via
 	// COutPacket::COutPacket(&pkt, 0x52)). Body: Encode4 updateTime +

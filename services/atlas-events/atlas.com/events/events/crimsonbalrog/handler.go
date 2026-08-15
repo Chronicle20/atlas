@@ -87,15 +87,3 @@ func (h *Handler) ConcurrencyKey(_ context.Context, workContext json.RawMessage)
 func (h *Handler) Advance(_ context.Context, o registry.Occurrence, w registry.Work) (registry.Progress, error) {
 	return registry.Progress{}, fmt.Errorf("crimsonbalrog: unexpected %s work for occurrence %s", w.Type, o.Id)
 }
-
-// Complete is cleanup for a terminal transition (FR-B18, FR-B19, FR-A15),
-// driven by the generic scheduling layer rather than by this package's own
-// consumers (arrival.go's ArrivalProcessor, monsters.go's MonsterProcessor).
-// It delegates to the same emitCleanup (arrival.go) those two paths use, so
-// a completion driven by the generic layer produces identical wire traffic
-// to one driven by the consumer — no second, divergent HIDE/DESTROY_BY_SOURCE
-// shape (ruling 4). reason is unused: emitCleanup's wire traffic does not
-// depend on WHY the occurrence completed, only on what it owns.
-func (h *Handler) Complete(ctx context.Context, o registry.Occurrence, _ string) error {
-	return emitCleanup(h.l, ctx, o.Id, o.Context)
-}

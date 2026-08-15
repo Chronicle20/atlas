@@ -96,11 +96,11 @@ func (p *ArrivalProcessorImpl) cleanup(o occurrence.Model) error {
 }
 
 // emitCleanup despawns everything an occurrence owns, then removes the
-// visual, for every attack map (FR-B19). Shared by ArrivalProcessorImpl's
-// cleanup (a completion driven by this consumer) and Handler.Complete (a
-// completion driven by the generic scheduling layer — handler.go), so both
-// paths produce identical wire traffic instead of a second, divergent HIDE/
-// DESTROY_BY_SOURCE shape (ruling 4). The destroy command is issued
+// visual, for every attack map (FR-B19). Used by ArrivalProcessorImpl's
+// cleanup (a completion driven by this consumer) — the only completion path
+// for CRIMSON_BALROG, since Advance is unreachable (handler.go) and there is
+// no separate generic Complete hook (R33-2: it had zero production callers).
+// The destroy command is issued
 // unconditionally per attack map, not gated on a monster tally: zero
 // survivors is success (FR-P4), and a stale tally can only make the gate
 // wrong in the direction of skipping a needed cleanup.

@@ -18,7 +18,6 @@ func (h stubHandler) Start(context.Context, Occurrence) (Progress, error)       
 func (h stubHandler) Advance(context.Context, Occurrence, Work) (Progress, error) {
 	return Progress{}, nil
 }
-func (h stubHandler) Complete(context.Context, Occurrence, string) error { return nil }
 
 func TestRegisterAndGet(t *testing.T) {
 	reset()

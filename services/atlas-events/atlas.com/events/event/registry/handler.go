@@ -98,10 +98,10 @@ type Handler interface {
 	// Start orchestrates the side effects of a newly created occurrence (FR-B11).
 	Start(ctx context.Context, o Occurrence) (Progress, error)
 
-	// Advance handles a due OCCURRENCE_TRANSITION row (FR-A14).
+	// Advance handles a due OCCURRENCE_TRANSITION row (FR-A14). Completion side
+	// effects (FR-B18, FR-B19, FR-A15) belong here too, on the terminal branch —
+	// there is no separate Complete method: both real implementations converge
+	// on occurrence.Processor.Complete directly, and a Handler.Complete would
+	// have zero production callers.
 	Advance(ctx context.Context, o Occurrence, w Work) (Progress, error)
-
-	// Complete is cleanup for a terminal transition (FR-B18, FR-B19, FR-A15);
-	// must be idempotent (FR-B20).
-	Complete(ctx context.Context, o Occurrence, reason string) error
 }

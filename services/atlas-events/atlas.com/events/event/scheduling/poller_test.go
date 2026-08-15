@@ -368,7 +368,6 @@ func (h fakeHandler) Advance(ctx context.Context, o registry.Occurrence, w regis
 	}
 	return registry.Progress{}, nil
 }
-func (h fakeHandler) Complete(context.Context, registry.Occurrence, string) error { return nil }
 
 var _ registry.Handler = fakeHandler{}
 

@@ -77,7 +77,6 @@ func (h resourceTestHandler) Start(context.Context, registry.Occurrence) (regist
 func (h resourceTestHandler) Advance(context.Context, registry.Occurrence, registry.Work) (registry.Progress, error) {
 	return registry.Progress{}, nil
 }
-func (h resourceTestHandler) Complete(context.Context, registry.Occurrence, string) error { return nil }
 
 func testDefinition(theType, name string) Model {
 	m, err := NewBuilder(theType, name).SetConfiguration(json.RawMessage(`{}`)).Build()

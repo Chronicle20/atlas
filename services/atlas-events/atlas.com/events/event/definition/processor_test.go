@@ -63,7 +63,6 @@ func (h rejectingHandler) Start(context.Context, registry.Occurrence) (registry.
 func (h rejectingHandler) Advance(context.Context, registry.Occurrence, registry.Work) (registry.Progress, error) {
 	return registry.Progress{}, nil
 }
-func (h rejectingHandler) Complete(context.Context, registry.Occurrence, string) error { return nil }
 
 type acceptingHandler struct {
 	t string
@@ -86,7 +85,6 @@ func (h acceptingHandler) Start(context.Context, registry.Occurrence) (registry.
 func (h acceptingHandler) Advance(context.Context, registry.Occurrence, registry.Work) (registry.Progress, error) {
 	return registry.Progress{}, nil
 }
-func (h acceptingHandler) Complete(context.Context, registry.Occurrence, string) error { return nil }
 
 // FR-D6: an invalid configuration is rejected on WRITE, by the handler that
 // owns the type, rather than persisted and failing later at trigger time.
@@ -287,7 +285,6 @@ func (h constantKeyHandler) Start(context.Context, registry.Occurrence) (registr
 func (h constantKeyHandler) Advance(context.Context, registry.Occurrence, registry.Work) (registry.Progress, error) {
 	return registry.Progress{}, nil
 }
-func (h constantKeyHandler) Complete(context.Context, registry.Occurrence, string) error { return nil }
 
 type varyingKeyHandler struct{ t string }
 
@@ -308,4 +305,3 @@ func (h varyingKeyHandler) Start(context.Context, registry.Occurrence) (registry
 func (h varyingKeyHandler) Advance(context.Context, registry.Occurrence, registry.Work) (registry.Progress, error) {
 	return registry.Progress{}, nil
 }
-func (h varyingKeyHandler) Complete(context.Context, registry.Occurrence, string) error { return nil }

@@ -53,26 +53,17 @@ type storedDoor struct {
 
 // Registry holds the primary door store plus three secondary indices:
 // field (for area-door spawn + field broadcast), owner (for recast/cleanup),
-// and town-party (for slot allocation + town broadcast). All tenant-scoped
-// reads/writes go through the Tenant* variants below, which key every entry
-// as <prefix>:<namespace>:<TenantKey(t)>:<entityKey>. The bare* instances are
-// retained ONLY for the cross-tenant GetAll (expiry sweep) and Clear (test
-// teardown) enumerations, for which libs/atlas-redis has no tenant-scoped
-// equivalent (see task-232 Task 7 brief). They are key-compatible with the
-// tenant-scoped writes: tenantEntityKey/namespacedKey both build the key via
-// strings.Join(parts, ":"), and Join over one separator is associative, so a
-// bare SCAN pattern "<prefix>:<namespace>:*" matches every tenant-scoped key
-// written under that namespace.
+// and town-party (for slot allocation + town broadcast). All reads/writes go
+// through the tenant-scoped fields below, which key every entry as
+// <prefix>:<namespace>:<TenantKey(t)>:<entityKey>. GetAll (expiry sweep) and
+// Clear (test teardown) are the two genuine cross-tenant operations and use
+// the deliberate, explicitly-named *AcrossTenants sibling methods (D7)
+// instead of a bare non-tenant-scoped instance.
 type Registry struct {
 	reg      *atlasredis.TenantRegistry[string, storedDoor]
 	fieldIdx *atlasredis.TenantKeyedSet[string]
 	ownerIdx *atlasredis.TenantKeyedSet[string]
 	townIdx  *atlasredis.TenantKeyedSet[string]
-
-	bareReg      *atlasredis.Registry[string, storedDoor]
-	bareFieldIdx *atlasredis.KeyedSet[string]
-	bareOwnerIdx *atlasredis.KeyedSet[string]
-	bareTownIdx  *atlasredis.KeyedSet[string]
 }
 
 var (
@@ -87,11 +78,6 @@ func newRegistry(rc *goredis.Client) *Registry {
 		fieldIdx: atlasredis.NewTenantKeyedSet[string](rc, "door-field", id),
 		ownerIdx: atlasredis.NewTenantKeyedSet[string](rc, "door-owner", id),
 		townIdx:  atlasredis.NewTenantKeyedSet[string](rc, "door-town", id),
-
-		bareReg:      atlasredis.NewRegistry[string, storedDoor](rc, "door", id),
-		bareFieldIdx: atlasredis.NewKeyedSet[string](rc, "door-field", id),
-		bareOwnerIdx: atlasredis.NewKeyedSet[string](rc, "door-owner", id),
-		bareTownIdx:  atlasredis.NewKeyedSet[string](rc, "door-town", id),
 	}
 }
 
@@ -331,16 +317,13 @@ func (r *Registry) Remove(ctx context.Context, t tenant.Model, areaDoorId uint32
 	return nil
 }
 
-// GetAll returns all doors grouped by tenant. This is a cross-tenant
-// enumeration with no tenant-scoped equivalent in libs/atlas-redis (Task 8
-// adds one), so it goes through the bare Registry over the same client and
-// namespace. It is key-compatible with tenant-scoped writes: bareReg's SCAN
-// pattern "atlas:door:*" matches "atlas:door:<TenantKey(t)>:<areaDoorId>"
-// keys written by r.reg, since both build the key via strings.Join(parts,
-// ":") and Join over one separator is associative.
+// GetAll returns all doors grouped by tenant. This is a deliberate,
+// explicitly-named cross-tenant enumeration (D7) via
+// TenantRegistry.GetAllAcrossTenants — the expiry sweep has no tenant to
+// loop over; it needs every tenant's live doors at once.
 func (r *Registry) GetAll(ctx context.Context) (map[tenant.Model][]Model, error) {
 	result := make(map[tenant.Model][]Model)
-	all, err := r.bareReg.GetAll(ctx)
+	all, err := r.reg.GetAllAcrossTenants(ctx)
 	if err != nil {
 		return result, err
 	}
@@ -355,10 +338,10 @@ func (r *Registry) GetAll(ctx context.Context) (map[tenant.Model][]Model, error)
 }
 
 // Clear removes all doors and all index entries across every tenant (useful
-// in tests). Same cross-tenant / bare-instance rationale as GetAll.
+// in tests). Same cross-tenant rationale as GetAll.
 func (r *Registry) Clear(ctx context.Context) {
-	_, _ = r.bareReg.Clear(ctx)
-	_, _ = r.bareFieldIdx.ClearAll(ctx)
-	_, _ = r.bareOwnerIdx.ClearAll(ctx)
-	_, _ = r.bareTownIdx.ClearAll(ctx)
+	_, _ = r.reg.ClearAllAcrossTenants(ctx)
+	_, _ = r.fieldIdx.ClearAllAcrossTenants(ctx)
+	_, _ = r.ownerIdx.ClearAllAcrossTenants(ctx)
+	_, _ = r.townIdx.ClearAllAcrossTenants(ctx)
 }

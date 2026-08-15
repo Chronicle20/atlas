@@ -187,13 +187,6 @@ func decodePurchaseEvent(t *testing.T, raw []byte) cashshop.StatusEvent[cashshop
 	return ev
 }
 
-func decodeErrorEvent(t *testing.T, raw []byte) cashshop.StatusEvent[cashshop.ErrorEventBody] {
-	t.Helper()
-	var ev cashshop.StatusEvent[cashshop.ErrorEventBody]
-	require.NoError(t, json.Unmarshal(raw, &ev))
-	return ev
-}
-
 // TestPurchaseTransactionIdSurvivesToSuccessEvent proves the id threads
 // command -> processor -> PurchaseEventBody on the success path.
 func TestPurchaseTransactionIdSurvivesToSuccessEvent(t *testing.T) {

@@ -280,7 +280,10 @@ export function CharacterDetailPage() {
         </div>
       )}
 
-      <PendingChangesPanel characterId={String(id)} />
+      <PendingChangesPanel
+        characterId={String(id)}
+        characterName={character?.attributes.name}
+      />
 
       <Toaster richColors />
 

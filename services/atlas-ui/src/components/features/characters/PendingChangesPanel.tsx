@@ -32,7 +32,7 @@ function requestedValue(change: PendingChange): string {
 
 interface PendingChangesPanelProps {
   characterId: string;
-  characterName?: string;
+  characterName?: string | undefined;
 }
 
 /**

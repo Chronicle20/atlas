@@ -59,11 +59,11 @@ function appliedNameChange(
   };
 }
 
-function renderPanel() {
+function renderPanel(characterName?: string) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <PendingChangesPanel characterId="1" />
+      <PendingChangesPanel characterId="1" characterName={characterName} />
     </QueryClientProvider>,
   );
 }
@@ -112,13 +112,14 @@ describe("PendingChangesPanel", () => {
 
   it("names the character and the requested value in the confirm dialog before cancelling", async () => {
     changes = [pendingNameChange({ id: "pc-1", requestedName: "Zulu" })];
-    renderPanel();
+    renderPanel("Bravestar");
 
     await userEvent.click(
       await screen.findByRole("button", { name: /cancel/i }),
     );
 
     const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent("Bravestar");
     expect(dialog).toHaveTextContent("Zulu");
     expect(mutateAsync).not.toHaveBeenCalled(); // not until confirmed
 

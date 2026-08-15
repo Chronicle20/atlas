@@ -336,7 +336,7 @@ func (r *SpawnPointRegistry) SetSpawnPointsForMap(ctx context.Context, mapKey ch
 	for _, csp := range spawnPoints {
 		stored := toStored(csp.SpawnPoint, csp.NextSpawnAt)
 		data, _ := json.Marshal(stored)
-		if err := r.hashes.Set(ctx, mapKey.Tenant, mapKey, strconv.FormatUint(uint64(csp.SpawnPoint.Id), 10), string(data)); err != nil {
+		if err := r.hashes.Set(ctx, mapKey.Tenant, mapKey, strconv.FormatUint(uint64(csp.Id), 10), string(data)); err != nil {
 			return err
 		}
 	}

@@ -70,9 +70,9 @@ func newCheckPossibleHandlerEnv(t *testing.T, region string, major uint16, minor
 
 	sp := session.NewProcessor(l, ctx)
 	sp.SetAccountId(sessionId, checkPossibleTestAccountId)
-	updated := sp.SetCharacterId(sessionId, checkPossibleTestCharacterId)
+	sp.SetCharacterId(sessionId, checkPossibleTestCharacterId)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).Build()
-	updated = session.NewProcessor(l, ctx).SetField(sessionId, f)
+	updated := session.NewProcessor(l, ctx).SetField(sessionId, f)
 
 	env := &checkPossibleHandlerEnv{t: t, ctx: ctx, s: updated, l: l, logs: logs}
 

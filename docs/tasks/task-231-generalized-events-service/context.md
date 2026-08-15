@@ -209,6 +209,16 @@ Named here so nobody treats them as settled:
   them; read `transport/state.go` rather than guessing `"in_transit"`.
 - **The Anniversary buff `sourceId`.** Must not collide with a skill id. Task 33
   Step 4 requires grepping existing producers before choosing.
+  **Resolved (Task 33):** chose `1000000000` (10 digits). Verified via
+  `grep -rhoE '[0-9]{7,9}' libs/atlas-constants/skill/*.go | sort -n | tail`:
+  the highest real skill literal anywhere in `libs/atlas-constants/skill/` is
+  `22181003` (8 digits); the only 9-digit hit, `999999999`, is a test-only
+  sentinel in `identity_test.go` asserting a lookup that must NOT resolve, not
+  a real skill id. `1000000000` sits above both, so it cannot collide with any
+  skill id atlas-constants knows about. Recorded here per the seed JSON's own
+  schema having no comment field to carry this rationale inline (checked:
+  `event-crimson-balrog.json` only has `type`/`name`/`enabled`/`configuration`
+  keys under `data.attributes`).
 - **Whether the v83 client renders an icon for `EXP_BUFF_RATE` /
   `ITEM_UP_BY_ITEM`.** Explicitly **unverified** and out of scope (design §10.3).
   Both rates are computed server-side in `atlas-rates`, so a missing icon is

@@ -4,7 +4,13 @@
       "type": "ANNIVERSARY",
       "name": "Anniversary",
       "enabled": false,
-      "configuration": {}
+      "configuration": {
+        "expMultiplier": 2.0,
+        "dropMultiplier": 2.0,
+        "buffSourceId": 1000000000,
+        "scheduledStart": "2020-01-01T00:00:00Z",
+        "scheduledEnd": "2020-01-08T00:00:00Z"
+      }
     }
   }
 }

@@ -18,23 +18,21 @@ import (
 	"atlas-cashshop/cashshop/inventory/compartment"
 	"atlas-cashshop/kafka/message/cashshop"
 	"atlas-cashshop/wallet"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"sync"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
 	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
@@ -43,51 +41,32 @@ import (
 // coupon/processor_test.go's testStatusTopic / newProcessorTestEnv pattern.
 const testPurchaseStatusTopic = "test-cash-shop-status-purchase"
 
-// --- direct-producer capture, mirroring coupon/processor_test.go -----------
+// emittedPurchaseEvents is the package-wide producer capture, installed once
+// from TestMain per the producertest.InstallCapturing contract -- the
+// producer.Manager singleton must not be reset per test, only the Capture's
+// recorded state (via Capture.Reset).
+var emittedPurchaseEvents *producertest.Capture
 
-type purchaseDirectEvents struct {
-	mu   sync.Mutex
-	msgs []kafka.Message
+func TestMain(m *testing.M) {
+	emittedPurchaseEvents = producertest.InstallCapturing()
+	os.Exit(m.Run())
 }
 
-type purchaseCapturingWriter struct {
-	topicName string
-	sink      *purchaseDirectEvents
-}
-
-func (w purchaseCapturingWriter) Topic() string { return w.topicName }
-
-func (w purchaseCapturingWriter) WriteMessages(_ context.Context, msgs ...kafka.Message) error {
-	w.sink.mu.Lock()
-	defer w.sink.mu.Unlock()
-	w.sink.msgs = append(w.sink.msgs, msgs...)
-	return nil
-}
-
-func (w purchaseCapturingWriter) Close() error { return nil }
-
-// captureDirectPurchaseEvents swaps the process-wide producer manager for one
-// whose writers record instead of publishing, so the rejectEmit /
-// producer.ProviderImpl DIRECT path (INVENTORY_FULL, UNKNOWN_ERROR) can be
-// inspected without a live broker.
-func captureDirectPurchaseEvents(t *testing.T) *purchaseDirectEvents {
+// captureDirectPurchaseEvents clears any messages recorded by a prior test
+// and points EVENT_TOPIC_CASH_SHOP_STATUS at this test's own topic, so the
+// rejectEmit / producer.ProviderImpl DIRECT path (INVENTORY_FULL,
+// UNKNOWN_ERROR, NOT_ENOUGH_CASH) can be inspected without a live broker.
+func captureDirectPurchaseEvents(t *testing.T) *producertest.Capture {
 	t.Helper()
 	t.Setenv("EVENT_TOPIC_CASH_SHOP_STATUS", testPurchaseStatusTopic)
-	d := &purchaseDirectEvents{}
-	producer.ResetInstance()
-	producer.GetManager(producer.ConfigWriterFactory(func(topicName string) producer.Writer {
-		return purchaseCapturingWriter{topicName: topicName, sink: d}
-	}))
-	t.Cleanup(producer.ResetInstance)
-	return d
+	emittedPurchaseEvents.Reset()
+	return emittedPurchaseEvents
 }
 
-func (d *purchaseDirectEvents) errorEvents(t *testing.T) []cashshop.StatusEvent[cashshop.ErrorEventBody] {
+func purchaseErrorEvents(t *testing.T, c *producertest.Capture) []cashshop.StatusEvent[cashshop.ErrorEventBody] {
 	t.Helper()
-	d.mu.Lock()
-	defer d.mu.Unlock()
 	var out []cashshop.StatusEvent[cashshop.ErrorEventBody]
-	for _, m := range d.msgs {
+	for _, m := range c.Messages(testPurchaseStatusTopic) {
 		var e cashshop.StatusEvent[cashshop.ErrorEventBody]
 		if err := json.Unmarshal(m.Value, &e); err != nil {
 			continue
@@ -256,7 +235,7 @@ func TestPurchaseTransactionIdSurvivesToErrorEvent(t *testing.T) {
 	err := NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, serialNumber, transactionId)
 	require.NoError(t, err, "rejectEmit short-circuits with a nil return -- see Purchase()'s rejectEmit handling")
 
-	errs := events.errorEvents(t)
+	errs := purchaseErrorEvents(t, events)
 	require.Len(t, errs, 1)
 	require.Equal(t, "INVENTORY_FULL", errs[0].Body.Error)
 	require.Equal(t, transactionId, errs[0].Body.TransactionId, "error event must echo the command's transaction id")
@@ -337,7 +316,7 @@ func TestPurchaseInsufficientFundsReachesConsumer(t *testing.T) {
 	entries := purchaseOutboxEntries(t, db)
 	require.Len(t, entries, 0)
 
-	errs := events.errorEvents(t)
+	errs := purchaseErrorEvents(t, events)
 	require.Len(t, errs, 1, "NOT_ENOUGH_CASH must reach the consumer instead of being silently dropped")
 	require.Equal(t, "NOT_ENOUGH_CASH", errs[0].Body.Error)
 	require.Equal(t, transactionId, errs[0].Body.TransactionId, "error event must echo the command's transaction id")

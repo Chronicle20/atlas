@@ -3,8 +3,10 @@ package character
 import (
 	"atlas-buddies/buddy"
 	character2 "atlas-buddies/kafka/message/character"
+	listmessage "atlas-buddies/kafka/message/list"
 	"atlas-buddies/list"
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/google/uuid"
@@ -135,6 +137,30 @@ func buddyName(t *testing.T, db *gorm.DB, ten tenant.Model, ownerId uint32, budd
 	return be.CharacterName
 }
 
+// buddyUpdatedOutboxCount counts the BUDDY_UPDATED status events enqueued
+// (via outbox.EmitProvider, see list/processor.go:723-724) for ownerId on
+// the buddy list status event topic. Filtering by decoded event type (rather
+// than just row count on the topic) keeps this robust against other status
+// event types sharing the same topic.
+func buddyUpdatedOutboxCount(t *testing.T, db *gorm.DB, ten tenant.Model, ownerId uint32) int {
+	t.Helper()
+	var rows []outbox.Entity
+	if err := db.Where("topic = ?", listmessage.EnvStatusEventTopic).Find(&rows).Error; err != nil {
+		t.Fatalf("Failed to query outbox entries: %v", err)
+	}
+	count := 0
+	for _, r := range rows {
+		var ev listmessage.StatusEvent[listmessage.BuddyUpdatedStatusEventBody]
+		if err := json.Unmarshal(r.MessageValue, &ev); err != nil {
+			continue
+		}
+		if ev.Type == listmessage.StatusEventTypeBuddyUpdated && uint32(ev.CharacterId) == ownerId {
+			count++
+		}
+	}
+	return count
+}
+
 func nameChangedEvent(characterId uint32, oldName string, newName string) character2.StatusEvent[character2.NameChangedStatusEventBody] {
 	return character2.StatusEvent[character2.NameChangedStatusEventBody]{
 		TransactionId: uuid.New(),
@@ -183,7 +209,10 @@ func TestNameChangedIsIdempotent(t *testing.T) {
 
 	ev := nameChangedEvent(1, "Yankee", "Zulu")
 	handleStatusEventNameChanged(db)(l, ctx, ev)
+	require.Equal(t, 1, buddyUpdatedOutboxCount(t, db, ten, 10), "first delivery must emit exactly one BUDDY_UPDATED")
+
 	handleStatusEventNameChanged(db)(l, ctx, ev)
+	require.Equal(t, 1, buddyUpdatedOutboxCount(t, db, ten, 10), "redelivery of the identical event must not emit a second BUDDY_UPDATED")
 
 	require.Equal(t, "Zulu", buddyName(t, db, ten, 10, 1))
 }

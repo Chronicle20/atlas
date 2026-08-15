@@ -25,13 +25,11 @@ func TestReturnScrollItemUseRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := ReturnScrollItemUse{ItemUse: ItemUse{
-				operation:  CharacterItemUseTownScrollHandle,
-				updateTime: 12345,
-				source:     5,
-				itemId:     2030000,
-			}}
-			output := ReturnScrollItemUse{ItemUse: ItemUse{operation: CharacterItemUseTownScrollHandle}}
+			input := NewReturnScrollItemUse()
+			input.updateTime = 12345
+			input.source = 5
+			input.itemId = 2030000
+			output := NewReturnScrollItemUse()
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.UpdateTime() != input.UpdateTime() {
 				t.Errorf("updateTime: got %v, want %v", output.UpdateTime(), input.UpdateTime())

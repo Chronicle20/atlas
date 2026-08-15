@@ -33,3 +33,15 @@ func TestFnameTokenRejectsBareEnglishWords(t *testing.T) {
 		}
 	}
 }
+
+// TestFnameTokenRejectsEmbeddedSubSymbol proves the sub_ alternative is
+// word-boundary anchored: a sub_XXXX sequence embedded in a larger identifier is
+// not a bare IDA symbol and must not be scraped into the roster, in either
+// direction (leading qualifier or trailing suffix).
+func TestFnameTokenRejectsEmbeddedSubSymbol(t *testing.T) {
+	for _, s := range []string{"prefix_sub_841AA5", "sub_841AA5_thunk", "xsub_841AA5", "sub_841AA5z"} {
+		if got := fnameToken.FindAllString(s, -1); len(got) != 0 {
+			t.Fatalf("input %q: expected no matches, got %v", s, got)
+		}
+	}
+}

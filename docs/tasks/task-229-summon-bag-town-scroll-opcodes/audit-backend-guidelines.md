@@ -211,3 +211,18 @@ cited (old address, why it was wrong, new address, new decompile line numbers).
   larger identifier; add an explicit boundary (`\b`) and a test case proving
   embedded-substring forms are rejected, since this scraper is shared
   infrastructure other packet tasks rely on.
+
+## Resolution (post-review)
+
+Both non-blocking findings are fixed on this branch (commit
+`fix(task-229): address the non-blocking code-review findings`):
+
+- `summon_bag_item_use_test.go` / `return_scroll_item_use_test.go` now build both
+  `input` and `output` through `NewSummonBagItemUse` / `NewReturnScrollItemUse`,
+  so the exported constructors are exercised and the operation defaulting they
+  encode is what the round-trip asserts against. The constructors are kept
+  (rather than deleted) to match `NewLotteryItemUse`'s shape in the same package.
+- `tools/packet-audit/cmd/export.go:47` anchors the `sub_` alternative as
+  `\bsub_[0-9A-Fa-f]+\b`. `TestFnameTokenRejectsEmbeddedSubSymbol` pins the
+  rejection of `prefix_sub_841AA5`, `sub_841AA5_thunk`, `xsub_841AA5` and
+  `sub_841AA5z`; the two pre-existing accept-cases still pass unchanged.

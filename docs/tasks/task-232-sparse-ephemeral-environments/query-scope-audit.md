@@ -127,7 +127,6 @@ task's section rather than given rows — there is nothing to classify.
 | atlas-pets | pets (`pet.Entity`) | Data | SCOPED | `services/atlas-pets/atlas.com/pets/pet/entity.go:18` (TenantId); `libs/atlas-database/tenant_scope.go:75-79`; reads at `services/atlas-pets/atlas.com/pets/pet/provider.go:11,22,37`; writes at `services/atlas-pets/atlas.com/pets/pet/administrator.go:13,39,57,75,93,111,129,147` | No raw SQL; no `WithoutTenantFilter`. |
 | atlas-pets | excludes (`exclude.Entity`) | Data | SCOPED | `services/atlas-pets/atlas.com/pets/pet/exclude/entity.go:26` (TenantId); `libs/atlas-database/tenant_scope.go:75-79`; write at `services/atlas-pets/atlas.com/pets/pet/administrator.go:153-172` (`setExcludes`) | Package has no `provider.go`/`administrator.go` of its own — its only query builder is `pet.setExcludes`, cited above (ambiguity rule). The `db.Exec` at `exclude/entity.go:15` is one-time `Migration` DDL (tenant_id backfill from the parent `pets` row), not a live query. `TenantId` is left zero in the `Create` struct literal (`administrator.go:161-166`) and injected by the automatic create callback (`tenant_scope.go:83-133`). |
 | atlas-portal-actions | portal_scripts (`script.Entity`) | Data | SCOPED | `services/atlas-portal-actions/atlas.com/portal/script/entity.go:17` (`TenantID`, column `tenant_id`); `libs/atlas-database/tenant_scope.go:31-37,75-79`; reads at `services/atlas-portal-actions/atlas.com/portal/script/provider.go:12,23,35`; writes at `services/atlas-portal-actions/atlas.com/portal/script/administrator.go:11,32,74,82` | No raw SQL; no `WithoutTenantFilter`. |
-
 | atlas-quest | quest_statuses (`quest.Entity`) | Data | SCOPED | `services/atlas-quest/atlas.com/quest/quest/entity.go:16` (TenantId, indexed); `libs/atlas-database/tenant_scope.go:75-79`; reads at `services/atlas-quest/atlas.com/quest/quest/provider.go:11,27,33,44,61`; writes at `services/atlas-quest/atlas.com/quest/quest/administrator.go:13,30,55,74,96,134,156,178` | No raw SQL; no `WithoutTenantFilter`. |
 | atlas-quest | quest_progress (`progress.Entity`) | Data | SCOPED | `services/atlas-quest/atlas.com/quest/quest/progress/entity.go:13` (TenantId, indexed); `libs/atlas-database/tenant_scope.go:75-79` | No provider/administrator of its own — read via `quest.Entity.Progress` foreignKey preload (`quest/entity.go:26`) and written through `quest/administrator.go:96` (`setProgress`, takes `tenantId` explicitly). Own `TenantId` column, independently callback-scoped. |
 | atlas-quest | quest_medal_maps (`medal.Entity`) | Data | N/A — orphaned | `services/atlas-quest/atlas.com/quest/quest/medal/entity.go:14-18` (no TenantId column, no FK annotation) | Brief pre-identified this as expected `TRANSITIVE` through the tenant-scoped quest-status parent; **not confirmed at source**. `medal.Migration` is never registered — `services/atlas-quest/atlas.com/quest/main.go:52` calls `database.SetMigrations(quest.Migration, progress.Migration, outboxlib.Migration)` only, so the `quest_medal_maps` table is never created. `grep -rn "medal\." services/atlas-quest --include=*.go` (excluding the entity/model files themselves) finds no provider, administrator, or caller anywhere in the service — the package is dead code with no live query path at all, not a live TRANSITIVE access reachable through a join. No verdict from the defined taxonomy fits an access path that does not exist; flagged for the controller rather than forced into TRANSITIVE. |
@@ -347,3 +346,215 @@ a disposition: **scope it**, or **forces isolated mode**.
 | Outbox advisory lock | `libs/atlas-outbox/lock.go` | single constant key per DB | Deliberately global; now serialises drainers across environments — throughput coupling, not correctness (design §8.4) |
 | MinIO canonical objects | `services/atlas-pr-bootstrap/scripts/reconcile-minio.sh` | Objects keyed `tenants/<tenantId>/...` (or `shared/`, operator-gated) — already tenant-scoped, not environment-scoped (`services/atlas-data/atlas.com/data/wzinput/scope.go:21-33`, `.../tenantpurge/purge.go:46`, `.../minioreconcile/reconcile.go:86`) | Scoped: the object *keys* need no change — they were never environment-scoped. What is environment-shaped today is the reconcile **script's discovery mechanism**: `reconcile-minio.sh:24-46` builds its keep-list by enumerating tenants per-namespace across every `atlas-pr-*` + `atlas-main` k8s namespace. Under sparse, most per-PR namespaces disappear, so this discovery step should instead query the `atlas-tenants` `tenant.Entity` registry (CONTROL, environment-scoped per Task 10/11) for the live-tenant set of a given environment, rather than enumerating namespaces. Flagged here so the Task 50 implementer does not have to re-derive this — the object model is already correct, only the script's tenant-discovery source needs to change. |
 | Login/channel ports + advertised IP | `tools/gen-lb-ports.sh`, `services/atlas-pr-bootstrap/scripts/version-ports.sh` | per-namespace LoadBalancer | Scoped in Task 46 |
+
+## 3. Second-mechanism sweep: tenant-less call contexts
+
+§1 classified every Postgres access path by one test: does it call
+`database.WithoutTenantFilter`? Task 3's review found that test incomplete —
+the fleet-wide GORM callback also fails open when a query is reached through a
+context that carries **no tenant at all** (no `WithoutTenantFilter` needed;
+the callback just silently no-ops), and separately when a query builder never
+receives `.WithContext(ctx)` at all. This section re-sweeps §1's 27
+Postgres-having services from thirds 1–2, plus a shape-2 spot-check of third
+3's 9, for both mechanisms.
+
+### Step 1: Confirmed at source
+
+`libs/atlas-database/tenant_scope.go` (`tenantQueryCallback`, lines 54-81;
+`tenantCreateCallback`, lines 83-118):
+
+- **No tenant in context:** `tenant.FromContext(ctx)()` (line 69) returns an
+  error when the context carries no tenant. The callback's response to that
+  error is `l.Debugf("No tenant in context for query on %s, skipping tenant
+  filter.", ...)` followed by a bare `return` (lines 70-73) — **no WHERE
+  clause is added, no error is raised, no `db.Error` is set.** The query
+  proceeds exactly as built, at whatever scope its own explicit filters (if
+  any) provide. Same shape in `tenantCreateCallback` (lines 98-101): on
+  `tenant.FromContext` error it just `return`s, so `TenantId` is left at
+  whatever the struct literal set (typically zero) rather than being injected.
+- **Query built on a `*gorm.DB` never given `.WithContext`:** the callback
+  reads `db.Statement.Context` (line 60), which GORM defaults to
+  `context.Background()` when `.WithContext` was never called on that
+  statement chain. That context carries no tenant, so this collapses into the
+  same "no tenant in context" branch above — same silent no-op, same
+  no-error.
+- **Logging:** only a `Debugf` in the query/update/delete path (line 71); the
+  create path (`tenantCreateCallback`) does not even log on this branch. No
+  `Warn`/`Error`, no metric, no propagated `db.Error`. A tenant-less query
+  against a `tenant_id`-bearing table is invisible at runtime unless someone
+  is tailing debug logs.
+
+Premise confirmed as stated in the brief. Proceeding with the sweep.
+
+### Step 2–3: Sweep and trace
+
+Method: for each of the 27 services in thirds 1–2 (the 19 named across
+§1's rows for thirds 1–2, plus the 8 services already confirmed to have no
+Postgres persistence were excluded — persistence-bearing services swept:
+`atlas-account, atlas-ban, atlas-buddies, atlas-cashshop, atlas-character,
+atlas-configurations, atlas-data, atlas-drop-information` (third 1) and
+`atlas-fame, atlas-families, atlas-guilds, atlas-inventory, atlas-keys,
+atlas-map-actions, atlas-maps, atlas-marriages, atlas-merchant,
+atlas-mini-games, atlas-monster-book, atlas-mounts, atlas-mts, atlas-notes,
+atlas-npc-conversations, atlas-npc-shops, atlas-party-quests, atlas-pets,
+atlas-portal-actions` (third 2, 19 services) — 27 total):
+
+```
+$ xargs -a <(for s in atlas-account atlas-ban atlas-buddies atlas-cashshop atlas-character \
+  atlas-configurations atlas-data atlas-drop-information atlas-fame atlas-families atlas-guilds \
+  atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-marriages atlas-merchant \
+  atlas-mini-games atlas-monster-book atlas-mounts atlas-mts atlas-notes atlas-npc-conversations \
+  atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions; do echo services/$s; done) \
+  grep -rln --include='*.go' -e "context.Background()" -e "context.TODO()" | grep -v _test.go
+```
+returned 33 non-test files. Every hit falls into one of four buckets, each
+traced to its query (or confirmed not to reach one):
+
+1. **REST handler boilerplate** (`*/rest/handler.go`, present in every one of
+   the 27 services) — `server.RetrieveSpan(l, handlerName, context.Background(),
+   func(sl, sctx) { return server.ParseTenant(fl, sctx, func(tl, tctx) {
+   handler(&HandlerDependency{..., ctx: tctx}) }) })`. Traced
+   `server.ParseTenant` to source (`libs/atlas-rest/server/handler.go:34-59`):
+   it reads the tenant ID/region/version from HTTP headers and calls `next`
+   with a tenant-bearing `tctx`, which is what every handler's `db.WithContext`
+   actually uses. `context.Background()` here is only the seed the tracer/
+   header-parsing wrapper starts from — it never reaches a query un-augmented.
+   Not a finding, for all 27 services.
+2. **Periodic ticker tasks that reconstruct tenant per-entity before any DB
+   call** — `atlas-account` `account.Timeout.Run` (`task.go:29`),
+   `atlas-character` `session.Timeout.Run` (`session/task.go:33`),
+   `atlas-guilds` `guild.Timeout.Run` (`task.go:31`), `atlas-mounts`
+   `TirednessTask.Run` (`mount/task.go:58`), `atlas-pets` `Timeout.Run`
+   (`pet/task.go:29`). All five follow the identical shape: `sctx :=
+   ...Start(context.Background(), ...)` is used only to enumerate an
+   in-memory/Redis registry (`GetRegistry().GetAll/GetActive/GetExpired`,
+   never `*gorm.DB`-backed), then for every entry `tctx :=
+   tenant.WithContext(sctx, entry.Tenant())` is built **before** constructing
+   any processor that touches `t.db`. The DB-touching processor
+   (`NewProcessor(t.l, tctx, t.db)` / `applyTick(..., tctx, ...)`) always
+   receives the per-row `tctx`, never the bare `sctx`. Not a finding for any
+   of the five — same defended pattern noted in project memory for buff/skill
+   tickers.
+3. **`atlas-maps`' `respawn.go`/`weather.go`/`mist_tick.go`/
+   `map/timer/processor.go`** — traced each `context.Background()` site; none
+   of the four files contains a `gorm`/`*gorm.DB`/`db.` call at all (`grep -n
+   "gorm\|db\.\|WithContext"` returns no query-builder hits). These tasks are
+   entirely Redis-registry-driven; `atlas-maps`' two Postgres tables
+   (`character_map_visits`, `character_locations`) are not reachable from
+   them. Not a finding.
+4. **`atlas-data`** — `baseline/restore.go:108-112`
+   (`cleanupAfterFailure`) builds `ctx, cancel :=
+   context.WithTimeout(context.Background(), cleanupTimeout)` then runs
+   `db.WithContext(ctx).Exec("DELETE FROM "+t+" WHERE tenant_id = ?",
+   target.String())` — the context carries no tenant, but the raw SQL's own
+   `WHERE tenant_id = ?` is bound explicitly to the `target` parameter, so the
+   delete is scoped at the SQL text itself, independent of the callback. Not
+   a finding (same explicit-bind pattern as the search-index partition
+   reads in §1). `runtime/rest/jobs.go:136,140` (`loadTemplateFromConfigMap`,
+   `discoverControllerImage`) use `context.Background()` for Kubernetes API
+   calls (`ConfigMap`/image discovery), never a Postgres query. Not a finding.
+
+**Shape-2 check** (query builders that never receive `.WithContext`,
+performed across all 27 third-1/2 services plus all 9 third-3 services with
+Postgres persistence):
+
+```
+$ for d in services/atlas-<svc>...; do
+    find "$d" -name '*.go' ! -name '*_test.go' | xargs grep -l "gorm.io/gorm" | wc -l   # gorm_files
+    find "$d" -name '*.go' ! -name '*_test.go' | xargs grep -l '\.WithContext(' | wc -l # withcontext_files
+  done
+```
+Every one of the 27 + 9 = 36 services with `gorm_files > 0` also has
+`withcontext_files > 0` — no service's persistence layer is entirely
+detached from context threading (full per-service counts are reproducible
+with the command above; example: `atlas-mts gorm_files=38
+withcontext_files=12`, `atlas-saga-orchestrator gorm_files=2
+withcontext_files=3`). One **dead-code** shape-2 instance was found at the
+function level: `atlas-npc-shops` `GetDistinctTenants(db *gorm.DB)`
+(`services/atlas-npc-shops/atlas.com/npc/shops/cache.go:75-79`) —
+`db.Model(&Entity{}).Distinct("tenant_id").Pluck("tenant_id", &tenantIds)`,
+which never calls `.WithContext` and takes a bare `db` param, is deliberately
+cross-tenant by intent (it exists to discover every tenant's distinct ids).
+`grep -rln "GetDistinctTenants" services/ libs/` finds only its own
+definition — **no production or test caller exists anywhere in the repo.**
+Not a live finding (no reachable path), same disposition as `AllMesoStakes`
+in §1's `atlas-trades` row — flagged here so a future caller does not wire it
+up assuming it is already tenant-safe; if it is ever wired up it needs an
+explicit `WithoutTenantFilter` + a documented reason, not ambient reliance on
+whatever context happens to reach it.
+
+**Third-3 re-check.** `atlas-trades`: `grep -rn "context.Background()\|
+context.TODO()"` over non-test files finds exactly one production hit outside
+the two already-documented rows —
+`services/atlas-trades/atlas.com/trades/trade/settlement.go:157`
+(`c.ctx = tenant.WithContext(context.Background(), p.t)`), which wraps a
+tenant before use (not a finding, same bucket-2 shape). The two documented
+`UNSCOPED` rows were re-traced end to end: `main.go:139-142` starts
+`ReconcileAtBoot` in a `routine.Go(l, rt.Context(), ...)` goroutine off a
+runtime-root context (no tenant), which calls `ReconcileEscrow` (confirmed at
+`settlement.go:1280-1300` calling into `settlement.go:1311`) and, via
+`ReconcileAtBoot` → `settlement.Unresolved` (`processor.go:73-81`), the
+`allUnresolved` provider (`provider.go:61-80`) — both confirmed exactly as
+recorded in §1. No new `atlas-trades` finding. `atlas-saga-orchestrator`
+(`gorm_files=2, withcontext_files=3`) and the remaining 7 third-3 services
+were shape-2 spot-checked above with no additional finding.
+
+### Step 4: §1 regrades
+
+No `SCOPED` row in §1 is contradicted by this sweep. Every tenant-less
+`context.Background()`/`context.TODO()` call site that reaches a Postgres
+query either resolves to a tenant before the query runs (bucket 2/4 above,
+production pattern) or is the standard REST-boilerplate wrapper that never
+reaches a query un-augmented (bucket 1). No table currently marked `SCOPED`
+has an unguarded tenant-less path. **No rows regraded.**
+
+### Step 6: Counts (mechanically derived)
+
+```
+$ grep -c '^| atlas-' docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit.md
+95
+```
+(unchanged from §1 — this sweep added zero rows and regraded zero rows, per
+Step 4 above).
+
+Services swept for both mechanisms in this section: 27 (third-1 8 +
+third-2 19, all with `### Files`-listed Postgres persistence) plus 9 from
+third 3 re-checked for shape 2 and the two known findings = 36 services
+total, all of the fleet's Postgres-having services covered by §1.
+
+New `UNSCOPED` findings from this sweep: **0**. New dead-code shape-2
+candidates flagged (non-live, not counted as findings): **1**
+(`atlas-npc-shops` `GetDistinctTenants`). §1 rows regraded: **0**.
+
+### Findings
+
+This sweep's premise (the fleet-wide callback fails open against a
+tenant-less context and against a `*gorm.DB` that never receives
+`.WithContext`) is confirmed at source (Step 1). Applying both tests across
+every Postgres-having service in thirds 1–2 plus a shape-2 check of third 3
+found **no additional `UNSCOPED` rows beyond the two `atlas-trades` instances
+already recorded in §1** (`escrow.AllItems`/`AllMesos` and
+`settlement.allUnresolved`), which this sweep independently re-traced and
+confirms exactly as documented. The two failure shapes identified in the
+brief — bulk write with no per-row tenant discrimination, versus cross-tenant
+discovery read with per-row tenant re-derivation and PK-addressed writes —
+were both looked for; no new instance of either shape was found. The only
+new artifact is a dead, uncalled shape-2 function
+(`atlas-npc-shops.GetDistinctTenants`) that is unscoped by construction but
+unreachable, flagged for the record rather than counted as a finding.
+
+**Input for Task 15's `tenant-scope-guard`:** a mechanical check that would
+have caught the two confirmed `atlas-trades` instances (and would catch a
+regression of this shape) is a lint over call sites that pass
+`database.WithoutTenantFilter(ctx)` (or a context built from
+`context.Background()`/`context.TODO()`/a runtime-root context) into a query
+builder for a `tenant_id`-bearing table, flagging any such call site whose
+*only* per-row tenant restoration happens after the read (i.e., the read
+itself is unscoped) unless the call site is on an explicit allowlist with a
+recorded reason — mirroring how `atlas-rankings`' `pruneBefore` opts in to
+failing closed by calling `tenant.FromContext` itself before the delete. A
+narrower, cheaper version of the same check: flag any `*gorm.DB` query
+builder function that is exported but has zero non-test callers in the
+module (would have caught both `AllMesoStakes` and `GetDistinctTenants`
+without needing call-graph tracing into `WithoutTenantFilter` usage at all).
+

@@ -51,6 +51,8 @@ func mutateConfig(t *testing.T, base string, name string) []byte {
 		m["attackMaps"] = json.RawMessage(`[]`)
 	case "fewer spawn positions than monsters":
 		m["attackMaps"] = json.RawMessage(`[{"mapId": 200090010, "spawnPositions": [{"x": 0, "y": 0}]}]`)
+	case "empty route id":
+		m["applicableRouteIds"] = json.RawMessage(`["boat-ellinia-orbis", ""]`)
 	default:
 		t.Fatalf("mutateConfig: unknown case %q", name)
 	}
@@ -69,6 +71,7 @@ func TestValidateRejectsFieldByField(t *testing.T) {
 		{"zero monster count", `"monsterCount": 2`, "monsterCount"},
 		{"probability above one", `"attackProbability": 0.42`, "attackProbability"},
 		{"no attack maps", `"attackMaps"`, "attackMaps"},
+		{"empty route id", `"applicableRouteIds": ["boat-ellinia-orbis", "boat-orbis-ellinia"]`, "applicableRouteIds"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			bad := mutateConfig(t, validConfig, tc.name)

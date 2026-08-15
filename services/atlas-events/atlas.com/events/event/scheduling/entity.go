@@ -49,8 +49,31 @@ func (Entity) TableName() string {
 	return "scheduled_event_work"
 }
 
+// MigrateTable creates the scheduled_event_work table and its partial
+// indexes (Task 19). ix_sew_pending_due is the FR-S4 poller hot path: PARTIAL
+// on state so the poll cost stays independent of how many COMPLETED rows have
+// accumulated (FR-N16), which is why no retention policy is needed here
+// (design §15.7). ix_sew_processing_claimed serves the FR-S7 lease reclaim
+// sweep. ux_sew_dedupe backs FR-B4 dedup: partial on state IN
+// (PENDING,PROCESSING) so a cancelled/failed row does not block a retry, and
+// AND dedupe_key <> ” so every OCCURRENCE_TRANSITION row (which opts out of
+// dedup with an empty key) does not collide with every other one for the
+// same tenant.
 func MigrateTable(db *gorm.DB) error {
-	return db.AutoMigrate(&Entity{})
+	if err := db.AutoMigrate(&Entity{}); err != nil {
+		return err
+	}
+	if err := db.Exec(`CREATE INDEX IF NOT EXISTS ix_sew_pending_due ` +
+		`ON scheduled_event_work (execute_at) WHERE state = 'PENDING'`).Error; err != nil {
+		return err
+	}
+	if err := db.Exec(`CREATE INDEX IF NOT EXISTS ix_sew_processing_claimed ` +
+		`ON scheduled_event_work (claimed_at) WHERE state = 'PROCESSING'`).Error; err != nil {
+		return err
+	}
+	return db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_sew_dedupe ` +
+		`ON scheduled_event_work (tenant_id, dedupe_key) ` +
+		`WHERE state IN ('PENDING','PROCESSING') AND dedupe_key <> ''`).Error
 }
 
 // Make converts a persistence Entity into a domain Model.

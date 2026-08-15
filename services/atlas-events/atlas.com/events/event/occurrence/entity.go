@@ -64,16 +64,40 @@ type MonsterEntity struct {
 
 func (MonsterEntity) TableName() string { return "event_occurrence_monster" }
 
-// MigrateTable creates the occurrence tables and the partial unique index that
-// backs ErrConcurrencyKeyTaken: at most one row per (tenant, concurrency key)
-// may exist, but an empty key (the "unbounded" opt-out) is excluded from the
-// constraint entirely. Postgres and SQLite share this partial-index syntax.
+// MigrateTable creates the occurrence tables and their partial indexes
+// (Task 19). ux_event_occurrence_concurrency_key backs ErrConcurrencyKeyTaken:
+// at most one row per (tenant, concurrency key) may exist, but an empty key
+// (the "unbounded" opt-out) is excluded from the constraint entirely.
+// ix_occ_type_state serves the FR-API7 "is <type> happening?" query.
+// ux_occ_concurrency is the design §5.3 concurrency policy, scoped to ACTIVE
+// occurrences only. ix_occ_map serves the FR-B15 map-entry query — leading
+// map_id because that is the most selective column at the call site;
+// world/channel/state are filtered from the joined occurrence row.
+// ix_occ_active_scope serves the world/channel-scoped active-occurrence
+// lookups. Postgres and SQLite share this partial-index syntax.
 func MigrateTable(db *gorm.DB) error {
 	if err := db.AutoMigrate(&Entity{}, &MapEntity{}, &MonsterEntity{}); err != nil {
 		return err
 	}
-	return db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_event_occurrence_concurrency_key ` +
-		`ON event_occurrence (tenant_id, concurrency_key) WHERE concurrency_key <> ''`).Error
+	if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_event_occurrence_concurrency_key ` +
+		`ON event_occurrence (tenant_id, concurrency_key) WHERE concurrency_key <> ''`).Error; err != nil {
+		return err
+	}
+	if err := db.Exec(`CREATE INDEX IF NOT EXISTS ix_occ_type_state ` +
+		`ON event_occurrence (tenant_id, type, state)`).Error; err != nil {
+		return err
+	}
+	if err := db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS ux_occ_concurrency ` +
+		`ON event_occurrence (tenant_id, event_definition_id, concurrency_key) ` +
+		`WHERE state = 'ACTIVE' AND concurrency_key <> ''`).Error; err != nil {
+		return err
+	}
+	if err := db.Exec(`CREATE INDEX IF NOT EXISTS ix_occ_map ` +
+		`ON event_occurrence_map (map_id, occurrence_id) WHERE visual = true`).Error; err != nil {
+		return err
+	}
+	return db.Exec(`CREATE INDEX IF NOT EXISTS ix_occ_active_scope ` +
+		`ON event_occurrence (tenant_id, world_id, channel_id, state) WHERE state = 'ACTIVE'`).Error
 }
 
 // Make converts a persistence Entity into a domain Model.

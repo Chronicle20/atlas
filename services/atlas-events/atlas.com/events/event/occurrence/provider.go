@@ -1,6 +1,8 @@
 package occurrence
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
@@ -52,5 +54,58 @@ func visualsInMapProvider(worldId world.Id, channelId channel.Id, mapId _map.Id)
 			return model.ErrorProvider[[]Entity](err)
 		}
 		return model.FixedProvider(results)
+	}
+}
+
+// ListFilters narrows the GET /events/occurrences collection query (FR-API6).
+// The zero value of every field means "no filter" for that dimension.
+type ListFilters struct {
+	DefinitionId  uuid.UUID
+	Type          string
+	State         string
+	WorldId       *world.Id
+	ChannelId     *channel.Id
+	MapId         *_map.Id
+	VoyageId      uuid.UUID
+	StartedAtFrom *time.Time
+	StartedAtTo   *time.Time
+}
+
+// listPagedProvider builds the WHERE-scoped, single-PK PagedQuery backing
+// GET /events/occurrences. mapId is the one filter that requires a join
+// against the FR-API8 child table.
+func listPagedProvider(page model.Page, f ListFilters) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		scoped := db
+		if f.DefinitionId != uuid.Nil {
+			scoped = scoped.Where("event_definition_id = ?", f.DefinitionId)
+		}
+		if f.Type != "" {
+			scoped = scoped.Where("type = ?", f.Type)
+		}
+		if f.State != "" {
+			scoped = scoped.Where("state = ?", f.State)
+		}
+		if f.WorldId != nil {
+			scoped = scoped.Where("world_id = ?", uint8(*f.WorldId))
+		}
+		if f.ChannelId != nil {
+			scoped = scoped.Where("channel_id = ?", uint8(*f.ChannelId))
+		}
+		if f.VoyageId != uuid.Nil {
+			scoped = scoped.Where("voyage_id = ?", f.VoyageId)
+		}
+		if f.StartedAtFrom != nil {
+			scoped = scoped.Where("started_at >= ?", *f.StartedAtFrom)
+		}
+		if f.StartedAtTo != nil {
+			scoped = scoped.Where("started_at <= ?", *f.StartedAtTo)
+		}
+		if f.MapId != nil {
+			scoped = scoped.
+				Joins("JOIN event_occurrence_map m ON m.occurrence_id = event_occurrence.id").
+				Where("m.map_id = ?", uint32(*f.MapId))
+		}
+		return database.PagedQuery[Entity](scoped, page)
 	}
 }

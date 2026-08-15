@@ -32,6 +32,9 @@ type Processor interface {
 	GetActiveByType(theType string) ([]Model, error)
 	GetActiveByVoyage(voyageId uuid.UUID, worldId world.Id, channelId channel.Id) ([]Model, error)
 	VisualsInMap(worldId world.Id, channelId channel.Id, mapId _map.Id) ([]Model, error)
+	// ListPaged backs GET /events/occurrences (FR-API6): a WHERE-scoped,
+	// SQL-paged listing over whichever ListFilters fields are non-zero.
+	ListPaged(page model.Page, f ListFilters) (model.Paged[Model], error)
 	ObserveMonsterSpawned(occurrenceId uuid.UUID, uniqueId uint32, monsterId uint32) error
 	ObserveMonsterGone(occurrenceId uuid.UUID, uniqueId uint32, monsterId uint32) error
 	MonsterTally(occurrenceId uuid.UUID) (total int, alive int, err error)
@@ -194,6 +197,11 @@ func (p *ProcessorImpl) GetActiveByVoyage(voyageId uuid.UUID, worldId world.Id, 
 
 func (p *ProcessorImpl) VisualsInMap(worldId world.Id, channelId channel.Id, mapId _map.Id) ([]Model, error) {
 	return model.SliceMap(Make)(visualsInMapProvider(worldId, channelId, mapId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+}
+
+func (p *ProcessorImpl) ListPaged(page model.Page, f ListFilters) (model.Paged[Model], error) {
+	ep := listPagedProvider(page, f)(p.db.WithContext(p.ctx))
+	return model.MapPaged(Make)(ep)(model.ParallelMap())()
 }
 
 // ObserveMonsterSpawned is INSERT-IF-ABSENT, deliberately not an upsert: a

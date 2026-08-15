@@ -144,8 +144,8 @@ func TestLockTenantIsolation(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		mB.Lock()
+		close(done) // acquisition is the assertion; signal from inside the critical section
 		mB.Unlock()
-		close(done)
 	}()
 
 	select {

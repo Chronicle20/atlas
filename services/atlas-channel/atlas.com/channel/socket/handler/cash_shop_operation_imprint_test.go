@@ -1,15 +1,16 @@
 package handler
 
 import (
+	messageCashShop "atlas-channel/kafka/message/cashshop"
 	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
@@ -82,8 +83,12 @@ func jsonAPIErrorDetail(status, title, detail string) []byte {
 // lookup + pending-change creation) and atlas-data (commodity resolution),
 // routed by path prefix. pendingChangeStatus/pendingChangeBody drive the
 // POST .../pending-changes response; everything else in this test always
-// succeeds.
-func newBuyHandlerTestServer(t *testing.T, characterName string, templateId uint32, pendingChangeStatus int, pendingChangeBody []byte) (*httptest.Server, *[]byte) {
+// succeeds. onPendingChangePost, if non-nil, is invoked synchronously right
+// after the POST body is captured and before the response is written --
+// tests use it to snapshot state (e.g. "has the purchase command been
+// emitted yet?") at the moment the pending record is inserted, to pin the
+// insert-first ordering.
+func newBuyHandlerTestServer(t *testing.T, characterName string, templateId uint32, pendingChangeStatus int, pendingChangeBody []byte, onPendingChangePost func()) (*httptest.Server, *[]byte) {
 	t.Helper()
 	var capturedPost []byte
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +97,9 @@ func newBuyHandlerTestServer(t *testing.T, characterName string, templateId uint
 			buf := make([]byte, r.ContentLength)
 			_, _ = r.Body.Read(buf)
 			capturedPost = buf
+			if onPendingChangePost != nil {
+				onPendingChangePost()
+			}
 			w.WriteHeader(pendingChangeStatus)
 			if pendingChangeBody != nil {
 				_, _ = w.Write(pendingChangeBody)
@@ -108,10 +116,32 @@ func newBuyHandlerTestServer(t *testing.T, characterName string, templateId uint
 	return srv, &capturedPost
 }
 
+// TestBuyNameChangeCreatesAPendingRequest pins task-227 task 38's whole
+// contract for the name-change arm, in order:
+//
+//	(a) the PENDING record is inserted BEFORE the purchase command is emitted;
+//	(b) the emitted REQUEST_PURCHASE command carries isPoints=false (i.e.
+//	    currency=0), the commodity's serialNumber, and a non-zero TransactionId;
+//	(c) that TransactionId is the pending record's own Id, so the consumer can
+//	    resolve back to it;
+//	(d) no done body is written from the handler -- the consumer answers the
+//	    client now.
 func TestBuyNameChangeCreatesAPendingRequest(t *testing.T) {
 	const characterId = uint32(12345)
-	srv, captured := newBuyHandlerTestServer(t, "Romeo", 5990000, http.StatusCreated,
-		jsonAPIAttrs("pending-changes", "1", map[string]any{"characterId": characterId, "type": "NAME_CHANGE", "status": "PENDING"}))
+	const serialNumber = uint32(12345)
+	pendingChangeId := uuid.New()
+
+	captured, restore := installCapturingProducer()
+	defer restore()
+
+	var purchaseEmittedBeforePost bool
+	onPost := func() {
+		purchaseEmittedBeforePost = len((*captured)[messageCashShop.EnvCommandTopic]) > 0
+	}
+
+	srv, capturedPost := newBuyHandlerTestServer(t, "Romeo", 5990000, http.StatusCreated,
+		jsonAPIAttrs("pending-changes", pendingChangeId.String(), map[string]any{"characterId": characterId, "type": "NAME_CHANGE", "status": "PENDING"}),
+		onPost)
 	defer srv.Close()
 	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
 	t.Setenv("DATA_SERVICE_URL", srv.URL+"/")
@@ -120,26 +150,70 @@ func TestBuyNameChangeCreatesAPendingRequest(t *testing.T) {
 	defer cleanup()
 
 	rec := &gaugeProducerRecorder{}
-	CashShopOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, buyNameChangePacket(t, "Romeo", "Sierra", 12345), cashShopOperationsOptions())
+	CashShopOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, buyNameChangePacket(t, "Romeo", "Sierra", serialNumber), cashShopOperationsOptions())
 
-	if rec.calls != 1 {
-		t.Fatalf("announced %d packets, want 1 (the success arm)", rec.calls)
+	if !bytes.Contains(*capturedPost, []byte(`"requestedName":"Sierra"`)) {
+		t.Errorf("POST body = %s, want requestedName Sierra", *capturedPost)
 	}
-	if rec.lastName != cashcb.CashShopOperationWriter {
-		t.Errorf("announced writer = %q, want %q", rec.lastName, cashcb.CashShopOperationWriter)
+	if !bytes.Contains(*capturedPost, []byte(`"type":"NAME_CHANGE"`)) {
+		t.Errorf("POST body = %s, want type NAME_CHANGE", *capturedPost)
 	}
-	if !bytes.Contains(*captured, []byte(`"requestedName":"Sierra"`)) {
-		t.Errorf("POST body = %s, want requestedName Sierra", *captured)
+
+	// (a) insert-first: the purchase command must not exist yet at the
+	// moment the pending-change POST lands.
+	if purchaseEmittedBeforePost {
+		t.Fatal("purchase command was already emitted when the pending-change POST arrived -- insert-first violated")
 	}
-	if !bytes.Contains(*captured, []byte(`"type":"NAME_CHANGE"`)) {
-		t.Errorf("POST body = %s, want type NAME_CHANGE", *captured)
+
+	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	if len(msgs) != 1 {
+		t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 1", len(msgs))
+	}
+	var cmd messageCashShop.Command[messageCashShop.RequestPurchaseCommandBody]
+	if err := json.Unmarshal(msgs[0].Value, &cmd); err != nil {
+		t.Fatalf("unmarshal REQUEST_PURCHASE command: %v", err)
+	}
+
+	// (b)
+	if cmd.Body.Currency != 0 {
+		t.Errorf("Body.Currency = %d, want 0 (isPoints=false)", cmd.Body.Currency)
+	}
+	if cmd.Body.SerialNumber != serialNumber {
+		t.Errorf("Body.SerialNumber = %d, want %d", cmd.Body.SerialNumber, serialNumber)
+	}
+	if cmd.Body.TransactionId == uuid.Nil {
+		t.Fatal("Body.TransactionId is nil, want a non-zero id correlating to the pending record")
+	}
+
+	// (c)
+	if cmd.Body.TransactionId != pendingChangeId {
+		t.Errorf("Body.TransactionId = %s, want the pending record's own id %s", cmd.Body.TransactionId, pendingChangeId)
+	}
+
+	// (d)
+	if rec.calls != 0 {
+		t.Fatalf("handler announced %d packets directly, want 0 -- the consumer answers the client now (writer=%q)", rec.calls, rec.lastName)
 	}
 }
 
+// TestBuyWorldTransferCreatesAPendingRequest mirrors
+// TestBuyNameChangeCreatesAPendingRequest for the world-transfer arm.
 func TestBuyWorldTransferCreatesAPendingRequest(t *testing.T) {
 	const characterId = uint32(12346)
-	srv, captured := newBuyHandlerTestServer(t, "Romeo", 5990001, http.StatusCreated,
-		jsonAPIAttrs("pending-changes", "1", map[string]any{"characterId": characterId, "type": "WORLD_TRANSFER", "status": "PENDING"}))
+	const serialNumber = uint32(12346)
+	pendingChangeId := uuid.New()
+
+	captured, restore := installCapturingProducer()
+	defer restore()
+
+	var purchaseEmittedBeforePost bool
+	onPost := func() {
+		purchaseEmittedBeforePost = len((*captured)[messageCashShop.EnvCommandTopic]) > 0
+	}
+
+	srv, capturedPost := newBuyHandlerTestServer(t, "Romeo", 5990001, http.StatusCreated,
+		jsonAPIAttrs("pending-changes", pendingChangeId.String(), map[string]any{"characterId": characterId, "type": "WORLD_TRANSFER", "status": "PENDING"}),
+		onPost)
 	defer srv.Close()
 	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
 	t.Setenv("DATA_SERVICE_URL", srv.URL+"/")
@@ -148,19 +222,49 @@ func TestBuyWorldTransferCreatesAPendingRequest(t *testing.T) {
 	defer cleanup()
 
 	rec := &gaugeProducerRecorder{}
-	CashShopOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, buyWorldTransferPacket(t, 2, 12346), cashShopOperationsOptions())
+	CashShopOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, buyWorldTransferPacket(t, 2, serialNumber), cashShopOperationsOptions())
 
-	if rec.calls != 1 {
-		t.Fatalf("announced %d packets, want 1 (the success arm)", rec.calls)
+	if !bytes.Contains(*capturedPost, []byte(`"destinationWorldId":2`)) {
+		t.Errorf("POST body = %s, want destinationWorldId 2", *capturedPost)
 	}
-	if rec.lastName != cashcb.CashShopOperationWriter {
-		t.Errorf("announced writer = %q, want %q", rec.lastName, cashcb.CashShopOperationWriter)
+	if !bytes.Contains(*capturedPost, []byte(`"type":"WORLD_TRANSFER"`)) {
+		t.Errorf("POST body = %s, want type WORLD_TRANSFER", *capturedPost)
 	}
-	if !bytes.Contains(*captured, []byte(`"destinationWorldId":2`)) {
-		t.Errorf("POST body = %s, want destinationWorldId 2", *captured)
+
+	// (a) insert-first: the purchase command must not exist yet at the
+	// moment the pending-change POST lands.
+	if purchaseEmittedBeforePost {
+		t.Fatal("purchase command was already emitted when the pending-change POST arrived -- insert-first violated")
 	}
-	if !bytes.Contains(*captured, []byte(`"type":"WORLD_TRANSFER"`)) {
-		t.Errorf("POST body = %s, want type WORLD_TRANSFER", *captured)
+
+	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	if len(msgs) != 1 {
+		t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 1", len(msgs))
+	}
+	var cmd messageCashShop.Command[messageCashShop.RequestPurchaseCommandBody]
+	if err := json.Unmarshal(msgs[0].Value, &cmd); err != nil {
+		t.Fatalf("unmarshal REQUEST_PURCHASE command: %v", err)
+	}
+
+	// (b)
+	if cmd.Body.Currency != 0 {
+		t.Errorf("Body.Currency = %d, want 0 (isPoints=false)", cmd.Body.Currency)
+	}
+	if cmd.Body.SerialNumber != serialNumber {
+		t.Errorf("Body.SerialNumber = %d, want %d", cmd.Body.SerialNumber, serialNumber)
+	}
+	if cmd.Body.TransactionId == uuid.Nil {
+		t.Fatal("Body.TransactionId is nil, want a non-zero id correlating to the pending record")
+	}
+
+	// (c)
+	if cmd.Body.TransactionId != pendingChangeId {
+		t.Errorf("Body.TransactionId = %s, want the pending record's own id %s", cmd.Body.TransactionId, pendingChangeId)
+	}
+
+	// (d)
+	if rec.calls != 0 {
+		t.Fatalf("handler announced %d packets directly, want 0 -- the consumer answers the client now (writer=%q)", rec.calls, rec.lastName)
 	}
 }
 
@@ -170,7 +274,7 @@ func TestBuyWorldTransferCreatesAPendingRequest(t *testing.T) {
 func TestBuyNameChangeRejectionReachesTheClient(t *testing.T) {
 	const characterId = uint32(12347)
 	srv, _ := newBuyHandlerTestServer(t, "Romeo", 5990000, http.StatusConflict,
-		jsonAPIErrorDetail("409", "Conflict", "name_reserved"))
+		jsonAPIErrorDetail("409", "Conflict", "name_reserved"), nil)
 	defer srv.Close()
 	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
 	t.Setenv("DATA_SERVICE_URL", srv.URL+"/")

@@ -11,6 +11,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -52,7 +53,7 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuy) {
 			sp := &cashsb.ShopOperationBuy{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			_ = cashshop.NewProcessor(l, ctx).RequestPurchase(s.CharacterId(), sp.SerialNumber(), sp.IsPoints(), sp.Currency(), sp.Zero())
+			_ = cashshop.NewProcessor(l, ctx).RequestPurchase(s.CharacterId(), sp.SerialNumber(), sp.IsPoints(), sp.Currency(), sp.Zero(), uuid.Nil)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationGift) {
@@ -206,14 +207,21 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 // handleBuyNameChange implements BUY_NAME_CHANGE (mode 46): it turns the
 // client's purchase-with-name request into a pending-change record in
 // atlas-character — the same record the item-use/cancel arm (Task 24) can
-// later cancel. It does not charge currency or move the coupon item:
-// ShopOperationBuyNameChange carries no isPoints/currency fields, unlike
-// every currency-charging BUY_* sibling in this handler (ShopOperationBuy,
-// ShopOperationIncreaseInventory, ShopOperationIncreaseStorage,
-// ShopOperationIncreaseCharacterSlot all decode isPoints+currency), so there
-// is nothing on the wire to charge with here — fulfillment (charging,
-// consuming the owned coupon) belongs to the pending-change's own execution
-// saga, not this handler.
+// later cancel — and then charges the coupon through the same
+// REQUEST_PURCHASE pipeline every other BUY_* arm uses.
+// ShopOperationBuyNameChange carries no isPoints/currency fields on the wire
+// (unlike ShopOperationBuy, ShopOperationIncreaseInventory,
+// ShopOperationIncreaseStorage, ShopOperationIncreaseCharacterSlot, which all
+// decode isPoints+currency), so the purchase is requested with isPoints=false,
+// currency=0 — there is nothing else on the wire to charge with. The pending
+// record is inserted BEFORE the purchase is requested (insert-first,
+// task-227 task 38): the purchase outcome event can otherwise reach the
+// consumer before this handler has finished, and the consumer resolves it
+// back to the pending record via the transactionId minted here from the
+// record's own Id. RequestPurchase is fully async — its error return is
+// discarded, and every outcome (success or failure) now arrives at the
+// consumer as a status event; this handler no longer answers the client
+// itself (task 39 wires that consumer-side answer up).
 //
 // The client has no NAME_CHANGE_FAILED arm (every other BUY_* has a
 // *_FAILED sibling constant in shop_operation_body.go; name-change does
@@ -244,33 +252,35 @@ func handleBuyNameChange(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			return
 		}
 
-		_, err = pendingchange.NewProcessor(l, ctx).RequestNameChange(characterId, sp.NewName(), com.ItemId)
+		rm, err := pendingchange.NewProcessor(l, ctx).RequestNameChange(characterId, sp.NewName(), com.ItemId)
 		if err != nil {
 			l.WithError(err).Warnf("Name change request rejected for character [%d].", characterId)
 			announceCashShopRejection(l, ctx, wp)(s, nameChangeRejectionMessage(err))
 			return
 		}
 
-		item := cashcb.CashInventoryItem{
-			AccountId:   s.AccountId(),
-			CharacterId: characterId,
-			TemplateId:  com.ItemId,
-			CommodityId: sp.SerialNumber(),
-			Quantity:    1,
+		transactionId, err := uuid.Parse(rm.Id)
+		if err != nil {
+			l.WithError(err).Errorf("Pending change record [%s] for character [%d] is not a valid UUID; purchase will not correlate.", rm.Id, characterId)
+			transactionId = uuid.Nil
 		}
-		if err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopNameChangeBuyDoneBody(item))(s); err != nil {
-			l.WithError(err).Errorf("Unable to announce name change purchase success to character [%d].", characterId)
-		}
+		_ = cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId)
 	}
 }
 
 // handleBuyWorldTransfer implements BUY_WORLD_TRANSFER (mode 49). Same
 // division of responsibility as handleBuyNameChange: ShopOperationBuyWorldTransfer
-// carries no isPoints/currency either, so this handler only records the
-// pending change; it does not charge currency or move the coupon. Unlike
-// name-change, a real client failure arm exists here
-// (CashShopTransferWorldFailedBody / TRANSFER_WORLD_FAILED,
-// shop_operation_body.go:454), so rejections use it instead of pink text.
+// carries no isPoints/currency either, so the purchase is requested with
+// isPoints=false, currency=0. The pending record is inserted BEFORE the
+// purchase is requested (insert-first, task-227 task 38) — see
+// handleBuyNameChange's doc for why the ordering matters and how the
+// transactionId correlates back to the record. RequestPurchase is fully
+// async — its error return is discarded, and every outcome now arrives at
+// the consumer as a status event; this handler no longer answers the client
+// itself (task 39 wires that consumer-side answer up). Unlike name-change, a
+// real client failure arm exists here (CashShopTransferWorldFailedBody /
+// TRANSFER_WORLD_FAILED, shop_operation_body.go:454), so pending-change
+// rejections use it instead of pink text.
 func handleBuyWorldTransfer(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, sp *cashsb.ShopOperationBuyWorldTransfer) {
 	return func(s session.Model, sp *cashsb.ShopOperationBuyWorldTransfer) {
 		characterId := s.CharacterId()
@@ -283,23 +293,19 @@ func handleBuyWorldTransfer(l logrus.FieldLogger, ctx context.Context, wp writer
 		}
 
 		destinationWorldId := world.Id(sp.TargetWorld())
-		_, err = pendingchange.NewProcessor(l, ctx).RequestWorldTransfer(characterId, destinationWorldId, com.ItemId)
+		rm, err := pendingchange.NewProcessor(l, ctx).RequestWorldTransfer(characterId, destinationWorldId, com.ItemId)
 		if err != nil {
 			l.WithError(err).Warnf("World transfer request rejected for character [%d].", characterId)
 			announceTransferWorldFailure(l, ctx, wp)(s, worldTransferRejectionReason(err))
 			return
 		}
 
-		item := cashcb.CashInventoryItem{
-			AccountId:   s.AccountId(),
-			CharacterId: characterId,
-			TemplateId:  com.ItemId,
-			CommodityId: sp.SerialNumber(),
-			Quantity:    1,
+		transactionId, err := uuid.Parse(rm.Id)
+		if err != nil {
+			l.WithError(err).Errorf("Pending change record [%s] for character [%d] is not a valid UUID; purchase will not correlate.", rm.Id, characterId)
+			transactionId = uuid.Nil
 		}
-		if err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopTransferWorldDoneBody(item))(s); err != nil {
-			l.WithError(err).Errorf("Unable to announce world transfer purchase success to character [%d].", characterId)
-		}
+		_ = cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId)
 	}
 }
 

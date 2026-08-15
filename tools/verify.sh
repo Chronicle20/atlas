@@ -293,10 +293,18 @@ fi
 # or call site must fail CI. Gated separately from go_analyzer_guards above
 # (rather than folded into the shared vettool) so a scopeguard-only change
 # doesn't force a rebuild/re-run of the other three analyzers, and vice versa.
-if [ "$ALL" -eq 1 ] || touched '^services/.*/entity\.go$|^tools/scopeguard/'; then
+#
+# The predicate is fleet-wide over ANY changed .go file, not just entity.go:
+# Rule 2 (the call-site check) fires on any GORM call site in services/ or
+# libs/, not only ones that live in an entity.go file — a scoped-out
+# `s.db.Model(...)` in a brand-new scheduler.go would otherwise merge clean
+# on a diff that touches no entity.go (fix round 2, BLOCKING finding). The
+# old `entity\.go$` half stays as an explicit alternative purely for
+# readability at the call site; it is already implied by `\.go$`.
+if [ "$ALL" -eq 1 ] || touched '\.go$|^tools/scopeguard/'; then
     step "scope guard" ./tools/scope-guard.sh
 else
-    skip "scope guard (no entity changed)"
+    skip "scope guard (no Go file changed)"
 fi
 
 # Path-gated in CI.

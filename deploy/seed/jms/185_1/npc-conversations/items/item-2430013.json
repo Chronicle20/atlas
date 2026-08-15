@@ -25,7 +25,8 @@
             "dialogueType": "sendOk",
             "text": "You finish it in three bites and immediately regret how fast that went.",
             "choices": [
-              { "nextState": null, "text": "OK" }
+              { "nextState": null, "text": "Ok" },
+              { "nextState": null, "text": "Exit" }
             ]
           }
         }

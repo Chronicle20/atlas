@@ -25,7 +25,8 @@
             "dialogueType": "sendOk",
             "text": "North. Reliably, stubbornly north. The compass is very pleased with itself.",
             "choices": [
-              { "nextState": null, "text": "OK" }
+              { "nextState": null, "text": "Ok" },
+              { "nextState": null, "text": "Exit" }
             ]
           }
         },
@@ -36,7 +37,8 @@
             "dialogueType": "sendOk",
             "text": "The needle wobbles, spins twice, and points north again. It was never going to be anything else.",
             "choices": [
-              { "nextState": null, "text": "OK" }
+              { "nextState": null, "text": "Ok" },
+              { "nextState": null, "text": "Exit" }
             ]
           }
         }

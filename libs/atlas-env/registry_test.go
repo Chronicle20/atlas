@@ -164,6 +164,24 @@ func TestEnvironmentsOwnedByExcludesOverriddenServices(t *testing.T) {
 	}
 }
 
+func TestEnvironmentsOwnedByExcludesNonActiveEnvironments(t *testing.T) {
+	// FR-5.2: autonomous iteration (Tasks 22-27) walks EnvironmentsOwnedBy to
+	// decide what work to do. A non-active baseline-owned environment (its
+	// namespace/ingress not yet ready, or being torn down) must never be
+	// returned, or a service would act on it before it exists / after it is
+	// gone.
+	r := NewMapRegistry(Id("main"), time.Now)
+	r.Apply(active("main", "main", "atlas-main", nil))
+	provisioning := active("pr-3", "main", "atlas-pr-3", nil)
+	provisioning.Phase = PhaseProvisioning
+	r.Apply(provisioning)
+
+	got := r.EnvironmentsOwnedBy("atlas-character")
+	if len(got) != 1 || got[0] != Id("main") {
+		t.Fatalf("EnvironmentsOwnedBy(atlas-character) = %v, want only main; PROVISIONING pr-3 must be excluded", got)
+	}
+}
+
 func TestStaleAfterFourMissedHeartbeats(t *testing.T) {
 	now := time.Unix(0, 0)
 	r := NewMapRegistry(Id("main"), func() time.Time { return now })
@@ -176,7 +194,11 @@ func TestStaleAfterFourMissedHeartbeats(t *testing.T) {
 	if r.Stale() {
 		t.Fatal("stale at 119s; bound is 120s")
 	}
-	now = now.Add(2 * time.Second)
+	now = now.Add(1 * time.Second) // exactly 120s since Observe
+	if r.Stale() {
+		t.Fatal("stale at exactly 120s; design §4.3 is \"stale AFTER 120s\", so the boundary itself is not yet stale")
+	}
+	now = now.Add(1 * time.Second) // 121s
 	if !r.Stale() {
 		t.Fatal("not stale at 121s; bound is 120s")
 	}

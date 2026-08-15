@@ -274,7 +274,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
     newTag: main-f00d56b
   - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
-    newTag: main-f00d56b
+    newTag: main-9c04277
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
     newTag: main-f00d56b
   - name: ghcr.io/chronicle20/atlas-mini-games/atlas-mini-games

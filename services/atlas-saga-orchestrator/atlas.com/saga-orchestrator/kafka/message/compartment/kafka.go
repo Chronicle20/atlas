@@ -30,6 +30,7 @@ const (
 	CommandRelease            = "RELEASE"
 	CommandSetOwner           = "SET_OWNER"
 	CommandApplyLock          = "APPLY_LOCK"
+	CommandApplyKarma         = "APPLY_KARMA"
 	CommandExtendExpiration   = "EXTEND_EXPIRATION"
 	CommandTypeCreate         = "CREATE"
 	CommandTypeDelete         = "DELETE"
@@ -162,6 +163,12 @@ type SetOwnerCommandBody struct {
 type ApplyLockCommandBody struct {
 	Slot       int16     `json:"slot"`
 	Expiration time.Time `json:"expiration"`
+}
+
+type ApplyKarmaCommandBody struct {
+	Slot          int16 `json:"slot"`
+	ScissorsKarma int32 `json:"scissorsKarma"`
+	Clear         bool  `json:"clear"`
 }
 
 // ExtendExpirationCommandBody MIRRORS

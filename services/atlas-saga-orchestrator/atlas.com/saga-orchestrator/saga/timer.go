@@ -174,6 +174,7 @@ var reverseWalkSagaTypes = []Type{
 	ItemTagUse,
 	SealingLockUse,
 	IncubatorUse,
+	KarmaScissorsUse,
 	ExpirationExtenderUse,
 	PointReset,
 	NoteSend,
@@ -205,7 +206,8 @@ var noReverseWalkSagaTypes = []Type{
 var allSagaTypes = []Type{
 	InventoryTransaction, QuestReward, TradeTransaction, TradeStaging,
 	CharacterCreation, StorageOperation, CharacterRespawn, GachaponTransaction,
-	PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse, PointReset,
+	PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse,
+	KarmaScissorsUse, PointReset,
 	MtsOperation, NoteSend, SkillBookUse, MesoSackUse, PetNameTagUse,
 }
 
@@ -237,8 +239,8 @@ func dispatchTimeoutRollbacks(l logrus.FieldLogger, ctx context.Context, s Saga)
 		c.DispatchTradeStagingRollbacks(s)
 	case PetEvolution:
 		c.DispatchPetEvolutionRollbacks(s)
-	case ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse:
-		// The four share one compensator, exactly as CompensateFailedStep
+	case ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse, KarmaScissorsUse:
+		// The five share one compensator, exactly as CompensateFailedStep
 		// routes them.
 		c.DispatchCashItemUseRollbacks(s)
 	case PointReset:

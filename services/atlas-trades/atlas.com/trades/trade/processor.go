@@ -925,7 +925,7 @@ func (p *ProcessorImpl) putItem(mb *message.Buffer, txId uuid.UUID, characterId 
 		return p.refuseStage(mb, txId, room, characterId, pt.Position(), targetSlot)
 	}
 
-	if err = checkRestrictions(assetView{Flags: a.Flag(), SourceSlot: a.Slot()}, p.itemData(it, a.TemplateId()), inventoryType); err != nil {
+	if err = checkRestrictions(assetView{Flags: a.Flag(), SourceSlot: a.Slot(), TemplateId: uint32(a.TemplateId())}, p.itemData(it, a.TemplateId()), inventoryType); err != nil {
 		p.l.WithError(err).Infof("Refusing to stage item [%d] for character [%d].", a.TemplateId(), characterId)
 		return p.refuseStage(mb, txId, room, characterId, pt.Position(), targetSlot)
 	}

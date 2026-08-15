@@ -49,7 +49,7 @@ type Model struct {
 	create          uint32
 	masterLevel     uint32
 	reqSkillLevel   uint32
-	tradeAvailable  bool
+	tradeAvailable  int32
 	noCancelMouse   bool
 	pquest          bool
 	left            int32

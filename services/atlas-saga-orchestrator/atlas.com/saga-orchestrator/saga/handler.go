@@ -956,6 +956,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSetAssetOwner, true
 	case ApplyAssetLock:
 		return h.handleApplyAssetLock, true
+	case ApplyAssetKarma:
+		return h.handleApplyAssetKarma, true
 	case ExtendAssetExpiration:
 		return h.handleExtendAssetExpiration, true
 	case IncubatorResult:
@@ -1154,6 +1156,26 @@ func (h *HandlerImpl) handleApplyAssetLock(s Saga, st Step[any]) error {
 	err := h.compP.RequestApplyLock(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Expiration)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to apply asset lock.")
+		return err
+	}
+	return nil
+}
+
+// handleApplyAssetKarma handles the ApplyAssetKarma action.
+//
+// The scissors' own karma type rides on the payload and is forwarded onto the
+// Kafka command body, because atlas-inventory — the owning service and the
+// authority — re-runs the eligibility predicate, and the EQUALITY half of that
+// predicate is meaningless without it. Forwarding 0 would silently degrade the
+// v87+ equality model to the v83 non-zero model.
+func (h *HandlerImpl) handleApplyAssetKarma(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ApplyAssetKarmaPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := h.compP.RequestApplyKarma(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.ScissorsKarma, false)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to apply asset karma.")
 		return err
 	}
 	return nil

@@ -16,6 +16,7 @@ import (
 	kafkaMessage "github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -166,8 +167,9 @@ func handleCloseStorageCommand() kafkaMessage.Handler[message.CloseStorageComman
 		l.Debugf("Received CloseStorage command for character [%d]", c.CharacterId)
 
 		// Remove NPC context from cache (legacy)
+		t := tenant.MustFromContext(ctx)
 		cache := storage.GetNpcContextCache()
-		cache.Remove(c.CharacterId)
+		cache.Remove(t, c.CharacterId)
 
 		// Delete the projection
 		projection.GetManager().Delete(ctx, c.CharacterId)

@@ -14,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -85,8 +86,9 @@ func handleStatusEventMapChanged() func(l logrus.FieldLogger, ctx context.Contex
 
 func cleanupProjection(l logrus.FieldLogger, ctx context.Context, characterId uint32) {
 	// Remove NPC context from cache (legacy)
+	t := tenant.MustFromContext(ctx)
 	cache := storage.GetNpcContextCache()
-	cache.Remove(characterId)
+	cache.Remove(t, characterId)
 
 	// Delete the projection
 	projection.GetManager().Delete(ctx, characterId)

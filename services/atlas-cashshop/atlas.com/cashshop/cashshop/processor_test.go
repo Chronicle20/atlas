@@ -298,6 +298,51 @@ func TestPurchaseTransactionIdDistinguishesConcurrentPurchases(t *testing.T) {
 	require.NotEqual(t, first.Body.TransactionId, second.Body.TransactionId, "two concurrent purchases for the same character must be distinguishable by transaction id")
 }
 
+// TestPurchaseInsufficientFundsReachesConsumer proves the NOT_ENOUGH_CASH
+// error event actually reaches an observer. Before the Step-0 fix, this emit
+// went through mb.Put inside the ExecuteTransaction/message.Emit closure
+// (see TestPurchaseTransactionIdSurvivesToErrorEvent's comment), and
+// message.Emit only flushes its buffer when the wrapped closure returns nil
+// (kafka/message/message.go:49-52) -- but the balance check returns
+// ErrInsufficientFunds, a non-nil error, so the buffered NOT_ENOUGH_CASH
+// event was silently discarded and PurchaseAndEmit produced zero outbox rows
+// and zero direct-producer events. The fix routes this emit through
+// rejectEmit on the DIRECT producer path, mirroring INVENTORY_FULL, so it is
+// now observable here exactly like the INVENTORY_FULL case above.
+func TestPurchaseInsufficientFundsReachesConsumer(t *testing.T) {
+	db := purchaseTestDatabase(t)
+	tenantId := uuid.New()
+	accountId := uint32(500)
+	characterId := uint32(1000)
+	serialNumber := uint32(9004)
+	price := uint32(4000)
+	transactionId := uuid.New()
+
+	events := captureDirectPurchaseEvents(t)
+	startPurchaseCharacterServer(t, characterId, accountId)
+	startPurchaseCommodityServer(t, serialNumber, testPurchaseItemId, price)
+	seedPurchaseCompartment(t, db, tenantId, accountId, 55)
+	// Wallet balance is well under price, so the balance check fails before
+	// any state-changing write.
+	seedPurchaseWallet(t, db, tenantId, accountId, 1)
+
+	ctx := databasetest.TenantContext(tenantId)
+	l, _ := testlog.NewNullLogger()
+
+	err := NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, serialNumber, transactionId)
+	require.NoError(t, err, "rejectEmit short-circuits with a nil return, mirroring INVENTORY_FULL")
+
+	// No outbox row: the rejection fires on the DIRECT producer path, not
+	// through the tx's outbox writes.
+	entries := purchaseOutboxEntries(t, db)
+	require.Len(t, entries, 0)
+
+	errs := events.errorEvents(t)
+	require.Len(t, errs, 1, "NOT_ENOUGH_CASH must reach the consumer instead of being silently dropped")
+	require.Equal(t, "NOT_ENOUGH_CASH", errs[0].Body.Error)
+	require.Equal(t, transactionId, errs[0].Body.TransactionId, "error event must echo the command's transaction id")
+}
+
 // TestPurchaseZeroTransactionIdAccepted proves the zero UUID -- what every
 // existing caller sends today, since atlas-channel is not minting real ids
 // until task 38/39 -- is accepted and passed through unchanged, so this

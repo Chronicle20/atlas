@@ -90,6 +90,50 @@ func Transform(ctx context.Context, m Model) (RestModel, error) {
 	}, nil
 }
 
+// PatchInput is the JSON:API PATCH input for FR-API2: only the enabled
+// attribute may ever be changed through this route. UnmarshalJSON is
+// implemented directly (rather than relying on struct-tag decoding) because
+// api2go/jsonapi hands the raw `attributes` payload to json.Unmarshal, and
+// plain struct-tag decoding silently ignores unrecognized keys — it would
+// accept `{"enabled":true,"name":"x"}` instead of rejecting it. Parsing the
+// attributes object into a map first lets this enforce "exactly one
+// attribute, named enabled, boolean" as a hard decode error, which
+// server.ParseInput turns into a 400.
+type PatchInput struct {
+	Id      uuid.UUID
+	Enabled bool
+}
+
+func (p PatchInput) GetName() string { return Resource }
+func (p PatchInput) GetID() string   { return p.Id.String() }
+
+func (p *PatchInput) SetID(idStr string) error {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return fmt.Errorf("invalid event definition id: %w", err)
+	}
+	p.Id = id
+	return nil
+}
+
+func (p *PatchInput) UnmarshalJSON(data []byte) error {
+	var attrs map[string]json.RawMessage
+	if err := json.Unmarshal(data, &attrs); err != nil {
+		return fmt.Errorf("invalid attributes: %w", err)
+	}
+	if len(attrs) != 1 {
+		return fmt.Errorf("only the enabled attribute may be patched")
+	}
+	raw, ok := attrs["enabled"]
+	if !ok {
+		return fmt.Errorf("only the enabled attribute may be patched")
+	}
+	if err := json.Unmarshal(raw, &p.Enabled); err != nil {
+		return fmt.Errorf("enabled must be a boolean")
+	}
+	return nil
+}
+
 // Extract builds a domain Model from a REST create body.
 func Extract(r RestModel) (Model, error) {
 	if r.Type == "" {

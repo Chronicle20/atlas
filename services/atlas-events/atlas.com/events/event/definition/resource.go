@@ -2,9 +2,7 @@ package definition
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -32,10 +30,11 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerHandler := server.RegisterHandler(l)(si)
+			registerInputHandler := server.RegisterInputHandler[PatchInput](l)(si)
 
 			router.HandleFunc("/events/definitions", registerHandler("get_all_event_definitions", getAllDefinitionsHandler(db))).Methods(http.MethodGet)
 			router.HandleFunc("/events/definitions/{definitionId}", registerHandler("get_event_definition", getDefinitionHandler(db))).Methods(http.MethodGet)
-			router.HandleFunc("/events/definitions/{definitionId}", registerHandler("update_event_definition", updateDefinitionHandler(db))).Methods(http.MethodPatch)
+			router.HandleFunc("/events/definitions/{definitionId}", registerInputHandler("update_event_definition", updateDefinitionHandler(db))).Methods(http.MethodPatch)
 		}
 	}
 }
@@ -143,51 +142,20 @@ func getDefinitionHandler(db *gorm.DB) server.GetHandler {
 	}
 }
 
-// patchEnvelope decodes just enough of a JSON:API PATCH body to enforce
-// FR-API2: only the enabled attribute may ever be changed through this route.
-// Any other key present in attributes is a rejection, not a silent ignore.
-type patchEnvelope struct {
-	Data struct {
-		Attributes map[string]interface{} `json:"attributes"`
-	} `json:"data"`
-}
-
-func updateDefinitionHandler(db *gorm.DB) server.GetHandler {
-	return func(d *server.HandlerDependency, c *server.HandlerContext) http.HandlerFunc {
+// updateDefinitionHandler enforces FR-API2 (only the enabled attribute may
+// ever be changed through this route) via PatchInput.UnmarshalJSON rather
+// than hand-parsing the JSON:API envelope — server.ParseInput decodes the
+// body into PatchInput and rejects a malformed/disallowed attribute set with
+// a 400 before this handler ever runs.
+func updateDefinitionHandler(db *gorm.DB) server.InputHandler[PatchInput] {
+	return func(d *server.HandlerDependency, c *server.HandlerContext, input PatchInput) http.HandlerFunc {
 		return server.ParseUUIDId(d.Logger(), "definitionId", func(definitionId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				body, err := io.ReadAll(r.Body)
-				if err != nil {
-					server.WriteBadRequest(d.Logger(), w, "unable to read request body")
-					return
-				}
-				defer func() { _ = r.Body.Close() }()
-
-				var env patchEnvelope
-				if err := json.Unmarshal(body, &env); err != nil {
-					server.WriteBadRequest(d.Logger(), w, "invalid JSON:API document")
-					return
-				}
-				if len(env.Data.Attributes) != 1 {
-					server.WriteBadRequest(d.Logger(), w, "only the enabled attribute may be patched")
-					return
-				}
-				rawEnabled, ok := env.Data.Attributes["enabled"]
-				if !ok {
-					server.WriteBadRequest(d.Logger(), w, "only the enabled attribute may be patched")
-					return
-				}
-				enabled, ok := rawEnabled.(bool)
-				if !ok {
-					server.WriteBadRequest(d.Logger(), w, "enabled must be a boolean")
-					return
-				}
-
 				setEnabled := NewProcessor(d.Logger(), d.Context(), db).SetEnabled
 				if EnabledOrchestrator != nil {
 					setEnabled = EnabledOrchestrator(d.Logger(), d.Context(), db)
 				}
-				updated, err := setEnabled(definitionId, enabled)
+				updated, err := setEnabled(definitionId, input.Enabled)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)
 					return

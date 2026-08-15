@@ -123,10 +123,51 @@ analyzer_guard_discover() {
 # the right subset each time. Filtering (rather than trusting the caller) is
 # also what keeps a guard's scope from silently widening: rediskeyguard must not
 # start reporting on libs/ just because a caller included libs/ in the list.
+#
+# Fail CLOSED on a bad path. The intersection legitimately comes back empty when
+# the caller's list contains no module under this guard's roots — a services-only
+# guard handed a libs-only change set, say. It also comes back empty when every
+# path in the list is wrong: a relative path where an absolute one was meant, a
+# $GITHUB_WORKSPACE that did not expand, a stale module directory. Those two
+# cases are indistinguishable downstream, and the second one reads as "no module
+# in scope — nothing to analyze", i.e. a green guard that analyzed nothing.
+# Every entry must therefore resolve to a real module directory, whatever root
+# it lives under; an entry that does not is an error, not a filter.
 analyzer_guard_scope() {
     if [ -z "${GUARD_MODULES:-}" ]; then
         analyzer_guard_discover "$@"
         return
+    fi
+
+    # Normalize first: entries may be repo-relative, and the discovered set is
+    # absolute. A relative entry that merely *happens* to resolve against the
+    # current directory would pass the existence check below and then match
+    # nothing in the intersection — the exact silent-pass this guards against.
+    local m raw normalized=""
+    while IFS= read -r raw; do
+        [ -n "$raw" ] || continue
+        case "$raw" in
+            /*) m="$raw" ;;
+            *)  m="$ROOT/$raw" ;;
+        esac
+        m="${m%/}"
+        normalized="$normalized$m"$'\n'
+    done < <(printf '%s\n' "$GUARD_MODULES" | tr ' \t' '\n\n' | sed '/^$/d')
+
+    local requested
+    requested="$(printf '%s' "$normalized" | LC_ALL=C sort -u)"
+
+    local bad=0
+    while IFS= read -r m; do
+        [ -n "$m" ] || continue
+        if [ ! -f "$m/go.mod" ]; then
+            echo "analyzer-guard: GUARD_MODULES entry is not a Go module directory: $m" >&2
+            bad=1
+        fi
+    done <<<"$requested"
+    if [ "$bad" -ne 0 ]; then
+        echo "analyzer-guard: refusing to run against an unresolvable module list" >&2
+        return 1
     fi
 
     local discovered
@@ -136,7 +177,7 @@ analyzer_guard_scope() {
     # Both sides are absolute, sorted, de-duplicated module directories.
     LC_ALL=C comm -12 \
         <(printf '%s\n' "$discovered") \
-        <(printf '%s\n' "$GUARD_MODULES" | tr ' \t' '\n\n' | sed '/^$/d' | LC_ALL=C sort -u)
+        <(printf '%s\n' "$requested")
 }
 
 # analyzer_guard_vet <bin> <label> — module dirs on stdin.
@@ -186,8 +227,13 @@ analyzer_guard_main() {
     local bin
     bin="$(analyzer_guard_build "${GUARD}vet" "$src" "./cmd/${GUARD}vet" "$src")"
 
+    # Resolve the scope BEFORE analyzing, so an unresolvable module list fails
+    # with its own error rather than borrowing the guard's remediation text.
+    local scope
+    scope="$(analyzer_guard_scope "${SCAN_ROOTS[@]}")" || return 1
+
     local rc=0
-    analyzer_guard_scope "${SCAN_ROOTS[@]}" | analyzer_guard_vet "$bin" "$GUARD" || rc=1
+    printf '%s\n' "$scope" | analyzer_guard_vet "$bin" "$GUARD" || rc=1
 
     if [ "$rc" -ne 0 ]; then
         local line

@@ -75,14 +75,20 @@ LIBS_BIN="$(analyzer_guard_build atlasguards-libs-vet "$SRC" \
 LOG="$(mktemp)"
 trap 'rm -f "$LOG"' EXIT
 
+# Resolve both scopes up front. An unresolvable module list is a caller bug —
+# a relative path, an unexpanded $GITHUB_WORKSPACE — and must stop the run
+# rather than silently analyze zero modules and report PASS.
+SERVICES_SCOPE="$( GUARD_MODULES="${GUARD_SERVICE_MODULES:-}"; analyzer_guard_scope "$ROOT/services" )"
+LIBS_SCOPE="$( GUARD_MODULES="${GUARD_LIB_MODULES:-}"; analyzer_guard_scope "$ROOT/libs" )"
+
 rc=0
 
 # services/: rediskeyguard + outboxguard + goroutineguard + buffdurationguard
-( GUARD_MODULES="${GUARD_SERVICE_MODULES:-}"; analyzer_guard_scope "$ROOT/services" ) \
+printf '%s\n' "$SERVICES_SCOPE" \
     | analyzer_guard_vet "$SERVICES_BIN" "go-analyzer-guards (services)" 2>>"$LOG" || rc=1
 
 # libs/: goroutineguard + buffdurationguard only
-( GUARD_MODULES="${GUARD_LIB_MODULES:-}"; analyzer_guard_scope "$ROOT/libs" ) \
+printf '%s\n' "$LIBS_SCOPE" \
     | analyzer_guard_vet "$LIBS_BIN" "go-analyzer-guards (libs)" 2>>"$LOG" || rc=1
 
 if [ "$rc" -eq 0 ]; then

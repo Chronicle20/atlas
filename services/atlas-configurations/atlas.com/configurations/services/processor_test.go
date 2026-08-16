@@ -368,9 +368,10 @@ func TestMake_LoginService(t *testing.T) {
 	}
 
 	entity := Entity{
-		Id:   testId,
-		Type: ServiceTypeLogin,
-		Data: jsonData,
+		Id:          testId,
+		Type:        ServiceTypeLogin,
+		Data:        jsonData,
+		Environment: "pr-99",
 	}
 
 	result, err := Make(entity)
@@ -385,6 +386,12 @@ func TestMake_LoginService(t *testing.T) {
 
 	if loginModel.Id != testId.String() {
 		t.Errorf("expected id '%s', got '%s'", testId.String(), loginModel.Id)
+	}
+	// task-48 fix round 2 Critical 1: Make() must copy Entity.Environment
+	// onto the RestModel, or cleanup.sh's environment-scoped reclaim filter
+	// never matches a real row.
+	if loginModel.Environment != "pr-99" {
+		t.Errorf("expected environment 'pr-99', got '%s'", loginModel.Environment)
 	}
 }
 
@@ -401,9 +408,10 @@ func TestMake_ChannelService(t *testing.T) {
 	}
 
 	entity := Entity{
-		Id:   testId,
-		Type: ServiceTypeChannel,
-		Data: jsonData,
+		Id:          testId,
+		Type:        ServiceTypeChannel,
+		Data:        jsonData,
+		Environment: "pr-99",
 	}
 
 	result, err := Make(entity)
@@ -418,6 +426,9 @@ func TestMake_ChannelService(t *testing.T) {
 
 	if channelModel.Id != testId.String() {
 		t.Errorf("expected id '%s', got '%s'", testId.String(), channelModel.Id)
+	}
+	if channelModel.Environment != "pr-99" {
+		t.Errorf("expected environment 'pr-99', got '%s'", channelModel.Environment)
 	}
 }
 
@@ -434,9 +445,10 @@ func TestMake_DropsService(t *testing.T) {
 	}
 
 	entity := Entity{
-		Id:   testId,
-		Type: ServiceTypeDrops,
-		Data: jsonData,
+		Id:          testId,
+		Type:        ServiceTypeDrops,
+		Data:        jsonData,
+		Environment: "pr-99",
 	}
 
 	result, err := Make(entity)
@@ -451,6 +463,9 @@ func TestMake_DropsService(t *testing.T) {
 
 	if dropsModel.Id != testId.String() {
 		t.Errorf("expected id '%s', got '%s'", testId.String(), dropsModel.Id)
+	}
+	if dropsModel.Environment != "pr-99" {
+		t.Errorf("expected environment 'pr-99', got '%s'", dropsModel.Environment)
 	}
 }
 

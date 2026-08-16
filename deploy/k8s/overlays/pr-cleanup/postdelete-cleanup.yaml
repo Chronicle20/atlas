@@ -104,24 +104,28 @@ spec:
             # reason environment-record.yaml (task-44/47) targets the
             # baseline's ingress rather than the PR's own.
             #
-            # Inlined as a literal rather than resolved dynamically: the
-            # dynamic mechanism (CI substituting a PLACEHOLDER_BASELINE_
-            # NAMESPACE token from the ACTIVE baseline environment record,
-            # the same way environment-record.yaml's own placeholder is
-            # meant to resolve — see deploy/k8s/overlays/pr-sparse/
-            # kustomization.yaml's header) is Task 50's explicit
-            # prerequisite work and does not exist anywhere in this repo
-            # yet — not even for pr-sparse's own critical-path Jobs, whose
-            # identical PLACEHOLDER_BASELINE_NAMESPACE token is ALSO still
-            # unresolved today. Introducing a second unresolved placeholder
-            # here would ship the exact same dead-value problem under a
-            # different name. A literal is the honest choice until Task 50
-            # lands the real resolver; both do_deactivate and
+            # Uses the SAME PLACEHOLDER_BASELINE_NAMESPACE sentinel Task 44
+            # introduced for deploy/k8s/overlays/pr-sparse/ (see
+            # environment-record.yaml and kustomization.yaml's header
+            # there), rather than a hard-coded "atlas-main" — the plan's
+            # Global Constraints forbid hard-coding the baseline id/
+            # namespace anywhere outside test fixtures and the `main`
+            # overlay itself, and pr-cleanup is neither (task-48 fix round
+            # 2 Critical 3). update-pr-overlay's substitution step already
+            # sweeps this file (it sends
+            # PLACEHOLDER_ATLAS_ENV/PLACEHOLDER_PR_NUMBER/PLACEHOLDER_FULL_SHA
+            # through both deploy/k8s/overlays/pr and
+            # deploy/k8s/overlays/pr-cleanup — see .github/workflows/
+            # pr-validation.yml's update-pr-overlay job), so extending it to
+            # also fill PLACEHOLDER_BASELINE_NAMESPACE from the ACTIVE
+            # baseline environment record is additive CI work, not a new
+            # mechanism — the same fill Task 50 already owns for
+            # pr-sparse's identical, still-unresolved token. Until Task 50
+            # lands that fill, this placeholder is unresolved here exactly
+            # as it already is in pr-sparse today; do_deactivate and
             # do_drop_control_plane are inert no-ops for every environment
-            # that was never registered in the control plane (today: 100%
-            # of PRs, since pr-sparse is not yet wired into CI either — see
-            # pr-validation.yml's update-pr-overlay step, which substitutes
-            # only deploy/k8s/overlays/pr and deploy/k8s/overlays/pr-cleanup),
-            # so this is safe regardless.
+            # that was never registered in the control plane in the
+            # meantime (today: 100% of PRs, since pr-sparse itself is not
+            # yet wired into CI).
             - name: ATLAS_UI_BASE
-              value: http://atlas-ingress.atlas-main.svc.cluster.local
+              value: http://atlas-ingress.PLACEHOLDER_BASELINE_NAMESPACE.svc.cluster.local

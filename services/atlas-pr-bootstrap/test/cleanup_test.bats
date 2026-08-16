@@ -507,6 +507,53 @@ EOF
     [ "$deleted_line" -lt "$first_psql_line" ]
 }
 
+@test "cleanup.sh deactivate PATCH carries baseline/namespace/tenant/overrides through both phase transitions" {
+    # task-48 fix round 2 Critical 2: a phase-only PATCH body zeroes the
+    # other four RestModel fields (non-pointer, so ParseInput unmarshals a
+    # fresh zero-value struct on any field the body omits). GET the
+    # existing record first and thread the four attributes into BOTH PATCH
+    # bodies unchanged, changing only phase.
+    make_stubs '[]' '[]'
+    cat > "$STUB_BIN/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "curl $*" >> "$STUB_LOG"
+method="GET"
+prev=""
+for a in "$@"; do
+    if [ "$prev" = "-X" ]; then method="$a"; fi
+    prev="$a"
+done
+url="${@: -1}"
+case "$url" in
+    */configurations/environments/*)
+        if [ "$method" = "GET" ]; then
+            echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"main","namespace":"atlas-pr-99","tenant":"tenant-1","overrides":{"foo":"bar"}}}}'
+        fi
+        exit 0
+        ;;
+    *)
+        echo '{"data":[]}'
+        exit 0
+        ;;
+esac
+EOF
+    chmod +x "$STUB_BIN/curl"
+    run run_cleanup
+    [ "$status" -eq 0 ]
+
+    patch_lines=$(grep -F -- '-X PATCH' "$STUB_LOG")
+    deact_line=$(printf '%s\n' "$patch_lines" | grep -F '"phase":"DEACTIVATING"')
+    deleted_line=$(printf '%s\n' "$patch_lines" | grep -F '"phase":"DELETED"')
+    [ -n "$deact_line" ]
+    [ -n "$deleted_line" ]
+    for line in "$deact_line" "$deleted_line"; do
+        [[ "$line" == *'"baseline":"main"'* ]]
+        [[ "$line" == *'"namespace":"atlas-pr-99"'* ]]
+        [[ "$line" == *'"tenant":"tenant-1"'* ]]
+        [[ "$line" == *'"overrides":{"foo":"bar"}'* ]]
+    done
+}
+
 @test "cleanup.sh fails the deactivate phase (not the whole script) when ATLAS_UI_BASE is missing" {
     make_stubs '[]' '[]'
     # run_cleanup's own default would backfill a missing ATLAS_UI_BASE, so
@@ -586,10 +633,10 @@ case "\$url" in
     */configurations/environments/*)
         [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE"}}}'
         ;;
-    */configurations/services)
+    */configurations/services*)
         [ "\$method" = "GET" ] && cat "$JSON_FIXTURE"
         ;;
-    */configurations/tenants|*/configurations/templates|*/api/tenants)
+    */configurations/tenants*|*/configurations/templates*|*/api/tenants*)
         [ "\$method" = "GET" ] && echo '{"data":[]}'
         ;;
 esac
@@ -631,6 +678,85 @@ EOF
         echo "ERROR: foreign row was deleted" >&2
         return 1
     fi
+
+    rm -rf "$SHIM_DIR"
+}
+
+@test "cleanup.sh drop-control-plane paginates past page 1" {
+    # task-48 fix round 2 Important 1: a single unpaginated GET only ever
+    # sees paginate.DefaultPageSize (50) rows; a resource with more than
+    # that would silently under-reclaim. Seed a fixture whose page 1 (of 2,
+    # per meta.page.last) has one of this environment's rows and whose
+    # page 2 has another — page 2 must be fetched and its row deleted too,
+    # or this test fails.
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/dcp-calls.log"
+    PAGE1="$BATS_TEST_TMPDIR/services-page1.json"
+    PAGE2="$BATS_TEST_TMPDIR/services-page2.json"
+    cat > "$PAGE1" <<'JSONEOF'
+{"data":[{"id":"svc-p1","attributes":{"environment":"pr-99"}}],"meta":{"page":{"last":2}}}
+JSONEOF
+    cat > "$PAGE2" <<'JSONEOF'
+{"data":[{"id":"svc-p2","attributes":{"environment":"pr-99"}}],"meta":{"page":{"last":2}}}
+JSONEOF
+    cat > "$SHIM_DIR/curl" <<CURLEOF
+#!/usr/bin/env bash
+printf '%s\n' "curl \$*" >> "$CALL_LOG"
+method="GET"
+prev=""
+for a in "\$@"; do
+    if [ "\$prev" = "-X" ]; then method="\$a"; fi
+    prev="\$a"
+done
+url="\${@: -1}"
+case "\$url" in
+    */configurations/environments/*)
+        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE"}}}'
+        ;;
+    */configurations/services*'page[number]=2'*)
+        [ "\$method" = "GET" ] && cat "$PAGE2"
+        ;;
+    */configurations/services*)
+        [ "\$method" = "GET" ] && cat "$PAGE1"
+        ;;
+    */configurations/tenants*|*/configurations/templates*|*/api/tenants*)
+        [ "\$method" = "GET" ] && echo '{"data":[]}'
+        ;;
+esac
+exit 0
+CURLEOF
+    chmod +x "$SHIM_DIR/curl"
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/gh" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env \
+        PR_NUMBER=99 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        ATLAS_UI_BASE=http://fake-ui ATLAS_DEACTIVATE_SETTLE_S=0 \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    grep -F -- '-X DELETE' "$CALL_LOG" | grep -F '/configurations/services/svc-p1'
+    grep -F -- '-X DELETE' "$CALL_LOG" | grep -F '/configurations/services/svc-p2'
 
     rm -rf "$SHIM_DIR"
 }

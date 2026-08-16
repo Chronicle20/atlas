@@ -84,10 +84,21 @@ fi
 # do not guess higher here, and do not conflate it with StaleAfter by
 # reusing that constant's value for a different guarantee.
 
+# _dcp_env_get — echoes this environment's environments record GET response
+# body (the full JSON:API document), or nothing if no record exists (a 404
+# from the GET) or ATLAS_UI_BASE/ATLAS_ENVIRONMENT are unset. Exit status
+# mirrors curl's.
+_dcp_env_get() {
+    [ -z "${ATLAS_UI_BASE:-}" ] && return 1
+    [ -z "${ATLAS_ENVIRONMENT:-}" ] && return 1
+    curl -fsS -H 'Accept: application/vnd.api+json' \
+        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
+        "$ATLAS_UI_BASE/api/configurations/environments/$ATLAS_ENVIRONMENT" 2>/dev/null
+}
+
 # _dcp_env_phase — echoes this environment's current control-plane phase
 # (PROVISIONING/ACTIVE/DEACTIVATING/DELETED), or nothing if no record
-# exists (a 404 from the collection GET) or ATLAS_UI_BASE/ATLAS_ENVIRONMENT
-# are unset.
+# exists.
 #
 # This is the live, self-healing gate do_deactivate and
 # do_drop_control_plane both use instead of a build-time ATLAS_MODE flag
@@ -98,13 +109,60 @@ fi
 # registered," and either way there is nothing for these two phases to do.
 # Checking live data can't drift from what actually got deployed the way a
 # manifest flag could, and it needs no ATLAS_MODE wiring at all.
+#
+# This is a DIFFERENT question than ATLAS_MODE answers for do_drop_dbs/
+# do_drop_topics/do_drop_redis below (task-48 fix round 2 Important 3):
+# those three ask "is this environment's Postgres/Kafka/Redis footprint
+# private or shared with main" — a build-time deployment-topology fact with
+# no live signal to check (sparse mode's shared resources have no per-env
+# marker to probe; the absence IS the fact). This gate asks "does a
+# control-plane record for this environment currently exist" — a fact that
+# IS live-checkable, and checking it live is strictly more robust than
+# trusting a flag that could drift from what was actually deployed. Two
+# different questions, answered two different ways; not two competing
+# signals for the same decision. Proof that swapping ATLAS_MODE for this
+# live check left isolated-mode teardown behaviour unchanged: no file under
+# deploy/k8s/overlays/pr/ (isolated mode's overlay) mentions "environments"
+# at all — only pr-sparse's environment-record.yaml POSTs one, and only to
+# the baseline's atlas-configurations (ATLAS_UI_BASE always resolves to the
+# baseline, never a PR's own instance — see postdelete-cleanup.yaml). An
+# isolated PR's GET against baseline/environments/pr-<N> 404s exactly as it
+# would have skipped under the old ATLAS_MODE=isolated gate; the pinned
+# bats test "cleanup.sh drop-control-plane and deactivate are skipped when
+# no control-plane environment record exists" exercises this via the
+# suite's own 404-by-default curl stub.
 _dcp_env_phase() {
-    [ -z "${ATLAS_UI_BASE:-}" ] && return 0
-    [ -z "${ATLAS_ENVIRONMENT:-}" ] && return 0
-    curl -fsS -H 'Accept: application/vnd.api+json' \
+    local body
+    body=$(_dcp_env_get) || return 0
+    printf '%s' "$body" | jq -r '.data.attributes.phase // empty' 2>/dev/null
+}
+
+# _dcp_patch_phase <new_phase> <baseline> <namespace> <tenant> <overrides_json>
+# — PATCHes the environments record to <new_phase>, carrying the OTHER four
+# attributes through unchanged. environments.RestModel's fields are
+# non-pointer (environments/rest.go), so ParseInput unmarshals a PATCH body
+# into a fresh zero-value struct first: any attribute omitted from the body
+# is zeroed, not left alone (environments/administrator.go's update() doc
+# comment is explicit about this). A phase-only body — the shape task-48's
+# own plan Step 3 sample showed — would silently wipe baseline/namespace/
+# tenant/overrides on every DEACTIVATING/DELETED transition (task-48 fix
+# round 2 Critical 2). GET-then-PATCH-with-everything is the fix.
+_dcp_patch_phase() {
+    local phase="$1" baseline="$2" namespace="$3" tenant="$4" overrides="$5"
+    local payload
+    payload=$(jq -nc \
+        --arg id "$ATLAS_ENVIRONMENT" \
+        --arg baseline "$baseline" \
+        --arg namespace "$namespace" \
+        --arg tenant "$tenant" \
+        --argjson overrides "$overrides" \
+        --arg phase "$phase" \
+        '{data:{type:"environments",id:$id,attributes:{baseline:$baseline,namespace:$namespace,tenant:$tenant,overrides:$overrides,phase:$phase}}}')
+    curl -fsS -X PATCH \
+        -H 'Content-Type: application/vnd.api+json' \
         -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
-        "$ATLAS_UI_BASE/api/configurations/environments/$ATLAS_ENVIRONMENT" 2>/dev/null \
-        | jq -r '.data.attributes.phase // empty' 2>/dev/null
+        -d "$payload" \
+        "$ATLAS_UI_BASE/api/configurations/environments/$ATLAS_ENVIRONMENT" >/dev/null
 }
 
 do_deactivate() {
@@ -112,8 +170,9 @@ do_deactivate() {
         ATLAS_STEP=deactivate log error "ATLAS_UI_BASE and ATLAS_ENVIRONMENT are required to deactivate; routing may still be live when destructive phases run"
         return 1
     fi
-    local phase
-    phase=$(_dcp_env_phase)
+    local body phase baseline namespace tenant overrides
+    body=$(_dcp_env_get)
+    phase=$(printf '%s' "${body:-}" | jq -r '.data.attributes.phase // empty' 2>/dev/null)
     if [ -z "$phase" ]; then
         ATLAS_STEP=deactivate log info "skipped — no control-plane environment record for $ATLAS_ENVIRONMENT (isolated mode never registers one; sparse mode does via environment-record.yaml)"
         return 0
@@ -122,21 +181,17 @@ do_deactivate() {
         ATLAS_STEP=deactivate log info "already deactivated (phase=DELETED); skipping"
         return 0
     fi
+    baseline=$(printf '%s' "$body" | jq -r '.data.attributes.baseline // ""' 2>/dev/null)
+    namespace=$(printf '%s' "$body" | jq -r '.data.attributes.namespace // ""' 2>/dev/null)
+    tenant=$(printf '%s' "$body" | jq -r '.data.attributes.tenant // ""' 2>/dev/null)
+    overrides=$(printf '%s' "$body" | jq -c '.data.attributes.overrides // {}' 2>/dev/null)
     ATLAS_STEP=deactivate log info "deactivating environment=$ATLAS_ENVIRONMENT before any destructive phase (FR-5.5)"
-    if ! curl -fsS -X PATCH \
-        -H 'Content-Type: application/vnd.api+json' \
-        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
-        -d "{\"data\":{\"type\":\"environments\",\"id\":\"$ATLAS_ENVIRONMENT\",\"attributes\":{\"phase\":\"DEACTIVATING\"}}}" \
-        "$ATLAS_UI_BASE/api/configurations/environments/$ATLAS_ENVIRONMENT" >/dev/null; then
+    if ! _dcp_patch_phase DEACTIVATING "$baseline" "$namespace" "$tenant" "$overrides"; then
         ATLAS_STEP=deactivate log warn "PATCH phase=DEACTIVATING failed"
         return 1
     fi
     sleep "${ATLAS_DEACTIVATE_SETTLE_S:-35}"
-    if ! curl -fsS -X PATCH \
-        -H 'Content-Type: application/vnd.api+json' \
-        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
-        -d "{\"data\":{\"type\":\"environments\",\"id\":\"$ATLAS_ENVIRONMENT\",\"attributes\":{\"phase\":\"DELETED\"}}}" \
-        "$ATLAS_UI_BASE/api/configurations/environments/$ATLAS_ENVIRONMENT" >/dev/null; then
+    if ! _dcp_patch_phase DELETED "$baseline" "$namespace" "$tenant" "$overrides"; then
         ATLAS_STEP=deactivate log warn "PATCH phase=DELETED failed"
         return 1
     fi
@@ -144,11 +199,19 @@ do_deactivate() {
 }
 
 # _dcp_reclaim <list_url> <label> — GETs the JSON:API collection at
-# $list_url, filters to rows whose attributes.environment equals
-# ATLAS_ENVIRONMENT (client-side: none of services/tenants/templates/
-# atlas-tenants expose a server-side ?environment= filter today — only
-# templates supports a query filter, and it is region/version, not
-# environment), and DELETEs every matching id individually.
+# $list_url one page at a time (page[size]=250, paginate.MaxPageSize —
+# libs/atlas-rest/server/paginate/params.go — vs. the 50-row
+# paginate.DefaultPageSize every one of these four list endpoints falls
+# back to unpaginated), filters each page to rows whose
+# attributes.environment equals ATLAS_ENVIRONMENT (client-side: none of
+# services/tenants/templates/atlas-tenants expose a server-side
+# ?environment= filter today — only templates supports a query filter, and
+# it is region/version, not environment), and DELETEs every matching id
+# individually. Stops once meta.page.last is reached (task-48 fix round 2
+# Important 1) — a single unpaginated GET would silently miss every row
+# past page 1 once a resource's row count exceeds DefaultPageSize, which is
+# realistic precisely because this task exists to clean up the duplicate-row
+# leak task-47 left behind.
 #
 # NEVER filters by Type and NEVER deletes "everything that isn't main" —
 # only an exact match on THIS environment's own id, so a foreign row
@@ -172,27 +235,37 @@ do_deactivate() {
 # bare table sweep if the gate were ever removed.
 _dcp_reclaim() {
     local list_url="$1" label="$2" rc=0
+    local page=1 last=1 found_any=0
     local body ids id
-    body=$(curl -fsS -H 'Accept: application/vnd.api+json' \
-        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
-        "$list_url") || { ATLAS_STEP=drop-control-plane log warn "$label: list failed"; return 1; }
-    ids=$(printf '%s' "$body" | jq -r --arg env "$ATLAS_ENVIRONMENT" \
-        '.data[]? | select(.attributes.environment == $env) | .id') || return 1
-    if [ -z "$ids" ]; then
-        ATLAS_STEP=drop-control-plane log info "$label: no rows for environment=$ATLAS_ENVIRONMENT"
-        return 0
-    fi
-    while IFS= read -r id; do
-        [ -z "$id" ] && continue
-        if curl -fsS -X DELETE \
+    while :; do
+        body=$(curl -fsS -H 'Accept: application/vnd.api+json' \
             -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
-            "$list_url/$id" >/dev/null; then
-            ATLAS_STEP=drop-control-plane log info "$label: deleted $id (environment=$ATLAS_ENVIRONMENT)"
-        else
-            ATLAS_STEP=drop-control-plane log warn "$label: delete $id failed"
-            rc=1
+            "${list_url}?page[size]=250&page[number]=${page}") \
+            || { ATLAS_STEP=drop-control-plane log warn "$label: list failed (page=$page)"; return 1; }
+        ids=$(printf '%s' "$body" | jq -r --arg env "$ATLAS_ENVIRONMENT" \
+            '.data[]? | select(.attributes.environment == $env) | .id') || return 1
+        if [ -n "$ids" ]; then
+            found_any=1
+            while IFS= read -r id; do
+                [ -z "$id" ] && continue
+                if curl -fsS -X DELETE \
+                    -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
+                    "$list_url/$id" >/dev/null; then
+                    ATLAS_STEP=drop-control-plane log info "$label: deleted $id (environment=$ATLAS_ENVIRONMENT)"
+                else
+                    ATLAS_STEP=drop-control-plane log warn "$label: delete $id failed"
+                    rc=1
+                fi
+            done <<<"$ids"
         fi
-    done <<<"$ids"
+        last=$(printf '%s' "$body" | jq -r '.meta.page.last // 1' 2>/dev/null)
+        case "$last" in (''|*[!0-9]*) last=1 ;; esac
+        [ "$page" -ge "$last" ] && break
+        page=$((page + 1))
+    done
+    if [ "$found_any" -eq 0 ]; then
+        ATLAS_STEP=drop-control-plane log info "$label: no rows for environment=$ATLAS_ENVIRONMENT"
+    fi
     return $rc
 }
 

@@ -12,6 +12,11 @@ tools/verify.sh --no-docker  # everything except the bake
 tools/verify.sh --quick --base <rev>   # iteration gate: only the increment
 ```
 
+Only the **flagless** invocation counts as verified. `--quick`, `--no-docker`,
+and `--all` also exit 0 — the first two print a caveat and skip the bake and
+`-race` — so "verify.sh exited 0" is not a pass unless it ran with no flags.
+Never claim verified from a subset.
+
 The script mirrors the jobs in `.github/workflows/pr-validation.yml`. **CI is the
 authority**: if the two ever disagree, the script is the bug. Path-gated CI jobs
 are path-gated here too, against the merge base with `origin/main`.
@@ -35,6 +40,8 @@ For a gate you run per task, scope it to the increment:
 ```sh
 tools/verify.sh --quick --base <last-commit-you-already-gated>
 ```
+
+Launch the gate in the background and keep working; never idle waiting on it.
 
 Measured on the task-227 branch: `--quick` resolved **86 changed Go modules**;
 `--quick --base HEAD~1` resolved **2**. The script now prints a warning when

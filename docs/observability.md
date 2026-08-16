@@ -136,6 +136,23 @@ sum by (pod) (rate(http_request_duration_seconds_count{atlas_env="a3f7"}[5m]))
 
 The `atlas-pr-environments` dashboard (when present in the cluster's Grafana) summarises open envs, time-to-ready, cleanup status, and bootstrap step durations. If absent, install via the standard Grafana dashboards-as-code mechanism on the cluster.
 
+## Diagnosing a runtime failure
+
+For a wedged deploy or a runtime failure, read the relevant pod logs **early**
+— via `mcp__kubernetes__pods_log` — rather than starting at packet-level fixes
+or bare pod listings. The logs usually name the real root cause directly.
+
+For a wedged startup, read `atlas-character-factory` and `atlas-world` first.
+
+Loki has no `app` label — select on `service_name` (Kubernetes labels with
+dots are normalised to underscores at ingestion, as noted above for
+`atlas.env`). An `app=` selector silently returns zero rows.
+
+For an ephemeral PR environment that will not come up or will not tear down,
+see [`docs/runbooks/ephemeral-pr-deployments.md`](runbooks/ephemeral-pr-deployments.md)
+§9.3 / §9.4 — that runbook owns env lifecycle; this section owns reaching logs
+in any environment.
+
 ## Log field naming
 
 Structured-log field keys are **snake_case** (`character_id`, `world_id`,

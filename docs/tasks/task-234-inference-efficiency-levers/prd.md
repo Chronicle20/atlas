@@ -135,6 +135,8 @@ term-2 cost is untouched entirely.
 - **Q2** Is the ceiling in FR-3.1 best expressed as a token threshold, a completed
   plan-task count, or both? A token threshold is directly tied to the measured
   cost; a task count is easier for a controller to self-assess.
-- **Q3** Is the first codemod worth writing *retrospectively* for the task-232
-  wiring pattern (no remaining call sites to convert), or should FR-2 wait for the
-  next sweep-shaped task and be built against live work?
+- **Q3** ✅ **RESOLVED — wait for live work.** The first codemod is *not* written
+  retrospectively. FR-2 ships as a decision rule plus a written contract for the
+  future rewriter (module layout, residue-list guarantee, `--check` mode); the
+  rewriter itself is built against the next sweep-shaped task. FR-2.1–2.3 are
+  therefore **deferred with a specification**, not dropped. See `plan.md` Task 4.

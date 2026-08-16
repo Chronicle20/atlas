@@ -130,8 +130,12 @@ work to validate it. Two honest options:
 **Recommendation: (b).** The measured waste is not "we lacked a rewriter" — it is
 "nobody asked whether a rewriter was cheaper than 6,231 agent turns." A decision
 rule at the point of dispatch captures that; a speculative rewriter might not fit
-and would itself cost inference to build. This needs the user's call before Lever 2
-proceeds — see the plan's Task 4.
+and would itself cost inference to build.
+
+> ✅ **Decided: option (b).** Confirmed by the user. Lever 2 ships as a decision
+> rule plus a written contract for the future rewriter; `tools/<name>/` is **not**
+> created by this task. See `plan.md` Task 4 for the consequences, including the
+> knock-on effect on Lever 4.
 
 ---
 
@@ -218,5 +222,5 @@ FR-3 (prose, one file)  ──┐
 FR-1 (12 frontmatter edits + validation dispatches) ──┤── independent, land first
 FR-5 (small digest addition) ──┘
                               │
-FR-2 (needs the Q3 decision) ─┴─> FR-4 (depends on FR-2's definition)
+FR-2 (Q3 → option b: rule + contract, no rewriter) ─┴─> FR-4 (now likely docs-only)
 ```

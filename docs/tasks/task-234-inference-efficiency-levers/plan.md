@@ -83,24 +83,33 @@ rather than assuming a path.
 
 ## Phase B — the decision gate
 
-### Task 4: Resolve Q3 with the user — retrospective codemod, or decision rule?
+### Task 4: Resolve Q3 — retrospective codemod, or decision rule? ✅ RESOLVED
 
-**This is a blocking question, not an implementation task.** Design recommends
-option (b): ship the decision rule now, build the real rewriter against the next
-sweep-shaped task.
+**Decision: option (b) — ship the decision rule now; build the real rewriter
+against the next sweep-shaped task.** Confirmed by the user, matching the design
+recommendation.
 
-**Steps:**
-1. Present the two options with the arithmetic from `design.md` Lever 2.
-2. Record the decision in this plan before proceeding to Task 5.
+Rationale of record: the measured waste was not "we lacked a rewriter," it was
+that nobody asked whether a rewriter was cheaper than 6,231 implementer turns. A
+rule at the point of dispatch captures that. A rewriter built speculatively
+against reconstructed testdata costs inference now, has no live work to validate
+it, and may not match the next sweep's shape.
 
-**Do not start Task 5 before this is answered** — option (a) and option (b)
-produce different work.
+**Consequences:**
+- **Task 5a is active.** Task 5b is dropped — do not create `tools/<name>/`.
+- Task 7 (FR-4) likely reduces to documentation, since "mechanically
+  transformed" will be defined by the rule rather than by a `--check` mode that
+  now does not exist. Re-read Task 7 with that in mind.
+- FR-2.1/2.2/2.3 (the module layout, residue-list contract, and `--check` mode)
+  become **specification for the future rewriter**, documented by Task 5a rather
+  than implemented. They are not dropped from the PRD; they are deferred with a
+  written contract so the next task builds to a known shape.
 
 ---
 
-## Phase C — conditional on Task 4
+## Phase C
 
-### Task 5a: Decision rule only *(if Q3 → option b)*
+### Task 5a: Decision rule *(active — Q3 resolved to option b)*
 
 **Files:**
 - Edit: `.claude/commands/plan-task.md` and/or `.claude/commands/execute-task.md`
@@ -112,22 +121,21 @@ produce different work.
    measured figure — 6,231 implementer turns cost 760M, ~122k per turn.
 2. Document the mechanical/judgment split from task-232 batch 4 (design.md Lever 2
    lists the six steps and which four are AST-derivable) as the worked example.
+   Cite the batch commits (`6a06ffae0`, `54e7e0c3d`, `8776709b8`) so the next task
+   has real diffs to build testdata from.
 3. Document the intended module layout for when one is written, mirroring
-   `tools/rediskeyguard/`.
+   `tools/rediskeyguard/` (`go.mod`, `analyzer.go`, `analyzer_test.go`, `cmd/`,
+   `testdata/`), plus the two contracts the rewriter must honor: **every site is
+   rewritten or listed, never silently skipped** (FR-2.2), and **`--check` mode
+   for use as a guard afterwards** (FR-2.3).
 
-### Task 5b: Retrospective rewriter *(if Q3 → option a)*
+**Verification:** prose only. The rule must be specific enough to be actionable at
+dispatch time — a threshold and a worked example, not "consider whether a codemod
+would help."
 
-**Files:** create `tools/<name>/` — `go.mod`, `analyzer.go`, `analyzer_test.go`,
-`cmd/`, `testdata/`
+### Task 5b: Retrospective rewriter — **DROPPED** (Q3 → option b)
 
-**Steps:**
-1. Mirror the `tools/rediskeyguard/` module layout.
-2. Build `testdata/` from the task-232 batch diffs (`6a06ffae0`, `54e7e0c3d`,
-   `8776709b8`).
-3. Implement the four mechanical steps; emit a residue list for the error-message
-   step (FR-2.2 — every site rewritten *or* listed, never silently skipped).
-4. Implement `--check` (FR-2.3) and confirm idempotence.
-5. Wire into `tools/go-analyzer-guards.sh` only if it holds green across the repo.
+Not implemented. Its contract survives as specification in Task 5a step 3.
 
 ---
 

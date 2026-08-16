@@ -50,7 +50,12 @@ func RootUrlFor(ctx context.Context, domain string) (string, error) {
 		return "", fmt.Errorf("resolving ingress for environment %q: %w", e, err)
 	}
 	if ns == "" {
-		return base, nil
+		// A registered record with an empty Namespace is not reachable
+		// through today's registry API, but the fallback this would
+		// otherwise permit — silently returning the baseline URL — is
+		// exactly what FR-3.5/G4 forbid. Fail closed rather than transition
+		// the operation to main.
+		return "", fmt.Errorf("resolving ingress for environment %q: empty namespace", e)
 	}
 	rewritten, err := replaceNamespace(base, ns)
 	if err != nil {

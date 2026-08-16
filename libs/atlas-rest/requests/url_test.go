@@ -97,6 +97,32 @@ func TestRootUrlForAnUnknownEnvironmentErrorsAndNeverFallsBack(t *testing.T) {
 	}
 }
 
+func TestRootUrlForAnEmptyNamespaceErrorsAndNeverFallsBack(t *testing.T) {
+	// FR-3.5 / G4 defense-in-depth: even a registered record whose Namespace
+	// is empty must fail closed, never silently resolve to the baseline URL.
+	t.Setenv("BASE_SERVICE_URL", "http://atlas-ingress.atlas-main.svc.cluster.local:80/api/")
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	reg.Apply(env.Record{
+		Name: "main", Baseline: "main",
+		Namespace: "atlas-main", Phase: env.PhaseActive,
+	})
+	reg.Apply(env.Record{
+		Name: "pr-123", Baseline: "main",
+		Namespace: "", Phase: env.PhaseActive,
+	})
+	env.SetRegistry(reg)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	ctx := env.WithContext(context.Background(), env.Id("pr-123"))
+	got, err := RootUrlFor(ctx, "characters")
+	if err == nil {
+		t.Fatalf("got %q with no error; want an error, never a baseline URL", got)
+	}
+	if got != "" {
+		t.Fatalf("got non-empty URL %q on error; want empty", got)
+	}
+}
+
 func TestRootUrlForHonoursAPerDomainOverride(t *testing.T) {
 	// A *_SERVICE_URL override bypasses the ingress entirely (local debug).
 	// It must keep winning, and must NOT be namespace-rewritten.

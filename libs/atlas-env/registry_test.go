@@ -212,3 +212,26 @@ func TestCurrentRegistryIsNeverNil(t *testing.T) {
 		t.Fatal("the default registry is not the legacy no-op")
 	}
 }
+
+func TestSetRegistryNilRestoresTheLegacyNoOp(t *testing.T) {
+	r := NewMapRegistry(Id("main"), time.Now)
+	r.Apply(Record{Name: "pr-123", Baseline: "main", Namespace: "atlas-pr-123", Phase: PhaseActive})
+	SetRegistry(r)
+	t.Cleanup(func() { SetRegistry(nil) })
+
+	if CurrentRegistry().IsActive(Id("pr-123")) == false {
+		t.Fatal("registry was not installed")
+	}
+
+	SetRegistry(nil)
+
+	if CurrentRegistry() == nil {
+		t.Fatal("SetRegistry(nil) stored nil; must substitute the legacy no-op")
+	}
+	if !CurrentRegistry().IsActive(Id("pr-123")) {
+		t.Fatal("the legacy no-op must answer IsActive true for any id (FR-1.8)")
+	}
+	if !CurrentRegistry().IsOwner(Id(""), "atlas-anything") {
+		t.Fatal("SetRegistry(nil) did not restore the legacy no-op")
+	}
+}

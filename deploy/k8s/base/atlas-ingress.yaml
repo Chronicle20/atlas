@@ -39,6 +39,7 @@ data:
         proxy_set_header REGION $http_region;
         proxy_set_header MAJOR_VERSION $http_major_version;
         proxy_set_header MINOR_VERSION $http_minor_version;
+        proxy_set_header ENVIRONMENT $http_environment;
 
         # Local-debug overrides (tools/debug-start.sh). Mounted from the
         # optional ConfigMap `atlas-ingress-debug-overrides`, which is NOT

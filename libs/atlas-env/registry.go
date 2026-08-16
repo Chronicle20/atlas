@@ -242,10 +242,15 @@ var (
 
 // SetRegistry installs the process-wide registry. Called once, from
 // libs/atlas-service's bootstrap wiring. Never call it from a domain
-// package (env-domain-guard).
+// package (env-domain-guard). Passing nil restores the legacy no-op
+// registry rather than storing nil — CurrentRegistry is never nil.
 func SetRegistry(r Registry) {
 	currentMu.Lock()
 	defer currentMu.Unlock()
+	if r == nil {
+		current = legacyRegistry{}
+		return
+	}
 	current = r
 }
 

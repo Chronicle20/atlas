@@ -4,6 +4,7 @@ import (
 	"atlas-login/account"
 	"atlas-login/configuration"
 	"atlas-login/configuration/projection"
+	tenantConfig "atlas-login/configuration/tenant"
 	account2 "atlas-login/kafka/consumer/account"
 	session2 "atlas-login/kafka/consumer/account/session"
 	"atlas-login/kafka/consumer/seed"
@@ -130,6 +131,12 @@ func main() {
 	// operator-driven config changes flow to the handlers that still read
 	// from the package-level cache. Cheap: it's a value-copy of a small
 	// map. Stops when the teardown ctx cancels.
+	//
+	// Environment ownership (FR-6.1/design C4): a baseline pod's projection
+	// snapshot can carry tenants of every environment it still owns, and
+	// ownership can shift (an override claims one) between ticks without a
+	// restart, so the republished set is filtered fresh each tick via
+	// service.ForEachOwnedEnvironment rather than published unconditionally.
 	routine.Go(l, rt.Context(), func(_ context.Context) {
 		t := time.NewTicker(time.Second)
 		defer t.Stop()
@@ -138,7 +145,7 @@ func main() {
 			case <-rt.Context().Done():
 				return
 			case <-t.C:
-				publishSnapshot()
+				publishOwnedSnapshot(l, rt.Context(), state)
 			}
 		}
 	})
@@ -173,6 +180,38 @@ func main() {
 		Run()
 
 	rt.Wait()
+}
+
+// publishOwnedSnapshot filters the projection snapshot down to tenants of
+// environments this deployment currently owns before republishing the
+// legacy configuration cache (FR-6.1/design C4): a baseline pod's
+// projection can carry tenants of every environment it still owns, and
+// ownership is resolved fresh on every call rather than assumed to be
+// static for the life of the pod.
+func publishOwnedSnapshot(l logrus.FieldLogger, ctx context.Context, state *projection.State) {
+	svc, tenants := state.Snapshot()
+
+	listTenants := func(_ context.Context) ([]tenant.Model, error) {
+		ts := make([]tenant.Model, 0, len(tenants))
+		for id, cfg := range tenants {
+			tm, err := tenant.Create(id, cfg.Region, cfg.MajorVersion, cfg.MinorVersion)
+			if err != nil {
+				continue
+			}
+			ts = append(ts, tm)
+		}
+		return ts, nil
+	}
+
+	owned := make(map[uuid.UUID]tenantConfig.RestModel, len(tenants))
+	service.ForEachOwnedEnvironment(l, ctx, serviceName, listTenants, func(envCtx context.Context) {
+		tm := tenant.MustFromContext(envCtx)
+		if cfg, ok := tenants[tm.Id()]; ok {
+			owned[tm.Id()] = cfg
+		}
+	})
+
+	configuration.PublishSnapshot(svc, owned)
 }
 
 // serverModelFn is the ServerModelFn the apply loop hands to listener.Add.

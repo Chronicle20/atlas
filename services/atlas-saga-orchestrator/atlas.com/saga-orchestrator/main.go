@@ -18,6 +18,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
+
 	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
@@ -223,7 +225,13 @@ func main() {
 	rt.Wait()
 }
 
-// recoverSagas loads all active sagas from the database and re-drives them
+// recoverSagas loads all active sagas from the database and re-drives them.
+// This is a persisted-work path (design §8.3): each saga row carries its own
+// tenant (region/version included, unlike the mts listing table), so
+// service.ForEachOwnedEnvironment reconstructs the environment from that
+// tenant rather than from env.Self() — a recovered saga belonging to a
+// tenant of an environment this deployment does not own is simply never
+// visited.
 func recoverSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.Manager) {
 	enabled := true
 	if v, ok := os.LookupEnv("SAGA_RECOVERY_ENABLED"); ok {
@@ -244,20 +252,48 @@ func recoverSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.
 	}
 
 	l.Infof("Recovering %d active sagas from database.", len(entities))
-	for _, e := range entities {
-		t, _ := tenant.Create(e.TenantId, e.TenantRegion, e.TenantMajor, e.TenantMinor)
-		ctx := withSelfEnvironment(tenant.WithContext(tdm.Context(), t))
-		processor := saga.NewProcessor(l, ctx)
+	service.ForEachOwnedEnvironment(l, tdm.Context(), serviceName, sagaEntityTenants(entities),
+		func(ctx context.Context) {
+			tm := tenant.MustFromContext(ctx)
+			processor := saga.NewProcessor(l, ctx)
+			for _, e := range entities {
+				if e.TenantId != tm.Id() {
+					continue
+				}
 
-		l.Infof("Recovering saga [%s] type [%s] for tenant [%s]",
-			e.TransactionId.String(), e.SagaType, e.TenantId.String())
+				l.Infof("Recovering saga [%s] type [%s] for tenant [%s]",
+					e.TransactionId.String(), e.SagaType, e.TenantId.String())
 
-		err := processor.Step(e.TransactionId)
-		if err != nil {
-			l.WithError(err).Errorf("Failed to recover saga [%s]", e.TransactionId.String())
-		}
-	}
+				err := processor.Step(e.TransactionId)
+				if err != nil {
+					l.WithError(err).Errorf("Failed to recover saga [%s]", e.TransactionId.String())
+				}
+			}
+		})
 	l.Infoln("Saga recovery complete.")
+}
+
+// sagaEntityTenants returns a TenantLister that reconstructs the distinct
+// tenants referenced by entities, deduplicated by tenant id. Each saga.Entity
+// carries its own region/major/minor (unlike e.g. atlas-mts's listing rows),
+// so the reconstructed tenant.Model is a real one, not a placeholder.
+func sagaEntityTenants(entities []saga.Entity) service.TenantLister {
+	return func(_ context.Context) ([]tenant.Model, error) {
+		seen := make(map[uuid.UUID]bool, len(entities))
+		ts := make([]tenant.Model, 0, len(entities))
+		for _, e := range entities {
+			if seen[e.TenantId] {
+				continue
+			}
+			tm, err := tenant.Create(e.TenantId, e.TenantRegion, e.TenantMajor, e.TenantMinor)
+			if err != nil {
+				continue
+			}
+			seen[e.TenantId] = true
+			ts = append(ts, tm)
+		}
+		return ts, nil
+	}
 }
 
 // startReaper starts a background goroutine that compensates timed-out sagas
@@ -289,6 +325,9 @@ func startReaper(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.M
 	})
 }
 
+// reapTimedOutSagas is the same persisted-work path as recoverSagas: the
+// environment is reconstructed per-row from the timed-out saga's own tenant
+// via service.ForEachOwnedEnvironment, not from env.Self().
 func reapTimedOutSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.Manager) {
 	entities := store.GetTimedOut(tdm.Context())
 	if len(entities) == 0 {
@@ -296,24 +335,29 @@ func reapTimedOutSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *ser
 	}
 
 	l.Infof("Reaping %d timed-out sagas.", len(entities))
-	for _, e := range entities {
-		t, _ := tenant.Create(e.TenantId, e.TenantRegion, e.TenantMajor, e.TenantMinor)
-		ctx := withSelfEnvironment(tenant.WithContext(tdm.Context(), t))
-		processor := saga.NewProcessor(l, ctx)
+	service.ForEachOwnedEnvironment(l, tdm.Context(), serviceName, sagaEntityTenants(entities),
+		func(ctx context.Context) {
+			tm := tenant.MustFromContext(ctx)
+			processor := saga.NewProcessor(l, ctx)
+			for _, e := range entities {
+				if e.TenantId != tm.Id() {
+					continue
+				}
 
-		l.Warnf("Saga [%s] type [%s] timed out, triggering compensation.",
-			e.TransactionId.String(), e.SagaType)
+				l.Warnf("Saga [%s] type [%s] timed out, triggering compensation.",
+					e.TransactionId.String(), e.SagaType)
 
-		// Mark the earliest pending step as failed to trigger compensation
-		err := processor.MarkEarliestPendingStep(e.TransactionId, saga.Failed)
-		if err != nil {
-			l.WithError(err).Errorf("Failed to mark timed-out saga [%s] step as failed", e.TransactionId.String())
-			continue
-		}
+				// Mark the earliest pending step as failed to trigger compensation
+				err := processor.MarkEarliestPendingStep(e.TransactionId, saga.Failed)
+				if err != nil {
+					l.WithError(err).Errorf("Failed to mark timed-out saga [%s] step as failed", e.TransactionId.String())
+					continue
+				}
 
-		err = processor.Step(e.TransactionId)
-		if err != nil {
-			l.WithError(err).Errorf("Failed to compensate timed-out saga [%s]", e.TransactionId.String())
-		}
-	}
+				err = processor.Step(e.TransactionId)
+				if err != nil {
+					l.WithError(err).Errorf("Failed to compensate timed-out saga [%s]", e.TransactionId.String())
+				}
+			}
+		})
 }

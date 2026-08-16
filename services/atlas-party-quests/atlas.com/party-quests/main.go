@@ -83,12 +83,15 @@ func main() {
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	tenants, err := tenant2.NewProcessor(l, rt.Context()).GetAll()
-	if err != nil {
-		l.WithError(err).Fatal("Unable to load tenants.")
+	listTenants := func(ctx context.Context) ([]tenant.Model, error) {
+		return tenant2.NewProcessor(l, ctx).GetAll()
 	}
 
-	// Start background ticker for PQ timers
+	// Start background ticker for PQ timers. Both the owned-environment set
+	// and each environment's tenant set are resolved fresh on every tick via
+	// service.ForEachOwnedEnvironment (FR-6.4/design C4) — the pre-existing
+	// shape loaded tenants once before the ticker and closed over the slice;
+	// a tenant provisioned after this pod started would never be picked up.
 	routine.Go(l, rt.Context(), func(_ context.Context) {
 		ticker := time.NewTicker(1 * time.Second)
 		defer ticker.Stop()
@@ -98,25 +101,25 @@ func main() {
 			case <-rt.Context().Done():
 				return
 			case <-ticker.C:
-				for _, t := range tenants {
-					ctx := tenant.WithContext(rt.Context(), t)
-					ip := instance.NewProcessor(l, ctx, db)
-					if err := ip.TickGlobalTimerAndEmit(); err != nil {
-						l.WithError(err).Warn("Error ticking global timer.")
-					}
-					if err := ip.TickStageTimerAndEmit(); err != nil {
-						l.WithError(err).Warn("Error ticking stage timer.")
-					}
-					if err := ip.TickBonusTimerAndEmit(); err != nil {
-						l.WithError(err).Warn("Error ticking bonus timer.")
-					}
-					if err := ip.TickCompletionTimerAndEmit(); err != nil {
-						l.WithError(err).Warn("Error ticking completion timer.")
-					}
-					if err := ip.TickRegistrationTimerAndEmit(); err != nil {
-						l.WithError(err).Warn("Error ticking registration timer.")
-					}
-				}
+				service.ForEachOwnedEnvironment(l, rt.Context(), serviceName, listTenants,
+					func(ctx context.Context) {
+						ip := instance.NewProcessor(l, ctx, db)
+						if err := ip.TickGlobalTimerAndEmit(); err != nil {
+							l.WithError(err).Warn("Error ticking global timer.")
+						}
+						if err := ip.TickStageTimerAndEmit(); err != nil {
+							l.WithError(err).Warn("Error ticking stage timer.")
+						}
+						if err := ip.TickBonusTimerAndEmit(); err != nil {
+							l.WithError(err).Warn("Error ticking bonus timer.")
+						}
+						if err := ip.TickCompletionTimerAndEmit(); err != nil {
+							l.WithError(err).Warn("Error ticking completion timer.")
+						}
+						if err := ip.TickRegistrationTimerAndEmit(); err != nil {
+							l.WithError(err).Warn("Error ticking registration timer.")
+						}
+					})
 			}
 		}
 	})
@@ -135,10 +138,10 @@ func main() {
 
 	rt.TeardownFunc(func() {
 		l.Infoln("Graceful shutdown: handling active PQ instances.")
-		for _, t := range tenants {
-			ctx := tenant.WithContext(rt.Context(), t)
-			_ = instance.NewProcessor(l, ctx, db).GracefulShutdownAndEmit()
-		}
+		service.ForEachOwnedEnvironment(l, rt.Context(), serviceName, listTenants,
+			func(ctx context.Context) {
+				_ = instance.NewProcessor(l, ctx, db).GracefulShutdownAndEmit()
+			})
 	})
 
 	rt.Wait()

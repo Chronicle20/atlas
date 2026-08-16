@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -101,8 +102,15 @@ func main() {
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
+	// envContext originates this pod's own environment identity onto a
+	// background task's per-tenant context before it reaches a Kafka emit --
+	// see 99c0e598d / task-232.
+	envContext := func(ctx context.Context) context.Context {
+		return env.WithContext(ctx, env.Self())
+	}
+
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(mount.NewTirednessTask(l, db, time.Minute))
+		tasks.Register(l, rt.Context())(mount.NewTirednessTask(l, db, time.Minute, envContext))
 	})
 
 	rt.Wait()

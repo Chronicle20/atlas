@@ -226,14 +226,18 @@ what it cost in tokens and tool calls, and the fresh-session comparison —
 lives in [`docs/agent-dispatch.md`](../../docs/agent-dispatch.md) §Context
 handoff.
 
-**After completing any plan task, if your context exceeds ~250k tokens and two
-or more plan tasks remain, hand off:**
+**After completing any plan task, if your context exceeds ~150k tokens — or
+4 plan tasks have completed in this controller session, whichever comes
+first — hand off. This applies unconditionally, however many plan tasks
+remain; there is no carve-out for "only one or two left."**
 
 1. Confirm `<workspace>/progress.md` records every finished task, its commit
    range, and any ruling you made that is not already in a `task-N-report.md`.
 2. Tell the user: "Controller context is ~<N>k with <M> tasks remaining.
    `/clear` and re-run `/execute-task <task-id>` — it resumes from the ledger."
-3. Stop. Do not start the next task.
+3. Stop: no further tool calls after the handoff line. Do not start the next
+   task, and do not use the handoff message as a lead-in to one more action —
+   a handoff the same context then works past is not a handoff.
 
 This is safe because the ledger is already the recovery map the skill designs
 for: it resumes at the first task with no `Task <N>: complete` line, and the
@@ -271,7 +275,7 @@ unscoped run of the same agent. See the Sharding section in
 - Implementers are `atlas-implementer`, never `general-purpose`.
 - Never run `tools/verify.sh` inside an implementer — that is `atlas-verifier`'s job (Step 4c).
 - Never dispatch a brief with no `### Files` section (Step 4b).
-- Never carry the controller past ~250k tokens with tasks remaining — hand off to a fresh session via the ledger (Step 4e).
+- Never carry the controller past ~150k tokens, or 4 completed plan tasks in one session — hand off to a fresh session via the ledger, unconditionally, regardless of tasks remaining (Step 4e).
 - Never start implementation outside the task worktree.
 - Follow plan steps exactly; stop and ask when blocked rather than guessing.
 - Run the verification commands the plan specifies; don't claim completion based on assumption.

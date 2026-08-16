@@ -199,3 +199,37 @@ topic/partition/handler cardinality, and do not source an `environment`
 label from message or request header data — always from `env.Self()`
 (process-local, trusted). Header-derived data is unvalidated cardinality: a
 producer bug can turn an unbounded string into an unbounded label set.
+
+## Login/channel port and IP allocation (Task 46)
+
+Each environment's `atlas-login-lb` / `atlas-channel-lb` request a dynamic IP
+from MetalLB's `pr-pool` (`deploy/k8s/overlays/pr/patches/lb-allocate.yaml`,
+mirrored in `pr-sparse/patches/lb-allocate.yaml`). Ports are derived from
+`majorVersion` alone (`services/atlas-pr-bootstrap/scripts/version-ports.sh`),
+so two environments on the same client version bind the identical port on
+different IPs — correct for a LoadBalancer Service, and confirmed as such in
+Task 46. Only the IP varies per environment; the port never does.
+
+`pr-pool` is confirmed live (`kubectl -n metallb-system get ipaddresspool -o
+yaml`) as `192.168.23.190-192.168.23.209` — 20 addresses. Each sparse
+environment consumes **two** (login + channel), so the pool ceiling is **10
+concurrent environments**, matching Task 29's metric-cardinality budget.
+
+### Failure mode: pool exhaustion
+
+When the pool has no free address left, `atlas-channel-lb` never gets a
+LoadBalancer IP and `services/atlas-pr-bootstrap/scripts/bootstrap.sh` fails
+loudly during the `lb-discover` step:
+
+```
+atlas-channel-lb has no allocated LoadBalancer IP — MetalLB pool exhausted?
+```
+
+Diagnostic — find every Service stuck `<pending>`:
+
+```sh
+kubectl get svc -A | grep pending
+```
+
+Remedy: tear down an idle PR environment to free its two addresses, or widen
+the `pr-pool` `IPAddressPool` range in the cluster's MetalLB configuration.

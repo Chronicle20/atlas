@@ -1,5 +1,5 @@
 # Per-PR LB Services request dynamic IPs from MetalLB's `pr-pool`
-# (192.168.23.210-.229; autoAssign: false, opt-in via annotation). The empty
+# (192.168.23.190-.209; autoAssign: false, opt-in via annotation). The empty
 # loadBalancerIP lets MetalLB pick any free IP from the pool. The
 # `cluster-pool` (.230-.250) is reserved for main env Services with
 # hardcoded IPs and would refuse to allocate here.

@@ -174,6 +174,16 @@ if [ "$run_commands" -eq 1 ]; then
         # A trailing backslash means the command continues on the next line;
         # what we extracted is a fragment and would "match nothing" trivially.
         case "$cmd" in *\\) continue ;; esac
+        # `find` is only read-only if you exclude the primaries that act. The
+        # metacharacter test above does not cover these: `-exec ... +` needs no
+        # `;` to terminate, and `-delete` needs no subcommand at all. Both
+        # would run with cwd inside the repo.
+        case " $cmd " in
+            *' -delete '*|*' -exec '*|*' -execdir '*|*' -ok '*|*' -okdir '*|\
+            *' -fls '*|*' -fprint '*|*' -fprint0 '*|*' -fprintf '*)
+                warn "F3 skipped (acting primary, not read-only): $cmd"
+                continue ;;
+        esac
         if ! ( cd "$root" && timeout 20 sh -c "$cmd" ) >/dev/null 2>&1; then
             finding "F3 matches nothing: $cmd"
         fi

@@ -20,7 +20,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestStorageByAccountAndWorld(ctx context.Context, accountId uint32, worldId world.Id) requests.Request[StorageRestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[StorageRestModel](err)
@@ -28,8 +27,7 @@ func requestStorageByAccountAndWorld(ctx context.Context, accountId uint32, worl
 	return requests.GetRequest[StorageRestModel](fmt.Sprintf(root+storageResource, accountId, worldId))
 }
 
-func requestAssetsByAccountAndWorld(ctx context.Context, accountId uint32, worldId world.Id) requests.Request[[]AssetRestModel]  {
-
+func requestAssetsByAccountAndWorld(ctx context.Context, accountId uint32, worldId world.Id) requests.Request[[]AssetRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]AssetRestModel](err)
@@ -37,8 +35,7 @@ func requestAssetsByAccountAndWorld(ctx context.Context, accountId uint32, world
 	return requests.GetRequest[[]AssetRestModel](fmt.Sprintf(root+storageAssetsResource, accountId, worldId))
 }
 
-func requestProjectionByCharacterId(ctx context.Context, characterId uint32) requests.Request[ProjectionRestModel]  {
-
+func requestProjectionByCharacterId(ctx context.Context, characterId uint32) requests.Request[ProjectionRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[ProjectionRestModel](err)
@@ -46,8 +43,7 @@ func requestProjectionByCharacterId(ctx context.Context, characterId uint32) req
 	return requests.GetRequest[ProjectionRestModel](fmt.Sprintf(root+projectionResource, characterId))
 }
 
-func requestProjectionAsset(ctx context.Context, characterId uint32, compartmentType byte, slot int16) requests.Request[AssetRestModel]  {
-
+func requestProjectionAsset(ctx context.Context, characterId uint32, compartmentType byte, slot int16) requests.Request[AssetRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[AssetRestModel](err)

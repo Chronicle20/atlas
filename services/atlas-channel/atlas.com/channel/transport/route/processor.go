@@ -50,7 +50,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 // ByIdProvider retrieves a route by ID
 func (p *ProcessorImpl) ByIdProvider(id string) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(id), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, id), Extract)
 }
 
 // GetById retrieves a route by ID
@@ -60,7 +60,7 @@ func (p *ProcessorImpl) GetById(id string) (Model, error) {
 
 // ByStateProvider retrieves a route state by route ID
 func (p *ProcessorImpl) ByStateProvider(id string) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestStateById(id), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestStateById(p.ctx, id), Extract)
 }
 
 // GetByState retrieves a route state by route ID
@@ -71,7 +71,7 @@ func (p *ProcessorImpl) GetByState(id string) (Model, error) {
 // ByScheduleProvider retrieves a route schedule by route ID
 func (p *ProcessorImpl) ByScheduleProvider(id string) model.Provider[[]TripScheduleModel] {
 	return requests.SliceProvider[TripScheduleRestModel, TripScheduleModel](p.l, p.ctx)(
-		requestScheduleById(id),
+		requestScheduleById(p.ctx, id),
 		ExtractSchedule,
 		model.Filters[TripScheduleModel](),
 	)
@@ -87,7 +87,11 @@ func (p *ProcessorImpl) GetBySchedule(id string) ([]TripScheduleModel, error) {
 // every route in the tenant, a genuine semantic-all consumer, so this
 // drains every page rather than fetching just the first.
 func (p *ProcessorImpl) InTenantProvider() model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inTenantUrl(), 250, Extract, model.Filters[Model]())
+	url, err := inTenantUrl(p.ctx)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 // GetInTenant retrieves all routes in a tenant

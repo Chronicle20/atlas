@@ -135,19 +135,27 @@ func (f BrowseFilter) query() string {
 	return "?" + q.Encode()
 }
 
-func requestBrowse(worldId world.Id, f BrowseFilter) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, byte(worldId)) + f.query())
+func requestBrowse(ctx context.Context, worldId world.Id, f BrowseFilter) requests.Request[[]RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]RestModel](err)
+	}
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+Resource, byte(worldId)) + f.query())
 }
 
 // browseUrl returns the bare browse URL for the given world/filters, WITHOUT
 // any page params, for requests.DrainProvider (BrowseAll): DrainProvider
 // appends its own page[number]/page[size] per iteration, so this must not
 // bake in Page/PageSize (BrowseAll callers never set them anyway).
-func browseUrl(worldId world.Id, f BrowseFilter) string {
-	base := fmt.Sprintf(getBaseRequest()+Resource, byte(worldId))
+func browseUrl(ctx context.Context, worldId world.Id, f BrowseFilter) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	base := fmt.Sprintf(root+Resource, byte(worldId))
 	q := f.filterQuery()
 	if len(q) == 0 {
-		return base
+		return base, nil
 	}
-	return base + "?" + q.Encode()
+	return base + "?" + q.Encode(), nil
 }

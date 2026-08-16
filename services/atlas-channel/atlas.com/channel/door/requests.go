@@ -19,7 +19,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestById(ctx context.Context, id string) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -32,8 +31,7 @@ func requestById(ctx context.Context, id string) requests.Request[RestModel] {
 // now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func inFieldUrl(ctx context.Context, f field.Model) string  {
-
+func inFieldUrl(ctx context.Context, f field.Model) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -43,8 +41,7 @@ func inFieldUrl(ctx context.Context, f field.Model) string  {
 
 // byOwnerUrl returns the list URL for a character's doors. Bare URL for the
 // same reason as inFieldUrl.
-func byOwnerUrl(ctx context.Context, ownerCharacterId uint32) string  {
-
+func byOwnerUrl(ctx context.Context, ownerCharacterId uint32) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err

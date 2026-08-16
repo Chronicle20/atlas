@@ -18,7 +18,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestById(ctx context.Context, questId uint32) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -30,8 +29,7 @@ func requestById(ctx context.Context, questId uint32) requests.Request[RestModel
 // because both lists are now paginated server-side (task-117) and consumed
 // via requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func allQuestsUrl(ctx context.Context) string  {
-
+func allQuestsUrl(ctx context.Context) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -39,8 +37,7 @@ func allQuestsUrl(ctx context.Context) string  {
 	return root + questsResource, nil
 }
 
-func autoStartQuestsUrl(ctx context.Context) string  {
-
+func autoStartQuestsUrl(ctx context.Context) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err

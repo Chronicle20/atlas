@@ -19,7 +19,6 @@ const (
 func getBaseRequest(ctx context.Context) (string, error) { return requests.RootUrlFor(ctx, "DATA") }
 
 func requestEquipment(ctx context.Context, id item.Id) requests.Request[EquipmentRestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[EquipmentRestModel](err)
@@ -27,8 +26,7 @@ func requestEquipment(ctx context.Context, id item.Id) requests.Request[Equipmen
 	return requests.GetRequest[EquipmentRestModel](fmt.Sprintf(root+EquipmentById, id))
 }
 
-func requestConsumable(ctx context.Context, id item.Id) requests.Request[ConsumableRestModel]  {
-
+func requestConsumable(ctx context.Context, id item.Id) requests.Request[ConsumableRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[ConsumableRestModel](err)
@@ -36,8 +34,7 @@ func requestConsumable(ctx context.Context, id item.Id) requests.Request[Consuma
 	return requests.GetRequest[ConsumableRestModel](fmt.Sprintf(root+ConsumableById, id))
 }
 
-func requestSetup(ctx context.Context, id item.Id) requests.Request[SetupRestModel]  {
-
+func requestSetup(ctx context.Context, id item.Id) requests.Request[SetupRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[SetupRestModel](err)
@@ -45,8 +42,7 @@ func requestSetup(ctx context.Context, id item.Id) requests.Request[SetupRestMod
 	return requests.GetRequest[SetupRestModel](fmt.Sprintf(root+SetupById, id))
 }
 
-func requestEtc(ctx context.Context, id item.Id) requests.Request[EtcRestModel]  {
-
+func requestEtc(ctx context.Context, id item.Id) requests.Request[EtcRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[EtcRestModel](err)
@@ -54,8 +50,7 @@ func requestEtc(ctx context.Context, id item.Id) requests.Request[EtcRestModel] 
 	return requests.GetRequest[EtcRestModel](fmt.Sprintf(root+EtcById, id))
 }
 
-func requestCash(ctx context.Context, id item.Id) requests.Request[CashRestModel]  {
-
+func requestCash(ctx context.Context, id item.Id) requests.Request[CashRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[CashRestModel](err)

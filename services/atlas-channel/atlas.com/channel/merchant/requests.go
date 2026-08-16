@@ -26,7 +26,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestShop(ctx context.Context, shopId string) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -38,8 +37,7 @@ func requestShop(ctx context.Context, shopId string) requests.Request[RestModel]
 // (not a requests.Request) because the list is now paginated server-side
 // (task-117) and consumed via requests.DrainProvider, which appends its own
 // page[number]/page[size] query params per request.
-func inFieldUrl(ctx context.Context, f field.Model) string  {
-
+func inFieldUrl(ctx context.Context, f field.Model) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -49,8 +47,7 @@ func inFieldUrl(ctx context.Context, f field.Model) string  {
 
 // byCharacterIdUrl is the bare-URL sibling of inFieldUrl for the
 // per-character shop list (task-117).
-func byCharacterIdUrl(ctx context.Context, characterId uint32) string  {
-
+func byCharacterIdUrl(ctx context.Context, characterId uint32) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -58,8 +55,7 @@ func byCharacterIdUrl(ctx context.Context, characterId uint32) string  {
 	return fmt.Sprintf(root+CharacterResource, characterId), nil
 }
 
-func requestVisiting(ctx context.Context, characterId uint32) requests.Request[RestModel]  {
-
+func requestVisiting(ctx context.Context, characterId uint32) requests.Request[RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -67,17 +63,19 @@ func requestVisiting(ctx context.Context, characterId uint32) requests.Request[R
 	return requests.GetRequest[RestModel](fmt.Sprintf(root+VisitingResource, characterId))
 }
 
-func requestSearchListings(ctx context.Context, itemId uint32, worldId world.Id, descending bool) requests.Request[[]ListingSearchRestModel]  {
-
+func requestSearchListings(ctx context.Context, itemId uint32, worldId world.Id, descending bool) requests.Request[[]ListingSearchRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]ListingSearchRestModel](err)
 	}
+	order := "asc"
+	if descending {
+		order = "desc"
+	}
 	return requests.GetRequest[[]ListingSearchRestModel](fmt.Sprintf(root+SearchListingsResource, itemId, worldId, order))
 }
 
-func requestTopSearches(ctx context.Context, worldId world.Id) requests.Request[[]TopSearchRestModel]  {
-
+func requestTopSearches(ctx context.Context, worldId world.Id) requests.Request[[]TopSearchRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]TopSearchRestModel](err)
@@ -85,8 +83,7 @@ func requestTopSearches(ctx context.Context, worldId world.Id) requests.Request[
 	return requests.GetRequest[[]TopSearchRestModel](fmt.Sprintf(root+TopSearchesResource, worldId))
 }
 
-func requestFrederickStatus(ctx context.Context, characterId uint32) requests.Request[FrederickStatusRestModel]  {
-
+func requestFrederickStatus(ctx context.Context, characterId uint32) requests.Request[FrederickStatusRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[FrederickStatusRestModel](err)
@@ -97,8 +94,7 @@ func requestFrederickStatus(ctx context.Context, characterId uint32) requests.Re
 // blacklistUrl is the bare-URL sibling of inFieldUrl for the per-shop
 // blacklist list, now paginated server-side (task-117) and consumed via
 // requests.DrainProvider — the mini-room dialog shows the whole blacklist.
-func blacklistUrl(ctx context.Context, shopId string) string  {
-
+func blacklistUrl(ctx context.Context, shopId string) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -109,8 +105,7 @@ func blacklistUrl(ctx context.Context, shopId string) string  {
 // visitsUrl is the bare-URL sibling of blacklistUrl for the per-shop visit
 // log (task-117): the log grows with unique visitor names, so the dialog
 // consumer drains every page.
-func visitsUrl(ctx context.Context, shopId string) string  {
-
+func visitsUrl(ctx context.Context, shopId string) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err

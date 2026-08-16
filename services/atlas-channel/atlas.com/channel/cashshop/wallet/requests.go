@@ -16,7 +16,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestByAccountId(ctx context.Context, accountId uint32) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)

@@ -20,8 +20,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 // bare URL (not a requests.Request) because the list is now paginated
 // server-side (task-117) and consumed via requests.DrainProvider, which
 // appends its own page[number]/page[size] query params per request.
-func characterNotesUrl(ctx context.Context, characterId uint32) string {
-
+func characterNotesUrl(ctx context.Context, characterId uint32) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -29,8 +28,7 @@ func characterNotesUrl(ctx context.Context, characterId uint32) string {
 	return fmt.Sprintf(root+Resource, characterId), nil
 }
 
-func requestById(ctx context.Context, noteId uint32) requests.Request[RestModel]  {
-
+func requestById(ctx context.Context, noteId uint32) requests.Request[RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)

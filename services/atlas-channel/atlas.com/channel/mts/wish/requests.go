@@ -26,8 +26,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 // URL (not a requests.Request) because the list is now paginated server-side
 // (task-117) and consumed via requests.DrainProvider, which appends its own
 // page[number]/page[size] query params per request.
-func byCharacterUrl(ctx context.Context, characterId uint32) string {
-
+func byCharacterUrl(ctx context.Context, characterId uint32) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -38,8 +37,7 @@ func byCharacterUrl(ctx context.Context, characterId uint32) string {
 // wantedByWorldUrl returns the list URL for every want-ad in a world, across all
 // characters (atlas-mts handleGetWorldWishlist returns the type=wanted entries
 // world-wide). Paginated server-side (task-117); consumed via DrainProvider.
-func wantedByWorldUrl(ctx context.Context, worldId byte) string  {
-
+func wantedByWorldUrl(ctx context.Context, worldId byte) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -50,8 +48,7 @@ func wantedByWorldUrl(ctx context.Context, worldId byte) string  {
 // byCharacterAndTypeUrl returns the list URL for only the character's cart or
 // wanted entries (atlas-mts handleGetCharacterWishlist honors the `type` query
 // param). Paginated server-side (task-117); consumed via DrainProvider.
-func byCharacterAndTypeUrl(ctx context.Context, characterId uint32, wishType string) string  {
-
+func byCharacterAndTypeUrl(ctx context.Context, characterId uint32, wishType string) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err

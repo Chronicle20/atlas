@@ -18,7 +18,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestById(ctx context.Context, petId uint32) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -30,8 +29,7 @@ func requestById(ctx context.Context, petId uint32) requests.Request[RestModel] 
 // (not a requests.Request) because the list is now paginated server-side
 // (task-117) and consumed via requests.DrainProvider, which appends its own
 // page[number]/page[size] query params per request.
-func byOwnerUrl(ctx context.Context, ownerId uint32) string  {
-
+func byOwnerUrl(ctx context.Context, ownerId uint32) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err

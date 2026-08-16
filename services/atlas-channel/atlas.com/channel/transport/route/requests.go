@@ -27,8 +27,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 // now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func inTenantUrl(ctx context.Context) string {
-
+func inTenantUrl(ctx context.Context) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -37,8 +36,7 @@ func inTenantUrl(ctx context.Context) string {
 }
 
 // requestById creates a request to get a route by ID
-func requestById(ctx context.Context, id string) requests.Request[RestModel]  {
-
+func requestById(ctx context.Context, id string) requests.Request[RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -47,8 +45,7 @@ func requestById(ctx context.Context, id string) requests.Request[RestModel]  {
 }
 
 // requestStateById creates a request to get a route's state by route ID
-func requestStateById(ctx context.Context, id string) requests.Request[RestModel]  {
-
+func requestStateById(ctx context.Context, id string) requests.Request[RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -57,8 +54,7 @@ func requestStateById(ctx context.Context, id string) requests.Request[RestModel
 }
 
 // requestScheduleById creates a request to get a route's schedule by route ID
-func requestScheduleById(ctx context.Context, id string) requests.Request[[]TripScheduleRestModel]  {
-
+func requestScheduleById(ctx context.Context, id string) requests.Request[[]TripScheduleRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]TripScheduleRestModel](err)

@@ -16,8 +16,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 // requestByAccountId creates a GET request for all compartments for an account
-func requestByAccountId(ctx context.Context, accountId uint32) requests.Request[[]RestModel]  {
-
+func requestByAccountId(ctx context.Context, accountId uint32) requests.Request[[]RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]RestModel](err)
@@ -27,7 +26,6 @@ func requestByAccountId(ctx context.Context, accountId uint32) requests.Request[
 
 // requestByAccountIdAndType creates a GET request for a specific compartment by account ID and type
 func requestByAccountIdAndType(ctx context.Context, accountId uint32, compartmentType CompartmentType) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)

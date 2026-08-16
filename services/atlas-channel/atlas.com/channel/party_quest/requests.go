@@ -16,7 +16,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestTimerByCharacterId(ctx context.Context, characterId uint32) requests.Request[TimerRestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[TimerRestModel](err)

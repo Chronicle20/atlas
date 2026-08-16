@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
@@ -22,8 +23,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 // now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func byCharacterIdUrl(ctx context.Context, characterId uint32) string {
-
+func byCharacterIdUrl(ctx context.Context, characterId uint32) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -31,20 +31,23 @@ func byCharacterIdUrl(ctx context.Context, characterId uint32) string {
 	return fmt.Sprintf(root+Resource, characterId), nil
 }
 
-func addForCharacterId(ctx context.Context, characterId uint32, serialNumber uint32) requests.Request[RestModel]  {
-
+func addForCharacterId(ctx context.Context, characterId uint32, serialNumber uint32) requests.Request[RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
 	}
+	i := RestModel{
+		Id:           uuid.Nil,
+		CharacterId:  characterId,
+		SerialNumber: serialNumber,
+	}
 	return requests.PostRequest[RestModel](fmt.Sprintf(root+Resource, characterId), i)
 }
 
-func clearForCharacterId(ctx context.Context, characterId uint32) requests.EmptyBodyRequest  {
-
+func clearForCharacterId(ctx context.Context, characterId uint32) requests.EmptyBodyRequest {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
-		return func(l logrus.FieldLogger, _ context.Context) error { return err }
+		return func(_ logrus.FieldLogger, _ context.Context) error { return err }
 	}
 	return requests.DeleteRequest(fmt.Sprintf(root+Resource, characterId))
 }

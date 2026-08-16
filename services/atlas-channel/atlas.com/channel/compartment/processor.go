@@ -44,7 +44,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ByCharacterIdAndTypeProvider(characterId uint32, inventoryType inventory.Type) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByType(characterId, inventoryType), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByType(p.ctx, characterId, inventoryType), Extract)
 }
 
 func (p *ProcessorImpl) GetByType(characterId uint32, inventoryType inventory.Type) (Model, error) {

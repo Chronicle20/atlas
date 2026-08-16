@@ -18,7 +18,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestByType(ctx context.Context, characterId uint32, inventoryType inventory.Type) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)

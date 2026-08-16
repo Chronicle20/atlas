@@ -21,8 +21,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 // now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func npcsInMapUrl(ctx context.Context, mapId _map.Id) string {
-
+func npcsInMapUrl(ctx context.Context, mapId _map.Id) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -30,8 +29,7 @@ func npcsInMapUrl(ctx context.Context, mapId _map.Id) string {
 	return fmt.Sprintf(root+npcsInMap, mapId), nil
 }
 
-func requestNPCsInMapByObjectId(ctx context.Context, mapId _map.Id, objectId uint32) requests.Request[[]RestModel]  {
-
+func requestNPCsInMapByObjectId(ctx context.Context, mapId _map.Id, objectId uint32) requests.Request[[]RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]RestModel](err)

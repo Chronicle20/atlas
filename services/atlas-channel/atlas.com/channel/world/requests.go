@@ -18,7 +18,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestWorld(ctx context.Context, worldId world.Id) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)

@@ -17,8 +17,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 	return requests.RootUrlFor(ctx, "DATA")
 }
 
-func requestInMapByName(ctx context.Context, mapId _map.Id, name string) requests.Request[[]RestModel]  {
-
+func requestInMapByName(ctx context.Context, mapId _map.Id, name string) requests.Request[[]RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]RestModel](err)

@@ -42,7 +42,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // fetching just the first -- a truncated list here means doors silently
 // vanish from the client's view.
 func (p *ProcessorImpl) InFieldModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inFieldUrl(f), 250, Extract, model.Filters[Model]())
+	url, err := inFieldUrl(p.ctx, f)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 // GetInField returns all doors in the given field.
@@ -56,7 +60,11 @@ func (p *ProcessorImpl) GetInField(f field.Model) ([]Model, error) {
 // one door pair in practice, so this is a single round trip in the common
 // case, but the drain is required for correctness at any size).
 func (p *ProcessorImpl) ByOwnerModelProvider(ownerCharacterId uint32) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byOwnerUrl(ownerCharacterId), 250, Extract, model.Filters[Model]())
+	url, err := byOwnerUrl(p.ctx, ownerCharacterId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 // GetByOwner returns all live doors owned by ownerCharacterId, resolved from

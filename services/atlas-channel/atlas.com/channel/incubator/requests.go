@@ -11,15 +11,19 @@ func getBaseRequest(ctx context.Context) (string, error) {
 	return requests.RootUrlFor(ctx, "GACHAPONS")
 }
 
-func dataBaseRequest() string {
-	return requests.RootUrl("DATA")
+func dataBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "DATA")
 }
 
 // requestNpcById creates a request to atlas-data for one NPC template. A 404
 // (mapped to requests.ErrNotFound by the request layer) means the NPC is absent
 // from the tenant's game data.
-func requestNpcById(npcId uint32) requests.Request[npcRestModel] {
-	url := fmt.Sprintf("%sdata/npcs/%d", dataBaseRequest(), npcId)
+func requestNpcById(ctx context.Context, npcId uint32) requests.Request[npcRestModel] {
+	root, err := dataBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[npcRestModel](err)
+	}
+	url := fmt.Sprintf("%sdata/npcs/%d", root, npcId)
 	return requests.GetRequest[npcRestModel](url)
 }
 
@@ -28,7 +32,11 @@ func requestNpcById(npcId uint32) requests.Request[npcRestModel] {
 // a nil body is passed (mirrors atlas-saga-orchestrator's gachapon client)
 // since jsonapi.Marshal would panic on a body value that does not implement
 // MarshalIdentifier.
-func requestSelectReward(eggId uint32) requests.Request[RewardRestModel] {
-	url := fmt.Sprintf("%sgachapons/%d/rewards/select", getBaseRequest(), eggId)
+func requestSelectReward(ctx context.Context, eggId uint32) requests.Request[RewardRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RewardRestModel](err)
+	}
+	url := fmt.Sprintf("%sgachapons/%d/rewards/select", root, eggId)
 	return requests.PostRequest[RewardRestModel](url, nil)
 }

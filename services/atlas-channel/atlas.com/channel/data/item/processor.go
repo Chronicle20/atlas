@@ -30,7 +30,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) ByNameProvider(query string) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(query), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(p.ctx, query), Extract, model.Filters[Model]())
 }
 
 // GetIdsByName resolves a search term to the matching item template ids via the

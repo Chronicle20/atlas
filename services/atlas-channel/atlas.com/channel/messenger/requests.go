@@ -19,7 +19,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestById(ctx context.Context, id uint32) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -27,8 +26,7 @@ func requestById(ctx context.Context, id uint32) requests.Request[RestModel] {
 	return requests.GetRequest[RestModel](fmt.Sprintf(root+ById, id))
 }
 
-func requestByMemberId(ctx context.Context, id uint32) requests.Request[[]RestModel]  {
-
+func requestByMemberId(ctx context.Context, id uint32) requests.Request[[]RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]RestModel](err)
@@ -36,8 +34,7 @@ func requestByMemberId(ctx context.Context, id uint32) requests.Request[[]RestMo
 	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+ByMemberId, id))
 }
 
-func requestMembers(ctx context.Context, id uint32) requests.Request[[]MemberRestModel]  {
-
+func requestMembers(ctx context.Context, id uint32) requests.Request[[]MemberRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]MemberRestModel](err)

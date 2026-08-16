@@ -29,8 +29,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 // is now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func inMapUrl(ctx context.Context, f field.Model) string {
-
+func inMapUrl(ctx context.Context, f field.Model) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err

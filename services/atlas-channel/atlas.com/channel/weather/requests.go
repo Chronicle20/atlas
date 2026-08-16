@@ -18,7 +18,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestWeatherInMap(ctx context.Context, f field.Model) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)

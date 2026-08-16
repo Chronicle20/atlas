@@ -17,7 +17,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestMap(ctx context.Context, mapId _map.Id) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)

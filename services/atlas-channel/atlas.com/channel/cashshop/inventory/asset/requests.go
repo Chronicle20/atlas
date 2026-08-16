@@ -19,7 +19,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 
 // requestById creates a GET request for a specific asset by ID
 func requestById(ctx context.Context, accountId uint32, compartmentId uuid.UUID, assetId uint32) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -28,8 +27,7 @@ func requestById(ctx context.Context, accountId uint32, compartmentId uuid.UUID,
 }
 
 // requestByCompartmentId creates a GET request for all assets in a compartment
-func requestByCompartmentId(ctx context.Context, accountId uint32, compartmentId uuid.UUID) requests.Request[[]RestModel]  {
-
+func requestByCompartmentId(ctx context.Context, accountId uint32, compartmentId uuid.UUID) requests.Request[[]RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]RestModel](err)

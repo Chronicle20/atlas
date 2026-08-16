@@ -21,8 +21,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 // instance. It is a bare URL (not a requests.Request) because the list is
 // paginated server-side and consumed via requests.DrainProvider, which
 // appends its own page[number]/page[size] query params per request.
-func inMapUrl(ctx context.Context, f field.Model) string {
-
+func inMapUrl(ctx context.Context, f field.Model) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err

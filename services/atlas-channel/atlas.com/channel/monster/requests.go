@@ -29,8 +29,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 // now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func inMapUrl(ctx context.Context, f field.Model) string {
-
+func inMapUrl(ctx context.Context, f field.Model) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -44,8 +43,7 @@ func inMapUrl(ctx context.Context, f field.Model) string {
 // atlas-monsters preserves its ascending-distance-from-center order across
 // pages, so draining is still safe (page order is meaningful, not
 // re-sorted).
-func inMapRectUrl(ctx context.Context, f field.Model, x1, y1, x2, y2 int16, limit uint32) string  {
-
+func inMapRectUrl(ctx context.Context, f field.Model, x1, y1, x2, y2 int16, limit uint32) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err
@@ -53,8 +51,7 @@ func inMapRectUrl(ctx context.Context, f field.Model, x1, y1, x2, y2 int16, limi
 	return fmt.Sprintf(root+mapMonstersRectResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String(), x1, y1, x2, y2, limit), nil
 }
 
-func requestById(ctx context.Context, uniqueId uint32) requests.Request[RestModel]  {
-
+func requestById(ctx context.Context, uniqueId uint32) requests.Request[RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)

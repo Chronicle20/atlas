@@ -16,7 +16,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestNPCShop(ctx context.Context, templateId uint32) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)

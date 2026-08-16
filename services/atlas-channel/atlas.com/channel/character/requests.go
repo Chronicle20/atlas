@@ -19,7 +19,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestById(ctx context.Context, id uint32) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -27,8 +26,7 @@ func requestById(ctx context.Context, id uint32) requests.Request[RestModel] {
 	return requests.GetRequest[RestModel](fmt.Sprintf(root+ById, id))
 }
 
-func requestByIdWithInventory(ctx context.Context, id uint32) requests.Request[RestModel]  {
-
+func requestByIdWithInventory(ctx context.Context, id uint32) requests.Request[RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -36,8 +34,7 @@ func requestByIdWithInventory(ctx context.Context, id uint32) requests.Request[R
 	return requests.GetRequest[RestModel](fmt.Sprintf(root+ByIdWithInventory, id))
 }
 
-func requestByName(ctx context.Context, name string) requests.Request[[]RestModel]  {
-
+func requestByName(ctx context.Context, name string) requests.Request[[]RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]RestModel](err)

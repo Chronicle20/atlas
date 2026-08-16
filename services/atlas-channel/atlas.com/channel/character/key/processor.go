@@ -36,10 +36,14 @@ var _ Processor = (*ProcessorImpl)(nil)
 // the complete key map (e.g. sending the full key-map record on channel
 // spawn), so this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(characterKeysUrl(characterId), 250, Extract, model.Filters[Model]())
+	url, err := characterKeysUrl(p.ctx, characterId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) Update(characterId uint32, key int32, theType int8, action int32) error {
-	_, err := updateKey(characterId, key, theType, action)(p.l, p.ctx)
+	_, err := updateKey(p.ctx, characterId, key, theType, action)(p.l, p.ctx)
 	return err
 }

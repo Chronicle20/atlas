@@ -20,8 +20,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 // is a bare URL (not a requests.Request) because the list is now paginated
 // server-side (task-117) and consumed via requests.DrainProvider, which
 // appends its own page[number]/page[size] query params per request.
-func characterMacrosUrl(ctx context.Context, characterId uint32) string {
-
+func characterMacrosUrl(ctx context.Context, characterId uint32) (string, error) {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return "", err

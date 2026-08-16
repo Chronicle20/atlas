@@ -21,8 +21,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 // requestByMember reads the (0-or-1) trade room characterId occupies.
-func requestByMember(ctx context.Context, characterId character.Id) requests.Request[[]RestModel]  {
-
+func requestByMember(ctx context.Context, characterId character.Id) requests.Request[[]RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]RestModel](err)

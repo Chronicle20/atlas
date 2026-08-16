@@ -17,8 +17,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 	return requests.RootUrlFor(ctx, "MINI_GAMES")
 }
 
-func requestInField(ctx context.Context, f field.Model) requests.Request[[]RestModel]  {
-
+func requestInField(ctx context.Context, f field.Model) requests.Request[[]RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]RestModel](err)
@@ -27,8 +26,7 @@ func requestInField(ctx context.Context, f field.Model) requests.Request[[]RestM
 }
 
 // requestByMember reads the (0-or-1) mini-game room characterId is seated in.
-func requestByMember(ctx context.Context, characterId uint32) requests.Request[[]RestModel]  {
-
+func requestByMember(ctx context.Context, characterId uint32) requests.Request[[]RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]RestModel](err)

@@ -21,7 +21,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 }
 
 func requestChannel(ctx context.Context, ch channel.Model) requests.Request[RestModel] {
-
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -29,8 +28,7 @@ func requestChannel(ctx context.Context, ch channel.Model) requests.Request[Rest
 	return requests.GetRequest[RestModel](fmt.Sprintf(root+ChannelResource, ch.WorldId(), ch.Id()))
 }
 
-func unregisterChannel(ctx context.Context, ch channel.Model) requests.EmptyBodyRequest  {
-
+func unregisterChannel(ctx context.Context, ch channel.Model) requests.EmptyBodyRequest {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return func(l logrus.FieldLogger, _ context.Context) error { return err }
@@ -45,7 +43,11 @@ func registerChannel(l logrus.FieldLogger) func(ctx context.Context) func(c Mode
 			if err != nil {
 				return err
 			}
-			_, err = requests.PostRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelsResource, c.WorldId()), i)(l, ctx)
+			root, err := getBaseRequest(ctx)
+			if err != nil {
+				return err
+			}
+			_, err = requests.PostRequest[RestModel](fmt.Sprintf(root+ChannelsResource, c.WorldId()), i)(l, ctx)
 			return err
 		}
 	}

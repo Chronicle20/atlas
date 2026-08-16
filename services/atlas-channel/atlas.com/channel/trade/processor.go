@@ -32,7 +32,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 // MemberModelProvider retrieves the (0-or-1) trade room characterId currently
 // occupies (owner or invitee) from atlas-trades.
 func (p *Processor) MemberModelProvider(characterId character.Id) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMember(characterId), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMember(p.ctx, characterId), Extract, model.Filters[Model]())
 }
 
 // InGame reports whether characterId is currently seated in a trade room. It is

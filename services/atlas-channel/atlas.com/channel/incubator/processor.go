@@ -40,7 +40,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // SelectReward rolls one reward for the given Pigmy Egg id via
 // atlas-reward-pools.
 func (p *ProcessorImpl) SelectReward(eggId uint32) (Reward, error) {
-	return requests.Provider[RewardRestModel, Reward](p.l, p.ctx)(requestSelectReward(eggId), Extract)()
+	return requests.Provider[RewardRestModel, Reward](p.l, p.ctx)(requestSelectReward(p.ctx, eggId), Extract)()
 }
 
 // SuccessNpcAvailable reports whether SuccessNpcId exists in atlas-data. A 404
@@ -48,7 +48,7 @@ func (p *ProcessorImpl) SelectReward(eggId uint32) (Reward, error) {
 // error is returned so the caller can fail safe (block) rather than risk a
 // client crash.
 func (p *ProcessorImpl) SuccessNpcAvailable() (bool, error) {
-	_, err := requests.Provider[npcRestModel, npcRestModel](p.l, p.ctx)(requestNpcById(SuccessNpcId), func(rm npcRestModel) (npcRestModel, error) { return rm, nil })()
+	_, err := requests.Provider[npcRestModel, npcRestModel](p.l, p.ctx)(requestNpcById(p.ctx, SuccessNpcId), func(rm npcRestModel) (npcRestModel, error) { return rm, nil })()
 	if errors.Is(err, requests.ErrNotFound) {
 		return false, nil
 	}

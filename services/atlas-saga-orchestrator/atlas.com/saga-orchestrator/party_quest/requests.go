@@ -1,6 +1,7 @@
 package party_quest
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -22,12 +23,16 @@ const (
 	CommandTypeEnterBonus        = "ENTER_BONUS"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("PARTIES")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "PARTIES")
 }
 
-func requestPartyByMemberId(memberId uint32) requests.Request[[]PartyRestModel] {
-	return requests.GetRequest[[]PartyRestModel](fmt.Sprintf(getBaseRequest()+"parties?filter[members.id]=%d", memberId))
+func requestPartyByMemberId(ctx context.Context, memberId uint32) requests.Request[[]PartyRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]PartyRestModel](err)
+	}
+	return requests.GetRequest[[]PartyRestModel](fmt.Sprintf(root+"parties?filter[members.id]=%d", memberId))
 }
 
 // PartyRestModel represents a party from the atlas-parties REST API
@@ -121,8 +126,12 @@ func ExtractMember(r MemberRestModel) (MemberRestModel, error) {
 	return r, nil
 }
 
-func requestPartyMembers(partyId uint32) requests.Request[[]MemberRestModel] {
-	return requests.GetRequest[[]MemberRestModel](fmt.Sprintf(getBaseRequest()+"parties/%d/members", partyId))
+func requestPartyMembers(ctx context.Context, partyId uint32) requests.Request[[]MemberRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]MemberRestModel](err)
+	}
+	return requests.GetRequest[[]MemberRestModel](fmt.Sprintf(root+"parties/%d/members", partyId))
 }
 
 // ConditionRestModel represents a start requirement condition from atlas-party-quests
@@ -181,12 +190,16 @@ func ExtractDefinition(r DefinitionRestModel) (DefinitionRestModel, error) {
 	return r, nil
 }
 
-func getPartyQuestsBaseRequest() string {
-	return requests.RootUrl("PARTY_QUESTS")
+func getPartyQuestsBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "PARTY_QUESTS")
 }
 
-func requestDefinitionByQuestId(questId string) requests.Request[DefinitionRestModel] {
-	return requests.GetRequest[DefinitionRestModel](fmt.Sprintf(getPartyQuestsBaseRequest()+"party-quests/definitions/quest/%s", questId))
+func requestDefinitionByQuestId(ctx context.Context, questId string) requests.Request[DefinitionRestModel] {
+	root, err := getPartyQuestsBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[DefinitionRestModel](err)
+	}
+	return requests.GetRequest[DefinitionRestModel](fmt.Sprintf(root+"party-quests/definitions/quest/%s", questId))
 }
 
 // InstanceRestModel represents a party quest instance from the atlas-party-quests REST API
@@ -216,8 +229,12 @@ func ExtractInstance(r InstanceRestModel) (InstanceRestModel, error) {
 	return r, nil
 }
 
-func requestInstanceByCharacterId(characterId uint32) requests.Request[InstanceRestModel] {
-	return requests.GetRequest[InstanceRestModel](fmt.Sprintf(getPartyQuestsBaseRequest()+"party-quests/instances/character/%d", characterId))
+func requestInstanceByCharacterId(ctx context.Context, characterId uint32) requests.Request[InstanceRestModel] {
+	root, err := getPartyQuestsBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[InstanceRestModel](err)
+	}
+	return requests.GetRequest[InstanceRestModel](fmt.Sprintf(root+"party-quests/instances/character/%d", characterId))
 }
 
 // Command represents a command message to atlas-party-quests

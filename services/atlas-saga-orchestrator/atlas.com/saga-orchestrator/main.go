@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"time"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	cashshopCompartment "atlas-saga-orchestrator/kafka/consumer/cashshop/compartment"
@@ -46,6 +47,21 @@ import (
 
 const serviceName = "atlas-saga-orchestrator"
 
+// withSelfEnvironment attaches this pod's own environment identity
+// (env.Self()) to ctx, with no tenant pairing. recoverSagas and
+// reapTimedOutSagas reconstruct a per-row tenant context from Entity
+// columns that carry no environment of their own (saga/entity.go has no
+// environment column); without this, every recovered/reaped saga's REST
+// calls and Kafka emits would resolve to the baseline URL/topic regardless
+// of which environment originally drove the saga (FR-1.8, FR-3.1/FR-3.2).
+// saga/ is outside env-domain-guard's permitted atlas-env import list, so
+// this is threaded in as a plain function value rather than the package
+// importing atlas-env itself (matches socket.WithSelfEnvironment,
+// 99c0e598d).
+func withSelfEnvironment(ctx context.Context) context.Context {
+	return env.WithContext(ctx, env.Self())
+}
+
 var consumerGroupId = consumergroup.Resolve("Saga Orchestrator Service")
 
 type Server struct {
@@ -69,7 +85,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	// Initialize database connection
@@ -178,6 +194,15 @@ func main() {
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
+	// Arm the saga timeout backstop's timer-fire environment origination
+	// (saga/timer.go). The timer re-wraps a fresh context.Background() when
+	// it fires, so it has no request context to inherit ENVIRONMENT from --
+	// withSelfEnvironment supplies this pod's own environment identity
+	// instead (FR-1.8), matching the recipe's envContext DI pattern
+	// (99c0e598d) since saga/ is outside env-domain-guard's permitted
+	// atlas-env import list.
+	saga.SagaTimers().SetEnvContext(withSelfEnvironment)
+
 	// Recover active sagas from database
 	recoverSagas(l, store, rt.TeardownManager())
 
@@ -221,7 +246,7 @@ func recoverSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.
 	l.Infof("Recovering %d active sagas from database.", len(entities))
 	for _, e := range entities {
 		t, _ := tenant.Create(e.TenantId, e.TenantRegion, e.TenantMajor, e.TenantMinor)
-		ctx := tenant.WithContext(tdm.Context(), t)
+		ctx := withSelfEnvironment(tenant.WithContext(tdm.Context(), t))
 		processor := saga.NewProcessor(l, ctx)
 
 		l.Infof("Recovering saga [%s] type [%s] for tenant [%s]",
@@ -273,7 +298,7 @@ func reapTimedOutSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *ser
 	l.Infof("Reaping %d timed-out sagas.", len(entities))
 	for _, e := range entities {
 		t, _ := tenant.Create(e.TenantId, e.TenantRegion, e.TenantMajor, e.TenantMinor)
-		ctx := tenant.WithContext(tdm.Context(), t)
+		ctx := withSelfEnvironment(tenant.WithContext(tdm.Context(), t))
 		processor := saga.NewProcessor(l, ctx)
 
 		l.Warnf("Saga [%s] type [%s] timed out, triggering compensation.",

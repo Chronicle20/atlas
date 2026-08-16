@@ -19,14 +19,29 @@ import (
 // it so the DB-backed PostgresStore does not need to reason about in-process
 // Go timers.
 type TimerRegistry struct {
-	mu      sync.Mutex
-	entries map[uuid.UUID]*time.Timer
+	mu         sync.Mutex
+	entries    map[uuid.UUID]*time.Timer
+	envContext func(context.Context) context.Context
 }
 
 var sagaTimerRegistry = &TimerRegistry{entries: make(map[uuid.UUID]*time.Timer)}
 
 // SagaTimers returns the singleton TimerRegistry.
 func SagaTimers() *TimerRegistry { return sagaTimerRegistry }
+
+// SetEnvContext wires the function that originates this pod's environment
+// identity onto the tenant context a fired timer rebuilds (see Schedule's
+// AfterFunc callback below). saga/ is outside env-domain-guard's permitted
+// atlas-env import list, so main.go supplies this as a plain function value
+// (withSelfEnvironment) rather than the package importing atlas-env itself
+// -- without it, every timed-out saga's compensation dispatch and Failed
+// emission would resolve to the baseline URL/topic regardless of which
+// environment originally drove the saga (FR-1.8, FR-3.1/FR-3.2).
+func (r *TimerRegistry) SetEnvContext(f func(context.Context) context.Context) {
+	r.mu.Lock()
+	r.envContext = f
+	r.mu.Unlock()
+}
 
 // Schedule arms a per-saga timer. If a timer already exists for the given
 // transactionId (retry / re-inject), the previous one is stopped and replaced.
@@ -51,6 +66,12 @@ func (r *TimerRegistry) Schedule(l logrus.FieldLogger, t tenant.Model, txId uuid
 		r.mu.Unlock()
 
 		ctx := tenant.WithContext(context.Background(), t)
+		r.mu.Lock()
+		ec := r.envContext
+		r.mu.Unlock()
+		if ec != nil {
+			ctx = ec(ctx)
+		}
 		handleSagaTimeout(l, ctx, txId, timeout)
 	})
 	r.entries[txId] = timer

@@ -243,3 +243,45 @@ above.
 `libs/atlas-packet` codec internals; new tables are seeded per-version and
 documented for live rollout. "The value is version-stable (IDA-verified
 identical)" does NOT exempt it — the task-103 uniformity ruling.
+
+---
+
+## Audit verification — DOM-34, DOM-35 (library migration hygiene)
+
+Rules defined in [audit-checklist.md](audit-checklist.md). Both trigger when the
+diff moves, extracts, or re-homes symbols between a service and a `libs/atlas-*`
+module — the table rows "Type aliases for library migrations" and "Leaving dead
+code after refactoring" above are the convention; this section is how to grade
+it.
+
+**Why.** We control the full lifecycle of every service in this monorepo. There
+is no external consumer to keep source-compatible, so a compatibility shim buys
+nothing and costs a second name for one concept.
+
+**DOM-34 — how to verify.** In each file the migration touched, grep for
+delegating declarations that point at the new home:
+
+```bash
+grep -rnE '=\s*[a-z][a-zA-Z0-9_]*\.[A-Z]' --include='*.go' <changed-pkgs>
+```
+
+Read every hit that resolves to the migrated package. A `type Foo = lib.Foo`, a
+`const X = lib.X`, a `var Y = lib.Y`, or a function whose body is a single call
+into the new home is a FAIL: the call sites should import the new home directly
+and the shim should be gone.
+
+**Pass criteria.** No alias, re-export, or single-delegation wrapper survives
+the move. "The package's own tests reference the old name" is not an exemption —
+update the tests (task-218, `poisonmist` / `mistcast`).
+
+**DOM-35 — how to verify.** For every symbol the extraction stopped using —
+constants, structs, functions, imports, variables — grep the whole service for
+remaining references:
+
+```bash
+grep -rn '\bSymbolName\b' --include='*.go' <service-root>
+```
+
+**Pass criteria.** Zero remaining references means the symbol is deleted in this
+diff, not left behind. A symbol whose only remaining reference is the
+alias/wrapper flagged by DOM-34 counts as unreferenced.

@@ -49,9 +49,13 @@ So:
 | **DOM structure** (DOM-01..05, 11, 16) | Changed package has `model.go`, `entity.go`, `rest.go`, or `provider.go` | [file-responsibilities.md](file-responsibilities.md#audit-verification--domain-structure-dom-0105-dom-11-dom-16) |
 | **FILE placement** (FILE-01..06) | Any changed Go package — no exemptions | [file-responsibilities.md](file-responsibilities.md#audit-verification--file-0106) |
 | **SUB sub-domain** (SUB-01..04) | Changed package has `resource.go` but no `model.go` | [file-responsibilities.md](file-responsibilities.md#audit-verification--sub-0104) |
-| **REST** (DOM-06..09, 12..15, 17..19) | Changed package has `resource.go`, `rest.go`, or `processor.go`, or registers HTTP routes | [patterns-rest-jsonapi.md](patterns-rest-jsonapi.md#audit-verification--rest-checks) |
+| **REST** (DOM-06..09, 12..15, 17..19, 32) | Changed package has `resource.go`, `rest.go`, or `processor.go`, or registers HTTP routes | [patterns-rest-jsonapi.md](patterns-rest-jsonapi.md#audit-verification--rest-checks) |
 | **Constants reuse** (DOM-21) | Diff declares a new type, named const block, or numeric-literal classification | [anti-patterns.md](anti-patterns.md#audit-verification--dom-21-shared-domain-types) |
-| **Testing** (DOM-10, 20, 24) | Diff touches a `_test.go`, or a changed package reaches an emit path | [testing-guide.md](testing-guide.md#audit-verification--dom-10-dom-20-dom-24) |
+| **Testing** (DOM-10, 20, 24, 33) | Diff touches a `_test.go`, changes a `Processor`/`Provider`/`Administrator` interface, or a changed package reaches an emit path | [testing-guide.md](testing-guide.md#audit-verification--dom-10-dom-20-dom-24-dom-33) |
+| **Cache** (DOM-29) | Changed package has `cache.go`, or a processor/struct holds cached state | [patterns-cache.md](patterns-cache.md#audit-verification--dom-29) |
+| **Messaging** (DOM-30) | Changed package has `producer.go`, or calls `AndEmit` / `message.Emit` / `producer.ProviderImpl` | [patterns-kafka.md](patterns-kafka.md#audit-verification--dom-30) |
+| **Multi-tenancy** (DOM-31) | Changed package has `rest.go`, or changed code reads tenant/trace state, passes a `tenantId`, or opens a DB session (`tenant.MustFromContext`, `db.WithContext(ctx)`) | [patterns-multitenancy-context.md](patterns-multitenancy-context.md#audit-verification--dom-31) |
+| **Migration hygiene** (DOM-34, 35) | Diff moves, extracts, or re-homes symbols between a service and a `libs/atlas-*` module | [anti-patterns.md](anti-patterns.md#audit-verification--dom-34-dom-35-library-migration-hygiene) |
 | **Deploy & topics** (DOM-22, 23) | Diff adds a `libs/atlas-*` module, or adds/renames a Kafka topic env var | [patterns-deploy.md](patterns-deploy.md) |
 | **Runtime safety** (DOM-26) | Any non-test Go file changed | [anti-patterns.md](anti-patterns.md#audit-verification--dom-26-goroutines) |
 | **Channel wire values** (DOM-25) | Diff touches `services/atlas-channel` or `libs/atlas-packet`, or a domain service emits a byte a client interprets | [anti-patterns.md](anti-patterns.md#audit-verification--dom-25-client-interpreted-wire-values) |
@@ -62,19 +66,24 @@ So:
 
 ## Foundational guidelines — no numbered rules
 
-These documents carry conventions that are enforceable guidelines but have no
-rule ID. They are the guideline of record when a finding needs one and no
-numbered rule covers it, and they may be cited as the documented exception that
-exempts a deviation. Open the ones whose subject the diff touches; they are not
-subject to the "if it is not in the checklist it does not exist" clause, which
-governs *numbered rules* only.
+These two documents carry general architectural guidance that is deliberately
+*not* mechanised into an audit rule: it describes how the code is shaped, not a
+condition a reviewer can grade PASS/FAIL from a diff. They are the guideline of
+record when a finding needs one and no numbered rule covers it, and they may be
+cited as the documented exception that exempts a deviation. Open the ones whose
+subject the diff touches; they are not subject to the "if it is not in the
+checklist it does not exist" clause, which governs *numbered rules* only.
 
 | Document | Open when |
 |---|---|
-| [ai-guidance.md](ai-guidance.md) | Any Go diff — carries the Commonly Missed Items checklist, mock-sync rules, and the no-type-aliases / dead-code migration rules |
-| [patterns-multitenancy-context.md](patterns-multitenancy-context.md) | Changed code reads tenant or trace state, passes `tenantId`, or opens a DB session (`tenant.MustFromContext`, `db.WithContext(ctx)`) |
 | [patterns-provider.md](patterns-provider.md) | Changed code defines or composes providers |
 | [patterns-functional.md](patterns-functional.md) | Changed code defines curried constructors, decorators, or model combinators |
+
+**No document is loaded unconditionally.** This index is the only thing a
+review reads before classifying the surface; every other document — foundational
+ones included — waits for its trigger. If you find yourself wanting a document
+loaded for "any Go diff", that is a sign its enforceable content belongs in the
+tables below as a numbered rule with its own `Applies when`.
 
 ---
 
@@ -110,6 +119,13 @@ governs *numbered rules* only.
 | DOM-26 | Every goroutine is spawned via `routine.Go(l, ctx, fn)`; a bare `go` statement needs a justified `//goroutine-guard:allow` marker | any non-test Go file changed |
 | DOM-27 | In DB-backed services, handler error branches use `server.WriteErrorResponse(...)` so transient DB errors surface as 503, not a bare 500 | changed handler writes `http.StatusInternalServerError` and the service calls `database.Connect` |
 | DOM-28 | Fallible enrichment/decorator paths degrade loudly — `model.ErrDecorator` + `degrade.Observe(...)` — never `if err != nil { return m }` | diff changes a `model.Decorator` or an enrichment fallback that fetches remote data |
+| DOM-29 | Caches are application-scoped singletons reached through a `GetCache()` accessor — never constructed in a processor constructor or held as per-instance processor state | package has `cache.go`, or a processor/struct holds cached state |
+| DOM-30 | An operation that writes to the database emits through the `AndEmit` + `message.Buffer` pattern, so the write and its events stay atomic — not a direct `producer.ProviderImpl(...)` call from the success path | changed package emits Kafka messages |
+| DOM-31 | Tenant and trace identifiers travel in context only — never a field on a REST model, a request body, or a public path/query parameter | package has `rest.go`, or changed code reads or passes tenant/trace state |
+| DOM-32 | Routes register through `server.RegisterHandler` / `server.RegisterInputHandler[T]` — no bare `http.HandlerFunc` route bodies, no manual tenant-header parsing, no custom error-response helpers | package registers HTTP routes |
+| DOM-33 | An interface change updates every mock implementation of that interface in the same diff | diff adds, removes, or re-signs a method on a `Processor` / `Provider` / `Administrator` interface |
+| DOM-34 | No type aliases, re-exports, or delegating wrappers left behind when a symbol moves to a shared library — every call site imports the new home directly | diff moves or extracts symbols between a service and a `libs/atlas-*` module |
+| DOM-35 | Symbols the extraction left unreferenced are deleted — no dead constants, structs, functions, imports, or variables | same |
 
 ## FILE-* — file responsibilities
 

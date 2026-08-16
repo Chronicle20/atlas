@@ -33,8 +33,9 @@ rule's verification procedure lives in the pattern document that checklist links
 to. Read them; never recite a rule from memory, and never treat a rule you
 remember as authoritative over what that file currently says. If a numbered rule
 you expect is absent from the checklist, it does not exist — say so rather than
-enforcing it. The checklist also lists foundational documents that carry
-enforceable conventions with no rule ID; those remain in force.
+enforcing it. The checklist also lists two foundational documents carrying
+general architectural guidance with no rule ID; those remain in force, and like
+every other document they load only when their own trigger fires.
 
 ## Input
 
@@ -103,10 +104,12 @@ surveying the repo to reading the changed files closely.
 3. Note the checklist's two-level triggering rule: a **family** trigger decides
    which document you open; each **rule's** own `Applies when` decides whether
    that rule is evaluated. Never dispose of a rule on the family trigger alone.
-4. Do NOT read the pattern documents yet. You load them in Phase 3, one family
-   at a time, and only for families whose trigger actually fires. Loading the
-   REST, deploy, scaffolding, security, testing, or resilience documents for a
-   diff that does not touch those surfaces is wasted context.
+4. Do NOT read any other guideline document yet. The checklist is the only one
+   you read unconditionally. Every other document — pattern documents and the
+   two foundational ones alike — loads in Phase 3, one family at a time, and
+   only when its trigger actually fires. Loading the REST, deploy, scaffolding,
+   security, testing, cache, messaging, or resilience documents for a diff that
+   does not touch those surfaces is wasted context.
 
 ## Phase 1: Build & Test (Objective Gate)
 
@@ -158,12 +161,12 @@ Open a family's document when ANY of its rules' triggers fire. Only when NO
 rule in the family applies do you record the family as `N/A` without opening
 its document, and then the negative trigger is the evidence.
 
-Also open any **foundational** document from the checklist whose subject the
-diff touches. Those documents carry conventions with no rule ID; they are the
-guideline of record when a finding needs one and no numbered rule covers it,
-and they may supply the documented exception that exempts a deviation. The
-"absent from the checklist means it does not exist" clause above governs
-*numbered rules*, not these.
+Also open a **foundational** document from the checklist when its stated trigger
+fires — never by default. Those documents carry general architectural guidance
+with no rule ID; they are the guideline of record when a finding needs one and
+no numbered rule covers it, and they may supply the documented exception that
+exempts a deviation. The "absent from the checklist means it does not exist"
+clause above governs *numbered rules*, not these.
 
 Rules whose evidence is a repo-root script (`tools/goroutine-guard.sh`,
 `tools/service-registration-guard.sh`, `tools/gen-routes.sh`) are settled by

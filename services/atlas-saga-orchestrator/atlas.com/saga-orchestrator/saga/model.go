@@ -76,6 +76,7 @@ const (
 	AwardCurrency        = sharedsaga.AwardCurrency
 	AwardFame            = sharedsaga.AwardFame
 	DestroyAsset         = sharedsaga.DestroyAsset
+	DestroyAllAssets     = sharedsaga.DestroyAllAssets
 	DestroyAssetFromSlot = sharedsaga.DestroyAssetFromSlot
 	EquipAsset           = sharedsaga.EquipAsset
 	UnequipAsset         = sharedsaga.UnequipAsset
@@ -266,6 +267,7 @@ type (
 	AwardCurrencyPayload                = sharedsaga.AwardCurrencyPayload
 	AwardFamePayload                    = sharedsaga.AwardFamePayload
 	DestroyAssetPayload                 = sharedsaga.DestroyAssetPayload
+	DestroyAllAssetsPayload             = sharedsaga.DestroyAllAssetsPayload
 	DestroyAssetFromSlotPayload         = sharedsaga.DestroyAssetFromSlotPayload
 	EquipAssetPayload                   = sharedsaga.EquipAssetPayload
 	UnequipAssetPayload                 = sharedsaga.UnequipAssetPayload
@@ -1094,6 +1096,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case DestroyAsset:
 		var payload DestroyAssetPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case DestroyAllAssets:
+		var payload DestroyAllAssetsPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

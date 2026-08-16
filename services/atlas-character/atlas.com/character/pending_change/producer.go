@@ -2,6 +2,7 @@ package pending_change
 
 import (
 	pendingchange2 "atlas-character/kafka/message/pending_change"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -75,9 +76,22 @@ func sagaTransactionId(m Model, purpose string) uuid.UUID {
 }
 
 const (
-	sagaPurposeDestroyAsset = "pending_change:destroy_asset"
-	sagaPurposeAwardAsset   = "pending_change:award_asset"
+	sagaPurposeDestroyAsset  = "pending_change:destroy_asset"
+	sagaPurposeAwardAsset    = "pending_change:award_asset"
+	sagaPurposeConsumeCoupon = "pending_change:consume_coupon"
 )
+
+// NameChangeCouponTemplateId is the cash-shop name-change coupon.
+//
+// Grounded, not assumed: derivation.md §3 reads CCashShop::ProcessBuy on every
+// GMS version v48-v95 and finds 5400000 compared as an EXACT id (5401000 is the
+// world-transfer sibling). The client's item-USE dispatcher buckets by prefix
+// instead (nItemID / 1000 == 5400, mirrored at
+// atlas-channel character_cash_item_use.go), but no second 5400xxx id exists in
+// any GMS binary examined, so the exact id is the whole band in practice. If a
+// tenant ever ships another 5400xxx coupon, this is the list to extend —
+// applyNameChange emits one consumption step per entry.
+var nameChangeCouponTemplateIds = []uint32{5400000}
 
 // destroyAssetCommandProvider consumes the coupon at request acceptance
 // (FR-2.8). Only the item path has an asset. The purchase path has none: its
@@ -116,6 +130,31 @@ func awardAssetCommandProvider(m Model) model.Provider[[]kafka.Message] {
 				TemplateId: m.AssetId(),
 				Quantity:   1,
 			},
+		}).
+		Build()
+	return sagaCommandProvider(s)
+}
+
+// consumeCouponsCommandProvider consumes EVERY name-change coupon the character
+// holds once the rename actually lands.
+//
+// Consumption is at APPLY, not at request acceptance, because on the purchase
+// path there is no coupon in the inventory when the request is made — the
+// cash-shop purchase materialises it afterwards. Destroying on apply is the only
+// point at which the item reliably exists.
+//
+// DestroyAllAssets rather than DestroyAsset: cash items do not stack (each
+// instance carries its own cashId and occupies its own slot), and DestroyAsset
+// resolves a template to the FIRST matching slot only — so a player holding two
+// coupons would keep one.
+func consumeCouponsCommandProvider(m Model, templateId uint32) model.Provider[[]kafka.Message] {
+	s := sharedsaga.NewBuilder().
+		SetTransactionId(sagaTransactionId(m, sagaPurposeConsumeCoupon+":"+strconv.FormatUint(uint64(templateId), 10))).
+		SetSagaType(sharedsaga.CashShopOperation).
+		SetInitiatedBy(sagaInitiator).
+		AddStep("consume_name_change_coupons", sharedsaga.Pending, sharedsaga.DestroyAllAssets, sharedsaga.DestroyAllAssetsPayload{
+			CharacterId: m.CharacterId(),
+			TemplateId:  templateId,
 		}).
 		Build()
 	return sagaCommandProvider(s)

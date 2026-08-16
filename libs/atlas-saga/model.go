@@ -94,6 +94,7 @@ const (
 	AwardCurrency        Action = "award_currency"
 	AwardFame            Action = "award_fame"
 	DestroyAsset         Action = "destroy_asset"
+	DestroyAllAssets     Action = "destroy_all_assets"
 	DestroyAssetFromSlot Action = "destroy_asset_from_slot"
 	EquipAsset           Action = "equip_asset"
 	UnequipAsset         Action = "unequip_asset"

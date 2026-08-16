@@ -95,11 +95,39 @@ type AwardFamePayload struct {
 }
 
 // DestroyAssetPayload represents the payload required to destroy an asset in a compartment.
+//
+// This action is SLOT-SCOPED even though it addresses the item by template: the
+// handler resolves TemplateId to the FIRST matching asset and acts on that one
+// slot. For a stackable item that is the whole item, so the distinction is
+// invisible. For an item that does not stack — a cash item, whose every
+// instance carries its own cashId and therefore its own slot — it is not. Use
+// DestroyAllAssets when you mean every instance.
 type DestroyAssetPayload struct {
 	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
 	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to destroy
 	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy (ignored if RemoveAll is true)
-	RemoveAll   bool   `json:"removeAll"`   // If true, remove all instances of the item regardless of Quantity
+	RemoveAll   bool   `json:"removeAll"`   // If true, remove the resolved slot's ENTIRE stack (not every slot holding this template — see DestroyAllAssets)
+	ShowEffect  bool   `json:"showEffect"`  // Render the item-loss chat line on the client when true
+}
+
+// DestroyAllAssetsPayload destroys EVERY asset of a template a character holds,
+// across every slot of the owning compartment, rather than the first one found.
+//
+// It exists because DestroyAsset cannot express that: its handler narrows
+// templateId to a single slot before RemoveAll is ever evaluated, so a caller
+// asking about an item silently gets an answer about one slot. That is only
+// observable for items that occupy more than one slot at once — which is
+// exactly the non-stacking cash items.
+//
+// NOT COMPENSABLE, deliberately: the payload records what to destroy, never how
+// much was found, so a rollback has nothing to recreate from. This is the same
+// reason DestroyAsset with RemoveAll=true is excluded from late compensation.
+// Use it only as a terminal step, or where losing the items on rollback is
+// acceptable; if you need rollback, enumerate first and emit explicit
+// DestroyAssetFromSlot steps instead.
+type DestroyAllAssetsPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item; every asset matching it is destroyed
 	ShowEffect  bool   `json:"showEffect"`  // Render the item-loss chat line on the client when true
 }
 

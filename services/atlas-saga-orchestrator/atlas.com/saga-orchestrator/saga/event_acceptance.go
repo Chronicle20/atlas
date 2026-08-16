@@ -142,6 +142,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	// Asset actions.
 	sharedsaga.AwardAsset:            {EventKindAssetCreated, EventKindAssetQuantityChanged},
 	sharedsaga.DestroyAsset:          {EventKindAssetDeleted, EventKindAssetQuantityChanged},
+	sharedsaga.DestroyAllAssets:      {EventKindAssetDeleted, EventKindAssetQuantityChanged},
 	sharedsaga.DestroyAssetFromSlot:  {EventKindAssetDeleted, EventKindAssetQuantityChanged},
 	sharedsaga.EquipAsset:            {EventKindAssetMoved},
 	sharedsaga.UnequipAsset:          {EventKindAssetMoved},

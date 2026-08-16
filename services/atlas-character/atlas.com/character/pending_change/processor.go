@@ -416,6 +416,18 @@ func (p *ProcessorImpl) applyNameChange(m Model) error {
 				return err
 			}
 
+			// The coupons are consumed here rather than at request acceptance:
+			// on the purchase path the cash-shop purchase materialises the
+			// coupon AFTER the request is made, so apply is the first point at
+			// which it reliably exists. Emitted before Resolve only so a
+			// failure to enqueue aborts the whole transaction — the outbox
+			// makes the ordering within it immaterial.
+			for _, templateId := range nameChangeCouponTemplateIds {
+				if err := buf.Put(sagamsg.EnvCommandTopic, consumeCouponsCommandProvider(m, templateId)); err != nil {
+					return err
+				}
+			}
+
 			// APPLIED releases the reservation by leaving PENDING, which is what
 			// drops the row out of idx_pc_name_reservation.
 			_, _, err = p.WithTransaction(tx).Resolve(buf)(m.Id(), StatusApplied, "")

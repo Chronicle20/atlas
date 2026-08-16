@@ -820,6 +820,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAwardCurrency, true
 	case DestroyAsset:
 		return h.handleDestroyAsset, true
+	case DestroyAllAssets:
+		return h.handleDestroyAllAssets, true
 	case DestroyAssetFromSlot:
 		return h.handleDestroyAssetFromSlot, true
 	case EquipAsset:
@@ -1177,6 +1179,22 @@ func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 	err := h.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, payload.Quantity, payload.RemoveAll)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to destroy asset.")
+		return err
+	}
+
+	return nil
+}
+
+// handleDestroyAllAssets handles the DestroyAllAssets action
+func (h *HandlerImpl) handleDestroyAllAssets(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(DestroyAllAssetsPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.compP.RequestDestroyAllItems(s.TransactionId(), payload.CharacterId, payload.TemplateId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to destroy all assets.")
 		return err
 	}
 

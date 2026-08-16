@@ -258,11 +258,13 @@ is now clean.**
 
 Four structural observations:
 
-1. **Router pointers appear twice by design.** Each of "Development
-   workflow", "Dispatching agents", and "Handing off context" ends with a
-   bold inline pointer to its `docs/*.md` companion, and the same
+1. **Router pointers appear twice by design.** "Development workflow" and
+   the "Dispatching agents"/"Handing off context" pair each end with a
+   bold inline pointer to their `docs/*.md` companion, and the same
    destination is repeated as a row in the "Where the procedures live"
-   table at the end of the file. This is deliberate: the inline pointer
+   table at the end of the file. (Fix round 2 collapsed the two separate
+   pointers to `docs/agent-dispatch.md` into one, so no destination is now
+   named more than twice.) This is deliberate: the inline pointer
    serves a reader going section-by-section; the table serves the FR-8
    "where is the detailed procedure" scan. Both forms name the same
    destination and neither adds new normative content, so this is not the
@@ -294,9 +296,14 @@ Four structural observations:
      `permissionDecision: "deny"` for an unjustified fork. **Genuinely
      blocking. Marker correct, left as-is.**
    - `CLAUDE.md:80` (path hygiene, "Use repo-relative paths or placeholders
-     … *(enforced)*") — backed by the repo's home/absolute-path guard,
-     which fails the branch on a literal path. **Genuinely blocking. Marker
-     correct, left as-is.**
+     … *(enforced)*") — backed by
+     `.claude/hooks/block-home-paths-in-docs.sh`, which emits
+     `permissionDecision: "deny"` on a literal home path. **Genuinely
+     blocking, but narrower than the rule it annotates:** the hook guards
+     writes under `docs/` only, while the rule covers every committed file.
+     Fix round 2 scoped the marker to *(enforced under `docs/`)* rather
+     than weakening the rule, since the rule is right and only the
+     enforcement claim was over-broad.
    - `CLAUDE.md:70` (context handoff, "Size thresholds are backstops, not
      triggers — dependency is the primary signal. *(enforced)*") —
      claimed to be backed by `.claude/hooks/commit-boundary.sh`. Reading
@@ -333,8 +340,9 @@ Four structural observations:
 grep -oE '\]\(([^)]+)\)' CLAUDE.md
 ```
 
-12 links captured, 9 distinct paths (`docs/agent-dispatch.md` linked 3×,
-`docs/superpowers-integration.md` linked 2×). All 9 confirmed to exist:
+11 links captured after fix round 2 (12 before), 9 distinct paths
+(`docs/agent-dispatch.md` and `docs/superpowers-integration.md` linked 2×
+each). All 9 confirmed to exist:
 `docs/superpowers-integration.md`, `docs/agent-dispatch.md`,
 `docs/verification.md`, `docs/adding-a-new-service.md`,
 `docs/packets/PROCESS.md`, `docs/git-workflow.md`,
@@ -383,7 +391,9 @@ wc -l -c CLAUDE.md
 | Before | 220 | 19,543 |
 | After (initial) | 103 | 11,735 |
 | After (fix round 1 — `*(enforced)*` marker removed from `CLAUDE.md:70`) | 103 | 11,722 |
-| Delta (final) | -117 (-53.2%) | -7,821 (-40.02%) |
+| After (procedural detail owned by linked docs stripped) | 94 | 10,698 |
+| After (fix round 2 — duplication, triggers, contradictions) | 90 | 10,521 |
+| Delta (final) | -130 (-59.1%) | -9,022 (-46.2%) |
 
 Reported as an outcome, not a goal. The 13-byte drop between the initial
 and fix-round measurements is the removed `*(enforced)*` marker (see Step
@@ -397,10 +407,67 @@ drop-captured content: `docs/observability.md` (+825 bytes),
 `docs/superpowers-integration.md` (+761 bytes), `docs/verification.md`
 (+353 bytes). Total size added across `docs/`: **13,106 bytes**.
 
-The trade made visible: root context shrank by 7,821 bytes; total
+The trade made visible: root context shrank by 9,022 bytes; total
 documentation grew by 13,106 bytes net (content moved out of the
 always-loaded root file into task-scoped, load-on-demand documents — it did
 not disappear).
+
+### Fix round 2 — targeted re-review of the finished `CLAUDE.md`
+
+A final pass over the finished file, scoped to three questions only —
+duplication still carried from a linked owner, routing triggers that
+describe document contents instead of task situations, and root summaries
+that contradict their authoritative document. No further size reduction
+was pursued for its own sake.
+
+**Contradictions found and fixed (3).** All three are cases where the
+compressed root form dropped a qualifier the ledger row itself records:
+
+- **`R-065` — the Opus opt-in was lost.** Root read "implementers run
+  Sonnet" flat, while `docs/agent-dispatch.md` §Model selection carries the
+  opt-in for a plan task tagged `model: opus`. The ledger row for R-065
+  includes "unless tagged `model: opus`"; the compression dropped it, so
+  root instructed against both the owner doc and its own disposition. An
+  agent reading root alone would have overridden a plan's deliberate tag.
+  Clause restored.
+- **`R-058` — the conflicts-with-`main` exception was lost.** Root stated
+  "do not merge `origin/main` as a routine build-triggering ritual" without
+  qualification. The exception in `docs/git-workflow.md` §Build triggering
+  fires in exactly the situation that sends a reader to the rule ("my push
+  didn't build"), and the R-058 row records it as part of the
+  `keep-compressed` content. Exception restored to the root bullet.
+- **`R-044` — the `*(enforced)*` marker over-claimed.** See Step 2
+  observation 3, revised: the backing hook guards `docs/` only. Marker
+  scoped to *(enforced under `docs/`)*.
+
+**Duplication removed (2).** §Handing off context reproduced
+`docs/agent-dispatch.md` §Context handoff clause-for-clause across five
+bullets, keeping the prose and omitting the numbers — which are the only
+thing the owner doc adds. It also duplicated *itself*: "the signal is
+dependency, not size" and "size thresholds are backstops, not triggers"
+(R-086) appeared two bullets apart. Compressed to three bullets with R-086
+stated once. The two separate inline pointers to `docs/agent-dispatch.md`
+(one per section) merged into one covering both.
+
+`CLAUDE.md:79` (R-089) also carried both clauses of
+`docs/tooling-conventions.md` §Shell and editing conventions verbatim;
+compressed to the rule, with the zsh/direnv specifics left to the owner.
+
+**Routing triggers rewritten (7).** Rows 1, 4, 5, 6, 7, 8, and 10 of "Where
+the procedures live" named a document topic plus its table of contents
+("Agent dispatch mechanics — model table, tool-call budget, fork policy,
+handoff thresholds" is a four-item index of that doc's headings), and on
+rows 1, 4, and 8 the "What's there" column then repeated the same list — so
+the third column earned nothing on precisely the rows whose trigger was
+weakest. Each was rewritten as a situation a reader would recognize
+themselves in ("A `verify.sh` guard failed, or the script and CI disagree";
+"You committed to `main`, a push didn't trigger a build, or `gh` returns
+401"), on the model of the two rows that already did this — packet work and
+Kubernetes debugging. Destinations unchanged.
+
+**Re-run checks.** Step 3 link check: 11 links, 9 distinct, all resolve.
+Step 4 exclusion check: both greps still empty. Step 5 scanability: section
+headings unchanged, all seven FR-8 questions still have exactly one home.
 
 ### Step 7 — repo gate (Step 8 of the brief)
 

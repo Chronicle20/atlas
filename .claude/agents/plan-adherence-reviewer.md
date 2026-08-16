@@ -21,6 +21,25 @@ You are an implementation plan auditor for the Atlas project. Your job is to ver
 
 You will be given a task folder path (e.g., `docs/tasks/task-044-superpowers-integration`). The plan to audit is at `<task-folder>/plan.md`.
 
+You may also be given a **task range** (e.g. `tasks 21-30`). If you are, audit
+only those plan tasks and name the range in your report title and filename
+(`audit-21-30.md`). If you are not, audit every task in the plan.
+
+## Sharding — read before dispatching or being dispatched
+
+This agent IS the plan-adherence audit. On a large plan (roughly 20+ tasks) it
+is correct to shard it, and the shard unit is **another dispatch of this agent
+with a task range** — never an ad-hoc `general-purpose` agent carrying an
+"audit plan tasks N-M vs code" prompt, and never both at once.
+
+- **Shard the specialist, or run it whole. Not both.** Running four range
+  audits alongside an unscoped `plan-adherence-reviewer` audits every task
+  twice; on one measured branch that duplication billed 6.5M tokens for zero
+  additional findings.
+- **Ranges must partition the plan — no overlaps, no gaps.** `1-10` and `9-20`
+  double-audit tasks 9 and 10. Use `1-10`, `11-20`, `21-30`, `31-40`.
+- Each shard writes its own `audit-N-M.md`; the dispatcher reads them together.
+
 ## Process
 
 ### Step 1: Load the Plan
@@ -57,7 +76,9 @@ For atlas-ui changes, run `npm run build` and `npm test` from `services/atlas-ui
 
 ### Step 5: Produce Audit Report
 
-Write the report to `<task-folder>/audit.md` (overwriting any existing audit). Format:
+Write the report to `<task-folder>/audit.md` — or `<task-folder>/audit-N-M.md`
+if you were given a task range — overwriting any existing report at that path.
+Format:
 
 ```markdown
 # Plan Audit — <task-folder-name>

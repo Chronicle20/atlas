@@ -137,15 +137,9 @@ this myself right now?" If yes, do it.
 
 ## Packet work
 
-Packet-audit work has ONE canonical playbook per task type and an executable entry point that drives it. Start at [`docs/packets/PROCESS.md`](docs/packets/PROCESS.md) (the source of truth for the version set, baseline status, and CI gates), then pick your entry point:
+Packet-audit work has ONE canonical playbook per task type and an executable entry point that drives it. Start at [`docs/packets/PROCESS.md`](docs/packets/PROCESS.md) — the source of truth for the version set, baseline status, CI gates, and the task-type → entry-point → playbook table.
 
-| Task type | Entry point | Canonical playbook |
-|---|---|---|
-| Implement a new feature codec (clientbound or serverbound) | `/implement-packet` command + `packet-implementer` agent | [`docs/packets/IMPLEMENTING_A_PACKET.md`](docs/packets/IMPLEMENTING_A_PACKET.md) |
-| Bring up a new client-version column | `/bringup-version` command | [`docs/packets/audits/STARTING_A_NEW_VERSION_PASS.md`](docs/packets/audits/STARTING_A_NEW_VERSION_PASS.md) |
-| Audit / implement a mode-prefix dispatcher family | `family-auditor` agent (read-only triage) · `dispatcher-family-implementer` agent (do-mode) | [`docs/packets/DISPATCHER_FAMILY.md`](docs/packets/DISPATCHER_FAMILY.md) |
-
-Every task type's leaf step — promoting one packet × version matrix cell to `✅` — is the single-cell verify procedure: `/verify-packet` command + `packet-verifier` agent, driving [`docs/packets/audits/VERIFYING_A_PACKET.md`](docs/packets/audits/VERIFYING_A_PACKET.md). Do not restate a playbook's procedure in prose elsewhere — link to it.
+Entry points: new feature codec → `/implement-packet` + `packet-implementer`; new client-version column → `/bringup-version`; mode-prefix dispatcher family → `family-auditor` (read-only triage) then `dispatcher-family-implementer` (do-mode). Every task type's leaf step — promoting one packet × version matrix cell to `✅` — is `/verify-packet` + `packet-verifier`. Do not restate a playbook's procedure in prose elsewhere — link to it.
 
 ## Reverse Engineering / IDA
 
@@ -177,11 +171,9 @@ Every task type's leaf step — promoting one packet × version matrix cell to `
 - Pass an explicit `model` on **every** Agent/Task dispatch. Unspecified inherits Opus, and an Opus subagent turn costs ~7x a Sonnet one.
 - The pin follows the **job**, not the `subagent_type`. Any dispatch whose job is review / verify / audit runs `sonnet`, always — including ad-hoc `general-purpose` agents carrying a review prompt, which frontmatter pins do not cover. Scans and inventories run `haiku`. Implementers run `sonnet` unless the plan task is tagged `model: opus`. Full table: `.claude/commands/execute-task.md` Step 4a.
 - Never use Fable for background/review workflows.
-- Long agents are the cost: context grows with turn count and every turn re-reads all of it, so one 600-turn agent costs far more than the same work split across fresh contexts. The implementer budget is **120 tool calls**, warned at 100 — counted by `.claude/hooks/turn-budget.sh` and contracted in `.claude/agents/atlas-implementer.md`, `.claude/agents/packet-implementer.md`, and `.claude/agents/dispatcher-family-implementer.md`. At the cap an implementer commits and reports `PARTIAL`; the controller dispatches a continuation. The number lives in the counting hook — change it there only.
-
-  The cap is **binding, not advisory**: `.claude/hooks/turn-budget-guard.sh` (PreToolUse) denies further tool calls past 125 for subagents, allowing only `git add`/`commit` and writing the report so the agent can still land work and hand back. Controllers are never blocked. This exists because the advisory-only version was declined three times on one branch — implementers ran to 127, 127 and 130 calls, and those eight over-long agents billed a third of all subagent spend.
+- Long agents are the cost: context grows with turn count and every turn re-reads all of it, so one 600-turn agent costs far more than the same work split across fresh contexts. The implementer budget is **120 tool calls**, warned at 100 — counted by `.claude/hooks/turn-budget.sh` and contracted in `.claude/agents/atlas-implementer.md`, `.claude/agents/packet-implementer.md`, and `.claude/agents/dispatcher-family-implementer.md`. At the cap an implementer commits and reports `PARTIAL`; the controller dispatches a continuation. The cap is **binding**: `.claude/hooks/turn-budget-guard.sh` (PreToolUse) denies subagent calls past CAP+5, exempting the commit-and-report path; controllers are never blocked. Change the number in the counting hook only.
 - Implementers do not run repo-wide verification. `tools/verify.sh`, `tools/lint.sh`, `-race`, and docker bake belong to the `atlas-verifier` agent in its own clean context; a `--quick` run inside a 400k-token implementer costs a large multiple of the same run in a 20k one. Implementers run module-local `go build ./... && go test ./...` and nothing more.
-- Fan out with **fresh-context agents, not `subagent_type: "fork"`.** A fork inherits the parent's entire conversation and re-reads it on every turn, so a forked child that runs 70+ turns costs several times a briefed agent doing the same job. Default to a named agent type plus an explicit brief. Fork only to continue an interactive debugging thread whose brief would be longer than the context it saves — and say so, because `.claude/hooks/fork-dispatch-guard.sh` requires the justification inline.
+- Fan out with **fresh-context agents, not `subagent_type: "fork"`** — a named agent type plus an explicit brief. Fork only to continue an interactive debugging thread, and say why inline; `.claude/hooks/fork-dispatch-guard.sh` denies an unjustified fork and states the cost.
 - The same arithmetic binds the **controller**, which is the one context that lives for a whole plan — every wake-up re-reads it. During `/execute-task`, hand off to a fresh session past ~250k tokens with tasks remaining: the SDD ledger (`.superpowers/sdd/<plan>/progress.md`) is the resume point, so the cost is one plan re-read. Procedure: `.claude/commands/execute-task.md` Step 4e.
 
 ## Context Handoff
@@ -213,20 +205,12 @@ backstop, not the trigger. The signal is dependency, not size.
   encodes this floor and raises the question at commits past it. The backstop at
   the other end is ~250k for a controller — see `/execute-task` Step 4e, which is
   this same rule in its threshold form, with the measured numbers behind it.
-- **The pattern already exists — reuse it.** `/execute-task` Step 4d (`PARTIAL`
-  → continuation brief beside the original → same report file as the persistent
-  memory across the split → fresh implementer) and Step 4e (controller → SDD
-  ledger → fresh session) are both exactly this handoff, and both already carry a
-  durable artifact: `task-N-report.md` and
-  `.superpowers/sdd/<plan>/progress.md`. Neither is special to `/execute-task` —
-  apply the same shape in any session, and where a canonical ledger already
-  exists, write there rather than inventing a second artifact. Generate briefs
-  with `tools/task-brief.sh`, never by hand out of `plan.md`.
-
-The failure this prevents: one session doing four unrelated jobs — resolve a merge,
-verify packet cells, run reviews, then fix a service bug — where the last job needed
-exactly one sentence from the first three but re-read all of them on all 57 of its
-turns.
+- **The pattern already exists — reuse it.** `/execute-task` Steps 4d and 4e are
+  this handoff in its two concrete forms, each with a durable artifact
+  (`task-N-report.md`, `.superpowers/sdd/<plan>/progress.md`). Apply the same
+  shape in any session; where a canonical ledger exists, write there rather than
+  inventing a second artifact. Generate briefs with `tools/task-brief.sh`, never
+  by hand out of `plan.md`.
 
 ## Shell & Editing Conventions
 

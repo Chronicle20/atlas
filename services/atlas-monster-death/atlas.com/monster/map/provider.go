@@ -19,7 +19,11 @@ import (
 func CharacterIdsInFieldModelProvider(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model) model.Provider[[]uint32] {
 	return func(ctx context.Context) func(f field.Model) model.Provider[[]uint32] {
 		return func(f field.Model) model.Provider[[]uint32] {
-			return requests.DrainProvider[RestModel, uint32](l, ctx)(charactersInFieldUrl(f), 250, Extract, model.Filters[uint32]())
+			url, err := charactersInFieldUrl(ctx, f)
+			if err != nil {
+				return model.ErrorProvider[[]uint32](err)
+			}
+			return requests.DrainProvider[RestModel, uint32](l, ctx)(url, 250, Extract, model.Filters[uint32]())
 		}
 	}
 }

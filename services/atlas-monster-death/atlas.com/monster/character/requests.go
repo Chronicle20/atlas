@@ -1,6 +1,7 @@
 package character
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -13,10 +14,14 @@ const (
 	ByName            = Resource + "?name=%s&include=inventory"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("CHARACTERS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "CHARACTERS")
 }
 
-func requestById(id uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
+func requestById(ctx context.Context, id uint32) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+ById, id))
 }

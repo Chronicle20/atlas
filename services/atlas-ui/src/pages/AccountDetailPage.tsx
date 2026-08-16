@@ -8,6 +8,7 @@ import { useWallet } from "@/lib/hooks/api/useWallet";
 import { ErrorDisplay } from "@/components/common";
 import { AccountDetailSkeleton } from "@/components/common/skeletons/AccountDetailSkeleton";
 import { WalletPanel } from "@/components/features/accounts/WalletPanel";
+import { BirthDateDialog } from "@/components/features/accounts/BirthDateDialog";
 import { CopyableIdHeader } from "@/components/common/CopyableIdHeader";
 import { CharactersPanel } from "@/components/features/accounts/CharactersPanel";
 
@@ -92,6 +93,9 @@ export function AccountDetailPage() {
               <p className="text-muted-foreground">PIC Attempts</p>
               <p className="font-medium">{account.attributes.picAttempts}</p>
             </div>
+            {activeTenant && (
+              <BirthDateDialog account={account} tenant={activeTenant} />
+            )}
           </CardContent>
         </Card>
 

@@ -86,5 +86,6 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 | **You need to read a client binary** | [docs/reverse-engineering.md](docs/reverse-engineering.md) | `func_query` usage, `idb_list` session resolution |
 | **You need a Go dependency's source, or are waiting on a long-running process** | [docs/tooling-conventions.md](docs/tooling-conventions.md) | Toolchain lookups, the polling anti-pattern |
 | **You are about to dispatch an agent, or to decide whether to hand off** | [docs/agent-dispatch.md](docs/agent-dispatch.md) | Full job→model table, implementer budget, controller handoff thresholds |
+| **You are about to dispatch several implementers at the same templated transformation** | [docs/codemod-vs-agents.md](docs/codemod-vs-agents.md) | The N=2 break-even rule, the task-232 batch-4 worked example, the deferred rewriter's contract |
 | **Runtime or Kubernetes debugging** — diagnosing a wedged deploy or crash-loop | [docs/observability.md](docs/observability.md) | Read pod logs first, and how to reach them |
 | **Writing or changing a Go service** | `backend-dev-guidelines` skill, `backend-guidelines-reviewer` agent | DOM-* checklist, constants reuse, service boundaries, test builders |

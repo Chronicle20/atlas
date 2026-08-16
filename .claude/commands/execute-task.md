@@ -64,6 +64,12 @@ task fits, the brief path, the report path, interfaces and decisions from
 earlier tasks, and your resolution of any ambiguity you noticed. Do not
 restate the agent's contracts in the prompt.
 
+**Before dispatching a third implementer at the same templated
+transformation**, stop and check whether an AST codemod is cheaper than the
+remaining manual dispatches — see
+[docs/codemod-vs-agents.md](../../docs/codemod-vs-agents.md) for the N=2
+break-even arithmetic and the worked example.
+
 ### Step 4a — Model discipline for every dispatch
 
 Model selection for every dispatch — the job → model table, the `model: opus`
@@ -154,6 +160,21 @@ After an implementer reports `DONE` / `DONE_WITH_CONCERNS`:
 2. **Keep going immediately** — do not poll, do not wait. Run the task review,
    then Step 4b's inventory for task N+1, then dispatch task N+1's implementer.
    The gate runs underneath all of it.
+
+   **Right-sizing the task review agent:** review+audit agents cost 2,616
+   turns / 227M tokens / 17.6% of task-232's total spend, so their sizing is
+   its own lever. A task whose diff was produced by a codemod and confirmed
+   with its `--check` mode (`docs/codemod-vs-agents.md`) may take a reduced
+   or skipped per-task review agent — the transformation is already
+   machine-verified as complete and non-silent. Every other task,
+   including a hand-applied "mechanical" batch with no `--check` PASS behind
+   it, is judgment-bearing and gets the full review agent; that is the safe
+   default. **No rewriter exists yet**, so no `--check` mode exists, so this
+   reduced path is dormant — today every task takes the full review agent.
+   This applies to the per-task review agent only. It never reduces
+   `tools/verify.sh` or the guideline reviewers (`backend-guidelines-reviewer`,
+   `frontend-guidelines-reviewer`) before a PR — those run unconditionally,
+   whatever produced the diff.
 3. **Reconcile when it lands**, at the next natural pause (the notification
    from the next subagent). Read the log, ledger PASS or the failing block, and
    record the new last-gated commit.

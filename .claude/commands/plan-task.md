@@ -96,6 +96,12 @@ worse moment and a higher cost. Split at plan time instead:
   *and* their tests is three tasks.
 - Prefer several small tasks over one large one. The review loop is per task,
   so smaller tasks also mean tighter review surfaces.
+- **Before sizing a templated transformation into more than 2 implementer
+  tasks, check whether an AST codemod is cheaper than the manual dispatches
+  it replaces** — see [docs/codemod-vs-agents.md](../../docs/codemod-vs-agents.md)
+  for the break-even arithmetic and the worked example. This is dormant until
+  a rewriter exists (no `tools/` codemod is built yet), but the sizing
+  question still belongs at plan time, not discovered mid-execution.
 
 Note in `context.md` any task you deliberately left large, and why.
 

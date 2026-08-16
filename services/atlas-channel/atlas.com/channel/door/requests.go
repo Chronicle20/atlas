@@ -18,14 +18,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 	return requests.RootUrlFor(ctx, "DOORS")
 }
 
-func requestById(ctx context.Context, id string) requests.Request[RestModel] {
-	root, err := getBaseRequest(ctx)
-	if err != nil {
-		return requests.ErrorRequest[RestModel](err)
-	}
-	return requests.GetRequest[RestModel](fmt.Sprintf(root+resourceById, id))
-}
-
 // inFieldUrl returns the list URL for the doors currently in one map
 // instance. It is a bare URL (not a requests.Request) because the list is
 // now paginated server-side (task-117) and consumed via

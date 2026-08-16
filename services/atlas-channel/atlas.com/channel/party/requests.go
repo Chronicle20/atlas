@@ -33,11 +33,3 @@ func requestByMemberId(ctx context.Context, id uint32) requests.Request[[]RestMo
 	}
 	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+ByMemberId, id))
 }
-
-func requestMembers(ctx context.Context, id uint32) requests.Request[[]MemberRestModel] {
-	root, err := getBaseRequest(ctx)
-	if err != nil {
-		return requests.ErrorRequest[[]MemberRestModel](err)
-	}
-	return requests.GetRequest[[]MemberRestModel](fmt.Sprintf(root+MembersResource, id))
-}

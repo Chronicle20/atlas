@@ -173,7 +173,7 @@ func (s *envSubscriber) Start(ctx context.Context, l logrus.FieldLogger, wg *syn
 
 	cmf := consumer.GetManager().AddConsumer(l, ctx, wg)
 	cmf(consumer.NewConfig(brokers, "configuration_environment_status", s.topic, groupId),
-		consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),
+		consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser),
 		consumer.SetStartOffset(kafka.FirstOffset))
 	if _, err := consumer.GetManager().RegisterHandler(s.topic, s.handle(l)); err != nil {
 		return err
@@ -191,7 +191,7 @@ func (s *envSubscriber) Start(ctx context.Context, l logrus.FieldLogger, wg *syn
 		s.caughtUp.SetEndOffsets(s.tenantTopic, tenantOffsets)
 
 		cmf(consumer.NewConfig(brokers, "configuration_tenant_status", s.tenantTopic, groupId),
-			consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),
+			consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser),
 			consumer.SetStartOffset(kafka.FirstOffset))
 		if _, err := consumer.GetManager().RegisterHandler(s.tenantTopic, s.handleTenant(l)); err != nil {
 			return err

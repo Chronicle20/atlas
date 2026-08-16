@@ -1,6 +1,7 @@
 package env
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -58,6 +59,19 @@ func TestReconcileWithNeitherIsTheLegacyValue(t *testing.T) {
 	got, err := Reconcile(r, Id(""), "")
 	if err != nil || got != Id("") {
 		t.Fatalf("got (%q, %v), want (\"\", nil)", got, err)
+	}
+}
+
+func TestMismatchedIsFalseByDefault(t *testing.T) {
+	if Mismatched(context.Background()) {
+		t.Fatal("expected a fresh context to not be mismatched")
+	}
+}
+
+func TestWithMismatchMarksTheContext(t *testing.T) {
+	ctx := WithMismatch(context.Background())
+	if !Mismatched(ctx) {
+		t.Fatal("expected WithMismatch to make Mismatched report true")
 	}
 }
 

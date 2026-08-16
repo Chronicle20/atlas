@@ -1,9 +1,32 @@
 package env
 
 import (
+	"context"
 	"errors"
 	"fmt"
 )
+
+// ctxKeyMismatch is a private context-key type so the mismatch flag can
+// never collide with another package's context value, mirroring ctxKeyEnv
+// in env.go.
+type ctxKeyMismatchType string
+
+const ctxKeyMismatch ctxKeyMismatchType = "env-mismatch"
+
+// WithMismatch records that the operation's ENVIRONMENT header disagreed
+// with the tenant it names (FR-7.7). A HeaderParser cannot return an error,
+// so this is how the disagreement survives to the ownership gate, which
+// drops the message.
+func WithMismatch(ctx context.Context) context.Context {
+	return context.WithValue(ctx, ctxKeyMismatch, true)
+}
+
+// Mismatched reports whether WithMismatch was called on ctx (or an ancestor
+// of it).
+func Mismatched(ctx context.Context) bool {
+	v, _ := ctx.Value(ctxKeyMismatch).(bool)
+	return v
+}
 
 // ErrEnvironmentMismatch is FR-7.7: a hard error, never a reconciliation. A
 // request whose ENVIRONMENT header disagrees with the tenant it names is

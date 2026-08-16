@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
+	"sync"
 	"testing"
 	"time"
 
@@ -171,5 +173,71 @@ func TestEnvCaughtUpWaitCaughtUpUnblocksOnFlip(t *testing.T) {
 		}
 	case <-time.After(time.Second):
 		t.Fatal("WaitCaughtUp did not unblock after the gate flipped")
+	}
+}
+
+// --- Fix round 1: an end-offset resolution failure that is NOT "topic
+// missing" must fail closed, never flip the gate ready with an empty
+// registry (task-20-report.md, review finding "readiness gate has a path
+// that reports Ready with an empty registry"). ---
+
+// TestResolveStartOffsetsTreatsMissingTopicAsAnEmptySnapshot is the
+// legitimate case: the topic has not been created yet (no environment has
+// ever been published). kafka.UnknownTopicOrPartition must resolve to an
+// empty, non-error snapshot so the gate is free to flip immediately.
+func TestResolveStartOffsetsTreatsMissingTopicAsAnEmptySnapshot(t *testing.T) {
+	offsets, err := resolveStartOffsets(context.Background(), []string{"broker:9092"}, "t",
+		func(context.Context, []string, string) (map[int]int64, error) {
+			return nil, kafka.UnknownTopicOrPartition
+		},
+		testLogger(t))
+	if err != nil {
+		t.Fatalf("missing topic must not error: %v", err)
+	}
+	if offsets == nil || len(offsets) != 0 {
+		t.Fatalf("missing topic must resolve to an empty (non-nil) snapshot, got %v", offsets)
+	}
+}
+
+// TestResolveStartOffsetsFailsClosedOnAnUnrelatedError is the outage case:
+// any error OTHER than kafka.UnknownTopicOrPartition (e.g. a dial failure)
+// must propagate rather than collapse to an empty snapshot.
+func TestResolveStartOffsetsFailsClosedOnAnUnrelatedError(t *testing.T) {
+	outage := errors.New("dial tcp 10.0.0.1:9092: connect: connection refused")
+	_, err := resolveStartOffsets(context.Background(), []string{"broker:9092"}, "t",
+		func(context.Context, []string, string) (map[int]int64, error) { return nil, outage },
+		testLogger(t))
+	if err == nil {
+		t.Fatal("a broker-outage-shaped error must propagate, not collapse to an empty snapshot")
+	}
+	if !errors.Is(err, outage) {
+		t.Fatalf("propagated error must wrap the original: %v", err)
+	}
+}
+
+// TestEnvSubscriberStartFailsClosedWhenEndOffsetsUnresolvable is the
+// assertion that would have caught the original bug: when end-offset
+// resolution fails for a reason other than a missing topic, Start must
+// return an error and the caught-up gate must NOT report ready. Start
+// returns before touching consumer.GetManager(), so this runs with no live
+// Kafka broker.
+func TestEnvSubscriberStartFailsClosedWhenEndOffsetsUnresolvable(t *testing.T) {
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	c := newEnvCaughtUp()
+	s := &envSubscriber{
+		registry: reg,
+		caughtUp: c,
+		topic:    "t",
+		readEndOffsets: func(context.Context, []string, string) (map[int]int64, error) {
+			return nil, errors.New("dial tcp: connection refused")
+		},
+	}
+
+	err := s.Start(context.Background(), testLogger(t), &sync.WaitGroup{}, "group")
+	if err == nil {
+		t.Fatal("Start must fail when end offsets cannot be resolved for a non-missing-topic reason")
+	}
+	if c.CaughtUpNow() {
+		t.Fatal("gate must not report ready when end offsets could not be resolved")
 	}
 }

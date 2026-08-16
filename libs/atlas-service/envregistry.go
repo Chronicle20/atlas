@@ -82,19 +82,76 @@ type envSubscriber struct {
 	registry envMutator
 	caughtUp *envCaughtUp
 	topic    string
+
+	// readEndOffsets resolves the topic's replayable end offsets. Defaults
+	// to consumer.ReadReplayableEndOffsets when nil; overridable in tests so
+	// the outage-vs-missing-topic branch in resolveStartOffsets can be
+	// exercised without a live broker (DialContext has a 10s timeout, far
+	// too slow for a unit test to hit deliberately).
+	readEndOffsets func(ctx context.Context, brokers []string, topic string) (map[int]int64, error)
+}
+
+// resolveStartOffsets reads the topic's replayable end offsets and decides
+// how a resolution failure should affect the caught-up gate. The two
+// conditions read collapses into one error return by consumer package
+// (libs/atlas-kafka/consumer/offsets.go): a topic that does not exist yet
+// (kafka.UnknownTopicOrPartition), and everything else — DialContext
+// failing, a partition leader unreachable, i.e. a broker outage at boot.
+// Those are NOT the same condition and must not be treated the same:
+//
+//   - Missing topic: a legitimate empty projection (nothing has been
+//     published yet, e.g. before the first PR environment is ever
+//     created). Safe to proceed with an empty snapshot — SetEndOffsets({})
+//     iterates zero partitions and the gate flips immediately, correctly,
+//     since there is nothing to catch up on.
+//   - Anything else: indistinguishable from an outage. Collapsing this to
+//     an empty snapshot (as services/atlas-channel/.../configuration/projection's
+//     offsetsOrEmpty does, and as this function's first version also did)
+//     flips the readiness gate before the consumer is even registered:
+//     /readyz reports Ready with an empty registry, and every query answers
+//     the FR-1.8 legacy default ("the local deployment owns it") — a
+//     plausible-looking wrong answer, not an error. Fail closed instead:
+//     propagate the error so the gate never flips and Start Fatals (mirrors
+//     the existing RegisterHandler-failure Fatal a few lines below — this
+//     is not a new failure mode, just the same one triggered earlier).
+//
+// This is a deliberate divergence from the atlas-channel sibling's
+// offsetsOrEmpty, which the brief told this file to mirror; see task-20
+// fix-round-1 in .superpowers/sdd/plan/task-20-report.md for why. Do not
+// "fix" this back to match — the sibling has the same latent gap and is
+// tracked separately (see the report).
+func resolveStartOffsets(ctx context.Context, brokers []string, topic string,
+	read func(ctx context.Context, brokers []string, topic string) (map[int]int64, error),
+	l logrus.FieldLogger,
+) (map[int]int64, error) {
+	offsets, err := read(ctx, brokers, topic)
+	if err == nil {
+		return offsets, nil
+	}
+	if errors.Is(err, kafka.UnknownTopicOrPartition) {
+		l.WithField("topic", topic).Info("envregistry.topic_not_yet_created; starting with an empty snapshot")
+		return map[int]int64{}, nil
+	}
+	return nil, fmt.Errorf("envregistry: reading end offsets for %q: %w", topic, err)
 }
 
 // Start snapshots the topic's end offset (giving caughtUp a bar to clear),
 // then registers a consumer + handler on the shared atlas-kafka manager.
+// Returns an error — without registering any consumer — when the end
+// offsets could not be resolved for a reason other than the topic not
+// existing yet (see resolveStartOffsets); the caller (startEnvironmentRegistry)
+// Fatals on that error, matching every other Start-failure path in this
+// module.
 func (s *envSubscriber) Start(ctx context.Context, l logrus.FieldLogger, wg *sync.WaitGroup, groupId string) error {
 	brokers := lookupBrokers()
 
-	offsets, err := consumer.ReadReplayableEndOffsets(ctx, brokers, s.topic)
+	read := s.readEndOffsets
+	if read == nil {
+		read = consumer.ReadReplayableEndOffsets
+	}
+	offsets, err := resolveStartOffsets(ctx, brokers, s.topic, read, l)
 	if err != nil {
-		// A missing topic shouldn't kill startup; the gate simply stays
-		// unready and the operator can debug. Log at warn so it's noticed.
-		l.WithError(err).WithField("topic", s.topic).Warn("envregistry.read_end_offsets_failed")
-		offsets = map[int]int64{}
+		return err
 	}
 	s.caughtUp.SetEndOffsets(offsets)
 

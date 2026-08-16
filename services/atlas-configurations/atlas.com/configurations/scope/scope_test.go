@@ -114,4 +114,12 @@ func TestAuthorizeWriteRejectsAnotherEnvironment(t *testing.T) {
 	if err := scope.AuthorizeWrite(env.Id(""), env.Id("")); err != nil {
 		t.Fatalf("legacy write rejected: %v", err)
 	}
+	// fix-2 regression: environment_migration.go's backfill stamps every
+	// pre-existing row with the baseline environment (e.g. "main"), never
+	// "". A legacy caller ("") must still be authorized to write a row
+	// owned by a named environment - AuthorizeWrite must not require
+	// caller == target when caller is empty.
+	if err := scope.AuthorizeWrite(env.Id(""), env.Id("main")); err != nil {
+		t.Fatalf("legacy caller against a named-environment row rejected: %v", err)
+	}
 }

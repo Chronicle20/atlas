@@ -175,10 +175,10 @@ func TestProcessorUpdateSameEnvironmentSucceeds(t *testing.T) {
 // TestProcessorUpdateLegacyEnvironmentSucceeds is a regression guard for the
 // no-environment-in-context caller (FR-1.8): it must still be able to
 // update a tenant that itself carries the legacy (empty) environment,
-// matching pre-task-232 behaviour. scope.AuthorizeWrite requires
-// caller == target exactly (scope.go), and the legacy caller is always ""
-// - so the seeded row's environment must be "" too, not a named one like
-// "main".
+// matching pre-task-232 behaviour. scope.AuthorizeWrite special-cases an
+// empty caller as always authorized, so this also holds for a row owned by
+// a named environment - see TestProcessorUpdateLegacyCallerAuthorizedForNamedEnvironment
+// below for that case specifically.
 func TestProcessorUpdateLegacyEnvironmentSucceeds(t *testing.T) {
 	db := test.SetupTestDB(t)
 	defer test.CleanupTestDB(db)
@@ -227,6 +227,47 @@ func TestProcessorDeleteLegacyEnvironmentSucceeds(t *testing.T) {
 	mb := message.NewBuffer()
 	if err := processor.Delete(mb)(m.Id()); err != nil {
 		t.Fatalf("Processor.Delete legacy environment: unexpected error: %v", err)
+	}
+}
+
+// TestProcessorUpdateLegacyCallerAuthorizedForNamedEnvironment is the fix-2
+// regression test: environment_migration.go's backfill stamps every
+// pre-existing row with the baseline environment (e.g. "main"), never "".
+// A legacy caller (no ENVIRONMENT header, caller="") updating a
+// "main"-owned row must succeed - scope.AuthorizeWrite treats an empty
+// caller as always authorized, matching scope.Strict's unfiltered reads for
+// the same caller.
+func TestProcessorUpdateLegacyCallerAuthorizedForNamedEnvironment(t *testing.T) {
+	db := test.SetupTestDB(t)
+	defer test.CleanupTestDB(db)
+
+	m := seedTenantWithEnvironment(t, db, "main")
+
+	logger, _ := logtest.NewNullLogger()
+	processor := tenant.NewProcessor(logger, context.Background(), db)
+	mb := message.NewBuffer()
+	updated, err := processor.Update(mb)(m.Id(), "renamed", "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("Processor.Update legacy caller against main-owned tenant: unexpected error: %v", err)
+	}
+	if updated.Name() != "renamed" {
+		t.Fatalf("updated.Name() = %q, want %q", updated.Name(), "renamed")
+	}
+}
+
+// TestProcessorDeleteLegacyCallerAuthorizedForNamedEnvironment mirrors
+// TestProcessorUpdateLegacyCallerAuthorizedForNamedEnvironment for Delete.
+func TestProcessorDeleteLegacyCallerAuthorizedForNamedEnvironment(t *testing.T) {
+	db := test.SetupTestDB(t)
+	defer test.CleanupTestDB(db)
+
+	m := seedTenantWithEnvironment(t, db, "main")
+
+	logger, _ := logtest.NewNullLogger()
+	processor := tenant.NewProcessor(logger, context.Background(), db)
+	mb := message.NewBuffer()
+	if err := processor.Delete(mb)(m.Id()); err != nil {
+		t.Fatalf("Processor.Delete legacy caller against main-owned tenant: unexpected error: %v", err)
 	}
 }
 
@@ -352,6 +393,64 @@ func TestDeleteTenantHandlerSameEnvironmentSucceeds(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Header.Set(env.Key, "pr-123")
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want 204, body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+// TestUpdateTenantHandlerLegacyCallerAuthorizedForNamedEnvironment is the
+// fix-2 regression test, driven end-to-end through the real HTTP handler
+// (the round-1 lesson: a correct-looking error value is not proof the
+// response is right). environment_migration.go's backfill stamps every
+// pre-existing row with the baseline environment ("main"), never "" - so a
+// legacy caller (no ENVIRONMENT header at all) updating that row must get
+// 200, matching pre-task-232 behaviour (FR-1.8). Before the fix-2 change to
+// scope.AuthorizeWrite, this returned 403.
+func TestUpdateTenantHandlerLegacyCallerAuthorizedForNamedEnvironment(t *testing.T) {
+	db := test.SetupTestDB(t)
+	defer test.CleanupTestDB(db)
+	logger, _ := logtest.NewNullLogger()
+
+	m := seedTenantWithEnvironment(t, db, "main")
+
+	router := mux.NewRouter()
+	tenant.RegisterRoutes(db)(testServerInformation{})(router, logger)
+
+	body := tenantUpdateBody(t, m.Id().String(), "renamed", "main")
+	req, err := http.NewRequest(http.MethodPatch, "/tenants/"+m.Id().String(), bytes.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// deliberately no env.Key header - legacy caller
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200, body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+// TestDeleteTenantHandlerLegacyCallerAuthorizedForNamedEnvironment mirrors
+// TestUpdateTenantHandlerLegacyCallerAuthorizedForNamedEnvironment for
+// Delete.
+func TestDeleteTenantHandlerLegacyCallerAuthorizedForNamedEnvironment(t *testing.T) {
+	db := test.SetupTestDB(t)
+	defer test.CleanupTestDB(db)
+	logger, _ := logtest.NewNullLogger()
+
+	m := seedTenantWithEnvironment(t, db, "main")
+
+	router := mux.NewRouter()
+	tenant.RegisterRoutes(db)(testServerInformation{})(router, logger)
+
+	req, err := http.NewRequest(http.MethodDelete, "/tenants/"+m.Id().String(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// deliberately no env.Key header - legacy caller
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 

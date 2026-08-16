@@ -33,11 +33,16 @@ func Strict(db *gorm.DB, e env.Id) *gorm.DB {
 	return db.Where("environment = ?", string(e))
 }
 
-// AuthorizeWrite returns ErrCrossEnvironmentWrite when target != caller.
-// The legacy caller ("") only ever targets the legacy environment, so a
-// legacy write is always authorized.
+// AuthorizeWrite returns ErrCrossEnvironmentWrite when target != caller,
+// except that a legacy caller ("") is always authorized - symmetric with
+// Strict, which applies no filter for a legacy caller's reads. A legacy
+// deployment (no ENVIRONMENT header) must remain byte-identical to
+// pre-change behaviour (FR-1.8), and the environment-backfill migration
+// stamps every pre-existing row with the baseline environment (e.g.
+// "main"), never "" - so restricting "" to only ever match "" would reject
+// every legacy write against a backfilled row.
 func AuthorizeWrite(caller env.Id, target env.Id) error {
-	if caller == target {
+	if caller == "" || caller == target {
 		return nil
 	}
 	return fmt.Errorf("%w: caller=%q target=%q", ErrCrossEnvironmentWrite, caller, target)

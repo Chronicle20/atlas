@@ -52,6 +52,25 @@ with a task range** — never an ad-hoc `general-purpose` agent carrying an
 1. From the plan and context files, identify which services/libraries were expected to be modified and which files were expected to be created or changed.
 2. Use `git log` and `git diff main...HEAD` (or the appropriate base branch) to identify what was actually changed on the current branch.
 
+**The branch diff is your evidence surface.** Read changed files in full where a
+task's evidence lives in them. Do not survey the repo, do not read sibling
+packages for background, and do not build a general model of the codebase.
+
+Two deliberate exceptions, because this audit's job is to detect absence:
+
+- **Absence of evidence in the diff IS the finding.** If a task claims work and
+  the diff contains none, that is `SKIPPED` — do not go exploring the repo
+  hoping to find it implemented somewhere else.
+- **One targeted lookup per task is allowed** to check whether a task was
+  satisfied a different way than the plan described (a `grep` for the symbol,
+  behavior or route the task names). That is what supports the "completed
+  differently but achieves the same goal → `DONE`" rule below. One targeted
+  grep — not a survey.
+
+If a task's status genuinely cannot be settled from the diff plus that one
+lookup, mark it `PARTIAL` and say in the Evidence column what you would have
+needed to read. Never resolve ambiguity by exploring.
+
 ### Step 3: Task Completion Audit
 
 For each task in the plan:

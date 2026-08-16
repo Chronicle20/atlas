@@ -26,6 +26,32 @@ You will be given either:
 
 If invoked with no argument and a `plan.md` exists in the current branch's task folder, derive the audit scope from the plan's `Files:` sections (any `.ts` / `.tsx` paths).
 
+## Scope
+
+When you are reviewing a **change** — a diff, a commit range, or a list of
+changed files, which is the common case — the changed files are your review
+surface.
+
+- You may read a changed file in full, and you may read a specific symbol's
+  definition when the diff uses it and correctness genuinely depends on its
+  contract.
+- Do NOT survey the app, do NOT read sibling components, hooks or services for
+  background, and do NOT build a general model of the codebase beyond what the
+  change touches. Prefer one targeted `grep` for a named symbol over reading a
+  file to find out what is in it.
+- If a checklist item cannot be evaluated from the change plus those targeted
+  lookups, do not go exploring to resolve it. Record it under a
+  `## Not evaluable from the diff` heading — one line each, naming the item and
+  what you would have needed to read. **That section is a required part of your
+  output.** It is what keeps a scoped review honest: a gap becomes a named item
+  instead of a silent pass.
+
+This does not soften the Mindset rules below. An unevaluated item is never a
+PASS — it is either a finding or a line in that section.
+
+When you are instead asked to audit an **entire area** with no change under
+review, that area is the surface and this section does not apply.
+
 ## Mindset
 
 - Default answer is FAIL.
@@ -147,6 +173,11 @@ If invoked standalone, write to `docs/audits/atlas-ui/audit.md`.
 
 ## Testing Checklist
 [Same format]
+
+## Not evaluable from the diff
+[Required when reviewing a change — see Scope. One line per checklist item you
+could not settle within the review surface, naming the item and what you would
+have needed to read. Write "none" if every item was evaluable.]
 
 ## Summary
 

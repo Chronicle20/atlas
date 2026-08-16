@@ -66,32 +66,10 @@ restate the agent's contracts in the prompt.
 
 ### Step 4a — Model discipline for every dispatch
 
-Pass an explicit `model` on **every** Agent/Task dispatch. Never rely on
-inheritance: an unspecified model inherits the main-loop model (Opus), and an
-Opus subagent turn costs ~7x a Sonnet one.
-
-The pin is chosen by the **job the agent is doing**, not by its
-`subagent_type`. Named reviewer agents carry a Sonnet pin in their frontmatter,
-but an ad-hoc `general-purpose` dispatch carrying a review prompt does not —
-that is the hole this rule closes.
-
-| Job | Model | Notes |
-|---|---|---|
-| Review, verify, audit, re-review, whole-branch review | **`sonnet`** — always | No exceptions. Reviewing is reading against a checklist; Opus buys nothing and these run long |
-| Scan, inventory, doc sweep, file-finding | `haiku` | |
-| Run the verification gate (`atlas-verifier`) | `haiku` | Frontmatter pin; it runs one command and quotes the output |
-| Implement a plan task (`atlas-implementer`) | `sonnet` | Default; frontmatter pin |
-| Implement a packet codec (`packet-implementer`) or dispatcher family (`dispatcher-family-implementer`) | `sonnet` | Frontmatter pin; both also carry the 120-call PARTIAL budget |
-| Implement a plan task tagged `model: opus` in plan.md | `opus` | Opt-in only — see below; pass `model: opus` on the dispatch to override the frontmatter |
-
-A plan task may be tagged `model: opus` in `plan.md` when it is genuinely
-derivation-heavy: IDA/packet field-order derivation, saga orchestration across
-services, or a cross-service contract change. `/plan-task` should apply that tag
-sparingly and justify it in one line. Everything else — REST surfaces, GORM
-entities, Kafka consumers, tests, template routing — runs Sonnet.
-
-If an implementer comes back wrong twice on Sonnet, escalate that one task to
-Opus and note it, rather than raising the default.
+Model selection for every dispatch — the job → model table, the `model: opus`
+opt-in, and the escalation rule — is owned by
+[`docs/agent-dispatch.md`](../../docs/agent-dispatch.md). Pass an explicit
+`model` on every dispatch.
 
 If the user explicitly requests inline mode this session (rare), invoke `superpowers:executing-plans` instead.
 
@@ -153,6 +131,8 @@ run in a clean 20k one, and their output is the biggest avoidable consumer of
 an implementer's window.
 
 **The gate runs concurrently with the next task. Never idle waiting for it.**
+See [`docs/agent-dispatch.md`](../../docs/agent-dispatch.md) §Verification
+split for why this split exists.
 
 A gate checks a commit, and commits are immutable — task N's verdict is equally
 valid whenever it lands. Blocking on it is pure wall clock: measured on
@@ -241,10 +221,10 @@ review, every fix ruling, every task-notification wake-up accumulates in it,
 and each wake-up re-reads all of it. By the twelfth plan task that is 300k+
 tokens billed to tick a checkbox.
 
-Measured on a real 18-task run: the controller finished at 402k tokens having
-produced only 165KB of its own tool output across 157 calls. Its last 42 turns
-— a self-contained segment sharing no state with the preceding tasks — ran at
-360-400k each. In a fresh session those same turns would have run at ~80k.
+The measured cost arithmetic behind this — a real 18-task controller run,
+what it cost in tokens and tool calls, and the fresh-session comparison —
+lives in [`docs/agent-dispatch.md`](../../docs/agent-dispatch.md) §Context
+handoff.
 
 **After completing any plan task, if your context exceeds ~250k tokens and two
 or more plan tasks remain, hand off:**
@@ -258,10 +238,9 @@ or more plan tasks remain, hand off:**
 This is safe because the ledger is already the recovery map the skill designs
 for: it resumes at the first task with no `Task <N>: complete` line, and the
 workspace (briefs, reports, review packages) lives on disk, git-ignored, not in
-your context. A fresh controller re-reads the plan once (~15k) and resumes at
-~40k instead of 300k+. Handing off mid-plan is cheaper than finishing it large,
-and it costs nothing in implementation quality — implementer contexts are
-untouched either way.
+your context. Handing off mid-plan is cheaper than finishing it large, and it
+costs nothing in implementation quality — implementer contexts are untouched
+either way.
 
 Hand off unconditionally, regardless of remaining task count, when the next
 task is a self-contained detour from the rest of the plan — a tooling

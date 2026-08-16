@@ -1,6 +1,7 @@
 package party_quest
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -10,10 +11,15 @@ const (
 	TimerByCharacterId = "party-quests/instances/character/%d/timer"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("PARTY_QUESTS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "PARTY_QUESTS")
 }
 
-func requestTimerByCharacterId(characterId uint32) requests.Request[TimerRestModel] {
-	return requests.GetRequest[TimerRestModel](fmt.Sprintf(getBaseRequest()+TimerByCharacterId, characterId))
+func requestTimerByCharacterId(ctx context.Context, characterId uint32) requests.Request[TimerRestModel] {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[TimerRestModel](err)
+	}
+	return requests.GetRequest[TimerRestModel](fmt.Sprintf(root+TimerByCharacterId, characterId))
 }

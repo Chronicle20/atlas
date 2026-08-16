@@ -1,6 +1,7 @@
 package world
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -12,10 +13,15 @@ const (
 	WorldsById     = WorldsResource + "%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("WORLDS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "WORLDS")
 }
 
-func requestWorld(worldId world.Id) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+WorldsById, worldId))
+func requestWorld(ctx context.Context, worldId world.Id) requests.Request[RestModel] {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+WorldsById, worldId))
 }

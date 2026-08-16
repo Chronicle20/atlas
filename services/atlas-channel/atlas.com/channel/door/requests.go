@@ -1,6 +1,7 @@
 package door
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -13,12 +14,17 @@ const (
 	resourceByOwner = "characters/%d/doors"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("DOORS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "DOORS")
 }
 
-func requestById(id string) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+resourceById, id))
+func requestById(ctx context.Context, id string) requests.Request[RestModel] {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+resourceById, id))
 }
 
 // inFieldUrl returns the list URL for the doors currently in one map
@@ -26,12 +32,22 @@ func requestById(id string) requests.Request[RestModel] {
 // now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func inFieldUrl(f field.Model) string {
-	return fmt.Sprintf(getBaseRequest()+resourceInField, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+func inFieldUrl(ctx context.Context, f field.Model) string  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+resourceInField, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()), nil
 }
 
 // byOwnerUrl returns the list URL for a character's doors. Bare URL for the
 // same reason as inFieldUrl.
-func byOwnerUrl(ownerCharacterId uint32) string {
-	return fmt.Sprintf(getBaseRequest()+resourceByOwner, ownerCharacterId)
+func byOwnerUrl(ctx context.Context, ownerCharacterId uint32) string  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+resourceByOwner, ownerCharacterId), nil
 }

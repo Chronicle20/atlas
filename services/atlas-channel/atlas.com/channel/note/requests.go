@@ -1,6 +1,7 @@
 package note
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -11,18 +12,28 @@ const (
 	NoteResource = "notes/%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("NOTES")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "NOTES")
 }
 
 // characterNotesUrl returns the list URL for a character's notes. It is a
 // bare URL (not a requests.Request) because the list is now paginated
 // server-side (task-117) and consumed via requests.DrainProvider, which
 // appends its own page[number]/page[size] query params per request.
-func characterNotesUrl(characterId uint32) string {
-	return fmt.Sprintf(getBaseRequest()+Resource, characterId)
+func characterNotesUrl(ctx context.Context, characterId uint32) string {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+Resource, characterId), nil
 }
 
-func requestById(noteId uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+NoteResource, noteId))
+func requestById(ctx context.Context, noteId uint32) requests.Request[RestModel]  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+NoteResource, noteId))
 }

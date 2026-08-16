@@ -1,6 +1,7 @@
 package wishlist
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -12,8 +13,8 @@ const (
 	Resource = "characters/%d/cash-shop/wishlist"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("CASHSHOP")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "CASHSHOP")
 }
 
 // byCharacterIdUrl returns the list URL for a character's cash-shop
@@ -21,19 +22,29 @@ func getBaseRequest() string {
 // now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func byCharacterIdUrl(characterId uint32) string {
-	return fmt.Sprintf(getBaseRequest()+Resource, characterId)
-}
+func byCharacterIdUrl(ctx context.Context, characterId uint32) string {
 
-func addForCharacterId(characterId uint32, serialNumber uint32) requests.Request[RestModel] {
-	i := RestModel{
-		Id:           uuid.Nil,
-		CharacterId:  characterId,
-		SerialNumber: serialNumber,
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
 	}
-	return requests.PostRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId), i)
+	return fmt.Sprintf(root+Resource, characterId), nil
 }
 
-func clearForCharacterId(characterId uint32) requests.EmptyBodyRequest {
-	return requests.DeleteRequest(fmt.Sprintf(getBaseRequest()+Resource, characterId))
+func addForCharacterId(ctx context.Context, characterId uint32, serialNumber uint32) requests.Request[RestModel]  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.PostRequest[RestModel](fmt.Sprintf(root+Resource, characterId), i)
+}
+
+func clearForCharacterId(ctx context.Context, characterId uint32) requests.EmptyBodyRequest  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return func(l logrus.FieldLogger, _ context.Context) error { return err }
+	}
+	return requests.DeleteRequest(fmt.Sprintf(root+Resource, characterId))
 }

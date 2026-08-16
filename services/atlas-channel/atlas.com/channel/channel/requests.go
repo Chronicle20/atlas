@@ -16,16 +16,26 @@ const (
 	ChannelResource  = ChannelsResource + "/%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("CHANNELS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "CHANNELS")
 }
 
-func requestChannel(ch channel.Model) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelResource, ch.WorldId(), ch.Id()))
+func requestChannel(ctx context.Context, ch channel.Model) requests.Request[RestModel] {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+ChannelResource, ch.WorldId(), ch.Id()))
 }
 
-func unregisterChannel(ch channel.Model) requests.EmptyBodyRequest {
-	return requests.DeleteRequest(fmt.Sprintf(getBaseRequest()+ChannelResource, ch.WorldId(), ch.Id()))
+func unregisterChannel(ctx context.Context, ch channel.Model) requests.EmptyBodyRequest  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return func(l logrus.FieldLogger, _ context.Context) error { return err }
+	}
+	return requests.DeleteRequest(fmt.Sprintf(root+ChannelResource, ch.WorldId(), ch.Id()))
 }
 
 func registerChannel(l logrus.FieldLogger) func(ctx context.Context) func(c Model) error {

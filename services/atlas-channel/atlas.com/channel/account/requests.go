@@ -1,6 +1,7 @@
 package account
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -11,10 +12,15 @@ const (
 	AccountsById     = AccountsResource + "/%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("ACCOUNTS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "ACCOUNTS")
 }
 
-func requestAccountById(id uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+AccountsById, id))
+func requestAccountById(ctx context.Context, id uint32) requests.Request[RestModel] {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+AccountsById, id))
 }

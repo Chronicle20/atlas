@@ -1,6 +1,7 @@
 package item
 
 import (
+	"context"
 	"net/url"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -10,8 +11,8 @@ const (
 	Resource = "data/item-strings"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("DATA")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "DATA")
 }
 
 // requestByName queries atlas-data's item-string search index by name. The

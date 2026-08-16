@@ -1,13 +1,14 @@
 package incubator
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("GACHAPONS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "GACHAPONS")
 }
 
 func dataBaseRequest() string {

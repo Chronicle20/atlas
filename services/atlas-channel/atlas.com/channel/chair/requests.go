@@ -1,6 +1,7 @@
 package chair
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -19,8 +20,8 @@ const (
 	Resource = "worlds/%d/channels/%d/maps/%d/instances/%s/chairs"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("CHAIRS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "CHAIRS")
 }
 
 // inMapUrl returns the list URL for the chairs currently occupied in one
@@ -28,6 +29,11 @@ func getBaseRequest() string {
 // is now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func inMapUrl(f field.Model) string {
-	return fmt.Sprintf(getBaseRequest()+Resource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+func inMapUrl(ctx context.Context, f field.Model) string {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+Resource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()), nil
 }

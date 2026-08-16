@@ -1,6 +1,7 @@
 package monsterbook
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
@@ -15,16 +16,20 @@ const (
 	CardsResource = "characters/%d/monster-book/cards"
 )
 
-var baseURLProvider = func() string {
-	return requests.RootUrl("MONSTER_BOOK")
+var baseURLProvider = func(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MONSTER_BOOK")
 }
 
-func getBaseRequest() string {
-	return baseURLProvider()
+func getBaseRequest(ctx context.Context) (string, error) {
+	return baseURLProvider(ctx)
 }
 
-func requestByCharacterId(characterId character.Id) requests.Request[CollectionRestModel] {
-	return requests.GetRequest[CollectionRestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
+func requestByCharacterId(ctx context.Context, characterId character.Id) requests.Request[CollectionRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[CollectionRestModel](err)
+	}
+	return requests.GetRequest[CollectionRestModel](fmt.Sprintf(root+Resource, characterId))
 }
 
 // cardsByCharacterIdUrl returns the list URL for a character's owned
@@ -32,14 +37,20 @@ func requestByCharacterId(characterId character.Id) requests.Request[CollectionR
 // the list is now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func cardsByCharacterIdUrl(characterId character.Id) string {
-	return fmt.Sprintf(getBaseRequest()+CardsResource, characterId)
+func cardsByCharacterIdUrl(ctx context.Context, characterId character.Id) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+CardsResource, characterId), nil
 }
 
 // SetBaseURLForTest swaps the base URL for tests using httptest. Only
-// call from a test; production code uses the env-driven default.
+// call from a test; production code uses the env-driven default. The
+// injected closure ignores ctx -- tests always exercise the fixed httptest
+// URL regardless of any environment on the context.
 func SetBaseURLForTest(url string) func() {
 	prev := baseURLProvider
-	baseURLProvider = func() string { return url + "/api/" }
+	baseURLProvider = func(_ context.Context) (string, error) { return url + "/api/", nil }
 	return func() { baseURLProvider = prev }
 }

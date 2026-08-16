@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -13,8 +14,8 @@ const (
 	mtsConfigResource      = "mts-configs"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("TENANTS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "TENANTS")
 }
 
 // requestForTenant builds the atlas-tenants fetch for a tenant's MTS

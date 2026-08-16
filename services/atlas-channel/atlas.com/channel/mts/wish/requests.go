@@ -1,6 +1,7 @@
 package wish
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 
@@ -17,28 +18,43 @@ const Resource = "characters/%d/mts/wishlist"
 // wish.handleGetWorldWishlist (every want-ad in a world, all characters).
 const WorldResource = "worlds/%d/mts/wishlist"
 
-func getBaseRequest() string {
-	return requests.RootUrl("MTS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MTS")
 }
 
 // byCharacterUrl returns the list URL for a character's wishlist. It is a bare
 // URL (not a requests.Request) because the list is now paginated server-side
 // (task-117) and consumed via requests.DrainProvider, which appends its own
 // page[number]/page[size] query params per request.
-func byCharacterUrl(characterId uint32) string {
-	return fmt.Sprintf(getBaseRequest()+Resource, characterId)
+func byCharacterUrl(ctx context.Context, characterId uint32) string {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+Resource, characterId), nil
 }
 
 // wantedByWorldUrl returns the list URL for every want-ad in a world, across all
 // characters (atlas-mts handleGetWorldWishlist returns the type=wanted entries
 // world-wide). Paginated server-side (task-117); consumed via DrainProvider.
-func wantedByWorldUrl(worldId byte) string {
-	return fmt.Sprintf(getBaseRequest()+WorldResource, worldId)
+func wantedByWorldUrl(ctx context.Context, worldId byte) string  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+WorldResource, worldId), nil
 }
 
 // byCharacterAndTypeUrl returns the list URL for only the character's cart or
 // wanted entries (atlas-mts handleGetCharacterWishlist honors the `type` query
 // param). Paginated server-side (task-117); consumed via DrainProvider.
-func byCharacterAndTypeUrl(characterId uint32, wishType string) string {
-	return fmt.Sprintf(getBaseRequest()+Resource, characterId) + "?type=" + url.QueryEscape(wishType)
+func byCharacterAndTypeUrl(ctx context.Context, characterId uint32, wishType string) string  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+Resource, characterId) + "?type=" + url.QueryEscape(wishType), nil
 }

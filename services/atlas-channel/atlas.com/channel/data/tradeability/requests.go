@@ -1,6 +1,7 @@
 package tradeability
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -15,24 +16,49 @@ const (
 	CashById       = "data/cash/items/%d"
 )
 
-func getBaseRequest() string { return requests.RootUrl("DATA") }
+func getBaseRequest(ctx context.Context) (string, error) { return requests.RootUrlFor(ctx, "DATA") }
 
-func requestEquipment(id item.Id) requests.Request[EquipmentRestModel] {
-	return requests.GetRequest[EquipmentRestModel](fmt.Sprintf(getBaseRequest()+EquipmentById, id))
+func requestEquipment(ctx context.Context, id item.Id) requests.Request[EquipmentRestModel] {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[EquipmentRestModel](err)
+	}
+	return requests.GetRequest[EquipmentRestModel](fmt.Sprintf(root+EquipmentById, id))
 }
 
-func requestConsumable(id item.Id) requests.Request[ConsumableRestModel] {
-	return requests.GetRequest[ConsumableRestModel](fmt.Sprintf(getBaseRequest()+ConsumableById, id))
+func requestConsumable(ctx context.Context, id item.Id) requests.Request[ConsumableRestModel]  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[ConsumableRestModel](err)
+	}
+	return requests.GetRequest[ConsumableRestModel](fmt.Sprintf(root+ConsumableById, id))
 }
 
-func requestSetup(id item.Id) requests.Request[SetupRestModel] {
-	return requests.GetRequest[SetupRestModel](fmt.Sprintf(getBaseRequest()+SetupById, id))
+func requestSetup(ctx context.Context, id item.Id) requests.Request[SetupRestModel]  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[SetupRestModel](err)
+	}
+	return requests.GetRequest[SetupRestModel](fmt.Sprintf(root+SetupById, id))
 }
 
-func requestEtc(id item.Id) requests.Request[EtcRestModel] {
-	return requests.GetRequest[EtcRestModel](fmt.Sprintf(getBaseRequest()+EtcById, id))
+func requestEtc(ctx context.Context, id item.Id) requests.Request[EtcRestModel]  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[EtcRestModel](err)
+	}
+	return requests.GetRequest[EtcRestModel](fmt.Sprintf(root+EtcById, id))
 }
 
-func requestCash(id item.Id) requests.Request[CashRestModel] {
-	return requests.GetRequest[CashRestModel](fmt.Sprintf(getBaseRequest()+CashById, id))
+func requestCash(ctx context.Context, id item.Id) requests.Request[CashRestModel]  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[CashRestModel](err)
+	}
+	return requests.GetRequest[CashRestModel](fmt.Sprintf(root+CashById, id))
 }

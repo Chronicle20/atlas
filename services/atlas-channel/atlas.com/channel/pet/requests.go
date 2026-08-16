@@ -1,6 +1,7 @@
 package pet
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -12,18 +13,28 @@ const (
 	ByOwnerResource = "characters/%d/pets"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("PETS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "PETS")
 }
 
-func requestById(petId uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, petId))
+func requestById(ctx context.Context, petId uint32) requests.Request[RestModel] {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+ById, petId))
 }
 
 // byOwnerUrl returns the list URL for a character's pets. It is a bare URL
 // (not a requests.Request) because the list is now paginated server-side
 // (task-117) and consumed via requests.DrainProvider, which appends its own
 // page[number]/page[size] query params per request.
-func byOwnerUrl(ownerId uint32) string {
-	return fmt.Sprintf(getBaseRequest()+ByOwnerResource, ownerId)
+func byOwnerUrl(ctx context.Context, ownerId uint32) string  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+ByOwnerResource, ownerId), nil
 }

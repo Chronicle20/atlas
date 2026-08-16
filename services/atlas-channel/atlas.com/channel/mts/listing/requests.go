@@ -1,6 +1,7 @@
 package listing
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -56,8 +57,8 @@ type BrowseFilter struct {
 	PageSize int
 }
 
-func getBaseRequest() string {
-	return requests.RootUrl("MTS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MTS")
 }
 
 // filterQuery renders only the non-paging filter fields. Shared by query()

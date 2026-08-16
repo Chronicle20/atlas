@@ -30,7 +30,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // caller, never swallowed or defaulted to 0: the handler (Task 12) rejects
 // conservatively on error (design §6 "never consume-then-drop").
 func (p *ProcessorImpl) GetWaitSeconds(worldId world.Id, family string) (uint32, error) {
-	rm, err := requestQueue(worldId, family)(p.l, p.ctx)
+	rm, err := requestQueue(p.ctx, worldId, family)(p.l, p.ctx)
 	if err != nil {
 		return 0, err
 	}

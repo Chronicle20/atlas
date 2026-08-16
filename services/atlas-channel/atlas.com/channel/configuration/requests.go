@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"context"
 	"atlas-channel/configuration/tenant"
 	"fmt"
 
@@ -15,14 +16,24 @@ const (
 	ForTenant = Resource + "/tenants/%s"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("CONFIGURATIONS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "CONFIGURATIONS")
 }
 
-func requestByService(serviceId uuid.UUID) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByService, serviceId.String()))
+func requestByService(ctx context.Context, serviceId uuid.UUID) requests.Request[RestModel] {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+ByService, serviceId.String()))
 }
 
-func requestForTenant(tenantId uuid.UUID) requests.Request[tenant.RestModel] {
-	return requests.GetRequest[tenant.RestModel](fmt.Sprintf(getBaseRequest()+ForTenant, tenantId.String()))
+func requestForTenant(ctx context.Context, tenantId uuid.UUID) requests.Request[tenant.RestModel]  {
+
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[tenant.RestModel](err)
+	}
+	return requests.GetRequest[tenant.RestModel](fmt.Sprintf(root+ForTenant, tenantId.String()))
 }

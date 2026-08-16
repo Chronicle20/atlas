@@ -93,6 +93,52 @@ retried. Triage:
    names) is a producer bug, not a registry problem — trace it to whichever
    service emitted the message.
 
+## Verifying a consumer group is seeded (FR-4.9, FR-5.3)
+
+Every override deployment in a sparse environment joins the shared baseline
+topics with a brand-new consumer group (`KAFKA_CONSUMER_GROUP`, resolved by
+`libs/atlas-kafka/consumergroup/resolver.go`). The sync-wave-0
+`atlas-kafka-precreate` Job commits an end-of-log offset for that group on
+every subscribed topic **before any Deployment starts** — while the group is
+still empty and therefore resettable (design §6.3). This is what keeps a new
+group from either replaying `main`'s entire retention window (the library's
+`FirstOffset` default) or losing traffic produced between group creation and
+first poll (`LastOffset`).
+
+The seeding logic lives in `deploy/k8s/base/kafka-precreate.sh` (mounted into
+the Job via the `atlas-kafka-precreate-script` ConfigMap) and is skipped
+entirely whenever `KAFKA_CONSUMER_GROUP` is unset — that is `main`, whose
+groups already exist and carry real committed offsets that must never be
+reset. `deploy/k8s/base/atlas-kafka-precreate_test.sh` asserts that skip
+without touching Kafka, and exercises `seed_group` against a real broker when
+`BOOTSTRAP_SERVERS` is set.
+
+To verify a group was actually seeded in a live environment:
+
+```sh
+kubectl -n atlas-pr-<N> logs job/atlas-kafka-precreate
+```
+
+should show `seeding end-of-log offsets for override consumer groups`
+followed by `override consumer group offsets verified`. The Job's own
+verification pass (`verify_group_offsets`) fails the Job — visible to Argo
+CD's health check, which holds every Deployment (sync-wave 10) until this
+Job completes — if any subscribed topic lacks a committed offset for any
+override group. A completed, healthy `atlas-kafka-precreate` Job is therefore
+itself the observable readiness signal (FR-5.3): no separate inference is
+needed.
+
+To check a specific group by hand:
+
+```sh
+kafka-consumer-groups.sh --bootstrap-server <broker> \
+    --group "<Service Name> [pr-<N>]" --describe
+```
+
+Every row's `CURRENT-OFFSET` column should be a number, never `-` (which
+means the group has no committed offset on that partition — the failure mode
+this Job exists to prevent).
+
 ## Loki selectors
 
 **Loki has no `app` label in this cluster.** Select on `service_name` and

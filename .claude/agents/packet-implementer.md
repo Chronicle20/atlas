@@ -28,6 +28,10 @@ description: |
   assistant: "Dispatching packet-implementer — its Step-0 check will decide whether this is a new codec or a thin wrapper over the existing AttackInfo decoder."
   </example>
 model: sonnet
+# tools: wide/unrestricted (FR-1.3) — this agent drives IDA through ida-pro-mcp
+# to decompile client read order; the MCP tool surface can't be enumerated
+# ahead of time, so it keeps the full default tool set rather than an allowlist.
+tools: "*"
 ---
 
 You implement exactly ONE new packet codec (or one small same-family batch),

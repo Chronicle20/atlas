@@ -27,6 +27,10 @@ description: |
   assistant: "Dispatching dispatcher-family-implementer for CWvsContext::OnGuildResult."
   </example>
 model: sonnet
+# tools: wide/unrestricted (FR-1.3) — this agent drives IDA through ida-pro-mcp
+# to decompile client read order; the MCP tool surface can't be enumerated
+# ahead of time, so it keeps the full default tool set rather than an allowlist.
+tools: "*"
 ---
 
 You implement exactly ONE mode-prefix dispatcher family, end to end, the way

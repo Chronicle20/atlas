@@ -23,6 +23,10 @@ description: |
   assistant: "Dispatching packet-verifier to re-derive the read order and re-pin."
   </example>
 model: sonnet
+# tools: wide/unrestricted (FR-1.3) — this agent drives IDA through ida-pro-mcp
+# to decompile client read order; the MCP tool surface can't be enumerated
+# ahead of time, so it keeps the full default tool set rather than an allowlist.
+tools: "*"
 ---
 
 You verify exactly one (packet, version) cell. You are working in the task

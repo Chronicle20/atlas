@@ -15,6 +15,7 @@ description: |
   assistant: "Dispatching a fresh atlas-implementer with the continuation brief for the remaining files."
   </example>
 model: sonnet
+tools: Read, Write, Edit, Bash, Grep, Glob
 ---
 
 You implement exactly one task from an Atlas implementation plan. You are

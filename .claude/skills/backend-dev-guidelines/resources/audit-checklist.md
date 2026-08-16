@@ -21,27 +21,60 @@ A diff that touches no REST handler does not load
 [patterns-rest-jsonapi.md](patterns-rest-jsonapi.md); a diff that adds no
 service does not load [scaffolding-checklist.md](scaffolding-checklist.md).
 
-Each row's **Applies when** column is the trigger. If a trigger does not fire,
-the rule is `N/A` with the trigger named as evidence — that is a legitimate
-disposition and is not the same as "not evaluable".
+### Triggering is two-level — do not collapse it
+
+**A family trigger decides which document to open. Each rule's own
+`Applies when` decides whether that rule is evaluated.** The two are not the
+same, and a family trigger is never narrower than the rules it carries: it is
+the *union* of its members' triggers, so that no rule can be skipped just
+because it shares a document with rules that did not apply.
+
+Concretely: DOM-06 (`processor.go`) lives in the REST document but applies to
+any package with a processor, REST or not. DOM-04/05 (`rest.go`) and DOM-11
+(`provider.go`) live in the DOM-structure section but apply to any package with
+those files, `model.go` or not.
+
+So:
+
+1. Open a family's document if **any** of its rules' triggers fire.
+2. Inside an opened document, evaluate each rule against **its own** trigger.
+3. A rule whose own trigger did not fire is `N/A`, with the trigger named as
+   evidence — a legitimate disposition, and not the same as "not evaluable".
+4. Never mark a rule `N/A` on the strength of the *family* trigger alone.
 
 ## Family index — load detail on demand
 
-| Family | Applies when | Detail document |
+| Family | Open the document when (union of member triggers) | Detail document |
 |---|---|---|
-| **DOM structure** (DOM-01..05, 11, 16) | Changed package has `model.go` | [file-responsibilities.md](file-responsibilities.md#audit-verification--domain-structure-dom-0105-dom-11-dom-16) |
+| **DOM structure** (DOM-01..05, 11, 16) | Changed package has `model.go`, `entity.go`, `rest.go`, or `provider.go` | [file-responsibilities.md](file-responsibilities.md#audit-verification--domain-structure-dom-0105-dom-11-dom-16) |
 | **FILE placement** (FILE-01..06) | Any changed Go package — no exemptions | [file-responsibilities.md](file-responsibilities.md#audit-verification--file-0106) |
 | **SUB sub-domain** (SUB-01..04) | Changed package has `resource.go` but no `model.go` | [file-responsibilities.md](file-responsibilities.md#audit-verification--sub-0104) |
-| **REST** (DOM-06..09, 12..15, 17..19) | Changed package has `resource.go` or `rest.go`, or registers HTTP routes | [patterns-rest-jsonapi.md](patterns-rest-jsonapi.md#audit-verification--rest-checks) |
+| **REST** (DOM-06..09, 12..15, 17..19) | Changed package has `resource.go`, `rest.go`, or `processor.go`, or registers HTTP routes | [patterns-rest-jsonapi.md](patterns-rest-jsonapi.md#audit-verification--rest-checks) |
 | **Constants reuse** (DOM-21) | Diff declares a new type, named const block, or numeric-literal classification | [anti-patterns.md](anti-patterns.md#audit-verification--dom-21-shared-domain-types) |
 | **Testing** (DOM-10, 20, 24) | Diff touches a `_test.go`, or a changed package reaches an emit path | [testing-guide.md](testing-guide.md#audit-verification--dom-10-dom-20-dom-24) |
 | **Deploy & topics** (DOM-22, 23) | Diff adds a `libs/atlas-*` module, or adds/renames a Kafka topic env var | [patterns-deploy.md](patterns-deploy.md) |
 | **Runtime safety** (DOM-26) | Any non-test Go file changed | [anti-patterns.md](anti-patterns.md#audit-verification--dom-26-goroutines) |
-| **Channel wire values** (DOM-25) | Diff touches `services/atlas-channel` or `libs/atlas-packet`, or a domain service emits a byte a client interprets | [anti-patterns.md](anti-patterns.md#anti-pattern-hardcoding-client-interpreted-wire-values) |
+| **Channel wire values** (DOM-25) | Diff touches `services/atlas-channel` or `libs/atlas-packet`, or a domain service emits a byte a client interprets | [anti-patterns.md](anti-patterns.md#audit-verification--dom-25-client-interpreted-wire-values) |
 | **Resilience** (DOM-27, 28) | DB-backed service handlers, or `model.Decorator` / enrichment paths changed | [patterns-resilience.md](patterns-resilience.md#audit-verification--dom-27-dom-28) |
 | **External clients** (EXT-01..04) | Changed package calls `requests.RootUrl` / `requests.GetRequest[T]` / `requests.PostRequest[T]` for another atlas service | [cross-service-implementation.md](cross-service-implementation.md#audit-verification--ext-0104) |
-| **Scaffolding** (SCAFFOLD-01..09) | Diff adds a `services/atlas-<svc>/` directory, or registers a new atlas-channel `Writer`/`Handler` | [scaffolding-checklist.md](scaffolding-checklist.md#audit-verification--scaffold-0109) |
+| **Scaffolding** (SCAFFOLD-01..09) | Diff adds a `services/atlas-<svc>/` directory, registers a new atlas-channel `Writer`/`Handler`, or changes `deploy/shared/routes.conf` | [scaffolding-checklist.md](scaffolding-checklist.md#audit-verification--scaffold-0109) |
 | **Security** (SEC-01..04) | Service handles authentication, authorization, tokens, redirects, or secrets | [patterns-security.md](patterns-security.md) |
+
+## Foundational guidelines — no numbered rules
+
+These documents carry conventions that are enforceable guidelines but have no
+rule ID. They are the guideline of record when a finding needs one and no
+numbered rule covers it, and they may be cited as the documented exception that
+exempts a deviation. Open the ones whose subject the diff touches; they are not
+subject to the "if it is not in the checklist it does not exist" clause, which
+governs *numbered rules* only.
+
+| Document | Open when |
+|---|---|
+| [ai-guidance.md](ai-guidance.md) | Any Go diff — carries the Commonly Missed Items checklist, mock-sync rules, and the no-type-aliases / dead-code migration rules |
+| [patterns-multitenancy-context.md](patterns-multitenancy-context.md) | Changed code reads tenant or trace state, passes `tenantId`, or opens a DB session (`tenant.MustFromContext`, `db.WithContext(ctx)`) |
+| [patterns-provider.md](patterns-provider.md) | Changed code defines or composes providers |
+| [patterns-functional.md](patterns-functional.md) | Changed code defines curried constructors, decorators, or model combinators |
 
 ---
 
@@ -71,7 +104,7 @@ disposition and is not the same as "not evaluable".
 | DOM-20 | Tests are table-driven (`tests := []struct{...}` + `t.Run`) | diff adds or changes tests |
 | DOM-21 | No redeclaration of a type, helper, or numeric constant that already exists in `libs/atlas-constants/` | diff declares a new type, const block, or numeric-literal classification |
 | DOM-22 | A new `libs/atlas-*` module is wired into the shared root `Dockerfile` and `go.work` | diff adds a module under `libs/` |
-| DOM-23 | Kafka topic env vars follow `COMMAND_TOPIC_*` / `EVENT_TOPIC_*`, live in the base env-configmap as `KEY: "KEY"`, and are never redeclared as literal `env:` values in a service manifest | diff adds or renames a topic env var |
+| DOM-23 | Kafka topic env vars follow `COMMAND_TOPIC_*` / `EVENT_TOPIC_*`, live in the base env-configmap as `KEY: "KEY"`, are re-listed in **both** overlays' `atlas-env` generator (which uses `behavior: replace` — a base key an overlay omits is absent at runtime in that environment), and are never redeclared as literal `env:` values in a service manifest | diff adds or renames a topic env var |
 | DOM-24 | Test packages that reach an emit path install the shared `producertest` stub (or inject a no-op producer per test) | a changed test package reaches `AndEmit` / `message.Emit` / `producer.Produce`, directly or transitively |
 | DOM-25 | Bytes the client interprets (dispatcher modes, sub-op codes, message/fail-reason codes) are resolved from a tenant writer-options table, never written as Go literals; domain services emit semantic keys, not client bytes | diff touches channel/socket/packet code, or a domain service event carries a client-interpreted byte |
 | DOM-26 | Every goroutine is spawned via `routine.Go(l, ctx, fn)`; a bare `go` statement needs a justified `//goroutine-guard:allow` marker | any non-test Go file changed |

@@ -31,9 +31,10 @@ You do NOT own the *rules*. Every `DOM-*`, `FILE-*`, `SUB-*`, `EXT-*`,
 `.claude/skills/backend-dev-guidelines/resources/audit-checklist.md`, and each
 rule's verification procedure lives in the pattern document that checklist links
 to. Read them; never recite a rule from memory, and never treat a rule you
-remember as authoritative over what that file currently says. If a rule you
-expect is absent from the checklist, it does not exist — say so rather than
-enforcing it.
+remember as authoritative over what that file currently says. If a numbered rule
+you expect is absent from the checklist, it does not exist — say so rather than
+enforcing it. The checklist also lists foundational documents that carry
+enforceable conventions with no rule ID; those remain in force.
 
 ## Input
 
@@ -99,7 +100,10 @@ surveying the repo to reading the changed files closely.
    `.claude/skills/backend-dev-guidelines/resources/audit-checklist.md`.
    It is deliberately compact — rule IDs, one-line definitions, and the trigger
    for each family.
-3. Do NOT read the pattern documents yet. You load them in Phase 3, one family
+3. Note the checklist's two-level triggering rule: a **family** trigger decides
+   which document you open; each **rule's** own `Applies when` decides whether
+   that rule is evaluated. Never dispose of a rule on the family trigger alone.
+4. Do NOT read the pattern documents yet. You load them in Phase 3, one family
    at a time, and only for families whose trigger actually fires. Loading the
    REST, deploy, scaffolding, security, testing, or resilience documents for a
    diff that does not touch those surfaces is wasted context.
@@ -129,17 +133,14 @@ build errors as the audit result and DO NOT proceed to Phase 2.
    family, and any package that calls another atlas service runs EXT-*. A
    REST-client or reader package with no `model.go` is exactly where
    collapsed-file violations hide.
-3. Record the other triggers the checklist's family index depends on, each with
-   the command or observation that settled it:
-   - changed test files, and whether any changed package reaches an emit path
-   - new modules under `libs/`, or added/renamed Kafka topic env vars
-   - changed `services/atlas-channel` or `libs/atlas-packet` code, and domain
-     events carrying client-interpreted bytes
-   - changed decorator/enrichment paths, and whether the service calls
-     `database.Connect`
-   - a newly added `services/atlas-<svc>/` directory, or a new channel
-     `Writer`/`Handler` registration
-   - whether the service handles auth, tokens, redirects, or secrets
+3. For **every** family and every foundational document in the checklist, record
+   whether its trigger fired and the command or observation that settled it.
+   Walk the checklist's tables to build that list — do not work from a
+   remembered subset, and do not let a family fall through undispositioned.
+   Also record, per in-scope package, which of `model.go`, `entity.go`,
+   `rest.go`, `provider.go`, `processor.go`, and `resource.go` exist, since
+   individual rules trigger on those files rather than on the package's
+   classification.
 
 ## Phase 3: Run the Applicable Checklists
 
@@ -147,13 +148,22 @@ For each family whose trigger fired in Phase 2:
 
 1. Open that family's detail document — the link is in the checklist's family
    index — and read only the section it points at.
-2. Run **every** rule in that family against every in-scope package the trigger
-   covers. Do not sample. A family is either run completely or dispositioned as
-   `N/A` with its trigger cited.
-3. Record each rule's outcome with file:line evidence, per the Mindset rules.
+2. Run **every** rule in that family whose own `Applies when` fires, against
+   every in-scope package it covers. Do not sample.
+3. Dispose of each remaining rule in the family as `N/A`, citing **that rule's**
+   own trigger — not the family's — as the evidence.
+4. Record each rule's outcome with file:line evidence, per the Mindset rules.
 
-For each family whose trigger did NOT fire, record the whole family as `N/A`
-with the negative trigger as evidence, and do not open its document.
+Open a family's document when ANY of its rules' triggers fire. Only when NO
+rule in the family applies do you record the family as `N/A` without opening
+its document, and then the negative trigger is the evidence.
+
+Also open any **foundational** document from the checklist whose subject the
+diff touches. Those documents carry conventions with no rule ID; they are the
+guideline of record when a finding needs one and no numbered rule covers it,
+and they may supply the documented exception that exempts a deviation. The
+"absent from the checklist means it does not exist" clause above governs
+*numbered rules*, not these.
 
 Rules whose evidence is a repo-root script (`tools/goroutine-guard.sh`,
 `tools/service-registration-guard.sh`, `tools/gen-routes.sh`) are settled by

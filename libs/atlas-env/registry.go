@@ -25,6 +25,10 @@ type Registry interface {
 	IsOwner(e Id, service string) bool       // FR-1.4
 	IsActive(e Id) bool                      // FR-1.4
 	Stale() bool                             // FR-1.7
+	// BaselineOf returns e's baseline environment. The bool reports whether e
+	// is known to the registry; an unknown e (including the legacy empty Id
+	// under legacyRegistry) returns ("", false).
+	BaselineOf(e Id) (Id, bool)
 }
 
 // MapRegistry is the in-memory Registry implementation: a projection of the
@@ -223,6 +227,18 @@ func (r *MapRegistry) EnvironmentsOwnedBy(service string) []Id {
 	return out
 }
 
+// BaselineOf returns e's baseline environment under the read lock. An
+// unknown e returns ("", false).
+func (r *MapRegistry) BaselineOf(e Id) (Id, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	rec, ok := r.records[e]
+	if !ok {
+		return "", false
+	}
+	return rec.Baseline, true
+}
+
 // legacyRegistry is the process-wide default before SetRegistry runs: every
 // query returns the legacy answer, so a service that has not yet been
 // migrated behaves exactly as it does today (FR-1.8).
@@ -234,6 +250,7 @@ func (legacyRegistry) EnvironmentsOwnedBy(string) []Id             { return []Id
 func (legacyRegistry) IsOwner(Id, string) bool                     { return true }
 func (legacyRegistry) IsActive(Id) bool                            { return true }
 func (legacyRegistry) Stale() bool                                 { return false }
+func (legacyRegistry) BaselineOf(Id) (Id, bool)                    { return "", false }
 
 var (
 	currentMu sync.RWMutex

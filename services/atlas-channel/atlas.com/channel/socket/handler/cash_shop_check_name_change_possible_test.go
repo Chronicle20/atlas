@@ -5,6 +5,7 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
+	channelworld "atlas-channel/world"
 	"bytes"
 	"context"
 	"strings"
@@ -53,6 +54,12 @@ type checkPossibleHandlerEnv struct {
 	// seam, cash_shop_check_transfer_world_possible.go).
 	charactersInWorld    []character.Model
 	charactersInWorldErr error
+
+	// worlds / worldsErr feed checkPossibleWorldsFunc, the world-name-list
+	// seam the ALLOWED arm depends on (an empty list crashes the client --
+	// see CashShopCheckTransferWorldPossibleHandleFunc's doc comment).
+	worlds    []channelworld.Model
+	worldsErr error
 }
 
 // newCheckPossibleHandlerEnv builds a session for the given tenant and
@@ -83,6 +90,12 @@ func newCheckPossibleHandlerEnv(t *testing.T, region string, major uint16, minor
 	updated := session.NewProcessor(l, ctx).SetField(sessionId, f)
 
 	env := &checkPossibleHandlerEnv{t: t, ctx: ctx, s: updated, l: l, logs: logs}
+	// A world set every case that is not specifically about the world list
+	// can rely on. The handler refuses ALLOWED without one.
+	env.withWorlds(
+		buildWorld(0, "Scania"),
+		buildWorld(1, "Bera"),
+	)
 
 	env.wp = func(name string) (swriter.BodyFunc, error) {
 		return func(bl logrus.FieldLogger, bctx context.Context) func(encoder packet.Encode) []byte {
@@ -116,7 +129,17 @@ func newCheckPossibleHandlerEnv(t *testing.T, region string, major uint16, minor
 	}
 	t.Cleanup(func() { checkPossibleAccountCharactersInWorldFunc = origCharsInWorld })
 
+	origWorlds := checkPossibleWorldsFunc
+	checkPossibleWorldsFunc = func(_ logrus.FieldLogger, _ context.Context) ([]channelworld.Model, error) {
+		return env.worlds, env.worldsErr
+	}
+	t.Cleanup(func() { checkPossibleWorldsFunc = origWorlds })
+
 	return env
+}
+
+func buildWorld(id world.Id, name string) channelworld.Model {
+	return channelworld.NewModelBuilder().SetId(id).SetName(name).MustBuild()
 }
 
 // checkPossibleWriterOptions supplies distinct, non-real resolved bytes,
@@ -140,6 +163,7 @@ func checkPossibleWriterOptions(writerName string) map[string]interface{} {
 	if writerName == chatpkt.WorldMessageWriter {
 		return map[string]interface{}{
 			"operations": map[string]interface{}{
+				string(writer.WorldMessagePopUp):    float64(0x01),
 				string(writer.WorldMessagePinkText): float64(0x05),
 			},
 		}
@@ -173,16 +197,46 @@ func (e *checkPossibleHandlerEnv) withCharactersInWorldErr(err error) *checkPoss
 	return e
 }
 
-// pinkTextWasAnnounced reports whether a WORLD_MESSAGE write occurred (the
-// storage-stranding warning is the only pink-text write either check handler
-// ever performs).
-func (e *checkPossibleHandlerEnv) pinkTextWasAnnounced() bool {
+func (e *checkPossibleHandlerEnv) withWorlds(ws ...channelworld.Model) *checkPossibleHandlerEnv {
+	e.worlds = ws
+	e.worldsErr = nil
+	return e
+}
+
+func (e *checkPossibleHandlerEnv) withWorldsErr(err error) *checkPossibleHandlerEnv {
+	e.worlds = nil
+	e.worldsErr = err
+	return e
+}
+
+// storageWarningWasAnnounced reports whether a WORLD_MESSAGE write occurred
+// (the storage-stranding warning is the only WORLD_MESSAGE write either check
+// handler ever performs).
+func (e *checkPossibleHandlerEnv) storageWarningWasAnnounced() bool {
 	for _, a := range e.announced {
 		if a.writer == chatpkt.WorldMessageWriter {
 			return true
 		}
 	}
 	return false
+}
+
+// storageWarningModeByte returns the resolved mode byte of the storage
+// warning's WORLD_MESSAGE write — byte 0 of the body, per
+// chatpkt.NewWorldMessageSimple.
+func (e *checkPossibleHandlerEnv) storageWarningModeByte() byte {
+	e.t.Helper()
+	for _, a := range e.announced {
+		if a.writer != chatpkt.WorldMessageWriter {
+			continue
+		}
+		if len(a.body) == 0 {
+			e.t.Fatal("the storage warning was announced with an empty body")
+		}
+		return a.body[0]
+	}
+	e.t.Fatal("no storage warning was announced")
+	return 0
 }
 
 func (e *checkPossibleHandlerEnv) handleNameChange(r *request.Reader) {
@@ -360,7 +414,7 @@ func TestNameChangePossibleWritesNoStorageWarning(t *testing.T) {
 	if got := env.lastAnnouncedResultByte(); got != 0x10 {
 		t.Fatalf("result byte = 0x%02X, want ALLOWED 0x10", got)
 	}
-	if env.pinkTextWasAnnounced() {
+	if env.storageWarningWasAnnounced() {
 		t.Fatal("the name-change handler must never write a storage warning")
 	}
 }

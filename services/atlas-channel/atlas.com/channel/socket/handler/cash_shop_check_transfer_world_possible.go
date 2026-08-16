@@ -5,6 +5,7 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
+	channelworld "atlas-channel/world"
 	"context"
 
 	"github.com/sirupsen/logrus"
@@ -24,6 +25,13 @@ import (
 // without a live atlas-character round trip.
 var checkPossibleAccountCharactersInWorldFunc = func(l logrus.FieldLogger, ctx context.Context, accountId uint32, worldId world.Id) ([]character.Model, error) {
 	return character.NewProcessor(l, ctx).GetForAccountInWorld(accountId, worldId)
+}
+
+// checkPossibleWorldsFunc is the seam for the world-name list the ALLOWED arm
+// must carry (see transferWorldNameList), swappable in tests for the same
+// reason as the two seams above.
+var checkPossibleWorldsFunc = func(l logrus.FieldLogger, ctx context.Context) ([]channelworld.Model, error) {
+	return channelworld.NewProcessor(l, ctx).GetAll()
 }
 
 // CashShopCheckTransferWorldPossibleHandleFunc handles the standalone
@@ -62,11 +70,19 @@ var checkPossibleAccountCharactersInWorldFunc = func(l logrus.FieldLogger, ctx c
 // BUY_WORLD_TRANSFER handler), which is the first point a destination world
 // is known.
 //
-// The world-name list (cashcb.CheckTransferWorldPossibleResult.WorldNames) is
-// likewise left empty here: atlas-channel's world package
-// (services/atlas-channel/atlas.com/channel/world) has no "list all worlds"
-// lookup today, only GetById(worldId). Populating the list needs a new
-// atlas-world REST client this task's brief does not list either.
+// The ALLOWED arm MUST carry a non-empty world-name list. An empty list is
+// not a cosmetic gap — it crashes the v83 client. Chain, from
+// MapleStory_dump.exe (GMS v83), recorded in
+// docs/tasks/task-227-cash-name-change-world-transfer/bug-world-transfer-client-crash.md:
+// CCashShop::OnCheckTransferWorldPossibleResult @0x47bd9b arm 0 opens
+// CUITransferWorldLicenseNotice; its OK button (@0x7ef6e3, a2 == 1) DoModals
+// CUITransferWorldSelectDlg, whose OnCreate @0x7efc22 guards the combo fill
+// loop against an empty m_asWorldName but then calls
+// CCtrlComboBox::SetSelected(0) (@0x4c738b) unguarded — which walks into
+// sub_4C7379 @0x4c7379, dereferencing the null head of an empty ZList at
+// [0x00000004]. So the handler answers UNKNOWN_ERROR rather than ALLOWED when
+// the list cannot be produced: a refusal arm renders a notice and returns the
+// player to the Cash Shop, where an ALLOWED-with-no-list kills the client.
 func CashShopCheckTransferWorldPossibleHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		p := cashsb.CheckTransferWorldPossible{}
@@ -109,9 +125,22 @@ func CashShopCheckTransferWorldPossibleHandleFunc(l logrus.FieldLogger, ctx cont
 			l.WithError(rErr).Errorf("Unable to record PIC attempt for account [%d].", s.AccountId())
 		}
 
-		announceTransferWorldPossible(l, ctx, wp, s, cashcb.CheckTransferWorldPossibleResultAllowedBody(characterId, a.BirthDate(), nil))
+		ws, wErr := checkPossibleWorldsFunc(l, ctx)
+		if wErr != nil {
+			l.WithError(wErr).Errorf("Unable to retrieve the world list for character [%d]; refusing the world-transfer check rather than sending an empty list.", characterId)
+			announceTransferWorldPossible(l, ctx, wp, s, cashcb.CheckTransferWorldPossibleResultBody(characterId, cashcb.CheckTransferWorldPossibleUnknownError, 0, nil))
+			return
+		}
+		worldNames := transferWorldNameList(l, ws)
+		if len(worldNames) == 0 {
+			l.Errorf("The world list is empty; refusing the world-transfer check for character [%d] rather than sending an empty list.", characterId)
+			announceTransferWorldPossible(l, ctx, wp, s, cashcb.CheckTransferWorldPossibleResultBody(characterId, cashcb.CheckTransferWorldPossibleUnknownError, 0, nil))
+			return
+		}
 
-		// FR-4.7: warn (pink text) when this transfer would strand the
+		announceTransferWorldPossible(l, ctx, wp, s, cashcb.CheckTransferWorldPossibleResultAllowedBody(characterId, a.BirthDate(), worldNames))
+
+		// FR-4.7: warn (cash-shop pop-up) when this transfer would strand the
 		// account's shared-per-world storage. Emitted AFTER the result
 		// packet, deliberately: the credential check the client is waiting
 		// on has already been answered above, so a slow/failed
@@ -119,6 +148,49 @@ func CashShopCheckTransferWorldPossibleHandleFunc(l logrus.FieldLogger, ctx cont
 		// response — see warnIfStrandingStorage's own fail-open contract.
 		warnIfStrandingStorage(l, ctx, wp, s, characterId)
 	}
+}
+
+// transferWorldNameList renders the world set as the wire list the client
+// indexes BY WORLD ID, not by position in the server's result set.
+//
+// The client never sends a world id back. CUITransferWorldSelectDlg::OnCreate
+// (@0x7efc22) fills its combo from CCashShop::m_asWorldName in list order;
+// sub_7F00D2 @0x7f00d2 stores the combo's m_nSelected (the raw INDEX) into
+// m_nResult; GetResult @0x7f00e2 returns it verbatim; and
+// CUITransferWorldLicenseNotice::OnButtonClicked @0x7ef6e3 hands that index to
+// CCashShop::SendBuyTransferWorldItemPacket as nTargetWorld. The
+// BUY_WORLD_TRANSFER handler (cash_shop_operation.go, handleBuyWorldTransfer)
+// then reads that field as world.Id(sp.TargetWorld()).
+//
+// So index i of this slice MUST be world i's name, or a transfer silently
+// lands in the wrong world. The list is therefore sized to max(world id)+1 and
+// filled by id, not appended in result order. A gap (an id with no world)
+// leaves a blank combo entry; selecting it resolves to a world atlas-character
+// does not know, which pendingchange.RequestWorldTransfer already rejects with
+// world_unknown. That is the honest, safe rendering — collapsing the gap would
+// shift every later world's index and misroute the purchase.
+func transferWorldNameList(l logrus.FieldLogger, ws []channelworld.Model) []string {
+	if len(ws) == 0 {
+		return nil
+	}
+
+	maxId := ws[0].Id()
+	for _, w := range ws {
+		if w.Id() > maxId {
+			maxId = w.Id()
+		}
+	}
+
+	names := make([]string, int(maxId)+1)
+	for _, w := range ws {
+		names[int(w.Id())] = w.Name()
+	}
+	for i, n := range names {
+		if n == "" {
+			l.Warnf("No world [%d] exists; the cash-shop world-transfer list carries a blank entry at that index so index and world id stay aligned.", i)
+		}
+	}
+	return names
 }
 
 // warnIfStrandingStorage implements task-227 Task 26 ruling from the FR-4.7
@@ -142,10 +214,16 @@ func warnIfStrandingStorage(l logrus.FieldLogger, ctx context.Context, wp writer
 	}
 
 	msg := "Your Cash Shop storage in this world is tied to your account, not this character. Because this is your only remaining character here, it will become inaccessible once the transfer completes."
-	// medal="" and characterName="" render this as a system notice, not a
-	// player megaphone -- the same convention every other system pink-text
-	// caller uses (e.g. system_message/consumer.go, saga/consumer.go).
-	if err := session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePinkTextBody("", "", msg))(s); err != nil {
+	// POP_UP, not PINK_TEXT. The recipient is by definition sitting in the
+	// Cash Shop, where there is no status bar: CWvsContext::OnBroadcastMsg
+	// @0xa22785 (GMS v83) routes PINK_TEXT (arm 5) through CHATLOG_ADD
+	// @0x4906b5, whose whole body is guarded by
+	// `if (TSingleton<CUIStatusBar>::ms_pInstance)` — so the warning is a
+	// silent no-op there. Arm 1 (POP_UP) instead falls straight through to
+	// CUtilDlg::Notice with no status-bar guard at all, which is the only
+	// delivery this op's audience actually renders. Same reason
+	// announceCashShopRejection (cash_shop_operation.go) uses the pop-up.
+	if err := session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody(msg))(s); err != nil {
 		l.WithError(err).Errorf("Unable to write storage-stranding warning for character [%d].", s.CharacterId())
 	}
 }

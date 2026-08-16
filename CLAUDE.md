@@ -6,7 +6,7 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 
 - Never commit or push directly to `main`.
 - Never edit files in the main repo when a task worktree exists for that work.
-- Never invent a value, name, opcode, or output.
+- Never invent a value, name, opcode, output, or behavior.
 - Never claim verified from a flagged or partial run.
 - Never open a PR without code review.
 - Never dispatch an agent without an explicit `model`.
@@ -41,7 +41,7 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 ## Development workflow
 
 - When asked to understand or plan something, do not start implementing; wait for explicit approval before making any edits. Planning and implementation are separate phases.
-- The canonical flow for any non-trivial change is four phases, each a separate slash command invoked from a fresh (`/clear`'d) session, so the next phase consumes only the prior phase's documented artifacts:
+- The canonical flow for any non-trivial change is four phases, each a separate slash command invoked from a fresh (`/clear`'d) session, so the next phase consumes only the prior phase's documented artifacts. `/spec-task` creates a dedicated worktree at `.worktrees/task-NNN-slug/` on a `task-NNN-slug` branch; all subsequent phases run inside that worktree, so docs, code, and the eventual PR are one unit:
   1. `/spec-task <idea>` — run from the main repo. Interactive PRD interview that creates the worktree + branch and commits the PRD. Output: `<worktree>/docs/tasks/task-NNN-slug/prd.md`.
   2. `cd .worktrees/task-NNN-slug`, `/clear`, then `/design-task <task-id>` — invokes `superpowers:brainstorming`. Output: `design.md`, committed on the task branch.
   3. `/clear`, then `/plan-task <task-id>` — invokes `superpowers:writing-plans`. Output: `plan.md` + `context.md`, committed.

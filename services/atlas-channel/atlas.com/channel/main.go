@@ -644,6 +644,7 @@ func produceWriters() []string {
 		cashcb.CashQueryResultWriter,
 		cashcb.CashItemGachaponResultWriter,
 		cashcb.VegaScrollWriter,
+		cashcb.CashShopCheckNameChangeWriter,
 		cashcb.CashShopCheckNameChangePossibleResultWriter,
 		cashcb.CashShopCheckTransferWorldPossibleResultWriter,
 		cashcb.CashShopCancelNameChangeResultWriter,
@@ -959,6 +960,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[cashsb.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
 	handlerMap[cashsb.CashItemGachaponHandle] = handler.CashItemGachaponHandleFunc
 	handlerMap[cashsb.CashShopCouponCodeHandle] = handler.CashShopCouponCodeHandleFunc
+	handlerMap[cashsb.CashShopCheckNameChangeHandle] = handler.CashShopCheckNameChangeHandleFunc
 	handlerMap[cashsb.CashShopCheckNameChangePossibleHandle] = handler.CashShopCheckNameChangePossibleHandleFunc
 	handlerMap[cashsb.CashShopCheckTransferWorldPossibleHandle] = handler.CashShopCheckTransferWorldPossibleHandleFunc
 	handlerMap[npcsb.NPCShopHandle] = handler.NPCShopHandleFunc

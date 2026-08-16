@@ -39,6 +39,7 @@ type Processor interface {
 	GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model]
 	ByNameProvider(name string) model.Provider[[]Model]
 	GetByName(name string) (Model, error)
+	CheckNameValidity(name string, worldId world.Id, scope NameScope) (NameValidityResult, error)
 	ForAccountInWorldProvider(accountId uint32, worldId world.Id) model.Provider[[]Model]
 	GetForAccountInWorld(accountId uint32, worldId world.Id) ([]Model, error)
 	RequestDistributeAp(f field.Model, characterId uint32, updateTime uint32, distributes []DistributePacket) error
@@ -250,6 +251,13 @@ func (p *ProcessorImpl) ForAccountInWorldProvider(accountId uint32, worldId worl
 
 func (p *ProcessorImpl) GetForAccountInWorld(accountId uint32, worldId world.Id) ([]Model, error) {
 	return p.ForAccountInWorldProvider(accountId, worldId)()
+}
+
+// CheckNameValidity asks atlas-character whether a candidate character name may
+// be used. worldId only matters under NameScopeWorld; NameScopeTenant ignores
+// it and checks the whole tenant.
+func (p *ProcessorImpl) CheckNameValidity(name string, worldId world.Id, scope NameScope) (NameValidityResult, error) {
+	return checkNameValidity(p.l, p.ctx, name, worldId, scope)
 }
 
 type DistributePacket struct {

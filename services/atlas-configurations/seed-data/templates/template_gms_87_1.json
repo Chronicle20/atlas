@@ -159,6 +159,15 @@
         ]
       },
       {
+        "opCode": "0x15",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCheckNameChangeHandle",
+        "fname": "CCashShop::SendCheckDuplicateIDPacket",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x16",
         "validator": "LoggedInValidator",
         "handler": "CreateCharacterHandle",

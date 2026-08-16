@@ -62,7 +62,7 @@ func TestProviderImplComposesTheEnvironmentDecorator(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 
-	var p Provider = ProviderImpl(l)(ctx)
+	p := ProviderImpl(l)(ctx)
 	if err := p("EVENT_TOPIC_PROVIDER_ENV_TEST")(model.FixedProvider([]kafka.Message{{Value: []byte("v")}})); err != nil {
 		t.Fatalf("produce: %v", err)
 	}

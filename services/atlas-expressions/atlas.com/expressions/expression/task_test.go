@@ -1,6 +1,7 @@
 package expression
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -23,7 +24,7 @@ func TestNewRevertTask(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	interval := 100 * time.Millisecond
 
-	task := NewRevertTask(logger, interval)
+	task := NewRevertTask(logger, interval, func(ctx context.Context) context.Context { return ctx })
 
 	assert.NotNil(t, task)
 }
@@ -32,7 +33,7 @@ func TestRevertTask_SleepTime(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	interval := 250 * time.Millisecond
 
-	task := NewRevertTask(logger, interval)
+	task := NewRevertTask(logger, interval, func(ctx context.Context) context.Context { return ctx })
 
 	assert.Equal(t, interval, task.SleepTime())
 }
@@ -49,7 +50,7 @@ func TestRevertTask_SleepTime_DifferentIntervals(t *testing.T) {
 	}
 
 	for _, interval := range testCases {
-		task := NewRevertTask(logger, interval)
+		task := NewRevertTask(logger, interval, func(ctx context.Context) context.Context { return ctx })
 		assert.Equal(t, interval, task.SleepTime(), "SleepTime should return %v", interval)
 	}
 }
@@ -58,7 +59,7 @@ func TestRevertTask_Run_NoExpiredExpressions(t *testing.T) {
 	setupTaskTest(t)
 
 	logger, _ := test.NewNullLogger()
-	task := NewRevertTask(logger, 100*time.Millisecond)
+	task := NewRevertTask(logger, 100*time.Millisecond, func(ctx context.Context) context.Context { return ctx })
 
 	ten := setupTestTenant(t)
 	ctx := testCtx(ten)
@@ -80,7 +81,7 @@ func TestRevertTask_Run_WithExpiredExpressions(t *testing.T) {
 	setupTaskTest(t)
 
 	logger, _ := test.NewNullLogger()
-	task := NewRevertTask(logger, 100*time.Millisecond)
+	task := NewRevertTask(logger, 100*time.Millisecond, func(ctx context.Context) context.Context { return ctx })
 
 	ten := setupTestTenant(t)
 	ctx := testCtx(ten)
@@ -105,7 +106,7 @@ func TestRevertTask_Run_MixedExpiredAndNonExpired(t *testing.T) {
 	setupTaskTest(t)
 
 	logger, _ := test.NewNullLogger()
-	task := NewRevertTask(logger, 100*time.Millisecond)
+	task := NewRevertTask(logger, 100*time.Millisecond, func(ctx context.Context) context.Context { return ctx })
 
 	ten := setupTestTenant(t)
 	ctx := testCtx(ten)

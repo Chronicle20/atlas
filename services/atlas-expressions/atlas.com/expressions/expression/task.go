@@ -17,13 +17,22 @@ import (
 const RevertTaskName = "expression_revert_task"
 
 type RevertTask struct {
-	l        logrus.FieldLogger
-	interval time.Duration
+	l          logrus.FieldLogger
+	interval   time.Duration
+	envContext func(context.Context) context.Context
 }
 
-func NewRevertTask(l logrus.FieldLogger, interval time.Duration) *RevertTask {
+// NewRevertTask builds the expired-expression revert sweep. envContext
+// originates this pod's own environment identity (env.Self()) onto each
+// expired expression's per-tenant context before the revert event is
+// produced -- expression is outside env-domain-guard's permitted atlas-env
+// import list, so the caller (main.go) threads this in as a plain function
+// value rather than the package importing atlas-env itself. Without it,
+// decide() sees an empty ENVIRONMENT header and fails open per FR-1.8:
+// every live deployment, not just this pod's, would revert the expression.
+func NewRevertTask(l logrus.FieldLogger, interval time.Duration, envContext func(context.Context) context.Context) *RevertTask {
 	l.Infof("Initializing expression revert task to run every %dms", interval.Milliseconds())
-	return &RevertTask{l, interval}
+	return &RevertTask{l, interval, envContext}
 }
 
 func (e *RevertTask) Run() {
@@ -31,7 +40,7 @@ func (e *RevertTask) Run() {
 	defer span.End()
 
 	for _, exp := range GetRegistry().popExpired(sctx) {
-		tctx := tenant.WithContext(sctx, exp.Tenant())
+		tctx := e.envContext(tenant.WithContext(sctx, exp.Tenant()))
 		transactionId := uuid.New() // Generate a new transaction ID for each expired expression
 		_ = producer.ProviderImpl(e.l)(tctx)(expression.EnvExpressionEvent)(expressionEventProvider(transactionId, exp.CharacterId(), exp.Field(), 0))
 	}

@@ -87,7 +87,7 @@ func InitializeCharacter(l logrus.FieldLogger, ctx context.Context, characterId 
 func fetchWearer(l logrus.FieldLogger, ctx context.Context, characterId uint32) (stat.Base, WearerProfile, error) {
 	l.Debugf("Fetching base stats + wearer profile for character [%d] from character service.", characterId)
 
-	charData, err := character.RequestById(characterId)(l, ctx)
+	charData, err := character.RequestById(ctx, characterId)(l, ctx)
 	if err != nil {
 		return stat.Base{}, WearerProfile{}, fmt.Errorf("failed to fetch character [%d]: %w", characterId, err)
 	}
@@ -109,7 +109,7 @@ func fetchWearer(l logrus.FieldLogger, ctx context.Context, characterId uint32) 
 func fetchEquippedSnapshots(l logrus.FieldLogger, ctx context.Context, characterId uint32) ([]EquippedAsset, error) {
 	l.Debugf("Fetching equipment snapshots for character [%d] from inventory service.", characterId)
 
-	compartment, err := inventory.RequestEquipCompartment(characterId)(l, ctx)
+	compartment, err := inventory.RequestEquipCompartment(ctx, characterId)(l, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch equip compartment for character [%d]: %w", characterId, err)
 	}
@@ -189,7 +189,7 @@ func fetchBuffBonuses(l logrus.FieldLogger, ctx context.Context, characterId uin
 
 	bonuses := make([]stat.Bonus, 0)
 	effectFor := func(skillId uint32, level byte) (*skilldata.EffectModel, error) {
-		si, err := skilldata.RequestById(skillId)(l, ctx)
+		si, err := skilldata.RequestById(ctx, skillId)(l, ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -255,7 +255,7 @@ func fetchPassiveBonuses(l logrus.FieldLogger, ctx context.Context, characterId 
 		if charSkill.Level == 0 {
 			continue
 		}
-		skillInfo, err := skilldata.RequestById(charSkill.Id)(l, ctx)
+		skillInfo, err := skilldata.RequestById(ctx, charSkill.Id)(l, ctx)
 		if err != nil {
 			l.WithError(err).Debugf("Failed to fetch skill data for skill [%d], skipping.", charSkill.Id)
 			continue

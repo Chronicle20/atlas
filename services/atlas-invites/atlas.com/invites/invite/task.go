@@ -17,16 +17,25 @@ import (
 const TimeoutTask = "timeout"
 
 type Timeout struct {
-	l        logrus.FieldLogger
-	interval time.Duration
-	timeout  time.Duration
+	l          logrus.FieldLogger
+	interval   time.Duration
+	timeout    time.Duration
+	envContext func(context.Context) context.Context
 }
 
-func NewInviteTimeout(l logrus.FieldLogger, interval time.Duration) *Timeout {
+// NewInviteTimeout builds the expired-invite sweep. envContext originates
+// this pod's own environment identity (env.Self()) onto each active
+// tenant's context before the rejection event is produced -- invite is
+// outside env-domain-guard's permitted atlas-env import list, so the caller
+// (main.go) threads this in as a plain function value rather than the
+// package importing atlas-env itself. Without it, decide() sees an empty
+// ENVIRONMENT header and fails open per FR-1.8: every live deployment, not
+// just this pod's, would act on the expired invite.
+func NewInviteTimeout(l logrus.FieldLogger, interval time.Duration, envContext func(context.Context) context.Context) *Timeout {
 	var to int64 = 180000
 	timeout := time.Duration(to) * time.Millisecond
 	l.Infof("Initializing invite timeout task to run every %dms, timeout invite older than %dms", interval.Milliseconds(), timeout.Milliseconds())
-	return &Timeout{l, interval, timeout}
+	return &Timeout{l, interval, timeout, envContext}
 }
 
 func (t *Timeout) Run() {
@@ -35,7 +44,7 @@ func (t *Timeout) Run() {
 
 	tenants := GetRegistry().GetActiveTenants()
 	for _, ten := range tenants {
-		ctx := tenant.WithContext(context.Background(), ten)
+		ctx := t.envContext(tenant.WithContext(context.Background(), ten))
 		is := GetRegistry().GetExpired(ctx, t.timeout)
 
 		t.l.Debugf("Executing timeout task for tenant [%s].", ten.Id().String())

@@ -53,7 +53,146 @@ fi
 # log lines inside a phase use log warn / log error.
 # ----------------------------------------------------------------------------
 
+# do_deactivate — FR-5.5: routing for this environment MUST stop before any
+# destructive phase runs. Two PATCHes, because every pod's registry
+# projection (libs/atlas-env) updates independently off a Kafka push, not a
+# poll: DEACTIVATING tells atlas-ingress to stop routing to this environment
+# and tells the gate to stop accepting new ownership/work for it; once every
+# pod has projected that (the settle window below), DELETED removes the
+# record entirely so no pod — including one that missed the DEACTIVATING
+# event outright — can observe this environment again (FR-5.7).
+#
+# ATLAS_DEACTIVATE_SETTLE_S is deliberately NOT env.StaleAfter
+# (libs/atlas-env/registry.go:10 — 120s, four missed 30s heartbeats). That
+# bound covers the CONSUMER going silent; this wait covers the PRODUCER's
+# message reaching every consumer, which is push-based over Kafka and
+# settles in about one heartbeat interval. 35s is one 30s heartbeat plus
+# margin. If Task 55 measurement shows that insufficient, raise it there —
+# do not guess higher here, and do not conflate it with StaleAfter by
+# reusing that constant's value for a different guarantee.
+do_deactivate() {
+    ATLAS_STEP=deactivate log info "deactivating environment=${ATLAS_ENVIRONMENT:-} before any destructive phase (FR-5.5)"
+    if [ -z "${ATLAS_UI_BASE:-}" ] || [ -z "${ATLAS_ENVIRONMENT:-}" ]; then
+        ATLAS_STEP=deactivate log error "ATLAS_UI_BASE and ATLAS_ENVIRONMENT are required to deactivate; routing may still be live when destructive phases run"
+        return 1
+    fi
+    if ! curl -fsS -X PATCH \
+        -H 'Content-Type: application/vnd.api+json' \
+        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
+        -d "{\"data\":{\"type\":\"environments\",\"id\":\"$ATLAS_ENVIRONMENT\",\"attributes\":{\"phase\":\"DEACTIVATING\"}}}" \
+        "$ATLAS_UI_BASE/api/configurations/environments/$ATLAS_ENVIRONMENT" >/dev/null; then
+        ATLAS_STEP=deactivate log warn "PATCH phase=DEACTIVATING failed"
+        return 1
+    fi
+    sleep "${ATLAS_DEACTIVATE_SETTLE_S:-35}"
+    if ! curl -fsS -X PATCH \
+        -H 'Content-Type: application/vnd.api+json' \
+        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
+        -d "{\"data\":{\"type\":\"environments\",\"id\":\"$ATLAS_ENVIRONMENT\",\"attributes\":{\"phase\":\"DELETED\"}}}" \
+        "$ATLAS_UI_BASE/api/configurations/environments/$ATLAS_ENVIRONMENT" >/dev/null; then
+        ATLAS_STEP=deactivate log warn "PATCH phase=DELETED failed"
+        return 1
+    fi
+    return 0
+}
+
+# _dcp_reclaim <list_url> <label> — GETs the JSON:API collection at
+# $list_url, filters to rows whose attributes.environment equals
+# ATLAS_ENVIRONMENT (client-side: none of services/tenants/templates/
+# atlas-tenants expose a server-side ?environment= filter today — only
+# templates supports a query filter, and it is region/version, not
+# environment), and DELETEs every matching id individually.
+#
+# NEVER filters by Type and NEVER deletes "everything that isn't main" —
+# only an exact match on THIS environment's own id, so a foreign row
+# (main's, or another PR's) is never touched even when it shares a Type
+# with one of this environment's rows. This also means every row for this
+# environment is collected and deleted, not just the one a Deployment's
+# SERVICE_ID currently points at: create_service_config (task-47) is not
+# idempotent across a retried bootstrap Job, so a crashed attempt can leave
+# an orphaned duplicate services row (same Type, same Environment,
+# different id) behind. A SERVICE_ID-driven delete would silently leak
+# every such orphan; the environment-scoped GET+filter does not, because it
+# has no notion of "the current one" — it deletes every row it finds.
+#
+# The server-side scope.AuthorizeWrite gate (atlas-configurations,
+# atlas-tenants; services/atlas-configurations/atlas.com/configurations/scope/scope.go)
+# independently 403s any DELETE whose ENVIRONMENT header doesn't match the
+# target row's own environment column. That gate and this loop's
+# client-side filter are two independent layers; neither alone is
+# sufficient — the gate cannot stop a scan that legitimately targets this
+# environment's own rows, and the filter alone would be one bug away from a
+# bare table sweep if the gate were ever removed.
+_dcp_reclaim() {
+    local list_url="$1" label="$2" rc=0
+    local body ids id
+    body=$(curl -fsS -H 'Accept: application/vnd.api+json' \
+        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
+        "$list_url") || { ATLAS_STEP=drop-control-plane log warn "$label: list failed"; return 1; }
+    ids=$(printf '%s' "$body" | jq -r --arg env "$ATLAS_ENVIRONMENT" \
+        '.data[]? | select(.attributes.environment == $env) | .id') || return 1
+    if [ -z "$ids" ]; then
+        ATLAS_STEP=drop-control-plane log info "$label: no rows for environment=$ATLAS_ENVIRONMENT"
+        return 0
+    fi
+    while IFS= read -r id; do
+        [ -z "$id" ] && continue
+        if curl -fsS -X DELETE \
+            -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
+            "$list_url/$id" >/dev/null; then
+            ATLAS_STEP=drop-control-plane log info "$label: deleted $id (environment=$ATLAS_ENVIRONMENT)"
+        else
+            ATLAS_STEP=drop-control-plane log warn "$label: delete $id failed"
+            rc=1
+        fi
+    done <<<"$ids"
+    return $rc
+}
+
+# do_drop_control_plane — reclaims this environment's rows from the
+# atlas-configurations (services/tenants/templates) and atlas-tenants
+# databases. In sparse mode those databases are SHARED with main (D1) — a
+# mis-scoped delete here destroys main's rows, not just pollutes them. Every
+# delete is scoped by the environment column via _dcp_reclaim; see that
+# function's comment for the two independent layers that enforce it.
+#
+# Isolated mode: skipped. do_drop_dbs already DROPs the whole per-env
+# Postgres database (including this environment's private atlas-
+# configurations instance) regardless of what runs here, so a REST-based
+# reclaim would be redundant at best; at worst it would depend on
+# ATLAS_UI_BASE/ATLAS_ENVIRONMENT wiring that isolated mode's cleanup Job
+# does not carry today (only sparse mode's bootstrap Job threads
+# ATLAS_ENVIRONMENT — task-47), turning a no-op phase into a spurious
+# failure. Reuses Task 47's ${ATLAS_MODE:-isolated} convention rather than
+# inventing a second signal.
+do_drop_control_plane() {
+    if [ "${ATLAS_MODE:-isolated}" != "sparse" ]; then
+        ATLAS_STEP=drop-control-plane log info "skipped (isolated) — do_drop_dbs already destroys this environment's atlas-configurations rows"
+        return 0
+    fi
+    if [ -z "${ATLAS_UI_BASE:-}" ] || [ -z "${ATLAS_ENVIRONMENT:-}" ]; then
+        ATLAS_STEP=drop-control-plane log error "ATLAS_UI_BASE and ATLAS_ENVIRONMENT are required in sparse mode; control-plane rows for this environment were not reclaimed"
+        return 1
+    fi
+    ATLAS_STEP=drop-control-plane log info "reclaiming control-plane rows for environment=$ATLAS_ENVIRONMENT"
+    local rc=0
+    _dcp_reclaim "$ATLAS_UI_BASE/api/configurations/services" services || rc=1
+    _dcp_reclaim "$ATLAS_UI_BASE/api/configurations/tenants" configuration-tenants || rc=1
+    _dcp_reclaim "$ATLAS_UI_BASE/api/configurations/templates" templates || rc=1
+    _dcp_reclaim "$ATLAS_UI_BASE/api/tenants" atlas-tenants || rc=1
+    return $rc
+}
+
 do_drop_dbs() {
+    if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+        # Sparse mode shares main's Postgres databases (D1) — there is
+        # nothing per-env to DROP. Log "skipped (sparse)" rather than
+        # silently returning 0: a phase that reports success without doing
+        # anything is indistinguishable from one that failed to find its
+        # target.
+        ATLAS_STEP=drop-dbs log info "skipped (sparse) — databases are shared with main"
+        return 0
+    fi
     ATLAS_STEP=drop-dbs log info "dropping per-env Postgres databases"
     # Probe connectivity before the per-DB loop. Postgres unreachable
     # means cleanup-targeting is broken and no other phase can be
@@ -77,6 +216,14 @@ do_drop_dbs() {
 }
 
 do_drop_topics() {
+    if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+        # Sparse mode never suffixes topic names with ATLAS_ENV (D1,
+        # FR-4.8) — topics are shared with main. Nothing per-env to
+        # delete; log the skip explicitly rather than silently returning
+        # 0 from a suffix scan that would find nothing anyway.
+        ATLAS_STEP=drop-topics log info "skipped (sparse) — topics are shared with main"
+        return 0
+    fi
     ATLAS_STEP=drop-topics log info "deleting per-env Kafka topics"
     local topics
     topics=$(rpk topic list -X brokers="$BOOTSTRAP_SERVERS" --format json \
@@ -113,6 +260,15 @@ do_drop_groups() {
 }
 
 do_drop_redis() {
+    if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+        # Sparse mode never prefixes Redis keys with ATLAS_ENV — the
+        # per-env key prefix is inert there (design §9,
+        # computeKeyPrefix("") is the legacy/shared path). Nothing per-env
+        # to delete; log the skip explicitly rather than silently
+        # returning 0 from a scan that would find nothing anyway.
+        ATLAS_STEP=drop-redis log info "skipped (sparse) — keys are shared with main"
+        return 0
+    fi
     ATLAS_STEP=drop-redis log info "deleting per-env Redis keys"
     redis-cli -u "redis://$REDIS_URL" --scan --pattern "${ATLAS_ENV}:*" \
         | xargs -r -n 1000 redis-cli -u "redis://$REDIS_URL" DEL
@@ -238,10 +394,12 @@ do_drop_branch() {
 # Orchestration. PHASES is interleaved <phase_name> <function_name>.
 # ----------------------------------------------------------------------------
 PHASES=(
-    drop-dbs             do_drop_dbs
-    drop-topics          do_drop_topics
+    deactivate           do_deactivate          # FR-5.5 — must be first
+    drop-control-plane   do_drop_control_plane
+    drop-dbs             do_drop_dbs            # no-op in sparse mode
+    drop-topics          do_drop_topics         # no-op in sparse mode
     drop-groups          do_drop_groups
-    drop-redis           do_drop_redis
+    drop-redis           do_drop_redis          # no-op in sparse mode
     drop-images          do_drop_images
     drop-dns             do_drop_dns
     drop-branch          do_drop_branch

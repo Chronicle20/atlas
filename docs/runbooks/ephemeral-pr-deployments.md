@@ -182,17 +182,22 @@ If something in that chain fails, the Application sits in `Terminating` with fin
 ### Diagnose
 
 **Read the summary line first.** As of task-075, `cleanup.sh` runs every
-phase regardless of any single phase's outcome. The final log line is
-the authoritative status:
+phase regardless of any single phase's outcome. As of task-48, the phase
+list also includes `deactivate` (always first — FR-5.5: routing stops
+before any destructive phase runs) and `drop-control-plane` (reclaims this
+environment's `atlas-configurations` services/tenants/templates rows and
+its `atlas-tenants` row; a no-op that logs "skipped (isolated)" outside
+sparse mode, since `drop-dbs` already destroys the whole per-env database
+there). The final log line is the authoritative status:
 
 ```
-{"ts":…,"level":"info","atlas.env":"…","atlas.step":"done","msg":"cleanup complete phases_run=7 phases_failed=0"}
+{"ts":…,"level":"info","atlas.env":"…","atlas.step":"done","msg":"cleanup complete phases_run=9 phases_failed=0"}
 ```
 
 or, on partial failure:
 
 ```
-{"ts":…,"level":"error","atlas.env":"…","atlas.step":"done","msg":"cleanup completed with errors phases_run=7 phases_failed=2 failed_phases=[\"drop-topics\",\"drop-redis\"]"}
+{"ts":…,"level":"error","atlas.env":"…","atlas.step":"done","msg":"cleanup completed with errors phases_run=9 phases_failed=2 failed_phases=[\"drop-topics\",\"drop-redis\"]"}
 ```
 
 Use the `failed_phases` array to scope your re-run — only the listed
@@ -496,7 +501,7 @@ As of task-075 the PostDelete Job runs every phase regardless of any
 single phase's outcome. The summary line names which phases failed:
 
 ```
-cleanup completed with errors phases_run=7 phases_failed=2 failed_phases=["drop-topics","drop-redis"]
+cleanup completed with errors phases_run=9 phases_failed=2 failed_phases=["drop-topics","drop-redis"]
 ```
 
 Re-run only the failed phases via the §9.11 sweep-orphans path with

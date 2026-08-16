@@ -5,6 +5,23 @@ setup() {
     STUB_BIN="$BATS_TEST_TMPDIR/bin"
     STUB_LOG="$BATS_TEST_TMPDIR/calls.log"
     mkdir -p "$STUB_BIN"
+
+    # Default curl stub, present for EVERY test (not just make_stubs
+    # callers): do_deactivate now calls curl unconditionally, and
+    # do_drop_control_plane calls it in sparse mode. Logs the invocation and
+    # succeeds — GETs return an empty JSON:API collection so
+    # do_drop_control_plane's default (isolated-mode-skipped, or
+    # sparse-mode-empty-list) path never fails an existing test that
+    # doesn't care about control-plane reclaim. Tests that DO care about
+    # the reclaim's scoping build their own SHIM_DIR curl stub, same
+    # convention as the drop-branch tests' own gh/kubectl stubs below.
+    cat > "$STUB_BIN/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "curl $*" >> "$STUB_LOG"
+echo '{"data":[]}'
+exit 0
+EOF
+    chmod +x "$STUB_BIN/curl"
 }
 
 # make_stubs writes shell-script stubs for every external binary cleanup.sh
@@ -72,6 +89,9 @@ run_cleanup() {
     BOOTSTRAP_SERVERS=kafka:9093 \
     REDIS_URL=redis:6379 \
     PR_NUMBER="${PR_NUMBER:-99}" \
+    ATLAS_UI_BASE="${ATLAS_UI_BASE:-http://atlas-ingress.test.svc.cluster.local}" \
+    ATLAS_ENVIRONMENT="${ATLAS_ENVIRONMENT:-pr-99}" \
+    ATLAS_DEACTIVATE_SETTLE_S="${ATLAS_DEACTIVATE_SETTLE_S:-0}" \
     bash "$PROJECT_ROOT/scripts/cleanup.sh"
 }
 
@@ -171,12 +191,18 @@ EOF
 #!/usr/bin/env bash
 exit 0
 EOF
+    cat > "$SHIM_DIR/curl" <<'EOF'
+#!/usr/bin/env bash
+echo '{"data":[]}'
+exit 0
+EOF
     chmod +x "$SHIM_DIR"/*
 
     PATH="$SHIM_DIR:$PATH" run env CALL_LOG="$CALL_LOG" \
         PR_NUMBER=42 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
         ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
         GHCR_TOKEN=fake-token \
+        ATLAS_UI_BASE=http://fake-ui ATLAS_ENVIRONMENT=pr-42 ATLAS_DEACTIVATE_SETTLE_S=0 \
         bash "$PROJECT_ROOT/scripts/cleanup.sh"
 
     [ "$status" -eq 0 ]
@@ -224,12 +250,18 @@ EOF
 #!/usr/bin/env bash
 exit 0
 EOF
+    cat > "$SHIM_DIR/curl" <<'EOF'
+#!/usr/bin/env bash
+echo '{"data":[]}'
+exit 0
+EOF
     chmod +x "$SHIM_DIR"/*
 
     PATH="$SHIM_DIR:$PATH" run env CALL_LOG="$CALL_LOG" \
         PR_NUMBER=42 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
         ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
         GHCR_TOKEN=fake-token \
+        ATLAS_UI_BASE=http://fake-ui ATLAS_ENVIRONMENT=pr-42 ATLAS_DEACTIVATE_SETTLE_S=0 \
         bash "$PROJECT_ROOT/scripts/cleanup.sh"
 
     [ "$status" -eq 0 ]
@@ -353,8 +385,9 @@ EOF
     run run_cleanup
     [ "$status" -eq 0 ]
     [[ "$output" == *'phases_failed=0'* ]]
-    # 7 phases after drop-tenant-storage was removed (superseded by PreDelete purge hook).
-    [[ "$output" == *'phases_run=7'* ]]
+    # 9 phases: 7 after drop-tenant-storage was removed (superseded by
+    # PreDelete purge hook), plus deactivate + drop-control-plane (task-48).
+    [[ "$output" == *'phases_run=9'* ]]
 }
 
 @test "cleanup.sh fails fast on malformed rpk output" {
@@ -386,4 +419,160 @@ EOF
     [ "$status" -eq 1 ]
     [[ "$output" == *'drop-topics'* ]]
     [[ "$output" == *'phase exited non-zero'* ]]
+}
+
+# ----------------------------------------------------------------------------
+# task-48: deactivate before destroy, and reclaim the control plane
+# ----------------------------------------------------------------------------
+
+@test "deactivate runs before every destructive phase" {
+    # Anchored to the PHASES array's own two-column
+    # "<phase-name>   <function-name>" lines (leading whitespace + name +
+    # whitespace + function) so this doesn't false-match the function
+    # definitions or the doc comments elsewhere in the file that also
+    # mention do_drop_dbs by name (e.g. do_drop_control_plane's own
+    # isolated-mode-skip rationale).
+    run grep -nE '^[[:space:]]+deactivate[[:space:]]+do_deactivate|^[[:space:]]+drop-[a-z-]+[[:space:]]+do_drop_' \
+        "$PROJECT_ROOT/scripts/cleanup.sh"
+    [ "$status" -eq 0 ]
+    deact=$(printf '%s\n' "$output" | grep -E 'deactivate[[:space:]]+do_deactivate' | head -1 | cut -d: -f1)
+    first_destructive=$(printf '%s\n' "$output" | grep -E 'drop-[a-z-]+[[:space:]]+do_drop_' | head -1 | cut -d: -f1)
+    [ -n "$deact" ]
+    [ -n "$first_destructive" ]
+    [ "$deact" -lt "$first_destructive" ]
+}
+
+@test "cleanup.sh deactivates (DEACTIVATING then DELETED) before any destructive phase runs" {
+    make_stubs '[]' '[]'
+    run run_cleanup
+    [ "$status" -eq 0 ]
+
+    deact_line=$(grep -n '"phase":"DEACTIVATING"' "$STUB_LOG" | head -1 | cut -d: -f1)
+    deleted_line=$(grep -n '"phase":"DELETED"' "$STUB_LOG" | head -1 | cut -d: -f1)
+    first_psql_line=$(grep -n '^psql ' "$STUB_LOG" | head -1 | cut -d: -f1)
+
+    [ -n "$deact_line" ]
+    [ -n "$deleted_line" ]
+    [ -n "$first_psql_line" ]
+    [ "$deact_line" -lt "$deleted_line" ]
+    [ "$deleted_line" -lt "$first_psql_line" ]
+}
+
+@test "cleanup.sh fails the deactivate phase (not the whole script) when ATLAS_UI_BASE is missing" {
+    make_stubs '[]' '[]'
+    # run_cleanup's own default would backfill a missing ATLAS_UI_BASE, so
+    # this test drives cleanup.sh directly with the var absent, same
+    # pattern as the drop-branch tests below.
+    PATH="$STUB_BIN:$PATH" run env -u ATLAS_UI_BASE STUB_LOG="$STUB_LOG" \
+        BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" \
+        DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo bar" BOOTSTRAP_SERVERS=kafka:9093 REDIS_URL=redis:6379 \
+        PR_NUMBER=99 ATLAS_ENVIRONMENT=pr-99 ATLAS_DEACTIVATE_SETTLE_S=0 \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+    [[ "$output" == *'ATLAS_UI_BASE and ATLAS_ENVIRONMENT are required'* ]]
+    [[ "$output" == *'failed_phases'*'deactivate'* ]]
+}
+
+@test "cleanup.sh drop-control-plane is skipped in isolated mode" {
+    make_stubs '[]' '[]'
+    run run_cleanup
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'drop-control-plane'*'skipped (isolated)'* ]]
+    if grep -F -- '-X DELETE' "$STUB_LOG"; then
+        echo "ERROR: DELETE issued in isolated mode" >&2
+        return 1
+    fi
+}
+
+@test "cleanup.sh drop-dbs/drop-topics/drop-redis are skipped (sparse) under ATLAS_MODE=sparse" {
+    make_stubs '[]' '[]'
+    ATLAS_MODE=sparse run run_cleanup
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'drop-dbs'*'skipped (sparse)'* ]]
+    [[ "$output" == *'drop-topics'*'skipped (sparse)'* ]]
+    [[ "$output" == *'drop-redis'*'skipped (sparse)'* ]]
+    if grep -F '^psql ' "$STUB_LOG"; then
+        echo "ERROR: psql invoked despite sparse skip" >&2
+        return 1
+    fi
+}
+
+@test "cleanup.sh drop-control-plane deletes every row for this environment, including duplicates, and never a foreign row" {
+    # task-47 review finding: create_service_config is not idempotent
+    # across a retried bootstrap Job, so a crashed attempt can leave an
+    # orphaned duplicate services row (same Type, same Environment,
+    # different id). Seed TWO rows for this environment plus one foreign
+    # (main-owned) row of the SAME type, and assert both of this
+    # environment's rows are deleted while the foreign one survives — a
+    # suite that only proves this environment's rows are gone would pass
+    # just as happily against an unscoped DELETE.
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/dcp-calls.log"
+    JSON_FIXTURE="$BATS_TEST_TMPDIR/services-list.json"
+    cat > "$JSON_FIXTURE" <<'JSONEOF'
+{"data":[
+  {"id":"svc-mine-1","attributes":{"environment":"pr-99"}},
+  {"id":"svc-mine-2","attributes":{"environment":"pr-99"}},
+  {"id":"svc-foreign","attributes":{"environment":"main"}}
+]}
+JSONEOF
+    cat > "$SHIM_DIR/curl" <<CURLEOF
+#!/usr/bin/env bash
+printf '%s\n' "curl \$*" >> "$CALL_LOG"
+method="GET"
+prev=""
+for a in "\$@"; do
+    if [ "\$prev" = "-X" ]; then method="\$a"; fi
+    prev="\$a"
+done
+url="\${@: -1}"
+case "\$url" in
+    */configurations/services)
+        [ "\$method" = "GET" ] && cat "$JSON_FIXTURE"
+        ;;
+    */configurations/tenants|*/configurations/templates|*/api/tenants)
+        [ "\$method" = "GET" ] && echo '{"data":[]}'
+        ;;
+esac
+exit 0
+CURLEOF
+    chmod +x "$SHIM_DIR/curl"
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/gh" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env \
+        PR_NUMBER=99 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        ATLAS_MODE=sparse ATLAS_ENVIRONMENT=pr-99 \
+        ATLAS_UI_BASE=http://fake-ui ATLAS_DEACTIVATE_SETTLE_S=0 \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    grep -F -- '-X DELETE' "$CALL_LOG" | grep -F '/configurations/services/svc-mine-1'
+    grep -F -- '-X DELETE' "$CALL_LOG" | grep -F '/configurations/services/svc-mine-2'
+    if grep -F -- '-X DELETE' "$CALL_LOG" | grep -F 'svc-foreign'; then
+        echo "ERROR: foreign row was deleted" >&2
+        return 1
+    fi
+
+    rm -rf "$SHIM_DIR"
 }

@@ -7,7 +7,7 @@ require (
 	github.com/Chronicle20/atlas/tools/goroutineguard v0.0.0
 	github.com/Chronicle20/atlas/tools/outboxguard v0.0.0
 	github.com/Chronicle20/atlas/tools/rediskeyguard v0.0.0
-	golang.org/x/tools v0.48.0
+	golang.org/x/tools v0.49.0
 )
 
 replace github.com/Chronicle20/atlas/tools/buffdurationguard => ../buffdurationguard

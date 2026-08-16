@@ -307,6 +307,16 @@ else
     skip "scope guard (no Go file changed)"
 fi
 
+# task-232 FR-4.1: bans new direct producer.Produce calls under services/ that
+# bypass producer.ProviderImpl's composed header decorators (span + tenant +
+# environment). Gated on producer-shaped Go changes plus the guard's own
+# source, mirroring the scope guard's self-inclusion above.
+if [ "$ALL" -eq 1 ] || touched '^services/.*producer.*\.go$|^libs/atlas-kafka/'; then
+    step "producer seam guard" ./tools/producer-seam-guard.sh
+else
+    skip "producer seam guard (no producer-shaped Go file changed)"
+fi
+
 # Path-gated in CI.
 
 if touched '^(\.github/config/services\.json|deploy/k8s/|docker-bake\.hcl|go\.work|tools/db-bootstrap\.sh)'; then

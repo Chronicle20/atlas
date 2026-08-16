@@ -100,7 +100,8 @@ func (p *ProcessorImpl) produceHitCommand(f field.Model, reactorId uint32, chara
 func produceToCommandTopic(l logrus.FieldLogger, ctx context.Context) func(provider model.Provider[[]kafka.Message]) error {
 	sd := producer.SpanHeaderDecorator(ctx)
 	td := producer.TenantHeaderDecorator(ctx)
-	return producer.Produce(l)(producer.ManagerWriterProvider(l)(EnvCommandTopic))(sd, td)
+	ed := producer.EnvHeaderDecorator(ctx)
+	return producer.Produce(l)(producer.ManagerWriterProvider(l)(EnvCommandTopic))(sd, td, ed)
 }
 
 // Command represents a command sent to atlas-reactors

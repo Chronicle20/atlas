@@ -44,13 +44,3 @@ func requestEtc(ctx context.Context, itemId uint32) requests.Request[EtcRestMode
 		fmt.Sprintf(root+"/etcs/%d", itemId),
 	)
 }
-
-func requestEquipable(ctx context.Context, itemId uint32) requests.Request[EquipableRestModel] {
-	root, err := getBaseRequest(ctx)
-	if err != nil {
-		return requests.ErrorRequest[EquipableRestModel](err)
-	}
-	return requests.GetRequest[EquipableRestModel](
-		fmt.Sprintf(root+"/equipables/%d", itemId),
-	)
-}

@@ -38,7 +38,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 // GetSessionsSince retrieves all sessions for a character since the given time
 func (p *ProcessorImpl) GetSessionsSince(characterId uint32, since time.Time) ([]SessionRestModel, error) {
-	return requests.DrainProvider[SessionRestModel, SessionRestModel](p.l, p.ctx)(SessionsSinceUrl(characterId, since.Unix()), sessionDrainPageSize, Extract, model.Filters[SessionRestModel]())()
+	url, err := SessionsSinceUrl(p.ctx, characterId, since.Unix())
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[SessionRestModel, SessionRestModel](p.l, p.ctx)(url, sessionDrainPageSize, Extract, model.Filters[SessionRestModel]())()
 }
 
 // ComputePlaytimeInRange computes total playtime within a specific time range

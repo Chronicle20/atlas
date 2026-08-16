@@ -7,16 +7,28 @@
 # allowlist fallback — except for the one "the row IS the scoping
 # dimension" shape (analyzer.go's checkEntity), which is listed here too.
 #
-# IMPORTANT (task-232 Task 19 fix round 1): a line in this file is NOT
+# IMPORTANT (task-232 Task 19, fix rounds 1-3): a line in this file is NOT
 # sufficient by itself to excuse a control-plane entity from the Environment
-# requirement. checkEntity also requires hasUniqueNaturalKey(st) — the
-# struct must declare a non-surrogate field with a `gorm:"...uniqueIndex..."`
-# (or `unique`) tag, proving it structurally owns its own identity as a
-# real DB constraint, not just a comment an entity author controls. A
-# control-plane entity added here without such a field stays flagged
-# regardless of the reason text — see the pinned smuggle-probe fixture at
-# tools/scopeguard/testdata/src/atlas-configurations/auditrow/entity.go and
-# TestAnalyzerAllowlisted in analyzer_test.go.
+# requirement. checkEntity requires THREE independent conditions to all
+# hold at once:
+#   1. this allowlist entry;
+#   2. hasUniqueNaturalKey(st) — the struct must declare a non-surrogate
+#      field with a `gorm:"...uniqueIndex..."` (or `unique`) tag, proving it
+#      structurally owns its own identity as a real DB constraint, not just
+#      a comment an entity author controls (fix round 1 closed the
+#      allowlist-only hole; see the auditrow fixture);
+#   3. hasScopingDimensionMarker — the entity itself must declare
+#      `func (Entity) ScopingDimension() {}`. Round 1's shape check alone
+#      turned out to be a proxy, not the claim: an idempotency-keyed audit
+#      row can carry a real unique key on an unrelated column and pass
+#      hasUniqueNaturalKey without being the scoping dimension at all (fix
+#      round 2 found this; see the smuggle2 fixture). The marker requires
+#      the author to STATE the claim in code, at the entity's own site.
+# A control-plane entity added here without satisfying ALL THREE stays
+# flagged regardless of the reason text — see the pinned smuggle-probe
+# fixtures at tools/scopeguard/testdata/src/atlas-configurations/{auditrow,
+# testfileaudit,smuggle2}/entity*.go and TestAnalyzerAllowlisted in
+# analyzer_test.go.
 #
 # Format: <pkg import path>/<entity.go base name> # <reason>
 # (pass.Pkg.Path() + "/" + filepath.Base(file) — see entityAllowlistKey in
@@ -50,7 +62,7 @@ atlas-trades/escrow/migration_test.go # legacyItemEntity (services/atlas-trades/
 # above "environment" to scope this row by. Mirrors the control-plane
 # "registry" shape the analyzer's own test fixture documents at
 # tools/scopeguard/testdata/src/atlas-tenants/registry/entity.go.
-atlas-configurations/environments/entity.go # environments.Entity is the environment registry row itself (Name/Baseline/Namespace/Tenant/Overrides/Phase) — no TenantId is possible (not tenant data) and no Environment is possible (the row IS the environment), exactly as atlas-tenants' tenant registry row is scoped by Environment because it sits one level below, and atlas-configurations' own tenants.Entity is scoped by Environment for the same reason. See design/PRD §3.5's category argument, cited in task-19-brief.md Step 3.
+atlas-configurations/environments/entity.go # environments.Entity is the environment registry row itself (Name/Baseline/Namespace/Tenant/Overrides/Phase) — no TenantId is possible (not tenant data) and no Environment is possible (the row IS the environment), exactly as atlas-tenants' tenant registry row is scoped by Environment because it sits one level below, and atlas-configurations' own tenants.Entity is scoped by Environment for the same reason. See design/PRD §3.5's category argument, cited in task-19-brief.md Step 3. Declares `func (Entity) ScopingDimension() {}` (fix round 3) alongside Name's uniqueIndex tag, so all three of this entry, hasUniqueNaturalKey, and hasScopingDimensionMarker hold.
 
 # task-232 Task 19 fix round 2: environments/processor_test.go declares
 # testEntity, a SQLite-compatible copy of environments.Entity (the
@@ -69,4 +81,4 @@ atlas-configurations/environments/entity.go # environments.Entity is the environ
 # testfileaudit/entity_test.go) proving a _test.go declaration with an
 # allowlist entry but NO unique natural key is still flagged — this line
 # alone does not create a blanket _test.go exemption.
-atlas-configurations/environments/processor_test.go # testEntity (SQLite-compatible copy of environments.Entity for unit tests) is the same scoping-dimension row as the real entity.go — no Environment is possible because the row IS the environment. hasUniqueNaturalKey(st) is satisfied by testEntity's Name field (`gorm:"not null;uniqueIndex"`), so this is gated the same as the real entry, not a bare prose exemption.
+atlas-configurations/environments/processor_test.go # testEntity (SQLite-compatible copy of environments.Entity for unit tests) is the same scoping-dimension row as the real entity.go — no Environment is possible because the row IS the environment. hasUniqueNaturalKey(st) is satisfied by testEntity's Name field (`gorm:"not null;uniqueIndex"`), and testEntity also declares `func (testEntity) ScopingDimension() {}` (fix round 3), so all three conditions hold, not a bare prose exemption.

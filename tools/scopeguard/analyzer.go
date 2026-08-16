@@ -9,17 +9,39 @@
 //     primary `Entity` struct must carry a scoping column — `TenantId` for a
 //     data-plane entity, `Environment` for a control-plane one (the two
 //     services that host the tenant/environment registries themselves:
-//     atlas-configurations, atlas-tenants). Either may be excused with a
-//     reason in allowlist.txt, but only for the "the row IS the scoping
-//     dimension" shape (a data-plane entity that IS the tenant, or the one
-//     control-plane entity that IS the environment list itself —
-//     atlas-configurations/environments.Entity, task-232 Task 19). That
-//     exception is gated on a STRUCTURAL precondition too
-//     (hasUniqueNaturalKey), not the allowlist line alone: fix round 1 on
-//     Task 19 proved an allowlist-only gate is smuggleable — any entity
-//     author can add a prose-justified line for an entity that is not
-//     actually the scoping dimension. An entity that merely forgot its
-//     scoping column, or fails the structural check, is not excusable.
+//     atlas-configurations, atlas-tenants). Either may be excused, but only
+//     for the "the row IS the scoping dimension" shape (a data-plane entity
+//     that IS the tenant, or the one control-plane entity that IS the
+//     environment list itself — atlas-configurations/environments.Entity,
+//     task-232 Task 19), and only when THREE independent conditions all
+//     hold at once:
+//
+//     - a reason in allowlist.txt, keyed off the declaring file
+//     (entityAllowlistKey) — prose, reviewed once at the line's own
+//     addition;
+//     - hasUniqueNaturalKey(st) — the struct declares a non-surrogate
+//     field with a real `gorm:"...uniqueIndex..."` DB constraint;
+//     - hasScopingDimensionMarker — the entity itself declares a
+//     `func (Entity) ScopingDimension() {}` marker method, so the claim
+//     is stated at the entity's own declaration site, not just in a
+//     text file far from the code.
+//
+//     No two of the three are sufficient. Fix round 1 (Task 19) proved an
+//     allowlist-only gate is smuggleable: any entity author can add a
+//     prose-justified line for an entity that is not actually the scoping
+//     dimension (the `auditrow` fixture). Fix round 2 proved
+//     hasUniqueNaturalKey alone is ALSO just a proxy: a control-plane row
+//     that is emphatically not the scoping dimension (an idempotency-keyed
+//     audit/job record) can carry an unrelated unique key and pass the
+//     structural check anyway (the `smuggle2` fixture). Struct shape cannot
+//     reliably decide "is this the top-level enumeration" — that is a
+//     semantic claim, not a syntactic property, and each shape refinement
+//     is one clever entity away from the next bypass. The marker method
+//     requires the author to STATE the claim in code, where a reviewer
+//     reading the entity's diff will see it and `grep -r
+//     ScopingDimension` finds every instance fleet-wide. An entity that
+//     merely forgot its scoping column, or fails any one of the three
+//     checks, is not excusable.
 //
 //  2. Call-site-level (per call, fleet-wide over services/ AND libs/): the
 //     two unscoping mechanisms the audit's §3 "second-mechanism sweep"
@@ -136,19 +158,26 @@ func checkEntity(pass *analysis.Pass, ts *ast.TypeSpec) {
 		// "environment" to scope by — the same shape as a data-plane entity
 		// that IS the tenant and so carries no TenantId. That is the one
 		// allowlist-able exception to Rule 1's control-plane branch, and it
-		// is gated on BOTH an allowlist entry AND a structural precondition
-		// (hasUniqueNaturalKey): an allowlist line alone is just prose an
-		// entity author controls, so it is not sufficient by itself — fix
-		// round 1 on task-232 Task 19 proved that by smuggling a plain
-		// audit-row entity (no scoping field, no natural key) past an
-		// allowlist-only version of this check. The entity must also
-		// declare its own identity as a uniquely-constrained, non-surrogate
-		// column: that is what "the row IS the environment" cashes out to
-		// mechanically. Every other control-plane entity without
-		// Environment is a real gap and stays hard-denied regardless of
-		// what allowlist.txt says (see "atlas-configurations/thing" and the
-		// pinned smuggle-probe fixture in analyzer_test.go).
-		if reason, ok := EntityAllowlist[key]; ok && hasUniqueNaturalKey(st) {
+		// is gated on THREE independent conditions, all required (task-232
+		// Task 19, fix rounds 1-3):
+		//   - an allowlist entry: prose an entity author controls, so not
+		//     sufficient alone — fix round 1 proved that by smuggling a
+		//     plain audit-row entity (no scoping field, no natural key)
+		//     past an allowlist-only version of this check;
+		//   - hasUniqueNaturalKey: also just a proxy, not sufficient alone
+		//     — fix round 2 proved that by smuggling an idempotency-keyed
+		//     audit row (an unrelated uniqueIndex column that has nothing
+		//     to do with being the scoping dimension) past an
+		//     allowlist+shape-only version;
+		//   - hasScopingDimensionMarker: the entity must declare
+		//     `func (Entity) ScopingDimension() {}` on itself, so the claim
+		//     is stated at the entity's own site, not inferred from shape.
+		// Every other control-plane entity without Environment is a real
+		// gap and stays hard-denied regardless of what allowlist.txt says
+		// or what fields it carries (see "atlas-configurations/thing" and
+		// the pinned smuggle-probe fixtures — auditrow, testfileaudit,
+		// smuggle2 — in analyzer_test.go).
+		if reason, ok := EntityAllowlist[key]; ok && hasUniqueNaturalKey(st) && hasScopingDimensionMarker(pass, ts.Name.Name) {
 			_ = reason
 			return
 		}
@@ -206,17 +235,19 @@ func hasField(st *ast.StructType, name string) bool {
 // hasUniqueNaturalKey reports whether st declares a non-surrogate field
 // carrying a `gorm:"...uniqueIndex..."` (or plain `unique`) tag — an
 // actually-enforced database uniqueness constraint on a business-meaningful
-// column, not a generated primary key. This is the structural precondition
+// column, not a generated primary key. This is ONE of three preconditions
 // Rule 1's control-plane allowlist exception requires (task-232 Task 19 fix
-// round 1): "the row IS the scoping dimension" cashes out to "this entity
-// declares its OWN identity as a uniquely-constrained natural key," which a
-// bare allowlist.txt line cannot prove by itself — an entity author fully
-// controls that file's prose. A field literally named Id/ID is excluded
-// even if tagged uniqueIndex, since that is the surrogate-PK convention
-// every entity in the fleet already carries (`gorm:"type:uuid;default:
-// uuid_generate_v4()"` etc.) and proves nothing about being a scoping
-// dimension — see environments.Entity's Name field (task-19-brief.md Step
-// 3) for the shape this is meant to recognize.
+// round 1), not sufficient by itself: fix round 2 found that "declares SOME
+// uniquely-constrained non-surrogate column" is a weaker claim than "the
+// row IS the scoping dimension" — an idempotency-keyed audit/job record
+// carries a real unique key too (its idempotency key) without being the
+// top-level enumeration of anything. hasScopingDimensionMarker is the
+// condition that closes that gap; see its own doc comment. A field
+// literally named Id/ID is excluded even if tagged uniqueIndex, since that
+// is the surrogate-PK convention every entity in the fleet already carries
+// (`gorm:"type:uuid;default: uuid_generate_v4()"` etc.) and proves nothing
+// about being a scoping dimension — see environments.Entity's Name field
+// (task-19-brief.md Step 3) for the shape this is meant to recognize.
 func hasUniqueNaturalKey(st *ast.StructType) bool {
 	if st.Fields == nil {
 		return false
@@ -236,6 +267,70 @@ func hasUniqueNaturalKey(st *ast.StructType) bool {
 		}
 	}
 	return false
+}
+
+// scopingDimensionMarkerName is the method name an entity author must
+// declare on the entity itself to claim "this row IS the scoping
+// dimension" (task-232 Task 19 fix round 3). hasUniqueNaturalKey alone
+// proved to be a proxy for that claim, not the claim: any control-plane row
+// with an unrelated unique key (an idempotency-keyed audit/job record, an
+// event log deduplicated by request id) satisfies "declares a uniquely-
+// constrained non-surrogate column" without being the top-level
+// enumeration at all — a fix-round-2 re-review built exactly that shape
+// (RequestId `gorm:"uniqueIndex"` on an audit row) and it sailed through
+// with no diagnostic. Struct SHAPE cannot reliably decide "is this the
+// scoping dimension" — that is a semantic claim about what the row means,
+// not a syntactic property of its columns, and each shape refinement is
+// one clever entity away from the next bypass.
+//
+// So the exception now requires the entity author to STATE the claim, at
+// the entity's own declaration site, in a form a reviewer reading that
+// file will see and a `grep -r ScopingDimension` finds fleet-wide: a
+// zero-value marker method, `func (Entity) ScopingDimension() {}`. This is
+// requirement 3 of 3 (alongside the allowlist.txt entry and
+// hasUniqueNaturalKey) — all three must hold for the exception to apply,
+// so an accidental exemption needs three independent things to align by
+// coincidence, and a deliberate one is a loud, reviewable act in the
+// entity's own diff rather than prose in a text file far from the code.
+const scopingDimensionMarkerName = "ScopingDimension"
+
+// hasScopingDimensionMarker reports whether the package declares a method
+// named ScopingDimension on the type entityName (value or pointer
+// receiver), anywhere in the package's files. A method can only be
+// declared in the same package as its receiver type in Go, so this is
+// already scoped to "the entity's own package" without needing a same-file
+// restriction; in every real instance (environments.Entity, testEntity)
+// the method sits directly beside the struct in the same file, which is
+// the point — a reviewer reading the entity sees the claim.
+func hasScopingDimensionMarker(pass *analysis.Pass, entityName string) bool {
+	for _, f := range pass.Files {
+		for _, decl := range f.Decls {
+			fd, ok := decl.(*ast.FuncDecl)
+			if !ok || fd.Recv == nil || len(fd.Recv.List) != 1 {
+				continue
+			}
+			if fd.Name.Name != scopingDimensionMarkerName {
+				continue
+			}
+			if receiverTypeName(fd.Recv.List[0].Type) == entityName {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// receiverTypeName extracts the bare type name from a method receiver's
+// type expression, unwrapping a pointer receiver (`*Entity`) to its
+// identifier the same way a value receiver (`Entity`) already is one.
+func receiverTypeName(expr ast.Expr) string {
+	if star, ok := expr.(*ast.StarExpr); ok {
+		expr = star.X
+	}
+	if id, ok := expr.(*ast.Ident); ok {
+		return id.Name
+	}
+	return ""
 }
 
 // serviceFromPkgPath extracts the atlas-<name> service module from a Go

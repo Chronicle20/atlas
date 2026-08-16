@@ -45,6 +45,15 @@ func TestAnalyzer(t *testing.T) {
 // It proves entityAllowlistKey's file-based derivation (any declaring file
 // name, not hardcoded to "entity.go") does not accidentally exempt
 // everything in a _test.go file — hasUniqueNaturalKey still gates it.
+//
+// atlas-configurations/smuggle2 is the fix-round-3 smuggle probe (the
+// re-reviewer's own construction): a control-plane entity WITH a
+// uniquely-constrained non-surrogate field (RequestId, an idempotency key)
+// — so it satisfies hasUniqueNaturalKey — but is not actually the scoping
+// dimension (an idempotency-keyed audit row is not the top-level
+// enumeration of anything). It gets an allowlist entry here too, but no
+// ScopingDimension marker method, and must still be flagged — proving the
+// marker, not the shape check, is what closes the round-2 hole.
 func TestAnalyzerAllowlisted(t *testing.T) {
 	origEntity, origCallsite := EntityAllowlist, CallsiteAllowlist
 	EntityAllowlist = map[string]string{
@@ -52,6 +61,7 @@ func TestAnalyzerAllowlisted(t *testing.T) {
 		"atlas-configurations/envfixture/entity.go":         "test fixture — see analyzer_test.go (task-232 Task 19 control-plane allowlist exception)",
 		"atlas-configurations/auditrow/entity.go":           "test fixture — see analyzer_test.go (task-232 Task 19 fix round 1 smuggle probe; must still be flagged)",
 		"atlas-configurations/testfileaudit/entity_test.go": "test fixture — see analyzer_test.go (task-232 Task 19 fix round 2 smuggle probe; a _test.go declaration must still be flagged with no unique natural key)",
+		"atlas-configurations/smuggle2/entity.go":           "test fixture — see analyzer_test.go (task-232 Task 19 fix round 3 smuggle probe; has a unique natural key but no ScopingDimension marker, must still be flagged)",
 	}
 	CallsiteAllowlist = map[string]string{
 		"atlas-callsite-allowed/task/task.go:14": "test fixture — see analyzer_test.go",
@@ -67,6 +77,7 @@ func TestAnalyzerAllowlisted(t *testing.T) {
 		"atlas-configurations/envfixture",
 		"atlas-configurations/auditrow",
 		"atlas-configurations/testfileaudit",
+		"atlas-configurations/smuggle2",
 		"atlas-callsite-allowed/task",
 	)
 }

@@ -34,6 +34,13 @@ type testEntity struct {
 
 func (testEntity) TableName() string { return "environments" }
 
+// ScopingDimension is a zero-value marker (tools/scopeguard's Rule 1,
+// task-232 Task 19 fix round 3) declaring that testEntity, like the real
+// environments.Entity it mirrors, IS the scoping dimension it would
+// otherwise be expected to carry an Environment column for. See
+// environments.Entity's own ScopingDimension for the full rationale.
+func (testEntity) ScopingDimension() {}
+
 // testDatabase returns a SQLite in-memory database migrated for both the
 // environments table and the outbox, with EnvEnvironmentStatusTopic set so
 // enqueueEnvironmentStatus is not a no-op - matching the real deployment

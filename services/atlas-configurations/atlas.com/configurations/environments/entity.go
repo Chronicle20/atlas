@@ -29,6 +29,18 @@ func (e Entity) TableName() string {
 	return "environments"
 }
 
+// ScopingDimension is a zero-value marker (tools/scopeguard's Rule 1,
+// task-232 Task 19 fix round 3) declaring, at this entity's own site, that
+// it IS the scoping dimension it would otherwise be expected to carry
+// (Environment) — the same shape as the tenant table being the tenant
+// list. scopeguard requires this marker, an allowlist.txt entry, AND a
+// uniquely-constrained natural key (Name) to all agree before excusing
+// this entity from the Environment-column requirement; see
+// tools/scopeguard/analyzer.go's hasScopingDimensionMarker doc comment for
+// why struct shape alone was found to be an insufficient proxy for this
+// claim.
+func (Entity) ScopingDimension() {}
+
 func Migration(db *gorm.DB) error {
 	return db.AutoMigrate(&Entity{})
 }

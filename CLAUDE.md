@@ -23,43 +23,35 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 
 ## Where you work — branch & worktree
 
-- Check the branch before every commit.
-- Setup work that must precede a feature branch still goes on the feature branch — create it first; it branches from the same HEAD.
-- Non-trivial tasks live in their own task worktree. Verify cwd is the correct worktree before planning, designing, or executing a task; cd into it yourself rather than asking the user.
-- Search across all worktrees (`git worktree list`) before concluding a task artifact is missing.
+- Check the branch before every commit. Setup work that must precede a feature branch still goes on that branch — create it first; it branches from the same HEAD.
+- Non-trivial tasks live in their own task worktree. Verify cwd is the correct worktree before planning, designing, or executing a task; cd into it yourself rather than asking the user. Search across all worktrees (`git worktree list`) before concluding a task artifact is missing.
 - When dispatching subagents, ensure they operate inside the correct worktree — never write artifacts or edits into the main repo — and verify the tree is clean after they run.
-- After completing a rebase, merge, or history-rewrite, always push (force-push when history was rewritten) so the PR reflects the resolved state; do not stop at local-only completion.
-- A plain push to a task branch triggers the PR workflows and the ephemeral rollout; do not merge `origin/main` as a routine build-triggering ritual. Exception: when the branch conflicts with main, merge `origin/main`, resolve, and push the merge commit.
+- After completing a rebase, merge, or history-rewrite, always push (force-push when history was rewritten); do not stop at local-only completion.
+- A plain push to a task branch triggers the PR workflows and the ephemeral rollout; do not merge `origin/main` as a routine build-triggering ritual.
 
 ## Done means verified
 
-- Before claiming a branch "done," "ready for PR," or invoking `superpowers:finishing-a-development-branch`, the flagless `tools/verify.sh` must exit 0.
-- Only the flagless invocation counts as verified — `--quick`/`--no-docker` also exit 0 but skip the bake and `-race`.
-- Always run the code-review step before opening a PR; do not skip even when the task plan looks complete. Code review is a different gate from `tools/verify.sh`.
-- A green `tools/verify.sh` does not mean the branch is correct — every module can build, vet, test, and bake clean while the branch carries a cross-service seam defect. When a change crosses a service boundary, trace the event into its consumers by hand and check that a test asserts the NEW contract.
+- Before claiming a branch "done," "ready for PR," or invoking `superpowers:finishing-a-development-branch`, the flagless `tools/verify.sh` must exit 0. Only the flagless invocation counts — `--quick`/`--no-docker` also exit 0 but skip the bake and `-race`.
+- Always run the code-review step before opening a PR; do not skip even when the task plan looks complete.
+- Code review is a different gate: a green `tools/verify.sh` does not mean the branch is correct, because it cannot see a cross-service seam defect. When a change crosses a service boundary, trace the event into its consumers by hand and check that a test asserts the NEW contract.
 
 ## Development workflow
 
 - When asked to understand or plan something, do not start implementing; wait for explicit approval before making any edits. Planning and implementation are separate phases.
-- The canonical flow for any non-trivial change is four phases, each a separate slash command invoked from a fresh (`/clear`'d) session, so the next phase consumes only the prior phase's documented artifacts. `/spec-task` creates a dedicated worktree at `.worktrees/task-NNN-slug/` on a `task-NNN-slug` branch; all subsequent phases run inside that worktree, so docs, code, and the eventual PR are one unit:
-  1. `/spec-task <idea>` — run from the main repo. Interactive PRD interview that creates the worktree + branch and commits the PRD. Output: `<worktree>/docs/tasks/task-NNN-slug/prd.md`.
-  2. `cd .worktrees/task-NNN-slug`, `/clear`, then `/design-task <task-id>` — invokes `superpowers:brainstorming`. Output: `design.md`, committed on the task branch.
-  3. `/clear`, then `/plan-task <task-id>` — invokes `superpowers:writing-plans`. Output: `plan.md` + `context.md`, committed.
-  4. `/clear`, then `/execute-task <task-id>` — invokes `superpowers:subagent-driven-development`. Reuses the existing worktree; never creates a new one.
+- Any non-trivial change runs the four-phase flow — `/spec-task` → `/design-task` → `/plan-task` → `/execute-task` — each a separate slash command invoked from a fresh (`/clear`'d) session, so the next phase consumes only the prior phase's documented artifacts. `/spec-task` runs from the main repo and creates a dedicated worktree at `.worktrees/task-NNN-slug/`; every later phase runs inside that worktree and never creates a new one, so docs, code, and the eventual PR are one unit.
 - Skip `/spec-task` only for trivial fixes that don't warrant a PRD; document those directly via a brainstorming session.
 - Before planning or designing a task, verify the task is not already planned/implemented and its number does not collide with an in-flight task.
 
-**Task lifecycle mechanics** — fuzzy task identifiers, the resolver's output format, the artifact-location override, and the code-review reviewer roster: see [docs/superpowers-integration.md](docs/superpowers-integration.md).
+**Task lifecycle mechanics** — each phase's command form and output artifact, fuzzy task identifiers, the resolver's output format, the artifact-location override, and the code-review reviewer roster: see [docs/superpowers-integration.md](docs/superpowers-integration.md).
 
 ## Dispatching agents
 
 - Pass an explicit `model` on every Agent/Task dispatch; unspecified inherits Opus, and an Opus subagent turn costs a large multiple of a Sonnet one.
-- The pin follows the job, not the `subagent_type`. Any dispatch whose job is review, verify, or audit runs Sonnet — including ad-hoc general-purpose agents carrying a review prompt. Scans and inventories run Haiku. Implementers run Sonnet unless the plan task is tagged `model: opus`.
-- Never use Fable for background or review workflows.
-- Implementers do not run repo-wide verification. `tools/verify.sh`, `tools/lint.sh`, `-race`, and docker bake belong to the verifier agent in its own clean context; implementers run module-local `go build ./... && go test ./...` and nothing more.
+- The pin follows the job, not the `subagent_type` — review/verify/audit runs Sonnet even for an ad-hoc general-purpose agent, scans and inventories run Haiku, implementers run Sonnet. Never use Fable for background or review workflows.
+- Implementers do not run repo-wide verification; they run module-local `go build ./... && go test ./...` and nothing more.
 - Fan out with fresh-context agents, not `subagent_type: "fork"` — a named agent type plus an explicit brief. Fork only to continue an interactive debugging thread, and say why inline. *(enforced)*
 
-**Agent or model dispatch mechanics** — the full job→model table, the implementer tool-call budget, and the fork-vs-fresh-context policy: see [docs/agent-dispatch.md](docs/agent-dispatch.md).
+**Agent or model dispatch mechanics** — the full job→model table and its opt-in Opus escalation, the implementer tool-call budget, the verification split, and the fork-vs-fresh-context policy: see [docs/agent-dispatch.md](docs/agent-dispatch.md).
 
 ## Handing off context
 
@@ -82,7 +74,6 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 - Ask the toolchain (`go list -m -f '{{.Dir}}' <module>`) rather than sweeping the filesystem for a Go dependency's source.
 - Never spend inference turns polling a process — launch it with a bound (`run_in_background`, or Monitor with an until-loop) and hand back or do something else in the meantime.
 - When updating `TODO.md` or other tracking docs, use `Glob`/`Grep` to find the file first rather than assuming a path.
-- For a wedged deploy or runtime failure, read the relevant pod logs early rather than starting at packet-level fixes or bare pod listings.
 - Send substantive content as its own text-only message before an `AskUserQuestion` — text emitted in the same turn does not render reliably.
 - Do not proactively pitch paid features; if one is genuinely the right tool, lead with what is known and unknown about billing before mentioning it.
 - Prefer portable POSIX shell; avoid zsh/direnv-specific constructs and batch patch loops. For a multi-file edit, prefer per-file Edit/Write over a shell patch loop.
@@ -95,9 +86,9 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 | **Adding a new service** | [docs/adding-a-new-service.md](docs/adding-a-new-service.md) | Service onboarding checklist |
 | **Packet or protocol work** — new codec, version bring-up, dispatcher family, verifying a cell | [docs/packets/PROCESS.md](docs/packets/PROCESS.md) | Task-type → entry point → canonical playbook |
 | **Task lifecycle mechanics** — fuzzy identifiers, resolver output, artifact locations, code-review dispatch | [docs/superpowers-integration.md](docs/superpowers-integration.md) | When-to-use-what for the four-phase workflow |
-| **Git, branch, or PR mechanics** — stray-commit recovery, build triggering, `gh` auth | [docs/git-workflow.md](docs/git-workflow.md) | Recovery steps, ephemeral-rollout behavior, token auth |
+| **Git, branch, or PR mechanics** — stray-commit recovery, build triggering, `gh` auth | [docs/git-workflow.md](docs/git-workflow.md) | Stray-commit recovery, the conflicts-with-main build exception, token auth |
 | **Reverse engineering or IDA work** — function lookup, session resolution | [docs/reverse-engineering.md](docs/reverse-engineering.md) | `func_query` usage, `idb_list` session resolution |
 | **Shell, editing, or tooling mechanics** — locating Go module source, waiting on processes | [docs/tooling-conventions.md](docs/tooling-conventions.md) | Toolchain lookups, the polling anti-pattern |
 | **Agent dispatch mechanics** — model table, tool-call budget, fork policy, handoff thresholds | [docs/agent-dispatch.md](docs/agent-dispatch.md) | Full job→model table, implementer budget, controller handoff |
-| **Runtime or Kubernetes debugging** — diagnosing a wedged deploy or crash-loop | [docs/observability.md](docs/observability.md) | Pod-log access paths |
+| **Runtime or Kubernetes debugging** — diagnosing a wedged deploy or crash-loop | [docs/observability.md](docs/observability.md) | Read pod logs first, and how to reach them |
 | **Go service patterns** — constants, service boundaries, test builders | `backend-dev-guidelines` skill, `backend-guidelines-reviewer` agent | DOM-* checklist enforcement |

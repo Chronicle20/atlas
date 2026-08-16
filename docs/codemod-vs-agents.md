@@ -14,9 +14,8 @@ rewriter that would apply it — the rewriter itself is **not built yet** (see
 
 ## The rule
 
-> Before dispatching more than **2 implementers** at the same templated
-> transformation, evaluate whether an AST codemod is cheaper than the
-> remaining manual dispatches.
+> Evaluate whether an AST codemod is cheaper **before dispatching the second
+> implementer** at the same templated transformation.
 
 "Templated transformation" means: the same multi-step edit, repeated across
 call sites/files/services, where most steps are syntactic (a rename, an
@@ -24,7 +23,7 @@ added import, a threaded parameter, a fixed call inserted at a fixed
 location) and at most one step requires per-site judgment (a log message, a
 comment, a domain-specific choice).
 
-### The arithmetic that sets N = 2
+### The arithmetic that sets the trigger at the second dispatch
 
 Two figures are measured, from task-232's batch 4:
 
@@ -34,31 +33,40 @@ Two figures are measured, from task-232's batch 4:
 
 One figure is a standing contract, not a measurement: an `atlas-implementer`
 dispatch is capped at **120 tool calls** before it must hand back `PARTIAL`
-(`docs/agent-dispatch.md` "The implementer budget"). Writing a codemod is
-itself exactly this shape of task — a small, self-contained Go module
-mirroring `tools/rediskeyguard/` (four or five files: `go.mod`, `analyzer.go`,
-`analyzer_test.go`, `cmd/`, `testdata/`) — so its cost ceiling is bounded by
-that same budget: at most 120 turns × ~122,010 tokens/turn ≈ **14.6M tokens**
-to build and test, worst case.
+(`docs/agent-dispatch.md` "The implementer budget").
 
-Two implementer dispatches manually applying the same templated
-transformation therefore have a cost ceiling of 2 × 120 × 122,010 ≈ **29.3M
-tokens** — a full budget's worth each, worst case. That is the break-even
-point: past it, a single bounded dispatch to write the codemod (≤14.6M
-tokens, once) costs less than the *manual* dispatches it replaces, and every
-site beyond what the codemod covers is a `--check`-verified mechanical
-rewrite instead of another implementer turn.
+The threshold follows from two separate steps, not one doubled figure —
+each number below appears once, with its source:
 
-**N = 2** is therefore the threshold: before a third implementer would be
-dispatched at the same templated transformation, stop and evaluate the
-codemod option.
+1. **Why not evaluate at the first dispatch — a precondition, not a cost
+   argument.** A single site cannot tell you a transformation is templated;
+   it could be a one-off. The first implementer dispatch is what reveals the
+   shape (the same edit needed again elsewhere) — there is nothing to
+   evaluate before that.
+2. **Why the second dispatch is the trigger — a cost argument.** Writing a
+   codemod is itself exactly the implementer's shape of task — a small,
+   self-contained Go module mirroring `tools/rediskeyguard/` (four or five
+   files: `go.mod`, `analyzer.go`, `analyzer_test.go`, `cmd/`, `testdata/`) —
+   so building and testing it once is bounded by the *same* 120-tool-call
+   cap as any other implementer dispatch: 120 × ~122,010 tokens/turn ≈
+   **14.6M tokens**, worst case. A second manual dispatch at the same
+   transformation is bounded by that identical cap — 120 × ~122,010 ≈
+   **14.6M tokens**, worst case, the same number, because it is the same
+   kind of dispatch. So the second manual dispatch is the first point that
+   both (a) confirms the transformation is templated (step 1) and (b) has
+   not yet cost more than the rewriter itself would — one further manual
+   dispatch already reaches the codemod's own worst-case build cost. That is
+   the break-even: evaluate there, not later.
+
+Every site the codemod covers beyond that point is a `--check`-verified
+mechanical rewrite instead of another implementer turn.
 
 Measured against what actually happened: batch 4's 6,231 turns / 760M tokens
-is **~26×** the 29.3M-token ceiling that two implementer-equivalents of
-codemod-writing would have cost (760M / 29.3M ≈ 25.9). The rule would have
-fired at turn budget #241 (the start of the third implementer's worth of
-work); the session ran roughly 26 implementer-budgets past that point before
-anyone asked the question.
+is **~52×** a single 14.6M-token dispatch ceiling (760M / 14.6M ≈ 52.1).
+That comparison shows the transformation ran far past any plausible
+threshold — it does not by itself pin the threshold at the second dispatch
+rather than the third or fourth; the two-step reasoning above is what does
+that.
 
 ## Worked example: task-232 batch 4
 
@@ -91,7 +99,7 @@ residue list rather than dispatched as a full implementer turn per site.
 
 ## The deferred rewriter's contract (specification only)
 
-If a templated transformation clears the N = 2 threshold, the rewriter that
+If a templated transformation clears the second-dispatch threshold, the rewriter that
 gets written should follow this shape — this is a specification for future
 work, not a description of an existing tool. Nothing under `tools/` currently
 implements it.

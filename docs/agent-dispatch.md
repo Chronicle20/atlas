@@ -57,9 +57,9 @@ re-reads all of it, so one 600-turn agent costs far more than the same work
 split across fresh contexts. Splitting is the designed outcome, not a
 failure.
 
-Before that split fans out to more than 2 implementers on the same templated
-transformation, check whether an AST codemod is cheaper than the remaining
-manual dispatches — see [docs/codemod-vs-agents.md](codemod-vs-agents.md).
+Before dispatching a second implementer at the same templated transformation,
+check whether an AST codemod is cheaper than the remaining manual dispatches
+— see [docs/codemod-vs-agents.md](codemod-vs-agents.md).
 
 ## Verification split
 

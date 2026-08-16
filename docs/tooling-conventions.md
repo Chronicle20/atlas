@@ -27,7 +27,7 @@ paths you own, rooted at a directory you name — never at `/`.
 ## Waiting on processes
 
 Never spend inference turns waiting for a process. Launch it once with a
-bound — background execution, or a monitor with an until-loop — and do
+bound — `run_in_background: true`, or `Monitor` with an until-loop — and do
 something else or hand back.
 
 Repeated `sleep` / `ps aux | grep` / `echo waiting` / `for i in $(seq …); do
@@ -46,5 +46,5 @@ edit, prefer per-file Edit/Write over a shell patch loop.
 Preserve line endings when editing — do not normalize CRLF→LF as a side
 effect; it inflates diffs with spurious changes.
 
-Use repo-relative paths or placeholders in committed files; never literal
-home or absolute paths.
+Always use repo-relative paths or placeholders in committed files; never
+literal home or absolute paths.

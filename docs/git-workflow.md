@@ -7,6 +7,7 @@ rewrites, what triggers a PR build, and `gh` authentication in this repo.
 
 Never commit or push directly to `main`. Branch protection blocks the push,
 so a commit made on local `main` is stranded and never reaches the remote.
+Check the branch before every `git commit`.
 
 Setup work that must precede a feature branch still goes *on* the feature
 branch — create it first; it branches from the same HEAD.

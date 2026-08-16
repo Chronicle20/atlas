@@ -18,11 +18,33 @@ S=services/atlas-<svc>/atlas.com/<name>
 grep -rn "service.Bootstrap"        "$S"
 grep -rn "SetHeaderParsers"         "$S"
 grep -rn "requests.RootUrl("        "$S"
+grep -rn "tenant.WithContext" --include='*.go' "$S" | grep -v '_test.go'
 ```
 
-Record the three counts before editing. They are this batch's checklist —
-every counted site must be touched, and the counts should match the number
-of edits made.
+Record all four counts before editing. They are this batch's checklist —
+every counted site must be touched (or, for `tenant.WithContext`,
+classified — see Step 3b below), and the counts should match the number of
+edits made.
+
+**Always filter `tenant.WithContext` with `grep -v '_test.go'`.** The
+unfiltered grep overstates the real surface by roughly 40x (most hits are
+test fixtures building a tenanted context, not production origination
+sites) — running Step 3b unfiltered sends every remaining batch into a
+~300-site read for a real surface that is usually single digits. State a
+batch's size as **conversion sites (Bootstrap + SetHeaderParsers +
+RootUrl) + NON-TEST `tenant.WithContext` audit sites** — the unfiltered
+count is not the batch's real scope.
+
+**A clean `requests.RootUrl(` grep does not prove a package is fully
+converted.** A package-level shared helper (`getBaseRequest()` /
+`getDataBaseRequest()`) called by several `*_requests.go` files in one
+package matches the grep only in the file that *defines* the helper — every
+other file that *calls* it does not contain the literal string
+`requests.RootUrl(` and will silently miss the conversion until `go build`
+fails on the helper's changed signature (or, worse, doesn't fail if the
+call site never got exercised). Before trusting a clean grep for a package,
+check whether any of its `*_requests.go` files share a package-level base
+URL helper and convert every caller together.
 
 **atlas-monsters counts** (recorded for calibration):
 

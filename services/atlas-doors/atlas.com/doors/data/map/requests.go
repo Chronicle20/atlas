@@ -1,6 +1,7 @@
 package map_
 
 import (
+	"context"
 	"fmt"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -12,17 +13,21 @@ const (
 	getMapPortals = "data/maps/%d/portals"
 )
 
-var baseURLProvider = func() string {
-	return requests.RootUrl("DATA")
+var baseURLProvider = func(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "DATA")
 }
 
-func getBaseRequest() string {
-	return baseURLProvider()
+func getBaseRequest(ctx context.Context) (string, error) {
+	return baseURLProvider(ctx)
 }
 
 // requestMap fetches a map with portals included via ?include=portals.
-func requestMap(mapId _map.Id) requests.Request[RestModel] {
-	url := fmt.Sprintf(getBaseRequest()+getMap+"?include=portals", mapId)
+func requestMap(ctx context.Context, mapId _map.Id) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	url := fmt.Sprintf(root+getMap+"?include=portals", mapId)
 	return requests.GetRequest[RestModel](url)
 }
 
@@ -30,14 +35,18 @@ func requestMap(mapId _map.Id) requests.Request[RestModel] {
 // sub-resource: the list is now paginated server-side (task-117) and
 // consumed via requests.DrainProvider, which appends its own
 // page[number]/page[size] query params per request.
-func portalsUrl(mapId _map.Id) string {
-	return fmt.Sprintf(getBaseRequest()+getMapPortals, mapId)
+func portalsUrl(ctx context.Context, mapId _map.Id) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+getMapPortals, mapId), nil
 }
 
 // SetBaseURLForTest swaps the base URL for httptest-backed tests. Only call
-// from a test; production uses the env-driven RootUrl("DATA") default.
+// from a test; production uses the env-driven RootUrlFor("DATA") default.
 func SetBaseURLForTest(url string) func() {
 	prev := baseURLProvider
-	baseURLProvider = func() string { return url + "/api/" }
+	baseURLProvider = func(_ context.Context) (string, error) { return url + "/api/", nil }
 	return func() { baseURLProvider = prev }
 }

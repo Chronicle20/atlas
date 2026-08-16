@@ -30,7 +30,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) LandingBelow(mapId _map.Id, x int16, y int16) (int16, bool) {
-	fh, err := requests.Provider[FootholdRestModel, Model](p.l, p.ctx)(requestBelow(mapId, x, y), Extract)()
+	fh, err := requests.Provider[FootholdRestModel, Model](p.l, p.ctx)(requestBelow(p.ctx, mapId, x, y), Extract)()
 	if err != nil {
 		// atlas-data returns an error status when nothing is below the point.
 		// Not exceptional — the caller falls back to the original y.

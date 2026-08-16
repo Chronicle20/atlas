@@ -13,6 +13,7 @@ import (
 	"os"
 	"time"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	account2 "atlas-character/kafka/consumer/account"
@@ -138,7 +139,15 @@ func main() {
 		Run()
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000)))
+		// session sits outside env-domain-guard's permitted atlas-env import
+		// list (main.go, kafka/, rest/, socket/), so this pod's environment
+		// identity is threaded in as a plain function value rather than the
+		// package importing atlas-env itself. Without it, Timeout's
+		// per-character logout Kafka events would carry an empty
+		// environment header and fail decide() open per FR-1.8.
+		tasks.Register(l, rt.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000), func(ctx context.Context) context.Context {
+			return env.WithContext(ctx, env.Self())
+		}))
 	})
 
 	rt.Wait()

@@ -18,16 +18,26 @@ import (
 const TimeoutTask = "timeout"
 
 type Timeout struct {
-	l        logrus.FieldLogger
-	db       *gorm.DB
-	interval time.Duration
-	timeout  time.Duration
+	l          logrus.FieldLogger
+	db         *gorm.DB
+	interval   time.Duration
+	timeout    time.Duration
+	envContext func(context.Context) context.Context
 }
 
-func NewTimeout(l logrus.FieldLogger, db *gorm.DB, interval time.Duration) *Timeout {
+// NewTimeout builds the periodic session-timeout sweep. envContext originates
+// this pod's own environment identity onto each timed-out session's
+// per-character context before LogoutAndEmit produces a real Kafka event --
+// session is outside env-domain-guard's permitted atlas-env import list
+// (main.go, kafka/, rest/, socket/), so the caller (main.go) threads this in
+// as a plain function value rather than the package importing atlas-env
+// itself. Without it, the logout event would carry an empty ENVIRONMENT
+// header and fail decide() open per FR-1.8: every live deployment, not just
+// this pod's, would act on the logout.
+func NewTimeout(l logrus.FieldLogger, db *gorm.DB, interval time.Duration, envContext func(context.Context) context.Context) *Timeout {
 	timeout := time.Duration(5000) * time.Millisecond
 	l.Infof("Initializing timeout task to run every %dms, timeout transition session older than %dms", interval.Milliseconds(), timeout.Milliseconds())
-	return &Timeout{l, db, interval, timeout}
+	return &Timeout{l, db, interval, timeout, envContext}
 }
 
 func (t *Timeout) Run() {
@@ -39,7 +49,7 @@ func (t *Timeout) Run() {
 	t.l.Debugf("Executing timeout task.")
 	cs := GetRegistry().GetAll(sctx)
 	for _, m := range cs {
-		tctx := tenant.WithContext(sctx, m.Tenant())
+		tctx := t.sessionTenantContext(sctx, m)
 		cp := character.NewProcessor(t.l, tctx, t.db)
 		cha := channel.NewModel(m.WorldId(), m.ChannelId())
 
@@ -64,4 +74,13 @@ func (t *Timeout) Run() {
 
 func (t *Timeout) SleepTime() time.Duration {
 	return t.interval
+}
+
+// sessionTenantContext builds the per-character context that LogoutAndEmit and
+// history.EndSession run under: the session's tenant, then envContext to
+// originate this pod's own environment identity on top. Extracted so the
+// origination itself is directly testable without standing up a DB or the
+// Redis-backed registry that Run's other callers require.
+func (t *Timeout) sessionTenantContext(sctx context.Context, m Model) context.Context {
+	return t.envContext(tenant.WithContext(sctx, m.Tenant()))
 }

@@ -44,6 +44,33 @@ func mustEnvelope(t *testing.T, rec env.Record) []byte {
 	return bts
 }
 
+// mustTenantEnvelope builds the wire bytes atlas-configurations' outbox.NewTenantEnvelope
+// produces for the tenant-status topic (task-232 R21-1): the same envelope
+// shape as mustEnvelope, but Config is the tenant's RestModel — here reduced
+// to just the "environment" attribute this projection reads.
+func mustTenantEnvelope(t *testing.T, tenantId string, environment string) []byte {
+	t.Helper()
+	bts, err := json.Marshal(struct {
+		SchemaVersion int    `json:"schema_version"`
+		Id            string `json:"id"`
+		Config        struct {
+			Environment string `json:"environment"`
+		} `json:"config"`
+		EmittedAt string `json:"emitted_at"`
+	}{
+		SchemaVersion: 1,
+		Id:            tenantId,
+		Config: struct {
+			Environment string `json:"environment"`
+		}{Environment: environment},
+		EmittedAt: time.Now().UTC().Format(time.RFC3339),
+	})
+	if err != nil {
+		t.Fatalf("mustTenantEnvelope: %v", err)
+	}
+	return bts
+}
+
 func TestEnvironmentProjectionAppliesRecords(t *testing.T) {
 	reg := env.NewMapRegistry(env.Id("main"), time.Now)
 	s := &envSubscriber{registry: reg, caughtUp: newEnvCaughtUp()}
@@ -99,6 +126,88 @@ func TestEnvironmentProjectionIgnoresAnUnreadableSchema(t *testing.T) {
 	}
 }
 
+// TestTenantProjectionAppliesEnvironment pins task-232 R21-1/FR-7.3: a
+// tenant-status message projects its "environment" attribute into the
+// registry's tenant map.
+func TestTenantProjectionAppliesEnvironment(t *testing.T) {
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	s := &envSubscriber{registry: reg, caughtUp: newEnvCaughtUp(), tenantTopic: "tenant-topic"}
+
+	payload := mustTenantEnvelope(t, "t-1", "pr-123")
+	if _, err := s.handleTenant(testLogger(t))(testLogger(t), context.Background(),
+		kafka.Message{
+			Topic: "tenant-topic", Partition: 0, Offset: 0,
+			Key: []byte("tenant:t-1"), Value: payload,
+		}); err != nil {
+		t.Fatalf("handleTenant: %v", err)
+	}
+
+	got, ok := reg.EnvironmentOfTenant("t-1")
+	if !ok || got != env.Id("pr-123") {
+		t.Fatalf("got (%q, %v), want (\"pr-123\", true)", got, ok)
+	}
+}
+
+// TestTenantProjectionAppliesTombstones pins the tombstone half: a
+// "tenant:<uuid>" tombstone removes the tenant's projected environment.
+func TestTenantProjectionAppliesTombstones(t *testing.T) {
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	reg.ApplyTenant("t-1", env.Id("pr-123"))
+	s := &envSubscriber{registry: reg, caughtUp: newEnvCaughtUp(), tenantTopic: "tenant-topic"}
+
+	if _, err := s.handleTenant(testLogger(t))(testLogger(t), context.Background(),
+		kafka.Message{Topic: "tenant-topic", Key: []byte("tenant:t-1"), Value: nil}); err != nil {
+		t.Fatalf("handleTenant: %v", err)
+	}
+
+	if _, ok := reg.EnvironmentOfTenant("t-1"); ok {
+		t.Fatal("tenant tombstone not applied")
+	}
+}
+
+// TestTenantProjectionIgnoresAnUnmatchedTombstoneKey mirrors the
+// environment-topic equivalent: a tombstone whose key doesn't carry the
+// "tenant:" prefix must not remove anything.
+func TestTenantProjectionIgnoresAnUnmatchedTombstoneKey(t *testing.T) {
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	reg.ApplyTenant("t-1", env.Id("pr-123"))
+	s := &envSubscriber{registry: reg, caughtUp: newEnvCaughtUp(), tenantTopic: "tenant-topic"}
+
+	if _, err := s.handleTenant(testLogger(t))(testLogger(t), context.Background(),
+		kafka.Message{Topic: "tenant-topic", Key: []byte("t-1"), Value: nil}); err != nil {
+		t.Fatalf("handleTenant: %v", err)
+	}
+
+	got, ok := reg.EnvironmentOfTenant("t-1")
+	if !ok || got != env.Id("pr-123") {
+		t.Fatal("tenant wrongly removed by a malformed tombstone key")
+	}
+}
+
+// TestEnvSubscriberStartSkipsTenantConsumerWhenTopicUnset pins task-232
+// R21-3: an unset tenant topic must not be fatal, and must not contribute
+// offsets to the catch-up gate. With only the environment topic's (empty)
+// snapshot registered, the gate must still be able to flip ready.
+func TestEnvSubscriberStartSkipsTenantConsumerWhenTopicUnset(t *testing.T) {
+	c := newEnvCaughtUp()
+	s := &envSubscriber{
+		registry:    env.NewMapRegistry(env.Id("main"), time.Now),
+		caughtUp:    c,
+		topic:       "env-topic",
+		tenantTopic: "", // unset
+		readEndOffsets: func(context.Context, []string, string) (map[int]int64, error) {
+			return map[int]int64{}, nil
+		},
+	}
+
+	if err := s.Start(context.Background(), testLogger(t), &sync.WaitGroup{}, "group"); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	if !c.CaughtUpNow() {
+		t.Fatal("gate must flip ready from the environment topic's empty snapshot alone when the tenant topic is unset")
+	}
+}
+
 func TestBootstrapWithoutTheOptionLeavesTheLegacyRegistry(t *testing.T) {
 	// FR-1.8: a service that has not yet been migrated keeps today's
 	// behaviour exactly.
@@ -135,17 +244,17 @@ func TestEnvCaughtUpNotReadyUntilEndOffsetsCleared(t *testing.T) {
 		t.Fatal("caught up before any end offsets were even set")
 	}
 
-	c.SetEndOffsets(map[int]int64{0: 3})
+	c.SetEndOffsets("env-topic", map[int]int64{0: 3})
 	if c.CaughtUpNow() {
 		t.Fatal("caught up immediately after SetEndOffsets, before any messages consumed")
 	}
 
-	c.Observe(0, 1)
+	c.Observe("env-topic", 0, 1)
 	if c.CaughtUpNow() {
 		t.Fatal("caught up before reaching the snapshotted end offset")
 	}
 
-	c.Observe(0, 2) // end=3 means offsets 0,1,2 exist; caught up at consumed==end-1
+	c.Observe("env-topic", 0, 2) // end=3 means offsets 0,1,2 exist; caught up at consumed==end-1
 	if !c.CaughtUpNow() {
 		t.Fatal("not caught up after consuming through the snapshotted end offset")
 	}
@@ -153,7 +262,7 @@ func TestEnvCaughtUpNotReadyUntilEndOffsetsCleared(t *testing.T) {
 
 func TestEnvCaughtUpWaitCaughtUpUnblocksOnFlip(t *testing.T) {
 	c := newEnvCaughtUp()
-	c.SetEndOffsets(map[int]int64{0: 1})
+	c.SetEndOffsets("env-topic", map[int]int64{0: 1})
 
 	done := make(chan error, 1)
 	go func() { done <- c.WaitCaughtUp(context.Background()) }()
@@ -164,7 +273,7 @@ func TestEnvCaughtUpWaitCaughtUpUnblocksOnFlip(t *testing.T) {
 	case <-time.After(20 * time.Millisecond):
 	}
 
-	c.Observe(0, 0)
+	c.Observe("env-topic", 0, 0)
 
 	select {
 	case err := <-done:
@@ -173,6 +282,30 @@ func TestEnvCaughtUpWaitCaughtUpUnblocksOnFlip(t *testing.T) {
 		}
 	case <-time.After(time.Second):
 		t.Fatal("WaitCaughtUp did not unblock after the gate flipped")
+	}
+}
+
+// TestEnvCaughtUpKeyedByTopicNotPartitionAlone pins task-232 R21-2: the
+// gate is keyed by (topic, partition), not partition alone. Two topics each
+// register a non-trivial end offset on partition 0; consuming only topic
+// A's partition 0 must leave the gate NOT caught up, even though topic B's
+// partition 0 end offset happens to be satisfiable by the same numbers. A
+// partition-only key would wrongly flip the gate here.
+func TestEnvCaughtUpKeyedByTopicNotPartitionAlone(t *testing.T) {
+	c := newEnvCaughtUp()
+	c.SetEndOffsets("topic-a", map[int]int64{0: 3})
+	c.SetEndOffsets("topic-b", map[int]int64{0: 3})
+
+	// Fully consume topic-a's partition 0 only.
+	c.Observe("topic-a", 0, 2)
+	if c.CaughtUpNow() {
+		t.Fatal("caught up after consuming only one of two registered topics")
+	}
+
+	// Now also consume topic-b's partition 0; only now should the gate flip.
+	c.Observe("topic-b", 0, 2)
+	if !c.CaughtUpNow() {
+		t.Fatal("not caught up after consuming both registered topics through their end offsets")
 	}
 }
 

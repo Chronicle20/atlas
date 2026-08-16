@@ -42,6 +42,12 @@ func WithEnvironmentRegistry(serviceName string) Option {
 // catch-up gate into Ready(). With no topic configured the registry stays
 // empty and every query answers the FR-1.8 legacy value; this is not fatal,
 // since main runs this way until Phase F rolls the topic out everywhere.
+//
+// The tenant-status topic (EVENT_TOPIC_CONFIGURATION_TENANT_STATUS) feeds
+// the tenant→environment derivation (FR-7.3). It is independently optional:
+// an unset tenant topic warns and skips the second consumer, but does not
+// prevent the environment topic from starting (R21-3) — mirroring this same
+// function's own unset-topic path for the environment topic one branch up.
 func (r *Runtime) startEnvironmentRegistry(c *envRegistryConfig) {
 	topic := os.Getenv("EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS")
 	reg := env.NewMapRegistry(env.Self(), time.Now)
@@ -50,7 +56,11 @@ func (r *Runtime) startEnvironmentRegistry(c *envRegistryConfig) {
 		r.logger.Warn("environment registry: EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS unset; running in legacy single-environment mode")
 		return
 	}
-	s := &envSubscriber{registry: reg, caughtUp: newEnvCaughtUp(), topic: topic}
+	tenantTopic := os.Getenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS")
+	if tenantTopic == "" {
+		r.logger.Warn("environment registry: EVENT_TOPIC_CONFIGURATION_TENANT_STATUS unset; tenant→environment derivation (FR-7.3) disabled")
+	}
+	s := &envSubscriber{registry: reg, caughtUp: newEnvCaughtUp(), topic: topic, tenantTopic: tenantTopic}
 	// Per-process group id so each container start replays the full
 	// compacted log from FirstOffset; a shared group would resume from the
 	// previous run's committed offset and leave the in-memory registry
@@ -71,17 +81,23 @@ type envMutator interface {
 	Apply(env.Record)
 	ApplyTombstone(env.Id)
 	Observe(time.Time)
+	ApplyTenant(tenantId string, e env.Id)
+	RemoveTenant(tenantId string)
 }
 
-// envSubscriber is the consumer-side wiring for the environment-status
-// topic. It mirrors services/atlas-channel/.../configuration/projection
-// structurally: snapshot end offsets, register one consumer replaying from
-// FirstOffset under a per-process group id, decode envelopes, and apply
-// them to the registry.
+// envSubscriber is the consumer-side wiring for the environment-status and
+// tenant-status topics. It mirrors services/atlas-channel/.../configuration/projection
+// structurally: snapshot end offsets per topic, register one consumer per
+// topic replaying from FirstOffset under a per-process group id, decode
+// envelopes, and apply them to the registry.
 type envSubscriber struct {
 	registry envMutator
 	caughtUp *envCaughtUp
 	topic    string
+	// tenantTopic is EVENT_TOPIC_CONFIGURATION_TENANT_STATUS. Empty means
+	// the tenant→environment derivation (FR-7.3) is disabled (R21-3): no
+	// second consumer is registered and no offsets are added to the gate.
+	tenantTopic string
 
 	// readEndOffsets resolves the topic's replayable end offsets. Defaults
 	// to consumer.ReadReplayableEndOffsets when nil; overridable in tests so
@@ -153,7 +169,7 @@ func (s *envSubscriber) Start(ctx context.Context, l logrus.FieldLogger, wg *syn
 	if err != nil {
 		return err
 	}
-	s.caughtUp.SetEndOffsets(offsets)
+	s.caughtUp.SetEndOffsets(s.topic, offsets)
 
 	cmf := consumer.GetManager().AddConsumer(l, ctx, wg)
 	cmf(consumer.NewConfig(brokers, "configuration_environment_status", s.topic, groupId),
@@ -161,6 +177,25 @@ func (s *envSubscriber) Start(ctx context.Context, l logrus.FieldLogger, wg *syn
 		consumer.SetStartOffset(kafka.FirstOffset))
 	if _, err := consumer.GetManager().RegisterHandler(s.topic, s.handle(l)); err != nil {
 		return err
+	}
+
+	// The tenant-status topic is independently optional (R21-3): when
+	// unset, no second consumer is registered and no offsets are added to
+	// the gate — the gate's readiness depends only on the environment
+	// topic, exactly as before this topic existed.
+	if s.tenantTopic != "" {
+		tenantOffsets, err := resolveStartOffsets(ctx, brokers, s.tenantTopic, read, l)
+		if err != nil {
+			return err
+		}
+		s.caughtUp.SetEndOffsets(s.tenantTopic, tenantOffsets)
+
+		cmf(consumer.NewConfig(brokers, "configuration_tenant_status", s.tenantTopic, groupId),
+			consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),
+			consumer.SetStartOffset(kafka.FirstOffset))
+		if _, err := consumer.GetManager().RegisterHandler(s.tenantTopic, s.handleTenant(l)); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -171,7 +206,7 @@ func (s *envSubscriber) Start(ctx context.Context, l logrus.FieldLogger, wg *syn
 func (s *envSubscriber) handle(l logrus.FieldLogger) handler.Handler {
 	return func(_ logrus.FieldLogger, _ context.Context, msg kafka.Message) (bool, error) {
 		s.registry.Observe(time.Now())
-		s.caughtUp.Observe(msg.Partition, msg.Offset)
+		s.caughtUp.Observe(s.topic, msg.Partition, msg.Offset)
 
 		if isEnvTombstone(msg.Value) {
 			id, ok := envIdFromKey(msg.Key)
@@ -191,6 +226,37 @@ func (s *envSubscriber) handle(l logrus.FieldLogger) handler.Handler {
 			return true, nil
 		}
 		s.registry.Apply(rec)
+		return true, nil
+	}
+}
+
+// handleTenant decodes one tenant-status message and projects its
+// "environment" attribute (task-232 R21-1, FR-7.3) into the registry.
+// Mirrors handle() above and services/atlas-channel/.../configuration/projection/subscriber.go's
+// handleTenant for the tombstone key convention ("tenant:<uuid>").
+func (s *envSubscriber) handleTenant(l logrus.FieldLogger) handler.Handler {
+	return func(_ logrus.FieldLogger, _ context.Context, msg kafka.Message) (bool, error) {
+		s.registry.Observe(time.Now())
+		s.caughtUp.Observe(s.tenantTopic, msg.Partition, msg.Offset)
+
+		if isEnvTombstone(msg.Value) {
+			id, ok := tenantIdFromKey(msg.Key)
+			if !ok {
+				return true, nil
+			}
+			s.registry.RemoveTenant(id)
+			return true, nil
+		}
+
+		id, environment, err := decodeTenantEnvelope(msg.Value)
+		if err != nil {
+			if !errors.Is(err, errUnsupportedEnvSchema) {
+				l.WithError(err).Warn("envregistry.tenant_decode_failed")
+			}
+			// Forward-compatible: don't retry on a schema we can't read.
+			return true, nil
+		}
+		s.registry.ApplyTenant(id, environment)
 		return true, nil
 	}
 }
@@ -244,49 +310,110 @@ func decodeEnvEnvelope(value []byte) (env.Record, error) {
 	return rec, nil
 }
 
+// tenantEnvelope is the wire shape published by atlas-configurations'
+// outbox.NewTenantEnvelope for the tenant-status topic: the same
+// {schema_version, id, config, emitted_at} shape as envEnvelope. Config
+// carries the tenant's RestModel; this projection reads only the
+// server-owned "environment" attribute (task-232 R21-1) out of it.
+type tenantEnvelope struct {
+	SchemaVersion int             `json:"schema_version"`
+	Id            string          `json:"id"`
+	Config        json.RawMessage `json:"config"`
+	EmittedAt     string          `json:"emitted_at"`
+}
+
+// tenantConfig reads only the "environment" attribute out of a tenant's
+// Config; every other tenant attribute is irrelevant to this projection.
+type tenantConfig struct {
+	Environment string `json:"environment"`
+}
+
+// tenantKeyPrefix is the outbox key prefix atlas-configurations' tenants
+// package writes (tenantOutboxKey): "tenant:<uuid>". Matches
+// services/atlas-channel/.../configuration/projection/subscriber.go's
+// tombstone key convention.
+const tenantKeyPrefix = "tenant:"
+
+func tenantIdFromKey(key []byte) (string, bool) {
+	k := string(key)
+	if !strings.HasPrefix(k, tenantKeyPrefix) || len(k) == len(tenantKeyPrefix) {
+		return "", false
+	}
+	return k[len(tenantKeyPrefix):], true
+}
+
+func decodeTenantEnvelope(value []byte) (id string, environment env.Id, err error) {
+	var e tenantEnvelope
+	if err := json.Unmarshal(value, &e); err != nil {
+		return "", "", err
+	}
+	if e.SchemaVersion > supportedEnvSchemaVersion {
+		return "", "", errUnsupportedEnvSchema
+	}
+	var cfg tenantConfig
+	if err := json.Unmarshal(e.Config, &cfg); err != nil {
+		return "", "", err
+	}
+	return e.Id, env.Id(cfg.Environment), nil
+}
+
 func lookupBrokers() []string {
 	return []string{os.Getenv("BOOTSTRAP_SERVERS")}
 }
 
 // envCaughtUp gates readiness on having consumed past the end-offset
-// snapshot taken at boot for the single environment-status topic. Mirrors
-// the semantics of services/atlas-channel/.../configuration/projection.CaughtUp
-// (one-way flip, never reverts) narrowed to one topic instead of two.
+// snapshot taken at boot, for every registered topic. Keyed on
+// (topic, partition) — never partition alone (task-232 R21-2): the
+// environment and tenant-status topics are two independent partition
+// spaces, and a partition-only key lets one topic's offsets satisfy the
+// other's end-offset bar, flipping /readyz Ready before the second topic
+// has actually been consumed. Mirrors
+// services/atlas-channel/.../configuration/projection.CaughtUp, which
+// already gets this right for its own two topics.
 type envCaughtUp struct {
 	mu         sync.Mutex
-	ends       map[int]int64
-	consumed   map[int]int64
-	set        bool
+	snapshots  map[string]map[int]int64 // topic -> partition -> boot end offset
+	consumed   map[string]map[int]int64 // topic -> partition -> highest consumed
 	caughtUp   atomic.Bool
 	readyChans []chan struct{}
 }
 
 func newEnvCaughtUp() *envCaughtUp {
-	return &envCaughtUp{consumed: map[int]int64{}}
+	return &envCaughtUp{
+		snapshots: map[string]map[int]int64{},
+		consumed:  map[string]map[int]int64{},
+	}
 }
 
-// SetEndOffsets records the topic's boot end-offset snapshot. An empty
-// offsets map (topic has no data yet) counts as trivially caught up.
-func (c *envCaughtUp) SetEndOffsets(offsets map[int]int64) {
+// SetEndOffsets records topic's boot end-offset snapshot. An empty offsets
+// map (topic has no data yet) counts as trivially caught up for that topic.
+func (c *envCaughtUp) SetEndOffsets(topic string, offsets map[int]int64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if offsets == nil {
 		offsets = map[int]int64{}
 	}
-	c.ends = offsets
-	c.set = true
+	c.snapshots[topic] = offsets
+	if c.consumed[topic] == nil {
+		c.consumed[topic] = map[int]int64{}
+	}
 	c.evaluateLocked()
 }
 
 // Observe records that the subscriber has consumed up to (and including)
-// offset on partition p. Idempotent: lower offsets are ignored.
-func (c *envCaughtUp) Observe(partition int, offset int64) {
+// offset on partition p of topic. Idempotent: lower offsets are ignored.
+func (c *envCaughtUp) Observe(topic string, partition int, offset int64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if existing, present := c.consumed[partition]; present && existing >= offset {
+	cur, ok := c.consumed[topic]
+	if !ok {
+		cur = map[int]int64{}
+		c.consumed[topic] = cur
+	}
+	if existing, present := cur[partition]; present && existing >= offset {
 		return
 	}
-	c.consumed[partition] = offset
+	cur[partition] = offset
 	c.evaluateLocked()
 }
 
@@ -315,21 +442,24 @@ func (c *envCaughtUp) WaitCaughtUp(ctx context.Context) error {
 }
 
 func (c *envCaughtUp) evaluateLocked() {
-	if !c.set {
+	if len(c.snapshots) == 0 {
 		return
 	}
-	for p, end := range c.ends {
-		// end == 0 means the partition is empty (Kafka end-offset is the
-		// next-to-be-written offset); trivially caught up.
-		if end == 0 {
-			continue
-		}
-		// Distinguish "never observed" from "observed offset 0" — a
-		// default int64 zero from a missing map key would otherwise
-		// satisfy `observed >= end-1` when end == 1.
-		observed, present := c.consumed[p]
-		if !present || observed < end-1 {
-			return
+	for topic, ends := range c.snapshots {
+		got := c.consumed[topic]
+		for p, end := range ends {
+			// end == 0 means the partition is empty (Kafka end-offset is the
+			// next-to-be-written offset); trivially caught up.
+			if end == 0 {
+				continue
+			}
+			// Distinguish "never observed" from "observed offset 0" — a
+			// default int64 zero from a missing map key would otherwise
+			// satisfy `observed >= end-1` when end == 1.
+			observed, present := got[p]
+			if !present || observed < end-1 {
+				return
+			}
 		}
 	}
 	if !c.caughtUp.Load() {

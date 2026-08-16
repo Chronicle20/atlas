@@ -35,6 +35,7 @@ type MapRegistry struct {
 	mu       sync.RWMutex
 	self     Id
 	records  map[Id]Record
+	tenants  map[string]Id
 	lastSeen time.Time
 	now      func() time.Time
 }
@@ -46,7 +47,35 @@ func NewMapRegistry(self Id, clock func() time.Time) *MapRegistry {
 	if clock == nil {
 		clock = time.Now
 	}
-	return &MapRegistry{self: self, records: map[Id]Record{}, now: clock}
+	return &MapRegistry{self: self, records: map[Id]Record{}, tenants: map[string]Id{}, now: clock}
+}
+
+// ApplyTenant projects tenant id's environment (FR-7.3). Populated by the
+// same projection that populates the environment records, from the
+// tenant-status topic.
+func (r *MapRegistry) ApplyTenant(tenantId string, e Id) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.tenants[tenantId] = e
+	r.lastSeen = r.now()
+}
+
+// RemoveTenant removes tenantId's projected environment, matching a Kafka
+// tombstone on the tenant-status topic.
+func (r *MapRegistry) RemoveTenant(tenantId string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.tenants, tenantId)
+	r.lastSeen = r.now()
+}
+
+// EnvironmentOfTenant answers FR-7.3: which environment does tenantId
+// belong to. The bool reports whether the tenant has been projected yet.
+func (r *MapRegistry) EnvironmentOfTenant(tenantId string) (Id, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	e, ok := r.tenants[tenantId]
+	return e, ok
 }
 
 // Apply projects one record into the registry. A PhaseDeleted record removes

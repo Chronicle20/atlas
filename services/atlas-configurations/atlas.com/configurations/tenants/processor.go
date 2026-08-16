@@ -104,6 +104,11 @@ func Make(e Entity) (RestModel, error) {
 	}
 	rm.Socket = socket.Normalize(rm.Socket)
 	rm.Id = e.Id.String()
+	// Environment is server-owned (task-232 FR-7.3 / D5): the Entity column
+	// always wins over whatever e.Data's JSON blob happened to contain, so a
+	// client-supplied "environment" in a past create/update body can never
+	// surface as this tenant's environment.
+	rm.Environment = e.Environment
 	return rm, nil
 }
 

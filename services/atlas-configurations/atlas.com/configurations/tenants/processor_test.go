@@ -581,3 +581,92 @@ func TestUpdateById_ReturnsValidationErrorForInvalidPreset(t *testing.T) {
 		t.Error("expected non-nil meta")
 	}
 }
+
+// TestProcessor_Create_IgnoresClientSuppliedEnvironment pins task-232 R21-1:
+// Environment is server-owned. A client that supplies "environment" in a
+// create body must not move the row's Entity.Environment column — the
+// column stays at the GORM default (”) until a future task wires actual
+// scoping onto the write path.
+func TestProcessor_Create_IgnoresClientSuppliedEnvironment(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	p := NewProcessor(l, ctx, db)
+
+	input := createTestRestModel("GMS", 83, 1)
+	input.Environment = "evil"
+
+	id, err := p.Create(input)
+	if err != nil {
+		t.Fatalf("failed to create tenant: %v", err)
+	}
+
+	var stored testEntity
+	if err := db.Where("id = ?", id).First(&stored).Error; err != nil {
+		t.Fatalf("failed to load stored entity: %v", err)
+	}
+	if stored.Environment != "" {
+		t.Errorf("expected Entity.Environment to stay at the default '', got %q", stored.Environment)
+	}
+}
+
+// TestProcessor_UpdateById_IgnoresClientSuppliedEnvironment pins task-232
+// R21-1: an update body's "environment" must never move an existing row
+// between environments. The row is seeded directly at the Entity level
+// (Create never sets Environment yet), then UpdateById is called with a
+// different environment in the payload; the column must be untouched.
+func TestProcessor_UpdateById_IgnoresClientSuppliedEnvironment(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	p := NewProcessor(l, ctx, db)
+
+	id := uuid.New()
+	seed := testEntity{
+		Id:           id,
+		Region:       "GMS",
+		MajorVersion: 83,
+		MinorVersion: 1,
+		Data:         json.RawMessage(`{}`),
+		Environment:  "pr-100",
+	}
+	if err := db.Create(&seed).Error; err != nil {
+		t.Fatalf("failed to seed entity: %v", err)
+	}
+
+	updated := createTestRestModel("SEA", 84, 2)
+	updated.Environment = "evil"
+	if err := p.UpdateById(id, updated); err != nil {
+		t.Fatalf("failed to update tenant: %v", err)
+	}
+
+	var stored testEntity
+	if err := db.Where("id = ?", id).First(&stored).Error; err != nil {
+		t.Fatalf("failed to load stored entity: %v", err)
+	}
+	if stored.Environment != "pr-100" {
+		t.Errorf("expected Entity.Environment to stay 'pr-100', got %q", stored.Environment)
+	}
+}
+
+// TestMake_SetsEnvironmentFromEntityColumn pins the read side of R21-1:
+// Make() must source RestModel.Environment from the Entity column, not from
+// whatever the JSON blob happens to contain.
+func TestMake_SetsEnvironmentFromEntityColumn(t *testing.T) {
+	entity := Entity{
+		Id:           uuid.New(),
+		Region:       "GMS",
+		MajorVersion: 83,
+		MinorVersion: 1,
+		Data:         json.RawMessage(`{"environment":"evil"}`),
+		Environment:  "pr-100",
+	}
+
+	result, err := Make(entity)
+	if err != nil {
+		t.Fatalf("Make failed: %v", err)
+	}
+	if result.Environment != "pr-100" {
+		t.Errorf("expected Environment 'pr-100' from the Entity column, got %q", result.Environment)
+	}
+}

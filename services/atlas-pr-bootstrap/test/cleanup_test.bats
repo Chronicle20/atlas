@@ -415,9 +415,10 @@ EOF
     run run_cleanup
     [ "$status" -eq 0 ]
     [[ "$output" == *'phases_failed=0'* ]]
-    # 9 phases: 7 after drop-tenant-storage was removed (superseded by
-    # PreDelete purge hook), plus deactivate + drop-control-plane (task-48).
-    [[ "$output" == *'phases_run=9'* ]]
+    # 10 phases: 7 after drop-tenant-storage was removed (superseded by
+    # PreDelete purge hook), plus deactivate + drop-control-plane (task-48),
+    # plus sweep-tenant (task-49).
+    [[ "$output" == *'phases_run=10'* ]]
 }
 
 @test "cleanup.sh fails fast on malformed rpk output" {
@@ -598,6 +599,136 @@ EOF
         echo "ERROR: psql invoked despite sparse skip" >&2
         return 1
     fi
+}
+
+# ----------------------------------------------------------------------------
+# task-49: sweep-tenant — the tenant-keyed orphan sweeper
+# ----------------------------------------------------------------------------
+
+@test "cleanup.sh sweep-tenant is skipped (isolated) under default ATLAS_MODE" {
+    make_stubs '[]' '[]'
+    run run_cleanup
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'sweep-tenant'*'skipped (isolated)'* ]]
+    if grep -F -- '--sweep-tenant' "$STUB_LOG"; then
+        echo "ERROR: sweep-tenant invoked under isolated mode" >&2
+        return 1
+    fi
+}
+
+@test "cleanup.sh sweep-tenant is skipped (no control-plane record) under ATLAS_MODE=sparse" {
+    # Default curl stub 404s the environments GET.
+    make_stubs '[]' '[]'
+    ATLAS_MODE=sparse run run_cleanup
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'sweep-tenant'*'skipped'*'no control-plane environment record'* ]]
+}
+
+@test "cleanup.sh sweep-tenant reclaims this environment's tenant via sweep-orphans.sh --sweep-tenant --apply" {
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/dcp-calls.log"
+    cat > "$SHIM_DIR/curl" <<CURLEOF
+#!/usr/bin/env bash
+printf '%s\n' "curl \$*" >> "$CALL_LOG"
+url="\${@: -1}"
+case "\$url" in
+    */configurations/environments/*)
+        echo '{"data":{"attributes":{"phase":"ACTIVE","tenant":"77777777-7777-7777-7777-777777777777"}}}'
+        ;;
+    *)
+        echo '{"data":[]}'
+        ;;
+esac
+exit 0
+CURLEOF
+    chmod +x "$SHIM_DIR/curl"
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/gh" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/psql" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "psql \$*" >> "$CALL_LOG"
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" ATLAS_MODE=sparse run env \
+        PR_NUMBER=99 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        ATLAS_UI_BASE=http://fake-ui ATLAS_DEACTIVATE_SETTLE_S=0 ATLAS_MODE=sparse \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'sweep-tenant'*'reclaiming tenant-keyed rows for tenant=77777777-7777-7777-7777-777777777777'* ]]
+    grep -F "tenant_id = '77777777-7777-7777-7777-777777777777'" "$CALL_LOG"
+
+    rm -rf "$SHIM_DIR"
+}
+
+@test "cleanup.sh sweep-tenant fails the phase (not the whole script) when the environment record has no tenant attribute" {
+    SHIM_DIR="$(mktemp -d)"
+    cat > "$SHIM_DIR/curl" <<'CURLEOF'
+#!/usr/bin/env bash
+url="${@: -1}"
+case "$url" in
+    */configurations/environments/*)
+        echo '{"data":{"attributes":{"phase":"ACTIVE"}}}'
+        ;;
+    *)
+        echo '{"data":[]}'
+        ;;
+esac
+exit 0
+CURLEOF
+    chmod +x "$SHIM_DIR/curl"
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/gh" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" ATLAS_MODE=sparse run env \
+        PR_NUMBER=99 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        ATLAS_UI_BASE=http://fake-ui ATLAS_DEACTIVATE_SETTLE_S=0 ATLAS_MODE=sparse \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    # The phase fails and is recorded, but every other phase still runs —
+    # this is reclamation, not a correctness gate.
+    [[ "$output" == *'sweep-tenant'*'no tenant attribute'* ]]
+    [[ "$output" == *'failed_phases'*'sweep-tenant'* ]]
+    [[ "$output" == *'drop-branch'*'phase complete'* ]]
+
+    rm -rf "$SHIM_DIR"
 }
 
 @test "cleanup.sh drop-control-plane deletes every row for this environment, including duplicates, and never a foreign row" {

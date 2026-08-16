@@ -233,3 +233,65 @@ kubectl get svc -A | grep pending
 
 Remedy: tear down an idle PR environment to free its two addresses, or widen
 the `pr-pool` `IPAddressPool` range in the cluster's MetalLB configuration.
+
+## Tenant-keyed teardown reclaim (task-49, design §7.5)
+
+Sparse mode's databases are **shared with `main`** (D1) — a sparse PR never
+gets its own Postgres instance, so `cleanup.sh`'s `drop-dbs` phase has
+nothing to `DROP` there and skips entirely (`skipped (sparse)`). Everything
+that PR's tenant wrote still lives in main's tables when the PR closes.
+
+`cleanup.sh`'s `sweep-tenant` phase (after `drop-control-plane`, sparse-mode
+only) reclaims those rows: it reads this environment's tenant id off the
+control-plane environment record (the same record `deactivate` and
+`drop-control-plane` already read — no separate env var to keep in sync),
+then runs
+
+```sh
+services/atlas-pr-bootstrap/scripts/sweep-orphans.sh \
+    --sweep-tenant <tenant-uuid> --apply
+```
+
+which `DELETE`s `WHERE tenant_id = '<tenant-uuid>'` from every table listed
+in `services/atlas-pr-bootstrap/scripts/tenant-tables.txt` — a **checked-in,
+generated** `<database> <table>` list, one row per data-plane table the
+FR-8.1 query-scope audit
+(`docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit.md`,
+filtered to `Plane == Data`) found. Control-plane tables are **not** in this
+list — `drop-control-plane` already owns those, scoped by environment id
+rather than tenant id.
+
+**Regenerate the list with `tools/gen-tenant-tables.sh`** whenever the audit
+or a service's `deploy/k8s/base/atlas-<service>.yaml` `DB_NAME` changes; do
+not hand-edit `tenant-tables.txt`. `tools/gen-tenant-tables.sh --check`
+fails if the checked-in list has drifted from what the audit + manifests
+would generate — a table missing from the list is silently never reclaimed,
+so this check runs alongside the other generated-artifact drift guards
+(`tools/verify.sh`'s "tenant tables drift" step).
+
+**What this does NOT guarantee — correctness does not depend on it.** A row
+whose tenant no longer resolves to a live environment is inert: no request
+path, and no other sweeper, ever looks it up again (the unknown-environment
+rule). `sweep-tenant`'s own failure is recorded in `failed_phases` but never
+aborts the rest of teardown — this is storage reclamation, not a
+correctness gate. Known incompleteness at the time this was written:
+
+- **`atlas-families` and `atlas-marriages`** have audit rows (`family_members`,
+  `marriages`, `proposals`, `ceremonies`) but **no
+  `deploy/k8s/base/atlas-<service>.yaml` manifest at all** — the generator
+  cannot resolve a `DB_NAME` for them and skips them with a warning rather
+  than guessing one. Once those services get sparse-mode deployment
+  manifests, re-run `tools/gen-tenant-tables.sh` to pick them up.
+- Any table added to a service's schema after the last audit sweep is not
+  in `tenant-tables.txt` until the audit is refreshed and the generator
+  re-run.
+
+Manual invocation (e.g. reclaiming a specific tenant without a full
+teardown run):
+
+```sh
+DB_HOST=... DB_PORT=5432 DB_USER=... DB_PASSWORD=... \
+    services/atlas-pr-bootstrap/scripts/sweep-orphans.sh \
+    --sweep-tenant <tenant-uuid>          # list mode — prints what would delete
+    # add --apply to actually delete
+```

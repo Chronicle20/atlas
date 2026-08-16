@@ -383,3 +383,87 @@ EOF
     [[ "$output" == *"abort"* ]] || [[ "$output" == *"enumerat"* ]]
     rm -rf "$SHIM_DIR"
 }
+
+# ---------------------------------------------------------------------------
+# --sweep-tenant (task-232 §7.5, tenant-keyed orphan sweeper)
+# ---------------------------------------------------------------------------
+
+@test "sweep-orphans.sh --sweep-tenant deletes only the named tenant's rows via psql" {
+    SHIM_DIR="$(mktemp -d)"
+    TMP_SCRIPTS="$(mktemp -d)"
+    cp "$SCRIPT" "$TMP_SCRIPTS/sweep-orphans.sh"
+    cp "$PROJECT_ROOT/scripts/lib.sh" "$TMP_SCRIPTS/lib.sh"
+    cat > "$TMP_SCRIPTS/tenant-tables.txt" <<'EOF'
+atlas-characters characters
+atlas-accounts accounts
+EOF
+    CALL_LOG="$BATS_TEST_TMPDIR/calls.log"
+    cat > "$SHIM_DIR/psql" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "psql \$*" >> "$CALL_LOG"
+exit 0
+EOF
+    chmod +x "$SHIM_DIR/psql" "$TMP_SCRIPTS/sweep-orphans.sh"
+
+    run env PATH="$SHIM_DIR:$PATH" DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        bash "$TMP_SCRIPTS/sweep-orphans.sh" \
+        --sweep-tenant "11111111-1111-1111-1111-111111111111" --apply
+
+    [ "$status" -eq 0 ]
+    grep -F -- "-d atlas-characters" "$CALL_LOG"
+    grep -F "DELETE FROM \"characters\" WHERE tenant_id = '11111111-1111-1111-1111-111111111111'" "$CALL_LOG"
+    grep -F -- "-d atlas-accounts" "$CALL_LOG"
+    grep -F "DELETE FROM \"accounts\" WHERE tenant_id = '11111111-1111-1111-1111-111111111111'" "$CALL_LOG"
+    # Never scoped to any OTHER tenant.
+    ! grep -F "tenant_id = '22222222" "$CALL_LOG"
+
+    rm -rf "$SHIM_DIR" "$TMP_SCRIPTS"
+}
+
+@test "sweep-orphans.sh --sweep-tenant refuses an empty tenant id" {
+    run bash "$SCRIPT" --sweep-tenant "" --apply
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"empty tenant"* ]]
+}
+
+@test "sweep-orphans.sh --sweep-tenant list mode (no --apply) never invokes psql" {
+    SHIM_DIR="$(mktemp -d)"
+    TMP_SCRIPTS="$(mktemp -d)"
+    cp "$SCRIPT" "$TMP_SCRIPTS/sweep-orphans.sh"
+    cp "$PROJECT_ROOT/scripts/lib.sh" "$TMP_SCRIPTS/lib.sh"
+    printf 'atlas-characters characters\n' > "$TMP_SCRIPTS/tenant-tables.txt"
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+echo "FAIL: psql invoked in list mode" >&2
+exit 1
+EOF
+    chmod +x "$SHIM_DIR/psql" "$TMP_SCRIPTS/sweep-orphans.sh"
+
+    run env PATH="$SHIM_DIR:$PATH" DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        bash "$TMP_SCRIPTS/sweep-orphans.sh" --sweep-tenant "33333333-3333-3333-3333-333333333333"
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"sweep-tenant atlas-characters.characters"* ]]
+
+    rm -rf "$SHIM_DIR" "$TMP_SCRIPTS"
+}
+
+@test "sweep-orphans.sh --sweep-tenant fails clearly when tenant-tables.txt is missing" {
+    TMP_SCRIPTS="$(mktemp -d)"
+    cp "$SCRIPT" "$TMP_SCRIPTS/sweep-orphans.sh"
+    cp "$PROJECT_ROOT/scripts/lib.sh" "$TMP_SCRIPTS/lib.sh"
+    chmod +x "$TMP_SCRIPTS/sweep-orphans.sh"
+
+    run env DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        bash "$TMP_SCRIPTS/sweep-orphans.sh" --sweep-tenant "tid" --apply
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"tenant-tables.txt"* ]]
+
+    rm -rf "$TMP_SCRIPTS"
+}
+
+@test "sweep-orphans.sh --sweep-tenant skips when DB_HOST is unset" {
+    run env bash "$SCRIPT" --sweep-tenant "tid" --apply
+    [ "$status" -eq 0 ]
+}

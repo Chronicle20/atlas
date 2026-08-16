@@ -390,6 +390,13 @@ else
     skip "LB port / version coverage (no deploy or versions.json change)"
 fi
 
+if touched '^(deploy/k8s/base/atlas-.*\.yaml|docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit\.md|tools/gen-tenant-tables(_test)?\.sh|services/atlas-pr-bootstrap/scripts/tenant-tables\.txt)'; then
+    step "tenant tables drift"  ./tools/gen-tenant-tables.sh --check
+    step "tenant tables generator tests" ./tools/gen-tenant-tables_test.sh
+else
+    skip "tenant tables drift (no audit, DB_NAME manifest, or generator change)"
+fi
+
 if touched '^(deploy/k8s/overlays/pr/|deploy/k8s/overlays/pr-sparse/|tools/pr-sparse-mirror-guard\.sh)'; then
     step "pr-sparse mirror drift" ./tools/pr-sparse-mirror-guard.sh
 else

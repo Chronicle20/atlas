@@ -4543,10 +4543,80 @@ working around it. `env-domain-guard` (Task 28) will catch the attempt.
 
 ---
 
+### Task 29A: Provision `SERVICE_NAME` on every Deployment — BLOCKS Task 30
+
+Inserted during execution. Task 26 gave `Consumer` a `service` field populated
+from `SERVICE_NAME`, and its brief said to provision the variable "in Task 42".
+Two facts found while reviewing Task 26 make that wrong:
+
+1. `grep -rn "SERVICE_NAME" deploy/` returns **nothing** — the variable is
+   absent from every base manifest and every overlay.
+2. **Task 42 does not mention `SERVICE_NAME`.** Followed literally, the plan
+   never provisions it at all.
+
+**Why the ordering matters.** With `service == ""`, `MapRegistry.IsOwner`
+(`libs/atlas-env/registry.go:186-200`) looks up `rec.Overrides[""]`, which never
+matches a real service key. The override branch is therefore dead and ownership
+collapses to `rec.Baseline == r.self`. For an environment overriding
+`atlas-character`:
+
+- `self=main,   service="", msgEnv=pr-123` → `gateProcess` (the baseline steals it)
+- `self=pr-123, service="", msgEnv=pr-123` → `gateSkipNotOwner` (the owner refuses it)
+
+That is not a race and not a dropped message — it is a **silent misroute** in
+which the baseline permanently consumes every environment's overridden-service
+traffic, while FR-4.6's "exactly one processor" still holds numerically and every
+counter and test looks correct. The isolation guarantee behind FR-1.2 is what
+breaks.
+
+The defect is inert only while no domain consumer registers `EnvHeaderParser`:
+`decide` returns at the `msgEnv == ""` guard before `service` is read. **Task 30
+Step 2 is what makes it live**, and Tasks 33–40 then replicate it across ~215
+sites — all of them landing *before* Task 42 at the end of Phase C. So the
+variable must be provisioned here, ahead of Task 30, not at the end of the phase.
+
+**Files:**
+- Modify: `deploy/k8s/base/env-configmap.yaml` (or the per-service Deployment
+  template that already injects `POD_NAMESPACE`) — inject `SERVICE_NAME` for
+  every service, sourced from the existing per-service name rather than a new
+  hand-maintained list
+- Read-only: `libs/atlas-kafka/consumer/manager.go` — how `c.service` is read
+- Read-only: `deploy/k8s/overlays/main/kustomization.yaml`,
+  `deploy/k8s/overlays/pr/kustomization.yaml`
+
+**Interfaces:** none — deployment configuration only.
+
+- [ ] **Step 1: Confirm the injection point.** Find how `POD_NAMESPACE` reaches
+  every service today and follow that mechanism exactly. Do not invent a second
+  one, and do not hand-maintain a per-service list if the existing mechanism can
+  derive the name.
+
+- [ ] **Step 2: Inject `SERVICE_NAME` for every service**, in both the `main`
+  and `pr` overlays.
+
+- [ ] **Step 3: Prove it covers every service.** Render the manifests
+  (`kustomize build` on both overlays) and assert every Deployment carries a
+  non-empty `SERVICE_NAME` whose value matches the ownership key used in
+  `Record.Overrides` — an env var that resolves to the wrong *form* of the name
+  (e.g. `monsters` where the registry expects `atlas-monsters`) misroutes exactly
+  as silently as an empty one. Quote the rendered output; do not assert by
+  inspection of the template.
+
+- [ ] **Step 4: Add a guard or a rendered-manifest assertion** so a newly-added
+  service cannot land without `SERVICE_NAME`. Follow the change-gate lesson from
+  Task 24: verify the guard's trigger predicate fires, not just its check.
+
+---
+
 ### Task 30: The service-wiring recipe, established on `atlas-monsters`
 
 This task's deliverable is as much the written recipe as the code: Tasks
 31–40 follow it verbatim, so it must be complete and correct before they run.
+
+**Prerequisite: Task 29A must have landed.** This task's Step 2 is what first
+registers `EnvHeaderParser` on a domain consumer, which is the moment the
+ownership gate starts reading `c.service`. Running it before `SERVICE_NAME` is
+provisioned opens a silent-misroute window — see Task 29A.
 
 **Files:**
 - Modify: `services/atlas-monsters/atlas.com/monsters/main.go` — the `Bootstrap` option

@@ -299,9 +299,15 @@ const scopingDimensionMarkerName = "ScopingDimension"
 // receiver), anywhere in the package's files. A method can only be
 // declared in the same package as its receiver type in Go, so this is
 // already scoped to "the entity's own package" without needing a same-file
-// restriction; in every real instance (environments.Entity, testEntity)
-// the method sits directly beside the struct in the same file, which is
-// the point — a reviewer reading the entity sees the claim.
+// restriction — matching by the receiver's literal AST identifier, not
+// through embedding promotion or a type alias, per fix round 3's
+// independent-reviewer probes. NOT an enforced invariant: today's two real
+// instances (environments.Entity, testEntity) happen to declare the method
+// directly beside the struct in the same file, but a marker declared in a
+// separate file of the same package is accepted by design (fix round 4
+// confirmed this is intentional, not a gap) — this function only requires
+// package-level co-location, so a reviewer diffing the entity's own file
+// may not always see the marker in that same diff.
 func hasScopingDimensionMarker(pass *analysis.Pass, entityName string) bool {
 	for _, f := range pass.Files {
 		for _, decl := range f.Decls {

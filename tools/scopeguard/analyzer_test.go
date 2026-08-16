@@ -15,14 +15,15 @@ import (
 func TestAnalyzer(t *testing.T) {
 	testdata := analysistest.TestData()
 	analysistest.Run(t, testdata, Analyzer,
-		"atlas-example/widget",       // Rule 1: data-plane, no TenantId — fails
-		"atlas-example/scoped",       // Rule 1: data-plane, has TenantId — passes
-		"atlas-example/lowerentity",  // Rule 1: lowercase `entity` name, no TenantId — fails (fix round 2)
-		"atlas-trades/itementity",    // Rule 1: `Entity`-suffixed name (ItemEntity), has TenantId — passes (fix round 2)
-		"atlas-configurations/thing", // Rule 2: control-plane, no Environment, no allowlist entry, no unique natural key — fails
-		"atlas-tenants/registry",     // Rule 2: control-plane, has Environment — passes
-		"atlas-tenants/config",       // has TenantId despite living in a control-plane service — passes (mirrors real configuration.Entity)
-		"atlas-callsite/scheduler",   // Rule 2 call-site: the atlas-marriages shape — one violation, one clean call site, in the same package
+		"atlas-example/widget",          // Rule 1: data-plane, no TenantId — fails
+		"atlas-example/scoped",          // Rule 1: data-plane, has TenantId — passes
+		"atlas-example/lowerentity",     // Rule 1: lowercase `entity` name, no TenantId — fails (fix round 2)
+		"atlas-trades/itementity",       // Rule 1: `Entity`-suffixed name (ItemEntity), has TenantId — passes (fix round 2)
+		"atlas-configurations/thing",    // Rule 2: control-plane, no Environment, no allowlist entry, no unique natural key — fails
+		"atlas-tenants/registry",        // Rule 2: control-plane, has Environment — passes
+		"atlas-tenants/config",          // has TenantId despite living in a control-plane service — passes (mirrors real configuration.Entity)
+		"atlas-configurations/smuggle4", // fix-round-4 pin: marker + unique key, but NO allowlist entry anywhere — fails
+		"atlas-callsite/scheduler",      // Rule 2 call-site: the atlas-marriages shape — one violation, one clean call site, in the same package
 	)
 }
 
@@ -54,6 +55,12 @@ func TestAnalyzer(t *testing.T) {
 // enumeration of anything). It gets an allowlist entry here too, but no
 // ScopingDimension marker method, and must still be flagged — proving the
 // marker, not the shape check, is what closes the round-2 hole.
+//
+// atlas-configurations/smuggle3 is the fix-round-4 pin for the
+// hasUniqueNaturalKey condition: marker present, allowlist entry present,
+// but no uniquely-constrained natural key. Before this fixture, nothing in
+// the committed suite would notice if `&& hasUniqueNaturalKey(st)` were
+// dropped from checkEntity — must still be flagged.
 func TestAnalyzerAllowlisted(t *testing.T) {
 	origEntity, origCallsite := EntityAllowlist, CallsiteAllowlist
 	EntityAllowlist = map[string]string{
@@ -62,6 +69,7 @@ func TestAnalyzerAllowlisted(t *testing.T) {
 		"atlas-configurations/auditrow/entity.go":           "test fixture — see analyzer_test.go (task-232 Task 19 fix round 1 smuggle probe; must still be flagged)",
 		"atlas-configurations/testfileaudit/entity_test.go": "test fixture — see analyzer_test.go (task-232 Task 19 fix round 2 smuggle probe; a _test.go declaration must still be flagged with no unique natural key)",
 		"atlas-configurations/smuggle2/entity.go":           "test fixture — see analyzer_test.go (task-232 Task 19 fix round 3 smuggle probe; has a unique natural key but no ScopingDimension marker, must still be flagged)",
+		"atlas-configurations/smuggle3/entity.go":           "test fixture — see analyzer_test.go (task-232 Task 19 fix round 4 pin; has the marker but no unique natural key, must still be flagged)",
 	}
 	CallsiteAllowlist = map[string]string{
 		"atlas-callsite-allowed/task/task.go:14": "test fixture — see analyzer_test.go",
@@ -78,6 +86,7 @@ func TestAnalyzerAllowlisted(t *testing.T) {
 		"atlas-configurations/auditrow",
 		"atlas-configurations/testfileaudit",
 		"atlas-configurations/smuggle2",
+		"atlas-configurations/smuggle3",
 		"atlas-callsite-allowed/task",
 	)
 }

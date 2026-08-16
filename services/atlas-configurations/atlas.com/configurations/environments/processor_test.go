@@ -257,6 +257,63 @@ func TestCreatingAnEnvironmentRejectsAnInvalidPhase(t *testing.T) {
 	}
 }
 
+// TestUpdatingAnEnvironmentWithAPartialPatchPreservesOmittedFields pins the
+// Critical from the branch review: RestModel serves as both the GET
+// response and the PATCH input with no pointer/omitempty fields, so a
+// caller that PATCHes only {"phase": "ACTIVE"} - the natural shape for a
+// lifecycle transition - must not zero out Baseline/Namespace/Tenant/
+// Overrides in the database. services/atlas-pr-bootstrap/scripts/cleanup.sh
+// works around this client-side today by GET-then-PATCH-with-everything;
+// this test pins the endpoint itself so the workaround is redundant rather
+// than load-bearing.
+//
+// It asserts against a fresh GetByName read (the persisted row), not the
+// value UpdateByName returns - a handler that merely echoed its input back
+// would pass a return-value assertion while still having zeroed the row.
+func TestUpdatingAnEnvironmentWithAPartialPatchPreservesOmittedFields(t *testing.T) {
+	db := testDatabase(t)
+	p := NewProcessor(testLogger(t), envContext(t, "main"), db)
+
+	_, err := p.Create(NewBuilder().
+		SetName("pr-20").
+		SetBaseline("main").
+		SetNamespace("atlas-pr-20").
+		SetTenant("tenant-20").
+		SetOverride("atlas-login", "atlas-pr-20").
+		SetPhase(env.PhaseProvisioning).
+		Build())
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	// Phase-only PATCH: every other RestModel field is left at its Go zero
+	// value, exactly as a partial JSON:API PATCH body would decode.
+	_, err = p.UpdateByName("pr-20", RestModel{Phase: env.PhaseActive})
+	if err != nil {
+		t.Fatalf("UpdateByName: %v", err)
+	}
+
+	persisted, err := p.GetByName("pr-20")
+	if err != nil {
+		t.Fatalf("GetByName: %v", err)
+	}
+	if persisted.Phase != env.PhaseActive {
+		t.Fatalf("persisted phase = %q, want %q", persisted.Phase, env.PhaseActive)
+	}
+	if persisted.Baseline != "main" {
+		t.Fatalf("persisted baseline = %q, want \"main\" (zeroed by partial PATCH)", persisted.Baseline)
+	}
+	if persisted.Namespace != "atlas-pr-20" {
+		t.Fatalf("persisted namespace = %q, want \"atlas-pr-20\" (zeroed by partial PATCH)", persisted.Namespace)
+	}
+	if persisted.Tenant != "tenant-20" {
+		t.Fatalf("persisted tenant = %q, want \"tenant-20\" (zeroed by partial PATCH)", persisted.Tenant)
+	}
+	if persisted.Overrides["atlas-login"] != "atlas-pr-20" {
+		t.Fatalf("persisted overrides = %+v, want atlas-login=atlas-pr-20 (zeroed by partial PATCH)", persisted.Overrides)
+	}
+}
+
 // TestUpdatingAnEnvironmentRejectsAnInvalidPhase mirrors the create-path
 // test for UpdateByName: an update to a junk phase must fail with
 // ErrInvalidPhase and must not enqueue an additional outbox row beyond the

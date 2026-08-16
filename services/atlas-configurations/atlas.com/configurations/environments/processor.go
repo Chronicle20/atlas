@@ -236,6 +236,26 @@ func (p *ProcessorImpl) UpdateByName(name string, input RestModel) (RestModel, e
 	// whatever the body happened to carry.
 	input.Name = name
 
+	// PATCH is partial: a caller that supplies only {"phase": "ACTIVE"} must
+	// not zero out the columns it left out of the body. RestModel has no
+	// pointer/omitempty fields (its wire shape also serves GET, which needs
+	// every field present), so a field the caller omitted decodes as its Go
+	// zero value - indistinguishable from an explicit empty value. Fall back
+	// to the already-fetched existing record for any field still at its zero
+	// value, so an update touches only what was actually supplied.
+	if input.Baseline == "" {
+		input.Baseline = existing.Baseline
+	}
+	if input.Namespace == "" {
+		input.Namespace = existing.Namespace
+	}
+	if input.Tenant == "" {
+		input.Tenant = existing.Tenant
+	}
+	if input.Overrides == nil {
+		input.Overrides = existing.Overrides
+	}
+
 	overrides, err := json.Marshal(input.Overrides)
 	if err != nil {
 		return RestModel{}, err

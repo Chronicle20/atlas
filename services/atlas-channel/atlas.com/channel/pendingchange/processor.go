@@ -28,8 +28,8 @@ const StatusPending = "PENDING"
 // 25), which decode the real requested name / destination world from the
 // ShopOperationBuy* ops.
 type Processor interface {
-	RequestNameChange(characterId uint32, requestedName string, assetId uint32) (RestModel, error)
-	RequestWorldTransfer(characterId uint32, destinationWorldId world.Id, assetId uint32) (RestModel, error)
+	RequestNameChange(characterId uint32, requestedName string) (RestModel, error)
+	RequestWorldTransfer(characterId uint32, destinationWorldId world.Id) (RestModel, error)
 	CancelPendingChange(characterId uint32, changeType string) (RestModel, error)
 	GetByCharacterId(characterId uint32) ([]RestModel, error)
 }
@@ -58,20 +58,31 @@ func identityRestModel(r RestModel) (RestModel, error) {
 	return r, nil
 }
 
-func (p *ProcessorImpl) RequestNameChange(characterId uint32, requestedName string, assetId uint32) (RestModel, error) {
+// RequestNameChange and RequestWorldTransfer are reached only from the
+// cash-shop purchase handlers (cash_shop_operation.go handleBuyNameChange /
+// handleBuyWorldTransfer), which makes every record they create a purchase-path
+// record. atlas-character's contract for that path is that AssetId is null —
+// the entitlement is correlated by TransactionId, not by an asset
+// (pending_change/entity.go, pending_change/processor.go) — so neither method
+// takes an assetId and CreateInputRestModel.AssetId stays nil here.
+//
+// It used to be passed (the commodity's own template id), which made
+// atlas-character emit a destroy_asset saga for a coupon the player did not
+// hold at request time; that saga failed silently and the cancel path then
+// refunded a coupon that was never consumed, leaving the player two.
+// See docs/tasks/task-227-cash-name-change-world-transfer/bug-purchase-path-sets-assetid.md.
+func (p *ProcessorImpl) RequestNameChange(characterId uint32, requestedName string) (RestModel, error) {
 	input := CreateInputRestModel{
 		Type:          TypeNameChange,
 		RequestedName: requestedName,
-		AssetId:       &assetId,
 	}
 	return p.request(characterId, input)
 }
 
-func (p *ProcessorImpl) RequestWorldTransfer(characterId uint32, destinationWorldId world.Id, assetId uint32) (RestModel, error) {
+func (p *ProcessorImpl) RequestWorldTransfer(characterId uint32, destinationWorldId world.Id) (RestModel, error) {
 	input := CreateInputRestModel{
 		Type:               TypeWorldTransfer,
 		DestinationWorldId: destinationWorldId,
-		AssetId:            &assetId,
 	}
 	return p.request(characterId, input)
 }

@@ -254,14 +254,18 @@ func handleBuyNameChange(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			return
 		}
 
-		com, err := commodity.NewProcessor(l, ctx).GetById(sp.SerialNumber())
-		if err != nil {
-			l.WithError(err).Errorf("Unable to resolve commodity [%d] to a template id for character [%d] name change request.", sp.SerialNumber(), characterId)
+		// The commodity is resolved purely to reject an unusable serial number
+		// BEFORE the insert-first pending record exists — an unresolvable
+		// serial would otherwise strand a PENDING record when RequestPurchase
+		// later fails. Its template id is deliberately not carried onto the
+		// request: see pendingchange.RequestNameChange.
+		if _, err := commodity.NewProcessor(l, ctx).GetById(sp.SerialNumber()); err != nil {
+			l.WithError(err).Errorf("Unable to resolve commodity [%d] for character [%d] name change request.", sp.SerialNumber(), characterId)
 			announceCashShopRejection(l, ctx, wp)(s, "Unable to process your name change request.")
 			return
 		}
 
-		rm, err := pendingchange.NewProcessor(l, ctx).RequestNameChange(characterId, sp.NewName(), com.ItemId)
+		rm, err := pendingchange.NewProcessor(l, ctx).RequestNameChange(characterId, sp.NewName())
 		if err != nil {
 			l.WithError(err).Warnf("Name change request rejected for character [%d].", characterId)
 			announceCashShopRejection(l, ctx, wp)(s, nameChangeRejectionMessage(err))
@@ -300,15 +304,17 @@ func handleBuyWorldTransfer(l logrus.FieldLogger, ctx context.Context, wp writer
 	return func(s session.Model, sp *cashsb.ShopOperationBuyWorldTransfer) {
 		characterId := s.CharacterId()
 
-		com, err := commodity.NewProcessor(l, ctx).GetById(sp.SerialNumber())
-		if err != nil {
-			l.WithError(err).Errorf("Unable to resolve commodity [%d] to a template id for character [%d] world transfer request.", sp.SerialNumber(), characterId)
+		// Resolved only to reject an unusable serial number before the
+		// insert-first pending record exists; the template id is deliberately
+		// not carried onto the request. See handleBuyNameChange.
+		if _, err := commodity.NewProcessor(l, ctx).GetById(sp.SerialNumber()); err != nil {
+			l.WithError(err).Errorf("Unable to resolve commodity [%d] for character [%d] world transfer request.", sp.SerialNumber(), characterId)
 			announceTransferWorldFailure(l, ctx, wp)(s, "unknown_error")
 			return
 		}
 
 		destinationWorldId := world.Id(sp.TargetWorld())
-		rm, err := pendingchange.NewProcessor(l, ctx).RequestWorldTransfer(characterId, destinationWorldId, com.ItemId)
+		rm, err := pendingchange.NewProcessor(l, ctx).RequestWorldTransfer(characterId, destinationWorldId)
 		if err != nil {
 			l.WithError(err).Warnf("World transfer request rejected for character [%d].", characterId)
 			announceTransferWorldFailure(l, ctx, wp)(s, worldTransferRejectionReason(err))

@@ -513,7 +513,13 @@ Departures from PRD §6: `requested_name_lower`, `notified_at`, and `asset_id` n
 1. Player uses a `5400xxx`/`5401xxx` coupon (whichever prefix derivation settles on) or
    completes `BUY_NAME_CHANGE`.
 2. atlas-channel `POST /characters/{id}/pending-changes` with
-   `{type: NAME_CHANGE, requestedName, assetId}`.
+   `{type: NAME_CHANGE, requestedName}` — **plus `assetId` only on the coupon
+   path**. The `BUY_NAME_CHANGE` purchase path must omit it: its entitlement is
+   the NX charge, correlated by the record's own id as the `REQUEST_PURCHASE`
+   transaction id, and there is no coupon in the player's inventory to consume.
+   Collapsing the two into one `assetId`-bearing request is what produced the
+   double-award fixed in `bug-purchase-path-sets-assetid.md`. As implemented,
+   atlas-channel has only the purchase path, so it never sends `assetId`.
 3. atlas-character validates (tenant scope + reservation), inserts `PENDING` in one
    transaction, emits `PENDING_CHANGE_CREATED` and the `DestroyAsset` command through the
    outbox. The insert either takes the reservation or violates the unique index — there is

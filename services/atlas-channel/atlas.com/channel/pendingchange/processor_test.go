@@ -107,7 +107,7 @@ func TestRequestNameChange(t *testing.T) {
 			withCharactersServiceURL(t, server.URL)
 
 			p := newTestProcessor()
-			result, err := p.RequestNameChange(1, "newname", 5000000)
+			result, err := p.RequestNameChange(1, "newname")
 
 			if tc.wantOK {
 				if err != nil {

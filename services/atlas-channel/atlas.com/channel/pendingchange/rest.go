@@ -37,16 +37,20 @@ func (r *RestModel) SetID(id string) error {
 
 // CreateInputRestModel is the POST body atlas-character's
 // POST /characters/{characterId}/pending-changes expects:
-// {data:{type:"pending-changes",attributes:{type,requestedName,destinationWorldId,assetId}}}.
+// {data:{type:"pending-changes",attributes:{type,requestedName,destinationWorldId}}}.
 //
-// AssetId is an item TEMPLATE id, not an instance id (task-6/task-7 seam;
-// see the atlas-character doc comment on the same field).
+// atlas-character's input model also accepts an assetId, for the item path
+// where a coupon in the player's inventory is consumed at request acceptance.
+// This service has no such path — its only producers are the cash-shop purchase
+// handlers — so the field is deliberately absent here rather than present and
+// always nil: on the purchase path an assetId is not merely unused, it is
+// actively wrong (it drives a destroy_asset saga for a coupon the player does
+// not hold, and a refund on cancel for a consumption that never happened).
 type CreateInputRestModel struct {
 	Id                 string   `json:"-"`
 	Type               string   `json:"type"`
 	RequestedName      string   `json:"requestedName,omitempty"`
 	DestinationWorldId world.Id `json:"destinationWorldId,omitempty"`
-	AssetId            *uint32  `json:"assetId,omitempty"`
 }
 
 func (r CreateInputRestModel) GetName() string {

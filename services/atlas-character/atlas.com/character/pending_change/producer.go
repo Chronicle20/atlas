@@ -80,8 +80,13 @@ const (
 )
 
 // destroyAssetCommandProvider consumes the coupon at request acceptance
-// (FR-2.8). Only the item path has an asset; the purchase path's entitlement is
-// consumed by atlas-cashshop off PENDING_CHANGE_CREATED.
+// (FR-2.8). Only the item path has an asset. The purchase path has none: its
+// entitlement is the NX charge itself, taken by atlas-cashshop's normal
+// Purchase flow off the REQUEST_PURCHASE command atlas-channel emits with this
+// record's id as the transaction id. atlas-cashshop does not consume
+// PENDING_CHANGE_CREATED — it has no reference to that event at all — so
+// nothing here is keyed off it. (An earlier version of this comment claimed the
+// opposite and contradicted Create's own doc a few lines up in processor.go.)
 func destroyAssetCommandProvider(m Model) model.Provider[[]kafka.Message] {
 	s := sharedsaga.NewBuilder().
 		SetTransactionId(sagaTransactionId(m, sagaPurposeDestroyAsset)).

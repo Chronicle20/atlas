@@ -26,12 +26,13 @@
 set -u
 
 FLOOR=40
-# Second tier: the ~250k controller threshold from .claude/commands/execute-task.md
-# Step 4e, expressed in the only unit this hook can see. Measured across the
-# task-231 execute chain, a controller's context grows ~2.1k tokens per tool
-# call over the 23k standing-prompt floor (86 calls -> 210-224k; 113 -> 236k;
-# 145 -> 309k), so 250k lands near 110 calls.
-ESCALATE=110
+# Second tier: the unconditional ~150k controller threshold from
+# .claude/commands/execute-task.md Step 4e, expressed in the only unit this
+# hook can see. Measured across the task-231 execute chain, a controller's
+# context grows ~2.1k tokens per tool call over the 23k standing-prompt floor
+# (86 calls -> 210-224k; 113 -> 236k; 145 -> 309k), so (150k - 23k) / 2.1k
+# lands near 60 calls.
+ESCALATE=60
 
 # No stdin -> can't decide, stay silent.
 [ -t 0 ] && exit 0
@@ -83,9 +84,13 @@ esac
 if [ "$count" -ge "$ESCALATE" ]; then
     body="Commit landed at $count tool calls — you are past the handoff threshold.
 
-At this call count the context is roughly 250k tokens (~2.1k per call over the
+At this call count the context is roughly 150k tokens (~2.1k per call over the
 23k floor). CLAUDE.md and .claude/commands/execute-task.md Step 4e both say:
-never carry the controller past ~250k with tasks remaining. That is here.
+never carry the controller past ~150k tokens — unconditionally, no carve-out
+for tasks remaining. That is here. (Step 4e also escalates after 4 completed
+plan tasks regardless of token count; this hook can only see tool calls, so if
+you have completed 4+ plan tasks in this conversation, treat that as
+independently past the threshold even if the call count above reads low.)
 
 The default is now HAND OFF, not continue. Continue only if the next step reads
 state that exists nowhere but this conversation — and if so, say why.

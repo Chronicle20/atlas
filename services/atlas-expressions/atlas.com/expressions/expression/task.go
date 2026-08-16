@@ -39,10 +39,28 @@ func (e *RevertTask) Run() {
 	sctx, span := otel.GetTracerProvider().Tracer("atlas-expressions").Start(context.Background(), RevertTaskName)
 	defer span.End()
 
-	for _, exp := range GetRegistry().popExpired(sctx) {
-		tctx := e.envContext(tenant.WithContext(sctx, exp.Tenant()))
-		transactionId := uuid.New() // Generate a new transaction ID for each expired expression
-		_ = producer.ProviderImpl(e.l)(tctx)(expression.EnvExpressionEvent)(expressionEventProvider(transactionId, exp.CharacterId(), exp.Field(), 0))
+	processExpired(e.l, sctx, GetRegistry().popExpired(sctx), revertExpression, e.envContext)
+}
+
+// revertExpression emits the revert event for one expired expression. It is
+// injected into processExpired so the pure sweep logic can be tested with a
+// spy in place of the real Kafka producer call.
+func revertExpression(l logrus.FieldLogger, ctx context.Context, exp Model) error {
+	transactionId := uuid.New() // Generate a new transaction ID for each expired expression
+	return producer.ProviderImpl(l)(ctx)(expression.EnvExpressionEvent)(expressionEventProvider(transactionId, exp.CharacterId(), exp.Field(), 0))
+}
+
+// processExpired originates this pod's own environment identity onto each
+// expired expression's per-tenant context before calling revert -- expiry
+// bookkeeping is per-character lifecycle state driven by real gameplay, so
+// an empty ENVIRONMENT header would make decide() fail open per FR-1.8 and
+// every live deployment, not just this pod's, would revert the expression.
+// A nil envContext is a caller bug; tests exercise this directly since
+// NewRevertTask's own tests can't observe the resulting context.
+func processExpired(l logrus.FieldLogger, ctx context.Context, expired []Model, revert func(l logrus.FieldLogger, ctx context.Context, exp Model) error, envContext func(context.Context) context.Context) {
+	for _, exp := range expired {
+		tctx := envContext(tenant.WithContext(ctx, exp.Tenant()))
+		_ = revert(l, tctx, exp)
 	}
 }
 

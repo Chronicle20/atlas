@@ -49,10 +49,31 @@ func (t *Timeout) Run() {
 	}
 
 	t.l.Debugf("Executing timeout task.")
+	processExpiredCoordinations(t.l, sctx, gs, t.rejectExpiredCoordination, t.envContext)
+}
+
+// rejectExpiredCoordination rejects one expired guild-creation coordination.
+// It is injected into processExpiredCoordinations so the pure sweep logic
+// can be tested with a spy in place of the real processor call -- the real
+// call pulls in t.db, which processExpiredCoordinations itself has no need
+// to know about.
+func (t *Timeout) rejectExpiredCoordination(l logrus.FieldLogger, ctx context.Context, leaderId uint32) error {
+	return NewProcessor(l, ctx, t.db).CreationAgreementResponseAndEmit(leaderId, false, uuid.New())
+}
+
+// processExpiredCoordinations originates this pod's own environment identity
+// onto each expired guild-creation coordination's per-tenant context before
+// calling act -- coordination timeout is per-character lifecycle state driven
+// by real gameplay, so an empty ENVIRONMENT header would make decide() fail
+// open per FR-1.8 and every live deployment, not just this pod's, would act
+// on the expired coordination. A nil envContext is a caller bug; tests
+// exercise this directly since NewTransitionTimeout's own tests can't
+// observe the resulting context.
+func processExpiredCoordinations(l logrus.FieldLogger, ctx context.Context, gs []coordinator.Model, act func(l logrus.FieldLogger, ctx context.Context, leaderId uint32) error, envContext func(context.Context) context.Context) {
 	for _, g := range gs {
-		t.l.Infof("Guild creation coordination expired for guild [%s].", g.Name())
-		tctx := t.envContext(tenant.WithContext(sctx, g.Tenant()))
-		_ = NewProcessor(t.l, tctx, t.db).CreationAgreementResponseAndEmit(g.LeaderId(), false, uuid.New())
+		l.Infof("Guild creation coordination expired for guild [%s].", g.Name())
+		tctx := envContext(tenant.WithContext(ctx, g.Tenant()))
+		_ = act(l, tctx, g.LeaderId())
 	}
 }
 

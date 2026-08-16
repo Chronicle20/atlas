@@ -154,6 +154,17 @@ not commit)
 **This task is the actual verification for the whole change.** Tasks 1–3 cannot be
 proven by the gate.
 
+**Before/after (FR-5.2):**
+
+| Metric | Before (task-232 baseline) | After |
+|---|---|---|
+| Subagent starting context, median | 37.3k (n=197, p25 35.9k, p90 39.3k) | pending a fresh session — the restricted agent definitions landed in `8b1513933` (amended by `ff4882ed7`), but this session's agent registry (built at session start, from the main repo's project root) predates them. A same-session probe against `agent-a86d72fe824002390` (atlas-verifier, tool-restriction probe) confirmed the restricted `tools:` list is not yet live: it reported the full unrestricted 16-tool set despite the on-branch definition declaring only `Bash, Read`. The digest's new `START-CTX` column and median line were exercised against this session's own subagent roster (n=11, median 28.4k) as a functional check of the script, not as the FR-5.2 "after" figure — those 11 agents ran under the same pre-restriction registry as the baseline. |
+| Main-thread starting context | 59.2k → 49.3k after task-233 | 49,352 tokens, measured this session (`session-digest.sh digest 6bf93293-e0b0-4afb-b462-247405411473`) — consistent with the task-233 figure; no further change expected from Task 6 itself, which only adds instrumentation. |
+| Fixed prefix share of billed input | 34% (≈434M of 1,294M) | not remeasured — no script support for this metric was added in this task; out of scope for FR-5's starting-context instrumentation. |
+
+Targets: subagent starting context **< 28k**; prefix share **< 22%**; no execute
+session peak above ~180k.
+
 ---
 
 ### Task 7: Review-agent right-sizing (FR-4)

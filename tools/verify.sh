@@ -384,6 +384,7 @@ fi
 
 if touched '^(deploy/|tools/gen-lb-ports\.sh|.*versions\.json)'; then
     step "LB port drift"       ./tools/gen-lb-ports.sh --check
+    step "routes drift"        ./tools/gen-routes.sh --check
     step "version coverage"    ./tools/check-version-coverage.sh
 else
     skip "LB port / version coverage (no deploy or versions.json change)"

@@ -37,7 +37,7 @@ Activate when working on:
 - [ ] **Requests** + **rest.go** for cross-service REST calls (if needed)
 - [ ] Context-based multi-tenancy (`tenant.MustFromContext`)
 - [ ] Table-driven **tests** for all logic layers
-- [ ] Background goroutines spawned via `routine.Go(l, ctx, fn)` from `libs/atlas-routine` — never a bare `go` statement (DOM-25; enforced by `tools/goroutine-guard.sh`)
+- [ ] Background goroutines spawned via `routine.Go(l, ctx, fn)` from `libs/atlas-routine` — never a bare `go` statement (DOM-26; enforced by `tools/goroutine-guard.sh`)
 
 **For Saga Actions (if implementing distributed transactions):**
 - [ ] **Saga handler** registered in orchestrator `handler.go`
@@ -68,7 +68,7 @@ When modifying any service code:
      }
      ```
    - Place it alphabetically among other service routes for maintainability
-   - Run `./deploy/scripts/sync-k8s-ingress-routes.sh` to regenerate `deploy/k8s/ingress.yaml` from the shared file
+   - Run `tools/gen-routes.sh` to regenerate `deploy/k8s/base/routes.conf.template.generated` from the shared file, and commit both (`deploy/scripts/sync-k8s-ingress-routes.sh` is dead — it targets a `deploy/k8s/ingress.yaml` that no longer exists)
 3. **Update service README** if API contracts changed
    - Navigate to the service's README.md (e.g., `services/atlas-<service>/atlas.com/<service>/README.md`)
    - Update the REST Endpoints table with correct paths, methods, and query parameters
@@ -170,5 +170,13 @@ See [Testing Conventions](resources/testing-guide.md) for comprehensive testing 
 | **Service Scaffolding** | **[resources/scaffolding-checklist.md](resources/scaffolding-checklist.md)** |
 | AI Code Guidance | [resources/ai-guidance.md](resources/ai-guidance.md) |
 | Anti-Patterns | [resources/anti-patterns.md](resources/anti-patterns.md) |
+| **Security Patterns** | **[resources/patterns-security.md](resources/patterns-security.md)** |
+| **Audit Checklist (authoritative rule index)** | **[resources/audit-checklist.md](resources/audit-checklist.md)** |
+
+The audit checklist is the single authoritative definition of the `DOM-*`,
+`FILE-*`, `SUB-*`, `EXT-*`, `SCAFFOLD-*`, and `SEC-*` rule IDs used by the
+`backend-guidelines-reviewer` agent. Each rule's verification procedure lives
+in the pattern document it enforces, linked from that index. Adding a rule
+means editing the checklist and the relevant pattern doc — never the agent.
 
 ---

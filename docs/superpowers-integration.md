@@ -59,7 +59,7 @@ verification split, and the front-loaded file inventory — are owned by
 Invoke `superpowers:requesting-code-review` after completing a logical chunk of work. The skill dispatches the relevant subset of these agents in parallel:
 
 - `plan-adherence-reviewer` — checks every task in `plan.md` was implemented; cites file:line evidence
-- `backend-guidelines-reviewer` — adversarial Go audit (DOM-*, SUB-*, SEC-* checks)
+- `backend-guidelines-reviewer` — adversarial Go audit against the applicable families in `.claude/skills/backend-dev-guidelines/resources/audit-checklist.md` (DOM-*, FILE-*, SUB-*, EXT-*, SCAFFOLD-*, SEC-*)
 - `frontend-guidelines-reviewer` — adversarial TS/React audit (FE-* checks)
 
 For ad-hoc one-off checks, invoke any agent directly by name without the orchestration skill.

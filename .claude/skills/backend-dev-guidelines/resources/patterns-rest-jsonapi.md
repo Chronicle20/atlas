@@ -434,3 +434,25 @@ tenantID := r.Header.Get("X-Tenant-ID")
 - Return typed domain errors (e.g., `ErrEmailRequired`)
 - Map domain errors to HTTP status in handler
 - Log errors with context using `d.Logger().WithError(err)`
+
+---
+
+## Audit verification — REST checks
+
+Rule IDs are defined in [audit-checklist.md](audit-checklist.md). This section
+is the verification procedure. These checks run on changed packages that have a
+`resource.go` or `rest.go`, or that register HTTP routes.
+
+| ID | How to verify | Pass criteria |
+|----|---------------|---------------|
+| DOM-06 | Read the `processor.go` constructor. | Logger parameter is `logrus.FieldLogger`, NOT `*logrus.Logger`. |
+| DOM-07 | Grep `resource.go` for `NewProcessor` call sites. | Every call passes `d.Logger()`; none pass `logrus.StandardLogger()`. |
+| DOM-08 | Grep `resource.go` for `Methods(http.MethodPost)` and `Methods(http.MethodPatch)`. | Each is registered with `RegisterInputHandler[T]`, not `RegisterHandler`. |
+| DOM-09 | Grep `resource.go` for `Transform(` call sites. | None discard the error with `_, _ :=` or `_ =`; every call checks it. |
+| DOM-12 | Grep `resource.go` for `os.Getenv`. | Zero matches. |
+| DOM-13 | Read the handler functions in `resource.go`. | Handlers call only their own domain's processor; cross-domain orchestration lives in the processor layer. |
+| DOM-14 | Grep `resource.go` for provider function call sites. | Handlers call processor methods only. See the documented circular-dependency exception in [anti-patterns.md](anti-patterns.md#exception-cross-domain-read-only-views-with-circular-dependencies) — it is the *only* thing that turns a direct provider call into a non-finding, and it requires the explanatory comment described there. |
+| DOM-15 | Grep `resource.go` for `db.Create`, `db.Save`, `db.Delete`. | Zero matches — all writes go processor → administrator. |
+| DOM-17 | Read the error-handling branches in `resource.go`. | Validation errors → 400, not-found → 404, conflicts → 409. For the 500-vs-503 rule in DB-backed services see [patterns-resilience.md](patterns-resilience.md#audit-verification--dom-27-dom-28). |
+| DOM-18 | Read `rest.go`. | Each `RestModel` implements `GetName()`, `GetID()`, `SetID()`. |
+| DOM-19 | Read the request models in `rest.go`. | `CreateRequest` / `UpdateRequest` are flat — no nested `Data` / `Type` / `Attributes` structs. |

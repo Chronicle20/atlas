@@ -38,7 +38,7 @@ Do NOT update ingress for:
 
 **File:** `deploy/shared/routes.conf`
 
-This file is the single source for nginx route definitions. It is bind-mounted into the compose nginx container directly and inlined into the K8s `atlas-ingress-configmap` ConfigMap (`deploy/k8s/ingress.yaml`) by `deploy/scripts/sync-k8s-ingress-routes.sh`. After editing, run the sync script before committing.
+This file is the single source for nginx route definitions. It is bind-mounted into the compose nginx container directly, and regenerated into the K8s template `deploy/k8s/base/routes.conf.template.generated` by `tools/gen-routes.sh` (which rewrites bare service hostnames to `${POD_NAMESPACE}`-templated FQDNs). After editing, run `tools/gen-routes.sh` and commit both files. (`deploy/scripts/sync-k8s-ingress-routes.sh` is dead — it targets a `deploy/k8s/ingress.yaml` that no longer exists.)
 
 This file contains:
 - Multiple `location` blocks routing traffic to different services
@@ -98,10 +98,10 @@ location ~ ^/api/tenants(/.*)?$ {
 
 After updating ingress configuration:
 
-1. **Sync the K8s ConfigMap and apply** (if testing on a cluster):
+1. **Regenerate the K8s routes template and apply** (if testing on a cluster):
    ```bash
-   ./deploy/scripts/sync-k8s-ingress-routes.sh
-   kubectl apply -f deploy/k8s/ingress.yaml
+   tools/gen-routes.sh
+   kubectl apply -k deploy/k8s/overlays/<env>
    ```
 
    For local compose testing, just restart the nginx container (it bind-mounts `routes.conf` directly):

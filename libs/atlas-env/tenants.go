@@ -47,6 +47,14 @@ type TenantResolver interface {
 // partitions, so a tenant may be visible before or after its environment
 // (design §7.3). This does not weaken D4 — an unknown ENVIRONMENT is still
 // rejected by the ownership gate.
+//
+// CAUTION: the tenantId == "" short-circuit above is indistinguishable from
+// an ordering bug that left the tenant off the context before Reconcile was
+// called. A legitimately tenant-less message (no tenant on ctx yet) and a
+// caller that forgot to register TenantHeaderParser before EnvHeaderParser
+// both take this same path and both trust the header unconditionally. If
+// messages start bypassing reconciliation unexpectedly, check parser
+// registration order first.
 func Reconcile(r Registry, headerEnv Id, tenantId string) (Id, error) {
 	tr, ok := r.(TenantResolver)
 	if !ok || tenantId == "" {

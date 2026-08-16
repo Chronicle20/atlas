@@ -75,6 +75,21 @@ func TestWithMismatchMarksTheContext(t *testing.T) {
 	}
 }
 
+func TestMustFromContextStillReturnsTheHeaderIdAfterAMismatchIsRecorded(t *testing.T) {
+	// EnvHeaderParser records a mismatch AND keeps the header's id on the
+	// context (env.WithContext(ctx, id)) — WithMismatch only marks the
+	// context, it never clears or overwrites the environment value. The
+	// ownership gate depends on both being readable independently: the id
+	// for labeling/logging, Mismatched for the drop decision.
+	ctx := WithMismatch(WithContext(context.Background(), Id("pr-123")))
+	if got := MustFromContext(ctx); got != Id("pr-123") {
+		t.Fatalf("MustFromContext = %q, want %q", got, "pr-123")
+	}
+	if !Mismatched(ctx) {
+		t.Fatal("expected Mismatched to still report true")
+	}
+}
+
 func TestApplyTenantAndRemoveTenant(t *testing.T) {
 	r := NewMapRegistry(Id("main"), time.Now)
 

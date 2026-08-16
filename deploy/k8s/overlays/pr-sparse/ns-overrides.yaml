@@ -12,15 +12,27 @@
 # reached via their own LB Services (patches/lb-allocate.yaml), never
 # through the nginx ingress's NS_* routing table.
 #
-# PLACEHOLDER_NS_OVERRIDES is filled by CI (Task 50) with one `- name: ...`
-# / `value: ...` pair per non-override-set NS_* variable, all pointing at
-# PLACEHOLDER_BASELINE_NAMESPACE (the baseline's k8s namespace — resolved
-# from the ACTIVE baseline environment record, never a literal "atlas-main"
-# — see kustomization.yaml's header). It is checked in empty (as here) so
-# this file parses as a syntactically valid, no-op strategic-merge patch:
-# `env:` layers zero entries onto the base container's env list, matching
-# Task 44 Step 4's smoke-test shape (build succeeds, base's NS_* defaults
-# untouched).
+# The anchor below (a lone comment line, not a bare scalar — see
+# kustomization.yaml's header for why) is filled by CI (Task 50) with one
+# `- name: ...` / `value: ...` pair per non-override-set NS_* variable,
+# all pointing at PLACEHOLDER_BASELINE_NAMESPACE (the baseline's k8s
+# namespace — resolved from the ACTIVE baseline environment record, never
+# a literal "atlas-main" — see kustomization.yaml's header). Its exact
+# sentinel text appears nowhere else in this directory's .yaml/.yml
+# files — only at the anchor itself, below — and the replacement value
+# follows the same escaped-newline, leading-escaped-newline, non-`|`-
+# delimiter contract documented at kustomization.yaml's delete-set
+# anchor: it must start with one escaped newline so the anchor's leading
+# `#` comments out only the (now-empty) anchor line, not the first
+# override entry. This payload does not itself contain `|`, but keep the
+# same non-`|` delimiter convention as the delete-set anchor for
+# consistency — see that anchor's comment for the reproduced failure
+# mode and the verified fix.
+#
+# Checked in empty, as here, this is a syntactically valid, no-op
+# strategic-merge patch: `env:` layers zero entries onto the base
+# container's env list, matching Task 44 Step 4's smoke-test shape (build
+# succeeds, base's NS_* defaults untouched).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,4 +43,4 @@ spec:
       containers:
         - name: nginx
           env:
-            PLACEHOLDER_NS_OVERRIDES
+            #PLACEHOLDER_NS_OVERRIDES

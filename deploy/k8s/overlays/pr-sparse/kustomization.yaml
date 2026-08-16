@@ -7,17 +7,18 @@
 # namespace, and the environment-record Job below tells every consumer
 # which services those are.
 #
-# PLACEHOLDER_PR_NUMBER / PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_FULL_SHA /
-# PLACEHOLDER_DELETE_BLOCK / PLACEHOLDER_NS_OVERRIDES are sentinel strings
-# resolved at CI time by .github/workflows/pr-validation.yml's
-# update-pr-overlay job, exactly as in overlays/pr/kustomization.yaml:1-20
-# (Task 50 extends that job to this overlay) — sed-substituted across this
-# directory, then force-pushed to bot/pr-<N>-resolved. The Argo CD
-# ApplicationSet(atlas-pr-sparse) targets that derived branch, NOT the PR
-# head directly, so kustomize never sees the placeholders.
+# PLACEHOLDER_PR_NUMBER / PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_FULL_SHA are
+# scalar sentinel strings resolved at CI time by
+# .github/workflows/pr-validation.yml's update-pr-overlay job, exactly as
+# in overlays/pr/kustomization.yaml:1-20 (Task 50 extends that job to this
+# overlay) — sed-substituted across this directory, then force-pushed to
+# bot/pr-<N>-resolved. The Argo CD ApplicationSet(atlas-pr-sparse) targets
+# that derived branch, NOT the PR head directly, so kustomize never sees
+# the placeholders.
 #
-# Two more placeholders name the baseline environment without hard-coding
-# it (env.Id "main" MUST NOT appear as a literal here — design §9, FR-1.5):
+# Two more scalar placeholders name the baseline environment without
+# hard-coding it (env.Id "main" MUST NOT appear as a literal here — design
+# §9, FR-1.5):
 #   PLACEHOLDER_BASELINE_ENVIRONMENT — the baseline's env.Id (e.g. "main"),
 #     used only in environment-record.yaml's `baseline` attribute.
 #   PLACEHOLDER_BASELINE_NAMESPACE — the baseline's k8s namespace (e.g.
@@ -28,6 +29,25 @@
 #     override set). Task 50 resolves both from the ACTIVE baseline
 #     environment record — the same source of truth every other consumer
 #     of env.Record.Baseline reads from, never a literal.
+#
+# All FIVE placeholders above are single-line scalars: CI's substitution
+# is a blind whole-directory `sed` substring replace
+# (.github/workflows/pr-validation.yml:725-731, `find ... -exec sed -i -e
+# "s|X|Y|g" {} +` across every .yaml/.yml file), and a scalar replacement
+# value is harmless even where it lands inside a comment — it stays a
+# valid single line.
+#
+# TWO more sentinels below carry MULTI-LINE block content instead: the
+# delete-set anchor in this file's `patches:` list, and the
+# NS-override-set anchor in ns-overrides.yaml. Those are a categorically
+# different shape — a multi-line replacement value spliced into a second,
+# unintended occurrence of the same sentinel text corrupts the file (a
+# comment line does not survive gaining embedded raw structure mid-line).
+# So each block sentinel's exact text appears exactly ONCE across every
+# .yaml/.yml file in this directory — at its own anchor, a lone comment
+# line — and is never spelled out again, including in this header; see
+# each anchor's own comment, in place, for its fill contract and the
+# required newline-escaping convention.
 #
 # As a side effect of the bot-branch model: the `images:` block below
 # starts with `newTag: latest` for every service, matching overlays/pr.
@@ -157,18 +177,42 @@ patches:
       kind: CronJob
       metadata:
         name: atlas-minio-reconcile
-  # PLACEHOLDER_DELETE_BLOCK: CI (Task 50) computes "every base Deployment
-  # not in the override set" (deploy/k8s/base/atlas-*.yaml minus the four
-  # kept names) and appends one `$patch: delete` entry per name here, e.g.:
+  # The delete-set anchor (see this file's header for why it's a lone
+  # comment line, not a bare scalar). CI (Task 50) computes "every base
+  # Deployment not in the override set" (deploy/k8s/base/atlas-*.yaml
+  # minus the four kept names) and blind-`sed`-replaces the anchor line
+  # below with one `$patch: delete` entry per name, e.g.:
   #   - patch: |-
   #       $patch: delete
   #       apiVersion: apps/v1
   #       kind: Deployment
   #       metadata:
   #         name: atlas-account
-  # Empty (as checked in) this overlay builds every base Deployment, same
-  # as overlays/pr — the smoke-test shape exercised by Task 44 Step 4.
-  PLACEHOLDER_DELETE_BLOCK
+  # The replacement value must escape every embedded newline as a
+  # backslash immediately followed by a real newline (GNU `sed s///`'s
+  # standard multi-line-replacement idiom) and must itself START with one
+  # such escaped newline, so the leading `#` on the anchor line comments
+  # out only the (now-empty) anchor rather than swallowing the first
+  # patch entry into the comment.
+  #
+  # DO NOT reuse `|` as the `sed` delimiter for this substitution (unlike
+  # the three scalar placeholders' `s|X|Y|g`, which is safe because none
+  # of PR_NUMBER/ATLAS_ENV/FULL_SHA ever contains `|`). The payload here
+  # is generated `$patch: delete` YAML, which itself uses `|-` (the
+  # block-scalar marker) — `|` inside the replacement collides with `|`
+  # as delimiter and `sed` fails outright (`unknown option to 's'`,
+  # reproduced directly). Use a delimiter guaranteed absent from the
+  # payload instead, e.g. a control character (`sed "s${D}X${D}Y${D}g"`
+  # with `D=$'\x01'` in bash), or substitute this one sentinel with
+  # `perl -0777 -pe` rather than `sed`. Verified directly with the
+  # control-character delimiter — see task-44-report.md's fix-round-1
+  # entry for the exact invocation and its output.
+  #
+  # Empty, as checked in here (a lone comment — ignored by the YAML
+  # parser, so this file still parses raw), this overlay builds every
+  # base Deployment, same as overlays/pr — the smoke-test shape exercised
+  # by Task 44 Step 4.
+  #PLACEHOLDER_DELETE_BLOCK
 
 # Per-env atlas-env ConfigMap. `merge` (not `replace`, unlike overlays/pr)
 # layers only what a sparse env changes on top of base/env-configmap.yaml:

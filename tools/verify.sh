@@ -390,6 +390,12 @@ else
     skip "LB port / version coverage (no deploy or versions.json change)"
 fi
 
+if touched '^(deploy/k8s/overlays/pr/|deploy/k8s/overlays/pr-sparse/|tools/pr-sparse-mirror-guard\.sh)'; then
+    step "pr-sparse mirror drift" ./tools/pr-sparse-mirror-guard.sh
+else
+    skip "pr-sparse mirror drift (neither overlay changed)"
+fi
+
 # ------------------------------------------------------------- lint & format
 #
 # Scope the Go layer to the CHANGED modules, exactly as the lint-go CI job does

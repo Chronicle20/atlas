@@ -27,19 +27,32 @@ the per-service `NS_*` variables Task 43 wired into every nginx upstream.
 
 ## What it keeps, unchanged
 
-`patches/lb-allocate.yaml`, `patches/ingress-host.yaml`,
-`patches/consumer-group-env.yaml`, `patches/seed-catalog-ref.yaml`,
-`ingress-route.yaml`, `atlas-env-tokens.yaml`, the replica-1 patch, the
-topology-spread patch, the `imagePullPolicy: Always` patch, and the
-sync-bootstrap / predelete-purge / pihole Jobs.
+The replica-1 patch, the topology-spread patch, and the
+`imagePullPolicy: Always` patch (all inline in `kustomization.yaml`,
+copied verbatim from `overlays/pr`), plus a set of files that are
+byte-identical copies — not references — of the same-named files in
+`overlays/pr/`. **`tools/pr-sparse-mirror-guard.sh`'s `MIRRORS` array is
+the single source of truth for exactly which files those are**; this
+README does not re-list them so the two can never disagree.
 
-These are byte-identical copies of the same-named files in `../pr/`, not
-references — kustomize's default load restrictor forbids a resource/patch
-path from escaping the overlay's own directory tree, so a relative `../pr/`
-path is rejected at build time (`security; file '...' is not in or below
-'.../pr-sparse'`). Keep them in sync with `overlays/pr` by hand (or fold
-the shared ones into a common base both overlays include, as a follow-up)
-until Task 50 automates the check.
+Copies, not references, because kustomize's default load restrictor
+forbids a resource/patch path from escaping the overlay's own directory
+tree — a relative `../pr/...` path is rejected at build time (`security;
+file '...' is not in or below '.../pr-sparse'`, reproduced directly). A
+shared `components:` directory (e.g. a hypothetical
+`deploy/k8s/overlays/_shared/`) was considered and **does not work
+either** — it hits the identical restrictor (verified during task-232
+Task 44's review, fix round 1). So this is forced duplication, not a
+shortcut, and `tools/pr-sparse-mirror-guard.sh` (wired into
+`tools/verify.sh`'s `deploy/`-gated block) is the drift guard that keeps
+it safe: it byte-diffs every mirrored file against its `overlays/pr`
+original and fails the build if any pair has diverged. A later task could
+still eliminate the duplication entirely by promoting these files into
+`deploy/k8s/base/` (a true common ancestor — `deploy/k8s/base/components/
+seed-catalog/` already does this shape) but that means touching
+`overlays/pr`, which is live in `main` today and out of this task's
+scope; the guard does not block that follow-up, it just makes today's
+duplication safe in the meantime.
 
 ## What it adds
 
@@ -52,40 +65,59 @@ until Task 50 automates the check.
 
 Currently fixed at `atlas-ingress` (always local — it is the routing
 mechanism itself, not a `NS_*`-addressed service), `atlas-login`,
-`atlas-channel`, and `atlas-character`. `PLACEHOLDER_DELETE_BLOCK` and
-`environment-record.yaml`'s `overrides` attribute both encode this set;
-Task 50's CI job is the single place that computes it, so the two never
-drift independently.
+`atlas-channel`, and `atlas-character`. The delete-set anchor
+(`kustomization.yaml`) and `environment-record.yaml`'s `overrides`
+attribute both encode this set; Task 50's CI job is the single place that
+computes it, so the two never drift independently.
 
 ## Sentinel contract
 
 Resolved at CI time by `.github/workflows/pr-validation.yml`'s
 `update-pr-overlay` job (Task 50), exactly as documented in
-`overlays/pr/kustomization.yaml:1-20`:
+`overlays/pr/kustomization.yaml:1-20`, extended here with two shapes that
+overlay doesn't need:
 
-- `PLACEHOLDER_PR_NUMBER`, `PLACEHOLDER_ATLAS_ENV`, `PLACEHOLDER_FULL_SHA` —
-  the same three sentinels `overlays/pr` uses.
-- `PLACEHOLDER_DELETE_BLOCK` — the `$patch: delete` entries for every base
-  Deployment not in the override set.
-- `PLACEHOLDER_NS_OVERRIDES` — the `NS_*` env entries for every
-  non-override-set service, pointed at `PLACEHOLDER_BASELINE_NAMESPACE`.
-- `PLACEHOLDER_BASELINE_ENVIRONMENT` / `PLACEHOLDER_BASELINE_NAMESPACE` —
-  the baseline's `env.Id` and k8s namespace, resolved from the ACTIVE
-  baseline environment record. Never a literal `"main"` / `"atlas-main"`
-  (FR-1.5) — see `kustomization.yaml`'s header comment.
+- **Scalar** (safe to spell out anywhere, including in comments —
+  substitution never spans a newline): `PLACEHOLDER_PR_NUMBER`,
+  `PLACEHOLDER_ATLAS_ENV`, `PLACEHOLDER_FULL_SHA` (the same three
+  `overlays/pr` uses), `PLACEHOLDER_BASELINE_ENVIRONMENT` /
+  `PLACEHOLDER_BASELINE_NAMESPACE` (the baseline's `env.Id` and k8s
+  namespace, resolved from the ACTIVE baseline environment record — never
+  a literal `"main"` / `"atlas-main"`, FR-1.5), and
+  `PLACEHOLDER_OVERRIDES_JSON` (a single-line JSON object, see
+  `environment-record.yaml`'s header).
+- **Multi-line block** (the delete-set anchor in `kustomization.yaml` and
+  the NS-override-set anchor in `ns-overrides.yaml`): each is a lone
+  comment line, appears exactly once across every `.yaml`/`.yml` file in
+  this directory, and is never spelled out again elsewhere — a second
+  bare occurrence would itself get corrupted by the same blind
+  substitution. Each anchor's own comment carries its fill contract:
+  the replacement must escape embedded newlines GNU-`sed`-style and
+  start with one escaped newline, and — because the delete-set payload
+  contains YAML's `|-` block-scalar marker — **must not use `|` as the
+  `sed` delimiter** (reproduced: `sed -i "s|X|<payload with a literal |>|g"`
+  fails with `unknown option to 's'`). See `kustomization.yaml`'s
+  delete-set anchor comment for the verified fix (a control-character
+  delimiter) and full detail.
 
 ## Verifying locally
+
+Scalar-only smoke test (matches Task 44 Step 4 — empty block anchors,
+build succeeds, Deployment count equals base's):
 
 ```sh
 sed -e 's/PLACEHOLDER_PR_NUMBER/999/g' -e 's/PLACEHOLDER_ATLAS_ENV/999/g' \
     -e 's/PLACEHOLDER_FULL_SHA/deadbeef/g' \
     -e 's/PLACEHOLDER_BASELINE_ENVIRONMENT/main/g' \
     -e 's/PLACEHOLDER_BASELINE_NAMESPACE/atlas-main/g' \
-    -e 's/PLACEHOLDER_DELETE_BLOCK//' -e 's/PLACEHOLDER_NS_OVERRIDES//' \
-    -i.bak deploy/k8s/overlays/pr-sparse/*.yaml
+    -e 's/PLACEHOLDER_OVERRIDES_JSON/{}/g' \
+    -i.bak deploy/k8s/overlays/pr-sparse/*.yaml deploy/k8s/overlays/pr-sparse/patches/*.yaml
 kustomize build deploy/k8s/overlays/pr-sparse | grep -c "^kind: Deployment"
 ```
 
-With `PLACEHOLDER_DELETE_BLOCK` empty this builds every base Deployment
-(64, same as `overlays/pr`'s smoke-test shape). Restore the `.bak` files
-afterwards — they must never be committed.
+This builds every base Deployment (64, same as `overlays/pr`'s
+smoke-test shape) since both block anchors are left as no-op comments.
+Restore the `.bak` files afterwards — they must never be committed. For
+the full real-content substitution (both block anchors filled, exactly 4
+Deployments remain) see `task-44-report.md`'s fix-round-1 entry for the
+exact commands and output.

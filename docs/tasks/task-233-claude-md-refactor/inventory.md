@@ -60,9 +60,9 @@ and already carries the rule.
 | R-045 | Packet work | Packet-audit work has ONE canonical playbook per task type and an executable entry point; start at `docs/packets/PROCESS.md` — source of truth for version set, baseline status, CI gates, task-type table | C | keep-compressed | `CLAUDE.md` §Where the procedures live |
 | R-046 | Packet work | Entry points: new feature codec → `/implement-packet` + `packet-implementer`; new client-version column → `/bringup-version`; dispatcher family → `family-auditor` then `dispatcher-family-implementer`; leaf step (all task types) → `/verify-packet` + `packet-verifier`; do not restate a playbook's procedure in prose elsewhere | D | drop-captured | `docs/packets/PROCESS.md` §Task type → entry point → canonical playbook |
 | R-047 | Reverse Engineering / IDA | For IDA Pro lookups, use the `func_query` tool with `name_regex` (the documented method); do not improvise alternate lookup approaches | D | relocate | `docs/reverse-engineering.md` §Function lookup |
+| R-047a | Reverse Engineering / IDA | See the IDA-MCP notes in project memory for the current API | D | relocate | `docs/reverse-engineering.md` §Function lookup |
 | R-048 | Reverse Engineering / IDA | Confirm the IDA instance/version under investigation matches the version you're targeting before reading | A | drop-captured | `CLAUDE.md` §Evidence & grounding (already states the general confirm-version rule, R-037) |
 | R-049 | Reverse Engineering / IDA | `select_instance(port)` and port-based selection are dead (since task-138); resolve the session from `idb_list` by binary name and pass it as the `database` parameter to subsequent calls | D | relocate | `docs/reverse-engineering.md` §Session resolution |
-| R-049a | Reverse Engineering / IDA | See the IDA-MCP notes in project memory for the current API | E | relocate | `docs/reverse-engineering.md` §Function lookup |
 | R-050 | Task Workflow | Before planning or designing a task, verify the task is not already planned/implemented and its number does not collide with an in-flight task | B | keep-compressed | `CLAUDE.md` §Development workflow |
 | R-051 | Task Workflow | Tool usage detail: `tools/task-numbers.sh next` to pick the number, `tools/task-resolve.sh --list` to see every existing task (one row per task, deduplicated across worktrees) | D | relocate | `docs/superpowers-integration.md` §Task lifecycle, task resolution |
 | R-052 | Debugging / Kubernetes | For wedged deploys or runtime failures, read the relevant pod logs early rather than starting at packet-level fixes or bare pod listings; the logs usually name the real root cause directly | B | keep-compressed | `CLAUDE.md` §Repository conventions |
@@ -145,7 +145,7 @@ No FR-3 item is missing a `keep-*` row.
   is `relocate` — that specific detail is absent from the section.
 - `docs/packets/PROCESS.md` → R-046, `drop-captured` (confirmed sufficient by
   reading the file — design §4.1).
-- `docs/reverse-engineering.md` → R-047, R-049, R-049a.
+- `docs/reverse-engineering.md` → R-047, R-047a, R-049.
 - `docs/git-workflow.md` → R-056, R-059, R-060.
 - `docs/agent-dispatch.md` → R-064, R-066, R-068–R-073, R-075, R-077–R-080,
   R-081, R-087, R-088.

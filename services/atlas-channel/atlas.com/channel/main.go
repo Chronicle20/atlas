@@ -188,6 +188,7 @@ func main() {
 			return service.ProjectionFuncs{StartFunc: sub.Start, WaitCaughtUpFunc: caughtUp.WaitCaughtUp}
 		}),
 		service.WithReadinessGate(caughtUp.CaughtUpNow),
+		service.WithEnvironmentRegistry(serviceName),
 	)
 	l := rt.Logger()
 
@@ -383,7 +384,19 @@ func buildListener(
 		if err != nil {
 			return nil, err
 		}
-		tctx := tenant.WithContext(ctx, t)
+		// This is the second per-tenant socket lifecycle context (alongside
+		// AdaptHandler's newSessionContext) -- it feeds CreateSocketService,
+		// which wires session.NewProcessor's Create/Destroy/SendPing
+		// directly as connect/disconnect/idle callbacks, bypassing
+		// AdaptHandler entirely. The environment must originate here too,
+		// from this pod's own identity (env.Self()), not be left to
+		// EnvHeaderParser's tenant-derived reconciliation to paper over.
+		// Origination lives in socket.NewListenerContext (not inline here)
+		// because a file literally named main.go cannot carry a test for
+		// this path -- env-domain-guard restricts atlas-env imports to
+		// main.go/kafka//rest//socket, and only the socket/ package can
+		// be tested.
+		tctx := socket.NewListenerContext(ctx, t)
 
 		if err := account.NewProcessor(l, tctx).InitializeRegistry(); err != nil {
 			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())

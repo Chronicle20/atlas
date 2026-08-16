@@ -40,6 +40,19 @@ func NewListenerContext(ctx context.Context, t tenant.Model) context.Context {
 	return env.WithContext(tctx, env.Self())
 }
 
+// WithSelfEnvironment attaches this pod's own environment identity
+// (env.Self()) to ctx, with no tenant pairing. It exists so a domain
+// package outside env-domain-guard's permitted import list (main.go,
+// kafka/, rest/, socket/) can originate the environment on a per-event
+// context -- e.g. character/combo's DecayTick, which builds its own
+// per-character tenant context in a background sweep and has nowhere
+// else to source env.Self() from -- without importing atlas-env
+// directly. Callers thread this in as a plain function value rather
+// than importing atlas-env themselves.
+func WithSelfEnvironment(ctx context.Context) context.Context {
+	return env.WithContext(ctx, env.Self())
+}
+
 func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) {
 	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) {
 		chakra.GetRegistry().StartSweeper(l, ctx)

@@ -328,7 +328,14 @@ func main() {
 	})
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(combo.NewDecayTick(l, rt.Context(), time.Second))
+		// character/combo sits outside env-domain-guard's permitted
+		// atlas-env import list (main.go, kafka/, rest/, socket/), so
+		// this pod's environment identity is threaded in as a plain
+		// function value (socket.WithSelfEnvironment) rather than the
+		// package importing atlas-env itself. Without it, DecayTick's
+		// per-character buff-cancel Kafka events would carry an empty
+		// environment header and fail decide() open per FR-1.8.
+		tasks.Register(l, rt.Context())(combo.NewDecayTick(l, rt.Context(), time.Second, socket.WithSelfEnvironment))
 	})
 
 	rt.TeardownFunc(session.Teardown(l))

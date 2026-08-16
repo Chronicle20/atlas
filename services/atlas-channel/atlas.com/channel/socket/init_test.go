@@ -40,3 +40,15 @@ func TestNewListenerContextOnMainIsTheLegacyValue(t *testing.T) {
 		t.Fatalf("environment = %q, want the empty id", got)
 	}
 }
+
+// TestWithSelfEnvironmentCarriesThisPodsEnvironment pins the helper that
+// lets a package outside env-domain-guard's permitted list (like
+// character/combo's DecayTick) originate env.Self() on a per-event
+// context without importing atlas-env directly.
+func TestWithSelfEnvironmentCarriesThisPodsEnvironment(t *testing.T) {
+	t.Setenv(env.SelfVar, "pr-123")
+	ctx := WithSelfEnvironment(context.Background())
+	if got := env.MustFromContext(ctx); got != env.Id("pr-123") {
+		t.Fatalf("environment = %q, want \"pr-123\" from ATLAS_ENVIRONMENT", got)
+	}
+}

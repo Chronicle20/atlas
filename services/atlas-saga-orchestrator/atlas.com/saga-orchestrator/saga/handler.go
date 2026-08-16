@@ -116,6 +116,7 @@ type Handler interface {
 	handleIncreaseBuddyCapacity(s Saga, st Step[any]) error
 	handleGainCloseness(s Saga, st Step[any]) error
 	handleEvolvePet(s Saga, st Step[any]) error
+	handleRevivePet(s Saga, st Step[any]) error
 	handleRenamePet(s Saga, st Step[any]) error
 	handleSpawnMonster(s Saga, st Step[any]) error
 	handleSpawnReactorDrops(s Saga, st Step[any]) error
@@ -831,6 +832,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleGainCloseness, true
 	case EvolvePet:
 		return h.handleEvolvePet, true
+	case RevivePet:
+		return h.handleRevivePet, true
 	case RenamePet:
 		return h.handleRenamePet, true
 	case SpawnMonster:
@@ -1496,6 +1499,21 @@ func (h *HandlerImpl) handleEvolvePet(s Saga, st Step[any]) error {
 	err := h.petP.EvolveAndEmit(s.TransactionId(), payload.PetId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to evolve pet.")
+		return err
+	}
+
+	return nil
+}
+
+func (h *HandlerImpl) handleRevivePet(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(RevivePetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.petP.ReviveAndEmit(s.TransactionId(), payload.CharacterId, payload.PetId, payload.SourceTemplateId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to revive pet.")
 		return err
 	}
 

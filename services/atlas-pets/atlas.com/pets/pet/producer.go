@@ -204,6 +204,35 @@ func evolvedEventProvider(m Model, oldTemplateId uint32, transactionId uuid.UUID
 	return producer.SingleMessageProvider(key, value)
 }
 
+func revivedEventProvider(m Model, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.OwnerId()))
+	value := &pet.StatusEvent[pet.RevivedStatusEventBody]{
+		PetId:   m.Id(),
+		OwnerId: m.OwnerId(),
+		Type:    pet.StatusEventTypeRevived,
+		Body: pet.RevivedStatusEventBody{
+			Slot:          m.Slot(),
+			Expiration:    m.Expiration(),
+			TransactionId: transactionId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func reviveFailedEventProvider(petId uint32, ownerId uint32, reason string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(ownerId))
+	value := &pet.StatusEvent[pet.ReviveFailedStatusEventBody]{
+		PetId:   petId,
+		OwnerId: ownerId,
+		Type:    pet.StatusEventTypeReviveFailed,
+		Body: pet.ReviveFailedStatusEventBody{
+			Reason:        reason,
+			TransactionId: transactionId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func nameChangedEventProvider(m Model, previousName string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(m.OwnerId()))
 	value := &pet.StatusEvent[pet.NameChangedStatusEventBody]{

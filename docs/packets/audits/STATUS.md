@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `078e5e1c7c196f09e716ca063c913132d539f7ac6533edf3dc2c9fe68948fa78`
+Tool: `3b70817b761d6a8cf38ce5de41fe6b232ee94288e9dc2c3dd8e9ef09319e61d5`
 
 - export gms_v48: `df18357a89e5e0506c9be3ca0beef22a11aa9a3c3050e60a2c28c7fbdfc77b04`
 - export gms_v61: `bf60cb22d8af5e2551c1e29f1b8b82debd7328238bb64ab92e658d64ac15c8df`
 - export gms_v72: `30cb8f5ed33853ba29448be5f2fecdaebd17dc23570cb6b0107fd371cfcabbed`
 - export gms_v79: `79c25b50f10f6a966e90d3cd006195f96bea11146e46b73807c31ef06c5210f0`
-- export gms_v83: `dea4319be65f2cbcd1f20a960afb0a3380844b08fa522bdc5db57a70f278793f`
-- export gms_v84: `11301e90188eb1f8680469a95c1e477f96be84c117ddf76d428d3ee5446e3347`
-- export gms_v87: `d8febf4d7636b2069e74d8e1ae42a8f1438be3ef89895a1e6a7d165417091cc9`
-- export gms_v92: `bbdd7f70111967e66c30c5ff378cbd51d3b0cdf07c7b3b33543d6adb0aea5fa1`
-- export gms_v95: `1a2bffa9022e6a659ad61059688ea4cf80685c21ad4270026d2e54a84a04686a`
+- export gms_v83: `7f29b326337ab09c6f44b83086cc014a8496978c1e00289520325d0cdc83e68b`
+- export gms_v84: `e6bb2b4a6766b56ca3e903b1d80ba425976615171115f733068329358f57af77`
+- export gms_v87: `c4e7148dbb27434854fc7d962959a09302e6d63077785c2327e0db3723b46fdc`
+- export gms_v92: `2d2a570a7cc4acec78cf1f0a2ab5932f49fabf4db74577b07150aa8baf99d686`
+- export gms_v95: `5c2431a4bfb125c3eb4c016ebb34147336cb93b652cc6da38b03ba59dcd429b7`
 - export jms_v185: `6e2d572d813c4a608f447308d5335ed69dd1da15380d9a0b2f133a2d532f0098`
 
 ## Clientbound
@@ -611,7 +611,7 @@ Tool: `078e5e1c7c196f09e716ca063c913132d539f7ac6533edf3dc2c9fe68948fa78`
 | USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest; sub_8327DB; sub_904D5E; sub_9560C6 | teleportrock/serverbound/Use (T1) |  | ⬜ | 0x04D | ✅ | 0x053 | ✅ | 0x052 | ✅ | 0x054 | ✅ | 0x054 | ✅ | 0x057 | ✅ | 0x05B | ❌ | 0x05B | ✅ | 0x04C | ✅ |
 | CANCEL_DEBUFF | CWvsContext::CheckTemporaryStatDuration | character/serverbound/CancelDebuff (T1) | 0x04E | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x061 | ✅ | 0x063 | ✅ | 0x063 | ✅ | 0x066 | ✅ | 0x06E | ❌ | 0x06F | ✅ | 0x05E | ✅ |
 | USE_RETURN_SCROLL | CWvsContext::SendPortalScrollUseRequest; CWvsContext::SendReturnScrollUseRequest; sub_841AA5 |  |  | ⬜ | 0x04E | ❌ | 0x054 | ❌ | 0x053 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x05C | ❌ | 0x05C | ❌ | 0x04D | ❌ |
-| DESTROY_PET_ITEM_REQUEST | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ | 0x050 | ❌ | 0x053 | ✅ | 0x057 | ❌ | 0x056 | ✅ | 0x048 | ✅ |
+| DESTROY_PET_ITEM_REQUEST | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ | 0x050 | ❌ | 0x053 | ✅ | 0x057 | ✅ | 0x056 | ✅ | 0x048 | ✅ |
 | TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest; sub_71E7F3; sub_8478EA; sub_91E33E; sub_970286 | teleportrock/serverbound/AddMap | 0x051 | ✅ | 0x05E | ✅ | 0x065 | ✅ | 0x064 | ✅ | 0x066 | ✅ | 0x066 | ✅ | 0x069 | ✅ | 0x071 | 🟡ᵈ | 0x072 | ✅ | 0x061 | ✅ |
 | ANTI_MACRO_RESULT | CUIAdminAntiMacro::SetRet; CUIAntiMacro::SetRet; sub_5F9718; sub_69C480 |  | 0x053 | ❌ | 0x060 | ❌ |  | ⬜ |  | ⬜ | 0x069 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x074 | ❌ | 0x075 | ❌ | 0x064 | ❌ |
 | SPECIAL_MOVE | CGrenade::SendTimeBombInfo; CUserLocal::DoActiveSkill_DamageMeter; CUserLocal::DoActiveSkill_Flying; CUserLocal::DoActiveSkill_Heal; CUserLocal::DoActiveSkill_MobCapture; CUserLocal::DoActiveSkill_OpenGate; CUserLocal::DoActiveSkill_RecoveryAura; CUserLocal::DoActiveSkill_SmokeShell; CUserLocal::DoActiveSkill_StatChangeAdmin; CUserLocal::DoActiveSkill_Summon; CUserLocal::DoActiveSkill_SummonMonster; CUserLocal::DoActiveSkill_TownPortal; CUserLocal::SendSkillUseRequest; CUserLocal::TryDoingMonsterMagnet; CUserLocal::TryDoingSwallowAbsorb; sub_8C0CBE |  |  | ⬜ | 0x053 | ❌ | 0x05A | ❌ | 0x059 | ❌ | 0x05B | ❌ | 0x05B | ❌ | 0x05E | ❌ | 0x066 | ❌ | 0x067 | ❌ | 0x056 | ❌ |
@@ -663,7 +663,7 @@ Tool: `078e5e1c7c196f09e716ca063c913132d539f7ac6533edf3dc2c9fe68948fa78`
 | USE_REMOTE | CWvsContext::SendUseGachaponRemoteRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ | 0x074 | ❌ | 0x077 | ❌ | 0x07F | ❌ | 0x080 | ❌ |  | ⬜ |
 | FOLLOW_CHARACTER_WITHRDAW |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ |
 | PET_AUTO_POT | CWvsContext::SendStatChangeItemUseRequestByPetQ | pet/serverbound/PetItemUse (T1) | 0x075 | ✅ | 0x08E | ✅ | 0x0A5 | ✅ | 0x0A7 | ✅ | 0x0AB | ✅ | 0x0B0 | ✅ | 0x0B7 | ✅ | 0x0C8 | ✅ | 0x0CB | ✅ | 0x0AE | ✅ |
-| WATER_OF_LIFE | CWvsContext::SendWaterOfLife |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x080 | ❌ | 0x081 | ❌ |  | ⬜ |
+| WATER_OF_LIFE | CWvsContext::SendWaterOfLife | pet/serverbound/PetWaterOfLife (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ✅ | 0x075 | ✅ | 0x078 | ✅ | 0x080 | ✅ | 0x081 | ✅ |  | ⬜ |
 | MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive; sub_6E7CF8; sub_7FE86B; sub_9184E5 | summon/serverbound/SummonMoveHandle | 0x078 | ❌ | 0x092 | ❌ | 0x0A9 | ❌ | 0x0AB | ❌ | 0x0AF | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CC | ❌ | 0x0CF | ✅ | 0x0B2 | ✅ |
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x081 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
 | SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack; sub_5D9424; sub_71B522 | summon/serverbound/SummonAttackHandle (T1) | 0x079 | ✅ | 0x093 | ✅ | 0x0AA | ✅ | 0x0AC | ✅ | 0x0B0 | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x0CD | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
@@ -1060,11 +1060,11 @@ Tool: `078e5e1c7c196f09e716ca063c913132d539f7ac6533edf3dc2c9fe68948fa78`
 | v61 | 270 | 0 | 56 | 234 | 460 | 0 | 48.2% |
 | v72 | 287 | 0 | 69 | 248 | 416 | 0 | 47.5% |
 | v79 | 332 | 0 | 68 | 245 | 375 | 0 | 51.5% |
-| v83 | 453 | 0 | 0 | 339 | 228 | 0 | 57.2% |
-| v84 | 427 | 0 | 0 | 346 | 247 | 0 | 55.2% |
-| v87 | 461 | 0 | 0 | 369 | 190 | 0 | 55.5% |
-| v92 | 32 | 0 | 151 | 696 | 141 | 0 | 3.6% |
-| v95 | 486 | 0 | 0 | 428 | 106 | 0 | 53.2% |
+| v83 | 454 | 0 | 0 | 338 | 228 | 0 | 57.3% |
+| v84 | 428 | 0 | 0 | 345 | 247 | 0 | 55.4% |
+| v87 | 462 | 0 | 0 | 368 | 190 | 0 | 55.7% |
+| v92 | 34 | 0 | 151 | 694 | 141 | 0 | 3.9% |
+| v95 | 487 | 0 | 0 | 427 | 106 | 0 | 53.3% |
 | JMS185 | 434 | 0 | 0 | 389 | 197 | 0 | 52.7% |
 
 ## Conflicts

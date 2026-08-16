@@ -1,6 +1,8 @@
 package matrix
 
 import (
+	"strings"
+
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/diff"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
 )
@@ -270,13 +272,32 @@ func gradeCore(a gradeArgs) Cell {
 }
 
 // findReport joins a registry op to its audit report via FName -> WriterName.
+// A registry `packet:` declaration DISAMBIGUATES a shared FName. One client
+// function can send more than one op — CWvsContext::SendActivatePetRequest is
+// both SPAWN_PET and DESTROY_PET_ITEM_REQUEST, chosen by whether the clicked
+// pet is dried up — and the FName→report index cannot tell them apart. Without
+// this check the second op silently inherits the first op's report and its
+// fixture, and the cell promotes to verified against a codec that does not
+// decode its body.
 func findReport(in Inputs, ref opEntryRef, version string) (LoadedReport, bool) {
 	wn, ok := in.FNameToWriter[version][ref.FName]
 	if !ok {
 		return LoadedReport{}, false
 	}
 	r, ok := in.Reports[version][wn]
+	if ok && isPacketID(ref.Packet) && PacketID(r) != ref.Packet {
+		return LoadedReport{}, false
+	}
 	return r, ok
+}
+
+// isPacketID reports whether a registry `packet:` value is a real packet
+// identifier (pkg/direction/Name) rather than prose. Some entries describe a
+// dispatcher family in words instead — gms_v79 MTS_OPERATION declares
+// "field/clientbound/mts_operation.go (35 discrete per-mode structs)" — and
+// those must not be compared against a report's packet id.
+func isPacketID(p string) bool {
+	return p != "" && !strings.ContainsAny(p, " \t") && strings.Count(p, "/") == 2
 }
 
 // reportResolved returns true when the report carries a real IDA address

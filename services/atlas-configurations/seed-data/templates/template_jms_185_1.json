@@ -552,6 +552,15 @@
         ]
       },
       {
+        "opCode": "0x48",
+        "validator": "LoggedInValidator",
+        "handler": "PetDestroyItemHandle",
+        "fname": "CWvsContext::SendActivatePetRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x49",
         "validator": "LoggedInValidator",
         "handler": "MonsterCatchItemUseHandle",

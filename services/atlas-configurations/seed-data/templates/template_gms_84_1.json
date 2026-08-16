@@ -688,6 +688,15 @@
         ]
       },
       {
+        "opCode": "0x50",
+        "validator": "LoggedInValidator",
+        "handler": "PetDestroyItemHandle",
+        "fname": "CWvsContext::SendActivatePetRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x51",
         "validator": "LoggedInValidator",
         "handler": "MonsterCatchItemUseHandle",
@@ -917,6 +926,15 @@
         "validator": "LoggedInValidator",
         "handler": "SueCharacter",
         "fname": "CField::SendChatMsgSlash",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x75",
+        "validator": "LoggedInValidator",
+        "handler": "WaterOfLifeHandle",
+        "fname": "CWvsContext::SendWaterOfLife",
         "services": [
           "channel"
         ]

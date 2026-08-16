@@ -33,6 +33,7 @@ type (
 	IncubatorResultPayload       = sharedsaga.IncubatorResultPayload
 	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
 	CreateNotePayload            = sharedsaga.CreateNotePayload
+	RevivePetPayload             = sharedsaga.RevivePetPayload
 	RenamePetPayload             = sharedsaga.RenamePetPayload
 
 	// Megaphone / world broadcast payload types
@@ -80,6 +81,7 @@ const (
 	MesoSackUse           = sharedsaga.MesoSackUse
 	PetNameTagUse         = sharedsaga.PetNameTagUse
 	RemoteMerchant        = sharedsaga.RemoteMerchant
+	PetRevive             = sharedsaga.PetRevive
 	ScriptedItemUse       = sharedsaga.ScriptedItemUse
 	RemoteNpcUse          = sharedsaga.RemoteNpcUse
 
@@ -122,6 +124,7 @@ const (
 	CreateNote            = sharedsaga.CreateNote
 	RenamePet             = sharedsaga.RenamePet
 	OpenNpcShop           = sharedsaga.OpenNpcShop
+	RevivePet             = sharedsaga.RevivePet
 	StartItemConversation = sharedsaga.StartItemConversation
 	StartNpcConversation  = sharedsaga.StartNpcConversation
 )

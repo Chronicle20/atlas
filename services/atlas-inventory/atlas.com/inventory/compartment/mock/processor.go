@@ -82,6 +82,8 @@ type ProcessorMock struct {
 	ModifyEquipmentFunc               func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error
 	ChangeTemplateAndEmitFunc         func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
 	ChangeTemplateFunc                func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
+	ResetPetExpirationAndEmitFunc     func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error
+	ResetPetExpirationFunc            func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error
 }
 
 var _ compartment.Processor = (*ProcessorMock)(nil)
@@ -590,6 +592,22 @@ func (m *ProcessorMock) ChangeTemplate(mb *message.Buffer) func(transactionId uu
 		return m.ChangeTemplateFunc(mb)
 	}
 	return func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
+		return nil
+	}
+}
+
+func (m *ProcessorMock) ResetPetExpirationAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+	if m.ResetPetExpirationAndEmitFunc != nil {
+		return m.ResetPetExpirationAndEmitFunc(transactionId, characterId, petId, expiration, sourceTemplateId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) ResetPetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+	if m.ResetPetExpirationFunc != nil {
+		return m.ResetPetExpirationFunc(mb)
+	}
+	return func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
 		return nil
 	}
 }

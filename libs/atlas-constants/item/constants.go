@@ -95,6 +95,7 @@ const (
 	ClassificationCosmeticCoupon           = Classification(515)
 	ClassificationExpression               = Classification(516)
 	ClassificationPetImprints              = Classification(517)
+	ClassificationWaterOfLife              = Classification(518)
 	ClassificationPetSkill                 = Classification(519)
 	ClassificationCurrencySack             = Classification(520)
 	ClassificationExperienceCoupon         = Classification(521)

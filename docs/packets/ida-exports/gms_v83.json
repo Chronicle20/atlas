@@ -15841,6 +15841,11 @@
         }
       ]
     },
+    "CWvsContext::SendWaterOfLife": {
+      "address": "0xa1dce6",
+      "direction": "serverbound",
+      "calls": []
+    },
     "CWvsContext::SendScriptRunItemRequest": {
       "address": "0xa09b26",
       "direction": "serverbound",

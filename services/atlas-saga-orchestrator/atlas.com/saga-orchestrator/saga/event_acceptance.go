@@ -53,6 +53,8 @@ const (
 	// Pet.
 	EventKindPetClosenessChanged EventKind = "pet.closeness_changed"
 	EventKindPetEvolved          EventKind = "pet.evolved"
+	EventKindPetRevived          EventKind = "pet.revived"
+	EventKindPetReviveFailed     EventKind = "pet.revive_failed"
 	EventKindPetNameChanged      EventKind = "pet.name_changed"
 
 	// Cash shop.
@@ -159,6 +161,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.IncreaseBuddyCapacity:  {EventKindBuddyCapacityChanged},
 	sharedsaga.GainCloseness:          {EventKindPetClosenessChanged},
 	sharedsaga.EvolvePet:              {EventKindPetEvolved},
+	sharedsaga.RevivePet:              {EventKindPetRevived, EventKindPetReviveFailed},
 	sharedsaga.RenamePet:              {EventKindPetNameChanged},
 
 	// Skills.
@@ -376,6 +379,8 @@ var outcomeTable = map[EventKind]EventOutcome{
 	// Pet.
 	EventKindPetClosenessChanged: OutcomeSuccess,
 	EventKindPetEvolved:          OutcomeSuccess,
+	EventKindPetRevived:          OutcomeSuccess,
+	EventKindPetReviveFailed:     OutcomeFailure,
 	EventKindPetNameChanged:      OutcomeSuccess,
 
 	// Cash shop.

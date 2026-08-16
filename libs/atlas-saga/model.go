@@ -49,6 +49,10 @@ const (
 	// shop from anywhere, then consume the item — never the other way round
 	// (task-221).
 	RemoteMerchant Type = "remote_merchant"
+	// PetRevive is the classification-518 Water of Life flow: consume the item,
+	// then reset a dried-up pet's lifespan. Consume comes first so a failed
+	// revive compensates into a refund rather than a free revive (task-228).
+	PetRevive Type = "pet_revive"
 
 	// ScriptedItemUse is the classification-243 flow: open the item's own
 	// dialogue, then consume the item — in that order, so an unauthored item
@@ -107,6 +111,7 @@ const (
 	IncreaseBuddyCapacity  Action = "increase_buddy_capacity"
 	GainCloseness          Action = "gain_closeness"
 	EvolvePet              Action = "evolve_pet"
+	RevivePet              Action = "revive_pet"
 	RenamePet              Action = "rename_pet"
 	TransferAP             Action = "transfer_ap"
 	TransferSP             Action = "transfer_sp"

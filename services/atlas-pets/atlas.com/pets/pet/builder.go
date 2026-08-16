@@ -4,22 +4,25 @@ import (
 	"atlas-pets/pet/exclude"
 	"errors"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type ModelBuilder struct {
-	id         uint32
-	cashId     uint64
-	templateId uint32
-	name       string
-	level      byte
-	closeness  uint16
-	fullness   byte
-	expiration time.Time
-	ownerId    uint32
-	slot       int8
-	excludes   []exclude.Model
-	flag       uint16
-	purchaseBy uint32
+	id                  uint32
+	cashId              uint64
+	templateId          uint32
+	name                string
+	level               byte
+	closeness           uint16
+	fullness            byte
+	expiration          time.Time
+	ownerId             uint32
+	slot                int8
+	excludes            []exclude.Model
+	flag                uint16
+	purchaseBy          uint32
+	reviveTransactionId *uuid.UUID
 }
 
 func NewModelBuilder(id uint32, cashId uint64, templateId uint32, name string, ownerId uint32) *ModelBuilder {
@@ -49,7 +52,8 @@ func Clone(m Model) *ModelBuilder {
 		SetSlot(m.Slot()).
 		SetExcludes(m.Excludes()).
 		SetFlag(m.Flag()).
-		SetPurchaseBy(m.PurchaseBy())
+		SetPurchaseBy(m.PurchaseBy()).
+		SetReviveTransactionId(m.ReviveTransactionId())
 }
 
 func (b *ModelBuilder) SetLevel(level byte) *ModelBuilder {
@@ -102,6 +106,11 @@ func (b *ModelBuilder) SetPurchaseBy(by uint32) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetReviveTransactionId(id *uuid.UUID) *ModelBuilder {
+	b.reviveTransactionId = id
+	return b
+}
+
 func (b *ModelBuilder) Build() (Model, error) {
 	if b.templateId == 0 {
 		return Model{}, errors.New("templateId is required")
@@ -123,18 +132,19 @@ func (b *ModelBuilder) Build() (Model, error) {
 	}
 
 	return Model{
-		id:         b.id,
-		cashId:     b.cashId,
-		templateId: b.templateId,
-		name:       b.name,
-		level:      b.level,
-		closeness:  b.closeness,
-		fullness:   b.fullness,
-		expiration: b.expiration,
-		ownerId:    b.ownerId,
-		slot:       b.slot,
-		excludes:   b.excludes,
-		flag:       b.flag,
-		purchaseBy: b.purchaseBy,
+		id:                  b.id,
+		cashId:              b.cashId,
+		templateId:          b.templateId,
+		name:                b.name,
+		level:               b.level,
+		closeness:           b.closeness,
+		fullness:            b.fullness,
+		expiration:          b.expiration,
+		ownerId:             b.ownerId,
+		slot:                b.slot,
+		excludes:            b.excludes,
+		flag:                b.flag,
+		purchaseBy:          b.purchaseBy,
+		reviveTransactionId: b.reviveTransactionId,
 	}, nil
 }

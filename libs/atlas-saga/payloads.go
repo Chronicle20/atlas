@@ -295,6 +295,16 @@ type EvolvePetPayload struct {
 	PetId       uint32 `json:"petId"`
 }
 
+// RevivePetPayload drives a Water of Life pet revive. It deliberately carries
+// NO expiration: atlas-pets derives the new lifespan from the consumed item's
+// own WZ info/life, so a forged saga step cannot dictate one. SourceTemplateId
+// names the consumed Water of Life (classification 518).
+type RevivePetPayload struct {
+	CharacterId      uint32 `json:"characterId"`
+	PetId            uint32 `json:"petId"`
+	SourceTemplateId uint32 `json:"sourceTemplateId"`
+}
+
 // RenamePetPayload drives a pet rename. PreviousName is captured by the
 // initiating service BEFORE the rename (atlas-channel already reads the pet to
 // resolve the target, so this costs no extra round trip) and exists solely so

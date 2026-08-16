@@ -54,6 +54,7 @@ const (
 	StatusEventTypeSlotChanged      = "SLOT_CHANGED"
 	StatusEventTypeExcludeChanged   = "EXCLUDE_CHANGED"
 	StatusEventTypeFlagChanged      = "FLAG_CHANGED"
+	StatusEventTypeReviveFailed     = "REVIVE_FAILED"
 	StatusEventTypeNameChanged      = "NAME_CHANGED"
 )
 
@@ -135,6 +136,14 @@ type ExcludeChangedStatusEventBody struct {
 type FlagChangedStatusEventBody struct {
 	Slot int8   `json:"slot"`
 	Flag uint16 `json:"flag"`
+}
+
+// ReviveFailedStatusEventBody reports that atlas-pets rejected a Water of Life
+// revive after the item was already consumed. The saga refunds the item; this
+// channel consumer is what tells the player why nothing happened.
+type ReviveFailedStatusEventBody struct {
+	Reason        string    `json:"reason"`
+	TransactionId uuid.UUID `json:"transactionId"`
 }
 
 // NameChangedStatusEventBody drives two consumers. atlas-channel needs Slot to

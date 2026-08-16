@@ -2396,6 +2396,7 @@
   direction: serverbound
   opcode: 83
   fname: CWvsContext::SendActivatePetRequest
+  packet: pet/serverbound/PetDestroyItem
   provenance: csv-import
 - op: USE_CATCH_ITEM
   direction: serverbound

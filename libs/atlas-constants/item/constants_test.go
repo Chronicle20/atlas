@@ -89,6 +89,15 @@ func TestClassificationExpirationExtender(t *testing.T) {
 	}
 }
 
+func TestClassificationWaterOfLife(t *testing.T) {
+	if ClassificationWaterOfLife != Classification(518) {
+		t.Fatalf("ClassificationWaterOfLife = %d, want 518", ClassificationWaterOfLife)
+	}
+	if got := GetClassification(Id(5180000)); got != ClassificationWaterOfLife {
+		t.Fatalf("GetClassification(5180000) = %d, want %d", got, ClassificationWaterOfLife)
+	}
+}
+
 // The two item families task-230 routes. 243xxxx is the scripted-item family
 // (Consume/0243.img — 23 items, each with spec/script + spec/npc); 239xxxx is
 // the remote-NPC family (verified names "Athena Pierce's Marble",

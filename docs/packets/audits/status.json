@@ -1,15 +1,15 @@
 {
-  "toolSha": "078e5e1c7c196f09e716ca063c913132d539f7ac6533edf3dc2c9fe68948fa78",
+  "toolSha": "3b70817b761d6a8cf38ce5de41fe6b232ee94288e9dc2c3dd8e9ef09319e61d5",
   "exportHashes": {
     "gms_v48": "df18357a89e5e0506c9be3ca0beef22a11aa9a3c3050e60a2c28c7fbdfc77b04",
     "gms_v61": "bf60cb22d8af5e2551c1e29f1b8b82debd7328238bb64ab92e658d64ac15c8df",
     "gms_v72": "30cb8f5ed33853ba29448be5f2fecdaebd17dc23570cb6b0107fd371cfcabbed",
     "gms_v79": "79c25b50f10f6a966e90d3cd006195f96bea11146e46b73807c31ef06c5210f0",
-    "gms_v83": "dea4319be65f2cbcd1f20a960afb0a3380844b08fa522bdc5db57a70f278793f",
-    "gms_v84": "11301e90188eb1f8680469a95c1e477f96be84c117ddf76d428d3ee5446e3347",
-    "gms_v87": "d8febf4d7636b2069e74d8e1ae42a8f1438be3ef89895a1e6a7d165417091cc9",
-    "gms_v92": "bbdd7f70111967e66c30c5ff378cbd51d3b0cdf07c7b3b33543d6adb0aea5fa1",
-    "gms_v95": "1a2bffa9022e6a659ad61059688ea4cf80685c21ad4270026d2e54a84a04686a",
+    "gms_v83": "7f29b326337ab09c6f44b83086cc014a8496978c1e00289520325d0cdc83e68b",
+    "gms_v84": "e6bb2b4a6766b56ca3e903b1d80ba425976615171115f733068329358f57af77",
+    "gms_v87": "c4e7148dbb27434854fc7d962959a09302e6d63077785c2327e0db3723b46fdc",
+    "gms_v92": "2d2a570a7cc4acec78cf1f0a2ab5932f49fabf4db74577b07150aa8baf99d686",
+    "gms_v95": "5c2431a4bfb125c3eb4c016ebb34147336cb93b652cc6da38b03ba59dcd429b7",
     "jms_v185": "6e2d572d813c4a608f447308d5335ed69dd1da15380d9a0b2f133a2d532f0098"
   },
   "rows": [
@@ -12173,8 +12173,7 @@
           "opcode": 83
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 87
         },
         "gms_v95": {
@@ -19164,8 +19163,9 @@
     {
       "kind": "op",
       "op": "WATER_OF_LIFE",
+      "packet": "pet/serverbound/PetWaterOfLife",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CWvsContext::SendWaterOfLife"
       ],
@@ -19187,28 +19187,23 @@
           "opcode": -1
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 117
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 117
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 120
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 128
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 129
         },
         "jms_v185": {

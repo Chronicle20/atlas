@@ -276,12 +276,16 @@ rule). `sweep-tenant`'s own failure is recorded in `failed_phases` but never
 aborts the rest of teardown — this is storage reclamation, not a
 correctness gate. Known incompleteness at the time this was written:
 
-- **`atlas-families` and `atlas-marriages`** have audit rows (`family_members`,
-  `marriages`, `proposals`, `ceremonies`) but **no
-  `deploy/k8s/base/atlas-<service>.yaml` manifest at all** — the generator
-  cannot resolve a `DB_NAME` for them and skips them with a warning rather
-  than guessing one. Once those services get sparse-mode deployment
-  manifests, re-run `tools/gen-tenant-tables.sh` to pick them up.
+- **`atlas-families` and `atlas-marriages`** are not currently deployed —
+  neither has a `deploy/k8s/base/atlas-<service>.yaml` manifest, so there
+  are no rows for them to reclaim in any environment. Their audit tables
+  (`family_members`, `marriages`, `proposals`, `ceremonies`) are **inert,
+  not missed**; this is not an outstanding reclamation gap. The generator
+  cannot resolve a `DB_NAME` for an undeployed service and skips them with
+  a warning rather than guessing one. The situation is self-correcting: if
+  either service gains a base manifest, the generated `tenant-tables.txt`
+  changes and `tools/gen-tenant-tables.sh --check` fails until it is
+  regenerated, so the guard catches the transition automatically.
 - Any table added to a service's schema after the last audit sweep is not
   in `tenant-tables.txt` until the audit is refreshed and the generator
   re-run.

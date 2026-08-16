@@ -241,6 +241,34 @@ jobs:
         run: ./tools/check-version-coverage.sh
 
   # ============================================
+  # Tenant Tables Drift Guard
+  # Regenerates the per-tenant Postgres table
+  # manifest consumed by the sparse-environment
+  # orphan sweeper from the source-of-truth audit
+  # and fails if the checked-in manifest
+  # (services/atlas-pr-bootstrap/scripts/tenant-tables.txt)
+  # has drifted (task-232 Task 49).
+  #
+  # Deliberately NOT gated on deploy-only: its inputs
+  # include deploy/k8s/base/atlas-*.yaml (which services
+  # are deployed), so a deploy-only change set is exactly
+  # when it can catch drift.
+  # ============================================
+  gen-tenant-tables:
+    name: Tenant Tables Drift Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Tenant tables manifest matches audit
+        run: ./tools/gen-tenant-tables.sh --check
+
+      - name: Tenant tables generator tests
+        run: ./tools/gen-tenant-tables_test.sh
+
+  # ============================================
   # atlas-constants Generator Drift Guard
   # Regenerates the identity/semantics/registry Go
   # sources from identities.yaml + the per-version
@@ -836,7 +864,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, go-analyzer-guards, npc-shop-contract-mirror-guard, gen-lb-ports, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, go-analyzer-guards, npc-shop-contract-mirror-guard, gen-lb-ports, gen-tenant-tables, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
     if: always()
     runs-on: ubuntu-latest
 
@@ -856,6 +884,7 @@ jobs:
           ANALYZER_GUARDS_RESULT="${{ needs.go-analyzer-guards.result }}"
           NPC_SHOP_CONTRACT_GUARD_RESULT="${{ needs.npc-shop-contract-mirror-guard.result }}"
           LBPORTS_RESULT="${{ needs.gen-lb-ports.result }}"
+          TENANT_TABLES_GUARD_RESULT="${{ needs.gen-tenant-tables.result }}"
           SVC_REG_GUARD_RESULT="${{ needs.service-registration-guard.result }}"
           TMPL_ORDER_GUARD_RESULT="${{ needs.template-opcode-order-guard.result }}"
           TMPL_MOVE_GUARD_RESULT="${{ needs.template-movement-types-guard.result }}"
@@ -875,6 +904,7 @@ jobs:
           echo "| Go Analyzer Guards (redis/outbox/goroutine/buff-duration) | $ANALYZER_GUARDS_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| NPC Shop Contract Mirror Guard | $NPC_SHOP_CONTRACT_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| LB Port Drift Guard | $LBPORTS_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tenant Tables Drift Guard | $TENANT_TABLES_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Service Registration Guard | $SVC_REG_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Template Opcode Order Guard | $TMPL_ORDER_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Template Movement Types Guard | $TMPL_MOVE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
@@ -903,7 +933,7 @@ jobs:
           # but never to fail outright. Comparing against "failure" (not
           # against "success") is what makes a skip pass. That tolerance
           # is only safe because detect-changes was verified above.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$ANALYZER_GUARDS_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$ANALYZER_GUARDS_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$TENANT_TABLES_GUARD_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

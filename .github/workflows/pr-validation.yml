@@ -271,6 +271,40 @@ jobs:
         run: ./tools/gen-tenant-tables_test.sh
 
   # ============================================
+  # Mode Select Decision Table Guard
+  # Runs tools/mode-select_test.sh — the FR-9.3
+  # escalation-table decision cases (including the
+  # unmatched-root-file / go.work / docker-bake.hcl
+  # escalation cases) for tools/mode-select.sh, the
+  # script detect-changes' "Compute mode" step calls
+  # to pick sparse vs. isolated (task-232 Task 50).
+  #
+  # Deliberately NOT gated on deploy-only: mode-select.sh's
+  # own escalation table is what decides whether a
+  # deploy-only change even runs the sparse-vs-isolated
+  # split correctly, so a deploy-only change set is
+  # exactly when this needs to run too.
+  # ============================================
+  mode-select:
+    name: Mode Select Decision Table Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Mode select decision table tests
+        run: ./tools/mode-select_test.sh
+
+      - name: Shellcheck tools/mode-select.sh
+        run: |
+          if command -v shellcheck >/dev/null 2>&1; then
+            shellcheck --severity=error tools/mode-select.sh tools/mode-select_test.sh
+          else
+            echo "shellcheck not available on this runner image — skipping (no install step added)."
+          fi
+
+  # ============================================
   # atlas-constants Generator Drift Guard
   # Regenerates the identity/semantics/registry Go
   # sources from identities.yaml + the per-version
@@ -743,24 +777,32 @@ jobs:
           set -euo pipefail
           # PLACEHOLDER_BASELINE_NAMESPACE / PLACEHOLDER_BASELINE_ENVIRONMENT
           # must never be a hard-coded "atlas-main" / "main" literal here
-          # (FR-1.5) — the only place that literal is allowed to live is
-          # deploy/k8s/overlays/main/ itself. There is no network path from
-          # this GH-hosted runner to the live cluster's atlas-configurations
-          # (update-pr-overlay runs on ubuntu-latest, not the
-          # [self-hosted, atlas-cluster] runner .github/workflows/pr-env-smoke.yml
-          # uses), so the ACTIVE baseline environment record's two fields
-          # are derived mechanically from the one committed source of truth
-          # for the baseline overlay, rather than queried live:
-          #   BASELINE_NAMESPACE — deploy/k8s/overlays/main/kustomization.yaml's
-          #     own `namespace:` (the literal FR-1.5 permits there).
+          # (FR-1.5). There is no network path from this GH-hosted runner to
+          # the live cluster's atlas-configurations (update-pr-overlay runs
+          # on ubuntu-latest, not the [self-hosted, atlas-cluster] runner
+          # .github/workflows/pr-env-smoke.yml uses), so the ACTIVE baseline
+          # environment record's two fields are derived mechanically from
+          # committed data, rather than queried live:
+          #   BASELINE_OVERLAY   — deploy/k8s/BASELINE_OVERLAY, the single
+          #     declared home for "which overlays/<name>/ is the baseline"
+          #     (FR-1.5: repointing the baseline is a one-line data change
+          #     there, never a code change in this workflow).
+          #   BASELINE_NAMESPACE — deploy/k8s/overlays/$BASELINE_OVERLAY/
+          #     kustomization.yaml's own `namespace:` field.
           #   BASELINE_ENVIRONMENT — derived from BASELINE_NAMESPACE by
           #     stripping the `atlas-` prefix, the same namespace<->env.Id
           #     convention every other environment uses (atlas-pr-<N> <-> pr-<N>).
-          # If the baseline overlay is ever renamed/re-namespaced this
-          # derivation renames with it — no second literal to drift.
-          BASELINE_NAMESPACE=$(sed -n 's/^namespace: *//p' deploy/k8s/overlays/main/kustomization.yaml | head -1)
+          #     This convention is assumed, not independently verified per
+          #     environment — it is currently true for every overlay in the repo.
+          BASELINE_OVERLAY=$(head -1 deploy/k8s/BASELINE_OVERLAY | tr -d '[:space:]')
+          if [ -z "$BASELINE_OVERLAY" ]; then
+            echo "::error::deploy/k8s/BASELINE_OVERLAY is empty" >&2
+            exit 1
+          fi
+          BASELINE_KUSTOMIZATION="deploy/k8s/overlays/${BASELINE_OVERLAY}/kustomization.yaml"
+          BASELINE_NAMESPACE=$(sed -n 's/^namespace: *//p' "$BASELINE_KUSTOMIZATION" | head -1)
           if [ -z "$BASELINE_NAMESPACE" ]; then
-            echo "::error::could not resolve namespace: from deploy/k8s/overlays/main/kustomization.yaml" >&2
+            echo "::error::could not resolve namespace: from $BASELINE_KUSTOMIZATION" >&2
             exit 1
           fi
           BASELINE_ENVIRONMENT="${BASELINE_NAMESPACE#atlas-}"
@@ -856,17 +898,21 @@ jobs:
 
             echo "Override set (+ atlas-ingress): $KEEP"
 
-            # The two block payloads can't use `|` as the sed delimiter —
+            # The three block payloads can't use `|` as the sed delimiter —
             # DELETE_BLOCK's payload contains a literal `|` from YAML's
             # `|-` block-scalar marker, which would terminate the `s|...|`
             # expression (reproduced in task-44-report.md fix-round-1).
-            # A control character is guaranteed absent from either payload.
+            # OVERRIDES_JSON is safe under `|` today only because service
+            # names can't contain `|`/`&`/`\`, but using the same `\x01`
+            # delimiter for all three keeps that invariant from ever having
+            # to be re-verified here. A control character is guaranteed
+            # absent from every payload.
             D=$(printf '\x01')
             find "$OVERLAY_DIR" -type f \( -name '*.yaml' -o -name '*.yml' \) \
               -exec sed -i \
                 -e "s${D}PLACEHOLDER_DELETE_BLOCK${D}${DELETE_BLOCK}${D}g" \
                 -e "s${D}PLACEHOLDER_NS_OVERRIDES${D}${NS_OVERRIDES}${D}g" \
-                -e "s|PLACEHOLDER_OVERRIDES_JSON|${OVERRIDES_JSON}|g" \
+                -e "s${D}PLACEHOLDER_OVERRIDES_JSON${D}${OVERRIDES_JSON}${D}g" \
                 {} +
           fi
 
@@ -999,7 +1045,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, go-analyzer-guards, npc-shop-contract-mirror-guard, gen-lb-ports, gen-tenant-tables, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, go-analyzer-guards, npc-shop-contract-mirror-guard, gen-lb-ports, gen-tenant-tables, mode-select, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
     if: always()
     runs-on: ubuntu-latest
 
@@ -1020,6 +1066,7 @@ jobs:
           NPC_SHOP_CONTRACT_GUARD_RESULT="${{ needs.npc-shop-contract-mirror-guard.result }}"
           LBPORTS_RESULT="${{ needs.gen-lb-ports.result }}"
           TENANT_TABLES_GUARD_RESULT="${{ needs.gen-tenant-tables.result }}"
+          MODE_SELECT_GUARD_RESULT="${{ needs.mode-select.result }}"
           SVC_REG_GUARD_RESULT="${{ needs.service-registration-guard.result }}"
           TMPL_ORDER_GUARD_RESULT="${{ needs.template-opcode-order-guard.result }}"
           TMPL_MOVE_GUARD_RESULT="${{ needs.template-movement-types-guard.result }}"
@@ -1040,6 +1087,7 @@ jobs:
           echo "| NPC Shop Contract Mirror Guard | $NPC_SHOP_CONTRACT_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| LB Port Drift Guard | $LBPORTS_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Tenant Tables Drift Guard | $TENANT_TABLES_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Mode Select Decision Table Guard | $MODE_SELECT_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Service Registration Guard | $SVC_REG_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Template Opcode Order Guard | $TMPL_ORDER_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Template Movement Types Guard | $TMPL_MOVE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
@@ -1068,7 +1116,7 @@ jobs:
           # but never to fail outright. Comparing against "failure" (not
           # against "success") is what makes a skip pass. That tolerance
           # is only safe because detect-changes was verified above.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$ANALYZER_GUARDS_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$TENANT_TABLES_GUARD_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$ANALYZER_GUARDS_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$TENANT_TABLES_GUARD_RESULT" == "failure" ] || [ "$MODE_SELECT_GUARD_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

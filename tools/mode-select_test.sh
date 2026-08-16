@@ -18,6 +18,17 @@ check isolated services/atlas-monsters/atlas.com/monsters/monster/entity.go
 check isolated some/unknown/path.txt
 check sparse   docs/tasks/task-232-sparse-ephemeral-environments/plan.md
 
+# Root-level build-graph files define the whole fleet's build/deploy graph
+# and must escalate — a PR touching them must not silently deploy only the
+# mandatory floor while the actual change goes unexercised.
+check isolated go.work
+check isolated go.work.sum
+check isolated docker-bake.hcl
+# A deliberately unrecognised root-level file also escalates (conservative
+# default: unmatched paths never default to sparse).
+check isolated some-unknown-root-file.txt
+check sparse   README.md
+
 # The override set ALWAYS includes the mandatory floor (FR-9.4, D6).
 set -- services/atlas-monsters/atlas.com/monsters/monster/processor.go
 overrides=$(printf '%s\n' "$@" | ./tools/mode-select.sh | tail -1)

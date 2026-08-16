@@ -27,14 +27,19 @@ trap 'rm -f "$TMPFILE"' EXIT
 cat >"$TMPFILE"
 
 # is_known_root: true when $1's top-level path segment is one this repo
-# recognizes (a real directory under the repo root, or a bare root-level
-# file with no "/"). Anything else — an unrecognized top-level directory —
-# is the "affected-service determination unreliable" case: escalate.
+# recognizes (a real directory under the repo root), or $1 is a bare
+# root-level file explicitly allowlisted as safe to ignore. Anything else —
+# an unrecognized top-level directory, OR an unrecognized bare root-level
+# file (go.work, docker-bake.hcl, an unlisted new root file, ...) — is the
+# "affected-service determination unreliable" case: escalate. A changed path
+# that matches no rule must escalate, never default to sparse.
 is_known_root() {
     case "$1" in
         services/*|libs/*|docs/*|deploy/*|tools/*|dev/*|.github/*) return 0 ;;
-        */*) return 1 ;;
-        *) return 0 ;;
+        # Root-level files with no build-graph or deploy impact — safe to
+        # leave unrouted; document any addition here with why.
+        README.md|LICENSE|.gitignore) return 0 ;;
+        *) return 1 ;;
     esac
 }
 

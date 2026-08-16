@@ -403,6 +403,12 @@ else
     skip "pr-sparse mirror drift (neither overlay changed)"
 fi
 
+if touched '^(tools/mode-select(_test)?\.sh|\.github/actions/detect-changes/action\.yml)'; then
+    step "mode select decision table" ./tools/mode-select_test.sh
+else
+    skip "mode select decision table (mode-select.sh / detect-changes unchanged)"
+fi
+
 # ------------------------------------------------------------- lint & format
 #
 # Scope the Go layer to the CHANGED modules, exactly as the lint-go CI job does

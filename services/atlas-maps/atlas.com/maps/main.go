@@ -21,6 +21,7 @@ import (
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/sirupsen/logrus"
@@ -117,14 +118,21 @@ func main() {
 		return characterClient.NewProcessor(l, ctx).Snapshot(characterId)
 	}
 
+	// envContext originates this pod's own environment identity onto a
+	// background task's per-tenant context before it reaches a Kafka emit --
+	// see 99c0e598d / task-232.
+	envContext := func(ctx context.Context) context.Context {
+		return env.WithContext(ctx, env.Self())
+	}
+
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewRespawn(l, 10000))
+		tasks.Register(l, rt.Context())(tasks.NewRespawn(l, 10000, envContext))
 	})
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewWeather(l, time.Second))
+		tasks.Register(l, rt.Context())(tasks.NewWeather(l, time.Second, envContext))
 	})
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewMistTick(l, 1000, charLookup))
+		tasks.Register(l, rt.Context())(tasks.NewMistTick(l, 1000, charLookup, envContext))
 	})
 
 	server.New(l).

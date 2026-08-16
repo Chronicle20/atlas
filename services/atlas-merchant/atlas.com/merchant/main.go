@@ -16,6 +16,7 @@ import (
 	"context"
 	"os"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
@@ -95,10 +96,17 @@ func main() {
 
 	compartment2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
+	// envContext originates this pod's own environment identity onto a
+	// background task's per-tenant context before it reaches a Kafka emit --
+	// see 99c0e598d / task-232.
+	envContext := func(ctx context.Context) context.Context {
+		return env.WithContext(ctx, env.Self())
+	}
+
 	// Start background tasks.
-	tasks.Register(l, rt.Context())(shop.NewExpirationTask(l, rt.Context(), db, shop.DefaultExpirationInterval))
+	tasks.Register(l, rt.Context())(shop.NewExpirationTask(l, rt.Context(), db, shop.DefaultExpirationInterval, envContext))
 	tasks.Register(l, rt.Context())(frederick.NewCleanupTask(l, rt.Context(), db, frederick.DefaultCleanupInterval))
-	tasks.Register(l, rt.Context())(frederick.NewNotificationTask(l, rt.Context(), db, frederick.DefaultNotificationInterval))
+	tasks.Register(l, rt.Context())(frederick.NewNotificationTask(l, rt.Context(), db, frederick.DefaultNotificationInterval, envContext))
 
 	server.New(l).
 		WithContext(rt.Context()).

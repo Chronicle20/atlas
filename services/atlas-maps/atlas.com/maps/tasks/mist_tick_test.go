@@ -103,7 +103,7 @@ func lastMessage(hook *test.Hook) string {
 func newTestMistTick(t *testing.T, reg *mist.Registry, rec *recordingProducer, charLookup CharacterLookup) *MistTick {
 	t.Helper()
 	logger, _ := test.NewNullLogger()
-	mt := NewMistTick(logger, 1000, charLookup)
+	mt := NewMistTick(logger, 1000, charLookup, func(ctx context.Context) context.Context { return ctx })
 	mt.registry = reg
 	mt.producerProvider = func(ctx context.Context) producer.Provider {
 		return rec.Provider()
@@ -112,7 +112,7 @@ func newTestMistTick(t *testing.T, reg *mist.Registry, rec *recordingProducer, c
 }
 
 func TestMistTick_SleepTime_RespectsConfiguredInterval(t *testing.T) {
-	mt := NewMistTick(nil, 750, nil)
+	mt := NewMistTick(nil, 750, nil, func(ctx context.Context) context.Context { return ctx })
 	require.Equal(t, 750*time.Millisecond, mt.SleepTime())
 }
 
@@ -264,4 +264,51 @@ func TestMistTick_DifferentInstances_DoNotCrossApply(t *testing.T) {
 
 	// Sanity: ensure mt.charsInField was called with instanceA, not instanceB.
 	_ = fB
+}
+
+// envMarkerKey is a test-local context key -- deliberately not
+// libs/atlas-env, since tasks sits outside env-domain-guard's permitted
+// import list (main.go, kafka/, rest/, socket/) and must not import
+// atlas-env even from a test file.
+type envMarkerKey string
+
+// TestMistTick_ProcessTenant_AppliesEnvContextToProducer pins the review fix:
+// this pod's own environment identity must be threaded onto each tenant's
+// tick context before it feeds the shared producer.Provider (processTenant).
+// The other tests above pass an identity envContext and would still pass if
+// this were dropped -- decide() would then fail open per FR-1.8 and every
+// live deployment, not just this pod's, would react to the tick's emits.
+func TestMistTick_ProcessTenant_AppliesEnvContextToProducer(t *testing.T) {
+	tt := mkTickTenant()
+	reg := mist.NewTestRegistry()
+	rec := newRecordingProducer()
+	charLookup := func(ctx context.Context, cid uint32) (int16, int16, uint16, error) {
+		return 0, 0, 1, nil
+	}
+
+	f := field.NewBuilder(0, 0, 100000000).SetInstance(uuid.Nil).Build()
+	liveMist := mist.NewBuilder(uuid.New(), f).
+		SetOwner("MONSTER", 1).
+		SetOrigin(0, 0).
+		SetBounds(-50, -50, 50, 50).
+		SetDisease("POISON", 80, 30*time.Second).
+		SetDuration(30 * time.Second).
+		SetTickInterval(time.Second).
+		Build()
+	require.NoError(t, reg.Add(tt, liveMist))
+
+	mt := newTestMistTick(t, reg, rec, charLookup)
+
+	var gotMarker any
+	mt.envContext = func(ctx context.Context) context.Context {
+		return context.WithValue(ctx, envMarkerKey("marker"), "stamped")
+	}
+	mt.producerProvider = func(ctx context.Context) producer.Provider {
+		gotMarker = ctx.Value(envMarkerKey("marker"))
+		return rec.Provider()
+	}
+
+	mt.runOnce(context.Background())
+
+	require.Equal(t, "stamped", gotMarker, "envContext was not applied to the tenant tick context")
 }

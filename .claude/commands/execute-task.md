@@ -239,6 +239,14 @@ remain; there is no carve-out for "only one or two left."**
    task, and do not use the handoff message as a lead-in to one more action —
    a handoff the same context then works past is not a handoff.
 
+CLAUDE.md's "Handing off context" rule is delegate-by-default, `/clear`
+only when the next unit is genuinely controller-shaped. This is the
+controller-shaped case: in `/execute-task` the controller *is* the loop —
+it dispatches implementers, reconciles gates, keeps the ledger — so "the
+next unit" here is the loop itself, which a dispatched subagent cannot take
+over. That is why step 2 above is a `/clear` instruction to the user rather
+than a fresh-agent dispatch.
+
 This is safe because the ledger is already the recovery map the skill designs
 for: it resumes at the first task with no `Task <N>: complete` line, and the
 workspace (briefs, reports, review packages) lives on disk, git-ignored, not in

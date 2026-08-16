@@ -31,10 +31,30 @@ check sparse   README.md
 
 # The override set ALWAYS includes the mandatory floor (FR-9.4, D6).
 set -- services/atlas-monsters/atlas.com/monsters/monster/processor.go
-overrides=$(printf '%s\n' "$@" | ./tools/mode-select.sh | tail -1)
+overrides=$(printf '%s\n' "$@" | ./tools/mode-select.sh | sed -n '2p')
 for required in atlas-login atlas-channel atlas-monsters; do
     echo "$overrides" | tr ' ' '\n' | grep -qx "$required" \
         || fail "override set [$overrides] is missing $required"
 done
+
+# FR-9.5: per-PR mode override labels, in both directions. A forced mode
+# must win regardless of what the escalation table or cideps would
+# otherwise compute.
+check_forced() { # <ATLAS_FORCE_MODE value> <expected-mode> <changed file>
+    got=$(printf '%s\n' "$3" | ATLAS_FORCE_MODE="$1" ./tools/mode-select.sh | head -1)
+    [ "$got" = "$2" ] || fail "forced=$1 file=$3: mode=$got, want=$2"
+}
+
+# down-force: a file that would otherwise escalate to isolated (libs/atlas-kafka
+# is on the escalation table) is forced down to sparse.
+check_forced sparse   sparse   libs/atlas-kafka/consumer/manager.go
+# up-force: a file that would otherwise compute sparse is forced up to isolated.
+check_forced isolated isolated services/atlas-monsters/atlas.com/monsters/monster/processor.go
+
+# Both labels at once is an error, not a precedence rule — a PR asking for
+# both is a mistake, and silently picking one would hide it.
+if printf 'x\n' | ATLAS_FORCE_MODE="sparse isolated" ./tools/mode-select.sh >/dev/null 2>&1; then
+    fail "conflicting force labels accepted"
+fi
 
 echo "PASS"

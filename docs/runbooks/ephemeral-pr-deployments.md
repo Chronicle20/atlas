@@ -592,3 +592,55 @@ confirm in the login/channel logs:
 - `projection.applied op=add` for **both** tenants, and
 - **no** `projection.applied op=drain` for v84,
 then connect a v84 client and confirm the login handshake completes (no hang).
+
+## §9.15 Sparse vs. isolated mode, and the per-PR override labels
+
+`tools/mode-select.sh` (task-232 FR-9.2–9.5) decides, per PR, whether the
+`deploy-env`-labeled environment is:
+
+- **sparse** — only the changed services plus the mandatory floor
+  (`atlas-login`, `atlas-channel` — FR-9.4/D6) are deployed as
+  Deployments; everything else in the namespace is served by `main`
+  (the shared baseline environment). This is the default whenever the
+  changed-file set maps cleanly to a small, known service set.
+- **isolated** — every service is deployed into the PR's own namespace,
+  nothing shared with `main`. This is the conservative default whenever
+  the change set touches something whose blast radius `mode-select.sh`
+  cannot narrow to a specific service list — a shared library
+  (`libs/atlas-kafka`, `libs/atlas-rest`, `libs/atlas-tenant`, `libs/atlas-redis`,
+  `libs/atlas-env`, `libs/atlas-service`), `deploy/k8s/base/*`, a Kafka
+  message contract, an `entity.go`/`migration*.go`, `atlas-configurations`,
+  `atlas-tenants`, or any path outside the repo's known top-level roots
+  (including `go.work`, `docker-bake.hcl`, and any unrecognized root file).
+
+The `detect-changes` composite action (`.github/actions/detect-changes/action.yml`)
+runs `mode-select.sh` once per PR validation run and posts a single, in-place-updated
+PR comment (marked with `<!-- atlas:mode-report -->`) naming the mode, the reason,
+and the override set — see the "Ephemeral Environment Mode Report" job in
+`pr-validation.yml`.
+
+**Overriding the computed mode.** Two labels force the mode explicitly, in
+either direction (FR-9.5):
+
+```sh
+# Force sparse even on a change that would otherwise escalate to isolated.
+# This is a deliberate, author-asserted risk: you are telling CI the
+# change is safe to validate against the shared control plane (atlas-login,
+# atlas-channel, and every other service still on `main`), not that the
+# escalation table is wrong.
+gh pr edit <N> --add-label atlas:sparse
+
+# Force isolated even on a change that would otherwise compute sparse.
+gh pr edit <N> --add-label atlas:isolated
+```
+
+Applying **both labels to the same PR is an error, not a precedence
+rule** — `mode-select.sh` exits non-zero rather than silently picking one,
+and the `detect-changes` job (and therefore the whole PR Validation run)
+fails until one label is removed.
+
+The nightly `pr-env-smoke.yml` run (FR-9.6) opens its synthetic PR with
+`atlas:isolated` for exactly this reason: its change is a docs-only touch
+(`docs/smoke/touch.txt`), which `mode-select.sh` would otherwise compute as
+sparse, and the whole point of that run is to prove the **full isolated
+stack** still deploys and tears down cleanly.

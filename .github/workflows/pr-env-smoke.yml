@@ -63,10 +63,19 @@ jobs:
           BRANCH:   ${{ steps.branch.outputs.branch }}
         run: |
           set -euo pipefail
+          # FR-9.6: this nightly run exists to prove the FULL isolated
+          # stack still deploys and tears down. The synthetic change is a
+          # docs-only touch (docs/smoke/touch.txt), which mode-select.sh
+          # would otherwise compute as sparse (task-232 Task 50) — pin it
+          # to isolated through the documented atlas:isolated override
+          # label (task-232 Task 51/FR-9.5) rather than a special case
+          # here, so the nightly run exercises the same override path a
+          # real PR author would use.
           url=$(gh pr create --base main --head "$BRANCH" \
             --title "[smoke-test] pr-env reclamation $(date -u +%FT%TZ)" \
             --body "Automated nightly smoke test for ephemeral PR-env teardown. Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" \
-            --label deploy-env)
+            --label deploy-env \
+            --label atlas:isolated)
           n=$(basename "$url")
           echo "pr_number=$n" >> "$GITHUB_OUTPUT"
           echo "Opened PR #$n on $BRANCH"

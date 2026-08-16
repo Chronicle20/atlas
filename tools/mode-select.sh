@@ -4,11 +4,13 @@
 #
 # Reads the changed-file list on stdin (one path per line, repo-relative,
 # same list detect-changes already computed — this script does not re-walk
-# the diff). Prints two lines to stdout:
+# the diff). Prints three lines to stdout:
 #   1. the mode: "sparse" or "isolated"
 #   2. the space-separated override-service set (sparse only; empty for
 #      isolated — the isolated overlay builds every service, it has no
 #      override set to compute)
+#   3. the reason the mode was chosen (human-readable, for the FR-9.7 PR
+#      report comment)
 #
 # Escalation (FR-9.3) is evaluated first, conservatively: a changed path
 # that matches none of the repo's known top-level roots escalates rather
@@ -16,9 +18,38 @@
 # tools/cideps for the affected-service set and union in the mandatory
 # floor (atlas-login, atlas-channel — FR-9.4/D6).
 #
+# ATLAS_FORCE_MODE (FR-9.5) overrides the computed mode entirely, in either
+# direction:
+#   ATLAS_FORCE_MODE=sparse    forces sparse (down-force — the PR author is
+#                               asserting the change is safe to validate
+#                               against the shared control plane, even if
+#                               the escalation table would otherwise force
+#                               isolated).
+#   ATLAS_FORCE_MODE=isolated  forces isolated (up-force).
+#   unset / empty               no override; compute normally.
+#   anything else (including "sparse isolated" — both labels applied at
+#   once) is a conflicting/unknown request and is an error, not a
+#   precedence rule: exit 2 without printing a mode.
+#
 # Must be run from the repo root (same assumption tools/cideps and every
 # other tools/*.sh script makes).
 set -eu
+
+case "${ATLAS_FORCE_MODE:-}" in
+    "") : ;; # no override; compute normally below
+    sparse)
+        printf 'sparse\n\n%s\n' "forced by the atlas:sparse label"
+        exit 0
+        ;;
+    isolated)
+        printf 'isolated\n\n%s\n' "forced by the atlas:isolated label"
+        exit 0
+        ;;
+    *)
+        echo "mode-select: conflicting or unknown ATLAS_FORCE_MODE '$ATLAS_FORCE_MODE'" >&2
+        exit 2
+        ;;
+esac
 
 CIDEPS_CONFIG="${CIDEPS_CONFIG:-.github/config/services.json}"
 
@@ -44,8 +75,19 @@ is_known_root() {
 }
 
 ESCALATE=0
+ESCALATE_REASON=""
 CHANGED_LIBS=""
 CHANGED_SVCS=""
+
+escalate() {
+    # escalate <reason> — sets ESCALATE and records the first reason given
+    # (later matches on the same file, or on a later file, do not overwrite
+    # it — the first trigger is usually the clearest one to report).
+    ESCALATE=1
+    if [ -z "$ESCALATE_REASON" ]; then
+        ESCALATE_REASON="$1"
+    fi
+}
 
 add_csv() {
     # add_csv <existing-csv-varname-via-stdout-echo> <value> — emits the
@@ -63,37 +105,37 @@ while IFS= read -r f; do
     base=$(basename "$f")
 
     case "$f" in
-        deploy/k8s/base/*) ESCALATE=1 ;;
+        deploy/k8s/base/*) escalate "deploy/k8s/base changed: $f" ;;
     esac
     case "$f" in
-        deploy/shared/routes.conf) ESCALATE=1 ;;
+        deploy/shared/routes.conf) escalate "shared route config changed: $f" ;;
     esac
     case "$f" in
-        tools/gen-routes.sh) ESCALATE=1 ;;
+        tools/gen-routes.sh) escalate "route generator changed: $f" ;;
     esac
     case "$f" in
-        libs/atlas-kafka/*) ESCALATE=1 ;;
+        libs/atlas-kafka/*) escalate "libs/atlas-kafka changed: $f" ;;
     esac
     case "$f" in
-        */kafka/message/*) ESCALATE=1 ;;
+        */kafka/message/*) escalate "kafka message contract changed: $f" ;;
     esac
     case "$f" in
-        services/atlas-configurations/*) ESCALATE=1 ;;
+        services/atlas-configurations/*) escalate "atlas-configurations changed: $f" ;;
     esac
     case "$f" in
-        services/atlas-tenants/*) ESCALATE=1 ;;
+        services/atlas-tenants/*) escalate "atlas-tenants changed: $f" ;;
     esac
     case "$f" in
         libs/atlas-kafka/*|libs/atlas-rest/*|libs/atlas-tenant/*|libs/atlas-redis/*|libs/atlas-env/*|libs/atlas-service/*)
-            ESCALATE=1 ;;
+            escalate "shared infrastructure library changed: $f" ;;
     esac
     case "$base" in
-        entity.go) ESCALATE=1 ;;
-        migration*.go) ESCALATE=1 ;;
+        entity.go) escalate "entity/schema file changed: $f" ;;
+        migration*.go) escalate "migration file changed: $f" ;;
     esac
 
     if ! is_known_root "$f"; then
-        ESCALATE=1
+        escalate "unrecognized path (affected-service determination unreliable): $f"
     fi
 
     case "$f" in
@@ -111,7 +153,7 @@ while IFS= read -r f; do
 done <"$TMPFILE"
 
 if [ "$ESCALATE" -eq 1 ]; then
-    printf 'isolated\n\n'
+    printf 'isolated\n\n%s\n' "$ESCALATE_REASON"
     exit 0
 fi
 
@@ -123,7 +165,7 @@ if ! OUT=$(cd "$REPO_ROOT" && go run ./tools/cideps \
         --changed-services="$CHANGED_SVCS" \
         --config="$CIDEPS_CONFIG" 2>/dev/null); then
     # cideps failed — the affected-service determination is unreliable.
-    printf 'isolated\n\n'
+    printf 'isolated\n\n%s\n' "cideps failed; affected-service determination unreliable"
     exit 0
 fi
 
@@ -132,4 +174,10 @@ SVC_NAMES=$(printf '%s' "$OUT" | jq -r '."go-services"[].name' 2>/dev/null || tr
 OVERRIDES=$(printf '%s\natlas-login\natlas-channel\n' "$SVC_NAMES" | grep -v '^$' | sort -u | tr '\n' ' ')
 OVERRIDES=${OVERRIDES% }
 
-printf 'sparse\n%s\n' "$OVERRIDES"
+if [ -n "$SVC_NAMES" ]; then
+    REASON="affected services: $(printf '%s' "$SVC_NAMES" | tr '\n' ' ' | sed 's/ *$//')"
+else
+    REASON="no service dependency-graph impact; only the mandatory atlas-login/atlas-channel floor deployed"
+fi
+
+printf 'sparse\n%s\n%s\n' "$OVERRIDES" "$REASON"

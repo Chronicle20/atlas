@@ -65,6 +65,7 @@ jobs:
       docker-services-matrix: ${{ steps.detect.outputs.docker-services-matrix }}
       mode: ${{ steps.detect.outputs.mode }}
       override-services: ${{ steps.detect.outputs.override-services }}
+      mode-reason: ${{ steps.detect.outputs.mode-reason }}
 
     steps:
       - name: Checkout
@@ -302,6 +303,70 @@ jobs:
             shellcheck --severity=error tools/mode-select.sh tools/mode-select_test.sh
           else
             echo "shellcheck not available on this runner image — skipping (no install step added)."
+          fi
+
+  # ============================================
+  # Ephemeral Environment Mode Report (FR-9.7)
+  #
+  # Posts (and, on later pushes to the same PR, updates in place) a single
+  # PR comment naming the chosen mode, the override set, and the reason —
+  # so a reviewer can see the sparse-vs-isolated decision (and whether it
+  # was forced by the atlas:sparse/atlas:isolated label, FR-9.5) without
+  # opening the detect-changes job summary. Gated only on the event being
+  # a pull_request — the mode is computed for every PR, deploy-env label
+  # or not, so the report is too.
+  # ============================================
+  mode-report:
+    name: Ephemeral Environment Mode Report
+    needs: detect-changes
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Post or update mode report comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          MODE: ${{ needs.detect-changes.outputs.mode }}
+          REASON: ${{ needs.detect-changes.outputs.mode-reason }}
+          OVERRIDES: ${{ needs.detect-changes.outputs.override-services }}
+        run: |
+          set -euo pipefail
+          MARKER="<!-- atlas:mode-report -->"
+
+          TOTAL_WORKLOADS=$(ls deploy/k8s/base/*.yaml 2>/dev/null | wc -l | tr -d ' ')
+
+          if [ "$MODE" = "sparse" ]; then
+            OVERRIDE_COUNT=$(printf '%s\n' "$OVERRIDES" | tr ' ' '\n' | grep -c . || true)
+            WORKLOADS_LINE="$OVERRIDE_COUNT of $TOTAL_WORKLOADS"
+            OVERRIDE_LIST=$(printf '%s\n' "$OVERRIDES" | tr ' ' '\n' | grep . | sed 's/^/`/;s/$/`/' | paste -sd, - | sed 's/,/, /g')
+            OVERRIDE_LINE="$OVERRIDE_LIST"
+            OTHER_LINE="served by \`main\`"
+            CHANGE_LINE="Change the mode with the \`atlas:isolated\` label."
+          else
+            WORKLOADS_LINE="$TOTAL_WORKLOADS of $TOTAL_WORKLOADS"
+            OVERRIDE_LINE="n/a — isolated deploys every service"
+            OTHER_LINE="n/a"
+            CHANGE_LINE="Change the mode with the \`atlas:sparse\` label."
+          fi
+
+          BODY=$(printf '%s\n### Ephemeral environment: **%s**\n\n| | |\n|---|---|\n| Mode | `%s` |\n| Reason | %s |\n| Workloads deployed | %s |\n| Override set | %s |\n| Everything else | %s |\n\n%s\n' \
+            "$MARKER" "$MODE" "$MODE" "$REASON" "$WORKLOADS_LINE" "$OVERRIDE_LINE" "$OTHER_LINE" "$CHANGE_LINE")
+
+          COMMENT_ID=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+            --jq "[.[] | select(.body | startswith(\"$MARKER\")) | .id] | first // empty")
+
+          if [ -n "$COMMENT_ID" ]; then
+            gh api --method PATCH "repos/$REPO/issues/comments/$COMMENT_ID" -f body="$BODY" >/dev/null
+            echo "Updated existing mode report comment $COMMENT_ID"
+          else
+            gh api --method POST "repos/$REPO/issues/$PR_NUMBER/comments" -f body="$BODY" >/dev/null
+            echo "Posted new mode report comment"
           fi
 
   # ============================================
@@ -1045,7 +1110,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, go-analyzer-guards, npc-shop-contract-mirror-guard, gen-lb-ports, gen-tenant-tables, mode-select, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, go-analyzer-guards, npc-shop-contract-mirror-guard, gen-lb-ports, gen-tenant-tables, mode-select, mode-report, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
     if: always()
     runs-on: ubuntu-latest
 
@@ -1067,6 +1132,7 @@ jobs:
           LBPORTS_RESULT="${{ needs.gen-lb-ports.result }}"
           TENANT_TABLES_GUARD_RESULT="${{ needs.gen-tenant-tables.result }}"
           MODE_SELECT_GUARD_RESULT="${{ needs.mode-select.result }}"
+          MODE_REPORT_RESULT="${{ needs.mode-report.result }}"
           SVC_REG_GUARD_RESULT="${{ needs.service-registration-guard.result }}"
           TMPL_ORDER_GUARD_RESULT="${{ needs.template-opcode-order-guard.result }}"
           TMPL_MOVE_GUARD_RESULT="${{ needs.template-movement-types-guard.result }}"
@@ -1088,6 +1154,7 @@ jobs:
           echo "| LB Port Drift Guard | $LBPORTS_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Tenant Tables Drift Guard | $TENANT_TABLES_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Mode Select Decision Table Guard | $MODE_SELECT_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ephemeral Environment Mode Report | $MODE_REPORT_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Service Registration Guard | $SVC_REG_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Template Opcode Order Guard | $TMPL_ORDER_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Template Movement Types Guard | $TMPL_MOVE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
@@ -1116,7 +1183,7 @@ jobs:
           # but never to fail outright. Comparing against "failure" (not
           # against "success") is what makes a skip pass. That tolerance
           # is only safe because detect-changes was verified above.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$ANALYZER_GUARDS_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$TENANT_TABLES_GUARD_RESULT" == "failure" ] || [ "$MODE_SELECT_GUARD_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$ANALYZER_GUARDS_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$TENANT_TABLES_GUARD_RESULT" == "failure" ] || [ "$MODE_SELECT_GUARD_RESULT" == "failure" ] || [ "$MODE_REPORT_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

@@ -63,6 +63,9 @@ outputs:
   override-services:
     description: 'Space-separated override-service set for sparse mode (always includes the atlas-login/atlas-channel floor; empty for isolated mode)'
     value: ${{ steps.mode.outputs.override-services }}
+  mode-reason:
+    description: 'Human-readable reason the mode was chosen, including whether it was forced by an atlas:sparse/atlas:isolated label (task-232 FR-9.5/9.7)'
+    value: ${{ steps.mode.outputs.mode-reason }}
 
 runs:
   using: 'composite'
@@ -339,17 +342,43 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
+        # FR-9.5: the atlas:sparse / atlas:isolated labels force the mode
+        # in either direction. Read them straight from the event payload
+        # ($GITHUB_EVENT_PATH is available to every step in the job, no
+        # extra input/permission needed to read a local file) rather than
+        # an API call. Both labels present at once is an error, not a
+        # precedence rule — mode-select.sh rejects it (exit 2) rather than
+        # silently picking one.
+        FORCE_MODE=""
+        if [ "${{ github.event_name }}" = "pull_request" ] && [ -f "${GITHUB_EVENT_PATH:-/dev/null}" ]; then
+          LABELS=$(jq -r '.pull_request.labels[]?.name // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || true)
+          HAS_SPARSE=0
+          HAS_ISOLATED=0
+          echo "$LABELS" | grep -qx 'atlas:sparse' && HAS_SPARSE=1
+          echo "$LABELS" | grep -qx 'atlas:isolated' && HAS_ISOLATED=1
+          if [ "$HAS_SPARSE" -eq 1 ] && [ "$HAS_ISOLATED" -eq 1 ]; then
+            FORCE_MODE="sparse isolated"
+          elif [ "$HAS_SPARSE" -eq 1 ]; then
+            FORCE_MODE="sparse"
+          elif [ "$HAS_ISOLATED" -eq 1 ]; then
+            FORCE_MODE="isolated"
+          fi
+        fi
+
         # tools/mode-select.sh decides sparse-vs-isolated (task-232
         # FR-9.2/9.3) from the SAME changed-file list the "detect" step
         # above persisted — not a re-derived diff.
-        RESULT=$(tools/mode-select.sh < "${RUNNER_TEMP}/detect-changes-files.txt")
+        RESULT=$(ATLAS_FORCE_MODE="$FORCE_MODE" tools/mode-select.sh < "${RUNNER_TEMP}/detect-changes-files.txt")
         MODE=$(echo "$RESULT" | sed -n '1p')
         OVERRIDES=$(echo "$RESULT" | sed -n '2p')
+        REASON=$(echo "$RESULT" | sed -n '3p')
         echo "mode=$MODE" >> $GITHUB_OUTPUT
         echo "override-services=$OVERRIDES" >> $GITHUB_OUTPUT
-        echo "PR-environment mode: $MODE"
+        echo "mode-reason=$REASON" >> $GITHUB_OUTPUT
+        echo "PR-environment mode: $MODE ($REASON)"
         [ -n "$OVERRIDES" ] && echo "Override services: $OVERRIDES"
         {
           echo "### PR-environment mode";
           echo "**$MODE**${OVERRIDES:+ (override set: \`$OVERRIDES\`)}";
+          echo "Reason: $REASON";
         } >> "$GITHUB_STEP_SUMMARY"

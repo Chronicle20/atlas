@@ -187,3 +187,27 @@ func TestOverlayCollectionAntiJoinTargetsTheUnaliasedTemplatesTable(t *testing.T
 		t.Fatalf("templates table is aliased; the anti-join's correlated subquery hard-codes \"templates\" and would silently stop correlating: %s", sql)
 	}
 }
+
+// TestOverlaySingleCaseOrderSurvivesFirstsPrimaryKeyOrder pins a gorm
+// clause-merge trap: gorm's First() appends its own "ORDER BY <pk>" via a
+// second Order() call, and clause.OrderBy.MergeClause only carries the
+// PRIOR clause's Columns into the merged clause - an Expression-only
+// OrderBy from a first Order() call is silently dropped the moment a second
+// Order() composes with it, degrading "own row wins" into "sorted by
+// whichever row happens to have the lower id". This asserts against the
+// ACTUAL generated SQL so a future edit that reverts OverlaySingle back to
+// Order(clause.OrderBy{Expression: ...}) (or Order(clause.Expr{...}),
+// equally silently dropped) fails loudly instead of ~50%-flaking
+// TestTemplatesPreferTheOwnEnvironmentRow.
+func TestOverlaySingleCaseOrderSurvivesFirstsPrimaryKeyOrder(t *testing.T) {
+	db := setupTestDB(t)
+
+	sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		var result Entity
+		return OverlaySingle(tx, env.Id("pr-123"), env.Id("main")).First(&result)
+	})
+
+	if !strings.Contains(sql, "CASE WHEN environment = 'pr-123' THEN 0 ELSE 1 END") {
+		t.Fatalf("the CASE preference order is missing from the generated SQL - it was dropped by gorm's clause merge: %s", sql)
+	}
+}

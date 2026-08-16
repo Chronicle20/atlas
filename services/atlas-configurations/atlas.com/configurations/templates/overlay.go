@@ -2,6 +2,8 @@ package templates
 
 import (
 	"atlas-configurations/scope"
+	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -25,14 +27,29 @@ var overlayKey = []string{"region", "major_version", "minor_version"}
 
 // OverlaySingle scopes a lookup of one version key. e's row wins; the
 // baseline's fills in when e has none.
+//
+// The CASE ordering must be a clause.OrderByColumn (a raw column, not a
+// clause.OrderBy{Expression: ...}): gorm's First() appends its own
+// primary-key OrderBy after this one, and OrderBy.MergeClause only carries
+// the PRIOR clause's Columns forward into the merged clause - a prior
+// Expression-only OrderBy is silently dropped the moment a second Order()
+// call composes with it. Encoding the CASE as a Columns entry keeps it
+// through that merge; see templates/overlay_test.go's
+// TestOverlaySingleCaseOrderSurvivesFirstsPrimaryKeyOrder for the SQL-level
+// pin. e is an env.Id resolved from the trusted environment registry
+// (task-232 R13-2), never client-supplied text, but the quote is still
+// escaped defensively before being embedded as a raw SQL literal.
 func OverlaySingle(db *gorm.DB, e env.Id, baseline env.Id) *gorm.DB {
 	if e == "" || e == baseline {
 		return scope.Strict(db, e)
 	}
+	escaped := strings.ReplaceAll(string(e), "'", "''")
 	return db.Where("environment IN (?, ?)", string(e), string(baseline)).
-		Order(clause.Expr{
-			SQL:  "CASE WHEN environment = ? THEN 0 ELSE 1 END",
-			Vars: []interface{}{string(e)},
+		Order(clause.OrderByColumn{
+			Column: clause.Column{
+				Name: fmt.Sprintf("CASE WHEN environment = '%s' THEN 0 ELSE 1 END", escaped),
+				Raw:  true,
+			},
 		})
 }
 
@@ -47,12 +64,14 @@ func OverlayCollection(db *gorm.DB, e env.Id, baseline env.Id) *gorm.DB {
 	if e == "" || e == baseline {
 		return scope.Strict(db, e)
 	}
-	anti := `environment = ? OR (environment = ? AND NOT EXISTS (
+	keyConditions := make([]string, len(overlayKey))
+	for i, k := range overlayKey {
+		keyConditions[i] = fmt.Sprintf("o.%s = templates.%s", k, k)
+	}
+	anti := fmt.Sprintf(`environment = ? OR (environment = ? AND NOT EXISTS (
 	           SELECT 1 FROM templates o
 	           WHERE o.environment = ?
-	             AND o.region = templates.region
-	             AND o.major_version = templates.major_version
-	             AND o.minor_version = templates.minor_version))`
+	             AND %s))`, strings.Join(keyConditions, " AND "))
 	return db.Where(anti, string(e), string(baseline), string(e))
 }
 

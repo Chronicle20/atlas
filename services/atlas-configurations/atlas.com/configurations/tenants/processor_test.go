@@ -59,6 +59,15 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("failed to connect database: %v", err)
 	}
 
+	// :memory: is per-connection; the default pool can open more than one
+	// connection and silently query an empty database (see
+	// environmentcol/migration_test.go for the same fix).
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("failed to get underlying sql.DB: %v", err)
+	}
+	sqlDB.SetMaxOpenConns(1)
+
 	// Use SQLite-compatible schema
 	err = db.AutoMigrate(&testEntity{}, &testHistoryEntity{})
 	if err != nil {

@@ -57,6 +57,12 @@ outputs:
   selection-reason:
     description: 'Human-readable reason for the selection'
     value: ${{ steps.affected.outputs.reason }}
+  mode:
+    description: 'PR-environment mode: "sparse" or "isolated" (task-232 FR-9.2/9.3)'
+    value: ${{ steps.mode.outputs.mode }}
+  override-services:
+    description: 'Space-separated override-service set for sparse mode (always includes the atlas-login/atlas-channel floor; empty for isolated mode)'
+    value: ${{ steps.mode.outputs.override-services }}
 
 runs:
   using: 'composite'
@@ -107,6 +113,12 @@ runs:
         CHANGED_FILES=$(git diff --name-only $BASE_REF HEAD 2>/dev/null || echo "")
         echo "Changed files:"
         echo "$CHANGED_FILES"
+
+        # Persisted for the "Compute mode" step below — mode-select.sh
+        # decides sparse-vs-isolated (task-232 FR-9.2/9.3) from the exact
+        # same changed-file list every other output here uses, rather than
+        # re-deriving it from a second `git diff`.
+        printf '%s\n' "$CHANGED_FILES" > "${RUNNER_TEMP}/detect-changes-files.txt"
 
         # Initialize arrays
         CHANGED_SERVICES=()
@@ -321,3 +333,23 @@ runs:
             echo "cideps FAILED — fell back to full rebuild";
           } >> "$GITHUB_STEP_SUMMARY"
         fi
+
+    - name: Compute mode
+      id: mode
+      shell: bash
+      run: |
+        set -euo pipefail
+        # tools/mode-select.sh decides sparse-vs-isolated (task-232
+        # FR-9.2/9.3) from the SAME changed-file list the "detect" step
+        # above persisted — not a re-derived diff.
+        RESULT=$(tools/mode-select.sh < "${RUNNER_TEMP}/detect-changes-files.txt")
+        MODE=$(echo "$RESULT" | sed -n '1p')
+        OVERRIDES=$(echo "$RESULT" | sed -n '2p')
+        echo "mode=$MODE" >> $GITHUB_OUTPUT
+        echo "override-services=$OVERRIDES" >> $GITHUB_OUTPUT
+        echo "PR-environment mode: $MODE"
+        [ -n "$OVERRIDES" ] && echo "Override services: $OVERRIDES"
+        {
+          echo "### PR-environment mode";
+          echo "**$MODE**${OVERRIDES:+ (override set: \`$OVERRIDES\`)}";
+        } >> "$GITHUB_STEP_SUMMARY"

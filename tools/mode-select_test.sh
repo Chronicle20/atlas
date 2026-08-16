@@ -39,15 +39,41 @@ done
 
 # FR-9.5: per-PR mode override labels, in both directions. A forced mode
 # must win regardless of what the escalation table or cideps would
-# otherwise compute.
+# otherwise compute. This asserts BOTH the mode line AND the override-set
+# line — a forced-sparse case that checks only the mode is not a test:
+# it passed while the override-set computation was silently skipped and
+# every base Deployment got removed with nothing to replace it.
 check_forced() { # <ATLAS_FORCE_MODE value> <expected-mode> <changed file>
     got=$(printf '%s\n' "$3" | ATLAS_FORCE_MODE="$1" ./tools/mode-select.sh | head -1)
     [ "$got" = "$2" ] || fail "forced=$1 file=$3: mode=$got, want=$2"
 }
 
+check_forced_overrides() { # <ATLAS_FORCE_MODE value> <changed file> <required override...>
+    force="$1"; file="$2"; shift 2
+    overrides=$(printf '%s\n' "$file" | ATLAS_FORCE_MODE="$force" ./tools/mode-select.sh | sed -n '2p')
+    [ -n "$overrides" ] || fail "forced=$force file=$file: override set is empty"
+    for required in "$@"; do
+        echo "$overrides" | tr ' ' '\n' | grep -qx "$required" \
+            || fail "forced=$force file=$file: override set [$overrides] is missing $required"
+    done
+}
+
 # down-force: a file that would otherwise escalate to isolated (libs/atlas-kafka
-# is on the escalation table) is forced down to sparse.
+# is on the escalation table) is forced down to sparse. Forcing the mode must
+# not bypass the override-set computation — the label means "validate this
+# against the shared control plane," not "deploy nothing."
 check_forced sparse   sparse   libs/atlas-kafka/consumer/manager.go
+check_forced_overrides sparse libs/atlas-kafka/consumer/manager.go atlas-login atlas-channel
+
+# The mandatory floor (atlas-login, atlas-channel) must be present in the
+# forced-sparse override set even when the change carries no service impact
+# of its own.
+check_forced_overrides sparse docs/tasks/task-232-sparse-ephemeral-environments/plan.md atlas-login atlas-channel
+
+# down-force where the affected-service set is non-empty: the override set
+# must include the file's own service in addition to the floor.
+check_forced_overrides sparse services/atlas-monsters/atlas.com/monsters/monster/processor.go atlas-login atlas-channel atlas-monsters
+
 # up-force: a file that would otherwise compute sparse is forced up to isolated.
 check_forced isolated isolated services/atlas-monsters/atlas.com/monsters/monster/processor.go
 

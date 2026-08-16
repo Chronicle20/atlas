@@ -24,8 +24,16 @@
 #                               asserting the change is safe to validate
 #                               against the shared control plane, even if
 #                               the escalation table would otherwise force
-#                               isolated).
-#   ATLAS_FORCE_MODE=isolated  forces isolated (up-force).
+#                               isolated). This still means the override set
+#                               is computed normally (cideps + the mandatory
+#                               floor) — the label asserts "validate this
+#                               against the shared control plane," not
+#                               "deploy nothing." Only the escalation gate is
+#                               skipped; the affected-service computation
+#                               below still runs.
+#   ATLAS_FORCE_MODE=isolated  forces isolated (up-force). The isolated
+#                               overlay builds every service, so there is no
+#                               override set to compute — this exits early.
 #   unset / empty               no override; compute normally.
 #   anything else (including "sparse isolated" — both labels applied at
 #   once) is a conflicting/unknown request and is an error, not a
@@ -35,18 +43,18 @@
 # other tools/*.sh script makes).
 set -eu
 
-case "${ATLAS_FORCE_MODE:-}" in
-    "") : ;; # no override; compute normally below
-    sparse)
-        printf 'sparse\n\n%s\n' "forced by the atlas:sparse label"
-        exit 0
-        ;;
+FORCE_MODE="${ATLAS_FORCE_MODE:-}"
+
+case "$FORCE_MODE" in
+    ""|sparse) : ;; # no override, or down-force: fall through to the
+                     # normal computation below so the override set (and,
+                     # for sparse, the escalation-skip) is applied there.
     isolated)
         printf 'isolated\n\n%s\n' "forced by the atlas:isolated label"
         exit 0
         ;;
     *)
-        echo "mode-select: conflicting or unknown ATLAS_FORCE_MODE '$ATLAS_FORCE_MODE'" >&2
+        echo "mode-select: conflicting or unknown ATLAS_FORCE_MODE '$FORCE_MODE'" >&2
         exit 2
         ;;
 esac
@@ -152,7 +160,18 @@ while IFS= read -r f; do
     esac
 done <"$TMPFILE"
 
-if [ "$ESCALATE" -eq 1 ]; then
+# A forced-sparse request skips the escalation gate entirely — that is the
+# whole point of the down-force — but still needs to compute the override
+# set below, so record what escalation would have done (for the REASON
+# line) instead of exiting here.
+FORCE_NOTE=""
+if [ "$FORCE_MODE" = "sparse" ]; then
+    if [ "$ESCALATE" -eq 1 ]; then
+        FORCE_NOTE="forced by the atlas:sparse label (overriding escalation: $ESCALATE_REASON)"
+    else
+        FORCE_NOTE="forced by the atlas:sparse label"
+    fi
+elif [ "$ESCALATE" -eq 1 ]; then
     printf 'isolated\n\n%s\n' "$ESCALATE_REASON"
     exit 0
 fi
@@ -164,7 +183,17 @@ if ! OUT=$(cd "$REPO_ROOT" && go run ./tools/cideps \
         --changed-libs="$CHANGED_LIBS" \
         --changed-services="$CHANGED_SVCS" \
         --config="$CIDEPS_CONFIG" 2>/dev/null); then
-    # cideps failed — the affected-service determination is unreliable.
+    # cideps failed — the affected-service determination is unreliable. On
+    # the normal path that means "escalate": we cannot safely narrow the
+    # override set, so build everything. On a forced-sparse path we cannot
+    # escalate to isolated (the label explicitly asked for sparse), so fall
+    # back to the mandatory floor rather than letting the override set go
+    # empty — an empty set on a force-sparse PR deploys nothing, the exact
+    # defect this fix addresses.
+    if [ "$FORCE_MODE" = "sparse" ]; then
+        printf 'sparse\natlas-channel atlas-login\n%s; cideps failed; affected-service determination unreliable (mandatory floor only)\n' "$FORCE_NOTE"
+        exit 0
+    fi
     printf 'isolated\n\n%s\n' "cideps failed; affected-service determination unreliable"
     exit 0
 fi
@@ -178,6 +207,9 @@ if [ -n "$SVC_NAMES" ]; then
     REASON="affected services: $(printf '%s' "$SVC_NAMES" | tr '\n' ' ' | sed 's/ *$//')"
 else
     REASON="no service dependency-graph impact; only the mandatory atlas-login/atlas-channel floor deployed"
+fi
+if [ -n "$FORCE_NOTE" ]; then
+    REASON="$FORCE_NOTE; $REASON"
 fi
 
 printf 'sparse\n%s\n%s\n' "$OVERRIDES" "$REASON"

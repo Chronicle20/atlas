@@ -37,7 +37,7 @@ func (p *ProcessorImpl) HasItem(characterId uint32, itemId uint32) (bool, error)
 	if !ok {
 		return false, nil
 	}
-	c, err := requestCompartmentByType(characterId, it)(p.l, p.ctx)
+	c, err := requestCompartmentByType(p.ctx, characterId, it)(p.l, p.ctx)
 	if err != nil {
 		return false, err
 	}

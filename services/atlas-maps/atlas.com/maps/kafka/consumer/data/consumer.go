@@ -18,7 +18,7 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 		return func(consumerGroupId string) {
 			rf(
 				consumer2.NewConfig(l)("data_events")(EnvEventTopic)(consumerGroupId),
-				consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),
+				consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser),
 				consumer.SetStartOffset(kafka.LastOffset),
 			)
 		}

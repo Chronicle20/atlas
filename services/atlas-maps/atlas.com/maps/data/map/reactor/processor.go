@@ -35,5 +35,9 @@ var _ Processor = (*ProcessorImpl)(nil)
 // /data/maps/{id}/reactors is now paginated (task-117), so this drains
 // every page rather than fetching one.
 func (p *ProcessorImpl) InMapProvider(mapId _map.Id) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(reactorsUrl(mapId), 250, Extract, model.Filters[Model]())
+	url, err := reactorsUrl(p.ctx, mapId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }

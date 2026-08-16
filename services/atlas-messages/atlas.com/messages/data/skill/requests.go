@@ -1,6 +1,7 @@
 package skill
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 
@@ -12,14 +13,22 @@ const (
 	skillsSearchResource = "data/skills?name=%s"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("DATA")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "DATA")
 }
 
-func requestById(skillId uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+skillsResource, skillId))
+func requestById(ctx context.Context, skillId uint32) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+skillsResource, skillId))
 }
 
-func requestByName(name string) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+skillsSearchResource, url.QueryEscape(name)))
+func requestByName(ctx context.Context, name string) requests.Request[[]RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]RestModel](err)
+	}
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+skillsSearchResource, url.QueryEscape(name)))
 }

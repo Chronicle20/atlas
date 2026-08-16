@@ -36,7 +36,12 @@ var _ Processor = (*ProcessorImpl)(nil)
 // fetching just the first, since GetPetIdsByName below needs the complete
 // set to find every matching pet.
 func (p *ProcessorImpl) GetPets(characterId uint32) ([]Model, error) {
-	pets, err := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterIdUrl(characterId), 250, Extract, model.Filters[Model]())()
+	url, err := byCharacterIdUrl(p.ctx, characterId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to resolve base URL for character [%d]'s pets.", characterId)
+		return nil, err
+	}
+	pets, err := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())()
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get pets for character [%d].", characterId)
 		return nil, err

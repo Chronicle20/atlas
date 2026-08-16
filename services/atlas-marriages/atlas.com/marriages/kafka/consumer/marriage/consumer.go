@@ -737,7 +737,7 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 
 			// Set up header parsers for tenant and span context
 			rf(config,
-				consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),
+				consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser),
 			)
 		}
 	}

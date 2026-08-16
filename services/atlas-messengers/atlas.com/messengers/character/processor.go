@@ -152,7 +152,7 @@ func GetById(l logrus.FieldLogger) func(ctx context.Context) func(characterId ui
 func getForeignCharacterInfo(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) (ForeignModel, error) {
 	return func(ctx context.Context) func(characterId uint32) (ForeignModel, error) {
 		return func(characterId uint32) (ForeignModel, error) {
-			return requests.Provider[ForeignRestModel, ForeignModel](l, ctx)(requestById(characterId), ExtractForeign)()
+			return requests.Provider[ForeignRestModel, ForeignModel](l, ctx)(requestById(ctx, characterId), ExtractForeign)()
 		}
 	}
 }

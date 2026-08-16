@@ -45,3 +45,29 @@ for p in 0 1; do
         || { echo "FAIL: partition $p has no committed offset"; exit 1; }
 done
 echo "PASS"
+
+# seed_group now takes a group plus one-or-more topics and collapses them
+# into a SINGLE kafka-consumer-groups.sh --reset-offsets --execute call with
+# repeated --topic flags (task-232 Task 45 review round 1, finding 2) — the
+# fix for the O(groups x topics) JVM-cold-start cost of one invocation per
+# (group, topic) pair. Assert that a single multi-topic call actually seeds
+# every named topic, not just the last one.
+TOPIC_A="atlas-precreate-test-a-$$"
+TOPIC_B="atlas-precreate-test-b-$$"
+GROUP2="atlas-precreate-test-group2-$$"
+kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --create --topic "$TOPIC_A" --partitions 1
+kafka-topics.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --create --topic "$TOPIC_B" --partitions 1
+printf 'a\nb\n' | kafka-console-producer.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --topic "$TOPIC_A"
+printf 'a\nb\n' | kafka-console-producer.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --topic "$TOPIC_B"
+
+seed_group "$GROUP2" "$TOPIC_A" "$TOPIC_B"
+
+described="$(kafka-consumer-groups.sh --bootstrap-server "$BOOTSTRAP_SERVERS" --group "$GROUP2" --describe 2>/dev/null)"
+for t in "$TOPIC_A" "$TOPIC_B"; do
+    off=$(printf '%s\n' "$described" | awk -v t="$t" '$2==t {print $4}')
+    if [ -z "$off" ] || [ "$off" = "-" ]; then
+        echo "FAIL: multi-topic seed_group left '$t' without a committed offset"
+        exit 1
+    fi
+done
+echo "PASS: seed_group seeds every topic in a single multi-topic call"

@@ -139,6 +139,24 @@ Every row's `CURRENT-OFFSET` column should be a number, never `-` (which
 means the group has no committed offset on that partition — the failure mode
 this Job exists to prevent).
 
+### `KAFKA_CONSUMER_GROUP` must be resolved, post-substitution group names
+
+Whoever wires `KAFKA_CONSUMER_GROUP` into the Job's `atlas-env` ConfigMap
+(newline-delimited, one group per line — group names contain spaces and
+brackets, e.g. `"Account Service [pr-123]"`, so a space-delimited list is
+ambiguous): the value must be the **resolved, post-substitution** group
+name(s) actually joined at runtime, never a raw literal copied from
+`deploy/k8s/overlays/pr/patches/consumer-group-env.yaml`.
+`libs/atlas-kafka/consumergroup/resolver.go` documents templated callers
+(`atlas-login`, `atlas-channel`) whose `KAFKA_CONSUMER_GROUP` is a **format
+string** such as `"Channel Service - %s [pr-123]"`, substituted per
+channel/login instance by `Resolve(defaultName, args...)` at runtime — this
+Job never performs that substitution. Copying the template literal in
+unresolved seeds a group name containing a literal `%s` that no runtime
+consumer ever joins: the seeding pass reports success and silently seeds
+nothing real. A templated service needs one resolved entry per
+channel/login instance it actually runs, not the template string itself.
+
 ## Loki selectors
 
 **Loki has no `app` label in this cluster.** Select on `service_name` and

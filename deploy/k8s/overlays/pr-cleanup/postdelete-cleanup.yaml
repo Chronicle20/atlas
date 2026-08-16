@@ -83,9 +83,45 @@ spec:
                 # dev/cluster-infra-coordination/atlas-pr-cleanup-env.example.yaml.
                 name: atlas-pr-cleanup-env
           env:
-            # PR_NUMBER is the sole per-PR substitution. ATLAS_ENV is
-            # derived inside cleanup.sh via lib.sh::compute_atlas_env, so
-            # any drift on the Application's atlas.env annotation is
-            # harmless (bug #4 defensive fix; see task-070/design.md §3.4).
+            # PR_NUMBER is the sole per-PR substitution. ATLAS_ENV AND
+            # ATLAS_ENVIRONMENT are both derived inside cleanup.sh from
+            # PR_NUMBER alone (lib.sh::compute_atlas_env for ATLAS_ENV;
+            # "pr-${PR_NUMBER}" for ATLAS_ENVIRONMENT, task-48 fix round 1)
+            # — so drift on the Application's atlas.env annotation is
+            # harmless (bug #4 defensive fix; see task-070/design.md §3.4)
+            # and neither needs its own manifest wiring.
             - name: PR_NUMBER
               value: "PLACEHOLDER_PR_NUMBER"
+            # ATLAS_UI_BASE — task-48 (deactivate-before-destroy /
+            # reclaim-control-plane). do_deactivate and do_drop_control_plane
+            # PATCH/DELETE against atlas-configurations' environments/
+            # services/tenants/templates resources and atlas-tenants — and
+            # per design, that control-plane data always lives at the
+            # BASELINE, never in a PR's own namespace: sparse mode shares
+            # main's atlas-configurations outright (D1), and by the time
+            # this PostDelete Job runs, the PR's OWN namespace (and its own
+            # atlas-ingress, if it had one) is already pruned — the same
+            # reason environment-record.yaml (task-44/47) targets the
+            # baseline's ingress rather than the PR's own.
+            #
+            # Inlined as a literal rather than resolved dynamically: the
+            # dynamic mechanism (CI substituting a PLACEHOLDER_BASELINE_
+            # NAMESPACE token from the ACTIVE baseline environment record,
+            # the same way environment-record.yaml's own placeholder is
+            # meant to resolve — see deploy/k8s/overlays/pr-sparse/
+            # kustomization.yaml's header) is Task 50's explicit
+            # prerequisite work and does not exist anywhere in this repo
+            # yet — not even for pr-sparse's own critical-path Jobs, whose
+            # identical PLACEHOLDER_BASELINE_NAMESPACE token is ALSO still
+            # unresolved today. Introducing a second unresolved placeholder
+            # here would ship the exact same dead-value problem under a
+            # different name. A literal is the honest choice until Task 50
+            # lands the real resolver; both do_deactivate and
+            # do_drop_control_plane are inert no-ops for every environment
+            # that was never registered in the control plane (today: 100%
+            # of PRs, since pr-sparse is not yet wired into CI either — see
+            # pr-validation.yml's update-pr-overlay step, which substitutes
+            # only deploy/k8s/overlays/pr and deploy/k8s/overlays/pr-cleanup),
+            # so this is safe regardless.
+            - name: ATLAS_UI_BASE
+              value: http://atlas-ingress.atlas-main.svc.cluster.local

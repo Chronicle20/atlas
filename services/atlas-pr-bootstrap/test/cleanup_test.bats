@@ -15,11 +15,25 @@ setup() {
     # doesn't care about control-plane reclaim. Tests that DO care about
     # the reclaim's scoping build their own SHIM_DIR curl stub, same
     # convention as the drop-branch tests' own gh/kubectl stubs below.
+    # The environments-record GET 404s by default (empty body, exit 1) —
+    # matching isolated mode, which never registers a control-plane
+    # environment record (task-48 fix round 1: do_deactivate/
+    # do_drop_control_plane gate on this live check now, not ATLAS_MODE).
+    # Every other GET returns an empty JSON:API collection.
     cat > "$STUB_BIN/curl" <<'EOF'
 #!/usr/bin/env bash
 echo "curl $*" >> "$STUB_LOG"
-echo '{"data":[]}'
-exit 0
+url="${@: -1}"
+case "$url" in
+    */configurations/environments/*)
+        echo '{}'
+        exit 1
+        ;;
+    *)
+        echo '{"data":[]}'
+        exit 0
+        ;;
+esac
 EOF
     chmod +x "$STUB_BIN/curl"
 }
@@ -114,6 +128,22 @@ run_cleanup() {
     [ "$status" -ne 0 ]
     [[ "$output" != *"missing required env: ATLAS_ENV"* ]]
     [[ "$output" == *"missing required env: DB_HOST"* ]]
+}
+
+@test "cleanup.sh derives ATLAS_ENVIRONMENT=pr-<N> from PR_NUMBER with no manifest wiring" {
+    # task-48 fix round 1: postdelete-cleanup.yaml carries no
+    # ATLAS_ENVIRONMENT env var — the controller's finding was that
+    # cleanup.sh should derive it the same way it already derives
+    # ATLAS_ENV. Confirms the derivation (and that an explicit override
+    # still wins).
+    make_stubs '[]' '[]'
+    run env -u ATLAS_ENVIRONMENT PATH="$STUB_BIN:$PATH" STUB_LOG="$STUB_LOG" \
+        BATS_TEST_TMPDIR="$BATS_TEST_TMPDIR" \
+        DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo bar" BOOTSTRAP_SERVERS=kafka:9093 REDIS_URL=redis:6379 \
+        PR_NUMBER=555 ATLAS_DEACTIVATE_SETTLE_S=0 \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+    [[ "$output" == *'derived ATLAS_ENVIRONMENT=pr-555 for PR 555'* ]]
 }
 
 @test "cleanup.sh fails without ATLAS_DB_NAMES" {
@@ -444,6 +474,25 @@ EOF
 
 @test "cleanup.sh deactivates (DEACTIVATING then DELETED) before any destructive phase runs" {
     make_stubs '[]' '[]'
+    # Override the default 404 with a live ACTIVE record so do_deactivate's
+    # gate (_dcp_env_phase) passes and it actually PATCHes, exercising the
+    # ordering this test is about.
+    cat > "$STUB_BIN/curl" <<'EOF'
+#!/usr/bin/env bash
+echo "curl $*" >> "$STUB_LOG"
+url="${@: -1}"
+case "$url" in
+    */configurations/environments/*)
+        echo '{"data":{"attributes":{"phase":"ACTIVE"}}}'
+        exit 0
+        ;;
+    *)
+        echo '{"data":[]}'
+        exit 0
+        ;;
+esac
+EOF
+    chmod +x "$STUB_BIN/curl"
     run run_cleanup
     [ "$status" -eq 0 ]
 
@@ -473,13 +522,20 @@ EOF
     [[ "$output" == *'failed_phases'*'deactivate'* ]]
 }
 
-@test "cleanup.sh drop-control-plane is skipped in isolated mode" {
+@test "cleanup.sh drop-control-plane and deactivate are skipped when no control-plane environment record exists" {
+    # Default curl stub 404s the environments GET — the isolated-mode
+    # reality (no environment-record.yaml Job ever registers one there).
     make_stubs '[]' '[]'
     run run_cleanup
     [ "$status" -eq 0 ]
-    [[ "$output" == *'drop-control-plane'*'skipped (isolated)'* ]]
+    [[ "$output" == *'deactivate'*'skipped'*'no control-plane environment record'* ]]
+    [[ "$output" == *'drop-control-plane'*'skipped'*'no control-plane environment record'* ]]
     if grep -F -- '-X DELETE' "$STUB_LOG"; then
-        echo "ERROR: DELETE issued in isolated mode" >&2
+        echo "ERROR: DELETE issued with no environment record" >&2
+        return 1
+    fi
+    if grep -F -- '-X PATCH' "$STUB_LOG"; then
+        echo "ERROR: PATCH issued with no environment record" >&2
         return 1
     fi
 }
@@ -527,6 +583,9 @@ for a in "\$@"; do
 done
 url="\${@: -1}"
 case "\$url" in
+    */configurations/environments/*)
+        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE"}}}'
+        ;;
     */configurations/services)
         [ "\$method" = "GET" ] && cat "$JSON_FIXTURE"
         ;;
@@ -562,7 +621,6 @@ EOF
     PATH="$SHIM_DIR:$PATH" run env \
         PR_NUMBER=99 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
         ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
-        ATLAS_MODE=sparse ATLAS_ENVIRONMENT=pr-99 \
         ATLAS_UI_BASE=http://fake-ui ATLAS_DEACTIVATE_SETTLE_S=0 \
         bash "$PROJECT_ROOT/scripts/cleanup.sh"
 

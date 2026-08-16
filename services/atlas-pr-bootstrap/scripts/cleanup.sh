@@ -37,6 +37,19 @@ ATLAS_ENV="$(compute_atlas_env "$PR_NUMBER")"
 export ATLAS_ENV
 ATLAS_STEP=init log info "derived ATLAS_ENV=${ATLAS_ENV} for PR ${PR_NUMBER}"
 
+# Derive ATLAS_ENVIRONMENT from PR_NUMBER the same way, and for the same
+# reason: "pr-<N>" is the wire identity every other consumer of this
+# convention already uses (libs/atlas-env.SelfVar; the sparse overlay's
+# atlas-env ConfigMap literal ATLAS_ENVIRONMENT=pr-PLACEHOLDER_PR_NUMBER;
+# environment-record.yaml's `name: "pr-PLACEHOLDER_PR_NUMBER"`), so
+# deriving it here needs no new manifest wiring — postdelete-cleanup.yaml
+# already carries PR_NUMBER (task-48 fix round 1). Only backfilled when
+# unset so an explicit override (tests, or a future caller with a reason
+# to differ) still wins.
+ATLAS_ENVIRONMENT="${ATLAS_ENVIRONMENT:-pr-${PR_NUMBER}}"
+export ATLAS_ENVIRONMENT
+ATLAS_STEP=init log info "derived ATLAS_ENVIRONMENT=${ATLAS_ENVIRONMENT} for PR ${PR_NUMBER}"
+
 # gh CLI requires its own credentials even when an explicit `-H
 # "Authorization: Bearer …"` header is passed on the request — without
 # GH_TOKEN/GITHUB_TOKEN in env it prompts for `gh auth login` and exits
@@ -70,12 +83,46 @@ fi
 # margin. If Task 55 measurement shows that insufficient, raise it there —
 # do not guess higher here, and do not conflate it with StaleAfter by
 # reusing that constant's value for a different guarantee.
+
+# _dcp_env_phase — echoes this environment's current control-plane phase
+# (PROVISIONING/ACTIVE/DEACTIVATING/DELETED), or nothing if no record
+# exists (a 404 from the collection GET) or ATLAS_UI_BASE/ATLAS_ENVIRONMENT
+# are unset.
+#
+# This is the live, self-healing gate do_deactivate and
+# do_drop_control_plane both use instead of a build-time ATLAS_MODE flag
+# (task-48 fix round 1): isolated-mode PRs never register a control-plane
+# environment record in the first place — only sparse mode's
+# environment-record.yaml Job (task-44/47) POSTs one — so "no record"
+# means exactly "isolated mode, or a sparse PR torn down before it ever
+# registered," and either way there is nothing for these two phases to do.
+# Checking live data can't drift from what actually got deployed the way a
+# manifest flag could, and it needs no ATLAS_MODE wiring at all.
+_dcp_env_phase() {
+    [ -z "${ATLAS_UI_BASE:-}" ] && return 0
+    [ -z "${ATLAS_ENVIRONMENT:-}" ] && return 0
+    curl -fsS -H 'Accept: application/vnd.api+json' \
+        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
+        "$ATLAS_UI_BASE/api/configurations/environments/$ATLAS_ENVIRONMENT" 2>/dev/null \
+        | jq -r '.data.attributes.phase // empty' 2>/dev/null
+}
+
 do_deactivate() {
-    ATLAS_STEP=deactivate log info "deactivating environment=${ATLAS_ENVIRONMENT:-} before any destructive phase (FR-5.5)"
     if [ -z "${ATLAS_UI_BASE:-}" ] || [ -z "${ATLAS_ENVIRONMENT:-}" ]; then
         ATLAS_STEP=deactivate log error "ATLAS_UI_BASE and ATLAS_ENVIRONMENT are required to deactivate; routing may still be live when destructive phases run"
         return 1
     fi
+    local phase
+    phase=$(_dcp_env_phase)
+    if [ -z "$phase" ]; then
+        ATLAS_STEP=deactivate log info "skipped — no control-plane environment record for $ATLAS_ENVIRONMENT (isolated mode never registers one; sparse mode does via environment-record.yaml)"
+        return 0
+    fi
+    if [ "$phase" = "DELETED" ]; then
+        ATLAS_STEP=deactivate log info "already deactivated (phase=DELETED); skipping"
+        return 0
+    fi
+    ATLAS_STEP=deactivate log info "deactivating environment=$ATLAS_ENVIRONMENT before any destructive phase (FR-5.5)"
     if ! curl -fsS -X PATCH \
         -H 'Content-Type: application/vnd.api+json' \
         -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
@@ -156,23 +203,27 @@ _dcp_reclaim() {
 # delete is scoped by the environment column via _dcp_reclaim; see that
 # function's comment for the two independent layers that enforce it.
 #
-# Isolated mode: skipped. do_drop_dbs already DROPs the whole per-env
-# Postgres database (including this environment's private atlas-
-# configurations instance) regardless of what runs here, so a REST-based
-# reclaim would be redundant at best; at worst it would depend on
-# ATLAS_UI_BASE/ATLAS_ENVIRONMENT wiring that isolated mode's cleanup Job
-# does not carry today (only sparse mode's bootstrap Job threads
-# ATLAS_ENVIRONMENT — task-47), turning a no-op phase into a spurious
-# failure. Reuses Task 47's ${ATLAS_MODE:-isolated} convention rather than
-# inventing a second signal.
+# Gated by _dcp_env_phase, the same live existence-check do_deactivate uses
+# (task-48 fix round 1) — NOT ATLAS_MODE. Isolated-mode PRs never register
+# a control-plane environment record, so the GET 404s and this phase
+# correctly no-ops: do_drop_dbs already DROPs the whole per-env Postgres
+# database there (including this environment's private atlas-configurations
+# instance) regardless of what runs here, so a REST-based reclaim would be
+# redundant even where it could reach a real record. Even in the
+# (currently impossible, since no record exists) case where this ran
+# against an isolated PR's own private instance, every row there carries
+# Environment="" (isolated bootstrap never sends an ENVIRONMENT header),
+# never "pr-<N>" — the environment-column filter in _dcp_reclaim would
+# still find nothing to delete. Two independent reasons this is safe, not
+# one.
 do_drop_control_plane() {
-    if [ "${ATLAS_MODE:-isolated}" != "sparse" ]; then
-        ATLAS_STEP=drop-control-plane log info "skipped (isolated) — do_drop_dbs already destroys this environment's atlas-configurations rows"
-        return 0
-    fi
     if [ -z "${ATLAS_UI_BASE:-}" ] || [ -z "${ATLAS_ENVIRONMENT:-}" ]; then
-        ATLAS_STEP=drop-control-plane log error "ATLAS_UI_BASE and ATLAS_ENVIRONMENT are required in sparse mode; control-plane rows for this environment were not reclaimed"
+        ATLAS_STEP=drop-control-plane log error "ATLAS_UI_BASE and ATLAS_ENVIRONMENT are required; control-plane rows for this environment were not reclaimed"
         return 1
+    fi
+    if [ -z "$(_dcp_env_phase)" ]; then
+        ATLAS_STEP=drop-control-plane log info "skipped — no control-plane environment record for $ATLAS_ENVIRONMENT (isolated mode: do_drop_dbs already destroys this environment's atlas-configurations rows)"
+        return 0
     fi
     ATLAS_STEP=drop-control-plane log info "reclaiming control-plane rows for environment=$ATLAS_ENVIRONMENT"
     local rc=0

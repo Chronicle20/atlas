@@ -376,6 +376,12 @@ else
     skip "env domain guard (no service Go file changed)"
 fi
 
+if touched '^services/.*/main\.go$|^tools/envguard/'; then
+    step "env bootstrap guard" ./tools/env-bootstrap-guard.sh
+else
+    skip "env bootstrap guard (no service main.go changed)"
+fi
+
 if touched '^tools/task-(resolve|brief)(_test)?\.sh$'; then
     step "task resolve/brief tests" ./tools/task-resolve_test.sh
 else

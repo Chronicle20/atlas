@@ -56,5 +56,10 @@ func TestTimerRegistry_FireAppliesEnvContext(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 
+	// Has()==false only means the callback's self-clean ran, not that
+	// handleSagaTimeout finished. Wait for full completion before returning
+	// so this callback's goroutine cannot race a later test.
+	SagaTimers().Wait()
+
 	assert.True(t, applied.Load(), "envContext should have been applied when the timer fired")
 }

@@ -22,6 +22,17 @@ type TimerRegistry struct {
 	mu         sync.Mutex
 	entries    map[uuid.UUID]*time.Timer
 	envContext func(context.Context) context.Context
+	// wg tracks every timer callback that has been armed but not yet
+	// finished running. It exists because Has() flips false the instant a
+	// firing callback self-cleans the registry entry — the very first thing
+	// the callback does, well before it drives handleSagaTimeout to
+	// completion. A test that polls Has()==false and then returns leaves
+	// that callback goroutine still in flight (still inside
+	// EmitSagaFailed/EmitSagaFailedByIds, reading package-level swappable
+	// function variables) racing whatever the next test does to that same
+	// state. Wait() is the deterministic replacement: it blocks until every
+	// armed callback has actually returned.
+	wg sync.WaitGroup
 }
 
 var sagaTimerRegistry = &TimerRegistry{entries: make(map[uuid.UUID]*time.Timer)}
@@ -53,10 +64,17 @@ func (r *TimerRegistry) Schedule(l logrus.FieldLogger, t tenant.Model, txId uuid
 	}
 	r.mu.Lock()
 	if old, ok := r.entries[txId]; ok {
-		old.Stop()
+		if old.Stop() {
+			// Genuinely stopped before firing -- its callback will never run,
+			// so release the Add(1) that armed it. If Stop returns false the
+			// callback already fired or is running and will call Done itself.
+			r.wg.Done()
+		}
 	}
 	var timer *time.Timer
+	r.wg.Add(1)
 	timer = time.AfterFunc(timeout, func() {
+		defer r.wg.Done()
 		// Self-clean the registry FIRST so subsequent observers (tests, reschedules)
 		// see the timer as "fired, not pending" even if downstream emission blocks.
 		r.mu.Lock()
@@ -83,10 +101,24 @@ func (r *TimerRegistry) Schedule(l logrus.FieldLogger, t tenant.Model, txId uuid
 func (r *TimerRegistry) Cancel(txId uuid.UUID) {
 	r.mu.Lock()
 	if t, ok := r.entries[txId]; ok {
-		t.Stop()
+		if t.Stop() {
+			r.wg.Done()
+		}
 		delete(r.entries, txId)
 	}
 	r.mu.Unlock()
+}
+
+// Wait blocks until every timer callback that has been armed (via Schedule)
+// has finished running to completion -- not merely until it has self-cleaned
+// the registry entry, which happens before the rest of the callback (the
+// full handleSagaTimeout walk, including the Failed emission) runs. Tests
+// that schedule a real timer and then touch state the callback also touches
+// (package-level swappable emit functions, the shared cache) MUST call Wait
+// before returning, or the callback goroutine can still be mid-flight when
+// the next test starts.
+func (r *TimerRegistry) Wait() {
+	r.wg.Wait()
 }
 
 // Has reports whether a timer is currently registered for the given transactionId.

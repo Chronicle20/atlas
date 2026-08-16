@@ -38,6 +38,13 @@ func TestTimerRegistry_ScheduleAndFire(t *testing.T) {
 	}
 	assert.False(t, SagaTimers().Has(s.TransactionId()), "timer should have self-cleaned after firing")
 
+	// Has()==false only means the callback's self-clean ran; the rest of
+	// handleSagaTimeout (including the Failed emission) can still be in
+	// flight. Wait for it to actually finish before this test returns, or
+	// its goroutine can race a later test's mutation of the package-level
+	// emit function variable.
+	SagaTimers().Wait()
+
 	// After the timer fires, handleSagaTimeout walks the full flow:
 	//   Pending → Compensating → (dispatch rollbacks) → Failed → evict.
 	// The saga no longer exists in the cache, so GetLifecycle returns
@@ -97,6 +104,7 @@ func TestTimerRegistry_ScheduleReplacesExisting(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 	assert.False(t, SagaTimers().Has(s.TransactionId()))
+	SagaTimers().Wait()
 }
 
 func TestTimerRegistry_ZeroDurationNoOp(t *testing.T) {

@@ -108,3 +108,30 @@ func setupTestDB(t *testing.T) *gorm.DB {
 - `SpanHeaderDecorator(ctx)`
 
 Always initialize producers using: `producer.ProviderImpl(log)(ctx)`.
+
+---
+
+## Audit verification — DOM-31
+
+Rule defined in [audit-checklist.md](audit-checklist.md). This section is the
+verification procedure. Triggers when a changed package has `rest.go`, or when
+changed code reads or passes tenant/trace state.
+
+**How to verify.**
+
+1. Read the `RestModel` and request structs in the changed `rest.go`. Look for
+   a `TenantId` / `tenant_id` field, or any other tenant-carrying attribute in
+   the serialized surface.
+2. Grep the changed `resource.go` for route patterns and query-parameter reads
+   that carry a tenant (`{tenantId}`, `r.URL.Query().Get("tenantId")`) and for
+   direct header reads (`r.Header.Get("TENANT_ID")`).
+3. Check provider, update, and delete signatures in the diff: they must NOT
+   take a `tenantId` parameter — GORM callbacks inject the filter from context
+   (see [Automatic Database Tenant Filtering](#automatic-database-tenant-filtering)).
+   Create functions are the documented exception; they keep `tenantId` because
+   they set the entity field.
+
+**Pass criteria.** Tenant identity reaches the code only through
+`tenant.MustFromContext(ctx)` and `db.WithContext(ctx)`. A tenant field on a
+public REST model, request body, path, or query parameter is a FAIL — the
+public API surface must not let a caller name its own tenant.

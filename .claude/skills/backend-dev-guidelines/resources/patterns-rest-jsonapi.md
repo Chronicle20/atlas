@@ -424,6 +424,21 @@ tenantID := r.Header.Get("X-Tenant-ID")
 // Tenant is available in d.Context() automatically
 ```
 
+❌ **Registering a route without the shared wrapper:**
+```go
+// DON'T DO THIS - no tenant parsing, no tracing, no consistent error shape
+router.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
+	// hand-rolled tenant parsing, error handling, encoding
+}).Methods(http.MethodGet)
+```
+
+✅ **Always route through server.RegisterHandler / RegisterInputHandler:**
+```go
+// DO THIS
+router.HandleFunc("/users",
+	server.RegisterHandler(l)(si)("get-users", listUsersHandler(db))).Methods(http.MethodGet)
+```
+
 
 ---
 
@@ -455,4 +470,5 @@ is the verification procedure. These checks run on changed packages that have a
 | DOM-15 | Grep `resource.go` for `db.Create`, `db.Save`, `db.Delete`. | Zero matches — all writes go processor → administrator. |
 | DOM-17 | Read the error-handling branches in `resource.go`. | Validation errors → 400, not-found → 404, conflicts → 409. For the 500-vs-503 rule in DB-backed services see [patterns-resilience.md](patterns-resilience.md#audit-verification--dom-27-dom-28). |
 | DOM-18 | Read `rest.go`. | Each `RestModel` implements `GetName()`, `GetID()`, `SetID()`. |
-| DOM-19 | Read the request models in `rest.go`. | `CreateRequest` / `UpdateRequest` are flat — no nested `Data` / `Type` / `Attributes` structs. |
+| DOM-19 | Read the request models in `rest.go`. | `CreateRequest` / `UpdateRequest` are flat — no nested `Data` / `Type` / `Attributes` structs, and no `jsonapi:` struct tags on fields; the interface methods carry the envelope. |
+| DOM-32 | Read every `router.HandleFunc(` line in the changed `resource.go`. Then grep the handler bodies for `r.Header.Get(` and for hand-rolled error writers (a local `writeError` / `respondWithError` helper). | Every route's second argument is a `server.RegisterHandler(...)` or `server.RegisterInputHandler[T](...)` call — never a raw `func(w http.ResponseWriter, r *http.Request)` literal. No handler parses the tenant header itself (it is already in `d.Context()`), and none defines a custom error-response helper: write the status code directly, or `server.WriteErrorResponse` where [patterns-resilience.md](patterns-resilience.md#audit-verification--dom-27-dom-28) requires it. DOM-08 separately grades the input-handler choice for POST/PATCH; DOM-32 grades that the wrapper is used at all. |

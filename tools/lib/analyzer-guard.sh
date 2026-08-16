@@ -76,7 +76,7 @@ analyzer_guard_jobs() {
 # renamed, or when Go itself is upgraded — the guard would then go on enforcing
 # the pre-change rules while looking like it ran.
 analyzer_guard_hash() {
-    { find "$@" \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) -print0 \
+    { find "$@" \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' -o -name '*.txt' \) -print0 \
         | LC_ALL=C sort -z | xargs -0 -r sha256sum; go version; } \
         | sha256sum | cut -c1-16
 }

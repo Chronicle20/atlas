@@ -18,6 +18,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -618,13 +619,15 @@ func TestProcessor_Create_IgnoresClientSuppliedEnvironment(t *testing.T) {
 
 // TestProcessor_UpdateById_IgnoresClientSuppliedEnvironment pins task-232
 // R21-1: an update body's "environment" must never move an existing row
-// between environments. The row is seeded directly at the Entity level
-// (Create never sets Environment yet), then UpdateById is called with a
-// different environment in the payload; the column must be untouched.
+// between environments. The row is seeded directly at the Entity level with
+// owner "pr-100", the caller is "pr-100" too (task-13 strict scoping now
+// rejects a mismatched caller before R21-1's sanitization is even reached),
+// then UpdateById is called with a different environment in the payload;
+// the column must be untouched.
 func TestProcessor_UpdateById_IgnoresClientSuppliedEnvironment(t *testing.T) {
 	db := setupTestDB(t)
 	l := testLogger()
-	ctx := context.Background()
+	ctx := env.WithContext(context.Background(), env.Id("pr-100"))
 	p := NewProcessor(l, ctx, db)
 
 	id := uuid.New()
@@ -746,7 +749,7 @@ func TestProcessor_UpdateById_OutboxMessageNeverCarriesClientSuppliedEnvironment
 	t.Setenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS", "tenant-status")
 	db := setupTestDB(t)
 	l := testLogger()
-	ctx := context.Background()
+	ctx := env.WithContext(context.Background(), env.Id("pr-100"))
 	p := NewProcessor(l, ctx, db)
 
 	id := uuid.New()

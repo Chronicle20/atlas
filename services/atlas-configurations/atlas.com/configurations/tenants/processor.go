@@ -15,6 +15,7 @@ import (
 	"gorm.io/gorm"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
@@ -217,6 +218,7 @@ func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
 			MajorVersion: input.MajorVersion,
 			MinorVersion: input.MinorVersion,
 			Data:         *rm,
+			Environment:  string(env.MustFromContext(p.ctx)),
 		}
 		if err := db.Create(e).Error; err != nil {
 			return err

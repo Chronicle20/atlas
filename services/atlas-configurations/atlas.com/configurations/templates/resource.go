@@ -160,7 +160,7 @@ func handleUpdateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel]
 						return
 					}
 					d.Logger().WithError(err).Errorf("Unable to update configuration template.")
-					server.WriteErrorResponse(d.Logger())(w)(err)
+					rest.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)
@@ -176,7 +176,7 @@ func handleDeleteConfigurationTemplate(db *gorm.DB) rest.GetHandler {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteById(templateId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to delete configuration template.")
-					server.WriteErrorResponse(d.Logger())(w)(err)
+					rest.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)

@@ -140,6 +140,36 @@ patches:
     target:
       kind: ConfigMap
       name: seed-catalog-config
+  # Tell bootstrap.sh it is running against a SHARED atlas-configurations
+  # database (task-232 task-47): ATLAS_MODE=sparse switches
+  # upsert_service_config's dangerous main-row merge off in favour of
+  # create_service_config, which creates a fresh Id-keyed row per
+  # environment and never reads/writes/merges into main's pinned row
+  # (G7/NG6). sync-bootstrap.yaml (the Job manifest) is one of the 9 files
+  # tools/pr-sparse-mirror-guard.sh binds byte-identical to overlays/pr, so
+  # ATLAS_MODE cannot be added there — this overlay-only strategic patch is
+  # the only place it can land without failing the guard or changing the
+  # isolated overlay. ATLAS_ENVIRONMENT (needed to stamp the fresh row so
+  # teardown/write-authorisation can scope it) rides the same patch, sourced
+  # from the atlas-env ConfigMap this overlay already generates above with
+  # literal ATLAS_ENVIRONMENT=pr-PLACEHOLDER_PR_NUMBER.
+  - target:
+      kind: Job
+      name: atlas-pr-bootstrap
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: ATLAS_MODE
+          value: sparse
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: ATLAS_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: atlas-env
+              key: ATLAS_ENVIRONMENT
   # atlas-minio-reconcile (task-174) is a main-only CronJob: it enumerates
   # tenants across every atlas-main + atlas-pr-* namespace and reconciles
   # MinIO storage cluster-wide, so it must run exactly once, not once per

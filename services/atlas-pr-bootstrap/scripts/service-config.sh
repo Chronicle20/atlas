@@ -48,3 +48,53 @@ merge_tenant_entry() {
             else (.tenants + [$entry]) end )
         else . end'
 }
+
+# Reassemble a full services JSON:API document from $1 = template path (for
+# .data.id / .data.type), replacing .data.attributes with the merged
+# attributes JSON read on stdin. Used only by build_service_config's isolated
+# branch to reproduce today's first-write (POST) body construction.
+rewrap_attributes() {
+    local tmpl="$1" attrs
+    attrs=$(cat)
+    jq -c --argjson a "$attrs" '.data.attributes = $a' "$tmpl"
+}
+
+# Build the service-config payload for this environment. $1 = shape
+# (login | channel | none), $2 = canonical template path.
+#
+# ATLAS_MODE=sparse: a NEW row with a fresh UUID carrying exactly this
+# environment's single tenant entry (or none, for a tenant-agnostic shape).
+# main's row is never read, written or merged into (G7, NG6). The services
+# table is Id-keyed and consumers select by SERVICE_ID, so multiple rows of
+# one Type are already representable (design C1) — no key change is needed
+# to make this work.
+#
+# ATLAS_MODE=isolated (default): unchanged. Reproduces today's first-write
+# POST body exactly — the pinned canonical id, with this environment's entry
+# merged into the template's own (always-empty) tenants[]. The GET-merge-
+# PATCH network sequence for an EXISTING live row stays in bootstrap.sh's
+# upsert_service_config — that merge reads live data, which is network I/O
+# and does not belong in this pure function.
+build_service_config() {
+    local shape="$1" tmpl="$2" entry
+    case "$shape" in
+        login)   entry=$(build_login_entry) ;;
+        channel) entry=$(build_channel_entry "$tmpl") ;;
+        none)    entry="" ;;
+        *)       log error "build_service_config: unknown shape '$shape'"; return 1 ;;
+    esac
+
+    if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+        jq -c --arg id "$(uuidgen)" --arg envn "$ATLAS_ENVIRONMENT" --argjson entry "${entry:-null}" '
+            .data.id = $id
+            | .data.attributes.environment = $envn
+            | if $entry == null then . else .data.attributes.tenants = [$entry] end
+        ' "$tmpl"
+    else
+        if [ -n "$entry" ]; then
+            jq -c '.data.attributes' "$tmpl" | merge_tenant_entry "$entry" | rewrap_attributes "$tmpl"
+        else
+            cat "$tmpl"
+        fi
+    fi
+}

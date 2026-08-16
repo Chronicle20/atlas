@@ -10,10 +10,13 @@
 //   - main.go (any package) — bootstrap wiring passes the registry down.
 //   - any file under a kafka/ or rest/ directory — the transport layer,
 //     where FR-4.5's REST/Kafka environment propagation (tasks 23-27) lives.
-//   - a package on domainAllowlist below — the small set of control-plane
-//     packages that OWN environment/tenant data as their domain model
-//     (atlas-configurations, atlas-tenants, atlas-data's ingest tracking),
-//     rather than an ordinary service reaching for global routing state.
+//   - a package on domainAllowlist below — two distinct, narrow shapes:
+//     control-plane packages that OWN environment/tenant data as their
+//     domain model (atlas-configurations, atlas-tenants), and the single
+//     env.Self()-only exception design §4.3 carves out for a pod's own,
+//     never-stale environment (atlas-data/runtime/ingest) — see the entry
+//     itself for why that second shape is NOT "ownership" and must not be
+//     used as precedent for a different env.Self() call site.
 //
 // Everything else under services/ that imports atlas-env is a domain
 // package reaching for global environment state directly, which is exactly
@@ -45,13 +48,15 @@ const domainPkgPath = "github.com/Chronicle20/atlas/libs/atlas-env"
 // against source before adding: an allowlist entry is permanent and
 // invisible, and this guard is the only thing that will ever re-examine it.
 //
-// Every entry here is a control-plane service that OWNS environment or
-// tenant data as its domain model (design.md §8.1's STRICT scoping, §9's
-// control-plane ingestrun migration, and FR-7.3's tenant→environment
-// derivation) — not an ordinary service reaching for global routing state,
-// which is exactly what NG5 bans. Discovered at task-232/28: these imports
-// already existed on this branch from tasks 18-20 and earlier, predating
-// this guard.
+// Seven of the eight entries are a control-plane service that OWNS
+// environment or tenant data as its domain model (design.md §8.1's STRICT
+// scoping and FR-7.3's tenant→environment derivation) — not an ordinary
+// service reaching for global routing state, which is exactly what NG5
+// bans. The eighth (atlas-data/runtime/ingest) is a materially different
+// shape: it does NOT own environment data, it calls env.Self() directly —
+// see that entry for the distinct justification. Discovered at task-232/28:
+// these imports already existed on this branch from tasks 18-20 and
+// earlier, predating this guard.
 var domainAllowlist = map[string]string{
 	"atlas-configurations/scope": "implements design §8.1's STRICT " +
 		"environment-scoping strategy (env.Id filter/authorize) shared by " +
@@ -69,10 +74,16 @@ var domainAllowlist = map[string]string{
 	"atlas-configurations/tenants": "control-plane tenants table scoped by " +
 		"env.Id per design §8.1; confirmed administrator.go:13, " +
 		"processor.go:18, provider.go:12.",
-	"atlas-data/runtime/ingest": "control-plane ingest-run tracking scoped " +
-		"by environment (design §9: atlas-data's ingestrun moves to a new, " +
-		"narrowly named environment-scoped constructor); confirmed " +
-		"heartbeat.go:12, progress.go:12.",
+	"atlas-data/runtime/ingest": "NOT an ownership case like the other " +
+		"seven — heartbeat.go:43 and progress.go:63,116 call env.Self() " +
+		"directly, reaching for the pod's own environment rather than " +
+		"receiving one as data. Sanctioned specifically by design §4.3's " +
+		"staleness carve-out (\"Environment == env.Self() -> Proceed. A " +
+		"pod's own environment comes from an env var and cannot go " +
+		"stale.\"), the same rule already documented at " +
+		"ingestrun.go:114-118 for this package's Redis registries. Not " +
+		"precedent for any other env.Self() call site — each needs its " +
+		"own §4.3 justification.",
 	"atlas-tenants/scope": "implements the same design §8.1 STRICT " +
 		"environment-scoping strategy as atlas-configurations/scope, for " +
 		"the tenant table itself; confirmed scope.go:18.",

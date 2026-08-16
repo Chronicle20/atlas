@@ -10,5 +10,11 @@ import (
 
 func TestAnalyzer(t *testing.T) {
 	testdata := analysistest.TestData()
-	analysistest.Run(t, testdata, envguard.Analyzer, "domainimport", "ok/kafka")
+	analysistest.Run(t, testdata, envguard.Analyzer,
+		"domainimport",               // violation: not main.go, not kafka/rest, not allowlisted
+		"ok/kafka",                   // allowed: kafka/ path segment
+		"ok/rest",                    // allowed: rest/ path segment
+		"mainok",                     // allowed: main.go
+		"atlas-configurations/scope", // allowed: domainAllowlist hit
+	)
 }

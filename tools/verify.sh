@@ -358,7 +358,7 @@ else
     skip "npc-shop contract mirror guard (contract unchanged)"
 fi
 
-if touched '^services/.*\.go$|^tools/envguard/'; then
+if touched '^services/.*\.go$|^tools/envguard/|^tools/env-domain-guard\.sh$'; then
     step "env domain guard" ./tools/env-domain-guard.sh
 else
     skip "env domain guard (no service Go file changed)"

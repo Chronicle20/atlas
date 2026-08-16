@@ -29,7 +29,8 @@ prompt does not — that is the hole this rule closes.
 
 A plan task may be tagged `model: opus` in `plan.md` when it is genuinely
 derivation-heavy: IDA/packet field-order derivation, saga orchestration
-across services, or a cross-service contract change. Everything else — REST
+across services, or a cross-service contract change. `/plan-task` should
+apply that tag sparingly and justify it in one line. Everything else — REST
 surfaces, GORM entities, Kafka consumers, tests, template routing — runs
 Sonnet.
 

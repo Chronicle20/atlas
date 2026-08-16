@@ -168,6 +168,123 @@ func TestForEachOwnedEnvironmentConcurrentlyRunsBodiesInParallel(t *testing.T) {
 		})
 }
 
+func TestForEachOwnedEnvironmentFiltersListerToItsOwnEnvironmentsTenants(t *testing.T) {
+	// A populated registry with tenants projected across two environments:
+	// each tenant must be visited exactly once, under its own environment,
+	// even though the lister below is well-behaved and already scopes its
+	// results per-context. This pins the happy path before the misbehaving
+	// lister below pins the enforcement.
+	r := env.NewMapRegistry(env.Id("main"), time.Now)
+	r.Apply(env.Record{Name: "main", Baseline: "main", Namespace: "atlas-main", Phase: env.PhaseActive})
+	r.Apply(env.Record{Name: "pr-123", Baseline: "main", Namespace: "atlas-pr-123", Phase: env.PhaseActive})
+
+	mainTenant := testTenant(t)
+	prTenant := testTenant(t)
+	r.ApplyTenant(mainTenant.Id().String(), env.Id("main"))
+	r.ApplyTenant(prTenant.Id().String(), env.Id("pr-123"))
+	env.SetRegistry(r)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	lister := func(ctx context.Context) ([]tenant.Model, error) {
+		switch env.MustFromContext(ctx) {
+		case env.Id("main"):
+			return []tenant.Model{mainTenant}, nil
+		case env.Id("pr-123"):
+			return []tenant.Model{prTenant}, nil
+		default:
+			return nil, nil
+		}
+	}
+
+	seen := map[string]map[string]int{"main": {}, "pr-123": {}}
+	ForEachOwnedEnvironment(testLogger(t), context.Background(), "atlas-monsters",
+		lister, func(ctx context.Context) {
+			e := string(env.MustFromContext(ctx))
+			tm := tenant.MustFromContext(ctx)
+			seen[e][tm.Id().String()]++
+		})
+
+	if seen["main"][mainTenant.Id().String()] != 1 {
+		t.Fatalf("seen[main][mainTenant] = %d, want 1", seen["main"][mainTenant.Id().String()])
+	}
+	if seen["pr-123"][prTenant.Id().String()] != 1 {
+		t.Fatalf("seen[pr-123][prTenant] = %d, want 1", seen["pr-123"][prTenant.Id().String()])
+	}
+	if len(seen["main"]) != 1 || len(seen["pr-123"]) != 1 {
+		t.Fatalf("seen = %v, want exactly one tenant visited per environment", seen)
+	}
+}
+
+func TestForEachOwnedEnvironmentFiltersOutTenantsWronglyReturnedForOtherEnvironments(t *testing.T) {
+	// FR-7.3 / the defect this fix closes: a lister that ignores the
+	// context environment and returns EVERY tenant it knows about (as the
+	// marriages/asset-expiration local DB/session-backed listers do) must
+	// still produce exactly one visit per (correct environment, tenant)
+	// pair. The filter, not the lister, is what enforces the contract.
+	r := env.NewMapRegistry(env.Id("main"), time.Now)
+	r.Apply(env.Record{Name: "main", Baseline: "main", Namespace: "atlas-main", Phase: env.PhaseActive})
+	r.Apply(env.Record{Name: "pr-123", Baseline: "main", Namespace: "atlas-pr-123", Phase: env.PhaseActive})
+
+	mainTenant := testTenant(t)
+	prTenant := testTenant(t)
+	r.ApplyTenant(mainTenant.Id().String(), env.Id("main"))
+	r.ApplyTenant(prTenant.Id().String(), env.Id("pr-123"))
+	env.SetRegistry(r)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	// Misbehaving lister: ignores ctx, returns both tenants every time.
+	allTenants := []tenant.Model{mainTenant, prTenant}
+	lister := func(context.Context) ([]tenant.Model, error) {
+		return allTenants, nil
+	}
+
+	seen := map[string]map[string]int{"main": {}, "pr-123": {}}
+	ForEachOwnedEnvironment(testLogger(t), context.Background(), "atlas-monsters",
+		lister, func(ctx context.Context) {
+			e := string(env.MustFromContext(ctx))
+			tm := tenant.MustFromContext(ctx)
+			seen[e][tm.Id().String()]++
+		})
+
+	if seen["main"][mainTenant.Id().String()] != 1 {
+		t.Fatalf("seen[main][mainTenant] = %d, want 1", seen["main"][mainTenant.Id().String()])
+	}
+	if seen["main"][prTenant.Id().String()] != 0 {
+		t.Fatalf("seen[main][prTenant] = %d, want 0 — prTenant leaked into main's iteration", seen["main"][prTenant.Id().String()])
+	}
+	if seen["pr-123"][prTenant.Id().String()] != 1 {
+		t.Fatalf("seen[pr-123][prTenant] = %d, want 1", seen["pr-123"][prTenant.Id().String()])
+	}
+	if seen["pr-123"][mainTenant.Id().String()] != 0 {
+		t.Fatalf("seen[pr-123][mainTenant] = %d, want 0 — mainTenant leaked into pr-123's iteration", seen["pr-123"][mainTenant.Id().String()])
+	}
+}
+
+func TestForEachOwnedEnvironmentLegacyRegistryVisitsEveryTenantUnfiltered(t *testing.T) {
+	// The regression this fix could most easily (and most invisibly) cause:
+	// against the legacy registry (no records, no tenant projections), the
+	// unknown-tenant passthrough must admit every tenant. Dropping it would
+	// silently filter every legacy iteration down to zero, stopping every
+	// ticker on an unmigrated / never-configured deployment.
+	env.SetRegistry(nil)
+
+	seen := map[string]int{}
+	ForEachOwnedEnvironment(testLogger(t), context.Background(), "atlas-monsters",
+		twoTenantsPerEnvironment(t), func(ctx context.Context) {
+			tm := tenant.MustFromContext(ctx)
+			seen[tm.Id().String()]++
+		})
+
+	if len(seen) != 2 {
+		t.Fatalf("seen = %v, want exactly 2 distinct tenants visited (legacy path unfiltered)", seen)
+	}
+	for id, n := range seen {
+		if n != 1 {
+			t.Fatalf("seen[%s] = %d, want 1", id, n)
+		}
+	}
+}
+
 func TestForEachOwnedEnvironmentReresolvesOwnershipEveryCall(t *testing.T) {
 	// FR-6.4: a loop must not cache an ownership set across ticks. This is
 	// the C4 defect stated as a test.

@@ -78,7 +78,12 @@ func ForEachOwnedEnvironmentConcurrently(l logrus.FieldLogger, ctx context.Conte
 func eachOwned(l logrus.FieldLogger, ctx context.Context, service string,
 	tenants TenantLister, visit func(logrus.FieldLogger, context.Context),
 ) {
-	for _, e := range env.CurrentRegistry().EnvironmentsOwnedBy(service) {
+	reg := env.CurrentRegistry()
+	// tr is nil against a Registry that does not project tenants (including
+	// legacyRegistry): the filter below then admits every tenant, matching
+	// today's single-environment behaviour exactly.
+	tr, _ := reg.(env.TenantResolver)
+	for _, e := range reg.EnvironmentsOwnedBy(service) {
 		ectx := env.WithContext(ctx, e)
 		el := l.WithField("environment", string(e))
 		ts, err := tenants(ectx)
@@ -87,6 +92,18 @@ func eachOwned(l logrus.FieldLogger, ctx context.Context, service string,
 			continue
 		}
 		for _, t := range ts {
+			// A TenantLister is documented to return only its own
+			// environment's tenants, but not every caller honors that
+			// (e.g. a local DB/session-backed lister that ignores context).
+			// Filter here so the contract holds regardless of the lister:
+			// keep t when it is projected to e, or when it is not projected
+			// at all (unknown tenants pass through, mirroring the
+			// unknown-tenant rule in Reconcile / tenants.go).
+			if tr != nil {
+				if te, ok := tr.EnvironmentOfTenant(t.Id().String()); ok && te != e {
+					continue
+				}
+			}
 			visit(el, tenant.WithContext(ectx, t))
 		}
 	}

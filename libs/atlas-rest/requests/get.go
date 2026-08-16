@@ -93,7 +93,7 @@ func getBody(l logrus.FieldLogger, ctx context.Context) func(url string, configu
 			}
 			if statusCode == http.StatusServiceUnavailable {
 				if attempt < c.retries {
-					clientRetriesTotal.WithLabelValues("503").Inc()
+					clientRetriesTotal.WithLabelValues("503", selfEnvironment()).Inc()
 					l.Warnf("Received [503] from [%s] on [%s], will retry.", http.MethodGet, url)
 				}
 				if d, ok := parseRetryAfter(r.Header.Get("Retry-After")); ok {

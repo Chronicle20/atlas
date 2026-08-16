@@ -33,7 +33,12 @@ var _ Processor = (*ProcessorImpl)(nil)
 // GetPlayerCountInMap retrieves the player count for a single map
 // Returns 0 on error to allow graceful degradation
 func (p *ProcessorImpl) GetPlayerCountInMap(f field.Model) (int, error) {
-	resp, err := requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(charactersInMapUrl(f), 250, Extract, model.Filters[RestModel]())()
+	url, err := charactersInMapUrl(p.ctx, f)
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to resolve characters-in-map URL for map [%d], using count 0", f.MapId())
+		return 0, nil
+	}
+	resp, err := requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(url, 250, Extract, model.Filters[RestModel]())()
 	if err != nil {
 		p.l.WithError(err).Warnf("Failed to get characters in map [%d], using count 0", f.MapId())
 		return 0, nil

@@ -58,7 +58,12 @@ func (p *ProcessorImpl) HasActiveBuff(characterId uint32, sourceId int32) model.
 // every page rather than fetching just the first.
 func (p *ProcessorImpl) GetBuffsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		buffsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(characterBuffsUrl(characterId), 250, Extract, model.Filters[Model]())
+		url, urlErr := characterBuffsUrl(p.ctx, characterId)
+		if urlErr != nil {
+			p.l.WithError(urlErr).Debugf("Failed to resolve buffs URL for character %d", characterId)
+			return []Model{}, nil
+		}
+		buffsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 		buffs, err := buffsProvider()
 		if err != nil {
 			// If not found or error, return empty slice (character may have no buffs)

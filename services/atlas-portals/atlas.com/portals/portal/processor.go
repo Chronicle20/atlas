@@ -45,11 +45,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) InMapByNameProvider(mapId _map.Id, name string) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMapByName(mapId, name), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMapByName(p.ctx, mapId, name), Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) InMapByIdProvider(mapId _map.Id, id uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestInMapById(mapId, id), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestInMapById(p.ctx, mapId, id), Extract)
 }
 
 func (p *ProcessorImpl) GetInMapByName(mapId _map.Id, name string) (Model, error) {
@@ -64,7 +64,11 @@ func (p *ProcessorImpl) GetInMapById(mapId _map.Id, id uint32) (Model, error) {
 // /data/maps/{id}/portals is now paginated (task-117), so this drains
 // every page rather than fetching one.
 func (p *ProcessorImpl) InMapProvider(mapId _map.Id) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(mapId), 250, Extract, model.Filters[Model]())
+	url, err := inMapUrl(p.ctx, mapId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) Warp(f field.Model, characterId uint32, targetMapId _map.Id) {

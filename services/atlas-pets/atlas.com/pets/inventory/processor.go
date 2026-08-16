@@ -33,7 +33,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, characterId), Extract)
 }
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Model, error) {

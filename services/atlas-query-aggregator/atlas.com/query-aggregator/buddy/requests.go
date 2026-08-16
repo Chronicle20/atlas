@@ -1,6 +1,7 @@
 package buddy
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -11,10 +12,14 @@ const (
 	ByCharacterId = Resource + "/character/%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("BUDDIES")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "BUDDIES")
 }
 
-func requestByCharacterId(characterId uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByCharacterId, characterId))
+func requestByCharacterId(ctx context.Context, characterId uint32) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+ByCharacterId, characterId))
 }

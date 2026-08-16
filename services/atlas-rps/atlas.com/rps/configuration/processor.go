@@ -45,7 +45,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // with no configured record yields ErrNoRewardConfig.
 func (p *ProcessorImpl) GetLadder(tenantId uuid.UUID) (game.Ladder, error) {
 	p.l.Debugf("Fetching rps-rewards configuration for tenant [%s].", tenantId)
-	ladders, err := requests.SliceProvider[RpsRewardRestModel, game.Ladder](p.l, p.ctx)(requestRewards(tenantId.String()), Extract, model.Filters[game.Ladder]())()
+	ladders, err := requests.SliceProvider[RpsRewardRestModel, game.Ladder](p.l, p.ctx)(requestRewards(p.ctx, tenantId.String()), Extract, model.Filters[game.Ladder]())()
 	if err != nil {
 		return game.Ladder{}, err
 	}

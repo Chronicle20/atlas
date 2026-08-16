@@ -500,6 +500,10 @@ func (e *OperationExecutor) executeStageClearAttempt(rc ReactorContext, characte
 
 // getPqInstanceByCharacter queries the party-quests service for the character's PQ instance
 func (e *OperationExecutor) getPqInstanceByCharacter(characterId uint32) (pqInstanceRestModel, error) {
-	url := fmt.Sprintf(requests.RootUrl("PARTY_QUESTS")+"party-quests/instances/character/%d", characterId)
+	root, err := requests.RootUrlFor(e.ctx, "PARTY_QUESTS")
+	if err != nil {
+		return pqInstanceRestModel{}, err
+	}
+	url := fmt.Sprintf(root+"party-quests/instances/character/%d", characterId)
 	return requests.GetRequest[pqInstanceRestModel](url)(e.l, e.ctx)
 }

@@ -113,7 +113,7 @@ func UpdateTenantHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 				tenant, err := processor.UpdateAndEmit(tenantId, im.Name(), im.Region(), im.MajorVersion(), im.MinorVersion())
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to update tenant")
-					server.WriteErrorResponse(d.Logger())(w)(err)
+					rest.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -141,7 +141,7 @@ func DeleteTenantHandler(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Ha
 				err := processor.DeleteAndEmit(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Error("Failed to delete tenant")
-					server.WriteErrorResponse(d.Logger())(w)(err)
+					rest.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 

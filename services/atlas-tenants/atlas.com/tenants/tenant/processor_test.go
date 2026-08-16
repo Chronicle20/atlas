@@ -12,6 +12,7 @@ import (
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/gorm"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -59,7 +60,7 @@ func (p *testProcessor) create(name, region string, majorVersion, minorVersion u
 }
 
 func (p *testProcessor) getById(id uuid.UUID) (tenant.Model, error) {
-	provider := tenant.GetByIdProvider(id)(p.db)
+	provider := tenant.GetByIdProvider(context.Background(), id)(p.db)
 	e, err := provider()
 	if err != nil {
 		return tenant.Model{}, err
@@ -85,13 +86,20 @@ func (p *testProcessor) getAll() ([]tenant.Model, error) {
 // map (see kafka/message/message.go), so no Kafka producer is needed - this
 // is the actual production update path, not a stand-in.
 func (p *testProcessor) update(id uuid.UUID, name, region string, majorVersion, minorVersion uint16) (tenant.Model, error) {
+	return p.updateAs(context.Background(), id, name, region, majorVersion, minorVersion)
+}
+
+// updateAs is update but with an explicit caller context, so a test can
+// exercise scope.AuthorizeWrite (task-232 FR-7.1) against a tenant owned by
+// a non-legacy environment.
+func (p *testProcessor) updateAs(ctx context.Context, id uuid.UUID, name, region string, majorVersion, minorVersion uint16) (tenant.Model, error) {
 	mb := message.NewBuffer()
-	processor := tenant.NewProcessor(p.l, context.Background(), p.db)
+	processor := tenant.NewProcessor(p.l, ctx, p.db)
 	return processor.Update(mb)(id, name, region, majorVersion, minorVersion)
 }
 
 func (p *testProcessor) delete(id uuid.UUID) error {
-	return tenant.DeleteTenant(p.db, id)
+	return tenant.DeleteTenant(context.Background(), p.db, id)
 }
 
 func TestCreate_Success(t *testing.T) {
@@ -245,7 +253,9 @@ func TestUpdate_PreservesEnvironment(t *testing.T) {
 
 	// Update does not mention Environment; it must be carried forward
 	// unchanged rather than zeroed by the rebuild in ProcessorImpl.Update.
-	updated, err := processor.update(m.Id(), "Updated Name", "EMS", 90, 2)
+	// The caller must be authorized for pr-123 (task-232 FR-7.1) - a legacy
+	// caller updating a pr-123-owned tenant is a cross-environment write.
+	updated, err := processor.updateAs(env.WithContext(context.Background(), env.Id("pr-123")), m.Id(), "Updated Name", "EMS", 90, 2)
 	if err != nil {
 		t.Fatalf("update() unexpected error: %v", err)
 	}

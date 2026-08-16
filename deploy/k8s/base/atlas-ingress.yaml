@@ -91,6 +91,10 @@ spec:
       - name: nginx
         image: nginx:latest
         env:
+        - name: SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['app']
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef:

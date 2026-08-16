@@ -39,8 +39,21 @@ atlas-saga-orchestrator/saga/store.go:241 # GetTimedOut — timeout-reaper sweep
 # from task-232 Task 3B/9B's review. Not WithoutTenantFilter: these never
 # call .WithContext at all, which is the OTHER unscoping mechanism.)
 
-atlas-marriages/scheduler/proposal_expiry.go:115 # getTenantsWithProposals — discovers which tenants have pending proposals so processExpiredProposals can loop per tenant, reconstructing tenantCtx before every write (proposal_expiry.go:126-129, comment "// Process each tenant"). query-scope-audit.md §4.1 row 3.
-atlas-marriages/scheduler/ceremony_timeout.go:116 # getTenantsWithActiveCeremonies — identical shape to proposal_expiry.go's getTenantsWithProposals; processActiveCeremonies reconstructs tenantCtx per tenant before every write. query-scope-audit.md §4.1 row 4.
+# Line numbers refreshed for task-232 Task 41 (commit e683d85da), which
+# rewrote both schedulers' TenantLister onto service.ForEachOwnedEnvironment
+# — the cross-tenant discovery query itself is unchanged in shape (still a
+# `Distinct("tenant_id").Pluck(...)` with no request tenant to scope by),
+# just moved into getTenantsWithProposals/getTenantsWithActiveCeremonies
+# helper functions the listTenantsWith* TenantLister calls. Environment
+# isolation for whatever tenants these return is enforced downstream, not
+# here: eachOwned (libs/atlas-service/foreach.go) filters every tenant a
+# TenantLister returns against the EnvironmentResolver projection before
+# visiting it, dropping any tenant that resolves to a different environment
+# than the one being iterated — see foreach.go's comment on the `tr != nil`
+# branch, which documents that this filter exists precisely because a
+# lister (like this one) is not always context-scoped enough to self-limit.
+atlas-marriages/scheduler/proposal_expiry.go:132 # getTenantsWithProposals — discovers which tenants have pending proposals so processExpiredProposalsForTenant can be run once per (environment, tenant) via service.ForEachOwnedEnvironment (proposal_expiry.go:94), which reconstructs tenantCtx before every write and filters returned tenants to the owning environment via eachOwned. query-scope-audit.md §4.1 row 3.
+atlas-marriages/scheduler/ceremony_timeout.go:138 # getTenantsWithActiveCeremonies — identical shape to proposal_expiry.go's getTenantsWithProposals; processActiveCeremoniesForTenant is run once per (environment, tenant) via service.ForEachOwnedEnvironment (ceremony_timeout.go:100), which reconstructs tenantCtx per tenant and filters returned tenants to the owning environment via eachOwned. query-scope-audit.md §4.1 row 4.
 
 # --- atlas-data: resolved-partition reads. Documented in query-scope-audit.md
 # §1 rows 75-77 and 80 (search indexes, spawn indexes) and the §3 disposition

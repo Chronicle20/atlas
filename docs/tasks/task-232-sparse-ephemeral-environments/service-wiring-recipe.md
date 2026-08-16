@@ -23,13 +23,22 @@ grep -rn "tenant.WithContext" --include='*.go' "$S" | grep -v '_test.go'
 
 Record all four counts before editing. They are this batch's checklist —
 every counted site must be touched (or, for `tenant.WithContext`,
-classified — see Step 3b below), and the counts should match the number of
-edits made.
+classified), and the counts should match the number of edits made.
+
+`tenant.WithContext` sites are **audit** sites, not conversion sites: this
+recipe's three edits do not cover them. Each one is classified against the
+scheme defined in plan Tasks 41/42 (`plan.md`, "Per-environment iteration
+for the eight per-tenant ticker loops" and "The remaining ticker loops, and
+the class-2 / class-3 dispositions") — class 1 originates per-environment
+and must be converted there; class 2 is read-only per-tenant state needing
+no change; class 3 is a deliberate control-plane sweep. A site this recipe's
+batch cannot classify is deferred to those tasks with the deferral recorded,
+never silently wired.
 
 **Always filter `tenant.WithContext` with `grep -v '_test.go'`.** The
 unfiltered grep overstates the real surface by roughly 40x (most hits are
 test fixtures building a tenanted context, not production origination
-sites) — running Step 3b unfiltered sends every remaining batch into a
+sites) — running the audit-site pass unfiltered sends every remaining batch into a
 ~300-site read for a real surface that is usually single digits. State a
 batch's size as **conversion sites (Bootstrap + SetHeaderParsers +
 RootUrl) + NON-TEST `tenant.WithContext` audit sites** — the unfiltered

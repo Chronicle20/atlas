@@ -3,9 +3,10 @@ module github.com/Chronicle20/atlas/libs/atlas-service
 go 1.25.5
 
 require (
-	github.com/Chronicle20/atlas/libs/atlas-env v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-env v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/segmentio/kafka-go v0.4.51
@@ -15,15 +16,20 @@ require (
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0 // indirect
-	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0 // indirect
+	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
-	github.com/klauspost/compress v1.18.6 // indirect
+	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/magefile/mage v1.9.0 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
+	github.com/prometheus/client_golang v1.24.1 // indirect
+	github.com/prometheus/client_model v0.6.2 // indirect
+	github.com/prometheus/common v0.70.1 // indirect
+	github.com/prometheus/procfs v0.21.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.45.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.45.0 // indirect

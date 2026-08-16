@@ -121,17 +121,24 @@ changed code reads or passes tenant/trace state.
 
 1. Read the `RestModel` and request structs in the changed `rest.go`. Look for
    a `TenantId` / `tenant_id` field, or any other tenant-carrying attribute in
-   the serialized surface.
+   the serialized surface. Read the `json` tag before flagging: a field tagged
+   `json:"-"` is not serialized and is not a violation — carrying the tenant
+   internally for `Transform` / `Extract` round-tripping is the established
+   shape (`services/atlas-buddies/atlas.com/buddies/list/rest.go`). A tenant
+   field with a real JSON name is the finding.
 2. Grep the changed `resource.go` for route patterns and query-parameter reads
    that carry a tenant (`{tenantId}`, `r.URL.Query().Get("tenantId")`) and for
    direct header reads (`r.Header.Get("TENANT_ID")`).
-3. Check provider, update, and delete signatures in the diff: they must NOT
-   take a `tenantId` parameter — GORM callbacks inject the filter from context
-   (see [Automatic Database Tenant Filtering](#automatic-database-tenant-filtering)).
-   Create functions are the documented exception; they keep `tenantId` because
-   they set the entity field.
-
 **Pass criteria.** Tenant identity reaches the code only through
 `tenant.MustFromContext(ctx)` and `db.WithContext(ctx)`. A tenant field on a
 public REST model, request body, path, or query parameter is a FAIL — the
 public API surface must not let a caller name its own tenant.
+
+**Scope.** DOM-31 grades the *public surface* only. A `tenantId` parameter on
+an unexported provider or administrator function is not a DOM-31 finding —
+`create` functions keep it to set the entity field, and some administrators
+scope a `WHERE` clause with it explicitly rather than relying on the callback
+(`services/atlas-character/atlas.com/character/teleport_rock/administrator.go`).
+Whether an internal function should thread `tenantId` at all is the unnumbered
+[Automatic Database Tenant Filtering](#automatic-database-tenant-filtering)
+guidance above, graded as general architectural guidance — not as DOM-31.

@@ -70,13 +70,21 @@ calls `AndEmit` / `message.Emit` / `producer.ProviderImpl`.
    `*AndEmit` shape in [Message Buffer Pattern](#message-buffer-pattern) — so
    that the operation's DB write and its events commit or fail together.
 
-**Pass criteria.** Operations that mutate state emit through `AndEmit` +
-`message.Buffer`.
+**Pass criteria.** An operation that performs a DB write emits through `AndEmit`
++ `message.Buffer`, so the write and its events commit or fail together.
 
-**Documented exception.** A direct producer call on a *post-failure* branch —
-one reached only after the operation's transaction has already failed, where
-there is no live buffer to attach to — is not a finding. The buffer requirement
-exists to keep a write atomic with its side effects; on that branch there is no
-write to be atomic with. This is the task-137 ruling (`atlas-notes` /
-`saga-orchestrator` CREATE_FAILED notifications). Cite the branch condition as
-evidence; a direct producer call on a *success* path is a FAIL.
+**Documented exceptions.** The buffer requirement exists to keep a *DB write*
+atomic with its side effects. Where there is no such write, a direct producer
+call is not a finding:
+
+1. **Post-failure branches** — reached only after the operation's transaction
+   has already failed, so there is no live buffer to attach to. The task-137
+   ruling (`atlas-notes` / `saga-orchestrator` CREATE_FAILED notifications).
+2. **Operations over non-DB state** — a processor whose state lives in an
+   in-memory registry or cache has no transaction on *any* path, success
+   included, so it emits directly
+   (`services/atlas-chairs/atlas.com/chairs/chair/processor.go` —
+   `GetRegistry().Set(...)` then a direct `producer.ProviderImpl(...)`).
+
+Cite the absent write as evidence. A direct producer call on the success path
+of an operation that *does* write to the database is a FAIL.

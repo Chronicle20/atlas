@@ -25,5 +25,5 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) RecentInvolving(characterIds []uint32) ([]Model, error) {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestHistory(characterIds), Extract, model.Filters[Model]())()
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestHistory(p.ctx, characterIds), Extract, model.Filters[Model]())()
 }

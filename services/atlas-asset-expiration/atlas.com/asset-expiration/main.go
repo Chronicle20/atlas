@@ -20,7 +20,7 @@ const serviceName = "atlas-asset-expiration"
 var consumerGroupId = consumergroup.Resolve("Asset Expiration Service")
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	// Initialize Kafka consumers

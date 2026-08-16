@@ -27,10 +27,13 @@ description: |
   assistant: "Dispatching dispatcher-family-implementer for CWvsContext::OnGuildResult."
   </example>
 model: sonnet
-# tools: wide/unrestricted (FR-1.3) — this agent drives IDA through ida-pro-mcp
-# to decompile client read order; the MCP tool surface can't be enumerated
-# ahead of time, so it keeps the full default tool set rather than an allowlist.
-tools: "*"
+# tools: intentionally omitted (FR-1.3) — resolves the loaded IDB via
+# ida-pro-mcp (list_instances/select_instance) to enumerate the family's mode
+# set from the client switch and decompile each arm's body; its MCP tool
+# surface can't be enumerated ahead of time. Per
+# https://code.claude.com/docs/en/sub-agents.md, omitting `tools:` is the
+# documented mechanism for inheriting every tool including MCP tools — a
+# wildcard value is not documented and is not used here.
 ---
 
 You implement exactly ONE mode-prefix dispatcher family, end to end, the way

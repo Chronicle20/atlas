@@ -5,7 +5,7 @@ go 1.25.5
 require (
 	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.6.0
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.0
 	golang.org/x/text v0.41.0
 )
 

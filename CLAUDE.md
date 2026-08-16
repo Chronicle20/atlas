@@ -67,7 +67,7 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 - If it can be resumed from repo state, the task's own reports, and a short written diagnosis, hand off. Do not wait for a context threshold; the signal is dependency, not size.
 - Handing off means delegating, not clearing. `/clear` is a user action — an agent cannot clear itself. Dispatch the next unit to a fresh agent with a brief. Only when the next unit is genuinely controller-shaped, write the diagnosis down and let the user `/clear`.
 - The diagnosis must be written before the handoff, not carried in your head — one paragraph into the task folder. A handoff whose reasoning survives only in conversation is not a handoff.
-- Size thresholds are backstops, not triggers — dependency is the primary signal. *(enforced)*
+- Size thresholds are backstops, not triggers — dependency is the primary signal.
 
 **Context handoff mechanics** — the specific thresholds and the `/execute-task` handoff pattern: see [docs/agent-dispatch.md](docs/agent-dispatch.md).
 

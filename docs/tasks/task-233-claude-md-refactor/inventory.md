@@ -251,9 +251,12 @@ sentence to an `R-NNN` row.
 | Where the procedures live | 9-row router table | R-009, R-024, R-045, plus destination-doc summaries of R-047/R-049/R-053/R-056/R-059/R-060/R-064/R-066/R-068–R-095 subsets |
 
 **Result: every sentence in the finished `CLAUDE.md` maps to at least one
-`R-NNN` row. No unmapped/invented rule found.**
+`R-NNN` row, with one exception found and fixed (item 3 below) — an
+unsupported `*(enforced)*` marker at `CLAUDE.md:70` that made an advisory
+rule read as mechanically gated. That marker has been removed; the sweep
+is now clean.**
 
-Two structural observations, neither a defect requiring a fix:
+Four structural observations:
 
 1. **Router pointers appear twice by design.** Each of "Development
    workflow", "Dispatching agents", and "Handing off context" ends with a
@@ -264,7 +267,7 @@ Two structural observations, neither a defect requiring a fix:
    "where is the detailed procedure" scan. Both forms name the same
    destination and neither adds new normative content, so this is not the
    "same rule described normatively in two places" the acceptance
-   criterion forbids — it is one router fact, indexed twice.
+   criterion forbids — it is one router fact, indexed twice. Not a defect.
 2. **One table row has no ledger source.** The "Where the procedures live"
    table's last row — "Go service patterns … `backend-dev-guidelines`
    skill, `backend-guidelines-reviewer` agent … DOM-* checklist
@@ -275,10 +278,54 @@ Two structural observations, neither a defect requiring a fix:
    independently `keep-compressed` into §Repository conventions. This row
    does not restate any existing `CLAUDE.md` rule with different force —
    it is a discoverability pointer to infrastructure the refactor did not
-   touch. Flagged as a concern rather than mechanically fixed, since
+   touch, and it is separately carried as one of `ownership.md`'s ten
+   concerns. Flagged as a concern rather than mechanically fixed, since
    removing or keeping it is an editorial call about the "where is the
    detailed procedure for this kind of work" scanability question, not a
-   round-trip defect.
+   round-trip defect. Not a defect requiring a fix.
+3. **`*(enforced)*` marker audit — one of three was unsupported, and has
+   been removed (fix round 1).** Three bullets in the finished `CLAUDE.md`
+   originally carried an `*(enforced)*` annotation, asserting that a hook
+   mechanically backs the rule rather than it being advisory. Each was
+   checked against the hook it claims:
+   - `CLAUDE.md:60` (fork policy, "Fan out with fresh-context agents, not
+     `subagent_type: "fork"` … *(enforced)*") — backed by
+     `.claude/hooks/fork-dispatch-guard.sh`, which emits
+     `permissionDecision: "deny"` for an unjustified fork. **Genuinely
+     blocking. Marker correct, left as-is.**
+   - `CLAUDE.md:80` (path hygiene, "Use repo-relative paths or placeholders
+     … *(enforced)*") — backed by the repo's home/absolute-path guard,
+     which fails the branch on a literal path. **Genuinely blocking. Marker
+     correct, left as-is.**
+   - `CLAUDE.md:70` (context handoff, "Size thresholds are backstops, not
+     triggers — dependency is the primary signal. *(enforced)*") —
+     claimed to be backed by `.claude/hooks/commit-boundary.sh`. Reading
+     that hook: line 10 states "It does NOT decide the handoff" and line 21
+     states "Always exits 0 — a nag must never break a session." The hook
+     is advisory (a nag), not a gate. **Unsupported — the marker made an
+     advisory rule read as mechanically enforced, which is a rule reading
+     *stronger* than its source, forbidden by PRD §2. Fixed:** the
+     `*(enforced)*` marker was removed from `CLAUDE.md:70`; the underlying
+     behavioral rule (thresholds are backstops, not triggers) is untouched.
+     This is exactly the class of drift the reverse round-trip exists to
+     catch, and Step 2's original pass missed it — recorded here as the
+     correction.
+4. **"Never do this" restates content stated in full elsewhere — by design,
+   same reasoning as observation 1.** Every bullet in §Never do this (e.g.
+   `CLAUDE.md:7`, "Never claim verified from a flagged or partial run")
+   restates, in imperative-prohibition form, a rule given in full further
+   down the document (here, the fuller R-003/R-004 statement in §Done means
+   verified). This is the same index-versus-normative-statement pattern as
+   observation 1: §Never do this is a consolidated index of prohibitions —
+   the plan's design explicitly calls for this section as a scanability
+   answer to "what must I never do?" (FR-8) — and the operative, fuller
+   statement of each rule lives in its own section (§Evidence & grounding,
+   §Where you work, §Done means verified, §Dispatching agents). Checked
+   each of the seven bullets against its fuller-statement section and
+   confirmed no bullet asserts anything the fuller statement does not
+   already say — no strengthening, broadening, or new obligation is
+   introduced by the index form. Not a "same rule described normatively in
+   two places" violation; not a defect.
 
 ### Step 3 — link check
 
@@ -334,10 +381,13 @@ wc -l -c CLAUDE.md
 | | Lines | Bytes |
 |---|---|---|
 | Before | 220 | 19,543 |
-| After | 103 | 11,735 |
-| Delta | -117 (-53.2%) | -7,808 (-39.96%) |
+| After (initial) | 103 | 11,735 |
+| After (fix round 1 — `*(enforced)*` marker removed from `CLAUDE.md:70`) | 103 | 11,722 |
+| Delta (final) | -117 (-53.2%) | -7,821 (-40.02%) |
 
-Reported as an outcome, not a goal.
+Reported as an outcome, not a goal. The 13-byte drop between the initial
+and fix-round measurements is the removed `*(enforced)*` marker (see Step
+2, observation 3) — no other content changed.
 
 New documents created by this refactor: exactly four —
 `docs/git-workflow.md`, `docs/reverse-engineering.md`,
@@ -347,7 +397,7 @@ drop-captured content: `docs/observability.md` (+825 bytes),
 `docs/superpowers-integration.md` (+761 bytes), `docs/verification.md`
 (+353 bytes). Total size added across `docs/`: **13,106 bytes**.
 
-The trade made visible: root context shrank by 7,808 bytes; total
+The trade made visible: root context shrank by 7,821 bytes; total
 documentation grew by 13,106 bytes net (content moved out of the
 always-loaded root file into task-scoped, load-on-demand documents — it did
 not disappear).

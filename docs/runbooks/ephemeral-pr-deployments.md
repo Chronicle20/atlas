@@ -598,20 +598,26 @@ then connect a v84 client and confirm the login handshake completes (no hang).
 `tools/mode-select.sh` (task-232 FR-9.2–9.5) decides, per PR, whether the
 `deploy-env`-labeled environment is:
 
-- **sparse** — only the changed services plus the mandatory floor
+- **sparse (default)** — only the changed services plus the mandatory floor
   (`atlas-login`, `atlas-channel` — FR-9.4/D6) are deployed as
   Deployments; everything else in the namespace is served by `main`
-  (the shared baseline environment). This is the default whenever the
-  changed-file set maps cleanly to a small, known service set.
-- **isolated** — every service is deployed into the PR's own namespace,
-  nothing shared with `main`. This is the conservative default whenever
-  the change set touches something whose blast radius `mode-select.sh`
-  cannot narrow to a specific service list — a shared library
+  (the shared baseline environment). This is what `mode-select.sh`'s
+  no-trigger branch resolves to — the changed-file set mapping cleanly to a
+  small, known service set is the common case, not the exception. Full
+  operational detail (gate counters, the P0 leakage alert, the unmeasured
+  fan-out cost, the MetalLB pool ceiling, the NetworkPolicy dependency) is
+  in `docs/runbooks/sparse-environments.md`, not duplicated here.
+- **isolated (escalation)** — every service is deployed into the PR's own
+  namespace, nothing shared with `main`. This is the documented escalation
+  path, triggered automatically whenever the change set touches something
+  whose blast radius `mode-select.sh` cannot narrow to a specific service
+  list — a shared library
   (`libs/atlas-kafka`, `libs/atlas-rest`, `libs/atlas-tenant`, `libs/atlas-redis`,
   `libs/atlas-env`, `libs/atlas-service`), `deploy/k8s/base/*`, a Kafka
   message contract, an `entity.go`/`migration*.go`, `atlas-configurations`,
   `atlas-tenants`, or any path outside the repo's known top-level roots
-  (including `go.work`, `docker-bake.hcl`, and any unrecognized root file).
+  (including `go.work`, `docker-bake.hcl`, and any unrecognized root file) —
+  or explicitly via the `atlas:isolated` label below.
 
 The `detect-changes` composite action (`.github/actions/detect-changes/action.yml`)
 runs `mode-select.sh` once per PR validation run and posts a single, in-place-updated

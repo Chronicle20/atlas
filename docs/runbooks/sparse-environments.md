@@ -9,13 +9,18 @@ design and `prd.md` for the FR/NFR numbering referenced below.
 
 ## Mode selection (FR-9)
 
-Every PR deploys in one of two modes:
+**Sparse is the default mode.** `tools/mode-select.sh`'s no-trigger branch
+resolves to `sparse` — only the changed services (plus the mandatory floor,
+below) are deployed as their own workloads; everything else is served by the
+`main` baseline via the environment registry. Escalating to isolated is the
+documented exception path, not a coin-flip alternative:
 
-- **Sparse** (default) — only the changed services (plus the mandatory
-  floor, below) are deployed as their own workloads; everything else is
-  served by the `main` baseline via the environment registry.
-- **Isolated** (existing) — a full-stack deployment, unaffected by the
-  registry/gate machinery this runbook covers.
+- **Sparse** (default) — as above.
+- **Isolated** (escalation) — a full-stack deployment, unaffected by the
+  registry/gate machinery this runbook covers. Used automatically when a
+  trigger below fires, or explicitly via `atlas:isolated` (see
+  `docs/runbooks/ephemeral-pr-deployments.md` §9.15 for both override
+  labels and the full trigger list).
 
 **Mode escalates to isolated automatically (FR-9.3)** when a PR touches any
 of:
@@ -63,6 +68,30 @@ counters, each labelled `{service, environment}`:
 pod correctly ignores traffic belonging to environments it does not own.
 `dropped_unresolvable` growing means a message nobody processed: the
 operation silently disappeared.
+
+### Fan-out cost is unmeasured at the time sparse became the default
+
+Sparse mode makes every override deployment's shared-topic consumer group
+receive **every** environment's traffic on the unsuffixed baseline topics —
+the gate above is what filters it back down per-environment. Task 53 was
+scoped to measure that fan-out cost (consumer lag, gate-skip rate) against
+`atlas_kafka_gate_*` under concurrent sparse environments, but those counters
+are introduced by this same branch and are not yet deployed — there is no
+live data to measure against yet. **Task 53 is deferred to a post-deploy
+follow-up**, not skipped: this doc will be updated with the real numbers once
+they exist. Until then, treat the fan-out cost as an open question, not an
+assumed-acceptable one, and watch for the symptom below.
+
+**Symptom to watch for:** consumer lag climbing on the shared, unsuffixed
+baseline topics as the number of concurrent sparse environments increases —
+check `atlas_kafka_gate_skipped_not_owner_total` growth rate per topic
+alongside standard consumer-lag metrics. If lag grows materially with
+concurrency, the mitigation options (in priority order to evaluate, none
+implemented yet) are:
+
+- escalate the hot service to isolated mode for PRs that touch it;
+- reinstate topic suffixing for that specific service;
+- partition consumer groups by environment for that topic.
 
 ## The alert (FR-10.4)
 
@@ -214,6 +243,27 @@ Task 46. Only the IP varies per environment; the port never does.
 yaml`) as `192.168.23.190-192.168.23.209` — 20 addresses. Each sparse
 environment consumes **two** (login + channel), so the pool ceiling is **10
 concurrent environments**, matching Task 29's metric-cardinality budget.
+
+That 10-environment figure is the **mechanical** limit (IP addresses, a hard
+resource bound) — it is not a validated statement about fan-out cost at that
+concurrency. See "Fan-out cost is unmeasured" above: the Kafka fan-out cost
+of 10 concurrent sparse environments sharing unsuffixed baseline topics has
+not been measured (Task 53, deferred). Treat 10 as "the pool physically
+cannot exceed this," not "10 is known to be safe for consumer lag."
+
+### NetworkPolicy dependency (design §16)
+
+Sparse mode's `M3` (baseline routing for un-overridden services) depends on
+**cross-namespace ingress** — a sparse PR namespace's requests reach services
+still running in the `main` namespace. As of this writing there are **no**
+NetworkPolicy resources in `deploy/k8s/` (repo) and none in any `atlas-*`
+namespace in the live cluster (cluster-wide NetworkPolicies exist only in
+`argocd`, `cattle-fleet-local-system`, and `cattle-resources-system`, none of
+which select atlas pods), so this dependency is currently unconstrained. It
+is not enforced anywhere today, only assumed. **If a NetworkPolicy is ever
+added that selects pods in an `atlas-*` namespace, it must explicitly permit
+this cross-namespace ingress or sparse routing breaks silently** — validate
+any future atlas-namespace NetworkPolicy against M3 before it merges.
 
 ### Failure mode: pool exhaustion
 

@@ -155,3 +155,206 @@ No FR-3 item is missing a `keep-*` row.
 
 No disagreement found between this classification and the PRD; no note rows
 were required.
+
+## Round-trip verification (Task 9)
+
+### Step 1 — forward round-trip: nothing lost
+
+Walked all 97 rows (`R-001`–`R-095`, plus `R-012a`, `R-047a`). For every
+`keep-verbatim`/`keep-compressed` row, the rule was located in the new
+`CLAUDE.md`. For every `relocate`/`drop-captured` row, the destination file
+was opened and the rule text confirmed present (not trusted from the row).
+
+**Result: 97/97 pass, no failures, no fixes required.**
+
+Two coexistences were confirmed as authorized, not defects:
+
+- `R-004` (flagless `tools/verify.sh` is the only pass) stays `keep-verbatim`
+  in `CLAUDE.md` §Done means verified; `R-008` (launch in background, never
+  idle) is the row that relocates to `docs/verification.md` §The iteration
+  gate. `docs/verification.md` additionally documents `--all`, which
+  `CLAUDE.md` does not — an intentional elaboration, not drift.
+- `R-025`'s dropped `/dev-docs` clause: confirmed `.claude/commands/dev-docs.md`
+  does not exist in this worktree; the row's fix-round-1 note stands.
+
+Every `relocate`/`drop-captured` destination was opened and read directly:
+`docs/verification.md`, `docs/superpowers-integration.md`,
+`docs/git-workflow.md`, `docs/reverse-engineering.md`,
+`docs/tooling-conventions.md`, `docs/agent-dispatch.md`,
+`docs/observability.md`, `docs/packets/PROCESS.md`,
+`docs/adding-a-new-service.md`. All named destination sections carry the
+rule text described by their row.
+
+### Step 2 — reverse round-trip: nothing invented
+
+Walked the finished `CLAUDE.md` sentence by sentence and mapped every
+sentence to an `R-NNN` row.
+
+| CLAUDE.md section | Sentence/bullet | Maps to |
+|---|---|---|
+| `# Atlas` intro | Go microservices monorepo, 14+ services, TS only in atlas-ui | R-001 |
+| Never do this | Never commit/push to `main` | R-054 |
+| Never do this | Never edit main repo when a task worktree exists | R-029 |
+| Never do this | Never invent a value/name/opcode/output/behavior | R-034 |
+| Never do this | Never claim verified from a flagged/partial run | R-004 |
+| Never do this | Never open a PR without code review | R-031 |
+| Never do this | Never dispatch an agent without explicit `model` | R-063 |
+| Never do this | Never land a placeholder/stub/501 | R-041 |
+| Evidence & grounding | Never invent… quote actual tool output | R-034, R-035 |
+| Evidence & grounding | Repo/WZ/IDA/live output outrank memory | R-036 |
+| Evidence & grounding | Confirm exact version before investigating | R-037 |
+| Evidence & grounding | Sweep, don't spot-check | R-038 |
+| Evidence & grounding | Finish producible work / don't split to avoid finishing | R-039, R-040 |
+| Evidence & grounding | Genuine blocker → surface and ask | R-042 |
+| Where you work | Check branch before every commit | R-054 |
+| Where you work | Setup work goes on the feature branch | R-055 |
+| Where you work | Verify cwd/worktree before planning/designing/executing | R-027 |
+| Where you work | Search all worktrees before concluding missing | R-028 |
+| Where you work | Subagents stay inside the correct worktree | R-030 |
+| Where you work | Push after rebase/merge/history-rewrite | R-057 |
+| Where you work | Plain push triggers PR workflow; conflict exception | R-058 |
+| Done means verified | Flagless `verify.sh` must exit 0 before "done" | R-003 |
+| Done means verified | Only flagless counts; `--quick`/`--no-docker` skip bake/-race | R-004 |
+| Done means verified | Always run code review before PR | R-031 |
+| Done means verified | Green `verify.sh` ≠ correct; trace seams by hand | R-032 |
+| Development workflow | Don't implement during planning; wait for approval | R-002 |
+| Development workflow | Four-phase flow, worktree/branch creation | R-012, R-012a |
+| Development workflow | Phase 1–4 list | R-013, R-014, R-015, R-016 |
+| Development workflow | Skip `/spec-task` only for trivial fixes | R-019 |
+| Development workflow | Verify task not already planned / no number collision | R-050 |
+| Development workflow | Task lifecycle mechanics → link | R-017, R-018, R-020–R-023, R-033, R-051 (router) |
+| Dispatching agents | Explicit `model` on every dispatch | R-063 |
+| Dispatching agents | Pin follows job not `subagent_type` | R-065 |
+| Dispatching agents | Never use Fable for background/review | R-067 |
+| Dispatching agents | Implementers don't run repo-wide verification | R-074 |
+| Dispatching agents | Fresh-context agents, not fork, unless justified | R-076 |
+| Dispatching agents | Agent dispatch mechanics → link | R-064, R-066, R-068–R-073, R-075, R-077 (router) |
+| Handing off context | Ask whether next unit depends on history or repo state | R-082 |
+| Handing off context | Resume from repo state + reports + diagnosis | R-083 |
+| Handing off context | Handing off means delegating, not clearing | R-084 |
+| Handing off context | Diagnosis written before handoff | R-085 |
+| Handing off context | Thresholds are backstops, not triggers | R-086 |
+| Handing off context | Context handoff mechanics → link | R-078–R-081, R-087, R-088 (router) |
+| Repository conventions | Check `libs/atlas-constants/` first | R-011 |
+| Repository conventions | Straightforward moves over re-exported aliases | R-010 |
+| Repository conventions | Builder pattern, no `*_testhelpers.go` | R-043 |
+| Repository conventions | Write design/plan.md directly, no per-section approval | R-026 |
+| Repository conventions | Repo-relative paths only | R-044 |
+| Repository conventions | Preserve line endings | R-090 |
+| Repository conventions | Ask the toolchain, don't sweep the filesystem | R-091 |
+| Repository conventions | Never poll; bound + hand back | R-094 |
+| Repository conventions | Glob/Grep first for TODO.md et al. | R-025 |
+| Repository conventions | Read pod logs early for wedged deploys | R-052 |
+| Repository conventions | Text before `AskUserQuestion` doesn't render | R-061 |
+| Repository conventions | Don't pitch paid features proactively | R-062 |
+| Repository conventions | Prefer POSIX shell; per-file edits over patch loops | R-089 |
+| Where the procedures live | 9-row router table | R-009, R-024, R-045, plus destination-doc summaries of R-047/R-049/R-053/R-056/R-059/R-060/R-064/R-066/R-068–R-095 subsets |
+
+**Result: every sentence in the finished `CLAUDE.md` maps to at least one
+`R-NNN` row. No unmapped/invented rule found.**
+
+Two structural observations, neither a defect requiring a fix:
+
+1. **Router pointers appear twice by design.** Each of "Development
+   workflow", "Dispatching agents", and "Handing off context" ends with a
+   bold inline pointer to its `docs/*.md` companion, and the same
+   destination is repeated as a row in the "Where the procedures live"
+   table at the end of the file. This is deliberate: the inline pointer
+   serves a reader going section-by-section; the table serves the FR-8
+   "where is the detailed procedure" scan. Both forms name the same
+   destination and neither adds new normative content, so this is not the
+   "same rule described normatively in two places" the acceptance
+   criterion forbids — it is one router fact, indexed twice.
+2. **One table row has no ledger source.** The "Where the procedures live"
+   table's last row — "Go service patterns … `backend-dev-guidelines`
+   skill, `backend-guidelines-reviewer` agent … DOM-* checklist
+   enforcement" — points at pre-existing repo infrastructure (the skill and
+   reviewer agent both predate this refactor) rather than at content this
+   task relocated. No `R-NNN` row disposes to this destination; the closest
+   related row is `R-011` (`libs/atlas-constants` / DOM-21), which is
+   independently `keep-compressed` into §Repository conventions. This row
+   does not restate any existing `CLAUDE.md` rule with different force —
+   it is a discoverability pointer to infrastructure the refactor did not
+   touch. Flagged as a concern rather than mechanically fixed, since
+   removing or keeping it is an editorial call about the "where is the
+   detailed procedure for this kind of work" scanability question, not a
+   round-trip defect.
+
+### Step 3 — link check
+
+```
+grep -oE '\]\(([^)]+)\)' CLAUDE.md
+```
+
+12 links captured, 9 distinct paths (`docs/agent-dispatch.md` linked 3×,
+`docs/superpowers-integration.md` linked 2×). All 9 confirmed to exist:
+`docs/superpowers-integration.md`, `docs/agent-dispatch.md`,
+`docs/verification.md`, `docs/adding-a-new-service.md`,
+`docs/packets/PROCESS.md`, `docs/git-workflow.md`,
+`docs/reverse-engineering.md`, `docs/tooling-conventions.md`,
+`docs/observability.md`.
+
+**Result: pass — no dead links.**
+
+### Step 4 — exclusion check
+
+```
+grep -n '\.claude/hooks/' CLAUDE.md
+grep -nE '120|CAP\+5|250k|60k|7x|7×|86 modules' CLAUDE.md
+```
+
+Both greps produced no output.
+
+**Result: pass — none of the excluded hook paths or magic numbers leaked
+into root context.**
+
+### Step 5 — scanability check (FR-8)
+
+Each of the seven FR-8 questions resolves to exactly one `CLAUDE.md`
+section, scannable without linear reading:
+
+| FR-8 question | Section |
+|---|---|
+| What must I never do? | ## Never do this |
+| Which workflow applies to this task? | ## Development workflow |
+| What evidence standard applies? | ## Evidence & grounding |
+| Which worktree and branch should I be in? | ## Where you work — branch & worktree |
+| Which agent and model should handle this? | ## Dispatching agents |
+| When should I hand work off? | ## Handing off context |
+| Where is the detailed procedure for this kind of work? | ## Where the procedures live |
+
+**Result: pass — all seven questions have exactly one home.**
+
+### Step 6 — measurement
+
+```
+wc -l -c CLAUDE.md
+```
+
+| | Lines | Bytes |
+|---|---|---|
+| Before | 220 | 19,543 |
+| After | 103 | 11,735 |
+| Delta | -117 (-53.2%) | -7,808 (-39.96%) |
+
+Reported as an outcome, not a goal.
+
+New documents created by this refactor: exactly four —
+`docs/git-workflow.md`, `docs/reverse-engineering.md`,
+`docs/tooling-conventions.md`, `docs/agent-dispatch.md` — totaling 11,167
+bytes. Three pre-existing documents also grew to absorb relocated/
+drop-captured content: `docs/observability.md` (+825 bytes),
+`docs/superpowers-integration.md` (+761 bytes), `docs/verification.md`
+(+353 bytes). Total size added across `docs/`: **13,106 bytes**.
+
+The trade made visible: root context shrank by 7,808 bytes; total
+documentation grew by 13,106 bytes net (content moved out of the
+always-loaded root file into task-scoped, load-on-demand documents — it did
+not disappear).
+
+### Step 7 — repo gate (Step 8 of the brief)
+
+Not run in this task by controller instruction: repo-wide verification
+(`tools/verify.sh`) runs in a separate clean context via the
+`atlas-verifier` agent, dispatched by the controller after this task
+reports. Treated as done-by-others.

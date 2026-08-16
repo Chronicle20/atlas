@@ -1,0 +1,66 @@
+# The environment record is the single source of truth every pod projects
+# (design §4.4, libs/atlas-env.Registry). It is created in PROVISIONING:
+# during PROVISIONING baseline deployments continue to own the environment's
+# services, overrides receive no work, and the ingress does not route
+# (FR-5.2). Task 45's offset seeding and the override rollout happen next;
+# the phase is flipped to ACTIVE last.
+#
+# This Job POSTs directly to the BASELINE's atlas-ingress
+# (PLACEHOLDER_BASELINE_NAMESPACE), not this env's own — atlas-configurations
+# is never part of the override set (it is always served by the baseline,
+# see ns-overrides.yaml), and hitting the baseline directly avoids an
+# ordering dependency on this env's own atlas-ingress Deployment (sync-wave
+# 10) from a sync-wave-1 Job.
+#
+# `sync-options: Force=true,Replace=true` (delete+recreate every sync,
+# same idiom as the base Kafka/topic precreate Jobs) means this Job's own
+# body must be idempotent: it GETs the record by name first and only POSTs
+# when absent, so a re-sync against an already-PROVISIONING/ACTIVE
+# environment is a no-op rather than a duplicate-name 500 (environments.Name
+# carries a uniqueIndex).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-environment-record
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/sync-options: Force=true,Replace=true
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: environment-record
+          image: alpine:3.20
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              apk add --no-cache --quiet curl >/dev/null
+              base="http://atlas-ingress.PLACEHOLDER_BASELINE_NAMESPACE.svc.cluster.local/api/configurations/environments"
+              name="pr-PLACEHOLDER_PR_NUMBER"
+              if curl -fsS "$base/$name" >/dev/null 2>&1; then
+                echo "environment record $name already exists, skipping"
+                exit 0
+              fi
+              curl -fsS -X POST "$base" \
+                -H "Content-Type: application/vnd.api+json" \
+                -d '{
+                      "data": {
+                        "type": "environments",
+                        "attributes": {
+                          "name": "pr-PLACEHOLDER_PR_NUMBER",
+                          "baseline": "PLACEHOLDER_BASELINE_ENVIRONMENT",
+                          "namespace": "atlas-pr-PLACEHOLDER_PR_NUMBER",
+                          "tenant": "",
+                          "overrides": {
+                            "atlas-login": "atlas-pr-PLACEHOLDER_PR_NUMBER",
+                            "atlas-channel": "atlas-pr-PLACEHOLDER_PR_NUMBER",
+                            "atlas-character": "atlas-pr-PLACEHOLDER_PR_NUMBER"
+                          },
+                          "phase": "PROVISIONING"
+                        }
+                      }
+                    }'
+              echo "created environment record $name"

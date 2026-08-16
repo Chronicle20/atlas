@@ -1,0 +1,10 @@
+# A tiny ConfigMap that carries the per-env token. The Argo CD
+# ApplicationSet substitutes data.ATLAS_ENV with the per-PR hash before
+# kustomize runs. Kustomize replacements then fan that value out to
+# every PLACEHOLDER_ATLAS_ENV slot it can reach.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-env-tokens
+data:
+  ATLAS_ENV: "PLACEHOLDER_ATLAS_ENV"

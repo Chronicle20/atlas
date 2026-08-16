@@ -35,7 +35,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // fetching just the first -- a truncated list here means monsters silently
 // can't see (and can't aggro/attack) players beyond the first page.
 func (p *ProcessorImpl) CharacterIdsInFieldProvider(f field.Model) model.Provider[[]uint32] {
-	return requests.DrainProvider[RestModel, uint32](p.l, p.ctx)(charactersInFieldUrl(f), 250, Extract, model.Filters[uint32]())
+	url, err := charactersInFieldUrl(p.ctx, f)
+	if err != nil {
+		return model.ErrorProvider[[]uint32](err)
+	}
+	return requests.DrainProvider[RestModel, uint32](p.l, p.ctx)(url, 250, Extract, model.Filters[uint32]())
 }
 
 // GetCharacterField resolves the character's CURRENT field from atlas-maps —
@@ -43,5 +47,5 @@ func (p *ProcessorImpl) CharacterIdsInFieldProvider(f field.Model) model.Provide
 // no field (PRD §8: a hide buff outlives any single map visit, so a field
 // snapshot on the event would be stale by EXPIRED time).
 func (p *ProcessorImpl) GetCharacterField(characterId uint32) (field.Model, error) {
-	return requests.Provider[LocationRestModel, field.Model](p.l, p.ctx)(requestCharacterLocation(characterId), ExtractLocation)()
+	return requests.Provider[LocationRestModel, field.Model](p.l, p.ctx)(requestCharacterLocation(p.ctx, characterId), ExtractLocation)()
 }

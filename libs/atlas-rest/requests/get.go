@@ -146,3 +146,16 @@ func MakeGetRequest[A any](url string, configurators ...Configurator) Request[A]
 		return get[A](l, ctx)(url, configurators...)
 	}
 }
+
+// ErrorRequest returns a Request that always fails with err, without issuing
+// any call. Used when a request cannot even be constructed — e.g.
+// RootUrlFor could not resolve the caller's environment to an ingress
+// (FR-3.5, G4) — so there is no URL to build a real Request from.
+//
+//goland:noinspection GoUnusedExportedFunction
+func ErrorRequest[A any](err error) Request[A] {
+	return func(l logrus.FieldLogger, ctx context.Context) (A, error) {
+		var zero A
+		return zero, err
+	}
+}

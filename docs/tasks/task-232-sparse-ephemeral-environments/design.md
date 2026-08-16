@@ -765,7 +765,7 @@ these join it.
 
 | Guard | Fails on | Requirement |
 |---|---|---|
-| `env-domain-guard` | `atlas-env` imported from a domain package (anything below `main.go` / `kafka/` / `rest/`) | FR-4.5, NG5 |
+| `env-domain-guard` | `atlas-env` imported from a domain package (anything below `main.go` / `kafka/` / `rest/` / `socket/`, or a written `domainAllowlist` entry) | FR-4.5, NG5 |
 | `producer-seam-guard` | a new direct `producer.Produce(` outside `libs/` | FR-4.1 |
 | `control-plane-scope-guard` | a new `atlas-configurations` / `atlas-tenants` entity without an environment column | FR-8.5 |
 | `tenant-scope-guard` | a new `services/*/entity.go` primary entity without `TenantId`, absent an allowlist entry with a reason | FR-8.5 |

@@ -3,13 +3,37 @@
 // from a domain package. atlas-env carries process-wide environment routing
 // state; letting a domain package import it directly would let environment
 // selection leak into business logic instead of staying confined to the
-// transport seams (main.go's bootstrap wiring, and the kafka/ and rest/
-// packages that already carry request/message-scoped context).
+// transport seams (main.go's bootstrap wiring, and the kafka/, rest/ and
+// socket/ packages that already carry request/message/session-scoped
+// context).
+//
+// PRD FR-2.2 names exactly four environment-origination points: a socket
+// connection to an override login/channel (D6), an inbound REST call
+// carrying the header, an inbound Kafka message carrying the header, and
+// the autonomous loop iterating owned environments (FR-6). The four allowed
+// import sites below map 1:1 onto those: main.go for the autonomous loop's
+// bootstrap wiring, kafka/ and rest/ for their headers, and socket/ for the
+// socket connection.
 //
 // Allowed import sites:
 //   - main.go (any package) — bootstrap wiring passes the registry down.
-//   - any file under a kafka/ or rest/ directory — the transport layer,
-//     where FR-4.5's REST/Kafka environment propagation (tasks 23-27) lives.
+//   - any file under a kafka/, rest/, or socket/ directory — the transport
+//     layer, where FR-4.5's REST/Kafka environment propagation (tasks
+//     23-27) and FR-2.2's socket origination (tasks 31-32) live. Permitted
+//     symmetrically: socket/ is the same kind of directory as kafka/ and
+//     rest/ — an entry seam that constructs the per-connection/per-message
+//     context, not domain logic in its own right. All three already mix
+//     that construction with a large volume of per-opcode/per-message
+//     dispatch code that calls into domain packages (confirmed:
+//     atlas-channel's kafka/ is ~29.5k lines across 154 files, its
+//     socket/handler/ ~24.5k across 191 files, including files with real
+//     inline computation like character_attack_combo_drain.go's damage/heal
+//     math) — that mixture is the accepted, pre-existing shape of this
+//     transport layer, not something new socket/ introduces. Scoping to
+//     e.g. socket/handler/handle.go alone (the one file that actually calls
+//     env.Self() today) would create an inconsistency with kafka/ and
+//     rest/, which are not scoped down to their own origination file
+//     either.
 //   - a package on domainAllowlist below — two distinct, narrow shapes:
 //     control-plane packages that OWN environment/tenant data as their
 //     domain model (atlas-configurations, atlas-tenants), and the single
@@ -98,7 +122,7 @@ var domainAllowlist = map[string]string{
 // via analysistest.
 var Analyzer = &analysis.Analyzer{
 	Name: "envdomainguard",
-	Doc:  "bans importing libs/atlas-env from a domain package (task-232 NG5/FR-4.5): only main.go, files under kafka/ or rest/, and domainAllowlist entries may import it",
+	Doc:  "bans importing libs/atlas-env from a domain package (task-232 NG5/FR-4.5): only main.go, files under kafka/, rest/ or socket/, and domainAllowlist entries may import it",
 	Run:  run,
 }
 
@@ -124,22 +148,23 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				continue
 			}
 			pass.Reportf(imp.Pos(),
-				"envdomainguard: atlas-env imported from a domain package; only main.go, files under kafka/ or rest/, or an entry in domainAllowlist (with a written reason) may import it (task-232 NG5/FR-4.5)")
+				"envdomainguard: atlas-env imported from a domain package; only main.go, files under kafka/, rest/ or socket/, or an entry in domainAllowlist (with a written reason) may import it (task-232 NG5/FR-4.5)")
 		}
 	}
 	return nil, nil
 }
 
-// allowedImportSite reports whether filename is one of the two sites
-// atlas-env may be imported from: main.go anywhere, or any file with a
-// kafka/ or rest/ path segment.
+// allowedImportSite reports whether filename is one of the sites atlas-env
+// may be imported from: main.go anywhere, or any file with a kafka/, rest/
+// or socket/ path segment (PRD FR-2.2's four origination points — see the
+// package doc comment).
 func allowedImportSite(filename string) bool {
 	if filepath.Base(filename) == "main.go" {
 		return true
 	}
 	dir := filepath.ToSlash(filepath.Dir(filename))
 	for _, segment := range strings.Split(dir, "/") {
-		if segment == "kafka" || segment == "rest" {
+		if segment == "kafka" || segment == "rest" || segment == "socket" {
 			return true
 		}
 	}

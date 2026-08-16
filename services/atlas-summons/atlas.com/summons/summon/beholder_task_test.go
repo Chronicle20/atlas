@@ -111,7 +111,7 @@ func TestBeholderSweepFiresHealAndBuffWhenDue(t *testing.T) {
 	}
 
 	cap := &beholderCaptureEmitter{}
-	task := NewBeholderTask(logrus.New(), context.Background(), time.Second)
+	task := NewBeholderTask(logrus.New(), context.Background(), time.Second, identityEnvContext)
 	task.emit = cap.emit
 	task.pick = func(int) int { return 0 } // deterministic: pick the first pool stat
 	task.Run()
@@ -206,7 +206,7 @@ func TestBeholderSweepSkipsWhenNotDue(t *testing.T) {
 	}
 
 	cap := &beholderCaptureEmitter{}
-	task := NewBeholderTask(logrus.New(), context.Background(), time.Second)
+	task := NewBeholderTask(logrus.New(), context.Background(), time.Second, identityEnvContext)
 	task.emit = cap.emit
 	task.pick = func(int) int { return 0 } // deterministic: pick the first pool stat
 	task.Run()
@@ -246,7 +246,7 @@ func TestBeholderSweepBuffAccumulatesAcrossPulses(t *testing.T) {
 	}
 
 	cap := &beholderCaptureEmitter{}
-	task := NewBeholderTask(logrus.New(), context.Background(), time.Second)
+	task := NewBeholderTask(logrus.New(), context.Background(), time.Second, identityEnvContext)
 	task.emit = cap.emit
 	seq := []int{0, 1, 2, 0} // WDEF, MDEF, WATK, WDEF (re-roll)
 	i := 0

@@ -26,6 +26,7 @@ description: |
   assistant: "Dispatching family-auditor for note_operation to enumerate arm coverage per version without changing anything."
   </example>
 model: sonnet
+tools: Read, Grep, Glob, Bash, Write
 ---
 
 You produce a READ-ONLY coverage audit of exactly ONE mode-prefix dispatcher

@@ -64,6 +64,12 @@ task fits, the brief path, the report path, interfaces and decisions from
 earlier tasks, and your resolution of any ambiguity you noticed. Do not
 restate the agent's contracts in the prompt.
 
+**Before dispatching a second implementer at the same templated
+transformation**, stop and check whether an AST codemod is cheaper than the
+remaining manual dispatches — see
+[docs/codemod-vs-agents.md](../../docs/codemod-vs-agents.md) for the
+break-even arithmetic and the worked example.
+
 ### Step 4a — Model discipline for every dispatch
 
 Model selection for every dispatch — the job → model table, the `model: opus`
@@ -154,6 +160,17 @@ After an implementer reports `DONE` / `DONE_WITH_CONCERNS`:
 2. **Keep going immediately** — do not poll, do not wait. Run the task review,
    then Step 4b's inventory for task N+1, then dispatch task N+1's implementer.
    The gate runs underneath all of it.
+
+   **Right-sizing the task review agent** (review+audit cost 2,616 turns /
+   227M tokens / 17.6% of task-232): a task whose diff was codemod-produced
+   and `--check`-confirmed (`docs/codemod-vs-agents.md`) may take a reduced
+   or skipped per-task review agent. Every other task — including a
+   hand-applied "mechanical" batch with no `--check` PASS behind it — is
+   judgment-bearing and gets the full review agent; that is the safe
+   default. No rewriter exists yet, so this reduced path is dormant and
+   every task takes full review today. This governs the per-task review
+   agent only; `tools/verify.sh` and the guideline reviewers still run
+   unconditionally before a PR.
 3. **Reconcile when it lands**, at the next natural pause (the notification
    from the next subagent). Read the log, ledger PASS or the failing block, and
    record the new last-gated commit.
@@ -226,14 +243,26 @@ what it cost in tokens and tool calls, and the fresh-session comparison —
 lives in [`docs/agent-dispatch.md`](../../docs/agent-dispatch.md) §Context
 handoff.
 
-**After completing any plan task, if your context exceeds ~250k tokens and two
-or more plan tasks remain, hand off:**
+**After completing any plan task, if your context exceeds ~150k tokens — or
+4 plan tasks have completed in this controller session, whichever comes
+first — hand off. This applies unconditionally, however many plan tasks
+remain; there is no carve-out for "only one or two left."**
 
 1. Confirm `<workspace>/progress.md` records every finished task, its commit
    range, and any ruling you made that is not already in a `task-N-report.md`.
 2. Tell the user: "Controller context is ~<N>k with <M> tasks remaining.
    `/clear` and re-run `/execute-task <task-id>` — it resumes from the ledger."
-3. Stop. Do not start the next task.
+3. Stop: no further tool calls after the handoff line. Do not start the next
+   task, and do not use the handoff message as a lead-in to one more action —
+   a handoff the same context then works past is not a handoff.
+
+CLAUDE.md's "Handing off context" rule is delegate-by-default, `/clear`
+only when the next unit is genuinely controller-shaped. This is the
+controller-shaped case: in `/execute-task` the controller *is* the loop —
+it dispatches implementers, reconciles gates, keeps the ledger — so "the
+next unit" here is the loop itself, which a dispatched subagent cannot take
+over. That is why step 2 above is a `/clear` instruction to the user rather
+than a fresh-agent dispatch.
 
 This is safe because the ledger is already the recovery map the skill designs
 for: it resumes at the first task with no `Task <N>: complete` line, and the
@@ -271,7 +300,7 @@ unscoped run of the same agent. See the Sharding section in
 - Implementers are `atlas-implementer`, never `general-purpose`.
 - Never run `tools/verify.sh` inside an implementer — that is `atlas-verifier`'s job (Step 4c).
 - Never dispatch a brief with no `### Files` section (Step 4b).
-- Never carry the controller past ~250k tokens with tasks remaining — hand off to a fresh session via the ledger (Step 4e).
+- Never carry the controller past ~150k tokens, or 4 completed plan tasks in one session — hand off to a fresh session via the ledger, unconditionally, regardless of tasks remaining (Step 4e).
 - Never start implementation outside the task worktree.
 - Follow plan steps exactly; stop and ask when blocked rather than guessing.
 - Run the verification commands the plan specifies; don't claim completion based on assumption.

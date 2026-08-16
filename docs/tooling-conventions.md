@@ -43,6 +43,10 @@ Prefer portable POSIX shell; avoid zsh/direnv-specific constructs and batch
 patch loops that can produce garbled or unapplied output. For a multi-file
 edit, prefer per-file Edit/Write over a shell patch loop.
 
+Quote glob arguments in shell tool calls — `--include='*.go'`, not
+`--include=*.go` — zsh expands an unquoted glob before `grep` sees it,
+producing `no matches found` and a wasted retry.
+
 Preserve line endings when editing — do not normalize CRLF→LF as a side
 effect; it inflates diffs with spurious changes.
 

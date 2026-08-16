@@ -57,6 +57,10 @@ re-reads all of it, so one 600-turn agent costs far more than the same work
 split across fresh contexts. Splitting is the designed outcome, not a
 failure.
 
+Before dispatching a second implementer at the same templated transformation,
+check whether an AST codemod is cheaper than the remaining manual dispatches
+— see [docs/codemod-vs-agents.md](codemod-vs-agents.md).
+
 ## Verification split
 
 Implementers never run `tools/verify.sh`, `tools/lint.sh`, `-race`, or
@@ -101,12 +105,22 @@ already hold, and you pay for that discovery twice; under ~40 tool calls,
 prefer continuing. `.claude/hooks/commit-boundary.sh` encodes this floor and
 raises the question at commits past it.
 
-**The backstop.** ~250k tokens for a controller — the one context that lives
-for a whole plan, where every wake-up re-reads it. Measured on a real
-18-task run: the controller finished at 402k tokens having produced only
-165KB of its own tool output across 157 calls. Its last 42 turns — a
-self-contained segment sharing no state with the preceding tasks — ran at
-360-400k each; in a fresh session those same turns would have run at ~80k.
+**The backstop.** ~150k tokens for a controller, or 4 completed plan tasks
+in one session, whichever comes first — the one context that lives for a
+whole plan, where every wake-up re-reads it, and the second trigger exists
+for a controller that cannot read its own context size. Apply the ceiling
+unconditionally: past the threshold, the controller does not start another
+plan task, however many remain — a carve-out for "only a couple left" is
+exactly the shape of the failure below. Measured on a real 18-task run: the
+controller finished at 402k tokens having produced only 165KB of its own
+tool output across 157 calls. Its last 42 turns — a self-contained segment
+sharing no state with the preceding tasks — ran at 360-400k each; in a fresh
+session those same turns would have run at ~80k. A second run, `854e6e87`,
+wrote a handoff marker (HANDOFF #10) at 243k tokens and then ran 26 more
+turns at an average of 259k (6.73M tokens) to finish one more plan task
+anyway; all 17 sessions in that task's run ended at their peak context. A
+handoff the same context then works past is not a handoff — the marker on
+disk is meaningless if the session that wrote it keeps going.
 
 Generate briefs with `tools/task-brief.sh`, never by hand out of `plan.md` —
 assembling them by hand is exactly the context bloat the brief exists to

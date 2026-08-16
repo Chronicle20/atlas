@@ -18,14 +18,6 @@ func getBaseRequest(ctx context.Context) (string, error) {
 	return requests.RootUrlFor(ctx, "DATA")
 }
 
-func requestInMapByName(ctx context.Context, mapId _map.Id, name string) requests.Request[[]RestModel] {
-	root, err := getBaseRequest(ctx)
-	if err != nil {
-		return requests.ErrorRequest[[]RestModel](err)
-	}
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+portalsByName, mapId, name))
-}
-
 func requestInMapById(ctx context.Context, mapId _map.Id, id uint32) requests.Request[RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {

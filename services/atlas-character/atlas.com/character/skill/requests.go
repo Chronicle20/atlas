@@ -27,11 +27,3 @@ func characterSkillsUrl(ctx context.Context, characterId uint32) (string, error)
 	}
 	return fmt.Sprintf(root+Resource, characterId), nil
 }
-
-func requestById(ctx context.Context, characterId uint32, id uint32) requests.Request[RestModel] {
-	root, err := getBaseRequest(ctx)
-	if err != nil {
-		return requests.ErrorRequest[RestModel](err)
-	}
-	return requests.GetRequest[RestModel](fmt.Sprintf(root+ById, characterId, id))
-}

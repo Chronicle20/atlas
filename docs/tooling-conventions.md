@@ -47,4 +47,6 @@ Preserve line endings when editing — do not normalize CRLF→LF as a side
 effect; it inflates diffs with spurious changes.
 
 Always use repo-relative paths or placeholders in committed files; never
-literal home or absolute paths.
+literal home or absolute paths like `/Users/<name>/...` or
+`/home/<name>/...` — a committed absolute path is not reproducible on
+another machine.

@@ -62,7 +62,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := lifecycle.Bootstrap(serviceName)
+	rt := lifecycle.Bootstrap(serviceName, lifecycle.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)

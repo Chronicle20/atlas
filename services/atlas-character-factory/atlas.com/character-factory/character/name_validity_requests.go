@@ -33,12 +33,15 @@ func NewNameValidityClient(l logrus.FieldLogger) *NameValidityClientImpl {
 	return &NameValidityClientImpl{l: l}
 }
 
-func getCharacterBaseRequest() string {
-	return requests.RootUrl("CHARACTERS")
+func getCharacterBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "CHARACTERS")
 }
 
 func (c *NameValidityClientImpl) Check(ctx context.Context, name string, worldId byte) (NameValidityResult, error) {
-	base := getCharacterBaseRequest()
+	base, err := getCharacterBaseRequest(ctx)
+	if err != nil {
+		return NameValidityResult{}, err
+	}
 	u := fmt.Sprintf("%s%s?name=%s&worldId=%d", base, nameValidityPath, url.QueryEscape(name), worldId)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
@@ -52,6 +55,7 @@ func (c *NameValidityClientImpl) Check(ctx context.Context, name string, worldId
 	// standard span + tenant header decorators manually to match what GetRequest does.
 	requests.SpanHeaderDecorator(ctx)(req.Header)
 	requests.TenantHeaderDecorator(ctx)(req.Header)
+	requests.EnvHeaderDecorator(ctx)(req.Header)
 
 	c.l.Debugf("Issuing [%s] request to [%s].", req.Method, req.URL)
 	resp, err := http.DefaultClient.Do(req)

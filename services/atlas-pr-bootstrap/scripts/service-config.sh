@@ -49,16 +49,6 @@ merge_tenant_entry() {
         else . end'
 }
 
-# Reassemble a full services JSON:API document from $1 = template path (for
-# .data.id / .data.type), replacing .data.attributes with the merged
-# attributes JSON read on stdin. Used only by build_service_config's isolated
-# branch to reproduce today's first-write (POST) body construction.
-rewrap_attributes() {
-    local tmpl="$1" attrs
-    attrs=$(cat)
-    jq -c --argjson a "$attrs" '.data.attributes = $a' "$tmpl"
-}
-
 # Build the service-config payload for this environment. $1 = shape
 # (login | channel | none), $2 = canonical template path.
 #
@@ -70,11 +60,15 @@ rewrap_attributes() {
 # to make this work.
 #
 # ATLAS_MODE=isolated (default): unchanged. Reproduces today's first-write
-# POST body exactly — the pinned canonical id, with this environment's entry
-# merged into the template's own (always-empty) tenants[]. The GET-merge-
-# PATCH network sequence for an EXISTING live row stays in bootstrap.sh's
-# upsert_service_config — that merge reads live data, which is network I/O
-# and does not belong in this pure function.
+# POST body exactly — the pinned canonical id, with .tenants UNCONDITIONALLY
+# REPLACED by [entry] (NOT merge_tenant_entry — some canonical templates
+# ship a non-empty seeded tenants[], e.g. channel-service.json's placeholder
+# ec876921…/port 0, and merging would append this environment's entry beside
+# that placeholder instead of replacing it, as the original code did). The
+# GET-merge-PATCH network sequence for an EXISTING live row stays in
+# bootstrap.sh's upsert_service_config, unchanged, and IS correct to use
+# merge_tenant_entry there — that merge is against live data with possibly
+# many real foreign tenants, not this pure function's canonical fixture.
 build_service_config() {
     local shape="$1" tmpl="$2" entry
     case "$shape" in
@@ -92,7 +86,7 @@ build_service_config() {
         ' "$tmpl"
     else
         if [ -n "$entry" ]; then
-            jq -c '.data.attributes' "$tmpl" | merge_tenant_entry "$entry" | rewrap_attributes "$tmpl"
+            jq -c --argjson entry "$entry" '.data.attributes.tenants = [$entry]' "$tmpl"
         else
             cat "$tmpl"
         fi

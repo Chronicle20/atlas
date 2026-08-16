@@ -99,6 +99,32 @@ worse moment and a higher cost. Split at plan time instead:
 
 Note in `context.md` any task you deliberately left large, and why.
 
+### Step 5b — Lint the plan (required)
+
+```
+tools/plan-lint.sh docs/tasks/<id>/plan.md
+```
+
+Must exit 0 before you commit. It checks the rules Step 5a already states, and
+which nothing previously enforced:
+
+| | Check | Why |
+|---|---|---|
+| **F1** | every `### Files` path exists, or is marked `new file` | Step 5a's own rule |
+| **F2** | the plan does not specify a stub to land | CLAUDE.md: no `// TODO`, stubbed handlers or 501s |
+| **F3** | read-only commands the plan tells the implementer to run actually match something | |
+| **F4** | task size (>6 files, or >1 service) — *warning* | Step 5a's splitting rule |
+
+F1–F3 are errors; fix them. F4 is advisory — a deliberately large task is
+allowed provided `context.md` says why, but oversized tasks are what produce
+`PARTIAL` hand-backs and a mid-plan split at a worse moment.
+
+This exists because these defects are cheap here and expensive later. On
+task-231 the controller had to append 18 `## CONTROLLER RULING` blocks patching
+exactly this class of problem — a `### Files` path that did not exist, a Step-2
+command matching nothing, four planned stubs — each discovered at dispatch time
+at 150–250k context, most after an investigation it had to run first.
+
 ### Step 6 — Commit and summarize
 
 ```

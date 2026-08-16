@@ -178,6 +178,30 @@ when `deploy/`, `tools/gen-lb-ports.sh`, or a `versions.json` changed. A new
 client version needs LB socket ports; without them the version is unreachable
 with no error anywhere.
 
+**Shell tooling** — `shell-guard.sh --require-shellcheck` plus the test suite of
+each changed script, when any `tools/**/*.sh` changed.
+
+The gate was previously hardcoded to `^tools/task-(resolve|brief)(_test)?\.sh$`,
+so every other script in `tools/` was ungated — including `plan-lint.sh`, which
+*executes* commands extracted from a plan file. A branch adding three `tools/`
+scripts produced a flagless run in which all 14 checks skipped and the gate
+still exited 0. A green gate that ran nothing is the failure mode this closes.
+
+- `shell-guard.sh` parse-checks each script with the interpreter its shebang
+  names, then runs `shellcheck -S error`. Severity `error` is deliberate: it is
+  clean across the tree today, so the guard landed with zero legacy debt and any
+  failure is a real regression. `-S warning` currently reports 19 pre-existing
+  findings; raising the bar means fixing those first.
+- `--require-shellcheck` fails when shellcheck is absent rather than degrading
+  to a syntax-only pass. A guard that silently weakens into one that always
+  passes is the same bug in a different place.
+- Test suites are discovered by convention: a changed `tools/foo.sh` runs
+  `tools/foo_test.sh` when it exists, and a changed `tools/foo_test.sh` runs
+  itself. Adding a suite is enough to gate it — no edit to `verify.sh`.
+
+CI mirror: the `shell-tooling-guard` job, ungated (the whole sweep is ~1s, so
+path filtering would cost more than it saves).
+
 ---
 
 ## Lint & format

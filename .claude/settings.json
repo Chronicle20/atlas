@@ -23,6 +23,15 @@
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/fork-dispatch-guard.sh"
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/turn-budget-guard.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [

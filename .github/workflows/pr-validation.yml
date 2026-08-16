@@ -414,6 +414,30 @@ jobs:
         run: ./tools/service-registration-guard.sh
 
   # ============================================
+  # Parse-checks and shellchecks every tools/**/*.sh.
+  # Before this job the repo's shell tooling had no
+  # gate at all: verify.sh's only shell check was
+  # hardcoded to tools/task-(resolve|brief).sh, so a
+  # branch adding three tools/ scripts saw all 14
+  # checks skip and still exited 0.
+  # Ungated and pure shell — the whole sweep is
+  # ~1s, so path filtering would cost more than it
+  # saves. --require-shellcheck makes a runner
+  # without shellcheck a failure rather than a
+  # silent downgrade to syntax-only.
+  # ============================================
+  shell-tooling-guard:
+    name: Shell Tooling Guard
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: shell tooling guard
+        run: ./tools/shell-guard.sh --require-shellcheck
+
+  # ============================================
   # Enforces ascending opCode order for the
   # handlers/writers arrays in every tenant
   # socket-config template. See
@@ -856,7 +880,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, go-analyzer-guards, npc-shop-contract-mirror-guard, npc-conversation-contract-mirror-guard, gen-lb-ports, service-registration-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, go-analyzer-guards, npc-shop-contract-mirror-guard, npc-conversation-contract-mirror-guard, gen-lb-ports, service-registration-guard, shell-tooling-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
     if: always()
     runs-on: ubuntu-latest
 
@@ -878,6 +902,7 @@ jobs:
           NPC_CONVERSATION_CONTRACT_GUARD_RESULT="${{ needs.npc-conversation-contract-mirror-guard.result }}"
           LBPORTS_RESULT="${{ needs.gen-lb-ports.result }}"
           SVC_REG_GUARD_RESULT="${{ needs.service-registration-guard.result }}"
+          SHELL_GUARD_RESULT="${{ needs.shell-tooling-guard.result }}"
           TMPL_ORDER_GUARD_RESULT="${{ needs.template-opcode-order-guard.result }}"
           TMPL_MOVE_GUARD_RESULT="${{ needs.template-movement-types-guard.result }}"
           SKILL_JOB_ID_GUARD_RESULT="${{ needs.skill-job-id-guard.result }}"
@@ -898,6 +923,7 @@ jobs:
           echo "| NPC Conversation Contract Mirror Guard | $NPC_CONVERSATION_CONTRACT_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| LB Port Drift Guard | $LBPORTS_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Service Registration Guard | $SVC_REG_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Shell Tooling Guard | $SHELL_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Template Opcode Order Guard | $TMPL_ORDER_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Template Movement Types Guard | $TMPL_MOVE_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Skill/Job Id Guard | $SKILL_JOB_ID_GUARD_RESULT |" >> $GITHUB_STEP_SUMMARY
@@ -925,7 +951,7 @@ jobs:
           # but never to fail outright. Comparing against "failure" (not
           # against "success") is what makes a skip pass. That tolerance
           # is only safe because detect-changes was verified above.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$ANALYZER_GUARDS_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$NPC_CONVERSATION_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$ANALYZER_GUARDS_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$NPC_CONVERSATION_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$SHELL_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

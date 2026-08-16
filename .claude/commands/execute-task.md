@@ -279,6 +279,13 @@ After all plan tasks complete and verify, the chosen skill hands off to `superpo
 
 > All plan tasks complete. Recommend running `superpowers:requesting-code-review` next, which dispatches the appropriate reviewer agents (plan-adherence, backend-guidelines, frontend-guidelines) in parallel.
 
+Whatever the plan's size, plan adherence is `plan-adherence-reviewer`'s job and
+nothing else's. On a long plan, shard **that agent** by non-overlapping task
+range (`1-10`, `11-20`, …) — do not dispatch ad-hoc `general-purpose` "audit
+plan tasks N-M vs code" agents, and never run range shards alongside an
+unscoped run of the same agent. See the Sharding section in
+`.claude/agents/plan-adherence-reviewer.md`.
+
 ## Important Rules
 
 - The worktree was created by `/spec-task`. NEVER create a new one here.

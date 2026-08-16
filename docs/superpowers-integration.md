@@ -38,6 +38,8 @@ Invoke `superpowers:requesting-code-review` after completing a logical chunk of 
 
 For ad-hoc one-off checks, invoke any agent directly by name without the orchestration skill.
 
+All three are **scoped to the change under review**: the diff is the review surface, repo surveying is off, and anything a reviewer could not evaluate within that surface is reported under `## Not evaluable from the diff` rather than passed silently. Each agent's own `## Scope` section is the contract — you do not need to restate it in the dispatch prompt. Measured on a 67-file Go diff, this cost the same as an unscoped review and returned a strict superset of its findings.
+
 ## Maintenance Commands
 
 | Command | What it does | Underlying agent |

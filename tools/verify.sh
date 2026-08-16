@@ -119,6 +119,26 @@ touched() {
     printf '%s\n' "$CHANGED" | grep -qE "$1"
 }
 
+changed_tool_suites() {
+    # Test suites to run for the changed tools/ scripts, one path per line.
+    # tools/foo.sh -> tools/foo_test.sh (when it exists); a changed
+    # tools/foo_test.sh runs itself.
+    if [ "$ALL" -eq 1 ]; then
+        find tools -name '*_test.sh' -type f | sort
+        return 0
+    fi
+    printf '%s\n' "$CHANGED" \
+        | grep -E '^tools/.*\.sh$' \
+        | while IFS= read -r f; do
+            case "$f" in
+                *_test.sh) suite="$f" ;;
+                *)         suite="${f%.sh}_test.sh" ;;
+            esac
+            [ -f "$suite" ] && printf '%s\n' "$suite"
+        done \
+        | sort -u || true
+}
+
 # --------------------------------------------------------------- go modules
 
 all_modules() {
@@ -332,10 +352,28 @@ else
     skip "npc-conversation contract mirror guard (contract unchanged)"
 fi
 
-if touched '^tools/task-(resolve|brief)(_test)?\.sh$'; then
-    step "task resolve/brief tests" ./tools/task-resolve_test.sh
+if touched '^tools/.*\.sh$'; then
+    step "shell tooling guard" ./tools/shell-guard.sh --require-shellcheck
+
+    # Run the test suite belonging to each changed tools/ script — whether the
+    # script changed or its own _test.sh did. This replaces a rule hardcoded to
+    # task-resolve/task-brief, under which every other script in tools/ was
+    # ungated: a branch adding three tools/ scripts saw all 14 checks skip and
+    # still exited 0.
+    suites="$(changed_tool_suites)"
+    if [ -n "$suites" ]; then
+        while IFS= read -r suite; do
+            [ -n "$suite" ] || continue
+            step "$(basename "$suite")" "./$suite"
+        done <<EOF
+$suites
+EOF
+    else
+        skip "tools test suites (no changed script has one)"
+    fi
 else
-    skip "task resolve/brief tests (task tooling unchanged)"
+    skip "shell tooling guard (no tools/ script changed)"
+    skip "tools test suites (no tools/ script changed)"
 fi
 
 if touched '^(deploy/|tools/gen-lb-ports\.sh|.*versions\.json)'; then

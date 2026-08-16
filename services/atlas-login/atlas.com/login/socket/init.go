@@ -11,12 +11,28 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	socket "github.com/Chronicle20/atlas/libs/atlas-socket"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const idleThreshold = 30 * time.Second
+
+// NewListenerContext builds the context for a tenant's socket-listener
+// registration: the tenant this listener serves, plus this pod's own
+// environment (env.Self()) — mirrors socket/handler's per-request session
+// context origination (FR-2.2). CreateSocketService's Create/
+// DestroyByIdWithSpan/SendPing callbacks below are wired directly from
+// this context, bypassing socket/handler.AdaptHandler entirely, so the
+// environment has to be originated here too — not only on the per-packet
+// handler path — or every session-lifecycle Kafka event (e.g.
+// EnvEventTopicSessionStatus) leaves a PR pod with an empty ENVIRONMENT
+// header.
+func NewListenerContext(ctx context.Context, t tenant.Model) context.Context {
+	tctx := tenant.WithContext(ctx, t)
+	return env.WithContext(tctx, env.Self())
+}
 
 func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, port int) {
 	t := tenant.MustFromContext(ctx)

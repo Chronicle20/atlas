@@ -216,7 +216,7 @@ func buildListener(
 		if err != nil {
 			return nil, err
 		}
-		tctx := tenant.WithContext(ctx, t)
+		tctx := socket.NewListenerContext(ctx, t)
 
 		if err := account.NewProcessor(l, tctx).InitializeRegistry(); err != nil {
 			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())

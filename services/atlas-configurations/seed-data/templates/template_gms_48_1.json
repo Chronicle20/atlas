@@ -144,7 +144,7 @@
         "opCode": "0x11",
         "validator": "LoggedInValidator",
         "handler": "CashShopCheckNameChangeHandle",
-        "fname": "CCashShop::SendCheckDuplicateIDPacket",
+        "fname": "CLogin::SendCheckDuplicateIDPacket",
         "services": [
           "channel"
         ]

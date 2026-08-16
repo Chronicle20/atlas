@@ -162,7 +162,7 @@
         "opCode": "0x15",
         "validator": "LoggedInValidator",
         "handler": "CashShopCheckNameChangeHandle",
-        "fname": "CCashShop::SendCheckDuplicateIDPacket",
+        "fname": "CLogin::SendCheckDuplicateIDPacket",
         "services": [
           "channel"
         ]

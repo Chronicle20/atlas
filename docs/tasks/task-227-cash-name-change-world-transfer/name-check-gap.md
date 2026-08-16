@@ -80,6 +80,23 @@ that evidence. No `packet-audit:verify` marker was added for this reason — the
 matrix cells for `CHECK_CHAR_NAME` stay owned by
 `character/serverbound/CheckName`'s test.
 
+## Why the new bindings carry CLogin's fname, not CCashShop's
+
+The template `fname` field is DERIVED, not free-form: `packet-audit seed-fname
+--write` regenerates it from the op registry by (direction, opcode), and
+`TestSeedFName_RealTemplatesInsertionCoverage` asserts that regenerating over
+the committed templates reproduces them exactly. The registry has one primary
+`fname` per op — for `CHECK_CHAR_NAME` that is
+`CLogin::SendCheckDuplicateIDPacket`, with `CCashShop::SendCheckDuplicateIDPacket`
+recorded as its `fname_alt` (`docs/packets/registry/gms_v83.yaml:1891-1896`).
+
+The first cut of this change hand-wrote the alt on the nine new channel
+bindings, which failed that test on all nine templates. Both bindings now
+carry the registry primary. The cash-shop sender is not lost: it is in the
+registry as the alt, in the `handler` field
+(`CashShopCheckNameChangeHandle` vs `CharacterCheckNameHandle`), and in
+`cashsb.CheckNameChangeRequest`'s doc comment.
+
 ## Deploy note
 
 The handler entries are **seed data**. An ephemeral env whose tenant socket

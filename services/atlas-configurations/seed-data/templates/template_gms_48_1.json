@@ -2419,6 +2419,14 @@
         ]
       },
       {
+        "opCode": "0x71",
+        "writer": "PetNameChanged",
+        "fname": "CPet::OnNameChanged",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x77",
         "writer": "SummonMove",
         "services": [

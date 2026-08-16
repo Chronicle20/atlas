@@ -31,6 +31,20 @@
         }
       ]
     },
+    "CPet::OnNameChanged": {
+      "address": "0x58da70",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "name-tag decoration layer selector (CLife::MakeNameTag)"
+        }
+      ]
+    },
     "CTradingRoomDlg::OnPutItem": {
       "address": "0x5e6ace",
       "direction": "clientbound",

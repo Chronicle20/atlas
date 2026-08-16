@@ -69,7 +69,7 @@ func checkInventory(l logrus.FieldLogger, pp producer.Provider, ctx context.Cont
 		}
 
 		for _, a := range assets {
-			if expiration.IsExpired(a.Expiration, now) {
+			if expiration.IsExpired(a.Expiration, now) && expiration.IsReapable(a.TemplateId) {
 				l.Infof("Asset [%s] (template [%d]) is expired for character [%d].", a.Id, a.TemplateId, characterId)
 
 				// Get replacement info
@@ -93,7 +93,7 @@ func checkStorage(l logrus.FieldLogger, pp producer.Provider, ctx context.Contex
 	}
 
 	for _, a := range assets {
-		if expiration.IsExpired(a.Expiration, now) {
+		if expiration.IsExpired(a.Expiration, now) && expiration.IsReapable(a.TemplateId) {
 			l.Infof("Storage asset [%s] (template [%d]) is expired for account [%d].", a.Id, a.TemplateId, accountId)
 
 			// Get replacement info
@@ -113,7 +113,7 @@ func checkCashshop(l logrus.FieldLogger, pp producer.Provider, ctx context.Conte
 	}
 
 	for _, item := range items {
-		if expiration.IsExpired(item.Expiration, now) {
+		if expiration.IsExpired(item.Expiration, now) && expiration.IsReapable(item.TemplateId) {
 			l.Infof("Cashshop item [%s] (template [%d]) is expired for account [%d].", item.Id, item.TemplateId, accountId)
 
 			// Get replacement info

@@ -64,6 +64,10 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case OpenNpcShopPayload:
 		return p.CharacterId
+	case StartItemConversationPayload:
+		return p.CharacterId
+	case StartNpcConversationPayload:
+		return p.CharacterId
 	case TransferToStoragePayload:
 		return p.CharacterId
 	case WithdrawFromStoragePayload:

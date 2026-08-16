@@ -81,6 +81,20 @@
         }
       ]
     },
+    "CPet::OnNameChanged": {
+      "address": "0x720f26",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "name-tag decoration layer selector (CLife::MakeNameTag)"
+        }
+      ]
+    },
     "CUserLocal__RequestIncCombo_send_0xA9": {
       "address": "0x99f346",
       "direction": "serverbound",
@@ -29137,6 +29151,52 @@
           "guard": "nResult != 0x00 && nResult != 0x01 && bHasMessage"
         }
       ]
+    },
+    "CWvsContext::SendWaterOfLife": {
+      "address": "0xa68f85",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0xa53f08",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time() via sub_9C7771; Encode4 at 0xa53f67, sourced 0xa53f5e)",
+          "guard": "sub_A5A9B6(a3, 1) at 0xa53f47 -- unnamed in v84 IDB, positionally the v83+ IsAbleToConsume-equivalent gate"
+        },
+        {
+          "op": "Decode2",
+          "comment": "source (nPOS; Encode2 at 0xa53f72)",
+          "guard": "sub_A5A9B6(a3, 1) at 0xa53f47"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID; Encode4 at 0xa53f7d)",
+          "guard": "sub_A5A9B6(a3, 1) at 0xa53f47"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0xa5a4b2",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "source (nPOS; Encode2 at 0xa5a58a)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID; Encode4 at 0xa5a595)"
+        }
+      ]
+    },
+    "sub_97A035": {
+      "address": "0x97a035",
+      "direction": "",
+      "note": "Non-packet helper delegated to from CUser::OnChat's <default> arm. Decompiled at 0x97a035 (task-230): signature sub_97A035(_DWORD *this, char *SubStr) takes no CInPacket*, and the body makes no CInPacket::Decode* calls (only sub_AABF64/sub_44484B/sub_4463C8/sub_602B18, a chat-string path). calls:null therefore records a verified absence of wire reads, not an unfilled placeholder. Added to unblock report-gen descent through CUser::OnChat; unrelated to task-230's ops.",
+      "calls": null
     }
   }
 }

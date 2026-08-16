@@ -1,0 +1,10 @@
+packet: pet/serverbound/PetWaterOfLife
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendWaterOfLife
+    address: "0x9f28e0"
+    decompile_sha256: 9d9c4c9ae9181073c377f646a604237faa4dedbea1bcf75f6738d2edebc37d44
+verifies:
+    - libs/atlas-packet/pet/serverbound/water_of_life_test.go#TestWaterOfLifeRoundTrip

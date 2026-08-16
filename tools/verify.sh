@@ -152,7 +152,11 @@ changed_modules() {
             printf '           This is the whole-branch diff. For a per-task iteration gate pass\n' >&2
             printf '           --base <last-gated-commit> to scope it to the increment under test.\033[0m\n' >&2
         else
-            echo "verify.sh: shared-lib change in this increment — fanning out to all modules"
+            # stderr, NOT stdout: this function's stdout IS the module list the
+            # caller cd's into, so a chatty line here becomes a phantom module
+            # ("cd: verify.sh: shared-lib change...: No such file or directory")
+            # and fails the gate. Matches the no-BASE branch above.
+            echo "verify.sh: shared-lib change in this increment — fanning out to all modules" >&2
         fi
         all_modules
         return
@@ -251,22 +255,38 @@ fi
 
 # ------------------------------------------------------------------- guards
 #
-# CI runs these unconditionally. Locally they are the whole cost of a gate run
-# (~45s each): every one rebuilds its analyzer into a temp dir and then walks
-# ~60 service modules SEQUENTIALLY with a standalone go/analysis driver, which
-# type-checks from source each time. Standalone drivers do not consult Go's
-# vet-fact cache — only `go vet -vettool=` does — so a warm run costs exactly
-# what a cold one does (measured: 46.4s then 47.5s back to back).
+# Gate the analyzer guards on "a .go file actually changed": a Go analyzer
+# cannot find a new violation in a diff that contains no Go. CI is gated the
+# same way now (on its affected-module matrices, plus a tools/-changed signal),
+# and still runs them on every PR that touches Go.
 #
-# Gate them on "a .go file actually changed": a Go analyzer cannot find a new
-# violation in a diff that contains no Go. CI stays the authority and still
-# runs them every time.
+# All four analyzers run in ONE sweep. Each used to rebuild its analyzer into a
+# temp dir and walk ~60 modules with a standalone go/analysis driver that
+# type-checks from source every time (measured: 46.4s then 47.5s back to back).
+# They now share a single `go vet -vettool=` binary, so the tree is type-checked
+# once and Go's per-package fact cache does the rest. Run one on its own with
+# tools/<name>-guard.sh when iterating on that analyzer.
+
+go_analyzer_guards() {
+    # Scope the sweep to the modules this run already identified as changed.
+    # An empty list means "sweep that root entirely", which is what we want in
+    # the two cases that produce one: --all, and a .go change that lives
+    # outside services/ and libs/ (an analyzer's own source under tools/,
+    # where the verdict on unchanged code can move).
+    local svc="" lib="" m
+    if [ "$ALL" -eq 0 ]; then
+        for m in ${MODULES[@]+"${MODULES[@]}"}; do
+            case "$m" in
+                "$ROOT"/services/*) svc="$svc$m"$'\n' ;;
+                "$ROOT"/libs/*)     lib="$lib$m"$'\n' ;;
+            esac
+        done
+    fi
+    GUARD_SERVICE_MODULES="$svc" GUARD_LIB_MODULES="$lib" ./tools/go-analyzer-guards.sh
+}
 
 if [ "$ALL" -eq 1 ] || touched '\.go$'; then
-    step "redis key guard"        ./tools/redis-key-guard.sh
-    step "goroutine guard"        ./tools/goroutine-guard.sh
-    step "outbox guard"           ./tools/outbox-guard.sh
-    step "buff duration guard"    ./tools/buff-duration-guard.sh
+    step "go analyzer guards"     go_analyzer_guards
     step "skill/job id guard"     ./tools/skill-job-id-guard.sh
 else
     skip "Go analyzer guards (no .go file changed)"
@@ -311,6 +331,12 @@ if touched 'kafka/message/shops/kafka\.go'; then
     step "npc-shop contract mirror guard" ./tools/npc-shop-contract-mirror-guard.sh
 else
     skip "npc-shop contract mirror guard (contract unchanged)"
+fi
+
+if touched 'kafka/message/npc/kafka\.go'; then
+    step "npc-conversation contract mirror guard" ./tools/npc-conversation-contract-mirror-guard.sh
+else
+    skip "npc-conversation contract mirror guard (contract unchanged)"
 fi
 
 if touched '^tools/task-(resolve|brief)(_test)?\.sh$'; then

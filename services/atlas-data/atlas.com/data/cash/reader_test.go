@@ -2,13 +2,31 @@ package cash
 
 import (
 	"atlas-data/xml"
+	"encoding/json"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
+
+// readCashFixture parses fixture XML and returns a slice of RestModel
+func readCashFixture(t *testing.T, xmlData string) []RestModel {
+	l, _ := test.NewNullLogger()
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Convert map to slice, maintaining order
+	models := make([]RestModel, 0, len(rmm))
+	for _, id := range rmm {
+		models = append(models, id)
+	}
+	return models
+}
 
 const testXML = `
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -1243,5 +1261,51 @@ func TestReaderMorphHpAdditiveOnly(t *testing.T) {
 		if v, ok := rm.Spec[SpecTypeHp]; ok {
 			t.Errorf("[%s] Spec[SpecTypeHp] = %d, want absent on a 0521 EXP coupon", id, v)
 		}
+	}
+}
+
+func TestReaderParsesLife(t *testing.T) {
+	// 0518.img/05180000/info: slotMax=1, cash=1, life=90. No maxDays, no addTime.
+	models := readCashFixture(t, `
+		<imgdir name="0518.img">
+			<imgdir name="05180000">
+				<imgdir name="info">
+					<int name="slotMax" value="1"/>
+					<int name="cash" value="1"/>
+					<int name="life" value="90"/>
+				</imgdir>
+			</imgdir>
+		</imgdir>`)
+
+	if len(models) != 1 {
+		t.Fatalf("got %d models, want 1", len(models))
+	}
+	if models[0].Life != 90 {
+		t.Errorf("Life = %d, want 90", models[0].Life)
+	}
+	if models[0].MaxDays != 0 {
+		t.Errorf("MaxDays = %d, want 0 (0518.img has no maxDays node)", models[0].MaxDays)
+	}
+}
+
+func TestReaderLifeAbsentIsZeroAndOmitted(t *testing.T) {
+	models := readCashFixture(t, `
+		<imgdir name="0518.img">
+			<imgdir name="05180000">
+				<imgdir name="info">
+					<int name="slotMax" value="1"/>
+				</imgdir>
+			</imgdir>
+		</imgdir>`)
+
+	if models[0].Life != 0 {
+		t.Errorf("Life = %d, want 0", models[0].Life)
+	}
+	b, err := json.Marshal(models[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(b), `"life"`) {
+		t.Errorf("absent life must be omitted from JSON, got %s", b)
 	}
 }

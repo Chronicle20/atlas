@@ -107,3 +107,20 @@ func TestMesoSackFailureMessage(t *testing.T) {
 		}
 	}
 }
+
+// A pet_name_tag_use saga can fail on the rename step, the consume step, or by
+// timeout, and no atlas-pets error code names a player-actionable cause today,
+// so every errorCode maps to the same generic message.
+func TestPetNameTagFailureMessage(t *testing.T) {
+	cases := []string{
+		saga.ErrorCodeUnknown,
+		"SAGA_TIMEOUT",
+		"",
+	}
+	want := "You are unable to rename your pet right now."
+	for _, code := range cases {
+		if got := petNameTagFailureMessage(code); got != want {
+			t.Errorf("petNameTagFailureMessage(%q) = %q, want %q", code, got, want)
+		}
+	}
+}

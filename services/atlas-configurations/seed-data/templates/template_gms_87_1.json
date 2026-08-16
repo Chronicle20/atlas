@@ -629,10 +629,28 @@
         ]
       },
       {
+        "opCode": "0x51",
+        "validator": "LoggedInValidator",
+        "handler": "ScriptedItemHandle",
+        "fname": "CWvsContext::SendScriptRunItemRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x52",
         "validator": "LoggedInValidator",
         "handler": "CharacterCashItemUseHandle",
         "fname": "CItemSpeakerDlg::_SendConsumeCashItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x53",
+        "validator": "LoggedInValidator",
+        "handler": "PetDestroyItemHandle",
+        "fname": "CWvsContext::SendActivatePetRequest",
         "services": [
           "channel"
         ]
@@ -818,6 +836,15 @@
         ]
       },
       {
+        "opCode": "0x72",
+        "validator": "LoggedInValidator",
+        "handler": "NpcItemUseHandle",
+        "fname": "CWvsContext::SendSelectNpcItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x73",
         "validator": "LoggedInValidator",
         "handler": "CharacterItemUseLotteryHandle",
@@ -831,6 +858,15 @@
         "validator": "LoggedInValidator",
         "handler": "SueCharacter",
         "fname": "CField::SendChatMsgSlash",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x78",
+        "validator": "LoggedInValidator",
+        "handler": "WaterOfLifeHandle",
+        "fname": "CWvsContext::SendWaterOfLife",
         "services": [
           "channel"
         ]
@@ -3097,6 +3133,14 @@
         "opCode": "0xB8",
         "writer": "PetChat",
         "fname": "CPet::OnAction",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xB9",
+        "writer": "PetNameChanged",
+        "fname": "CPet::OnNameChanged",
         "services": [
           "channel"
         ]

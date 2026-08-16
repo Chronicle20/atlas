@@ -100,11 +100,24 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 }
 
 // enrichPetAsset fetches pet data from atlas-pets for pet assets and enriches the model.
+//
+// EVERY InventoryChange add entry for a pet asset must go through this. The
+// asset status events carry no pet fields, so an unenriched pet asset encodes a
+// GW_ItemSlotPet block whose serial falls back to the Atlas pet id (see
+// asset.PetSerialNumber in libs/atlas-packet) and whose name, level, closeness
+// and fullness are all zero. The block is still the right LENGTH, so the packet
+// does not desync — the client silently accepts a pet record it can no longer
+// address by serial, which kills pet commands and crashes it on despawn.
 func enrichPetAsset(l logrus.FieldLogger, ctx context.Context, a asset.Model) asset.Model {
+	return enrichPetAssetWith(l, pet.NewProcessor(l, ctx).GetById, a)
+}
+
+// enrichPetAssetWith is enrichPetAsset with the atlas-pets lookup injected.
+func enrichPetAssetWith(l logrus.FieldLogger, fetch func(petId uint32) (pet.Model, error), a asset.Model) asset.Model {
 	if !a.IsPet() || a.PetId() == 0 {
 		return a
 	}
-	pm, err := pet.NewProcessor(l, ctx).GetById(a.PetId())
+	pm, err := fetch(a.PetId())
 	if err != nil {
 		l.WithError(err).Debugf("Unable to fetch pet [%d] for asset enrichment.", a.PetId())
 		return a
@@ -286,6 +299,7 @@ func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handle
 			}
 
 			a := buildAssetFromUpdatedBody(e)
+			a = enrichPetAsset(l, ctx, a)
 			so := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(invcb.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventoryType), a.Slot(), model2.NewAsset(true, a))).Encode)
 			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, so)
 			if err != nil {

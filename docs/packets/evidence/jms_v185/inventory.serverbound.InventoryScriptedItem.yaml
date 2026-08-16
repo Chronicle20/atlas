@@ -1,0 +1,10 @@
+packet: inventory/serverbound/InventoryScriptedItem
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendScriptRunItemRequest
+    address: "0xaee7ce"
+    decompile_sha256: fd9f92b28d6893e87c6f2a7a582770373a192ee26157ed0efa6bbc431810f878
+verifies:
+  - libs/atlas-packet/inventory/serverbound/scripted_item_test.go#TestScriptedItemWireLayout_JMSv185

@@ -1170,11 +1170,13 @@
 - op: PET_NAMECHANGE
   direction: clientbound
   opcode: 176
-  fname: CPet__OnNameChanged_recv_0xB0
+  fname: CPet::OnNameChanged
+  fname_alts:
+  - CPet__OnNameChanged_recv_0xB0
   provenance: ida-discovered
   ida:
     address: 7474982
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 176 (0xB0) -> CPet::OnNameChanged (v84 fn 0x720f26; body match v95 0x6a11f0: DecodeStr name + Decode1 + MakeNameTag 1003).'
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 176 (0xB0) -> CPet::OnNameChanged (v84 fn 0x720f26; body match v95 0x6a11f0: DecodeStr name + Decode1 + MakeNameTag 1003). task-224: symbol renamed CPet::OnNameChanged in the IDB (was unnamed sub_720F26 with an auto-generated placeholder label); old label retained as fname_alt.'
 - op: PET_EXCEPTION_LIST
   direction: clientbound
   opcode: 177
@@ -2931,6 +2933,7 @@
   direction: serverbound
   opcode: 80
   fname: CWvsContext::SendActivatePetRequest
+  packet: pet/serverbound/PetDestroyItem
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: USE_CATCH_ITEM

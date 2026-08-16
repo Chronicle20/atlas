@@ -34,6 +34,9 @@ func NewPetSpawnActivated(ownerId uint32, slot int8, templateId uint32, name str
 		ownerId: ownerId, slot: slot, active: true,
 		templateId: templateId, name: name, petId: petId,
 		x: x, y: y, stance: stance, foothold: foothold,
+		// Must equal what NameChanged writes, or a renamed pet's decoration
+		// appears on rename and vanishes on the next respawn.
+		nameTag: NameTagLayer,
 	}
 }
 

@@ -1,0 +1,11 @@
+{
+  "WriterName": "PetWaterOfLife",
+  "IDAName": "CWvsContext::SendWaterOfLife",
+  "Address": "0x9f28e0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/pet/serverbound/water_of_life.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -2386,6 +2386,14 @@
   ida:
     address: 9454617
   note: 'v72 COutPacket(76) verified via global COutPacket-ctor harvest @0x904419; Δ+1 vs v79 op 75 (mid/field/social Δ+1). fname corrected from stale placeholder "sub_955781" (mismatched an unrelated address) to the confirmed-named symbol CWvsContext::SendTamingMobFoodItemUseRequest (task-138 Task 5 re-verification).'
+- op: SCRIPTED_ITEM
+  direction: serverbound
+  opcode: 77
+  fname: CWvsContext::SendScriptRunItemRequest
+  provenance: ida-discovered
+  ida:
+    address: 9454808
+  note: 'task-230: sender confirmed at 0x9044d8 (GMS_v72 IDB). COutPacket(77)+Encode4(updateTime)+Encode2(slot)+Encode4(itemId).'
 - op: USE_CASH_ITEM
   direction: serverbound
   opcode: 78
@@ -2594,6 +2602,14 @@
   ida:
     address: 6175200
   note: 'task-226: fname corrected — prior entry carried sub_6022DB, v79''s address-derived symbol wrongly copied onto v72. Address 0x5e39e0 was and remains correct: decompile reads COutPacket::COutPacket(pkt, 109), confirming it as the real sender. Renamed CMacroSysMan::FlushToSvr in the v72 IDB.'
+- op: NPC_ITEM_USE_REQUEST
+  direction: serverbound
+  opcode: 110
+  fname: CWvsContext::SendSelectNpcItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 9479596
+  note: 'task-230: sender confirmed at 0x90a5ac (GMS_v72 IDB). COutPacket(110)+Encode2(slot)+Encode4(itemId), no leading updateTime.'
 - op: LOTTERY_ITEM_USE_REQUEST
   direction: serverbound
   opcode: 111

@@ -81,6 +81,20 @@
         }
       ]
     },
+    "CPet::OnNameChanged": {
+      "address": "0x6967c0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "name-tag decoration layer selector (CLife::MakeNameTag)"
+        }
+      ]
+    },
     "CUserLocal__RequestIncCombo_send_0xBA": {
       "address": "0x8ef840",
       "direction": "serverbound",
@@ -12953,6 +12967,11 @@
         }
       ]
     },
+    "CWvsContext::SendWaterOfLife": {
+      "address": "0x9c6f90",
+      "direction": "serverbound",
+      "calls": []
+    },
     "CWvsContext::TryRecovery": {
       "address": "",
       "direction": "serverbound",
@@ -13385,6 +13404,43 @@
           "op": "DecodeStr",
           "comment": "sMessage",
           "guard": "nResult != 0x00 && nResult != 0x01 && bHasMessage"
+        }
+      ]
+    },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0x9b3da0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 500 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 500 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 500 && result"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0x9aff40",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 200 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 200 && <default>"
         }
       ]
     }

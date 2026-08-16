@@ -14,6 +14,16 @@ const (
 type RestModel struct {
 	Id   uint32             `json:"-"`
 	Spec map[SpecType]int32 `json:"spec"`
+	// Npc is the NPC template a scripted item's dialogue renders with (the
+	// 243xxxx family, WZ spec/npc) or the NPC a remote-NPC item summons (the
+	// 239xxxx family, WZ info/npc). Tags must match atlas-data's
+	// consumable/rest.go exactly — a mismatch decodes to zero silently and is
+	// indistinguishable from a content gap.
+	Npc uint32 `json:"npc"`
+	// Script is the WZ spec/script value. Recorded for authoring traceability
+	// only; conversations are keyed by item id, never by script name.
+	Script      string `json:"script"`
+	RunOnPickup bool   `json:"runOnPickup"`
 }
 
 func (r RestModel) GetName() string {
@@ -48,7 +58,10 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 
 func Extract(rm RestModel) (Model, error) {
 	return Model{
-		id:   rm.Id,
-		spec: rm.Spec,
+		id:          rm.Id,
+		spec:        rm.Spec,
+		npc:         rm.Npc,
+		script:      rm.Script,
+		runOnPickup: rm.RunOnPickup,
 	}, nil
 }

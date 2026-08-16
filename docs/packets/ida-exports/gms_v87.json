@@ -81,6 +81,55 @@
         }
       ]
     },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0xa9f3d2",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time())",
+          "guard": "CWvsContext::IsAbleToConsume(this, arg4, 1)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "source (nPOS)",
+          "guard": "CWvsContext::IsAbleToConsume(this, arg4, 1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)",
+          "guard": "CWvsContext::IsAbleToConsume(this, arg4, 1)"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0xaa5a85",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "source (nPOS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)"
+        }
+      ]
+    },
+    "CPet::OnNameChanged": {
+      "address": "0x7484e0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "name-tag decoration layer selector (CLife::MakeNameTag)"
+        }
+      ]
+    },
     "CUserLocal::RequestIncCombo": {
       "address": "0x9e37bc",
       "direction": "serverbound",
@@ -15912,6 +15961,11 @@
           "guard": "nResult != 0x00 && nResult != 0x01 && bHasMessage"
         }
       ]
+    },
+    "CWvsContext::SendWaterOfLife": {
+      "address": "0xab501c",
+      "direction": "serverbound",
+      "calls": []
     }
   }
 }

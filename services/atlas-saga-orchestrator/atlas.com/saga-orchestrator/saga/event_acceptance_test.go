@@ -19,7 +19,7 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.ChangeJob, sharedsaga.ChangeHair, sharedsaga.ChangeFace, sharedsaga.ChangeSkin, sharedsaga.SetHP,
 	sharedsaga.DeductExperience, sharedsaga.CancelAllBuffs, sharedsaga.ResetStats, sharedsaga.RebalanceAP,
 	sharedsaga.ValidateCharacterState, sharedsaga.IncreaseBuddyCapacity, sharedsaga.GainCloseness,
-	sharedsaga.EvolvePet,
+	sharedsaga.EvolvePet, sharedsaga.RevivePet,
 	sharedsaga.CreateSkill, sharedsaga.UpdateSkill,
 	sharedsaga.CompleteQuest, sharedsaga.StartQuest, sharedsaga.SetQuestProgress, sharedsaga.ForfeitQuest,
 	sharedsaga.ApplyConsumableEffect, sharedsaga.CancelConsumableEffect,
@@ -55,6 +55,7 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.OpenNpcShop,
 	sharedsaga.ValidateWorldTransfer, sharedsaga.LeaveGuildForTransfer, sharedsaga.LeavePartyForTransfer,
 	sharedsaga.SeverBuddiesForTransfer, sharedsaga.ChangeCharacterWorld,
+	sharedsaga.StartItemConversation, sharedsaga.StartNpcConversation,
 }
 
 // TestAcceptanceTable_EveryActionRepresented asserts every Action constant
@@ -101,6 +102,7 @@ func TestStepAcceptsEvent_KnownSuccessKinds(t *testing.T) {
 		{sharedsaga.IncreaseBuddyCapacity, EventKindBuddyCapacityChanged},
 		{sharedsaga.GainCloseness, EventKindPetClosenessChanged},
 		{sharedsaga.EvolvePet, EventKindPetEvolved},
+		{sharedsaga.RevivePet, EventKindPetRevived},
 		{sharedsaga.UpdateStorageMesos, EventKindStorageMesosUpdated},
 		{sharedsaga.AcceptToStorage, EventKindStorageCompartmentAccepted},
 		{sharedsaga.ReleaseFromStorage, EventKindStorageCompartmentReleased},
@@ -154,6 +156,7 @@ func TestStepAcceptsEvent_FailureKinds(t *testing.T) {
 		{sharedsaga.AwardAsset, EventKindAssetQuantityChanged},
 		{sharedsaga.DestroyAsset, EventKindAssetQuantityChanged},
 		{sharedsaga.DestroyAssetFromSlot, EventKindAssetQuantityChanged},
+		{sharedsaga.RevivePet, EventKindPetReviveFailed},
 	}
 	for _, tc := range cases {
 		if !StepAcceptsEvent(tc.action, tc.kind) {

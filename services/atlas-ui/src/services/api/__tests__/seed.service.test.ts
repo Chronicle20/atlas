@@ -131,6 +131,15 @@ describe("seedService status projections", () => {
     expect(s.conversationCount).toBe(214);
   });
 
+  it("reads item-conversations from item.conversation key", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => seedStatusBody({ "item.conversation": 2 }),
+    });
+    const s = await seedService.getItemConversationsSeedStatus(mockTenant);
+    expect(s.conversationCount).toBe(2);
+  });
+
   it("reads npc-shops + auxiliary commodities from subdomain map", async () => {
     // ShopSubdomain implements seeder.SubdomainAuxiliary, so the
     // status response carries a "commodities" entry alongside the

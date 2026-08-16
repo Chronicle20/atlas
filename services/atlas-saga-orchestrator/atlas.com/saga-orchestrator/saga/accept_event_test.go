@@ -171,6 +171,57 @@ func TestAcceptEvent_EvolvePetRejectsClosenessChanged(t *testing.T) {
 	assert.False(t, ok, "CLOSENESS_CHANGED must not complete an evolve_pet step")
 }
 
+func newRevivePetSaga(t *testing.T, ctx context.Context, tx uuid.UUID) {
+	t.Helper()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(PetRevive).
+		SetInitiatedBy("test").
+		AddStep("revive", Pending, RevivePet, RevivePetPayload{
+			CharacterId:      1,
+			PetId:            2,
+			SourceTemplateId: 5180000,
+		}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+}
+
+func TestAcceptEvent_RevivePetMatchesRevived(t *testing.T) {
+	p, _, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	newRevivePetSaga(t, ctx, tx)
+
+	decision, ok := p.AcceptEvent(tx, EventKindPetRevived)
+	require.True(t, ok, "REVIVED event must complete a pending revive_pet step")
+	assert.Equal(t, "revive", decision.Step.StepId())
+	assert.Equal(t, RevivePet, decision.Step.Action())
+	assert.Equal(t, tx, decision.Saga.TransactionId())
+}
+
+func TestAcceptEvent_RevivePetMatchesReviveFailed(t *testing.T) {
+	// REVIVE_FAILED must be accepted too, so the saga compensates the
+	// already-completed destroy step immediately rather than waiting out the
+	// flat timeout with the player's Water of Life gone.
+	p, _, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	newRevivePetSaga(t, ctx, tx)
+
+	decision, ok := p.AcceptEvent(tx, EventKindPetReviveFailed)
+	require.True(t, ok, "REVIVE_FAILED event must be accepted by a pending revive_pet step")
+	assert.Equal(t, "revive", decision.Step.StepId())
+	assert.Equal(t, RevivePet, decision.Step.Action())
+}
+
+func TestAcceptEvent_RevivePetRejectsClosenessChanged(t *testing.T) {
+	p, _, ctx := newAcceptEventTestProcessor(t)
+	tx := uuid.New()
+	newRevivePetSaga(t, ctx, tx)
+
+	_, ok := p.AcceptEvent(tx, EventKindPetClosenessChanged)
+	assert.False(t, ok, "CLOSENESS_CHANGED must not complete a revive_pet step")
+}
+
 func TestAcceptEvent_WarnOnceForUnmatchedEvent(t *testing.T) {
 	logger, hook := logtest.NewNullLogger()
 	ctx := acceptEventTestCtx(t)

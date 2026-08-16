@@ -24,8 +24,8 @@ const (
 	requestTimeout = 2 * time.Second
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("RANKINGS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "RANKINGS")
 }
 
 // requestByCharacterIds builds a Request for the atlas-rankings bulk
@@ -34,15 +34,20 @@ func getBaseRequest() string {
 // configurators, so the timeout has to go through a hand-rolled
 // requests.Request closure over requests.MakeGetRequest, matching the
 // per-call-timeout pattern already established for the header decorators.
-func requestByCharacterIds(ids []uint32) requests.Request[[]RestModel] {
+func requestByCharacterIds(ctx context.Context, ids []uint32) requests.Request[[]RestModel] {
 	strs := make([]string, len(ids))
 	for i, id := range ids {
 		strs[i] = strconv.FormatUint(uint64(id), 10)
 	}
-	url := fmt.Sprintf(getBaseRequest()+ByIds, strings.Join(strs, ","))
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]RestModel](err)
+	}
+	url := fmt.Sprintf(root+ByIds, strings.Join(strs, ","))
 	return func(l logrus.FieldLogger, ctx context.Context) ([]RestModel, error) {
 		sd := requests.AddHeaderDecorator(requests.SpanHeaderDecorator(ctx))
 		td := requests.AddHeaderDecorator(requests.TenantHeaderDecorator(ctx))
-		return requests.MakeGetRequest[[]RestModel](url, sd, td, requests.SetTimeout(requestTimeout))(l, ctx)
+		ed := requests.AddHeaderDecorator(requests.EnvHeaderDecorator(ctx))
+		return requests.MakeGetRequest[[]RestModel](url, sd, td, ed, requests.SetTimeout(requestTimeout))(l, ctx)
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	sh "github.com/Chronicle20/atlas/libs/atlas-socket/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -48,16 +49,28 @@ func NoOpHandlerFunc(_ logrus.FieldLogger, _ context.Context, _ writer.Producer)
 	}
 }
 
+// newSessionContext builds the base context for a login socket session:
+// the tenant this session belongs to, plus this pod's own environment
+// (env.Self() — never a value read off the wire, since a game client
+// connects to the PR's own login service and the environment is
+// originated here, not propagated from an inbound header). Tracing wraps
+// on top of this in AdaptHandler.
+func newSessionContext(t tenant.Model) context.Context {
+	ctx := tenant.WithContext(context.Background(), t)
+	ctx = env.WithContext(ctx, env.Self())
+	return ctx
+}
+
 func AdaptHandler(l logrus.FieldLogger) func(t tenant.Model, wp writer.Producer) Adapter {
 	return func(t tenant.Model, wp writer.Producer) Adapter {
 		return func(name string, v MessageValidator, h MessageHandler, readerOptions map[string]interface{}) request.Handler {
 			return func(sessionId uuid.UUID, r request.Reader) {
 				fl := l.WithField("session", sessionId.String())
-				sctx, span := otel.GetTracerProvider().Tracer("atlas-login").Start(context.Background(), "socket_handler")
+				sctx, span := otel.GetTracerProvider().Tracer("atlas-login").Start(newSessionContext(t), "socket_handler")
 				sl := fl.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
 				defer span.End()
 
-				tctx := tenant.WithContext(sctx, t)
+				tctx := sctx
 
 				sp := session.NewProcessor(l, tctx)
 				sp.IfPresentById(sessionId, func(s session.Model) error {

@@ -41,7 +41,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // consumer (server list / world-select screens need every world, not just
 // page 1), so it drains every page rather than fetching just the first.
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(worldsUrl(), 250, Extract, model.Filters[Model]())
+	url, err := worldsUrl(p.ctx)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetAll() ([]Model, error) {
@@ -49,7 +53,7 @@ func (p *ProcessorImpl) GetAll() ([]Model, error) {
 }
 
 func (p *ProcessorImpl) ByIdModelProvider(worldId world.Id) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestWorld(worldId), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestWorld(p.ctx, worldId), Extract)
 }
 
 func (p *ProcessorImpl) GetById(worldId world.Id) (Model, error) {

@@ -66,6 +66,7 @@ func main() {
 			return service.ProjectionFuncs{StartFunc: sub.Start, WaitCaughtUpFunc: caughtUp.WaitCaughtUp}
 		}),
 		service.WithReadinessGate(caughtUp.CaughtUpNow),
+		service.WithEnvironmentRegistry(serviceName),
 	)
 	l := rt.Logger()
 

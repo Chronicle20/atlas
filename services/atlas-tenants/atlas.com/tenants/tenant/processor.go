@@ -127,9 +127,13 @@ func (p *ProcessorImpl) CreateAndEmit(name string, region string, majorVersion u
 // Update updates an existing tenant
 func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
 	return func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
-		// First get the tenant to ensure it exists
-		provider := GetByIdProvider(p.ctx, id)(p.db)
-		e, err := provider()
+		// First get the tenant to ensure it exists. Unscoped (not
+		// GetByIdProvider) so that a cross-environment target still loads
+		// here and reaches UpdateTenant's scope.AuthorizeWrite below,
+		// which needs the row's real environment to distinguish
+		// ErrCrossEnvironmentWrite from a genuinely nonexistent id
+		// (task-232 fix round 1).
+		e, err := byIdUnscoped(p.ctx, p.db, id)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return Model{}, errors.New("tenant not found")
@@ -199,9 +203,12 @@ func (p *ProcessorImpl) UpdateAndEmit(id uuid.UUID, name string, region string, 
 // Delete deletes a tenant
 func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uuid.UUID) error {
 	return func(id uuid.UUID) error {
-		// First get the tenant to ensure it exists and to log its details
-		provider := GetByIdProvider(p.ctx, id)(p.db)
-		e, err := provider()
+		// First get the tenant to ensure it exists and to log its details.
+		// Unscoped (not GetByIdProvider) for the same reason as Update
+		// above: DeleteTenant's scope.AuthorizeWrite needs the row's real
+		// environment to produce ErrCrossEnvironmentWrite rather than a
+		// bare "not found" that never reaches it (task-232 fix round 1).
+		e, err := byIdUnscoped(p.ctx, p.db, id)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errors.New("tenant not found")

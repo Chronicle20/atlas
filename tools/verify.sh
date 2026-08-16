@@ -332,6 +332,18 @@ else
     skip "service registration guard (no registration list changed)"
 fi
 
+# task-232 Task 29A: asserts every service Deployment/StatefulSet/DaemonSet
+# carries SERVICE_NAME sourced via the downward API from its own `app` pod
+# label — libs/atlas-env/registry.go MapRegistry.IsOwner keys ownership on
+# it, so a missing or wrong-form value is a silent traffic misroute, not a
+# build failure. Gated on any deploy/k8s/ manifest change plus the guard's
+# own source, mirroring the service registration guard predicate above.
+if touched '^deploy/k8s/|^tools/service-name-guard'; then
+    step "service name guard" ./tools/service-name-guard.sh
+else
+    skip "service name guard (no deploy/k8s manifest changed)"
+fi
+
 if touched '^services/atlas-configurations/seed-data/templates/'; then
     step "template opcode order guard"       ./tools/template-opcode-order-guard.sh
     step "template duplicate binding guard"  ./tools/template-duplicate-binding-guard.sh

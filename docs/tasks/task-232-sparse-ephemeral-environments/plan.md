@@ -667,7 +667,9 @@ named environment-scoped one (FR-8.4).
 - Create: `libs/atlas-redis/environment_test.go`
 - Modify: `libs/atlas-redis/keys.go` — add `environmentEntityKey` beside `tenantEntityKey` (line 46)
 - Modify: `libs/atlas-redis/go.mod` — add the `libs/atlas-env` requirement (Task 17 must land first)
-- Modify: `services/atlas-data/atlas.com/data/runtime/ingest/ingestrun.go:114-120` — swap the constructor
+- Modify: `services/atlas-data/atlas.com/data/ingestrun/ingestrun.go:119-129` — swap the constructor
+  (correction, controller addendum #1: the file does not live under
+  `runtime/ingest/`; the package is `services/atlas-data/atlas.com/data/ingestrun/`)
 - Read-only: `libs/atlas-redis/tenant_registry.go` — the shape to mirror
 - Read-only: `libs/atlas-env/env.go` (Task 17) — `env.Id`
 
@@ -687,6 +689,14 @@ Phase A does not depend on it.
   func (r *EnvironmentRegistry[K, V]) Remove(ctx context.Context, e env.Id, key K) error
   func (r *EnvironmentRegistry[K, V]) GetAllValues(ctx context.Context, e env.Id) ([]V, error)
   ```
+
+  Correction (controller addendum #1): the shipped `libs/atlas-redis/environment.go`
+  exports considerably more than the five methods above. At minimum add
+  `UpdateWithTTL(ctx context.Context, e env.Id, key K, ttl time.Duration, fn func(V) V) (V, error)`
+  (`environment.go:206`). The other shipped methods, for reference: `PutWithTTL`,
+  `RemoveExisting`, `Update`, `Exists`, `GetAllEntries`, `ClearByPrefix`,
+  `Client`, `Namespace`, `Clear` — listed here so the plan matches what
+  landed.
 
 - [ ] **Step 1: Write the failing key-shape test**
 
@@ -1491,14 +1501,19 @@ git commit -m "feat(atlas-configurations): environment-scoped control-plane read
 
 ### Task 14: Environment-scoped reads and writes in `atlas-tenants`
 
-`GetAll()` is the function F13's autonomous-loop pattern calls; making it
-environment-filtered is what stops a baseline pod from picking up an
-ephemeral tenant it does not own.
+`AllProvider(page)` is the function F13's autonomous-loop pattern calls;
+making it environment-filtered is what stops a baseline pod from picking up
+an ephemeral tenant it does not own. (Correction, controller addendum #2:
+`atlas-tenants`' `tenant.Processor` has no `GetAll()` method — the real
+interface method is `AllProvider(page model.Page) model.Provider[model.Paged[Model]]`,
+confirmed at `services/atlas-tenants/atlas.com/tenants/tenant/processor.go:19,45`.
+The shipped tests in `services/atlas-tenants/atlas.com/tenants/tenant/scope_test.go`
+correctly target `AllProvider`.)
 
 **Files:**
 - Modify: `services/atlas-tenants/atlas.com/tenants/tenant/provider.go` — environment filter on every read
 - Modify: `services/atlas-tenants/atlas.com/tenants/tenant/administrator.go` — set environment on write; reject cross-environment writes
-- Modify: `services/atlas-tenants/atlas.com/tenants/tenant/processor.go` — `GetAll` gains the filter
+- Modify: `services/atlas-tenants/atlas.com/tenants/tenant/processor.go` — `AllProvider` gains the filter
 - Modify: `services/atlas-tenants/atlas.com/tenants/configuration/provider.go` and `configuration/administrator.go` — same treatment
 - Modify: `services/atlas-tenants/atlas.com/tenants/rest/handler.go` — 403 mapping
 - Read-only: `services/atlas-configurations/atlas.com/configurations/scope/scope.go` (Task 13) — copy the two helpers into this service rather than importing across a service boundary
@@ -1513,10 +1528,16 @@ duplication; do not create a shared library for it.
 
 **Interfaces:**
 - Consumes: `env.FromContext` (Task 17), the `Environment` field (Task 12).
-- Produces: `Processor.GetAll()` returns only tenants of the caller's
-  environment. Task 27's `ForEachOwnedEnvironment` depends on this filter.
+- Produces: `Processor.AllProvider(page)` returns only tenants of the
+  caller's environment. Task 27's `ForEachOwnedEnvironment` depends on this
+  filter. (Correction, controller addendum #2: not `GetAll()` — see the note
+  above the Files block.)
 
-- [ ] **Step 1: Write the failing `GetAll` filter test**
+- [ ] **Step 1: Write the failing `AllProvider` filter test**
+
+Shipped as `services/atlas-tenants/atlas.com/tenants/tenant/scope_test.go`
+(correction, controller addendum #2 — reproduced here matching the real
+`AllProvider(page)`/`model.Page`/`model.Paged` call shape, not `GetAll()`):
 
 ```go
 func TestGetAllReturnsOnlyTheCallersEnvironmentsTenants(t *testing.T) {
@@ -1524,12 +1545,13 @@ func TestGetAllReturnsOnlyTheCallersEnvironmentsTenants(t *testing.T) {
 	seedTenant(t, db, "main")
 	seedTenant(t, db, "pr-123")
 
-	got, err := NewProcessor(testLogger(t), envContext(t, "pr-123"), db).GetAll()
+	ctx := env.WithContext(context.Background(), env.Id("pr-123"))
+	paged, err := NewProcessor(testLogger(t), ctx, db).AllProvider(model.Page{Number: 1, Size: 250})()
 	if err != nil {
-		t.Fatalf("GetAll: %v", err)
+		t.Fatalf("AllProvider: %v", err)
 	}
-	if len(got) != 1 || got[0].Environment() != "pr-123" {
-		t.Fatalf("got %d tenants (%v), want pr-123's only", len(got), got)
+	if len(paged.Items) != 1 || paged.Items[0].Environment() != "pr-123" {
+		t.Fatalf("got %d tenants (%v), want pr-123's only", len(paged.Items), paged.Items)
 	}
 }
 
@@ -1538,12 +1560,12 @@ func TestGetAllWithLegacyEnvironmentReturnsEverything(t *testing.T) {
 	seedTenant(t, db, "main")
 	seedTenant(t, db, "pr-123")
 
-	got, err := NewProcessor(testLogger(t), context.Background(), db).GetAll()
+	paged, err := NewProcessor(testLogger(t), context.Background(), db).AllProvider(model.Page{Number: 1, Size: 250})()
 	if err != nil {
-		t.Fatalf("GetAll: %v", err)
+		t.Fatalf("AllProvider: %v", err)
 	}
-	if len(got) != 2 {
-		t.Fatalf("legacy GetAll returned %d, want 2 (FR-1.8)", len(got))
+	if len(paged.Items) != 2 {
+		t.Fatalf("legacy GetAll returned %d, want 2 (FR-1.8)", len(paged.Items))
 	}
 }
 ```

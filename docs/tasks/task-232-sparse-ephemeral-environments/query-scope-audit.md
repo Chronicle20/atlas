@@ -1104,3 +1104,78 @@ The three `GLOBAL-CORRECT` sites received a one-line intent comment at their
 construction call site (not a behavior change) — `atlas-messengers`,
 `atlas-kites`, `atlas-portal-actions` — each verified independently with
 module-local `go build ./... && go test ./...` (all green, no new failures).
+
+## 6. Sign-off (PRD §12 prerequisites)
+
+Numbered `## 6` rather than the brief's literal `## 4` — that number, and
+`## 5`, are already taken by sections this document grew since the brief was
+written (§4 "UNSCOPED dispositions", §5 "Deliberately-global Redis
+resources"). Appending as the next free number keeps the document's existing
+structure intact, the same convention §5's own heading note used.
+
+Task 16 (this task). Verifies each FR-8 acceptance criterion against a real
+artifact — counted or run directly, not copied from the brief's or an
+earlier addendum's placeholder numbers.
+
+| Criterion | Evidence |
+|---|---|
+| FR-8.1 every query path scoped | §1 of this document mechanically counts **95** entity/table rows (`grep -c '^\| atlas-' query-scope-audit.md`), of which **12** carry the literal `UNSCOPED` verdict in §1's table (`grep -c '\| UNSCOPED \|'` restricted to §1's row range — confirmed at §3 Step 6, "12 (8 from §1 parts 1-3 + 4 from this section)"). That raw count is **not 0** — see the honest caveat below. Every one of those 12, plus a 13th finding outside §1's row set (`libs/atlas-database/idempotency.go:143`, shared-library code), was individually traced to a query builder and read for a stated intent in §4.1's row-by-row disposition table: **13/13 `INTENDED-GLOBAL`, 0/13 `TENANT-DEFECT`, 0/13 `UNDECIDED`** (§4.2 Summary). Each of the 13 entry points is additionally pinned in the CI-enforced `tools/scopeguard/callsite-allowlist.txt` with a written, source-cited reason, so a *new* unscoped call site — one not already dispositioned here — fails the "scope guard" step of `tools/verify.sh` (confirmed ✓ in the flagless run below), not silently reproduces this count. **Caveat, stated plainly rather than rounded to 0:** the criterion's literal text ("every query path scoped") is not met by raw count — 12 §1 rows and 1 shared-library row remain structurally unfiltered by design (periodic background sweeps that discover across every tenant in one deployment, correct under today's per-environment-owns-its-database model, per §4.2's own analysis). This is not a gap Phase A failed to close; it is a documented, CI-guarded architectural fact that only becomes a defect once environments stop owning separate databases (decision D1) — which is why §4.3 hands the 13 entry points to Task 42 as the conversion list, not to this task. Zero of the 13 are undecided or defective today. |
+| FR-8.2 control-plane environment dimension | Tasks 11-12. Legacy-compatibility test confirmed at source: `services/atlas-configurations/atlas.com/configurations/scope/scope_test.go:81` `TestStrictWithEmptyEnvironmentAppliesNoFilter` asserts `scope.Strict(db.Model(&templates.Entity{}), env.Id(""))` applies no filter — an empty `env.Id` (the value a caller with no environment resolves to, e.g. `main`'s legacy code paths) sees every row, unchanged from pre-Task-11/12 behavior. Module-local `cd services/atlas-configurations/atlas.com/configurations && go test ./scope/...` → `ok atlas-configurations/scope`. |
+| FR-8.3 data-plane Redis on the tenant-scoped API | Tasks 4-7. `atlas-storage`'s npc-context cache defect — keyed on character id alone, and character ids are per-tenant sequences, so two tenants collided inside a single multi-tenant deployment — fixed in its own commit `05dd24392` ("fix(atlas-storage): tenant-scope the npc-context cache"), confirmed an ancestor of this branch's HEAD (`git merge-base --is-ancestor 05dd24392 HEAD` → true). The commit's own message states the defect was pre-existing, not introduced by sparse environments, and that the `ATLAS_ENV` key prefix had masked it only across environments, not across tenants sharing one. |
+| FR-8.4 bare constructors withdrawn | Task 9. `tools/rediskeyguard/analyzer.go`'s `bareConstructorAllowlist` (the only allowlist this guard checks, per its own doc comment at `analyzer.go:62-68`) has **14 entries** (12 "Shape 1" tenant-enumeration indexes + 2 "Shape 2" cross-tenant-value indexes; mechanically counted from the map literal, `analyzer.go:90-138`), each with a written reason citing the confirmed file:line evidence for why the bare (non-tenant-scoped) constructor is correct there. `./tools/redis-key-guard.sh` run directly: `rediskeyguard: 64 module(s), 8 parallel` → exit 0, no findings outside the allowlist. |
+| FR-8.5 guards fail CI on regression | Tasks 9, 15. Both analyzer-backed guards are wired into the flagless `tools/verify.sh` gate: the "scope guard" step (`verify.sh:305`, `./tools/scope-guard.sh`, FR-8.1's Postgres tenant-scope check) and rediskeyguard folded into the "go analyzer guards" step (`tools/go-analyzer-guards.sh:53`, FR-8.4's bare-constructor check) — both confirmed `✓` in the Step 1 flagless-green run below. Each guard also ships its own unit tests (`tools/scopeguard/analyzer_test.go`, `tools/rediskeyguard`'s own test suite per `go-analyzer-guards.sh:60`) pinning the fixtures that prove a real regression is caught, not just that the binary runs. |
+| FR-8.6 every deployment-scoped resource dispositioned | §2 of this document. Eight resources (Redis key prefix, Kafka topic names, Postgres DB names, consumer group ids, object id allocation, outbox advisory lock, MinIO canonical objects, login/channel ports) each carry an explicit disposition — scoped (with the task that scopes it), already-correct, or deliberately-global-with-a-named-tradeoff. No row left undispositioned. |
+
+### Step 1 evidence (run by the controller, not re-run here per addendum #2)
+
+First run, `tools/verify.sh --base c8d44127cbb9eb2016c621463f86614b81c618e7`
+(the branch point): **FAILED**, `rc=1`, "64 check(s) FAILED — the branch is
+not ready", every failure a `docker buildx bake` target. Root cause:
+`libs/atlas-env` was missing from the shared `Dockerfile` (not `COPY`'d,
+absent from the synthesized `go.work`), so every service failed to compile
+in Docker while all 87 modules built fine against the repo-root `go.work` —
+a defect the bake step exists specifically to catch and `go build`/`--quick`
+cannot. Fixed by commit `03e224271` ("fix(docker): add libs/atlas-env to the
+shared build context and go.work").
+
+Second run, same base, after the fix: **PASS**. Verified directly from the
+log (`$CLAUDE_JOB_DIR/tmp/gate-phaseA2.log`, tail reproduced below) — `rc=0`,
+`0` FAILED, 64/64 `docker buildx bake` targets ✓, all 87 modules
+`go build`/`vet`/`test -race` ✓, go analyzer guards ✓, skill/job id guard ✓,
+scope guard ✓, service registration guard ✓, LB port drift ✓, version
+coverage ✓, lint & format guard (87 modules) ✓:
+
+```
+  ✓ go analyzer guards
+  ✓ skill/job id guard
+  ✓ scope guard
+  ✓ service registration guard
+  ✓ LB port drift
+  ✓ version coverage
+  ✓ lint & format guard (87 module(s))
+
+All checks passed.
+```
+
+No `--quick` caveat printed. This is the first flagless-green commit on the
+branch; HEAD at sign-off is `03e224271`.
+
+**This history is itself FR-8.5 evidence**, not just the final verdict: a
+gate that caught a real, branch-wide Docker-packaging defect that every
+prior `--quick` run missed (because `--quick` skips the bake) is exactly the
+"guards fail CI on regression" property FR-8.5 asks for. It also means
+FR-8.3's `libs/atlas-env` dependency was broken in its Docker packaging from
+whichever task introduced it through `03e224271` — every commit in between
+would have failed a flagless gate had one run.
+
+### Verdict
+
+Six of six rows filled from an artifact read or command run directly against
+this branch, not copied from the brief's or an earlier addendum's numbers.
+FR-8.1 is the one row that does not reduce to a clean literal zero, and that
+nuance is stated above rather than rounded away: 12 §1 rows plus 1
+shared-library row are unfiltered by design, all 13 confirmed `INTENDED-GLOBAL`
+with zero `TENANT-DEFECT` and zero `UNDECIDED`, and all 13 are pinned in a
+CI-enforced allowlist that fails a *new* unscoped path. Phase A's actual
+prerequisite — no live, undispositioned tenant-scope defect, and a guard that
+would catch one — is met. **Phase A is done; Phase B-F may proceed.**

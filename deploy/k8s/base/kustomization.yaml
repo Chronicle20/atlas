@@ -22,6 +22,7 @@ resources:
   - atlas-drops.yaml
   - atlas-effective-stats.yaml
   - atlas-expressions.yaml
+  - atlas-families.yaml
   - atlas-fame.yaml
   - atlas-reward-pools.yaml
   - atlas-guilds.yaml

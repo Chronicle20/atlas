@@ -3316,8 +3316,19 @@
             "CANNOT_GIFT_TECHNICAL_DIFFICULTIES": 151,
             "CANNOT_TRANSFER_UNDER_LEVEL_TWENTY": 152,
             "CANNOT_TRANSFER_TO_SAME_WORLD": 153,
+            "world_same": 153,
             "CANNOT_TRANSFER_TO_NEW_WORLD": 154,
-            "CANNOT_TRANSFER_OUT": 155
+            "world_full": 154,
+            "world_unknown": 154,
+            "CANNOT_TRANSFER_OUT": 155,
+            "name_taken": 155,
+            "banned": 155,
+            "is_guild_master": 155,
+            "is_gm": 155,
+            "in_family": 155,
+            "trade_open": 155,
+            "merchant_open": 155,
+            "mts_listings_open": 155
           }
         },
         "services": [

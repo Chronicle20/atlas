@@ -53,8 +53,8 @@ atlas-maps character_map_visits
 atlas-merchant frederick_items
 atlas-merchant frederick_mesos
 atlas-merchant frederick_notifications
-atlas-merchant listings
 atlas-merchant listing_search_counts
+atlas-merchant listings
 atlas-merchant merchant_blacklists
 atlas-merchant merchant_visits
 atlas-merchant messages
@@ -96,11 +96,11 @@ atlas-storage storages
 atlas-tenants configurations
 atlas-trades trade_escrow_items
 atlas-trades trade_escrow_meso_refunds
-atlas-trades trade_escrow_mesos
 atlas-trades trade_escrow_meso_stakes
+atlas-trades trade_escrow_mesos
 atlas-trades trade_ledger_entries
 atlas-trades trade_ledger_items
 atlas-trades trade_ledger_sides
 atlas-trades trade_settlement_items
-atlas-trades trade_settlements
 atlas-trades trade_settlement_sides
+atlas-trades trade_settlements

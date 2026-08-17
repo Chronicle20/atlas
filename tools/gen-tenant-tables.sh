@@ -27,6 +27,13 @@
 # docs/runbooks/sparse-environments.md.)
 set -euo pipefail
 
+# Byte collation, not locale collation. `sort` under en_US.UTF-8 ignores
+# punctuation ("listings" < "listing_search_counts"), while CI's C/POSIX
+# locale compares bytes ('_' 0x5F < 's' 0x73) and orders them the other way.
+# Without this pin the checked-in list is stable only for whoever generated
+# it, and --check fails on every machine with a different LANG.
+export LC_ALL=C
+
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 AUDIT="$REPO_ROOT/docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit.md"
 BASE_DIR="$REPO_ROOT/deploy/k8s/base"

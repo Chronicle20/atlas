@@ -2240,7 +2240,7 @@ func (p *ProcessorImpl) ResetPetExpiration(mb *message.Buffer) func(transactionI
 			return errors.New("requested expiration exceeds the source item's server-derived cap")
 		}
 
-		invLock := LockRegistry().Get(characterId, inventory.TypeValueCash)
+		invLock := LockRegistry().Get(p.t, characterId, inventory.TypeValueCash)
 		invLock.Lock()
 		defer invLock.Unlock()
 

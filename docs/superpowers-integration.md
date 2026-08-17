@@ -14,8 +14,15 @@ budget, isolation, handoff.
 | 2. Design | `/design-task <task-folder>` | Architecture, alternatives, tradeoffs | `design.md` |
 | 3. Plan | `/plan-task <task-folder>` | Bite-sized TDD step-by-step plan | `plan.md` + `context.md` |
 | 4. Execute | `/execute-task <task-folder>` | Subagent-driven implementation | code + commits |
+| 5. After implementation | `/fix-pr-bug <task> <bug-slug>` | PR validation, live testing, debugging, follow-up fixes — diagnosis to a durable file, fix in a fresh context | `bug-<slug>.md` + fix commits |
 
-Run `/clear` between phases. Each command consumes only the prior phase's documented artifacts.
+Run `/clear` between phases 1–4. Each command consumes only the prior phase's documented artifacts.
+
+Phase 5 is not a `/clear` boundary and does not require one: it hands off by
+writing a diagnosis and dispatching against it. It exists because the flow used
+to stop at phase 4 while the work did not — one measured task spent 12.7% of its
+entire budget after the PR opened, at 94% main thread with three subagents across
+four sessions. See [`docs/post-implementation.md`](post-implementation.md).
 
 ### Task resolution
 
@@ -61,8 +68,43 @@ Invoke `superpowers:requesting-code-review` after completing a logical chunk of 
 - `plan-adherence-reviewer` — checks every task in `plan.md` was implemented; cites file:line evidence
 - `backend-guidelines-reviewer` — adversarial Go audit against the applicable families in `.claude/skills/backend-dev-guidelines/resources/audit-checklist.md` (DOM-*, FILE-*, SUB-*, EXT-*, SCAFFOLD-*, SEC-*)
 - `frontend-guidelines-reviewer` — adversarial TS/React audit (FE-* checks)
+- `atlas-reviewer` — per-unit / ad-hoc correctness review of one commit range against its brief. This is the named home for what used to ride bare `general-purpose`; use it rather than dispatching `general-purpose` with a review prompt.
 
 For ad-hoc one-off checks, invoke any agent directly by name without the orchestration skill.
+
+### Picking the roster — do not derive it by hand
+
+Run the classifier and read the roster off it:
+
+```sh
+tools/change-surfaces.sh --base <merge-base-or-last-gated-commit>
+```
+
+- `go_changed=true` → `backend-guidelines-reviewer`
+- `frontend_review=true` → `frontend-guidelines-reviewer`
+- `packet_surface=true` → also `packet-completeness-critic` (packet tasks)
+- a `plan.md` exists → `plan-adherence-reviewer`
+
+Pass the whole block verbatim into each reviewer's dispatch brief. It gives the
+backend reviewer its `backend_audit_families` list up front, replacing the
+13.6 KB `git diff --stat` pair one measured reviewer opened with — carried
+through all 83 of its turns — plus ~12 later turns spent rediscovering whether a
+Dockerfile exists and whether topic env vars changed.
+
+**The block is additive and fails open.** It states the families that are
+*definitely* in scope. A reviewer may add a family; a reviewer may **not** drop
+one because the block omitted it. When the classifier cannot understand the
+change — an unresolvable base, a Go file in an unrecognised layout — it emits
+`classification=uncertain` with every family listed, and the review runs wide.
+
+### What a reviewer returns
+
+Every reviewer writes its full reasoning to a durable artifact and returns a
+compact verdict-first block. The contract, the verdict semantics, and the
+controller's read rule are in [`docs/review-protocol.md`](review-protocol.md).
+Short version: `verdict` is the first line, blocking findings are enumerated
+with `file:line`, everything else is a count, and the controller opens the
+artifact only when the verdict is not `APPROVED`.
 
 All three are **scoped to the change under review**: the diff is the review surface, repo surveying is off, and anything a reviewer could not evaluate within that surface is reported under `## Not evaluable from the diff` rather than passed silently. Each agent's own `## Scope` section is the contract — you do not need to restate it in the dispatch prompt. Measured on a 67-file Go diff, this cost the same as an unscoped review and returned a strict superset of its findings.
 

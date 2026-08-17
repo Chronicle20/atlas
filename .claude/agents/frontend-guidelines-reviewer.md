@@ -86,6 +86,24 @@ Note: atlas-ui uses Vitest (via 'npm test' → 'vitest run'), not Jest. The '--w
 
 If either fails, the audit overall status is automatically `fail`. Record the errors and stop.
 
+## Reading the diff and the guideline documents — slice, do not re-read
+
+Your review surface arrives as a diff, and the guideline resources above are
+many and large. Take the inventory before the hunks:
+
+```sh
+git diff --stat <range>                       # which files, how big — always first
+git diff <range> -- <path>                    # one flagged file's hunks
+tools/doc-slice.sh <path> --outline           # any document over ~20 KB
+tools/doc-slice.sh <path> --section '<name>'  # the one pattern you are checking
+```
+
+Load a Phase 0 resource when its surface actually appears in the diff — a
+forms/Zod document for a diff with no form in it is wasted context. Escalate to
+a full read when the slice is insufficient, and say so in the audit; a document
+that is repeatedly escalated needs restructuring. See
+[`docs/slice-first.md`](../../docs/slice-first.md).
+
 ## Phase 2: File Inventory
 
 List all changed/in-scope files. Classify each as:
@@ -196,3 +214,35 @@ have needed to read. Write "none" if every item was evaluable.]
 - **FAIL**: Build fails or tests fail.
 
 A single FAIL check prevents overall PASS.
+
+## Return to the controller
+
+`audit.md` is the review. What you *return* is a pointer plus the part the
+controller must act on immediately.
+
+Return exactly the block defined in
+[`docs/review-protocol.md`](../../docs/review-protocol.md), verdict first:
+
+```text
+verdict: APPROVED | APPROVED_WITH_FINDINGS | CHANGES_REQUIRED
+artifact: docs/tasks/<task-folder>/audit.md
+scope_confirmed: <the files / diff range you actually audited>
+blocking: <n>
+  - <file:line> — <one sentence per blocking finding>
+non_blocking: <n>
+not_evaluable: <n>
+```
+
+`PASS` → `APPROVED` (or `APPROVED_WITH_FINDINGS` when non-blocking items
+exist); `NEEDS-WORK` / `FAIL` → `CHANGES_REQUIRED`.
+
+The file inventory, the three checklists, the build/test output, and every
+non-blocking WARN stay in `audit.md`. Do not restate a PASS in the return.
+Never suppress a genuine concern to keep the return small — use
+`APPROVED_WITH_FINDINGS`.
+
+## Do not fan out
+
+Run the checklist yourself; a question answerable in one or two tool calls is
+far cheaper answered inline than dispatched. See
+[`docs/agent-dispatch.md`](../../docs/agent-dispatch.md) §Inline vs delegate.

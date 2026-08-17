@@ -50,6 +50,8 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 - The pin follows the job, not the `subagent_type` — review/verify/audit runs Sonnet even for an ad-hoc general-purpose agent, scans and inventories run Haiku, implementers run Sonnet unless the plan task is tagged `model: opus`. Never use Fable for background or review workflows.
 - Implementers do not run repo-wide verification; they run module-local `go build ./... && go test ./...` and nothing more.
 - Fan out with fresh-context agents, not `subagent_type: "fork"` — a named agent type plus an explicit brief. Fork only to continue an interactive debugging thread, and say why inline. *(enforced)*
+- Decide inline-vs-delegate on expected turns, not on how big the task sounds: a question you can answer in one or two targeted tool calls costs far less inline than the ~35k dispatch floor. Reviewers never fan out checklist questions to children.
+- Every reviewer writes its reasoning to a durable artifact and returns a compact verdict-first block — see [docs/review-protocol.md](docs/review-protocol.md). Per-unit review is `atlas-reviewer`, never a bare `general-purpose` dispatch.
 
 ## Handing off context
 
@@ -68,7 +70,9 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 - Use repo-relative paths or placeholders in committed files; never a literal home/absolute path. *(enforced under `docs/`)*
 - Preserve existing line endings when editing; do not normalize CRLF→LF as a side effect.
 - Ask the toolchain (`go list -m -f '{{.Dir}}' <module>`) rather than sweeping the filesystem for a Go dependency's source.
-- Never spend inference turns polling a process — launch it with a bound (`run_in_background`, or Monitor with an until-loop) and hand back or do something else in the meantime.
+- Never spend inference turns polling a process — launch it with a bound (`run_in_background`, or Monitor with an until-loop) and hand back or do something else in the meantime. The same applies to waiting on a child agent: completions arrive as notifications, so there is nothing to wait for. *(enforced)*
+- Slice a large artifact before reading it whole — `tools/doc-slice.sh --outline/--section/--rows`, `git diff --stat` before hunks, `tools/task-brief.sh` before `plan.md`. A default with an escalation path, not a ban: read the whole file when correctness needs it.
+- Ask the tooling for a mechanical fact rather than deriving it — `tools/task-facts.sh <task>` for branch/worktree/surfaces/guards, `tools/verify.sh --facts` for what the gate selects.
 - When updating `TODO.md` or other tracking docs, use `Glob`/`Grep` to find the file first rather than assuming a path.
 - Send substantive content as its own text-only message before an `AskUserQuestion` — text emitted in the same turn does not render reliably.
 - Do not proactively pitch paid features; if one is genuinely the right tool, lead with what is known and unknown about billing before mentioning it.
@@ -85,7 +89,10 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 | **You committed to `main`, a push didn't trigger a build, or `gh` returns 401** | [docs/git-workflow.md](docs/git-workflow.md) | Stray-commit recovery, the conflicts-with-main build exception, token auth |
 | **You need to read a client binary** | [docs/reverse-engineering.md](docs/reverse-engineering.md) | `func_query` usage, `idb_list` session resolution |
 | **You need a Go dependency's source, or are waiting on a long-running process** | [docs/tooling-conventions.md](docs/tooling-conventions.md) | Toolchain lookups, the polling anti-pattern |
-| **You are about to dispatch an agent, or to decide whether to hand off** | [docs/agent-dispatch.md](docs/agent-dispatch.md) | Full job→model table, implementer budget, controller handoff thresholds |
+| **You are about to dispatch an agent, or to decide whether to hand off** | [docs/agent-dispatch.md](docs/agent-dispatch.md) | Full job→model table, implementer budget, inline-vs-delegate break-even, controller handoff thresholds, the agent ledger |
+| **You are dispatching a reviewer, or writing a review's result** | [docs/review-protocol.md](docs/review-protocol.md) | Verdict vocabulary, the compact return block, the durable-artifact requirement, the controller's read rule |
+| **You are about to read a large document, diff, plan, or offloaded tool result** | [docs/slice-first.md](docs/slice-first.md) | `tools/doc-slice.sh` modes, the per-situation table, when to escalate to a full read |
+| **The PR is open and something is wrong** — validation failure, live-test bug, regression, follow-up fix | [docs/post-implementation.md](docs/post-implementation.md) | Phase 5: reproduce inline, diagnose to `bug-<slug>.md`, delegate the fix, verify fresh (`/fix-pr-bug`) |
 | **You are about to dispatch a second implementer at the same templated transformation** | [docs/codemod-vs-agents.md](docs/codemod-vs-agents.md) | The break-even rule (evaluate before the second dispatch), the task-232 batch-4 worked example, the deferred rewriter's contract |
 | **Runtime or Kubernetes debugging** — diagnosing a wedged deploy or crash-loop | [docs/observability.md](docs/observability.md) | Read pod logs first, and how to reach them |
 | **Writing or changing a Go service** | `backend-dev-guidelines` skill, `backend-guidelines-reviewer` agent | Service patterns and the authoritative audit rule index (`resources/audit-checklist.md`): DOM/FILE/SUB/EXT/SCAFFOLD/SEC rules, constants reuse, service boundaries, test builders |

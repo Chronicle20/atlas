@@ -144,6 +144,17 @@ or bare pod listings. The logs usually name the real root cause directly.
 
 For a wedged startup, read `atlas-character-factory` and `atlas-world` first.
 
+**Never list a whole namespace when you already know the service name.** A
+`pods_list_in_namespace` is almost entirely metadata; measured at 17.5 KB
+arriving at turn 9 of a 172-turn session ≈ 0.72M tokens, when the three pod
+names it wanted were the whole payload. Name the pod, or filter the listing.
+
+Pod logs are the opposite case and work correctly today: large `pods_log`
+payloads spill to `<session>/tool-results/` and enter context as ~1.3 KB stubs,
+which you then slice from disk with `grep` / `tools/doc-slice.sh --grep`. That
+is the designed path — nine bounded reads instead of four unbounded ones. Do not
+`Read` a spilled result whole to "see it properly."
+
 Loki has no `app` label — select on `service_name` (Kubernetes labels with
 dots are normalised to underscores at ingestion, as noted above for
 `atlas.env`). An `app=` selector silently returns zero rows.

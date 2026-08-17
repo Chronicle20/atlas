@@ -27,6 +27,51 @@ second copy of it in `CLAUDE.md` or anywhere else.
 
 ---
 
+## Asking the gate what it selected — `--facts`
+
+Before investigating why a run was broad, slow, or skipped something, ask it:
+
+```sh
+tools/verify.sh --facts --quick --base <sha>
+```
+
+```text
+base=8c3736a
+changed_paths=41
+changed_services=atlas-cashshop,atlas-channel
+changed_libs=none
+go_changed=true
+ui_changed=false
+fanout_reason=none
+modules_selected=4
+modules=services/atlas-cashshop/…,services/atlas-channel/…
+guard_suites=none
+bake_targets=none
+gates_selected=3
+gate=go build/vet (4 modules)
+gate=go analyzer guards
+gate=lint & format guard (4 module(s))
+gates_skipped=11
+```
+
+Pass the same flags you would really run — the answer reflects them, so
+`--facts --quick --base X` reports what `--quick --base X` would do. Every
+informational line goes to stderr; stdout is `key=value` only.
+
+**It cannot drift from a real run.** `--facts` does not re-implement the
+selection logic: it runs the script's real body and neuters `step()`, so each
+gate records its label instead of executing. `tools/verify_test.sh` asserts both
+the behavioural agreement (selected and skipped label sets match a real run over
+the same change set) and the structural invariant that a gate label can only
+originate inside `step()`.
+
+This exists because the alternative was measured: ~30 turns at 170–290k context
+spent reverse-engineering the change-detection, module selection, and guard
+gating from this script's source — ≈6.9M tokens, about a quarter of one
+controller session — to learn facts the script had already computed. If you find
+yourself running `git diff` against `tools/verify.sh`, or grepping it to see how
+it invokes guards, run `--facts` instead.
+
 ## The iteration gate
 
 The default change base is the merge base with `origin/main` — the **whole

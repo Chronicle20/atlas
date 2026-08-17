@@ -37,6 +37,45 @@ expensive. If the process exceeds its bound, kill it and fall back; do not
 keep polling. When a tool has a known hang mode, the fallback belongs in
 that tool's agent doc, not in a longer wait.
 
+The same holds for **waiting on a child agent**. There is no wait primitive
+because none is needed: completions arrive as notifications, so do other work
+or end the turn and be re-invoked. Emitting `true` to stay alive is the worst
+version of this — measured at 30 such calls inside one agent, 36% of its entire
+cost, for zero information.
+
+`.claude/hooks/wait-loop-guard.sh` makes this machine-checked rather than
+advisory, the way `fork-dispatch-guard.sh` did for forks. It refuses bare
+no-ops, sleep-driven polls, and broad `ps`/`pgrep` sweeps. It deliberately
+allows real process debugging — `ps -p <pid>`, `kill`/`pkill`, `kubectl`,
+`docker ps`, `top -b -n1` — and anything prefixed `POLL-JUSTIFIED: <reason>`,
+mirroring `FORK-JUSTIFIED:`. A considered wait costs one sentence; the
+reflexive one is blocked.
+
+## Ask for a fact rather than deriving it
+
+Mechanical repository facts have deterministic sources. Use them:
+
+| Question | Ask |
+|---|---|
+| Which worktree / branch / task folder, what artifacts exist, which surfaces changed, which guards apply, what's installed | `tools/task-facts.sh <task>` |
+| What will the gate build, and why is it fanning out | `tools/verify.sh --facts --quick --base <sha>` |
+| Which services/libs/audit families does this diff touch | `tools/change-surfaces.sh --base <sha>` |
+| One task out of a plan | `tools/task-brief.sh <plan> <N>` |
+| One section or a few rows of a large document | `tools/doc-slice.sh` — see [slice-first.md](slice-first.md) |
+
+Do not probe for toolchain availability (`command -v`, `--version`, `which`)
+— `task-facts.sh` reports `toolchain=` and `go_version=` live. Measured: ~65
+such probes across 80 of 213 streams, answering a question the environment can
+simply state.
+
+**A deterministic tool defeated by a wrapper is a net loss.** When a
+token-optimizing shell wrapper swallows a script's stdout, the saved bytes cost
+a whole extra turn to recover the output — observed twice on
+`tools/task-resolve.sh`, where a 280-byte result was followed by a second call
+to read the wrapper's tee log. Any such wrapper must pass `tools/*.sh` output
+through unfiltered; these scripts already emit a compact `key=value` contract
+and have nothing to trim.
+
 ## Shell and editing conventions
 
 Prefer portable POSIX shell; avoid zsh/direnv-specific constructs and batch

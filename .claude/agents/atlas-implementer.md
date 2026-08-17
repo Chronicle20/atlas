@@ -121,6 +121,22 @@ its role, plus the patterns to copy. The planner already knew them.
   worktree they were already in. If you catch yourself guessing at module-cache
   case-escaping (`!chronicle20`), that is the signal — run `go list` instead.
   Never root a `find` at `/`.
+- **Slice a large reference document before reading it whole.** When the brief
+  points at a wiring recipe, a scope audit, a result matrix, or an offloaded
+  tool result, take the named section or rows:
+
+  ```sh
+  tools/doc-slice.sh <path> --outline
+  tools/doc-slice.sh <path> --section 'Pattern C'
+  tools/doc-slice.sh <path> --rows atlas-account --rows atlas-buddies
+  ```
+
+  Two such documents were read whole 74 times across 25 implementer streams and
+  cost 7.5% of one task's entire tool-result carry, when each agent needed one
+  section. This is a default with an escalation path, not a ban: if the slice is
+  insufficient, read the file and say so in your report. Source files you are
+  about to edit are not "large reference documents" — read those.
+  See [`docs/slice-first.md`](../../docs/slice-first.md).
 
 ## Your Job
 

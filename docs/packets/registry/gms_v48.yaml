@@ -785,13 +785,15 @@
 - op: CASHSHOP_CHECK_NAME_CHANGE
   direction: clientbound
   opcode: 258
-  fname: sub_455A7F
-  fname_alts:
-  - CCashShop::OnCheckNameChangePossibleResult
+  fname: CCashShop::OnCheckDuplicatedIDResult
   provenance: ida-discovered
   ida:
     address: 4545151
-  note: 'unnamed sub_455A7F = OnCheckNameChangePossibleResult (v61 fname_alt sub_463900).'
+  note: 'task-227: formerly unnamed sub_455A7F, now named CCashShop::OnCheckDuplicatedIDResult
+    in the v48 IDB. Body is DecodeStr(sName) + Decode1(nResult) + Notice (SP 499 ok /
+    498 duplicate / 3222 unknown) — structurally identical to v83 @0x47baea. The earlier
+    note claiming this was OnCheckNameChangePossibleResult was wrong: that handler reads
+    Decode4+Decode1+Decode4 and does not exist before v79.'
 - op: CASHSHOP_GACHAPON_STAMP_RESULT
   direction: clientbound
   opcode: 259
@@ -1590,6 +1592,30 @@
   ida:
     address: 5244563
   note: 'BODY-VERIFIED send-site 0x5006e7: name-validate (sub_6C1BD8) then COutPacket(17)+EncodeStr(name a2) + SetExclRequestSent. EXACT twin of v61 CHECK_CHAR_NAME (SendCheckDuplicateIDPacket sub_565537: COutPacket(21)+EncodeStr(name)). fname carries body-canonical name for candidatesFromFName (matches the CheckName audit report); sub_500693 @0x500693 is the resolved v48 send-site. v61 CHECK_CHAR_NAME=21 (Delta-4). Atlas handler: CharacterCheckNameHandle.'
+- op: NAME_TRANSFER
+  direction: serverbound
+  opcode: 18
+  fname: CCashShop::SendCheckNameChangePossiblePacket
+  provenance: ida-discovered
+  ida:
+    address: 4520254
+  note: 'task-227: @0x44f93e builds COutPacket(18) (disasm `push 12h` @0x44f950) then
+    Encode4+Encode4. Reached only from CCashShop::OnBuyNameChange @0x44c5f1, which
+    CCashShop::ProcessBuy @0x44f7b8 selects on item id 5400000 (cmp against offset
+    loc_5265BF+1). NOTE the v48 opcode is 18, not the 16 used by v61-v95 — v48 predates
+    the two-slot shift. Previously absent from the registry.'
+- op: WORLD_TRANSFER
+  direction: serverbound
+  opcode: 20
+  fname: CCashShop::SendCheckTransferWorldPossiblePacket
+  provenance: ida-discovered
+  ida:
+    address: 4520853
+  note: 'task-227: formerly unnamed sub_44FB95; @0x44fb95 builds COutPacket(20) (disasm
+    `push 14h` @0x44fba7) then Encode4+Encode4. Reached only from
+    CCashShop::OnBuyTransferWorldItem @0x44c707 (ProcessBuy item id 5401000 = offset
+    loc_5269A5+3) after CCashShop::CheckTransferWorldPossible @0x44fa5d passes. v48
+    opcode is 20, not the 18 used by v61-v95. Previously absent from the registry.'
 - op: CREATE_CHAR
   direction: serverbound
   opcode: 21

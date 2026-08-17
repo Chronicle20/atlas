@@ -249,6 +249,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-families
+spec:
+  template:
+    spec:
+      containers:
+        - name: families
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-fame
 spec:
   template:

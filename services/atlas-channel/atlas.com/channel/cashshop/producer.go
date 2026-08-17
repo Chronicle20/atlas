@@ -39,14 +39,19 @@ func CharacterExitCashShopStatusEventProvider(actorId uint32, f field.Model) mod
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestPurchaseCommandProvider(characterId uint32, serialNumber uint32, currency uint32) model.Provider[[]kafka.Message] {
+// RequestPurchaseCommandProvider builds the REQUEST_PURCHASE command.
+// transactionId is an opaque correlation id (uuid.Nil for callers with no
+// record to correlate back to, e.g. the ordinary BUY arm) — see
+// RequestPurchaseCommandBody's doc comment.
+func RequestPurchaseCommandProvider(characterId uint32, serialNumber uint32, currency uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.Command[cashshop.RequestPurchaseCommandBody]{
 		CharacterId: characterId,
 		Type:        cashshop.CommandTypeRequestPurchase,
 		Body: cashshop.RequestPurchaseCommandBody{
-			Currency:     currency,
-			SerialNumber: serialNumber,
+			TransactionId: transactionId,
+			Currency:      currency,
+			SerialNumber:  serialNumber,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

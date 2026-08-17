@@ -80,6 +80,7 @@ var payloadUnmarshalers = map[Action]PayloadUnmarshaler{
 	WarpToRandomPortal:   unmarshalWarpToRandomPortalPayload,
 	WarpToPortal:         unmarshalWarpToPortalPayload,
 	DestroyAsset:         unmarshalDestroyAssetPayload,
+	DestroyAllAssets:     unmarshalDestroyAllAssetsPayload,
 	DestroyAssetFromSlot: unmarshalDestroyAssetFromSlotPayload,
 }
 
@@ -149,6 +150,10 @@ func unmarshalAwardMesosPayload(rawPayload interface{}) (any, error) {
 
 func unmarshalDestroyAssetPayload(rawPayload interface{}) (any, error) {
 	return unmarshalGenericPayload[DestroyAssetPayload](rawPayload)
+}
+
+func unmarshalDestroyAllAssetsPayload(rawPayload interface{}) (any, error) {
+	return unmarshalGenericPayload[DestroyAllAssetsPayload](rawPayload)
 }
 
 func unmarshalDestroyAssetFromSlotPayload(rawPayload interface{}) (any, error) {

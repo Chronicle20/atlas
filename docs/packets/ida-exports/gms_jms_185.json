@@ -3,6 +3,44 @@
   "md5": "af6652ff9b7c549341f35e3569d7564a",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CCashShop::OnCheckTransferWorldPossibleResult": {
+      "address": "0x48e7a6",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(iPacket)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "CInPacket::Decode1(iPacket) && count > 0"
+        }
+      ]
+    },
+    "CCashShop::SendCheckTransferWorldPossiblePacket": {
+      "address": "0x484fbf",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
     "CPet::OnNameChanged": {
       "address": "0x76a5de",
       "direction": "clientbound",

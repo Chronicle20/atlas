@@ -169,6 +169,22 @@ func UpdateState(db *gorm.DB, id string, from State, to State) (int64, error) {
 	return result.RowsAffected, result.Error
 }
 
+// updateSellerName renames seller_name on EVERY listing row for sellerId,
+// regardless of State — sold, cancelled, expired and active alike. seller_name
+// is the seller's current display identity, not a point-in-time record of who
+// they were at sale time, so leaving old rows behind would show one person
+// under two names in the same list. Returns rows affected (0 = the seller
+// currently has no listings, not an error).
+func updateSellerName(db *gorm.DB, sellerId uint32, newName string) (int64, error) {
+	result := db.Model(&entity{}).
+		Where(map[string]interface{}{"seller_id": sellerId}).
+		Updates(map[string]interface{}{
+			"seller_name": newName,
+			"updated_at":  time.Now(),
+		})
+	return result.RowsAffected, result.Error
+}
+
 // DeleteActive hard-deletes a listing row by id ONLY while it is still active,
 // returning rows affected (1 = deleted, 0 = not active / already gone). It is the
 // late-compensation inverse of a spurious AcceptToMtsListing: the list saga timed

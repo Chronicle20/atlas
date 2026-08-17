@@ -583,6 +583,84 @@ func CreateSingleTradeConfigJsonData(config map[string]interface{}) (json.RawMes
 	return CreateTradeConfigJsonData([]map[string]interface{}{config})
 }
 
+// ImprintConfigRestModel is the JSON:API resource for the per-tenant cash
+// name-change / world-transfer pending-request expiry (FR-2.6). The single
+// attribute JSON key must match what atlas-character decodes in
+// services/atlas-character/atlas.com/character/configuration/rest.go
+// (RestModel.PendingExpiryHours). Unlike TradeConfigRestModel's knobs, there
+// is only one field, so there is no partial-PATCH merge concern: the whole
+// resource IS the one knob.
+type ImprintConfigRestModel struct {
+	Id                 string `json:"-"`
+	PendingExpiryHours int    `json:"pendingExpiryHours"`
+}
+
+// GetID returns the resource ID
+func (m ImprintConfigRestModel) GetID() string {
+	return m.Id
+}
+
+// SetID sets the resource ID
+func (m *ImprintConfigRestModel) SetID(id string) error {
+	m.Id = id
+	return nil
+}
+
+// GetName returns the resource name
+func (m ImprintConfigRestModel) GetName() string {
+	return "imprint-configs"
+}
+
+// TransformImprintConfig converts a stored map[string]interface{} entry (flat
+// — id and pendingExpiryHours at the top level, no nested "attributes", see
+// CreateSingleImprintConfigJsonData) into an ImprintConfigRestModel.
+func TransformImprintConfig(data map[string]interface{}) (ImprintConfigRestModel, error) {
+	id, _ := data["id"].(string)
+
+	hours := 0
+	if val, ok := data["pendingExpiryHours"].(float64); ok {
+		hours = int(val)
+	} else if val, ok := data["pendingExpiryHours"].(int); ok {
+		hours = val
+	}
+
+	return ImprintConfigRestModel{
+		Id:                 id,
+		PendingExpiryHours: hours,
+	}, nil
+}
+
+// ExtractImprintConfig converts an ImprintConfigRestModel back into the flat
+// map stored in the configuration entity.
+func ExtractImprintConfig(m ImprintConfigRestModel) (map[string]interface{}, error) {
+	id := m.Id
+	if id == "" {
+		id = uuid.New().String()
+	}
+	return map[string]interface{}{
+		"id":                 id,
+		"pendingExpiryHours": m.PendingExpiryHours,
+	}, nil
+}
+
+// CreateImprintConfigJsonData creates a JSON:API compliant data structure for
+// imprint configs (an array of flat config entries under "data").
+func CreateImprintConfigJsonData(configs []map[string]interface{}) (json.RawMessage, error) {
+	data := map[string]interface{}{
+		"data": configs,
+	}
+	return json.Marshal(data)
+}
+
+// CreateSingleImprintConfigJsonData wraps one imprint config in a JSON:API
+// document, mirroring CreateSingleKiteConfigJsonData: the flat map is stored
+// as-is under "data" so GetImprintConfigByIdProvider/GetAllImprintConfigsProvider
+// round-trip it straight back into the same flat shape TransformImprintConfig
+// expects.
+func CreateSingleImprintConfigJsonData(config map[string]interface{}) (json.RawMessage, error) {
+	return CreateImprintConfigJsonData([]map[string]interface{}{config})
+}
+
 // InstanceRouteRestModel is the JSON:API resource for instance routes
 type InstanceRouteRestModel struct {
 	Id string `json:"-"`

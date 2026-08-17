@@ -49,6 +49,14 @@ const (
 	// shop from anywhere, then consume the item — never the other way round
 	// (task-221).
 	RemoteMerchant Type = "remote_merchant"
+	// WorldTransfer moves a character between worlds. Its steps run in a fixed,
+	// load-bearing order: validate -> leave_guild -> leave_party -> sever_buddies
+	// -> change_character_world. The world update is last and is a single-row
+	// update, so a failure anywhere leaves the character wholly in the source
+	// world with only recoverable severances applied — the character is never
+	// in two worlds and never in none.
+	WorldTransfer Type = "world_transfer"
+
 	// PetRevive is the classification-518 Water of Life flow: consume the item,
 	// then reset a dried-up pet's lifespan. Consume comes first so a failed
 	// revive compensates into a refund rather than a free revive (task-228).
@@ -86,6 +94,7 @@ const (
 	AwardCurrency        Action = "award_currency"
 	AwardFame            Action = "award_fame"
 	DestroyAsset         Action = "destroy_asset"
+	DestroyAllAssets     Action = "destroy_all_assets"
 	DestroyAssetFromSlot Action = "destroy_asset_from_slot"
 	EquipAsset           Action = "equip_asset"
 	UnequipAsset         Action = "unequip_asset"
@@ -267,6 +276,15 @@ const (
 	// Megaphone / world broadcast actions
 	EmitMegaphone         Action = "emit_megaphone"
 	EnqueueWorldBroadcast Action = "enqueue_world_broadcast"
+
+	// World transfer actions (task-227). Order is fixed and load-bearing:
+	// validate -> leave_guild -> leave_party -> sever_buddies ->
+	// change_character_world. See the WorldTransfer Type doc comment.
+	ValidateWorldTransfer   Action = "validate_world_transfer"
+	LeaveGuildForTransfer   Action = "leave_guild_for_transfer"
+	LeavePartyForTransfer   Action = "leave_party_for_transfer"
+	SeverBuddiesForTransfer Action = "sever_buddies_for_transfer"
+	ChangeCharacterWorld    Action = "change_character_world"
 )
 
 // Saga represents the entire saga transaction.

@@ -16,6 +16,7 @@ type Processor interface {
 	RemoveMember(guildId uint32, characterId uint32) error
 	UpdateStatus(characterId uint32, online bool) error
 	UpdateTitle(characterId uint32, title byte) error
+	UpdateName(characterId uint32, name string) error
 }
 
 type ProcessorImpl struct {
@@ -77,4 +78,8 @@ func (p *ProcessorImpl) UpdateStatus(characterId uint32, online bool) error {
 
 func (p *ProcessorImpl) UpdateTitle(characterId uint32, title byte) error {
 	return updateTitle(p.db.WithContext(p.ctx), characterId, title)
+}
+
+func (p *ProcessorImpl) UpdateName(characterId uint32, name string) error {
+	return updateName(p.db.WithContext(p.ctx), p.t.Id(), characterId, name)
 }

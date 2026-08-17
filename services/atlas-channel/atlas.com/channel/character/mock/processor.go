@@ -8,6 +8,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -25,6 +26,10 @@ type MockProcessor struct {
 	// asset (locked, flag, template id) rather than just a resolved template
 	// id. Defaults to the pre-existing "not implemented" error when unset.
 	GetItemInSlotFunc func(characterId uint32, inventoryType inventory2.Type, slot int16) (asset.Model, error)
+	// CheckNameValidityFunc lets a test control the atlas-character
+	// name-validity answer the cash-shop rename probe (task-227) depends on.
+	// Defaults to "valid" when unset.
+	CheckNameValidityFunc func(name string, worldId world.Id, scope character.NameScope) (character.NameValidityResult, error)
 }
 
 // NewMockProcessor creates a new MockProcessor instance
@@ -114,6 +119,33 @@ func (m *MockProcessor) GetByName(name string) (character.Model, error) {
 		return character.Model{}, errors.New("character not found")
 	}
 	return c, nil
+}
+
+// ForAccountInWorldProvider filters the mock's Characters by worldId (the
+// mock has no separate accountId index, so it does not additionally filter
+// by accountId -- callers that need accountId-scoped behavior should seed
+// Characters accordingly).
+func (m *MockProcessor) ForAccountInWorldProvider(_ uint32, worldId world.Id) model.Provider[[]character.Model] {
+	return func() ([]character.Model, error) {
+		out := make([]character.Model, 0)
+		for _, c := range m.Characters {
+			if c.WorldId() == worldId {
+				out = append(out, c)
+			}
+		}
+		return out, nil
+	}
+}
+
+func (m *MockProcessor) GetForAccountInWorld(accountId uint32, worldId world.Id) ([]character.Model, error) {
+	return m.ForAccountInWorldProvider(accountId, worldId)()
+}
+
+func (m *MockProcessor) CheckNameValidity(name string, worldId world.Id, scope character.NameScope) (character.NameValidityResult, error) {
+	if m.CheckNameValidityFunc != nil {
+		return m.CheckNameValidityFunc(name, worldId, scope)
+	}
+	return character.NameValidityResult{Valid: true}, nil
 }
 
 func (m *MockProcessor) RequestDistributeAp(_ field.Model, _ uint32, _ uint32, _ []character.DistributePacket) error {

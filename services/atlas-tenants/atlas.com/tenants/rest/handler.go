@@ -85,3 +85,7 @@ func ParseMtsConfigId(l logrus.FieldLogger, next func(string) http.HandlerFunc) 
 func ParseTradeConfigId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
 	return server.ParseStringId(l, "tradeConfigId", next)
 }
+
+func ParseImprintConfigId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseStringId(l, "imprintConfigId", next)
+}

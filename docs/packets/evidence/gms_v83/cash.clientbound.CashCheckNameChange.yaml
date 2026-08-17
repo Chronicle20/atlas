@@ -1,0 +1,16 @@
+packet: cash/clientbound/CashCheckNameChange
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCheckDuplicatedIDResult
+    address: "0x47baea"
+    decompile_sha256: 61fcd7bb86403ea2a148b1a7fa0838c919d6814693589a00b2dcbf5070f00628
+verifies:
+    - libs/atlas-packet/cash/clientbound/check_name_change_test.go#TestCheckNameChangeByteFixture
+    - libs/atlas-packet/cash/clientbound/check_name_change_test.go#TestCheckNameChangeRoundTrip
+    - libs/atlas-packet/cash/clientbound/check_name_change_test.go#TestCheckNameChangeNoVersionDivergence
+    - libs/atlas-packet/cash/clientbound/check_name_change_test.go#TestCheckNameChangeCodesAreConfigResolved
+    - libs/atlas-packet/cash/clientbound/check_name_change_test.go#TestCheckNameChangeAvailableBody
+    - libs/atlas-packet/cash/clientbound/check_name_change_test.go#TestCheckNameChangeReasonMapping
+    - libs/atlas-packet/cash/clientbound/check_name_change_test.go#TestCheckNameChangeSignedResultRoundTrips

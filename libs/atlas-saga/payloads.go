@@ -95,11 +95,39 @@ type AwardFamePayload struct {
 }
 
 // DestroyAssetPayload represents the payload required to destroy an asset in a compartment.
+//
+// This action is SLOT-SCOPED even though it addresses the item by template: the
+// handler resolves TemplateId to the FIRST matching asset and acts on that one
+// slot. For a stackable item that is the whole item, so the distinction is
+// invisible. For an item that does not stack — a cash item, whose every
+// instance carries its own cashId and therefore its own slot — it is not. Use
+// DestroyAllAssets when you mean every instance.
 type DestroyAssetPayload struct {
 	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
 	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to destroy
 	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy (ignored if RemoveAll is true)
-	RemoveAll   bool   `json:"removeAll"`   // If true, remove all instances of the item regardless of Quantity
+	RemoveAll   bool   `json:"removeAll"`   // If true, remove the resolved slot's ENTIRE stack (not every slot holding this template — see DestroyAllAssets)
+	ShowEffect  bool   `json:"showEffect"`  // Render the item-loss chat line on the client when true
+}
+
+// DestroyAllAssetsPayload destroys EVERY asset of a template a character holds,
+// across every slot of the owning compartment, rather than the first one found.
+//
+// It exists because DestroyAsset cannot express that: its handler narrows
+// templateId to a single slot before RemoveAll is ever evaluated, so a caller
+// asking about an item silently gets an answer about one slot. That is only
+// observable for items that occupy more than one slot at once — which is
+// exactly the non-stacking cash items.
+//
+// NOT COMPENSABLE, deliberately: the payload records what to destroy, never how
+// much was found, so a rollback has nothing to recreate from. This is the same
+// reason DestroyAsset with RemoveAll=true is excluded from late compensation.
+// Use it only as a terminal step, or where losing the items on rollback is
+// acceptable; if you need rollback, enumerate first and emit explicit
+// DestroyAssetFromSlot steps instead.
+type DestroyAllAssetsPayload struct {
+	CharacterId uint32 `json:"characterId"` // CharacterId associated with the action
+	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item; every asset matching it is destroyed
 	ShowEffect  bool   `json:"showEffect"`  // Render the item-loss chat line on the client when true
 }
 
@@ -1315,4 +1343,53 @@ type EnqueueWorldBroadcastPayload struct {
 	SenderLook      AvatarSnapshot  `json:"senderLook"`
 	ReceiverName    string          `json:"receiverName"`
 	ReceiverLook    *AvatarSnapshot `json:"receiverLook,omitempty"`
+}
+
+// ValidateWorldTransferPayload represents the payload required to validate a
+// pending world transfer before any severance step runs.
+type ValidateWorldTransferPayload struct {
+	CharacterId        uint32    `json:"characterId"`        // CharacterId to transfer
+	SourceWorldId      world.Id  `json:"sourceWorldId"`      // WorldId the character currently resides in
+	DestinationWorldId world.Id  `json:"destinationWorldId"` // WorldId the character is transferring to
+	PendingChangeId    uuid.UUID `json:"pendingChangeId"`    // PendingChangeId of the eligibility record backing this transfer
+}
+
+// LeaveGuildForTransferPayload represents the payload required to remove a
+// character from their guild ahead of a world transfer.
+type LeaveGuildForTransferPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId leaving the guild
+	WorldId     world.Id `json:"worldId"`     // WorldId the character currently resides in
+	GuildId     uint32   `json:"guildId"`     // GuildId the character is leaving
+	// Title is recorded so the compensation can re-add the member at the rank
+	// they held. A guild re-join is not a client-driveable recovery, so this
+	// is the one severance whose compensation must be exact.
+	Title byte `json:"title"`
+}
+
+// LeavePartyForTransferPayload represents the payload required to remove a
+// character from their party ahead of a world transfer.
+type LeavePartyForTransferPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId leaving the party
+	WorldId     world.Id `json:"worldId"`     // WorldId the character currently resides in
+	PartyId     uint32   `json:"partyId"`     // PartyId the character is leaving
+}
+
+// SeverBuddiesForTransferPayload represents the payload required to sever a
+// character's buddy relationships ahead of a world transfer.
+type SeverBuddiesForTransferPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId being severed from its buddies
+	WorldId     world.Id `json:"worldId"`     // WorldId the character currently resides in
+	// BuddyIds is captured before severance so the compensation can restore
+	// entries in both directions.
+	BuddyIds []uint32 `json:"buddyIds"`
+}
+
+// ChangeCharacterWorldPayload represents the payload required to move a
+// character's world assignment. This is the final, single-row-update step of
+// a world transfer: it runs only after every severance step has succeeded.
+type ChangeCharacterWorldPayload struct {
+	CharacterId        uint32    `json:"characterId"`        // CharacterId being moved
+	SourceWorldId      world.Id  `json:"sourceWorldId"`      // WorldId the character currently resides in
+	DestinationWorldId world.Id  `json:"destinationWorldId"` // WorldId the character is transferring to
+	PendingChangeId    uuid.UUID `json:"pendingChangeId"`    // PendingChangeId of the eligibility record backing this transfer
 }

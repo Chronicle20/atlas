@@ -165,6 +165,12 @@ type Processor interface {
 	// translate the wire's uint32 serial into the UUID-keyed listing for the
 	// cancel/buy/bid flows.
 	GetBySerial(worldId world.Id, sn uint32) (Model, error)
+	// ByCharacterActivePagedProvider returns one page of a seller's ACTIVE
+	// listings across worlds. Backs GET /characters/{characterId}/mts/listings
+	// (task-227 gate 11) — mirrors holding.Processor.ByCharacterPagedProvider's
+	// shape exactly, scoped to StateActive since a settled/cancelled/expired
+	// listing has already left escrow (or become a holding).
+	ByCharacterActivePagedProvider(sellerId uint32, page model.Page) model.Provider[model.Paged[Model]]
 	Create(m Model) (Model, error)
 	Browse(worldId world.Id, state State, f BrowseFilter) ([]Model, error)
 	CountBrowse(worldId world.Id, state State, f BrowseFilter) (int64, error)
@@ -253,6 +259,10 @@ type Processor interface {
 	// of SettleMove): it soft-deletes the deterministic buyer holding and transitions
 	// the listing sold->active in one tx.
 	RestoreFromHolding(listingId string, buyerId uint32) error
+	// RenameSeller renames seller_name on EVERY listing row for sellerId,
+	// regardless of State (task-227 NAME_CHANGED consumption). Returns rows
+	// affected (0 = the seller has no listings, not an error).
+	RenameSeller(sellerId uint32, newName string) (int64, error)
 }
 
 // ReleasedOffer describes one losing want-ad offer that ReleaseSiblingOffers
@@ -318,6 +328,12 @@ func (p *ProcessorImpl) GetBySerial(worldId world.Id, sn uint32) (Model, error) 
 	return GetBySerial(worldId, sn)(p.db.WithContext(p.ctx))()
 }
 
+// ByCharacterActivePagedProvider returns one page of a seller's ACTIVE listings
+// across worlds, mirroring holding.Processor.ByCharacterPagedProvider's shape.
+func (p *ProcessorImpl) ByCharacterActivePagedProvider(sellerId uint32, page model.Page) model.Provider[model.Paged[Model]] {
+	return model.MapPaged(modelFromEntity)(getBySellerStatePaged(sellerId, StateActive, page)(p.db.WithContext(p.ctx)))(model.ParallelMap())
+}
+
 // Create persists a new listing and returns the stored Model (with its assigned
 // surrogate id).
 func (p *ProcessorImpl) Create(m Model) (Model, error) {
@@ -353,6 +369,12 @@ func (p *ProcessorImpl) TransitionState(id string, from State, to State) (bool, 
 // the optional end time). Used by the bid path.
 func (p *ProcessorImpl) UpdateAuction(id string, currentBid uint32, highBidderId uint32, endsAt *time.Time) error {
 	return UpdateAuction(p.db.WithContext(p.ctx), id, currentBid, highBidderId, endsAt)
+}
+
+// RenameSeller renames seller_name on every listing row for sellerId,
+// regardless of State — see updateSellerName for the rationale.
+func (p *ProcessorImpl) RenameSeller(sellerId uint32, newName string) (int64, error) {
+	return updateSellerName(p.db.WithContext(p.ctx), sellerId, newName)
 }
 
 // CancelResult reports the outcome of a Cancel attempt. Won is true iff this

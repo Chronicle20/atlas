@@ -38,6 +38,11 @@ location ~ ^/api/guilds(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/families(/.*)?$ {
+  set $u "atlas-families.${POD_NAMESPACE}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/pets(/.*)?$ {
   set $u "atlas-pets.${NS_ATLAS_PETS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

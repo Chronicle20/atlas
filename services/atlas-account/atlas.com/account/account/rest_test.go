@@ -1,11 +1,45 @@
 package account
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
+
+// TestBirthDateRoundTripEntityToWire round-trips the pre-v95 credential
+// through entity -> model -> RestModel and confirms the wire form (the
+// `birthDate` json key atlas-channel's mirrored RestModel decodes) carries
+// the same uint32 the check-transfer-world-possible codec puts on the wire.
+func TestBirthDateRoundTripEntityToWire(t *testing.T) {
+	e := Entity{TenantId: uuid.New(), Name: "testuser", BirthDate: 19940203}
+
+	m, err := Make(e)
+	if err != nil {
+		t.Fatalf("Make failed: %v", err)
+	}
+	if m.BirthDate() != 19940203 {
+		t.Errorf("BirthDate mismatch after Make. Expected 19940203, got %v", m.BirthDate())
+	}
+
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("Transform failed: %v", err)
+	}
+	if rm.BirthDate != 19940203 {
+		t.Errorf("BirthDate mismatch after Transform. Expected 19940203, got %v", rm.BirthDate)
+	}
+
+	b, err := json.Marshal(rm)
+	if err != nil {
+		t.Fatalf("json.Marshal failed: %v", err)
+	}
+	if !strings.Contains(string(b), `"birthDate":19940203`) {
+		t.Errorf("wire form missing birthDate key/value, got: %s", string(b))
+	}
+}
 
 func TestTransform(t *testing.T) {
 	tenantId := uuid.New()
@@ -14,6 +48,7 @@ func TestTransform(t *testing.T) {
 		SetPassword("hashedpass").
 		SetPin("1234").
 		SetPic("5678").
+		SetBirthDate(19900101).
 		SetState(StateLoggedIn).
 		SetGender(1).
 		SetTOS(true).
@@ -44,6 +79,10 @@ func TestTransform(t *testing.T) {
 		t.Errorf("Pic mismatch. Expected 5678, got %v", rm.Pic)
 	}
 
+	if rm.BirthDate != 19900101 {
+		t.Errorf("BirthDate mismatch. Expected 19900101, got %v", rm.BirthDate)
+	}
+
 	if rm.LoggedIn != byte(StateLoggedIn) {
 		t.Errorf("LoggedIn mismatch. Expected %v, got %v", StateLoggedIn, rm.LoggedIn)
 	}
@@ -59,14 +98,15 @@ func TestTransform(t *testing.T) {
 
 func TestExtract(t *testing.T) {
 	rm := RestModel{
-		Id:       456,
-		Name:     "extracteduser",
-		Password: "extractpass",
-		Pin:      "9999",
-		Pic:      "8888",
-		LoggedIn: byte(StateTransition),
-		Gender:   0,
-		TOS:      false,
+		Id:        456,
+		Name:      "extracteduser",
+		Password:  "extractpass",
+		Pin:       "9999",
+		Pic:       "8888",
+		BirthDate: 19850615,
+		LoggedIn:  byte(StateTransition),
+		Gender:    0,
+		TOS:       false,
 	}
 
 	m, err := Extract(rm)
@@ -92,6 +132,10 @@ func TestExtract(t *testing.T) {
 
 	if m.Pic() != "8888" {
 		t.Errorf("Pic mismatch. Expected 8888, got %v", m.Pic())
+	}
+
+	if m.BirthDate() != 19850615 {
+		t.Errorf("BirthDate mismatch. Expected 19850615, got %v", m.BirthDate())
 	}
 
 	if m.State() != StateTransition {

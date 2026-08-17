@@ -220,6 +220,7 @@ const (
 	StatusEventTypeStatChanged       = "STAT_CHANGED"
 	StatusEventTypeDeleted           = "DELETED"
 	StatusEventTypeCreationFailed    = "CREATION_FAILED"
+	StatusEventTypeWorldChanged      = "WORLD_CHANGED"
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
@@ -256,6 +257,11 @@ type StatusEventCreatedBody struct {
 type StatusEventCreationFailedBody struct {
 	Name    string `json:"name"`
 	Message string `json:"message"`
+}
+
+type StatusEventWorldChangedBody struct {
+	OldWorldId world.Id `json:"oldWorldId"`
+	NewWorldId world.Id `json:"newWorldId"`
 }
 
 type StatusEventLoginBody struct {

@@ -183,6 +183,67 @@ func TestBrowseEnvelopeAndFilter(t *testing.T) {
 	}
 }
 
+// TestGetCharacterActiveListings asserts the character-scoped route (task-227
+// gate 11) returns ONLY the seller's ACTIVE listings across worlds — a
+// cancelled listing (now a holding) and another seller's active listing must
+// both be excluded.
+func TestGetCharacterActiveListings(t *testing.T) {
+	// Cancel writes a seller holding inside its tx, so this needs the same
+	// dual-migration helper cancel_test.go uses — CreateListingProcessor alone
+	// only migrates the listings schema.
+	p, db, cleanup := newCancelProcessor(t)
+	defer cleanup()
+
+	seedListing(t, p, 0, 200, "equip", listing.SaleTypeFixed)
+	seedListing(t, p, 1, 200, "use", listing.SaleTypeFixed)
+	cancelled := seedListing(t, p, 0, 200, "equip", listing.SaleTypeFixed)
+	if _, err := p.CancelForSeller(cancelled.Id().String(), 200); err != nil {
+		t.Fatalf("cancel: %v", err)
+	}
+	seedListing(t, p, 0, 999, "equip", listing.SaleTypeFixed)
+
+	srv := newListingServer(t, db)
+	defer srv.Close()
+	client := &http.Client{}
+
+	resp, err := client.Do(withTenant(t, http.MethodGet, fmt.Sprintf("%s/characters/200/mts/listings", srv.URL)))
+	if err != nil {
+		t.Fatalf("get character active listings: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status = %d, want 200", resp.StatusCode)
+	}
+	var env struct {
+		Data []struct {
+			Type       string `json:"type"`
+			Attributes struct {
+				SellerId uint32 `json:"sellerId"`
+				State    string `json:"state"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&env); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if err := resp.Body.Close(); err != nil {
+		t.Fatalf("close response body: %v", err)
+	}
+	if len(env.Data) != 2 {
+		t.Fatalf("got %d active listings, want 2 (cancelled and other-seller listings must be excluded)", len(env.Data))
+	}
+	for _, d := range env.Data {
+		if d.Type != "listings" {
+			t.Errorf("resource type = %q, want listings", d.Type)
+		}
+		if d.Attributes.SellerId != 200 {
+			t.Errorf("sellerId = %d, want 200", d.Attributes.SellerId)
+		}
+		if d.Attributes.State != "active" {
+			t.Errorf("state = %q, want active", d.Attributes.State)
+		}
+	}
+}
+
 // TestListingDetail asserts the detail endpoint returns a single "listings"
 // resource and 404s for an unknown id.
 func TestListingDetail(t *testing.T) {

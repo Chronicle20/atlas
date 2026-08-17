@@ -3,6 +3,84 @@
   "md5": "",
   "generated_at": "2026-06-13T12:51:12Z",
   "functions": {
+    "CCashShop::OnCheckTransferWorldPossibleResult": {
+      "address": "0x47ef39",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a2)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a2) && count > 0"
+        }
+      ]
+    },
+    "CCashShop::OnCheckNameChangePossibleResult": {
+      "address": "0x47ed54",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendCheckTransferWorldPossiblePacket": {
+      "address": "0x4760e6",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendCheckNameChangePossiblePacket": {
+      "address": "0x475f14",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
     "CPet::OnNameChanged": {
       "address": "0x720f26",
       "direction": "clientbound",
@@ -7950,7 +8028,7 @@
       "calls": [
         {
           "op": "Decode4",
-          "comment": "characterId (dispatcher-prefix pattern — consumed by CUserPool::OnUserRemotePacket Decode4 before OnShowUpgradeTombEffect)"
+          "comment": "characterId (dispatcher-prefix pattern \u2014 consumed by CUserPool::OnUserRemotePacket Decode4 before OnShowUpgradeTombEffect)"
         },
         {
           "op": "Decode4",
@@ -22650,7 +22728,7 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "itemId — hard-coded 0x541370 (5510000)"
+          "comment": "itemId \u2014 hard-coded 0x541370 (5510000)"
         },
         {
           "op": "Encode4",
@@ -29054,6 +29132,65 @@
           "op": "Decode4",
           "comment": "",
           "guard": "v39 == (void *)999999999"
+        }
+      ]
+    },
+    "CCashShop::OnCheckDuplicatedIDResult": {
+      "address": "0x47ec88",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::OnCancelNameChangeResult": {
+      "address": "0xa75e3a",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nResult"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bHasMessage",
+          "guard": "nResult != 0x00 && nResult != 0xFF"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sMessage",
+          "guard": "nResult != 0x00 && nResult != 0xFF && bHasMessage"
+        }
+      ]
+    },
+    "CWvsContext::OnCancelNameChangebyOther": {
+      "address": "0xa75fa9",
+      "direction": "clientbound",
+      "calls": []
+    },
+    "CWvsContext::OnCancelTransferWorldResult": {
+      "address": "0xa75ff0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nResult"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bHasMessage",
+          "guard": "nResult != 0x00 && nResult != 0x01"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sMessage",
+          "guard": "nResult != 0x00 && nResult != 0x01 && bHasMessage"
         }
       ]
     },

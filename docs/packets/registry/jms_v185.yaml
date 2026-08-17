@@ -1971,11 +1971,28 @@
   fname_alts:
     - CCashShop::SendCheckDuplicateIDPacket
   provenance: csv-import
-- op: NAME_TRANSFER
+- op: WORLD_TRANSFER
   direction: serverbound
   opcode: 9
-  fname: CCashShop::SendCheckNameChangePossiblePacket
-  provenance: csv-import
+  fname: CCashShop::SendCheckTransferWorldPossiblePacket
+  provenance: ida-discovered
+  ida:
+    address: 4739007
+  note: 'task-227 correction: this row was NAME_TRANSFER by csv-import, on the strength of
+    the IDB symbol ?SendCheckNameChangePossiblePacket@ at 0x484fbf. The symbol is
+    transposed. Evidence: (1) CCashShop::ProcessBuy @0x484ca8 routes ONLY item id
+    5401000 (cmp against offset loc_5269A6+2) into the caller @0x480bca — on every GMS
+    version v48-v95, 5401000 is the world-transfer item and 5400000 is the name-change
+    item; jms_v185 has no 5400000 branch at all. (2) jms_v185 contains no
+    CUIChangingCharacterName, no CUIChangingLicenseNotice, no
+    CCashShop::OnCheckNameChangePossibleResult, no CCashShop::OnCheckDuplicatedIDResult
+    and no SendBuyNameChangeItemPacket — the name-change feature is absent from this
+    client. (3) It does contain the complete transfer flow: CUITransferWorldSelectDlg,
+    CUITransferWorldLicenseNotice, CCashShop::OnCheckTransferWorldPossibleResult (0x16C),
+    SendBuyTransferWorldItemPacket, OnCashItemResTransferWorldDone/Failed. The send sets
+    the same m_bCashShopRequestSent flag that OnCheckTransferWorldPossibleResult clears.
+    Body diverges from GMS: retn 4 (one stack arg) and a single EncodeStr(sSPW) — no
+    Encode4(dwCharacterID).'
 - op: VIEW_ALL_CHAR
   direction: serverbound
   opcode: 10

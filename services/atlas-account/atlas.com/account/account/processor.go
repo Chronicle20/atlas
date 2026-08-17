@@ -237,6 +237,10 @@ func (p *ProcessorImpl) Update(accountId uint32, input Model) (Model, error) {
 		p.l.Debugf("Updating PIC of account [%d].", accountId)
 		modifiers = append(modifiers, updatePic(input.pic))
 	}
+	if a.birthDate != input.birthDate && input.birthDate != 0 {
+		p.l.Debugf("Updating BirthDate of account [%d].", accountId)
+		modifiers = append(modifiers, updateBirthDate(input.birthDate))
+	}
 	if a.tos != input.tos && input.tos != false {
 		p.l.Debugf("Updating TOS [%t] of account [%d].", input.tos, accountId)
 		modifiers = append(modifiers, updateTos(input.tos))

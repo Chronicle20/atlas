@@ -312,6 +312,117 @@ errors:
 	}
 }
 
+// TestExpectedTableResolvesAliasOnlyWhereAnchorExists pins the `alias_of`
+// contract: an alias takes its anchor's byte on every version the anchor
+// covers, and is OMITTED — never invented — on a version whose switch has no
+// case for the anchor.
+func TestExpectedTableResolvesAliasOnlyWhereAnchorExists(t *testing.T) {
+	entries := []opEntry{
+		{Key: "CANNOT_TRANSFER_NO_EMPTY_SLOTS", Modes: map[string]int{"gms_v83": 223}},
+		{Key: "no_character_slot", AliasOf: "CANNOT_TRANSFER_NO_EMPTY_SLOTS"},
+	}
+	got := expectedFor(entries, "gms_v83")
+	if got["no_character_slot"] != 223 {
+		t.Errorf("alias should take the anchor's byte, got %v", got)
+	}
+	// gms_v48 has no case for the anchor, so neither key may appear.
+	if got := expectedFor(entries, "gms_v48"); len(got) != 0 {
+		t.Errorf("alias must be omitted where the anchor is absent, got %v", got)
+	}
+}
+
+// TestOperations_AliasKeyRoundTrips proves an aliased key survives both
+// directions: generate emits it next to its anchor, and --check accepts it
+// instead of reporting it EXTRA.
+func TestOperations_AliasKeyRoundTrips(t *testing.T) {
+	dir := t.TempDir()
+	dispatchers := filepath.Join(dir, "dispatchers")
+	templates := filepath.Join(dir, "templates")
+	mustMkdirAll(t, dispatchers)
+	mustMkdirAll(t, templates)
+
+	mustWrite(t, filepath.Join(dispatchers, "d.yaml"), `
+writer: TestWriter
+op: TEST_OP
+errors:
+  - key: CANNOT_TRANSFER_OUT
+    modes:
+      gms_v83: 222
+  - key: name_taken
+    alias_of: CANNOT_TRANSFER_OUT
+`)
+	writeAllTemplates(t, templates, `{"socket":{"writers":[{"opCode":"0x1","writer":"TestWriter","options":{"errors":{}}}],"handlers":[]}}`)
+
+	var out, errOut bytes.Buffer
+	if rc := operationsRun(operationsOpts{DispatchersDir: dispatchers, TemplatesDir: templates}, &out, &errOut); rc != 0 {
+		t.Fatalf("generate rc=%d stderr=%s", rc, errOut.String())
+	}
+	raw := mustRead(t, filepath.Join(templates, "template_gms_83_1.json"))
+	if !strings.Contains(raw, `"name_taken": 222`) {
+		t.Fatalf("alias not emitted with the anchor's byte: %s", raw)
+	}
+
+	out.Reset()
+	errOut.Reset()
+	if rc := operationsRun(operationsOpts{DispatchersDir: dispatchers, TemplatesDir: templates, Check: true}, &out, &errOut); rc != 0 {
+		t.Fatalf("check after generate rc=%d stderr=%s", rc, errOut.String())
+	}
+}
+
+// TestOperations_RejectsMalformedAlias covers the two malformed-doc shapes
+// validateAliases exists to stop: a dangling anchor and an alias that also
+// declares modes. Both exit 3 (doc error), not 1 (finding).
+func TestOperations_RejectsMalformedAlias(t *testing.T) {
+	cases := []struct {
+		name string
+		doc  string
+		want string
+	}{
+		{"dangling", `
+writer: TestWriter
+op: TEST_OP
+errors:
+  - key: ANCHOR
+    modes:
+      gms_v83: 1
+  - key: alias
+    alias_of: NOT_A_KEY
+`, "is not a non-alias key"},
+		{"alias with modes", `
+writer: TestWriter
+op: TEST_OP
+errors:
+  - key: ANCHOR
+    modes:
+      gms_v83: 1
+  - key: alias
+    alias_of: ANCHOR
+    modes:
+      gms_v83: 2
+`, "declares both alias_of and modes"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			dir := t.TempDir()
+			dispatchers := filepath.Join(dir, "dispatchers")
+			templates := filepath.Join(dir, "templates")
+			mustMkdirAll(t, dispatchers)
+			mustMkdirAll(t, templates)
+			mustWrite(t, filepath.Join(dispatchers, "d.yaml"), c.doc)
+			writeAllTemplates(t, templates, `{"socket":{"writers":[],"handlers":[]}}`)
+
+			var out, errOut bytes.Buffer
+			rc := operationsRun(operationsOpts{DispatchersDir: dispatchers, TemplatesDir: templates, Check: true}, &out, &errOut)
+			if rc != 3 {
+				t.Fatalf("rc=%d want 3; stderr=%s", rc, errOut.String())
+			}
+			if !strings.Contains(errOut.String(), c.want) {
+				t.Fatalf("stderr %q does not contain %q", errOut.String(), c.want)
+			}
+		})
+	}
+}
+
 // writeMinimalTemplates writes a minimal socket doc — with a handful of
 // pre-existing handlers spanning a range of opCodes — to every version's
 // template file under dir/templates, and returns that templates dir. Used by

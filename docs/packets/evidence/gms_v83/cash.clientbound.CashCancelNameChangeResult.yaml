@@ -1,0 +1,16 @@
+packet: cash/clientbound/CashCancelNameChangeResult
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnCancelNameChangeResult
+    address: "0xa2a677"
+    decompile_sha256: cc7373570f35054e47731228b91c002cec7a90197b94b6776270e7a3795ee45a
+verifies:
+    - libs/atlas-packet/cash/clientbound/cancel_name_change_result_test.go#TestCancelNameChangeResultRoundTrip
+    - libs/atlas-packet/cash/clientbound/cancel_name_change_result_test.go#TestCancelNameChangeResultByteFixtureCancelled
+    - libs/atlas-packet/cash/clientbound/cancel_name_change_result_test.go#TestCancelNameChangeResultByteFixtureCancelledAlt
+    - libs/atlas-packet/cash/clientbound/cancel_name_change_result_test.go#TestCancelNameChangeResultByteFixtureFailedWithMessage
+    - libs/atlas-packet/cash/clientbound/cancel_name_change_result_test.go#TestCancelNameChangeResultByteFixtureFailedNoMessage
+    - libs/atlas-packet/cash/clientbound/cancel_name_change_result_test.go#TestCancelNameChangeResultNoVersionDivergence
+    - libs/atlas-packet/cash/clientbound/cancel_name_change_result_test.go#TestCancelNameChangeResultCodesAreConfigResolved

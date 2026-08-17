@@ -4,6 +4,8 @@ import (
 	"atlas-channel/kafka/message/cashshop"
 	"encoding/json"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 // TestResolvePurchaseCurrency verifies the isPoints->currency mapping applied by
@@ -37,7 +39,7 @@ func TestResolvePurchaseCurrency(t *testing.T) {
 
 			// The resolved currency must survive into the wallet command body the
 			// processor forwards.
-			provider := RequestPurchaseCommandProvider(characterId, serial, resolved)
+			provider := RequestPurchaseCommandProvider(characterId, serial, resolved, uuid.Nil)
 			msgs, err := provider()
 			if err != nil {
 				t.Fatalf("provider error: %v", err)

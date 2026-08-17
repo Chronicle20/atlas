@@ -55,6 +55,22 @@ type NameValidityResult struct {
 	Detail string
 }
 
+// NameScope selects the uniqueness scope of a name check. Character creation
+// uses NameScopeWorld (a name may repeat across worlds); a name change uses
+// NameScopeTenant (FR-3.2), which is deliberately stricter so that a later
+// world transfer can never produce a collision.
+type NameScope string
+
+const (
+	NameScopeWorld  NameScope = "WORLD"
+	NameScopeTenant NameScope = "TENANT"
+)
+
+// NameReservedFunc reports whether name is held by a live pending name-change
+// reservation. Injected rather than imported: pending_change already depends on
+// character for the apply path, so a direct import here would cycle.
+type NameReservedFunc func(l logrus.FieldLogger, ctx context.Context, name string) (bool, error)
+
 const (
 	CommandDistributeApAbilityStrength     = "STRENGTH"
 	CommandDistributeApAbilityDexterity    = "DEXTERITY"
@@ -72,6 +88,7 @@ func appliesAutoAP(t tenant.Model) bool {
 
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
+	WithNameReserved(f NameReservedFunc) Processor
 	ByIdProvider(decorators ...model.Decorator[Model]) func(id uint32) model.Provider[Model]
 	GetById(decorators ...model.Decorator[Model]) func(id uint32) (Model, error)
 	GetForAccountInWorld(decorators ...model.Decorator[Model]) func(accountId uint32, worldId world.Id) ([]Model, error)
@@ -81,7 +98,7 @@ type Processor interface {
 	AllProvider(page model.Page, decorators ...model.Decorator[Model]) model.Provider[model.Paged[Model]]
 	SkillModelDecorator(m Model) Model
 	IsValidName(name string) (bool, error)
-	CheckNameValidity(name string, worldId world.Id) (NameValidityResult, error)
+	CheckNameValidity(name string, worldId world.Id, scope NameScope) (NameValidityResult, error)
 	CreateAndEmit(transactionId uuid.UUID, input Model, mapId _map.Id) (Model, error)
 	Create(mb *message.Buffer) func(transactionId uuid.UUID, input Model, mapId _map.Id) (Model, error)
 	DeleteAndEmit(transactionId uuid.UUID, characterId uint32) error
@@ -131,6 +148,8 @@ type Processor interface {
 	ProcessJobChange(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, jobId job.Id) error
 	UpdateAndEmit(transactionId uuid.UUID, characterId uint32, input RestModel) error
 	Update(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, input RestModel) error
+	ChangeWorldAndEmit(transactionId uuid.UUID, characterId uint32, newWorldId world.Id) error
+	ChangeWorld(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, newWorldId world.Id) error
 	ResetStatsAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	RebalanceAPAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []RebalanceTarget) error
@@ -140,13 +159,14 @@ type Processor interface {
 }
 
 type ProcessorImpl struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	db  *gorm.DB
-	t   tenant.Model
-	pp  portal.Processor
-	sp  skill2.Processor
-	sdp skill3.Processor
+	l            logrus.FieldLogger
+	ctx          context.Context
+	db           *gorm.DB
+	t            tenant.Model
+	pp           portal.Processor
+	sp           skill2.Processor
+	sdp          skill3.Processor
+	nameReserved NameReservedFunc
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
@@ -175,13 +195,32 @@ func (p *ProcessorImpl) set() constants.SkillJobSet {
 
 func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	return &ProcessorImpl{
-		l:   p.l,
-		ctx: p.ctx,
-		db:  tx,
-		t:   p.t,
-		pp:  p.pp,
-		sp:  p.sp,
-		sdp: p.sdp,
+		l:            p.l,
+		ctx:          p.ctx,
+		db:           tx,
+		t:            p.t,
+		pp:           p.pp,
+		sp:           p.sp,
+		sdp:          p.sdp,
+		nameReserved: p.nameReserved,
+	}
+}
+
+// WithNameReserved injects the pending-name reservation lookup (FR-3.3). A
+// processor with no injection (the zero value, e.g. every pre-existing
+// NewProcessor call site) simply skips the reservation check rather than
+// panicking — pending_change wires the real implementation in main.go to
+// avoid character importing pending_change and cycling back on itself.
+func (p *ProcessorImpl) WithNameReserved(f NameReservedFunc) Processor {
+	return &ProcessorImpl{
+		l:            p.l,
+		ctx:          p.ctx,
+		db:           p.db,
+		t:            p.t,
+		pp:           p.pp,
+		sp:           p.sp,
+		sdp:          p.sdp,
+		nameReserved: f,
 	}
 }
 
@@ -266,7 +305,7 @@ func (p *ProcessorImpl) IsValidName(name string) (bool, error) {
 	return true, nil
 }
 
-func (p *ProcessorImpl) CheckNameValidity(name string, worldId world.Id) (NameValidityResult, error) {
+func (p *ProcessorImpl) CheckNameValidity(name string, worldId world.Id, scope NameScope) (NameValidityResult, error) {
 	if len(name) < 3 || len(name) > 12 {
 		return NameValidityResult{Valid: false, Reason: "length", Detail: "Name must be 3-12 characters."}, nil
 	}
@@ -277,15 +316,33 @@ func (p *ProcessorImpl) CheckNameValidity(name string, worldId world.Id) (NameVa
 	if !m {
 		return NameValidityResult{Valid: false, Reason: "regex", Detail: "Name contains invalid characters."}, nil
 	}
+
+	// getForName is already tenant-wide and already LOWER(name) = LOWER(?)
+	// (provider.go); NameScopeWorld re-applies the world filter the
+	// processor has always applied, byte for byte.
 	cs, err := p.GetForName()(name)
 	if err != nil {
 		return NameValidityResult{}, err
 	}
 	for _, c := range cs {
-		if c.WorldId() == worldId {
+		if scope == NameScopeTenant || c.WorldId() == worldId {
 			return NameValidityResult{Valid: false, Reason: "duplicate", Detail: "Name already taken."}, nil
 		}
 	}
+
+	// A live reservation blocks BOTH scopes (FR-3.3): a rename in flight must
+	// block a creation of the same name, or the rename loses its own race at
+	// apply time.
+	if p.nameReserved != nil {
+		reserved, err := p.nameReserved(p.l, p.ctx, name)
+		if err != nil {
+			return NameValidityResult{}, err
+		}
+		if reserved {
+			return NameValidityResult{Valid: false, Reason: "reserved", Detail: "Name is reserved by a pending name change."}, nil
+		}
+	}
+
 	return NameValidityResult{Valid: true}, nil
 }
 
@@ -2031,6 +2088,43 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 			}
 
 			return nil
+		})
+	}
+}
+
+// ChangeWorldAndEmit is the transactional/emitting counterpart to ChangeWorld
+// (Method(mb)/MethodAndEmit() convention). It exists as a dedicated pair
+// rather than a PATCH field because world.Id is a byte and world 0 is a real,
+// commonly-used world id: a zero-value-means-absent PATCH field (as Update's
+// other fields use) cannot express "transfer to world 0" (task-227 controller
+// ruling). This is the route the world-transfer saga (Task 13) calls.
+func (p *ProcessorImpl) ChangeWorldAndEmit(transactionId uuid.UUID, characterId uint32, newWorldId world.Id) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+			return p.WithTransaction(tx).ChangeWorld(buf)(transactionId, characterId, newWorldId)
+		})
+	})
+}
+
+// ChangeWorld moves a character to newWorldId and emits WORLD_CHANGED with the
+// routing WorldId set to the NEW world. It is a no-op (no row update, no
+// emission) when the character is already in newWorldId — explicit equality,
+// not a zero-value check, so world 0 is a valid, reachable destination.
+func (p *ProcessorImpl) ChangeWorld(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, newWorldId world.Id) error {
+	return func(transactionId uuid.UUID, characterId uint32, newWorldId world.Id) error {
+		return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+			if newWorldId == c.WorldId() {
+				return nil
+			}
+			oldWorldId := c.WorldId()
+			if err := dynamicUpdate(tx)(SetWorldId(newWorldId))(c); err != nil {
+				return err
+			}
+			return mb.Put(character2.EnvEventTopicCharacterStatus, worldChangedEventProvider(transactionId, characterId, oldWorldId, newWorldId))
 		})
 	}
 }

@@ -53,6 +53,8 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.CreateNote,
 	sharedsaga.EmitMegaphone, sharedsaga.EnqueueWorldBroadcast,
 	sharedsaga.OpenNpcShop,
+	sharedsaga.ValidateWorldTransfer, sharedsaga.LeaveGuildForTransfer, sharedsaga.LeavePartyForTransfer,
+	sharedsaga.SeverBuddiesForTransfer, sharedsaga.ChangeCharacterWorld,
 	sharedsaga.StartItemConversation, sharedsaga.StartNpcConversation,
 }
 

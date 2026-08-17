@@ -6,6 +6,7 @@ type Model struct {
 	password       string
 	pin            string
 	pic            string
+	birthDate      uint32
 	loggedIn       int
 	lastLogin      uint64
 	gender         byte
@@ -32,6 +33,10 @@ func (a Model) PIC() string {
 	return a.pic
 }
 
+func (a Model) BirthDate() uint32 {
+	return a.birthDate
+}
+
 func (a Model) CharacterSlots() int16 {
 	return a.characterSlots
 }
@@ -50,6 +55,7 @@ type builder struct {
 	password       string
 	pin            string
 	pic            string
+	birthDate      uint32
 	loggedIn       int
 	lastLogin      uint64
 	gender         byte
@@ -86,6 +92,11 @@ func (a *builder) SetPin(pin string) *builder {
 
 func (a *builder) SetPic(pic string) *builder {
 	a.pic = pic
+	return a
+}
+
+func (a *builder) SetBirthDate(birthDate uint32) *builder {
+	a.birthDate = birthDate
 	return a
 }
 
@@ -136,6 +147,7 @@ func (a *builder) Build() Model {
 		password:       a.password,
 		pin:            a.pin,
 		pic:            a.pic,
+		birthDate:      a.birthDate,
 		loggedIn:       a.loggedIn,
 		lastLogin:      a.lastLogin,
 		gender:         a.gender,

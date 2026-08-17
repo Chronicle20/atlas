@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -20,7 +22,7 @@ import (
 
 func buildNameValidityServer(db *gorm.DB) *httptest.Server {
 	r := mux.NewRouter()
-	ri := character.InitResource(GetServer())(db)
+	ri := character.InitResource(GetServer())(db)(nil)
 	ri(r, testLogger())
 	return httptest.NewServer(r)
 }
@@ -230,5 +232,107 @@ func TestNameValidity_MalformedWorldId(t *testing.T) {
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Fatalf("Expected 400, got %d", resp.StatusCode)
+	}
+}
+
+// TestNameValidity_InvalidScope — scope="BOGUS" → 400
+func TestNameValidity_InvalidScope(t *testing.T) {
+	db := testDatabase(t)
+	tm := newFixedTenant()
+	ts := buildNameValidityServer(db)
+	defer ts.Close()
+
+	url := fmt.Sprintf("%s/characters/name-validity?name=Hero&worldId=1&scope=BOGUS", ts.URL)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		t.Fatalf("Failed to build request: %v", err)
+	}
+	addTenantHeaders(req, tm)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("Expected 400, got %d", resp.StatusCode)
+	}
+}
+
+// TestNameValidity_TenantScopeRejectsOtherWorldDuplicate proves the scope
+// parameter is not ignored: the same name in a different world is accepted
+// under WORLD scope (today's creation behaviour) and rejected under TENANT
+// scope (FR-3.2, used by name change so a later world transfer can never
+// collide).
+func TestNameValidity_TenantScopeRejectsOtherWorldDuplicate(t *testing.T) {
+	db := testDatabase(t)
+	tm := newFixedTenant()
+	seedCharacterWithTenant(t, db, tm, "Foxtrot", world.Id(1))
+	ts := buildNameValidityServer(db)
+	defer ts.Close()
+
+	// World scope: creation in world 0 may reuse a name held only in world 1.
+	resp := doNameValidityRequestWithTenant(t, ts, tm, "Foxtrot", "0")
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200, got %d", resp.StatusCode)
+	}
+	r := parseNameValidityResponse(t, resp)
+	if !r.Valid {
+		t.Fatalf("expected world-scoped check to allow a cross-world duplicate, got %s", r.Reason)
+	}
+
+	// Tenant scope: a name change may not.
+	url := fmt.Sprintf("%s/characters/name-validity?name=Foxtrot&worldId=0&scope=TENANT", ts.URL)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		t.Fatalf("Failed to build request: %v", err)
+	}
+	addTenantHeaders(req, tm)
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("Request failed: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected 200, got %d", resp.StatusCode)
+	}
+	r = parseNameValidityResponse(t, resp)
+	if r.Valid || r.Reason != "duplicate" {
+		t.Fatalf("expected tenant-scoped duplicate, got valid=%v reason=%s", r.Valid, r.Reason)
+	}
+}
+
+// TestNameValidity_RejectsAReservedNameInBothScopes proves a live pending
+// name-change reservation blocks BOTH scopes (FR-3.3): character creation is
+// the one behaviour change a name-change reservation is required to affect.
+func TestNameValidity_RejectsAReservedNameInBothScopes(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	p := character.NewProcessor(testLogger(), tctx, testDatabase(t)).
+		WithNameReserved(func(_ logrus.FieldLogger, _ context.Context, name string) (bool, error) {
+			return strings.EqualFold(name, "Golf"), nil
+		})
+
+	for _, scope := range []character.NameScope{character.NameScopeWorld, character.NameScopeTenant} {
+		res, err := p.CheckNameValidity("golf", world.Id(0), scope)
+		if err != nil {
+			t.Fatalf("scope %s: %v", scope, err)
+		}
+		if res.Valid || res.Reason != "reserved" {
+			t.Fatalf("scope %s: expected reserved, got valid=%v reason=%s", scope, res.Valid, res.Reason)
+		}
+	}
+}
+
+// TestNameValidity_UnwiredProcessorDoesNotPanic proves an un-wired processor
+// (nameReserved == nil, every pre-Task-6 NewProcessor call site) degrades
+// safely instead of panicking.
+func TestNameValidity_UnwiredProcessorDoesNotPanic(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	p := character.NewProcessor(testLogger(), tctx, testDatabase(t))
+
+	res, err := p.CheckNameValidity("Hero", world.Id(0), character.NameScopeWorld)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !res.Valid {
+		t.Fatalf("expected valid=true, got reason=%s", res.Reason)
 	}
 }

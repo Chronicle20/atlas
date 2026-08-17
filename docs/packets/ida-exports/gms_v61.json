@@ -3,6 +3,34 @@
   "md5": "",
   "generated_at": "2026-07-02T05:12:39Z",
   "functions": {
+    "CCashShop::SendCheckTransferWorldPossiblePacket": {
+      "address": "0x45cefd",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendCheckNameChangePossiblePacket": {
+      "address": "0x45cd72",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
     "CPet::OnNameChanged": {
       "address": "0x6135d6",
       "direction": "clientbound",
@@ -1040,13 +1068,16 @@
       ]
     },
     "CCashShop::OnCheckDuplicatedIDResult": {
-      "address": "",
+      "address": "0x463900",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },

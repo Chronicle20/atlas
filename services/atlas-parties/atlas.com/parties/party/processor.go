@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/sirupsen/logrus"
@@ -41,8 +43,8 @@ type Processor interface {
 	JoinAndEmit(partyId uint32, characterId uint32) (Model, error)
 	Expel(mb *message.Buffer) func(actorId uint32, partyId uint32, characterId uint32) (Model, error)
 	ExpelAndEmit(actorId uint32, partyId uint32, characterId uint32) (Model, error)
-	Leave(mb *message.Buffer) func(partyId uint32, characterId uint32) (Model, error)
-	LeaveAndEmit(partyId uint32, characterId uint32) (Model, error)
+	Leave(mb *message.Buffer) func(partyId uint32, characterId uint32, transactionId uuid.UUID) (Model, error)
+	LeaveAndEmit(partyId uint32, characterId uint32, transactionId uuid.UUID) (Model, error)
 	ChangeLeader(mb *message.Buffer) func(actorId uint32, partyId uint32, characterId uint32) (Model, error)
 	ChangeLeaderAndEmit(actorId uint32, partyId uint32, characterId uint32) (Model, error)
 	RequestInvite(mb *message.Buffer) func(actorId uint32, characterId uint32) error
@@ -357,7 +359,7 @@ func (p *ProcessorImpl) Expel(mb *message.Buffer) func(actorId uint32, partyId u
 			p.l.Debugf("Party [%d] is empty after expelling character [%d], disbanding party.", partyId, characterId)
 
 			// Emit disband event before removing party
-			err = mb.Put(EnvEventStatusTopic, disbandEventProvider(actorId, party.Id(), c.WorldId(), []uint32{}))
+			err = mb.Put(EnvEventStatusTopic, disbandEventProvider(actorId, party.Id(), c.WorldId(), []uint32{}, uuid.Nil))
 			if err != nil {
 				p.l.WithError(err).Warnf("Unable to emit disband event for party [%d].", partyId)
 				// Don't return error as the disbanding will still proceed
@@ -386,11 +388,11 @@ func (p *ProcessorImpl) Expel(mb *message.Buffer) func(actorId uint32, partyId u
 	}
 }
 
-func (p *ProcessorImpl) LeaveAndEmit(partyId uint32, characterId uint32) (Model, error) {
+func (p *ProcessorImpl) LeaveAndEmit(partyId uint32, characterId uint32, transactionId uuid.UUID) (Model, error) {
 	var party Model
 	var domainErr error
 	err := message.Emit(p.p)(func(buf *message.Buffer) error {
-		party, domainErr = p.Leave(buf)(partyId, characterId)
+		party, domainErr = p.Leave(buf)(partyId, characterId, transactionId)
 		return nil
 	})
 	if err != nil {
@@ -399,8 +401,8 @@ func (p *ProcessorImpl) LeaveAndEmit(partyId uint32, characterId uint32) (Model,
 	return party, domainErr
 }
 
-func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, characterId uint32) (Model, error) {
-	return func(partyId uint32, characterId uint32) (Model, error) {
+func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, characterId uint32, transactionId uuid.UUID) (Model, error) {
+	return func(partyId uint32, characterId uint32, transactionId uuid.UUID) (Model, error) {
 		c, err := p.cp.GetById(characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Error getting character [%d].", characterId)
@@ -470,7 +472,7 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, character
 
 			GetRegistry().Remove(p.ctx, partyId)
 			p.l.Debugf("Party [%d] has been disbanded.", partyId)
-			err = mb.Put(EnvEventStatusTopic, disbandEventProvider(characterId, partyId, c.WorldId(), formerMembers))
+			err = mb.Put(EnvEventStatusTopic, disbandEventProvider(characterId, partyId, c.WorldId(), formerMembers, transactionId))
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to announce the party [%d] was disbanded.", partyId)
 				err = mb.Put(EnvEventStatusTopic, errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
@@ -481,7 +483,7 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, character
 			}
 		} else {
 			p.l.Debugf("Character [%d] left party [%d].", characterId, partyId)
-			err = mb.Put(EnvEventStatusTopic, leftEventProvider(characterId, partyId, c.WorldId()))
+			err = mb.Put(EnvEventStatusTopic, leftEventProvider(characterId, partyId, c.WorldId(), transactionId))
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to announce the party [%d] was left.", partyId)
 				err = mb.Put(EnvEventStatusTopic, errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))

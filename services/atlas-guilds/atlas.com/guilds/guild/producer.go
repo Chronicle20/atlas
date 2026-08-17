@@ -142,7 +142,11 @@ func statusEventMemberLeftProvider(worldId world.Id, guildId uint32, characterId
 	return producer.SingleMessageProvider(key, value)
 }
 
-func statusEventMemberJoinedProvider(worldId world.Id, guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, allianceTitle byte, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+// online is explicit rather than hard-coded true: the world-transfer
+// compensation (task-227) re-adds a member who is OFFLINE by construction —
+// the transfer saga only runs after LOGOUT — and announcing them as online
+// would put a ghost on every guild roster in the world they never left.
+func statusEventMemberJoinedProvider(worldId world.Id, guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, allianceTitle byte, online bool, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(guildId))
 	value := &guild2.StatusEvent[guild2.StatusEventMemberJoinedBody]{
 		WorldId:       worldId,
@@ -155,7 +159,7 @@ func statusEventMemberJoinedProvider(worldId world.Id, guildId uint32, character
 			JobId:         jobId,
 			Level:         level,
 			Title:         title,
-			Online:        true,
+			Online:        online,
 			AllianceTitle: allianceTitle,
 		},
 	}

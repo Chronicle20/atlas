@@ -1,0 +1,15 @@
+packet: cash/clientbound/CashCheckNameChangePossibleResult
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCheckNameChangePossibleResult
+    address: "0x495470"
+    decompile_sha256: c944e0d9bbeac0f8ffbb41d68f8252d19955d5cb025674e52ce374ddae3dbb27
+verifies:
+    - libs/atlas-packet/cash/clientbound/check_name_change_possible_result_test.go#TestCheckNameChangePossibleResultByteFixture
+    - libs/atlas-packet/cash/clientbound/check_name_change_possible_result_test.go#TestCheckNameChangePossibleResultRoundTrip
+    - libs/atlas-packet/cash/clientbound/check_name_change_possible_result_test.go#TestCheckNameChangePossibleResultNoVersionDivergence
+    - libs/atlas-packet/cash/clientbound/check_name_change_possible_result_test.go#TestCheckNameChangePossibleResultCodesAreConfigResolved
+    - libs/atlas-packet/cash/clientbound/check_name_change_possible_result_test.go#TestCheckNameChangePossibleResultAllowedBody
+    - libs/atlas-packet/cash/clientbound/check_name_change_possible_result_test.go#TestCheckNameChangePossibleResultReasonMapping

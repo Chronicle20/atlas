@@ -16,6 +16,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
+
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
@@ -43,8 +45,8 @@ var (
 var errPurchaseRejected = errors.New("purchase rejected")
 
 type Processor interface {
-	PurchaseAndEmit(characterId uint32, currency uint32, serialNumber uint32) error
-	Purchase(mb *message.Buffer) func(characterId uint32, currency uint32, serialNumber uint32) error
+	PurchaseAndEmit(characterId uint32, currency uint32, serialNumber uint32, transactionId uuid.UUID) error
+	Purchase(mb *message.Buffer) func(characterId uint32, currency uint32, serialNumber uint32, transactionId uuid.UUID) error
 	PurchaseInventoryIncreaseByItemAndEmit(characterId uint32, currency uint32, serialNumber uint32) error
 	PurchaseInventoryIncreaseByTypeAndEmit(characterId uint32, currency uint32, inventoryType inventory.Type) error
 	PurchaseInventoryIncrease(mb *message.Buffer) func(characterId uint32, currency uint32, inventoryType inventory.Type, cost uint32, amount uint32) error
@@ -87,42 +89,55 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-func (p *ProcessorImpl) PurchaseAndEmit(characterId uint32, currency uint32, serialNumber uint32) error {
+func (p *ProcessorImpl) PurchaseAndEmit(characterId uint32, currency uint32, serialNumber uint32, transactionId uuid.UUID) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
-			return NewProcessor(p.l, p.ctx, tx).Purchase(buf)(characterId, currency, serialNumber)
+			return NewProcessor(p.l, p.ctx, tx).Purchase(buf)(characterId, currency, serialNumber, transactionId)
 		})
 	})
 }
 
-func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, currency uint32, serialNumber uint32) error {
-	return func(characterId uint32, currency uint32, serialNumber uint32) error {
-		// rejectEmit captures the INVENTORY_FULL rejection (no state change
-		// committed) so it can be fired on the DIRECT producer path, outside
-		// the tx closure below, instead of leaking into the outbox as if it
-		// were part of the committed transaction (recipe failure-path pitfall #1).
+func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, currency uint32, serialNumber uint32, transactionId uuid.UUID) error {
+	return func(characterId uint32, currency uint32, serialNumber uint32, transactionId uuid.UUID) error {
+		// rejectEmit captures every purchase-path rejection/error (no state
+		// change committed on this branch) so it can be fired on the DIRECT
+		// producer path, outside the tx closure below, instead of being
+		// buffered on mb and silently dropped: message.Emit only flushes its
+		// buffer when the wrapped closure returns nil
+		// (kafka/message/message.go:49-52), and PurchaseAndEmit's closure
+		// returns whatever error this tx produces -- so an mb.Put'd error
+		// event on a failing purchase never reached the outbox (recipe
+		// failure-path pitfall #1).
 		var rejectEmit func() error
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			ci, err := p.comP.GetById(serialNumber)
 			if err != nil {
-				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
+				rejectEmit = func() error {
+					return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", transactionId))
+				}
 				return err
 			}
 			p.l.Debugf("Character [%d] attempting to purchase [%d] using currency [%d]. Cost is [%d].", characterId, serialNumber, currency, ci.Price())
 			c, err := p.chaP.GetById(p.chaP.InventoryDecorator)(characterId)
 			if err != nil {
-				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
+				rejectEmit = func() error {
+					return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", transactionId))
+				}
 				return err
 			}
 			w, err := p.walP.GetByAccountId(c.AccountId())
 			if err != nil {
-				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
+				rejectEmit = func() error {
+					return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", transactionId))
+				}
 				return err
 			}
 			balance := w.Balance(currency)
 			if balance < ci.Price() {
 				p.l.Debugf("Character [%d] has insufficient balance for purchase. Cost [%d]. Balance [%d].", characterId, ci.Price(), balance)
-				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "NOT_ENOUGH_CASH"))
+				rejectEmit = func() error {
+					return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "NOT_ENOUGH_CASH", transactionId))
+				}
 				return ErrInsufficientFunds
 			}
 
@@ -137,13 +152,15 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 
 			ccm, err := p.cicP.GetByAccountIdAndType(c.AccountId(), compartmentType)
 			if err != nil {
-				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
+				rejectEmit = func() error {
+					return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", transactionId))
+				}
 				return err
 			}
 			if ccm.Capacity() <= uint32(len(ccm.Assets())) {
 				p.l.Debugf("Character [%d] has no room for purchase. Compartment [%s] capacity [%d].", characterId, ccm.Id(), ccm.Capacity())
 				rejectEmit = func() error {
-					return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "INVENTORY_FULL"))
+					return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "INVENTORY_FULL", transactionId))
 				}
 				return errPurchaseRejected
 			}
@@ -173,14 +190,18 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 				petCashId, err = p.astP.NextCashId()
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to reserve a cash serial for character [%d] template [%d].", characterId, ci.ItemId())
-					_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
+					rejectEmit = func() error {
+						return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", transactionId))
+					}
 					return err
 				}
 
 				pe, peErr := p.petP.Create(characterId, uint64(petCashId), ci.ItemId(), petName)
 				if peErr != nil {
 					p.l.WithError(peErr).Errorf("Unable to create pet for character [%d] template [%d].", characterId, ci.ItemId())
-					_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
+					rejectEmit = func() error {
+						return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", transactionId))
+					}
 					return peErr
 				}
 				petId = pe.Id()
@@ -198,12 +219,14 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 			}
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create asset for character [%d].", characterId)
-				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
+				rejectEmit = func() error {
+					return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", transactionId))
+				}
 				return err
 			}
 
 			p.l.Debugf("Character [%d] successfully purchased item [%d] for [%d] currency.", characterId, ci.ItemId(), ci.Price())
-			_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.PurchaseStatusEventProvider(characterId, ci.ItemId(), ci.Price(), ccm.Id(), am.Id()))
+			_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.PurchaseStatusEventProvider(characterId, ci.ItemId(), ci.Price(), ccm.Id(), am.Id(), transactionId))
 
 			return nil
 		})
@@ -288,7 +311,7 @@ func (p *ProcessorImpl) PurchaseInventoryIncrease(mb *message.Buffer) func(chara
 			// UNKNOWN_ERROR reflects no committed state change (the tx
 			// above rolled back / never wrote), so it stays on the direct
 			// producer path outside the tx rather than the outbox.
-			_ = producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
+			_ = producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", uuid.Nil))
 			return txErr
 		}
 

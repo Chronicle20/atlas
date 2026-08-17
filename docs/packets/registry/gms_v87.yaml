@@ -607,11 +607,13 @@
   direction: clientbound
   opcode: 116
   fname: CWvsContext::OnCancelNameChangeResult
+  packet: cash/clientbound/CashCancelNameChangeResult
   provenance: csv-import
 - op: CANCEL_TRANSFER_WORLD_RESULT
   direction: clientbound
   opcode: 117
   fname: CWvsContext::OnCancelTransferWorldResult
+  packet: cash/clientbound/CashCancelTransferWorldResult
   provenance: csv-import
 - op: DESTROY_SHOP_RESULT
   direction: clientbound
@@ -645,6 +647,7 @@
   direction: clientbound
   opcode: 123
   fname: CWvsContext::OnCancelNameChangebyOther
+  packet: character/clientbound/CancelNameChangeByOther
   provenance: csv-import
 - op: SET_EXTRA_PENDANT_SLOT
   direction: clientbound

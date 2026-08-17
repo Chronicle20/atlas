@@ -2,6 +2,7 @@ package pet
 
 import (
 	"atlas-pets/character"
+	"atlas-pets/data/cash"
 	data2 "atlas-pets/data/pet"
 	"atlas-pets/data/position"
 	inv "atlas-pets/inventory"
@@ -23,6 +24,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	petconst "github.com/Chronicle20/atlas/libs/atlas-constants/pet"
 	petskill "github.com/Chronicle20/atlas/libs/atlas-constants/pet/skill"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -79,6 +81,10 @@ type Processor interface {
 	AwardLevel(mb *message.Buffer) func(petId uint32) func(amount byte) error
 	EvolveAndEmit(transactionId uuid.UUID, petId uint32) error
 	Evolve(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32) error
+	ReviveAndEmit(transactionId uuid.UUID, actorId uint32, petId uint32, sourceTemplateId uint32) error
+	Revive(mb *message.Buffer) func(transactionId uuid.UUID, actorId uint32, petId uint32, sourceTemplateId uint32) error
+	RenameAndEmit(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error
+	Rename(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error
 	SetExcludeAndEmit(petId uint32, items []uint32) error
 	SetExclude(mb *message.Buffer) func(petId uint32) func(items []uint32) error
 	SetSkillAndEmit(petId uint32, skillKey string, enabled bool) error
@@ -96,6 +102,7 @@ type ProcessorImpl struct {
 	dp  data2.Processor
 	sp  skill.Processor
 	ip  inv.Processor
+	cdp cash.Processor
 	// Despawner is an optional test-mock override for Despawn, left nil in
 	// production (see NewProcessor). It must NOT be bound at construction
 	// time: With(...) shallow-copies the struct without rebinding method
@@ -122,6 +129,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		dp:  data2.NewProcessor(l, ctx),
 		sp:  skill.NewProcessor(l, ctx),
 		ip:  inv.NewProcessor(l, ctx),
+		cdp: cash.NewProcessor(l, ctx),
 	}
 	p.rollEvolution = weightedRoll
 	return p
@@ -185,6 +193,12 @@ func WithSkillProcessor(sp skill.Processor) ProcessorOption {
 func WithInventoryProcessor(ip inv.Processor) ProcessorOption {
 	return func(p *ProcessorImpl) {
 		p.ip = ip
+	}
+}
+
+func WithCashDataProcessor(cdp cash.Processor) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.cdp = cdp
 	}
 }
 
@@ -417,6 +431,10 @@ func (p *ProcessorImpl) SpawnAndEmit(petId uint32, actorId uint32, lead bool) er
 var (
 	ErrTooManySpawnedPets = errors.New("too many pets spawned")
 	ErrNeedMultiPetSkill  = errors.New("need multi pet skill")
+	// ErrPetExpired: a pet whose lifespan has run out is a dried-up doll. It
+	// keeps its inventory slot (see atlas-asset-expiration's IsReapable) but
+	// cannot be summoned until a Water of Life revives it (task-228).
+	ErrPetExpired = errors.New("pet expired")
 )
 
 func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(lead bool) error {
@@ -431,6 +449,10 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorI
 					}
 					if pe.OwnerId() != actorId {
 						return errors.New("pet not owned by character")
+					}
+
+					if !pe.Expiration().IsZero() && time.Now().After(pe.Expiration()) {
+						return ErrPetExpired
 					}
 
 					// Egg hatch-on-summon: if the template is an egg, hatch into
@@ -947,6 +969,154 @@ func (p *ProcessorImpl) Evolve(mb *message.Buffer) func(transactionId uuid.UUID,
 			}
 		}
 		p.l.Infof("Evolved pet [%d]: [%d] -> [%d].", petId, oldTemplateId, newTemplateId)
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) ReviveAndEmit(transactionId uuid.UUID, actorId uint32, petId uint32, sourceTemplateId uint32) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).Revive(mb)(transactionId, actorId, petId, sourceTemplateId)
+		})
+	})
+}
+
+// Revive restores a dried-up pet's lifespan from the consumed Water of Life's
+// own WZ info/life. It is a SET, not an add: the old expiration is in the past
+// by definition, so adding to it would be wrong.
+//
+// The RESET_PET_EXPIRATION cascade is buffered INSIDE this transaction's outbox
+// rather than being a separate saga step. Two mutation steps can half-apply,
+// and a half-application is exactly the bug FR-5.4 names: a pet alive here and
+// still a doll in the item slot. Buffering the cascade in the same transaction
+// makes the pair atomic at the database level; the saga is left responsible
+// only for the cross-service consume/refund pair (design §7.1).
+//
+// Every rejection buffers REVIVE_FAILED and returns nil, NOT an error — the
+// transactional emit path discards the buffer when the closure errors, so a
+// rejection returned as an error would never reach the saga and the player's
+// already-consumed Water of Life would wait out the saga timeout for its refund.
+func (p *ProcessorImpl) Revive(mb *message.Buffer) func(transactionId uuid.UUID, actorId uint32, petId uint32, sourceTemplateId uint32) error {
+	return func(transactionId uuid.UUID, actorId uint32, petId uint32, sourceTemplateId uint32) error {
+		p.l.Debugf("Reviving pet [%d] for character [%d] with source [%d].", petId, actorId, sourceTemplateId)
+
+		pe, err := p.GetById(petId)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to resolve pet [%d] for revive.", petId)
+			return mb.Put(pet.EnvStatusEventTopic, reviveFailedEventProvider(petId, actorId, "pet not found", transactionId))
+		}
+		if pe.OwnerId() != actorId {
+			p.l.Warnf("Character [%d] attempted to revive pet [%d] owned by [%d].", actorId, petId, pe.OwnerId())
+			return mb.Put(pet.EnvStatusEventTopic, reviveFailedEventProvider(petId, actorId, "pet not owned by character", transactionId))
+		}
+
+		// Idempotency / liveness gate (design §9). Redelivery re-cascades the
+		// STORED expiration rather than a recomputed one, so the pair converges
+		// even if the first delivery's cascade was itself lost.
+		if rt := pe.ReviveTransactionId(); rt != nil && *rt == transactionId {
+			p.l.Infof("Revive of pet [%d] for transaction [%s] is a redelivery; re-emitting without a write.", petId, transactionId)
+			if err = p.ip.ResetPetExpiration(mb)(transactionId, pe.OwnerId(), petId, pe.Expiration(), sourceTemplateId); err != nil {
+				return err
+			}
+			return mb.Put(pet.EnvStatusEventTopic, revivedEventProvider(pe, transactionId))
+		}
+		if !pe.Expiration().IsZero() && time.Now().Before(pe.Expiration()) {
+			p.l.Warnf("Character [%d] attempted to revive pet [%d], which has not dried up.", actorId, petId)
+			return mb.Put(pet.EnvStatusEventTopic, reviveFailedEventProvider(petId, pe.OwnerId(), "pet has not dried up", transactionId))
+		}
+
+		cd, err := p.cdp.GetById(sourceTemplateId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to resolve cash data for source [%d]; refusing to revive pet [%d].", sourceTemplateId, petId)
+			return mb.Put(pet.EnvStatusEventTopic, reviveFailedEventProvider(petId, pe.OwnerId(), "unable to resolve source item data", transactionId))
+		}
+		if cd.Life() == 0 {
+			p.l.Errorf("Source item [%d] has no info/life; refusing to revive pet [%d].", sourceTemplateId, petId)
+			return mb.Put(pet.EnvStatusEventTopic, reviveFailedEventProvider(petId, pe.OwnerId(), "source item grants no lifespan", transactionId))
+		}
+
+		expiration := time.Now().Add(time.Duration(cd.Life()) * 24 * time.Hour)
+		updated, err := Clone(pe).
+			SetExpiration(expiration).
+			SetReviveTransactionId(&transactionId).
+			Build()
+		if err != nil {
+			return err
+		}
+		if err = updateOnRevive(p.db)(petId, expiration, transactionId); err != nil {
+			return err
+		}
+		// The cascade: atlas-inventory holds the expiration the CLIENT reads.
+		// CUIToolTip::GetPetDeadDate (gms_v83 @0x8ebfde) formats "dried up" or a
+		// date from the ITEM SLOT alone, so a pet revived only here would still
+		// read as a doll.
+		if err = p.ip.ResetPetExpiration(mb)(transactionId, pe.OwnerId(), petId, expiration, sourceTemplateId); err != nil {
+			return err
+		}
+		p.l.Infof("Revived pet [%d] for character [%d]: source [%d], life [%d] days, expiration [%s].", petId, actorId, sourceTemplateId, cd.Life(), expiration)
+		return mb.Put(pet.EnvStatusEventTopic, revivedEventProvider(updated, transactionId))
+	}
+}
+
+func (p *ProcessorImpl) RenameAndEmit(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.With(WithTransaction(tx)).Rename(mb)(transactionId, petId, actorId, name)
+		})
+	})
+}
+
+// ErrNotOwner is returned by Rename when the acting character does not own
+// the pet. Distinguishing this from other rename failures lets callers (e.g.
+// the operator PATCH handler in resource.go) map it to 403 rather than a
+// generic 500.
+var ErrNotOwner = errors.New("pet is not owned by character")
+
+// Rename applies a new pet name and emits NAME_CHANGED.
+//
+// Idempotent by construction (PRD FR-5.5): the pre-read proves the row exists,
+// so updateName's zero-rows-affected case is a no-op rather than an error, and
+// the status event is emitted on EVERY delivery — that re-emission is required,
+// not incidental, because it is how a redelivered command still completes the
+// orchestrator's rename_pet step.
+func (p *ProcessorImpl) Rename(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error {
+	return func(transactionId uuid.UUID, petId uint32, actorId uint32, name string) error {
+		p.l.Debugf("Renaming pet [%d] to [%s].", petId, name)
+
+		// Re-validate here rather than trusting the caller: atlas-channel
+		// validates too, but anything can publish to this topic (PRD FR-5.6).
+		normalized := petconst.NormalizeName(name)
+		if err := petconst.ValidateName(normalized); err != nil {
+			p.l.WithError(err).Warnf("Rejecting rename of pet [%d] to [%s]: invalid name.", petId, name)
+			return err
+		}
+
+		var previousName string
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			pe, err := p.With(WithTransaction(tx)).GetById(petId)
+			if err != nil {
+				return err
+			}
+			if pe.OwnerId() != actorId {
+				return fmt.Errorf("pet [%d] is not owned by character [%d]: %w", petId, actorId, ErrNotOwner)
+			}
+			previousName = pe.Name()
+
+			updated, err := Clone(pe).SetName(normalized).Build()
+			if err != nil {
+				return err
+			}
+			if err = updateName(tx)(petId, normalized); err != nil {
+				return err
+			}
+			return mb.Put(pet.EnvStatusEventTopic, nameChangedEventProvider(updated, previousName, transactionId))
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Unable to rename pet [%d].", petId)
+			return txErr
+		}
+
+		p.l.Infof("Renamed pet [%d]: [%s] -> [%s].", petId, previousName, normalized)
 		return nil
 	}
 }

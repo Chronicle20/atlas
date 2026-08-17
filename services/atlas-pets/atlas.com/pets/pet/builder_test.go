@@ -149,3 +149,20 @@ func TestModelBuilder_Build_ValidBoundaries(t *testing.T) {
 		})
 	}
 }
+
+func TestModelBuilderSetName(t *testing.T) {
+	m, err := NewModelBuilder(1, 0, 5000000, "Original", 42).SetName("Renamed").Build()
+	if err != nil {
+		t.Fatalf("Build() = %v", err)
+	}
+	if m.Name() != "Renamed" {
+		t.Fatalf("Name() = %q, want %q", m.Name(), "Renamed")
+	}
+}
+
+// Build's name-required invariant must still hold through the new setter.
+func TestModelBuilderSetNameEmptyRejected(t *testing.T) {
+	if _, err := NewModelBuilder(1, 0, 5000000, "Original", 42).SetName("").Build(); err == nil {
+		t.Fatal("Build() with empty name = nil error, want error")
+	}
+}

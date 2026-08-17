@@ -11,6 +11,7 @@ type RestModel struct {
 	Id      uint32 `json:"-"`
 	AddTime uint32 `json:"addTime,omitempty"`
 	MaxDays uint32 `json:"maxDays,omitempty"`
+	Life    uint32 `json:"life,omitempty"`
 }
 
 func (r RestModel) GetName() string {
@@ -41,5 +42,5 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 }
 
 func Extract(rm RestModel) (Model, error) {
-	return Model{id: rm.Id, addTime: rm.AddTime, maxDays: rm.MaxDays}, nil
+	return Model{id: rm.Id, addTime: rm.AddTime, maxDays: rm.MaxDays, life: rm.Life}, nil
 }

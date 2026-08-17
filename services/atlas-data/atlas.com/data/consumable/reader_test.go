@@ -1170,3 +1170,90 @@ const morphRandomTestXML = `
   </imgdir>
 </imgdir>
 `
+
+// readOne parses a single item's XML fragment (a top-level <imgdir name="...">
+// block) and returns its RestModel. It wraps the fragment in an outer imgdir
+// so Read's ChildNodes iteration sees exactly one item.
+func readOne(t *testing.T, itemXML string) RestModel {
+	t.Helper()
+	l, _ := test.NewNullLogger()
+
+	wrapped := "<imgdir name=\"wrapper.img\">" + itemXML + "</imgdir>"
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(wrapped)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rmm) != 1 {
+		t.Fatalf("readOne: expected exactly one item, got %d", len(rmm))
+	}
+	for _, m := range rmm {
+		return m
+	}
+	panic("unreachable")
+}
+
+// Verified against Item.wz/Consume/0243.img.xml: all 23 items in the 0243
+// family author npc/script/runOnPickup under spec, and ZERO of them carry
+// info/npc. 02430010 (openTreasure) is the only one with spec/runOnPickup=1.
+// Contrast 02390001, which genuinely authors npc under info — hence the
+// fallback rather than a move. See docs/tasks/task-230-scripted-items/item-inventory.md.
+func TestConsumableReader_SpecNpcTakesPrecedence(t *testing.T) {
+	// item authored spec-side only (the 0243 shape)
+	m := readOne(t, `
+		<imgdir name="02430010">
+		  <imgdir name="info">
+		    <int name="tradeBlock" value="1"/>
+		    <int name="slotMax" value="100"/>
+		  </imgdir>
+		  <imgdir name="spec">
+		    <string name="script" value="openTreasure"/>
+		    <int name="npc" value="2040030"/>
+		    <int name="runOnPickup" value="1"/>
+		  </imgdir>
+		</imgdir>`)
+
+	if m.Npc != 2040030 {
+		t.Errorf("Npc: got %d, want 2040030", m.Npc)
+	}
+	if m.Script != "openTreasure" {
+		t.Errorf("Script: got %q, want %q", m.Script, "openTreasure")
+	}
+	if !m.RunOnPickup {
+		t.Error("RunOnPickup: got false, want true")
+	}
+}
+
+func TestConsumableReader_InfoNpcFallback(t *testing.T) {
+	// item authored info-side only (the 0239 shape, verified on 02390001)
+	m := readOne(t, `
+		<imgdir name="02390001">
+		  <imgdir name="info">
+		    <int name="npc" value="9090002"/>
+		    <int name="slotMax" value="100"/>
+		  </imgdir>
+		</imgdir>`)
+
+	if m.Npc != 9090002 {
+		t.Errorf("Npc: got %d, want 9090002", m.Npc)
+	}
+	if m.RunOnPickup {
+		t.Error("RunOnPickup: got true, want false")
+	}
+}
+
+func TestConsumableReader_NoNpcAnywhere(t *testing.T) {
+	m := readOne(t, `
+		<imgdir name="02000000">
+		  <imgdir name="info">
+		    <int name="slotMax" value="100"/>
+		  </imgdir>
+		  <imgdir name="spec">
+		    <int name="hp" value="50"/>
+		  </imgdir>
+		</imgdir>`)
+
+	if m.Npc != 0 {
+		t.Errorf("Npc: got %d, want 0", m.Npc)
+	}
+}

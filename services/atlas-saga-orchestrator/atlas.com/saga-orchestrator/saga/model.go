@@ -39,6 +39,7 @@ const (
 	CharacterRespawn      = sharedsaga.CharacterRespawn
 	GachaponTransaction   = sharedsaga.GachaponTransaction
 	PetEvolution          = sharedsaga.PetEvolution
+	PetRevive             = sharedsaga.PetRevive
 	ItemTagUse            = sharedsaga.ItemTagUse
 	SealingLockUse        = sharedsaga.SealingLockUse
 	IncubatorUse          = sharedsaga.IncubatorUse
@@ -49,7 +50,12 @@ const (
 	MtsOperation          = sharedsaga.MtsOperation
 	NoteSend              = sharedsaga.NoteSend
 	SkillBookUse          = sharedsaga.SkillBookUse
+	PetNameTagUse         = sharedsaga.PetNameTagUse
 	RemoteMerchant        = sharedsaga.RemoteMerchant
+
+	// Scripted item / remote NPC saga types (task-230)
+	ScriptedItemUse = sharedsaga.ScriptedItemUse
+	RemoteNpcUse    = sharedsaga.RemoteNpcUse
 )
 
 // Status constants
@@ -96,6 +102,8 @@ const (
 	IncreaseBuddyCapacity  = sharedsaga.IncreaseBuddyCapacity
 	GainCloseness          = sharedsaga.GainCloseness
 	EvolvePet              = sharedsaga.EvolvePet
+	RevivePet              = sharedsaga.RevivePet
+	RenamePet              = sharedsaga.RenamePet
 
 	// Skill actions
 	CreateSkill = sharedsaga.CreateSkill
@@ -144,6 +152,10 @@ const (
 
 	// NPC shop actions (task-221)
 	OpenNpcShop = sharedsaga.OpenNpcShop
+
+	// Scripted item / remote NPC conversation actions (task-230)
+	StartItemConversation = sharedsaga.StartItemConversation
+	StartNpcConversation  = sharedsaga.StartNpcConversation
 
 	// Trade actions (task-205). trade_settlement is a COMPOSITE expanded by
 	// expandTradeSettlement into release_from_character / accept_to_character /
@@ -265,6 +277,8 @@ type (
 	IncreaseBuddyCapacityPayload        = sharedsaga.IncreaseBuddyCapacityPayload
 	GainClosenessPayload                = sharedsaga.GainClosenessPayload
 	EvolvePetPayload                    = sharedsaga.EvolvePetPayload
+	RevivePetPayload                    = sharedsaga.RevivePetPayload
+	RenamePetPayload                    = sharedsaga.RenamePetPayload
 	CompleteQuestPayload                = sharedsaga.CompleteQuestPayload
 	StartQuestPayload                   = sharedsaga.StartQuestPayload
 	ForfeitQuestPayload                 = sharedsaga.ForfeitQuestPayload
@@ -285,6 +299,8 @@ type (
 	SpawnReactorDropsPayload            = sharedsaga.SpawnReactorDropsPayload
 	ShowStoragePayload                  = sharedsaga.ShowStoragePayload
 	OpenNpcShopPayload                  = sharedsaga.OpenNpcShopPayload
+	StartItemConversationPayload        = sharedsaga.StartItemConversationPayload
+	StartNpcConversationPayload         = sharedsaga.StartNpcConversationPayload
 	DepositToStoragePayload             = sharedsaga.DepositToStoragePayload
 	UpdateStorageMesosPayload           = sharedsaga.UpdateStorageMesosPayload
 	TransferToStoragePayload            = sharedsaga.TransferToStoragePayload
@@ -1338,6 +1354,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}
 		s.payload = any(payload).(T)
+	case StartItemConversation:
+		var payload StartItemConversationPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case StartNpcConversation:
+		var payload StartNpcConversationPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
 	case AcceptToStorage:
 		var payload AcceptToStoragePayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
@@ -1406,6 +1434,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case EvolvePet:
 		var payload EvolvePetPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case RevivePet:
+		var payload RevivePetPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case RenamePet:
+		var payload RenamePetPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

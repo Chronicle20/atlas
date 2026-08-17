@@ -33,7 +33,8 @@ description: Common pitfalls to avoid when implementing Golang microservices.
 
 | Type aliases for library migrations | Adds indirection; we control all services — update call sites directly |
 | Leaving dead code after refactoring | Unused constants/structs/functions clutter the codebase and cause confusion |
-| Bare `go` statements | An unrecovered panic in the goroutine crashes the whole pod — spawn via `routine.Go(l, ctx, fn)` from `libs/atlas-routine`; enforced by `tools/goroutine-guard.sh` (DOM-25). Test-scaffolding exceptions need a justified `//goroutine-guard:allow` marker. |
+| Bare `go` statements | An unrecovered panic in the goroutine crashes the whole pod — spawn via `routine.Go(l, ctx, fn)` from `libs/atlas-routine`; enforced by `tools/goroutine-guard.sh` (DOM-26). Test-scaffolding exceptions need a justified `//goroutine-guard:allow` marker. |
+| Redeclaring a type/constant that already lives in `libs/atlas-constants` | Two answers to the same domain question drift apart — search the shared library first (DOM-21). |
 
 **Always** prefer pure, context-aware, curried, and testable functions.
 
@@ -162,3 +163,125 @@ announceTo(..., fieldpkt.SomeNoticeBody(66)) // 66 = client "not enough NX"
 
 Reviewed as DOM-25; the dispatcher-family variant is documented in
 `docs/packets/DISPATCHER_FAMILY.md` ("Client-table values INSIDE bodies").
+
+---
+
+## Audit verification — DOM-21 (shared domain types)
+
+Rule defined in [audit-checklist.md](audit-checklist.md). Triggers whenever the
+diff declares a new `type X`, a named `const` block, or a numeric-literal
+classification check.
+
+**How to verify.** For each such declaration in the changed packages, grep
+`libs/atlas-constants/` for an equivalent. Specifically check:
+
+- item-id classifications (`itemId / 10000`, `itemId / 1_000_000`)
+- inventory types (the 1..5 enum for equipment/use/setup/etc/cash)
+- weapon types
+- world / channel / character / map id widths
+- job, skill, and monster id types
+
+**Pass criteria.** Either no shared equivalent exists, or the new declaration
+explicitly wraps or uses the atlas-constants version (`inventory.Type`,
+`item.Classification`, `item.GetClassification`, `world.Id`, …). FAIL if the
+service redeclares a type, helper, or numeric constant that already lives in
+`libs/atlas-constants/`. `libs/atlas-constants/README.md` is the package index.
+
+---
+
+## Audit verification — DOM-26 (goroutines)
+
+Rule defined in [audit-checklist.md](audit-checklist.md). Triggers on any
+changed non-test Go file.
+
+**How to verify.** Grep the changed packages for bare `go` statements:
+
+```bash
+grep -rnE '^\s*go (func|[A-Za-z_])' --include='*.go' <pkg>
+```
+
+Exclude `_test.go` files. For any hit, look for a
+`//goroutine-guard:allow <justification>` marker on the same line or the line
+above.
+
+**Pass criteria.** Non-test code contains no bare `go` statements: every
+goroutine is spawned via `routine.Go(l, ctx, fn)` from
+`github.com/Chronicle20/atlas/libs/atlas-routine`, which recovers and logs
+panics so one bad goroutine cannot crash the pod. The only exceptions are sites
+carrying a justified marker. Mechanical check: `tools/goroutine-guard.sh` exits
+0 from the repo root. Any new bare `go` statement — or a marker with no
+justification — is a FAIL.
+
+---
+
+## Audit verification — DOM-25 (client-interpreted wire values)
+
+Rule defined in [audit-checklist.md](audit-checklist.md); the pattern and its
+rationale are in
+[Hardcoding client-interpreted wire values](#anti-pattern-hardcoding-client-interpreted-wire-values)
+above.
+
+**How to verify.**
+
+1. In changed channel/socket code, find integer literals or Go constants
+   holding CLIENT wire codes — dispatcher modes, sub-operation codes, message
+   types, notice/fail reason codes: any byte the client feeds through a lookup
+   switch — that flow into packet body functions or `*Body(...)` arguments.
+2. For each, verify the value is resolved from a tenant writer-options table:
+   `WithResolvedCode(...)` for mandatory tables, or a soft resolver with a
+   bare-arm fallback for optional ones (see `failNoticeOr` /
+   `noticeFailReasons` in atlas-channel's mts consumer, task-102). Verify the
+   table exists in **every** supported version's seed template under
+   `services/atlas-configurations/seed-data/templates/`.
+3. Verify domain (non-channel) services emit SEMANTIC keys — the
+   WishOrigin / FailReason layering. A `byte` field carrying a client code in a
+   Kafka event produced by a domain service is a finding.
+4. A new table requires a rollout-checklist note: seed templates never apply
+   retroactively to live tenants.
+
+**Pass criteria.** No client wire code appears as a Go literal outside
+`libs/atlas-packet` codec internals; new tables are seeded per-version and
+documented for live rollout. "The value is version-stable (IDA-verified
+identical)" does NOT exempt it — the task-103 uniformity ruling.
+
+---
+
+## Audit verification — DOM-34, DOM-35 (library migration hygiene)
+
+Rules defined in [audit-checklist.md](audit-checklist.md). Both trigger when the
+diff moves, extracts, or re-homes symbols between a service and a `libs/atlas-*`
+module — the table rows "Type aliases for library migrations" and "Leaving dead
+code after refactoring" above are the convention; this section is how to grade
+it.
+
+**Why.** We control the full lifecycle of every service in this monorepo. There
+is no external consumer to keep source-compatible, so a compatibility shim buys
+nothing and costs a second name for one concept.
+
+**DOM-34 — how to verify.** In each file the migration touched, grep for
+delegating declarations that point at the new home:
+
+```bash
+grep -rnE '=\s*[a-z][a-zA-Z0-9_]*\.[A-Z]' --include='*.go' <changed-pkgs>
+```
+
+Read every hit that resolves to the migrated package. A `type Foo = lib.Foo`, a
+`const X = lib.X`, a `var Y = lib.Y`, or a function whose body is a single call
+into the new home is a FAIL: the call sites should import the new home directly
+and the shim should be gone.
+
+**Pass criteria.** No alias, re-export, or single-delegation wrapper survives
+the move. "The package's own tests reference the old name" is not an exemption —
+update the tests (task-218, `poisonmist` / `mistcast`).
+
+**DOM-35 — how to verify.** For every symbol the extraction stopped using —
+constants, structs, functions, imports, variables — grep the whole service for
+remaining references:
+
+```bash
+grep -rn '\bSymbolName\b' --include='*.go' <service-root>
+```
+
+**Pass criteria.** Zero remaining references means the symbol is deleted in this
+diff, not left behind. A symbol whose only remaining reference is the
+alias/wrapper flagged by DOM-34 counts as unreferenced.

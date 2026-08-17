@@ -29,3 +29,14 @@ func TestExtractCharacterId_UnknownPayloadIsZero(t *testing.T) {
 	assert.Equal(t, uint32(0), ExtractCharacterId(step),
 		"unknown payloads must read 0 so the guard leaves them unconstrained")
 }
+
+func TestExtractCharacterIdFromConversationPayloads(t *testing.T) {
+	item := NewStep[any]("s1", Pending, StartItemConversation, StartItemConversationPayload{CharacterId: 4242, ItemId: 2430008})
+	if got := ExtractCharacterId(item); got != 4242 {
+		t.Errorf("item: got %d want 4242", got)
+	}
+	npcStep := NewStep[any]("s2", Pending, StartNpcConversation, StartNpcConversationPayload{CharacterId: 4243, NpcTemplateId: 9090002})
+	if got := ExtractCharacterId(npcStep); got != 4243 {
+		t.Errorf("npc: got %d want 4243", got)
+	}
+}

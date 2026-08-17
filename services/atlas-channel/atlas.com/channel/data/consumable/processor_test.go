@@ -2,6 +2,7 @@ package consumable
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -52,5 +53,45 @@ func TestGetById_DecodesSpec(t *testing.T) {
 	}
 	if v, ok := m.GetSpec(SpecTypeMPRecovery); ok {
 		t.Errorf("GetSpec(mpR): want (0, false) for an absent key, got (%d, %v)", v, ok)
+	}
+}
+
+// The 243 handler resolves the dialogue's avatar from the consumable's npc
+// field. Until task-230 the channel's RestModel carried only `spec`, so the
+// value never reached the handler even after atlas-data started parsing it
+// correctly.
+func TestConsumableExtractCarriesNpcScriptAndRunOnPickup(t *testing.T) {
+	rm := RestModel{
+		Id:          2430008,
+		Spec:        map[SpecType]int32{},
+		Npc:         2084002,
+		Script:      "compassUse",
+		RunOnPickup: false,
+	}
+	m, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	if m.Npc() != 2084002 {
+		t.Errorf("Npc: got %d want 2084002", m.Npc())
+	}
+	if m.Script() != "compassUse" {
+		t.Errorf("Script: got %q want %q", m.Script(), "compassUse")
+	}
+	if m.RunOnPickup() {
+		t.Error("RunOnPickup: got true want false")
+	}
+}
+
+// The json tags must match what atlas-data serves
+// (services/atlas-data/atlas.com/data/consumable/rest.go:74-76). A mismatch
+// decodes to zero silently and looks exactly like a content gap.
+func TestConsumableRestModelJsonTags(t *testing.T) {
+	var rm RestModel
+	if err := json.Unmarshal([]byte(`{"npc":2084002,"script":"compassUse","runOnPickup":true,"spec":{}}`), &rm); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if rm.Npc != 2084002 || rm.Script != "compassUse" || !rm.RunOnPickup {
+		t.Errorf("decoded: %+v", rm)
 	}
 }

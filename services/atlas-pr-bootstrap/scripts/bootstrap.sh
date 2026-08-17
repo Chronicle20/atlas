@@ -483,6 +483,7 @@ endpoints=(
     /api/gachapons/seed
     /api/npcs/conversations/seed
     /api/quests/conversations/seed
+    /api/items/conversations/seed
     /api/shops/seed
     /api/portals/scripts/seed
     /api/reactors/actions/seed

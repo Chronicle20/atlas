@@ -2,7 +2,9 @@ package inventory
 
 import (
 	"atlas-pets/kafka/message"
+	compartmentmsg "atlas-pets/kafka/message/compartment"
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -15,6 +17,7 @@ type Processor interface {
 	ByCharacterIdProvider(characterId uint32) model.Provider[Model]
 	GetByCharacterId(characterId uint32) (Model, error)
 	ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
+	ResetPetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -38,4 +41,21 @@ func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Model, error) {
 	return p.ByCharacterIdProvider(characterId)()
+}
+
+// ChangeTemplate buffers a CHANGE_TEMPLATE command to atlas-inventory.
+func (p *ProcessorImpl) ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
+		return mb.Put(compartmentmsg.EnvCommandTopic, changeTemplateCommandProvider(transactionId, characterId, petId, newTemplateId))
+	}
+}
+
+// ResetPetExpiration buffers a RESET_PET_EXPIRATION command to atlas-inventory.
+// It is buffered inside the revive's own database transaction + outbox, so the
+// pet row update and this cascade commit together or not at all — the pet
+// record and the inventory slot cannot diverge (design §7.1).
+func (p *ProcessorImpl) ResetPetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+		return mb.Put(compartmentmsg.EnvCommandTopic, resetPetExpirationCommandProvider(transactionId, characterId, petId, expiration, sourceTemplateId))
+	}
 }

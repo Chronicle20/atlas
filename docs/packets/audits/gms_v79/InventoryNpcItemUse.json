@@ -1,0 +1,30 @@
+{
+  "WriterName": "InventoryNpcItemUse",
+  "IDAName": "CWvsContext::SendSelectNpcItemUseRequest",
+  "Address": "0x95b96c",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/inventory/serverbound/npc_item_use.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 1,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "source slot (nPOS, a2)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "itemId (nItemID, a3); gated (a3/10000==545||a3/10000==239)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

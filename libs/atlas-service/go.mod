@@ -10,7 +10,7 @@ require (
 	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/segmentio/kafka-go v0.4.51
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.0
 	go.elastic.co/ecslogrus v1.0.0
 )
 

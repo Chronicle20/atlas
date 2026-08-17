@@ -15,6 +15,7 @@ description: |
   assistant: "Dispatching atlas-verifier again for the fix commit."
   </example>
 model: haiku
+tools: Bash, Read
 ---
 
 You run Atlas's verification gate and report the result. You are a

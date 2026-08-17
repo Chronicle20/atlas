@@ -294,20 +294,16 @@ propagates the gate's own status with `exit $rc`. **A background gate must
 return the gate's exit code, not a wrapper's** — otherwise "the gate passed" is
 a claim about the wrapper.
 
-### Still outstanding
+### Code review
 
-Per CLAUDE.md, **code review has not been run** — it is a separate gate from
-verification, and it is required before a PR. This session was directed not to
-dispatch agents, so the reviewer roster was not launched. Before opening a PR:
-
-```sh
-tools/change-surfaces.sh --base origin/main   # roster + families for this diff
-```
-
-then `superpowers:requesting-code-review`. On this branch the classifier reports
-`go_changed=false`, `frontend_review=false`, `tooling_surface=true` — so the
-review that matters is of the shell tooling and the workflow documents, not the
-Go guideline checklists.
+Code review ran in a later round and its findings are closed in `606018d75`:
+the slice-first section that Task 2.4 named for the two guideline reviewers,
+and `doc-slice.sh`'s character-vs-byte truncation (both described above), plus
+the two accepted deviations recorded in `plan.md`. The classifier reports
+`go_changed=false`, `frontend_review=false`, `tooling_surface=true` on this
+branch, so the review covered the shell tooling and the workflow documents
+rather than the Go guideline checklists. The plan-adherence artifact for that
+round is `docs/tasks/task-237-agentic-cost-levers/audit.md`.
 
 Mapping to the requested validation list:
 

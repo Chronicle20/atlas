@@ -72,8 +72,6 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m.UseDelay = uint32(i.GetIntegerWithDefault("useDelay", 0))
 			m.DelayMsg = i.GetString("delayMsg", "")
 			m.IncFatigue = i.GetIntegerWithDefault("incFatigue", 0)
-			m.Npc = uint32(i.GetIntegerWithDefault("npc", 0))
-			m.RunOnPickup = i.GetBool("runOnPickup", false)
 			m.MonsterBook = i.GetBool("monsterBook", false)
 			m.MonsterId = uint32(i.GetIntegerWithDefault("mob", 0))
 			m.BigSize = i.GetBool("bigSize", false)
@@ -116,6 +114,11 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 				}
 			}
 
+			// Defaults from info; the spec block below overrides when the item
+			// authors these fields spec-side (the 0243 family).
+			m.Npc = uint32(i.GetIntegerWithDefault("npc", 0))
+			m.RunOnPickup = i.GetBool("runOnPickup", false)
+
 			s, err := cxml.ChildByName("spec")
 			if err == nil && s != nil {
 				m.Spec[SpecTypeHP] = s.GetIntegerWithDefault(string(SpecTypeHP), 0)
@@ -150,6 +153,16 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 				// Monster Carnival items, etc.); surface it on the dedicated
 				// field so the inventory consume-on-pickup gate can act on it.
 				m.ConsumeOnPickup = s.GetBool("consumeOnPickup", false)
+
+				// npc and runOnPickup are authored under spec for the 0243
+				// scripted-item family (verified: all 23 items in
+				// Item.wz/Consume/0243.img.xml carry spec/npc, ZERO carry
+				// info/npc) but under info for the 0239 remote-NPC family
+				// (verified on 02390001). Read spec first, fall back to info,
+				// so both families resolve. Same defect class as
+				// consumeOnPickup above.
+				m.Npc = uint32(s.GetIntegerWithDefault("npc", i.GetIntegerWithDefault("npc", 0)))
+				m.RunOnPickup = s.GetBool("runOnPickup", i.GetBool("runOnPickup", false))
 
 				ms, err := s.ChildByName("morphRandom")
 				if err == nil && ms != nil {

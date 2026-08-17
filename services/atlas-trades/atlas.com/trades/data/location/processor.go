@@ -32,7 +32,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) FieldProvider(characterId character.Id) model.Provider[field.Model] {
-	return requests.Provider[RestModel, field.Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+	return requests.Provider[RestModel, field.Model](p.l, p.ctx)(requestByCharacterId(p.ctx, characterId), Extract)
 }
 
 // FieldOf returns the field atlas-maps has the character standing in. A 404

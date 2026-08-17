@@ -33,5 +33,5 @@ func (p *ProcessorImpl) Create(ownerId uint32, cashId uint64, templateId uint32,
 		templateId: templateId,
 		name:       name,
 	}
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestCreate(i), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestCreate(p.ctx, i), Extract)()
 }

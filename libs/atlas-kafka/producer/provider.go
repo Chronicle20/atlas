@@ -15,8 +15,9 @@ func ProviderImpl(l logrus.FieldLogger) func(ctx context.Context) Provider {
 	return func(ctx context.Context) Provider {
 		sd := SpanHeaderDecorator(ctx)
 		td := TenantHeaderDecorator(ctx)
+		ed := EnvHeaderDecorator(ctx)
 		return func(token string) MessageProducer {
-			return Produce(l)(ManagerWriterProvider(l)(token))(sd, td)
+			return Produce(l)(ManagerWriterProvider(l)(token))(sd, td, ed)
 		}
 	}
 }

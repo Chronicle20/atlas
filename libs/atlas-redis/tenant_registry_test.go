@@ -338,3 +338,96 @@ func TestTenantRegistry_Update_RetriesOnContention(t *testing.T) {
 
 // helper for non-shared use; ensures package compiles with strconv import.
 var _ = strconv.Itoa
+
+func TestTenantRegistry_RemoveExisting(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer func() { _ = client.Close() }()
+	reg := NewTenantRegistry[string, string](client, "test:removeexisting", func(k string) string { return k })
+	tm := newTestTenant(t, "GMS")
+	ctx := context.Background()
+
+	existed, err := reg.RemoveExisting(ctx, tm, "missing")
+	if err != nil {
+		t.Fatalf("RemoveExisting on missing key: %v", err)
+	}
+	if existed {
+		t.Fatalf("existed = true, want false for missing key")
+	}
+
+	if err := reg.Put(ctx, tm, "present", "v"); err != nil {
+		t.Fatalf("Put: %v", err)
+	}
+	existed, err = reg.RemoveExisting(ctx, tm, "present")
+	if err != nil {
+		t.Fatalf("RemoveExisting: %v", err)
+	}
+	if !existed {
+		t.Fatalf("existed = false, want true for present key")
+	}
+	// Second call: key is now gone, so it must report false, not error.
+	existed, err = reg.RemoveExisting(ctx, tm, "present")
+	if err != nil {
+		t.Fatalf("RemoveExisting (second call): %v", err)
+	}
+	if existed {
+		t.Fatalf("existed = true on second call, want false — already removed")
+	}
+}
+
+func TestTenantRegistry_GetAllAcrossTenants(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer func() { _ = client.Close() }()
+	reg := NewTenantRegistry[string, string](client, "test:crosstenant", func(k string) string { return k })
+	ctx := context.Background()
+
+	// Two tenants that differ in region AND version, not just UUID — pins
+	// the key-shape property, not merely "two tenants stay separate".
+	t1, err := tenant.Create(uuid.New(), "GMS", 0, 83)
+	if err != nil {
+		t.Fatalf("tenant.Create t1: %v", err)
+	}
+	t2, err := tenant.Create(uuid.New(), "JMS", 1, 62)
+	if err != nil {
+		t.Fatalf("tenant.Create t2: %v", err)
+	}
+
+	if err := reg.Put(ctx, t1, "a", "va"); err != nil {
+		t.Fatalf("Put t1: %v", err)
+	}
+	if err := reg.Put(ctx, t2, "b", "vb"); err != nil {
+		t.Fatalf("Put t2: %v", err)
+	}
+
+	all, err := reg.GetAllAcrossTenants(ctx)
+	if err != nil {
+		t.Fatalf("GetAllAcrossTenants: %v", err)
+	}
+	if len(all) != 2 {
+		t.Fatalf("len(all) = %d, want 2", len(all))
+	}
+
+	// GetAllAcrossTenants must see the SAME keys GetAllValues sees per-tenant
+	// (key-compatibility: a cross-tenant scan is not a different key shape).
+	t1Values, err := reg.GetAllValues(ctx, t1)
+	if err != nil {
+		t.Fatalf("GetAllValues t1: %v", err)
+	}
+	if len(t1Values) != 1 || t1Values[0] != "va" {
+		t.Fatalf("GetAllValues(t1) = %v, want [va]", t1Values)
+	}
+
+	deleted, err := reg.ClearAllAcrossTenants(ctx)
+	if err != nil {
+		t.Fatalf("ClearAllAcrossTenants: %v", err)
+	}
+	if deleted != 2 {
+		t.Fatalf("deleted = %d, want 2", deleted)
+	}
+	remaining, err := reg.GetAllAcrossTenants(ctx)
+	if err != nil {
+		t.Fatalf("GetAllAcrossTenants after clear: %v", err)
+	}
+	if len(remaining) != 0 {
+		t.Fatalf("remaining = %v, want empty after ClearAllAcrossTenants", remaining)
+	}
+}

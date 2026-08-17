@@ -33,6 +33,7 @@ type (
 	IncubatorResultPayload       = sharedsaga.IncubatorResultPayload
 	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
 	CreateNotePayload            = sharedsaga.CreateNotePayload
+	RevivePetPayload             = sharedsaga.RevivePetPayload
 	RenamePetPayload             = sharedsaga.RenamePetPayload
 
 	// Megaphone / world broadcast payload types
@@ -54,6 +55,10 @@ type (
 
 	// Remote-merchant payload types
 	OpenNpcShopPayload = sharedsaga.OpenNpcShopPayload
+
+	// NPC conversation payload types
+	StartItemConversationPayload = sharedsaga.StartItemConversationPayload
+	StartNpcConversationPayload  = sharedsaga.StartNpcConversationPayload
 )
 
 // Re-export constants from atlas-saga shared library
@@ -76,6 +81,9 @@ const (
 	MesoSackUse           = sharedsaga.MesoSackUse
 	PetNameTagUse         = sharedsaga.PetNameTagUse
 	RemoteMerchant        = sharedsaga.RemoteMerchant
+	PetRevive             = sharedsaga.PetRevive
+	ScriptedItemUse       = sharedsaga.ScriptedItemUse
+	RemoteNpcUse          = sharedsaga.RemoteNpcUse
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -116,6 +124,9 @@ const (
 	CreateNote            = sharedsaga.CreateNote
 	RenamePet             = sharedsaga.RenamePet
 	OpenNpcShop           = sharedsaga.OpenNpcShop
+	RevivePet             = sharedsaga.RevivePet
+	StartItemConversation = sharedsaga.StartItemConversation
+	StartNpcConversation  = sharedsaga.StartNpcConversation
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

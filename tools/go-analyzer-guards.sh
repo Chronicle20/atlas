@@ -54,11 +54,12 @@ GUARD_SRCS=(
     "$ROOT/tools/outboxguard"
     "$ROOT/tools/goroutineguard"
     "$ROOT/tools/buffdurationguard"
+    "$ROOT/tools/scopeguard"
 )
 
 # Guards that ship their own unit tests. rediskeyguard and outboxguard have
 # none to run — this mirrors the SELFTEST flags on the per-guard wrappers.
-SELFTEST_GUARDS=(goroutineguard buffdurationguard)
+SELFTEST_GUARDS=(goroutineguard buffdurationguard scopeguard)
 
 if [ "${GUARD_SKIP_SELFTEST:-0}" -ne 1 ]; then
     for g in "${SELFTEST_GUARDS[@]}"; do
@@ -115,6 +116,12 @@ if grep -q '^\s*.*buffdurationguard:' "$LOG"; then
     echo "  buffdurationguard — seconds-valued buff duration emitter found."
     echo "    The COMMAND_TOPIC_CHARACTER_BUFF duration field is MILLISECONDS."
     echo "    Contract owner: services/atlas-buffs/atlas.com/buffs/kafka/message/character/kafka.go"
+fi
+if grep -q '^\s*.*scopeguard:' "$LOG"; then
+    echo "  scopeguard — an entity or call site is unscoped with no allowlist entry"
+    echo "    add a written reason to tools/scopeguard/allowlist.txt or"
+    echo "    tools/scopeguard/callsite-allowlist.txt, or fix the code — see"
+    echo "    docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit.md"
 fi
 
 echo ""

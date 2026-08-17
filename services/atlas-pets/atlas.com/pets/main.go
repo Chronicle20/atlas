@@ -13,6 +13,7 @@ import (
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
@@ -49,7 +50,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)
@@ -105,7 +106,15 @@ func main() {
 		Run()
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(pet.NewHungerTask(l, db, time.Minute*time.Duration(3)))
+		// pet/task.go sits outside env-domain-guard's permitted atlas-env
+		// import list (main.go, kafka/, rest/, socket/), so this pod's
+		// environment identity is threaded in as a plain function value
+		// rather than the package importing atlas-env itself. Without it,
+		// HungerTask's per-owner hunger Kafka events would carry an empty
+		// environment header and fail decide() open per FR-1.8.
+		tasks.Register(l, rt.Context())(pet.NewHungerTask(l, db, time.Minute*time.Duration(3), func(ctx context.Context) context.Context {
+			return env.WithContext(ctx, env.Self())
+		}))
 	})
 
 	rt.Wait()

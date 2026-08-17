@@ -8,6 +8,7 @@ import (
 	"context"
 	"os"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	macro2 "atlas-skills/kafka/consumer/macro"
@@ -49,7 +50,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)
@@ -94,7 +95,9 @@ func main() {
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(tasks.NewExpirationTask(l, db, 1000))
+		tasks.Register(l, rt.Context())(tasks.NewExpirationTask(l, db, 1000, func(ctx context.Context) context.Context {
+			return env.WithContext(ctx, env.Self())
+		}))
 	})
 
 	server.New(l).

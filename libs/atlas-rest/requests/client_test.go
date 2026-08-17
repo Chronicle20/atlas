@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 )
 
 func TestDefaultTimeoutTriggersOnSlowServer(t *testing.T) {
@@ -174,5 +176,53 @@ func TestFastServerSucceedsWithDefaultTimeout(t *testing.T) {
 	err := delete(l, context.Background())(srv.URL)
 	if err != nil {
 		t.Fatal("fast server should not have timed out or errored")
+	}
+}
+
+// TestDeleteRequestEmitsTheEnvironmentHeaderFromContext drives an actual
+// outbound request through the canonical DeleteRequest/decorated.go
+// composition (the same one GetRequest/PostRequest/PutRequest/PatchRequest
+// use) and inspects the header the server received — not a direct call to
+// EnvHeaderDecorator. This is the regression FR-3.1 exists to prevent: a
+// service must never have to set the header by hand.
+func TestDeleteRequestEmitsTheEnvironmentHeaderFromContext(t *testing.T) {
+	var got string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		got = r.Header.Get(env.Key)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	l := logrus.New()
+	l.SetLevel(logrus.PanicLevel)
+
+	ctx := env.WithContext(context.Background(), env.Id("pr-123"))
+	if err := DeleteRequest(srv.URL)(l, ctx); err != nil {
+		t.Fatalf("DeleteRequest: %v", err)
+	}
+	if got != "pr-123" {
+		t.Fatalf("got ENVIRONMENT header %q, want %q", got, "pr-123")
+	}
+}
+
+// TestDeleteRequestOmitsTheEnvironmentHeaderWithNoEnvironment pins NFR-7:
+// a legacy operation (no environment on ctx) must be byte-identical to
+// today — no ENVIRONMENT header at all.
+func TestDeleteRequestOmitsTheEnvironmentHeaderWithNoEnvironment(t *testing.T) {
+	var present bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, present = r.Header[http.CanonicalHeaderKey(env.Key)]
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	l := logrus.New()
+	l.SetLevel(logrus.PanicLevel)
+
+	if err := DeleteRequest(srv.URL)(l, context.Background()); err != nil {
+		t.Fatalf("DeleteRequest: %v", err)
+	}
+	if present {
+		t.Fatalf("ENVIRONMENT header present with no environment on context; want absent")
 	}
 }

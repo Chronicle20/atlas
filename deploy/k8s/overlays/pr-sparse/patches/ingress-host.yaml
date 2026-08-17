@@ -1,0 +1,24 @@
+# Per-PR atlas-ingress k8s Ingress rewrites the host from `dev.atlas.home`
+# (base default, used by main env) to `<PR_NUMBER>.atlas.home` so each PR
+# env answers on a distinct hostname. Without this, both main and PR
+# Ingresses claim `dev.atlas.home` at Traefik, one shadows the other,
+# and "two envs" is really one env serving both browser tabs.
+#
+# The Traefik IngressRoute in ingress-route.yaml already targets the
+# per-PR host — this brings the standard k8s Ingress in line.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: atlas-ingress
+spec:
+  rules:
+  - host: PLACEHOLDER_PR_NUMBER.atlas.home
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: atlas-ingress
+            port:
+              number: 80

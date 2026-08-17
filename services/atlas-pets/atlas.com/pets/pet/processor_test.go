@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -1278,6 +1279,14 @@ type fakeInventoryProcessor struct {
 	characterId   uint32
 	petId         uint32
 	newTemplateId uint32
+
+	// ResetPetExpiration cascade capture, used by revive tests.
+	rpeCalled           bool
+	rpeTransactionId    uuid.UUID
+	rpeCharacterId      uint32
+	rpePetId            uint32
+	rpeExpiration       time.Time
+	rpeSourceTemplateId uint32
 }
 
 func (f *fakeInventoryProcessor) ByCharacterIdProvider(characterId uint32) model.Provider[inventory.Model] {
@@ -1295,6 +1304,18 @@ func (f *fakeInventoryProcessor) ChangeTemplate(mb *message.Buffer) func(transac
 		f.characterId = characterId
 		f.petId = petId
 		f.newTemplateId = newTemplateId
+		return nil
+	}
+}
+
+func (f *fakeInventoryProcessor) ResetPetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+		f.rpeCalled = true
+		f.rpeTransactionId = transactionId
+		f.rpeCharacterId = characterId
+		f.rpePetId = petId
+		f.rpeExpiration = expiration
+		f.rpeSourceTemplateId = sourceTemplateId
 		return nil
 	}
 }

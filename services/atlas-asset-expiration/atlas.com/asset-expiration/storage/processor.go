@@ -39,5 +39,9 @@ func identity(m AssetRestModel) (AssetRestModel, error) {
 // in the storage, so this drains every page rather than fetching just the
 // first.
 func (p *ProcessorImpl) GetAssets(accountId uint32, worldId world.Id) ([]AssetRestModel, error) {
-	return requests.DrainProvider[AssetRestModel, AssetRestModel](p.l, p.ctx)(storageAssetsUrl(accountId, worldId), 250, identity, model.Filters[AssetRestModel]())()
+	url, err := storageAssetsUrl(p.ctx, accountId, worldId)
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[AssetRestModel, AssetRestModel](p.l, p.ctx)(url, 250, identity, model.Filters[AssetRestModel]())()
 }

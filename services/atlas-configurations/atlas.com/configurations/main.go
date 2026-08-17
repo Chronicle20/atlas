@@ -1,6 +1,8 @@
 package main
 
 import (
+	"atlas-configurations/environmentcol"
+	"atlas-configurations/environments"
 	"atlas-configurations/seeder"
 	"atlas-configurations/services"
 	"atlas-configurations/templates"
@@ -40,10 +42,14 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(templates.Migration, tenants.Migration, services.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(
+		templates.Migration, tenants.Migration, services.Migration, outboxlib.Migration,
+		environments.Migration,
+		environmentcol.Migration, // must run last: it backfills the columns the three above create
+	))
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {
 		if database.IsTransientConnectionError(err) {
@@ -67,6 +73,8 @@ func main() {
 		drainer.Stop()
 		publisher.Close()
 	})
+
+	environments.StartHeartbeat(l, rt.Context(), environments.NewProcessor(l, rt.Context(), db))
 
 	// Run seed import
 	seedConfig := seeder.DefaultConfig()
@@ -99,6 +107,7 @@ func main() {
 		AddRouteInitializer(templates.InitResource(GetServer())(db)).
 		AddRouteInitializer(tenants.InitResource(GetServer())(db)).
 		AddRouteInitializer(services.InitResource(GetServer())(db)).
+		AddRouteInitializer(environments.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 

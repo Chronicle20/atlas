@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 
@@ -133,7 +134,7 @@ func TestProcessStatusReturnsOnlyTheCallersScope(t *testing.T) {
 	put := func(suffix, runId string) {
 		rec := ingestrun.NewRecord(runId, "job-"+runId, "x", "GMS", "83.1", "", time.Now().UTC(), []string{"STRING"})
 		rec = rec.WithPhase(ingestrun.PhaseSucceeded, time.Now().UTC(), "")
-		if err := regs.Run.PutWithTTL(ctx, suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL); err != nil {
+		if err := regs.Run.PutWithTTL(ctx, env.Self(), suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -177,7 +178,7 @@ func TestProcessStatusTerminalRecordServedWithoutK8s(t *testing.T) {
 	rec = rec.WithWorkerTerminal("STRING", ingestrun.WorkerSucceeded, time.Now().UTC(), "")
 	rec = rec.WithWorkerTerminal("MAP", ingestrun.WorkerSkipped, time.Now().UTC(), "")
 	rec = rec.WithPhase(ingestrun.PhaseSucceeded, time.Now().UTC(), "")
-	if err := regs.Run.PutWithTTL(ctx, suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL); err != nil {
+	if err := regs.Run.PutWithTTL(ctx, env.Self(), suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL); err != nil {
 		t.Fatal(err)
 	}
 
@@ -202,7 +203,7 @@ func TestProcessStatusStuckRecordSurfacesReason(t *testing.T) {
 		time.Now().UTC(), []string{"STRING", "MAP"})
 	rec = rec.WithWorkerRunning("MAP", time.Now().UTC())
 	rec = rec.WithPhase(ingestrun.PhaseStuck, time.Now().UTC(), "watchdog deleted the ingest Job after 7200s without a heartbeat")
-	if err := regs.Run.PutWithTTL(ctx, suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL); err != nil {
+	if err := regs.Run.PutWithTTL(ctx, env.Self(), suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL); err != nil {
 		t.Fatal(err)
 	}
 
@@ -223,7 +224,7 @@ func seedRunning(t *testing.T, regs *IngestRegistries) string {
 	suffix := ingestrun.KeySuffix("tenants/"+testTenantId, "GMS", 83, 1)
 	rec := ingestrun.NewRecord("run-1", "job-1", "tenants/"+testTenantId, "GMS", "83.1", testTenantId,
 		time.Now().UTC(), []string{"STRING", "MAP"})
-	if err := regs.Run.PutWithTTL(context.Background(), suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL); err != nil {
+	if err := regs.Run.PutWithTTL(context.Background(), env.Self(), suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL); err != nil {
 		t.Fatal(err)
 	}
 	return suffix
@@ -232,7 +233,7 @@ func seedRunning(t *testing.T, regs *IngestRegistries) string {
 func TestProcessStatusRunningWithFreshHeartbeatStaysRunning(t *testing.T) {
 	regs, _ := newRegs(t)
 	suffix := seedRunning(t, regs)
-	if err := regs.Job.PutWithTTL(context.Background(), suffix+ingestrun.HeartbeatKeySuffix,
+	if err := regs.Job.PutWithTTL(context.Background(), env.Self(), suffix+ingestrun.HeartbeatKeySuffix,
 		time.Now().UTC().Format(time.RFC3339), time.Hour); err != nil {
 		t.Fatal(err)
 	}
@@ -247,7 +248,7 @@ func TestProcessStatusRunningWithStaleHeartbeatAndNoJobIsUnknown(t *testing.T) {
 	regs, _ := newRegs(t)
 	suffix := seedRunning(t, regs)
 	stale := time.Now().UTC().Add(-time.Duration(DefaultWatchdogTimeoutSecs+60) * time.Second)
-	if err := regs.Job.PutWithTTL(context.Background(), suffix+ingestrun.HeartbeatKeySuffix,
+	if err := regs.Job.PutWithTTL(context.Background(), env.Self(), suffix+ingestrun.HeartbeatKeySuffix,
 		stale.Format(time.RFC3339), time.Hour); err != nil {
 		t.Fatal(err)
 	}

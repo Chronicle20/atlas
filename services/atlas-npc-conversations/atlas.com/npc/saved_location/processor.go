@@ -38,7 +38,7 @@ var _ Processor = (*processor)(nil)
 // GetSavedLocation retrieves a saved location for a character by type
 func (p *processor) GetSavedLocation(characterId uint32, locationType string) model.Provider[Model] {
 	return func() (Model, error) {
-		provider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterAndType(characterId, locationType), Extract)
+		provider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterAndType(p.ctx, characterId, locationType), Extract)
 		result, err := provider()
 		if err != nil {
 			// Check if it's a 404/not found error

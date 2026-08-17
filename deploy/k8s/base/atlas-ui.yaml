@@ -19,6 +19,10 @@ spec:
         ports:
         - containerPort: 80
         env:
+        - name: SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['app']
         - name: VITE_ROOT_API_URL
           value: "http://atlas-ingress.atlas.svc.cluster.local"
 ---

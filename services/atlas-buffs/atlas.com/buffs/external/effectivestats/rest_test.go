@@ -67,7 +67,7 @@ func TestRequestByCharacter_RoundTrip(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 
-	rm, err := RequestByCharacter(world.Id(0), channel.Id(1), 42)(logrus.New(), ctx)
+	rm, err := RequestByCharacter(ctx, world.Id(0), channel.Id(1), 42)(logrus.New(), ctx)
 	if err != nil {
 		t.Fatalf("RequestByCharacter: %v", err)
 	}

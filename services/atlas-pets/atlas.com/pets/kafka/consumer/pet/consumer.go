@@ -21,8 +21,8 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("pet_command")(pet2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-			rf(consumer2.NewConfig(l)("pet_movement_command")(pet2.EnvCommandTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("pet_command")(pet2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
+			rf(consumer2.NewConfig(l)("pet_movement_command")(pet2.EnvCommandTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
 		}
 	}
 }
@@ -57,6 +57,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEvolveCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleReviveCommand(db)))); err != nil {
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRenameCommand(db)))); err != nil {
@@ -163,6 +166,18 @@ func handleEvolveCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.EvolveCo
 		err := pet.NewProcessor(l, ctx, db).EvolveAndEmit(c.TransactionId, c.PetId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to evolve pet [%d].", c.PetId)
+		}
+	}
+}
+
+func handleReviveCommand(db *gorm.DB) message.Handler[pet2.Command[pet2.ReviveCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c pet2.Command[pet2.ReviveCommandBody]) {
+		if c.Type != pet2.CommandPetRevive {
+			return
+		}
+		err := pet.NewProcessor(l, ctx, db).ReviveAndEmit(c.TransactionId, c.ActorId, c.PetId, c.Body.SourceTemplateId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to revive pet [%d].", c.PetId)
 		}
 	}
 }

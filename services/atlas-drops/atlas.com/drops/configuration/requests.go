@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -14,10 +15,14 @@ const (
 	ForTenant = Resource + "/tenants/%s"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("CONFIGURATIONS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "CONFIGURATIONS")
 }
 
-func requestByService(serviceId uuid.UUID) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByService, serviceId.String()))
+func requestByService(ctx context.Context, serviceId uuid.UUID) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+ByService, serviceId.String()))
 }

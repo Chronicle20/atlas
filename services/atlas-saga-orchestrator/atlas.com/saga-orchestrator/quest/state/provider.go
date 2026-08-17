@@ -16,7 +16,11 @@ import (
 func startedQuestsProvider(l logrus.FieldLogger) func(ctx context.Context) func(characterId uint32) model.Provider[[]Model] {
 	return func(ctx context.Context) func(characterId uint32) model.Provider[[]Model] {
 		return func(characterId uint32) model.Provider[[]Model] {
-			return requests.DrainProvider[RestModel, Model](l, ctx)(startedQuestsUrl(characterId), 250, Extract, model.Filters[Model]())
+			url, err := startedQuestsUrl(ctx, characterId)
+			if err != nil {
+				return model.ErrorProvider[[]Model](err)
+			}
+			return requests.DrainProvider[RestModel, Model](l, ctx)(url, 250, Extract, model.Filters[Model]())
 		}
 	}
 }

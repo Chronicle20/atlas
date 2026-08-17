@@ -21,6 +21,7 @@ var rules = []subdomainRule{
 	{path: "reactor-actions/reactors", typ: "reactor-action", pattern: regexp.MustCompile(`^reactor-(.+)\.json$`)},
 	{path: "npc-conversations/npc", typ: "npc-conversation", pattern: regexp.MustCompile(`^npc-(\d+)\.json$`)},
 	{path: "npc-conversations/quests", typ: "quest-conversation", pattern: regexp.MustCompile(`^quest-(\d+)\.json$`)},
+	{path: "npc-conversations/items", typ: "item-conversation", pattern: regexp.MustCompile(`^item-(\d+)\.json$`)},
 	{path: "npc-shops/shops", typ: "npc-shop", pattern: regexp.MustCompile(`^shop-(\d+)\.json$`)},
 	{path: "party-quests/definitions", typ: "party-quest-definition", pattern: regexp.MustCompile(`^party-quest-(.+)\.json$`)},
 	// Version-agnostic transport configuration, seeded from

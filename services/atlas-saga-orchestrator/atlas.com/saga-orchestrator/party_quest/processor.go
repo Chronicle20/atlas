@@ -140,7 +140,7 @@ func (p *ProcessorImpl) RegisterPartyQuest(characterId uint32, worldId world.Id,
 
 // getParty fetches the party for a character from atlas-parties
 func (p *ProcessorImpl) getParty(characterId uint32) (PartyRestModel, error) {
-	models, err := requests.SliceProvider[PartyRestModel, PartyRestModel](p.l, p.ctx)(requestPartyByMemberId(characterId), ExtractParty, model.Filters[PartyRestModel]())()
+	models, err := requests.SliceProvider[PartyRestModel, PartyRestModel](p.l, p.ctx)(requestPartyByMemberId(p.ctx, characterId), ExtractParty, model.Filters[PartyRestModel]())()
 	if err != nil {
 		return PartyRestModel{}, err
 	}
@@ -172,17 +172,18 @@ func (p *ProcessorImpl) produceRegisterCommand(characterId uint32, worldId world
 func produceToCommandTopic(l logrus.FieldLogger, ctx context.Context) func(provider model.Provider[[]kafka.Message]) error {
 	sd := producer.SpanHeaderDecorator(ctx)
 	td := producer.TenantHeaderDecorator(ctx)
-	return producer.Produce(l)(producer.ManagerWriterProvider(l)(EnvCommandTopic))(sd, td)
+	ed := producer.EnvHeaderDecorator(ctx)
+	return producer.Produce(l)(producer.ManagerWriterProvider(l)(EnvCommandTopic))(sd, td, ed)
 }
 
 // getDefinition fetches the party quest definition by questId from atlas-party-quests
 func (p *ProcessorImpl) getDefinition(questId string) (DefinitionRestModel, error) {
-	return requests.Provider[DefinitionRestModel, DefinitionRestModel](p.l, p.ctx)(requestDefinitionByQuestId(questId), ExtractDefinition)()
+	return requests.Provider[DefinitionRestModel, DefinitionRestModel](p.l, p.ctx)(requestDefinitionByQuestId(p.ctx, questId), ExtractDefinition)()
 }
 
 // getPartyMembers fetches all members of a party from atlas-parties
 func (p *ProcessorImpl) getPartyMembers(partyId uint32) ([]MemberRestModel, error) {
-	return requests.SliceProvider[MemberRestModel, MemberRestModel](p.l, p.ctx)(requestPartyMembers(partyId), ExtractMember, model.Filters[MemberRestModel]())()
+	return requests.SliceProvider[MemberRestModel, MemberRestModel](p.l, p.ctx)(requestPartyMembers(p.ctx, partyId), ExtractMember, model.Filters[MemberRestModel]())()
 }
 
 // GetPartyMembers resolves the party for a character and returns all party members.
@@ -344,7 +345,7 @@ func (p *ProcessorImpl) produceStageClearAttemptCommand(instanceId uuid.UUID) er
 
 // StageClearAttemptByCharacter looks up the PQ instance by character and produces a STAGE_CLEAR_ATTEMPT command.
 func (p *ProcessorImpl) StageClearAttemptByCharacter(characterId uint32) error {
-	inst, err := requests.Provider[InstanceRestModel, InstanceRestModel](p.l, p.ctx)(requestInstanceByCharacterId(characterId), ExtractInstance)()
+	inst, err := requests.Provider[InstanceRestModel, InstanceRestModel](p.l, p.ctx)(requestInstanceByCharacterId(p.ctx, characterId), ExtractInstance)()
 	if err != nil {
 		return fmt.Errorf("failed to get PQ instance for character %d: %w", characterId, err)
 	}
@@ -359,7 +360,7 @@ func (p *ProcessorImpl) StageClearAttemptByCharacter(characterId uint32) error {
 
 // EnterBonusByCharacter looks up the PQ instance by character and produces an ENTER_BONUS command.
 func (p *ProcessorImpl) EnterBonusByCharacter(characterId uint32, worldId world.Id) error {
-	inst, err := requests.Provider[InstanceRestModel, InstanceRestModel](p.l, p.ctx)(requestInstanceByCharacterId(characterId), ExtractInstance)()
+	inst, err := requests.Provider[InstanceRestModel, InstanceRestModel](p.l, p.ctx)(requestInstanceByCharacterId(p.ctx, characterId), ExtractInstance)()
 	if err != nil {
 		return PartyQuestError{
 			Code:    ErrorCodeBonusNotAvailable,

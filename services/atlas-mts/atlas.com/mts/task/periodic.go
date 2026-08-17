@@ -15,6 +15,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (
@@ -24,6 +26,11 @@ const (
 	// The remainder is logged and picked up on the next tick — the sweep is
 	// bounded but never silently truncated (NFR 8.3).
 	sweepBatchLimit = 500
+
+	// serviceName is the environment-registry owner name for atlas-mts,
+	// matching the const declared in package main (main.go:29). Duplicated
+	// here because the two packages cannot share an unexported const.
+	serviceName = "atlas-mts"
 )
 
 // PeriodicTask runs the DB-driven auction-expiration sweep at a fixed interval.
@@ -101,6 +108,19 @@ func (t *PeriodicTask) run() {
 // (lm.TenantId()), so no tenant model reconstruction is needed. Each listing is
 // addressed by its unique surrogate uuid, so the per-listing GetById/UpdateState
 // inside Expire resolve the correct row without tenant filtering.
+//
+// Environment ownership (FR-6.1, design §8.3): this is a persisted-work path,
+// same shape as the saga sweeper — the discovery query above already found
+// every expired listing across every tenant, and service.ForEachOwnedEnvironment
+// reconstructs each row's environment from its tenant.Id() (the listing table
+// carries no environment column of its own) rather than assuming env.Self().
+// Only listing.TenantId()s discovered THIS tick populate the lister, and the
+// region/version passed to tenant.Create are placeholders — eachOwned's
+// environment filter keys off Id() alone, and the compensating writes below
+// never read region/version from the context tenant (they already resolve
+// the target tenant from the row via lm.TenantId()). A row whose tenant
+// belongs to an environment this deployment does not own is simply never
+// visited, so no separate skip check is needed inside the loop.
 func Sweep(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, opts ...listing.Option) (int, error) {
 	now := time.Now()
 	sweepCtx := database.WithoutTenantFilter(ctx)
@@ -125,52 +145,80 @@ func Sweep(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, opts ...listi
 	// derived from each listing row.
 	p := listing.NewProcessor(l, sweepCtx, db, opts...)
 
-	swept := 0
-	for _, lm := range expired {
-		// Settle-at-expiry decision (design §5.6): an expired auction WITH a high
-		// bidder is SETTLED to the winner (seller points credit + custody move,
-		// NO winner re-debit — the winner's prepaid was already escrowed at bid
-		// time); an expired listing with NO bids returns to the SELLER holding via
-		// the Expire transition (origin=expired). SettleAuction encapsulates both
-		// arms; the ticker only supplies the resolved winner/seller accounts.
-		if lm.HighBidderId() != 0 {
-			winnerAccount := winnerAccountFor(sdb, lm.Id(), lm.HighBidderId())
-			res, serr := p.SettleAuction(listing.SettleRequest{
-				ListingId:       lm.Id(),
-				WorldId:         world.Id(lm.WorldId()),
-				WinnerId:        lm.HighBidderId(),
-				WinnerAccountId: winnerAccount,
-				SellerAccountId: lm.SellerAccountId(),
-			})
-			if serr != nil {
-				l.WithError(serr).Warnf("MTS expiration sweep: failed to settle auction [%s] to winner [%d] (tenant [%s]); will retry next tick.", lm.Id(), lm.HighBidderId(), lm.TenantId())
+	// listTenants returns the distinct tenants THIS tick's discovery query
+	// found, reconstructed from the row's TenantId() alone. Region/version
+	// are unknown (the listings table doesn't store them) and are not
+	// needed downstream — see the ownership note above.
+	listTenants := func(_ context.Context) ([]tenant.Model, error) {
+		seen := make(map[uuid.UUID]bool, len(expired))
+		ts := make([]tenant.Model, 0, len(expired))
+		for _, lm := range expired {
+			if seen[lm.TenantId()] {
 				continue
 			}
-			if res.HadWinner {
-				swept++
-				l.Debugf("MTS expiration sweep: settled auction [%s] -> winner [%d] holding (tenant [%s]).", lm.Id(), lm.HighBidderId(), lm.TenantId())
-			} else if res.Expired {
-				// The high bidder had no held bid (e.g. a stale/released row); the
-				// auction returned to the seller holding instead.
-				swept++
-				l.Debugf("MTS expiration sweep: auction [%s] had a high bidder but no held bid; returned to seller [%d] holding.", lm.Id(), lm.SellerId())
+			tm, terr := tenant.Create(lm.TenantId(), "", 0, 0)
+			if terr != nil {
+				l.WithError(terr).Warnf("MTS expiration sweep: failed to reconstruct tenant [%s]; its listings will be skipped this tick.", lm.TenantId())
+				continue
 			}
-			continue
+			seen[lm.TenantId()] = true
+			ts = append(ts, tm)
 		}
-
-		res, eerr := p.Expire(lm.Id().String())
-		if eerr != nil {
-			l.WithError(eerr).Warnf("MTS expiration sweep: failed to expire listing [%s] (tenant [%s], seller [%d]); will retry next tick.", lm.Id(), lm.TenantId(), lm.SellerId())
-			continue
-		}
-		if res.Won {
-			swept++
-			l.Debugf("MTS expiration sweep: expired listing [%s] -> seller [%d] holding (tenant [%s]).", lm.Id(), res.SellerId, lm.TenantId())
-		}
-		// res.Won==false means a concurrent buy already settled the row between the
-		// discovery query and the transition; that is correct (the buyer won) and
-		// is not counted as an expiration.
+		return ts, nil
 	}
+
+	swept := 0
+	service.ForEachOwnedEnvironment(l, ctx, serviceName, listTenants, func(envCtx context.Context) {
+		tm := tenant.MustFromContext(envCtx)
+		for _, lm := range expired {
+			if lm.TenantId() != tm.Id() {
+				continue
+			}
+			// Settle-at-expiry decision (design §5.6): an expired auction WITH a high
+			// bidder is SETTLED to the winner (seller points credit + custody move,
+			// NO winner re-debit — the winner's prepaid was already escrowed at bid
+			// time); an expired listing with NO bids returns to the SELLER holding via
+			// the Expire transition (origin=expired). SettleAuction encapsulates both
+			// arms; the ticker only supplies the resolved winner/seller accounts.
+			if lm.HighBidderId() != 0 {
+				winnerAccount := winnerAccountFor(sdb, lm.Id(), lm.HighBidderId())
+				res, serr := p.SettleAuction(listing.SettleRequest{
+					ListingId:       lm.Id(),
+					WorldId:         world.Id(lm.WorldId()),
+					WinnerId:        lm.HighBidderId(),
+					WinnerAccountId: winnerAccount,
+					SellerAccountId: lm.SellerAccountId(),
+				})
+				if serr != nil {
+					l.WithError(serr).Warnf("MTS expiration sweep: failed to settle auction [%s] to winner [%d] (tenant [%s]); will retry next tick.", lm.Id(), lm.HighBidderId(), lm.TenantId())
+					continue
+				}
+				if res.HadWinner {
+					swept++
+					l.Debugf("MTS expiration sweep: settled auction [%s] -> winner [%d] holding (tenant [%s]).", lm.Id(), lm.HighBidderId(), lm.TenantId())
+				} else if res.Expired {
+					// The high bidder had no held bid (e.g. a stale/released row); the
+					// auction returned to the seller holding instead.
+					swept++
+					l.Debugf("MTS expiration sweep: auction [%s] had a high bidder but no held bid; returned to seller [%d] holding.", lm.Id(), lm.SellerId())
+				}
+				continue
+			}
+
+			res, eerr := p.Expire(lm.Id().String())
+			if eerr != nil {
+				l.WithError(eerr).Warnf("MTS expiration sweep: failed to expire listing [%s] (tenant [%s], seller [%d]); will retry next tick.", lm.Id(), lm.TenantId(), lm.SellerId())
+				continue
+			}
+			if res.Won {
+				swept++
+				l.Debugf("MTS expiration sweep: expired listing [%s] -> seller [%d] holding (tenant [%s]).", lm.Id(), res.SellerId, lm.TenantId())
+			}
+			// res.Won==false means a concurrent buy already settled the row between the
+			// discovery query and the transition; that is correct (the buyer won) and
+			// is not counted as an expiration.
+		}
+	})
 
 	deferred := int(total) - len(expired)
 	if deferred > 0 {

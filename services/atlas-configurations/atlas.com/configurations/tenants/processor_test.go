@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
 	"testing"
 	"time"
 
@@ -16,6 +17,9 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
@@ -27,6 +31,7 @@ type testEntity struct {
 	MajorVersion uint16          `gorm:"not null"`
 	MinorVersion uint16          `gorm:"not null"`
 	Data         json.RawMessage `gorm:"type:text;not null"`
+	Environment  string          `gorm:"not null;default:''"`
 }
 
 func (testEntity) TableName() string {
@@ -35,10 +40,11 @@ func (testEntity) TableName() string {
 
 // testHistoryEntity is a SQLite-compatible version of HistoryEntity for testing
 type testHistoryEntity struct {
-	Id        uuid.UUID       `gorm:"type:text;primaryKey"`
-	TenantId  uuid.UUID       `gorm:"type:text"`
-	Data      json.RawMessage `gorm:"type:text;not null"`
-	CreatedAt time.Time       `gorm:"not null"`
+	Id          uuid.UUID       `gorm:"type:text;primaryKey"`
+	TenantId    uuid.UUID       `gorm:"type:text"`
+	Data        json.RawMessage `gorm:"type:text;not null"`
+	CreatedAt   time.Time       `gorm:"not null"`
+	Environment string          `gorm:"not null;default:''"`
 }
 
 func (testHistoryEntity) TableName() string {
@@ -53,10 +59,22 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		t.Fatalf("failed to connect database: %v", err)
 	}
 
+	// :memory: is per-connection; the default pool can open more than one
+	// connection and silently query an empty database (see
+	// environmentcol/migration_test.go for the same fix).
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("failed to get underlying sql.DB: %v", err)
+	}
+	sqlDB.SetMaxOpenConns(1)
+
 	// Use SQLite-compatible schema
 	err = db.AutoMigrate(&testEntity{}, &testHistoryEntity{})
 	if err != nil {
 		t.Fatalf("failed to migrate: %v", err)
+	}
+	if err := outboxlib.Migration(db); err != nil {
+		t.Fatalf("failed to migrate outbox: %v", err)
 	}
 
 	return db
@@ -577,5 +595,219 @@ func TestUpdateById_ReturnsValidationErrorForInvalidPreset(t *testing.T) {
 	}
 	if apiErrs[0].Meta == nil {
 		t.Error("expected non-nil meta")
+	}
+}
+
+// TestProcessor_Create_IgnoresClientSuppliedEnvironment pins task-232 R21-1:
+// Environment is server-owned. A client that supplies "environment" in a
+// create body must not move the row's Entity.Environment column — the
+// column stays at the GORM default (”) until a future task wires actual
+// scoping onto the write path.
+func TestProcessor_Create_IgnoresClientSuppliedEnvironment(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	p := NewProcessor(l, ctx, db)
+
+	input := createTestRestModel("GMS", 83, 1)
+	input.Environment = "evil"
+
+	id, err := p.Create(input)
+	if err != nil {
+		t.Fatalf("failed to create tenant: %v", err)
+	}
+
+	var stored testEntity
+	if err := db.Where("id = ?", id).First(&stored).Error; err != nil {
+		t.Fatalf("failed to load stored entity: %v", err)
+	}
+	if stored.Environment != "" {
+		t.Errorf("expected Entity.Environment to stay at the default '', got %q", stored.Environment)
+	}
+}
+
+// TestProcessor_UpdateById_IgnoresClientSuppliedEnvironment pins task-232
+// R21-1: an update body's "environment" must never move an existing row
+// between environments. The row is seeded directly at the Entity level with
+// owner "pr-100", the caller is "pr-100" too (task-13 strict scoping now
+// rejects a mismatched caller before R21-1's sanitization is even reached),
+// then UpdateById is called with a different environment in the payload;
+// the column must be untouched.
+func TestProcessor_UpdateById_IgnoresClientSuppliedEnvironment(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := env.WithContext(context.Background(), env.Id("pr-100"))
+	p := NewProcessor(l, ctx, db)
+
+	id := uuid.New()
+	seed := testEntity{
+		Id:           id,
+		Region:       "GMS",
+		MajorVersion: 83,
+		MinorVersion: 1,
+		Data:         json.RawMessage(`{}`),
+		Environment:  "pr-100",
+	}
+	if err := db.Create(&seed).Error; err != nil {
+		t.Fatalf("failed to seed entity: %v", err)
+	}
+
+	updated := createTestRestModel("SEA", 84, 2)
+	updated.Environment = "evil"
+	if err := p.UpdateById(id, updated); err != nil {
+		t.Fatalf("failed to update tenant: %v", err)
+	}
+
+	var stored testEntity
+	if err := db.Where("id = ?", id).First(&stored).Error; err != nil {
+		t.Fatalf("failed to load stored entity: %v", err)
+	}
+	if stored.Environment != "pr-100" {
+		t.Errorf("expected Entity.Environment to stay 'pr-100', got %q", stored.Environment)
+	}
+}
+
+// TestMake_SetsEnvironmentFromEntityColumn pins the read side of R21-1:
+// Make() must source RestModel.Environment from the Entity column, not from
+// whatever the JSON blob happens to contain.
+func TestMake_SetsEnvironmentFromEntityColumn(t *testing.T) {
+	entity := Entity{
+		Id:           uuid.New(),
+		Region:       "GMS",
+		MajorVersion: 83,
+		MinorVersion: 1,
+		Data:         json.RawMessage(`{"environment":"evil"}`),
+		Environment:  "pr-100",
+	}
+
+	result, err := Make(entity)
+	if err != nil {
+		t.Fatalf("Make failed: %v", err)
+	}
+	if result.Environment != "pr-100" {
+		t.Errorf("expected Environment 'pr-100' from the Entity column, got %q", result.Environment)
+	}
+}
+
+// outboxTenantEnvelope decodes the wire shape outbox.NewTenantEnvelope
+// produces — the same shape libs/atlas-service's envSubscriber.handleTenant
+// decodes off EVENT_TOPIC_CONFIGURATION_TENANT_STATUS. Config is read only
+// far enough to inspect "environment", matching what the projection reads.
+type outboxTenantEnvelope struct {
+	SchemaVersion int    `json:"schema_version"`
+	Id            string `json:"id"`
+	Config        struct {
+		Environment string `json:"environment"`
+	} `json:"config"`
+	EmittedAt string `json:"emitted_at"`
+}
+
+// latestOutboxTenantEnvelope loads the most recently enqueued outbox row
+// for the given topic and decodes it as a tenant envelope.
+func latestOutboxTenantEnvelope(t *testing.T, db *gorm.DB, topic string) outboxTenantEnvelope {
+	t.Helper()
+	var row outboxlib.Entity
+	if err := db.Where("topic = ?", topic).Order("id DESC").First(&row).Error; err != nil {
+		t.Fatalf("failed to load outbox row for topic %q: %v", topic, err)
+	}
+	var env outboxTenantEnvelope
+	if err := json.Unmarshal(row.MessageValue, &env); err != nil {
+		t.Fatalf("failed to decode outbox message value: %v", err)
+	}
+	return env
+}
+
+// TestProcessor_Create_OutboxMessageNeverCarriesClientSuppliedEnvironment
+// pins task-232 R21-1's Critical fix: a client-supplied "environment" in a
+// create body must not surface in the message published to
+// EVENT_TOPIC_CONFIGURATION_TENANT_STATUS. Unlike
+// TestProcessor_Create_IgnoresClientSuppliedEnvironment (which only checks
+// the DB row), this decodes the actual enqueued outbox payload — the input
+// libs/atlas-service's tenant->environment projection (and therefore
+// Reconcile/FR-7.7) consumes.
+func TestProcessor_Create_OutboxMessageNeverCarriesClientSuppliedEnvironment(t *testing.T) {
+	t.Setenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS", "tenant-status")
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	p := NewProcessor(l, ctx, db)
+
+	input := createTestRestModel("GMS", 83, 1)
+	input.Environment = "pr-999"
+
+	id, err := p.Create(input)
+	if err != nil {
+		t.Fatalf("failed to create tenant: %v", err)
+	}
+
+	env := latestOutboxTenantEnvelope(t, db, "tenant-status")
+	if env.Id != id.String() {
+		t.Fatalf("expected outbox envelope id %q, got %q", id.String(), env.Id)
+	}
+	if env.Config.Environment != "" {
+		t.Errorf("expected outbox message environment to stay the server-owned default '', got %q (client-supplied value leaked onto the wire)", env.Config.Environment)
+	}
+}
+
+// TestProcessor_UpdateById_OutboxMessageNeverCarriesClientSuppliedEnvironment
+// is the update-path equivalent: the row is seeded with a real environment
+// directly at the Entity level, then updated with a different
+// client-supplied environment; the outbox message must carry the seeded
+// (persisted) value, never the client's.
+func TestProcessor_UpdateById_OutboxMessageNeverCarriesClientSuppliedEnvironment(t *testing.T) {
+	t.Setenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS", "tenant-status")
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := env.WithContext(context.Background(), env.Id("pr-100"))
+	p := NewProcessor(l, ctx, db)
+
+	id := uuid.New()
+	seed := testEntity{
+		Id:           id,
+		Region:       "GMS",
+		MajorVersion: 83,
+		MinorVersion: 1,
+		Data:         json.RawMessage(`{}`),
+		Environment:  "pr-100",
+	}
+	if err := db.Create(&seed).Error; err != nil {
+		t.Fatalf("failed to seed entity: %v", err)
+	}
+
+	updated := createTestRestModel("SEA", 84, 2)
+	updated.Environment = "pr-999"
+	if err := p.UpdateById(id, updated); err != nil {
+		t.Fatalf("failed to update tenant: %v", err)
+	}
+
+	env := latestOutboxTenantEnvelope(t, db, "tenant-status")
+	if env.Config.Environment != "pr-100" {
+		t.Errorf("expected outbox message environment to stay the persisted 'pr-100', got %q (client-supplied value leaked onto the wire)", env.Config.Environment)
+	}
+}
+
+// TestEnqueueTenantStatus_SkippedWhenTopicUnset guards the sanitize-then-
+// enqueue tests above: with EVENT_TOPIC_CONFIGURATION_TENANT_STATUS unset
+// (the default in every other test in this file), no outbox row is written
+// at all, matching pre-existing behaviour.
+func TestEnqueueTenantStatus_SkippedWhenTopicUnset(t *testing.T) {
+	if topic := os.Getenv("EVENT_TOPIC_CONFIGURATION_TENANT_STATUS"); topic != "" {
+		t.Fatalf("test environment leaked EVENT_TOPIC_CONFIGURATION_TENANT_STATUS=%q", topic)
+	}
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	p := NewProcessor(l, ctx, db)
+
+	if _, err := p.Create(createTestRestModel("GMS", 83, 1)); err != nil {
+		t.Fatalf("failed to create tenant: %v", err)
+	}
+
+	var count int64
+	if err := db.Model(&outboxlib.Entity{}).Count(&count).Error; err != nil {
+		t.Fatalf("failed to count outbox rows: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("expected no outbox rows enqueued with the topic unset, got %d", count)
 	}
 }

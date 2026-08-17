@@ -25,7 +25,7 @@ func Init(l logrus.FieldLogger) func(ctx context.Context) func(serviceId uuid.UU
 	return func(ctx context.Context) func(serviceId uuid.UUID) {
 		return func(serviceId uuid.UUID) {
 			once.Do(func() {
-				c, err := requestByService(serviceId)(l, ctx)
+				c, err := requestByService(ctx, serviceId)(l, ctx)
 				if err != nil {
 					log.Fatalf("Could not retrieve configuration.")
 				}

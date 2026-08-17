@@ -32,7 +32,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) CountInMap(_ uuid.UUID, field field.Model) (int, error) {
-	data, err := requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(inMapUrl(field), 250, Extract, model.Filters[RestModel]())()
+	url, err := inMapUrl(p.ctx, field)
+	if err != nil {
+		return 0, err
+	}
+	data, err := requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(url, 250, Extract, model.Filters[RestModel]())()
 	if err != nil {
 		return 0, err
 	}
@@ -40,7 +44,7 @@ func (p *ProcessorImpl) CountInMap(_ uuid.UUID, field field.Model) (int, error) 
 }
 
 func (p *ProcessorImpl) CreateMonster(_ uuid.UUID, field field.Model, monsterId uint32, x int16, y int16, fh int16, team int8) {
-	_, err := requestCreate(field, monsterId, x, y, fh, team)(p.l, p.ctx)
+	_, err := requestCreate(p.ctx, field, monsterId, x, y, fh, team)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Errorf("Creating monster for field [%s].", field.Id())
 	}
@@ -58,5 +62,9 @@ func (p *ProcessorImpl) CreateMonster(_ uuid.UUID, field field.Model, monsterId 
 // to bound a caller on a tight tick budget); callers on the default REST
 // timeout can omit them.
 func (p *ProcessorImpl) GetInMapRect(f field.Model, x1, y1, x2, y2 int16, limit uint32, configurators ...requests.Configurator) ([]RestModel, error) {
-	return requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(inMapRectUrl(f, x1, y1, x2, y2, limit), 250, Extract, model.Filters[RestModel](), configurators...)()
+	url, err := inMapRectUrl(p.ctx, f, x1, y1, x2, y2, limit)
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(url, 250, Extract, model.Filters[RestModel](), configurators...)()
 }

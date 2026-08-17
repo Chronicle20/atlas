@@ -16,12 +16,21 @@
 //	outboxguard        services/ only
 //	goroutineguard     services/ + libs/
 //	buffdurationguard  services/ + libs/
+//	scopeguard         services/ + libs/
 //
 // Widening rediskeyguard or outboxguard to libs/ as a side effect of merging
 // the jobs would be a behavior change smuggled in under a performance change,
 // so the two sets stay distinct and get two binaries. Diagnostics stay
 // attributable because every analyzer already prefixes its message with its own
 // name ("rediskeyguard: ...", "outboxguard: ..." and so on).
+//
+// scopeguard joined services/ + libs/ in fix round 2 (task-232): its own
+// tools/scope-guard.sh entry point has always swept both roots (Rule 2, the
+// call-site check, is fleet-wide by design — libs/atlas-database itself has
+// a live WithoutTenantFilter call site the rule must see), and enrolling it
+// here is what makes CI's go-analyzer-guards job actually run it — before
+// this it had no CI entry point at all, only tools/verify.sh's own
+// change-gated call to tools/scope-guard.sh.
 package atlasguards
 
 import (
@@ -31,6 +40,7 @@ import (
 	"github.com/Chronicle20/atlas/tools/goroutineguard"
 	"github.com/Chronicle20/atlas/tools/outboxguard"
 	"github.com/Chronicle20/atlas/tools/rediskeyguard"
+	"github.com/Chronicle20/atlas/tools/scopeguard"
 )
 
 // Services is the analyzer set that applies to modules under services/.
@@ -40,6 +50,7 @@ func Services() []*analysis.Analyzer {
 		outboxguard.Analyzer,
 		goroutineguard.Analyzer,
 		buffdurationguard.Analyzer,
+		scopeguard.Analyzer,
 	}
 }
 
@@ -48,5 +59,6 @@ func Libraries() []*analysis.Analyzer {
 	return []*analysis.Analyzer{
 		goroutineguard.Analyzer,
 		buffdurationguard.Analyzer,
+		scopeguard.Analyzer,
 	}
 }

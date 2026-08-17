@@ -72,7 +72,7 @@ func (p *ProcessorImpl) HitReactorByName(f field.Model, characterId uint32, reac
 // getReactorsByName fetches reactors by name from atlas-reactors
 func (p *ProcessorImpl) getReactorsByName(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, name string) ([]ReactorRestModel, error) {
 	return requests.SliceProvider[ReactorRestModel, ReactorRestModel](p.l, p.ctx)(
-		requestReactorsByName(worldId, channelId, mapId, instance, name),
+		requestReactorsByName(p.ctx, worldId, channelId, mapId, instance, name),
 		ExtractReactor,
 		model.Filters[ReactorRestModel](),
 	)()
@@ -100,7 +100,8 @@ func (p *ProcessorImpl) produceHitCommand(f field.Model, reactorId uint32, chara
 func produceToCommandTopic(l logrus.FieldLogger, ctx context.Context) func(provider model.Provider[[]kafka.Message]) error {
 	sd := producer.SpanHeaderDecorator(ctx)
 	td := producer.TenantHeaderDecorator(ctx)
-	return producer.Produce(l)(producer.ManagerWriterProvider(l)(EnvCommandTopic))(sd, td)
+	ed := producer.EnvHeaderDecorator(ctx)
+	return producer.Produce(l)(producer.ManagerWriterProvider(l)(EnvCommandTopic))(sd, td, ed)
 }
 
 // Command represents a command sent to atlas-reactors
@@ -149,13 +150,17 @@ func ExtractReactor(r ReactorRestModel) (ReactorRestModel, error) {
 	return r, nil
 }
 
-func getReactorsBaseRequest() string {
-	return requests.RootUrl("REACTORS")
+func getReactorsBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "REACTORS")
 }
 
-func requestReactorsByName(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, name string) requests.Request[[]ReactorRestModel] {
+func requestReactorsByName(ctx context.Context, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, name string) requests.Request[[]ReactorRestModel] {
+	root, err := getReactorsBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]ReactorRestModel](err)
+	}
 	return requests.GetRequest[[]ReactorRestModel](fmt.Sprintf(
-		getReactorsBaseRequest()+"worlds/%d/channels/%d/maps/%d/instances/%s/reactors?name=%s",
+		root+"worlds/%d/channels/%d/maps/%d/instances/%s/reactors?name=%s",
 		worldId, channelId, mapId, instance.String(), name,
 	))
 }

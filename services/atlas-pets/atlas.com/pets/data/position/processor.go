@@ -29,5 +29,5 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetBelow(mapId _map.Id, x int16, y int16) model.Provider[Model] {
-	return requests.Provider[FootholdRestModel, Model](p.l, p.ctx)(getInMap(mapId, x, y), Extract)
+	return requests.Provider[FootholdRestModel, Model](p.l, p.ctx)(getInMap(p.ctx, mapId, x, y), Extract)
 }

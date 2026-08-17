@@ -11,6 +11,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -39,7 +40,7 @@ const serviceName = "atlas-rps"
 var consumerGroupId = consumergroup.Resolve("RPS Service")
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)
@@ -54,7 +55,9 @@ func main() {
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(game.NewSweepTask(l, time.Millisecond*50))
+		tasks.Register(l, rt.Context())(game.NewSweepTask(l, time.Millisecond*50, func(ctx context.Context) context.Context {
+			return env.WithContext(ctx, env.Self())
+		}))
 	})
 
 	server.New(l).

@@ -138,14 +138,14 @@ func (p *ProcessorImpl) cancelRouteEffects(mb *message.Buffer, route RouteModel,
 // rest.RegisterHandler installed it into, exactly as every other read in
 // this processor relies on.
 func (p *ProcessorImpl) GetInstancesByRoute(routeId uuid.UUID) []TransportInstance {
-	return getInstanceRegistry().GetInstancesByRoute(p.t.Id(), routeId)
+	return getInstanceRegistry().GetInstancesByRoute(p.ctx, routeId)
 }
 
 func (p *ProcessorImpl) StartTransport(mb *message.Buffer) func(characterId uint32, routeId uuid.UUID, f field.Model) error {
 	return func(characterId uint32, routeId uuid.UUID, f field.Model) error {
 		// Double-transport prevention
 		cr := getCharacterRegistry()
-		if cr.IsInTransport(characterId) {
+		if cr.IsInTransport(p.ctx, characterId) {
 			p.l.Warnf("Character [%d] is already in an instance transport, rejecting.", characterId)
 			return errors.New("character already in transport")
 		}
@@ -159,7 +159,7 @@ func (p *ProcessorImpl) StartTransport(mb *message.Buffer) func(characterId uint
 		// Find or create instance
 		ir := getInstanceRegistry()
 		now := time.Now()
-		inst := ir.FindOrCreateInstance(p.t.Id(), route, now)
+		inst := ir.FindOrCreateInstance(p.ctx, route, now)
 
 		// Add character to instance and character registry
 		entry := CharacterEntry{
@@ -167,8 +167,8 @@ func (p *ProcessorImpl) StartTransport(mb *message.Buffer) func(characterId uint
 			WorldId:     f.WorldId(),
 			ChannelId:   f.ChannelId(),
 		}
-		_, count := ir.AddCharacter(inst.InstanceId(), entry)
-		cr.Add(characterId, inst.InstanceId())
+		_, count := ir.AddCharacter(p.ctx, inst.InstanceId(), entry)
+		cr.Add(p.ctx, characterId, inst.InstanceId())
 
 		p.l.Infof("Character [%d] boarding instance [%s] for route [%s] (%s). Characters: %d/%d.",
 			characterId, inst.InstanceId(), route.Name(), route.Id(), count, route.Capacity())
@@ -204,7 +204,7 @@ func (p *ProcessorImpl) HandleMapEnter(mb *message.Buffer) func(characterId uint
 	return func(characterId uint32, mapId _map.Id, instanceId uuid.UUID, worldId world.Id, channelId channel.Id) error {
 		isTransit := getRouteRegistry().IsTransitMap(p.ctx, mapId)
 		cr := getCharacterRegistry()
-		charInstanceId, inTransport := cr.GetInstanceForCharacter(characterId)
+		charInstanceId, inTransport := cr.GetInstanceForCharacter(p.ctx, characterId)
 
 		if !isTransit && !inTransport {
 			return nil
@@ -213,9 +213,9 @@ func (p *ProcessorImpl) HandleMapEnter(mb *message.Buffer) func(characterId uint
 		if !isTransit && inTransport {
 			// Character entered a non-transit map while in transport — cancel
 			ir := getInstanceRegistry()
-			inst, ok := ir.GetInstance(charInstanceId)
+			inst, ok := ir.GetInstance(p.ctx, charInstanceId)
 			if !ok {
-				cr.Remove(characterId)
+				cr.Remove(p.ctx, characterId)
 				return nil
 			}
 
@@ -229,8 +229,8 @@ func (p *ProcessorImpl) HandleMapEnter(mb *message.Buffer) func(characterId uint
 				p.l.Warnf("Route [%s] not found while cancelling instance [%s]; character [%d] may retain transit effects.", inst.RouteId(), charInstanceId, characterId)
 			}
 
-			cr.Remove(characterId)
-			empty := ir.RemoveCharacter(charInstanceId, characterId)
+			cr.Remove(p.ctx, characterId)
+			empty := ir.RemoveCharacter(p.ctx, charInstanceId, characterId)
 
 			// A failed event put is logged, not returned: ReleaseInstance below
 			// must run regardless (PRD §8 failure isolation).
@@ -240,7 +240,7 @@ func (p *ProcessorImpl) HandleMapEnter(mb *message.Buffer) func(characterId uint
 
 			if empty {
 				p.l.Infof("Instance [%s] is now empty, releasing.", charInstanceId)
-				ir.ReleaseInstance(charInstanceId)
+				ir.ReleaseInstance(p.ctx, charInstanceId)
 			}
 			return nil
 		}
@@ -252,7 +252,7 @@ func (p *ProcessorImpl) HandleMapEnter(mb *message.Buffer) func(characterId uint
 		// isTransit && inTransport — character moving between transit maps
 		// Look up route via character registry, not GetRouteByTransitMap (handles shared transit maps)
 		ir := getInstanceRegistry()
-		inst, ok := ir.GetInstance(charInstanceId)
+		inst, ok := ir.GetInstance(p.ctx, charInstanceId)
 		if !ok {
 			return nil
 		}
@@ -288,7 +288,7 @@ func (p *ProcessorImpl) HandleMapEnterAndEmit(characterId uint32, mapId _map.Id,
 func (p *ProcessorImpl) HandleMapExit(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error {
 	return func(characterId uint32, mapId _map.Id, instanceId uuid.UUID, worldId world.Id, channelId channel.Id) error {
 		cr := getCharacterRegistry()
-		if !cr.IsInTransport(characterId) {
+		if !cr.IsInTransport(p.ctx, characterId) {
 			return nil
 		}
 
@@ -308,15 +308,15 @@ func (p *ProcessorImpl) HandleMapExitAndEmit(characterId uint32, mapId _map.Id, 
 func (p *ProcessorImpl) HandleLogout(mb *message.Buffer) func(characterId uint32, worldId world.Id, channelId channel.Id) error {
 	return func(characterId uint32, worldId world.Id, channelId channel.Id) error {
 		cr := getCharacterRegistry()
-		charInstanceId, ok := cr.GetInstanceForCharacter(characterId)
+		charInstanceId, ok := cr.GetInstanceForCharacter(p.ctx, characterId)
 		if !ok {
 			return nil // Character not in an instance transport
 		}
 
 		ir := getInstanceRegistry()
-		inst, ok := ir.GetInstance(charInstanceId)
+		inst, ok := ir.GetInstance(p.ctx, charInstanceId)
 		if !ok {
-			cr.Remove(characterId)
+			cr.Remove(p.ctx, characterId)
 			return nil
 		}
 
@@ -333,8 +333,8 @@ func (p *ProcessorImpl) HandleLogout(mb *message.Buffer) func(characterId uint32
 			p.l.Warnf("Route [%s] not found while cancelling instance [%s] on logout; character [%d] may retain transit effects.", inst.RouteId(), charInstanceId, characterId)
 		}
 
-		cr.Remove(characterId)
-		empty := ir.RemoveCharacter(charInstanceId, characterId)
+		cr.Remove(p.ctx, characterId)
+		empty := ir.RemoveCharacter(p.ctx, charInstanceId, characterId)
 
 		if err := mb.Put(it.EnvEventTopic, cancelledEventProvider(worldId, characterId, inst.RouteId(), charInstanceId, it.CancelReasonLogout)); err != nil {
 			p.l.WithError(err).Errorf("Unable to buffer CANCELLED event for character [%d] on logout; continuing to instance release.", characterId)
@@ -342,7 +342,7 @@ func (p *ProcessorImpl) HandleLogout(mb *message.Buffer) func(characterId uint32
 
 		if empty {
 			p.l.Infof("Instance [%s] is now empty after logout, releasing.", charInstanceId)
-			ir.ReleaseInstance(charInstanceId)
+			ir.ReleaseInstance(p.ctx, charInstanceId)
 		}
 		return nil
 	}
@@ -374,12 +374,12 @@ func (p *ProcessorImpl) TickBoardingExpiration(mb *message.Buffer) error {
 	ir := getInstanceRegistry()
 	now := time.Now()
 
-	for _, inst := range ir.GetExpiredBoarding(now) {
+	for _, inst := range ir.GetExpiredBoarding(p.ctx, now) {
 		if inst.TenantId() != p.t.Id() {
 			continue
 		}
 		p.l.Infof("Boarding window expired for instance [%s] route [%s], transitioning to InTransit.", inst.InstanceId(), inst.RouteId())
-		ir.TransitionToInTransit(inst.InstanceId())
+		ir.TransitionToInTransit(p.ctx, inst.InstanceId())
 	}
 	return nil
 }
@@ -394,7 +394,7 @@ func (p *ProcessorImpl) TickArrival(mb *message.Buffer) error {
 	ir := getInstanceRegistry()
 	now := time.Now()
 
-	for _, inst := range ir.GetExpiredTransit(now) {
+	for _, inst := range ir.GetExpiredTransit(p.ctx, now) {
 		if inst.TenantId() != p.t.Id() {
 			continue
 		}
@@ -402,12 +402,12 @@ func (p *ProcessorImpl) TickArrival(mb *message.Buffer) error {
 		route, ok := getRouteRegistry().GetRoute(p.ctx, inst.RouteId())
 		if !ok {
 			p.l.Warnf("Route [%s] not found for arriving instance [%s], releasing.", inst.RouteId(), inst.InstanceId())
-			ir.ReleaseInstance(inst.InstanceId())
+			ir.ReleaseInstance(p.ctx, inst.InstanceId())
 			continue
 		}
 
 		p.completeInstance(mb, inst, route)
-		ir.ReleaseInstance(inst.InstanceId())
+		ir.ReleaseInstance(p.ctx, inst.InstanceId())
 	}
 	return nil
 }
@@ -451,7 +451,7 @@ func (p *ProcessorImpl) completeInstance(mb *message.Buffer, inst TransportInsta
 			_ = mb.Put(it.EnvEventTopic, completedEventProvider(entry.WorldId, entry.CharacterId, route.Id(), inst.InstanceId()))
 		}
 
-		cr.Remove(entry.CharacterId)
+		cr.Remove(p.ctx, entry.CharacterId)
 	}
 }
 
@@ -468,13 +468,13 @@ func (p *ProcessorImpl) TickStuckTimeout(mb *message.Buffer) error {
 	routes := getRouteRegistry().GetRoutes(p.ctx)
 	for _, route := range routes {
 		maxLifetime := route.MaxLifetime()
-		for _, inst := range ir.GetStuck(now, maxLifetime) {
+		for _, inst := range ir.GetStuck(p.ctx, now, maxLifetime) {
 			if inst.RouteId() != route.Id() || inst.TenantId() != p.t.Id() {
 				continue
 			}
 			p.l.Warnf("Instance [%s] for route [%s] exceeded max lifetime, force-cancelling.", inst.InstanceId(), route.Name())
 			p.forceCancelInstance(mb, inst, route)
-			ir.ReleaseInstance(inst.InstanceId())
+			ir.ReleaseInstance(p.ctx, inst.InstanceId())
 		}
 	}
 	return nil
@@ -490,7 +490,7 @@ func (p *ProcessorImpl) forceCancelInstance(mb *message.Buffer, inst TransportIn
 		p.cancelRouteEffects(mb, route, entry.WorldId, entry.ChannelId, entry.CharacterId)
 		_ = mb.Put(character2EnvCommandTopic, warpToStartMapProvider(entry.WorldId, entry.ChannelId, entry.CharacterId, route.StartMapId()))
 		_ = mb.Put(it.EnvEventTopic, cancelledEventProvider(entry.WorldId, entry.CharacterId, route.Id(), inst.InstanceId(), it.CancelReasonStuck))
-		cr.Remove(entry.CharacterId)
+		cr.Remove(p.ctx, entry.CharacterId)
 	}
 }
 
@@ -504,14 +504,14 @@ func (p *ProcessorImpl) GracefulShutdown(mb *message.Buffer) error {
 	ir := getInstanceRegistry()
 	cr := getCharacterRegistry()
 
-	for _, inst := range ir.GetAllActive() {
+	for _, inst := range ir.GetAllActive(p.ctx) {
 		if inst.TenantId() != p.t.Id() {
 			continue
 		}
 
 		route, ok := getRouteRegistry().GetRoute(p.ctx, inst.RouteId())
 		if !ok {
-			ir.ReleaseInstance(inst.InstanceId())
+			ir.ReleaseInstance(p.ctx, inst.InstanceId())
 			continue
 		}
 
@@ -522,9 +522,9 @@ func (p *ProcessorImpl) GracefulShutdown(mb *message.Buffer) error {
 		for _, entry := range characters {
 			p.cancelRouteEffects(mb, route, entry.WorldId, entry.ChannelId, entry.CharacterId)
 			_ = mb.Put(character2EnvCommandTopic, warpToStartMapProvider(entry.WorldId, entry.ChannelId, entry.CharacterId, route.StartMapId()))
-			cr.Remove(entry.CharacterId)
+			cr.Remove(p.ctx, entry.CharacterId)
 		}
-		ir.ReleaseInstance(inst.InstanceId())
+		ir.ReleaseInstance(p.ctx, inst.InstanceId())
 	}
 	return nil
 }

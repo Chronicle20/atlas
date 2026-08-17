@@ -1,6 +1,7 @@
 package skill
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -11,22 +12,22 @@ const (
 	skillsResource = "data/skills/%d"
 )
 
-var baseURLProvider = func() string {
-	return requests.RootUrl("DATA")
+var baseURLProvider = func(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "DATA")
 }
 
-func getBaseRequest() string {
-	return baseURLProvider()
-}
-
-func requestById(skillId skill.Id) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+skillsResource, uint32(skillId)))
+func requestById(ctx context.Context, skillId skill.Id) requests.Request[RestModel] {
+	root, err := baseURLProvider(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+skillsResource, uint32(skillId)))
 }
 
 // SetBaseURLForTest swaps the base URL for httptest-backed tests. Only call
-// from a test; production uses the env-driven RootUrl("DATA") default.
+// from a test; production uses the env-driven RootUrlFor("DATA") default.
 func SetBaseURLForTest(url string) func() {
 	prev := baseURLProvider
-	baseURLProvider = func() string { return url + "/api/" }
+	baseURLProvider = func(_ context.Context) (string, error) { return url + "/api/", nil }
 	return func() { baseURLProvider = prev }
 }

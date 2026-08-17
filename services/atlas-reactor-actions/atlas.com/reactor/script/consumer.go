@@ -42,7 +42,7 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 		return func(groupId string) {
 			rf(
 				consumer2.NewConfig(l)("reactor_actions_command")(EnvCommandTopic)(groupId),
-				consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),
+				consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser),
 			)
 		}
 	}

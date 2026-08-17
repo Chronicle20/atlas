@@ -27,7 +27,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 // GetCompartments retrieves all cash shop compartments from atlas-cashshop
 func (p *ProcessorImpl) GetCompartments(accountId uint32) ([]CompartmentRestModel, error) {
-	return requestCompartments(accountId)(p.l, p.ctx)
+	return requestCompartments(p.ctx, accountId)(p.l, p.ctx)
 }
 
 // GetAllItems retrieves all items across all compartments for an account

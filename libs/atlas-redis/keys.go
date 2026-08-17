@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -50,6 +51,24 @@ func tenantEntityKey(namespace string, t tenant.Model, entityKey string) string 
 
 func tenantScanPattern(namespace string, t tenant.Model) string {
 	return namespacedKey(namespace, TenantKey(t), "*")
+}
+
+// environmentEntityKey scopes a control-plane key by environment. The empty
+// environment is the legacy value and produces exactly the key
+// namespacedKey produced before environments existed, so main's existing
+// state stays addressable (NFR-7).
+func environmentEntityKey(namespace string, e env.Id, entityKey string) string {
+	if e == "" {
+		return namespacedKey(namespace, entityKey)
+	}
+	return namespacedKey(namespace, string(e), entityKey)
+}
+
+func environmentScanPattern(namespace string, e env.Id) string {
+	if e == "" {
+		return namespacedKey(namespace, "*")
+	}
+	return namespacedKey(namespace, string(e), "*")
 }
 
 func CompositeKey(parts ...string) string {

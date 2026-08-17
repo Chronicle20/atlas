@@ -89,13 +89,13 @@ func decodeSweepGameEnded(t *testing.T, msg kafka.Message) rps.Event[rps.GameEnd
 }
 
 func TestNewSweepTask(t *testing.T) {
-	task := game.NewSweepTask(testLogger(), 100*time.Millisecond)
+	task := game.NewSweepTask(testLogger(), 100*time.Millisecond, func(ctx context.Context) context.Context { return ctx })
 	assert.NotNil(t, task)
 }
 
 func TestSweepTask_SleepTime(t *testing.T) {
 	interval := 250 * time.Millisecond
-	task := game.NewSweepTask(testLogger(), interval)
+	task := game.NewSweepTask(testLogger(), interval, func(ctx context.Context) context.Context { return ctx })
 	assert.Equal(t, interval, task.SleepTime())
 }
 
@@ -120,7 +120,7 @@ func TestSweepTask_Run_NoExpiredSessions(t *testing.T) {
 		MustBuild()
 	game.GetRegistry().Put(ctx, m)
 
-	task := game.NewSweepTask(testLogger(), 50*time.Millisecond)
+	task := game.NewSweepTask(testLogger(), 50*time.Millisecond, func(ctx context.Context) context.Context { return ctx })
 	task.Run()
 
 	_, found := game.GetRegistry().Get(ctx, characterId)
@@ -162,7 +162,7 @@ func TestSweepTask_Run_DisposesExpiredSessionWithNoPayout(t *testing.T) {
 	now = now.Add(10 * time.Minute)
 	game.GetRegistry().SetNowFunc(func() time.Time { return now })
 
-	task := game.NewSweepTask(testLogger(), 50*time.Millisecond)
+	task := game.NewSweepTask(testLogger(), 50*time.Millisecond, func(ctx context.Context) context.Context { return ctx })
 	task.Run()
 
 	_, found := game.GetRegistry().Get(ctx, characterId)
@@ -206,7 +206,7 @@ func TestSweepTask_Run_MultiTenantSweepsAcrossAllTracked(t *testing.T) {
 	now = now.Add(10 * time.Minute)
 	game.GetRegistry().SetNowFunc(func() time.Time { return now })
 
-	task := game.NewSweepTask(testLogger(), 50*time.Millisecond)
+	task := game.NewSweepTask(testLogger(), 50*time.Millisecond, func(ctx context.Context) context.Context { return ctx })
 	task.Run()
 
 	_, found1 := game.GetRegistry().Get(ctx1, 3001)

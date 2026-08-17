@@ -12,6 +12,11 @@ tools/verify.sh --no-docker  # everything except the bake
 tools/verify.sh --quick --base <rev>   # iteration gate: only the increment
 ```
 
+Only the **flagless** invocation counts as verified. `--quick`, `--no-docker`,
+and `--all` also exit 0 — the first two print a caveat and skip the bake and
+`-race` — so "verify.sh exited 0" is not a pass unless it ran with no flags.
+Never claim verified from a subset.
+
 The script mirrors the jobs in `.github/workflows/pr-validation.yml`. **CI is the
 authority**: if the two ever disagree, the script is the bug. Path-gated CI jobs
 are path-gated here too, against the merge base with `origin/main`.
@@ -21,6 +26,51 @@ skipped. The list of checks lives in the script, not here — do not maintain a
 second copy of it in `CLAUDE.md` or anywhere else.
 
 ---
+
+## Asking the gate what it selected — `--facts`
+
+Before investigating why a run was broad, slow, or skipped something, ask it:
+
+```sh
+tools/verify.sh --facts --quick --base <sha>
+```
+
+```text
+base=8c3736a
+changed_paths=41
+changed_services=atlas-cashshop,atlas-channel
+changed_libs=none
+go_changed=true
+ui_changed=false
+fanout_reason=none
+modules_selected=4
+modules=services/atlas-cashshop/…,services/atlas-channel/…
+guard_suites=none
+bake_targets=none
+gates_selected=3
+gate=go build/vet (4 modules)
+gate=go analyzer guards
+gate=lint & format guard (4 module(s))
+gates_skipped=11
+```
+
+Pass the same flags you would really run — the answer reflects them, so
+`--facts --quick --base X` reports what `--quick --base X` would do. Every
+informational line goes to stderr; stdout is `key=value` only.
+
+**It cannot drift from a real run.** `--facts` does not re-implement the
+selection logic: it runs the script's real body and neuters `step()`, so each
+gate records its label instead of executing. `tools/verify_test.sh` asserts both
+the behavioural agreement (selected and skipped label sets match a real run over
+the same change set) and the structural invariant that a gate label can only
+originate inside `step()`.
+
+This exists because the alternative was measured: ~30 turns at 170–290k context
+spent reverse-engineering the change-detection, module selection, and guard
+gating from this script's source — ≈6.9M tokens, about a quarter of one
+controller session — to learn facts the script had already computed. If you find
+yourself running `git diff` against `tools/verify.sh`, or grepping it to see how
+it invokes guards, run `--facts` instead.
 
 ## The iteration gate
 
@@ -35,6 +85,8 @@ For a gate you run per task, scope it to the increment:
 ```sh
 tools/verify.sh --quick --base <last-commit-you-already-gated>
 ```
+
+Launch the gate in the background and keep working; never idle waiting on it.
 
 Measured on the task-227 branch: `--quick` resolved **86 changed Go modules**;
 `--quick --base HEAD~1` resolved **2**. The script now prints a warning when
@@ -171,11 +223,36 @@ leading doc comment, which names the mirror direction, may differ.
 | `trade-contract-mirror-guard.sh` | atlas-trades `kafka/message/trade/kafka.go` | atlas-channel |
 | `mist-contract-mirror-guard.sh` | atlas-maps `kafka/message/mist/kafka.go` | atlas-channel — a drifted mirror yields a mist with no bounds, no lifetime, no recovery magnitude and no party scope (task-218) |
 | `npc-shop-contract-mirror-guard.sh` | atlas-npc-shops `kafka/message/shops/kafka.go` | atlas-channel, atlas-saga-orchestrator |
+| `npc-conversation-contract-mirror-guard.sh` | atlas-npc-conversations `kafka/message/npc/kafka.go` | atlas-saga-orchestrator — a drifted mirror yields a conversation start with no item id, no avatar, or no transactionId, so the awaiting saga step never completes (task-230) |
 
 **Deploy / versions** — `gen-lb-ports.sh --check` and `check-version-coverage.sh`,
 when `deploy/`, `tools/gen-lb-ports.sh`, or a `versions.json` changed. A new
 client version needs LB socket ports; without them the version is unreachable
 with no error anywhere.
+
+**Shell tooling** — `shell-guard.sh --require-shellcheck` plus the test suite of
+each changed script, when any `tools/**/*.sh` changed.
+
+The gate was previously hardcoded to `^tools/task-(resolve|brief)(_test)?\.sh$`,
+so every other script in `tools/` was ungated — including `plan-lint.sh`, which
+*executes* commands extracted from a plan file. A branch adding three `tools/`
+scripts produced a flagless run in which all 14 checks skipped and the gate
+still exited 0. A green gate that ran nothing is the failure mode this closes.
+
+- `shell-guard.sh` parse-checks each script with the interpreter its shebang
+  names, then runs `shellcheck -S error`. Severity `error` is deliberate: it is
+  clean across the tree today, so the guard landed with zero legacy debt and any
+  failure is a real regression. `-S warning` currently reports 19 pre-existing
+  findings; raising the bar means fixing those first.
+- `--require-shellcheck` fails when shellcheck is absent rather than degrading
+  to a syntax-only pass. A guard that silently weakens into one that always
+  passes is the same bug in a different place.
+- Test suites are discovered by convention: a changed `tools/foo.sh` runs
+  `tools/foo_test.sh` when it exists, and a changed `tools/foo_test.sh` runs
+  itself. Adding a suite is enough to gate it — no edit to `verify.sh`.
+
+CI mirror: the `shell-tooling-guard` job, ungated (the whole sweep is ~1s, so
+path filtering would cost more than it saves).
 
 ---
 

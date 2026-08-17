@@ -26,7 +26,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(p.ctx, characterId), Extract)
 }
 
 // GetByCharacterId returns the character's mount progression. A character with no

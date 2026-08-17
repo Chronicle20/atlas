@@ -30,12 +30,16 @@ var _ Processor = (*ProcessorImpl)(nil)
 // ?include=portals query parameter, so a single round-trip populates both map
 // attributes and portal sub-resources.
 func (p *ProcessorImpl) GetById(mapId _map.Id) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestMap(mapId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestMap(p.ctx, mapId), Extract)()
 }
 
 // GetPortals fetches only the portal list for a map via the /portals
 // sub-resource endpoint. atlas-data's GET /data/maps/{id}/portals is now
 // paginated (task-117), so this drains every page rather than fetching one.
 func (p *ProcessorImpl) GetPortals(mapId _map.Id) ([]Portal, error) {
-	return requests.DrainProvider[PortalRestModel, Portal](p.l, p.ctx)(portalsUrl(mapId), 250, ExtractPortal, model.Filters[Portal]())()
+	url, err := portalsUrl(p.ctx, mapId)
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[PortalRestModel, Portal](p.l, p.ctx)(url, 250, ExtractPortal, model.Filters[Portal]())()
 }

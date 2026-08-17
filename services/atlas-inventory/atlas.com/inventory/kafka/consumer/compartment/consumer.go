@@ -26,7 +26,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("compartment_command")(compartment2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("compartment_command")(compartment2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
 		}
 	}
 }
@@ -100,6 +100,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleExtendExpirationCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleResetPetExpirationCommand(db)))); err != nil {
 				return err
 			}
 			return nil
@@ -451,6 +454,28 @@ func handleExtendExpirationCommand(db *gorm.DB) message.Handler[compartment2.Com
 		)
 		if err != nil {
 			l.WithError(err).Errorf("Failed to extend expiration of asset in slot [%d] for character [%d].", c.Body.Slot, c.CharacterId)
+		}
+	}
+}
+
+func handleResetPetExpirationCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ResetPetExpirationCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ResetPetExpirationCommandBody]) {
+		if c.Type != compartment2.CommandResetPetExpiration {
+			return
+		}
+
+		l.Debugf("Received RESET_PET_EXPIRATION command for character [%d], pet [%d], source [%d].",
+			c.CharacterId, c.Body.PetId, c.Body.SourceTemplateId)
+
+		err := compartment.NewProcessor(l, ctx, db).ResetPetExpirationAndEmit(
+			c.TransactionId,
+			c.CharacterId,
+			c.Body.PetId,
+			c.Body.Expiration,
+			c.Body.SourceTemplateId,
+		)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to reset expiration of pet [%d] asset for character [%d].", c.Body.PetId, c.CharacterId)
 		}
 	}
 }

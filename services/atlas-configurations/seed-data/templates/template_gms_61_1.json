@@ -763,6 +763,15 @@
         ]
       },
       {
+        "opCode": "0x66",
+        "validator": "LoggedInValidator",
+        "handler": "NpcItemUseHandle",
+        "fname": "CWvsContext::SendSelectNpcItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x68",
         "validator": "LoggedInValidator",
         "handler": "SueCharacter",

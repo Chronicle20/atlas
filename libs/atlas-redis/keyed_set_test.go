@@ -239,3 +239,41 @@ func TestTenantKeyedSet_PerTenantPerKey(t *testing.T) {
 		t.Fatalf("Members after Clear = %v want empty", members)
 	}
 }
+
+func TestTenantKeyedSet_ClearAllAcrossTenants(t *testing.T) {
+	prev := keyPrefix
+	t.Cleanup(func() { keyPrefix = prev })
+	keyPrefix = computeKeyPrefix("")
+
+	client, _ := setupTestRedis(t)
+	ctx := context.Background()
+	s := NewTenantKeyedSet[string](client, "test:crosstenant-set", func(k string) string { return k })
+
+	// Two tenants differing in region AND version.
+	t1 := makeTenant("00000000-0000-0000-0000-000000000001", "GMS", 83, 1)
+	t2 := makeTenant("00000000-0000-0000-0000-000000000002", "JMS", 62, 1)
+
+	if err := s.Add(ctx, t1, "field-a", "1"); err != nil {
+		t.Fatalf("Add t1: %v", err)
+	}
+	if err := s.Add(ctx, t2, "field-b", "2"); err != nil {
+		t.Fatalf("Add t2: %v", err)
+	}
+
+	deleted, err := s.ClearAllAcrossTenants(ctx)
+	if err != nil {
+		t.Fatalf("ClearAllAcrossTenants: %v", err)
+	}
+	if deleted != 2 {
+		t.Fatalf("deleted = %d, want 2", deleted)
+	}
+
+	membersA, _ := s.Members(ctx, t1, "field-a")
+	if len(membersA) != 0 {
+		t.Fatalf("Members t1 after ClearAllAcrossTenants = %v, want empty", membersA)
+	}
+	membersB, _ := s.Members(ctx, t2, "field-b")
+	if len(membersB) != 0 {
+		t.Fatalf("Members t2 after ClearAllAcrossTenants = %v, want empty", membersB)
+	}
+}

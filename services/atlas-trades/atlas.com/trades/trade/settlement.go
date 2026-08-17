@@ -68,6 +68,47 @@ func GetAttestationTimers() *attestationTimers {
 	return attestationTimerRegistry
 }
 
+// --- environment origination -------------------------------------------------
+//
+// detached() and the boot reconciliation passes (Reconcile, ReconcileEscrow)
+// all rebuild a per-row context from context.Background() plus a restored
+// tenant, with no request in flight to inherit ENVIRONMENT from — an
+// attestation deadline fires long after its arming command's context is gone,
+// and a boot sweep runs before any request has arrived at all. Without this
+// pod's own environment identity applied, every REST call and Kafka emit those
+// paths originate would silently resolve to the baseline URL/topic regardless
+// of which environment the pod actually belongs to (FR-1.8, FR-3.1/FR-3.2).
+//
+// trade/ is outside env-domain-guard's permitted atlas-env import list, so the
+// real env.WithContext/env.Self() implementation is threaded in from main.go
+// as a plain function value instead of the package importing atlas-env itself
+// (matches socket.WithSelfEnvironment, 99c0e598d, and
+// saga.SagaTimers().SetEnvContext, bfe36ebfe). The default is the identity
+// function, which is what every existing test exercises unless it calls
+// SetEnvContext.
+var (
+	selfEnvContextMu sync.RWMutex
+	selfEnvContext   = func(ctx context.Context) context.Context { return ctx }
+)
+
+// SetEnvContext installs the pod's environment-origination function. main.go
+// calls this once at boot, before the attestation timer registry or the
+// reconciliation passes can run.
+func SetEnvContext(f func(context.Context) context.Context) {
+	selfEnvContextMu.Lock()
+	defer selfEnvContextMu.Unlock()
+	selfEnvContext = f
+}
+
+// applyEnvContext applies the currently-installed environment-origination
+// function to ctx.
+func applyEnvContext(ctx context.Context) context.Context {
+	selfEnvContextMu.RLock()
+	f := selfEnvContext
+	selfEnvContextMu.RUnlock()
+	return f(ctx)
+}
+
 // Arm schedules fire for one room, replacing any deadline already armed for it.
 //
 // ctx is deliberately NOT the command's context. A Kafka handler's context is
@@ -154,7 +195,7 @@ func (r *attestationTimers) forget(t tenant.Model, roomId uuid.UUID, stop chan s
 // is why Confirm arms from OUTSIDE emit, where p.db is still the root handle.
 func (p *ProcessorImpl) detached() *ProcessorImpl {
 	c := *p
-	c.ctx = tenant.WithContext(context.Background(), p.t)
+	c.ctx = applyEnvContext(tenant.WithContext(context.Background(), p.t))
 	return &c
 }
 
@@ -1252,7 +1293,7 @@ func Reconcile(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) error {
 			failures++
 			continue
 		}
-		if rerr := NewProcessor(l, tenant.WithContext(ctx, t), db).ReconcileSettlements(); rerr != nil {
+		if rerr := NewProcessor(l, applyEnvContext(tenant.WithContext(ctx, t)), db).ReconcileSettlements(); rerr != nil {
 			l.WithError(rerr).Errorf("Unable to reconcile settlements for tenant [%s].", t.Id().String())
 			failures++
 		}
@@ -1365,7 +1406,7 @@ func ReconcileEscrow(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, own
 	var failures int
 	for _, r := range rooms {
 		l.Warnf("Trade room [%s] left [%d] item(s) and [%d] meso row(s) in escrow with no room to claim them. Returning them to their owners.", r.roomId.String(), len(r.items), len(r.mesos))
-		p := NewProcessor(l, tenant.WithContext(ctx, r.tenant), db).(*ProcessorImpl)
+		p := NewProcessor(l, applyEnvContext(tenant.WithContext(ctx, r.tenant)), db).(*ProcessorImpl)
 		if uerr := p.emit(func(txp *ProcessorImpl, mb *message.Buffer) error {
 			return txp.unwindStranded(mb, r)
 		}); uerr != nil {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-npc-conversations/conversation"
+	"atlas-npc-conversations/conversation/item"
 	npcConversation "atlas-npc-conversations/conversation/npc"
 	"atlas-npc-conversations/conversation/quest"
 	"atlas-npc-conversations/conversation/recipe"
@@ -49,7 +50,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)
@@ -58,6 +59,7 @@ func main() {
 	db := database.Connect(l, database.SetMigrations(
 		npcConversation.MigrateTable,
 		quest.MigrateTable,
+		item.MigrateTable,
 		recipe.MigrateTable,
 		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
 	))
@@ -100,6 +102,8 @@ func main() {
 		AddRouteInitializer(npcConversation.InitSeedResource(GetServer())(db)).
 		AddRouteInitializer(quest.InitResource(GetServer())(db)).
 		AddRouteInitializer(quest.InitSeedResource(GetServer())(db)).
+		AddRouteInitializer(item.InitResource(GetServer())(db)).
+		AddRouteInitializer(item.InitSeedResource(GetServer())(db)).
 		AddRouteInitializer(recipe.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).

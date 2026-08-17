@@ -26,7 +26,7 @@ func identity(r RestModel) (RestModel, error) {
 }
 
 func (p *Processor) GetName(itemId uint32) (string, error) {
-	rm, err := requests.Provider[RestModel, RestModel](p.l, p.ctx)(requestById(itemId), identity)()
+	rm, err := requests.Provider[RestModel, RestModel](p.l, p.ctx)(requestById(p.ctx, itemId), identity)()
 	if err != nil {
 		return "", err
 	}

@@ -710,3 +710,18 @@ Reference these for additional patterns:
 | atlas-npc-conversations | `map/` | GET characters in map |
 | atlas-npc-conversations | `cosmetic/` | GET appearance data |
 | atlas-channel | `character/` | GET/POST character data |
+
+---
+
+## Audit verification — EXT-01..04
+
+Rule IDs are defined in [audit-checklist.md](audit-checklist.md). These checks
+trigger when a changed package calls another atlas service via
+`requests.RootUrl(...)`, `requests.GetRequest[T]`, or `requests.PostRequest[T]`.
+
+| ID | How to verify | Pass criteria |
+|----|---------------|---------------|
+| EXT-01 | Grep the target REST model for `SetToOneReferenceID` and `SetToManyReferenceIDs`. | Both methods present, even as no-ops. Without them api2go errors on any response carrying a `relationships` block — see `libs/atlas-rest/CLAUDE.md`. task-037 surfaced this twice as misleading "not found" errors. |
+| EXT-02 | Look for `httptest.NewServer` (or equivalent) under the client package or its sibling `_test.go`. | A test serves a representative fixture response matching the upstream's actual JSON:API shape — including any `relationships` block — and asserts the client's domain method returns a populated struct. `FakeClient` mocks alone do NOT satisfy this; they bypass unmarshal. |
+| EXT-03 | Grep the client for `requests.ErrNotFound` / `errors.Is(err, requests.ErrNotFound)`. | Only genuine 404s map to a domain-level "not found"; transport, decode, and 5xx failures bubble up with their original error. Surfacing every error as "not found" hides deploy bugs. |
+| EXT-04 | Read the client's request file. | URL composed via `requests.RootUrl(<DOMAIN>) + "<path>"`. Direct service DNS only when ingress would loop back, and documented with a comment when so. |

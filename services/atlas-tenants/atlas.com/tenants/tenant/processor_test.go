@@ -12,6 +12,7 @@ import (
 	logtest "github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/gorm"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -59,7 +60,7 @@ func (p *testProcessor) create(name, region string, majorVersion, minorVersion u
 }
 
 func (p *testProcessor) getById(id uuid.UUID) (tenant.Model, error) {
-	provider := tenant.GetByIdProvider(id)(p.db)
+	provider := tenant.GetByIdProvider(context.Background(), id)(p.db)
 	e, err := provider()
 	if err != nil {
 		return tenant.Model{}, err
@@ -79,28 +80,26 @@ func (p *testProcessor) getAll() ([]tenant.Model, error) {
 	return paged.Items, nil
 }
 
+// update exercises the real tenant.ProcessorImpl.Update via the base
+// (buffer-taking) method, using a throwaway message.Buffer instead of the
+// Kafka-emitting UpdateAndEmit wrapper. mb.Put only appends to an in-memory
+// map (see kafka/message/message.go), so no Kafka producer is needed - this
+// is the actual production update path, not a stand-in.
 func (p *testProcessor) update(id uuid.UUID, name, region string, majorVersion, minorVersion uint16) (tenant.Model, error) {
-	provider := tenant.GetByIdProvider(id)(p.db)
-	e, err := provider()
-	if err != nil {
-		return tenant.Model{}, err
-	}
+	return p.updateAs(context.Background(), id, name, region, majorVersion, minorVersion)
+}
 
-	e.Name = name
-	e.Region = region
-	e.MajorVersion = majorVersion
-	e.MinorVersion = minorVersion
-
-	err = tenant.UpdateTenant(p.db, e)
-	if err != nil {
-		return tenant.Model{}, err
-	}
-
-	return tenant.Make(e)
+// updateAs is update but with an explicit caller context, so a test can
+// exercise scope.AuthorizeWrite (task-232 FR-7.1) against a tenant owned by
+// a non-legacy environment.
+func (p *testProcessor) updateAs(ctx context.Context, id uuid.UUID, name, region string, majorVersion, minorVersion uint16) (tenant.Model, error) {
+	mb := message.NewBuffer()
+	processor := tenant.NewProcessor(p.l, ctx, p.db)
+	return processor.Update(mb)(id, name, region, majorVersion, minorVersion)
 }
 
 func (p *testProcessor) delete(id uuid.UUID) error {
-	return tenant.DeleteTenant(p.db, id)
+	return tenant.DeleteTenant(context.Background(), p.db, id)
 }
 
 func TestCreate_Success(t *testing.T) {
@@ -233,6 +232,48 @@ func TestUpdate_Success(t *testing.T) {
 	}
 }
 
+func TestUpdate_PreservesEnvironment(t *testing.T) {
+	processor, cleanup := setupTestProcessor(t)
+	defer cleanup()
+
+	m, err := tenant.NewModelBuilder().
+		SetName("Original Name").
+		SetRegion("GMS").
+		SetMajorVersion(83).
+		SetMinorVersion(1).
+		SetEnvironment("pr-123").
+		Build()
+	if err != nil {
+		t.Fatalf("Build() unexpected error: %v", err)
+	}
+	e := tenant.FromModel(m)
+	if err := tenant.CreateTenant(processor.db, e); err != nil {
+		t.Fatalf("CreateTenant: %v", err)
+	}
+
+	// Update does not mention Environment; it must be carried forward
+	// unchanged rather than zeroed by the rebuild in ProcessorImpl.Update.
+	// The caller must be authorized for pr-123 (task-232 FR-7.1) - a legacy
+	// caller updating a pr-123-owned tenant is a cross-environment write.
+	updated, err := processor.updateAs(env.WithContext(context.Background(), env.Id("pr-123")), m.Id(), "Updated Name", "EMS", 90, 2)
+	if err != nil {
+		t.Fatalf("update() unexpected error: %v", err)
+	}
+	if updated.Environment() != "pr-123" {
+		t.Errorf("updated.Environment() = %q, want %q", updated.Environment(), "pr-123")
+	}
+
+	// Confirm the persisted row also carries the environment forward, not
+	// just the in-memory return value.
+	found, err := processor.getById(m.Id())
+	if err != nil {
+		t.Fatalf("getById() unexpected error: %v", err)
+	}
+	if found.Environment() != "pr-123" {
+		t.Errorf("found.Environment() = %q, want %q", found.Environment(), "pr-123")
+	}
+}
+
 func TestUpdate_NotFound(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
@@ -361,6 +402,35 @@ func TestFromModel(t *testing.T) {
 	}
 	if entity.Region != model.Region() {
 		t.Errorf("entity.Region = %s, want %s", entity.Region, model.Region())
+	}
+}
+
+func TestTenantEnvironmentRoundTrips(t *testing.T) {
+	processor, cleanup := setupTestProcessor(t)
+	defer cleanup()
+
+	m, err := tenant.NewModelBuilder().
+		SetName("Test Tenant").
+		SetRegion("GMS").
+		SetMajorVersion(83).
+		SetMinorVersion(1).
+		SetEnvironment("pr-123").
+		Build()
+	if err != nil {
+		t.Fatalf("Build() unexpected error: %v", err)
+	}
+
+	e := tenant.FromModel(m)
+	if err := tenant.CreateTenant(processor.db, e); err != nil {
+		t.Fatalf("CreateTenant: %v", err)
+	}
+
+	got, err := processor.getById(m.Id())
+	if err != nil {
+		t.Fatalf("getById: %v", err)
+	}
+	if got.Environment() != "pr-123" {
+		t.Fatalf("Environment() = %q, want \"pr-123\"", got.Environment())
 	}
 }
 

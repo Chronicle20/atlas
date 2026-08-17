@@ -1,6 +1,7 @@
 package character
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -11,11 +12,15 @@ const (
 	ById     = Resource + "/%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("CHARACTERS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "CHARACTERS")
 }
 
 // RequestById returns a request to fetch a character by ID from atlas-character service
-func RequestById(id uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
+func RequestById(ctx context.Context, id uint32) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+ById, id))
 }

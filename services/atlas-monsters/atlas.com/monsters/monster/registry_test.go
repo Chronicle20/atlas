@@ -1482,3 +1482,43 @@ func TestClaimMonster_ExactlyOneWinner(t *testing.T) {
 		t.Error("monster still present after a successful claim")
 	}
 }
+
+// TestMonsterRegistryIsTenantScoped asserts the "monster" namespace's Redis
+// key carries the tenant, not just the stored payload: two tenants' id
+// allocators both hand out the same first uniqueId in a fresh field, so a
+// tenant-dropped key would let t2's GetMonster resolve t1's monster.
+func TestMonsterRegistryIsTenantScoped(t *testing.T) {
+	r := GetMonsterRegistry()
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	t1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	t2, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	m1 := r.CreateMonster(ctx, t1, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+
+	if _, err := r.GetMonster(t2, m1.UniqueId()); err == nil {
+		t.Fatalf("tenant 2 resolved tenant 1's monster [%d] — key is not tenant-scoped", m1.UniqueId())
+	}
+}
+
+// TestMonsterMapIndexIsTenantScoped asserts the "monster-map" SET key carries
+// the tenant. Both tenants place a monster in the identical (world, channel,
+// map, instance); t2's index must stay empty until t2 creates its own.
+func TestMonsterMapIndexIsTenantScoped(t *testing.T) {
+	r := GetMonsterRegistry()
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	t1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	t2, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	r.CreateMonster(ctx, t1, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+
+	got := r.GetMonstersInMap(t2, f)
+	if len(got) != 0 {
+		t.Fatalf("tenant 2 saw %d of tenant 1's monsters in the same field, want 0", len(got))
+	}
+}

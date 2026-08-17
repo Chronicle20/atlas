@@ -7,32 +7,21 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/google/uuid"
+
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, error) {
 	return func(t tenant.Model, ownerId uint32, m Model) (Model, error) {
-		s := m.Slot()
-		e := &Entity{
-			TenantId:   t.Id(),
-			OwnerId:    ownerId,
-			CashId:     m.CashId(),
-			TemplateId: m.TemplateId(),
-			Name:       m.Name(),
-			Level:      m.Level(),
-			Closeness:  m.Closeness(),
-			Fullness:   m.Fullness(),
-			Expiration: m.Expiration(),
-			Slot:       &s,
-			Flag:       m.Flag(),
-			PurchaseBy: m.PurchaseBy(),
-		}
+		e := m.ToEntity(t.Id())
+		e.OwnerId = ownerId
 
-		err := db.Create(e).Error
+		err := db.Create(&e).Error
 		if err != nil {
 			return Model{}, err
 		}
-		return Make(*e)
+		return Make(e)
 	}
 }
 
@@ -123,6 +112,27 @@ func updateOnEvolve(db *gorm.DB) func(petId uint32, templateId uint32, expiratio
 		}
 		if result.RowsAffected == 0 {
 			return errors.New("no entity found to evolve")
+		}
+		return nil
+	}
+}
+
+// updateOnRevive writes ONLY the expiration and the revive transaction id.
+// Deliberately not updateOnEvolve: that function also rewrites template_id,
+// and a revive must never touch the pet's template.
+func updateOnRevive(db *gorm.DB) func(petId uint32, expiration time.Time, transactionId uuid.UUID) error {
+	return func(petId uint32, expiration time.Time, transactionId uuid.UUID) error {
+		result := db.Model(&Entity{}).
+			Where("id = ?", petId).
+			Updates(map[string]interface{}{
+				"expiration":            expiration,
+				"revive_transaction_id": transactionId,
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("no entity found to revive")
 		}
 		return nil
 	}

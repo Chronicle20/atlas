@@ -19,7 +19,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer2.Config, decorators ...model.Decorator[consumer2.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer2.Config, decorators ...model.Decorator[consumer2.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer.NewConfig(l)("character_status")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer2.SetHeaderParsers(consumer2.SpanHeaderParser, consumer2.TenantHeaderParser))
+			rf(consumer.NewConfig(l)("character_status")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer2.SetHeaderParsers(consumer2.SpanHeaderParser, consumer2.TenantHeaderParser, consumer2.EnvHeaderParser))
 		}
 	}
 }

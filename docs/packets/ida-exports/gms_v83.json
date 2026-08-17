@@ -15884,6 +15884,46 @@
           "comment": ""
         }
       ]
+    },
+    "CWvsContext::SendWaterOfLife": {
+      "address": "0xa1dce6",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0xa09b26",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::IsAbleToConsume(this, a3, 1)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "CWvsContext::IsAbleToConsume(this, a3, 1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::IsAbleToConsume(this, a3, 1)"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0xa10075",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
     }
   }
 }

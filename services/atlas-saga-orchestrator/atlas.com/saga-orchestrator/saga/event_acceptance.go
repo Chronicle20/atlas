@@ -53,6 +53,8 @@ const (
 	// Pet.
 	EventKindPetClosenessChanged EventKind = "pet.closeness_changed"
 	EventKindPetEvolved          EventKind = "pet.evolved"
+	EventKindPetRevived          EventKind = "pet.revived"
+	EventKindPetReviveFailed     EventKind = "pet.revive_failed"
 	EventKindPetNameChanged      EventKind = "pet.name_changed"
 
 	// Cash shop.
@@ -112,6 +114,11 @@ const (
 	// NPC shop (atlas-npc-shops acks on EVENT_TOPIC_NPC_SHOP_STATUS, task-221).
 	EventKindNpcShopEntered EventKind = "npcshop.entered"
 	EventKindNpcShopError   EventKind = "npcshop.error"
+
+	// NPC conversation (atlas-npc-conversations acks on
+	// EVENT_TOPIC_NPC_CONVERSATION_STATUS, task-230).
+	EventKindNpcConversationStarted    EventKind = "npcconversation.started"
+	EventKindNpcConversationStartError EventKind = "npcconversation.start_error"
 )
 
 // acceptanceTable maps each saga.Action to the set of EventKinds that can
@@ -154,6 +161,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.IncreaseBuddyCapacity:  {EventKindBuddyCapacityChanged},
 	sharedsaga.GainCloseness:          {EventKindPetClosenessChanged},
 	sharedsaga.EvolvePet:              {EventKindPetEvolved},
+	sharedsaga.RevivePet:              {EventKindPetRevived, EventKindPetReviveFailed},
 	sharedsaga.RenamePet:              {EventKindPetNameChanged},
 
 	// Skills.
@@ -177,15 +185,20 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.ShowStorage: {},
 	// Unlike ShowStorage this is NOT self-completing: the item is consumed by a
 	// following step, so the shop must be confirmed open first (task-221 FR-4.3).
-	sharedsaga.OpenNpcShop:          {EventKindNpcShopEntered, EventKindNpcShopError},
-	sharedsaga.DepositToStorage:     {EventKindCompartmentAccepted, EventKindCompartmentError},
-	sharedsaga.UpdateStorageMesos:   {EventKindStorageMesosUpdated, EventKindStorageError},
-	sharedsaga.TransferToStorage:    {}, // composite: expanded into sub-steps before dispatch
-	sharedsaga.WithdrawFromStorage:  {}, // composite
-	sharedsaga.AcceptToStorage:      {EventKindStorageCompartmentAccepted, EventKindStorageCompartmentError},
-	sharedsaga.ReleaseFromCharacter: {EventKindCompartmentReleased, EventKindCompartmentError},
-	sharedsaga.AcceptToCharacter:    {EventKindCompartmentAccepted, EventKindCompartmentError},
-	sharedsaga.ReleaseFromStorage:   {EventKindStorageCompartmentReleased, EventKindStorageCompartmentError},
+	sharedsaga.OpenNpcShop: {EventKindNpcShopEntered, EventKindNpcShopError},
+	// Unlike ShowStorage these are NOT self-completing: the item (if any) is
+	// consumed by a following step, so the dialogue must be confirmed opened
+	// first (task-230).
+	sharedsaga.StartItemConversation: {EventKindNpcConversationStarted, EventKindNpcConversationStartError},
+	sharedsaga.StartNpcConversation:  {EventKindNpcConversationStarted, EventKindNpcConversationStartError},
+	sharedsaga.DepositToStorage:      {EventKindCompartmentAccepted, EventKindCompartmentError},
+	sharedsaga.UpdateStorageMesos:    {EventKindStorageMesosUpdated, EventKindStorageError},
+	sharedsaga.TransferToStorage:     {}, // composite: expanded into sub-steps before dispatch
+	sharedsaga.WithdrawFromStorage:   {}, // composite
+	sharedsaga.AcceptToStorage:       {EventKindStorageCompartmentAccepted, EventKindStorageCompartmentError},
+	sharedsaga.ReleaseFromCharacter:  {EventKindCompartmentReleased, EventKindCompartmentError},
+	sharedsaga.AcceptToCharacter:     {EventKindCompartmentAccepted, EventKindCompartmentError},
+	sharedsaga.ReleaseFromStorage:    {EventKindStorageCompartmentReleased, EventKindStorageCompartmentError},
 
 	// Trade (task-205).
 	sharedsaga.TradeSettlement:  {}, // composite: expanded into release_from_trade×N + accept_to_character×N + award_mesos
@@ -366,6 +379,8 @@ var outcomeTable = map[EventKind]EventOutcome{
 	// Pet.
 	EventKindPetClosenessChanged: OutcomeSuccess,
 	EventKindPetEvolved:          OutcomeSuccess,
+	EventKindPetRevived:          OutcomeSuccess,
+	EventKindPetReviveFailed:     OutcomeFailure,
 	EventKindPetNameChanged:      OutcomeSuccess,
 
 	// Cash shop.
@@ -427,6 +442,10 @@ var outcomeTable = map[EventKind]EventOutcome{
 	// NPC shop.
 	EventKindNpcShopEntered: OutcomeSuccess,
 	EventKindNpcShopError:   OutcomeFailure,
+
+	// NPC conversation.
+	EventKindNpcConversationStarted:    OutcomeSuccess,
+	EventKindNpcConversationStartError: OutcomeFailure,
 }
 
 // EventOutcomeOf returns the outcome classification for kind.

@@ -47,6 +47,7 @@ func main() {
 	caughtUp := projection.NewCaughtUp()
 
 	rt := service.Bootstrap(serviceName,
+		service.WithEnvironmentRegistry(serviceName),
 		service.WithConfigProjection(consumerGroupId, func(t service.ProjectionTopics) service.Projection {
 			sub := &projection.Subscriber{State: state, CaughtUp: caughtUp, TenantTopic: t.TenantStatus}
 			return service.ProjectionFuncs{StartFunc: sub.Start, WaitCaughtUpFunc: caughtUp.WaitCaughtUp}

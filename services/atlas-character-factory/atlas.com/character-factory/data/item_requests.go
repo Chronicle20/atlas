@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -33,6 +34,10 @@ func (e *EquipmentRestModel) SetID(id string) error {
 func (e *EquipmentRestModel) SetToOneReferenceID(_, _ string) error            { return nil }
 func (e *EquipmentRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
-func requestEquipmentById(id uint32) requests.Request[EquipmentRestModel] {
-	return requests.GetRequest[EquipmentRestModel](fmt.Sprintf("%s"+equipmentPath, getDataBaseRequest(), id))
+func requestEquipmentById(ctx context.Context, id uint32) requests.Request[EquipmentRestModel] {
+	root, err := getDataBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[EquipmentRestModel](err)
+	}
+	return requests.GetRequest[EquipmentRestModel](fmt.Sprintf("%s"+equipmentPath, root, id))
 }

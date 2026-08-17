@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -25,6 +26,31 @@ func RetrieveSpan(l logrus.FieldLogger, name string, ctx context.Context, next S
 		sl := l.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
 		defer span.End()
 		next(sl, sctx)(w, r)
+	}
+}
+
+type EnvironmentHandler func(logrus.FieldLogger, context.Context) http.HandlerFunc
+
+// ParseEnvironment reads the ENVIRONMENT header onto the context. An absent
+// header is the legacy value and passes through unchanged (FR-1.8). A
+// present header naming an environment the registry does not know, or knows
+// as inactive, is rejected with 400 — never served by the baseline (FR-3.6,
+// D4).
+//
+//goland:noinspection GoUnusedExportedFunction
+func ParseEnvironment(l logrus.FieldLogger, ctx context.Context, next EnvironmentHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id := env.Id(r.Header.Get(env.Key))
+		if id != "" && !env.CurrentRegistry().IsActive(id) {
+			l.WithField(env.Key, string(id)).Error("Request names an unknown or inactive environment.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		el := l
+		if id != "" {
+			el = l.WithField("environment", string(id))
+		}
+		next(el, env.WithContext(ctx, id))(w, r)
 	}
 }
 
@@ -95,6 +121,14 @@ func ParseTenant(l logrus.FieldLogger, ctx context.Context, next TenantHandler) 
 		}
 
 		tctx := tenant.WithContext(ctx, t)
+
+		resolved, err := env.Reconcile(env.CurrentRegistry(), env.MustFromContext(tctx), t.Id().String())
+		if err != nil {
+			l.WithError(err).Error("Environment header disagrees with the tenant's environment.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		tctx = env.WithContext(tctx, resolved)
 		next(tl, tctx)(w, r)
 	}
 }

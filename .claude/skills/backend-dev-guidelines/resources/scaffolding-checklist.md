@@ -97,7 +97,10 @@ location ~ ^/api/<service-path>(/.*)?$ {
 }
 ```
 
-After editing, run `./deploy/scripts/sync-k8s-ingress-routes.sh` to regenerate the inlined K8s ConfigMap in `deploy/k8s/ingress.yaml`.
+After editing, run `tools/gen-routes.sh` to regenerate
+`deploy/k8s/base/routes.conf.template.generated` from the shared source, and
+commit both files. (`deploy/scripts/sync-k8s-ingress-routes.sh` is **dead** — it
+targets a `deploy/k8s/ingress.yaml` that no longer exists. Do not run it.)
 
 ## 5. Tenant Opcode Template (atlas-channel packet writers/handlers only)
 **File:** `services/atlas-configurations/seed-data/templates/template_<region>_<major>_<minor>.json`
@@ -141,3 +144,32 @@ After scaffolding is complete:
 ## Conditional Steps
 - Steps 3 and 4 only apply to services that expose REST endpoints. Kafka-only services skip Bruno and ingress.
 - Step 5 only applies when the change introduces new atlas-channel packet writers or recv handlers. Pure-REST services and Kafka-only services skip the opcode template seed.
+
+---
+
+## Audit verification — SCAFFOLD-01..09
+
+Rule IDs are defined in [audit-checklist.md](audit-checklist.md). These checks
+trigger when the diff:
+
+- adds a `services/atlas-<service>/` directory — detect with
+  `git diff --name-status <base>..HEAD | awk '$1 == "A" && $2 ~ /^services\/atlas-[^/]+\/.+\/main\.go$/'`; **or**
+- registers a new `Writer` / `Handler` constant in
+  `services/atlas-channel/atlas.com/channel/main.go`, or adds a package under
+  `libs/atlas-packet/character/{clientbound,serverbound}/<feature>/`
+  (SCAFFOLD-07 only).
+
+Canonical source for the registration lists is `docs/adding-a-new-service.md`;
+this section is the audit's verification form of it.
+
+| ID | How to verify | Pass criteria |
+|----|---------------|---------------|
+| SCAFFOLD-01 | `jq '.services[] \| select(.name == "atlas-<service>")' .github/config/services.json` | Returns a non-empty object with `type: "go-service"`. CI's change detection reads this file; without an entry the service never builds. |
+| SCAFFOLD-02 | `test -f deploy/k8s/base/atlas-<service>.yaml` and grep the filename in `deploy/k8s/base/kustomization.yaml` `resources:` | Base manifest exists with `Deployment` + `Service`, no `namespace:` (overlays set it), unsuffixed `DB_NAME`, `containerPort: 8080`, db creds from the `db-credentials` secret — and it is listed in the base kustomization. |
+| SCAFFOLD-03 | Grep `"atlas-<service>"` in `docker-bake.hcl`'s `go_services` list and `./services/atlas-<service>/atlas.com/<svc>` in `go.work`. | Both present. Go services are built from the shared repo-root `Dockerfile`, parameterized by `ARG SERVICE` (see [patterns-deploy.md](patterns-deploy.md)); a new Go service needs no Dockerfile of its own, and adding one is a finding. Note one known leftover: `services/atlas-renders/Dockerfile` still exists even though `atlas-renders` is a `go-service` with `docker_context: "."` and is built through the root Dockerfile — the file is dead, not an exception to the rule. `docker-bake.hcl` is hand-synced with services.json; adding to one does not add to the other. |
+| SCAFFOLD-04 | `grep -F "atlas-<service>:" deploy/shared/routes.conf` | At least one `location` block routes to the service, using the bare container name. Skip for Kafka-only services (no `rest/` package, no REST handlers in `main.go`). |
+| SCAFFOLD-05 | Re-run `tools/gen-routes.sh` and `git diff --exit-code deploy/k8s/base/routes.conf.template.generated` | Exit 0 — the generated template is in sync with `deploy/shared/routes.conf` and both are committed. |
+| SCAFFOLD-06 | `grep -F "atlas-<service>:" deploy/compose/docker-compose.core.yml` | Service block exists alongside peers. |
+| SCAFFOLD-07 | For each new `Writer` / `Handler` constant, grep its name in the targeted `services/atlas-configurations/seed-data/templates/template_<region>_<major>_<minor>.json`. | Each new `Writer` appears as a `"writer": "<Name>"` row in `writers[]`; each new recv `Handler` appears as a `"handler": "<Name>"` row in `handlers[]`. The targeted client version(s) must match what the design doc declared. Pure-REST and Kafka-only services skip this check. |
+| SCAFFOLD-08 | `test -d services/atlas-<service>/.bruno && test -f services/atlas-<service>/.bruno/bruno.json` | Directory exists with `bruno.json`, `collection.bru`, and an `environments/` directory. Skip for Kafka-only services. |
+| SCAFFOLD-09 | `tools/service-registration-guard.sh` | Exit 0. This structurally checks the enumerations that fail *silently* when missed: both overlays' `images:` pins, the main `ATLAS_ENV` and db-name-suffix patches, `ATLAS_DB_NAMES`, `tools/db-bootstrap.sh`, base kustomization membership, and atlas-env key parity between base and overlays. Exit 2 means "cannot verify" (fail-closed) — record that as a FAIL, not a PASS. |

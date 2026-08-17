@@ -27,25 +27,32 @@ const SweepTaskName = "rps_sweep_task"
 // session left in the registry for a Processor.Dispose call to find, and no
 // payout saga is ever built or submitted for a sweep).
 type SweepTask struct {
-	l        logrus.FieldLogger
-	interval time.Duration
+	l          logrus.FieldLogger
+	interval   time.Duration
+	envContext func(context.Context) context.Context
 }
 
-// NewSweepTask creates a new SweepTask that runs every interval.
-func NewSweepTask(l logrus.FieldLogger, interval time.Duration) *SweepTask {
+// NewSweepTask creates a new SweepTask that runs every interval. envContext
+// originates this pod's own environment identity (env.Self()) onto each
+// swept session's per-tenant context before the GameEnded event is emitted
+// -- game is outside env-domain-guard's permitted atlas-env import list, so
+// the caller (main.go) threads this in as a plain function value rather
+// than the package importing atlas-env itself.
+func NewSweepTask(l logrus.FieldLogger, interval time.Duration, envContext func(context.Context) context.Context) *SweepTask {
 	l.Infof("Initializing RPS session sweep task to run every %dms", interval.Milliseconds())
-	return &SweepTask{l, interval}
+	return &SweepTask{l, interval, envContext}
 }
 
 // Run pops every expired session across all tracked tenants and disposes
 // each with no payout, re-injecting the swept model's tenant onto the
-// context so the emitted event carries the correct tenant headers.
+// context so the emitted event carries the correct tenant headers, then
+// applying envContext so the event carries this pod's own environment too.
 func (s *SweepTask) Run() {
 	sctx, span := otel.GetTracerProvider().Tracer("atlas-rps").Start(context.Background(), SweepTaskName)
 	defer span.End()
 
 	for _, m := range GetRegistry().PopExpired(sctx) {
-		tctx := tenant.WithContext(sctx, m.Tenant())
+		tctx := s.envContext(tenant.WithContext(sctx, m.Tenant()))
 		if err := producer.ProviderImpl(s.l)(tctx)(rps.EnvEventTopic)(gameEndedEventProvider(m.CharacterId(), m.WorldId(), m.ChannelId(), rps.ReasonDisconnected, nil)); err != nil {
 			s.l.WithError(err).Errorf("Unable to emit GameEnded for swept RPS session for character [%d].", m.CharacterId())
 		}

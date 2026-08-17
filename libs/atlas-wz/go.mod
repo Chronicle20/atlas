@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0-20260522184656-55cd21714da6
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.0
 )
 
 require (

@@ -15,6 +15,7 @@ description: |
   assistant: "Dispatching service-documentation agent."
   </example>
 model: sonnet
+tools: Read, Grep, Glob, Write, Edit, Bash
 ---
 
 You are the Atlas Documentation Agent.

@@ -31,6 +31,7 @@ import {
   useSeedGachapons,
   useSeedNpcConversations,
   useSeedQuestConversations,
+  useSeedItemConversations,
   useSeedNpcShops,
   useSeedPortalScripts,
   useSeedReactorScripts,
@@ -47,6 +48,7 @@ import {
   useGachaponsSeedStatus,
   useNpcConversationsSeedStatus,
   useQuestConversationsSeedStatus,
+  useItemConversationsSeedStatus,
   useNpcShopsSeedStatus,
   usePortalScriptsSeedStatus,
   useReactorScriptsSeedStatus,
@@ -73,6 +75,7 @@ export function SetupPage() {
   const seedGachapons = useSeedGachapons();
   const seedNpcConversations = useSeedNpcConversations();
   const seedQuestConversations = useSeedQuestConversations();
+  const seedItemConversations = useSeedItemConversations();
   const seedNpcShops = useSeedNpcShops();
   const seedPortalScripts = useSeedPortalScripts();
   const seedReactorScripts = useSeedReactorScripts();
@@ -92,6 +95,7 @@ export function SetupPage() {
   const gachaponsSeed = useGachaponsSeedStatus();
   const npcConversationsSeed = useNpcConversationsSeedStatus();
   const questConversationsSeed = useQuestConversationsSeedStatus();
+  const itemConversationsSeed = useItemConversationsSeedStatus();
   const npcShopsSeed = useNpcShopsSeedStatus();
   const portalScriptsSeed = usePortalScriptsSeedStatus();
   const reactorScriptsSeed = useReactorScriptsSeedStatus();
@@ -238,6 +242,17 @@ export function SetupPage() {
       mutation: seedQuestConversations,
       formatBadge: () => {
         const d = questConversationsSeed.data;
+        return !d
+          ? "—"
+          : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`;
+      },
+    },
+    {
+      label: "Item Conversations",
+      icon: <MessageSquare className="h-5 w-5" />,
+      mutation: seedItemConversations,
+      formatBadge: () => {
+        const d = itemConversationsSeed.data;
         return !d
           ? "—"
           : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`;

@@ -66,7 +66,7 @@ func (p *ProcessorImpl) GetById(mapId _map.Id) (Model, error) {
 		return cached.(Model), nil
 	}
 
-	m, err := requests.Provider[RestModel, Model](p.l, p.ctx)(requestMap(mapId), Extract)()
+	m, err := requests.Provider[RestModel, Model](p.l, p.ctx)(requestMap(p.ctx, mapId), Extract)()
 	if err != nil {
 		return Model{}, err
 	}

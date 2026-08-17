@@ -302,3 +302,30 @@ Need to cache data?
      └─ NEVER in processor constructor
      └─ ALWAYS via GetCache() singleton accessor
 ```
+
+---
+
+## Audit verification — DOM-29
+
+Rule defined in [audit-checklist.md](audit-checklist.md). This section is the
+verification procedure. Triggers when a changed package has `cache.go`, or when
+a processor / struct in the diff holds cached state.
+
+**How to verify.**
+
+1. Grep the changed package for cache-shaped state: a `map[...]...` field, a
+   `sync.Map`, or a field whose type name contains `Cache` on a processor or
+   other per-request struct.
+2. For each hit, read the constructor. A cache assembled inside `NewProcessor`
+   (`cache: make(map[...]...)`) is a per-request cache and a FAIL — see
+   [Cache per processor instance](#-wrong-cache-per-processor-instance).
+3. Confirm the singleton itself follows the shape in
+   [Standard Singleton Cache Pattern](#standard-singleton-cache-pattern):
+   package-level instance, `sync.Once` initialization, `sync.RWMutex` guarding
+   reads and writes, and a `GetCache()` accessor.
+
+**Pass criteria.** Every cache is application-scoped and reached through a
+singleton accessor; processors hold only a reference to it. A per-request cache
+field is a FAIL regardless of how many sibling packages do the same. DOM-29
+grades *scope* — a singleton that lives under a different file or accessor name
+still passes DOM-29; its placement is graded under the FILE-* family.

@@ -21,15 +21,16 @@ const DefaultNotificationInterval = 1 * time.Hour
 var notificationTiers = []uint16{2, 5, 10, 15, 30, 60, 90}
 
 type NotificationTask struct {
-	l        logrus.FieldLogger
-	ctx      context.Context
-	db       *gorm.DB
-	interval time.Duration
+	l          logrus.FieldLogger
+	ctx        context.Context
+	db         *gorm.DB
+	interval   time.Duration
+	envContext func(context.Context) context.Context
 }
 
-func NewNotificationTask(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, interval time.Duration) *NotificationTask {
+func NewNotificationTask(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, interval time.Duration, envContext func(context.Context) context.Context) *NotificationTask {
 	l.Infof("Initializing Frederick notification task to run every %dms.", interval.Milliseconds())
-	return &NotificationTask{l: l, ctx: ctx, db: db, interval: interval}
+	return &NotificationTask{l: l, ctx: ctx, db: db, interval: interval, envContext: envContext}
 }
 
 func (t *NotificationTask) Run() {
@@ -56,27 +57,44 @@ func (t *NotificationTask) Run() {
 
 	t.l.Infof("Processing %d Frederick notifications.", len(notifications))
 
-	for _, n := range notifications {
-		ten, err := tenant.Create(n.TenantId, n.TenantRegion, n.TenantMajor, n.TenantMinor)
-		if err != nil {
-			t.l.WithError(err).Errorf("Error creating tenant context for notification [%s].", n.Id)
-			continue
-		}
-		tctx := tenant.WithContext(t.ctx, ten)
+	processDueNotifications(t.l, t.ctx, notifications, notifyAndAdvance(t.l, t.db, noTenantCtx), t.envContext)
+}
 
-		kp := producer.ProviderImpl(t.l)(tctx)
+// notifyAndAdvance emits the tier notification for one due entry, then
+// advances it to the next tier or deletes it if none remain. Injected into
+// processDueNotifications so the pure sweep logic can be tested with a spy
+// in place of the real producer/db side effects.
+func notifyAndAdvance(l logrus.FieldLogger, db *gorm.DB, noTenantCtx context.Context) func(ctx context.Context, n NotificationEntity) {
+	return func(ctx context.Context, n NotificationEntity) {
+		kp := producer.ProviderImpl(l)(ctx)
 		_ = kp(merchant.EnvStatusEventTopic)(notificationProvider(n.CharacterId, n.NextDay))
 
 		next, hasNext := nextTier(n.NextDay)
 		if hasNext {
-			if _, err := advanceNotification(n.Id, next)(t.db.WithContext(noTenantCtx))(); err != nil {
-				t.l.WithError(err).Errorf("Error advancing notification [%s] to tier %d.", n.Id, next)
+			if _, err := advanceNotification(n.Id, next)(db.WithContext(noTenantCtx))(); err != nil {
+				l.WithError(err).Errorf("Error advancing notification [%s] to tier %d.", n.Id, next)
 			}
 		} else {
-			if _, err := deleteNotification(n.Id)(t.db.WithContext(noTenantCtx))(); err != nil {
-				t.l.WithError(err).Errorf("Error deleting final notification [%s].", n.Id)
+			if _, err := deleteNotification(n.Id)(db.WithContext(noTenantCtx))(); err != nil {
+				l.WithError(err).Errorf("Error deleting final notification [%s].", n.Id)
 			}
 		}
+	}
+}
+
+// processDueNotifications originates this pod's own environment identity
+// onto each due notification's per-tenant context before the emit -- an
+// empty ENVIRONMENT header would make decide() fail open per FR-1.8 and
+// every live deployment, not just this pod's, would notify.
+func processDueNotifications(l logrus.FieldLogger, ctx context.Context, notifications []NotificationEntity, notify func(ctx context.Context, n NotificationEntity), envContext func(context.Context) context.Context) {
+	for _, n := range notifications {
+		ten, err := tenant.Create(n.TenantId, n.TenantRegion, n.TenantMajor, n.TenantMinor)
+		if err != nil {
+			l.WithError(err).Errorf("Error creating tenant context for notification [%s].", n.Id)
+			continue
+		}
+		tctx := envContext(tenant.WithContext(ctx, ten))
+		notify(tctx, n)
 	}
 }
 

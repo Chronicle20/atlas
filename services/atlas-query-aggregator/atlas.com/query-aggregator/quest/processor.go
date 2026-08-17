@@ -38,7 +38,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // GetQuestState returns the state of a quest for a character
 func (p *ProcessorImpl) GetQuestState(characterId uint32, questId uint32) model.Provider[State] {
 	return func() (State, error) {
-		questProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, questId), Extract)
+		questProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, characterId, questId), Extract)
 		quest, err := questProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get quest state for character %d, quest %d", characterId, questId)
@@ -51,7 +51,7 @@ func (p *ProcessorImpl) GetQuestState(characterId uint32, questId uint32) model.
 // GetQuestProgress returns the progress of a quest for a specific info number
 func (p *ProcessorImpl) GetQuestProgress(characterId uint32, questId uint32, infoNumber uint32) model.Provider[int] {
 	return func() (int, error) {
-		questProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, questId), Extract)
+		questProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, characterId, questId), Extract)
 		quest, err := questProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get quest progress for character %d, quest %d, infoNumber %d", characterId, questId, infoNumber)
@@ -67,7 +67,7 @@ func (p *ProcessorImpl) GetQuestProgress(characterId uint32, questId uint32, inf
 // GetQuest returns the complete quest model for a character
 func (p *ProcessorImpl) GetQuest(characterId uint32, questId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		questProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, questId), Extract)
+		questProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, characterId, questId), Extract)
 		quest, err := questProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get quest data for character %d, quest %d", characterId, questId)
@@ -84,7 +84,12 @@ func (p *ProcessorImpl) GetQuest(characterId uint32, questId uint32) model.Provi
 // the first.
 func (p *ProcessorImpl) GetQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		questsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterUrl(characterId), 250, Extract, model.Filters[Model]())
+		url, err := byCharacterUrl(p.ctx, characterId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to resolve quests URL for character %d", characterId)
+			return nil, err
+		}
+		questsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 		quests, err := questsProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get quests for character %d", characterId)
@@ -100,7 +105,12 @@ func (p *ProcessorImpl) GetQuestsByCharacter(characterId uint32) model.Provider[
 // just the first.
 func (p *ProcessorImpl) GetStartedQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		questsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(startedByCharacterUrl(characterId), 250, Extract, model.Filters[Model]())
+		url, err := startedByCharacterUrl(p.ctx, characterId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to resolve started quests URL for character %d", characterId)
+			return nil, err
+		}
+		questsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 		quests, err := questsProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get started quests for character %d", characterId)
@@ -116,7 +126,12 @@ func (p *ProcessorImpl) GetStartedQuestsByCharacter(characterId uint32) model.Pr
 // drains every page rather than fetching just the first.
 func (p *ProcessorImpl) GetCompletedQuestsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		questsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(completedByCharacterUrl(characterId), 250, Extract, model.Filters[Model]())
+		url, err := completedByCharacterUrl(p.ctx, characterId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to resolve completed quests URL for character %d", characterId)
+			return nil, err
+		}
+		questsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 		quests, err := questsProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get completed quests for character %d", characterId)

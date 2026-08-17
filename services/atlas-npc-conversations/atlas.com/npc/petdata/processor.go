@@ -30,7 +30,7 @@ var _ Processor = (*processor)(nil)
 
 // GetById retrieves pet evolution data for the given pet template id
 func (p *processor) GetById(petTemplateId uint32) (Model, error) {
-	m, err := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(petTemplateId), Extract)()
+	m, err := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, petTemplateId), Extract)()
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to get pet data for template %d", petTemplateId)
 		return Model{}, err

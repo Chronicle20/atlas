@@ -39,11 +39,15 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ByIdModelProvider(id uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountById(id), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountById(p.ctx, id), Extract)
 }
 
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(getBaseRequest()+AccountsResource, 250, Extract, model.Filters[Model]())
+	root, err := getBaseRequest(p.ctx)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(root+AccountsResource, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetById(id uint32) (Model, error) {

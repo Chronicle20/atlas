@@ -44,15 +44,15 @@ var _ Processor = (*ProcessorImpl)(nil)
 func (p *ProcessorImpl) TradeBlockProvider(inventoryType inventory.Type, templateId item.Id) model.Provider[bool] {
 	switch inventoryType {
 	case inventory.TypeValueEquip:
-		return requests.Provider[EquipmentRestModel, bool](p.l, p.ctx)(requestEquipment(templateId), extractTradeBlock)
+		return requests.Provider[EquipmentRestModel, bool](p.l, p.ctx)(requestEquipment(p.ctx, templateId), extractTradeBlock)
 	case inventory.TypeValueUse:
-		return requests.Provider[ConsumableRestModel, bool](p.l, p.ctx)(requestConsumable(templateId), extractTradeBlock)
+		return requests.Provider[ConsumableRestModel, bool](p.l, p.ctx)(requestConsumable(p.ctx, templateId), extractTradeBlock)
 	case inventory.TypeValueSetup:
-		return requests.Provider[SetupRestModel, bool](p.l, p.ctx)(requestSetup(templateId), extractTradeBlock)
+		return requests.Provider[SetupRestModel, bool](p.l, p.ctx)(requestSetup(p.ctx, templateId), extractTradeBlock)
 	case inventory.TypeValueETC:
-		return requests.Provider[EtcRestModel, bool](p.l, p.ctx)(requestEtc(templateId), extractTradeBlock)
+		return requests.Provider[EtcRestModel, bool](p.l, p.ctx)(requestEtc(p.ctx, templateId), extractTradeBlock)
 	case inventory.TypeValueCash:
-		return requests.Provider[CashRestModel, bool](p.l, p.ctx)(requestCash(templateId), extractTradeBlock)
+		return requests.Provider[CashRestModel, bool](p.l, p.ctx)(requestCash(p.ctx, templateId), extractTradeBlock)
 	default:
 		return model.ErrorProvider[bool](fmt.Errorf("item: no atlas-data resource for inventory type [%d]", inventoryType))
 	}
@@ -92,13 +92,13 @@ func (p *ProcessorImpl) SlotMax(inventoryType inventory.Type, templateId item.Id
 func (p *ProcessorImpl) SlotMaxProvider(inventoryType inventory.Type, templateId item.Id) model.Provider[uint32] {
 	switch inventoryType {
 	case inventory.TypeValueUse:
-		return requests.Provider[ConsumableRestModel, uint32](p.l, p.ctx)(requestConsumable(templateId), extractSlotMax)
+		return requests.Provider[ConsumableRestModel, uint32](p.l, p.ctx)(requestConsumable(p.ctx, templateId), extractSlotMax)
 	case inventory.TypeValueSetup:
-		return requests.Provider[SetupRestModel, uint32](p.l, p.ctx)(requestSetup(templateId), extractSlotMax)
+		return requests.Provider[SetupRestModel, uint32](p.l, p.ctx)(requestSetup(p.ctx, templateId), extractSlotMax)
 	case inventory.TypeValueETC:
-		return requests.Provider[EtcRestModel, uint32](p.l, p.ctx)(requestEtc(templateId), extractSlotMax)
+		return requests.Provider[EtcRestModel, uint32](p.l, p.ctx)(requestEtc(p.ctx, templateId), extractSlotMax)
 	case inventory.TypeValueCash:
-		return requests.Provider[CashRestModel, uint32](p.l, p.ctx)(requestCash(templateId), extractSlotMax)
+		return requests.Provider[CashRestModel, uint32](p.l, p.ctx)(requestCash(p.ctx, templateId), extractSlotMax)
 	default:
 		return model.ErrorProvider[uint32](fmt.Errorf("item: no atlas-data slotMax resource for inventory type [%d]", inventoryType))
 	}

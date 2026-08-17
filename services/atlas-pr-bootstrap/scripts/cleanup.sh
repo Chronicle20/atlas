@@ -37,6 +37,19 @@ ATLAS_ENV="$(compute_atlas_env "$PR_NUMBER")"
 export ATLAS_ENV
 ATLAS_STEP=init log info "derived ATLAS_ENV=${ATLAS_ENV} for PR ${PR_NUMBER}"
 
+# Derive ATLAS_ENVIRONMENT from PR_NUMBER the same way, and for the same
+# reason: "pr-<N>" is the wire identity every other consumer of this
+# convention already uses (libs/atlas-env.SelfVar; the sparse overlay's
+# atlas-env ConfigMap literal ATLAS_ENVIRONMENT=pr-PLACEHOLDER_PR_NUMBER;
+# environment-record.yaml's `name: "pr-PLACEHOLDER_PR_NUMBER"`), so
+# deriving it here needs no new manifest wiring — postdelete-cleanup.yaml
+# already carries PR_NUMBER (task-48 fix round 1). Only backfilled when
+# unset so an explicit override (tests, or a future caller with a reason
+# to differ) still wins.
+ATLAS_ENVIRONMENT="${ATLAS_ENVIRONMENT:-pr-${PR_NUMBER}}"
+export ATLAS_ENVIRONMENT
+ATLAS_STEP=init log info "derived ATLAS_ENVIRONMENT=${ATLAS_ENVIRONMENT} for PR ${PR_NUMBER}"
+
 # gh CLI requires its own credentials even when an explicit `-H
 # "Authorization: Bearer …"` header is passed on the request — without
 # GH_TOKEN/GITHUB_TOKEN in env it prompts for `gh auth login` and exits
@@ -53,7 +66,314 @@ fi
 # log lines inside a phase use log warn / log error.
 # ----------------------------------------------------------------------------
 
+# do_deactivate — FR-5.5: routing for this environment MUST stop before any
+# destructive phase runs. Two PATCHes, because every pod's registry
+# projection (libs/atlas-env) updates independently off a Kafka push, not a
+# poll: DEACTIVATING tells atlas-ingress to stop routing to this environment
+# and tells the gate to stop accepting new ownership/work for it; once every
+# pod has projected that (the settle window below), DELETED removes the
+# record entirely so no pod — including one that missed the DEACTIVATING
+# event outright — can observe this environment again (FR-5.7).
+#
+# ATLAS_DEACTIVATE_SETTLE_S is deliberately NOT env.StaleAfter
+# (libs/atlas-env/registry.go:10 — 120s, four missed 30s heartbeats). That
+# bound covers the CONSUMER going silent; this wait covers the PRODUCER's
+# message reaching every consumer, which is push-based over Kafka and
+# settles in about one heartbeat interval. 35s is one 30s heartbeat plus
+# margin. If Task 55 measurement shows that insufficient, raise it there —
+# do not guess higher here, and do not conflate it with StaleAfter by
+# reusing that constant's value for a different guarantee.
+
+# _dcp_env_get — echoes this environment's environments record GET response
+# body (the full JSON:API document), or nothing if no record exists (a 404
+# from the GET) or ATLAS_UI_BASE/ATLAS_ENVIRONMENT are unset. Exit status
+# mirrors curl's.
+_dcp_env_get() {
+    [ -z "${ATLAS_UI_BASE:-}" ] && return 1
+    [ -z "${ATLAS_ENVIRONMENT:-}" ] && return 1
+    curl -fsS -H 'Accept: application/vnd.api+json' \
+        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
+        "$ATLAS_UI_BASE/api/configurations/environments/$ATLAS_ENVIRONMENT" 2>/dev/null
+}
+
+# _dcp_env_phase — echoes this environment's current control-plane phase
+# (PROVISIONING/ACTIVE/DEACTIVATING/DELETED), or nothing if no record
+# exists.
+#
+# This is the live, self-healing gate do_deactivate and
+# do_drop_control_plane both use instead of a build-time ATLAS_MODE flag
+# (task-48 fix round 1): isolated-mode PRs never register a control-plane
+# environment record in the first place — only sparse mode's
+# environment-record.yaml Job (task-44/47) POSTs one — so "no record"
+# means exactly "isolated mode, or a sparse PR torn down before it ever
+# registered," and either way there is nothing for these two phases to do.
+# Checking live data can't drift from what actually got deployed the way a
+# manifest flag could, and it needs no ATLAS_MODE wiring at all.
+#
+# This is a DIFFERENT question than ATLAS_MODE answers for do_drop_dbs/
+# do_drop_topics/do_drop_redis below (task-48 fix round 2 Important 3):
+# those three ask "is this environment's Postgres/Kafka/Redis footprint
+# private or shared with main" — a build-time deployment-topology fact with
+# no live signal to check (sparse mode's shared resources have no per-env
+# marker to probe; the absence IS the fact). This gate asks "does a
+# control-plane record for this environment currently exist" — a fact that
+# IS live-checkable, and checking it live is strictly more robust than
+# trusting a flag that could drift from what was actually deployed. Two
+# different questions, answered two different ways; not two competing
+# signals for the same decision. Proof that swapping ATLAS_MODE for this
+# live check left isolated-mode teardown behaviour unchanged: no file under
+# deploy/k8s/overlays/pr/ (isolated mode's overlay) mentions "environments"
+# at all — only pr-sparse's environment-record.yaml POSTs one, and only to
+# the baseline's atlas-configurations (ATLAS_UI_BASE always resolves to the
+# baseline, never a PR's own instance — see postdelete-cleanup.yaml). An
+# isolated PR's GET against baseline/environments/pr-<N> 404s exactly as it
+# would have skipped under the old ATLAS_MODE=isolated gate; the pinned
+# bats test "cleanup.sh drop-control-plane and deactivate are skipped when
+# no control-plane environment record exists" exercises this via the
+# suite's own 404-by-default curl stub.
+_dcp_env_phase() {
+    local body
+    body=$(_dcp_env_get) || return 0
+    printf '%s' "$body" | jq -r '.data.attributes.phase // empty' 2>/dev/null
+}
+
+# _dcp_patch_phase <new_phase> <baseline> <namespace> <tenant> <overrides_json>
+# — PATCHes the environments record to <new_phase>, carrying the OTHER four
+# attributes through unchanged. environments.RestModel's fields are
+# non-pointer (environments/rest.go), so ParseInput unmarshals a PATCH body
+# into a fresh zero-value struct first: any attribute omitted from the body
+# is zeroed, not left alone (environments/administrator.go's update() doc
+# comment is explicit about this). A phase-only body — the shape task-48's
+# own plan Step 3 sample showed — would silently wipe baseline/namespace/
+# tenant/overrides on every DEACTIVATING/DELETED transition (task-48 fix
+# round 2 Critical 2). GET-then-PATCH-with-everything is the fix.
+_dcp_patch_phase() {
+    local phase="$1" baseline="$2" namespace="$3" tenant="$4" overrides="$5"
+    local payload
+    payload=$(jq -nc \
+        --arg id "$ATLAS_ENVIRONMENT" \
+        --arg baseline "$baseline" \
+        --arg namespace "$namespace" \
+        --arg tenant "$tenant" \
+        --argjson overrides "$overrides" \
+        --arg phase "$phase" \
+        '{data:{type:"environments",id:$id,attributes:{baseline:$baseline,namespace:$namespace,tenant:$tenant,overrides:$overrides,phase:$phase}}}')
+    curl -fsS -X PATCH \
+        -H 'Content-Type: application/vnd.api+json' \
+        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
+        -d "$payload" \
+        "$ATLAS_UI_BASE/api/configurations/environments/$ATLAS_ENVIRONMENT" >/dev/null
+}
+
+do_deactivate() {
+    if [ -z "${ATLAS_UI_BASE:-}" ] || [ -z "${ATLAS_ENVIRONMENT:-}" ]; then
+        ATLAS_STEP=deactivate log error "ATLAS_UI_BASE and ATLAS_ENVIRONMENT are required to deactivate; routing may still be live when destructive phases run"
+        return 1
+    fi
+    local body phase baseline namespace tenant overrides
+    body=$(_dcp_env_get)
+    phase=$(printf '%s' "${body:-}" | jq -r '.data.attributes.phase // empty' 2>/dev/null)
+    if [ -z "$phase" ]; then
+        ATLAS_STEP=deactivate log info "skipped — no control-plane environment record for $ATLAS_ENVIRONMENT (isolated mode never registers one; sparse mode does via environment-record.yaml)"
+        return 0
+    fi
+    if [ "$phase" = "DELETED" ]; then
+        ATLAS_STEP=deactivate log info "already deactivated (phase=DELETED); skipping"
+        return 0
+    fi
+    baseline=$(printf '%s' "$body" | jq -r '.data.attributes.baseline // ""' 2>/dev/null)
+    namespace=$(printf '%s' "$body" | jq -r '.data.attributes.namespace // ""' 2>/dev/null)
+    tenant=$(printf '%s' "$body" | jq -r '.data.attributes.tenant // ""' 2>/dev/null)
+    overrides=$(printf '%s' "$body" | jq -c '.data.attributes.overrides // {}' 2>/dev/null)
+    ATLAS_STEP=deactivate log info "deactivating environment=$ATLAS_ENVIRONMENT before any destructive phase (FR-5.5)"
+    if ! _dcp_patch_phase DEACTIVATING "$baseline" "$namespace" "$tenant" "$overrides"; then
+        ATLAS_STEP=deactivate log warn "PATCH phase=DEACTIVATING failed"
+        return 1
+    fi
+    sleep "${ATLAS_DEACTIVATE_SETTLE_S:-35}"
+    if ! _dcp_patch_phase DELETED "$baseline" "$namespace" "$tenant" "$overrides"; then
+        ATLAS_STEP=deactivate log warn "PATCH phase=DELETED failed"
+        return 1
+    fi
+    return 0
+}
+
+# _dcp_reclaim <list_url> <label> — GETs the JSON:API collection at
+# $list_url one page at a time (page[size]=250, paginate.MaxPageSize —
+# libs/atlas-rest/server/paginate/params.go — vs. the 50-row
+# paginate.DefaultPageSize every one of these four list endpoints falls
+# back to unpaginated), filters each page to rows whose
+# attributes.environment equals ATLAS_ENVIRONMENT (client-side: none of
+# services/tenants/templates/atlas-tenants expose a server-side
+# ?environment= filter today — only templates supports a query filter, and
+# it is region/version, not environment), and DELETEs every matching id
+# individually. Stops once meta.page.last is reached (task-48 fix round 2
+# Important 1) — a single unpaginated GET would silently miss every row
+# past page 1 once a resource's row count exceeds DefaultPageSize, which is
+# realistic precisely because this task exists to clean up the duplicate-row
+# leak task-47 left behind.
+#
+# NEVER filters by Type and NEVER deletes "everything that isn't main" —
+# only an exact match on THIS environment's own id, so a foreign row
+# (main's, or another PR's) is never touched even when it shares a Type
+# with one of this environment's rows. This also means every row for this
+# environment is collected and deleted, not just the one a Deployment's
+# SERVICE_ID currently points at: create_service_config (task-47) is not
+# idempotent across a retried bootstrap Job, so a crashed attempt can leave
+# an orphaned duplicate services row (same Type, same Environment,
+# different id) behind. A SERVICE_ID-driven delete would silently leak
+# every such orphan; the environment-scoped GET+filter does not, because it
+# has no notion of "the current one" — it deletes every row it finds.
+#
+# The server-side scope.AuthorizeWrite gate (atlas-configurations,
+# atlas-tenants; services/atlas-configurations/atlas.com/configurations/scope/scope.go)
+# independently 403s any DELETE whose ENVIRONMENT header doesn't match the
+# target row's own environment column. That gate and this loop's
+# client-side filter are two independent layers; neither alone is
+# sufficient — the gate cannot stop a scan that legitimately targets this
+# environment's own rows, and the filter alone would be one bug away from a
+# bare table sweep if the gate were ever removed.
+_dcp_reclaim() {
+    local list_url="$1" label="$2" rc=0
+    local page=1 last=1 found_any=0
+    local body ids id
+    while :; do
+        body=$(curl -fsS -H 'Accept: application/vnd.api+json' \
+            -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
+            "${list_url}?page[size]=250&page[number]=${page}") \
+            || { ATLAS_STEP=drop-control-plane log warn "$label: list failed (page=$page)"; return 1; }
+        ids=$(printf '%s' "$body" | jq -r --arg env "$ATLAS_ENVIRONMENT" \
+            '.data[]? | select(.attributes.environment == $env) | .id') || return 1
+        if [ -n "$ids" ]; then
+            found_any=1
+            while IFS= read -r id; do
+                [ -z "$id" ] && continue
+                if curl -fsS -X DELETE \
+                    -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
+                    "$list_url/$id" >/dev/null; then
+                    ATLAS_STEP=drop-control-plane log info "$label: deleted $id (environment=$ATLAS_ENVIRONMENT)"
+                else
+                    ATLAS_STEP=drop-control-plane log warn "$label: delete $id failed"
+                    rc=1
+                fi
+            done <<<"$ids"
+        fi
+        last=$(printf '%s' "$body" | jq -r '.meta.page.last // 1' 2>/dev/null)
+        case "$last" in (''|*[!0-9]*) last=1 ;; esac
+        [ "$page" -ge "$last" ] && break
+        page=$((page + 1))
+    done
+    if [ "$found_any" -eq 0 ]; then
+        ATLAS_STEP=drop-control-plane log info "$label: no rows for environment=$ATLAS_ENVIRONMENT"
+    fi
+    return $rc
+}
+
+# do_drop_control_plane — reclaims this environment's rows from the
+# atlas-configurations (services/tenants/templates) and atlas-tenants
+# databases. In sparse mode those databases are SHARED with main (D1) — a
+# mis-scoped delete here destroys main's rows, not just pollutes them. Every
+# delete is scoped by the environment column via _dcp_reclaim; see that
+# function's comment for the two independent layers that enforce it.
+#
+# Gated by _dcp_env_phase, the same live existence-check do_deactivate uses
+# (task-48 fix round 1) — NOT ATLAS_MODE. Isolated-mode PRs never register
+# a control-plane environment record, so the GET 404s and this phase
+# correctly no-ops: do_drop_dbs already DROPs the whole per-env Postgres
+# database there (including this environment's private atlas-configurations
+# instance) regardless of what runs here, so a REST-based reclaim would be
+# redundant even where it could reach a real record. Even in the
+# (currently impossible, since no record exists) case where this ran
+# against an isolated PR's own private instance, every row there carries
+# Environment="" (isolated bootstrap never sends an ENVIRONMENT header),
+# never "pr-<N>" — the environment-column filter in _dcp_reclaim would
+# still find nothing to delete. Two independent reasons this is safe, not
+# one.
+do_drop_control_plane() {
+    if [ -z "${ATLAS_UI_BASE:-}" ] || [ -z "${ATLAS_ENVIRONMENT:-}" ]; then
+        ATLAS_STEP=drop-control-plane log error "ATLAS_UI_BASE and ATLAS_ENVIRONMENT are required; control-plane rows for this environment were not reclaimed"
+        return 1
+    fi
+    if [ -z "$(_dcp_env_phase)" ]; then
+        ATLAS_STEP=drop-control-plane log info "skipped — no control-plane environment record for $ATLAS_ENVIRONMENT (isolated mode: do_drop_dbs already destroys this environment's atlas-configurations rows)"
+        return 0
+    fi
+    ATLAS_STEP=drop-control-plane log info "reclaiming control-plane rows for environment=$ATLAS_ENVIRONMENT"
+    local rc=0
+    _dcp_reclaim "$ATLAS_UI_BASE/api/configurations/services" services || rc=1
+    _dcp_reclaim "$ATLAS_UI_BASE/api/configurations/tenants" configuration-tenants || rc=1
+    _dcp_reclaim "$ATLAS_UI_BASE/api/configurations/templates" templates || rc=1
+    _dcp_reclaim "$ATLAS_UI_BASE/api/tenants" atlas-tenants || rc=1
+    return $rc
+}
+
+# do_sweep_tenant — reclaims THIS environment's tenant's rows from the
+# shared databases sparse mode never DROPs (do_drop_dbs skips entirely
+# there, see below). Isolated mode's do_drop_dbs already destroys this
+# environment's entire private database, tables and all, so there is
+# nothing left for this phase to do there — gated on ATLAS_MODE, the same
+# build-time deployment-topology fact do_drop_dbs/do_drop_topics/
+# do_drop_redis already gate on (task-48 fix round 2 Important 3: this is
+# a "private vs shared footprint" question, not a live-checkable one).
+#
+# The tenant id itself IS live-checked, the same way do_deactivate and
+# do_drop_control_plane read baseline/namespace/tenant/overrides: GET the
+# control-plane environment record and read its `tenant` attribute, rather
+# than inventing a second env var that could drift from what
+# environment-record.yaml actually registered.
+#
+# Delegates to sweep-orphans.sh --sweep-tenant, the one generic
+# "delete rows for tenant T" mechanism driven by tenant-tables.txt
+# (generated by tools/gen-tenant-tables.sh from the FR-8.1 query-scope
+# audit) — not a second copy of that logic here.
+#
+# Failure here must NOT fail teardown (it is storage reclamation, not a
+# correctness gate — task-232 design §7.5): run_phase records a non-zero
+# return in failed_phases and continues regardless, same as every other
+# phase.
+do_sweep_tenant() {
+    if [ "${ATLAS_MODE:-isolated}" != "sparse" ]; then
+        # Isolated mode's databases are this environment's own — do_drop_dbs
+        # already DROPs them (tenant rows included) regardless of what runs
+        # here. Log the skip explicitly rather than silently returning 0.
+        ATLAS_STEP=sweep-tenant log info "skipped (isolated) — this environment's databases are already dropped by drop-dbs"
+        return 0
+    fi
+    # Same live existence-check do_drop_control_plane uses (task-48 fix
+    # round 1): no record means a sparse PR torn down before it ever
+    # registered a tenant (environment-record.yaml never ran, or this is a
+    # re-run after a prior teardown already deleted it) — nothing was ever
+    # written under a tenant that doesn't exist yet, so this is "nothing to
+    # do", not a failure.
+    if [ -z "$(_dcp_env_phase)" ]; then
+        ATLAS_STEP=sweep-tenant log info "skipped — no control-plane environment record for $ATLAS_ENVIRONMENT (nothing registered to reclaim)"
+        return 0
+    fi
+    local body tenant
+    body=$(_dcp_env_get)
+    tenant=$(printf '%s' "${body:-}" | jq -r '.data.attributes.tenant // empty' 2>/dev/null)
+    if [ -z "$tenant" ]; then
+        ATLAS_STEP=sweep-tenant log warn "control-plane environment record for $ATLAS_ENVIRONMENT has no tenant attribute; cannot reclaim tenant-keyed rows"
+        return 1
+    fi
+    ATLAS_STEP=sweep-tenant log info "reclaiming tenant-keyed rows for tenant=$tenant across shared databases"
+    if ! "$(dirname "$0")/sweep-orphans.sh" --sweep-tenant "$tenant" --apply; then
+        ATLAS_STEP=sweep-tenant log warn "sweep-orphans.sh --sweep-tenant reported failures"
+        return 1
+    fi
+    return 0
+}
+
 do_drop_dbs() {
+    if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+        # Sparse mode shares main's Postgres databases (D1) — there is
+        # nothing per-env to DROP. Log "skipped (sparse)" rather than
+        # silently returning 0: a phase that reports success without doing
+        # anything is indistinguishable from one that failed to find its
+        # target.
+        ATLAS_STEP=drop-dbs log info "skipped (sparse) — databases are shared with main"
+        return 0
+    fi
     ATLAS_STEP=drop-dbs log info "dropping per-env Postgres databases"
     # Probe connectivity before the per-DB loop. Postgres unreachable
     # means cleanup-targeting is broken and no other phase can be
@@ -77,6 +397,14 @@ do_drop_dbs() {
 }
 
 do_drop_topics() {
+    if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+        # Sparse mode never suffixes topic names with ATLAS_ENV (D1,
+        # FR-4.8) — topics are shared with main. Nothing per-env to
+        # delete; log the skip explicitly rather than silently returning
+        # 0 from a suffix scan that would find nothing anyway.
+        ATLAS_STEP=drop-topics log info "skipped (sparse) — topics are shared with main"
+        return 0
+    fi
     ATLAS_STEP=drop-topics log info "deleting per-env Kafka topics"
     local topics
     topics=$(rpk topic list -X brokers="$BOOTSTRAP_SERVERS" --format json \
@@ -113,6 +441,15 @@ do_drop_groups() {
 }
 
 do_drop_redis() {
+    if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+        # Sparse mode never prefixes Redis keys with ATLAS_ENV — the
+        # per-env key prefix is inert there (design §9,
+        # computeKeyPrefix("") is the legacy/shared path). Nothing per-env
+        # to delete; log the skip explicitly rather than silently
+        # returning 0 from a scan that would find nothing anyway.
+        ATLAS_STEP=drop-redis log info "skipped (sparse) — keys are shared with main"
+        return 0
+    fi
     ATLAS_STEP=drop-redis log info "deleting per-env Redis keys"
     redis-cli -u "redis://$REDIS_URL" --scan --pattern "${ATLAS_ENV}:*" \
         | xargs -r -n 1000 redis-cli -u "redis://$REDIS_URL" DEL
@@ -238,10 +575,13 @@ do_drop_branch() {
 # Orchestration. PHASES is interleaved <phase_name> <function_name>.
 # ----------------------------------------------------------------------------
 PHASES=(
-    drop-dbs             do_drop_dbs
-    drop-topics          do_drop_topics
+    deactivate           do_deactivate          # FR-5.5 — must be first
+    drop-control-plane   do_drop_control_plane
+    sweep-tenant         do_sweep_tenant        # no-op in isolated mode; sparse-only reclaim
+    drop-dbs             do_drop_dbs            # no-op in sparse mode
+    drop-topics          do_drop_topics         # no-op in sparse mode
     drop-groups          do_drop_groups
-    drop-redis           do_drop_redis
+    drop-redis           do_drop_redis          # no-op in sparse mode
     drop-images          do_drop_images
     drop-dns             do_drop_dns
     drop-branch          do_drop_branch

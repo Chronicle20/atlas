@@ -17,6 +17,7 @@ type modelBuilder struct {
 	region       string
 	majorVersion uint16
 	minorVersion uint16
+	environment  string
 }
 
 // NewModelBuilder creates a new model builder
@@ -34,6 +35,7 @@ func CloneModel(m Model) *modelBuilder {
 		region:       m.region,
 		majorVersion: m.majorVersion,
 		minorVersion: m.minorVersion,
+		environment:  m.environment,
 	}
 }
 
@@ -67,6 +69,12 @@ func (b *modelBuilder) SetMinorVersion(minorVersion uint16) *modelBuilder {
 	return b
 }
 
+// SetEnvironment sets the tenant environment
+func (b *modelBuilder) SetEnvironment(environment string) *modelBuilder {
+	b.environment = environment
+	return b
+}
+
 // Build creates a new Model with validation
 func (b *modelBuilder) Build() (Model, error) {
 	if b.name == "" {
@@ -81,5 +89,6 @@ func (b *modelBuilder) Build() (Model, error) {
 		region:       b.region,
 		majorVersion: b.majorVersion,
 		minorVersion: b.minorVersion,
+		environment:  b.environment,
 	}, nil
 }

@@ -56,7 +56,7 @@ func TestInitiate_ThenGetExpired_ReturnsAgreement(t *testing.T) {
 	// strictly > 0.  Use a tiny sleep so the age is at least 1 nanosecond old.
 	time.Sleep(time.Millisecond)
 
-	expired, err := GetRegistry().GetExpired(0)
+	expired, err := GetRegistry().GetExpiredAcrossTenants(0)
 	require.NoError(t, err)
 	require.Len(t, expired, 1)
 	assert.Equal(t, "TestGuild", expired[0].Name())
@@ -83,7 +83,7 @@ func TestRespond_Disagree_RemovesAgreement(t *testing.T) {
 	assert.Equal(t, "TestGuild", mdl.Name())
 
 	// GetExpired with zero timeout should return nothing now.
-	expired, err := GetRegistry().GetExpired(0)
+	expired, err := GetRegistry().GetExpiredAcrossTenants(0)
 	require.NoError(t, err)
 	assert.Empty(t, expired)
 }
@@ -105,6 +105,57 @@ func TestRespond_Agree_UpdatesAgreement(t *testing.T) {
 	mdl, err := GetRegistry().Respond(ctx, 200, true)
 	require.NoError(t, err)
 	assert.True(t, mdl.Responses()[200])
+}
+
+func TestGetExpiredAcrossTenants_TwoTenants_Isolation(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	InitRegistry(client)
+
+	t1 := setupTestTenant(t)
+	t2 := setupTestTenant(t)
+	ctx1 := setupTestContext(t, t1)
+	ctx2 := setupTestContext(t, t2)
+
+	ch := channel.NewModel(0, 0)
+
+	require.NoError(t, GetRegistry().Initiate(ctx1, ch, "Guild1", 100, []uint32{100, 200}))
+	require.NoError(t, GetRegistry().Initiate(ctx2, ch, "Guild2", 300, []uint32{300, 400}))
+
+	// Let both agreements age past a zero timeout.
+	time.Sleep(time.Millisecond)
+
+	// t1's agreements are stored under t1's tenant key; the agreement created
+	// under t2 must not appear when read back through the agreements
+	// registry for t1's tenant scope.
+	_, err := GetRegistry().agreements.Get(ctx1, t1, mustAgreementId(t, GetRegistry(), ctx1, 100))
+	require.NoError(t, err)
+
+	g2ID := mustAgreementId(t, GetRegistry(), ctx2, 300)
+	_, err = GetRegistry().agreements.Get(ctx1, t1, g2ID)
+	require.Error(t, err, "t1 must not be able to read t2's agreement via t1's tenant scope")
+
+	// GetExpiredAcrossTenants sweeps every tenant and must see both.
+	expired, err := GetRegistry().GetExpiredAcrossTenants(0)
+	require.NoError(t, err)
+	require.Len(t, expired, 2)
+	names := map[string]bool{}
+	for _, g := range expired {
+		names[g.Name()] = true
+	}
+	assert.True(t, names["Guild1"])
+	assert.True(t, names["Guild2"])
+}
+
+// mustAgreementId recovers the agreement UUID tracked for characterId under
+// ctx, by way of the char->agreement-id index that Initiate populates.
+func mustAgreementId(t *testing.T, r *Registry, ctx context.Context, characterId uint32) uuid.UUID {
+	t.Helper()
+	ten := tenant.MustFromContext(ctx)
+	idStr, err := r.charAgree.Get(ctx, ten, characterId)
+	require.NoError(t, err)
+	id, err := uuid.Parse(idStr)
+	require.NoError(t, err)
+	return id
 }
 
 func TestInitiate_AlreadyInAgreement_ReturnsError(t *testing.T) {

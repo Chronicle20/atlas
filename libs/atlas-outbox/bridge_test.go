@@ -14,6 +14,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	kafkaproducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -110,6 +111,86 @@ func TestEnqueueBuffer_HeaderParityWithDirectPath(t *testing.T) {
 		got[h.Key] = h.Value
 	}
 	require.Equal(t, want, got)
+}
+
+// task-232: the outbox path dropped ENVIRONMENT while the direct path
+// (ProviderImpl) attached it via EnvHeaderDecorator, so every outbox-routed
+// emit failed decide() open (FR-1.8) regardless of the operation's actual
+// environment. Assert parity through the exported bridge entry point — the
+// path every caller actually takes.
+func TestEnqueueBuffer_HeaderParityWithDirectPath_IncludesEnvironment(t *testing.T) {
+	db := bridgeDb(t)
+	ctx := env.WithContext(tenantCtx(t), env.Id("pr-123"))
+
+	require.NoError(t, db.Transaction(func(tx *gorm.DB) error {
+		return outbox.EnqueueBuffer(logrus.New(), ctx, tx,
+			map[string][]kafka.Message{"T": {{Key: []byte("k"), Value: []byte("v")}}})
+	}))
+
+	// Direct-path reference: fold the same decorators ProviderImpl passes
+	// to Produce, including EnvHeaderDecorator.
+	want := map[string][]byte{}
+	for _, d := range []kafkaproducer.HeaderDecorator{
+		kafkaproducer.SpanHeaderDecorator(ctx),
+		kafkaproducer.TenantHeaderDecorator(ctx),
+		kafkaproducer.EnvHeaderDecorator(ctx),
+	} {
+		hm, err := d()
+		require.NoError(t, err)
+		for k, v := range hm {
+			want[k] = []byte(v)
+		}
+	}
+	require.Contains(t, want, env.Key, "test setup: direct path must produce an ENVIRONMENT header")
+
+	pub := &fakePublisher{}
+	d := outbox.NewDrainer(logrus.New(), db, outbox.PublisherFunc(pub.WriteMessages),
+		outbox.WithPollInterval(20*time.Millisecond))
+	ctx2, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	go d.Run(ctx2)
+	require.Eventually(t, func() bool {
+		pub.mu.Lock()
+		defer pub.mu.Unlock()
+		return len(pub.messages) == 1
+	}, 400*time.Millisecond, 10*time.Millisecond)
+
+	got := map[string][]byte{}
+	for _, h := range pub.messages[0].Headers {
+		got[h.Key] = h.Value
+	}
+	require.Equal(t, want, got)
+}
+
+// task-232 legacy semantic (FR-1.8 / NFR-7): a context with no environment
+// must produce NO ENVIRONMENT header through the outbox path either — not
+// an empty-valued one. Matches
+// TestEnvHeaderDecoratorEmitsNothingForTheLegacyEnvironment in
+// libs/atlas-kafka/producer/header_test.go.
+func TestEnqueueBuffer_NoEnvironmentHeaderForLegacyEnvironment(t *testing.T) {
+	db := bridgeDb(t)
+	ctx := tenantCtx(t)
+
+	require.NoError(t, db.Transaction(func(tx *gorm.DB) error {
+		return outbox.EnqueueBuffer(logrus.New(), ctx, tx,
+			map[string][]kafka.Message{"T": {{Key: []byte("k"), Value: []byte("v")}}})
+	}))
+
+	pub := &fakePublisher{}
+	d := outbox.NewDrainer(logrus.New(), db, outbox.PublisherFunc(pub.WriteMessages),
+		outbox.WithPollInterval(20*time.Millisecond))
+	ctx2, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	go d.Run(ctx2)
+	require.Eventually(t, func() bool {
+		pub.mu.Lock()
+		defer pub.mu.Unlock()
+		return len(pub.messages) == 1
+	}, 400*time.Millisecond, 10*time.Millisecond)
+
+	for _, h := range pub.messages[0].Headers {
+		require.NotEqual(t, env.Key, h.Key, "unexpected ENVIRONMENT header for a legacy (no-env) context")
+	}
 }
 
 func TestEnqueueBuffer_RowFailureReturnsError(t *testing.T) {

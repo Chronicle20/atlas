@@ -31,7 +31,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) InMapByNameModelProvider(mapId _map.Id, name string) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMapByName(mapId, name), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMapByName(p.ctx, mapId, name), Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetInMapByName(mapId _map.Id, name string) (Model, error) {

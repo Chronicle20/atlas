@@ -2,6 +2,8 @@ package scheduler
 
 import (
 	"context"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,6 +12,8 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupTestDB(t *testing.T) *gorm.DB {
@@ -107,7 +111,7 @@ func TestProposalExpiryScheduler_GetTenantsWithProposals(t *testing.T) {
 	scheduler := NewProposalExpiryScheduler(log, ctx, db)
 
 	// Test getting tenants with proposals
-	tenants, err := scheduler.getTenantsWithProposals()
+	tenants, err := scheduler.getTenantsWithProposals(ctx)
 	// The table doesn't exist, so we expect an error
 	if err == nil {
 		t.Error("Expected error due to missing table, got none")
@@ -126,9 +130,29 @@ func TestProposalExpiryScheduler_ProcessExpiredProposalsForTenant(t *testing.T) 
 
 	scheduler := NewProposalExpiryScheduler(log, ctx, db)
 
-	// Create a test tenant
-	tenantId := uuid.New()
+	// Create a test tenant and embed it on the context, matching what
+	// service.ForEachOwnedEnvironment does before invoking the body.
+	tm, err := tenant.Create(uuid.New(), "background-scheduler", 1, 0)
+	if err != nil {
+		t.Fatalf("Failed to create tenant model: %v", err)
+	}
+	tenantCtx := tenant.WithContext(ctx, tm)
 
 	// Test processing expired proposals for specific tenant
-	scheduler.processExpiredProposalsForTenant(tenantId)
+	scheduler.processExpiredProposalsForTenant(tenantCtx)
+}
+
+// TestProposalExpiryScheduler_UsesForEachOwnedEnvironment pins design C4/FR-6.1:
+// tenant resolution must go through service.ForEachOwnedEnvironment so both
+// the owned-environment set and each environment's tenant set are resolved
+// fresh on every tick, not cached and closed over.
+func TestProposalExpiryScheduler_UsesForEachOwnedEnvironment(t *testing.T) {
+	src, err := os.ReadFile("proposal_expiry.go")
+	if err != nil {
+		t.Fatalf("read proposal_expiry.go: %v", err)
+	}
+	s := string(src)
+	if !strings.Contains(s, "service.ForEachOwnedEnvironment") {
+		t.Fatal("processExpiredProposals does not use service.ForEachOwnedEnvironment")
+	}
 }

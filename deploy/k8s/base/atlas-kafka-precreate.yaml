@@ -13,6 +13,15 @@
 # Idempotent: re-applying the manifest re-creates the Job; existing topics are
 # left alone (--if-not-exists). Adding a new topic on main or in a PR overlay
 # is picked up on the next sync.
+#
+# Also seeds (task-232 Task 45, design §6.3) committed end-of-log offsets for
+# every override consumer group named in KAFKA_CONSUMER_GROUP, while each
+# group is still empty and therefore resettable — see kafka-precreate.sh for
+# the mechanism and NG6 (main is inert: the pass is skipped whenever
+# KAFKA_CONSUMER_GROUP is unset). The script is mounted from the
+# atlas-kafka-precreate-script ConfigMap (kustomization.yaml) instead of
+# living inline here so it is independently sourceable and testable
+# (atlas-kafka-precreate_test.sh).
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -36,81 +45,13 @@ spec:
           envFrom:
             - configMapRef:
                 name: atlas-env
+          volumeMounts:
+            - name: kafka-precreate-script
+              mountPath: /scripts
           command:
             - /bin/bash
-            - -c
-            - |
-              set -euo pipefail
-              : "${BOOTSTRAP_SERVERS:?BOOTSTRAP_SERVERS not set in atlas-env}"
-              echo "[$(date -u +%FT%TZ)] precreating topics on $BOOTSTRAP_SERVERS"
-
-              # Collect the distinct topic names from every COMMAND/EVENT_TOPIC_* env var.
-              # Config-projection topics go in a separate list: their consumers
-              # replay them from first-offset at every boot to rebuild
-              # tenant/service config state, and the outbox never re-emits a
-              # (topic, key) it already delivered. With the default DELETE
-              # cleanup, retention empties the topic ~7 days after the last
-              # config change and every later projection boot has nothing to
-              # replay (2026-07-08 world/channel/character-factory loops).
-              # Events are keyed (tenant:<uuid> / service:<uuid>), so
-              # compaction retains the latest snapshot per key forever.
-              topics="$(mktemp)"
-              compact_topics="$(mktemp)"
-              for var in $(compgen -e | grep -E '^(COMMAND|EVENT)_TOPIC_' || true); do
-                  topic="${!var}"
-                  if [ -z "$topic" ]; then
-                      continue
-                  fi
-                  case "$var" in
-                      EVENT_TOPIC_CONFIGURATION_TENANT_STATUS|EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS)
-                          printf '%s\n' "$topic" >> "$compact_topics"
-                          ;;
-                      *)
-                          printf '%s\n' "$topic" >> "$topics"
-                          ;;
-                  esac
-              done
-              sort -u "$compact_topics" -o "$compact_topics"
-              # A topic named by both a config-status var and any other var must
-              # stay compacted — drop it from the plain list.
-              sort -u "$topics" | comm -23 - "$compact_topics" > "${topics}.plain"
-              mv "${topics}.plain" "$topics"
-              count=$(( $(wc -l < "$topics") + $(wc -l < "$compact_topics") ))
-
-              # Each kafka-topics.sh --create is a full JVM cold start (~1-1.5s) and only
-              # creates one topic per call, so a serial loop over ~140 topics takes minutes.
-              # Fan out with xargs -P so the JVM starts overlap; --if-not-exists keeps it
-              # idempotent and concurrent creates of distinct topics don't conflict. xargs
-              # exits non-zero if any child fails, which set -e turns into a Job retry.
-              echo "[$(date -u +%FT%TZ)] creating $count topics (concurrency 16)"
-              xargs -P 16 -I {} \
-                  /opt/kafka/bin/kafka-topics.sh \
-                      --bootstrap-server "$BOOTSTRAP_SERVERS" \
-                      --create --if-not-exists \
-                      --topic {} \
-                      --partitions 1 \
-                      --replication-factor 1 \
-                  < "$topics" >/dev/null
-
-              # The compacted config-projection topics (only a handful) are
-              # created serially with cleanup.policy=compact.
-              while read -r topic; do
-                  /opt/kafka/bin/kafka-topics.sh \
-                      --bootstrap-server "$BOOTSTRAP_SERVERS" \
-                      --create --if-not-exists \
-                      --topic "$topic" \
-                      --partitions 1 \
-                      --replication-factor 1 \
-                      --config cleanup.policy=compact \
-                      >/dev/null
-                  # --create --if-not-exists skips existing topics, so also
-                  # alter (idempotent) to converge topics created before this
-                  # policy existed.
-                  /opt/kafka/bin/kafka-configs.sh \
-                      --bootstrap-server "$BOOTSTRAP_SERVERS" \
-                      --alter --entity-type topics --entity-name "$topic" \
-                      --add-config cleanup.policy=compact \
-                      >/dev/null
-              done < "$compact_topics"
-
-              echo "[$(date -u +%FT%TZ)] reconciled $count topics"
+            - /scripts/kafka-precreate.sh
+      volumes:
+        - name: kafka-precreate-script
+          configMap:
+            name: atlas-kafka-precreate-script

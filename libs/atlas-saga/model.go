@@ -49,6 +49,19 @@ const (
 	// shop from anywhere, then consume the item — never the other way round
 	// (task-221).
 	RemoteMerchant Type = "remote_merchant"
+	// PetRevive is the classification-518 Water of Life flow: consume the item,
+	// then reset a dried-up pet's lifespan. Consume comes first so a failed
+	// revive compensates into a refund rather than a free revive (task-228).
+	PetRevive Type = "pet_revive"
+
+	// ScriptedItemUse is the classification-243 flow: open the item's own
+	// dialogue, then consume the item — in that order, so an unauthored item
+	// costs the player nothing.
+	ScriptedItemUse Type = "scripted_item_use"
+
+	// RemoteNpcUse is the classification-239 flow: open the named NPC's shop or
+	// conversation from anywhere, then consume the item.
+	RemoteNpcUse Type = "remote_npc_use"
 )
 
 // Status represents the status of a saga step
@@ -98,6 +111,7 @@ const (
 	IncreaseBuddyCapacity  Action = "increase_buddy_capacity"
 	GainCloseness          Action = "gain_closeness"
 	EvolvePet              Action = "evolve_pet"
+	RevivePet              Action = "revive_pet"
 	RenamePet              Action = "rename_pet"
 	TransferAP             Action = "transfer_ap"
 	TransferSP             Action = "transfer_sp"
@@ -149,6 +163,18 @@ const (
 
 	// NPC shop actions
 	OpenNpcShop Action = "open_npc_shop"
+
+	// NPC conversation actions. Both are deliberately NOT self-completing: the
+	// step stays Pending until EVENT_TOPIC_NPC_CONVERSATION_STATUS reports
+	// STARTED or START_ERROR, which is what lets a following destroy step
+	// consume the item only once the dialogue actually opened.
+	//
+	// Two discrete actions rather than one with a mode discriminator: the
+	// orchestrator's handler dispatch is per-action, and a discriminator inside
+	// the payload would move branching somewhere the compensator and
+	// event-acceptance tables cannot see it.
+	StartItemConversation Action = "start_item_conversation"
+	StartNpcConversation  Action = "start_npc_conversation"
 
 	// Trade actions (task-205). trade_settlement is a COMPOSITE: the
 	// orchestrator expands it into release_from_character / accept_to_character /

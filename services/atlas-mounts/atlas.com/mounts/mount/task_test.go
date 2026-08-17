@@ -60,7 +60,8 @@ func TestTirednessTask_TicksEachActiveMountOnce(t *testing.T) {
 		return nil
 	}
 
-	task := NewTirednessTask(taskTestLogger(), nil, time.Minute)
+	identityEnvContext := func(ctx context.Context) context.Context { return ctx }
+	task := NewTirednessTask(taskTestLogger(), nil, time.Minute, identityEnvContext)
 	task.Run()
 
 	assert.Len(t, calls, 2, "Run must tick once per active entry")
@@ -75,6 +76,43 @@ func TestTirednessTask_TicksEachActiveMountOnce(t *testing.T) {
 }
 
 func TestTirednessTask_SleepTime(t *testing.T) {
-	task := NewTirednessTask(taskTestLogger(), nil, time.Minute)
+	identityEnvContext := func(ctx context.Context) context.Context { return ctx }
+	task := NewTirednessTask(taskTestLogger(), nil, time.Minute, identityEnvContext)
 	assert.Equal(t, time.Minute, task.SleepTime())
+}
+
+// envMarkerKey is a test-local context key -- deliberately not
+// libs/atlas-env, since mount sits outside env-domain-guard's permitted
+// import list (main.go, kafka/, rest/, socket/) and must not import
+// atlas-env even from a test file.
+type envMarkerKey string
+
+// TestProcessActiveAppliesEnvContextToTick pins the review fix: this pod's
+// own environment identity must be threaded onto each active entry's
+// per-tenant context before the tick call reaches the outbox emit. The
+// TestTirednessTask_TicksEachActiveMountOnce test above passes an identity
+// envContext and would still pass if this were dropped -- an unstamped
+// context would silently misroute the emit to whatever environment
+// RootUrlFor/producer resolve as baseline.
+func TestProcessActiveAppliesEnvContextToTick(t *testing.T) {
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	assert.NoError(t, err)
+
+	active := []ActiveEntry{
+		{Tenant: tn, CharacterId: 100, Ctx: MountRideContext{WorldId: world.Id(0), SkillId: 80001000, VehicleId: 1902000}},
+	}
+
+	envContext := func(ctx context.Context) context.Context {
+		return context.WithValue(ctx, envMarkerKey("marker"), "stamped")
+	}
+
+	var gotMarker any
+	tick := func(_ logrus.FieldLogger, ctx context.Context, _ *gorm.DB, _ world.Id, _ uint32) error {
+		gotMarker = ctx.Value(envMarkerKey("marker"))
+		return nil
+	}
+
+	processActive(taskTestLogger(), context.Background(), nil, active, tick, envContext)
+
+	assert.Equal(t, "stamped", gotMarker, "envContext was not applied to the tick context")
 }

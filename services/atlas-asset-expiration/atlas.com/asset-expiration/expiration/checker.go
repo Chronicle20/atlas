@@ -2,6 +2,8 @@ package expiration
 
 import (
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 // IsExpired checks if an item has expired
@@ -21,4 +23,13 @@ func IsExpired(expiration time.Time, now time.Time) bool {
 // HasExpiration checks if an item has an expiration time set
 func HasExpiration(expiration time.Time) bool {
 	return !expiration.IsZero() && !expiration.Equal(time.Time{})
+}
+
+// IsReapable reports whether an expired asset may be destroyed. Pets are the
+// sole exemption: an expired pet does not vanish, it dries up into a doll that
+// keeps its cash-inventory slot until a Water of Life (5180000) revives it.
+// The rule is by classification, not an id allowlist, so every present and
+// future 5000xxx pet template is covered without further edits.
+func IsReapable(templateId uint32) bool {
+	return item.GetClassification(item.Id(templateId)) != item.ClassificationPet
 }

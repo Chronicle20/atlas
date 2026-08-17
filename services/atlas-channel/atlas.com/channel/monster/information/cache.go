@@ -150,7 +150,7 @@ func EvictTenant(tid uuid.UUID) {
 
 // upstreamFn is the test-overridable upstream fetch (task-060 precedent).
 var upstreamFn = func(l logrus.FieldLogger, ctx context.Context, monsterId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](l, ctx)(requestById(monsterId), Extract)()
+	return requests.Provider[RestModel, Model](l, ctx)(requestById(ctx, monsterId), Extract)()
 }
 
 // notFoundError synthesizes a not-found error for negative-cache hits so

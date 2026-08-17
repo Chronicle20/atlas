@@ -70,3 +70,69 @@ func TestRejectedApplyLeavesTheCouponsAlone(t *testing.T) {
 		t.Fatalf("a rejected apply must not consume coupons, got %d", got)
 	}
 }
+
+// TestApplyConsumesTheWorldTransferCoupon pins the fix for
+// bug-world-transfer-coupon-not-consumed.md: an APPLIED world transfer must
+// consume the 5401000 coupon exactly like an APPLIED name change consumes
+// 5400000. Resolve, not ApplyForCharacter, drives this transition in
+// production — the world-transfer saga's terminal event calls Resolve
+// directly, so exercising ResolveAndEmit here matches the real call path.
+func TestApplyConsumesTheWorldTransferCoupon(t *testing.T) {
+	db := newProcessorTestDB(t)
+	l, ctx := testLogger(t), testContext(t)
+	characterId := seedCharacter(t, db, "Yankee", world.Id(0))
+
+	p := NewProcessor(l, ctx, db).withTransferEligibilityGates(passingGateDeps())
+	m, err := p.CreateAndEmit(uuid.New(), characterId, TypeWorldTransfer, "", world.Id(1), nil)
+	if err != nil {
+		t.Fatalf("CreateAndEmit: %v", err)
+	}
+	if got := countOutboxMessagesMatching(t, db, "consume_world_transfer_coupons"); got != 0 {
+		t.Fatalf("no coupon consumption may be emitted at request time, got %d", got)
+	}
+
+	if _, moved, err := p.ResolveAndEmit(m.Id(), StatusApplied, ""); err != nil || !moved {
+		t.Fatalf("ResolveAndEmit: moved=%v err=%v", moved, err)
+	}
+
+	if got := countOutboxMessagesMatching(t, db, "consume_world_transfer_coupons"); got != 1 {
+		t.Fatalf("expected one coupon-consumption command on apply, got %d", got)
+	}
+	if got := countOutboxMessagesMatching(t, db, "destroy_all_assets"); got != 1 {
+		t.Fatalf("consumption must use destroy_all_assets, got %d", got)
+	}
+	if got := countOutboxMessagesMatching(t, db, "5401000"); got != 1 {
+		t.Fatalf("expected the consumption to name the world-transfer coupon template, got %d", got)
+	}
+	// The name-change step id must never appear on a world-transfer resolve.
+	if got := countOutboxMessagesMatching(t, db, "consume_name_change_coupons"); got != 0 {
+		t.Fatalf("expected no name-change consumption on a world-transfer resolve, got %d", got)
+	}
+}
+
+// A world transfer resolved to REJECTED, CANCELLED, or EXPIRED must not
+// consume the coupon — the player still holds an unspent change.
+func TestNonAppliedWorldTransferResolutionLeavesTheCouponAlone(t *testing.T) {
+	for _, status := range []string{StatusRejected, StatusCancelled, StatusExpired} {
+		status := status
+		t.Run(status, func(t *testing.T) {
+			db := newProcessorTestDB(t)
+			l, ctx := testLogger(t), testContext(t)
+			characterId := seedCharacter(t, db, "Zulu", world.Id(0))
+
+			p := NewProcessor(l, ctx, db).withTransferEligibilityGates(passingGateDeps())
+			m, err := p.CreateAndEmit(uuid.New(), characterId, TypeWorldTransfer, "", world.Id(1), nil)
+			if err != nil {
+				t.Fatalf("CreateAndEmit: %v", err)
+			}
+
+			if _, moved, err := p.ResolveAndEmit(m.Id(), status, "test_reason"); err != nil || !moved {
+				t.Fatalf("ResolveAndEmit: moved=%v err=%v", moved, err)
+			}
+
+			if got := countOutboxMessagesMatching(t, db, "consume_world_transfer_coupons"); got != 0 {
+				t.Fatalf("a %s resolve must not consume the coupon, got %d", status, got)
+			}
+		})
+	}
+}

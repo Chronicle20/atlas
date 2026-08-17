@@ -93,6 +93,42 @@ const (
 // applyNameChange emits one consumption step per entry.
 var nameChangeCouponTemplateIds = []uint32{5400000}
 
+// worldTransferCouponTemplateIds is the cash-shop world-transfer coupon.
+//
+// Grounded, not assumed: derivation.md §3 reads CCashShop::ProcessBuy across all
+// nine GMS versions and finds 5401000 compared as an EXACT id, the
+// world-transfer sibling of 5400000 (§3: "5400000 is name change. 5401000 is
+// world transfer."). jms_v185 has no 5400000 at all and maps 5401000 to the
+// world-transfer flow (§1.5), so this id is universal across every configured
+// version. The same value is already used at atlas-channel
+// character_cash_item_use.go:1112.
+var worldTransferCouponTemplateIds = []uint32{5401000}
+
+// couponTemplateIdsForType returns the coupon template ids consumed on a
+// landed APPLIED transition for the given pending-change type. An unknown type
+// consumes nothing rather than guessing.
+func couponTemplateIdsForType(changeType string) []uint32 {
+	switch changeType {
+	case TypeNameChange:
+		return nameChangeCouponTemplateIds
+	case TypeWorldTransfer:
+		return worldTransferCouponTemplateIds
+	default:
+		return nil
+	}
+}
+
+// couponConsumptionStepId names the saga step by change type so the two flows
+// stay distinguishable in the outbox and in saga history.
+func couponConsumptionStepId(changeType string) string {
+	switch changeType {
+	case TypeWorldTransfer:
+		return "consume_world_transfer_coupons"
+	default:
+		return "consume_name_change_coupons"
+	}
+}
+
 // destroyAssetCommandProvider consumes the coupon at request acceptance
 // (FR-2.8). Only the item path has an asset. The purchase path has none: its
 // entitlement is the NX charge itself, taken by atlas-cashshop's normal
@@ -135,8 +171,10 @@ func awardAssetCommandProvider(m Model) model.Provider[[]kafka.Message] {
 	return sagaCommandProvider(s)
 }
 
-// consumeCouponsCommandProvider consumes EVERY name-change coupon the character
-// holds once the rename actually lands.
+// consumeCouponsCommandProvider consumes EVERY coupon of templateId the
+// character holds once the pending change actually lands (APPLIED). It is
+// generic over change type: the step id is derived from m.Type() so the
+// name-change and world-transfer flows stay distinguishable in the outbox.
 //
 // Consumption is at APPLY, not at request acceptance, because on the purchase
 // path there is no coupon in the inventory when the request is made — the
@@ -152,7 +190,7 @@ func consumeCouponsCommandProvider(m Model, templateId uint32) model.Provider[[]
 		SetTransactionId(sagaTransactionId(m, sagaPurposeConsumeCoupon+":"+strconv.FormatUint(uint64(templateId), 10))).
 		SetSagaType(sharedsaga.CashShopOperation).
 		SetInitiatedBy(sagaInitiator).
-		AddStep("consume_name_change_coupons", sharedsaga.Pending, sharedsaga.DestroyAllAssets, sharedsaga.DestroyAllAssetsPayload{
+		AddStep(couponConsumptionStepId(m.Type()), sharedsaga.Pending, sharedsaga.DestroyAllAssets, sharedsaga.DestroyAllAssetsPayload{
 			CharacterId: m.CharacterId(),
 			TemplateId:  templateId,
 		}).

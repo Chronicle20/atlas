@@ -307,6 +307,20 @@ func (p *ProcessorImpl) Resolve(mb *message.Buffer) func(id uuid.UUID, status st
 				return Model{}, false, err
 			}
 		}
+		// The APPLIED-side mirror of the refund above: the coupons are consumed
+		// here, not at request acceptance, because on the purchase path there is
+		// no coupon in the inventory when the request is made — the cash-shop
+		// purchase materialises it afterwards, so APPLY is the first point at
+		// which it reliably exists. Every terminal transition passes through
+		// this chokepoint, so a redelivered resolve (moved == false, handled
+		// above) never mints a second consume.
+		if status == StatusApplied {
+			for _, templateId := range couponTemplateIdsForType(m.Type()) {
+				if err := mb.Put(sagamsg.EnvCommandTopic, consumeCouponsCommandProvider(m, templateId)); err != nil {
+					return Model{}, false, err
+				}
+			}
+		}
 		if err := mb.Put(pendingchange2.EnvEventTopic, resolvedEventProvider(m)); err != nil {
 			return Model{}, false, err
 		}
@@ -417,18 +431,11 @@ func (p *ProcessorImpl) applyNameChange(m Model) error {
 				return err
 			}
 
-			// The coupons are consumed here rather than at request acceptance:
-			// on the purchase path the cash-shop purchase materialises the
-			// coupon AFTER the request is made, so apply is the first point at
-			// which it reliably exists. Emitted before Resolve only so a
-			// failure to enqueue aborts the whole transaction — the outbox
-			// makes the ordering within it immaterial.
-			for _, templateId := range nameChangeCouponTemplateIds {
-				if err := buf.Put(sagamsg.EnvCommandTopic, consumeCouponsCommandProvider(m, templateId)); err != nil {
-					return err
-				}
-			}
-
+			// Coupon consumption on APPLIED happens inside Resolve (the
+			// single chokepoint every terminal transition passes through, and
+			// the APPLIED-side mirror of the refund it already carries), not
+			// here — see the comment there.
+			//
 			// APPLIED releases the reservation by leaving PENDING, which is what
 			// drops the row out of idx_pc_name_reservation.
 			_, _, err = p.WithTransaction(tx).Resolve(buf)(m.Id(), StatusApplied, "")

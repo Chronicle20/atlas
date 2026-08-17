@@ -20,7 +20,7 @@ require (
 	github.com/redis/go-redis/v9 v9.22.0
 	github.com/segmentio/kafka-go v0.4.51
 	github.com/sirupsen/logrus v1.10.0
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 	go.elastic.co/ecslogrus v1.0.0
 	go.opentelemetry.io/otel v1.45.0
 	gorm.io/driver/sqlite v1.6.0

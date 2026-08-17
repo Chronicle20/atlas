@@ -111,17 +111,34 @@ Two bugs in nine lines:
   whether the call succeeded. It should be `len(members) > 1` (or an explicit
   senior/junior check); a tree containing only yourself is not a family.
 
-**Why the body was HTML** is a deployment question I could not settle from this
-checkout. `RootUrl("FAMILIES")` (`libs/atlas-rest/requests/url.go:14`) falls
-back to `BASE_SERVICE_URL` when `FAMILIES_SERVICE` is unset, and the log shows
-the request going to the shared ingress. `atlas-families` *does* exist in the
-repo and *does* serve `GET /families/tree/{characterId}`
-(`services/atlas-families/atlas.com/family/family/`), so the most likely
-explanation is that it is not deployed in the `atlas-pr-1370` namespace and the
-ingress fell through to an HTML default backend — note the guild gate against
-the same ingress in the same trace answered correctly with JSON. **Unverified**;
-confirm with `kubectl get deploy -n atlas-pr-1370 | grep families` before
-acting on it.
+**Why the body was HTML — resolved 2026-08-17.** `atlas-families` has never been
+deployed anywhere. It is not a namespace-specific miss; it is absent from every
+layer of the deploy path:
+
+| Layer | Checked | Result |
+|---|---|---|
+| Live namespace | `kubectl get deploy -n atlas-pr-1370` | 69 deployments, **no `atlas-families`** |
+| Base manifests | `deploy/k8s/base/` | **no `atlas-families.yaml`** (every other service has one) |
+| Ingress routes | `deploy/shared/routes.conf` (115 `location` blocks) | **no `/api/families` route** |
+| Version pinning | `deploy/k8s/base/versions.json` | **no families entry** |
+| Image build | `docker-bake.hcl:56`, `deploy/k8s/overlays/{pr,main}/kustomization.yaml` | present — the image *is* built and tagged |
+
+So the image is built and never scheduled, and the ingress has no route for
+`/api/families/...`. The request fell through nginx to the default backend,
+which returned HTML — exactly matching the observed
+`invalid character '<' looking for beginning of value`. The guild gate answered
+JSON in the same trace because `/api/guilds` *is* routed.
+
+`RootUrl("FAMILIES")` (`libs/atlas-rest/requests/url.go:14`) falls back to
+`BASE_SERVICE_URL` when `FAMILIES_SERVICE` is unset, which is why the call went
+to the shared ingress rather than failing to resolve.
+
+`atlas-families` does exist in the repo and does serve
+`GET /families/tree/{characterId}`
+(`services/atlas-families/atlas.com/family/family/`); it has been in-tree since
+task-118 (`293ff9b4e`). Nothing about gate 8 can work in any environment until
+the service is routed and scheduled — **this is a prerequisite, not a
+side-issue.**
 
 ### 2b — every gate reports an outage as an affirmative block
 
@@ -306,6 +323,74 @@ correctly and then not wired up.
    explicit logged fallback on `gms_12_1` and `jms_185_1`.
 
 Steps 1–3 need no further client derivation. Steps 4–5 do.
+
+## Rulings (2026-08-17, decided on this task)
+
+All four open decisions above are now settled. These are binding on the fix;
+do not re-litigate them.
+
+1. **Storage warning → emit at BUY time.** Move `warnIfStrandingStorage` out of
+   the CHECK handler and into `handleBuyWorldTransfer`, on the rejection-free
+   path. It keeps failing open (a lookup error is logged and swallowed). The
+   CHECK handler stops emitting any `POP_UP`, so the license notice's modal
+   loop is never re-entered.
+2. **BUY-time reasons → seed reason keys into all ten templates.** The
+   alias-in-code alternative is explicitly **not** taken. Each template's
+   `errors` table gains reason keys pointing at *that version's own* code for
+   the aliased name (see the alias table below).
+3. **Families → wire up the deployment.** `deploy/k8s/base/atlas-families.yaml`,
+   the `/api/families` route in `deploy/shared/routes.conf` (then regenerate
+   `routes.conf.template.generated` with `tools/gen-routes.sh`), the
+   `versions.json` entry, and the `kustomization.yaml` resource entry — plus
+   `inFamily`'s two logic bugs. Follow
+   [`docs/adding-a-new-service.md`](../../adding-a-new-service.md) for the
+   manifest shape; model it on a sibling read-only service.
+4. **Scope → all five steps** in the suggested fix order.
+
+### The alias table (ruling 2)
+
+Derived from `template_gms_83_1.json` `/socket/writers/211/options/errors`
+(53 entries, enumerated in full). Only these names are transfer-relevant:
+
+```
+219 CANNOT_TRANSFER_UNDER_LEVEL_TWENTY
+220 CANNOT_TRANSFER_TO_SAME_WORLD
+221 CANNOT_TRANSFER_TO_NEW_WORLD
+222 CANNOT_TRANSFER_OUT
+223 CANNOT_TRANSFER_NO_EMPTY_SLOTS
+231 PLEASE_TRY_AGAIN
+```
+
+| Reason key | Aliases to | Why |
+|---|---|---|
+| `world_same` | `CANNOT_TRANSFER_TO_SAME_WORLD` | exact match |
+| `world_full` | `CANNOT_TRANSFER_TO_NEW_WORLD` | destination-side refusal |
+| `world_unknown` | `CANNOT_TRANSFER_TO_NEW_WORLD` | destination-side refusal |
+| `no_character_slot` | `CANNOT_TRANSFER_NO_EMPTY_SLOTS` | exact match |
+| `check_unavailable` | `PLEASE_TRY_AGAIN` | transient, and honest — the server does not know |
+| `unknown_error` | `PLEASE_TRY_AGAIN` | transient |
+| `name_taken`, `banned`, `is_guild_master`, `is_gm`, `in_family`, `trade_open`, `merchant_open`, `mts_listings_open` | `CANNOT_TRANSFER_OUT` | source-side refusal; no more specific code exists in the table |
+
+**Resolve the numeric code per template from that template's own table** — the
+numbers differ on every version (see the version table above). Never copy a
+gms_83_1 number into another template.
+
+Two templates cannot carry the aliases and must fall back explicitly, with a
+logged reason rather than a silent 99:
+
+- `template_gms_12_1.json` — has no `errors` table at all.
+- `template_jms_185_1.json` — has an `errors` table but none of the
+  `CANNOT_TRANSFER_*` names.
+
+**Caveat carried forward:** the alias *names* are prior derivation from the
+existing templates, not text confirmed against a live client (StringPool ids
+4002–4008 could not be read — no String.wz in this checkout). This was accepted
+when scope was set to all five steps. Confirm the rendered strings during live
+re-test.
+
+After step 4 lands, `in_family`, `is_gm` and `is_guild_master` should be
+answered at CHECK time and should not normally reach the BUY-time `errors`
+path; their aliases remain as a correctness backstop.
 
 ## Verification notes
 

@@ -10,11 +10,16 @@ import (
 // table"). Each seeded reason key must resolve to the SAME numeric code as
 // its anchor name, in that template's own "errors" table - the numbers are
 // not portable across templates, only the names are.
+// CANNOT_TRANSFER_TO_NEW_WORLD is deliberately NOT a key in this map. Its
+// rendered text ("You cannot transfer a character into the new server
+// world.", StringPool 4006) is the newest-world prohibition, not "destination
+// full" - there is no gate for that rule, so nothing may alias it (see
+// "Rendered StringPool text", "Two corrections this forces on the alias
+// table"). world_full/world_unknown alias the honest generic retry instead.
 var worldTransferAliasGroups = map[string][]string{
 	"CANNOT_TRANSFER_TO_SAME_WORLD":  {"world_same"},
-	"CANNOT_TRANSFER_TO_NEW_WORLD":   {"world_full", "world_unknown"},
 	"CANNOT_TRANSFER_NO_EMPTY_SLOTS": {"no_character_slot"},
-	"PLEASE_TRY_AGAIN":               {"check_unavailable", "unknown_error"},
+	"PLEASE_TRY_AGAIN":               {"check_unavailable", "unknown_error", "world_full", "world_unknown"},
 	"CANNOT_TRANSFER_OUT": {
 		"name_taken", "banned", "is_guild_master", "is_gm",
 		"in_family", "trade_open", "merchant_open", "mts_listings_open",
@@ -93,6 +98,33 @@ func TestWorldTransferReasonAliasesResolveToAnchorCode(t *testing.T) {
 
 	if seededCount == 0 {
 		t.Fatal("no world-transfer reason aliases were found on any shipped template - seeding regressed")
+	}
+}
+
+// TestCannotTransferToNewWorldHasNoAlias pins the first correction from
+// "Rendered StringPool text": CANNOT_TRANSFER_TO_NEW_WORLD (StringPool 4006)
+// renders the newest-world prohibition, not "destination full", and there is
+// no gate for that rule. No reason key may alias it.
+func TestCannotTransferToNewWorldHasNoAlias(t *testing.T) {
+	c := LoadCatalog(testLogger(), seedTemplatesDir())
+
+	for _, e := range c.Entries() {
+		errs, ok := findErrorsTable(e.Model)
+		if !ok {
+			continue
+		}
+		anchorCode, anchorPresent := errs["CANNOT_TRANSFER_TO_NEW_WORLD"]
+		if !anchorPresent {
+			continue
+		}
+		for key, code := range errs {
+			if key == "CANNOT_TRANSFER_TO_NEW_WORLD" {
+				continue
+			}
+			if code == anchorCode {
+				t.Errorf("%s: key [%s] = %v aliases CANNOT_TRANSFER_TO_NEW_WORLD, which no reason key may alias (see bug-world-transfer-eligibility-reasons.md)", e.FileName, key, code)
+			}
+		}
 	}
 }
 

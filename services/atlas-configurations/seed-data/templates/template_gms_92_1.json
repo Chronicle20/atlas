@@ -3125,8 +3125,6 @@
             "CANNOT_TRANSFER_TO_SAME_WORLD": 58,
             "world_same": 58,
             "CANNOT_TRANSFER_TO_NEW_WORLD": 59,
-            "world_full": 59,
-            "world_unknown": 59,
             "CANNOT_TRANSFER_OUT": 60,
             "name_taken": 60,
             "banned": 60,
@@ -3141,6 +3139,8 @@
             "EVENT_ENDED_OR_CANT_BE_FREELY_TESTED": 62,
             "CANNOT_BE_PURCHASED_WITH_MAPLE_POINTS": 68,
             "PLEASE_TRY_AGAIN": 69,
+            "world_full": 69,
+            "world_unknown": 69,
             "check_unavailable": 69,
             "unknown_error": 69
           }

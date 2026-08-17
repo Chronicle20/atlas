@@ -10,3 +10,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-17T11:48:39Z	agent	audit-round-2	backend-guidelines-reviewer	sonnet	-	25	-	-	DONE	-	APPROVED	no	docs/tasks/task-227-cash-name-change-world-transfer/audit-world-transfer-fixes-round-2.md	-
 2026-08-17T11:48:40Z	agent	bug-audit-round-1-fix	atlas-implementer	sonnet	-	64	-	-	DONE	88b53f027	-	-	docs/tasks/task-227-cash-name-change-world-transfer/fix-audit-round-1-report.md	-
 2026-08-17T11:48:40Z	agent	gate-flagless-final	atlas-verifier	haiku	-	23	-	-	PASS	88b53f027	-	-	-	-
+2026-08-17T19:34:59Z	agent	bug-world-transfer-coupon-not-consumed	atlas-implementer	sonnet	-	-	-	-	DONE	5ffaad846	-	-	-	-
+2026-08-17T19:35:03Z	agent	bug-world-transfer-coupon-not-consumed	atlas-reviewer	sonnet	-	-	-	-	DONE	5ffaad846	APPROVED_WITH_FINDINGS	true	-	-

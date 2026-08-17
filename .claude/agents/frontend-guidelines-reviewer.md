@@ -196,3 +196,35 @@ have needed to read. Write "none" if every item was evaluable.]
 - **FAIL**: Build fails or tests fail.
 
 A single FAIL check prevents overall PASS.
+
+## Return to the controller
+
+`audit.md` is the review. What you *return* is a pointer plus the part the
+controller must act on immediately.
+
+Return exactly the block defined in
+[`docs/review-protocol.md`](../../docs/review-protocol.md), verdict first:
+
+```text
+verdict: APPROVED | APPROVED_WITH_FINDINGS | CHANGES_REQUIRED
+artifact: docs/tasks/<task-folder>/audit.md
+scope_confirmed: <the files / diff range you actually audited>
+blocking: <n>
+  - <file:line> — <one sentence per blocking finding>
+non_blocking: <n>
+not_evaluable: <n>
+```
+
+`PASS` → `APPROVED` (or `APPROVED_WITH_FINDINGS` when non-blocking items
+exist); `NEEDS-WORK` / `FAIL` → `CHANGES_REQUIRED`.
+
+The file inventory, the three checklists, the build/test output, and every
+non-blocking WARN stay in `audit.md`. Do not restate a PASS in the return.
+Never suppress a genuine concern to keep the return small — use
+`APPROVED_WITH_FINDINGS`.
+
+## Do not fan out
+
+Run the checklist yourself; a question answerable in one or two tool calls is
+far cheaper answered inline than dispatched. See
+[`docs/agent-dispatch.md`](../../docs/agent-dispatch.md) §Inline vs delegate.

@@ -16,6 +16,20 @@ yourself:
 tools/task-resolve.sh "$ARGUMENTS"
 ```
 
+Or, to get the resolution **and** the rest of the mechanical facts in one call —
+branch, HEAD, which phase artifacts exist, changed services and surfaces, the
+guards this change selects, the toolchain:
+
+```sh
+tools/task-facts.sh "$ARGUMENTS"
+```
+
+Under 1 KB, and it composes the same resolvers rather than replacing them, so
+the exit codes below are unchanged. Prefer it: measured across one task, 2,191
+Bash calls and 2.07 MB were spent re-deriving these facts by hand while
+`task-resolve.sh` — which answers the first three — was used in 16 of 213
+streams.
+
 It prints one tab-separated line: `<task-id>\t<task-dir>\t<worktree>`, and
 accepts exact, number-only (`54`/`054`/`task-54`/`task-054`), or slug-fragment
 identifiers.
@@ -128,6 +142,21 @@ discovery repeated inside a large implementer context.
 section rather than falling back to a repo sweep. If that comes back, this
 step was skipped — do it and re-dispatch.
 
+**Where the brief points at a large reference document** — a wiring recipe, a
+scope audit, a result matrix — name the *slice*, not the document. The brief
+should say "Pattern C of `service-wiring-recipe.md`" or "the `atlas-buddies`
+and `atlas-drops` rows of `query-scope-audit.md`", and the implementer reaches
+them with `tools/doc-slice.sh --section` / `--rows`. Measured: two such
+documents were read whole 74 times across 25 agent streams and cost 7.5% of a
+task's entire tool-result carry, when each agent needed one section.
+See [`docs/slice-first.md`](../../docs/slice-first.md).
+
+**Prepend the fact block** from `tools/task-facts.sh <task> --base
+<last-gated-commit>` to the brief. It is under 1 KB and it removes the
+orientation calls — branch, worktree, changed services, applicable guards,
+toolchain — that an implementer otherwise spends a median of 13 tool calls
+establishing before its first edit.
+
 ### Step 4c — Verification runs outside the implementer
 
 `atlas-implementer` runs only module-local `go build ./... && go test ./...`.
@@ -157,9 +186,36 @@ After an implementer reports `DONE` / `DONE_WITH_CONCERNS`:
    with `run_in_background: true`. Pass `--base` — without it the whole-branch
    diff makes each run ~10× longer once any `libs/` file has been touched
    (docs/verification.md, "Iteration gate"). Ledger the commit you gated from.
+
+   **If a gate behaves unexpectedly — too broad, too slow, skipping something
+   you expected — ask it what it selected before investigating the script:**
+
+   ```sh
+   tools/verify.sh --facts --quick --base <last-gated-commit>
+   ```
+
+   It prints the change base, changed services and libs, the fan-out reason,
+   the module count, the guard suites, and every gate that would run, then
+   exits without building. It is the same code path as a real run with the work
+   removed, so it cannot disagree with one. Measured: ~30 turns at 170–290k
+   context went into reverse-engineering that selection from `verify.sh`'s
+   source — ≈6.9M tokens, ~24% of one controller session — for facts the
+   script had already computed.
 2. **Keep going immediately** — do not poll, do not wait. Run the task review,
    then Step 4b's inventory for task N+1, then dispatch task N+1's implementer.
    The gate runs underneath all of it.
+
+   **The per-task review agent is `atlas-reviewer` (`model: sonnet`), never a
+   bare `general-purpose` dispatch.** That was 84 of 93 review dispatches in
+   one measured task, and it is why review had no contract to live in: those
+   84 returned a median of 4,904 B of prose and **not one of them wrote a
+   durable artifact**. `atlas-reviewer` carries both halves — the artifact and
+   the verdict-first return of
+   [`docs/review-protocol.md`](../../docs/review-protocol.md).
+
+   Read the review artifact only when the verdict is not `APPROVED`. On
+   `CHANGES_REQUIRED` the enumerated `blocking` lines are the fix brief; open
+   the artifact when a line is not actionable as written.
 
    **Right-sizing the task review agent** (review+audit cost 2,616 turns /
    227M tokens / 17.6% of task-232): a task whose diff was codemod-produced
@@ -276,6 +332,27 @@ task is a self-contained detour from the rest of the plan — a tooling
 investigation, a packet/IDA derivation, a docs sweep. Those share no state with
 what you are carrying, so they pay full freight for none of it.
 
+### Step 4f — Record what each agent cost
+
+When you reconcile an agent (implementer, verifier, reviewer), append one line
+to the task ledger:
+
+```sh
+tools/agent-ledger.sh append <task> --unit "Task <N>" --agent-type <type> \
+  --model <model> --status <status> --commit <sha>
+```
+
+Reviewer rows add `--verdict <verdict> --caused-fix <yes|no>`; when you hand off
+at Step 4e, add `--kind handoff --unit "after Task <N>" --context-tokens <n>`.
+
+Pass only what you actually know — an omitted field stays `-`. **Do not
+estimate.** Both cost audits were assembled by parsing transcripts by hand
+because nothing aggregated this; a fabricated turn count would poison the next
+one worse than a gap would.
+
+Batch this with the ledger edit and the next dispatch — it is one more line in a
+turn that is already happening, not a turn of its own.
+
 **Batch the ledger update with the next dispatch.** Editing `progress.md` and
 the following brief/dispatch call are independent — issue them in one message.
 A standalone turn for a 200-byte checkbox costs the same 250-400k as a turn
@@ -298,6 +375,10 @@ unscoped run of the same agent. See the Sharding section in
 
 - The worktree was created by `/spec-task`. NEVER create a new one here.
 - Implementers are `atlas-implementer`, never `general-purpose`.
+- Per-task reviewers are `atlas-reviewer`, never `general-purpose` (Step 4c).
+- Never poll a backgrounded gate — `.claude/hooks/wait-loop-guard.sh` refuses it.
+- Never reverse-engineer the gate's selection from its source; ask
+  `tools/verify.sh --facts` (Step 4c).
 - Never run `tools/verify.sh` inside an implementer — that is `atlas-verifier`'s job (Step 4c).
 - Never dispatch a brief with no `### Files` section (Step 4b).
 - Never carry the controller past ~150k tokens, or 4 completed plan tasks in one session — hand off to a fresh session via the ledger, unconditionally, regardless of tasks remaining (Step 4e).

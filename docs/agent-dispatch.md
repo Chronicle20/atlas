@@ -74,6 +74,55 @@ For the concurrency procedure that runs that gate against the rest of the
 plan — launch, keep going, reconcile, at most one gate in flight — see
 `/execute-task` Step 4c. That is command mechanics and stays there.
 
+## Inline vs delegate
+
+Delegation is strongly preferred when it replaces a meaningful sequence of
+expensive turns in an already-large context. It is a loss when it replaces one
+or two cheap ones.
+
+A fresh subagent carries a **~35–38k dispatch floor** before it has done
+anything (measured: an agent's turn-1 input is 38,178 tokens; a whole two-turn
+agent cost 52,857). So the decision is arithmetic, not conceptual:
+
+> **If you can answer the question in roughly one or two targeted tool calls,
+> answer it yourself. Break-even is about four to five turns of your own
+> work** — a ~35k floor against a parent turn at 100–150k.
+
+Decide on *expected turns and context*, not on how big the task sounds. "Audit
+the saga step handler coverage" sounds like a delegation and is a grep. "Fix
+this one-line bug" sounds trivial and is a fresh implementer, because your own
+context is 300k.
+
+What this rules out, with the measurement behind it. One
+`backend-guidelines-reviewer` dispatched six children for checklist questions:
+
+| Child | Turns | Billed input | Output tokens |
+|---|---|---|---|
+| Pending_change domain DOM/FILE checklist | 20 | 2,009,604 | 2,997 |
+| DOM-21 atlas-constants reuse check | 10 | 713,475 | **25** |
+| Orphan reconciliation severity assessment | 10 | 634,682 | **39** |
+| Saga step handler coverage audit | 12 | 576,718 | 1,581 |
+| Hand-mirrored cashshop kafka struct parity | 6 | 335,081 | **22** |
+| Cashshop Purchase tx boundary audit | 2 | 52,857 | **5** |
+| **Total** | 60 | **4.32M** | 4,669 |
+
+Four of the six produced fewer than 40 output tokens. Their *returns* were
+maximally compact — the cost was the floor plus each child's own context growth.
+The last one made a single tool call and cost 52,857.
+
+The parent then had nothing to do while its async children ran and emitted **30
+`Bash true` no-op turns** — 33% of its tool calls, ≈3.6M tokens, ≈36% of the
+whole agent, for zero information.
+`.claude/hooks/wait-loop-guard.sh` now refuses those calls and the polling
+equivalents; this rule removes the reason to make them.
+
+**Reviewers do not fan out at all.** A reviewer answers its own checklist. See
+[docs/review-protocol.md](review-protocol.md).
+
+**Never idle waiting on a child.** Agent completions arrive as notifications —
+do other work, or end the turn and be re-invoked. There is no wait primitive
+because none is needed.
+
 ## Fork vs fresh context
 
 Fan out with **fresh-context agents, not `subagent_type: "fork"`** — a named
@@ -133,3 +182,33 @@ forms — `PARTIAL` handling and controller handoff — each keyed to one of
 those durable artifacts. Apply the same shape in any session; where a
 canonical ledger already exists, write there rather than inventing a second
 artifact.
+
+**The rule does not stop when implementation does.** PR validation, live
+testing, debugging, regression investigation, and follow-up fixes are the same
+question at the same boundaries — and they are where it was measured to be
+ignored: one task's post-PR phase was 12.7% of its total spend at **94% main
+thread**, three subagents across four sessions, peaking at 328k and 274k solo.
+Against the execute phase's 19% main-thread share, that is the workflow's
+largest single structural regression. The concrete loop — reproduce inline,
+diagnose into `docs/tasks/<task>/bug-<slug>.md`, dispatch a fresh implementer
+against that file, verify in a clean context — is
+[docs/post-implementation.md](post-implementation.md), mechanized as
+`/fix-pr-bug`.
+
+## Recording what a dispatch cost
+
+Append one line per agent to the task's ledger at reconcile time:
+
+```sh
+tools/agent-ledger.sh append <task> --unit "<plan task or bug slug>" \
+  --agent-type <type> --model <model> --status <status> --commit <sha>
+```
+
+Reviewer rows add `--verdict` and `--caused-fix`; a handoff records
+`--kind handoff --context-tokens <n>`, which is the only marker anywhere for a
+handoff that was written and then worked past.
+
+**Unknown is `-`, never a guess.** If the runtime does not hand you a turn count
+or a byte size, leave the flag off. Both cost audits were reconstructed from
+transcripts by hand precisely because nothing aggregated this; a fabricated
+number would be worse than the gap it fills.

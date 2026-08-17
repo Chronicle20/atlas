@@ -266,3 +266,50 @@ have needed to read. Write "none" if every item was evaluable.]
 A single FAIL check in any package prevents overall PASS. There is no curve.
 Items under `Not evaluable from the diff` do not count toward PASS — they are
 reported, never absorbed.
+
+## Return to the controller
+
+The audit artifacts above are the review. What you *return* is a pointer plus
+the part the controller must act on immediately — nothing else.
+
+Return exactly the block defined in
+[`docs/review-protocol.md`](../../docs/review-protocol.md), verdict first:
+
+```text
+verdict: APPROVED | APPROVED_WITH_FINDINGS | CHANGES_REQUIRED
+artifact: docs/tasks/<task-folder>/audit.md
+scope_confirmed: <the packages / diff range you actually audited>
+blocking: <n>
+  - <file:line> — <one sentence per blocking finding>
+non_blocking: <n>
+not_evaluable: <n>
+```
+
+Map your status vocabulary onto the verdict: `PASS` → `APPROVED` (or
+`APPROVED_WITH_FINDINGS` when non-blocking items exist), `NEEDS-WORK` /
+`FAIL` → `CHANGES_REQUIRED`.
+
+Everything else stays in `audit.md` / `audit.json`: every PASS and its
+file:line evidence, every `N/A` and the trigger that settled it, the
+applicability table, the build/test transcript, the security section, and the
+non-blocking detail. The controller reads the artifact when the verdict is not
+`APPROVED`; on `APPROVED` it should not need to.
+
+Do not restate a PASS in the return. A measured review streamed 1.9 KB of
+PASS justification into a controller that never referred to it again, while
+the one line that changed the controller's next action sat at the end.
+
+Never suppress a genuine concern to keep the return small — that is what
+`APPROVED_WITH_FINDINGS` is for.
+
+## Do not fan out
+
+Run the checklists yourself. Do not dispatch child agents for individual rule
+questions — "does a Dockerfile exist", "is this constant already in
+atlas-constants", "is this topic in the configmap" are one or two tool calls
+each, against a ~35k floor per dispatch. Measured on this agent: six such
+children cost 4.32M billed input for 4,669 output tokens, four of them
+returning under 40 tokens, and the parent then burned 30 no-op `true` turns
+waiting on them — 36% of its own cost, for nothing.
+`.claude/hooks/wait-loop-guard.sh` now refuses those turns. See
+[`docs/agent-dispatch.md`](../../docs/agent-dispatch.md) §Inline vs delegate.

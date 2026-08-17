@@ -149,3 +149,45 @@ Format:
 - Every finding must include evidence (file path, line number, git commit, or specific code reference).
 - If a task's completion status is ambiguous, mark it `PARTIAL` and explain what you found vs. what was expected.
 - Be thorough but fair — if a task was completed in a slightly different way than described but achieves the same goal, mark it `DONE` with a note.
+
+## Reading the plan — slice, do not re-read
+
+A plan can be 291 KB / 7,592 lines. One measured `plan-adherence-reviewer` read
+its plan **13 times in a single agent** — 93.5 KB of duplicate copies — because
+it needed a different task each time and the file does not fit.
+
+Extract the one task you are auditing instead:
+
+```sh
+tools/task-brief.sh <plan-path> <N>          # writes task-<N>-brief.md, prints the path
+tools/doc-slice.sh <plan-path> --outline     # when you need to see what tasks exist
+```
+
+Read the plan whole only if you must judge the plan's overall structure. See
+[`docs/slice-first.md`](../../docs/slice-first.md).
+
+## Return to the controller
+
+`audit.md` is the audit. What you *return* is a pointer plus the part the
+controller must act on immediately.
+
+Return exactly the block defined in
+[`docs/review-protocol.md`](../../docs/review-protocol.md), verdict first:
+
+```text
+verdict: APPROVED | APPROVED_WITH_FINDINGS | CHANGES_REQUIRED
+artifact: docs/tasks/<task-folder>/audit.md
+scope_confirmed: <the task range you actually audited — e.g. "Tasks 11-20 of 41">
+blocking: <n>
+  - <task N / file:line> — <one sentence: what was skipped or done wrong>
+non_blocking: <n>
+not_evaluable: <n>
+```
+
+A task marked `PARTIAL` or `MISSING` is a blocking finding and is enumerated.
+A task marked `DONE` — however interesting the evidence — is a count, and its
+evidence lives in `audit.md`.
+
+`scope_confirmed` is load-bearing here in particular: when this agent is
+sharded by task range, it is the only way a controller can tell that every
+range was covered and none overlapped.

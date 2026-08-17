@@ -33,7 +33,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ByIdModelProvider(worldId world.Id) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestWorld(worldId), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestWorld(p.ctx, worldId), Extract)
 }
 
 func (p *ProcessorImpl) GetById(worldId world.Id) (Model, error) {
@@ -45,7 +45,11 @@ func (p *ProcessorImpl) GetById(worldId world.Id) (Model, error) {
 // just the first — the cash-shop world-transfer name list is indexed by world
 // id on the wire, so a truncated list silently misroutes a transfer.
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(worldsUrl(), 250, Extract, model.Filters[Model]())
+	url, err := worldsUrl(p.ctx)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetAll() ([]Model, error) {

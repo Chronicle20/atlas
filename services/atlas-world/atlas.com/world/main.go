@@ -20,6 +20,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -33,6 +34,20 @@ import (
 const serviceName = "atlas-world"
 
 var consumerGroupId = consumergroup.Resolve("World Orchestrator")
+
+// withSelfEnvironment attaches this pod's own environment identity
+// (env.Self()) to ctx, with no tenant pairing. The boot channel-status sweep
+// (channel.RequestStatus) and the broadcast queue sweep (broadcast.NewSweep)
+// each rebuild a per-tenant context from a background/ticker root with no
+// inbound request to inherit ENVIRONMENT from; without this, their real
+// Kafka emits would resolve to the baseline topic regardless of which
+// environment this pod belongs to (FR-1.8). channel/ and broadcast/ are
+// outside env-domain-guard's permitted atlas-env import list, so this is
+// threaded in as a plain function value rather than either package
+// importing atlas-env itself (matches socket.WithSelfEnvironment, 99c0e598d).
+func withSelfEnvironment(ctx context.Context) context.Context {
+	return env.WithContext(ctx, env.Self())
+}
 
 type Server struct {
 	baseUrl string
@@ -59,6 +74,7 @@ func main() {
 	caughtUp := projection.NewCaughtUp()
 
 	rt := service.Bootstrap(serviceName,
+		service.WithEnvironmentRegistry(serviceName),
 		service.WithConfigProjection(consumerGroupId, func(t service.ProjectionTopics) service.Projection {
 			sub := &projection.Subscriber{State: state, CaughtUp: caughtUp, TenantTopic: t.TenantStatus}
 			return service.ProjectionFuncs{StartFunc: sub.Start, WaitCaughtUpFunc: caughtUp.WaitCaughtUp}
@@ -118,7 +134,7 @@ func main() {
 	if tcs, err := configuration.GetTenantConfigs(); err != nil {
 		l.WithError(err).Warn("Skipping boot channel-status sweep; tenant configs not ready.")
 	} else {
-		_ = model.ForEachMap(model.FixedProvider(tcs), channel.RequestStatus(l)(ctx))
+		_ = model.ForEachMap(model.FixedProvider(tcs), channel.RequestStatus(l, withSelfEnvironment)(ctx))
 	}
 	span.End()
 
@@ -131,7 +147,7 @@ func main() {
 	// both pods would sweep every second and STARTED/ENDED status events
 	// would double-fire continuously.
 	registerBroadcastSweep := func(l logrus.FieldLogger, ctx context.Context) {
-		tasks.Register(l, ctx)(broadcast.NewSweep(l, ctx, time.Second))
+		tasks.Register(l, ctx)(broadcast.NewSweep(l, ctx, time.Second, withSelfEnvironment))
 	}
 
 	if leaderEnabled(l) {

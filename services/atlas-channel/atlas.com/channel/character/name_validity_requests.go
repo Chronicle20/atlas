@@ -58,7 +58,11 @@ type NameValidityResult struct {
 // services/atlas-character-factory/.../character/name_validity_requests.go,
 // which makes the identical call for character creation.
 func checkNameValidity(l logrus.FieldLogger, ctx context.Context, name string, worldId world.Id, scope NameScope) (NameValidityResult, error) {
-	u := fmt.Sprintf("%s%s?name=%s&worldId=%d&scope=%s", getBaseRequest(), nameValidityPath, url.QueryEscape(name), worldId, scope)
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return NameValidityResult{}, err
+	}
+	u := fmt.Sprintf("%s%s?name=%s&worldId=%d&scope=%s", root, nameValidityPath, url.QueryEscape(name), worldId, scope)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {

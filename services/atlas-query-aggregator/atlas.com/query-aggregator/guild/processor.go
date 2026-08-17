@@ -66,7 +66,7 @@ func (p *ProcessorImpl) HasGuild(characterId uint32) (bool, error) {
 // byMemberIdProvider creates a provider for guilds by member ID
 func byMemberIdProvider(l logrus.FieldLogger, ctx context.Context, memberId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		models, err := requests.SliceProvider[RestModel, Model](l, ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())()
+		models, err := requests.SliceProvider[RestModel, Model](l, ctx)(requestByMemberId(ctx, memberId), Extract, model.Filters[Model]())()
 		if err != nil {
 			return Model{}, err
 		}

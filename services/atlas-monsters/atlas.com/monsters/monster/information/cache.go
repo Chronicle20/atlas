@@ -156,7 +156,11 @@ func uint32KeyFn(id uint32) string {
 var upstreamFn = upstreamFetch
 
 func upstreamFetch(l logrus.FieldLogger, ctx context.Context, monsterId uint32) (RestModel, error) {
-	return requests.GetRequest[RestModel](getBaseRequest()+fmt.Sprintf(monsterResource, monsterId))(l, ctx)
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return RestModel{}, err
+	}
+	return requests.GetRequest[RestModel](root+fmt.Sprintf(monsterResource, monsterId))(l, ctx)
 }
 
 // FlushTenant clears both the positive and negative cache namespaces for

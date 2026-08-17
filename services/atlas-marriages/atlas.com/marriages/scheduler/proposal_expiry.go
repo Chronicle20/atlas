@@ -7,6 +7,7 @@ import (
 
 	retry "github.com/Chronicle20/atlas/libs/atlas-retry"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 
 	"github.com/google/uuid"
@@ -82,66 +83,82 @@ func (s *ProposalExpiryScheduler) run() {
 	}
 }
 
-// processExpiredProposals processes expired proposals for all tenants
+// processExpiredProposals processes expired proposals for every tenant of
+// every environment this deployment owns for atlas-marriages. Both the
+// environment set and each environment's tenant set are resolved fresh on
+// every call (FR-6.4) via service.ForEachOwnedEnvironment.
 func (s *ProposalExpiryScheduler) processExpiredProposals() {
 	s.log.Debug("Processing expired proposals for all tenants")
 
-	// Get all tenants that have proposals
-	tenantIds, err := s.getTenantsWithProposals()
-	if err != nil {
-		s.log.WithError(err).Error("Failed to get tenants with proposals")
-		return
-	}
+	service.ForEachOwnedEnvironment(s.log, s.ctx, serviceName, s.listTenantsWithProposals,
+		func(ctx context.Context) {
+			s.processExpiredProposalsForTenant(ctx)
+		})
+}
 
+// listTenantsWithProposals is the service.TenantLister for this scheduler:
+// it retrieves every tenant ID that has a pending proposal and builds the
+// corresponding tenant models.
+func (s *ProposalExpiryScheduler) listTenantsWithProposals(ctx context.Context) ([]tenant.Model, error) {
+	tenantIds, err := s.getTenantsWithProposals(ctx)
+	if err != nil {
+		return nil, err
+	}
 	if len(tenantIds) == 0 {
 		s.log.Debug("No tenants with proposals found")
-		return
+		return nil, nil
 	}
 
 	s.log.WithField("tenantCount", len(tenantIds)).Debug("Processing expired proposals for tenants")
 
-	// Process each tenant
+	ts := make([]tenant.Model, 0, len(tenantIds))
 	for _, tenantId := range tenantIds {
-		s.processExpiredProposalsForTenant(tenantId)
+		tm, err := tenant.Create(tenantId, "background-scheduler", 1, 0)
+		if err != nil {
+			s.log.WithError(err).WithField("tenantId", tenantId).Error("Unable to build tenant model; skipping.")
+			continue
+		}
+		ts = append(ts, tm)
 	}
+	return ts, nil
 }
 
 // getTenantsWithProposals retrieves all tenant IDs that have pending proposals
-func (s *ProposalExpiryScheduler) getTenantsWithProposals() ([]uuid.UUID, error) {
+func (s *ProposalExpiryScheduler) getTenantsWithProposals(ctx context.Context) ([]uuid.UUID, error) {
 	var tenantIds []uuid.UUID
 
 	cfg := retry.DefaultConfig().WithMaxRetries(3).WithInitialDelay(500 * time.Millisecond).WithMaxDelay(5 * time.Second)
-	err := retry.Try(s.ctx, cfg, func(attempt int) (bool, error) {
+	err := retry.Try(ctx, cfg, func(attempt int) (bool, error) {
 		err := s.db.Model(&marriage.ProposalEntity{}).
 			Where("status = ?", marriage.ProposalStatusPending).
 			Distinct("tenant_id").
 			Pluck("tenant_id", &tenantIds).Error
 		return err != nil, err
 	})
+	if err != nil {
+		s.log.WithError(err).Error("Failed to get tenants with proposals")
+	}
 
 	return tenantIds, err
 }
 
-// processExpiredProposalsForTenant processes expired proposals for a specific tenant
-func (s *ProposalExpiryScheduler) processExpiredProposalsForTenant(tenantId uuid.UUID) {
+// processExpiredProposalsForTenant processes expired proposals for the
+// tenant already carried on ctx (set by service.ForEachOwnedEnvironment).
+func (s *ProposalExpiryScheduler) processExpiredProposalsForTenant(ctx context.Context) {
+	t := tenant.MustFromContext(ctx)
 	cfg2 := retry.DefaultConfig().WithMaxRetries(3).WithInitialDelay(1 * time.Second).WithMaxDelay(10 * time.Second)
-	err := retry.Try(s.ctx, cfg2, func(attempt int) (bool, error) {
-		tenantModel, err := tenant.Create(tenantId, "background-scheduler", 1, 0)
-		if err != nil {
-			return false, err
-		}
-		tenantCtx := tenant.WithContext(s.ctx, tenantModel)
-		processor := marriage.NewProcessor(s.log, tenantCtx, s.db)
-		err = processor.ProcessExpiredProposals()
+	err := retry.Try(ctx, cfg2, func(attempt int) (bool, error) {
+		processor := marriage.NewProcessor(s.log, ctx, s.db)
+		err := processor.ProcessExpiredProposals()
 		return err != nil, err
 	})
 	if err != nil {
 		s.log.WithFields(logrus.Fields{
-			"tenantId": tenantId,
+			"tenantId": t.Id(),
 			"error":    err,
 		}).Error("Failed to process expired proposals for tenant after retries")
 		return
 	}
 
-	s.log.WithField("tenantId", tenantId).Debug("Successfully processed expired proposals for tenant")
+	s.log.WithField("tenantId", t.Id()).Debug("Successfully processed expired proposals for tenant")
 }

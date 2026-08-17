@@ -15,6 +15,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -25,6 +26,22 @@ import (
 )
 
 const serviceName = "atlas-summons"
+
+// withSelfEnvironment attaches this pod's own environment identity
+// (env.Self()) to ctx, with no tenant pairing. summon.NewExpiryTask and
+// summon.NewBeholderTask are periodic per-tenant sweeps: each rebuilds a
+// per-tenant context from the summon registry's grouping, which carries no
+// environment of its own (there is no inbound request to inherit ENVIRONMENT
+// from). Without this, their DESTROYED/CHANGE_HP/APPLY/skill-status emits
+// would carry an empty ENVIRONMENT header and fail decide() open per FR-1.8,
+// actioning the sweep on every live deployment instead of just this pod's.
+// summon/ is outside env-domain-guard's permitted atlas-env import list
+// (main.go, kafka/, rest/), so this is threaded in as a plain function value
+// rather than the package importing atlas-env itself (matches
+// socket.WithSelfEnvironment, 99c0e598d).
+func withSelfEnvironment(ctx context.Context) context.Context {
+	return env.WithContext(ctx, env.Self())
+}
 
 var consumerGroupId = consumergroup.Resolve("Summon Registry Service")
 
@@ -49,7 +66,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)
@@ -85,8 +102,8 @@ func main() {
 	// duration-expiry sweep that despawns summons whose lifetime has elapsed, and
 	// the Beholder aura sweep that heals/buffs owners of deployed Beholders.
 	registerSweepTasks := func(l logrus.FieldLogger, ctx context.Context) {
-		tasks.Register(l, ctx)(summon.NewExpiryTask(l, ctx, time.Second))
-		tasks.Register(l, ctx)(summon.NewBeholderTask(l, ctx, time.Second))
+		tasks.Register(l, ctx)(summon.NewExpiryTask(l, ctx, time.Second, withSelfEnvironment))
+		tasks.Register(l, ctx)(summon.NewBeholderTask(l, ctx, time.Second, withSelfEnvironment))
 	}
 
 	if leaderEnabled(l) {

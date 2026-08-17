@@ -47,8 +47,8 @@ const jsonAPIResponseWithHpTmpl = `{
 
 func withBaseURL(url string) func() {
 	prev := baseURLProvider
-	baseURLProvider = func() string {
-		return strings.TrimRight(url, "/") + "/"
+	baseURLProvider = func(_ context.Context) (string, error) {
+		return strings.TrimRight(url, "/") + "/", nil
 	}
 	return func() { baseURLProvider = prev }
 }

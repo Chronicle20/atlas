@@ -11,6 +11,7 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
@@ -26,7 +27,7 @@ func testSink(t *testing.T, runId string) (*redisSink, *miniredis.Miniredis, str
 
 func readRecord(t *testing.T, s *redisSink) ingestrun.Record {
 	t.Helper()
-	rec, err := s.reg.Get(context.Background(), s.key)
+	rec, err := s.reg.Get(context.Background(), env.Self(), s.key)
 	if err != nil {
 		t.Fatalf("read record: %v", err)
 	}
@@ -45,7 +46,7 @@ func TestSinkInitAdoptsExistingRecord(t *testing.T) {
 	created := time.Date(2026, 8, 8, 10, 0, 0, 0, time.UTC)
 
 	existing := ingestrun.NewRecord("run-1", "job-1", "shared", "GMS", "83.1", "", created, nil)
-	if err := s.reg.PutWithTTL(ctx, s.key, existing, ingestrun.RecordTTL); err != nil {
+	if err := s.reg.PutWithTTL(ctx, env.Self(), s.key, existing, ingestrun.RecordTTL); err != nil {
 		t.Fatal(err)
 	}
 
@@ -156,7 +157,7 @@ func TestSinkDropsWritesForASupersededRun(t *testing.T) {
 	now := time.Now().UTC()
 
 	fresh := ingestrun.NewRecord("run-NEW", "job-2", "shared", "GMS", "83.1", "", now, []string{"STRING"})
-	if err := s.reg.PutWithTTL(ctx, s.key, fresh, ingestrun.RecordTTL); err != nil {
+	if err := s.reg.PutWithTTL(ctx, env.Self(), s.key, fresh, ingestrun.RecordTTL); err != nil {
 		t.Fatal(err)
 	}
 
@@ -186,7 +187,7 @@ func TestSinkInitDropsWritesForASupersededRun(t *testing.T) {
 
 	fresh := ingestrun.NewRecord("run-NEW", "job-2", "shared", "GMS", "83.1", "", now, []string{"STRING"})
 	fresh = fresh.WithPhase(ingestrun.PhaseSucceeded, now, "")
-	if err := s.reg.PutWithTTL(ctx, s.key, fresh, ingestrun.RecordTTL); err != nil {
+	if err := s.reg.PutWithTTL(ctx, env.Self(), s.key, fresh, ingestrun.RecordTTL); err != nil {
 		t.Fatal(err)
 	}
 

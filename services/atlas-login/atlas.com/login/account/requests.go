@@ -1,6 +1,7 @@
 package account
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -15,29 +16,49 @@ const (
 	PicAttempts      = AccountsResource + "/%d/pic-attempts"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("ACCOUNTS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "ACCOUNTS")
 }
 
-func requestAccountByName(name string) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+AccountsByName, name))
+func requestAccountByName(ctx context.Context, name string) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+AccountsByName, name))
 }
 
-func requestAccountById(id uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+AccountsById, id))
+func requestAccountById(ctx context.Context, id uint32) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+AccountsById, id))
 }
 
-func requestUpdate(m Model) requests.Request[RestModel] {
+func requestUpdate(ctx context.Context, m Model) requests.Request[RestModel] {
 	im, _ := Transform(m)
-	return requests.PatchRequest[RestModel](fmt.Sprintf(getBaseRequest()+Update, m.id), im)
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.PatchRequest[RestModel](fmt.Sprintf(root+Update, m.id), im)
 }
 
-func requestRecordPinAttempt(accountId uint32, success bool, ipAddress string, hwid string) requests.Request[PinAttemptOutputRestModel] {
+func requestRecordPinAttempt(ctx context.Context, accountId uint32, success bool, ipAddress string, hwid string) requests.Request[PinAttemptOutputRestModel] {
 	input := PinAttemptInputRestModel{Success: success, IpAddress: ipAddress, HWID: hwid}
-	return requests.PostRequest[PinAttemptOutputRestModel](fmt.Sprintf(getBaseRequest()+PinAttempts, accountId), input)
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[PinAttemptOutputRestModel](err)
+	}
+	return requests.PostRequest[PinAttemptOutputRestModel](fmt.Sprintf(root+PinAttempts, accountId), input)
 }
 
-func requestRecordPicAttempt(accountId uint32, success bool, ipAddress string, hwid string) requests.Request[PicAttemptOutputRestModel] {
+func requestRecordPicAttempt(ctx context.Context, accountId uint32, success bool, ipAddress string, hwid string) requests.Request[PicAttemptOutputRestModel] {
 	input := PicAttemptInputRestModel{Success: success, IpAddress: ipAddress, HWID: hwid}
-	return requests.PostRequest[PicAttemptOutputRestModel](fmt.Sprintf(getBaseRequest()+PicAttempts, accountId), input)
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[PicAttemptOutputRestModel](err)
+	}
+	return requests.PostRequest[PicAttemptOutputRestModel](fmt.Sprintf(root+PicAttempts, accountId), input)
 }

@@ -10,10 +10,11 @@ import (
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
-func newTestRedis(t *testing.T) (*goredis.Client, *miniredis.Miniredis, *redis.Registry[string, string]) {
+func newTestRedis(t *testing.T) (*goredis.Client, *miniredis.Miniredis, *redis.EnvironmentRegistry[string, string]) {
 	t.Helper()
 	mr := miniredis.RunT(t)
 	c := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
@@ -37,7 +38,7 @@ func TestRunHeartbeat_FirstTickIsImmediate(t *testing.T) {
 	// ticker starts, so this should resolve well under one heartbeatInterval.
 	deadline := time.Now().Add(2 * time.Second)
 	for time.Now().Before(deadline) {
-		if v, err := reg.Get(ctx, suffix+":updatedAt"); err == nil && v != "" {
+		if v, err := reg.Get(ctx, env.Self(), suffix+":updatedAt"); err == nil && v != "" {
 			return
 		}
 		time.Sleep(20 * time.Millisecond)

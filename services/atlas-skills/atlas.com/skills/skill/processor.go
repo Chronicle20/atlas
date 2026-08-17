@@ -312,11 +312,17 @@ func (p *ProcessorImpl) ResetCooldownsAndEmit(transactionId uuid.UUID, worldId w
 	return cleared, nil
 }
 
-// ExpireCooldowns expires all cooldowns that have passed their expiration time
-func ExpireCooldowns(l logrus.FieldLogger, ctx context.Context) {
+// ExpireCooldowns expires all cooldowns that have passed their expiration
+// time. envContext must originate this pod's own environment identity
+// (env.Self()) onto each expired cooldown's per-tenant context before the
+// status event is emitted -- skill is outside env-domain-guard's permitted
+// atlas-env import list, so the caller (main.go, via tasks.ExpirationTask)
+// threads this in as a plain function value rather than the package
+// importing atlas-env itself.
+func ExpireCooldowns(l logrus.FieldLogger, ctx context.Context, envContext func(context.Context) context.Context) {
 	for _, s := range GetRegistry().GetAll(ctx) {
 		if s.CooldownExpiresAt().Before(time.Now()) {
-			tctx := tenant.WithContext(ctx, s.Tenant())
+			tctx := envContext(tenant.WithContext(ctx, s.Tenant()))
 			_ = GetRegistry().Clear(tctx, s.CharacterId(), s.SkillId())
 			// Use zero values for transactionId and worldId since this is a background expiration
 			_ = producer.ProviderImpl(l)(tctx)(skill2.EnvStatusEventTopic)(statusEventCooldownExpiredProvider(uuid.Nil, world.Id(0), s.CharacterId(), s.SkillId()))

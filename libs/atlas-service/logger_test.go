@@ -2,12 +2,46 @@ package service
 
 import (
 	"bytes"
+	"encoding/json"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/sirupsen/logrus"
 )
+
+func TestLoggerEmitsTheEnvironmentField(t *testing.T) {
+	t.Setenv("ATLAS_ENVIRONMENT", "pr-123")
+	var buf bytes.Buffer
+	l := CreateLogger("atlas-test")
+	l.SetOutput(&buf)
+	l.Info("hello")
+
+	var rec map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &rec); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if rec["environment"] != "pr-123" {
+		t.Fatalf("environment = %v, want \"pr-123\"", rec["environment"])
+	}
+}
+
+func TestLoggerOmitsTheEnvironmentFieldOnMain(t *testing.T) {
+	// NFR-7: main's log records are byte-identical to today's.
+	t.Setenv("ATLAS_ENVIRONMENT", "")
+	var buf bytes.Buffer
+	l := CreateLogger("atlas-test")
+	l.SetOutput(&buf)
+	l.Info("hello")
+
+	var rec map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &rec); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if _, present := rec["environment"]; present {
+		t.Fatal("environment field emitted with no ATLAS_ENVIRONMENT set")
+	}
+}
 
 func TestCreateLoggerEmitsServiceNameAndNormalizedKeys(t *testing.T) {
 	l := CreateLogger("atlas-test")

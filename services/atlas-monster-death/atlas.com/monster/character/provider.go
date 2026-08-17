@@ -5,5 +5,5 @@ import (
 )
 
 func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, characterId), Extract)()
 }

@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -13,8 +14,8 @@ const (
 	mtsConfigResource      = "mts-configs"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("TENANTS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "TENANTS")
 }
 
 // requestForTenant builds the atlas-tenants fetch for a tenant's MTS
@@ -22,7 +23,11 @@ func getBaseRequest() string {
 // tenant has no mts-configs row seeded the fetch misses and the registry falls
 // back to DefaultConfig; seed the resource (POST .../mts-configs/seed or the
 // atlas-ui config page) to drive the economic knobs per tenant.
-func requestForTenant(tenantId uuid.UUID) requests.Request[RestModel] {
-	url := fmt.Sprintf("%stenants/%s/%s/%s", getBaseRequest(), tenantId.String(), configurationsResource, mtsConfigResource)
+func requestForTenant(ctx context.Context, tenantId uuid.UUID) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	url := fmt.Sprintf("%stenants/%s/%s/%s", root, tenantId.String(), configurationsResource, mtsConfigResource)
 	return requests.GetRequest[RestModel](url)
 }

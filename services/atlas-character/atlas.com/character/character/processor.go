@@ -1304,7 +1304,7 @@ func (p *ProcessorImpl) getMaxMpGrowth(c Model) (uint16, error) {
 	// Use effective intelligence (includes buffs, equipment) with fallback to base
 	intelligence := c.Intelligence()
 	ch := channel.NewModel(c.WorldId(), 0)
-	effectiveStats, err := effective_stats.RequestByCharacter(ch, c.Id())(p.l, p.ctx)
+	effectiveStats, err := effective_stats.RequestByCharacter(p.ctx, ch, c.Id())(p.l, p.ctx)
 	if err == nil {
 		intelligence = uint16(effectiveStats.Intelligence)
 	} else {
@@ -1382,7 +1382,7 @@ func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUI
 			// Use effective MaxHP when the stats service reports a positive value;
 			// otherwise fall back to the character's base MaxHP to avoid clamping
 			// a positive regen tick to zero (which would emit a spurious DIED).
-			effectiveStats, err := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
+			effectiveStats, err := effective_stats.RequestByCharacter(p.ctx, channel, c.Id())(p.l, p.ctx)
 			maxHP := resolveEffectiveMax(p.l, c.MaxHp(), effectiveStats.MaxHp, err, c.Id(), "MaxHP")
 
 			adjusted = enforceBounds(amount, c.Hp(), maxHP, 0)
@@ -1430,7 +1430,7 @@ func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, 
 			// Use effective MaxHP when the stats service reports a positive value;
 			// otherwise fall back to the character's base MaxHP to avoid a
 			// SetHP(>=0) being clamped to zero and emitting a spurious DIED.
-			effectiveStats, err := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
+			effectiveStats, err := effective_stats.RequestByCharacter(p.ctx, channel, c.Id())(p.l, p.ctx)
 			maxHP := resolveEffectiveMax(p.l, c.MaxHp(), effectiveStats.MaxHp, err, c.Id(), "MaxHP")
 
 			// Clamp amount between 0 and effective MaxHP
@@ -1481,7 +1481,7 @@ func (p *ProcessorImpl) ChangeMP(mb *message.Buffer) func(transactionId uuid.UUI
 			// Use effective MaxMP when the stats service reports a positive value;
 			// otherwise fall back to the character's base MaxMP (same reasoning
 			// as ChangeHP — a zero cap would clamp routine MP regen to 0).
-			effectiveStats, err := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
+			effectiveStats, err := effective_stats.RequestByCharacter(p.ctx, channel, c.Id())(p.l, p.ctx)
 			maxMP := resolveEffectiveMax(p.l, c.MaxMp(), effectiveStats.MaxMp, err, c.Id(), "MaxMP")
 
 			adjusted := enforceBounds(amount, c.Mp(), maxMP, 0)
@@ -2377,7 +2377,7 @@ func (p *ProcessorImpl) TransferAP(mb *message.Buffer) func(transactionId uuid.U
 					// a silent degradation would reintroduce the very desync
 					// this scaling fixes.
 					effectiveInt := c.Intelligence()
-					es, esErr := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
+					es, esErr := effective_stats.RequestByCharacter(p.ctx, channel, c.Id())(p.l, p.ctx)
 					if esErr != nil {
 						p.l.WithError(esErr).Warnf("Failed to fetch effective stats for character [%d]; magician MP-reset loss falls back to base INT [%d].", c.Id(), effectiveInt)
 					} else if es.Intelligence > 0 {

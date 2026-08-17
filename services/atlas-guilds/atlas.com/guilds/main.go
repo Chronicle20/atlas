@@ -14,6 +14,7 @@ import (
 	"os"
 	"time"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	character2 "atlas-guilds/kafka/consumer/character"
@@ -57,7 +58,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)
@@ -118,7 +119,9 @@ func main() {
 		Run()
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35)))
+		tasks.Register(l, rt.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35), func(ctx context.Context) context.Context {
+			return env.WithContext(ctx, env.Self())
+		}))
 	})
 
 	rt.Wait()

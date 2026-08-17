@@ -357,12 +357,60 @@ else
     skip "Go analyzer guards (no .go file changed)"
 fi
 
+# FR-8.5 (task-232): keeps the query-scope audit from rotting while
+# Phases B-F are still in flight — a newly-added unscoped entity.go struct
+# or call site must fail CI. Gated separately from go_analyzer_guards above
+# (rather than folded into the shared vettool) so a scopeguard-only change
+# doesn't force a rebuild/re-run of the other three analyzers, and vice versa.
+#
+# The predicate is fleet-wide over ANY changed .go file, not just entity.go:
+# Rule 2 (the call-site check) fires on any GORM call site in services/ or
+# libs/, not only ones that live in an entity.go file — a scoped-out
+# `s.db.Model(...)` in a brand-new scheduler.go would otherwise merge clean
+# on a diff that touches no entity.go (fix round 2, BLOCKING finding). The
+# old `entity\.go$` half stays as an explicit alternative purely for
+# readability at the call site; it is already implied by `\.go$`.
+if [ "$ALL" -eq 1 ] || touched '\.go$|^tools/scopeguard/'; then
+    step "scope guard" ./tools/scope-guard.sh
+else
+    skip "scope guard (no Go file changed)"
+fi
+
+# task-232 FR-4.1: bans new direct producer.Produce calls under services/ that
+# bypass producer.ProviderImpl's composed header decorators (span + tenant +
+# environment). Gated on ANY services/ Go change — not just files matching
+# *producer*.go — because the violation this guards against can appear in any
+# services/ file (a processor.go, a handler, a saga step), not only ones named
+# for the seam they call into. This repo's own allowlist proves the narrower
+# predicate was wrong: two of the four pre-existing call sites
+# (reactor/processor.go, party_quest/processor.go) contain no "producer"
+# substring in their path and would have skipped the gated (non --all) run
+# entirely. Also gated on libs/atlas-kafka/ (the seam itself) and the guard's
+# own source, mirroring the scope guard's self-inclusion above.
+if [ "$ALL" -eq 1 ] || touched '^services/.*\.go$|^libs/atlas-kafka/|^tools/producerseamguard/|^tools/producer-seam-guard\.sh$'; then
+    step "producer seam guard" ./tools/producer-seam-guard.sh
+else
+    skip "producer seam guard (no services/ or atlas-kafka Go file changed)"
+fi
+
 # Path-gated in CI.
 
 if touched '^(\.github/config/services\.json|deploy/k8s/|docker-bake\.hcl|go\.work|tools/db-bootstrap\.sh)'; then
     step "service registration guard" ./tools/service-registration-guard.sh
 else
     skip "service registration guard (no registration list changed)"
+fi
+
+# task-232 Task 29A: asserts every service Deployment/StatefulSet/DaemonSet
+# carries SERVICE_NAME sourced via the downward API from its own `app` pod
+# label — libs/atlas-env/registry.go MapRegistry.IsOwner keys ownership on
+# it, so a missing or wrong-form value is a silent traffic misroute, not a
+# build failure. Gated on any deploy/k8s/ manifest change plus the guard's
+# own source, mirroring the service registration guard predicate above.
+if touched '^deploy/k8s/|^tools/service-name-guard'; then
+    step "service name guard" ./tools/service-name-guard.sh
+else
+    skip "service name guard (no deploy/k8s manifest changed)"
 fi
 
 if touched '^services/atlas-configurations/seed-data/templates/'; then
@@ -396,6 +444,18 @@ if touched 'kafka/message/shops/kafka\.go'; then
     step "npc-shop contract mirror guard" ./tools/npc-shop-contract-mirror-guard.sh
 else
     skip "npc-shop contract mirror guard (contract unchanged)"
+fi
+
+if touched '^services/.*\.go$|^tools/envguard/|^tools/env-domain-guard\.sh$'; then
+    step "env domain guard" ./tools/env-domain-guard.sh
+else
+    skip "env domain guard (no service Go file changed)"
+fi
+
+if touched '^services/.*/main\.go$|^tools/envguard/'; then
+    step "env bootstrap guard" ./tools/env-bootstrap-guard.sh
+else
+    skip "env bootstrap guard (no service main.go changed)"
 fi
 
 if touched 'kafka/message/npc/kafka\.go'; then
@@ -450,9 +510,29 @@ fi
 
 if touched '^(deploy/|tools/gen-lb-ports\.sh|.*versions\.json)'; then
     step "LB port drift"       ./tools/gen-lb-ports.sh --check
+    step "routes drift"        ./tools/gen-routes.sh --check
     step "version coverage"    ./tools/check-version-coverage.sh
 else
     skip "LB port / version coverage (no deploy or versions.json change)"
+fi
+
+if touched '^(deploy/k8s/base/atlas-.*\.yaml|docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit\.md|tools/gen-tenant-tables(_test)?\.sh|services/atlas-pr-bootstrap/scripts/tenant-tables\.txt)'; then
+    step "tenant tables drift"  ./tools/gen-tenant-tables.sh --check
+    step "tenant tables generator tests" ./tools/gen-tenant-tables_test.sh
+else
+    skip "tenant tables drift (no audit, DB_NAME manifest, or generator change)"
+fi
+
+if touched '^(deploy/k8s/overlays/pr/|deploy/k8s/overlays/pr-sparse/|tools/pr-sparse-mirror-guard\.sh)'; then
+    step "pr-sparse mirror drift" ./tools/pr-sparse-mirror-guard.sh
+else
+    skip "pr-sparse mirror drift (neither overlay changed)"
+fi
+
+if touched '^(tools/mode-select(_test)?\.sh|\.github/actions/detect-changes/action\.yml)'; then
+    step "mode select decision table" ./tools/mode-select_test.sh
+else
+    skip "mode select decision table (mode-select.sh / detect-changes unchanged)"
 fi
 
 # ------------------------------------------------------------- lint & format

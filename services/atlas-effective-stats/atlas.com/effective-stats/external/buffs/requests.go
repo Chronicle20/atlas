@@ -14,13 +14,17 @@ const (
 	CharacterBuffs = "characters/%d/buffs"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("BUFFS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "BUFFS")
 }
 
 // characterBuffsUrl returns the list URL for a character's buffs.
-func characterBuffsUrl(characterId uint32) string {
-	return fmt.Sprintf(getBaseRequest()+CharacterBuffs, characterId)
+func characterBuffsUrl(ctx context.Context, characterId uint32) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+CharacterBuffs, characterId), nil
 }
 
 // identity is the no-op transformer for requests.DrainProvider, since
@@ -37,6 +41,10 @@ func identity(m BuffRestModel) (BuffRestModel, error) {
 // are unchanged.
 func RequestCharacterBuffs(characterId uint32) requests.Request[[]BuffRestModel] {
 	return func(l logrus.FieldLogger, ctx context.Context) ([]BuffRestModel, error) {
-		return requests.DrainProvider[BuffRestModel, BuffRestModel](l, ctx)(characterBuffsUrl(characterId), 250, identity, model.Filters[BuffRestModel]())()
+		url, err := characterBuffsUrl(ctx, characterId)
+		if err != nil {
+			return nil, err
+		}
+		return requests.DrainProvider[BuffRestModel, BuffRestModel](l, ctx)(url, 250, identity, model.Filters[BuffRestModel]())()
 	}
 }

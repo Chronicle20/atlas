@@ -35,7 +35,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // GetMarriageGifts returns the marriage gift data for a character
 func (p *ProcessorImpl) GetMarriageGifts(characterId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		marriageProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+		marriageProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(p.ctx, characterId), Extract)
 		marriage, err := marriageProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get marriage gifts for character %d", characterId)
@@ -48,7 +48,7 @@ func (p *ProcessorImpl) GetMarriageGifts(characterId uint32) model.Provider[Mode
 // HasUnclaimedGifts returns whether the character has unclaimed marriage gifts
 func (p *ProcessorImpl) HasUnclaimedGifts(characterId uint32) model.Provider[bool] {
 	return func() (bool, error) {
-		marriageProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+		marriageProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(p.ctx, characterId), Extract)
 		marriage, err := marriageProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to check unclaimed gifts for character %d", characterId)
@@ -61,7 +61,7 @@ func (p *ProcessorImpl) HasUnclaimedGifts(characterId uint32) model.Provider[boo
 // GetUnclaimedGiftCount returns the number of unclaimed gifts for a character
 func (p *ProcessorImpl) GetUnclaimedGiftCount(characterId uint32) model.Provider[int] {
 	return func() (int, error) {
-		marriageProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+		marriageProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(p.ctx, characterId), Extract)
 		marriage, err := marriageProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get unclaimed gift count for character %d", characterId)

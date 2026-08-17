@@ -128,6 +128,20 @@ func (r *TenantRegistry[K, V]) Remove(ctx context.Context, t tenant.Model, key K
 	return r.client.Del(ctx, rk).Err()
 }
 
+// RemoveExisting deletes the key and reports whether it existed. Redis DEL is
+// atomic and returns the number of keys removed, so under concurrency exactly
+// one caller observes true — the primitive callers need when a removal must
+// also be an exclusive claim (e.g. one monster, one catcher). Tenant-scoped
+// counterpart of Registry.RemoveExisting.
+func (r *TenantRegistry[K, V]) RemoveExisting(ctx context.Context, t tenant.Model, key K) (bool, error) {
+	rk := r.entityKey(t, key)
+	n, err := r.client.Del(ctx, rk).Result()
+	if err != nil {
+		return false, fmt.Errorf("redis del: %w", err)
+	}
+	return n == 1, nil
+}
+
 func (r *TenantRegistry[K, V]) Update(ctx context.Context, t tenant.Model, key K, fn func(V) V) (V, error) {
 	rk := r.entityKey(t, key)
 
@@ -241,6 +255,103 @@ func (r *TenantRegistry[K, V]) GetAllEntries(ctx context.Context, t tenant.Model
 // Scan pattern = tenantEntityKey(r.namespace, t, keyPrefix) + "*". Pipelined DEL. Returns count.
 func (r *TenantRegistry[K, V]) ClearByPrefix(ctx context.Context, t tenant.Model, keyPrefix string) (int, error) {
 	pattern := tenantEntityKey(r.namespace, t, keyPrefix) + "*"
+	iter := r.client.Scan(ctx, 0, pattern, 100).Iterator()
+
+	deleted := 0
+	pipe := r.client.Pipeline()
+	pipeSize := 0
+	var firstErr error
+
+	flushPipe := func() {
+		if pipeSize == 0 {
+			return
+		}
+		if _, err := pipe.Exec(ctx); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		pipe = r.client.Pipeline()
+		pipeSize = 0
+	}
+
+	for iter.Next(ctx) {
+		pipe.Del(ctx, iter.Val())
+		deleted++
+		pipeSize++
+		if pipeSize >= 100 {
+			flushPipe()
+		}
+	}
+	flushPipe()
+
+	if err := iter.Err(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return deleted, firstErr
+}
+
+// GetAllAcrossTenants returns every value in this namespace across ALL
+// tenants (SCAN + pipelined GET over the whole namespace, not one tenant's
+// slice of it). This is a deliberate, explicitly-named cross-tenant
+// enumeration — D7 requires crossing tenants to be visible at the call site,
+// never a side effect of the ordinary tenant-scoped API. Reserved for
+// genuine cross-tenant background sweeps (e.g. a periodic task with no
+// tenant to loop over) that need every tenant's live data at once. Skips
+// internal keys whose suffix begins with "_", matching GetAllValues.
+func (r *TenantRegistry[K, V]) GetAllAcrossTenants(ctx context.Context) ([]V, error) {
+	var result []V
+	pattern := namespacedKey(r.namespace, "*")
+	prefix := namespacedKey(r.namespace, "")
+	var cursor uint64
+
+	for {
+		keys, next, err := r.client.Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			return nil, fmt.Errorf("redis scan: %w", err)
+		}
+
+		if len(keys) > 0 {
+			pipe := r.client.Pipeline()
+			cmds := make([]*goredis.StringCmd, len(keys))
+			for i, k := range keys {
+				cmds[i] = pipe.Get(ctx, k)
+			}
+			_, _ = pipe.Exec(ctx)
+
+			for i, cmd := range cmds {
+				data, err := cmd.Bytes()
+				if errors.Is(err, goredis.Nil) {
+					continue
+				}
+				if err != nil {
+					continue
+				}
+				suffix := strings.TrimPrefix(keys[i], prefix)
+				if strings.HasPrefix(suffix, "_") {
+					continue
+				}
+				v, err := r.unmarshal(data)
+				if err != nil {
+					continue
+				}
+				result = append(result, v)
+			}
+		}
+
+		cursor = next
+		if cursor == 0 {
+			break
+		}
+	}
+	return result, nil
+}
+
+// ClearAllAcrossTenants deletes every entry in this namespace across ALL
+// tenants (SCAN COUNT=100 + pipelined DEL over the whole namespace). Returns
+// the number of keys deleted. Deliberate cross-tenant sibling of Clear — see
+// GetAllAcrossTenants for the D7 rationale. Reserved for test-only
+// full-namespace teardown and genuine cross-tenant sweeps.
+func (r *TenantRegistry[K, V]) ClearAllAcrossTenants(ctx context.Context) (int, error) {
+	pattern := namespacedKey(r.namespace, "*")
 	iter := r.client.Scan(ctx, 0, pattern, 100).Iterator()
 
 	deleted := 0

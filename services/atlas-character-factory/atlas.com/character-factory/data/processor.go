@@ -41,7 +41,7 @@ func (c *ProcessorImpl) GetSkillsByIds(ctx context.Context, ids []uint32) ([]Ski
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	rms, err := requestSkillsByIds(ids)(c.l, ctx)
+	rms, err := requestSkillsByIds(ctx, ids)(c.l, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (c *ProcessorImpl) GetItemById(ctx context.Context, id uint32) (ItemInfo, e
 		// Non-equip items don't have a "/data/equipment/{id}" entry; existence is presumed.
 		return ItemInfo{Id: id, Equipable: false}, nil
 	}
-	if _, err := requestEquipmentById(id)(c.l, ctx); err != nil {
+	if _, err := requestEquipmentById(ctx, id)(c.l, ctx); err != nil {
 		// Distinguish a real 404 from atlas-data ("template not present") from
 		// any other failure (HTTP transport, JSON:API decode, etc). Surfacing
 		// every error as ErrNotFound makes deploy bugs (see task-037, where

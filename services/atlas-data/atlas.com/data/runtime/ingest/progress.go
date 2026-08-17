@@ -9,6 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
@@ -22,7 +23,7 @@ const progressWriteTimeout = 5 * time.Second
 // goes through the same run-id guard and the same context discipline.
 type redisSink struct {
 	l     logrus.FieldLogger
-	reg   *redis.Registry[string, ingestrun.Record]
+	reg   *redis.EnvironmentRegistry[string, ingestrun.Record]
 	key   string
 	runId string
 
@@ -30,7 +31,7 @@ type redisSink struct {
 	starts map[string]time.Time
 }
 
-func newRedisSink(l logrus.FieldLogger, reg *redis.Registry[string, ingestrun.Record], suffix, runId string) *redisSink {
+func newRedisSink(l logrus.FieldLogger, reg *redis.EnvironmentRegistry[string, ingestrun.Record], suffix, runId string) *redisSink {
 	return &redisSink{
 		l:      l,
 		reg:    reg,
@@ -59,7 +60,7 @@ func (s *redisSink) writeCtx(ctx context.Context) (context.Context, context.Canc
 // the write is allowed through. Every mutation — Init included — goes through
 // this one guard so a stale pod can never revert a newer run's record.
 func (s *redisSink) guardedUpdate(wctx context.Context, fn func(ingestrun.Record) ingestrun.Record) (err error, stale bool) {
-	_, err = s.reg.UpdateWithTTL(wctx, s.key, ingestrun.RecordTTL, func(rec ingestrun.Record) ingestrun.Record {
+	_, err = s.reg.UpdateWithTTL(wctx, env.Self(), s.key, ingestrun.RecordTTL, func(rec ingestrun.Record) ingestrun.Record {
 		if rec.RunId != "" && s.runId != "" && rec.RunId != s.runId {
 			stale = true
 			return rec
@@ -112,7 +113,7 @@ func (s *redisSink) Init(ctx context.Context, seed ingestrun.Record, roster []st
 		return
 	}
 	if errors.Is(err, redis.ErrNotFound) {
-		if perr := s.reg.PutWithTTL(wctx, s.key, seed, ingestrun.RecordTTL); perr != nil {
+		if perr := s.reg.PutWithTTL(wctx, env.Self(), s.key, seed, ingestrun.RecordTTL); perr != nil {
 			s.l.WithError(perr).Warnf("ingest progress seed failed (key=%s)", s.key)
 		}
 		return

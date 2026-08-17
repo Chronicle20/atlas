@@ -15,13 +15,17 @@ const (
 	CharacterSkillsAll = Resource
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("SKILLS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "SKILLS")
 }
 
 // characterSkillsUrl returns the list URL for a character's skills.
-func characterSkillsUrl(characterId uint32) string {
-	return fmt.Sprintf(getBaseRequest()+CharacterSkillsAll, characterId)
+func characterSkillsUrl(ctx context.Context, characterId uint32) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+CharacterSkillsAll, characterId), nil
 }
 
 // identity is the no-op transformer for requests.DrainProvider, since
@@ -38,6 +42,10 @@ func identity(m RestModel) (RestModel, error) {
 // unchanged.
 func RequestCharacterSkills(characterId uint32) requests.Request[[]RestModel] {
 	return func(l logrus.FieldLogger, ctx context.Context) ([]RestModel, error) {
-		return requests.DrainProvider[RestModel, RestModel](l, ctx)(characterSkillsUrl(characterId), 250, identity, model.Filters[RestModel]())()
+		url, err := characterSkillsUrl(ctx, characterId)
+		if err != nil {
+			return nil, err
+		}
+		return requests.DrainProvider[RestModel, RestModel](l, ctx)(url, 250, identity, model.Filters[RestModel]())()
 	}
 }

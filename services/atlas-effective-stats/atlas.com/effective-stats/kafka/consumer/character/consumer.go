@@ -21,7 +21,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("character_status")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_status")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
 		}
 	}
 }
@@ -73,7 +73,7 @@ func handleStatChanged(l logrus.FieldLogger, ctx context.Context, e character2.S
 		// atlas-character emits TypeLevel / TypeJob STAT_CHANGED events with
 		// Values=nil. We must refetch the wearer record to pick up the new
 		// level/jobId.
-		cm, err := externalcharacter.RequestById(e.CharacterId)(l, ctx)
+		cm, err := externalcharacter.RequestById(ctx, e.CharacterId)(l, ctx)
 		if err != nil {
 			l.WithError(err).Warnf("Unable to refetch wearer profile for character [%d]; skipping re-gate.", e.CharacterId)
 			return

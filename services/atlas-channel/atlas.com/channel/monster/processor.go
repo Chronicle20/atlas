@@ -50,7 +50,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(uniqueId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(uniqueId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, uniqueId), Extract)()
 }
 
 // InMapModelProvider fetches every monster currently in one map instance.
@@ -60,7 +60,11 @@ func (p *ProcessorImpl) GetById(uniqueId uint32) (Model, error) {
 // just the first -- a truncated list here means monsters silently vanish
 // from the client's view.
 func (p *ProcessorImpl) InMapModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(f), 250, Extract, model.Filters[Model]())
+	url, err := inMapUrl(p.ctx, f)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) ForEachInMap(f field.Model, o model.Operator[Model]) error {
@@ -75,7 +79,11 @@ func (p *ProcessorImpl) GetInMap(f field.Model) ([]Model, error) {
 // provider over the resulting monsters. Used by AoE skill handlers (e.g.,
 // Priest Doom) that need server-side bounding-box mob selection.
 func (p *ProcessorImpl) InMapRectModelProvider(f field.Model, x1, y1, x2, y2 int16, limit uint32) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapRectUrl(f, x1, y1, x2, y2, limit), 250, Extract, model.Filters[Model]())
+	url, err := inMapRectUrl(p.ctx, f, x1, y1, x2, y2, limit)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 // GetInMapRect resolves the rect query into a slice of monsters.

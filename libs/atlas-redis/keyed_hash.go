@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -60,4 +61,88 @@ func (h *TenantKeyedHash[K]) GetAll(ctx context.Context, t tenant.Model, k K) (m
 // DeleteKey removes the entire hash for (t, k).
 func (h *TenantKeyedHash[K]) DeleteKey(ctx context.Context, t tenant.Model, k K) error {
 	return h.client.Del(ctx, h.key(t, k)).Err()
+}
+
+// Key returns the fully-namespaced Redis key for (t, k). Exported for
+// callers (e.g. atlas-maps) that run Lua scripts against the concrete key;
+// key construction itself stays inside the lib.
+func (h *TenantKeyedHash[K]) Key(t tenant.Model, k K) string { return h.key(t, k) }
+
+// Len returns the number of fields in the hash for (t, k).
+func (h *TenantKeyedHash[K]) Len(ctx context.Context, t tenant.Model, k K) (int64, error) {
+	return h.client.HLen(ctx, h.key(t, k)).Result()
+}
+
+// ClearForTenantId deletes every hash whose key begins with
+// <prefix>:<namespace>:<tenantId>. TenantKey(t) starts with the bare tenant
+// UUID (see keys.go), so this pattern matches every (region, version) a
+// given tenant ID has ever been keyed under without requiring the caller to
+// know the tenant's current region/version — needed by TenantDeleted-style
+// handlers that only carry the tenant ID. SCAN(COUNT=100) + pipelined DEL,
+// mirroring KeyedHash.Clear. Returns the number of keys deleted.
+func (h *TenantKeyedHash[K]) ClearForTenantId(ctx context.Context, tenantId uuid.UUID) (int, error) {
+	pattern := namespacedKey(h.namespace, tenantId.String()) + keySeparator + "*"
+	iter := h.client.Scan(ctx, 0, pattern, 100).Iterator()
+	deleted := 0
+	pipe := h.client.Pipeline()
+	pipeSize := 0
+	var firstErr error
+	flush := func() {
+		if pipeSize == 0 {
+			return
+		}
+		if _, err := pipe.Exec(ctx); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		pipe = h.client.Pipeline()
+		pipeSize = 0
+	}
+	for iter.Next(ctx) {
+		pipe.Del(ctx, iter.Val())
+		deleted++
+		pipeSize++
+		if pipeSize >= 100 {
+			flush()
+		}
+	}
+	flush()
+	if err := iter.Err(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return deleted, firstErr
+}
+
+// ClearAllAcrossTenants deletes every hash in the namespace, across every
+// tenant. Deliberate, explicitly-named cross-tenant operation (D7) — for
+// test-only full-namespace teardown, not for ordinary request paths.
+func (h *TenantKeyedHash[K]) ClearAllAcrossTenants(ctx context.Context) (int, error) {
+	pattern := namespacedKey(h.namespace) + keySeparator + "*"
+	iter := h.client.Scan(ctx, 0, pattern, 100).Iterator()
+	deleted := 0
+	pipe := h.client.Pipeline()
+	pipeSize := 0
+	var firstErr error
+	flush := func() {
+		if pipeSize == 0 {
+			return
+		}
+		if _, err := pipe.Exec(ctx); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		pipe = h.client.Pipeline()
+		pipeSize = 0
+	}
+	for iter.Next(ctx) {
+		pipe.Del(ctx, iter.Val())
+		deleted++
+		pipeSize++
+		if pipeSize >= 100 {
+			flush()
+		}
+	}
+	flush()
+	if err := iter.Err(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return deleted, firstErr
 }

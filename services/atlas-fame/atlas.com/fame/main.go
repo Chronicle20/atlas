@@ -23,7 +23,7 @@ const serviceName = "atlas-fame"
 var consumerGroupId = consumergroup.Resolve("Fame Service")
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(fame.Migration, outboxlib.Migration))

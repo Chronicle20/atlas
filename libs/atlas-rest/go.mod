@@ -27,6 +27,7 @@ require (
 )
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-env v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
@@ -43,6 +44,8 @@ require (
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/tools v0.44.0 // indirect
 )
+
+replace github.com/Chronicle20/atlas/libs/atlas-env => ../atlas-env
 
 replace github.com/Chronicle20/atlas/libs/atlas-model => ../atlas-model
 

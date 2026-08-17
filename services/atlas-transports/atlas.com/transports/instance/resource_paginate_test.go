@@ -171,13 +171,18 @@ func TestGetInstanceRouteStatusPaginates(t *testing.T) {
 	}
 
 	tenantId := uuid.New()
+	tm, err := tenant.Create(tenantId, "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("seed tenant create failed: %v", err)
+	}
+	instCtx := tenant.WithContext(context.Background(), tm)
 
 	reg := getInstanceRegistry()
 	now := time.Now()
 	seededIds := make([]string, 0, 3)
 	for i := 0; i < 3; i++ {
-		inst := reg.FindOrCreateInstance(tenantId, route, now)
-		reg.AddCharacter(inst.InstanceId(), CharacterEntry{CharacterId: uint32(i + 1)})
+		inst := reg.FindOrCreateInstance(instCtx, route, now)
+		reg.AddCharacter(instCtx, inst.InstanceId(), CharacterEntry{CharacterId: uint32(i + 1)})
 		seededIds = append(seededIds, inst.InstanceId().String())
 	}
 

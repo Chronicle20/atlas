@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -19,8 +20,8 @@ const (
 	monstersResource        = "monsters/%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("MONSTERS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MONSTERS")
 }
 
 // inMapUrl returns the list URL for the monsters currently in one map
@@ -28,8 +29,12 @@ func getBaseRequest() string {
 // now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func inMapUrl(f field.Model) string {
-	return fmt.Sprintf(getBaseRequest()+mapMonstersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+func inMapUrl(ctx context.Context, f field.Model) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+mapMonstersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()), nil
 }
 
 // inMapRectUrl returns the list URL for the atlas-monsters rectangle query
@@ -38,10 +43,18 @@ func inMapUrl(f field.Model) string {
 // atlas-monsters preserves its ascending-distance-from-center order across
 // pages, so draining is still safe (page order is meaningful, not
 // re-sorted).
-func inMapRectUrl(f field.Model, x1, y1, x2, y2 int16, limit uint32) string {
-	return fmt.Sprintf(getBaseRequest()+mapMonstersRectResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String(), x1, y1, x2, y2, limit)
+func inMapRectUrl(ctx context.Context, f field.Model, x1, y1, x2, y2 int16, limit uint32) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+mapMonstersRectResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String(), x1, y1, x2, y2, limit), nil
 }
 
-func requestById(uniqueId uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+monstersResource, uniqueId))
+func requestById(ctx context.Context, uniqueId uint32) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+monstersResource, uniqueId))
 }

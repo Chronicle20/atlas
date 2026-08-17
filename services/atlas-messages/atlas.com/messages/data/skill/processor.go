@@ -33,11 +33,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(uniqueId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(uniqueId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, uniqueId), Extract)()
 }
 
 func (p *ProcessorImpl) GetByName(name string) ([]Model, error) {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(name), Extract, model.Filters[Model]())()
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(p.ctx, name), Extract, model.Filters[Model]())()
 }
 
 func (p *ProcessorImpl) GetEffect(uniqueId uint32, level byte) (effect.Model, error) {

@@ -39,7 +39,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(guildId uint32, threadId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(guildId, threadId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, guildId, threadId), Extract)()
 }
 
 // AllModelProvider fetches every thread for a guild. The guild BBS thread
@@ -50,7 +50,11 @@ func (p *ProcessorImpl) GetById(guildId uint32, threadId uint32) (Model, error) 
 // would silently hide older threads (and, worse, could drop the pinned
 // notice thread if it fell past page 1).
 func (p *ProcessorImpl) AllModelProvider(guildId uint32) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(allUrl(guildId), 250, Extract, model.Filters[Model]())
+	url, err := allUrl(p.ctx, guildId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetAll(guildId uint32) ([]Model, error) {

@@ -15,10 +15,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
-func newTestRedis(t *testing.T) (*goredis.Client, *redis.Registry[string, string]) {
+func newTestRedis(t *testing.T) (*goredis.Client, *redis.EnvironmentRegistry[string, string]) {
 	t.Helper()
 	mr := miniredis.RunT(t)
 	rdb := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
@@ -126,7 +127,7 @@ func TestWatchdogSweep(t *testing.T) {
 					if suffix == "" {
 						t.Fatalf("test setup: job %q missing scope/region/version labels", jb.name)
 					}
-					if err := reg.PutWithTTL(context.Background(), suffix+":updatedAt", jb.updatedAt.UTC().Format(time.RFC3339), time.Hour); err != nil {
+					if err := reg.PutWithTTL(context.Background(), env.Self(), suffix+":updatedAt", jb.updatedAt.UTC().Format(time.RFC3339), time.Hour); err != nil {
 						t.Fatal(err)
 					}
 				}
@@ -164,14 +165,14 @@ func TestJobCreatorWritesHeartbeatToRedis(t *testing.T) {
 		t.Fatal(err)
 	}
 	suffix := ingestrun.KeySuffix("tenants/t1", "GMS", 83, 1)
-	got, err := reg.Get(context.Background(), suffix)
+	got, err := reg.Get(context.Background(), env.Self(), suffix)
 	if err != nil {
 		t.Fatalf("registry missing job key suffix %q: %v", suffix, err)
 	}
 	if got != name {
 		t.Fatalf("registry job key = %q, want %q", got, name)
 	}
-	if _, err := reg.Get(context.Background(), suffix+ingestrun.HeartbeatKeySuffix); err != nil {
+	if _, err := reg.Get(context.Background(), env.Self(), suffix+ingestrun.HeartbeatKeySuffix); err != nil {
 		t.Fatalf("registry missing updatedAt: %v", err)
 	}
 }
@@ -190,13 +191,13 @@ func TestDeleteStuckJobWritesStuckRecord(t *testing.T) {
 		time.Now().UTC().Add(-time.Hour), []string{"STRING", "MAP"})
 	rec = rec.WithWorkerTerminal("STRING", ingestrun.WorkerSucceeded, time.Now().UTC(), "")
 	rec = rec.WithWorkerRunning("MAP", time.Now().UTC())
-	if err := regs.Run.PutWithTTL(ctx, suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL); err != nil {
+	if err := regs.Run.PutWithTTL(ctx, env.Self(), suffix+ingestrun.RunKeySuffix, rec, ingestrun.RecordTTL); err != nil {
 		t.Fatal(err)
 	}
-	if err := regs.Job.PutWithTTL(ctx, suffix, "j1", time.Hour); err != nil {
+	if err := regs.Job.PutWithTTL(ctx, env.Self(), suffix, "j1", time.Hour); err != nil {
 		t.Fatal(err)
 	}
-	if err := regs.Job.PutWithTTL(ctx, suffix+ingestrun.HeartbeatKeySuffix, time.Now().UTC().Format(time.RFC3339), time.Hour); err != nil {
+	if err := regs.Job.PutWithTTL(ctx, env.Self(), suffix+ingestrun.HeartbeatKeySuffix, time.Now().UTC().Format(time.RFC3339), time.Hour); err != nil {
 		t.Fatal(err)
 	}
 
@@ -213,7 +214,7 @@ func TestDeleteStuckJobWritesStuckRecord(t *testing.T) {
 
 	w.deleteStuckJob(ctx, job)
 
-	got, err := regs.Run.Get(ctx, suffix+ingestrun.RunKeySuffix)
+	got, err := regs.Run.Get(ctx, env.Self(), suffix+ingestrun.RunKeySuffix)
 	if err != nil {
 		t.Fatalf("run record gone: %v", err)
 	}
@@ -234,10 +235,10 @@ func TestDeleteStuckJobWritesStuckRecord(t *testing.T) {
 		t.Fatalf("MAP = %s, want running (preserved, not rewritten)", got.Workers[1].State)
 	}
 	// The two heartbeat keys are still removed, as before.
-	if _, err := regs.Job.Get(ctx, suffix); err == nil {
+	if _, err := regs.Job.Get(ctx, env.Self(), suffix); err == nil {
 		t.Fatal("job-name key not removed")
 	}
-	if _, err := regs.Job.Get(ctx, suffix+ingestrun.HeartbeatKeySuffix); err == nil {
+	if _, err := regs.Job.Get(ctx, env.Self(), suffix+ingestrun.HeartbeatKeySuffix); err == nil {
 		t.Fatal("heartbeat key not removed")
 	}
 }
@@ -256,7 +257,7 @@ func TestDeleteStuckJobDoesNotClobberNewerRun(t *testing.T) {
 	newer := ingestrun.NewRecord("run-new", "j2", scope, "GMS", "83.1", "t1",
 		time.Now().UTC(), []string{"STRING", "MAP"})
 	newer = newer.WithWorkerRunning("STRING", time.Now().UTC())
-	if err := regs.Run.PutWithTTL(ctx, suffix+ingestrun.RunKeySuffix, newer, ingestrun.RecordTTL); err != nil {
+	if err := regs.Run.PutWithTTL(ctx, env.Self(), suffix+ingestrun.RunKeySuffix, newer, ingestrun.RecordTTL); err != nil {
 		t.Fatal(err)
 	}
 
@@ -287,7 +288,7 @@ func TestDeleteStuckJobDoesNotClobberNewerRun(t *testing.T) {
 
 	w.deleteStuckJob(ctx, job)
 
-	got, err := regs.Run.Get(ctx, suffix+ingestrun.RunKeySuffix)
+	got, err := regs.Run.Get(ctx, env.Self(), suffix+ingestrun.RunKeySuffix)
 	if err != nil {
 		t.Fatalf("newer run record gone: %v", err)
 	}
@@ -325,7 +326,7 @@ func TestDeleteStuckJobWithNoRecordIsQuiet(t *testing.T) {
 	w.deleteStuckJob(ctx, job)
 
 	suffix := ingestrun.KeySuffix("shared", "GMS", 83, 1)
-	if _, err := regs.Run.Get(ctx, suffix+ingestrun.RunKeySuffix); err == nil {
+	if _, err := regs.Run.Get(ctx, env.Self(), suffix+ingestrun.RunKeySuffix); err == nil {
 		t.Fatal("deleteStuckJob created a record where none existed")
 	}
 }

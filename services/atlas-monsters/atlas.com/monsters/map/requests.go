@@ -1,6 +1,7 @@
 package _map
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -14,8 +15,8 @@ const (
 	characterLocationResource     = "characters/%d/location"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("MAPS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MAPS")
 }
 
 // charactersInFieldUrl returns the list URL for the characters currently in
@@ -23,10 +24,18 @@ func getBaseRequest() string {
 // list is now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func charactersInFieldUrl(f field.Model) string {
-	return fmt.Sprintf(getBaseRequest()+mapInstanceCharactersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+func charactersInFieldUrl(ctx context.Context, f field.Model) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+mapInstanceCharactersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()), nil
 }
 
-func requestCharacterLocation(characterId uint32) requests.Request[LocationRestModel] {
-	return requests.GetRequest[LocationRestModel](fmt.Sprintf(getBaseRequest()+characterLocationResource, characterId))
+func requestCharacterLocation(ctx context.Context, characterId uint32) requests.Request[LocationRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[LocationRestModel](err)
+	}
+	return requests.GetRequest[LocationRestModel](fmt.Sprintf(root+characterLocationResource, characterId))
 }

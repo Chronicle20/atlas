@@ -371,5 +371,5 @@ func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) GetForeignCharacterInfo(characterId uint32) (ForeignModel, error) {
-	return requests.Provider[ForeignRestModel, ForeignModel](p.l, p.ctx)(requestById(characterId), ExtractForeign)()
+	return requests.Provider[ForeignRestModel, ForeignModel](p.l, p.ctx)(requestById(p.ctx, characterId), ExtractForeign)()
 }

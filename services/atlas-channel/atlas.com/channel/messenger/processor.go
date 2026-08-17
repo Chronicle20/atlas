@@ -57,7 +57,7 @@ func (p *ProcessorImpl) GetById(messengerId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByIdProvider(messengerId uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(messengerId), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, messengerId), Extract)
 }
 
 func (p *ProcessorImpl) GetByMemberId(memberId uint32) (Model, error) {
@@ -65,6 +65,6 @@ func (p *ProcessorImpl) GetByMemberId(memberId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByMemberIdProvider(memberId uint32) model.Provider[Model] {
-	rp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
+	rp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(p.ctx, memberId), Extract, model.Filters[Model]())
 	return model.FirstProvider(rp, model.Filters[Model]())
 }

@@ -8,6 +8,7 @@ type entityBuilder struct {
 	region       string
 	majorVersion uint16
 	minorVersion uint16
+	environment  string
 }
 
 // NewEntityBuilder creates a new entity builder
@@ -45,6 +46,12 @@ func (b *entityBuilder) SetMinorVersion(minorVersion uint16) *entityBuilder {
 	return b
 }
 
+// SetEnvironment sets the tenant environment
+func (b *entityBuilder) SetEnvironment(environment string) *entityBuilder {
+	b.environment = environment
+	return b
+}
+
 // Build creates a new Entity
 func (b *entityBuilder) Build() Entity {
 	return Entity{
@@ -53,6 +60,7 @@ func (b *entityBuilder) Build() Entity {
 		Region:       b.region,
 		MajorVersion: b.majorVersion,
 		MinorVersion: b.minorVersion,
+		Environment:  b.environment,
 	}
 }
 
@@ -64,5 +72,6 @@ func FromModel(m Model) Entity {
 		SetRegion(m.Region()).
 		SetMajorVersion(m.MajorVersion()).
 		SetMinorVersion(m.MinorVersion()).
+		SetEnvironment(m.Environment()).
 		Build()
 }

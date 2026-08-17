@@ -53,12 +53,17 @@ type storedDoor struct {
 
 // Registry holds the primary door store plus three secondary indices:
 // field (for area-door spawn + field broadcast), owner (for recast/cleanup),
-// and town-party (for slot allocation + town broadcast).
+// and town-party (for slot allocation + town broadcast). All reads/writes go
+// through the tenant-scoped fields below, which key every entry as
+// <prefix>:<namespace>:<TenantKey(t)>:<entityKey>. GetAll (expiry sweep) and
+// Clear (test teardown) are the two genuine cross-tenant operations and use
+// the deliberate, explicitly-named *AcrossTenants sibling methods (D7)
+// instead of a bare non-tenant-scoped instance.
 type Registry struct {
-	reg      *atlasredis.Registry[string, storedDoor]
-	fieldIdx *atlasredis.KeyedSet[string]
-	ownerIdx *atlasredis.KeyedSet[string]
-	townIdx  *atlasredis.KeyedSet[string]
+	reg      *atlasredis.TenantRegistry[string, storedDoor]
+	fieldIdx *atlasredis.TenantKeyedSet[string]
+	ownerIdx *atlasredis.TenantKeyedSet[string]
+	townIdx  *atlasredis.TenantKeyedSet[string]
 }
 
 var (
@@ -69,10 +74,10 @@ var (
 func newRegistry(rc *goredis.Client) *Registry {
 	id := func(s string) string { return s }
 	return &Registry{
-		reg:      atlasredis.NewRegistry[string, storedDoor](rc, "door", id),
-		fieldIdx: atlasredis.NewKeyedSet[string](rc, "door-field", id),
-		ownerIdx: atlasredis.NewKeyedSet[string](rc, "door-owner", id),
-		townIdx:  atlasredis.NewKeyedSet[string](rc, "door-town", id),
+		reg:      atlasredis.NewTenantRegistry[string, storedDoor](rc, "door", id),
+		fieldIdx: atlasredis.NewTenantKeyedSet[string](rc, "door-field", id),
+		ownerIdx: atlasredis.NewTenantKeyedSet[string](rc, "door-owner", id),
+		townIdx:  atlasredis.NewTenantKeyedSet[string](rc, "door-town", id),
 	}
 }
 
@@ -88,24 +93,23 @@ func GetRegistry() *Registry { return registry }
 // --------------------------------------------------------------------------
 
 // storeSuffix is the entity-key tail for the primary store.
-// Full Redis key: atlas:door:<tenantId>:<areaDoorId>
-func storeSuffix(t tenant.Model, areaDoorId uint32) string {
-	return fmt.Sprintf("%s:%d", t.Id().String(), areaDoorId)
+// Full Redis key: atlas:door:<TenantKey(t)>:<areaDoorId>
+func storeSuffix(areaDoorId uint32) string {
+	return fmt.Sprintf("%d", areaDoorId)
 }
 
 // fieldSuffix is the entity-key tail for the field index SET.
-// Full Redis key: atlas:door-field:<tenantId>:<world>:<channel>:<map>:<instance>
-func fieldSuffix(t tenant.Model, f field.Model) string {
-	return fmt.Sprintf("%s:%d:%d:%d:%s",
-		t.Id().String(),
+// Full Redis key: atlas:door-field:<TenantKey(t)>:<world>:<channel>:<map>:<instance>
+func fieldSuffix(f field.Model) string {
+	return fmt.Sprintf("%d:%d:%d:%s",
 		byte(f.WorldId()), byte(f.ChannelId()), uint32(f.MapId()),
 		f.Instance().String())
 }
 
 // ownerSuffix is the entity-key tail for the owner index SET.
-// Full Redis key: atlas:door-owner:<tenantId>:<characterId>
-func ownerSuffix(t tenant.Model, characterId character.Id) string {
-	return fmt.Sprintf("%s:%d", t.Id().String(), uint32(characterId))
+// Full Redis key: atlas:door-owner:<TenantKey(t)>:<characterId>
+func ownerSuffix(characterId character.Id) string {
+	return fmt.Sprintf("%d", uint32(characterId))
 }
 
 // partyScope returns a discriminator that prevents two solo casters at the same
@@ -118,10 +122,9 @@ func partyScope(partyId uint32, ownerCharacterId character.Id) string {
 }
 
 // townSuffix is the entity-key tail for the town-party index SET.
-// Full Redis key: atlas:door-town:<tenantId>:<world>:<channel>:<townMap>:<partyScope>
-func townSuffix(t tenant.Model, f field.Model, townMapId _map.Id, partyId uint32, ownerCharacterId character.Id) string {
-	return fmt.Sprintf("%s:%d:%d:%d:%s",
-		t.Id().String(),
+// Full Redis key: atlas:door-town:<TenantKey(t)>:<world>:<channel>:<townMap>:<partyScope>
+func townSuffix(f field.Model, townMapId _map.Id, partyId uint32, ownerCharacterId character.Id) string {
+	return fmt.Sprintf("%d:%d:%d:%s",
 		byte(f.WorldId()), byte(f.ChannelId()), uint32(townMapId),
 		partyScope(partyId, ownerCharacterId))
 }
@@ -225,19 +228,19 @@ var errDoorNotFound = errors.New("door not found")
 
 // Put stores the door in the primary registry and adds it to all three indices.
 func (r *Registry) Put(ctx context.Context, t tenant.Model, m Model) error {
-	if err := r.reg.Put(ctx, storeSuffix(t, m.areaDoorId), toStored(t, m)); err != nil {
+	if err := r.reg.Put(ctx, t, storeSuffix(m.areaDoorId), toStored(t, m)); err != nil {
 		return err
 	}
 	mk := memberKey(m.areaDoorId)
-	_ = r.fieldIdx.Add(ctx, fieldSuffix(t, m.fld), mk)
-	_ = r.ownerIdx.Add(ctx, ownerSuffix(t, m.ownerCharacterId), mk)
-	_ = r.townIdx.Add(ctx, townSuffix(t, m.fld, m.townMapId, m.partyId, m.ownerCharacterId), mk)
+	_ = r.fieldIdx.Add(ctx, t, fieldSuffix(m.fld), mk)
+	_ = r.ownerIdx.Add(ctx, t, ownerSuffix(m.ownerCharacterId), mk)
+	_ = r.townIdx.Add(ctx, t, townSuffix(m.fld, m.townMapId, m.partyId, m.ownerCharacterId), mk)
 	return nil
 }
 
 // Get retrieves a single door by its areaDoorId.
 func (r *Registry) Get(ctx context.Context, t tenant.Model, areaDoorId uint32) (Model, error) {
-	sd, err := r.reg.Get(ctx, storeSuffix(t, areaDoorId))
+	sd, err := r.reg.Get(ctx, t, storeSuffix(areaDoorId))
 	if errors.Is(err, atlasredis.ErrNotFound) {
 		return Model{}, errDoorNotFound
 	}
@@ -250,23 +253,23 @@ func (r *Registry) Get(ctx context.Context, t tenant.Model, areaDoorId uint32) (
 
 // GetInField returns all doors whose area field matches f.
 func (r *Registry) GetInField(ctx context.Context, t tenant.Model, f field.Model) ([]Model, error) {
-	return r.lookupByIndex(ctx, t, r.fieldIdx, fieldSuffix(t, f))
+	return r.lookupByIndex(ctx, t, r.fieldIdx, fieldSuffix(f))
 }
 
 // GetByOwner returns all doors owned by characterId.
 func (r *Registry) GetByOwner(ctx context.Context, t tenant.Model, characterId character.Id) ([]Model, error) {
-	return r.lookupByIndex(ctx, t, r.ownerIdx, ownerSuffix(t, characterId))
+	return r.lookupByIndex(ctx, t, r.ownerIdx, ownerSuffix(characterId))
 }
 
 // GetInTownParty returns all doors in the town-party bucket for the given
 // field, townMapId, and party/owner scope.
 func (r *Registry) GetInTownParty(ctx context.Context, t tenant.Model, f field.Model, townMapId _map.Id, partyId uint32, ownerCharacterId character.Id) ([]Model, error) {
-	return r.lookupByIndex(ctx, t, r.townIdx, townSuffix(t, f, townMapId, partyId, ownerCharacterId))
+	return r.lookupByIndex(ctx, t, r.townIdx, townSuffix(f, townMapId, partyId, ownerCharacterId))
 }
 
 // lookupByIndex fetches all doors referenced by a secondary index SET.
-func (r *Registry) lookupByIndex(ctx context.Context, t tenant.Model, idx *atlasredis.KeyedSet[string], suffix string) ([]Model, error) {
-	members, err := idx.Members(ctx, suffix)
+func (r *Registry) lookupByIndex(ctx context.Context, t tenant.Model, idx *atlasredis.TenantKeyedSet[string], suffix string) ([]Model, error) {
+	members, err := idx.Members(ctx, t, suffix)
 	if err != nil || len(members) == 0 {
 		return nil, err
 	}
@@ -277,7 +280,7 @@ func (r *Registry) lookupByIndex(ctx context.Context, t tenant.Model, idx *atlas
 		if _, err := fmt.Sscanf(mk, "%d", &id); err != nil {
 			continue
 		}
-		sd, gerr := r.reg.Get(ctx, storeSuffix(t, id))
+		sd, gerr := r.reg.Get(ctx, t, storeSuffix(id))
 		if gerr != nil {
 			continue
 		}
@@ -293,7 +296,7 @@ func (r *Registry) lookupByIndex(ctx context.Context, t tenant.Model, idx *atlas
 // Remove deletes a door and clears it from all three indices. It reads the
 // stored door first to reconstruct the exact index keys.
 func (r *Registry) Remove(ctx context.Context, t tenant.Model, areaDoorId uint32) error {
-	sd, err := r.reg.Get(ctx, storeSuffix(t, areaDoorId))
+	sd, err := r.reg.Get(ctx, t, storeSuffix(areaDoorId))
 	if errors.Is(err, atlasredis.ErrNotFound) {
 		return errDoorNotFound
 	}
@@ -306,18 +309,21 @@ func (r *Registry) Remove(ctx context.Context, t tenant.Model, areaDoorId uint32
 	}
 
 	mk := memberKey(areaDoorId)
-	_ = r.fieldIdx.Remove(ctx, fieldSuffix(t, m.fld), mk)
-	_ = r.ownerIdx.Remove(ctx, ownerSuffix(t, m.ownerCharacterId), mk)
-	_ = r.townIdx.Remove(ctx, townSuffix(t, m.fld, m.townMapId, m.partyId, m.ownerCharacterId), mk)
-	_ = r.reg.Remove(ctx, storeSuffix(t, areaDoorId))
+	_ = r.fieldIdx.Remove(ctx, t, fieldSuffix(m.fld), mk)
+	_ = r.ownerIdx.Remove(ctx, t, ownerSuffix(m.ownerCharacterId), mk)
+	_ = r.townIdx.Remove(ctx, t, townSuffix(m.fld, m.townMapId, m.partyId, m.ownerCharacterId), mk)
+	_ = r.reg.Remove(ctx, t, storeSuffix(areaDoorId))
 
 	return nil
 }
 
-// GetAll returns all doors grouped by tenant.
+// GetAll returns all doors grouped by tenant. This is a deliberate,
+// explicitly-named cross-tenant enumeration (D7) via
+// TenantRegistry.GetAllAcrossTenants — the expiry sweep has no tenant to
+// loop over; it needs every tenant's live doors at once.
 func (r *Registry) GetAll(ctx context.Context) (map[tenant.Model][]Model, error) {
 	result := make(map[tenant.Model][]Model)
-	all, err := r.reg.GetAll(ctx)
+	all, err := r.reg.GetAllAcrossTenants(ctx)
 	if err != nil {
 		return result, err
 	}
@@ -331,10 +337,11 @@ func (r *Registry) GetAll(ctx context.Context) (map[tenant.Model][]Model, error)
 	return result, nil
 }
 
-// Clear removes all doors and all index entries (useful in tests).
+// Clear removes all doors and all index entries across every tenant (useful
+// in tests). Same cross-tenant rationale as GetAll.
 func (r *Registry) Clear(ctx context.Context) {
-	_, _ = r.reg.Clear(ctx)
-	_, _ = r.fieldIdx.ClearAll(ctx)
-	_, _ = r.ownerIdx.ClearAll(ctx)
-	_, _ = r.townIdx.ClearAll(ctx)
+	_, _ = r.reg.ClearAllAcrossTenants(ctx)
+	_, _ = r.fieldIdx.ClearAllAcrossTenants(ctx)
+	_, _ = r.ownerIdx.ClearAllAcrossTenants(ctx)
+	_, _ = r.townIdx.ClearAllAcrossTenants(ctx)
 }

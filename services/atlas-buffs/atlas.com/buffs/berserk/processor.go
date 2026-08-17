@@ -52,10 +52,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		now: time.Now,
 	}
 	p.getCharacter = func(characterId uint32) (extchar.RestModel, error) {
-		return extchar.RequestById(characterId)(l, ctx)
+		return extchar.RequestById(ctx, characterId)(l, ctx)
 	}
 	p.getSkillLevel = func(characterId uint32) (byte, error) {
-		rm, err := extskills.RequestByCharacterAndSkill(characterId, uint32(skill.DarkKnightBerserkId))(l, ctx)
+		rm, err := extskills.RequestByCharacterAndSkill(ctx, characterId, uint32(skill.DarkKnightBerserkId))(l, ctx)
 		if errors.Is(err, requests.ErrNotFound) {
 			// The character never learned the skill: level 0, not an error.
 			return 0, nil
@@ -66,7 +66,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		return rm.Level, nil
 	}
 	p.getMaxHp = func(worldId world.Id, channelId channel.Id, characterId uint32) (uint32, error) {
-		rm, err := exteffstats.RequestByCharacter(worldId, channelId, characterId)(l, ctx)
+		rm, err := exteffstats.RequestByCharacter(ctx, worldId, channelId, characterId)(l, ctx)
 		if err != nil {
 			return 0, err
 		}

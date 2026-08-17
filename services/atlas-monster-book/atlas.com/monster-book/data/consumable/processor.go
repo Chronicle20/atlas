@@ -27,5 +27,5 @@ var _ Processor = (*ProcessorImpl)(nil)
 // propagated automatically by requests.GetRequest (TenantHeaderDecorator), so
 // the lookup is correctly tenant- and version-scoped.
 func (p *ProcessorImpl) GetById(itemId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(itemId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, itemId), Extract)()
 }

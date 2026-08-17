@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func newTestAttackCooldownRegistry(t *testing.T) (*attackCooldownRegistry, *miniredis.Miniredis) {
@@ -19,7 +21,7 @@ func newTestAttackCooldownRegistry(t *testing.T) (*attackCooldownRegistry, *mini
 	}
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	return &attackCooldownRegistry{
-		reg: atlasredis.NewRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s }),
+		reg: atlasredis.NewTenantRegistry[string, int64](rc, "monster-attack-cooldown", func(s string) string { return s }),
 	}, mr
 }
 
@@ -50,7 +52,7 @@ func TestAttackCooldown_DistinctFromSkillRegistry(t *testing.T) {
 	r.SetCooldown(ctx, tm, 100, uint8(0), 1*time.Second)
 	keys := mr.Keys()
 	for _, k := range keys {
-		if k == atlasredis.KeyPrefix()+":monster-cooldown:"+tm.Id().String()+":100:0" {
+		if k == atlasredis.KeyPrefix()+":monster-cooldown:"+atlasredis.TenantKey(tm)+":100:0" {
 			t.Fatalf("attack-cooldown key collides with skill-cooldown key namespace: %s", k)
 		}
 	}
@@ -103,6 +105,29 @@ func TestAttackCooldown_ClearDoesNotAffectNumericPrefixMonster(t *testing.T) {
 	}
 	if !r.IsOnCooldown(ctx, tm, 1000, uint8(0)) {
 		t.Fatalf("monsterId 1000 cooldown must NOT be cleared when clearing monsterId 100")
+	}
+}
+
+// TestAttackCooldown_IsTenantScoped asserts the "monster-attack-cooldown" key
+// carries the tenant: a cooldown set for t1 on (monsterId, attackPos) must
+// not be visible to t2 for the identical (monsterId, attackPos).
+func TestAttackCooldown_IsTenantScoped(t *testing.T) {
+	r, mr := newTestAttackCooldownRegistry(t)
+	defer mr.Close()
+	ctx := context.Background()
+	t1 := newTestTenant(t)
+	// t2 differs from t1 in region AND version, not just UUID — this pins the
+	// tenant-scoped key SHAPE (TenantKey embeds region/version), not merely
+	// "two distinct tenants stay separate".
+	t2, err := tenant.Create(uuid.New(), "JMS", 62, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create t2: %v", err)
+	}
+
+	r.SetCooldown(ctx, t1, 100, uint8(1), 1*time.Second)
+
+	if r.IsOnCooldown(ctx, t2, 100, uint8(1)) {
+		t.Fatalf("tenant 2 saw tenant 1's attack cooldown for the same (monsterId, attackPos)")
 	}
 }
 

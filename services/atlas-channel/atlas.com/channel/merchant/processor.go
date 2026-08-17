@@ -62,7 +62,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // here (session spawn on map load) need the whole set, so this drains every
 // page rather than fetching one.
 func (p *ProcessorImpl) InFieldModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inFieldUrl(f), 250, Extract, model.Filters[Model]())
+	url, err := inFieldUrl(p.ctx, f)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) ForEachInField(f field.Model, o model.Operator[Model]) error {
@@ -70,11 +74,11 @@ func (p *ProcessorImpl) ForEachInField(f field.Model, o model.Operator[Model]) e
 }
 
 func (p *ProcessorImpl) GetVisitingShop(characterId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestVisiting(characterId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestVisiting(p.ctx, characterId), Extract)()
 }
 
 func (p *ProcessorImpl) GetShop(shopId string) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestShop(shopId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestShop(p.ctx, shopId), Extract)()
 }
 
 // GetByCharacterId fetches the complete set of shops for a character.
@@ -83,11 +87,15 @@ func (p *ProcessorImpl) GetShop(shopId string) (Model, error) {
 // character has at most one active shop per ShopType, so it is naturally
 // small), so this drains every page rather than fetching one.
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterIdUrl(characterId), 250, Extract, model.Filters[Model]())()
+	url, err := byCharacterIdUrl(p.ctx, characterId)
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())()
 }
 
 func (p *ProcessorImpl) HasFrederickPending(characterId uint32) (bool, error) {
-	rm, err := requestFrederickStatus(characterId)(p.l, p.ctx)
+	rm, err := requestFrederickStatus(p.ctx, characterId)(p.l, p.ctx)
 	if err != nil {
 		return false, err
 	}
@@ -123,14 +131,22 @@ func (p *ProcessorImpl) RemoveBlacklist(characterId uint32, shopId uuid.UUID, na
 // here shows the whole set, so this drains every page rather than fetching
 // one.
 func (p *ProcessorImpl) GetBlacklist(shopId string) ([]string, error) {
-	return requests.DrainProvider[BlacklistRestModel, string](p.l, p.ctx)(blacklistUrl(shopId), 250, ExtractBlacklistName, model.Filters[string]())()
+	url, err := blacklistUrl(p.ctx, shopId)
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[BlacklistRestModel, string](p.l, p.ctx)(url, 250, ExtractBlacklistName, model.Filters[string]())()
 }
 
 // GetVisits fetches the complete visit log for a shop — paginated
 // server-side (task-117) and drained here for the same whole-set dialog
 // semantics as GetBlacklist.
 func (p *ProcessorImpl) GetVisits(shopId string) ([]VisitEntry, error) {
-	return requests.DrainProvider[VisitRestModel, VisitEntry](p.l, p.ctx)(visitsUrl(shopId), 250, ExtractVisitEntry, model.Filters[VisitEntry]())()
+	url, err := visitsUrl(p.ctx, shopId)
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[VisitRestModel, VisitEntry](p.l, p.ctx)(url, 250, ExtractVisitEntry, model.Filters[VisitEntry]())()
 }
 
 func (p *ProcessorImpl) ExitShop(characterId uint32, shopId uuid.UUID) error {
@@ -175,14 +191,14 @@ func (p *ProcessorImpl) PurchaseBundle(characterId uint32, shopId uuid.UUID, lis
 }
 
 func (p *ProcessorImpl) SearchListings(worldId world.Id, itemId uint32, descending bool) ([]SearchListing, error) {
-	return requests.SliceProvider[ListingSearchRestModel, SearchListing](p.l, p.ctx)(requestSearchListings(itemId, worldId, descending), ExtractSearchListing, model.Filters[SearchListing]())()
+	return requests.SliceProvider[ListingSearchRestModel, SearchListing](p.l, p.ctx)(requestSearchListings(p.ctx, itemId, worldId, descending), ExtractSearchListing, model.Filters[SearchListing]())()
 }
 
 // GetTopSearches deliberately fetches a single page: the route is a bounded
 // top-N ranking (LIMIT 10 server-side, task-117 envelope), so page 1 at the
 // route's default size is always the complete collection — no drain needed.
 func (p *ProcessorImpl) GetTopSearches(worldId world.Id) ([]TopSearch, error) {
-	return requests.SliceProvider[TopSearchRestModel, TopSearch](p.l, p.ctx)(requestTopSearches(worldId), ExtractTopSearch, model.Filters[TopSearch]())()
+	return requests.SliceProvider[TopSearchRestModel, TopSearch](p.l, p.ctx)(requestTopSearches(p.ctx, worldId), ExtractTopSearch, model.Filters[TopSearch]())()
 }
 
 func (p *ProcessorImpl) RecordItemSearch(f field.Model, characterId uint32, itemId uint32) error {

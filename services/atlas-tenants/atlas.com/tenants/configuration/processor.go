@@ -251,6 +251,26 @@ var _ Processor = (*ProcessorImpl)(nil)
 //
 // A resolution failure aborts the caller rather than emitting
 // tenant-free: the operation is meaningless for an unknown tenant.
+//
+// task-232 batch 8 audit (this site was traced, not assumed clean): every
+// caller of this method is a REST handler registered through
+// rest.RegisterHandler/RegisterInputHandler (atlas-tenants/rest.go), which
+// forward to server.RegisterSimpleHandler/RegisterSimpleInputHandler --
+// both wrap every request in server.ParseEnvironment before the handler
+// runs (libs/atlas-rest/server/register.go), so p.ctx (== d.Context())
+// always already carries the request's ENVIRONMENT value, even when the
+// header is absent (the empty/baseline id). atlastenant.WithContext
+// (libs/atlas-tenant/processor.go:90-96) only calls context.WithValue for
+// the four tenant keys, so it does not strip that value -- no env.WithContext
+// call is needed here. No production code changes at this site.
+//
+// This does NOT mean the emit is fully wired end-to-end: EnqueueBuffer's
+// header build (libs/atlas-outbox/bridge.go:53 headerMap) decorates only
+// Span and Tenant headers, never Env -- a pre-existing gap in the shared
+// outbox library that silently drops ENVIRONMENT for every *AndEmit call in
+// every outbox-using service, not something introduced or fixable by this
+// batch's file list (atlas-summons + atlas-tenants only). Flagged to the
+// controller rather than patched here.
 func (p *ProcessorImpl) tenantCtx(tenantId uuid.UUID) (context.Context, error) {
 	m, err := tenants.NewProcessor(p.l, p.ctx, p.db).GetById(tenantId)
 	if err != nil {

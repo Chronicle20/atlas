@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
@@ -164,7 +165,7 @@ func TestJobCreatorCreateInitialisesRunRecord(t *testing.T) {
 	}
 
 	suffix := ingestrun.KeySuffix(scope, "GMS", 83, 1)
-	rec, err := regs.Run.Get(context.Background(), suffix+ingestrun.RunKeySuffix)
+	rec, err := regs.Run.Get(context.Background(), env.Self(), suffix+ingestrun.RunKeySuffix)
 	if err != nil {
 		t.Fatalf("run record not written: %v", err)
 	}

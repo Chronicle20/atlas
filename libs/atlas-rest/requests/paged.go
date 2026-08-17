@@ -54,13 +54,16 @@ func PagedGetRequest[A any](rawUrl string, page model.Page, configurators ...Con
 		if err != nil {
 			return PagedResponse[A]{}, err
 		}
-		// Attach the span + tenant header decorators the non-paged GetRequest
-		// applies (decorated.go). Prepended so a caller-supplied configurator
-		// can still override them. Without these a tenant-scoped server rejects
-		// the request with 400 in ParseTenant.
+		// Attach the span + tenant + environment header decorators the
+		// non-paged GetRequest applies (decorated.go). Prepended so a
+		// caller-supplied configurator can still override them. Without
+		// these a tenant-scoped server rejects the request with 400 in
+		// ParseTenant, and an environment-scoped operation silently
+		// crosses into the baseline (FR-3.1).
 		configurators = append([]Configurator{
 			AddHeaderDecorator(SpanHeaderDecorator(ctx)),
 			AddHeaderDecorator(TenantHeaderDecorator(ctx)),
+			AddHeaderDecorator(EnvHeaderDecorator(ctx)),
 		}, configurators...)
 		body, err := getBody(l, ctx)(u, configurators...)
 		if err != nil {

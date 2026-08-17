@@ -74,7 +74,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
-		mp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
+		mp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, characterId), Extract)
 		return model.Map(model.Decorate(decorators))(mp)()
 	}
 }
@@ -230,7 +230,7 @@ func (p *ProcessorImpl) GetItemInSlot(characterId uint32, inventoryType inventor
 }
 
 func (p *ProcessorImpl) ByNameProvider(name string) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(name), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(p.ctx, name), Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByName(name string) (Model, error) {
@@ -246,7 +246,11 @@ func (p *ProcessorImpl) GetByName(name string) (Model, error) {
 // counting an account's characters in a world needs the whole set, not one
 // page of it.
 func (p *ProcessorImpl) ForAccountInWorldProvider(accountId uint32, worldId world.Id) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(accountInWorldUrl(accountId, worldId), 100, Extract, model.Filters[Model]())
+	url, err := accountInWorldUrl(p.ctx, accountId, worldId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 100, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetForAccountInWorld(accountId uint32, worldId world.Id) ([]Model, error) {

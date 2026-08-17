@@ -32,7 +32,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 // Page -> History view renders the complete set, so this drains every page
 // (up to page[size]=250 per request) rather than fetching just the first.
 func (p *ProcessorImpl) GetByCharacterProvider(characterId uint32) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterUrl(characterId), 250, Extract, model.Filters[Model]())
+	url, err := byCharacterUrl(p.ctx, characterId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByCharacter(characterId uint32) ([]Model, error) {

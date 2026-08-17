@@ -38,7 +38,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 // GetInventory retrieves a character's inventory from atlas-inventory
 func (p *ProcessorImpl) GetInventory(characterId uint32) (RestModel, error) {
-	return requestInventory(characterId)(p.l, p.ctx)
+	return requestInventory(p.ctx, characterId)(p.l, p.ctx)
 }
 
 // GetAssets retrieves ALL assets from a specific compartment. The upstream
@@ -46,7 +46,11 @@ func (p *ProcessorImpl) GetInventory(characterId uint32) (RestModel, error) {
 // below need every asset in the compartment, so this drains every page
 // rather than fetching just the first.
 func (p *ProcessorImpl) GetAssets(characterId uint32, compartmentId string) ([]AssetRestModel, error) {
-	return requests.DrainProvider[AssetRestModel, AssetRestModel](p.l, p.ctx)(compartmentAssetsUrl(characterId, compartmentId), 250, identity, model.Filters[AssetRestModel]())()
+	url, err := compartmentAssetsUrl(p.ctx, characterId, compartmentId)
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[AssetRestModel, AssetRestModel](p.l, p.ctx)(url, 250, identity, model.Filters[AssetRestModel]())()
 }
 
 // GetEquippedAssets retrieves all equipped assets for a character (items in equipment slots)

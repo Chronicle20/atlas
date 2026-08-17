@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -39,5 +40,19 @@ func TenantHeaderDecorator(ctx context.Context) HeaderDecorator {
 		h.Set(tenant.Region, t.Region())
 		h.Set(tenant.MajorVersion, strconv.Itoa(int(t.MajorVersion())))
 		h.Set(tenant.MinorVersion, strconv.Itoa(int(t.MinorVersion())))
+	}
+}
+
+// EnvHeaderDecorator sets the ENVIRONMENT header from the operation's
+// context. Set centrally so no service sets it by hand (FR-3.1); a service
+// handling a request for pr-123 emits pr-123 on every downstream call
+// regardless of which deployment it is (FR-3.2).
+func EnvHeaderDecorator(ctx context.Context) HeaderDecorator {
+	return func(h http.Header) {
+		e, _ := env.FromContext(ctx)()
+		if e == "" {
+			return // legacy: no header, byte-identical to today
+		}
+		h.Set(env.Key, string(e))
 	}
 }

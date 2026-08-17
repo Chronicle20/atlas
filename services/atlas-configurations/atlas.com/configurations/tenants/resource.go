@@ -103,7 +103,7 @@ func handleUpdateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 						return
 					}
 					d.Logger().WithError(err).Errorf("Unable to update configuration tenant.")
-					server.WriteErrorResponse(d.Logger())(w)(err)
+					rest.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)
@@ -151,7 +151,7 @@ func handleDeleteConfigurationTenant(db *gorm.DB) rest.GetHandler {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteById(tenantId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to delete configuration tenant.")
-					server.WriteErrorResponse(d.Logger())(w)(err)
+					rest.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)

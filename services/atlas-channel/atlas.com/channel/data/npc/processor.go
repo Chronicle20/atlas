@@ -40,11 +40,15 @@ func (p *ProcessorImpl) ForEachInMap(mapId _map.Id, f model.Operator[Model]) err
 // /data/maps/{id}/npcs is now paginated (task-117), so this drains every
 // page rather than fetching one.
 func (p *ProcessorImpl) InMapModelProvider(mapId _map.Id) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(npcsInMapUrl(mapId), 250, Extract, model.Filters[Model]())
+	url, err := npcsInMapUrl(p.ctx, mapId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) InMapByObjectIdModelProvider(mapId _map.Id, objectId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestNPCsInMapByObjectId(mapId, objectId), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestNPCsInMapByObjectId(p.ctx, mapId, objectId), Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetInMapByObjectId(mapId _map.Id, objectId uint32) (Model, error) {

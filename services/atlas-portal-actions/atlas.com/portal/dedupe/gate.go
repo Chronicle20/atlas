@@ -65,7 +65,10 @@ func (nilGate) Allow(_ logrus.FieldLogger, _ context.Context, _ Key) bool { retu
 var gate Gate
 
 // InitGate wires the gate to Redis. Call once at startup, beside
-// action.InitRegistry.
+// action.InitRegistry. The *atlas.Lock is a process-wide singleton, but
+// redisKey below composes the tenant into every acquired key, so distinct
+// tenants never contend for the same Redis key even when one process serves
+// multiple tenants (sparse ephemeral environments, D1).
 func InitGate(client *goredis.Client) {
 	gate = &redisGate{lock: atlas.NewLock(client, lockNamespace)}
 }

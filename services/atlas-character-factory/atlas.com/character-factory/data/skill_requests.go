@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -26,15 +27,19 @@ func (s *SkillRestModel) SetID(id string) error {
 	return nil
 }
 
-func getDataBaseRequest() string {
-	return requests.RootUrl("DATA")
+func getDataBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "DATA")
 }
 
-func requestSkillsByIds(ids []uint32) requests.Request[[]SkillRestModel] {
+func requestSkillsByIds(ctx context.Context, ids []uint32) requests.Request[[]SkillRestModel] {
 	parts := make([]string, len(ids))
 	for i, id := range ids {
 		parts[i] = fmt.Sprint(id)
 	}
-	url := fmt.Sprintf("%s%s?ids=%s", getDataBaseRequest(), skillsPath, strings.Join(parts, ","))
+	root, err := getDataBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]SkillRestModel](err)
+	}
+	url := fmt.Sprintf("%s%s?ids=%s", root, skillsPath, strings.Join(parts, ","))
 	return requests.GetRequest[[]SkillRestModel](url)
 }

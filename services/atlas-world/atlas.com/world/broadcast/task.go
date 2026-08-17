@@ -18,17 +18,26 @@ const SweepTask = "broadcast_sweep"
 // Must only be registered on the leader-elected pod - see main.go's
 // WORLD_BROADCAST_LEADER_* wiring.
 type Sweep struct {
-	l        logrus.FieldLogger
-	ctx      context.Context
-	interval time.Duration
+	l          logrus.FieldLogger
+	ctx        context.Context
+	interval   time.Duration
+	envContext func(context.Context) context.Context
 }
 
-func NewSweep(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *Sweep {
+// NewSweep constructs the leader-gated broadcast sweep task. envContext
+// attaches this pod's environment identity to each tenant's context before
+// it reaches SweepTenant's Kafka emit -- the sweep's root ctx is a
+// background/otel-span context with no inbound request to inherit
+// ENVIRONMENT from, and broadcast/ is outside env-domain-guard's permitted
+// atlas-env import list, so the environment is threaded in via DI rather
+// than imported directly (task-232).
+func NewSweep(l logrus.FieldLogger, ctx context.Context, interval time.Duration, envContext func(context.Context) context.Context) *Sweep {
 	l.Infof("Initializing %s task to run every %dms.", SweepTask, interval.Milliseconds())
 	return &Sweep{
-		l:        l,
-		ctx:      ctx,
-		interval: interval,
+		l:          l,
+		ctx:        ctx,
+		interval:   interval,
+		envContext: envContext,
 	}
 }
 
@@ -38,7 +47,7 @@ func (t *Sweep) Run() {
 
 	t.l.Debugf("Executing %s task.", SweepTask)
 	err := model.ForEachSlice(model.FixedProvider(GetRegistry().Tenants()), func(te tenant.Model) error {
-		tctx := tenant.WithContext(sctx, te)
+		tctx := t.envContext(tenant.WithContext(sctx, te))
 		return NewProcessor(t.l, tctx).SweepTenant()
 	})
 	if err != nil {

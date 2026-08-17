@@ -30,12 +30,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(itemId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(itemId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, itemId), Extract)()
 }
 
 func (p *ProcessorImpl) GetRechargeable() ([]Model, error) {
 	// atlas-data's GET /data/consumables?filter[rechargeable]=true is now
 	// paginated (task-117); this drains every page rather than fetching one,
 	// since callers need the complete rechargeable set.
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(rechargeableUrl(), 250, Extract, model.Filters[Model]())()
+	url, err := rechargeableUrl(p.ctx)
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())()
 }

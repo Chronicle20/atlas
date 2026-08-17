@@ -1,6 +1,7 @@
 package monsterbook
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
@@ -13,10 +14,14 @@ const (
 	Resource = "characters/%d/monster-book"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("MONSTER_BOOK")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MONSTER_BOOK")
 }
 
-func requestByCharacterId(characterId character.Id) requests.Request[CollectionRestModel] {
-	return requests.GetRequest[CollectionRestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
+func requestByCharacterId(ctx context.Context, characterId character.Id) requests.Request[CollectionRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[CollectionRestModel](err)
+	}
+	return requests.GetRequest[CollectionRestModel](fmt.Sprintf(root+Resource, characterId))
 }

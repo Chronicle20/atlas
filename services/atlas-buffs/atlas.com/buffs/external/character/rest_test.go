@@ -63,7 +63,7 @@ func TestRequestById_RoundTrip(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 
-	rm, err := RequestById(42)(logrus.New(), ctx)
+	rm, err := RequestById(ctx, 42)(logrus.New(), ctx)
 	if err != nil {
 		t.Fatalf("RequestById: %v", err)
 	}

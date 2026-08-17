@@ -27,5 +27,9 @@ var _ Processor = (*ProcessorImpl)(nil)
 // GetByCharacterId drains every page of the character's buffs (the
 // upstream list is paginated, task-117).
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(characterBuffsUrl(characterId), 250, Extract, model.Filters[Model]())()
+	url, err := characterBuffsUrl(p.ctx, characterId)
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())()
 }

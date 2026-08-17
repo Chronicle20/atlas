@@ -8,6 +8,8 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
 // SetupTestDB creates an in-memory SQLite database for testing
@@ -31,9 +33,15 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 	}
 	sqlDB.SetMaxOpenConns(1)
 
-	// Run migrations
+	// Run migrations. outboxlib.Migration is required by any test that
+	// exercises a *AndEmit path (e.g. ProcessorImpl.UpdateAndEmit /
+	// DeleteAndEmit through the HTTP handlers), which writes to the
+	// transactional outbox table as part of the same DB transaction.
 	if err := db.AutoMigrate(&tenant.Entity{}, &configuration.Entity{}); err != nil {
 		t.Fatalf("Failed to migrate test database: %v", err)
+	}
+	if err := outboxlib.Migration(db); err != nil {
+		t.Fatalf("Failed to migrate outbox test database: %v", err)
 	}
 
 	return db

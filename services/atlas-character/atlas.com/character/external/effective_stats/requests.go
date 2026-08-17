@@ -1,6 +1,7 @@
 package effective_stats
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -11,11 +12,15 @@ const (
 	Resource = "worlds/%d/channels/%d/characters/%d/stats"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("EFFECTIVE_STATS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "EFFECTIVE_STATS")
 }
 
 // RequestByCharacter returns a request to fetch effective stats for a character
-func RequestByCharacter(ch channel.Model, characterId uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, ch.WorldId(), ch.Id(), characterId))
+func RequestByCharacter(ctx context.Context, ch channel.Model, characterId uint32) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+Resource, ch.WorldId(), ch.Id(), characterId))
 }

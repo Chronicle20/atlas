@@ -42,7 +42,7 @@ func GetTenantConfig(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UU
 		return cfg, nil
 	}
 
-	cfg, err := RequestForTenant(tenantId)(l, ctx)
+	cfg, err := RequestForTenant(ctx, tenantId)(l, ctx)
 	if err != nil {
 		l.WithError(err).Warnf("Failed to fetch tenant config for %s, using defaults", tenantId.String())
 		cfg = tenant.RestModel{}

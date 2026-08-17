@@ -91,7 +91,7 @@ func SelectBySerialNumber(ps []Model, serialNumber uint64) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByIdProvider(petId uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(petId), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, petId), Extract)
 }
 
 func (p *ProcessorImpl) GetById(petId uint32) (Model, error) {
@@ -104,7 +104,11 @@ func (p *ProcessorImpl) GetById(petId uint32) (Model, error) {
 // pet list on channel spawn), so this drains every page rather than
 // fetching just the first.
 func (p *ProcessorImpl) ByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byOwnerUrl(ownerId), 250, Extract, model.Filters[Model]())
+	url, err := byOwnerUrl(p.ctx, ownerId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByOwner(ownerId uint32) ([]Model, error) {

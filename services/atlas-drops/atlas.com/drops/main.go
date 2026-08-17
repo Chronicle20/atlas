@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	drop2 "atlas-drops/kafka/consumer/drop"
@@ -52,7 +53,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)
@@ -88,14 +89,28 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatalf("Unable to find task [%s].", drop.ExpirationTaskName)
 	}
+	// drop sits outside env-domain-guard's permitted atlas-env import list
+	// (main.go, kafka/, rest/, socket/), so this pod's environment identity
+	// is threaded in as a plain function value rather than the package
+	// importing atlas-env itself. Without it, ExpirationTask's per-tenant
+	// expire Kafka events would carry an empty environment header and fail
+	// decide() open per FR-1.8.
+	envContext := func(ctx context.Context) context.Context {
+		return env.WithContext(ctx, env.Self())
+	}
+
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(drop.NewExpirationTask(l, time.Millisecond*time.Duration(tt.Interval)))
+		tasks.Register(l, rt.Context())(drop.NewExpirationTask(l, time.Millisecond*time.Duration(tt.Interval), envContext))
 	})
 
 	rt.TeardownFunc(func() {
 		sctx, span := otel.GetTracerProvider().Tracer("atlas-drops").Start(context.Background(), "teardown")
 		_ = model.ForEachSlice(drop.AllProvider, func(m drop.Model) error {
-			tctx := tenant.WithContext(sctx, m.Tenant())
+			// This pod's own environment identity must be originated here
+			// too: teardown emits the same real ExpireAndEmit Kafka event as
+			// the periodic sweep above, and main.go is one of the sites
+			// env-domain-guard permits to import atlas-env directly.
+			tctx := envContext(tenant.WithContext(sctx, m.Tenant()))
 			p := drop.NewProcessor(l, tctx)
 			return p.ExpireAndEmit(m)
 		})

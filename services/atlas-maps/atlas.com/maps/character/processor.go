@@ -31,7 +31,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 // Snapshot fetches the character resource and projects (x, y, hp) out of it.
 func (p *ProcessorImpl) Snapshot(characterId uint32) (int16, int16, uint16, error) {
-	rm, err := requestById(characterId)(p.l, p.ctx)
+	rm, err := requestById(p.ctx, characterId)(p.l, p.ctx)
 	if err != nil {
 		return 0, 0, 0, err
 	}

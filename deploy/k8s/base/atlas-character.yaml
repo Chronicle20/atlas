@@ -22,6 +22,10 @@ spec:
         - configMapRef:
             name: atlas-env
         env:
+        - name: SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['app']
         - name: SERVICE_MODE
           value: MIXED
         - name: LOG_LEVEL

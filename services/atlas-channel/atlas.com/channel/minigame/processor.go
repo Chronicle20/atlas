@@ -26,7 +26,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 // in field f from atlas-mini-games (task-16 endpoint), for map-entry balloon
 // spawn (task-19).
 func (p *Processor) InFieldModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInField(f), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInField(p.ctx, f), Extract, model.Filters[Model]())
 }
 
 // ForEachInField applies o to every mini-game room in field f.
@@ -37,7 +37,7 @@ func (p *Processor) ForEachInField(f field.Model, o model.Operator[Model]) error
 // MemberModelProvider retrieves the (0-or-1) mini-game room characterId is
 // currently seated in (owner or visitor) from atlas-mini-games.
 func (p *Processor) MemberModelProvider(characterId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMember(characterId), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMember(p.ctx, characterId), Extract, model.Filters[Model]())
 }
 
 // InGame reports whether characterId is currently seated in a mini-game room.

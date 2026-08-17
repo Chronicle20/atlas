@@ -21,7 +21,7 @@ func newTestCooldownRegistry(t *testing.T) (*cooldownRegistry, *miniredis.Minire
 	}
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	return &cooldownRegistry{
-		reg: atlasredis.NewRegistry[string, int64](rc, "monster-cooldown", func(s string) string { return s }),
+		reg: atlasredis.NewTenantRegistry[string, int64](rc, "monster-cooldown", func(s string) string { return s }),
 	}, mr
 }
 
@@ -79,7 +79,7 @@ func TestCooldown_RemainingPastTimestampZero(t *testing.T) {
 
 	// Simulate a stale/past-expiry value by storing expiryMs=1 (1ms epoch,
 	// which is always in the past). Remaining should return 0.
-	if err := r.reg.PutWithTTL(ctx, cooldownSuffix(tm, 100, byte(42)), int64(1), 5*time.Second); err != nil {
+	if err := r.reg.PutWithTTL(ctx, tm, cooldownKey(100, byte(42)), int64(1), 5*time.Second); err != nil {
 		t.Fatalf("PutWithTTL: %v", err)
 	}
 
@@ -124,6 +124,29 @@ func TestCooldown_ClearDoesNotAffectNumericPrefixMonster(t *testing.T) {
 	}
 	if !r.IsOnCooldown(ctx, tm, 1000, byte(1)) {
 		t.Fatalf("monsterId 1000 cooldown must NOT be cleared when clearing monsterId 100")
+	}
+}
+
+// TestCooldown_IsTenantScoped asserts the "monster-cooldown" key carries the
+// tenant: a cooldown set for t1 on (monsterId, skillId) must not be visible
+// to t2 for the identical (monsterId, skillId).
+func TestCooldown_IsTenantScoped(t *testing.T) {
+	r, mr := newTestCooldownRegistry(t)
+	defer mr.Close()
+	ctx := context.Background()
+	t1 := newTestTenant(t)
+	// t2 differs from t1 in region AND version, not just UUID — this pins the
+	// tenant-scoped key SHAPE (TenantKey embeds region/version), not merely
+	// "two distinct tenants stay separate".
+	t2, err := tenant.Create(uuid.New(), "JMS", 62, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create t2: %v", err)
+	}
+
+	r.SetCooldown(ctx, t1, 100, byte(42), 5*time.Second)
+
+	if r.IsOnCooldown(ctx, t2, 100, byte(42)) {
+		t.Fatalf("tenant 2 saw tenant 1's cooldown for the same (monsterId, skillId)")
 	}
 }
 

@@ -36,7 +36,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetEquippedWeaponType(characterId uint32) (item.WeaponType, error) {
-	compartment, err := requestEquipCompartment(characterId)(p.l, p.ctx)
+	compartment, err := requestEquipCompartment(p.ctx, characterId)(p.l, p.ctx)
 	if err != nil {
 		return item.WeaponTypeNone, err
 	}

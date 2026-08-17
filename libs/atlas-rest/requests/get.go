@@ -93,7 +93,7 @@ func getBody(l logrus.FieldLogger, ctx context.Context) func(url string, configu
 			}
 			if statusCode == http.StatusServiceUnavailable {
 				if attempt < c.retries {
-					clientRetriesTotal.WithLabelValues("503").Inc()
+					clientRetriesTotal.WithLabelValues("503", selfEnvironment()).Inc()
 					l.Warnf("Received [503] from [%s] on [%s], will retry.", http.MethodGet, url)
 				}
 				if d, ok := parseRetryAfter(r.Header.Get("Retry-After")); ok {
@@ -144,5 +144,18 @@ func get[A any](l logrus.FieldLogger, ctx context.Context) func(url string, conf
 func MakeGetRequest[A any](url string, configurators ...Configurator) Request[A] {
 	return func(l logrus.FieldLogger, ctx context.Context) (A, error) {
 		return get[A](l, ctx)(url, configurators...)
+	}
+}
+
+// ErrorRequest returns a Request that always fails with err, without issuing
+// any call. Used when a request cannot even be constructed — e.g.
+// RootUrlFor could not resolve the caller's environment to an ingress
+// (FR-3.5, G4) — so there is no URL to build a real Request from.
+//
+//goland:noinspection GoUnusedExportedFunction
+func ErrorRequest[A any](err error) Request[A] {
+	return func(l logrus.FieldLogger, ctx context.Context) (A, error) {
+		var zero A
+		return zero, err
 	}
 }

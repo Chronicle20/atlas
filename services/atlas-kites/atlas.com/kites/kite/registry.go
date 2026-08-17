@@ -48,7 +48,11 @@ func InitRegistry(client *goredis.Client) {
 		reg: atlas.NewTenantRegistry[uint32, entry](client, "kite", func(k uint32) string {
 			return strconv.FormatUint(uint64(k), 10)
 		}),
-		ids:  atlas.NewIDGenerator(client, "kite"),
+		ids: atlas.NewIDGenerator(client, "kite"),
+		// lock is a process-wide *atlas.Lock singleton; fieldLockKey below
+		// embeds the tenant, so distinct tenants never contend for the same
+		// Redis key even when one process serves multiple tenants (sparse
+		// ephemeral environments, D1).
 		lock: atlas.NewLock(client, "kite-cap"),
 	}
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (
@@ -58,9 +59,15 @@ func LockRegistry() *lockRegistry {
 	return lr
 }
 
-func (r *lockRegistry) Get(characterId uint32, inventoryType inventory.Type) *DistributedMutex {
+// Get builds a distributed mutex whose key is tenant-scoped: atlas.Lock
+// itself is a process-wide singleton (namespace "inventory" only), so
+// without the tenant segment two tenants' characters sharing the same
+// characterId/inventoryType pair would contend for the same Redis key once
+// a single atlas-inventory process serves more than one tenant (sparse
+// ephemeral environments, D1).
+func (r *lockRegistry) Get(t tenant.Model, characterId uint32, inventoryType inventory.Type) *DistributedMutex {
 	return &DistributedMutex{
 		lock: r.lock,
-		key:  fmt.Sprintf("%d:%d", characterId, inventoryType),
+		key:  atlas.CompositeKey(atlas.TenantKey(t), fmt.Sprintf("%d:%d", characterId, inventoryType)),
 	}
 }

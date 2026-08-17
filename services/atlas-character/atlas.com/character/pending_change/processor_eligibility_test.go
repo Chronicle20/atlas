@@ -496,3 +496,40 @@ func TestCheckTransferEligibilityResolvesTheCharacterAndEvaluates(t *testing.T) 
 		t.Fatalf("got ok=%v reason=%s, want eligible", ok, reason)
 	}
 }
+
+// TestCheckTransferEligibilityIndependentEvaluatesOnlyTheIndependentHalf is
+// the unit-level pin for the OQ-7 split (design §6.1,
+// bug-world-transfer-eligibility-reasons.md, "The better fix for 2c"): the
+// destination-free entry point rejects on a destination-independent gate
+// (in_family) and, when every independent gate passes, reports eligible —
+// even for a character whose only "problem" would be a destination-DEPENDENT
+// gate (world_same), which this entry point takes no destinationWorldId to
+// evaluate at all.
+func TestCheckTransferEligibilityIndependentEvaluatesOnlyTheIndependentHalf(t *testing.T) {
+	db := newProcessorTestDB(t)
+	l, ctx := testLogger(t), testContext(t)
+	characterId := seedCharacter(t, db, "Romeo", world.Id(0))
+
+	inFamilyGates := passingGateDeps()
+	inFamilyGates.inFamily = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+		return true, nil
+	}
+	p := NewProcessor(l, ctx, db).withTransferEligibilityGates(inFamilyGates)
+
+	ok, reason, err := p.CheckTransferEligibilityIndependent(characterId)
+	if err != nil {
+		t.Fatalf("CheckTransferEligibilityIndependent: %v", err)
+	}
+	if ok || reason != "in_family" {
+		t.Fatalf("got ok=%v reason=%s, want in_family", ok, reason)
+	}
+
+	p2 := NewProcessor(l, ctx, db).withTransferEligibilityGates(passingGateDeps())
+	ok, reason, err = p2.CheckTransferEligibilityIndependent(characterId)
+	if err != nil {
+		t.Fatalf("CheckTransferEligibilityIndependent: %v", err)
+	}
+	if !ok || reason != "" {
+		t.Fatalf("got ok=%v reason=%s, want eligible (destination-dependent gates must not run here)", ok, reason)
+	}
+}

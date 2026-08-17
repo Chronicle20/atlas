@@ -32,6 +32,12 @@ type Processor interface {
 	RequestWorldTransfer(characterId uint32, destinationWorldId world.Id) (RestModel, error)
 	CancelPendingChange(characterId uint32, changeType string) (RestModel, error)
 	GetByCharacterId(characterId uint32) ([]RestModel, error)
+	// CheckTransferEligibilityIndependent calls atlas-character's
+	// destination-free eligibility route (design's OQ-7 split). It backs the
+	// CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE handler, which is asked before a
+	// destination world is chosen and so cannot use RequestWorldTransfer's
+	// full gate table.
+	CheckTransferEligibilityIndependent(characterId uint32) (bool, string, error)
 }
 
 type ProcessorImpl struct {
@@ -56,6 +62,23 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]RestModel, error
 // cashshop/inventory/asset), so the wire shape is the return shape.
 func identityRestModel(r RestModel) (RestModel, error) {
 	return r, nil
+}
+
+// identityEligibilityRestModel is identityRestModel's counterpart for
+// EligibilityRestModel.
+func identityEligibilityRestModel(r EligibilityRestModel) (EligibilityRestModel, error) {
+	return r, nil
+}
+
+// CheckTransferEligibilityIndependent resolves the character and runs ONLY
+// the destination-independent half of atlas-character's gate table, with no
+// side effect (design's OQ-7 split).
+func (p *ProcessorImpl) CheckTransferEligibilityIndependent(characterId uint32) (bool, string, error) {
+	res, err := requests.Provider[EligibilityRestModel, EligibilityRestModel](p.l, p.ctx)(requestTransferEligibilityIndependent(characterId), identityEligibilityRestModel)()
+	if err != nil {
+		return false, "", err
+	}
+	return res.Eligible, res.Reason, nil
 }
 
 // RequestNameChange and RequestWorldTransfer are reached only from the

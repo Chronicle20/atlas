@@ -169,7 +169,7 @@ eligible-world list. The non-goal in PRD §2 is vacuous rather than deferred.
 | OQ-4 inventory world-scoped? | **Resolved: no.** Purely character-scoped. FR-4.5's inventory step collapses to a no-op. | §1.5 |
 | OQ-5 tenant-wide duplicate names in live data | **Cannot be surveyed from this checkout** and must not be assumed away. Design chooses a **query-level** tenant-wide check plus a partial unique index on *pending reservations only* — no new constraint on `characters`. This is correct whether or not duplicates exist. | §3.4 |
 | OQ-6 per-world version divergence | **Resolved: impossible.** Version lives on the tenant. | §1.9 |
-| OQ-7 reason-code enumerations | Deferred to per-cell derivation — this is exactly what `packet-verifier` produces, and inventing them here would be the failure mode the playbook exists to prevent. Design fixes the *server-side* reason taxonomy (§6) and maps it to wire codes at codec time. | §3.7 |
+| OQ-7 reason-code enumerations | **Resolved.** The wire-code mapping was derived and landed in `libs/atlas-packet/cash/clientbound/check_transfer_world_possible_result.go` (`CheckTransferWorldPossibleResultRejectedBody`) and the ten `errors`-table alias templates — both per-cell derivations, not invented here. What stayed open past that was *wiring*: the CHECK-time mapper was dead code, because the CHECK op carries no `destinationWorldId` and the eligibility gate table required one for every gate. Closed by splitting the gate table into a destination-independent half (evaluable with only a characterId) and a destination-dependent half (needs the world), and exposing the independent half through its own entry point — see §6.1. | §6.1 |
 | OQ-8 offline notification delivery | **Resolved: a column, not new machinery.** `notified_at` on the pending-change row; atlas-character consumes its own `LOGIN` status event and re-emits `PENDING_CHANGE_RESOLVED` for any resolved-but-unnotified row. | §3.9 |
 | OQ-9 whether the client accepts `CANCEL_*` outside the cash shop | Deferred to codec derivation, with a **designed fallback**: every resolved-notification also carries a pink-text world message (`WorldMessagePinkTextBody`). If the client ignores the packet outside the cash shop, the player still learns why their coupon came back. | §3.9 |
 
@@ -621,6 +621,42 @@ must not be conflated in what reaches the player or the operator panel.
 
 Every rejection path returns one of these (FR-5.1). A path that would return none is a bug,
 and the test suite asserts exhaustiveness over the enum.
+
+### 6.1 Destination-independent vs. destination-dependent gates (closes OQ-7)
+
+The eligibility gate table (`processor_eligibility.go`) splits into two halves by whether a
+gate needs `destinationWorldId`:
+
+- **Destination-independent** (evaluable with only a characterId): `is_gm`, `banned`,
+  `is_guild_master`, `in_family`, `trade_open`, `merchant_open`, `mts_listings_open`.
+- **Destination-dependent** (need the world being transferred to): `world_same`,
+  `world_unknown`, `world_full`, `no_character_slot`, `name_taken`.
+
+atlas-character exposes both through its existing `GET .../transfer-eligibility` route
+(full table, requires `destinationWorldId`) and a second, destination-free route,
+`GET .../transfer-eligibility-independent` (independent half only, characterId alone).
+Both share every gate's underlying dependency-lookup logic; only the orchestration (which
+gates run, in what order) differs — the split is data-shaped, not a second implementation.
+
+This resolves the design gap `bug-world-transfer-eligibility-reasons.md` ("The better fix
+for 2c") found in the field: `CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE` (the CHECK op) is
+sent *before* the player has picked a destination world, so it cannot call the
+destination-dependent route. Before this fix it answered `ALLOWED` on a valid credential
+alone, with **no gate evaluation at all**, and every gate — including `in_family`, which
+has independently confirmed client text (StringPool id 5017 on GMS v83) reachable only from
+this op's own result arm — surfaced for the first time at `BUY_WORLD_TRANSFER` time, where
+it collapses to the generic `CANNOT_TRANSFER_OUT` `errors`-table alias because no more
+precise code exists there.
+
+Wiring `CheckTransferEligibilityIndependent` into the CHECK handler
+(`cash_shop_check_transfer_world_possible.go`) means a destination-independent rejection is
+now reported at CHECK time, through `CheckTransferWorldPossibleResultRejectedBody` — giving
+`in_family` its real client string instead of the generic `errors`-table fallback. BUY time
+is unchanged: `RequestWorldTransfer` still runs the **full** table (both halves) and still
+answers through the `errors`-table path, which is where `world_same` / `world_full` /
+`no_character_slot` belong and where `CANNOT_TRANSFER_*` codes actually exist. The
+CHECK-time evaluation is advisory — the authoritative check remains the one BUY time runs
+when the pending-change record is actually created.
 
 ---
 

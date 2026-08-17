@@ -60,6 +60,15 @@ type checkPossibleHandlerEnv struct {
 	// see CashShopCheckTransferWorldPossibleHandleFunc's doc comment).
 	worlds    []channelworld.Model
 	worldsErr error
+
+	// transferEligible / transferEligibleReason / transferEligibleErr feed
+	// checkPossibleTransferEligibilityIndependentFunc, the destination-free
+	// gate-check seam (design's OQ-7 split). Defaults to eligible/true with
+	// no reason in newCheckPossibleHandlerEnv, so every existing ALLOWED-path
+	// test needs no change.
+	transferEligible       bool
+	transferEligibleReason string
+	transferEligibleErr    error
 }
 
 // newCheckPossibleHandlerEnv builds a session for the given tenant and
@@ -89,7 +98,7 @@ func newCheckPossibleHandlerEnv(t *testing.T, region string, major uint16, minor
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).Build()
 	updated := session.NewProcessor(l, ctx).SetField(sessionId, f)
 
-	env := &checkPossibleHandlerEnv{t: t, ctx: ctx, s: updated, l: l, logs: logs}
+	env := &checkPossibleHandlerEnv{t: t, ctx: ctx, s: updated, l: l, logs: logs, transferEligible: true}
 	// A world set every case that is not specifically about the world list
 	// can rely on. The handler refuses ALLOWED without one.
 	env.withWorlds(
@@ -134,6 +143,12 @@ func newCheckPossibleHandlerEnv(t *testing.T, region string, major uint16, minor
 		return env.worlds, env.worldsErr
 	}
 	t.Cleanup(func() { checkPossibleWorldsFunc = origWorlds })
+
+	origTransferEligible := checkPossibleTransferEligibilityIndependentFunc
+	checkPossibleTransferEligibilityIndependentFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, string, error) {
+		return env.transferEligible, env.transferEligibleReason, env.transferEligibleErr
+	}
+	t.Cleanup(func() { checkPossibleTransferEligibilityIndependentFunc = origTransferEligible })
 
 	return env
 }
@@ -206,6 +221,24 @@ func (e *checkPossibleHandlerEnv) withWorlds(ws ...channelworld.Model) *checkPos
 func (e *checkPossibleHandlerEnv) withWorldsErr(err error) *checkPossibleHandlerEnv {
 	e.worlds = nil
 	e.worldsErr = err
+	return e
+}
+
+// withTransferEligibilityIndependentRejected sets the destination-free gate
+// check (design's OQ-7 split) to reject with reason.
+func (e *checkPossibleHandlerEnv) withTransferEligibilityIndependentRejected(reason string) *checkPossibleHandlerEnv {
+	e.transferEligible = false
+	e.transferEligibleReason = reason
+	e.transferEligibleErr = nil
+	return e
+}
+
+// withTransferEligibilityIndependentErr sets the destination-free gate check
+// to fail with an infrastructure error.
+func (e *checkPossibleHandlerEnv) withTransferEligibilityIndependentErr(err error) *checkPossibleHandlerEnv {
+	e.transferEligible = false
+	e.transferEligibleReason = ""
+	e.transferEligibleErr = err
 	return e
 }
 

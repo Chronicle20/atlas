@@ -89,3 +89,28 @@ func (r *CancelInputRestModel) SetID(id string) error {
 	r.Id = id
 	return nil
 }
+
+// EligibilityRestModel is the read-only response of atlas-character's
+// GET .../transfer-eligibility-independent (services/atlas-character/atlas.com/character/pending_change/rest.go's
+// EligibilityRestModel, which the destination-bearing
+// .../transfer-eligibility route shares). Id is the characterId the check
+// was run for, so the response is addressable JSON:API; only Eligible/Reason
+// are read here.
+type EligibilityRestModel struct {
+	Id       string `json:"-"`
+	Eligible bool   `json:"eligible"`
+	Reason   string `json:"reason,omitempty"`
+}
+
+func (r EligibilityRestModel) GetName() string {
+	return "transfer-eligibilities"
+}
+
+func (r EligibilityRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *EligibilityRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}

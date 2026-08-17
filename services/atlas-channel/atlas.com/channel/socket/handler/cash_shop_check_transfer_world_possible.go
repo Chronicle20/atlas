@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/account"
 	"atlas-channel/character"
+	"atlas-channel/pendingchange"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	channelworld "atlas-channel/world"
@@ -16,6 +17,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
+
+// checkPossibleTransferEligibilityIndependentFunc is the seam for the
+// destination-free gate check (design's OQ-7 split), swappable in tests the
+// same way the other checkPossible* funcs in this file are.
+var checkPossibleTransferEligibilityIndependentFunc = func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (bool, string, error) {
+	return pendingchange.NewProcessor(l, ctx).CheckTransferEligibilityIndependent(characterId)
+}
 
 // checkPossibleAccountCharactersInWorldFunc is the seam warnIfStrandingStorage
 // (cash_shop_operation.go) calls through for the FR-4.7 last-character-in-
@@ -53,23 +61,25 @@ var checkPossibleWorldsFunc = func(l logrus.FieldLogger, ctx context.Context) ([
 // This op does NOT carry a destination world — BUY_WORLD_TRANSFER supplies
 // that later — so the destination-dependent gates of atlas-character's
 // transfer-eligibility endpoint (world_same, world_unknown/world_full,
-// no_character_slot, name_taken) cannot be evaluated here, and that endpoint
-// has no destination-agnostic form (services/atlas-character/atlas.com/character/pending_change/resource.go
-// handleGetTransferEligibility requires destinationWorldId on every call, and
-// pending_change.CheckTransferEligibility's own gate 1 compares it against
-// the character's current world). The remaining destination-independent gates
-// (is_gm, banned, is_guild_master, in_family, trade_open, merchant_open,
-// mts_listings_open) are evaluated by the SAME endpoint's SAME gate table, so
-// they cannot be split out without inventing a second entry point on
-// atlas-character that this task's brief does not authorize. Per task-227
-// Task 26 ruling 5, this is reported as a genuine design gap rather than
-// invented: this handler validates the credential and the PIC-attempt
-// lockout only, exactly as the sibling name-change handler does, and answers
-// ALLOWED on a valid credential with no further gate evaluation. The real
-// per-purchase eligibility gates already run when the pending-change record
-// is created (pendingchange.RequestWorldTransfer, wired in Task 25's
-// BUY_WORLD_TRANSFER handler), which is the first point a destination world
-// is known.
+// no_character_slot, name_taken) cannot be evaluated here and remain
+// BUY-time only, via pendingchange.RequestWorldTransfer's full gate table
+// (wired in the BUY_WORLD_TRANSFER handler).
+//
+// The remaining destination-independent gates (is_gm, banned,
+// is_guild_master, in_family, trade_open, merchant_open, mts_listings_open)
+// ARE evaluated here, via atlas-character's destination-free
+// GET .../transfer-eligibility-independent route
+// (pending_change.CheckTransferEligibilityIndependent) — this closes OQ-7
+// (docs/tasks/task-227-cash-name-change-world-transfer/bug-world-transfer-eligibility-reasons.md,
+// "The better fix for 2c"). A rejection from that check answers via
+// cashcb.CheckTransferWorldPossibleResultRejectedBody, which routes in_family
+// to its own confirmed client arm (StringPool 5017) rather than collapsing to
+// the generic UNKNOWN_ERROR every other rejection on this op still uses. The
+// real per-purchase gates (both halves) still run again when the
+// pending-change record is created (pendingchange.RequestWorldTransfer,
+// wired in the BUY_WORLD_TRANSFER handler) — that second, authoritative
+// evaluation is unchanged; this one is advisory, so the player is told before
+// the license notice rather than after picking a destination.
 //
 // The ALLOWED arm MUST carry a non-empty world-name list. An empty list is
 // not a cosmetic gap — it crashes the v83 client. Chain, from
@@ -124,6 +134,24 @@ func CashShopCheckTransferWorldPossibleHandleFunc(l logrus.FieldLogger, ctx cont
 
 		if _, _, rErr := checkPossibleRecordPicAttemptFunc(l, ctx, s.AccountId(), true, ipAddress); rErr != nil {
 			l.WithError(rErr).Errorf("Unable to record PIC attempt for account [%d].", s.AccountId())
+		}
+
+		// Destination-independent gate check (design's OQ-7 split, see the
+		// type-level doc comment above). An infrastructure failure here
+		// refuses the transfer rather than risking a false ALLOWED — the
+		// same fail-closed posture the world-list lookup below already uses
+		// — and reuses UNKNOWN_ERROR since no dedicated arm exists for "the
+		// check itself could not run".
+		eligible, reason, eErr := checkPossibleTransferEligibilityIndependentFunc(l, ctx, characterId)
+		if eErr != nil {
+			l.WithError(eErr).Errorf("Unable to check destination-independent transfer eligibility for character [%d]; refusing the world-transfer check.", characterId)
+			announceTransferWorldPossible(l, ctx, wp, s, cashcb.CheckTransferWorldPossibleResultBody(characterId, cashcb.CheckTransferWorldPossibleUnknownError, 0, nil))
+			return
+		}
+		if !eligible {
+			l.Infof("World-transfer check for character [%d] rejected by a destination-independent gate: %s.", characterId, reason)
+			announceTransferWorldPossible(l, ctx, wp, s, cashcb.CheckTransferWorldPossibleResultRejectedBody(characterId, reason, nil))
+			return
 		}
 
 		ws, wErr := checkPossibleWorldsFunc(l, ctx)

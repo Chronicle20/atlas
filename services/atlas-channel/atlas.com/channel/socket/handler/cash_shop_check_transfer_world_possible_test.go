@@ -307,6 +307,66 @@ func TestTransferWorldPossibleWorldListFailureRefusesRatherThanCrashing(t *testi
 	})
 }
 
+// task-227 fix-round, step 4 (design's OQ-7 split,
+// docs/tasks/task-227-cash-name-change-world-transfer/bug-world-transfer-eligibility-reasons.md,
+// "The better fix for 2c"): a rejected destination-independent gate must
+// answer via CheckTransferWorldPossibleResultRejectedBody, and in_family in
+// particular must land on its own confirmed arm (IN_FAMILY / StringPool
+// 5017) rather than collapsing to UNKNOWN_ERROR like every other rejection
+// on this op still does.
+func TestTransferWorldPossibleRejectsOnIndependentGate(t *testing.T) {
+	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
+	env.withAccount(buildAccount("s3cr3t", 0))
+	env.withTransferEligibilityIndependentRejected("in_family")
+	env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
+
+	if got := env.lastAnnouncedResultByte(); got != 0x28 {
+		t.Fatalf("result byte = 0x%02X, want IN_FAMILY 0x28 (checkPossibleWriterOptions' configured code)", got)
+	}
+}
+
+// A rejection reason with no dedicated arm (e.g. banned) still resolves via
+// the same rejected-body path, folding to UNKNOWN_ERROR -- proving the gate
+// check is wired end to end, not just for in_family.
+func TestTransferWorldPossibleRejectsOnIndependentGateWithoutDedicatedArm(t *testing.T) {
+	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
+	env.withAccount(buildAccount("s3cr3t", 0))
+	env.withTransferEligibilityIndependentRejected("banned")
+	env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
+
+	if got := env.lastAnnouncedResultByte(); got != 0x2F {
+		t.Fatalf("result byte = 0x%02X, want UNKNOWN_ERROR 0x2F", got)
+	}
+}
+
+// An infrastructure failure evaluating the independent gates must refuse
+// rather than risk a false ALLOWED, the same fail-closed posture the
+// world-list lookup already uses.
+func TestTransferWorldPossibleEligibilityCheckErrorRefuses(t *testing.T) {
+	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
+	env.withAccount(buildAccount("s3cr3t", 0))
+	env.withTransferEligibilityIndependentErr(errors.New("atlas-character unavailable"))
+	env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
+
+	if got := env.lastAnnouncedResultByte(); got != 0x2F {
+		t.Fatalf("result byte = 0x%02X, want UNKNOWN_ERROR 0x2F", got)
+	}
+}
+
+// A rejected CHECK result must never emit the POP_UP storage warning -- the
+// fix-round-3 timing rule (Symptom 1) applies here too, not just to the
+// ALLOWED arm.
+func TestTransferWorldPossibleRejectionNeverEmitsStorageWarning(t *testing.T) {
+	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
+	env.withAccount(buildAccount("s3cr3t", 0))
+	env.withTransferEligibilityIndependentRejected("in_family")
+	env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
+
+	if env.storageWarningWasAnnounced() {
+		t.Fatal("a rejected CHECK result must never emit the storage-stranding warning")
+	}
+}
+
 // The credential must never reach a log line.
 func TestTransferWorldPossibleNeverLogsTheCredential(t *testing.T) {
 	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)

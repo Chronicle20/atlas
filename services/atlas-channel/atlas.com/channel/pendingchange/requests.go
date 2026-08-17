@@ -79,6 +79,19 @@ func requestByCharacterId(characterId uint32) requests.Request[[]RestModel] {
 	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
 }
 
+// requestTransferEligibilityIndependentUrl points at the destination-free
+// eligibility route (design's OQ-7 split,
+// docs/tasks/task-227-cash-name-change-world-transfer/bug-world-transfer-eligibility-reasons.md).
+// It sits outside the /pending-changes prefix, mirroring atlas-character's
+// own resource.go registration.
+func requestTransferEligibilityIndependentUrl(characterId uint32) string {
+	return fmt.Sprintf(getBaseRequest()+"characters/%d/transfer-eligibility-independent", characterId)
+}
+
+func requestTransferEligibilityIndependent(characterId uint32) requests.Request[EligibilityRestModel] {
+	return requests.GetRequest[EligibilityRestModel](requestTransferEligibilityIndependentUrl(characterId))
+}
+
 // postCreate issues the pending-change creation POST directly via net/http
 // (rather than requests.MakePostRequest) so a 422 response body can be read
 // for its `detail` reason. Header parity with the shared helper is

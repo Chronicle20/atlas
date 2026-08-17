@@ -89,3 +89,36 @@ func TestCheckTransferWorldPossibleReasonKeyRoutesCheckUnavailableToUnknownError
 		t.Fatalf("result byte = %d, want 9 (UNKNOWN_ERROR's configured code)", body[4])
 	}
 }
+
+// TestCheckTransferWorldPossibleReasonKeyRoutesInFamilyToItsOwnArm is this
+// test file's step-4 seam pin (design's OQ-7 split,
+// docs/tasks/task-227-cash-name-change-world-transfer/bug-world-transfer-eligibility-reasons.md,
+// "The better fix for 2c"), complementing
+// TestCheckTransferWorldPossibleReasonKeyRoutesCheckUnavailableToUnknownError
+// immediately above. The NEW contract step 4 exists to deliver: unlike
+// check_unavailable (and every other reason on this op besides in_family),
+// "in_family" -- reported by atlas-character's destination-independent gate
+// via CashShopCheckTransferWorldPossibleHandleFunc's
+// checkPossibleTransferEligibilityIndependentFunc seam -- resolves to its own
+// confirmed arm (IN_FAMILY, StringPool 5017) rather than folding to the
+// generic UNKNOWN_ERROR. TestTransferWorldPossibleRejectsOnIndependentGate
+// (cash_shop_check_transfer_world_possible_test.go) exercises the full
+// handler-level wiring of this same seam; this test pins the mapper's own
+// contract for the specific string the handler passes through unmodified.
+func TestCheckTransferWorldPossibleReasonKeyRoutesInFamilyToItsOwnArm(t *testing.T) {
+	options := map[string]interface{}{
+		"operations": map[string]interface{}{
+			cashcb.CheckTransferWorldPossibleUnknownError: float64(9),
+			cashcb.CheckTransferWorldPossibleInFamily:     float64(8),
+		},
+	}
+
+	ctx := tenant.WithContext(context.Background(), mustTenant(t, "GMS", 83, 1))
+	body := cashcb.CheckTransferWorldPossibleResultRejectedBody(1, "in_family", nil)(logrus.New(), ctx)(options)
+	if len(body) < 5 {
+		t.Fatalf("body = %#v, too short to carry the result byte", body)
+	}
+	if body[4] != 8 {
+		t.Fatalf("result byte = %d, want 8 (IN_FAMILY's configured code) -- in_family must not fold to UNKNOWN_ERROR at CHECK time", body[4])
+	}
+}

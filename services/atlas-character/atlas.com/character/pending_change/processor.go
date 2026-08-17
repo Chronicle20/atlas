@@ -71,6 +71,7 @@ type Processor interface {
 	GetById(id uuid.UUID) (Model, error)
 	NameReserved(name string) (bool, error)
 	CheckTransferEligibility(characterId uint32, destinationWorldId world.Id) (bool, string, error)
+	CheckTransferEligibilityIndependent(characterId uint32) (bool, string, error)
 	WithTransaction(tx *gorm.DB) Processor
 	WithWorldTransferStarter(f WorldTransferStarterFunc) Processor
 	withTransferEligibilityGates(g gateDeps) Processor

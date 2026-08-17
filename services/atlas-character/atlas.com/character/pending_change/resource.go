@@ -35,6 +35,13 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			// WORLD_TRANSFER pending-change request, so it is not itself a
 			// pending-changes resource.
 			router.HandleFunc("/characters/{characterId}/transfer-eligibility", registerGet("get_transfer_eligibility", handleGetTransferEligibility)).Methods(http.MethodGet)
+
+			// The destination-free counterpart (design's OQ-7 split,
+			// docs/tasks/task-227-cash-name-change-world-transfer/bug-world-transfer-eligibility-reasons.md):
+			// atlas-channel's CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE handler is
+			// asked before a destination world is chosen, so it cannot supply
+			// destinationWorldId and cannot use the route above.
+			router.HandleFunc("/characters/{characterId}/transfer-eligibility-independent", registerGet("get_transfer_eligibility_independent", handleGetTransferEligibilityIndependent)).Methods(http.MethodGet)
 		}
 	}
 }
@@ -81,6 +88,35 @@ func handleGetTransferEligibility(d *rest.HandlerDependency, c *rest.HandlerCont
 				CheckTransferEligibility(characterId, destinationWorldId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Checking transfer eligibility for character [%d] to world [%d].", characterId, destinationWorldId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			res := EligibilityRestModel{
+				Id:       strconv.FormatUint(uint64(characterId), 10),
+				Eligible: eligible,
+				Reason:   reason,
+			}
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[EligibilityRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
+}
+
+// handleGetTransferEligibilityIndependent runs ONLY the destination-independent
+// half of the gate table (is_gm, banned, is_guild_master, in_family,
+// trade_open, merchant_open, mts_listings_open), with no side effect, so
+// atlas-channel's CHECK-time handler — which is asked before a destination
+// world is chosen — can report a precise rejection reason instead of
+// answering ALLOWED unconditionally (design's OQ-7 split).
+func handleGetTransferEligibilityIndependent(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			eligible, reason, err := NewProcessor(d.Logger(), d.Context(), d.DB()).
+				CheckTransferEligibilityIndependent(characterId)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Checking destination-independent transfer eligibility for character [%d].", characterId)
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}

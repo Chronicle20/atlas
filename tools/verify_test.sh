@@ -89,8 +89,10 @@ facts_key() { local k="$1"; shift; "$VERIFY" --facts "$@" 2>/dev/null | sed -n "
 # --- probes ----------------------------------------------------------------
 #
 # Every real run below is scoped with `--base HEAD`, so the change set is only
-# the working tree. An unscoped run would be the whole-branch diff — minutes of
-# shellcheck and lint, in a test whose subject is selection, not execution.
+# the working tree. An unscoped run would be the whole-branch diff — minutes
+# of lint and static analysis, in a test whose subject is selection rather
+# than execution. (Do not start a comment line with the word that shellcheck
+# reads as a directive; it parses one and fails with SC1072/SC1073.)
 #
 # Fixed names, not $$: a crashed run leaves exactly one stale file, which the
 # next run removes, instead of one per attempt.

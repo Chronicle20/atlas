@@ -340,12 +340,20 @@ do not re-litigate them.
    the aliased name (see the alias table below).
 3. **Families → wire up the deployment.** `deploy/k8s/base/atlas-families.yaml`,
    the `/api/families` route in `deploy/shared/routes.conf` (then regenerate
-   `routes.conf.template.generated` with `tools/gen-routes.sh`), the
-   `versions.json` entry, and the `kustomization.yaml` resource entry — plus
-   `inFamily`'s two logic bugs. Follow
+   `routes.conf.template.generated` with `tools/gen-routes.sh`), and the
+   `kustomization.yaml` resource entry — plus `inFamily`'s two logic bugs.
+   Follow
    [`docs/adding-a-new-service.md`](../../adding-a-new-service.md) for the
    manifest shape; model it on a sibling read-only service.
 4. **Scope → all five steps** in the suggested fix order.
+
+**Correction to ruling 3 (found during implementation):** the ruling asked for a
+`deploy/k8s/base/versions.json` entry. There is no such thing to add —
+`versions.json` is the client game-version / LB-port list and has no per-service
+concept, with `additionalProperties: false` in its schema. The ruling was wrong;
+no entry was added. Service registration is covered by the base manifest, the
+`kustomization.yaml` resource entry, the ingress route, and
+`tools/service-registration-guard.sh`.
 
 ### The alias table (ruling 2)
 
@@ -371,6 +379,10 @@ Derived from `template_gms_83_1.json` `/socket/writers/211/options/errors`
 | `unknown_error` | `PLEASE_TRY_AGAIN` | transient |
 | `name_taken`, `banned`, `is_guild_master`, `is_gm`, `in_family`, `trade_open`, `merchant_open`, `mts_listings_open` | `CANNOT_TRANSFER_OUT` | source-side refusal; no more specific code exists in the table |
 
+> **SUPERSEDED — see "Rendered StringPool text (verified)" below.** Two rows of
+> this table were wrong. `world_full` and `world_unknown` must NOT alias
+> `CANNOT_TRANSFER_TO_NEW_WORLD`. The corrected table is the one to implement.
+
 **Resolve the numeric code per template from that template's own table** — the
 numbers differ on every version (see the version table above). Never copy a
 gms_83_1 number into another template.
@@ -382,11 +394,92 @@ logged reason rather than a silent 99:
 - `template_jms_185_1.json` — has an `errors` table but none of the
   `CANNOT_TRANSFER_*` names.
 
-**Caveat carried forward:** the alias *names* are prior derivation from the
-existing templates, not text confirmed against a live client (StringPool ids
-4002–4008 could not be read — no String.wz in this checkout). This was accepted
-when scope was set to all five steps. Confirm the rendered strings during live
-re-test.
+## Rendered StringPool text (verified 2026-08-17)
+
+The earlier caveat — that the alias names were prior derivation and the rendered
+text could not be read — **is now closed.** The text was recovered from the
+binary, not guessed.
+
+### Where the strings actually live
+
+Not in `String.wz`. The tenant WZ dumps (`GMS/83.1/String.wz`) contain
+`TransferWorld.img` and `NameChange.img`, which hold the *license agreement*
+body — `TransferWorld.img/TransferWorld/Text00` is
+`"#eRULES FOR CHARACTER TRANSFER#n"`, confirming the identity of the dialog in
+symptom 1 — but there is no `StringPool.img` in any WZ file. The StringPool is
+an **encrypted table inside the client binary**.
+
+### How to read it
+
+`StringPool::GetString` `@0x79e993` indexes `off_BDC9D4[id]`. Each entry is
+`[1-byte seed][XOR-encrypted, NUL-terminated ASCII]`. The keystream is a 16-byte
+key at `0xB001EC` (length at `0xB001FC` = 16), bit-rotated left by the seed:
+
+```
+key = d6 de 75 86 46 64 a3 71 e8 e6 7b d3 33 30 e7 2e
+rotate (sub_79EBF3 @0x79ebf3): if seed >= 8, byte-rotate left by (seed>>3) % 16,
+                               then bit-rotate the whole 16 bytes left by seed & 7
+keystream[i] = rotated[i % 16]
+plain[i] = cipher[i] ^ ks[i], EXCEPT plain[i] = ks[i] when cipher[i] == ks[i]
+           (sub_79ECDE @0x79ecde — the quirk exists to avoid emitting NUL)
+```
+
+The seed is simply the entry's ordinal within its block (id 4002 → 0, 4003 → 1,
+… 4020 → 18), but read it from the data rather than deriving it.
+
+### The strings
+
+`NoticeFailReason` code → StringPool id → rendered text:
+
+| Code | Template name | id | Text |
+|---|---|---|---|
+| 219 | `CANNOT_TRANSFER_UNDER_LEVEL_TWENTY` | 4002 | "You cannot transfer a character under level 20." |
+| 220 | `CANNOT_TRANSFER_TO_SAME_WORLD` | 4005 | "You cannot transfer a character \r\nto the same world it is currently in." |
+| 221 | `CANNOT_TRANSFER_TO_NEW_WORLD` | 4006 | "You cannot transfer a character \r\ninto the new server world." |
+| 222 | `CANNOT_TRANSFER_OUT` | 4007 | "You may not transfer out of this \r\nworld at this time." |
+| 223 | `CANNOT_TRANSFER_NO_EMPTY_SLOTS` | 4008 | "You cannot transfer a character into \r\na world that has no empty character slots." |
+| 231 | `PLEASE_TRY_AGAIN` | 5064 | "Sorry for inconvinence. \r\nplease try again." *(sic)* |
+| *default* | — | 557 | "Due to an unknown error,\r\nthe request for Cash Shop has failed." |
+
+**Every existing template name is accurate.** The prior derivation was sound.
+
+CHECK-result-only strings, unreachable from `NoticeFailReason` — these are the
+payoff for step 4:
+
+| id | Text | Our reason |
+|---|---|---|
+| 4003 | "You cannot transfer a character that \r\nis currently married." | *(no gate — see below)* |
+| 4004 | "You cannot transfer a character that \r\nis currently a Guild leader." | `is_guild_master` |
+| 4009 | "You cannot transfer a character if \r\nyour account has ever been blocked once." | `banned` |
+| 4010 | "You cannot transfer a character that\r\n has already been transferred \r\nwithin the last 30 days." | *(no gate)* |
+| 4015 | "You cannot transfer a character if \r\nyour account has already requested for a transfer." | *(no gate)* |
+| 5017 | "You have to quit Family \r\nto move to another world." | `in_family` |
+
+### Two corrections this forces on the alias table
+
+**`CANNOT_TRANSFER_TO_NEW_WORLD` (221) does not mean "the destination world is
+full."** It renders "You cannot transfer a character into the new server world"
+— it is the *newest-world* prohibition, matching `TransferWorld.img` Text10
+("Your character(s) may not be transferred to the newest server"). We have no
+gate for that rule, so **nothing should alias 221.**
+
+Correspondingly:
+
+| Reason key | ~~Was~~ | **Now** | Why |
+|---|---|---|---|
+| `world_full` | ~~`CANNOT_TRANSFER_TO_NEW_WORLD`~~ | **`PLEASE_TRY_AGAIN`** | no code means "destination at capacity"; 221 would state a different rule, and `CANNOT_TRANSFER_OUT` blames the source world |
+| `world_unknown` | ~~`CANNOT_TRANSFER_TO_NEW_WORLD`~~ | **`PLEASE_TRY_AGAIN`** | same; a generic retry is honest, a wrong specific rule is not |
+
+`no_character_slot → CANNOT_TRANSFER_NO_EMPTY_SLOTS` is confirmed exact ("a
+world that has no empty character slots"). `world_same` is confirmed exact. All
+other rows stand.
+
+### Three gates the client has text for and we do not
+
+`4003` (married), `4010` (transferred within the last 30 days) and `4015` (a
+transfer already requested) are real client-side rules with real strings, and
+the eligibility gate table implements none of them. FR/design coverage question,
+not a bug in this fix — recorded here so it is not lost.
 
 After step 4 lands, `in_family`, `is_gm` and `is_guild_master` should be
 answered at CHECK time and should not normally reach the BUY-time `errors`

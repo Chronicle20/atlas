@@ -38,6 +38,7 @@ atlas-drops continent_drops
 atlas-drops monster_drops
 atlas-drops reactor_drops
 atlas-fame logs
+atlas-families family_members
 atlas-guilds characters
 atlas-guilds guilds
 atlas-guilds members

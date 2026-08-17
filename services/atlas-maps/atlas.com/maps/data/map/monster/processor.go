@@ -36,7 +36,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // grinding/party-quest maps commonly exceed the default page size, so this
 // drains every page rather than fetching one.
 func (p *ProcessorImpl) SpawnPointProvider(mapId _map.Id) model.Provider[[]SpawnPoint] {
-	return requests.DrainProvider[RestModel, SpawnPoint](p.l, p.ctx)(spawnPointsUrl(mapId), 250, Extract, model.Filters[SpawnPoint]())
+	url, err := spawnPointsUrl(p.ctx, mapId)
+	if err != nil {
+		return model.ErrorProvider[[]SpawnPoint](err)
+	}
+	return requests.DrainProvider[RestModel, SpawnPoint](p.l, p.ctx)(url, 250, Extract, model.Filters[SpawnPoint]())
 }
 
 func (p *ProcessorImpl) SpawnableSpawnPointProvider(mapId _map.Id) model.Provider[[]SpawnPoint] {

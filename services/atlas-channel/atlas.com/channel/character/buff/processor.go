@@ -57,7 +57,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // dropped exactly the buffless players (observed as Echo of Hero's map-wide
 // fan-out logging fetch_failures / applied:0 for a fresh recipient).
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	drain := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(characterBuffsUrl(characterId), 250, Extract, model.Filters[Model]())
+	url, err := characterBuffsUrl(p.ctx, characterId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	drain := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 	return func() ([]Model, error) {
 		ms, err := drain()
 		if errors.Is(err, requests.ErrNotFound) {

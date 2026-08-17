@@ -1,0 +1,81 @@
+# scopeguard call-site allowlist (Rule 2).
+#
+# One entry per exempted call site: either an explicit
+# database.WithoutTenantFilter(...) opt-out, or a GORM verb invoked on a
+# `db`/`DB` struct field with no `.WithContext(` in its chain.
+#
+# Format: <package import path>/<file base name>:<line> # <reason>
+# (pass.Pkg.Path() + "/" + filepath.Base(file) + ":" + line — see
+# callsiteKey in analyzer.go; keyed off the package's Go import path, not a
+# filesystem path, because that is stable regardless of the `go vet`
+# driver's working directory — the same reason tools/rediskeyguard keys its
+# bareConstructorAllowlist off pass.Pkg.Path()).
+# An entry with no reason is a lint failure of this file itself
+# (TestAllowlistEntriesHaveReasons).
+#
+# _test.go files are excluded from both call-site rules entirely (see
+# isTestFile in analyzer.go) — test fixtures legitimately seed cross-tenant
+# data or call query helpers without a request-scoped context, matching the
+# audit's own raw-SQL-bypass grep, which excludes _test.go for the same
+# reason. None of the entries below are test files.
+
+# --- INTENDED-GLOBAL background sweeps, per query-scope-audit.md §4.1 ---
+# (task-232 Task 4A reviewed each row for a stated intent — source comment,
+# git blame, or domain semantics — and classified all thirteen
+# INTENDED-GLOBAL, none TENANT-DEFECT. Converting these to per-environment
+# iteration is Task 42's job (§4.3 hand-off list), not this guard's.)
+
+atlas-ban/ban/task.go:30 # ExpiredBanCleanup.Run — bulk delete of expired temporary bans across all tenants, by design. Source comment services/atlas-ban/atlas.com/ban/ban/task.go:26-28: "This intentionally bypasses the processor layer and operates without tenant context, performing a single global sweep rather than iterating per-tenant." query-scope-audit.md §4.1 row 1.
+atlas-ban/history/task.go:32 # HistoryPurge.Run — bulk delete of login history older than RetentionDays across all tenants, by design. Source comment services/atlas-ban/atlas.com/ban/history/task.go:27-29: "This intentionally bypasses the processor layer and operates without tenant context, performing a single global sweep rather than iterating per-tenant." query-scope-audit.md §4.1 row 2.
+atlas-merchant/frederick/task.go:31 # CleanupTask.Run — custody-expiry reaper for frederick_items/frederick_mesos, same reaper shape as the other INTENDED-GLOBAL bulk-write rows in this file. query-scope-audit.md §4.1 row 5.
+atlas-merchant/frederick/notification_task.go:37 # NotificationTask.Run — due-notification sweep across every tenant in the deployment; each row's tenant is reconstructed before its Kafka emit/write (notification_task.go:58-79). query-scope-audit.md §4.1 row 6.
+atlas-merchant/shop/task.go:30 # ExpirationTask.Run — cross-tenant merchant-expiry sweep. Source comment services/atlas-merchant/atlas.com/merchant/shop/task.go:30-32: "Single source of truth for the expiry predicate... run cross-tenant so one task instance sweeps every tenant." query-scope-audit.md §4.1 row 7.
+atlas-mts/task/periodic.go:126 # Sweep — cross-tenant discovery of expired auction listings and want-ads. Line moved 106->126 in task-232 Task 42 (ForEachOwnedEnvironment wrapping added around the per-row loop below this call site); query shape unchanged. Source comment services/atlas-mts/atlas.com/mts/task/periodic.go:96-113 explains why: listings carry only a tenant_id uuid (no region/version), so a full tenant.Model cannot be rebuilt for a per-tenant loop; each row is instead addressed by its own surrogate uuid post-discovery, and environment ownership is enforced downstream by the per-row TenantId() filter inside service.ForEachOwnedEnvironment. query-scope-audit.md §4.1 row 8/9.
+atlas-saga-orchestrator/saga/store.go:230 # GetAllActive — boot-time saga recovery across every tenant. Own doc comment services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/store.go:227: "returns all active and compensating sagas across all tenants (for startup recovery)". query-scope-audit.md §4.1 row 10.
+atlas-saga-orchestrator/saga/store.go:241 # GetTimedOut — timeout-reaper sweep, identical shape to GetAllActive in the same store; caller reconstructs tenant context per row before processor.Step. query-scope-audit.md §4.1 row 10.
+
+# --- atlas-marriages: cross-tenant discovery reads, per-row tenant restore ---
+# (the call-site rule this Rule exists to catch — the atlas-marriages shape
+# from task-232 Task 3B/9B's review. Not WithoutTenantFilter: these never
+# call .WithContext at all, which is the OTHER unscoping mechanism.)
+
+# Line numbers refreshed for task-232 Task 41 (commit e683d85da), which
+# rewrote both schedulers' TenantLister onto service.ForEachOwnedEnvironment
+# — the cross-tenant discovery query itself is unchanged in shape (still a
+# `Distinct("tenant_id").Pluck(...)` with no request tenant to scope by),
+# just moved into getTenantsWithProposals/getTenantsWithActiveCeremonies
+# helper functions the listTenantsWith* TenantLister calls. Environment
+# isolation for whatever tenants these return is enforced downstream, not
+# here: eachOwned (libs/atlas-service/foreach.go) filters every tenant a
+# TenantLister returns against the EnvironmentResolver projection before
+# visiting it, dropping any tenant that resolves to a different environment
+# than the one being iterated — see foreach.go's comment on the `tr != nil`
+# branch, which documents that this filter exists precisely because a
+# lister (like this one) is not always context-scoped enough to self-limit.
+atlas-marriages/scheduler/proposal_expiry.go:132 # getTenantsWithProposals — discovers which tenants have pending proposals so processExpiredProposalsForTenant can be run once per (environment, tenant) via service.ForEachOwnedEnvironment (proposal_expiry.go:94), which reconstructs tenantCtx before every write and filters returned tenants to the owning environment via eachOwned. query-scope-audit.md §4.1 row 3.
+atlas-marriages/scheduler/ceremony_timeout.go:138 # getTenantsWithActiveCeremonies — identical shape to proposal_expiry.go's getTenantsWithProposals; processActiveCeremoniesForTenant is run once per (environment, tenant) via service.ForEachOwnedEnvironment (ceremony_timeout.go:100), which reconstructs tenantCtx per tenant and filters returned tenants to the owning environment via eachOwned. query-scope-audit.md §4.1 row 4.
+
+# --- atlas-data: resolved-partition reads. Documented in query-scope-audit.md
+# §1 rows 75-77 and 80 (search indexes, spawn indexes) and the §3 disposition
+# table lines 808/810; graded SCOPED there for the same reason given per entry
+# below. Allowlisted here because the call sites bypass the automatic callback
+# and the guard cannot see the compensating explicit `tenant_id = ?`. ---
+# Verified directly at source (task-232/15): every one of these bypasses the
+# automatic tenant filter only to immediately re-apply an explicit
+# `tenant_id = ?` WHERE against a tenant id resolved by
+# searchindex.ResolvePartitionTenantId (or, for status.go, an
+# operator-gated scope param) — never an unfiltered cross-tenant read. The
+# bypass exists because *_spawn_index/*_search_index rows for shared content
+# land in whichever tenant partition ran ingest (issue #1213: a request
+# tenant with no rows of its own must read the version-scoped canonical
+# tenant's rows instead), so the automatic context-tenant filter would
+# contradict the resolved partition rather than reinforce it.
+
+atlas-data/monster/spawn_index.go:46 # SpawnMapsFor — bypasses only to let the explicit `tenant_id = ? AND monster_id = ?` (spawn_index.go:47) target the resolved partition tenant instead of the request tenant; doc comment spawn_index.go:28-38 explains why (issue #1213).
+atlas-data/npc/spawn_index.go:40 # SpawnMapsFor — same resolved-partition shape as monster.SpawnMapsFor; doc comment npc/spawn_index.go:28-32 points at monster's for the full rationale (issue #1213).
+atlas-data/searchindex/searchindex.go:99 # ResolvePartitionTenantId itself — the probe this whole pattern is built on; doc comment searchindex.go:80-95 states callers MUST pass the result into a query that also bypasses the filter, or the callback would re-inject the request tenant and contradict the resolved partition.
+atlas-data/searchindex/searchindex.go:138 # Search — every WHERE built after this bypass re-applies `tenant_id = ?` against the resolved partition id explicitly (searchindex.go:165,180,209 in the same function).
+atlas-data/searchindex/searchindex.go:235 # SearchWithFilter — same resolved-partition shape as Search; WHERE re-applies `tenant_id = ?` (searchindex.go:238) against the resolved partition id.
+atlas-data/searchindex/searchindex.go:264 # Count — same resolved-partition shape as Search/SearchWithFilter.
+atlas-data/searchindex/searchindex.go:304 # CountWithFilter — same resolved-partition shape as Count; WHERE re-applies `tenant_id = ?` (searchindex.go:306) against the resolved partition id.
+atlas-data/data/status.go:148 # handleGetStatus — bypasses so a `scope=shared` request (X-Atlas-Operator gated, resolveStatusTenantId:124-130) can read the canonical baseline tenant's rows instead of being AND-ed with the caller's own tenant_id; comment status.go:145-148 states this explicitly. queryStatus (not shown in this file) filters tenant_id explicitly to the resolved scope.

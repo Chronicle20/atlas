@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func setupInstanceTestRegistry(t *testing.T) *InstanceRegistry {
@@ -35,18 +36,19 @@ func newTestRoute() RouteModel {
 
 func TestFindOrCreateInstance_CreatesNew(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	inst := reg.FindOrCreateInstance(tenantId, route, now)
+	inst := reg.FindOrCreateInstance(ctx, route, now)
 
 	assert.NotEqual(t, uuid.Nil, inst.InstanceId())
 	assert.Equal(t, route.Id(), inst.RouteId())
-	assert.Equal(t, tenantId, inst.TenantId())
+	tm := tenant.MustFromContext(ctx)
+	assert.Equal(t, tm.Id(), inst.TenantId())
 	assert.Equal(t, Boarding, inst.State())
 
-	loaded, ok := reg.GetInstance(inst.InstanceId())
+	loaded, ok := reg.GetInstance(ctx, inst.InstanceId())
 	assert.True(t, ok)
 	assert.Equal(t, 0, loaded.CharacterCount())
 	assert.True(t, loaded.BoardingUntil().After(now))
@@ -55,59 +57,59 @@ func TestFindOrCreateInstance_CreatesNew(t *testing.T) {
 
 func TestFindOrCreateInstance_ReusesExisting(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	inst1 := reg.FindOrCreateInstance(tenantId, route, now)
-	inst2 := reg.FindOrCreateInstance(tenantId, route, now)
+	inst1 := reg.FindOrCreateInstance(ctx, route, now)
+	inst2 := reg.FindOrCreateInstance(ctx, route, now)
 
 	assert.Equal(t, inst1.InstanceId(), inst2.InstanceId())
 }
 
 func TestFindOrCreateInstance_NewWhenFull(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute() // capacity = 3
 	now := time.Now()
 
-	inst1 := reg.FindOrCreateInstance(tenantId, route, now)
-	reg.AddCharacter(inst1.InstanceId(), CharacterEntry{CharacterId: 1})
-	reg.AddCharacter(inst1.InstanceId(), CharacterEntry{CharacterId: 2})
-	reg.AddCharacter(inst1.InstanceId(), CharacterEntry{CharacterId: 3})
+	inst1 := reg.FindOrCreateInstance(ctx, route, now)
+	reg.AddCharacter(ctx, inst1.InstanceId(), CharacterEntry{CharacterId: 1})
+	reg.AddCharacter(ctx, inst1.InstanceId(), CharacterEntry{CharacterId: 2})
+	reg.AddCharacter(ctx, inst1.InstanceId(), CharacterEntry{CharacterId: 3})
 
-	inst2 := reg.FindOrCreateInstance(tenantId, route, now)
+	inst2 := reg.FindOrCreateInstance(ctx, route, now)
 	assert.NotEqual(t, inst1.InstanceId(), inst2.InstanceId())
 }
 
 func TestFindOrCreateInstance_NewWhenBoardingExpired(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	inst1 := reg.FindOrCreateInstance(tenantId, route, now)
+	inst1 := reg.FindOrCreateInstance(ctx, route, now)
 
 	// Advance time past boarding window
 	later := now.Add(15 * time.Second)
-	inst2 := reg.FindOrCreateInstance(tenantId, route, later)
+	inst2 := reg.FindOrCreateInstance(ctx, route, later)
 
 	assert.NotEqual(t, inst1.InstanceId(), inst2.InstanceId())
 }
 
 func TestAddCharacter(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	inst := reg.FindOrCreateInstance(tenantId, route, now)
-	ok, count := reg.AddCharacter(inst.InstanceId(), CharacterEntry{CharacterId: 42, WorldId: 0, ChannelId: 1})
+	inst := reg.FindOrCreateInstance(ctx, route, now)
+	ok, count := reg.AddCharacter(ctx, inst.InstanceId(), CharacterEntry{CharacterId: 42, WorldId: 0, ChannelId: 1})
 
 	assert.True(t, ok)
 	assert.Equal(t, 1, count)
 
-	loaded, ok2 := reg.GetInstance(inst.InstanceId())
+	loaded, ok2 := reg.GetInstance(ctx, inst.InstanceId())
 	assert.True(t, ok2)
 	assert.Equal(t, 1, loaded.CharacterCount())
 	assert.True(t, loaded.HasCharacter(42))
@@ -115,25 +117,26 @@ func TestAddCharacter(t *testing.T) {
 
 func TestAddCharacter_InvalidInstance(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	ok, count := reg.AddCharacter(uuid.New(), CharacterEntry{CharacterId: 42})
+	ctx := newTestTenantContext(t)
+	ok, count := reg.AddCharacter(ctx, uuid.New(), CharacterEntry{CharacterId: 42})
 	assert.False(t, ok)
 	assert.Equal(t, 0, count)
 }
 
 func TestRemoveCharacter(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	inst := reg.FindOrCreateInstance(tenantId, route, now)
-	reg.AddCharacter(inst.InstanceId(), CharacterEntry{CharacterId: 1})
-	reg.AddCharacter(inst.InstanceId(), CharacterEntry{CharacterId: 2})
+	inst := reg.FindOrCreateInstance(ctx, route, now)
+	reg.AddCharacter(ctx, inst.InstanceId(), CharacterEntry{CharacterId: 1})
+	reg.AddCharacter(ctx, inst.InstanceId(), CharacterEntry{CharacterId: 2})
 
-	empty := reg.RemoveCharacter(inst.InstanceId(), 1)
+	empty := reg.RemoveCharacter(ctx, inst.InstanceId(), 1)
 	assert.False(t, empty)
 
-	loaded, ok := reg.GetInstance(inst.InstanceId())
+	loaded, ok := reg.GetInstance(ctx, inst.InstanceId())
 	assert.True(t, ok)
 	assert.Equal(t, 1, loaded.CharacterCount())
 	assert.False(t, loaded.HasCharacter(1))
@@ -142,165 +145,181 @@ func TestRemoveCharacter(t *testing.T) {
 
 func TestRemoveCharacter_LastCharacter(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	inst := reg.FindOrCreateInstance(tenantId, route, now)
-	reg.AddCharacter(inst.InstanceId(), CharacterEntry{CharacterId: 1})
+	inst := reg.FindOrCreateInstance(ctx, route, now)
+	reg.AddCharacter(ctx, inst.InstanceId(), CharacterEntry{CharacterId: 1})
 
-	empty := reg.RemoveCharacter(inst.InstanceId(), 1)
+	empty := reg.RemoveCharacter(ctx, inst.InstanceId(), 1)
 	assert.True(t, empty)
 
-	loaded, ok := reg.GetInstance(inst.InstanceId())
+	loaded, ok := reg.GetInstance(ctx, inst.InstanceId())
 	assert.True(t, ok)
 	assert.Equal(t, 0, loaded.CharacterCount())
 }
 
 func TestTransitionToInTransit(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	inst := reg.FindOrCreateInstance(tenantId, route, now)
+	inst := reg.FindOrCreateInstance(ctx, route, now)
 	assert.Equal(t, Boarding, inst.State())
 
-	ok := reg.TransitionToInTransit(inst.InstanceId())
+	ok := reg.TransitionToInTransit(ctx, inst.InstanceId())
 	assert.True(t, ok)
 
-	loaded, ok2 := reg.GetInstance(inst.InstanceId())
+	loaded, ok2 := reg.GetInstance(ctx, inst.InstanceId())
 	assert.True(t, ok2)
 	assert.Equal(t, InTransit, loaded.State())
 }
 
 func TestTransitionToInTransit_AlreadyInTransit(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	inst := reg.FindOrCreateInstance(tenantId, route, now)
-	reg.TransitionToInTransit(inst.InstanceId())
+	inst := reg.FindOrCreateInstance(ctx, route, now)
+	reg.TransitionToInTransit(ctx, inst.InstanceId())
 
-	ok := reg.TransitionToInTransit(inst.InstanceId())
+	ok := reg.TransitionToInTransit(ctx, inst.InstanceId())
 	assert.False(t, ok)
 }
 
 func TestReleaseInstance(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	inst := reg.FindOrCreateInstance(tenantId, route, now)
+	inst := reg.FindOrCreateInstance(ctx, route, now)
 	instanceId := inst.InstanceId()
 
-	reg.ReleaseInstance(instanceId)
+	reg.ReleaseInstance(ctx, instanceId)
 
-	_, ok := reg.GetInstance(instanceId)
+	_, ok := reg.GetInstance(ctx, instanceId)
 	assert.False(t, ok)
 }
 
 func TestGetExpiredBoarding(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	inst := reg.FindOrCreateInstance(tenantId, route, now)
-	reg.AddCharacter(inst.InstanceId(), CharacterEntry{CharacterId: 1})
+	inst := reg.FindOrCreateInstance(ctx, route, now)
+	reg.AddCharacter(ctx, inst.InstanceId(), CharacterEntry{CharacterId: 1})
 
 	// Before expiration
-	expired := reg.GetExpiredBoarding(now.Add(5 * time.Second))
+	expired := reg.GetExpiredBoarding(ctx, now.Add(5*time.Second))
 	assert.Empty(t, expired)
 
 	// After expiration
-	expired = reg.GetExpiredBoarding(now.Add(15 * time.Second))
+	expired = reg.GetExpiredBoarding(ctx, now.Add(15*time.Second))
 	assert.Len(t, expired, 1)
 	assert.Equal(t, inst.InstanceId(), expired[0].InstanceId())
 }
 
 func TestGetExpiredTransit(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	inst := reg.FindOrCreateInstance(tenantId, route, now)
-	reg.AddCharacter(inst.InstanceId(), CharacterEntry{CharacterId: 1})
-	reg.TransitionToInTransit(inst.InstanceId())
+	inst := reg.FindOrCreateInstance(ctx, route, now)
+	reg.AddCharacter(ctx, inst.InstanceId(), CharacterEntry{CharacterId: 1})
+	reg.TransitionToInTransit(ctx, inst.InstanceId())
 
 	// Before arrival
-	expired := reg.GetExpiredTransit(now.Add(30 * time.Second))
+	expired := reg.GetExpiredTransit(ctx, now.Add(30*time.Second))
 	assert.Empty(t, expired)
 
 	// After arrival (boarding 10s + travel 30s = 40s)
-	expired = reg.GetExpiredTransit(now.Add(45 * time.Second))
+	expired = reg.GetExpiredTransit(ctx, now.Add(45*time.Second))
 	assert.Len(t, expired, 1)
 }
 
 func TestGetStuck(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	inst := reg.FindOrCreateInstance(tenantId, route, now)
+	inst := reg.FindOrCreateInstance(ctx, route, now)
 
 	// Before max lifetime
-	stuck := reg.GetStuck(now.Add(60*time.Second), route.MaxLifetime())
+	stuck := reg.GetStuck(ctx, now.Add(60*time.Second), route.MaxLifetime())
 	assert.Empty(t, stuck)
 
 	// After max lifetime (80s + 1s)
-	stuck = reg.GetStuck(now.Add(81*time.Second), route.MaxLifetime())
+	stuck = reg.GetStuck(ctx, now.Add(81*time.Second), route.MaxLifetime())
 	assert.Len(t, stuck, 1)
 	assert.Equal(t, inst.InstanceId(), stuck[0].InstanceId())
 }
 
 func TestGetAllActive(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
-	reg.FindOrCreateInstance(tenantId, route, now)
-	reg.FindOrCreateInstance(tenantId, route, now.Add(15*time.Second))
+	reg.FindOrCreateInstance(ctx, route, now)
+	reg.FindOrCreateInstance(ctx, route, now.Add(15*time.Second))
 
-	active := reg.GetAllActive()
+	active := reg.GetAllActive(ctx)
 	assert.Len(t, active, 2)
+}
+
+func TestGetAllActive_TwoTenantsDoNotCollide(t *testing.T) {
+	reg := setupInstanceTestRegistry(t)
+	ctxA := newTestTenantContext(t)
+	ctxB := newTestTenantContext(t)
+	route := newTestRoute()
+	now := time.Now()
+
+	reg.FindOrCreateInstance(ctxA, route, now)
+	reg.FindOrCreateInstance(ctxB, route, now)
+	reg.FindOrCreateInstance(ctxB, route, now.Add(15*time.Second))
+
+	assert.Len(t, reg.GetAllActive(ctxA), 1, "tenant A must only see its own instance")
+	assert.Len(t, reg.GetAllActive(ctxB), 2, "tenant B must only see its own instances")
 }
 
 func TestGetInstancesByRoute_RoundTrip(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
 	// Create an instance and optionally add a character.
-	inst := reg.FindOrCreateInstance(tenantId, route, now)
+	inst := reg.FindOrCreateInstance(ctx, route, now)
 	instanceId := inst.InstanceId()
-	reg.AddCharacter(instanceId, CharacterEntry{CharacterId: 42, WorldId: 0, ChannelId: 1})
+	reg.AddCharacter(ctx, instanceId, CharacterEntry{CharacterId: 42, WorldId: 0, ChannelId: 1})
 
-	// The region-less tenant route key used during store must match the key used
+	// The tenant-scoped route key used during store must match the key used
 	// during read — this is the correctness crux exercised by this test.
-	instances := reg.GetInstancesByRoute(tenantId, route.Id())
+	instances := reg.GetInstancesByRoute(ctx, route.Id())
 	assert.Len(t, instances, 1, "expected exactly one instance for the route")
 	assert.Equal(t, instanceId, instances[0].InstanceId(), "instance id should match the one stored")
 
 	// A different tenant must not see the instance (tenant scoping).
-	otherInstances := reg.GetInstancesByRoute(uuid.New(), route.Id())
+	otherCtx := newTestTenantContext(t)
+	otherInstances := reg.GetInstancesByRoute(otherCtx, route.Id())
 	assert.Empty(t, otherInstances, "different tenant should see no instances")
 
 	// After release the route member must be removed.
-	reg.ReleaseInstance(instanceId)
-	afterRelease := reg.GetInstancesByRoute(tenantId, route.Id())
+	reg.ReleaseInstance(ctx, instanceId)
+	afterRelease := reg.GetInstancesByRoute(ctx, route.Id())
 	assert.Empty(t, afterRelease, "released instance should not appear in route members")
 }
 
 func TestConcurrentAccess(t *testing.T) {
 	reg := setupInstanceTestRegistry(t)
-	tenantId := uuid.New()
+	ctx := newTestTenantContext(t)
 	route := newTestRoute()
 	now := time.Now()
 
@@ -309,13 +328,13 @@ func TestConcurrentAccess(t *testing.T) {
 		wg.Add(1)
 		go func(id uint32) {
 			defer wg.Done()
-			inst := reg.FindOrCreateInstance(tenantId, route, now)
-			reg.AddCharacter(inst.InstanceId(), CharacterEntry{CharacterId: id})
+			inst := reg.FindOrCreateInstance(ctx, route, now)
+			reg.AddCharacter(ctx, inst.InstanceId(), CharacterEntry{CharacterId: id})
 		}(i)
 	}
 	wg.Wait()
 
-	active := reg.GetAllActive()
+	active := reg.GetAllActive(ctx)
 	totalChars := 0
 	for _, inst := range active {
 		totalChars += inst.CharacterCount()

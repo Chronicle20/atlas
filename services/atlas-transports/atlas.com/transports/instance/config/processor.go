@@ -37,7 +37,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // rather than fetching just the first.
 func (p *ProcessorImpl) GetInstanceRoutes(t tenant.Model) ([]instance.RouteModel, error) {
 	p.l.Debugf("Fetching instance routes for tenant [%s]", t.Id())
-	return requests.DrainProvider[InstanceRouteRestModel, instance.RouteModel](p.l, p.ctx)(instanceRoutesUrl(t.Id().String()), 250, ExtractRouteFor(p.l, t), model.Filters[instance.RouteModel]())()
+	url, err := instanceRoutesUrl(p.ctx, t.Id().String())
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[InstanceRouteRestModel, instance.RouteModel](p.l, p.ctx)(url, 250, ExtractRouteFor(p.l, t), model.Filters[instance.RouteModel]())()
 }
 
 func (p *ProcessorImpl) LoadConfigurationsForTenant(t tenant.Model) ([]instance.RouteModel, error) {

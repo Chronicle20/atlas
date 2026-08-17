@@ -15,6 +15,41 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// envMarkerKey is a test-local context key -- deliberately not
+// libs/atlas-env, since tasks sits outside env-domain-guard's permitted
+// import list (main.go, kafka/, rest/, socket/) and must not import
+// atlas-env even from a test file.
+type envMarkerKey string
+
+// TestRecomputeTaskTenantContextAppliesEnvContext pins the task-232 batch-6
+// origination-audit fix: tenantContext must run the per-tenant context
+// through envContext before intervalFor and processorFor see it, so the
+// periodic recompute tick's outbound REST calls (configuration lookup,
+// character read) carry this pod's own environment identity rather than an
+// empty one. Without this, RootUrlFor's legacy-baseline fallback resolves
+// an empty environment to the BASELINE URL, silently hitting main's
+// environment instead of this pod's.
+func TestRecomputeTaskTenantContextAppliesEnvContext(t *testing.T) {
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("build tenant: %v", err)
+	}
+
+	envContext := func(ctx context.Context) context.Context {
+		return context.WithValue(ctx, envMarkerKey("marker"), "stamped")
+	}
+
+	task := &RecomputeTask{ctx: context.Background(), envContext: envContext}
+	tctx := task.tenantContext(tn)
+
+	if got := tctx.Value(envMarkerKey("marker")); got != "stamped" {
+		t.Fatalf("envContext was not applied: got %v, want \"stamped\"", got)
+	}
+	if got := tenant.MustFromContext(tctx); got != tn {
+		t.Fatalf("tenant not preserved: got %v, want %v", got, tn)
+	}
+}
+
 type fakeProcessor struct {
 	due            bool
 	dueErr         error
@@ -68,10 +103,11 @@ func TestRunSkipsFailingTenantAndContinues(t *testing.T) {
 	countA, countC := 0, 0
 
 	task := &RecomputeTask{
-		l:        logrus.New(),
-		ctx:      context.Background(),
-		interval: time.Minute,
-		tenants:  func() ([]tenant.Model, error) { return ts, nil },
+		l:          logrus.New(),
+		ctx:        context.Background(),
+		interval:   time.Minute,
+		envContext: func(ctx context.Context) context.Context { return ctx },
+		tenants:    func() ([]tenant.Model, error) { return ts, nil },
 		intervalFor: func(context.Context, uuid.UUID) time.Duration {
 			return time.Hour
 		},
@@ -99,10 +135,11 @@ func TestRunSkipsNotDueTenants(t *testing.T) {
 	ts := testTenants(t, 1)
 	count := 0
 	task := &RecomputeTask{
-		l:        logrus.New(),
-		ctx:      context.Background(),
-		interval: time.Minute,
-		tenants:  func() ([]tenant.Model, error) { return ts, nil },
+		l:          logrus.New(),
+		ctx:        context.Background(),
+		interval:   time.Minute,
+		envContext: func(ctx context.Context) context.Context { return ctx },
+		tenants:    func() ([]tenant.Model, error) { return ts, nil },
 		intervalFor: func(context.Context, uuid.UUID) time.Duration {
 			return time.Hour
 		},
@@ -124,10 +161,11 @@ func TestRunSkipsAllTenantsWhenContextAlreadyCancelled(t *testing.T) {
 	cancel()
 
 	task := &RecomputeTask{
-		l:        logrus.New(),
-		ctx:      ctx,
-		interval: time.Minute,
-		tenants:  func() ([]tenant.Model, error) { return ts, nil },
+		l:          logrus.New(),
+		ctx:        ctx,
+		interval:   time.Minute,
+		envContext: func(ctx context.Context) context.Context { return ctx },
+		tenants:    func() ([]tenant.Model, error) { return ts, nil },
 		intervalFor: func(context.Context, uuid.UUID) time.Duration {
 			return time.Hour
 		},
@@ -151,10 +189,11 @@ func TestRunStopsTenantLoopOnMidTickCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	task := &RecomputeTask{
-		l:        logrus.New(),
-		ctx:      ctx,
-		interval: time.Minute,
-		tenants:  func() ([]tenant.Model, error) { return ts, nil },
+		l:          logrus.New(),
+		ctx:        ctx,
+		interval:   time.Minute,
+		envContext: func(ctx context.Context) context.Context { return ctx },
+		tenants:    func() ([]tenant.Model, error) { return ts, nil },
 		intervalFor: func(context.Context, uuid.UUID) time.Duration {
 			return time.Hour
 		},
@@ -186,10 +225,11 @@ func TestRunSkipsTenantWhenIsDueErrorsAndContinues(t *testing.T) {
 	countB := 0
 
 	task := &RecomputeTask{
-		l:        logrus.New(),
-		ctx:      context.Background(),
-		interval: time.Minute,
-		tenants:  func() ([]tenant.Model, error) { return ts, nil },
+		l:          logrus.New(),
+		ctx:        context.Background(),
+		interval:   time.Minute,
+		envContext: func(ctx context.Context) context.Context { return ctx },
+		tenants:    func() ([]tenant.Model, error) { return ts, nil },
 		intervalFor: func(context.Context, uuid.UUID) time.Duration {
 			return time.Hour
 		},
@@ -213,10 +253,11 @@ func TestRunSkipsTenantWhenIsDueErrorsAndContinues(t *testing.T) {
 
 func TestRunToleratesTenantEnumerationFailure(t *testing.T) {
 	task := &RecomputeTask{
-		l:        logrus.New(),
-		ctx:      context.Background(),
-		interval: time.Minute,
-		tenants:  func() ([]tenant.Model, error) { return nil, errors.New("tenants down") },
+		l:          logrus.New(),
+		ctx:        context.Background(),
+		interval:   time.Minute,
+		envContext: func(ctx context.Context) context.Context { return ctx },
+		tenants:    func() ([]tenant.Model, error) { return nil, errors.New("tenants down") },
 		intervalFor: func(context.Context, uuid.UUID) time.Duration {
 			return time.Hour
 		},

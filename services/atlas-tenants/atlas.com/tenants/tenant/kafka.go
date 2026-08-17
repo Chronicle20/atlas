@@ -28,6 +28,7 @@ type StatusEventCreatedBody struct {
 	Region       string `json:"region"`
 	MajorVersion uint16 `json:"majorVersion"`
 	MinorVersion uint16 `json:"minorVersion"`
+	Environment  string `json:"environment"`
 }
 
 // StatusEventUpdatedBody is the body for a tenant updated event
@@ -36,6 +37,7 @@ type StatusEventUpdatedBody struct {
 	Region       string `json:"region"`
 	MajorVersion uint16 `json:"majorVersion"`
 	MinorVersion uint16 `json:"minorVersion"`
+	Environment  string `json:"environment"`
 }
 
 // StatusEventDeletedBody is the body for a tenant deleted event
@@ -44,10 +46,11 @@ type StatusEventDeletedBody struct {
 	Region       string `json:"region"`
 	MajorVersion uint16 `json:"majorVersion"`
 	MinorVersion uint16 `json:"minorVersion"`
+	Environment  string `json:"environment"`
 }
 
 // CreateStatusEventProvider creates a provider for tenant status events
-func CreateStatusEventProvider(tenantId uuid.UUID, eventType string, name string, region string, majorVersion uint16, minorVersion uint16) model.Provider[[]kafka.Message] {
+func CreateStatusEventProvider(tenantId uuid.UUID, eventType string, name string, region string, majorVersion uint16, minorVersion uint16, environment string) model.Provider[[]kafka.Message] {
 	var body interface{}
 	switch eventType {
 	case "CREATED":
@@ -56,6 +59,7 @@ func CreateStatusEventProvider(tenantId uuid.UUID, eventType string, name string
 			Region:       region,
 			MajorVersion: majorVersion,
 			MinorVersion: minorVersion,
+			Environment:  environment,
 		}
 	case "UPDATED":
 		body = StatusEventUpdatedBody{
@@ -63,6 +67,7 @@ func CreateStatusEventProvider(tenantId uuid.UUID, eventType string, name string
 			Region:       region,
 			MajorVersion: majorVersion,
 			MinorVersion: minorVersion,
+			Environment:  environment,
 		}
 	case "DELETED":
 		body = StatusEventDeletedBody{
@@ -70,6 +75,7 @@ func CreateStatusEventProvider(tenantId uuid.UUID, eventType string, name string
 			Region:       region,
 			MajorVersion: majorVersion,
 			MinorVersion: minorVersion,
+			Environment:  environment,
 		}
 	}
 

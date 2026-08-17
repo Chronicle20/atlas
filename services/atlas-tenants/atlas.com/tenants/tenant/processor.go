@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
@@ -70,6 +71,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(name string, region stri
 			SetRegion(region).
 			SetMajorVersion(majorVersion).
 			SetMinorVersion(minorVersion).
+			SetEnvironment(string(env.MustFromContext(p.ctx))).
 			Build()
 		if err != nil {
 			return Model{}, err
@@ -90,6 +92,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(name string, region stri
 			m.Region(),
 			m.MajorVersion(),
 			m.MinorVersion(),
+			m.Environment(),
 		))
 		if err != nil {
 			return Model{}, err
@@ -124,9 +127,13 @@ func (p *ProcessorImpl) CreateAndEmit(name string, region string, majorVersion u
 // Update updates an existing tenant
 func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
 	return func(id uuid.UUID, name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
-		// First get the tenant to ensure it exists
-		provider := GetByIdProvider(id)(p.db)
-		e, err := provider()
+		// First get the tenant to ensure it exists. Unscoped (not
+		// GetByIdProvider) so that a cross-environment target still loads
+		// here and reaches UpdateTenant's scope.AuthorizeWrite below,
+		// which needs the row's real environment to distinguish
+		// ErrCrossEnvironmentWrite from a genuinely nonexistent id
+		// (task-232 fix round 1).
+		e, err := byIdUnscoped(p.ctx, p.db, id)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return Model{}, errors.New("tenant not found")
@@ -140,9 +147,10 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uuid.UUID, name strin
 			SetRegion(region).
 			SetMajorVersion(majorVersion).
 			SetMinorVersion(minorVersion).
+			SetEnvironment(e.Environment).
 			Build()
 
-		err = UpdateTenant(p.db, e)
+		err = UpdateTenant(p.ctx, p.db, e)
 		if err != nil {
 			return Model{}, err
 		}
@@ -160,6 +168,7 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uuid.UUID, name strin
 			m.Region(),
 			m.MajorVersion(),
 			m.MinorVersion(),
+			m.Environment(),
 		))
 		if err != nil {
 			return Model{}, err
@@ -194,9 +203,12 @@ func (p *ProcessorImpl) UpdateAndEmit(id uuid.UUID, name string, region string, 
 // Delete deletes a tenant
 func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uuid.UUID) error {
 	return func(id uuid.UUID) error {
-		// First get the tenant to ensure it exists and to log its details
-		provider := GetByIdProvider(id)(p.db)
-		e, err := provider()
+		// First get the tenant to ensure it exists and to log its details.
+		// Unscoped (not GetByIdProvider) for the same reason as Update
+		// above: DeleteTenant's scope.AuthorizeWrite needs the row's real
+		// environment to produce ErrCrossEnvironmentWrite rather than a
+		// bare "not found" that never reaches it (task-232 fix round 1).
+		e, err := byIdUnscoped(p.ctx, p.db, id)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return errors.New("tenant not found")
@@ -209,7 +221,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uuid.UUID) error {
 			return err
 		}
 
-		err = DeleteTenant(p.db, id)
+		err = DeleteTenant(p.ctx, p.db, id)
 		if err != nil {
 			return err
 		}
@@ -222,6 +234,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uuid.UUID) error {
 			m.Region(),
 			m.MajorVersion(),
 			m.MinorVersion(),
+			m.Environment(),
 		))
 		if err != nil {
 			return err
@@ -249,15 +262,15 @@ func (p *ProcessorImpl) DeleteAndEmit(id uuid.UUID) error {
 
 // GetById gets a tenant by ID
 func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {
-	return model.Map(Make)(GetByIdProvider(id)(p.db))()
+	return model.Map(Make)(GetByIdProvider(p.ctx, id)(p.db))()
 }
 
 // ByIdProvider returns a provider for a tenant by ID
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
-	return model.Map(Make)(GetByIdProvider(id)(p.db))
+	return model.Map(Make)(GetByIdProvider(p.ctx, id)(p.db))
 }
 
 // AllProvider returns a paged provider for all tenants
 func (p *ProcessorImpl) AllProvider(page model.Page) model.Provider[model.Paged[Model]] {
-	return model.MapPaged(Make)(getAll(page)(p.db))(model.ParallelMap())
+	return model.MapPaged(Make)(getAll(p.ctx, page)(p.db))(model.ParallelMap())
 }

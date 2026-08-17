@@ -175,6 +175,10 @@ func (r *pqInstanceRestModel) SetID(idStr string) error {
 }
 
 func (e *ConditionEvaluator) getPqInstanceByCharacter(characterId uint32) (pqInstanceRestModel, error) {
-	url := fmt.Sprintf(requests.RootUrl("PARTY_QUESTS")+"party-quests/instances/character/%d", characterId)
+	root, err := requests.RootUrlFor(e.ctx, "PARTY_QUESTS")
+	if err != nil {
+		return pqInstanceRestModel{}, err
+	}
+	url := fmt.Sprintf(root+"party-quests/instances/character/%d", characterId)
 	return requests.GetRequest[pqInstanceRestModel](url)(e.l, e.ctx)
 }

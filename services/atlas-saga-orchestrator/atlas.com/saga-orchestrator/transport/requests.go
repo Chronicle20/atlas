@@ -15,16 +15,20 @@ import (
 
 const BaseUrl = "TRANSPORTS_URL"
 
-func getBaseRequest() string {
-	return requests.RootUrl(BaseUrl)
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, BaseUrl)
 }
 
 // allInstanceRoutesUrl is a bare URL (not a requests.Request) because the
 // list is now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func allInstanceRoutesUrl() string {
-	return getBaseRequest() + "transports/instance-routes"
+func allInstanceRoutesUrl(ctx context.Context) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return root + "transports/instance-routes", nil
 }
 
 func identityTransform(r RouteRestModel) (RouteRestModel, error) {
@@ -38,7 +42,11 @@ func identityTransform(r RouteRestModel) (RouteRestModel, error) {
 // the first.
 func GetRouteByName(l logrus.FieldLogger, ctx context.Context) func(name string) (RouteRestModel, error) {
 	return func(name string) (RouteRestModel, error) {
-		resp, err := requests.DrainProvider[RouteRestModel, RouteRestModel](l, ctx)(allInstanceRoutesUrl(), 250, identityTransform, model.Filters[RouteRestModel]())()
+		url, err := allInstanceRoutesUrl(ctx)
+		if err != nil {
+			return RouteRestModel{}, err
+		}
+		resp, err := requests.DrainProvider[RouteRestModel, RouteRestModel](l, ctx)(url, 250, identityTransform, model.Filters[RouteRestModel]())()
 		if err != nil {
 			return RouteRestModel{}, fmt.Errorf("failed to fetch instance routes: %w", err)
 		}
@@ -62,9 +70,13 @@ func StartTransport(l logrus.FieldLogger, ctx context.Context) func(routeId uuid
 			ChannelId:   channelId,
 		}
 
-		url := fmt.Sprintf("%stransports/instance-routes/%s/start", getBaseRequest(), routeId.String())
+		root, err := getBaseRequest(ctx)
+		if err != nil {
+			return err
+		}
+		url := fmt.Sprintf("%stransports/instance-routes/%s/start", root, routeId.String())
 		// Use struct{} as the response type since this endpoint returns 204 No Content
-		_, err := requests.PostRequest[struct{}](url, body)(l, ctx)
+		_, err = requests.PostRequest[struct{}](url, body)(l, ctx)
 		return err
 	}
 }

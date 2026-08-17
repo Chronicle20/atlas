@@ -40,7 +40,7 @@ func (p *ProcessorImpl) SpawnMonster(f field.Model, monsterId uint32, x, y, fh i
 		Team:      team,
 	}
 
-	_, err := requestSpawnMonster(f, req.ToRestModel())(p.l, p.ctx)
+	_, err := requestSpawnMonster(p.ctx, f, req.ToRestModel())(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to spawn monster %d at (%d, %d) in map %d", monsterId, x, y, f.MapId())
 		return err

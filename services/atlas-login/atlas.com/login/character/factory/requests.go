@@ -1,6 +1,8 @@
 package factory
 
 import (
+	"context"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
@@ -9,13 +11,17 @@ const (
 	Resource = "characters/seed"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("CHARACTER_FACTORY")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "CHARACTER_FACTORY")
 }
 
-func requestCreate(accountId uint32, worldId world.Id, name string, jobIndex uint32, subJobIndex uint16, face uint32, hair uint32, color uint32, skinColor uint32, gender byte, top uint32, bottom uint32, shoes uint32, weapon uint32,
+func requestCreate(ctx context.Context, accountId uint32, worldId world.Id, name string, jobIndex uint32, subJobIndex uint16, face uint32, hair uint32, color uint32, skinColor uint32, gender byte, top uint32, bottom uint32, shoes uint32, weapon uint32,
 	strength byte, dexterity byte, intelligence byte, luck byte,
 ) requests.Request[CreateCharacterResponse] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[CreateCharacterResponse](err)
+	}
 	i := RestModel{
 		AccountId:    accountId,
 		WorldId:      worldId,
@@ -40,5 +46,5 @@ func requestCreate(accountId uint32, worldId world.Id, name string, jobIndex uin
 		Mp:           5,
 		MapId:        0,
 	}
-	return requests.PostRequest[CreateCharacterResponse](getBaseRequest()+Resource, i)
+	return requests.PostRequest[CreateCharacterResponse](root+Resource, i)
 }

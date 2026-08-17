@@ -125,7 +125,7 @@ func (p *ProcessorImpl) GetSlotMax(itemId uint32) uint32 {
 
 	case inventory.TypeValueUse:
 		// Consumable items
-		resp, fetchErr := requestConsumable(itemId)(p.l, p.ctx)
+		resp, fetchErr := requestConsumable(p.ctx, itemId)(p.l, p.ctx)
 		if fetchErr != nil {
 			p.l.WithError(fetchErr).Warnf("Failed to fetch consumable [%d], using default", itemId)
 			slotMax = GetDefaultSlotMax(itemId)
@@ -135,7 +135,7 @@ func (p *ProcessorImpl) GetSlotMax(itemId uint32) uint32 {
 
 	case inventory.TypeValueSetup:
 		// Setup items
-		resp, fetchErr := requestSetup(itemId)(p.l, p.ctx)
+		resp, fetchErr := requestSetup(p.ctx, itemId)(p.l, p.ctx)
 		if fetchErr != nil {
 			p.l.WithError(fetchErr).Warnf("Failed to fetch setup [%d], using default", itemId)
 			slotMax = GetDefaultSlotMax(itemId)
@@ -145,7 +145,7 @@ func (p *ProcessorImpl) GetSlotMax(itemId uint32) uint32 {
 
 	case inventory.TypeValueETC:
 		// ETC items
-		resp, fetchErr := requestEtc(itemId)(p.l, p.ctx)
+		resp, fetchErr := requestEtc(p.ctx, itemId)(p.l, p.ctx)
 		if fetchErr != nil {
 			p.l.WithError(fetchErr).Warnf("Failed to fetch etc [%d], using default", itemId)
 			slotMax = GetDefaultSlotMax(itemId)
@@ -155,7 +155,7 @@ func (p *ProcessorImpl) GetSlotMax(itemId uint32) uint32 {
 
 	case inventory.TypeValueCash:
 		// Cash items - treat similar to consumables for now
-		resp, fetchErr := requestConsumable(itemId)(p.l, p.ctx)
+		resp, fetchErr := requestConsumable(p.ctx, itemId)(p.l, p.ctx)
 		if fetchErr != nil {
 			p.l.WithError(fetchErr).Warnf("Failed to fetch cash item [%d], using default", itemId)
 			slotMax = GetDefaultSlotMax(itemId)

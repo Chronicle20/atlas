@@ -37,7 +37,12 @@ var _ Processor = (*ProcessorImpl)(nil)
 // count every spawned pet.
 func (p *ProcessorImpl) GetPets(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		petsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterIdUrl(characterId), 250, Extract, []model.Filter[Model]{})
+		url, err := byCharacterIdUrl(p.ctx, characterId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to resolve pets URL for character %d", characterId)
+			return []Model{}, err
+		}
+		petsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, []model.Filter[Model]{})
 		pets, err := petsProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get pets for character %d", characterId)

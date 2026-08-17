@@ -31,7 +31,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ByIdModelProvider(worldId world.Id) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestWorld(worldId), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestWorld(p.ctx, worldId), Extract)
 }
 
 func (p *ProcessorImpl) GetById(worldId world.Id) (Model, error) {

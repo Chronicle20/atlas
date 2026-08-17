@@ -40,7 +40,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) CompartmentProvider(characterId character.Id, inventoryType inventory.Type) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByType(characterId, inventoryType), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByType(p.ctx, characterId, inventoryType), Extract)
 }
 
 func (p *ProcessorImpl) GetCompartment(characterId character.Id, inventoryType inventory.Type) (Model, error) {

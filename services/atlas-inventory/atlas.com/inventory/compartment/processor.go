@@ -306,7 +306,7 @@ func (p *ProcessorImpl) EquipItemAndEmit(transactionId uuid.UUID, characterId ui
 func (p *ProcessorImpl) EquipItem(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
 		p.l.Debugf("Attempting to equip item in slot [%d] to [%d] for character [%d].", source, destination, characterId)
-		invLock := LockRegistry().Get(characterId, inventory.TypeValueEquip)
+		invLock := LockRegistry().Get(p.t, characterId, inventory.TypeValueEquip)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -420,7 +420,7 @@ func (p *ProcessorImpl) RemoveEquipAndEmit(transactionId uuid.UUID, characterId 
 func (p *ProcessorImpl) RemoveEquip(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, source int16, destination int16) error {
 		p.l.Debugf("Attempting to remove equipment in slot [%d] to [%d] for character [%d].", source, destination, characterId)
-		invLock := LockRegistry().Get(characterId, inventory.TypeValueEquip)
+		invLock := LockRegistry().Get(p.t, characterId, inventory.TypeValueEquip)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -477,7 +477,7 @@ func (p *ProcessorImpl) MoveAndEmit(transactionId uuid.UUID, characterId uint32,
 
 func (p *ProcessorImpl) MoveAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, source int16, destination int16) error {
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 		return p.Move(mb)(transactionId, characterId, inventoryType, source, destination)
@@ -679,7 +679,7 @@ func (p *ProcessorImpl) IncreaseCapacityAndEmit(transactionId uuid.UUID, charact
 func (p *ProcessorImpl) IncreaseCapacity(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, amount uint32) error {
 		p.l.Debugf("Character [%d] attempting to change compartment capacity by [%d]. Type [%d].", characterId, amount, inventoryType)
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -723,7 +723,7 @@ func (p *ProcessorImpl) Drop(mb *message.Buffer) func(transactionId uuid.UUID, c
 			return errors.New("cannot drop nothing")
 		}
 
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -810,7 +810,7 @@ func (p *ProcessorImpl) RequestReserveAndEmit(transactionId uuid.UUID, character
 func (p *ProcessorImpl) RequestReserve(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reservationRequests []ReservationRequest) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, reservationRequests []ReservationRequest) error {
 		p.l.Debugf("Character [%d] attempting to reserve [%d] inventory [%d] reservation [%s].", characterId, len(reservationRequests), inventoryType, transactionId.String())
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -861,7 +861,7 @@ func (p *ProcessorImpl) CancelReservationAndEmit(transactionId uuid.UUID, charac
 func (p *ProcessorImpl) CancelReservation(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
 		p.l.Debugf("Character [%d] attempting to cancel inventory [%d] reservation [%s].", characterId, inventoryType, transactionId.String())
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -889,7 +889,7 @@ func (p *ProcessorImpl) ConsumeAssetAndEmit(transactionId uuid.UUID, characterId
 func (p *ProcessorImpl) ConsumeAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
 		p.l.Debugf("Character [%d] attempting to consume asset in inventory [%d] slot [%d]. Transaction [%s].", characterId, inventoryType, slot, transactionId.String())
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -951,7 +951,7 @@ func (p *ProcessorImpl) DestroyAssetAndEmit(transactionId uuid.UUID, characterId
 func (p *ProcessorImpl) DestroyAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, quantity uint32) error {
 		p.l.Debugf("Character [%d] attempting to destroy [%d] asset in inventory [%d] slot [%d].", characterId, quantity, inventoryType, slot)
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -1002,7 +1002,7 @@ func (p *ProcessorImpl) ExpireAssetAndEmit(transactionId uuid.UUID, characterId 
 func (p *ProcessorImpl) ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, isCash bool, replaceItemId uint32, replaceMessage string) error {
 		p.l.Debugf("Character [%d] attempting to expire asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -1067,7 +1067,7 @@ func (p *ProcessorImpl) SetAssetOwnerAndEmit(transactionId uuid.UUID, characterI
 func (p *ProcessorImpl) SetAssetOwner(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error {
 		p.l.Debugf("Character [%d] attempting to set owner of asset in inventory [%d] slot [%d] to [%s].", characterId, inventoryType, slot, owner)
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -1101,7 +1101,7 @@ func (p *ProcessorImpl) ApplyAssetLockAndEmit(transactionId uuid.UUID, character
 func (p *ProcessorImpl) ApplyAssetLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error {
 		p.l.Debugf("Character [%d] attempting to apply lock to asset in inventory [%d] slot [%d].", characterId, inventoryType, slot)
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -1138,7 +1138,7 @@ func (p *ProcessorImpl) ApplyAssetKarmaAndEmit(transactionId uuid.UUID, characte
 func (p *ProcessorImpl) ApplyAssetKarma(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error {
 		p.l.Debugf("Character [%d] attempting to apply karma (clear [%t]) to asset in inventory [%d] slot [%d].", characterId, clear, inventoryType, slot)
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -1220,7 +1220,7 @@ func (p *ProcessorImpl) ExtendAssetExpiration(mb *message.Buffer) func(transacti
 			return errors.New("requested expiration exceeds the extender's server-derived cap")
 		}
 
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -1279,7 +1279,7 @@ func (p *ProcessorImpl) CreateAssetAndEmit(transactionId uuid.UUID, characterId 
 
 func (p *ProcessorImpl) CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 		return p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
@@ -1394,7 +1394,7 @@ func (p *ProcessorImpl) AttemptEquipmentPickUp(mb *message.Buffer) func(transact
 		}
 
 		p.l.Debugf("Gaining [%d] item [%d] for character [%d] in inventory [%d].", 1, templateId, characterId, inventoryType)
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -1487,7 +1487,7 @@ func (p *ProcessorImpl) AttemptItemPickUp(mb *message.Buffer) func(transactionId
 			}
 		}
 
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -1632,7 +1632,7 @@ func (p *ProcessorImpl) RechargeAsset(mb *message.Buffer) func(transactionId uui
 			return errors.New("recharge operation not supported for this inventory type")
 		}
 
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -1692,7 +1692,7 @@ func (p *ProcessorImpl) MergeAndCompact(mb *message.Buffer) func(transactionId u
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
 		p.l.Debugf("Character [%d] attempting to merge and compact assets in inventory [%d].", characterId, inventoryType)
 
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -1814,7 +1814,7 @@ func (p *ProcessorImpl) Accept(mb *message.Buffer) func(transactionId uuid.UUID,
 		p.l.Debugf("Character [%d] attempting to accept asset template [%d] with quantity [%d] in inventory [%d].", characterId, m.TemplateId(), m.Quantity(), inventoryType)
 
 		// Lock the inventory to prevent concurrent modifications
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -1936,7 +1936,7 @@ func (p *ProcessorImpl) Release(mb *message.Buffer) func(transactionId uuid.UUID
 		p.l.Debugf("Character [%d] attempting to release [%d] of asset [%d] from inventory [%d].", characterId, quantity, assetId, inventoryType)
 
 		// Lock the inventory to prevent concurrent modifications
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -2025,7 +2025,7 @@ func (p *ProcessorImpl) CompactAndSort(mb *message.Buffer) func(transactionId uu
 	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type) error {
 		p.l.Debugf("Character [%d] attempting to compact and sort assets in inventory [%d].", characterId, inventoryType)
 
-		invLock := LockRegistry().Get(characterId, inventoryType)
+		invLock := LockRegistry().Get(p.t, characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -2146,7 +2146,7 @@ func (p *ProcessorImpl) ModifyEquipment(mb *message.Buffer) func(transactionId u
 	return func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error {
 		p.l.Debugf("Character [%d] attempting to modify equipment stats for asset [%d].", characterId, assetId)
 
-		invLock := LockRegistry().Get(characterId, inventory.TypeValueEquip)
+		invLock := LockRegistry().Get(p.t, characterId, inventory.TypeValueEquip)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -2172,7 +2172,7 @@ func (p *ProcessorImpl) ChangeTemplateAndEmit(transactionId uuid.UUID, character
 func (p *ProcessorImpl) ChangeTemplate(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
 		p.l.Debugf("Character [%d] changing template of pet [%d] asset to [%d].", characterId, petId, newTemplateId)
-		invLock := LockRegistry().Get(characterId, inventory.TypeValueCash)
+		invLock := LockRegistry().Get(p.t, characterId, inventory.TypeValueCash)
 		invLock.Lock()
 		defer invLock.Unlock()
 
@@ -2240,7 +2240,7 @@ func (p *ProcessorImpl) ResetPetExpiration(mb *message.Buffer) func(transactionI
 			return errors.New("requested expiration exceeds the source item's server-derived cap")
 		}
 
-		invLock := LockRegistry().Get(characterId, inventory.TypeValueCash)
+		invLock := LockRegistry().Get(p.t, characterId, inventory.TypeValueCash)
 		invLock.Lock()
 		defer invLock.Unlock()
 

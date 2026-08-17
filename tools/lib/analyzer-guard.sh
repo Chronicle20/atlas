@@ -76,7 +76,7 @@ analyzer_guard_jobs() {
 # renamed, or when Go itself is upgraded — the guard would then go on enforcing
 # the pre-change rules while looking like it ran.
 analyzer_guard_hash() {
-    { find "$@" \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' \) -print0 \
+    { find "$@" \( -name '*.go' -o -name 'go.mod' -o -name 'go.sum' -o -name '*.txt' \) -print0 \
         | LC_ALL=C sort -z | xargs -0 -r sha256sum; go version; } \
         | sha256sum | cut -c1-16
 }
@@ -109,10 +109,41 @@ analyzer_guard_build() {
 }
 
 # analyzer_guard_discover <root>... — every Go module directory under <root>s.
+#
+# Excludes nested worktrees *reachable below* each root — e.g. a run from the
+# main repo must not descend into .worktrees/task-xxx/services/... and analyze
+# every task branch's modules. That is a statement about nesting, not about
+# substring: a plain `-not -path '*/.worktrees/*'` also matches when the ROOT
+# itself sits inside .worktrees/ (i.e. this run IS a worktree, the normal case
+# for every task in this repo), because the excluded segment then appears in
+# the root's own absolute path rather than below it. That produced a run that
+# discovered zero modules and returned success having analyzed nothing.
+#
+# Fixed by matching the exclusion against the path RELATIVE to the root being
+# scanned, not the raw absolute path — a `.worktrees` segment in the root
+# itself is invisible once stripped, while one appearing below the root still
+# excludes.
 analyzer_guard_discover() {
-    find "$@" -name go.mod -not -path '*/node_modules/*' \
-        -not -path '*/.worktrees/*' -print0 \
-        | xargs -0 -r -n1 dirname | LC_ALL=C sort -u
+    local root
+    for root in "$@"; do
+        [ -d "$root" ] || continue
+        local rootnorm="${root%/}"
+        find "$root" -name go.mod -not -path '*/node_modules/*' -print0 \
+            | while IFS= read -r -d '' f; do
+                local dir rel
+                dir="$(dirname "$f")"
+                if [ "$dir" = "$rootnorm" ]; then
+                    rel=""
+                else
+                    rel="${dir#"$rootnorm"/}"
+                fi
+                case "$rel" in
+                    .worktrees | .worktrees/* | */.worktrees | */.worktrees/*)
+                        continue ;;
+                esac
+                printf '%s\n' "$dir"
+            done
+    done | LC_ALL=C sort -u
 }
 
 # analyzer_guard_scope <root>... — the module set to analyze under <root>s.

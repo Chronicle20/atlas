@@ -13,7 +13,7 @@ import (
 func byCharacterIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, characterId uint32) model.Provider[Model] {
 	return func(ctx context.Context) func(ch channel.Model, characterId uint32) model.Provider[Model] {
 		return func(ch channel.Model, characterId uint32) model.Provider[Model] {
-			return requests.Provider[RestModel, Model](l, ctx)(requestForCharacter(ch, characterId), Extract)
+			return requests.Provider[RestModel, Model](l, ctx)(requestForCharacter(ctx, ch, characterId), Extract)
 		}
 	}
 }

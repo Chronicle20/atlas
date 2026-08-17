@@ -8,6 +8,7 @@ setup() {
     export MAJOR_VERSION="84"
     export LB_IP="10.0.0.9"
     CHANNEL_TMPL="$PROJECT_ROOT/canonical/services/channel-service.json"
+    CANONICAL="$PROJECT_ROOT/canonical/services"
 }
 
 @test "build_login_entry: derived port, given id" {
@@ -67,4 +68,57 @@ setup() {
     entry='{"id":"bbbb","port":8400}'
     merged="$(printf '%s' "$live" | merge_tenant_entry "$entry")"
     [ "$(echo "$merged" | jq -cS .)" = "$(echo "$live" | jq -cS .)" ]
+}
+
+@test "sparse mode never reads or writes the pinned main service row" {
+    export ATLAS_MODE=sparse
+    export TENANT_ID="$(uuidgen)"
+    export MAJOR_VERSION=83
+    export LB_IP=192.168.23.211
+    export ATLAS_ENVIRONMENT="pr-999"
+
+    run build_service_config login "$CANONICAL/login-service.json"
+    [ "$status" -eq 0 ]
+
+    # A fresh id, NOT the canonical pinned one.
+    pinned=$(jq -r '.data.id' "$CANONICAL/login-service.json")
+    got=$(echo "$output" | jq -r '.data.id')
+    [ "$got" != "$pinned" ]
+    [ "$got" != "null" ]
+
+    # Exactly this environment's one tenant — never a merge of main's list.
+    [ "$(echo "$output" | jq '.data.attributes.tenants | length')" -eq 1 ]
+    [ "$(echo "$output" | jq -r '.data.attributes.tenants[0].id')" = "$TENANT_ID" ]
+
+    # The environment is stamped so teardown and write-authorisation can scope it.
+    [ "$(echo "$output" | jq -r '.data.attributes.environment')" = "$ATLAS_ENVIRONMENT" ]
+}
+
+@test "isolated mode still merges into the pinned row" {
+    export ATLAS_MODE=isolated
+    run build_service_config login "$CANONICAL/login-service.json"
+    [ "$status" -eq 0 ]
+    pinned=$(jq -r '.data.id' "$CANONICAL/login-service.json")
+    [ "$(echo "$output" | jq -r '.data.id')" = "$pinned" ]
+}
+
+@test "isolated mode POST body replaces channel-service's seeded placeholder tenant, never appends beside it" {
+    export ATLAS_MODE=isolated
+    run build_service_config channel "$CANONICAL/channel-service.json"
+    [ "$status" -eq 0 ]
+
+    # Fixture sanity: channel-service.json ships a non-empty seeded tenants[]
+    # (placeholder id ec876921-c363-4cc6-9c51-5bb8d57f9553, port 0) — unlike
+    # login-service.json's tenants: []. A merge instead of a replace here
+    # appends beside the placeholder instead of discarding it.
+    seeded=$(jq -r '.data.attributes.tenants[0].id' "$CANONICAL/channel-service.json")
+    [ "$seeded" = "ec876921-c363-4cc6-9c51-5bb8d57f9553" ]
+
+    pinned=$(jq -r '.data.id' "$CANONICAL/channel-service.json")
+    [ "$(echo "$output" | jq -r '.data.id')" = "$pinned" ]
+
+    # Exactly one tenant — this environment's, the placeholder is gone.
+    [ "$(echo "$output" | jq '.data.attributes.tenants | length')" -eq 1 ]
+    [ "$(echo "$output" | jq -r '.data.attributes.tenants[0].id')" = "$TENANT_ID" ]
+    [ "$(echo "$output" | jq -r '.data.attributes.tenants[0].worlds[0].channels[0].port')" = "8401" ]
 }

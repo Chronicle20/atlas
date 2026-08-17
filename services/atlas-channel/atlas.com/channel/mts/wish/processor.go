@@ -51,7 +51,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 // they need the complete wishlist — this drains every page rather than
 // fetching just the first.
 func (p *ProcessorImpl) GetByCharacterProvider(characterId uint32) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterUrl(characterId), 250, Extract, model.Filters[Model]())
+	url, err := byCharacterUrl(p.ctx, characterId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByCharacter(characterId uint32) ([]Model, error) {
@@ -62,14 +66,22 @@ func (p *ProcessorImpl) GetByCharacter(characterId uint32) ([]Model, error) {
 // for a character. The upstream list is now paginated (task-117); the Cart and
 // Wanted MTS views render the complete set, so this drains every page.
 func (p *ProcessorImpl) GetByCharacterAndType(characterId uint32, wishType string) ([]Model, error) {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterAndTypeUrl(characterId, wishType), 250, Extract, model.Filters[Model]())()
+	url, err := byCharacterAndTypeUrl(p.ctx, characterId, wishType)
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())()
 }
 
 // GetWantedByWorld fetches every want-ad in a world, across all characters. The
 // upstream list is now paginated (task-117); the cross-character Wanted browse
 // tab renders the complete set, so this drains every page.
 func (p *ProcessorImpl) GetWantedByWorld(worldId byte) ([]Model, error) {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(wantedByWorldUrl(worldId), 250, Extract, model.Filters[Model]())()
+	url, err := wantedByWorldUrl(p.ctx, worldId)
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())()
 }
 
 func (p *ProcessorImpl) GetByCharacterItem(characterId uint32, itemId uint32) (Model, error) {

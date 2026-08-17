@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	drop2 "atlas-reactors/kafka/consumer/drop"
@@ -45,7 +46,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)
@@ -77,7 +78,9 @@ func main() {
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
-	rt.TeardownFunc(reactor.NewProcessor(l, rt.Context()).Teardown())
+	rt.TeardownFunc(reactor.NewProcessor(l, rt.Context()).Teardown(func(ctx context.Context) context.Context {
+		return env.WithContext(ctx, env.Self())
+	}))
 
 	rt.Wait()
 }

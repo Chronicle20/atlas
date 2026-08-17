@@ -1,6 +1,7 @@
 package instance
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"testing"
@@ -11,6 +12,7 @@ import (
 	logtest "github.com/sirupsen/logrus/hooks/test"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestGetInstanceRouteStatusIsTenantScoped is the cross-tenant guard. An
@@ -35,9 +37,15 @@ func TestGetInstanceRouteStatusIsTenantScoped(t *testing.T) {
 	tenantA := uuid.New()
 	tenantB := uuid.New()
 
+	tmA, err := tenant.Create(tenantA, "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("seed tenant create failed: %v", err)
+	}
+	ctxA := tenant.WithContext(context.Background(), tmA)
+
 	reg := getInstanceRegistry()
-	inst := reg.FindOrCreateInstance(tenantA, route, time.Now())
-	reg.AddCharacter(inst.InstanceId(), CharacterEntry{CharacterId: 1})
+	inst := reg.FindOrCreateInstance(ctxA, route, time.Now())
+	reg.AddCharacter(ctxA, inst.InstanceId(), CharacterEntry{CharacterId: 1})
 
 	logger, _ := logtest.NewNullLogger()
 	router := mux.NewRouter()

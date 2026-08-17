@@ -71,7 +71,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // ByCharacterIdProvider returns a provider that fetches the character's
 // monster book collection from atlas-monster-book.
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId character.Id) model.Provider[Collection] {
-	return requests.Provider[CollectionRestModel, Collection](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+	return requests.Provider[CollectionRestModel, Collection](p.l, p.ctx)(requestByCharacterId(p.ctx, characterId), Extract)
 }
 
 // GetByCharacterId fetches and returns the monster book collection for the

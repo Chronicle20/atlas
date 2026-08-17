@@ -45,7 +45,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // every page rather than fetching just the first -- exact pre-pagination
 // semantics.
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(characterQuestsUrl(characterId), 250, Extract, model.Filters[Model]())
+	url, err := characterQuestsUrl(p.ctx, characterId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {

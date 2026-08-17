@@ -12,8 +12,8 @@ import (
 
 const BaseUrl = "CHARACTER_URL"
 
-func getBaseRequest() string {
-	return requests.RootUrl(BaseUrl)
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, BaseUrl)
 }
 
 func PutSavedLocation(l logrus.FieldLogger, ctx context.Context) func(characterId uint32, locationType string, mapId _map.Id, portalId uint32) (RestModel, error) {
@@ -22,21 +22,33 @@ func PutSavedLocation(l logrus.FieldLogger, ctx context.Context) func(characterI
 			MapId:    mapId,
 			PortalId: portalId,
 		}
-		url := fmt.Sprintf("%scharacters/%d/locations/%s", getBaseRequest(), characterId, locationType)
+		root, err := getBaseRequest(ctx)
+		if err != nil {
+			return RestModel{}, err
+		}
+		url := fmt.Sprintf("%scharacters/%d/locations/%s", root, characterId, locationType)
 		return requests.PutRequest[RestModel](url, body)(l, ctx)
 	}
 }
 
 func GetSavedLocation(l logrus.FieldLogger, ctx context.Context) func(characterId uint32, locationType string) (RestModel, error) {
 	return func(characterId uint32, locationType string) (RestModel, error) {
-		url := fmt.Sprintf("%scharacters/%d/locations/%s", getBaseRequest(), characterId, locationType)
+		root, err := getBaseRequest(ctx)
+		if err != nil {
+			return RestModel{}, err
+		}
+		url := fmt.Sprintf("%scharacters/%d/locations/%s", root, characterId, locationType)
 		return requests.GetRequest[RestModel](url)(l, ctx)
 	}
 }
 
 func DeleteSavedLocation(l logrus.FieldLogger, ctx context.Context) func(characterId uint32, locationType string) error {
 	return func(characterId uint32, locationType string) error {
-		url := fmt.Sprintf("%scharacters/%d/locations/%s", getBaseRequest(), characterId, locationType)
+		root, err := getBaseRequest(ctx)
+		if err != nil {
+			return err
+		}
+		url := fmt.Sprintf("%scharacters/%d/locations/%s", root, characterId, locationType)
 		return requests.DeleteRequest(url)(l, ctx)
 	}
 }

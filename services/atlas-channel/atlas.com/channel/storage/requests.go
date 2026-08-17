@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -14,22 +15,22 @@ const (
 	projectionAssetResource = "storage/projections/%d/compartments/%d/assets/%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("STORAGE")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "STORAGE")
 }
 
-func requestStorageByAccountAndWorld(accountId uint32, worldId world.Id) requests.Request[StorageRestModel] {
-	return requests.GetRequest[StorageRestModel](fmt.Sprintf(getBaseRequest()+storageResource, accountId, worldId))
+func requestStorageByAccountAndWorld(ctx context.Context, accountId uint32, worldId world.Id) requests.Request[StorageRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[StorageRestModel](err)
+	}
+	return requests.GetRequest[StorageRestModel](fmt.Sprintf(root+storageResource, accountId, worldId))
 }
 
-func requestAssetsByAccountAndWorld(accountId uint32, worldId world.Id) requests.Request[[]AssetRestModel] {
-	return requests.GetRequest[[]AssetRestModel](fmt.Sprintf(getBaseRequest()+storageAssetsResource, accountId, worldId))
-}
-
-func requestProjectionByCharacterId(characterId uint32) requests.Request[ProjectionRestModel] {
-	return requests.GetRequest[ProjectionRestModel](fmt.Sprintf(getBaseRequest()+projectionResource, characterId))
-}
-
-func requestProjectionAsset(characterId uint32, compartmentType byte, slot int16) requests.Request[AssetRestModel] {
-	return requests.GetRequest[AssetRestModel](fmt.Sprintf(getBaseRequest()+projectionAssetResource, characterId, compartmentType, slot))
+func requestProjectionByCharacterId(ctx context.Context, characterId uint32) requests.Request[ProjectionRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[ProjectionRestModel](err)
+	}
+	return requests.GetRequest[ProjectionRestModel](fmt.Sprintf(root+projectionResource, characterId))
 }

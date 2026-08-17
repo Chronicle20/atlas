@@ -32,7 +32,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(p.ctx, characterId), Extract)()
 }
 
 // RequestAddMap registers the character's CURRENT map (server-derived from

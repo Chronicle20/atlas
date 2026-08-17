@@ -47,7 +47,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		now: time.Now,
 	}
 	p.getCharacterHp = func(characterId uint32) (uint16, error) {
-		rm, err := extchar.RequestById(characterId)(l, ctx)
+		rm, err := extchar.RequestById(ctx, characterId)(l, ctx)
 		if err != nil {
 			return 0, err
 		}

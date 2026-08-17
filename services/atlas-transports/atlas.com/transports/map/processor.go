@@ -35,5 +35,9 @@ var _ Processor = (*ProcessorImpl)(nil)
 // this drains every page rather than fetching just the first -- a truncated
 // list here means some passengers silently miss the transport.
 func (p *ProcessorImpl) CharacterIdsInMapProvider(field field.Model) model.Provider[[]uint32] {
-	return requests.DrainProvider[RestModel, uint32](p.l, p.ctx)(charactersInMapUrl(field), 250, Extract, model.Filters[uint32]())
+	url, err := charactersInMapUrl(p.ctx, field)
+	if err != nil {
+		return model.ErrorProvider[[]uint32](err)
+	}
+	return requests.DrainProvider[RestModel, uint32](p.l, p.ctx)(url, 250, Extract, model.Filters[uint32]())
 }

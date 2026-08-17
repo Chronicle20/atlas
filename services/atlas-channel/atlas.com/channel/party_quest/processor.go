@@ -27,5 +27,5 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetTimerByCharacterId(characterId uint32) (TimerModel, error) {
-	return requests.Provider[TimerRestModel, TimerModel](p.l, p.ctx)(requestTimerByCharacterId(characterId), ExtractTimer)()
+	return requests.Provider[TimerRestModel, TimerModel](p.l, p.ctx)(requestTimerByCharacterId(p.ctx, characterId), ExtractTimer)()
 }

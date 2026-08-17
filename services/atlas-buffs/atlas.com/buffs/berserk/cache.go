@@ -37,7 +37,7 @@ var (
 func GetEffectXCache() *EffectXCache {
 	effectXCacheOnce.Do(func() {
 		effectXCache = NewEffectXCache(func(l logrus.FieldLogger, ctx context.Context) (dataskill.RestModel, error) {
-			return dataskill.RequestById(uint32(skill.DarkKnightBerserkId))(l, ctx)
+			return dataskill.RequestById(ctx, uint32(skill.DarkKnightBerserkId))(l, ctx)
 		})
 	})
 	return effectXCache

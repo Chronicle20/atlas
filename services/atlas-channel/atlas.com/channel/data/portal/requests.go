@@ -1,6 +1,7 @@
 package portal
 
 import (
+	"context"
 	"fmt"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -12,10 +13,14 @@ const (
 	portalsByName = portalsInMap + "?name=%s"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("DATA")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "DATA")
 }
 
-func requestInMapByName(mapId _map.Id, name string) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+portalsByName, mapId, name))
+func requestInMapByName(ctx context.Context, mapId _map.Id, name string) requests.Request[[]RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]RestModel](err)
+	}
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+portalsByName, mapId, name))
 }

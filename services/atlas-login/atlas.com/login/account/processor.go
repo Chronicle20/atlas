@@ -54,15 +54,19 @@ func (p *ProcessorImpl) ForAccountById(id uint32, operator model.Operator[Model]
 }
 
 func (p *ProcessorImpl) ByNameModelProvider(name string) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountByName(name), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountByName(p.ctx, name), Extract)
 }
 
 func (p *ProcessorImpl) ByIdModelProvider(id uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountById(id), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountById(p.ctx, id), Extract)
 }
 
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(getBaseRequest()+AccountsResource, 250, Extract, model.Filters[Model]())
+	root, err := getBaseRequest(p.ctx)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(root+AccountsResource, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
@@ -96,7 +100,7 @@ func (p *ProcessorImpl) UpdatePin(id uint32, pin string) error {
 		return err
 	}
 	updated := a.ToBuilder().SetPin(pin).Build()
-	_, err = requestUpdate(updated)(p.l, p.ctx)
+	_, err = requestUpdate(p.ctx, updated)(p.l, p.ctx)
 	if err != nil {
 		return err
 	}
@@ -109,7 +113,7 @@ func (p *ProcessorImpl) UpdatePic(id uint32, pic string) error {
 		return err
 	}
 	updated := a.ToBuilder().SetPic(pic).Build()
-	_, err = requestUpdate(updated)(p.l, p.ctx)
+	_, err = requestUpdate(p.ctx, updated)(p.l, p.ctx)
 	if err != nil {
 		return err
 	}
@@ -122,7 +126,7 @@ func (p *ProcessorImpl) UpdateTos(id uint32, tos bool) error {
 		return err
 	}
 	updated := a.ToBuilder().SetTos(tos).Build()
-	_, err = requestUpdate(updated)(p.l, p.ctx)
+	_, err = requestUpdate(p.ctx, updated)(p.l, p.ctx)
 	if err != nil {
 		return err
 	}
@@ -135,7 +139,7 @@ func (p *ProcessorImpl) UpdateGender(id uint32, gender byte) error {
 		return err
 	}
 	updated := a.ToBuilder().SetGender(gender).Build()
-	_, err = requestUpdate(updated)(p.l, p.ctx)
+	_, err = requestUpdate(p.ctx, updated)(p.l, p.ctx)
 	if err != nil {
 		return err
 	}
@@ -143,7 +147,7 @@ func (p *ProcessorImpl) UpdateGender(id uint32, gender byte) error {
 }
 
 func (p *ProcessorImpl) RecordPinAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
-	result, err := requestRecordPinAttempt(id, success, ipAddress, hwid)(p.l, p.ctx)
+	result, err := requestRecordPinAttempt(p.ctx, id, success, ipAddress, hwid)(p.l, p.ctx)
 	if err != nil {
 		return 0, false, err
 	}
@@ -151,7 +155,7 @@ func (p *ProcessorImpl) RecordPinAttempt(id uint32, success bool, ipAddress stri
 }
 
 func (p *ProcessorImpl) RecordPicAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
-	result, err := requestRecordPicAttempt(id, success, ipAddress, hwid)(p.l, p.ctx)
+	result, err := requestRecordPicAttempt(p.ctx, id, success, ipAddress, hwid)(p.l, p.ctx)
 	if err != nil {
 		return 0, false, err
 	}

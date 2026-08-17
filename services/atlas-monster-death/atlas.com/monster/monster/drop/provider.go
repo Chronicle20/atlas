@@ -6,7 +6,11 @@ import (
 )
 
 func (p *ProcessorImpl) byMonsterIdProvider(monsterId uint32) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(monsterDropsUrl(monsterId), 250, Extract, model.Filters[Model]())
+	url, err := monsterDropsUrl(p.ctx, monsterId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByMonsterId(monsterId uint32) ([]Model, error) {

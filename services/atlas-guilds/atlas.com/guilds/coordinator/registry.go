@@ -16,17 +16,15 @@ import (
 )
 
 type Registry struct {
-	active     *atlas.Set                            // agreement-id strings
-	agreements *atlas.Registry[uuid.UUID, Model]     // agreement-id -> Model
-	charAgree  *atlas.TenantRegistry[uint32, string] // characterId -> agreement-id string
+	agreements *atlas.TenantRegistry[uuid.UUID, Model] // agreement-id -> Model
+	charAgree  *atlas.TenantRegistry[uint32, string]   // characterId -> agreement-id string
 }
 
 var registry *Registry
 
 func InitRegistry(client *goredis.Client) {
 	registry = &Registry{
-		active:     atlas.NewSet(client, "coordinator:active"),
-		agreements: atlas.NewRegistry[uuid.UUID, Model](client, "coordinator:agreement", func(id uuid.UUID) string { return id.String() }),
+		agreements: atlas.NewTenantRegistry[uuid.UUID, Model](client, "coordinator:agreement", func(id uuid.UUID) string { return id.String() }),
 		charAgree:  atlas.NewTenantRegistry[uint32, string](client, "coordinator:char", func(id uint32) string { return strconv.FormatUint(uint64(id), 10) }),
 	}
 }
@@ -64,10 +62,10 @@ func (r *Registry) Initiate(ctx context.Context, ch channel.Model, name string, 
 			return fmt.Errorf("track member agreement: %w", err)
 		}
 	}
-	if err := r.agreements.Put(ctx, agreementId, mdl); err != nil {
+	if err := r.agreements.Put(ctx, t, agreementId, mdl); err != nil {
 		return fmt.Errorf("store agreement: %w", err)
 	}
-	return r.active.Add(ctx, agreementId.String())
+	return nil
 }
 
 func (r *Registry) Respond(ctx context.Context, characterId uint32, agree bool) (Model, error) {
@@ -81,43 +79,40 @@ func (r *Registry) Respond(ctx context.Context, characterId uint32, agree bool) 
 	if err != nil {
 		return Model{}, fmt.Errorf("parse agreement id: %w", err)
 	}
-	g, err := r.agreements.Get(ctx, agreementId)
+	g, err := r.agreements.Get(ctx, t, agreementId)
 	if err != nil {
 		return Model{}, fmt.Errorf("agreement not found: %w", err)
 	}
 
 	if agree {
 		g = g.Agree(characterId)
-		_ = r.agreements.Put(ctx, agreementId, g)
+		_ = r.agreements.Put(ctx, t, agreementId, g)
 		return g, nil
 	}
 
 	// Disagreed — delete the agreement and clear character mappings.
-	_ = r.agreements.Remove(ctx, agreementId)
-	_ = r.active.Remove(ctx, agreementId.String())
+	_ = r.agreements.Remove(ctx, t, agreementId)
 	for _, m := range g.requests {
 		_ = r.charAgree.Put(ctx, t, m, uuid.Nil.String())
 	}
 	return g, nil
 }
 
-func (r *Registry) GetExpired(timeout time.Duration) ([]Model, error) {
+// GetExpiredAcrossTenants sweeps every tenant's pending agreements for ones
+// older than timeout. Explicitly cross-tenant: its caller (the expiration
+// ticker, guild/task.go) runs on context.Background() with no tenant in
+// context, so there is no per-tenant context to loop over. Each returned
+// Model already carries its own tenant (Model.tenant), which is what the
+// caller recovers from afterward.
+func (r *Registry) GetExpiredAcrossTenants(timeout time.Duration) ([]Model, error) {
 	ctx := context.Background()
-	members, err := r.active.Members(ctx)
+	all, err := r.agreements.GetAllAcrossTenants(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get active agreements: %w", err)
+		return nil, fmt.Errorf("get agreements across tenants: %w", err)
 	}
 	now := time.Now()
 	results := make([]Model, 0)
-	for _, idStr := range members {
-		id, err := uuid.Parse(idStr)
-		if err != nil {
-			continue
-		}
-		g, err := r.agreements.Get(ctx, id)
-		if err != nil {
-			continue
-		}
+	for _, g := range all {
 		if now.Sub(g.Age()) > timeout {
 			results = append(results, g)
 		}

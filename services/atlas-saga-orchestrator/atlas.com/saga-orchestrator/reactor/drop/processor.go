@@ -151,7 +151,7 @@ func (p *ProcessorImpl) fetchReactorDrops(classification string) ([]Model, error
 		return nil, err
 	}
 
-	reactor, err := requestReactorDrops(uint32(classificationId))(p.l, p.ctx)
+	reactor, err := requestReactorDrops(p.ctx, uint32(classificationId))(p.l, p.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -264,7 +264,7 @@ func (p *ProcessorImpl) calculateDropX(centerX int16, index int) int16 {
 
 // calculateDropPosition calculates the proper drop position using foothold data from the data service
 func (p *ProcessorImpl) calculateDropPosition(mapId _map.Id, initialX, initialY, fallbackX, fallbackY int16) (int16, int16) {
-	pos, err := requestDropPosition(mapId, initialX, initialY, fallbackX, fallbackY)(p.l, p.ctx)
+	pos, err := requestDropPosition(p.ctx, mapId, initialX, initialY, fallbackX, fallbackY)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Warnf("Failed to calculate drop position for map [%d], using fallback (%d, %d)", mapId, fallbackX, fallbackY)
 		return fallbackX, fallbackY

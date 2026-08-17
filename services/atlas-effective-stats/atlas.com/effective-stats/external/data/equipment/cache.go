@@ -29,7 +29,7 @@ type Provider func(ctx context.Context, templateId uint32) (EquipmentRequirement
 type fetcher func(ctx context.Context, l logrus.FieldLogger, templateId uint32) (EquipmentRequirements, error)
 
 var defaultFetcher fetcher = func(ctx context.Context, l logrus.FieldLogger, templateId uint32) (EquipmentRequirements, error) {
-	rm, err := RequestById(templateId)(l, ctx)
+	rm, err := RequestById(ctx, templateId)(l, ctx)
 	if err != nil {
 		return EquipmentRequirements{}, err
 	}

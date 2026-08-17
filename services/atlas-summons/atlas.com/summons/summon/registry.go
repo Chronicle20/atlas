@@ -3,6 +3,7 @@ package summon
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -156,9 +157,13 @@ func fromStored(s storedSummon) (tenant.Model, Model, error) {
 }
 
 type Registry struct {
-	reg      *atlasredis.Registry[string, storedSummon]
-	fieldIdx *atlasredis.KeyedSet[string]
-	ownerIdx *atlasredis.KeyedSet[string]
+	// reg backs the summon store via the tenant-scoped API (D7): the stored
+	// key is atlas:summon:<tenantId>:<region>:<major>.<minor>:<id>.
+	reg *atlasredis.TenantRegistry[uint32, storedSummon]
+	// fieldIdx and ownerIdx back the per-field and per-owner membership SETs,
+	// tenant-scoped the same way.
+	fieldIdx *atlasredis.TenantKeyedSet[string]
+	ownerIdx *atlasredis.TenantKeyedSet[string]
 }
 
 var (
@@ -168,40 +173,40 @@ var (
 
 func newRegistry(rc *goredis.Client) *Registry {
 	return &Registry{
-		reg:      atlasredis.NewRegistry[string, storedSummon](rc, "summon", func(s string) string { return s }),
-		fieldIdx: atlasredis.NewKeyedSet[string](rc, "summon-map", func(s string) string { return s }),
-		ownerIdx: atlasredis.NewKeyedSet[string](rc, "summon-owner", func(s string) string { return s }),
+		reg:      atlasredis.NewTenantRegistry[uint32, storedSummon](rc, "summon", func(id uint32) string { return strconv.FormatUint(uint64(id), 10) }),
+		fieldIdx: atlasredis.NewTenantKeyedSet[string](rc, "summon-map", func(s string) string { return s }),
+		ownerIdx: atlasredis.NewTenantKeyedSet[string](rc, "summon-owner", func(s string) string { return s }),
 	}
 }
 
 func InitRegistry(rc *goredis.Client) { once.Do(func() { registry = newRegistry(rc) }) }
 func GetRegistry() *Registry          { return registry }
 
-func storeSuffix(t tenant.Model, id uint32) string {
-	return fmt.Sprintf("%s:%d", t.Id().String(), id)
+// fieldKey is the tenant-scoped map-index SET's entity key: the tenant
+// segment is supplied by TenantKeyedSet, so this carries only the field
+// coordinates.
+func fieldKey(f field.Model) string {
+	return fmt.Sprintf("%d:%d:%d:%s", f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
 }
 
-func fieldSuffix(t tenant.Model, f field.Model) string {
-	return fmt.Sprintf("%s:%d:%d:%d:%s", t.Id().String(), f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
-}
-
-func ownerSuffix(t tenant.Model, characterId uint32) string {
-	return fmt.Sprintf("%s:%d", t.Id().String(), characterId)
+// ownerKey is the tenant-scoped owner-index SET's entity key (tenant-free).
+func ownerKey(characterId uint32) string {
+	return fmt.Sprintf("%d", characterId)
 }
 
 func (r *Registry) Put(ctx context.Context, t tenant.Model, m Model) error {
-	if err := r.reg.Put(ctx, storeSuffix(t, m.Id()), toStored(t, m)); err != nil {
+	if err := r.reg.Put(ctx, t, m.Id(), toStored(t, m)); err != nil {
 		return err
 	}
 	member := fmt.Sprintf("%d", m.Id())
-	if err := r.fieldIdx.Add(ctx, fieldSuffix(t, m.Field()), member); err != nil {
+	if err := r.fieldIdx.Add(ctx, t, fieldKey(m.Field()), member); err != nil {
 		return err
 	}
-	return r.ownerIdx.Add(ctx, ownerSuffix(t, m.OwnerCharacterId()), member)
+	return r.ownerIdx.Add(ctx, t, ownerKey(m.OwnerCharacterId()), member)
 }
 
 func (r *Registry) Get(ctx context.Context, t tenant.Model, id uint32) (Model, error) {
-	s, err := r.reg.Get(ctx, storeSuffix(t, id))
+	s, err := r.reg.Get(ctx, t, id)
 	if err != nil {
 		return Model{}, err
 	}
@@ -213,15 +218,15 @@ func (r *Registry) Get(ctx context.Context, t tenant.Model, id uint32) (Model, e
 }
 
 func (r *Registry) GetInField(ctx context.Context, t tenant.Model, f field.Model) ([]Model, error) {
-	return r.loadMembers(ctx, t, r.fieldIdx, fieldSuffix(t, f))
+	return r.loadMembers(ctx, t, r.fieldIdx, fieldKey(f))
 }
 
 func (r *Registry) GetByOwner(ctx context.Context, t tenant.Model, characterId uint32) ([]Model, error) {
-	return r.loadMembers(ctx, t, r.ownerIdx, ownerSuffix(t, characterId))
+	return r.loadMembers(ctx, t, r.ownerIdx, ownerKey(characterId))
 }
 
-func (r *Registry) loadMembers(ctx context.Context, t tenant.Model, set *atlasredis.KeyedSet[string], key string) ([]Model, error) {
-	members, err := set.Members(ctx, key)
+func (r *Registry) loadMembers(ctx context.Context, t tenant.Model, set *atlasredis.TenantKeyedSet[string], key string) ([]Model, error) {
+	members, err := set.Members(ctx, t, key)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +247,7 @@ func (r *Registry) loadMembers(ctx context.Context, t tenant.Model, set *atlasre
 }
 
 func (r *Registry) Update(ctx context.Context, t tenant.Model, id uint32, fn func(Model) Model) (Model, error) {
-	s, err := r.reg.Update(ctx, storeSuffix(t, id), func(cur storedSummon) storedSummon {
+	s, err := r.reg.Update(ctx, t, id, func(cur storedSummon) storedSummon {
 		_, m, derr := fromStored(cur)
 		if derr != nil {
 			return cur
@@ -263,18 +268,21 @@ func (r *Registry) Remove(ctx context.Context, t tenant.Model, id uint32) error 
 	m, err := r.Get(ctx, t, id)
 	if err == nil {
 		member := fmt.Sprintf("%d", id)
-		_ = r.fieldIdx.Remove(ctx, fieldSuffix(t, m.Field()), member)
-		_ = r.ownerIdx.Remove(ctx, ownerSuffix(t, m.OwnerCharacterId()), member)
+		_ = r.fieldIdx.Remove(ctx, t, fieldKey(m.Field()), member)
+		_ = r.ownerIdx.Remove(ctx, t, ownerKey(m.OwnerCharacterId()), member)
 	}
-	return r.reg.Remove(ctx, storeSuffix(t, id))
+	return r.reg.Remove(ctx, t, id)
 }
 
 // GetAll returns every stored summon grouped by tenant. The tenant is rebuilt
 // from the fields embedded in each stored value (mirroring atlas-monsters'
 // Registry.GetMonsters), so sweep tasks can construct a tenant-scoped context
-// per group. Undecodable entries are skipped.
+// per group. Undecodable entries are skipped. Uses the deliberate,
+// explicitly-named cross-tenant TenantRegistry.GetAllAcrossTenants sibling
+// (D7) — the periodic sweep tasks (expiry_task.go, beholder_task.go) have no
+// tenant to loop over; they need every tenant with live summon data.
 func (r *Registry) GetAll(ctx context.Context) (map[tenant.Model][]Model, error) {
-	stored, err := r.reg.GetAll(ctx)
+	stored, err := r.reg.GetAllAcrossTenants(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -20,13 +20,23 @@ import (
 // cannot clear the HUD. The client runs the same idle timer and clears itself
 // (design.md §2.5, §5.3); the server's job is to agree with it.
 type DecayTick struct {
-	l        logrus.FieldLogger
-	ctx      context.Context
-	interval time.Duration
+	l          logrus.FieldLogger
+	ctx        context.Context
+	interval   time.Duration
+	envContext func(context.Context) context.Context
 }
 
-func NewDecayTick(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *DecayTick {
-	return &DecayTick{l: l, ctx: ctx, interval: interval}
+// NewDecayTick builds the idle-combo sweep. envContext originates this
+// pod's own environment identity (env.Self()) onto each expired combo's
+// per-character context before the buff-cancel Kafka event is produced --
+// character/combo is outside env-domain-guard's permitted atlas-env import
+// list, so the caller (main.go) threads this in as a plain function value
+// (socket.WithSelfEnvironment) rather than the package importing atlas-env
+// itself. Without it, decide() sees an empty ENVIRONMENT header and fails
+// open per FR-1.8: every live deployment, not just this pod's, would act
+// on the cancel.
+func NewDecayTick(l logrus.FieldLogger, ctx context.Context, interval time.Duration, envContext func(context.Context) context.Context) *DecayTick {
+	return &DecayTick{l: l, ctx: ctx, interval: interval, envContext: envContext}
 }
 
 func (r *DecayTick) SleepTime() time.Duration {
@@ -41,7 +51,7 @@ func (r *DecayTick) Run() {
 	if len(expired) == 0 {
 		return
 	}
-	processExpiries(r.l, ctx, expired, cancelComboBuff)
+	processExpiries(r.l, ctx, expired, cancelComboBuff, r.envContext)
 }
 
 // cancelComboBuff drops the Combo Ability buff for one expired combo. The
@@ -57,10 +67,18 @@ func cancelComboBuff(l logrus.FieldLogger, ctx context.Context, e Expired) error
 // combo bookkeeping never fails a player action (task-217 NFR-4), and the
 // next sweep will not retry because the count is already zero -- an orphaned
 // buff icon is strictly better than a stalled tick.
-func processExpiries(l logrus.FieldLogger, ctx context.Context, expired []Expired, cancel func(l logrus.FieldLogger, ctx context.Context, e Expired) error) int {
+//
+// envContext must attach this pod's own environment identity (env.Self())
+// alongside the per-character tenant -- this is per-character lifecycle
+// state driven by real gameplay, not one of the periodic multi-tenant
+// background sweeps (session/task.go, session/processor.go, channel/task.go)
+// that legitimately omit the environment. A nil envContext is a caller bug;
+// tests exercise it directly since NewDecayTick's own tests can't observe
+// the resulting context.
+func processExpiries(l logrus.FieldLogger, ctx context.Context, expired []Expired, cancel func(l logrus.FieldLogger, ctx context.Context, e Expired) error, envContext func(context.Context) context.Context) int {
 	n := 0
 	for _, e := range expired {
-		tctx := tenant.WithContext(ctx, e.Tenant())
+		tctx := envContext(tenant.WithContext(ctx, e.Tenant()))
 		if err := cancel(l, tctx, e); err != nil {
 			l.WithError(err).Errorf("Aran combo: decay cancel emit failed for character [%d].", e.CharacterId())
 			continue

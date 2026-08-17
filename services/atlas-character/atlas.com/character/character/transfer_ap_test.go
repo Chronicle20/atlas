@@ -601,9 +601,9 @@ func TestTransferAP_Case14_Magician_MPtoSTR_EffectiveIntUsed(t *testing.T) {
 		_, _ = w.Write([]byte(`{"data":{"type":"effective-stats","id":"` + strconv.FormatUint(uint64(id), 10) + `","attributes":{"intelligence":300}}}`))
 	}))
 	defer srv.Close()
-	// effective_stats resolves its base via requests.RootUrl("EFFECTIVE_STATS")
-	// -> EFFECTIVE_STATS_SERVICE_URL (trailing slash: the resource path is
-	// appended directly).
+	// effective_stats resolves its base via requests.RootUrlFor(ctx,
+	// "EFFECTIVE_STATS") -> EFFECTIVE_STATS_SERVICE_URL (trailing slash: the
+	// resource path is appended directly).
 	t.Setenv("EFFECTIVE_STATS_SERVICE_URL", srv.URL+"/")
 
 	mb := message.NewBuffer()

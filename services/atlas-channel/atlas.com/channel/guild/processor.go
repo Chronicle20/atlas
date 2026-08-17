@@ -47,7 +47,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(guildId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(guildId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, guildId), Extract)()
 }
 
 func (p *ProcessorImpl) GetByMemberId(memberId uint32) (Model, error) {
@@ -55,7 +55,7 @@ func (p *ProcessorImpl) GetByMemberId(memberId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByMemberIdProvider(memberId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(p.ctx, memberId), Extract, model.Filters[Model]())
 }
 
 func MemberOnline(m member.Model) bool {

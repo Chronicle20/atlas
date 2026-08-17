@@ -71,6 +71,108 @@ func TestUpdateConfigurationTemplateReturnsNoContent(t *testing.T) {
 	}
 }
 
+// TestUpdateConfigurationTemplateHandlerLegacyCallerAuthorizedForNamedEnvironment
+// is the fix-2 regression test, driven end-to-end through the real HTTP
+// handler (the round-1 lesson: a correct-looking error value is not proof
+// the response is right). environment_migration.go's backfill stamps every
+// pre-existing row with the baseline environment ("main"), never "" - so a
+// legacy caller (no ENVIRONMENT header at all) updating that row must get
+// 204, matching pre-task-232 behaviour (FR-1.8). Before the fix-2 change to
+// scope.AuthorizeWrite, this returned 403.
+func TestUpdateConfigurationTemplateHandlerLegacyCallerAuthorizedForNamedEnvironment(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+
+	rm := createTestRestModel("GMS", 83, 1)
+	seed, err := json.Marshal(rm)
+	if err != nil {
+		t.Fatalf("seed marshal failed: %v", err)
+	}
+	id := uuid.MustParse("00000000-0000-0000-0000-0000000004a3")
+	if err := db.Create(&Entity{
+		Id:           id,
+		Region:       rm.Region,
+		MajorVersion: rm.MajorVersion,
+		MinorVersion: rm.MinorVersion,
+		Data:         seed,
+		Environment:  "main",
+	}).Error; err != nil {
+		t.Fatalf("seed create failed: %v", err)
+	}
+
+	router := mux.NewRouter()
+	InitResource(testServerInformation{})(db)(router, l)
+
+	updated := createTestRestModel("GMS", 83, 2)
+	attributes, err := json.Marshal(updated)
+	if err != nil {
+		t.Fatalf("attribute marshal failed: %v", err)
+	}
+	body, err := json.Marshal(map[string]any{
+		"data": map[string]any{
+			"type":       "templates",
+			"id":         id.String(),
+			"attributes": json.RawMessage(attributes),
+		},
+	})
+	if err != nil {
+		t.Fatalf("body marshal failed: %v", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, "/configurations/templates/"+id.String(), bytes.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	// deliberately no ENVIRONMENT header - legacy caller
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want 204, body=%s", rr.Code, rr.Body.String())
+	}
+}
+
+// TestDeleteConfigurationTemplateHandlerLegacyCallerAuthorizedForNamedEnvironment
+// mirrors TestUpdateConfigurationTemplateHandlerLegacyCallerAuthorizedForNamedEnvironment
+// for Delete.
+func TestDeleteConfigurationTemplateHandlerLegacyCallerAuthorizedForNamedEnvironment(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+
+	rm := createTestRestModel("GMS", 83, 1)
+	seed, err := json.Marshal(rm)
+	if err != nil {
+		t.Fatalf("seed marshal failed: %v", err)
+	}
+	id := uuid.MustParse("00000000-0000-0000-0000-0000000004a4")
+	if err := db.Create(&Entity{
+		Id:           id,
+		Region:       rm.Region,
+		MajorVersion: rm.MajorVersion,
+		MinorVersion: rm.MinorVersion,
+		Data:         seed,
+		Environment:  "main",
+	}).Error; err != nil {
+		t.Fatalf("seed create failed: %v", err)
+	}
+
+	router := mux.NewRouter()
+	InitResource(testServerInformation{})(db)(router, l)
+
+	req, err := http.NewRequest(http.MethodDelete, "/configurations/templates/"+id.String(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// deliberately no ENVIRONMENT header - legacy caller
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want 204, body=%s", rr.Code, rr.Body.String())
+	}
+}
+
 func TestDeleteConfigurationTemplateReturnsNoContent(t *testing.T) {
 	db := setupTestDB(t)
 	l := testLogger()

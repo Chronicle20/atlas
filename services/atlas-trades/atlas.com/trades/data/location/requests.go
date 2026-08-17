@@ -1,6 +1,7 @@
 package location
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
@@ -11,10 +12,14 @@ const (
 	Resource = "characters/%d/location"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("MAPS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MAPS")
 }
 
-func requestByCharacterId(characterId character.Id) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
+func requestByCharacterId(ctx context.Context, characterId character.Id) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+Resource, characterId))
 }

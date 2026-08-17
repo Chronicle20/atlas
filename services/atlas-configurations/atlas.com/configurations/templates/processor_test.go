@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"atlas-configurations/scope"
 	"atlas-configurations/templates/socket"
 	"atlas-configurations/templates/socket/handler"
 	"context"
@@ -25,6 +26,7 @@ type testEntity struct {
 	MajorVersion uint16          `gorm:"not null"`
 	MinorVersion uint16          `gorm:"not null"`
 	Data         json.RawMessage `gorm:"type:text;not null"`
+	Environment  string          `gorm:"not null;default:''"`
 }
 
 func (testEntity) TableName() string {
@@ -38,6 +40,15 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("failed to connect database: %v", err)
 	}
+
+	// :memory: is per-connection; the default pool can open more than one
+	// connection and silently query an empty database (see
+	// environmentcol/migration_test.go for the same fix).
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("failed to get underlying sql.DB: %v", err)
+	}
+	sqlDB.SetMaxOpenConns(1)
 
 	// Use SQLite-compatible schema
 	err = db.AutoMigrate(&testEntity{})
@@ -863,5 +874,50 @@ func TestReseedProducesSameBytesAsFreshCreate(t *testing.T) {
 
 	if string(reseeded.Data) != string(fresh.Data) {
 		t.Errorf("re-seeded bytes differ from a fresh boot seed of the same file")
+	}
+}
+
+// TestReseedByIdRejectsCrossEnvironmentWrite is the ReseedById analogue of
+// services/processor_test.go's TestPrEnvironmentCannotPatchAMainOwnedServiceRow
+// (task-232 C2/Step 7): ReseedById is AuthorizeWrite-guarded via update(),
+// but every other TestReseed* test in this file runs under
+// context.Background() - the legacy "" caller, whose Environment ("") always
+// equals the seeded row's own Environment (""), so the guard is never
+// exercised there. Here a non-baseline caller (pr-123) can SEE the
+// baseline's row via the overlay-scoped read but must be rejected with
+// scope.ErrCrossEnvironmentWrite when it tries to re-seed it, and the row
+// must be byte-identical afterwards.
+func TestReseedByIdRejectsCrossEnvironmentWrite(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	catalog := LoadCatalog(l, seedTemplatesDir())
+
+	entry, ok := catalog.Lookup("GMS", 83, 1)
+	if !ok {
+		t.Fatalf("GMS 83.1 missing from the seed corpus")
+	}
+
+	mainP := NewProcessor(l, envContext(t, "main"), db).WithCatalog(catalog)
+	id, err := mainP.Create(entry.Model)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	var before Entity
+	if err := db.Where("id = ?", id).First(&before).Error; err != nil {
+		t.Fatalf("read back (before): %v", err)
+	}
+
+	prP := NewProcessor(l, envContext(t, "pr-123"), db).WithCatalog(catalog)
+	err = prP.ReseedById(id)
+	if !errors.Is(err, scope.ErrCrossEnvironmentWrite) {
+		t.Fatalf("got %v, want ErrCrossEnvironmentWrite", err)
+	}
+
+	var after Entity
+	if err := db.Where("id = ?", id).First(&after).Error; err != nil {
+		t.Fatalf("read back (after): %v", err)
+	}
+	if string(after.Data) != string(before.Data) {
+		t.Fatalf("main's row changed:\n before %s\n after  %s", before.Data, after.Data)
 	}
 }

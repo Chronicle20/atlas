@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -13,22 +14,38 @@ const (
 	Etc         = "data/etcs/%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("DATA")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "DATA")
 }
 
-func requestEquipment(templateId uint32) requests.Request[EquipmentRestModel] {
-	return requests.GetRequest[EquipmentRestModel](fmt.Sprintf(getBaseRequest()+Equipment, templateId))
+func requestEquipment(ctx context.Context, templateId uint32) requests.Request[EquipmentRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[EquipmentRestModel](err)
+	}
+	return requests.GetRequest[EquipmentRestModel](fmt.Sprintf(root+Equipment, templateId))
 }
 
-func requestConsumable(templateId uint32) requests.Request[ConsumableRestModel] {
-	return requests.GetRequest[ConsumableRestModel](fmt.Sprintf(getBaseRequest()+Consumables, templateId))
+func requestConsumable(ctx context.Context, templateId uint32) requests.Request[ConsumableRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[ConsumableRestModel](err)
+	}
+	return requests.GetRequest[ConsumableRestModel](fmt.Sprintf(root+Consumables, templateId))
 }
 
-func requestSetup(templateId uint32) requests.Request[SetupRestModel] {
-	return requests.GetRequest[SetupRestModel](fmt.Sprintf(getBaseRequest()+Setup, templateId))
+func requestSetup(ctx context.Context, templateId uint32) requests.Request[SetupRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[SetupRestModel](err)
+	}
+	return requests.GetRequest[SetupRestModel](fmt.Sprintf(root+Setup, templateId))
 }
 
-func requestEtc(templateId uint32) requests.Request[EtcRestModel] {
-	return requests.GetRequest[EtcRestModel](fmt.Sprintf(getBaseRequest()+Etc, templateId))
+func requestEtc(ctx context.Context, templateId uint32) requests.Request[EtcRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[EtcRestModel](err)
+	}
+	return requests.GetRequest[EtcRestModel](fmt.Sprintf(root+Etc, templateId))
 }

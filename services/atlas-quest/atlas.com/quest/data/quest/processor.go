@@ -40,7 +40,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetQuestDefinition(questId uint32) (RestModel, error) {
-	result, err := requestQuestById(questId)(p.l, p.ctx)
+	result, err := requestQuestById(p.ctx, questId)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to get quest definition for quest %d", questId)
 		return RestModel{}, err
@@ -52,7 +52,12 @@ func (p *ProcessorImpl) GetAutoStartQuests(mapId _map.Id) ([]RestModel, error) {
 	// atlas-data's GET /data/quests/auto-start is now paginated (task-117);
 	// this drains every page rather than fetching one, since callers need
 	// the complete auto-start set to filter by mapId below.
-	allAutoStart, err := requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(autoStartQuestsUrl(), 250, identity, model.Filters[RestModel]())()
+	url, err := autoStartQuestsUrl(p.ctx)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to resolve auto-start quests URL")
+		return nil, err
+	}
+	allAutoStart, err := requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(url, 250, identity, model.Filters[RestModel]())()
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to get auto-start quests")
 		return nil, err

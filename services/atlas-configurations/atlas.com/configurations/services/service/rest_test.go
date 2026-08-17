@@ -66,6 +66,28 @@ func TestGenericRestModel_JSONMarshal(t *testing.T) {
 	}
 }
 
+// TestGenericRestModel_JSONMarshal_EnvironmentAttribute is the task-48 fix
+// round 2 Critical 1 regression guard: cleanup.sh's _dcp_reclaim filters
+// the /api/configurations/services JSON:API collection on
+// attributes.environment, so that key must actually appear in the
+// marshaled JSON, not just live on the Go struct.
+func TestGenericRestModel_JSONMarshal_EnvironmentAttribute(t *testing.T) {
+	rm := GenericRestModel{Id: "test-id", Environment: "pr-99"}
+
+	data, err := json.Marshal(rm)
+	if err != nil {
+		t.Fatalf("JSON marshal failed: %v", err)
+	}
+
+	var decoded map[string]interface{}
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("JSON unmarshal failed: %v", err)
+	}
+	if decoded["environment"] != "pr-99" {
+		t.Errorf("expected \"environment\":\"pr-99\" in marshaled JSON, got %v", decoded["environment"])
+	}
+}
+
 func TestLoginRestModel_GetName(t *testing.T) {
 	rm := LoginRestModel{}
 	expected := "services"
@@ -127,6 +149,24 @@ func TestLoginRestModel_JSONMarshal(t *testing.T) {
 	}
 	if decoded.Tenants[0].Port != 8484 {
 		t.Errorf("expected port 8484, got %d", decoded.Tenants[0].Port)
+	}
+}
+
+// TestLoginRestModel_JSONMarshal_EnvironmentAttribute mirrors
+// TestGenericRestModel_JSONMarshal_EnvironmentAttribute for the Login shape.
+func TestLoginRestModel_JSONMarshal_EnvironmentAttribute(t *testing.T) {
+	rm := LoginRestModel{Id: "test-id", Environment: "pr-99"}
+
+	data, err := json.Marshal(rm)
+	if err != nil {
+		t.Fatalf("JSON marshal failed: %v", err)
+	}
+	var decoded map[string]interface{}
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("JSON unmarshal failed: %v", err)
+	}
+	if decoded["environment"] != "pr-99" {
+		t.Errorf("expected \"environment\":\"pr-99\" in marshaled JSON, got %v", decoded["environment"])
 	}
 }
 
@@ -209,6 +249,24 @@ func TestChannelRestModel_JSONMarshal(t *testing.T) {
 	}
 	if len(decoded.Tenants[0].Worlds[0].Channels) != 2 {
 		t.Errorf("expected 2 channels, got %d", len(decoded.Tenants[0].Worlds[0].Channels))
+	}
+}
+
+// TestChannelRestModel_JSONMarshal_EnvironmentAttribute mirrors
+// TestGenericRestModel_JSONMarshal_EnvironmentAttribute for the Channel shape.
+func TestChannelRestModel_JSONMarshal_EnvironmentAttribute(t *testing.T) {
+	rm := ChannelRestModel{Id: "test-id", Environment: "pr-99"}
+
+	data, err := json.Marshal(rm)
+	if err != nil {
+		t.Fatalf("JSON marshal failed: %v", err)
+	}
+	var decoded map[string]interface{}
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("JSON unmarshal failed: %v", err)
+	}
+	if decoded["environment"] != "pr-99" {
+		t.Errorf("expected \"environment\":\"pr-99\" in marshaled JSON, got %v", decoded["environment"])
 	}
 }
 

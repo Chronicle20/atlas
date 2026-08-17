@@ -5,6 +5,8 @@ import (
 	"errors"
 
 	goredis "github.com/redis/go-redis/v9"
+
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Hash is an env-global Redis HASH whose key is namespaced via KeyPrefix().
@@ -44,6 +46,51 @@ func (h *Hash) Exists(ctx context.Context, field string) (bool, error) {
 
 func (h *Hash) GetAll(ctx context.Context) (map[string]string, error) {
 	return h.client.HGetAll(ctx, h.key()).Result()
+}
+
+// TenantHash is a tenant-scoped Redis HASH: one HASH per tenant under
+// namespace. NewHash/NewKeyedHash above remain the only bare (env-global)
+// Hash constructors and stay banned by tools/rediskeyguard for DATA-PLANE
+// call sites (see the note in tools/rediskeyguard/analyzer.go) — TenantHash
+// is the tenant-scoped constructor those call sites must migrate onto.
+type TenantHash struct {
+	client    *goredis.Client
+	namespace string
+}
+
+func NewTenantHash(client *goredis.Client, namespace string) *TenantHash {
+	return &TenantHash{client: client, namespace: namespace}
+}
+
+func (h *TenantHash) key(t tenant.Model) string {
+	return namespacedKey(h.namespace, TenantKey(t))
+}
+
+func (h *TenantHash) Set(ctx context.Context, t tenant.Model, field, value string) error {
+	return h.client.HSet(ctx, h.key(t), field, value).Err()
+}
+
+func (h *TenantHash) Get(ctx context.Context, t tenant.Model, field string) (string, error) {
+	v, err := h.client.HGet(ctx, h.key(t), field).Result()
+	if errors.Is(err, goredis.Nil) {
+		return "", ErrNotFound
+	}
+	return v, err
+}
+
+func (h *TenantHash) Del(ctx context.Context, t tenant.Model, fields ...string) error {
+	if len(fields) == 0 {
+		return nil
+	}
+	return h.client.HDel(ctx, h.key(t), fields...).Err()
+}
+
+func (h *TenantHash) Exists(ctx context.Context, t tenant.Model, field string) (bool, error) {
+	return h.client.HExists(ctx, h.key(t), field).Result()
+}
+
+func (h *TenantHash) GetAll(ctx context.Context, t tenant.Model) (map[string]string, error) {
+	return h.client.HGetAll(ctx, h.key(t)).Result()
 }
 
 // KeyedHash is a family of env-global HASHes, one per key K. The Lua-script

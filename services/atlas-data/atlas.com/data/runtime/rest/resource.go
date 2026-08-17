@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	redis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -105,7 +106,7 @@ func processStatus(jc *JobCreator, regs *IngestRegistries) func(d *rest.HandlerD
 			var rec ingestrun.Record
 			phase := ingestrun.PhaseNone
 			if regs != nil && regs.Run != nil {
-				stored, err := regs.Run.Get(r.Context(), suffix+ingestrun.RunKeySuffix)
+				stored, err := regs.Run.Get(r.Context(), env.Self(), suffix+ingestrun.RunKeySuffix)
 				switch {
 				case err == nil:
 					rec, phase = stored, stored.Phase
@@ -139,7 +140,7 @@ func corroborateRunning(ctx context.Context, jc *JobCreator, regs *IngestRegistr
 	// alive; believe it regardless of what Kubernetes says. This covers the
 	// window between Job creation and pod scheduling, and any Job-list hiccup.
 	if regs != nil && regs.Job != nil {
-		if ts, err := regs.Job.Get(ctx, suffix+ingestrun.HeartbeatKeySuffix); err == nil && ts != "" {
+		if ts, err := regs.Job.Get(ctx, env.Self(), suffix+ingestrun.HeartbeatKeySuffix); err == nil && ts != "" {
 			if hb, perr := time.Parse(time.RFC3339, ts); perr == nil {
 				if time.Since(hb) < time.Duration(DefaultWatchdogTimeoutSecs)*time.Second {
 					return ingestrun.PhaseRunning

@@ -1,0 +1,16 @@
+# tools/envguard/bootstrap-allowlist.txt — services exempt from
+# env-bootstrap-guard.sh, one service name per line. Comments (#) and blank
+# lines are ignored.
+#
+# A service belongs here ONLY when its main.go genuinely never calls
+# service.Bootstrap (libs/atlas-service) at all — never merely because it
+# currently fails the check.
+#
+# Enforced as of task-232/52: env-bootstrap-guard.sh is wired into
+# tools/verify.sh and every services/*/atlas.com/*/main.go now calls
+# service.Bootstrap(...) with WithEnvironmentRegistry (some under the import
+# alias "lifecycle", e.g. atlas-character and atlas-storage — an alias, not
+# a different bootstrap path). All 64 services pass; this allowlist has zero
+# live entries and is expected to stay empty. Do not add a service here
+# merely because it currently fails the check — only when its main.go
+# genuinely never calls service.Bootstrap at all.

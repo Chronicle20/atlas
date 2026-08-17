@@ -37,7 +37,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // (character-info popup, cash-shop entry) need the complete wishlist, so
 // this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterIdUrl(characterId), 250, Extract, model.Filters[Model]())
+	url, err := byCharacterIdUrl(p.ctx, characterId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
@@ -47,7 +51,7 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 func (p *ProcessorImpl) SetForCharacter(characterId uint32, serialNumbers []uint32) ([]Model, error) {
 	p.l.Debugf("Setting wishlist for character [%d].", characterId)
 	results := make([]Model, 0)
-	err := clearForCharacterId(characterId)(p.l, p.ctx)
+	err := clearForCharacterId(p.ctx, characterId)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to clear wishlist for character [%d].", characterId)
 		return results, err
@@ -57,7 +61,7 @@ func (p *ProcessorImpl) SetForCharacter(characterId uint32, serialNumbers []uint
 			continue
 		}
 		var rm RestModel
-		rm, err = addForCharacterId(characterId, serialNumber)(p.l, p.ctx)
+		rm, err = addForCharacterId(p.ctx, characterId, serialNumber)(p.l, p.ctx)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to add serialNumber [%d] to wishlist for character [%d].", serialNumber, characterId)
 			continue

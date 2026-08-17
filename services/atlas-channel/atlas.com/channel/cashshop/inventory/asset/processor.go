@@ -36,7 +36,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 // ByIdProvider returns a provider function that fetches an asset by ID
 func (p *ProcessorImpl) ByIdProvider(accountId uint32, compartmentId uuid.UUID, assetId uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(accountId, compartmentId, assetId), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, accountId, compartmentId, assetId), Extract)
 }
 
 // GetById retrieves an asset by ID
@@ -46,7 +46,7 @@ func (p *ProcessorImpl) GetById(accountId uint32, compartmentId uuid.UUID, asset
 
 // ByCompartmentIdProvider returns a provider function that fetches all assets for a compartment
 func (p *ProcessorImpl) ByCompartmentIdProvider(accountId uint32, compartmentId uuid.UUID) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCompartmentId(accountId, compartmentId), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByCompartmentId(p.ctx, accountId, compartmentId), Extract, model.Filters[Model]())
 }
 
 // GetByCompartmentId retrieves all assets for a compartment

@@ -49,7 +49,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) PrepaidBalance(accountId uint32) (uint32, error) {
-	rm, err := requestByAccountId(accountId)(p.l, p.ctx)
+	rm, err := requestByAccountId(p.ctx, accountId)(p.l, p.ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -57,7 +57,7 @@ func (p *ProcessorImpl) PrepaidBalance(accountId uint32) (uint32, error) {
 }
 
 func (p *ProcessorImpl) Balance(accountId uint32) (uint32, uint32, error) {
-	rm, err := requestByAccountId(accountId)(p.l, p.ctx)
+	rm, err := requestByAccountId(p.ctx, accountId)(p.l, p.ctx)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -66,12 +66,12 @@ func (p *ProcessorImpl) Balance(accountId uint32) (uint32, uint32, error) {
 
 func (p *ProcessorImpl) EnsureWallet(accountId uint32, credit uint32, points uint32, prepaid uint32) error {
 	// A successful GET means the wallet already exists — leave it as-is.
-	if _, err := requestByAccountId(accountId)(p.l, p.ctx); err == nil {
+	if _, err := requestByAccountId(p.ctx, accountId)(p.l, p.ctx); err == nil {
 		return nil
 	} else if !errors.Is(err, requests.ErrNotFound) {
 		return err
 	}
 	rm := RestModel{AccountId: accountId, Credit: credit, Points: points, Prepaid: prepaid}
-	_, err := createRequest(accountId, rm)(p.l, p.ctx)
+	_, err := createRequest(p.ctx, accountId, rm)(p.l, p.ctx)
 	return err
 }

@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -11,11 +12,11 @@ const (
 	mapMonstersResource = "worlds/%d/channels/%d/maps/%d/monsters"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("MONSTERS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MONSTERS")
 }
 
-func requestCreate(f field.Model, monsterId uint32, x int16, y int16, fh int16, team int8) requests.Request[RestModel] {
+func requestCreate(ctx context.Context, f field.Model, monsterId uint32, x int16, y int16, fh int16, team int8) requests.Request[RestModel] {
 	m := RestModel{
 		Id:        "0",
 		MonsterId: monsterId,
@@ -24,6 +25,10 @@ func requestCreate(f field.Model, monsterId uint32, x int16, y int16, fh int16, 
 		Fh:        fh,
 		Team:      team,
 	}
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
 	// TODO - field migration
-	return requests.PostRequest[RestModel](fmt.Sprintf(getBaseRequest()+mapMonstersResource, f.WorldId(), f.ChannelId(), f.MapId()), m)
+	return requests.PostRequest[RestModel](fmt.Sprintf(root+mapMonstersResource, f.WorldId(), f.ChannelId(), f.MapId()), m)
 }

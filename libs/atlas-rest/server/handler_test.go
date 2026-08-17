@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -14,10 +15,17 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+func testLogger(t *testing.T) logrus.FieldLogger {
+	t.Helper()
+	l, _ := test.NewNullLogger()
+	return l
+}
 
 type MockSpan struct {
 	trace.Span
@@ -182,5 +190,118 @@ func TestTenantPropagation(t *testing.T) {
 
 	if !called {
 		t.Fatal(errors.New("invalid tenant").Error())
+	}
+}
+
+func TestParseEnvironmentPutsTheHeaderOnTheContext(t *testing.T) {
+	var got env.Id
+	h := server.ParseEnvironment(testLogger(t), context.Background(),
+		func(_ logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
+			return func(w http.ResponseWriter, _ *http.Request) {
+				got = env.MustFromContext(ctx)
+				w.WriteHeader(http.StatusOK)
+			}
+		})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(env.Key, "pr-123")
+	w := httptest.NewRecorder()
+	h(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+	if got != env.Id("pr-123") {
+		t.Fatalf("environment = %q, want \"pr-123\"", got)
+	}
+}
+
+func TestParseEnvironmentWithNoHeaderIsTheLegacyPath(t *testing.T) {
+	// FR-1.8 / NFR-7: an unheadered request is exactly today's request.
+	called := false
+	h := server.ParseEnvironment(testLogger(t), context.Background(),
+		func(_ logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
+			return func(w http.ResponseWriter, _ *http.Request) {
+				called = true
+				if got := env.MustFromContext(ctx); got != env.Id("") {
+					t.Errorf("environment = %q, want the empty id", got)
+				}
+				w.WriteHeader(http.StatusOK)
+			}
+		})
+
+	h(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+	if !called {
+		t.Fatal("handler not reached; an unheadered request must pass through")
+	}
+}
+
+func TestParseEnvironmentRejectsAnUnknownEnvironment(t *testing.T) {
+	// FR-3.6: a request naming an unknown or inactive environment is
+	// rejected. Never served by the baseline (G4).
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	reg.Apply(env.Record{
+		Name: "main", Baseline: "main",
+		Namespace: "atlas-main", Phase: env.PhaseActive,
+	})
+	env.SetRegistry(reg)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	h := server.ParseEnvironment(testLogger(t), context.Background(),
+		func(_ logrus.FieldLogger, _ context.Context) http.HandlerFunc {
+			return func(http.ResponseWriter, *http.Request) {
+				t.Fatal("handler reached for an unknown environment")
+			}
+		})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(env.Key, "pr-999")
+	w := httptest.NewRecorder()
+	h(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", w.Code)
+	}
+}
+
+func TestParseTenantRejectsAMismatchedEnvironment(t *testing.T) {
+	// FR-7.7: a header environment that disagrees with the tenant's
+	// registered environment is rejected outright; the handler is never
+	// reached.
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	reg.Apply(env.Record{
+		Name: "main", Baseline: "main",
+		Namespace: "atlas-main", Phase: env.PhaseActive,
+	})
+	reg.Apply(env.Record{
+		Name: "pr-123", Baseline: "main",
+		Namespace: "atlas-pr-123", Phase: env.PhaseActive,
+	})
+	id := uuid.New()
+	reg.ApplyTenant(id.String(), env.Id("pr-123"))
+	env.SetRegistry(reg)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	it, err := tenant.Create(id, "GMS", uint16(83), uint16(1))
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	requests.TenantHeaderDecorator(tenant.WithContext(context.Background(), it))(r.Header)
+	w := httptest.NewRecorder()
+
+	// Simulate ParseEnvironment having already put the (mismatched) header
+	// environment on the context, as register.go composes it.
+	ctx := env.WithContext(context.Background(), env.Id("not-pr-123"))
+
+	server.ParseTenant(testLogger(t), ctx, func(_ logrus.FieldLogger, _ context.Context) http.HandlerFunc {
+		return func(http.ResponseWriter, *http.Request) {
+			t.Fatal("handler reached for a mismatched environment")
+		}
+	})(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", w.Code)
 	}
 }

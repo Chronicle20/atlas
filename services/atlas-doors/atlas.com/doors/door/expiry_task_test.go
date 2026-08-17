@@ -13,6 +13,10 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// identityEnvContext is a no-op envContext for tests that don't care about
+// environment origination -- it just returns ctx unchanged.
+func identityEnvContext(ctx context.Context) context.Context { return ctx }
+
 // fakeExpiryProcessor records which owner ids were passed to RemoveByOwner.
 type fakeExpiryProcessor struct {
 	removed []character.Id
@@ -83,9 +87,10 @@ func TestExpiryRemovesOnlyExpiredPastGrace(t *testing.T) {
 
 	fake := &fakeExpiryProcessor{}
 	task := &ExpiryTask{
-		l:        logrus.New(),
-		ctx:      ctx,
-		interval: 30 * time.Second,
+		l:          logrus.New(),
+		ctx:        ctx,
+		interval:   30 * time.Second,
+		envContext: identityEnvContext,
 		newProcessor: func(l logrus.FieldLogger, tctx context.Context) expiryProcessor {
 			// Verify the processor is created with a context that carries a tenant.
 			if _, err := tenant.FromContext(tctx)(); err != nil {
@@ -142,9 +147,10 @@ func TestExpirySkipsZeroExpiresAt(t *testing.T) {
 
 	fake := &fakeExpiryProcessor{}
 	task := &ExpiryTask{
-		l:        logrus.New(),
-		ctx:      ctx,
-		interval: 30 * time.Second,
+		l:          logrus.New(),
+		ctx:        ctx,
+		interval:   30 * time.Second,
+		envContext: identityEnvContext,
 		newProcessor: func(l logrus.FieldLogger, tctx context.Context) expiryProcessor {
 			return fake
 		},
@@ -153,5 +159,40 @@ func TestExpirySkipsZeroExpiresAt(t *testing.T) {
 
 	if len(fake.removed) != 0 {
 		t.Fatalf("expected no removal for zero ExpiresAt, got %v", fake.removed)
+	}
+}
+
+// envMarkerKey is a test-local context key -- deliberately not
+// libs/atlas-env, since door sits outside env-domain-guard's permitted
+// import list (main.go, kafka/, rest/, socket/) and must not import
+// atlas-env even from a test file.
+type envMarkerKey string
+
+// TestExpiryTaskTenantContextAppliesEnvContext pins the task-232 batch-2
+// origination-audit fix: tenantContext must run each tenant's per-sweep
+// context through envContext before RemoveByOwner emits the DOOR_STATUS
+// REMOVED event, so the sweep carries this pod's own environment identity
+// rather than an empty one. Without this the ExpiryTask sweep would fail
+// FR-1.8's decide() open, and the removal would be actioned by every live
+// deployment, not just the originating one.
+func TestExpiryTaskTenantContextAppliesEnvContext(t *testing.T) {
+	ten, _ := newTestTenant()
+
+	envContext := func(ctx context.Context) context.Context {
+		return context.WithValue(ctx, envMarkerKey("marker"), "stamped")
+	}
+
+	task := &ExpiryTask{
+		l:          logrus.New(),
+		ctx:        context.Background(),
+		envContext: envContext,
+	}
+	tctx := task.tenantContext(ten)
+
+	if got := tctx.Value(envMarkerKey("marker")); got != "stamped" {
+		t.Fatalf("envContext was not applied: got %v, want \"stamped\"", got)
+	}
+	if got, err := tenant.FromContext(tctx)(); err != nil || got != ten {
+		t.Fatalf("tenant not preserved: got %v, err %v, want %v", got, err, ten)
 	}
 }

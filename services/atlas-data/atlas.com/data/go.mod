@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-database v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-env v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-redis v0.0.0-00010101000000-000000000000
@@ -138,6 +139,8 @@ replace github.com/Chronicle20/atlas/libs/atlas-opcodes => ../../../../libs/atla
 replace github.com/Chronicle20/atlas/libs/atlas-packet => ../../../../libs/atlas-packet
 
 replace github.com/Chronicle20/atlas/libs/atlas-redis => ../../../../libs/atlas-redis
+
+replace github.com/Chronicle20/atlas/libs/atlas-env => ../../../../libs/atlas-env
 
 replace github.com/Chronicle20/atlas/libs/atlas-retry => ../../../../libs/atlas-retry
 

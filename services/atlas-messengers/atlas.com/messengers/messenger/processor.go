@@ -63,6 +63,10 @@ func GetById(ctx context.Context) func(messengerId uint32) (Model, error) {
 	}
 }
 
+// createLock is a process-wide *atlas.Lock singleton, but every key it
+// acquires (see acquireCreateLock below) is composed with atlas.TenantKey(t),
+// so distinct tenants never contend for the same Redis key even when one
+// process serves multiple tenants (sparse ephemeral environments, D1).
 var createLock *atlas.Lock
 
 func InitLock(client *goredis.Client) {

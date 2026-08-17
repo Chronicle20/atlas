@@ -1,6 +1,7 @@
 package info
 
 import (
+	"context"
 	"fmt"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -9,10 +10,14 @@ import (
 
 const mapsResource = "data/maps/%d"
 
-func getBaseRequest() string {
-	return requests.RootUrl("DATA")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "DATA")
 }
 
-func requestMap(mapId _map.Id) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+mapsResource, mapId))
+func requestMap(ctx context.Context, mapId _map.Id) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+mapsResource, mapId))
 }

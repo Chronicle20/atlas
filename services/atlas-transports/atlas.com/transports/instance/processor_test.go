@@ -180,7 +180,7 @@ func TestStartTransport_AlreadyInTransportEmitsNothing(t *testing.T) {
 	p, ctx := setupProcessorTest(t)
 	route := newEffectRoute(t, 2)
 	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
-	getCharacterRegistry().Add(42, uuid.New())
+	getCharacterRegistry().Add(ctx, 42, uuid.New())
 
 	mb := message.NewBuffer()
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(240000110)).Build()
@@ -197,7 +197,7 @@ func board(t *testing.T, p *ProcessorImpl, route RouteModel, characterId uint32,
 	mb := message.NewBuffer()
 	f := field.NewBuilder(worldId, channelId, route.StartMapId()).Build()
 	assert.NoError(t, p.StartTransport(mb)(characterId, route.Id(), f))
-	instanceId, ok := getCharacterRegistry().GetInstanceForCharacter(characterId)
+	instanceId, ok := getCharacterRegistry().GetInstanceForCharacter(p.ctx, characterId)
 	assert.True(t, ok)
 	return instanceId
 }
@@ -306,7 +306,7 @@ func TestTickStuckTimeout_CancelsEffectsForEveryCharacter(t *testing.T) {
 	assert.Empty(t, mb.GetAll()[consumable.EnvCommandTopic], "instance is not stuck yet")
 
 	// Advance past MaxLifetime by asking the registry directly.
-	stuck := getInstanceRegistry().GetStuck(time.Now().Add(route.MaxLifetime()+time.Second), route.MaxLifetime())
+	stuck := getInstanceRegistry().GetStuck(ctx, time.Now().Add(route.MaxLifetime()+time.Second), route.MaxLifetime())
 	assert.NotEmpty(t, stuck, "instance must be considered stuck once MaxLifetime has elapsed")
 }
 
@@ -361,7 +361,7 @@ func TestForceCancelInstance_CancelsEffectsAndWarpsToStart(t *testing.T) {
 	instanceId := board(t, p, route, 42, world.Id(0), channel.Id(1))
 	board(t, p, route, 43, world.Id(0), channel.Id(2))
 
-	inst, ok := getInstanceRegistry().GetInstance(instanceId)
+	inst, ok := getInstanceRegistry().GetInstance(ctx, instanceId)
 	assert.True(t, ok)
 
 	mb := message.NewBuffer()
@@ -387,8 +387,8 @@ func TestForceCancelInstance_CancelsEffectsAndWarpsToStart(t *testing.T) {
 		assert.Equal(t, it.CancelReasonStuck, e.Body.Reason)
 	}
 
-	assert.False(t, getCharacterRegistry().IsInTransport(42))
-	assert.False(t, getCharacterRegistry().IsInTransport(43))
+	assert.False(t, getCharacterRegistry().IsInTransport(ctx, 42))
+	assert.False(t, getCharacterRegistry().IsInTransport(ctx, 43))
 }
 
 func TestForceCancelInstance_NoEffectsEmitsNoConsumableCommands(t *testing.T) {
@@ -397,7 +397,7 @@ func TestForceCancelInstance_NoEffectsEmitsNoConsumableCommands(t *testing.T) {
 	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
 	instanceId := board(t, p, route, 42, world.Id(0), channel.Id(1))
 
-	inst, ok := getInstanceRegistry().GetInstance(instanceId)
+	inst, ok := getInstanceRegistry().GetInstance(ctx, instanceId)
 	assert.True(t, ok)
 
 	mb := message.NewBuffer()
@@ -414,7 +414,7 @@ func TestForceCancelInstance_NoEffectsEmitsNoConsumableCommands(t *testing.T) {
 	assert.Equal(t, it.EventTypeCancelled, evs[0].Type)
 	assert.Equal(t, it.CancelReasonStuck, evs[0].Body.Reason)
 
-	assert.False(t, getCharacterRegistry().IsInTransport(42))
+	assert.False(t, getCharacterRegistry().IsInTransport(ctx, 42))
 }
 
 // A route with a forced return: the timer expiring means the player ran out of
@@ -427,7 +427,7 @@ func TestCompleteInstance_ForcedReturnWarpsBackAndCancels(t *testing.T) {
 	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
 	instanceId := board(t, p, route, 42, world.Id(0), channel.Id(1))
 
-	inst, ok := getInstanceRegistry().GetInstance(instanceId)
+	inst, ok := getInstanceRegistry().GetInstance(ctx, instanceId)
 	assert.True(t, ok)
 
 	mb := message.NewBuffer()
@@ -447,7 +447,7 @@ func TestCompleteInstance_ForcedReturnWarpsBackAndCancels(t *testing.T) {
 	assert.Equal(t, it.EventTypeCancelled, evs[0].Type)
 	assert.Equal(t, it.CancelReasonTimeout, evs[0].Body.Reason)
 
-	assert.False(t, getCharacterRegistry().IsInTransport(42))
+	assert.False(t, getCharacterRegistry().IsInTransport(ctx, 42))
 }
 
 // The ferry regression bar: no forced return, no declared effects — deliver to
@@ -458,7 +458,7 @@ func TestCompleteInstance_NoForcedReturnDeliversAndCompletes(t *testing.T) {
 	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
 	instanceId := board(t, p, route, 42, world.Id(0), channel.Id(1))
 
-	inst, ok := getInstanceRegistry().GetInstance(instanceId)
+	inst, ok := getInstanceRegistry().GetInstance(ctx, instanceId)
 	assert.True(t, ok)
 
 	mb := message.NewBuffer()
@@ -492,7 +492,7 @@ func TestCompleteInstance_EffectsWithoutForcedReturnStillDelivers(t *testing.T) 
 	getRouteRegistry().AddTenant(ctx, []RouteModel{route})
 	instanceId := board(t, p, route, 42, world.Id(0), channel.Id(1))
 
-	inst, ok := getInstanceRegistry().GetInstance(instanceId)
+	inst, ok := getInstanceRegistry().GetInstance(ctx, instanceId)
 	assert.True(t, ok)
 
 	mb := message.NewBuffer()

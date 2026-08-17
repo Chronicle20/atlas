@@ -29,5 +29,5 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetInMap(mapId _map.Id, initialX int16, initialY int16, fallbackX int16, fallbackY int16) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(getInMap(mapId, initialX, initialY, fallbackX, fallbackY), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(getInMap(p.ctx, mapId, initialX, initialY, fallbackX, fallbackY), Extract)
 }

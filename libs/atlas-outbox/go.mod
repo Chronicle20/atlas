@@ -9,7 +9,7 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/segmentio/kafka-go v0.4.51
 	github.com/sirupsen/logrus v1.10.0
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
 	gorm.io/datatypes v1.2.7
 	gorm.io/driver/postgres v1.6.2

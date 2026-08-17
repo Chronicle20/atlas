@@ -8,7 +8,7 @@ require (
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/sirupsen/logrus v1.10.0
-	github.com/stretchr/testify v1.11.1
+	github.com/stretchr/testify v1.12.0
 )
 
 require (

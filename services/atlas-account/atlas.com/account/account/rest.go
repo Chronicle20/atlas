@@ -26,6 +26,7 @@ type RestModel struct {
 	Password       string `json:"-"`
 	Pin            string `json:"pin"`
 	Pic            string `json:"pic"`
+	BirthDate      uint32 `json:"birthDate"`
 	PinAttempts    int    `json:"pinAttempts"`
 	PicAttempts    int    `json:"picAttempts"`
 	LoggedIn       byte   `json:"loggedIn"`
@@ -61,6 +62,7 @@ func Transform(m Model) (RestModel, error) {
 		Password:       m.Password(),
 		Pin:            m.Pin(),
 		Pic:            m.Pic(),
+		BirthDate:      m.BirthDate(),
 		PinAttempts:    m.PinAttempts(),
 		PicAttempts:    m.PicAttempts(),
 		LoggedIn:       byte(m.State()),
@@ -158,6 +160,7 @@ func Extract(rm RestModel) (Model, error) {
 		SetPassword(rm.Password).
 		SetPin(rm.Pin).
 		SetPic(rm.Pic).
+		SetBirthDate(rm.BirthDate).
 		SetPinAttempts(rm.PinAttempts).
 		SetPicAttempts(rm.PicAttempts).
 		SetState(State(rm.LoggedIn)).

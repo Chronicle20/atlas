@@ -421,6 +421,13 @@ else
     skip "template guards (no tenant socket-config template changed)"
 fi
 
+if touched '^services/atlas-channel/atlas\.com/channel/socket/handler/.*\.go$' \
+    || touched '^services/atlas-configurations/seed-data/templates/'; then
+    step "operator cancel path guard" ./tools/operator-cancel-path-guard.sh
+else
+    skip "operator cancel path guard (no socket handler or tenant template changed)"
+fi
+
 if touched 'kafka/message/trade/kafka\.go'; then
     step "trade contract mirror guard" ./tools/trade-contract-mirror-guard.sh
 else

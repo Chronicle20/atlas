@@ -34,6 +34,9 @@ const (
 	EventTypeKiteConfigCreated    = "KITE_CONFIG_CREATED"
 	EventTypeKiteConfigUpdated    = "KITE_CONFIG_UPDATED"
 	EventTypeKiteConfigDeleted    = "KITE_CONFIG_DELETED"
+	EventTypeImprintConfigCreated = "IMPRINT_CONFIG_CREATED"
+	EventTypeImprintConfigUpdated = "IMPRINT_CONFIG_UPDATED"
+	EventTypeImprintConfigDeleted = "IMPRINT_CONFIG_DELETED"
 )
 
 // ConfigurationStatusEvent is a generic event for configuration status changes
@@ -87,6 +90,18 @@ func CreateTradeConfigStatusEventProvider(tenantId uuid.UUID, eventType string, 
 		TenantId:     tenantId,
 		Type:         eventType,
 		ResourceType: "trade-config",
+		ResourceId:   configId,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// CreateImprintConfigStatusEventProvider creates a provider for imprint config status events
+func CreateImprintConfigStatusEventProvider(tenantId uuid.UUID, eventType string, configId string) model.Provider[[]kafka.Message] {
+	key := []byte(tenantId.String())
+	value := ConfigurationStatusEvent{
+		TenantId:     tenantId,
+		Type:         eventType,
+		ResourceType: "imprint-config",
 		ResourceId:   configId,
 	}
 	return producer.SingleMessageProvider(key, value)

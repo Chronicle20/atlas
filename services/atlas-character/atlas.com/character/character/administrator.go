@@ -132,6 +132,8 @@ func update(db *gorm.DB, characterId uint32, modifiers ...EntityUpdateFunction) 
 				updates[column] = tempEntity.GM
 			case "Name":
 				updates[column] = tempEntity.Name
+			case "World":
+				updates[column] = tempEntity.World
 			case "X":
 				updates[column] = tempEntity.X
 			case "Y":
@@ -307,6 +309,14 @@ func SetName(name string) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
 		return []string{"Name"}, func(e *entity) {
 			e.Name = name
+		}
+	}
+}
+
+func SetWorldId(worldId world.Id) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"World"}, func(e *entity) {
+			e.World = worldId
 		}
 	}
 }

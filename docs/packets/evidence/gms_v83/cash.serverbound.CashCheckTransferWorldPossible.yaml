@@ -1,0 +1,14 @@
+packet: cash/serverbound/CashCheckTransferWorldPossible
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::SendCheckTransferWorldPossiblePacket
+    address: "0x47359c"
+    decompile_sha256: 02f1f077858f50c4610c5ee69e644b80f4e2a62b6a251e0b0253e1ed5eefa445
+verifies:
+    - libs/atlas-packet/cash/serverbound/check_transfer_world_possible_test.go#TestCheckTransferWorldPossibleByteFixture
+    - libs/atlas-packet/cash/serverbound/check_transfer_world_possible_test.go#TestCheckTransferWorldPossibleRoundTrip
+    - libs/atlas-packet/cash/serverbound/check_transfer_world_possible_test.go#TestCheckTransferWorldPossibleStringRedactsCredential
+    - libs/atlas-packet/cash/serverbound/check_transfer_world_possible_test.go#TestCheckTransferWorldPossibleV95ChangesWireType
+    - libs/atlas-packet/cash/serverbound/check_transfer_world_possible_test.go#TestCheckTransferWorldPossibleJmsHasNoCharacterId

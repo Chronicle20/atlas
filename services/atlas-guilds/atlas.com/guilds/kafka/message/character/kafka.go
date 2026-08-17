@@ -14,6 +14,7 @@ const (
 	EventCharacterStatusTypeLogin          = "LOGIN"
 	EventCharacterStatusTypeLogout         = "LOGOUT"
 	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
+	EventCharacterStatusTypeNameChanged    = "NAME_CHANGED"
 )
 
 type StatusEvent[E any] struct {
@@ -44,3 +45,8 @@ type StatusEventChannelChangedBody struct {
 }
 
 type StatusEventDeletedBody struct{}
+
+type StatusEventNameChangedBody struct {
+	OldName string `json:"oldName"`
+	NewName string `json:"newName"`
+}

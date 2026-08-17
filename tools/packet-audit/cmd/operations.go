@@ -38,6 +38,14 @@ type operationsOpts struct {
 type opEntry struct {
 	Key   string         `yaml:"key"`
 	Modes map[string]int `yaml:"modes"`
+	// AliasOf names another (non-alias) key in the SAME table whose per-version
+	// mode this entry reuses. An alias carries NO modes of its own: it is an
+	// Atlas-side reason key that the server resolves through ResolveCode, bound
+	// to a byte that was already IDA-verified for the anchor. It is emitted only
+	// on the versions where the anchor is present, so a version whose client
+	// switch has no case for the anchor gets neither key rather than an invented
+	// code. See the alias block in docs/packets/dispatchers/cash_shop_operation.yaml.
+	AliasOf string `yaml:"alias_of"`
 }
 
 type dispatcherDoc struct {
@@ -125,6 +133,10 @@ func runOperations(args []string, stderr io.Writer) int {
 func operationsRun(o operationsOpts, stdout, stderr io.Writer) int {
 	docs, err := loadDispatcherDocs(o.DispatchersDir)
 	if err != nil {
+		fmt.Fprintf(stderr, "packet-audit operations: %v\n", err)
+		return 3
+	}
+	if err := validateAliases(docs); err != nil {
 		fmt.Fprintf(stderr, "packet-audit operations: %v\n", err)
 		return 3
 	}
@@ -268,14 +280,59 @@ func loadDispatcherDocs(dir string) ([]dispatcherDoc, error) {
 	return out, nil
 }
 
+// expectedFor resolves one table's key→mode map for a single version. Anchors
+// (entries with `modes`) resolve first; `alias_of` entries then take their
+// anchor's byte, and are omitted entirely on any version where the anchor is
+// absent.
 func expectedFor(entries []opEntry, version string) map[string]int {
 	m := map[string]int{}
 	for _, op := range entries {
+		if op.AliasOf != "" {
+			continue
+		}
 		if v, ok := op.Modes[version]; ok {
 			m[op.Key] = v
 		}
 	}
+	for _, op := range entries {
+		if op.AliasOf == "" {
+			continue
+		}
+		if v, ok := m[op.AliasOf]; ok {
+			m[op.Key] = v
+		}
+	}
 	return m
+}
+
+// validateAliases rejects a dispatcher doc whose `alias_of` does not name a
+// non-alias key in the SAME table, or that declares both `alias_of` and
+// `modes`. Either would silently drop the key from every template on generate
+// and then fail as EXTRA on --check, so it is a malformed-doc error, not a
+// finding.
+func validateAliases(docs []dispatcherDoc) error {
+	for _, doc := range docs {
+		for _, tb := range doc.tables() {
+			anchors := map[string]bool{}
+			for _, op := range tb.entries {
+				if op.AliasOf == "" {
+					anchors[op.Key] = true
+				}
+			}
+			for _, op := range tb.entries {
+				if op.AliasOf == "" {
+					continue
+				}
+				if len(op.Modes) > 0 {
+					return fmt.Errorf("%s %s: key %q declares both alias_of and modes", doc.targetName(), tb.name, op.Key)
+				}
+				if !anchors[op.AliasOf] {
+					return fmt.Errorf("%s %s: key %q aliases %q, which is not a non-alias key in the same table", doc.targetName(), tb.name, op.Key, op.AliasOf)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // ---- order-preserving recursive JSON node ----

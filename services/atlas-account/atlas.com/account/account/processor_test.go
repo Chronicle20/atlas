@@ -193,6 +193,34 @@ func TestUpdatePic(t *testing.T) {
 	}
 }
 
+func TestUpdateBirthDate(t *testing.T) {
+	setupTestRegistry(t)
+	l, _ := test.NewNullLogger()
+	db := setupTestDatabase(t)
+	st := sampleTenant()
+	tctx := tenant.WithContext(context.Background(), st)
+
+	mb := message.NewBuffer()
+	created, err := NewProcessor(l, tctx, db).Create(mb)("testuser")("password")
+	if err != nil {
+		t.Fatalf("Failed to create account: %v", err)
+	}
+
+	input, _ := NewBuilder(st.Id(), created.Name()).
+		SetBirthDate(19900101).
+		Build()
+
+	p := NewProcessor(l, tctx, db)
+	updated, err := p.Update(created.Id(), input)
+	if err != nil {
+		t.Fatalf("Failed to update account: %v", err)
+	}
+
+	if updated.BirthDate() != 19900101 {
+		t.Errorf("BirthDate mismatch. Expected 19900101, got %v", updated.BirthDate())
+	}
+}
+
 func TestUpdateTOS(t *testing.T) {
 	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()

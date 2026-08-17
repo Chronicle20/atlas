@@ -90,12 +90,12 @@ func TestDeletionIdempotency(t *testing.T) {
 		})
 
 		buffer1 := message.NewBuffer()
-		_, err1 := processor.Leave(buffer1)(party.Id(), 456)
+		_, err1 := processor.Leave(buffer1)(party.Id(), 456, uuid.Nil)
 		assert.NoError(t, err1)
 
 		// Second leave attempt should fail gracefully
 		buffer2 := message.NewBuffer()
-		_, err2 := processor.Leave(buffer2)(party.Id(), 456)
+		_, err2 := processor.Leave(buffer2)(party.Id(), 456, uuid.Nil)
 		assert.Error(t, err2)
 		assert.Equal(t, ErrNotIn, err2)
 
@@ -151,7 +151,7 @@ func TestCharacterDeletionEventFlow(t *testing.T) {
 		// This matches what handleStatusEventDeleted does in the character consumer
 
 		// Step 1: Remove from party using party processor (like the event handler does)
-		_, err = partyProcessor.LeaveAndEmit(party.Id(), 456)
+		_, err = partyProcessor.LeaveAndEmit(party.Id(), 456, uuid.Nil)
 		if err != nil {
 			// Expect Kafka error in test environment, but party leave logic should work
 			t.Logf("Expected Kafka emission error: %v", err)
@@ -256,7 +256,7 @@ func TestCharacterDeletionEventFlow(t *testing.T) {
 		// This matches what handleStatusEventDeleted does in the character consumer
 
 		// Step 1: Remove leader from party using party processor (this should disband the party)
-		_, err = partyProcessor.LeaveAndEmit(party.Id(), leaderId)
+		_, err = partyProcessor.LeaveAndEmit(party.Id(), leaderId, uuid.Nil)
 		if err != nil {
 			// Expect Kafka error in test environment, but party leave logic should work
 			t.Logf("Expected Kafka emission error: %v", err)

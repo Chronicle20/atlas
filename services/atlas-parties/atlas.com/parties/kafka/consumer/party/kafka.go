@@ -1,5 +1,7 @@
 package party
 
+import "github.com/google/uuid"
+
 const (
 	EnvCommandTopic           = "COMMAND_TOPIC_PARTY"
 	CommandPartyCreate        = "CREATE"
@@ -10,9 +12,10 @@ const (
 )
 
 type commandEvent[E any] struct {
-	ActorId uint32 `json:"actorId"`
-	Type    string `json:"type"`
-	Body    E      `json:"body"`
+	ActorId       uint32    `json:"actorId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId,omitempty"`
 }
 
 type createCommandBody struct{}

@@ -1,0 +1,13 @@
+packet: cash/serverbound/CashCheckNameChangePossible
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::SendCheckNameChangePossiblePacket
+    address: "0x47dd48"
+    decompile_sha256: dd555eec20ecb143168fa0913e7a9d17b26e87c449ca59acc333c2f1b34653ae
+verifies:
+    - libs/atlas-packet/cash/serverbound/check_name_change_possible_test.go#TestCheckNameChangePossibleByteFixture
+    - libs/atlas-packet/cash/serverbound/check_name_change_possible_test.go#TestCheckNameChangePossibleRoundTrip
+    - libs/atlas-packet/cash/serverbound/check_name_change_possible_test.go#TestCheckNameChangePossibleStringRedactsCredential
+    - libs/atlas-packet/cash/serverbound/check_name_change_possible_test.go#TestCheckNameChangePossibleV95ChangesWireType

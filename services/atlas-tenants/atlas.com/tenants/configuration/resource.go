@@ -1618,6 +1618,10 @@ func RegisterRoutes(db *gorm.DB) func(si jsonapi.ServerInformation) server.Route
 			r.HandleFunc("/tenants/{tenantId}/configurations/kite-configs", registerKiteConfigInputHandler("create_kite_config", CreateKiteConfigHandler(db))).Methods(http.MethodPost)
 			r.HandleFunc("/tenants/{tenantId}/configurations/kite-configs", registerKiteConfigInputHandler("update_kite_config", UpdateKiteConfigHandler(db))).Methods(http.MethodPatch)
 			r.HandleFunc("/tenants/{tenantId}/configurations/kite-configs", registerHandler("delete_kite_config", DeleteKiteConfigHandler(db))).Methods(http.MethodDelete)
+
+			// Imprint config endpoints (FR-2.6 pending-change expiry) — see
+			// imprint_handler.go.
+			RegisterImprintConfigRoutes(db, si, l, r)
 		}
 	}
 }

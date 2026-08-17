@@ -1,6 +1,7 @@
 package party
 
 import (
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -80,14 +81,15 @@ func joinedEventProvider(actorId uint32, partyId uint32, worldId world.Id) model
 	return producer.SingleMessageProvider(key, value)
 }
 
-func leftEventProvider(actorId uint32, partyId uint32, worldId world.Id) model.Provider[[]kafka.Message] {
+func leftEventProvider(actorId uint32, partyId uint32, worldId world.Id, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[leftEventBody]{
-		ActorId: actorId,
-		PartyId: partyId,
-		WorldId: worldId,
-		Type:    EventPartyStatusTypeLeft,
-		Body:    leftEventBody{},
+		ActorId:       actorId,
+		PartyId:       partyId,
+		WorldId:       worldId,
+		Type:          EventPartyStatusTypeLeft,
+		Body:          leftEventBody{},
+		TransactionId: transactionId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }
@@ -106,7 +108,7 @@ func expelEventProvider(actorId uint32, partyId uint32, worldId world.Id, charac
 	return producer.SingleMessageProvider(key, value)
 }
 
-func disbandEventProvider(actorId uint32, partyId uint32, worldId world.Id, members []uint32) model.Provider[[]kafka.Message] {
+func disbandEventProvider(actorId uint32, partyId uint32, worldId world.Id, members []uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &statusEvent[disbandEventBody]{
 		ActorId: actorId,
@@ -116,6 +118,7 @@ func disbandEventProvider(actorId uint32, partyId uint32, worldId world.Id, memb
 		Body: disbandEventBody{
 			Members: members,
 		},
+		TransactionId: transactionId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

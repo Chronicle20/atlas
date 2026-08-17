@@ -205,6 +205,13 @@ export type {
 export { fetchPaged, fetchAll } from "./pagination";
 export type { PageMeta, PagedResult } from "./pagination";
 
+// Cash-shop pending changes (task-227)
+export type {
+  PendingChange,
+  PendingChangeType,
+  PendingChangeStatus,
+} from "./pending-changes.service";
+
 // Cash-shop coupon codes (task-206)
 export { couponsService, CouponConflictError } from "./coupons.service";
 export {

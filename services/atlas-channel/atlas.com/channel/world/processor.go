@@ -13,6 +13,8 @@ import (
 type Processor interface {
 	ByIdModelProvider(worldId world.Id) model.Provider[Model]
 	GetById(worldId world.Id) (Model, error)
+	AllProvider() model.Provider[[]Model]
+	GetAll() ([]Model, error)
 }
 
 type ProcessorImpl struct {
@@ -36,4 +38,20 @@ func (p *ProcessorImpl) ByIdModelProvider(worldId world.Id) model.Provider[Model
 
 func (p *ProcessorImpl) GetById(worldId world.Id) (Model, error) {
 	return p.ByIdModelProvider(worldId)()
+}
+
+// AllProvider fetches every world for the tenant. atlas-world's worlds list
+// is paginated (task-117), so this drains every page rather than fetching
+// just the first — the cash-shop world-transfer name list is indexed by world
+// id on the wire, so a truncated list silently misroutes a transfer.
+func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
+	url, err := worldsUrl(p.ctx)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
+}
+
+func (p *ProcessorImpl) GetAll() ([]Model, error) {
+	return p.AllProvider()()
 }

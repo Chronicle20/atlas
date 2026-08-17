@@ -114,6 +114,24 @@
         ]
       },
       {
+        "opCode": "0x10",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCheckNameChangePossibleHandle",
+        "fname": "CCashShop::SendCheckNameChangePossiblePacket",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x12",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCheckTransferWorldPossibleHandle",
+        "fname": "CCashShop::SendCheckTransferWorldPossiblePacket",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x13",
         "validator": "LoggedInValidator",
         "handler": "CharacterSelectedHandle",
@@ -138,6 +156,15 @@
         "fname": "CLogin::SendCheckDuplicateIDPacket",
         "services": [
           "login"
+        ]
+      },
+      {
+        "opCode": "0x15",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCheckNameChangeHandle",
+        "fname": "CLogin::SendCheckDuplicateIDPacket",
+        "services": [
+          "channel"
         ]
       },
       {
@@ -2688,6 +2715,44 @@
         ]
       },
       {
+        "opCode": "0x69",
+        "writer": "CashShopCancelNameChangeResult",
+        "fname": "CWvsContext::OnCancelNameChangeResult",
+        "options": {
+          "operations": {
+            "CANCELLED": 0,
+            "CANCELLED_ALT": 255,
+            "FAILED": 1
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x6A",
+        "writer": "CashShopCancelTransferWorldResult",
+        "fname": "CWvsContext::OnCancelTransferWorldResult",
+        "options": {
+          "operations": {
+            "CANCELLED": 0,
+            "CANCELLED_ALT": 1,
+            "FAILED": 2
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x70",
+        "writer": "CancelNameChangeByOther",
+        "fname": "CWvsContext::OnCancelNameChangebyOther",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x71",
         "writer": "CharacterSkillMacro",
         "fname": "CWvsContext::OnMacroSysDataInit",
@@ -4317,10 +4382,57 @@
             "CANNOT_GIFT_TECHNICAL_DIFFICULTIES": 193,
             "CANNOT_TRANSFER_UNDER_LEVEL_TWENTY": 194,
             "CANNOT_TRANSFER_TO_SAME_WORLD": 195,
+            "world_same": 195,
             "CANNOT_TRANSFER_TO_NEW_WORLD": 196,
             "CANNOT_TRANSFER_OUT": 197,
+            "name_taken": 197,
+            "banned": 197,
+            "is_guild_master": 197,
+            "is_gm": 197,
+            "in_family": 197,
+            "trade_open": 197,
+            "merchant_open": 197,
+            "mts_listings_open": 197,
             "CANNOT_TRANSFER_NO_EMPTY_SLOTS": 198,
+            "no_character_slot": 198,
             "EVENT_ENDED_OR_CANT_BE_FREELY_TESTED": 199
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x125",
+        "writer": "CashShopCheckNameChange",
+        "fname": "CCashShop::OnCheckDuplicatedIDResult",
+        "options": {
+          "operations": {
+            "AVAILABLE": 0,
+            "TAKEN": 1,
+            "UNKNOWN_ERROR": 255
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x128",
+        "writer": "CashShopCheckTransferWorldPossibleResult",
+        "fname": "CCashShop::OnCheckTransferWorldPossibleResult",
+        "options": {
+          "operations": {
+            "ALLOWED": 0,
+            "CHARACTER_NOT_FOUND": 1,
+            "REASON_2": 2,
+            "REASON_3": 3,
+            "REASON_4": 4,
+            "REASON_5": 5,
+            "REASON_6": 6,
+            "REASON_7": 7,
+            "IN_FAMILY": 8,
+            "UNKNOWN_ERROR": 9
           }
         },
         "services": [

@@ -20,6 +20,7 @@ type Processor interface {
 	GetAllAccounts() ([]Model, error)
 	IsLoggedIn(id uint32) bool
 	InitializeRegistry() error
+	RecordPicAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error)
 }
 
 // ProcessorImpl implements the Processor interface
@@ -73,4 +74,18 @@ func (p *ProcessorImpl) InitializeRegistry() error {
 
 func IsLogged(m Model) bool {
 	return m.LoggedIn() > 0
+}
+
+// RecordPicAttempt records a PIC-comparison outcome against
+// accounts/{accountId}/pic-attempts and returns the running attempt count and
+// whether the lockout limit was reached. It is the lockout counter behind the
+// credential validated by the cash-shop NAME_TRANSFER / WORLD_TRANSFER check
+// handlers (task-227 Task 26 ruling 4) — without it, those check ops are a
+// brute-force oracle against the account's second password / birthday code.
+func (p *ProcessorImpl) RecordPicAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
+	result, err := requestRecordPicAttempt(p.ctx, id, success, ipAddress, hwid)(p.l, p.ctx)
+	if err != nil {
+		return 0, false, err
+	}
+	return result.Attempts, result.LimitReached, nil
 }

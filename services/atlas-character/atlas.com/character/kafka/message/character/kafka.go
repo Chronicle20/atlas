@@ -233,6 +233,7 @@ const (
 	StatusEventTypeDeleted           = "DELETED"
 	StatusEventTypeCreationFailed    = "CREATION_FAILED"
 	StatusEventTypeNameChanged       = "NAME_CHANGED"
+	StatusEventTypeWorldChanged      = "WORLD_CHANGED"
 	StatusEventTypeHairChanged       = "HAIR_CHANGED"
 	StatusEventTypeFaceChanged       = "FACE_CHANGED"
 	StatusEventTypeGenderChanged     = "GENDER_CHANGED"
@@ -358,6 +359,11 @@ type StatusEventStatChangedBody struct {
 type StatusEventNameChangedBody struct {
 	OldName string `json:"oldName"`
 	NewName string `json:"newName"`
+}
+
+type StatusEventWorldChangedBody struct {
+	OldWorldId world.Id `json:"oldWorldId"`
+	NewWorldId world.Id `json:"newWorldId"`
 }
 
 type StatusEventHairChangedBody struct {

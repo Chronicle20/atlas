@@ -233,6 +233,7 @@ var reverseWalkSagaTypes = []Type{
 	NoteSend,
 	SkillBookUse,
 	MesoSackUse,
+	WorldTransfer,
 	PetNameTagUse,
 }
 
@@ -261,7 +262,7 @@ var allSagaTypes = []Type{
 	CharacterCreation, StorageOperation, CharacterRespawn, GachaponTransaction,
 	PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse,
 	KarmaScissorsUse, PointReset,
-	MtsOperation, NoteSend, SkillBookUse, MesoSackUse, PetNameTagUse,
+	MtsOperation, NoteSend, SkillBookUse, MesoSackUse, WorldTransfer, PetNameTagUse,
 }
 
 // dispatchTimeoutRollbacks fires the reverse walk for a timed-out saga and
@@ -306,6 +307,11 @@ func dispatchTimeoutRollbacks(l logrus.FieldLogger, ctx context.Context, s Saga)
 		// Without this a timed-out sack use is pure loss: consume_meso_sack
 		// completed, award_mesos never landed, and nothing puts the sack back.
 		c.DispatchMesoSackRollbacks(s)
+	case WorldTransfer:
+		// Without this a timed-out transfer strands the character exactly
+		// where FR-4.8 says they must never be: guildless, partyless and
+		// buddyless, in whichever world the last completed step left them.
+		c.DispatchWorldTransferRollbacks(s)
 	case PetNameTagUse:
 		// Without this a timed-out rename leaves the new name applied while the
 		// tag was never consumed — or, on the other ordering, the player's pet

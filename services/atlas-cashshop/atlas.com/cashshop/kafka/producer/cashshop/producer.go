@@ -10,13 +10,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-func ErrorStatusEventProvider(characterId uint32, error string) model.Provider[[]kafka.Message] {
+func ErrorStatusEventProvider(characterId uint32, error string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.StatusEvent[cashshop.ErrorEventBody]{
 		CharacterId: characterId,
 		Type:        cashshop.StatusEventTypeError,
 		Body: cashshop.ErrorEventBody{
-			Error: error,
+			Error:         error,
+			TransactionId: transactionId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -36,7 +37,7 @@ func InventoryCapacityIncreasedStatusEventProvider(characterId uint32, inventory
 	return producer.SingleMessageProvider(key, value)
 }
 
-func PurchaseStatusEventProvider(characterId uint32, templateId, price uint32, compartmentId uuid.UUID, assetId uint32) model.Provider[[]kafka.Message] {
+func PurchaseStatusEventProvider(characterId uint32, templateId, price uint32, compartmentId uuid.UUID, assetId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.StatusEvent[cashshop.PurchaseEventBody]{
 		CharacterId: characterId,
@@ -46,6 +47,7 @@ func PurchaseStatusEventProvider(characterId uint32, templateId, price uint32, c
 			Price:         price,
 			CompartmentId: compartmentId,
 			AssetId:       assetId,
+			TransactionId: transactionId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

@@ -1,16 +1,16 @@
 {
-  "toolSha": "3b70817b761d6a8cf38ce5de41fe6b232ee94288e9dc2c3dd8e9ef09319e61d5",
+  "toolSha": "5fc900375526d55dc4f6924cbc53fc0468abb4b0d3ec6f640ac6e3f10ad839ea",
   "exportHashes": {
-    "gms_v48": "df18357a89e5e0506c9be3ca0beef22a11aa9a3c3050e60a2c28c7fbdfc77b04",
-    "gms_v61": "bf60cb22d8af5e2551c1e29f1b8b82debd7328238bb64ab92e658d64ac15c8df",
-    "gms_v72": "30cb8f5ed33853ba29448be5f2fecdaebd17dc23570cb6b0107fd371cfcabbed",
-    "gms_v79": "79c25b50f10f6a966e90d3cd006195f96bea11146e46b73807c31ef06c5210f0",
-    "gms_v83": "7f29b326337ab09c6f44b83086cc014a8496978c1e00289520325d0cdc83e68b",
-    "gms_v84": "e6bb2b4a6766b56ca3e903b1d80ba425976615171115f733068329358f57af77",
-    "gms_v87": "c4e7148dbb27434854fc7d962959a09302e6d63077785c2327e0db3723b46fdc",
-    "gms_v92": "2d2a570a7cc4acec78cf1f0a2ab5932f49fabf4db74577b07150aa8baf99d686",
-    "gms_v95": "5c2431a4bfb125c3eb4c016ebb34147336cb93b652cc6da38b03ba59dcd429b7",
-    "jms_v185": "6e2d572d813c4a608f447308d5335ed69dd1da15380d9a0b2f133a2d532f0098"
+    "gms_v48": "63ef7be502671420db6e0ede292136989b63903bc0efd30720ca20f267c84445",
+    "gms_v61": "208aeecd70bb6a0ebd4084a2a484a59004ad870f1981a073f71c055441d67b13",
+    "gms_v72": "3423364142d304c11c4df0fde8357b22f4195201102b44e65bef827fc57c0563",
+    "gms_v79": "354aa7a82248a79950bb46f38662a649b4fc2e2516d889cdff732b4c715fa003",
+    "gms_v83": "2076257344b8d083b87931038241d37dc7085b1d0f5649782df624a1c3b24440",
+    "gms_v84": "26fe01e29b5b4763043c912243875b7f6d9e64b65caa18ff327ec22d83f90dbb",
+    "gms_v87": "b0e774245a36fa4f33154d1285cf63f85a2bbf3b6a2985872b58166d81323e03",
+    "gms_v92": "5f616addc61a5212951c01973f5c78956740ff33ecf6b7f00616e9734085b275",
+    "gms_v95": "2fd6842449c00db334814af79c94ae263901321562efb8bb889a5d66f2cac3f6",
+    "jms_v185": "503d992dc6a7af040770fce2a8db52f276fc21a16dfe26d82b459bca98ab3505"
   },
   "rows": [
     {
@@ -1984,63 +1984,6 @@
     },
     {
       "kind": "op",
-      "op": "NAME_TRANSFER",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CCashShop::SendCheckNameChangePossiblePacket"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 16
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 16
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 16
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 16
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 16
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 9
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "PLAYER_LOGGEDIN",
       "packet": "socket/serverbound/ChannelConnect",
       "direction": "serverbound",
@@ -2378,53 +2321,49 @@
     },
     {
       "kind": "op",
-      "op": "WORLD_TRANSFER",
+      "op": "NAME_TRANSFER",
+      "packet": "cash/serverbound/CashCheckNameChangePossible",
       "direction": "serverbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
-        "CCashShop::SendCheckTransferWorldPossiblePacket"
+        "CCashShop::SendCheckNameChangePossiblePacket"
       ],
       "cells": {
         "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 18
         },
         "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 16
         },
         "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 16
         },
         "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
+          "state": "verified",
+          "opcode": 16
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 18
+          "state": "verified",
+          "opcode": 16
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 18
+          "state": "verified",
+          "opcode": 16
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 18
+          "state": "verified",
+          "opcode": 16
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 18
+          "state": "verified",
+          "opcode": 16
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 18
+          "state": "verified",
+          "opcode": 16
         },
         "jms_v185": {
           "state": "n-a",
@@ -2651,6 +2590,58 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "WORLD_TRANSFER",
+      "packet": "cash/serverbound/CashCheckTransferWorldPossible",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CCashShop::SendCheckTransferWorldPossiblePacket"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 20
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 18
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 18
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 18
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 18
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 18
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 18
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 18
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 18
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 9
         }
       }
     },
@@ -13452,43 +13443,35 @@
           "opcode": -1
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 86
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 105
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 107
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 113
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 116
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 116
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 118
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 117
         },
         "jms_v185": {
@@ -13843,43 +13826,35 @@
           "opcode": -1
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 87
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 106
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 108
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 114
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 117
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 117
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 119
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 118
         },
         "jms_v185": {
@@ -18203,38 +18178,31 @@
           "opcode": -1
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 112
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 114
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 120
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 123
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 123
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 125
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 124
         },
         "jms_v185": {
@@ -37900,59 +37868,47 @@
     {
       "kind": "op",
       "op": "CASHSHOP_CHECK_NAME_CHANGE",
+      "packet": "cash/clientbound/CashCheckNameChange",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
-        "CCashShop::OnCheckDuplicatedIDResult",
-        "CCashShop::OnCheckNameChangePossibleResult",
-        "sub_455A7F",
-        "sub_463900",
-        "sub_473519"
+        "CCashShop::OnCheckDuplicatedIDResult"
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 258
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 257
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 293
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 305
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 328
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 335
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 345
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 379
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 387
         },
         "jms_v185": {
@@ -38131,60 +38087,51 @@
     {
       "kind": "op",
       "op": "CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT",
+      "packet": "cash/clientbound/CashCheckTransferWorldPossibleResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CCashShop::OnCheckTransferWorldPossibleResult"
       ],
       "cells": {
         "gms_v48": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 261
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 260
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 296
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 308
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 331
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 338
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 348
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 382
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 390
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 364
         }
       }
@@ -42376,8 +42323,9 @@
     {
       "kind": "op",
       "op": "CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT",
+      "packet": "cash/clientbound/CashCheckNameChangePossibleResult",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
         "CCashShop::OnCheckNameChangePossibleResult"
       ],
@@ -42395,33 +42343,27 @@
           "opcode": -1
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 306
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 329
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 336
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 346
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 380
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 388
         },
         "jms_v185": {

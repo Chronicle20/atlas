@@ -43,7 +43,6 @@ def fail(msg):
 # Go-services that intentionally have no k8s deployment yet. Every name here
 # must be justified; remove the entry the moment the service gets a manifest.
 ALLOW_NO_DEPLOYMENT = {
-    'atlas-families',   # scaffolded service, not yet deployed
     'atlas-marriages',  # scaffolded service, not yet deployed
 }
 

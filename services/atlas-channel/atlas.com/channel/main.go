@@ -48,6 +48,7 @@ import (
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
 	"atlas-channel/kafka/consumer/party_quest"
+	"atlas-channel/kafka/consumer/pendingchange"
 	"atlas-channel/kafka/consumer/pet"
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
@@ -227,6 +228,7 @@ func main() {
 	doorConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	party.InitConsumers(l)(cmf)(consumerGroupId)
 	party_quest.InitConsumers(l)(cmf)(consumerGroupId)
+	pendingchange.InitConsumers(l)(cmf)(consumerGroupId)
 	session2.InitConsumers(l)(cmf)(consumerGroupId)
 	fame.InitConsumers(l)(cmf)(consumerGroupId)
 	thread.InitConsumers(l)(cmf)(consumerGroupId)
@@ -502,6 +504,9 @@ func buildListener(
 		if err := register(party_quest.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(pendingchange.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(session2.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -659,6 +664,12 @@ func produceWriters() []string {
 		cashcb.CashQueryResultWriter,
 		cashcb.CashItemGachaponResultWriter,
 		cashcb.VegaScrollWriter,
+		cashcb.CashShopCheckNameChangeWriter,
+		cashcb.CashShopCheckNameChangePossibleResultWriter,
+		cashcb.CashShopCheckTransferWorldPossibleResultWriter,
+		cashcb.CashShopCancelNameChangeResultWriter,
+		cashcb.CashShopCancelTransferWorldResultWriter,
+		charcb.CancelNameChangeByOtherWriter,
 		monstercb.MonsterSpawnWriter,
 		monstercb.MonsterDestroyWriter,
 		monstercb.MonsterControlWriter,
@@ -969,6 +980,9 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[cashsb.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
 	handlerMap[cashsb.CashItemGachaponHandle] = handler.CashItemGachaponHandleFunc
 	handlerMap[cashsb.CashShopCouponCodeHandle] = handler.CashShopCouponCodeHandleFunc
+	handlerMap[cashsb.CashShopCheckNameChangeHandle] = handler.CashShopCheckNameChangeHandleFunc
+	handlerMap[cashsb.CashShopCheckNameChangePossibleHandle] = handler.CashShopCheckNameChangePossibleHandleFunc
+	handlerMap[cashsb.CashShopCheckTransferWorldPossibleHandle] = handler.CashShopCheckTransferWorldPossibleHandleFunc
 	handlerMap[npcsb.NPCShopHandle] = handler.NPCShopHandleFunc
 	handlerMap[invsb.CompartmentMergeRequestHandle] = handler.CompartmentMergeHandleFunc
 	handlerMap[invsb.CompartmentSortRequestHandle] = handler.CompartmentSortHandleFunc

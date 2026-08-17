@@ -1,0 +1,12 @@
+packet: character/clientbound/CancelNameChangeByOther
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnCancelNameChangebyOther
+    address: "0x9f7620"
+    decompile_sha256: a09cbe326ee53b1f4a1cea6f170e7095042394f2c04c4e99394a5a60caaba6a8
+verifies:
+    - libs/atlas-packet/character/clientbound/cancel_name_change_by_other_test.go#TestCancelNameChangeByOtherRoundTrip
+    - libs/atlas-packet/character/clientbound/cancel_name_change_by_other_test.go#TestCancelNameChangeByOtherByteFixtureEmpty
+    - libs/atlas-packet/character/clientbound/cancel_name_change_by_other_test.go#TestCancelNameChangeByOtherNoVersionDivergence

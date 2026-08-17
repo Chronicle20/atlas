@@ -118,60 +118,63 @@ func TestTransferWorldPossibleLockoutReusesUnknownError(t *testing.T) {
 	}
 }
 
-// FR-4.7: when the transferring character is the account's LAST character
-// in the source world, the check must ALSO write a pink-text storage
-// warning -- and the result must still be answered ALLOWED (the warning is
-// advisory, never a gate). This is the original brief's
-// TestWorldTransferCheckWarnsWhenStrandingStorage, asserting both halves.
-func TestWorldTransferCheckWarnsWhenStrandingStorage(t *testing.T) {
-	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
-	env.withAccount(buildAccount("s3cr3t", 0))
-	env.withCharactersInWorld(character.NewModelBuilder().SetId(checkPossibleTestCharacterId).MustBuild())
-	env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
+// task-227 fix-round-3, Ruling 1
+// (docs/tasks/task-227-cash-name-change-world-transfer/bug-world-transfer-eligibility-reasons.md
+// Symptom 1): the CHECK handler must NEVER emit the FR-4.7 storage-stranding
+// warning, in any scenario that used to trigger it. It did once, immediately
+// after the ALLOWED result, but ALLOWED opens the client's license-notice
+// dialog as a modal (CUITransferWorldLicenseNotice::DoModal), and the
+// warning's own POP_UP world message opened a SECOND modal inside that
+// dialog's nested message loop -- stealing the input grab and leaving the
+// license notice unresponsive. The warning now fires from
+// handleBuyWorldTransfer instead, once the player has dismissed that dialog
+// (see TestBuyWorldTransferWarnsWhenStrandingStorage in
+// cash_shop_operation_imprint_test.go).
+func TestWorldTransferCheckNeverEmitsStorageWarning(t *testing.T) {
+	t.Run("would-be-stranded character", func(t *testing.T) {
+		env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
+		env.withAccount(buildAccount("s3cr3t", 0))
+		env.withCharactersInWorld(character.NewModelBuilder().SetId(checkPossibleTestCharacterId).MustBuild())
+		env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
 
-	if got := env.lastAnnouncedResultByte(); got != 0x20 {
-		t.Fatalf("result byte = 0x%02X, want ALLOWED 0x20", got)
-	}
-	if !env.storageWarningWasAnnounced() {
-		t.Fatal("expected the storage-stranding pink-text warning to be written")
-	}
-}
+		if got := env.lastAnnouncedResultByte(); got != 0x20 {
+			t.Fatalf("result byte = 0x%02X, want ALLOWED 0x20", got)
+		}
+		if env.storageWarningWasAnnounced() {
+			t.Fatal("CHECK must never emit the storage-stranding warning, even when the transfer would strand storage")
+		}
+	})
 
-// FR-4.7: when the account has ANOTHER character left behind in the source
-// world, storage is not stranded (it stays reachable through the sibling),
-// so no warning is due -- and the result is unaffected.
-func TestWorldTransferCheckNoWarningWhenAnotherCharacterRemains(t *testing.T) {
-	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
-	env.withAccount(buildAccount("s3cr3t", 0))
-	env.withCharactersInWorld(
-		character.NewModelBuilder().SetId(checkPossibleTestCharacterId).MustBuild(),
-		character.NewModelBuilder().SetId(checkPossibleTestCharacterId+1).MustBuild(),
-	)
-	env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
+	t.Run("another character remains", func(t *testing.T) {
+		env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
+		env.withAccount(buildAccount("s3cr3t", 0))
+		env.withCharactersInWorld(
+			character.NewModelBuilder().SetId(checkPossibleTestCharacterId).MustBuild(),
+			character.NewModelBuilder().SetId(checkPossibleTestCharacterId+1).MustBuild(),
+		)
+		env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
 
-	if got := env.lastAnnouncedResultByte(); got != 0x20 {
-		t.Fatalf("result byte = 0x%02X, want ALLOWED 0x20", got)
-	}
-	if env.storageWarningWasAnnounced() {
-		t.Fatal("no warning is due when another character remains in the source world")
-	}
-}
+		if got := env.lastAnnouncedResultByte(); got != 0x20 {
+			t.Fatalf("result byte = 0x%02X, want ALLOWED 0x20", got)
+		}
+		if env.storageWarningWasAnnounced() {
+			t.Fatal("CHECK must never emit the storage-stranding warning")
+		}
+	})
 
-// FR-4.7 ruling 2: the warning FAILS OPEN. A failed last-character lookup
-// must never reject the check or fail the handler -- it must simply skip
-// the courtesy warning and answer normally.
-func TestWorldTransferCheckLookupErrorFailsOpen(t *testing.T) {
-	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
-	env.withAccount(buildAccount("s3cr3t", 0))
-	env.withCharactersInWorldErr(errors.New("atlas-character unavailable"))
-	env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
+	t.Run("last-character lookup errors", func(t *testing.T) {
+		env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
+		env.withAccount(buildAccount("s3cr3t", 0))
+		env.withCharactersInWorldErr(errors.New("atlas-character unavailable"))
+		env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
 
-	if got := env.lastAnnouncedResultByte(); got != 0x20 {
-		t.Fatalf("result byte = 0x%02X, want ALLOWED 0x20 (a courtesy lookup failure must not block a legitimate transfer)", got)
-	}
-	if env.storageWarningWasAnnounced() {
-		t.Fatal("a failed lookup must not emit the warning")
-	}
+		if got := env.lastAnnouncedResultByte(); got != 0x20 {
+			t.Fatalf("result byte = 0x%02X, want ALLOWED 0x20", got)
+		}
+		if env.storageWarningWasAnnounced() {
+			t.Fatal("CHECK must never emit the storage-stranding warning")
+		}
+	})
 }
 
 // decodeAllowedWorldNames pulls the world-name list out of a GMS pre-v95
@@ -302,23 +305,6 @@ func TestTransferWorldPossibleWorldListFailureRefusesRatherThanCrashing(t *testi
 			t.Fatalf("result byte = 0x%02X, want UNKNOWN_ERROR 0x2F", got)
 		}
 	})
-}
-
-// The FR-4.7 warning goes to a client sitting in the Cash Shop, which has no
-// status bar. PINK_TEXT (arm 5) reaches CHATLOG_ADD @0x4906b5, whose body is
-// entirely inside `if (TSingleton<CUIStatusBar>::ms_pInstance)` — a silent
-// no-op there. It must be sent as POP_UP (arm 1), which
-// CWvsContext::OnBroadcastMsg @0xa22785 routes to CUtilDlg::Notice with no
-// status-bar guard.
-func TestWorldTransferStorageWarningUsesPopUpNotPinkText(t *testing.T) {
-	env := newCheckPossibleHandlerEnv(t, "GMS", 95, 1)
-	env.withAccount(buildAccount("s3cr3t", 0))
-	env.withCharactersInWorld(character.NewModelBuilder().SetId(checkPossibleTestCharacterId).MustBuild())
-	env.handleWorldTransfer(transferWorldPossiblePacket(env.l, env.ctx, checkPossibleTestCharacterId, 0, "s3cr3t"))
-
-	if got := env.storageWarningModeByte(); got != 0x01 {
-		t.Fatalf("storage warning mode byte = 0x%02X, want POP_UP 0x01 (0x05 is PINK_TEXT, which the Cash Shop silently drops)", got)
-	}
 }
 
 // The credential must never reach a log line.

@@ -15,10 +15,12 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	atlaspacket "github.com/Chronicle20/atlas/libs/atlas-packet"
 	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const (
@@ -299,7 +301,10 @@ func handleBuyNameChange(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 // Unlike name-change, a
 // real client failure arm exists here (CashShopTransferWorldFailedBody /
 // TRANSFER_WORLD_FAILED, shop_operation_body.go:454), so pending-change
-// rejections use it instead of pink text.
+// rejections use it instead of pink text. On the rejection-free path this
+// handler also emits FR-4.7's storage-stranding courtesy warning
+// (warnIfStrandingStorage, below) — moved here from the CHECK handler to
+// avoid a client-side modal collision, see that function's own doc comment.
 func handleBuyWorldTransfer(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, sp *cashsb.ShopOperationBuyWorldTransfer) {
 	return func(s session.Model, sp *cashsb.ShopOperationBuyWorldTransfer) {
 		characterId := s.CharacterId()
@@ -333,6 +338,56 @@ func handleBuyWorldTransfer(l logrus.FieldLogger, ctx context.Context, wp writer
 		if err := cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId); err != nil {
 			l.WithError(err).Errorf("Unable to request purchase for character [%d] serial number [%d] transaction [%s]; pending world transfer record [%s] may be orphaned.", characterId, sp.SerialNumber(), transactionId, rm.Id)
 		}
+
+		// FR-4.7's storage-stranding courtesy warning fires HERE, not from the
+		// CHECK handler it originally shipped in. It used to be emitted right
+		// after CHECK's ALLOWED result, but ALLOWED opens the client's
+		// license-notice dialog as a modal (CUITransferWorldLicenseNotice ::
+		// DoModal), and the warning's own POP_UP world message opens a SECOND
+		// modal (CUtilDlg::Notice) inside that one's nested loop — stealing
+		// the input grab and leaving the license notice dead behind it. See
+		// docs/tasks/task-227-cash-name-change-world-transfer/bug-world-transfer-eligibility-reasons.md
+		// (Symptom 1) for the full IDA trace and Ruling 1. By the time this
+		// handler runs, the player has already dismissed that dialog and
+		// picked a destination, so there is no modal left for the warning to
+		// collide with — and this is also the first point the warning is
+		// actually actionable.
+		warnIfStrandingStorage(l, ctx, wp, s, characterId)
+	}
+}
+
+// warnIfStrandingStorage implements task-227 Task 26's FR-4.7 courtesy
+// notice: storage is keyed (tenant, world, account) and shared by every
+// character the account owns in that world (FR-4.6), so it is only stranded
+// when the transferring character is the account's LAST character in the
+// SOURCE world — s.WorldId(), i.e. the world being left, not the destination
+// world this BUY carries. This is advisory, not a gate, so it FAILS OPEN: a
+// lookup error is logged and swallowed, never surfaced to the player and
+// never allowed to affect the (already-requested) purchase.
+func warnIfStrandingStorage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, characterId uint32) {
+	chars, err := checkPossibleAccountCharactersInWorldFunc(l, ctx, s.AccountId(), s.WorldId())
+	if err != nil {
+		l.WithError(err).Errorf("Unable to determine whether world transfer strands storage for account [%d] world [%d]; skipping the courtesy warning.", s.AccountId(), s.WorldId())
+		return
+	}
+
+	isLast := len(chars) == 1 && chars[0].Id() == characterId
+	if !isLast {
+		return
+	}
+
+	msg := "Your Cash Shop storage in this world is tied to your account, not this character. Because this is your only remaining character here, it will become inaccessible once the transfer completes."
+	// POP_UP, not PINK_TEXT. The recipient is by definition sitting in the
+	// Cash Shop, where there is no status bar: CWvsContext::OnBroadcastMsg
+	// @0xa22785 (GMS v83) routes PINK_TEXT (arm 5) through CHATLOG_ADD
+	// @0x4906b5, whose whole body is guarded by
+	// `if (TSingleton<CUIStatusBar>::ms_pInstance)` — so the warning is a
+	// silent no-op there. Arm 1 (POP_UP) instead falls straight through to
+	// CUtilDlg::Notice with no status-bar guard at all, which is the only
+	// delivery this op's audience actually renders. Same reason
+	// announceCashShopRejection (above) uses the pop-up.
+	if err := session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody(msg))(s); err != nil {
+		l.WithError(err).Errorf("Unable to write storage-stranding warning for character [%d].", s.CharacterId())
 	}
 }
 
@@ -347,12 +402,39 @@ func announceCashShopRejection(l logrus.FieldLogger, ctx context.Context, wp wri
 	}
 }
 
+// transferFailureReasonConfigured reports whether this tenant's cash shop
+// "errors" table binds an alias for the given world-transfer rejection
+// reason (see docs/tasks/task-227-cash-name-change-world-transfer/
+// bug-world-transfer-eligibility-reasons.md, "Rulings" ruling 2 and its
+// alias table). Most templates carry an alias for every reason; two do not:
+// template_gms_12_1.json has no "errors" table at all, and
+// template_jms_185_1.json's table carries none of the CANNOT_TRANSFER_*
+// codes the aliases point at. This predicate turns that gap into an
+// explicit, logged fallback to the client's generic notice arm instead of
+// letting it fall through silently to ResolveCode's 99 sentinel.
+// Package-level var so tests can drive both the bound and unbound case
+// without a live writer registry (mirrors tradeEnterErrorConfigured in
+// kafka/consumer/trade/consumer.go).
+var transferFailureReasonConfigured = func(l logrus.FieldLogger, ctx context.Context, reason string) bool {
+	t := tenant.MustFromContext(ctx)
+	opts, ok := writer.TenantWriterOptions(t.Id(), cashcb.CashShopOperationWriter)
+	if !ok {
+		l.Warnf("Writer options for [%s] missing; world transfer failure reason [%s] not resolvable.", cashcb.CashShopOperationWriter, reason)
+		return false
+	}
+	return atlaspacket.CodeConfigured(opts, "errors", reason)
+}
+
 // announceTransferWorldFailure emits the real TRANSFER_WORLD_FAILED arm.
 // reason is a key into the tenant's "errors" code table (same convention as
 // every other *_FAILED body in this family, e.g. CashShopBuyFailedBody),
 // not display text.
 func announceTransferWorldFailure(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, reason string) {
 	return func(s session.Model, reason string) {
+		if !transferFailureReasonConfigured(l, ctx, reason) {
+			t := tenant.MustFromContext(ctx)
+			l.Warnf("Template [%s %d.%d] has no errors-table alias for world transfer failure reason [%s]; falling back to the client's generic notice for character [%d].", t.Region(), t.MajorVersion(), t.MinorVersion(), reason, s.CharacterId())
+		}
 		if err := session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopTransferWorldFailedBody(reason))(s); err != nil {
 			l.WithError(err).Errorf("Unable to announce world transfer failure to character [%d].", s.CharacterId())
 		}

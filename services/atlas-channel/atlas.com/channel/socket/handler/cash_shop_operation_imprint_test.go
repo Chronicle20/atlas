@@ -1,9 +1,13 @@
 package handler
 
 import (
+	"atlas-channel/character"
 	messageCashShop "atlas-channel/kafka/message/cashshop"
+	"atlas-channel/socket/writer"
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,10 +15,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	swriter "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
 )
 
 // cashShopOperationsOptions is the minimal "operations" mode table
@@ -51,6 +58,89 @@ func buyWorldTransferPacket(t *testing.T, targetWorld byte, serialNumber uint32)
 	req := request.Request(w.Bytes())
 	reader := request.NewRequestReader(&req, 0)
 	return &reader
+}
+
+// installCharactersInWorldSeam swaps checkPossibleAccountCharactersInWorldFunc
+// (cash_shop_check_transfer_world_possible.go) for the duration of a test --
+// the seam warnIfStrandingStorage (cash_shop_operation.go, task-227
+// fix-round-3 Ruling 1) reads to decide whether a BUY_WORLD_TRANSFER would
+// strand the account's Cash Shop storage, without a live atlas-character
+// round trip. Returns a restore func.
+func installCharactersInWorldSeam(t *testing.T, chars []character.Model, err error) func() {
+	t.Helper()
+	orig := checkPossibleAccountCharactersInWorldFunc
+	checkPossibleAccountCharactersInWorldFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id) ([]character.Model, error) {
+		return chars, err
+	}
+	return func() { checkPossibleAccountCharactersInWorldFunc = orig }
+}
+
+// worldMessageBuyRecorder is a fake writer.Producer that records every write
+// (writer name + plaintext body), resolving each writer's "operations" table
+// the same way checkPossibleWriterOptions does in
+// cash_shop_check_name_change_possible_test.go -- so a test can assert the
+// exact resolved mode byte of the FR-4.7 storage-stranding warning
+// (chatpkt.WorldMessageWriter) without decrypting anything.
+type worldMessageBuyRecorder struct {
+	announced []struct {
+		writer string
+		body   []byte
+	}
+}
+
+func (r *worldMessageBuyRecorder) producer() writer.Producer {
+	return func(name string) (swriter.BodyFunc, error) {
+		return func(l logrus.FieldLogger, ctx context.Context) func(encoder packet.Encode) []byte {
+			return func(encoder packet.Encode) []byte {
+				b := encoder(l, ctx)(worldMessageBuyWriterOptions(name))
+				r.announced = append(r.announced, struct {
+					writer string
+					body   []byte
+				}{writer: name, body: b})
+				return b
+			}
+		}, nil
+	}
+}
+
+func worldMessageBuyWriterOptions(writerName string) map[string]interface{} {
+	if writerName == chatpkt.WorldMessageWriter {
+		return map[string]interface{}{
+			"operations": map[string]interface{}{
+				string(writer.WorldMessagePopUp):    float64(0x01),
+				string(writer.WorldMessagePinkText): float64(0x05),
+			},
+		}
+	}
+	return map[string]interface{}{"operations": map[string]interface{}{}}
+}
+
+// storageWarningWasAnnounced reports whether a WORLD_MESSAGE write occurred.
+func (r *worldMessageBuyRecorder) storageWarningWasAnnounced() bool {
+	for _, a := range r.announced {
+		if a.writer == chatpkt.WorldMessageWriter {
+			return true
+		}
+	}
+	return false
+}
+
+// storageWarningModeByte returns the resolved mode byte of the storage
+// warning's WORLD_MESSAGE write -- byte 0 of the body, per
+// chatpkt.NewWorldMessageSimple.
+func (r *worldMessageBuyRecorder) storageWarningModeByte(t *testing.T) byte {
+	t.Helper()
+	for _, a := range r.announced {
+		if a.writer != chatpkt.WorldMessageWriter {
+			continue
+		}
+		if len(a.body) == 0 {
+			t.Fatal("the storage warning was announced with an empty body")
+		}
+		return a.body[0]
+	}
+	t.Fatal("no storage warning was announced")
+	return 0
 }
 
 // jsonAPIAttrs writes a minimal {"data":{"type":...,"id":...,"attributes":...}}
@@ -198,11 +288,17 @@ func TestBuyNameChangeCreatesAPendingRequest(t *testing.T) {
 }
 
 // TestBuyWorldTransferCreatesAPendingRequest mirrors
-// TestBuyNameChangeCreatesAPendingRequest for the world-transfer arm.
+// TestBuyNameChangeCreatesAPendingRequest for the world-transfer arm. It is
+// not about the FR-4.7 storage warning, so the last-character-in-world seam
+// is pinned to "no characters" (never stranding) to keep assertion (d) below
+// -- zero packets announced directly -- true regardless of that warning's
+// own behaviour, which TestBuyWorldTransferWarnsWhenStrandingStorage covers.
 func TestBuyWorldTransferCreatesAPendingRequest(t *testing.T) {
 	const characterId = uint32(12346)
 	const serialNumber = uint32(12346)
 	pendingChangeId := uuid.New()
+
+	defer installCharactersInWorldSeam(t, nil, nil)()
 
 	captured, restore := installCapturingProducer()
 	defer restore()
@@ -266,6 +362,110 @@ func TestBuyWorldTransferCreatesAPendingRequest(t *testing.T) {
 	// (d)
 	if rec.calls != 0 {
 		t.Fatalf("handler announced %d packets directly, want 0 -- the consumer answers the client now (writer=%q)", rec.calls, rec.lastName)
+	}
+}
+
+// TestBuyWorldTransferWarnsWhenStrandingStorage pins task-227 fix-round-3
+// Ruling 1
+// (docs/tasks/task-227-cash-name-change-world-transfer/bug-world-transfer-eligibility-reasons.md):
+// the FR-4.7 storage-stranding courtesy warning now fires from this handler,
+// on the rejection-free (successful) path, as POP_UP -- not from the CHECK
+// handler, which collided with the client's license-notice modal (see
+// TestWorldTransferCheckNeverEmitsStorageWarning,
+// cash_shop_check_transfer_world_possible_test.go).
+func TestBuyWorldTransferWarnsWhenStrandingStorage(t *testing.T) {
+	const characterId = uint32(12349)
+	const serialNumber = uint32(12349)
+	pendingChangeId := uuid.New()
+
+	defer installCharactersInWorldSeam(t, []character.Model{
+		character.NewModelBuilder().SetId(characterId).MustBuild(),
+	}, nil)()
+
+	srv, _ := newBuyHandlerTestServer(t, "Romeo", 5990002, http.StatusCreated,
+		jsonAPIAttrs("pending-changes", pendingChangeId.String(), map[string]any{"characterId": characterId, "type": "WORLD_TRANSFER", "status": "PENDING"}),
+		nil)
+	defer srv.Close()
+	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
+	t.Setenv("DATA_SERVICE_URL", srv.URL+"/")
+
+	s, ctx, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	rec := &worldMessageBuyRecorder{}
+	CashShopOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, buyWorldTransferPacket(t, 2, serialNumber), cashShopOperationsOptions())
+
+	if !rec.storageWarningWasAnnounced() {
+		t.Fatal("expected the storage-stranding warning to be written on the successful BUY path")
+	}
+	if got := rec.storageWarningModeByte(t); got != 0x01 {
+		t.Fatalf("storage warning mode byte = 0x%02X, want POP_UP 0x01 (0x05 is PINK_TEXT, which the Cash Shop silently drops)", got)
+	}
+}
+
+// TestBuyWorldTransferNoWarningWhenAnotherCharacterRemains mirrors FR-4.7's
+// "storage stays reachable" case at BUY time: when another account
+// character remains in the SOURCE world, storage is not stranded.
+func TestBuyWorldTransferNoWarningWhenAnotherCharacterRemains(t *testing.T) {
+	const characterId = uint32(12350)
+	const serialNumber = uint32(12350)
+	pendingChangeId := uuid.New()
+
+	defer installCharactersInWorldSeam(t, []character.Model{
+		character.NewModelBuilder().SetId(characterId).MustBuild(),
+		character.NewModelBuilder().SetId(characterId + 1).MustBuild(),
+	}, nil)()
+
+	srv, _ := newBuyHandlerTestServer(t, "Romeo", 5990003, http.StatusCreated,
+		jsonAPIAttrs("pending-changes", pendingChangeId.String(), map[string]any{"characterId": characterId, "type": "WORLD_TRANSFER", "status": "PENDING"}),
+		nil)
+	defer srv.Close()
+	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
+	t.Setenv("DATA_SERVICE_URL", srv.URL+"/")
+
+	s, ctx, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	rec := &worldMessageBuyRecorder{}
+	CashShopOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, buyWorldTransferPacket(t, 2, serialNumber), cashShopOperationsOptions())
+
+	if rec.storageWarningWasAnnounced() {
+		t.Fatal("no warning is due when another character remains in the source world")
+	}
+}
+
+// TestBuyWorldTransferStorageWarningLookupFailsOpen pins the FAILS OPEN
+// contract: a failed last-character lookup must never block or affect the
+// purchase, it must simply skip the courtesy warning.
+func TestBuyWorldTransferStorageWarningLookupFailsOpen(t *testing.T) {
+	const characterId = uint32(12351)
+	const serialNumber = uint32(12351)
+	pendingChangeId := uuid.New()
+
+	defer installCharactersInWorldSeam(t, nil, errors.New("atlas-character unavailable"))()
+
+	captured, restore := installCapturingProducer()
+	defer restore()
+
+	srv, _ := newBuyHandlerTestServer(t, "Romeo", 5990004, http.StatusCreated,
+		jsonAPIAttrs("pending-changes", pendingChangeId.String(), map[string]any{"characterId": characterId, "type": "WORLD_TRANSFER", "status": "PENDING"}),
+		nil)
+	defer srv.Close()
+	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
+	t.Setenv("DATA_SERVICE_URL", srv.URL+"/")
+
+	s, ctx, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	rec := &worldMessageBuyRecorder{}
+	CashShopOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, buyWorldTransferPacket(t, 2, serialNumber), cashShopOperationsOptions())
+
+	if rec.storageWarningWasAnnounced() {
+		t.Fatal("a failed lookup must not emit the warning")
+	}
+	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	if len(msgs) != 1 {
+		t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 1 -- a courtesy lookup failure must not block the purchase", len(msgs))
 	}
 }
 

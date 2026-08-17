@@ -13,16 +13,17 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
-	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
-// checkPossibleAccountCharactersInWorldFunc is the seam
-// CashShopCheckTransferWorldPossibleHandleFunc calls through for the FR-4.7
-// last-character-in-source-world lookup, so tests can swap it the way
-// checkPossibleAccountGetByIdFunc is swapped (cash_shop_check_name_change_possible.go)
-// without a live atlas-character round trip.
+// checkPossibleAccountCharactersInWorldFunc is the seam warnIfStrandingStorage
+// (cash_shop_operation.go) calls through for the FR-4.7 last-character-in-
+// source-world lookup, so tests can swap it the way checkPossibleAccountGetByIdFunc
+// is swapped (cash_shop_check_name_change_possible.go) without a live
+// atlas-character round trip. Declared here rather than beside its caller
+// because this file already owns the analogous account/PIC seams this op's
+// sibling BUY_WORLD_TRANSFER handler reuses.
 var checkPossibleAccountCharactersInWorldFunc = func(l logrus.FieldLogger, ctx context.Context, accountId uint32, worldId world.Id) ([]character.Model, error) {
 	return character.NewProcessor(l, ctx).GetForAccountInWorld(accountId, worldId)
 }
@@ -140,13 +141,18 @@ func CashShopCheckTransferWorldPossibleHandleFunc(l logrus.FieldLogger, ctx cont
 
 		announceTransferWorldPossible(l, ctx, wp, s, cashcb.CheckTransferWorldPossibleResultAllowedBody(characterId, a.BirthDate(), worldNames))
 
-		// FR-4.7: warn (cash-shop pop-up) when this transfer would strand the
-		// account's shared-per-world storage. Emitted AFTER the result
-		// packet, deliberately: the credential check the client is waiting
-		// on has already been answered above, so a slow/failed
-		// last-character lookup below can never delay or block that
-		// response — see warnIfStrandingStorage's own fail-open contract.
-		warnIfStrandingStorage(l, ctx, wp, s, characterId)
+		// FR-4.7's storage-stranding courtesy warning is NOT emitted here.
+		// It used to be, immediately after the ALLOWED result above, but that
+		// collided with the client's license-notice modal: ALLOWED opens
+		// CUITransferWorldLicenseNotice via DoModal, and the warning's own
+		// POP_UP world message opens a SECOND modal (CUtilDlg::Notice) inside
+		// that one's nested message loop, which steals the input grab and
+		// makes the license notice unresponsive. See
+		// docs/tasks/task-227-cash-name-change-world-transfer/bug-world-transfer-eligibility-reasons.md
+		// (Symptom 1) for the full IDA trace, and its Ruling 1: the warning
+		// now fires from handleBuyWorldTransfer (cash_shop_operation.go),
+		// once the player has dismissed that dialog and picked a
+		// destination.
 	}
 }
 
@@ -191,41 +197,6 @@ func transferWorldNameList(l logrus.FieldLogger, ws []channelworld.Model) []stri
 		}
 	}
 	return names
-}
-
-// warnIfStrandingStorage implements task-227 Task 26 ruling from the FR-4.7
-// fix-round-2 brief: storage is keyed (tenant, world, account) and shared by
-// every character the account owns in that world (FR-4.6), so it is only
-// stranded when the transferring character is the account's LAST character
-// in the SOURCE world (s.WorldId() — this op carries no destination world,
-// see the handler's own doc comment). This is advisory, not a gate, so it
-// FAILS OPEN: a lookup error is logged and swallowed, never surfaced to the
-// player and never allowed to affect the (already-announced) check result.
-func warnIfStrandingStorage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, characterId uint32) {
-	chars, err := checkPossibleAccountCharactersInWorldFunc(l, ctx, s.AccountId(), s.WorldId())
-	if err != nil {
-		l.WithError(err).Errorf("Unable to determine whether world transfer strands storage for account [%d] world [%d]; skipping the courtesy warning.", s.AccountId(), s.WorldId())
-		return
-	}
-
-	isLast := len(chars) == 1 && chars[0].Id() == characterId
-	if !isLast {
-		return
-	}
-
-	msg := "Your Cash Shop storage in this world is tied to your account, not this character. Because this is your only remaining character here, it will become inaccessible once the transfer completes."
-	// POP_UP, not PINK_TEXT. The recipient is by definition sitting in the
-	// Cash Shop, where there is no status bar: CWvsContext::OnBroadcastMsg
-	// @0xa22785 (GMS v83) routes PINK_TEXT (arm 5) through CHATLOG_ADD
-	// @0x4906b5, whose whole body is guarded by
-	// `if (TSingleton<CUIStatusBar>::ms_pInstance)` — so the warning is a
-	// silent no-op there. Arm 1 (POP_UP) instead falls straight through to
-	// CUtilDlg::Notice with no status-bar guard at all, which is the only
-	// delivery this op's audience actually renders. Same reason
-	// announceCashShopRejection (cash_shop_operation.go) uses the pop-up.
-	if err := session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody(msg))(s); err != nil {
-		l.WithError(err).Errorf("Unable to write storage-stranding warning for character [%d].", s.CharacterId())
-	}
 }
 
 // transferWorldCredentialMatches mirrors nameChangeCredentialMatches (see

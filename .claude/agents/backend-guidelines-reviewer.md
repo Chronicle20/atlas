@@ -121,6 +121,24 @@ cd <service-path>/atlas.com/<module> && go test ./... -count=1
 If either fails, the audit overall status is automatically `fail`. Record the
 build errors as the audit result and DO NOT proceed to Phase 2.
 
+## Reading the diff and the guideline documents — slice, do not re-read
+
+Your review surface arrives as a diff, and a service diff is routinely larger
+than the context that has to hold it. Take the inventory before the hunks:
+
+```sh
+git diff --stat <range>                       # which files, how big — always first
+git diff <range> -- <path>                    # one flagged file's hunks
+tools/doc-slice.sh <path> --outline           # any document over ~20 KB
+tools/doc-slice.sh <path> --section '<name>'  # the one family you are running
+```
+
+Phase 0's checklist read is the deliberate exception — it is compact and you
+read it whole. Every other large document loads by slice, one family at a time.
+Escalate to a full read when the slice is insufficient, and say so in the audit;
+a document that is repeatedly escalated needs restructuring. See
+[`docs/slice-first.md`](../../docs/slice-first.md).
+
 ## Phase 2: Surface Classification
 
 1. List the packages in scope (changed packages, or every package under

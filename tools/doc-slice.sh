@@ -93,10 +93,14 @@ emit() {
     # Cap the output and always say when it was capped, naming the source so the
     # caller can escalate deliberately rather than silently acting on a partial.
     local out; out="$(cat)"
-    if [ "${#out}" -gt "$MAX_BYTES" ]; then
-        printf '%s\n' "${out:0:$MAX_BYTES}"
-        printf '\n[doc-slice: output truncated at %s bytes of %s. Source: %s (%s lines, %s bytes). Narrow the pattern, or read the file directly if you need all of it.]\n' \
-            "$MAX_BYTES" "${#out}" "$FILE" "$total_lines" "$total_bytes"
+    # Measure and cut in bytes, not characters: ${#out} and ${out:0:N} count
+    # characters under a multi-byte locale, so a doc with any non-ASCII would be
+    # capped somewhere other than where the flag says.
+    local out_bytes; out_bytes="$(printf '%s' "$out" | wc -c | tr -d ' ')"
+    if [ "$out_bytes" -gt "$MAX_BYTES" ]; then
+        printf '%s' "$out" | head -c "$MAX_BYTES"
+        printf '\n\n[doc-slice: output truncated at %s bytes of %s. Source: %s (%s lines, %s bytes). Narrow the pattern, or read the file directly if you need all of it.]\n' \
+            "$MAX_BYTES" "$out_bytes" "$FILE" "$total_lines" "$total_bytes"
     else
         printf '%s\n' "$out"
     fi

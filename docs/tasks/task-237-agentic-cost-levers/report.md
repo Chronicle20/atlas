@@ -81,6 +81,7 @@ carry, from 74 of 11,102 tool calls**; median >12 KB result lands at position
 | `docs/slice-first.md` | **New.** The principle, the measurement, and a per-situation table (plan task, recipe, audit matrix, review diff, offload, config, source). |
 | `.claude/agents/atlas-implementer.md` | Contract 3 gains the slice-first bullet, explicitly exempting source files being edited. |
 | `.claude/agents/plan-adherence-reviewer.md` | New "Reading the plan — slice, do not re-read" section pointing at `tools/task-brief.sh`. |
+| `.claude/agents/backend-guidelines-reviewer.md`, `frontend-guidelines-reviewer.md` | New "Reading the diff and the guideline documents — slice, do not re-read" section: `git diff --stat` before hunks, `--outline` before `--section`, load a guideline resource only when its surface appears in the diff. Added in the post-implementation review round — the first pass omitted them, which was the omission the review caught. |
 | `atlas-reviewer.md` | `git diff --stat` before hunks. |
 | `.claude/commands/execute-task.md` | Step 4b: briefs name the *slice* ("Pattern C of…"), not the document. |
 | `docs/reverse-engineering.md` | Prefer `func_query`/bounded `insn_query` over full `decompile`; one `select:` line for the whole IDA tool set. |
@@ -224,6 +225,22 @@ initially recursed unboundedly, because `verify.sh` runs every changed
 `tools/*_test.sh` and this test invokes `verify.sh`. Both fixed
 (`ATLAS_VERIFY_TEST_INNER` breaks the recursion at depth one) and documented in
 the file so the next editor does not reintroduce them.
+
+### Found by code review, fixed in the same branch
+
+`tools/doc-slice.sh`'s `emit()` capped output with `${#out}` and
+`${out:0:$MAX_BYTES}`. Both count **characters**, not bytes, under a multi-byte
+locale, while the flag help and the truncation notice both say "bytes" — so any
+document carrying non-ASCII (em-dashes, curly quotes, accented text: routine in
+this repo's docs) truncated somewhere other than where the tool claimed.
+Measured: a 40-line UTF-8 fixture under `--max-bytes 200` emitted **252 bytes**.
+Now measured with `wc -c` and cut with `head -c`, with a regression assertion in
+`doc-slice_test.sh` built on that fixture — it fails against the old expansion.
+
+Naming, for the record: the plan called the `--facts` coverage
+`tools/verify-facts_test.sh`; it shipped as `tools/verify_test.sh`, because the
+suite also carries a `verify.sh` structural invariant (a gate label can only
+originate inside `step()`) that is not a `--facts` property.
 
 ---
 

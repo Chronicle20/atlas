@@ -86,6 +86,24 @@ Note: atlas-ui uses Vitest (via 'npm test' → 'vitest run'), not Jest. The '--w
 
 If either fails, the audit overall status is automatically `fail`. Record the errors and stop.
 
+## Reading the diff and the guideline documents — slice, do not re-read
+
+Your review surface arrives as a diff, and the guideline resources above are
+many and large. Take the inventory before the hunks:
+
+```sh
+git diff --stat <range>                       # which files, how big — always first
+git diff <range> -- <path>                    # one flagged file's hunks
+tools/doc-slice.sh <path> --outline           # any document over ~20 KB
+tools/doc-slice.sh <path> --section '<name>'  # the one pattern you are checking
+```
+
+Load a Phase 0 resource when its surface actually appears in the diff — a
+forms/Zod document for a diff with no form in it is wasted context. Escalate to
+a full read when the slice is insufficient, and say so in the audit; a document
+that is repeatedly escalated needs restructuring. See
+[`docs/slice-first.md`](../../docs/slice-first.md).
+
 ## Phase 2: File Inventory
 
 List all changed/in-scope files. Classify each as:

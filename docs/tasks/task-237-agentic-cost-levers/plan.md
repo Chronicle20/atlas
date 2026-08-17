@@ -49,6 +49,12 @@ for bare `general-purpose` per-unit review — is not written anywhere.
    `frontend-guidelines-reviewer.md`, `plan-adherence-reviewer.md`,
    `packet-completeness-critic.md`, `family-auditor.md` — each pointing at the
    protocol and naming its own artifact path.
+   **Accepted exemption (code review, post-implementation):**
+   `packet-completeness-critic.md` and `family-auditor.md` were left untouched.
+   Both already return a one-line verdict plus counts and point the caller at
+   their own artifact, so the append would have been churn against a contract
+   they already satisfy. The other three, plus the new `atlas-reviewer.md`,
+   carry the section.
 3. New `.claude/agents/atlas-reviewer.md` — the named contract for per-unit /
    ad-hoc code review that currently rides bare `general-purpose` (84 of 93
    dispatches in task-232).
@@ -101,7 +107,10 @@ logic (227 §A1); 2,191 Bash calls / 2.07 MB on mechanical repository facts (232
    toolchain line, in one <1 KB block. No new resolution framework.
 4. `_test.sh` for each new script; `verify.sh --facts` covered by
    `tools/verify-facts_test.sh` asserting `--facts` agrees with a real run's
-   selection.
+   selection. **Shipped as `tools/verify_test.sh`** — the suite also carries the
+   structural anti-drift invariant that a gate label can only originate inside
+   `step()`, which is a `verify.sh` property rather than a `--facts` one, so it
+   is named for the script under test.
 5. Inject into briefs: `/execute-task` Step 4b prepends the block;
    `superpowers:requesting-code-review` roster section consumes
    `change-surfaces.sh`.

@@ -159,6 +159,22 @@ assert_has "truncation is announced"        "truncated" "$out"
 assert_has "truncation names the source"    "fixture.md" "$out"
 assert_has "truncation offers escalation"   "read the file directly" "$out"
 
+# The cap is in bytes, not characters. A document of multi-byte characters
+# would truncate somewhere other than the flag says if this used ${#var} /
+# ${var:0:n}, which count characters under a UTF-8 locale.
+utf8="$tmp/utf8.md"
+{ echo "# Heading"
+  for i in $(seq 1 40); do echo "row $i — em-dash … ellipsis … ünïcödé"; done; } > "$utf8"
+out="$(LC_ALL=en_US.UTF-8 "$SLICE" "$utf8" --lines 1-999 --max-bytes 200)"
+body="${out%%$'\n\n[doc-slice:'*}"
+bytes="$(printf '%s' "$body" | wc -c | tr -d ' ')"
+if [ "$bytes" -le 200 ]; then
+  echo "ok   - multi-byte truncation caps at $bytes bytes, not characters"
+else
+  echo "FAIL - multi-byte truncation emitted $bytes bytes for --max-bytes 200" >&2
+  fails=$((fails+1))
+fi
+
 # --- usage errors -----------------------------------------------------------
 
 "$SLICE" "$tmp/nope.md" --outline >/dev/null 2>&1; rc=$?

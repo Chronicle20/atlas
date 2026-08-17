@@ -16,6 +16,20 @@ yourself:
 tools/task-resolve.sh "$ARGUMENTS"
 ```
 
+Or, to get the resolution **and** the rest of the mechanical facts in one call —
+branch, HEAD, which phase artifacts exist, changed services and surfaces, the
+guards this change selects, the toolchain:
+
+```sh
+tools/task-facts.sh "$ARGUMENTS"
+```
+
+Under 1 KB, and it composes the same resolvers rather than replacing them, so
+the exit codes below are unchanged. Prefer it: measured across one task, 2,191
+Bash calls and 2.07 MB were spent re-deriving these facts by hand while
+`task-resolve.sh` — which answers the first three — was used in 16 of 213
+streams.
+
 It prints one tab-separated line: `<task-id>\t<task-dir>\t<worktree>`, and
 accepts exact, number-only (`54`/`054`/`task-54`/`task-054`), or slug-fragment
 identifiers.
@@ -64,34 +78,18 @@ task fits, the brief path, the report path, interfaces and decisions from
 earlier tasks, and your resolution of any ambiguity you noticed. Do not
 restate the agent's contracts in the prompt.
 
+**Before dispatching a second implementer at the same templated
+transformation**, stop and check whether an AST codemod is cheaper than the
+remaining manual dispatches — see
+[docs/codemod-vs-agents.md](../../docs/codemod-vs-agents.md) for the
+break-even arithmetic and the worked example.
+
 ### Step 4a — Model discipline for every dispatch
 
-Pass an explicit `model` on **every** Agent/Task dispatch. Never rely on
-inheritance: an unspecified model inherits the main-loop model (Opus), and an
-Opus subagent turn costs ~7x a Sonnet one.
-
-The pin is chosen by the **job the agent is doing**, not by its
-`subagent_type`. Named reviewer agents carry a Sonnet pin in their frontmatter,
-but an ad-hoc `general-purpose` dispatch carrying a review prompt does not —
-that is the hole this rule closes.
-
-| Job | Model | Notes |
-|---|---|---|
-| Review, verify, audit, re-review, whole-branch review | **`sonnet`** — always | No exceptions. Reviewing is reading against a checklist; Opus buys nothing and these run long |
-| Scan, inventory, doc sweep, file-finding | `haiku` | |
-| Run the verification gate (`atlas-verifier`) | `haiku` | Frontmatter pin; it runs one command and quotes the output |
-| Implement a plan task (`atlas-implementer`) | `sonnet` | Default; frontmatter pin |
-| Implement a packet codec (`packet-implementer`) or dispatcher family (`dispatcher-family-implementer`) | `sonnet` | Frontmatter pin; both also carry the 120-call PARTIAL budget |
-| Implement a plan task tagged `model: opus` in plan.md | `opus` | Opt-in only — see below; pass `model: opus` on the dispatch to override the frontmatter |
-
-A plan task may be tagged `model: opus` in `plan.md` when it is genuinely
-derivation-heavy: IDA/packet field-order derivation, saga orchestration across
-services, or a cross-service contract change. `/plan-task` should apply that tag
-sparingly and justify it in one line. Everything else — REST surfaces, GORM
-entities, Kafka consumers, tests, template routing — runs Sonnet.
-
-If an implementer comes back wrong twice on Sonnet, escalate that one task to
-Opus and note it, rather than raising the default.
+Model selection for every dispatch — the job → model table, the `model: opus`
+opt-in, and the escalation rule — is owned by
+[`docs/agent-dispatch.md`](../../docs/agent-dispatch.md). Pass an explicit
+`model` on every dispatch.
 
 If the user explicitly requests inline mode this session (rare), invoke `superpowers:executing-plans` instead.
 
@@ -144,6 +142,21 @@ discovery repeated inside a large implementer context.
 section rather than falling back to a repo sweep. If that comes back, this
 step was skipped — do it and re-dispatch.
 
+**Where the brief points at a large reference document** — a wiring recipe, a
+scope audit, a result matrix — name the *slice*, not the document. The brief
+should say "Pattern C of `service-wiring-recipe.md`" or "the `atlas-buddies`
+and `atlas-drops` rows of `query-scope-audit.md`", and the implementer reaches
+them with `tools/doc-slice.sh --section` / `--rows`. Measured: two such
+documents were read whole 74 times across 25 agent streams and cost 7.5% of a
+task's entire tool-result carry, when each agent needed one section.
+See [`docs/slice-first.md`](../../docs/slice-first.md).
+
+**Prepend the fact block** from `tools/task-facts.sh <task> --base
+<last-gated-commit>` to the brief. It is under 1 KB and it removes the
+orientation calls — branch, worktree, changed services, applicable guards,
+toolchain — that an implementer otherwise spends a median of 13 tool calls
+establishing before its first edit.
+
 ### Step 4c — Verification runs outside the implementer
 
 `atlas-implementer` runs only module-local `go build ./... && go test ./...`.
@@ -153,6 +166,8 @@ run in a clean 20k one, and their output is the biggest avoidable consumer of
 an implementer's window.
 
 **The gate runs concurrently with the next task. Never idle waiting for it.**
+See [`docs/agent-dispatch.md`](../../docs/agent-dispatch.md) §Verification
+split for why this split exists.
 
 A gate checks a commit, and commits are immutable — task N's verdict is equally
 valid whenever it lands. Blocking on it is pure wall clock: measured on
@@ -171,9 +186,47 @@ After an implementer reports `DONE` / `DONE_WITH_CONCERNS`:
    with `run_in_background: true`. Pass `--base` — without it the whole-branch
    diff makes each run ~10× longer once any `libs/` file has been touched
    (docs/verification.md, "Iteration gate"). Ledger the commit you gated from.
+
+   **If a gate behaves unexpectedly — too broad, too slow, skipping something
+   you expected — ask it what it selected before investigating the script:**
+
+   ```sh
+   tools/verify.sh --facts --quick --base <last-gated-commit>
+   ```
+
+   It prints the change base, changed services and libs, the fan-out reason,
+   the module count, the guard suites, and every gate that would run, then
+   exits without building. It is the same code path as a real run with the work
+   removed, so it cannot disagree with one. Measured: ~30 turns at 170–290k
+   context went into reverse-engineering that selection from `verify.sh`'s
+   source — ≈6.9M tokens, ~24% of one controller session — for facts the
+   script had already computed.
 2. **Keep going immediately** — do not poll, do not wait. Run the task review,
    then Step 4b's inventory for task N+1, then dispatch task N+1's implementer.
    The gate runs underneath all of it.
+
+   **The per-task review agent is `atlas-reviewer` (`model: sonnet`), never a
+   bare `general-purpose` dispatch.** That was 84 of 93 review dispatches in
+   one measured task, and it is why review had no contract to live in: those
+   84 returned a median of 4,904 B of prose and **not one of them wrote a
+   durable artifact**. `atlas-reviewer` carries both halves — the artifact and
+   the verdict-first return of
+   [`docs/review-protocol.md`](../../docs/review-protocol.md).
+
+   Read the review artifact only when the verdict is not `APPROVED`. On
+   `CHANGES_REQUIRED` the enumerated `blocking` lines are the fix brief; open
+   the artifact when a line is not actionable as written.
+
+   **Right-sizing the task review agent** (review+audit cost 2,616 turns /
+   227M tokens / 17.6% of task-232): a task whose diff was codemod-produced
+   and `--check`-confirmed (`docs/codemod-vs-agents.md`) may take a reduced
+   or skipped per-task review agent. Every other task — including a
+   hand-applied "mechanical" batch with no `--check` PASS behind it — is
+   judgment-bearing and gets the full review agent; that is the safe
+   default. No rewriter exists yet, so this reduced path is dormant and
+   every task takes full review today. This governs the per-task review
+   agent only; `tools/verify.sh` and the guideline reviewers still run
+   unconditionally before a PR.
 3. **Reconcile when it lands**, at the next natural pause (the notification
    from the next subagent). Read the log, ledger PASS or the failing block, and
    record the new last-gated commit.
@@ -241,32 +294,64 @@ review, every fix ruling, every task-notification wake-up accumulates in it,
 and each wake-up re-reads all of it. By the twelfth plan task that is 300k+
 tokens billed to tick a checkbox.
 
-Measured on a real 18-task run: the controller finished at 402k tokens having
-produced only 165KB of its own tool output across 157 calls. Its last 42 turns
-— a self-contained segment sharing no state with the preceding tasks — ran at
-360-400k each. In a fresh session those same turns would have run at ~80k.
+The measured cost arithmetic behind this — a real 18-task controller run,
+what it cost in tokens and tool calls, and the fresh-session comparison —
+lives in [`docs/agent-dispatch.md`](../../docs/agent-dispatch.md) §Context
+handoff.
 
-**After completing any plan task, if your context exceeds ~250k tokens and two
-or more plan tasks remain, hand off:**
+**After completing any plan task, if your context exceeds ~150k tokens — or
+4 plan tasks have completed in this controller session, whichever comes
+first — hand off. This applies unconditionally, however many plan tasks
+remain; there is no carve-out for "only one or two left."**
 
 1. Confirm `<workspace>/progress.md` records every finished task, its commit
    range, and any ruling you made that is not already in a `task-N-report.md`.
 2. Tell the user: "Controller context is ~<N>k with <M> tasks remaining.
    `/clear` and re-run `/execute-task <task-id>` — it resumes from the ledger."
-3. Stop. Do not start the next task.
+3. Stop: no further tool calls after the handoff line. Do not start the next
+   task, and do not use the handoff message as a lead-in to one more action —
+   a handoff the same context then works past is not a handoff.
+
+CLAUDE.md's "Handing off context" rule is delegate-by-default, `/clear`
+only when the next unit is genuinely controller-shaped. This is the
+controller-shaped case: in `/execute-task` the controller *is* the loop —
+it dispatches implementers, reconciles gates, keeps the ledger — so "the
+next unit" here is the loop itself, which a dispatched subagent cannot take
+over. That is why step 2 above is a `/clear` instruction to the user rather
+than a fresh-agent dispatch.
 
 This is safe because the ledger is already the recovery map the skill designs
 for: it resumes at the first task with no `Task <N>: complete` line, and the
 workspace (briefs, reports, review packages) lives on disk, git-ignored, not in
-your context. A fresh controller re-reads the plan once (~15k) and resumes at
-~40k instead of 300k+. Handing off mid-plan is cheaper than finishing it large,
-and it costs nothing in implementation quality — implementer contexts are
-untouched either way.
+your context. Handing off mid-plan is cheaper than finishing it large, and it
+costs nothing in implementation quality — implementer contexts are untouched
+either way.
 
 Hand off unconditionally, regardless of remaining task count, when the next
 task is a self-contained detour from the rest of the plan — a tooling
 investigation, a packet/IDA derivation, a docs sweep. Those share no state with
 what you are carrying, so they pay full freight for none of it.
+
+### Step 4f — Record what each agent cost
+
+When you reconcile an agent (implementer, verifier, reviewer), append one line
+to the task ledger:
+
+```sh
+tools/agent-ledger.sh append <task> --unit "Task <N>" --agent-type <type> \
+  --model <model> --status <status> --commit <sha>
+```
+
+Reviewer rows add `--verdict <verdict> --caused-fix <yes|no>`; when you hand off
+at Step 4e, add `--kind handoff --unit "after Task <N>" --context-tokens <n>`.
+
+Pass only what you actually know — an omitted field stays `-`. **Do not
+estimate.** Both cost audits were assembled by parsing transcripts by hand
+because nothing aggregated this; a fabricated turn count would poison the next
+one worse than a gap would.
+
+Batch this with the ledger edit and the next dispatch — it is one more line in a
+turn that is already happening, not a turn of its own.
 
 **Batch the ledger update with the next dispatch.** Editing `progress.md` and
 the following brief/dispatch call are independent — issue them in one message.
@@ -279,13 +364,24 @@ After all plan tasks complete and verify, the chosen skill hands off to `superpo
 
 > All plan tasks complete. Recommend running `superpowers:requesting-code-review` next, which dispatches the appropriate reviewer agents (plan-adherence, backend-guidelines, frontend-guidelines) in parallel.
 
+Whatever the plan's size, plan adherence is `plan-adherence-reviewer`'s job and
+nothing else's. On a long plan, shard **that agent** by non-overlapping task
+range (`1-10`, `11-20`, …) — do not dispatch ad-hoc `general-purpose` "audit
+plan tasks N-M vs code" agents, and never run range shards alongside an
+unscoped run of the same agent. See the Sharding section in
+`.claude/agents/plan-adherence-reviewer.md`.
+
 ## Important Rules
 
 - The worktree was created by `/spec-task`. NEVER create a new one here.
 - Implementers are `atlas-implementer`, never `general-purpose`.
+- Per-task reviewers are `atlas-reviewer`, never `general-purpose` (Step 4c).
+- Never poll a backgrounded gate — `.claude/hooks/wait-loop-guard.sh` refuses it.
+- Never reverse-engineer the gate's selection from its source; ask
+  `tools/verify.sh --facts` (Step 4c).
 - Never run `tools/verify.sh` inside an implementer — that is `atlas-verifier`'s job (Step 4c).
 - Never dispatch a brief with no `### Files` section (Step 4b).
-- Never carry the controller past ~250k tokens with tasks remaining — hand off to a fresh session via the ledger (Step 4e).
+- Never carry the controller past ~150k tokens, or 4 completed plan tasks in one session — hand off to a fresh session via the ledger, unconditionally, regardless of tasks remaining (Step 4e).
 - Never start implementation outside the task worktree.
 - Follow plan steps exactly; stop and ask when blocked rather than guessing.
 - Run the verification commands the plan specifies; don't claim completion based on assumption.

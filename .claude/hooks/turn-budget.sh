@@ -22,8 +22,14 @@
 # the soft warning, the hard cap, and every REPEAT calls past the cap. Always
 # exits 0 — a counter must never break a session.
 #
-# The cap is stated once here and referenced from CLAUDE.md and
-# .claude/agents/atlas-implementer.md. Change it in this file only.
+# The cap is stated once here and referenced from CLAUDE.md,
+# .claude/agents/atlas-implementer.md, and .claude/hooks/turn-budget-guard.sh
+# (which parses CAP out of this file at runtime). Change it in this file only.
+#
+# This hook only NAGS. Enforcement lives in the PreToolUse companion
+# turn-budget-guard.sh, which denies further tool calls past CAP+5 for
+# subagents. Both are needed: this one gives the agent the chance to stop
+# voluntarily, the guard handles the ones that don't.
 
 set -u
 

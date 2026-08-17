@@ -111,3 +111,15 @@ concerns — the service-side knob is `DB_MAX_OPEN_CONNS`.
 
 Every REST-serving service exposes `/metrics` automatically (mounted by the
 rest-server Builder); no per-service mount is needed.
+
+---
+
+## Audit verification — DOM-27, DOM-28
+
+Rule IDs are defined in [audit-checklist.md](audit-checklist.md). This section
+is the verification procedure.
+
+| ID | How to verify | Pass criteria |
+|----|---------------|---------------|
+| DOM-27 | (a) In changed resource handlers, find every error branch that writes `http.StatusInternalServerError` directly via `w.WriteHeader`. (b) If the service has a DB (calls `database.Connect`), those branches must instead call `server.WriteErrorResponse(d.Logger())(w)(err)`, and `main.go` must call `server.RegisterTransientErrorClassifier` composing `database.IsTransientConnectionError` + `database.CountTransient`. (c) 404 and 400 branches are exempt. | Changed handlers in DB-backed services use `WriteErrorResponse`; the classifier is registered once in `main.go`. A transient pool-exhaustion error surfacing as a generic 500 is a finding (task-168). |
+| DOM-28 | (a) In changed code, find every `model.Decorator[...]` implementation and every enrichment/fallback path whose body fetches remote data (processor / requests / DB / Redis) and branches on `err`. (b) Each failure path must either propagate the error or degrade loudly via `model.ErrDecorator` + `degrade.Observe(l, "<svc>.<domain>.<enrichment>", id, err)` — Warn log plus an `atlas_enrichment_degraded_total` increment. | Every fallible enrichment in the diff logs Warn and increments the degradation metric on failure. A bare `if err != nil { return m }` that drops fetched data with no log and no metric is a finding regardless of justification (task-168; see `docs/tasks/task-168-db-connection-resilience/decorator-audit.md` for the fleet baseline). |

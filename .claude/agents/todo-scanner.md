@@ -15,6 +15,7 @@ description: |
   assistant: "Let me dispatch todo-scanner to give you a current inventory."
   </example>
 model: haiku
+tools: Read, Grep, Glob, Write, Bash
 ---
 
 You are a codebase analyst performing a comprehensive review of the Atlas project to identify incomplete work.

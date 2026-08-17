@@ -1,0 +1,12 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-17T11:17:19Z	agent	bug-storage-warning-timing	atlas-implementer	sonnet	-	50	-	-	DONE	c642cda59	-	-	docs/tasks/task-227-cash-name-change-world-transfer/fix-storage-warning-timing-report.md	-
+2026-08-17T11:17:20Z	agent	bug-families-gate	atlas-implementer	sonnet	-	86	-	-	DONE	89a20e6ba	-	-	docs/tasks/task-227-cash-name-change-world-transfer/fix-families-gate-report.md	-
+2026-08-17T11:17:20Z	agent	bug-reason-code-seeding	atlas-implementer	sonnet	-	108	-	-	DONE	94df4ab86	-	-	docs/tasks/task-227-cash-name-change-world-transfer/fix-reason-code-seeding-report.md	-
+2026-08-17T11:17:20Z	agent	bug-check-unavailable	atlas-implementer	sonnet	-	95	-	-	DONE	f210c33fd	-	-	docs/tasks/task-227-cash-name-change-world-transfer/fix-check-unavailable-report.md	-
+2026-08-17T11:17:20Z	agent	bug-check-time-rejection	atlas-implementer	sonnet	-	88	-	-	DONE	2b6fb05a8	-	-	docs/tasks/task-227-cash-name-change-world-transfer/fix-check-time-rejection-report.md	-
+2026-08-17T11:17:21Z	agent	review-world-transfer-fixes	atlas-reviewer	sonnet	-	55	-	-	DONE	57b109008	APPROVED_WITH_FINDINGS	yes	docs/tasks/task-227-cash-name-change-world-transfer/review-world-transfer-fixes.md	-
+2026-08-17T11:22:04Z	agent	backend-audit-world-transfer-fixes	backend-guidelines-reviewer	sonnet	-	75	-	-	DONE	-	CHANGES_REQUIRED	yes	docs/tasks/task-227-cash-name-change-world-transfer/audit-world-transfer-fixes.md	-
+2026-08-17T11:22:42Z	agent	gate-flagless-fix-round-1	atlas-verifier	haiku	-	75	-	-	FAIL	-	-	-	-	-
+2026-08-17T11:48:39Z	agent	audit-round-2	backend-guidelines-reviewer	sonnet	-	25	-	-	DONE	-	APPROVED	no	docs/tasks/task-227-cash-name-change-world-transfer/audit-world-transfer-fixes-round-2.md	-
+2026-08-17T11:48:40Z	agent	bug-audit-round-1-fix	atlas-implementer	sonnet	-	64	-	-	DONE	88b53f027	-	-	docs/tasks/task-227-cash-name-change-world-transfer/fix-audit-round-1-report.md	-
+2026-08-17T11:48:40Z	agent	gate-flagless-final	atlas-verifier	haiku	-	23	-	-	PASS	88b53f027	-	-	-	-

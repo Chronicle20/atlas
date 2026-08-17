@@ -496,6 +496,58 @@ path; their aliases remain as a correctness backstop.
   taxonomy; adding `check_unavailable` to design §6 will fail it until the arm
   table is updated. That failure is the test doing its job.
 
+## Resolution (2026-08-17)
+
+All five steps landed on `task-227-cash-name-change-world-transfer`.
+
+| Step | What | Commit |
+|---|---|---|
+| 1 | Storage warning moved CHECK → `handleBuyWorldTransfer`; CHECK emits no POP_UP | `c642cda59` |
+| 2a | `atlas-families` deployment: base manifest, `/api/families` ingress route (regenerated), kustomization entry, allowlist removal | `196cf871d` |
+| 2b | `inFamily` — errors propagate instead of reading as membership; a tree of one is not a family | `89a20e6ba` |
+| 3 | `check_unavailable` across all 11 gates, per-gate error-injection tests, arm table + seam tests | `f210c33fd` |
+| 4 | Gate table split destination-independent/dependent; CHECK-time rejection path wired; **OQ-7 closed** | `2b6fb05a8` |
+| 5 | Reason keys seeded into 9 templates; `world_full`/`world_unknown` corrected to `PLEASE_TRY_AGAIN` | `94df4ab86` |
+| — | Fix round: 5 backend-guidelines findings + lint dead code | `88b53f027` |
+
+Docs: `45ce492f8` (rulings + families deploy gap), `ddf151f35` (verified StringPool
+text), `57b109008` (per-step reports + review artifact).
+
+Because five agents worked this range and three ran concurrently in one worktree,
+commit boundaries do not cleanly separate steps 1, 2 and 5 — content at HEAD is
+correct and reviewed, only attribution is mixed. Deliberately not rebased.
+
+### Gates
+
+- **Flagless `tools/verify.sh` — PASS, exit 0.** 86 modules build/vet/`test -race`;
+  `docker buildx bake atlas-character`; all repo guards; lint 0 issues.
+  (`--quick` would NOT have been sufficient — the first run failed on the lint
+  guard, which `--quick` skips.)
+- **Correctness review vs this document — APPROVED_WITH_FINDINGS**, 0 blocking;
+  both findings were uncommitted reports, since committed.
+  `review-world-transfer-fixes.md`
+- **Backend guidelines — round 1 CHANGES_REQUIRED (5 blocking), round 2 APPROVED**
+  (0/0), re-verified against the diff rather than the fix report.
+  `audit-world-transfer-fixes.md`, `audit-world-transfer-fixes-round-2.md`
+
+### Still open
+
+- **Live re-test has NOT been done.** The fix is gated and reviewed, not
+  confirmed against a client. Re-test on `atlas-pr-1370` (tenant
+  `d606f1cb-ba79-45ca-a989-cf0dc956fee7`, GMS 83.1): the license notice must
+  respond to input with no dialog behind it; a transfer to Bera must no longer
+  report `in_family`; and the rejection text should match the strings verified
+  above.
+- **`atlas-families` has never run in any environment.** This branch is the
+  first time it is scheduled and routed. Watch its pod on first deploy — a
+  service that has only ever been built is not a service that has ever started.
+- **Three client rules we do not gate** — married (4003), transferred within the
+  last 30 days (4010), transfer already requested (4015). Real strings, no gates.
+  Coverage question for a follow-up, deliberately not opened here.
+- **`is_guild_master` (4004) and `banned` (4009) could get their own CHECK arms**
+  now that their text is verified, instead of falling through to `UNKNOWN_ERROR`
+  as `in_family` no longer does. Arm-derivation work beyond the scoped five steps.
+
 ## Evidence index
 
 All addresses are GMS v83, `MapleStory_dump.exe.i64`, IDA session `41f09cce`.

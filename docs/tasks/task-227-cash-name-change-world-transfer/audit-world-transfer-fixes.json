@@ -1,0 +1,102 @@
+{
+  "service": "atlas-character, atlas-channel, atlas-packet, atlas-configurations (task-227 world-transfer fixes)",
+  "path": "62b0b733c..HEAD",
+  "date": "2026-08-17",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-character/pending_change",
+      "type": "domain",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go/processor_<group>.go", "status": "pass", "evidence": "processor.go interface/ctor; processor_eligibility.go is the idiomatic split"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API in rest.go", "status": "pass", "evidence": "rest.go:110-131 EligibilityRestModel + GetName/GetID/SetID"},
+        {"id": "FILE-03", "name": "Cross-service requests in requests.go", "status": "pass", "evidence": "requests.go carries inFamily, requestFamilyTree, etc."},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "no pending_change.go bundling responsibilities"},
+        {"id": "DOM-04", "name": "Transform(Model)(RestModel,error) in rest.go", "status": "pass", "evidence": "pre-existing Transform unchanged; EligibilityRestModel is a read-only projection"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "resource.go:116"},
+        {"id": "DOM-07", "name": "Handler passes d.Logger()", "status": "pass", "evidence": "resource.go:116"},
+        {"id": "DOM-09", "name": "Every Transform call checked", "status": "n-a", "evidence": "new handler never calls Transform"},
+        {"id": "DOM-12", "name": "No os.Getenv in handler", "status": "pass", "evidence": "resource.go new handler has no os.Getenv"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handler", "status": "pass", "evidence": "resource.go:113-134"},
+        {"id": "DOM-14", "name": "Handler calls processor, not provider", "status": "pass", "evidence": "resource.go:116-117"},
+        {"id": "DOM-15", "name": "No db writes in handler", "status": "pass", "evidence": "no db.Create/Save/Delete in new handler"},
+        {"id": "DOM-17", "name": "Domain errors map to correct status", "status": "pass", "evidence": "statusForError, resource.go:310-328"},
+        {"id": "DOM-27", "name": "503 via server.WriteErrorResponse", "status": "pass", "evidence": "resource.go:120"},
+        {"id": "DOM-31", "name": "Tenant/trace never a REST field/param", "status": "pass", "evidence": "no tenant. reference in resource.go"},
+        {"id": "DOM-32", "name": "Routes via server.RegisterHandler/RegisterInputHandler[T]", "status": "pass", "evidence": "resource.go:44 uses registerGet helper"},
+        {"id": "EXT-01", "name": "Target REST model has SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "pending_change/rest.go:241-247 familyMemberRestModel lacks both methods"},
+        {"id": "EXT-03", "name": "Only genuine 404 -> not found", "status": "pass", "evidence": "requests.go inFamily maps only requests.ErrNotFound"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrl", "status": "pass", "evidence": "requests.go familyBaseUrl composes via requests.RootUrl"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "requests_test.go:107-171 TestInFamily; processor_eligibility_test.go:166-264,328-415"},
+        {"id": "DOM-10", "name": "Test DB calls RegisterTenantCallbacks", "status": "not-evaluable", "evidence": "newProcessorTestDB(t) helper not in this diff"},
+        {"id": "DOM-24", "name": "Producer stub on emit-reaching tests", "status": "n-a", "evidence": "no test reaches AndEmit/message.Emit/producer.Produce"},
+        {"id": "DOM-33", "name": "Mocks updated for interface change", "status": "pass", "evidence": "no mock of pending_change.Processor exists"}
+      ]
+    },
+    {
+      "name": "atlas-channel/pendingchange",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "processor.go:30-50"},
+        {"id": "FILE-02", "name": "RestModel/JSON:API methods in rest.go", "status": "pass", "evidence": "rest.go:99-116 EligibilityRestModel"},
+        {"id": "FILE-03", "name": "Request functions in requests.go", "status": "pass", "evidence": "requests.go:87-93"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "no pendingchange.go"},
+        {"id": "DOM-04", "name": "func Transform( in rest.go", "status": "fail", "evidence": "rest.go has no func Transform(; identity equivalents live in processor.go:63-71 under different names"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "fail", "evidence": "no func TransformSlice( in rest.go; GetByCharacterId uses requests.SliceProvider + identityRestModel instead"},
+        {"id": "DOM-18", "name": "JSON:API interface", "status": "pass", "evidence": "rest.go:105-116 EligibilityRestModel; rest.go:25-91 pre-existing models"},
+        {"id": "DOM-19", "name": "Flat request models", "status": "pass", "evidence": "CreateInputRestModel/CancelInputRestModel flat structs"},
+        {"id": "DOM-31", "name": "Tenant/trace never a REST field", "status": "pass", "evidence": "no tenant. reference in package"},
+        {"id": "EXT-01", "name": "Target REST model has SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "rest.go:99-116 new EligibilityRestModel lacks both methods"},
+        {"id": "EXT-02", "name": "httptest-backed integration test with representative fixture", "status": "fail", "evidence": "grep for CheckTransferEligibilityIndependent under services/atlas-channel finds no test file at all"},
+        {"id": "EXT-03", "name": "Only genuine 404 -> not found", "status": "pass", "evidence": "processor.go:76-82 propagates every error verbatim"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrl", "status": "pass", "evidence": "requests.go:58-60"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "processor_test.go:27-142,146-248"},
+        {"id": "DOM-24", "name": "Producer stub on emit-reaching tests", "status": "n-a", "evidence": "no test reaches AndEmit/message.Emit/producer.Produce"},
+        {"id": "DOM-33", "name": "Mocks updated for interface change", "status": "pass", "evidence": "no mock of pendingchange.Processor exists"}
+      ]
+    },
+    {
+      "name": "atlas-channel/socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "op-specific handler files"},
+        {"id": "DOM-25", "name": "Client bytes resolved from tenant table", "status": "pass", "evidence": "cash_shop_operation.go:402-419 transferFailureReasonConfigured; check_transfer_world_possible_result.go:225-227,292-294,331-335"},
+        {"id": "DOM-26", "name": "No bare go statement", "status": "pass", "evidence": "grep found none in changed files"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handler", "status": "pass", "evidence": "cash_shop_check_transfer_world_possible.go:97-185"},
+        {"id": "DOM-14", "name": "Handler calls processor, not provider", "status": "pass", "evidence": "checkPossible*Func seams delegate to NewProcessor"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "cash_shop_check_transfer_world_possible_test.go t.Run subtests for multi-case scenarios"},
+        {"id": "DOM-24", "name": "Producer stub on emit-reaching tests", "status": "n-a", "evidence": "handlers write via session.Announce/writer.Producer, not Kafka AndEmit"}
+      ]
+    },
+    {
+      "name": "atlas-packet/cash/clientbound",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Wire bytes resolved from tenant table", "status": "pass", "evidence": "check_transfer_world_possible_result.go:225-227,292-294,331-335"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "check_transfer_world_possible_result_test.go TestCheckTransferWorldPossibleResultReasonMapping"}
+      ]
+    },
+    {
+      "name": "atlas-configurations/templates",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "world_transfer_alias_test.go: TestWorldTransferReasonAliasesResolveToAnchorCode (64-102), TestCannotTransferToNewWorldHasNoAlias (108-129), TestWorldTransferUnmappableTemplatesCarryNoAliases (134-154) all loop multiple cases without tests:=[]struct{...}+t.Run"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "n-a", "evidence": "new file is single-purpose test file"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-10: newProcessorTestDB(t) helper used throughout processor_eligibility_test.go is not in this diff; would need to read its unchanged definition to confirm it calls database.RegisterTenantCallbacks(l, db)"
+  ],
+  "blocking": [
+    "EXT-02: services/atlas-channel/atlas.com/channel/pendingchange/processor.go:76-82 CheckTransferEligibilityIndependent has zero test coverage, no httptest fixture test",
+    "EXT-01: services/atlas-channel/atlas.com/channel/pendingchange/rest.go:99-116 new EligibilityRestModel lacks SetToOneReferenceID/SetToManyReferenceIDs",
+    "DOM-04/DOM-05: services/atlas-channel/atlas.com/channel/pendingchange/rest.go has no func Transform(/func TransformSlice(",
+    "EXT-01: services/atlas-character/atlas.com/character/pending_change/rest.go:241-247 familyMemberRestModel (backs rewritten inFamily) lacks SetToOneReferenceID/SetToManyReferenceIDs",
+    "DOM-20: services/atlas-configurations/atlas.com/configurations/templates/world_transfer_alias_test.go multi-case tests are not table-driven"
+  ],
+  "nonBlocking": []
+}

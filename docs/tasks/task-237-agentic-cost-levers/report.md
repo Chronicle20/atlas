@@ -253,7 +253,44 @@ the file so the next editor does not reintroduce them.
 | `tools/agent-ledger_test.sh` | **27 pass** — including "unmeasured is `-`, never 0" |
 | `.claude/hooks/wait-loop-guard_test.sh` | **33 pass** — 15 deny, 18 allow (legitimate debugging preserved) |
 | `shellcheck -x` on all new/changed scripts | No `error`-severity findings (the repo gate's threshold); the two style findings worth fixing were fixed |
-| `tools/verify.sh` (flagless) | See the run recorded at the end of this file |
+| `tools/verify.sh` (flagless) | **PASS, exit 0** — 7 checks ran (shell tooling guard + all six suites), 13 skipped as unapplicable (no Go module, no `go.mod`, no `.go` file, no deploy or UI change). Verdict below. |
+
+### The flagless gate
+
+```
+✓ shell tooling guard      ✓ agent-ledger_test.sh     ✓ change-surfaces_test.sh
+✓ doc-slice_test.sh        ✓ task-facts_test.sh       ✓ verify_test.sh
+✓ wait-loop-guard_test.sh
+All checks passed.  GATE EXIT=0
+```
+
+The **first** flagless run FAILED and is worth recording, because the failure
+mode was self-inflicted twice over. `shell tooling guard` went red on
+`tools/verify_test.sh`: a comment line beginning `# shellcheck and lint, …` is
+parsed by shellcheck as a malformed directive (SC1072/SC1073). Fixed in
+`742dad384`, with a note in the file so it is not reintroduced.
+
+And the run was initially *reported* as passing, because it was launched as
+`tools/verify.sh > log 2>&1; echo "GATE EXIT=$?"` — the compound's exit status
+is `echo`'s, so the harness saw 0 while the gate had exited 1. The re-run
+propagates the gate's own status with `exit $rc`. **A background gate must
+return the gate's exit code, not a wrapper's** — otherwise "the gate passed" is
+a claim about the wrapper.
+
+### Still outstanding
+
+Per CLAUDE.md, **code review has not been run** — it is a separate gate from
+verification, and it is required before a PR. This session was directed not to
+dispatch agents, so the reviewer roster was not launched. Before opening a PR:
+
+```sh
+tools/change-surfaces.sh --base origin/main   # roster + families for this diff
+```
+
+then `superpowers:requesting-code-review`. On this branch the classifier reports
+`go_changed=false`, `frontend_review=false`, `tooling_surface=true` — so the
+review that matters is of the shell tooling and the workflow documents, not the
+Go guideline checklists.
 
 Mapping to the requested validation list:
 

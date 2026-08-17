@@ -39,7 +39,7 @@ location ~ ^/api/guilds(/.*)?$ {
 }
 
 location ~ ^/api/families(/.*)?$ {
-  set $u "atlas-families.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-families.${NS_ATLAS_FAMILIES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
@@ -484,7 +484,7 @@ location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/summons(
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/dragons(/.*)?$ {
-  set $u "atlas-dragons.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-dragons.${NS_ATLAS_DRAGONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
@@ -494,7 +494,7 @@ location ~ ^/api/monsters/[^/]+/drops(/.*)?$ {
 }
 
 location ~ ^/api/items/conversations(/.*)?$ {
-  set $u "atlas-npc-conversations.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-npc-conversations.${NS_ATLAS_NPC_CONVERSATIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
@@ -519,7 +519,7 @@ location ~ ^/api/summons(/.*)?$ {
 }
 
 location ~ ^/api/dragons(/.*)?$ {
-  set $u "atlas-dragons.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-dragons.${NS_ATLAS_DRAGONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 

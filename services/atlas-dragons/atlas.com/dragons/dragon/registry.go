@@ -88,8 +88,8 @@ func fromStored(s storedDragon) (tenant.Model, Model, error) {
 // makes "at most one dragon per character" a property of the key space rather
 // than an invariant to enforce.
 type Registry struct {
-	reg      *atlasredis.Registry[string, storedDragon]
-	fieldIdx *atlasredis.KeyedSet[string]
+	reg      *atlasredis.TenantRegistry[string, storedDragon]
+	fieldIdx *atlasredis.TenantKeyedSet[string]
 }
 
 var (
@@ -99,8 +99,8 @@ var (
 
 func newRegistry(rc *goredis.Client) *Registry {
 	return &Registry{
-		reg:      atlasredis.NewRegistry[string, storedDragon](rc, "dragon", func(s string) string { return s }),
-		fieldIdx: atlasredis.NewKeyedSet[string](rc, "dragon-map", func(s string) string { return s }),
+		reg:      atlasredis.NewTenantRegistry[string, storedDragon](rc, "dragon", func(s string) string { return s }),
+		fieldIdx: atlasredis.NewTenantKeyedSet[string](rc, "dragon-map", func(s string) string { return s }),
 	}
 }
 
@@ -111,12 +111,15 @@ func InitRegistry(rc *goredis.Client) { once.Do(func() { registry = newRegistry(
 // GetRegistry returns the package-level Registry singleton set up by InitRegistry.
 func GetRegistry() *Registry { return registry }
 
-func storeSuffix(t tenant.Model, characterId uint32) string {
-	return fmt.Sprintf("%s:%d", t.Id().String(), characterId)
+// storeSuffix and fieldSuffix carry no tenant segment: the tenant-scoped
+// atlas-redis types (TenantRegistry / TenantKeyedSet) prefix every key with the
+// tenant themselves, so repeating it here would double-scope the key space.
+func storeSuffix(characterId uint32) string {
+	return fmt.Sprintf("%d", characterId)
 }
 
-func fieldSuffix(t tenant.Model, f field.Model) string {
-	return fmt.Sprintf("%s:%d:%d:%d:%s", t.Id().String(), f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+func fieldSuffix(f field.Model) string {
+	return fmt.Sprintf("%d:%d:%d:%s", f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
 }
 
 func member(characterId uint32) string { return fmt.Sprintf("%d", characterId) }
@@ -128,17 +131,17 @@ func member(characterId uint32) string { return fmt.Sprintf("%d", characterId) }
 func (r *Registry) Put(ctx context.Context, t tenant.Model, m Model) error {
 	if prev, err := r.Get(ctx, t, m.OwnerCharacterId()); err == nil {
 		if prev.Field() != m.Field() {
-			_ = r.fieldIdx.Remove(ctx, fieldSuffix(t, prev.Field()), member(m.OwnerCharacterId()))
+			_ = r.fieldIdx.Remove(ctx, t, fieldSuffix(prev.Field()), member(m.OwnerCharacterId()))
 		}
 	}
-	if err := r.reg.Put(ctx, storeSuffix(t, m.OwnerCharacterId()), toStored(t, m)); err != nil {
+	if err := r.reg.Put(ctx, t, storeSuffix(m.OwnerCharacterId()), toStored(t, m)); err != nil {
 		return err
 	}
-	return r.fieldIdx.Add(ctx, fieldSuffix(t, m.Field()), member(m.OwnerCharacterId()))
+	return r.fieldIdx.Add(ctx, t, fieldSuffix(m.Field()), member(m.OwnerCharacterId()))
 }
 
 func (r *Registry) Get(ctx context.Context, t tenant.Model, characterId uint32) (Model, error) {
-	s, err := r.reg.Get(ctx, storeSuffix(t, characterId))
+	s, err := r.reg.Get(ctx, t, storeSuffix(characterId))
 	if err != nil {
 		return Model{}, err
 	}
@@ -151,14 +154,14 @@ func (r *Registry) Get(ctx context.Context, t tenant.Model, characterId uint32) 
 
 // Exists reports whether characterId currently owns a dragon for this tenant.
 func (r *Registry) Exists(ctx context.Context, t tenant.Model, characterId uint32) (bool, error) {
-	return r.reg.Exists(ctx, storeSuffix(t, characterId))
+	return r.reg.Exists(ctx, t, storeSuffix(characterId))
 }
 
 // GetInField returns every dragon currently indexed on field f for this tenant.
 // Stale index entries (dragon removed without going through Remove) are
 // skipped rather than surfaced as an error.
 func (r *Registry) GetInField(ctx context.Context, t tenant.Model, f field.Model) ([]Model, error) {
-	members, err := r.fieldIdx.Members(ctx, fieldSuffix(t, f))
+	members, err := r.fieldIdx.Members(ctx, t, fieldSuffix(f))
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +187,7 @@ func (r *Registry) GetInField(ctx context.Context, t tenant.Model, f field.Model
 // permanently invisible to GetInField for the new one. A field change must go
 // through Remove followed by Put, never Update.
 func (r *Registry) Update(ctx context.Context, t tenant.Model, characterId uint32, fn func(Model) Model) (Model, error) {
-	s, err := r.reg.Update(ctx, storeSuffix(t, characterId), func(cur storedDragon) storedDragon {
+	s, err := r.reg.Update(ctx, t, storeSuffix(characterId), func(cur storedDragon) storedDragon {
 		_, m, derr := fromStored(cur)
 		if derr != nil {
 			return cur
@@ -207,7 +210,7 @@ func (r *Registry) Update(ctx context.Context, t tenant.Model, characterId uint3
 func (r *Registry) Remove(ctx context.Context, t tenant.Model, characterId uint32) (bool, error) {
 	m, err := r.Get(ctx, t, characterId)
 	if err == nil {
-		_ = r.fieldIdx.Remove(ctx, fieldSuffix(t, m.Field()), member(characterId))
+		_ = r.fieldIdx.Remove(ctx, t, fieldSuffix(m.Field()), member(characterId))
 	}
-	return r.reg.RemoveExisting(ctx, storeSuffix(t, characterId))
+	return r.reg.RemoveExisting(ctx, t, storeSuffix(characterId))
 }

@@ -72,12 +72,22 @@ func Migration(db *gorm.DB) error {
 
 	// Add constraints based on database type
 	if dialectName == "postgres" {
+		// JuniorIds is persisted with `serializer:json`, so junior_ids is a TEXT
+		// column holding a JSON array ("[1,2]"), NOT a Postgres integer[]. The
+		// array_length() form this constraint used to carry is an array function
+		// and fails against text with SQLSTATE 42883 ("function
+		// array_length(text, integer) does not exist"), which aborts the whole
+		// migration and crash-loops the service on startup. Count the JSON
+		// elements instead. A nil slice serializes to SQL NULL (GORM's
+		// JSONSerializer returns nil rather than the literal "null" when the
+		// field is not NOT NULL), so NULL is still allowed; an empty slice is
+		// "[]", which counts as 0.
 		err = db.Exec(`
 			DO $$ BEGIN
 				IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'check_junior_count') THEN
-					ALTER TABLE family_members 
-					ADD CONSTRAINT check_junior_count 
-					CHECK (array_length(junior_ids, 1) IS NULL OR array_length(junior_ids, 1) <= 2);
+					ALTER TABLE family_members
+					ADD CONSTRAINT check_junior_count
+					CHECK (junior_ids IS NULL OR json_array_length(junior_ids::json) <= 2);
 				END IF;
 			END $$;
 		`).Error

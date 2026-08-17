@@ -54,27 +54,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 // TransactionId to a PENDING record -- by listing and matching Id, since
 // atlas-character exposes no GET-by-id-alone route for this resource today.
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]RestModel, error) {
-	return requests.SliceProvider[RestModel, RestModel](p.l, p.ctx)(requestByCharacterId(characterId), identityRestModel, model.Filters[RestModel]())()
-}
-
-// identityRestModel satisfies model.Transformer[RestModel, RestModel]: this
-// resource has no separate domain Model type (unlike e.g.
-// cashshop/inventory/asset), so the wire shape is the return shape.
-func identityRestModel(r RestModel) (RestModel, error) {
-	return r, nil
-}
-
-// identityEligibilityRestModel is identityRestModel's counterpart for
-// EligibilityRestModel.
-func identityEligibilityRestModel(r EligibilityRestModel) (EligibilityRestModel, error) {
-	return r, nil
+	return requests.SliceProvider[RestModel, RestModel](p.l, p.ctx)(requestByCharacterId(characterId), Transform, model.Filters[RestModel]())()
 }
 
 // CheckTransferEligibilityIndependent resolves the character and runs ONLY
 // the destination-independent half of atlas-character's gate table, with no
 // side effect (design's OQ-7 split).
 func (p *ProcessorImpl) CheckTransferEligibilityIndependent(characterId uint32) (bool, string, error) {
-	res, err := requests.Provider[EligibilityRestModel, EligibilityRestModel](p.l, p.ctx)(requestTransferEligibilityIndependent(characterId), identityEligibilityRestModel)()
+	res, err := requests.Provider[EligibilityRestModel, EligibilityRestModel](p.l, p.ctx)(requestTransferEligibilityIndependent(characterId), TransformEligibility)()
 	if err != nil {
 		return false, "", err
 	}

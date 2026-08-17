@@ -64,36 +64,50 @@ func findErrorsTable(rm RestModel) (map[string]interface{}, bool) {
 func TestWorldTransferReasonAliasesResolveToAnchorCode(t *testing.T) {
 	c := LoadCatalog(testLogger(), seedTemplatesDir())
 
-	seededCount := 0
+	tests := make([]struct {
+		name  string
+		entry CatalogEntry
+	}, 0, len(c.Entries()))
 	for _, e := range c.Entries() {
-		errs, ok := findErrorsTable(e.Model)
-		if !ok {
-			// gms_12_1 (no errors table) and jms_185_1 (errors table without
-			// the CANNOT_TRANSFER_* names) land here. Nothing to assert.
-			continue
-		}
+		tests = append(tests, struct {
+			name  string
+			entry CatalogEntry
+		}{name: e.FileName, entry: e})
+	}
 
-		for anchor, aliases := range worldTransferAliasGroups {
-			anchorCode, anchorPresent := errs[anchor]
-			for _, alias := range aliases {
-				aliasCode, aliasPresent := errs[alias]
-				if !aliasPresent {
-					// gms_48_1/gms_61_1 lack CANNOT_TRANSFER_NO_EMPTY_SLOTS
-					// and PLEASE_TRY_AGAIN entirely, and gms_72_1 lacks
-					// PLEASE_TRY_AGAIN - the corresponding aliases were
-					// correctly not seeded on those templates. Not an error.
-					continue
-				}
-				if !anchorPresent {
-					t.Errorf("%s: alias [%s] = %v but anchor [%s] is absent from this template's errors table", e.FileName, alias, aliasCode, anchor)
-					continue
-				}
-				if aliasCode != anchorCode {
-					t.Errorf("%s: alias [%s] = %v, want %v (anchor [%s])", e.FileName, alias, aliasCode, anchorCode, anchor)
-				}
-				seededCount++
+	seededCount := 0
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			errs, ok := findErrorsTable(tc.entry.Model)
+			if !ok {
+				// gms_12_1 (no errors table) and jms_185_1 (errors table
+				// without the CANNOT_TRANSFER_* names) land here. Nothing to
+				// assert.
+				return
 			}
-		}
+
+			for anchor, aliases := range worldTransferAliasGroups {
+				anchorCode, anchorPresent := errs[anchor]
+				for _, alias := range aliases {
+					aliasCode, aliasPresent := errs[alias]
+					if !aliasPresent {
+						// gms_48_1/gms_61_1 lack CANNOT_TRANSFER_NO_EMPTY_SLOTS
+						// and PLEASE_TRY_AGAIN entirely, and gms_72_1 lacks
+						// PLEASE_TRY_AGAIN - the corresponding aliases were
+						// correctly not seeded on those templates. Not an error.
+						continue
+					}
+					if !anchorPresent {
+						t.Errorf("%s: alias [%s] = %v but anchor [%s] is absent from this template's errors table", tc.entry.FileName, alias, aliasCode, anchor)
+						continue
+					}
+					if aliasCode != anchorCode {
+						t.Errorf("%s: alias [%s] = %v, want %v (anchor [%s])", tc.entry.FileName, alias, aliasCode, anchorCode, anchor)
+					}
+					seededCount++
+				}
+			}
+		})
 	}
 
 	if seededCount == 0 {
@@ -108,23 +122,36 @@ func TestWorldTransferReasonAliasesResolveToAnchorCode(t *testing.T) {
 func TestCannotTransferToNewWorldHasNoAlias(t *testing.T) {
 	c := LoadCatalog(testLogger(), seedTemplatesDir())
 
+	tests := make([]struct {
+		name  string
+		entry CatalogEntry
+	}, 0, len(c.Entries()))
 	for _, e := range c.Entries() {
-		errs, ok := findErrorsTable(e.Model)
-		if !ok {
-			continue
-		}
-		anchorCode, anchorPresent := errs["CANNOT_TRANSFER_TO_NEW_WORLD"]
-		if !anchorPresent {
-			continue
-		}
-		for key, code := range errs {
-			if key == "CANNOT_TRANSFER_TO_NEW_WORLD" {
-				continue
+		tests = append(tests, struct {
+			name  string
+			entry CatalogEntry
+		}{name: e.FileName, entry: e})
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			errs, ok := findErrorsTable(tc.entry.Model)
+			if !ok {
+				return
 			}
-			if code == anchorCode {
-				t.Errorf("%s: key [%s] = %v aliases CANNOT_TRANSFER_TO_NEW_WORLD, which no reason key may alias (see bug-world-transfer-eligibility-reasons.md)", e.FileName, key, code)
+			anchorCode, anchorPresent := errs["CANNOT_TRANSFER_TO_NEW_WORLD"]
+			if !anchorPresent {
+				return
 			}
-		}
+			for key, code := range errs {
+				if key == "CANNOT_TRANSFER_TO_NEW_WORLD" {
+					continue
+				}
+				if code == anchorCode {
+					t.Errorf("%s: key [%s] = %v aliases CANNOT_TRANSFER_TO_NEW_WORLD, which no reason key may alias (see bug-world-transfer-eligibility-reasons.md)", tc.entry.FileName, key, code)
+				}
+			}
+		})
 	}
 }
 
@@ -134,21 +161,30 @@ func TestCannotTransferToNewWorldHasNoAlias(t *testing.T) {
 func TestWorldTransferUnmappableTemplatesCarryNoAliases(t *testing.T) {
 	c := LoadCatalog(testLogger(), seedTemplatesDir())
 
-	for _, name := range []string{"template_gms_12_1.json", "template_jms_185_1.json"} {
-		var entry CatalogEntry
-		found := false
-		for _, cand := range c.Entries() {
-			if cand.FileName == name {
-				entry = cand
-				found = true
-				break
+	tests := []struct {
+		name string
+	}{
+		{name: "template_gms_12_1.json"},
+		{name: "template_jms_185_1.json"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var entry CatalogEntry
+			found := false
+			for _, cand := range c.Entries() {
+				if cand.FileName == tc.name {
+					entry = cand
+					found = true
+					break
+				}
 			}
-		}
-		if !found {
-			t.Fatalf("shipped catalog has no entry for %s", name)
-		}
-		if _, found := findErrorsTable(entry.Model); found {
-			t.Errorf("%s: expected no CANNOT_TRANSFER_TO_SAME_WORLD-bearing errors table, found one - update the aliasing fallback in cash_shop_operation.go if this template gained transfer codes", name)
-		}
+			if !found {
+				t.Fatalf("shipped catalog has no entry for %s", tc.name)
+			}
+			if _, found := findErrorsTable(entry.Model); found {
+				t.Errorf("%s: expected no CANNOT_TRANSFER_TO_SAME_WORLD-bearing errors table, found one - update the aliasing fallback in cash_shop_operation.go if this template gained transfer codes", tc.name)
+			}
+		})
 	}
 }

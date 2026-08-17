@@ -254,24 +254,6 @@ func (e *checkPossibleHandlerEnv) storageWarningWasAnnounced() bool {
 	return false
 }
 
-// storageWarningModeByte returns the resolved mode byte of the storage
-// warning's WORLD_MESSAGE write — byte 0 of the body, per
-// chatpkt.NewWorldMessageSimple.
-func (e *checkPossibleHandlerEnv) storageWarningModeByte() byte {
-	e.t.Helper()
-	for _, a := range e.announced {
-		if a.writer != chatpkt.WorldMessageWriter {
-			continue
-		}
-		if len(a.body) == 0 {
-			e.t.Fatal("the storage warning was announced with an empty body")
-		}
-		return a.body[0]
-	}
-	e.t.Fatal("no storage warning was announced")
-	return 0
-}
-
 func (e *checkPossibleHandlerEnv) handleNameChange(r *request.Reader) {
 	e.t.Helper()
 	CashShopCheckNameChangePossibleHandleFunc(e.l, e.ctx, e.wp)(e.s, r, map[string]interface{}{})

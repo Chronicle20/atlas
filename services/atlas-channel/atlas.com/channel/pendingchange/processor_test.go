@@ -247,6 +247,106 @@ func TestCancelPendingChange(t *testing.T) {
 	}
 }
 
+// TestCheckTransferEligibilityIndependent covers the destination-free gate
+// client (design's OQ-7 split) the CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE
+// handler depends on end to end: a real httptest server serving a
+// representative JSON:API fixture, unmarshalled through the real
+// EligibilityRestModel/Transform path (not the socket/handler package's
+// swappable func var, which bypasses unmarshal entirely).
+func TestCheckTransferEligibilityIndependent(t *testing.T) {
+	tests := []struct {
+		name         string
+		statusCode   int
+		body         any
+		rawBody      string
+		wantEligible bool
+		wantReason   string
+		wantErr      bool
+	}{
+		{
+			name:       "200 eligible",
+			statusCode: http.StatusOK,
+			body: map[string]any{
+				"data": map[string]any{
+					"type": "transfer-eligibilities",
+					"id":   "1",
+					"attributes": map[string]any{
+						"eligible": true,
+					},
+				},
+			},
+			wantEligible: true,
+			wantReason:   "",
+		},
+		{
+			name:       "200 ineligible with reason",
+			statusCode: http.StatusOK,
+			body: map[string]any{
+				"data": map[string]any{
+					"type": "transfer-eligibilities",
+					"id":   "1",
+					"attributes": map[string]any{
+						"eligible": false,
+						"reason":   "world_full",
+					},
+				},
+			},
+			wantEligible: false,
+			wantReason:   "world_full",
+		},
+		{
+			name:       "500 infrastructure error propagates",
+			statusCode: http.StatusInternalServerError,
+			rawBody:    "not json at all {{{",
+			wantErr:    true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var gotPath string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
+				w.WriteHeader(tc.statusCode)
+				if tc.rawBody != "" {
+					_, _ = w.Write([]byte(tc.rawBody))
+					return
+				}
+				if tc.body != nil {
+					_ = json.NewEncoder(w).Encode(tc.body)
+				}
+			}))
+			defer server.Close()
+
+			withCharactersServiceURL(t, server.URL)
+
+			p := newTestProcessor()
+			eligible, reason, err := p.CheckTransferEligibilityIndependent(1)
+
+			if gotPath != "/characters/1/transfer-eligibility-independent" {
+				t.Fatalf("expected transfer-eligibility-independent route, got path %q", gotPath)
+			}
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected an error, got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+			if eligible != tc.wantEligible {
+				t.Fatalf("eligible = %v, want %v", eligible, tc.wantEligible)
+			}
+			if reason != tc.wantReason {
+				t.Fatalf("reason = %q, want %q", reason, tc.wantReason)
+			}
+		})
+	}
+}
+
 func jsonAPIErrorBody(status, title, detail string) map[string]any {
 	return map[string]any{
 		"errors": []any{

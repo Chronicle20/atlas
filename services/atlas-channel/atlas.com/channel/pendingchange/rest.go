@@ -114,3 +114,40 @@ func (r *EligibilityRestModel) SetID(id string) error {
 	r.Id = id
 	return nil
 }
+
+func (r *EligibilityRestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *EligibilityRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
+// Transform satisfies model.Transformer[RestModel, RestModel]: this resource
+// has no separate domain Model type (unlike e.g. cashshop/inventory/asset),
+// so the wire shape is the return shape.
+func Transform(r RestModel) (RestModel, error) {
+	return r, nil
+}
+
+// TransformSlice maps a slice of RestModel through Transform. GetByCharacterId
+// (processor.go), the package's one list handler, applies Transform
+// per-element via requests.SliceProvider instead of calling this directly;
+// TransformSlice is the conventional bulk entry point other callers expect
+// alongside Transform.
+func TransformSlice(rs []RestModel) ([]RestModel, error) {
+	out := make([]RestModel, 0, len(rs))
+	for _, r := range rs {
+		tr, err := Transform(r)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, tr)
+	}
+	return out, nil
+}
+
+// TransformEligibility is Transform's counterpart for EligibilityRestModel.
+func TransformEligibility(r EligibilityRestModel) (EligibilityRestModel, error) {
+	return r, nil
+}

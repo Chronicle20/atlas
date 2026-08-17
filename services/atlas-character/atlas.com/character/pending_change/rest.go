@@ -242,9 +242,11 @@ type familyMemberRestModel struct {
 	Id string `json:"-"`
 }
 
-func (r familyMemberRestModel) GetName() string        { return "family-tree-members" }
-func (r familyMemberRestModel) GetID() string          { return r.Id }
-func (r *familyMemberRestModel) SetID(id string) error { r.Id = id; return nil }
+func (r familyMemberRestModel) GetName() string                                   { return "family-tree-members" }
+func (r familyMemberRestModel) GetID() string                                     { return r.Id }
+func (r *familyMemberRestModel) SetID(id string) error                            { r.Id = id; return nil }
+func (r *familyMemberRestModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (r *familyMemberRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
 // tradeRoomRestModel is the minimal projection of atlas-trades' GET
 // /trades/rooms?filter[characterId]={id}

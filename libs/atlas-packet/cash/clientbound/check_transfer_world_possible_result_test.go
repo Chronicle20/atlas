@@ -390,7 +390,7 @@ func TestCheckTransferWorldPossibleResultReasonMapping(t *testing.T) {
 	required := []string{
 		"world_same", "world_unknown", "world_full", "no_character_slot",
 		"banned", "is_guild_master", "is_gm", "in_family", "trade_open",
-		"merchant_open", "mts_listings_open", "name_taken",
+		"merchant_open", "mts_listings_open", "name_taken", "check_unavailable",
 	}
 
 	if len(checkTransferWorldPossibleReasonArms) != len(required) {

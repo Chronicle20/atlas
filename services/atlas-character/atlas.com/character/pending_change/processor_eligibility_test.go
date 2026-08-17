@@ -3,6 +3,7 @@ package pending_change
 import (
 	"atlas-character/character"
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -312,6 +313,160 @@ func TestEligibilityOrderingShortCircuitsBeforeAnyRemoteCall(t *testing.T) {
 	reason, ok := p.evaluateTransferEligibility(c, world.Id(3))
 	if ok || reason != "world_same" {
 		t.Fatalf("got ok=%v reason=%s, want world_same", ok, reason)
+	}
+}
+
+// TestEligibilityGateErrorsReportCheckUnavailable is the error-injection
+// counterpart to TestEligibilityRemoteGates: for every remote dependency in
+// gateDeps, an error from the dependency must NOT surface as the gate's
+// affirmative reason (e.g. "banned", "in_family") — that would report a mere
+// outage as a finding. The gate still fails CLOSED (ok is always false) but
+// the reported reason is the distinct "check_unavailable" (design §6,
+// bug-world-transfer-eligibility-reasons.md §2b). The underlying dependency
+// error is still logged (WithError) by the production code; this test only
+// asserts the reason the caller sees.
+func TestEligibilityGateErrorsReportCheckUnavailable(t *testing.T) {
+	depErr := errors.New("dependency unavailable")
+	tests := []struct {
+		name   string
+		mutate func(deps *gateDeps)
+	}{
+		{
+			name: "Gate3WorldStatus",
+			mutate: func(deps *gateDeps) {
+				deps.worldStatus = func(_ logrus.FieldLogger, _ context.Context, _ world.Id) (bool, bool, error) {
+					return false, false, depErr
+				}
+			},
+		},
+		{
+			name: "Gate4AccountSlots",
+			mutate: func(deps *gateDeps) {
+				deps.accountSlots = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (int16, error) {
+					return 0, depErr
+				}
+			},
+		},
+		{
+			name: "Gate6Banned",
+			mutate: func(deps *gateDeps) {
+				deps.banned = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+					return false, depErr
+				}
+			},
+		},
+		{
+			name: "Gate7GuildTitle",
+			mutate: func(deps *gateDeps) {
+				deps.guildTitle = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (byte, bool, error) {
+					return 0, false, depErr
+				}
+			},
+		},
+		{
+			name: "Gate8InFamily",
+			mutate: func(deps *gateDeps) {
+				deps.inFamily = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+					return false, depErr
+				}
+			},
+		},
+		{
+			name: "Gate9TradeOpen",
+			mutate: func(deps *gateDeps) {
+				deps.tradeOpen = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+					return false, depErr
+				}
+			},
+		},
+		{
+			name: "Gate10MerchantOpen",
+			mutate: func(deps *gateDeps) {
+				deps.merchantOpen = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+					return false, depErr
+				}
+			},
+		},
+		{
+			name: "Gate11MtsHolding",
+			mutate: func(deps *gateDeps) {
+				deps.mtsHolding = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+					return false, depErr
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := newProcessorTestDB(t)
+			deps := passingGateDeps()
+			tt.mutate(&deps)
+			p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
+				withTransferEligibilityGates(deps).(*ProcessorImpl)
+
+			c := buildCharacter(1, 1000, world.Id(0), tt.name, 0)
+			reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
+			if ok || reason != "check_unavailable" {
+				t.Fatalf("got ok=%v reason=%s, want ok=false reason=check_unavailable", ok, reason)
+			}
+		})
+	}
+}
+
+// TestEligibilityGate4ExistingCharacterCountErrorReportsCheckUnavailable
+// covers gate 4's second dependency: the LOCAL existing-character count
+// (character.GetForAccountInWorld) is not part of the gateDeps seam, so the
+// only way to trip its error path is a real DB failure — closing the pool
+// underneath the query, exactly as resource_test.go's
+// DatabaseFailureIsNotA200ZeroCharacter does.
+func TestEligibilityGate4ExistingCharacterCountErrorReportsCheckUnavailable(t *testing.T) {
+	db := newProcessorTestDB(t)
+	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
+		withTransferEligibilityGates(passingGateDeps()).(*ProcessorImpl)
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("db.DB(): %v", err)
+	}
+	if err := sqlDB.Close(); err != nil {
+		t.Fatalf("sqlDB.Close(): %v", err)
+	}
+
+	c := buildCharacter(1, 1000, world.Id(0), "Romeo", 0)
+	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
+	if ok || reason != "check_unavailable" {
+		t.Fatalf("got ok=%v reason=%s, want ok=false reason=check_unavailable", ok, reason)
+	}
+}
+
+// TestEligibilityGate5NameTakenCheckErrorReportsCheckUnavailable covers gate
+// 5's dependency (character.GetForName), likewise a local DB call outside the
+// gateDeps seam.
+func TestEligibilityGate5NameTakenCheckErrorReportsCheckUnavailable(t *testing.T) {
+	db := newProcessorTestDB(t)
+	l, ctx := testLogger(t), testContext(t)
+	characterId := seedCharacter(t, db, "Sierra", world.Id(0))
+
+	p := NewProcessor(l, ctx, db).(*ProcessorImpl).
+		withTransferEligibilityGates(passingGateDeps()).(*ProcessorImpl)
+
+	c, err := character.NewProcessor(l, ctx, db).GetById()(characterId)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatalf("db.DB(): %v", err)
+	}
+	if err := sqlDB.Close(); err != nil {
+		t.Fatalf("sqlDB.Close(): %v", err)
+	}
+
+	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
+	if ok || reason != "check_unavailable" {
+		t.Fatalf("got ok=%v reason=%s, want ok=false reason=check_unavailable", ok, reason)
 	}
 }
 

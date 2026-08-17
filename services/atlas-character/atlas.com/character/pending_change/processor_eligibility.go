@@ -98,10 +98,14 @@ func (p *ProcessorImpl) CheckTransferEligibility(characterId uint32, destination
 // evaluateTransferEligibility applies the design §3.6 / §1.6 gate table in the
 // documented order — cheapest and most local first, so an obviously-invalid
 // request never fans out to eight services — and returns on the first failing
-// gate. Every rejection (including an infrastructure failure on a remote
-// gate, which fails CLOSED: an escrow gate that cannot be verified is treated
-// as blocking, never as silently eligible) is logged at info with tenant,
-// character, destination and reason (design §8).
+// gate. Every rejection is logged at info with tenant, character, destination
+// and reason (design §8). A remote dependency error still fails CLOSED — the
+// transfer is refused either way — but is reported as the distinct
+// "check_unavailable" reason (design §6), never as the gate's affirmative
+// reason: the server does not know whether the condition holds, only that it
+// could not find out, and the two must not be conflated in what reaches the
+// player. The error itself, with the real dependency it came from, is always
+// logged at error level before the reject.
 func (p *ProcessorImpl) evaluateTransferEligibility(c character.Model, destinationWorldId world.Id) (string, bool) {
 	reject := func(reason string) (string, bool) {
 		p.l.Infof("World-transfer eligibility check for character [%d] (tenant [%s]) to world [%d] rejected: %s.", c.Id(), p.t.Id(), destinationWorldId, reason)
@@ -123,7 +127,7 @@ func (p *ProcessorImpl) evaluateTransferEligibility(c character.Model, destinati
 	found, full, err := p.gates.worldStatus(p.l, p.ctx, destinationWorldId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to check destination world [%d] status for character [%d] transfer.", destinationWorldId, c.Id())
-		return reject("world_unknown")
+		return reject("check_unavailable")
 	}
 	if !found {
 		return reject("world_unknown")
@@ -137,12 +141,12 @@ func (p *ProcessorImpl) evaluateTransferEligibility(c character.Model, destinati
 	slots, err := p.gates.accountSlots(p.l, p.ctx, c.AccountId())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to check character slots for account [%d] transferring character [%d].", c.AccountId(), c.Id())
-		return reject("no_character_slot")
+		return reject("check_unavailable")
 	}
 	existing, err := character.NewProcessor(p.l, p.ctx, p.db).GetForAccountInWorld()(c.AccountId(), destinationWorldId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to count existing characters for account [%d] in world [%d].", c.AccountId(), destinationWorldId)
-		return reject("no_character_slot")
+		return reject("check_unavailable")
 	}
 	if int16(len(existing)) >= slots {
 		return reject("no_character_slot")
@@ -154,7 +158,7 @@ func (p *ProcessorImpl) evaluateTransferEligibility(c character.Model, destinati
 	cs, err := character.NewProcessor(p.l, p.ctx, p.db).GetForName()(c.Name())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to check name availability for character [%d] transferring to world [%d].", c.Id(), destinationWorldId)
-		return reject("name_taken")
+		return reject("check_unavailable")
 	}
 	for _, other := range cs {
 		if other.Id() != c.Id() {
@@ -166,7 +170,7 @@ func (p *ProcessorImpl) evaluateTransferEligibility(c character.Model, destinati
 	banned, err := p.gates.banned(p.l, p.ctx, c.AccountId())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to check ban status for account [%d] transferring character [%d].", c.AccountId(), c.Id())
-		return reject("banned")
+		return reject("check_unavailable")
 	}
 	if banned {
 		return reject("banned")
@@ -177,7 +181,7 @@ func (p *ProcessorImpl) evaluateTransferEligibility(c character.Model, destinati
 	title, inGuild, err := p.gates.guildTitle(p.l, p.ctx, c.Id())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to check guild membership for character [%d].", c.Id())
-		return reject("is_guild_master")
+		return reject("check_unavailable")
 	}
 	if inGuild && title == guildMasterTitle {
 		return reject("is_guild_master")
@@ -188,7 +192,7 @@ func (p *ProcessorImpl) evaluateTransferEligibility(c character.Model, destinati
 	inFamily, err := p.gates.inFamily(p.l, p.ctx, c.Id())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to check family membership for character [%d].", c.Id())
-		return reject("in_family")
+		return reject("check_unavailable")
 	}
 	if inFamily {
 		return reject("in_family")
@@ -199,7 +203,7 @@ func (p *ProcessorImpl) evaluateTransferEligibility(c character.Model, destinati
 	tradeOpen, err := p.gates.tradeOpen(p.l, p.ctx, c.Id())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to check open trade rooms for character [%d].", c.Id())
-		return reject("trade_open")
+		return reject("check_unavailable")
 	}
 	if tradeOpen {
 		return reject("trade_open")
@@ -209,7 +213,7 @@ func (p *ProcessorImpl) evaluateTransferEligibility(c character.Model, destinati
 	merchantOpen, err := p.gates.merchantOpen(p.l, p.ctx, c.Id())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to check hired-merchant status for character [%d].", c.Id())
-		return reject("merchant_open")
+		return reject("check_unavailable")
 	}
 	if merchantOpen {
 		return reject("merchant_open")
@@ -220,7 +224,7 @@ func (p *ProcessorImpl) evaluateTransferEligibility(c character.Model, destinati
 	mtsOpen, err := p.gates.mtsHolding(p.l, p.ctx, c.Id())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to check MTS holdings for character [%d].", c.Id())
-		return reject("mts_listings_open")
+		return reject("check_unavailable")
 	}
 	if mtsOpen {
 		return reject("mts_listings_open")

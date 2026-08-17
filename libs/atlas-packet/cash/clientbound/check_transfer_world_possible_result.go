@@ -244,6 +244,7 @@ func CheckTransferWorldPossibleResultAllowedBody(characterId uint32, birthDate u
 //	merchant_open         -> UNKNOWN_ERROR    (client default arm)
 //	mts_listings_open     -> UNKNOWN_ERROR    (client default arm)
 //	name_taken            -> UNKNOWN_ERROR    (client default arm)
+//	check_unavailable     -> UNKNOWN_ERROR    (client default arm — see note)
 //
 // Only in_family lands on a distinct arm, because arm 8 is the only rejection
 // arm (of 1..8) with independently confirmed rendered text: v83
@@ -268,16 +269,22 @@ func CheckTransferWorldPossibleResultAllowedBody(characterId uint32, birthDate u
 // belongs to a different, unreachable-from-here function would assert a
 // client behaviour that does not exist.
 //
-// The remaining nine reasons (world_same, world_unknown, world_full,
+// The remaining ten reasons (world_same, world_unknown, world_full,
 // no_character_slot, banned, trade_open, merchant_open, mts_listings_open,
-// name_taken) collapse to UNKNOWN_ERROR for the same reason arms 2..7 are
-// exposed but unused by this mapper: none of the ten IDBs has decoded
-// StringPool text for ids 2..7 (§4.2 — the StringPoolStrings enum carries no
-// member names for them), so assigning any of these nine business reasons to
-// one of those six arms would be inventing a semantic pairing this task's
-// evidence does not support. UNKNOWN_ERROR is the client's own designated
-// catch-all for "something went wrong" and loses no information the client
-// could have displayed more specifically.
+// name_taken, check_unavailable) collapse to UNKNOWN_ERROR for the same
+// reason arms 2..7 are exposed but unused by this mapper: none of the ten
+// IDBs has decoded StringPool text for ids 2..7 (§4.2 — the StringPoolStrings
+// enum carries no member names for them), so assigning any of these ten
+// business reasons to one of those six arms would be inventing a semantic
+// pairing this task's evidence does not support. UNKNOWN_ERROR is the
+// client's own designated catch-all for "something went wrong" and loses no
+// information the client could have displayed more specifically.
+//
+// check_unavailable (bug-world-transfer-eligibility-reasons.md §2b) is
+// distinct from every other reason in the taxonomy — it means a remote
+// eligibility dependency errored, not that any gate's condition genuinely
+// held — but it is not one of the arms with independently confirmed distinct
+// client text, so it routes here too, same as an unrecognised reason would.
 //
 // An unrecognised reason string also resolves UNKNOWN_ERROR: the taxonomy is
 // closed, so a value outside it is a server bug, and the safe wire answer is
@@ -313,6 +320,7 @@ var checkTransferWorldPossibleReasonArms = map[string]string{
 	"merchant_open":     CheckTransferWorldPossibleUnknownError,
 	"mts_listings_open": CheckTransferWorldPossibleUnknownError,
 	"name_taken":        CheckTransferWorldPossibleUnknownError,
+	"check_unavailable": CheckTransferWorldPossibleUnknownError,
 }
 
 // CheckTransferWorldPossibleResultBody emits an arbitrary arm by its

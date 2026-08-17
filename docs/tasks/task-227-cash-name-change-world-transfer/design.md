@@ -603,11 +603,21 @@ time (OQ-7). They are not free text.
 `name_invalid_length` · `name_invalid_charset` · `name_taken` · `name_reserved` ·
 `already_pending` · `world_same` · `world_unknown` · `world_full` · `no_character_slot` ·
 `banned` · `is_guild_master` · `is_gm` · `in_family` · `trade_open` · `merchant_open` ·
-`mts_listings_open` · `operator_cancelled` · `player_cancelled` · `expired` · `saga_failed`
+`mts_listings_open` · `operator_cancelled` · `player_cancelled` · `expired` · `saga_failed` ·
+`check_unavailable`
 
 `player_cancelled` (task-227 client-cancel addendum, §5.4) is deliberately distinct from
 `operator_cancelled`: REST and the operator panel are the only surfaces that distinguish
 reasons at all, so collapsing the two would destroy the audit trail of *who* cancelled.
+
+`check_unavailable` (world-transfer eligibility bug fix, `bug-world-transfer-eligibility-
+reasons.md` §2b) is distinct from every affirmative gate reason it sits alongside
+(`world_unknown`, `no_character_slot`, `name_taken`, `banned`, `is_guild_master`,
+`in_family`, `trade_open`, `merchant_open`, `mts_listings_open`). Those nine gates each
+call a remote dependency; when the call errors, the gate still fails CLOSED (the transfer
+is refused) but reports `check_unavailable` rather than its affirmative reason — the
+server does not know the condition holds, only that it could not find out, and the two
+must not be conflated in what reaches the player or the operator panel.
 
 Every rejection path returns one of these (FR-5.1). A path that would return none is a bug,
 and the test suite asserts exhaustiveness over the enum.

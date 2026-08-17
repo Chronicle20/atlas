@@ -85,3 +85,87 @@ func TestMtsGate_NeitherPasses(t *testing.T) {
 		t.Fatal("expected neither holdings nor active listings to report open=false")
 	}
 }
+
+// familyTreeDoc builds a JSON:API "data" array of the given number of
+// family-tree-members resources, matching the shape getFamilyTreeHandler
+// (services/atlas-families/atlas.com/family/family/resource.go) returns.
+func familyTreeDoc(ids ...string) string {
+	doc := `{"data":[`
+	for i, id := range ids {
+		if i > 0 {
+			doc += ","
+		}
+		doc += `{"type":"family-tree-members","id":"` + id + `","attributes":{}}`
+	}
+	doc += `]}`
+	return doc
+}
+
+// TestInFamily covers the two bugs fixed in inFamily: a non-404 error must
+// never be reported as an affirmative family membership, and a tree
+// containing only the requesting character is not a family.
+func TestInFamily(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		body       string
+		wantIn     bool
+		wantErr    bool
+	}{
+		{
+			name:       "404 -> no family",
+			statusCode: http.StatusNotFound,
+			wantIn:     false,
+			wantErr:    false,
+		},
+		{
+			name:       "200 with self-only tree -> no family",
+			statusCode: http.StatusOK,
+			body:       familyTreeDoc("500500"),
+			wantIn:     false,
+			wantErr:    false,
+		},
+		{
+			name:       "200 with a relative -> in family",
+			statusCode: http.StatusOK,
+			body:       familyTreeDoc("500500", "500501"),
+			wantIn:     true,
+			wantErr:    false,
+		},
+		{
+			name:       "500 (transport/decode failure) -> error, not in family",
+			statusCode: http.StatusInternalServerError,
+			body:       "",
+			wantIn:     false,
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mux := http.NewServeMux()
+			mux.HandleFunc("/families/tree/", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/vnd.api+json")
+				w.WriteHeader(tt.statusCode)
+				if tt.body != "" {
+					_, _ = w.Write([]byte(tt.body))
+				}
+			})
+			srv := httptest.NewServer(mux)
+			defer srv.Close()
+			t.Setenv("FAMILIES_SERVICE_URL", srv.URL+"/")
+
+			in, err := inFamily(testLogger(t), context.Background(), 500500)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected an error to propagate, got nil")
+				}
+			} else if err != nil {
+				t.Fatalf("inFamily: unexpected error: %v", err)
+			}
+			if in != tt.wantIn {
+				t.Fatalf("inFamily = %v, want %v", in, tt.wantIn)
+			}
+		})
+	}
+}

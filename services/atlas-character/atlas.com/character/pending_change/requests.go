@@ -109,16 +109,26 @@ func requestFamilyTree(characterId uint32) requests.Request[[]familyMemberRestMo
 	return requests.GetRequest[[]familyMemberRestModel](fmt.Sprintf(familyBaseUrl()+"families/tree/%d", characterId))
 }
 
-// inFamily implements gateDeps.inFamily.
+// inFamily implements gateDeps.inFamily. A 404 means the character has no
+// family member row at all: not in a family. Any other error (transport,
+// decode, non-2xx) is propagated rather than swallowed — a failed check must
+// never be reported to the caller as an affirmative family membership; gate 8
+// relies on this to decide whether to fail open or closed.
+//
+// The tree returned on success is bounded (self + senior + juniors +
+// siblings — familyMemberRestModel doc above, and getFamilyTreeHandler in
+// atlas-families). A character with no relatives still gets a 200 containing
+// only itself, so success alone is not "in a family": len(members) > 1 is
+// required to have an actual relative present.
 func inFamily(l logrus.FieldLogger, ctx context.Context, characterId uint32) (bool, error) {
-	_, err := requestFamilyTree(characterId)(l, ctx)
+	ms, err := requestFamilyTree(characterId)(l, ctx)
 	if err != nil {
 		if errors.Is(err, requests.ErrNotFound) {
 			return false, nil
 		}
 		return false, err
 	}
-	return true, nil
+	return len(ms) > 1, nil
 }
 
 // --- Gate 9: atlas-trades -----------------------------------------------

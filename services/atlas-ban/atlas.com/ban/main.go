@@ -49,7 +49,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(ban.Migration, history.Migration, report.Migration))

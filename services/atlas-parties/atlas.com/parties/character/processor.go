@@ -29,6 +29,8 @@ type Processor interface {
 	LevelChange(mb *message.Buffer) func(characterId uint32, level byte) error
 	JobChangeAndEmit(characterId uint32, jobId job.Id) error
 	JobChange(mb *message.Buffer) func(characterId uint32, jobId job.Id) error
+	NameChangeAndEmit(characterId uint32, name string) error
+	NameChange(mb *message.Buffer) func(characterId uint32, name string) error
 	GmChange(characterId uint32) error
 	MapChange(characterId uint32, mapId _map.Id) error
 	JoinParty(characterId uint32, partyId uint32) error
@@ -87,6 +89,13 @@ func (p *ProcessorImpl) Login(mb *message.Buffer) func(f field.Model, characterI
 					func(m Model) Model { return m.ChangeGm(fm.GM()) },
 					func(m Model) Model { return m.ChangeLevel(fm.Level()) },
 					func(m Model) Model { return m.ChangeJob(fm.JobId()) },
+					// Name belongs in this list for exactly the reason the
+					// comment above gives: a pending NAME_CHANGE applies at
+					// LOGOUT, so the rename lands while this service sees
+					// nothing. Omitting it left the old name in the party
+					// window across relogs, not just for the rest of the
+					// session (task-227).
+					func(m Model) Model { return m.ChangeName(fm.Name()) },
 				)
 			}
 		}
@@ -173,6 +182,50 @@ func (p *ProcessorImpl) LevelChange(mb *message.Buffer) func(characterId uint32,
 			err = mb.Put(EnvEventMemberStatusTopic, levelChangedEventProvider(c.PartyId(), c.WorldId(), characterId, oldLevel, level, c.Name()))
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to announce the party [%d] member [%d] level changed.", c.PartyId(), c.Id())
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
+// NameChange refreshes the registry copy of a character's name and, when they
+// are in a party, announces it so every member's party window is redrawn.
+//
+// The registry copy is what atlas-channel renders: the party window's member
+// names come from this service's REST model (toPartyMembers reads m.Name()), so
+// without this the old name survives in the window for the whole session — for
+// the renamed player and for everyone else in the party alike.
+func (p *ProcessorImpl) NameChangeAndEmit(characterId uint32, name string) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.NameChange(buf)(characterId, name)
+	})
+}
+
+func (p *ProcessorImpl) NameChange(mb *message.Buffer) func(characterId uint32, name string) error {
+	return func(characterId uint32, name string) error {
+		c, err := p.GetById(characterId)
+		if err != nil {
+			// Not in the registry: nothing cached to correct, and the next
+			// login populates it from atlas-character with the new name.
+			p.l.Debugf("Character [%d] not in registry for name change; nothing to refresh.", characterId)
+			return nil
+		}
+
+		oldName := c.Name()
+		if oldName == name {
+			return nil
+		}
+
+		p.l.Debugf("Updating character [%d] name from [%s] to [%s] in registry.", characterId, oldName, name)
+		fn := func(m Model) Model { return Model.ChangeName(m, name) }
+		c = GetRegistry().Update(p.ctx, c.Id(), fn)
+
+		if c.PartyId() != 0 {
+			err = mb.Put(EnvEventMemberStatusTopic, nameChangedEventProvider(c.PartyId(), c.WorldId(), characterId, oldName, name))
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to announce the party [%d] member [%d] name changed.", c.PartyId(), c.Id())
 				return err
 			}
 		}
@@ -318,5 +371,5 @@ func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) GetForeignCharacterInfo(characterId uint32) (ForeignModel, error) {
-	return requests.Provider[ForeignRestModel, ForeignModel](p.l, p.ctx)(requestById(characterId), ExtractForeign)()
+	return requests.Provider[ForeignRestModel, ForeignModel](p.l, p.ctx)(requestById(p.ctx, characterId), ExtractForeign)()
 }

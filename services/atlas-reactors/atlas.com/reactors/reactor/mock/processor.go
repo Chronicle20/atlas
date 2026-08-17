@@ -2,6 +2,7 @@ package mock
 
 import (
 	"atlas-reactors/reactor"
+	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -13,9 +14,9 @@ type ProcessorMock struct {
 	GetInFieldFunc        func(f field.Model) ([]reactor.Model, error)
 	CreateFunc            func(b *reactor.ModelBuilder) error
 	DestroyInFieldFunc    func(f field.Model)
-	TeardownFunc          func() func()
-	DestroyAllFunc        func() error
-	DestroyInTenantFunc   func(t tenant.Model) model.Operator[[]reactor.Model]
+	TeardownFunc          func(envContext func(context.Context) context.Context) func()
+	DestroyAllFunc        func(envContext func(context.Context) context.Context) error
+	DestroyInTenantFunc   func(envContext func(context.Context) context.Context, t tenant.Model) model.Operator[[]reactor.Model]
 	DestroyFunc           func() model.Operator[reactor.Model]
 	HitFunc               func(reactorId uint32, characterId uint32, skillId uint32) error
 	TriggerFunc           func(r reactor.Model, characterId uint32)
@@ -51,23 +52,23 @@ func (m *ProcessorMock) DestroyInField(f field.Model) {
 	}
 }
 
-func (m *ProcessorMock) Teardown() func() {
+func (m *ProcessorMock) Teardown(envContext func(context.Context) context.Context) func() {
 	if m.TeardownFunc != nil {
-		return m.TeardownFunc()
+		return m.TeardownFunc(envContext)
 	}
 	return func() {}
 }
 
-func (m *ProcessorMock) DestroyAll() error {
+func (m *ProcessorMock) DestroyAll(envContext func(context.Context) context.Context) error {
 	if m.DestroyAllFunc != nil {
-		return m.DestroyAllFunc()
+		return m.DestroyAllFunc(envContext)
 	}
 	return nil
 }
 
-func (m *ProcessorMock) DestroyInTenant(t tenant.Model) model.Operator[[]reactor.Model] {
+func (m *ProcessorMock) DestroyInTenant(envContext func(context.Context) context.Context, t tenant.Model) model.Operator[[]reactor.Model] {
 	if m.DestroyInTenantFunc != nil {
-		return m.DestroyInTenantFunc(t)
+		return m.DestroyInTenantFunc(envContext, t)
 	}
 	return func(models []reactor.Model) error {
 		return nil

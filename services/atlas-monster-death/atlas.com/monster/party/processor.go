@@ -28,6 +28,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetByMemberId(memberId uint32) (Model, error) {
-	rp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
+	rp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(p.ctx, memberId), Extract, model.Filters[Model]())
 	return model.FirstProvider(rp, model.Filters[Model]())()
 }

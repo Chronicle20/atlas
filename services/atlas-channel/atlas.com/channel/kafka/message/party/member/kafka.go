@@ -5,9 +5,10 @@ import (
 )
 
 const (
-	EnvEventStatusTopic        = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
-	EventPartyStatusTypeLogin  = "LOGIN"
-	EventPartyStatusTypeLogout = "LOGOUT"
+	EnvEventStatusTopic             = "EVENT_TOPIC_PARTY_MEMBER_STATUS"
+	EventPartyStatusTypeLogin       = "LOGIN"
+	EventPartyStatusTypeLogout      = "LOGOUT"
+	EventPartyStatusTypeNameChanged = "NAME_CHANGED"
 )
 
 type StatusEvent[E any] struct {
@@ -21,3 +22,9 @@ type StatusEvent[E any] struct {
 type LoginEventBody struct{}
 
 type LogoutEventBody struct{}
+
+// NameChangedEventBody mirrors atlas-parties' memberNameChangedEventBody.
+type NameChangedEventBody struct {
+	OldName string `json:"oldName"`
+	NewName string `json:"newName"`
+}

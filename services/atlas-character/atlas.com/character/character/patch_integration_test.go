@@ -1555,3 +1555,185 @@ func TestGmAbsentMeansNoChange(t *testing.T) {
 		}
 	}
 }
+
+// TestChangeWorldToWorldZeroEmitsWorldChanged is the controller-ruling proof:
+// world.Id is a byte and world 0 is a real, commonly-used world (character
+// tests seed SetWorldId(0) throughout), so ChangeWorld/ChangeWorldAndEmit must
+// treat 0 as a reachable destination rather than a "field absent" sentinel —
+// unlike the removed input.WorldId arm on Update, which could never move a
+// character TO world 0. The character starts at a NON-ZERO world so the
+// assertion actually exercises a real transfer, not a same-world no-op.
+func TestChangeWorldToWorldZeroEmitsWorldChanged(t *testing.T) {
+	db := testDatabase(t)
+	tenantModel := testTenant()
+	tctx := tenant.WithContext(context.Background(), tenantModel)
+	logger := testLogger()
+
+	originalCharacter := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(world.Id(3)).
+		SetName("OriginalName").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		Build()
+
+	processor := character.NewProcessor(logger, tctx, db)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
+	if err != nil {
+		t.Fatalf("Failed to create character for testing: %v", err)
+	}
+
+	transactionId := uuid.New()
+	if err := processor.ChangeWorldAndEmit(transactionId, createdCharacter.Id(), world.Id(0)); err != nil {
+		t.Fatalf("ChangeWorldAndEmit: %v", err)
+	}
+
+	updatedCharacter, err := processor.GetById()(createdCharacter.Id())
+	if err != nil {
+		t.Fatalf("Failed to get updated character: %v", err)
+	}
+	if updatedCharacter.WorldId() != world.Id(0) {
+		t.Errorf("Expected world ID 0, got %d", updatedCharacter.WorldId())
+	}
+}
+
+// TestChangeWorldEmitsExactlyOneWorldChangedWithNewWorldRouting drives
+// ChangeWorld directly (rather than *AndEmit) so the buffered event can be
+// inspected, proving the row moved, exactly one WORLD_CHANGED was buffered,
+// and its routing WorldId + body carry the NEW world (0), not the old one.
+func TestChangeWorldEmitsExactlyOneWorldChangedWithNewWorldRouting(t *testing.T) {
+	db := testDatabase(t)
+	tenantModel := testTenant()
+	tctx := tenant.WithContext(context.Background(), tenantModel)
+	logger := testLogger()
+
+	originalCharacter := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(world.Id(3)).
+		SetName("OriginalName").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		Build()
+
+	processor := character.NewProcessor(logger, tctx, db)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
+	if err != nil {
+		t.Fatalf("Failed to create character for testing: %v", err)
+	}
+
+	buf := message.NewBuffer()
+	transactionId := uuid.New()
+	if err := processor.ChangeWorld(buf)(transactionId, createdCharacter.Id(), world.Id(0)); err != nil {
+		t.Fatalf("ChangeWorld: %v", err)
+	}
+
+	updatedCharacter, err := processor.GetById()(createdCharacter.Id())
+	if err != nil {
+		t.Fatalf("Failed to get updated character: %v", err)
+	}
+	if updatedCharacter.WorldId() != world.Id(0) {
+		t.Errorf("Expected world ID 0, got %d", updatedCharacter.WorldId())
+	}
+
+	statusMessages := buf.GetAll()[character2.EnvEventTopicCharacterStatus]
+	if len(statusMessages) != 1 {
+		t.Fatalf("Expected exactly 1 WORLD_CHANGED event, got %d", len(statusMessages))
+	}
+
+	var eventValue character2.StatusEvent[character2.StatusEventWorldChangedBody]
+	if err := json.Unmarshal(statusMessages[0].Value, &eventValue); err != nil {
+		t.Fatalf("Failed to unmarshal event value: %v", err)
+	}
+	if eventValue.Type != character2.StatusEventTypeWorldChanged {
+		t.Errorf("Expected event type '%s', got '%s'", character2.StatusEventTypeWorldChanged, eventValue.Type)
+	}
+	if eventValue.CharacterId != createdCharacter.Id() {
+		t.Errorf("Expected character ID %d, got %d", createdCharacter.Id(), eventValue.CharacterId)
+	}
+	// Routing WorldId must be the NEW world (0) — consumers route on it and
+	// the character now lives there.
+	if eventValue.WorldId != world.Id(0) {
+		t.Errorf("Expected routing world ID 0, got %d", eventValue.WorldId)
+	}
+	if eventValue.TransactionId != transactionId {
+		t.Errorf("Expected transaction ID %s, got %s", transactionId, eventValue.TransactionId)
+	}
+	if eventValue.Body.OldWorldId != world.Id(3) {
+		t.Errorf("Expected old world ID 3, got %d", eventValue.Body.OldWorldId)
+	}
+	if eventValue.Body.NewWorldId != world.Id(0) {
+		t.Errorf("Expected new world ID 0, got %d", eventValue.Body.NewWorldId)
+	}
+}
+
+// TestChangeWorldSameValueIsANoOpAndEmitsNoEvent proves ChangeWorld's no-op
+// guard is an explicit equality check, not a zero-value check: a character
+// already at world 0, "changed" to world 0 again, gets no row update and no
+// emission.
+func TestChangeWorldSameValueIsANoOpAndEmitsNoEvent(t *testing.T) {
+	db := testDatabase(t)
+	tenantModel := testTenant()
+	tctx := tenant.WithContext(context.Background(), tenantModel)
+	logger := testLogger()
+
+	originalCharacter := character.NewModelBuilder().
+		SetAccountId(1000).
+		SetWorldId(world.Id(0)).
+		SetName("OriginalName").
+		SetLevel(1).
+		SetStrength(4).
+		SetDexterity(4).
+		SetIntelligence(4).
+		SetLuck(4).
+		SetMaxHp(50).SetHp(50).
+		SetMaxMp(50).SetMp(50).
+		SetJobId(job.Id(0)).
+		SetGender(0).
+		SetHair(30000).
+		SetFace(20000).
+		SetSkinColor(0).
+		Build()
+
+	processor := character.NewProcessor(logger, tctx, db)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
+	if err != nil {
+		t.Fatalf("Failed to create character for testing: %v", err)
+	}
+
+	buf := message.NewBuffer()
+	if err := processor.ChangeWorld(buf)(uuid.New(), createdCharacter.Id(), world.Id(0)); err != nil {
+		t.Fatalf("ChangeWorld: %v", err)
+	}
+
+	updatedCharacter, err := processor.GetById()(createdCharacter.Id())
+	if err != nil {
+		t.Fatalf("Failed to get updated character: %v", err)
+	}
+	if updatedCharacter.WorldId() != world.Id(0) {
+		t.Errorf("Expected world ID to remain 0, got %d", updatedCharacter.WorldId())
+	}
+
+	if got := len(buf.GetAll()[character2.EnvEventTopicCharacterStatus]); got != 0 {
+		t.Errorf("Expected no WORLD_CHANGED event on a same-world no-op, got %d", got)
+	}
+}

@@ -35,7 +35,7 @@ func (p *ProcessorImpl) HasItem(characterId uint32, itemId uint32) (bool, error)
 		},
 	}
 
-	result, err := requestValidation(characterId, conditions)(p.l, p.ctx)
+	result, err := requestValidation(p.ctx, characterId, conditions)(p.l, p.ctx)
 	if err != nil {
 		return false, err
 	}

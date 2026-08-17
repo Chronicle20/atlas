@@ -8,6 +8,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus/hooks/test"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -45,5 +46,35 @@ func TestProviderImplComposesSpanAndTenantHeaders(t *testing.T) {
 	}
 	if headers[tenant.Region] != "GMS" {
 		t.Errorf("missing/wrong region header: %q", headers[tenant.Region])
+	}
+}
+
+func TestProviderImplComposesTheEnvironmentDecorator(t *testing.T) {
+	// FR-4.1: written centrally. A service must never add this by hand.
+	ResetInstance()
+	t.Cleanup(ResetInstance)
+
+	mw := &MockWriter{topic: "provider-env-test-topic"}
+	GetManager(ConfigWriterFactory(func(topicName string) Writer { return mw }))
+	t.Setenv("EVENT_TOPIC_PROVIDER_ENV_TEST", "provider-env-test-topic")
+
+	ctx := env.WithContext(context.Background(), env.Id("pr-123"))
+
+	l, _ := test.NewNullLogger()
+
+	p := ProviderImpl(l)(ctx)
+	if err := p("EVENT_TOPIC_PROVIDER_ENV_TEST")(model.FixedProvider([]kafka.Message{{Value: []byte("v")}})); err != nil {
+		t.Fatalf("produce: %v", err)
+	}
+
+	if len(mw.writtenMessages) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(mw.writtenMessages))
+	}
+	headers := map[string]string{}
+	for _, h := range mw.writtenMessages[0].Headers {
+		headers[h.Key] = string(h.Value)
+	}
+	if headers[env.Key] != "pr-123" {
+		t.Fatalf("produced message headers = %v, want %s=pr-123", headers, env.Key)
 	}
 }

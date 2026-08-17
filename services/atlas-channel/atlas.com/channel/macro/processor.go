@@ -38,7 +38,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // the complete set (e.g. sending the full macro record on channel spawn),
 // so this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(characterMacrosUrl(characterId), 250, Extract, model.Filters[Model]())
+	url, err := characterMacrosUrl(p.ctx, characterId)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {

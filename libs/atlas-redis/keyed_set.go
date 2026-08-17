@@ -131,3 +131,44 @@ func (s *TenantKeyedSet[K]) IsMember(ctx context.Context, t tenant.Model, k K, m
 func (s *TenantKeyedSet[K]) Clear(ctx context.Context, t tenant.Model, k K) error {
 	return s.client.Del(ctx, s.key(t, k)).Err()
 }
+
+// ClearAllAcrossTenants deletes every SET in this KeyedSet's namespace across
+// ALL tenants (SCAN COUNT=100 + pipelined DEL). Returns the number of keys
+// deleted. Deliberate, explicitly-named cross-tenant enumeration — see
+// TenantRegistry.GetAllAcrossTenants for the D7 rationale. Reserved for
+// test-only full-namespace teardown.
+func (s *TenantKeyedSet[K]) ClearAllAcrossTenants(ctx context.Context) (int, error) {
+	pattern := namespacedKey(s.namespace, "*")
+	iter := s.client.Scan(ctx, 0, pattern, 100).Iterator()
+
+	deleted := 0
+	pipe := s.client.Pipeline()
+	pipeSize := 0
+	var firstErr error
+
+	flushPipe := func() {
+		if pipeSize == 0 {
+			return
+		}
+		if _, err := pipe.Exec(ctx); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		pipe = s.client.Pipeline()
+		pipeSize = 0
+	}
+
+	for iter.Next(ctx) {
+		pipe.Del(ctx, iter.Val())
+		deleted++
+		pipeSize++
+		if pipeSize >= 100 {
+			flushPipe()
+		}
+	}
+	flushPipe()
+
+	if err := iter.Err(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return deleted, firstErr
+}

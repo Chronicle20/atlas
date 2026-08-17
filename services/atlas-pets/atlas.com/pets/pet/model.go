@@ -3,22 +3,25 @@ package pet
 import (
 	"atlas-pets/pet/exclude"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Model struct {
-	id         uint32
-	cashId     uint64
-	templateId uint32
-	name       string
-	level      byte
-	closeness  uint16
-	fullness   byte
-	expiration time.Time
-	ownerId    uint32
-	slot       int8
-	excludes   []exclude.Model
-	flag       uint16
-	purchaseBy uint32
+	id                  uint32
+	cashId              uint64
+	templateId          uint32
+	name                string
+	level               byte
+	closeness           uint16
+	fullness            byte
+	expiration          time.Time
+	ownerId             uint32
+	slot                int8
+	excludes            []exclude.Model
+	flag                uint16
+	purchaseBy          uint32
+	reviveTransactionId *uuid.UUID
 }
 
 func (m Model) Id() uint32 {
@@ -80,4 +83,10 @@ func (m Model) Flag() uint16 {
 
 func (m Model) PurchaseBy() uint32 {
 	return m.purchaseBy
+}
+
+// ReviveTransactionId is the saga transaction of the last successful revive,
+// or nil if the pet has never been revived.
+func (m Model) ReviveTransactionId() *uuid.UUID {
+	return m.reviveTransactionId
 }

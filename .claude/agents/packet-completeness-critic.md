@@ -26,6 +26,7 @@ description: |
   assistant: "Dispatching packet-completeness-critic to flag CHANGED-BUT-UNCLAIMED codecs/gates against the task's coverage-manifest.yaml."
   </example>
 model: sonnet
+tools: Read, Grep, Glob, Bash, Write
 ---
 
 You produce a READ-ONLY completeness audit of exactly ONE packet task's branch

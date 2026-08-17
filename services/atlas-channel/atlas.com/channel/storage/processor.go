@@ -57,7 +57,7 @@ type StorageData struct {
 // GetStorageData fetches storage metadata and assets for an account
 func (p *ProcessorImpl) GetStorageData(accountId uint32, worldId world.Id) (StorageData, error) {
 	// Fetch storage with assets included
-	storageModel, err := requestStorageByAccountAndWorld(accountId, worldId)(p.l, p.ctx)
+	storageModel, err := requestStorageByAccountAndWorld(p.ctx, accountId, worldId)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Debugf("Unable to get storage for account %d world %d, returning empty storage.", accountId, worldId)
 		// Storage might not exist yet - return empty storage
@@ -84,7 +84,7 @@ func (p *ProcessorImpl) GetStorageData(accountId uint32, worldId world.Id) (Stor
 // GetProjectionData fetches projection data for a character from storage service
 func (p *ProcessorImpl) GetProjectionData(characterId uint32) (ProjectionData, error) {
 	// Fetch projection from storage service
-	projModel, err := requestProjectionByCharacterId(characterId)(p.l, p.ctx)
+	projModel, err := requestProjectionByCharacterId(p.ctx, characterId)(p.l, p.ctx)
 	if err != nil {
 		return ProjectionData{}, err
 	}

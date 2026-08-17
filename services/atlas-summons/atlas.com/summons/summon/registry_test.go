@@ -58,3 +58,54 @@ func TestRegistryPutIndexesByFieldAndOwner(t *testing.T) {
 		t.Fatalf("indexes not cleared on remove")
 	}
 }
+
+// TestRegistryIsTenantScoped writes under tenant 1 and reads under tenant 2
+// against the SAME registry instance (same Redis backing), using identical
+// key material (same summon id, same field coordinates, same owner id) for
+// both tenants. If the tenant segment were dropped from the key, tenant 2's
+// reads would collide with tenant 1's writes and this test would fail.
+func TestRegistryIsTenantScoped(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(mr.Close)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	reg := newRegistry(rc)
+
+	ten1, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// ten2 differs from ten1 in region AND version, not just UUID — this pins
+	// the tenant-scoped key SHAPE (TenantKey embeds region/version), not
+	// merely "two distinct tenants stay separate".
+	ten2, err := tenant.Create(uuid.New(), "JMS", 62, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+	m := NewBuilder().SetId(1000001).SetOwnerCharacterId(42).SetField(f).
+		SetSummonType(SummonTypePuppet).SetMovementType(MovementStationary).Build()
+
+	if err := reg.Put(ctx, ten1, m); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := reg.Get(ctx, ten2, m.Id()); err == nil {
+		t.Fatalf("tenant 2 read tenant 1's summon by id")
+	}
+	if inField, err := reg.GetInField(ctx, ten2, f); err != nil || len(inField) != 0 {
+		t.Fatalf("tenant 2 saw tenant 1's summon via field index: %v %+v", err, inField)
+	}
+	if byOwner, err := reg.GetByOwner(ctx, ten2, m.OwnerCharacterId()); err != nil || len(byOwner) != 0 {
+		t.Fatalf("tenant 2 saw tenant 1's summon via owner index: %v %+v", err, byOwner)
+	}
+
+	// tenant 1 still sees its own data.
+	if got, err := reg.Get(ctx, ten1, m.Id()); err != nil || got.Id() != m.Id() {
+		t.Fatalf("tenant 1 lost its own summon: %v %+v", err, got)
+	}
+}

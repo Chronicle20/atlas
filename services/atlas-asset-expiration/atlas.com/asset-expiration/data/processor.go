@@ -35,7 +35,7 @@ func (p *ProcessorImpl) GetReplaceInfo(templateId uint32) ReplaceInfo {
 	// Cash: 5000000+
 
 	if templateId >= 1000000 && templateId < 2000000 {
-		eq, err := requestEquipment(templateId)(p.l, p.ctx)
+		eq, err := requestEquipment(p.ctx, templateId)(p.l, p.ctx)
 		if err != nil {
 			p.l.WithError(err).Warnf("Failed to get equipment data for template [%d].", templateId)
 			return ReplaceInfo{}
@@ -47,7 +47,7 @@ func (p *ProcessorImpl) GetReplaceInfo(templateId uint32) ReplaceInfo {
 	}
 
 	if templateId >= 2000000 && templateId < 3000000 {
-		con, err := requestConsumable(templateId)(p.l, p.ctx)
+		con, err := requestConsumable(p.ctx, templateId)(p.l, p.ctx)
 		if err != nil {
 			p.l.WithError(err).Warnf("Failed to get consumable data for template [%d].", templateId)
 			return ReplaceInfo{}
@@ -59,7 +59,7 @@ func (p *ProcessorImpl) GetReplaceInfo(templateId uint32) ReplaceInfo {
 	}
 
 	if templateId >= 3000000 && templateId < 4000000 {
-		setup, err := requestSetup(templateId)(p.l, p.ctx)
+		setup, err := requestSetup(p.ctx, templateId)(p.l, p.ctx)
 		if err != nil {
 			p.l.WithError(err).Warnf("Failed to get setup data for template [%d].", templateId)
 			return ReplaceInfo{}
@@ -71,7 +71,7 @@ func (p *ProcessorImpl) GetReplaceInfo(templateId uint32) ReplaceInfo {
 	}
 
 	if templateId >= 4000000 && templateId < 5000000 {
-		etc, err := requestEtc(templateId)(p.l, p.ctx)
+		etc, err := requestEtc(p.ctx, templateId)(p.l, p.ctx)
 		if err != nil {
 			p.l.WithError(err).Warnf("Failed to get etc data for template [%d].", templateId)
 			return ReplaceInfo{}

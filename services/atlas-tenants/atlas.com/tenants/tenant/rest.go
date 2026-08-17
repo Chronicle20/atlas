@@ -7,6 +7,7 @@ type RestModel struct {
 	Region       string `json:"region"`
 	MajorVersion uint16 `json:"majorVersion"`
 	MinorVersion uint16 `json:"minorVersion"`
+	Environment  string `json:"environment"`
 }
 
 // GetID returns the resource ID
@@ -33,6 +34,7 @@ func Transform(m Model) (RestModel, error) {
 		Region:       m.Region(),
 		MajorVersion: m.MajorVersion(),
 		MinorVersion: m.MinorVersion(),
+		Environment:  m.Environment(),
 	}, nil
 }
 
@@ -43,5 +45,6 @@ func Extract(r RestModel) (Model, error) {
 		SetRegion(r.Region).
 		SetMajorVersion(r.MajorVersion).
 		SetMinorVersion(r.MinorVersion).
+		SetEnvironment(r.Environment).
 		Build()
 }

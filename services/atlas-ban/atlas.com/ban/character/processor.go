@@ -24,10 +24,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, characterId), Extract)()
 }
 
 func (p *ProcessorImpl) GetByName(name string) (Model, error) {
-	ps := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(name), Extract, model.Filters[Model]())
+	ps := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(p.ctx, name), Extract, model.Filters[Model]())
 	return model.First(ps, model.Filters[Model]())
 }

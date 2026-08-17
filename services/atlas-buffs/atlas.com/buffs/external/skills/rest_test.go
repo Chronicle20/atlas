@@ -60,7 +60,7 @@ func TestRequestByCharacterAndSkill_RoundTrip(t *testing.T) {
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 
-	rm, err := RequestByCharacterAndSkill(42, 1320006)(logrus.New(), ctx)
+	rm, err := RequestByCharacterAndSkill(ctx, 42, 1320006)(logrus.New(), ctx)
 	if err != nil {
 		t.Fatalf("RequestByCharacterAndSkill: %v", err)
 	}

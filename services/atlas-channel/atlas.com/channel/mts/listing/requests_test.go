@@ -1,6 +1,7 @@
 package listing
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -104,7 +105,10 @@ func TestBrowseFilterQueryTemplateIds(t *testing.T) {
 // own page[number]/page[size] each iteration, so a baked-in value here would
 // pin every drained page to the same window instead of advancing.
 func TestBrowseUrlOmitsPageParams(t *testing.T) {
-	got := browseUrl(world.Id(1), BrowseFilter{SellerId: 100100})
+	got, err := browseUrl(context.Background(), world.Id(1), BrowseFilter{SellerId: 100100})
+	if err != nil {
+		t.Fatalf("browseUrl returned unexpected error: %v", err)
+	}
 	if strings.Contains(got, "page") {
 		t.Errorf("browseUrl %q must not contain any page param", got)
 	}

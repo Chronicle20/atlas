@@ -52,3 +52,45 @@ func TestSurpriseFailedEventBodyWireShape(t *testing.T) {
 		t.Fatalf("wire shape drifted: %s", b)
 	}
 }
+
+// task-227 task 37 added TransactionId to RequestPurchaseCommandBody /
+// PurchaseEventBody / ErrorEventBody in both services' hand-mirrored copies.
+// Pin the channel side's shape too, so a rename on either side fails loudly.
+// Zero UUID means "no correlation" -- what atlas-channel sends today, since
+// it is not minting real ids until task 38/39 -- and must round-trip as the
+// all-zero UUID string, not an omitted field (omitempty is a no-op on
+// uuid.UUID's [16]byte).
+func TestRequestPurchaseCommandBodyWireShape(t *testing.T) {
+	b, err := json.Marshal(RequestPurchaseCommandBody{Currency: 1, SerialNumber: 9001})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"transactionId":"00000000-0000-0000-0000-000000000000","currency":1,"serialNumber":9001}`
+	if string(b) != want {
+		t.Fatalf("wire shape drifted:\n got %s\nwant %s", b, want)
+	}
+}
+
+func TestChannelPurchaseEventBodyDecodesTransactionId(t *testing.T) {
+	txId := uuid.MustParse("44444444-5555-6666-7777-888888888888")
+	raw := `{"templateId":5000000,"price":4000,"compartmentId":"33333333-4444-5555-6666-777777777777","assetId":42,"itemId":0,"transactionId":"44444444-5555-6666-7777-888888888888"}`
+	var body PurchaseEventBody
+	if err := json.Unmarshal([]byte(raw), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.TransactionId != txId {
+		t.Fatalf("transactionId did not decode: got %s want %s", body.TransactionId, txId)
+	}
+}
+
+func TestChannelErrorEventBodyDecodesTransactionId(t *testing.T) {
+	txId := uuid.MustParse("55555555-6666-7777-8888-999999999999")
+	raw := `{"error":"NOT_ENOUGH_CASH","transactionId":"55555555-6666-7777-8888-999999999999"}`
+	var body ErrorEventBody
+	if err := json.Unmarshal([]byte(raw), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.TransactionId != txId {
+		t.Fatalf("transactionId did not decode: got %s want %s", body.TransactionId, txId)
+	}
+}

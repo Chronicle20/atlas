@@ -34,7 +34,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // GetBuddyList returns the buddy list data for a character
 func (p *ProcessorImpl) GetBuddyList(characterId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		buddyProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+		buddyProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(p.ctx, characterId), Extract)
 		buddyList, err := buddyProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get buddy list for character %d", characterId)
@@ -47,7 +47,7 @@ func (p *ProcessorImpl) GetBuddyList(characterId uint32) model.Provider[Model] {
 // GetBuddyCapacity returns the buddy list capacity for a character
 func (p *ProcessorImpl) GetBuddyCapacity(characterId uint32) model.Provider[byte] {
 	return func() (byte, error) {
-		buddyProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+		buddyProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestByCharacterId(p.ctx, characterId), Extract)
 		buddyList, err := buddyProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get buddy capacity for character %d", characterId)

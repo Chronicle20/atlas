@@ -13,7 +13,7 @@ func byCharacterIdProvider(l logrus.FieldLogger) func(ctx context.Context) func(
 	return func(ctx context.Context) func(ch channel.Model, characterId uint32) model.Provider[Model] {
 		return func(ch channel.Model, characterId uint32) model.Provider[Model] {
 			return func() (Model, error) {
-				resp, err := requestRates(ch, characterId)(l, ctx)
+				resp, err := requestRates(ctx, ch, characterId)(l, ctx)
 				if err != nil {
 					return Model{}, err
 				}

@@ -38,9 +38,18 @@ type BeholderTask struct {
 	// owner's buffs accumulate one-at-a-time — original-GMS behavior). It is a
 	// field so tests can inject a deterministic chooser; production uses rand.Intn.
 	pick func(n int) int
+	// envContext originates this pod's own environment identity
+	// (env.Self()) onto each tenant group's per-tenant context before the
+	// heal/buff/skill-status events are emitted. This is a periodic
+	// multi-tenant background sweep with no inbound request to inherit
+	// ENVIRONMENT from, so the caller (main.go) threads this in as a plain
+	// function value (withSelfEnvironment) rather than the package importing
+	// atlas-env itself — summon/ is outside env-domain-guard's permitted
+	// import list.
+	envContext func(context.Context) context.Context
 }
 
-func NewBeholderTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *BeholderTask {
+func NewBeholderTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration, envContext func(context.Context) context.Context) *BeholderTask {
 	return &BeholderTask{
 		l:        l,
 		ctx:      ctx,
@@ -48,7 +57,8 @@ func NewBeholderTask(l logrus.FieldLogger, ctx context.Context, interval time.Du
 		emit: func(emitCtx context.Context, topic string, provider model.Provider[[]kafka.Message]) error {
 			return producer.ProviderImpl(l)(emitCtx)(topic)(provider)
 		},
-		pick: rand.Intn,
+		pick:       rand.Intn,
+		envContext: envContext,
 	}
 }
 
@@ -68,7 +78,7 @@ func (t *BeholderTask) Run() {
 	}
 	now := time.Now()
 	for ten, ms := range all {
-		tctx := tenant.WithContext(t.ctx, ten)
+		tctx := t.envContext(tenant.WithContext(t.ctx, ten))
 		for _, m := range ms {
 			if !m.IsBeholder() {
 				continue

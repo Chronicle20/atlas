@@ -4,6 +4,7 @@ use (
 	./libs/atlas-constants
 	./libs/atlas-constants/gen
 	./libs/atlas-database
+	./libs/atlas-env
 	./libs/atlas-kafka
 	./libs/atlas-lock
 	./libs/atlas-model

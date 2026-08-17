@@ -1,6 +1,7 @@
 package cashshop
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -11,14 +12,14 @@ const (
 	Compartments = "accounts/%d/cash-shop/inventory/compartments"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("CASHSHOP")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "CASHSHOP")
 }
 
-func requestInventory(accountId uint32) requests.Request[InventoryRestModel] {
-	return requests.GetRequest[InventoryRestModel](fmt.Sprintf(getBaseRequest()+Inventory, accountId))
-}
-
-func requestCompartments(accountId uint32) requests.Request[[]CompartmentRestModel] {
-	return requests.GetRequest[[]CompartmentRestModel](fmt.Sprintf(getBaseRequest()+Compartments, accountId))
+func requestCompartments(ctx context.Context, accountId uint32) requests.Request[[]CompartmentRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]CompartmentRestModel](err)
+	}
+	return requests.GetRequest[[]CompartmentRestModel](fmt.Sprintf(root+Compartments, accountId))
 }

@@ -1,9 +1,11 @@
 package monster
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -16,16 +18,24 @@ const (
 	MonstersInField = "worlds/%d/channels/%d/maps/%d/instances/%s/monsters"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("MONSTERS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MONSTERS")
 }
 
-func requestDestroyInField(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) requests.EmptyBodyRequest {
-	return requests.DeleteRequest(fmt.Sprintf(getBaseRequest()+MonstersInField, worldId, channelId, mapId, instance.String()))
+func requestDestroyInField(ctx context.Context, worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) requests.EmptyBodyRequest {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return func(_ logrus.FieldLogger, _ context.Context) error { return err }
+	}
+	return requests.DeleteRequest(fmt.Sprintf(root+MonstersInField, worldId, channelId, mapId, instance.String()))
 }
 
-func requestSpawnInField(f field.Model, input SpawnInputRestModel) requests.Request[SpawnResponseRestModel] {
-	return requests.PostRequest[SpawnResponseRestModel](fmt.Sprintf(getBaseRequest()+MonstersInField, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()), input)
+func requestSpawnInField(ctx context.Context, f field.Model, input SpawnInputRestModel) requests.Request[SpawnResponseRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[SpawnResponseRestModel](err)
+	}
+	return requests.PostRequest[SpawnResponseRestModel](fmt.Sprintf(root+MonstersInField, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()), input)
 }
 
 type SpawnInputRestModel struct {

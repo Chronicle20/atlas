@@ -42,3 +42,17 @@ func NewServiceEnvelope(id uuid.UUID, config any, emittedAt time.Time) ([]byte, 
 func NewTenantEnvelope(id uuid.UUID, config any, emittedAt time.Time) ([]byte, error) {
 	return NewServiceEnvelope(id, config, emittedAt)
 }
+
+// NewEnvironmentEnvelope serializes an environment record for the
+// EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS topic. Shares the envelope
+// shape with services and tenants; kept as its own constructor so it can
+// diverge without ricochet. Unlike the other two, the id is the
+// environment's Name (its wire identity), not a generated uuid.
+func NewEnvironmentEnvelope(name string, config any, emittedAt time.Time) ([]byte, error) {
+	return json.Marshal(envelope{
+		SchemaVersion: CurrentSchemaVersion,
+		Id:            name,
+		Config:        config,
+		EmittedAt:     emittedAt.UTC().Format(time.RFC3339),
+	})
+}

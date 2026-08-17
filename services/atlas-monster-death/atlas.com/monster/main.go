@@ -17,7 +17,7 @@ const serviceName = "atlas-monster-death"
 var consumerGroupId = consumergroup.Resolve("Monster Death Service")
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())

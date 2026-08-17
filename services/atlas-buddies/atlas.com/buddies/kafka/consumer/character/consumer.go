@@ -19,7 +19,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("character_status_event")(character.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_status_event")(character.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
 		}
 	}
 }
@@ -42,6 +42,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventNameChanged(db)))); err != nil {
 				return err
 			}
 			return nil
@@ -106,6 +109,18 @@ func handleStatusEventChannelChanged(db *gorm.DB) func(l logrus.FieldLogger, ctx
 		err := list.NewProcessor(l, ctx, db).UpdateBuddyChannelAndEmit(event.CharacterId, event.WorldId, int8(event.Body.ChannelId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process change channel for character [%d].", event.CharacterId)
+		}
+	}
+}
+
+func handleStatusEventNameChanged(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, event character.StatusEvent[character.NameChangedStatusEventBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event character.StatusEvent[character.NameChangedStatusEventBody]) {
+		if event.Type != character.StatusEventTypeNameChanged {
+			return
+		}
+		err := list.NewProcessor(l, ctx, db).UpdateBuddyNameAndEmit(event.CharacterId, event.WorldId, event.Body.NewName)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to process name change for character [%d].", event.CharacterId)
 		}
 	}
 }

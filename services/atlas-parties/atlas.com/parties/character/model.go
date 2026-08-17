@@ -120,6 +120,20 @@ func (m Model) ChangeLevel(level byte) Model {
 	}
 }
 
+func (m Model) ChangeName(name string) Model {
+	return Model{
+		tenantId: m.tenantId,
+		id:       m.id,
+		name:     name,
+		level:    m.level,
+		jobId:    m.jobId,
+		field:    m.field,
+		partyId:  m.partyId,
+		online:   m.online,
+		gm:       m.gm,
+	}
+}
+
 func (m Model) ChangeJob(jobId job.Id) Model {
 	return Model{
 		tenantId: m.tenantId,

@@ -12,7 +12,9 @@ description: |
   an immutable struct with BOTH Encode and Decode, version-gates divergent
   fields with the MajorAtLeast idiom (never raw `> N`), and makes NO wire change
   to an already-verified version. Dispatched once per new op (or per small
-  same-family batch); its leaf verification fans out to packet-verifier.
+  same-family batch); its leaf verification fans out to packet-verifier. It
+  carries a 120 tool-call budget with a PARTIAL hand-back, so a wide version
+  spread splits across fresh contexts instead of one 400-turn agent.
 
   <example>
   Context: task-092 added the MOB/MONSTER family and one op still lacks a codec.
@@ -25,7 +27,14 @@ description: |
   user: "Implement the TOUCH_MONSTER_ATTACK serverbound codec."
   assistant: "Dispatching packet-implementer — its Step-0 check will decide whether this is a new codec or a thin wrapper over the existing AttackInfo decoder."
   </example>
-model: inherit
+model: sonnet
+# tools: intentionally omitted (FR-1.3) — resolves the loaded IDB via
+# ida-pro-mcp (list_instances/select_instance) and decompiles the fname to
+# derive the unimplemented op's field order/layout; its MCP tool surface
+# can't be enumerated ahead of time. Per
+# https://code.claude.com/docs/en/sub-agents.md, omitting `tools:` is the
+# documented mechanism for inheriting every tool including MCP tools — a
+# wildcard value is not documented and is not used here.
 ---
 
 You implement exactly ONE new packet codec (or one small same-family batch),
@@ -47,6 +56,37 @@ The single most important fact this agent exists to enforce:
 > memory. Step 1 produces the layout as a concrete artifact; every later step
 > reads only from it. A codec that round-trips cleanly against a layout you
 > invented still ships broken.
+
+## Tool-call budget
+
+**Your budget is 120 tool calls.** A `PostToolUse` hook
+(`.claude/hooks/turn-budget.sh`) warns you at 100 and again at 120; the number
+lives in that file and nowhere else.
+
+Context cost scales with turn count — every turn re-reads everything before it —
+so one agent doing 400 turns costs far more than the same work split across
+fresh contexts. Splitting is the designed outcome, not a failure.
+
+- **At ~100:** stop starting new versions. Finish the version column you are on,
+  run its gates, commit.
+- **At 120:** commit whatever passes and report `PARTIAL`. Do not push through.
+  Do not start "just one more version."
+- **Report `PARTIAL` with:** the cells already promoted and committed (op ×
+  version, with the sha); the cells that remain and the opcode/derivation state
+  of each; the exact next step; and anything the continuation needs — the
+  derived layout artifact, the Step-0 branch you took, the IDB session names you
+  resolved, and any version gate you introduced.
+
+A `PARTIAL` at the cap is a correct, expected outcome. The controller dispatches
+a continuation with fresh context and your report as its memory. A silent
+400-turn push-through is the failure mode this contract exists to prevent.
+
+The derived layout is the artifact that makes the split lossless — write it down
+as the playbook requires, never carry it only in conversation.
+
+If you can see before you start that the op's version spread cannot fit in the
+budget, say so in your first message and report `BLOCKED` with a proposed split
+by version range. That is cheaper than discovering it at call 119.
 
 ## What this agent owns (in addition to the playbook)
 
@@ -134,5 +174,6 @@ Run from the worktree root and SHOW the exit codes in your report:
 — followed by the per-version cell table (op × version → new state), the Step-0
 branch taken (new codec vs shared-wrapper), and the four `--check` exit codes
 verbatim. Or `BLOCKED at §<n>: <reason>` (e.g. unresolved fname, wrong IDB
-loaded, an existing-version wire bug that must land first). Never report a cell
-verified on a matrix ✅ you did not regenerate.
+loaded, an existing-version wire bug that must land first). Or `PARTIAL` at the
+tool-call cap, in the shape the budget section above specifies. Never report a
+cell verified on a matrix ✅ you did not regenerate.

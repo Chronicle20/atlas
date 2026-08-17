@@ -20,7 +20,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("guild_command")(guild2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("guild_command")(guild2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
 		}
 	}
 }
@@ -43,6 +43,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandLeave(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRejoin(db)))); err != nil {
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestInvite(db)))); err != nil {
@@ -113,6 +116,20 @@ func handleCommandLeave(db *gorm.DB) message.Handler[guild2.Command[guild2.Leave
 		}
 
 		_ = guild.NewProcessor(l, ctx, db).LeaveAndEmit(c.Body.GuildId, c.CharacterId, c.Body.Force, c.TransactionId)
+	}
+}
+
+// handleCommandRejoin restores a membership a forced LEAVE removed, at the
+// title the caller supplies. It backs the world-transfer saga's guild
+// compensation (task-227 FR-4.8) — the one severance whose undo cannot be
+// driven by the player.
+func handleCommandRejoin(db *gorm.DB) message.Handler[guild2.Command[guild2.RejoinBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c guild2.Command[guild2.RejoinBody]) {
+		if c.Type != guild2.CommandTypeRejoin {
+			return
+		}
+
+		_ = guild.NewProcessor(l, ctx, db).RejoinAndEmit(c.Body.GuildId, c.CharacterId, c.Body.Title, c.TransactionId)
 	}
 }
 

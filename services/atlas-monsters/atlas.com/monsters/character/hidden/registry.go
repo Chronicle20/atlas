@@ -5,7 +5,6 @@ package hidden
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"sync"
 
@@ -27,12 +26,17 @@ type storedHidden struct {
 	CharacterId        uint32 `json:"characterId"`
 }
 
-// Registry pairs a payload store with a per-tenant SET index (mirroring the
-// monster registry's reg + mapIdx pairing):
-//   - reg: atlas:hidden-character:<tenantId>:<characterId> -> storedHidden
+// Registry pairs a tenant-scoped payload store with a per-tenant SET index
+// (mirroring the monster registry's reg + mapIdx pairing):
+//   - reg: atlas:hidden-character:<tenantKey>:<characterId> -> storedHidden
 //   - tenantIdx: atlas:hidden-characters:<tenantKey>:all -> SET of characterIds
+//
+// GetAll is the one genuine cross-tenant operation — the reconciliation
+// sweep has no tenant to loop over, it needs every tenant's hidden set — and
+// uses the deliberate, explicitly-named TenantRegistry.GetAllAcrossTenants
+// sibling (D7).
 type Registry struct {
-	reg       *atlasredis.Registry[string, storedHidden]
+	reg       *atlasredis.TenantRegistry[uint32, storedHidden]
 	tenantIdx *atlasredis.TenantKeyedSet[string]
 }
 
@@ -43,7 +47,7 @@ var (
 
 func newRegistry(rc *goredis.Client) *Registry {
 	return &Registry{
-		reg:       atlasredis.NewRegistry[string, storedHidden](rc, "hidden-character", func(s string) string { return s }),
+		reg:       atlasredis.NewTenantRegistry[uint32, storedHidden](rc, "hidden-character", func(id uint32) string { return strconv.FormatUint(uint64(id), 10) }),
 		tenantIdx: atlasredis.NewTenantKeyedSet[string](rc, "hidden-characters", func(s string) string { return s }),
 	}
 }
@@ -60,15 +64,11 @@ func GetRegistry() *Registry {
 	return registry
 }
 
-func payloadSuffix(t tenant.Model, characterId uint32) string {
-	return fmt.Sprintf("%s:%d", t.Id().String(), characterId)
-}
-
 const tenantSetKey = "all"
 
 // Add marks characterId as GM-hidden. Idempotent (SADD + Put overwrite).
 func (r *Registry) Add(ctx context.Context, t tenant.Model, characterId uint32) error {
-	if err := r.reg.Put(ctx, payloadSuffix(t, characterId), storedHidden{
+	if err := r.reg.Put(ctx, t, characterId, storedHidden{
 		TenantId:           t.Id().String(),
 		TenantRegion:       t.Region(),
 		TenantMajorVersion: t.MajorVersion(),
@@ -83,7 +83,7 @@ func (r *Registry) Add(ctx context.Context, t tenant.Model, characterId uint32) 
 // Remove clears characterId's hidden mark. Idempotent (SREM + Remove of a
 // missing key are both no-ops).
 func (r *Registry) Remove(ctx context.Context, t tenant.Model, characterId uint32) error {
-	if err := r.reg.Remove(ctx, payloadSuffix(t, characterId)); err != nil {
+	if err := r.reg.Remove(ctx, t, characterId); err != nil {
 		return err
 	}
 	return r.tenantIdx.Remove(ctx, t, tenantSetKey, strconv.FormatUint(uint64(characterId), 10))
@@ -111,7 +111,7 @@ func (r *Registry) MemberSet(ctx context.Context, t tenant.Model) (map[uint32]st
 // reconciliation sweep's iteration source (mirrors Registry.GetMonsters).
 func (r *Registry) GetAll(ctx context.Context) map[tenant.Model][]uint32 {
 	result := make(map[tenant.Model][]uint32)
-	all, err := r.reg.GetAll(ctx)
+	all, err := r.reg.GetAllAcrossTenants(ctx)
 	if err != nil {
 		return result
 	}
@@ -136,7 +136,7 @@ func (r *Registry) GetAll(ctx context.Context) map[tenant.Model][]uint32 {
 // loop below needs to know which tenants to clear the SET index for.
 func (r *Registry) Clear(ctx context.Context) {
 	all := r.GetAll(ctx)
-	_, _ = r.reg.Clear(ctx)
+	_, _ = r.reg.ClearAllAcrossTenants(ctx)
 	for t := range all {
 		_ = r.tenantIdx.Clear(ctx, t, tenantSetKey)
 	}

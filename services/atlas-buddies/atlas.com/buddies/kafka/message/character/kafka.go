@@ -15,6 +15,7 @@ const (
 	StatusEventTypeLogin          = "LOGIN"
 	StatusEventTypeLogout         = "LOGOUT"
 	StatusEventTypeChannelChanged = "CHANNEL_CHANGED"
+	StatusEventTypeNameChanged    = "NAME_CHANGED"
 )
 
 type StatusEvent[E any] struct {
@@ -48,4 +49,14 @@ type ChannelChangedStatusEventBody struct {
 	OldChannelId channel.Id `json:"oldChannelId"`
 	MapId        _map.Id    `json:"mapId"`
 	Instance     uuid.UUID  `json:"instance"`
+}
+
+// StatusEventNameChangedBody mirrors the producer's
+// atlas-character/kafka/message/character/kafka.go StatusEventNameChangedBody
+// field-for-field: OldName/NewName, both `json:"oldName"`/`json:"newName"`.
+// There is no compile-time link between the two services, so a wrong tag
+// here silently drops every NAME_CHANGED event.
+type NameChangedStatusEventBody struct {
+	OldName string `json:"oldName"`
+	NewName string `json:"newName"`
 }

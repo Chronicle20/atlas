@@ -77,7 +77,11 @@ func (p *ProcessorImpl) IsValidName(name string) (bool, error) {
 // this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) ByAccountAndWorldProvider(decorators ...model.Decorator[Model]) func(accountId uint32, worldId world.Id) model.Provider[[]Model] {
 	return func(accountId uint32, worldId world.Id) model.Provider[[]Model] {
-		mp := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byAccountAndWorldUrl(accountId, worldId), 250, Extract, model.Filters[Model]())
+		url, err := byAccountAndWorldUrl(p.ctx, accountId, worldId)
+		if err != nil {
+			return model.ErrorProvider[[]Model](err)
+		}
+		mp := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 		return model.SliceMap(model.Decorate(decorators))(mp)(model.ParallelMap())
 	}
 }
@@ -148,7 +152,7 @@ func MergeRankings(cs []Model, rs []ranking.Model) []Model {
 
 func (p *ProcessorImpl) ByNameProvider(decorators ...model.Decorator[Model]) func(name string) model.Provider[[]Model] {
 	return func(name string) model.Provider[[]Model] {
-		mp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(name), Extract, model.Filters[Model]())
+		mp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(p.ctx, name), Extract, model.Filters[Model]())
 		return model.SliceMap(model.Decorate(decorators))(mp)(model.ParallelMap())
 	}
 }
@@ -161,7 +165,7 @@ func (p *ProcessorImpl) GetByName(decorators ...model.Decorator[Model]) func(nam
 
 func (p *ProcessorImpl) ByIdProvider(decorators ...model.Decorator[Model]) func(id uint32) model.Provider[Model] {
 	return func(id uint32) model.Provider[Model] {
-		mp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(id), Extract)
+		mp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, id), Extract)
 		return model.Map(model.Decorate(decorators))(mp)
 	}
 }
@@ -188,5 +192,5 @@ func (p *ProcessorImpl) InventoryDecorator() model.Decorator[Model] {
 }
 
 func (p *ProcessorImpl) DeleteById(characterId uint32) error {
-	return requestDelete(characterId)(p.l, p.ctx)
+	return requestDelete(p.ctx, characterId)(p.l, p.ctx)
 }

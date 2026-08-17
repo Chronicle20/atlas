@@ -24,7 +24,7 @@ type Processor interface {
 	RequestStorageIncreasePurchase(characterId uint32, isPoints bool, currency uint32) error
 	RequestStorageIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
 	RequestCharacterSlotIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
-	RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error
+	RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32, transactionId uuid.UUID) error
 	RequestCouponRedemption(characterId uint32, code string) error
 	MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error
 	MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error
@@ -95,10 +95,10 @@ func (p *ProcessorImpl) RequestCharacterSlotIncreasePurchaseByItem(characterId u
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestCharacterSlotIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32) error {
+func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32, transactionId uuid.UUID) error {
 	currency = resolvePurchaseCurrency(isPoints, currency)
-	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d]", characterId, serialNumber, currency, zero)
-	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency))
+	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d], transaction [%s]", characterId, serialNumber, currency, zero, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency, transactionId))
 }
 
 // RequestCouponRedemption forwards an already-normalized coupon code to

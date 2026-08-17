@@ -24,7 +24,7 @@ import (
 const serviceName = "atlas-renders"
 
 func main() {
-	rt := service.Bootstrap(serviceName, service.WithoutTracer())
+	rt := service.Bootstrap(serviceName, service.WithoutTracer(), service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	s, err := storage.New(l, storage.ConfigFromEnv())

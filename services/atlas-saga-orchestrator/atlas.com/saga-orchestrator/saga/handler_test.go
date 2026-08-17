@@ -20,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -1597,4 +1598,71 @@ func TestHandleExtendAssetExpiration_InvalidPayload(t *testing.T) {
 	err = NewHandler(logger, ctx).handleExtendAssetExpiration(s, step)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid payload")
+}
+
+// TestHandleStartItemConversation_DoesNotSelfComplete guards the
+// non-self-completing contract (task-230): dispatching StartItemConversation
+// through the handler must emit the START_ITEM_CONVERSATION command and
+// return, but must NOT complete the step itself. Only the npcconversation
+// status consumer (STARTED/START_ERROR, kafka/consumer/npcconversation) may
+// do that — otherwise the following destroy_asset_from_slot step would run
+// before anyone knows whether the dialogue actually opened, consuming an
+// unauthored item's slot for nothing.
+func TestHandleStartItemConversation_DoesNotSelfComplete(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx := setupContext()
+
+	transactionId := uuid.New()
+	sg, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(ScriptedItemUse).
+		SetInitiatedBy("test").
+		AddStep("start_item_conversation", Pending, StartItemConversation, StartItemConversationPayload{
+			CharacterId:   1234,
+			ItemId:        2430008,
+			NpcTemplateId: 2084002,
+		}).
+		Build()
+	assert.NoError(t, err)
+	assert.NoError(t, GetCache().Put(ctx, sg))
+
+	step := sg.Steps()[0]
+
+	err = NewHandler(logger, ctx).handleStartItemConversation(sg, step)
+	assert.NoError(t, err)
+
+	got, err := NewProcessor(logger, ctx).GetById(transactionId)
+	require.NoError(t, err)
+	assert.Equal(t, Pending, got.Steps()[0].Status(),
+		"start_item_conversation must stay Pending after the handler returns — only STARTED/START_ERROR may complete or fail it")
+}
+
+// TestHandleStartNpcConversation_DoesNotSelfComplete is the StartNpcConversation
+// twin of TestHandleStartItemConversation_DoesNotSelfComplete.
+func TestHandleStartNpcConversation_DoesNotSelfComplete(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	_, ctx := setupContext()
+
+	transactionId := uuid.New()
+	sg, err := NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(RemoteNpcUse).
+		SetInitiatedBy("test").
+		AddStep("start_npc_conversation", Pending, StartNpcConversation, StartNpcConversationPayload{
+			CharacterId:   4321,
+			NpcTemplateId: 9090002,
+		}).
+		Build()
+	assert.NoError(t, err)
+	assert.NoError(t, GetCache().Put(ctx, sg))
+
+	step := sg.Steps()[0]
+
+	err = NewHandler(logger, ctx).handleStartNpcConversation(sg, step)
+	assert.NoError(t, err)
+
+	got, err := NewProcessor(logger, ctx).GetById(transactionId)
+	require.NoError(t, err)
+	assert.Equal(t, Pending, got.Steps()[0].Status(),
+		"start_npc_conversation must stay Pending after the handler returns — only STARTED/START_ERROR may complete or fail it")
 }

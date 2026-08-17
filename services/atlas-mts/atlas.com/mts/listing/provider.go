@@ -177,6 +177,25 @@ func getBrowse(worldId world.Id, state State, f BrowseFilter) database.EntityPro
 	}
 }
 
+// getBySellerStatePaged returns one page of a seller's listings in a given
+// state, across worlds — the composite (tenant_id, seller_id, state) index
+// (idx_listings_seller_state) backs this directly. It is the read-side
+// counterpart of getActiveCountBySeller below (same predicate shape), added
+// for task-227 gate 11: an ACTIVE listing is not a holding — a listing becomes
+// a holding only on cancel/expiry (Cancel/Expire) — so a seller with a live
+// auction and no holdings would otherwise pass a holdings-only check while the
+// auction is stranded in a world they just left. The WHERE clause is an
+// explicit name-keyed map so seller 0 / any zero-valued state constant is
+// never silently dropped by GORM's struct-condition elision.
+func getBySellerStatePaged(sellerId uint32, state State, page model.Page) database.EntityProvider[model.Paged[entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[entity]] {
+		return database.PagedQuery[entity](db.Where(map[string]interface{}{
+			"seller_id": sellerId,
+			"state":     string(state),
+		}), page)
+	}
+}
+
 // getActiveCountBySeller returns the number of active listings owned by a seller.
 //
 // The WHERE clause uses an explicit name-keyed map rather than a struct

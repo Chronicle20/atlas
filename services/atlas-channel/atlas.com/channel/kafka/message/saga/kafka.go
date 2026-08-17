@@ -29,6 +29,7 @@ const (
 	SagaTypeMtsOperation     = "mts_operation"
 	SagaTypeNoteSend         = "note_send"
 	SagaTypeMesoSackUse      = "meso_sack_use"
+	SagaTypePetNameTagUse    = "pet_name_tag_use"
 )
 
 // MtsTakeHomeResultKind is the Results["kind"] marker the orchestrator sets on a

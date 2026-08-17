@@ -14,6 +14,10 @@ import (
 // every page rather than fetching one.
 func GetByMapId(l logrus.FieldLogger, ctx context.Context) func(mapId uint32) model.Provider[[]Model] {
 	return func(mapId uint32) model.Provider[[]Model] {
-		return requests.DrainProvider[RestModel, Model](l, ctx)(inMapUrl(mapId), 250, Extract, model.Filters[Model]())
+		url, err := inMapUrl(ctx, mapId)
+		if err != nil {
+			return model.ErrorProvider[[]Model](err)
+		}
+		return requests.DrainProvider[RestModel, Model](l, ctx)(url, 250, Extract, model.Filters[Model]())
 	}
 }

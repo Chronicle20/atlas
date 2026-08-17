@@ -38,7 +38,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
-		mp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
+		mp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, characterId), Extract)
 		return model.Map(model.Decorate(decorators))(mp)()
 	}
 }

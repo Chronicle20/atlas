@@ -1,0 +1,22 @@
+# coverage-manifest
+ops:
+  - USE_CASH_ITEM                        # status.json op name
+  - cash/serverbound/CashItemUseMegaphone   # status.json packet path for the same op
+versions:
+  - gms_v48
+  - gms_v61
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v92
+  - gms_v95
+  - jms_v185
+fields:
+  - "USE_CASH_ITEM: this task adds ItemUseKarmaScissors, a new sub-body arm selected by ClassificationKarmaScissors (552) inside the existing USE_CASH_ITEM opcode. It changes no wire layout of any already-verified USE_CASH_ITEM version column; the outer opcode/body framing for every other arm (megaphone, sale, incubator, karma-scissors' sibling arms, unrelease, etc.) is untouched."
+  - "USE_CASH_ITEM: ItemUseKarmaScissors round-trips at both updateTime positions against golden bytes for gms_v83 and gms_v95 (Task 2 unit fixtures), independent of the matrix's per-version audit-report verification below."
+  - "USE_CASH_ITEM: three columns remain UNVERIFIED (status.json state=incomplete, not silently dropped) after this task, unchanged from before this task: gms_v83 (opcode 79, note: no audit report), gms_v84 (opcode 79, note: no audit report), gms_v92 (opcode 86, note: tier-1 without fixture; verdict search-only). This task did not attempt to promote these three columns; it only added a sub-body arm reachable once the opcode itself is decoded."
+out_of_scope:
+  - model/asset            # KarmaUsed flag getter/setter plumbing across seven services is domain-model state, not a packet codec.
+  - inventory/tradeAvailable  # atlas-data reader retype (bool->int32) and downstream consumer updates are WZ-data-shape churn, not a wire packet.

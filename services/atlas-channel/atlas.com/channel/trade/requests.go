@@ -1,6 +1,7 @@
 package trade
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
@@ -15,11 +16,15 @@ const (
 	RoomsResource = "trades/rooms?filter[characterId]=%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("TRADES")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "TRADES")
 }
 
 // requestByMember reads the (0-or-1) trade room characterId occupies.
-func requestByMember(characterId character.Id) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+RoomsResource, characterId))
+func requestByMember(ctx context.Context, characterId character.Id) requests.Request[[]RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]RestModel](err)
+	}
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+RoomsResource, characterId))
 }

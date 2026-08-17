@@ -17,6 +17,7 @@ import (
 	gachapon2 "atlas-saga-orchestrator/kafka/message/gachapon"
 	incubator2 "atlas-saga-orchestrator/kafka/message/incubator"
 	megaphone2 "atlas-saga-orchestrator/kafka/message/megaphone"
+	"atlas-saga-orchestrator/kafka/message/npc"
 	npcshop "atlas-saga-orchestrator/kafka/message/npcshop"
 	questmessage "atlas-saga-orchestrator/kafka/message/quest"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
@@ -25,7 +26,9 @@ import (
 	"atlas-saga-orchestrator/monster"
 	"atlas-saga-orchestrator/mts"
 	"atlas-saga-orchestrator/note"
+	"atlas-saga-orchestrator/party"
 	party_quest "atlas-saga-orchestrator/party_quest"
+	"atlas-saga-orchestrator/pending_change"
 	"atlas-saga-orchestrator/pet"
 	portalBlocking "atlas-saga-orchestrator/portal"
 	"atlas-saga-orchestrator/quest"
@@ -83,6 +86,13 @@ type Handler interface {
 	WithPartyQuestProcessor(party_quest.Processor) Handler
 	WithReactorProcessor(reactor.Processor) Handler
 	WithNoteProcessor(note.Processor) Handler
+	// WithPartyProcessor and WithPendingChangeProcessor are the injector
+	// seams for the five world-transfer handlers (task-227 Task 13). Without
+	// them no test can reach those handlers' bodies — only their dispatch and
+	// payload typing — so a handler calling the wrong endpoint would ship
+	// green.
+	WithPartyProcessor(party.Processor) Handler
+	WithPendingChangeProcessor(pending_change.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -115,6 +125,8 @@ type Handler interface {
 	handleIncreaseBuddyCapacity(s Saga, st Step[any]) error
 	handleGainCloseness(s Saga, st Step[any]) error
 	handleEvolvePet(s Saga, st Step[any]) error
+	handleRevivePet(s Saga, st Step[any]) error
+	handleRenamePet(s Saga, st Step[any]) error
 	handleSpawnMonster(s Saga, st Step[any]) error
 	handleSpawnReactorDrops(s Saga, st Step[any]) error
 	handleCompleteQuest(s Saga, st Step[any]) error
@@ -177,6 +189,13 @@ type Handler interface {
 	handleCreateNote(s Saga, st Step[any]) error
 	handleOpenNpcShop(s Saga, st Step[any]) error
 	handleExtendAssetExpiration(s Saga, st Step[any]) error
+	handleValidateWorldTransfer(s Saga, st Step[any]) error
+	handleLeaveGuildForTransfer(s Saga, st Step[any]) error
+	handleLeavePartyForTransfer(s Saga, st Step[any]) error
+	handleSeverBuddiesForTransfer(s Saga, st Step[any]) error
+	handleChangeCharacterWorld(s Saga, st Step[any]) error
+	handleStartItemConversation(s Saga, st Step[any]) error
+	handleStartNpcConversation(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -212,6 +231,8 @@ type HandlerImpl struct {
 	mapCommandP     map_command.Processor
 	rpsP            rps.Processor
 	noteP           note.Processor
+	partyP          party.Processor
+	pendingChangeP  pending_change.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -247,6 +268,8 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		mapCommandP:     map_command.NewProcessor(l, ctx),
 		rpsP:            rps.NewProcessor(l, ctx),
 		noteP:           note.NewProcessor(l, ctx),
+		partyP:          party.NewProcessor(l, ctx),
+		pendingChangeP:  pending_change.NewProcessor(l, ctx),
 	}
 }
 
@@ -755,6 +778,18 @@ func (h *HandlerImpl) WithReactorProcessor(reactorP reactor.Processor) Handler {
 	}
 }
 
+func (h *HandlerImpl) WithPartyProcessor(partyP party.Processor) Handler {
+	c := *h
+	c.partyP = partyP
+	return &c
+}
+
+func (h *HandlerImpl) WithPendingChangeProcessor(pendingChangeP pending_change.Processor) Handler {
+	c := *h
+	c.pendingChangeP = pendingChangeP
+	return &c
+}
+
 func (h *HandlerImpl) WithNoteProcessor(noteP note.Processor) Handler {
 	return &HandlerImpl{
 		l:     h.l,
@@ -785,6 +820,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAwardCurrency, true
 	case DestroyAsset:
 		return h.handleDestroyAsset, true
+	case DestroyAllAssets:
+		return h.handleDestroyAllAssets, true
 	case DestroyAssetFromSlot:
 		return h.handleDestroyAssetFromSlot, true
 	case EquipAsset:
@@ -827,6 +864,20 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleGainCloseness, true
 	case EvolvePet:
 		return h.handleEvolvePet, true
+	case ValidateWorldTransfer:
+		return h.handleValidateWorldTransfer, true
+	case LeaveGuildForTransfer:
+		return h.handleLeaveGuildForTransfer, true
+	case LeavePartyForTransfer:
+		return h.handleLeavePartyForTransfer, true
+	case SeverBuddiesForTransfer:
+		return h.handleSeverBuddiesForTransfer, true
+	case ChangeCharacterWorld:
+		return h.handleChangeCharacterWorld, true
+	case RevivePet:
+		return h.handleRevivePet, true
+	case RenamePet:
+		return h.handleRenamePet, true
 	case SpawnMonster:
 		return h.handleSpawnMonster, true
 	case SpawnReactorDrops:
@@ -853,6 +904,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleShowStorage, true
 	case OpenNpcShop:
 		return h.handleOpenNpcShop, true
+	case StartItemConversation:
+		return h.handleStartItemConversation, true
+	case StartNpcConversation:
+		return h.handleStartNpcConversation, true
 	case AcceptToStorage:
 		return h.handleAcceptToStorage, true
 	case ReleaseFromCharacter:
@@ -953,6 +1008,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSetAssetOwner, true
 	case ApplyAssetLock:
 		return h.handleApplyAssetLock, true
+	case ApplyAssetKarma:
+		return h.handleApplyAssetKarma, true
 	case ExtendAssetExpiration:
 		return h.handleExtendAssetExpiration, true
 	case IncubatorResult:
@@ -1128,6 +1185,22 @@ func (h *HandlerImpl) handleDestroyAsset(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handleDestroyAllAssets handles the DestroyAllAssets action
+func (h *HandlerImpl) handleDestroyAllAssets(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(DestroyAllAssetsPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.compP.RequestDestroyAllItems(s.TransactionId(), payload.CharacterId, payload.TemplateId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to destroy all assets.")
+		return err
+	}
+
+	return nil
+}
+
 // handleSetAssetOwner handles the SetAssetOwner action
 func (h *HandlerImpl) handleSetAssetOwner(s Saga, st Step[any]) error {
 	payload, ok := st.Payload().(SetAssetOwnerPayload)
@@ -1151,6 +1224,26 @@ func (h *HandlerImpl) handleApplyAssetLock(s Saga, st Step[any]) error {
 	err := h.compP.RequestApplyLock(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.Expiration)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to apply asset lock.")
+		return err
+	}
+	return nil
+}
+
+// handleApplyAssetKarma handles the ApplyAssetKarma action.
+//
+// The scissors' own karma type rides on the payload and is forwarded onto the
+// Kafka command body, because atlas-inventory — the owning service and the
+// authority — re-runs the eligibility predicate, and the EQUALITY half of that
+// predicate is meaningless without it. Forwarding 0 would silently degrade the
+// v87+ equality model to the v83 non-zero model.
+func (h *HandlerImpl) handleApplyAssetKarma(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ApplyAssetKarmaPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+	err := h.compP.RequestApplyKarma(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.ScissorsKarma, false)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to apply asset karma.")
 		return err
 	}
 	return nil
@@ -1216,6 +1309,63 @@ func (h *HandlerImpl) handleOpenNpcShop(s Saga, st Step[any]) error {
 		"character_id":    payload.CharacterId,
 		"npc_template_id": payload.NpcTemplateId,
 	}).Debug("Dispatched npc shop ENTER; awaiting ENTERED/ENTER_ERROR.")
+
+	return nil
+}
+
+// handleStartItemConversation handles the StartItemConversation action.
+//
+// Deliberately NOT self-completing (contrast handleShowStorage): the step stays
+// Pending until the conversation status consumer reports STARTED or
+// START_ERROR. That is the whole point of the scripted-item saga — the
+// following destroy_asset_from_slot step must not run unless the dialogue
+// actually opened, so an item with no authored conversation survives.
+func (h *HandlerImpl) handleStartItemConversation(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(StartItemConversationPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := producer.ProviderImpl(h.l)(h.ctx)(npc.EnvCommandTopic)(NpcConversationStartItemCommandProvider(s.TransactionId(), payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to emit item conversation start command.")
+		return err
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id":  s.TransactionId().String(),
+		"character_id":    payload.CharacterId,
+		"item_id":         payload.ItemId,
+		"npc_template_id": payload.NpcTemplateId,
+	}).Debug("Dispatched item conversation START; awaiting STARTED/START_ERROR.")
+
+	return nil
+}
+
+// handleStartNpcConversation handles the StartNpcConversation action.
+//
+// Deliberately NOT self-completing, for the same reason as
+// handleStartItemConversation: the step stays Pending until the conversation
+// status consumer reports STARTED or START_ERROR, so a following
+// destroy_asset_from_slot step (if any) never runs against a dialogue that
+// never opened.
+func (h *HandlerImpl) handleStartNpcConversation(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(StartNpcConversationPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := producer.ProviderImpl(h.l)(h.ctx)(npc.EnvCommandTopic)(NpcConversationStartNpcCommandProvider(s.TransactionId(), payload))
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to emit npc conversation start command.")
+		return err
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id":  s.TransactionId().String(),
+		"character_id":    payload.CharacterId,
+		"npc_template_id": payload.NpcTemplateId,
+	}).Debug("Dispatched npc conversation START; awaiting STARTED/START_ERROR.")
 
 	return nil
 }
@@ -1383,6 +1533,164 @@ func (h *HandlerImpl) handleIncreaseBuddyCapacity(s Saga, st Step[any]) error {
 	return nil
 }
 
+// handleValidateWorldTransfer runs atlas-character's read-only transfer
+// eligibility gate (Task 11). It is read-only, so there is no compensation
+// and — matching handleValidateCharacterState's shape — no downstream event
+// will ever advance this step, so it self-completes on success. An
+// eligible == false response is turned into an error carrying the gate's
+// reason, which becomes the saga's failure reason and hence the eventual
+// pending-change record's REJECTED reason (Task 14) — it must not be
+// swallowed.
+func (h *HandlerImpl) handleValidateWorldTransfer(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ValidateWorldTransferPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	eligible, reason, err := h.pendingChangeP.CheckTransferEligibility(payload.CharacterId, payload.DestinationWorldId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to check world transfer eligibility.")
+		return err
+	}
+	if !eligible {
+		err := fmt.Errorf("world transfer not eligible: %s", reason)
+		h.logActionError(s, st, err, "World transfer eligibility check rejected.")
+		return err
+	}
+
+	if err := NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true); err != nil {
+		h.logActionError(s, st, err, "Unable to self-complete world transfer validation step.")
+		return err
+	}
+	return nil
+}
+
+// handleLeaveGuildForTransfer emits a forced LEAVE command against the
+// character's guild ahead of a world transfer. force=true bypasses any
+// client-confirmation gate the guild service would otherwise apply — the
+// saga must guarantee the severance, not wait on player confirmation. A
+// GuildId of 0 means the character has no guild: the step self-completes,
+// since no LEAVE command means no MEMBER_LEFT will ever arrive to advance it.
+func (h *HandlerImpl) handleLeaveGuildForTransfer(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(LeaveGuildForTransferPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	if payload.GuildId == 0 {
+		if err := NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true); err != nil {
+			h.logActionError(s, st, err, "Unable to self-complete guildless world transfer step.")
+			return err
+		}
+		return nil
+	}
+
+	err := h.guildP.RequestLeave(s.TransactionId(), payload.CharacterId, payload.GuildId, true)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to leave guild for world transfer.")
+		return err
+	}
+
+	return nil
+}
+
+// handleLeavePartyForTransfer emits a LEAVE command against the character's
+// party ahead of a world transfer. A PartyId of 0 means the character has no
+// party: the step self-completes, matching handleLeaveGuildForTransfer.
+func (h *HandlerImpl) handleLeavePartyForTransfer(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(LeavePartyForTransferPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	if payload.PartyId == 0 {
+		if err := NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true); err != nil {
+			h.logActionError(s, st, err, "Unable to self-complete partyless world transfer step.")
+			return err
+		}
+		return nil
+	}
+
+	err := h.partyP.RequestLeave(s.TransactionId(), payload.CharacterId, payload.PartyId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to leave party for world transfer.")
+		return err
+	}
+
+	return nil
+}
+
+// handleSeverBuddiesForTransfer emits a REQUEST_DELETE for every id in
+// BuddyIds, once in each direction (FR-4.3 requires severance to be mutual —
+// atlas-buddies only removes the caller's own list entry per command), so N
+// buddies means 2N in-flight severances. The step must not complete on the
+// first BUDDY_REMOVED ack — the other 2N-1 would still be in flight, and a
+// failure among them would never be observed by the saga, landing the
+// character in the destination world while still holding buddy rows that
+// point at characters in the world it left. RegisterSeveranceTracker records
+// the full expected set BEFORE any command is emitted (so a fast ack can
+// never race ahead of registration); handleBuddyRemovedEvent
+// (kafka/consumer/buddylist/consumer.go) only completes the step once every
+// pair has been observed via AcknowledgeSeverance. An empty BuddyIds means
+// the character has no buddies to sever: no tracker is needed, and the step
+// self-completes immediately, matching the guild/party skip branches.
+func (h *HandlerImpl) handleSeverBuddiesForTransfer(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(SeverBuddiesForTransferPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	if len(payload.BuddyIds) == 0 {
+		if err := NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true); err != nil {
+			h.logActionError(s, st, err, "Unable to self-complete buddyless world transfer step.")
+			return err
+		}
+		return nil
+	}
+
+	RegisterSeveranceTracker(s.TransactionId(), payload.CharacterId, payload.BuddyIds)
+
+	for _, buddyId := range payload.BuddyIds {
+		if err := h.buddyListP.RequestDeleteAndEmit(s.TransactionId(), payload.CharacterId, payload.WorldId, buddyId); err != nil {
+			h.logActionError(s, st, err, "Unable to sever buddy for world transfer.")
+			return err
+		}
+		if err := h.buddyListP.RequestDeleteAndEmit(s.TransactionId(), buddyId, payload.WorldId, payload.CharacterId); err != nil {
+			h.logActionError(s, st, err, "Unable to sever reverse-direction buddy for world transfer.")
+			return err
+		}
+	}
+
+	return nil
+}
+
+// handleChangeCharacterWorld is the final, single-row-update step of a world
+// transfer (task-227 Task 13). It PATCHes the character's world through the
+// dedicated world-change route (Task 7) — never the generic PATCH
+// /characters/{id}, which cannot express "transfer to world 0" — then
+// resolves the backing pending-change record to APPLIED. Completion is
+// asynchronous: it arrives on the WORLD_CHANGED status event
+// (EventKindCharacterWorldChanged), which atlas-character emits from the
+// world-change route with the routing world set to the destination.
+func (h *HandlerImpl) handleChangeCharacterWorld(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ChangeCharacterWorldPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	if err := h.pendingChangeP.ChangeWorld(s.TransactionId(), payload.CharacterId, payload.DestinationWorldId); err != nil {
+		h.logActionError(s, st, err, "Unable to change character world.")
+		return err
+	}
+
+	if err := h.pendingChangeP.Resolve(payload.CharacterId, payload.PendingChangeId, pending_change.StatusApplied, ""); err != nil {
+		h.logActionError(s, st, err, "Unable to resolve pending change to APPLIED.")
+		return err
+	}
+
+	return nil
+}
+
 func (h *HandlerImpl) handleGainCloseness(s Saga, st Step[any]) error {
 	payload, ok := st.Payload().(GainClosenessPayload)
 	if !ok {
@@ -1407,6 +1715,36 @@ func (h *HandlerImpl) handleEvolvePet(s Saga, st Step[any]) error {
 	err := h.petP.EvolveAndEmit(s.TransactionId(), payload.PetId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to evolve pet.")
+		return err
+	}
+
+	return nil
+}
+
+func (h *HandlerImpl) handleRevivePet(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(RevivePetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.petP.ReviveAndEmit(s.TransactionId(), payload.CharacterId, payload.PetId, payload.SourceTemplateId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to revive pet.")
+		return err
+	}
+
+	return nil
+}
+
+func (h *HandlerImpl) handleRenamePet(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(RenamePetPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.petP.RenameAndEmit(s.TransactionId(), payload.PetId, payload.CharacterId, payload.Name)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to rename pet.")
 		return err
 	}
 

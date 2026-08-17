@@ -51,7 +51,12 @@ type RestModel struct {
 	AddTime uint32 `json:"addTime,omitempty"`
 	// MaxDays is info/maxDays in DAYS — the ceiling, anchored to now, past
 	// which an extender may not push a target's expiration.
-	MaxDays         uint32 `json:"maxDays,omitempty"`
+	MaxDays uint32 `json:"maxDays,omitempty"`
+	// Life is info/life in DAYS — the lifespan a pet-revival item (Water of
+	// Life, classification 518) grants. Same WZ node and same unit as
+	// pet/reader.go's Life; 0518.img carries life but no maxDays, which is
+	// why the expiration-extender's maxDays ceiling cannot serve this flow.
+	Life            uint32 `json:"life,omitempty"`
 	Meso            uint32 `json:"meso,omitempty"` // 0520 meso sacks: info/meso award amount
 	StateChangeItem uint32 `json:"stateChangeItem,omitempty"`
 	// Npc is the WZ info/npc value: the NPC template a remote-merchant cash
@@ -63,6 +68,15 @@ type RestModel struct {
 	PetSkills   []string           `json:"petSkills,omitempty"`
 	PetSkillAdd bool               `json:"petSkillAdd,omitempty"`
 	TradeBlock  bool               `json:"tradeBlock"`
+	// TradeAvailable is WZ info/tradeAvailable; see equipment/rest.go.
+	TradeAvailable int32 `json:"tradeAvailable"`
+	// Karma is WZ info/karma — the SCISSORS' OWN karma type, read by
+	// CItemInfo::RegisterKarmaScissorsItem (gms_v95 @0x5A1120) into
+	// KARMASCISSORSITEM.nKarmaType. Parsed for every cash item and left 0 for
+	// non-scissors: absence already yields 0, so no classification filter is
+	// needed. The v83 corpus carries no `karma` node at all, which is why the
+	// eligibility predicate treats 0 as "untyped scissors" (design §3.2).
+	Karma int32 `json:"karma"`
 }
 
 func (r RestModel) GetName() string {

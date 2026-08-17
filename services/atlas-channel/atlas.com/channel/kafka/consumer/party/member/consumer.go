@@ -73,7 +73,7 @@ func applyMemberDoor(pm *partypkt.PartyMember, dp door.Processor, memberId uint3
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("party_member_status_event")(member2.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("party_member_status_event")(member2.EnvEventStatusTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -91,6 +91,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleLogoutEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleNameChangedEvent(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -137,6 +142,44 @@ func handleLoginEvent(sc server.Model, wp writer.Producer) message.Handler[membe
 func handleLogoutEvent(sc server.Model, wp writer.Producer) message.Handler[member2.StatusEvent[member2.LogoutEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e member2.StatusEvent[member2.LogoutEventBody]) {
 		if e.Type != member2.EventPartyStatusTypeLogout {
+			return
+		}
+
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
+			return
+		}
+
+		p, err := party.NewProcessor(l, ctx).GetById(e.PartyId)
+		if err != nil {
+			l.WithError(err).Errorf("Received event for party [%d] which does not exist.", e.PartyId)
+			return
+		}
+
+		tc, err := character.NewProcessor(l, ctx).GetById()(e.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Received event for character [%d] which does not exist.", e.CharacterId)
+			return
+		}
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			for _, m := range p.Members() {
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), partyUpdate(l)(ctx)(wp)(p, tc, sc.ChannelId()))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce character [%d] triggered party [%d] update.", m.Id(), p.Id())
+				}
+			}
+		})
+	}
+}
+
+// handleNameChangedEvent redraws the party window for every member after one of
+// them is renamed. The window's member names come from atlas-parties' registry
+// (toPartyMembers reads m.Name()), so this re-fetch is what carries the new name
+// to the client — for the renamed player and everyone else in the party alike.
+// Without it the old name persists in the window until the party is rebuilt.
+func handleNameChangedEvent(sc server.Model, wp writer.Producer) message.Handler[member2.StatusEvent[member2.NameChangedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e member2.StatusEvent[member2.NameChangedEventBody]) {
+		if e.Type != member2.EventPartyStatusTypeNameChanged {
 			return
 		}
 

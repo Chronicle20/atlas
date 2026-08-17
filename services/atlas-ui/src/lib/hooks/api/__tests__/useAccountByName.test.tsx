@@ -50,6 +50,7 @@ const mockAccount: Account = {
     language: "en",
     country: "US",
     characterSlots: 6,
+    birthDate: 0,
   },
 };
 

@@ -78,12 +78,15 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m.ProtectTime = uint32(i.GetIntegerWithDefault("protectTime", 0))
 			m.AddTime = uint32(i.GetIntegerWithDefault("addTime", 0))
 			m.MaxDays = uint32(i.GetIntegerWithDefault("maxDays", 0))
+			m.Life = uint32(i.GetIntegerWithDefault("life", 0))
 			// 0520 meso sacks: the flat award amount. Absent node => 0, which the
 			// channel handler treats as "reject, consume nothing" (FR-1.2/FR-2.4).
 			// Deliberately NOT a Spec entry — Spec is the consumable effect map and
 			// this is an award amount.
 			m.Meso = uint32(i.GetIntegerWithDefault("meso", 0))
 			m.TradeBlock = i.GetBool("tradeBlock", false)
+			m.TradeAvailable = i.GetIntegerWithDefault("tradeAvailable", 0)
+			m.Karma = i.GetIntegerWithDefault("karma", 0)
 			m.StateChangeItem = uint32(i.GetIntegerWithDefault("stateChangeItem", 0))
 			// info/npc — the shop NPC a remote-merchant item (0545.img) opens.
 			// Mirrors consumable/reader.go's identical read.

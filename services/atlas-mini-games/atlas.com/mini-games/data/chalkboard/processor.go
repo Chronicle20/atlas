@@ -35,7 +35,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // silently fail-opened (EXT-03) — the caller decides how to handle it, instead
 // of letting a transient outage wave the CREATE/VISIT chalkboard gate through.
 func (p *ProcessorImpl) HasOpen(characterId uint32) (bool, error) {
-	_, err := requestById(characterId)(p.l, p.ctx)
+	_, err := requestById(p.ctx, characterId)(p.l, p.ctx)
 	if err != nil {
 		if errors.Is(err, requests.ErrNotFound) {
 			return false, nil

@@ -29,7 +29,7 @@ func (p *RestAppearanceProvider) GetCharacterAppearance(ctx context.Context, cha
 
 	// Make REST request to query aggregator
 	provider := requests.Provider[RestCharacterModel, CharacterAppearance](p.l, ctx)(
-		requestCharacterById(characterId),
+		requestCharacterById(ctx, characterId),
 		ExtractAppearance,
 	)
 

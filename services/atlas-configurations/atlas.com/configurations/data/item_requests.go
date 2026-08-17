@@ -1,6 +1,7 @@
 package data
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -46,7 +47,11 @@ func (i *ItemRestModel) SetToManyReferenceIDs(_ string, _ []string) error { retu
 
 // requestEquipmentById hits GET /data/equipment/{id} which returns equip statistics.
 // A 404 from atlas-data means the template does not exist as equip data.
-func requestEquipmentById(id uint32) requests.Request[ItemRestModel] {
-	url := fmt.Sprintf("%s"+equipmentPath, getDataBaseRequest(), id)
+func requestEquipmentById(ctx context.Context, id uint32) requests.Request[ItemRestModel] {
+	root, err := getDataBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[ItemRestModel](err)
+	}
+	url := fmt.Sprintf("%s"+equipmentPath, root, id)
 	return requests.GetRequest[ItemRestModel](url)
 }

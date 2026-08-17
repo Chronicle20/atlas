@@ -1,6 +1,7 @@
 package saved_location
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -11,10 +12,14 @@ const (
 	ByCharacterAndType = "/characters/%d/" + Resource + "/%s"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("CHARACTERS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "CHARACTERS")
 }
 
-func requestByCharacterAndType(characterId uint32, locationType string) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByCharacterAndType, characterId, locationType))
+func requestByCharacterAndType(ctx context.Context, characterId uint32, locationType string) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+ByCharacterAndType, characterId, locationType))
 }

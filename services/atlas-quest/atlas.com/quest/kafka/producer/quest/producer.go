@@ -94,7 +94,8 @@ func ErrorStatusEventProvider(characterId uint32, worldId world.Id, questId uint
 func emitEvent(l logrus.FieldLogger, ctx context.Context, provider model.Provider[[]kafka.Message]) error {
 	sd := producer.SpanHeaderDecorator(ctx)
 	td := producer.TenantHeaderDecorator(ctx)
-	return producer.Produce(l)(producer.ManagerWriterProvider(l)(quest2.EnvStatusEventTopic))(sd, td)(provider)
+	ed := producer.EnvHeaderDecorator(ctx)
+	return producer.Produce(l)(producer.ManagerWriterProvider(l)(quest2.EnvStatusEventTopic))(sd, td, ed)(provider)
 }
 
 // EmitQuestStarted emits a quest started event

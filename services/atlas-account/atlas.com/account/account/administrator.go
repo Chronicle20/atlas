@@ -55,6 +55,17 @@ func updatePic(pic string) EntityUpdateFunction {
 	}
 }
 
+func updateBirthDate(birthDate uint32) EntityUpdateFunction {
+	return func() ([]string, func(e *Entity)) {
+		cs := []string{"birth_date"}
+
+		uf := func(e *Entity) {
+			e.BirthDate = birthDate
+		}
+		return cs, uf
+	}
+}
+
 func updatePin(pin string) EntityUpdateFunction {
 	return func() ([]string, func(e *Entity)) {
 		cs := []string{"pin"}
@@ -116,6 +127,7 @@ func Make(a Entity) (Model, error) {
 		SetPassword(a.Password).
 		SetPin(a.PIN).
 		SetPic(a.PIC).
+		SetBirthDate(a.BirthDate).
 		SetPinAttempts(a.PinAttempts).
 		SetPicAttempts(a.PicAttempts).
 		SetGender(a.Gender).

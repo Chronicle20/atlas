@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-mts/bid"
 	"atlas-mts/holding"
+	characterConsumer "atlas-mts/kafka/consumer/character"
 	custodyConsumer "atlas-mts/kafka/consumer/custody"
 	mtsConsumer "atlas-mts/kafka/consumer/mts"
 	"atlas-mts/listing"
@@ -51,7 +52,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(
@@ -86,10 +87,14 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	custodyConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mtsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	characterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := custodyConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	if err := mtsConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := characterConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 

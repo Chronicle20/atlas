@@ -1,6 +1,10 @@
 package party
 
-import "github.com/Chronicle20/atlas/libs/atlas-constants/world"
+import (
+	"github.com/google/uuid"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+)
 
 const (
 	EnvCommandTopic           = "COMMAND_TOPIC_PARTY"
@@ -60,11 +64,12 @@ type changeLeaderBody struct {
 }
 
 type statusEvent[E any] struct {
-	ActorId uint32   `json:"actorId"`
-	WorldId world.Id `json:"worldId"`
-	PartyId uint32   `json:"partyId"`
-	Type    string   `json:"type"`
-	Body    E        `json:"body"`
+	ActorId       uint32    `json:"actorId"`
+	WorldId       world.Id  `json:"worldId"`
+	PartyId       uint32    `json:"partyId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
+	TransactionId uuid.UUID `json:"transactionId,omitempty"`
 }
 
 type createdEventBody struct{}

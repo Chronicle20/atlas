@@ -360,6 +360,12 @@ func (m *Asset) encodeStackableInfo(l logrus.FieldLogger, _ context.Context) fun
 	}
 }
 
+// PetDriedUpFileTime is the FILETIME at or above which the client reads a pet
+// as dried up: 150842304000000000 = 2079-01-01, the constant at dword_AF30B0
+// compared by GMS v83 sub_4E4044 @0x4E4044. Sending exactly this value is what
+// puts a pet in the dried-up state; see encodePetDeadDate.
+const PetDriedUpFileTime int64 = 150842304000000000
+
 // encodePetDeadDate renders GW_ItemSlotPet::dateDead (the 8-byte FILETIME at
 // struct offset +89; GW_ItemSlotPet::RawDecode GMS v83 @0x4e4219 reads it with
 // DecodeBuffer(this+89, 8)).
@@ -375,11 +381,27 @@ func (m *Asset) encodeStackableInfo(l logrus.FieldLogger, _ context.Context) fun
 // So an unset dead date must NOT go out as the MsTime sentinel. Zero is used
 // instead: it is unambiguously below the threshold, so the pet stays usable and
 // the client falls back to the item's own `permanent` WZ property for its
-// tooltip text. A pet whose life date is genuinely known always takes the
-// MsTime path below.
+// tooltip text.
+//
+// The threshold is a THRESHOLD, not an expiry clock: the client never compares
+// dateDead against the current time, so a dead date that has merely elapsed
+// (say, yesterday) still encodes below the threshold and the pet reads as
+// alive. That is why an already-elapsed dead date is sent as
+// PetDriedUpFileTime rather than as its own MsTime value — it is the only way
+// to express "this pet has dried up" on the wire. Without it the client offers
+// the pet for summoning (CWvsContext::SendActivatePetRequest @0xa240a2 gates
+// on the same predicate), the server rejects with ErrPetExpired, and the
+// exclusive-request lock the client set never clears.
+//
+// Encoding therefore depends on the current time. That is inherent: the wire
+// value is a state ("dried up" / "dries up on <date>"), and which state a
+// stored expiration denotes changes as the clock passes it.
 func encodePetDeadDate(t time.Time) int64 {
 	if t.IsZero() {
 		return 0
+	}
+	if !t.After(time.Now()) {
+		return PetDriedUpFileTime
 	}
 	return MsTime(t)
 }
@@ -644,6 +666,11 @@ func (m *Asset) decodeStackableInfo(r *request.Reader, isCash bool) {
 
 // decodePetDeadDate is the inverse of encodePetDeadDate: it maps the
 // "unset" wire value (0) back to the zero time so the codec round-trips.
+//
+// PetDriedUpFileTime does not round-trip, and cannot: it is a state marker
+// that replaces every already-elapsed dead date, so the original timestamp is
+// not on the wire. It decodes to the 2079 threshold date, which still reads as
+// dried up under the same predicate the client uses.
 func decodePetDeadDate(v int64) time.Time {
 	if v == 0 {
 		return time.Time{}

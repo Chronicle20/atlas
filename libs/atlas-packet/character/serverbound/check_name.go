@@ -13,8 +13,18 @@ import (
 const CharacterCheckNameHandle = "CharacterCheckNameHandle"
 
 // CheckName - CLogin::SendCheckDuplicateIDPacket
+//
+// The cash shop sends the SAME op from its rename dialog
+// (CCashShop::SendCheckDuplicateIDPacket); that half is decoded by
+// cash/serverbound.CheckNameChange, which answers with a different clientbound
+// op. See that type's doc comment for why the channel binds its own handler
+// name to this opcode instead of reusing CharacterCheckNameHandle.
 type CheckName struct {
 	name string
+}
+
+func NewCheckName(name string) CheckName {
+	return CheckName{name: name}
 }
 
 func (m CheckName) Name() string {

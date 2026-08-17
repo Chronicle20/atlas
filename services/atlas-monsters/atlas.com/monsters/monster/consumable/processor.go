@@ -29,5 +29,5 @@ var _ Processor = (*ProcessorImpl)(nil)
 // cache would buy nothing for the risk of serving one tenant another's
 // reward id (task-212 design §7).
 func (p *ProcessorImpl) GetById(itemId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(itemId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, itemId), Extract)()
 }

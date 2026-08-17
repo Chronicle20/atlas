@@ -7,32 +7,21 @@ import (
 
 	"gorm.io/gorm"
 
+	"github.com/google/uuid"
+
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, error) {
 	return func(t tenant.Model, ownerId uint32, m Model) (Model, error) {
-		s := m.Slot()
-		e := &Entity{
-			TenantId:   t.Id(),
-			OwnerId:    ownerId,
-			CashId:     m.CashId(),
-			TemplateId: m.TemplateId(),
-			Name:       m.Name(),
-			Level:      m.Level(),
-			Closeness:  m.Closeness(),
-			Fullness:   m.Fullness(),
-			Expiration: m.Expiration(),
-			Slot:       &s,
-			Flag:       m.Flag(),
-			PurchaseBy: m.PurchaseBy(),
-		}
+		e := m.ToEntity(t.Id())
+		e.OwnerId = ownerId
 
-		err := db.Create(e).Error
+		err := db.Create(&e).Error
 		if err != nil {
 			return Model{}, err
 		}
-		return Make(*e)
+		return Make(e)
 	}
 }
 
@@ -90,6 +79,26 @@ func updateLevel(db *gorm.DB) func(petId uint32, level byte) error {
 	}
 }
 
+func updateName(db *gorm.DB) func(petId uint32, name string) error {
+	return func(petId uint32, name string) error {
+		result := db.Model(&Entity{}).
+			Where("id = ?", petId).
+			Update("name", name)
+
+		if result.Error != nil {
+			return result.Error
+		}
+
+		// Deliberately NOT treating RowsAffected == 0 as an error, unlike the
+		// sibling update functions above. Kafka is at-least-once: a redelivered
+		// RENAME whose value is already applied updates zero rows, and erroring
+		// there would fail the orchestrator's rename_pet step on a duplicate
+		// that changed nothing (PRD FR-5.5). Existence is proven by the caller's
+		// pre-read inside the same transaction.
+		return nil
+	}
+}
+
 func updateOnEvolve(db *gorm.DB) func(petId uint32, templateId uint32, expiration time.Time) error {
 	return func(petId uint32, templateId uint32, expiration time.Time) error {
 		result := db.Model(&Entity{}).
@@ -103,6 +112,27 @@ func updateOnEvolve(db *gorm.DB) func(petId uint32, templateId uint32, expiratio
 		}
 		if result.RowsAffected == 0 {
 			return errors.New("no entity found to evolve")
+		}
+		return nil
+	}
+}
+
+// updateOnRevive writes ONLY the expiration and the revive transaction id.
+// Deliberately not updateOnEvolve: that function also rewrites template_id,
+// and a revive must never touch the pet's template.
+func updateOnRevive(db *gorm.DB) func(petId uint32, expiration time.Time, transactionId uuid.UUID) error {
+	return func(petId uint32, expiration time.Time, transactionId uuid.UUID) error {
+		result := db.Model(&Entity{}).
+			Where("id = ?", petId).
+			Updates(map[string]interface{}{
+				"expiration":            expiration,
+				"revive_transaction_id": transactionId,
+			})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("no entity found to revive")
 		}
 		return nil
 	}

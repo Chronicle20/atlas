@@ -1,0 +1,17 @@
+packet: cash/clientbound/CashCancelTransferWorldResult
+direction: clientbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::OnCancelTransferWorldResult
+    address: "0xa2a82d"
+    decompile_sha256: 32fdabc6e5d01197a6bcaf3fd41e8067ddd92eeb3ae768f631ef8d10fa3a4671
+verifies:
+    - libs/atlas-packet/cash/clientbound/cancel_transfer_world_result_test.go#TestCancelTransferWorldResultRoundTrip
+    - libs/atlas-packet/cash/clientbound/cancel_transfer_world_result_test.go#TestCancelTransferWorldResultByteFixtureCancelled
+    - libs/atlas-packet/cash/clientbound/cancel_transfer_world_result_test.go#TestCancelTransferWorldResultByteFixtureCancelledAlt
+    - libs/atlas-packet/cash/clientbound/cancel_transfer_world_result_test.go#TestCancelTransferWorldResultByteFixtureFailedWithMessage
+    - libs/atlas-packet/cash/clientbound/cancel_transfer_world_result_test.go#TestCancelTransferWorldResultByteFixtureFailedNoMessage
+    - libs/atlas-packet/cash/clientbound/cancel_transfer_world_result_test.go#TestCancelTransferWorldResultNoVersionDivergence
+    - libs/atlas-packet/cash/clientbound/cancel_transfer_world_result_test.go#TestCancelTransferWorldResultZeroFFAsymmetry
+    - libs/atlas-packet/cash/clientbound/cancel_transfer_world_result_test.go#TestCancelTransferWorldResultCodesAreConfigResolved

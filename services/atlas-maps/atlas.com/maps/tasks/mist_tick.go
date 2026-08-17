@@ -300,17 +300,21 @@ type MistTick struct {
 	processorFactory func(l logrus.FieldLogger, ctx context.Context, p producer.Provider, r *mist.Registry) mist.Processor
 	charsInField     func(t tenant.Model, f field.Model) []uint32
 	monstersInRect   func(ctx context.Context, m mist.Mist) ([]monster.RestModel, error)
+	envContext       func(context.Context) context.Context
 }
 
 // NewMistTick constructs a MistTick wired to the singleton mist registry
 // and the standard producer provider. The supplied charLookup is the seam
 // for fetching character world coordinates and HP (atlas-character REST in
-// production, fakes in tests).
-func NewMistTick(l logrus.FieldLogger, interval int, charLookup CharacterLookup) *MistTick {
+// production, fakes in tests). envContext originates this pod's own
+// environment identity onto each tenant's tick context before it feeds the
+// shared producer.Provider (see processTenant).
+func NewMistTick(l logrus.FieldLogger, interval int, charLookup CharacterLookup, envContext func(context.Context) context.Context) *MistTick {
 	return &MistTick{
 		l:          l,
 		interval:   interval,
 		charLookup: charLookup,
+		envContext: envContext,
 		registry:   mist.GetRegistry(),
 		producerProvider: func(ctx context.Context) producer.Provider {
 			return producer.ProviderImpl(l)(ctx)
@@ -378,7 +382,7 @@ func (r *MistTick) runOnce(ctx context.Context) {
 // own message.Buffer (tickCharacters/tickMonsters), so there is no shared
 // mutable buffer between mists either.
 func (r *MistTick) processTenant(ctx context.Context, t tenant.Model) {
-	tctx := tenant.WithContext(ctx, t)
+	tctx := r.envContext(tenant.WithContext(ctx, t))
 	prov := r.producerProvider(tctx)
 
 	mists := r.registry.AllByTenant(t)

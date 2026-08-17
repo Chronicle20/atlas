@@ -38,5 +38,9 @@ var _ Processor = (*ProcessorImpl)(nil)
 // sole caller) must see every buff to compute rate-affecting stat changes,
 // so this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) GetActiveBuffs(characterId uint32) ([]RestModel, error) {
-	return requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(characterBuffsUrl(characterId), 250, identity, model.Filters[RestModel]())()
+	url, err := characterBuffsUrl(p.ctx, characterId)
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[RestModel, RestModel](p.l, p.ctx)(url, 250, identity, model.Filters[RestModel]())()
 }

@@ -22,7 +22,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("asset_status")(asset.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("asset_status")(asset.EnvEventTopicStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
 		}
 	}
 }
@@ -65,7 +65,7 @@ func handleAssetMoved(l logrus.FieldLogger, ctx context.Context, e asset.StatusE
 func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.MovedStatusEventBody]) {
 	l.Debugf("Equipment [%d] (template %d) equipped by character [%d], fetching stats.", e.AssetId, e.TemplateId, e.CharacterId)
 
-	compartment, err := inventory.RequestEquipCompartment(e.CharacterId)(l, ctx)
+	compartment, err := inventory.RequestEquipCompartment(ctx, e.CharacterId)(l, ctx)
 	if err != nil {
 		l.WithError(err).Errorf("Failed to fetch equipment data for character [%d].", e.CharacterId)
 		return

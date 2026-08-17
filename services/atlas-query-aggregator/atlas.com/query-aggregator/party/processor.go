@@ -33,7 +33,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // GetPartyByCharacter returns the party for a character, or a zero-value model if the character has no party
 func (p *ProcessorImpl) GetPartyByCharacter(characterId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		models, err := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(characterId), Extract, model.Filters[Model]())()
+		models, err := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(p.ctx, characterId), Extract, model.Filters[Model]())()
 		if err != nil {
 			p.l.WithError(err).Debugf("Failed to get party for character %d, treating as no party", characterId)
 			return Model{}, nil

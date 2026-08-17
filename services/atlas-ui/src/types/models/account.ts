@@ -12,6 +12,11 @@ export interface AccountAttributes {
   pic: string;
   pinAttempts: number;
   picAttempts: number;
+  /**
+   * yyyymmdd as an integer, 0 when unset — NOT a timestamp. See
+   * lib/utils/birth-date.ts for the conversion helpers.
+   */
+  birthDate: number;
   loggedIn: number;
   lastLogin: number;
   gender: number;

@@ -33,7 +33,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // Returns error if no routes found or REST client fails
 func (p *ProcessorImpl) GetRouteByStartMap(mapId _map.Id) (Model, error) {
 	// Call REST client (returns array of routes)
-	resp, err := requestRoutesByStartMap(mapId)(p.l, p.ctx)
+	resp, err := requestRoutesByStartMap(p.ctx, mapId)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Warnf("Failed to get route for start map %d", mapId)
 		return Model{}, fmt.Errorf("failed to get route for start map %d: %w", mapId, err)

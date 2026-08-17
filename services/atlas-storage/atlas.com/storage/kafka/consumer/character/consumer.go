@@ -14,12 +14,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("character_status_event")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_status_event")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
 		}
 	}
 }
@@ -85,8 +86,9 @@ func handleStatusEventMapChanged() func(l logrus.FieldLogger, ctx context.Contex
 
 func cleanupProjection(l logrus.FieldLogger, ctx context.Context, characterId uint32) {
 	// Remove NPC context from cache (legacy)
+	t := tenant.MustFromContext(ctx)
 	cache := storage.GetNpcContextCache()
-	cache.Remove(characterId)
+	cache.Remove(t, characterId)
 
 	// Delete the projection
 	projection.GetManager().Delete(ctx, characterId)

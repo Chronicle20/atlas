@@ -64,6 +64,10 @@ func ExtractCharacterId(step Step[any]) uint32 {
 		return p.CharacterId
 	case OpenNpcShopPayload:
 		return p.CharacterId
+	case StartItemConversationPayload:
+		return p.CharacterId
+	case StartNpcConversationPayload:
+		return p.CharacterId
 	case TransferToStoragePayload:
 		return p.CharacterId
 	case WithdrawFromStoragePayload:
@@ -99,6 +103,16 @@ func ExtractCharacterId(step Step[any]) uint32 {
 	case SelectGachaponRewardPayload:
 		return p.CharacterId
 	case EmitGachaponWinPayload:
+		return p.CharacterId
+	case ValidateWorldTransferPayload:
+		return p.CharacterId
+	case LeaveGuildForTransferPayload:
+		return p.CharacterId
+	case LeavePartyForTransferPayload:
+		return p.CharacterId
+	case SeverBuddiesForTransferPayload:
+		return p.CharacterId
+	case ChangeCharacterWorldPayload:
 		return p.CharacterId
 	default:
 		return 0

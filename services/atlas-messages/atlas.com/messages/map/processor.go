@@ -61,5 +61,9 @@ func (p *ProcessorImpl) CharacterIdsInMapStringProvider(ch channel.Model, mapStr
 // just the first -- a truncated list here means some players in the map
 // silently miss the broadcast message.
 func (p *ProcessorImpl) CharacterIdsInFieldProvider(f field.Model) model.Provider[[]uint32] {
-	return requests.DrainProvider[RestModel, uint32](p.l, p.ctx)(charactersInMapUrl(f), 250, Extract, model.Filters[uint32]())
+	url, err := charactersInMapUrl(p.ctx, f)
+	if err != nil {
+		return model.ErrorProvider[[]uint32](err)
+	}
+	return requests.DrainProvider[RestModel, uint32](p.l, p.ctx)(url, 250, Extract, model.Filters[uint32]())
 }

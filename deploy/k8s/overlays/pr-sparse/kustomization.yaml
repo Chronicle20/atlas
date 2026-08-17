@@ -1,0 +1,413 @@
+# Sparse PR overlay shell (task-232 Task 44, Phase D).
+#
+# Unlike overlays/pr (the isolated overlay this file is derived from), this
+# overlay deploys only the override set's Deployments (design §17) plus the
+# always-local atlas-ingress. Every other service is routed through NS_*
+# (Task 43, deploy/k8s/base/ns-vars.generated.yaml) to the baseline
+# namespace, and the environment-record Job below tells every consumer
+# which services those are.
+#
+# PLACEHOLDER_PR_NUMBER / PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_FULL_SHA are
+# scalar sentinel strings resolved at CI time by
+# .github/workflows/pr-validation.yml's update-pr-overlay job, exactly as
+# in overlays/pr/kustomization.yaml:1-20 (Task 50 extends that job to this
+# overlay) — sed-substituted across this directory, then force-pushed to
+# bot/pr-<N>-resolved. The Argo CD ApplicationSet(atlas-pr-sparse) targets
+# that derived branch, NOT the PR head directly, so kustomize never sees
+# the placeholders.
+#
+# Two more scalar placeholders name the baseline environment without
+# hard-coding it (env.Id "main" MUST NOT appear as a literal here — design
+# §9, FR-1.5):
+#   PLACEHOLDER_BASELINE_ENVIRONMENT — the baseline's env.Id (e.g. "main"),
+#     used only in environment-record.yaml's `baseline` attribute.
+#   PLACEHOLDER_BASELINE_NAMESPACE — the baseline's k8s namespace (e.g.
+#     "atlas-main"), used in ns-overrides.yaml (the NS_* values every
+#     undeployed service routes through) and in environment-record.yaml
+#     (the environment-record Job POSTs directly to the baseline's own
+#     atlas-ingress, since atlas-configurations is never part of the
+#     override set). Task 50 resolves both from the ACTIVE baseline
+#     environment record — the same source of truth every other consumer
+#     of env.Record.Baseline reads from, never a literal.
+#
+# All FIVE placeholders above are single-line scalars: CI's substitution
+# is a blind whole-directory `sed` substring replace
+# (.github/workflows/pr-validation.yml:725-731, `find ... -exec sed -i -e
+# "s|X|Y|g" {} +` across every .yaml/.yml file), and a scalar replacement
+# value is harmless even where it lands inside a comment — it stays a
+# valid single line.
+#
+# TWO more sentinels below carry MULTI-LINE block content instead: the
+# delete-set anchor in this file's `patches:` list, and the
+# NS-override-set anchor in ns-overrides.yaml. Those are a categorically
+# different shape — a multi-line replacement value spliced into a second,
+# unintended occurrence of the same sentinel text corrupts the file (a
+# comment line does not survive gaining embedded raw structure mid-line).
+# So each block sentinel's exact text appears exactly ONCE across every
+# .yaml/.yml file in this directory — at its own anchor, a lone comment
+# line — and is never spelled out again, including in this header; see
+# each anchor's own comment, in place, for its fill contract and the
+# required newline-escaping convention.
+#
+# As a side effect of the bot-branch model: the `images:` block below
+# starts with `newTag: latest` for every service, matching overlays/pr.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# namespace is rewritten by the ApplicationSet at sync time:
+# atlas-pr-PLACEHOLDER_PR_NUMBER -> atlas-pr-<actual PR number>
+namespace: atlas-pr-PLACEHOLDER_PR_NUMBER
+
+resources:
+  - ../../base
+  - atlas-env-tokens.yaml
+  - ingress-route.yaml
+  - sync-bootstrap.yaml
+  - predelete-purge.yaml
+  - postsync-pihole-add.yaml
+  - environment-record.yaml
+  # wave0-create-dbs.yaml (overlays/pr) is intentionally NOT included: a
+  # sparse env shares the baseline's databases (D1) — there is nothing to
+  # pre-create.
+  # Note: the PostDelete cleanup Job, same as overlays/pr, does NOT live
+  # here — it is shared cross-overlay tooling that lives in
+  # deploy/k8s/overlays/pr-cleanup/ (see that overlay's header and
+  # task-070/design.md §3.1 (Design A)).
+  #
+  # atlas-env-tokens.yaml / ingress-route.yaml / sync-bootstrap.yaml /
+  # predelete-purge.yaml / postsync-pihole-add.yaml are byte-identical
+  # copies of the same-named files in ../pr/ — kustomize's default load
+  # restrictor forbids a patch/resource path from escaping this
+  # directory's tree, so a relative ../pr/ reference is not viable. Keep
+  # them in sync with ../pr/ by hand until Task 50 (or a follow-up) moves
+  # the shared ones to a common base both overlays include.
+
+patches:
+  # The NS_* override patch onto atlas-ingress (Task 43's per-service
+  # routing variables) — the mechanism that makes "only 4 Deployments"
+  # correct routing rather than a broken one.
+  - path: ns-overrides.yaml
+  - path: patches/ingress-host.yaml
+  - path: patches/consumer-group-env.yaml
+  - path: patches/lb-allocate.yaml
+  # db-name-suffix.yaml (overlays/pr) is intentionally NOT included (D1:
+  # shared databases — no per-environment DB_NAME suffix). The three
+  # patches above are byte-identical copies of ../pr/patches/ — same load-
+  # restrictor constraint as the resources list.
+  #
+  # Ephemeral PR envs do not need HA. Pin every Deployment to a single
+  # replica to halve the pod footprint vs main (some base manifests ship
+  # with replicas: 2 or 4). Same cluster-relief patch as overlays/pr
+  # (task-063 deploy testing, 2026-05-15). Targets kind=Deployment so Jobs
+  # / IngressRoutes etc. are untouched.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+  # Spread this PR env's pods evenly across schedulable nodes. Same
+  # rationale as overlays/pr, with the env label sed-substituted at CI
+  # time so each PR env spreads only its own pods, not across other PR
+  # envs.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/template/spec/topologySpreadConstraints
+        value:
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels:
+                atlas.env: "PLACEHOLDER_ATLAS_ENV"
+  # Force a fresh pull for every app container in the PR env. Same
+  # rationale as overlays/pr (incident 2026-07-15, atlas-maps serving a
+  # stale atlas-rest under the frozen-:latest-digest failure mode). Base
+  # atlas Deployments are single-container, so containers/0 is always the
+  # app container.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
+  # Override GITSYNC_REF so the git-sync sidecar tracks the PR's full
+  # commit SHA (not main). CI sed-substitutes PLACEHOLDER_FULL_SHA at
+  # apply time.
+  - path: patches/seed-catalog-ref.yaml
+    target:
+      kind: ConfigMap
+      name: seed-catalog-config
+  # Tell bootstrap.sh it is running against a SHARED atlas-configurations
+  # database (task-232 task-47): ATLAS_MODE=sparse switches
+  # upsert_service_config's dangerous main-row merge off in favour of
+  # create_service_config, which creates a fresh Id-keyed row per
+  # environment and never reads/writes/merges into main's pinned row
+  # (G7/NG6). sync-bootstrap.yaml (the Job manifest) is one of the 9 files
+  # tools/pr-sparse-mirror-guard.sh binds byte-identical to overlays/pr, so
+  # ATLAS_MODE cannot be added there — this overlay-only strategic patch is
+  # the only place it can land without failing the guard or changing the
+  # isolated overlay. ATLAS_ENVIRONMENT (needed to stamp the fresh row so
+  # teardown/write-authorisation can scope it) rides the same patch, sourced
+  # from the atlas-env ConfigMap this overlay already generates above with
+  # literal ATLAS_ENVIRONMENT=pr-PLACEHOLDER_PR_NUMBER.
+  - target:
+      kind: Job
+      name: atlas-pr-bootstrap
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: ATLAS_MODE
+          value: sparse
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: ATLAS_ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: atlas-env
+              key: ATLAS_ENVIRONMENT
+  # atlas-minio-reconcile (task-174) is a main-only CronJob: it enumerates
+  # tenants across every atlas-main + atlas-pr-* namespace and reconciles
+  # MinIO storage cluster-wide, so it must run exactly once, not once per
+  # PR env — including per sparse PR env. Its ClusterRole/ClusterRoleBinding
+  # are cluster-scoped, so leaving them in would collide by name across
+  # concurrently-running PR overlays. Delete the whole resource set here,
+  # same as overlays/pr; it applies only via deploy/k8s/overlays/main.
+  - patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: atlas-minio-reconcile
+  - patch: |-
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRole
+      metadata:
+        name: atlas-minio-reconcile
+  - patch: |-
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: atlas-minio-reconcile
+  - patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: atlas-minio-reconcile-config
+  - patch: |-
+      $patch: delete
+      apiVersion: batch/v1
+      kind: CronJob
+      metadata:
+        name: atlas-minio-reconcile
+  # The delete-set anchor (see this file's header for why it's a lone
+  # comment line, not a bare scalar). CI (Task 50) computes "every base
+  # Deployment not in the override set" (deploy/k8s/base/atlas-*.yaml
+  # minus the four kept names) and blind-`sed`-replaces the anchor line
+  # below with one `$patch: delete` entry per name, e.g.:
+  #   - patch: |-
+  #       $patch: delete
+  #       apiVersion: apps/v1
+  #       kind: Deployment
+  #       metadata:
+  #         name: atlas-account
+  # The replacement value must escape every embedded newline as a
+  # backslash immediately followed by a real newline (GNU `sed s///`'s
+  # standard multi-line-replacement idiom) and must itself START with one
+  # such escaped newline, so the leading `#` on the anchor line comments
+  # out only the (now-empty) anchor rather than swallowing the first
+  # patch entry into the comment.
+  #
+  # DO NOT reuse `|` as the `sed` delimiter for this substitution (unlike
+  # the three scalar placeholders' `s|X|Y|g`, which is safe because none
+  # of PR_NUMBER/ATLAS_ENV/FULL_SHA ever contains `|`). The payload here
+  # is generated `$patch: delete` YAML, which itself uses `|-` (the
+  # block-scalar marker) — `|` inside the replacement collides with `|`
+  # as delimiter and `sed` fails outright (`unknown option to 's'`,
+  # reproduced directly). Use a delimiter guaranteed absent from the
+  # payload instead, e.g. a control character (`sed "s${D}X${D}Y${D}g"`
+  # with `D=$'\x01'` in bash), or substitute this one sentinel with
+  # `perl -0777 -pe` rather than `sed`. Verified directly with the
+  # control-character delimiter — see task-44-report.md's fix-round-1
+  # entry for the exact invocation and its output.
+  #
+  # Empty, as checked in here (a lone comment — ignored by the YAML
+  # parser, so this file still parses raw), this overlay builds every
+  # base Deployment, same as overlays/pr — the smoke-test shape exercised
+  # by Task 44 Step 4.
+  #PLACEHOLDER_DELETE_BLOCK
+
+# Per-env atlas-env ConfigMap. `merge` (not `replace`, unlike overlays/pr)
+# layers only what a sparse env changes on top of base/env-configmap.yaml:
+# base already ships DB_HOST/DB_PORT/REDIS_URL/TRACE_*/REST_PORT and every
+# COMMAND_TOPIC_*/EVENT_TOPIC_* unsuffixed, and `merge` keeps all of that
+# untouched. That is what makes topic suffixing disappear (D1, FR-4.8)
+# without restating 90+ literals here, and removing ATLAS_ENV from this
+# ConfigMap (kept only on individual container envs via
+# patches/consumer-group-env.yaml, for KAFKA_CONSUMER_GROUP uniqueness) is
+# what makes the Redis key prefix inert (design §9) — computeKeyPrefix("")
+# is already the legacy path, so no code change is needed.
+configMapGenerator:
+  - name: atlas-env
+    behavior: merge
+    literals:
+      - BASE_SERVICE_URL=http://atlas-ingress.atlas-pr-PLACEHOLDER_PR_NUMBER.svc.cluster.local:80/api/
+      - BOOTSTRAP_SERVERS=kafka-broker.kafka.svc.cluster.local:9093
+      # env.Self() reads this (libs/atlas-env SelfVar) — it is what lets a
+      # pod in this namespace answer "which environment am I" once the
+      # environment record goes ACTIVE (Task 45).
+      - ATLAS_ENVIRONMENT=pr-PLACEHOLDER_PR_NUMBER
+  - name: atlas-pr-bootstrap-tenant
+    literals:
+      - TENANT_ID=00000000-0000-0000-0000-000000000001
+      - REGION=GMS
+      - MAJOR_VERSION=83
+      - MINOR_VERSION=1
+
+images:
+  - name: ghcr.io/chronicle20/atlas-account/atlas-account
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-ban/atlas-ban
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-buddies/atlas-buddies
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-buffs/atlas-buffs
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-cashshop/atlas-cashshop
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-chairs/atlas-chairs
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-character/atlas-character
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-data/atlas-data
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-drops/atlas-drops
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-effective-stats/atlas-effective-stats
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-expressions/atlas-expressions
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-fame/atlas-fame
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-families/atlas-families
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-reward-pools/atlas-reward-pools
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-inventory/atlas-inventory
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-invites/atlas-invites
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-keys/atlas-keys
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-kites/atlas-kites
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-login/atlas-login
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-marriages/atlas-marriages
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-mini-games/atlas-mini-games
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-monster-book/atlas-monster-book
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-mounts/atlas-mounts
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-mts/atlas-mts
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-parties/atlas-parties
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-pets/atlas-pets
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-rankings/atlas-rankings
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-rps/atlas-rps
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-skills/atlas-skills
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-storage/atlas-storage
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-summons/atlas-summons
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-trades/atlas-trades
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-world/atlas-world
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
+    newTag: latest
+
+commonLabels:
+  # Both values quoted so post-sed all-digit hashes (e.g. ATLAS_ENV="1756"
+  # for PR #461) and all-digit PR numbers (e.g. "500") parse as strings.
+  # Kustomize rejects commonLabels values that YAML parses as integers.
+  atlas.env: "PLACEHOLDER_ATLAS_ENV"
+  atlas.pr-number: "PLACEHOLDER_PR_NUMBER"

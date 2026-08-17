@@ -29,7 +29,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) DestroyInField(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) error {
-	return requestDestroyInField(worldId, channelId, mapId, instance)(p.l, p.ctx)
+	return requestDestroyInField(p.ctx, worldId, channelId, mapId, instance)(p.l, p.ctx)
 }
 
 func (p *ProcessorImpl) SpawnInField(f field.Model, monsterId uint32, x int16, y int16, fh int16) error {
@@ -41,7 +41,7 @@ func (p *ProcessorImpl) SpawnInField(f field.Model, monsterId uint32, x int16, y
 		Fh:        fh,
 		Team:      0,
 	}
-	_, err := requestSpawnInField(f, input)(p.l, p.ctx)
+	_, err := requestSpawnInField(p.ctx, f, input)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to spawn monster [%d] in field [%s].", monsterId, f.Id())
 		return err

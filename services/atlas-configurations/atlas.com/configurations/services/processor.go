@@ -115,6 +115,11 @@ func Make(e Entity) (interface{}, error) {
 		}
 		rm.Id = e.Id.String()
 		rm.Type = string(e.Type)
+		// Environment is server-owned (task-232 FR-7.3, task-48 fix round 2
+		// Critical 1): the Entity column always wins over whatever e.Data's
+		// JSON blob happened to contain, mirroring
+		// configurations/tenants/processor.go:100-113.
+		rm.Environment = e.Environment
 		return rm, nil
 	} else if e.Type == ServiceTypeChannel {
 		var rm service.ChannelRestModel
@@ -124,6 +129,7 @@ func Make(e Entity) (interface{}, error) {
 		}
 		rm.Id = e.Id.String()
 		rm.Type = string(e.Type)
+		rm.Environment = e.Environment
 		return rm, nil
 	} else if e.Type == ServiceTypeDrops {
 		var rm service.GenericRestModel
@@ -133,6 +139,7 @@ func Make(e Entity) (interface{}, error) {
 		}
 		rm.Id = e.Id.String()
 		rm.Type = string(e.Type)
+		rm.Environment = e.Environment
 		return rm, nil
 	}
 	return nil, errors.New("invalid service type")

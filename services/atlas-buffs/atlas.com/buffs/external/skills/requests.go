@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -11,10 +12,14 @@ const (
 	ByCharacterSkill = Resource + "/%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("SKILLS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "SKILLS")
 }
 
-func RequestByCharacterAndSkill(characterId uint32, skillId uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByCharacterSkill, characterId, skillId))
+func RequestByCharacterAndSkill(ctx context.Context, characterId uint32, skillId uint32) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+ByCharacterSkill, characterId, skillId))
 }

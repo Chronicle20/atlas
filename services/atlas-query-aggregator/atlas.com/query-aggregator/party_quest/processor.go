@@ -33,7 +33,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // GetInstanceByCharacter returns the active PQ instance for a character, or a zero-value model if none exists
 func (p *ProcessorImpl) GetInstanceByCharacter(characterId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		m, err := requests.Provider[RestModel, Model](p.l, p.ctx)(requestInstanceByCharacterId(characterId), Extract)()
+		m, err := requests.Provider[RestModel, Model](p.l, p.ctx)(requestInstanceByCharacterId(p.ctx, characterId), Extract)()
 		if err != nil {
 			p.l.WithError(err).Debugf("Failed to get party quest instance for character %d, treating as no active PQ", characterId)
 			return Model{}, nil

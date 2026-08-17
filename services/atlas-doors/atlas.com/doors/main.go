@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	character2 "atlas-doors/kafka/consumer/character"
@@ -51,7 +52,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)
@@ -87,7 +88,15 @@ func main() {
 		Run()
 
 	registerSweepTasks := func(l logrus.FieldLogger, ctx context.Context) {
-		tasks.Register(l, ctx)(door.NewExpiryTask(l, ctx, time.Second))
+		// door sits outside env-domain-guard's permitted atlas-env import
+		// list (main.go, kafka/, rest/, socket/), so this pod's environment
+		// identity is threaded in as a plain function value rather than the
+		// package importing atlas-env itself. Without it, ExpiryTask's
+		// per-tenant REMOVED Kafka events would carry an empty environment
+		// header and fail decide() open per FR-1.8.
+		tasks.Register(l, ctx)(door.NewExpiryTask(l, ctx, time.Second, func(ctx context.Context) context.Context {
+			return env.WithContext(ctx, env.Self())
+		}))
 	}
 
 	if leaderEnabled(l) {

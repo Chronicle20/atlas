@@ -197,10 +197,10 @@ A legacy singleton cache that tracks which NPC a character is interacting with f
 ### Core Models
 
 **NpcContextCache**
-- Redis-backed cache keyed by `atlas:npc-context:{characterId}`
-- `Get`: Retrieves NPC ID for a character if not expired
-- `Put`: Stores NPC context with TTL
-- `Remove`: Clears NPC context for a character
+- Redis-backed cache keyed by `atlas:npc-context:{tenantId}:{region}:{majorVersion}.{minorVersion}:{characterId}` — tenant-scoped, since character ids are per-tenant sequences and would otherwise collide across tenants on the same character id
+- `Get`: Retrieves NPC ID for a character within a tenant if not expired
+- `Put`: Stores NPC context with TTL within a tenant
+- `Remove`: Clears NPC context for a character within a tenant
 
 ### Invariants
 

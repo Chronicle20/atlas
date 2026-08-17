@@ -60,6 +60,15 @@
         ]
       },
       {
+        "opCode": "0x09",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCheckTransferWorldPossibleHandle",
+        "fname": "CCashShop::SendCheckTransferWorldPossiblePacket",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x0A",
         "validator": "LoggedInValidator",
         "handler": "CharacterViewAllHandle",
@@ -534,10 +543,28 @@
         ]
       },
       {
+        "opCode": "0x46",
+        "validator": "LoggedInValidator",
+        "handler": "ScriptedItemHandle",
+        "fname": "CWvsContext::SendScriptRunItemRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x47",
         "validator": "LoggedInValidator",
         "handler": "CharacterCashItemUseHandle",
         "fname": "CItemSpeakerDlg::_SendConsumeCashItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x48",
+        "validator": "LoggedInValidator",
+        "handler": "PetDestroyItemHandle",
+        "fname": "CWvsContext::SendActivatePetRequest",
         "services": [
           "channel"
         ]
@@ -709,6 +736,15 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterSkillMacroHandle",
         "fname": "CMacroSysMan::FlushToSvr",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x6A",
+        "validator": "LoggedInValidator",
+        "handler": "NpcItemUseHandle",
+        "fname": "CWvsContext::SendSelectNpcItemUseRequest",
         "services": [
           "channel"
         ]
@@ -3079,6 +3115,14 @@
         ]
       },
       {
+        "opCode": "0xB2",
+        "writer": "PetNameChanged",
+        "fname": "CPet::OnNameChanged",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xB3",
         "writer": "PetExcludeResponse",
         "fname": "CPet::OnLoadExceptionList",
@@ -4682,6 +4726,28 @@
             "NOT_ENOUGH_MESOS": 209,
             "CASH_SHOP_NOT_AVAILABLE_DURING_BETA": 210,
             "INVALID_BIRTHDAY": 211
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x16C",
+        "writer": "CashShopCheckTransferWorldPossibleResult",
+        "fname": "CCashShop::OnCheckTransferWorldPossibleResult",
+        "options": {
+          "operations": {
+            "ALLOWED": 0,
+            "CHARACTER_NOT_FOUND": 1,
+            "REASON_2": 2,
+            "REASON_3": 3,
+            "REASON_4": 4,
+            "REASON_5": 5,
+            "REASON_6": 6,
+            "REASON_7": 7,
+            "IN_FAMILY": 8,
+            "UNKNOWN_ERROR": 9
           }
         },
         "services": [

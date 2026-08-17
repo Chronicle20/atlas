@@ -122,3 +122,62 @@ func TestStageableInventoryTypeRoundTrips(t *testing.T) {
 		}
 	}
 }
+
+// TestKarmaMarkOverridesUntradeableFlag: karma exists to let an untradeable item
+// through exactly once.
+func TestKarmaMarkOverridesUntradeableFlag(t *testing.T) {
+	flags := uint16(asset.FlagUntradeable) | uint16(asset.FlagKarmaEquip)
+	err := checkRestrictions(assetView{Flags: flags, TemplateId: 1002357}, itemDataView{}, byte(inventory.TypeValueEquip))
+	if err != nil {
+		t.Fatalf("checkRestrictions refused a karma-marked untradeable equip: %v", err)
+	}
+}
+
+// TestKarmaMarkOverridesTradeBlock is the one that decides whether the feature
+// works at all: untradeable items derive their untradeability MOSTLY from the WZ
+// tradeBlock prop, so a karma mark that only defeated the flag check would still
+// be refused.
+func TestKarmaMarkOverridesTradeBlock(t *testing.T) {
+	flags := uint16(asset.FlagKarmaEquip)
+	err := checkRestrictions(assetView{Flags: flags, TemplateId: 1002357}, itemDataView{TradeBlock: true}, byte(inventory.TypeValueEquip))
+	if err != nil {
+		t.Fatalf("checkRestrictions refused a karma-marked tradeBlock'd equip: %v", err)
+	}
+}
+
+// TestKarmaMarkUsesTheSlotClassBit: the BUNDLE bit (0x02) on an equip is
+// FlagSpikes and must NOT read as a karma mark.
+func TestKarmaMarkUsesTheSlotClassBit(t *testing.T) {
+	spikedEquip := uint16(asset.FlagUntradeable) | uint16(asset.FlagSpikes)
+	if err := checkRestrictions(assetView{Flags: spikedEquip, TemplateId: 1002357}, itemDataView{}, byte(inventory.TypeValueEquip)); err != errUntradeableFlag {
+		t.Fatalf("a SPIKED untradeable equip was treated as karma-marked: %v", err)
+	}
+	markedBundle := uint16(asset.FlagUntradeable) | uint16(asset.FlagKarmaUse)
+	if err := checkRestrictions(assetView{Flags: markedBundle, TemplateId: 2280000}, itemDataView{}, byte(inventory.TypeValueUse)); err != nil {
+		t.Fatalf("checkRestrictions refused a karma-marked untradeable bundle: %v", err)
+	}
+}
+
+// TestKarmaMarkDoesNotWeakenTheOtherRules is FR-7.2.
+func TestKarmaMarkDoesNotWeakenTheOtherRules(t *testing.T) {
+	flags := uint16(asset.FlagKarmaEquip)
+	if err := checkRestrictions(assetView{Flags: flags, TemplateId: 1002357, SourceSlot: -11}, itemDataView{}, byte(inventory.TypeValueEquip)); err != errEquipped {
+		t.Fatalf("a karma mark rescued an EQUIPPED item: %v", err)
+	}
+	if err := checkRestrictions(assetView{Flags: flags, TemplateId: 1002357}, itemDataView{Unreadable: true}, byte(inventory.TypeValueEquip)); err != errItemDataUnknown {
+		t.Fatalf("a karma mark rescued an UNREADABLE item lookup: %v", err)
+	}
+	if err := checkRestrictions(assetView{Flags: flags, TemplateId: 1002357}, itemDataView{}, byte(99)); err != errUnknownInventory {
+		t.Fatalf("a karma mark rescued an UNKNOWN compartment: %v", err)
+	}
+}
+
+// TestUnmarkedUntradeableStillRefuses: the override must not become the rule.
+func TestUnmarkedUntradeableStillRefuses(t *testing.T) {
+	if err := checkRestrictions(assetView{Flags: uint16(asset.FlagUntradeable), TemplateId: 1002357}, itemDataView{}, byte(inventory.TypeValueEquip)); err != errUntradeableFlag {
+		t.Fatalf("an UNMARKED untradeable equip was allowed: %v", err)
+	}
+	if err := checkRestrictions(assetView{TemplateId: 1002357}, itemDataView{TradeBlock: true}, byte(inventory.TypeValueEquip)); err != errTradeBlock {
+		t.Fatalf("an UNMARKED tradeBlock'd equip was allowed: %v", err)
+	}
+}

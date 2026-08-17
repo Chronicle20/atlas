@@ -13,6 +13,7 @@ type ProcessorMock struct {
 	RequestCreateItemFunc          func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
 	RequestCreateItemWithStatsFunc func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) error
 	RequestDestroyItemFunc         func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
+	RequestDestroyAllItemsFunc     func(transactionId uuid.UUID, characterId uint32, templateId uint32) error
 	RequestEquipAssetFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestUnequipAssetFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestCreateAndEquipAssetFunc func(transactionId uuid.UUID, payload compartment.CreateAndEquipAssetPayload) error
@@ -21,6 +22,7 @@ type ProcessorMock struct {
 	RequestDestroyItemFromSlotFunc func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
 	RequestSetOwnerFunc            func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, owner string) error
 	RequestApplyLockFunc           func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error
+	RequestApplyKarmaFunc          func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, scissorsKarma int32, clear bool) error
 	RequestExtendExpirationFunc    func(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time, extenderTemplateId uint32) error
 }
 
@@ -44,6 +46,14 @@ func (m *ProcessorMock) RequestCreateItemWithStats(transactionId uuid.UUID, char
 func (m *ProcessorMock) RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
 	if m.RequestDestroyItemFunc != nil {
 		return m.RequestDestroyItemFunc(transactionId, characterId, templateId, quantity, removeAll)
+	}
+	return nil
+}
+
+// RequestDestroyAllItems is a mock implementation of the compartment.Processor.RequestDestroyAllItems method
+func (m *ProcessorMock) RequestDestroyAllItems(transactionId uuid.UUID, characterId uint32, templateId uint32) error {
+	if m.RequestDestroyAllItemsFunc != nil {
+		return m.RequestDestroyAllItemsFunc(transactionId, characterId, templateId)
 	}
 	return nil
 }
@@ -108,6 +118,14 @@ func (m *ProcessorMock) RequestSetOwner(transactionId uuid.UUID, characterId uin
 func (m *ProcessorMock) RequestApplyLock(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, expiration time.Time) error {
 	if m.RequestApplyLockFunc != nil {
 		return m.RequestApplyLockFunc(transactionId, characterId, inventoryType, slot, expiration)
+	}
+	return nil
+}
+
+// RequestApplyKarma is a mock implementation of the compartment.Processor.RequestApplyKarma method
+func (m *ProcessorMock) RequestApplyKarma(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, scissorsKarma int32, clear bool) error {
+	if m.RequestApplyKarmaFunc != nil {
+		return m.RequestApplyKarmaFunc(transactionId, characterId, inventoryType, slot, scissorsKarma, clear)
 	}
 	return nil
 }

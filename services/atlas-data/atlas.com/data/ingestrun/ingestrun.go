@@ -108,16 +108,24 @@ func KeySuffix(scope, region string, major, minor uint16) string {
 	return fmt.Sprintf("%s:%s:%d.%d", scope, region, major, minor)
 }
 
-// NewJobRegistry returns the env-global Registry for the job-name and
+// NewJobRegistry returns the environment-scoped Registry for the job-name and
 // heartbeat keys. The keyFn is the identity so callers supply the full suffix.
-func NewJobRegistry(rdb *goredis.Client) *redis.Registry[string, string] {
-	return redis.NewRegistry[string, string](rdb, Namespace, func(s string) string { return s })
+//
+// ingestrun is legitimately cross-tenant control-plane state (task-232 §4.3),
+// so it does not move to the Tenant-scoped API; it moves to the narrower
+// environment-scoped one instead (FR-8.4). Every caller passes env.Self() —
+// this process's own environment, never one read off a context — because a
+// pod's own environment cannot go stale (design §4.3).
+func NewJobRegistry(rdb *goredis.Client) *redis.EnvironmentRegistry[string, string] {
+	return redis.NewEnvironmentRegistry[string, string](rdb, Namespace, func(s string) string { return s })
 }
 
-// NewRunRegistry returns the env-global Registry for run records. Values are
-// JSON-marshalled by the Registry itself.
-func NewRunRegistry(rdb *goredis.Client) *redis.Registry[string, Record] {
-	return redis.NewRegistry[string, Record](rdb, Namespace, func(s string) string { return s })
+// NewRunRegistry returns the environment-scoped Registry for run records.
+// Values are JSON-marshalled by the Registry itself.
+//
+// Same environment-scoping rationale as NewJobRegistry — see its doc comment.
+func NewRunRegistry(rdb *goredis.Client) *redis.EnvironmentRegistry[string, Record] {
+	return redis.NewEnvironmentRegistry[string, Record](rdb, Namespace, func(s string) string { return s })
 }
 
 // NewRecord seeds a fresh running record with every roster name pending.

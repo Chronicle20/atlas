@@ -579,6 +579,7 @@
   direction: clientbound
   opcode: 86
   fname: CWvsContext::OnCancelNameChangeResult
+  packet: cash/clientbound/CashCancelNameChangeResult
   provenance: ida-discovered
   ida:
     address: 8586219
@@ -586,6 +587,7 @@
   direction: clientbound
   opcode: 87
   fname: CWvsContext::OnCancelTransferWorldResult
+  packet: cash/clientbound/CashCancelTransferWorldResult
   provenance: ida-discovered
   ida:
     address: 8586219
@@ -1638,11 +1640,15 @@
 - op: CASHSHOP_CHECK_NAME_CHANGE
   direction: clientbound
   opcode: 257
-  fname: sub_463900
+  fname: CCashShop::OnCheckDuplicatedIDResult
   provenance: ida-discovered
   ida:
     address: 4602112
-  note: 'v61 IDB unnamed sub_463900 = CCashShop::OnCheckNameChangePossibleResult (CASHSHOP_CHECK_NAME_CHANGE, v72 293). CCashShop block is a clean Δ-36 shift of v72 289-296.'
+  note: 'task-227: formerly unnamed sub_463900, now named CCashShop::OnCheckDuplicatedIDResult
+    in the v61 IDB. Body is DecodeStr(sName) + Decode1(nResult) + Notice (SP 531 ok /
+    530 duplicate / 3492 unknown). The earlier note claiming OnCheckNameChangePossibleResult
+    was wrong: that handler reads Decode4+Decode1+Decode4 and does not exist before v79.
+    CCashShop block is still a clean Δ-36 shift of v72 289-296.'
 - op: CASHSHOP_GACHAPON_STAMP_RESULT
   direction: clientbound
   opcode: 258
@@ -1807,6 +1813,29 @@
   ida:
     address: 6291023
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): CLogin::MakeVACDlg. COutPacket(15); Δ0 vs v72.'
+- op: NAME_TRANSFER
+  direction: serverbound
+  opcode: 16
+  fname: CCashShop::SendCheckNameChangePossiblePacket
+  provenance: ida-discovered
+  ida:
+    address: 4574578
+  note: 'task-227: @0x45cd72 builds COutPacket(16) then Encode4+Encode4. Reached only
+    from CCashShop::OnBuyNameChange @0x4595db, which CCashShop::ProcessBuy @0x45cb70
+    selects on item id 5400000 (cmp against offset loc_5265BF+1 = 0x5265C0). Previously
+    absent from the registry, so the matrix graded the v61 cell blank as if the op did
+    not exist.'
+- op: WORLD_TRANSFER
+  direction: serverbound
+  opcode: 18
+  fname: CCashShop::SendCheckTransferWorldPossiblePacket
+  provenance: ida-discovered
+  ida:
+    address: 4574973
+  note: 'task-227: formerly unnamed sub_45CEFD; @0x45cefd builds COutPacket(18) then
+    Encode4+Encode4. Reached only from CCashShop::OnBuyTransferWorldItem @0x459737
+    (ProcessBuy item id 5401000 = offset sub_5269A8) after CCashShop::CheckTransferWorldPossible
+    @0x45ce91 passes. Previously absent from the registry.'
 - op: CHAR_SELECT
   direction: serverbound
   opcode: 19
@@ -2108,6 +2137,14 @@
   ida:
     address: 5862508
   note: 'task-226 FR-2.2: corrected from n-a. Located via the full 391-site COutPacket-ctor xref enumeration (xref_query, paginated) by proximity to the already-named receive-side CMacroSysMan::SetMacro (0x59744b) — CMacroSysMan::FlushToSvr sits 0x21 bytes after it, unnamed until this task, now renamed and idb_save''d. COutPacket(101); delegates whole encode to sub_4B7928 (renamed MACROSYSDATA::Encode) which does Encode1(count clamped<=5) then a 29-byte-stride loop calling sub_4B7884 (renamed SINGLEMACRO::Encode, EncodeStr(name)+Encode1(shout)+3xEncode4(skillId)) — exact match to the confirmed cross-version send shape and adjacent to SINGLEMACRO::Decode (0x4b78d5) as hinted by harvest-log.md. No serverbound opcode 101 collision in this registry (101 is otherwise only used clientbound, for WHISPER).'
+- op: NPC_ITEM_USE_REQUEST
+  direction: serverbound
+  opcode: 102
+  fname: CWvsContext::SendSelectNpcItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 8615821
+  note: 'task-230: sender confirmed at 0x83778d (GMS_v61.1_U_DEVM.exe). COutPacket(102)+Encode2(slot)+Encode4(itemId), no leading updateTime.'
 - op: SPOUSE_CHAT
   direction: serverbound
   opcode: 109

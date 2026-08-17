@@ -35,6 +35,10 @@ type assetView struct {
 	// libs/atlas-constants/inventory/slot's Slots table is entirely negative).
 	// There is no separate EQUIPPED inventory.Type to compare against.
 	SourceSlot slot.Position
+	// TemplateId is needed to resolve the KARMA BIT, which is slot-class
+	// dependent: 0x10 on an equip, 0x02 on a bundle — and 0x02 on an equip is
+	// FlagSpikes. See libs/atlas-constants/asset.KarmaFlagFor.
+	TemplateId uint32
 }
 
 // itemDataView is the atlas-data side of the same pair: what the WZ item record
@@ -83,13 +87,30 @@ func checkRestrictions(a assetView, d itemDataView, source byte) error {
 	if a.SourceSlot < 0 {
 		return errEquipped
 	}
-	if asset.HasFlag(a.Flags, asset.FlagUntradeable) || asset.HasFlag(a.Flags, asset.FlagMergeUntradeable) {
+	// A karma mark (Scissors of Karma, task-223) buys exactly one transfer, and
+	// it must defeat BOTH tradeability rules or it defeats nothing useful:
+	// untradeable items derive their untradeability mostly from the WZ
+	// tradeBlock prop, not from the flag. The mark is CONSUMED by the transfer
+	// — it is masked off the settlement snapshot at the moment the receiving
+	// asset is built (atlas-saga-orchestrator's trade-settlement expansion), so
+	// the item arrives untradeable for its new owner. An UNWOUND (cancelled)
+	// trade replays the same snapshot unmasked, so a staged-then-unstaged item
+	// keeps its mark.
+	//
+	// The other three rules are untouched: unknown compartment and equipped slot
+	// are checked above, and errItemDataUnknown stays ABOVE the tradeBlock check
+	// so an unreadable lookup is never rescued by a mark.
+	karmaMarked := false
+	if f, ok := asset.KarmaFlagFor(a.TemplateId); ok {
+		karmaMarked = asset.HasFlag(a.Flags, f)
+	}
+	if !karmaMarked && (asset.HasFlag(a.Flags, asset.FlagUntradeable) || asset.HasFlag(a.Flags, asset.FlagMergeUntradeable)) {
 		return errUntradeableFlag
 	}
 	if d.Unreadable {
 		return errItemDataUnknown
 	}
-	if d.TradeBlock {
+	if !karmaMarked && d.TradeBlock {
 		return errTradeBlock
 	}
 	return nil

@@ -31,6 +31,7 @@ WORKDIR /app
 # shared across every target.
 COPY libs/atlas-constants/go.mod   libs/atlas-constants/go.sum   libs/atlas-constants/
 COPY libs/atlas-database/go.mod    libs/atlas-database/go.sum    libs/atlas-database/
+COPY libs/atlas-env/go.mod         libs/atlas-env/
 COPY libs/atlas-kafka/go.mod       libs/atlas-kafka/go.sum       libs/atlas-kafka/
 COPY libs/atlas-lock/go.mod        libs/atlas-lock/go.sum        libs/atlas-lock/
 COPY libs/atlas-model/go.mod       libs/atlas-model/go.sum       libs/atlas-model/
@@ -61,6 +62,7 @@ COPY services/${SERVICE}/ services/${SERVICE}/
 # when any lib source changes — same invalidation profile as today).
 COPY libs/atlas-constants   libs/atlas-constants
 COPY libs/atlas-database    libs/atlas-database
+COPY libs/atlas-env         libs/atlas-env
 COPY libs/atlas-kafka       libs/atlas-kafka
 COPY libs/atlas-lock        libs/atlas-lock
 COPY libs/atlas-model       libs/atlas-model
@@ -81,7 +83,7 @@ COPY libs/atlas-tenant      libs/atlas-tenant
 COPY libs/atlas-tracing     libs/atlas-tracing
 COPY libs/atlas-wz          libs/atlas-wz
 
-# Synthesize a minimal go.work containing only the 21 libs + the target service.
+# Synthesize a minimal go.work containing only the 22 libs + the target service.
 # The repo-root go.work also lists ~50 sibling services + 2 tools/* modules
 # whose go.mod files are not in the build context; copying it directly fails
 # workspace-load. Equivalent to what the legacy per-service Dockerfiles did.
@@ -90,7 +92,7 @@ RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1 | sed 's:/$::') \
     && test -f "${MOD_DIR}/go.mod" || (echo "ERROR: ${MOD_DIR}/go.mod missing" >&2 && exit 1) \
     && { \
          printf 'go 1.26.0\n\nuse (\n'; \
-         for L in atlas-constants atlas-database atlas-kafka atlas-lock atlas-model \
+         for L in atlas-constants atlas-database atlas-env atlas-kafka atlas-lock atlas-model \
                   atlas-object-id atlas-opcodes atlas-outbox atlas-packet atlas-redis \
                   atlas-rest atlas-retry atlas-routine atlas-saga atlas-script-core \
                   atlas-seeder atlas-service atlas-socket atlas-tenant atlas-tracing atlas-wz; do \

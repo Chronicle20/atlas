@@ -1,6 +1,7 @@
 package channel
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -15,18 +16,26 @@ const (
 	ById           = Resource + "/%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("CHANNELS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "CHANNELS")
 }
 
 // channelsForWorldUrl is a bare URL (not a requests.Request) because the
 // list is now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func channelsForWorldUrl(worldId world.Id) string {
-	return fmt.Sprintf(getBaseRequest()+Resource, worldId)
+func channelsForWorldUrl(ctx context.Context, worldId world.Id) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+Resource, worldId), nil
 }
 
-func requestChannel(ch channel.Model) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, ch.WorldId(), ch.Id()))
+func requestChannel(ctx context.Context, ch channel.Model) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+ById, ch.WorldId(), ch.Id()))
 }

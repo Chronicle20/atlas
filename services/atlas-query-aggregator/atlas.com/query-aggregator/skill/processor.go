@@ -37,7 +37,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // Returns 0 if the skill is not found (character doesn't have the skill)
 func (p *ProcessorImpl) GetSkillLevel(characterId uint32, skillId uint32) model.Provider[byte] {
 	return func() (byte, error) {
-		skillProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, skillId), Extract)
+		skillProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, characterId, skillId), Extract)
 		skill, err := skillProvider()
 		if err != nil {
 			// Skill not found is not an error - return 0 level
@@ -51,7 +51,7 @@ func (p *ProcessorImpl) GetSkillLevel(characterId uint32, skillId uint32) model.
 // GetSkill returns the complete skill model for a character
 func (p *ProcessorImpl) GetSkill(characterId uint32, skillId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		skillProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId, skillId), Extract)
+		skillProvider := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, characterId, skillId), Extract)
 		skill, err := skillProvider()
 		if err != nil {
 			p.l.WithError(err).Debugf("Failed to get skill data for character %d, skill %d", characterId, skillId)
@@ -66,7 +66,12 @@ func (p *ProcessorImpl) GetSkill(characterId uint32, skillId uint32) model.Provi
 // this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) GetSkillsByCharacter(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		skillsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterUrl(characterId), 250, Extract, model.Filters[Model]())
+		url, err := byCharacterUrl(p.ctx, characterId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to resolve skills URL for character %d", characterId)
+			return nil, err
+		}
+		skillsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 		skills, err := skillsProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get skills for character %d", characterId)

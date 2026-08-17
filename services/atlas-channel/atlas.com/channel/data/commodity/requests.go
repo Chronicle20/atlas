@@ -1,0 +1,19 @@
+package commodity
+
+import (
+	"fmt"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+)
+
+const (
+	commodityResource = "data/commodity/items/%d"
+)
+
+func getBaseRequest() string {
+	return requests.RootUrl("DATA")
+}
+
+func requestById(serialNumber uint32) requests.Request[RestModel] {
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+commodityResource, serialNumber))
+}

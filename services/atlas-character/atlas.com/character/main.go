@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-character/character"
 	"atlas-character/kafka/consumer/drop"
+	"atlas-character/pending_change"
 	"atlas-character/saved_location"
 	"atlas-character/service"
 	"atlas-character/session"
@@ -13,6 +14,7 @@ import (
 	"os"
 	"time"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	account2 "atlas-character/kafka/consumer/account"
@@ -62,14 +64,14 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := lifecycle.Bootstrap(serviceName)
+	rt := lifecycle.Bootstrap(serviceName, lifecycle.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)
 	session.InitRegistry(rc)
 	character.InitTemporalRegistry(rc)
 
-	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration, teleport_rock.Migration, outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(character.Migration, history.Migration, saved_location.Migration, teleport_rock.Migration, pending_change.Migration, outboxlib.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
@@ -123,7 +125,7 @@ func main() {
 		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
-		AddRouteInitializer(character.InitResource(GetServer())(db)).
+		AddRouteInitializer(character.InitResource(GetServer())(db)(pending_change.NameReservedFor(db))).
 		AddRouteInitializer(history.InitResource(GetServer())(db)).
 		AddRouteInitializer(saved_location.InitResource(GetServer())(db)).
 		AddRouteInitializer(teleport_rock.InitResource(GetServer())(db)(func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (world.Id, error) {
@@ -133,12 +135,25 @@ func main() {
 			}
 			return m.WorldId(), nil
 		})).
+		AddRouteInitializer(pending_change.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000)))
+		// session sits outside env-domain-guard's permitted atlas-env import
+		// list (main.go, kafka/, rest/, socket/), so this pod's environment
+		// identity is threaded in as a plain function value rather than the
+		// package importing atlas-env itself. Without it, Timeout's
+		// per-character logout Kafka events would carry an empty
+		// environment header and fail decide() open per FR-1.8.
+		tasks.Register(l, rt.Context())(session.NewTimeout(l, db, time.Millisecond*time.Duration(5000), func(ctx context.Context) context.Context {
+			return env.WithContext(ctx, env.Self())
+		}))
+	})
+
+	routine.Go(l, rt.Context(), func(_ context.Context) {
+		tasks.Register(l, rt.Context())(pending_change.NewExpiry(l, db, time.Minute*15))
 	})
 
 	rt.Wait()

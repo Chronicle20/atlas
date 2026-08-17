@@ -13,6 +13,7 @@ type Model struct {
 	region       string
 	majorVersion uint16
 	minorVersion uint16
+	environment  string
 }
 
 // Id returns the tenant ID
@@ -40,6 +41,11 @@ func (m Model) MinorVersion() uint16 {
 	return m.minorVersion
 }
 
+// Environment returns the tenant environment
+func (m Model) Environment() string {
+	return m.environment
+}
+
 // String returns a string representation of the tenant
 func (m Model) String() string {
 	return fmt.Sprintf("Id [%s] Name [%s] Region [%s] Version [%d.%d]", m.Id().String(), m.Name(), m.Region(), m.MajorVersion(), m.MinorVersion())
@@ -53,5 +59,6 @@ func Make(e Entity) (Model, error) {
 		SetRegion(e.Region).
 		SetMajorVersion(e.MajorVersion).
 		SetMinorVersion(e.MinorVersion).
+		SetEnvironment(e.Environment).
 		Build()
 }

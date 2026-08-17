@@ -31,7 +31,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) CreateMonster(f field.Model, monsterId uint32, x int16, y int16, fh int16, team int8) error {
-	_, err := requestCreate(f, monsterId, x, y, fh, team)(p.l, p.ctx)
+	_, err := requestCreate(p.ctx, f, monsterId, x, y, fh, team)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Errorf("Creating monster for map %s.", f.Id())
 	}

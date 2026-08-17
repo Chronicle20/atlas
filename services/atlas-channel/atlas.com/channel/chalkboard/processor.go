@@ -43,7 +43,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // paginated (task-117), so this drains every page rather than fetching
 // just the first.
 func (p *ProcessorImpl) InMapModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(f), 250, Extract, model.Filters[Model]())
+	url, err := inMapUrl(p.ctx, f)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) ForEachInMap(f field.Model, o model.Operator[Model]) error {

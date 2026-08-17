@@ -15,6 +15,7 @@ import (
 	"os"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -25,6 +26,20 @@ import (
 )
 
 const serviceName = "atlas-trades"
+
+// withSelfEnvironment attaches this pod's own environment identity
+// (env.Self()) to ctx, with no tenant pairing. trade.detached() and the boot
+// reconciliation passes (trade.Reconcile, trade.ReconcileEscrow) rebuild a
+// per-row context with no request in flight to inherit ENVIRONMENT from;
+// without this, their REST calls and Kafka emits would resolve to the
+// baseline URL/topic regardless of which environment the pod belongs to
+// (FR-1.8, FR-3.1/FR-3.2). trade/ is outside env-domain-guard's permitted
+// atlas-env import list, so this is threaded in as a plain function value
+// rather than the package importing atlas-env itself (matches
+// socket.WithSelfEnvironment, 99c0e598d).
+func withSelfEnvironment(ctx context.Context) context.Context {
+	return env.WithContext(ctx, env.Self())
+}
 
 // consumerGroupId is the Kafka consumer group this service registers under. It
 // is also the literal that deploy/k8s/overlays/pr/scripts/gen-consumer-group-patch.sh
@@ -55,8 +70,13 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
+
+	// Arm trade's environment-origination DI (settlement.go's applyEnvContext)
+	// before anything that could reach it runs: the attestation deadline
+	// registry, the boot reconciliation passes, and every consumer command.
+	trade.SetEnvContext(withSelfEnvironment)
 
 	// Transient DB-connection errors surface as 503 + Retry-After (DOM-27,
 	// task-168) instead of 500, so callers retry rather than treating a

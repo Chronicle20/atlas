@@ -144,7 +144,7 @@ func (p *ProcessorImpl) GetStateMachineForCharacter(questId uint32, characterId 
 	}
 
 	// Get the character's quest status from atlas-quest service
-	questStatus, err := status.RequestByCharacterAndQuest(characterId, questId)(p.l, p.ctx)
+	questStatus, err := status.RequestByCharacterAndQuest(p.ctx, characterId, questId)(p.l, p.ctx)
 	if err != nil {
 		// If quest status not found, treat as NOT_STARTED
 		p.l.Debugf("Quest status not found for character [%d] quest [%d], treating as NOT_STARTED", characterId, questId)

@@ -34,7 +34,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) OutcomeProvider(transactionId uuid.UUID) model.Provider[Outcome] {
-	return requests.Provider[RestModel, Outcome](p.l, p.ctx)(requestSagaById(transactionId), Extract)
+	return requests.Provider[RestModel, Outcome](p.l, p.ctx)(requestSagaById(p.ctx, transactionId), Extract)
 }
 
 func (p *ProcessorImpl) Outcome(transactionId uuid.UUID) (Outcome, error) {

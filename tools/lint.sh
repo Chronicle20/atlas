@@ -63,6 +63,21 @@ done
 TOOLS_BIN="$ROOT/.cache/tools/bin"
 GOLANGCI="$TOOLS_BIN/golangci-lint-$GOLANGCI_LINT_VERSION"
 
+# Per-tree lint cache. The default (~/.cache/golangci-lint) is shared by every
+# worktree, and golangci-lint replays cached issues by package path — so linting
+# libs/atlas-model in the main repo surfaced stale findings recorded from
+# .worktrees/task-NNN/libs/atlas-model, whose files no longer exist:
+#   "failed to parse file: .worktrees/.../processor_test.go: no such file or directory"
+# Keying the cache to $ROOT gives each worktree its own and removes the crosstalk.
+#
+# NOTE: this does NOT make concurrent golangci-lint runs safe. The tool takes an
+# exclusive lock that separate cache directories do not isolate — a second run
+# exits non-zero with "parallel golangci-lint is running" and "0 issues", which
+# is a spurious failure. The per-module loop below is therefore deliberately
+# SEQUENTIAL; do not parallelize it. Run only one lint.sh per machine at a time.
+export GOLANGCI_LINT_CACHE="${GOLANGCI_LINT_CACHE:-$ROOT/.cache/golangci-lint}"
+mkdir -p "$GOLANGCI_LINT_CACHE"
+
 GO_RC=0
 UI_RC=0
 FAILED=()
@@ -198,6 +213,12 @@ run_go() {
 
 run_ui() {
     local uidir="$ROOT/services/atlas-ui"
+    # Select the required Node if the shell has not already. No-op when node is
+    # already correct (CI, direnv, devcontainer). This is what lets a caller
+    # write `tools/verify.sh` instead of prefixing every invocation with an
+    # `export NVM_DIR=… && . nvm.sh && nvm use 22 &&` bootstrap.
+    # shellcheck source=lib/node-env.sh
+    . "$ROOT/tools/lib/node-env.sh"
     if ! command -v node >/dev/null 2>&1; then
         echo "lint.sh: ERROR — node not found; atlas-ui checks need Node $NODE_MAJOR_REQUIRED (try: nvm use $NODE_MAJOR_REQUIRED)" >&2
         UI_RC=1

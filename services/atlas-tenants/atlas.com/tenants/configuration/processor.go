@@ -188,6 +188,28 @@ type Processor interface {
 	// KiteConfigProvider returns a provider for the kite-configs configuration
 	KiteConfigProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}]
 
+	// Imprint config operations (FR-2.6 pending-change expiry; see imprint_handler.go)
+	// CreateImprintConfig creates a new imprint config configuration
+	CreateImprintConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(config map[string]interface{}) (Model, error)
+	// CreateImprintConfigAndEmit creates a new imprint config configuration and emits events
+	CreateImprintConfigAndEmit(tenantId uuid.UUID, config map[string]interface{}) (Model, error)
+	// UpdateImprintConfig updates an existing imprint config configuration
+	UpdateImprintConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(configID string) func(config map[string]interface{}) (Model, error)
+	// UpdateImprintConfigAndEmit updates an existing imprint config configuration and emits events
+	UpdateImprintConfigAndEmit(tenantId uuid.UUID, configID string, config map[string]interface{}) (Model, error)
+	// DeleteImprintConfig deletes an imprint config configuration
+	DeleteImprintConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(configID string) error
+	// DeleteImprintConfigAndEmit deletes an imprint config configuration and emits events
+	DeleteImprintConfigAndEmit(tenantId uuid.UUID, configID string) error
+	// GetImprintConfigById gets an imprint config by ID
+	GetImprintConfigById(tenantId uuid.UUID, configID string) (map[string]interface{}, error)
+	// GetAllImprintConfigs gets all imprint configs for a tenant
+	GetAllImprintConfigs(tenantId uuid.UUID) ([]map[string]interface{}, error)
+	// ImprintConfigByIdProvider returns a provider for an imprint config by ID
+	ImprintConfigByIdProvider(tenantId uuid.UUID, configID string) model.Provider[map[string]interface{}]
+	// AllImprintConfigsProvider returns a provider for all imprint configs for a tenant
+	AllImprintConfigsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
+
 	// Seed operations
 	// SeedRpsRewards clears existing rps-rewards for a tenant and loads them from seed files
 	SeedRpsRewards(tenantId uuid.UUID) (SeedResult, error)
@@ -195,6 +217,8 @@ type Processor interface {
 	SeedMtsConfigs(tenantId uuid.UUID) (SeedResult, error)
 	// SeedTradeConfigs clears existing trade configs for a tenant and loads them from seed files
 	SeedTradeConfigs(tenantId uuid.UUID) (SeedResult, error)
+	// SeedImprintConfigs clears existing imprint configs for a tenant and loads them from seed files
+	SeedImprintConfigs(tenantId uuid.UUID) (SeedResult, error)
 }
 
 // ProcessorImpl implements the Processor interface
@@ -227,6 +251,26 @@ var _ Processor = (*ProcessorImpl)(nil)
 //
 // A resolution failure aborts the caller rather than emitting
 // tenant-free: the operation is meaningless for an unknown tenant.
+//
+// task-232 batch 8 audit (this site was traced, not assumed clean): every
+// caller of this method is a REST handler registered through
+// rest.RegisterHandler/RegisterInputHandler (atlas-tenants/rest.go), which
+// forward to server.RegisterSimpleHandler/RegisterSimpleInputHandler --
+// both wrap every request in server.ParseEnvironment before the handler
+// runs (libs/atlas-rest/server/register.go), so p.ctx (== d.Context())
+// always already carries the request's ENVIRONMENT value, even when the
+// header is absent (the empty/baseline id). atlastenant.WithContext
+// (libs/atlas-tenant/processor.go:90-96) only calls context.WithValue for
+// the four tenant keys, so it does not strip that value -- no env.WithContext
+// call is needed here. No production code changes at this site.
+//
+// This does NOT mean the emit is fully wired end-to-end: EnqueueBuffer's
+// header build (libs/atlas-outbox/bridge.go:53 headerMap) decorates only
+// Span and Tenant headers, never Env -- a pre-existing gap in the shared
+// outbox library that silently drops ENVIRONMENT for every *AndEmit call in
+// every outbox-using service, not something introduced or fixable by this
+// batch's file list (atlas-summons + atlas-tenants only). Flagged to the
+// controller rather than patched here.
 func (p *ProcessorImpl) tenantCtx(tenantId uuid.UUID) (context.Context, error) {
 	m, err := tenants.NewProcessor(p.l, p.ctx, p.db).GetById(tenantId)
 	if err != nil {

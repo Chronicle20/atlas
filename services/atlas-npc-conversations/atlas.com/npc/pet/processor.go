@@ -37,7 +37,12 @@ var _ Processor = (*processor)(nil)
 // find the pet in the requested slot.
 func (p *processor) GetPets(characterId uint32) model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		petsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(byCharacterIdUrl(characterId), 250, Extract, []model.Filter[Model]{})
+		url, err := byCharacterIdUrl(p.ctx, characterId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to resolve base URL for pets for character %d", characterId)
+			return []Model{}, err
+		}
+		petsProvider := requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, []model.Filter[Model]{})
 		pets, err := petsProvider()
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to get pets for character %d", characterId)

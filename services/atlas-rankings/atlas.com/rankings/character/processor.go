@@ -34,7 +34,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // page — see tenant.ProcessorImpl.AllProvider for the identical rationale
 // and page-size choice.
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(allCharactersUrl(), 250, Extract, model.Filters[Model]())
+	url, err := allCharactersUrl(p.ctx)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 // GetAll returns all characters of the tenant in context.

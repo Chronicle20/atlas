@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/buddylist"
 	"atlas-saga-orchestrator/cashshop"
 	"atlas-saga-orchestrator/character"
 	"atlas-saga-orchestrator/compartment"
@@ -10,6 +11,8 @@ import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	sagaMsg "atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/mts"
+	"atlas-saga-orchestrator/pending_change"
+	"atlas-saga-orchestrator/pet"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/trade"
 	"atlas-saga-orchestrator/validation"
@@ -39,6 +42,9 @@ type Compensator interface {
 	WithCashshopProcessor(cashshop.Processor) Compensator
 	WithMtsProcessor(mts.Processor) Compensator
 	WithTradeProcessor(trade.Processor) Compensator
+	WithBuddyListProcessor(buddylist.Processor) Compensator
+	WithPendingChangeProcessor(pending_change.Processor) Compensator
+	WithPetProcessor(pet.Processor) Compensator
 
 	CompensateFailedStep(s Saga) error
 	compensateEquipAsset(s Saga, failedStep Step[any]) error
@@ -55,10 +61,12 @@ type Compensator interface {
 	compensateCashItemUse(s Saga, failedStep Step[any]) error
 	compensatePointReset(s Saga, failedStep Step[any]) error
 	compensateMesoSackUse(s Saga, failedStep Step[any]) error
+	compensatePetNameTagUse(s Saga, failedStep Step[any]) error
 	compensateMtsOperation(s Saga, failedStep Step[any]) error
 	compensateNoteSend(s Saga, failedStep Step[any]) error
 	compensateSkillBookUse(s Saga, failedStep Step[any]) error
 	compensateTradeTransaction(s Saga, failedStep Step[any]) error
+	compensateWorldTransfer(s Saga, failedStep Step[any]) error
 
 	// DispatchTradeTransactionRollbacks reverse-walks the completed steps of a
 	// trade_settlement saga (task-205) and dispatches the inverse for each:
@@ -109,11 +117,14 @@ type Compensator interface {
 
 	// DispatchCashItemUseRollbacks reverse-walks the completed steps of a
 	// cash-item-use saga (ItemTagUse/SealingLockUse/IncubatorUse/
-	// RemoteMerchant), re-creating every consumed item
-	// (DestroyAsset/DestroyAssetFromSlot → CreateItem), destroying every
-	// awarded result (AwardAsset → DestroyItem), and closing every opened
-	// shop (OpenNpcShop → EXIT). No lifecycle transitions, no Failed
-	// emission, no cache eviction — callers handle those.
+	// KarmaScissorsUse/RemoteMerchant/ScriptedItemUse/RemoteNpcUse), re-creating
+	// every consumed item (DestroyAsset/DestroyAssetFromSlot → CreateItem),
+	// destroying every awarded result (AwardAsset → DestroyItem), clearing every
+	// applied karma mark (ApplyAssetKarma → clear), closing every opened shop
+	// (OpenNpcShop → EXIT), and ending every opened dialogue
+	// (StartItemConversation/StartNpcConversation → END_CONVERSATION). No
+	// lifecycle transitions, no Failed emission, no cache eviction — callers
+	// handle those.
 	DispatchCashItemUseRollbacks(s Saga)
 
 	// DispatchPointResetRollbacks reverse-walks the completed steps of a
@@ -129,6 +140,18 @@ type Compensator interface {
 	// inverse. No lifecycle transitions, no Failed emission, no cache
 	// eviction — callers handle those.
 	DispatchMesoSackRollbacks(s Saga)
+
+	// DispatchPetNameTagRollbacks reverse-walks the completed steps of a
+	// pet_name_tag_use saga and reverts the pet's name by re-issuing RENAME
+	// with the PreviousName captured at build time. Pure dispatch half — no
+	// lifecycle transitions, no Failed emission, no cache eviction.
+	//
+	// Known, accepted limitation: if some other actor renames the pet between
+	// step 1 and this revert, the revert restores a stale name. A rename is
+	// player-initiated, serialized by the client's exclusive-request gate, and
+	// the window is one Kafka round trip — a compare-and-swap revert keyed on
+	// the applied name buys almost nothing for real complexity (design §3.7).
+	DispatchPetNameTagRollbacks(s Saga)
 
 	// DispatchSkillBookUseRollbacks reverse-walks the completed steps of a
 	// skill_book_use saga and re-awards the destroyed book (task-125). Pure
@@ -146,6 +169,17 @@ type Compensator interface {
 	// saga_terminal log + span emitted by the caller. Returns true only when
 	// an inverse command was dispatched by this call.
 	CompensateLateStep(s Saga, step Step[any]) (bool, error)
+
+	// DispatchWorldTransferRollbacks reverse-walks the completed steps of a
+	// world_transfer saga and undoes every recoverable severance: the world
+	// assignment back to SourceWorldId, then the buddy entries in both
+	// directions, then the guild membership at the title the leave step
+	// recorded. Pure dispatch half — no lifecycle transitions, no Failed
+	// emission, no record resolution, no cache eviction. FR-4.8's guarantee
+	// (the character is left WHOLLY in the source world, never in two and
+	// never in none) rests on this plus change_character_world being the last
+	// step of the saga.
+	DispatchWorldTransferRollbacks(s Saga)
 }
 
 type CompensatorImpl struct {
@@ -161,6 +195,9 @@ type CompensatorImpl struct {
 	cashshopP cashshop.Processor
 	mtsP      mts.Processor
 	tradeP    trade.Processor
+	buddyP    buddylist.Processor
+	pcP       pending_change.Processor
+	petP      pet.Processor
 }
 
 func NewCompensator(l logrus.FieldLogger, ctx context.Context) Compensator {
@@ -177,6 +214,9 @@ func NewCompensator(l logrus.FieldLogger, ctx context.Context) Compensator {
 		cashshopP: cashshop.NewProcessor(l, ctx),
 		mtsP:      mts.NewProcessor(l, ctx),
 		tradeP:    trade.NewProcessor(l, ctx),
+		buddyP:    buddylist.NewProcessor(l, ctx),
+		pcP:       pending_change.NewProcessor(l, ctx),
+		petP:      pet.NewProcessor(l, ctx),
 	}
 }
 
@@ -241,6 +281,24 @@ func (c *CompensatorImpl) WithTradeProcessor(tradeP trade.Processor) Compensator
 	return n
 }
 
+func (c *CompensatorImpl) WithBuddyListProcessor(buddyP buddylist.Processor) Compensator {
+	n := c.copy()
+	n.buddyP = buddyP
+	return n
+}
+
+func (c *CompensatorImpl) WithPendingChangeProcessor(pcP pending_change.Processor) Compensator {
+	n := c.copy()
+	n.pcP = pcP
+	return n
+}
+
+func (c *CompensatorImpl) WithPetProcessor(petP pet.Processor) Compensator {
+	n := c.copy()
+	n.petP = petP
+	return n
+}
+
 // CompensateFailedStep handles compensation for failed steps
 func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// Find the failed step
@@ -272,12 +330,16 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	}
 
 	// Cash-item-use reverse-walk (Task 10; expiration_extender_use added
-	// task-222, remote_merchant added task-221). A failed item_tag_use /
-	// sealing_lock_use / incubator_use / expiration_extender_use /
-	// remote_merchant must refund the already-completed consume steps (the
-	// tagged/sealed/incubated/extender item) and undo any awarded result — or
-	// close any opened shop — rather than only compensating the failed step.
-	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse || s.SagaType() == ExpirationExtenderUse || s.SagaType() == RemoteMerchant {
+	// task-222, remote_merchant added task-221, karma_scissors_use added
+	// task-223, scripted_item_use/remote_npc_use added task-230). A failed
+	// item_tag_use / sealing_lock_use / incubator_use /
+	// expiration_extender_use / remote_merchant / karma_scissors_use /
+	// scripted_item_use / remote_npc_use must refund the already-completed
+	// consume steps (the tagged/sealed/incubated/extender item, or the
+	// destroyed scissors) and undo any awarded result or applied karma mark —
+	// or close any opened shop, or end any opened dialogue — rather than only
+	// compensating the failed step.
+	if s.SagaType() == ItemTagUse || s.SagaType() == SealingLockUse || s.SagaType() == IncubatorUse || s.SagaType() == ExpirationExtenderUse || s.SagaType() == RemoteMerchant || s.SagaType() == KarmaScissorsUse || s.SagaType() == ScriptedItemUse || s.SagaType() == RemoteNpcUse {
 		return c.compensateCashItemUse(s, failedStep)
 	}
 
@@ -297,6 +359,14 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// release the client's exclusive-request gate.
 	if s.SagaType() == MesoSackUse {
 		return c.compensateMesoSackUse(s, failedStep)
+	}
+
+	// Pet-name-tag reverse-walk. Rename-first, consume-second: invert the
+	// completed rename_pet step by reverting to the PreviousName captured at
+	// build time, then emit the saga-failed event carrying the character id
+	// so atlas-channel can release the client's exclusive-request gate.
+	if s.SagaType() == PetNameTagUse {
+		return c.compensatePetNameTagUse(s, failedStep)
 	}
 
 	// MTS reverse-walk (task-102 §4.1 — the dupe-safety core). A failed
@@ -341,6 +411,17 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// the failed step; a failed destroy step has nothing to reverse.
 	if s.SagaType() == SkillBookUse {
 		return c.compensateSkillBookUse(s, failedStep)
+	}
+
+	// World-transfer reverse-walk (task-227 FR-4.8). change_character_world is
+	// the LAST step, so a failure anywhere leaves the character in the source
+	// world with only recoverable severances applied — but "recoverable" is
+	// only true if something actually recovers them. Without this arm the
+	// per-action switch below falls to its default, which merely re-marks the
+	// failed step Pending: the character would keep their world but lose their
+	// guild, their party and every buddy, permanently and silently.
+	if s.SagaType() == WorldTransfer {
+		return c.compensateWorldTransfer(s, failedStep)
 	}
 
 	c.l.WithFields(logrus.Fields{
@@ -1381,13 +1462,14 @@ func (c *CompensatorImpl) DispatchSkillBookUseRollbacks(s Saga) {
 
 // compensateCashItemUse is the reverse-walk compensator for cash-item-use
 // sagas (ItemTagUse/SealingLockUse/IncubatorUse — Task 10; RemoteMerchant —
-// task-221). On a failed step (e.g. the terminal incubator_result emit, or
-// consume_remote_merchant_item) it walks the saga's completed steps in
-// reverse, re-creating consumed items, destroying awarded results, and
-// closing any opened shop, emits exactly one StatusEventTypeFailed, cancels
-// the Phase-4 timer, and evicts the saga. The FAILED event is what triggers
-// the channel's INCUBATOR_RESULT(0) announcement (or, for remote_merchant,
-// the shop's already-dispatched EXIT).
+// task-221; KarmaScissorsUse — task-223). On a failed step (e.g. the terminal
+// incubator_result emit, or consume_remote_merchant_item) it walks the saga's
+// completed steps in reverse, re-creating consumed items, destroying awarded
+// results, clearing any applied karma mark, and closing any opened shop,
+// emits exactly one StatusEventTypeFailed, cancels the Phase-4 timer, and
+// evicts the saga. The FAILED event is what triggers the channel's
+// INCUBATOR_RESULT(0) announcement (or, for remote_merchant, the shop's
+// already-dispatched EXIT).
 //
 // Double-emission is prevented by TryTransition(Compensating → Failed): if the
 // timer already emitted Failed, the transition is refused and this function
@@ -1447,9 +1529,15 @@ func (c *CompensatorImpl) compensateCashItemUse(s Saga, failedStep Step[any]) er
 //   - AwardAsset (a granted result, e.g. the incubator's produced item)  →
 //     DestroyItem (mirrors DispatchCharacterCreationRollbacks's AwardAsset
 //     inverse).
+//   - ApplyAssetKarma (target marked one-trade-enabled) → RequestApplyKarma(clear=true).
 //   - OpenNpcShop (a remote-merchant shop opened before the consume step —
 //     task-221 FR-4.5) → EXIT, via EmitNpcShopExit, so the player is not
 //     left standing in a shop they did not pay for.
+//   - StartItemConversation / StartNpcConversation (a scripted-item or
+//     remote-npc dialogue opened before the destroy step — task-230) →
+//     END_CONVERSATION, via EmitNpcConversationEnd. The destroy step is the
+//     last step for these sagas, so the only path reaching this arm is
+//     "dialogue opened, destroy failed" — a UI teardown, not an item restore.
 //
 // An error refunding one step does not abort the chain.
 func (c *CompensatorImpl) DispatchCashItemUseRollbacks(s Saga) {
@@ -1505,6 +1593,14 @@ func (c *CompensatorImpl) DispatchCashItemUseRollbacks(s Saga) {
 					}).Error("Reverse-walk: AwardAsset -> DestroyItem dispatch failed; continuing chain.")
 				}
 			}
+		case ApplyAssetKarma:
+			// Inverse of a completed mark: clear it. A saga that failed after the
+			// mark was applied must not leave a free trade behind (FR-6.6).
+			if payload, ok := step.Payload().(ApplyAssetKarmaPayload); ok {
+				if err := c.compP.RequestApplyKarma(s.TransactionId(), payload.CharacterId, payload.InventoryType, payload.Slot, payload.ScissorsKarma, true); err != nil {
+					c.l.WithError(err).Errorf("Unable to clear the karma mark for character [%d] in inventory [%d] slot [%d] during compensation.", payload.CharacterId, payload.InventoryType, payload.Slot)
+				}
+			}
 		case OpenNpcShop:
 			// The inverse of "opened a shop" is "close it". Without this a
 			// failed destroy step leaves the player standing in a shop they
@@ -1516,6 +1612,32 @@ func (c *CompensatorImpl) DispatchCashItemUseRollbacks(s Saga) {
 						"step_id":        step.StepId(),
 						"character_id":   payload.CharacterId,
 					}).Error("Reverse-walk: OpenNpcShop -> EXIT dispatch failed; continuing chain.")
+				}
+			}
+		case StartItemConversation:
+			// The inverse of "opened a dialogue" is "close it". Because the
+			// destroy is the LAST step, the only path that reaches here is
+			// "conversation opened, destroy failed" — rare, and its
+			// compensation is a UI teardown rather than an item restore. That
+			// asymmetry is the point of the conversation-first ordering.
+			if payload, ok := step.Payload().(StartItemConversationPayload); ok {
+				if err := EmitNpcConversationEnd(c.l, c.ctx, s.TransactionId(), payload.CharacterId, payload.NpcTemplateId); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+						"item_id":        payload.ItemId,
+					}).Error("Reverse-walk: StartItemConversation -> END_CONVERSATION dispatch failed; continuing chain.")
+				}
+			}
+		case StartNpcConversation:
+			if payload, ok := step.Payload().(StartNpcConversationPayload); ok {
+				if err := EmitNpcConversationEnd(c.l, c.ctx, s.TransactionId(), payload.CharacterId, payload.NpcTemplateId); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+					}).Error("Reverse-walk: StartNpcConversation -> END_CONVERSATION dispatch failed; continuing chain.")
 				}
 			}
 		}
@@ -1728,6 +1850,338 @@ func (c *CompensatorImpl) DispatchMesoSackRollbacks(s Saga) {
 					"step_id":        step.StepId(),
 					"template_id":    payload.TemplateId,
 				}).Error("Reverse-walk: meso sack DestroyAsset → CreateItem dispatch failed; continuing chain.")
+			}
+		}
+	}
+}
+
+// compensateWorldTransfer is the world_transfer reverse-walk compensator
+// (task-227 FR-4.8). It runs the inverses in REVERSE step order, resolves the
+// backing pending-change record to REJECTED/saga_failed (which is what drives
+// the refund, exactly once, through the Task 6 transition gate), and emits a
+// single StatusEventTypeFailed. TryTransition(Compensating -> Failed) guards
+// against a double-emit where the timeout backstop already emitted Failed.
+//
+// The record resolution runs even when the transition is lost. The refund is
+// gated by atlas-character's own PENDING -> terminal transition, so a second
+// resolve is a no-op there, whereas skipping it would leave a PENDING record
+// and an unrefunded coupon for a saga that is definitively dead.
+func (c *CompensatorImpl) compensateWorldTransfer(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("WorldTransfer saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchWorldTransferRollbacks(s)
+
+	characterId, pendingChangeId := worldTransferRecordIds(s)
+	if pendingChangeId != uuid.Nil {
+		if err := c.pcP.Resolve(characterId, pendingChangeId, pending_change.StatusRejected, worldTransferRejectionReason); err != nil {
+			// Not fatal to the rollback: the severances are already undone and
+			// the character is already back in the source world. Log loudly —
+			// the record stays PENDING and the coupon unrefunded until the
+			// expiry sweep catches it.
+			c.l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id":    s.TransactionId().String(),
+				"character_id":      characterId,
+				"pending_change_id": pendingChangeId.String(),
+				"tenant_id":         c.t.Id().String(),
+			}).Error("Reverse-walk: unable to resolve world-transfer pending change to REJECTED.")
+		} else {
+			c.l.WithFields(logrus.Fields{
+				"transaction_id":    s.TransactionId().String(),
+				"character_id":      characterId,
+				"pending_change_id": pendingChangeId.String(),
+				"tenant_id":         c.t.Id().String(),
+			}).Info("Reverse-walk: resolved world-transfer pending change to REJECTED/saga_failed.")
+		}
+	} else {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Reverse-walk: world_transfer saga carries no pendingChangeId; record cannot be resolved and the coupon cannot be refunded.")
+	}
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; world-transfer emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("World transfer failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailedByIds(c.l, c.ctx, s.TransactionId(), string(s.SagaType()), 0, characterId, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after world-transfer compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("World-transfer reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// worldTransferRejectionReason is the closed-set reason (design §6) a
+// mid-saga failure writes to the pending-change record. It is NOT free text —
+// atlas-character maps it to a wire code at codec time.
+const worldTransferRejectionReason = "saga_failed"
+
+// worldTransferRecordIds recovers the character and the backing pending-change
+// record from whichever world-transfer step carries them. Both the validate
+// step and the change step carry the pair, so a failure at either end of the
+// saga still resolves the record; the severance steps carry neither.
+func worldTransferRecordIds(s Saga) (uint32, uuid.UUID) {
+	for _, step := range s.Steps() {
+		switch p := step.Payload().(type) {
+		case ChangeCharacterWorldPayload:
+			return p.CharacterId, p.PendingChangeId
+		case ValidateWorldTransferPayload:
+			return p.CharacterId, p.PendingChangeId
+		}
+	}
+	// No id-carrying step: fall back to any step that names the character, so
+	// the Failed event still reaches a session even when the record cannot be
+	// resolved.
+	for _, step := range s.Steps() {
+		if id := ExtractCharacterId(step); id != 0 {
+			return id, uuid.Nil
+		}
+	}
+	return 0, uuid.Nil
+}
+
+// DispatchWorldTransferRollbacks reverse-walks the saga's completed steps and
+// dispatches the inverse of each (design §3.11):
+//
+//	change_character_world      -> world back to SourceWorldId
+//	sever_buddies_for_transfer  -> RESTORE every BuddyId, BOTH directions
+//	leave_party_for_transfer    -> NONE, deliberately (see below)
+//	leave_guild_for_transfer    -> REJOIN at the recorded Title
+//	validate_world_transfer     -> NONE, read-only
+//
+// Reverse order is not cosmetic: the world must come back before the severances
+// are undone, because the guild and buddy services key their rows off the
+// character's world. Restoring a guild membership while the character is still
+// recorded in the destination world would re-add them to a roster in a world
+// they are about to leave again.
+//
+// Only Completed steps are inverted. A step that never ran committed nothing,
+// and an over-eager compensator would re-add a guild membership the character
+// never left or restore a buddy that was never severed.
+//
+// An error on one inverse does not abort the walk — every remaining severance
+// is still worth undoing.
+func (c *CompensatorImpl) DispatchWorldTransferRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+
+		switch payload := step.Payload().(type) {
+		case ChangeCharacterWorldPayload:
+			// The dedicated world-change route, never a generic PATCH with a
+			// worldId field: a zero-value worldId cannot express "world 0",
+			// which is a real world.
+			if err := c.pcP.ChangeWorld(s.TransactionId(), payload.CharacterId, payload.SourceWorldId); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"character_id":   payload.CharacterId,
+					"world_id":       payload.SourceWorldId,
+				}).Error("Reverse-walk: world restore to source world failed; continuing chain.")
+				continue
+			}
+			c.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"step_id":        step.StepId(),
+				"character_id":   payload.CharacterId,
+				"world_id":       payload.SourceWorldId,
+				"tenant_id":      c.t.Id().String(),
+			}).Info("Reverse-walk: restored character to source world.")
+
+		case SeverBuddiesForTransferPayload:
+			// Both directions, mirroring the 2N REQUEST_DELETEs the severance
+			// step emitted — atlas-buddies only ever touches the commanded
+			// character's own list.
+			for _, buddyId := range payload.BuddyIds {
+				if err := c.buddyP.RestoreAndEmit(s.TransactionId(), payload.CharacterId, payload.WorldId, buddyId); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+						"buddy_id":       buddyId,
+					}).Error("Reverse-walk: buddy restore failed; continuing chain.")
+				}
+				if err := c.buddyP.RestoreAndEmit(s.TransactionId(), buddyId, payload.WorldId, payload.CharacterId); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   buddyId,
+						"buddy_id":       payload.CharacterId,
+					}).Error("Reverse-walk: reverse-direction buddy restore failed; continuing chain.")
+				}
+			}
+			c.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"step_id":        step.StepId(),
+				"character_id":   payload.CharacterId,
+				"buddy_count":    len(payload.BuddyIds),
+				"tenant_id":      c.t.Id().String(),
+			}).Info("Reverse-walk: restored severed buddy entries in both directions.")
+
+		case LeavePartyForTransferPayload:
+			// DELIBERATE NO-OP, not an omission (design §3.11). Party
+			// membership is not durable state: atlas-parties holds it in an
+			// in-memory registry rebuilt at login, the other members have
+			// already been told the character left, and there is no
+			// server-issued "put them back" that does not also require the
+			// leader and every other member to still be online in the same
+			// party. Re-forming a party is a normal client action; re-joining
+			// a guild is not, which is why the guild arm below exists and this
+			// one does not. Do not "fix" this by inventing a rejoin command.
+			c.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"step_id":        step.StepId(),
+				"character_id":   payload.CharacterId,
+				"party_id":       payload.PartyId,
+				"tenant_id":      c.t.Id().String(),
+			}).Info("Reverse-walk: party departure is not restorable; no compensation dispatched (deliberate).")
+
+		case LeaveGuildForTransferPayload:
+			// The one severance whose compensation must be EXACT — a guild
+			// re-join is not a client-driveable recovery, which is why Title
+			// is carried in the payload at all.
+			if err := c.guildP.RequestRejoin(s.TransactionId(), payload.CharacterId, payload.GuildId, payload.Title); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"character_id":   payload.CharacterId,
+					"guild_id":       payload.GuildId,
+					"title":          payload.Title,
+				}).Error("Reverse-walk: guild rejoin failed; continuing chain.")
+				continue
+			}
+			c.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"step_id":        step.StepId(),
+				"character_id":   payload.CharacterId,
+				"guild_id":       payload.GuildId,
+				"title":          payload.Title,
+				"tenant_id":      c.t.Id().String(),
+			}).Info("Reverse-walk: restored guild membership at prior title.")
+
+		case ValidateWorldTransferPayload:
+			// Read-only gate: nothing was committed, so there is nothing to
+			// undo. Named explicitly so a reader can see the step was
+			// considered rather than forgotten.
+			continue
+		}
+	}
+}
+
+// compensatePetNameTagUse is the pet_name_tag_use reverse-walk compensator:
+// on a failed consume_pet_name_tag it reverts the already-completed rename
+// (the rename-first, consume-second ordering means the tag was never spent,
+// but the pet's name was already applied) and emits exactly one
+// StatusEventTypeFailed. TryTransition(Compensating → Failed) guards against
+// a double-emit where the timeout backstop already emitted Failed.
+func (c *CompensatorImpl) compensatePetNameTagUse(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("PetNameTagUse saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchPetNameTagRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; pet-name-tag emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Pet name tag use failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after pet-name-tag compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Pet-name-tag reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// petNameTagCharacterId resolves the character to notify. The RenamePet
+// payload is present on every pet_name_tag_use saga by construction; the
+// generic ExtractCharacterId walk is the belt-and-braces fallback (same
+// shape as mesoSackCharacterId).
+func petNameTagCharacterId(s Saga) uint32 {
+	for _, step := range s.Steps() {
+		if step.Action() == RenamePet {
+			if payload, ok := step.Payload().(RenamePetPayload); ok && payload.CharacterId != 0 {
+				return payload.CharacterId
+			}
+		}
+	}
+	for _, step := range s.Steps() {
+		if id := ExtractCharacterId(step); id != 0 {
+			return id
+		}
+	}
+	return 0
+}
+
+// DispatchPetNameTagRollbacks reverse-walks the saga's completed steps and
+// reverts the pet's name by re-issuing RENAME with the PreviousName captured
+// at build time (RenamePet → RenameAndEmit). Pure dispatch half — no
+// lifecycle transitions, no event emission, no cache eviction. Only a
+// Completed rename step is inverted; a rename step that never completed
+// applied nothing and has no inverse. An error reverting the rename does not
+// abort the walk.
+func (c *CompensatorImpl) DispatchPetNameTagRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		if step.Action() != RenamePet {
+			continue
+		}
+		if payload, ok := step.Payload().(RenamePetPayload); ok {
+			if err := c.petP.RenameAndEmit(s.TransactionId(), payload.PetId, payload.CharacterId, payload.PreviousName); err != nil {
+				c.l.WithError(err).WithFields(logrus.Fields{
+					"transaction_id": s.TransactionId().String(),
+					"step_id":        step.StepId(),
+					"pet_id":         payload.PetId,
+				}).Error("Reverse-walk: pet name tag RenamePet revert dispatch failed; continuing chain.")
 			}
 		}
 	}

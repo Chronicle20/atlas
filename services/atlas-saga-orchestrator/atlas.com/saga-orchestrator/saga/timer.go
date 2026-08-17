@@ -19,14 +19,40 @@ import (
 // it so the DB-backed PostgresStore does not need to reason about in-process
 // Go timers.
 type TimerRegistry struct {
-	mu      sync.Mutex
-	entries map[uuid.UUID]*time.Timer
+	mu         sync.Mutex
+	entries    map[uuid.UUID]*time.Timer
+	envContext func(context.Context) context.Context
+	// wg tracks every timer callback that has been armed but not yet
+	// finished running. It exists because Has() flips false the instant a
+	// firing callback self-cleans the registry entry — the very first thing
+	// the callback does, well before it drives handleSagaTimeout to
+	// completion. A test that polls Has()==false and then returns leaves
+	// that callback goroutine still in flight (still inside
+	// EmitSagaFailed/EmitSagaFailedByIds, reading package-level swappable
+	// function variables) racing whatever the next test does to that same
+	// state. Wait() is the deterministic replacement: it blocks until every
+	// armed callback has actually returned.
+	wg sync.WaitGroup
 }
 
 var sagaTimerRegistry = &TimerRegistry{entries: make(map[uuid.UUID]*time.Timer)}
 
 // SagaTimers returns the singleton TimerRegistry.
 func SagaTimers() *TimerRegistry { return sagaTimerRegistry }
+
+// SetEnvContext wires the function that originates this pod's environment
+// identity onto the tenant context a fired timer rebuilds (see Schedule's
+// AfterFunc callback below). saga/ is outside env-domain-guard's permitted
+// atlas-env import list, so main.go supplies this as a plain function value
+// (withSelfEnvironment) rather than the package importing atlas-env itself
+// -- without it, every timed-out saga's compensation dispatch and Failed
+// emission would resolve to the baseline URL/topic regardless of which
+// environment originally drove the saga (FR-1.8, FR-3.1/FR-3.2).
+func (r *TimerRegistry) SetEnvContext(f func(context.Context) context.Context) {
+	r.mu.Lock()
+	r.envContext = f
+	r.mu.Unlock()
+}
 
 // Schedule arms a per-saga timer. If a timer already exists for the given
 // transactionId (retry / re-inject), the previous one is stopped and replaced.
@@ -38,10 +64,17 @@ func (r *TimerRegistry) Schedule(l logrus.FieldLogger, t tenant.Model, txId uuid
 	}
 	r.mu.Lock()
 	if old, ok := r.entries[txId]; ok {
-		old.Stop()
+		if old.Stop() {
+			// Genuinely stopped before firing -- its callback will never run,
+			// so release the Add(1) that armed it. If Stop returns false the
+			// callback already fired or is running and will call Done itself.
+			r.wg.Done()
+		}
 	}
 	var timer *time.Timer
+	r.wg.Add(1)
 	timer = time.AfterFunc(timeout, func() {
+		defer r.wg.Done()
 		// Self-clean the registry FIRST so subsequent observers (tests, reschedules)
 		// see the timer as "fired, not pending" even if downstream emission blocks.
 		r.mu.Lock()
@@ -51,6 +84,12 @@ func (r *TimerRegistry) Schedule(l logrus.FieldLogger, t tenant.Model, txId uuid
 		r.mu.Unlock()
 
 		ctx := tenant.WithContext(context.Background(), t)
+		r.mu.Lock()
+		ec := r.envContext
+		r.mu.Unlock()
+		if ec != nil {
+			ctx = ec(ctx)
+		}
 		handleSagaTimeout(l, ctx, txId, timeout)
 	})
 	r.entries[txId] = timer
@@ -62,10 +101,24 @@ func (r *TimerRegistry) Schedule(l logrus.FieldLogger, t tenant.Model, txId uuid
 func (r *TimerRegistry) Cancel(txId uuid.UUID) {
 	r.mu.Lock()
 	if t, ok := r.entries[txId]; ok {
-		t.Stop()
+		if t.Stop() {
+			r.wg.Done()
+		}
 		delete(r.entries, txId)
 	}
 	r.mu.Unlock()
+}
+
+// Wait blocks until every timer callback that has been armed (via Schedule)
+// has finished running to completion -- not merely until it has self-cleaned
+// the registry entry, which happens before the rest of the callback (the
+// full handleSagaTimeout walk, including the Failed emission) runs. Tests
+// that schedule a real timer and then touch state the callback also touches
+// (package-level swappable emit functions, the shared cache) MUST call Wait
+// before returning, or the callback goroutine can still be mid-flight when
+// the next test starts.
+func (r *TimerRegistry) Wait() {
+	r.wg.Wait()
 }
 
 // Has reports whether a timer is currently registered for the given transactionId.
@@ -174,11 +227,14 @@ var reverseWalkSagaTypes = []Type{
 	ItemTagUse,
 	SealingLockUse,
 	IncubatorUse,
+	KarmaScissorsUse,
 	ExpirationExtenderUse,
 	PointReset,
 	NoteSend,
 	SkillBookUse,
 	MesoSackUse,
+	WorldTransfer,
+	PetNameTagUse,
 }
 
 // noReverseWalkSagaTypes are the saga types that deliberately have NO reverse
@@ -204,8 +260,9 @@ var noReverseWalkSagaTypes = []Type{
 var allSagaTypes = []Type{
 	InventoryTransaction, QuestReward, TradeTransaction, TradeStaging,
 	CharacterCreation, StorageOperation, CharacterRespawn, GachaponTransaction,
-	PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse, PointReset,
-	MtsOperation, NoteSend, SkillBookUse, MesoSackUse,
+	PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse,
+	KarmaScissorsUse, PointReset,
+	MtsOperation, NoteSend, SkillBookUse, MesoSackUse, WorldTransfer, PetNameTagUse,
 }
 
 // dispatchTimeoutRollbacks fires the reverse walk for a timed-out saga and
@@ -236,8 +293,8 @@ func dispatchTimeoutRollbacks(l logrus.FieldLogger, ctx context.Context, s Saga)
 		c.DispatchTradeStagingRollbacks(s)
 	case PetEvolution:
 		c.DispatchPetEvolutionRollbacks(s)
-	case ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse:
-		// The four share one compensator, exactly as CompensateFailedStep
+	case ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse, KarmaScissorsUse:
+		// The five share one compensator, exactly as CompensateFailedStep
 		// routes them.
 		c.DispatchCashItemUseRollbacks(s)
 	case PointReset:
@@ -250,6 +307,16 @@ func dispatchTimeoutRollbacks(l logrus.FieldLogger, ctx context.Context, s Saga)
 		// Without this a timed-out sack use is pure loss: consume_meso_sack
 		// completed, award_mesos never landed, and nothing puts the sack back.
 		c.DispatchMesoSackRollbacks(s)
+	case WorldTransfer:
+		// Without this a timed-out transfer strands the character exactly
+		// where FR-4.8 says they must never be: guildless, partyless and
+		// buddyless, in whichever world the last completed step left them.
+		c.DispatchWorldTransferRollbacks(s)
+	case PetNameTagUse:
+		// Without this a timed-out rename leaves the new name applied while the
+		// tag was never consumed — or, on the other ordering, the player's pet
+		// keeps a name they were told failed.
+		c.DispatchPetNameTagRollbacks(s)
 	default:
 		return false
 	}

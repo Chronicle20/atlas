@@ -21,13 +21,19 @@ import (
 )
 
 // InitResource registers the listing routes:
-//   - GET  /worlds/{worldId}/listings              — browse/search active listings
-//   - POST /worlds/{worldId}/listings              — initiate a list (TransferToMts saga)
-//   - GET  /worlds/{worldId}/listings/{listingId}  — listing detail
+//   - GET  /worlds/{worldId}/listings                   — browse/search active listings
+//   - POST /worlds/{worldId}/listings                   — initiate a list (TransferToMts saga)
+//   - GET  /worlds/{worldId}/listings/{listingId}        — listing detail
+//   - GET  /characters/{characterId}/mts/listings        — a seller's ACTIVE listings across worlds
 //
 // The POST initiates the custody/fee saga; it does NOT create the listing row
 // (that happens on the custody consumer's AcceptToMtsListing). The DELETE
 // performs the seller's race-safe cancel (active->holding(seller)).
+//
+// The character-scoped route mirrors holding.InitResource's
+// GET /characters/{characterId}/mts/holding in shape and registration style
+// (task-227 gate 11): it is the only way to see a live auction, since a
+// listing becomes a holding only on cancel/expiry.
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
@@ -39,8 +45,45 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", registerInput("create_listing", handleCreateListing)).Methods(http.MethodPost)
 			r.HandleFunc("/{listingId}", registerGet("get_listing", handleGetListing)).Methods(http.MethodGet)
 			r.HandleFunc("/{listingId}", registerGet("cancel_listing", handleCancelListing)).Methods(http.MethodDelete)
+
+			cr := router.PathPrefix("/characters/{characterId}/mts/listings").Subrouter()
+			cr.HandleFunc("", registerGet("get_character_active_listings", handleGetCharacterActiveListings)).Methods(http.MethodGet)
 		}
 	}
+}
+
+// handleGetCharacterActiveListings is a game-capped list (a seller's active
+// listing count is bounded by the tenant's per-character active cap, see
+// getActiveCountBySeller) — page[size] defaults to and caps at
+// paginate.MaxPageSize, mirroring holding.handleGetCharacterHoldings.
+func handleGetCharacterActiveListings(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			page, perr := paginate.ParseParams(r.URL.Query(), paginate.MaxPageSize, paginate.MaxPageSize)
+			if perr != nil {
+				server.WriteBadRequest(d.Logger(), w, "invalid page[number]/page[size]")
+				return
+			}
+
+			paged, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByCharacterActivePagedProvider(characterId, page)()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Retrieving active listings for character [%d].", characterId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalPaginatedResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res, paginate.EnvelopeFor(paged), r)
+		}
+	})
 }
 
 // handleCancelListing performs the seller's cancel of an active listing, moving

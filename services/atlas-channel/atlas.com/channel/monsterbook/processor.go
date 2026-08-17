@@ -79,7 +79,7 @@ func (p *ProcessorImpl) RequestSetCover(characterId character.Id, coverCardId it
 // ByCharacterIdProvider returns a provider that fetches the character's
 // monster book collection from atlas-monster-book.
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId character.Id) model.Provider[Collection] {
-	return requests.Provider[CollectionRestModel, Collection](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
+	return requests.Provider[CollectionRestModel, Collection](p.l, p.ctx)(requestByCharacterId(p.ctx, characterId), Extract)
 }
 
 // GetByCharacterId fetches and returns the monster book collection for the
@@ -94,7 +94,11 @@ func (p *ProcessorImpl) GetByCharacterId(characterId character.Id) (Collection, 
 // attaches the FULL card list to the character model sent on channel
 // spawn, so this drains every page rather than fetching just the first.
 func (p *ProcessorImpl) CardsByCharacterIdProvider(characterId character.Id) model.Provider[[]Card] {
-	return requests.DrainProvider[CardRestModel, Card](p.l, p.ctx)(cardsByCharacterIdUrl(characterId), 250, ExtractCard, model.Filters[Card]())
+	url, err := cardsByCharacterIdUrl(p.ctx, characterId)
+	if err != nil {
+		return model.ErrorProvider[[]Card](err)
+	}
+	return requests.DrainProvider[CardRestModel, Card](p.l, p.ctx)(url, 250, ExtractCard, model.Filters[Card]())
 }
 
 // GetCardsByCharacterId fetches and returns the owned card list for the character.

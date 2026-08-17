@@ -19,7 +19,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("guild_status_event")(guild2.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("guild_status_event")(guild2.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -41,6 +41,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleGuildCapacityUpdatedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleGuildMemberLeftEvent))); err != nil {
 			return err
 		}
 		return nil
@@ -97,6 +100,17 @@ func handleGuildCapacityUpdatedEvent(l logrus.FieldLogger, ctx context.Context, 
 	}
 	p := saga.NewProcessor(l, ctx)
 	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindGuildCapacityUpdated); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
+}
+
+func handleGuildMemberLeftEvent(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventMemberLeftBody]) {
+	if e.Type != guild2.StatusEventTypeMemberLeft {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindGuildMemberLeft, saga.ForCharacter(e.Body.CharacterId)); !ok {
 		return
 	}
 	_ = p.StepCompleted(e.TransactionId, true)

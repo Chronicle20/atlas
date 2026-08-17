@@ -13,6 +13,14 @@ const (
 	CommandTypeRequestEmblem           = "REQUEST_EMBLEM"
 	CommandTypeRequestDisband          = "REQUEST_DISBAND"
 	CommandTypeRequestCapacityIncrease = "REQUEST_CAPACITY_INCREASE"
+	CommandTypeLeave                   = "LEAVE"
+	// CommandTypeRejoin re-adds a character to a guild at an explicitly
+	// supplied title. Mirrors atlas-guilds' CommandTypeRejoin. It is the
+	// inverse of CommandTypeLeave for the world-transfer saga's compensation
+	// (task-227 FR-4.8): a guild re-join is not a client-driveable recovery,
+	// so the compensator has to issue it server-side at the exact rank the
+	// leave step recorded in its payload.
+	CommandTypeRejoin = "REJOIN"
 )
 
 type Command[E any] struct {
@@ -40,6 +48,19 @@ type RequestDisbandBody struct {
 type RequestCapacityIncreaseBody struct {
 	WorldId   world.Id   `json:"worldId"`
 	ChannelId channel.Id `json:"channelId"`
+}
+
+type LeaveBody struct {
+	GuildId uint32 `json:"guildId"`
+	Force   bool   `json:"force"`
+}
+
+// RejoinBody mirrors atlas-guilds' RejoinBody exactly (field names and json
+// tags). Title is mandatory: re-adding at the default rookie rank would
+// silently demote a guild officer whose world transfer failed.
+type RejoinBody struct {
+	GuildId uint32 `json:"guildId"`
+	Title   byte   `json:"title"`
 }
 
 const (

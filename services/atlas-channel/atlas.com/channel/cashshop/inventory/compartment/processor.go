@@ -33,7 +33,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 // ByAccountIdProvider returns a provider function that fetches all compartments for an account
 func (p *ProcessorImpl) ByAccountIdProvider(accountId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByAccountId(accountId), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByAccountId(p.ctx, accountId), Extract, model.Filters[Model]())
 }
 
 // GetByAccountId retrieves all compartments for an account
@@ -43,7 +43,7 @@ func (p *ProcessorImpl) GetByAccountId(accountId uint32) ([]Model, error) {
 
 // ByAccountIdAndTypeProvider returns a provider function that fetches a specific compartment by account ID and type
 func (p *ProcessorImpl) ByAccountIdAndTypeProvider(accountId uint32, compartmentType CompartmentType) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByAccountIdAndType(accountId, compartmentType), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByAccountIdAndType(p.ctx, accountId, compartmentType), Extract)
 }
 
 // GetByAccountIdAndType retrieves a specific compartment by account ID and type

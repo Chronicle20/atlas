@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	lock "github.com/Chronicle20/atlas/libs/atlas-lock"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -39,7 +40,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(ranking.Migration))
@@ -62,8 +63,17 @@ func main() {
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()
 
+	// tasks/recompute.go sits outside env-domain-guard's permitted atlas-env
+	// import list (main.go, kafka/, rest/, socket/), so this pod's
+	// environment identity is threaded in as a plain function value rather
+	// than the package importing atlas-env itself. Without it,
+	// RecomputeTask's per-tenant configuration lookup and character read
+	// would resolve through RootUrlFor's legacy-baseline fallback and
+	// silently hit main's environment instead of this pod's.
 	registerRecompute := func(l logrus.FieldLogger, ctx context.Context) {
-		tasks.Register(l, ctx)(tasks.NewRecomputeTask(l, ctx, db, baseTick))
+		tasks.Register(l, ctx)(tasks.NewRecomputeTask(l, ctx, db, baseTick, func(ctx context.Context) context.Context {
+			return env.WithContext(ctx, env.Self())
+		}))
 	}
 
 	if leaderEnabled(l) {

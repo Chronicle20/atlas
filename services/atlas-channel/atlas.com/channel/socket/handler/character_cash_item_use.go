@@ -6,20 +6,25 @@ import (
 	"atlas-channel/consumable"
 	cashData "atlas-channel/data/cash"
 	equipmentData "atlas-channel/data/equipment"
+	"atlas-channel/data/tradeability"
 	"atlas-channel/incubator"
 	"atlas-channel/kite"
+	"atlas-channel/pendingchange"
 	"atlas-channel/pet"
 	"atlas-channel/saga"
 	"atlas-channel/session"
 	"atlas-channel/shopscanner"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
 	"math"
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -259,10 +264,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			})
 			return
 		}
-		sealTimed := CashSlotItemTypeSealTimed
-		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-			sealTimed = CashSlotItemTypeSealTimedV95
-		}
+		sealTimed := sealTimedCashSlotItemType(t)
 		if it == CashSlotItemTypeSeal || it == sealTimed {
 			sp := cashsb.NewItemUseSeal(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
@@ -323,6 +325,128 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 							InventoryType: byte(invType),
 							Slot:          targetSlot,
 							Expiration:    expiration,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+				},
+			})
+			return
+		}
+		if it == karmaScissorsCashSlotItemType(t) {
+			sp := cashsb.NewItemUseKarmaScissors(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			invTypeRaw := sp.InventoryType()
+			targetSlot := int16(sp.Slot())
+
+			// The client takes an exclusive-request lock before sending
+			// (gms_v83 @0x830FB5 gates on CanSendExclRequest(500, 0) and then
+			// sets the lock), so EVERY outcome must unlock — a refusal that
+			// returns silently wedges the client until the next unlocking
+			// packet. The success path's non-silent INVENTORY_OPERATION, driven
+			// by the UPDATED event, clears the lock on its own; only the
+			// refusals need this.
+			refuse := func(format string, args ...interface{}) {
+				l.Warnf(format, args...)
+				_ = session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+			}
+
+			// Gate 0b: the raw inventory-type int off the wire must be one of the
+			// five known compartments. inventory.Type is a signed int8, so an
+			// out-of-range value would otherwise address a nonexistent
+			// compartment rather than fail.
+			invType, ok := knownInventoryType(invTypeRaw)
+			if !ok {
+				refuse("Character [%d] attempted to use karma scissors [%d] against unknown inventory type [%d] slot [%d].", s.CharacterId(), itemId, invTypeRaw, targetSlot)
+				return
+			}
+			// Gate 0d: a negative slot is an equipped item.
+			if targetSlot < 0 {
+				refuse("Character [%d] attempted to use karma scissors [%d] on equipped slot [%d] of inventory [%d].", s.CharacterId(), itemId, targetSlot, invType)
+				return
+			}
+			// Gate 0e: the slot must be occupied.
+			target, err := karmaCharacterProcessorFunc(l, ctx).GetItemInSlot(s.CharacterId(), invType, targetSlot)()
+			if err != nil {
+				refuse("Character [%d] attempted to use karma scissors [%d] on empty slot [%d] of inventory [%d].", s.CharacterId(), itemId, targetSlot, invType)
+				return
+			}
+			// Gate 0c: pets carry karma on bit 0x01, which is FlagLock in
+			// Atlas's shared flag column. See libs/atlas-constants/asset.KarmaFlagFor.
+			karmaBit, ok := af.KarmaFlagFor(target.TemplateId())
+			if !ok {
+				refuse("Character [%d] attempted to use karma scissors [%d] on pet-class item [%d] in inventory [%d] slot [%d]; pets are not karma targets.", s.CharacterId(), itemId, target.TemplateId(), invType, targetSlot)
+				return
+			}
+			// Gate 1: CUIKarmaDlg::PutItem's first refusal — IsProtectedItem.
+			if target.Locked() {
+				refuse("Character [%d] attempted to use karma scissors [%d] on sealing-locked item [%d] in inventory [%d] slot [%d].", s.CharacterId(), itemId, target.TemplateId(), invType, targetSlot)
+				return
+			}
+			// Gate 2: the eligibility predicate. The scissors' own karma type
+			// comes from ITS data, the target's from the target's — no literal
+			// karma type appears anywhere, which is why 5520001 works the moment
+			// a tenant's WZ carries it and is unusable when it does not.
+			cd, err := karmaCashDataProcessorFunc(l, ctx).GetById(uint32(itemId))
+			if err != nil {
+				refuse("Character [%d] used karma scissors [%d] but its cash item data could not be read; refusing rather than assuming an untyped scissors. Target item [%d] in inventory [%d] slot [%d].", s.CharacterId(), itemId, target.TemplateId(), invType, targetSlot)
+				return
+			}
+			td, err := karmaTradeabilityProcessorFunc(l, ctx).Get(invType, item.Id(target.TemplateId()))
+			if err != nil {
+				refuse("Character [%d] used karma scissors [%d] on item [%d] whose item data could not be read; refusing rather than assuming eligibility. Inventory [%d] slot [%d].", s.CharacterId(), itemId, target.TemplateId(), invType, targetSlot)
+				return
+			}
+			if !af.KarmaEligible(cd.Karma, td.TradeAvailable()) {
+				refuse("Character [%d] attempted to use karma scissors [%d] (karma type [%d]) on ineligible item [%d] (tradeAvailable [%d]) in inventory [%d] slot [%d].", s.CharacterId(), itemId, cd.Karma, target.TemplateId(), td.TradeAvailable(), invType, targetSlot)
+				return
+			}
+			// Gate 3: IsPossibleTradingItem — the mark is already set.
+			if af.HasFlag(target.Flag(), karmaBit) {
+				refuse("Character [%d] attempted to use karma scissors [%d] on already-marked item [%d] in inventory [%d] slot [%d].", s.CharacterId(), itemId, target.TemplateId(), invType, targetSlot)
+				return
+			}
+			// Gate 4: server-only. Karma exists to unlock an UNTRADEABLE item;
+			// marking a tradeable one is a no-op that still consumes the
+			// scissors. "Untradeable" is the same pair of conditions
+			// atlas-trades enforces, so this gate and the trade-side override
+			// are two readings of one definition and cannot disagree.
+			if !af.HasFlag(target.Flag(), af.FlagUntradeable) && !af.HasFlag(target.Flag(), af.FlagMergeUntradeable) && !td.TradeBlock() {
+				refuse("Character [%d] attempted to use karma scissors [%d] on already-tradeable item [%d] in inventory [%d] slot [%d].", s.CharacterId(), itemId, target.TemplateId(), invType, targetSlot)
+				return
+			}
+
+			// Consume first, mark second: a failure to apply the mark then
+			// compensates by restoring the scissors rather than leaving a free
+			// trade behind.
+			transactionId := uuid.New()
+			now := time.Now()
+			_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
+				TransactionId: transactionId,
+				SagaType:      saga.KarmaScissorsUse,
+				InitiatedBy:   "CASH_ITEM_USE",
+				Steps: []saga.Step{
+					{
+						StepId: "consume_karma_scissors",
+						Status: saga.Pending,
+						Action: saga.DestroyAsset,
+						Payload: saga.DestroyAssetPayload{
+							CharacterId: s.CharacterId(),
+							TemplateId:  uint32(itemId),
+							Quantity:    1,
+						},
+						CreatedAt: now,
+						UpdatedAt: now,
+					},
+					{
+						StepId: "apply_asset_karma",
+						Status: saga.Pending,
+						Action: saga.ApplyAssetKarma,
+						Payload: saga.ApplyAssetKarmaPayload{
+							CharacterId:   s.CharacterId(),
+							InventoryType: byte(invType),
+							Slot:          targetSlot,
+							ScissorsKarma: cd.Karma,
 						},
 						CreatedAt: now,
 						UpdatedAt: now,
@@ -589,6 +713,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
+		if it == CashSlotItemTypePetNameTag {
+			sp := cashsb.NewItemUsePetNameTag(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			handlePetNameTagUse(l, ctx, wp)(s, itemId, sp.Name())
+			return
+		}
+
 		if it == CashSlotItemTypeCurrencySack {
 			// No sub-body: the classification-520 arm of
 			// CWvsContext::SendConsumeCashItemUseRequest encodes nothing beyond
@@ -609,6 +740,39 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			sp := &cashsb.ItemUseStoreSearch{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			_ = shopscanner.NewProcessor(l, ctx).Search(wp)(s, sp.SearchItemId(), sp.Descending(), itemId, source, sp.UpdateTime())
+			return
+		}
+
+		// No sub-body: CWvsContext::SendConsumeCashItemUseRequest's cases 52/53
+		// (gms_v83 @0xa0b1b4/@0xa0b294) and 53/54 (gms_v95 @0x9ec299/@0x9ec384)
+		// carry no name and no target world -- only an optional, hard-coded
+		// confirmation byte (Encode1), which is the LAST field on the wire and
+		// carries no domain data, so there is nothing here worth decoding off
+		// r. Two facts settle that, both derived by direct disassembly on v83
+		// AND v95 (docs/tasks/task-227-cash-name-change-world-transfer/
+		// cancel-confirm-semantics.md): (1) dismissing either of the two
+		// chained CUICancelCharacterCouponRequests::DoModal dialogs sends NO
+		// packet at all -- the byte and the SendPacket call are gated
+		// together, so a received packet of this arm IS necessarily the
+		// double-confirmed cancel; there is no tail-less variant on the wire
+		// to distinguish. (2) the byte's value is always 1 on both versions
+		// (v95 encodes a literal 1; v83 sets edi=1 once at function entry via
+		// push 1/pop edi and never reassigns it before either call site) --
+		// not "0 or 1 depending on which dialog," and not version-divergent.
+		//
+		// This arm is therefore the client's cancel entry point (task-227
+		// client-cancel addendum, see cancel-entry-point.md): using a
+		// name-change or world-transfer coupon that already has a pending
+		// change outstanding is how the client asks to cancel it. The
+		// character id comes from the session, never the client -- ownership
+		// holds by construction on the atlas-character side too
+		// (pending_change.CancelForCharacterAndType).
+		if it == nameChangeCashSlotItemType(t) {
+			handleCashCouponCancel(l, ctx, wp)(s, itemId, pendingchange.TypeNameChange)
+			return
+		}
+		if it == worldTransferCashSlotItemType(t) {
+			handleCashCouponCancel(l, ctx, wp)(s, itemId, pendingchange.TypeWorldTransfer)
 			return
 		}
 
@@ -792,19 +956,21 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 type CashSlotItemType uint32
 
 const (
-	CashSlotItemTypeFieldEffect   = CashSlotItemType(16)
-	CashSlotItemTypeNote          = CashSlotItemType(21)
-	CashSlotItemTypeStoreSearch   = CashSlotItemType(29)
-	CashSlotItemTypePetConsumable = CashSlotItemType(30)
-	CashSlotItemTypePetSkill      = CashSlotItemType(28)
-	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
-	CashSlotItemTypeKite          = CashSlotItemType(18)
-	CashSlotItemTypeItemTag       = CashSlotItemType(25)
-	CashSlotItemTypeSeal          = CashSlotItemType(26)
-	CashSlotItemTypeIncubator     = CashSlotItemType(27)
-	CashSlotItemTypeSealTimed     = CashSlotItemType(64)
-	CashSlotItemTypeSealTimedV95  = CashSlotItemType(65)
-	CashSlotItemTypeCube          = CashSlotItemType(74)
+	CashSlotItemTypeFieldEffect      = CashSlotItemType(16)
+	CashSlotItemTypeNote             = CashSlotItemType(21)
+	CashSlotItemTypeStoreSearch      = CashSlotItemType(29)
+	CashSlotItemTypePetConsumable    = CashSlotItemType(30)
+	CashSlotItemTypePetSkill         = CashSlotItemType(28)
+	CashSlotItemTypeChalkboard       = CashSlotItemType(32)
+	CashSlotItemTypeKite             = CashSlotItemType(18)
+	CashSlotItemTypeItemTag          = CashSlotItemType(25)
+	CashSlotItemTypeSeal             = CashSlotItemType(26)
+	CashSlotItemTypeIncubator        = CashSlotItemType(27)
+	CashSlotItemTypeSealTimed        = CashSlotItemType(64)
+	CashSlotItemTypeSealTimedV95     = CashSlotItemType(65)
+	CashSlotItemTypeKarmaScissors    = CashSlotItemType(63) // GMS < 95, and JMS
+	CashSlotItemTypeKarmaScissorsV95 = CashSlotItemType(64) // GMS >= 95
+	CashSlotItemTypeCube             = CashSlotItemType(74)
 	// CashSlotItemTypeCurrencySack is classification 520 (meso sacks). Atlas
 	// returns 19 on EVERY version even though the v48 client's own table says
 	// 17 and v61's says 18: the type is derived from the server-resolved
@@ -831,6 +997,13 @@ const (
 	// — the handler gates on item.ClassificationTeleportRock (504) before
 	// routing into the use-flow, so aliased megaphones are unaffected.
 	CashSlotItemTypeTeleportRock = CashSlotItemType(12)
+
+	// CashSlotItemTypePetNameTag is classification 517 (Pet Name Tag, 5170000).
+	// No other classification maps to 17 in GetCashSlotItemType — meso sacks
+	// return 19 on every version by deliberate Atlas policy (see
+	// CashSlotItemTypeCurrencySack above) even though the v48 client's own
+	// table says 17 — so gating the arm on `it` alone is unambiguous.
+	CashSlotItemTypePetNameTag = CashSlotItemType(17)
 )
 
 // cashItemInSlotFunc is a test seam for the cash-inventory ownership check
@@ -850,6 +1023,50 @@ var cashItemInSlotFunc = func(l logrus.FieldLogger, ctx context.Context, charact
 // Kafka broker to assert which arm a request reached.
 var requestItemConsumeFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId character.Id, itemId item.Id, source slot.Position, quantity int16, updateTime uint32) error {
 	return consumable.NewProcessor(l, ctx).RequestItemConsume(f, characterId, itemId, source, quantity, updateTime)
+}
+
+// karmaCharacterProcessorFunc is a test seam for the karma arm's target-item
+// lookup (package-var injection precedent: cashItemInSlotFunc above). Unlike
+// that seam, which resolves only a template id, the karma arm's gates
+// 0c/1/3/4 need the full target asset (locked, flag, template id), so this
+// seam exposes the whole character2.Processor — tests substitute
+// character/mock.MockProcessor's GetItemInSlotFunc.
+var karmaCharacterProcessorFunc = func(l logrus.FieldLogger, ctx context.Context) character2.Processor {
+	return character2.NewProcessor(l, ctx)
+}
+
+// karmaCashDataProcessorFunc is a test seam for the karma arm's scissors
+// cash-item-data lookup (Task 10). Tests substitute data/cash/mock's
+// ProcessorMock.
+var karmaCashDataProcessorFunc = func(l logrus.FieldLogger, ctx context.Context) cashData.Processor {
+	return cashData.NewProcessor(l, ctx)
+}
+
+// karmaTradeabilityProcessorFunc is a test seam for the karma arm's target
+// tradeability lookup (Task 10). Tests substitute data/tradeability/mock's
+// ProcessorMock — see that package's doc comment on why GetFunc must always
+// be set explicitly in a karma test.
+var karmaTradeabilityProcessorFunc = func(l logrus.FieldLogger, ctx context.Context) tradeability.Processor {
+	return tradeability.NewProcessor(l, ctx)
+}
+
+// knownInventoryType decodes the raw inventory-type int off the wire into a
+// shared inventory.Type, reporting false for anything that is not one of the
+// five compartments. inventory.Type is a SIGNED int8, so an out-of-range value
+// would silently address a nonexistent compartment if merely converted — a
+// crafted packet must be a refusal, not a panic or a wrong-compartment read.
+// Mirrors atlas-trades' stageableInventoryType.
+func knownInventoryType(raw int32) (inventory.Type, bool) {
+	if raw < 0 || raw > math.MaxInt8 {
+		return 0, false
+	}
+	t := inventory.Type(raw)
+	for _, known := range inventory.Types {
+		if t == known {
+			return t, true
+		}
+	}
+	return 0, false
 }
 
 const (
@@ -873,6 +1090,96 @@ func viciousHammerCashSlotItemType(t tenant.Model) CashSlotItemType {
 		return CashSlotItemTypeViciousHammerV95
 	}
 	return CashSlotItemTypeViciousHammer
+}
+
+// nameChangeCashSlotItemType returns the version-scoped CashSlotItemType for
+// the name-change coupon (item id prefix 5400). task-227 derivation.md §3
+// settles the prefix->flow assignment from the client's own ProcessBuy/
+// get_cashslot_item_type arms: 5400000 is name change on every GMS version
+// v48-v95 (v83 -> 52, v95 -> 53). Do not reorder against
+// worldTransferCashSlotItemType without re-reading §3 -- jms_v185 has no
+// 5400000 at all (§1.5), so this value is never produced there in practice,
+// but the helper still returns a value distinct from the world-transfer one.
+func nameChangeCashSlotItemType(t tenant.Model) CashSlotItemType {
+	if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+		return CashSlotItemType(53)
+	}
+	return CashSlotItemType(52)
+}
+
+// worldTransferCashSlotItemType returns the version-scoped CashSlotItemType
+// for the world-transfer coupon (item id prefix 5401). task-227
+// derivation.md §3: 5401000 is world transfer on every GMS version v48-v95
+// (v83 -> 53, v95 -> 54) and on jms_v185, which maps 5401000 to this flow
+// despite lacking a name-change item at all (§1.5).
+func worldTransferCashSlotItemType(t tenant.Model) CashSlotItemType {
+	if t.IsRegion("GMS") && t.MajorAtLeast(95) {
+		return CashSlotItemType(54)
+	}
+	return CashSlotItemType(53)
+}
+
+// handleCashCouponCancel is the server side of the coupon item-use cancel
+// arm (task-227 client-cancel addendum, see the case-52/53 comment above).
+// It cancels the calling character's own pending record of changeType via
+// atlas-character's self-scoped cancel route -- the character id comes from
+// the session, never the client. It unlocks the client (enableActions) on
+// EVERY path: success, "nothing pending" (404, not an error for the
+// player), and infrastructure failure alike. Dropping enableActions on any
+// one of those leaves the client permanently locked (FR-5.3), which is the
+// whole reason this arm existed before this task.
+//
+// No clientbound CANCEL_* is emitted from here: the server's reply is the
+// PENDING_CHANGE_RESOLVED event atlas-character emits on a successful
+// cancel, which a separate consumer (task-227 Task 27) turns into
+// CancelNameChangeResult / CancelTransferWorldResult. Emitting from this
+// handler too would double-send.
+func handleCashCouponCancel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, itemId item.Id, changeType string) {
+	return func(s session.Model, itemId item.Id, changeType string) {
+		characterId := s.CharacterId()
+		_, err := pendingchange.NewProcessor(l, ctx).CancelPendingChange(characterId, changeType)
+		if err != nil {
+			var re *pendingchange.RejectedError
+			if errors.As(err, &re) && re.Status == http.StatusNotFound {
+				// A normal race against the sweeper or an operator cancel,
+				// not a failure -- there was simply nothing pending to cancel.
+				l.Debugf("Character [%d] used coupon [%d] to cancel a pending [%s] change, but nothing was pending.", characterId, itemId, changeType)
+			} else {
+				l.WithError(err).Warnf("Character [%d] failed to cancel pending [%s] change via coupon [%d].", characterId, changeType, itemId)
+			}
+			_ = enableActions(l)(ctx)(wp)(s)
+			return
+		}
+		_ = enableActions(l)(ctx)(wp)(s)
+	}
+}
+
+// sealTimedCashSlotItemType returns the version-scoped CashSlotItemType for the
+// Sealing Lock (timed). Extracted from the handler arm so that
+// karma_slot_type_test.go's disjointness guard can assert against the SAME code
+// the runtime executes — a test that re-derives this rule would keep passing
+// against a stale copy if the real threshold ever moved.
+func sealTimedCashSlotItemType(t tenant.Model) CashSlotItemType {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		return CashSlotItemTypeSealTimedV95
+	}
+	return CashSlotItemTypeSealTimed
+}
+
+// karmaScissorsCashSlotItemType returns the version-scoped CashSlotItemType for
+// the Scissors of Karma (classification 552).
+//
+// A bare constant compare is FORBIDDEN here: pre-95, CashSlotItemTypeSealTimed
+// is also 64. The karma and seal arms are disjoint at runtime today only because
+// the seal arm recomputes itself to 65 on GMS >= 95 (:261-265) — a coincidence
+// that a version-scoped resolver on both sides turns into a structural property.
+// karma_slot_type_test.go asserts the two never collide on any configured
+// version.
+func karmaScissorsCashSlotItemType(t tenant.Model) CashSlotItemType {
+	if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+		return CashSlotItemTypeKarmaScissorsV95
+	}
+	return CashSlotItemTypeKarmaScissors
 }
 
 func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
@@ -1045,12 +1352,18 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 			return CashSlotItemType(6)
 		}
 		if category == item.ClassificationPetImprints {
-			if 10000*itemId/10000 != itemId {
+			// get_cashslot_item_type @0x48645b, case 517:
+			//   return a1 % 10000 != 0 ? 0 : 17;
+			// The previous spelling of this was `10000*itemId/10000 != itemId`,
+			// which OVERFLOWS: item.Id is uint32, so 10000 * 5170000 wraps to
+			// 160,392,448 and the branch returned 0 for the one item id it was
+			// supposed to admit. The Pet Name Tag never reached a handler.
+			if itemId%10000 != 0 {
 				return CashSlotItemType(0)
 			}
-			return CashSlotItemType(17)
+			return CashSlotItemTypePetNameTag
 		}
-		if category == 518 {
+		if category == item.ClassificationWaterOfLife {
 			return CashSlotItemType(5)
 		}
 		if category == item.ClassificationPetSkill {
@@ -1120,13 +1433,6 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 					return CashSlotItemType(53)
 				} else {
 					return CashSlotItemType(52)
-				}
-			}
-			if itemId/1000 == 5401 {
-				if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-					return CashSlotItemType(54)
-				} else {
-					return CashSlotItemType(53)
 				}
 			}
 			if itemId/1000 == 5401 {
@@ -1211,12 +1517,8 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 				return CashSlotItemType(62)
 			}
 		}
-		if category == 552 {
-			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-				return CashSlotItemType(64)
-			} else {
-				return CashSlotItemType(63)
-			}
+		if category == item.ClassificationKarmaScissors {
+			return karmaScissorsCashSlotItemType(t)
 		}
 		if category == 553 {
 			if t.Region() == "GMS" && t.MajorVersion() >= 95 {

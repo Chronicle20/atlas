@@ -27,7 +27,7 @@ const serviceName = "atlas-consumables"
 var consumerGroupId = consumergroup.Resolve("Consumables Service")
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)

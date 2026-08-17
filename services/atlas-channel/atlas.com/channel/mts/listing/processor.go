@@ -53,7 +53,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) BrowseProvider(worldId world.Id, f BrowseFilter) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestBrowse(worldId, f), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestBrowse(p.ctx, worldId, f), Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) Browse(worldId world.Id, f BrowseFilter) ([]Model, error) {
@@ -68,7 +68,11 @@ func (p *ProcessorImpl) Browse(worldId world.Id, f BrowseFilter) ([]Model, error
 // sales, want-ad offers, cart favorites, bidder auction re-push) need the
 // complete matching set, not one server page.
 func (p *ProcessorImpl) BrowseAllProvider(worldId world.Id, f BrowseFilter) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(browseUrl(worldId, f), browseAllPageSize, Extract, model.Filters[Model]())
+	url, err := browseUrl(p.ctx, worldId, f)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, browseAllPageSize, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) BrowseAll(worldId world.Id, f BrowseFilter) ([]Model, error) {

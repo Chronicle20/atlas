@@ -4,6 +4,7 @@ import (
 	"atlas-inventory/asset"
 	"atlas-inventory/compartment"
 	"atlas-inventory/data/cash"
+	"atlas-inventory/data/tradeability"
 	"atlas-inventory/kafka/message"
 	dropMsg "atlas-inventory/kafka/message/drop"
 	"time"
@@ -19,6 +20,7 @@ import (
 type ProcessorMock struct {
 	WithTransactionFunc               func(db *gorm.DB) *compartment.ProcessorImpl
 	WithAssetProcessorFunc            func(ap asset.Processor) *compartment.ProcessorImpl
+	WithTradeabilityProcessorFunc     func(tp tradeability.Processor) *compartment.ProcessorImpl
 	WithCashProcessorFunc             func(cp cash.Processor) *compartment.ProcessorImpl
 	ByIdProviderFunc                  func(id uuid.UUID) model.Provider[compartment.Model]
 	GetByIdFunc                       func(id uuid.UUID) (compartment.Model, error)
@@ -56,6 +58,8 @@ type ProcessorMock struct {
 	SetAssetOwnerFunc                 func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, owner string) error
 	ApplyAssetLockAndEmitFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
 	ApplyAssetLockFunc                func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time) error
+	ApplyAssetKarmaAndEmitFunc        func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error
+	ApplyAssetKarmaFunc               func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error
 	ExtendAssetExpirationAndEmitFunc  func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error
 	ExtendAssetExpirationFunc         func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error
 	CreateAssetAndLockFunc            func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error
@@ -78,6 +82,8 @@ type ProcessorMock struct {
 	ModifyEquipmentFunc               func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, assetId uint32, stats asset.Model) error
 	ChangeTemplateAndEmitFunc         func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
 	ChangeTemplateFunc                func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error
+	ResetPetExpirationAndEmitFunc     func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error
+	ResetPetExpirationFunc            func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error
 }
 
 var _ compartment.Processor = (*ProcessorMock)(nil)
@@ -92,6 +98,13 @@ func (m *ProcessorMock) WithTransaction(db *gorm.DB) *compartment.ProcessorImpl 
 func (m *ProcessorMock) WithAssetProcessor(ap asset.Processor) *compartment.ProcessorImpl {
 	if m.WithAssetProcessorFunc != nil {
 		return m.WithAssetProcessorFunc(ap)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) WithTradeabilityProcessor(tp tradeability.Processor) *compartment.ProcessorImpl {
+	if m.WithTradeabilityProcessorFunc != nil {
+		return m.WithTradeabilityProcessorFunc(tp)
 	}
 	return nil
 }
@@ -389,6 +402,22 @@ func (m *ProcessorMock) ApplyAssetLock(mb *message.Buffer) func(transactionId uu
 	}
 }
 
+func (m *ProcessorMock) ApplyAssetKarmaAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error {
+	if m.ApplyAssetKarmaAndEmitFunc != nil {
+		return m.ApplyAssetKarmaAndEmitFunc(transactionId, characterId, inventoryType, slot, scissorsKarma, clear)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) ApplyAssetKarma(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error {
+	if m.ApplyAssetKarmaFunc != nil {
+		return m.ApplyAssetKarmaFunc(mb)
+	}
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, scissorsKarma int32, clear bool) error {
+		return nil
+	}
+}
+
 func (m *ProcessorMock) ExtendAssetExpirationAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, expiration time.Time, extenderTemplateId uint32) error {
 	if m.ExtendAssetExpirationAndEmitFunc != nil {
 		return m.ExtendAssetExpirationAndEmitFunc(transactionId, characterId, inventoryType, slot, expiration, extenderTemplateId)
@@ -563,6 +592,22 @@ func (m *ProcessorMock) ChangeTemplate(mb *message.Buffer) func(transactionId uu
 		return m.ChangeTemplateFunc(mb)
 	}
 	return func(transactionId uuid.UUID, characterId uint32, petId uint32, newTemplateId uint32) error {
+		return nil
+	}
+}
+
+func (m *ProcessorMock) ResetPetExpirationAndEmit(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+	if m.ResetPetExpirationAndEmitFunc != nil {
+		return m.ResetPetExpirationAndEmitFunc(transactionId, characterId, petId, expiration, sourceTemplateId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) ResetPetExpiration(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
+	if m.ResetPetExpirationFunc != nil {
+		return m.ResetPetExpirationFunc(mb)
+	}
+	return func(transactionId uuid.UUID, characterId uint32, petId uint32, expiration time.Time, sourceTemplateId uint32) error {
 		return nil
 	}
 }

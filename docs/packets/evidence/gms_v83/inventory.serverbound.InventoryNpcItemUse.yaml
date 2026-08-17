@@ -1,0 +1,10 @@
+packet: inventory/serverbound/InventoryNpcItemUse
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendSelectNpcItemUseRequest
+    address: "0xa10075"
+    decompile_sha256: 13963f7baada57d3148a506fb1ad12059391b69acaadd2ebb9d3626fe095f4bc
+verifies:
+    - libs/atlas-packet/inventory/serverbound/npc_item_use_test.go#TestNpcItemUseWireLayoutHasNoUpdateTime

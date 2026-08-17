@@ -182,17 +182,22 @@ If something in that chain fails, the Application sits in `Terminating` with fin
 ### Diagnose
 
 **Read the summary line first.** As of task-075, `cleanup.sh` runs every
-phase regardless of any single phase's outcome. The final log line is
-the authoritative status:
+phase regardless of any single phase's outcome. As of task-48, the phase
+list also includes `deactivate` (always first — FR-5.5: routing stops
+before any destructive phase runs) and `drop-control-plane` (reclaims this
+environment's `atlas-configurations` services/tenants/templates rows and
+its `atlas-tenants` row; a no-op that logs "skipped (isolated)" outside
+sparse mode, since `drop-dbs` already destroys the whole per-env database
+there). The final log line is the authoritative status:
 
 ```
-{"ts":…,"level":"info","atlas.env":"…","atlas.step":"done","msg":"cleanup complete phases_run=7 phases_failed=0"}
+{"ts":…,"level":"info","atlas.env":"…","atlas.step":"done","msg":"cleanup complete phases_run=9 phases_failed=0"}
 ```
 
 or, on partial failure:
 
 ```
-{"ts":…,"level":"error","atlas.env":"…","atlas.step":"done","msg":"cleanup completed with errors phases_run=7 phases_failed=2 failed_phases=[\"drop-topics\",\"drop-redis\"]"}
+{"ts":…,"level":"error","atlas.env":"…","atlas.step":"done","msg":"cleanup completed with errors phases_run=9 phases_failed=2 failed_phases=[\"drop-topics\",\"drop-redis\"]"}
 ```
 
 Use the `failed_phases` array to scope your re-run — only the listed
@@ -496,7 +501,7 @@ As of task-075 the PostDelete Job runs every phase regardless of any
 single phase's outcome. The summary line names which phases failed:
 
 ```
-cleanup completed with errors phases_run=7 phases_failed=2 failed_phases=["drop-topics","drop-redis"]
+cleanup completed with errors phases_run=9 phases_failed=2 failed_phases=["drop-topics","drop-redis"]
 ```
 
 Re-run only the failed phases via the §9.11 sweep-orphans path with
@@ -504,6 +509,8 @@ Re-run only the failed phases via the §9.11 sweep-orphans path with
 
 | Phase | Manual re-run |
 |---|---|
+| `deactivate` | **Highest priority — routing may still be live.** `curl -X PATCH -H 'Content-Type: application/vnd.api+json' -H "ENVIRONMENT: <env>" -d '{"data":{"type":"environments","id":"<env>","attributes":{"baseline":"<baseline>","namespace":"<namespace>","tenant":"<tenant>","overrides":<overrides-json>,"phase":"DEACTIVATING"}}}' <baseline-ui-base>/api/configurations/environments/<env>`, wait ~35s, then repeat with `"phase":"DELETED"`. GET the record first (`.../api/configurations/environments/<env>`) to fill `<baseline>`/`<namespace>`/`<tenant>`/`<overrides-json>` from its current values — omitting them zeroes the record (§9.4 background). |
+| `drop-control-plane` | Reclaims leaked `services`/`tenants`/`templates` (atlas-configurations) and tenant (atlas-tenants) rows for this environment. Re-run: `for res in configurations/services configurations/tenants configurations/templates tenants; do curl -H "ENVIRONMENT: <env>" "<baseline-ui-base>/api/$res?page[size]=250" \| jq -r --arg env "<env>" '.data[]? \| select(.attributes.environment == $env) \| .id' \| xargs -r -I{} curl -X DELETE -H "ENVIRONMENT: <env>" "<baseline-ui-base>/api/$res/{}"; done` (loop `page[number]` if `meta.page.last` > 1). Never delete a row whose `attributes.environment` isn't exactly `<env>` — that field is what keeps this scoped away from `main`. |
 | `drop-dbs` | `psql -h postgres.home -U <user> -c 'DROP DATABASE IF EXISTS "atlas-<base>-<env>";'` (per leaked DB) |
 | `drop-topics` | `rpk topic list -X brokers=kafka.home:9093 --format json \| jq -r '.[].name' \| grep -- '-<env>$' \| xargs -r -n1 rpk topic delete -X brokers=kafka.home:9093` |
 | `drop-groups` | `rpk group list -X brokers=kafka.home:9093 --format json \| jq -r '.[].name' \| grep -- '\[<env>\]$' \| xargs -r -d '\n' -n1 rpk group delete -X brokers=kafka.home:9093` |
@@ -585,3 +592,61 @@ confirm in the login/channel logs:
 - `projection.applied op=add` for **both** tenants, and
 - **no** `projection.applied op=drain` for v84,
 then connect a v84 client and confirm the login handshake completes (no hang).
+
+## §9.15 Sparse vs. isolated mode, and the per-PR override labels
+
+`tools/mode-select.sh` (task-232 FR-9.2–9.5) decides, per PR, whether the
+`deploy-env`-labeled environment is:
+
+- **sparse (default)** — only the changed services plus the mandatory floor
+  (`atlas-login`, `atlas-channel` — FR-9.4/D6) are deployed as
+  Deployments; everything else in the namespace is served by `main`
+  (the shared baseline environment). This is what `mode-select.sh`'s
+  no-trigger branch resolves to — the changed-file set mapping cleanly to a
+  small, known service set is the common case, not the exception. Full
+  operational detail (gate counters, the P0 leakage alert, the unmeasured
+  fan-out cost, the MetalLB pool ceiling, the NetworkPolicy dependency) is
+  in `docs/runbooks/sparse-environments.md`, not duplicated here.
+- **isolated (escalation)** — every service is deployed into the PR's own
+  namespace, nothing shared with `main`. This is the documented escalation
+  path, triggered automatically whenever the change set touches something
+  whose blast radius `mode-select.sh` cannot narrow to a specific service
+  list — a shared library
+  (`libs/atlas-kafka`, `libs/atlas-rest`, `libs/atlas-tenant`, `libs/atlas-redis`,
+  `libs/atlas-env`, `libs/atlas-service`), `deploy/k8s/base/*`, a Kafka
+  message contract, an `entity.go`/`migration*.go`, `atlas-configurations`,
+  `atlas-tenants`, or any path outside the repo's known top-level roots
+  (including `go.work`, `docker-bake.hcl`, and any unrecognized root file) —
+  or explicitly via the `atlas:isolated` label below.
+
+The `detect-changes` composite action (`.github/actions/detect-changes/action.yml`)
+runs `mode-select.sh` once per PR validation run and posts a single, in-place-updated
+PR comment (marked with `<!-- atlas:mode-report -->`) naming the mode, the reason,
+and the override set — see the "Ephemeral Environment Mode Report" job in
+`pr-validation.yml`.
+
+**Overriding the computed mode.** Two labels force the mode explicitly, in
+either direction (FR-9.5):
+
+```sh
+# Force sparse even on a change that would otherwise escalate to isolated.
+# This is a deliberate, author-asserted risk: you are telling CI the
+# change is safe to validate against the shared control plane (atlas-login,
+# atlas-channel, and every other service still on `main`), not that the
+# escalation table is wrong.
+gh pr edit <N> --add-label atlas:sparse
+
+# Force isolated even on a change that would otherwise compute sparse.
+gh pr edit <N> --add-label atlas:isolated
+```
+
+Applying **both labels to the same PR is an error, not a precedence
+rule** — `mode-select.sh` exits non-zero rather than silently picking one,
+and the `detect-changes` job (and therefore the whole PR Validation run)
+fails until one label is removed.
+
+The nightly `pr-env-smoke.yml` run (FR-9.6) opens its synthetic PR with
+`atlas:isolated` for exactly this reason: its change is a docs-only touch
+(`docs/smoke/touch.txt`), which `mode-select.sh` would otherwise compute as
+sparse, and the whole point of that run is to prove the **full isolated
+stack** still deploys and tears down cleanly.

@@ -49,6 +49,7 @@ import (
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
 	"atlas-channel/kafka/consumer/party_quest"
+	"atlas-channel/kafka/consumer/pendingchange"
 	"atlas-channel/kafka/consumer/pet"
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
@@ -191,6 +192,7 @@ func main() {
 			return service.ProjectionFuncs{StartFunc: sub.Start, WaitCaughtUpFunc: caughtUp.WaitCaughtUp}
 		}),
 		service.WithReadinessGate(caughtUp.CaughtUpNow),
+		service.WithEnvironmentRegistry(serviceName),
 	)
 	l := rt.Logger()
 
@@ -230,6 +232,7 @@ func main() {
 	doorConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	party.InitConsumers(l)(cmf)(consumerGroupId)
 	party_quest.InitConsumers(l)(cmf)(consumerGroupId)
+	pendingchange.InitConsumers(l)(cmf)(consumerGroupId)
 	session2.InitConsumers(l)(cmf)(consumerGroupId)
 	fame.InitConsumers(l)(cmf)(consumerGroupId)
 	thread.InitConsumers(l)(cmf)(consumerGroupId)
@@ -331,7 +334,14 @@ func main() {
 	})
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(combo.NewDecayTick(l, rt.Context(), time.Second))
+		// character/combo sits outside env-domain-guard's permitted
+		// atlas-env import list (main.go, kafka/, rest/, socket/), so
+		// this pod's environment identity is threaded in as a plain
+		// function value (socket.WithSelfEnvironment) rather than the
+		// package importing atlas-env itself. Without it, DecayTick's
+		// per-character buff-cancel Kafka events would carry an empty
+		// environment header and fail decide() open per FR-1.8.
+		tasks.Register(l, rt.Context())(combo.NewDecayTick(l, rt.Context(), time.Second, socket.WithSelfEnvironment))
 	})
 
 	rt.TeardownFunc(session.Teardown(l))
@@ -387,7 +397,19 @@ func buildListener(
 		if err != nil {
 			return nil, err
 		}
-		tctx := tenant.WithContext(ctx, t)
+		// This is the second per-tenant socket lifecycle context (alongside
+		// AdaptHandler's newSessionContext) -- it feeds CreateSocketService,
+		// which wires session.NewProcessor's Create/Destroy/SendPing
+		// directly as connect/disconnect/idle callbacks, bypassing
+		// AdaptHandler entirely. The environment must originate here too,
+		// from this pod's own identity (env.Self()), not be left to
+		// EnvHeaderParser's tenant-derived reconciliation to paper over.
+		// Origination lives in socket.NewListenerContext (not inline here)
+		// because a file literally named main.go cannot carry a test for
+		// this path -- env-domain-guard restricts atlas-env imports to
+		// main.go/kafka//rest//socket, and only the socket/ package can
+		// be tested.
+		tctx := socket.NewListenerContext(ctx, t)
 
 		if err := account.NewProcessor(l, tctx).InitializeRegistry(); err != nil {
 			l.WithError(err).Errorf("Unable to initialize account registry for tenant [%s].", t.String())
@@ -487,6 +509,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(party_quest.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(pendingchange.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(session2.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
@@ -646,6 +671,12 @@ func produceWriters() []string {
 		cashcb.CashQueryResultWriter,
 		cashcb.CashItemGachaponResultWriter,
 		cashcb.VegaScrollWriter,
+		cashcb.CashShopCheckNameChangeWriter,
+		cashcb.CashShopCheckNameChangePossibleResultWriter,
+		cashcb.CashShopCheckTransferWorldPossibleResultWriter,
+		cashcb.CashShopCancelNameChangeResultWriter,
+		cashcb.CashShopCancelTransferWorldResultWriter,
+		charcb.CancelNameChangeByOtherWriter,
 		monstercb.MonsterSpawnWriter,
 		monstercb.MonsterDestroyWriter,
 		monstercb.MonsterControlWriter,
@@ -739,6 +770,7 @@ func produceWriters() []string {
 		charcb.CharacterSkillMacroWriter,
 		petcb.PetExcludeResponseWriter,
 		petcb.PetCashFoodResultWriter,
+		petcb.PetNameChangedWriter,
 		charcb.CharacterKeyMapAutoHpWriter,
 		charcb.CharacterKeyMapAutoMpWriter,
 		npccb.NPCShopWriter,
@@ -932,6 +964,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[cashsb.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
 	handlerMap[fieldsb.ItemUpgradeUpdateHandle] = handler.ItemUpgradeUpdateHandleFunc
 	handlerMap[charsb.ChalkboardCloseHandle] = handler.ChalkboardCloseHandleHandleFunc
+	handlerMap[petsb.WaterOfLifeHandle] = handler.WaterOfLifeHandleFunc
 	handlerMap[chatSB.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
 	handlerMap[fieldsb.CharacterSpouseChatHandle] = handler.CharacterSpouseChatHandleFunc
 	handlerMap[messengersb.MessengerOperationHandle] = handler.MessengerOperationHandleFunc
@@ -941,6 +974,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[fieldsb.ItcOperationHandle] = handler.ItcOperationHandleFunc
 	handlerMap[petsb.PetMovementHandle] = handler.PetMovementHandleFunc
 	handlerMap[petsb.PetSpawnHandle] = handler.PetSpawnHandleFunc
+	handlerMap[petsb.PetDestroyItemHandle] = handler.PetDestroyItemHandleFunc
 	handlerMap[petsb.PetCommandHandle] = handler.PetCommandHandleFunc
 	handlerMap[petsb.PetChatHandle] = handler.PetChatHandleFunc
 	handlerMap[petsb.PetDropPickUpHandle] = handler.PetDropPickUpHandleFunc
@@ -957,6 +991,9 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[cashsb.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
 	handlerMap[cashsb.CashItemGachaponHandle] = handler.CashItemGachaponHandleFunc
 	handlerMap[cashsb.CashShopCouponCodeHandle] = handler.CashShopCouponCodeHandleFunc
+	handlerMap[cashsb.CashShopCheckNameChangeHandle] = handler.CashShopCheckNameChangeHandleFunc
+	handlerMap[cashsb.CashShopCheckNameChangePossibleHandle] = handler.CashShopCheckNameChangePossibleHandleFunc
+	handlerMap[cashsb.CashShopCheckTransferWorldPossibleHandle] = handler.CashShopCheckTransferWorldPossibleHandleFunc
 	handlerMap[npcsb.NPCShopHandle] = handler.NPCShopHandleFunc
 	handlerMap[invsb.CompartmentMergeRequestHandle] = handler.CompartmentMergeHandleFunc
 	handlerMap[invsb.CompartmentSortRequestHandle] = handler.CompartmentSortHandleFunc
@@ -978,6 +1015,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[mbsb.MonsterBookCoverHandler] = handler.MonsterBookCoverHandleFunc
 	handlerMap[trsb.TeleportRockAddMapHandle] = handler.TeleportRockAddMapHandleFunc
 	handlerMap[trsb.TeleportRockUseHandle] = handler.TeleportRockUseHandleFunc
+	handlerMap[invsb.ScriptedItemHandle] = handler.ScriptedItemHandleFunc
+	handlerMap[invsb.NpcItemUseHandle] = handler.NpcItemUseHandleFunc
 	return handlerMap
 }
 

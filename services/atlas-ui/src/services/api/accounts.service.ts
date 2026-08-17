@@ -33,6 +33,7 @@ function transformAccount(data: Account): Account {
       characterSlots: Number(data.attributes.characterSlots),
       pinAttempts: Number(data.attributes.pinAttempts),
       picAttempts: Number(data.attributes.picAttempts),
+      birthDate: Number(data.attributes.birthDate ?? 0),
       tos: Boolean(data.attributes.tos),
     },
   };
@@ -99,6 +100,37 @@ export const accountsService = {
   async getAccountById(id: string, options?: ServiceOptions): Promise<Account> {
     const account = await api.getOne<Account>(`${BASE_PATH}/${id}`, options);
     return transformAccount(account);
+  },
+
+  /**
+   * Sets an account's birth date (yyyymmdd as an integer, 0 = unset).
+   *
+   * The whole current attribute set is resent, not just birthDate. atlas-account's
+   * PATCH handler rebuilds a full account Model from the request body and diffs
+   * it against the stored row (account/processor.go Update): pinAttempts,
+   * picAttempts and gender are written on ANY difference, including a difference
+   * from an absent field defaulting to 0. Sending birthDate alone would therefore
+   * silently reset those three. `account` must be the freshly-fetched account,
+   * for the same reason.
+   */
+  async updateAccountBirthDate(
+    account: Account,
+    birthDate: number,
+    options?: ServiceOptions,
+  ): Promise<Account> {
+    const body = {
+      data: {
+        id: account.id,
+        type: "accounts",
+        attributes: { ...account.attributes, birthDate },
+      },
+    };
+    const updated = await api.patch<Account>(
+      `${BASE_PATH}/${account.id}`,
+      body,
+      options,
+    );
+    return transformAccount(updated);
   },
 
   async accountExists(id: string, options?: ServiceOptions): Promise<boolean> {

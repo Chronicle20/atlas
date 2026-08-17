@@ -18,22 +18,31 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 )
 
-func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
-	return func(db *gorm.DB) server.RouteInitializer {
-		return func(router *mux.Router, l logrus.FieldLogger) {
-			registerGet := rest.RegisterHandler(l)(db)(si)
-			r := router.PathPrefix("/characters").Subrouter()
-			r.HandleFunc("", registerGet("get_characters_for_account_in_world", handleGetCharactersForAccountInWorld)).Methods(http.MethodGet).Queries("accountId", "{accountId}", "worldId", "{worldId}", "include", "{include}")
-			r.HandleFunc("", registerGet("get_characters_for_account_in_world", handleGetCharactersForAccountInWorld)).Methods(http.MethodGet).Queries("accountId", "{accountId}", "worldId", "{worldId}")
-			r.HandleFunc("", registerGet("get_characters_by_name", handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}", "include", "{include}")
-			r.HandleFunc("", registerGet("get_characters_by_name", handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}")
-			r.HandleFunc("", registerGet("get_characters", handleGetCharacters)).Methods(http.MethodGet)
-			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("create_character", handleCreateCharacter)).Methods(http.MethodPost)
-			r.HandleFunc("/name-validity", registerGet("get_name_validity", handleGetNameValidity)).Methods(http.MethodGet)
-			r.HandleFunc("/{characterId}", registerGet("get_character", handleGetCharacter)).Methods(http.MethodGet).Queries("include", "{include}")
-			r.HandleFunc("/{characterId}", registerGet("get_character", handleGetCharacter)).Methods(http.MethodGet)
-			r.HandleFunc("/{characterId}", rest.RegisterInputHandler[RestModel](l)(db)(si)("update_character", handleUpdateCharacter)).Methods(http.MethodPatch)
-			r.HandleFunc("/{characterId}", rest.RegisterHandler(l)(db)(si)("delete_character", handleDeleteCharacter)).Methods(http.MethodDelete)
+// InitResource wires the /characters routes. nameReservedOf is injected
+// (rather than imported) for the same reason teleport_rock's WorldIdOf is:
+// pending_change already imports character for its apply path, so a direct
+// import here would cycle. main.go closes the loop by passing
+// pending_change.NameReservedFor(db); nil is a safe default (CheckNameValidity
+// skips the reservation check entirely when nameReserved is nil).
+func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) func(nameReservedOf NameReservedFunc) server.RouteInitializer {
+	return func(db *gorm.DB) func(nameReservedOf NameReservedFunc) server.RouteInitializer {
+		return func(nameReservedOf NameReservedFunc) server.RouteInitializer {
+			return func(router *mux.Router, l logrus.FieldLogger) {
+				registerGet := rest.RegisterHandler(l)(db)(si)
+				r := router.PathPrefix("/characters").Subrouter()
+				r.HandleFunc("", registerGet("get_characters_for_account_in_world", handleGetCharactersForAccountInWorld)).Methods(http.MethodGet).Queries("accountId", "{accountId}", "worldId", "{worldId}", "include", "{include}")
+				r.HandleFunc("", registerGet("get_characters_for_account_in_world", handleGetCharactersForAccountInWorld)).Methods(http.MethodGet).Queries("accountId", "{accountId}", "worldId", "{worldId}")
+				r.HandleFunc("", registerGet("get_characters_by_name", handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}", "include", "{include}")
+				r.HandleFunc("", registerGet("get_characters_by_name", handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}")
+				r.HandleFunc("", registerGet("get_characters", handleGetCharacters)).Methods(http.MethodGet)
+				r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("create_character", handleCreateCharacter)).Methods(http.MethodPost)
+				r.HandleFunc("/name-validity", registerGet("get_name_validity", handleGetNameValidity(nameReservedOf))).Methods(http.MethodGet)
+				r.HandleFunc("/{characterId}", registerGet("get_character", handleGetCharacter)).Methods(http.MethodGet).Queries("include", "{include}")
+				r.HandleFunc("/{characterId}", registerGet("get_character", handleGetCharacter)).Methods(http.MethodGet)
+				r.HandleFunc("/{characterId}", rest.RegisterInputHandler[RestModel](l)(db)(si)("update_character", handleUpdateCharacter)).Methods(http.MethodPatch)
+				r.HandleFunc("/{characterId}", rest.RegisterHandler(l)(db)(si)("delete_character", handleDeleteCharacter)).Methods(http.MethodDelete)
+				r.HandleFunc("/{characterId}/world-change", rest.RegisterInputHandler[WorldChangeInputRestModel](l)(db)(si)("change_character_world", handleChangeCharacterWorld)).Methods(http.MethodPost)
+			}
 		}
 	}
 }
@@ -220,6 +229,33 @@ func handleDeleteCharacter(d *rest.HandlerDependency, _ *rest.HandlerContext) ht
 		return func(w http.ResponseWriter, r *http.Request) {
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAndEmit(uuid.New(), characterId)
 			if err != nil {
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		}
+	})
+}
+
+// handleChangeCharacterWorld is the dedicated world-transfer route the saga
+// (Task 13) calls. It exists separately from PATCH because world.Id is a
+// byte and world 0 is a real, commonly-used world id: PATCH's "zero means
+// absent" convention cannot express "transfer to world 0" (task-227
+// controller ruling).
+func handleChangeCharacterWorld(d *rest.HandlerDependency, _ *rest.HandlerContext, input WorldChangeInputRestModel) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			transactionId := input.TransactionId
+			if transactionId == uuid.Nil {
+				transactionId = uuid.New()
+			}
+			err := NewProcessor(d.Logger(), d.Context(), d.DB()).ChangeWorldAndEmit(transactionId, characterId, input.NewWorldId)
+			if err != nil {
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Changing world for character [%d].", characterId)
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}

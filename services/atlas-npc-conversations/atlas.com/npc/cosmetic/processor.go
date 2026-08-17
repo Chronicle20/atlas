@@ -426,7 +426,7 @@ func (p *ProcessorImpl) UpdateCharacterAppearance(characterId uint32, cosmeticTy
 
 	// Make PATCH request to character service
 	provider := requests.Provider[RestCharacterModel, CharacterAppearance](p.l, p.ctx)(
-		requestUpdateCharacter(characterId, updateRequest),
+		requestUpdateCharacter(p.ctx, characterId, updateRequest),
 		ExtractAppearance,
 	)
 
@@ -448,7 +448,7 @@ func (p *ProcessorImpl) hairExists(hairId uint32) bool {
 	}
 
 	// Query atlas-data service - 404 means not found
-	_, err := data.RequestHairById(hairId)(p.l, p.ctx)
+	_, err := data.RequestHairById(p.ctx, hairId)(p.l, p.ctx)
 	if err != nil {
 		p.l.Debugf("Hair %d not found in atlas-data (may not exist or service unavailable)", hairId)
 		return false
@@ -464,7 +464,7 @@ func (p *ProcessorImpl) faceExists(faceId uint32) bool {
 	}
 
 	// Query atlas-data service - 404 means not found
-	_, err := data.RequestFaceById(faceId)(p.l, p.ctx)
+	_, err := data.RequestFaceById(p.ctx, faceId)(p.l, p.ctx)
 	if err != nil {
 		p.l.Debugf("Face %d not found in atlas-data (may not exist or service unavailable)", faceId)
 		return false

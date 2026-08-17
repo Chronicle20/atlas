@@ -9,6 +9,15 @@ type GenericRestModel struct {
 	Id    string           `json:"-"`
 	Type  string           `json:"type,omitempty"`
 	Tasks []task.RestModel `json:"tasks"`
+	// Environment is server-owned and read-only (task-232 FR-7.3, mirroring
+	// tenants.RestModel/templates.RestModel): it always reflects
+	// Entity.Environment, set by services/processor.go's Make(). Create and
+	// UpdateById never read this field from a client-supplied body — see
+	// configurations/tenants/processor.go:100-113 for the pattern this
+	// copies. Added for task-48 fix round 2 Critical 1: cleanup.sh's
+	// _dcp_reclaim filters this collection on attributes.environment, which
+	// was always null before this field existed.
+	Environment string `json:"environment"`
 }
 
 func (r GenericRestModel) GetName() string {
@@ -52,6 +61,9 @@ type LoginRestModel struct {
 	Type    string                 `json:"type"`
 	Tasks   []task.RestModel       `json:"tasks"`
 	Tenants []LoginTenantRestModel `json:"tenants"`
+	// Environment is server-owned and read-only; see GenericRestModel's
+	// Environment field comment above.
+	Environment string `json:"environment"`
 }
 
 func (r LoginRestModel) GetName() string {
@@ -77,6 +89,9 @@ type ChannelRestModel struct {
 	Type    string                   `json:"type"`
 	Tasks   []task.RestModel         `json:"tasks"`
 	Tenants []ChannelTenantRestModel `json:"tenants"`
+	// Environment is server-owned and read-only; see GenericRestModel's
+	// Environment field comment above.
+	Environment string `json:"environment"`
 }
 
 func (r ChannelRestModel) GetName() string {

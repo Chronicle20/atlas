@@ -118,7 +118,7 @@ func handleUpdateServiceConfiguration(db *gorm.DB) rest.InputHandler[service.Inp
 				err := NewProcessor(d.Logger(), d.Context(), db).UpdateById(serviceId, input)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to update service configuration.")
-					server.WriteErrorResponse(d.Logger())(w)(err)
+					rest.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 
@@ -145,7 +145,7 @@ func handleDeleteServiceConfiguration(db *gorm.DB) rest.GetHandler {
 				err := NewProcessor(d.Logger(), d.Context(), db).DeleteById(serviceId)
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Unable to delete service configuration.")
-					server.WriteErrorResponse(d.Logger())(w)(err)
+					rest.WriteErrorResponse(d.Logger())(w)(err)
 					return
 				}
 				w.WriteHeader(http.StatusNoContent)

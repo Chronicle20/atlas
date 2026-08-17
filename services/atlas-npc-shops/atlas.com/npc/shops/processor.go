@@ -681,7 +681,7 @@ func (p *ProcessorImpl) RechargeableConsumablesDecorator(m Model) Model {
 		return p.RechargeableConsumablesDecoratorFn(m)
 	}
 
-	rechargeables := GetConsumableCache().GetConsumables(p.l, p.ctx, p.t.Id())
+	rechargeables := GetConsumableCache().GetConsumables(p.l, p.ctx, p.t)
 	existing := m.Commodities()
 
 	// Always refresh stored rechargeables with the latest SlotMax/UnitPrice,

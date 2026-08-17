@@ -306,3 +306,18 @@ When using AI tools to modify code:
 3. **Request full test suite runs** (`go test ./... -count=1`) not just single packages
 4. **Verify AI updated ALL mock locations** - search for mock files yourself
 5. **Don't accept "tests will pass"** - require actual test execution output
+
+---
+
+## Audit verification — DOM-10, DOM-20, DOM-24, DOM-33
+
+Rule IDs are defined in
+[audit-checklist.md](audit-checklist.md). This section is the verification
+procedure.
+
+| ID | How to verify | Pass criteria |
+|----|---------------|---------------|
+| DOM-33 | For every `Processor` / `Provider` / `Administrator` interface the diff adds a method to, removes a method from, or re-signs, locate its mocks: `grep -rn "type.*Mock struct" <service-root>` plus the conventional `{package}/mock/*.go` paths, and inline mock types in `_test.go` files. Check each against the new interface. | Every mock implementing the changed interface appears in the same diff, carrying the added/changed method with a matching signature and the nil-check default described in [Mock Implementation Pattern](#mock-implementation-pattern). A green `go build ./...` in the changed module is corroborating evidence but not sufficient on its own — a mock in a *different* module compiles independently, so name the mocks you checked. Mocks left stale are a FAIL, not a WARN: they compile until the next caller and then break the build. |
+| DOM-10 | Read the test files; find `setupTestDB` or the equivalent GORM bootstrap. | It calls `database.RegisterTenantCallbacks(l, db)` after `gorm.Open()`. Without it, tenant filtering silently does not apply in tests. |
+| DOM-20 | Read the changed test files. | Tests use the `tests := []struct{...}` + `t.Run` table-driven pattern. Where a more specific playbook governs the file type (e.g. the per-version byte-fixture pins described in `docs/packets/audits/VERIFYING_A_PACKET.md`), that playbook is the applicable guideline and DOM-20's generic shape does not override it — cite the playbook when disposing of the check that way. |
+| DOM-24 | (a) For each changed `*_test.go`, grep for **direct** emit call sites: `AndEmit(`, `message.Emit(`, `producer.Produce(`. (b) Also flag **transitive** emits — tests that call a consumer entry point (`handleXEvent`, `consume(`) or a saga processor method (`processor.Step(`, `processor.StepCompleted(`, `processor.AcceptEvent(`) whose body reaches `producer.ProviderImpl(...)` or `message.Emit(...)` within about three hops. Walk the call graph one hop into production code from each test entry point. | Every package matched by (a) or (b) has ONE of: a `TestMain` calling `producertest.InstallNoop()` (from `github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest`), OR per-test injection of a no-op `producer.Provider` via a `WithProducer(...)` builder method (`atlas-marriages` is the canonical example). A service-local `noopWriter` / `testkafka` helper does NOT satisfy it, even one that calls `ConfigWriterFactory` correctly — the shared `producertest` package is the single source of truth. A `t.Cleanup(producer.ResetInstance)` after the install is also a FAIL: it reverts the singleton to the unstubbed default for the next test in the package. An unstubbed emit path costs ~42s per emit (10-retry × 100ms→10s backoff in `libs/atlas-kafka/producer/producer.go`) and can make a test assert state that only holds while the producer is hanging. See [Stubbing the Kafka Producer in Tests](#stubbing-the-kafka-producer-in-tests) above. |

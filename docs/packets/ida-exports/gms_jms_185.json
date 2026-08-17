@@ -3,6 +3,59 @@
   "md5": "af6652ff9b7c549341f35e3569d7564a",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CCashShop::OnCheckTransferWorldPossibleResult": {
+      "address": "0x48e7a6",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(iPacket)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "CInPacket::Decode1(iPacket) && count > 0"
+        }
+      ]
+    },
+    "CCashShop::SendCheckTransferWorldPossiblePacket": {
+      "address": "0x484fbf",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        }
+      ]
+    },
+    "CPet::OnNameChanged": {
+      "address": "0x76a5de",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Delegate",
+          "comment": "branches on this client-state query (sub_768D82(this)), NOT a wire read -- no Decode1 here, unlike GMS. JMS body is one byte shorter than GMS (no trailing name-tag flag byte).",
+          "ref": "sub_768D82"
+        }
+      ]
+    },
     "CUserLocal::RequestIncCombo": {
       "address": "0xa2d435",
       "direction": "serverbound",
@@ -9266,6 +9319,11 @@
       "direction": "",
       "calls": null
     },
+    "sub_768D82": {
+      "address": "0x768d82",
+      "direction": "",
+      "calls": null
+    },
     "sub_411A4F": {
       "address": "0x411a4f",
       "direction": "",
@@ -15139,6 +15197,40 @@
         {
           "op": "Decode4",
           "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0xaee7ce",
+      "region": "JMS",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "get_update_time()"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0xaf43ee",
+      "region": "JMS",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID"
         }
       ]
     }

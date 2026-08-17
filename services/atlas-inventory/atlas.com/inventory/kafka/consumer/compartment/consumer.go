@@ -26,7 +26,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("compartment_command")(compartment2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("compartment_command")(compartment2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
 		}
 	}
 }
@@ -96,7 +96,13 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyLockCommand(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyKarmaCommand(db)))); err != nil {
+				return err
+			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleExtendExpirationCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleResetPetExpirationCommand(db)))); err != nil {
 				return err
 			}
 			return nil
@@ -406,6 +412,29 @@ func handleApplyLockCommand(db *gorm.DB) message.Handler[compartment2.Command[co
 	}
 }
 
+func handleApplyKarmaCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ApplyKarmaCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ApplyKarmaCommandBody]) {
+		if c.Type != compartment2.CommandApplyKarma {
+			return
+		}
+
+		l.Debugf("Received APPLY_KARMA command for character [%d], slot [%d], clear [%t].",
+			c.CharacterId, c.Body.Slot, c.Body.Clear)
+
+		err := compartment.NewProcessor(l, ctx, db).ApplyAssetKarmaAndEmit(
+			c.TransactionId,
+			c.CharacterId,
+			inventory.Type(c.InventoryType),
+			c.Body.Slot,
+			c.Body.ScissorsKarma,
+			c.Body.Clear,
+		)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to apply karma to asset in slot [%d] for character [%d].", c.Body.Slot, c.CharacterId)
+		}
+	}
+}
+
 func handleExtendExpirationCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ExtendExpirationCommandBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ExtendExpirationCommandBody]) {
 		if c.Type != compartment2.CommandExtendExpiration {
@@ -425,6 +454,28 @@ func handleExtendExpirationCommand(db *gorm.DB) message.Handler[compartment2.Com
 		)
 		if err != nil {
 			l.WithError(err).Errorf("Failed to extend expiration of asset in slot [%d] for character [%d].", c.Body.Slot, c.CharacterId)
+		}
+	}
+}
+
+func handleResetPetExpirationCommand(db *gorm.DB) message.Handler[compartment2.Command[compartment2.ResetPetExpirationCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c compartment2.Command[compartment2.ResetPetExpirationCommandBody]) {
+		if c.Type != compartment2.CommandResetPetExpiration {
+			return
+		}
+
+		l.Debugf("Received RESET_PET_EXPIRATION command for character [%d], pet [%d], source [%d].",
+			c.CharacterId, c.Body.PetId, c.Body.SourceTemplateId)
+
+		err := compartment.NewProcessor(l, ctx, db).ResetPetExpirationAndEmit(
+			c.TransactionId,
+			c.CharacterId,
+			c.Body.PetId,
+			c.Body.Expiration,
+			c.Body.SourceTemplateId,
+		)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to reset expiration of pet [%d] asset for character [%d].", c.Body.PetId, c.CharacterId)
 		}
 	}
 }

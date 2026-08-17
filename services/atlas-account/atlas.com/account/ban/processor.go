@@ -25,5 +25,5 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) CheckBan(ip string, hwid string, accountId uint32) (CheckRestModel, error) {
-	return requestCheckBan(ip, hwid, accountId)(p.l, p.ctx)
+	return requestCheckBan(p.ctx, ip, hwid, accountId)(p.l, p.ctx)
 }

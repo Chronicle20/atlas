@@ -24,6 +24,7 @@ const (
 	EventKindCharacterMesoError         EventKind = "character.meso_error"
 	EventKindCharacterApTransferError   EventKind = "character.ap_transfer_error"
 	EventKindCharacterDeleted           EventKind = "character.deleted"
+	EventKindCharacterWorldChanged      EventKind = "character.world_changed"
 
 	// Asset subsystem.
 	EventKindAssetCreated         EventKind = "asset.created"
@@ -46,6 +47,17 @@ const (
 
 	// Buddy list.
 	EventKindBuddyCapacityChanged EventKind = "buddy.capacity_changed"
+	EventKindBuddyDeleted         EventKind = "buddy.deleted"
+
+	// Guild (world-transfer severance; task-227).
+	EventKindGuildMemberLeft EventKind = "guild.member_left"
+
+	// Party (world-transfer severance; task-227). PartyDisbanded covers the
+	// alternate outcome atlas-parties emits instead of MemberLeft when the
+	// leaving character is the party leader (see
+	// kafka/message/party/kafka.go's StatusEventDisbandBody doc comment).
+	EventKindPartyMemberLeft EventKind = "party.member_left"
+	EventKindPartyDisbanded  EventKind = "party.disbanded"
 
 	// Consumable.
 	EventKindConsumableEffectApplied EventKind = "consumable.effect_applied"
@@ -53,6 +65,9 @@ const (
 	// Pet.
 	EventKindPetClosenessChanged EventKind = "pet.closeness_changed"
 	EventKindPetEvolved          EventKind = "pet.evolved"
+	EventKindPetRevived          EventKind = "pet.revived"
+	EventKindPetReviveFailed     EventKind = "pet.revive_failed"
+	EventKindPetNameChanged      EventKind = "pet.name_changed"
 
 	// Cash shop.
 	EventKindCashShopWalletUpdated       EventKind = "cashshop.wallet_updated"
@@ -111,6 +126,11 @@ const (
 	// NPC shop (atlas-npc-shops acks on EVENT_TOPIC_NPC_SHOP_STATUS, task-221).
 	EventKindNpcShopEntered EventKind = "npcshop.entered"
 	EventKindNpcShopError   EventKind = "npcshop.error"
+
+	// NPC conversation (atlas-npc-conversations acks on
+	// EVENT_TOPIC_NPC_CONVERSATION_STATUS, task-230).
+	EventKindNpcConversationStarted    EventKind = "npcconversation.started"
+	EventKindNpcConversationStartError EventKind = "npcconversation.start_error"
 )
 
 // acceptanceTable maps each saga.Action to the set of EventKinds that can
@@ -122,12 +142,14 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	// Asset actions.
 	sharedsaga.AwardAsset:            {EventKindAssetCreated, EventKindAssetQuantityChanged},
 	sharedsaga.DestroyAsset:          {EventKindAssetDeleted, EventKindAssetQuantityChanged},
+	sharedsaga.DestroyAllAssets:      {EventKindAssetDeleted, EventKindAssetQuantityChanged},
 	sharedsaga.DestroyAssetFromSlot:  {EventKindAssetDeleted, EventKindAssetQuantityChanged},
 	sharedsaga.EquipAsset:            {EventKindAssetMoved},
 	sharedsaga.UnequipAsset:          {EventKindAssetMoved},
 	sharedsaga.CreateAndEquipAsset:   {EventKindAssetCreated},
 	sharedsaga.SetAssetOwner:         {EventKindAssetUpdated},
 	sharedsaga.ApplyAssetLock:        {EventKindAssetUpdated},
+	sharedsaga.ApplyAssetKarma:       {EventKindAssetUpdated},
 	sharedsaga.ExtendAssetExpiration: {EventKindAssetUpdated},
 	sharedsaga.IncubatorResult:       {},
 
@@ -152,6 +174,20 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.IncreaseBuddyCapacity:  {EventKindBuddyCapacityChanged},
 	sharedsaga.GainCloseness:          {EventKindPetClosenessChanged},
 	sharedsaga.EvolvePet:              {EventKindPetEvolved},
+	sharedsaga.RevivePet:              {EventKindPetRevived, EventKindPetReviveFailed},
+	sharedsaga.RenamePet:              {EventKindPetNameChanged},
+
+	// World transfer (task-227). ValidateWorldTransfer is read-only and
+	// self-completing (handleValidateWorldTransfer calls StepCompleted
+	// directly, matching handleValidateCharacterState/handleSendMessage).
+	// LeavePartyForTransfer accepts both PartyMemberLeft and PartyDisbanded:
+	// atlas-parties disbands instead of emitting LEFT when the leaving
+	// character is the party leader (see kafka/message/party/kafka.go).
+	sharedsaga.ValidateWorldTransfer:   {},
+	sharedsaga.LeaveGuildForTransfer:   {EventKindGuildMemberLeft},
+	sharedsaga.LeavePartyForTransfer:   {EventKindPartyMemberLeft, EventKindPartyDisbanded},
+	sharedsaga.SeverBuddiesForTransfer: {EventKindBuddyDeleted},
+	sharedsaga.ChangeCharacterWorld:    {EventKindCharacterWorldChanged},
 
 	// Skills.
 	sharedsaga.CreateSkill: {EventKindSkillCreated},
@@ -174,15 +210,20 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.ShowStorage: {},
 	// Unlike ShowStorage this is NOT self-completing: the item is consumed by a
 	// following step, so the shop must be confirmed open first (task-221 FR-4.3).
-	sharedsaga.OpenNpcShop:          {EventKindNpcShopEntered, EventKindNpcShopError},
-	sharedsaga.DepositToStorage:     {EventKindCompartmentAccepted, EventKindCompartmentError},
-	sharedsaga.UpdateStorageMesos:   {EventKindStorageMesosUpdated, EventKindStorageError},
-	sharedsaga.TransferToStorage:    {}, // composite: expanded into sub-steps before dispatch
-	sharedsaga.WithdrawFromStorage:  {}, // composite
-	sharedsaga.AcceptToStorage:      {EventKindStorageCompartmentAccepted, EventKindStorageCompartmentError},
-	sharedsaga.ReleaseFromCharacter: {EventKindCompartmentReleased, EventKindCompartmentError},
-	sharedsaga.AcceptToCharacter:    {EventKindCompartmentAccepted, EventKindCompartmentError},
-	sharedsaga.ReleaseFromStorage:   {EventKindStorageCompartmentReleased, EventKindStorageCompartmentError},
+	sharedsaga.OpenNpcShop: {EventKindNpcShopEntered, EventKindNpcShopError},
+	// Unlike ShowStorage these are NOT self-completing: the item (if any) is
+	// consumed by a following step, so the dialogue must be confirmed opened
+	// first (task-230).
+	sharedsaga.StartItemConversation: {EventKindNpcConversationStarted, EventKindNpcConversationStartError},
+	sharedsaga.StartNpcConversation:  {EventKindNpcConversationStarted, EventKindNpcConversationStartError},
+	sharedsaga.DepositToStorage:      {EventKindCompartmentAccepted, EventKindCompartmentError},
+	sharedsaga.UpdateStorageMesos:    {EventKindStorageMesosUpdated, EventKindStorageError},
+	sharedsaga.TransferToStorage:     {}, // composite: expanded into sub-steps before dispatch
+	sharedsaga.WithdrawFromStorage:   {}, // composite
+	sharedsaga.AcceptToStorage:       {EventKindStorageCompartmentAccepted, EventKindStorageCompartmentError},
+	sharedsaga.ReleaseFromCharacter:  {EventKindCompartmentReleased, EventKindCompartmentError},
+	sharedsaga.AcceptToCharacter:     {EventKindCompartmentAccepted, EventKindCompartmentError},
+	sharedsaga.ReleaseFromStorage:    {EventKindStorageCompartmentReleased, EventKindStorageCompartmentError},
 
 	// Trade (task-205).
 	sharedsaga.TradeSettlement:  {}, // composite: expanded into release_from_trade×N + accept_to_character×N + award_mesos
@@ -334,6 +375,7 @@ var outcomeTable = map[EventKind]EventOutcome{
 	EventKindCharacterApTransferError:   OutcomeFailure,
 	EventKindCharacterMesoError:         OutcomeFailure,
 	EventKindCharacterDeleted:           OutcomeSuccess,
+	EventKindCharacterWorldChanged:      OutcomeSuccess,
 
 	// Asset subsystem.
 	EventKindAssetCreated:         OutcomeSuccess,
@@ -356,6 +398,14 @@ var outcomeTable = map[EventKind]EventOutcome{
 
 	// Buddy list.
 	EventKindBuddyCapacityChanged: OutcomeSuccess,
+	EventKindBuddyDeleted:         OutcomeSuccess,
+
+	// Guild (world-transfer severance).
+	EventKindGuildMemberLeft: OutcomeSuccess,
+
+	// Party (world-transfer severance).
+	EventKindPartyMemberLeft: OutcomeSuccess,
+	EventKindPartyDisbanded:  OutcomeSuccess,
 
 	// Consumable.
 	EventKindConsumableEffectApplied: OutcomeSuccess,
@@ -363,6 +413,9 @@ var outcomeTable = map[EventKind]EventOutcome{
 	// Pet.
 	EventKindPetClosenessChanged: OutcomeSuccess,
 	EventKindPetEvolved:          OutcomeSuccess,
+	EventKindPetRevived:          OutcomeSuccess,
+	EventKindPetReviveFailed:     OutcomeFailure,
+	EventKindPetNameChanged:      OutcomeSuccess,
 
 	// Cash shop.
 	EventKindCashShopWalletUpdated:       OutcomeSuccess,
@@ -423,6 +476,10 @@ var outcomeTable = map[EventKind]EventOutcome{
 	// NPC shop.
 	EventKindNpcShopEntered: OutcomeSuccess,
 	EventKindNpcShopError:   OutcomeFailure,
+
+	// NPC conversation.
+	EventKindNpcConversationStarted:    OutcomeSuccess,
+	EventKindNpcConversationStartError: OutcomeFailure,
 }
 
 // EventOutcomeOf returns the outcome classification for kind.

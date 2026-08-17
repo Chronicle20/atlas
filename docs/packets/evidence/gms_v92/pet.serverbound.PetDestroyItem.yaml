@@ -1,0 +1,8 @@
+packet: pet/serverbound/PetDestroyItem
+direction: serverbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendActivatePetRequest
+    address: "0x9cb540"
+    decompile_sha256: e75166ebb35501fd564ddbc3b12861ccfdd646be0b583611ff8c9e6c873aee4d

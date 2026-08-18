@@ -126,6 +126,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-dragons",
+      "type": "go-service",
+      "path": "services/atlas-dragons",
+      "module_path": "services/atlas-dragons/atlas.com/dragons",
+      "docker_image": "ghcr.io/chronicle20/atlas-dragons/atlas-dragons",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-drop-information",
       "type": "go-service",
       "path": "services/atlas-drop-information",

@@ -136,11 +136,15 @@ spec:
           value: $(POD_NAMESPACE)
         - name: NS_ATLAS_DOORS
           value: $(POD_NAMESPACE)
+        - name: NS_ATLAS_DRAGONS
+          value: $(POD_NAMESPACE)
         - name: NS_ATLAS_DROPS
           value: $(POD_NAMESPACE)
         - name: NS_ATLAS_DROP_INFORMATION
           value: $(POD_NAMESPACE)
         - name: NS_ATLAS_EFFECTIVE_STATS
+          value: $(POD_NAMESPACE)
+        - name: NS_ATLAS_FAMILIES
           value: $(POD_NAMESPACE)
         - name: NS_ATLAS_GUILDS
           value: $(POD_NAMESPACE)

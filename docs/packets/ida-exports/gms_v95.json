@@ -16806,6 +16806,69 @@
         }
       ]
     },
+    "CDragon::OnCreated": {
+      "address": "0x50dc90",
+      "direction": "clientbound",
+      "notes": "SPAWN_DRAGON body. CDragon::OnCreated@0x50dc90 (GMS v95.0): the owner CUser* and CInPacket* are passed in by the caller (CUserPool::OnUserCommonPacket@0x94cdb0, which Decode4's ownerCharacterId before dispatch at 0x94cdbc -- the dragon has no wire identity of its own). Body reads, in order: Decode4 x (0x50dcc9, stored to m_ptPos.x) + Decode4 y (0x50dcdc, stored to m_ptPos.y) + Decode1 moveAction (0x50dd17) + Decode2 <read, discarded -- return value never assigned> (0x50dd34) + Decode2 m_nJobCode (0x50dd43). Atlas DragonSpawn.Decode: ownerCharacterId (upstream) + x(int32) + y(int32) + stance(byte) + discarded short + jobId(uint16). Match (task-225).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "x -> TSecType<long>::SetData(&m_ptPos.x) @0x50dcc9/0x50dcd5"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y -> TSecType<long>::SetData(&m_ptPos.y) @0x50dcdc/0x50dcea"
+        },
+        {
+          "op": "Decode1",
+          "comment": "moveAction -> _ZtlSecureTear_m_nMoveAction @0x50dd17"
+        },
+        {
+          "op": "Decode2",
+          "comment": "read and discarded -- return value never assigned @0x50dd34"
+        },
+        {
+          "op": "Decode2",
+          "comment": "m_nJobCode @0x50dd43"
+        }
+      ]
+    },
+    "CDragon::OnMove": {
+      "address": "0x50ad30",
+      "direction": "clientbound",
+      "notes": "MOVE_DRAGON body. CDragon::OnMove@0x50ad30 (GMS v95.0) is a single delegating call: CMovePath::OnMovePacket(&m_pvc[142], iPacket, 0)@0x50ad4a (falls back to a fixed offset 0x244 if m_pvc has no interface, @0x50ad60). The owner CUser identity is consumed upstream by CUserPool::OnUserCommonPacket@0x94cdb0 (Decode4 ownerCharacterId @0x94cdbc) before dispatch, same as OnCreated. The whole remaining body is the opaque CMovePath blob (already begins with the start position per CMovePath::Encode); Atlas DragonMove.Decode reads ownerCharacterId (upstream) then ReadBytes(Available()) for the raw blob. Match (task-225).",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "opaque CMovePath blob @0x50ad4a",
+          "ref": "CMovePath::OnMovePacket"
+        }
+      ]
+    },
+    "CUser::OnDragonPacket": {
+      "address": "0x8e5c00",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 208
+        }
+      ],
+      "notes": "REMOVE_DRAGON body. CUser::OnDragonPacket@0x8e5c00 (GMS v95.0) switches on nType: 206 -> spawn (allocates/reinits CDragon then calls CDragon::OnCreated), else-if nType==207 -> CDragon::OnMove. THERE IS NO CASE FOR 208 (REMOVE_DRAGON) -- the outer dispatcher CUserPool::OnUserCommonPacket@0x94cdb0 routes opcodes 206..208 into OnDragonPacket via the range test `(v6-206)<=2` @0x94cf14, so 208 enters this function and falls through both branches with zero effect: no field is read, no dragon state changes. An xref sweep on ZRef<CDragon>::_ReleaseRaw@0x8decb0 (four callers: the ZRef destructor, ZRef::operator=, OnDragonPacket's respawn path (206 branch reinit), and CUser::~CUser) confirms the only client-side dragon teardown is CUser destruction (the owner leaving the field) -- REMOVE_DRAGON is sent by the server but has no client handler arm. Byte-identical (routed-but-unhandled 208) shape confirmed for v84 by the v84 registry note at gms_v84.yaml:1254. Atlas DragonRemove.Decode reads only ownerCharacterId (consumed upstream by CUserPool::OnUserCommonPacket, same as SPAWN/MOVE); the body itself is empty because there is no handler arm to read anything. Match (task-225) -- the packet is correct-and-harmless to send, but the client discards it silently.",
+      "calls": []
+    },
+    "CVecCtrlDragon::EndUpdateActive": {
+      "address": "0x996570",
+      "direction": "serverbound",
+      "notes": "MOVE_DRAGON (serverbound) send site. CVecCtrlDragon::EndUpdateActive@0x996570 (GMS v95.0): if CMovePath::IsTimeForFlush(&m_path,0,0)@0x9965a0, builds COutPacket(214)@0x9965b2 then CMovePath::Flush(&m_path,&oPacketMove,0,0)@0x9965ca and sends via CClientSocket::SendPacket@0x9965de. There is NO leading identity field (unlike CVecCtrlSummoned::EndUpdateActive, which writes Encode4 summonId first) -- the dragon is 1:1 with its owning CUser, resolved server-side from the sending session. Atlas dragon/serverbound.Move.Decode reads only ReadBytes(Available()) for the whole opaque CMovePath blob (startX/startY lifted from its first 4 bytes to seed persisted position, per CMovePath::Encode leading with Encode2 startX/startY). Match (task-225).",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "opaque CMovePath blob, opcode 214 @0x9965b2/0x9965ca",
+          "ref": "CMovePath::Flush"
+        }
+      ]
+    },
     "CMacroSysMan::FlushToSvr": {
       "address": "0x60ea20",
       "direction": "serverbound",

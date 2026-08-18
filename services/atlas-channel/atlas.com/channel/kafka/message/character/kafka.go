@@ -4,6 +4,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -140,6 +141,15 @@ type StatusEventMapChangedBody struct {
 	UseTargetPosition bool  `json:"useTargetPosition"`
 	TargetX           int16 `json:"targetX"`
 	TargetY           int16 `json:"targetY"`
+}
+
+// JobChangedStatusEventBody mirrors atlas-character's
+// JobChangedStatusEventBody. It carries NO map id — which is why the dragon
+// create for a job change has to run channel-side, where the session's field is
+// available (see task-225 plan Task 9).
+type JobChangedStatusEventBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	JobId     job.Id     `json:"jobId"`
 }
 
 type ExperienceChangedStatusEventBody struct {

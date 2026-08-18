@@ -20,6 +20,7 @@ import (
 	"atlas-channel/kafka/consumer/consumable"
 	"atlas-channel/kafka/consumer/conversation_reward_notice"
 	doorConsumer "atlas-channel/kafka/consumer/door"
+	dragonConsumer "atlas-channel/kafka/consumer/dragon"
 	"atlas-channel/kafka/consumer/drop"
 	"atlas-channel/kafka/consumer/expression"
 	"atlas-channel/kafka/consumer/fame"
@@ -97,6 +98,8 @@ import (
 	chatSB "github.com/Chronicle20/atlas/libs/atlas-packet/chat/serverbound"
 	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
 	doorsb "github.com/Chronicle20/atlas/libs/atlas-packet/door/serverbound"
+	dragoncb "github.com/Chronicle20/atlas/libs/atlas-packet/dragon/clientbound"
+	dragonsb "github.com/Chronicle20/atlas/libs/atlas-packet/dragon/serverbound"
 	dropcb "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
 	dropsb "github.com/Chronicle20/atlas/libs/atlas-packet/drop/serverbound"
 	famecb "github.com/Chronicle20/atlas/libs/atlas-packet/fame/clientbound"
@@ -223,6 +226,7 @@ func main() {
 	message.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
 	summonConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	dragonConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mbconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mistConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	doorConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -480,6 +484,9 @@ func buildListener(
 		if err := register(summonConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(dragonConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(mbconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -681,6 +688,9 @@ func produceWriters() []string {
 		summoncb.SummonAttackWriter,
 		summoncb.SummonDamageWriter,
 		summoncb.SummonSkillWriter,
+		dragoncb.DragonSpawnWriter,
+		dragoncb.DragonMoveWriter,
+		dragoncb.DragonRemoveWriter,
 		monstercb.MobCrcKeyChangedWriter,
 		monstercb.MobAffectedWriter,
 		monstercb.MonsterSpecialEffectBySkillWriter,
@@ -887,6 +897,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[summonsb.SummonMoveHandle] = handler.SummonMoveHandleFunc
 	handlerMap[summonsb.SummonAttackHandle] = handler.SummonAttackHandleFunc
 	handlerMap[summonsb.SummonDamageHandle] = handler.SummonDamageHandleFunc
+	handlerMap[dragonsb.DragonMoveHandle] = handler.DragonMoveHandleFunc
 	handlerMap[monstersb.MobCrcKeyChangedReplyHandle] = handler.MobCrcKeyChangedReplyHandleFunc
 	handlerMap[monstersb.MobDropPickupRequestHandle] = handler.MobDropPickupRequestHandleFunc
 	handlerMap[monstersb.UseCatchItemHandle] = handler.MonsterCatchItemUseHandleFunc

@@ -1,0 +1,10 @@
+packet: dragon/serverbound/Move
+direction: serverbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CVecCtrlDragon::EndUpdateActive
+    address: "0x96f190"
+    decompile_sha256: 5fa3a4dc91d0aeeee5a881f37b92d776581c22fe84674fac3f4fe82705b80673
+verifies:
+    - libs/atlas-packet/dragon/serverbound/move_test.go#TestServerboundMoveHasNoLeadingIdentityField_v92

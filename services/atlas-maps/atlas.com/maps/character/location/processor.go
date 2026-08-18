@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"gorm.io/gorm"
 
+	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -17,6 +18,8 @@ import (
 type Processor interface {
 	GetById(characterId uint32) (Model, error)
 	Set(characterId uint32, f field.Model) (Model, error)
+	SetState(characterId uint32, state characterconst.PresenceState) error
+	SetStateIfOnline(characterId uint32, state characterconst.PresenceState) error
 	Delete(characterId uint32) error
 	Resolve(currentField field.Model) (field.Model, ResolutionReason, error)
 }
@@ -83,6 +86,22 @@ func (p *ProcessorImpl) Set(characterId uint32, f field.Model) (Model, error) {
 		return Model{}, err
 	}
 	return Make(e)
+}
+
+// SetState writes the liveness discriminator unconditionally. Only LOGIN and
+// CHANNEL_CHANGED (which genuinely mean "this character is live right now")
+// and LOGOUT use this.
+func (p *ProcessorImpl) SetState(characterId uint32, state characterconst.PresenceState) error {
+	t := tenant.MustFromContext(p.ctx)
+	return setLocationState(p.db.WithContext(p.ctx))(t.Id())(characterId)(state, false)
+}
+
+// SetStateIfOnline writes the liveness discriminator only when the row is not
+// already OFFLINE. Cash-shop transitions use this so a late-delivered
+// CHARACTER_EXIT cannot resurrect a logged-off character.
+func (p *ProcessorImpl) SetStateIfOnline(characterId uint32, state characterconst.PresenceState) error {
+	t := tenant.MustFromContext(p.ctx)
+	return setLocationState(p.db.WithContext(p.ctx))(t.Id())(characterId)(state, true)
 }
 
 func (p *ProcessorImpl) Delete(characterId uint32) error {

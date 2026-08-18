@@ -11,8 +11,10 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
+	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -186,5 +188,140 @@ func TestSetIsTenantScoped(t *testing.T) {
 	}
 	if _, err := pB.GetById(uint32(7)); err == nil {
 		t.Fatal("tenant B must not see tenant A's row")
+	}
+}
+
+// TestSetState_TransitionsWithoutDisturbingPosition proves the state column is
+// an independent discriminator: flipping it must not move the character.
+func TestSetState_TransitionsWithoutDisturbingPosition(t *testing.T) {
+	ctx := newCtxTenant(t)
+	db := newTestDB(t)
+
+	const characterId uint32 = 42
+	f := field.NewBuilder(world.Id(1), 7, _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+
+	p := NewProcessor(logrus.New(), ctx, db)
+	if _, err := p.Set(characterId, f); err != nil {
+		t.Fatalf("Set: %v", err)
+	}
+
+	// A freshly written row is OFFLINE until something asserts liveness.
+	m, err := p.GetById(characterId)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if m.State() != characterconst.PresenceStateOffline {
+		t.Errorf("initial state = %q, want OFFLINE", m.State())
+	}
+
+	if err := p.SetState(characterId, characterconst.PresenceStateInCashShop); err != nil {
+		t.Fatalf("SetState: %v", err)
+	}
+
+	m, err = p.GetById(characterId)
+	if err != nil {
+		t.Fatalf("GetById after SetState: %v", err)
+	}
+	if m.State() != characterconst.PresenceStateInCashShop {
+		t.Errorf("state = %q, want IN_CASH_SHOP", m.State())
+	}
+	if m.WorldId() != world.Id(1) || m.ChannelId() != 7 || m.MapId() != _map.Id(100000000) {
+		t.Errorf("SetState disturbed position: world=%d channel=%d map=%d", m.WorldId(), m.ChannelId(), m.MapId())
+	}
+}
+
+// TestSet_PreservesState proves a position write does not reset the
+// discriminator. LOGOUT calls Set then SetState; CHANGE_MAP calls Set alone and
+// must leave liveness as it found it. upsertLocation used db.Save (a full-row
+// overwrite), which would silently zero the state here.
+func TestSet_PreservesState(t *testing.T) {
+	ctx := newCtxTenant(t)
+	db := newTestDB(t)
+
+	const characterId uint32 = 43
+	f := field.NewBuilder(world.Id(1), 2, _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+
+	p := NewProcessor(logrus.New(), ctx, db)
+	if _, err := p.Set(characterId, f); err != nil {
+		t.Fatalf("Set: %v", err)
+	}
+	if err := p.SetState(characterId, characterconst.PresenceStateInField); err != nil {
+		t.Fatalf("SetState: %v", err)
+	}
+
+	moved := field.NewBuilder(world.Id(1), 2, _map.Id(104000000)).SetInstance(uuid.Nil).Build()
+	if _, err := p.Set(characterId, moved); err != nil {
+		t.Fatalf("Set after move: %v", err)
+	}
+
+	m, err := p.GetById(characterId)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if m.MapId() != _map.Id(104000000) {
+		t.Errorf("map = %d, want 104000000", m.MapId())
+	}
+	if m.State() != characterconst.PresenceStateInField {
+		t.Errorf("Set reset the state to %q, want IN_FIELD preserved", m.State())
+	}
+}
+
+// TestSetStateIfOnline_DoesNotResurrectOfflineRow is the ordering rule of
+// design §1.3: a CHARACTER_EXIT that arrives after LOGOUT must not flip a
+// logged-off character back to IN_FIELD.
+func TestSetStateIfOnline_DoesNotResurrectOfflineRow(t *testing.T) {
+	ctx := newCtxTenant(t)
+	db := newTestDB(t)
+
+	const characterId uint32 = 45
+	f := field.NewBuilder(world.Id(1), 3, _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+
+	p := NewProcessor(logrus.New(), ctx, db)
+	if _, err := p.Set(characterId, f); err != nil {
+		t.Fatalf("Set: %v", err)
+	}
+	if err := p.SetState(characterId, characterconst.PresenceStateOffline); err != nil {
+		t.Fatalf("SetState OFFLINE: %v", err)
+	}
+
+	// The late CHARACTER_EXIT.
+	if err := p.SetStateIfOnline(characterId, characterconst.PresenceStateInField); err != nil {
+		t.Fatalf("SetStateIfOnline: %v", err)
+	}
+
+	m, err := p.GetById(characterId)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if m.State() != characterconst.PresenceStateOffline {
+		t.Errorf("late CHARACTER_EXIT resurrected the row to %q, want OFFLINE", m.State())
+	}
+}
+
+// TestSetStateIfOnline_AppliesWhenOnline is the same call on a live row.
+func TestSetStateIfOnline_AppliesWhenOnline(t *testing.T) {
+	ctx := newCtxTenant(t)
+	db := newTestDB(t)
+
+	const characterId uint32 = 46
+	f := field.NewBuilder(world.Id(1), 3, _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+
+	p := NewProcessor(logrus.New(), ctx, db)
+	if _, err := p.Set(characterId, f); err != nil {
+		t.Fatalf("Set: %v", err)
+	}
+	if err := p.SetState(characterId, characterconst.PresenceStateInCashShop); err != nil {
+		t.Fatalf("SetState: %v", err)
+	}
+	if err := p.SetStateIfOnline(characterId, characterconst.PresenceStateInField); err != nil {
+		t.Fatalf("SetStateIfOnline: %v", err)
+	}
+
+	m, err := p.GetById(characterId)
+	if err != nil {
+		t.Fatalf("GetById: %v", err)
+	}
+	if m.State() != characterconst.PresenceStateInField {
+		t.Errorf("state = %q, want IN_FIELD", m.State())
 	}
 }

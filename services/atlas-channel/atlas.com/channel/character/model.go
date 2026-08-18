@@ -61,8 +61,19 @@ type Model struct {
 	monsterBook        monsterbook.Model
 }
 
+// Gm reports whether this character has any GM level at all. It is deliberately
+// `> 0` rather than `== 1`: GM levels above 1 exist in this repo (see
+// libs/atlas-saga/validation.go and atlas-query-aggregator's character model),
+// and `== 1` classified those accounts as ordinary players — which, for
+// /find's concealment gate, leaked exactly the accounts it exists to hide.
 func (m Model) Gm() bool {
-	return m.gm == 1
+	return m.gm > 0
+}
+
+// GmLevel returns the raw GM level. Prefer Gm() for visibility decisions:
+// GM visibility is a boolean predicate on level > 0, not a tier comparison.
+func (m Model) GmLevel() int {
+	return m.gm
 }
 
 func (m Model) Rank() uint32 {

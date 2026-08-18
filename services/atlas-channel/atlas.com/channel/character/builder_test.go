@@ -254,3 +254,27 @@ func TestModel_MonsterBookCards(t *testing.T) {
 		t.Errorf("id not preserved: %d", m.Id())
 	}
 }
+
+// TestGm_IsTrueForEveryLevelAboveZero — gm == 1 was the old predicate, which
+// classified a level-2 GM as an ordinary player. /find's concealment gate
+// would then leak exactly the accounts it exists to hide.
+func TestGm_IsTrueForEveryLevelAboveZero(t *testing.T) {
+	cases := []struct {
+		level int
+		want  bool
+	}{
+		{0, false},
+		{1, true},
+		{2, true},
+		{5, true},
+	}
+	for _, c := range cases {
+		m := character.NewModelBuilder().SetId(1).SetGm(c.level).MustBuild()
+		if got := m.Gm(); got != c.want {
+			t.Errorf("gm level %d: Gm() = %t, want %t", c.level, got, c.want)
+		}
+		if got := m.GmLevel(); got != c.level {
+			t.Errorf("gm level %d: GmLevel() = %d, want %d", c.level, got, c.level)
+		}
+	}
+}

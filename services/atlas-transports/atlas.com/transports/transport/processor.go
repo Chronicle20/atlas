@@ -185,7 +185,14 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 			if err != nil {
 				p.l.WithError(err).Errorf("Error updating route [%s].", route.Id())
 			}
-			if r.State() == AwaitingReturn {
+			// A voyage has just ended if this tick left InTransit (the common
+			// case) or if the route restarted mid-voyage and landed directly
+			// in AwaitingReturn (the registry's prior state on restart is not
+			// InTransit, so the first disjunct alone would miss it). A
+			// duplicate VOYAGE_ARRIVED when both are true is harmless -
+			// atlas-events completes it via a guarded UPDATE and the warp
+			// loop no-ops on an empty en-route map.
+			if route.State() == InTransit || r.State() == AwaitingReturn {
 				p.l.Infof("Transport for route [%s] has arrived at [%d].", r.Id(), r.DestinationMapId())
 				for _, enRouteMapId := range r.EnRouteMapIds() {
 					err = model.ForEachSlice(model.FixedProvider(p.chanP.GetAll()), func(c channel2.Model) error {
@@ -198,7 +205,9 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 						return err
 					}
 				}
-				if err = p.emitVoyageEvent(mb)(r, tr, VoyageArrivedStatusEventProvider); err != nil {
+				if tr.ArrivedTripId == uuid.Nil {
+					p.l.Errorf("Route [%s] arrived but no arrived trip identity was reported; skipping voyage arrival event.", r.Id())
+				} else if err = p.emitVoyageEvent(mb)(r, tr.ArrivedTripId, tr.ArrivedDepartedAt, VoyageArrivedStatusEventProvider); err != nil {
 					p.l.WithError(err).Errorf("Error sending voyage arrival event for route [%s].", r.Id())
 					return err
 				}
@@ -222,7 +231,7 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 					p.l.WithError(err).Errorf("Error warping characters from staging map [%d] to enroute map.", r.StagingMapId())
 					return err
 				}
-				if err = p.emitVoyageEvent(mb)(r, tr, VoyageDepartedStatusEventProvider); err != nil {
+				if err = p.emitVoyageEvent(mb)(r, tr.TripId, tr.DepartedAt, VoyageDepartedStatusEventProvider); err != nil {
 					p.l.WithError(err).Errorf("Error sending voyage departure event for route [%s].", r.Id())
 					return err
 				}
@@ -251,10 +260,16 @@ func (p *ProcessorImpl) warpTo(mb *message.Buffer) func(fromField field.Model, t
 // channel identity of its own, so unlike the observation-deck ARRIVED/DEPARTED
 // pair these must be per (world, channel) — the same fan-out shape the warp
 // loops in this function already use (design G1).
-func (p *ProcessorImpl) emitVoyageEvent(mb *message.Buffer) func(r Model, tr Transition, provider func(uuid.UUID, transport.VoyageStatusEventBody) model.Provider[[]kafka.Message]) error {
-	return func(r Model, tr Transition, provider func(uuid.UUID, transport.VoyageStatusEventBody) model.Provider[[]kafka.Message]) error {
+//
+// tripId/departedAt are the identity of the voyage this event is about, given
+// explicitly by the caller rather than read off a shared Transition — arrival
+// and departure each name a different trip on the same tick (the transition's
+// TripId/DepartedAt for departure, ArrivedTripId/ArrivedDepartedAt for
+// arrival), so there is no single field pair a shared caller could read.
+func (p *ProcessorImpl) emitVoyageEvent(mb *message.Buffer) func(r Model, tripId uuid.UUID, departedAt time.Time, provider func(uuid.UUID, transport.VoyageStatusEventBody) model.Provider[[]kafka.Message]) error {
+	return func(r Model, tripId uuid.UUID, departedAt time.Time, provider func(uuid.UUID, transport.VoyageStatusEventBody) model.Provider[[]kafka.Message]) error {
 		t := tenant.MustFromContext(p.ctx)
-		voyageId := VoyageId(t, r.Id(), tr.TripId, tr.DepartedAt)
+		voyageId := VoyageId(t, r.Id(), tripId, departedAt)
 		return model.ForEachSlice(model.FixedProvider(p.chanP.GetAll()), func(c channel2.Model) error {
 			return mb.Put(transport.EnvEventTopicStatus, provider(r.Id(), transport.VoyageStatusEventBody{
 				VoyageId:         voyageId,
@@ -264,7 +279,7 @@ func (p *ProcessorImpl) emitVoyageEvent(mb *message.Buffer) func(r Model, tr Tra
 				EnRouteMapIds:    r.EnRouteMapIds(),
 				DestinationMapId: r.DestinationMapId(),
 				ObservationMapId: r.ObservationMapId(),
-				DepartedAt:       tr.DepartedAt,
+				DepartedAt:       departedAt,
 			}))
 		}, model.ParallelExecute())
 	}

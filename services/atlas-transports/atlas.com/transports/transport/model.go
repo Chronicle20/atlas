@@ -119,6 +119,16 @@ type Transition struct {
 	// State is OutOfService, where there is no selected trip.
 	TripId     uuid.UUID
 	DepartedAt time.Time
+	// ArrivedTripId and ArrivedDepartedAt name the voyage that just ended -
+	// the trip whose arrival is the most recent at or before now (aka
+	// justArrivedTrip) - independent of TripId/DepartedAt, which name the
+	// trip the transition's *state* is about. They are populated on every
+	// return path of Evaluate regardless of State, so arrival side effects
+	// can identify the arrived voyage even when the route lands somewhere
+	// other than AwaitingReturn. Both are zero when no trip has arrived as
+	// of now.
+	ArrivedTripId     uuid.UUID
+	ArrivedDepartedAt time.Time
 }
 
 // timeOfDay strips the date from t, leaving only a comparable time of day.
@@ -226,33 +236,37 @@ func (m Model) Evaluate(now time.Time) Transition {
 		nextTrip = futureTrip
 	}
 
+	// arrivedTripId and arrivedDepartedAt are justArrivedTrip's identity,
+	// materialized the same way the selected trip's identity is. They are
+	// zero when no trip has arrived as of now. Computed once here so every
+	// return path below - including the nextTrip == nil early return, which
+	// happens before nextTrip-based identity would otherwise be reachable -
+	// can carry it.
+	var arrivedTripId uuid.UUID
+	var arrivedDepartedAt time.Time
+	if justArrivedTrip != nil {
+		arrivedTripId = justArrivedTrip.TripId()
+		arrivedDepartedAt = materializeDeparture(now, timeOfDay(justArrivedTrip.Departure()))
+	}
+
 	if nextTrip == nil {
-		return Transition{State: OutOfService}
+		return Transition{
+			State:             OutOfService,
+			ArrivedTripId:     arrivedTripId,
+			ArrivedDepartedAt: arrivedDepartedAt,
+		}
 	}
 
 	to := func(state RouteState, next RouteState, boundary time.Time) Transition {
 		return Transition{
-			State:      state,
-			NextState:  next,
-			NextAt:     materializeBoundary(now, boundary),
-			TripId:     nextTrip.TripId(),
-			DepartedAt: materializeDeparture(now, timeOfDay(nextTrip.Departure())),
+			State:             state,
+			NextState:         next,
+			NextAt:            materializeBoundary(now, boundary),
+			TripId:            nextTrip.TripId(),
+			DepartedAt:        materializeDeparture(now, timeOfDay(nextTrip.Departure())),
+			ArrivedTripId:     arrivedTripId,
+			ArrivedDepartedAt: arrivedDepartedAt,
 		}
-	}
-
-	// toAwaitingReturn is `to(AwaitingReturn, OpenEntry, boardingOpen)`, but
-	// naming the trip that just arrived (justArrivedTrip) rather than
-	// nextTrip - one tick past an arrival, nextTrip has already moved on to
-	// whatever departs next, which is a different trip and a different
-	// VoyageId. Falls back to nextTrip's identity, unchanged, when no
-	// just-arrived trip was found.
-	toAwaitingReturn := func(boundary time.Time) Transition {
-		tr := to(AwaitingReturn, OpenEntry, boundary)
-		if justArrivedTrip != nil {
-			tr.TripId = justArrivedTrip.TripId()
-			tr.DepartedAt = materializeDeparture(now, timeOfDay(justArrivedTrip.Departure()))
-		}
-		return tr
 	}
 
 	boardingOpen := timeOfDay(nextTrip.BoardingOpen())
@@ -270,7 +284,7 @@ func (m Model) Evaluate(now time.Time) Transition {
 		if nowTimeOfDay.Before(arrival) {
 			return to(InTransit, AwaitingReturn, arrival)
 		} else if nowTimeOfDay.Before(boardingOpen) {
-			return toAwaitingReturn(boardingOpen)
+			return to(AwaitingReturn, OpenEntry, boardingOpen)
 		} else if nowTimeOfDay.Before(boardingClosed) {
 			return to(OpenEntry, LockedEntry, boardingClosed)
 		} else if nowTimeOfDay.Before(departure) {
@@ -280,7 +294,7 @@ func (m Model) Evaluate(now time.Time) Transition {
 	}
 
 	if nowTimeOfDay.Before(boardingOpen) {
-		return toAwaitingReturn(boardingOpen)
+		return to(AwaitingReturn, OpenEntry, boardingOpen)
 	} else if nowTimeOfDay.Before(boardingClosed) {
 		return to(OpenEntry, LockedEntry, boardingClosed)
 	} else if nowTimeOfDay.Before(departure) {
@@ -288,7 +302,11 @@ func (m Model) Evaluate(now time.Time) Transition {
 	} else if nowTimeOfDay.Before(arrival) {
 		return to(InTransit, AwaitingReturn, arrival)
 	}
-	return Transition{State: OutOfService}
+	return Transition{
+		State:             OutOfService,
+		ArrivedTripId:     arrivedTripId,
+		ArrivedDepartedAt: arrivedDepartedAt,
+	}
 }
 
 func (m Model) processStateChange(now time.Time) RouteState {

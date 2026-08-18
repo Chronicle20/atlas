@@ -516,6 +516,18 @@ func newProcessorWithChannels(t *testing.T, specs []channelSpec, now time.Time) 
 	t.Helper()
 	setupTransportTestRegistry(t)
 	tenantModel, ctx := newTestTenantContext(t)
+	p, mb, chans := newProcessorForTenantWithChannels(t, tenantModel, ctx, specs, now)
+	return p, mb, chans
+}
+
+// newProcessorForTenantWithChannels is newProcessorWithChannels with the
+// tenant supplied by the caller instead of freshly registered, so a test
+// that ticks UpdateRoute more than once (e.g. a departure tick followed by
+// an arrival tick) can keep the same tenant identity across both - VoyageId
+// is derived in part from the tenant, so two independently-registered
+// tenants would desynchronize the very identity the test is checking.
+func newProcessorForTenantWithChannels(t *testing.T, tenantModel tenant.Model, ctx context.Context, specs []channelSpec, now time.Time) (*ProcessorImpl, *message.Buffer, []channel2.Model) {
+	t.Helper()
 
 	chans := make([]channel2.Model, 0, len(specs))
 	for _, s := range specs {
@@ -590,15 +602,19 @@ func countEvents(t *testing.T, mb *message.Buffer, eventType string) int {
 func inTransitRouteAboutToArrive(t *testing.T) (Model, time.Time) {
 	t.Helper()
 	routeId := uuid.New()
-	tripId := uuid.New()
-	// Boards 12:30, closes 12:35, departs 12:37, arrives 12:47 - the same
-	// boundaries TestEvaluate_Branches already pins as AwaitingReturn at
-	// 12:00 (before boarding opens).
-	trip := NewTripScheduleModel(tripId, routeId, tod(12, 30), tod(12, 35), tod(12, 37), tod(12, 47))
-	m := routeWithSchedule(t, routeId, []TripScheduleModel{trip})
+	// Trip A boards 12:00, closes 12:50, departs 13:00, arrives 13:30. Trip
+	// B - a later trip on the same schedule whose boarding is NOT yet open
+	// at the pinned `now` - is what makes Evaluate land in AwaitingReturn
+	// (counting down to trip B's boarding) rather than OpenEntry: with only
+	// trip A on the schedule the same `now` would fall into the gap-2
+	// (OutOfService) shape instead. justArrivedTrip is trip A, which is what
+	// this fixture needs populated - see TestArrivalEmitsVoyageArrivedPerChannel.
+	tripA := NewTripScheduleModel(uuid.New(), routeId, tod(12, 0), tod(12, 50), tod(13, 0), tod(13, 30))
+	tripB := NewTripScheduleModel(uuid.New(), routeId, tod(14, 0), tod(14, 50), tod(15, 0), tod(15, 30))
+	m := routeWithSchedule(t, routeId, []TripScheduleModel{tripA, tripB})
 	updated, err := m.Builder().SetState(InTransit).Build()
 	require.NoError(t, err)
-	now := time.Date(2026, 8, 15, 12, 0, 0, 0, time.UTC)
+	now := time.Date(2026, 8, 15, 13, 31, 0, 0, time.UTC)
 	return updated, now
 }
 
@@ -708,4 +724,212 @@ func TestArrivalAcrossMidnightUsesDepartureDayVoyageId(t *testing.T) {
 	if !msgs[0].Body.DepartedAt.Equal(wantDepartedAt) {
 		t.Fatalf("DepartedAt = %s, want %s", msgs[0].Body.DepartedAt, wantDepartedAt)
 	}
+}
+
+// warpRecord captures one WarpRandom call the mock character processor
+// recorded, so a test can assert the arrival warp actually ran rather than
+// only that UpdateRoute did not error.
+type warpRecord struct {
+	characterId uint32
+	toMapId     _map.Id
+}
+
+// arrivalWarpMapProcessor reports a single fixed character present on
+// enRouteMapId and none elsewhere, so a test can assert UpdateRoute's
+// arrival warp loop actually moved that character off the en-route map.
+type arrivalWarpMapProcessor struct {
+	enRouteMapId _map.Id
+	characterId  uint32
+}
+
+func (a arrivalWarpMapProcessor) CharacterIdsInMapProvider(f field.Model) model.Provider[[]uint32] {
+	if f.MapId() == a.enRouteMapId {
+		return model.FixedProvider([]uint32{a.characterId})
+	}
+	return model.FixedProvider[[]uint32](nil)
+}
+
+var _ _map2.Processor = arrivalWarpMapProcessor{}
+
+// newProcessorForArrivalWarp is newProcessorWithChannels, but its map
+// processor reports one character present on enRouteMapId (instead of the
+// no-op default) and its character processor records every WarpRandom call,
+// so a test can assert the arrival warp moved that character rather than
+// merely that emitting the arrival event did not error.
+func newProcessorForArrivalWarp(t *testing.T, now time.Time, enRouteMapId _map.Id) (*ProcessorImpl, *message.Buffer, *[]warpRecord) {
+	t.Helper()
+	setupTransportTestRegistry(t)
+	tenantModel, ctx := newTestTenantContext(t)
+
+	chans := []channel2.Model{channel2.NewModel(world.Id(1), channel2.Id(1))}
+	mockChanP := &channelmock.ProcessorMock{
+		GetAllFunc: func() []channel2.Model {
+			return chans
+		},
+	}
+
+	warps := &[]warpRecord{}
+	mockCharP := &charactermock.ProcessorMock{
+		WarpRandomFunc: func(mb *message.Buffer) func(characterId uint32) func(fieldId field.Id) error {
+			return func(characterId uint32) func(fieldId field.Id) error {
+				return func(fieldId field.Id) error {
+					tf, ok := field.FromId(fieldId)
+					if !ok {
+						t.Fatalf("could not parse warped-to field id")
+					}
+					*warps = append(*warps, warpRecord{characterId: characterId, toMapId: tf.MapId()})
+					return nil
+				}
+			}
+		},
+	}
+
+	l := logrus.New()
+	l.SetOutput(&bytes.Buffer{})
+
+	p := &ProcessorImpl{
+		l:     l,
+		ctx:   ctx,
+		t:     tenantModel,
+		chanP: mockChanP,
+		charP: mockCharP,
+		mp:    arrivalWarpMapProcessor{enRouteMapId: enRouteMapId, characterId: 500},
+		now:   func() time.Time { return now },
+	}
+	return p, message.NewBuffer(), warps
+}
+
+// routeAboutToArriveIntoOpenEntry returns a route persisted as InTransit
+// whose next trip's boarding window is already open by the arrival instant
+// (the gap-1 shape from the bug report: trip A boards 12:00, departs 13:00,
+// arrives 13:30; trip B boards 13:00), so UpdateRoute(now) evaluates to
+// OpenEntry rather than AwaitingReturn.
+func routeAboutToArriveIntoOpenEntry(t *testing.T) (Model, time.Time) {
+	t.Helper()
+	routeId := uuid.New()
+	tripA := NewTripScheduleModel(uuid.New(), routeId, tod(12, 0), tod(12, 50), tod(13, 0), tod(13, 30))
+	tripB := NewTripScheduleModel(uuid.New(), routeId, tod(13, 0), tod(13, 50), tod(14, 0), tod(14, 30))
+	m := routeWithSchedule(t, routeId, []TripScheduleModel{tripA, tripB})
+	updated, err := m.Builder().SetState(InTransit).Build()
+	require.NoError(t, err)
+	now := time.Date(2026, 8, 15, 13, 31, 0, 0, time.UTC)
+	return updated, now
+}
+
+// routeAboutToArriveIntoOutOfService returns a route persisted as InTransit
+// with no future trip on its schedule (the gap-2 shape from the bug
+// report), so UpdateRoute(now) evaluates to OutOfService rather than
+// AwaitingReturn.
+func routeAboutToArriveIntoOutOfService(t *testing.T) (Model, time.Time) {
+	t.Helper()
+	routeId := uuid.New()
+	trip := NewTripScheduleModel(uuid.New(), routeId, tod(12, 0), tod(12, 50), tod(13, 0), tod(13, 30))
+	m := routeWithSchedule(t, routeId, []TripScheduleModel{trip})
+	updated, err := m.Builder().SetState(InTransit).Build()
+	require.NoError(t, err)
+	now := time.Date(2026, 8, 15, 13, 31, 0, 0, time.UTC)
+	return updated, now
+}
+
+// Gap 1 regression: a route whose arrival tick lands in OpenEntry (rather
+// than AwaitingReturn, because the next trip's boarding is already open)
+// must still run the arrival warp and emit one VOYAGE_ARRIVED per channel.
+// Before this fix, gating the arrival block on r.State() == AwaitingReturn
+// silently dropped both.
+func TestArrivalIntoOpenEntryWarpsAndEmitsVoyageArrivedPerChannel(t *testing.T) {
+	route, now := routeAboutToArriveIntoOpenEntry(t)
+	enRouteMapId := route.EnRouteMapIds()[0]
+	p, mb, warps := newProcessorForArrivalWarp(t, now, enRouteMapId)
+
+	if err := p.UpdateRoute(mb)(route); err != nil {
+		t.Fatalf("UpdateRoute: %v", err)
+	}
+
+	if len(*warps) != 1 {
+		t.Fatalf("expected the arrival warp to move 1 character, got %d", len(*warps))
+	}
+	if (*warps)[0].toMapId != route.DestinationMapId() {
+		t.Fatalf("warped to map %d, want destination map %d", (*warps)[0].toMapId, route.DestinationMapId())
+	}
+
+	msgs := voyageEvents(t, mb, transport.EventStatusVoyageArrived)
+	if len(msgs) != 1 {
+		t.Fatalf("expected one VOYAGE_ARRIVED per channel, got %d", len(msgs))
+	}
+	if msgs[0].Body.VoyageId == uuid.Nil {
+		t.Fatalf("voyage id not populated")
+	}
+}
+
+// Gap 2 regression: a route whose arrival tick lands in OutOfService
+// (rather than AwaitingReturn, because no future trip remains) must still
+// run the arrival warp and emit one VOYAGE_ARRIVED per channel.
+func TestArrivalIntoOutOfServiceWarpsAndEmitsVoyageArrivedPerChannel(t *testing.T) {
+	route, now := routeAboutToArriveIntoOutOfService(t)
+	enRouteMapId := route.EnRouteMapIds()[0]
+	p, mb, warps := newProcessorForArrivalWarp(t, now, enRouteMapId)
+
+	if err := p.UpdateRoute(mb)(route); err != nil {
+		t.Fatalf("UpdateRoute: %v", err)
+	}
+
+	if len(*warps) != 1 {
+		t.Fatalf("expected the arrival warp to move 1 character, got %d", len(*warps))
+	}
+	if (*warps)[0].toMapId != route.DestinationMapId() {
+		t.Fatalf("warped to map %d, want destination map %d", (*warps)[0].toMapId, route.DestinationMapId())
+	}
+
+	msgs := voyageEvents(t, mb, transport.EventStatusVoyageArrived)
+	if len(msgs) != 1 {
+		t.Fatalf("expected one VOYAGE_ARRIVED per channel, got %d", len(msgs))
+	}
+	if msgs[0].Body.VoyageId == uuid.Nil {
+		t.Fatalf("voyage id not populated")
+	}
+}
+
+// TestArrivalVoyageIdMatchesDepartureVoyageIdEndToEnd is the assertion that
+// would have caught the original live bug: the VOYAGE_ARRIVED emitted for a
+// trip's arrival must carry the same voyageId as the VOYAGE_DEPARTED
+// emitted for that trip's departure, asserted end-to-end through the
+// processor (not just through Evaluate). Both ticks run through the same
+// tenant so VoyageId's tenant-derived component cannot itself desync them.
+func TestArrivalVoyageIdMatchesDepartureVoyageIdEndToEnd(t *testing.T) {
+	setupTransportTestRegistry(t)
+	tenantModel, ctx := newTestTenantContext(t)
+
+	routeId := uuid.New()
+	tripA := NewTripScheduleModel(uuid.New(), routeId, tod(12, 0), tod(12, 50), tod(13, 0), tod(13, 30))
+	tripB := NewTripScheduleModel(uuid.New(), routeId, tod(13, 0), tod(13, 50), tod(14, 0), tod(14, 30))
+	m := routeWithSchedule(t, routeId, []TripScheduleModel{tripA, tripB})
+
+	locked, err := m.Builder().SetState(LockedEntry).Build()
+	require.NoError(t, err)
+
+	departureNow := time.Date(2026, 8, 15, 13, 10, 0, 0, time.UTC)
+	p1, mb1, _ := newProcessorForTenantWithChannels(t, tenantModel, ctx, []channelSpec{{world: 1, channel: 1}}, departureNow)
+	require.NoError(t, p1.UpdateRoute(mb1)(locked))
+
+	departedMsgs := voyageEvents(t, mb1, transport.EventStatusVoyageDeparted)
+	require.Len(t, departedMsgs, 1)
+	departedVoyageId := departedMsgs[0].Body.VoyageId
+	require.NotEqual(t, uuid.Nil, departedVoyageId)
+
+	inTransit, err := m.Builder().SetState(InTransit).Build()
+	require.NoError(t, err)
+
+	// past tripA's arrival, with tripB's boarding already open - the same
+	// gap-1 shape TestArrivalIntoOpenEntryWarpsAndEmitsVoyageArrivedPerChannel
+	// exercises, chosen here specifically because it is the shape the
+	// pre-fix code silently dropped VOYAGE_ARRIVED for.
+	arrivalNow := time.Date(2026, 8, 15, 13, 31, 0, 0, time.UTC)
+	p2, mb2, _ := newProcessorForTenantWithChannels(t, tenantModel, ctx, []channelSpec{{world: 1, channel: 1}}, arrivalNow)
+	require.NoError(t, p2.UpdateRoute(mb2)(inTransit))
+
+	arrivedMsgs := voyageEvents(t, mb2, transport.EventStatusVoyageArrived)
+	require.Len(t, arrivedMsgs, 1)
+
+	assert.Equal(t, departedVoyageId, arrivedMsgs[0].Body.VoyageId,
+		"VOYAGE_ARRIVED's voyageId must equal VOYAGE_DEPARTED's voyageId for the same trip")
 }

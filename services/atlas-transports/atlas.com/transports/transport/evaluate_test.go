@@ -263,9 +263,12 @@ func TestEvaluateDepartureInstantForSameDayTrip(t *testing.T) {
 // TestEvaluateArrivalTickReportsSameIdentityAsDepartureTick pins the
 // invariant VOYAGE_ARRIVED depends on: VoyageId is a pure function of
 // (route id, TripId, DepartedAt), so a trip's departure tick and its arrival
-// tick must report the same pair. One tick past arrival, the naive "trip
-// Evaluate would board next" selector picks the *next* trip instead of the
-// one that just landed - this is the regression the bug report reproduced.
+// tick must report the same pair - now via the arrival tick's
+// ArrivedTripId/ArrivedDepartedAt, which are populated on every return path
+// of Evaluate regardless of the state the route lands in afterwards. One
+// tick past arrival, the naive "trip Evaluate would board next" selector
+// picks the *next* trip instead of the one that just landed - this is the
+// regression the bug report reproduced.
 func TestEvaluateArrivalTickReportsSameIdentityAsDepartureTick(t *testing.T) {
 	t.Run("same-day trip", func(t *testing.T) {
 		routeId := uuid.New()
@@ -279,9 +282,9 @@ func TestEvaluateArrivalTickReportsSameIdentityAsDepartureTick(t *testing.T) {
 		pastArrival := m.Evaluate(time.Date(2026, 8, 15, 13, 31, 0, 0, time.UTC))
 		require.Equal(t, AwaitingReturn, pastArrival.State)
 
-		assert.Equal(t, inTransit.TripId, pastArrival.TripId, "TripId must match between the in-transit and arrival ticks")
-		assert.True(t, inTransit.DepartedAt.Equal(pastArrival.DepartedAt),
-			"DepartedAt must match between the in-transit and arrival ticks: %s vs %s", inTransit.DepartedAt, pastArrival.DepartedAt)
+		assert.Equal(t, inTransit.TripId, pastArrival.ArrivedTripId, "ArrivedTripId must match the in-transit tick's TripId")
+		assert.True(t, inTransit.DepartedAt.Equal(pastArrival.ArrivedDepartedAt),
+			"ArrivedDepartedAt must match the in-transit tick's DepartedAt: %s vs %s", inTransit.DepartedAt, pastArrival.ArrivedDepartedAt)
 	})
 
 	t.Run("midnight-crossing trip", func(t *testing.T) {
@@ -298,9 +301,48 @@ func TestEvaluateArrivalTickReportsSameIdentityAsDepartureTick(t *testing.T) {
 		pastArrival := m.Evaluate(time.Date(2026, 8, 16, 0, 31, 0, 0, time.UTC))
 		require.Equal(t, AwaitingReturn, pastArrival.State)
 
-		assert.Equal(t, inTransit.TripId, pastArrival.TripId, "TripId must match between the in-transit and arrival ticks")
-		assert.True(t, inTransit.DepartedAt.Equal(pastArrival.DepartedAt),
-			"DepartedAt must match between the in-transit and arrival ticks: %s vs %s", inTransit.DepartedAt, pastArrival.DepartedAt)
+		assert.Equal(t, inTransit.TripId, pastArrival.ArrivedTripId, "ArrivedTripId must match the in-transit tick's TripId")
+		assert.True(t, inTransit.DepartedAt.Equal(pastArrival.ArrivedDepartedAt),
+			"ArrivedDepartedAt must match the in-transit tick's DepartedAt: %s vs %s", inTransit.DepartedAt, pastArrival.ArrivedDepartedAt)
+	})
+
+	// Gap 1: the next trip's boarding window is already open by the time
+	// this trip arrives, so Evaluate lands in OpenEntry rather than
+	// AwaitingReturn. The arrived trip's identity must still be reported.
+	t.Run("arrival lands in OpenEntry", func(t *testing.T) {
+		routeId := uuid.New()
+		tripA := NewTripScheduleModel(uuid.New(), routeId, tod(12, 0), tod(12, 50), tod(13, 0), tod(13, 30))
+		tripB := NewTripScheduleModel(uuid.New(), routeId, tod(13, 0), tod(13, 50), tod(14, 0), tod(14, 30))
+		m := routeWithSchedule(t, routeId, []TripScheduleModel{tripA, tripB})
+
+		inTransit := m.Evaluate(time.Date(2026, 8, 15, 13, 10, 0, 0, time.UTC))
+		require.Equal(t, InTransit, inTransit.State)
+
+		pastArrival := m.Evaluate(time.Date(2026, 8, 15, 13, 31, 0, 0, time.UTC))
+		require.Equal(t, OpenEntry, pastArrival.State)
+
+		assert.Equal(t, inTransit.TripId, pastArrival.ArrivedTripId, "ArrivedTripId must match the in-transit tick's TripId")
+		assert.True(t, inTransit.DepartedAt.Equal(pastArrival.ArrivedDepartedAt),
+			"ArrivedDepartedAt must match the in-transit tick's DepartedAt: %s vs %s", inTransit.DepartedAt, pastArrival.ArrivedDepartedAt)
+	})
+
+	// Gap 2: no future trip remains after this one arrives, so Evaluate
+	// lands in OutOfService rather than AwaitingReturn. The arrived trip's
+	// identity must still be reported.
+	t.Run("arrival lands in OutOfService", func(t *testing.T) {
+		routeId := uuid.New()
+		trip := NewTripScheduleModel(uuid.New(), routeId, tod(12, 0), tod(12, 50), tod(13, 0), tod(13, 30))
+		m := routeWithSchedule(t, routeId, []TripScheduleModel{trip})
+
+		inTransit := m.Evaluate(time.Date(2026, 8, 15, 13, 10, 0, 0, time.UTC))
+		require.Equal(t, InTransit, inTransit.State)
+
+		pastArrival := m.Evaluate(time.Date(2026, 8, 15, 13, 31, 0, 0, time.UTC))
+		require.Equal(t, OutOfService, pastArrival.State)
+
+		assert.Equal(t, inTransit.TripId, pastArrival.ArrivedTripId, "ArrivedTripId must match the in-transit tick's TripId")
+		assert.True(t, inTransit.DepartedAt.Equal(pastArrival.ArrivedDepartedAt),
+			"ArrivedDepartedAt must match the in-transit tick's DepartedAt: %s vs %s", inTransit.DepartedAt, pastArrival.ArrivedDepartedAt)
 	})
 }
 

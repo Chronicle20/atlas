@@ -132,6 +132,12 @@ func Get(l logrus.FieldLogger, ctx context.Context, characterId uint32) (Model, 
 	}, nil
 }
 
+// NewModelForTest constructs a Model directly. Only call from a test;
+// production code builds one through Get.
+func NewModelForTest(characterId uint32, w world.Id, ch channel.Id, m _map.Id, instance uuid.UUID, state characterconst.PresenceState) Model {
+	return Model{characterId: characterId, worldId: w, channelId: ch, mapId: m, instance: instance, state: state}
+}
+
 // SetBaseURLForTest swaps the base URL for tests using httptest. Only
 // call from a test; production code uses the env-driven default.
 func SetBaseURLForTest(url string) func() {

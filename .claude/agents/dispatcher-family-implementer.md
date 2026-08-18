@@ -27,6 +27,11 @@ description: |
   assistant: "Dispatching dispatcher-family-implementer for CWvsContext::OnGuildResult."
   </example>
 model: sonnet
+disallowedTools: [Agent]
+# disallowedTools (not a `tools:` allowlist): this agent is a LEAF — it never
+# dispatches children, and repo policy is that leaf agents do not fan out.
+# Denying Agent subtractively keeps `tools:` omitted, which is the only
+# documented way to inherit MCP tools (see the FR-1.3 note below).
 # tools: intentionally omitted (FR-1.3) — resolves the loaded IDB via
 # ida-pro-mcp (list_instances/select_instance) to enumerate the family's mode
 # set from the client switch and decompile each arm's body; its MCP tool

@@ -119,6 +119,28 @@ equivalents; this rule removes the reason to make them.
 **Reviewers do not fan out at all.** A reviewer answers its own checklist. See
 [docs/review-protocol.md](review-protocol.md).
 
+### Shrinking the floor itself
+
+Two parts of the floor are ours, not the harness's:
+
+- **The agent roster.** The custom-agent listing costs ~5.3k (measured via
+  `/context`) and is delivered as an "Available agent types for the Agent tool"
+  reminder. Whether denying the tool also suppresses the listing is **inferred,
+  not measured** — the emitting code has no named gate. Leaf agents deny it
+  regardless, because it enforces the no-fan-out rule structurally:
+  `disallowedTools: [Agent]`. Use `disallowedTools`, never a `tools:` allowlist
+  — the packet agents must keep `tools:` omitted, which is the only documented
+  way to inherit MCP tools (`ida-pro-mcp`). `packet-implementer` is the
+  exception: it legitimately dispatches `packet-verifier` per cell.
+- **Bundled skills.** Claude Code's built-in skills (`dataviz`, `claude-api`,
+  `design`, `update-config`, …) are ~2.5k of listing this repo never invokes
+  (summed from `/context`'s built-in skill listing: dataviz 380, claude-api 360,
+  design 340, code-review 270, update-config 240, and eleven smaller entries).
+  `disableBundledSkills: true` in `.claude/settings.json` removes them. Plugin
+  skills (`superpowers:*`) and the four-phase commands are unaffected; the
+  built-in `/code-review` skill goes with them, and repo code review runs
+  through the reviewer agents anyway.
+
 **Never idle waiting on a child.** Agent completions arrive as notifications —
 do other work, or end the turn and be re-invoked. There is no wait primitive
 because none is needed.

@@ -125,4 +125,23 @@ No Go change is required. Do not add a startup auto-seed.
 
 ## Resolution
 
-_(pending)_
+Fixed in `03e870091` — *fix(task-231): add Setup page seed control for event
+definitions*. Frontend-only, as diagnosed: `seedEventDefinitions` /
+`getEventDefinitionsSeedStatus` in `seed.service.ts`, the mutation/status hooks
+and status key in `useSeed.ts`, an "Event Definitions" row on `SetupPage.tsx`
+following the 202/void Instance Transport Routes shape, and the corrected
+empty-state copy on `EventDefinitionsPage.tsx`. Tests extended in
+`__tests__/useSeed.test.tsx` and `__tests__/SetupPage.test.tsx`.
+
+Gate: `tools/verify.sh --quick --base de965a0a0` exited 0 (docker bake skipped
+— this is not the pre-PR flagless pass). atlas-ui build, 2092 tests, and lint
+all clean.
+
+Seam checked by hand against `event/definition/subdomain.go`: the posted path
+`/api/events/definitions/seed` matches `URLPrefix "/events/definitions"` under
+the service base path, and the status key `definition.event` matches
+`DefinitionSubdomain.Name()`.
+
+Live re-test on the ephemeral environment: **not yet performed** — the fix must
+be deployed to `atlas-pr-1375` before an operator can confirm the seed row
+actually populates the definitions table.

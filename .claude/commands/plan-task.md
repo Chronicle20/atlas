@@ -62,7 +62,7 @@ Run the `writing-plans` skill's self-review (placeholder scan, type consistency,
 
 Phase 4 extracts each task section verbatim into the implementer's brief
 (`tools/task-brief.sh` is an awk slice of the `## Task N` heading and its
-body). Whatever you write into a task section IS the brief. Two rules follow
+body). Whatever you write into a task section IS the brief. Three rules follow
 from that.
 
 **Every task carries a `### Files` block.** You are reading the code to write
@@ -84,6 +84,39 @@ Paths must be repo-relative and must exist (or be explicitly marked `new
 file`). Mark read-only references as such so the implementer does not edit
 them. Include the module root the task's `go build`/`go test` runs from when
 it is not obvious from the paths.
+
+**Test blocks carry the spec, not the scaffolding.** You have no compiler; the
+implementer has one and an adjacent `_test.go` to copy from. In a ```` ```go ````
+test block, spell out **in full** everything that only you know:
+
+- the test function names, and the subtest name per case
+- the case table — every case, with its exact inputs
+- the exact expected values: byte fixtures, opcodes, version gates, error
+  strings, field-by-field assertions
+
+and name rather than spell out everything the repo already decides:
+
+- imports, `t.Run` wrappers, `defer`/cleanup
+- fixture and builder construction — `Patterns to copy:
+  `services/atlas-y/.../baz_test.go:40-72` (same setup)`
+- test-DB / tenant-context helpers
+
+```markdown
+- [ ] **Step 1: Write the failing test**
+
+`TestFindDecision` — table-driven, setup copied from
+`services/atlas-channel/.../cash_shop_check_name_change_test.go:1-90`.
+
+| case | session state | gm | expect mode | expect payload |
+|---|---|---|---|---|
+| same field | `CashSceneNone`, field 100 | 0 | `0x09` | mapId 100 |
+| in cash shop | `CashSceneCashShop` | 0 | `0x09` | `-1` |
+```
+
+This overrides `superpowers:writing-plans`' "no test code without actual test
+code" rule, for scaffolding only. **A vague case table or expected value is a
+plan failure.** If you cannot write the expected value down, you have not
+finished designing the task — do not paper over it with a pointer.
 
 **Size tasks to the implementer budget.** Implementers stop at 120 tool calls
 and hand back `PARTIAL`; the controller then splits the task anyway, at a
@@ -120,16 +153,24 @@ which nothing previously enforced:
 | **F2** | the plan does not specify a stub to land | CLAUDE.md: no `// TODO`, stubbed handlers or 501s |
 | **F3** | read-only commands the plan tells the implementer to run actually match something | |
 | **F4** | task size (>6 files, or >1 service) — *warning* | Step 5a's splitting rule |
+| **F5** | every symbol a ```` ```go ```` block calls resolves — *warning* | the code in the plan is written without a compiler |
 
-F1–F3 are errors; fix them. F4 is advisory — a deliberately large task is
-allowed provided `context.md` says why, but oversized tasks are what produce
-`PARTIAL` hand-backs and a mid-plan split at a worse moment.
+F1–F3 are errors; fix them. F4 and F5 are advisory.
 
-This exists because these defects are cheap here and expensive later. On
-task-231 the controller had to append 18 `## CONTROLLER RULING` blocks patching
-exactly this class of problem — a `### Files` path that did not exist, a Step-2
-command matching nothing, four planned stubs — each discovered at dispatch time
-at 150–250k context, most after an investigation it had to run first.
+F4: a deliberately large task is allowed provided `context.md` says why, but
+oversized tasks are what produce `PARTIAL` hand-backs and a mid-plan split at a
+worse moment.
+
+F5: a symbol resolves if the repo defines it, the repo calls it anywhere, or the
+plan declares it. What survives is either the repo's first use of an external
+API — confirm the signature — or a method you invented from memory, which an
+implementer hits at dispatch time. **Grep each one before committing**; advisory
+only because the first case is legitimate, not because it is optional.
+
+F5 indexes every `.go` file in the tree, so it adds ~5s. `--no-symbols` skips it.
+
+Every one of these defects is cheap to fix here and expensive at dispatch time,
+where it surfaces as a `CONTROLLER RULING` at 150–250k context.
 
 ### Step 6 — Commit and summarize
 

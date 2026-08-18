@@ -4,8 +4,7 @@ argument-hint: <region> <major> <minor>  (e.g. GMS 92 1)
 ---
 
 You are the orchestrator for adding a new client-version column to the packet
-coverage matrix. This is the entry point task-113 lacked — it was
-hand-orchestrated. You **narrate and delegate** (like `/execute-task`); you do
+coverage matrix. You **narrate and delegate** (like `/execute-task`); you do
 NOT do the whole pass inside one monolithic agent. A human stays in the loop
 between stages.
 

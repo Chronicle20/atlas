@@ -11,41 +11,16 @@ contract for *what* is reviewed. This is only the shape of the answer.
 
 ---
 
-## Why this exists
+## Why this shape
 
-Two independent cost audits reached the same conclusion from different data.
+A review's prose is consumed by the controller on the turn it arrives and then
+carried as dead weight for every turn after. Only the verdict and the blocking
+lines change what the controller does next; the reasoning belongs on disk, where
+it stays readable without being re-billed.
 
-Implementer and verifier returns are already right and are explicitly **not**
-changed by this document:
-
-| Agent class | Measured return | Verdict |
-|---|---|---|
-| `atlas-verifier` | 478–1,546 B | already minimal — the reference shape |
-| `atlas-implementer` / `packet-implementer` | 1,145–2,595 B median, 101/101 cite a commit sha | already near-ideal |
-
-Reviewers are the outlier:
-
-| Measurement | Value |
-|---|---|
-| Reviewer return, median | **4,904 B** (p90 8,162 B, max 14,459 B) |
-| …against the implementer median | 3.6× larger, at 4.3× the dispatch count |
-| Share of all return bytes in one task | **75%** |
-| Ad-hoc `general-purpose` reviews that wrote a durable artifact | **0 of 84** |
-| Reviews whose verdict appears in the first 80 characters | **26 of 84** |
-| Notification carry (bytes × controller turns remaining) | 40.3 MB-turns ≈ 10M tokens |
-| Fenced evidence as a share of review prose | **2.4%** — the rest is reasoning |
-
-One concrete case: a `Review Task 26` return streamed 3,370 B into the
-controller *and* wrote a 12.2 KB `task-26-review.md`. Roughly 1.9 KB of the
-stream was five restatements of PASS, each with file:line evidence, each already
-on disk, and none of them actionable. Only the final "Blocking: the FR-4.7
-warning is entirely absent" changed what the controller did next.
-
-The controller-side consequence was checked in both audits: after a review, the
-controller either dispatched a scoped fix agent naming the finding, or moved on.
-**No case was found where a controller re-used review prose more than one turn
-after ingesting it.** It was consumed immediately and then carried for a median
-of 51 further turns as dead weight.
+Implementer and verifier returns are already the right shape and are explicitly
+**not** changed by this document — `atlas-verifier`'s 478–1,546 B return is the
+reference. Reviewers are the outlier this contract exists to fix.
 
 ---
 

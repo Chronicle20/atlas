@@ -36,12 +36,11 @@ your prompt: `cd` there first and verify the branch with `git branch --show-curr
 mutate a codec, registry, template, `gates.yaml`, evidence record, STATUS.md, or
 status.json. If you want to fix something, RECORD it as a finding.
 
-## Why this exists
+## Your role
 
-The off-by-one / scope-hole bug class (memory: `bug_majorversion_gt83`,
-`bug_reshift_csv_carryover`) lands because a change touches a codec or version
-gate that the task never declared and no fixture pinned. gate-lint (code shape)
-and gate-check (fixture pairs) are the mechanical guards; you are the SEMANTIC
+The scope-hole bug class lands when a change touches a codec or version gate
+that the task never declared and no fixture pinned. gate-lint (code shape) and
+gate-check (fixture pairs) are the mechanical guards; you are the SEMANTIC
 guard — you confirm the diff and the declared scope agree.
 
 ## Context you need

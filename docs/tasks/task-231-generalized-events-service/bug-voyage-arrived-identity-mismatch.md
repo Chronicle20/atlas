@@ -175,3 +175,27 @@ same `Model` at the in-transit instant and again one tick past arrival and
 asserts equal `TripId`/`DepartedAt` (and that the arrival tick's state is
 `AwaitingReturn`), for both a same-day trip and a midnight-crossing trip. It
 fails against the pre-fix code (see report) and passes after the fix.
+
+**Commit:** `aeb23694b` — fix(atlas-transports): report just-arrived trip
+identity at AwaitingReturn.
+
+**Gates.** `tools/verify.sh --quick --base d728af737` → **PASS**, exit 0, all 67
+checks (build/vet across 89 modules after the shared-lib fan-out, analyzer
+guards, seam guards, drift checks, lint & format).
+
+**Review.** `atlas-reviewer` over `aeb23694b` against this file → **APPROVED**,
+0 blocking / 0 non-blocking
+(`review-bug-voyage-arrived-identity-mismatch.md`). It independently reverted
+`model.go` and confirmed the new test fails with exactly this bug's symptom, and
+hand-verified `materializeDeparture`'s day projection for both trip shapes
+rather than trusting the test's framing. It also traced the seam
+(`transport/processor.go:257,267` reads `tr.TripId`/`tr.DepartedAt` directly
+from the `Transition`), confirming the producer-side fix alone repairs the
+`VOYAGE_ARRIVED` payload and that leaving `atlas-events` untouched was correct.
+
+**Live re-test: NOT YET DONE.** The branch has not been pushed, so
+`atlas-pr-1375` still runs the pre-fix image. This bug is not confirmed fixed
+until a CRIMSON_BALROG occurrence is observed transitioning out of `ACTIVE` on
+voyage arrival in the namespace, with the Balrog despawned and the boat-shake
+visual hidden. The unit evidence proves the two ids now agree; it does not
+prove the occurrence completes end to end.

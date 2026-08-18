@@ -62,6 +62,20 @@ Direct probe of `atlas-data` (in-cluster, GMS 83.1 headers):
 | `equipment/1302000` | 200 |
 | `monsters/100100`, `maps/100000000`, `skills/4001003` | 200 |
 
+**The item still appears in the web UI — that is not a contradiction.** The UI's
+name and icon come from a *different* document type, `ITEM_STRING` (ingested
+from `String.wz`, served by `/data/item-strings`,
+`services/atlas-data/atlas.com/data/item/string_resource.go:27-29`), which
+ingested fine:
+
+```
+GET /api/data/item-strings/2000004 → 200 {"attributes":{"name":"Elixir"}}
+GET /api/data/consumables/2000004  → 404
+```
+
+Only the `CONSUMABLE` document — the one from `Item.wz/Consume` carrying the
+HP/MP spec that `ConsumeStandard` needs — is absent.
+
 `GET /api/data/status` reports `documentCount: 49049, updatedAt: 2026-08-08T17:28:58Z`
 — the corpus is populated, but the CONSUMABLE and CASH document types are
 entirely absent from it.
@@ -140,6 +154,26 @@ code is written** — it decides whether there is a code fix at all.
      before, pass after.
    - the channel's `EVENT_TOPIC_CONSUMABLE_STATUS` consumer — handle the new
      type.
+
+## Resolution
+
+**Confirmed by re-ingest.** The operator triggered an `Item.wz` ingest on
+`atlas-main` (Job `ingest-shared-gms-83-1-gn9ep4`, started 2026-08-18T14:19:16Z).
+Mid-run, `GET /api/data/consumables/2000004` on `atlas-main` flipped from 404 to
+**200**. The diagnosis holds: the failure was a missing `CONSUMABLE` document
+corpus, not a code defect in the consume path.
+
+`atlas-pr-1375` still returns **404** — it has its own database
+(`atlas-data-3178`) and needs its own ingest before potions work there.
+
+The ingest Job's own log shows only six warnings, all mobskill-related
+(`mobskill.InitString failed`, `register BFSkill.img.xml`, `MobSkill.img.xml`,
+etc.) — no `walk …/Item.wz/Consume` warning. So this run's Item worker did not
+fail. Why the 2026-08-08 corpus lacked the category is not recoverable from
+here: that run's Job logs are gone. Left unanswered rather than guessed.
+
+Fix item 2 below (the empty `errorType`) is independent of all this and landed
+in commit `f1d8bb567`.
 
 ## Not yet answered
 

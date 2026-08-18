@@ -20,3 +20,9 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-18T13:47:45Z	agent	Task 8	atlas-reviewer	sonnet	-	-	-	-	DONE	8ca62121b	APPROVED	no	docs/tasks/task-238-whisper-find-location/review-task-8.md	-
 2026-08-18T13:48:40Z	agent	Tasks 6-9 gate	atlas-verifier	haiku	-	-	-	-	PASS	17873fb17	-	-	-	-
 2026-08-18T13:48:40Z	handoff	after Task 9	-	-	-	-	-	-	-	-	-	-	-	80000
+2026-08-18T13:57:58Z	agent	branch-end	plan-adherence-reviewer	sonnet	-	-	-	-	-	1104053da	-	-	docs/tasks/task-238-whisper-find-location/audit.md	-
+2026-08-18T13:59:33Z	agent	branch-end	packet-completeness-critic	sonnet	-	-	-	-	DONE	1104053da	CLEAN	no	docs/tasks/task-238-whisper-find-location/completeness-critic.md	-
+2026-08-18T14:02:50Z	agent	branch-end	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	1104053da	APPROVED	no	docs/tasks/task-238-whisper-find-location/audit.md	-
+2026-08-18T14:08:33Z	agent	branch-end	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	1104053da	CHANGES_REQUIRED	yes	docs/tasks/task-238-whisper-find-location/backend-audit.md	-
+2026-08-18T14:24:31Z	agent	Fix round 1	atlas-implementer	sonnet	-	-	-	-	DONE	2413cbf29	-	-	.superpowers/sdd/plan/fix-round-1-report.md	-
+2026-08-18T14:33:24Z	agent	Fix round 1	atlas-reviewer	sonnet	-	-	-	-	DONE	2413cbf29	APPROVED	no	docs/tasks/task-238-whisper-find-location/review-fix-round-1.md	-

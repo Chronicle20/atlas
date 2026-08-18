@@ -345,17 +345,50 @@ only excluded mode is `0x22`. The x/y pair is read only when the mode is odd
 identically; FR-12 gains no arm-specific exception. `gms_v72` (`v93`) and
 `gms_v79` (`v93`) carry the same guard structure.
 
-**Flagged divergence, out of scope.** `gms_v92` and `gms_v95` guard the find
-arm on `mode == 72` and read x/y at `findMode == 1` **without** the odd-mode
-test (`gms_v95.json`: `Decode4 | v3 == 72 && v28 == 1`, twice). On those two
-client versions the `0x48` arm expects x/y that Atlas does not send, which
-would under-read the packet. That is a pre-existing packet-layer version gap in
-`libs/atlas-packet`, independent of this task's selection logic, and the PRD
-explicitly non-goals encoding changes (§2, §7). It is recorded here as a
-finding and belongs in its own packet task with its own fixture verification —
-not folded into this branch, where it would need a version gate and per-version
-cell promotion that this task's acceptance criteria do not cover. **Raised for
-the user's decision; this design does not change it.**
+**WITHDRAWN — flagged divergence on `gms_v92`/`gms_v95` (v1 of this design).**
+v1 read `gms_v95.json`'s raw `CField::OnWhisper` guard `Decode4 | v3 == 72 &&
+v28 == 1` as evidence that those two clients read x/y on the `0x48` arm, and
+recorded it as a pre-existing packet gap. **That reading was wrong, and the
+finding is withdrawn.** Re-derived during `/plan-task` against the live IDBs:
+
+`CField::OnWhisper` @`0x5448a0` (v95, `GMS_v95.0_U_DEVM.exe`) and @`0x53e2a0`
+(v92, `GMS_v92_1_DEVM.exe`) both have the shape:
+
+```c
+case 9:
+case 72:
+  DecodeStr(name); v28 = Decode1();  // findMode
+  v29 = Decode4();                   // payload
+  if ( (v3 & 1) == 0 )               // EVEN mode -> 0x48
+  {
+    if ( (v3 & 0x40) != 0 ) { switch (v28) { case 2: case 3: case 1: } }
+    goto LABEL_125;                  // no further decode -- no x/y
+  }
+  switch ( v28 )                     // ODD mode -> 0x09
+  {
+    case 1:
+      v44 = Decode4();               // x
+      nTargetPosition_Y = Decode4(); // y
+```
+
+x/y is read **only** when the mode is odd (`0x09`) **and** findMode is 1 — the
+same rule as v83/v84/v87, and exactly what Atlas already encodes. The raw guard
+quoted in v1 is a harvesting artifact: the exporter collapsed the shared
+`case 9: case 72:` label onto its last value and dropped the `(v3 & 1)` branch
+that separates the two arms. The curated per-arm record in the same export
+(`CField::OnWhisper#FindResultMap`: `x (mode 0x09 only)`, *"Wire
+version-invariant"*) was correct all along.
+
+**There is no version gap, no version gate to add, and no wire change to any
+version.** `libs/atlas-packet` stays test-only, as §7 says.
+
+The derivation did retire a separate blocker: `gms_v92.json`'s eight
+`CField::OnWhisper#*` arm records were `"unresolved": true` (*"requires a
+per-arm decompile pass against the v92 IDB"*), which is why the `gms_v92`
+clientbound WHISPER matrix cell sits at `incomplete` — *"tier-1 without
+fixture; verdict ❌"*. The read order is now derived, so the plan promotes that
+cell (plan Task 9). The serverbound `chat/serverbound/ChatWhisper` × `gms_v92`
+cell (*"no audit report"*) is a separate op and stays out of scope.
 
 ### 2.7 Instanced maps (resolves OQ-4)
 
@@ -597,9 +630,12 @@ Flagless `tools/verify.sh` must exit 0, and code review runs before the PR
    the FR-7 premise error, evidenced at
    `atlas-maps/.../kafka/consumer/character/consumer.go:109-138` and `:172`.
    Confirm the reversal before `/plan-task`.
-2. **The v92/v95 buddy-window x/y divergence** (§2.6). A real, evidenced,
-   pre-existing packet gap on two client versions, outside this task's stated
-   scope. Should it become a follow-up packet task?
+2. ~~**The v92/v95 buddy-window x/y divergence** (§2.6).~~ **RESOLVED during
+   `/plan-task` — the divergence does not exist.** Re-derived against the live
+   v92/v95 IDBs; both gate x/y on the odd-mode test exactly as v83/v84/v87 do,
+   so Atlas's current encoding is correct. See §2.6 for the decompile. The
+   derivation retired the `unresolved` v92 arm records, and the plan uses them
+   to promote the `gms_v92` clientbound WHISPER matrix cell.
 3. **The `Gm()` semantics change** (§2.4). Correct and small, but it touches two
    callers outside `/find` (GM chat colouring, session flagging). Confirm that
    widening `gm == 1` to `gm > 0` is intended repo-wide.

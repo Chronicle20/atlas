@@ -15,9 +15,12 @@ import (
 	"context"
 	"os"
 
+	"github.com/google/uuid"
+
 	"gorm.io/gorm"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -59,7 +62,7 @@ func init() {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	// registry.Register makes each event type's handler resolvable by
@@ -111,7 +114,9 @@ func main() {
 	// and max attempts are configuration (FR-N16).
 	pollerCfg := scheduling.ConfigFromEnv()
 	routine.Go(l, rt.Context(), func(ctx context.Context) {
-		scheduling.NewPoller(l, ctx, db, pollerCfg).Run(ctx)
+		p := scheduling.NewPoller(l, ctx, db, pollerCfg)
+		p.SetOwnership(ownsTenant(serviceName))
+		p.Run(ctx)
 	})
 
 	server.New(l).
@@ -127,4 +132,44 @@ func main() {
 		Run()
 
 	rt.Wait()
+}
+
+// ownsTenant answers, for one scheduled-work row, whether THIS deployment
+// serves the environment that owns the row's tenant (task-232 FR-4.6).
+//
+// The scheduling poller is deliberately cross-tenant (design §4.2), so it is
+// the one place in this service where the GORM tenant filter cannot do the
+// scoping for us. Once a PR environment shares atlas-events' database with
+// the baseline deployment, "every tenant's due work" would otherwise include
+// the other deployment's work.
+//
+// It lives in main.go, not in event/scheduling, because libs/atlas-env may
+// not be imported from a domain package (task-232 NG5/FR-4.5, enforced by
+// tools/envguard) — the same reason atlas-saga-orchestrator resolves
+// environment ownership in its own main.go rather than inside saga/.
+//
+// The registry is resolved on EVERY call rather than captured once: an
+// environment provisioned after this pod started must be honoured without a
+// restart, since a baseline pod cannot be redeployed to serve an ephemeral
+// environment (FR-6.4, G7/NG6 — the same rule libs/atlas-service's
+// eachOwned follows).
+func ownsTenant(service string) scheduling.TenantOwnership {
+	return func(tenantId uuid.UUID) bool {
+		reg := env.CurrentRegistry()
+		tr, ok := reg.(env.TenantResolver)
+		if !ok {
+			// A registry that does not project tenants is the legacy,
+			// single-deployment case: everything visible is ours (FR-1.8).
+			return true
+		}
+		e, known := tr.EnvironmentOfTenant(tenantId.String())
+		if !known {
+			// Unknown tenants pass through, mirroring the unknown-tenant rule
+			// in libs/atlas-service's eachOwned and env.Reconcile. Treating
+			// them as unowned would silently strand work for any tenant the
+			// registry has not projected yet.
+			return true
+		}
+		return reg.IsOwner(e, service)
+	}
 }

@@ -167,6 +167,11 @@ func (poller *Poller) Run(ctx context.Context) {
 	}
 }
 
+// SetOwnership installs the environment-ownership predicate on the poller's
+// processor (task-232). Unset, the poller behaves exactly as it did before
+// sparse ephemeral environments existed: it owns every tenant it can see.
+func (poller *Poller) SetOwnership(o TenantOwnership) { poller.p.SetOwnership(o) }
+
 // Stop halts Run's loop. Idempotent within a single close; callers that need
 // to stop more than once should guard their own call site.
 func (poller *Poller) Stop() {

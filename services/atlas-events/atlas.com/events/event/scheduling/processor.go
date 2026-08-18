@@ -48,6 +48,25 @@ func (e errNoHandler) Error() string {
 // state machine without registering a real registry.Handler.
 type Executor func(Model) error
 
+// TenantOwnership answers "does this deployment serve the environment that
+// owns tenantId?" — the task-232 sparse-ephemeral-environments question.
+//
+// The poller is deliberately cross-tenant (design §4.2): it must see every
+// tenant's due work, so it cannot lean on the GORM tenant filter. Once more
+// than one deployment shares a database, "every tenant" stops meaning "every
+// tenant of mine" — a baseline pod would otherwise CLAIM a PR environment's
+// row, moving it to PROCESSING, and then execute it against the wrong
+// deployment's handlers.
+//
+// It is injected rather than resolved here because libs/atlas-env may not be
+// imported from a domain package (task-232 NG5/FR-4.5, tools/envguard); main.go
+// supplies the registry-backed implementation, exactly as the saga
+// orchestrator resolves ownership in its own main.go. The nil value means
+// "own everything", which is precisely the single-deployment behaviour that
+// predates task-232 — so every existing test and a legacy registry both keep
+// today's semantics without opting in.
+type TenantOwnership func(tenantId uuid.UUID) bool
+
 // Processor is the generic entry point onto scheduled-work claiming,
 // lease reclaim and execution. Unlike definition.Processor/occurrence.Processor
 // it is NOT constructed from a tenant-scoped context: the poller is the one
@@ -66,6 +85,7 @@ type ProcessorImpl struct {
 	ctx         context.Context
 	db          *gorm.DB
 	executor    Executor
+	owns        TenantOwnership
 	maxAttempts int
 	backoff     time.Duration
 }
@@ -93,6 +113,16 @@ func NewProcessorWithExecutor(l logrus.FieldLogger, ctx context.Context, db *gor
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
+
+// SetOwnership installs the environment-ownership predicate ClaimBatch and
+// Reclaim consult before touching a row (task-232). Leaving it unset keeps
+// the pre-task-232 "this deployment owns every tenant" behaviour.
+func (p *ProcessorImpl) SetOwnership(o TenantOwnership) { p.owns = o }
+
+// ownsTenant is the nil-safe form of the injected predicate.
+func (p *ProcessorImpl) ownsTenant(tenantId uuid.UUID) bool {
+	return p.owns == nil || p.owns(tenantId)
+}
 
 // SetMaxAttempts overrides the retry ceiling ExecuteOne's outcome policy
 // applies (design §5.2, FR-S9).
@@ -124,6 +154,24 @@ func (p *ProcessorImpl) ClaimBatch(instanceId string, limit int) ([]Model, error
 			Order("execute_at ASC").Limit(limit).Find(&rows).Error; err != nil {
 			return err
 		}
+		if len(rows) == 0 {
+			return nil
+		}
+
+		// Drop rows belonging to an environment this deployment does not
+		// serve BEFORE the claiming UPDATE, not after (task-232). Claiming
+		// first and skipping later would strand the row in PROCESSING under
+		// this pod's instanceId until its lease expired, delaying the pod
+		// that does own it by a full lease interval. Rows filtered out here
+		// were only ever SELECT ... FOR UPDATE'd, so they stay PENDING and
+		// their owner claims them on its own next tick.
+		owned := make([]Entity, 0, len(rows))
+		for _, r := range rows {
+			if p.ownsTenant(r.TenantID) {
+				owned = append(owned, r)
+			}
+		}
+		rows = owned
 		if len(rows) == 0 {
 			return nil
 		}
@@ -164,16 +212,52 @@ func (p *ProcessorImpl) ClaimBatch(instanceId string, limit int) ([]Model, error
 // (FR-S7). Like ClaimBatch this deliberately sees every tenant's stuck work.
 func (p *ProcessorImpl) Reclaim(lease time.Duration) (int64, error) {
 	cutoff := time.Now().Add(-lease)
+	base := p.db.WithContext(database.WithoutTenantFilter(p.ctx)).
+		Model(&Entity{}).
+		Where("state = ? AND claimed_at < ?", StateProcessing, cutoff)
+
+	// When no ownership predicate is installed this deployment owns every
+	// tenant, and the sweep stays the single bulk UPDATE it has always been.
+	if p.owns == nil {
+		res := base.Updates(reclaimAssignments())
+		return res.RowsAffected, res.Error
+	}
+
+	// Otherwise resolve the due rows first and reset only the ones this
+	// deployment serves (task-232). Reclaiming another environment's row
+	// would bump its attempts and hand it back to PENDING while the pod that
+	// actually owns it is still working on it — the lease exists to detect a
+	// DEAD claimer, not a claimer in another environment.
+	var due []Entity
+	if err := base.Session(&gorm.Session{}).Find(&due).Error; err != nil {
+		return 0, err
+	}
+	ids := make([]uuid.UUID, 0, len(due))
+	for _, e := range due {
+		if p.ownsTenant(e.TenantID) {
+			ids = append(ids, e.ID)
+		}
+	}
+	if len(ids) == 0 {
+		return 0, nil
+	}
 	res := p.db.WithContext(database.WithoutTenantFilter(p.ctx)).
 		Model(&Entity{}).
-		Where("state = ? AND claimed_at < ?", StateProcessing, cutoff).
-		Updates(map[string]any{
-			"state":      StatePending,
-			"attempts":   gorm.Expr("attempts + 1"),
-			"claimed_by": "",
-			"claimed_at": nil,
-		})
+		Where("id IN ? AND state = ?", ids, StateProcessing).
+		Updates(reclaimAssignments())
 	return res.RowsAffected, res.Error
+}
+
+// reclaimAssignments is the single definition of what "return this row to the
+// queue" means, shared by Reclaim's owns-everything and per-environment paths
+// so the two cannot drift.
+func reclaimAssignments() map[string]any {
+	return map[string]any{
+		"state":      StatePending,
+		"attempts":   gorm.Expr("attempts + 1"),
+		"claimed_by": "",
+		"claimed_at": nil,
+	}
 }
 
 // ExecuteOne dispatches the claimed row m and writes the resulting state

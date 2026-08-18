@@ -40,6 +40,13 @@ func (Entity) TableName() string { return "event_occurrence" }
 // QUERY time, so FR-B13/FR-B14 is a predicate rather than a branch in
 // atlas-channel.
 type MapEntity struct {
+	// TenantID is redundant with the parent occurrence's tenant, but it is
+	// carried here so the fleet-wide GORM tenant callback
+	// (libs/atlas-database/tenant_scope.go) scopes this table directly rather
+	// than relying on every caller remembering to join through
+	// event_occurrence. task-232's scopeguard Rule 1 requires it on every
+	// data-plane entity for exactly that reason.
+	TenantID     uuid.UUID `gorm:"column:tenant_id;type:uuid;not null"`
 	OccurrenceID uuid.UUID `gorm:"primaryKey;column:occurrence_id;type:uuid"`
 	MapID        uint32    `gorm:"primaryKey;column:map_id"`
 	Visual       bool      `gorm:"column:visual;not null;default:false"`
@@ -51,6 +58,9 @@ func (MapEntity) TableName() string { return "event_occurrence_map" }
 // counter: a counter cannot be made idempotent under Kafka redelivery, and
 // cannot tolerate KILLED arriving before CREATED (design §9.5, §14 A4).
 type MonsterEntity struct {
+	// TenantID: see MapEntity.TenantID — carried so the tenant callback
+	// scopes event_occurrence_monster directly (task-232 scopeguard Rule 1).
+	TenantID     uuid.UUID `gorm:"column:tenant_id;type:uuid;not null"`
 	OccurrenceID uuid.UUID `gorm:"primaryKey;column:occurrence_id;type:uuid"`
 	UniqueID     uint32    `gorm:"primaryKey;column:unique_id"`
 	MonsterID    uint32    `gorm:"column:monster_id;not null"`

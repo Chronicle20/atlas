@@ -96,7 +96,7 @@ func (p *ProcessorImpl) CreateFromSeed(d definition.Model, s registry.Seed, trig
 
 	maps := make([]MapEntity, 0, len(s.Maps))
 	for _, ms := range s.Maps {
-		maps = append(maps, MapEntity{OccurrenceID: entity.ID, MapID: uint32(ms.MapId), Visual: ms.Visual})
+		maps = append(maps, MapEntity{TenantID: p.t.Id(), OccurrenceID: entity.ID, MapID: uint32(ms.MapId), Visual: ms.Visual})
 	}
 
 	tm, err := transition.NewBuilder(entity.ID, transitionStage(s.Stage, StateActive)).
@@ -217,6 +217,7 @@ func (p *ProcessorImpl) ListPaged(page model.Page, f ListFilters) (model.Paged[M
 // §9.5).
 func (p *ProcessorImpl) ObserveMonsterSpawned(occurrenceId uuid.UUID, uniqueId uint32, monsterId uint32) error {
 	return observeMonsterSpawned(p.db.WithContext(p.ctx))(MonsterEntity{
+		TenantID:     p.t.Id(),
 		OccurrenceID: occurrenceId, UniqueID: uniqueId, MonsterID: monsterId,
 		Alive: true, ObservedAt: time.Now(),
 	})
@@ -226,6 +227,7 @@ func (p *ProcessorImpl) ObserveMonsterSpawned(occurrenceId uuid.UUID, uniqueId u
 // and correct whether or not CREATED was seen first.
 func (p *ProcessorImpl) ObserveMonsterGone(occurrenceId uuid.UUID, uniqueId uint32, monsterId uint32) error {
 	return observeMonsterGone(p.db.WithContext(p.ctx))(MonsterEntity{
+		TenantID:     p.t.Id(),
 		OccurrenceID: occurrenceId, UniqueID: uniqueId, MonsterID: monsterId,
 		Alive: false, ObservedAt: time.Now(),
 	})

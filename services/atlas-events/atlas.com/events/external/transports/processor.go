@@ -25,7 +25,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetRoute(routeId uuid.UUID) (RestModel, error) {
-	return requests.Provider[RestModel, RestModel](p.l, p.ctx)(requestRoute(routeId), Extract)()
+	return requests.Provider[RestModel, RestModel](p.l, p.ctx)(requestRoute(p.ctx, routeId), Extract)()
 }
 
 func Extract(m RestModel) (RestModel, error) {

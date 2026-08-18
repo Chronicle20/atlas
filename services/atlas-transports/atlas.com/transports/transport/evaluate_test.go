@@ -260,6 +260,50 @@ func TestEvaluateDepartureInstantForSameDayTrip(t *testing.T) {
 	}
 }
 
+// TestEvaluateArrivalTickReportsSameIdentityAsDepartureTick pins the
+// invariant VOYAGE_ARRIVED depends on: VoyageId is a pure function of
+// (route id, TripId, DepartedAt), so a trip's departure tick and its arrival
+// tick must report the same pair. One tick past arrival, the naive "trip
+// Evaluate would board next" selector picks the *next* trip instead of the
+// one that just landed - this is the regression the bug report reproduced.
+func TestEvaluateArrivalTickReportsSameIdentityAsDepartureTick(t *testing.T) {
+	t.Run("same-day trip", func(t *testing.T) {
+		routeId := uuid.New()
+		tripA := NewTripScheduleModel(uuid.New(), routeId, tod(11, 50), tod(12, 50), tod(13, 0), tod(13, 30))
+		tripB := NewTripScheduleModel(uuid.New(), routeId, tod(13, 50), tod(14, 50), tod(15, 0), tod(15, 30))
+		m := routeWithSchedule(t, routeId, []TripScheduleModel{tripA, tripB})
+
+		inTransit := m.Evaluate(time.Date(2026, 8, 15, 13, 10, 0, 0, time.UTC))
+		require.Equal(t, InTransit, inTransit.State)
+
+		pastArrival := m.Evaluate(time.Date(2026, 8, 15, 13, 31, 0, 0, time.UTC))
+		require.Equal(t, AwaitingReturn, pastArrival.State)
+
+		assert.Equal(t, inTransit.TripId, pastArrival.TripId, "TripId must match between the in-transit and arrival ticks")
+		assert.True(t, inTransit.DepartedAt.Equal(pastArrival.DepartedAt),
+			"DepartedAt must match between the in-transit and arrival ticks: %s vs %s", inTransit.DepartedAt, pastArrival.DepartedAt)
+	})
+
+	t.Run("midnight-crossing trip", func(t *testing.T) {
+		routeId := uuid.New()
+		// Trip A departs 23:30, arrives 00:30 (next calendar day). Trip B
+		// departs later the same day (09:00), well clear of the crossing.
+		tripA := NewTripScheduleModel(uuid.New(), routeId, tod(22, 30), tod(23, 20), tod(23, 30), tod(0, 30))
+		tripB := NewTripScheduleModel(uuid.New(), routeId, tod(8, 0), tod(8, 50), tod(9, 0), tod(9, 30))
+		m := routeWithSchedule(t, routeId, []TripScheduleModel{tripA, tripB})
+
+		inTransit := m.Evaluate(time.Date(2026, 8, 15, 23, 40, 0, 0, time.UTC))
+		require.Equal(t, InTransit, inTransit.State)
+
+		pastArrival := m.Evaluate(time.Date(2026, 8, 16, 0, 31, 0, 0, time.UTC))
+		require.Equal(t, AwaitingReturn, pastArrival.State)
+
+		assert.Equal(t, inTransit.TripId, pastArrival.TripId, "TripId must match between the in-transit and arrival ticks")
+		assert.True(t, inTransit.DepartedAt.Equal(pastArrival.DepartedAt),
+			"DepartedAt must match between the in-transit and arrival ticks: %s vs %s", inTransit.DepartedAt, pastArrival.DepartedAt)
+	})
+}
+
 // TestEvaluate_NextAtIsAlwaysInTheFuture guards the materialization rule.
 func TestEvaluate_NextAtIsAlwaysInTheFuture(t *testing.T) {
 	routeId := uuid.New()

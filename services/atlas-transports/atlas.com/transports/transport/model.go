@@ -111,12 +111,12 @@ type Transition struct {
 	State     RouteState
 	NextState RouteState
 	NextAt    time.Time
-	// TripId names the trip Evaluate selected, and DepartedAt is that trip's
-	// departure time-of-day materialized onto the calendar day it actually
-	// departed — the previous day when a midnight-crossing trip is observed
-	// after midnight. Together with the route id and the tenant they are the
-	// inputs to VoyageId (design §7.1). Both are zero when State is
-	// OutOfService, where there is no selected trip.
+	// TripId names the trip this transition is about, and DepartedAt is that
+	// trip's departure time-of-day materialized onto the calendar day it
+	// actually departed — the previous day when a midnight-crossing trip is
+	// observed after midnight. Together with the route id and the tenant
+	// they are the inputs to VoyageId (design §7.1). Both are zero when
+	// State is OutOfService, where there is no selected trip.
 	TripId     uuid.UUID
 	DepartedAt time.Time
 }
@@ -165,6 +165,12 @@ func (m Model) Evaluate(now time.Time) Transition {
 	var nextTrip *TripScheduleModel
 	var inTransitTrip *TripScheduleModel
 	var futureTrip *TripScheduleModel
+	// justArrivedTrip is, among this route's trips, the one whose arrival
+	// time-of-day is the latest at or before nowTimeOfDay - the trip that has
+	// just landed. It is what AwaitingReturn actually reports identity for
+	// (see the AwaitingReturn branches below); nextTrip alone answers "what's
+	// coming up next", which one tick past an arrival is a different trip.
+	var justArrivedTrip *TripScheduleModel
 
 	nowTimeOfDay := timeOfDay(now)
 
@@ -184,10 +190,24 @@ func (m Model) Evaluate(now time.Time) Transition {
 					inTransitTrip = &trip
 				}
 			}
+			// The trip's arrival sits on the low side of the zero-date axis
+			// (e.g. 00:30) while its departure sits on the high side (e.g.
+			// 23:30); "already arrived" is the region between them, the
+			// complement of the in-transit wraparound above.
+			if !nowTimeOfDay.Before(tripArrivalTimeOfDay) && nowTimeOfDay.Before(tripDepartureTimeOfDay) {
+				if justArrivedTrip == nil || tripArrivalTimeOfDay.After(timeOfDay(justArrivedTrip.Arrival())) {
+					justArrivedTrip = &trip
+				}
+			}
 		} else {
 			if nowTimeOfDay.After(tripDepartureTimeOfDay) && nowTimeOfDay.Before(tripArrivalTimeOfDay) {
 				if inTransitTrip == nil || tripDepartureTimeOfDay.After(timeOfDay(inTransitTrip.Departure())) {
 					inTransitTrip = &trip
+				}
+			}
+			if !nowTimeOfDay.Before(tripArrivalTimeOfDay) {
+				if justArrivedTrip == nil || tripArrivalTimeOfDay.After(timeOfDay(justArrivedTrip.Arrival())) {
+					justArrivedTrip = &trip
 				}
 			}
 		}
@@ -220,6 +240,21 @@ func (m Model) Evaluate(now time.Time) Transition {
 		}
 	}
 
+	// toAwaitingReturn is `to(AwaitingReturn, OpenEntry, boardingOpen)`, but
+	// naming the trip that just arrived (justArrivedTrip) rather than
+	// nextTrip - one tick past an arrival, nextTrip has already moved on to
+	// whatever departs next, which is a different trip and a different
+	// VoyageId. Falls back to nextTrip's identity, unchanged, when no
+	// just-arrived trip was found.
+	toAwaitingReturn := func(boundary time.Time) Transition {
+		tr := to(AwaitingReturn, OpenEntry, boundary)
+		if justArrivedTrip != nil {
+			tr.TripId = justArrivedTrip.TripId()
+			tr.DepartedAt = materializeDeparture(now, timeOfDay(justArrivedTrip.Departure()))
+		}
+		return tr
+	}
+
 	boardingOpen := timeOfDay(nextTrip.BoardingOpen())
 	boardingClosed := timeOfDay(nextTrip.BoardingClosed())
 	departure := timeOfDay(nextTrip.Departure())
@@ -235,7 +270,7 @@ func (m Model) Evaluate(now time.Time) Transition {
 		if nowTimeOfDay.Before(arrival) {
 			return to(InTransit, AwaitingReturn, arrival)
 		} else if nowTimeOfDay.Before(boardingOpen) {
-			return to(AwaitingReturn, OpenEntry, boardingOpen)
+			return toAwaitingReturn(boardingOpen)
 		} else if nowTimeOfDay.Before(boardingClosed) {
 			return to(OpenEntry, LockedEntry, boardingClosed)
 		} else if nowTimeOfDay.Before(departure) {
@@ -245,7 +280,7 @@ func (m Model) Evaluate(now time.Time) Transition {
 	}
 
 	if nowTimeOfDay.Before(boardingOpen) {
-		return to(AwaitingReturn, OpenEntry, boardingOpen)
+		return toAwaitingReturn(boardingOpen)
 	} else if nowTimeOfDay.Before(boardingClosed) {
 		return to(OpenEntry, LockedEntry, boardingClosed)
 	} else if nowTimeOfDay.Before(departure) {

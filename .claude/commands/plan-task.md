@@ -120,10 +120,25 @@ which nothing previously enforced:
 | **F2** | the plan does not specify a stub to land | CLAUDE.md: no `// TODO`, stubbed handlers or 501s |
 | **F3** | read-only commands the plan tells the implementer to run actually match something | |
 | **F4** | task size (>6 files, or >1 service) — *warning* | Step 5a's splitting rule |
+| **F5** | every symbol a ```` ```go ```` block calls resolves — *warning* | the code in the plan is written without a compiler |
 
-F1–F3 are errors; fix them. F4 is advisory — a deliberately large task is
-allowed provided `context.md` says why, but oversized tasks are what produce
-`PARTIAL` hand-backs and a mid-plan split at a worse moment.
+F1–F3 are errors; fix them. F4 and F5 are advisory.
+
+F4: a deliberately large task is allowed provided `context.md` says why, but
+oversized tasks are what produce `PARTIAL` hand-backs and a mid-plan split at a
+worse moment.
+
+F5: a symbol resolves if the repo defines it, the repo calls it anywhere, or the
+plan declares it. What survives is either the repo's first use of an external
+API — fine, confirm the signature — or a method you invented from memory, which
+an implementer will hit at dispatch time. **Grep each one before committing.**
+It is advisory rather than an error only because the first case is legitimate;
+it is not optional. On task-238 this check was run by hand — roughly thirty tool
+calls at 250k context, the most expensive stretch of the plan session, spent
+grepping for `newCtxTenant`, `SetCashScene` and `NewModelBuilder` to find out
+whether the API just written into the plan exists.
+
+F5 indexes every `.go` file in the tree, so it adds ~5s. `--no-symbols` skips it.
 
 This exists because these defects are cheap here and expensive later. On
 task-231 the controller had to append 18 `## CONTROLLER RULING` blocks patching

@@ -25,9 +25,10 @@
 # explicitly marked `new file`)" and "a task touching more than ~6 files ...
 # gets split". Both rules were stated and neither was checked. This checks them.
 #
-# Usage: tools/plan-lint.sh PLAN [--no-commands] [--quiet]
+# Usage: tools/plan-lint.sh PLAN [--no-commands] [--no-symbols] [--quiet]
 #
 #   --no-commands   skip F3 (do not execute the plan's read-only commands)
+#   --no-symbols    skip F5 (do not index the repo's Go symbols)
 #   --quiet         findings only, no per-check progress
 #
 # Exit codes:
@@ -37,12 +38,13 @@
 
 set -u
 
-plan=""; run_commands=1; quiet=0
+plan=""; run_commands=1; run_symbols=1; quiet=0
 for a in "$@"; do
     case "$a" in
         --no-commands) run_commands=0 ;;
+        --no-symbols)  run_symbols=0 ;;
         --quiet)       quiet=1 ;;
-        -h|--help)     sed -n '35,42p' "$0"; exit 0 ;;
+        -h|--help)     sed -n '28,33p' "$0"; exit 0 ;;
         -*) printf 'plan-lint.sh: unknown flag %s\n' "$a" >&2; exit 2 ;;
         *)  plan="$a" ;;
     esac
@@ -59,6 +61,9 @@ finding() { findings=$((findings + 1)); printf '  %s\n' "$*"; }
 # F4 is advisory: Step 5a permits a deliberately large task provided context.md
 # says why. Reporting it as an error would drown the hard failures in noise.
 warn()    { warnings=$((warnings + 1)); printf '  %s\n' "$*"; }
+# F4 and F5 advise different fixes, so each footer prints only if its own check
+# fired. The counters are set by the checks; `warn` stays generic.
+f4warns=0; f5warns=0
 
 # A repo-relative path starts with a real top-level directory. Anything else on
 # a Files bullet is a Go symbol (`monster.Model.SpawnSourceType`), a REST route
@@ -97,10 +102,10 @@ emit_size() {
     nsvc="$(printf '%s\n' "$services" | grep -c . || true)"
     case "${nsvc:-0}" in ''|*[!0-9]*) nsvc=0 ;; esac
     if [ "$count" -gt 6 ]; then
-        warn "F4 oversized: \"$current\" lists $count files (Step 5a splits at ~6)"
+        f4warns=$((f4warns + 1)); warn "F4 oversized: \"$current\" lists $count files (Step 5a splits at ~6)"
     fi
     if [ "$nsvc" -gt 1 ]; then
-        warn "F4 multi-service: \"$current\" spans $nsvc services — Step 5a splits these"
+        f4warns=$((f4warns + 1)); warn "F4 multi-service: \"$current\" spans $nsvc services — Step 5a splits these"
     fi
 }
 
@@ -191,6 +196,80 @@ if [ "$run_commands" -eq 1 ]; then
     rm -f /tmp/plan-lint-cmds.$$
 fi
 
+# --------------------------------------------------------------------- F5 ---
+# Symbols the plan's Go blocks call that resolve nowhere.
+#
+# F1 checks the paths a plan names. Nothing checked the *symbols* it names, and
+# those are written from memory at 250k context by a planner with no compiler.
+# On the task-238 plan chain roughly thirty tool calls in the session's most
+# expensive stretch were the planner hand-verifying its own snippets — grepping
+# for `newCtxTenant`, `SetCashScene`, `NewModelBuilder` to find out whether the
+# API it had just written into the plan exists. That is this check, run by hand.
+#
+# What counts as "resolves": the name is defined anywhere in the repo's Go
+# source, OR called anywhere in it, OR appears anywhere in the plan's own Go
+# blocks outside a call site. The second clause is what keeps this quiet without
+# a hand-curated allowlist — if the repo already calls `require.NoError` or
+# `db.Where`, those names are part of this codebase's vocabulary and a plan may
+# use them freely. The third clause lets a plan introduce its own vocabulary:
+# a helper it defines in Task 2 and calls in Task 6 resolves against itself.
+#
+# Scope is deliberately narrow — selector calls (`.Name(`) only. The obvious
+# companion rule, "unqualified lowercase calls must be package-local helpers",
+# was measured against all 263 plans in docs/tasks/ and fired 216 times, almost
+# all of them benign: helpers the plan legitimately introduces in prose, plus
+# SQL, Lua and IDA pseudocode sitting inside ```go fences. A check that noisy
+# gets ignored, which costs more than it saves. The selector rule fires 107
+# times across 38 of those 263 plans — a rate a planner can actually act on.
+#
+# Advisory, like F4. A plan may legitimately be the first thing in the repo to
+# touch an external API (task-071's `multipart.CreateFormFile` is a true
+# example), and that is a "confirm the signature" prompt, not a build break.
+if [ "$run_symbols" -eq 1 ]; then
+    say "F5     symbols named in the plan's Go blocks"
+
+    awk '
+        /^[[:space:]]*```go[[:space:]]*$/ { ing=1; next }
+        /^[[:space:]]*```/                { ing=0; next }
+        ing                               { print }
+    ' "$plan" > /tmp/plan-lint-go.$$ 2>/dev/null || true
+
+    if [ -s /tmp/plan-lint-go.$$ ]; then
+        # The repo's whole Go vocabulary: everything it defines, everything it
+        # calls. One pass; ~28k names on this tree.
+        { grep -rhoE '^func (\([^)]*\) )?[A-Za-z_][A-Za-z0-9_]*' --include='*.go' \
+              --exclude-dir=.worktrees --exclude-dir=node_modules "$root" 2>/dev/null \
+            | sed -E 's/^func (\([^)]*\) )?//'
+          grep -rhoE '\.[A-Za-z_][A-Za-z0-9_]*\(' --include='*.go' \
+              --exclude-dir=.worktrees --exclude-dir=node_modules "$root" 2>/dev/null \
+            | tr -d '.('
+        } | sort -u > /tmp/plan-lint-idx.$$ 2>/dev/null || true
+
+        # The plan's own vocabulary. Blanking call sites first is what makes
+        # this "declared, not merely called" — then add back the definitions,
+        # whose names are followed by `(` and would have been blanked with them.
+        { sed -E 's/[A-Za-z_][A-Za-z0-9_]*\(/ /g' /tmp/plan-lint-go.$$ \
+            | grep -oE '[A-Za-z_][A-Za-z0-9_]*'
+          grep -hoE '^[[:space:]]*func (\([^)]*\) )?[A-Za-z_][A-Za-z0-9_]*' /tmp/plan-lint-go.$$ \
+            | sed -E 's/^[[:space:]]*func (\([^)]*\) )?//'
+        } | sort -u > /tmp/plan-lint-vocab.$$ 2>/dev/null || true
+
+        sort -u /tmp/plan-lint-idx.$$ /tmp/plan-lint-vocab.$$ > /tmp/plan-lint-known.$$
+        grep -hoE '\.[A-Za-z_][A-Za-z0-9_]*\(' /tmp/plan-lint-go.$$ \
+          | tr -d '.(' | sort -u > /tmp/plan-lint-sel.$$ 2>/dev/null || true
+
+        comm -23 /tmp/plan-lint-sel.$$ /tmp/plan-lint-known.$$ > /tmp/plan-lint-unk.$$ 2>/dev/null || true
+        # Redirect, not a pipe — same subshell trap as F2's loop.
+        while IFS= read -r sym; do
+            [ -n "$sym" ] || continue
+            f5warns=$((f5warns + 1)); warn "F5 unknown symbol: ${sym} — nothing in the repo defines or calls it, and the plan does not declare it"
+        done < /tmp/plan-lint-unk.$$
+        rm -f /tmp/plan-lint-idx.$$ /tmp/plan-lint-vocab.$$ /tmp/plan-lint-known.$$ \
+              /tmp/plan-lint-sel.$$ /tmp/plan-lint-unk.$$
+    fi
+    rm -f /tmp/plan-lint-go.$$
+fi
+
 # ------------------------------------------------------------------ verdict --
 printf '\n'
 if [ "$findings" -eq 0 ] && [ "$warnings" -eq 0 ]; then
@@ -198,10 +277,15 @@ if [ "$findings" -eq 0 ] && [ "$warnings" -eq 0 ]; then
     exit 0
 fi
 printf 'plan-lint: %d error(s), %d warning(s) in %s\n' "$findings" "$warnings" "$plan"
-if [ "$warnings" -gt 0 ]; then
+if [ "$f4warns" -gt 0 ]; then
     printf '  F4 warnings are advisory — Step 5a allows a deliberately large task\n'
     printf '  provided context.md records why. Oversized tasks are what produce\n'
     printf '  PARTIAL hand-backs, so split them unless you have a reason.\n'
+fi
+if [ "$f5warns" -gt 0 ]; then
+    printf '  F5 warnings are advisory too, but grep each one before you commit:\n'
+    printf '  either the symbol exists and this is the first use in the repo, or\n'
+    printf '  you invented it and an implementer will hit it at dispatch time.\n'
 fi
 if [ "$findings" -gt 0 ]; then
     printf '  Fix the errors before /execute-task. Each one otherwise costs a\n'

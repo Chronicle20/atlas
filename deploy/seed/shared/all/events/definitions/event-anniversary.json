@@ -1,5 +1,7 @@
 {
   "data": {
+    "id": "anniversary",
+    "type": "event-definition",
     "attributes": {
       "type": "ANNIVERSARY",
       "name": "Anniversary",

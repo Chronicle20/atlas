@@ -488,6 +488,8 @@ endpoints=(
     /api/portals/scripts/seed
     /api/reactors/actions/seed
     /api/maps/actions/seed
+    /api/events/definitions/seed
+    /api/party-quests/definitions/seed
 )
 for ep in "${endpoints[@]}"; do
     ( post "$ATLAS_UI_BASE$ep" >/dev/null && log info "seeded $ep" ) &

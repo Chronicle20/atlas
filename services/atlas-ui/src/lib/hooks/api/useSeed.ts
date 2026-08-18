@@ -18,6 +18,7 @@ import {
   type MapActionScriptsSeedStatus,
   type NpcConversationsSeedStatus,
   type NpcShopsSeedStatus,
+  type PartyQuestDefinitionsSeedStatus,
   type PortalScriptsSeedStatus,
   type QuestConversationsSeedStatus,
   type ReactorScriptsSeedStatus,
@@ -73,6 +74,8 @@ const instanceRoutesSeedStatusKey = (tenantId: string) =>
   ["instanceRoutesSeedStatus", tenantId] as const;
 const eventDefinitionsSeedStatusKey = (tenantId: string) =>
   ["eventDefinitionsSeedStatus", tenantId] as const;
+const partyQuestDefinitionsSeedStatusKey = (tenantId: string) =>
+  ["partyQuestDefinitionsSeedStatus", tenantId] as const;
 
 export function useSeedDrops(): UseMutationResult<void, Error, void> {
   const { activeTenant } = useTenant();
@@ -283,6 +286,24 @@ export function useSeedEventDefinitions(): UseMutationResult<
       if (!activeTenant) return;
       void queryClient.invalidateQueries({
         queryKey: eventDefinitionsSeedStatusKey(activeTenant.id),
+      });
+    },
+  });
+}
+
+export function useSeedPartyQuestDefinitions(): UseMutationResult<
+  void,
+  Error,
+  void
+> {
+  const { activeTenant } = useTenant();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => seedService.seedPartyQuestDefinitions(),
+    onSuccess: () => {
+      if (!activeTenant) return;
+      void queryClient.invalidateQueries({
+        queryKey: partyQuestDefinitionsSeedStatusKey(activeTenant.id),
       });
     },
   });
@@ -568,6 +589,23 @@ export function useEventDefinitionsSeedStatus(): UseQueryResult<
       ? eventDefinitionsSeedStatusKey(activeTenant.id)
       : ["eventDefinitionsSeedStatus", "none"],
     queryFn: () => seedService.getEventDefinitionsSeedStatus(activeTenant!),
+    enabled: !!activeTenant,
+    staleTime: 0,
+    refetchInterval: 5000,
+  });
+}
+
+export function usePartyQuestDefinitionsSeedStatus(): UseQueryResult<
+  PartyQuestDefinitionsSeedStatus,
+  Error
+> {
+  const { activeTenant } = useTenant();
+  return useQuery({
+    queryKey: activeTenant
+      ? partyQuestDefinitionsSeedStatusKey(activeTenant.id)
+      : ["partyQuestDefinitionsSeedStatus", "none"],
+    queryFn: () =>
+      seedService.getPartyQuestDefinitionsSeedStatus(activeTenant!),
     enabled: !!activeTenant,
     staleTime: 0,
     refetchInterval: 5000,

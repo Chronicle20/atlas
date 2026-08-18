@@ -96,6 +96,11 @@ export interface EventDefinitionsSeedStatus {
   updatedAt: string | null;
 }
 
+export interface PartyQuestDefinitionsSeedStatus {
+  definitionCount: number;
+  updatedAt: string | null;
+}
+
 export type IngestPhase =
   "none" | "running" | "succeeded" | "failed" | "stuck" | "unknown";
 
@@ -279,6 +284,10 @@ class SeedService {
 
   async seedEventDefinitions(): Promise<void> {
     await api.post("/api/events/definitions/seed", {});
+  }
+
+  async seedPartyQuestDefinitions(): Promise<void> {
+    await api.post("/api/party-quests/definitions/seed", {});
   }
 
   async uploadWzFiles(tenant: Tenant, file: File): Promise<void> {
@@ -505,6 +514,19 @@ class SeedService {
     );
     return {
       definitionCount: subdomainCount(s, "definition.event"),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
+  }
+
+  async getPartyQuestDefinitionsSeedStatus(
+    tenant: Tenant,
+  ): Promise<PartyQuestDefinitionsSeedStatus> {
+    const s = await fetchSeedStatus(
+      "/api/party-quests/definitions/seed/status",
+      tenant,
+    );
+    return {
+      definitionCount: subdomainCount(s, "definition.partyquest"),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }

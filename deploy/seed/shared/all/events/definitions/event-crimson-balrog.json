@@ -1,5 +1,7 @@
 {
   "data": {
+    "id": "crimson-balrog",
+    "type": "event-definition",
     "attributes": {
       "type": "CRIMSON_BALROG",
       "name": "Crimson Balrog",

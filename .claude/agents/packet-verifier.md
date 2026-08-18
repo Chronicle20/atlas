@@ -42,7 +42,7 @@ worktree given in your prompt — `cd` there first and verify the branch.
 
 **Procedure: follow `docs/packets/audits/VERIFYING_A_PACKET.md` §0–10 verbatim.**
 Read it FIRST, in full, and execute it — do not paraphrase or work from a
-remembered version. That playbook owns every rule this agent used to restate:
+remembered version. That playbook owns every rule below:
 Verification-Over-Memory (no fabricated bytes/opcodes/read orders — every byte
 cites a decompile line or export entry), IDA-instance resolution by loaded IDB
 (`idb_list`, match the EXACT binary filename, pass it as the `database`

@@ -197,34 +197,22 @@ if [ "$run_commands" -eq 1 ]; then
 fi
 
 # --------------------------------------------------------------------- F5 ---
-# Symbols the plan's Go blocks call that resolve nowhere.
+# Symbols the plan's Go blocks call that resolve nowhere. F1 checks the paths a
+# plan names; this checks the symbols, which are written without a compiler.
 #
-# F1 checks the paths a plan names. Nothing checked the *symbols* it names, and
-# those are written from memory at 250k context by a planner with no compiler.
-# On the task-238 plan chain roughly thirty tool calls in the session's most
-# expensive stretch were the planner hand-verifying its own snippets — grepping
-# for `newCtxTenant`, `SetCashScene`, `NewModelBuilder` to find out whether the
-# API it had just written into the plan exists. That is this check, run by hand.
+# "Resolves" = defined anywhere in the repo's Go source, OR called anywhere in
+# it, OR present in the plan's own Go blocks outside a call site. The second
+# clause removes the need for a curated stdlib allowlist; the third lets a plan
+# introduce its own vocabulary.
 #
-# What counts as "resolves": the name is defined anywhere in the repo's Go
-# source, OR called anywhere in it, OR appears anywhere in the plan's own Go
-# blocks outside a call site. The second clause is what keeps this quiet without
-# a hand-curated allowlist — if the repo already calls `require.NoError` or
-# `db.Where`, those names are part of this codebase's vocabulary and a plan may
-# use them freely. The third clause lets a plan introduce its own vocabulary:
-# a helper it defines in Task 2 and calls in Task 6 resolves against itself.
+# Selector calls (`.Name(`) only, deliberately. The companion rule for
+# unqualified lowercase calls fires 216 times across the 263 plans in
+# docs/tasks/, nearly all benign — helpers a plan introduces, plus SQL, Lua and
+# IDA pseudocode inside ```go fences. Selectors fire 107 times across 38 of
+# them. Do not widen this without re-measuring; a noisy linter gets ignored.
 #
-# Scope is deliberately narrow — selector calls (`.Name(`) only. The obvious
-# companion rule, "unqualified lowercase calls must be package-local helpers",
-# was measured against all 263 plans in docs/tasks/ and fired 216 times, almost
-# all of them benign: helpers the plan legitimately introduces in prose, plus
-# SQL, Lua and IDA pseudocode sitting inside ```go fences. A check that noisy
-# gets ignored, which costs more than it saves. The selector rule fires 107
-# times across 38 of those 263 plans — a rate a planner can actually act on.
-#
-# Advisory, like F4. A plan may legitimately be the first thing in the repo to
-# touch an external API (task-071's `multipart.CreateFormFile` is a true
-# example), and that is a "confirm the signature" prompt, not a build break.
+# Advisory, like F4: a plan may legitimately be the repo's first use of an
+# external API, which is a "confirm the signature" prompt, not a build break.
 if [ "$run_symbols" -eq 1 ]; then
     say "F5     symbols named in the plan's Go blocks"
 

@@ -115,12 +115,10 @@ its role, plus the patterns to copy. The planner already knew them.
   search for it.** `go list -m -f '{{.Dir}}' <module>` prints the directory in
   ~0.02s and is correct whether the module resolves to the module cache or to a
   local `replace`. `go doc <pkg> [symbol]` reads it without a path at all.
-  `find /` costs ~2 minutes per call on WSL2: one task-227 implementer and its
-  reviewer spent **6 minutes across five whole-filesystem sweeps** looking for
-  `atlas-rest`, which `go.mod` had `replace`d to `libs/atlas-rest` inside the
-  worktree they were already in. If you catch yourself guessing at module-cache
-  case-escaping (`!chronicle20`), that is the signal — run `go list` instead.
-  Never root a `find` at `/`.
+  `find /` costs ~2 minutes per call on WSL2, and the module is often
+  `replace`d to a `libs/` path inside the worktree you are already in. If you
+  catch yourself guessing at module-cache case-escaping (`!chronicle20`), that
+  is the signal — run `go list` instead. Never root a `find` at `/`.
 - **Slice a large reference document before reading it whole.** When the brief
   points at a wiring recipe, a scope audit, a result matrix, or an offloaded
   tool result, take the named section or rows:

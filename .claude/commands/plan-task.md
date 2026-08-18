@@ -85,14 +85,9 @@ file`). Mark read-only references as such so the implementer does not edit
 them. Include the module root the task's `go build`/`go test` runs from when
 it is not obvious from the paths.
 
-**Test blocks carry the spec, not the scaffolding.** You have no compiler. Every
-line of test setup you write is a line you guessed at and then have to verify by
-grep, at the most expensive context in the workflow — and the implementer, who
-does have a compiler and an adjacent `_test.go` to copy, would have written it
-correctly for free.
-
-So in a ```` ```go ```` test block, spell out **in full** everything that only
-you know:
+**Test blocks carry the spec, not the scaffolding.** You have no compiler; the
+implementer has one and an adjacent `_test.go` to copy from. In a ```` ```go ````
+test block, spell out **in full** everything that only you know:
 
 - the test function names, and the subtest name per case
 - the case table — every case, with its exact inputs
@@ -118,13 +113,10 @@ and name rather than spell out everything the repo already decides:
 | in cash shop | `CashSceneCashShop` | 0 | `0x09` | `-1` |
 ```
 
-This is a deliberate divergence from `superpowers:writing-plans`, which lists
-*"Write tests for the above" (without actual test code)* as a plan failure. The
-divergence is narrow and it is only about scaffolding: **a case table or an
-expected value that is vague is exactly the task-231 failure the linter exists to
-prevent, and costs far more than it saves.** If you cannot write the expected
-value down, you have not finished designing the task — do not paper over it with
-a pointer.
+This overrides `superpowers:writing-plans`' "no test code without actual test
+code" rule, for scaffolding only. **A vague case table or expected value is a
+plan failure.** If you cannot write the expected value down, you have not
+finished designing the task — do not paper over it with a pointer.
 
 **Size tasks to the implementer budget.** Implementers stop at 120 tool calls
 and hand back `PARTIAL`; the controller then splits the task anyway, at a
@@ -171,21 +163,14 @@ worse moment.
 
 F5: a symbol resolves if the repo defines it, the repo calls it anywhere, or the
 plan declares it. What survives is either the repo's first use of an external
-API — fine, confirm the signature — or a method you invented from memory, which
-an implementer will hit at dispatch time. **Grep each one before committing.**
-It is advisory rather than an error only because the first case is legitimate;
-it is not optional. On task-238 this check was run by hand — roughly thirty tool
-calls at 250k context, the most expensive stretch of the plan session, spent
-grepping for `newCtxTenant`, `SetCashScene` and `NewModelBuilder` to find out
-whether the API just written into the plan exists.
+API — confirm the signature — or a method you invented from memory, which an
+implementer hits at dispatch time. **Grep each one before committing**; advisory
+only because the first case is legitimate, not because it is optional.
 
 F5 indexes every `.go` file in the tree, so it adds ~5s. `--no-symbols` skips it.
 
-This exists because these defects are cheap here and expensive later. On
-task-231 the controller had to append 18 `## CONTROLLER RULING` blocks patching
-exactly this class of problem — a `### Files` path that did not exist, a Step-2
-command matching nothing, four planned stubs — each discovered at dispatch time
-at 150–250k context, most after an investigation it had to run first.
+Every one of these defects is cheap to fix here and expensive at dispatch time,
+where it surfaces as a `CONTROLLER RULING` at 150–250k context.
 
 ### Step 6 — Commit and summarize
 

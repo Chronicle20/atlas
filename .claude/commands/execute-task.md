@@ -170,10 +170,7 @@ See [`docs/agent-dispatch.md`](../../docs/agent-dispatch.md) §Verification
 split for why this split exists.
 
 A gate checks a commit, and commits are immutable — task N's verdict is equally
-valid whenever it lands. Blocking on it is pure wall clock: measured on
-task-227, one controller session spent **48 of 109 minutes idle** waiting for
-backgrounded gates it had already launched, while 3 tasks took 109 minutes that
-contained only 47 minutes of actual subagent work.
+valid whenever it lands. Blocking on it is pure wall clock.
 
 After an implementer reports `DONE` / `DONE_WITH_CONCERNS`:
 
@@ -197,28 +194,22 @@ After an implementer reports `DONE` / `DONE_WITH_CONCERNS`:
    It prints the change base, changed services and libs, the fan-out reason,
    the module count, the guard suites, and every gate that would run, then
    exits without building. It is the same code path as a real run with the work
-   removed, so it cannot disagree with one. Measured: ~30 turns at 170–290k
-   context went into reverse-engineering that selection from `verify.sh`'s
-   source — ≈6.9M tokens, ~24% of one controller session — for facts the
-   script had already computed.
+   removed, so it cannot disagree with one. Never reverse-engineer the
+   selection from `verify.sh`'s source; ask it.
 2. **Keep going immediately** — do not poll, do not wait. Run the task review,
    then Step 4b's inventory for task N+1, then dispatch task N+1's implementer.
    The gate runs underneath all of it.
 
    **The per-task review agent is `atlas-reviewer` (`model: sonnet`), never a
-   bare `general-purpose` dispatch.** That was 84 of 93 review dispatches in
-   one measured task, and it is why review had no contract to live in: those
-   84 returned a median of 4,904 B of prose and **not one of them wrote a
-   durable artifact**. `atlas-reviewer` carries both halves — the artifact and
-   the verdict-first return of
+   bare `general-purpose` dispatch.** `atlas-reviewer` carries both halves the
+   contract needs — the durable artifact and the verdict-first return of
    [`docs/review-protocol.md`](../../docs/review-protocol.md).
 
    Read the review artifact only when the verdict is not `APPROVED`. On
    `CHANGES_REQUIRED` the enumerated `blocking` lines are the fix brief; open
    the artifact when a line is not actionable as written.
 
-   **Right-sizing the task review agent** (review+audit cost 2,616 turns /
-   227M tokens / 17.6% of task-232): a task whose diff was codemod-produced
+   **Right-sizing the task review agent.** A task whose diff was codemod-produced
    and `--check`-confirmed (`docs/codemod-vs-agents.md`) may take a reduced
    or skipped per-task review agent. Every other task — including a
    hand-applied "mechanical" batch with no `--check` PASS behind it — is
@@ -241,8 +232,7 @@ On a verdict:
 - **FAIL** → the quoted failing block becomes a review finding. Feed it into
   the existing fix loop (resume the implementer for rounds 1-3). Never fix it
   yourself in the controller session. **Do not gate the fix round separately** —
-  the fix commit joins the next gate's range. Gating a one-line `gofmt` fix on
-  its own cost 22 of those 48 idle minutes on task-227.
+  the fix commit joins the next gate's range.
 - **ERROR** → the gate did not run. Resolve it (wrong tree, timeout) and
   re-launch. Never treat ERROR as PASS.
 

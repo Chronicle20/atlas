@@ -23,6 +23,11 @@ description: |
   assistant: "Dispatching packet-verifier to re-derive the read order and re-pin."
   </example>
 model: sonnet
+disallowedTools: [Agent]
+# disallowedTools (not a `tools:` allowlist): this agent is a LEAF — it never
+# dispatches children, and repo policy is that leaf agents do not fan out.
+# Denying Agent subtractively keeps `tools:` omitted, which is the only
+# documented way to inherit MCP tools (see the FR-1.3 note below).
 # tools: intentionally omitted (FR-1.3) — matches the loaded IDB via
 # ida-pro-mcp (idb_list, exact binary filename) and decompiles the fname to
 # pin the byte-fixture evidence record; its MCP tool surface can't be

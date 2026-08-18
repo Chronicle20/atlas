@@ -197,6 +197,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-dragons
+spec:
+  template:
+    spec:
+      containers:
+        - name: dragons
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-drop-information
 spec:
   template:
@@ -255,6 +268,19 @@ spec:
     spec:
       containers:
         - name: expressions
+          env:
+            - name: ATLAS_ENV
+              value: "main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-families
+spec:
+  template:
+    spec:
+      containers:
+        - name: families
           env:
             - name: ATLAS_ENV
               value: "main"

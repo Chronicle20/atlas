@@ -1,0 +1,81 @@
+# coverage-manifest — task-227-cash-name-change-world-transfer
+#
+# Declares every packet x version cell this task owns. Format follows
+# docs/tasks/task-206-cash-shop-coupon-codes/coverage-manifest.yaml.
+#
+# CELL COUNT: 67, not the 59 the plan's Task 1 brief assumed.
+#
+# The brief's 59 was computed from the coverage matrix as it stood before this
+# task's derivation pass. That matrix was wrong in two places, both proven in
+# derivation.md and both already corrected in docs/packets/registry/ +
+# docs/packets/audits/ on this branch:
+#
+#   * NAME_TRANSFER and WORLD_TRANSFER were blank (⬜ "op absent") on
+#     gms_v48/v61/v72/v79. All four clients build and send both packets
+#     (derivation.md §1.2, §1.3, §1.6). +8 cells. v48 uses opcodes
+#     0x012/0x014, NOT the 0x010/0x012 that v61-v95 use.
+#   * jms_v185 serverbound 0x009 was filed as NAME_TRANSFER on the strength of
+#     a transposed IDB symbol. jms_v185 has no name-change feature at all; the
+#     op is WORLD_TRANSFER (derivation.md §1.5). Net 0 cells, moved rows.
+#
+# So: NAME_TRANSFER 6 -> 9 cells, WORLD_TRANSFER 5 -> 10 cells; the six
+# clientbound rows are unchanged from the brief.
+#
+# Per-row cell counts:
+#   CANCEL_NAME_CHANGE_RESULT                       8   v61 v72 v79 v83 v84 v87 v92 v95
+#   CANCEL_TRANSFER_WORLD_RESULT                    8   v61 v72 v79 v83 v84 v87 v92 v95
+#   CANCEL_NAME_CHANGE_BY_OTHER                     7       v72 v79 v83 v84 v87 v92 v95
+#   CASHSHOP_CHECK_NAME_CHANGE                      9   v48 v61 v72 v79 v83 v84 v87 v92 v95
+#   CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT  10   v48 v61 v72 v79 v83 v84 v87 v92 v95 jms_v185
+#   CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT      6           v79 v83 v84 v87 v92 v95
+#   NAME_TRANSFER            (serverbound)          9   v48 v61 v72 v79 v83 v84 v87 v92 v95
+#   WORLD_TRANSFER           (serverbound)         10   v48 v61 v72 v79 v83 v84 v87 v92 v95 jms_v185
+#                                                  --
+#                                                  67
+
+ops:
+  - CANCEL_NAME_CHANGE_RESULT
+  - CANCEL_TRANSFER_WORLD_RESULT
+  - CANCEL_NAME_CHANGE_BY_OTHER
+  - CASHSHOP_CHECK_NAME_CHANGE
+  - CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT
+  - CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT
+  - NAME_TRANSFER
+  - WORLD_TRANSFER
+
+versions:
+  - gms_v48
+  - gms_v61
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v92
+  - gms_v95
+  - jms_v185
+
+fields:
+  - "NAME_TRANSFER (serverbound): gms_v48 0x012; gms_v61/v72/v79/v83/v84/v87/v92/v95 0x010; absent on jms_v185. Body Encode4(dwCharacterID) + Encode4(nBirthDate) on v48..v92; Encode4(dwCharID) + EncodeStr(sSPW) on gms_v95 — the second field CHANGES WIRE TYPE at v95, it is not merely widened (derivation.md §2.1)."
+  - "WORLD_TRANSFER (serverbound): gms_v48 0x014; gms_v61..gms_v95 0x012; jms_v185 0x009. Body Encode4(dwCharacterID) + Encode4(nBirthDate) on v48..v92; Encode4 + EncodeStr(sSPW) on gms_v95; jms_v185 is EncodeStr(sSPW) ONLY — no character id (retn 4 at 0x485035 proves one stack arg)."
+  - "Second field on both serverbound ops is the account second password / 8-digit birthday code (v83 ask_SPW @0x9acf95 returns atoi(input), -1 on cancel). Redaction belongs in the struct's String(), not at the handler call site."
+  - "CASHSHOP_CHECK_NAME_CHANGE (clientbound, CCashShop::OnCheckDuplicatedIDResult): DecodeStr(sName) + Decode1(nResult) on all nine GMS versions. nResult is SIGNED: >0 duplicate, ==0 available, <0 unknown error. NOT a dispatcher family (derivation.md §5)."
+  - "CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT (clientbound): Decode4(dwCharacterID, discarded) + Decode1(nResult) + Decode4(nBirthDate) on v79..v95. Reason codes 0/1/2/3/default (derivation.md §4.1)."
+  - "CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT (clientbound): Decode4(dwCharacterID, discarded) + Decode1(nResult) + Decode4(nBirthDate) + Decode1(bHasWorldList) [+ Decode4(nCount) + nCount x DecodeStr] on GMS v48..v95. jms_v185 DROPS nBirthDate entirely. The world-name list is decoded before the result switch, so it is present on failure paths too. Reason codes 0..8 + default; case 8 (family gate) does not exist on v48/v61 (derivation.md §4.2)."
+  - "CANCEL_NAME_CHANGE_RESULT (clientbound): Decode1(nResult); 0x00 and 0xFF are both terminal success variants with NO further read; anything else continues Decode1(bHasMessage) [+ DecodeStr(sMessage)]. v61..v95."
+  - "CANCEL_TRANSFER_WORLD_RESULT (clientbound): same shape as CANCEL_NAME_CHANGE_RESULT except the second terminal constant is 0x01, NOT 0xFF. v61..v95. This asymmetry is the easiest way to write two decoders that both pass a fixture and are silently swapped."
+  - "CANCEL_NAME_CHANGE_BY_OTHER (clientbound): EMPTY BODY — the client decodes nothing. It renders one StringPool notice and clears a CWvsContext flag + timestamp. v72..v95."
+  - "Registry/matrix corrections landed by the derivation pass: gms_v48/v61/v72 CASHSHOP_CHECK_NAME_CHANGE fname sub_455A7F/sub_463900/sub_473519 -> CCashShop::OnCheckDuplicatedIDResult (and the wrong v48 fname_alt removed); gms_v48/v61/v72/v79 gained NAME_TRANSFER + WORLD_TRANSFER serverbound rows; jms_v185 serverbound 0x009 moved NAME_TRANSFER -> WORLD_TRANSFER. STATUS.md / status.json regenerated; matrix --check, fname-doc --check, dispatcher-lint and operations --check all exit 0."
+  - "IDB symbol corrections (not repo files, recorded for reproducibility): gms_v83 0x47031e/0x4733ca/0x470480/0x47359c, gms_v84 six functions, gms_v92 six functions, gms_v48/v61/v72/v79 SendCheckTransferWorldPossiblePacket, gms_v48/v61/v72 OnCheckDuplicatedIDResult, jms_v185 0x480bca/0x484fbf. Full before/after table in derivation.md §1.4."
+
+out_of_scope:
+  # This task's non-packet surface. Listed so a completeness critic does not
+  # read these as unclaimed changes, and so nobody mistakes their absence from
+  # the matrix for an oversight.
+  - character_pending_changes            # atlas-character table + sub-package (entity/model/builder/administrator/provider/rest), design.md §3.1-§3.2
+  - imprint-configs                      # new tenant configuration resource in atlas-character (expiry window, default 168h), plan Task 8
+  - name-change/world-transfer saga       # atlas-saga-orchestrator steps + compensators, design.md §3.10
+  - NAME_CHANGED consumers                # atlas-character self-consumption of character_event_status; the event exists today with zero consumers
+  - GET /characters/name-validity scope   # existing endpoint extended with a `scope` parameter + `reserved` reason, NOT a new endpoint (design.md §3.4)
+  - atlas-ui pending-change panel         # service + hooks + character card, plan Phase F
+  - character_cash_item_use.go:1132-1138  # dead duplicate of the 5401 branch; deletion, not a codec change (derivation.md §3)

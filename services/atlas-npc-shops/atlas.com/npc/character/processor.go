@@ -41,14 +41,14 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error) {
 	return func(characterId uint32) (Model, error) {
-		cp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(characterId), Extract)
+		cp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, characterId), Extract)
 		return model.Map(model.Decorate(decorators))(cp)()
 	}
 }
 
 func (p *ProcessorImpl) ByNameProvider(decorators ...model.Decorator[Model]) func(name string) model.Provider[[]Model] {
 	return func(name string) model.Provider[[]Model] {
-		ps := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(name), Extract, model.Filters[Model]())
+		ps := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByName(p.ctx, name), Extract, model.Filters[Model]())
 		return model.SliceMap(model.Decorate(decorators))(ps)(model.ParallelMap())
 	}
 }

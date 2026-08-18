@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"context"
 	"net/url"
 	"strings"
 	"testing"
@@ -24,7 +25,8 @@ func TestInMapRectUrlUsesMaxNotLimit(t *testing.T) {
 	t.Setenv("BASE_SERVICE_URL", "http://monsters/api/")
 
 	f := field.NewBuilder(0, 0, 240011000).SetInstance(uuid.Nil).Build()
-	raw := inMapRectUrl(f, 488, -628, 888, -328, 7)
+	raw, err := inMapRectUrl(context.Background(), f, 488, -628, 888, -328, 7)
+	require.NoError(t, err)
 
 	require.NotContains(t, raw, "limit=",
 		"a `limit` query param makes atlas-monsters answer 400 for every rect lookup")

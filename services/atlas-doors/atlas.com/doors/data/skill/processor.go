@@ -31,7 +31,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 // GetById fetches the skill from atlas-data by skill id.
 func (p *ProcessorImpl) GetById(skillId skill.Id) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(skillId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, skillId), Extract)()
 }
 
 // GetEffect returns the effect for the given 1-based skill level.

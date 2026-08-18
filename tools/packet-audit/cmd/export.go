@@ -39,9 +39,15 @@ type exportOpts struct {
 	Splice string
 }
 
-// fnameToken matches an FName-looking Class::Method token (used to scrape
-// candidate roster entries out of _pending.md prose).
-var fnameToken = regexp.MustCompile(`[A-Z][A-Za-z0-9_]+::[A-Za-z0-9_]+`)
+// fnameToken matches an FName-looking Class::Method token, OR a bare IDA
+// sub_XXXXXX symbol (used to scrape candidate roster entries out of
+// _pending.md prose). Some registry primary fnames ARE the bare sub_ form
+// (no class qualifier ever got named in the IDB), and those must be scrapable
+// too — see task-229 Ruling 1. The sub_ alternative is word-boundary anchored on
+// both ends: unanchored it matches as a substring of a larger identifier
+// (`prefix_sub_1234`, `sub_1234_thunk`), and this scraper is shared
+// infrastructure every packet task's roster depends on.
+var fnameToken = regexp.MustCompile(`[A-Z][A-Za-z0-9_]+::[A-Za-z0-9_]+|\bsub_[0-9A-Fa-f]+\b`)
 
 // exportRun is the injectable core: it builds the roster, harvests via the given
 // client, backfills direction, marshals deterministically, writes Output, and

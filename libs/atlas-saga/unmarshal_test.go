@@ -1291,3 +1291,93 @@ func TestExpirationExtenderUseSagaTypeValue(t *testing.T) {
 		t.Fatalf("ExpirationExtenderUse = %q, want %q", ExpirationExtenderUse, "expiration_extender_use")
 	}
 }
+
+func TestPetReviveSagaTypeValue(t *testing.T) {
+	if PetRevive != Type("pet_revive") {
+		t.Fatalf("PetRevive = %q, want %q", PetRevive, "pet_revive")
+	}
+}
+
+func TestRevivePetActionValue(t *testing.T) {
+	if RevivePet != Action("revive_pet") {
+		t.Fatalf("RevivePet = %q, want %q", RevivePet, "revive_pet")
+	}
+}
+
+func TestUnmarshalRevivePetPayload(t *testing.T) {
+	raw := []byte(`{"stepId":"revive_pet","status":"pending","action":"revive_pet",` +
+		`"payload":{"characterId":42,"petId":7,"sourceTemplateId":5180000}}`)
+
+	var s Step[any]
+	if err := json.Unmarshal(raw, &s); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	p, ok := s.Payload.(RevivePetPayload)
+	if !ok {
+		t.Fatalf("payload type = %T, want RevivePetPayload", s.Payload)
+	}
+	want := RevivePetPayload{CharacterId: 42, PetId: 7, SourceTemplateId: 5180000}
+	if p != want {
+		t.Fatalf("payload = %+v, want %+v", p, want)
+	}
+}
+
+func TestUnmarshalStartItemConversationPayload(t *testing.T) {
+	raw := []byte(`{
+		"stepId": "start_item_conversation",
+		"status": "pending",
+		"action": "start_item_conversation",
+		"payload": {
+			"characterId": 1234,
+			"accountId": 77,
+			"itemId": 2430008,
+			"npcTemplateId": 2084002,
+			"slot": 5,
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 100000000,
+			"instance": "00000000-0000-0000-0000-000000000000"
+		}
+	}`)
+
+	var s Step[any]
+	if err := json.Unmarshal(raw, &s); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	p, ok := s.Payload.(StartItemConversationPayload)
+	if !ok {
+		t.Fatalf("payload type = %T, want StartItemConversationPayload", s.Payload)
+	}
+	if p.CharacterId != 1234 || p.ItemId != 2430008 || p.NpcTemplateId != 2084002 || p.Slot != 5 || p.AccountId != 77 {
+		t.Errorf("payload round-trip: %+v", p)
+	}
+}
+
+func TestUnmarshalStartNpcConversationPayload(t *testing.T) {
+	raw := []byte(`{
+		"stepId": "start_npc_conversation",
+		"status": "pending",
+		"action": "start_npc_conversation",
+		"payload": {
+			"characterId": 1234,
+			"accountId": 77,
+			"npcTemplateId": 9090002,
+			"worldId": 0,
+			"channelId": 1,
+			"mapId": 100000000,
+			"instance": "00000000-0000-0000-0000-000000000000"
+		}
+	}`)
+
+	var s Step[any]
+	if err := json.Unmarshal(raw, &s); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	p, ok := s.Payload.(StartNpcConversationPayload)
+	if !ok {
+		t.Fatalf("payload type = %T, want StartNpcConversationPayload", s.Payload)
+	}
+	if p.CharacterId != 1234 || p.NpcTemplateId != 9090002 || p.AccountId != 77 {
+		t.Errorf("payload round-trip: %+v", p)
+	}
+}

@@ -1,0 +1,13 @@
+packet: cash/clientbound/CashCheckTransferWorldPossibleResult
+direction: clientbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CCashShop::OnCheckTransferWorldPossibleResult
+    address: "0x48757c"
+    decompile_sha256: c622484f4a048ec295e2bdce5afd254fedb7446b103692d9cd6f031c5b714a7c
+verifies:
+    - libs/atlas-packet/cash/clientbound/check_transfer_world_possible_result_test.go#TestCheckTransferWorldPossibleResultByteFixtureNoWorldList
+    - libs/atlas-packet/cash/clientbound/check_transfer_world_possible_result_test.go#TestCheckTransferWorldPossibleResultByteFixtureWithWorldList
+    - libs/atlas-packet/cash/clientbound/check_transfer_world_possible_result_test.go#TestCheckTransferWorldPossibleResultRoundTrip
+    - libs/atlas-packet/cash/clientbound/check_transfer_world_possible_result_test.go#TestCheckTransferWorldPossibleResultReasonMapping

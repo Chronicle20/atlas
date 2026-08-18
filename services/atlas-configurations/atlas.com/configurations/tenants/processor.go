@@ -15,6 +15,7 @@ import (
 	"gorm.io/gorm"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
@@ -104,6 +105,11 @@ func Make(e Entity) (RestModel, error) {
 	}
 	rm.Socket = socket.Normalize(rm.Socket)
 	rm.Id = e.Id.String()
+	// Environment is server-owned (task-232 FR-7.3 / D5): the Entity column
+	// always wins over whatever e.Data's JSON blob happened to contain, so a
+	// client-supplied "environment" in a past create/update body can never
+	// surface as this tenant's environment.
+	rm.Environment = e.Environment
 	return rm, nil
 }
 
@@ -152,7 +158,20 @@ func (p *ProcessorImpl) UpdateById(tenantId uuid.UUID, input RestModel) error {
 		if err := update(p.ctx, tenantId, input.Region, input.MajorVersion, input.MinorVersion, *rm)(db); err != nil {
 			return err
 		}
-		return enqueueTenantStatus(db, tenantId, input)
+		// Environment is server-owned (task-232 R21-1): the outbox message
+		// published to EVENT_TOPIC_CONFIGURATION_TENANT_STATUS must carry
+		// the persisted row's Environment, never whatever the client's
+		// request body set. Re-read the row (rather than trusting
+		// input.Environment) so libs/atlas-service's tenant->environment
+		// projection — and therefore FR-7.7's Reconcile — can never be fed
+		// an attacker-controlled value.
+		persisted, err := byIdEntityProvider(p.ctx)(tenantId)(db)()
+		if err != nil {
+			return err
+		}
+		sanitized := input
+		sanitized.Environment = persisted.Environment
+		return enqueueTenantStatus(db, tenantId, sanitized)
 	})
 }
 
@@ -199,11 +218,18 @@ func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
 			MajorVersion: input.MajorVersion,
 			MinorVersion: input.MinorVersion,
 			Data:         *rm,
+			Environment:  string(env.MustFromContext(p.ctx)),
 		}
 		if err := db.Create(e).Error; err != nil {
 			return err
 		}
-		return enqueueTenantStatus(db, tenantId, input)
+		// Environment is server-owned (task-232 R21-1): sanitize before
+		// publishing so the outbox message never carries whatever the
+		// client's request body set for "environment" — see the matching
+		// comment in UpdateById.
+		sanitized := input
+		sanitized.Environment = e.Environment
+		return enqueueTenantStatus(db, tenantId, sanitized)
 	})
 	if err != nil {
 		return uuid.Nil, err

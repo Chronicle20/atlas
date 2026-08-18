@@ -252,6 +252,61 @@ export function useTerminateAccountSession(): UseMutationResult<
 }
 
 /**
+ * Hook to set an account's birth date (yyyymmdd as an integer, 0 = unset).
+ *
+ * Takes the whole `account`, not just its id: the service resends every
+ * attribute because atlas-account's PATCH is a full-model diff — see
+ * accountsService.updateAccountBirthDate.
+ */
+export function useUpdateAccountBirthDate(): UseMutationResult<
+  Account,
+  Error,
+  { tenant: Tenant; account: Account; birthDate: number }
+> {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ account, birthDate }) =>
+      accountsService.updateAccountBirthDate(account, birthDate),
+    onMutate: async ({ tenant, account, birthDate }) => {
+      await queryClient.cancelQueries({
+        queryKey: accountKeys.detail(tenant, account.id),
+      });
+
+      const previousAccount = queryClient.getQueryData<Account>(
+        accountKeys.detail(tenant, account.id),
+      );
+
+      if (previousAccount) {
+        queryClient.setQueryData<Account>(
+          accountKeys.detail(tenant, account.id),
+          {
+            ...previousAccount,
+            attributes: { ...previousAccount.attributes, birthDate },
+          },
+        );
+      }
+
+      return { previousAccount };
+    },
+    onError: (_error, { tenant, account }, context) => {
+      if (context?.previousAccount) {
+        queryClient.setQueryData(
+          accountKeys.detail(tenant, account.id),
+          context.previousAccount,
+        );
+      }
+    },
+    onSettled: (_data, _error, { tenant, account }) => {
+      queryClient.invalidateQueries({
+        queryKey: accountKeys.detail(tenant, account.id),
+      });
+      queryClient.invalidateQueries({ queryKey: accountKeys.lists() });
+    },
+  });
+}
+
+/**
  * Hook to terminate multiple account sessions in batch
  */
 export function useTerminateMultipleSessions(): UseMutationResult<

@@ -39,7 +39,7 @@ func setupCharacterResourceRouter(db *gorm.DB) *mux.Router {
 	r := mux.NewRouter()
 	l := logrus.New()
 	l.SetLevel(logrus.ErrorLevel)
-	ri := InitResource(&resourceTestServerInfo{})(db)
+	ri := InitResource(&resourceTestServerInfo{})(db)(nil)
 	ri(r, l)
 	return r
 }

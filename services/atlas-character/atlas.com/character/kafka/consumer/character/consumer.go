@@ -4,6 +4,7 @@ import (
 	"atlas-character/character"
 	consumer2 "atlas-character/kafka/consumer"
 	character2 "atlas-character/kafka/message/character"
+	"atlas-character/pending_change"
 	"context"
 
 	"github.com/sirupsen/logrus"
@@ -21,9 +22,9 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("character_command")(character2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-			rf(consumer2.NewConfig(l)("character_event_status")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
-			rf(consumer2.NewConfig(l)("character_movement_command")(character2.EnvCommandTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_command")(character2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
+			rf(consumer2.NewConfig(l)("character_event_status")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
+			rf(consumer2.NewConfig(l)("character_movement_command")(character2.EnvCommandTopicMovement)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
 		}
 	}
 }
@@ -108,6 +109,12 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleJobChangedStatusEvent(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleLogoutApplyPendingChanges(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleLoginPendingChangeCatchUp(db)))); err != nil {
 				return err
 			}
 			return nil
@@ -316,6 +323,38 @@ func handleJobChangedStatusEvent(db *gorm.DB) message.Handler[character2.StatusE
 		}
 		cha := channel.NewModel(e.WorldId, e.Body.ChannelId)
 		_ = character.NewProcessor(l, ctx, db).ProcessJobChangeAndEmit(e.TransactionId, cha, e.CharacterId, e.Body.JobId)
+	}
+}
+
+// handleLogoutApplyPendingChanges is the safe point of FR-2.4: the LOGOUT status
+// event is atlas-character's own statement that the character left every
+// channel, so it is the earliest moment a rename or a world transfer may touch
+// the record. The applier tolerates redelivery — the status transition is the
+// idempotency key (pending_change.transition).
+func handleLogoutApplyPendingChanges(db *gorm.DB) message.Handler[character2.StatusEvent[character2.StatusEventLogoutBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLogoutBody]) {
+		if e.Type != character2.StatusEventTypeLogout {
+			return
+		}
+		if err := pending_change.NewProcessor(l, ctx, db).ApplyForCharacter(e.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to apply pending changes for character [%d] at logout.", e.CharacterId)
+		}
+	}
+}
+
+// handleLoginPendingChangeCatchUp does two things, both catch-ups rather than
+// primary paths: it re-emits a resolution the player was offline for (FR-2.9),
+// and it re-attempts any PENDING row whose apply previously failed, so a crashed
+// applier or a Kafka gap self-heals instead of stranding the coupon until expiry.
+func handleLoginPendingChangeCatchUp(db *gorm.DB) message.Handler[character2.StatusEvent[character2.StatusEventLoginBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventLoginBody]) {
+		if e.Type != character2.StatusEventTypeLogin {
+			return
+		}
+		p := pending_change.NewProcessor(l, ctx, db)
+		if err := p.RenotifyForCharacter(e.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to re-emit unnotified pending-change resolutions for character [%d].", e.CharacterId)
+		}
 	}
 }
 

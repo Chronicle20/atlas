@@ -133,6 +133,7 @@ const (
 	StatusEventTypeStatChanged       = "STAT_CHANGED"
 	StatusEventTypeDeleted           = "DELETED"
 	StatusEventTypeGmChanged         = "GM_CHANGED"
+	StatusEventTypeNameChanged       = "NAME_CHANGED"
 
 	StatusEventTypeError              = "ERROR"
 	StatusEventErrorTypeNotEnoughMeso = "NOT_ENOUGH_MESO"
@@ -148,6 +149,14 @@ type StatusEvent[E any] struct {
 
 type StatusEventCreatedBody struct {
 	Name string `json:"name"`
+}
+
+// StatusEventNameChangedBody mirrors atlas-character's
+// StatusEventNameChangedBody — the producer of this event
+// (character/producer.go, emitted when a pending NAME_CHANGE applies).
+type StatusEventNameChangedBody struct {
+	OldName string `json:"oldName"`
+	NewName string `json:"newName"`
 }
 
 type StatusEventLoginBody struct {

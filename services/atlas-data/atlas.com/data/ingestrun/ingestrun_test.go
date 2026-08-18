@@ -1,6 +1,7 @@
 package ingestrun
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -33,6 +34,41 @@ func TestKeySuffix(t *testing.T) {
 	}
 	if got := KeySuffix("shared", "JMS", 185, 1); got != "shared:JMS:185.1" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+// TestKeySuffixIsDiscriminating pins that a tenant-scoped KeySuffix carries
+// the tenant id, region and major.minor version — the property
+// tools/rediskeyguard's bareConstructorAllowlist entry for this package
+// relies on to treat NewJobRegistry/NewRunRegistry as tenant-independent at
+// the constructor level (D7). Both are identity-keyFn'd, so callers supply
+// the whole suffix, and every caller builds it here. If a future change ever
+// dropped the tenant segment from KeySuffix, this namespace would collide
+// across tenants sharing an environment with nothing left to catch it — the
+// allowlist entry would keep suppressing the guard. This test is the thing
+// that must fail first.
+func TestKeySuffixIsDiscriminating(t *testing.T) {
+	tenantId := "9f6b8e2a-1c3d-4e5f-8a9b-0c1d2e3f4a5b"
+	region := "GMS"
+	var major, minor uint16 = 83, 1
+
+	scope := "tenants/" + tenantId
+	got := KeySuffix(scope, region, major, minor)
+
+	if !strings.Contains(got, tenantId) {
+		t.Fatalf("KeySuffix(%q, ...) = %q: missing tenant id %q", scope, got, tenantId)
+	}
+	if !strings.Contains(got, region) {
+		t.Fatalf("KeySuffix(...) = %q: missing region %q", got, region)
+	}
+	if !strings.Contains(got, "83.1") {
+		t.Fatalf("KeySuffix(...) = %q: missing major.minor version 83.1", got)
+	}
+
+	// Two different tenants, same region/version, must not collide.
+	other := KeySuffix("tenants/other-tenant-id", region, major, minor)
+	if got == other {
+		t.Fatalf("KeySuffix collided across tenants: %q == %q", got, other)
 	}
 }
 

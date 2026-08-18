@@ -1,6 +1,7 @@
 package macro
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -11,14 +12,18 @@ const (
 	ById     = Resource + "/%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("SKILLS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "SKILLS")
 }
 
 // characterMacrosUrl returns the list URL for a character's skill macros. It
 // is a bare URL (not a requests.Request) because the list is now paginated
 // server-side (task-117) and consumed via requests.DrainProvider, which
 // appends its own page[number]/page[size] query params per request.
-func characterMacrosUrl(characterId uint32) string {
-	return fmt.Sprintf(getBaseRequest()+Resource, characterId)
+func characterMacrosUrl(ctx context.Context, characterId uint32) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+Resource, characterId), nil
 }

@@ -221,7 +221,7 @@ func (p *ProcessorImpl) ValidateStartRequirements(characterId uint32, questDef d
 	}
 
 	// Call query-aggregator
-	result, err := requestValidation(characterId, conditions)(p.l, p.ctx)
+	result, err := requestValidation(p.ctx, characterId, conditions)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to validate start requirements for character [%d]", characterId)
 		return false, nil, err
@@ -310,7 +310,7 @@ func (p *ProcessorImpl) ValidateEndRequirements(characterId uint32, questDef dat
 	}
 
 	// Call query-aggregator
-	result, err := requestValidation(characterId, conditions)(p.l, p.ctx)
+	result, err := requestValidation(p.ctx, characterId, conditions)(p.l, p.ctx)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to validate end requirements for character [%d]", characterId)
 		return false, nil, err

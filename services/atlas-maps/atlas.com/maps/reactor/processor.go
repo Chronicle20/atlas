@@ -46,7 +46,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // upstream atlas-reactors list is now paginated (task-117), so this drains
 // every page rather than fetching just the first.
 func (p *ProcessorImpl) InMapModelProvider(_ uuid.UUID, field field.Model) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(field), 250, Extract, model.Filters[Model]())
+	url, err := inMapUrl(p.ctx, field)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetInMap(transactionId uuid.UUID, field field.Model) ([]Model, error) {

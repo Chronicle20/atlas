@@ -20,6 +20,7 @@ type Processor interface {
 	GetAllAccounts() ([]Model, error)
 	IsLoggedIn(id uint32) bool
 	InitializeRegistry() error
+	RecordPicAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error)
 }
 
 // ProcessorImpl implements the Processor interface
@@ -39,11 +40,15 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ByIdModelProvider(id uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountById(id), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestAccountById(p.ctx, id), Extract)
 }
 
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(getBaseRequest()+AccountsResource, 250, Extract, model.Filters[Model]())
+	root, err := getBaseRequest(p.ctx)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(root+AccountsResource, 250, Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
@@ -69,4 +74,18 @@ func (p *ProcessorImpl) InitializeRegistry() error {
 
 func IsLogged(m Model) bool {
 	return m.LoggedIn() > 0
+}
+
+// RecordPicAttempt records a PIC-comparison outcome against
+// accounts/{accountId}/pic-attempts and returns the running attempt count and
+// whether the lockout limit was reached. It is the lockout counter behind the
+// credential validated by the cash-shop NAME_TRANSFER / WORLD_TRANSFER check
+// handlers (task-227 Task 26 ruling 4) — without it, those check ops are a
+// brute-force oracle against the account's second password / birthday code.
+func (p *ProcessorImpl) RecordPicAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
+	result, err := requestRecordPicAttempt(p.ctx, id, success, ipAddress, hwid)(p.l, p.ctx)
+	if err != nil {
+		return 0, false, err
+	}
+	return result.Attempts, result.LimitReached, nil
 }

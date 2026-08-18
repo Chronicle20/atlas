@@ -578,11 +578,13 @@
   direction: clientbound
   opcode: 113
   fname: CWvsContext::OnCancelNameChangeResult
+  packet: cash/clientbound/CashCancelNameChangeResult
   provenance: csv-import
 - op: CANCEL_TRANSFER_WORLD_RESULT
   direction: clientbound
   opcode: 114
   fname: CWvsContext::OnCancelTransferWorldResult
+  packet: cash/clientbound/CashCancelTransferWorldResult
   provenance: csv-import
 - op: DESTROY_SHOP_RESULT
   direction: clientbound
@@ -613,6 +615,7 @@
   direction: clientbound
   opcode: 120
   fname: CWvsContext::OnCancelNameChangebyOther
+  packet: character/clientbound/CancelNameChangeByOther
   provenance: csv-import
 - op: SET_EXTRA_PENDANT_SLOT
   direction: clientbound
@@ -930,17 +933,72 @@
   direction: clientbound
   opcode: 181
   fname: CDragon::OnCreated
-  provenance: csv-import
+  packet: dragon/clientbound/DragonSpawn
+  provenance: ida-discovered
+  ida:
+    address: 0x4fe502
+  note: >-
+    task-225: live decompile of the v83 CDragon::OnCreated equivalent (renamed
+    from sub_4FE502 during this verification) @0x4fe502
+    (MapleStory_dump.exe.i64 v83, session 41f13e0d). Reads, in order: Decode4
+    x (this[58] @0x4fe529), Decode4 y (this[59] @0x4fe534), Decode1 stance
+    (secured via _ZtlSecureTear<long> into this[37] @0x4fe554/0x4fe56a),
+    Decode2 <read, discarded — return value never assigned> @0x4fe570 — and
+    the read sequence stops there. There is NO trailing jobId Decode2
+    (contrast GMS v95's CDragon::OnCreated @0x50dc90, which reads a fifth
+    Decode2 into m_nJobCode). Matches the domain: Evan's job table
+    (2200-2218) does not exist before GMS v84, so v83's CDragon has no job
+    code to receive. Body = 11 bytes (vs 13 on versions that carry jobId).
+    Matches the committed DragonSpawn codec's v83 branch exactly (Task 1,
+    spawnHasJobId gate) — see
+    libs/atlas-packet/dragon/clientbound/spawn_test.go's
+    TestDragonSpawnBytesV83/TestDragonSpawnRoundTripV83.
 - op: MOVE_DRAGON
   direction: clientbound
   opcode: 182
   fname: CDragon::OnMove
-  provenance: csv-import
+  packet: dragon/clientbound/DragonMove
+  provenance: ida-discovered
+  ida:
+    address: 0x4fef90
+  note: >-
+    task-225: live decompile of the v83 CDragon::OnMove equivalent (renamed
+    from sub_4FEF90 during this verification) @0x4fef90
+    (MapleStory_dump.exe.i64 v83, session 41f13e0d). Single delegating call:
+    CMovePath::OnMovePacket((this[55]!=0 ? this[55]-12+428 : 428), iPacket, v2)
+    @0x4fef9e. Called from CUser::OnDragonPacket @0x93908f's 0xB6 (182)
+    branch. ownerCharacterId is consumed upstream by
+    CUserPool::OnUserCommonPacket @0x972401 (Decode4 characterId @0x97240c)
+    before the range dispatch `v6>=181 && v6<=183` @0x97249d routes into
+    OnDragonPacket. The whole remaining body is the opaque CMovePath blob.
+    Matches the committed DragonMove codec exactly (Task 1) — byte-identical
+    to the v95 shape already verified (task-225).
 - op: REMOVE_DRAGON
   direction: clientbound
   opcode: 183
   fname: CUser::OnDragonPacket
-  provenance: csv-import
+  packet: dragon/clientbound/DragonRemove
+  provenance: ida-discovered
+  ida:
+    address: 0x93908f
+  note: >-
+    task-225: live decompile of CUser::OnDragonPacket @0x93908f
+    (MapleStory_dump.exe.i64 v83, session 41f13e0d). Switches on nType (a2):
+    a2==0xB5 (181) -> spawn (ZRef<CDragon>::_ReleaseRaw + allocate/reinit
+    CDragon then CDragon::OnCreated), else-if this[1996] && a2==0xB6 (182) ->
+    CDragon::OnMove. THERE IS NO CASE FOR 0xB7 (183, REMOVE_DRAGON) — the
+    outer dispatcher CUserPool::OnUserCommonPacket @0x972401 routes opcodes
+    181..183 into OnDragonPacket via the range test `v6>=181 && v6<=183`
+    @0x97249d, so 183 enters this function and falls through both branches
+    with zero effect: no field is read, no dragon state changes. This is the
+    SAME routed-but-unhandled-183 shape already recorded for v84 at
+    docs/packets/registry/gms_v84.yaml:1254 and for v95 at
+    docs/packets/registry/gms_v95.yaml's REMOVE_DRAGON note — both are the
+    model this entry follows. Sending REMOVE_DRAGON is correct and harmless;
+    the client silently discards it because there is no handler arm. The
+    DragonRemove codec's ownerCharacterId field is likewise consumed upstream
+    and never read by this function — the cell's body is empty because there
+    is no code to read it.
 - op: MOVE_PLAYER
   direction: clientbound
   opcode: 185
@@ -2231,7 +2289,11 @@
   direction: serverbound
   opcode: 75
   fname: CWvsContext::SendMobSummonItemUseRequest
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 10524539
+  note: task-229 — v83 IDB confirms CWvsContext::SendMobSummonItemUseRequest @0xa0977b builds COutPacket(0x4B)@0xa0989b under the mob-summon confirm-dialog guard, then Encode4(updateTime)@0xa098ad + Encode2(slot)@0xa098b8 + Encode4(itemId)@0xa098c3 — same updateTime+slot+itemId shape as USE_ITEM/USE_RETURN_SCROLL but a distinct send site gated on the summon-item confirmation flow, matching the gms_v61 structural twin CWvsContext::SendMobSummonItemUseRequest @0x832003.
+  packet: inventory/serverbound/InventorySummonBagItemUse
 - op: PET_FOOD
   direction: serverbound
   opcode: 76
@@ -2262,6 +2324,7 @@
   direction: serverbound
   opcode: 80
   fname: CWvsContext::SendActivatePetRequest
+  packet: pet/serverbound/PetDestroyItem
   provenance: csv-import
 - op: USE_CATCH_ITEM
   direction: serverbound
@@ -2290,7 +2353,11 @@
   direction: serverbound
   opcode: 85
   fname: CWvsContext::SendPortalScrollUseRequest
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 10609102
+  note: task-229 — v83 IDB confirms CWvsContext::SendPortalScrollUseRequest @0xa1e1ce reads the item's own Return Scroll WZ props via IWzProperty::GetItem (StringPool ids 2306/2307/2309, off CItemInfo::GetItemProp(itemId)) with NO RunMapTransferItem call and NO by-name/target-name branch — distinct from the teleport-rock sender CWvsContext::SendMapTransferItemUseRequest @0xa0a3bb (the era's mislabel trap noted at gms_v72.yaml:2414/gms_v79.yaml:2798). Builds COutPacket(0x55)@0xa1e3e9 then Encode4(updateTime)@0xa1e400 + Encode2(slot)@0xa1e40b + Encode4(itemId)@0xa1e416.
+  packet: inventory/serverbound/InventoryReturnScrollItemUse
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 86
@@ -2982,7 +3049,23 @@
   direction: serverbound
   opcode: 181
   fname: CVecCtrlDragon::EndUpdateActive
-  provenance: csv-import
+  packet: dragon/serverbound/Move
+  provenance: ida-discovered
+  ida:
+    address: 0x9b7b9c
+  note: >-
+    task-225: live decompile of CVecCtrlDragon::EndUpdateActive @0x9b7b9c
+    (MapleStory_dump.exe.i64 v83, session 41f13e0d). Send site: if
+    CMovePath::IsTimeForFlush(this+428,0) @0x9b7bb4, builds COutPacket(0xB5)
+    @0x9b7bc5 then CMovePath::Flush(v1,v2,0,0) @0x9b7bd8 and sends via
+    CClientSocket::SendPacket @0x9b7beb. There is NO leading identity field —
+    the dragon is 1:1 with its owning CUser and the server resolves it
+    entirely from the sending session's character id. Opcode 0xB5 = 181
+    confirmed from the COutPacket construction site itself (ground truth per
+    the distrust-IDB-names rule), matching the registry opcode. Matches the
+    committed serverbound dragon.Move codec exactly (Task 1): the whole body
+    is the opaque CMovePath blob, rebroadcast byte-faithfully — byte-identical
+    to the v95 shape already verified (task-225).
 - op: UNNAMED_R299
   direction: serverbound
   opcode: 182

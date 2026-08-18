@@ -607,11 +607,13 @@
   direction: clientbound
   opcode: 116
   fname: CWvsContext::OnCancelNameChangeResult
+  packet: cash/clientbound/CashCancelNameChangeResult
   provenance: csv-import
 - op: CANCEL_TRANSFER_WORLD_RESULT
   direction: clientbound
   opcode: 117
   fname: CWvsContext::OnCancelTransferWorldResult
+  packet: cash/clientbound/CashCancelTransferWorldResult
   provenance: csv-import
 - op: DESTROY_SHOP_RESULT
   direction: clientbound
@@ -645,6 +647,7 @@
   direction: clientbound
   opcode: 123
   fname: CWvsContext::OnCancelNameChangebyOther
+  packet: character/clientbound/CancelNameChangeByOther
   provenance: csv-import
 - op: SET_EXTRA_PENDANT_SLOT
   direction: clientbound
@@ -1016,17 +1019,62 @@
   direction: clientbound
   opcode: 194
   fname: CDragon::OnCreated
-  provenance: csv-import
+  packet: dragon/clientbound/DragonSpawn
+  provenance: ida-discovered
+  ida:
+    address: 0x5200ed
+  note: >-
+    task-225: live decompile of CDragon::OnCreated @0x5200ed
+    (GMSv87_4GB.exe.i64, session d51ecbd3), reached via
+    CUser::OnDragonPacket @0x9b3880's a2==0xC2 (194) branch, itself routed
+    by CUserPool::OnUserCommonPacket @0x9f7387's range test
+    `v6>=0xC2 && v6<=0xC4` @0x9f7430. Reads, in order: Decode4 (stored at
+    this+61) @0x52010b, Decode4 (stored at this+58) @0x52011f, Decode1
+    stance @0x520141 (via sub_4172B3 into this+37), Decode2 <read,
+    discarded — return value never assigned> @0x52015e, Decode2 jobId
+    (this+71) @0x520178. 13-byte body. The two Decode4 calls store to
+    struct offsets in reverse order versus v84's (this[58] then this[59])
+    but the WIRE READ ORDER is identical: Decode4, Decode4, Decode1,
+    Decode2(discarded), Decode2(jobId) — byte-identical to the
+    already-verified v84/v95 shape. v87 CONFIRMS the spawnHasJobId gate
+    boundary (GMS MajorAtLeast(84)): v87 carries jobId.
 - op: MOVE_DRAGON
   direction: clientbound
   opcode: 195
   fname: CDragon::OnMove
-  provenance: csv-import
+  packet: dragon/clientbound/DragonMove
+  provenance: ida-discovered
+  ida:
+    address: 0x520c71
+  note: >-
+    task-225: live decompile of CDragon::OnMove @0x520c71
+    (GMSv87_4GB.exe.i64, session d51ecbd3) — a single delegating call:
+    CMovePath::OnMovePacket(*(this+55)!=0 ? *(this+55)-12+572 : 572, a2),
+    identical shape to v83/v84/v95's CDragon::OnMove (only the per-version
+    fallback constant differs; the wire shape is unaffected — the whole
+    remaining body is the opaque CMovePath blob). Reached via
+    CUser::OnDragonPacket @0x9b3880's a2==0xC3 (195) branch (gated on
+    this[2203]). Matches the committed DragonMove codec exactly.
 - op: REMOVE_DRAGON
   direction: clientbound
   opcode: 196
   fname: CUser::OnDragonPacket
-  provenance: csv-import
+  packet: dragon/clientbound/DragonRemove
+  provenance: ida-discovered
+  ida:
+    address: 0x9b3880
+  note: >-
+    task-225: live decompile of CUser::OnDragonPacket @0x9b3880
+    (GMSv87_4GB.exe.i64, session d51ecbd3). Handles only a2==0xC2 (194,
+    spawn, CDragon::OnCreated @0x5200ed) and this[2203]&&a2==0xC3 (195,
+    move, CDragon::OnMove @0x520c71). THERE IS NO CASE FOR 0xC4 (196,
+    REMOVE_DRAGON) — the outer dispatcher CUserPool::OnUserCommonPacket
+    @0x9f7387 routes the range v6>=0xC2 && v6<=0xC4 into this function
+    (test @0x9f7430, call @0x9f7438), so 196 enters and falls through both
+    branches with zero effect: no field is read, no dragon state changes.
+    Same routed-but-unhandled shape already recorded for v83/v84/v95
+    (docs/packets/registry/gms_v84.yaml:1254). Sending REMOVE_DRAGON is
+    correct and harmless; the client silently discards it.
 - op: MOVE_PLAYER
   direction: clientbound
   opcode: 198
@@ -2366,6 +2414,7 @@
   opcode: 78
   fname: CWvsContext::SendMobSummonItemUseRequest
   provenance: csv-import
+  packet: inventory/serverbound/InventorySummonBagItemUse
 - op: PET_FOOD
   direction: serverbound
   opcode: 79
@@ -2396,6 +2445,7 @@
   direction: serverbound
   opcode: 83
   fname: CWvsContext::SendActivatePetRequest
+  packet: pet/serverbound/PetDestroyItem
   provenance: csv-import
 - op: USE_CATCH_ITEM
   direction: serverbound
@@ -2422,6 +2472,7 @@
   opcode: 88
   fname: CWvsContext::SendPortalScrollUseRequest
   provenance: csv-import
+  packet: inventory/serverbound/InventoryReturnScrollItemUse
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 89
@@ -3167,7 +3218,18 @@
   direction: serverbound
   opcode: 193
   fname: CVecCtrlDragon::EndUpdateActive
-  provenance: csv-import
+  packet: dragon/serverbound/Move
+  provenance: ida-discovered
+  ida:
+    address: 0xa46fae
+  note: >-
+    task-225: live decompile of CVecCtrlDragon::EndUpdateActive @0xa46fae
+    (GMSv87_4GB.exe.i64, session d51ecbd3). Send site: builds
+    COutPacket(193=0xC1) @0xa46fd7 then CMovePath::Flush(v1,&a3,0,0)
+    @0xa46fea and sends via CClientSocket::SendPacket @0xa46ffd. There is
+    NO leading identity field — same shape as v83/v84/v95's
+    CVecCtrlDragon::EndUpdateActive. Opcode 193 confirmed against the
+    registry.
 - op: UNNAMED_R299
   direction: serverbound
   opcode: 194

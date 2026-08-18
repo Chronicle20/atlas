@@ -3,8 +3,8 @@ direction: serverbound
 version: gms_v48
 category: TIER1-FIXTURE
 ida:
-    function: sub_719DD9
-    address: "0x719dd9"
-    decompile_sha256: 1d8fff3d014d4f77e83f4151f5cbe53529a4c8c27d9b583acc3d2fda5ad9b863
+    function: CWvsContext::SendStatChangeItemUseRequest
+    address: "0x70db3c"
+    decompile_sha256: 2c496da5c22ba0eac115d474111d8443efd0625be005ad6ac0efe8cf43d7a335
 verifies:
-  - libs/atlas-packet/inventory/serverbound/item_use_test.go#TestItemUseBytesV48
+    - libs/atlas-packet/inventory/serverbound/item_use_test.go#TestItemUseBytesV48

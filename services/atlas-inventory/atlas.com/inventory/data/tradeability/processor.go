@@ -35,15 +35,15 @@ var _ Processor = (*ProcessorImpl)(nil)
 func (p *ProcessorImpl) ByIdProvider(inventoryType inventory.Type, templateId item.Id) model.Provider[Model] {
 	switch inventoryType {
 	case inventory.TypeValueEquip:
-		return requests.Provider[EquipmentRestModel, Model](p.l, p.ctx)(requestEquipment(templateId), extract)
+		return requests.Provider[EquipmentRestModel, Model](p.l, p.ctx)(requestEquipment(p.ctx, templateId), extract)
 	case inventory.TypeValueUse:
-		return requests.Provider[ConsumableRestModel, Model](p.l, p.ctx)(requestConsumable(templateId), extract)
+		return requests.Provider[ConsumableRestModel, Model](p.l, p.ctx)(requestConsumable(p.ctx, templateId), extract)
 	case inventory.TypeValueSetup:
-		return requests.Provider[SetupRestModel, Model](p.l, p.ctx)(requestSetup(templateId), extract)
+		return requests.Provider[SetupRestModel, Model](p.l, p.ctx)(requestSetup(p.ctx, templateId), extract)
 	case inventory.TypeValueETC:
-		return requests.Provider[EtcRestModel, Model](p.l, p.ctx)(requestEtc(templateId), extract)
+		return requests.Provider[EtcRestModel, Model](p.l, p.ctx)(requestEtc(p.ctx, templateId), extract)
 	case inventory.TypeValueCash:
-		return requests.Provider[CashRestModel, Model](p.l, p.ctx)(requestCash(templateId), extract)
+		return requests.Provider[CashRestModel, Model](p.l, p.ctx)(requestCash(p.ctx, templateId), extract)
 	default:
 		return model.ErrorProvider[Model](fmt.Errorf("tradeability: no atlas-data resource for inventory type [%d]", inventoryType))
 	}

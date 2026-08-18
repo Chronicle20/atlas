@@ -1,145 +1,150 @@
 location ~ ^/api/merchants(/.*)?$ {
-  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-merchant.${NS_ATLAS_MERCHANT}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/rps(/.*)?$ {
-  set $u "atlas-rps.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-rps.${NS_ATLAS_RPS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/messengers(/.*)?$ {
-  set $u "atlas-messengers.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-messengers.${NS_ATLAS_MESSENGERS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/parties(/.*)?$ {
-  set $u "atlas-parties.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-parties.${NS_ATLAS_PARTIES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/party-quests(/.*)?$ {
-  set $u "atlas-party-quests.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-party-quests.${NS_ATLAS_PARTY_QUESTS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/portals/blocked(/.*)?$ {
-  set $u "atlas-portals.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-portals.${NS_ATLAS_PORTALS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/portals(/.*)?$ {
-  set $u "atlas-portal-actions.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-portal-actions.${NS_ATLAS_PORTAL_ACTIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/guilds(/.*)?$ {
-  set $u "atlas-guilds.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-guilds.${NS_ATLAS_GUILDS}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/families(/.*)?$ {
+  set $u "atlas-families.${NS_ATLAS_FAMILIES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/pets(/.*)?$ {
-  set $u "atlas-pets.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-pets.${NS_ATLAS_PETS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/accounts/[^/]+/cash-shop(/.*)?$ {
-  set $u "atlas-cashshop.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-cashshop.${NS_ATLAS_CASHSHOP}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/accounts/[^/]+/wallet(/.*)?$ {
-  set $u "atlas-cashshop.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-cashshop.${NS_ATLAS_CASHSHOP}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/buddy-list(/.*)?$ {
-  set $u "atlas-buddies.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-buddies.${NS_ATLAS_BUDDIES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/visits(/.*)?$ {
-  set $u "atlas-maps.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-maps.${NS_ATLAS_MAPS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/location(/.*)?$ {
-  set $u "atlas-maps.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-maps.${NS_ATLAS_MAPS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/buffs(/.*)?$ {
-  set $u "atlas-buffs.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-buffs.${NS_ATLAS_BUFFS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/invites(/.*)?$ {
-  set $u "atlas-invites.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-invites.${NS_ATLAS_INVITES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/keys(/.*)?$ {
-  set $u "atlas-keys.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-keys.${NS_ATLAS_KEYS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/monster-book(/.*)?$ {
-  set $u "atlas-monster-book.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-monster-book.${NS_ATLAS_MONSTER_BOOK}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/pets(/.*)?$ {
-  set $u "atlas-pets.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-pets.${NS_ATLAS_PETS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/mount(/.*)?$ {
-  set $u "atlas-mounts.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-mounts.${NS_ATLAS_MOUNTS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/quests(/.*)?$ {
-  set $u "atlas-quest.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-quest.${NS_ATLAS_QUEST}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/quests/conversations(/.*)?$ {
-  set $u "atlas-npc-conversations.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-npc-conversations.${NS_ATLAS_NPC_CONVERSATIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/quests/[^/]+/conversation(/.*)?$ {
-  set $u "atlas-npc-conversations.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-npc-conversations.${NS_ATLAS_NPC_CONVERSATIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/skills(/.*)?$ {
-  set $u "atlas-skills.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-skills.${NS_ATLAS_SKILLS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/macros(/.*)?$ {
-  set $u "atlas-skills.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-skills.${NS_ATLAS_SKILLS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/cash-shop(/.*)?$ {
-  set $u "atlas-cashshop.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-cashshop.${NS_ATLAS_CASHSHOP}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/inventory(/.*)?$ {
-  set $u "atlas-inventory.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-inventory.${NS_ATLAS_INVENTORY}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/notes(/.*)?$ {
-  set $u "atlas-notes.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-notes.${NS_ATLAS_NOTES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/cash-shop(/.*)?$ {
-  set $u "atlas-cashshop.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-cashshop.${NS_ATLAS_CASHSHOP}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
@@ -148,97 +153,97 @@ location ~ ^/api/cash-shop(/.*)?$ {
 # catch-all and the UI gets the SPA's index.html back instead of JSON.
 # `^/api/coupons(/.*)?$` covers /api/coupons/{id}/redemptions as well.
 location ~ ^/api/coupons(/.*)?$ {
-  set $u "atlas-cashshop.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-cashshop.${NS_ATLAS_CASHSHOP}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/coupon-batches(/.*)?$ {
-  set $u "atlas-cashshop.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-cashshop.${NS_ATLAS_CASHSHOP}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/coupon-redemptions(/.*)?$ {
-  set $u "atlas-cashshop.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-cashshop.${NS_ATLAS_CASHSHOP}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/drops(/.*)?$ {
-  set $u "atlas-drops.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-drops.${NS_ATLAS_DROPS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/chalkboards(/.*)?$ {
-  set $u "atlas-chalkboards.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-chalkboards.${NS_ATLAS_CHALKBOARDS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/chalkboards(/.*)?$ {
-  set $u "atlas-chalkboards.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-chalkboards.${NS_ATLAS_CHALKBOARDS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/kites(/.*)?$ {
-  set $u "atlas-kites.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-kites.${NS_ATLAS_KITES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/kites(/.*)?$ {
-  set $u "atlas-kites.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-kites.${NS_ATLAS_KITES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/games(/.*)?$ {
-  set $u "atlas-mini-games.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-mini-games.${NS_ATLAS_MINI_GAMES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/game-records(/.*)?$ {
-  set $u "atlas-mini-games.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-mini-games.${NS_ATLAS_MINI_GAMES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/games(/.*)?$ {
-  set $u "atlas-mini-games.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-mini-games.${NS_ATLAS_MINI_GAMES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/chairs(/.*)?$ {
-  set $u "atlas-chairs.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-chairs.${NS_ATLAS_CHAIRS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/chairs(/.*)?$ {
-  set $u "atlas-chairs.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-chairs.${NS_ATLAS_CHAIRS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/doors(/.*)?$ {
-  set $u "atlas-doors.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-doors.${NS_ATLAS_DOORS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/doors(/.*)?$ {
-  set $u "atlas-doors.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-doors.${NS_ATLAS_DOORS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/doors(/.*)?$ {
-  set $u "atlas-doors.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-doors.${NS_ATLAS_DOORS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/drops/seed(/.*)?$ {
-  set $u "atlas-drop-information.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-drop-information.${NS_ATLAS_DROP_INFORMATION}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/continents/drops$ {
-  set $u "atlas-drop-information.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-drop-information.${NS_ATLAS_DROP_INFORMATION}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/drops(/.*)?$ {
-  set $u "atlas-drops.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-drops.${NS_ATLAS_DROPS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
@@ -248,7 +253,7 @@ location ~ ^/api/events(/.*)?$ {
 }
 
 location ~ ^/api/configurations(/.*)?$ {
-  set $u "atlas-configurations.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-configurations.${NS_ATLAS_CONFIGURATIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
@@ -284,7 +289,7 @@ location ~ "^/api/assets/(?<tenant>[^/]+)/(?<region>[^/]+)/(?<v>[0-9]+\.[0-9]+)/
   proxy_set_header REGION        $region;
   proxy_set_header MAJOR_VERSION $major;
   proxy_set_header MINOR_VERSION $minor;
-  set $u "atlas-renders.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-renders.${NS_ATLAS_RENDERS}.svc.cluster.local:8080";
   proxy_pass http://$u/api/wz/character/render/$tenant/$region/$v/$hash.png$is_args$args;
   add_header Cache-Control "public, max-age=86400, immutable" always;
 }
@@ -330,7 +335,7 @@ location @maprender_miss {
   # Atlas-renders is the source of truth for its own status codes; we
   # want them to pass through untouched.
   proxy_intercept_errors off;
-  set $u "atlas-renders.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-renders.${NS_ATLAS_RENDERS}.svc.cluster.local:8080";
   proxy_pass http://$u/api/wz/map/render/$t/$r/$v/$mapid/render.png;
   add_header Cache-Control "public, max-age=86400, immutable" always;
 }
@@ -359,37 +364,37 @@ location @shared_fallback {
 # --- end task-071 asset routing rewrite -------------------------------------
 
 location ~ ^/api/accounts(/.*)?$ {
-  set $u "atlas-account.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-account.${NS_ATLAS_ACCOUNT}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/bans(/.*)?$ {
-  set $u "atlas-ban.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-ban.${NS_ATLAS_BAN}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/chat/history(/.*)?$ {
-  set $u "atlas-messages.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-messages.${NS_ATLAS_MESSAGES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/reports(/.*)?$ {
-  set $u "atlas-ban.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-ban.${NS_ATLAS_BAN}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/seed(/.*)?$ {
-  set $u "atlas-character-factory.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-character-factory.${NS_ATLAS_CHARACTER_FACTORY}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/factory(/.*)?$ {
-  set $u "atlas-character-factory.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-character-factory.${NS_ATLAS_CHARACTER_FACTORY}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/mts(/.*)?$ {
-  set $u "atlas-mts.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-mts.${NS_ATLAS_MTS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
@@ -399,22 +404,22 @@ location ~ ^/api/characters/[^/]+/mts(/.*)?$ {
 # GetVisitingShop 404s and every owner-side op (add-item, open, close,
 # maintenance) silently no-ops (task-127).
 location ~ ^/api/characters/[^/]+/visiting(/.*)?$ {
-  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-merchant.${NS_ATLAS_MERCHANT}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/merchants(/.*)?$ {
-  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-merchant.${NS_ATLAS_MERCHANT}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters/[^/]+/frederick(/.*)?$ {
-  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-merchant.${NS_ATLAS_MERCHANT}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/characters(/.*)?$ {
-  set $u "atlas-character.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-character.${NS_ATLAS_CHARACTER}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
@@ -429,197 +434,212 @@ location ^~ /api/data/wz {
   proxy_read_timeout 3600;
   proxy_send_timeout 3600;
   send_timeout 3600;
-  set $u "atlas-data.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-data.${NS_ATLAS_DATA}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/data(/.*)?$ {
-  set $u "atlas-data.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-data.${NS_ATLAS_DATA}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/gachapons(/.*)?$ {
-  set $u "atlas-reward-pools.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-reward-pools.${NS_ATLAS_REWARD_POOLS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/global-items(/.*)?$ {
-  set $u "atlas-reward-pools.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-reward-pools.${NS_ATLAS_REWARD_POOLS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/history(/.*)?$ {
-  set $u "atlas-ban.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-ban.${NS_ATLAS_BAN}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/maps/actions(/.*)?$ {
-  set $u "atlas-map-actions.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-map-actions.${NS_ATLAS_MAP_ACTIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/maps/[^/]+/actions(/.*)?$ {
-  set $u "atlas-map-actions.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-map-actions.${NS_ATLAS_MAP_ACTIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/characters(/.*)?$ {
-  set $u "atlas-maps.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-maps.${NS_ATLAS_MAPS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/weather(/.*)?$ {
-  set $u "atlas-maps.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-maps.${NS_ATLAS_MAPS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/monsters(/.*)?$ {
-  set $u "atlas-monsters.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-monsters.${NS_ATLAS_MONSTERS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/summons(/.*)?$ {
-  set $u "atlas-summons.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-summons.${NS_ATLAS_SUMMONS}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/dragons(/.*)?$ {
+  set $u "atlas-dragons.${NS_ATLAS_DRAGONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/monsters/[^/]+/drops(/.*)?$ {
-  set $u "atlas-drop-information.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-drop-information.${NS_ATLAS_DROP_INFORMATION}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/items/conversations(/.*)?$ {
+  set $u "atlas-npc-conversations.${NS_ATLAS_NPC_CONVERSATIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/items/[^/]+/drops(/.*)?$ {
-  set $u "atlas-drop-information.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-drop-information.${NS_ATLAS_DROP_INFORMATION}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/items/[^/]+/recipes(/.*)?$ {
-  set $u "atlas-npc-conversations.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-npc-conversations.${NS_ATLAS_NPC_CONVERSATIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/monsters(/.*)?$ {
-  set $u "atlas-monsters.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-monsters.${NS_ATLAS_MONSTERS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/summons(/.*)?$ {
-  set $u "atlas-summons.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-summons.${NS_ATLAS_SUMMONS}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/dragons(/.*)?$ {
+  set $u "atlas-dragons.${NS_ATLAS_DRAGONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/npcs/conversations(/.*)?$ {
-  set $u "atlas-npc-conversations.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-npc-conversations.${NS_ATLAS_NPC_CONVERSATIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/npcs/[^/]+/conversations(/.*)?$ {
-  set $u "atlas-npc-conversations.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-npc-conversations.${NS_ATLAS_NPC_CONVERSATIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/npcs/[^/]+/recipes(/.*)?$ {
-  set $u "atlas-npc-conversations.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-npc-conversations.${NS_ATLAS_NPC_CONVERSATIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/npcs(/.*)?$ {
-  set $u "atlas-npc-shops.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-npc-shops.${NS_ATLAS_NPC_SHOPS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/commodities(/.*)?$ {
-  set $u "atlas-npc-shops.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-npc-shops.${NS_ATLAS_NPC_SHOPS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/notes(/.*)?$ {
-  set $u "atlas-notes.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-notes.${NS_ATLAS_NOTES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/rankings(/.*)?$ {
-  set $u "atlas-rankings.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-rankings.${NS_ATLAS_RANKINGS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/shops(/.*)?$ {
-  set $u "atlas-npc-shops.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-npc-shops.${NS_ATLAS_NPC_SHOPS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/storage(/.*)?$ {
-  set $u "atlas-storage.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-storage.${NS_ATLAS_STORAGE}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/tenants(/.*)?$ {
-  set $u "atlas-tenants.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-tenants.${NS_ATLAS_TENANTS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/trades(/.*)?$ {
-  set $u "atlas-trades.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-trades.${NS_ATLAS_TRADES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/transports(/.*)?$ {
-  set $u "atlas-transports.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-transports.${NS_ATLAS_TRANSPORTS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/reactors(/.*)?$ {
-  set $u "atlas-reactors.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-reactors.${NS_ATLAS_REACTORS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/reactors/actions(/.*)?$ {
-  set $u "atlas-reactor-actions.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-reactor-actions.${NS_ATLAS_REACTOR_ACTIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/reactors/[^/]+/actions(/.*)?$ {
-  set $u "atlas-reactor-actions.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-reactor-actions.${NS_ATLAS_REACTOR_ACTIONS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/reactors/[^/]+/drops(/.*)?$ {
-  set $u "atlas-drop-information.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-drop-information.${NS_ATLAS_DROP_INFORMATION}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/reactors(/.*)?$ {
-  set $u "atlas-reactors.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-reactors.${NS_ATLAS_REACTORS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/sagas(/.*)?$ {
-  set $u "atlas-saga-orchestrator.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-saga-orchestrator.${NS_ATLAS_SAGA_ORCHESTRATOR}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/validations(/.*)?$ {
-  set $u "atlas-query-aggregator.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-query-aggregator.${NS_ATLAS_QUERY_AGGREGATOR}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/characters/[^/]+/rates(/.*)?$ {
-  set $u "atlas-rates.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-rates.${NS_ATLAS_RATES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/characters/[^/]+/stats(/.*)?$ {
-  set $u "atlas-effective-stats.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-effective-stats.${NS_ATLAS_EFFECTIVE_STATS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/listings(/.*)?$ {
-  set $u "atlas-mts.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-mts.${NS_ATLAS_MTS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/mts(/.*)?$ {
-  set $u "atlas-mts.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-mts.${NS_ATLAS_MTS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
@@ -630,21 +650,21 @@ location ~ ^/api/worlds/[^/]+/mts(/.*)?$ {
 # receives the store balloon for an already-open shop and cannot enter it, and
 # owl top-searches fail (task-127).
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/merchants(/.*)?$ {
-  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-merchant.${NS_ATLAS_MERCHANT}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds/[^/]+/shop-searches(/.*)?$ {
-  set $u "atlas-merchant.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-merchant.${NS_ATLAS_MERCHANT}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location ~ ^/api/worlds(/.*)?$ {
-  set $u "atlas-world.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-world.${NS_ATLAS_WORLD}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 
 location / {
-  set $u "atlas-ui.${POD_NAMESPACE}.svc.cluster.local:80";
+  set $u "atlas-ui.${NS_ATLAS_UI}.svc.cluster.local:80";
   proxy_pass http://$u$request_uri;
 }

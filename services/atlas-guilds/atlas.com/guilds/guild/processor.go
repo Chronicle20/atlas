@@ -65,6 +65,13 @@ type Processor interface {
 	RequestInviteAndEmit(guildId uint32, characterId uint32, targetId uint32) error
 	Join(mb *message.Buffer) func(guildId uint32) func(characterId uint32) func(transactionId uuid.UUID) error
 	JoinAndEmit(guildId uint32, characterId uint32, transactionId uuid.UUID) error
+	// Rejoin re-adds characterId to guildId at an explicitly supplied title,
+	// rather than Join's hard-coded rookie rank. It backs the world-transfer
+	// saga's guild compensation (task-227 FR-4.8) and is idempotent: a
+	// character already on the roster is left alone, so a redelivered REJOIN
+	// cannot create a duplicate membership row.
+	Rejoin(mb *message.Buffer) func(guildId uint32) func(characterId uint32) func(title byte) func(transactionId uuid.UUID) error
+	RejoinAndEmit(guildId uint32, characterId uint32, title byte, transactionId uuid.UUID) error
 	ChangeTitles(mb *message.Buffer) func(guildId uint32) func(characterId uint32) func(titles []string) func(transactionId uuid.UUID) error
 	ChangeTitlesAndEmit(guildId uint32, characterId uint32, titles []string, transactionId uuid.UUID) error
 	ChangeMemberTitle(mb *message.Buffer) func(guildId uint32) func(characterId uint32) func(targetId uint32) func(title byte) func(transactionId uuid.UUID) error
@@ -561,7 +568,7 @@ func (p *ProcessorImpl) Join(mb *message.Buffer) func(guildId uint32) func(chara
 					return err
 				}
 
-				_ = mb.Put(guild2.EnvStatusEventTopic, statusEventMemberJoinedProvider(g.WorldId(), g.Id(), characterId, c.Name(), c.JobId(), c.Level(), 5, 5, transactionId))
+				_ = mb.Put(guild2.EnvStatusEventTopic, statusEventMemberJoinedProvider(g.WorldId(), g.Id(), characterId, c.Name(), c.JobId(), c.Level(), 5, 5, true, transactionId))
 				return nil
 			}
 		}
@@ -572,6 +579,58 @@ func (p *ProcessorImpl) JoinAndEmit(guildId uint32, characterId uint32, transact
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
 			return p.WithTransaction(tx).Join(mb)(guildId)(characterId)(transactionId)
+		})
+	})
+}
+
+// Rejoin restores a membership that a forced LEAVE removed, at the rank the
+// character held. Unlike Join it does not hard-code title 5: a guild officer
+// whose world transfer failed must come back an officer, and the caller (the
+// saga compensator) is the only party that still knows the prior title.
+//
+// Idempotent by construction: an at-least-once redelivery of the REJOIN command
+// finds the character already on the roster and returns without touching it,
+// rather than inserting a second membership row.
+func (p *ProcessorImpl) Rejoin(mb *message.Buffer) func(guildId uint32) func(characterId uint32) func(title byte) func(transactionId uuid.UUID) error {
+	return func(guildId uint32) func(characterId uint32) func(title byte) func(transactionId uuid.UUID) error {
+		return func(characterId uint32) func(title byte) func(transactionId uuid.UUID) error {
+			return func(title byte) func(transactionId uuid.UUID) error {
+				return func(transactionId uuid.UUID) error {
+					g, err := p.GetById(guildId)
+					if err != nil {
+						return err
+					}
+
+					for _, m := range g.Members() {
+						if m.CharacterId() == characterId {
+							p.l.Debugf("Character [%d] is already a member of guild [%d]; REJOIN is a no-op.", characterId, guildId)
+							return nil
+						}
+					}
+
+					c, err := character.NewProcessor(p.l, p.ctx).GetById(characterId)
+					if err != nil {
+						return err
+					}
+
+					_, err = member.NewProcessor(p.l, p.ctx, p.db).AddMember(guildId, characterId, c.Name(), c.JobId(), c.Level(), title)
+					if err != nil {
+						return err
+					}
+
+					p.l.Infof("Restored character [%d] to guild [%d] at title [%d].", characterId, guildId, title)
+					_ = mb.Put(guild2.EnvStatusEventTopic, statusEventMemberJoinedProvider(g.WorldId(), g.Id(), characterId, c.Name(), c.JobId(), c.Level(), title, title, false, transactionId))
+					return nil
+				}
+			}
+		}
+	}
+}
+
+func (p *ProcessorImpl) RejoinAndEmit(guildId uint32, characterId uint32, title byte, transactionId uuid.UUID) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(mb *message.Buffer) error {
+			return p.WithTransaction(tx).Rejoin(mb)(guildId)(characterId)(title)(transactionId)
 		})
 	})
 }

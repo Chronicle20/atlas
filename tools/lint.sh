@@ -213,6 +213,12 @@ run_go() {
 
 run_ui() {
     local uidir="$ROOT/services/atlas-ui"
+    # Select the required Node if the shell has not already. No-op when node is
+    # already correct (CI, direnv, devcontainer). This is what lets a caller
+    # write `tools/verify.sh` instead of prefixing every invocation with an
+    # `export NVM_DIR=… && . nvm.sh && nvm use 22 &&` bootstrap.
+    # shellcheck source=lib/node-env.sh
+    . "$ROOT/tools/lib/node-env.sh"
     if ! command -v node >/dev/null 2>&1; then
         echo "lint.sh: ERROR — node not found; atlas-ui checks need Node $NODE_MAJOR_REQUIRED (try: nvm use $NODE_MAJOR_REQUIRED)" >&2
         UI_RC=1

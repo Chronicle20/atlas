@@ -1,6 +1,7 @@
 package drop
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -11,8 +12,8 @@ const (
 	Resource = "worlds/%d/channels/%d/maps/%d/instances/%s/drops"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("DROPS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "DROPS")
 }
 
 // inMapUrl returns the list URL for the drops currently in one map
@@ -20,6 +21,10 @@ func getBaseRequest() string {
 // now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func inMapUrl(f field.Model) string {
-	return fmt.Sprintf(getBaseRequest()+Resource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+func inMapUrl(ctx context.Context, f field.Model) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+Resource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()), nil
 }

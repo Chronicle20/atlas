@@ -20,7 +20,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("pet_status_event")(pet2.EnvEventTopicPetStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("pet_status_event")(pet2.EnvEventTopicPetStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -33,6 +33,15 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEvolvedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRevivedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleReviveFailedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleNameChangedEvent))); err != nil {
 			return err
 		}
 		return nil
@@ -66,6 +75,34 @@ func handleClosenessChangedEvent(l logrus.FieldLogger, ctx context.Context, e pe
 	_ = p.StepCompleted(e.Body.TransactionId, true)
 }
 
+func handleNameChangedEvent(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.NameChangedStatusEventBody]) {
+	if e.Type != pet2.StatusEventTypeNameChanged {
+		return
+	}
+
+	// Skip events without a transaction ID (non-saga renames, e.g. an admin
+	// or GM rename issued outside the pet_name_tag_use saga).
+	if e.Body.TransactionId == uuid.Nil {
+		l.Debugf("Pet name changed event for pet [%d] has no transaction ID, skipping saga completion", e.PetId)
+		return
+	}
+
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindPetNameChanged); !ok {
+		return
+	}
+
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.Body.TransactionId.String(),
+		"pet_id":         e.PetId,
+		"owner_id":       e.OwnerId,
+		"name":           e.Body.Name,
+		"previous_name":  e.Body.PreviousName,
+	}).Debug("Pet name changed successfully, marking saga step as completed")
+
+	_ = p.StepCompleted(e.Body.TransactionId, true)
+}
+
 func handleEvolvedEvent(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.EvolvedStatusEventBody]) {
 	if e.Type != pet2.StatusEventTypeEvolved {
 		return
@@ -91,4 +128,50 @@ func handleEvolvedEvent(l logrus.FieldLogger, ctx context.Context, e pet2.Status
 	}).Debug("Pet evolved successfully, marking saga step as completed")
 
 	_ = p.StepCompleted(e.Body.TransactionId, true)
+}
+
+func handleRevivedEvent(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.RevivedStatusEventBody]) {
+	if e.Type != pet2.StatusEventTypeRevived {
+		return
+	}
+	if e.Body.TransactionId == uuid.Nil {
+		return
+	}
+
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindPetRevived); !ok {
+		return
+	}
+
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.Body.TransactionId.String(),
+		"pet_id":         e.PetId,
+		"owner_id":       e.OwnerId,
+		"expiration":     e.Body.Expiration,
+	}).Debug("Pet revived successfully, marking saga step as completed")
+
+	_ = p.StepCompleted(e.Body.TransactionId, true)
+}
+
+func handleReviveFailedEvent(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.ReviveFailedStatusEventBody]) {
+	if e.Type != pet2.StatusEventTypeReviveFailed {
+		return
+	}
+	if e.Body.TransactionId == uuid.Nil {
+		return
+	}
+
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindPetReviveFailed); !ok {
+		return
+	}
+
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.Body.TransactionId.String(),
+		"pet_id":         e.PetId,
+		"owner_id":       e.OwnerId,
+		"reason":         e.Body.Reason,
+	}).Warn("Pet revive failed, failing saga step so the Water of Life is refunded.")
+
+	_ = p.StepCompleted(e.Body.TransactionId, false)
 }

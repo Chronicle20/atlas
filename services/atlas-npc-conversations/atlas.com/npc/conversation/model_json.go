@@ -505,29 +505,31 @@ func (c ConversationContext) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(struct {
-		Field            field.Model           `json:"field"`
-		CharacterId      uint32                `json:"characterId"`
-		NpcId            uint32                `json:"npcId"`
-		CurrentState     string                `json:"currentState"`
-		Conversation     *conversationDataJSON `json:"conversation,omitempty"`
-		Context          map[string]string     `json:"context,omitempty"`
-		PendingSagaId    *uuid.UUID            `json:"pendingSagaId,omitempty"`
-		ConversationType ConversationType      `json:"conversationType"`
-		SourceId         uint32                `json:"sourceId"`
-	}{c.field, c.characterId, c.npcId, c.currentState, convData, c.context, c.pendingSagaId, c.conversationType, c.sourceId})
+		Field               field.Model           `json:"field"`
+		CharacterId         uint32                `json:"characterId"`
+		NpcId               uint32                `json:"npcId"`
+		CurrentState        string                `json:"currentState"`
+		Conversation        *conversationDataJSON `json:"conversation,omitempty"`
+		Context             map[string]string     `json:"context,omitempty"`
+		PendingSagaId       *uuid.UUID            `json:"pendingSagaId,omitempty"`
+		ConversationType    ConversationType      `json:"conversationType"`
+		SourceId            uint32                `json:"sourceId"`
+		OriginTransactionId *uuid.UUID            `json:"originTransactionId,omitempty"`
+	}{c.field, c.characterId, c.npcId, c.currentState, convData, c.context, c.pendingSagaId, c.conversationType, c.sourceId, c.originTransactionId})
 }
 
 func (c *ConversationContext) UnmarshalJSON(data []byte) error {
 	var aux struct {
-		Field            field.Model           `json:"field"`
-		CharacterId      uint32                `json:"characterId"`
-		NpcId            uint32                `json:"npcId"`
-		CurrentState     string                `json:"currentState"`
-		Conversation     *conversationDataJSON `json:"conversation,omitempty"`
-		Context          map[string]string     `json:"context,omitempty"`
-		PendingSagaId    *uuid.UUID            `json:"pendingSagaId,omitempty"`
-		ConversationType ConversationType      `json:"conversationType"`
-		SourceId         uint32                `json:"sourceId"`
+		Field               field.Model           `json:"field"`
+		CharacterId         uint32                `json:"characterId"`
+		NpcId               uint32                `json:"npcId"`
+		CurrentState        string                `json:"currentState"`
+		Conversation        *conversationDataJSON `json:"conversation,omitempty"`
+		Context             map[string]string     `json:"context,omitempty"`
+		PendingSagaId       *uuid.UUID            `json:"pendingSagaId,omitempty"`
+		ConversationType    ConversationType      `json:"conversationType"`
+		SourceId            uint32                `json:"sourceId"`
+		OriginTransactionId *uuid.UUID            `json:"originTransactionId,omitempty"`
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
@@ -540,6 +542,7 @@ func (c *ConversationContext) UnmarshalJSON(data []byte) error {
 	c.pendingSagaId = aux.PendingSagaId
 	c.conversationType = aux.ConversationType
 	c.sourceId = aux.SourceId
+	c.originTransactionId = aux.OriginTransactionId
 	if aux.Conversation != nil {
 		c.conversation = storedConversation{
 			startState: aux.Conversation.StartState,

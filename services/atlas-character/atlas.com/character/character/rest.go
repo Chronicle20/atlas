@@ -4,6 +4,7 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
@@ -161,4 +162,34 @@ func derefOrZero(v *int) int {
 		return 0
 	}
 	return *v
+}
+
+// WorldChangeInputRestModel is the POST body for the dedicated world-change
+// route:
+// {data:{type:"characters",attributes:{newWorldId}}}. It exists separately
+// from RestModel/Update because world.Id is a byte and world 0 is a real
+// destination — a PATCH field using RestModel's "zero means absent"
+// convention could never express a transfer to world 0 (task-227 controller
+// ruling). This is the route the world-transfer saga (Task 13) calls.
+type WorldChangeInputRestModel struct {
+	Id         string   `json:"-"`
+	NewWorldId world.Id `json:"newWorldId"`
+	// TransactionId, when supplied, is threaded through to WORLD_CHANGED so a
+	// caller (the world-transfer saga, task-227 Task 13) can correlate the
+	// resulting status event back to its own step. A zero value falls back to
+	// a freshly generated id, preserving non-saga callers' behavior.
+	TransactionId uuid.UUID `json:"transactionId,omitempty"`
+}
+
+func (r WorldChangeInputRestModel) GetName() string {
+	return "characters"
+}
+
+func (r WorldChangeInputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *WorldChangeInputRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
 }

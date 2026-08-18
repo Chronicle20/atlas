@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -15,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
@@ -188,6 +190,7 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 			gp:                     m.gp,
 			prp:                    m.prp,
 			engine:                 m.engine,
+			service:                os.Getenv("SERVICE_NAME"),
 		}
 
 		m.consumers[c.topic] = con
@@ -252,7 +255,10 @@ type Consumer struct {
 	handlers      map[string]handler.Handler
 	headerParsers []HeaderParser
 	engine        EngineName
-	mu            sync.Mutex
+	// service identifies this deployment's own service for the ownership
+	// gate (FR-4.4), populated from SERVICE_NAME in AddConsumer.
+	service string
+	mu      sync.Mutex
 
 	// Read-only after construction; copied from Config in AddConsumer.
 	fetchTimeout           time.Duration
@@ -613,6 +619,26 @@ func (c *Consumer) processMessage(l logrus.FieldLogger, ctx context.Context, msg
 	for _, p := range c.headerParsers {
 		wctx = p(wctx, msg.Headers)
 	}
+
+	// Ownership gate (FR-4.4). Runs BEFORE the tracing span and before any
+	// domain handler, in consumer infrastructure — no domain processor
+	// contains environment-conditional logic (FR-4.5, NG5).
+	//
+	// Both drop paths return TRUE: the message is acknowledged and the
+	// offset advances. A drop is not a failure — returning false would
+	// block the prefix-commit cursor and wedge the partition.
+	msgEnv, _ := env.FromContext(wctx)()
+	switch decide(env.CurrentRegistry(), env.Self(), c.service, msgEnv, env.Mismatched(wctx)) {
+	case gateDropUnresolvable:
+		gateDroppedUnresolvable.WithLabelValues(c.service, string(msgEnv)).Inc()
+		l.WithField("environment", string(msgEnv)).WithField("topic", msg.Topic).
+			Error("Dropping message: environment is unresolvable. No deployment will process it.")
+		return true
+	case gateSkipNotOwner:
+		gateSkippedNotOwner.WithLabelValues(c.service, string(msgEnv)).Inc()
+		return true
+	}
+	gateProcessed.WithLabelValues(c.service, string(msgEnv)).Inc()
 
 	var span trace.Span
 	wctx, span = otel.GetTracerProvider().Tracer("atlas-kafka").Start(wctx, c.name)

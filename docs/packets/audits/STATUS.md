@@ -4,18 +4,18 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
+Tool: `319a7ad9b3347b81a4a0eed68718ebad0639d1ae89d0a93857f0c26f6ac9ca21`
 
-- export gms_v48: `255cf90dfe7d4851b445be1de39b5a18529ed242779c558a4188df2b073e1b6e`
-- export gms_v61: `0532e86e0ce45f5c898626409c98e28c8a1804d42c28406fcac1b5c379b71be0`
-- export gms_v72: `01445ed400a216f7f219cc2831653cb421c26c43fd50676b11510550fa1a94af`
-- export gms_v79: `a956db8ff64a8df29fbf11e19b158d3191dec51bb246ffd0848a721ea43409df`
-- export gms_v83: `9cfa0c4f248d94baf255babc9b95417e59806be4cbd96e0b98951be03c74352e`
-- export gms_v84: `53992af04beff72106d1fb79de956139aa824617b1d92b08ef9a3a064b710e6a`
-- export gms_v87: `f029b556b8d373a02e60e6df0c210ce143d111a960e06601bfae23cd59d11d4f`
-- export gms_v92: `0d675dac446741930ce0dabfdc5b2c54ab5417175d9b57341ed97dda046001f6`
-- export gms_v95: `f15eb92b0b367981984ef68303fecd197d8735bcc0ce7e603b3003509a717355`
-- export jms_v185: `0d054f727c883d0fea10da9ffa4da21c07a549f34caa8369f0ac44ee4f581a0b`
+- export gms_v48: `f46a1c091a8f557a7a0a47c295bed12c56e0f70e23552726d1ca6586eadbf0dd`
+- export gms_v61: `6c974c037a17229958f04d245f414de004f5530852466818e48167a4172e7c70`
+- export gms_v72: `f22e6d780c0ca97b845d09876f2a4724b612189f9d9d353451be062bcb741c56`
+- export gms_v79: `efa7d503bee32a270bf80e0d437259e1b4e13e7d7bab2058427def64e781a2a3`
+- export gms_v83: `9b938038def5da2b3e98681db301b5299a0c35274b2d71b92be3b364505d57d8`
+- export gms_v84: `16832eea1aedc71e48c73e047e4fca66fef8d2bfdc1901f2b5f00ac1286c40ce`
+- export gms_v87: `dcb1d52ed4c88dcef1d351e698a21c647b3bdd82a3c79b7bfc9c39682e15ab02`
+- export gms_v92: `05ed16a35700adcad2328e6cbd02418713bef4a90af79dc3fc569f6d0922a596`
+- export gms_v95: `fa56a542eabc75d20d5ba920b272ad990f1abe0fe99f346bb4ad96d950f7ca09`
+- export jms_v185: `576eda436b95b42e99f3bb0a6343964695a5c0732b95beed1593bab25f78df3c`
 
 ## Clientbound
 
@@ -154,11 +154,11 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | BLOW_WEATHER | CField::OnBlowWeather; sub_4C930A; sub_4ED39C; sub_5723E6 | field/clientbound/FieldEffectWeather (T1) | 0x055 | ✅ | 0x06A | ❌ | 0x082 | 🟡ᶠ | 0x086 | 🟡ᶠ | 0x08E | ✅ | 0x091 | ✅ | 0x096 | ✅ | 0x09D | 🟡ᶠ | 0x09E | ✅ | 0x08B | ✅ |
 | BONUS_EXP_CHANGED | CWvsContext::OnBonusExpRateChanged |  |  | ⬜ |  | ⬜ | 0x055 | ❌ | 0x056 | ❌ | 0x05D | ❌ | 0x05F | ❌ | 0x05F | ❌ | 0x061 | ❌ | 0x060 | ❌ | 0x064 | ❌ |
 | CLEAR_AVATAR_MEGAPHONE | CWvsContext::OnClearAvatarMegaphone | chat/clientbound/ChatClearAvatarMegaphone |  | ⬜ | 0x055 | ❌ | 0x068 | ❌ | 0x06A | ❌ | 0x070 | ✅ | 0x073 | ✅ | 0x073 | ✅ | 0x075 | ❌ | 0x074 | ✅ | 0x05B | ✅ |
-| CANCEL_NAME_CHANGE_RESULT | CWvsContext::OnCancelNameChangeResult |  |  | ⬜ | 0x056 | ❌ | 0x069 | ❌ | 0x06B | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x074 | ❌ | 0x076 | ❌ | 0x075 | ❌ |  | ⬜ |
+| CANCEL_NAME_CHANGE_RESULT | CWvsContext::OnCancelNameChangeResult |  |  | ⬜ | 0x056 | ✅ | 0x069 | ✅ | 0x06B | ✅ | 0x071 | ✅ | 0x074 | ✅ | 0x074 | ✅ | 0x076 | ✅ | 0x075 | ✅ |  | ⬜ |
 | PLAY_JUKEBOX | CField::OnPlayJukeBox; sub_4C95F2 | field/clientbound/FieldPlayJukebox (T1) | 0x056 | 🟡ᶠ |  | ⬜ | 0x083 | 🟡ᶠ | 0x087 | 🟡ᶠ | 0x08F | ✅ | 0x092 | ✅ | 0x097 | ✅ | 0x09E | 🟡ᶠ | 0x09F | ✅ | 0x08C | ✅ |
 | POTION_DISCOUNT_RATE_CHANGED | CWvsContext::OnPotionDiscountRateChanged |  |  | ⬜ |  | ⬜ | 0x056 | ❌ | 0x057 | ❌ |  | ⬜ | 0x060 | ❌ | 0x060 | ❌ | 0x062 | ❌ | 0x061 | ❌ |  | ⬜ |
 | ADMIN_RESULT | CField::OnAdminResult; sub_57255F | field/clientbound/FieldAdminResult (T1) | 0x057 | ✅ | 0x06B | 🟡ᶠ | 0x084 | 🟡ᶠ | 0x088 | ✅ | 0x090 | ✅ | 0x093 | ✅ | 0x098 | ✅ | 0x09F | ❌ | 0x0A0 | ✅ | 0x08D | ✅ |
-| CANCEL_TRANSFER_WORLD_RESULT | CWvsContext::OnCancelTransferWorldResult |  |  | ⬜ | 0x057 | ❌ | 0x06A | ❌ | 0x06C | ❌ | 0x072 | ❌ | 0x075 | ❌ | 0x075 | ❌ | 0x077 | ❌ | 0x076 | ❌ |  | ⬜ |
+| CANCEL_TRANSFER_WORLD_RESULT | CWvsContext::OnCancelTransferWorldResult |  |  | ⬜ | 0x057 | ✅ | 0x06A | ✅ | 0x06C | ✅ | 0x072 | ✅ | 0x075 | ✅ | 0x075 | ✅ | 0x077 | ✅ | 0x076 | ✅ |  | ⬜ |
 | CONSULT_AUTHKEY_UPDATE | CWvsContext::OnConsultAuthkeyUpdate |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x057 | ❌ | 0x059 | ❌ | 0x059 | ❌ | 0x05B | ❌ | 0x05A | ❌ | 0x05E | ❌ |
 | FAMILY_CHART_RESULT | CWvsContext::OnFamilyChartResult |  |  | ⬜ |  | ⬜ | 0x057 | ❌ | 0x058 | ❌ | 0x05E | ❌ | 0x061 | ❌ | 0x061 | ❌ | 0x063 | ❌ | 0x062 | ❌ | 0x065 | ❌ |
 | CLASS_COMPETITION_AUTHKEY_UPDATE | CWvsContext::OnClassCompetitionAuthkeyUpdate |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x058 | ❌ | 0x05A | ❌ | 0x05A | ❌ | 0x05C | ❌ | 0x05B | ❌ | 0x05F | ❌ |
@@ -201,7 +201,8 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | SPAWN_PET | CUser::OnPetPacket; CUser::OnPetPacket_Spawn |  | 0x06D | ❌ | 0x07F | ❌ | 0x099 | ❌ | 0x09D | ❌ | 0x0A8 | ❌ | 0x0AB | ❌ | 0x0B4 | ❌ | 0x0C3 | ❌ | 0x0C6 | ❌ | 0x0AD | ❌ |
 | NEW_YEAR_CARD_RES | CWvsContext::OnNewYearCardRes |  |  | ⬜ |  | ⬜ | 0x06E | ❌ | 0x070 | ❌ | 0x076 | ❌ | 0x079 | ❌ | 0x079 | ❌ | 0x07B | ❌ | 0x07A | ❌ |  | ⬜ |
 | RANDOM_MORPH_RES | CWvsContext::OnRandomMorphRes |  |  | ⬜ |  | ⬜ | 0x06F | ❌ | 0x071 | ❌ | 0x077 | ❌ | 0x07A | ❌ | 0x07A | ❌ | 0x07C | ❌ | 0x07B | ❌ |  | ⬜ |
-| CANCEL_NAME_CHANGE_BY_OTHER | CWvsContext::OnCancelNameChangebyOther |  |  | ⬜ |  | ⬜ | 0x070 | ❌ | 0x072 | ❌ | 0x078 | ❌ | 0x07B | ❌ | 0x07B | ❌ | 0x07D | ❌ | 0x07C | ❌ |  | ⬜ |
+| CANCEL_NAME_CHANGE_BY_OTHER | CWvsContext::OnCancelNameChangebyOther |  |  | ⬜ |  | ⬜ | 0x070 | ✅ | 0x072 | ✅ | 0x078 | ✅ | 0x07B | ✅ | 0x07B | ✅ | 0x07D | ✅ | 0x07C | ✅ |  | ⬜ |
+| PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 | pet/clientbound/PetNameChanged (T1) | 0x071 | ✅ | 0x083 | ✅ | 0x09D | ✅ | 0x0A1 | ✅ | 0x0AC | ✅ | 0x0B0 | ✅ | 0x0B9 | ✅ | 0x0C8 | ✅ | 0x0CB | ✅ | 0x0B2 | ✅ |
 | IDA_0X073 | sub_AF7C61 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ |
 | SET_EXTRA_PENDANT_SLOT | CWvsContext::OnSetBuyEquipExt; sub_95EE37 |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x073 | ❌ | 0x079 | ❌ | 0x07C | ❌ | 0x07C | ❌ | 0x07E | ❌ | 0x07D | ❌ |  | ⬜ |
 | IDA_0X074 | CWvsContext::OnSetPassenserRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ |
@@ -230,7 +231,6 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | CLEAR_BACK_EFFECT | CMapLoadable::OnClearBackEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x082 | ❌ | 0x085 | ❌ | 0x08A | ❌ | 0x091 | ❌ | 0x092 | ❌ | 0x080 | ❌ |
 | PET_CHAT | CPet::OnAction | pet/clientbound/PetChat (T1) |  | ⬜ | 0x082 | ✅ | 0x09C | ✅ | 0x0A0 | ✅ | 0x0AB | ✅ | 0x0AF | ✅ | 0x0B8 | ✅ | 0x0C7 | ❌ | 0x0CA | ✅ | 0x0B1 | ✅ |
 | FIND_FRIEND | CWvsContext::OnFindFirend |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x083 | ❌ | 0x086 | ❌ | 0x086 | ❌ |  | ⬜ |
-| PET_NAMECHANGE | CPet::OnNameChanged; CPet__OnNameChanged_recv_0xB0 |  |  | ⬜ | 0x083 | ❌ | 0x09D | ❌ | 0x0A1 | ❌ | 0x0AC | ❌ | 0x0B0 | ❌ | 0x0B9 | ❌ | 0x0C8 | ❌ | 0x0CB | ❌ | 0x0B2 | ❌ |
 | PET_EXCEPTION_LIST | CPet::OnLoadExceptionList | pet/clientbound/PetExcludeResponse (T1) |  | ⬜ | 0x084 | ✅ | 0x09E | ✅ | 0x0A2 | ✅ | 0x0AD | ✅ | 0x0B1 | ✅ | 0x0BA | ✅ | 0x0C9 | ❌ | 0x0CC | ✅ | 0x0B3 | ✅ |
 | WILD_HUNTER_INFO | CWvsContext::OnWildHunterInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x084 | ❌ |  | ⬜ |
 | PET_COMMAND | CPet::OnActionCommand | pet/clientbound/PetCommandResponse (T1) |  | ⬜ | 0x085 | ✅ | 0x09F | ✅ | 0x0A3 | ✅ | 0x0AE | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CA | ❌ | 0x0CD | ✅ | 0x0B4 | ✅ |
@@ -306,10 +306,10 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0B9 | ❌ | 0x0BB | ❌ |  | ⬜ |
 | SPAWN_NPC_REQUEST_CONTROLLER | CNpcPool::OnNpcChangeController | npc/clientbound/NpcSpawnRequestController (T1) | 0x0B3 | ✅ | 0x0C4 | 🟡ᶠ | 0x0E5 | 🟡ᶠ | 0x0ED | 🟡ᶠ | 0x103 | ✅ | 0x10A | ✅ | 0x114 | ✅ | 0x131 | ❌ | 0x139 | ✅ | 0x118 | ✅ |
 | APPLY_MONSTER_STATUS | CMob::OnStatSet | monster/clientbound/MonsterStatSet (T1) |  | ⬜ | 0x0B5 | ✅ | 0x0D6 | ✅ | 0x0DC | ✅ | 0x0F2 | ✅ | 0x0F8 | ✅ | 0x102 | ✅ | 0x11A | 🟡ᶠ | 0x122 | ✅ | 0x103 | ✅ |
-| SPAWN_DRAGON | CDragon::OnCreated |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0D1 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
+| SPAWN_DRAGON | CDragon::OnCreated |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ✅ | 0x0B9 | ✅ | 0x0C2 | ✅ | 0x0D1 | ✅ | 0x0CE | ✅ | 0x0BB | ✅ |
 | CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) |  | ⬜ | 0x0B6 | ✅ | 0x0D7 | ✅ | 0x0DD | ✅ | 0x0F3 | ✅ | 0x0F9 | ✅ | 0x103 | ✅ | 0x11B | 🟡ᶠ | 0x123 | ✅ | 0x104 | ✅ |
-| MOVE_DRAGON | CDragon::OnMove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B6 | ❌ | 0x0BA | ❌ | 0x0C3 | ❌ | 0x0D2 | ❌ | 0x0CF | ❌ | 0x0BC | ❌ |
-| REMOVE_DRAGON | CUser::OnDragonPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B7 | ❌ | 0x0BB | ❌ | 0x0C4 | ❌ | 0x0D3 | ❌ | 0x0D0 | ❌ | 0x0BD | ❌ |
+| MOVE_DRAGON | CDragon::OnMove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B6 | ✅ | 0x0BA | ✅ | 0x0C3 | ✅ | 0x0D2 | ✅ | 0x0CF | ✅ | 0x0BC | ✅ |
+| REMOVE_DRAGON | CUser::OnDragonPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B7 | ✅ | 0x0BB | ✅ | 0x0C4 | ✅ | 0x0D3 | ✅ | 0x0D0 | ✅ | 0x0BD | ✅ |
 | RESET_MONSTER_ANIMATION | CMob::OnSuspendReset | monster/clientbound/MonsterResetMonsterAnimation (T1) |  | ⬜ | 0x0B7 | 🟡ᶠ | 0x0D8 | 🟡ᶠ | 0x0DE | 🟡ᶠ | 0x0F4 | ✅ | 0x0FA | ✅ | 0x104 | ✅ | 0x11C | 🟡ᶠ | 0x124 | ✅ | 0x105 | ✅ |
 | DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) |  | ⬜ | 0x0B9 | ✅ | 0x0DA | ✅ | 0x0E0 | ✅ | 0x0F6 | ✅ | 0x0FC | ✅ | 0x106 | ✅ | 0x11E | ❌ | 0x126 | ✅ | 0x107 | ✅ |
 | MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill; sub_647790 | monster/clientbound/MonsterMonsterSpecialEffectBySkill (T1) |  | ⬜ | 0x0BA | ✅ | 0x0DB | ✅ | 0x0E1 | ✅ | 0x0F7 | ✅ | 0x0FD | ✅ | 0x107 | ✅ | 0x11F | ❌ | 0x127 | ✅ | 0x108 | ✅ |
@@ -406,11 +406,11 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | CASHSHOP_OPERATION | CCashShop::OnCashItemResult | cash/clientbound/CashBuyFailed (T1) |  | ⬜ | 0x0FF | ✅ | 0x123 | ✅ | 0x12F | ✅ | 0x145 | ✅ | 0x14C | ✅ | 0x156 | ✅ | 0x178 | ❌ | 0x180 | ✅ | 0x164 | ✅ |
 | IDA_0X0FF | CCashShop::OnOneADay |  | 0x0FF | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | CASHSHOP_CASH_ITEM_RESULT | CCashShop::OnCashItemResult | cash/clientbound/CashBuyFailed (T1) | 0x100 | ✅ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult; CCashShop::OnCheckNameChangePossibleResult; sub_455A7F; sub_463900; sub_473519 |  | 0x102 | ❌ | 0x101 | ❌ | 0x125 | ❌ | 0x131 | ❌ | 0x148 | ❌ | 0x14F | ❌ | 0x159 | ❌ | 0x17B | ❌ | 0x183 | ❌ |  | ⬜ |
+| CASHSHOP_CHECK_NAME_CHANGE | CCashShop::OnCheckDuplicatedIDResult | cash/clientbound/CashCheckNameChange (T1) | 0x102 | ✅ | 0x101 | ✅ | 0x125 | ✅ | 0x131 | ✅ | 0x148 | ✅ | 0x14F | ✅ | 0x159 | ✅ | 0x17B | ✅ | 0x183 | ✅ |  | ⬜ |
 | CASHSHOP_GACHAPON_STAMP_RESULT | CCashShop::OnCashShopGachaponStampResult |  | 0x103 | ❌ | 0x102 | ❌ | 0x126 | ❌ | 0x135 | ❌ | 0x14C | ❌ | 0x153 | ❌ | 0x15D | ❌ | 0x17F | ❌ | 0x187 | ❌ | 0x16B | ❌ |
 | SNOWBALL_STATE | CField_SnowBall::OnSnowBallState | field/clientbound/FieldSnowballState (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x103 | ✅ | 0x119 | ✅ | 0x120 | ✅ | 0x12A | ✅ | 0x14A | ❌ | 0x152 | ✅ | 0x131 | ✅ |
 | HIT_SNOWBALL | CField_SnowBall::OnSnowBallHit | field/clientbound/FieldSnowballHit (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x104 | ✅ | 0x11A | ✅ | 0x121 | ✅ | 0x12B | ✅ | 0x14B | 🟡ᶠ | 0x153 | ✅ | 0x132 | ✅ |
-| CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT | CCashShop::OnCheckTransferWorldPossibleResult |  | 0x105 | ❌ | 0x104 | ❌ | 0x128 | ❌ | 0x134 | ❌ | 0x14B | ❌ | 0x152 | ❌ | 0x15C | ❌ | 0x17E | ❌ | 0x186 | ❌ | 0x16C | ❌ |
+| CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT | CCashShop::OnCheckTransferWorldPossibleResult | cash/clientbound/CashCheckTransferWorldPossibleResult (T1) | 0x105 | ✅ | 0x104 | ✅ | 0x128 | ✅ | 0x134 | ✅ | 0x14B | ✅ | 0x152 | ✅ | 0x15C | ✅ | 0x17E | ✅ | 0x186 | ✅ | 0x16C | ✅ |
 | MOB_SKILL_DELAY | CMob::OnMobSkillDelay | monster/clientbound/MonsterMobSkillDelay (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x105 | ✅ | 0x10F | ✅ | 0x127 | 🟡ᶠ | 0x12F | ✅ | 0x10F | ✅ |
 | SNOWBALL_MESSAGE | CField_SnowBall::OnSnowBallMsg | field/clientbound/FieldSnowballMessage (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x105 | ✅ | 0x11B | ✅ | 0x122 | ✅ | 0x12C | ✅ | 0x14C | 🟡ᶠ | 0x154 | ✅ | 0x133 | ✅ |
 | KEYMAP | CFuncKeyMappedMan::OnInit | character/clientbound/CharacterKeyMap (T1) |  | ⬜ | 0x106 | ✅ | 0x12A | ✅ | 0x137 | ✅ | 0x14F | ✅ | 0x158 | ✅ | 0x163 | ✅ | 0x185 | 🟡ᶠ | 0x18E | ✅ | 0x170 | ✅ |
@@ -473,7 +473,7 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | CHARGE_PARAM_RESULT | CCashShop::OnChargeParamResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x12D | ❌ | 0x143 | ❌ | 0x14A | ❌ | 0x154 | ❌ | 0x176 | ❌ | 0x17E | ❌ | 0x161 | ❌ |
 | QUERY_CASH_RESULT | CCashShop::OnQueryCashResult | cash/clientbound/CashQueryResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x12E | 🟡ᶠ | 0x144 | ✅ | 0x14B | ✅ | 0x155 | ✅ | 0x177 | 🟡ᶠ | 0x17F | ✅ | 0x163 | ✅ |
 | CASHSHOP_PURCHASE_EXP_CHANGED | CCashShop::OnPurchaseExpChanged |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x130 | ❌ | 0x146 | ❌ | 0x14D | ❌ | 0x157 | ❌ | 0x179 | ❌ | 0x181 | ❌ | 0x165 | ❌ |
-| CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT | CCashShop::OnCheckNameChangePossibleResult |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x132 | ❌ | 0x149 | ❌ | 0x150 | ❌ | 0x15A | ❌ | 0x17C | ❌ | 0x184 | ❌ |  | ⬜ |
+| CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT | CCashShop::OnCheckNameChangePossibleResult | cash/clientbound/CashCheckNameChangePossibleResult (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x132 | ✅ | 0x149 | ✅ | 0x150 | ✅ | 0x15A | ✅ | 0x17C | ✅ | 0x184 | ✅ |  | ⬜ |
 | MTS_OPERATION2 | CField::OnCharacterSale; CITC::OnQueryCashResult | field/clientbound/FieldMtsOperation2 (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x143 | ✅ | 0x15B | ✅ | 0x15B | ✅ | 0x170 | ✅ | 0x192 | ❌ | 0x19B | ✅ |  | ⬜ |
 | MTS_OPERATION | CField::OnCharacterSale; CITC::OnNormalItemResult | field/clientbound/FieldMtsResultBidAuctionFailed (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x144 | ✅ | 0x15C | ✅ | 0x15C | ✅ | 0x171 | ✅ | 0x193 | ❌ | 0x19C | ✅ |  | ⬜ |
 | OPEN_GATE_CREATED | COpenGatePool::OnOpenGateCreated |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x144 | ❌ | 0x14C | ❌ |  | ⬜ |
@@ -525,11 +525,11 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | PICK_ALL_CHAR | CLogin::SendSelectCharPacketByVAC; sub_500254 | login/serverbound/AllCharacterListSelect | 0x00D | ❌ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ✅ | 0x00E | ❌ | 0x00E | ✅ |  | ⬜ |
 | VAC | CLogin::MakeVACDlg; CLogin::ResetVAC; sub_50273F | login/serverbound/AllCharacterListPong | 0x00E | ❌ | 0x00F | 🟡ᵈ | 0x00F | 🟡ᵈ | 0x00F | 🟡ᵈ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ✅ | 0x00F | ❌ | 0x00F | ✅ |  | ⬜ |
 | CHAR_SELECT | CLogin::SendSelectCharPacket; sub_500174 | login/serverbound/CharacterSelect | 0x00F | ❌ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ✅ | 0x013 | ❌ | 0x013 | ✅ | 0x006 | ✅ |
-| NAME_TRANSFER | CCashShop::SendCheckNameChangePossiblePacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x010 | ❌ | 0x009 | ❌ |
 | PLAYER_LOGGEDIN | CClientSocket::OnConnect | socket/serverbound/ChannelConnect | 0x010 | ❌ | 0x014 | ❌ | 0x014 | ❌ | 0x014 | ❌ | 0x014 | ✅ | 0x014 | ❌ | 0x014 | ✅ | 0x014 | ❌ | 0x014 | ✅ | 0x007 | ✅ |
 | CHECK_CHAR_NAME | CCashShop::SendCheckDuplicateIDPacket; CLogin::SendCheckDuplicateIDPacket; sub_500693; sub_565537 | character/serverbound/CheckName (T1) | 0x011 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | ✅ | 0x015 | 🟡ᶠ | 0x015 | ✅ | 0x008 | ✅ |
 | UNNAMED_R18 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ | 0x011 | ❌ |  | ⬜ |
-| WORLD_TRANSFER | CCashShop::SendCheckTransferWorldPossiblePacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ | 0x012 | ❌ |  | ⬜ |
+| NAME_TRANSFER | CCashShop::SendCheckNameChangePossiblePacket | cash/serverbound/CashCheckNameChangePossible (T1) | 0x012 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ | 0x010 | ✅ |  | ⬜ |
+| WORLD_TRANSFER | CCashShop::SendCheckTransferWorldPossiblePacket | cash/serverbound/CashCheckTransferWorldPossible (T1) | 0x014 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x012 | ✅ | 0x009 | ✅ |
 | CREATE_CHAR | CLogin::SendNewCharPacket; sub_500545; sub_5653E9 | character/serverbound/CreateCharacter (T1) | 0x015 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ✅ | 0x016 | ❌ | 0x016 | ✅ | 0x00B | ✅ |
 | DELETE_CHAR | CLogin::SendDeleteCharPacket; sub_50043F; sub_5652E3 | character/serverbound/DeleteCharacter (T1) | 0x016 | ✅ | 0x017 | ✅ | 0x018 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x017 | ✅ | 0x018 | 🟡ᶠ | 0x018 | ✅ | 0x00D | ✅ |
 | CREATE_CHAR_IN_CS | CLogin::SendNewCharPacket | character/serverbound/CreateCharacter (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x017 | ❌ | 0x017 | ✅ |  | ⬜ |
@@ -579,10 +579,12 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | UNNAMED_R74 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x036 | ❌ | 0x036 | ❌ | 0x039 | ❌ | 0x03C | ❌ | 0x03B | ❌ | 0x02E | ❌ |
 | ITEM_MOVE | CWvsContext::SendChangeSlotPositionRequest; sub_70D8DE | inventory/serverbound/InventoryMove (T1) | 0x037 | ✅ | 0x042 | ❌ | 0x046 | 🟡ᶠ | 0x045 | 🟡ᶠ | 0x047 | ❌ | 0x047 | ❌ | 0x04A | ✅ | 0x04E | 🟡ᶠ | 0x04D | ✅ | 0x03F | ✅ |
 | UNNAMED_R75 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x037 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x03D | ❌ | 0x03C | ❌ | 0x02F | ❌ |
+| USE_ITEM | CWvsContext::SendStatChangeItemUseRequest | inventory/serverbound/InventoryItemUse (T1) | 0x038 | ✅ | 0x043 | ❌ | 0x047 | 🟡ᶠ | 0x046 | 🟡ᶠ | 0x048 | ✅ | 0x048 | ✅ | 0x04B | ✅ | 0x04F | ✅ | 0x04E | ✅ | 0x040 | ✅ |
 | CANCEL_ITEM_EFFECT | CWvsContext::SendStatChangeItemCancelRequest; sub_70DD49 | character/serverbound/ItemCancel (T1) | 0x039 | ✅ | 0x044 | ✅ | 0x048 | ✅ | 0x047 | ✅ | 0x049 | ✅ | 0x049 | ✅ | 0x04C | ✅ | 0x050 | 🟡ᶠ | 0x04F | ✅ | 0x041 | ✅ |
 | STATE_CHANGE_BY_PORTABLE_CHAIR_REQUEST | CWvsContext::TryRecovery | character/serverbound/StateChangeByPortableChair (T1) | 0x03A | ✅ | 0x045 | ✅ | 0x049 | ✅ | 0x048 | ✅ | 0x04A | ✅ | 0x04A | ✅ | 0x04D | ✅ | 0x051 | ❌ | 0x050 | ✅ | 0x042 | ✅ |
 | REMOTE_STORE | CWvsContext::SendRemoteShopOpenRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x03B | ❌ | 0x03B | ❌ | 0x03E | ❌ | 0x041 | ❌ | 0x040 | ❌ | 0x033 | ❌ |
-| PET_FOOD | CWvsContext::SendPetFoodItemUseRequest | pet/serverbound/PetFood (T1) | 0x03C | ✅ | 0x047 | ❌ | 0x04B | 🟡ᶠ | 0x04A | 🟡ᶠ | 0x04C | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x053 | 🟡ᶠ | 0x052 | ✅ | 0x044 | ✅ |
+| USE_SUMMON_BAG | CWvsContext::SendMobSummonItemUseRequest; sub_904154; sub_955499 |  | 0x03B | ✅ | 0x046 | ✅ | 0x04A | ✅ | 0x049 | ✅ | 0x04B | ✅ | 0x04B | ✅ | 0x04E | ✅ | 0x052 | ✅ | 0x051 | ✅ | 0x043 | ✅ |
+| PET_FOOD | CWvsContext::SendPetFoodItemUseRequest | pet/serverbound/PetFood (T1) | 0x03C | ✅ | 0x047 | ❌ | 0x04B | 🟡ᶠ | 0x04A | 🟡ᶠ | 0x04C | ✅ | 0x04C | ✅ | 0x04F | ✅ | 0x053 | ✅ | 0x052 | ✅ | 0x044 | ✅ |
 | USE_MOUNT_FOOD | CWvsContext::SendTamingMobFoodItemUseRequest | mount/serverbound/MountFood | 0x03D | ✅ | 0x048 | ✅ | 0x04C | ✅ | 0x04B | ✅ | 0x04D | ✅ | 0x04D | ✅ | 0x050 | ✅ | 0x054 | 🟡ᵈ | 0x053 | ✅ | 0x045 | ✅ |
 | HIRED_MERCHANT_REQUEST | CWvsContext::SendEntrustedShopCheckRequest; sub_715A7B; sub_971BE0 |  |  | ⬜ | 0x03E | ❌ | 0x03E | ❌ | 0x03D | ❌ | 0x03F | ❌ | 0x03F | ❌ | 0x042 | ❌ | 0x045 | ❌ | 0x044 | ❌ | 0x037 | ❌ |
 | USE_CASH_ITEM | CItemSpeakerDlg::_SendConsumeCashItemUseRequest; CUICharacterSaleDlg::SendCreateNewCharacter; CUIIncubator::OnButtonClicked; CUIKarmaDlg::_SendConsumeCashItemUseRequest; CUIUnreleaseDlg::UnreleaseEquipItem; CWvsContext::SendConsumeCashItemUseRequest | cash/serverbound/CashItemUseMegaphone (T1) | 0x03E | ✅ | 0x049 | ✅ | 0x04E | ✅ | 0x04D | ✅ | 0x04F | ❌ | 0x04F | ❌ | 0x052 | ✅ | 0x056 | ❌ | 0x055 | ✅ | 0x047 | ✅ |
@@ -593,25 +595,23 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | USE_SKILL_BOOK | CWvsContext::SendSkillLearnItemUseRequest | character/serverbound/CharacterUseSkillBook (T1) | 0x040 | ✅ | 0x04B | ✅ | 0x051 | ✅ | 0x050 | ✅ | 0x052 | ✅ | 0x052 | ✅ | 0x055 | ✅ | 0x059 | 🟡ᶠ | 0x058 | ✅ | 0x04A | ✅ |
 | DUEY_ACTION | CParcelDlg::CloseParcelDlg; CTabQuickSend::SendQuickDelivery; CTabReceive::DiscardParcel; CTabReceive::ReceiveParcel; CTabSend::SendParcel; CUIFadeYesNo::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x041 | ❌ | 0x041 | ❌ | 0x044 | ❌ | 0x047 | ❌ | 0x046 | ❌ | 0x039 | ❌ |
 | ITEM_SORT2 | CWvsContext::SendSortItemRequest; sub_954CFD | inventory/serverbound/InventoryCompartmentSortRequest (T1) |  | ⬜ | 0x041 | ✅ | 0x045 | ✅ | 0x044 | ✅ | 0x046 | ❌ | 0x046 | ❌ | 0x049 | ✅ | 0x04D | 🟡ᶠ | 0x04C | ✅ | 0x03E | ✅ |
-| USE_ITEM | CWvsContext::SendStatChangeItemUseRequest; sub_719DD9 | inventory/serverbound/InventoryItemUse (T1) | 0x041 | ✅ | 0x043 | ❌ | 0x047 | 🟡ᶠ | 0x046 | 🟡ᶠ | 0x048 | ✅ | 0x048 | ✅ | 0x04B | ✅ | 0x04F | 🟡ᶠ | 0x04E | ✅ | 0x040 | ✅ |
+| USE_RETURN_SCROLL | CWvsContext::SendPortalScrollUseRequest; CWvsContext::SendReturnScrollUseRequest; sub_841AA5 |  | 0x041 | ✅ | 0x04E | ✅ | 0x054 | ✅ | 0x053 | ✅ | 0x055 | ✅ | 0x055 | ✅ | 0x058 | ✅ | 0x05C | ✅ | 0x05C | ✅ | 0x04D | ✅ |
 | OWL_ACTION | CUIShopScanner::OnCreate | merchant/serverbound/OwlAction (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x042 | ✅ | 0x042 | ❌ | 0x045 | ❌ | 0x049 | ❌ | 0x048 | ✅ | 0x03A | ❌ |
-| USE_UPGRADE_SCROLL | CWvsContext::SendUpgradeItemUseRequest; sub_954F9B | inventory/serverbound/InventoryScrollUse (T1) | 0x042 | ✅ | 0x04F | ✅ | 0x055 | ✅ | 0x054 | ✅ | 0x056 | ✅ | 0x056 | ✅ | 0x059 | ✅ | 0x05D | 🟡ᶠ | 0x05D | ✅ | 0x04E | ✅ |
+| USE_UPGRADE_SCROLL | CWvsContext::SendUpgradeItemUseRequest; sub_954F9B | inventory/serverbound/InventoryScrollUse (T1) | 0x042 | ✅ | 0x04F | ✅ | 0x055 | ✅ | 0x054 | ✅ | 0x056 | ✅ | 0x056 | ✅ | 0x059 | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x04E | ✅ |
 | DISTRIBUTE_AP | CWvsContext::SendAbilityUpRequest; sub_71CD00; sub_8457EE | character/serverbound/DistributeAp (T1) | 0x043 | ✅ | 0x050 | ✅ | 0x056 | ✅ | 0x055 | ✅ | 0x057 | ✅ | 0x057 | ✅ | 0x05B | ✅ | 0x061 | ❌ | 0x062 | ✅ | 0x052 | ✅ |
 | ADMIN_SHOP | CAdminShopDlg::OnPacket; CAdminShopDlg::SendTradeRequest; CAdminShopDlg::SetRet; CUIAdminShopWishList::SendRegisterPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x044 | ❌ | 0x044 | ❌ | 0x047 | ❌ | 0x04B | ❌ | 0x04A | ❌ | 0x03C | ❌ |
 | HEAL_OVER_TIME | CWvsContext::SendStatChangeRequest | character/serverbound/HealOverTime (T1) | 0x044 | ✅ | 0x051 | ✅ | 0x058 | ✅ | 0x057 | ✅ | 0x059 | ✅ | 0x059 | ✅ | 0x05C | ✅ | 0x063 | 🟡ᶠ | 0x064 | ✅ | 0x054 | ✅ |
-| USE_SUMMON_BAG | CWvsContext::SendMobSummonItemUseRequest; sub_955499 |  |  | ⬜ | 0x046 | ❌ | 0x04A | ❌ | 0x049 | ❌ | 0x04B | ❌ | 0x04B | ❌ | 0x04E | ❌ | 0x052 | ❌ | 0x051 | ❌ | 0x043 | ❌ |
 | CANCEL_BUFF | CUserLocal::SendSkillCancelRequest | character/serverbound/BuffCancelRequest (T1) | 0x047 | ✅ | 0x054 | 🟡ᶠ | 0x05B | 🟡ᶠ | 0x05A | 🟡ᶠ | 0x05C | ✅ | 0x05C | ✅ | 0x05F | ✅ | 0x067 | ❌ | 0x068 | ✅ | 0x057 | ✅ |
 | SKILL_EFFECT | CUserLocal::DoActiveSkill_Prepare; sub_6ADD4C | character/serverbound/CharacterSkillPrepare (T1) | 0x048 | ✅ | 0x055 | ✅ | 0x05C | ✅ | 0x05B | ✅ | 0x05D | ✅ | 0x05D | ✅ | 0x060 | ✅ | 0x068 | ❌ | 0x069 | ✅ | 0x058 | ✅ |
 | USER_EFFECT_LOCAL | CUserLocal::SendSkillEffectRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x048 | ❌ | 0x047 | ❌ |  | ⬜ |
 | DISTRIBUTE_SP | CWvsContext::SendSkillUpRequest; sub_71CEB3; sub_8458EB | character/serverbound/DistributeSp (T1) | 0x049 | ✅ | 0x052 | ✅ | 0x059 | ✅ | 0x058 | ✅ | 0x05A | ✅ | 0x05A | ✅ | 0x05D | ✅ | 0x065 | 🟡ᶠ | 0x066 | ✅ | 0x055 | ✅ |
 | GIVE_FAME | CWvsContext::SendGivePopularityRequest; sub_71CF3B; sub_845A65; sub_96E07F | fame/serverbound/Change | 0x04A | ❌ | 0x057 | ❌ | 0x05E | ❌ | 0x05D | ❌ | 0x05F | ✅ | 0x05F | ✅ | 0x062 | ✅ | 0x06A | 🟡ᵈ | 0x06B | ✅ | 0x05A | ✅ |
 | CHAR_INFO_REQUEST | CWvsContext::SendCharacterInfoRequest; sub_71D059; sub_845B68 | character/serverbound/InfoRequest (T1) | 0x04C | ✅ | 0x059 | ✅ | 0x060 | ✅ | 0x05F | ✅ | 0x061 | ✅ | 0x061 | ✅ | 0x064 | ✅ | 0x06C | 🟡ᶠ | 0x06D | ✅ | 0x05C | ✅ |
+| SCRIPTED_ITEM | CWvsContext::SendScriptRunItemRequest | inventory/serverbound/InventoryScriptedItem (T1) |  | ⬜ |  | ⬜ | 0x04D | ✅ | 0x04C | ✅ | 0x04E | ✅ | 0x04E | ✅ | 0x051 | ✅ | 0x055 | ✅ | 0x054 | ✅ | 0x046 | ✅ |
 | SPAWN_PET | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) | 0x04D | ✅ |  | ⬜ | 0x061 | ✅ | 0x060 | ✅ | 0x062 | ❌ | 0x062 | ❌ | 0x065 | ✅ | 0x06D | ❌ | 0x06E | ✅ | 0x05D | ✅ |
 | USE_TELEPORT_ROCK | CWvsContext::SendMapTransferItemUseRequest; sub_8327DB; sub_904D5E; sub_9560C6 | teleportrock/serverbound/Use (T1) |  | ⬜ | 0x04D | ✅ | 0x053 | ✅ | 0x052 | ✅ | 0x054 | ✅ | 0x054 | ✅ | 0x057 | ✅ | 0x05B | ❌ | 0x05B | ✅ | 0x04C | ✅ |
 | CANCEL_DEBUFF | CWvsContext::CheckTemporaryStatDuration | character/serverbound/CancelDebuff (T1) | 0x04E | ✅ | 0x05B | ✅ | 0x062 | ✅ | 0x061 | ✅ | 0x063 | ✅ | 0x063 | ✅ | 0x066 | ✅ | 0x06E | ❌ | 0x06F | ✅ | 0x05E | ✅ |
-| SCRIPTED_ITEM | CWvsContext::SendScriptRunItemRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04E | ❌ | 0x04E | ❌ | 0x051 | ❌ | 0x055 | ❌ | 0x054 | ❌ | 0x046 | ❌ |
-| USE_RETURN_SCROLL | CWvsContext::SendPortalScrollUseRequest; CWvsContext::SendReturnScrollUseRequest; sub_841AA5 |  |  | ⬜ | 0x04E | ❌ | 0x054 | ❌ | 0x053 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x058 | ❌ | 0x05C | ❌ | 0x05C | ❌ | 0x04D | ❌ |
-| DESTROY_PET_ITEM_REQUEST | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ | 0x050 | ❌ | 0x053 | ✅ | 0x057 | ❌ | 0x056 | ✅ | 0x048 | ✅ |
+| DESTROY_PET_ITEM_REQUEST | CWvsContext::SendActivatePetRequest | pet/serverbound/PetSpawn (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x050 | ❌ | 0x050 | ❌ | 0x053 | ✅ | 0x057 | ✅ | 0x056 | ✅ | 0x048 | ✅ |
 | TROCK_ADD_MAP | CWvsContext::SendMapTransferRequest; sub_71E7F3; sub_8478EA; sub_91E33E; sub_970286 | teleportrock/serverbound/AddMap | 0x051 | ✅ | 0x05E | ✅ | 0x065 | ✅ | 0x064 | ✅ | 0x066 | ✅ | 0x066 | ✅ | 0x069 | ✅ | 0x071 | 🟡ᵈ | 0x072 | ✅ | 0x061 | ✅ |
 | ANTI_MACRO_RESULT | CUIAdminAntiMacro::SetRet; CUIAntiMacro::SetRet; sub_5F9718; sub_69C480 |  | 0x053 | ❌ | 0x060 | ❌ |  | ⬜ |  | ⬜ | 0x069 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x074 | ❌ | 0x075 | ❌ | 0x064 | ❌ |
 | SPECIAL_MOVE | CGrenade::SendTimeBombInfo; CUserLocal::DoActiveSkill_DamageMeter; CUserLocal::DoActiveSkill_Flying; CUserLocal::DoActiveSkill_Heal; CUserLocal::DoActiveSkill_MobCapture; CUserLocal::DoActiveSkill_OpenGate; CUserLocal::DoActiveSkill_RecoveryAura; CUserLocal::DoActiveSkill_SmokeShell; CUserLocal::DoActiveSkill_StatChangeAdmin; CUserLocal::DoActiveSkill_Summon; CUserLocal::DoActiveSkill_SummonMonster; CUserLocal::DoActiveSkill_TownPortal; CUserLocal::SendSkillUseRequest; CUserLocal::TryDoingMonsterMagnet; CUserLocal::TryDoingSwallowAbsorb; sub_8C0CBE |  |  | ⬜ | 0x053 | ❌ | 0x05A | ❌ | 0x059 | ❌ | 0x05B | ❌ | 0x05B | ❌ | 0x05E | ❌ | 0x066 | ❌ | 0x067 | ❌ | 0x056 | ❌ |
@@ -638,6 +638,7 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | NOTE_ACTION | CCashShop::OnCashItemResLoadGiftDone; CMemoListDlg::SetRet; CWvsContext::OnMemoNotify_Receive | note/serverbound/NoteOperationDiscard (T1) | 0x065 | ✅ | 0x077 | ✅ | 0x081 | ✅ | 0x080 | ✅ | 0x083 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x097 | ❌ | 0x09A | ✅ | 0x086 | ✅ |
 | SKILL_MACRO | CMacroSysMan::FlushToSvr; sub_59746C | character/serverbound/CharacterSkillMacroHandle (T1) |  | ⬜ | 0x065 | ✅ | 0x06D | ✅ | 0x06C | ✅ | 0x06E | ✅ | 0x06E | ✅ | 0x071 | ✅ | 0x079 | ✅ | 0x07A | ✅ | 0x069 | ✅ |
 | USE_INNER_PORTAL | CUserLocal::TryRegisterTeleport |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x065 | ❌ | 0x065 | ❌ | 0x068 | ❌ | 0x070 | ❌ | 0x071 | ❌ | 0x060 | ❌ |
+| NPC_ITEM_USE_REQUEST | CWvsContext::SendSelectNpcItemUseRequest | inventory/serverbound/InventoryNpcItemUse (T1) |  | ⬜ | 0x066 | ✅ | 0x06E | ✅ | 0x06D | ✅ | 0x06F | ✅ | 0x06F | ✅ | 0x072 | ✅ | 0x07A | ✅ | 0x07B | ✅ | 0x06A | ✅ |
 | USE_SHOP_SCANNER_ITEM | CWvsContext::SendShopScannerItemUseRequest | merchant/serverbound/ShopScannerItemUse (T1) |  | ⬜ |  | ⬜ | 0x066 | ✅ | 0x065 | ✅ | 0x053 | ✅ | 0x053 | ❌ |  | ⬜ | 0x05A | ❌ | 0x05A | ✅ |  | ⬜ |
 | ANTI_MACRO_ITEM_USE | CWvsContext::SendAntiMacroItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x067 | ❌ | 0x067 | ❌ | 0x06A | ❌ | 0x072 | ❌ | 0x073 | ❌ | 0x062 | ❌ |
 | USE_DOOR | CField::TryEnterTownPortal; CTownPortalPool::TryEnterTownPortal; sub_4CB90A; sub_5E3082 | field/serverbound/FieldUseDoor (T1) | 0x067 | ✅ | 0x079 | ✅ | 0x083 | ✅ | 0x082 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x08D | ✅ | 0x099 | ❌ | 0x09C | ✅ | 0x088 | ✅ |
@@ -650,7 +651,6 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | GRENADE_EFFECT | CUserLocal::ThrowGrenade |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06D | ❌ | 0x06D | ❌ | 0x070 | ❌ | 0x078 | ❌ | 0x079 | ❌ | 0x068 | ❌ |
 | CHANGE_KEYMAP | CFuncKeyMappedMan::ChangePetConsumeItemID; CFuncKeyMappedMan::ChangePetConsumeMPItemID; CFuncKeyMappedMan::SaveFuncKeyMap | character/serverbound/KeyMapChange (T1) | 0x06E | ✅ | 0x07B | ✅ | 0x085 | ✅ | 0x084 | ✅ | 0x087 | ✅ | 0x08B | ✅ | 0x08F | ✅ | 0x09C | ❌ | 0x09F | ✅ | 0x08A | ✅ |
 | LOTTERY_ITEM_USE_REQUEST | CWvsContext::SendLotteryItemUseRequest | inventory/serverbound/InventoryLotteryItemUse (T1) |  | ⬜ |  | ⬜ | 0x06F | ✅ | 0x06E | ✅ | 0x070 | ✅ | 0x070 | ✅ | 0x073 | ✅ | 0x07B | 🟡ᶠ | 0x07C | ✅ | 0x06B | ✅ |
-| NPC_ITEM_USE_REQUEST | CWvsContext::SendSelectNpcItemUseRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x06F | ❌ | 0x06F | ❌ | 0x072 | ❌ | 0x07A | ❌ | 0x07B | ❌ | 0x06A | ❌ |
 | RPS_ACTION | CRPSGameDlg::OnBtContinue; CRPSGameDlg::OnBtExit; CRPSGameDlg::OnBtRetry; CRPSGameDlg::OnBtStart; CRPSGameDlg::SendSelection; CRPSGameDlg::Update | rps/serverbound/RpsOperation | 0x06F | ✅ | 0x07C | ✅ | 0x086 | ✅ | 0x085 | ✅ | 0x088 | ✅ | 0x08C | ✅ | 0x090 | ✅ | 0x09D | ❌ | 0x0A0 | ✅ | 0x08B | ✅ |
 | MAKER_SKILL | CUIItemMaker::RequestItemMake |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x071 | ❌ | 0x071 | ❌ | 0x074 | ❌ | 0x07C | ❌ | 0x07D | ❌ | 0x06C | ❌ |
 | MOVE_PET | CVecCtrlPet::EndUpdateActive; sub_6E5BD6 | pet/serverbound/PetMovementRequest (T1) | 0x071 | ✅ | 0x08A | ✅ | 0x0A1 | ✅ | 0x0A3 | ✅ | 0x0A7 | ✅ | 0x0AC | ✅ | 0x0B3 | ✅ | 0x0C4 | 🟡ᶠ | 0x0C7 | ✅ | 0x0AA | ✅ |
@@ -663,7 +663,7 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | USE_REMOTE | CWvsContext::SendUseGachaponRemoteRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x074 | ❌ | 0x074 | ❌ | 0x077 | ❌ | 0x07F | ❌ | 0x080 | ❌ |  | ⬜ |
 | FOLLOW_CHARACTER_WITHRDAW |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ |
 | PET_AUTO_POT | CWvsContext::SendStatChangeItemUseRequestByPetQ | pet/serverbound/PetItemUse (T1) | 0x075 | ✅ | 0x08E | ✅ | 0x0A5 | ✅ | 0x0A7 | ✅ | 0x0AB | ✅ | 0x0B0 | ✅ | 0x0B7 | ✅ | 0x0C8 | ✅ | 0x0CB | ✅ | 0x0AE | ✅ |
-| WATER_OF_LIFE | CWvsContext::SendWaterOfLife |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ❌ | 0x075 | ❌ | 0x078 | ❌ | 0x080 | ❌ | 0x081 | ❌ |  | ⬜ |
+| WATER_OF_LIFE | CWvsContext::SendWaterOfLife | pet/serverbound/PetWaterOfLife (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x075 | ✅ | 0x075 | ✅ | 0x078 | ✅ | 0x080 | ✅ | 0x081 | ✅ |  | ⬜ |
 | MOVE_SUMMON | CVecCtrlSummoned::EndUpdateActive; sub_6E7CF8; sub_7FE86B; sub_9184E5 | summon/serverbound/SummonMoveHandle | 0x078 | ❌ | 0x092 | ❌ | 0x0A9 | ❌ | 0x0AB | ❌ | 0x0AF | ✅ | 0x0B2 | ✅ | 0x0BB | ✅ | 0x0CC | ❌ | 0x0CF | ✅ | 0x0B2 | ✅ |
 | REPAIR_DURABILITY_ALL | CRepairDurabilityDlg::SendRepairDurabilityAll |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x079 | ❌ | 0x081 | ❌ | 0x082 | ❌ | 0x06D | ❌ |
 | SUMMON_ATTACK | CSummoned::AttackToTargetMob; CSummoned::TryDoingAttackManual; CSummoned::TryDoingTaslaCoilAttack; sub_5D9424; sub_71B522 | summon/serverbound/SummonAttackHandle (T1) | 0x079 | ✅ | 0x093 | ✅ | 0x0AA | ✅ | 0x0AC | ✅ | 0x0B0 | ❌ | 0x0B3 | ❌ | 0x0BC | ❌ | 0x0CD | ❌ | 0x0D0 | ❌ | 0x0B3 | ❌ |
@@ -738,7 +738,7 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | UNNAMED_R279 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B2 | ❌ | 0x0C3 | ❌ | 0x0C6 | ❌ |  | ⬜ |
 | UNNAMED_R296 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B3 | ❌ |  | ⬜ | 0x0BF | ❌ | 0x0D1 | ❌ | 0x0D4 | ❌ | 0x0B7 | ❌ |
 | UNNAMED_R297 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B4 | ❌ |  | ⬜ | 0x0C0 | ❌ | 0x0D2 | ❌ | 0x0D5 | ❌ | 0x0B8 | ❌ |
-| MOVE_DRAGON | CVecCtrlDragon::EndUpdateActive; CVecCtrlDragon__EndUpdateActive_send_0xBA |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ❌ | 0x0BA | ❌ | 0x0C1 | ❌ | 0x0D3 | ❌ | 0x0D6 | ❌ | 0x0B9 | ❌ |
+| MOVE_DRAGON | CVecCtrlDragon::EndUpdateActive |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ✅ | 0x0BA | ✅ | 0x0C1 | ✅ | 0x0D3 | ✅ | 0x0D6 | ✅ | 0x0B9 | ✅ |
 | UNNAMED_R299 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B6 | ❌ |  | ⬜ | 0x0C2 | ❌ | 0x0D4 | ❌ | 0x0D7 | ❌ | 0x0BA | ❌ |
 | CHANGE_QUICKSLOT | CQuickslotKeyMappedMan::SaveQuickslotKeyMap; CQuickslotKeyMappedMan__SaveQuickslotKeyMap_send_0xBC |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B7 | ❌ | 0x0BC | ❌ | 0x0C3 | ❌ | 0x0D5 | ❌ | 0x0D8 | ❌ | 0x0BB | ❌ |
 | MONSTER_CARNIVAL | CUIMonsterCarnival::RequestSend; sub_6F0D5F | monster/carnival/serverbound/MonsterCarnival (T1) |  | ⬜ | 0x0B7 | ❌ | 0x0D0 | ❌ | 0x0D2 | 🟡ᶠ | 0x0DA | ✅ | 0x0E0 | ✅ | 0x0E7 | ✅ | 0x0FF | ❌ | 0x106 | ✅ | 0x0E5 | ✅ |
@@ -839,6 +839,7 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 | cash/serverbound/CashItemUseItemMegaphone (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseMapleTV (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashItemUseMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
+| cash/serverbound/CashItemUsePetNameTag (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUsePetSkill (T1) |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ✅ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -1055,16 +1056,16 @@ Tool: `830d32c7a9cc84e624b12bfbd8bd4ae5f80ff9eb337a113f04a6f09b80304fe1`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 205 | 0 | 19 | 195 | 600 | 0 | 48.9% |
-| v61 | 268 | 0 | 56 | 234 | 461 | 0 | 48.0% |
-| v72 | 284 | 0 | 69 | 248 | 418 | 0 | 47.3% |
-| v79 | 329 | 0 | 68 | 245 | 377 | 0 | 51.2% |
-| v83 | 449 | 0 | 0 | 342 | 228 | 0 | 56.8% |
-| v84 | 424 | 0 | 0 | 348 | 247 | 0 | 54.9% |
-| v87 | 458 | 0 | 0 | 371 | 190 | 0 | 55.2% |
-| v92 | 29 | 0 | 151 | 698 | 141 | 0 | 3.3% |
-| v95 | 483 | 0 | 0 | 430 | 106 | 0 | 52.9% |
-| JMS185 | 431 | 0 | 0 | 391 | 197 | 0 | 52.4% |
+| v48 | 212 | 0 | 19 | 194 | 595 | 0 | 49.9% |
+| v61 | 278 | 0 | 56 | 228 | 458 | 0 | 49.5% |
+| v72 | 296 | 0 | 69 | 241 | 414 | 0 | 48.8% |
+| v79 | 342 | 0 | 68 | 237 | 373 | 0 | 52.9% |
+| v83 | 468 | 0 | 0 | 324 | 228 | 0 | 59.1% |
+| v84 | 442 | 0 | 0 | 331 | 247 | 0 | 57.2% |
+| v87 | 476 | 0 | 0 | 354 | 190 | 0 | 57.3% |
+| v92 | 51 | 0 | 148 | 680 | 141 | 0 | 5.8% |
+| v95 | 501 | 0 | 0 | 413 | 106 | 0 | 54.8% |
+| JMS185 | 442 | 0 | 0 | 381 | 197 | 0 | 53.7% |
 
 ## Conflicts
 

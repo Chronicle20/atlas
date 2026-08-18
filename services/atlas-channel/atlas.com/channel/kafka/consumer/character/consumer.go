@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-channel/character"
 	"atlas-channel/character/combo"
+	dragoncmd "atlas-channel/dragon"
 	consumer2 "atlas-channel/kafka/consumer"
 	mapconsumer "atlas-channel/kafka/consumer/map"
 	character2 "atlas-channel/kafka/message/character"
@@ -43,7 +44,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("character_status_event")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("character_status_event")(character2.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -81,6 +82,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLevelChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventJobChanged(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -493,6 +499,30 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 			// stat.TypeLevel. Only the foreign effect needs an explicit push,
 			// since other players don't receive the stat packet.
 			return _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(charpkt.CharacterLevelUpEffectForeignBody(s.CharacterId())))
+		})
+	}
+}
+
+// handleStatusEventJobChanged asks atlas-dragons to (re)create the dragon for a
+// character whose job just changed, using the live session's field — the event
+// carries no map id and GET /characters/{id} does not return one.
+//
+// It emits CREATE unconditionally and does NOT test the job itself: the
+// dragon-bearing predicate lives in exactly one place (atlas-dragons'
+// Processor.Create), and duplicating it channel-side would be a second copy to
+// drift. A non-Evan job change is a cheap no-op there.
+//
+// The DESTROY direction is owned by atlas-dragons, which needs no field.
+func handleStatusEventJobChanged(sc server.Model, wp writer.Producer) message.Handler[character2.StatusEvent[character2.JobChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, event character2.StatusEvent[character2.JobChangedStatusEventBody]) {
+		if event.Type != character2.StatusEventTypeJobChanged {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), event.WorldId, event.Body.ChannelId) {
+			return
+		}
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(event.CharacterId, func(s session.Model) error {
+			return dragoncmd.NewProcessor(l, ctx).Create(s.Field(), event.CharacterId)
 		})
 	}
 }

@@ -1,0 +1,84 @@
+# scopeguard entity-level allowlist (Rule 1).
+#
+# One entry per exempted services/**/entity.go primary `Entity` struct that
+# has no TenantId field. Entities in the two control-plane services
+# (atlas-configurations, atlas-tenants) go through Rule 1's control-plane
+# branch instead, which normally requires an Environment column with no
+# allowlist fallback — except for the one "the row IS the scoping
+# dimension" shape (analyzer.go's checkEntity), which is listed here too.
+#
+# IMPORTANT (task-232 Task 19, fix rounds 1-3): a line in this file is NOT
+# sufficient by itself to excuse a control-plane entity from the Environment
+# requirement. checkEntity requires THREE independent conditions to all
+# hold at once:
+#   1. this allowlist entry;
+#   2. hasUniqueNaturalKey(st) — the struct must declare a non-surrogate
+#      field with a `gorm:"...uniqueIndex..."` (or `unique`) tag, proving it
+#      structurally owns its own identity as a real DB constraint, not just
+#      a comment an entity author controls (fix round 1 closed the
+#      allowlist-only hole; see the auditrow fixture);
+#   3. hasScopingDimensionMarker — the entity itself must declare
+#      `func (Entity) ScopingDimension() {}`. Round 1's shape check alone
+#      turned out to be a proxy, not the claim: an idempotency-keyed audit
+#      row can carry a real unique key on an unrelated column and pass
+#      hasUniqueNaturalKey without being the scoping dimension at all (fix
+#      round 2 found this; see the smuggle2 fixture). The marker requires
+#      the author to STATE the claim in code, at the entity's own site.
+# A control-plane entity added here without satisfying ALL THREE stays
+# flagged regardless of the reason text — see the pinned smuggle-probe
+# fixtures at tools/scopeguard/testdata/src/atlas-configurations/{auditrow,
+# testfileaudit,smuggle2}/entity*.go and TestAnalyzerAllowlisted in
+# analyzer_test.go.
+#
+# Format: <pkg import path>/<entity.go base name> # <reason>
+# (pass.Pkg.Path() + "/" + filepath.Base(file) — see entityAllowlistKey in
+# analyzer.go. Keyed off the package's Go import path, not a filesystem
+# path, because that is stable regardless of the `go vet` driver's working
+# directory; a service module's import path root segment is always its bare
+# `atlas-<name>` module name, e.g. `atlas-quest/quest/medal/entity.go`.)
+# An entry with no reason is a lint failure of this file itself
+# (TestAllowlistEntriesHaveReasons).
+#
+# Seeded from query-scope-audit.md's FORCES-ISOLATED rows — there are none
+# (confirmed: grep -c "FORCES-ISOLATED" finds 3 occurrences, but all 3 are
+# prose, not table rows — the taxonomy definition at line 14 and two "No
+# FORCES-ISOLATED rows in this third" negations at lines 227 and 281). The
+# one entry below is not a FORCES-ISOLATED row:
+# it is dead code the audit separately flagged as N/A (row at line 132),
+# verified at source, not a live query path at all.
+
+atlas-quest/quest/medal/entity.go # quest_medal_maps (medal.Entity) has no TenantId and no Migration registration — services/atlas-quest/atlas.com/quest/main.go:52 registers quest.Migration, progress.Migration, outboxlib.Migration only, so this table is never created. grep -rn "medal\." across services/atlas-quest (excluding entity/model files) finds no provider, administrator, or caller anywhere — dead code with no live query path at all, not a live TRANSITIVE access. query-scope-audit.md row at line 132.
+
+# Added fix round 2, after widening Rule 1 to also match Entity-suffixed
+# names (ItemEntity, MesoEntity, etc.) — this file is not an entity.go at
+# all, but a _test.go carrying a struct that legitimately matches the
+# widened predicate.
+atlas-trades/escrow/migration_test.go # legacyItemEntity (services/atlas-trades/atlas.com/trades/escrow/migration_test.go:12) is a test-only fixture reproducing the pre-snapshot row shape from before TenantId existed on this table, per its own doc comment at migration_test.go:10-11 ("kept only in this test so the migration can be driven against a table that actually has the stale columns"). TestMigrationDropsStaleColumns drives Migration() against it and asserts the stale (pre-TenantId) columns are dropped — the struct is deliberately unscoped, not a live query path. The sibling legacyMesoEntity in the same file already carries TenantId and needs no exemption.
+
+# task-232 Task 19: atlas-configurations' fourth resource is the environment
+# list itself (services/atlas-configurations/atlas.com/configurations/environments/entity.go).
+# It carries no Environment column because it IS the environment list, the
+# same shape as the tenant table being the tenant list — there is nothing
+# above "environment" to scope this row by. Mirrors the control-plane
+# "registry" shape the analyzer's own test fixture documents at
+# tools/scopeguard/testdata/src/atlas-tenants/registry/entity.go.
+atlas-configurations/environments/entity.go # environments.Entity is the environment registry row itself (Name/Baseline/Namespace/Tenant/Overrides/Phase) — no TenantId is possible (not tenant data) and no Environment is possible (the row IS the environment), exactly as atlas-tenants' tenant registry row is scoped by Environment because it sits one level below, and atlas-configurations' own tenants.Entity is scoped by Environment for the same reason. See design/PRD §3.5's category argument, cited in task-19-brief.md Step 3. Declares `func (Entity) ScopingDimension() {}` (fix round 3) alongside Name's uniqueIndex tag, so all three of this entry, hasUniqueNaturalKey, and hasScopingDimensionMarker hold.
+
+# task-232 Task 19 fix round 2: environments/processor_test.go declares
+# testEntity, a SQLite-compatible copy of environments.Entity (the
+# production Entity's `default:uuid_generate_v4()` tag is a postgres-only
+# function SQLite's CREATE TABLE cannot express — the same reason
+# tenants/processor_test.go and services/processor_test.go keep their own
+# SQLite-compatible copies, except those siblings' copies carry an
+# Environment column since Task 11 added one to those five entities, and
+# this one correctly does not). entityAllowlistKey is derived from the
+# declaring file's own base name (see analyzer.go's entityAllowlistKey),
+# not hardcoded to "entity.go", so a _test.go declaration is excusable on
+# the same terms as any other file — gated on hasUniqueNaturalKey exactly
+# like the real entity.go entry above. testEntity's Name field carries
+# `gorm:"not null;uniqueIndex"`, satisfying that gate. See the pinned
+# "testfileaudit" fixture (tools/scopeguard/testdata/src/atlas-configurations/
+# testfileaudit/entity_test.go) proving a _test.go declaration with an
+# allowlist entry but NO unique natural key is still flagged — this line
+# alone does not create a blanket _test.go exemption.
+atlas-configurations/environments/processor_test.go # testEntity (SQLite-compatible copy of environments.Entity for unit tests) is the same scoping-dimension row as the real entity.go — no Environment is possible because the row IS the environment. hasUniqueNaturalKey(st) is satisfied by testEntity's Name field (`gorm:"not null;uniqueIndex"`), and testEntity also declares `func (testEntity) ScopingDimension() {}` (fix round 3), so all three conditions hold, not a bare prose exemption.

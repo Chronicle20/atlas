@@ -14,6 +14,7 @@ type Builder struct {
 	password    string
 	pin         string
 	pic         string
+	birthDate   uint32
 	pinAttempts int
 	picAttempts int
 	state       State
@@ -49,6 +50,11 @@ func (b *Builder) SetPin(pin string) *Builder {
 
 func (b *Builder) SetPic(pic string) *Builder {
 	b.pic = pic
+	return b
+}
+
+func (b *Builder) SetBirthDate(birthDate uint32) *Builder {
+	b.birthDate = birthDate
 	return b
 }
 
@@ -94,6 +100,7 @@ func (b *Builder) Build() (Model, error) {
 		password:    b.password,
 		pin:         b.pin,
 		pic:         b.pic,
+		birthDate:   b.birthDate,
 		pinAttempts: b.pinAttempts,
 		picAttempts: b.picAttempts,
 		state:       b.state,

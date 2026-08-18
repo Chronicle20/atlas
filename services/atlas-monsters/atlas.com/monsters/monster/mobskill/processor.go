@@ -27,5 +27,5 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetByIdAndLevel(skillId uint16, level uint16) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByIdAndLevel(skillId, level), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestByIdAndLevel(p.ctx, skillId, level), Extract)()
 }

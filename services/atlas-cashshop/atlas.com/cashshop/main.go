@@ -56,7 +56,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, opening.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration, database.IdempotencyMigration))

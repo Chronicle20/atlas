@@ -75,6 +75,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}
 		s.Payload = any(payload).(T)
+	case DestroyAllAssets:
+		var payload DestroyAllAssetsPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
 	case DestroyAssetFromSlot:
 		var payload DestroyAssetFromSlotPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
@@ -185,6 +191,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case EvolvePet:
 		var payload EvolvePetPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case RevivePet:
+		var payload RevivePetPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case RenamePet:
+		var payload RenamePetPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}
@@ -317,6 +335,18 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case OpenNpcShop:
 		var payload OpenNpcShopPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case StartItemConversation:
+		var payload StartItemConversationPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case StartNpcConversation:
+		var payload StartNpcConversationPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}
@@ -599,6 +629,41 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case ExtendAssetExpiration:
 		var payload ExtendAssetExpirationPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	// World transfer (task-227). Missing cases here are SILENT: the action
+	// falls to the generic default arm, decodes into map[string]any, and the
+	// any(payload).(T) assertion still succeeds because Saga.Steps is
+	// []Step[any] — so the step arrives untyped and every consumer's
+	// type-assert rejects it as "invalid payload".
+	case ValidateWorldTransfer:
+		var payload ValidateWorldTransferPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case LeaveGuildForTransfer:
+		var payload LeaveGuildForTransferPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case LeavePartyForTransfer:
+		var payload LeavePartyForTransferPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case SeverBuddiesForTransfer:
+		var payload SeverBuddiesForTransferPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ChangeCharacterWorld:
+		var payload ChangeCharacterWorldPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

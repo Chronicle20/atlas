@@ -36,7 +36,7 @@ func (p *ProcessorImpl) GetById(uniqueId uint32) (Model, error) {
 	if m, ok := GetCache().Get(t, uniqueId); ok {
 		return m, nil
 	}
-	m, err := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(uniqueId), Extract)()
+	m, err := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, uniqueId), Extract)()
 	if err != nil {
 		return Model{}, err
 	}

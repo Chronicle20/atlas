@@ -30,7 +30,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(skillId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(skillId), Extract)()
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, skillId), Extract)()
 }
 
 func (p *ProcessorImpl) GetEffect(skillId uint32, level byte) (effect.Model, error) {

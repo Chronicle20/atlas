@@ -113,6 +113,57 @@ func updateBuddyShopStatus(db *gorm.DB, characterId uint32, targetId uint32, inS
 	return true, nil
 }
 
+// buddyNameUpdate reports one owner's buddy-list row that updateBuddyName
+// actually renamed, carrying what the caller needs to emit BUDDY_UPDATED to
+// that owner (list/processor.go:610-645's UpdateBuddyChannel emit pattern).
+type buddyNameUpdate struct {
+	OwnerId   uint32
+	Group     string
+	ChannelId int8
+	InShop    bool
+}
+
+// updateBuddyName renames every buddy-list row that NAMES targetId — rows
+// whose own character_id column equals targetId, never the id of whichever
+// owner happens to hold it — to name. A naive implementation that instead
+// scoped the update to "targetId's own list" (treating character_id as the
+// list owner, as list.Entity's field of the same name does) would silently
+// rename targetId's OWN buddies instead of targetId's name in every OTHER
+// owner's list — the exact wrong-column bug this function exists to avoid.
+//
+// buddy.Entity's sole primary key is character_id (buddy/entity.go:24), a
+// pre-existing defect (surfaced separately, not fixed by this task) that
+// limits the table to at most one such row across all owners today; the
+// query still matches on the buddy's column so it stays correct if that
+// defect is ever fixed and multiple owners come to hold the same buddy.
+// Rows already at name are left untouched and excluded from the returned
+// slice — that is what keeps a redelivered NAME_CHANGED event from emitting
+// BUDDY_UPDATED a second time.
+func updateBuddyName(db *gorm.DB, targetId uint32, name string) ([]buddyNameUpdate, error) {
+	var rows []buddy.Entity
+	if err := db.Where("character_id = ?", targetId).Find(&rows).Error; err != nil {
+		return nil, err
+	}
+
+	var updates []buddyNameUpdate
+	for _, row := range rows {
+		if row.CharacterName == name {
+			continue
+		}
+		row.CharacterName = name
+		if err := db.Save(&row).Error; err != nil {
+			return nil, err
+		}
+
+		var le Entity
+		if err := db.Where("id = ?", row.ListId).First(&le).Error; err != nil {
+			return nil, err
+		}
+		updates = append(updates, buddyNameUpdate{OwnerId: le.CharacterId, Group: row.Group, ChannelId: row.ChannelId, InShop: row.InShop})
+	}
+	return updates, nil
+}
+
 func deleteEntityWithBuddies(db *gorm.DB, characterId uint32) error {
 	var entity Entity
 

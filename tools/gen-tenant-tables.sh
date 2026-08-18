@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+# Generate the tenant-keyed table list the sparse-mode teardown sweeper
+# (services/atlas-pr-bootstrap/scripts/sweep-orphans.sh::sweep_tenant) reads
+# to reclaim one tenant's rows across main's shared databases (task-232
+# design §7.5, D1). Driven from the FR-8.1 query-scope audit — one generated
+# list, not 85 hand-maintained per-service cleanup scripts.
+#
+#   gen-tenant-tables.sh           regenerate the checked-in list
+#   gen-tenant-tables.sh --check   generate to a temp buffer, diff vs the
+#                                  checked-in list; exit 1 on drift (CI guard)
+#
+# <database> column: the exact DB_NAME value deploy/k8s/base/atlas-<service>.yaml
+# sets for that service — NOT service-name-derived, and NEVER suffixed with
+# ATLAS_ENV. Evidence: deploy/k8s/overlays/pr-sparse/kustomization.yaml
+# deliberately does NOT include patches/db-name-suffix.yaml (isolated mode's
+# per-env DB_NAME override) — "shared databases — no per-environment DB_NAME
+# suffix" (D1). So a sparse environment's Postgres connections use the exact
+# base DB_NAME every atlas-<service> Deployment already carries in
+# deploy/k8s/base/. sweep_tenant therefore connects to that literal name,
+# never "${db}-${ATLAS_ENV}" (isolated mode's do_drop_dbs formula in
+# cleanup.sh, which does not apply to sparse mode's shared databases).
+#
+# A service whose deploy/k8s/base/atlas-<service>.yaml does not exist has no
+# known DB_NAME and is skipped with a warning — never guessed. (At the time
+# this generator was written, atlas-families and atlas-marriages have audit
+# rows but no deploy/k8s/base manifest; see the warning this prints and
+# docs/runbooks/sparse-environments.md.)
+set -euo pipefail
+
+# Byte collation, not locale collation. `sort` under en_US.UTF-8 ignores
+# punctuation ("listings" < "listing_search_counts"), while CI's C/POSIX
+# locale compares bytes ('_' 0x5F < 's' 0x73) and orders them the other way.
+# Without this pin the checked-in list is stable only for whoever generated
+# it, and --check fails on every machine with a different LANG.
+export LC_ALL=C
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+AUDIT="$REPO_ROOT/docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit.md"
+BASE_DIR="$REPO_ROOT/deploy/k8s/base"
+OUT="$REPO_ROOT/services/atlas-pr-bootstrap/scripts/tenant-tables.txt"
+
+CHECK=0
+[ "${1:-}" = "--check" ] && CHECK=1
+
+[ -f "$AUDIT" ] || { echo "gen-tenant-tables: missing $AUDIT" >&2; exit 1; }
+
+HEADER_LINE='| Service | Table / entity | Plane | Verdict | Evidence (file:line) | Notes |'
+
+# db_name_for <service> — echoes the DB_NAME value
+# deploy/k8s/base/atlas-<service>.yaml sets for that service, or nothing if
+# the service has no base manifest.
+db_name_for() {
+    local svc="$1" file
+    file="$BASE_DIR/${svc}.yaml"
+    [ -f "$file" ] || return 0
+    awk '/name: DB_NAME/{getline; print; exit}' "$file" \
+        | sed -E 's/.*value: *"([^"]+)".*/\1/'
+}
+
+trim() {
+    sed -E 's/^[[:space:]]+|[[:space:]]+$//g'
+}
+
+# generate — prints "<database> <table>" lines to stdout, one per data-plane
+# audit row (after splitting comma-separated multi-table rows), sorted
+# uniquely for determinism. Warns to stderr about rows it could not resolve
+# a DB_NAME for.
+generate() {
+    local start_line data_start
+    start_line="$(grep -Fn "$HEADER_LINE" "$AUDIT" | head -1 | cut -d: -f1)"
+    [ -n "$start_line" ] || { echo "gen-tenant-tables: could not locate audit table header in $AUDIT" >&2; exit 1; }
+    data_start=$((start_line + 2))
+
+    local line svc entity plane rest
+    # The while loop below is the left side of a pipe (`| sort -u`), so it
+    # runs in a subshell — an array populated inside it would not survive
+    # past `done`. Collect skipped-service names in a temp file instead,
+    # which IS visible to the parent after the pipeline completes.
+    local skip_file
+    skip_file="$(mktemp)"
+
+    while IFS='|' read -r _ svc entity plane rest; do
+        svc="$(printf '%s' "$svc" | trim)"
+        plane="$(printf '%s' "$plane" | trim)"
+        [ "$plane" = "Data" ] || continue
+        [ -n "$svc" ] || continue
+
+        # Strip the trailing "(`pkg.Entity`[, ...])" annotation, then drop a
+        # " / alt-descriptor" suffix (one row, atlas-cashshop's
+        # "accounts / cash wallets" — wallet.Entity.TableName() is literally
+        # "accounts"; the alt text is prose, not a second table).
+        local tables db t
+        tables="$(printf '%s' "$entity" \
+            | sed -E 's/[[:space:]]*\(.*$//; s/[[:space:]]*\/.*$//' \
+            | trim)"
+        [ -n "$tables" ] || continue
+
+        db="$(db_name_for "$svc")"
+        if [ -z "$db" ]; then
+            printf '%s\n' "$svc" >> "$skip_file"
+            continue
+        fi
+
+        local -a tbls
+        IFS=',' read -ra tbls <<< "$tables"
+        for t in "${tbls[@]}"; do
+            t="$(printf '%s' "$t" | trim)"
+            [ -n "$t" ] && printf '%s %s\n' "$db" "$t"
+        done
+    done < <(sed -n "${data_start},\$p" "$AUDIT" | awk '/^\|/{print; next} {exit}') \
+        | sort -u
+
+    if [ -s "$skip_file" ]; then
+        printf 'gen-tenant-tables: no deploy/k8s/base manifest (no known DB_NAME) for: %s — skipped, not guessed\n' \
+            "$(sort -u "$skip_file" | tr '\n' ' ')" >&2
+    fi
+    rm -f "$skip_file"
+}
+
+render() {
+    cat <<'HEADER'
+# Generated by tools/gen-tenant-tables.sh — DO NOT EDIT BY HAND.
+#
+# <database> <table> — one row per data-plane table a sparse-mode tenant's
+# rows can land in, driven from the FR-8.1 query-scope audit (docs/tasks/
+# task-232-sparse-ephemeral-environments/query-scope-audit.md, filtered to
+# Plane == Data). Consumed by sweep-orphans.sh::sweep_tenant, which DELETEs
+# WHERE tenant_id = '<tenant>' from every row here.
+#
+# <database> is the literal DB_NAME deploy/k8s/base/atlas-<service>.yaml
+# sets — sparse mode never suffixes it with ATLAS_ENV (D1: shared
+# databases). Regenerate with tools/gen-tenant-tables.sh; do not hand-edit.
+HEADER
+    generate
+}
+
+gen="$(render)"
+if [ "$CHECK" = 1 ]; then
+    if [ ! -f "$OUT" ] || ! diff -u "$OUT" <(printf '%s\n' "$gen") >&2; then
+        echo "gen-tenant-tables: $OUT is stale; run tools/gen-tenant-tables.sh and commit" >&2
+        exit 1
+    fi
+    echo "gen-tenant-tables: $OUT is up to date"
+else
+    printf '%s\n' "$gen" > "$OUT"
+    echo "gen-tenant-tables: wrote $OUT"
+fi

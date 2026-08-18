@@ -19,6 +19,13 @@ type RestModel struct {
 	NPCs         []npcs.RestModel     `json:"npcs"`
 	Worlds       []worlds.RestModel   `json:"worlds"`
 	CashShop     cashshop.RestModel   `json:"cashShop"`
+	// Environment is server-owned and read-only (task-232 FR-7.3): it always
+	// reflects Entity.Environment, set once by Create from the caller's
+	// context. Make() overwrites whatever this field held after
+	// unmarshaling Entity.Data, so a client-supplied value in a
+	// create/update request body is never round-tripped into the column -
+	// Create and UpdateById never read RestModel.Environment.
+	Environment string `json:"environment"`
 }
 
 func (r RestModel) GetName() string {

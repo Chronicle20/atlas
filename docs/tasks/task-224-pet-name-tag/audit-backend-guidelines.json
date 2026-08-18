@@ -1,0 +1,89 @@
+{
+  "service": "task-224-pet-name-tag (multi-module: atlas-pets, atlas-saga-orchestrator, atlas-channel, libs/atlas-constants, libs/atlas-packet, libs/atlas-saga)",
+  "path": ".worktrees/task-224-pet-name-tag",
+  "date": "2026-08-13",
+  "build": "pass",
+  "testsPassed": "all packages green under go test ./... -count=1 in all 6 modules",
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "services/atlas-pets/atlas.com/pets/pet",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "pass", "evidence": "pet/builder.go:60-65 SetName; :107-133 Build() invariants"},
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "pet/processor.go:116"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "pet/resource.go:193"},
+        {"id": "DOM-08", "name": "PATCH uses RegisterInputHandler", "status": "pass", "evidence": "pet/resource.go:29"},
+        {"id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "pet/resource.go:220-224"},
+        {"id": "DOM-10", "name": "Test DB tenant callbacks", "status": "pass", "evidence": "pet/processor_test.go:80"},
+        {"id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "grep clean"},
+        {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "handleUpdate calls only pet processor"},
+        {"id": "DOM-14", "name": "Handlers don't call providers directly", "status": "pass", "evidence": "no getById(...) lowercase call in resource.go"},
+        {"id": "DOM-15", "name": "No direct entity writes in handlers", "status": "pass", "evidence": "grep clean for db.Create/Save/Delete"},
+        {"id": "DOM-16", "name": "administrator.go has write op", "status": "pass", "evidence": "pet/administrator.go:96-115 updateName"},
+        {"id": "DOM-17", "name": "Domain error -> HTTP status mapping", "status": "fail", "evidence": "pet/resource.go:197-208 not-found and ownership-mismatch both fall through to generic 500 via WriteErrorResponse; no errors.Is(gorm.ErrRecordNotFound) or ownership sentinel branch"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "processor_test.go TestRenameRejectsInvalidName and siblings use bare for loops, not t.Run subtables; matches pre-existing sibling style"},
+        {"id": "DOM-21", "name": "Reuse atlas-constants types", "status": "pass", "evidence": "pet/resource.go:14, pet/processor.go:26 import petconst"},
+        {"id": "DOM-24", "name": "Kafka producer stubbed in emit tests", "status": "pass", "evidence": "Rename/RenameAndEmit emit via outbox.EmitProvider (DB write), not a synchronous producer call; libs/atlas-outbox/provider.go:21-30"},
+        {"id": "DOM-27", "name": "Transient DB errors -> 503", "status": "pass", "evidence": "pet/resource.go:196,206,217,224 all use server.WriteErrorResponse; classifier registered in main.go:73"}
+      ]
+    },
+    {
+      "name": "libs/atlas-constants/pet",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No collapsed catch-all file", "status": "pass", "evidence": "name.go holds only the bound constants and two functions"},
+        {"id": "DOM-21", "name": "Genuinely new shared constant (no prior duplicate)", "status": "pass", "evidence": "first canonical home for the 4/12 pet-name bound"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet (cash/serverbound, pet/clientbound)",
+      "type": "support",
+      "checks": [
+        {"id": "packet-coverage", "name": "Ten-version clientbound byte fixtures", "status": "pass", "evidence": "libs/atlas-packet/pet/clientbound/name_changed_test.go lines 17-230, one packet-audit:verify test per version"},
+        {"id": "DOM-25", "name": "No client wire code as bare Go literal (encode-side)", "status": "pass", "evidence": "NameTagLayer is a decoration selector consumed identically across versions, not a dispatcher/sub-op/notice code; CashSlotItemType(17) mirrors client decode-side classification, not an outbound wire value"}
+      ]
+    },
+    {
+      "name": "libs/atlas-saga",
+      "type": "support",
+      "checks": [
+        {"id": "shared-model", "name": "New Type/Action/Payload registered in switch + unmarshal", "status": "pass", "evidence": "model.go:45,95; payloads.go:298-305; unmarshal.go:189-195"}
+      ]
+    },
+    {
+      "name": "services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga (+ pet)",
+      "type": "domain-like (existing saga orchestration package)",
+      "checks": [
+        {"id": "handler-wiring", "name": "handleRenamePet registered", "status": "pass", "evidence": "saga/handler.go:828-829, 1369-1381"},
+        {"id": "event-acceptance", "name": "EventKindPetNameChanged wired end to end", "status": "pass", "evidence": "event_acceptance.go:56,151,360; kafka/consumer/pet/consumer.go:73-95"},
+        {"id": "reverse-walk-classification", "name": "PetNameTagUse classified in all three lists", "status": "pass", "evidence": "timer.go:181,208; TestEverySagaTypeIsClassified passes"},
+        {"id": "compensator-wiring", "name": "compensatePetNameTagUse dispatched on failure", "status": "pass", "evidence": "compensator.go:325-326, 1745-1834"},
+        {"id": "mock-sync", "name": "pet.Processor mock updated for Rename/RenameAndEmit", "status": "pass", "evidence": "pet/mock/processor.go:16-17,53-68"},
+        {"id": "test-visibility", "name": "New compensation-revert test executes under go test ./...", "status": "warn", "evidence": "pet_name_tag_compensation_test.go:1 //go:build test — invisible to plain go test ./... and tools/test-all-go.sh; confirmed passes only with -tags test. Pre-existing convention (meso_sack_compensation_test.go), not introduced by this branch."}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel (socket/handler, kafka/consumer/pet, kafka/consumer/saga)",
+      "type": "support (handler/consumer orchestration package)",
+      "checks": [
+        {"id": "bugfix-correctness", "name": "Cash-slot classification overflow fix", "status": "pass", "evidence": "character_cash_item_use.go:955-961; TestGetCashSlotItemTypePetNameTag"},
+        {"id": "SEC-ownership", "name": "Target pet resolved server-side, not from client payload", "status": "pass", "evidence": "character_cash_item_use_pet_name_tag.go:104-121; wire body carries only name (item_use_pet_name_tag.go:47-52)"},
+        {"id": "DOM-24", "name": "Producer stubbed for saga.Create Kafka emit", "status": "pass", "evidence": "character_cash_item_use_pet_name_tag_test.go:96-97,120-121 installCapturingProducer + producertest.InstallNoop() restore, no t.Cleanup(producer.ResetInstance)"},
+        {"id": "parallel-safety", "name": "ForSessionsInMap closure captures only immutable values", "status": "pass", "evidence": "kafka/consumer/pet/consumer.go:456-486"},
+        {"id": "failure-rendering", "name": "petNameTagFailureMessage deliberately generic, verified in code not just comment", "status": "pass", "evidence": "kafka/consumer/saga/consumer.go:380-416; TestPetNameTagFailureMessage asserts 3 codes -> same string"},
+        {"id": "template-wiring", "name": "PetNameChanged writer present in all 10 seed templates", "status": "pass", "evidence": "template_{gms_48,61,72,79,83,84,87,92,95}_1.json, template_jms_185_1.json each +8 lines; template-opcode-order-guard.sh and template-duplicate-binding-guard.sh exit 0"},
+        {"id": "contract-mirror", "name": "pet kafka.go mirrors byte-identical across 3 modules", "status": "pass", "evidence": "diff of atlas-channel and atlas-saga-orchestrator new-symbol blocks against atlas-pets owner is empty; contract_mirror_test.go round-trip fixtures in both mirrors"}
+      ]
+    }
+  ],
+  "blocking": [
+    "DOM-17: services/atlas-pets/atlas.com/pets/pet/resource.go handleUpdate maps both not-found (gorm.ErrRecordNotFound via p.GetById, resource.go:197) and non-owner rename (pet/processor.go:990-991, surfaced at resource.go:206) to generic 500 instead of 404/403"
+  ],
+  "nonBlocking": [
+    "DOM-20: new atlas-pets/pet and atlas-constants/pet tests are not table-driven (bare for loops instead of t.Run subtests), consistent with pre-existing sibling style",
+    "Informational: saga/pet_name_tag_compensation_test.go inherits the pre-existing //go:build test tag, making the new FR-7.4 revert-on-failure test invisible to plain go test ./... and tools/test-all-go.sh; confirmed to pass under -tags test",
+    "Observation: installCapturingProducer (pre-existing atlas-channel helper, reused not duplicated) is a service-local capturing writer rather than the shared producertest package; permitted by testing-guide.md's own message-capture-assertion carve-out"
+  ]
+}

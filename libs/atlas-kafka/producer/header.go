@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -39,6 +40,24 @@ func TenantHeaderDecorator(ctx context.Context) HeaderDecorator {
 		headers[tenant.Region] = t.Region()
 		headers[tenant.MajorVersion] = string(binary.BigEndian.AppendUint16(make([]byte, 0), t.MajorVersion()))
 		headers[tenant.MinorVersion] = string(binary.BigEndian.AppendUint16(make([]byte, 0), t.MinorVersion()))
+		return headers, nil
+	}
+}
+
+// EnvHeaderDecorator writes the operation's environment as a message
+// header, mirroring TenantHeaderDecorator. Message BODIES are untouched —
+// no domain schema changes anywhere, which is what keeps the 64-service
+// migration mechanical (design §6.1).
+//
+//goland:noinspection GoUnusedExportedFunction
+func EnvHeaderDecorator(ctx context.Context) HeaderDecorator {
+	return func() (map[string]string, error) {
+		headers := make(map[string]string)
+		e, _ := env.FromContext(ctx)()
+		if e == "" {
+			return headers, nil
+		}
+		headers[env.Key] = string(e)
 		return headers, nil
 	}
 }

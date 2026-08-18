@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -133,6 +134,10 @@ func Make(e Entity) (RestModel, error) {
 	}
 	rm.Socket = socket.Normalize(rm.Socket)
 	rm.Id = e.Id.String()
+	// Environment is server-owned (task-232 D5): the Entity column always
+	// wins over whatever e.Data's JSON blob happened to contain, matching
+	// tenants.Make (see the comment there).
+	rm.Environment = e.Environment
 	return rm, nil
 }
 
@@ -181,6 +186,7 @@ func (p *ProcessorImpl) Create(input RestModel) (uuid.UUID, error) {
 			MajorVersion: input.MajorVersion,
 			MinorVersion: input.MinorVersion,
 			Data:         data,
+			Environment:  string(env.MustFromContext(p.ctx)),
 		}
 		return db.Create(e).Error
 	})

@@ -620,11 +620,13 @@
   direction: clientbound
   opcode: 117
   fname: CWvsContext::OnCancelNameChangeResult
+  packet: cash/clientbound/CashCancelNameChangeResult
   provenance: csv-import
 - op: CANCEL_TRANSFER_WORLD_RESULT
   direction: clientbound
   opcode: 118
   fname: CWvsContext::OnCancelTransferWorldResult
+  packet: cash/clientbound/CashCancelTransferWorldResult
   provenance: csv-import
 - op: DESTROY_SHOP_RESULT
   direction: clientbound
@@ -655,6 +657,7 @@
   direction: clientbound
   opcode: 124
   fname: CWvsContext::OnCancelNameChangebyOther
+  packet: character/clientbound/CancelNameChangeByOther
   provenance: csv-import
 - op: SET_EXTRA_PENDANT_SLOT
   direction: clientbound
@@ -1060,17 +1063,69 @@
   direction: clientbound
   opcode: 206
   fname: CDragon::OnCreated
-  provenance: csv-import
+  packet: dragon/clientbound/DragonSpawn
+  provenance: ida-discovered
+  ida:
+    address: 0x50dc90
+  note: >-
+    task-225: live decompile of CDragon::OnCreated @0x50dc90 (GMS_v95.0_U_DEVM.exe.i64,
+    session 79906a1e). The owner CUser*/CInPacket* are passed in by the caller
+    (CUserPool::OnUserCommonPacket @0x94cdb0, which Decode4's ownerCharacterId
+    at 0x94cdbc before dispatching opcodes 206..208 via `(v6-206)<=2` @0x94cf14
+    — the dragon has no wire identity of its own). Body reads: Decode4 x
+    (@0x50dcc9) + Decode4 y (@0x50dcdc) + Decode1 moveAction/stance (@0x50dd17)
+    + Decode2 <read, discarded — return value never assigned> (@0x50dd34) +
+    Decode2 jobCode (@0x50dd43). Matches the committed DragonSpawn codec
+    exactly (Task 1). Opcode-construction site for the whole family confirmed
+    at CUserPool::OnUserCommonPacket's range-router; symbol names distrusted
+    per provenance (csv-import elsewhere in this family) — read order taken
+    from decompile, not the fname.
 - op: MOVE_DRAGON
   direction: clientbound
   opcode: 207
   fname: CDragon::OnMove
-  provenance: csv-import
+  packet: dragon/clientbound/DragonMove
+  provenance: ida-discovered
+  ida:
+    address: 0x50ad30
+  note: >-
+    task-225: live decompile of CDragon::OnMove @0x50ad30 (GMS_v95.0_U_DEVM.exe.i64,
+    session 79906a1e). Single delegating call: CMovePath::OnMovePacket(&m_pvc[142],
+    iPacket, 0) @0x50ad4a (falls back to a fixed offset if m_pvc has no
+    interface, @0x50ad60). ownerCharacterId is consumed upstream by
+    CUserPool::OnUserCommonPacket @0x94cdb0 before dispatch (same as
+    SPAWN_DRAGON); the whole remaining body is the opaque CMovePath blob,
+    which already begins with the start position (CMovePath::Encode leads
+    with startX/startY), so it must not be written separately. Matches the
+    committed DragonMove codec exactly (Task 1).
 - op: REMOVE_DRAGON
   direction: clientbound
   opcode: 208
   fname: CUser::OnDragonPacket
-  provenance: csv-import
+  packet: dragon/clientbound/DragonRemove
+  provenance: ida-discovered
+  ida:
+    address: 0x8e5c00
+  note: >-
+    task-225: live decompile of CUser::OnDragonPacket @0x8e5c00 (GMS_v95.0_U_DEVM.exe.i64,
+    session 79906a1e). Switches on nType: 206 -> spawn (allocate/reinit CDragon
+    then CDragon::OnCreated), else-if nType==207 -> CDragon::OnMove. THERE IS
+    NO CASE FOR 208 — the outer dispatcher CUserPool::OnUserCommonPacket
+    @0x94cdb0 routes opcodes 206..208 into OnDragonPacket via the range test
+    `(v6-206)<=2` @0x94cf14, so 208 enters this function and falls through
+    both branches with zero effect: no field is read, no dragon state
+    changes. This is the SAME routed-but-unhandled-208 shape already recorded
+    for v84 at docs/packets/registry/gms_v84.yaml:1254 (that note documents
+    both v84 and v95 from the same investigation and is the model for this
+    entry). An xref sweep on ZRef<CDragon>::_ReleaseRaw @0x8decb0 (GMS v95.0)
+    returns four callers — the ZRef destructor, ZRef::operator=,
+    OnDragonPacket's 206-branch respawn reinit, and CUser::~CUser — confirming
+    the only client-side dragon teardown is CUser destruction (the owner
+    leaving the field), not this opcode. Sending REMOVE_DRAGON is correct and
+    harmless; the client silently discards it because there is no handler
+    arm. The DragonRemove codec's ownerCharacterId field is likewise consumed
+    upstream and never read by this function — the cell's body is empty
+    because there is no code to read it.
 - op: MOVE_PLAYER
   direction: clientbound
   opcode: 210
@@ -2584,6 +2639,7 @@
   opcode: 81
   fname: CWvsContext::SendMobSummonItemUseRequest
   provenance: csv-import
+  packet: inventory/serverbound/InventorySummonBagItemUse
 - op: PET_FOOD
   direction: serverbound
   opcode: 82
@@ -2614,6 +2670,7 @@
   direction: serverbound
   opcode: 86
   fname: CWvsContext::SendActivatePetRequest
+  packet: pet/serverbound/PetDestroyItem
   provenance: csv-import
 - op: USE_CATCH_ITEM
   direction: serverbound
@@ -2645,6 +2702,7 @@
   opcode: 92
   fname: CWvsContext::SendPortalScrollUseRequest
   provenance: csv-import
+  packet: inventory/serverbound/InventoryReturnScrollItemUse
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 93
@@ -3473,7 +3531,24 @@
   direction: serverbound
   opcode: 214
   fname: CVecCtrlDragon::EndUpdateActive
-  provenance: csv-import
+  packet: dragon/serverbound/Move
+  provenance: ida-discovered
+  ida:
+    address: 0x996570
+  note: >-
+    task-225: live decompile of CVecCtrlDragon::EndUpdateActive @0x996570
+    (GMS_v95.0_U_DEVM.exe.i64, session 79906a1e). Send site: if
+    CMovePath::IsTimeForFlush(&m_path,0,0) @0x9965a0, builds COutPacket(214)
+    @0x9965b2 then CMovePath::Flush(&m_path,&oPacketMove,0,0) @0x9965ca and
+    sends via CClientSocket::SendPacket @0x9965de. There is NO leading
+    identity field — unlike CVecCtrlSummoned::EndUpdateActive, which writes
+    Encode4 summonId first — because the dragon is 1:1 with its owning CUser
+    and the server resolves it entirely from the sending session's character
+    id. Opcode 214 confirmed from the COutPacket construction site itself
+    (ground truth per the distrust-IDB-names rule), matching the registry
+    opcode. Matches the committed serverbound dragon.Move codec exactly
+    (Task 1): the whole body is the opaque CMovePath blob, rebroadcast
+    byte-faithfully.
 - op: UNNAMED_R299
   direction: serverbound
   opcode: 215

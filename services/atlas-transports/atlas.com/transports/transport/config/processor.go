@@ -46,14 +46,22 @@ var _ Processor = (*ProcessorImpl)(nil)
 // first.
 func (p *ProcessorImpl) GetRoutes(t tenant.Model) ([]transport.Model, error) {
 	p.l.Debugf("Fetching routes for tenant [%s]", t.Id())
-	return requests.DrainProvider[RouteRestModel, transport.Model](p.l, p.ctx)(routesUrl(t.Id().String()), 250, ExtractRouteFor(p.l, t), model.Filters[transport.Model]())()
+	url, err := routesUrl(p.ctx, t.Id().String())
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[RouteRestModel, transport.Model](p.l, p.ctx)(url, 250, ExtractRouteFor(p.l, t), model.Filters[transport.Model]())()
 }
 
 // GetVessels returns all vessels for a tenant. Same paginated-upstream/
 // startup-bootstrap reasoning as GetRoutes above.
 func (p *ProcessorImpl) GetVessels(t tenant.Model) ([]transport.SharedVesselModel, error) {
 	p.l.Debugf("Fetching vessels for tenant [%s]", t.Id())
-	return requests.DrainProvider[VesselRestModel, transport.SharedVesselModel](p.l, p.ctx)(vesselsUrl(t.Id().String()), 250, ExtractVessel, model.Filters[transport.SharedVesselModel]())()
+	url, err := vesselsUrl(p.ctx, t.Id().String())
+	if err != nil {
+		return nil, err
+	}
+	return requests.DrainProvider[VesselRestModel, transport.SharedVesselModel](p.l, p.ctx)(url, 250, ExtractVessel, model.Filters[transport.SharedVesselModel]())()
 }
 
 // LoadConfigurationsForTenant loads all configurations for a tenant and returns routes and vessels

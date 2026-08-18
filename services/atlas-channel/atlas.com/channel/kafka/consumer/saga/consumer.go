@@ -36,7 +36,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("saga_status_event")(saga.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("saga_status_event")(saga.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -375,6 +375,24 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 			}
 			return
 		}
+
+		// Pet-name-tag failures: the orchestrator's compensator has already
+		// reverted the pet's name (and refunded nothing — the tag is consumed
+		// only after the rename succeeds). Tell the player why, then release the
+		// client's exclusive-request gate. Nothing in this flow warps, so a
+		// plain enable-actions is the correct unlock.
+		if e.Body.SagaType == saga.SagaTypePetNameTagUse {
+			msg := petNameTagFailureMessage(e.Body.ErrorCode)
+			err = session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePinkTextBody("", "", msg))(s)
+			if err != nil {
+				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send pet-name-tag pink text.")
+			}
+			err = session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)(s)
+			if err != nil {
+				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send enable-actions after pet-name-tag failure.")
+			}
+			return
+		}
 	}
 }
 
@@ -387,6 +405,15 @@ func mesoSackFailureMessage(errorCode string) string {
 		return "You cannot hold any more mesos."
 	}
 	return "You are unable to use this item right now."
+}
+
+// petNameTagFailureMessage maps a pet_name_tag_use saga's errorCode to the pink
+// text the player sees. The saga can fail on the rename step, on the consume
+// step, or by timeout, and no atlas-pets error code names a player-actionable
+// cause today — so the generic message is the honest one. Add specific arms here
+// when (and only when) a service starts supplying a machine-readable code.
+func petNameTagFailureMessage(errorCode string) string {
+	return "You are unable to rename your pet right now."
 }
 
 // getStorageErrorBodyProducer returns the appropriate BodyProducer for the given error code

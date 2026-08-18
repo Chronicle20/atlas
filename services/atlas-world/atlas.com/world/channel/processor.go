@@ -144,7 +144,15 @@ func ByWorldFilter(id world.Id) model.Filter[Model] {
 	}
 }
 
-func RequestStatus(l logrus.FieldLogger) func(ctx context.Context) func(tenantId uuid.UUID) model.Operator[tenant2.RestModel] {
+// RequestStatus builds the per-tenant request-status operator used by the
+// boot channel-status sweep (main.go). envContext attaches this pod's
+// environment identity to the per-tenant context before it reaches
+// RequestStatusAndEmit's Kafka emit -- the sweep's root ctx is a
+// background/otel-span context with no inbound request to inherit
+// ENVIRONMENT from, and channel/ is outside env-domain-guard's permitted
+// atlas-env import list, so the environment is threaded in via DI rather
+// than imported directly (task-232).
+func RequestStatus(l logrus.FieldLogger, envContext func(context.Context) context.Context) func(ctx context.Context) func(tenantId uuid.UUID) model.Operator[tenant2.RestModel] {
 	return func(ctx context.Context) func(tenantId uuid.UUID) model.Operator[tenant2.RestModel] {
 		return func(tenantId uuid.UUID) model.Operator[tenant2.RestModel] {
 			return func(rm tenant2.RestModel) error {
@@ -152,7 +160,7 @@ func RequestStatus(l logrus.FieldLogger) func(ctx context.Context) func(tenantId
 				if err != nil {
 					return err
 				}
-				tctx := tenant.WithContext(ctx, t)
+				tctx := envContext(tenant.WithContext(ctx, t))
 				return NewProcessor(l, tctx).RequestStatusAndEmit()
 			}
 		}

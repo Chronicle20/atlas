@@ -19,7 +19,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("character_status_event")(EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_status_event")(EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
 		}
 	}
 }
@@ -50,6 +50,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventGmChanged))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventNameChanged))); err != nil {
 			return err
 		}
 		return nil
@@ -208,7 +211,7 @@ func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, e Statu
 		WithField("partyMemberCount", len(p.Members())).
 		Debugf("Character [%d] found in party [%d] before deletion.", e.CharacterId, p.Id())
 
-	p, err = pp.LeaveAndEmit(p.Id(), e.CharacterId)
+	p, err = pp.LeaveAndEmit(p.Id(), e.CharacterId, e.TransactionId)
 	if err != nil {
 		l.WithError(err).
 			WithField("transactionId", e.TransactionId).
@@ -271,6 +274,35 @@ func handleStatusEventLevelChanged(l logrus.FieldLogger, ctx context.Context, e 
 		WithField("transactionId", e.TransactionId).
 		WithField("currentLevel", e.Body.Current).
 		Debugf("Successfully processed level change for character [%d].", e.CharacterId)
+}
+
+func handleStatusEventNameChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[StatusEventNameChangedBody]) {
+	if e.Type != StatusEventTypeNameChanged {
+		return
+	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("worldId", e.WorldId).
+		WithField("transactionId", e.TransactionId).
+		WithField("oldName", e.Body.OldName).
+		WithField("newName", e.Body.NewName).
+		Debugf("Processing name changed event for character [%d].", e.CharacterId)
+
+	err := character.NewProcessor(l, ctx).NameChangeAndEmit(e.CharacterId, e.Body.NewName)
+	if err != nil {
+		l.WithError(err).
+			WithField("characterId", e.CharacterId).
+			WithField("worldId", e.WorldId).
+			WithField("transactionId", e.TransactionId).
+			WithField("newName", e.Body.NewName).
+			Errorf("Unable to process name change for character [%d].", e.CharacterId)
+		return
+	}
+
+	l.WithField("characterId", e.CharacterId).
+		WithField("transactionId", e.TransactionId).
+		WithField("newName", e.Body.NewName).
+		Debugf("Successfully processed name change for character [%d].", e.CharacterId)
 }
 
 func handleStatusEventGmChanged(l logrus.FieldLogger, ctx context.Context, e StatusEvent[GmChangedStatusEventBody]) {

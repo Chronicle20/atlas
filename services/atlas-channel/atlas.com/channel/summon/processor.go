@@ -44,7 +44,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // list here means some existing summons silently fail to replay to the
 // entering character.
 func (p *ProcessorImpl) InMapModelProvider(f field.Model) model.Provider[[]Model] {
-	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(inMapUrl(f), 250, Extract, model.Filters[Model]())
+	url, err := inMapUrl(p.ctx, f)
+	if err != nil {
+		return model.ErrorProvider[[]Model](err)
+	}
+	return requests.DrainProvider[RestModel, Model](p.l, p.ctx)(url, 250, Extract, model.Filters[Model]())
 }
 
 // ForEachInMap applies o to every summon currently in field f.

@@ -17,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	outbox "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -44,6 +45,7 @@ func testDatabase(t *testing.T) *gorm.DB {
 	var migrators []func(db *gorm.DB) error
 	migrators = append(migrators, character.Migration)
 	migrators = append(migrators, teleport_rock.Migration)
+	migrators = append(migrators, outbox.Migration)
 
 	for _, migrator := range migrators {
 		if err := migrator(db); err != nil {

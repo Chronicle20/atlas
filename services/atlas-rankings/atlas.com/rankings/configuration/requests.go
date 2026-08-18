@@ -18,12 +18,16 @@ const DefaultRecomputeInterval = 5 * time.Minute
 
 const byTenant = "tenants/%s/configurations/rankings"
 
-func getBaseRequest() string {
-	return requests.RootUrl("TENANTS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "TENANTS")
 }
 
-func requestByTenantId(tenantId uuid.UUID) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+byTenant, tenantId))
+func requestByTenantId(ctx context.Context, tenantId uuid.UUID) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+byTenant, tenantId))
 }
 
 // GetRecomputeInterval resolves the tenant's recompute cadence. Missing
@@ -32,7 +36,7 @@ func requestByTenantId(tenantId uuid.UUID) requests.Request[RestModel] {
 // never stalls its recompute entirely.
 func GetRecomputeInterval(l logrus.FieldLogger, ctx context.Context) func(tenantId uuid.UUID) time.Duration {
 	return func(tenantId uuid.UUID) time.Duration {
-		rm, err := requestByTenantId(tenantId)(l, ctx)
+		rm, err := requestByTenantId(ctx, tenantId)(l, ctx)
 		if err != nil {
 			if !errors.Is(err, requests.ErrNotFound) {
 				l.WithError(err).Warnf("Unable to read rankings configuration for tenant [%s]; using default interval.", tenantId)

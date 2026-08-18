@@ -1,0 +1,10 @@
+packet: inventory/serverbound/InventoryItemUse
+direction: serverbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendStatChangeItemUseRequest
+    address: "0x9b3600"
+    decompile_sha256: 2e1bbf3afe34d5a8fc9a536e228d3a86bb1eca14571919a3a0277a953923631b
+verifies:
+    - libs/atlas-packet/inventory/serverbound/item_use_test.go#TestItemUseRoundTrip

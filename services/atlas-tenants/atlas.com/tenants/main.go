@@ -46,7 +46,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(
@@ -54,6 +54,7 @@ func main() {
 		configuration.MigrateEntities,
 		outboxlib.Migration,
 		func(db *gorm.DB) error { return db.AutoMigrate(&seeder.SeedState{}) },
+		tenant.EnvironmentMigration,
 	))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.

@@ -1,16 +1,16 @@
-# InventoryItemUse (← `sub_719DD9`)
+# InventoryItemUse (← `CWvsContext::SendStatChangeItemUseRequest`)
 
-- **IDA:** 0x719dd9
+- **IDA:** 0x70db3c
 - **Atlas file:** `libs/atlas-packet/inventory/serverbound/item_use.go`
 - **Variant:** GMS/v48
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 1 | int16 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | int32 | int32 `updateTime` | ✅ |  |
+| 1 | int16 | int16 `slot` | ✅ |  |
+| 2 | int32 | int32 `itemId` | ✅ |  |
 

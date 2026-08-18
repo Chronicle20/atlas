@@ -40,7 +40,11 @@ var _ Processor = (*ProcessorImpl)(nil)
 // load and ticker loop in main.go, a genuine semantic-all consumer, so it
 // drains every page rather than fetching just the first.
 func (p *ProcessorImpl) AllProvider() model.Provider[[]tenant.Model] {
-	return requests.DrainProvider[RestModel, tenant.Model](p.l, p.ctx)(allTenantsUrl(), 250, Extract, model.Filters[tenant.Model]())
+	url, err := allTenantsUrl(p.ctx)
+	if err != nil {
+		return model.ErrorProvider[[]tenant.Model](err)
+	}
+	return requests.DrainProvider[RestModel, tenant.Model](p.l, p.ctx)(url, 250, Extract, model.Filters[tenant.Model]())
 }
 
 // GetAll returns all tenants

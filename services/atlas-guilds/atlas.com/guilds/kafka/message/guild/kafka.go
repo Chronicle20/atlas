@@ -20,6 +20,14 @@ const (
 	CommandTypeChangeTitles            = "CHANGE_TITLES"
 	CommandTypeChangeMemberTitle       = "CHANGE_MEMBER_TITLE"
 	CommandTypeLeave                   = "LEAVE"
+	// CommandTypeRejoin re-adds a character to a guild at an explicitly
+	// supplied title. It exists for the world-transfer saga's compensation
+	// (task-227 FR-4.8): leave_guild_for_transfer emits a FORCED LEAVE, and a
+	// guild re-join is not a client-driveable recovery, so the only way to put
+	// the player back where they were is a server-issued re-add that restores
+	// the exact rank they held. It is deliberately NOT the invite/accept flow
+	// (which would require the player to act) and NOT REQUEST_INVITE.
+	CommandTypeRejoin = "REJOIN"
 )
 
 type Command[E any] struct {
@@ -57,6 +65,14 @@ type ChangeNoticeBody struct {
 type LeaveBody struct {
 	GuildId uint32 `json:"guildId"`
 	Force   bool   `json:"force"`
+}
+
+// RejoinBody carries the guild and the rank the character must be restored to.
+// Title is mandatory: re-adding at the default rookie title would silently
+// demote a guild officer whose world transfer failed.
+type RejoinBody struct {
+	GuildId uint32 `json:"guildId"`
+	Title   byte   `json:"title"`
 }
 
 type RequestInviteBody struct {

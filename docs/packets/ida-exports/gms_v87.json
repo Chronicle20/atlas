@@ -3,6 +3,133 @@
   "md5": "2e692f3ab5078e04138d264f8ea1e668",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CCashShop::OnCheckTransferWorldPossibleResult": {
+      "address": "0x48757c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a2)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a2) && count > 0"
+        }
+      ]
+    },
+    "CCashShop::OnCheckNameChangePossibleResult": {
+      "address": "0x487397",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendCheckTransferWorldPossiblePacket": {
+      "address": "0x47df1a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendCheckNameChangePossiblePacket": {
+      "address": "0x47dd48",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0xa9f3d2",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time())",
+          "guard": "CWvsContext::IsAbleToConsume(this, arg4, 1)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "source (nPOS)",
+          "guard": "CWvsContext::IsAbleToConsume(this, arg4, 1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)",
+          "guard": "CWvsContext::IsAbleToConsume(this, arg4, 1)"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0xaa5a85",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "source (nPOS)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)"
+        }
+      ]
+    },
+    "CPet::OnNameChanged": {
+      "address": "0x7484e0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "name-tag decoration layer selector (CLife::MakeNameTag)"
+        }
+      ]
+    },
     "CUserLocal::RequestIncCombo": {
       "address": "0x9e37bc",
       "direction": "serverbound",
@@ -188,6 +315,48 @@
           "op": "Decode4",
           "comment": "nItemID",
           "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendMobSummonItemUseRequest": {
+      "address": "0xa9f027",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (a2)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (arg4)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendPortalScrollUseRequest": {
+      "address": "0xab5507",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime",
+          "guard": "CWvsContext::CanSendExclRequest(this, 500, 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (a2)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 500, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 500, 0)"
         }
       ]
     },
@@ -9250,7 +9419,7 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "itemId — hard-coded 5510000 (0x541370)"
+          "comment": "itemId \u2014 hard-coded 5510000 (0x541370)"
         },
         {
           "op": "Encode4",
@@ -11790,6 +11959,69 @@
         {
           "op": "Decode1",
           "comment": "action/newStance (v & 0x7F -> SetAttackAction@0x7f9695) \u2014 OnHit@0x7f968a (SKILL behavior). NO summonSkillId int on the wire."
+        }
+      ]
+    },
+    "CDragon::OnCreated": {
+      "address": "0x5200ed",
+      "direction": "clientbound",
+      "notes": "SPAWN_DRAGON body. CDragon::OnCreated@0x5200ed (GMSv87_4GB.exe.i64, session d51ecbd3), reached via CUser::OnDragonPacket@0x9b3880's a2==0xC2 (194) branch, itself routed by CUserPool::OnUserCommonPacket@0x9f7387's range test v6>=0xC2 && v6<=0xC4 @0x9f7430. Reads, in order: Decode4 (stored at this+61) @0x52010b, Decode4 (stored at this+58) @0x52011f, Decode1 stance @0x520141 (via sub_4172B3 into this+37), Decode2 <read, discarded -- return value never assigned> @0x52015e, Decode2 jobId (this+71) @0x520178. 13-byte body -- the two Decode4 calls store to struct offsets in reverse order versus v84's (this[58] then this[59]) but the WIRE READ ORDER is identical: Decode4, Decode4, Decode1, Decode2(discarded), Decode2(jobId), byte-identical to the already-verified v84/v95 shape. v87 CONFIRMS the spawnHasJobId gate boundary (GMS MajorAtLeast(84)): v87 carries jobId. Match (task-225).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "first Decode4 -> stored at this+61 @0x52010b"
+        },
+        {
+          "op": "Decode4",
+          "comment": "second Decode4 -> stored at this+58 @0x52011f"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stance -> secured into this+37 via sub_4172B3 @0x520141/0x520158"
+        },
+        {
+          "op": "Decode2",
+          "comment": "read and discarded -- return value never assigned @0x52015e"
+        },
+        {
+          "op": "Decode2",
+          "comment": "jobId -> this+71 @0x520178"
+        }
+      ]
+    },
+    "CDragon::OnMove": {
+      "address": "0x520c71",
+      "direction": "clientbound",
+      "notes": "MOVE_DRAGON body. CDragon::OnMove@0x520c71 (GMSv87_4GB.exe.i64, session d51ecbd3) is a single delegating call: CMovePath::OnMovePacket(*(this+55)!=0 ? *(this+55)-12+572 : 572, a2) -- identical shape to v83/v84/v95's CDragon::OnMove (only the per-version fallback constant differs; the wire shape is unaffected). Reached via CUser::OnDragonPacket@0x9b3880's a2==0xC3 (195) branch (gated on this[2203]). The whole remaining body is the opaque CMovePath blob. Matches the committed DragonMove codec exactly. Match (task-225).",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "opaque CMovePath blob @0x520c71",
+          "ref": "CMovePath::OnMovePacket"
+        }
+      ]
+    },
+    "CUser::OnDragonPacket": {
+      "address": "0x9b3880",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 196
+        }
+      ],
+      "notes": "REMOVE_DRAGON body. CUser::OnDragonPacket@0x9b3880 (GMSv87_4GB.exe.i64, session d51ecbd3) handles only a2==0xC2 (194, spawn, CDragon::OnCreated@0x5200ed) and this[2203]&&a2==0xC3 (195, move, CDragon::OnMove@0x520c71). THERE IS NO CASE FOR 0xC4 (196, REMOVE_DRAGON) -- the outer dispatcher CUserPool::OnUserCommonPacket@0x9f7387 routes the range v6>=0xC2 && v6<=0xC4 into this function (test @0x9f7430, call @0x9f7438), so 196 enters and falls through both branches with zero effect: no field is read, no dragon state changes. Same routed-but-unhandled shape already recorded for v83/v84/v95 (docs/packets/registry/gms_v84.yaml:1254). Sending REMOVE_DRAGON is correct and harmless; the client silently discards it. Match (task-225).",
+      "calls": []
+    },
+    "CVecCtrlDragon::EndUpdateActive": {
+      "address": "0xa46fae",
+      "direction": "serverbound",
+      "notes": "MOVE_DRAGON (serverbound) send site. CVecCtrlDragon::EndUpdateActive@0xa46fae (GMSv87_4GB.exe.i64, session d51ecbd3): if CMovePath::IsTimeForFlush(this+572,0), builds COutPacket(193=0xC1)@0xa46fd7 then CMovePath::Flush(v1,&a3,0,0)@0xa46fea and sends via CClientSocket::SendPacket@0xa46ffd. There is NO leading identity field -- same shape as v83/v84/v95's CVecCtrlDragon::EndUpdateActive. Opcode 193 confirmed from the COutPacket construction site itself, matching the registry opcode (193) for serverbound MOVE_DRAGON on v87. Match (task-225).",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "opaque CMovePath blob, opcode 193 @0xa46fd7/0xa46fea",
+          "ref": "CMovePath::Flush"
         }
       ]
     },
@@ -15775,6 +16007,70 @@
           "comment": ""
         }
       ]
+    },
+    "CCashShop::OnCheckDuplicatedIDResult": {
+      "address": "0x4872cb",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::OnCancelNameChangeResult": {
+      "address": "0xac2313",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nResult"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bHasMessage",
+          "guard": "nResult != 0x00 && nResult != 0xFF"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sMessage",
+          "guard": "nResult != 0x00 && nResult != 0xFF && bHasMessage"
+        }
+      ]
+    },
+    "CWvsContext::OnCancelNameChangebyOther": {
+      "address": "0xac2482",
+      "direction": "clientbound",
+      "calls": []
+    },
+    "CWvsContext::OnCancelTransferWorldResult": {
+      "address": "0xac24c9",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nResult"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bHasMessage",
+          "guard": "nResult != 0x00 && nResult != 0x01"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sMessage",
+          "guard": "nResult != 0x00 && nResult != 0x01 && bHasMessage"
+        }
+      ]
+    },
+    "CWvsContext::SendWaterOfLife": {
+      "address": "0xab501c",
+      "direction": "serverbound",
+      "calls": []
     }
   }
 }

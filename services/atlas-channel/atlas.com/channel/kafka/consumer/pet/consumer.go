@@ -9,6 +9,7 @@ import (
 	"atlas-channel/pet"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	socketHandler "atlas-channel/socket/handler"
 	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
@@ -37,7 +38,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("pet_status_event")(pet2.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("pet_status_event")(pet2.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -90,6 +91,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleFlagChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleReviveFailed(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleNameChanged(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -261,6 +272,20 @@ func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(
 	}
 }
 
+// petAssetRefresher re-announces the owner's cash pet asset so the client's
+// GW_ItemSlotPet — the record the INVENTORY slot renders from — picks up the
+// pet's current data. The in-world packets (name tag, effects, spawn body)
+// only repaint the spawned pet; none of them touch the inventory item. Without
+// this the slot keeps stale data until some unrelated full inventory re-send
+// (entering or leaving the cash shop) happens to refresh it.
+//
+// It is a package-level var so tests can record the call without a live
+// character REST backend, mirroring the reportAnnouncer seam in
+// kafka/consumer/report.
+var petAssetRefresher = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, sc server.Model, petId uint32, ownerId uint32) {
+	_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(ownerId, announcePetStatUpdate(l)(ctx)(wp)(petId, ownerId))
+}
+
 func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.ClosenessChangedStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.ClosenessChangedStatusEventBody]) {
 		if e.Type != pet2.StatusEventTypeClosenessChanged {
@@ -272,7 +297,7 @@ func handleClosenessChanged(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId, announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId))
+		petAssetRefresher(l, ctx, wp, sc, e.PetId, e.OwnerId)
 	}
 }
 
@@ -451,6 +476,46 @@ func handleExcludeChanged(sc server.Model, wp writer.Producer) message.Handler[p
 	}
 }
 
+func handleNameChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.NameChangedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.NameChangedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeNameChanged {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(e.OwnerId)
+		if err != nil {
+			return
+		}
+
+		// The name lives in TWO client-side records and PetNameChanged only
+		// updates one of them. It repaints the name tag over the SPAWNED pet;
+		// the INVENTORY slot renders from GW_ItemSlotPet.sPetName, which no
+		// pet packet touches. Refresh the owner's cash asset too, or the item
+		// keeps the old name until an unrelated full inventory re-send (cash
+		// shop entry/exit) happens to correct it. Owner-only by construction:
+		// nobody else can see that item.
+		petAssetRefresher(l, ctx, wp, sc, e.PetId, e.OwnerId)
+
+		// ForSessionsInMap includes the owner, so one call reaches both the
+		// renaming player and every observer. The callback closes over
+		// immutable values only — the iteration is PARALLEL
+		// (bug_channel_foreachinmap_parallel_shared_state), so nothing shared
+		// may be mutated inside it.
+		//
+		// Observers who enter the map LATER get the new name from the
+		// PetActivated spawn body instead; both codecs write the same
+		// NameTagLayer, so the decoration does not flicker between the two.
+		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(),
+			session.Announce(l)(ctx)(wp)(petpkt.PetNameChangedWriter)(
+				petpkt.NewPetNameChanged(e.OwnerId, e.Body.Slot, e.Body.Name).Encode))
+	}
+}
+
 func handleFlagChanged(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.FlagChangedStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.FlagChangedStatusEventBody]) {
 		if e.Type != pet2.StatusEventTypeFlagChanged {
@@ -464,6 +529,34 @@ func handleFlagChanged(sc server.Model, wp writer.Producer) message.Handler[pet2
 
 		// Re-announce the pet's cash asset so the client's GW_ItemSlotPet
 		// usPetSkill short refreshes — there is no dedicated skill packet.
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId, announcePetStatUpdate(l)(ctx)(wp)(e.PetId, e.OwnerId))
+		petAssetRefresher(l, ctx, wp, sc, e.PetId, e.OwnerId)
+	}
+}
+
+// handleReviveFailed announces an asynchronous Water of Life revive failure.
+// atlas-pets rejects the revive only after the saga's first step already
+// destroyed the item; the saga compensates by refunding it, so this handler's
+// only job is to tell the player why nothing happened. The event carries no
+// world/channel, so IfPresentByCharacterId on this channel IS the routing --
+// a character connected to another channel simply hears nothing, which is
+// correct.
+func handleReviveFailed(sc server.Model, wp writer.Producer) message.Handler[pet2.StatusEvent[pet2.ReviveFailedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pet2.StatusEvent[pet2.ReviveFailedStatusEventBody]) {
+		if e.Type != pet2.StatusEventTypeReviveFailed {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		l.Warnf("Pet [%d] revive failed for character [%d]: %s.", e.PetId, e.OwnerId, e.Body.Reason)
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.OwnerId,
+			session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationSystemMessageBody(socketHandler.WaterOfLifeFailedMessage)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce revive failure to character [%d].", e.OwnerId)
+		}
 	}
 }

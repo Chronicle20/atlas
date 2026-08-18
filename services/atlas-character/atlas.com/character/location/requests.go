@@ -53,12 +53,16 @@ func (r *RestModel) SetID(s string) error {
 func (r *RestModel) SetToOneReferenceID(_, _ string) error            { return nil }
 func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
-var baseURLProvider = func() string {
-	return requests.RootUrl("MAPS")
+var baseURLProvider = func(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MAPS")
 }
 
-func requestByCharacterId(characterId uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(baseURLProvider()+Resource, characterId))
+func requestByCharacterId(ctx context.Context, characterId uint32) requests.Request[RestModel] {
+	root, err := baseURLProvider(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+Resource, characterId))
 }
 
 // GetField returns the durable field stored in atlas-maps for the given
@@ -69,7 +73,7 @@ func requestByCharacterId(characterId uint32) requests.Request[RestModel] {
 // (5xx, network, decode), returns the underlying error so callers can
 // distinguish infrastructure failures from missing data.
 func GetField(l logrus.FieldLogger, ctx context.Context, characterId uint32) (field.Model, error) {
-	rm, err := requestByCharacterId(characterId)(l, ctx)
+	rm, err := requestByCharacterId(ctx, characterId)(l, ctx)
 	if err != nil {
 		if errors.Is(err, requests.ErrNotFound) {
 			return field.Model{}, ErrNotFound
@@ -83,6 +87,6 @@ func GetField(l logrus.FieldLogger, ctx context.Context, characterId uint32) (fi
 // call from a test; production code uses the env-driven default.
 func SetBaseURLForTest(url string) func() {
 	prev := baseURLProvider
-	baseURLProvider = func() string { return url + "/api/" }
+	baseURLProvider = func(_ context.Context) (string, error) { return url + "/api/", nil }
 	return func() { baseURLProvider = prev }
 }

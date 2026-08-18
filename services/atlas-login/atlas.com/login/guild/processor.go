@@ -32,7 +32,7 @@ func (p *ProcessorImpl) GetByMemberId(memberId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByMemberIdProvider(memberId uint32) model.Provider[[]Model] {
-	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(p.ctx, memberId), Extract, model.Filters[Model]())
 }
 
 func (p *ProcessorImpl) IsGuildMaster(characterId uint32) (bool, error) {

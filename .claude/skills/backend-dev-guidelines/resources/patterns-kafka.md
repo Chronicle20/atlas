@@ -52,3 +52,39 @@ func TestMain(m *testing.M) {
 ```
 
 For per-test injection (when the processor exposes `WithProducer(...)`), pass a no-op `producer.Provider` directly. See [Stubbing the Kafka Producer in Tests](testing-guide.md#stubbing-the-kafka-producer-in-tests).
+
+---
+
+## Audit verification — DOM-30
+
+Rule defined in [audit-checklist.md](audit-checklist.md). This section is the
+verification procedure. Triggers when a changed package has `producer.go`, or
+calls `AndEmit` / `message.Emit` / `producer.ProviderImpl`.
+
+**How to verify.**
+
+1. Grep the changed non-test files for `producer.ProviderImpl(` and
+   `producer.Produce(` call sites outside `producer.go` itself.
+2. For each, read the enclosing function. The emission belongs inside a
+   `message.Emit(p.p)(func(mb *message.Buffer) error { ... })` wrapper — the
+   `*AndEmit` shape in [Message Buffer Pattern](#message-buffer-pattern) — so
+   that the operation's DB write and its events commit or fail together.
+
+**Pass criteria.** An operation that performs a DB write emits through `AndEmit`
++ `message.Buffer`, so the write and its events commit or fail together.
+
+**Documented exceptions.** The buffer requirement exists to keep a *DB write*
+atomic with its side effects. Where there is no such write, a direct producer
+call is not a finding:
+
+1. **Post-failure branches** — reached only after the operation's transaction
+   has already failed, so there is no live buffer to attach to. The task-137
+   ruling (`atlas-notes` / `saga-orchestrator` CREATE_FAILED notifications).
+2. **Operations over non-DB state** — a processor whose state lives in an
+   in-memory registry or cache has no transaction on *any* path, success
+   included, so it emits directly
+   (`services/atlas-chairs/atlas.com/chairs/chair/processor.go` —
+   `GetRegistry().Set(...)` then a direct `producer.ProviderImpl(...)`).
+
+Cite the absent write as evidence. A direct producer call on the success path
+of an operation that *does* write to the database is a FAIL.

@@ -1,0 +1,10 @@
+packet: inventory/serverbound/InventoryReturnScrollItemUse
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendPortalScrollUseRequest
+    address: "0xa1e1ce"
+    decompile_sha256: 37e02806342089634f30e3f9ba12c98fcf081cb48358802fffe0824de8ef0274
+verifies:
+    - libs/atlas-packet/inventory/serverbound/return_scroll_item_use_test.go#TestReturnScrollItemUseRoundTrip

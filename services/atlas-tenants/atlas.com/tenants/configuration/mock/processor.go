@@ -82,10 +82,23 @@ type ProcessorMock struct {
 	GetKiteConfigFunc           func(tenantID uuid.UUID) (map[string]interface{}, error)
 	KiteConfigProviderFunc      func(tenantID uuid.UUID) model.Provider[map[string]interface{}]
 
+	// Imprint config operations
+	CreateImprintConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error)
+	CreateImprintConfigAndEmitFunc func(tenantID uuid.UUID, config map[string]interface{}) (configuration.Model, error)
+	UpdateImprintConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error)
+	UpdateImprintConfigAndEmitFunc func(tenantID uuid.UUID, configID string, config map[string]interface{}) (configuration.Model, error)
+	DeleteImprintConfigFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) error
+	DeleteImprintConfigAndEmitFunc func(tenantID uuid.UUID, configID string) error
+	GetImprintConfigByIdFunc       func(tenantID uuid.UUID, configID string) (map[string]interface{}, error)
+	GetAllImprintConfigsFunc       func(tenantID uuid.UUID) ([]map[string]interface{}, error)
+	ImprintConfigByIdProviderFunc  func(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}]
+	AllImprintConfigsProviderFunc  func(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+
 	// Seed operations
-	SeedRpsRewardsFunc   func(tenantID uuid.UUID) (configuration.SeedResult, error)
-	SeedMtsConfigsFunc   func(tenantID uuid.UUID) (configuration.SeedResult, error)
-	SeedTradeConfigsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedRpsRewardsFunc     func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedMtsConfigsFunc     func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedTradeConfigsFunc   func(tenantID uuid.UUID) (configuration.SeedResult, error)
+	SeedImprintConfigsFunc func(tenantID uuid.UUID) (configuration.SeedResult, error)
 
 	// Vessel operations
 	CreateVesselFunc        func(mb *message.Buffer) func(tenantID uuid.UUID) func(vessel map[string]interface{}) (configuration.Model, error)
@@ -722,6 +735,112 @@ func (m *ProcessorMock) SeedTradeConfigs(tenantID uuid.UUID) (configuration.Seed
 		return m.SeedTradeConfigsFunc(tenantID)
 	}
 	return configuration.SeedResult{}, nil
+}
+
+// SeedImprintConfigs is a mock implementation
+func (m *ProcessorMock) SeedImprintConfigs(tenantID uuid.UUID) (configuration.SeedResult, error) {
+	if m.SeedImprintConfigsFunc != nil {
+		return m.SeedImprintConfigsFunc(tenantID)
+	}
+	return configuration.SeedResult{}, nil
+}
+
+// CreateImprintConfig is a mock implementation
+func (m *ProcessorMock) CreateImprintConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error) {
+	if m.CreateImprintConfigFunc != nil {
+		return m.CreateImprintConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(config map[string]interface{}) (configuration.Model, error) {
+		return func(config map[string]interface{}) (configuration.Model, error) {
+			return configuration.Model{}, nil
+		}
+	}
+}
+
+// CreateImprintConfigAndEmit is a mock implementation
+func (m *ProcessorMock) CreateImprintConfigAndEmit(tenantID uuid.UUID, config map[string]interface{}) (configuration.Model, error) {
+	if m.CreateImprintConfigAndEmitFunc != nil {
+		return m.CreateImprintConfigAndEmitFunc(tenantID, config)
+	}
+	return configuration.Model{}, nil
+}
+
+// UpdateImprintConfig is a mock implementation
+func (m *ProcessorMock) UpdateImprintConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateImprintConfigFunc != nil {
+		return m.UpdateImprintConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+		return func(configID string) func(config map[string]interface{}) (configuration.Model, error) {
+			return func(config map[string]interface{}) (configuration.Model, error) {
+				return configuration.Model{}, nil
+			}
+		}
+	}
+}
+
+// UpdateImprintConfigAndEmit is a mock implementation
+func (m *ProcessorMock) UpdateImprintConfigAndEmit(tenantID uuid.UUID, configID string, config map[string]interface{}) (configuration.Model, error) {
+	if m.UpdateImprintConfigAndEmitFunc != nil {
+		return m.UpdateImprintConfigAndEmitFunc(tenantID, configID, config)
+	}
+	return configuration.Model{}, nil
+}
+
+// DeleteImprintConfig is a mock implementation
+func (m *ProcessorMock) DeleteImprintConfig(mb *message.Buffer) func(tenantID uuid.UUID) func(configID string) error {
+	if m.DeleteImprintConfigFunc != nil {
+		return m.DeleteImprintConfigFunc(mb)
+	}
+	return func(tenantID uuid.UUID) func(configID string) error {
+		return func(configID string) error {
+			return nil
+		}
+	}
+}
+
+// DeleteImprintConfigAndEmit is a mock implementation
+func (m *ProcessorMock) DeleteImprintConfigAndEmit(tenantID uuid.UUID, configID string) error {
+	if m.DeleteImprintConfigAndEmitFunc != nil {
+		return m.DeleteImprintConfigAndEmitFunc(tenantID, configID)
+	}
+	return nil
+}
+
+// GetImprintConfigById is a mock implementation
+func (m *ProcessorMock) GetImprintConfigById(tenantID uuid.UUID, configID string) (map[string]interface{}, error) {
+	if m.GetImprintConfigByIdFunc != nil {
+		return m.GetImprintConfigByIdFunc(tenantID, configID)
+	}
+	return map[string]interface{}{}, nil
+}
+
+// GetAllImprintConfigs is a mock implementation
+func (m *ProcessorMock) GetAllImprintConfigs(tenantID uuid.UUID) ([]map[string]interface{}, error) {
+	if m.GetAllImprintConfigsFunc != nil {
+		return m.GetAllImprintConfigsFunc(tenantID)
+	}
+	return []map[string]interface{}{}, nil
+}
+
+// ImprintConfigByIdProvider is a mock implementation
+func (m *ProcessorMock) ImprintConfigByIdProvider(tenantID uuid.UUID, configID string) model.Provider[map[string]interface{}] {
+	if m.ImprintConfigByIdProviderFunc != nil {
+		return m.ImprintConfigByIdProviderFunc(tenantID, configID)
+	}
+	return func() (map[string]interface{}, error) {
+		return map[string]interface{}{}, nil
+	}
+}
+
+// AllImprintConfigsProvider is a mock implementation
+func (m *ProcessorMock) AllImprintConfigsProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
+	if m.AllImprintConfigsProviderFunc != nil {
+		return m.AllImprintConfigsProviderFunc(tenantID)
+	}
+	return func() ([]map[string]interface{}, error) {
+		return []map[string]interface{}{}, nil
+	}
 }
 
 // CreateRankings is a mock implementation

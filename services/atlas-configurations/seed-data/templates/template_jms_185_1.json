@@ -60,6 +60,15 @@
         ]
       },
       {
+        "opCode": "0x09",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopCheckTransferWorldPossibleHandle",
+        "fname": "CCashShop::SendCheckTransferWorldPossiblePacket",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x0A",
         "validator": "LoggedInValidator",
         "handler": "CharacterViewAllHandle",
@@ -516,6 +525,15 @@
         ]
       },
       {
+        "opCode": "0x43",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseSummonBagHandle",
+        "fname": "CWvsContext::SendMobSummonItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x44",
         "validator": "LoggedInValidator",
         "handler": "PetFoodHandle",
@@ -534,10 +552,28 @@
         ]
       },
       {
+        "opCode": "0x46",
+        "validator": "LoggedInValidator",
+        "handler": "ScriptedItemHandle",
+        "fname": "CWvsContext::SendScriptRunItemRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x47",
         "validator": "LoggedInValidator",
         "handler": "CharacterCashItemUseHandle",
         "fname": "CItemSpeakerDlg::_SendConsumeCashItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x48",
+        "validator": "LoggedInValidator",
+        "handler": "PetDestroyItemHandle",
+        "fname": "CWvsContext::SendActivatePetRequest",
         "services": [
           "channel"
         ]
@@ -565,6 +601,15 @@
         "validator": "LoggedInValidator",
         "handler": "TeleportRockUseHandle",
         "fname": "CWvsContext::SendMapTransferItemUseRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x4D",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterItemUseTownScrollHandle",
+        "fname": "CWvsContext::SendPortalScrollUseRequest",
         "services": [
           "channel"
         ]
@@ -709,6 +754,15 @@
         "validator": "LoggedInValidator",
         "handler": "CharacterSkillMacroHandle",
         "fname": "CMacroSysMan::FlushToSvr",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x6A",
+        "validator": "LoggedInValidator",
+        "handler": "NpcItemUseHandle",
+        "fname": "CWvsContext::SendSelectNpcItemUseRequest",
         "services": [
           "channel"
         ]
@@ -1322,6 +1376,151 @@
         "validator": "LoggedInValidator",
         "handler": "SummonDamageHandle",
         "fname": "CSummoned::SetDamaged",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xB9",
+        "validator": "LoggedInValidator",
+        "handler": "DragonMoveHandle",
+        "fname": "CVecCtrlDragon::EndUpdateActive",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_ATK_RUSH",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "MOB_ATK_RUSH_STOP",
+              "Type": "NORMAL"
+            }
+          ]
+        },
         "services": [
           "channel"
         ]
@@ -2942,6 +3141,14 @@
         ]
       },
       {
+        "opCode": "0xB2",
+        "writer": "PetNameChanged",
+        "fname": "CPet::OnNameChanged",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xB3",
         "writer": "PetExcludeResponse",
         "fname": "CPet::OnLoadExceptionList",
@@ -3001,6 +3208,30 @@
         "opCode": "0xBA",
         "writer": "SummonDamage",
         "fname": "CSummonedPool::OnSkill",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xBB",
+        "writer": "DragonSpawn",
+        "fname": "CDragon::OnCreated",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xBC",
+        "writer": "DragonMove",
+        "fname": "CDragon::OnMove",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xBD",
+        "writer": "DragonRemove",
+        "fname": "CUser::OnDragonPacket",
         "services": [
           "channel"
         ]
@@ -4521,6 +4752,28 @@
             "NOT_ENOUGH_MESOS": 209,
             "CASH_SHOP_NOT_AVAILABLE_DURING_BETA": 210,
             "INVALID_BIRTHDAY": 211
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x16C",
+        "writer": "CashShopCheckTransferWorldPossibleResult",
+        "fname": "CCashShop::OnCheckTransferWorldPossibleResult",
+        "options": {
+          "operations": {
+            "ALLOWED": 0,
+            "CHARACTER_NOT_FOUND": 1,
+            "REASON_2": 2,
+            "REASON_3": 3,
+            "REASON_4": 4,
+            "REASON_5": 5,
+            "REASON_6": 6,
+            "REASON_7": 7,
+            "IN_FAMILY": 8,
+            "UNKNOWN_ERROR": 9
           }
         },
         "services": [

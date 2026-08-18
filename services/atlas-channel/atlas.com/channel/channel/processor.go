@@ -52,7 +52,7 @@ func (p *ProcessorImpl) Register(ch channel.Model, ipAddress string, port int) e
 // from upstream is treated as success — the listener drain may race with
 // an operator-driven unregister, and the goal is "the channel is gone."
 func (p *ProcessorImpl) Unregister(ch channel.Model) error {
-	err := unregisterChannel(ch)(p.l, p.ctx)
+	err := unregisterChannel(p.ctx, ch)(p.l, p.ctx)
 	if err != nil && !errors.Is(err, requests.ErrNotFound) {
 		return err
 	}
@@ -60,7 +60,7 @@ func (p *ProcessorImpl) Unregister(ch channel.Model) error {
 }
 
 func (p *ProcessorImpl) ByIdModelProvider(ch channel.Model) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestChannel(ch), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestChannel(p.ctx, ch), Extract)
 }
 
 func (p *ProcessorImpl) GetById(ch channel.Model) (Model, error) {

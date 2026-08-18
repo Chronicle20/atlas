@@ -39,7 +39,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ByTemplateIdProvider(templateId uint32) model.Provider[Model] {
-	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestNPCShop(templateId), Extract)
+	return requests.Provider[RestModel, Model](p.l, p.ctx)(requestNPCShop(p.ctx, templateId), Extract)
 }
 
 func (p *ProcessorImpl) GetShop(template uint32) (Model, error) {

@@ -71,7 +71,7 @@ func (s *Subscriber) Start(ctx context.Context, l logrus.FieldLogger, wg *sync.W
 	cmf := consumer.GetManager().AddConsumer(l, ctx, wg)
 	if s.ServiceTopic != "" {
 		cmf(consumer.NewConfig(brokers, "configuration_service_status", s.ServiceTopic, groupId),
-			consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),
+			consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser),
 			consumer.SetStartOffset(kafka.FirstOffset))
 		if _, err := consumer.GetManager().RegisterHandler(s.ServiceTopic, s.handleService(l)); err != nil {
 			return err
@@ -79,7 +79,7 @@ func (s *Subscriber) Start(ctx context.Context, l logrus.FieldLogger, wg *sync.W
 	}
 	if s.TenantTopic != "" {
 		cmf(consumer.NewConfig(brokers, "configuration_tenant_status", s.TenantTopic, groupId),
-			consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),
+			consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser),
 			consumer.SetStartOffset(kafka.FirstOffset))
 		if _, err := consumer.GetManager().RegisterHandler(s.TenantTopic, s.handleTenant(l)); err != nil {
 			return err

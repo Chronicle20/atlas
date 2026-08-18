@@ -35,7 +35,7 @@ func (p *ProcessorImpl) GetFootholdBelow(mapId _map.Id, x, y int16) (uint32, err
 		Y: y,
 	}
 
-	result, err := requestFootholdBelow(mapId, input)(p.l, p.ctx)
+	result, err := requestFootholdBelow(p.ctx, mapId, input)(p.l, p.ctx)
 	if err != nil {
 		// If no foothold is found, atlas-data returns an error (500 status)
 		// Return 0 as the default foothold ID

@@ -18,11 +18,13 @@ resources:
   - atlas-data.yaml
   - atlas-data-ingest-job-template.yaml
   - atlas-doors.yaml
+  - atlas-dragons.yaml
   - atlas-drop-information.yaml
   - atlas-drops.yaml
   - atlas-effective-stats.yaml
   - atlas-events.yaml
   - atlas-expressions.yaml
+  - atlas-families.yaml
   - atlas-fame.yaml
   - atlas-reward-pools.yaml
   - atlas-guilds.yaml
@@ -81,6 +83,12 @@ configMapGenerator:
   - name: atlas-ingress-routes
     files:
       - routes.conf.template=routes.conf.template.generated
+  # The atlas-kafka-precreate Job's script body, extracted (task-232 Task 45)
+  # so atlas-kafka-precreate_test.sh can source it and exercise seed_group
+  # directly. See atlas-kafka-precreate.yaml.
+  - name: atlas-kafka-precreate-script
+    files:
+      - kafka-precreate.sh
 
 # Push every Deployment to sync-wave 10 so Argo CD waits for the
 # atlas-kafka-precreate Job (sync-wave 0) to complete before rolling

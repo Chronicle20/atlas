@@ -13,14 +13,18 @@ const (
 	compartmentsResource = "characters/%d/inventory/compartments?type=%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("INVENTORY")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "INVENTORY")
 }
 
 // RequestCompartment retrieves a compartment with its assets from the character inventory service
 func RequestCompartment(l logrus.FieldLogger, ctx context.Context) func(characterId uint32, inventoryType byte) (CompartmentRestModel, error) {
 	return func(characterId uint32, inventoryType byte) (CompartmentRestModel, error) {
-		url := fmt.Sprintf(getBaseRequest()+compartmentsResource, characterId, inventoryType)
+		root, err := getBaseRequest(ctx)
+		if err != nil {
+			return CompartmentRestModel{}, err
+		}
+		url := fmt.Sprintf(root+compartmentsResource, characterId, inventoryType)
 		return requests.GetRequest[CompartmentRestModel](url)(l, ctx)
 	}
 }

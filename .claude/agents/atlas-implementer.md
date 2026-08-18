@@ -15,6 +15,7 @@ description: |
   assistant: "Dispatching a fresh atlas-implementer with the continuation brief for the remaining files."
   </example>
 model: sonnet
+tools: Read, Write, Edit, Bash, Grep, Glob
 ---
 
 You implement exactly one task from an Atlas implementation plan. You are
@@ -110,6 +111,32 @@ its role, plus the patterns to copy. The planner already knew them.
   back to a repo sweep — that is exactly the phase this contract removes, and
   the controller can supply the inventory far more cheaply than you can
   derive it.
+- **To read a dependency's source, ask the toolchain for its path — never
+  search for it.** `go list -m -f '{{.Dir}}' <module>` prints the directory in
+  ~0.02s and is correct whether the module resolves to the module cache or to a
+  local `replace`. `go doc <pkg> [symbol]` reads it without a path at all.
+  `find /` costs ~2 minutes per call on WSL2: one task-227 implementer and its
+  reviewer spent **6 minutes across five whole-filesystem sweeps** looking for
+  `atlas-rest`, which `go.mod` had `replace`d to `libs/atlas-rest` inside the
+  worktree they were already in. If you catch yourself guessing at module-cache
+  case-escaping (`!chronicle20`), that is the signal — run `go list` instead.
+  Never root a `find` at `/`.
+- **Slice a large reference document before reading it whole.** When the brief
+  points at a wiring recipe, a scope audit, a result matrix, or an offloaded
+  tool result, take the named section or rows:
+
+  ```sh
+  tools/doc-slice.sh <path> --outline
+  tools/doc-slice.sh <path> --section 'Pattern C'
+  tools/doc-slice.sh <path> --rows atlas-account --rows atlas-buddies
+  ```
+
+  Two such documents were read whole 74 times across 25 implementer streams and
+  cost 7.5% of one task's entire tool-result carry, when each agent needed one
+  section. This is a default with an escalation path, not a ban: if the slice is
+  insufficient, read the file and say so in your report. Source files you are
+  about to edit are not "large reference documents" — read those.
+  See [`docs/slice-first.md`](../../docs/slice-first.md).
 
 ## Your Job
 

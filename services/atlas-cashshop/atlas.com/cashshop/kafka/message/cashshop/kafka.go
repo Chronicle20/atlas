@@ -25,9 +25,16 @@ type Command[E any] struct {
 	Body        E      `json:"body"`
 }
 
+// RequestPurchaseCommandBody requests one Commodity purchase. TransactionId is
+// an opaque correlation id minted by the caller (zero UUID means "no
+// correlation" for backward compatibility with existing callers) — see
+// OpenSurpriseCommandBody for the same pattern. It is echoed back on both
+// PurchaseEventBody and ErrorEventBody so a caller juggling multiple
+// concurrent purchases for the same character can tell them apart.
 type RequestPurchaseCommandBody struct {
-	Currency     uint32 `json:"currency"`
-	SerialNumber uint32 `json:"serialNumber"`
+	TransactionId uuid.UUID `json:"transactionId"`
+	Currency      uint32    `json:"currency"`
+	SerialNumber  uint32    `json:"serialNumber"`
 }
 
 type RequestInventoryIncreaseByTypeCommandBody struct {
@@ -102,8 +109,9 @@ type InventoryCapacityIncreasedBody struct {
 }
 
 type ErrorEventBody struct {
-	Error      string `json:"error"`
-	CashItemId uint32 `json:"cashItemId,omitempty"`
+	Error         string    `json:"error"`
+	CashItemId    uint32    `json:"cashItemId,omitempty"`
+	TransactionId uuid.UUID `json:"transactionId"`
 }
 
 type PurchaseEventBody struct {
@@ -111,6 +119,7 @@ type PurchaseEventBody struct {
 	Price         uint32    `json:"price"`
 	CompartmentId uuid.UUID `json:"compartmentId"`
 	AssetId       uint32    `json:"assetId"`
+	TransactionId uuid.UUID `json:"transactionId"`
 }
 
 // CouponRedeemedBody describes one successful redemption.

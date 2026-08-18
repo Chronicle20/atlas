@@ -1125,6 +1125,8 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "Movement", pkg: "pet", dir: csvpkg.DirClientbound}}
 	case "CPet::OnAction":
 		return []candidate{{name: "Chat", pkg: "pet", dir: csvpkg.DirClientbound}}
+	case "CPet::OnNameChanged":
+		return []candidate{{name: "NameChanged", pkg: "pet", dir: csvpkg.DirClientbound}}
 	case "CPet::OnActionCommand":
 		return []candidate{{name: "CommandResponse", pkg: "pet", dir: csvpkg.DirClientbound}}
 	case "CPet::OnLoadExceptionList":
@@ -1292,6 +1294,10 @@ func candidatesFromFName(fname string) []candidate {
 	case "CPet::SendDropPickUpRequest":
 		// CSV: PET_LOOT — atlas DropPickUp.
 		return []candidate{{name: "DropPickUp", pkg: "pet", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendWaterOfLife":
+		// CSV: WATER_OF_LIFE — atlas WaterOfLife. Empty body on every applicable
+		// version (task-228): COutPacket(op) + SendPacket, zero Encode* calls.
+		return []candidate{{name: "WaterOfLife", pkg: "pet", dir: csvpkg.DirServerbound}}
 	case "sub_6E5BD6":
 		// MOVE_PET (serverbound) in gms_v48: CVecCtrlPet::EndUpdateActive is UNNAMED
 		// — sub_6E5BD6 @0x6e5bd6, COutPacket(113)+CMovePath::Flush (no leading petId,
@@ -2185,12 +2191,15 @@ func candidatesFromFName(fname string) []candidate {
 		// (inventoryType)+Encode2(src)+Encode2(dst)+Encode2(count). The v48 registry
 		// primary fname is sub_70D8DE, so it keys to the same inventory.Move codec.
 		return []candidate{{name: "Move", dir: csvpkg.DirServerbound, pkg: "inventory"}}
-	case "sub_719DD9":
-		// USE_ITEM (serverbound) in gms_v48: CWvsContext::SendStatChangeItemUseRequest
-		// is UNNAMED — sub_719DD9 @0x719dd9, COutPacket(65)+Encode4(updateTime)+Encode2
-		// (slot)+Encode4(itemId). The v48 registry primary fname is sub_719DD9, so it
-		// keys to the same inventory.ItemUse codec.
-		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// task-229 CORRECTION: a "sub_719DD9" case previously lived here, claiming
+	// that address was the UNNAMED CWvsContext::SendStatChangeItemUseRequest
+	// (USE_ITEM). Re-decompile proved that wrong: 0x719dd9 is already named
+	// CWvsContext::SendPortalScrollUseRequest in the v48 IDB — the
+	// USE_RETURN_SCROLL sender (case below), not USE_ITEM. The genuine v48
+	// USE_ITEM sender is CWvsContext::SendStatChangeItemUseRequest @0x70db3c,
+	// which is already named and keys via the case at line ~2198. No
+	// candidatesFromFName case is needed for sub_719DD9 any more since the
+	// registry now uses the real, already-named fnames for both ops.
 	case "CWvsContext::SendGatherItemRequest":
 		return []candidate{{name: "CompartmentMergeRequest", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendSortItemRequest":
@@ -2199,11 +2208,57 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendUpgradeItemUseRequest":
 		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// task-229 — USE_SUMMON_BAG / USE_RETURN_SCROLL. Same 3-field wire body as
+	// USE_ITEM (Encode4 updateTime + Encode2 slot + Encode4 itemId) but distinct
+	// client send sites, so each keys to its own audit-only wrapper struct in
+	// inventory/serverbound. One wrapper per op = one packet id / report /
+	// evidence key per op; see docs/packets/audits/VERIFYING_A_PACKET.md
+	// "Shared-model ops".
+	case "CWvsContext::SendMobSummonItemUseRequest":
+		return []candidate{{name: "SummonBagItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_955499":
+		// USE_SUMMON_BAG on gms_v79 (@0x9555b0): the summon-bag sender is UNNAMED
+		// in the IDB and the registry carries sub_955499 (its own dummy name —
+		// address 0x955499) as the primary fname (the v79 IDB additionally
+		// mislabels the function as SendEngagementRequest — opcode read from the
+		// body).
+		return []candidate{{name: "SummonBagItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_904154":
+		// USE_SUMMON_BAG on gms_v72 (@0x904154): the summon-bag sender is UNNAMED
+		// in the IDB; its dummy name is its own address, sub_904154. task-229
+		// verify-pass CORRECTION: the registry previously carried sub_955499
+		// (copy-pasted from the v79 entry) — IDA's dummy-name convention ties
+		// sub_XXXXXX names to their own address, so that literal mis-resolves to
+		// an unrelated function (_ceil @0x95548e) when harvested against v72.
+		return []candidate{{name: "SummonBagItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "CWvsContext::SendPortalScrollUseRequest":
+		return []candidate{{name: "ReturnScrollItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "CWvsContext::SendReturnScrollUseRequest":
+		// gms_v72 / gms_v79 primary fname. Renamed live in those IDBs on task-124
+		// away from the inherited SendMapTransferItemUseRequest mislabel — that
+		// symbol is the teleport-rock sender, a different op.
+		return []candidate{{name: "ReturnScrollItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_841AA5":
+		// USE_RETURN_SCROLL on gms_v61 (send site @0x841cb8): unnamed in the IDB;
+		// reads the Return Scroll WZ props (StringPool 2276/2277/2279) and is
+		// distinct from USE_TELEPORT_ROCK (opcode 77 / sub_8327DB).
+		return []candidate{{name: "ReturnScrollItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	// Reward-box ("lottery") use (task-131). Struct LotteryItemUse in
 	// inventory/serverbound; body slot(int16) + itemId(int32). Opcode + codec
 	// exist from v72 up; v48/v61 lack the opcode (generic item-use path).
 	case "CWvsContext::SendLotteryItemUseRequest":
 		return []candidate{{name: "LotteryItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// Scripted items (task-230). Struct ScriptedItem in inventory/serverbound;
+	// body updateTime(uint32) + slot(int16) + itemId(int32). Opcode exists v72
+	// through jms_v185; v12/v48/v61 lack the sender entirely.
+	case "CWvsContext::SendScriptRunItemRequest":
+		return []candidate{{name: "ScriptedItem", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// Remote-NPC item use (task-230), covering the 239xxxx and 545xxxx
+	// families. Struct NpcItemUse in inventory/serverbound; body slot(int16) +
+	// itemId(int32) with NO leading updateTime. Opcode exists v61 through
+	// jms_v185; v12/v48 lack it.
+	case "CWvsContext::SendSelectNpcItemUseRequest":
+		return []candidate{{name: "NpcItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	// USE_SKILL_BOOK (task-125): CWvsContext::SendSkillLearnItemUseRequest,
 	// v83 @0xa0a1b2 IDA-verified (already named in the IDB, opcode 0x52 via
 	// COutPacket::COutPacket(&pkt, 0x52)). Body: Encode4 updateTime +
@@ -2256,6 +2311,14 @@ func candidatesFromFName(fname string) []candidate {
 			// nothing else (jms_v185 @0xaf1a42, entry 0xaf16df) — see
 			// item_use_pet_skill_test.go for the full decompile trail.
 			{name: "ItemUsePetSkill", dir: csvpkg.DirServerbound, pkg: "cash"},
+			// Pet Name Tag (task-224 fix round 1, cash-slot type 17):
+			// jumptable case-17 arm entry @0xa0ba15 collects the new name via a
+			// CUtilDlgEx input dialog, then does exactly ONE COutPacket::EncodeStr
+			// @0xa0bcb5 before falling through (jmp loc_A0E9EC) to the shared
+			// dispatcher tail — the same "one sub-body encode, shared trailing
+			// update_time" shape as every other sibling in this list. See
+			// item_use_pet_name_tag_test.go for the byte fixtures.
+			{name: "ItemUsePetNameTag", dir: csvpkg.DirServerbound, pkg: "cash"},
 		}
 	// Item Megaphone (cash-slot type 14): the REAL send function, separate
 	// from the main dispatcher above (task-123 phase 19, gms_v95
@@ -2514,6 +2577,59 @@ func candidatesFromFName(fname string) []candidate {
 	// above — the struct is CashItemGachaponButton (already "Cash"-prefixed).
 	case "CUICashItemGachapon::OnButtonClicked":
 		return []candidate{{name: "CashItemGachaponButton", dir: csvpkg.DirServerbound, pkg: "cash", reportName: "CashItemGachaponButton"}}
+	// Serverbound NAME_TRANSFER (task-227): the cash shop's "may this character
+	// be renamed?" request, sent from the 5400000 name-change purchase arm of
+	// CCashShop::ProcessBuy. Standalone opcode (gms_v48 0x012, gms_v61..v95
+	// 0x010), no leading mode byte, so it is a bare-fname candidate rather than
+	// an OnCashItemResult "#" arm. Absent from jms_v185 — that client has no
+	// name-change feature; its 0x009 is WORLD_TRANSFER
+	// (docs/tasks/task-227-cash-name-change-world-transfer/derivation.md §1.5).
+	case "CCashShop::SendCheckNameChangePossiblePacket":
+		return []candidate{{name: "CheckNameChangePossible", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	// Serverbound WORLD_TRANSFER (task-227): the cash shop's "may this character
+	// change worlds?" request, sent from the 5401000 world-transfer purchase arm
+	// of CCashShop::ProcessBuy after CCashShop::CheckTransferWorldPossible
+	// passes. Standalone opcode (gms_v48 0x014, gms_v61..v95 0x012, jms_v185
+	// 0x009), no leading mode byte, so it is a bare-fname candidate rather than
+	// an OnCashItemResult "#" arm. Present on jms_v185, unlike its
+	// NAME_TRANSFER sibling
+	// (docs/tasks/task-227-cash-name-change-world-transfer/derivation.md §1.5).
+	case "CCashShop::SendCheckTransferWorldPossiblePacket":
+		return []candidate{{name: "CheckTransferWorldPossible", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	// Clientbound CASHSHOP_CHECK_NAME_CHANGE_POSSIBLE_RESULT (task-227): the
+	// server's answer to the NAME_TRANSFER request above. Routed by
+	// CCashShop::OnPacket as its own case (v83 0x149), NOT by the
+	// OnCashItemResult mode dispatcher, so it is a bare-fname candidate rather
+	// than a "#" arm. Body is Decode4 (character id, discarded) + Decode1
+	// (nResult) + Decode4 (nBirthDate) on every version v79..v95; nResult
+	// selects only which dialog/notice renders, never a different field
+	// layout, so this is not a dispatcher family either
+	// (docs/tasks/task-227-cash-name-change-world-transfer/derivation.md §2.4, §4.1).
+	case "CCashShop::OnCheckNameChangePossibleResult":
+		return []candidate{{name: "CheckNameChangePossibleResult", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Clientbound CASHSHOP_CHECK_NAME_CHANGE (task-227): the per-name duplicate
+	// answer for the cash-shop rename dialog. Routed by CCashShop::OnPacket as
+	// its own case (v83 0x148), NOT by the OnCashItemResult mode dispatcher, so
+	// it is a bare-fname candidate rather than a "#" arm. Body is DecodeStr
+	// (sName) + Decode1 (nResult, SIGNED: >0 taken, ==0 available, <0 unknown
+	// error) on every version v48..v95; nResult selects only which
+	// dialog/notice renders, never a different field layout, so this is not a
+	// dispatcher family either
+	// (docs/tasks/task-227-cash-name-change-world-transfer/derivation.md §2.3, §4.4, §5).
+	case "CCashShop::OnCheckDuplicatedIDResult":
+		return []candidate{{name: "CheckNameChange", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Clientbound CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT (task-227): the
+	// server's answer to the WORLD_TRANSFER request above. Routed by
+	// CCashShop::OnPacket as its own case, NOT by the OnCashItemResult mode
+	// dispatcher. Body is Decode4 (character id, discarded) + Decode1
+	// (nResult) + Decode4 (nBirthDate, GMS only) + Decode1 (bHasWorldList) +
+	// optional Decode4 count + count x DecodeStr on every version v48..v95 and
+	// jms_v185 (jms drops nBirthDate); nResult selects only which
+	// dialog/notice renders, never a different field layout, so this is not a
+	// dispatcher family either
+	// (docs/tasks/task-227-cash-name-change-world-transfer/derivation.md §2.5, §4.2).
+	case "CCashShop::OnCheckTransferWorldPossibleResult":
+		return []candidate{{name: "CheckTransferWorldPossibleResult", dir: csvpkg.DirClientbound, pkg: "cash"}}
 	// Vega's Spell result dialog — single mode byte (task-130 §2.2). v83 opcode
 	// 0x166 via CUIVega::OnPacket; v95 0x1AD.
 	case "CUIVega::OnVegaResult":

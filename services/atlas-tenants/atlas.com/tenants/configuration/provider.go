@@ -415,6 +415,71 @@ func GetRpsRewardByIdProvider(tenantID uuid.UUID, rpsRewardID string) func(db *g
 	}
 }
 
+// GetImprintConfigByIdProvider returns a provider for a specific imprint config by ID
+func GetImprintConfigByIdProvider(tenantID uuid.UUID, configID string) func(db *gorm.DB) model.Provider[map[string]interface{}] {
+	return func(db *gorm.DB) model.Provider[map[string]interface{}] {
+		entityProvider := GetByTenantIdAndResourceNameProvider(tenantID, "imprint-configs")(db)
+		return model.Map(func(e Entity) (map[string]interface{}, error) {
+			var resourceData map[string]interface{}
+			if err := json.Unmarshal(e.ResourceData, &resourceData); err != nil {
+				return nil, err
+			}
+
+			// Check if it's an array of resources
+			if resources, ok := resourceData["data"].([]interface{}); ok {
+				for _, resource := range resources {
+					if resourceMap, ok := resource.(map[string]interface{}); ok {
+						if id, ok := resourceMap["id"].(string); ok && id == configID {
+							return resourceMap, nil
+						}
+					}
+				}
+				return nil, gorm.ErrRecordNotFound
+			}
+
+			// Check if it's a single resource
+			if data, ok := resourceData["data"].(map[string]interface{}); ok {
+				if id, ok := data["id"].(string); ok && id == configID {
+					return data, nil
+				}
+			}
+
+			return nil, gorm.ErrRecordNotFound
+		})(entityProvider)
+	}
+}
+
+// GetAllImprintConfigsProvider returns a provider for all imprint configs for a tenant
+func GetAllImprintConfigsProvider(tenantID uuid.UUID) func(db *gorm.DB) model.Provider[[]map[string]interface{}] {
+	return func(db *gorm.DB) model.Provider[[]map[string]interface{}] {
+		entityProvider := GetByTenantIdAndResourceNameProvider(tenantID, "imprint-configs")(db)
+		return model.Map(func(e Entity) ([]map[string]interface{}, error) {
+			var resourceData map[string]interface{}
+			if err := json.Unmarshal(e.ResourceData, &resourceData); err != nil {
+				return nil, err
+			}
+
+			// Check if it's an array of resources
+			if resources, ok := resourceData["data"].([]interface{}); ok {
+				result := make([]map[string]interface{}, 0, len(resources))
+				for _, resource := range resources {
+					if resourceMap, ok := resource.(map[string]interface{}); ok {
+						result = append(result, resourceMap)
+					}
+				}
+				return result, nil
+			}
+
+			// Check if it's a single resource
+			if data, ok := resourceData["data"].(map[string]interface{}); ok {
+				return []map[string]interface{}{data}, nil
+			}
+
+			return []map[string]interface{}{}, nil
+		})(entityProvider)
+	}
+}
+
 // GetAllRpsRewardsProvider returns a provider for all rps-rewards for a tenant
 func GetAllRpsRewardsProvider(tenantID uuid.UUID) func(db *gorm.DB) model.Provider[[]map[string]interface{}] {
 	return func(db *gorm.DB) model.Provider[[]map[string]interface{}] {

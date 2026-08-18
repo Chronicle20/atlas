@@ -1,6 +1,7 @@
 package minigame
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -12,15 +13,23 @@ const (
 	CharacterResource = "characters/%d/games"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("MINI_GAMES")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MINI_GAMES")
 }
 
-func requestInField(f field.Model) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
+func requestInField(ctx context.Context, f field.Model) requests.Request[[]RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]RestModel](err)
+	}
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+Resource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
 }
 
 // requestByMember reads the (0-or-1) mini-game room characterId is seated in.
-func requestByMember(characterId uint32) requests.Request[[]RestModel] {
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+CharacterResource, characterId))
+func requestByMember(ctx context.Context, characterId uint32) requests.Request[[]RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]RestModel](err)
+	}
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+CharacterResource, characterId))
 }

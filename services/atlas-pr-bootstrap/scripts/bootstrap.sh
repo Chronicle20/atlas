@@ -366,11 +366,7 @@ upsert_service_config() {
         # canonical payload verbatim for tenant-agnostic configs).
         log info "service config $svc_id absent; POST"
         local body
-        if [ -n "$entry" ]; then
-            body=$(jq -c --argjson entry "$entry" '.data.attributes.tenants = [$entry]' "$payload_path")
-        else
-            body=$(cat "$payload_path")
-        fi
+        body=$(build_service_config "$shape" "$payload_path")
         curl -fsS -X POST \
             -H 'Accept: application/vnd.api+json' \
             -H 'Content-Type: application/vnd.api+json' \
@@ -379,14 +375,56 @@ upsert_service_config() {
     fi
 }
 
-# login-service: version-derived login port, id-keyed merge.
-upsert_service_config /atlas/canonical/services/login-service.json login
+# Sparse mode (ATLAS_MODE=sparse): create a brand-new services row scoped to
+# this environment instead of merging into the canonical (main-owned) row.
+# main's row is never read, written or merged into (G7/NG6) — the whole
+# point of this function existing separately from upsert_service_config.
+#   $1 = canonical template path
+#   $2 = shape: login | channel | none (tenant-agnostic, e.g. drops)
+#   $3 = the override Deployment whose SERVICE_ID env var must be repointed
+#        at the freshly created row (see the SERVICE_ID-routing note below).
+create_service_config() {
+    local tmpl="$1" shape="$2" deployment="$3" body svc_id
+    body=$(build_service_config "$shape" "$tmpl") || return 1
+    svc_id=$(echo "$body" | jq -r '.data.id')
+    curl -fsS -X POST \
+        -H 'Accept: application/vnd.api+json' \
+        -H 'Content-Type: application/vnd.api+json' \
+        -d "$body" \
+        "$ATLAS_UI_BASE/api/configurations/services" >/dev/null
+    log info "sparse service config $svc_id created (type=$shape, environment=$ATLAS_ENVIRONMENT)"
 
-# channel-service: version-derived channel port + LB_IP, id-keyed merge.
-upsert_service_config /atlas/canonical/services/channel-service.json channel
+    # SERVICE_ID routing (task-47): base/atlas-<svc>.yaml bakes the pinned
+    # canonical SERVICE_ID into the Deployment at kustomize-build time, so
+    # $deployment starts pointed at main's row until this patch lands. The
+    # row id does not exist until this function runs, so the sparse overlay
+    # cannot set it statically — a hardcoded SERVICE_ID there would just
+    # reintroduce the pinned-row problem in a new place. Instead, patch the
+    # already-running Deployment directly: atlas-pr-bootstrap's Role already
+    # grants get/patch/update on deployments (it needs them for the restart
+    # loop below), and the bootstrap Job and the override Deployments both
+    # apply in sync-wave 10 in parallel, so this patch racing the
+    # Deployment's own rollout is fine — the pod that lands from this
+    # `kubectl set env` triggered restart is the one that ends up Ready.
+    kubectl set env deployment/"$deployment" SERVICE_ID="$svc_id" 2>/dev/null \
+        || log warn "could not set SERVICE_ID=$svc_id on deployment/$deployment"
+}
 
-# drops-service: tenant-agnostic (no tenants array) — pass through unchanged.
-upsert_service_config /atlas/canonical/services/drops-service.json none
+if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+    # Sparse mode: fresh Id-keyed rows, never main's pinned rows (G7/NG6).
+    create_service_config /atlas/canonical/services/login-service.json login atlas-login
+    create_service_config /atlas/canonical/services/channel-service.json channel atlas-channel
+    create_service_config /atlas/canonical/services/drops-service.json none atlas-drops
+else
+    # login-service: version-derived login port, id-keyed merge.
+    upsert_service_config /atlas/canonical/services/login-service.json login
+
+    # channel-service: version-derived channel port + LB_IP, id-keyed merge.
+    upsert_service_config /atlas/canonical/services/channel-service.json channel
+
+    # drops-service: tenant-agnostic (no tenants array) — pass through unchanged.
+    upsert_service_config /atlas/canonical/services/drops-service.json none
+fi
 
 # Rolling restart for services that still read SERVICE_ID synchronously at
 # startup. atlas-login and atlas-channel were removed by task-032 — they
@@ -394,10 +432,19 @@ upsert_service_config /atlas/canonical/services/drops-service.json none
 # tenant updates live without a restart. Keeping them in this list would
 # defeat the whole point of the dynamic-config feature.
 ATLAS_STEP=service-restart
-for d in atlas-drops atlas-character-factory atlas-world; do
+restart_targets="atlas-drops atlas-character-factory atlas-world"
+if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+    # In sparse mode, create_service_config just repointed atlas-login's and
+    # atlas-channel's SERVICE_ID at a freshly created row (above) — unlike
+    # isolated mode, where SERVICE_ID is the pinned canonical id both before
+    # and after bootstrap runs, here the env var actually changed, and it is
+    # only read at process start. They must restart to pick it up.
+    restart_targets="atlas-login atlas-channel $restart_targets"
+fi
+for d in $restart_targets; do
     kubectl rollout restart deployment/"$d" 2>/dev/null || log warn "could not restart $d"
 done
-for d in atlas-drops atlas-character-factory atlas-world; do
+for d in $restart_targets; do
     kubectl rollout status deployment/"$d" --timeout=180s 2>/dev/null || log warn "$d not ready"
 done
 
@@ -436,6 +483,7 @@ endpoints=(
     /api/gachapons/seed
     /api/npcs/conversations/seed
     /api/quests/conversations/seed
+    /api/items/conversations/seed
     /api/shops/seed
     /api/portals/scripts/seed
     /api/reactors/actions/seed

@@ -1,6 +1,7 @@
 package weather
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -12,10 +13,14 @@ const (
 	mapInstanceWeatherResource = mapInstanceResource + "/weather"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("MAPS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MAPS")
 }
 
-func requestWeatherInMap(f field.Model) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+mapInstanceWeatherResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
+func requestWeatherInMap(ctx context.Context, f field.Model) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+mapInstanceWeatherResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
 }

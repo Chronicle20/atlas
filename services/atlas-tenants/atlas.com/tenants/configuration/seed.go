@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	defaultRpsRewardsPath   = "/configurations/rps-rewards"
-	defaultMtsConfigsPath   = "/configurations/mts-configs"
-	defaultTradeConfigsPath = "/configurations/trade-configs"
+	defaultRpsRewardsPath     = "/configurations/rps-rewards"
+	defaultMtsConfigsPath     = "/configurations/mts-configs"
+	defaultTradeConfigsPath   = "/configurations/trade-configs"
+	defaultImprintConfigsPath = "/configurations/imprint-configs"
 )
 
 // SeedResult represents the result of a seed operation
@@ -65,6 +66,22 @@ func getTradeConfigsPath() string {
 // directory to read.
 func LoadTradeConfigFiles() ([]map[string]interface{}, []error) {
 	return loadSeedFiles(getTradeConfigsPath())
+}
+
+// getImprintConfigsPath returns the path to the imprint configs seed directory.
+func getImprintConfigsPath() string {
+	if path := os.Getenv("IMPRINT_CONFIGS_SEED_PATH"); path != "" {
+		return path
+	}
+	return defaultImprintConfigsPath
+}
+
+// LoadImprintConfigFiles reads all JSON files from the imprint configs seed
+// directory and parses them into map[string]interface{} structs. The directory
+// ships in the image (services/atlas-tenants/configurations/imprint-configs →
+// /configurations/imprint-configs), mirroring LoadTradeConfigFiles.
+func LoadImprintConfigFiles() ([]map[string]interface{}, []error) {
+	return loadSeedFiles(getImprintConfigsPath())
 }
 
 // loadSeedFiles reads all JSON files from the given directory and parses them.

@@ -1,0 +1,10 @@
+packet: inventory/serverbound/InventorySummonBagItemUse
+direction: serverbound
+version: gms_v79
+category: TIER1-FIXTURE
+ida:
+    function: sub_955499
+    address: "0x955499"
+    decompile_sha256: 3430dbd360e83846c23e59e971cdf71c5d9caa3f2bea4d5be941aad8f4cda710
+verifies:
+    - libs/atlas-packet/inventory/serverbound/summon_bag_item_use_test.go#TestSummonBagItemUseRoundTrip

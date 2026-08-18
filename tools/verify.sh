@@ -11,7 +11,9 @@
 # do not restate its contents in CLAUDE.md.
 #
 # Change detection: guards whose CI job is path-gated only run when the
-# relevant paths changed against the merge base. `--all` forces everything.
+# relevant paths changed against the merge base. `--all` forces everything;
+# `--base <rev>` narrows the change set to an increment, which is what a
+# per-task iteration gate wants — see docs/verification.md, "Iteration gate".
 #
 # Every check runs even after an earlier one fails, so one pass gives the
 # complete picture. Exit status is non-zero if any check failed.
@@ -26,18 +28,27 @@ ALL=0
 NO_DOCKER=0
 NO_UI=0
 QUICK=0
+FACTS=0
 
 usage() {
     cat <<'EOF'
 usage: tools/verify.sh [options]
 
   --base <rev>   diff base for change detection (default: merge-base with
-                 origin/main, falling back to main)
+                 origin/main, falling back to main). For a per-task iteration
+                 gate pass the last commit you already gated — the default
+                 whole-branch diff makes one libs/ commit fan every later run
+                 out to all modules.
   --all          run every check regardless of what changed
   --no-docker    skip `docker buildx bake` (fast inner loop; NOT sufficient
                  before a PR when a go.mod was touched)
   --no-ui        skip the atlas-ui lint/test layer
   --quick        skip docker + `go test -race` (syntax/vet/guards only)
+  --facts        print WHAT this invocation would select — change base, changed
+                 services/libs, fan-out reason, module count, guard suites,
+                 bake targets, gates — and exit 0 without running any check.
+                 Combine with the same flags you would really run
+                 (`--facts --quick --base <sha>`); the answer reflects them.
   -h, --help     this message
 
 Exit status is 0 only when every check that ran passed.
@@ -51,6 +62,7 @@ while [ $# -gt 0 ]; do
         --no-docker) NO_DOCKER=1; shift ;;
         --no-ui) NO_UI=1; shift ;;
         --quick) QUICK=1; NO_DOCKER=1; shift ;;
+        --facts) FACTS=1; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "verify.sh: unknown option $1" >&2; usage >&2; exit 2 ;;
     esac
@@ -59,10 +71,32 @@ done
 PASSED=()
 FAILED=()
 SKIPPED=()
+SELECTED=()
 
+# Informational chatter. Under --facts it must not pollute the fact block on
+# stdout, but it must not be lost either — a suppressed warning is how a fan-out
+# surprise becomes a rediscovery.
+info() {
+    if [ "$FACTS" -eq 1 ]; then
+        echo "$@" >&2
+    else
+        echo "$@"
+    fi
+}
+
+# step <label> <command...>
+#
+# Under --facts this is the whole mechanism: the script's real body runs, its
+# real selection logic decides which steps are reached, and each one records its
+# label instead of executing. That is why --facts cannot drift from a real run —
+# it IS the real run, with the work removed. Never reimplement the selection
+# predicates in the fact printer.
 step() {
-    # step <label> <command...>
     local label="$1"; shift
+    if [ "$FACTS" -eq 1 ]; then
+        SELECTED+=("$label")
+        return 0
+    fi
     printf '\n\033[1m── %s\033[0m\n' "$label"
     if "$@"; then
         PASSED+=("$label")
@@ -89,8 +123,9 @@ resolve_base() {
 # ---------------------------------------------------------------- change set
 
 CHANGED=""
+BASE_SHA="all"
 if [ "$ALL" -eq 1 ]; then
-    echo "verify.sh: --all — running every check"
+    info "verify.sh: --all — running every check"
 else
     if base="$(resolve_base)"; then
         # `git diff --name-only` with no rev compares worktree-vs-INDEX, so a
@@ -101,7 +136,8 @@ else
         # guards and still exit 0. Diff against HEAD to cover staged + unstaged.
         CHANGED="$(git diff --name-only "$base"...HEAD; git diff --name-only HEAD; git ls-files --others --exclude-standard)"
         CHANGED="$(printf '%s\n' "$CHANGED" | sort -u | sed '/^$/d')"
-        echo "verify.sh: change base $(git rev-parse --short "$base") — $(printf '%s\n' "$CHANGED" | sed '/^$/d' | wc -l) changed path(s)"
+        BASE_SHA="$(git rev-parse --short "$base")"
+        info "verify.sh: change base $BASE_SHA — $(printf '%s\n' "$CHANGED" | sed '/^$/d' | wc -l) changed path(s)"
     else
         echo "verify.sh: WARNING — no merge base with origin/main or main; falling back to --all" >&2
         ALL=1
@@ -111,7 +147,33 @@ fi
 touched() {
     # touched <grep-ere> — true when the change set matches, or when --all
     [ "$ALL" -eq 1 ] && return 0
-    printf '%s\n' "$CHANGED" | grep -qE "$1"
+    # NOT `grep -q`. Under `set -o pipefail`, grep -q exits on the first match
+    # and the still-writing `printf` takes SIGPIPE (141), which pipefail then
+    # reports as the pipeline's status — so a MATCH reads as "no match" and the
+    # guard SKIPS while the gate still exits 0. It only bites once $CHANGED
+    # exceeds the 64KB pipe buffer, i.e. on exactly the large sweep branches
+    # that most need the guards. Letting grep drain its input removes the race.
+    printf '%s\n' "$CHANGED" | grep -E "$1" >/dev/null
+}
+
+changed_tool_suites() {
+    # Test suites to run for the changed tools/ scripts, one path per line.
+    # tools/foo.sh -> tools/foo_test.sh (when it exists); a changed
+    # tools/foo_test.sh runs itself.
+    if [ "$ALL" -eq 1 ]; then
+        find tools -name '*_test.sh' -type f | sort
+        return 0
+    fi
+    printf '%s\n' "$CHANGED" \
+        | grep -E '^tools/.*\.sh$' \
+        | while IFS= read -r f; do
+            case "$f" in
+                *_test.sh) suite="$f" ;;
+                *)         suite="${f%.sh}_test.sh" ;;
+            esac
+            [ -f "$suite" ] && printf '%s\n' "$suite"
+        done \
+        | sort -u || true
 }
 
 # --------------------------------------------------------------- go modules
@@ -119,6 +181,12 @@ touched() {
 all_modules() {
     find "$ROOT/services" "$ROOT/libs" -name go.mod -not -path '*/node_modules/*' -print0 \
         | xargs -0 -r -n1 dirname | sort -u
+}
+
+# The one predicate that decides whether this run fans out to every module.
+# Extracted so `--facts` can name the reason without restating the rule.
+fanout_paths() {
+    printf '%s\n' "$CHANGED" | grep -E '^(go\.work|libs/)' || true
 }
 
 changed_modules() {
@@ -130,7 +198,29 @@ changed_modules() {
     # through the workspace, so a lib edit can break a service that has no
     # changed file of its own. Conservative on purpose — use --quick to skip
     # the -race pass while iterating.
-    if printf '%s\n' "$CHANGED" | grep -qE '^(go\.work|libs/)'; then
+    #
+    # The trap this fan-out sets: CHANGED is the whole branch against its merge
+    # base, so ONE libs/ commit makes every later run on that branch a full
+    # 86-module build, forever. On a long branch that is ~10 minutes per run
+    # instead of ~1. Say so out loud, and name the remedy — an iteration gate
+    # should pass --base <last-gated-commit> so the change set is the increment
+    # under test, not the accumulated branch.
+    local fanout
+    fanout="$(fanout_paths)"
+    if [ -n "$fanout" ]; then
+        if [ -z "$BASE" ]; then
+            printf '\033[33mverify.sh: shared-lib change fans out to ALL modules (%s path(s) under go.work/libs/).\n' \
+                "$(printf '%s\n' "$fanout" | wc -l | tr -d ' ')" >&2
+            printf '           first: %s\n' "$(printf '%s\n' "$fanout" | head -1)" >&2
+            printf '           This is the whole-branch diff. For a per-task iteration gate pass\n' >&2
+            printf '           --base <last-gated-commit> to scope it to the increment under test.\033[0m\n' >&2
+        else
+            # stderr, NOT stdout: this function's stdout IS the module list the
+            # caller cd's into, so a chatty line here becomes a phantom module
+            # ("cd: verify.sh: shared-lib change...: No such file or directory")
+            # and fails the gate. Matches the no-BASE branch above.
+            echo "verify.sh: shared-lib change in this increment — fanning out to all modules" >&2
+        fi
         all_modules
         return
     fi
@@ -138,7 +228,8 @@ changed_modules() {
     while IFS= read -r m; do mods+=("$m"); done < <(all_modules)
     for m in "${mods[@]}"; do
         rel="${m#"$ROOT"/}"
-        if printf '%s\n' "$CHANGED" | grep -qE "^${rel}/"; then
+        # See touched(): no `-q` under pipefail.
+        if printf '%s\n' "$CHANGED" | grep -E "^${rel}/" >/dev/null; then
             echo "$m"
         fi
     done
@@ -161,7 +252,7 @@ go_layer() {
 if [ "${#MODULES[@]}" -eq 0 ]; then
     skip "go build/vet/test (no Go module changed)"
 else
-    echo "verify.sh: ${#MODULES[@]} changed Go module(s)"
+    info "verify.sh: ${#MODULES[@]} changed Go module(s)"
     for mod in "${MODULES[@]}"; do
         step "go build/vet$([ "$QUICK" -eq 0 ] && echo '/test -race')  ${mod#"$ROOT"/}" go_layer "$mod"
     done
@@ -174,7 +265,8 @@ fi
 
 bake_targets() {
     # services whose go.mod (or the shared Dockerfile / bake file) changed
-    if printf '%s\n' "$CHANGED" | grep -qE '^(Dockerfile|docker-bake\.hcl|go\.work)$'; then
+    # See touched(): no `-q` under pipefail.
+    if printf '%s\n' "$CHANGED" | grep -E '^(Dockerfile|docker-bake\.hcl|go\.work)$' >/dev/null; then
         python3 -c "
 import json
 d=json.load(open('.github/config/services.json'))
@@ -228,25 +320,77 @@ fi
 
 # ------------------------------------------------------------------- guards
 #
-# CI runs these unconditionally. Locally they are the whole cost of a gate run
-# (~45s each): every one rebuilds its analyzer into a temp dir and then walks
-# ~60 service modules SEQUENTIALLY with a standalone go/analysis driver, which
-# type-checks from source each time. Standalone drivers do not consult Go's
-# vet-fact cache — only `go vet -vettool=` does — so a warm run costs exactly
-# what a cold one does (measured: 46.4s then 47.5s back to back).
+# Gate the analyzer guards on "a .go file actually changed": a Go analyzer
+# cannot find a new violation in a diff that contains no Go. CI is gated the
+# same way now (on its affected-module matrices, plus a tools/-changed signal),
+# and still runs them on every PR that touches Go.
 #
-# Gate them on "a .go file actually changed": a Go analyzer cannot find a new
-# violation in a diff that contains no Go. CI stays the authority and still
-# runs them every time.
+# All four analyzers run in ONE sweep. Each used to rebuild its analyzer into a
+# temp dir and walk ~60 modules with a standalone go/analysis driver that
+# type-checks from source every time (measured: 46.4s then 47.5s back to back).
+# They now share a single `go vet -vettool=` binary, so the tree is type-checked
+# once and Go's per-package fact cache does the rest. Run one on its own with
+# tools/<name>-guard.sh when iterating on that analyzer.
+
+go_analyzer_guards() {
+    # Scope the sweep to the modules this run already identified as changed.
+    # An empty list means "sweep that root entirely", which is what we want in
+    # the two cases that produce one: --all, and a .go change that lives
+    # outside services/ and libs/ (an analyzer's own source under tools/,
+    # where the verdict on unchanged code can move).
+    local svc="" lib="" m
+    if [ "$ALL" -eq 0 ]; then
+        for m in ${MODULES[@]+"${MODULES[@]}"}; do
+            case "$m" in
+                "$ROOT"/services/*) svc="$svc$m"$'\n' ;;
+                "$ROOT"/libs/*)     lib="$lib$m"$'\n' ;;
+            esac
+        done
+    fi
+    GUARD_SERVICE_MODULES="$svc" GUARD_LIB_MODULES="$lib" ./tools/go-analyzer-guards.sh
+}
 
 if [ "$ALL" -eq 1 ] || touched '\.go$'; then
-    step "redis key guard"        ./tools/redis-key-guard.sh
-    step "goroutine guard"        ./tools/goroutine-guard.sh
-    step "outbox guard"           ./tools/outbox-guard.sh
-    step "buff duration guard"    ./tools/buff-duration-guard.sh
+    step "go analyzer guards"     go_analyzer_guards
     step "skill/job id guard"     ./tools/skill-job-id-guard.sh
 else
     skip "Go analyzer guards (no .go file changed)"
+fi
+
+# FR-8.5 (task-232): keeps the query-scope audit from rotting while
+# Phases B-F are still in flight — a newly-added unscoped entity.go struct
+# or call site must fail CI. Gated separately from go_analyzer_guards above
+# (rather than folded into the shared vettool) so a scopeguard-only change
+# doesn't force a rebuild/re-run of the other three analyzers, and vice versa.
+#
+# The predicate is fleet-wide over ANY changed .go file, not just entity.go:
+# Rule 2 (the call-site check) fires on any GORM call site in services/ or
+# libs/, not only ones that live in an entity.go file — a scoped-out
+# `s.db.Model(...)` in a brand-new scheduler.go would otherwise merge clean
+# on a diff that touches no entity.go (fix round 2, BLOCKING finding). The
+# old `entity\.go$` half stays as an explicit alternative purely for
+# readability at the call site; it is already implied by `\.go$`.
+if [ "$ALL" -eq 1 ] || touched '\.go$|^tools/scopeguard/'; then
+    step "scope guard" ./tools/scope-guard.sh
+else
+    skip "scope guard (no Go file changed)"
+fi
+
+# task-232 FR-4.1: bans new direct producer.Produce calls under services/ that
+# bypass producer.ProviderImpl's composed header decorators (span + tenant +
+# environment). Gated on ANY services/ Go change — not just files matching
+# *producer*.go — because the violation this guards against can appear in any
+# services/ file (a processor.go, a handler, a saga step), not only ones named
+# for the seam they call into. This repo's own allowlist proves the narrower
+# predicate was wrong: two of the four pre-existing call sites
+# (reactor/processor.go, party_quest/processor.go) contain no "producer"
+# substring in their path and would have skipped the gated (non --all) run
+# entirely. Also gated on libs/atlas-kafka/ (the seam itself) and the guard's
+# own source, mirroring the scope guard's self-inclusion above.
+if [ "$ALL" -eq 1 ] || touched '^services/.*\.go$|^libs/atlas-kafka/|^tools/producerseamguard/|^tools/producer-seam-guard\.sh$'; then
+    step "producer seam guard" ./tools/producer-seam-guard.sh
+else
+    skip "producer seam guard (no services/ or atlas-kafka Go file changed)"
 fi
 
 # Path-gated in CI.
@@ -257,12 +401,31 @@ else
     skip "service registration guard (no registration list changed)"
 fi
 
+# task-232 Task 29A: asserts every service Deployment/StatefulSet/DaemonSet
+# carries SERVICE_NAME sourced via the downward API from its own `app` pod
+# label — libs/atlas-env/registry.go MapRegistry.IsOwner keys ownership on
+# it, so a missing or wrong-form value is a silent traffic misroute, not a
+# build failure. Gated on any deploy/k8s/ manifest change plus the guard's
+# own source, mirroring the service registration guard predicate above.
+if touched '^deploy/k8s/|^tools/service-name-guard'; then
+    step "service name guard" ./tools/service-name-guard.sh
+else
+    skip "service name guard (no deploy/k8s manifest changed)"
+fi
+
 if touched '^services/atlas-configurations/seed-data/templates/'; then
     step "template opcode order guard"       ./tools/template-opcode-order-guard.sh
     step "template duplicate binding guard"  ./tools/template-duplicate-binding-guard.sh
     step "template movement types guard"     ./tools/template-movement-types-guard.sh
 else
     skip "template guards (no tenant socket-config template changed)"
+fi
+
+if touched '^services/atlas-channel/atlas\.com/channel/socket/handler/.*\.go$' \
+    || touched '^services/atlas-configurations/seed-data/templates/'; then
+    step "operator cancel path guard" ./tools/operator-cancel-path-guard.sh
+else
+    skip "operator cancel path guard (no socket handler or tenant template changed)"
 fi
 
 if touched 'kafka/message/trade/kafka\.go'; then
@@ -283,17 +446,93 @@ else
     skip "npc-shop contract mirror guard (contract unchanged)"
 fi
 
-if touched '^tools/task-(resolve|brief)(_test)?\.sh$'; then
-    step "task resolve/brief tests" ./tools/task-resolve_test.sh
+if touched '^services/.*\.go$|^tools/envguard/|^tools/env-domain-guard\.sh$'; then
+    step "env domain guard" ./tools/env-domain-guard.sh
 else
-    skip "task resolve/brief tests (task tooling unchanged)"
+    skip "env domain guard (no service Go file changed)"
+fi
+
+if touched '^services/.*/main\.go$|^tools/envguard/'; then
+    step "env bootstrap guard" ./tools/env-bootstrap-guard.sh
+else
+    skip "env bootstrap guard (no service main.go changed)"
+fi
+
+if touched 'kafka/message/npc/kafka\.go'; then
+    step "npc-conversation contract mirror guard" ./tools/npc-conversation-contract-mirror-guard.sh
+else
+    skip "npc-conversation contract mirror guard (contract unchanged)"
+fi
+
+if touched '^tools/.*\.sh$'; then
+    step "shell tooling guard" ./tools/shell-guard.sh --require-shellcheck
+
+    # Run the test suite belonging to each changed tools/ script — whether the
+    # script changed or its own _test.sh did. This replaces a rule hardcoded to
+    # task-resolve/task-brief, under which every other script in tools/ was
+    # ungated: a branch adding three tools/ scripts saw all 14 checks skip and
+    # still exited 0.
+    suites="$(changed_tool_suites)"
+    if [ -n "$suites" ]; then
+        while IFS= read -r suite; do
+            [ -n "$suite" ] || continue
+            step "$(basename "$suite")" "./$suite"
+        done <<EOF
+$suites
+EOF
+    else
+        skip "tools test suites (no changed script has one)"
+    fi
+else
+    skip "shell tooling guard (no tools/ script changed)"
+    skip "tools test suites (no tools/ script changed)"
+fi
+
+# The PreToolUse/PostToolUse hooks are shell too, and they gate every tool call
+# in every session — a broken one is not a lint problem, it is a workflow
+# outage. Their suites live beside them rather than under tools/, so the
+# tools/-changed gate above does not reach them.
+if touched '^\.claude/hooks/'; then
+    hook_suites="$(find .claude/hooks -name '*_test.sh' -type f | sort)"
+    if [ -n "$hook_suites" ]; then
+        while IFS= read -r suite; do
+            [ -n "$suite" ] || continue
+            step "$(basename "$suite")" "./$suite"
+        done <<EOF
+$hook_suites
+EOF
+    else
+        skip "hook test suites (none exist)"
+    fi
+else
+    skip "hook test suites (no .claude/hooks/ change)"
 fi
 
 if touched '^(deploy/|tools/gen-lb-ports\.sh|.*versions\.json)'; then
     step "LB port drift"       ./tools/gen-lb-ports.sh --check
+    step "routes drift"        ./tools/gen-routes.sh --check
     step "version coverage"    ./tools/check-version-coverage.sh
 else
     skip "LB port / version coverage (no deploy or versions.json change)"
+fi
+
+if touched '^(deploy/k8s/base/atlas-.*\.yaml|docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit\.md|tools/gen-tenant-tables(_test)?\.sh|services/atlas-pr-bootstrap/scripts/tenant-tables\.txt)'; then
+    step "tenant tables drift"  ./tools/gen-tenant-tables.sh --check
+    step "tenant tables generator tests" ./tools/gen-tenant-tables_test.sh
+else
+    skip "tenant tables drift (no audit, DB_NAME manifest, or generator change)"
+fi
+
+if touched '^(deploy/k8s/overlays/pr/|deploy/k8s/overlays/pr-sparse/|tools/pr-sparse-mirror-guard\.sh)'; then
+    step "pr-sparse mirror drift" ./tools/pr-sparse-mirror-guard.sh
+else
+    skip "pr-sparse mirror drift (neither overlay changed)"
+fi
+
+if touched '^(tools/mode-select(_test)?\.sh|\.github/actions/detect-changes/action\.yml)'; then
+    step "mode select decision table" ./tools/mode-select_test.sh
+else
+    skip "mode select decision table (mode-select.sh / detect-changes unchanged)"
 fi
 
 # ------------------------------------------------------------- lint & format
@@ -337,6 +576,9 @@ fi
 
 ui_test_layer() {
     (
+        # Same shim tools/lint.sh uses; no-op when node is already correct.
+        # shellcheck source=lib/node-env.sh
+        . "$ROOT/tools/lib/node-env.sh"
         cd "$ROOT/services/atlas-ui"
         # Same two commands node-test runs. `npm test` is already `vitest run`.
         npm test && npm run build
@@ -349,6 +591,77 @@ elif [ "$UI_CHANGED" -eq 1 ]; then
     step "atlas-ui tests + build" ui_test_layer
 else
     skip "atlas-ui tests + build (atlas-ui unchanged)"
+fi
+
+# -------------------------------------------------------------------- facts
+#
+# Everything above has run its real selection logic; under --facts nothing has
+# executed. Print what was selected and stop.
+#
+# Contract: `key=value`, one per line, stdout only, always exit 0. Callers grep
+# it; adding a key is safe, renaming one is not.
+
+if [ "$FACTS" -eq 1 ]; then
+    csv() {
+        # csv <newline-list> — collapse to a comma list, or "none"
+        local v; v="$(printf '%s\n' "$1" | sed '/^$/d' | paste -sd, -)"
+        printf '%s' "${v:-none}"
+    }
+
+    fanout="$(fanout_paths)"
+    changed_services="$(printf '%s\n' "$CHANGED" | sed -n 's|^services/\([^/]*\)/.*|\1|p' | sort -u)"
+    changed_libs="$(printf '%s\n' "$CHANGED" | sed -n 's|^libs/\([^/]*\)/.*|\1|p' | sort -u)"
+    module_rel=""
+    for m in ${MODULES[@]+"${MODULES[@]}"}; do
+        module_rel="$module_rel${m#"$ROOT"/}"$'\n'
+    done
+
+    echo "base=$BASE_SHA"
+    if [ "$ALL" -eq 1 ]; then
+        echo "changed_paths=all"
+    else
+        echo "changed_paths=$(printf '%s\n' "$CHANGED" | sed '/^$/d' | wc -l | tr -d ' ')"
+    fi
+    echo "changed_services=$(csv "$changed_services")"
+    echo "changed_libs=$(csv "$changed_libs")"
+    echo "go_changed=$(touched '\.go$' && echo true || echo false)"
+    echo "ui_changed=$([ "$UI_CHANGED" -eq 1 ] && echo true || echo false)"
+    if [ -n "$fanout" ]; then
+        echo "fanout_reason=shared-lib:$(printf '%s\n' "$fanout" | head -1)"
+    elif [ "$ALL" -eq 1 ]; then
+        echo "fanout_reason=--all"
+    else
+        echo "fanout_reason=none"
+    fi
+    echo "modules_selected=${#MODULES[@]}"
+    # A full fan-out lists 80+ modules; the count above is the fact, the list is
+    # only useful when it is short enough to act on.
+    if [ "${#MODULES[@]}" -le 12 ]; then
+        echo "modules=$(csv "$module_rel")"
+    else
+        echo "modules=(${#MODULES[@]} modules — fan-out, list suppressed)"
+    fi
+    echo "guard_suites=$(csv "$(changed_tool_suites)")"
+    echo "bake_targets=$(csv "$(printf '%s\n' ${TARGETS[@]+"${TARGETS[@]}"})")"
+
+    # Gates that WOULD run. Per-module build steps collapse to one line — the
+    # count is already `modules_selected`.
+    gates=""
+    module_gate=""
+    for label in ${SELECTED[@]+"${SELECTED[@]}"}; do
+        case "$label" in
+            # `|| true` is load-bearing: a bare assignment takes the exit status
+            # of its last command substitution, so on --quick the false test
+            # would abort the script under `set -e`.
+            "go build/vet"*) module_gate="go build/vet$([ "$QUICK" -eq 0 ] && echo '/test -race' || true) (${#MODULES[@]} modules)" ;;
+            *) gates="$gates$label"$'\n' ;;
+        esac
+    done
+    [ -n "$module_gate" ] && gates="$module_gate"$'\n'"$gates"
+    echo "gates_selected=$(printf '%s\n' "$gates" | sed '/^$/d' | wc -l | tr -d ' ')"
+    printf '%s\n' "$gates" | sed '/^$/d' | while IFS= read -r g; do echo "gate=$g"; done
+    echo "gates_skipped=${#SKIPPED[@]}"
+    exit 0
 fi
 
 # ------------------------------------------------------------------ summary

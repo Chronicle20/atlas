@@ -20,9 +20,15 @@ type Processor interface {
 	GetInField(f field.Model) ([]Model, error)
 	Create(b *ModelBuilder) error
 	DestroyInField(f field.Model)
-	Teardown() func()
-	DestroyAll() error
-	DestroyInTenant(t tenant.Model) model.Operator[[]Model]
+	// Teardown builds the shutdown-time destroy-everything sweep. envContext
+	// must originate this pod's own environment identity (env.Self()) onto
+	// each tenant's context before the per-reactor destroy emits a real
+	// Kafka event -- reactor is outside env-domain-guard's permitted
+	// atlas-env import list, so main.go threads this in as a plain function
+	// value rather than the package importing atlas-env itself.
+	Teardown(envContext func(context.Context) context.Context) func()
+	DestroyAll(envContext func(context.Context) context.Context) error
+	DestroyInTenant(envContext func(context.Context) context.Context, t tenant.Model) model.Operator[[]Model]
 	Destroy() model.Operator[Model]
 	Hit(reactorId uint32, characterId uint32, skillId uint32) error
 	Trigger(r Model, characterId uint32)
@@ -108,7 +114,7 @@ func (p *ProcessorImpl) DestroyInField(f field.Model) {
 	p.l.Debugf("Destroyed [%d] reactors and cleared cooldowns for map [%d] instance [%s].", len(reactors), f.MapId(), f.Instance())
 }
 
-func (p *ProcessorImpl) Teardown() func() {
+func (p *ProcessorImpl) Teardown(envContext func(context.Context) context.Context) func() {
 	return func() {
 		CancelAllPendingActivations()
 		cancelAllStateTimeouts()
@@ -116,7 +122,7 @@ func (p *ProcessorImpl) Teardown() func() {
 		ctx, span := otel.GetTracerProvider().Tracer("atlas-reactors").Start(context.Background(), "teardown")
 		defer span.End()
 
-		err := NewProcessor(p.l, ctx).DestroyAll()
+		err := NewProcessor(p.l, ctx).DestroyAll(envContext)
 		if err != nil {
 			p.l.WithError(err).Errorf("Error destroying all reactors on teardown.")
 		}
@@ -129,13 +135,15 @@ func allByTenantProvider() model.Provider[map[tenant.Model][]Model] {
 	}
 }
 
-func (p *ProcessorImpl) DestroyAll() error {
-	return model.ForEachMap(allByTenantProvider(), p.DestroyInTenant, model.ParallelExecute())
+func (p *ProcessorImpl) DestroyAll(envContext func(context.Context) context.Context) error {
+	return model.ForEachMap(allByTenantProvider(), func(t tenant.Model) model.Operator[[]Model] {
+		return p.DestroyInTenant(envContext, t)
+	}, model.ParallelExecute())
 }
 
-func (p *ProcessorImpl) DestroyInTenant(t tenant.Model) model.Operator[[]Model] {
+func (p *ProcessorImpl) DestroyInTenant(envContext func(context.Context) context.Context, t tenant.Model) model.Operator[[]Model] {
 	return func(models []Model) error {
-		tctx := tenant.WithContext(p.ctx, t)
+		tctx := envContext(tenant.WithContext(p.ctx, t))
 		return model.ForEachSlice(model.FixedProvider(models), NewProcessor(p.l, tctx).Destroy(), model.ParallelExecute())
 	}
 }

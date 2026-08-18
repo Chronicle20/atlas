@@ -937,17 +937,67 @@
   direction: clientbound
   opcode: 187
   fname: CDragon::OnCreated
-  provenance: csv-import
+  packet: dragon/clientbound/DragonSpawn
+  provenance: ida-discovered
+  ida:
+    address: 0x52edd3
+  note: >-
+    task-225: live decompile of CDragon::OnCreated @0x52edd3
+    (MapleStory_dump_SCY.exe.i64 JMS185, session b6864e54), reached via
+    CUser::OnDragonPacket @0x9f822f's nType==0xBB (187) branch, itself routed
+    by CUserPool::OnUserCommonPacket @0xa440d7's range test `v5>=187 &&
+    v5<=189` @0xa44200 (call @0xa44206; ownerCharacterId Decode4'd upstream
+    @0xa440e6, matching the family's owner-consumed-before-dispatch shape on
+    every other version). Reads, in order: Decode4 (this[61])
+    @0x52edf1/0x52edfd, Decode4 (this[58]) @0x52ee05/0x52ee13, Decode1 stance
+    (via sub_417710 into this[37]) @0x52ee27/0x52ee3e, Decode2 <read, return
+    value never assigned — discarded> @0x52ee44, Decode2 jobId (this[71])
+    @0x52ee4e/0x52ee5e. 13-byte body — JMS185 DOES carry jobId, matching the
+    (GMS && MajorAtLeast(84)) || JMS gate in spawn.go's spawnHasJobId. The two
+    Decode4 storage offsets (this[61] then this[58]) match v87's shape
+    exactly; wire read order across all jobId-carrying versions is identical:
+    Decode4, Decode4, Decode1, Decode2(discarded), Decode2(jobId).
 - op: MOVE_DRAGON
   direction: clientbound
   opcode: 188
   fname: CDragon::OnMove
-  provenance: csv-import
+  packet: dragon/clientbound/DragonMove
+  provenance: ida-discovered
+  ida:
+    address: 0x52f94f
+  note: >-
+    task-225: live decompile of CDragon::OnMove @0x52f94f
+    (MapleStory_dump_SCY.exe.i64 JMS185, session b6864e54) — a single
+    delegating call: CMovePath::OnMovePacket(*(this+55)!=0 ? *(this+55)-12+580
+    : 580, iPacket, 0), identical shape to every other verified version
+    (v83/v84/v87/v92/v95). Reached via CUser::OnDragonPacket @0x9f822f's
+    nType==0xBC (188) branch (gated on `v7 != 0`, i.e. an existing CDragon),
+    itself routed by CUserPool::OnUserCommonPacket @0xa440d7's range test
+    `v5>=187 && v5<=189` @0xa44200. The whole remaining body is the opaque
+    CMovePath blob. Matches the committed DragonMove codec exactly.
 - op: REMOVE_DRAGON
   direction: clientbound
   opcode: 189
   fname: CUser::OnDragonPacket
-  provenance: csv-import
+  packet: dragon/clientbound/DragonRemove
+  provenance: ida-discovered
+  ida:
+    address: 0x9f822f
+  note: >-
+    task-225: live decompile of CUser::OnDragonPacket @0x9f822f
+    (MapleStory_dump_SCY.exe.i64 JMS185, session b6864e54). Handles only
+    nType==0xBB (187, spawn -> CDragon::OnCreated @0x52edd3) and
+    v7&&nType==0xBC (188, move -> CDragon::OnMove @0x52f94f) — THERE IS NO
+    CASE FOR 0xBD (189, REMOVE_DRAGON). The outer dispatcher
+    CUserPool::OnUserCommonPacket @0xa440d7 routes the range `v5>=187 &&
+    v5<=189` @0xa44200 into OnDragonPacket (call @0xa44206), so 189 enters
+    the function and falls through both branches with zero effect: no field
+    is read, no dragon state changes. Same routed-but-unhandled shape already
+    recorded for gms_v83/v84/v87/v92/v95 (model note:
+    docs/packets/registry/gms_v84.yaml:1254). Sending REMOVE_DRAGON is
+    correct and harmless; the client silently discards it — the only
+    client-side dragon teardown is CUser destruction (the owner leaving the
+    field), consistent with every other verified version.
 - op: MOVE_PLAYER
   direction: clientbound
   opcode: 191
@@ -1971,11 +2021,28 @@
   fname_alts:
     - CCashShop::SendCheckDuplicateIDPacket
   provenance: csv-import
-- op: NAME_TRANSFER
+- op: WORLD_TRANSFER
   direction: serverbound
   opcode: 9
-  fname: CCashShop::SendCheckNameChangePossiblePacket
-  provenance: csv-import
+  fname: CCashShop::SendCheckTransferWorldPossiblePacket
+  provenance: ida-discovered
+  ida:
+    address: 4739007
+  note: 'task-227 correction: this row was NAME_TRANSFER by csv-import, on the strength of
+    the IDB symbol ?SendCheckNameChangePossiblePacket@ at 0x484fbf. The symbol is
+    transposed. Evidence: (1) CCashShop::ProcessBuy @0x484ca8 routes ONLY item id
+    5401000 (cmp against offset loc_5269A6+2) into the caller @0x480bca — on every GMS
+    version v48-v95, 5401000 is the world-transfer item and 5400000 is the name-change
+    item; jms_v185 has no 5400000 branch at all. (2) jms_v185 contains no
+    CUIChangingCharacterName, no CUIChangingLicenseNotice, no
+    CCashShop::OnCheckNameChangePossibleResult, no CCashShop::OnCheckDuplicatedIDResult
+    and no SendBuyNameChangeItemPacket — the name-change feature is absent from this
+    client. (3) It does contain the complete transfer flow: CUITransferWorldSelectDlg,
+    CUITransferWorldLicenseNotice, CCashShop::OnCheckTransferWorldPossibleResult (0x16C),
+    SendBuyTransferWorldItemPacket, OnCashItemResTransferWorldDone/Failed. The send sets
+    the same m_bCashShopRequestSent flag that OnCheckTransferWorldPossibleResult clears.
+    Body diverges from GMS: retn 4 (one stack arg) and a single EncodeStr(sSPW) — no
+    Encode4(dwCharacterID).'
 - op: VIEW_ALL_CHAR
   direction: serverbound
   opcode: 10
@@ -2309,6 +2376,7 @@
   opcode: 67
   fname: CWvsContext::SendMobSummonItemUseRequest
   provenance: csv-import
+  packet: inventory/serverbound/InventorySummonBagItemUse
 - op: PET_FOOD
   direction: serverbound
   opcode: 68
@@ -2339,6 +2407,7 @@
   direction: serverbound
   opcode: 72
   fname: CWvsContext::SendActivatePetRequest
+  packet: pet/serverbound/PetDestroyItem
   provenance: csv-import
 - op: USE_CATCH_ITEM
   direction: serverbound
@@ -2365,6 +2434,7 @@
   opcode: 77
   fname: CWvsContext::SendPortalScrollUseRequest
   provenance: csv-import
+  packet: inventory/serverbound/InventoryReturnScrollItemUse
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 78
@@ -3059,7 +3129,19 @@
   direction: serverbound
   opcode: 185
   fname: CVecCtrlDragon::EndUpdateActive
-  provenance: csv-import
+  packet: dragon/serverbound/Move
+  provenance: ida-discovered
+  ida:
+    address: 0xa91786
+  note: >-
+    task-225: live decompile of CVecCtrlDragon::EndUpdateActive @0xa91786
+    (MapleStory_dump_SCY.exe.i64 JMS185, session b6864e54). Send site: if
+    CMovePath::IsTimeForFlush(this+580,0,0) @0xa917a2, builds
+    COutPacket(0xB9=185) @0xa917b3 then CMovePath::Flush(this+580,&pkt,0,0)
+    @0xa917c3 and sends via CClientSocket::SendPacket @0xa917d6. There is NO
+    leading identity field — same shape as every other verified version
+    (v83/v84/v87/v92/v95) — because the dragon is 1:1 with its owning CUser;
+    the server resolves it from the sending session's character id.
 - op: UNNAMED_R299
   direction: serverbound
   opcode: 186

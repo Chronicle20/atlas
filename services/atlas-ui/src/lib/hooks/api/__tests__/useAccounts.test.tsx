@@ -52,6 +52,7 @@ const mockAccount: Account = {
     language: "en",
     country: "US",
     characterSlots: 6,
+    birthDate: 0,
   },
 };
 
@@ -72,6 +73,7 @@ const mockAccounts: Account[] = [
       language: "en",
       country: "US",
       characterSlots: 3,
+      birthDate: 0,
     },
   },
 ];

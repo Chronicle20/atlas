@@ -47,7 +47,7 @@ func newRegistryWithFetcher(f fetcher) *Registry {
 // defaultFetcher fetches a tenant's configuration from atlas-tenants and folds
 // it into the domain Model.
 func defaultFetcher(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) (Model, error) {
-	rm, err := requestForTenant(tenantId)(l, ctx)
+	rm, err := requestForTenant(ctx, tenantId)(l, ctx)
 	if err != nil {
 		return Model{}, err
 	}

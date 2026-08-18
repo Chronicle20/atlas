@@ -56,7 +56,7 @@ func GetServer() Server {
 }
 
 func main() {
-	rt := service.Bootstrap(serviceName)
+	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
 	rc := atlas.Connect(l)
@@ -90,9 +90,8 @@ func main() {
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	tenants, err := tenant2.NewProcessor(l, rt.Context()).GetAll()
-	if err != nil {
-		l.WithError(err).Fatal("Unable to load tenants.")
+	listTenants := func(ctx context.Context) ([]tenant.Model, error) {
+		return tenant2.NewProcessor(l, ctx).GetAll()
 	}
 
 	// Reconcile each tenant's registries against configuration. This is
@@ -100,11 +99,12 @@ func main() {
 	// in the shared Redis registry: one rolling restart per tenant.
 	configProcessor := config.NewProcessor(l, rt.Context())
 	instanceConfigProcessor := instanceConfig.NewProcessor(l, rt.Context())
-	for _, t := range tenants {
-		ctx := tenant.WithContext(rt.Context(), t)
-		_ = reconcileScheduled(l, t, configProcessor, transport.NewProcessor(l, ctx))
-		_ = reconcileInstance(l, t, instanceConfigProcessor, instance.NewProcessor(l, ctx))
-	}
+	service.ForEachOwnedEnvironment(l, rt.Context(), serviceName, listTenants,
+		func(ctx context.Context) {
+			t := tenant.MustFromContext(ctx)
+			_ = reconcileScheduled(l, t, configProcessor, transport.NewProcessor(l, ctx))
+			_ = reconcileInstance(l, t, instanceConfigProcessor, instance.NewProcessor(l, ctx))
+		})
 
 	// Start a background goroutine to periodically update route states and instance transports
 	routine.Go(l, rt.Context(), func(_ context.Context) {
@@ -116,18 +116,17 @@ func main() {
 			case <-rt.Context().Done():
 				return
 			case <-ticker.C:
-				for _, t := range tenants {
-					ctx := tenant.WithContext(rt.Context(), t)
+				service.ForEachOwnedEnvironment(l, rt.Context(), serviceName, listTenants,
+					func(ctx context.Context) {
+						// Update scheduled transport routes
+						_ = transport.NewProcessor(l, ctx).UpdateRoutes()
 
-					// Update scheduled transport routes
-					transport.NewProcessor(l, ctx).UpdateRoutes()
-
-					// Tick instance transport timers
-					ip := instance.NewProcessor(l, ctx)
-					_ = ip.TickBoardingExpirationAndEmit()
-					_ = ip.TickArrivalAndEmit()
-					_ = ip.TickStuckTimeoutAndEmit()
-				}
+						// Tick instance transport timers
+						ip := instance.NewProcessor(l, ctx)
+						_ = ip.TickBoardingExpirationAndEmit()
+						_ = ip.TickArrivalAndEmit()
+						_ = ip.TickStuckTimeoutAndEmit()
+					})
 			}
 		}
 	})
@@ -147,10 +146,10 @@ func main() {
 	// Graceful shutdown: warp all mid-transport characters to start maps
 	rt.TeardownFunc(func() {
 		l.Infoln("Graceful shutdown: handling instance transports.")
-		for _, t := range tenants {
-			ctx := tenant.WithContext(rt.Context(), t)
-			_ = instance.NewProcessor(l, ctx).GracefulShutdownAndEmit()
-		}
+		service.ForEachOwnedEnvironment(l, rt.Context(), serviceName, listTenants,
+			func(ctx context.Context) {
+				_ = instance.NewProcessor(l, ctx).GracefulShutdownAndEmit()
+			})
 	})
 
 	rt.Wait()

@@ -42,14 +42,19 @@ var applyTick = func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, wor
 // they are never ticked (FR-2.2). A single task iterates the registry; there are
 // no per-character goroutines or timers.
 type TirednessTask struct {
-	l        logrus.FieldLogger
-	db       *gorm.DB
-	interval time.Duration
+	l          logrus.FieldLogger
+	db         *gorm.DB
+	interval   time.Duration
+	envContext func(context.Context) context.Context
 }
 
-func NewTirednessTask(l logrus.FieldLogger, db *gorm.DB, interval time.Duration) *TirednessTask {
+// NewTirednessTask constructs the tiredness ticker. envContext originates
+// this pod's own environment identity onto each active entry's per-tenant
+// context before it reaches the outbox emit in applyTick -- see 99c0e598d /
+// task-232.
+func NewTirednessTask(l logrus.FieldLogger, db *gorm.DB, interval time.Duration, envContext func(context.Context) context.Context) *TirednessTask {
 	l.Infof("Initializing %s task to run every %dms", TirednessTaskName, interval.Milliseconds())
-	return &TirednessTask{l: l, db: db, interval: interval}
+	return &TirednessTask{l: l, db: db, interval: interval, envContext: envContext}
 }
 
 func (t *TirednessTask) Run() {
@@ -63,13 +68,19 @@ func (t *TirednessTask) Run() {
 		return
 	}
 
+	processActive(t.l, sctx, t.db, entries, applyTick, t.envContext)
+}
+
+// processActive is the pure per-entry sweep extracted from Run() so the
+// envContext threading can be pinned without a database or Kafka. The
+// registry spans all tenants and the ticker has no ambient tenant, so each
+// entry carries its own tenant; tick originates this pod's environment
+// identity onto that tenant-scoped context before calling tick.
+func processActive(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, entries []ActiveEntry, tick func(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, worldId world.Id, characterId uint32) error, envContext func(context.Context) context.Context) {
 	for _, e := range entries {
-		// The registry spans all tenants and the ticker has no ambient tenant,
-		// so each entry carries its own tenant. Scope the tick to that tenant so
-		// the processor (tenant.MustFromContext) touches the correct row.
-		tctx := tenant.WithContext(sctx, e.Tenant)
-		if err := applyTick(t.l, tctx, t.db, e.Ctx.WorldId, e.CharacterId); err != nil {
-			t.l.WithError(err).Errorf("Unable to apply tiredness tick for character [%d].", e.CharacterId)
+		tctx := envContext(tenant.WithContext(ctx, e.Tenant))
+		if err := tick(l, tctx, db, e.Ctx.WorldId, e.CharacterId); err != nil {
+			l.WithError(err).Errorf("Unable to apply tiredness tick for character [%d].", e.CharacterId)
 		}
 	}
 }

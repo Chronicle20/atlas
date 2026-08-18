@@ -760,6 +760,7 @@
   direction: clientbound
   opcode: 116
   fname: CWvsContext::OnCancelNameChangeResult
+  packet: cash/clientbound/CashCancelNameChangeResult
   provenance: ida-discovered
   ida:
     address: 10820816
@@ -768,6 +769,7 @@
   direction: clientbound
   opcode: 117
   fname: CWvsContext::OnCancelTransferWorldResult
+  packet: cash/clientbound/CashCancelTransferWorldResult
   provenance: ida-discovered
   ida:
     address: 10820816
@@ -816,6 +818,7 @@
   direction: clientbound
   opcode: 123
   fname: CWvsContext::OnCancelNameChangebyOther
+  packet: character/clientbound/CancelNameChangeByOther
   provenance: ida-discovered
   ida:
     address: 10820816
@@ -1167,11 +1170,13 @@
 - op: PET_NAMECHANGE
   direction: clientbound
   opcode: 176
-  fname: CPet__OnNameChanged_recv_0xB0
+  fname: CPet::OnNameChanged
+  fname_alts:
+  - CPet__OnNameChanged_recv_0xB0
   provenance: ida-discovered
   ida:
     address: 7474982
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 176 (0xB0) -> CPet::OnNameChanged (v84 fn 0x720f26; body match v95 0x6a11f0: DecodeStr name + Decode1 + MakeNameTag 1003).'
+  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. pet sub-dispatcher case 176 (0xB0) -> CPet::OnNameChanged (v84 fn 0x720f26; body match v95 0x6a11f0: DecodeStr name + Decode1 + MakeNameTag 1003). task-224: symbol renamed CPet::OnNameChanged in the IDB (was unnamed sub_720F26 with an auto-generated placeholder label); old label retained as fname_alt.'
 - op: PET_EXCEPTION_LIST
   direction: clientbound
   opcode: 177
@@ -1232,26 +1237,67 @@
   direction: clientbound
   opcode: 185
   fname: CDragon::OnCreated
+  packet: dragon/clientbound/DragonSpawn
   provenance: ida-discovered
   ida:
-    address: 9897145
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. dragon dispatcher sub_9704B9 case 185 (0xB9) -> spawn (sub_506F85); v95 CUser::OnDragonPacket 206.'
+    address: 0x506f85
+  note: >-
+    task-225: live decompile of CDragon::OnCreated (renamed from sub_506F85
+    during this verification) @0x506f85 (GMS_v84.1_U_DEVM.i64, session
+    5881cf84), reached via CUser::OnDragonPacket (renamed from sub_9704B9)
+    @0x9704b9's case 185 (0xB9) branch. Reads, in order: Decode4 x
+    (this[58] @0x506fac), Decode4 y (this[59] @0x506fb7), Decode1 stance
+    (secured into this[37] @0x506fd7/0x506fed), Decode2 <read, discarded —
+    return value never assigned> @0x506ff3, Decode2 jobId (this[63]
+    @0x506ffb/0x50700c). 13-byte body — v84 is the first version whose
+    CDragon carries jobId (Evan's job table 2200-2218 first exists at v84;
+    contrast v83's CDragon::OnCreated @0x4fe502, which stops after the
+    discarded short). Byte-identical to the already-verified v95 shape.
+    Supersedes the prior task-100 note, which cited the dispatcher address
+    (0x9704b9, sub_9704B9 case 185) rather than the handler's own address.
 - op: MOVE_DRAGON
   direction: clientbound
   opcode: 186
   fname: CDragon::OnMove
+  packet: dragon/clientbound/DragonMove
   provenance: ida-discovered
   ida:
-    address: 9897145
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. dragon dispatcher sub_9704B9 case 186 (0xBA) -> CDragon::OnMove (sub_507AC6); v95 OnDragonPacket 207.'
+    address: 0x507ac6
+  note: >-
+    task-225: live decompile of CDragon::OnMove (renamed from sub_507AC6
+    during this verification) @0x507ac6 (GMS_v84.1_U_DEVM.i64, session
+    5881cf84) — a single delegating call: CMovePath::OnMovePacket(this[55]!=0
+    ? this[55]-12+428 : 428, a2), identical shape to v83's CDragon::OnMove
+    @0x4fef90 and v95's. Reached via CUser::OnDragonPacket @0x9704b9's case
+    186 (0xBA) branch (gated on this[2074]). The whole remaining body is the
+    opaque CMovePath blob. Matches the committed DragonMove codec exactly.
+    Supersedes the prior task-100 note, which cited the dispatcher address
+    (0x9704b9, sub_9704B9 case 186) rather than the handler's own address.
 - op: REMOVE_DRAGON
   direction: clientbound
   opcode: 187
   fname: CUser::OnDragonPacket
+  packet: dragon/clientbound/DragonRemove
   provenance: ida-discovered
   ida:
-    address: 10167363
-  note: 'v84 opcode 187 (0xBB) READ from the v84 IDB dispatch range (task-100 correction of a cluster-B guess). CUserPool::OnUserCommonPacket (sub_9B23A1) routes the dragon family with an explicit range check: at 0x9B2443 it tests v6 >= 185 && v6 <= 187 and at 0x9B244B calls sub_9704B9; opcode 187 is therefore explicitly inside the dragon dispatch range. sub_9704B9 (= CUser::OnDragonPacket) has cases only for 185 (spawn, sub_506F85) and 186 (move, sub_507AC6); 187 is routed-but-unhandled (no remove body). Body-identical to v95 CUser::OnDragonPacket @0x8e5c00, which handles only 206 (spawn) + 207 (move); its outer dispatcher CUserPool::OnUserCommonPacket @0x94cdb0 routes if((v6-206)<=2) -> OnDragonPacket i.e. 206/207/208, so v95 REMOVE_DRAGON=208 is likewise routed-but-unhandled. Opcode verified from the dispatch-range upper bound; remove logic itself is absent in both v84 and v95.'
+    address: 0x9704b9
+  note: >-
+    task-225: live decompile of CUser::OnDragonPacket (renamed from
+    sub_9704B9 during this verification) @0x9704b9 (GMS_v84.1_U_DEVM.i64,
+    session 5881cf84). Handles only a2==185 (spawn, CDragon::OnCreated
+    @0x506f85) and this[2074]&&a2==186 (move, CDragon::OnMove @0x507ac6).
+    THERE IS NO CASE FOR 187 (0xBB, REMOVE_DRAGON) — the outer dispatcher
+    CUserPool::OnUserCommonPacket @0x9b2443 routes the range v6>=185 &&
+    v6<=187 into this function (test @0x9b2428, call @0x9b244b), so 187
+    enters and falls through both branches with zero effect: no field is
+    read, no dragon state changes. Same routed-but-unhandled shape already
+    recorded for v83 (docs/packets/registry/gms_v83.yaml) and v95
+    (docs/packets/registry/gms_v95.yaml). Sending REMOVE_DRAGON is correct
+    and harmless; the client silently discards it. Live-decompile
+    confirmation of the task-100 note's prior conclusion (opcode range was
+    previously inferred from the dispatch-range upper bound alone; the ida
+    address is corrected from the outer dispatcher's 0x9b2443 to
+    OnDragonPacket's own 0x9704b9 to match the fname).
 - op: MOVE_PLAYER
   direction: clientbound
   opcode: 189
@@ -2892,8 +2938,19 @@
   direction: serverbound
   opcode: 75
   fname: CWvsContext::SendMobSummonItemUseRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10828637
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083
+    found v84 byte-identical to v83. Corrected by discover-ops against the v84
+    IDB. task-229: live decompile of the v84 IDB (GMS_v84.1_U_DEVM.i64, session
+    5881cf84) confirms sub_A53B5D@0xa53b5d (renamed to
+    CWvsContext::SendMobSummonItemUseRequest this pass, was unnamed) constructs
+    COutPacket(75)+Encode4(updateTime)+Encode2(slot)+Encode4(itemId) under the
+    same sub_A5A9B6/sub_99E795/mob-summon-WZ-flag/sub_48903A(200,0) gate chain
+    as the v61 structural twin CWvsContext::SendMobSummonItemUseRequest — the
+    v83-byte-identical claim holds for this op.'
+  packet: inventory/serverbound/InventorySummonBagItemUse
 - op: PET_FOOD
   direction: serverbound
   opcode: 76
@@ -2928,6 +2985,7 @@
   direction: serverbound
   opcode: 80
   fname: CWvsContext::SendActivatePetRequest
+  packet: pet/serverbound/PetDestroyItem
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: USE_CATCH_ITEM
@@ -2958,8 +3016,22 @@
   direction: serverbound
   opcode: 85
   fname: CWvsContext::SendPortalScrollUseRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10916973
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083
+    found v84 byte-identical to v83. Corrected by discover-ops against the v84
+    IDB. task-229: live decompile of the v84 IDB (GMS_v84.1_U_DEVM.i64, session
+    5881cf84) confirms sub_A6946D@0xa6946d (renamed to
+    CWvsContext::SendPortalScrollUseRequest this pass, was unnamed) constructs
+    COutPacket(85)+Encode4(updateTime)+Encode2(slot)+Encode4(itemId) at
+    0xa69688, reading Return Scroll WZ props via StringPool ids 2307/2308/2310
+    with no RunMapTransferItem call and no by-name/target-name branch —
+    distinct from the teleport-rock sender sub_A547AB@0xa547ab (opcode 84,
+    calls CWvsContext::RunMapTransferItem, the era mislabel trap documented at
+    gms_v72.yaml:2414/gms_v79.yaml:2798 does not apply here since that
+    function is unnamed in this IDB, not mislabeled).'
+  packet: inventory/serverbound/InventoryReturnScrollItemUse
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 86
@@ -3746,11 +3818,27 @@
 - op: MOVE_DRAGON
   direction: serverbound
   opcode: 186
-  fname: CVecCtrlDragon__EndUpdateActive_send_0xBA
+  fname: CVecCtrlDragon::EndUpdateActive
+  packet: dragon/serverbound/Move
   provenance: ida-discovered
   ida:
-    address: 10481751
-  note: 'v84 opcode-table reshift (task-100, cluster B CPet/CSummoned): re-read from v84 IDB GMS_v84.1_U_DEVM.i64. CVecCtrlDragon::EndUpdateActive (v84 fn 0x9ff057) COutPacket(186,0xBA)+MovePath::Flush; body match v95 0x996570 COutPacket(214). Displaced from stale 181 by serverbound summon reshift.'
+    address: 0x9ff057
+  note: >-
+    task-225: live decompile of CVecCtrlDragon::EndUpdateActive @0x9ff057
+    (GMS_v84.1_U_DEVM.i64, session 5881cf84). The IDB symbol was renamed
+    from the raw discover-ops name CVecCtrlDragon__EndUpdateActive_send_0xBA
+    to the clean CVecCtrlDragon::EndUpdateActive during this verification,
+    to match the registry fname already used on gms_v83/v87/v92/v95/jms_v185
+    (the fname-registry divergence this task fixes — see
+    docs/packets/registry/gms_v84.yaml's seed-fname test). Send site: if
+    sub_6A1502(0) @0x9ff06f, builds COutPacket(186=0xBA) @0x9ff080 then
+    CMovePath::Flush(v1,v3,0,0) @0x9ff093 and sends via
+    CClientSocket::SendPacket @0x9ff0a6. There is NO leading identity
+    field — same shape as v83's CVecCtrlDragon::EndUpdateActive @0x9b7b9c
+    (COutPacket 0xB5=181) and v95's (COutPacket 214). Opcode 186 confirmed
+    from the COutPacket construction site itself, matching the registry
+    opcode. Supersedes the prior task-100 note (same finding, un-renamed
+    symbol).
 - op: CHANGE_QUICKSLOT
   direction: serverbound
   opcode: 188

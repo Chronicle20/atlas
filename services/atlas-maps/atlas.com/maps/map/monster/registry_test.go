@@ -32,9 +32,8 @@ func setupSpawnTestRedis(t *testing.T) (*goredis.Client, *miniredis.Miniredis) {
 // use in tests. Using this instead of &SpawnPointRegistry{client: client}
 // ensures the hashes field is wired up correctly.
 func newTestRegistry(client *goredis.Client) *SpawnPointRegistry {
-	kh := atlasredis.NewKeyedHash[character.MapKey](client, "maps:spawn", func(mk character.MapKey) string {
-		return fmt.Sprintf("%s:%d:%d:%d:%s",
-			mk.Tenant.Id().String(),
+	kh := atlasredis.NewTenantKeyedHash[character.MapKey](client, "maps:spawn", func(mk character.MapKey) string {
+		return fmt.Sprintf("%d:%d:%d:%s",
 			mk.Field.WorldId(),
 			mk.Field.ChannelId(),
 			mk.Field.MapId(),

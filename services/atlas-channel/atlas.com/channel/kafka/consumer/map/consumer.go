@@ -9,6 +9,7 @@ import (
 	mapData "atlas-channel/data/map"
 	npc2 "atlas-channel/data/npc"
 	"atlas-channel/door"
+	dragoncmd "atlas-channel/dragon"
 	"atlas-channel/drop"
 	"atlas-channel/events"
 	"atlas-channel/guild"
@@ -49,6 +50,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
+	dragonpkt "github.com/Chronicle20/atlas/libs/atlas-packet/dragon/clientbound"
 	droppkt "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
 	fieldpkt "github.com/Chronicle20/atlas/libs/atlas-packet/field"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
@@ -70,7 +72,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("map_status_event")(_map3.EnvEventTopicMapStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("map_status_event")(_map3.EnvEventTopicMapStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -238,6 +240,12 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		routine.Go(l, ctx, func(_ context.Context) {
 			if err := summoncmd.NewProcessor(l, ctx).ForEachInMap(f, spawnSummonForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn summons for character [%d].", s.CharacterId())
+			}
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			if err := dragoncmd.NewProcessor(l, ctx).ForEachInMap(f, spawnDragonForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn dragons for character [%d].", s.CharacterId())
 			}
 		})
 
@@ -444,6 +452,31 @@ func spawnSummonForSession(l logrus.FieldLogger) func(ctx context.Context) func(
 				return func(m summoncmd.Model) error {
 					return session.Announce(l)(ctx)(wp)(summonpkt.SummonSpawnWriter)(
 						writer.SummonSpawnBody(m.OwnerCharacterId(), m.Id(), m.SkillId(), m.SkillLevel(), m.X(), m.Y(), 0, m.MovementType(), m.IsPuppet(), false))(s)
+				}
+			}
+		}
+	}
+}
+
+// spawnDragonForSession sends a SPAWN_DRAGON for an existing dragon to the
+// entering session s (FR-3.2) — a player entering a map must see an Evan's
+// dragon immediately, not only after that Evan next moves.
+//
+// The owner's own dragon reaches them via the CREATED event broadcast, which is
+// map-wide and includes the owner, so this operator does not need to special-case
+// self: on a fresh entry the entering character's dragon is (re)created by
+// atlas-dragons and broadcast, and re-sending here would be a duplicate. Callers
+// therefore skip m.OwnerCharacterId() == s.CharacterId().
+func spawnDragonForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[dragoncmd.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[dragoncmd.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[dragoncmd.Model] {
+			return func(s session.Model) model.Operator[dragoncmd.Model] {
+				return func(m dragoncmd.Model) error {
+					if m.OwnerCharacterId() == s.CharacterId() {
+						return nil
+					}
+					return session.Announce(l)(ctx)(wp)(dragonpkt.DragonSpawnWriter)(
+						writer.DragonSpawnBody(m.OwnerCharacterId(), m.X(), m.Y(), m.Stance(), m.JobId()))(s)
 				}
 			}
 		}

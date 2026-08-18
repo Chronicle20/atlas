@@ -24,7 +24,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) GetById(itemId uint32) (RestModel, error) {
-	return requests.Provider[RestModel, RestModel](p.l, p.ctx)(requestById(itemId), Extract)()
+	return requests.Provider[RestModel, RestModel](p.l, p.ctx)(requestById(p.ctx, itemId), Extract)()
 }
 
 func Extract(m RestModel) (RestModel, error) {

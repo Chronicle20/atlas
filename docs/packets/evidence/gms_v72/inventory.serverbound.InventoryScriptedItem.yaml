@@ -1,0 +1,10 @@
+packet: inventory/serverbound/InventoryScriptedItem
+direction: serverbound
+version: gms_v72
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendScriptRunItemRequest
+    address: "0x9044d8"
+    decompile_sha256: 4f72c9917827e77b21c5ebd3f9e5bcc0e89fe96daaf62483fcb29eafaada99ea
+verifies:
+    - libs/atlas-packet/inventory/serverbound/scripted_item_test.go#TestScriptedItemWireLayout_GMSv72

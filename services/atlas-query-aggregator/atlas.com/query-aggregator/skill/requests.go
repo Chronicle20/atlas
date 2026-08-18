@@ -1,6 +1,7 @@
 package skill
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
@@ -13,18 +14,26 @@ const (
 	ByCharacter        = CharactersResource + "/%d/" + SkillsResource
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("SKILLS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "SKILLS")
 }
 
-func requestById(characterId uint32, skillId uint32) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByCharacterAndId, characterId, skillId))
+func requestById(ctx context.Context, characterId uint32, skillId uint32) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	return requests.GetRequest[RestModel](fmt.Sprintf(root+ByCharacterAndId, characterId, skillId))
 }
 
 // byCharacterUrl is a bare URL (not a requests.Request) because the list is
 // now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size]
 // query params per request.
-func byCharacterUrl(characterId uint32) string {
-	return fmt.Sprintf(getBaseRequest()+ByCharacter, characterId)
+func byCharacterUrl(ctx context.Context, characterId uint32) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+ByCharacter, characterId), nil
 }

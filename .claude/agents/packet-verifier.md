@@ -23,6 +23,13 @@ description: |
   assistant: "Dispatching packet-verifier to re-derive the read order and re-pin."
   </example>
 model: sonnet
+# tools: intentionally omitted (FR-1.3) — matches the loaded IDB via
+# ida-pro-mcp (idb_list, exact binary filename) and decompiles the fname to
+# pin the byte-fixture evidence record; its MCP tool surface can't be
+# enumerated ahead of time. Per
+# https://code.claude.com/docs/en/sub-agents.md, omitting `tools:` is the
+# documented mechanism for inheriting every tool including MCP tools — a
+# wildcard value is not documented and is not used here.
 ---
 
 You verify exactly one (packet, version) cell. You are working in the task

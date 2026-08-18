@@ -16,8 +16,8 @@ const (
 	holdingsResource = "characters/%d/mts/holding?worldId=%d"
 )
 
-func getBaseRequest() string {
-	return requests.RootUrl("MTS")
+func getBaseRequest(ctx context.Context) (string, error) {
+	return requests.RootUrlFor(ctx, "MTS")
 }
 
 // holdingsUrl returns the list URL for a character's holdings (optionally
@@ -25,8 +25,12 @@ func getBaseRequest() string {
 // now paginated server-side (task-117) and consumed via
 // requests.DrainProvider, which appends its own page[number]/page[size] query
 // params per request.
-func holdingsUrl(characterId uint32, worldId byte) string {
-	return fmt.Sprintf(getBaseRequest()+holdingsResource, characterId, worldId)
+func holdingsUrl(ctx context.Context, characterId uint32, worldId byte) (string, error) {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(root+holdingsResource, characterId, worldId), nil
 }
 
 // identityHolding is the no-op transformer requests.DrainProvider requires:
@@ -41,6 +45,10 @@ func identityHolding(m HoldingRestModel) (HoldingRestModel, error) { return m, n
 // first.
 func RequestHoldings(l logrus.FieldLogger, ctx context.Context) func(characterId uint32, worldId byte) ([]HoldingRestModel, error) {
 	return func(characterId uint32, worldId byte) ([]HoldingRestModel, error) {
-		return requests.DrainProvider[HoldingRestModel, HoldingRestModel](l, ctx)(holdingsUrl(characterId, worldId), 250, identityHolding, model.Filters[HoldingRestModel]())()
+		url, err := holdingsUrl(ctx, characterId, worldId)
+		if err != nil {
+			return nil, err
+		}
+		return requests.DrainProvider[HoldingRestModel, HoldingRestModel](l, ctx)(url, 250, identityHolding, model.Filters[HoldingRestModel]())()
 	}
 }

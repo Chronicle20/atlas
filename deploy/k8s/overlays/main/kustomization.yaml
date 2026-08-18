@@ -65,6 +65,7 @@ configMapGenerator:
       - COMMAND_TOPIC_CONSUMABLE=COMMAND_TOPIC_CONSUMABLE-main
       - COMMAND_TOPIC_DATA=COMMAND_TOPIC_DATA-main
       - COMMAND_TOPIC_DOOR=COMMAND_TOPIC_DOOR-main
+      - COMMAND_TOPIC_DRAGON=COMMAND_TOPIC_DRAGON-main
       - COMMAND_TOPIC_DROP=COMMAND_TOPIC_DROP-main
       - COMMAND_TOPIC_DROP_ITEM=COMMAND_TOPIC_DROP_ITEM-main
       - COMMAND_TOPIC_EQUIP_ITEM=COMMAND_TOPIC_EQUIP_ITEM-main
@@ -138,8 +139,10 @@ configMapGenerator:
       - EVENT_TOPIC_CHARACTER_CHAT=EVENT_TOPIC_CHARACTER_CHAT-main
       - EVENT_TOPIC_CHARACTER_GENERAL_CHAT=EVENT_TOPIC_CHARACTER_GENERAL_CHAT-main
       - EVENT_TOPIC_CHARACTER_MOVEMENT=EVENT_TOPIC_CHARACTER_MOVEMENT-main
+      - EVENT_TOPIC_CHARACTER_PENDING_CHANGE=EVENT_TOPIC_CHARACTER_PENDING_CHANGE-main
       - EVENT_TOPIC_CHARACTER_STATUS=EVENT_TOPIC_CHARACTER_STATUS-main
       - EVENT_TOPIC_COMPARTMENT_STATUS=EVENT_TOPIC_COMPARTMENT_STATUS-main
+      - EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS=EVENT_TOPIC_CONFIGURATION_ENVIRONMENT_STATUS-main
       - EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS=EVENT_TOPIC_CONFIGURATION_SERVICE_STATUS-main
       - EVENT_TOPIC_CONFIGURATION_STATUS=EVENT_TOPIC_CONFIGURATION_STATUS-main
       - EVENT_TOPIC_CONFIGURATION_TENANT_STATUS=EVENT_TOPIC_CONFIGURATION_TENANT_STATUS-main
@@ -147,6 +150,7 @@ configMapGenerator:
       - EVENT_TOPIC_CONVERSATION_REWARD_NOTICE=EVENT_TOPIC_CONVERSATION_REWARD_NOTICE-main
       - EVENT_TOPIC_DATA=EVENT_TOPIC_DATA-main
       - EVENT_TOPIC_DOOR_STATUS=EVENT_TOPIC_DOOR_STATUS-main
+      - EVENT_TOPIC_DRAGON_STATUS=EVENT_TOPIC_DRAGON_STATUS-main
       - EVENT_TOPIC_DROP_STATUS=EVENT_TOPIC_DROP_STATUS-main
       - EVENT_TOPIC_EQUIP_CHANGED=EVENT_TOPIC_EQUIP_CHANGED-main
       - EVENT_TOPIC_EVENT_VISUAL=EVENT_TOPIC_EVENT_VISUAL-main
@@ -182,6 +186,7 @@ configMapGenerator:
       - EVENT_TOPIC_MTS_CUSTODY_STATUS=EVENT_TOPIC_MTS_CUSTODY_STATUS-main
       - EVENT_TOPIC_MTS_STATUS=EVENT_TOPIC_MTS_STATUS-main
       - EVENT_TOPIC_NOTE_STATUS=EVENT_TOPIC_NOTE_STATUS-main
+      - EVENT_TOPIC_NPC_CONVERSATION_STATUS=EVENT_TOPIC_NPC_CONVERSATION_STATUS-main
       - EVENT_TOPIC_NPC_SHOP_STATUS=EVENT_TOPIC_NPC_SHOP_STATUS-main
       - EVENT_TOPIC_PARTY_MEMBER_STATUS=EVENT_TOPIC_PARTY_MEMBER_STATUS-main
       - EVENT_TOPIC_PARTY_QUEST_STATUS=EVENT_TOPIC_PARTY_QUEST_STATUS-main
@@ -211,138 +216,140 @@ configMapGenerator:
       - EVENT_TOPIC_WORLD_RATE=EVENT_TOPIC_WORLD_RATE-main
 images:
   - name: ghcr.io/chronicle20/atlas-account/atlas-account
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-ban/atlas-ban
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-buddies/atlas-buddies
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-buffs/atlas-buffs
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-cashshop/atlas-cashshop
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-chairs/atlas-chairs
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
+  - name: ghcr.io/chronicle20/atlas-dragons/atlas-dragons
+    newTag: main-b7d3218
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-effective-stats/atlas-effective-stats
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-events/atlas-events
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-expressions/atlas-expressions
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-fame/atlas-fame
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-families/atlas-families
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-reward-pools/atlas-reward-pools
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-inventory/atlas-inventory
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-invites/atlas-invites
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-keys/atlas-keys
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-kites/atlas-kites
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-login/atlas-login
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-marriages/atlas-marriages
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-mini-games/atlas-mini-games
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-monster-book/atlas-monster-book
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-mounts/atlas-mounts
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-mts/atlas-mts
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-parties/atlas-parties
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-pets/atlas-pets
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-rankings/atlas-rankings
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-rps/atlas-rps
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-skills/atlas-skills
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-storage/atlas-storage
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-summons/atlas-summons
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-trades/atlas-trades
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
-    newTag: main-d23dffc
+    newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-28b5b1f
+    newTag: main-b4cf63c
 commonLabels:
   atlas.env: main

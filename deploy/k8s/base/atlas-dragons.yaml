@@ -1,0 +1,41 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-dragons
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: atlas-dragons
+  template:
+    metadata:
+      labels:
+        app: atlas-dragons
+    spec:
+      containers:
+      - name: dragons
+        image: ghcr.io/chronicle20/atlas-dragons/atlas-dragons:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['app']
+        - name: LOG_LEVEL
+          value: "info"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-dragons
+spec:
+  selector:
+    app: atlas-dragons
+  ports:
+  - protocol: TCP
+    port: 8080

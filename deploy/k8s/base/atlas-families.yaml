@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-families
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: atlas-families
+  template:
+    metadata:
+      labels:
+        app: atlas-families
+    spec:
+      containers:
+      - name: families
+        image: ghcr.io/chronicle20/atlas-families/atlas-families:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['app']
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: DB_NAME
+          value: "atlas-families"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-families
+spec:
+  selector:
+    app: atlas-families
+  ports:
+  - protocol: TCP
+    port: 8080

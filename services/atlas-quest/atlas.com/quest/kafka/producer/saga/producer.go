@@ -25,7 +25,8 @@ func EmitSaga(l logrus.FieldLogger, ctx context.Context, s saga.Saga) error {
 	topicToken := saga.EnvCommandTopic
 	sd := producer.SpanHeaderDecorator(ctx)
 	td := producer.TenantHeaderDecorator(ctx)
-	return producer.Produce(l)(producer.ManagerWriterProvider(l)(topicToken))(sd, td)(SagaCommandProvider(s))
+	ed := producer.EnvHeaderDecorator(ctx)
+	return producer.Produce(l)(producer.ManagerWriterProvider(l)(topicToken))(sd, td, ed)(SagaCommandProvider(s))
 }
 
 // Builder helps construct sagas with multiple steps

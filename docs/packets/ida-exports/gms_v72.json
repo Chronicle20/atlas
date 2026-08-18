@@ -3,6 +3,80 @@
   "md5": "",
   "generated_at": "2026-07-01T15:41:36Z",
   "functions": {
+    "CCashShop::OnCheckTransferWorldPossibleResult": {
+      "address": "0x4737ca",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a2)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a2) && count > 0"
+        }
+      ]
+    },
+    "CCashShop::SendCheckTransferWorldPossiblePacket": {
+      "address": "0x46be19",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendCheckNameChangePossiblePacket": {
+      "address": "0x46bc47",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CPet::OnNameChanged": {
+      "address": "0x66c137",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "name-tag decoration layer selector (CLife::MakeNameTag)"
+        }
+      ]
+    },
     "CTradingRoomDlg::OnPutItem": {
       "address": "0x6fdce7",
       "direction": "clientbound",
@@ -1112,13 +1186,16 @@
       ]
     },
     "CCashShop::OnCheckDuplicatedIDResult": {
-      "address": "",
+      "address": "0x473519",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
@@ -1130,17 +1207,6 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "CCashShop::OnCheckTransferWorldPossibleResult": {
-      "address": "",
-      "direction": "",
-      "unresolved": true,
-      "calls": [
-        {
-          "op": "Unresolved",
-          "comment": "decompilation failed; hand-trace"
         }
       ]
     },
@@ -10342,15 +10408,15 @@
       "calls": [
         {
           "op": "Encode4",
-          "comment": "itemId (COutPacket::Encode4(0x541370) — hard-coded 5510000)"
+          "comment": "itemId (COutPacket::Encode4(0x541370) \u2014 hard-coded 5510000)"
         },
         {
           "op": "Encode4",
-          "comment": "x (v2 — m_ptRevive.x)"
+          "comment": "x (v2 \u2014 m_ptRevive.x)"
         },
         {
           "op": "Encode4",
-          "comment": "y (v6 — m_ptRevive.y)"
+          "comment": "y (v6 \u2014 m_ptRevive.y)"
         }
       ]
     },
@@ -15430,6 +15496,48 @@
         }
       ]
     },
+    "sub_904154": {
+      "address": "0x904154",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        }
+      ]
+    },
+    "CWvsContext::SendReturnScrollUseRequest": {
+      "address": "0x917221",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v43 == (void *)999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v43 == (void *)999999999"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v43 == (void *)999999999"
+        }
+      ]
+    },
     "CWvsContext::SendStatChangeItemUseRequestByPetQ": {
       "address": "0x903f8b",
       "direction": "serverbound",
@@ -19998,11 +20106,11 @@
         },
         {
           "op": "Decode2",
-          "comment": "slotIndex; Decode2 (v72 LEGACY shape, materially different from MODERN bare-counter arm — task-183 Wave 3 task-3.4-legacy-misc-report.md)"
+          "comment": "slotIndex; Decode2 (v72 LEGACY shape, materially different from MODERN bare-counter arm \u2014 task-183 Wave 3 task-3.4-legacy-misc-report.md)"
         },
         {
           "op": "DecodeBuffer",
-          "comment": "GW_ItemSlotBase::Decode(&pItem) = item slot payload (model.Asset) — consumed to find-and-remove the matching locker entry"
+          "comment": "GW_ItemSlotBase::Decode(&pItem) = item slot payload (model.Asset) \u2014 consumed to find-and-remove the matching locker entry"
         }
       ]
     },
@@ -20195,6 +20303,43 @@
         {
           "op": "Decode4",
           "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0x9044d8",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time())",
+          "guard": "a3 / 10000 == 243 && sub_4DBE16(500, 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "source (a2, inventory slot)",
+          "guard": "a3 / 10000 == 243 && sub_4DBE16(500, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (a3)",
+          "guard": "a3 / 10000 == 243 && sub_4DBE16(500, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0x90a5ac",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "source (a2, inventory slot)",
+          "guard": "(a3 / 10000 == 545 || a3 / 10000 == 239) && sub_4DBE16(200, 0) && !flag18 && !dword_A9F430"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (a3)",
+          "guard": "(a3 / 10000 == 545 || a3 / 10000 == 239) && sub_4DBE16(200, 0) && !flag18 && !dword_A9F430"
         }
       ]
     }

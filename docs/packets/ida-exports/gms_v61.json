@@ -3,6 +3,48 @@
   "md5": "",
   "generated_at": "2026-07-02T05:12:39Z",
   "functions": {
+    "CCashShop::SendCheckTransferWorldPossiblePacket": {
+      "address": "0x45cefd",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendCheckNameChangePossiblePacket": {
+      "address": "0x45cd72",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CPet::OnNameChanged": {
+      "address": "0x6135d6",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "name-tag decoration layer selector (CLife::MakeNameTag)"
+        }
+      ]
+    },
     "CTradingRoomDlg::OnPutItem": {
       "address": "0x68b37f",
       "direction": "clientbound",
@@ -1026,13 +1068,16 @@
       ]
     },
     "CCashShop::OnCheckDuplicatedIDResult": {
-      "address": "",
+      "address": "0x463900",
       "direction": "",
-      "unresolved": true,
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "function not found in IDB"
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
         }
       ]
     },
@@ -18834,6 +18879,21 @@
         }
       ]
     },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0x83778d",
+      "direction": "serverbound",
+      "note": "task-230: NPC_ITEM_USE_REQUEST (opcode 102 / 0x066). COutPacket(102) @0x837851, Encode2(a2=source) @0x837863, Encode4(a3=itemId) @0x83786e. No leading updateTime. Two refusal arms (field flag bit 18; CUniqueModeless open) send nothing. Confirmed via live decompile (mcp__ida-pro__decompile) against IDA session 415bf585 (GMS_v61.1_U_DEVM.exe.i64).",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "source (nPOS / a2), int16 slot"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID / a3)"
+        }
+      ]
+    },
     "CMacroSysMan::SetMacro": {
       "address": "0x59744b",
       "direction": "clientbound",
@@ -18921,6 +18981,48 @@
         {
           "op": "Decode4",
           "comment": ""
+        }
+      ]
+    },
+    "CWvsContext::SendMobSummonItemUseRequest": {
+      "address": "0x831c83",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        }
+      ]
+    },
+    "sub_841AA5": {
+      "address": "0x841aa5",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v36 == (void *)999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v36 == (void *)999999999"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v36 == (void *)999999999"
         }
       ]
     }

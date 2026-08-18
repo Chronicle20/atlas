@@ -13,6 +13,7 @@ import {
   type GachaponsSeedStatus,
   type IngestRun,
   type InstanceRoutesSeedStatus,
+  type ItemConversationsSeedStatus,
   type MapActionScriptsSeedStatus,
   type NpcConversationsSeedStatus,
   type NpcShopsSeedStatus,
@@ -53,6 +54,8 @@ const npcConversationsSeedStatusKey = (tenantId: string) =>
   ["npcConversationsSeedStatus", tenantId] as const;
 const questConversationsSeedStatusKey = (tenantId: string) =>
   ["questConversationsSeedStatus", tenantId] as const;
+const itemConversationsSeedStatusKey = (tenantId: string) =>
+  ["itemConversationsSeedStatus", tenantId] as const;
 const npcShopsSeedStatusKey = (tenantId: string) =>
   ["npcShopsSeedStatus", tenantId] as const;
 const portalScriptsSeedStatusKey = (tenantId: string) =>
@@ -127,6 +130,24 @@ export function useSeedQuestConversations(): UseMutationResult<
       if (!activeTenant) return;
       void queryClient.invalidateQueries({
         queryKey: questConversationsSeedStatusKey(activeTenant.id),
+      });
+    },
+  });
+}
+
+export function useSeedItemConversations(): UseMutationResult<
+  unknown,
+  Error,
+  void
+> {
+  const { activeTenant } = useTenant();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => seedService.seedItemConversations(),
+    onSuccess: () => {
+      if (!activeTenant) return;
+      void queryClient.invalidateQueries({
+        queryKey: itemConversationsSeedStatusKey(activeTenant.id),
       });
     },
   });
@@ -382,6 +403,22 @@ export function useQuestConversationsSeedStatus(): UseQueryResult<
       ? questConversationsSeedStatusKey(activeTenant.id)
       : ["questConversationsSeedStatus", "none"],
     queryFn: () => seedService.getQuestConversationsSeedStatus(activeTenant!),
+    enabled: !!activeTenant,
+    staleTime: 0,
+    refetchInterval: 5000,
+  });
+}
+
+export function useItemConversationsSeedStatus(): UseQueryResult<
+  ItemConversationsSeedStatus,
+  Error
+> {
+  const { activeTenant } = useTenant();
+  return useQuery({
+    queryKey: activeTenant
+      ? itemConversationsSeedStatusKey(activeTenant.id)
+      : ["itemConversationsSeedStatus", "none"],
+    queryFn: () => seedService.getItemConversationsSeedStatus(activeTenant!),
     enabled: !!activeTenant,
     staleTime: 0,
     refetchInterval: 5000,

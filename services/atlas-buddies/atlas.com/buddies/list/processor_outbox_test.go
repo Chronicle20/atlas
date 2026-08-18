@@ -101,7 +101,7 @@ func TestRequestDeleteBuddyMissingListRoutesRejectDirect(t *testing.T) {
 	worldId := world.Id(0)
 
 	mb := message.NewBuffer()
-	err := NewProcessor(l, ctx, db).RequestDeleteBuddy(mb)(characterId, worldId, targetId)
+	err := NewProcessor(l, ctx, db).RequestDeleteBuddy(mb)(characterId, worldId, targetId, uuid.Nil)
 	if err != nil {
 		t.Fatalf("RequestDeleteBuddy is expected to swallow the tx error and return nil, got: %v", err)
 	}
@@ -191,7 +191,7 @@ func TestRequestDeleteBuddySuccessMergesIntoCallerBuffer(t *testing.T) {
 	}
 
 	mb := message.NewBuffer()
-	err := NewProcessor(l, ctx, db).RequestDeleteBuddy(mb)(characterId, worldId, targetId)
+	err := NewProcessor(l, ctx, db).RequestDeleteBuddy(mb)(characterId, worldId, targetId, uuid.Nil)
 	if err != nil {
 		t.Fatalf("expected no error on successful delete, got: %v", err)
 	}

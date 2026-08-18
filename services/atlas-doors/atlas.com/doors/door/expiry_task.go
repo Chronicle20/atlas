@@ -29,20 +29,38 @@ type ExpiryTask struct {
 	ctx          context.Context
 	interval     time.Duration
 	newProcessor func(l logrus.FieldLogger, ctx context.Context) expiryProcessor
+	envContext   func(context.Context) context.Context
 }
 
-// NewExpiryTask wires the production processor seam.
-func NewExpiryTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration) *ExpiryTask {
+// NewExpiryTask wires the production processor seam. envContext originates
+// this pod's own environment identity onto each tenant's per-sweep context
+// before RemoveByOwner emits a real DOOR_STATUS Kafka event -- door is
+// outside env-domain-guard's permitted atlas-env import list (main.go,
+// kafka/, rest/, socket/), so the caller (main.go) threads this in as a
+// plain function value rather than the package importing atlas-env itself.
+// Without it, the REMOVED event would carry an empty ENVIRONMENT header and
+// fail decide() open per FR-1.8: every live deployment, not just this pod's,
+// would act on the removal.
+func NewExpiryTask(l logrus.FieldLogger, ctx context.Context, interval time.Duration, envContext func(context.Context) context.Context) *ExpiryTask {
 	l.Infof("Initializing door expiry task to run every %dms.", interval.Milliseconds())
 	t := &ExpiryTask{
-		l:        l,
-		ctx:      ctx,
-		interval: interval,
+		l:          l,
+		ctx:        ctx,
+		interval:   interval,
+		envContext: envContext,
 	}
 	t.newProcessor = func(l logrus.FieldLogger, tctx context.Context) expiryProcessor {
 		return NewProcessor(l, tctx)
 	}
 	return t
+}
+
+// tenantContext builds the per-tenant context each sweep pass runs under:
+// the tenant, then envContext to originate this pod's own environment
+// identity on top. Extracted so the origination itself is directly
+// testable without standing up the full expiry sweep.
+func (t *ExpiryTask) tenantContext(ten tenant.Model) context.Context {
+	return t.envContext(tenant.WithContext(t.ctx, ten))
 }
 
 // SleepTime returns the task's run interval, satisfying tasks.Task.
@@ -59,7 +77,7 @@ func (t *ExpiryTask) Run() {
 	}
 	now := time.Now()
 	for ten, doors := range all {
-		tctx := tenant.WithContext(t.ctx, ten)
+		tctx := t.tenantContext(ten)
 		p := t.newProcessor(t.l, tctx)
 		for _, m := range doors {
 			// Skip doors with no expiry configured.

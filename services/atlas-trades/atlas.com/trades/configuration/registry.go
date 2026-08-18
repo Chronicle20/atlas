@@ -52,7 +52,7 @@ func newRegistryWithFetcher(f fetcher) *Registry {
 // reported LOUDLY here; Extract then substitutes the shipped table so the
 // service keeps running on known-good rates rather than on a broken one.
 func defaultFetcher(l logrus.FieldLogger, ctx context.Context, tenantId uuid.UUID) (Model, error) {
-	rm, err := requestForTenant(tenantId)(l, ctx)
+	rm, err := requestForTenant(ctx, tenantId)(l, ctx)
 	if err != nil {
 		return Model{}, err
 	}

@@ -19,7 +19,7 @@ import (
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
-			rf(consumer2.NewConfig(l)("buddy_list_command")(list2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("buddy_list_command")(list2.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser))
 		}
 	}
 }
@@ -36,6 +36,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestBuddyDeleteCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRestoreBuddyCommand(db)))); err != nil {
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleIncreaseCapacityCommand(db)))); err != nil {
@@ -75,9 +78,25 @@ func handleRequestBuddyDeleteCommand(db *gorm.DB) message.Handler[list2.Command[
 		if c.Type != list2.CommandTypeRequestDelete {
 			return
 		}
-		err := list.NewProcessor(l, ctx, db).RequestDeleteBuddyAndEmit(uint32(c.CharacterId), c.WorldId, uint32(c.Body.CharacterId))
+		err := list.NewProcessor(l, ctx, db).RequestDeleteBuddyAndEmit(uint32(c.CharacterId), c.WorldId, uint32(c.Body.CharacterId), c.TransactionId)
 		if err != nil {
 			l.WithError(err).Errorf("Error attempting to delete [%d] to character [%d] buddy list.", c.Body.CharacterId, c.CharacterId)
+		}
+	}
+}
+
+// handleRestoreBuddyCommand re-adds a buddy entry a server-issued
+// REQUEST_DELETE removed, one direction per command, without an invite
+// handshake. It backs the world-transfer saga's compensation (task-227
+// FR-4.8).
+func handleRestoreBuddyCommand(db *gorm.DB) message.Handler[list2.Command[list2.RestoreBuddyCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c list2.Command[list2.RestoreBuddyCommandBody]) {
+		if c.Type != list2.CommandTypeRestore {
+			return
+		}
+		err := list.NewProcessor(l, ctx, db).RestoreBuddyAndEmit(uint32(c.CharacterId), c.WorldId, uint32(c.Body.CharacterId))
+		if err != nil {
+			l.WithError(err).Errorf("Error attempting to restore [%d] to character [%d] buddy list.", c.Body.CharacterId, c.CharacterId)
 		}
 	}
 }

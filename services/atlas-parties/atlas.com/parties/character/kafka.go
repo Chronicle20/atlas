@@ -11,6 +11,7 @@ const (
 	EventPartyMemberStatusTypeLogout       = "LOGOUT"
 	EventPartyMemberStatusTypeLevelChanged = "LEVEL_CHANGED"
 	EventPartyMemberStatusTypeJobChanged   = "JOB_CHANGED"
+	EventPartyMemberStatusTypeNameChanged  = "NAME_CHANGED"
 )
 
 type memberStatusEvent[E any] struct {
@@ -35,4 +36,12 @@ type memberJobChangedEventBody struct {
 	OldJobId job.Id `json:"oldJobId"`
 	NewJobId job.Id `json:"newJobId"`
 	Name     string `json:"name"`
+}
+
+// memberNameChangedEventBody carries both names because the consumer's job is
+// to redraw a window that still shows the old one — the old name is what makes
+// the event diagnosable in a log after the registry has already moved on.
+type memberNameChangedEventBody struct {
+	OldName string `json:"oldName"`
+	NewName string `json:"newName"`
 }

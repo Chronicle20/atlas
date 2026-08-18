@@ -35,8 +35,8 @@ func (p *ProcessorImpl) GetById(partyId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByIdProvider(partyId uint32) model.Provider[Model] {
-	pp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(partyId), Extract)
-	mp := requests.SliceProvider[MemberRestModel, MemberModel](p.l, p.ctx)(requestMembers(partyId), ExtractMember, model.Filters[MemberModel]())
+	pp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(p.ctx, partyId), Extract)
+	mp := requests.SliceProvider[MemberRestModel, MemberModel](p.l, p.ctx)(requestMembers(p.ctx, partyId), ExtractMember, model.Filters[MemberModel]())
 	return func() (Model, error) {
 		pa, err := pp()
 		if err != nil {
@@ -56,7 +56,7 @@ func (p *ProcessorImpl) GetByMemberId(memberId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByMemberIdProvider(memberId uint32) model.Provider[[]Model] {
-	pp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
+	pp := requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(p.ctx, memberId), Extract, model.Filters[Model]())
 	return func() ([]Model, error) {
 		ps, err := pp()
 		if err != nil {
@@ -64,7 +64,7 @@ func (p *ProcessorImpl) ByMemberIdProvider(memberId uint32) model.Provider[[]Mod
 		}
 		results := make([]Model, 0)
 		for _, pa := range ps {
-			ms, err := requests.SliceProvider[MemberRestModel, MemberModel](p.l, p.ctx)(requestMembers(pa.Id()), ExtractMember, model.Filters[MemberModel]())()
+			ms, err := requests.SliceProvider[MemberRestModel, MemberModel](p.l, p.ctx)(requestMembers(p.ctx, pa.Id()), ExtractMember, model.Filters[MemberModel]())()
 			if err != nil {
 				return []Model{}, err
 			}

@@ -248,7 +248,7 @@ location ~ ^/api/drops(/.*)?$ {
 }
 
 location ~ ^/api/events(/.*)?$ {
-  set $u "atlas-events.${POD_NAMESPACE}.svc.cluster.local:8080";
+  set $u "atlas-events.${NS_ATLAS_EVENTS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 

@@ -1,2 +1,4 @@
 ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
 2026-08-18T11:25:19Z	agent	bug-no-event-definition-seed-control	atlas-implementer	sonnet	-	-	-	-	DONE	03e870091	-	-	-	-
+2026-08-18T12:06:54Z	agent	bug-event-definition-seed-yields-zero	atlas-implementer	sonnet	-	-	-	-	DONE	c5e8b8bbe	-	-	-	-
+2026-08-18T12:06:54Z	agent	bug-event-definition-seed-yields-zero	atlas-reviewer	sonnet	-	-	-	-	DONE	c5e8b8bbe	APPROVED	no	-	-

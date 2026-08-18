@@ -144,6 +144,8 @@ spec:
           value: $(POD_NAMESPACE)
         - name: NS_ATLAS_EFFECTIVE_STATS
           value: $(POD_NAMESPACE)
+        - name: NS_ATLAS_EVENTS
+          value: $(POD_NAMESPACE)
         - name: NS_ATLAS_FAMILIES
           value: $(POD_NAMESPACE)
         - name: NS_ATLAS_GUILDS

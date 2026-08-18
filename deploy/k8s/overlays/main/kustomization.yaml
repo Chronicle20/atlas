@@ -245,7 +245,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-dragons/atlas-dragons
-    newTag: main-b4cf63c
+    newTag: main-b7d3218
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
     newTag: main-b4cf63c
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops

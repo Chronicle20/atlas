@@ -1,16 +1,16 @@
 {
-  "toolSha": "5fc900375526d55dc4f6924cbc53fc0468abb4b0d3ec6f640ac6e3f10ad839ea",
+  "toolSha": "319a7ad9b3347b81a4a0eed68718ebad0639d1ae89d0a93857f0c26f6ac9ca21",
   "exportHashes": {
-    "gms_v48": "63ef7be502671420db6e0ede292136989b63903bc0efd30720ca20f267c84445",
-    "gms_v61": "208aeecd70bb6a0ebd4084a2a484a59004ad870f1981a073f71c055441d67b13",
-    "gms_v72": "3423364142d304c11c4df0fde8357b22f4195201102b44e65bef827fc57c0563",
-    "gms_v79": "354aa7a82248a79950bb46f38662a649b4fc2e2516d889cdff732b4c715fa003",
-    "gms_v83": "1aec8d9b3ed90155d77dd408a037ce694e78bfb57020473b142d8d6aeb272936",
-    "gms_v84": "b0fe6bb7795eb8eb78118672f3d86443108f74bfe36c3d4402cf33573f0b774d",
-    "gms_v87": "6e9f4b61a02a00acace5ce2ae75d853f3b5bb228dc728e168e1610cc2f5ebb80",
-    "gms_v92": "3e89cc1ec9d6b882dfd3d7068a6516af70a3130217509baa830a6260fe400cf7",
-    "gms_v95": "2917c00ad0507638bfc8625f7278af34c08000e4fb8491a16d4734be99aa0105",
-    "jms_v185": "f4aeb158772b7c8a4ec3ffa949b069bb3d5c2e7a6bd897e35ad6b239959e5235"
+    "gms_v48": "f46a1c091a8f557a7a0a47c295bed12c56e0f70e23552726d1ca6586eadbf0dd",
+    "gms_v61": "6c974c037a17229958f04d245f414de004f5530852466818e48167a4172e7c70",
+    "gms_v72": "f22e6d780c0ca97b845d09876f2a4724b612189f9d9d353451be062bcb741c56",
+    "gms_v79": "efa7d503bee32a270bf80e0d437259e1b4e13e7d7bab2058427def64e781a2a3",
+    "gms_v83": "9b938038def5da2b3e98681db301b5299a0c35274b2d71b92be3b364505d57d8",
+    "gms_v84": "16832eea1aedc71e48c73e047e4fca66fef8d2bfdc1901f2b5f00ac1286c40ce",
+    "gms_v87": "dcb1d52ed4c88dcef1d351e698a21c647b3bdd82a3c79b7bfc9c39682e15ab02",
+    "gms_v92": "05ed16a35700adcad2328e6cbd02418713bef4a90af79dc3fc569f6d0922a596",
+    "gms_v95": "fa56a542eabc75d20d5ba920b272ad990f1abe0fe99f346bb4ad96d950f7ca09",
+    "jms_v185": "576eda436b95b42e99f3bb0a6343964695a5c0732b95beed1593bab25f78df3c"
   },
   "rows": [
     {
@@ -8167,6 +8167,61 @@
     },
     {
       "kind": "op",
+      "op": "USE_ITEM",
+      "packet": "inventory/serverbound/InventoryItemUse",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CWvsContext::SendStatChangeItemUseRequest"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 56
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "tier-1 without fixture; verdict ❌",
+          "opcode": 67
+        },
+        "gms_v72": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 71
+        },
+        "gms_v79": {
+          "state": "partial",
+          "note": "tier-1: needs byte-fixture test to verify",
+          "opcode": 70
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 72
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 72
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 75
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 79
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 78
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 64
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "CANCEL_ITEM_EFFECT",
       "packet": "character/serverbound/ItemCancel",
       "direction": "serverbound",
@@ -8493,6 +8548,59 @@
     },
     {
       "kind": "op",
+      "op": "USE_SUMMON_BAG",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CWvsContext::SendMobSummonItemUseRequest",
+        "sub_904154",
+        "sub_955499"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 59
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 70
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 74
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 73
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 75
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 75
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 78
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 82
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 81
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 67
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "BUDDYLIST",
       "packet": "buddy/clientbound/BuddyAlreadyBuddy",
       "direction": "clientbound",
@@ -8638,8 +8746,7 @@
           "opcode": 79
         },
         "gms_v92": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 83
         },
         "gms_v95": {
@@ -9548,13 +9655,13 @@
     },
     {
       "kind": "op",
-      "op": "USE_ITEM",
-      "packet": "inventory/serverbound/InventoryItemUse",
+      "op": "USE_RETURN_SCROLL",
       "direction": "serverbound",
-      "tier1": true,
+      "tier1": false,
       "fnames": [
-        "CWvsContext::SendStatChangeItemUseRequest",
-        "sub_719DD9"
+        "CWvsContext::SendPortalScrollUseRequest",
+        "CWvsContext::SendReturnScrollUseRequest",
+        "sub_841AA5"
       ],
       "cells": {
         "gms_v48": {
@@ -9562,44 +9669,40 @@
           "opcode": 65
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict ❌",
-          "opcode": 67
-        },
-        "gms_v72": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 71
-        },
-        "gms_v79": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 70
-        },
-        "gms_v83": {
-          "state": "verified",
-          "opcode": 72
-        },
-        "gms_v84": {
-          "state": "verified",
-          "opcode": 72
-        },
-        "gms_v87": {
-          "state": "verified",
-          "opcode": 75
-        },
-        "gms_v92": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
-          "opcode": 79
-        },
-        "gms_v95": {
           "state": "verified",
           "opcode": 78
         },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 84
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 83
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 85
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 85
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 88
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 92
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 92
+        },
         "jms_v185": {
           "state": "verified",
-          "opcode": 64
+          "opcode": 77
         }
       }
     },
@@ -9752,8 +9855,7 @@
           "opcode": 89
         },
         "gms_v92": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 93
         },
         "gms_v95": {
@@ -10318,67 +10420,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 76
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 67
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "USE_SUMMON_BAG",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::SendMobSummonItemUseRequest",
-        "sub_955499"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 70
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 74
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 73
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 75
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 75
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 78
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 82
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 81
         },
         "jms_v185": {
           "state": "incomplete",
@@ -11834,68 +11875,6 @@
           "state": "incomplete",
           "note": "no audit report",
           "opcode": 85
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "USE_RETURN_SCROLL",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CWvsContext::SendPortalScrollUseRequest",
-        "CWvsContext::SendReturnScrollUseRequest",
-        "sub_841AA5"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 78
-        },
-        "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 84
-        },
-        "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 83
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 85
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 85
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 88
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 92
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 92
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 77
         }
       }
     },

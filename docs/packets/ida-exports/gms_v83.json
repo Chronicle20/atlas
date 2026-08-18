@@ -9888,6 +9888,28 @@
       "direction": "serverbound",
       "calls": []
     },
+    "CWvsContext::SendMobSummonItemUseRequest": {
+      "address": "0xa0977b",
+      "direction": "serverbound",
+      "note": "USE_SUMMON_BAG (task-229, opcode 75/0x4B, InventorySummonBagItemUse). Decompiled v83 @0xa09896: under CWvsContext::CanSendExclRequest(this, 200, 0) (after the optional YesNo interest-warning dialog), COutPacket::COutPacket(&pkt, 0x4B) then Encode4(get_update_time())@0xa098ad + Encode2(a2/nPOS slot)@0xa098b8 + Encode4(a3/itemId)@0xa098c3. Same updateTime+slot+itemId shape as InventoryItemUse/InventoryReturnScrollItemUse but a distinct send site gated on the mob-summon guard (get_field()+324 bit2 / sub_5DCF70 confirm-summon check), matching the gms_v61 structural twin CWvsContext::SendMobSummonItemUseRequest @0x832003.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "get_update_time() (tick)",
+          "guard": "CUtilDlg::YesNo(v11, v12, v13, v14, v15) == 6 && CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS (slot)",
+          "guard": "CUtilDlg::YesNo(v11, v12, v13, v14, v15) == 6 && CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID",
+          "guard": "CUtilDlg::YesNo(v11, v12, v13, v14, v15) == 6 && CWvsContext::CanSendExclRequest(this, 200, 0)"
+        }
+      ]
+    },
     "CWvsContext::SendPetFoodItemUseRequest": {
       "address": "0xa09905",
       "direction": "serverbound",
@@ -9903,6 +9925,28 @@
         {
           "op": "Encode4",
           "comment": "nItemID"
+        }
+      ]
+    },
+    "CWvsContext::SendPortalScrollUseRequest": {
+      "address": "0xa1e1ce",
+      "direction": "serverbound",
+      "note": "USE_RETURN_SCROLL (task-229, opcode 85/0x55, InventoryReturnScrollItemUse). Decompiled v83 @0xa1e3e9: CWvsContext::SendPortalScrollUseRequest reads the item's own Return Scroll WZ props via IWzProperty::GetItem (StringPool ids 2306/'spec', 2307, 2309, all resolved off CItemInfo::GetItemProp(a3) — the item being used), with NO RunMapTransferItem call and NO by-name/target-name branch (the trap documented for gms_v72.yaml:2414 and gms_v79.yaml:2798 where the era's SendMapTransferItemUseRequest symbol is a mislabel for the teleport-rock sender — the v83 teleport-rock sender is the distinct CWvsContext::SendMapTransferItemUseRequest @0xa0a3bb entry above, USE_TELEPORT_ROCK/task-124). Under the int32==999999999 (no destination-map override) success path, COutPacket::COutPacket(&pkt, 0x55) then Encode4(get_update_time())@0xa1e400 + Encode2(a2/nPOS slot)@0xa1e40b + Encode4(a3/itemId)@0xa1e416 — same updateTime+slot+itemId shape as InventoryItemUse/InventorySummonBagItemUse.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "get_update_time() (tick)",
+          "guard": "int32 == 999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS (slot)",
+          "guard": "int32 == 999999999"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID",
+          "guard": "int32 == 999999999"
         }
       ]
     },

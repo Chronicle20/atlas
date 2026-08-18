@@ -1,0 +1,10 @@
+packet: inventory/serverbound/InventorySummonBagItemUse
+direction: serverbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendMobSummonItemUseRequest
+    address: "0x9b3b80"
+    decompile_sha256: a115f41308a6de1cd7f847a62e541043b2b8ffebcc62020233eb7a1afdf2f9fd
+verifies:
+    - libs/atlas-packet/inventory/serverbound/summon_bag_item_use_test.go#TestSummonBagItemUseRoundTrip

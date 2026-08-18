@@ -1,0 +1,10 @@
+packet: pet/serverbound/PetFood
+direction: serverbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendPetFoodItemUseRequest
+    address: "0x9afa50"
+    decompile_sha256: c99a54444d4138a9391bed5fe249aa65bc5e8be12d780e558fdc7b9f0c002b2c
+verifies:
+    - libs/atlas-packet/pet/serverbound/food_test.go#TestFoodRoundTrip

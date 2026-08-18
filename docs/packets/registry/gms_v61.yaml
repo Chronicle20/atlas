@@ -2337,11 +2337,16 @@
     address: 8592515
   note: 'task-212 correction (v61 IDB session 415bf585, GMS_v61.1_U_DEVM.exe):
     sub_831C83@0x831c83 is named CWvsContext::SendMobSummonItemUseRequest;
-    decompile emits COutPacket(70)+Encode4(updateTime)+Encode1+Encode2 (no mob
-    id) — the real USE_SUMMON_BAG. Supersedes the prior send-site-harvest
-    ITEM_MOVE mislabel at this opcode (shared placeholder ctor-site address
-    0x5ffc4f = 6291023, not the function''s own address). The real ITEM_MOVE
-    sender is relocated to opcode 66 (see below).'
+    decompile emits COutPacket(70)+Encode4(updateTime)+Encode2(slot)+Encode4(itemId)
+    (no mob id) — the real USE_SUMMON_BAG. task-229 correction: the call
+    sequence above was corrected from a stale "Encode1+Encode2" reading;
+    re-decompiled at 415bf585 and confirmed there is no Encode1 call in the
+    function — the body is Encode4+Encode2+Encode4 as stated. Supersedes the
+    prior send-site-harvest ITEM_MOVE mislabel at this opcode (shared
+    placeholder ctor-site address 0x5ffc4f = 6291023, not the function''s own
+    address). The real ITEM_MOVE sender is relocated to opcode 66 (see
+    below).'
+  packet: inventory/serverbound/InventorySummonBagItemUse
 - op: USE_ITEM
   direction: serverbound
   opcode: 67
@@ -2508,6 +2513,7 @@
   ida:
     address: 8658104
   note: 'v61 send-site (0x841cb8, CWvsContext item region): COutPacket(78)+Encode4(time)+Encode2(useSlot)+Encode4(targetMap). v72 USE_RETURN_SCROLL=84 (Δ-6). task-124 v61 verify pass CORRECTION: this is NOT SendMapTransferItemUseRequest (prior note claimed so in error) — sub_841AA5 reads WZ Return Scroll props (StringPool ids 2276/2277/2279 via IWzProperty::Getitem) and has a different field order (no byName/target-name branch); the real USE_TELEPORT_ROCK is opcode 77 / sub_8327DB (renamed CWvsContext::SendMapTransferItemUseRequest), see that entry above.'
+  packet: inventory/serverbound/InventoryReturnScrollItemUse
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 79

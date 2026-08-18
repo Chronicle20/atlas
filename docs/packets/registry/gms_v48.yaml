@@ -972,12 +972,31 @@
   note: 'BODY-VERIFIED send-site 0x70d8de: COutPacket(55)+Encode4(updateTime)+Encode1(a2=inventoryType)+Encode2(a3=srcSlot)+Encode2(a4=dstSlot)+Encode2(a5=quantity) + SetExclRequestSent. Canonical inventory item-move/drop = v61 ITEM_MOVE (sub_831C83). v61 ITEM_MOVE=70 (Delta-15). NB v48 op57/op60/op61 are item-USE-family variants (Enc4(time)+Enc2(slot)+Enc4(itemId), category-gated e.g. op61 only itemId/10000==226) left unresolved pending item-category cross-ref.'
 - op: USE_ITEM
   direction: serverbound
+  opcode: 56
+  fname: CWvsContext::SendStatChangeItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 7396156
+  note: 'task-229 CORRECTION: this entry previously lived (wrongly) at opcode 65 under fname sub_719DD9, which is a mislabel — see the USE_RETURN_SCROLL entry below for that function''s real identity. The genuine USE_ITEM sender is CWvsContext::SendStatChangeItemUseRequest (already named in the v48 IDB), send-site 0x70db3c: guard on dword_80C898+844 (busy/pending flag) then a3/10000!=221-or-secure-fuse check, sub_713039(itemId) inventory-validate, CUser::IsOnFoothold gate, field-flag dword_80C898+6440, sub_4A2518(200,0) excl-request guard, then COutPacket(56)+Encode4(updateTime)+Encode2(a2=slot)+Encode4(a3=itemId)+SetExclRequestSent. Item-category gate confirmed from the caller dispatcher sub_4A1DDC: categories 200/201/202/205/221 (potions/stat-change consumables) route here. Structural + category twin of v61 USE_ITEM (SendStatChangeItemUseRequest, opcode 67) and v83 USE_ITEM (SendStatChangeItemUseRequest, opcode 72) — same fname, same body shape, only the opcode differs per version. Re-pinned evidence/report/marker accordingly (task-229).'
+  packet: inventory/serverbound/InventoryItemUse
+- op: USE_SUMMON_BAG
+  direction: serverbound
+  opcode: 59
+  fname: CWvsContext::SendMobSummonItemUseRequest
+  provenance: ida-discovered
+  ida:
+    address: 7396778
+  note: 'task-229 — v48 IDB confirms CWvsContext::SendMobSummonItemUseRequest (already named in the IDB, session 93cc947e, GMS_v48_1_DEVM.exe.i64) @0x70ddaa builds COutPacket(59)@0x70dec6 under a confirm-dialog + excl-request guard (sub_4A2518(200,0)@0x70deb7), then Encode4(updateTime)@0x70ded7 + Encode2(slot)@0x70dee2 + Encode4(itemId)@0x70deed — the same updateTime+slot+itemId shape as USE_ITEM/USE_RETURN_SCROLL but a distinct send site. Item-category gate confirmed from the caller dispatcher sub_4A1DDC (right-click item-use jumptable, case 2): category itemId/10000==210 (mob summon sacks) is the ONLY category that routes to SendMobSummonItemUseRequest — none of the other 200-series categories (200/201/202/205/221->SendStatChangeItemUseRequest, 203->SendPortalScrollUseRequest, 212->PetFood, 224->Engagement, 226->TamingMobFood, 227->Bridle, 228/229->SkillBook) do. Structural twin of the v61 CWvsContext::SendMobSummonItemUseRequest @0x831c83 (opcode 70): same guard shape (item-validate gate, field-limit-bit-gated Notice, YesNo confirm dialog, excl-request guard, Encode4+Encode2+Encode4, SetExclRequestSent twice). Design-phase probe (0x3B/COutPacket(59)) confirmed as the genuine summon-bag sender, not a near-miss.'
+  packet: inventory/serverbound/InventorySummonBagItemUse
+- op: USE_RETURN_SCROLL
+  direction: serverbound
   opcode: 65
-  fname: sub_719DD9
+  fname: CWvsContext::SendPortalScrollUseRequest
   provenance: ida-discovered
   ida:
     address: 7445977
-  note: 'BODY-VERIFIED send-site 0x719dd9: sub_713039(itemId) inventory-validate + item WZ props (StringPool 2089/2090) + map-restriction flags (get_field+58 >>5 / >>8 "cannot use here") + return-scroll target-map check (sub_71E860, notice 2678), then COutPacket(65)+Encode4(updateTime)+Encode2(a2=slot)+Encode4(a3=itemId) + SetExclRequestSent. = USE_ITEM (consumable/return-scroll use; Enc4(time)+Enc2(slot)+Enc4(itemId)). v61 USE_ITEM=71.'
+  note: 'task-229 CORRECTION: this opcode/address was previously registered as USE_ITEM under fname sub_719DD9 — that was a mislabel. The function is already named CWvsContext::SendPortalScrollUseRequest in the v48 IDB (session 93cc947e, GMS_v48_1_DEVM.exe.i64) and is the canonical USE_RETURN_SCROLL fname on v83/v87/v95 (same name, same role, different opcode per version). Full re-decompile @0x719dd9 confirms: sub_713039(itemId) inventory-validate, sub_4A2518(500,0) excl-request guard, reads the item''s own WZ props via IWzProperty::Getitem (StringPool ids 2089@0x719e3e and 2090@0x719eb7, off CItemInfo/ZRef item data) with NO RunMapTransferItem call and NO by-name/target-name branch — the exact structural signature that separates USE_RETURN_SCROLL from the teleport-rock sender across every other verified version (gms_v72.yaml:2414, gms_v79.yaml:2798, gms_v83.yaml:2300). A field-restriction bitmask (get_field()+232 >>5/>>8, "cannot use here") gates a CUtilDlg::Notice(270); when the target-map WZ prop resolves to a real value (not the 999999999 sentinel), a target-map validity check sub_71E860(currentMapId, targetMapId) runs — decompiled: rejects same-map "block 9" special zones (mapId/1000000%100==9) and 20009-prefixed maps for either side, then compares each map''s continent group (mapId/10000000) via sub_721D6C and requires them equal — a classic "return scroll target must be reachable from the current continent" check; on failure, Notice(2678). Category gate confirmed from caller dispatcher sub_4A1DDC (right-click item-use jumptable, case 2): itemId/10000==203 is the SOLE category routed here (Return Scroll itemId 2030000 falls in category 203). Builds COutPacket(65)@0x719f88 then Encode4(updateTime)@0x719fa0 + Encode2(slot)@0x719fab + Encode4(itemId)@0x719fb6, SetExclRequestSent. Sibling cross-check: MAP_TRANSFER_RESULT (clientbound, the warp-completion receive path a successful return-scroll use triggers) already exists on v48 at opcode 35 (CWvsContext::OnMapTransferResult). Re-pinned USE_ITEM''s evidence/report/marker off this same address to its correct sender (see USE_ITEM entry above) so the two ops no longer share a false attribution.'
+  packet: inventory/serverbound/InventoryReturnScrollItemUse
 - op: TROCK_ADD_MAP
   direction: serverbound
   opcode: 81

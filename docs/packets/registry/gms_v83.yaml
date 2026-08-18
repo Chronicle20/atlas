@@ -2289,7 +2289,11 @@
   direction: serverbound
   opcode: 75
   fname: CWvsContext::SendMobSummonItemUseRequest
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 10524539
+  note: task-229 — v83 IDB confirms CWvsContext::SendMobSummonItemUseRequest @0xa0977b builds COutPacket(0x4B)@0xa0989b under the mob-summon confirm-dialog guard, then Encode4(updateTime)@0xa098ad + Encode2(slot)@0xa098b8 + Encode4(itemId)@0xa098c3 — same updateTime+slot+itemId shape as USE_ITEM/USE_RETURN_SCROLL but a distinct send site gated on the summon-item confirmation flow, matching the gms_v61 structural twin CWvsContext::SendMobSummonItemUseRequest @0x832003.
+  packet: inventory/serverbound/InventorySummonBagItemUse
 - op: PET_FOOD
   direction: serverbound
   opcode: 76
@@ -2349,7 +2353,11 @@
   direction: serverbound
   opcode: 85
   fname: CWvsContext::SendPortalScrollUseRequest
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 10609102
+  note: task-229 — v83 IDB confirms CWvsContext::SendPortalScrollUseRequest @0xa1e1ce reads the item's own Return Scroll WZ props via IWzProperty::GetItem (StringPool ids 2306/2307/2309, off CItemInfo::GetItemProp(itemId)) with NO RunMapTransferItem call and NO by-name/target-name branch — distinct from the teleport-rock sender CWvsContext::SendMapTransferItemUseRequest @0xa0a3bb (the era's mislabel trap noted at gms_v72.yaml:2414/gms_v79.yaml:2798). Builds COutPacket(0x55)@0xa1e3e9 then Encode4(updateTime)@0xa1e400 + Encode2(slot)@0xa1e40b + Encode4(itemId)@0xa1e416.
+  packet: inventory/serverbound/InventoryReturnScrollItemUse
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 86

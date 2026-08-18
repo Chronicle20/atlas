@@ -1,7 +1,7 @@
 {
   "WriterName": "InventoryItemUse",
-  "IDAName": "sub_719DD9",
-  "Address": "0x719dd9",
+  "IDAName": "CWvsContext::SendStatChangeItemUseRequest",
+  "Address": "0x70db3c",
   "Variant": "GMS/v48",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/inventory/serverbound/item_use.go",
@@ -10,30 +10,30 @@
       "Index": 0,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "updateTime",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 1,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 1,
+      "IDAComment": "slot",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 2,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 2,
+      "IDAComment": "itemId",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

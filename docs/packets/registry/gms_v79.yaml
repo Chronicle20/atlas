@@ -2822,6 +2822,7 @@
   ida:
     address: 9866322
   note: 'task-124 v79 verify pass CORRECTION: this fname previously read CWvsContext::SendMapTransferItemUseRequest — that name was a mislabel inherited from the raw IDB symbol; the function @0x968c52 is a bare packet (COutPacket(83)+Encode4(updateTime)+Encode2(nPOS)+Encode4(itemId)) reading WZ Return-Scroll props (StringPool ids 2293/2294/2296 via IWzProperty::Getitem) with NO RunMapTransferItem call and NO byName/target-name branch — it is genuinely distinct from teleport-rock USE. Renamed live in the IDB this pass to CWvsContext::SendReturnScrollUseRequest; the real teleport-rock USE_TELEPORT_ROCK sender (opcode 82, unnamed sub_9560C6) is documented separately above. Original harvest note retained: COutPacket(83)+Enc4(time)+Enc2(slot)+Enc4(itemId) town/return scroll; v83 USE_RETURN_SCROLL=0x55=85 (d-2).'
+  packet: inventory/serverbound/InventoryReturnScrollItemUse
 - op: CHANGE_MAP_SPECIAL
   direction: serverbound
   opcode: 98
@@ -2942,6 +2943,7 @@
   ida:
     address: 9786521
   note: 'v79 sub_955499 COutPacket(73); push 49h;a2 @0x9555b0 (IDB mislabels fn as SendEngagementRequest; opcode read from body per unreliable-name caveat). v83 USE_SUMMON_BAG=0x4b=75 (d-2). delta doc serverbound (ida-read).'
+  packet: inventory/serverbound/InventorySummonBagItemUse
 - op: USE_MOUNT_FOOD
   direction: serverbound
   opcode: 75

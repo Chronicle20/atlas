@@ -318,6 +318,48 @@
         }
       ]
     },
+    "CWvsContext::SendMobSummonItemUseRequest": {
+      "address": "0xa9f027",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (a2)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (arg4)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 200, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendPortalScrollUseRequest": {
+      "address": "0xab5507",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime",
+          "guard": "CWvsContext::CanSendExclRequest(this, 500, 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot (a2)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 500, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)",
+          "guard": "CWvsContext::CanSendExclRequest(this, 500, 0)"
+        }
+      ]
+    },
     "CEmployeePool::OnEmployeeEnterField": {
       "address": "0x533528",
       "direction": "",

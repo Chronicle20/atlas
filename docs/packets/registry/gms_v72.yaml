@@ -2365,11 +2365,12 @@
 - op: USE_SUMMON_BAG
   direction: serverbound
   opcode: 74
-  fname: sub_955499
+  fname: sub_904154
   provenance: ida-discovered
   ida:
     address: 9453908
-  note: 'v72 COutPacket(74) verified via global COutPacket-ctor harvest @0x904154; Δ+1 vs v79 op 73 (mid/field/social Δ+1).'
+  note: 'v72 COutPacket(74) verified via global COutPacket-ctor harvest @0x904154; Δ+1 vs v79 op 73 (mid/field/social Δ+1). task-229 verify-pass CORRECTION: fname previously read sub_955499, copy-pasted from the v79 entry (whose real address IS 0x955499); v72''s own dummy name is sub_904154 (its own address, confirmed via IDA lookup_funcs/disasm and a probe-rename that proved IDA coerces sub_XXXXXX names back to the address they encode) — sub_955499 mis-resolves to an unrelated function (_ceil @0x95548e) when harvested for this version. Function left unnamed (bare dummy sub_ form) per the sub_-fname-preservation rule; only the digits were corrected to match its real address.'
+  packet: inventory/serverbound/InventorySummonBagItemUse
 - op: PET_FOOD
   direction: serverbound
   opcode: 75
@@ -2447,6 +2448,7 @@
   ida:
     address: 9531937
   note: 'task-124 v72 verify pass CORRECTION: this fname previously read CWvsContext::SendMapTransferItemUseRequest — that name was a mislabel inherited from the raw IDB symbol; the function @0x917221 is a bare packet (COutPacket(84)+Encode4(updateTime)+Encode2+Encode4) reading WZ Return-Scroll props (StringPool ids 2291/2292/2294 via IWzProperty::Getitem) with NO RunMapTransferItem call and NO byName/target-name branch — it is genuinely distinct from teleport-rock USE. Renamed live in the IDB this pass to CWvsContext::SendReturnScrollUseRequest; the real teleport-rock USE_TELEPORT_ROCK sender (opcode 83, unnamed sub_904D5E) is documented separately above. v72 COutPacket(84) original harvest note retained: verified via global COutPacket-ctor harvest @0x917221; Δ+1 vs v79 op 83 (mid/field/social Δ+1).'
+  packet: inventory/serverbound/InventoryReturnScrollItemUse
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 85

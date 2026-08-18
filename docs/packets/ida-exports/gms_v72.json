@@ -15496,6 +15496,48 @@
         }
       ]
     },
+    "sub_904154": {
+      "address": "0x904154",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        }
+      ]
+    },
+    "CWvsContext::SendReturnScrollUseRequest": {
+      "address": "0x917221",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v43 == (void *)999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v43 == (void *)999999999"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v43 == (void *)999999999"
+        }
+      ]
+    },
     "CWvsContext::SendStatChangeItemUseRequestByPetQ": {
       "address": "0x903f8b",
       "direction": "serverbound",

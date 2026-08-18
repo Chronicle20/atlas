@@ -2938,8 +2938,19 @@
   direction: serverbound
   opcode: 75
   fname: CWvsContext::SendMobSummonItemUseRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10828637
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083
+    found v84 byte-identical to v83. Corrected by discover-ops against the v84
+    IDB. task-229: live decompile of the v84 IDB (GMS_v84.1_U_DEVM.i64, session
+    5881cf84) confirms sub_A53B5D@0xa53b5d (renamed to
+    CWvsContext::SendMobSummonItemUseRequest this pass, was unnamed) constructs
+    COutPacket(75)+Encode4(updateTime)+Encode2(slot)+Encode4(itemId) under the
+    same sub_A5A9B6/sub_99E795/mob-summon-WZ-flag/sub_48903A(200,0) gate chain
+    as the v61 structural twin CWvsContext::SendMobSummonItemUseRequest — the
+    v83-byte-identical claim holds for this op.'
+  packet: inventory/serverbound/InventorySummonBagItemUse
 - op: PET_FOOD
   direction: serverbound
   opcode: 76
@@ -3005,8 +3016,22 @@
   direction: serverbound
   opcode: 85
   fname: CWvsContext::SendPortalScrollUseRequest
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 10916973
+  note: 'seeded from the v83 CSV column — the CSVs have no v84 column; task-083
+    found v84 byte-identical to v83. Corrected by discover-ops against the v84
+    IDB. task-229: live decompile of the v84 IDB (GMS_v84.1_U_DEVM.i64, session
+    5881cf84) confirms sub_A6946D@0xa6946d (renamed to
+    CWvsContext::SendPortalScrollUseRequest this pass, was unnamed) constructs
+    COutPacket(85)+Encode4(updateTime)+Encode2(slot)+Encode4(itemId) at
+    0xa69688, reading Return Scroll WZ props via StringPool ids 2307/2308/2310
+    with no RunMapTransferItem call and no by-name/target-name branch —
+    distinct from the teleport-rock sender sub_A547AB@0xa547ab (opcode 84,
+    calls CWvsContext::RunMapTransferItem, the era mislabel trap documented at
+    gms_v72.yaml:2414/gms_v79.yaml:2798 does not apply here since that
+    function is unnamed in this IDB, not mislabeled).'
+  packet: inventory/serverbound/InventoryReturnScrollItemUse
 - op: USE_UPGRADE_SCROLL
   direction: serverbound
   opcode: 86

@@ -18983,6 +18983,48 @@
           "comment": ""
         }
       ]
+    },
+    "CWvsContext::SendMobSummonItemUseRequest": {
+      "address": "0x831c83",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        }
+      ]
+    },
+    "sub_841AA5": {
+      "address": "0x841aa5",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v36 == (void *)999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v36 == (void *)999999999"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v36 == (void *)999999999"
+        }
+      ]
     }
   }
 }

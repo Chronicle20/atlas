@@ -2191,12 +2191,15 @@ func candidatesFromFName(fname string) []candidate {
 		// (inventoryType)+Encode2(src)+Encode2(dst)+Encode2(count). The v48 registry
 		// primary fname is sub_70D8DE, so it keys to the same inventory.Move codec.
 		return []candidate{{name: "Move", dir: csvpkg.DirServerbound, pkg: "inventory"}}
-	case "sub_719DD9":
-		// USE_ITEM (serverbound) in gms_v48: CWvsContext::SendStatChangeItemUseRequest
-		// is UNNAMED — sub_719DD9 @0x719dd9, COutPacket(65)+Encode4(updateTime)+Encode2
-		// (slot)+Encode4(itemId). The v48 registry primary fname is sub_719DD9, so it
-		// keys to the same inventory.ItemUse codec.
-		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// task-229 CORRECTION: a "sub_719DD9" case previously lived here, claiming
+	// that address was the UNNAMED CWvsContext::SendStatChangeItemUseRequest
+	// (USE_ITEM). Re-decompile proved that wrong: 0x719dd9 is already named
+	// CWvsContext::SendPortalScrollUseRequest in the v48 IDB — the
+	// USE_RETURN_SCROLL sender (case below), not USE_ITEM. The genuine v48
+	// USE_ITEM sender is CWvsContext::SendStatChangeItemUseRequest @0x70db3c,
+	// which is already named and keys via the case at line ~2198. No
+	// candidatesFromFName case is needed for sub_719DD9 any more since the
+	// registry now uses the real, already-named fnames for both ops.
 	case "CWvsContext::SendGatherItemRequest":
 		return []candidate{{name: "CompartmentMergeRequest", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendSortItemRequest":
@@ -2205,6 +2208,41 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	case "CWvsContext::SendUpgradeItemUseRequest":
 		return []candidate{{name: "ScrollUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	// task-229 — USE_SUMMON_BAG / USE_RETURN_SCROLL. Same 3-field wire body as
+	// USE_ITEM (Encode4 updateTime + Encode2 slot + Encode4 itemId) but distinct
+	// client send sites, so each keys to its own audit-only wrapper struct in
+	// inventory/serverbound. One wrapper per op = one packet id / report /
+	// evidence key per op; see docs/packets/audits/VERIFYING_A_PACKET.md
+	// "Shared-model ops".
+	case "CWvsContext::SendMobSummonItemUseRequest":
+		return []candidate{{name: "SummonBagItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_955499":
+		// USE_SUMMON_BAG on gms_v79 (@0x9555b0): the summon-bag sender is UNNAMED
+		// in the IDB and the registry carries sub_955499 (its own dummy name —
+		// address 0x955499) as the primary fname (the v79 IDB additionally
+		// mislabels the function as SendEngagementRequest — opcode read from the
+		// body).
+		return []candidate{{name: "SummonBagItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_904154":
+		// USE_SUMMON_BAG on gms_v72 (@0x904154): the summon-bag sender is UNNAMED
+		// in the IDB; its dummy name is its own address, sub_904154. task-229
+		// verify-pass CORRECTION: the registry previously carried sub_955499
+		// (copy-pasted from the v79 entry) — IDA's dummy-name convention ties
+		// sub_XXXXXX names to their own address, so that literal mis-resolves to
+		// an unrelated function (_ceil @0x95548e) when harvested against v72.
+		return []candidate{{name: "SummonBagItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "CWvsContext::SendPortalScrollUseRequest":
+		return []candidate{{name: "ReturnScrollItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "CWvsContext::SendReturnScrollUseRequest":
+		// gms_v72 / gms_v79 primary fname. Renamed live in those IDBs on task-124
+		// away from the inherited SendMapTransferItemUseRequest mislabel — that
+		// symbol is the teleport-rock sender, a different op.
+		return []candidate{{name: "ReturnScrollItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
+	case "sub_841AA5":
+		// USE_RETURN_SCROLL on gms_v61 (send site @0x841cb8): unnamed in the IDB;
+		// reads the Return Scroll WZ props (StringPool 2276/2277/2279) and is
+		// distinct from USE_TELEPORT_ROCK (opcode 77 / sub_8327DB).
+		return []candidate{{name: "ReturnScrollItemUse", dir: csvpkg.DirServerbound, pkg: "inventory"}}
 	// Reward-box ("lottery") use (task-131). Struct LotteryItemUse in
 	// inventory/serverbound; body slot(int16) + itemId(int32). Opcode + codec
 	// exist from v72 up; v48/v61 lack the opcode (generic item-use path).

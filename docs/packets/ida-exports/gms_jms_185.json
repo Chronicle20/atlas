@@ -13838,6 +13838,50 @@
         }
       ]
     },
+    "CWvsContext::SendMobSummonItemUseRequest": {
+      "address": "0xaee405",
+      "direction": "serverbound",
+      "notes": "USE_SUMMON_BAG (task-229 jms_v185 verify pass, MapleStory_dump_SCY.exe.i64). COutPacket::COutPacket(&pkt,0x43) @0xaee525 (opcode 67, matches registry USE_SUMMON_BAG), Encode4(get_update_time()) @0xaee537, Encode2(a2) @0xaee542, Encode4(nItemID) @0xaee54d, then CClientSocket::SendPacket @0xaee55c, under CWvsContext::CanSendExclRequest(this,200,0) @0xaee517 — the mob-summon gate, structural twin of gms_v61 SendMobSummonItemUseRequest @0x832003.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::IsAbleToConsume(this, nItemID, 1 && CUtilDlg::YesNo(v11._m_pStr, v12, v13, v14, v15) == 6 && CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "CWvsContext::IsAbleToConsume(this, nItemID, 1 && CUtilDlg::YesNo(v11._m_pStr, v12, v13, v14, v15) == 6 && CWvsContext::CanSendExclRequest(this, 200, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CWvsContext::IsAbleToConsume(this, nItemID, 1 && CUtilDlg::YesNo(v11._m_pStr, v12, v13, v14, v15) == 6 && CWvsContext::CanSendExclRequest(this, 200, 0)"
+        }
+      ]
+    },
+    "CWvsContext::SendPortalScrollUseRequest": {
+      "address": "0xb04d24",
+      "direction": "serverbound",
+      "notes": "USE_RETURN_SCROLL (task-229 jms_v185 verify pass, MapleStory_dump_SCY.exe.i64). COutPacket::COutPacket(&pkt,0x4D) @0xb04f50 (opcode 77, matches registry USE_RETURN_SCROLL), Encode4(get_update_time()) @0xb04f67, Encode2(nPOS) @0xb04f72, Encode4(nItemID) @0xb04f7d, then CClientSocket::SendPacket @0xb04f8c. Reads Return Scroll WZ props via IWzProperty::Getitem (StringPool ids 0x9BC/2493/2495) @0xb04d8b-e77 — no RunMapTransferItem call and no by-name/target-name branch, which separates it from the teleport-rock sender SendMapTransferItemUseRequest (opcode 0x4C=76, calls RunMapTransferItem @0xaef0d9).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "int32 == 999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "int32 == 999999999"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "int32 == 999999999"
+        }
+      ]
+    },
     "CWvsContext::SendMapTransferRequest": {
       "address": "0xb0d9eb",
       "direction": "serverbound",

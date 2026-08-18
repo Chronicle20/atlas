@@ -2,6 +2,7 @@ package location
 
 import (
 	"atlas-maps/data/map/info"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"testing"
@@ -9,6 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -138,5 +141,70 @@ func TestChangeCharacterLocation_NoRow_404(t *testing.T) {
 	}
 	if rw.calls != 0 {
 		t.Fatalf("ChangeMap must not be called when no row; got %d calls", rw.calls)
+	}
+}
+
+// TestTransform_CarriesState proves the discriminator survives the projection
+// atlas-channel's /find path reads.
+func TestTransform_CarriesState(t *testing.T) {
+	m := NewBuilder(1234).
+		SetWorldId(world.Id(0)).
+		SetChannelId(channel.Id(7)).
+		SetMapId(_map.Id(100000000)).
+		SetInstance(uuid.Nil).
+		SetState(characterconst.PresenceStateInCashShop).
+		Build()
+
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("Transform: %v", err)
+	}
+	if rm.State != characterconst.PresenceStateInCashShop {
+		t.Errorf("State = %q, want IN_CASH_SHOP", rm.State)
+	}
+	if rm.ChannelId != channel.Id(7) {
+		t.Errorf("ChannelId = %d, want 7", rm.ChannelId)
+	}
+	if rm.GetName() != "character-locations" {
+		t.Errorf("GetName = %q, want character-locations", rm.GetName())
+	}
+}
+
+// TestRestModel_StateJSONKey pins the wire key itself. atlas-channel decodes
+// "state"; renaming or re-casing it silently degrades /find to "not findable"
+// on every off-channel target, with no error anywhere.
+func TestRestModel_StateJSONKey(t *testing.T) {
+	rm := RestModel{
+		Id:        1234,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(7),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		State:     characterconst.PresenceStateInField,
+	}
+
+	b, err := json.Marshal(rm)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+
+	var decoded map[string]interface{}
+	if err := json.Unmarshal(b, &decoded); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+	got, ok := decoded["state"]
+	if !ok {
+		t.Fatalf("no state key in %s", string(b))
+	}
+	if got != "IN_FIELD" {
+		t.Errorf("state = %v, want IN_FIELD", got)
+	}
+	// The pre-existing attributes must still be there — this is an additive
+	// change, and atlas-character / atlas-login / the session bootstrap all
+	// read them.
+	for _, k := range []string{"worldId", "channelId", "mapId", "instance"} {
+		if _, ok := decoded[k]; !ok {
+			t.Errorf("attribute %q disappeared from %s", k, string(b))
+		}
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -99,8 +100,12 @@ func handleStatusEventLoginFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx cont
 			f := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.EnterAndEmit(transactionId, f, event.CharacterId)
-			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, f); err != nil {
+			lp := location.NewProcessor(l, ctx, db)
+			if _, err := lp.Set(event.CharacterId, f); err != nil {
 				l.WithError(err).Warnf("location.Set on LOGIN failed for character [%d].", event.CharacterId)
+			}
+			if err := lp.SetState(event.CharacterId, characterconst.PresenceStateInField); err != nil {
+				l.WithError(err).Warnf("location.SetState on LOGIN failed for character [%d].", event.CharacterId)
 			}
 		}
 	}
@@ -131,6 +136,9 @@ func handleStatusEventLogoutFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx con
 			if _, err := lp.Set(event.CharacterId, resolved); err != nil {
 				l.WithError(err).Warnf("location.Set on LOGOUT failed for character [%d].", event.CharacterId)
 			}
+			if err := lp.SetState(event.CharacterId, characterconst.PresenceStateOffline); err != nil {
+				l.WithError(err).Warnf("location.SetState on LOGOUT failed for character [%d].", event.CharacterId)
+			}
 
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.ExitAndEmit(transactionId, current, event.CharacterId)
@@ -146,8 +154,12 @@ func handleStatusEventChannelChangedFunc(db *gorm.DB) func(l logrus.FieldLogger,
 			newField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.TransitionChannelAndEmit(transactionId, newField, event.Body.OldChannelId, event.CharacterId)
-			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, newField); err != nil {
+			lp := location.NewProcessor(l, ctx, db)
+			if _, err := lp.Set(event.CharacterId, newField); err != nil {
 				l.WithError(err).Warnf("location.Set on CHANNEL_CHANGED failed for character [%d].", event.CharacterId)
+			}
+			if err := lp.SetState(event.CharacterId, characterconst.PresenceStateInField); err != nil {
+				l.WithError(err).Warnf("location.SetState on CHANNEL_CHANGED failed for character [%d].", event.CharacterId)
 			}
 
 			// --- map-time-limit timer hooks (task-050) ---

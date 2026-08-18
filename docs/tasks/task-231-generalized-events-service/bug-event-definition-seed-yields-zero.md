@@ -172,3 +172,40 @@ Fixed, all five parts:
 5. `atlas-ui` gained a "Party Quest Definitions" Setup row, mirroring the
    event-definitions wiring in `seed.service.ts`, `useSeed.ts`, and
    `SetupPage.tsx`, with matching test coverage.
+
+## Gate history and remaining work
+
+Review: **APPROVED** (`review-bug-event-definition-seed-yields-zero.md`), 0
+blocking. The reviewer mutation-tested part 4 — reverted `handlers.go` to the
+pre-fix version, confirmed `TestRegisterRoutes_AllFilesRejectedLogsError` fails
+against old code (`level = info, want error`) and passes against new, then
+restored the file.
+
+First gate run (`tools/verify.sh --quick --base f4e62a93d`) failed two checks:
+
+1. **routes drift** — a pre-existing branch defect, not caused by this fix.
+   task-231 added the `/api/events` location to `deploy/shared/routes.conf` but
+   never added the matching `NS_ATLAS_EVENTS` pair to `atlas-ingress.yaml`'s
+   `NS_*` env block, so `gen-routes.sh`'s two generated outputs were stale and
+   the guard reported "routed but NOT DEFINED in the ingress (nginx will fail
+   to start)". Fixed in `333b19ce1`: added the env pair and regenerated
+   `routes.conf.template.generated` + `ns-vars.generated.yaml` (5 lines total).
+2. **lint & format guard (89 modules)** — `libs/atlas-packet` reported
+   `Error: parallel golangci-lint is running`. That is a concurrent-invocation
+   collision in the linter, not a finding; every other module reported
+   `0 issues.` Expected to clear on a serial re-run.
+
+A second `--quick --base f4e62a93d` run was launched after `333b19ce1` to
+confirm both clear. **Its verdict is not yet recorded here — read
+`gate-seed-zero-2.log` or re-run the gate before trusting this branch.**
+
+Still outstanding after the gate:
+
+- **Live re-test on `atlas-pr-1375`.** Nothing in this bug's chain has been
+  confirmed against a running environment since the diagnosis. Once the PR
+  image rebuilds, POST the seed (or click Setup → Event Definitions) and
+  confirm `subdomains:{"definition.event":2}` and two rows on the Event
+  Definitions page. The previous run's evidence of failure was
+  `"definition.event":0` at 11:51:38 — that number is the assertion.
+- The flagless `tools/verify.sh` (bake + `-race`) has never run on this branch;
+  `--quick` does not substitute for it before the PR.

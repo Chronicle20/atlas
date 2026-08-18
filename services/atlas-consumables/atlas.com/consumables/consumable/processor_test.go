@@ -5,6 +5,8 @@ import (
 	"atlas-consumables/character"
 	"atlas-consumables/character/buff/stat"
 	"atlas-consumables/equipable"
+	"atlas-consumables/kafka/message/consumable"
+	"errors"
 	"io"
 	"testing"
 
@@ -587,6 +589,26 @@ func TestComputeEffectPlan_ZeroWeightMorphTableSkipsMorphOnly(t *testing.T) {
 	plan := computeEffectPlan(discardLogger(), character.NewModelBuilder().Build(), ci)
 	assert.Empty(t, plan.statups)
 	assert.Equal(t, []int16{50}, plan.hpChanges)
+}
+
+// bug-consumable-data-missing.md item 2: every consume failure that isn't a
+// recognized pet error previously emitted an empty errorType on the wire
+// ({"error":""}), which the channel's consumer has nothing to map to a
+// client message or unstick action. consumeErrorType must classify an
+// unrecognized failure (e.g. an atlas-data 404) to the distinct
+// ErrorTypeConsumeFailed rather than "".
+func TestConsumeErrorType_GenericFailure(t *testing.T) {
+	genericErr := errors.New("not found")
+	assert.Equal(t, consumable.ErrorTypeConsumeFailed, consumeErrorType(genericErr))
+	assert.NotEmpty(t, consumeErrorType(genericErr))
+}
+
+func TestConsumeErrorType_PetCannotConsume(t *testing.T) {
+	assert.Equal(t, consumable.ErrorTypePetCannotConsume, consumeErrorType(ErrPetCannotConsume))
+}
+
+func TestConsumeErrorType_PetCannotLearn(t *testing.T) {
+	assert.Equal(t, consumable.ErrorTypePetCannotLearn, consumeErrorType(ErrPetCannotLearn))
 }
 
 func TestPetSkillPouchClassification(t *testing.T) {

@@ -119,6 +119,7 @@ const (
 	ErrorTypePetCannotLearn   = "PET_CANNOT_LEARN"
 	ErrorTypeInventoryFull    = "INVENTORY_FULL"
 	ErrorTypeVegaInvalid      = "VEGA_INVALID"
+	ErrorTypeConsumeFailed    = "CONSUME_FAILED"
 
 	// Catch failure causes reported by atlas-consumables' pre-reserve gates.
 	// The wire byte is NOT chosen here — atlas-channel maps cause to reason

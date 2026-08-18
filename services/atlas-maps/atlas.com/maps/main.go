@@ -90,7 +90,7 @@ func main() {
 	if err := character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
-	if err := cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+	if err := cashshop.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	if err := monster.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {

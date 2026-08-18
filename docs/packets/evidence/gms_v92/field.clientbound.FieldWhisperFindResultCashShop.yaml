@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldWhisperFindResultCashShop
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#FindResultCashShop
+    address: "0x53e2a0"
+    decompile_sha256: 441e408f22c153e8841beaf6a61cd38799a9b9739b16045d611f72108125aed0
+verifies:
+  - libs/atlas-packet/field/clientbound/whisper_test.go#TestWhisperByteOutputV92

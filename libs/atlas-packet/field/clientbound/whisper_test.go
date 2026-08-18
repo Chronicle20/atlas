@@ -554,3 +554,100 @@ func TestWhisperByteOutputV48(t *testing.T) {
 		t.Errorf("v48 error: got %v", got)
 	}
 }
+
+// packet-audit:verify packet=field/clientbound/FieldWhisperSendResult version=gms_v92 ida=0x53e2a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperReceive version=gms_v92 ida=0x53e2a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultCashShop version=gms_v92 ida=0x53e2a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultMap version=gms_v92 ida=0x53e2a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultChannel version=gms_v92 ida=0x53e2a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperFindResultError version=gms_v92 ida=0x53e2a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperError version=gms_v92 ida=0x53e2a0
+// packet-audit:verify packet=field/clientbound/FieldWhisperWeather version=gms_v92 ida=0x53e2a0
+//
+// TestWhisperByteOutputV92 pins every gms_v92 WHISPER (op 0x96 = 150)
+// clientbound sub-mode. IDA: CField::OnWhisper @0x53e2a0
+// (GMS_v92_1_DEVM.exe) switches on Decode1(mode):
+//
+//	case 10/138 SendResult : DecodeStr(target) + Decode1(success)
+//	case 18     Receive    : DecodeStr(from) + Decode1(ch) + Decode1(gm) + DecodeStr(msg)
+//	case 34     Error      : DecodeStr(target) + Decode1(whispersEnabled)
+//	case 146    Weather    : DecodeStr(from) + Decode1(flag) + DecodeStr(msg)
+//	case 9/72   FindResult : DecodeStr(target) + Decode1(findMode) + Decode4(value)
+//
+// The find arm splits on mode parity, NOT on the mode value: the even arm
+// (0x48) is guarded by `if ((v4 & 1) == 0)` and exits via LABEL_121 with no
+// further decode, while the odd arm (0x09) reaches `case 1:` and reads
+// v36=Decode4(x), v67=Decode4(y). x/y are therefore read only for mode 0x09 at
+// findMode 1 — the same rule as v83/v84/v87/v95, and byte-identical to the v83
+// golden (version-invariant layout).
+func TestWhisperByteOutputV92(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 92, 1)
+
+	send := NewWhisperSendResult(0x0A, "TargetPlayer", true)
+	if got := pt.Encode(t, ctx, send.Encode, nil); !bytes.Equal(got, append(append([]byte{0x0A}, wstrV79("TargetPlayer")...), 0x01)) {
+		t.Errorf("v92 sendResult: got %v", got)
+	}
+
+	recv := NewWhisperReceive(0x12, "SenderPlayer", 3, false, "secret whisper")
+	var rw []byte
+	rw = append(rw, 0x12)
+	rw = append(rw, wstrV79("SenderPlayer")...)
+	rw = append(rw, 0x03, 0x00)
+	rw = append(rw, wstrV79("secret whisper")...)
+	if got := pt.Encode(t, ctx, recv.Encode, nil); !bytes.Equal(got, rw) {
+		t.Errorf("v92 receive: got %v want %v", got, rw)
+	}
+
+	cash := NewWhisperFindResultCashShop(0x09, "ShopPlayer")
+	if got := pt.Encode(t, ctx, cash.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("ShopPlayer")...), 0x02, 0xFF, 0xFF, 0xFF, 0xFF)) {
+		t.Errorf("v92 cashShop: got %v", got)
+	}
+
+	mp := NewWhisperFindResultMap(0x09, "MapPlayer", 100000000)
+	if got := pt.Encode(t, ctx, mp.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("MapPlayer")...), 0x01, 0x00, 0xE1, 0xF5, 0x05)) {
+		t.Errorf("v92 map: got %v", got)
+	}
+
+	// The odd arm carries x/y; @0x53e2a0 case 1 reads v36=Decode4, v67=Decode4.
+	mpxy := NewWhisperFindResultMapWithXY(0x09, "MapPlayer", 100000000, 250, -75)
+	var mxy []byte
+	mxy = append(mxy, 0x09)
+	mxy = append(mxy, wstrV79("MapPlayer")...)
+	mxy = append(mxy, 0x01, 0x00, 0xE1, 0xF5, 0x05)
+	mxy = append(mxy, 0xFA, 0x00, 0x00, 0x00)
+	mxy = append(mxy, 0xB5, 0xFF, 0xFF, 0xFF)
+	if got := pt.Encode(t, ctx, mpxy.Encode, nil); !bytes.Equal(got, mxy) {
+		t.Errorf("v92 mapWithXY: got %v want %v", got, mxy)
+	}
+
+	// The even arm does NOT: `if ((v4 & 1) == 0)` exits via LABEL_121.
+	mp48 := NewWhisperFindResultMap(0x48, "MapPlayer", 100000000)
+	if got := pt.Encode(t, ctx, mp48.Encode, nil); !bytes.Equal(got, append(append([]byte{0x48}, wstrV79("MapPlayer")...), 0x01, 0x00, 0xE1, 0xF5, 0x05)) {
+		t.Errorf("v92 map 0x48: got %v", got)
+	}
+
+	ch := NewWhisperFindResultChannel(0x09, "ChannelPlayer", 5)
+	if got := pt.Encode(t, ctx, ch.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("ChannelPlayer")...), 0x03, 0x05, 0x00, 0x00, 0x00)) {
+		t.Errorf("v92 channel: got %v", got)
+	}
+
+	fe := NewWhisperFindResultError(0x09, "MissingPlayer")
+	if got := pt.Encode(t, ctx, fe.Encode, nil); !bytes.Equal(got, append(append([]byte{0x09}, wstrV79("MissingPlayer")...), 0x00, 0x00, 0x00, 0x00, 0x00)) {
+		t.Errorf("v92 findError: got %v", got)
+	}
+
+	er := WhisperError{mode: 0x22, targetName: "BlockedPlayer", whispersEnabled: false}
+	if got := pt.Encode(t, ctx, er.Encode, nil); !bytes.Equal(got, append(append([]byte{0x22}, wstrV79("BlockedPlayer")...), 0x00)) {
+		t.Errorf("v92 error: got %v", got)
+	}
+
+	wx := NewWhisperWeather(0x92, "GMPlayer", "Weather alert!")
+	var ww []byte
+	ww = append(ww, 0x92)
+	ww = append(ww, wstrV79("GMPlayer")...)
+	ww = append(ww, 0x01)
+	ww = append(ww, wstrV79("Weather alert!")...)
+	if got := pt.Encode(t, ctx, wx.Encode, nil); !bytes.Equal(got, ww) {
+		t.Errorf("v92 weather: got %v want %v", got, ww)
+	}
+}

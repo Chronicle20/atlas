@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldWhisperFindResultChannel
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#FindResultChannel
+    address: "0x53e2a0"
+    decompile_sha256: 48b9f7ec07a0f53cef0c97f5106112788320cc31e592c059a8248b4cd6f3952c
+verifies:
+  - libs/atlas-packet/field/clientbound/whisper_test.go#TestWhisperByteOutputV92

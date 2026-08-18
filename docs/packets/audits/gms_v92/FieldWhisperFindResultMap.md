@@ -1,20 +1,19 @@
 # FieldWhisperFindResultMap (← `CField::OnWhisper#FindResultMap`)
 
-- **IDA:** 
+- **IDA:** 0x53e2a0
 - **Atlas file:** `libs/atlas-packet/field/clientbound/whisper.go`
 - **Variant:** GMS/v92
 - **Branch depth:** 1
-- **Verdict:** 🔍
-- **Flat-diff-invalid:** the wire shape depends on a runtime discriminator a flat positional diff cannot model — the Atlas writer branches on a non-version condition (a data-dependent field or an untraced version-derived local), and/or the client reads fields conditionally (e.g. `mode <= 1`). The verdict is capped to 🔍; the row-level mismatches below are a modeling limitation, not a verified wire bug — confirm per-branch via byte-level tests.
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `dispatcher-family arm not harvested for gms_v92 (see notes)` | 🚫 | IDA read-order unresolved: dispatcher-family arm not harvested for gms_v92 (see notes) |
-| 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
-| 3 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 4 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
-| 5 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `mode` | ✅ |  |
+| 1 | string | string `target` | ✅ |  |
+| 2 | byte | byte `findMode (=1)` | ✅ |  |
+| 3 | int32 | int32 `mapId` | ✅ |  |
+| 4 | int32 | int32 `x (mode 0x09 only)` | ✅ |  |
+| 5 | int32 | int32 `y (mode 0x09 only)` | ✅ |  |
 

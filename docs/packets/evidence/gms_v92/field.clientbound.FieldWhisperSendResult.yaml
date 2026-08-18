@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldWhisperSendResult
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#SendResult
+    address: "0x53e2a0"
+    decompile_sha256: 7f8c335b95d9524bb3a09caaa6aecf8df121110a9399e67e9734e0a0a3915cfd
+verifies:
+  - libs/atlas-packet/field/clientbound/whisper_test.go#TestWhisperByteOutputV92

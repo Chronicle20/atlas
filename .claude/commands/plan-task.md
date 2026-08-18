@@ -62,7 +62,7 @@ Run the `writing-plans` skill's self-review (placeholder scan, type consistency,
 
 Phase 4 extracts each task section verbatim into the implementer's brief
 (`tools/task-brief.sh` is an awk slice of the `## Task N` heading and its
-body). Whatever you write into a task section IS the brief. Two rules follow
+body). Whatever you write into a task section IS the brief. Three rules follow
 from that.
 
 **Every task carries a `### Files` block.** You are reading the code to write
@@ -84,6 +84,47 @@ Paths must be repo-relative and must exist (or be explicitly marked `new
 file`). Mark read-only references as such so the implementer does not edit
 them. Include the module root the task's `go build`/`go test` runs from when
 it is not obvious from the paths.
+
+**Test blocks carry the spec, not the scaffolding.** You have no compiler. Every
+line of test setup you write is a line you guessed at and then have to verify by
+grep, at the most expensive context in the workflow — and the implementer, who
+does have a compiler and an adjacent `_test.go` to copy, would have written it
+correctly for free.
+
+So in a ```` ```go ```` test block, spell out **in full** everything that only
+you know:
+
+- the test function names, and the subtest name per case
+- the case table — every case, with its exact inputs
+- the exact expected values: byte fixtures, opcodes, version gates, error
+  strings, field-by-field assertions
+
+and name rather than spell out everything the repo already decides:
+
+- imports, `t.Run` wrappers, `defer`/cleanup
+- fixture and builder construction — `Patterns to copy:
+  `services/atlas-y/.../baz_test.go:40-72` (same setup)`
+- test-DB / tenant-context helpers
+
+```markdown
+- [ ] **Step 1: Write the failing test**
+
+`TestFindDecision` — table-driven, setup copied from
+`services/atlas-channel/.../cash_shop_check_name_change_test.go:1-90`.
+
+| case | session state | gm | expect mode | expect payload |
+|---|---|---|---|---|
+| same field | `CashSceneNone`, field 100 | 0 | `0x09` | mapId 100 |
+| in cash shop | `CashSceneCashShop` | 0 | `0x09` | `-1` |
+```
+
+This is a deliberate divergence from `superpowers:writing-plans`, which lists
+*"Write tests for the above" (without actual test code)* as a plan failure. The
+divergence is narrow and it is only about scaffolding: **a case table or an
+expected value that is vague is exactly the task-231 failure the linter exists to
+prevent, and costs far more than it saves.** If you cannot write the expected
+value down, you have not finished designing the task — do not paper over it with
+a pointer.
 
 **Size tasks to the implementer budget.** Implementers stop at 120 tool calls
 and hand back `PARTIAL`; the controller then splits the task anyway, at a

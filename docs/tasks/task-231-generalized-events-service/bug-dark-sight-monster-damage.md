@@ -25,7 +25,11 @@ skill.
 **Expected:** monsters do not target or touch-damage a character in Dark Sight;
 this is the skill's defining behavior.
 
-**Root cause: ESTABLISHED.** The wire side was already settled — the local
+**Root cause: RETRACTED (2026-08-18) — see `## Update 2026-08-18` at the
+end of this file. Everything in this section and in `## Fix` below is the
+FIRST pass's reasoning and is superseded.**
+
+~~Root cause: ESTABLISHED.~~ The wire side was already settled — the local
 `TemporaryStatSet` this server sends on a Rogue Dark Sight cast does carry
 `DARK_SIGHT` with a non-zero value, so the packet-encoding-defect fix shape
 is ruled out. The client side is now settled too, by decompiling the v83
@@ -255,3 +259,160 @@ Two smaller items remain open, neither blocking:
   and made no IDB changes, so a future pass may want to name `sub_666362`
   (e.g. `CMob::ProcessAttackInfoList` or similar, once its exact role is
   fully typed) to make it discoverable by name next time.
+
+---
+
+# Update 2026-08-18 — first pass retracted, new evidence
+
+## What live testing showed
+
+Reported by the tester on `atlas-pr-1375` (tenant
+`15d000e1-260e-414b-bdf0-4c2b68b8995c`, GMS 83.1), after the first pass:
+
+- Monsters spawned by the map's own life data: **do not** touch-damage a
+  dark-sighted character.
+- Monsters spawned by the GM `!spawn` command: **do not** either.
+- A monster the character already has aggro on: **does** hit through Dark
+  Sight (believed correct).
+- Crimson Balrog (8150000) spawned by the CRIMSON_BALROG event: **does** hit
+  through Dark Sight. The same template GM-spawned did not.
+- When the client behaves correctly, **no damage report reaches the server at
+  all** — so the suppression that works in the other cases is client-side.
+
+That refutes the first pass's conclusion ("the v83 client never gates
+touch damage; the fix must be server-side suppression"). The client does
+suppress it; the first pass looked in the wrong function. Do NOT implement
+the server-side `DARK_SIGHT` short-circuit described in `## Fix` above on the
+strength of that reasoning.
+
+## Where the client gate actually is
+
+Full decompile evidence in
+[`client-analysis-dark-sight-touch-damage.md`](client-analysis-dark-sight-touch-damage.md).
+Summary: the only mob-related call to `CUser::IsDarkSight` (`0x4f0d45`) in the
+whole binary is inside `CMob::IsTargetInAttackRange` (`0x66a517`). While the
+player is dark-sighted, no attack index validates there, so
+`CMob::GenerateMovePath` never calls `CMob::DoAttack` (`0x66d9c0`) — the ONLY
+producer of the `CMob::m_lpLayerASAni` (offset `0xE4`) hit-record queue that
+`sub_666362` drains to dispatch `CUserLocal::SetDamaged`. The suppression is
+"the mob never arms an attack against an invisible player," not a check at
+the moment of contact. The wire's `nAttackIdx == -1` is `SetDamaged`
+reporting a type-0 (plain contact) attack, not a missing attack index.
+
+## The server-side delta between the working and broken spawn paths
+
+All three spawn paths converge on the same code
+(`atlas-monsters` `handleSpawnFieldCommand` → `monster.Processor.Create`,
+`monster/processor.go:216-225`), so only the command's field values differ:
+
+| path | foothold sent | observed |
+|---|---|---|
+| map life data (`atlas-maps`, `data/map/monster/rest.go:14` `fh`) | real `fh` from Map.wz | Dark Sight works |
+| GM `!spawn` (`atlas-messages`, `command/monster/commands.go:248-256`) | resolved via `POST data/maps/{id}/footholds/below` | Dark Sight works |
+| CRIMSON_BALROG event (`atlas-events`) | **always 0** | Dark Sight fails |
+
+The event path is the only one that never resolves a foothold:
+`crimsonbalrog.Position` carries only `x`/`y`
+(`services/atlas-events/atlas.com/events/events/crimsonbalrog/config.go:24-28`)
+and `spawnFieldCommandProvider` leaves `Fh` (and `Team`) at their zero value
+(`.../crimsonbalrog/producer.go:63-80`), even though
+`monster.SpawnFieldCommandBody` has the field
+(`.../kafka/message/monster/kafka.go:48-56`).
+
+It compounds downstream: `atlas-channel`'s `SnapMobPosition` returns early
+when `fh == 0` (`services/atlas-channel/atlas.com/channel/data/map/processor.go:96-98`),
+so the spawn Y is never validated against the deck surface either.
+
+Live `atlas-data` on `atlas-pr-1375`, queried against the seeded spawn points
+(`deploy/seed/shared/all/events/definitions/event-crimson-balrog.json`):
+
+- map 200090010, x=339 → foothold **10**, `(335,156)→(665,113)`; interpolated
+  surface at x=339 is y≈155. The seed spawns at y=**148** — ~7px above the
+  deck, with no foothold.
+- map 200090000, x=-538 → foothold **10**, `(-769,113)→(-439,156)`;
+  interpolated surface at x=-538 is y≈143. The seed spawns at y=143 — on the
+  deck, but still with `fh = 0`.
+
+`CMobPool::OnMobEnterField` → `CMob::Init` (`0x662981`-`0x66299a`) feeds an
+unresolved spawn foothold through as `a3 = 0` into `CVecCtrlMob::Init`, so
+`fh = 0` genuinely produces a differently-initialized mob physics state
+client-side.
+
+## Ruled out this pass
+
+- **`spawnSourceType` is not a behavioral delta.** It is pure provenance in
+  `atlas-monsters`: the only read outside logging/echo is the
+  `DESTROY_BY_SOURCE` match (`monster/processor.go:1363`). GM omits it
+  (normalized to `CYCLIC`, `kafka/consumer/monster/consumer.go:357-361`), the
+  event sends `EVENT`; nothing branches on it.
+- **`team` is not the delta.** GM and event both send `0`; only the map-life
+  path sends `-1`. GM works, so `0` is not what breaks it.
+- **Not the monster template by itself.** The same template (8150000)
+  GM-spawned did not hit through Dark Sight.
+- **Not a packet-encoding defect in the Dark Sight temp stat** — see the
+  first pass's "Wire side: RULED OUT", which still stands.
+
+## Root cause: NOT ESTABLISHED
+
+`fh = 0` is the only behavioral difference found between a spawn path that
+works and one that does not, and it is independently a defect. But the
+decompile does not yet explain HOW it produces the symptom, and the obvious
+mechanism is refuted: the whole attack-arming block in `CMob::Update`
+(`TryDoingSkill(...) || (*(m_pvcActive-12+0x250) && IsTargetInAttackRange(...))`)
+is itself gated on `*(m_pvcActive-12 + 0x18)` — the same flag
+`CMob::TryFirstAttack` requires (`0x66e356`). An ungrounded mob does not skip
+the Dark Sight check and still reach `DoAttack`; it reaches neither. If that
+flag is "landed," `fh = 0` predicts FEWER touch hits, not more.
+
+Do not write the fix as "this is the root cause" until one of the open
+questions below closes it.
+
+## Open questions, in priority order
+
+1. **Was the GM-spawn control test run in the same boat map (200090010 /
+   200090000) during a crossing, or in a different map?** If it was a
+   different map, the control is much weaker and the boat map / ContiMove
+   context is unexcluded.
+2. **How does the event-spawned Balrog behave visually** — standing on the
+   deck, sunk into it, floating, sliding, not moving? That distinguishes
+   "ungrounded and never lands" from "lands immediately, `fh` irrelevant."
+3. Is `AttackInfo[7]` (the per-attack "ignore stealth" override in the
+   `IsTargetInAttackRange` gate) set on 8150000's contact attack? If it is,
+   this template ignores Dark Sight unconditionally and the spawn path is a
+   red herring — the GM-spawn control would then need re-running to confirm
+   the negative was real.
+4. Does the `-12`-adjusted `+0x18` flag ever get set for a mob initialized
+   with `fh = 0`, and how fast? Setter not yet located; candidates
+   `CVecCtrl::CalcFloat` (`0x9b2c3c`), `CVecCtrl::WorkUpdateActive`
+   (`0x9b19d0`), `CVecCtrlMob::WorkUpdateActive` (`0x9bca2a`),
+   `CVecCtrlMob::CtrlUpdateActiveMove` (`0x9bccaf`).
+5. Is there a route to a queued `m_lpLayerASAni` node that bypasses the local
+   client's `IsTargetInAttackRange` call — e.g. a server-driven
+   `m_nOneTimeAction` change? Not ruled out.
+
+## Fix (superseding the `## Fix` section above)
+
+Independent of whether it proves to be this bug's root cause, the event path
+sending `fh = 0` is a defect and should be fixed:
+
+- `services/atlas-events/atlas.com/events/events/crimsonbalrog/producer.go`
+  `spawnFieldCommandProvider` — populate `Fh`.
+- Resolve it the way the other producers do, via
+  `POST data/maps/{mapId}/footholds/below` on the `DATA` service. Mirror
+  `services/atlas-messages/atlas.com/messages/data/foothold/`
+  (`processor.go` / `requests.go` / `rest.go` + `mock/`); `atlas-events`'s
+  existing `external/maps` package is the local convention for a REST client.
+- Alternative, preferred if the invariant should hold for every producer:
+  resolve it in `atlas-monsters` instead — `handleSpawnFieldCommand`
+  (`kafka/consumer/monster/consumer.go:364-383`) or
+  `monster.Processor.Create` (`monster/processor.go:216-225`), when the
+  command's `fh` is 0. `atlas-monsters` already has `DATA` REST clients under
+  `monster/information`, `monster/mobskill` to mirror. One enforcement point
+  covers present and future producers; the lookup only runs when `fh == 0`,
+  so the cyclic path pays nothing.
+- Whichever side it lands on, a test must assert a non-zero `fh` reaches the
+  spawn command / `Create` for an event-sourced spawn, failing before the fix.
+
+Do NOT implement the first pass's server-side `DARK_SIGHT` short-circuit in
+`character_damage.go` — it would mask a client-side gate that demonstrably
+works for every other spawn path.

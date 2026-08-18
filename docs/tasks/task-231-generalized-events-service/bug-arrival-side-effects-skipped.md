@@ -157,4 +157,47 @@ Module-local verification: `go build ./... && go test ./...` from
 
 ## Resolution
 
-_Pending._
+**Commit:** `77b87db91` — fix(atlas-transports): run arrival side effects
+regardless of landing state.
+
+`Transition` gained `ArrivedTripId`/`ArrivedDepartedAt`, populated on all six
+`Evaluate` return paths (both `OutOfService` returns included, with the
+selection loop left above the early return). `toAwaitingReturn` was removed and
+both `AwaitingReturn` sites restored to plain `to(...)`, so `TripId`/`DepartedAt`
+again uniformly mean `nextTrip` — the semantics `rest.go:152` and the departure
+emission assume. `processor.go`'s arrival gate is now
+`route.State() == InTransit || r.State() == AwaitingReturn`, and
+`emitVoyageEvent` takes explicit `tripId, departedAt` rather than a shared
+`Transition`, so arrival and departure each name their own identity. Arrival
+emission is skipped with a logged error when `ArrivedTripId == uuid.Nil`; the
+warp still runs.
+
+One pre-existing fixture changed: `inTransitRouteAboutToArrive` went from a
+single-trip to a two-trip schedule. The old fixture never populated
+`justArrivedTrip` — with one trip it matched `nextTrip` coincidentally and
+passed only through the fallback this commit removes.
+
+**Gates.** `tools/verify.sh --quick --base d728af737` → **PASS**, exit 0, all 67
+checks (build/vet across 89 modules, analyzer guards, seam guards, drift checks,
+lint & format). Note `--quick` skips the docker bake and `-race`; the flagless
+run still owes a pass before PR.
+
+**Review.** `atlas-reviewer` over `77b87db91` → **APPROVED**, 0 blocking /
+0 non-blocking (`review-bug-arrival-side-effects-skipped.md`). It independently
+confirmed the fixture claim above rather than accepting the implementer's
+account, and proved test honesty by building a throwaway worktree at
+`aeb23694b` with only the new `model.go` copied in — showing the three new
+processor-level tests fail without the `processor.go` gate change while the
+model-level test passes with only the model change, isolating which half of the
+fix each test pins.
+
+Two items the review marked **not evaluable**, both outside this diff:
+its restart-recovery disjunct leans on `atlas-events`' guarded `UPDATE` being
+idempotent (asserted from reading `events/crimsonbalrog/arrival.go`, not
+independently re-verified), and the `## Not yet answered` question below.
+
+**Live re-test: NOT YET DONE.** The branch is unpushed, so `atlas-pr-1375` runs
+the pre-fix image. Neither this fix nor `aeb23694b` is confirmed until a
+CRIMSON_BALROG occurrence is observed leaving `ACTIVE` on voyage arrival in the
+namespace. The original bug passed unit tests, so static evidence is not
+sufficient here.

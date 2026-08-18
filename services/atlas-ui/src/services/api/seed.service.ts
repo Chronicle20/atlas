@@ -91,6 +91,11 @@ export interface InstanceRoutesSeedStatus {
   updatedAt: string | null;
 }
 
+export interface EventDefinitionsSeedStatus {
+  definitionCount: number;
+  updatedAt: string | null;
+}
+
 export type IngestPhase =
   "none" | "running" | "succeeded" | "failed" | "stuck" | "unknown";
 
@@ -270,6 +275,10 @@ class SeedService {
 
   async seedInstanceRoutes(): Promise<void> {
     await api.post("/api/tenants/configurations/instance-routes/seed", {});
+  }
+
+  async seedEventDefinitions(): Promise<void> {
+    await api.post("/api/events/definitions/seed", {});
   }
 
   async uploadWzFiles(tenant: Tenant, file: File): Promise<void> {
@@ -483,6 +492,19 @@ class SeedService {
     );
     return {
       routeCount: subdomainCount(s, "instance-routes"),
+      updatedAt: s.tenantSeededAt ?? s.updatedAt,
+    };
+  }
+
+  async getEventDefinitionsSeedStatus(
+    tenant: Tenant,
+  ): Promise<EventDefinitionsSeedStatus> {
+    const s = await fetchSeedStatus(
+      "/api/events/definitions/seed/status",
+      tenant,
+    );
+    return {
+      definitionCount: subdomainCount(s, "definition.event"),
       updatedAt: s.tenantSeededAt ?? s.updatedAt,
     };
   }

@@ -24,6 +24,7 @@ import {
   Ship,
   Anchor,
   Plane,
+  CalendarClock,
 } from "lucide-react";
 import { Toaster, toast } from "sonner";
 import {
@@ -39,6 +40,7 @@ import {
   useSeedTransportRoutes,
   useSeedTransportVessels,
   useSeedInstanceRoutes,
+  useSeedEventDefinitions,
   useUploadWzFiles,
   useRunDataProcessing,
   useWzInputStatus,
@@ -56,6 +58,7 @@ import {
   useTransportRoutesSeedStatus,
   useTransportVesselsSeedStatus,
   useInstanceRoutesSeedStatus,
+  useEventDefinitionsSeedStatus,
 } from "@/lib/hooks/api/useSeed";
 import { SetupRow } from "@/components/features/setup/SetupRow";
 import { IngestProgressPanel } from "@/components/features/setup/IngestProgressPanel";
@@ -83,6 +86,7 @@ export function SetupPage() {
   const seedTransportRoutes = useSeedTransportRoutes();
   const seedTransportVessels = useSeedTransportVessels();
   const seedInstanceRoutes = useSeedInstanceRoutes();
+  const seedEventDefinitions = useSeedEventDefinitions();
 
   const uploadWz = useUploadWzFiles();
   const runProcessing = useRunDataProcessing();
@@ -103,6 +107,7 @@ export function SetupPage() {
   const transportRoutesSeed = useTransportRoutesSeedStatus();
   const transportVesselsSeed = useTransportVesselsSeedStatus();
   const instanceRoutesSeed = useInstanceRoutesSeedStatus();
+  const eventDefinitionsSeed = useEventDefinitionsSeedStatus();
 
   const restoreMutation = useRestoreBaseline(activeTenant);
 
@@ -333,6 +338,17 @@ export function SetupPage() {
         return !d
           ? "—"
           : `${formatCount(d.routeCount)} ${pluralize(d.routeCount, "route", "routes")}`;
+      },
+    },
+    {
+      label: "Event Definitions",
+      icon: <CalendarClock className="h-5 w-5" />,
+      mutation: seedEventDefinitions,
+      formatBadge: () => {
+        const d = eventDefinitionsSeed.data;
+        return !d
+          ? "—"
+          : `${formatCount(d.definitionCount)} ${pluralize(d.definitionCount, "definition", "definitions")}`;
       },
     },
   ];

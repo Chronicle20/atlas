@@ -80,6 +80,7 @@ vi.mock("@/lib/hooks/api/useSeed", () => ({
   useSeedTransportRoutes: () => idleMutation,
   useSeedTransportVessels: () => idleMutation,
   useSeedInstanceRoutes: () => idleMutation,
+  useSeedEventDefinitions: () => idleMutation,
   useUploadWzFiles: () => idleMutation,
   useRunDataProcessing: () => idleMutation,
   useWzInputStatus: () => ({
@@ -99,6 +100,7 @@ vi.mock("@/lib/hooks/api/useSeed", () => ({
   useTransportRoutesSeedStatus: () => emptyStatus,
   useTransportVesselsSeedStatus: () => emptyStatus,
   useInstanceRoutesSeedStatus: () => emptyStatus,
+  useEventDefinitionsSeedStatus: () => emptyStatus,
   showWzUploadErrorToast: vi.fn(),
 }));
 
@@ -187,7 +189,7 @@ describe("SetupPage (tenant-only)", () => {
     ingestRunResult = { data: undefined, isError: false };
   });
 
-  it("renders all eleven seed rows", () => {
+  it("renders all twelve seed rows", () => {
     render(<SetupPage />);
     for (const label of [
       "Monster & Reactor Drops",
@@ -201,8 +203,23 @@ describe("SetupPage (tenant-only)", () => {
       "Transport Routes",
       "Transport Vessels",
       "Instance Transport Routes",
+      "Event Definitions",
     ]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
+  });
+
+  it("posts the event definitions seed when its Seed button is clicked", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    render(<SetupPage />);
+    const label = screen.getByText("Event Definitions");
+    const rowContainer = label.closest(
+      ".flex.items-center.justify-between",
+    ) as HTMLElement;
+    expect(rowContainer).toBeTruthy();
+    const button = rowContainer.querySelector("button");
+    expect(button).toBeTruthy();
+    await userEvent.click(button!);
+    expect(idleMutation.mutate).toHaveBeenCalled();
   });
 });

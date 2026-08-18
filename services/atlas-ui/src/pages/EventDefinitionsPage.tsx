@@ -130,8 +130,7 @@ export function EventDefinitionsPage() {
         error={definitionsQuery.error?.message ?? null}
         emptyState={{
           title: "No event definitions found",
-          description:
-            "Event definitions are seeded by atlas-events at startup.",
+          description: "Event definitions are seeded from the Setup page.",
         }}
       />
     </div>

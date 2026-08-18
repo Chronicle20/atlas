@@ -17,11 +17,13 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func newTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
+	l, _ := test.NewNullLogger()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("gorm.Open: %v", err)
@@ -29,6 +31,7 @@ func newTestDB(t *testing.T) *gorm.DB {
 	if err := location.Migration(db); err != nil {
 		t.Fatalf("location.Migration: %v", err)
 	}
+	database.RegisterTenantCallbacks(l, db)
 	return db
 }
 

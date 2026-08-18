@@ -25,6 +25,7 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 SRC="$REPO_ROOT/deploy/shared/routes.conf"
 OUT="$REPO_ROOT/deploy/k8s/base/routes.conf.template.generated"
 NSVARS="$REPO_ROOT/deploy/k8s/base/ns-vars.generated.yaml"
+INGRESS="$REPO_ROOT/deploy/k8s/base/atlas-ingress.yaml"
 
 CHECK=0
 [ "${1:-}" = "--check" ] && CHECK=1
@@ -83,6 +84,33 @@ gen_nsvars() {
   done
 }
 
+# The NS_* env block in atlas-ingress.yaml is the only place these variables
+# are actually DEFINED for nginx. It is maintained by hand (overlays patch
+# individual entries by name, and each value must stay in k8s $(POD_NAMESPACE)
+# form), so nothing regenerates it — but a routed service missing from it is a
+# hard outage, not a cosmetic drift: NGINX_ENVSUBST_FILTER only substitutes
+# variables that are DEFINED, so an undefined ${NS_ATLAS_FOO} survives envsubst
+# literally and nginx rejects the config at startup with
+# `unknown "ns_atlas_foo" variable`, taking the whole ingress down. Verified
+# against atlas-families, which reached main routed-but-undefined.
+check_ingress() {
+  local nsvars="$1" want have
+  want="$(grep -oE 'NS_ATLAS_[A-Z_]+' "$nsvars" | sort -u)"
+  have="$(grep -oE 'NS_ATLAS_[A-Z_]+' "$INGRESS" | sort -u)"
+  if [ "$want" = "$have" ]; then
+    return 0
+  fi
+  echo "gen-routes: deploy/k8s/base/atlas-ingress.yaml NS_* env block is out of sync." >&2
+  comm -23 <(printf '%s\n' "$want") <(printf '%s\n' "$have") | while IFS= read -r v; do
+    [ -n "$v" ] && echo "  routed but NOT DEFINED in the ingress (nginx will fail to start): $v" >&2
+  done
+  comm -13 <(printf '%s\n' "$want") <(printf '%s\n' "$have") | while IFS= read -r v; do
+    [ -n "$v" ] && echo "  defined in the ingress but no longer routed (remove it): $v" >&2
+  done
+  echo "  Add/remove the matching '- name: <VAR>' / 'value: \$(POD_NAMESPACE)' pair(s)." >&2
+  return 1
+}
+
 if [ "$CHECK" = 1 ]; then
   tmp_routes="$(mktemp)"
   tmp_nsvars="$(mktemp)"
@@ -92,6 +120,7 @@ if [ "$CHECK" = 1 ]; then
   status=0
   diff -u "$OUT" "$tmp_routes" || status=1
   diff -u "$NSVARS" "$tmp_nsvars" || status=1
+  check_ingress "$tmp_nsvars" || status=1
   if [ "$status" -ne 0 ]; then
     echo "gen-routes: output is stale; run tools/gen-routes.sh and commit" >&2
     exit 1
@@ -102,4 +131,7 @@ else
   gen_nsvars "$NSVARS"
   echo "wrote $OUT ($(wc -l <"$OUT") lines)"
   echo "wrote $NSVARS ($(wc -l <"$NSVARS") lines)"
+  # Regenerating can newly route a service whose NS_* variable the ingress
+  # never defined; fail here rather than let it reach a cluster.
+  check_ingress "$NSVARS"
 fi

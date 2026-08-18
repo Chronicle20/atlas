@@ -36,6 +36,7 @@ tmpl_dir = sys.argv[1]
 
 MOVE_HANDLERS = {
     "CharacterMoveHandle",
+    "DragonMoveHandle",
     "MonsterMovementHandle",
     "NPCActionHandle",
     "PetMovementHandle",

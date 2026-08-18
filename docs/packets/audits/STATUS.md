@@ -4,18 +4,18 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `55d8b5df78f0815067ceffb29180e242f5a7d52174b6ce2cf05edbb0c981ae0c`
+Tool: `319a7ad9b3347b81a4a0eed68718ebad0639d1ae89d0a93857f0c26f6ac9ca21`
 
 - export gms_v48: `f46a1c091a8f557a7a0a47c295bed12c56e0f70e23552726d1ca6586eadbf0dd`
 - export gms_v61: `6c974c037a17229958f04d245f414de004f5530852466818e48167a4172e7c70`
 - export gms_v72: `f22e6d780c0ca97b845d09876f2a4724b612189f9d9d353451be062bcb741c56`
 - export gms_v79: `efa7d503bee32a270bf80e0d437259e1b4e13e7d7bab2058427def64e781a2a3`
-- export gms_v83: `40f65d5c0e86a9514ff93e8cc900ac21327a29c46e8cc39dbb9e3766a4aad0ac`
-- export gms_v84: `74fd81d52853bef1cd05f6629ae64f0ef671f66755cacce5a3ab3650bff36f9c`
-- export gms_v87: `b2faf1a0375570100616e4cffd60c2de485ad06b9dce3ae678a6d07b92d06d44`
-- export gms_v92: `aa2c75513a62bad99ce4e4956e73a361e5b89bb702ad500ad721052888cabcd0`
-- export gms_v95: `25127a3294e10b55ab67fc1735b46b534fe064e66465a6256172725c5590724a`
-- export jms_v185: `d13fc90714f8bc2da7e0e16c77cc4906bb80275e19124be07cc5375e689a404d`
+- export gms_v83: `9b938038def5da2b3e98681db301b5299a0c35274b2d71b92be3b364505d57d8`
+- export gms_v84: `16832eea1aedc71e48c73e047e4fca66fef8d2bfdc1901f2b5f00ac1286c40ce`
+- export gms_v87: `dcb1d52ed4c88dcef1d351e698a21c647b3bdd82a3c79b7bfc9c39682e15ab02`
+- export gms_v92: `05ed16a35700adcad2328e6cbd02418713bef4a90af79dc3fc569f6d0922a596`
+- export gms_v95: `fa56a542eabc75d20d5ba920b272ad990f1abe0fe99f346bb4ad96d950f7ca09`
+- export jms_v185: `576eda436b95b42e99f3bb0a6343964695a5c0732b95beed1593bab25f78df3c`
 
 ## Clientbound
 
@@ -306,10 +306,10 @@ Tool: `55d8b5df78f0815067ceffb29180e242f5a7d52174b6ce2cf05edbb0c981ae0c`
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0B9 | ❌ | 0x0BB | ❌ |  | ⬜ |
 | SPAWN_NPC_REQUEST_CONTROLLER | CNpcPool::OnNpcChangeController | npc/clientbound/NpcSpawnRequestController (T1) | 0x0B3 | ✅ | 0x0C4 | 🟡ᶠ | 0x0E5 | 🟡ᶠ | 0x0ED | 🟡ᶠ | 0x103 | ✅ | 0x10A | ✅ | 0x114 | ✅ | 0x131 | ❌ | 0x139 | ✅ | 0x118 | ✅ |
 | APPLY_MONSTER_STATUS | CMob::OnStatSet | monster/clientbound/MonsterStatSet (T1) |  | ⬜ | 0x0B5 | ✅ | 0x0D6 | ✅ | 0x0DC | ✅ | 0x0F2 | ✅ | 0x0F8 | ✅ | 0x102 | ✅ | 0x11A | 🟡ᶠ | 0x122 | ✅ | 0x103 | ✅ |
-| SPAWN_DRAGON | CDragon::OnCreated |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ❌ | 0x0B9 | ❌ | 0x0C2 | ❌ | 0x0D1 | ❌ | 0x0CE | ❌ | 0x0BB | ❌ |
+| SPAWN_DRAGON | CDragon::OnCreated |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ✅ | 0x0B9 | ✅ | 0x0C2 | ✅ | 0x0D1 | ✅ | 0x0CE | ✅ | 0x0BB | ✅ |
 | CANCEL_MONSTER_STATUS | CMob::OnStatReset | monster/clientbound/MonsterStatReset (T1) |  | ⬜ | 0x0B6 | ✅ | 0x0D7 | ✅ | 0x0DD | ✅ | 0x0F3 | ✅ | 0x0F9 | ✅ | 0x103 | ✅ | 0x11B | 🟡ᶠ | 0x123 | ✅ | 0x104 | ✅ |
-| MOVE_DRAGON | CDragon::OnMove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B6 | ❌ | 0x0BA | ❌ | 0x0C3 | ❌ | 0x0D2 | ❌ | 0x0CF | ❌ | 0x0BC | ❌ |
-| REMOVE_DRAGON | CUser::OnDragonPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B7 | ❌ | 0x0BB | ❌ | 0x0C4 | ❌ | 0x0D3 | ❌ | 0x0D0 | ❌ | 0x0BD | ❌ |
+| MOVE_DRAGON | CDragon::OnMove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B6 | ✅ | 0x0BA | ✅ | 0x0C3 | ✅ | 0x0D2 | ✅ | 0x0CF | ✅ | 0x0BC | ✅ |
+| REMOVE_DRAGON | CUser::OnDragonPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B7 | ✅ | 0x0BB | ✅ | 0x0C4 | ✅ | 0x0D3 | ✅ | 0x0D0 | ✅ | 0x0BD | ✅ |
 | RESET_MONSTER_ANIMATION | CMob::OnSuspendReset | monster/clientbound/MonsterResetMonsterAnimation (T1) |  | ⬜ | 0x0B7 | 🟡ᶠ | 0x0D8 | 🟡ᶠ | 0x0DE | 🟡ᶠ | 0x0F4 | ✅ | 0x0FA | ✅ | 0x104 | ✅ | 0x11C | 🟡ᶠ | 0x124 | ✅ | 0x105 | ✅ |
 | DAMAGE_MONSTER | CMob::OnDamaged | monster/clientbound/MonsterDamage (T1) |  | ⬜ | 0x0B9 | ✅ | 0x0DA | ✅ | 0x0E0 | ✅ | 0x0F6 | ✅ | 0x0FC | ✅ | 0x106 | ✅ | 0x11E | ❌ | 0x126 | ✅ | 0x107 | ✅ |
 | MONSTER_SPECIAL_EFFECT_BY_SKILL | CMob::OnSpecialEffectBySkill; sub_647790 | monster/clientbound/MonsterMonsterSpecialEffectBySkill (T1) |  | ⬜ | 0x0BA | ✅ | 0x0DB | ✅ | 0x0E1 | ✅ | 0x0F7 | ✅ | 0x0FD | ✅ | 0x107 | ✅ | 0x11F | ❌ | 0x127 | ✅ | 0x108 | ✅ |
@@ -738,7 +738,7 @@ Tool: `55d8b5df78f0815067ceffb29180e242f5a7d52174b6ce2cf05edbb0c981ae0c`
 | UNNAMED_R279 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B2 | ❌ | 0x0C3 | ❌ | 0x0C6 | ❌ |  | ⬜ |
 | UNNAMED_R296 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B3 | ❌ |  | ⬜ | 0x0BF | ❌ | 0x0D1 | ❌ | 0x0D4 | ❌ | 0x0B7 | ❌ |
 | UNNAMED_R297 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B4 | ❌ |  | ⬜ | 0x0C0 | ❌ | 0x0D2 | ❌ | 0x0D5 | ❌ | 0x0B8 | ❌ |
-| MOVE_DRAGON | CVecCtrlDragon::EndUpdateActive; CVecCtrlDragon__EndUpdateActive_send_0xBA |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ❌ | 0x0BA | ❌ | 0x0C1 | ❌ | 0x0D3 | ❌ | 0x0D6 | ❌ | 0x0B9 | ❌ |
+| MOVE_DRAGON | CVecCtrlDragon::EndUpdateActive |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B5 | ✅ | 0x0BA | ✅ | 0x0C1 | ✅ | 0x0D3 | ✅ | 0x0D6 | ✅ | 0x0B9 | ✅ |
 | UNNAMED_R299 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B6 | ❌ |  | ⬜ | 0x0C2 | ❌ | 0x0D4 | ❌ | 0x0D7 | ❌ | 0x0BA | ❌ |
 | CHANGE_QUICKSLOT | CQuickslotKeyMappedMan::SaveQuickslotKeyMap; CQuickslotKeyMappedMan__SaveQuickslotKeyMap_send_0xBC |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B7 | ❌ | 0x0BC | ❌ | 0x0C3 | ❌ | 0x0D5 | ❌ | 0x0D8 | ❌ | 0x0BB | ❌ |
 | MONSTER_CARNIVAL | CUIMonsterCarnival::RequestSend; sub_6F0D5F | monster/carnival/serverbound/MonsterCarnival (T1) |  | ⬜ | 0x0B7 | ❌ | 0x0D0 | ❌ | 0x0D2 | 🟡ᶠ | 0x0DA | ✅ | 0x0E0 | ✅ | 0x0E7 | ✅ | 0x0FF | ❌ | 0x106 | ✅ | 0x0E5 | ✅ |
@@ -1060,12 +1060,12 @@ Tool: `55d8b5df78f0815067ceffb29180e242f5a7d52174b6ce2cf05edbb0c981ae0c`
 | v61 | 278 | 0 | 56 | 228 | 458 | 0 | 49.5% |
 | v72 | 296 | 0 | 69 | 241 | 414 | 0 | 48.8% |
 | v79 | 342 | 0 | 68 | 237 | 373 | 0 | 52.9% |
-| v83 | 464 | 0 | 0 | 328 | 228 | 0 | 58.6% |
-| v84 | 438 | 0 | 0 | 335 | 247 | 0 | 56.7% |
-| v87 | 472 | 0 | 0 | 358 | 190 | 0 | 56.9% |
-| v92 | 47 | 0 | 148 | 684 | 141 | 0 | 5.3% |
-| v95 | 497 | 0 | 0 | 417 | 106 | 0 | 54.4% |
-| JMS185 | 438 | 0 | 0 | 385 | 197 | 0 | 53.2% |
+| v83 | 468 | 0 | 0 | 324 | 228 | 0 | 59.1% |
+| v84 | 442 | 0 | 0 | 331 | 247 | 0 | 57.2% |
+| v87 | 476 | 0 | 0 | 354 | 190 | 0 | 57.3% |
+| v92 | 51 | 0 | 148 | 680 | 141 | 0 | 5.8% |
+| v95 | 501 | 0 | 0 | 413 | 106 | 0 | 54.8% |
+| JMS185 | 442 | 0 | 0 | 381 | 197 | 0 | 53.7% |
 
 ## Conflicts
 

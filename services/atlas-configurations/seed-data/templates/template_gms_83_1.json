@@ -1583,6 +1583,111 @@
         ]
       },
       {
+        "opCode": "0xB5",
+        "validator": "LoggedInValidator",
+        "handler": "DragonMoveHandle",
+        "fname": "CVecCtrlDragon::EndUpdateActive",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "JUMP",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMPACT",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "IMMEDIATE",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "TELEPORT",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "HANG_ON_BACK",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "ASSAULTER",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "ASSASSINATION",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "RUSH",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "SIT_DOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "START_WINGS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "WINGS",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "ARAN_ADJUST",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "MOB_TOSS",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "DASH_SLIDE",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            }
+          ]
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xBC",
         "validator": "LoggedInValidator",
         "handler": "MonsterMovementHandle",
@@ -3457,6 +3562,30 @@
         "opCode": "0xB4",
         "writer": "SummonDamage",
         "fname": "CSummonedPool::OnSkill",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xB5",
+        "writer": "DragonSpawn",
+        "fname": "CDragon::OnCreated",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xB6",
+        "writer": "DragonMove",
+        "fname": "CDragon::OnMove",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0xB7",
+        "writer": "DragonRemove",
+        "fname": "CUser::OnDragonPacket",
         "services": [
           "channel"
         ]

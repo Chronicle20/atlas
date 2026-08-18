@@ -1,0 +1,10 @@
+packet: dragon/clientbound/DragonRemove
+direction: clientbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CUser::OnDragonPacket
+    address: "0x9704b9"
+    decompile_sha256: f1d6e591a74c0987079a7413ca7fd8ed6f9d93e64d71cd0dce29282fa62f1f34
+verifies:
+    - libs/atlas-packet/dragon/clientbound/remove_test.go#TestDragonRemoveBytes_v84

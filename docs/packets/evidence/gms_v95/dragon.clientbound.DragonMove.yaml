@@ -1,0 +1,10 @@
+packet: dragon/clientbound/DragonMove
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CDragon::OnMove
+    address: "0x50ad30"
+    decompile_sha256: 182811e0e49770c35ecf39c6f230f0296e862f04520ec37162378a43ba6f0f00
+verifies:
+    - libs/atlas-packet/dragon/clientbound/move_test.go#TestDragonMoveIsOwnerIdPlusOpaqueBlob

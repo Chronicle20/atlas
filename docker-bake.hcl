@@ -48,6 +48,7 @@ go_services = [
   "atlas-consumables",
   "atlas-data",
   "atlas-doors",
+  "atlas-dragons",
   "atlas-drop-information",
   "atlas-drops",
   "atlas-effective-stats",

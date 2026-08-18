@@ -1095,20 +1095,59 @@
   direction: clientbound
   opcode: 209
   fname: CDragon::OnCreated
-  provenance: csv-import
-  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
+  packet: dragon/clientbound/DragonSpawn
+  provenance: ida-discovered
+  ida:
+    address: 0x5084c0
+  note: >-
+    task-225: live decompile of CDragon::OnCreated @0x5084c0
+    (GMS_v92_1_DEVM.exe.i64, session acdfccff), reached via
+    CUser::OnDragonPacket (renamed from sub_8CE880 during this
+    verification) @0x8ce880's a2==209 branch, itself routed by
+    CUserPool::OnUserCommonPacket @0x929750's range test
+    `(unsigned int)(v6 - 209) <= 2` @0x9298b9. Reads, in order: Decode4 x
+    @0x5084f9, Decode4 y @0x50850c, Decode1 stance @0x508547 (secured via
+    _ZtlSecureTear into this[37]), Decode2 <read, discarded — return value
+    never assigned> @0x508564, Decode2 jobId (this[71]) @0x508573.
+    13-byte body. Byte-identical to the already-verified v84/v87/v95
+    shape. v92 CONFIRMS the spawnHasJobId gate boundary (GMS
+    MajorAtLeast(84)): v92 carries jobId.
 - op: MOVE_DRAGON
   direction: clientbound
   opcode: 210
   fname: CDragon::OnMove
-  provenance: csv-import
-  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
+  packet: dragon/clientbound/DragonMove
+  provenance: ida-discovered
+  ida:
+    address: 0x505560
+  note: >-
+    task-225: live decompile of CDragon::OnMove @0x505560
+    (GMS_v92_1_DEVM.exe.i64, session acdfccff) — a single delegating call:
+    CMovePath::OnMovePacket(this[55]!=0 ? this[55]-12+580 : 580, a2, 0),
+    identical shape to v83/v84/v87/v95's CDragon::OnMove. Reached via
+    CUser::OnDragonPacket @0x8ce880's a2==210 branch (gated on
+    this[2792]). Matches the committed DragonMove codec exactly.
 - op: REMOVE_DRAGON
   direction: clientbound
   opcode: 211
   fname: CUser::OnDragonPacket
-  provenance: csv-import
-  note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
+  packet: dragon/clientbound/DragonRemove
+  provenance: ida-discovered
+  ida:
+    address: 0x8ce880
+  note: >-
+    task-225: live decompile of CUser::OnDragonPacket (renamed from
+    sub_8CE880 during this verification) @0x8ce880
+    (GMS_v92_1_DEVM.exe.i64, session acdfccff). Handles only a2==209
+    (spawn, CDragon::OnCreated @0x5084c0) and this[2792]&&a2==210 (move,
+    CDragon::OnMove @0x505560). THERE IS NO CASE FOR 211 (REMOVE_DRAGON)
+    — the outer dispatcher CUserPool::OnUserCommonPacket @0x929750 routes
+    the range `(unsigned int)(v6 - 209) <= 2` into this function
+    (test @0x9298b9, call @0x9298bf), so 211 enters and falls through both
+    branches with zero effect: no field is read, no dragon state changes.
+    Same routed-but-unhandled shape already recorded for v83/v84/v87/v95
+    (docs/packets/registry/gms_v84.yaml:1254). Sending REMOVE_DRAGON is
+    correct and harmless; the client silently discards it.
 - op: MOVE_PLAYER
   direction: clientbound
   opcode: 213
@@ -3443,7 +3482,18 @@
   direction: serverbound
   opcode: 211
   fname: CVecCtrlDragon::EndUpdateActive
-  provenance: csv-import
+  packet: dragon/serverbound/Move
+  provenance: ida-discovered
+  ida:
+    address: 0x96f190
+  note: >-
+    task-225: live decompile of CVecCtrlDragon::EndUpdateActive @0x96f190
+    (GMS_v92_1_DEVM.exe.i64, session acdfccff). Send site: builds
+    COutPacket(211=0xD3) @0x96f1d2 then CMovePath::Flush(v1,&v3,0,0)
+    @0x96f1ea and sends via CClientSocket::SendPacket @0x96f1fe. There is
+    NO leading identity field — same shape as v83/v84/v87/v95's
+    CVecCtrlDragon::EndUpdateActive. Opcode 211 confirmed against the
+    registry.
 - op: UNNAMED_R299
   direction: serverbound
   opcode: 212

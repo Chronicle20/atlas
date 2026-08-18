@@ -195,9 +195,11 @@ First gate run (`tools/verify.sh --quick --base f4e62a93d`) failed two checks:
    collision in the linter, not a finding; every other module reported
    `0 issues.` Expected to clear on a serial re-run.
 
-A second `--quick --base f4e62a93d` run was launched after `333b19ce1` to
-confirm both clear. **Its verdict is not yet recorded here — read
-`gate-seed-zero-2.log` or re-run the gate before trusting this branch.**
+The second `--quick --base f4e62a93d` run after `333b19ce1` **PASSED**, exit 0,
+0 failures — `routes drift` and `lint & format guard (89 module(s))` both green,
+confirming (1) was a real fix and (2) was indeed a linter collision. The run's
+own closing note still applies: "All checks passed, but docker bake was skipped
+— not a pre-PR pass." 
 
 Still outstanding after the gate:
 

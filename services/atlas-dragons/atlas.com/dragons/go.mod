@@ -5,18 +5,21 @@ go 1.25.5
 require (
 	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0
+	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-redis v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-service v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/mux v1.8.1
+	github.com/jtumidanski/api2go v1.0.4
 	github.com/redis/go-redis/v9 v9.22.0
-	github.com/sirupsen/logrus v1.9.4
+	github.com/segmentio/kafka-go v0.4.51
+	github.com/sirupsen/logrus v1.10.0
 )
 
 require (
-	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0 // indirect
@@ -26,9 +29,7 @@ require (
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
-	github.com/jtumidanski/api2go v1.0.4 // indirect
 	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
@@ -37,7 +38,6 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
-	github.com/segmentio/kafka-go v0.4.51 // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.elastic.co/ecslogrus v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect

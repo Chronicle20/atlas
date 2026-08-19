@@ -1338,6 +1338,20 @@ func candidatesFromFName(fname string) []candidate {
 		// Atlas struct: note/clientbound/operation.go Refresh.
 		return []candidate{{name: "Refresh", pkg: "note", dir: csvpkg.DirClientbound}}
 
+	// --- Social: parcel (Duey) ---
+	// CSV: PARCEL (clientbound, opcode 0x142 in GMS v83) → CParcelDlg::OnPacket
+	// dispatches on a leading mode byte; docs/packets/dispatchers/parcel.yaml is
+	// the mode-resolution source of truth (task-241 Task 6/7).
+	case "CParcelDlg::OnPacket#Open":
+		// mode=8 (OPEN, jms_v185 mode=10): bool quickEnabled + mailbox list +
+		// arrived list, each entry a PARCEL::Decode (parcel.Parcel).
+		// Atlas struct: parcel/clientbound/parcel.go Open.
+		return []candidate{{name: "Open", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#OpenQuick":
+		// mode=26/0x1A (OPEN_QUICK): no additional bytes.
+		// Atlas struct: parcel/clientbound/parcel.go OpenQuick.
+		return []candidate{{name: "OpenQuick", pkg: "parcel", dir: csvpkg.DirClientbound}}
+
 	// CSV: NOTE_ACTION (serverbound, opcode 0x9A/154 in GMS v95) — three FNames share
 	// this opcode; each represents a different sub-operation.
 	case "CWvsContext::OnMemoNotify_Receive":

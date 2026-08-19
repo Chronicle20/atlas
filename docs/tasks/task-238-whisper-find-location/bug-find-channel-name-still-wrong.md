@@ -123,4 +123,30 @@ mirror deliberately omits the include, so no other service is affected.
 
 ## Outcome
 
-Open — fix not yet applied.
+- Fixed by `53537cf58` — `SetReferencedStructs` on `world.RestModel`
+  (`services/atlas-login/atlas.com/login/world/rest.go:96-115`), hydrating
+  `r.Channels` from the `included` array via `jsonapi.ProcessIncludeData` while
+  preserving relationship order. New `world/rest_test.go` exercises the `[1, 0]`
+  include order atlas-world actually returns; shown RED (all fields zero)
+  against the pre-fix `rest.go` and GREEN after. No other file touched — the
+  `+1` label (`682739570`) and the sort (`ceb83cc09`) stay, and the sort is
+  load-bearing again now that the ids are real.
+- Gate, range `9632c91da..53537cf58`: `tools/verify.sh --quick` exit 0, every
+  check green **including the lint & format guard** — the cross-worktree
+  golangci-lint lock that blocked the previous round has cleared.
+- Review: `atlas-reviewer` APPROVED, 0 blocking / 0 non-blocking
+  (`review-fix-included-channels.md`). It independently reverted `rest.go` and
+  re-ran the test to confirm RED/GREEN, and swept every `world.Model.Channels()`
+  consumer in atlas-login: only `ChannelId()` and `CurrentCapacity()` are read
+  (server-list name and capacity, both intended). `Port`/`IpAddress` on this
+  model are consumed nowhere, so nothing else changes behaviour.
+- **Still outstanding: the live re-test**, and the flagless `tools/verify.sh`
+  (the `--quick` run skips the Docker bake and `-race`). Neither the gate nor
+  any unit test can observe the symptom — it is a client-render defect.
+  Re-test procedure: wait for `atlas-login` to reach image `pr-1407-53537cf`,
+  then **fully restart the client** (`CLogin::OnWorldInformation` @0x5f95b7
+  appends to `m_WorldItem` and never clears it, and `SendLoginPacket` @0x5f6d6a
+  takes the first entry matching the world id, so a client process that saw the
+  old list keeps using it). Expect world-select to read `Scania - 1` /
+  `Scania - 2` with a non-empty capacity gauge, `/find atlas` → `Scania - 1`,
+  `/find chronicle` → `Scania - 2`.

@@ -1,0 +1,43 @@
+{
+  "service": "atlas-channel",
+  "path": "services/atlas-channel/atlas.com/channel",
+  "date": "2026-08-19",
+  "auditRange": "748510af2..489bb3327",
+  "scope": [
+    "kafka/consumer/message/consumer.go",
+    "kafka/consumer/message/consumer_test.go"
+  ],
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "kafka/consumer/message",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface/constructor/methods live in processor.go", "status": "n-a", "evidence": "No Processor/ProcessorImpl/NewProcessor declared in this package"},
+        {"id": "FILE-02", "name": "RestModel/Transform/Extract/JSON:API methods live in rest.go", "status": "n-a", "evidence": "No RestModel/Transform/Extract declared"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "n-a", "evidence": "No requests.RootUrl/GetRequest/PostRequest/getBaseRequest in this package"},
+        {"id": "FILE-04", "name": "Entity struct/Migration/TableName live in entity.go", "status": "n-a", "evidence": "No entity struct declared"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/readers placed per file table", "status": "n-a", "evidence": "No Builder, domain Model, Create*/Update*/Delete*, or database.Query/SliceQuery in this package"},
+        {"id": "FILE-06", "name": "No package-named catch-all file carrying >=2 responsibilities", "status": "pass", "evidence": "kafka/consumer/message/consumer.go:1-312 carries none of the FILE-01..05 responsibilities; single-purpose Kafka-consumer-handler file"},
+        {"id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "n-a", "evidence": "consumer_test.go opens no GORM DB"},
+        {"id": "DOM-20", "name": "Tests are table-driven (tests := []struct{...} + t.Run)", "status": "fail", "evidence": "kafka/consumer/message/consumer_test.go: no t.Run and no 'tests := []struct' in the file; 17 separate Test... functions used instead, several structurally identical across chat types (lines 314, 391, 462)"},
+        {"id": "DOM-24", "name": "Test packages reaching an emit path install producertest/no-op producer", "status": "n-a", "evidence": "Test entry points reach only character GetById (HTTP) and session.Announce/IfPresentByCharacterId/GetByCharacterId (socket write); session.NewProcessor's stored producer.Provider (session/processor.go:76) is only invoked from SessionCreated (session/processor.go:349) and Destroy (session/processor.go:426), neither reached by pipedSession's Create call (session/processor.go:364-378)"},
+        {"id": "DOM-33", "name": "Every mock of a changed interface updated in the same diff", "status": "n-a", "evidence": "No interface method added/removed/re-signed; handleWhisperChat etc. are free functions"},
+        {"id": "DOM-26", "name": "Every goroutine spawned via routine.Go", "status": "pass", "evidence": "grep for bare go statements in kafka/consumer/message/consumer.go returns no matches"},
+        {"id": "DOM-31", "name": "Tenant/trace identifiers travel in context only", "status": "pass", "evidence": "consumer.go:89,122,199,244,264,284 read tenant via tenant.MustFromContext(ctx); whisperDeliveryPlan(t tenant.Model, ...) at consumer.go:186 takes it as an internal function parameter, not a REST-model field/request body/query param"},
+        {"id": "DOM-25", "name": "Client-interpreted wire bytes resolved from a tenant writer-options table, never a Go literal", "status": "fail", "evidence": "consumer.go:210 fieldcb.NewWhisperSendResult(0x0A, tc.Name(), true) and consumer.go:228 fieldcb.NewWhisperReceive(0x12, c.Name(), byte(e.ChannelId), c.Gm(), e.Message) pass raw byte literals as sub-op-code arguments instead of resolving via WithResolvedCode(...)/a tenant writer-options table; values unchanged from pre-fix code but reviewed surface includes them since the diff restructures the surrounding function body"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-25: rollout/versioning half of the check (whether 0x0A/0x12 are seeded per-tenant-version in services/atlas-configurations/seed-data/templates/) not settled from this diff; would require reading the fieldcb codec and seed-template directory outside the two changed files"
+  ],
+  "blocking": [
+    "DOM-20: kafka/consumer/message/consumer_test.go does not use the table-driven tests := []struct{...} + t.Run pattern",
+    "DOM-25: kafka/consumer/message/consumer.go:210,228 pass raw client-interpreted sub-op-code literals (0x0A, 0x12) instead of resolving them from a tenant writer-options table"
+  ],
+  "nonBlocking": []
+}

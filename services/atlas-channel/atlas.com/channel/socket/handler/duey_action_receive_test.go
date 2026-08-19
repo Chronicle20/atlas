@@ -8,6 +8,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"errors"
 	"io"
 	"testing"
 	"time"
@@ -162,11 +163,12 @@ func TestDueyActionReceive(t *testing.T) {
 	}
 
 	cases := []struct {
-		name    string
-		parcel  func() dueyparcel.Model
-		compFul bool // EQUIP compartment reports 0 free slots
-		compDup bool // EQUIP compartment already holds itemId
-		want    expect
+		name         string
+		parcel       func() dueyparcel.Model
+		compFul      bool // EQUIP compartment reports 0 free slots
+		compDup      bool // EQUIP compartment already holds itemId
+		getParcelErr error
+		want         expect
 	}{
 		{
 			name: "receive happy path",
@@ -205,6 +207,37 @@ func TestDueyActionReceive(t *testing.T) {
 			},
 			want: expect{reason: parcelcb.ParcelOperationIncorrectRequest},
 		},
+		{
+			// Resolution is scoped to the caller's own pending mailbox
+			// (design §7.2/§7.3), so a parcel addressed to someone else can
+			// never be returned by getParcel — it fails closed with
+			// errParcelNotResolved, exactly like an unknown wire id.
+			name: "not addressed to me",
+			parcel: func() dueyparcel.Model {
+				return mustParcelModel(t, pendingId, 999, 0, "", time.Now().Add(-time.Hour), 5000, &itemId, byte(inventory.TypeValueEquip))
+			},
+			getParcelErr: errParcelNotResolved,
+			want:         expect{reason: parcelcb.ParcelOperationIncorrectRequest},
+		},
+		{
+			// Same fail-closed path for a parcel that has already moved out
+			// of the pending mailbox (status "received"): getParcel never
+			// surfaces it.
+			name: "already received",
+			parcel: func() dueyparcel.Model {
+				return mustParcelModel(t, pendingId, 100, 0, "received", time.Now().Add(-time.Hour), 5000, &itemId, byte(inventory.TypeValueEquip))
+			},
+			getParcelErr: errParcelNotResolved,
+			want:         expect{reason: parcelcb.ParcelOperationIncorrectRequest},
+		},
+		{
+			name: "getParcel error",
+			parcel: func() dueyparcel.Model {
+				return mustParcelModel(t, pendingId, 100, 0, "", time.Now().Add(-time.Hour), 5000, &itemId, byte(inventory.TypeValueEquip))
+			},
+			getParcelErr: errors.New("atlas-parcel unavailable"),
+			want:         expect{reason: parcelcb.ParcelOperationIncorrectRequest},
+		},
 	}
 
 	for _, tc := range cases {
@@ -219,7 +252,12 @@ func TestDueyActionReceive(t *testing.T) {
 
 			var sagas []saga.Saga
 			deps := dueyReceiveDeps{
-				getParcel: func(_ uint32, _ world.Id, _ uint32) (dueyparcel.Model, error) { return p, nil },
+				getParcel: func(_ uint32, _ world.Id, _ uint32) (dueyparcel.Model, error) {
+					if tc.getParcelErr != nil {
+						return dueyparcel.Model{}, tc.getParcelErr
+					}
+					return p, nil
+				},
 				getCompartment: func(_ uint32, it inventory.Type) (compartment.Model, error) {
 					capacity := uint32(24)
 					var assets []asset.Model

@@ -2,6 +2,7 @@ package parcel
 
 import (
 	"context"
+	"encoding/binary"
 	"time"
 
 	"github.com/google/uuid"
@@ -103,6 +104,22 @@ func (m Model) Status() string             { return m.status }
 func (m Model) Quick() bool                { return m.quick }
 func (m Model) Returned() bool             { return m.returned }
 func (m Model) ReceivableAt() time.Time    { return m.receivableAt }
+
+// WireId projects a parcel's atlas-parcel uuid.UUID identity onto the
+// wire's uint32 parcelId — the client's PARCEL struct's `+0 uint32 parcelId`,
+// echoed verbatim by CTabReceive::ReceiveParcel/DiscardParcel (design §5.3).
+// It resolves the client's wire-format uint32 parcelId against atlas-parcel's
+// uuid.UUID row identity by taking the first 4 bytes of the id, big-endian.
+// This is a deliberate, self-contained engineering choice for a wire detail
+// the design doc explicitly leaves to implementation ("the exact byte
+// layout... is derived during implementation", §5.3). Every caller that
+// projects a parcel id onto the wire — DUEY_ACTION RECEIVE/DISCARD's
+// resolution and Model.ToPacket()'s emission of the OPEN list body alike —
+// MUST use this function rather than re-deriving the projection, or the
+// two directions will silently disagree.
+func WireId(id uuid.UUID) uint32 {
+	return binary.BigEndian.Uint32(id[:4])
+}
 
 // Extract builds a Model from the wire RestModel.
 func Extract(rm RestModel) (Model, error) {

@@ -7,7 +7,6 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
-	"encoding/binary"
 	"errors"
 	"time"
 
@@ -89,29 +88,37 @@ func handleDueyActionDiscard(l logrus.FieldLogger, ctx context.Context, wp write
 }
 
 // errParcelNotResolved is returned by resolveParcelByWireId when no pending
-// parcel in the caller's own mailbox matches the wire id.
+// parcel in the caller's own mailbox matches the wire id, or when more than
+// one does (a same-mailbox collision — see resolveParcelByWireId).
 var errParcelNotResolved = errors.New("parcel not resolved")
-
-// wireIdOf projects a parcel's atlas-parcel uuid.UUID identity onto the
-// wire's uint32 parcelId — see handleDueyActionReceive's doc comment.
-func wireIdOf(id uuid.UUID) uint32 {
-	return binary.BigEndian.Uint32(id[:4])
-}
 
 // resolveParcelByWireId is the production getParcel implementation — see
 // handleDueyActionReceive's doc comment for the matching scheme and its
-// caveat.
+// caveat. Resolution is scoped to the caller's own pending mailbox
+// (GetForRecipient), so a collision can only happen against the caller's
+// own rows; when more than one matches, this rejects rather than guessing
+// which one the client meant.
 func resolveParcelByWireId(l logrus.FieldLogger, ctx context.Context, characterId uint32, worldId world.Id, wireId uint32) (dueyparcel.Model, error) {
 	ms, err := dueyparcel.NewProcessor(l, ctx).GetForRecipient(characterId, worldId)
 	if err != nil {
 		return dueyparcel.Model{}, err
 	}
+	var match dueyparcel.Model
+	found := false
 	for _, m := range ms {
-		if wireIdOf(m.Id()) == wireId {
-			return m, nil
+		if dueyparcel.WireId(m.Id()) == wireId {
+			if found {
+				l.Warnf("Character [%d] wire parcelId [%d] collides across multiple pending parcels; refusing to guess.", characterId, wireId)
+				return dueyparcel.Model{}, errParcelNotResolved
+			}
+			match = m
+			found = true
 		}
 	}
-	return dueyparcel.Model{}, errParcelNotResolved
+	if !found {
+		return dueyparcel.Model{}, errParcelNotResolved
+	}
+	return match, nil
 }
 
 // handleDueyActionClose clears whatever session-side Duey dialog state the
@@ -145,7 +152,7 @@ func receiveParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer
 	// A meso-only parcel carries no item, so neither inventory pre-flight
 	// applies (it can never fail on slots or a duplicate template).
 	if itemId := p.ItemId(); itemId != nil {
-		it := inventory.Type(int8(p.ItemType()))
+		it := inventory.Type(p.ItemType())
 		cp, cerr := deps.getCompartment(s.CharacterId(), it)
 		if cerr != nil {
 			l.WithError(cerr).Errorf("Character [%d] DUEY_ACTION RECEIVE: unable to load inventory type [%d].", s.CharacterId(), it)
@@ -247,5 +254,5 @@ func discardParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer
 		return
 	}
 
-	_ = session.Announce(l)(ctx)(wp)(parcelcb.ParcelWriter)(parcelcb.ParcelRemovedBody(wireIdOf(p.Id()), parcelcb.ParcelRemovedKindDiscarded))(s)
+	_ = session.Announce(l)(ctx)(wp)(parcelcb.ParcelWriter)(parcelcb.ParcelRemovedBody(dueyparcel.WireId(p.Id()), parcelcb.ParcelRemovedKindDiscarded))(s)
 }

@@ -14,6 +14,8 @@ import (
 type Processor interface {
 	Register(s *document.Storage[string, RestModel], r model.Provider[[]RestModel]) error
 	RegisterCashPackage(path string) error
+	AllPaged(page model.Page) (model.Paged[RestModel], error)
+	GetById(id string) (RestModel, error)
 }
 
 type ProcessorImpl struct {
@@ -58,4 +60,14 @@ func (p *ProcessorImpl) Register(s *document.Storage[string, RestModel], r model
 
 func (p *ProcessorImpl) RegisterCashPackage(path string) error {
 	return p.Register(NewStorage(p.l, p.db), Read(p.l)(xml.FromPathProvider(path)))
+}
+
+// AllPaged returns a page of cash packages.
+func (p *ProcessorImpl) AllPaged(page model.Page) (model.Paged[RestModel], error) {
+	return NewStorage(p.l, p.db).AllPagedProvider(p.ctx)(page)()
+}
+
+// GetById returns a single cash package by its id.
+func (p *ProcessorImpl) GetById(id string) (RestModel, error) {
+	return NewStorage(p.l, p.db).GetById(p.ctx)(id)
 }

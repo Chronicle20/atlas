@@ -39,27 +39,32 @@ func TestReadCashPackages(t *testing.T) {
 		t.Fatalf("len(rms) = %d, want 3", len(rms))
 	}
 
-	want := []RestModel{
-		{Id: 9100000, SerialNumbers: []uint32{10000, 10001, 10002}},
-		{Id: 9100001, SerialNumbers: []uint32{20000}},
-		{Id: 9100002, SerialNumbers: []uint32{}},
+	tests := []struct {
+		name string
+		want RestModel
+	}{
+		{name: "package with three serial numbers", want: RestModel{Id: 9100000, SerialNumbers: []uint32{10000, 10001, 10002}}},
+		{name: "package with one serial number", want: RestModel{Id: 9100001, SerialNumbers: []uint32{20000}}},
+		{name: "package with no serial numbers", want: RestModel{Id: 9100002, SerialNumbers: []uint32{}}},
 	}
 
-	for i, w := range want {
-		got := rms[i]
-		if got.Id != w.Id {
-			t.Fatalf("rms[%d].Id = %d, want %d", i, got.Id, w.Id)
-		}
-		if got.SerialNumbers == nil {
-			t.Fatalf("rms[%d].SerialNumbers = nil, want non-nil (possibly empty) slice", i)
-		}
-		if len(got.SerialNumbers) != len(w.SerialNumbers) {
-			t.Fatalf("rms[%d].SerialNumbers = %v, want %v", i, got.SerialNumbers, w.SerialNumbers)
-		}
-		for j, sn := range w.SerialNumbers {
-			if got.SerialNumbers[j] != sn {
-				t.Fatalf("rms[%d].SerialNumbers[%d] = %d, want %d", i, j, got.SerialNumbers[j], sn)
+	for i, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := rms[i]
+			if got.Id != tt.want.Id {
+				t.Fatalf("rms[%d].Id = %d, want %d", i, got.Id, tt.want.Id)
 			}
-		}
+			if got.SerialNumbers == nil {
+				t.Fatalf("rms[%d].SerialNumbers = nil, want non-nil (possibly empty) slice", i)
+			}
+			if len(got.SerialNumbers) != len(tt.want.SerialNumbers) {
+				t.Fatalf("rms[%d].SerialNumbers = %v, want %v", i, got.SerialNumbers, tt.want.SerialNumbers)
+			}
+			for j, sn := range tt.want.SerialNumbers {
+				if got.SerialNumbers[j] != sn {
+					t.Fatalf("rms[%d].SerialNumbers[%d] = %d, want %d", i, j, got.SerialNumbers[j], sn)
+				}
+			}
+		})
 	}
 }

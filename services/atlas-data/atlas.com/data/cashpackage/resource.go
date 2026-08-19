@@ -36,8 +36,8 @@ func handleGetCashPackagesRequest(db *gorm.DB) func(d *rest.HandlerDependency, c
 				return
 			}
 
-			s := NewStorage(d.Logger(), db)
-			paged, err := s.AllPagedProvider(d.Context())(page)()
+			p := NewProcessor(d.Logger(), d.Context(), db)
+			paged, err := p.AllPaged(page)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve cash packages.")
 				server.WriteErrorResponse(d.Logger())(w)(err)
@@ -54,8 +54,8 @@ func handleGetCashPackageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParsePackageId(d.Logger(), func(packageId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				s := NewStorage(d.Logger(), db)
-				res, err := s.GetById(d.Context())(strconv.Itoa(int(packageId)))
+				p := NewProcessor(d.Logger(), d.Context(), db)
+				res, err := p.GetById(strconv.Itoa(int(packageId)))
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate cash package %d.", packageId)
 					w.WriteHeader(http.StatusNotFound)

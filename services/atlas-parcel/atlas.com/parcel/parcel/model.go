@@ -63,9 +63,9 @@ func (m Model) RecipientId() uint32 { return m.recipientId }
 func (m Model) RecipientAccountId() uint32 { return m.recipientAccountId }
 
 // RecipientName is the display name of the parcel's original recipient — a
-// task-23 addition for the expiry sweep's return leg (design §7.4), NOT yet
-// populated by the currently-landed atlas-channel send saga; see entity.go's
-// doc comment for the exact follow-up wiring this needs.
+// task-23 addition for the expiry sweep's return leg (design §7.4), populated
+// end to end by the send saga; see entity.go's doc comment for the exact
+// wiring.
 func (m Model) RecipientName() string { return m.recipientName }
 
 func (m Model) Message() string { return m.message }

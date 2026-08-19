@@ -81,7 +81,11 @@ func TestReturnLegSurvivesClientExpiryGuard(t *testing.T) {
 	expiresAt := createdAt.Add(ExpiryWindow)
 
 	quotient := uint64(expiresAt.Sub(now)) / uint64(24*time.Hour)
-	if !(quotient < 30) {
+	// Written as quotient >= 30 (the failure case) rather than !(quotient < 30)
+	// to satisfy staticcheck's De Morgan rewrite (QF1001); the client's own
+	// comparison is still `< 30` (v72 0x65AF41 / v83 0x6F0D11, cmp eax, 1Eh;
+	// jl), so this is a logical inversion, not a transcription slip.
+	if quotient >= 30 {
 		t.Fatalf("client's unsigned (expiresAt-now)/24h guard would refuse a freshly-receivable return leg: quotient = %d, want < 30", quotient)
 	}
 }

@@ -4,6 +4,8 @@ import (
 	custodyConsumer "atlas-parcel/kafka/consumer/custody"
 	"atlas-parcel/parcel"
 	"os"
+	"strconv"
+	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -54,8 +56,8 @@ func main() {
 		return false
 	})
 
-	// Periodic tasks (expiry sweep, notification) are registered by later
-	// tasks in the Duey parcel-delivery plan.
+	// Periodic tasks (notification) are registered by later tasks in the
+	// Duey parcel-delivery plan.
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	custodyConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := custodyConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
@@ -63,6 +65,12 @@ func main() {
 	}
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+
+	// DB-driven expiry sweep: expires unclaimed pending parcels and inserts
+	// a return-to-sender leg for each (design §7.4 / §8).
+	expiryTask := parcel.NewExpiryTask(l, rt.Context(), db, getExpirationInterval())
+	expiryTask.Start()
+	rt.TeardownFunc(expiryTask.Stop)
 
 	srv := server.New(l).
 		WithContext(rt.Context()).
@@ -76,4 +84,19 @@ func main() {
 	srv.Run()
 
 	rt.Wait()
+}
+
+// getExpirationInterval reads the expiry sweep cadence from
+// PARCEL_EXPIRY_INTERVAL_SECONDS, falling back to parcel.DefaultExpiryInterval
+// when unset or invalid.
+func getExpirationInterval() time.Duration {
+	intervalStr := os.Getenv("PARCEL_EXPIRY_INTERVAL_SECONDS")
+	if intervalStr == "" {
+		return parcel.DefaultExpiryInterval
+	}
+	seconds, err := strconv.Atoi(intervalStr)
+	if err != nil || seconds <= 0 {
+		return parcel.DefaultExpiryInterval
+	}
+	return time.Duration(seconds) * time.Second
 }

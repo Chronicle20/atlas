@@ -44,6 +44,8 @@ spec:
             secretKeyRef:
               name: db-credentials
               key: DB_PASSWORD
+        - name: PARCEL_EXPIRY_INTERVAL_SECONDS
+          value: "3600"
 ---
 apiVersion: v1
 kind: Service

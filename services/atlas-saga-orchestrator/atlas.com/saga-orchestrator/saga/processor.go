@@ -2201,12 +2201,19 @@ func (p *ProcessorImpl) expandTransferToParcel(st Step[any]) ([]Step[any], error
 		return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", payload.CharacterId, err)
 	}
 
-	// Find the asset by id.
+	// The JSON:API id is a string. One that does not parse is SKIPPED rather than
+	// coerced: an unchecked Sscanf leaves the target at zero, and zero is a
+	// legitimate-looking asset id — so an unparseable id would silently match a
+	// payload asking for asset 0 and stage the wrong item. Mirrors
+	// expandTransferToTrade's asset-lookup loop.
 	var foundAsset *compartment.AssetRestModel
 	for i := range comp.Assets {
-		var assetId uint32
-		fmt.Sscanf(comp.Assets[i].Id, "%d", &assetId)
-		if assetId == payload.AssetId {
+		assetId, perr := strconv.ParseUint(comp.Assets[i].Id, 10, 32)
+		if perr != nil {
+			p.l.WithError(perr).Warnf("Asset id [%s] in character [%d]'s compartment is not numeric. Skipping it.", comp.Assets[i].Id, payload.CharacterId)
+			continue
+		}
+		if uint32(assetId) == payload.AssetId {
 			foundAsset = &comp.Assets[i]
 			break
 		}

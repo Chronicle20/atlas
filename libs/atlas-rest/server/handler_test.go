@@ -264,6 +264,102 @@ func TestParseEnvironmentRejectsAnUnknownEnvironment(t *testing.T) {
 	}
 }
 
+func TestParseEnvironmentAdmitsAProvisioningEnvironment(t *testing.T) {
+	// A known environment still in PROVISIONING must be admitted so it can
+	// perform self-writes (e.g. atlas-pr-bootstrap's service-config rows)
+	// before the ACTIVE flip. Confinement to its own data is enforced
+	// downstream by the scope layer, not by this gate.
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	reg.Apply(env.Record{
+		Name: "main", Baseline: "main",
+		Namespace: "atlas-main", Phase: env.PhaseActive,
+	})
+	reg.Apply(env.Record{
+		Name: "pr-123", Baseline: "main",
+		Namespace: "atlas-pr-123", Phase: env.PhaseProvisioning,
+	})
+	env.SetRegistry(reg)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	called := false
+	h := server.ParseEnvironment(testLogger(t), context.Background(),
+		func(_ logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
+			return func(w http.ResponseWriter, _ *http.Request) {
+				called = true
+				if got := env.MustFromContext(ctx); got != env.Id("pr-123") {
+					t.Errorf("environment = %q, want \"pr-123\"", got)
+				}
+				w.WriteHeader(http.StatusOK)
+			}
+		})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(env.Key, "pr-123")
+	w := httptest.NewRecorder()
+	h(w, r)
+
+	if !called {
+		t.Fatal("handler not reached for a PROVISIONING environment")
+	}
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+}
+
+func TestParseEnvironmentRejectsADeactivatingEnvironment(t *testing.T) {
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	reg.Apply(env.Record{
+		Name: "pr-123", Baseline: "main",
+		Namespace: "atlas-pr-123", Phase: env.PhaseDeactivating,
+	})
+	env.SetRegistry(reg)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	h := server.ParseEnvironment(testLogger(t), context.Background(),
+		func(_ logrus.FieldLogger, _ context.Context) http.HandlerFunc {
+			return func(http.ResponseWriter, *http.Request) {
+				t.Fatal("handler reached for a DEACTIVATING environment")
+			}
+		})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(env.Key, "pr-123")
+	w := httptest.NewRecorder()
+	h(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", w.Code)
+	}
+}
+
+func TestParseEnvironmentRejectsADeletedEnvironment(t *testing.T) {
+	// Apply with PhaseDeleted removes the record, so a DELETED environment
+	// is indistinguishable from unknown to the registry — both are rejected.
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	reg.Apply(env.Record{
+		Name: "pr-123", Baseline: "main",
+		Namespace: "atlas-pr-123", Phase: env.PhaseDeleted,
+	})
+	env.SetRegistry(reg)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	h := server.ParseEnvironment(testLogger(t), context.Background(),
+		func(_ logrus.FieldLogger, _ context.Context) http.HandlerFunc {
+			return func(http.ResponseWriter, *http.Request) {
+				t.Fatal("handler reached for a DELETED environment")
+			}
+		})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(env.Key, "pr-123")
+	w := httptest.NewRecorder()
+	h(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", w.Code)
+	}
+}
+
 func TestParseTenantRejectsAMismatchedEnvironment(t *testing.T) {
 	// FR-7.7: a header environment that disagrees with the tenant's
 	// registered environment is rejected outright; the handler is never

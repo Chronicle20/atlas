@@ -34,14 +34,21 @@ type EnvironmentHandler func(logrus.FieldLogger, context.Context) http.HandlerFu
 // ParseEnvironment reads the ENVIRONMENT header onto the context. An absent
 // header is the legacy value and passes through unchanged (FR-1.8). A
 // present header naming an environment the registry does not know, or knows
-// as inactive, is rejected with 400 — never served by the baseline (FR-3.6,
-// D4).
+// as DEACTIVATING or DELETED, is rejected with 400 — never served by the
+// baseline. A known environment in PROVISIONING or ACTIVE is admitted: this
+// gate only puts the id on the context, it does not grant broad access.
+// PROVISIONING must be admitted so an environment can write its own rows
+// while it is still being set up (e.g. atlas-pr-bootstrap's service-config
+// self-writes). Confinement to the caller's own data is enforced downstream
+// by the scope layer (scope.Strict on reads, scope.AuthorizeWrite on
+// writes), not by this handler. Traffic ownership is separate and still
+// governed by Registry.IsOwner, which keeps requiring ACTIVE (FR-5.2).
 //
 //goland:noinspection GoUnusedExportedFunction
 func ParseEnvironment(l logrus.FieldLogger, ctx context.Context, next EnvironmentHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := env.Id(r.Header.Get(env.Key))
-		if id != "" && !env.CurrentRegistry().IsActive(id) {
+		if id != "" && !env.CurrentRegistry().IsProvisionable(id) {
 			l.WithField(env.Key, string(id)).Error("Request names an unknown or inactive environment.")
 			w.WriteHeader(http.StatusBadRequest)
 			return

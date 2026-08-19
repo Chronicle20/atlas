@@ -24,7 +24,14 @@ type Registry interface {
 	EnvironmentsOwnedBy(service string) []Id // FR-1.3
 	IsOwner(e Id, service string) bool       // FR-1.4
 	IsActive(e Id) bool                      // FR-1.4
-	Stale() bool                             // FR-1.7
+	// IsProvisionable reports whether e is known and in a phase that may
+	// serve its own requests (PROVISIONING or ACTIVE). The empty legacy Id
+	// short-circuits to true (FR-1.8), exactly like IsActive. Used by the
+	// REST environment gate (ParseEnvironment) to admit an environment's
+	// own self-writes during PROVISIONING; it is NOT a substitute for
+	// IsActive, which IsOwner and EnvironmentsOwnedBy continue to use.
+	IsProvisionable(e Id) bool
+	Stale() bool // FR-1.7
 	// BaselineOf returns e's baseline environment. The bool reports whether e
 	// is known to the registry; an unknown e (including the legacy empty Id
 	// under legacyRegistry) returns ("", false).
@@ -179,6 +186,18 @@ func (r *MapRegistry) IsActive(e Id) bool {
 	return ok && rec.Active()
 }
 
+// IsProvisionable reports whether e's record is present and in a phase that
+// may serve its own requests: PROVISIONING or ACTIVE.
+func (r *MapRegistry) IsProvisionable(e Id) bool {
+	if e == "" {
+		return true // FR-1.8
+	}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	rec, ok := r.records[e]
+	return ok && rec.Provisionable()
+}
+
 // IsOwner reports whether THIS process's deployment is the effective
 // implementation of service for environment e. It is a pure function of the
 // projected log plus self, so exactly one deployment satisfies it and every
@@ -249,6 +268,7 @@ func (legacyRegistry) ServiceNamespace(Id, string) (string, error) { return "", 
 func (legacyRegistry) EnvironmentsOwnedBy(string) []Id             { return []Id{""} }
 func (legacyRegistry) IsOwner(Id, string) bool                     { return true }
 func (legacyRegistry) IsActive(Id) bool                            { return true }
+func (legacyRegistry) IsProvisionable(Id) bool                     { return true }
 func (legacyRegistry) Stale() bool                                 { return false }
 func (legacyRegistry) BaselineOf(Id) (Id, bool)                    { return "", false }
 

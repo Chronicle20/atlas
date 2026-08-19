@@ -131,4 +131,42 @@ channel — and must stay gated on `sc.Is(...)`.
 
 ## Resolution
 
-_(pending)_
+Fixed in `services/atlas-channel/atlas.com/channel/kafka/consumer/message/consumer.go`
+(`handleWhisperChat`). The single channel-scoped gate (`sc.Is(t, e.WorldId,
+e.ChannelId)`) is now two: a world-scoped gate (`sc.IsWorld(t, e.WorldId)`)
+that every channel handler in the event's world passes, and the original
+channel-scoped `sc.Is(...)` check retained only to decide whether *this*
+handler is the sender's own channel (and therefore owns the one-time
+`WhisperSendResult` confirmation). The decision is factored into a small pure
+function, `whisperDeliveryPlan`, so the cross-channel gating logic is
+unit-testable without a live session-registry/socket fixture.
+
+Recipient delivery (`WhisperReceive`) now runs unconditionally on every
+channel handler in the world; `session.NewProcessor(...).GetByCharacterId(sc.Channel())`
+resolves on exactly the one channel holding the recipient's session, so
+delivery is a no-op everywhere else. The `GET /api/characters/{id}` REST
+fan-out is also fixed: the recipient's character is fetched only inside the
+sender-channel branch (needed for `WhisperSendResult`'s target name), and the
+sender's character is fetched only after the recipient's session is
+confirmed present on this channel (needed for `WhisperReceive`'s from-name
+and gm flag) — so a whisper in an N-channel world no longer issues 2N
+REST calls, only the (at most) 2 that correspond to real deliveries.
+
+`handleMultiChat`, `handleMessengerChat`, and `handlePinkChat` share the
+identical channel-scoping defect and were deliberately left untouched per
+the brief's scope — see "Not yet answered" above for the follow-up.
+
+Verified: `go build ./... && go test ./...` from
+`services/atlas-channel/atlas.com/channel` (full module suite, all packages
+passing). A new table test,
+`services/atlas-channel/atlas.com/channel/kafka/consumer/message/consumer_test.go`,
+reproduces the exact bug scenario (recipient on a different channel than the
+sender) against the pre-fix code — confirmed to fail there and pass against
+the fix — plus three companion cases (sender-channel-only delivery,
+same-channel double delivery, and a different-world handler emitting
+nothing).
+
+**Live re-test against the reported reproduction (tenant
+`625de849-e34f-45c8-95e6-b8e794774422`, `atlas-pr-1407`, `Atlas`→`Chronicle`
+across channels 0/1) is still pending** — this fix has only been verified by
+module-local unit tests, not against a live ephemeral environment.

@@ -3,8 +3,8 @@
 #
 # SOURCE OF TRUTH for the DueyAction writer. Derived arms on GMS v83,
 # opcode 0x041 (task-241 design §5.4): SEND @0x6F36A8 (quick=0) /
-# @0x6F1DF5 (quick=1), RECEIVE via v72 CTabReceive::ReceiveParcel
-# @0x65AF41, DISCARD @0x6F0DC3, CLOSE via CParcelDlg::CloseParcelDlg
+# @0x6F1DF5 (quick=1), RECEIVE via CTabReceive::ReceiveParcel
+# @0x6F0CA3, DISCARD @0x6F0DC3, CLOSE via CParcelDlg::CloseParcelDlg
 # @0x6F5691. Modes 0x00, 0x03 and 0x06 are unattested in either build.
 #
 # direction: serverbound is required here — it is what opts this file out

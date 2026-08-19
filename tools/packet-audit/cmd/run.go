@@ -1449,6 +1449,30 @@ func candidatesFromFName(fname string) []candidate {
 		// Atlas struct: parcel/clientbound/parcel.go AlarmGeneric.
 		return []candidate{{name: "AlarmGeneric", pkg: "parcel", dir: csvpkg.DirClientbound}}
 
+	// CSV: DUEY_ACTION (serverbound) — four independent client send sites
+	// share one leading mode byte; docs/packets/dispatchers/duey_action.yaml
+	// is the mode-resolution source of truth (task-241 Task 6/10).
+	case "CTabSend::SendParcel":
+		// mode=2 (SEND, jms_v185 mode=3): byte invType, uint16 slot, uint16
+		// quantity, uint32 mesos, string recipientName, bool quick; and only
+		// when quick: string message, uint32 ticketRef (v83 @0x6F36A8
+		// quick=0 / @0x6F1DF5 quick=1, design.md §5.4).
+		// Atlas struct: parcel/serverbound/action_send.go ActionSend.
+		return []candidate{{name: "ActionSend", pkg: "parcel", dir: csvpkg.DirServerbound}}
+	case "CTabReceive::ReceiveParcel":
+		// mode=4 (RECEIVE, jms_v185 mode=5): uint32 parcelId (v83 @0x6F0CA3).
+		// Atlas struct: parcel/serverbound/action_parcel_id.go ActionReceive.
+		return []candidate{{name: "ActionReceive", pkg: "parcel", dir: csvpkg.DirServerbound}}
+	case "CTabReceive::DiscardParcel":
+		// mode=5 (DISCARD, jms_v185 mode=6): uint32 parcelId (v83 @0x6F0DC3).
+		// Atlas struct: parcel/serverbound/action_parcel_id.go ActionDiscard.
+		return []candidate{{name: "ActionDiscard", pkg: "parcel", dir: csvpkg.DirServerbound}}
+	case "CParcelDlg::CloseParcelDlg":
+		// mode=7 (CLOSE, jms_v185 mode=8): no additional bytes (v83
+		// @0x6F5691).
+		// Atlas struct: parcel/serverbound/action_parcel_id.go ActionClose.
+		return []candidate{{name: "ActionClose", pkg: "parcel", dir: csvpkg.DirServerbound}}
+
 	// CSV: NOTE_ACTION (serverbound, opcode 0x9A/154 in GMS v95) — three FNames share
 	// this opcode; each represents a different sub-operation.
 	case "CWvsContext::OnMemoNotify_Receive":

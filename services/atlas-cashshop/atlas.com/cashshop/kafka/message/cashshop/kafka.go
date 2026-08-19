@@ -20,6 +20,7 @@ const (
 	CommandTypeRequestLockerRebate                = "REQUEST_LOCKER_REBATE"
 	CommandTypeRequestGiftPurchase                = "REQUEST_GIFT_PURCHASE"
 	CommandTypeRequestPackagePurchase             = "REQUEST_PACKAGE_PURCHASE"
+	CommandTypeRequestRingPurchase                = "REQUEST_RING_PURCHASE"
 )
 
 type Command[E any] struct {
@@ -141,6 +142,25 @@ type RequestPackagePurchaseCommandBody struct {
 	SenderName           string    `json:"senderName"`
 }
 
+// RequestRingPurchaseCommandBody requests one RING pair purchase (task-240
+// task 19): a single commodity SERIAL NUMBER buys one item, but a ring pair
+// needs two -- one for the buyer, one for PartnerCharacterId. Both halves
+// are minted from the resolved commodity's ItemId (see OQ-R1, design.md
+// §4.3); RingType selects whether the pair is recorded as ring.TypeCouple or
+// ring.TypeFriendship. SenderName/Message mirror
+// RequestGiftPurchaseCommandBody's fields: the partner's half carries them
+// as GiftFrom/GiftMessage (FR-RING-3), because from the partner's locker
+// this looks exactly like a gift from the buyer.
+type RequestRingPurchaseCommandBody struct {
+	TransactionId      uuid.UUID `json:"transactionId"`
+	Currency           uint32    `json:"currency"`
+	SerialNumber       uint32    `json:"serialNumber"`
+	PartnerCharacterId uint32    `json:"partnerCharacterId"`
+	SenderName         string    `json:"senderName"`
+	Message            string    `json:"message"`
+	RingType           string    `json:"ringType"`
+}
+
 const (
 	EnvEventTopicStatus                       = "EVENT_TOPIC_CASH_SHOP_STATUS"
 	StatusEventTypeInventoryCapacityIncreased = "INVENTORY_CAPACITY_INCREASED"
@@ -153,6 +173,7 @@ const (
 	StatusEventTypeLockerRebated              = "LOCKER_REBATED"
 	StatusEventTypeGiftPurchased              = "GIFT_PURCHASED"
 	StatusEventTypePackagePurchased           = "PACKAGE_PURCHASED"
+	StatusEventTypeRingPurchased              = "RING_PURCHASED"
 )
 
 type StatusEvent[E any] struct {
@@ -321,4 +342,23 @@ type PackagePurchasedBody struct {
 	Price                uint32    `json:"price"`
 	RecipientCharacterId uint32    `json:"recipientCharacterId"`
 	RecipientName        string    `json:"recipientName"`
+}
+
+// RingPurchasedBody describes one successful RING purchase (task-240 task
+// 19). It reports the BUYER's own half -- CompartmentId/AssetId name the
+// asset created in the buyer's own locker, mirroring PurchaseEventBody, so
+// the channel can build the buyer's CashInventoryItem without a second
+// lookup. PartnerName is resolved server-side (the command only carries
+// PartnerCharacterId) so the channel can render it without a round trip.
+// PairId is ring.Entity's shared pairing id, letting a caller correlate this
+// purchase with the partner's own RING_PURCHASED-shaped view later (FR-RING-7).
+type RingPurchasedBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	CompartmentId uuid.UUID `json:"compartmentId"`
+	AssetId       uint32    `json:"assetId"`
+	PartnerName   string    `json:"partnerName"`
+	TemplateId    uint32    `json:"templateId"`
+	Quantity      uint16    `json:"quantity"`
+	RingType      string    `json:"ringType"`
+	PairId        uuid.UUID `json:"pairId"`
 }

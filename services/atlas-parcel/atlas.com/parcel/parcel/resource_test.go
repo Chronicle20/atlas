@@ -311,6 +311,39 @@ func TestParcelResource(t *testing.T) {
 		require.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 
+	t.Run("notify", func(t *testing.T) {
+		db := newParcelTestDB(t)
+		tid := uuid.New()
+		created := seedParcel(t, db, tid, 300, 100)
+		require.Nil(t, created.LastNotified())
+
+		srv := newParcelServer(db)
+		defer srv.Close()
+
+		resp, err := client.Do(withTenant(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s/notify", srv.URL, created.Id().String())))
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		require.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+		m, err := parcel.NewProcessor(logrus.New(), databasetest.TenantContext(tid), db).GetById(created.Id())
+		require.NoError(t, err)
+		require.NotNil(t, m.LastNotified())
+	})
+
+	t.Run("notify missing", func(t *testing.T) {
+		db := newParcelTestDB(t)
+		tid := uuid.New()
+
+		srv := newParcelServer(db)
+		defer srv.Close()
+
+		missing := uuid.New().String()
+		resp, err := client.Do(withTenant(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s/notify", srv.URL, missing)))
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
 	t.Run("tenant isolation", func(t *testing.T) {
 		db := newParcelTestDB(t)
 		tidA, tidB := uuid.New(), uuid.New()

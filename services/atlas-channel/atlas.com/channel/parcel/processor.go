@@ -43,11 +43,22 @@ type RestModel struct {
 	Quick    bool   `json:"quick"`
 	Returned bool   `json:"returned"`
 
+	// CreatedAt is the OPEN packet's PARCEL.sentAt (design §5.3, +21
+	// FILETIME) — Task 21's only reader.
+	CreatedAt time.Time `json:"createdAt"`
+
 	// ReceivableAt gates Task 18's receive pre-flight (design §7.2): a
 	// pending parcel addressed to the caller is not receivable until this
 	// passes. Not carried by Task 17's send-side pre-flight, which never
 	// reads an individual parcel's timing.
 	ReceivableAt time.Time `json:"receivableAt"`
+
+	// LastNotified is nil until either Task 21's SHOW_PARCEL consumer or
+	// Task 24's atlas-parcel notification sweep stamps it — both writers
+	// share the single nullable column and its one meaning ("the player has
+	// been told about this parcel once"). Task 21 reads it to split the
+	// OPEN packet's mailbox from its "new arrivals" second list (FR-24).
+	LastNotified *time.Time `json:"lastNotified,omitempty"`
 }
 
 func (r RestModel) GetName() string { return "parcels" }
@@ -84,7 +95,9 @@ type Model struct {
 	status             string
 	quick              bool
 	returned           bool
+	createdAt          time.Time
 	receivableAt       time.Time
+	lastNotified       *time.Time
 }
 
 func (m Model) Id() uuid.UUID              { return m.id }
@@ -103,7 +116,9 @@ func (m Model) Quantity() uint16           { return m.quantity }
 func (m Model) Status() string             { return m.status }
 func (m Model) Quick() bool                { return m.quick }
 func (m Model) Returned() bool             { return m.returned }
+func (m Model) CreatedAt() time.Time       { return m.createdAt }
 func (m Model) ReceivableAt() time.Time    { return m.receivableAt }
+func (m Model) LastNotified() *time.Time   { return m.lastNotified }
 
 // WireId projects a parcel's atlas-parcel uuid.UUID identity onto the
 // wire's uint32 parcelId — the client's PARCEL struct's `+0 uint32 parcelId`,
@@ -144,7 +159,9 @@ func Extract(rm RestModel) (Model, error) {
 		status:             rm.Status,
 		quick:              rm.Quick,
 		returned:           rm.Returned,
+		createdAt:          rm.CreatedAt,
 		receivableAt:       rm.ReceivableAt,
+		lastNotified:       rm.LastNotified,
 	}, nil
 }
 
@@ -203,4 +220,13 @@ func (p *Processor) Discard(id uuid.UUID, recipientId uint32) (Model, error) {
 		return Model{}, err
 	}
 	return Extract(rm)
+}
+
+// MarkNotified stamps LastNotified on id (Task 21's SHOW_PARCEL consumer,
+// design §5.3, FR-24): a direct PATCH /parcels/{id}/notify against
+// atlas-parcel, mirroring Discard's direct-PATCH shape. Not a saga —
+// nothing leaves custody, this is bookkeeping invisible to the player.
+func (p *Processor) MarkNotified(id uuid.UUID) error {
+	_, err := notifyRequest(p.ctx, id)(p.l, p.ctx)
+	return err
 }

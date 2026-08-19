@@ -20,6 +20,9 @@ const (
 	parcelsByRecipientResource = "parcels?filter[recipientId]=%d&filter[worldId]=%d&filter[status]=pending"
 	// parcelResource fetches a single parcel by id.
 	parcelResource = "parcels/%s"
+	// parcelNotifyResource stamps LastNotified on a parcel (task-241 Task
+	// 21, design §5.3, FR-24) — no request or response body.
+	parcelNotifyResource = "parcels/%s/notify"
 )
 
 func getBaseRequest(ctx context.Context) (string, error) {
@@ -80,4 +83,36 @@ func discardRequest(ctx context.Context, parcelId uuid.UUID, recipientId uint32)
 	}
 	url := fmt.Sprintf(root+parcelResource, parcelId.String())
 	return requests.PatchRequest[RestModel](url, discardRestModel{Id: parcelId.String(), RecipientId: recipientId})
+}
+
+// notifyRestModel is the (unread) PATCH /parcels/{id}/notify request body —
+// atlas-parcel's handleNotifyParcel takes no input, but requests.PatchRequest
+// needs a jsonapi-marshalable value to send.
+type notifyRestModel struct {
+	Id string `json:"-"`
+}
+
+func (r notifyRestModel) GetName() string { return "parcels" }
+
+func (r notifyRestModel) GetID() string { return r.Id }
+
+func (r *notifyRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
+}
+
+// Required JSON:API relationship stubs — see RestModel's identical comment.
+func (r *notifyRestModel) SetToOneReferenceID(_, _ string) error { return nil }
+
+func (r *notifyRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
+// notifyRequest stamps LastNotified on parcelId (Task 21's SHOW_PARCEL
+// consumer, design §5.3, FR-24).
+func notifyRequest(ctx context.Context, parcelId uuid.UUID) requests.Request[RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[RestModel](err)
+	}
+	url := fmt.Sprintf(root+parcelNotifyResource, parcelId.String())
+	return requests.PatchRequest[RestModel](url, notifyRestModel{Id: parcelId.String()})
 }

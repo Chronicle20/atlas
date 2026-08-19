@@ -35,6 +35,10 @@ import (
 //     18's discard arm. Discard is deliberately NOT a saga (design §4.4):
 //     nothing leaves custody, so atlas-channel PATCHes this route directly
 //     instead of going through the Kafka custody consumer.
+//   - PATCH /parcels/{parcelId}/notify                                   — Task
+//     21's SHOW_PARCEL consumer. Stamps LastNotified (no request body, no
+//     resource returned) so the parcel drops out of the OPEN packet's
+//     "new arrivals" list on the next open (design §5.3, FR-24).
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
@@ -45,6 +49,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			pr.HandleFunc("", registerGet("get_parcels", handleGetParcels)).Methods(http.MethodGet)
 			pr.HandleFunc("/{parcelId}", registerGet("get_parcel", handleGetParcel)).Methods(http.MethodGet)
 			pr.HandleFunc("/{parcelId}", registerPatch("discard_parcel", handleDiscardParcel)).Methods(http.MethodPatch)
+			pr.HandleFunc("/{parcelId}/notify", registerGet("notify_parcel", handleNotifyParcel)).Methods(http.MethodPatch)
 
 			cr := router.PathPrefix("/characters/{characterId}").Subrouter()
 			cr.HandleFunc("/parcel-status", registerGet("get_character_parcel_status", handleGetParcelStatus)).Methods(http.MethodGet)
@@ -224,6 +229,43 @@ func handleDiscardParcel(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
+}
+
+// handleNotifyParcel stamps LastNotified on a parcel (task-241 Task 21's
+// SHOW_PARCEL consumer, design §5.3). Unlike discard this is not
+// recipient-gated: it is atlas-channel's own bookkeeping, invisible to the
+// player, so no caller-supplied ownership check applies. A missing id is
+// still a clean 404, never a disconnect.
+func handleNotifyParcel(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseParcelId(d.Logger(), func(parcelIdStr string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			parcelId, err := uuid.Parse(parcelIdStr)
+			if err != nil {
+				d.Logger().WithError(err).Warnf("Unable to parse parcelId [%s].", parcelIdStr)
+				server.WriteBadRequest(d.Logger(), w, "parcelId must be a uuid")
+				return
+			}
+
+			_, err = NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(parcelId)
+			if errors.Is(err, ErrNotFound) {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Retrieving parcel [%s] to notify.", parcelId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			if err := NewProcessor(d.Logger(), d.Context(), d.DB()).MarkNotified(parcelId); err != nil {
+				d.Logger().WithError(err).Errorf("Marking parcel [%s] notified.", parcelId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			w.WriteHeader(http.StatusNoContent)
 		}
 	})
 }

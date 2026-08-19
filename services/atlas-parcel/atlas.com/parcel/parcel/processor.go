@@ -25,6 +25,7 @@ type Processor interface {
 	Create(m Model) (Model, error)
 	Receive(id uuid.UUID, recipientId uint32) (Model, error)
 	Discard(id uuid.UUID, recipientId uint32) (Model, error)
+	MarkNotified(id uuid.UUID) error
 }
 
 // ProcessorImpl is the production Processor. now defaults to time.Now and is
@@ -147,6 +148,18 @@ func (p *ProcessorImpl) Discard(id uuid.UUID, recipientId uint32) (Model, error)
 		}
 		return nil
 	})
+}
+
+// MarkNotified stamps LastNotified on id with the processor's clock
+// (task-241 design §5.3): atlas-channel calls this once, per newly-arrived
+// parcel, right after building the OPEN packet's second list — the
+// cheapest correct implementation of FR-24, needing no extra packet. It
+// shares the StampNotified administrator primitive with task-24's
+// notification sweep; both writers give the single nullable LastNotified
+// column the same meaning ("the player has been told about this parcel
+// once"), so either one stamping first makes the other a harmless no-op.
+func (p *ProcessorImpl) MarkNotified(id uuid.UUID) error {
+	return StampNotified(p.db.WithContext(p.ctx))([]uuid.UUID{id}, p.now())
 }
 
 // resolve is the shared race-safe transition underpinning Receive and

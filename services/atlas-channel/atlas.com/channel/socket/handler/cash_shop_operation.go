@@ -182,10 +182,17 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			// reached via request-in-flight-latch analysis rather than a
 			// client correlation table) to be UPDATE_WISHLIST (mode 98), the
 			// same arm SET_WISHLIST already answers with.
+			// The failure arm must pair with the latch-clearing UPDATE_WISHLIST
+			// success arm above (derivation.md D2b evidence 1): SET_WISH_FAILED
+			// (mode 99, CCashShop::OnCashItemResSetWishFailed) clears the
+			// client's request-in-flight latch; LOAD_WISH_FAILED does not, and
+			// answering with it would leave the client wedged. This corrects
+			// the brief's Step 5 instruction, which named LOAD_WISH_FAILED in
+			// conflict with the derivation it itself cites.
 			wl, err := wishlist.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve wishlist for character [%d].", s.CharacterId())
-				err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopLoadWishFailedBody("unknown_error"))(s)
+				err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopSetWishFailedBody("unknown_error"))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce wishlist load failure for character [%d].", s.CharacterId())
 				}

@@ -53,7 +53,12 @@ func equipSlotRequestWithTenant(t *testing.T, method, url string, tenantId uuid.
 
 func extendBody(t *testing.T, slotIndex int16, days uint16) []byte {
 	t.Helper()
-	b, err := jsonapi.Marshal(ExtendInputRestModel{SlotIndex: slotIndex, Days: days})
+	return extendBodyWithTransaction(t, slotIndex, days, uuid.Nil)
+}
+
+func extendBodyWithTransaction(t *testing.T, slotIndex int16, days uint16, transactionId uuid.UUID) []byte {
+	t.Helper()
+	b, err := jsonapi.Marshal(ExtendInputRestModel{SlotIndex: slotIndex, Days: days, TransactionId: transactionId})
 	require.NoError(t, err)
 	return b
 }
@@ -89,5 +94,50 @@ func TestPostExtendEquipSlot(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &payload))
 	assert.Equal(t, characterId, payload.Data.Attributes.CharacterId)
 	assert.Equal(t, S, payload.Data.Attributes.SlotIndex, "the response must echo the caller's slotIndex, not a resolved/invented one")
+	assert.WithinDuration(t, time.Now().Add(30*24*time.Hour), payload.Data.Attributes.ExpiresAt, time.Minute)
+}
+
+// TestPostExtendEquipSlot_RedeliveredTransactionIdDoesNotDoubleExtend proves
+// the write route's idempotency guard (task-240 task 24c): atlas-cashshop's
+// EXTEND_EQUIP_SLOT outbox command is at-least-once, so a POST redelivered
+// with the SAME transactionId must not add days a second time. Driven
+// through the route (not around it, i.e. not calling Extend directly) so it
+// proves the handler actually threads TransactionId from the wire body into
+// the dedupe check.
+func TestPostExtendEquipSlot_RedeliveredTransactionIdDoesNotDoubleExtend(t *testing.T) {
+	db := testDB(t)
+	tenantId := uuid.New()
+	characterId := uint32(42)
+	S := testSlotIndex(t)
+	txId := uuid.New()
+
+	router := setupEquipSlotResourceRouter(db)
+
+	first := equipSlotRequestWithTenant(t, http.MethodPost, "/characters/42/equip-slot-extensions", tenantId, extendBodyWithTransaction(t, S, 30, txId))
+	rr1 := httptest.NewRecorder()
+	router.ServeHTTP(rr1, first)
+	require.Equal(t, http.StatusOK, rr1.Code, "body: %s", rr1.Body.String())
+
+	// Redeliver the identical command: same character, slot, days, AND
+	// transaction id -- exactly what an at-least-once outbox redelivery
+	// looks like on the wire.
+	second := equipSlotRequestWithTenant(t, http.MethodPost, "/characters/42/equip-slot-extensions", tenantId, extendBodyWithTransaction(t, S, 30, txId))
+	rr2 := httptest.NewRecorder()
+	router.ServeHTTP(rr2, second)
+	require.Equal(t, http.StatusOK, rr2.Code, "a redelivery must not fail the caller -- it is success-without-effect")
+
+	active, err := GetActive(db, tenantId, characterId)
+	require.NoError(t, err)
+	require.Len(t, active, 1)
+	assert.WithinDuration(t, time.Now().Add(30*24*time.Hour), active[0].ExpiresAt(), time.Minute, "the redelivery must not add another 30 days")
+
+	var payload struct {
+		Data struct {
+			Attributes struct {
+				ExpiresAt time.Time `json:"expiresAt"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(rr2.Body.Bytes(), &payload))
 	assert.WithinDuration(t, time.Now().Add(30*24*time.Hour), payload.Data.Attributes.ExpiresAt, time.Minute)
 }

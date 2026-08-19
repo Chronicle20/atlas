@@ -61,7 +61,7 @@ func TestExtend(t *testing.T) {
 		db := testDB(t)
 		characterId := uint32(42)
 
-		expiresAt, err := Extend(db, tenantA, characterId, S, 30*24*time.Hour)
+		expiresAt, err := Extend(db, tenantA, characterId, S, 30*24*time.Hour, uuid.Nil)
 		require.NoError(t, err)
 		assertWithinTolerance(t, time.Now().Add(30*24*time.Hour), expiresAt, tolerance)
 
@@ -75,10 +75,10 @@ func TestExtend(t *testing.T) {
 		db := testDB(t)
 		characterId := uint32(42)
 
-		_, err := Extend(db, tenantA, characterId, S, 30*24*time.Hour)
+		_, err := Extend(db, tenantA, characterId, S, 30*24*time.Hour, uuid.Nil)
 		require.NoError(t, err)
 
-		expiresAt, err := Extend(db, tenantA, characterId, S, 30*24*time.Hour)
+		expiresAt, err := Extend(db, tenantA, characterId, S, 30*24*time.Hour, uuid.Nil)
 		require.NoError(t, err)
 		assertWithinTolerance(t, time.Now().Add(60*24*time.Hour), expiresAt, tolerance)
 
@@ -100,7 +100,7 @@ func TestExtend(t *testing.T) {
 		}
 		require.NoError(t, db.Create(expired).Error)
 
-		expiresAt, err := Extend(db, tenantA, characterId, S, 30*24*time.Hour)
+		expiresAt, err := Extend(db, tenantA, characterId, S, 30*24*time.Hour, uuid.Nil)
 		require.NoError(t, err)
 		assertWithinTolerance(t, time.Now().Add(30*24*time.Hour), expiresAt, tolerance)
 	})
@@ -125,7 +125,7 @@ func TestExtend(t *testing.T) {
 
 	t.Run("another character is separate", func(t *testing.T) {
 		db := testDB(t)
-		_, err := Extend(db, tenantA, 42, S, 30*24*time.Hour)
+		_, err := Extend(db, tenantA, 42, S, 30*24*time.Hour, uuid.Nil)
 		require.NoError(t, err)
 
 		active, err := GetActive(db, tenantA, 99)
@@ -135,11 +135,41 @@ func TestExtend(t *testing.T) {
 
 	t.Run("another tenant is separate", func(t *testing.T) {
 		db := testDB(t)
-		_, err := Extend(db, tenantA, 42, S, 30*24*time.Hour)
+		_, err := Extend(db, tenantA, 42, S, 30*24*time.Hour, uuid.Nil)
 		require.NoError(t, err)
 
 		active, err := GetActive(db, uuid.New(), 42)
 		require.NoError(t, err)
 		assert.Empty(t, active)
+	})
+
+	t.Run("a repeated transaction id does not double-extend", func(t *testing.T) {
+		db := testDB(t)
+		characterId := uint32(42)
+		txId := uuid.New()
+
+		first, err := Extend(db, tenantA, characterId, S, 30*24*time.Hour, txId)
+		require.NoError(t, err)
+
+		second, err := Extend(db, tenantA, characterId, S, 30*24*time.Hour, txId)
+		require.NoError(t, err)
+		assert.True(t, first.Equal(second), "a redelivered call for the SAME transaction id must not add days again: first [%s], second [%s]", first, second)
+
+		active, err := GetActive(db, tenantA, characterId)
+		require.NoError(t, err)
+		require.Len(t, active, 1)
+		assertWithinTolerance(t, time.Now().Add(30*24*time.Hour), active[0].ExpiresAt(), tolerance)
+	})
+
+	t.Run("a genuinely new transaction id still extends", func(t *testing.T) {
+		db := testDB(t)
+		characterId := uint32(42)
+
+		_, err := Extend(db, tenantA, characterId, S, 30*24*time.Hour, uuid.New())
+		require.NoError(t, err)
+
+		expiresAt, err := Extend(db, tenantA, characterId, S, 30*24*time.Hour, uuid.New())
+		require.NoError(t, err)
+		assertWithinTolerance(t, time.Now().Add(60*24*time.Hour), expiresAt, tolerance)
 	})
 }

@@ -22,6 +22,15 @@ const (
 	CommandTypeRequestPackagePurchase             = "REQUEST_PACKAGE_PURCHASE"
 	CommandTypeRequestRingPurchase                = "REQUEST_RING_PURCHASE"
 	CommandTypeRequestEquipSlotIncrease           = "REQUEST_EQUIP_SLOT_INCREASE"
+
+	// CommandTypeExtendEquipSlot is an INTERNAL follow-up command, never sent
+	// by atlas-channel: PurchaseEquipSlotAndEmit (cashshop/equipslot.go)
+	// mints it via the outbox from inside the purchase transaction, so the
+	// atlas-character write (a cross-service HTTP call with nothing local to
+	// roll back it on failure) only happens once the wallet debit and
+	// purchase record have durably committed -- task-240 task 24c. See
+	// CompleteEquipSlotExtension for the consumer side.
+	CommandTypeExtendEquipSlot = "EXTEND_EQUIP_SLOT"
 )
 
 type Command[E any] struct {
@@ -176,6 +185,18 @@ type RequestEquipSlotIncreaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	Currency      uint32    `json:"currency"`
 	SerialNumber  uint32    `json:"serialNumber"`
+}
+
+// ExtendEquipSlotCommandBody carries the already-resolved extension the
+// purchase transaction charged for: SlotIndex is the Atlas canonical
+// position (R1), Days the commodity's Period, and TransactionId the SAME
+// idempotency key the purchase claimed -- atlas-character's write route
+// keys its own dedupe on it, so a redelivery of this command (the outbox is
+// at-least-once) does not double-extend.
+type ExtendEquipSlotCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	SlotIndex     int16     `json:"slotIndex"`
+	Days          uint16    `json:"days"`
 }
 
 const (

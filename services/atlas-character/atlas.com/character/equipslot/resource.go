@@ -61,7 +61,7 @@ func handleExtendEquipSlot(d *rest.HandlerDependency, c *rest.HandlerContext, in
 		return func(w http.ResponseWriter, r *http.Request) {
 			period := time.Duration(input.Days) * 24 * time.Hour
 			p := NewProcessor(d.Logger(), d.Context(), d.DB())
-			if _, err := p.Extend(characterId, input.SlotIndex, period); err != nil {
+			if _, err := p.Extend(characterId, input.SlotIndex, period, input.TransactionId); err != nil {
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}

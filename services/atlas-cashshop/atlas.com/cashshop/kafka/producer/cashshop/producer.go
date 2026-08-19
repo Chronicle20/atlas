@@ -198,6 +198,27 @@ func EquipSlotIncreasedStatusEventProvider(characterId uint32, transactionId uui
 	return producer.SingleMessageProvider(key, value)
 }
 
+// ExtendEquipSlotCommandProvider builds the internal EXTEND_EQUIP_SLOT
+// follow-up command (task-240 task 24c) PurchaseEquipSlotAndEmit mints from
+// inside the purchase transaction, via the outbox, so the atlas-character
+// write happens only after the wallet debit and purchase record are durably
+// committed. transactionId is carried through unchanged -- it is the SAME
+// key the purchase claimed and the key atlas-character's write route dedupes
+// on.
+func ExtendEquipSlotCommandProvider(characterId uint32, transactionId uuid.UUID, slotIndex int16, days uint16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.ExtendEquipSlotCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeExtendEquipSlot,
+		Body: cashshop.ExtendEquipSlotCommandBody{
+			TransactionId: transactionId,
+			SlotIndex:     slotIndex,
+			Days:          days,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func SurpriseFailedStatusEventProvider(characterId uint32, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.StatusEvent[cashshop.SurpriseFailedEventBody]{

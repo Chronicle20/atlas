@@ -1,0 +1,21 @@
+{
+  "WriterName": "ParcelReceiverUnableToReceive",
+  "IDAName": "CParcelDlg::OnPacket#ReceiverUnableToReceive",
+  "Address": "0x6f5c15",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/parcel/clientbound/parcel.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (15/0x0F RECEIVER_UNABLE_TO_RECEIVE; dispatch byte, notice-only, no body)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

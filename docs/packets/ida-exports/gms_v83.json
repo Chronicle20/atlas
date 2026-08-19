@@ -16120,6 +16120,352 @@
           "comment": ""
         }
       ]
+    },
+    "CParcelDlg::OnPacket#Open": {
+      "address": "0x6f5b32",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. Mode consumed by CParcelDlg::OnPacket's outer Decode1 @0x6f570f; case 8 @0x6f5af9 reads quickEnabled @0x6f5b32, then CParcelDlg::CParcelDlg constructs (no wire bytes) and CParcelDlg::SetParcelDlg @0x6f5b61 -> CTabReceive::SetParcel @0x6ef69c does the mailbox/arrived reads: count Decode1 @0x6ef6b1 + count*PARCEL::Decode @0x6ef6d7 (mailbox), then count Decode1 @0x6ef74d + count*PARCEL::Decode @0x6ef772 (arrived, each raised via CUtilDlg::Notice). PARCEL::Decode @0x4e4345: CInPacket::DecodeBuffer(234) @0x4e435d then Decode1(hasItem) @0x4e4365, optional GW_ItemSlotBase::Decode @0x4e4378. Atlas struct: parcel/clientbound/parcel.go Open + parcel/parcel.go Parcel.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (8 OPEN; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "quickEnabled"
+        },
+        {
+          "op": "Decode1",
+          "comment": "mailbox count"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "one parcel entry (PARCEL::Decode: 234-byte fixed id/senderName/mesos/expiresAt/message block + hasItem + optional GW_ItemSlotBase item) -- loop body",
+          "guard": "loop mailbox count"
+        },
+        {
+          "op": "Decode1",
+          "comment": "arrived count"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "one parcel entry (PARCEL::Decode, same shape as mailbox) -- loop body",
+          "guard": "loop arrived count"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#OpenQuick": {
+      "address": "0x6f5862",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. Case 26 @0x6f5862: no wire reads beyond the mode byte -- allocates a fresh CParcelDlg(mode=1) only. Atlas struct: parcel/clientbound/parcel.go OpenQuick.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (26/0x1A OPEN_QUICK; dispatch byte, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SendEnableActions": {
+      "address": "0x6f5bf1",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. Mode 9 falls to OnPacket's default arm -> CParcelDlg::NoticeResult @0x6f5be2, whose a1<=16 switch @0x6f5bf1 has no case 9 -- returns without a notice (client-side re-enable only). No body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go SendEnableActions.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (9 SEND_ENABLE_ACTIONS; dispatch byte, no notice text, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#NotEnoughMesos": {
+      "address": "0x6f5c83",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 10 @0x6f5c83: SP_5599_YOU_DO_NOT_HAVE_ENOUGH_MESOS, no body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go NotEnoughMesos.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (10/0x0A NOT_ENOUGH_MESOS; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#IncorrectRequest": {
+      "address": "0x6f5c6d",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 11 @0x6f5c6d: SP_3903_YOU_HAVE_MADE_AN_INCORRECT_REQUEST, no body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go IncorrectRequest.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (11/0x0B INCORRECT_REQUEST; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#NameDoesNotExist": {
+      "address": "0x6f5c57",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 12 @0x6f5c57: SP_3904_PLEASE_DOUBLE_CHECK_THE_RECEIVERS_NAME, no body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go NameDoesNotExist.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (12/0x0C NAME_DOES_NOT_EXIST; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SameAccount": {
+      "address": "0x6f5c41",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 13 @0x6f5c41: SP_3905_YOU_MAY_NOT_SEND_THE_PACKAGE_TO_A_CHARACTER_UNDER_THE_SAME_ACCOUNT, no body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go SameAccount.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (13/0x0D SAME_ACCOUNT; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ReceiverStorageFull": {
+      "address": "0x6f5c2b",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 14 @0x6f5c2b: SP_3906_THE_RECEIVERS_PACKAGE_STORAGE_IS_FULL, no body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go ReceiverStorageFull.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (14/0x0E RECEIVER_STORAGE_FULL; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ReceiverUnableToReceive": {
+      "address": "0x6f5c15",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 15 @0x6f5c15: SP_3907_THE_CHARACTER_IS_UNABLE_TO_RECEIVE_PACKAGES, no body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go ReceiverUnableToReceive.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (15/0x0F RECEIVER_UNABLE_TO_RECEIVE; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SenderUniqueConflict": {
+      "address": "0x6f5c99",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 16 @0x6f5c99: SP_3908 (one-of-a-kind conflict), no body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go SenderUniqueConflict.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (16/0x10 SENDER_UNIQUE_CONFLICT; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#MesoLimit": {
+      "address": "0x6f5d11",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 17 @0x6f5d11: SP_3977 (level-15-and-below 1M meso/day limit), no body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go MesoLimit.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (17/0x11 MESO_LIMIT; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SuccessfullySent": {
+      "address": "0x6f579d",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 18 @0x6f5cfe: SP_3901_THE_PACKAGE_HAS_BEEN_SUCCESSFULLY_SENT. OnPacket's default arm additionally checks `a1==18` @0x6f579d to trigger CloseParcelDlg as a side effect. No body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go SuccessfullySent.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (18/0x12 SUCCESSFULLY_SENT; dispatch byte, notice-only, no body; also gates the CloseParcelDlg side effect)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#UnknownError": {
+      "address": "0x6f5cb3",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 19 @0x6f5cb3 (`goto LABEL_25`) shares SP_3909_AN_UNKNOWN_ERROR_HAS_OCCURRED with case 28. No body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go UnknownError.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (19/0x13 UNKNOWN_ERROR; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#RecvEnableActions": {
+      "address": "0x6f5cad",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. Mode 20 falls to OnPacket's default arm -> NoticeResult @0x6f5be2, whose a1>16 switch @0x6f5cad has no case 20 -- returns without a notice (client-side re-enable only). No body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go RecvEnableActions.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (20/0x14 RECV_ENABLE_ACTIONS; dispatch byte, no notice text, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#RecvNoFreeSlots": {
+      "address": "0x6f5cd8",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 21 @0x6f5cd8: SP_3910 (inventory has no free slots), no body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go RecvNoFreeSlots.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (21/0x15 RECV_NO_FREE_SLOTS; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#RecvUniqueConflict": {
+      "address": "0x6f5cc5",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 22 @0x6f5cc5: SP_3911 (one-of-a-kind retrieve conflict), no body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go RecvUniqueConflict.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (22/0x16 RECV_UNIQUE_CONFLICT; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#UnknownError2": {
+      "address": "0x6f5ce9",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. NoticeResult case 28 @0x6f5cad falls into LABEL_25 @0x6f5ce9, sharing SP_3909_AN_UNKNOWN_ERROR_HAS_OCCURRED with case 19. No body beyond the mode byte. Atlas struct: parcel/clientbound/parcel.go UnknownError2.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (28/0x1C UNKNOWN_ERROR_2; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ParcelRemoved": {
+      "address": "0x6f59fd",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. Case 23 @0x6f59fd: CInPacket::Decode4 (parcelId) then Decode1 (kind) @0x6f5a06; kind==3 selects SP_3899_SUCCESSFULLY_DELETED @0x6f5a62, else SP_3900_SUCCESSFULLY_CLAIMED @0x6f5a8e. Atlas struct: parcel/clientbound/parcel.go ParcelRemoved.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (23/0x17 PARCEL_REMOVED; dispatch byte)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "parcelId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "kind (3 = deleted/SP_3899; else = claimed/SP_3900)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ParcelArrived": {
+      "address": "0x6f5997",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. Case 24 @0x6f597b: a single PARCEL::Decode call @0x6f5997, then CParcelDlg::AddNewParcel and an SP_3902_A_NEW_PACKAGE_HAS_BEEN_SENT notice (no further wire bytes). Atlas struct: parcel/clientbound/parcel.go ParcelArrived + parcel/parcel.go Parcel.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (24/0x18 PARCEL_ARRIVED; dispatch byte)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "one parcel entry (PARCEL::Decode: 234-byte fixed id/senderName/mesos/expiresAt/message block + hasItem + optional GW_ItemSlotBase item)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#AlarmNamed": {
+      "address": "0x6f58b3",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. Case 25 @0x6f58b3: CInPacket::DecodeStr (senderName) then Decode1 (hasItem) @0x6f58c8, driving CUIFadeYesNo::CreateParcelAlarm's named-sender fade window. Atlas struct: parcel/clientbound/parcel.go AlarmNamed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (25/0x19 ALARM_NAMED; dispatch byte)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "senderName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasItem"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#AlarmGeneric": {
+      "address": "0x6f580f",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. Case 27 @0x6f580f: CInPacket::Decode1 (hasItem) only, driving CUIFadeYesNo::CreateParcelAlarm's generic (unnamed-sender) fade window. Atlas struct: parcel/clientbound/parcel.go AlarmGeneric.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (27/0x1B ALARM_GENERIC; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasItem"
+        }
+      ]
+    },
+    "CTabSend::SendParcel": {
+      "address": "0x6f1df5",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. DUEY_ACTION mode 2 (SEND). Two independent client call sites share this fname: the NPC-path sub_6F36A8 (quick=0, stops after the quick flag) and the quick-send sub_6F1DF5 (quick=1, appends message+ticketRef). Both COutPacket(&pkt, 0x41); Encode1(2) mode; Encode1(invType) @0x6f1fab/0x6f37db; Encode2(slot) @0x6f1fc8/0x6f37ea; Encode2(quantity) @0x6f1fd7/0x6f37f9; Encode4(mesos) @0x6f1fe2/0x6f3804; EncodeStr(recipientName) @0x6f1ffb/0x6f381d; Encode1(quick) @0x6f2005 (=1)/0x6f3826 (=0). Quick path only: EncodeStr(message) @0x6f201e, Encode4(ticketRef) @0x6f2029. Atlas struct: parcel/serverbound/action_send.go ActionSend.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "inventoryType"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mesos"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "quick"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message -- quick-send path only (sub_6F1DF5); the NPC path (sub_6F36A8) stops after the quick flag",
+          "guard": "quick != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ticketRef -- quick-send path only",
+          "guard": "quick != 0"
+        }
+      ]
+    },
+    "CTabReceive::ReceiveParcel": {
+      "address": "0x6f0ca3",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. DUEY_ACTION mode 4 (RECEIVE). Gated on the 30-day expiry countdown (sub_A62970(v5,...) < 30 @0x6f0d2e; parcel.go +21 field doc). COutPacket(&pkt, 0x41) @0x6f0d46; Encode1(4) @0x6f0d53; Encode4(parcelId) @0x6f0d66. Atlas struct: parcel/serverbound/action_parcel_id.go ActionReceive.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "parcelId"
+        }
+      ]
+    },
+    "CTabReceive::DiscardParcel": {
+      "address": "0x6f0dc3",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. DUEY_ACTION mode 5 (DISCARD). COutPacket(&pkt, 65) @0x6f0e2d; Encode1(5) @0x6f0e3a; Encode4(parcelId) @0x6f0e4d, gated on a CUtilDlg::YesNo confirm. Atlas struct: parcel/serverbound/action_parcel_id.go ActionDiscard.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "parcelId"
+        }
+      ]
+    },
+    "CParcelDlg::CloseParcelDlg": {
+      "address": "0x6f5691",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, gms_v83 anchor. DUEY_ACTION mode 7 (CLOSE). COutPacket(&pkt, 65) @0x6f56a6; Encode1(7) @0x6f56b4; no further bytes -- the mode byte itself is written by the shared Action wrapper (action.go), not ActionClose. Atlas struct: parcel/serverbound/action_parcel_id.go ActionClose.",
+      "calls": []
     }
   }
 }

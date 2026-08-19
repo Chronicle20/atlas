@@ -1,0 +1,87 @@
+# coverage-manifest — task-241 Duey parcel delivery
+#
+# Declares every op × version this branch claims. `packet-completeness-critic`
+# diffs this against the branch's actual git delta (libs/atlas-packet structs +
+# version gates) and matrix delta (docs/packets/audits/status.json) before the
+# PR, reporting CHANGED-BUT-UNCLAIMED and CLAIMED-BUT-UNVERIFIED.
+#
+# Both ops are mode-prefix dispatcher families authored discrete-per-mode from
+# the start (docs/packets/DISPATCHER_FAMILY.md); neither appears in
+# docs/packets/dispatcher-lint-baseline.yaml, which is empty and only shrinks.
+ops:
+  - PARCEL                        # clientbound, CParcelDlg::OnPacket — 21 enumerated arms
+  - DUEY_ACTION                   # serverbound, DueyActionHandle — 4 arms
+
+versions:
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v92
+  - gms_v95
+  - jms_v185
+
+# gms_v48 and gms_v61 are n-a for BOTH ops (status.json opcode: -1 — the op is
+# absent from those builds' registries). They are deliberately not claimed.
+not_applicable:
+  - gms_v48
+  - gms_v61
+
+# PARCEL arms (docs/packets/dispatchers/parcel.yaml). Modes are v83-derived and
+# each other GMS column was independently re-derived on its own IDB (Task 6
+# continuation). All seven GMS columns are byte-identical to the v83 anchor.
+parcel_arms:
+  - OPEN                          # gms 8   / jms 10
+  - SEND_ENABLE_ACTIONS           # gms 9
+  - NOT_ENOUGH_MESOS              # gms 10
+  - INCORRECT_REQUEST             # gms 11
+  - NAME_DOES_NOT_EXIST           # gms 12
+  - SAME_ACCOUNT                  # gms 13
+  - RECEIVER_STORAGE_FULL         # gms 14
+  - RECEIVER_UNABLE_TO_RECEIVE    # gms 15
+  - SENDER_UNIQUE_CONFLICT        # gms 16
+  - MESO_LIMIT                    # gms 17
+  - SUCCESSFULLY_SENT             # gms 18  / jms 19 (CloseParcelDlg side-effect arm)
+  - UNKNOWN_ERROR                 # gms 19
+  - RECV_ENABLE_ACTIONS           # gms 20
+  - RECV_NO_FREE_SLOTS            # gms 21
+  - RECV_UNIQUE_CONFLICT          # gms 22
+  - PARCEL_REMOVED                # gms 23  / jms 24
+  - PARCEL_ARRIVED                # gms 24  / jms 25
+  - ALARM_NAMED                   # gms 25  / jms 26
+  - OPEN_QUICK                    # gms 26  / jms 27
+  - ALARM_GENERIC                 # gms 27  / jms 28
+  - UNKNOWN_ERROR_2               # gms 28
+
+# DUEY_ACTION arms (docs/packets/dispatchers/duey_action.yaml). jms_v185 is
+# shifted +1 from every GMS build. Modes 0x00, 0x03 and 0x06 are unattested in
+# either build and are deliberately not claimed.
+duey_action_arms:
+  - SEND                          # gms 2 / jms 3
+  - RECEIVE                       # gms 4 / jms 5
+  - DISCARD                       # gms 5 / jms 6
+  - CLOSE                         # gms 7 / jms 8
+
+fields:
+  - "parcel/clientbound/*: one discrete struct per enumerated mode, config-resolved mode byte"
+  - "parcel/serverbound/*: Action + ActionSend + ActionReceive/ActionDiscard/ActionClose"
+  - "parcel/parcel.go: shared Parcel record encoded by Open/OpenQuick"
+
+# KNOWN CEILING — jms_v185 PARCEL cannot fully promote in this pass.
+# parcel.yaml records that JMS's notice range dispatches one fewer distinct slot
+# than v83's (sub_755FD3 vs v83's NoticeResult), and without a way to correlate
+# StringPool ids to English text the 14 notice-only keys cannot be mapped
+# one-for-one without guessing — which DISPATCHER_FAMILY.md forbids. Only the 7
+# keys with a direct body-match are populated for jms_v185; the rest are left
+# unset (unverified) rather than filled from a pattern. This is a Task 6
+# derivation blocker carried forward, not a gap this task introduced.
+partial_coverage:
+  jms_v185:
+    op: PARCEL
+    claimed_arms: [OPEN, SUCCESSFULLY_SENT, PARCEL_REMOVED, PARCEL_ARRIVED, ALARM_NAMED, OPEN_QUICK, ALARM_GENERIC]
+    unmapped_arms_reason: "StringPool ids not correlatable to text; mapping the 14 notice-only keys would require guessing"
+
+out_of_scope:
+  - CASHSHOP_OPERATION            # parcel_pending alias only (Task 27); the op row itself is untouched
+  - model/asset                   # shared item-slot blob encoded inside Parcel (incidental)

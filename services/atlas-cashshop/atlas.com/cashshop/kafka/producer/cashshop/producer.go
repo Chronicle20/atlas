@@ -112,6 +112,27 @@ func LockerRebatedStatusEventProvider(characterId uint32, cashId int64, amount i
 	return producer.SingleMessageProvider(key, value)
 }
 
+// GiftPurchasedStatusEventProvider builds the GIFT_PURCHASED status event.
+// characterId is the SENDER (the actor keying the outbound message, same
+// convention as every other status event here); recipientCharacterId and
+// recipientName identify who received the item.
+func GiftPurchasedStatusEventProvider(characterId uint32, transactionId uuid.UUID, recipientName string, templateId uint32, quantity uint16, price uint32, recipientCharacterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.StatusEvent[cashshop.GiftPurchasedBody]{
+		CharacterId: characterId,
+		Type:        cashshop.StatusEventTypeGiftPurchased,
+		Body: cashshop.GiftPurchasedBody{
+			TransactionId:        transactionId,
+			RecipientName:        recipientName,
+			TemplateId:           templateId,
+			Quantity:             quantity,
+			Price:                price,
+			RecipientCharacterId: recipientCharacterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func SurpriseFailedStatusEventProvider(characterId uint32, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.StatusEvent[cashshop.SurpriseFailedEventBody]{

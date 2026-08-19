@@ -27,6 +27,10 @@ type Processor interface {
 	GetByCompartmentId(compartmentId uuid.UUID) ([]Model, error)
 	Create(mb *message.Buffer) func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
 	CreateAndEmit(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
+	// CreateGift is Create with the sender's GiftFrom/GiftMessage carried
+	// onto the created row (task-240 task 13) -- everything else (period
+	// lookup, expiration, item-create status event) is identical to Create.
+	CreateGift(mb *message.Buffer) func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32, giftFrom string, giftMessage string) (Model, error)
 	NextCashId() (int64, error)
 	CreateWithCashId(mb *message.Buffer) func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
 	CreateWithCashIdAndEmit(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
@@ -94,7 +98,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(compartmentId uuid.UUID,
 			hourlyConfig := configuration.GetHourlyExpirations(p.l, p.ctx, p.t.Id())
 			expiration := CalculateExpiration(period, templateId, hourlyConfig)
 
-			entity, err := create(tx, p.t.Id(), compartmentId, templateId, commodityId, currency, quantity, petId, purchasedBy, expiration)()
+			entity, err := create(tx, p.t.Id(), compartmentId, templateId, commodityId, currency, quantity, petId, purchasedBy, expiration, "", "")()
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create asset for compartment [%s] template [%d].", compartmentId, templateId)
 				return err
@@ -132,6 +136,51 @@ func (p *ProcessorImpl) CreateAndEmit(compartmentId uuid.UUID, templateId uint32
 		})
 	})
 	return result, txErr
+}
+
+func (p *ProcessorImpl) CreateGift(mb *message.Buffer) func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32, giftFrom string, giftMessage string) (Model, error) {
+	return func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32, giftFrom string, giftMessage string) (Model, error) {
+		var result Model
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			var period uint32 = 30
+			if commodityId != 0 {
+				c, err := p.cp.GetById(commodityId)
+				if err == nil {
+					period = c.Period()
+				} else {
+					p.l.WithError(err).Warnf("Failed to fetch commodity %d, using default period", commodityId)
+				}
+			}
+
+			hourlyConfig := configuration.GetHourlyExpirations(p.l, p.ctx, p.t.Id())
+			expiration := CalculateExpiration(period, templateId, hourlyConfig)
+
+			entity, err := create(tx, p.t.Id(), compartmentId, templateId, commodityId, currency, quantity, petId, purchasedBy, expiration, giftFrom, giftMessage)()
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to create gift asset for compartment [%s] template [%d].", compartmentId, templateId)
+				return err
+			}
+
+			m, err := Make(entity)
+			if err != nil {
+				return err
+			}
+			result = m
+
+			return mb.Put(item.EnvStatusTopic, itemProducer.CreateStatusEventProvider(
+				m.Id(),
+				m.CashId(),
+				m.TemplateId(),
+				m.Quantity(),
+				m.PurchasedBy(),
+				m.Flag(),
+			))
+		})
+		if txErr != nil {
+			return Model{}, txErr
+		}
+		return result, nil
+	}
 }
 
 // NextCashId reserves a fresh, collision-checked cash serial without creating

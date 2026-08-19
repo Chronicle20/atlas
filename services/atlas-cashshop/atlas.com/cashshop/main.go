@@ -137,6 +137,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(wallet.InitResource(GetServer())(db)).
 		AddRouteInitializer(wishlist.InitResource(GetServer())(db)).
+		AddRouteInitializer(purchaserecord.InitResource(GetServer())(db)).
 		AddRouteInitializer(compartment.InitResource(GetServer())(db)).
 		AddRouteInitializer(asset.InitResource(GetServer())(db)).
 		AddRouteInitializer(inventory.InitResource(GetServer())(db)).

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/cashshop"
+	"atlas-channel/cashshop/purchaserecord"
 	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
 	"atlas-channel/data/commodity"
@@ -187,7 +188,19 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationGetPurchaseRecord) {
 			sp := &cashsb.ShopOperationGetPurchaseRecord{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] requesting purchase record for [%d].", s.CharacterId(), sp.SerialNumber())
+			m, err := purchaserecord.NewProcessor(l, ctx).GetForAccount(s.AccountId(), sp.SerialNumber())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve purchase record for account [%d] serial [%d].", s.AccountId(), sp.SerialNumber())
+				err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopPurchaseRecordFailedBody("unknown_error"))(s)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce purchase record failure for character [%d].", s.CharacterId())
+				}
+				return
+			}
+			err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopPurchaseRecordDoneBody(int32(sp.SerialNumber()), purchaseRecordFlag(m.Count())))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce purchase record for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyNameChange) {
@@ -389,6 +402,16 @@ func warnIfStrandingStorage(l logrus.FieldLogger, ctx context.Context, wp writer
 	if err := session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody(msg))(s); err != nil {
 		l.WithError(err).Errorf("Unable to write storage-stranding warning for character [%d].", s.CharacterId())
 	}
+}
+
+// purchaseRecordFlag maps a purchase count onto the wire's single
+// purchased byte (PurchaseRecordDone.purchased, compared !=0 -> bool by the
+// client): any count > 0 is "purchased", never a literal count.
+func purchaseRecordFlag(count uint32) byte {
+	if count > 0 {
+		return 1
+	}
+	return 0
 }
 
 // announceCashShopRejection is the FR-5.1 pink-text fallback for arms with

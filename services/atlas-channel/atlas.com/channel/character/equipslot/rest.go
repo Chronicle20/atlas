@@ -28,6 +28,12 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+// SetToOneReferenceID satisfies the api2go UnmarshalToOneRelations interface.
+func (r *RestModel) SetToOneReferenceID(_ string, _ string) error { return nil }
+
+// SetToManyReferenceIDs satisfies the api2go UnmarshalToManyRelations interface.
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
 // Transform is the identity transformer requests.SliceProvider needs --
 // mirroring pendingchange.Transform's shape for a list resource that has no
 // separate channel-side Model type.

@@ -27,6 +27,12 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// SetToOneReferenceID satisfies the api2go UnmarshalToOneRelations interface.
+func (r *RestModel) SetToOneReferenceID(_ string, _ string) error { return nil }
+
+// SetToManyReferenceIDs satisfies the api2go UnmarshalToManyRelations interface.
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		serialNumber: rm.SerialNumber,

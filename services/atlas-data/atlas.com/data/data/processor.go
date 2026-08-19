@@ -2,6 +2,7 @@ package data
 
 import (
 	"atlas-data/cash"
+	"atlas-data/cashpackage"
 	"atlas-data/characters/templates"
 	"atlas-data/commodity"
 	"atlas-data/consumable"
@@ -174,6 +175,7 @@ func (p *ProcessorImpl) StartWorker(name string, path string) error {
 		err = p.RegisterAllData(path, filepath.Join("Item.wz", "Cash"), cash.NewProcessor(p.l, p.ctx, p.db).RegisterCash)()
 	} else if name == WorkerCommodity {
 		err = p.RegisterFileData(path, filepath.Join("Etc.wz", "Commodity.img.xml"), commodity.NewProcessor(p.l, p.ctx, p.db).RegisterCommodity)()
+		err = p.RegisterFileData(path, filepath.Join("Etc.wz", "CashPackage.img.xml"), cashpackage.NewProcessor(p.l, p.ctx, p.db).RegisterCashPackage)()
 	} else if name == WorkerEtc {
 		if err = item.InitStringFlat(p.db)(p.l)(p.ctx)(filepath.Join(path, "String.wz", "Etc.img.xml")); err != nil {
 			p.l.WithError(err).Errorf("Failed to initialize etc item string registry.")

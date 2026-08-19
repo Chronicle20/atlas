@@ -1,0 +1,58 @@
+# Parcel — CParcelDlg::OnPacket per-version mode table.
+#
+# SOURCE OF TRUTH for the Parcel writer. Derived from CParcelDlg::OnPacket
+# @0x6F56EA and CParcelDlg::NoticeResult @0x6F5BE2 on GMS v83 (task-241
+# design §5.2). Arms 0x00-0x07 do not exist: OnPacket's `default` runs
+# NoticeResult, which returns without a notice for anything below 0x0A, so
+# the observable arm set starts at 0x08.
+#
+# Cosmic's public enum is superseded where the two disagree: 0x17
+# (PARCEL_REMOVED) has a body (uint32 parcelId, byte kind) rather than being
+# a bare "recv successful" notice; 0x18/0x19/0x1B (PARCEL_ARRIVED,
+# ALARM_NAMED, ALARM_GENERIC) are the notification arms, not generic
+# results; and 0x1A/0x1C (OPEN_QUICK, UNKNOWN_ERROR_2) exist at all.
+#
+# Every mode below is v83-derived (task-241 Task 6, Step 1). Each other
+# version column is re-derived per DISPATCHER_FAMILY.md before it is
+# claimed — storage_operation.yaml is the precedent for how a shifted
+# column gets recorded, and JMS is expected to shift. As of this commit
+# only the gms_v83 column is populated; the remaining columns
+# (gms_v72, gms_v79, gms_v84, gms_v87, gms_v92, gms_v95, jms_v185) require
+# a live decompile of each build's CParcelDlg::OnPacket, which was not
+# available when this file was authored — see task-241 Task 6 report for
+# the blocker. Do not fill a column below without that verification.
+writer: Parcel
+fname: CParcelDlg::OnPacket
+op: PARCEL
+direction: clientbound
+opcodes:
+  gms_v72: "0x120"
+  gms_v79: "0x12C"
+  gms_v83: "0x142"
+  gms_v84: "0x149"
+  gms_v87: "0x153"
+  gms_v92: "0x175"
+  gms_v95: "0x17D"
+  jms_v185: "0x160"
+operations:
+  - { key: OPEN,                        modes: { gms_v83: 8  } }
+  - { key: SEND_ENABLE_ACTIONS,         modes: { gms_v83: 9  } }
+  - { key: NOT_ENOUGH_MESOS,            modes: { gms_v83: 10 } }
+  - { key: INCORRECT_REQUEST,           modes: { gms_v83: 11 } }
+  - { key: NAME_DOES_NOT_EXIST,         modes: { gms_v83: 12 } }
+  - { key: SAME_ACCOUNT,                modes: { gms_v83: 13 } }
+  - { key: RECEIVER_STORAGE_FULL,       modes: { gms_v83: 14 } }
+  - { key: RECEIVER_UNABLE_TO_RECEIVE,  modes: { gms_v83: 15 } }
+  - { key: SENDER_UNIQUE_CONFLICT,      modes: { gms_v83: 16 } }
+  - { key: MESO_LIMIT,                  modes: { gms_v83: 17 } }
+  - { key: SUCCESSFULLY_SENT,           modes: { gms_v83: 18 } }
+  - { key: UNKNOWN_ERROR,               modes: { gms_v83: 19 } }
+  - { key: RECV_ENABLE_ACTIONS,         modes: { gms_v83: 20 } }
+  - { key: RECV_NO_FREE_SLOTS,          modes: { gms_v83: 21 } }
+  - { key: RECV_UNIQUE_CONFLICT,        modes: { gms_v83: 22 } }
+  - { key: PARCEL_REMOVED,              modes: { gms_v83: 23 } }
+  - { key: PARCEL_ARRIVED,              modes: { gms_v83: 24 } }
+  - { key: ALARM_NAMED,                 modes: { gms_v83: 25 } }
+  - { key: OPEN_QUICK,                  modes: { gms_v83: 26 } }
+  - { key: ALARM_GENERIC,               modes: { gms_v83: 27 } }
+  - { key: UNKNOWN_ERROR_2,             modes: { gms_v83: 28 } }

@@ -3236,6 +3236,11 @@
         ]
       },
       {
+        "opCode": "0x175",
+        "writer": "Parcel",
+        "fname": "CParcelDlg::OnPacket"
+      },
+      {
         "opCode": "0x177",
         "writer": "CashShopCashQueryResult",
         "fname": "CCashShop::OnQueryCashResult",

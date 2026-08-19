@@ -1,0 +1,30 @@
+# DueyAction — CTabSend::SendParcel (+ CTabReceive::ReceiveParcel/
+# DiscardParcel, CParcelDlg::CloseParcelDlg) per-version mode table.
+#
+# SOURCE OF TRUTH for the DueyAction writer. Derived arms on GMS v83,
+# opcode 0x041 (task-241 design §5.4): SEND @0x6F36A8 (quick=0) /
+# @0x6F1DF5 (quick=1), RECEIVE via v72 CTabReceive::ReceiveParcel
+# @0x65AF41, DISCARD @0x6F0DC3, CLOSE via CParcelDlg::CloseParcelDlg
+# @0x6F5691. Modes 0x00, 0x03 and 0x06 are unattested in either build.
+#
+# direction: serverbound is required here — it is what opts this file out
+# of the FAM-CAP check (DISPATCHER_FAMILY.md: "Serverbound dispatcher files
+# are out of scope for FAM-CAP").
+#
+# gms_v72 is closed at opcode 0x040 (registry: gms_v72.yaml, provenance
+# ida-discovered, CTabReceive::ReceiveParcel @0x65AF41 = 6663489). v79's
+# opcode and every remaining version column (gms_v72, gms_v79, gms_v84,
+# gms_v87, gms_v92, gms_v95, jms_v185) require a live decompile of each
+# build's CTabSend::SendParcel / CTabReceive::ReceiveParcel /
+# CTabReceive::DiscardParcel / CParcelDlg::CloseParcelDlg, which was not
+# available when this file was authored — see task-241 Task 6 report for
+# the blocker. Do not fill a column below without that verification.
+writer: DueyAction
+fname: CTabSend::SendParcel
+op: DUEY_ACTION
+direction: serverbound
+operations:
+  - { key: SEND,    modes: { gms_v83: 2 } }
+  - { key: RECEIVE, modes: { gms_v83: 4 } }
+  - { key: DISCARD, modes: { gms_v83: 5 } }
+  - { key: CLOSE,   modes: { gms_v83: 7 } }

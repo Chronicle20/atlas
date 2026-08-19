@@ -4573,6 +4573,11 @@
         ]
       },
       {
+        "opCode": "0x12C",
+        "writer": "Parcel",
+        "fname": "CParcelDlg::OnPacket"
+      },
+      {
         "opCode": "0x12E",
         "writer": "CashShopCashQueryResult",
         "fname": "CCashShop::OnQueryCashResult",

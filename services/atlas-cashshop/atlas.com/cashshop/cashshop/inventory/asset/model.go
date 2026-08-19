@@ -12,6 +12,7 @@ type Model struct {
 	cashId        int64
 	templateId    uint32
 	commodityId   uint32
+	currency      uint32
 	quantity      uint32
 	flag          uint16
 	petId         uint32
@@ -38,6 +39,13 @@ func (m Model) TemplateId() uint32 {
 
 func (m Model) CommodityId() uint32 {
 	return m.commodityId
+}
+
+// Currency is the wallet bucket this asset was purchased with -- see
+// Entity.Currency's doc comment for the full 0-means-default-bucket
+// convention.
+func (m Model) Currency() uint32 {
+	return m.currency
 }
 
 func (m Model) Quantity() uint32 {
@@ -71,6 +79,7 @@ func Clone(m Model) *ModelBuilder {
 		cashId:        m.cashId,
 		templateId:    m.templateId,
 		commodityId:   m.commodityId,
+		currency:      m.currency,
 		quantity:      m.quantity,
 		flag:          m.flag,
 		petId:         m.petId,
@@ -86,6 +95,7 @@ type ModelBuilder struct {
 	cashId        int64
 	templateId    uint32
 	commodityId   uint32
+	currency      uint32
 	quantity      uint32
 	flag          uint16
 	petId         uint32
@@ -126,6 +136,11 @@ func (b *ModelBuilder) SetCommodityId(commodityId uint32) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetCurrency(currency uint32) *ModelBuilder {
+	b.currency = currency
+	return b
+}
+
 func (b *ModelBuilder) SetQuantity(quantity uint32) *ModelBuilder {
 	b.quantity = quantity
 	return b
@@ -163,6 +178,7 @@ func (b *ModelBuilder) Build() Model {
 		cashId:        b.cashId,
 		templateId:    b.templateId,
 		commodityId:   b.commodityId,
+		currency:      b.currency,
 		quantity:      b.quantity,
 		flag:          b.flag,
 		petId:         b.petId,

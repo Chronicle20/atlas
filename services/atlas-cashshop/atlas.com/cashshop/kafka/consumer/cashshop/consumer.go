@@ -65,6 +65,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCouponRedemption(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestLockerRebate(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -169,6 +172,21 @@ func handleCommandRequestCouponRedemption(db *gorm.DB) message.Handler[cashshop.
 		// been reported to the player and only needs logging here.
 		if err := coupon.NewProcessor(l, ctx, db).RedeemAndEmit(c.CharacterId, c.Body.Code); err != nil {
 			l.WithError(err).Debugf("Coupon redemption for character [%d] did not succeed.", c.CharacterId)
+		}
+	}
+}
+
+func handleCommandRequestLockerRebate(db *gorm.DB) message.Handler[cashshop.Command[cashshop.RequestLockerRebateCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c cashshop.Command[cashshop.RequestLockerRebateCommandBody]) {
+		if c.Type != cashshop.CommandTypeRequestLockerRebate {
+			return
+		}
+		// RebateAndEmit owns the whole outcome, including emitting the
+		// LOCKER_REBATED / ERROR event on the appropriate path, so a
+		// returned error has already been reported to the player and only
+		// needs logging here.
+		if err := cashshop3.NewProcessor(l, ctx, db).RebateAndEmit(c.CharacterId, c.Body.AccountId, c.Body.CashId, c.Body.TransactionId); err != nil {
+			l.WithError(err).Errorf("Locker rebate for character [%d], cashId [%d] did not succeed.", c.CharacterId, c.Body.CashId)
 		}
 	}
 }

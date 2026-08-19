@@ -23,7 +23,7 @@ func generateUniqueCashId(db *gorm.DB) (int64, error) {
 	}
 }
 
-func create(db *gorm.DB, tenantId uuid.UUID, compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32, expiration time.Time) model.Provider[Entity] {
+func create(db *gorm.DB, tenantId uuid.UUID, compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32, expiration time.Time) model.Provider[Entity] {
 	cashId, err := generateUniqueCashId(db)
 	if err != nil {
 		return model.ErrorProvider[Entity](err)
@@ -35,6 +35,7 @@ func create(db *gorm.DB, tenantId uuid.UUID, compartmentId uuid.UUID, templateId
 		CashId:        cashId,
 		TemplateId:    templateId,
 		CommodityId:   commodityId,
+		Currency:      currency,
 		Quantity:      quantity,
 		Flag:          0,
 		PetId:         petId,
@@ -50,7 +51,7 @@ func create(db *gorm.DB, tenantId uuid.UUID, compartmentId uuid.UUID, templateId
 	return model.FixedProvider(entity)
 }
 
-func findOrCreateByCashId(db *gorm.DB, tenantId uuid.UUID, cashId int64, compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, petId uint32, purchasedBy uint32, expiration time.Time) model.Provider[Entity] {
+func findOrCreateByCashId(db *gorm.DB, tenantId uuid.UUID, cashId int64, compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32, expiration time.Time) model.Provider[Entity] {
 	entities, err := byCashIdProvider(cashId)(db)()
 	if err != nil {
 		return model.ErrorProvider[Entity](err)
@@ -66,6 +67,7 @@ func findOrCreateByCashId(db *gorm.DB, tenantId uuid.UUID, cashId int64, compart
 		CashId:        cashId,
 		TemplateId:    templateId,
 		CommodityId:   commodityId,
+		Currency:      currency,
 		Quantity:      quantity,
 		Flag:          0,
 		PetId:         petId,

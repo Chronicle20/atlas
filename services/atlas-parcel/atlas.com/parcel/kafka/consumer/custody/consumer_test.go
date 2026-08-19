@@ -99,6 +99,9 @@ func newAcceptCommand(transactionId uuid.UUID, parcelId uuid.UUID) custody.Comma
 			TemplateId:         1302000,
 			Quantity:           1,
 			Strength:           5,
+			ItemLevel:          3,
+			RingId:             777,
+			ViciousCount:       12,
 			Owner:              "Chronicle",
 		},
 	}
@@ -122,6 +125,11 @@ func TestCustodyCommands(t *testing.T) {
 		require.NotNil(t, m.ItemId())
 		assert.Equal(t, uint32(1302000), *m.ItemId())
 		assert.Equal(t, uint16(5), m.ItemSnapshot().Strength)
+		// task-15 review B1/B2: ItemLevel/RingId/ViciousCount must round-trip
+		// through AssetData, not be silently dropped on the parcel snapshot.
+		assert.Equal(t, byte(3), m.ItemSnapshot().LevelType, "ItemLevel must map to AssetData.LevelType")
+		assert.Equal(t, uint32(777), m.ItemSnapshot().RingId, "RingId must survive the parcel round-trip")
+		assert.Equal(t, uint32(12), m.ItemSnapshot().ViciousCount, "ViciousCount must survive the parcel round-trip")
 
 		accepted := eventsOfType(rp.events, custody.StatusEventAccepted)
 		require.Len(t, accepted, 1)

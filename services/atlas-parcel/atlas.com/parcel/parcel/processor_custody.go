@@ -60,7 +60,10 @@ type AcceptParams struct {
 	Jump          uint16
 	Slots         uint16
 	Level         byte
+	ItemLevel     byte
 	ItemExp       uint32
+	RingId        uint32
+	ViciousCount  uint32
 	Flags         uint16
 	Owner         string
 }
@@ -120,8 +123,11 @@ func (p *ProcessorImpl) AcceptCustody(params AcceptParams) (Model, error) {
 					Speed:         params.Speed,
 					Jump:          params.Jump,
 					Slots:         params.Slots,
+					LevelType:     params.ItemLevel,
 					Level:         params.Level,
 					Experience:    params.ItemExp,
+					RingId:        params.RingId,
+					ViciousCount:  params.ViciousCount,
 				})
 		}
 

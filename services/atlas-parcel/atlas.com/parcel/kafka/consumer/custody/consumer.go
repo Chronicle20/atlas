@@ -114,7 +114,10 @@ func handleAcceptToParcel(pf providerFn) func(db *gorm.DB) message.Handler[custo
 				Jump:               b.Jump,
 				Slots:              b.Slots,
 				Level:              b.Level,
+				ItemLevel:          b.ItemLevel,
 				ItemExp:            b.ItemExp,
+				RingId:             b.RingId,
+				ViciousCount:       b.ViciousCount,
 				Flags:              b.Flags,
 				Owner:              b.Owner,
 			})

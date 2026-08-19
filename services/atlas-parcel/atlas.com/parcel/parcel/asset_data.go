@@ -44,6 +44,16 @@ type AssetData struct {
 	CommodityId    uint32     `json:"commodityId"`
 	PurchaseBy     uint32     `json:"purchaseBy"`
 	PetId          uint32     `json:"petId"`
+
+	// RingId and ViciousCount are Duey-specific additions (task-15 review
+	// finding B2): the merchant original this struct was copied from had no
+	// home for them, but a mailed equip's ring identity and vicious-hammer
+	// count must survive the parcel round-trip like every other stat here.
+	// JSONB-backed (see Value/Scan below), so no migration is required to add
+	// a field. Mirrors atlas-saga-orchestrator's AcceptToParcelPayload /
+	// atlas-mts's listing.entity RingId/ViciousCount columns.
+	RingId       uint32 `json:"ringId"`
+	ViciousCount uint32 `json:"viciousCount"`
 }
 
 func (a AssetData) WithQuantity(quantity uint32) AssetData {

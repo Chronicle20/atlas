@@ -29,7 +29,7 @@ description: |
   </example>
 model: sonnet
 # tools: intentionally omitted (FR-1.3) — resolves the loaded IDB via
-# ida-pro-mcp (list_instances/select_instance) and decompiles the fname to
+# ida-pro-mcp (idb_list + the `database` argument) and decompiles the fname to
 # derive the unimplemented op's field order/layout; its MCP tool surface
 # can't be enumerated ahead of time. Per
 # https://code.claude.com/docs/en/sub-agents.md, omitting `tools:` is the
@@ -99,8 +99,9 @@ by version range. That is cheaper than discovering it at call 119.
    is how task-092 nearly broke `TOUCH_MONSTER_ATTACK`. Report which branch you took.
 
 2. **Derive from the GMS v95.1 IDB as source of truth, distrusting symbols.**
-   Resolve the instance by loaded IDB via `list_instances` / `select_instance`
-   (never hardcode a port — assignments are launch-order specific). Every field,
+   Resolve the session by loaded IDB via `idb_list` (match on binary name) and
+   pass that session id as `database` on every call — `select_instance` and
+   port-based selection are dead; never hardcode a port. Every field,
    width, and address is cited to a decompile line. If the op's `fname` doesn't
    resolve as a key in the version's export `functions` map, `evidence pin` will
    fail later — STOP and escalate the unresolved fname to the user; never

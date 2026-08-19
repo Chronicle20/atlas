@@ -22,7 +22,8 @@ new-version pass to fix an existing one.
 > full re-export overwrite.
 
 All commands run from the worktree root and need a live IDA-MCP instance for the
-target version; select it with `--ida-port <port>` (0 = default active instance).
+target version; select it with `--ida-database <session id>` (the session id from
+`idb_list` — port-based selection is dead).
 Confirm the loaded IDB matches the version you are auditing before you read.
 
 ## The diagnostic toolkit
@@ -43,7 +44,7 @@ reports `divergent` / `missing-mode` entries (dispatcher applicability included)
 --allowlist <path>     unimplemented-case allowlist (default: docs/packets/audits/<auditdir>/_unimplemented.json)
 --descent-depth <n>    max helper-descent recursion depth (default 6)
 --ida-url <url>        IDA-MCP HTTP endpoint (default http://192.168.20.3:13337/mcp)
---ida-port <n>         IDA-MCP instance to select (default 0 = active)
+--ida-database <id>    IDA-MCP session id from idb_list; targets that IDB directly
 --ida-timeout <dur>    per-call IDA-MCP timeout (default 1m0s)
 ```
 
@@ -65,7 +66,7 @@ Walks every exported entry, pulls its live IDA read order, and writes an
 --audit-dir <path>     committed audit dir (default: docs/packets/audits/<version>)
 --descent-depth <n>    max helper-descent recursion depth (default 6)
 --ida-url <url>        IDA-MCP HTTP endpoint (default http://192.168.20.3:13337/mcp)
---ida-port <n>         IDA-MCP instance to select (default 0 = active)
+--ida-database <id>    IDA-MCP session id from idb_list; targets that IDB directly
 --ida-timeout <dur>    per-call IDA-MCP timeout (default 1m0s)
 ```
 
@@ -89,7 +90,7 @@ per-op list of "committed baseline says X, live IDB says Y" you work down.
 --audit-dir <path>     committed audit dir (default: docs/packets/audits/<version>)
 --descent-depth <n>    max helper-descent recursion depth (default 6)
 --ida-url <url>        IDA-MCP HTTP endpoint (default http://192.168.20.3:13337/mcp)
---ida-port <n>         IDA-MCP instance to select (default 0 = active)
+--ida-database <id>    IDA-MCP session id from idb_list; targets that IDB directly
 --ida-timeout <dur>    per-call IDA-MCP timeout (default 1m0s)
 ```
 
@@ -107,7 +108,7 @@ worklist, no mutation, just the shape delta for a suspected field-level drift.
 --baseline <path>      baseline export JSON (default: docs/packets/ida-exports/<version>.json)
 --descent-depth <n>    max helper-descent recursion depth (default 6)
 --ida-url <url>        IDA-MCP HTTP endpoint (default http://192.168.20.3:13337/mcp)
---ida-port <n>         IDA-MCP instance to select (default 0 = active)
+--ida-database <id>    IDA-MCP session id from idb_list; targets that IDB directly
 --ida-timeout <dur>    per-call IDA-MCP timeout (default 1m0s)
 ```
 
@@ -128,7 +129,7 @@ which is a bring-up tool and out of scope for maintenance).
 --min-confidence <f>   high-confidence threshold for the roll-up (default 0.6)
 --descent-depth <n>    max helper-descent recursion depth (default 6)
 --ida-url <url>        IDA-MCP HTTP endpoint (default http://192.168.20.3:13337/mcp)
---ida-port <n>         IDA-MCP instance to select (default 0 = active)
+--ida-database <id>    IDA-MCP session id from idb_list; targets that IDB directly
 --ida-timeout <dur>    per-call IDA-MCP timeout (default 1m0s)
 ```
 

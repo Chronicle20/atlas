@@ -130,10 +130,8 @@ func runExport(args []string, stderr io.Writer) int {
 	fs.StringVar(&eo.Output, "output", "", "output JSON path (required)")
 	var generatedAt string
 	fs.StringVar(&generatedAt, "generated-at", "", "fixed provenance timestamp (default: now / $PACKET_AUDIT_GENERATED_AT)")
-	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
 	var idaDatabase string
-	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
+	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly; preferred when many IDBs are open on one server")
 	// Roster-source overrides (additive; default behaviour is unchanged when the
 	// flags are absent). Pass an empty value (e.g. --prior-export "") to harvest a
 	// TARGETED roster — only the FNames listed in --pending — instead of the full
@@ -182,28 +180,20 @@ func runExport(args []string, stderr io.Writer) int {
 		eo.GeneratedAt = time.Now().UTC().Format(time.RFC3339)
 	}
 
-	client := newIDAClient(eo.IDAURL, eo.IDATimeout, idaPort, idaDatabase)
+	client := newIDAClient(eo.IDAURL, eo.IDATimeout, idaDatabase)
 	return exportRun(eo, client, os.Stdout, stderr)
 }
 
-// newIDAClient builds the IDA-MCP client every subcommand talks through.
-//
-// There are two live IDA-MCP servers and they take different selectors: the
+// newIDAClient builds the IDA-MCP client every subcommand talks through. The
 // session-based server hosts every IDB at once and picks one by a `database`
-// session id (from idb_list), while the older per-port server hosts one IDB per
-// port and has no `database` param. `database` therefore wins when both are set
-// — `-ida-port` against the session server fails outright, since the
-// select_instance call it relies on was removed.
-func newIDAClient(url string, timeout time.Duration, port int, database string) idasrc.MCPClient {
+// session id (from idb_list); an empty database leaves the server to pick its
+// default session.
+func newIDAClient(url string, timeout time.Duration, database string) idasrc.MCPClient {
 	hc := &http.Client{Timeout: timeout}
-	switch {
-	case database != "":
+	if database != "" {
 		return idasrc.NewMCPHTTPClientWithDatabase(url, hc, database)
-	case port != 0:
-		return idasrc.NewMCPHTTPClientWithInstance(url, hc, port)
-	default:
-		return idasrc.NewMCPHTTPClient(url, hc)
 	}
+	return idasrc.NewMCPHTTPClient(url, hc)
 }
 
 // runValidate is the validate-subcommand flag wrapper. It parses validate flags,
@@ -222,10 +212,8 @@ func runValidate(args []string, stderr io.Writer) int {
 	fs.StringVar(&idaURL, "ida-url", "http://192.168.20.3:13337/mcp", "IDA-MCP HTTP endpoint")
 	fs.DurationVar(&idaTimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.IntVar(&vo.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")
-	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
 	var idaDatabase string
-	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
+	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly; preferred when many IDBs are open on one server")
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -251,7 +239,7 @@ func runValidate(args []string, stderr io.Writer) int {
 		vo.Allowlist = "docs/packets/audits/" + auditDir + "/_unimplemented.json"
 	}
 
-	client := newIDAClient(idaURL, idaTimeout, idaPort, idaDatabase)
+	client := newIDAClient(idaURL, idaTimeout, idaDatabase)
 	return validateRun(vo, client, os.Stdout)
 }
 
@@ -271,10 +259,8 @@ func runInfer(args []string, stderr io.Writer) int {
 	fs.StringVar(&idaURL, "ida-url", "http://192.168.20.3:13337/mcp", "IDA-MCP HTTP endpoint")
 	fs.DurationVar(&idaTimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.IntVar(&io_.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")
-	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
 	var idaDatabase string
-	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
+	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly; preferred when many IDBs are open on one server")
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -291,7 +277,7 @@ func runInfer(args []string, stderr io.Writer) int {
 		io_.Baseline = "docs/packets/ida-exports/" + version + ".json"
 	}
 
-	client := newIDAClient(idaURL, idaTimeout, idaPort, idaDatabase)
+	client := newIDAClient(idaURL, idaTimeout, idaDatabase)
 	return inferRun(io_, client, os.Stdout)
 }
 
@@ -310,10 +296,8 @@ func runDiffShape(args []string, stderr io.Writer) int {
 	fs.StringVar(&idaURL, "ida-url", "http://192.168.20.3:13337/mcp", "IDA-MCP HTTP endpoint")
 	fs.DurationVar(&idaTimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.IntVar(&do.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")
-	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
 	var idaDatabase string
-	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
+	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly; preferred when many IDBs are open on one server")
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -330,7 +314,7 @@ func runDiffShape(args []string, stderr io.Writer) int {
 		do.Baseline = "docs/packets/ida-exports/" + version + ".json"
 	}
 
-	client := newIDAClient(idaURL, idaTimeout, idaPort, idaDatabase)
+	client := newIDAClient(idaURL, idaTimeout, idaDatabase)
 	return diffShapeRun(do, client, os.Stdout)
 }
 
@@ -352,10 +336,8 @@ func runResolveDispatch(args []string, stderr io.Writer) int {
 	fs.StringVar(&idaURL, "ida-url", "http://192.168.20.3:13337/mcp", "IDA-MCP HTTP endpoint")
 	fs.DurationVar(&idaTimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.IntVar(&ro.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")
-	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
 	var idaDatabase string
-	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
+	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly; preferred when many IDBs are open on one server")
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -372,7 +354,7 @@ func runResolveDispatch(args []string, stderr io.Writer) int {
 		ro.Baseline = "docs/packets/ida-exports/" + version + ".json"
 	}
 
-	client := newIDAClient(idaURL, idaTimeout, idaPort, idaDatabase)
+	client := newIDAClient(idaURL, idaTimeout, idaDatabase)
 	return resolveDispatchRun(ro, client, os.Stdout)
 }
 
@@ -393,10 +375,8 @@ func runDecompose(args []string, stderr io.Writer) int {
 	fs.StringVar(&idaURL, "ida-url", "http://192.168.20.3:13337/mcp", "IDA-MCP HTTP endpoint")
 	fs.DurationVar(&idaTimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.IntVar(&do.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")
-	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
 	var idaDatabase string
-	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
+	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly; preferred when many IDBs are open on one server")
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -416,7 +396,7 @@ func runDecompose(args []string, stderr io.Writer) int {
 		do.AuditDir = "docs/packets/audits/" + do.Version
 	}
 
-	client := newIDAClient(idaURL, idaTimeout, idaPort, idaDatabase)
+	client := newIDAClient(idaURL, idaTimeout, idaDatabase)
 	return decomposeRun(do, client, os.Stdout)
 }
 
@@ -436,10 +416,8 @@ func runTriage(args []string, stderr io.Writer) int {
 	fs.StringVar(&idaURL, "ida-url", "http://192.168.20.3:13337/mcp", "IDA-MCP HTTP endpoint")
 	fs.DurationVar(&idaTimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.IntVar(&to.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")
-	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
 	var idaDatabase string
-	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
+	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly; preferred when many IDBs are open on one server")
 
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -459,6 +437,6 @@ func runTriage(args []string, stderr io.Writer) int {
 		to.AuditDir = "docs/packets/audits/" + to.Version
 	}
 
-	client := newIDAClient(idaURL, idaTimeout, idaPort, idaDatabase)
+	client := newIDAClient(idaURL, idaTimeout, idaDatabase)
 	return triageRun(to, client, os.Stdout)
 }

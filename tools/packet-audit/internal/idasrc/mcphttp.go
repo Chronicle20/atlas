@@ -27,45 +27,30 @@ type MCPHTTPClient struct {
 	nextID    int
 	sessionID string // Mcp-Session-Id captured from the initialize response.
 
-	// InstancePort, when non-zero, names an ida-pro-mcp instance (multi-IDB
-	// setup) to select once via select_instance, lazily after the handshake.
-	// 0 means "use the default active instance" (no select_instance call).
-	InstancePort     int
-	instanceSelected bool
-
 	// Database, when non-empty, is the session id (from idb_list) of the IDB to
 	// target. It is injected as the "database" argument on every tools/call, so
-	// the harvest reads the intended IDB directly on the session-based server —
-	// the successor to the removed select_instance/port mechanism. Empty leaves
-	// the server to pick its default session (legacy single-IDB behaviour).
+	// the harvest reads the intended IDB directly on the session-based server.
+	// Empty leaves the server to pick its default session (legacy single-IDB
+	// behaviour).
 	Database string
 }
 
 // NewMCPHTTPClient builds a client targeting the given MCP endpoint URL. A nil
-// *http.Client defaults to a fresh one. No instance is selected (port 0 → the
-// server's default active instance).
+// *http.Client defaults to a fresh one.
 func NewMCPHTTPClient(url string, hc *http.Client) *MCPHTTPClient {
-	return NewMCPHTTPClientWithInstance(url, hc, 0)
-}
-
-// NewMCPHTTPClientWithInstance builds a client that, after the handshake,
-// selects the ida-pro-mcp instance listening on the given port (multi-IDB:
-// v83/v87/v95/jms each run a distinct instance). A port of 0 selects nothing
-// and uses the server's default active instance.
-func NewMCPHTTPClientWithInstance(url string, hc *http.Client, port int) *MCPHTTPClient {
 	if hc == nil {
 		hc = &http.Client{}
 	}
-	return &MCPHTTPClient{url: url, http: hc, InstancePort: port}
+	return &MCPHTTPClient{url: url, http: hc}
 }
 
 // NewMCPHTTPClientWithDatabase builds a client that targets a specific IDB by
 // session id (from idb_list), injecting it as the "database" argument on every
-// tools/call. This is the session-based successor to select_instance/port:
-// each tool (lookup_funcs, func_query, decompile, callees) is session-scoped on
-// the current server, so a harvest that omits "database" hits the server's
-// default IDB — the source of cross-version harvest mismatches. A non-empty
-// database makes the harvest deterministic regardless of which IDBs are open.
+// tools/call. Each tool (lookup_funcs, func_query, decompile, callees) is
+// session-scoped on the current server, so a harvest that omits "database"
+// hits the server's default IDB — the source of cross-version harvest
+// mismatches. A non-empty database makes the harvest deterministic regardless
+// of which IDBs are open.
 func NewMCPHTTPClientWithDatabase(url string, hc *http.Client, database string) *MCPHTTPClient {
 	if hc == nil {
 		hc = &http.Client{}
@@ -266,16 +251,6 @@ func (c *MCPHTTPClient) ensureInit(ctx context.Context) error {
 		return err
 	}
 	c.inited = true
-	// Multi-IDB: if an instance port is configured, select it exactly once,
-	// after the handshake and before any tool call, so subsequent calls target
-	// the right IDB. Done here (rather than in a separate guard) so it runs
-	// inside the single one-time init path.
-	if c.InstancePort != 0 && !c.instanceSelected {
-		if err := c.selectInstanceLocked(ctx, c.InstancePort); err != nil {
-			return err
-		}
-		c.instanceSelected = true
-	}
 	return nil
 }
 
@@ -298,8 +273,7 @@ func (c *MCPHTTPClient) callStructured(ctx context.Context, tool string, args ma
 	// Session-based targeting: every session-scoped tool (lookup_funcs,
 	// func_query, decompile, callees) accepts a "database" argument. Inject it
 	// here — the single chokepoint for the harvest's tool calls — so the read
-	// hits the intended IDB. select_instance goes through callStructuredLocked
-	// and is intentionally left untouched.
+	// hits the intended IDB.
 	if c.Database != "" && args != nil {
 		if _, ok := args["database"]; !ok {
 			args["database"] = c.Database
@@ -308,8 +282,7 @@ func (c *MCPHTTPClient) callStructured(ctx context.Context, tool string, args ma
 	return c.callStructuredLocked(ctx, tool, args)
 }
 
-// callStructuredLocked is callStructured without the handshake — used by the
-// post-handshake select_instance call to avoid re-entering ensureInit.
+// callStructuredLocked is callStructured without the handshake.
 func (c *MCPHTTPClient) callStructuredLocked(ctx context.Context, tool string, args map[string]any) (json.RawMessage, error) {
 	id := c.allocID()
 	params := map[string]any{"name": tool, "arguments": args}
@@ -334,23 +307,6 @@ func (c *MCPHTTPClient) callStructuredLocked(ctx context.Context, tool string, a
 		return nil, fmt.Errorf("idasrc: tools/call %q returned no structuredContent", tool)
 	}
 	return tr.StructuredContent, nil
-}
-
-// SelectInstance switches the active ida-pro-mcp instance (multi-IDB) to the one
-// listening on the given port, for all subsequent calls. It performs the
-// handshake if needed.
-func (c *MCPHTTPClient) SelectInstance(ctx context.Context, port int) error {
-	if err := c.ensureInit(ctx); err != nil {
-		return err
-	}
-	return c.selectInstanceLocked(ctx, port)
-}
-
-func (c *MCPHTTPClient) selectInstanceLocked(ctx context.Context, port int) error {
-	if _, err := c.callStructuredLocked(ctx, "select_instance", map[string]any{"port": port}); err != nil {
-		return fmt.Errorf("idasrc: select_instance port %d: %w", port, err)
-	}
-	return nil
 }
 
 // lookupFnEntry is one element of the lookup_funcs structuredContent.result

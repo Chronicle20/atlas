@@ -524,7 +524,7 @@ left silent (see `docs/tasks/task-081-ida-export-reharvest/four-version-validati
   human-confirmation pass over the "ambiguous" picks lifts coverage — then re-validation is
   fully repeatable from committed inputs.
 - [ ] **V7 ledger/guide**: update `docs/packets/audits/STARTING_A_NEW_VERSION_PASS.md` with
-  the `infer`/`validate` + `--ida-port` multi-IDB workflow and the dispatch-selector schema;
+  the `infer`/`validate` + `--ida-database` multi-IDB workflow and the dispatch-selector schema;
   re-curate the `_pending.md` registries to mark `#`-mode entries as live-verified.
 - [ ] Optional: a `validate` mode that also handles if/else-chain dispatch handlers
   (e.g. `CLogin::OnCheckPasswordResult`) — currently honest `unverifiable` (a genuine

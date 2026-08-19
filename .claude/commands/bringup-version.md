@@ -55,10 +55,10 @@ key artifacts, and any blocker — so the pass is RESUMABLE if interrupted.
 - **The IDA-MCP instance is a single global, single-threaded resource.** Stages
   2, 4, 5 and every `packet-verifier` that decompiles all drive the same IDA
   server. NEVER run two IDA-writing agents in parallel — dispatch verifiers one
-  at a time (or strictly batched per IDB with `select_instance`), never as a
-  concurrent fan-out. Confirm the loaded IDB matches the target version via
-  `list_instances` before any decompile; do not hardcode ports (launch-order
-  specific).
+  at a time (or strictly batched per IDB), never as a concurrent fan-out.
+  Confirm the loaded IDB matches the target version via `idb_list` before any
+  decompile, and pin that session id as the `database` argument; port-based
+  selection (`select_instance`) is dead.
 - **`run.go` `candidatesFromFName` and `evidence/families.yaml` are shared
   single files.** Two agents editing them concurrently corrupt each other. Any
   stage that touches them is serialized.

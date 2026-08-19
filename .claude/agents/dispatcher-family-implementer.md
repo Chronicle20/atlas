@@ -33,7 +33,7 @@ disallowedTools: [Agent]
 # Denying Agent subtractively keeps `tools:` omitted, which is the only
 # documented way to inherit MCP tools (see the FR-1.3 note below).
 # tools: intentionally omitted (FR-1.3) — resolves the loaded IDB via
-# ida-pro-mcp (list_instances/select_instance) to enumerate the family's mode
+# ida-pro-mcp (idb_list + the `database` argument) to enumerate the family's mode
 # set from the client switch and decompile each arm's body; its MCP tool
 # surface can't be enumerated ahead of time. Per
 # https://code.claude.com/docs/en/sub-agents.md, omitting `tools:` is the
@@ -104,7 +104,8 @@ Agent-specific execution rules (in addition to the playbook):
 1. NEVER fabricate bytes, opcodes, mode values, or read orders from MapleStory
    knowledge. Every fixture byte and every mode value traces to a decompile line
    (function + address) or export entry you cite. Resolve IDA by loaded IDB via
-   list_instances/select_instance; if the right IDB isn't loaded and the export
+   `idb_list` and pin that session id as the `database` argument
+   (`select_instance` is dead); if the right IDB isn't loaded and the export
    lacks the function, STOP and report blocked.
    - **`run.go` `#`-entry comments can be STALE.** The `// Atlas X writes: … ❌`
      narrative in `candidatesFromFName` is a point-in-time note, not live truth —

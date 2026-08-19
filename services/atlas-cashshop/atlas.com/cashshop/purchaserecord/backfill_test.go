@@ -89,23 +89,28 @@ func TestBackfill(t *testing.T) {
 		}
 	})
 
-	t.Run("counts duplicates", func(t *testing.T) {
+	// The next two subtests re-check state left over from "seeds from live
+	// assets" above; they are not duplicate/soft-delete fixtures in their own
+	// right. Real duplicate-counting and soft-deleted-inclusion coverage,
+	// with fixtures that actually create duplicates and a soft-deleted row,
+	// lives in TestBackfillCountsDuplicatesAndSoftDeletes below.
+	t.Run("a single purchase stays counted once", func(t *testing.T) {
 		count, err := Get(db, a, accountId, 10000)
 		if err != nil {
 			t.Fatalf("Get 10000: %v", err)
 		}
 		if count != 1 {
-			t.Fatalf("count 10000 before duplicates = %d, want 1", count)
+			t.Fatalf("count 10000 = %d, want 1", count)
 		}
 	})
 
-	t.Run("includes soft-deleted assets", func(t *testing.T) {
+	t.Run("a commodity with no assets has no record", func(t *testing.T) {
 		count, err := Get(db, a, accountId, 30000)
 		if err != nil {
 			t.Fatalf("Get 30000: %v", err)
 		}
 		if count != 0 {
-			t.Fatalf("count 30000 before backfill = %d, want 0", count)
+			t.Fatalf("count 30000 = %d, want 0", count)
 		}
 	})
 
@@ -212,6 +217,25 @@ func TestBackfillCountsDuplicatesAndSoftDeletes(t *testing.T) {
 			t.Fatalf("count 30000 after second backfill = %d, want 1", count)
 		}
 	})
+}
+
+// TestBackfillUsesSQLiteFallbackUnderTest documents and pins the dialect
+// branch Backfill takes in this module's test suite: sqlite cannot scan a
+// SQL-side MIN()/MAX() aggregate over a DATETIME column back into
+// time.Time, so Backfill routes sqlite through backfillGroupsSQLite (Go-side
+// grouping) and reserves the bounded, single-query SQL GROUP BY/MIN/MAX
+// aggregation (backfillGroupsSQL) for every other driver, including the
+// production Postgres path. This test does not exercise backfillGroupsSQL
+// itself -- doing so needs a live Postgres instance, unavailable to this
+// module's test suite -- but it pins the dialect check so a future change
+// that silently routes sqlite through the SQL-aggregate path (and
+// reintroduces the scan failure) fails loudly here instead of surfacing as
+// a flaky CI failure.
+func TestBackfillUsesSQLiteFallbackUnderTest(t *testing.T) {
+	db := backfillDatabase(t)
+	if got := db.Dialector.Name(); got != "sqlite" {
+		t.Fatalf("test database dialect = %q, want %q -- Backfill's dialect branch assumes sqlite in this suite", got, "sqlite")
+	}
 }
 
 func mustCreateAsset(t *testing.T, db *gorm.DB, tenantId uuid.UUID, compartmentId uuid.UUID, commodityId uint32, at time.Time) uint32 {

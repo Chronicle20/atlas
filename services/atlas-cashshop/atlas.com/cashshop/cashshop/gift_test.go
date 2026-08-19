@@ -6,6 +6,11 @@ package cashshop
 // ordering GiftAndEmit documents.
 
 import (
+	"atlas-cashshop/cashshop/inventory/asset"
+	"atlas-cashshop/cashshop/inventory/compartment"
+	"atlas-cashshop/kafka/message/cashshop"
+	"atlas-cashshop/purchaserecord"
+	"atlas-cashshop/wallet"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,12 +18,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-
-	"atlas-cashshop/cashshop/inventory/asset"
-	"atlas-cashshop/cashshop/inventory/compartment"
-	"atlas-cashshop/kafka/message/cashshop"
-	"atlas-cashshop/purchaserecord"
-	"atlas-cashshop/wallet"
 
 	"github.com/google/uuid"
 	testlog "github.com/sirupsen/logrus/hooks/test"

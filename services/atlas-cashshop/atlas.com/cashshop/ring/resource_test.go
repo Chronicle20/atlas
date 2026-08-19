@@ -9,14 +9,13 @@
 package ring_test
 
 import (
+	"atlas-cashshop/ring"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"atlas-cashshop/ring"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"

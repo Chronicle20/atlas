@@ -1,6 +1,10 @@
 package cashshop
 
 import (
+	"atlas-channel/pendingchange"
+	"atlas-channel/server"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,11 +15,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"atlas-channel/pendingchange"
-	"atlas-channel/server"
-	"atlas-channel/session"
-	"atlas-channel/socket/writer"
 
 	cashshop2 "atlas-channel/kafka/message/cashshop"
 

@@ -41,10 +41,9 @@ func main() {
 	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(parcel.Migration))
-	// db is threaded through route initializers, consumers and tasks that
-	// later tasks in this plan register (REST handlers, kafka consumer,
-	// expiry sweep, notification task); nothing consumes it yet.
-	_ = db
+	// db is also threaded through the kafka consumer and periodic tasks that
+	// later tasks in this plan register (kafka consumer, expiry sweep,
+	// notification task).
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {
 		if database.IsTransientConnectionError(err) {
@@ -65,6 +64,7 @@ func main() {
 		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(parcel.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready))
 

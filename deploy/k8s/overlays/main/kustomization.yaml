@@ -316,7 +316,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
     newTag: main-ee5f275
   - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
-    newTag: main-ee5f275
+    newTag: main-c5e8832
   - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
     newTag: main-ee5f275
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest

@@ -9200,6 +9200,70 @@
     },
     {
       "kind": "op",
+      "op": "DUEY_ACTION",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CParcelDlg::CloseParcelDlg",
+        "CTabQuickSend::SendQuickDelivery",
+        "CTabReceive::DiscardParcel",
+        "CTabReceive::ReceiveParcel",
+        "CTabSend::SendParcel",
+        "CUIFadeYesNo::OnButtonClicked"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 64
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 63
+        },
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 65
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 65
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 68
+        },
+        "gms_v92": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 71
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 70
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 57
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "EXPEDITION_RESULT",
       "direction": "clientbound",
       "tier1": false,
@@ -9532,68 +9596,6 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "DUEY_ACTION",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CParcelDlg::CloseParcelDlg",
-        "CTabQuickSend::SendQuickDelivery",
-        "CTabReceive::DiscardParcel",
-        "CTabReceive::ReceiveParcel",
-        "CTabSend::SendParcel",
-        "CUIFadeYesNo::OnButtonClicked"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 65
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 65
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 68
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 71
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 70
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 57
         }
       }
     },

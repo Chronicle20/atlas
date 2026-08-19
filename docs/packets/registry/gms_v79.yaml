@@ -2907,6 +2907,18 @@
   ida:
     address: 9903072
   note: 'v79 sub_971BE0 COutPacket(61); push 3Dh;a2 @0x971d7a. v83 HIRED_MERCHANT_REQUEST=0x3f=63 (d-2). delta doc serverbound (ida-read).'
+- op: DUEY_ACTION
+  direction: serverbound
+  opcode: 63
+  fname: CTabSend::SendParcel
+  fname_alts:
+    - CTabReceive::ReceiveParcel
+    - CTabReceive::DiscardParcel
+    - CParcelDlg::CloseParcelDlg
+  provenance: ida-discovered
+  ida:
+    address: 6821647
+  note: 'task-241 Task 6 continuation: live decompile of all 4 DUEY_ACTION send-sites on the v79 IDB (session f36df4cd, GMS_v79_1_DEVM.exe.i64) — CTabSend::SendParcel @0x68170f, CTabReceive::ReceiveParcel @0x67ed0c, CTabReceive::DiscardParcel @0x67ee2c, CParcelDlg::CloseParcelDlg @0x6836b0 — each constructs COutPacket(this, 63) (0x3F). Confirms the v79=v83-2 delta lead (v83 DUEY_ACTION=65) directly against the v79 decompile rather than the neighboring-opcode pattern alone. Mode bytes inside the packet (SEND=2, RECEIVE=4, DISCARD=5, CLOSE=7 via Encode1) are byte-identical to v83.'
 - op: ITEM_SORT
   direction: serverbound
   opcode: 67

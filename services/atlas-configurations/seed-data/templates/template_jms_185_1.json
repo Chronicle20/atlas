@@ -4640,7 +4640,18 @@
       {
         "opCode": "0x160",
         "writer": "Parcel",
-        "fname": "CParcelDlg::OnPacket"
+        "fname": "CParcelDlg::OnPacket",
+        "options": {
+          "operations": {
+            "OPEN": 10,
+            "SUCCESSFULLY_SENT": 19,
+            "PARCEL_REMOVED": 24,
+            "PARCEL_ARRIVED": 25,
+            "ALARM_NAMED": 26,
+            "OPEN_QUICK": 27,
+            "ALARM_GENERIC": 28
+          }
+        }
       },
       {
         "opCode": "0x163",

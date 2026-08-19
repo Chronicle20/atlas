@@ -56,7 +56,11 @@ func InventoryCapacityIncreasedStatusEventProvider(characterId uint32, inventory
 	return producer.SingleMessageProvider(key, value)
 }
 
-func PurchaseStatusEventProvider(characterId uint32, templateId, price uint32, compartmentId uuid.UUID, assetId uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+// PurchaseStatusEventProvider builds the PURCHASE status event. operation
+// echoes RequestPurchaseCommandBody.Operation (empty for the generic BUY
+// arm) so the channel can answer on that arm's own SUCCESS mode byte instead
+// of the generic purchase-success fallback.
+func PurchaseStatusEventProvider(characterId uint32, templateId, price uint32, compartmentId uuid.UUID, assetId uint32, transactionId uuid.UUID, operation string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.StatusEvent[cashshop.PurchaseEventBody]{
 		CharacterId: characterId,
@@ -67,6 +71,7 @@ func PurchaseStatusEventProvider(characterId uint32, templateId, price uint32, c
 			CompartmentId: compartmentId,
 			AssetId:       assetId,
 			TransactionId: transactionId,
+			Operation:     operation,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

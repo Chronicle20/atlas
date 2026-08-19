@@ -194,6 +194,26 @@ func handleStatusEventPurchase(sc server.Model, wp writer.Producer) message.Hand
 				}
 			}
 
+			// BUY_NORMAL answers on its own SUCCESS mode byte
+			// (BUY_NORMAL_SUCCESS), not the generic purchase-success body --
+			// see cash_shop_operation.go's BUY_NORMAL arm for why the client
+			// gets no isPoints/currency to read on this op. SlotPos is 0: the
+			// purchase lands in the cash locker, not a placed inventory slot,
+			// and no derivation source assigns this list entry any other
+			// position.
+			if e.Body.Operation == cashshop2.ErrorOperationBuyNormal {
+				refs := []cashpkt.PackedCashItemRef{{
+					Quantity: uint16(a.Item().Quantity()),
+					SlotPos:  0,
+					ItemId:   int32(a.Item().TemplateId()),
+				}}
+				if err = session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopBuyNormalDoneBody(refs))(s); err != nil {
+					l.WithError(err).Errorf("Unable to announce buy normal success to character [%d].", e.CharacterId)
+					return err
+				}
+				return nil
+			}
+
 			// Announce the purchase success to the character session
 			err = session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopCashInventoryPurchaseSuccessBody(item))(s)
 			if err != nil {

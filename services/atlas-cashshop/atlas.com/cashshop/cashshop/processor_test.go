@@ -186,7 +186,7 @@ func TestPurchaseTransactionIdSurvivesToSuccessEvent(t *testing.T) {
 	ctx := databasetest.TenantContext(tenantId)
 	l, _ := testlog.NewNullLogger()
 
-	err := NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, serialNumber, transactionId)
+	err := NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, serialNumber, transactionId, "")
 	require.NoError(t, err)
 
 	entries := purchaseOutboxEntries(t, db)
@@ -233,7 +233,7 @@ func TestPurchaseTransactionIdSurvivesToErrorEvent(t *testing.T) {
 	ctx := databasetest.TenantContext(tenantId)
 	l, _ := testlog.NewNullLogger()
 
-	err := NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, serialNumber, transactionId)
+	err := NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, serialNumber, transactionId, "")
 	require.NoError(t, err, "rejectEmit short-circuits with a nil return -- see Purchase()'s rejectEmit handling")
 
 	errs := purchaseErrorEvents(t, events)
@@ -264,10 +264,10 @@ func TestPurchaseTransactionIdDistinguishesConcurrentPurchases(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 
 	startPurchaseCommodityServer(t, 9101, testPurchaseItemId, price)
-	require.NoError(t, NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, 9101, txA))
+	require.NoError(t, NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, 9101, txA, ""))
 
 	startPurchaseCommodityServer(t, 9102, testPurchaseItemId, price)
-	require.NoError(t, NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, 9102, txB))
+	require.NoError(t, NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, 9102, txB, ""))
 
 	entries := purchaseOutboxEntries(t, db)
 	require.Len(t, entries, 2)
@@ -309,7 +309,7 @@ func TestPurchaseInsufficientFundsReachesConsumer(t *testing.T) {
 	ctx := databasetest.TenantContext(tenantId)
 	l, _ := testlog.NewNullLogger()
 
-	err := NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, serialNumber, transactionId)
+	err := NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, serialNumber, transactionId, "")
 	require.NoError(t, err, "rejectEmit short-circuits with a nil return, mirroring INVENTORY_FULL")
 
 	// No outbox row: the rejection fires on the DIRECT producer path, not
@@ -343,7 +343,7 @@ func TestPurchaseZeroTransactionIdAccepted(t *testing.T) {
 	ctx := databasetest.TenantContext(tenantId)
 	l, _ := testlog.NewNullLogger()
 
-	err := NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, serialNumber, uuid.Nil)
+	err := NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 1, serialNumber, uuid.Nil, "")
 	require.NoError(t, err)
 
 	entries := purchaseOutboxEntries(t, db)

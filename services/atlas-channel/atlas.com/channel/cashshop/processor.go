@@ -24,7 +24,7 @@ type Processor interface {
 	RequestStorageIncreasePurchase(characterId uint32, isPoints bool, currency uint32) error
 	RequestStorageIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
 	RequestCharacterSlotIncreasePurchaseByItem(characterId uint32, isPoints bool, currency uint32, serialNumber uint32) error
-	RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32, transactionId uuid.UUID) error
+	RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32, transactionId uuid.UUID, operation string) error
 	RequestCouponRedemption(characterId uint32, code string) error
 	MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error
 	MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error
@@ -95,10 +95,10 @@ func (p *ProcessorImpl) RequestCharacterSlotIncreasePurchaseByItem(characterId u
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestCharacterSlotIncreaseByItemCommandProvider(characterId, currency, serialNumber))
 }
 
-func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32, transactionId uuid.UUID) error {
+func (p *ProcessorImpl) RequestPurchase(characterId uint32, serialNumber uint32, isPoints bool, currency uint32, zero uint32, transactionId uuid.UUID, operation string) error {
 	currency = resolvePurchaseCurrency(isPoints, currency)
-	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d], transaction [%s]", characterId, serialNumber, currency, zero, transactionId)
-	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency, transactionId))
+	p.l.Debugf("Character [%d] purchasing [%d] with currency [%d], zero [%d], transaction [%s], operation [%s]", characterId, serialNumber, currency, zero, transactionId, operation)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPurchaseCommandProvider(characterId, serialNumber, currency, transactionId, operation))
 }
 
 // RequestCouponRedemption forwards an already-normalized coupon code to

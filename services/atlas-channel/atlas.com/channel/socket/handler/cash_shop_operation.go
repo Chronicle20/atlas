@@ -6,6 +6,7 @@ import (
 	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
 	"atlas-channel/data/commodity"
+	messageCashShop "atlas-channel/kafka/message/cashshop"
 	"atlas-channel/pendingchange"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -56,7 +57,7 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuy) {
 			sp := &cashsb.ShopOperationBuy{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			_ = cashshop.NewProcessor(l, ctx).RequestPurchase(s.CharacterId(), sp.SerialNumber(), sp.IsPoints(), sp.Currency(), sp.Zero(), uuid.Nil)
+			_ = cashshop.NewProcessor(l, ctx).RequestPurchase(s.CharacterId(), sp.SerialNumber(), sp.IsPoints(), sp.Currency(), sp.Zero(), uuid.Nil, "")
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationGift) {
@@ -153,7 +154,16 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyNormal) {
 			sp := &cashsb.ShopOperationBuyNormal{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] purchasing [%d].", s.CharacterId(), sp.SerialNumber())
+			// ShopOperationBuyNormal carries no isPoints/currency on the v83+
+			// wire -- the whole body is a bare serialNumber (shop_operation_buy_normal.go:23-28)
+			// -- so, exactly like BUY_NAME_CHANGE (handleBuyNameChange above),
+			// the purchase is requested with isPoints=false, currency=0: there
+			// is nothing else to charge with. The transactionId is minted here
+			// per click (design §8): a Kafka redelivery replays one id while a
+			// genuine second click legitimately charges twice.
+			if err = cashshop.NewProcessor(l, ctx).RequestPurchase(s.CharacterId(), sp.SerialNumber(), false, 0, 0, uuid.New(), messageCashShop.ErrorOperationBuyNormal); err != nil {
+				l.WithError(err).Errorf("Unable to request BUY_NORMAL purchase for character [%d] serial number [%d].", s.CharacterId(), sp.SerialNumber())
+			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationRebateLockerItem) {
@@ -325,7 +335,7 @@ func handleBuyNameChange(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			announceCashShopRejection(l, ctx, wp)(s, "Unable to process your name change request.")
 			return
 		}
-		if err := cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId); err != nil {
+		if err := cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId, ""); err != nil {
 			l.WithError(err).Errorf("Unable to request purchase for character [%d] serial number [%d] transaction [%s]; pending name change record [%s] may be orphaned.", characterId, sp.SerialNumber(), transactionId, rm.Id)
 		}
 	}
@@ -377,7 +387,7 @@ func handleBuyWorldTransfer(l logrus.FieldLogger, ctx context.Context, wp writer
 			announceTransferWorldFailure(l, ctx, wp)(s, "unknown_error")
 			return
 		}
-		if err := cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId); err != nil {
+		if err := cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId, ""); err != nil {
 			l.WithError(err).Errorf("Unable to request purchase for character [%d] serial number [%d] transaction [%s]; pending world transfer record [%s] may be orphaned.", characterId, sp.SerialNumber(), transactionId, rm.Id)
 		}
 

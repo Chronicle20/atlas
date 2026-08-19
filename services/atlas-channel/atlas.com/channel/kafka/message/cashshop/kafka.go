@@ -33,10 +33,17 @@ type Command[E any] struct {
 // OpenSurpriseCommandBody for the same pattern. It is echoed back on both
 // PurchaseEventBody and ErrorEventBody so a caller juggling multiple
 // concurrent purchases for the same character can tell them apart.
+// Operation names the cash shop arm requesting this purchase, so
+// atlas-cashshop can echo it back onto PurchaseEventBody / ErrorEventBody
+// and the channel can answer on that arm's own SUCCESS/FAILED mode byte
+// instead of the generic purchase-success fallback. Empty means "the
+// generic BUY arm" -- every producer that predates this field leaves it
+// empty and keeps its existing behavior byte for byte.
 type RequestPurchaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	Currency      uint32    `json:"currency"`
 	SerialNumber  uint32    `json:"serialNumber"`
+	Operation     string    `json:"operation,omitempty"`
 }
 
 type RequestInventoryIncreaseByTypeCommandBody struct {
@@ -156,6 +163,10 @@ type PurchaseEventBody struct {
 	AssetId       uint32    `json:"assetId"`
 	ItemId        uint32    `json:"itemId"`
 	TransactionId uuid.UUID `json:"transactionId"`
+	// Operation is the RequestPurchaseCommandBody.Operation this purchase was
+	// requested with, echoed back so the channel can answer on that arm's own
+	// SUCCESS mode byte. Empty means the generic BUY arm (today's behavior).
+	Operation string `json:"operation,omitempty"`
 }
 
 type CashItemMovedToInventoryEventBody struct {

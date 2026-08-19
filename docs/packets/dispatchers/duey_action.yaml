@@ -1,7 +1,22 @@
-# DueyAction — CTabSend::SendParcel (+ CTabReceive::ReceiveParcel/
+# DueyActionHandle — CTabSend::SendParcel (+ CTabReceive::ReceiveParcel/
 # DiscardParcel, CParcelDlg::CloseParcelDlg) per-version mode table.
 #
-# SOURCE OF TRUTH for the DueyAction writer. Derived arms on GMS v83,
+# task-241 Task 28a: the header key changed from `writer: DueyAction` to
+# `handler: DueyActionHandle` (the Go constant string verbatim — see
+# libs/atlas-packet/parcel/serverbound/action.go:13 and its registration at
+# services/atlas-channel/atlas.com/channel/main.go:1011) and an `opcodes:`
+# block was added. Before this the file declared `direction: serverbound`
+# under a CLIENTBOUND `writer:` key with no `opcodes:` entry, so
+# `packet-audit operations` had nothing to populate the templates with and
+# the handler was never routed — every Duey serverbound packet
+# (SEND/RECEIVE/DISCARD/CLOSE) was silently dropped at runtime on every
+# tenant. Opcodes below are read from docs/packets/audits/status.json
+# rows[165] (kind: op, op: DUEY_ACTION) and cross-checked against the
+# per-version support docs at docs/packets/audits/support/{version}.md;
+# gms_v72, gms_v79 and gms_v92 have only that one status.json source (the
+# v72/v79 support docs say n-a with no opcode, and there is no gms_v92.md).
+#
+# SOURCE OF TRUTH for the DueyActionHandle handler. Derived arms on GMS v83,
 # opcode 0x041 (task-241 design §5.4): SEND @0x6F36A8 (quick=0) /
 # @0x6F1DF5 (quick=1), RECEIVE via CTabReceive::ReceiveParcel
 # @0x6F0CA3, DISCARD @0x6F0DC3, CLOSE via CParcelDlg::CloseParcelDlg
@@ -36,10 +51,11 @@
 #   jms_v185 (05eb9c27): opcode 57 (0x39, registry-confirmed) — mode values
 #     are shifted +1 from every GMS build: SEND=3 @0x753aa5, RECEIVE=5
 #     @0x75110b, DISCARD=6 @0x75122b, CLOSE=8 @0x7559c8.
-writer: DueyAction
+handler: DueyActionHandle
 fname: CTabSend::SendParcel
 op: DUEY_ACTION
 direction: serverbound
+opcodes: { gms_v72: "0x040", gms_v79: "0x03F", gms_v83: "0x041", gms_v84: "0x041", gms_v87: "0x044", gms_v92: "0x047", gms_v95: "0x046", jms_v185: "0x039" }
 operations:
   - { key: SEND,    modes: { gms_v72: 2, gms_v79: 2, gms_v83: 2, gms_v84: 2, gms_v87: 2, gms_v92: 2, gms_v95: 2, jms_v185: 3 } }
   - { key: RECEIVE, modes: { gms_v72: 4, gms_v79: 4, gms_v83: 4, gms_v84: 4, gms_v87: 4, gms_v92: 4, gms_v95: 4, jms_v185: 5 } }

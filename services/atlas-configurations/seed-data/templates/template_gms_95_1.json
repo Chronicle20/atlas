@@ -601,6 +601,19 @@
         ]
       },
       {
+        "opCode": "0x046",
+        "handler": "DueyActionHandle",
+        "fname": "CTabSend::SendParcel",
+        "options": {
+          "operations": {
+            "SEND": 2,
+            "RECEIVE": 4,
+            "DISCARD": 5,
+            "CLOSE": 7
+          }
+        }
+      },
+      {
         "opCode": "0x48",
         "validator": "LoggedInValidator",
         "handler": "OwlActionHandle",

@@ -151,14 +151,31 @@ func showParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, t
 }
 
 // quickDeliveryEnabled reports whether this tenant's client can reach the
-// Quick Delivery Ticket path (classification 533). Task 22's plan section
-// (docs/tasks/task-241-duey-parcel-delivery/plan.md) documents this same
-// condition — t.IsRegion("GMS") && t.MajorAtLeast(72) — as its own version
-// gate for dueyCouponEnabled, mirroring remoteMerchantEnabled's identical
-// gate for classification 545
-// (socket/handler/character_cash_item_use_remote_merchant.go). Task 22 does
-// not exist yet as of this task, so the two can't share code across
-// packages; this is the condition to keep in sync when it lands.
+// Quick Delivery Ticket path (classification 533). This is the same
+// condition as socket/handler/character_cash_item_use_duey.go's
+// dueyCouponEnabled, in a different package — the two packages can't share
+// code across the boundary, so keep them in sync by hand.
+//
+// GMS half: t.IsRegion("GMS") && t.MajorAtLeast(72), mirroring
+// remoteMerchantEnabled's identical gate for classification 545
+// (socket/handler/character_cash_item_use_remote_merchant.go).
+//
+// JMS half: JMS v185 is enabled. Two facts settle it (task-241 task-22
+// controller addendum, IDA-verified, MapleStory_dump_SCY.exe session
+// 05eb9c27):
+//  1. get_cashslot_item_type @0x49a1ee contains `case 533: return 32;` — JMS
+//     routes classification 533 to cash-slot type 32.
+//  2. CWvsContext::SendConsumeCashItemUseRequest @0xaef2f5 dispatches through
+//     a jump table at @0xaef3a8, and IDA's own default-arm annotation on the
+//     bound check at @0xaef3a2 reads verbatim: "ja def_AEF3A8; jumptable
+//     00AEF3A8 default case, cases 34,35,37,40,45,46,53,54,62,65-68". 32 is
+//     not in that default set, so type 32 has a real, non-default arm — the
+//     JMS client actually sends this op.
+//
+// docs/packets/dispatchers/parcel.yaml:67 gives jms_v185: 10 for OPEN and
+// :85 gives jms_v185: 27 for OPEN_QUICK, so PARCEL[OPEN_QUICK] renders on
+// jms_v185 too.
 func quickDeliveryEnabled(t tenant.Model) bool {
-	return t.IsRegion("GMS") && t.MajorAtLeast(72)
+	return (t.IsRegion("GMS") && t.MajorAtLeast(72)) ||
+		(t.IsRegion("JMS") && t.MajorAtLeast(185))
 }

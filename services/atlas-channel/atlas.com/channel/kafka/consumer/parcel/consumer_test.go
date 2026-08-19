@@ -55,6 +55,19 @@ func newQuickDisabledTenant(t *testing.T) tenant.Model {
 	return tm
 }
 
+// newJmsQuickEnabledTenant is a JMS build at quickDeliveryEnabled's
+// MajorAtLeast(185) floor, for the subtest that proves the JMS half of the
+// gate (task-241 task-22 controller addendum) is wired, not just the GMS
+// half.
+func newJmsQuickEnabledTenant(t *testing.T) tenant.Model {
+	t.Helper()
+	tm, err := tenant.Create(uuid.New(), "JMS", 185, 1)
+	if err != nil {
+		t.Fatalf("tenant: %v", err)
+	}
+	return tm
+}
+
 // newTestServer registers a server whose world/channel (0, 0) match
 // session.NewSession's un-set default field, so IfPresentByCharacterId's
 // world/channel filters actually match a directly-registered test session
@@ -191,6 +204,30 @@ func TestShowParcelCommand(t *testing.T) {
 		}
 		if len(notified) != 0 {
 			t.Errorf("notified = %v, want none", notified)
+		}
+	})
+
+	t.Run("open with mailbox jms quick enabled", func(t *testing.T) {
+		tm := newJmsQuickEnabledTenant(t)
+		ctx := tenant.WithContext(context.Background(), tm)
+		s, cleanup := newRealSession(tm, ctx, 100)
+		defer cleanup()
+
+		var captured [][]byte
+		deps := showParcelDeps{
+			getMailbox: func(_ uint32, _ world.Id) ([]dueyparcel.Model, error) {
+				return []dueyparcel.Model{receivableParcel(100, true)}, nil
+			},
+			markNotified: func(_ uuid.UUID) error { return nil },
+		}
+
+		e := parcelmsg.ShowParcelCommand{CharacterId: 100, WorldId: worldId, Quick: false}
+		if err := showParcel(nullLogger(), ctx, wp(&captured), tm, e, deps)(s); err != nil {
+			t.Fatalf("showParcel: %v", err)
+		}
+		quickEnabled, _, _ := openCounts(t, captured[0])
+		if !quickEnabled {
+			t.Error("quickEnabled = false, want true for a JMS v185 tenant")
 		}
 	})
 

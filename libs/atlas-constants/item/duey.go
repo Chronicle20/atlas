@@ -10,8 +10,10 @@ package item
 // Typed uint32 (not Id) to match compartment.Model.FindFirstByItemId's
 // signature at every call site without a conversion.
 //
-// task-241 Task 17 defines this ahead of Task 22 landing (per Task 17's
+// task-241 Task 17 defined this ahead of Task 22 landing (per Task 17's
 // brief: "if Task 22 has not landed, define it there and have Task 22
-// remove the duplicate"). Task 22 adds ClassificationDueyCoupon membership
-// and the coupon-use handler; this constant is shared by both.
+// remove the duplicate"). Task 22 landed the coupon-use handler
+// (services/atlas-channel/atlas.com/channel/socket/handler/
+// character_cash_item_use_duey.go) and reuses this constant rather than
+// redefining it.
 const QuickDeliveryTicketId = uint32(5330000)

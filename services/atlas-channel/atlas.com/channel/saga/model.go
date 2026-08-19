@@ -63,6 +63,9 @@ type (
 	// Parcel custody payload types (task-241)
 	TransferToParcelPayload   = sharedsaga.TransferToParcelPayload
 	WithdrawFromParcelPayload = sharedsaga.WithdrawFromParcelPayload
+
+	// ShowParcel payload type (task-241, task-22)
+	ShowParcelPayload = sharedsaga.ShowParcelPayload
 )
 
 // Re-export constants from atlas-saga shared library
@@ -135,6 +138,7 @@ const (
 	StartNpcConversation  = sharedsaga.StartNpcConversation
 	TransferToParcel      = sharedsaga.TransferToParcel
 	WithdrawFromParcel    = sharedsaga.WithdrawFromParcel
+	ShowParcel            = sharedsaga.ShowParcel
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

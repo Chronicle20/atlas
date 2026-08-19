@@ -16071,6 +16071,352 @@
       "address": "0xab501c",
       "direction": "serverbound",
       "calls": []
+    },
+    "CParcelDlg::OnPacket#Open": {
+      "address": "0x734b43",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). Mode consumed by CParcelDlg::OnPacket's outer Decode1 @0x734700; case 8 reads quickEnabled Decode1 @0x734b43, then CParcelDlg::CParcelDlg(v21,...) @0x734b64 -> CParcelDlg::SetParcelDlg @0x734b72 -> CTabReceive::SetParcel @0x72e688 (SetParcel-equivalent) does the mailbox/arrived reads: count Decode1 @0x72e69d + count*PARCEL::Decode (loop @0x72e6b2-0x72e6eb), then count Decode1 @0x72e739 + count*PARCEL::Decode (loop @0x72e744-0x72e919). PARCEL::Decode @0x5035ce: CInPacket::DecodeBuffer(0xEA=234) @0x5035e6, then Decode1(hasItem) @0x5035ee, optional GW_ItemSlotBase::Decode @0x503601. Byte-identical shape to v83/v84, confirmed on this IDB. Atlas struct: parcel/clientbound/parcel.go Open + parcel/parcel.go Parcel.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (8 OPEN; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "quickEnabled"
+        },
+        {
+          "op": "Decode1",
+          "comment": "mailbox count"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "one parcel entry (PARCEL::Decode: 234-byte fixed id/senderName/mesos/expiresAt/message block + hasItem + optional GW_ItemSlotBase item) -- loop body",
+          "guard": "loop mailbox count"
+        },
+        {
+          "op": "Decode1",
+          "comment": "arrived count"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "one parcel entry (PARCEL::Decode, same shape as mailbox) -- loop body",
+          "guard": "loop arrived count"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SendEnableActions": {
+      "address": "0x734c02",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). Mode 9 falls to OnPacket's default arm -> sub_734BF3 @0x734bf3 (NoticeResult-equivalent), whose a1<=16 switch @0x734c02 has no case 9 -- returns without a notice (client-side re-enable only). No body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go SendEnableActions.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (9 SEND_ENABLE_ACTIONS; dispatch byte, no notice text, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#NotEnoughMesos": {
+      "address": "0x734c9e",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 case 10 @0x734c9e, no body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go NotEnoughMesos.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (10/0x0A NOT_ENOUGH_MESOS; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#IncorrectRequest": {
+      "address": "0x734c88",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 case 11 @0x734c88, no body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go IncorrectRequest.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (11/0x0B INCORRECT_REQUEST; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#NameDoesNotExist": {
+      "address": "0x734c72",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 case 12 @0x734c72, no body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go NameDoesNotExist.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (12/0x0C NAME_DOES_NOT_EXIST; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SameAccount": {
+      "address": "0x734c5c",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 case 13 @0x734c5c, no body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go SameAccount.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (13/0x0D SAME_ACCOUNT; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ReceiverStorageFull": {
+      "address": "0x734c46",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 case 14 @0x734c46, no body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go ReceiverStorageFull.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (14/0x0E RECEIVER_STORAGE_FULL; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ReceiverUnableToReceive": {
+      "address": "0x734c30",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 default arm (a1==15) @0x734c30, no body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go ReceiverUnableToReceive.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (15/0x0F RECEIVER_UNABLE_TO_RECEIVE; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SenderUniqueConflict": {
+      "address": "0x734cb4",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 case 16 @0x734cb4, no body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go SenderUniqueConflict.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (16/0x10 SENDER_UNIQUE_CONFLICT; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#MesoLimit": {
+      "address": "0x734d2c",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 case 17 @0x734d2c, no body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go MesoLimit.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (17/0x11 MESO_LIMIT; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SuccessfullySent": {
+      "address": "0x734796",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 case 18 @0x734d19. OnPacket's default arm additionally checks `a1==18` @0x734796 to trigger CloseParcelDlg (@0x734682) as a side effect. No body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go SuccessfullySent.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (18/0x12 SUCCESSFULLY_SENT; dispatch byte, notice-only, no body; also gates the CloseParcelDlg side effect)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#UnknownError": {
+      "address": "0x734d06",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 case 19 -> shared LABEL_25 block @0x734d06 (v3=3917), same block UnknownError2/case 28 falls into. No body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go UnknownError.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (19/0x13 UNKNOWN_ERROR; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#RecvEnableActions": {
+      "address": "0x734cbe",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). Mode 20 falls to OnPacket's default arm -> sub_734BF3's a1>16 switch @0x734cbe, which has no case 20 -- returns without a notice (client-side re-enable only). No body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go RecvEnableActions.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (20/0x14 RECV_ENABLE_ACTIONS; dispatch byte, no notice text, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#RecvNoFreeSlots": {
+      "address": "0x734cf3",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 case 21 @0x734cf3, no body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go RecvNoFreeSlots.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (21/0x15 RECV_NO_FREE_SLOTS; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#RecvUniqueConflict": {
+      "address": "0x734ce0",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 case 22 @0x734ce0, no body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go RecvUniqueConflict.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (22/0x16 RECV_UNIQUE_CONFLICT; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ParcelRemoved": {
+      "address": "0x7349fe",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). Case 23 @0x7349fe: CInPacket::Decode4 (parcelId) then Decode1 (kind) @0x734a07; kind==3 selects one StringPool id, else another. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go ParcelRemoved.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (23/0x17 PARCEL_REMOVED; dispatch byte)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "parcelId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "kind (3 = deleted; else = claimed)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ParcelArrived": {
+      "address": "0x734998",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). Case 24: a single PARCEL::Decode call @0x734998, then a StringPool-id-3910-class notice (no further wire bytes). Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go ParcelArrived + parcel/parcel.go Parcel.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (24/0x18 PARCEL_ARRIVED; dispatch byte)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "one parcel entry (PARCEL::Decode: 234-byte fixed id/senderName/mesos/expiresAt/message block + hasItem + optional GW_ItemSlotBase item)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#AlarmNamed": {
+      "address": "0x7348b4",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). Case 25 @0x7348b4: CInPacket::DecodeStr (senderName) then Decode1 (hasItem) @0x7348c9, driving the named-sender fade window (CUIFadeYesNo). Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go AlarmNamed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (25/0x19 ALARM_NAMED; dispatch byte)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "senderName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasItem"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#OpenQuick": {
+      "address": "0x7348a4",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). Case 26 @0x73485b-0x7348a4: no wire reads beyond the mode byte -- TSingleton<CUniqueModeless> disconnect-guard then CParcelDlg::CParcelDlg(v9,1) construction only. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go OpenQuick.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (26/0x1A OPEN_QUICK; dispatch byte, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#AlarmGeneric": {
+      "address": "0x734808",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). Case 27 @0x734808: CInPacket::Decode1 (hasItem) only, driving the generic (unnamed-sender) fade window (CUIFadeYesNo). Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go AlarmGeneric.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (27/0x1B ALARM_GENERIC; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasItem"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#UnknownError2": {
+      "address": "0x734d06",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). NoticeResult-equivalent sub_734BF3 case 28 falls into the same shared LABEL_25 block @0x734d06 that case 19 (UnknownError) uses. No body beyond the mode byte. Byte-identical shape to v83/v84. Atlas struct: parcel/clientbound/parcel.go UnknownError2.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (28/0x1C UNKNOWN_ERROR_2; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CTabSend::SendParcel": {
+      "address": "0x730de5",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). DUEY_ACTION mode 2 (SEND). Two independent client call sites share this fname: the NPC-path CTabSend::SendParcel itself @0x73269a (quick=0, stops after the quick flag) and the quick-send CTabQuickSend::SendQuickDelivery @0x730de5 (quick=1, appends message+ticketRef). Both COutPacket(&pkt, 0x44); Encode1(2) mode @0x7327bf/0x730f9b; Encode1(invType) @0x7327cd/0x730fa9; Encode2(slot) @0x7327dc/0x730fb8; Encode2(quantity) @0x7327eb/0x730fc7; Encode4(mesos) @0x7327f6/0x730fd2; EncodeStr(recipientName) @0x73280f/0x730feb; Encode1(quick) @0x732818 (=0)/0x730ff5 (=1). Quick path only: EncodeStr(message) @0x73100e, Encode4(ticketRef) @0x731019. Byte-identical shape to v83/v84. Atlas struct: parcel/serverbound/action_send.go ActionSend.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "inventoryType"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mesos"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "quick"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message -- quick-send path only (CTabQuickSend::SendQuickDelivery); the NPC path (CTabSend::SendParcel) stops after the quick flag",
+          "guard": "quick != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ticketRef -- quick-send path only",
+          "guard": "quick != 0"
+        }
+      ]
+    },
+    "CTabReceive::ReceiveParcel": {
+      "address": "0x72fc91",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). DUEY_ACTION mode 4 (RECEIVE). Gated on the 30-day expiry countdown @0x72fd1c. COutPacket(&pkt, 0x44) @0x72fd34; Encode1(4) @0x72fd41; Encode4(parcelId) @0x72fd54. Byte-identical shape to v83/v84. Atlas struct: parcel/serverbound/action_parcel_id.go ActionReceive.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "parcelId"
+        }
+      ]
+    },
+    "CTabReceive::DiscardParcel": {
+      "address": "0x72fdb1",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). DUEY_ACTION mode 5 (DISCARD). COutPacket(&pkt, 0x44) @0x72fe1b; Encode1(5) @0x72fe28; Encode4(parcelId) @0x72fe3b. Byte-identical shape to v83/v84. Atlas struct: parcel/serverbound/action_parcel_id.go ActionDiscard.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "parcelId"
+        }
+      ]
+    },
+    "CParcelDlg::CloseParcelDlg": {
+      "address": "0x734682",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, gms_v87 batch 5/8 (session c0829805, GMSv87_4GB.exe.i64). DUEY_ACTION mode 7 (CLOSE). COutPacket(&pkt, 0x44) @0x734697; Encode1(7) @0x7346a5; no further bytes -- the mode byte itself is written by the shared Action wrapper (action.go), not ActionClose. Byte-identical shape to v83/v84. Atlas struct: parcel/serverbound/action_parcel_id.go ActionClose.",
+      "calls": []
     }
   }
 }

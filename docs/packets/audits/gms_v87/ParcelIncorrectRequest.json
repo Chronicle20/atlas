@@ -1,0 +1,21 @@
+{
+  "WriterName": "ParcelIncorrectRequest",
+  "IDAName": "CParcelDlg::OnPacket#IncorrectRequest",
+  "Address": "0x734c88",
+  "Variant": "GMS/v87",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/parcel/clientbound/parcel.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (11/0x0B INCORRECT_REQUEST; dispatch byte, notice-only, no body)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

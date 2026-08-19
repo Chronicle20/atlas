@@ -1,0 +1,10 @@
+packet: parcel/serverbound/ParcelActionReceive
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CTabReceive::ReceiveParcel
+    address: "0x72fc91"
+    decompile_sha256: 1b2ab1f85142a5ac1aacd3fb3721e69e0759e91b2026b8ce349bf4d9aa7b8118
+verifies:
+    - parcel/serverbound/v87_test.go#TestActionReceiveV87

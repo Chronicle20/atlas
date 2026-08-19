@@ -9,6 +9,7 @@ import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/mts"
+	"atlas-saga-orchestrator/parcel"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
 	"atlas-saga-orchestrator/validation"
@@ -2294,17 +2295,36 @@ func (p *ProcessorImpl) expandWithdrawFromParcel(st Step[any]) ([]Step[any], err
 		return nil, fmt.Errorf("invalid payload type for WithdrawFromParcel")
 	}
 
+	p.l.Debugf("Looking up parcel [%s] for character [%d]", payload.ParcelId, payload.CharacterId)
+
+	pm, err := parcel.RequestParcel(p.l, p.ctx)(payload.ParcelId)
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup parcel [%s]: %w", payload.ParcelId, err)
+	}
+
+	releaseStep := NewStep[any](
+		"release_from_parcel",
+		Pending,
+		ReleaseFromParcel,
+		ReleaseFromParcelPayload{
+			TransactionId: payload.TransactionId,
+			ParcelId:      payload.ParcelId,
+			RecipientId:   payload.CharacterId,
+		},
+	)
+
+	// Meso-only parcel (design §12 RISK-2): pm.ItemId is nil, nothing to grant
+	// into inventory, so no accept_to_character step is emitted — mirrors
+	// expandTransferToParcel's HasItem=false branch on the send side.
+	if pm.ItemId == nil {
+		p.l.Debugf("Parcel [%s] is meso-only, skipping accept_to_character", payload.ParcelId)
+		return []Step[any]{releaseStep}, nil
+	}
+
+	p.l.Debugf("Found parcel [%s] item template [%d] for withdrawal", payload.ParcelId, *pm.ItemId)
+
 	steps := []Step[any]{
-		NewStep[any](
-			"release_from_parcel",
-			Pending,
-			ReleaseFromParcel,
-			ReleaseFromParcelPayload{
-				TransactionId: payload.TransactionId,
-				ParcelId:      payload.ParcelId,
-				RecipientId:   payload.CharacterId,
-			},
-		),
+		releaseStep,
 		NewStep[any](
 			"accept_to_character",
 			Pending,
@@ -2313,6 +2333,41 @@ func (p *ProcessorImpl) expandWithdrawFromParcel(st Step[any]) ([]Step[any], err
 				TransactionId: payload.TransactionId,
 				CharacterId:   payload.CharacterId,
 				InventoryType: payload.InventoryType,
+				TemplateId:    *pm.ItemId,
+				AssetData: asset2.AssetData{
+					Expiration:     pm.ItemSnapshot.Expiration,
+					CreatedAt:      pm.ItemSnapshot.CreatedAt,
+					Quantity:       uint32(pm.Quantity),
+					OwnerId:        pm.ItemSnapshot.OwnerId,
+					Owner:          pm.ItemSnapshot.Owner,
+					Flag:           pm.ItemSnapshot.Flag,
+					Rechargeable:   pm.ItemSnapshot.Rechargeable,
+					Strength:       pm.ItemSnapshot.Strength,
+					Dexterity:      pm.ItemSnapshot.Dexterity,
+					Intelligence:   pm.ItemSnapshot.Intelligence,
+					Luck:           pm.ItemSnapshot.Luck,
+					Hp:             pm.ItemSnapshot.Hp,
+					Mp:             pm.ItemSnapshot.Mp,
+					WeaponAttack:   pm.ItemSnapshot.WeaponAttack,
+					MagicAttack:    pm.ItemSnapshot.MagicAttack,
+					WeaponDefense:  pm.ItemSnapshot.WeaponDefense,
+					MagicDefense:   pm.ItemSnapshot.MagicDefense,
+					Accuracy:       pm.ItemSnapshot.Accuracy,
+					Avoidability:   pm.ItemSnapshot.Avoidability,
+					Hands:          pm.ItemSnapshot.Hands,
+					Speed:          pm.ItemSnapshot.Speed,
+					Jump:           pm.ItemSnapshot.Jump,
+					Slots:          pm.ItemSnapshot.Slots,
+					LevelType:      pm.ItemSnapshot.LevelType,
+					Level:          pm.ItemSnapshot.Level,
+					Experience:     pm.ItemSnapshot.Experience,
+					HammersApplied: pm.ItemSnapshot.HammersApplied,
+					EquippedSince:  pm.ItemSnapshot.EquippedSince,
+					CashId:         pm.ItemSnapshot.CashId,
+					CommodityId:    pm.ItemSnapshot.CommodityId,
+					PurchaseBy:     pm.ItemSnapshot.PurchaseBy,
+					PetId:          pm.ItemSnapshot.PetId,
+				},
 			},
 		),
 	}

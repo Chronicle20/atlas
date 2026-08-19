@@ -167,36 +167,149 @@ func TestExpandTransferToParcel(t *testing.T) {
 	})
 }
 
+// parcelDoc is a JSON:API single-resource doc matching the orchestrator's
+// parcel.RestModel (no relationships, so no `included` block). itemId is the
+// literal JSON fragment for the "itemId" attribute — "null" for a meso-only
+// parcel, or a bare integer for an item parcel — since RestModel.ItemId is a
+// *uint32 and api2go/jsonapi decodes JSON null into a nil pointer.
+func parcelDoc(parcelId string, itemIdJSON string, templateId uint32, quantity uint16, strength uint16, owner string) string {
+	return `{
+		"data": {
+			"type": "parcels",
+			"id": "` + parcelId + `",
+			"attributes": {
+				"worldId": 0,
+				"senderId": 1,
+				"senderAccountId": 1,
+				"senderName": "Sender",
+				"recipientId": 100,
+				"recipientAccountId": 10,
+				"message": "hello",
+				"mesoAmount": 500,
+				"feePaid": 100,
+				"itemId": ` + itemIdJSON + `,
+				"itemType": 1,
+				"quantity": ` + itoa(uint32(quantity)) + `,
+				"itemSnapshot": {
+					"quantity": ` + itoa(uint32(quantity)) + `,
+					"strength": ` + itoa(uint32(strength)) + `,
+					"owner": "` + owner + `"
+				},
+				"status": "pending",
+				"quick": false,
+				"returned": false
+			}
+		}
+	}`
+}
+
 // TestExpandWithdrawFromParcel asserts WithdrawFromParcel expands to
-// [release_from_parcel, accept_to_character].
+// [release_from_parcel, accept_to_character] when the parcel row holds an
+// item, to a single [release_from_parcel] step when it is meso-only (design
+// §12 RISK-2 — nothing to grant into inventory, so accept_to_character would
+// carry a meaningless zero-valued item), and errors without emitting steps
+// when the parcel lookup fails.
 func TestExpandWithdrawFromParcel(t *testing.T) {
-	txId := uuid.New()
-	parcelId := uuid.New()
-	payload := WithdrawFromParcelPayload{
-		TransactionId: txId,
-		ParcelId:      parcelId,
-		CharacterId:   100,
-		WorldId:       0,
-		InventoryType: 1,
-	}
-	st := NewStep[any]("withdraw_from_parcel-1", Pending, WithdrawFromParcel, payload)
+	t.Run("withdraw with item", func(t *testing.T) {
+		const templateId = uint32(1302000)
+		parcelId := uuid.New()
 
-	p := newTestExpansionProcessor(t)
-	steps, err := p.expandWithdrawFromParcel(st)
-	require.NoError(t, err)
-	require.Len(t, steps, 2)
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/vnd.api+json")
+			_, _ = w.Write([]byte(parcelDoc(parcelId.String(), itoa(templateId), templateId, 1, 9, "Bob")))
+		}))
+		defer srv.Close()
+		t.Setenv("PARCEL_SERVICE_URL", srv.URL+"/")
 
-	require.Equal(t, ReleaseFromParcel, steps[0].Action())
-	require.Equal(t, "release_from_parcel", steps[0].StepId())
-	rel, ok := steps[0].Payload().(ReleaseFromParcelPayload)
-	require.True(t, ok)
-	require.Equal(t, parcelId, rel.ParcelId)
-	require.Equal(t, uint32(100), rel.RecipientId)
+		txId := uuid.New()
+		payload := WithdrawFromParcelPayload{
+			TransactionId: txId,
+			ParcelId:      parcelId,
+			CharacterId:   100,
+			WorldId:       0,
+			InventoryType: 1,
+		}
+		st := NewStep[any]("withdraw_from_parcel-1", Pending, WithdrawFromParcel, payload)
 
-	require.Equal(t, AcceptToCharacter, steps[1].Action())
-	require.Equal(t, "accept_to_character", steps[1].StepId())
-	acc, ok := steps[1].Payload().(AcceptToCharacterPayload)
-	require.True(t, ok)
-	require.Equal(t, uint32(100), acc.CharacterId)
-	require.Equal(t, byte(1), acc.InventoryType)
+		p := newTestExpansionProcessor(t)
+		steps, err := p.expandWithdrawFromParcel(st)
+		require.NoError(t, err)
+		require.Len(t, steps, 2)
+
+		require.Equal(t, ReleaseFromParcel, steps[0].Action())
+		require.Equal(t, "release_from_parcel", steps[0].StepId())
+		rel, ok := steps[0].Payload().(ReleaseFromParcelPayload)
+		require.True(t, ok)
+		require.Equal(t, parcelId, rel.ParcelId)
+		require.Equal(t, uint32(100), rel.RecipientId)
+
+		require.Equal(t, AcceptToCharacter, steps[1].Action())
+		require.Equal(t, "accept_to_character", steps[1].StepId())
+		acc, ok := steps[1].Payload().(AcceptToCharacterPayload)
+		require.True(t, ok)
+		require.Equal(t, uint32(100), acc.CharacterId)
+		require.Equal(t, byte(1), acc.InventoryType)
+		// The real snapshot from the parcel row, not zeros (this is the defect
+		// the fix round exists to close: an item withdrawn from a parcel must
+		// not be handed to the character as template 0).
+		require.Equal(t, templateId, acc.TemplateId)
+		require.Equal(t, uint16(9), acc.AssetData.Strength)
+		require.Equal(t, "Bob", acc.AssetData.Owner)
+		require.Equal(t, uint32(1), acc.AssetData.Quantity)
+	})
+
+	t.Run("withdraw meso only", func(t *testing.T) {
+		parcelId := uuid.New()
+
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/vnd.api+json")
+			_, _ = w.Write([]byte(parcelDoc(parcelId.String(), "null", 0, 0, 0, "")))
+		}))
+		defer srv.Close()
+		t.Setenv("PARCEL_SERVICE_URL", srv.URL+"/")
+
+		payload := WithdrawFromParcelPayload{
+			TransactionId: uuid.New(),
+			ParcelId:      parcelId,
+			CharacterId:   100,
+			WorldId:       0,
+			InventoryType: 1,
+		}
+		st := NewStep[any]("withdraw_from_parcel-1", Pending, WithdrawFromParcel, payload)
+
+		p := newTestExpansionProcessor(t)
+		steps, err := p.expandWithdrawFromParcel(st)
+		require.NoError(t, err)
+		// Meso-only: only release_from_parcel is emitted. No accept_to_character
+		// carrying a zero-valued item — mirrors expandTransferToParcel's
+		// HasItem=false branch on the send side (RISK-2).
+		require.Len(t, steps, 1)
+		require.Equal(t, ReleaseFromParcel, steps[0].Action())
+		rel, ok := steps[0].Payload().(ReleaseFromParcelPayload)
+		require.True(t, ok)
+		require.Equal(t, parcelId, rel.ParcelId)
+		require.Equal(t, uint32(100), rel.RecipientId)
+	})
+
+	t.Run("withdraw parcel lookup fails", func(t *testing.T) {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusNotFound)
+		}))
+		defer srv.Close()
+		t.Setenv("PARCEL_SERVICE_URL", srv.URL+"/")
+
+		payload := WithdrawFromParcelPayload{
+			TransactionId: uuid.New(),
+			ParcelId:      uuid.New(),
+			CharacterId:   100,
+			WorldId:       0,
+			InventoryType: 1,
+		}
+		st := NewStep[any]("withdraw_from_parcel-1", Pending, WithdrawFromParcel, payload)
+
+		p := newTestExpansionProcessor(t)
+		steps, err := p.expandWithdrawFromParcel(st)
+		require.Error(t, err)
+		require.Nil(t, steps)
+	})
 }

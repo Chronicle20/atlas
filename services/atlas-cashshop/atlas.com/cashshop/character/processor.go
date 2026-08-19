@@ -5,6 +5,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -15,7 +16,7 @@ import (
 type Processor interface {
 	GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error)
 	InventoryDecorator(m Model) Model
-	ExtendEquipSlot(characterId uint32, slotIndex int16, days uint16) (time.Time, error)
+	ExtendEquipSlot(characterId uint32, slotIndex int16, days uint16, transactionId uuid.UUID) (time.Time, error)
 }
 
 type ProcessorImpl struct {
@@ -56,6 +57,9 @@ func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 // atlas-character's write route (task-240 task 23, R2 -- the write side
 // task 22 deferred). slotIndex is the Atlas canonical position (R1); this
 // call carries it through unchanged, it does not resolve or invent it.
-func (p *ProcessorImpl) ExtendEquipSlot(characterId uint32, slotIndex int16, days uint16) (time.Time, error) {
-	return requests.Provider[EquipSlotExtensionRestModel, time.Time](p.l, p.ctx)(requestExtendEquipSlot(p.ctx, characterId, slotIndex, days), ExtractEquipSlotExtension)()
+// transactionId is the purchase's idempotency key (task-240 task 24c):
+// atlas-character's write route dedupes on it, so a redelivered EXTEND
+// request does not double-extend.
+func (p *ProcessorImpl) ExtendEquipSlot(characterId uint32, slotIndex int16, days uint16, transactionId uuid.UUID) (time.Time, error) {
+	return requests.Provider[EquipSlotExtensionRestModel, time.Time](p.l, p.ctx)(requestExtendEquipSlot(p.ctx, characterId, slotIndex, days, transactionId), ExtractEquipSlotExtension)()
 }

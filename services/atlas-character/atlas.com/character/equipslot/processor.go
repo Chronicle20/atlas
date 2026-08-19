@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
@@ -11,7 +12,7 @@ import (
 )
 
 type Processor interface {
-	Extend(characterId uint32, slotIndex int16, period time.Duration) (time.Time, error)
+	Extend(characterId uint32, slotIndex int16, period time.Duration, transactionId uuid.UUID) (time.Time, error)
 	GetActive(characterId uint32) ([]Model, error)
 }
 
@@ -33,8 +34,8 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 var _ Processor = (*ProcessorImpl)(nil)
 
-func (p *ProcessorImpl) Extend(characterId uint32, slotIndex int16, period time.Duration) (time.Time, error) {
-	expiresAt, err := Extend(p.db.WithContext(p.ctx), p.t.Id(), characterId, slotIndex, period)
+func (p *ProcessorImpl) Extend(characterId uint32, slotIndex int16, period time.Duration, transactionId uuid.UUID) (time.Time, error) {
+	expiresAt, err := Extend(p.db.WithContext(p.ctx), p.t.Id(), characterId, slotIndex, period, transactionId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to extend equip slot [%d] for character [%d].", slotIndex, characterId)
 		return time.Time{}, err

@@ -80,6 +80,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestEquipSlotIncrease(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandExtendEquipSlot(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -259,6 +262,27 @@ func handleCommandRequestEquipSlotIncrease(db *gorm.DB) message.Handler[cashshop
 		// to the player and only needs logging here.
 		if err := cashshop3.NewProcessor(l, ctx, db).PurchaseEquipSlotAndEmit(c.CharacterId, c.Body.Currency, c.Body.SerialNumber, c.Body.TransactionId); err != nil {
 			l.WithError(err).Errorf("Equip slot purchase for character [%d] did not succeed.", c.CharacterId)
+		}
+	}
+}
+
+// handleCommandExtendEquipSlot consumes the internal EXTEND_EQUIP_SLOT
+// follow-up command PurchaseEquipSlotAndEmit mints via the outbox (task-240
+// task 24c): by the time this fires, the purchase's wallet debit and
+// purchase record have already durably committed, so the atlas-character
+// write only ever happens after the charge is final -- never before.
+func handleCommandExtendEquipSlot(db *gorm.DB) message.Handler[cashshop.Command[cashshop.ExtendEquipSlotCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c cashshop.Command[cashshop.ExtendEquipSlotCommandBody]) {
+		if c.Type != cashshop.CommandTypeExtendEquipSlot {
+			return
+		}
+		// CompleteEquipSlotExtension owns the whole outcome, including
+		// emitting EQUIP_SLOT_INCREASED on success; a failure here means the
+		// atlas-character write itself failed and is logged for
+		// reconciliation, not retried and not reported to the player as a
+		// purchase failure (the charge already stands).
+		if err := cashshop3.NewProcessor(l, ctx, db).CompleteEquipSlotExtension(c.CharacterId, c.Body.SlotIndex, c.Body.Days, c.Body.TransactionId); err != nil {
+			l.WithError(err).Errorf("Equip slot extension for character [%d] (transaction [%s]) did not succeed.", c.CharacterId, c.Body.TransactionId)
 		}
 	}
 }

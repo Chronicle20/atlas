@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
@@ -44,11 +46,15 @@ func (r *EquipSlotExtensionRestModel) SetID(id string) error {
 // route expects. SlotIndex carries the Atlas canonical position (R1) --
 // the caller resolves it (e.g. via slot.GetSlotByType("pendant2")), atlas-
 // character never invents it. Days is the extension's length; atlas-
-// character converts it to a time.Duration.
+// character converts it to a time.Duration. TransactionId is the purchase's
+// own idempotency key (task-240 task 24c): the atlas-character write route
+// dedupes on it, so a redelivered EXTEND_EQUIP_SLOT outbox command (the
+// outbox is at-least-once) does not double-extend.
 type ExtendEquipSlotInputRestModel struct {
-	Id        string `json:"-"`
-	SlotIndex int16  `json:"slotIndex"`
-	Days      uint16 `json:"days"`
+	Id            string    `json:"-"`
+	SlotIndex     int16     `json:"slotIndex"`
+	Days          uint16    `json:"days"`
+	TransactionId uuid.UUID `json:"transactionId"`
 }
 
 func (r ExtendEquipSlotInputRestModel) GetName() string {
@@ -64,12 +70,12 @@ func (r *ExtendEquipSlotInputRestModel) SetID(id string) error {
 	return nil
 }
 
-func requestExtendEquipSlot(ctx context.Context, characterId uint32, slotIndex int16, days uint16) requests.Request[EquipSlotExtensionRestModel] {
+func requestExtendEquipSlot(ctx context.Context, characterId uint32, slotIndex int16, days uint16, transactionId uuid.UUID) requests.Request[EquipSlotExtensionRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[EquipSlotExtensionRestModel](err)
 	}
-	body := ExtendEquipSlotInputRestModel{SlotIndex: slotIndex, Days: days}
+	body := ExtendEquipSlotInputRestModel{SlotIndex: slotIndex, Days: days, TransactionId: transactionId}
 	return requests.PostRequest[EquipSlotExtensionRestModel](fmt.Sprintf(root+EquipSlotExtensions, characterId), body)
 }
 

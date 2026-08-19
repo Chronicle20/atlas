@@ -2,6 +2,8 @@ package equipslot
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // RestModel represents one of a character's currently-active equipped-inventory
@@ -40,11 +42,16 @@ func Transform(m Model) (RestModel, error) {
 // 23, R2 -- the write side task 22's InitResource deferred). SlotIndex
 // carries the caller's already-resolved Atlas canonical position (R1); this
 // route persists it as given and does not resolve or invent it. Days is the
-// extension length in days.
+// extension length in days. TransactionId is atlas-cashshop's purchase
+// idempotency key (task-240 task 24c): this route dedupes on it, via
+// Extend/Entity.TransactionId, so a redelivered EXTEND_EQUIP_SLOT outbox
+// command does not add days a second time. The zero UUID means "no dedupe
+// key supplied" and always applies (matches every pre-task-24c caller).
 type ExtendInputRestModel struct {
-	Id        string `json:"-"`
-	SlotIndex int16  `json:"slotIndex"`
-	Days      uint16 `json:"days"`
+	Id            string    `json:"-"`
+	SlotIndex     int16     `json:"slotIndex"`
+	Days          uint16    `json:"days"`
+	TransactionId uuid.UUID `json:"transactionId"`
 }
 
 func (r ExtendInputRestModel) GetName() string {

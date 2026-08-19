@@ -20,8 +20,18 @@ type Entity struct {
 	CharacterId uint32    `gorm:"not null;uniqueIndex:idx_equipslot_unique"`
 	SlotIndex   int16     `gorm:"not null;uniqueIndex:idx_equipslot_unique"`
 	ExpiresAt   time.Time `gorm:"not null"`
-	CreatedAt   time.Time `gorm:"not null"`
-	UpdatedAt   time.Time `gorm:"not null"`
+	// TransactionId is the idempotency key of the LAST Extend call applied to
+	// this row (task-240 task 24c): atlas-cashshop's purchase transaction
+	// mints an EXTEND_EQUIP_SLOT outbox command carrying its own transaction
+	// id, and the outbox is at-least-once, so a redelivery of that command
+	// must not add days a second time. A repeat call carrying the SAME
+	// TransactionId already stored here is a no-op that returns the current
+	// ExpiresAt unchanged. The zero UUID means "no dedupe key recorded" and
+	// never matches a real transaction id, preserving the original
+	// (pre-task-24c) behavior for any caller that does not supply one.
+	TransactionId uuid.UUID `gorm:"not null;default:'00000000-0000-0000-0000-000000000000'"`
+	CreatedAt     time.Time `gorm:"not null"`
+	UpdatedAt     time.Time `gorm:"not null"`
 }
 
 func (e Entity) TableName() string { return "character_equip_slot_extensions" }

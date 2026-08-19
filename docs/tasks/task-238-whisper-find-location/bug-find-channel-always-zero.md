@@ -102,3 +102,42 @@ that assembles the list.
 
 - Fixed by: _(pending)_
 - Live re-test: _(pending)_
+
+---
+
+## Follow-up: retail 1-based channel labels (approved by reporter)
+
+Decision taken after the ordering fix landed (`ceb83cc09`): adopt retail
+numbering. `server_list_entry.go:94` names channels with the 0-based
+`x.ChannelId()`, so world-select currently lists `Scania - 0 … Scania - N-1` and
+a /find against channel 0 reads `"Scania - 0"`. Every retail MapleStory labels
+channels 1-based.
+
+This is label-only. It does not change which channel a position maps to: the
+client still selects and reports channels by array position, and the ordering
+fix already guarantees position == channel id. Only the rendered string moves.
+
+### Fix
+
+- `libs/atlas-packet/login/clientbound/server_list_entry.go:94` — format the
+  channel name with `x.ChannelId() + 1` so channel id 0 renders `"Scania - 1"`.
+  Change the `:135` decoder comment's example to match. Do NOT touch `:96`
+  (`byte(x.ChannelId() - 1)`) or the `:138` decoder — see the note below.
+- `libs/atlas-packet/login/clientbound/server_list_entry_test.go` — add a case
+  asserting the encoded name for `channel.Id(0)` is `"<world> - 1"`. Must fail
+  before the change.
+
+Safe against the pinned `packet-audit:verify` cells: no existing fixture asserts
+the channel-name string. `TestServerListEntryV61Body` encodes zero channels;
+`TestServerListEntryWorldIdInChannels` and `TestServerListEntryRoundTrip` skip
+the name with `_ = r.ReadAsciiString()`. The v48 fixture pins the id byte
+(`server_list_entry_v48_test.go:56`), not the name.
+
+### Still out of scope
+
+`server_list_entry.go:96` writes `byte(x.ChannelId() - 1)`, underflowing to `255`
+for channel 0, with the decoder at `:138` compensating with `+ 1`. The v83 client
+stores this byte at channel-entry+12 and never reads it (`SendLoginPacket`
+@0x5f6d6a copies entry+16, the adult flag), so it is inert — but encoder, decoder
+and the 0-based registry disagree. Changing it moves bytes under a pinned v48
+fixture and deserves its own task.

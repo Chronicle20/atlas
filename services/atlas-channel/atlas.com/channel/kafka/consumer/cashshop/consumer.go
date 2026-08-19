@@ -122,6 +122,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventEquipSlotIncreased(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -504,6 +509,40 @@ func handleStatusEventRingPurchased(sc server.Model, wp writer.Producer) message
 
 			if err = session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(body)(s); err != nil {
 				l.WithError(err).Errorf("Unable to announce ring purchase success to character [%d].", e.CharacterId)
+				return err
+			}
+			return nil
+		})
+	}
+}
+
+// handleStatusEventEquipSlotIncreased announces the ENABLE_EQUIP_SLOT_EXT_SUCCESS
+// arm for a purchased equip slot extension (task-240 task 23). There is no
+// locker asset to look up here -- the purchase creates no cash inventory
+// item, closer to handleStatusEventInventoryCapacityIncreased's shape than
+// to handleStatusEventRingPurchased's.
+//
+// e.Body.SlotIndex is the Atlas CANONICAL equipped-inventory position
+// (-59, pendant2) -- see EquipSlotIncreasedBody's doc comment. The
+// EnableEquipSlotExtSuccess packet body's slotIndex is a distinct WIRE
+// value that this derivation pins at 0 (it indexes a one-element slot
+// array), so the literal 0 below -- never e.Body.SlotIndex -- is
+// deliberate: passing the event field through would silently encode
+// -59 as the unsigned wire value 65477.
+func handleStatusEventEquipSlotIncreased(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.EquipSlotIncreasedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.EquipSlotIncreasedBody]) {
+		if e.Type != cashshop2.StatusEventTypeEquipSlotIncreased {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			if err := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopEnableEquipSlotExtSuccessBody(0, e.Body.Days))(s); err != nil {
+				l.WithError(err).Errorf("Unable to announce equip slot extension success to character [%d].", e.CharacterId)
 				return err
 			}
 			return nil

@@ -3,10 +3,14 @@ package writer
 import (
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
+	"atlas-channel/character/equipslot"
 	"atlas-channel/character/teleportrock"
 	"atlas-channel/quest"
 	model2 "atlas-channel/socket/model"
+	"context"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -14,7 +18,7 @@ import (
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
-func BuildCharacterData(c character.Model, bl buddylist.Model, mapId _map.Id, trm teleportrock.Model) charpkt.CharacterData {
+func BuildCharacterData(l logrus.FieldLogger, ctx context.Context, c character.Model, bl buddylist.Model, mapId _map.Id, trm teleportrock.Model) charpkt.CharacterData {
 	cd := charpkt.CharacterData{
 		Stats: charpkt.CharacterStats{
 			Id:         c.Id(),
@@ -57,7 +61,7 @@ func BuildCharacterData(c character.Model, bl buddylist.Model, mapId _map.Id, tr
 	}
 
 	// Inventory
-	cd.Inventory = buildInventoryData(c)
+	cd.Inventory = buildInventoryData(l, ctx, c)
 
 	// Skills
 	for _, s := range c.Skills() {
@@ -112,18 +116,24 @@ func BuildCharacterData(c character.Model, bl buddylist.Model, mapId _map.Id, tr
 	return cd
 }
 
-func buildInventoryData(c character.Model) charpkt.InventoryData {
-	// EquipSlotExtExpire is left at ZeroTime here; populating it from the
-	// character's active equip-slot extension is atlas-channel consumption
-	// that rides with a later task, which already owns this file and already
-	// holds the character client (see derivation-equip-slot.md E2, R3).
+func buildInventoryData(l logrus.FieldLogger, ctx context.Context, c character.Model) charpkt.InventoryData {
+	exts, err := equipslot.NewProcessor(l, ctx).GetActive(c.Id())
+	if err != nil {
+		// Fail-open: a missing/unreachable equip-slot-extensions read must
+		// never block SET_FIELD, mirroring the teleport-rock fail-open in
+		// SetFieldBody (design §4.4).
+		l.WithError(err).Warnf("Unable to fetch equip-slot extensions for character [%d]; sending ZeroTime.", c.Id())
+		exts = nil
+	}
+	equipSlotExtExpire := equipSlotExtExpireFor(exts)
+
 	inv := charpkt.InventoryData{
 		EquipCapacity:      byte(c.Inventory().Equipable().Capacity()),
 		UseCapacity:        byte(c.Inventory().Consumable().Capacity()),
 		SetupCapacity:      byte(c.Inventory().Setup().Capacity()),
 		EtcCapacity:        byte(c.Inventory().ETC().Capacity()),
 		CashCapacity:       byte(c.Inventory().Cash().Capacity()),
-		EquipSlotExtExpire: ZeroTime,
+		EquipSlotExtExpire: equipSlotExtExpire,
 	}
 
 	// Regular equipment and cash equipment from equipment slots
@@ -164,4 +174,20 @@ func buildInventoryData(c character.Model) charpkt.InventoryData {
 	}
 
 	return inv
+}
+
+// equipSlotExtExpireFor derives the SET_FIELD/InventoryData EquipSlotExtExpire
+// FILETIME value from a character's active equip-slot extensions (task-240
+// task 23, R3/R4). No active extension keeps ZeroTime -- the correct
+// placeholder for the common case, not an error. An active one converts its
+// ExpiresAt via packetmodel.MsTime, the same FILETIME formula
+// (t.Unix()*10_000_000 + 116444736000000000) every other timestamp field in
+// this codec already applies (libs/atlas-packet/model/ms_time.go). Only the
+// first entry is used -- pendant2 is currently the only extendable slot, so
+// "active extensions" is a one-element list in practice.
+func equipSlotExtExpireFor(exts []equipslot.RestModel) int64 {
+	if len(exts) == 0 {
+		return ZeroTime
+	}
+	return packetmodel.MsTime(exts[0].ExpiresAt)
 }

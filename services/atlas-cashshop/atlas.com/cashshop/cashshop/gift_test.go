@@ -6,11 +6,6 @@ package cashshop
 // ordering GiftAndEmit documents.
 
 import (
-	"atlas-cashshop/cashshop/inventory/asset"
-	"atlas-cashshop/cashshop/inventory/compartment"
-	"atlas-cashshop/kafka/message/cashshop"
-	"atlas-cashshop/purchaserecord"
-	"atlas-cashshop/wallet"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -18,6 +13,12 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"atlas-cashshop/cashshop/inventory/asset"
+	"atlas-cashshop/cashshop/inventory/compartment"
+	"atlas-cashshop/kafka/message/cashshop"
+	"atlas-cashshop/purchaserecord"
+	"atlas-cashshop/wallet"
 
 	"github.com/google/uuid"
 	testlog "github.com/sirupsen/logrus/hooks/test"
@@ -314,6 +315,52 @@ func TestGift(t *testing.T) {
 		w, err := wallet.NewProcessor(l, ctx, db).GetByAccountId(senderAccountId)
 		require.NoError(t, err)
 		require.Equal(t, uint32(3800), w.Credit(), "a replayed transaction id must not charge the sender twice")
+	})
+
+	// TestGift/"a late failure rolls back the cross-account write" is task
+	// 24a's item 1: GiftAndEmit's purchaserecord.Record (step 7) is the LAST
+	// write before the success event, running after the sender's wallet was
+	// already debited AND the asset was already created in the RECIPIENT's
+	// (a different account's) compartment, in the SAME outer transaction.
+	// Failing it here proves database.ExecuteTransaction rolls the whole
+	// transaction back -- sender wallet AND recipient asset together -- not
+	// just the write that failed. Precedent: ring/administrator_test.go's
+	// TestCreatePairIsAtomic proves the inner ring.CreatePair batch is atomic;
+	// this proves the OUTER cross-account transaction is too, which
+	// TestCreatePairIsAtomic cannot reach.
+	t.Run("a late failure rolls back the cross-account write", func(t *testing.T) {
+		db := giftTestDatabase(t)
+		tenantId := uuid.New()
+		events := captureDirectPurchaseEvents(t)
+		startGiftCharacterServer(t, map[uint32]giftCharacterFixture{
+			senderCharacterId:    {accountId: senderAccountId, jobId: 0, name: senderName},
+			recipientCharacterId: {accountId: recipientAccountId, jobId: 0, name: "Recipient"},
+		})
+		startGiftCommodityServer(t, giftCommodityId, giftItemId, giftPrice)
+		seedPurchaseCompartment(t, db, tenantId, senderAccountId, 55)
+		recipientCompartmentId := seedPurchaseCompartment(t, db, tenantId, recipientAccountId, 55)
+		seedPurchaseWallet(t, db, tenantId, senderAccountId, 5000)
+		databasetest.FailWritesOn(t, db, "cash_purchase_records", databasetest.WriteCreate)
+
+		ctx := databasetest.TenantContext(tenantId)
+		l, _ := testlog.NewNullLogger()
+		transactionId := uuid.New()
+
+		err := NewProcessor(l, ctx, db).GiftAndEmit(senderCharacterId, transactionId, giftCommodityId, recipientCharacterId, senderName, giftText)
+		require.NoError(t, err, "rejectEmit short-circuits with a nil return")
+
+		w, err := wallet.NewProcessor(l, ctx, db).GetByAccountId(senderAccountId)
+		require.NoError(t, err)
+		require.Equal(t, uint32(5000), w.Credit(), "the sender's debit must roll back with the failed purchase record")
+
+		recipientAssets, err := asset.NewProcessor(l, ctx, db).GetByCompartmentId(recipientCompartmentId)
+		require.NoError(t, err)
+		require.Empty(t, recipientAssets, "the recipient's asset -- created on a DIFFERENT account than the one that failed -- must roll back too")
+
+		errs := purchaseErrorEvents(t, events)
+		require.Len(t, errs, 1)
+		require.Equal(t, cashshop.ErrorOperationGift, errs[0].Body.Operation)
+		require.Equal(t, "UNKNOWN_ERROR", errs[0].Body.Error)
 	})
 
 	t.Run("records the purchase for the sender", func(t *testing.T) {

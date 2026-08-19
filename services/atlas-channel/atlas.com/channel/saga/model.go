@@ -59,6 +59,9 @@ type (
 	// NPC conversation payload types
 	StartItemConversationPayload = sharedsaga.StartItemConversationPayload
 	StartNpcConversationPayload  = sharedsaga.StartNpcConversationPayload
+
+	// Parcel custody payload types (task-241)
+	TransferToParcelPayload = sharedsaga.TransferToParcelPayload
 )
 
 // Re-export constants from atlas-saga shared library
@@ -84,6 +87,7 @@ const (
 	PetRevive             = sharedsaga.PetRevive
 	ScriptedItemUse       = sharedsaga.ScriptedItemUse
 	RemoteNpcUse          = sharedsaga.RemoteNpcUse
+	ParcelSend            = sharedsaga.ParcelSend
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -127,6 +131,7 @@ const (
 	RevivePet             = sharedsaga.RevivePet
 	StartItemConversation = sharedsaga.StartItemConversation
 	StartNpcConversation  = sharedsaga.StartNpcConversation
+	TransferToParcel      = sharedsaga.TransferToParcel
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

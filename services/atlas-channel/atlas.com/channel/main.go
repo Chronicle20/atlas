@@ -128,6 +128,7 @@ import (
 	notesb "github.com/Chronicle20/atlas/libs/atlas-packet/note/serverbound"
 	npccb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	npcsb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/serverbound"
+	parcelsb "github.com/Chronicle20/atlas/libs/atlas-packet/parcel/serverbound"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	partysb "github.com/Chronicle20/atlas/libs/atlas-packet/party/serverbound"
 	petcb "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
@@ -1002,6 +1003,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[notesb.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	handlerMap[questsb.QuestActionHandle] = handler.QuestActionHandleFunc
 	handlerMap[storagesb.StorageOperationHandle] = handler.StorageOperationHandleFunc
+	handlerMap[parcelsb.DueyActionHandle] = handler.DueyActionHandleFunc
 	handlerMap[rpssb.RPSActionHandle] = handler.RPSActionHandleFunc
 	handlerMap[reactorsb.ReactorHitHandle] = handler.ReactorHitHandleFunc
 	handlerMap[socketsb.PongHandle] = handler.PongHandleFunc

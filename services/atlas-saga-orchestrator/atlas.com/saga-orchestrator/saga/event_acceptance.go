@@ -88,6 +88,12 @@ const (
 	EventKindTradeCustodyReleased EventKind = "trade.custody_released"
 	EventKindTradeCustodyError    EventKind = "trade.custody_error"
 
+	// Parcel custody (atlas-parcel custody acks on
+	// EVENT_TOPIC_PARCEL_CUSTODY_STATUS, task-241).
+	EventKindParcelCustodyAccepted EventKind = "parcel.custody_accepted"
+	EventKindParcelCustodyReleased EventKind = "parcel.custody_released"
+	EventKindParcelCustodyError    EventKind = "parcel.custody_error"
+
 	// Compartment (character inventory).
 	EventKindCompartmentCreated        EventKind = "compartment.created"
 	EventKindCompartmentCreationFailed EventKind = "compartment.creation_failed"
@@ -246,6 +252,12 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.ReleaseFromMtsHolding:   {EventKindMtsCustodyReleased, EventKindMtsCustodyError},
 	sharedsaga.MtsMoveListingToHolding: {EventKindMtsCustodyMoved, EventKindMtsCustodyError},
 	sharedsaga.MtsBidEscrow:            {EventKindCashShopWalletUpdated, EventKindCashShopWalletError}, // reuses the cash-shop wallet ack
+
+	// Parcel (task-241).
+	sharedsaga.TransferToParcel:   {}, // composite: expanded into release_from_character + accept_to_parcel
+	sharedsaga.WithdrawFromParcel: {}, // composite: expanded into release_from_parcel + accept_to_character
+	sharedsaga.AcceptToParcel:     {EventKindParcelCustodyAccepted, EventKindParcelCustodyError},
+	sharedsaga.ReleaseFromParcel:  {EventKindParcelCustodyReleased, EventKindParcelCustodyError},
 
 	// Guild.
 	sharedsaga.RequestGuildName:             {EventKindGuildRequestAgreement, EventKindGuildCreated},
@@ -437,6 +449,11 @@ var outcomeTable = map[EventKind]EventOutcome{
 	EventKindTradeCustodyAccepted: OutcomeSuccess,
 	EventKindTradeCustodyReleased: OutcomeSuccess,
 	EventKindTradeCustodyError:    OutcomeFailure,
+
+	// Parcel custody.
+	EventKindParcelCustodyAccepted: OutcomeSuccess,
+	EventKindParcelCustodyReleased: OutcomeSuccess,
+	EventKindParcelCustodyError:    OutcomeFailure,
 
 	// Compartment (character inventory).
 	EventKindCompartmentCreated:        OutcomeSuccess,

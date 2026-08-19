@@ -55,13 +55,17 @@ environments, which it still does.
 
 ## Knowingly left open
 
-1. **FR-3.6 is now literally out of date.**
-   `docs/tasks/task-232-sparse-ephemeral-environments/prd.md:348,543` still
-   reads that a request naming an "unknown or inactive" environment is
-   rejected. `PROVISIONING` is not Active, so the PRD text no longer matches
-   the code. This is a sanctioned decision, not drift — but the PRD should be
-   amended by whoever owns task-232 rather than silently diverging. Flagged,
-   not edited here.
+1. ~~FR-3.6 is out of date.~~ **Resolved.** task-232's PRD has been amended on
+   this branch: FR-3.6 now states that unknown / `DEACTIVATING` / `DELETED`
+   are rejected and `PROVISIONING` is admitted, with a note recording that
+   the original wording deadlocked against FR-5.2 and why the amendment does
+   not affect ownership or routing. The error-semantics table was updated to
+   match, as was the stale FR-3.6 comment on
+   `TestParseEnvironmentRejectsAnUnknownEnvironment`.
+
+   `task-232/plan.md:3088,3131` still quote the old text. Left as-is
+   deliberately — a plan is a record of what was planned at the time, not a
+   live specification.
 2. **~39 services behind the gate have no scope layer.** Whether that matters
    in practice depends on per-service deployment topology (namespace/DB per
    environment), which was out of scope to audit. If environment isolation is

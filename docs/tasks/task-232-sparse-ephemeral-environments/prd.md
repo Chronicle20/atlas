@@ -345,7 +345,22 @@ port-registered and therefore belongs in the mandatory floor —
   resources; no per-request registry lookup.
 - **FR-3.5** If an `ACTIVE` environment declares an override and that override is
   unavailable, the ingress returns an error. It must not fall back to baseline.
-- **FR-3.6** A request naming an unknown or inactive environment is rejected.
+- **FR-3.6** A request naming an unknown environment, or one in `DEACTIVATING`
+  or `DELETED`, is rejected. A request naming an environment in `PROVISIONING`
+  is **admitted**.
+
+  *Amended after implementation.* As originally written this rejected every
+  non-`ACTIVE` environment, which made the lifecycle unsatisfiable: an
+  environment's own setup writes — atlas-pr-bootstrap's service-config rows —
+  happen during `PROVISIONING`, but FR-5.2 flips the phase to `ACTIVE` only
+  after that setup completes. The two rules deadlocked, and the first real
+  sparse environment could not bootstrap (400 on every service-config POST).
+  Admitting `PROVISIONING` resolves it. This weakens the REST gate only;
+  ownership and routing are unaffected, because those are governed by
+  `Registry.IsOwner`, which still requires `ACTIVE` (FR-5.2). Note that
+  in-process confinement to the caller's own rows exists only in
+  atlas-configurations and atlas-tenants, which implement the scope layer;
+  the gate itself has never provided it.
 
 ### FR-4 — Kafka
 
@@ -540,7 +555,8 @@ environment-scoped (D5). Reads are filtered by the caller's execution environmen
 
 | Condition | Behavior |
 |---|---|
-| Unknown / inactive environment on a REST request | Reject (FR-3.6) |
+| Unknown / `DEACTIVATING` / `DELETED` environment on a REST request | Reject (FR-3.6) |
+| `PROVISIONING` environment on a REST request | Admit — setup writes happen in this phase (FR-3.6) |
 | Override declared but unavailable | Error; never fall back (FR-3.5) |
 | Unknown environment on a Kafka message | Ack, do not process, alert (FR-4.7) |
 | Registry cache stale beyond bound | Fail closed (FR-1.7) |

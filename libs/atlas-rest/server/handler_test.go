@@ -237,8 +237,11 @@ func TestParseEnvironmentWithNoHeaderIsTheLegacyPath(t *testing.T) {
 }
 
 func TestParseEnvironmentRejectsAnUnknownEnvironment(t *testing.T) {
-	// FR-3.6: a request naming an unknown or inactive environment is
-	// rejected. Never served by the baseline (G4).
+	// FR-3.6 (as amended): a request naming an UNKNOWN environment is
+	// rejected — never served by the baseline (G4). PROVISIONING is now
+	// admitted; see TestParseEnvironmentAdmitsAProvisioningEnvironment.
+	// This case uses an id the registry was never given, so it pins the
+	// unknown branch specifically, not the phase check.
 	reg := env.NewMapRegistry(env.Id("main"), time.Now)
 	reg.Apply(env.Record{
 		Name: "main", Baseline: "main",

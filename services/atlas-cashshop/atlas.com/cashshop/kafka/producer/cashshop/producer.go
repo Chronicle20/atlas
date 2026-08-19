@@ -133,6 +133,30 @@ func GiftPurchasedStatusEventProvider(characterId uint32, transactionId uuid.UUI
 	return producer.SingleMessageProvider(key, value)
 }
 
+// PackagePurchasedStatusEventProvider builds the PACKAGE_PURCHASED status
+// event (task-240 task 16). characterId is the BUYER (the actor keying the
+// outbound message, same convention as every other status event here);
+// recipientCharacterId/recipientName identify who received the members --
+// the buyer's own identity on a buy-for-self purchase, mirroring
+// PackagePurchasedBody's doc comment.
+func PackagePurchasedStatusEventProvider(characterId uint32, transactionId uuid.UUID, compartmentId uuid.UUID, assetIds []uint32, packageTemplateId uint32, price uint32, recipientCharacterId uint32, recipientName string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.StatusEvent[cashshop.PackagePurchasedBody]{
+		CharacterId: characterId,
+		Type:        cashshop.StatusEventTypePackagePurchased,
+		Body: cashshop.PackagePurchasedBody{
+			TransactionId:        transactionId,
+			CompartmentId:        compartmentId,
+			AssetIds:             assetIds,
+			PackageTemplateId:    packageTemplateId,
+			Price:                price,
+			RecipientCharacterId: recipientCharacterId,
+			RecipientName:        recipientName,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func SurpriseFailedStatusEventProvider(characterId uint32, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.StatusEvent[cashshop.SurpriseFailedEventBody]{

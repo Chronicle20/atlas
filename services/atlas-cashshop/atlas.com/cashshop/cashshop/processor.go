@@ -7,6 +7,7 @@ import (
 	"atlas-cashshop/character"
 	compartment2 "atlas-cashshop/character/compartment"
 	inventory2 "atlas-cashshop/character/inventory"
+	dataCashPkg "atlas-cashshop/data/cashpackage"
 	dataPet "atlas-cashshop/data/pet"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/cashshop"
@@ -97,39 +98,42 @@ type Processor interface {
 	PurchaseInventoryIncrease(mb *message.Buffer) func(characterId uint32, currency uint32, inventoryType inventory.Type, cost uint32, amount uint32) error
 	RebateAndEmit(characterId uint32, accountId uint32, cashId int64, transactionId uuid.UUID) error
 	GiftAndEmit(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, giftMessage string) error
+	PurchasePackageAndEmit(characterId uint32, transactionId uuid.UUID, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error
 }
 
 type ProcessorImpl struct {
-	l        logrus.FieldLogger
-	ctx      context.Context
-	db       *gorm.DB
-	t        tenant.Model
-	chaP     character.Processor
-	comP     commodity.Processor
-	cicP     compartment.Processor
-	chaInvP  inventory2.Processor
-	chaComP  compartment2.Processor
-	walP     wallet.Processor
-	astP     asset.Processor
-	petP     pet.Processor
-	dataPetP dataPet.Processor
+	l            logrus.FieldLogger
+	ctx          context.Context
+	db           *gorm.DB
+	t            tenant.Model
+	chaP         character.Processor
+	comP         commodity.Processor
+	cicP         compartment.Processor
+	chaInvP      inventory2.Processor
+	chaComP      compartment2.Processor
+	walP         wallet.Processor
+	astP         asset.Processor
+	petP         pet.Processor
+	dataPetP     dataPet.Processor
+	dataCashPkgP dataCashPkg.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	p := &ProcessorImpl{
-		l:        l,
-		ctx:      ctx,
-		db:       db,
-		t:        tenant.MustFromContext(ctx),
-		chaP:     character.NewProcessor(l, ctx),
-		comP:     commodity.NewProcessor(l, ctx),
-		cicP:     compartment.NewProcessor(l, ctx, db),
-		chaInvP:  inventory2.NewProcessor(l, ctx),
-		chaComP:  compartment2.NewProcessor(l, ctx),
-		walP:     wallet.NewProcessor(l, ctx, db),
-		astP:     asset.NewProcessor(l, ctx, db),
-		petP:     pet.NewProcessor(l, ctx),
-		dataPetP: dataPet.NewProcessor(l, ctx),
+		l:            l,
+		ctx:          ctx,
+		db:           db,
+		t:            tenant.MustFromContext(ctx),
+		chaP:         character.NewProcessor(l, ctx),
+		comP:         commodity.NewProcessor(l, ctx),
+		cicP:         compartment.NewProcessor(l, ctx, db),
+		chaInvP:      inventory2.NewProcessor(l, ctx),
+		chaComP:      compartment2.NewProcessor(l, ctx),
+		walP:         wallet.NewProcessor(l, ctx, db),
+		astP:         asset.NewProcessor(l, ctx, db),
+		petP:         pet.NewProcessor(l, ctx),
+		dataPetP:     dataPet.NewProcessor(l, ctx),
+		dataCashPkgP: dataCashPkg.NewProcessor(l, ctx),
 	}
 	return p
 }

@@ -83,14 +83,6 @@ func (t *NotificationTask) withClock(now func() time.Time) *NotificationTask {
 	return &c
 }
 
-// withBatch returns a copy of the task with its claim batch size replaced —
-// unexported, test-only seam mirroring ExpiryTask.withBatch.
-func (t *NotificationTask) withBatch(batch int) *NotificationTask {
-	c := *t
-	c.batch = batch
-	return &c
-}
-
 // SleepTime reports the sweep's cadence.
 func (t *NotificationTask) SleepTime() time.Duration {
 	return t.interval

@@ -45,3 +45,23 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-19T15:20:57Z	agent	Task 13	atlas-reviewer	sonnet	-	-	-	-	DONE	47fdbf191	APPROVED_WITH_FINDINGS	yes	-	-
 2026-08-19T15:20:57Z	agent	Task 13 re-review	atlas-reviewer	sonnet	-	-	-	-	DONE	6e557896d	APPROVED	no	-	-
 2026-08-19T15:20:58Z	handoff	after Task 13	-	-	-	-	-	-	-	-	-	-	-	110000
+2026-08-19T15:22:44Z	agent	Task 14	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-19T15:37:20Z	agent	Task 14	atlas-implementer	sonnet	-	-	-	-	DONE	964196ee0	-	-	-	-
+2026-08-19T15:37:20Z	agent	Task 15	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-19T15:40:34Z	agent	Task 14	atlas-reviewer	sonnet	-	-	-	-	DONE	964196ee0	APPROVED	no	-	-
+2026-08-19T15:49:09Z	agent	Task 15	atlas-implementer	sonnet	-	-	-	-	DONE	f1fd89fb9	-	-	-	-
+2026-08-19T15:49:09Z	agent	Task 16	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-19T15:52:50Z	agent	Task 15	atlas-reviewer	sonnet	-	-	-	-	DONE	f1fd89fb9	CHANGES_REQUIRED	yes	-	-
+2026-08-19T15:52:50Z	agent	Task 16	atlas-implementer	sonnet	-	-	-	-	DONE	66125ac	-	-	-	-
+2026-08-19T15:55:08Z	agent	Task 16	atlas-reviewer	sonnet	-	-	-	-	DONE	66125ac	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-19T15:56:54Z	agent	Task 15	atlas-implementer	sonnet	-	-	-	-	DONE	281ce4242	-	-	-	-
+2026-08-19T15:56:54Z	agent	Task 17	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-19T15:58:45Z	agent	Task 15	atlas-reviewer	sonnet	-	-	-	-	DONE	281ce4242	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-19T16:16:21Z	agent	Task 17	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	680a44ff0	-	-	-	-
+2026-08-19T16:16:22Z	agent	Task 17 cont	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-19T16:17:56Z	agent	Task 17 cont	atlas-implementer	sonnet	-	-	-	-	DONE	-	-	-	-	-
+2026-08-19T16:21:56Z	agent	Task 17	atlas-reviewer	sonnet	-	-	-	-	DONE	680a44ff0	CHANGES_REQUIRED	yes	-	-
+2026-08-19T16:23:26Z	agent	Task 17 fix 1	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-19T16:27:34Z	agent	Task 17 fix 1	atlas-implementer	sonnet	-	-	-	-	DONE	3b8de6cc0	-	-	-	-
+2026-08-19T16:30:35Z	agent	Task 17 fix 1	atlas-reviewer	sonnet	-	-	-	-	DONE	3b8de6cc0	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-19T16:30:36Z	handoff	after Task 17	-	-	-	-	-	-	-	-	-	-	-	100000

@@ -24,6 +24,8 @@ set -e
 . "$(dirname "$0")/version-ports.sh"
 # shellcheck source=service-config.sh
 . "$(dirname "$0")/service-config.sh"
+# shellcheck source=env-record.sh
+. "$(dirname "$0")/env-record.sh"
 
 require_env ATLAS_ENV ATLAS_UI_BASE TENANT_ID REGION MAJOR_VERSION MINOR_VERSION
 MINIO_ENDPOINT="${MINIO_ENDPOINT:-http://minio.minio.svc.cluster.local:9000}"
@@ -96,6 +98,31 @@ create_environment_tenant() {
         return 1
     fi
     printf '%s' "$id"
+}
+
+# record_environment_tenant <tenant_id> — writes the tenant id onto this
+# environment's control-plane record (FR-3), which is the ONLY thing
+# cleanup.sh's sweep-tenant phase reads to know what to reclaim
+# (cleanup.sh:352-358). Without it a sparse environment's gameplay rows
+# survive teardown forever, silently.
+#
+# The PATCH must carry the record's CURRENT phase, not a chosen one:
+# bootstrap runs while the environment is PROVISIONING and must not promote
+# it, and a body with no phase is a 400 (UpdateByName validates phase before
+# it backfills anything). A same-phase transition is explicitly legal, which
+# is also what makes re-running this idempotent (FR-3.4).
+record_environment_tenant() {
+    local tenant="$1" body phase baseline namespace overrides
+    body=$(env_record_get) || body=""
+    phase=$(printf '%s' "${body:-}" | jq -r '.data.attributes.phase // empty' 2>/dev/null)
+    if [ -z "$phase" ]; then
+        log error "no control-plane environment record for ${ATLAS_ENVIRONMENT:-<unset>}; cannot record tenant=$tenant"
+        return 1
+    fi
+    baseline=$(printf '%s' "$body" | jq -r '.data.attributes.baseline // ""' 2>/dev/null)
+    namespace=$(printf '%s' "$body" | jq -r '.data.attributes.namespace // ""' 2>/dev/null)
+    overrides=$(printf '%s' "$body" | jq -c '.data.attributes.overrides // {}' 2>/dev/null)
+    env_record_patch "$phase" "$baseline" "$namespace" "$tenant" "$overrides"
 }
 
 # Sanity-check TENANT_ID shape. The libs/atlas-rest middleware that
@@ -315,6 +342,26 @@ REGION="$canonical_region"
 MAJOR_VERSION="$canonical_major"
 MINOR_VERSION="$canonical_minor"
 log info "using TENANT_ID=$TENANT_ID for downstream calls"
+
+# Record the tenant on the control-plane environment record BEFORE any
+# tenant-keyed write happens. The reverse order leaks on every partial
+# failure: a bootstrap that dies after the config clone but before the PATCH
+# leaves rows under a tenant teardown has no way to name.
+#
+# Sparse-only, and gated on the same ATLAS_MODE fact env_header_init uses:
+# an isolated environment registers no control-plane record at all
+# (cleanup.sh:120-133), so there is nothing to PATCH and do_drop_dbs reclaims
+# its rows by dropping the databases outright.
+#
+# `|| exit 1` is belt-and-braces for `set -e` (restored at line 22 after
+# lib.sh relaxes it), stated at the call site for the same reason the
+# create_service_config calls below do. An environment that provisions a
+# tenant but never records it produces exactly the residue this exists to
+# prevent (FR-3.5).
+if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+    ATLAS_STEP=record-tenant record_environment_tenant "$TENANT_ID" || exit 1
+    ATLAS_STEP=record-tenant log info "recorded tenant=$TENANT_ID on environment record $ATLAS_ENVIRONMENT"
+fi
 
 # Tenant configuration: clone the canonical template's attributes into a
 # per-tenant row in atlas-configurations. Rest-equivalent of the UI's

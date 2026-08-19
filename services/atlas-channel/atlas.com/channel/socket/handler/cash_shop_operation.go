@@ -195,8 +195,13 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyPackage) {
 			sp := &cashsb.ShopOperationBuyPackage{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			pt := cashshop.GetPointType(sp.PointType())
-			l.Infof("Character [%d] purchasing [%d] with [%s]. Option [%d]", s.CharacterId(), sp.SerialNumber(), pt, sp.Option())
+			handleBuyPackage(l, ctx, wp)(s, sp)
+			return
+		}
+		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyOtherPackage) {
+			sp := &cashsb.ShopOperationBuyOtherPackage{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			handleBuyOtherPackage(l, ctx, wp)(s, sp)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationApplyWishlist) {

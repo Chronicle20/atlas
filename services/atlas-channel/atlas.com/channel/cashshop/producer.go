@@ -184,3 +184,19 @@ func RequestGiftPurchaseCommandProvider(characterId uint32, transactionId uuid.U
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func RequestPackagePurchaseCommandProvider(characterId uint32, transactionId uuid.UUID, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.RequestPackagePurchaseCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestPackagePurchase,
+		Body: cashshop.RequestPackagePurchaseCommandBody{
+			TransactionId:        transactionId,
+			Currency:             currency,
+			SerialNumber:         serialNumber,
+			RecipientCharacterId: recipientCharacterId,
+			SenderName:           senderName,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

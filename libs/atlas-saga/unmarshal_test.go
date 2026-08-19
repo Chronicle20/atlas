@@ -923,6 +923,79 @@ func TestUnmarshalWithdrawFromParcelStep(t *testing.T) {
 	}
 }
 
+func TestUnmarshalShowParcelStep(t *testing.T) {
+	raw := `{
+		"stepId": "show_parcel-1",
+		"status": "pending",
+		"action": "show_parcel",
+		"payload": {
+			"characterId": 100,
+			"npcId": 2030,
+			"worldId": 0,
+			"channelId": 1,
+			"quick": false
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != ShowParcel {
+		t.Fatalf("expected action ShowParcel, got %q", step.Action)
+	}
+	p, ok := step.Payload.(ShowParcelPayload)
+	if !ok {
+		t.Fatalf("expected ShowParcelPayload, got %T", step.Payload)
+	}
+	if p.CharacterId != 100 {
+		t.Errorf("characterId: expected 100, got %d", p.CharacterId)
+	}
+	if p.NpcId != 2030 {
+		t.Errorf("npcId: expected 2030, got %d", p.NpcId)
+	}
+	if p.WorldId != 0 {
+		t.Errorf("worldId: expected 0, got %d", p.WorldId)
+	}
+	if p.ChannelId != 1 {
+		t.Errorf("channelId: expected 1, got %d", p.ChannelId)
+	}
+	if p.Quick != false {
+		t.Errorf("quick: expected false, got %v", p.Quick)
+	}
+}
+
+func TestUnmarshalShowParcelStep_Quick(t *testing.T) {
+	raw := `{
+		"stepId": "show_parcel-1",
+		"status": "pending",
+		"action": "show_parcel",
+		"payload": {
+			"characterId": 100,
+			"npcId": 2030,
+			"worldId": 0,
+			"channelId": 1,
+			"quick": true
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	p, ok := step.Payload.(ShowParcelPayload)
+	if !ok {
+		t.Fatalf("expected ShowParcelPayload, got %T", step.Payload)
+	}
+	if p.Quick != true {
+		t.Errorf("quick: expected true, got %v", p.Quick)
+	}
+}
+
 func TestUnmarshalAwaitInventoryCreatedStep_ZeroCharacterId(t *testing.T) {
 	// Mirrors the sentinel-payload shape that character-factory emits before
 	// orchestrator result-forwarding substitutes the real characterId.

@@ -1,11 +1,13 @@
 package parcel
 
 import (
+	parcelmsg "atlas-saga-orchestrator/kafka/message/parcel"
 	parcelCustody "atlas-saga-orchestrator/kafka/message/parcel/custody"
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
@@ -104,6 +106,22 @@ func RemoveParcelProvider(transactionId uuid.UUID, parcelId uuid.UUID) model.Pro
 		Body: parcelCustody.RemoveParcelCommandBody{
 			ParcelId: parcelId,
 		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// ShowParcelCommandProvider creates a SHOW_PARCEL command for atlas-channel.
+// Keyed by the character id, mirroring ShowStorageCommandProvider.
+func ShowParcelCommandProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, quick bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &parcelmsg.ShowParcelCommand{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		ChannelId:     ch.Id(),
+		CharacterId:   characterId,
+		NpcId:         npcId,
+		Quick:         quick,
+		Type:          parcelmsg.CommandTypeShowParcel,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

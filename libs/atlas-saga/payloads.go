@@ -1080,6 +1080,20 @@ type WithdrawFromParcelPayload struct {
 	InventoryType byte      `json:"inventoryType"`
 }
 
+// ShowParcelPayload represents the payload required to show the Duey parcel
+// dialog to a character. Quick lets one command serve both entry points: the
+// NPC path sends Quick: false (the channel announces PARCEL[OPEN] with the
+// mailbox) and the Quick Delivery Ticket path sends Quick: true (the channel
+// announces PARCEL[OPEN_QUICK], mode 0x1A, the quick-send-only dialog with no
+// list — task-241 design §5.2, §9.5).
+type ShowParcelPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show the parcel dialog to
+	NpcId       uint32     `json:"npcId"`       // NpcId of the parcel NPC (Duey)
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Quick       bool       `json:"quick"`       // Quick Delivery Ticket entry point
+}
+
 // RequestGuildNamePayload represents the payload required to request a guild name.
 type RequestGuildNamePayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action

@@ -2,10 +2,12 @@ package parcel
 
 import (
 	"atlas-saga-orchestrator/kafka/message"
+	parcelmsg "atlas-saga-orchestrator/kafka/message/parcel"
 	parcelCustody "atlas-saga-orchestrator/kafka/message/parcel/custody"
 	"context"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
@@ -80,6 +82,12 @@ type Processor interface {
 	RestoreParcel(mb *message.Buffer) func(transactionId uuid.UUID, parcelId uuid.UUID) error
 	RemoveParcelAndEmit(transactionId uuid.UUID, parcelId uuid.UUID) error
 	RemoveParcel(mb *message.Buffer) func(transactionId uuid.UUID, parcelId uuid.UUID) error
+	// ShowParcelAndEmit and ShowParcel dispatch the SHOW_PARCEL command to
+	// atlas-channel via COMMAND_TOPIC_PARCEL, mirroring
+	// storage.Processor.ShowStorageAndEmit. Self-completing: the caller marks
+	// the step done immediately after the command is sent (Task 19).
+	ShowParcelAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, quick bool) error
+	ShowParcel(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, quick bool) error
 }
 
 type ProcessorImpl struct {
@@ -143,5 +151,17 @@ func (p *ProcessorImpl) RemoveParcelAndEmit(transactionId uuid.UUID, parcelId uu
 func (p *ProcessorImpl) RemoveParcel(mb *message.Buffer) func(transactionId uuid.UUID, parcelId uuid.UUID) error {
 	return func(transactionId uuid.UUID, parcelId uuid.UUID) error {
 		return mb.Put(parcelCustody.EnvCommandTopic, RemoveParcelProvider(transactionId, parcelId))
+	}
+}
+
+func (p *ProcessorImpl) ShowParcelAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, quick bool) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.ShowParcel(mb)(transactionId, ch, characterId, npcId, quick)
+	})
+}
+
+func (p *ProcessorImpl) ShowParcel(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, quick bool) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, npcId uint32, quick bool) error {
+		return mb.Put(parcelmsg.EnvCommandTopic, ShowParcelCommandProvider(transactionId, ch, characterId, npcId, quick))
 	}
 }

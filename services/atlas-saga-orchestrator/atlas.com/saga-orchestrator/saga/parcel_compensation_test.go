@@ -88,6 +88,14 @@ func (m *parcelTestMock) RemoveParcel(_ *message.Buffer) func(uuid.UUID, uuid.UU
 	return func(_ uuid.UUID, _ uuid.UUID) error { return nil }
 }
 
+func (m *parcelTestMock) ShowParcelAndEmit(_ uuid.UUID, _ channel.Model, _ uint32, _ uint32, _ bool) error {
+	return nil
+}
+
+func (m *parcelTestMock) ShowParcel(_ *message.Buffer) func(uuid.UUID, channel.Model, uint32, uint32, bool) error {
+	return func(_ uuid.UUID, _ channel.Model, _ uint32, _ uint32, _ bool) error { return nil }
+}
+
 // Ensure the mock satisfies parcel.Processor at compile time.
 var _ parcelsvc.Processor = (*parcelTestMock)(nil)
 

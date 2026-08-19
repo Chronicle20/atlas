@@ -258,6 +258,10 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.WithdrawFromParcel: {}, // composite: expanded into release_from_parcel + accept_to_character
 	sharedsaga.AcceptToParcel:     {EventKindParcelCustodyAccepted, EventKindParcelCustodyError},
 	sharedsaga.ReleaseFromParcel:  {EventKindParcelCustodyReleased, EventKindParcelCustodyError},
+	// Self-completing like ShowStorage: nothing downstream depends on the
+	// dialog having opened, because the ticket is consumed by the
+	// parcel_send saga and not by opening the interface (FR-26).
+	sharedsaga.ShowParcel: {},
 
 	// Guild.
 	sharedsaga.RequestGuildName:             {EventKindGuildRequestAgreement, EventKindGuildCreated},

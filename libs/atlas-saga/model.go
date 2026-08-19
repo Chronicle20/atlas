@@ -236,6 +236,12 @@ const (
 	ReleaseFromParcel  Action = "release_from_parcel"
 	WithdrawFromParcel Action = "withdraw_from_parcel"
 
+	// ShowParcel opens the Duey dialog for a character, like ShowStorage opens
+	// the storage UI. Self-completing: nothing downstream depends on the dialog
+	// having opened, because the ticket is consumed by the parcel_send saga and
+	// not by opening the interface (task-241 FR-26).
+	ShowParcel Action = "show_parcel"
+
 	// Guild actions
 	RequestGuildName             Action = "request_guild_name"
 	RequestGuildEmblem           Action = "request_guild_emblem"

@@ -207,6 +207,7 @@ const (
 	AcceptToParcel     = sharedsaga.AcceptToParcel
 	ReleaseFromParcel  = sharedsaga.ReleaseFromParcel
 	WithdrawFromParcel = sharedsaga.WithdrawFromParcel
+	ShowParcel         = sharedsaga.ShowParcel
 
 	// Guild actions
 	RequestGuildName             = sharedsaga.RequestGuildName
@@ -347,6 +348,7 @@ type (
 	AcceptToParcelPayload               = sharedsaga.AcceptToParcelPayload
 	ReleaseFromParcelPayload            = sharedsaga.ReleaseFromParcelPayload
 	WithdrawFromParcelPayload           = sharedsaga.WithdrawFromParcelPayload
+	ShowParcelPayload                   = sharedsaga.ShowParcelPayload
 	ReleaseFromCharacterPayload         = sharedsaga.ReleaseFromCharacterPayload
 	ReleaseFromStoragePayload           = sharedsaga.ReleaseFromStoragePayload
 	TradeSettlementPayload              = sharedsaga.TradeSettlementPayload

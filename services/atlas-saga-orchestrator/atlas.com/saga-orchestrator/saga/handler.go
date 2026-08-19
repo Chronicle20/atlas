@@ -151,6 +151,7 @@ type Handler interface {
 	handleReleaseFromMtsHolding(s Saga, st Step[any]) error
 	handleAcceptToParcel(s Saga, st Step[any]) error
 	handleReleaseFromParcel(s Saga, st Step[any]) error
+	handleShowParcel(s Saga, st Step[any]) error
 	handleAcceptToTrade(s Saga, st Step[any]) error
 	handleReleaseFromTrade(s Saga, st Step[any]) error
 	handleMtsMoveListingToHolding(s Saga, st Step[any]) error
@@ -943,6 +944,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAcceptToParcel, true
 	case ReleaseFromParcel:
 		return h.handleReleaseFromParcel, true
+	case ShowParcel:
+		return h.handleShowParcel, true
 	case AcceptToTrade:
 		return h.handleAcceptToTrade, true
 	case ReleaseFromTrade:
@@ -2607,6 +2610,31 @@ func (h *HandlerImpl) handleReleaseFromParcel(s Saga, st Step[any]) error {
 		h.logActionError(s, st, err, "Unable to release parcel from custody.")
 		return err
 	}
+
+	return nil
+}
+
+// handleShowParcel handles the ShowParcel action. This sends a SHOW_PARCEL
+// command to atlas-channel to display the Duey parcel dialog to the
+// character. Self-completing like handleShowStorage: nothing downstream
+// depends on the dialog having opened, because the ticket is consumed by the
+// parcel_send saga and not by opening the interface (task-241 FR-26).
+func (h *HandlerImpl) handleShowParcel(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ShowParcelPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.parcelP.ShowParcelAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.NpcId, payload.Quick)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show parcel.")
+		return err
+	}
+
+	// ShowParcel is a synchronous command with no async response event.
+	// Mark the step as completed immediately after successfully sending the command.
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
 	return nil
 }

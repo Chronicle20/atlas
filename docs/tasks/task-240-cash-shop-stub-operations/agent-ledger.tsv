@@ -92,3 +92,8 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-19T18:58:35Z	agent	Task 24b	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
 2026-08-19T18:58:36Z	handoff	after Task 24c	-	-	-	-	-	-	-	-	-	-	-	130000
 2026-08-19T19:04:49Z	agent	Task 24c	atlas-reviewer	sonnet	-	-	-	-	DONE	bcceb3784	APPROVED	no	-	-
+2026-08-19T19:10:29Z	agent	Task 24abc	gate	-	-	-	-	-	ERROR	a294a1e2f	-	-	-	-
+2026-08-19T19:11:59Z	agent	Task 24b	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	71fc76306	-	-	-	-
+2026-08-19T19:11:59Z	agent	Task 24b fname	packet-verifier	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-19T19:24:37Z	agent	Task 24b fname	packet-verifier	sonnet	-	-	-	-	DONE	02ab37435	-	-	-	-
+2026-08-19T19:24:37Z	handoff	after Task 24b fname	-	-	-	-	-	-	-	-	-	-	-	145000

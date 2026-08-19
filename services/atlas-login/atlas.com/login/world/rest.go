@@ -88,6 +88,32 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 	return nil
 }
 
+// SetReferencedStructs implements the jsonapi.UnmarshalIncludedRelations
+// interface. api2go only hydrates a to-many relationship's attributes from
+// the document's `included` array when the target implements this method;
+// without it, r.Channels comes back as N structs with only a UUID and zero
+// values everywhere else.
+func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+	if refMap, ok := references["channels"]; ok {
+		for i := range r.Channels {
+			if data, ok := refMap[r.Channels[i].GetID()]; ok {
+				id := r.Channels[i].GetID()
+				scm := channel.RestModel{}
+				err := jsonapi.ProcessIncludeData(&scm, data, references)
+				if err != nil {
+					return err
+				}
+				err = scm.SetID(id)
+				if err != nil {
+					return err
+				}
+				r.Channels[i] = scm
+			}
+		}
+	}
+	return nil
+}
+
 func Transform(m Model) (RestModel, error) {
 	cms, err := model.SliceMap(channel.Transform)(model.FixedProvider(m.Channels()))(model.ParallelMap())()
 	if err != nil {

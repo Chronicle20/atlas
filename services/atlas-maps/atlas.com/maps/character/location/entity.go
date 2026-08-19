@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
@@ -22,6 +23,7 @@ type entity struct {
 	ChannelId   channel.Id `gorm:"not null"`
 	MapId       _map.Id    `gorm:"not null"`
 	Instance    uuid.UUID  `gorm:"type:uuid;not null;default:'00000000-0000-0000-0000-000000000000'"`
+	State       string     `gorm:"not null;default:'OFFLINE'"`
 	UpdatedAt   time.Time  `gorm:"not null"`
 }
 
@@ -36,5 +38,6 @@ func Make(e entity) (Model, error) {
 		SetChannelId(e.ChannelId).
 		SetMapId(e.MapId).
 		SetInstance(e.Instance).
+		SetState(characterconst.ParsePresenceState(e.State)).
 		Build(), nil
 }

@@ -100,6 +100,12 @@ func (s *Model) setCharacterId(id uint32) Model {
 	return ns
 }
 
+// Gm reports whether this session's character is a GM. The flag is set at
+// login bootstrap from character.Model.Gm(), so it inherits that predicate.
+func (s *Model) Gm() bool {
+	return s.gm
+}
+
 func (s *Model) setGm(gm bool) Model {
 	ns := CloneSession(*s)
 	ns.gm = gm

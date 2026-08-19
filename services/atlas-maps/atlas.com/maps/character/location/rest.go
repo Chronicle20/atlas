@@ -6,17 +6,19 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // RestModel is the JSON:API projection of a character's last-known location.
 type RestModel struct {
-	Id        uint32     `json:"-"`
-	WorldId   world.Id   `json:"worldId"`
-	ChannelId channel.Id `json:"channelId"`
-	MapId     _map.Id    `json:"mapId"`
-	Instance  uuid.UUID  `json:"instance"`
+	Id        uint32                       `json:"-"`
+	WorldId   world.Id                     `json:"worldId"`
+	ChannelId channel.Id                   `json:"channelId"`
+	MapId     _map.Id                      `json:"mapId"`
+	Instance  uuid.UUID                    `json:"instance"`
+	State     characterconst.PresenceState `json:"state"`
 }
 
 // GetName returns the JSON:API resource type.
@@ -57,6 +59,7 @@ func Transform(m Model) (RestModel, error) {
 		ChannelId: m.ChannelId(),
 		MapId:     m.MapId(),
 		Instance:  m.Instance(),
+		State:     m.State(),
 	}, nil
 }
 

@@ -13,7 +13,7 @@ Tool: `319a7ad9b3347b81a4a0eed68718ebad0639d1ae89d0a93857f0c26f6ac9ca21`
 - export gms_v83: `9b938038def5da2b3e98681db301b5299a0c35274b2d71b92be3b364505d57d8`
 - export gms_v84: `16832eea1aedc71e48c73e047e4fca66fef8d2bfdc1901f2b5f00ac1286c40ce`
 - export gms_v87: `dcb1d52ed4c88dcef1d351e698a21c647b3bdd82a3c79b7bfc9c39682e15ab02`
-- export gms_v92: `05ed16a35700adcad2328e6cbd02418713bef4a90af79dc3fc569f6d0922a596`
+- export gms_v92: `c152d5ac734c4ea19cda05c81358e440f693e2399fdf1a4de1b1bf81319bb5e4`
 - export gms_v95: `fa56a542eabc75d20d5ba920b272ad990f1abe0fe99f346bb4ad96d950f7ca09`
 - export jms_v185: `576eda436b95b42e99f3bb0a6343964695a5c0732b95beed1593bab25f78df3c`
 
@@ -141,7 +141,7 @@ Tool: `319a7ad9b3347b81a4a0eed68718ebad0639d1ae89d0a93857f0c26f6ac9ca21`
 | MULTICHAT | CField::OnGroupMessage | field/clientbound/FieldMultiChat (T1) | 0x050 | ✅ | 0x064 | ✅ | 0x07A | ✅ | 0x07E | ✅ | 0x086 | ✅ | 0x089 | ✅ | 0x08E | ✅ | 0x095 | 🟡ᶠ | 0x096 | ✅ | 0x084 | ✅ |
 | HOUR_CHANGED | CWvsContext::OnHourChanged |  |  | ⬜ |  | ⬜ | 0x051 | ❌ | 0x052 | ❌ | 0x055 | ❌ | 0x057 | ❌ | 0x057 | ❌ | 0x059 | ❌ | 0x058 | ❌ |  | ⬜ |
 | IDA_0X051 | sub_B1135F |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x051 | ❌ |
-| WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x051 | ✅ | 0x065 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x096 | ❌ | 0x097 | ✅ | 0x085 | ✅ |
+| WHISPER | CField::OnWhisper | field/clientbound/FieldWhisperError (T1) | 0x051 | ✅ | 0x065 | ✅ | 0x07B | ✅ | 0x07F | ✅ | 0x087 | ✅ | 0x08A | ✅ | 0x08F | ✅ | 0x096 | ✅ | 0x097 | ✅ | 0x085 | ✅ |
 | IDA_0X052 | sub_B113C8 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x052 | ❌ |
 | MINIMAP_ON_OFF | CWvsContext::OnMiniMapOnOff; sub_90CE83; sub_95E24B |  |  | ⬜ |  | ⬜ | 0x052 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x058 | ❌ | 0x058 | ❌ | 0x05A | ❌ | 0x059 | ❌ | 0x05D | ❌ |
 | SPOUSE_CHAT | CField::OnCoupleMessage | field/clientbound/FieldSpouseChat (T1) | 0x052 | ✅ | 0x066 | ✅ | 0x07C | ✅ | 0x080 | ✅ | 0x088 | ✅ | 0x08B | ✅ | 0x090 | ✅ | 0x097 | 🟡ᶠ | 0x098 | ✅ |  | ⬜ |
@@ -1063,7 +1063,7 @@ Tool: `319a7ad9b3347b81a4a0eed68718ebad0639d1ae89d0a93857f0c26f6ac9ca21`
 | v83 | 468 | 0 | 0 | 324 | 228 | 0 | 59.1% |
 | v84 | 442 | 0 | 0 | 331 | 247 | 0 | 57.2% |
 | v87 | 476 | 0 | 0 | 354 | 190 | 0 | 57.3% |
-| v92 | 51 | 0 | 148 | 680 | 141 | 0 | 5.8% |
+| v92 | 52 | 0 | 148 | 679 | 141 | 0 | 5.9% |
 | v95 | 501 | 0 | 0 | 413 | 106 | 0 | 54.8% |
 | JMS185 | 442 | 0 | 0 | 381 | 197 | 0 | 53.7% |
 

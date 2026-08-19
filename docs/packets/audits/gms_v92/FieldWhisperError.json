@@ -1,7 +1,7 @@
 {
   "WriterName": "FieldWhisperError",
   "IDAName": "CField::OnWhisper#Error",
-  "Address": "",
+  "Address": "0x53e2a0",
   "Variant": "GMS/v92",
   "BranchDepth": 0,
   "AtlasFile": "libs/atlas-packet/field/clientbound/whisper.go",
@@ -10,30 +10,30 @@
       "Index": 0,
       "AtlasOp": 0,
       "AtlasKind": 0,
-      "IDAOp": 6,
-      "IDAComment": "dispatcher-family arm not harvested for gms_v92 (see notes)",
-      "Verdict": 4,
-      "Note": "IDA read-order unresolved: dispatcher-family arm not harvested for gms_v92 (see notes)"
+      "IDAOp": 0,
+      "IDAComment": "mode",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 1,
       "AtlasOp": 4,
       "AtlasKind": 0,
-      "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAOp": 4,
+      "IDAComment": "target",
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 2,
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "",
-      "Verdict": 2,
-      "Note": "atlas: extra — client never reads this field"
+      "IDAComment": "whispersEnabled",
+      "Verdict": 0,
+      "Note": ""
     }
   ],
-  "Verdict": 2,
+  "Verdict": 0,
   "FlatInvalid": false
 }

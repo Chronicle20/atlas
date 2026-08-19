@@ -1,0 +1,10 @@
+packet: field/clientbound/FieldWhisperWeather
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CField::OnWhisper#Weather
+    address: "0x53e2a0"
+    decompile_sha256: aae388750cfde19a78f27dba300ebf13e574226cbf33eebb5ccce54c6251f4c5
+verifies:
+  - libs/atlas-packet/field/clientbound/whisper_test.go#TestWhisperByteOutputV92

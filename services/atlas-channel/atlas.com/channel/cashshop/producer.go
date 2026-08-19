@@ -168,3 +168,19 @@ func RequestLockerRebateCommandProvider(characterId uint32, transactionId uuid.U
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func RequestGiftPurchaseCommandProvider(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.RequestGiftPurchaseCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestGiftPurchase,
+		Body: cashshop.RequestGiftPurchaseCommandBody{
+			TransactionId:        transactionId,
+			SerialNumber:         serialNumber,
+			RecipientCharacterId: recipientCharacterId,
+			SenderName:           senderName,
+			Message:              message,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

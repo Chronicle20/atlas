@@ -63,7 +63,7 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationGift) {
 			sp := &cashsb.ShopOperationGift{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] gifting [%d] to [%s] with message [%s]. birthday [%d]", s.CharacterId(), sp.SerialNumber(), sp.Name(), sp.Message(), sp.Birthday())
+			handleGift(l, ctx, wp)(s, sp)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationSetWishlist) {

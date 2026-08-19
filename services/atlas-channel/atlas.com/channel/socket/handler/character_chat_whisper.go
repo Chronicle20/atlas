@@ -229,12 +229,17 @@ func produceWhisperChatResult(l logrus.FieldLogger) func(ctx context.Context) fu
 						entry.Debug("whisper resolved")
 					}
 
+					// Undeliverable target and a failed produce answer the
+					// client identically; build the failure announce once so
+					// the mode byte appears at a single call site.
+					announceFailure := session.Announce(l)(ctx)(wp)(fieldcb.WhisperWriter)(fieldcb.NewWhisperSendResult(0x0A, targetName, false).Encode)
+
 					if !o.deliverable {
-						return session.Announce(l)(ctx)(wp)(fieldcb.WhisperWriter)(fieldcb.NewWhisperSendResult(0x0A, targetName, false).Encode)(s)
+						return announceFailure(s)
 					}
 
 					if err := produceWhisperChatFunc(l, ctx, s.Field(), s.CharacterId(), msg, targetName); err != nil {
-						return session.Announce(l)(ctx)(wp)(fieldcb.WhisperWriter)(fieldcb.NewWhisperSendResult(0x0A, targetName, false).Encode)(s)
+						return announceFailure(s)
 					}
 					return nil
 				}

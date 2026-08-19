@@ -17,6 +17,7 @@ const (
 	CommandTypeExpire                             = "EXPIRE"
 	CommandTypeOpenSurprise                       = "OPEN_SURPRISE"
 	CommandTypeRequestCouponRedemption            = "REQUEST_COUPON_REDEMPTION"
+	CommandTypeRequestLockerRebate                = "REQUEST_LOCKER_REBATE"
 )
 
 type Command[E any] struct {
@@ -92,6 +93,18 @@ type RequestCouponRedemptionCommandBody struct {
 	Code string `json:"code"`
 }
 
+// RequestLockerRebateCommandBody refunds one locker asset. CashId is the
+// client's GW_ItemSlotBase::liCashItemSN (cash_assets.CashId), NOT the row id
+// -- see shop_operation_rebate_locker_item.go:18-21. TransactionId is the
+// idempotency key, mirroring OpenSurpriseCommandBody: a Kafka redelivery
+// replays the same id and is rejected as success-without-effect by the
+// ledger, while a genuine second click gets a new one.
+type RequestLockerRebateCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	AccountId     uint32    `json:"accountId"`
+	CashId        int64     `json:"cashId"`
+}
+
 const (
 	EnvEventTopicStatus                       = "EVENT_TOPIC_CASH_SHOP_STATUS"
 	StatusEventTypeInventoryCapacityIncreased = "INVENTORY_CAPACITY_INCREASED"
@@ -101,6 +114,7 @@ const (
 	StatusEventTypeSurpriseFailed             = "SURPRISE_FAILED"
 	StatusEventTypeCouponRedeemed             = "COUPON_REDEEMED"
 	StatusEventTypeCouponFailed               = "COUPON_FAILED"
+	StatusEventTypeLockerRebated              = "LOCKER_REBATED"
 )
 
 type StatusEvent[E any] struct {
@@ -221,4 +235,16 @@ type SurpriseOpenedEventBody struct {
 // there is no distinct NOT_OWNED reason.)
 type SurpriseFailedEventBody struct {
 	Reason string `json:"reason"`
+}
+
+// LockerRebatedBody describes one successful REBATE. Currency is the wallet
+// bucket credited (wallet.Model.Balance's convention: 1 = credit/NX, 2 =
+// Maple Points, anything else = prepaid) -- see asset.Entity.Currency's doc
+// comment for how 0 on the refunded asset resolves to the ordinary credit/NX
+// bucket rather than being echoed here as a literal 0.
+type LockerRebatedBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	CashId        int64     `json:"cashId"`
+	Amount        int32     `json:"amount"`
+	Currency      uint32    `json:"currency"`
 }

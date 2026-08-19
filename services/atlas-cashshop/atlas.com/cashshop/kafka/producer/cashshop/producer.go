@@ -94,6 +94,24 @@ func SurpriseOpenedStatusEventProvider(characterId uint32, compartmentId uuid.UU
 	return producer.SingleMessageProvider(key, value)
 }
 
+// LockerRebatedStatusEventProvider builds the LOCKER_REBATED status event.
+// amount is the commodity price refunded; currency is the wallet bucket it
+// landed on (see LockerRebatedBody's doc comment).
+func LockerRebatedStatusEventProvider(characterId uint32, cashId int64, amount int32, currency uint32, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.StatusEvent[cashshop.LockerRebatedBody]{
+		CharacterId: characterId,
+		Type:        cashshop.StatusEventTypeLockerRebated,
+		Body: cashshop.LockerRebatedBody{
+			TransactionId: transactionId,
+			CashId:        cashId,
+			Amount:        amount,
+			Currency:      currency,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func SurpriseFailedStatusEventProvider(characterId uint32, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.StatusEvent[cashshop.SurpriseFailedEventBody]{

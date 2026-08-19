@@ -128,7 +128,7 @@ func (g cashItemGranter) Grant(mb *message.Buffer) func(tx *gorm.DB, rc redempti
 		}
 
 		am, err := asset.NewProcessor(g.l, g.ctx, tx).
-			Create(mb)(rc.compartmentId, ci.ItemId(), r.SerialNumber(), r.Quantity(), 0, rc.characterId)
+			Create(mb)(rc.compartmentId, ci.ItemId(), r.SerialNumber(), 0, r.Quantity(), 0, rc.characterId)
 		if err != nil {
 			return grantedReward{}, err
 		}

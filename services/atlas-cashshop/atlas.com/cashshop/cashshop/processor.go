@@ -51,6 +51,7 @@ type Processor interface {
 	PurchaseInventoryIncreaseByItemAndEmit(characterId uint32, currency uint32, serialNumber uint32) error
 	PurchaseInventoryIncreaseByTypeAndEmit(characterId uint32, currency uint32, inventoryType inventory.Type) error
 	PurchaseInventoryIncrease(mb *message.Buffer) func(characterId uint32, currency uint32, inventoryType inventory.Type, cost uint32, amount uint32) error
+	RebateAndEmit(characterId uint32, accountId uint32, cashId int64, transactionId uuid.UUID) error
 }
 
 type ProcessorImpl struct {
@@ -212,11 +213,15 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 			// Create the flattened asset directly (no separate item creation).
 			// Pets must carry the serial reserved above; everything else gets a
 			// freshly generated one.
+			// currency is the wallet bucket just debited above (w.Purchase's
+			// argument), recorded on the asset row so a later locker rebate
+			// (task-240 task 11) knows which bucket to credit back instead of
+			// guessing -- see asset.Entity.Currency's doc comment.
 			var am asset.Model
 			if petCashId != 0 {
-				am, err = p.astP.CreateWithCashId(mb)(ccm.Id(), petCashId, ci.ItemId(), serialNumber, ci.Count(), petId, characterId)
+				am, err = p.astP.CreateWithCashId(mb)(ccm.Id(), petCashId, ci.ItemId(), serialNumber, currency, ci.Count(), petId, characterId)
 			} else {
-				am, err = p.astP.Create(mb)(ccm.Id(), ci.ItemId(), serialNumber, ci.Count(), petId, characterId)
+				am, err = p.astP.Create(mb)(ccm.Id(), ci.ItemId(), serialNumber, currency, ci.Count(), petId, characterId)
 			}
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create asset for character [%d].", characterId)

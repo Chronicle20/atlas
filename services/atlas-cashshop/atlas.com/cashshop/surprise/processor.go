@@ -244,7 +244,7 @@ func (p *ProcessorImpl) Open(mb *message.Buffer) func(transactionId uuid.UUID, a
 				}
 			}
 
-			rewardAsset, err := astP.Create(mb)(ccm.Id(), ci.ItemId(), reward.CommodityId(), ci.Count(), 0, characterId)
+			rewardAsset, err := astP.Create(mb)(ccm.Id(), ci.ItemId(), reward.CommodityId(), 0, ci.Count(), 0, characterId)
 			if err != nil {
 				return err
 			}

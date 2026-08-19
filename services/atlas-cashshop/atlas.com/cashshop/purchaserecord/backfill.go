@@ -67,7 +67,7 @@ func Backfill(l logrus.FieldLogger, db *gorm.DB) (int, error) {
 
 	var groups []backfillGroupRow
 	var err error
-	if db.Dialector.Name() == "sqlite" {
+	if db.Name() == "sqlite" {
 		// gorm's sqlite driver (mattn/go-sqlite3) cannot scan a MIN()/MAX()
 		// over a DATETIME column back into time.Time -- the aggregate result
 		// carries no declared column type for the driver's automatic

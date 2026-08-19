@@ -113,13 +113,17 @@ func BuildCharacterData(c character.Model, bl buddylist.Model, mapId _map.Id, tr
 }
 
 func buildInventoryData(c character.Model) charpkt.InventoryData {
+	// EquipSlotExtExpire is left at ZeroTime here; populating it from the
+	// character's active equip-slot extension is atlas-channel consumption
+	// that rides with a later task, which already owns this file and already
+	// holds the character client (see derivation-equip-slot.md E2, R3).
 	inv := charpkt.InventoryData{
-		EquipCapacity: byte(c.Inventory().Equipable().Capacity()),
-		UseCapacity:   byte(c.Inventory().Consumable().Capacity()),
-		SetupCapacity: byte(c.Inventory().Setup().Capacity()),
-		EtcCapacity:   byte(c.Inventory().ETC().Capacity()),
-		CashCapacity:  byte(c.Inventory().Cash().Capacity()),
-		Timestamp:     ZeroTime,
+		EquipCapacity:      byte(c.Inventory().Equipable().Capacity()),
+		UseCapacity:        byte(c.Inventory().Consumable().Capacity()),
+		SetupCapacity:      byte(c.Inventory().Setup().Capacity()),
+		EtcCapacity:        byte(c.Inventory().ETC().Capacity()),
+		CashCapacity:       byte(c.Inventory().Cash().Capacity()),
+		EquipSlotExtExpire: ZeroTime,
 	}
 
 	// Regular equipment and cash equipment from equipment slots

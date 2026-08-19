@@ -50,7 +50,7 @@ func TestSetFieldByteOutputV79(t *testing.T) {
 		Inventory: charpkt.InventoryData{
 			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 			EtcCapacity: 24, CashCapacity: 24,
-			Timestamp: 94354848000000000,
+			EquipSlotExtExpire: 94354848000000000,
 		},
 	}
 	input := SetField{
@@ -113,7 +113,7 @@ func TestSetFieldByteOutputV72(t *testing.T) {
 		Inventory: charpkt.InventoryData{
 			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 			EtcCapacity: 24, CashCapacity: 24,
-			Timestamp: 94354848000000000,
+			EquipSlotExtExpire: 94354848000000000,
 		},
 	}
 	input := SetField{
@@ -164,7 +164,7 @@ func TestSetFieldByteOutputV61(t *testing.T) {
 		Inventory: charpkt.InventoryData{
 			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 			EtcCapacity: 24, CashCapacity: 24,
-			Timestamp: 94354848000000000,
+			EquipSlotExtExpire: 94354848000000000,
 		},
 	}
 	input := SetField{
@@ -222,7 +222,7 @@ func TestSetFieldByteOutputV48(t *testing.T) {
 		Inventory: charpkt.InventoryData{
 			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 			EtcCapacity: 24, CashCapacity: 24,
-			Timestamp: 94354848000000000,
+			EquipSlotExtExpire: 94354848000000000,
 		},
 	}
 	input := SetField{
@@ -283,7 +283,7 @@ func TestSetFieldRoundTrip(t *testing.T) {
 				Inventory: charpkt.InventoryData{
 					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 					EtcCapacity: 24, CashCapacity: 24,
-					Timestamp: 94354848000000000,
+					EquipSlotExtExpire: 94354848000000000,
 				},
 			}
 			input := NewSetField(channel.Id(1), cd)

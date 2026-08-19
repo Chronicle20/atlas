@@ -33,6 +33,7 @@ setup() {
         [ "$base" = "lib.sh" ] && continue
         [ "$base" = "version-ports.sh" ] && continue
         [ "$base" = "service-config.sh" ] && continue
+        [ "$base" = "env-record.sh" ] && continue
         if ! printf '%s\n' "$chmod_line" | grep -qF "/atlas/${base}"; then
             missing+=("$base")
         fi

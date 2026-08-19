@@ -46,3 +46,19 @@ func Make(e Entity) (Model, error) {
 		createdAt:          e.CreatedAt,
 	}, nil
 }
+
+// ToEntity transforms a Model into an Entity for persistence.
+func (m Model) ToEntity(tenantId uuid.UUID) Entity {
+	return Entity{
+		Id:                 m.id,
+		TenantId:           tenantId,
+		PairId:             m.pairId,
+		CharacterId:        m.characterId,
+		PartnerCharacterId: m.partnerCharacterId,
+		AssetId:            m.assetId,
+		ItemTemplateId:     m.itemTemplateId,
+		RingType:           string(m.ringType),
+		State:              string(m.state),
+		CreatedAt:          m.createdAt,
+	}
+}

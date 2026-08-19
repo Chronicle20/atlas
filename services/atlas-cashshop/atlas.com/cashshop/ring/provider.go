@@ -2,6 +2,7 @@ package ring
 
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -43,4 +44,13 @@ func GetById(db *gorm.DB, tenantId uuid.UUID, id uuid.UUID) (Model, error) {
 		return Model{}, err
 	}
 	return Make(e)
+}
+
+// byCharacterIdPagedProvider pages every ring half a character holds, for
+// GET /rings?filter[characterId]=.
+func byCharacterIdPagedProvider(t tenant.Model, characterId uint32, page model.Page) database.EntityProvider[model.Paged[Entity]] {
+	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
+		return database.PagedQuery[Entity](
+			db.Where("tenant_id = ? AND character_id = ?", t.Id(), characterId).Order("created_at, id"), page)
+	}
 }

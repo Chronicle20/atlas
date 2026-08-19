@@ -6,12 +6,14 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 )
 
 func testDB(t *testing.T) *gorm.DB {
@@ -29,6 +31,8 @@ func testDB(t *testing.T) *gorm.DB {
 		sqlDB.SetConnMaxLifetime(0)
 		sqlDB.SetConnMaxIdleTime(0)
 	}
+	l, _ := test.NewNullLogger()
+	database.RegisterTenantCallbacks(l, db)
 	require.NoError(t, Migration(db))
 	return db
 }

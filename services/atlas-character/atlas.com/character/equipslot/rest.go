@@ -38,6 +38,20 @@ func Transform(m Model) (RestModel, error) {
 	}, nil
 }
 
+// TransformSlice maps a slice of domain Models to their REST projections.
+// Returns the first transform error encountered, if any.
+func TransformSlice(ms []Model) ([]RestModel, error) {
+	rs := make([]RestModel, 0, len(ms))
+	for _, m := range ms {
+		r, err := Transform(m)
+		if err != nil {
+			return nil, err
+		}
+		rs = append(rs, r)
+	}
+	return rs, nil
+}
+
 // ExtendInputRestModel is the POST write route's request body (task-240 task
 // 23, R2 -- the write side task 22's InitResource deferred). SlotIndex
 // carries the caller's already-resolved Atlas canonical position (R1); this

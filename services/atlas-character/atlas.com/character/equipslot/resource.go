@@ -10,7 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
@@ -38,7 +37,7 @@ func handleGetEquipSlotExtensions(d *rest.HandlerDependency, c *rest.HandlerCont
 				return
 			}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))()()
+			res, err := TransformSlice(ms)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				server.WriteErrorResponse(d.Logger())(w)(err)

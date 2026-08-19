@@ -3,11 +3,16 @@ package handler
 import (
 	"bytes"
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/sirupsen/logrus"
 
 	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -107,22 +112,87 @@ func TestCashShopPackageResultBodies(t *testing.T) {
 	})
 }
 
+// buyOtherPackagePacket builds a full BUY_OTHER_PACKAGE wire packet: the
+// dispatcher's own mode byte (ShopOperation, cash_shop_operation.go:52-55)
+// followed by ShopOperationBuyOtherPackage's body (spw string, serialNumber
+// uint32, name string, message string --
+// libs/atlas-packet/cash/serverbound/shop_operation_buy_other_package.go:44-53).
+// Mirrors buyNameChangePacket/buyWorldTransferPacket
+// (cash_shop_operation_imprint_test.go:40-61).
+func buyOtherPackagePacket(t *testing.T, op byte, spw string, serialNumber uint32, name, message string) *request.Reader {
+	t.Helper()
+	w := response.NewWriter(logrus.New())
+	w.WriteByte(op)
+	w.WriteAsciiString(spw)
+	w.WriteInt(serialNumber)
+	w.WriteAsciiString(name)
+	w.WriteAsciiString(message)
+	req := request.Request(w.Bytes())
+	reader := request.NewRequestReader(&req, 0)
+	return &reader
+}
+
+// newBuyOtherPackageTestServer stands in for atlas-account (secondary
+// credential resolution) and atlas-character (recipient lookup), routed by
+// path. The account response carries no PIC/birthDate, so
+// verifySecondaryCredential (cash_shop_credential.go) passes unconditionally
+// (credentialMatches: an unset credential of the applicable kind always
+// passes). The character response is an empty JSON:API list -- GetByName
+// (character/processor.go:236-238) resolves that to atlasmodel.ErrEmptySlice,
+// the same "unknown recipient" rejection TestGiftRejectionReason
+// (cash_shop_gift_test.go) pins to the "INCORRECT_NAME" errors-table key --
+// which is exactly the observable effect asserted below: an announced
+// GIFT_PACKAGE_FAILED write on cashcb.CashShopOperationWriter. That write can
+// only happen if the dispatcher actually reached handleBuyOtherPackage
+// (cash_shop_operation.go:201-206), so it is a direct probe of the dispatch
+// arm, not of the isCashShopOperation helper alone.
+func newBuyOtherPackageTestServer(t *testing.T) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.Path, "accounts/"):
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(jsonAPIAttrs("accounts", "1", map[string]any{"name": "Sender"}))
+		default:
+			// character lookup by name: empty JSON:API list -> unknown recipient.
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"data":[]}`))
+		}
+	}))
+}
+
 // TestBuyOtherPackageIsDispatched is the acceptance criterion for this task
 // turned into a test: BUY_OTHER_PACKAGE (CashShopOperationBuyOtherPackage,
 // cash_shop_operation.go:40) was declared but referenced nowhere else
-// (unrouted). It must now dispatch on its configured op byte and NOT on a
-// neighbouring one.
+// (unrouted). It must now dispatch on its configured op byte and drive
+// CashShopOperationHandleFunc -- the real dispatcher entry point -- end to
+// end, not just the isCashShopOperation helper: deleting the dispatch arm at
+// cash_shop_operation.go:201-206 must turn this test RED.
 func TestBuyOtherPackageIsDispatched(t *testing.T) {
+	const characterId = uint32(54321)
+	const op = byte(33)
 	options := map[string]interface{}{
 		"operations": map[string]interface{}{
-			"BUY_OTHER_PACKAGE": float64(33),
+			CashShopOperationBuyOtherPackage: float64(op),
 		},
 	}
 
-	if got := isCashShopOperation(logrus.New())(options, 33, CashShopOperationBuyOtherPackage); !got {
-		t.Fatalf("isCashShopOperation(options, 33, %q) = %v, want true", CashShopOperationBuyOtherPackage, got)
+	srv := newBuyOtherPackageTestServer(t)
+	defer srv.Close()
+	t.Setenv("ACCOUNTS_SERVICE_URL", srv.URL+"/")
+	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
+
+	s, ctx, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	rec := &gaugeProducerRecorder{}
+	pkt := buyOtherPackagePacket(t, op, "", 5990000, "UnknownRecipient", "hello")
+	CashShopOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, pkt, options)
+
+	if rec.calls != 1 {
+		t.Fatalf("announced packets = %d, want 1 (BUY_OTHER_PACKAGE must reach handleBuyOtherPackage and answer GIFT_PACKAGE_FAILED)", rec.calls)
 	}
-	if got := isCashShopOperation(logrus.New())(options, 32, CashShopOperationBuyOtherPackage); got {
-		t.Fatalf("isCashShopOperation(options, 32, %q) = %v, want false", CashShopOperationBuyOtherPackage, got)
+	if rec.lastName != cashcb.CashShopOperationWriter {
+		t.Fatalf("announced writer = %q, want %q", rec.lastName, cashcb.CashShopOperationWriter)
 	}
 }

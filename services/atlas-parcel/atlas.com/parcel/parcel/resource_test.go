@@ -124,6 +124,23 @@ func TestParcelResource(t *testing.T) {
 		require.Len(t, env.Data, 2)
 	})
 
+	// list by recipient without filter[worldId] must be a clean 400, never a
+	// silent default to world 0 — world 0 is an ordinary real world, not a
+	// sentinel, and a tenant has many worlds.
+	t.Run("list by recipient missing worldId", func(t *testing.T) {
+		db := newParcelTestDB(t)
+		tid := uuid.New()
+		seedParcel(t, db, tid, 900, 100)
+
+		srv := newParcelServer(db)
+		defer srv.Close()
+
+		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels?filter[recipientId]=100&filter[status]=pending", srv.URL)))
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
 	t.Run("list by sender", func(t *testing.T) {
 		db := newParcelTestDB(t)
 		tid := uuid.New()
@@ -223,7 +240,7 @@ func TestParcelResource(t *testing.T) {
 		srv := newParcelServer(db)
 		defer srv.Close()
 
-		resp, err := client.Do(withTenant(t, tidB, http.MethodGet, fmt.Sprintf("%s/parcels?filter[recipientId]=100", srv.URL)))
+		resp, err := client.Do(withTenant(t, tidB, http.MethodGet, fmt.Sprintf("%s/parcels?filter[recipientId]=100&filter[worldId]=0", srv.URL)))
 		require.NoError(t, err)
 		defer resp.Body.Close()
 		require.Equal(t, http.StatusOK, resp.StatusCode)

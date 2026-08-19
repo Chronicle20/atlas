@@ -52,8 +52,12 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 // points into the two Processor reads that exist (GetForRecipient,
 // GetPendingForSender) — both of which only ever surface StatusPending
 // parcels, so filter[status], when supplied, must be "pending"; anything
-// else is a clean 400, never a disconnect. filter[worldId] defaults to world
-// 0 (a real world, per the Processor's own convention) when omitted.
+// else is a clean 400, never a disconnect. filter[worldId] is REQUIRED with
+// filter[recipientId] — world 0 is an ordinary real world, not a sentinel,
+// so a missing filter[worldId] must never silently default to it (a tenant
+// has many worlds; this is the third instance of this exact mis-scoping
+// risk in the plan — task-2's provider WHERE clause and task-3's
+// HasInFlight both had the same shape of finding).
 func handleGetParcels(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
@@ -74,16 +78,19 @@ func handleGetParcels(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 				return
 			}
 
-			worldId := world.Id(0)
-			if v := q.Get("filter[worldId]"); v != "" {
-				parsed, werr := strconv.ParseUint(v, 10, 8)
-				if werr != nil {
-					d.Logger().WithError(werr).Warnf("Unable to parse filter[worldId].")
-					server.WriteBadRequest(d.Logger(), w, "filter[worldId] must be a byte")
-					return
-				}
-				worldId = world.Id(byte(parsed))
+			v := q.Get("filter[worldId]")
+			if v == "" {
+				d.Logger().Warnf("Parcel list request for recipient [%d] omitted filter[worldId].", recipientId)
+				server.WriteBadRequest(d.Logger(), w, "filter[worldId] is required")
+				return
 			}
+			parsed, werr := strconv.ParseUint(v, 10, 8)
+			if werr != nil {
+				d.Logger().WithError(werr).Warnf("Unable to parse filter[worldId].")
+				server.WriteBadRequest(d.Logger(), w, "filter[worldId] must be a byte")
+				return
+			}
+			worldId := world.Id(byte(parsed))
 
 			ms, err := p.GetForRecipient(uint32(recipientId), worldId)
 			if err != nil {
@@ -145,7 +152,7 @@ func handleGetParcel(d *rest.HandlerDependency, c *rest.HandlerContext) http.Han
 			}
 
 			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(parcelId)
-			if errors.Is(err, gorm.ErrRecordNotFound) {
+			if errors.Is(err, ErrNotFound) {
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}

@@ -106,8 +106,8 @@ func legacySampleCD() CharacterData {
 		Inventory: InventoryData{
 			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 			EtcCapacity: 24, CashCapacity: 24,
-			EquipSlotExtExpire:    94354848000000000,
-			RegularEquip: []model.Asset{equip},
+			EquipSlotExtExpire: 94354848000000000,
+			RegularEquip:       []model.Asset{equip},
 		},
 		MonsterBook: MonsterBookData{CoverCardId: 2388000},
 	}

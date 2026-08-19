@@ -12,6 +12,7 @@ import (
 	"atlas-cashshop/kafka/message/cashshop"
 	cashshop2 "atlas-cashshop/kafka/producer/cashshop"
 	"atlas-cashshop/pet"
+	"atlas-cashshop/purchaserecord"
 	"atlas-cashshop/wallet"
 	"context"
 	"errors"
@@ -219,6 +220,14 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 			}
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create asset for character [%d].", characterId)
+				rejectEmit = func() error {
+					return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", transactionId))
+				}
+				return err
+			}
+
+			if err = purchaserecord.Record(tx, p.t.Id(), c.AccountId(), serialNumber); err != nil {
+				p.l.WithError(err).Errorf("Unable to record purchase for character [%d].", characterId)
 				rejectEmit = func() error {
 					return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", transactionId))
 				}

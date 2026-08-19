@@ -17,6 +17,7 @@ import (
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
 	"atlas-cashshop/kafka/message/cashshop"
+	"atlas-cashshop/purchaserecord"
 	"atlas-cashshop/wallet"
 	"encoding/json"
 	"fmt"
@@ -100,7 +101,7 @@ func purchaseCompartmentMigrationSqlite(db *gorm.DB) error {
 
 func purchaseTestDatabase(t *testing.T) *gorm.DB {
 	t.Helper()
-	return databasetest.NewInMemoryTenantDB(t, purchaseCompartmentMigrationSqlite, asset.Migration, wallet.Migration, outbox.Migration)
+	return databasetest.NewInMemoryTenantDB(t, purchaseCompartmentMigrationSqlite, asset.Migration, wallet.Migration, purchaserecord.Migration, outbox.Migration)
 }
 
 func seedPurchaseCompartment(t *testing.T, db *gorm.DB, tenantId uuid.UUID, accountId uint32, capacity uint32) uuid.UUID {

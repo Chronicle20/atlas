@@ -79,3 +79,11 @@ func (m Model) ExpiresAt() time.Time { return m.expiresAt }
 func (m Model) ResolvedAt() *time.Time { return m.resolvedAt }
 
 func (m Model) LastNotified() *time.Time { return m.lastNotified }
+
+// Receivable reports whether the parcel can be claimed as of now: it is
+// still pending and its ReceivableAt has passed. Used both by Processor.Receive
+// (as the authoritative in-transaction check) and by HasInFlight's inbound
+// half (design §9.1).
+func (m Model) Receivable(now time.Time) bool {
+	return m.status == StatusPending && !m.receivableAt.After(now)
+}

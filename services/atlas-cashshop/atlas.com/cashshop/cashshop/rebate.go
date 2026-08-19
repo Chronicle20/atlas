@@ -42,16 +42,18 @@ const reasonRebateUnknownError = "unknown_error"
 // one locker asset's purchase price and removes it, atomically and
 // idempotently.
 //
-// Currency resolution (controller corrections C1/C2/C3): the wallet bucket
-// credited is the refunded asset's OWN asset.Model.Currency() -- the bucket
-// Purchase recorded on the asset row when it was bought
-// (cashshop/processor.go's Purchase, cashshop/inventory/asset.Entity.Currency).
-// Currency == 0 is not "unknown"; it is the explicit default-bucket
-// convention that covers both (a) every asset that predates the column and
-// (b) every asset created on a gift/reward/surprise path that was never
-// bought with currency at all -- both resolve to the ordinary credit/NX
-// bucket (currency id 1 in wallet.Model's Balance/Award convention), the
-// same bucket Purchase's own default arm uses.
+// Currency resolution (fix round 1, controller corrections C1/C2/C3): the
+// wallet bucket credited is the refunded asset's OWN asset.Model.Currency()
+// -- the EFFECTIVE bucket Purchase recorded on the asset row when it was
+// bought (cashshop/processor.go's Purchase persists
+// effectivePurchaseCurrency(currency), never the raw wire currency -- see
+// that function's doc comment for why). Because Purchase normalizes 1/2
+// unchanged and everything else to walletCurrencyPrepaid (3), a stored
+// Currency == 0 can ONLY mean "this row predates the Currency column" --
+// not "a purchase whose bucket happened to be prepaid" -- so it is safe for
+// a rebate to treat 0 as legacy and default it to the ordinary credit/NX
+// bucket (the user's ruling, C2), and to credit every other stored value
+// (1, 2, or 3) back verbatim with no further translation.
 func (p *ProcessorImpl) RebateAndEmit(characterId uint32, accountId uint32, cashId int64, transactionId uuid.UUID) error {
 	var rejectEmit func() error
 	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
@@ -131,11 +133,12 @@ func (p *ProcessorImpl) RebateAndEmit(characterId uint32, accountId uint32, cash
 			}
 
 			// Step 5: credit the wallet on the currency the asset was
-			// purchased with -- see this file's package-level doc comment
-			// for the 0-means-default-bucket convention.
+			// purchased with -- see RebateAndEmit's doc comment for why a
+			// stored 0 can only mean "legacy row" (never "a genuine prepaid
+			// purchase") and therefore safely defaults to credit/NX here.
 			currency := am.Currency()
 			if currency == 0 {
-				currency = 1
+				currency = walletCurrencyCredit
 			}
 			walP := wallet.NewProcessor(p.l, p.ctx, tx)
 			w, err := walP.GetByAccountId(accountId)

@@ -272,3 +272,75 @@ func TestRebate(t *testing.T) {
 		require.Equal(t, price, w.Points(), "the Points bucket recorded on the asset must be the one credited")
 	})
 }
+
+// TestRebateFixRound1CurrencyNormalization proves the fix-round-1 defect and
+// its fix: a BUY_NORMAL-shaped purchase (wire currency 0) debits prepaid, so
+// its stored asset currency and its rebate must land on prepaid too -- NOT
+// credit/NX, which is what the pre-fix code did (asset.Entity.Currency
+// persisted the raw wire 0, and RebateAndEmit's read-site "0 -> credit"
+// default silently redirected the refund to the wrong bucket: a free
+// currency conversion on the most common buy path).
+func TestRebateFixRound1CurrencyNormalization(t *testing.T) {
+	tenantId := uuid.New()
+	accountId := uint32(77)
+	characterId := uint32(2000)
+	serialNumber := uint32(9500)
+	price := uint32(500)
+
+	t.Run("a wire-currency-0 purchase persists prepaid and rebates prepaid", func(t *testing.T) {
+		db := rebateTestDatabase(t)
+		startPurchaseCharacterServer(t, characterId, accountId)
+		startPurchaseCommodityServer(t, serialNumber, testPurchaseItemId, price)
+		seedPurchaseCompartment(t, db, tenantId, accountId, 55)
+		require.NoError(t, db.Create(&wallet.Entity{Id: uuid.New(), TenantId: tenantId, AccountId: accountId, Credit: 0, Points: 0, Prepaid: price}).Error)
+
+		ctx := databasetest.TenantContext(tenantId)
+		l, _ := testlog.NewNullLogger()
+
+		// BUY_NORMAL's wire shape: currency 0 (design.md:18,
+		// resolvePurchaseCurrency in atlas-channel).
+		require.NoError(t, NewProcessor(l, ctx, db).PurchaseAndEmit(characterId, 0, serialNumber, uuid.New(), ""))
+
+		// The debit landed on prepaid (wallet.Model routes wire currency 0
+		// there) -- this is the pre-existing, correct DEBIT behavior this
+		// fix must not disturb.
+		w, err := wallet.NewProcessor(l, ctx, db).GetByAccountId(accountId)
+		require.NoError(t, err)
+		require.Equal(t, uint32(0), w.Prepaid(), "the purchase must debit prepaid for wire currency 0")
+
+		var stored asset.Entity
+		require.NoError(t, db.Where("compartment_id in (?)", db.Model(&compartment.Entity{}).Select("id").Where("account_id = ?", accountId)).First(&stored).Error)
+		require.Equal(t, walletCurrencyPrepaid, stored.Currency, "the asset must persist the EFFECTIVE bucket (prepaid=3), not the raw wire value (0)")
+		cashId := stored.CashId
+
+		require.NoError(t, NewProcessor(l, ctx, db).RebateAndEmit(characterId, accountId, cashId, uuid.New()))
+
+		w, err = wallet.NewProcessor(l, ctx, db).GetByAccountId(accountId)
+		require.NoError(t, err)
+		require.Equal(t, price, w.Prepaid(), "the rebate must credit back the SAME bucket the purchase debited (prepaid), not credit/NX")
+		require.Equal(t, uint32(0), w.Credit(), "credit/NX must not receive a free conversion from the rebate")
+	})
+
+	t.Run("a legacy asset (Currency == 0) rebates to credit", func(t *testing.T) {
+		db := rebateTestDatabase(t)
+		legacyCashId := int64(900006)
+		compartmentId := seedPurchaseCompartment(t, db, tenantId, accountId, 55)
+		require.NoError(t, db.Create(&wallet.Entity{Id: uuid.New(), TenantId: tenantId, AccountId: accountId, Credit: 0, Prepaid: 0}).Error)
+		startPurchaseCommodityServer(t, serialNumber+1, testPurchaseItemId, price)
+		// No purchase can produce a stored 0 anymore (Purchase always
+		// normalizes via effectivePurchaseCurrency) -- a raw 0 can only be
+		// constructed directly, exactly as a row that predates the column
+		// would look.
+		seedRebateAsset(t, db, tenantId, compartmentId, legacyCashId, serialNumber+1, 0, time.Now().Add(30*24*time.Hour))
+
+		ctx := databasetest.TenantContext(tenantId)
+		l, _ := testlog.NewNullLogger()
+
+		require.NoError(t, NewProcessor(l, ctx, db).RebateAndEmit(characterId, accountId, legacyCashId, uuid.New()))
+
+		w, err := wallet.NewProcessor(l, ctx, db).GetByAccountId(accountId)
+		require.NoError(t, err)
+		require.Equal(t, price, w.Credit(), "a legacy (predates-the-column) asset must default to credit/NX per the user's ruling (C2)")
+		require.Equal(t, uint32(0), w.Prepaid())
+	})
+}

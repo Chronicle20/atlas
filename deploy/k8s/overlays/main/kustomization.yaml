@@ -8,6 +8,7 @@ namespace: atlas-main
 resources:
   - ../../base
   - atlas-env-tokens.yaml
+  - environment-record.yaml
 patches:
   - path: lb-pin.yaml
   - path: patches/atlas-env-env.yaml
@@ -36,6 +37,15 @@ configMapGenerator:
   - name: atlas-env
     behavior: replace
     literals:
+      # env.Self() reads this. It MUST equal `namespace` with the `atlas-`
+      # prefix stripped, which is exactly how CI derives
+      # BASELINE_ENVIRONMENT (.github/workflows/pr-validation.yml:921) and
+      # what pr-sparse's environment-record.yaml writes into `baseline`.
+      # MapRegistry.IsOwner compares rec.Baseline == r.self by string
+      # equality (libs/atlas-env/registry.go:218), so any disagreement makes
+      # the baseline own nothing. tools/overlay-env-guard.sh pins the two
+      # together.
+      - ATLAS_ENVIRONMENT=main
       - BASE_SERVICE_URL=http://atlas-ingress.atlas-main.svc.cluster.local:80/api/
       - BOOTSTRAP_SERVERS=kafka.home:9093
       - DB_HOST=postgres.home

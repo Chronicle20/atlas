@@ -14,6 +14,13 @@ import (
 
 const serviceName = "atlas-parcel"
 
+// consumerGroupId is resolved ahead of its consumer registration: the custody
+// consumer that consumes it is Task 15 of the Duey parcel-delivery plan and
+// has not been implemented yet. Keep this declaration in place — do not
+// delete it — so Task 15 wires the existing group id rather than re-adding
+// it from scratch.
+//
+//nolint:unused // consumed by Task 15's custody consumer, not yet implemented
 var consumerGroupId = consumergroup.Resolve("Parcel Service")
 
 type Server struct {

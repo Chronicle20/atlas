@@ -116,7 +116,7 @@ func TestParcelResource(t *testing.T) {
 
 		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels?filter[recipientId]=100&filter[worldId]=0&filter[status]=pending", srv.URL)))
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var env dataList
@@ -137,7 +137,7 @@ func TestParcelResource(t *testing.T) {
 
 		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels?filter[recipientId]=100&filter[status]=pending", srv.URL)))
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 
@@ -151,7 +151,7 @@ func TestParcelResource(t *testing.T) {
 
 		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels?filter[senderId]=300&filter[status]=pending", srv.URL)))
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var env dataList
@@ -169,7 +169,7 @@ func TestParcelResource(t *testing.T) {
 
 		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels/%s", srv.URL, created.Id().String())))
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var env envelope
@@ -189,7 +189,7 @@ func TestParcelResource(t *testing.T) {
 		missing := uuid.New().String()
 		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels/%s", srv.URL, missing)))
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 
@@ -203,7 +203,7 @@ func TestParcelResource(t *testing.T) {
 
 		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/characters/100/parcel-status", srv.URL)))
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var env envelope
@@ -222,7 +222,7 @@ func TestParcelResource(t *testing.T) {
 
 		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/characters/100/parcel-status", srv.URL)))
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var env envelope
@@ -242,7 +242,7 @@ func TestParcelResource(t *testing.T) {
 
 		resp, err := client.Do(withTenant(t, tidB, http.MethodGet, fmt.Sprintf("%s/parcels?filter[recipientId]=100&filter[worldId]=0", srv.URL)))
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var env dataList

@@ -9,12 +9,6 @@ package cashshop
 // domain's placement exists to prevent.
 
 import (
-	"atlas-cashshop/cashshop/inventory/asset"
-	"atlas-cashshop/cashshop/inventory/compartment"
-	"atlas-cashshop/kafka/message/cashshop"
-	"atlas-cashshop/purchaserecord"
-	"atlas-cashshop/ring"
-	"atlas-cashshop/wallet"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -22,6 +16,13 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"atlas-cashshop/cashshop/inventory/asset"
+	"atlas-cashshop/cashshop/inventory/compartment"
+	"atlas-cashshop/kafka/message/cashshop"
+	"atlas-cashshop/purchaserecord"
+	"atlas-cashshop/ring"
+	"atlas-cashshop/wallet"
 
 	"github.com/google/uuid"
 	testlog "github.com/sirupsen/logrus/hooks/test"
@@ -342,6 +343,60 @@ func TestPurchaseRing(t *testing.T) {
 		errs := purchaseErrorEvents(t, events)
 		require.Len(t, errs, 1)
 		require.Equal(t, cashshop.ErrorOperationCouple, errs[0].Body.Operation)
+	})
+
+	// TestPurchaseRing/"a late failure rolls back the cross-account write" is
+	// task 24a's item 1: PurchaseRingAndEmit's purchaserecord.Record (step 8)
+	// is the LAST write before the success event, running after the buyer's
+	// wallet was already debited AND both halves -- the buyer's own asset AND
+	// the PARTNER's asset, on a different account -- were already created and
+	// paired, in the SAME outer transaction. Failing it here proves
+	// database.ExecuteTransaction rolls the whole transaction back together,
+	// not just the write that failed. Precedent: ring/administrator_test.go's
+	// TestCreatePairIsAtomic proves the inner ring.CreatePair batch is atomic;
+	// this proves the OUTER cross-account transaction is too, which
+	// TestCreatePairIsAtomic cannot reach.
+	t.Run("a late failure rolls back the cross-account write", func(t *testing.T) {
+		db := ringTestDatabase(t)
+		tenantId := uuid.New()
+		events := captureDirectPurchaseEvents(t)
+		startRingCharacterServer(t, map[uint32]ringCharacterFixture{
+			buyerCharacterId:   {accountId: buyerAccountId, jobId: 0, name: senderName},
+			partnerCharacterId: {accountId: partnerAccountId, jobId: 0, name: "Partner"},
+		})
+		startRingCommodityServer(t, ringCommodityId, ringItemId, ringPrice)
+		seedPurchaseCompartment(t, db, tenantId, buyerAccountId, 10)
+		partnerCompartmentId := seedPurchaseCompartment(t, db, tenantId, partnerAccountId, 10)
+		seedPurchaseWallet(t, db, tenantId, buyerAccountId, 5000)
+		databasetest.FailWritesOn(t, db, "cash_purchase_records", databasetest.WriteCreate)
+
+		ctx := databasetest.TenantContext(tenantId)
+		l, _ := testlog.NewNullLogger()
+		transactionId := uuid.New()
+
+		err := NewProcessor(l, ctx, db).PurchaseRingAndEmit(buyerCharacterId, transactionId, 1, ringCommodityId, partnerCharacterId, senderName, "Forever", string(ring.TypeFriendship))
+		require.NoError(t, err, "rejectEmit short-circuits with a nil return")
+
+		w, err := wallet.NewProcessor(l, ctx, db).GetByAccountId(buyerAccountId)
+		require.NoError(t, err)
+		require.Equal(t, uint32(5000), w.Credit(), "the buyer's debit must roll back with the failed purchase record")
+
+		buyerCcm, err := compartment.NewProcessor(l, ctx, db).GetByAccountIdAndType(buyerAccountId, compartment.TypeExplorer)
+		require.NoError(t, err)
+		require.Empty(t, buyerCcm.Assets(), "the buyer's own asset must roll back")
+
+		partnerAssets, err := asset.NewProcessor(l, ctx, db).GetByCompartmentId(partnerCompartmentId)
+		require.NoError(t, err)
+		require.Empty(t, partnerAssets, "the partner's asset -- created on a DIFFERENT account than the one that failed -- must roll back too")
+
+		buyerRings, err := ring.GetByCharacterId(db, tenantId, buyerCharacterId)
+		require.NoError(t, err)
+		require.Empty(t, buyerRings, "the pair row must roll back with everything else")
+
+		errs := purchaseErrorEvents(t, events)
+		require.Len(t, errs, 1)
+		require.Equal(t, cashshop.ErrorOperationFriendship, errs[0].Body.Operation)
+		require.Equal(t, "UNKNOWN_ERROR", errs[0].Body.Error)
 	})
 
 	t.Run("replay creates one pair", func(t *testing.T) {

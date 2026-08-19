@@ -2,6 +2,7 @@ package ring
 
 import (
 	"atlas-cashshop/rest"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -96,6 +97,17 @@ func handleGetRing(db *gorm.DB) rest.GetHandler {
 			return func(w http.ResponseWriter, r *http.Request) {
 				t := tenant.MustFromContext(d.Context())
 				m, err := GetById(db.WithContext(d.Context()), t.Id(), ringId)
+				// A ring belonging to another tenant resolves to
+				// gorm.ErrRecordNotFound (GetById scopes on tenant_id), the
+				// same as a genuinely unknown id -- mirrors
+				// coupon/resource.go's handleGetCoupon, whose 404 mapping
+				// this route did not have (task 24a item 2's HTTP-level
+				// cross-tenant isolation test caught the gap: a 500 leaked
+				// server-error noise for what is an ordinary 404).
+				if errors.Is(err, gorm.ErrRecordNotFound) {
+					rest.WriteError(d.Logger(), w, http.StatusNotFound, "no such ring")
+					return
+				}
 				if err != nil {
 					restserver.WriteErrorResponse(d.Logger())(w)(err)
 					return

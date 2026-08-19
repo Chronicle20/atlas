@@ -1,13 +1,14 @@
 package handler
 
 import (
+	"context"
+	"errors"
+
 	"atlas-channel/cashshop"
 	"atlas-channel/character"
 	messagecashshop "atlas-channel/kafka/message/cashshop"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
-	"context"
-	"errors"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -112,7 +113,11 @@ func handleRingPurchase(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		partner, err := character.NewProcessor(l, ctx).GetByName(name)
 		if err != nil {
 			l.WithError(err).Infof("Character [%d] attempted to purchase a ring for unknown partner [%s].", s.CharacterId(), name)
-			announceRingFailure(l, ctx, wp)(s, ringType, giftRejectionReason(err))
+			// Forced to atlasmodel.ErrEmptySlice -- see the identical
+			// comment on handleGift's own recipient lookup
+			// (cash_shop_gift.go), the pattern this copies (task 24a item
+			// 3, flagged non-blocking in review-task-20.md).
+			announceRingFailure(l, ctx, wp)(s, ringType, giftRejectionReason(atlasmodel.ErrEmptySlice))
 			return
 		}
 		if partner.WorldId() != s.WorldId() {

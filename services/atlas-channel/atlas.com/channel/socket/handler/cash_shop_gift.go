@@ -1,12 +1,13 @@
 package handler
 
 import (
+	"context"
+	"errors"
+
 	"atlas-channel/cashshop"
 	"atlas-channel/character"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
-	"context"
-	"errors"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -102,7 +103,16 @@ func handleGift(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) f
 		recipient, err := character.NewProcessor(l, ctx).GetByName(sp.Name())
 		if err != nil {
 			l.WithError(err).Infof("Character [%d] attempted to gift unknown recipient [%s].", s.CharacterId(), sp.Name())
-			announceGiftFailure(l, ctx, wp)(s, giftRejectionReason(err))
+			// Forced to atlasmodel.ErrEmptySlice, mirroring the cross-world
+			// branch below, rather than passed raw: character.GetByName
+			// resolves through model.FirstProvider today, which does return
+			// ErrEmptySlice on an unknown name, but giftRejectionReason must
+			// not depend on that being true forever -- an unknown-recipient
+			// rejection is always INCORRECT_NAME here, never the generic
+			// unknown_error default a future error-class change on the
+			// lookup path could otherwise silently fall through to (task
+			// 24a item 3, flagged non-blocking in review-task-20.md).
+			announceGiftFailure(l, ctx, wp)(s, giftRejectionReason(atlasmodel.ErrEmptySlice))
 			return
 		}
 		if recipient.WorldId() != s.WorldId() {

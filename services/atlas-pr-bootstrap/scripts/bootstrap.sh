@@ -58,14 +58,40 @@ post() {
         "$@" -d '{}'
 }
 
+# get_attr URL ATTR [extra curl args...]
+#
+# Note the pipeline: the exit status is jq's, not curl's, so a failed request
+# is NOT reported here — it surfaces as empty output. Callers that act on the
+# value must validate it (see document_count).
 get_attr() {
+    local url="$1" attr="$2"
+    shift 2
     curl -fsS \
         -H "TENANT_ID: $TENANT_ID" \
         -H "REGION: $REGION" \
         -H "MAJOR_VERSION: $MAJOR_VERSION" \
         -H "MINOR_VERSION: $MINOR_VERSION" \
         -H "Accept: application/vnd.api+json" \
-        "$1" | jq -r ".data.attributes.$2"
+        "$@" \
+        "$url" | jq -r ".data.attributes.$attr"
+}
+
+# document_count URL [extra curl args...] — echoes /api/data/status's
+# documentCount for one scope, or returns non-zero if the value did not come
+# back as a plain integer.
+#
+# The validation is the point. get_attr cannot report a failed request, so an
+# unreachable atlas-data yields "" and a JSON:API error body yields "null".
+# Either one, treated as a count, reads as "no data here" — which is what
+# decides whether to run a destructive restore. Fail loudly instead.
+document_count() {
+    local url="$1" n
+    shift
+    n=$(get_attr "$url" documentCount "$@")
+    case "$n" in
+        '' | *[!0-9]*) return 1 ;;
+    esac
+    printf '%s' "$n"
 }
 
 # Polling helper — returns 0 when /api/data/status has *stopped*
@@ -481,11 +507,37 @@ for d in $restart_targets; do
 done
 
 # Data ingest: baseline-restore only. The preflight already proved the
-# baseline exists for this version, so there is no "what if absent" branch;
-# a non-zero documentCount means a prior sync already restored (idempotent).
+# baseline exists for this version, so there is no "what if absent" branch.
+#
+# The guard mirrors atlas-data's READ semantics instead of asking only "does
+# this tenant own rows?". document/storage.go falls back to the version-scoped
+# canonical tenant (canonical.TenantId) when the caller's tenant has none, so a
+# tenant provisioned after canonical ingestion reads the full dataset while
+# owning zero rows. That is the normal steady state, not an empty environment.
+#
+# Restoring in that state is not merely redundant, it is destructive: the dump
+# is replayed through baseline.Rewriter, which rewrites ONLY the tenant_id
+# column and copies every other column — primary keys included — verbatim. A
+# COPY into a database that already holds the canonical rows therefore fails on
+# documents_pkey and rolls back to a wiped target tenant. Isolated environments
+# never hit this because they get an empty database; the first sparse
+# environment shares the baseline's atlas-data, which already held all ~49k
+# canonical rows, and its bootstrap died here.
+#
+# Both counts zero means the data is genuinely unreachable — a fresh isolated
+# database — and the restore is what populates it.
 ATLAS_STEP=data-ingest
-docs=$(get_attr "$ATLAS_UI_BASE/api/data/status" documentCount)
-if [ "$docs" = "0" ] || [ "$docs" = "null" ]; then
+docs=$(document_count "$ATLAS_UI_BASE/api/data/status") || {
+    log error "data-ingest: could not read the tenant document count"
+    exit 1
+}
+# scope=shared reports the canonical tenant's count and is operator-gated
+# (status.go's resolveStatusTenantId 403s without this header).
+canon=$(document_count "$ATLAS_UI_BASE/api/data/status?scope=shared" -H "X-Atlas-Operator: 1") || {
+    log error "data-ingest: could not read the canonical document count"
+    exit 1
+}
+if [ "$docs" = "0" ] && [ "$canon" = "0" ]; then
     log info "restoring canonical baseline → POST /api/data/baseline/restore"
     restore_body=$(jq -cn \
         --arg r "$REGION" \
@@ -504,7 +556,7 @@ if [ "$docs" = "0" ] || [ "$docs" = "null" ]; then
         "$ATLAS_UI_BASE/api/data/baseline/restore" >/dev/null
     retry 60 5 data_processing_done
 else
-    log info "data already processed (documentCount=$docs); skipping ingest"
+    log info "data already reachable (tenant=$docs, canonical=$canon); skipping ingest"
 fi
 
 # Per-domain seeds, in parallel

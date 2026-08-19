@@ -278,34 +278,74 @@ v87-era body-part additions (`get_bodyaprt_name` on v95 gains cases 49/50/51 =
 medal/belt/shoulder-ish that v83 does not have for 51 — on v83, 51 *is* the
 extended pendant).
 
-### 1.7 gms_v72 — no equip-slot-extension effect in the client
+### 1.7 gms_v72 — RECONCILED 2026-08-19 (task-240 task 24): the send DOES exist; "no effect" is unsettled, not confirmed
 
-`func_query(name_regex="OnCashItemRes", session=f2a2e7c1)` returns 46 named
-`OnCashItemRes*` handlers; **`OnCashItemResEnableEquipSlotExtDone` is not among
-them**, and `func_query(name_regex="EquipSlot|EquipExt")` returns nothing.
+**This section originally concluded "no equip-slot-extension effect in the
+client" from a name-based search plus a decompiler pretty-name that turned out
+to be stale. That conclusion is withdrawn.** See
+`review-task-21.md` (non-blocking finding 2) and the reconciliation task that
+re-decompiled `0x468e43` directly against the v72 IDB (session `f2a2e7c1`) and
+cross-checked v79 (session `f36df4cd`).
+
+Original evidence, still accurate as far as it goes: `func_query(name_regex="OnCashItemRes",
+session=f2a2e7c1)` returns 46 named `OnCashItemRes*` handlers;
+`OnCashItemResEnableEquipSlotExtDone` is not among them, and
+`func_query(name_regex="EquipSlot|EquipExt")` returns nothing.
 `search_text("CompareFileTime", 0x473500–0x4739d1)` over the unnamed gap in the
 handler block returns 0 hits.
 
-The address the repo's v72 fixture comment cites —
-`libs/atlas-packet/cash/serverbound/shop_operation_enable_equip_slot_test.go:66`,
-"CCashShop::OnEnableEquipSlotExt@0x469fa9 (0x407), NOT v79 OnIncCharacterSlotCount"
-— resolves in the v72 IDB to `CCashShop::OnIncCharacterSlotCount` @ `0x468e43`,
-whose send is:
+**What was wrong:** this section treated the decompiler's pretty-printed
+function header (`CCashShop::OnIncCharacterSlotCount`) as the function's
+identity. `lookup_funcs`/`analyze_function` against the v72 IDB's actual name
+table (not the decompiler's stale header) return the real linked symbol:
+
+```
+?OnBuySlotInc@CCashShop@@QAEXJ@Z   (CCashShop::OnBuySlotInc)   size 0x407
+```
+
+`OnBuySlotInc` in v72 is a single pre-split handler that services every
+cash-shop slot-purchase tab (equip/use/setup/etc/character) through one body,
+keyed on `Data / 1000 % 10` (the tab id). By v79 this one function has been
+split into three:
+
+| v79 function | addr | size | shape |
+|---|---|---|---|
+| `OnBuySlotInc` | `0x466b13` | `0x359` | itemType-gated (1–4), mode=6 constant, `Encode1(0)` + `Encode1(a2)`, no currency field |
+| `OnIncCharacterSlotCount` | `0x4673be` | `0x21d` | `CItemInfo::GetEquipExtItem` + `CConfirmPurchaseDlg::Confirm`, mode=9 constant, `Encode1(flag)` + `Encode4(a2)`, no currency field |
+| `OnEnableEquipSlotExt` | `0x469fa9` | `0x407` | CS_COMMODITY_EX + `GetSlotIncDelta`, mode 6\|7, pointType+currency+flag+serialNumber |
+
+v72's `0x468e43` matches `OnEnableEquipSlotExt` **exactly** in size (0x407 vs
+0x407) and in body: identical StringPool ids (558, 537, 493, 494, 508),
+identical `GetSlotIncDelta`/48-96 slot-cap logic, identical `CS_COMMODITY_EX`
+construction, identical field order. It does **not** match v79's
+`OnIncCharacterSlotCount` (0x21d, structurally divergent — different item-info
+call, different dialog, different packet field shape). The send is:
 
 ```c
       COutPacket::COutPacket((COutPacket *)v31, 219);
       v19 = TSecType<long>::GetData(v34 + 16);
       COutPacket::Encode1((COutPacket *)v31, (v19 / 1000 == 9110) + 6);   // mode 6 or 7
-      COutPacket::Encode1((COutPacket *)v31, v45 == 2);
-      COutPacket::Encode4((COutPacket *)v31, v45);
-      COutPacket::Encode1((COutPacket *)v31, 1u);
-      COutPacket::Encode4((COutPacket *)v31, (unsigned int)a2);
+      COutPacket::Encode1((COutPacket *)v31, v45 == 2);   // pointType
+      COutPacket::Encode4((COutPacket *)v31, v45);        // currency
+      COutPacket::Encode1((COutPacket *)v31, 1u);         // constant flag
+      COutPacket::Encode4((COutPacket *)v31, (unsigned int)a2);  // serialNumber
 ```
 
-That is the slot-count purchase, not the equip-slot extension. So on v72 the
-serverbound body shape exists (the repo pins it) but **there is no client-side
-extension effect to drive**. Treat gms_v72 (and, untested, v61/v48) as *no
-effect*, not as "slot index 0 with body part unknown".
+This is the equip-slot-extension purchase-send lineage, not a slot-count
+purchase that happens to look similar.
+
+**On "no client-side effect":** the absence of a distinctly-named
+`OnCashItemResEnableEquipSlotExtDone` in v72 is now better explained by the
+same pre-split structure as the send side: v72 has a generic
+`OnCashItemResIncSlotCountDone`/`OnCashItemResIncSlotCountFailed` pair
+(`0x472686`/`0x47277a`) that v79 likely narrows into the per-op `...Done`
+handlers, the same way `OnBuySlotInc` narrows into three sends. Whether that
+generic handler actually applies the equip-slot-extension FILETIME (§1.1–1.6)
+on v72 has **not** been decompiled and is not settled by this reconciliation —
+it would need `OnCashItemResIncSlotCountDone` decompiled and traced against the
+`CharacterData` FILETIME field. Do **not** treat gms_v72 as confirmed "no
+effect"; treat it as **send confirmed present, client-side application
+unverified** (open question, not "no effect").
 
 ---
 

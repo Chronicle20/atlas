@@ -64,7 +64,7 @@ func TestRequestPurchaseCommandProvider_JMSBuyRoutesSerial(t *testing.T) {
 	// Drive the decoded buy through the same producer the handler uses:
 	// RequestPurchase(...) -> RequestPurchaseCommandProvider(characterId, serial, currency).
 	const characterId = uint32(42)
-	provider := RequestPurchaseCommandProvider(characterId, sp.SerialNumber(), sp.Currency(), uuid.Nil)
+	provider := RequestPurchaseCommandProvider(characterId, sp.SerialNumber(), sp.Currency(), uuid.Nil, "")
 
 	msgs, err := provider()
 	if err != nil {

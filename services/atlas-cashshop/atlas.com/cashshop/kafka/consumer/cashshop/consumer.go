@@ -71,6 +71,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestGiftPurchase(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestPackagePurchase(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -205,6 +208,21 @@ func handleCommandRequestGiftPurchase(db *gorm.DB) message.Handler[cashshop.Comm
 		// needs logging here.
 		if err := cashshop3.NewProcessor(l, ctx, db).GiftAndEmit(c.CharacterId, c.Body.TransactionId, c.Body.SerialNumber, c.Body.RecipientCharacterId, c.Body.SenderName, c.Body.Message); err != nil {
 			l.WithError(err).Errorf("Gift purchase for character [%d], recipient [%d] did not succeed.", c.CharacterId, c.Body.RecipientCharacterId)
+		}
+	}
+}
+
+func handleCommandRequestPackagePurchase(db *gorm.DB) message.Handler[cashshop.Command[cashshop.RequestPackagePurchaseCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c cashshop.Command[cashshop.RequestPackagePurchaseCommandBody]) {
+		if c.Type != cashshop.CommandTypeRequestPackagePurchase {
+			return
+		}
+		// PurchasePackageAndEmit owns the whole outcome, including emitting
+		// the PACKAGE_PURCHASED / ERROR event on the appropriate path, so a
+		// returned error has already been reported to the player and only
+		// needs logging here.
+		if err := cashshop3.NewProcessor(l, ctx, db).PurchasePackageAndEmit(c.CharacterId, c.Body.TransactionId, c.Body.Currency, c.Body.SerialNumber, c.Body.RecipientCharacterId, c.Body.SenderName); err != nil {
+			l.WithError(err).Errorf("Package purchase for character [%d], recipient [%d] did not succeed.", c.CharacterId, c.Body.RecipientCharacterId)
 		}
 	}
 }

@@ -1,0 +1,38 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-19T11:29:46Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	c16e1e256	-	-	-	-
+2026-08-19T11:33:39Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	c16e1e256	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-19T11:37:54Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE	b179059b5	-	-	-	-
+2026-08-19T11:37:55Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	b179059b5	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-19T11:41:11Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	91dc1cae9	-	-	-	-
+2026-08-19T11:48:12Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	91dc1cae9	CHANGES_REQUIRED	yes	-	-
+2026-08-19T11:48:12Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	cae523317	-	-	-	-
+2026-08-19T11:51:01Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	cae523317	CHANGES_REQUIRED	yes	-	-
+2026-08-19T11:56:57Z	agent	Task 4 fix 1	atlas-implementer	sonnet	-	-	-	-	DONE	6879aa7e0	-	-	-	-
+2026-08-19T11:56:57Z	agent	Task 4 fix 1	atlas-reviewer	sonnet	-	-	-	-	DONE	6879aa7e0	APPROVED	no	-	-
+2026-08-19T11:56:58Z	agent	Task 3 fix 1	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	7449ce973	-	-	-	-
+2026-08-19T11:58:01Z	agent	Task 3 fix 1	atlas-reviewer	sonnet	-	-	-	-	DONE	7449ce973	APPROVED	no	-	-
+2026-08-19T11:58:01Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	100000
+2026-08-19T12:13:07Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	DONE	37a0fb601	-	-	-	-
+2026-08-19T12:15:30Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DONE	37a0fb601	APPROVED	no	-	-
+2026-08-19T12:15:34Z	agent	Task 5 lint fix	atlas-implementer	sonnet	-	-	-	-	DONE	86c949d99	-	-	-	-
+2026-08-19T12:23:47Z	agent	Task 5 pr-sparse fix	atlas-implementer	sonnet	-	-	-	-	DONE	2604430f3	-	-	-	-
+2026-08-19T12:23:49Z	agent	Task 6	atlas-implementer	sonnet	-	-	-	-	BLOCKED	a590457c6	-	-	-	-
+2026-08-19T12:36:15Z	agent	Task 6 cont	dispatcher-family-implementer	sonnet	-	-	-	-	DONE	91a6e82aa	-	-	-	-
+2026-08-19T12:43:09Z	agent	Task 6	atlas-reviewer	sonnet	-	-	-	-	DONE	91a6e82aa	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-19T12:46:12Z	agent	Task 6 IDA audit	packet-verifier	sonnet	-	-	-	-	DONE	91a6e82aa	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-19T12:56:13Z	agent	Task 7	dispatcher-family-implementer	sonnet	-	-	-	-	DONE	797baebef	-	-	-	-
+2026-08-19T12:56:16Z	handoff	after Task 7	-	-	-	-	-	-	-	-	-	-	-	150000
+2026-08-19T13:00:13Z	agent	gate 6	verify.sh	-	-	-	-	-	PASS	797baebef	-	-	-	-
+2026-08-19T13:02:26Z	agent	Task 7	packet-verifier	sonnet	-	-	-	-	DONE	797baebef	CHANGES_REQUIRED	yes	-	-
+2026-08-19T13:09:31Z	agent	Task 7 fix	dispatcher-family-implementer	sonnet	-	-	-	-	DONE	29ec83a32	-	-	-	-
+2026-08-19T13:10:58Z	agent	Task 7 fix	packet-verifier	sonnet	-	-	-	-	DONE	29ec83a32	APPROVED	no	-	-
+2026-08-19T13:17:34Z	agent	Task 8	dispatcher-family-implementer	sonnet	-	-	-	-	DONE	f1e7d0229	-	-	-	-
+2026-08-19T13:20:49Z	agent	Task 8	packet-verifier	sonnet	-	-	-	-	DONE	f1e7d0229	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-19T13:21:47Z	agent	gate 7	verify.sh	-	-	-	-	-	PASS	f1e7d0229	-	-	-	-
+2026-08-19T13:28:32Z	agent	Task 9	dispatcher-family-implementer	sonnet	-	-	-	-	DONE	707e97efc	-	-	-	-
+2026-08-19T13:31:32Z	agent	Task 9	packet-verifier	sonnet	-	-	-	-	DONE	707e97efc	APPROVED	no	-	-
+2026-08-19T13:33:00Z	agent	gate 8	verify.sh	-	-	-	-	-	PASS	707e97efc	-	-	-	-
+2026-08-19T13:47:32Z	agent	Task 10	dispatcher-family-implementer	sonnet	-	-	-	-	DONE	586ee9ebb	-	-	-	-
+2026-08-19T13:49:59Z	agent	Task 10	packet-verifier	sonnet	-	-	-	-	DONE	586ee9ebb	APPROVED	no	-	-
+2026-08-19T13:58:24Z	agent	gate 9	verify.sh	-	-	-	-	-	FAIL-ENV	586ee9ebb	-	-	-	-
+2026-08-19T13:58:24Z	handoff	after Task 10	-	-	-	-	-	-	-	-	-	-	-	100000

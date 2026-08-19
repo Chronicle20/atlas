@@ -30,6 +30,7 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	return func(rf func(config consumer.Config, decorators ...atlasmodel.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
 			rf(consumer2.NewConfig(l)("parcel_show_command")(parcelmsg.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
+			rf(consumer2.NewConfig(l)("parcel_status_event")(parcelmsg.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser, consumer.EnvHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 		}
 	}
 }
@@ -43,7 +44,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				if err != nil {
 					return nil, err
 				}
-				return []listener.HandlerHandle{{Topic: t, Id: id}}, nil
+				handles := []listener.HandlerHandle{{Topic: t, Id: id}}
+
+				t, _ = topic.EnvProvider(l)(parcelmsg.EnvStatusEventTopic)()
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleParcelArrivedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+
+				return handles, nil
 			}
 		}
 	}
@@ -178,4 +188,36 @@ func showParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, t
 func quickDeliveryEnabled(t tenant.Model) bool {
 	return (t.IsRegion("GMS") && t.MajorAtLeast(72)) ||
 		(t.IsRegion("JMS") && t.MajorAtLeast(185))
+}
+
+// handleParcelArrivedEvent announces PARCEL[ALARM_NAMED] to a parcel's
+// recipient when atlas-parcel publishes a PARCEL_ARRIVED status event
+// (task-241 Task 24's producer). Guards on the event type and on tenant
+// (t.Is(sc.Tenant())), mirroring handleFrederickNotificationEvent
+// (kafka/consumer/merchant/consumer.go:454), then announces through
+// IfPresentByCharacterId — a recipient with no session on this channel is a
+// silent no-op.
+//
+// This always resolves to ALARM_NAMED (0x19), never PARCEL_ARRIVED (0x18).
+// Design §7.1 makes this an explicit trade: 0x18 would both append the
+// dialog row and raise SP_3902, but selecting it requires knowing the
+// session has an open parcel dialog, which the channel does not track. A
+// player with the dialog open sees a toast instead of a live row —
+// accepted, low severity.
+func handleParcelArrivedEvent(sc server.Model, wp writer.Producer) message.Handler[parcelmsg.StatusEvent[parcelmsg.StatusEventParcelArrivedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e parcelmsg.StatusEvent[parcelmsg.StatusEventParcelArrivedBody]) {
+		if e.Type != parcelmsg.StatusEventParcelArrived {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(parcelcb.ParcelWriter)(parcelcb.ParcelAlarmNamedBody(e.Body.SenderName, e.Body.HasItem)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce parcel arrival to character [%d].", e.CharacterId)
+		}
+	}
 }

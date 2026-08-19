@@ -29,3 +29,36 @@ type ShowParcelCommand struct {
 	Quick         bool       `json:"quick"`
 	Type          string     `json:"type"`
 }
+
+// EnvStatusEventTopic names the parcel status event topic — the arrival
+// notification channel to the rest of the platform. It is a sibling of
+// custody's EnvStatusTopic, not the same topic: custody acks saga steps,
+// this one notifies players. Mirrors atlas-parcel's producer-side
+// kafka/message/parcel/kafka.go (task-241 Task 24) — field names must match
+// exactly since these are separate Go modules.
+const EnvStatusEventTopic = "EVENT_TOPIC_PARCEL_STATUS"
+
+// StatusEventParcelArrived is the only status event this topic carries
+// today (design §7.1 — no notification tier ladder, one arrival event).
+const StatusEventParcelArrived = "PARCEL_ARRIVED"
+
+// StatusEvent is the generic parcel status event envelope, addressed to the
+// parcel's recipient by CharacterId — mirrors atlas-parcel's producer-side
+// StatusEvent[E] (task-241 Task 24) and
+// services/atlas-merchant/atlas.com/merchant/kafka/message/merchant/kafka.go's
+// StatusEvent[E], the shape handleParcelArrivedEvent expects
+// (IfPresentByCharacterId keyed off CharacterId, task-25).
+type StatusEvent[E any] struct {
+	CharacterId uint32 `json:"characterId"`
+	Type        string `json:"type"`
+	Body        E      `json:"body"`
+}
+
+// StatusEventParcelArrivedBody carries what the channel-side alarm needs to
+// announce ALARM_NAMED (task-25, design §7.1): the sender's display name and
+// whether the parcel holds an item. There is no notification tier here — a
+// parcel has one arrival event, not Frederick's escalating rot ladder.
+type StatusEventParcelArrivedBody struct {
+	SenderName string `json:"senderName"`
+	HasItem    bool   `json:"hasItem"`
+}

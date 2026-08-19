@@ -12,24 +12,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	restserver "github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
-
-// byCharacterIdPagedProvider pages every ring half a character holds, for
-// GET /rings?filter[characterId]=. Defined locally rather than in
-// provider.go: this file is additive REST surface over the already-shipped
-// CreatePair/GetByCharacterId/GetById (task-240 task 18), and stays out of
-// that file while its own review is in flight.
-func byCharacterIdPagedProvider(t tenant.Model, characterId uint32, page model.Page) database.EntityProvider[model.Paged[Entity]] {
-	return func(db *gorm.DB) model.Provider[model.Paged[Entity]] {
-		return database.PagedQuery[Entity](
-			db.Where("tenant_id = ? AND character_id = ?", t.Id(), characterId).Order("created_at, id"), page)
-	}
-}
 
 // InitResource registers the two READ-ONLY routes PRD §5.4 leaves open:
 // GET /rings (filtered by character) and GET /rings/{ringId}. This closes

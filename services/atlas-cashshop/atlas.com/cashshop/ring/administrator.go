@@ -26,32 +26,35 @@ func CreatePair(db *gorm.DB, tenantId uuid.UUID, ringType Type, a Half, b Half) 
 	pairId := uuid.New()
 	now := time.Now()
 
-	rows := []Entity{
-		{
-			Id:                 uuid.New(),
-			TenantId:           tenantId,
-			PairId:             pairId,
-			CharacterId:        a.CharacterId,
-			PartnerCharacterId: b.CharacterId,
-			AssetId:            a.AssetId,
-			ItemTemplateId:     a.ItemTemplateId,
-			RingType:           string(ringType),
-			State:              string(StateActive),
-			CreatedAt:          now,
-		},
-		{
-			Id:                 uuid.New(),
-			TenantId:           tenantId,
-			PairId:             pairId,
-			CharacterId:        b.CharacterId,
-			PartnerCharacterId: a.CharacterId,
-			AssetId:            b.AssetId,
-			ItemTemplateId:     b.ItemTemplateId,
-			RingType:           string(ringType),
-			State:              string(StateActive),
-			CreatedAt:          now,
-		},
+	ma, err := NewBuilder().
+		SetPairId(pairId).
+		SetCharacterId(a.CharacterId).
+		SetPartnerCharacterId(b.CharacterId).
+		SetAssetId(a.AssetId).
+		SetItemTemplateId(a.ItemTemplateId).
+		SetType(ringType).
+		SetState(StateActive).
+		SetCreatedAt(now).
+		Build()
+	if err != nil {
+		return uuid.Nil, err
 	}
+
+	mb, err := NewBuilder().
+		SetPairId(pairId).
+		SetCharacterId(b.CharacterId).
+		SetPartnerCharacterId(a.CharacterId).
+		SetAssetId(b.AssetId).
+		SetItemTemplateId(b.ItemTemplateId).
+		SetType(ringType).
+		SetState(StateActive).
+		SetCreatedAt(now).
+		Build()
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	rows := []Entity{ma.ToEntity(tenantId), mb.ToEntity(tenantId)}
 
 	if err := db.Create(&rows).Error; err != nil {
 		return uuid.Nil, err

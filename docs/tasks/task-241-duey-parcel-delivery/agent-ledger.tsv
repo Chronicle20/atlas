@@ -36,3 +36,12 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-19T13:49:59Z	agent	Task 10	packet-verifier	sonnet	-	-	-	-	DONE	586ee9ebb	APPROVED	no	-	-
 2026-08-19T13:58:24Z	agent	gate 9	verify.sh	-	-	-	-	-	FAIL-ENV	586ee9ebb	-	-	-	-
 2026-08-19T13:58:24Z	handoff	after Task 10	-	-	-	-	-	-	-	-	-	-	-	100000
+2026-08-19T14:32:18Z	agent	Task 11	atlas-implementer	sonnet	-	-	-	-	DONE	bc69a8a76	-	-	-	-
+2026-08-19T14:32:21Z	agent	Task 11	atlas-reviewer	sonnet	-	-	-	-	DONE	bc69a8a76	APPROVED	no	-	-
+2026-08-19T15:03:34Z	agent	Task 12	atlas-implementer	sonnet	-	-	-	-	DONE	1a7cc20d6	-	-	-	-
+2026-08-19T15:03:42Z	agent	Task 12	atlas-reviewer	sonnet	-	-	-	-	DONE	3c658eb49	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-19T15:03:42Z	agent	Task 12 re-review	atlas-reviewer	sonnet	-	-	-	-	DONE	1a7cc20d6	APPROVED	no	-	-
+2026-08-19T15:20:51Z	agent	Task 13	atlas-implementer	sonnet	-	-	-	-	DONE	6e557896d	-	-	-	-
+2026-08-19T15:20:57Z	agent	Task 13	atlas-reviewer	sonnet	-	-	-	-	DONE	47fdbf191	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-19T15:20:57Z	agent	Task 13 re-review	atlas-reviewer	sonnet	-	-	-	-	DONE	6e557896d	APPROVED	no	-	-
+2026-08-19T15:20:58Z	handoff	after Task 13	-	-	-	-	-	-	-	-	-	-	-	110000

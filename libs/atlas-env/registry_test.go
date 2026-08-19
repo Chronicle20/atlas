@@ -38,10 +38,12 @@ func TestRecordProvisionableAcrossPhases(t *testing.T) {
 		{PhaseDeleted, false},
 	}
 	for _, c := range cases {
-		rec := Record{Name: "pr-123", Baseline: "main", Namespace: "atlas-pr-123", Phase: c.phase}
-		if got := rec.Provisionable(); got != c.want {
-			t.Errorf("Provisionable() phase=%q = %v, want %v", c.phase, got, c.want)
-		}
+		t.Run(c.phase, func(t *testing.T) {
+			rec := Record{Name: "pr-123", Baseline: "main", Namespace: "atlas-pr-123", Phase: c.phase}
+			if got := rec.Provisionable(); got != c.want {
+				t.Errorf("Provisionable() phase=%q = %v, want %v", c.phase, got, c.want)
+			}
+		})
 	}
 }
 

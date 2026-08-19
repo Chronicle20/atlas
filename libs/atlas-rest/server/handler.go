@@ -36,13 +36,32 @@ type EnvironmentHandler func(logrus.FieldLogger, context.Context) http.HandlerFu
 // present header naming an environment the registry does not know, or knows
 // as DEACTIVATING or DELETED, is rejected with 400 — never served by the
 // baseline. A known environment in PROVISIONING or ACTIVE is admitted: this
-// gate only puts the id on the context, it does not grant broad access.
+// gate only puts the id on the context, it does not itself grant access.
+//
 // PROVISIONING must be admitted so an environment can write its own rows
-// while it is still being set up (e.g. atlas-pr-bootstrap's service-config
-// self-writes). Confinement to the caller's own data is enforced downstream
-// by the scope layer (scope.Strict on reads, scope.AuthorizeWrite on
-// writes), not by this handler. Traffic ownership is separate and still
-// governed by Registry.IsOwner, which keeps requiring ACTIVE (FR-5.2).
+// while it is still being set up — atlas-pr-bootstrap's service-config
+// self-writes are part of provisioning, so requiring ACTIVE here made the
+// lifecycle unsatisfiable (it deadlocks against the rule that the phase is
+// flipped to ACTIVE last). This relaxes FR-3.6, which as originally written
+// rejected every non-ACTIVE environment at this gate.
+//
+// Be precise about what confines an admitted request, because it is NOT
+// uniform across services. atlas-configurations and atlas-tenants implement
+// the scope layer (scope.Strict filters reads to the caller's environment,
+// scope.AuthorizeWrite rejects writes targeting another environment's rows),
+// so for those two a PROVISIONING caller genuinely reaches only its own
+// rows. Every OTHER service behind this gate has no such layer: admitting
+// the header there means the request is served exactly as any untagged
+// request would be, against whatever data that deployment holds. That is
+// the intended sparse-mode behaviour — non-overridden services ARE the
+// baseline's, and a request tagged with a provisioning environment is
+// answered from baseline data — but it is not "confinement", and this
+// comment must not claim it is.
+//
+// Traffic ownership is a separate mechanism and is unchanged: Registry
+// .IsOwner still requires ACTIVE, which is what keeps FR-5.2's guarantee
+// that during PROVISIONING the baseline still owns the environment's
+// services and overrides receive no work.
 //
 //goland:noinspection GoUnusedExportedFunction
 func ParseEnvironment(l logrus.FieldLogger, ctx context.Context, next EnvironmentHandler) http.HandlerFunc {

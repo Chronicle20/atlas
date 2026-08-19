@@ -148,37 +148,67 @@ func sendMultiChat(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	}
 }
 
+// whisperDeliveryPlan decides, for a single (tenant, world, channel) handler
+// instance, which of the two whisper announcements it must attempt for one
+// whisper chat event.
+//
+// Whisper is world-scoped in the client, not channel-scoped — WhisperReceive
+// carries the sender's channel id as a field precisely so the client can
+// render it regardless of which channel the recipient is logged into.
+// Handlers are registered once per (tenant, world, channel) socket listener,
+// so every channel handler in the event's world must evaluate the recipient
+// leg (sendReceive); the session lookup that follows resolves on exactly the
+// one channel holding the recipient and is a no-op everywhere else. Only the
+// sender's own channel handler emits the send-result confirmation
+// (sendResult) — it must be emitted exactly once.
+func whisperDeliveryPlan(t tenant.Model, sc server.Model, e message3.ChatEvent[message3.WhisperChatBody]) (sendResult bool, sendReceive bool) {
+	if !sc.IsWorld(t, e.WorldId) {
+		return false, false
+	}
+	return sc.Is(t, e.WorldId, e.ChannelId), true
+}
+
 func handleWhisperChat(sc server.Model, wp writer.Producer) message.Handler[message3.ChatEvent[message3.WhisperChatBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e message3.ChatEvent[message3.WhisperChatBody]) {
 		if e.Type != message3.ChatTypeWhisper {
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		t := tenant.MustFromContext(ctx)
+		sendResult, sendReceive := whisperDeliveryPlan(t, sc, e)
+		if !sendResult && !sendReceive {
 			return
 		}
 
-		c, err := character.NewProcessor(l, ctx).GetById()(e.ActorId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve character [%d] sending whisper.", e.ActorId)
-			return
-		}
-		tc, err := character.NewProcessor(l, ctx).GetById()(e.Body.Recipient)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve character [%d] receiving whisper.", e.Body.Recipient)
-			return
-		}
-
-		bp := fieldcb.NewWhisperSendResult(0x0A, tc.Name(), true).Encode
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, session.Announce(l)(ctx)(wp)(fieldcb.WhisperWriter)(bp))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
+		if sendResult {
+			tc, err := character.NewProcessor(l, ctx).GetById()(e.Body.Recipient)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve character [%d] receiving whisper.", e.Body.Recipient)
+			} else {
+				bp := fieldcb.NewWhisperSendResult(0x0A, tc.Name(), true).Encode
+				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, session.Announce(l)(ctx)(wp)(fieldcb.WhisperWriter)(bp))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
+				}
+			}
 		}
 
-		bp = fieldcb.NewWhisperReceive(0x12, c.Name(), byte(e.ChannelId), c.Gm(), e.Message).Encode
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.Recipient, session.Announce(l)(ctx)(wp)(fieldcb.WhisperWriter)(bp))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
+		if sendReceive {
+			// Test presence before the character fetch: every channel handler
+			// in the world reaches this point, and only the one holding the
+			// recipient's session should pay for a GET /api/characters/{id}.
+			rs, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(e.Body.Recipient)
+			if err == nil {
+				c, cErr := character.NewProcessor(l, ctx).GetById()(e.ActorId)
+				if cErr != nil {
+					l.WithError(cErr).Errorf("Unable to retrieve character [%d] sending whisper.", e.ActorId)
+				} else {
+					bp := fieldcb.NewWhisperReceive(0x12, c.Name(), byte(e.ChannelId), c.Gm(), e.Message).Encode
+					if aErr := session.Announce(l)(ctx)(wp)(fieldcb.WhisperWriter)(bp)(rs); aErr != nil {
+						l.WithError(aErr).Errorf("Unable to send whisper message from [%d] to [%d].", e.ActorId, e.Body.Recipient)
+					}
+				}
+			}
 		}
 	}
 }

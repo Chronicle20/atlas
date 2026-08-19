@@ -22,10 +22,12 @@ const (
 	// CommandRestoreParcel un-resolves a parcel released by a
 	// withdraw_from_parcel whose accept_to_character then failed (otherwise
 	// the item is lost). The late-comp inverse of RELEASE_FROM_PARCEL.
+	// Idempotent: 0 rows affected is success.
 	CommandRestoreParcel = "RESTORE_PARCEL"
 	// CommandRemoveParcel hard-deletes a still-pending parcel row created by a
 	// late accept_to_parcel after its saga already compensated (otherwise the
 	// item is duplicated). The late-comp inverse of ACCEPT_TO_PARCEL.
+	// Idempotent: 0 rows affected is success.
 	CommandRemoveParcel = "REMOVE_PARCEL"
 )
 
@@ -97,13 +99,14 @@ type ReleaseFromParcelCommandBody struct {
 }
 
 // RestoreParcelCommandBody un-resolves a parcel row by id (the compensating
-// inverse of RELEASE_FROM_PARCEL).
+// inverse of RELEASE_FROM_PARCEL). Idempotent: 0 rows affected is success.
 type RestoreParcelCommandBody struct {
 	ParcelId uuid.UUID `json:"parcelId"`
 }
 
 // RemoveParcelCommandBody hard-deletes a still-pending parcel row by id (the
-// compensating inverse of ACCEPT_TO_PARCEL).
+// compensating inverse of ACCEPT_TO_PARCEL). Idempotent: 0 rows affected is
+// success.
 type RemoveParcelCommandBody struct {
 	ParcelId uuid.UUID `json:"parcelId"`
 }

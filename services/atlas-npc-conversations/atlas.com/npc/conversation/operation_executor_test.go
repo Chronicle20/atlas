@@ -3,6 +3,7 @@ package conversation
 import (
 	"atlas-npc-conversations/saga"
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
@@ -486,6 +487,90 @@ func stepIds(steps []sharedsaga.Step[any]) []string {
 		out[i] = s.StepId
 	}
 	return out
+}
+
+func TestExecuteOpenDuey(t *testing.T) {
+	t.Run("emits show_parcel", func(t *testing.T) {
+		mr := miniredis.RunT(t)
+		rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+		InitRegistry(rc)
+		l, _ := test.NewNullLogger()
+		var tm tenant.Model
+		tctx := tenant.WithContext(context.Background(), tm)
+		characterId := uint32(100)
+		GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().
+			SetCharacterId(characterId).
+			SetNpcId(9010009).
+			Build())
+		defer GetRegistry().ClearContext(tctx, characterId)
+
+		executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+
+		op, err := NewOperationBuilder().SetType("open_duey").Build()
+		if err != nil {
+			t.Fatalf("build op: %v", err)
+		}
+
+		f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+		_, status, action, payload, err := executor.createStepForOperation(f, characterId, op)
+		if err != nil {
+			t.Fatalf("createStepForOperation returned error: %v", err)
+		}
+		if action != saga.ShowParcel {
+			t.Fatalf("expected action ShowParcel, got %q", action)
+		}
+		if status != saga.Pending {
+			t.Fatalf("expected status Pending, got %q", status)
+		}
+		p, ok := payload.(saga.ShowParcelPayload)
+		if !ok {
+			t.Fatalf("expected ShowParcelPayload, got %T", payload)
+		}
+		if p.CharacterId != characterId {
+			t.Errorf("expected CharacterId %d, got %d", characterId, p.CharacterId)
+		}
+		if p.NpcId != 9010009 {
+			t.Errorf("expected NpcId 9010009, got %d", p.NpcId)
+		}
+		if p.WorldId != world.Id(0) {
+			t.Errorf("expected WorldId 0, got %d", p.WorldId)
+		}
+		if p.ChannelId != channel.Id(1) {
+			t.Errorf("expected ChannelId 1, got %d", p.ChannelId)
+		}
+		if p.Quick {
+			t.Error("expected Quick to be false")
+		}
+	})
+
+	t.Run("missing context", func(t *testing.T) {
+		mr := miniredis.RunT(t)
+		rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+		InitRegistry(rc)
+		l, _ := test.NewNullLogger()
+		var tm tenant.Model
+		tctx := tenant.WithContext(context.Background(), tm)
+		characterId := uint32(101)
+
+		executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+
+		op, err := NewOperationBuilder().SetType("open_duey").Build()
+		if err != nil {
+			t.Fatalf("build op: %v", err)
+		}
+
+		f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+		_, _, _, payload, err := executor.createStepForOperation(f, characterId, op)
+		if err == nil {
+			t.Fatal("expected error when no conversation context exists")
+		}
+		if !strings.Contains(err.Error(), "conversation context") {
+			t.Errorf("expected error to mention conversation context, got %q", err.Error())
+		}
+		if payload != nil {
+			t.Errorf("expected nil payload, got %v", payload)
+		}
+	})
 }
 
 func TestCreateStepForOperation_RebalanceAP_SingleTarget(t *testing.T) {

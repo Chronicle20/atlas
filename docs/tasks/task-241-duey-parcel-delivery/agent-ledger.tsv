@@ -123,3 +123,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-19T21:25:58Z	agent	Task 28 batch gms_v79	gate	-	-	-	-	-	pass	cdaae842e	-	-	-	-
 2026-08-19T21:27:12Z	agent	Task 28 batch gms_v79	atlas-reviewer	sonnet	-	-	-	-	done	cdaae842e	APPROVED	no	-	-
 2026-08-19T21:29:56Z	agent	Task 28 RULING 22 retro-fit	atlas-implementer	sonnet	-	-	-	-	done	2ebf0771a	-	-	-	-
+2026-08-19T21:55:11Z	agent	Task 28 retro-fit	atlas-reviewer	sonnet	-	-	-	-	completed	2ebf0771a	APPROVED	no	-	-
+2026-08-19T22:11:31Z	agent	Task 28 batch 4 (gms_v84)	packet-verifier	sonnet	-	-	-	-	blocked	-	-	-	-	-

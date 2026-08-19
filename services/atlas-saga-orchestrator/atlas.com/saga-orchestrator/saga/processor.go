@@ -1180,7 +1180,8 @@ func isExpandableAction(a Action) bool {
 	case TransferToStorage, WithdrawFromStorage,
 		TransferToCashShop, WithdrawFromCashShop,
 		TransferToMts, WithdrawFromMts, MtsSettlePurchase,
-		TradeSettlement, TransferToTrade, TradeUnwind:
+		TradeSettlement, TransferToTrade, TradeUnwind,
+		TransferToParcel, WithdrawFromParcel:
 		return true
 	default:
 		return false
@@ -1226,6 +1227,10 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 		newSteps, err = p.expandTransferToTrade(st)
 	case TradeUnwind:
 		newSteps, err = p.expandTradeUnwind(st)
+	case TransferToParcel:
+		newSteps, err = p.expandTransferToParcel(st)
+	case WithdrawFromParcel:
+		newSteps, err = p.expandWithdrawFromParcel(st)
 	default:
 		return fmt.Errorf("unknown high-level action for expansion: %s", st.Action())
 	}
@@ -2133,6 +2138,181 @@ func (p *ProcessorImpl) expandWithdrawFromMts(st Step[any]) ([]Step[any], error)
 				InventoryType: byte(inventoryType),
 				TemplateId:    found.TemplateId,
 				AssetData:     assetData,
+			},
+		),
+	}
+
+	return steps, nil
+}
+
+// expandTransferToParcel expands TransferToParcel into ReleaseFromCharacter +
+// AcceptToParcel. Mirrors expandTransferToMts: it looks up the source asset from
+// the character's inventory by AssetId, captures the full item snapshot, then
+// builds a release step (item leaves inventory FIRST) followed by an accept step
+// that carries the snapshot plus the delivery params (recipient identity, meso,
+// fee, quick flag, message, computed ReceivableAt/ExpiresAt) copied from the
+// TransferToParcelPayload, so atlas-parcel can CREATE the custody row.
+//
+// A meso-only parcel (AssetId == 0, design §12 RISK-2) never touches inventory:
+// the lookup is guarded entirely behind payload.AssetId != 0, and the expansion
+// emits a single accept_to_parcel step with HasItem=false and a zero-valued
+// snapshot — no release_from_character is emitted for an asset that doesn't
+// exist.
+func (p *ProcessorImpl) expandTransferToParcel(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(TransferToParcelPayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for TransferToParcel")
+	}
+
+	if payload.AssetId == 0 {
+		p.l.Debugf("Parcel [%s] for character [%d] is meso-only, skipping inventory lookup", payload.ParcelId, payload.CharacterId)
+		return []Step[any]{
+			NewStep[any](
+				"accept_to_parcel",
+				Pending,
+				AcceptToParcel,
+				AcceptToParcelPayload{
+					TransactionId:      payload.TransactionId,
+					ParcelId:           payload.ParcelId,
+					CharacterId:        payload.CharacterId,
+					WorldId:            payload.WorldId,
+					SenderAccountId:    payload.SenderAccountId,
+					SenderName:         payload.SenderName,
+					RecipientId:        payload.RecipientId,
+					RecipientAccountId: payload.RecipientAccountId,
+					MesoAmount:         payload.MesoAmount,
+					FeePaid:            payload.FeePaid,
+					Quick:              payload.Quick,
+					Message:            payload.Message,
+					ReceivableAt:       payload.ReceivableAt,
+					ExpiresAt:          payload.ExpiresAt,
+					HasItem:            false,
+				},
+			),
+		}, nil
+	}
+
+	p.l.Debugf("Looking up source asset for character [%d] inventory [%d] assetId [%d]",
+		payload.CharacterId, payload.SourceInventoryType, payload.AssetId)
+
+	comp, err := compartment.RequestCompartment(p.l, p.ctx)(payload.CharacterId, payload.SourceInventoryType)
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", payload.CharacterId, err)
+	}
+
+	// Find the asset by id.
+	var foundAsset *compartment.AssetRestModel
+	for i := range comp.Assets {
+		var assetId uint32
+		fmt.Sscanf(comp.Assets[i].Id, "%d", &assetId)
+		if assetId == payload.AssetId {
+			foundAsset = &comp.Assets[i]
+			break
+		}
+	}
+
+	if foundAsset == nil {
+		return nil, fmt.Errorf("no asset found with id [%d] in character [%d] inventory [%d]",
+			payload.AssetId, payload.CharacterId, payload.SourceInventoryType)
+	}
+
+	p.l.Debugf("Found source asset template [%d] id [%s] for parcel delivery", foundAsset.TemplateId, foundAsset.Id)
+
+	steps := []Step[any]{
+		NewStep[any](
+			"release_from_character",
+			Pending,
+			ReleaseFromCharacter,
+			ReleaseFromCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: payload.SourceInventoryType,
+				AssetId:       payload.AssetId,
+				Quantity:      payload.Quantity,
+			},
+		),
+		NewStep[any](
+			"accept_to_parcel",
+			Pending,
+			AcceptToParcel,
+			AcceptToParcelPayload{
+				TransactionId:      payload.TransactionId,
+				ParcelId:           payload.ParcelId,
+				CharacterId:        payload.CharacterId,
+				WorldId:            payload.WorldId,
+				SenderAccountId:    payload.SenderAccountId,
+				SenderName:         payload.SenderName,
+				RecipientId:        payload.RecipientId,
+				RecipientAccountId: payload.RecipientAccountId,
+				MesoAmount:         payload.MesoAmount,
+				FeePaid:            payload.FeePaid,
+				Quick:              payload.Quick,
+				Message:            payload.Message,
+				ReceivableAt:       payload.ReceivableAt,
+				ExpiresAt:          payload.ExpiresAt,
+				HasItem:            true,
+
+				// Item snapshot captured from inventory.
+				TemplateId:    foundAsset.TemplateId,
+				Quantity:      payload.Quantity,
+				Strength:      foundAsset.Strength,
+				Dexterity:     foundAsset.Dexterity,
+				Intelligence:  foundAsset.Intelligence,
+				Luck:          foundAsset.Luck,
+				HP:            foundAsset.Hp,
+				MP:            foundAsset.Mp,
+				WeaponAttack:  foundAsset.WeaponAttack,
+				MagicAttack:   foundAsset.MagicAttack,
+				WeaponDefense: foundAsset.WeaponDefense,
+				MagicDefense:  foundAsset.MagicDefense,
+				Accuracy:      foundAsset.Accuracy,
+				Avoidability:  foundAsset.Avoidability,
+				Hands:         foundAsset.Hands,
+				Speed:         foundAsset.Speed,
+				Jump:          foundAsset.Jump,
+				Slots:         foundAsset.Slots,
+				Level:         foundAsset.Level,
+				ItemExp:       foundAsset.Experience,
+				Flags:         foundAsset.Flag,
+				Owner:         foundAsset.Owner,
+			},
+		),
+	}
+
+	return steps, nil
+}
+
+// expandWithdrawFromParcel expands WithdrawFromParcel into ReleaseFromParcel +
+// AcceptToCharacter. Unlike the other withdraw composites, this does not look up
+// an item snapshot at expansion time: the parcel row already holds it, and
+// release_from_parcel is where atlas-parcel transitions the row to received
+// inside its own transaction (design §4.3) — the status change and the custody
+// release are the same fact and must not be two steps that can disagree.
+func (p *ProcessorImpl) expandWithdrawFromParcel(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(WithdrawFromParcelPayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for WithdrawFromParcel")
+	}
+
+	steps := []Step[any]{
+		NewStep[any](
+			"release_from_parcel",
+			Pending,
+			ReleaseFromParcel,
+			ReleaseFromParcelPayload{
+				TransactionId: payload.TransactionId,
+				ParcelId:      payload.ParcelId,
+				RecipientId:   payload.CharacterId,
+			},
+		),
+		NewStep[any](
+			"accept_to_character",
+			Pending,
+			AcceptToCharacter,
+			AcceptToCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: payload.InventoryType,
 			},
 		),
 	}

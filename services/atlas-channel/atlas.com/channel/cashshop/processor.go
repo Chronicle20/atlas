@@ -29,6 +29,7 @@ type Processor interface {
 	MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, slot int16) error
 	MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error
 	OpenSurprise(accountId uint32, characterId uint32, cashId int64) error
+	RequestLockerRebate(accountId uint32, characterId uint32, cashId int64, transactionId uuid.UUID) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -221,4 +222,14 @@ func (p *ProcessorImpl) OpenSurprise(accountId uint32, characterId uint32, cashI
 	transactionId := uuid.New()
 	p.l.Debugf("Character [%d] opening surprise box [%d]. Transaction [%s].", characterId, cashId, transactionId)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(OpenSurpriseCommandProvider(characterId, transactionId, accountId, cashId))
+}
+
+// RequestLockerRebate forwards a locker item REBATE request. TransactionId is
+// minted by the caller (once per click, mirroring OpenSurprise's idempotency
+// pattern) so a Kafka redelivery replays this id and is rejected by
+// atlas-cashshop's rebate ledger while a genuine second click gets a fresh
+// one.
+func (p *ProcessorImpl) RequestLockerRebate(accountId uint32, characterId uint32, cashId int64, transactionId uuid.UUID) error {
+	p.l.Debugf("Character [%d] requesting locker rebate for cash item [%d]. Transaction [%s].", characterId, cashId, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestLockerRebateCommandProvider(characterId, transactionId, accountId, cashId))
 }

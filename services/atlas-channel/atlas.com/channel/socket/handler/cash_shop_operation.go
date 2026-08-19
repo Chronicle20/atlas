@@ -169,7 +169,21 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationRebateLockerItem) {
 			sp := &cashsb.ShopOperationRebateLockerItem{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] using rebate [%d]. birthday [%d]", s.CharacterId(), sp.Unk(), sp.Birthday())
+			if cErr := verifySecondaryCredential(l, ctx)(s, sp.SPW(), sp.Birthday()); cErr != nil {
+				if errors.Is(cErr, ErrCredentialMismatch) {
+					if aErr := session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopRebateFailedBody("INVALID_BIRTHDAY"))(s); aErr != nil {
+						l.WithError(aErr).Errorf("Unable to announce rebate credential failure for character [%d].", s.CharacterId())
+					}
+					return
+				}
+				l.WithError(cErr).Errorf("Unable to verify secondary credential for character [%d] requesting locker rebate.", s.CharacterId())
+				return
+			}
+			cashId := int64(sp.Unk())
+			transactionId := uuid.New()
+			if err = cashshop.NewProcessor(l, ctx).RequestLockerRebate(s.AccountId(), s.CharacterId(), cashId, transactionId); err != nil {
+				l.WithError(err).Errorf("Unable to request locker rebate for character [%d] cash item [%d].", s.CharacterId(), cashId)
+			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyCouple) {

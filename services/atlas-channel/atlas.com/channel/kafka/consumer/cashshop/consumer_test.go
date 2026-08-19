@@ -688,6 +688,21 @@ func (e *consumerEnv) decodeBuyNormalDone(t *testing.T) cashpkt.BuyNormalDone {
 	return m
 }
 
+// decodeEnableEquipSlotExtSuccess decodes the last announced
+// CashShopOperation body as the ENABLE_EQUIP_SLOT_EXT_SUCCESS arm.
+func (e *consumerEnv) decodeEnableEquipSlotExtSuccess(t *testing.T) cashpkt.EnableEquipSlotExtSuccess {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.EnableEquipSlotExtSuccess{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
 // pendingChangeRecordFixture is one row a pendingChangeFixtureServer's GET
 // .../pending-changes response reports.
 type pendingChangeRecordFixture struct {
@@ -1198,5 +1213,39 @@ func TestErrorUnrelatedFailureTakesPreExistingPath(t *testing.T) {
 	}
 	if got := env.lastAnnouncedMode(); got != env.modeFor(cashpkt.CashShopOperationInventoryCapacityIncreaseFailed) {
 		t.Errorf("mode = %d, want the generic capacity-increase-failed mode %d", got, env.modeFor(cashpkt.CashShopOperationInventoryCapacityIncreaseFailed))
+	}
+}
+
+// TestEquipSlotIncreasedAnnouncesWireSlotIndexZeroNotTheCanonicalPosition
+// pins the hazard consumer.go:544's doc comment describes: the event's
+// SlotIndex (-59, the Atlas CANONICAL equipped-inventory pendant2 position)
+// must never reach the wire directly. handleStatusEventEquipSlotIncreased
+// must announce the ENABLE_EQUIP_SLOT_EXT_SUCCESS body with wire slotIndex
+// 0 -- a regression that forwards e.Body.SlotIndex straight through would
+// instead encode 65477 (the unsigned view of -59) and this assertion would
+// fail loudly. Days is asserted separately, with a distinct value (30), so
+// the two fields cannot be silently swapped or confused.
+func TestEquipSlotIncreasedAnnouncesWireSlotIndexZeroNotTheCanonicalPosition(t *testing.T) {
+	env := newConsumerEnv(t)
+
+	handleStatusEventEquipSlotIncreased(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.EquipSlotIncreasedBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypeEquipSlotIncreased,
+		Body: cashshop2.EquipSlotIncreasedBody{
+			TransactionId: uuid.Nil,
+			SlotIndex:     -59,
+			Days:          30,
+		},
+	})
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	body := env.decodeEnableEquipSlotExtSuccess(t)
+	if body.SlotIndex() != 0 {
+		t.Errorf("slotIndex = %d, want the WIRE value 0 -- the canonical -59 (65477 unsigned) must never reach the packet", body.SlotIndex())
+	}
+	if body.Days() != 30 {
+		t.Errorf("days = %d, want 30 unchanged", body.Days())
 	}
 }

@@ -21,12 +21,23 @@ type Entity struct {
 	// Currency is the wallet bucket (wallet.Model.Balance's convention: 1 =
 	// credit/NX, 2 = Maple Points, anything else = prepaid) this asset was
 	// purchased with -- recorded so a locker rebate (task-240 task 11) knows
-	// which bucket to credit back, instead of guessing. 0 is NOT "unknown":
-	// it is the explicit default-bucket convention (controller correction
-	// C2) for both (a) every asset that predates this column and (b) every
-	// asset created on a gift/reward/surprise path that was never bought
-	// with currency at all (C3) -- a rebate treats 0 as the ordinary
-	// credit/NX bucket, same as ordinary Purchase's ordinary arm.
+	// which bucket to credit back, instead of guessing.
+	//
+	// Purchase (cashshop/processor.go) never persists the raw wire currency
+	// here -- it persists effectivePurchaseCurrency(currency), which maps
+	// 1/2 unchanged and every other wire value (including 0, BUY_NORMAL's
+	// wire currency) to walletCurrencyPrepaid (3). That normalization is
+	// what makes a stored 0 UNAMBIGUOUS: it means EITHER (a) this row
+	// predates the Currency column, or (b) this asset was created on a
+	// gift/reward/surprise path that was never bought with currency at all
+	// (astP.Create/CreateWithCashId called with a literal 0) -- and NEVER
+	// "a genuine purchase whose bucket was prepaid" (fix round 1; a prior,
+	// wrong version of this comment claimed 0 already meant the default
+	// bucket for an ordinary buy -- it did not, because wallet.Model routes
+	// 0 to prepaid, not credit, and Purchase used to persist the raw wire
+	// value unchanged). A rebate therefore safely treats a stored 0 as the
+	// ordinary credit/NX bucket (the user's ruling, C2) and every other
+	// stored value as itself, with no further guessing.
 	Currency    uint32         `gorm:"not null;default:0"`
 	Quantity    uint32         `gorm:"not null"`
 	Flag        uint16         `gorm:"not null"`

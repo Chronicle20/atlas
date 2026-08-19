@@ -45,6 +45,50 @@ var (
 // before txErr is inspected.
 var errPurchaseRejected = errors.New("purchase rejected")
 
+// Wallet bucket ids, matching wallet.Model's Balance/Purchase/Award dispatch
+// (wallet/model.go): 1 routes to credit (NX), 2 to Maple Points, and EVERY
+// OTHER value -- including 0 -- routes to prepaid. No entry in
+// libs/atlas-constants covers wallet currency buckets, so these are defined
+// here, next to the one place that normalizes a raw wire currency into a
+// value worth persisting.
+const (
+	walletCurrencyCredit  uint32 = 1
+	walletCurrencyPoints  uint32 = 2
+	walletCurrencyPrepaid uint32 = 3
+)
+
+// effectivePurchaseCurrency maps a raw wire currency (what the client sent,
+// and what w.Purchase/w.Balance dispatch on for the DEBIT) to the value
+// worth PERSISTING on the created asset row for a later rebate to read back.
+//
+// This is the fix for a real bug found in review: wallet.Model routes any
+// currency other than 1 or 2 to prepaid, so a BUY_NORMAL purchase (wire
+// currency 0, atlas-channel's resolvePurchaseCurrency -- see
+// services/atlas-channel/atlas.com/channel/cashshop/processor.go:118 --
+// deliberately produces isPoints=false/currency=0 for exactly this arm,
+// design.md:18) debits prepaid. But persisting the raw 0 on the asset makes
+// it indistinguishable from a legacy row that predates the Currency column
+// at all (asset.Entity.Currency's 0-means-legacy convention) -- so a rebate
+// reading a raw-0 asset cannot tell "this was a prepaid purchase" from
+// "nothing was ever recorded," and defaulted to credit, crediting the WRONG
+// bucket (a free currency conversion on the most common buy path).
+//
+// The fix normalizes at this write site instead of guessing at the read
+// site: 1 and 2 persist unchanged (they are already unambiguous), and every
+// other raw value -- including 0 -- persists as walletCurrencyPrepaid (3),
+// which is not 0 and therefore cannot collide with the legacy convention.
+// wallet.Model's dispatch is untouched: 0 and 3 already hit the identical
+// "everything else" prepaid arm, so the DEBIT (which keeps using the raw
+// wire value) behaves exactly as before.
+func effectivePurchaseCurrency(currency uint32) uint32 {
+	switch currency {
+	case walletCurrencyCredit, walletCurrencyPoints:
+		return currency
+	default:
+		return walletCurrencyPrepaid
+	}
+}
+
 type Processor interface {
 	PurchaseAndEmit(characterId uint32, currency uint32, serialNumber uint32, transactionId uuid.UUID, operation string) error
 	Purchase(mb *message.Buffer) func(characterId uint32, currency uint32, serialNumber uint32, transactionId uuid.UUID, operation string) error
@@ -213,15 +257,17 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 			// Create the flattened asset directly (no separate item creation).
 			// Pets must carry the serial reserved above; everything else gets a
 			// freshly generated one.
-			// currency is the wallet bucket just debited above (w.Purchase's
-			// argument), recorded on the asset row so a later locker rebate
-			// (task-240 task 11) knows which bucket to credit back instead of
-			// guessing -- see asset.Entity.Currency's doc comment.
+			// effectiveCurrency (NOT the raw wire currency) is recorded on the
+			// asset row so a later locker rebate (task-240 task 11) knows which
+			// bucket to credit back instead of guessing -- see
+			// effectivePurchaseCurrency's doc comment for why the raw value
+			// must not be persisted as-is.
+			effectiveCurrency := effectivePurchaseCurrency(currency)
 			var am asset.Model
 			if petCashId != 0 {
-				am, err = p.astP.CreateWithCashId(mb)(ccm.Id(), petCashId, ci.ItemId(), serialNumber, currency, ci.Count(), petId, characterId)
+				am, err = p.astP.CreateWithCashId(mb)(ccm.Id(), petCashId, ci.ItemId(), serialNumber, effectiveCurrency, ci.Count(), petId, characterId)
 			} else {
-				am, err = p.astP.Create(mb)(ccm.Id(), ci.ItemId(), serialNumber, currency, ci.Count(), petId, characterId)
+				am, err = p.astP.Create(mb)(ccm.Id(), ci.ItemId(), serialNumber, effectiveCurrency, ci.Count(), petId, characterId)
 			}
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create asset for character [%d].", characterId)

@@ -197,10 +197,17 @@ func handleStatusEventPurchase(sc server.Model, wp writer.Producer) message.Hand
 			// BUY_NORMAL answers on its own SUCCESS mode byte
 			// (BUY_NORMAL_SUCCESS), not the generic purchase-success body --
 			// see cash_shop_operation.go's BUY_NORMAL arm for why the client
-			// gets no isPoints/currency to read on this op. SlotPos is 0: the
-			// purchase lands in the cash locker, not a placed inventory slot,
-			// and no derivation source assigns this list entry any other
-			// position.
+			// gets no isPoints/currency to read on this op. Per
+			// docs/tasks/task-183-cashshop-result-family/arm-catalog.md's
+			// BUY_NORMAL_SUCCESS row, the client reads this field as
+			// nPos/slotPos and passes it to
+			// CCSWnd_Inventory::SetSelectedNo to select which cash-shop
+			// inventory window entry becomes highlighted after the
+			// purchase -- it is not unconstrained filler. SlotPos is 0
+			// (selects the first entry): neither this service's nor
+			// atlas-cashshop's cash-locker asset model persists a
+			// slot/ordinal position, so 0 is an interim value pending real
+			// slot tracking, not a derived one.
 			if e.Body.Operation == cashshop2.ErrorOperationBuyNormal {
 				refs := []cashpkt.PackedCashItemRef{{
 					Quantity: uint16(a.Item().Quantity()),

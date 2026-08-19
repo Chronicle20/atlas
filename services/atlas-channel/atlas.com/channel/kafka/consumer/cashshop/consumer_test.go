@@ -673,6 +673,21 @@ func (e *consumerEnv) decodeCashInventoryPurchaseSuccess(t *testing.T) cashpkt.C
 	return m
 }
 
+// decodeBuyNormalDone decodes the last announced CashShopOperation body as
+// the BUY_NORMAL_SUCCESS arm.
+func (e *consumerEnv) decodeBuyNormalDone(t *testing.T) cashpkt.BuyNormalDone {
+	t.Helper()
+	a := e.lastAnnounced()
+	if a.writerName != cashpkt.CashShopOperationWriter {
+		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	}
+	m := cashpkt.BuyNormalDone{}
+	req := request.Request(a.body)
+	r := request.NewRequestReader(&req, 0)
+	m.Decode(e.logger, e.ctx)(&r, nil)
+	return m
+}
+
 // pendingChangeRecordFixture is one row a pendingChangeFixtureServer's GET
 // .../pending-changes response reports.
 type pendingChangeRecordFixture struct {
@@ -1009,6 +1024,50 @@ func TestPurchaseSuccessUnrelatedBuyTakesPreExistingPath(t *testing.T) {
 	body := env.decodeCashInventoryPurchaseSuccess(t)
 	if body.Mode() != env.modeFor(cashpkt.CashShopOperationPurchaseSuccess) {
 		t.Errorf("mode = %d, want the generic PURCHASE_SUCCESS mode %d -- an unrelated buy must not take a name-change/world-transfer DONE arm", body.Mode(), env.modeFor(cashpkt.CashShopOperationPurchaseSuccess))
+	}
+}
+
+// TestPurchaseSuccessBuyNormalAnnouncesBuyNormalDone pins the BUY_NORMAL
+// success-routing branch (consumer.go's handleStatusEventPurchase): a
+// purchase event discriminated as BUY_NORMAL must be answered with the
+// dedicated BUY_NORMAL_SUCCESS body (mode 141 for this test tenant's GMS
+// 83.1 template), not the generic PURCHASE_SUCCESS body an undiscriminated
+// event still receives.
+func TestPurchaseSuccessBuyNormalAnnouncesBuyNormalDone(t *testing.T) {
+	env := newConsumerEnv(t)
+	assetId := uint32(604)
+	env.seedAsset(env.compartment, assetId)
+
+	handleStatusEventPurchase(env.sc, env.wp)(env.logger, env.ctx, cashshop2.StatusEvent[cashshop2.PurchaseEventBody]{
+		CharacterId: testCharacterId,
+		Type:        cashshop2.StatusEventTypePurchase,
+		Body: cashshop2.PurchaseEventBody{
+			CompartmentId: env.compartment,
+			AssetId:       assetId,
+			TransactionId: uuid.Nil,
+			Operation:     cashshop2.ErrorOperationBuyNormal,
+		},
+	})
+
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
+		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	}
+	body := env.decodeBuyNormalDone(t)
+	if got, want := body.Mode(), env.modeFor(cashpkt.CashShopOperationBuyNormalDone); got != want {
+		t.Errorf("mode = %d, want the BUY_NORMAL_SUCCESS mode %d", got, want)
+	}
+	if unwanted := env.modeFor(cashpkt.CashShopOperationPurchaseSuccess); body.Mode() == unwanted {
+		t.Errorf("mode = %d, must not be the generic PURCHASE_SUCCESS mode %d -- a BUY_NORMAL purchase must not take the generic fallback path", body.Mode(), unwanted)
+	}
+	refs := body.Refs()
+	if len(refs) != 1 {
+		t.Fatalf("refs = %v, want exactly one entry", refs)
+	}
+	if refs[0].ItemId != 5000000 {
+		t.Errorf("ItemId = %d, want 5000000 (assetDoc's fixture templateId)", refs[0].ItemId)
+	}
+	if refs[0].Quantity != 1 {
+		t.Errorf("Quantity = %d, want 1 (assetDoc's fixture quantity)", refs[0].Quantity)
 	}
 }
 

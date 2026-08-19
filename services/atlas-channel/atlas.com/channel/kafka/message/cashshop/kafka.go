@@ -21,6 +21,7 @@ const (
 	CommandTypeRequestCouponRedemption            = "REQUEST_COUPON_REDEMPTION"
 	CommandTypeRequestLockerRebate                = "REQUEST_LOCKER_REBATE"
 	CommandTypeRequestGiftPurchase                = "REQUEST_GIFT_PURCHASE"
+	CommandTypeRequestPackagePurchase             = "REQUEST_PACKAGE_PURCHASE"
 )
 
 type Command[E any] struct {
@@ -130,6 +131,23 @@ type RequestGiftPurchaseCommandBody struct {
 	Message              string    `json:"message"`
 }
 
+// RequestPackagePurchaseCommandBody requests one CASH PACKAGE purchase
+// (task-240 task 16): client modes 30 (buy-for-self) and 31 (gift) share
+// this single body, discriminated by RecipientCharacterId -- ZERO means
+// buy-for-self, non-zero means the package's members land in the named
+// recipient's compartment instead of the buyer's own. Every other rule
+// (resolution, capacity, atomicity, pricing) is identical between the two
+// modes, so there is deliberately no separate gift-package command. Currency
+// mirrors RequestPurchaseCommandBody's raw wire value (0..3) -- see
+// walletCurrencyCredit/Points/Prepaid in atlas-cashshop's cashshop/processor.go.
+type RequestPackagePurchaseCommandBody struct {
+	TransactionId        uuid.UUID `json:"transactionId"`
+	Currency             uint32    `json:"currency"`
+	SerialNumber         uint32    `json:"serialNumber"`
+	RecipientCharacterId uint32    `json:"recipientCharacterId"`
+	SenderName           string    `json:"senderName"`
+}
+
 const (
 	EnvEventTopicStatus                       = "EVENT_TOPIC_CASH_SHOP_STATUS"
 	EventCashShopStatusTypeCharacterEnter     = "CHARACTER_ENTER"
@@ -144,6 +162,7 @@ const (
 	StatusEventTypeCouponFailed               = "COUPON_FAILED"
 	StatusEventTypeLockerRebated              = "LOCKER_REBATED"
 	StatusEventTypeGiftPurchased              = "GIFT_PURCHASED"
+	StatusEventTypePackagePurchased           = "PACKAGE_PURCHASED"
 )
 
 // TODO multiple services have different impl of this
@@ -286,4 +305,24 @@ type GiftPurchasedBody struct {
 	Quantity             uint16    `json:"quantity"`
 	Price                uint32    `json:"price"`
 	RecipientCharacterId uint32    `json:"recipientCharacterId"`
+}
+
+// PackagePurchasedBody describes one successful PACKAGE purchase (task-240
+// task 16), covering both buy-for-self and gift modes. AssetIds carries one
+// entry per member asset created, in the same order the package's members
+// resolved -- mirroring CouponRedeemedBody's AssetIds (this service projects
+// each into a cashpkt.CashInventoryItem itself; atlas-cashshop does not build
+// them). Price is the PACKAGE commodity's own price (never the sum of the
+// member commodities' prices). RecipientCharacterId/RecipientName echo the
+// buyer's own identity on a buy-for-self purchase (RecipientCharacterId == 0
+// on the command) so the consumer does not need a separate branch to find
+// out who received the members.
+type PackagePurchasedBody struct {
+	TransactionId        uuid.UUID `json:"transactionId"`
+	CompartmentId        uuid.UUID `json:"compartmentId"`
+	AssetIds             []uint32  `json:"assetIds"`
+	PackageTemplateId    uint32    `json:"packageTemplateId"`
+	Price                uint32    `json:"price"`
+	RecipientCharacterId uint32    `json:"recipientCharacterId"`
+	RecipientName        string    `json:"recipientName"`
 }

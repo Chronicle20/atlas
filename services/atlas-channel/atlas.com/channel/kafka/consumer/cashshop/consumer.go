@@ -112,6 +112,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventPackagePurchased(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -366,6 +371,78 @@ func handleStatusEventGiftPurchased(sc server.Model, wp writer.Producer) message
 
 		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopGiftDoneBody(e.Body.RecipientName, int32(e.Body.TemplateId), e.Body.Quantity, int32(e.Body.Price)))
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
+	}
+}
+
+// handleStatusEventPackagePurchased answers task 16's REQUEST_PACKAGE_PURCHASE
+// command, covering both BUY_PACKAGE and BUY_OTHER_PACKAGE (task 17):
+// PackagePurchasedBody.RecipientCharacterId discriminates the two exactly
+// like the command that requested it -- ZERO means buy-for-self
+// (BUY_PACKAGE_SUCCESS, mode 154), non-zero means gift
+// (GIFT_PACKAGE_SUCCESS, mode 156, derivation.md D3b/§5). Both arms
+// announce to e.CharacterId (the buyer/sender, per
+// PackagePurchasedStatusEventProvider's convention -- mirroring
+// handleStatusEventGiftPurchased above).
+//
+// The buy-for-self arm projects Body.AssetIds into cashpkt.CashInventoryItem
+// records the same way handleStatusEventPurchase does
+// (kafka/consumer/cashshop/consumer.go:160-169) and
+// handleStatusEventCouponRedeemed does above -- atlas-cashshop deliberately
+// does not build these itself (PackagePurchasedBody's own doc comment). The
+// gift arm carries no item blob at all (GiftPackageDone's TRUE SHAPE, see
+// shop_operation_result_gift.go) so Body.AssetIds is not read on that path.
+//
+// unused1/unused2 on CashShopGiftPackageDoneBody are named "unused" in the
+// clientbound constructor itself (NewGiftPackageDone) -- kept zero here;
+// derivation.md did not contradict that.
+func handleStatusEventPackagePurchased(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.PackagePurchasedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.PackagePurchasedBody]) {
+		if e.Type != cashshop2.StatusEventTypePackagePurchased {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			if e.Body.RecipientCharacterId != 0 {
+				err := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopGiftPackageDoneBody(e.Body.RecipientName, int32(e.Body.PackageTemplateId), 0, 0, int32(e.Body.Price)))(s)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce package gift success to character [%d].", e.CharacterId)
+					return err
+				}
+				return nil
+			}
+
+			ap := asset.NewProcessor(l, ctx)
+			items := make([]cashpkt.CashInventoryItem, 0, len(e.Body.AssetIds))
+			for _, id := range e.Body.AssetIds {
+				a, err := ap.GetById(s.AccountId(), e.Body.CompartmentId, id)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to retrieve package asset [%d] for character [%d].", id, e.CharacterId)
+					return err
+				}
+				items = append(items, cashpkt.CashInventoryItem{
+					CashId:      a.Item().CashId(),
+					AccountId:   s.AccountId(),
+					CharacterId: e.CharacterId,
+					TemplateId:  a.Item().TemplateId(),
+					CommodityId: a.CommodityId(),
+					Quantity:    int16(a.Item().Quantity()),
+					GiftFrom:    "",
+					Expiration:  packetmodel.MsTime(a.Expiration()),
+				})
+			}
+
+			err := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopBuyPackageDoneBody(items, 0))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce package purchase success to character [%d].", e.CharacterId)
+				return err
+			}
+			return nil
+		})
 	}
 }
 

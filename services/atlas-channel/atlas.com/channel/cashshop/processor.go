@@ -31,6 +31,7 @@ type Processor interface {
 	OpenSurprise(accountId uint32, characterId uint32, cashId int64) error
 	RequestLockerRebate(accountId uint32, characterId uint32, cashId int64, transactionId uuid.UUID) error
 	RequestGiftPurchase(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) error
+	RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -243,4 +244,29 @@ func (p *ProcessorImpl) RequestLockerRebate(accountId uint32, characterId uint32
 func (p *ProcessorImpl) RequestGiftPurchase(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) error {
 	p.l.Debugf("Character [%d] gifting serial [%d] to character [%d]. Transaction [%s].", characterId, serialNumber, recipientCharacterId, transactionId)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestGiftPurchaseCommandProvider(characterId, transactionId, serialNumber, recipientCharacterId, senderName, message))
+}
+
+// RequestPackagePurchase forwards a CASH PACKAGE purchase request (task-240
+// task 17, atlas-channel half of task 16's REQUEST_PACKAGE_PURCHASE
+// command). TransactionId is minted by the caller (once per click, mirroring
+// OpenSurprise/RequestGiftPurchase's idempotency pattern) so a Kafka
+// redelivery replays this id and is rejected by atlas-cashshop's package
+// ledger while a genuine second click gets a fresh one.
+// RecipientCharacterId == 0 means buy-for-self (BUY_PACKAGE, mode 30/32);
+// non-zero means gift (BUY_OTHER_PACKAGE, mode 31/33) -- the same single
+// command shape task 16 built on the atlas-cashshop side.
+//
+// isPoints/currency go through resolvePurchaseCurrency exactly like
+// RequestPurchase above -- the same helper, the same call shape. For
+// BUY_PACKAGE (handleBuyPackage), that resolution is load-bearing: it maps
+// the wire's pointType bool onto a currency code. For BUY_OTHER_PACKAGE
+// (handleBuyOtherPackage), the caller always passes isPoints=false with an
+// already-final currency (walletCurrencyPrepaid, 3), so
+// resolvePurchaseCurrency's only branch (isPoints && currency==0) can never
+// fire and the call is an inert passthrough -- see handleBuyOtherPackage's
+// own doc comment for why that caller does not depend on this resolution.
+func (p *ProcessorImpl) RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error {
+	currency = resolvePurchaseCurrency(isPoints, currency)
+	p.l.Debugf("Character [%d] purchasing package serial [%d] with currency [%d] for recipient [%d]. Transaction [%s].", characterId, serialNumber, currency, recipientCharacterId, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPackagePurchaseCommandProvider(characterId, transactionId, currency, serialNumber, recipientCharacterId, senderName))
 }

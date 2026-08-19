@@ -23,6 +23,25 @@ func ErrorStatusEventProvider(characterId uint32, error string, transactionId uu
 	return producer.SingleMessageProvider(key, value)
 }
 
+// ErrorStatusEventForOperationProvider is ErrorStatusEventProvider with the
+// failing arm attached (ErrorEventBody.Operation), so the channel can answer
+// on that arm's own *_FAILED mode byte instead of the legacy
+// capacity-increase fallback. ErrorStatusEventProvider is left untouched --
+// its callers predate this field and keep the empty-operation behavior.
+func ErrorStatusEventForOperationProvider(characterId uint32, operation string, error string, transactionId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.StatusEvent[cashshop.ErrorEventBody]{
+		CharacterId: characterId,
+		Type:        cashshop.StatusEventTypeError,
+		Body: cashshop.ErrorEventBody{
+			Error:         error,
+			TransactionId: transactionId,
+			Operation:     operation,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func InventoryCapacityIncreasedStatusEventProvider(characterId uint32, inventoryType byte, capacity uint32, amount uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.StatusEvent[cashshop.InventoryCapacityIncreasedBody]{

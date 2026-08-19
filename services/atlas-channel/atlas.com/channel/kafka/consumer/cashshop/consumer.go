@@ -24,6 +24,7 @@ import (
 	cashpkt "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -287,6 +288,34 @@ func handleStatusEventCouponFailed(sc server.Model, wp writer.Producer) message.
 	}
 }
 
+// failureBodyForOperation routes a cash shop failure to its own arm's
+// *_FAILED body builder, keyed on ErrorEventBody.Operation. default
+// reproduces today's behavior byte for byte -- CashShopInventoryCapacityIncreaseFailedBody
+// -- so an existing producer that never sets Operation (empty string) is
+// unaffected, as is any operation value this switch does not yet recognize.
+func failureBodyForOperation(operation string, reason string) packet.Encode {
+	switch operation {
+	case cashshop2.ErrorOperationGift:
+		return cashpkt.CashShopGiftFailedBody(reason)
+	case cashshop2.ErrorOperationBuyNormal:
+		return cashpkt.CashShopBuyNormalFailedBody(reason)
+	case cashshop2.ErrorOperationRebate:
+		return cashpkt.CashShopRebateFailedBody(reason)
+	case cashshop2.ErrorOperationCouple:
+		return cashpkt.CashShopCoupleFailedBody(reason)
+	case cashshop2.ErrorOperationFriendship:
+		return cashpkt.CashShopFriendshipFailedBody(reason)
+	case cashshop2.ErrorOperationBuyPackage:
+		return cashpkt.CashShopBuyPackageFailedBody(reason)
+	case cashshop2.ErrorOperationGiftPackage:
+		return cashpkt.CashShopGiftPackageFailedBody(reason)
+	case cashshop2.ErrorOperationEnableEquipSlot:
+		return cashpkt.CashShopEnableEquipSlotExtFailedBody(reason)
+	default:
+		return cashpkt.CashShopInventoryCapacityIncreaseFailedBody(reason)
+	}
+}
+
 func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.ErrorEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.ErrorEventBody]) {
 		if e.Type != cashshop2.StatusEventTypeError {
@@ -329,8 +358,9 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 			}
 		}
 
-		// Use the generic error handler
-		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopInventoryCapacityIncreaseFailedBody(e.Body.Error))
+		// Route to the failing arm's own *_FAILED mode byte (falls back to
+		// today's capacity-increase arm for an empty/unrecognized operation).
+		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(failureBodyForOperation(e.Body.Operation, e.Body.Error))
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
 		return
 	}

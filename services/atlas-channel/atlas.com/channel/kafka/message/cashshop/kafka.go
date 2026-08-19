@@ -125,7 +125,23 @@ type ErrorEventBody struct {
 	Error         string    `json:"error"`
 	CashItemId    uint32    `json:"cashItemId,omitempty"`
 	TransactionId uuid.UUID `json:"transactionId"`
+	// Operation names the cash shop arm this failure belongs to, so the channel
+	// can answer on that arm's own *_FAILED mode byte. Empty means "the legacy
+	// capacity-increase arm" -- every producer that predates this field leaves it
+	// empty and keeps its existing behavior byte for byte.
+	Operation string `json:"operation,omitempty"`
 }
+
+const (
+	ErrorOperationGift            = "GIFT"
+	ErrorOperationBuyNormal       = "BUY_NORMAL"
+	ErrorOperationRebate          = "REBATE"
+	ErrorOperationCouple          = "COUPLE"
+	ErrorOperationFriendship      = "FRIENDSHIP"
+	ErrorOperationBuyPackage      = "BUY_PACKAGE"
+	ErrorOperationGiftPackage     = "GIFT_PACKAGE"
+	ErrorOperationEnableEquipSlot = "ENABLE_EQUIP_SLOT"
+)
 
 type CharacterMovementBody struct {
 	CharacterId uint32     `json:"characterId"`

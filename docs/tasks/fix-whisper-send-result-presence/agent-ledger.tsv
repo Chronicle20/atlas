@@ -1,0 +1,3 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-19T11:46:12Z	agent	bug-whisper-send-result-always-success	atlas-implementer	sonnet	-	40	-	-	DONE	2633d67d3	-	-	docs/tasks/fix-whisper-send-result-presence/bug-whisper-send-result-always-success.md	-
+2026-08-19T11:48:32Z	agent	bug-whisper-send-result-always-success	atlas-reviewer	sonnet	-	17	-	-	DONE	2633d67d3	APPROVED	no	docs/tasks/fix-whisper-send-result-presence/review-whisper-send-result.md	-

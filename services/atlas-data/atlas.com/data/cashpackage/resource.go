@@ -52,7 +52,7 @@ func handleGetCashPackagesRequest(db *gorm.DB) func(d *rest.HandlerDependency, c
 
 func handleGetCashPackageRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseItemId(d.Logger(), func(packageId uint32) http.HandlerFunc {
+		return rest.ParsePackageId(d.Logger(), func(packageId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
 				res, err := s.GetById(d.Context())(strconv.Itoa(int(packageId)))

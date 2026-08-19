@@ -176,7 +176,29 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationApplyWishlist) {
-			l.Infof("Character [%d] requesting to apply wishlist.", s.CharacterId())
+			// APPLY_WISHLIST (mode 33/35) carries no bytes after the mode byte
+			// (derivation.md D2a: RESOLVED, empty body). The reply arm is
+			// inferred (derivation.md D2b: RESOLVED but flagged INFERENTIAL,
+			// reached via request-in-flight-latch analysis rather than a
+			// client correlation table) to be UPDATE_WISHLIST (mode 98), the
+			// same arm SET_WISHLIST already answers with.
+			wl, err := wishlist.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve wishlist for character [%d].", s.CharacterId())
+				err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopLoadWishFailedBody("unknown_error"))(s)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce wishlist load failure for character [%d].", s.CharacterId())
+				}
+				return
+			}
+			sns := make([]uint32, len(wl))
+			for i, w := range wl {
+				sns[i] = w.SerialNumber()
+			}
+			err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopWishListUpdateBody(sns))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce wishlist for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyFriendship) {

@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
@@ -63,8 +64,8 @@ func TestBuyNormalPurchaseCurrency(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			captured, restore := installCapturingProducer()
-			defer restore()
+			captured := producertest.InstallCapturing()
+			defer producertest.InstallNoop()
 
 			const accountId = uint32(9000)
 			const characterId = uint32(9001)
@@ -77,7 +78,7 @@ func TestBuyNormalPurchaseCurrency(t *testing.T) {
 				t.Fatalf("RequestPurchase: %v", err)
 			}
 
-			msgs := (*captured)[messageCashShop.EnvCommandTopic]
+			msgs := captured.Messages(messageCashShop.EnvCommandTopic)
 			if len(msgs) != 1 {
 				t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 1", len(msgs))
 			}
@@ -102,8 +103,8 @@ func TestBuyNormalPurchaseCurrency(t *testing.T) {
 // a non-nil per-click TransactionId (design §8) all reach the emitted
 // REQUEST_PURCHASE command.
 func TestBuyNormalHandleEmitsPurchase(t *testing.T) {
-	captured, restore := installCapturingProducer()
-	defer restore()
+	captured := producertest.InstallCapturing()
+	defer producertest.InstallNoop()
 
 	const accountId = uint32(7001)
 	const characterId = uint32(7002)
@@ -115,7 +116,7 @@ func TestBuyNormalHandleEmitsPurchase(t *testing.T) {
 
 	CashShopOperationHandleFunc(logrus.New(), ctx, nil)(s, buyNormalPacket(t, mode, serial), buyNormalOperationsOptions(mode))
 
-	msgs := (*captured)[messageCashShop.EnvCommandTopic]
+	msgs := captured.Messages(messageCashShop.EnvCommandTopic)
 	if len(msgs) != 1 {
 		t.Fatalf("REQUEST_PURCHASE messages emitted = %d, want 1", len(msgs))
 	}

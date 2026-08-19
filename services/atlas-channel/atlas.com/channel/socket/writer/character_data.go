@@ -16,6 +16,7 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 )
 
 func BuildCharacterData(l logrus.FieldLogger, ctx context.Context, c character.Model, bl buddylist.Model, mapId _map.Id, trm teleportrock.Model) charpkt.CharacterData {
@@ -122,7 +123,7 @@ func buildInventoryData(l logrus.FieldLogger, ctx context.Context, c character.M
 		// Fail-open: a missing/unreachable equip-slot-extensions read must
 		// never block SET_FIELD, mirroring the teleport-rock fail-open in
 		// SetFieldBody (design §4.4).
-		l.WithError(err).Warnf("Unable to fetch equip-slot extensions for character [%d]; sending ZeroTime.", c.Id())
+		degrade.Observe(l, "channel.character_data.equip_slot_ext", c.Id(), err)
 		exts = nil
 	}
 	equipSlotExtExpire := equipSlotExtExpireFor(exts)

@@ -1,9 +1,10 @@
 package equipslot
 
 import (
-	"atlas-character/rest"
 	"net/http"
 	"time"
+
+	"atlas-character/rest"
 
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"

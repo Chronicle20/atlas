@@ -262,6 +262,27 @@ fi
 #
 # `go build` against the workspace go.work does NOT catch a missing
 # `COPY libs/...` in the shared root Dockerfile. Only the bake does.
+#
+# This bake is a BUILD CHECK, not an image build: nothing downstream in this
+# script consumes its output. It is therefore run with output=cacheonly, so it
+# never writes to the docker image store.
+#
+# That matters because the store is machine-global while worktrees are not.
+# docker-bake.hcl tags targets `<svc>:${ATLAS_IMAGE_TAG}` (default `local`),
+# the same tag deploy/compose/docker-compose.*.yml runs — so a verify.sh in one
+# worktree used to silently replace the `<svc>:local` image built from another
+# tree's code, and two trees verifying the same service raced for the tag.
+# cacheonly removes the write entirely rather than renaming it: the collision
+# is gone and the images stop accumulating. The buildkit solve cache is still
+# populated, so a later real build reuses this one's work — measured on
+# atlas-ban with a source edit: the cacheonly run compiled it (27 CACHED
+# steps), the normal bake that followed reported the go-build step itself
+# CACHED (64 CACHED steps).
+#
+# A broken build still FAILS under cacheonly (every stage runs; only the export
+# is dropped) — verified against both a bad COPY path and a Go type error.
+# To actually PRODUCE runnable `<svc>:local` images, use tools/build-services.sh.
+BAKE_OUTPUT='*.output=type=cacheonly'
 
 bake_targets() {
     # services whose go.mod (or the shared Dockerfile / bake file) changed
@@ -313,7 +334,7 @@ else
         skip "docker buildx bake (no go.mod touched)"
     else
         for t in "${TARGETS[@]}"; do
-            step "docker buildx bake $t" docker buildx bake "$t"
+            step "docker buildx bake $t" docker buildx bake --set "$BAKE_OUTPUT" "$t"
         done
     fi
 fi

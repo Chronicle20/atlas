@@ -537,3 +537,180 @@ func (m *UnknownError2) Decode(_ logrus.FieldLogger, _ context.Context) func(r *
 		m.mode = r.ReadByte()
 	}
 }
+
+// The four arms below are the body-carrying PARCEL notify results
+// (task-241 Task 9): CParcelDlg::OnPacket @0x6F56EA (v83) explicit cases
+// 23/24/25/27 read a body beyond the mode byte, unlike the fifteen
+// bodyless notice arms above. Each mode value is resolved per-tenant via
+// the arm's body function in parcel_body.go against
+// docs/packets/dispatchers/parcel.yaml (Task 6); all four keys carry a
+// jms_v185 value in that table (Ruling 5's 7 populated keys).
+
+// ParcelRemoved - mode, parcelId, kind.
+//
+// CParcelDlg::OnPacket case 23 @0x6F56EA (v83): CInPacket::Decode4
+// (parcelId) then CInPacket::Decode1 (kind). kind==3 selects
+// SP_3899_SUCCESSFULLY_DELETED; any other value selects
+// SP_3900_SUCCESSFULLY_CLAIMED (v83 @0x6F5A62/@0x6F5A8E) — the decompile
+// pins only the `!= 3` discriminator for "claimed", not a second fixed
+// value, so ParcelRemovedKindClaimed below is the canonical non-3 value
+// (0) rather than a decompile-cited literal.
+//
+// packet-audit:fname CParcelDlg::OnPacket#ParcelRemoved
+type ParcelRemoved struct {
+	mode     byte
+	parcelId uint32
+	kind     byte
+}
+
+// ParcelRemovedKindDiscarded is the kind byte CParcelDlg::OnPacket's 0x17
+// arm compares against directly (v83 @0x6F5A62: `if (kind == 3)` selects
+// SP_3899 "deleted").
+const ParcelRemovedKindDiscarded = byte(3)
+
+// ParcelRemovedKindClaimed is the kind byte for the "claimed" branch.
+// CParcelDlg::OnPacket's 0x17 arm only tests `kind == 3` (Discarded); the
+// else branch (SP_3900 "claimed") accepts any other value, so there is no
+// single decompile-cited literal for it — 0 is used as the canonical
+// non-3 value.
+const ParcelRemovedKindClaimed = byte(0)
+
+func NewParcelRemoved(mode byte, parcelId uint32, kind byte) ParcelRemoved {
+	return ParcelRemoved{mode: mode, parcelId: parcelId, kind: kind}
+}
+
+func (m ParcelRemoved) Mode() byte        { return m.mode }
+func (m ParcelRemoved) ParcelId() uint32  { return m.parcelId }
+func (m ParcelRemoved) Kind() byte        { return m.kind }
+func (m ParcelRemoved) Operation() string { return ParcelWriter }
+func (m ParcelRemoved) String() string {
+	return fmt.Sprintf("parcel removed [%d] kind [%d]", m.parcelId, m.kind)
+}
+
+func (m ParcelRemoved) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteInt(m.parcelId)
+		w.WriteByte(m.kind)
+		return w.Bytes()
+	}
+}
+
+func (m *ParcelRemoved) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.parcelId = r.ReadUint32()
+		m.kind = r.ReadByte()
+	}
+}
+
+// ParcelArrived - mode, one parcel.Parcel body.
+//
+// CParcelDlg::OnPacket case 24 @0x6F56EA (v83): a single PARCEL::Decode
+// call (v83 @0x6F5997), then CParcelDlg::AddNewParcel and an
+// SP_3902_A_NEW_PACKAGE_HAS_BEEN_SENT notice.
+//
+// packet-audit:fname CParcelDlg::OnPacket#ParcelArrived
+type ParcelArrived struct {
+	mode   byte
+	parcel parcel.Parcel
+}
+
+func NewParcelArrived(mode byte, p parcel.Parcel) ParcelArrived {
+	return ParcelArrived{mode: mode, parcel: p}
+}
+
+func (m ParcelArrived) Mode() byte            { return m.mode }
+func (m ParcelArrived) Parcel() parcel.Parcel { return m.parcel }
+func (m ParcelArrived) Operation() string     { return ParcelWriter }
+func (m ParcelArrived) String() string        { return "parcel arrived" }
+
+func (m ParcelArrived) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteByteArray(m.parcel.Encode(l, ctx)(options))
+		return w.Bytes()
+	}
+}
+
+// AlarmNamed - mode, senderName, hasItem.
+//
+// CParcelDlg::OnPacket case 25 @0x6F56EA (v83): CInPacket::DecodeStr
+// (senderName) then CInPacket::Decode1 (hasItem), used to drive
+// CUIFadeYesNo::CreateParcelAlarm's named-sender fade window.
+//
+// packet-audit:fname CParcelDlg::OnPacket#AlarmNamed
+type AlarmNamed struct {
+	mode       byte
+	senderName string
+	hasItem    bool
+}
+
+func NewParcelAlarmNamed(mode byte, senderName string, hasItem bool) AlarmNamed {
+	return AlarmNamed{mode: mode, senderName: senderName, hasItem: hasItem}
+}
+
+func (m AlarmNamed) Mode() byte         { return m.mode }
+func (m AlarmNamed) SenderName() string { return m.senderName }
+func (m AlarmNamed) HasItem() bool      { return m.hasItem }
+func (m AlarmNamed) Operation() string  { return ParcelWriter }
+func (m AlarmNamed) String() string {
+	return fmt.Sprintf("parcel alarm named [%s]", m.senderName)
+}
+
+func (m AlarmNamed) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteAsciiString(m.senderName)
+		w.WriteBool(m.hasItem)
+		return w.Bytes()
+	}
+}
+
+func (m *AlarmNamed) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.senderName = r.ReadAsciiString()
+		m.hasItem = r.ReadBool()
+	}
+}
+
+// AlarmGeneric - mode, hasItem.
+//
+// CParcelDlg::OnPacket case 27 @0x6F56EA (v83): CInPacket::Decode1
+// (hasItem) only, used to drive CUIFadeYesNo::CreateParcelAlarm's
+// generic (unnamed-sender) fade window.
+//
+// packet-audit:fname CParcelDlg::OnPacket#AlarmGeneric
+type AlarmGeneric struct {
+	mode    byte
+	hasItem bool
+}
+
+func NewParcelAlarmGeneric(mode byte, hasItem bool) AlarmGeneric {
+	return AlarmGeneric{mode: mode, hasItem: hasItem}
+}
+
+func (m AlarmGeneric) Mode() byte        { return m.mode }
+func (m AlarmGeneric) HasItem() bool     { return m.hasItem }
+func (m AlarmGeneric) Operation() string { return ParcelWriter }
+func (m AlarmGeneric) String() string    { return "parcel alarm generic" }
+
+func (m AlarmGeneric) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteBool(m.hasItem)
+		return w.Bytes()
+	}
+}
+
+func (m *AlarmGeneric) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.hasItem = r.ReadBool()
+	}
+}

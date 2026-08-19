@@ -31,6 +31,10 @@ const (
 	ParcelOperationRecvNoFreeSlots         = "RECV_NO_FREE_SLOTS"
 	ParcelOperationRecvUniqueConflict      = "RECV_UNIQUE_CONFLICT"
 	ParcelOperationUnknownError2           = "UNKNOWN_ERROR_2"
+	ParcelOperationParcelRemoved           = "PARCEL_REMOVED"
+	ParcelOperationParcelArrived           = "PARCEL_ARRIVED"
+	ParcelOperationAlarmNamed              = "ALARM_NAMED"
+	ParcelOperationAlarmGeneric            = "ALARM_GENERIC"
 )
 
 // ParcelOpenBody resolves the OPEN mode from the tenant operations table and
@@ -169,5 +173,39 @@ func ParcelRecvUniqueConflictBody() func(logrus.FieldLogger, context.Context) fu
 func ParcelUnknownError2Body() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", ParcelOperationUnknownError2, func(mode byte) packet.Encoder {
 		return NewParcelUnknownError2(mode)
+	})
+}
+
+// ParcelRemovedBody resolves the PARCEL_REMOVED mode from the tenant
+// operations table and constructs the ParcelRemoved arm. kind is a
+// client-interpreted discriminator (ParcelRemovedKindDiscarded /
+// ParcelRemovedKindClaimed in parcel.go), not an operations-table code.
+func ParcelRemovedBody(parcelId uint32, kind byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", ParcelOperationParcelRemoved, func(mode byte) packet.Encoder {
+		return NewParcelRemoved(mode, parcelId, kind)
+	})
+}
+
+// ParcelArrivedBody resolves the PARCEL_ARRIVED mode from the tenant
+// operations table and constructs the ParcelArrived arm.
+func ParcelArrivedBody(p parcel.Parcel) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", ParcelOperationParcelArrived, func(mode byte) packet.Encoder {
+		return NewParcelArrived(mode, p)
+	})
+}
+
+// ParcelAlarmNamedBody resolves the ALARM_NAMED mode from the tenant
+// operations table and constructs the AlarmNamed arm.
+func ParcelAlarmNamedBody(senderName string, hasItem bool) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", ParcelOperationAlarmNamed, func(mode byte) packet.Encoder {
+		return NewParcelAlarmNamed(mode, senderName, hasItem)
+	})
+}
+
+// ParcelAlarmGenericBody resolves the ALARM_GENERIC mode from the tenant
+// operations table and constructs the AlarmGeneric arm.
+func ParcelAlarmGenericBody(hasItem bool) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", ParcelOperationAlarmGeneric, func(mode byte) packet.Encoder {
+		return NewParcelAlarmGeneric(mode, hasItem)
 	})
 }

@@ -1427,6 +1427,27 @@ func candidatesFromFName(fname string) []candidate {
 		// text-only error dialog.
 		// Atlas struct: parcel/clientbound/parcel.go UnknownError2.
 		return []candidate{{name: "UnknownError2", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#ParcelRemoved":
+		// mode=23/0x17 (PARCEL_REMOVED, jms_v185 mode=24): uint32 parcelId +
+		// byte kind. kind==3 selects SP_3899 "deleted"; else SP_3900
+		// "claimed" (v83 @0x6F5A62/@0x6F5A8E).
+		// Atlas struct: parcel/clientbound/parcel.go ParcelRemoved.
+		return []candidate{{name: "ParcelRemoved", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#ParcelArrived":
+		// mode=24/0x18 (PARCEL_ARRIVED, jms_v185 mode=25): one PARCEL::Decode
+		// (parcel.Parcel) body.
+		// Atlas struct: parcel/clientbound/parcel.go ParcelArrived.
+		return []candidate{{name: "ParcelArrived", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#AlarmNamed":
+		// mode=25/0x19 (ALARM_NAMED, jms_v185 mode=26): DecodeStr
+		// (senderName) + Decode1 (hasItem).
+		// Atlas struct: parcel/clientbound/parcel.go AlarmNamed.
+		return []candidate{{name: "AlarmNamed", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#AlarmGeneric":
+		// mode=27/0x1B (ALARM_GENERIC, jms_v185 mode=28): Decode1 (hasItem)
+		// only.
+		// Atlas struct: parcel/clientbound/parcel.go AlarmGeneric.
+		return []candidate{{name: "AlarmGeneric", pkg: "parcel", dir: csvpkg.DirClientbound}}
 
 	// CSV: NOTE_ACTION (serverbound, opcode 0x9A/154 in GMS v95) — three FNames share
 	// this opcode; each represents a different sub-operation.

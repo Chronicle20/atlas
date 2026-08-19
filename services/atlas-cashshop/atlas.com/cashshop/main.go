@@ -63,6 +63,16 @@ func main() {
 
 	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, opening.Migration, purchaserecord.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration, database.IdempotencyMigration))
 
+	// Seed cash_purchase_records from cash_assets history for accounts that
+	// bought before purchaserecord existed. Idempotent, so it runs on every
+	// boot; a failure here is a degraded answer (missing purchase history),
+	// not a reason to refuse to serve the cash shop.
+	if backfilled, err := purchaserecord.Backfill(l, db); err != nil {
+		l.WithError(err).Warn("Failed to backfill purchase records from cash_assets history.")
+	} else if backfilled > 0 {
+		l.Infof("Backfilled %d purchase record(s) from existing cash_assets history.", backfilled)
+	}
+
 	// ACCEPT/RELEASE claim an idempotency key so an at-least-once redelivery
 	// cannot duplicate or double-release a cash asset (task-208).
 	database.StartIdempotencySweeper(l, rt.Context(), db, database.DefaultIdempotencyRetention, database.DefaultIdempotencySweep)

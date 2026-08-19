@@ -27,3 +27,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-18T14:24:31Z	agent	Fix round 1	atlas-implementer	sonnet	-	-	-	-	DONE	2413cbf29	-	-	.superpowers/sdd/plan/fix-round-1-report.md	-
 2026-08-18T14:33:24Z	agent	Fix round 1	atlas-reviewer	sonnet	-	-	-	-	DONE	2413cbf29	APPROVED	no	docs/tasks/task-238-whisper-find-location/review-fix-round-1.md	-
 2026-08-18T14:54:56Z	agent	branch-end gate	atlas-verifier	haiku	-	-	-	-	PASS	a9bb5d83d	-	-	-	-
+2026-08-19T11:43:11Z	agent	bug-find-channel-always-zero	atlas-implementer	sonnet	-	-	-	-	DONE	ceb83cc09	-	-	-	-
+2026-08-19T11:47:40Z	agent	channel-label-one-based	atlas-implementer	sonnet	-	-	-	-	DONE	6827395704f0	-	-	-	-

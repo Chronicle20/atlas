@@ -100,8 +100,32 @@ that assembles the list.
 
 ## Outcome
 
-- Fixed by: _(pending)_
-- Live re-test: _(pending)_
+- Fixed by `ceb83cc09` — sort the channel list by id in `ServerListEntryBody`
+  (`services/atlas-login/atlas.com/login/socket/writer/server_list.go`), the
+  single funnel both call sites use, so packet position equals channel id.
+- Follow-up `6827395704f0` — 1-based channel labels (see the follow-up section
+  below). This also required updating the pinned `gms_v48` fixture's expected
+  name byte in `server_list_entry_v48_test.go`: contrary to what the follow-up
+  brief claimed, `TestServerListEntryBytesV48` DOES assert the channel-name
+  string. The length prefix is unchanged (`0x0A`; "Scania - 2" is still ten
+  chars), so the fixture's pinned read order and field widths are untouched —
+  only the content of a display string the client renders.
+- Gate, range `62439e69b..HEAD`: `tools/verify.sh --quick` PASSES every check
+  except the lint & format guard; `packet-audit matrix --check` and
+  `fname-doc --check` both PASS, so the fixture edit staled no evidence record.
+- **Lint guard: blocked, not failed.** Four runs, all ending in
+  `Error: parallel golangci-lint is running`, each naming different modules this
+  branch never touched, with "0 issues." for every module that completed. Cause
+  identified: a concurrent golangci-lint (pid 3693706) in the
+  `fix-whisper-cross-channel-delivery` worktree — the cross-worktree lock
+  contention documented at `docs/verification.md:285`. Re-run once that
+  finishes. No lint finding is attributable to this branch.
+- **Still outstanding: flagless `tools/verify.sh`** (the `--quick` runs skip the
+  Docker bake and `-race`), and the **live re-test**. Neither the gate nor any
+  unit test can observe the reported symptom — it is a client-render defect.
+  Re-test: `/find` the channel-1 character from channel 0 and confirm the named
+  channel is correct. Expect world-select to read `Scania - 1` / `Scania - 2`
+  where it previously read `Scania - 0` / `Scania - 1`.
 
 ---
 

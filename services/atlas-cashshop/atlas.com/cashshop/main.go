@@ -11,6 +11,7 @@ import (
 	"atlas-cashshop/kafka/consumer/cashshop"
 	"atlas-cashshop/kafka/consumer/character"
 	"atlas-cashshop/purchaserecord"
+	"atlas-cashshop/ring"
 	"atlas-cashshop/surprise/opening"
 	"atlas-cashshop/wallet"
 	"atlas-cashshop/wishlist"
@@ -61,7 +62,7 @@ func main() {
 	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, opening.Migration, purchaserecord.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration, database.IdempotencyMigration))
+	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, opening.Migration, purchaserecord.Migration, ring.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration, database.IdempotencyMigration))
 
 	// Seed cash_purchase_records from cash_assets history for accounts that
 	// bought before purchaserecord existed. Idempotent, so it runs on every

@@ -77,3 +77,24 @@ func ReceivableByRecipient(recipientId uint32, worldId world.Id, now time.Time) 
 		return model.SliceMap(Make)(model.FixedProvider(results))()
 	}
 }
+
+// ReceivableByRecipientAnyWorld is ReceivableByRecipient without the
+// world_id predicate — a tenant is multi-world and a character's inbound
+// parcels can have been sent within any of them, so "does this character
+// have a receivable inbound parcel" (Processor.HasInFlight's inbound half,
+// design §9.1 / gate 12) must not be scoped to a single world. Still backed
+// by idx_parcels_recipient (tenant_id, recipient_id, status); dropping the
+// world_id residual filter does not lose the index.
+func ReceivableByRecipientAnyWorld(recipientId uint32, now time.Time) database.EntityProvider[[]Model] {
+	return func(db *gorm.DB) model.Provider[[]Model] {
+		var results []Entity
+		err := db.Where(map[string]interface{}{
+			"recipient_id": recipientId,
+			"status":       StatusPending,
+		}).Where("receivable_at <= ?", now).Find(&results).Error
+		if err != nil {
+			return model.ErrorProvider[[]Model](err)
+		}
+		return model.SliceMap(Make)(model.FixedProvider(results))()
+	}
+}

@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
@@ -189,6 +190,24 @@ func TestProcessorHasInFlight(t *testing.T) {
 		assert.True(t, has)
 	})
 
+	t.Run("inbound receivable in a non-zero world", func(t *testing.T) {
+		// Regression for the reviewer's BLOCKING 1: HasInFlight's inbound
+		// check must not be hardcoded to world 0 — a parcel sent within any
+		// world must still be found. Under the old
+		// ReceivableByRecipient(characterId, world.Id(0), now) code this
+		// subtest fails (false negative) because the seeded parcel's
+		// WorldId is 7, not 0.
+		db, tid := newProcessorTestDB(t)
+		seedParcel(t, db, tid, func(b *Builder) {
+			b.SetWorldId(world.Id(7)).SetRecipientId(100).SetReceivableAt(fixedClock.Add(-time.Hour))
+		})
+		p := newTestProcessor(t, db, tid, fixedClock)
+
+		has, err := p.HasInFlight(100)
+		require.NoError(t, err)
+		assert.True(t, has)
+	})
+
 	t.Run("inbound not yet receivable", func(t *testing.T) {
 		db, tid := newProcessorTestDB(t)
 		seedParcel(t, db, tid, func(b *Builder) {
@@ -223,5 +242,29 @@ func TestProcessorHasInFlight(t *testing.T) {
 		has, err := p.HasInFlight(100)
 		require.NoError(t, err)
 		assert.False(t, has)
+	})
+}
+
+func TestProcessorGetById(t *testing.T) {
+	t.Run("happy path", func(t *testing.T) {
+		db, tid := newProcessorTestDB(t)
+		id := seedParcel(t, db, tid, nil)
+		p := newTestProcessor(t, db, tid, fixedClock)
+
+		m, err := p.GetById(id)
+		require.NoError(t, err)
+		assert.Equal(t, id, m.Id())
+	})
+
+	t.Run("missing", func(t *testing.T) {
+		// Regression for the reviewer's BLOCKING 2: GetById must map a
+		// missing row to the package's own ErrNotFound sentinel, not
+		// forward gorm.ErrRecordNotFound unchanged, so a caller can
+		// errors.Is(err, parcel.ErrNotFound) uniformly.
+		db, tid := newProcessorTestDB(t)
+		p := newTestProcessor(t, db, tid, fixedClock)
+
+		_, err := p.GetById(uuid.New())
+		assert.ErrorIs(t, err, ErrNotFound)
 	})
 }

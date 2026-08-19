@@ -2,6 +2,7 @@ package parcel
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -61,9 +62,16 @@ func (p *ProcessorImpl) withClock(now func() time.Time) Processor {
 	}
 }
 
-// GetById retrieves a single parcel by id.
+// GetById retrieves a single parcel by id. A missing row is mapped to
+// ErrNotFound (never the raw gorm.ErrRecordNotFound) so a caller can
+// errors.Is(err, ErrNotFound) uniformly across every Processor method that
+// can fail with "no such parcel."
 func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {
-	return ById(id)(p.db.WithContext(p.ctx))()
+	m, err := ById(id)(p.db.WithContext(p.ctx))()
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return Model{}, ErrNotFound
+	}
+	return m, err
 }
 
 // GetForRecipient returns the recipient's pending parcels in a world — the
@@ -82,7 +90,10 @@ func (p *ProcessorImpl) GetPendingForSender(senderId uint32) ([]Model, error) {
 // HasInFlight reports whether characterId has a parcel it is still
 // responsible for: an outbound parcel it sent that is still pending (in
 // flight from the instant it is sent), OR an inbound parcel addressed to it
-// that has already become receivable. An inbound parcel that has not yet
+// that has already become receivable, IN ANY WORLD — a tenant is
+// multi-world and characterId does not carry a world of its own here, so the
+// inbound check is deliberately not scoped to world 0 or any other single
+// world (ReceivableByRecipientAnyWorld). An inbound parcel that has not yet
 // become receivable is not the character's problem yet — this asymmetry is
 // intentional (design §9.1, gate 12).
 func (p *ProcessorImpl) HasInFlight(characterId uint32) (bool, error) {
@@ -97,7 +108,7 @@ func (p *ProcessorImpl) HasInFlight(characterId uint32) (bool, error) {
 		return true, nil
 	}
 
-	inbound, err := ReceivableByRecipient(characterId, world.Id(0), now)(tdb)()
+	inbound, err := ReceivableByRecipientAnyWorld(characterId, now)(tdb)()
 	if err != nil {
 		return false, err
 	}
@@ -141,7 +152,15 @@ func (p *ProcessorImpl) Discard(id uuid.UUID, recipientId uint32) (Model, error)
 // resolve is the shared race-safe transition underpinning Receive and
 // Discard: in one ExecuteTransaction it re-reads the row, validates
 // ownership then the caller-supplied gate, and — only once both pass —
-// updates status and resolved_at atomically.
+// applies the transition via UpdateStatusIfPending, a compare-and-swap on
+// status='pending' rather than an unconditional write. The in-memory gate
+// above already rejects an obviously-non-pending row with a precise error
+// (ErrNotPending / ErrNotYetReceivable), but only the DB-level predicate
+// closes the race a second, concurrent caller can still win between this
+// re-read and this write: RowsAffected==0 means the row stopped being
+// pending after the read, which resolve reports as ErrNotPending (NFR-3,
+// award-once, now enforced at the storage layer and not merely by
+// sequential replay ordering).
 func (p *ProcessorImpl) resolve(id uuid.UUID, recipientId uint32, status string, gate func(m Model, now time.Time) error) (Model, error) {
 	now := p.now()
 	var result Model
@@ -156,8 +175,12 @@ func (p *ProcessorImpl) resolve(id uuid.UUID, recipientId uint32, status string,
 		if err := gate(m, now); err != nil {
 			return err
 		}
-		if err := UpdateStatus(tx)(id, status, now); err != nil {
+		rows, err := UpdateStatusIfPending(tx)(id, status, now)
+		if err != nil {
 			return err
+		}
+		if rows == 0 {
+			return ErrNotPending
 		}
 		result, err = ById(id)(tx)()
 		return err

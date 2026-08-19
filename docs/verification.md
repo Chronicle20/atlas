@@ -124,6 +124,15 @@ cycle and turns "verified" into a lie.
 Build everything: `docker buildx bake all-go-services` (or `tools/build-services.sh`,
 a thin wrapper).
 
+`verify.sh` runs its bake as a **build check only** — it passes
+`--set '*.output=type=cacheonly'`, so it never writes to the docker image store.
+That keeps a run in one worktree from replacing the `<svc>:local` image another
+tree built, since `docker-bake.hcl` tags every target `<svc>:${ATLAS_IMAGE_TAG}`
+(default `local`) — the same tag `deploy/compose/docker-compose.*.yml` runs, and
+the image store is machine-global while worktrees are not. A broken build still
+fails; only the export is dropped. To actually **produce** runnable
+`<svc>:local` images, run `tools/build-services.sh` — `verify.sh` will not.
+
 Adding a new shared lib requires two `COPY` lines in the root `Dockerfile` (one
 in the mod-only block, one in the source block) and one `./libs/<name>` line in
 `go.work`. That is all — no per-service edits.

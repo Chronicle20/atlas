@@ -5,6 +5,9 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // Create persists a new parcel and returns the stored Model. TenantId is
@@ -56,6 +59,42 @@ func UpdateStatusIfPending(db *gorm.DB) func(id uuid.UUID, status string, resolv
 				"resolved_at": resolvedAt,
 			})
 		return res.RowsAffected, res.Error
+	}
+}
+
+// ClaimExpired is the expiry sweep's claim-by-update (design §8.1, NFR-7):
+// one UPDATE that both selects and transitions up to batch expired-pending
+// rows in a single statement, guarded by status='pending' both in the outer
+// WHERE and the candidate subquery. That outer guard is the actual
+// concurrency safety property — under concurrent replicas, whichever
+// UPDATE's row-level write commits first is the only one whose WHERE
+// clause still matches that row by the time it runs; the loser's UPDATE
+// simply claims zero of that row, no leader election required. LIMIT
+// cannot appear directly on an UPDATE (unsupported by both postgres and
+// sqlite's default build), so the batch cap lives in a SELECT id ... LIMIT
+// subquery instead — standard SQL, portable to both backends this service
+// runs under (production postgres, databasetest's in-memory sqlite).
+func ClaimExpired(db *gorm.DB) func(now time.Time, batch int) ([]Model, error) {
+	return func(now time.Time, batch int) ([]Model, error) {
+		candidates := db.Model(&Entity{}).
+			Select("id").
+			Where("status = ? AND expires_at <= ?", StatusPending, now).
+			Order("expires_at ASC").
+			Limit(batch)
+
+		var entities []Entity
+		err := db.Clauses(clause.Returning{}).
+			Model(&entities).
+			Where("status = ? AND expires_at <= ?", StatusPending, now).
+			Where("id IN (?)", candidates).
+			Updates(map[string]interface{}{
+				"status":      StatusExpired,
+				"resolved_at": now,
+			}).Error
+		if err != nil {
+			return nil, err
+		}
+		return model.SliceMap(Make)(model.FixedProvider(entities))()()
 	}
 }
 

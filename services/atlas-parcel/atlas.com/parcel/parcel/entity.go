@@ -20,8 +20,20 @@ const (
 const ReceivableDelay = 24 * time.Hour
 
 // ExpiryWindow is how long an unreceived parcel remains claimable before it
-// is swept and returned/discarded.
-const ExpiryWindow = 30 * 24 * time.Hour
+// is swept and returned/discarded. This is 29 days, not the naively
+// "obvious" 30 — the client's own receive guard (CTabReceive::ReceiveParcel,
+// v72 @0x65AF41 / v83 @0x6F0D11) computes an UNSIGNED 64-bit quotient of
+// (wire +21 deadline - now) / 1 day and refuses the receive unless that
+// quotient is strictly < 30. A 30-day window is survivable on the normal
+// delivery path (ReceivableAt = CreatedAt + 24h already leaves ~29 days of
+// life once a parcel becomes receivable), but NOT on the expiry sweep's
+// return leg (task-23), which has ReceivableAt == CreatedAt (no 24h delay):
+// exactly 30 days of remaining life at the moment it becomes receivable,
+// and floor(30) < 30 is false — the client would refuse it. 29 days keeps
+// the quotient at 29 or below for the whole life of every parcel, return
+// legs included. See docs/tasks/task-241-duey-parcel-delivery/context.md
+// §11 (RISK-4 resolution) for the full derivation.
+const ExpiryWindow = 29 * 24 * time.Hour
 
 // Entity is the persisted record of a parcel in Duey's custody.
 type Entity struct {
@@ -36,6 +48,19 @@ type Entity struct {
 
 	RecipientId        uint32 `gorm:"not null;index:idx_parcels_recipient,priority:2"`
 	RecipientAccountId uint32 `gorm:"not null"`
+	// RecipientName is not populated by the currently-landed atlas-channel
+	// send saga (Task 17's TransferToParcelPayload/AcceptToParcelPayload
+	// carry no such field yet) — it exists for the expiry sweep's return
+	// leg (task-23, design §7.4), which needs the original recipient's
+	// display name for the returned parcel's SenderName. Until a follow-up
+	// task threads RecipientName through
+	// libs/atlas-saga.TransferToParcelPayload/AcceptToParcelPayload, the
+	// orchestrator's TransferToParcel expansion, and atlas-parcel's own
+	// custody.AcceptToParcelCommandBody, every parcel created through that
+	// path will have RecipientName == "" and a return leg's SenderName will
+	// be empty rather than a display name. This is a known, named gap — see
+	// the expiry sweep's doc comment in task.go.
+	RecipientName string `gorm:"not null;default:''"`
 
 	Message    string
 	MesoAmount uint32

@@ -13,12 +13,14 @@ import (
 // exported constructor that skips validation.
 type Model struct {
 	id                 uuid.UUID
+	tenantId           uuid.UUID
 	worldId            world.Id
 	senderId           uint32
 	senderAccountId    uint32
 	senderName         string
 	recipientId        uint32
 	recipientAccountId uint32
+	recipientName      string
 	message            string
 	mesoAmount         uint32
 	feePaid            uint32
@@ -38,6 +40,16 @@ type Model struct {
 
 func (m Model) Id() uuid.UUID { return m.id }
 
+// TenantId is populated only by Make(Entity) (read from a persisted row) —
+// a freshly Built Model for Create leaves it zero, matching
+// entityFromModel's deliberate omission (the tenant:create callback injects
+// it from context). The expiry sweep (task-23) is this field's only reader:
+// it runs cross-tenant under database.WithoutTenantFilter, and needs a
+// claimed row's own tenant to re-enter that tenant's context before
+// inserting the return leg — mirroring atlas-mts's listing.Model.TenantId()
+// (task/periodic.go).
+func (m Model) TenantId() uuid.UUID { return m.tenantId }
+
 func (m Model) WorldId() world.Id { return m.worldId }
 
 func (m Model) SenderId() uint32 { return m.senderId }
@@ -49,6 +61,12 @@ func (m Model) SenderName() string { return m.senderName }
 func (m Model) RecipientId() uint32 { return m.recipientId }
 
 func (m Model) RecipientAccountId() uint32 { return m.recipientAccountId }
+
+// RecipientName is the display name of the parcel's original recipient — a
+// task-23 addition for the expiry sweep's return leg (design §7.4), NOT yet
+// populated by the currently-landed atlas-channel send saga; see entity.go's
+// doc comment for the exact follow-up wiring this needs.
+func (m Model) RecipientName() string { return m.recipientName }
 
 func (m Model) Message() string { return m.message }
 

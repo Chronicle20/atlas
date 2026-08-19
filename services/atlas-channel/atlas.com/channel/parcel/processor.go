@@ -43,8 +43,12 @@ type RestModel struct {
 	Quick    bool   `json:"quick"`
 	Returned bool   `json:"returned"`
 
-	// CreatedAt is the OPEN packet's PARCEL.sentAt (design §5.3, +21
-	// FILETIME) — Task 21's only reader.
+	// CreatedAt is the parcel's creation timestamp — Task 21's only reader.
+	// It is NOT the OPEN packet's PARCEL.expiresAt (+21 FILETIME); that wire
+	// field carries ExpiresAt below (task-23 / RISK-4 resolution,
+	// docs/tasks/task-241-duey-parcel-delivery/context.md §11 — the client's
+	// receive guard divides unsigned, so +21 must be a future deadline, not
+	// the send time).
 	CreatedAt time.Time `json:"createdAt"`
 
 	// ReceivableAt gates Task 18's receive pre-flight (design §7.2): a
@@ -52,6 +56,12 @@ type RestModel struct {
 	// passes. Not carried by Task 17's send-side pre-flight, which never
 	// reads an individual parcel's timing.
 	ReceivableAt time.Time `json:"receivableAt"`
+
+	// ExpiresAt is the OPEN packet's PARCEL.expiresAt (+21 FILETIME,
+	// task-23 / RISK-4 resolution). atlas-parcel's REST already emits this
+	// (services/atlas-parcel/.../parcel/rest.go), so no producer-side change
+	// was needed.
+	ExpiresAt time.Time `json:"expiresAt"`
 
 	// LastNotified is nil until either Task 21's SHOW_PARCEL consumer or
 	// Task 24's atlas-parcel notification sweep stamps it — both writers
@@ -97,6 +107,7 @@ type Model struct {
 	returned           bool
 	createdAt          time.Time
 	receivableAt       time.Time
+	expiresAt          time.Time
 	lastNotified       *time.Time
 }
 
@@ -118,6 +129,7 @@ func (m Model) Quick() bool                { return m.quick }
 func (m Model) Returned() bool             { return m.returned }
 func (m Model) CreatedAt() time.Time       { return m.createdAt }
 func (m Model) ReceivableAt() time.Time    { return m.receivableAt }
+func (m Model) ExpiresAt() time.Time       { return m.expiresAt }
 func (m Model) LastNotified() *time.Time   { return m.lastNotified }
 
 // WireId projects a parcel's atlas-parcel uuid.UUID identity onto the
@@ -161,6 +173,7 @@ func Extract(rm RestModel) (Model, error) {
 		returned:           rm.Returned,
 		createdAt:          rm.CreatedAt,
 		receivableAt:       rm.ReceivableAt,
+		expiresAt:          rm.ExpiresAt,
 		lastNotified:       rm.LastNotified,
 	}, nil
 }

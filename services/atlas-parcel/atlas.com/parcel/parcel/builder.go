@@ -13,12 +13,14 @@ import (
 // validates before returning.
 type Builder struct {
 	id                 uuid.UUID
+	tenantId           uuid.UUID
 	worldId            world.Id
 	senderId           uint32
 	senderAccountId    uint32
 	senderName         string
 	recipientId        uint32
 	recipientAccountId uint32
+	recipientName      string
 	message            string
 	mesoAmount         uint32
 	feePaid            uint32
@@ -42,6 +44,14 @@ func NewBuilder() *Builder {
 
 func (b *Builder) SetId(id uuid.UUID) *Builder {
 	b.id = id
+	return b
+}
+
+// SetTenantId sets the row's tenant — read-path only (Make populates it from
+// a persisted Entity). Create's entityFromModel deliberately ignores it; see
+// model.go's TenantId() doc comment.
+func (b *Builder) SetTenantId(tenantId uuid.UUID) *Builder {
+	b.tenantId = tenantId
 	return b
 }
 
@@ -72,6 +82,11 @@ func (b *Builder) SetRecipientId(recipientId uint32) *Builder {
 
 func (b *Builder) SetRecipientAccountId(recipientAccountId uint32) *Builder {
 	b.recipientAccountId = recipientAccountId
+	return b
+}
+
+func (b *Builder) SetRecipientName(recipientName string) *Builder {
+	b.recipientName = recipientName
 	return b
 }
 
@@ -172,12 +187,14 @@ func (b *Builder) Build() (Model, error) {
 	}
 	return Model{
 		id:                 b.id,
+		tenantId:           b.tenantId,
 		worldId:            b.worldId,
 		senderId:           b.senderId,
 		senderAccountId:    b.senderAccountId,
 		senderName:         b.senderName,
 		recipientId:        b.recipientId,
 		recipientAccountId: b.recipientAccountId,
+		recipientName:      b.recipientName,
 		message:            b.message,
 		mesoAmount:         b.mesoAmount,
 		feePaid:            b.feePaid,
@@ -202,12 +219,14 @@ func (b *Builder) Build() (Model, error) {
 func Make(e Entity) (Model, error) {
 	return NewBuilder().
 		SetId(e.Id).
+		SetTenantId(e.TenantId).
 		SetWorldId(world.Id(e.WorldId)).
 		SetSenderId(e.SenderId).
 		SetSenderAccountId(e.SenderAccountId).
 		SetSenderName(e.SenderName).
 		SetRecipientId(e.RecipientId).
 		SetRecipientAccountId(e.RecipientAccountId).
+		SetRecipientName(e.RecipientName).
 		SetMessage(e.Message).
 		SetMesoAmount(e.MesoAmount).
 		SetFeePaid(e.FeePaid).
@@ -240,6 +259,7 @@ func entityFromModel(m Model) Entity {
 		SenderName:         m.senderName,
 		RecipientId:        m.recipientId,
 		RecipientAccountId: m.recipientAccountId,
+		RecipientName:      m.recipientName,
 		Message:            m.message,
 		MesoAmount:         m.mesoAmount,
 		FeePaid:            m.feePaid,

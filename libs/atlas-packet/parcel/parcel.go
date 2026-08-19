@@ -35,14 +35,42 @@ import (
 //	+17      uint32 mesos           SetParcel formats SP_3879 gated on
 //	                                 *(parcel+17)!=0, value read from the
 //	                                 same offset (v83 @0x6EF7E2/@0x6EF801).
-//	+21      uint64 sentAt          v72 CTabReceive::ReceiveParcel computes
-//	          (FILETIME)             its 30-day eligibility window from
-//	                                 *(uint64*)(parcel+21) (design.md §5.3,
-//	                                 v72 ReceiveParcel @0x65AF41 region).
-//	                                 Corroborated directly in v83:
-//	                                 CTabReceive::ReceiveParcel @0x6F0D11
-//	                                 computes the same <30-day check off
-//	                                 *(parcel+21).
+//	+21      uint64 expiresAt       v72 CTabReceive::ReceiveParcel @0x65AF41,
+//	          (FILETIME)             verbatim: `sub ecx,[+21.lo]; sbb
+//	                                 eax,[+21.hi]` (parcel[+21] - now, 64-bit),
+//	                                 then `call __aulldiv` against
+//	                                 0xC92A69C000 (864000000000 = 1 day in
+//	                                 100ns ticks), `cmp eax,1Eh` (30),
+//	                                 `jl short loc_65AFDF` taken -> builds and
+//	                                 sends the RECEIVE request; falling
+//	                                 through goes to StringPool id 3864 via
+//	                                 CUtilDlg::Notice, a refusal dialog with no
+//	                                 packet sent. v83 is byte-identical in
+//	                                 shape at @0x6F0D11: `cmp eax,1Eh; jl short
+//	                                 loc_6F0D41` -> COutPacket(0x41),
+//	                                 Encode1(4), Encode4(*parcelId),
+//	                                 SendPacket. v83's divide helper
+//	                                 (sub_A62970) is unnamed in that IDB but
+//	                                 was confirmed to be __aulldiv by reading
+//	                                 it directly: 0xA62984/0xA6298C are both
+//	                                 unsigned `div ecx` with no sign-handling
+//	                                 prologue.
+//	                                 The divide is UNSIGNED, so this is NOT a
+//	                                 "how many days old is this parcel"
+//	                                 eligibility window — it is a countdown to
+//	                                 a future deadline. If *(parcel+21) were in
+//	                                 the past (e.g. the parcel's send time),
+//	                                 parcel[+21]-now underflows to ~2^64 and
+//	                                 the unsigned quotient lands around
+//	                                 21,350,398, never < 30: the client
+//	                                 refuses every receive. *(parcel+21) must
+//	                                 therefore be a timestamp STRICTLY IN THE
+//	                                 FUTURE, less than 30 days out — the
+//	                                 parcel's expiry deadline, not the time it
+//	                                 was sent (task-241 Task 23 / RISK-4
+//	                                 resolution, docs/tasks/
+//	                                 task-241-duey-parcel-delivery/context.md
+//	                                 §11).
 //	+29..233 message + padding      No client consumer in the v83 IDB reads
 //	          (205 bytes)            this span field-by-field — SetParcel and
 //	                                 OnPacket only ever dereference offsets
@@ -82,23 +110,24 @@ type Parcel struct {
 	id         uint32
 	senderName string
 	mesos      uint32
-	sentAt     time.Time
+	expiresAt  time.Time
 	message    string
 	item       *model.Asset
 }
 
 // NewParcel constructs a Parcel with no attached item. Use SetItem to attach
-// one.
-func NewParcel(id uint32, senderName string, mesos uint32, sentAt time.Time, message string) Parcel {
-	return Parcel{id: id, senderName: senderName, mesos: mesos, sentAt: sentAt, message: message}
+// one. expiresAt MUST be a future deadline, not the parcel's creation time —
+// see the +21 field doc above.
+func NewParcel(id uint32, senderName string, mesos uint32, expiresAt time.Time, message string) Parcel {
+	return Parcel{id: id, senderName: senderName, mesos: mesos, expiresAt: expiresAt, message: message}
 }
 
-func (p Parcel) Id() uint32         { return p.id }
-func (p Parcel) SenderName() string { return p.senderName }
-func (p Parcel) Mesos() uint32      { return p.mesos }
-func (p Parcel) SentAt() time.Time  { return p.sentAt }
-func (p Parcel) Message() string    { return p.message }
-func (p Parcel) HasItem() bool      { return p.item != nil }
+func (p Parcel) Id() uint32           { return p.id }
+func (p Parcel) SenderName() string   { return p.senderName }
+func (p Parcel) Mesos() uint32        { return p.mesos }
+func (p Parcel) ExpiresAt() time.Time { return p.expiresAt }
+func (p Parcel) Message() string      { return p.message }
+func (p Parcel) HasItem() bool        { return p.item != nil }
 
 // Item returns the attached asset and whether one is set.
 func (p Parcel) Item() (model.Asset, bool) {
@@ -131,8 +160,8 @@ func (p Parcel) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 		w.WriteInt(p.id)
 		writeFixedAscii(w, p.senderName, parcelSenderNameWidth)
 		w.WriteInt(p.mesos)
-		sentAt := model.MsTimeBytes(p.sentAt)
-		w.WriteByteArray(sentAt[:])
+		expiresAt := model.MsTimeBytes(p.expiresAt)
+		w.WriteByteArray(expiresAt[:])
 		writeFixedAscii(w, p.message, parcelMessageWidth)
 		w.WriteBool(p.HasItem())
 		if p.item != nil {

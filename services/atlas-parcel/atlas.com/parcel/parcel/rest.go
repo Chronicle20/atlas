@@ -22,6 +22,7 @@ type RestModel struct {
 
 	RecipientId        uint32 `json:"recipientId"`
 	RecipientAccountId uint32 `json:"recipientAccountId"`
+	RecipientName      string `json:"recipientName,omitempty"`
 
 	Message    string `json:"message"`
 	MesoAmount uint32 `json:"mesoAmount"`
@@ -66,6 +67,7 @@ func Transform(m Model) (RestModel, error) {
 		SenderName:         m.SenderName(),
 		RecipientId:        m.RecipientId(),
 		RecipientAccountId: m.RecipientAccountId(),
+		RecipientName:      m.RecipientName(),
 		Message:            m.Message(),
 		MesoAmount:         m.MesoAmount(),
 		FeePaid:            m.FeePaid(),

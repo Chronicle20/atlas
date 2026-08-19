@@ -234,3 +234,77 @@ follow-ups (`docs/adding-a-new-service.md` §6.1 and §6b):
   `dispatcher-lint-baseline.yaml`.
 - `backend-guidelines-reviewer`, `plan-adherence-reviewer` and
   `packet-completeness-critic` all clear before the PR.
+
+## 11. RISK-4 resolution (Task 23)
+
+Design §7.4 flagged this as a tuning question — "30 days or 29?" — decided by
+the polarity of `CTabReceive::ReceiveParcel`'s 30-day check. It is not a
+tuning question. It is a **live defect**: the branch was encoding the wrong
+timestamp into the PARCEL wire struct's `+21` field, and as a result every
+RECEIVE request the client would ever send was refused client-side, silently,
+on both audited builds.
+
+**The decompiled check** — v72 `CTabReceive::ReceiveParcel` @`0x65AF41`, v83
+@`0x6F0D11` (structurally identical):
+
+```
+sub  ecx, [ebp+FileTime.dwLowDateTime]     ; parcel[+21] - now, 64-bit
+mov  eax, [eax+19h]
+sbb  eax, [ebp+FileTime.dwHighDateTime]
+push 0C9h
+push 2A69C000h                             ; 0xC92A69C000 = 864000000000 = 1 day (100ns ticks)
+push eax
+push ecx
+call __aulldiv                             ; UNSIGNED 64-bit divide
+cmp  eax, 1Eh                              ; 30
+jl   short loc_65AFDF                      ; taken -> build+send the RECEIVE request
+```
+
+v83's divide helper `sub_A62970` is unnamed in that IDB but was confirmed to
+be `__aulldiv` by reading it directly — `0xA62984`/`0xA6298C` are both
+unsigned `div ecx` with no sign-handling prologue.
+
+**Why this is a defect, not a tuning knob:** the divide is *unsigned*. If
+`parcel[+21]` is in the past, `parcel[+21] - now` underflows to roughly
+`2^64`, and the quotient lands around `21,350,398` — never `< 30`. The client
+refuses and shows the SP_3864 "cannot receive" notice; no RECEIVE packet is
+ever sent. `parcel[+21]` must therefore hold a **future** deadline — the
+parcel's expiry, not its send time. Before this task, `libs/atlas-packet/
+parcel/parcel.go` named the field `sentAt` and
+`services/atlas-channel/atlas.com/channel/parcel/model.go` passed
+`m.CreatedAt()` (always in the past) into it. Every parcel receive was dead on
+arrival on both v72 and v83, undetected because every existing test asserts
+encode/decode round-trips against self-consistent wire bytes — the value
+itself was simply wrong.
+
+**Decision:**
+
+1. Encode `ExpiresAt` at `+21`, not `CreatedAt` — the wire field (and its
+   accessor) is renamed `sentAt`/`SentAt()` -> `expiresAt`/`ExpiresAt()`.
+2. `ExpiryWindow` moves from 30 days to **29 days**
+   (`services/atlas-parcel/atlas.com/parcel/parcel/entity.go`).
+
+On (2): 30 days is survivable on the normal delivery path, because
+`ReceivableAt = CreatedAt + 24h` already leaves ~29 days of remaining life by
+the time a parcel becomes receivable. It is **not** survivable on the return
+leg this same task creates, which has `ReceivableAt == CreatedAt` (no 24h
+delay) and `ExpiresAt == CreatedAt + ExpiryWindow` — exactly 30 days of
+remaining life at the moment it becomes receivable, and `floor(30) < 30` is
+false. 29 days keeps the quotient at 29 or below for the whole life of every
+parcel, return legs included.
+
+A second, honestly-bounded reason for the margin: the client's `now` does not
+come straight from the OS. v72 `sub_51BADD` calls a system-time function
+through the import pointer `dword_AA75B8`, then adds a stored correction word
+at `this+516` before converting to FILETIME. Whether that pointer resolves to
+`GetLocalTime` or `GetSystemTime` is not statically determinable from the
+IDB, so a client in a behind-UTC timezone could compute a `now` up to ~12
+hours earlier than the server's. A full day of margin covers that either way
+— flagged as unverified-but-bounded, not asserted.
+
+This is corrected as part of Task 23, not deferred: `libs/atlas-packet/
+parcel/parcel.go`'s field/accessor/constructor-param rename and doc rewrite,
+`services/atlas-channel/atlas.com/channel/parcel/processor.go`'s new
+`ExpiresAt` on `RestModel`/`Model`, `services/atlas-channel/atlas.com/channel/
+parcel/model.go`'s `ToPacket` now passing `m.ExpiresAt()`, and `entity.go`'s
+`ExpiryWindow` reduction to 29 days.

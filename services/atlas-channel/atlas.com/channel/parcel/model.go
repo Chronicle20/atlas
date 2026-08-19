@@ -23,7 +23,7 @@ import (
 // item therefore shows on the wire with zero-valued equip stats rather than
 // invented ones — flagged here rather than silently guessed.
 func (m Model) ToPacket() packetparcel.Parcel {
-	p := packetparcel.NewParcel(WireId(m.Id()), m.SenderName(), m.MesoAmount(), m.CreatedAt(), m.Message())
+	p := packetparcel.NewParcel(WireId(m.Id()), m.SenderName(), m.MesoAmount(), m.ExpiresAt(), m.Message())
 
 	if m.ItemId() == nil {
 		return p

@@ -100,3 +100,8 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-19T19:42:03Z	agent	Tail artifacts	atlas-reviewer	sonnet	-	-	-	-	complete	02ab37435	APPROVED_WITH_FINDINGS	no	-	-
 2026-08-19T20:03:35Z	agent	Gate fix	atlas-implementer	sonnet	-	-	-	-	DONE	b0a318962	-	-	-	-
 2026-08-19T21:23:58Z	agent	Branch gate	verify.sh	-	-	-	-	-	PASS	3bc7ebd21	-	-	-	-
+2026-08-19T21:56:22Z	agent	Fix A	atlas-implementer	sonnet	-	-	-	-	DONE	1b3429a32	-	-	-	-
+2026-08-19T21:56:22Z	agent	Fix B	atlas-implementer	sonnet	-	-	-	-	DONE	2dbb2bc24	-	-	-	-
+2026-08-19T21:56:22Z	agent	Fix C	atlas-implementer	sonnet	-	-	-	-	DONE	fc370ef31	-	-	-	-
+2026-08-19T21:56:22Z	agent	Fix D	atlas-implementer	sonnet	-	-	-	-	DONE	68e8f81c0	-	-	-	-
+2026-08-19T22:23:20Z	agent	Branch gate (final)	verify.sh	-	-	-	-	-	PASS	b469ab070	-	-	-	-

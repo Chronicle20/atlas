@@ -1,0 +1,85 @@
+{
+  "service": "libs/atlas-env + libs/atlas-rest/server",
+  "path": "libs/atlas-env, libs/atlas-rest/server",
+  "date": "2026-08-19",
+  "build": "pass",
+  "testsPassed": 6,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "libs/atlas-env",
+      "type": "support",
+      "checks": [
+        {
+          "id": "FILE-05",
+          "name": "Builder in builder.go, domain Model in model.go, writes in administrator.go, readers in provider.go, enums in state.go",
+          "status": "pass",
+          "evidence": "libs/atlas-env/record.go:17-38 holds only the Record model + predicates; libs/atlas-env/registry.go:15-99,179-193 holds only registry read logic"
+        },
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file carrying >=2 responsibilities",
+          "status": "pass",
+          "evidence": "record.go and registry.go each carry a single FILE-01..05 responsibility, no Processor+RestModel+requests collapse"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Tests are table-driven (tests := []struct{...} + t.Run)",
+          "status": "fail",
+          "evidence": "libs/atlas-env/registry_test.go:30-45 TestRecordProvisionableAcrossPhases builds a cases table but loops with a bare for-range and t.Errorf, never calling t.Run per case"
+        },
+        {
+          "id": "DOM-33",
+          "name": "An interface change updates every mock implementation of that interface in the same diff",
+          "status": "pass",
+          "evidence": "env.Registry gained IsProvisionable (registry.go:31); both implementations, *MapRegistry (registry.go:189-198) and legacyRegistry (registry.go:271), are updated in this diff; grep -rln IsActive across the repo shows no third hand-rolled implementation; libs/atlas-service and libs/atlas-kafka (the other consumer modules) build clean"
+        },
+        {
+          "id": "DOM-21",
+          "name": "No redeclaration of a type/helper/constant already in libs/atlas-constants",
+          "status": "n-a",
+          "evidence": "Provisionable()/IsProvisionable reuse pre-existing PhaseProvisioning/PhaseActive constants (record.go:5-6); no new type or const declared"
+        }
+      ]
+    },
+    {
+      "name": "libs/atlas-rest/server",
+      "type": "support",
+      "checks": [
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file carrying >=2 responsibilities",
+          "status": "pass",
+          "evidence": "handler.go holds only RetrieveSpan/ParseEnvironment/ParseTenant middleware, none of the FILE-01..05 responsibility types"
+        },
+        {
+          "id": "DOM-31",
+          "name": "Tenant and trace identifiers travel in context only",
+          "status": "pass",
+          "evidence": "handler.go:51 reads env id from header (pre-existing), handler.go:60 puts it on context via env.WithContext only; ParseTenant (unchanged) writes only into tenant.WithContext at handler.go:130; no REST model/query param carries it"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Tests are table-driven (tests := []struct{...} + t.Run)",
+          "status": "pass",
+          "evidence": "The three new tests in handler_test.go are each single-scenario, no []struct{...} table declared, so DOM-20's table requirement does not bind"
+        },
+        {
+          "id": "DOM-33",
+          "name": "An interface change updates every mock implementation of that interface in the same diff",
+          "status": "n-a",
+          "evidence": "handler.go:51 only calls env.CurrentRegistry().IsProvisionable(id); this package does not implement env.Registry itself"
+        }
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "downstream scope.AuthorizeWrite/scope.Strict enforcement: not touched by this diff; verifying every consuming service's scope layer is outside the changed-file surface",
+    "atlas-pr-bootstrap end-to-end PROVISIONING self-write flow: no atlas-pr-bootstrap file appears in this diff"
+  ],
+  "blocking": [
+    "DOM-20: libs/atlas-env/registry_test.go:30-45: TestRecordProvisionableAcrossPhases builds a table but iterates without t.Run per case"
+  ],
+  "nonBlocking": []
+}

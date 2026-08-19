@@ -237,8 +237,11 @@ func TestParseEnvironmentWithNoHeaderIsTheLegacyPath(t *testing.T) {
 }
 
 func TestParseEnvironmentRejectsAnUnknownEnvironment(t *testing.T) {
-	// FR-3.6: a request naming an unknown or inactive environment is
-	// rejected. Never served by the baseline (G4).
+	// FR-3.6 (as amended): a request naming an UNKNOWN environment is
+	// rejected — never served by the baseline (G4). PROVISIONING is now
+	// admitted; see TestParseEnvironmentAdmitsAProvisioningEnvironment.
+	// This case uses an id the registry was never given, so it pins the
+	// unknown branch specifically, not the phase check.
 	reg := env.NewMapRegistry(env.Id("main"), time.Now)
 	reg.Apply(env.Record{
 		Name: "main", Baseline: "main",
@@ -256,6 +259,102 @@ func TestParseEnvironmentRejectsAnUnknownEnvironment(t *testing.T) {
 
 	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.Header.Set(env.Key, "pr-999")
+	w := httptest.NewRecorder()
+	h(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", w.Code)
+	}
+}
+
+func TestParseEnvironmentAdmitsAProvisioningEnvironment(t *testing.T) {
+	// A known environment still in PROVISIONING must be admitted so it can
+	// perform self-writes (e.g. atlas-pr-bootstrap's service-config rows)
+	// before the ACTIVE flip. Confinement to its own data is enforced
+	// downstream by the scope layer, not by this gate.
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	reg.Apply(env.Record{
+		Name: "main", Baseline: "main",
+		Namespace: "atlas-main", Phase: env.PhaseActive,
+	})
+	reg.Apply(env.Record{
+		Name: "pr-123", Baseline: "main",
+		Namespace: "atlas-pr-123", Phase: env.PhaseProvisioning,
+	})
+	env.SetRegistry(reg)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	called := false
+	h := server.ParseEnvironment(testLogger(t), context.Background(),
+		func(_ logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
+			return func(w http.ResponseWriter, _ *http.Request) {
+				called = true
+				if got := env.MustFromContext(ctx); got != env.Id("pr-123") {
+					t.Errorf("environment = %q, want \"pr-123\"", got)
+				}
+				w.WriteHeader(http.StatusOK)
+			}
+		})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(env.Key, "pr-123")
+	w := httptest.NewRecorder()
+	h(w, r)
+
+	if !called {
+		t.Fatal("handler not reached for a PROVISIONING environment")
+	}
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", w.Code)
+	}
+}
+
+func TestParseEnvironmentRejectsADeactivatingEnvironment(t *testing.T) {
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	reg.Apply(env.Record{
+		Name: "pr-123", Baseline: "main",
+		Namespace: "atlas-pr-123", Phase: env.PhaseDeactivating,
+	})
+	env.SetRegistry(reg)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	h := server.ParseEnvironment(testLogger(t), context.Background(),
+		func(_ logrus.FieldLogger, _ context.Context) http.HandlerFunc {
+			return func(http.ResponseWriter, *http.Request) {
+				t.Fatal("handler reached for a DEACTIVATING environment")
+			}
+		})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(env.Key, "pr-123")
+	w := httptest.NewRecorder()
+	h(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", w.Code)
+	}
+}
+
+func TestParseEnvironmentRejectsADeletedEnvironment(t *testing.T) {
+	// Apply with PhaseDeleted removes the record, so a DELETED environment
+	// is indistinguishable from unknown to the registry — both are rejected.
+	reg := env.NewMapRegistry(env.Id("main"), time.Now)
+	reg.Apply(env.Record{
+		Name: "pr-123", Baseline: "main",
+		Namespace: "atlas-pr-123", Phase: env.PhaseDeleted,
+	})
+	env.SetRegistry(reg)
+	t.Cleanup(func() { env.SetRegistry(nil) })
+
+	h := server.ParseEnvironment(testLogger(t), context.Background(),
+		func(_ logrus.FieldLogger, _ context.Context) http.HandlerFunc {
+			return func(http.ResponseWriter, *http.Request) {
+				t.Fatal("handler reached for a DELETED environment")
+			}
+		})
+
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r.Header.Set(env.Key, "pr-123")
 	w := httptest.NewRecorder()
 	h(w, r)
 

@@ -27,6 +27,60 @@ func TestLegacyEnvironmentResolvesToTheLocalDeployment(t *testing.T) {
 	}
 }
 
+func TestRecordProvisionableAcrossPhases(t *testing.T) {
+	cases := []struct {
+		phase string
+		want  bool
+	}{
+		{PhaseProvisioning, true},
+		{PhaseActive, true},
+		{PhaseDeactivating, false},
+		{PhaseDeleted, false},
+	}
+	for _, c := range cases {
+		t.Run(c.phase, func(t *testing.T) {
+			rec := Record{Name: "pr-123", Baseline: "main", Namespace: "atlas-pr-123", Phase: c.phase}
+			if got := rec.Provisionable(); got != c.want {
+				t.Errorf("Provisionable() phase=%q = %v, want %v", c.phase, got, c.want)
+			}
+		})
+	}
+}
+
+func TestIsProvisionableAcrossPhasesAndUnknownAndLegacy(t *testing.T) {
+	r := NewMapRegistry(Id("main"), time.Now)
+	r.Apply(Record{Name: "pr-provisioning", Baseline: "main", Namespace: "atlas-pr-provisioning", Phase: PhaseProvisioning})
+	r.Apply(active("pr-active", "main", "atlas-pr-active", nil))
+	// DEACTIVATING and DELETED aren't directly Apply-able (DELETED removes the
+	// record), so exercise them via Record.Provisionable() above, and confirm
+	// the registry's ok-check path here with a DEACTIVATING record projected
+	// as-is (Apply stores any phase other than DELETED verbatim).
+	r.Apply(Record{Name: "pr-deactivating", Baseline: "main", Namespace: "atlas-pr-deactivating", Phase: PhaseDeactivating})
+
+	if !r.IsProvisionable(Id("")) {
+		t.Fatal("IsProvisionable(\"\") = false, want true (FR-1.8 legacy short-circuit)")
+	}
+	if !r.IsProvisionable(Id("pr-provisioning")) {
+		t.Fatal("PROVISIONING environment reported not provisionable")
+	}
+	if !r.IsProvisionable(Id("pr-active")) {
+		t.Fatal("ACTIVE environment reported not provisionable")
+	}
+	if r.IsProvisionable(Id("pr-deactivating")) {
+		t.Fatal("DEACTIVATING environment reported provisionable")
+	}
+	if r.IsProvisionable(Id("pr-999")) {
+		t.Fatal("unknown environment reported provisionable")
+	}
+
+	// DELETED: Apply with PhaseDeleted removes the record entirely, so the
+	// lookup falls into the same not-found path as unknown.
+	r.Apply(Record{Name: "pr-deleted", Baseline: "main", Namespace: "atlas-pr-deleted", Phase: PhaseDeleted})
+	if r.IsProvisionable(Id("pr-deleted")) {
+		t.Fatal("DELETED environment reported provisionable")
+	}
+}
+
 func TestServiceNamespaceFallsBackToTheBaseline(t *testing.T) {
 	r := NewMapRegistry(Id("main"), time.Now)
 	r.Apply(active("main", "main", "atlas-main", nil))

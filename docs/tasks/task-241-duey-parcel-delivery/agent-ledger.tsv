@@ -114,3 +114,12 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-19T20:22:07Z	agent	Task 28a	atlas-implementer	sonnet	-	-	-	-	done	ee2267d64	-	-	-	-
 2026-08-19T20:24:09Z	agent	Task 28a	atlas-reviewer	sonnet	-	-	-	-	done	ee2267d64	APPROVED	no	-	-
 2026-08-19T20:32:43Z	agent	Task 27	atlas-reviewer	sonnet	-	-	-	-	done	283a618da	APPROVED	no	-	-
+2026-08-19T20:54:50Z	agent	Task 28 batch gms_v83	packet-verifier	sonnet	-	-	-	-	partial	90c44a7a3	-	-	-	-
+2026-08-19T20:58:45Z	agent	Task 28 batch gms_v83	atlas-reviewer	sonnet	-	-	-	-	done	90c44a7a3	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-19T21:00:54Z	agent	Task 28 batch gms_v83	gate	-	-	-	-	-	pass	90c44a7a3	-	-	-	-
+2026-08-19T21:12:53Z	agent	Task 28 batch gms_v72	packet-verifier	sonnet	-	-	-	-	done	238faead6	-	-	-	-
+2026-08-19T21:17:29Z	agent	Task 28 batch gms_v72	atlas-reviewer	sonnet	-	-	-	-	done	238faead6	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-19T21:23:42Z	agent	Task 28 batch gms_v79	packet-verifier	sonnet	-	-	-	-	done	cdaae842e	-	-	-	-
+2026-08-19T21:25:58Z	agent	Task 28 batch gms_v79	gate	-	-	-	-	-	pass	cdaae842e	-	-	-	-
+2026-08-19T21:27:12Z	agent	Task 28 batch gms_v79	atlas-reviewer	sonnet	-	-	-	-	done	cdaae842e	APPROVED	no	-	-
+2026-08-19T21:29:56Z	agent	Task 28 RULING 22 retro-fit	atlas-implementer	sonnet	-	-	-	-	done	2ebf0771a	-	-	-	-

@@ -200,3 +200,27 @@ func RequestPackagePurchaseCommandProvider(characterId uint32, transactionId uui
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// RequestRingPurchaseCommandProvider builds the REQUEST_RING_PURCHASE
+// command. transactionId is minted by the caller (once per click, mirroring
+// RequestGiftPurchaseCommandProvider/RequestPackagePurchaseCommandProvider's
+// idempotency pattern) so a Kafka redelivery replays this id and is
+// rejected by atlas-cashshop's ring ledger while a genuine second click
+// gets a fresh one. ringType selects "COUPLE" vs "FRIENDSHIP".
+func RequestRingPurchaseCommandProvider(characterId uint32, transactionId uuid.UUID, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.RequestRingPurchaseCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestRingPurchase,
+		Body: cashshop.RequestRingPurchaseCommandBody{
+			TransactionId:      transactionId,
+			Currency:           currency,
+			SerialNumber:       serialNumber,
+			PartnerCharacterId: partnerCharacterId,
+			SenderName:         senderName,
+			Message:            message,
+			RingType:           ringType,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -189,7 +189,7 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyCouple) {
 			sp := &cashsb.ShopOperationBuyCouple{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] purchasing [%d] for [%s] with message [%s]. Option [%d], birthday [%d]", s.CharacterId(), sp.SerialNumber(), sp.Name(), sp.Message(), sp.Option(), sp.Birthday())
+			handleBuyCouple(l, ctx, wp)(s, sp)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyPackage) {
@@ -240,7 +240,7 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyFriendship) {
 			sp := &cashsb.ShopOperationBuyFriendship{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] purchasing [%d] for [%s] with message [%s]. Option [%d], birthday [%d]", s.CharacterId(), sp.SerialNumber(), sp.Name(), sp.Message(), sp.Option(), sp.Birthday())
+			handleBuyFriendship(l, ctx, wp)(s, sp)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationGetPurchaseRecord) {

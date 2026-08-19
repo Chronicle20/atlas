@@ -117,6 +117,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventRingPurchased(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -439,6 +444,66 @@ func handleStatusEventPackagePurchased(sc server.Model, wp writer.Producer) mess
 			err := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopBuyPackageDoneBody(items, 0))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce package purchase success to character [%d].", e.CharacterId)
+				return err
+			}
+			return nil
+		})
+	}
+}
+
+// handleStatusEventRingPurchased announces the COUPLE_SUCCESS / FRIENDSHIP_SUCCESS
+// arm to the BUYER's session (e.CharacterId, per RingPurchasedBody's
+// convention of keying the status event on the buyer -- mirroring
+// handleStatusEventGiftPurchased/handleStatusEventPackagePurchased above).
+// It projects Body.AssetId into a cashpkt.CashInventoryItem the same way
+// handleStatusEventPurchase does (atlas-cashshop deliberately does not
+// build this itself -- RingPurchasedBody's own doc comment), then picks
+// CashShopCoupleDoneBody or CashShopFriendshipDoneBody by Body.RingType.
+// The partner's own half is not announced here -- there is no live session
+// correlation for it on this event (see OQ-R1: the distinct-halves
+// rejection branch is unimplemented for the same reason).
+func handleStatusEventRingPurchased(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.RingPurchasedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.RingPurchasedBody]) {
+		if e.Type != cashshop2.StatusEventTypeRingPurchased {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			a, err := asset.NewProcessor(l, ctx).GetById(s.AccountId(), e.Body.CompartmentId, e.Body.AssetId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve ring asset [%d] for character [%d].", e.Body.AssetId, e.CharacterId)
+				return err
+			}
+
+			item := cashpkt.CashInventoryItem{
+				CashId:      a.Item().CashId(),
+				AccountId:   s.AccountId(),
+				CharacterId: e.CharacterId,
+				TemplateId:  a.Item().TemplateId(),
+				CommodityId: a.CommodityId(),
+				Quantity:    int16(a.Item().Quantity()),
+				GiftFrom:    "",
+				Expiration:  packetmodel.MsTime(a.Expiration()),
+			}
+
+			var body func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte
+			switch e.Body.RingType {
+			case cashshop2.RingTypeCouple:
+				body = cashpkt.CashShopCoupleDoneBody(item, e.Body.PartnerName, int32(e.Body.TemplateId), e.Body.Quantity)
+			case cashshop2.RingTypeFriendship:
+				body = cashpkt.CashShopFriendshipDoneBody(item, e.Body.PartnerName, int32(e.Body.TemplateId), e.Body.Quantity)
+			default:
+				l.Errorf("Unrecognized ring type [%s] for character [%d]; unable to announce ring purchase.", e.Body.RingType, e.CharacterId)
+				return nil
+			}
+
+			if err = session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(body)(s); err != nil {
+				l.WithError(err).Errorf("Unable to announce ring purchase success to character [%d].", e.CharacterId)
 				return err
 			}
 			return nil

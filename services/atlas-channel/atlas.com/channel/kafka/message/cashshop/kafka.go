@@ -23,6 +23,7 @@ const (
 	CommandTypeRequestGiftPurchase                = "REQUEST_GIFT_PURCHASE"
 	CommandTypeRequestPackagePurchase             = "REQUEST_PACKAGE_PURCHASE"
 	CommandTypeRequestRingPurchase                = "REQUEST_RING_PURCHASE"
+	CommandTypeRequestEquipSlotIncrease           = "REQUEST_EQUIP_SLOT_INCREASE"
 )
 
 type Command[E any] struct {
@@ -181,6 +182,16 @@ const (
 	RingTypeFriendship = "FRIENDSHIP"
 )
 
+// RequestEquipSlotIncreaseCommandBody requests one ENABLE_EQUIP_SLOT
+// purchase (task-240 task 23, mode 9/10) -- see atlas-cashshop's
+// kafka/message/cashshop/kafka.go for the authoritative shape this mirrors.
+// TransactionId is the idempotency key, mirroring RequestRingPurchaseCommandBody.
+type RequestEquipSlotIncreaseCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	Currency      uint32    `json:"currency"`
+	SerialNumber  uint32    `json:"serialNumber"`
+}
+
 const (
 	EnvEventTopicStatus                       = "EVENT_TOPIC_CASH_SHOP_STATUS"
 	EventCashShopStatusTypeCharacterEnter     = "CHARACTER_ENTER"
@@ -197,6 +208,7 @@ const (
 	StatusEventTypeGiftPurchased              = "GIFT_PURCHASED"
 	StatusEventTypePackagePurchased           = "PACKAGE_PURCHASED"
 	StatusEventTypeRingPurchased              = "RING_PURCHASED"
+	StatusEventTypeEquipSlotIncreased         = "EQUIP_SLOT_INCREASED"
 )
 
 // TODO multiple services have different impl of this
@@ -379,4 +391,17 @@ type RingPurchasedBody struct {
 	Quantity      uint16    `json:"quantity"`
 	RingType      string    `json:"ringType"`
 	PairId        uuid.UUID `json:"pairId"`
+}
+
+// EquipSlotIncreasedBody describes one successful ENABLE_EQUIP_SLOT
+// purchase (task-240 task 23). SlotIndex is the Atlas CANONICAL
+// equipped-inventory position (R1 -- see atlas-cashshop's
+// kafka/message/cashshop/kafka.go, the authoritative shape this mirrors),
+// NOT the wire value: the EnableEquipSlotExtSuccess packet body's
+// slotIndex is always 0, and the channel must encode that 0 itself rather
+// than passing this field straight into the packet body.
+type EquipSlotIncreasedBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	SlotIndex     int16     `json:"slotIndex"`
+	Days          uint16    `json:"days"`
 }

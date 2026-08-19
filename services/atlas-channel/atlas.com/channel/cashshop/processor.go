@@ -33,6 +33,7 @@ type Processor interface {
 	RequestGiftPurchase(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) error
 	RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error
 	RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error
+	RequestEquipSlotIncrease(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -284,4 +285,17 @@ func (p *ProcessorImpl) RequestRingPurchase(characterId uint32, transactionId uu
 	currency = resolvePurchaseCurrency(isPoints, currency)
 	p.l.Debugf("Character [%d] purchasing ring serial [%d] with currency [%d] for partner [%d]. Transaction [%s].", characterId, serialNumber, currency, partnerCharacterId, transactionId)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestRingPurchaseCommandProvider(characterId, transactionId, currency, serialNumber, partnerCharacterId, senderName, message, ringType))
+}
+
+// RequestEquipSlotIncrease forwards an ENABLE_EQUIP_SLOT purchase request
+// (task-240 task 23, mode 9/10). TransactionId is minted by the caller
+// (once per click, mirroring RequestPackagePurchase/RequestRingPurchase's
+// idempotency pattern) so a Kafka redelivery replays this id and is
+// rejected by atlas-cashshop's ledger while a genuine second click gets a
+// fresh one. isPoints/currency go through resolvePurchaseCurrency exactly
+// like every other purchase arm above.
+func (p *ProcessorImpl) RequestEquipSlotIncrease(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32) error {
+	currency = resolvePurchaseCurrency(isPoints, currency)
+	p.l.Debugf("Character [%d] requesting equip slot increase serial [%d] with currency [%d]. Transaction [%s].", characterId, serialNumber, currency, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestEquipSlotIncreaseCommandProvider(characterId, transactionId, currency, serialNumber))
 }

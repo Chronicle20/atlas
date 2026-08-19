@@ -509,6 +509,28 @@ else
     skip "tools test suites (no tools/ script changed)"
 fi
 
+# atlas-pr-bootstrap's shell is the PR environment's whole control plane —
+# bootstrap.sh, cleanup.sh and their helpers create and reclaim every
+# ephemeral env. It ships a substantial bats suite, but nothing ran it: the
+# tools/ gate above only reaches tools/, only matches *_test.sh (these are
+# *.bats), and `bats` appears nowhere in .github/workflows. So the suite was
+# advisory, and the sparse SERVICE_ID defect (empty uuidgen output silently
+# becoming an empty env var, crash-looping atlas-channel/atlas-login) shipped
+# past a test file that could have expressed it. Gate it like any other suite.
+if touched '^services/atlas-pr-bootstrap/'; then
+    if command -v bats >/dev/null 2>&1; then
+        step "atlas-pr-bootstrap bats suite" bats services/atlas-pr-bootstrap/test
+    else
+        # Deliberately a hard failure, not a skip. A silent skip is how this
+        # suite went unrun in the first place; `bats` is already part of the
+        # toolchain tools/task-facts.sh probes for.
+        step "atlas-pr-bootstrap bats suite" \
+            sh -c 'echo "bats is not installed — install it to verify services/atlas-pr-bootstrap (see tools/task-facts.sh toolchain probe)" >&2; exit 1'
+    fi
+else
+    skip "atlas-pr-bootstrap bats suite (service unchanged)"
+fi
+
 # The PreToolUse/PostToolUse hooks are shell too, and they gate every tool call
 # in every session — a broken one is not a lint problem, it is a workflow
 # outage. Their suites live beside them rather than under tools/, so the

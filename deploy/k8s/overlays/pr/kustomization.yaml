@@ -221,6 +221,7 @@ configMapGenerator:
       - COMMAND_TOPIC_NPC=COMMAND_TOPIC_NPC-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_NPC_CONVERSATION=COMMAND_TOPIC_NPC_CONVERSATION-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_NPC_SHOP=COMMAND_TOPIC_NPC_SHOP-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_PARCEL_CUSTODY=COMMAND_TOPIC_PARCEL_CUSTODY-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_PARTY=COMMAND_TOPIC_PARTY-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_PARTY_QUEST=COMMAND_TOPIC_PARTY_QUEST-PLACEHOLDER_ATLAS_ENV
       - COMMAND_TOPIC_PET=COMMAND_TOPIC_PET-PLACEHOLDER_ATLAS_ENV
@@ -311,6 +312,8 @@ configMapGenerator:
       - EVENT_TOPIC_NOTE_STATUS=EVENT_TOPIC_NOTE_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_NPC_CONVERSATION_STATUS=EVENT_TOPIC_NPC_CONVERSATION_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_NPC_SHOP_STATUS=EVENT_TOPIC_NPC_SHOP_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_PARCEL_CUSTODY_STATUS=EVENT_TOPIC_PARCEL_CUSTODY_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_PARCEL_STATUS=EVENT_TOPIC_PARCEL_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_PARTY_MEMBER_STATUS=EVENT_TOPIC_PARTY_MEMBER_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_PARTY_QUEST_STATUS=EVENT_TOPIC_PARTY_QUEST_STATUS-PLACEHOLDER_ATLAS_ENV
       - EVENT_TOPIC_PARTY_STATUS=EVENT_TOPIC_PARTY_STATUS-PLACEHOLDER_ATLAS_ENV
@@ -339,7 +342,7 @@ configMapGenerator:
       - EVENT_TOPIC_WORLD_RATE=EVENT_TOPIC_WORLD_RATE-PLACEHOLDER_ATLAS_ENV
   - name: atlas-db-names
     literals:
-      - ATLAS_DB_NAMES=atlas-accounts atlas-bans atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-families atlas-reward-pools atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-mini-games atlas-monster-book atlas-mounts atlas-mts atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-rankings atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants atlas-trades
+      - ATLAS_DB_NAMES=atlas-accounts atlas-bans atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-families atlas-reward-pools atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-mini-games atlas-monster-book atlas-mounts atlas-mts atlas-notes atlas-npc-conversations atlas-npc-shops atlas-parcel atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-rankings atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants atlas-trades
   - name: atlas-pr-bootstrap-tenant
     literals:
       - TENANT_ID=00000000-0000-0000-0000-000000000001
@@ -459,6 +462,8 @@ images:
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-parcel/atlas-parcel
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-parties/atlas-parties
     newTag: latest

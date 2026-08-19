@@ -77,6 +77,7 @@ go_services = [
   "atlas-notes",
   "atlas-npc-conversations",
   "atlas-npc-shops",
+  "atlas-parcel",
   "atlas-parties",
   "atlas-party-quests",
   "atlas-pets",

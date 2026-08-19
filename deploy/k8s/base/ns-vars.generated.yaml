@@ -73,6 +73,8 @@
   value: $(POD_NAMESPACE)
 - name: NS_ATLAS_NPC_SHOPS
   value: $(POD_NAMESPACE)
+- name: NS_ATLAS_PARCEL
+  value: $(POD_NAMESPACE)
 - name: NS_ATLAS_PARTIES
   value: $(POD_NAMESPACE)
 - name: NS_ATLAS_PARTY_QUESTS

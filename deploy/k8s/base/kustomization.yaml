@@ -50,6 +50,7 @@ resources:
   - atlas-notes.yaml
   - atlas-npc-conversations.yaml
   - atlas-npc-shops.yaml
+  - atlas-parcel.yaml
   - atlas-parties.yaml
   - atlas-party-quests.yaml
   - atlas-pets.yaml

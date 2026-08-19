@@ -605,6 +605,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-parcel
+spec:
+  template:
+    spec:
+      containers:
+        - name: parcel
+          env:
+            - name: KAFKA_CONSUMER_GROUP
+              value: "Parcel Service [PLACEHOLDER_ATLAS_ENV]"
+            - name: ATLAS_ENV
+              value: "PLACEHOLDER_ATLAS_ENV"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-parties
 spec:
   template:

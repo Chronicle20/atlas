@@ -1,0 +1,10 @@
+packet: parcel/serverbound/ParcelActionDiscard
+direction: serverbound
+version: gms_v84
+category: TIER1-FIXTURE
+ida:
+    function: CTabReceive::DiscardParcel
+    address: "0x70927c"
+    decompile_sha256: e448789eccc8f8f3796fde02b7afe40395097bb38c461fc46a6842682b30e0f7
+verifies:
+    - parcel/serverbound/v84_test.go#TestActionDiscardV84

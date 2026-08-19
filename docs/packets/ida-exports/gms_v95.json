@@ -2864,6 +2864,32 @@
         }
       ]
     },
+    "CCashShop::OnGiftPackage": {
+      "address": "0x4907b0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "sSPW (second password, from ask_SPW); COutPacket::EncodeStr @0x490b93",
+          "guard": "!this->m_bCashShopRequestSent"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nCommSN (commodity serial number); inlined 4-byte write into COutPacket::m_aSendBuff (v45 is oPacket's own m_aSendBuff field, offset 0x4 per COutPacket's type layout — Hex-Rays split it into a separate local because it lost type info at this call site) @0x490be2, not a named EncodeStr/Encode4 call",
+          "guard": "!this->m_bCashShopRequestSent"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sGiveTo (recipient character name, from CUISendGift::GetResult); COutPacket::EncodeStr @0x490c01",
+          "guard": "!this->m_bCashShopRequestSent"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sText (gift message, from CUISendGift::GetResult); COutPacket::EncodeStr @0x490c1d",
+          "guard": "!this->m_bCashShopRequestSent"
+        }
+      ]
+    },
     "CEntrustedShopDlg::AddBlackList": {
       "address": "0x51ed50",
       "direction": "serverbound",

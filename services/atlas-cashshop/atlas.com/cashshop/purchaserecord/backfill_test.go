@@ -233,7 +233,7 @@ func TestBackfillCountsDuplicatesAndSoftDeletes(t *testing.T) {
 // a flaky CI failure.
 func TestBackfillUsesSQLiteFallbackUnderTest(t *testing.T) {
 	db := backfillDatabase(t)
-	if got := db.Dialector.Name(); got != "sqlite" {
+	if got := db.Name(); got != "sqlite" {
 		t.Fatalf("test database dialect = %q, want %q -- Backfill's dialect branch assumes sqlite in this suite", got, "sqlite")
 	}
 }

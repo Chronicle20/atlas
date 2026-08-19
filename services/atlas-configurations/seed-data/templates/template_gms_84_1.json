@@ -5136,6 +5136,7 @@
             "trade_open": 231,
             "merchant_open": 231,
             "mts_listings_open": 231,
+            "parcel_pending": 231,
             "CANNOT_TRANSFER_NO_EMPTY_SLOTS": 232,
             "no_character_slot": 232,
             "EVENT_ENDED_OR_CANT_BE_FREELY_TESTED": 233,

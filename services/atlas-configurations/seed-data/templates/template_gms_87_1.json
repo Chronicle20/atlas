@@ -4842,6 +4842,7 @@
             "trade_open": 237,
             "merchant_open": 237,
             "mts_listings_open": 237,
+            "parcel_pending": 237,
             "CANNOT_TRANSFER_NO_EMPTY_SLOTS": 238,
             "no_character_slot": 238,
             "EVENT_ENDED_OR_CANT_BE_FREELY_TESTED": 239,

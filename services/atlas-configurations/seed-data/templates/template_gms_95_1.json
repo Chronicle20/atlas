@@ -4949,6 +4949,7 @@
             "trade_open": 60,
             "merchant_open": 60,
             "mts_listings_open": 60,
+            "parcel_pending": 60,
             "CANNOT_TRANSFER_NO_EMPTY_SLOTS": 61,
             "no_character_slot": 61,
             "EVENT_ENDED_OR_CANT_BE_FREELY_TESTED": 62,

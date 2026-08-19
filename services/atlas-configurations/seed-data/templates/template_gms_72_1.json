@@ -4423,6 +4423,7 @@
             "trade_open": 197,
             "merchant_open": 197,
             "mts_listings_open": 197,
+            "parcel_pending": 197,
             "CANNOT_TRANSFER_NO_EMPTY_SLOTS": 198,
             "no_character_slot": 198,
             "EVENT_ENDED_OR_CANT_BE_FREELY_TESTED": 199

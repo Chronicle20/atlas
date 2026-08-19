@@ -129,8 +129,13 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationEnableEquipSlot) {
 			sp := &cashsb.ShopOperationEnableEquipSlot{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			pt := cashshop.GetPointType(sp.PointType())
-			l.Infof("Character [%d] enabling equip slot? via item [%d] using [%s].", s.CharacterId(), sp.SerialNumber(), pt)
+			// TransactionId is minted here per click (design §8, mirroring
+			// every other paid arm in this handler): a Kafka redelivery
+			// replays one id while a genuine second click legitimately
+			// charges twice.
+			if err = cashshop.NewProcessor(l, ctx).RequestEquipSlotIncrease(s.CharacterId(), uuid.New(), sp.PointType(), 0, sp.SerialNumber()); err != nil {
+				l.WithError(err).Errorf("Unable to request equip slot increase for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationMoveFromCashInventory) {

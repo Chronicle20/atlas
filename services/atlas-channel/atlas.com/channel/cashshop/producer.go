@@ -224,3 +224,19 @@ func RequestRingPurchaseCommandProvider(characterId uint32, transactionId uuid.U
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// RequestEquipSlotIncreaseCommandProvider builds the
+// REQUEST_EQUIP_SLOT_INCREASE command (task-240 task 23, mode 9/10).
+func RequestEquipSlotIncreaseCommandProvider(characterId uint32, transactionId uuid.UUID, currency uint32, serialNumber uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.RequestEquipSlotIncreaseCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestEquipSlotIncrease,
+		Body: cashshop.RequestEquipSlotIncreaseCommandBody{
+			TransactionId: transactionId,
+			Currency:      currency,
+			SerialNumber:  serialNumber,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

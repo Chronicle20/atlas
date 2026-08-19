@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/asset"
 	"atlas-channel/character"
+	dueyparcel "atlas-channel/parcel"
 	"atlas-channel/saga"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -206,6 +207,17 @@ func TestDueyActionSend(t *testing.T) {
 		reason  string // "" if no announce is expected
 		sagaLen int
 		warn    bool
+
+		// Saga step assertions, checked only when sagaLen > 0. quick,
+		// message, mesoAmount, sourceInventoryType, assetId and quantity
+		// are the inputs buildParcelSendSaga's steps are expected to carry
+		// through unchanged.
+		quick               bool
+		message             string
+		mesoAmount          uint32
+		sourceInventoryType byte
+		assetId             uint32
+		quantity            uint32
 	}
 
 	cases := []struct {
@@ -217,17 +229,17 @@ func TestDueyActionSend(t *testing.T) {
 		{
 			name: "npc send item and meso",
 			sp:   newActionSendBytes(byte(inventory.TypeValueUse), 5, 1, 1000, "Bob", false, "", 0),
-			want: expect{sagaLen: 1},
+			want: expect{sagaLen: 1, mesoAmount: 1000, sourceInventoryType: byte(inventory.TypeValueUse), assetId: 5, quantity: 1},
 		},
 		{
 			name: "quick send",
 			sp:   newActionSendBytes(byte(inventory.TypeValueUse), 5, 1, 1000, "Bob", true, "hi", 0),
-			want: expect{sagaLen: 1},
+			want: expect{sagaLen: 1, quick: true, message: "hi", mesoAmount: 1000, sourceInventoryType: byte(inventory.TypeValueUse), assetId: 5, quantity: 1},
 		},
 		{
 			name: "meso only",
 			sp:   newActionSendBytes(0, 0, 0, 1000, "Bob", false, "", 0),
-			want: expect{sagaLen: 1},
+			want: expect{sagaLen: 1, mesoAmount: 1000},
 		},
 		{
 			name: "nothing attached",
@@ -280,7 +292,7 @@ func TestDueyActionSend(t *testing.T) {
 			name:   "mailbox at nine",
 			mutate: func(f *dueySendFixture) { f.pending = 9 },
 			sp:     newActionSendBytes(0, 0, 0, 1000, "Bob", false, "", 0),
-			want:   expect{sagaLen: 1},
+			want:   expect{sagaLen: 1, mesoAmount: 1000},
 		},
 		{
 			name:   "quick without a ticket",
@@ -323,6 +335,69 @@ func TestDueyActionSend(t *testing.T) {
 				sg := f.sagas[0]
 				if sg.SagaType != saga.ParcelSend {
 					t.Errorf("SagaType = %q, want %q", sg.SagaType, saga.ParcelSend)
+				}
+
+				// Step count and order: award_mesos first, an optional
+				// destroy_asset only when quick, transfer_to_parcel last
+				// (design §4.3, buildParcelSendSaga).
+				wantStepCount := 2
+				if tc.want.quick {
+					wantStepCount = 3
+				}
+				if len(sg.Steps) != wantStepCount {
+					t.Fatalf("steps = %d, want %d (%+v)", len(sg.Steps), wantStepCount, sg.Steps)
+				}
+
+				if sg.Steps[0].Action != saga.AwardMesos {
+					t.Errorf("step 1 action = %q, want %q", sg.Steps[0].Action, saga.AwardMesos)
+				}
+				amp, ok := sg.Steps[0].Payload.(saga.AwardMesosPayload)
+				if !ok {
+					t.Fatalf("step 1 payload type = %T, want AwardMesosPayload", sg.Steps[0].Payload)
+				}
+				total, _ := dueyparcel.TotalCost(tc.want.mesoAmount, tc.want.quick)
+				if amp.Amount != -int32(total) {
+					t.Errorf("award mesos amount = %d, want %d", amp.Amount, -int32(total))
+				}
+
+				lastIdx := 1
+				if tc.want.quick {
+					if sg.Steps[1].Action != saga.DestroyAsset {
+						t.Errorf("step 2 action = %q, want %q", sg.Steps[1].Action, saga.DestroyAsset)
+					}
+					if _, ok := sg.Steps[1].Payload.(saga.DestroyAssetPayload); !ok {
+						t.Errorf("step 2 payload type = %T, want DestroyAssetPayload", sg.Steps[1].Payload)
+					}
+					lastIdx = 2
+				} else {
+					for _, st := range sg.Steps {
+						if st.Action == saga.DestroyAsset {
+							t.Errorf("non-quick send must not include a destroy_asset step, got: %+v", st)
+						}
+					}
+				}
+
+				if sg.Steps[lastIdx].Action != saga.TransferToParcel {
+					t.Errorf("last step action = %q, want %q", sg.Steps[lastIdx].Action, saga.TransferToParcel)
+				}
+				tp, ok := sg.Steps[lastIdx].Payload.(saga.TransferToParcelPayload)
+				if !ok {
+					t.Fatalf("last step payload type = %T, want TransferToParcelPayload", sg.Steps[lastIdx].Payload)
+				}
+				if tp.AssetId != tc.want.assetId {
+					t.Errorf("transfer_to_parcel assetId = %d, want %d", tp.AssetId, tc.want.assetId)
+				}
+				if tp.Quantity != tc.want.quantity {
+					t.Errorf("transfer_to_parcel quantity = %d, want %d", tp.Quantity, tc.want.quantity)
+				}
+				if tp.Quick != tc.want.quick {
+					t.Errorf("transfer_to_parcel quick = %v, want %v", tp.Quick, tc.want.quick)
+				}
+				if tp.Message != tc.want.message {
+					t.Errorf("transfer_to_parcel message = %q, want %q", tp.Message, tc.want.message)
+				}
+				if tp.SourceInventoryType != tc.want.sourceInventoryType {
+					t.Errorf("transfer_to_parcel sourceInventoryType = %d, want %d", tp.SourceInventoryType, tc.want.sourceInventoryType)
 				}
 			}
 

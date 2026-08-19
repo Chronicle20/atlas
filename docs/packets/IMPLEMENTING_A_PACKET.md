@@ -46,16 +46,18 @@ wrong). task-092 nearly shipped a duplicate `TOUCH_MONSTER_ATTACK` codec this wa
 
 ## Step 1 — Derive structure from the IDB
 
-For each applicable version, `select_instance(<port>)` then `decompile` the
+For each applicable version, resolve the IDB's session id from `idb_list` and
+pass it as `database` on a `decompile` of the
 registry entry's `fname`, descending into helper reads/writes (the same
 address-based descent rule the exporter uses). Record the ordered field list
 with widths (`Decode1/2/4/Str/Buffer`) and every per-version delta into
 `docs/tasks/<task>/structures/<version>.md#<OP>`, including the export address.
 
-Multi-instance IDA ports are assigned per IDA launch order and **must not be
-hardcoded** — enumerate with `list_instances` and `select_instance` the one
-whose loaded IDB matches the target version. (task-092 used v83=13337,
-v87=13338, v95=13339, jms=13340, v84=13341, but that is launch-order specific.)
+The session server hosts every IDB at once, so the target **must not be left
+implicit** — enumerate with `idb_list`, match the loaded IDB to the target
+version by binary name, and pass that session id as `database` on every call.
+Port-based selection (`select_instance`) is dead; see
+[`docs/reverse-engineering.md`](../reverse-engineering.md).
 
 For a **serverbound** op the "read order" is what the *client* writes (its
 `Encode*`/`COutPacket` build site), which the server then reads back. Send-side
@@ -77,7 +79,7 @@ build site, not a read helper.
   above have a bulk checker for the serverbound direction:
 
   ```bash
-  go run ./tools/packet-audit verify-serverbound --version <key> --ida-port <port>
+  go run ./tools/packet-audit verify-serverbound --version <key> --ida-database <session id>
   ```
 
   For every serverbound registry entry it decompiles the client send function

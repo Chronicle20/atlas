@@ -68,7 +68,7 @@ the reference worklist).
 ```bash
 go run ./tools/packet-audit discover-ops \
   --version <version-key> \
-  --ida-port <port> \
+  --ida-database <session id> \
   --ida-url http://192.168.20.3:13337/mcp \
   --out /tmp/<version>_discover.md
 ```
@@ -81,8 +81,8 @@ Flags:
   -dispatcher string
         comma-separated list of dispatcher function names and/or hex addresses
         (default "CClientSocket::ProcessPacket")
-  -ida-port int
-        IDA-MCP instance port to select (0 = default active instance)
+  -ida-database string
+        IDA-MCP session id (database) from idb_list; targets that IDB directly
   -ida-url string
         IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
   -out string
@@ -118,7 +118,7 @@ Once curation is done, re-run with `--apply`:
 ```bash
 go run ./tools/packet-audit discover-ops \
   --version <version-key> \
-  --ida-port <port> \
+  --ida-database <session id> \
   --dispatcher 0xADDR1,0xADDR2,...   \
   --apply \
   --out docs/packets/registry/discover_<version>.md
@@ -130,11 +130,12 @@ under "Missing at discovery" — resolve each as a CSV transcription error
 (correct the entry) or a discovery blind spot (record as `provenance: manual`
 with an IDA citation). See `discover_gms_v87.md` for a completed example.
 
-**Instance selection**: multiple IDBs can be loaded simultaneously; never
-hardcode port numbers. Use `mcp__ida-pro__list_instances` to enumerate loaded
-IDBs, then pass the matching port as `--ida-port`. The current four-version
-convention assigns ports 13337–13340 by convention but port assignment depends
-on IDA launch order — always confirm via `list_instances`.
+**IDB selection**: the session server hosts every IDB at once, so a run that
+names no IDB hits whichever one the server considers active. Use
+`mcp__ida-pro__idb_list` to enumerate the loaded IDBs, match the target version
+**by binary name**, and pass that session id as `--ida-database`. Port-based
+selection (`--ida-port`, `select_instance`) is dead — see
+[`docs/reverse-engineering.md`](../../reverse-engineering.md).
 
 ### 1.2 Tenant template
 
@@ -169,7 +170,7 @@ because the target version actually has them). Then run:
 ```bash
 go run ./tools/packet-audit export \
   --version <version-key> \
-  --ida-port <port> \
+  --ida-database <session id> \
   --ida-url http://192.168.20.3:13337/mcp \
   --output docs/packets/ida-exports/<version>.json
 ```
@@ -181,8 +182,8 @@ Flags:
         max helper-descent recursion depth (default 6)
   -generated-at string
         fixed provenance timestamp (default: now / $PACKET_AUDIT_GENERATED_AT)
-  -ida-port int
-        IDA-MCP instance port to select (0 = default active instance)
+  -ida-database string
+        IDA-MCP session id (database) from idb_list; targets that IDB directly
   -ida-timeout duration
         per-call IDA-MCP timeout (default 1m0s)
   -ida-url string
@@ -224,7 +225,7 @@ the open IDB:
 ```bash
 go run ./tools/packet-audit validate \
   --version <version-key> \
-  --ida-port <port> \
+  --ida-database <session id> \
   --report /tmp/<version>_validate.md
 ```
 
@@ -237,8 +238,8 @@ Flags:
         baseline export JSON path (default: docs/packets/ida-exports/<version>.json)
   -descent-depth int
         max helper-descent recursion depth (default 6)
-  -ida-port int
-        IDA-MCP instance port to select (0 = default active instance)
+  -ida-database string
+        IDA-MCP session id (database) from idb_list; targets that IDB directly
   -ida-timeout duration
         per-call IDA-MCP timeout (default 1m0s)
   -ida-url string
@@ -257,7 +258,7 @@ cases into `docs/packets/audits/<version>/_unimplemented.json`.
 ```bash
 go run ./tools/packet-audit decompose \
   --version   <version-key> \
-  --ida-port  <port> \
+  --ida-database <session id> \
   --out       /tmp/<version>_extended.json \
   --report    /tmp/<version>_decompose.md
 ```
@@ -271,8 +272,8 @@ Flags:
         baseline export JSON path (default: docs/packets/ida-exports/<version>.json)
   -descent-depth int
         max helper-descent recursion depth (default 6)
-  -ida-port int
-        IDA-MCP instance port to select (0 = default active instance)
+  -ida-database string
+        IDA-MCP session id (database) from idb_list; targets that IDB directly
   -ida-timeout duration
         per-call IDA-MCP timeout (default 1m0s)
   -ida-url string
@@ -295,7 +296,7 @@ Flags:
 ```bash
 go run ./tools/packet-audit triage \
   --version   <version-key> \
-  --ida-port  <port> \
+  --ida-database <session id> \
   --report    /tmp/<version>_triage.md
 ```
 
@@ -308,8 +309,8 @@ Flags:
         baseline export JSON path (default: docs/packets/ida-exports/<version>.json)
   -descent-depth int
         max helper-descent recursion depth (default 6)
-  -ida-port int
-        IDA-MCP instance port to select (0 = default active instance)
+  -ida-database string
+        IDA-MCP session id (database) from idb_list; targets that IDB directly
   -ida-timeout duration
         per-call IDA-MCP timeout (default 1m0s)
   -ida-url string
@@ -328,7 +329,7 @@ Flags:
 ```bash
 go run ./tools/packet-audit resolve-dispatch \
   --version   <version-key> \
-  --ida-port  <port> \
+  --ida-database <session id> \
   --worklist  /tmp/<version>_resolve.md
 ```
 
@@ -339,8 +340,8 @@ Flags:
         baseline export JSON path (default: docs/packets/ida-exports/<version>.json)
   -descent-depth int
         max helper-descent recursion depth (default 6)
-  -ida-port int
-        IDA-MCP instance port to select (0 = default active instance)
+  -ida-database string
+        IDA-MCP session id (database) from idb_list; targets that IDB directly
   -ida-timeout duration
         per-call IDA-MCP timeout (default 1m0s)
   -ida-url string
@@ -369,7 +370,7 @@ addresses — with the version's IDB open:
 ```bash
 go run ./tools/packet-audit verify-serverbound \
   --version  <version-key> \
-  --ida-port <port>
+  --ida-database <session id>
 ```
 
 Flags:
@@ -377,8 +378,8 @@ Flags:
 ```
   -audits-dir string
         parent directory containing per-version audit report dirs (default "docs/packets/audits")
-  -ida-port int
-        IDA-MCP instance port to select (0 = default active instance)
+  -ida-database string
+        IDA-MCP session id (database) from idb_list; targets that IDB directly
   -ida-url string
         IDA-MCP HTTP endpoint (default "http://192.168.20.3:13337/mcp")
   -out string

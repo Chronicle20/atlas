@@ -131,7 +131,7 @@ func runExport(args []string, stderr io.Writer) int {
 	var generatedAt string
 	fs.StringVar(&generatedAt, "generated-at", "", "fixed provenance timestamp (default: now / $PACKET_AUDIT_GENERATED_AT)")
 	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
+	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance) — deprecated, use -ida-database")
 	var idaDatabase string
 	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
 	// Roster-source overrides (additive; default behaviour is unchanged when the
@@ -223,7 +223,7 @@ func runValidate(args []string, stderr io.Writer) int {
 	fs.DurationVar(&idaTimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.IntVar(&vo.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")
 	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
+	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance) — deprecated, use -ida-database")
 	var idaDatabase string
 	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
 
@@ -272,7 +272,7 @@ func runInfer(args []string, stderr io.Writer) int {
 	fs.DurationVar(&idaTimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.IntVar(&io_.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")
 	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
+	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance) — deprecated, use -ida-database")
 	var idaDatabase string
 	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
 
@@ -311,7 +311,7 @@ func runDiffShape(args []string, stderr io.Writer) int {
 	fs.DurationVar(&idaTimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.IntVar(&do.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")
 	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
+	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance) — deprecated, use -ida-database")
 	var idaDatabase string
 	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
 
@@ -353,7 +353,7 @@ func runResolveDispatch(args []string, stderr io.Writer) int {
 	fs.DurationVar(&idaTimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.IntVar(&ro.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")
 	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
+	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance) — deprecated, use -ida-database")
 	var idaDatabase string
 	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
 
@@ -394,7 +394,7 @@ func runDecompose(args []string, stderr io.Writer) int {
 	fs.DurationVar(&idaTimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.IntVar(&do.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")
 	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
+	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance) — deprecated, use -ida-database")
 	var idaDatabase string
 	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
 
@@ -437,7 +437,7 @@ func runTriage(args []string, stderr io.Writer) int {
 	fs.DurationVar(&idaTimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.IntVar(&to.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")
 	var idaPort int
-	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance; e.g. 13338 for a second loaded IDB)")
+	fs.IntVar(&idaPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance) — deprecated, use -ida-database")
 	var idaDatabase string
 	fs.StringVar(&idaDatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
 

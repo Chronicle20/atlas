@@ -318,8 +318,8 @@ The no-PIC path is wire-correct for v95. The PIC paths are where complexity (and
 
 ### Recommended audit pipeline shape (informed by spike)
 
-1. **CSV→IDA resolver:** parse CSV, filter rows with non-zero v95 opcode, resolve each `FName` via `mcp__ida-pro__get_function_by_name` → address. ~270 rows total (clientbound + serverbound).
-2. **Field extractor:** for each address, `decompile_function` and grep the `Decode1/2/4/8/Buffer/Str` (or `Encode*`) call sequence. Output a normalized field list (`[byte, byte, int32, int32, byte, ...]`).
+1. **CSV→IDA resolver:** parse CSV, filter rows with non-zero v95 opcode, resolve each `FName` via `mcp__ida-pro__func_query` → address. ~270 rows total (clientbound + serverbound).
+2. **Field extractor:** for each address, `mcp__ida-pro__decompile` and grep the `Decode1/2/4/8/Buffer/Str` (or `Encode*`) call sequence. Output a normalized field list (`[byte, byte, int32, int32, byte, ...]`).
 3. **Atlas locator:** for each writer/handler name, locate the `.go` file across **all** `libs/atlas-packet/**/*.go` (writers can live outside the `login/` domain — cf. `CharacterList` → `character/clientbound/list.go`).
 4. **Diff renderer:** static read of `Encode`/`Decode` (regex on `w.Write*` / `r.Read*` calls) to extract Atlas's sequence; compare against IDA's. Emit a per-packet markdown row.
 5. **Human review gate:** never auto-edit `.go` files. Output is a report per-packet; humans apply fixes.

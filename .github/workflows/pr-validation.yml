@@ -814,9 +814,13 @@ jobs:
   # After build-docker completes, create/update a derived branch
   # `bot/pr-<N>-resolved` that:
   #   1. Substitutes every PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_PR_NUMBER /
-  #      PLACEHOLDER_FULL_SHA token in deploy/k8s/overlays/pr/ AND
-  #      deploy/k8s/overlays/pr-cleanup/ with the actual per-PR value
+  #      PLACEHOLDER_FULL_SHA token in the mode-selected main overlay
+  #      (deploy/k8s/overlays/pr/ for isolated/full, pr-sparse/ for sparse)
+  #      AND deploy/k8s/overlays/pr-cleanup/ with the actual per-PR value
   #      (sed across both directories).
+  #   1b. In sparse mode, relocates the resolved pr-sparse/ onto
+  #      deploy/k8s/overlays/pr/ before staging, because the out-of-repo
+  #      ApplicationSet hard-codes that path (see the Force-push step).
   #   2. Bumps deploy/k8s/overlays/pr/kustomization.yaml's `images:` block
   #      so only the just-built services point at pr-<N>-<sha>; unchanged
   #      services keep `newTag: latest` (which option-b's main-publish
@@ -1120,15 +1124,50 @@ jobs:
           git config user.name 'atlas-image-bot'
           git config user.email 'atlas-image-bot@users.noreply.github.com'
 
+          # Argo CD's ApplicationSet(atlas-pr) hard-codes
+          # `path: deploy/k8s/overlays/pr` for its main source, and it lives
+          # in cluster-infra — outside this repo, so no in-repo guard can
+          # see it. Sparse mode therefore CANNOT publish its resolved output
+          # under `pr-sparse/`: Argo would render the untouched `pr/`, whose
+          # `namespace: atlas-pr-PLACEHOLDER_PR_NUMBER` is not a valid
+          # RFC 1123 label, and the sync retry-loops forever having created
+          # nothing (observed on PR #1411, the first sparse-mode PR).
+          #
+          # Instead the mode-selected overlay is published AT the fixed path
+          # the ApplicationSet already expects. The bot branch is generated
+          # and disposable, so relocating a directory on it costs nothing and
+          # keeps the mode decision entirely in this workflow. `pr-sparse/`
+          # and `pr/` sit at the same depth, so the shared `../../base`
+          # resource reference resolves identically after the move.
+          #
+          # This must run AFTER the CATALOG_REVISION stamp, the image-tag
+          # bump, and gen-cleanup-env.sh — the last of those reads
+          # `deploy/k8s/overlays/pr/scripts/`, which sparse mode does not
+          # carry and which the move removes.
           if [ "$MODE" = "sparse" ]; then
-            MAIN_OVERLAY=deploy/k8s/overlays/pr-sparse
-          else
-            MAIN_OVERLAY=deploy/k8s/overlays/pr
+            rm -rf deploy/k8s/overlays/pr
+            mv deploy/k8s/overlays/pr-sparse deploy/k8s/overlays/pr
           fi
 
-          # Stage the substituted overlays (mode-selected main overlay +
-          # pr-cleanup) + bumped image tags + stamped CATALOG_REVISION.
-          git add "$MAIN_OVERLAY" deploy/k8s/overlays/pr-cleanup deploy/seed
+          # The substitution step's leak guard only ever scanned the
+          # mode-selected source directory, which is why a fully-resolved
+          # `pr-sparse/` reported clean while the `pr/` Argo actually
+          # rendered was still full of placeholders. Re-check the published
+          # path — the one thing Argo reads — after the move.
+          LEAKS=$(find deploy/k8s/overlays/pr deploy/k8s/overlays/pr-cleanup \
+              -type f \( -name '*.yaml' -o -name '*.yml' \) \
+            -exec grep -n 'PLACEHOLDER_' {} + || true)
+          if [ -n "$LEAKS" ]; then
+            echo "$LEAKS"
+            echo "::error::unfilled PLACEHOLDER_ token(s) in the published overlay — Argo would render these verbatim" >&2
+            exit 1
+          fi
+
+          # Stage the resolved overlays (published `pr/` + `pr-cleanup`) +
+          # bumped image tags + stamped CATALOG_REVISION. `-A` is required:
+          # sparse mode's move deletes `pr-sparse/` and rewrites `pr/`, and
+          # a plain `git add <path>` would not stage the removals.
+          git add -A deploy/k8s/overlays deploy/seed
 
           if git diff --cached --quiet; then
               echo "::warning::No changes to commit — PR overlay was already resolved? Skipping force-push."

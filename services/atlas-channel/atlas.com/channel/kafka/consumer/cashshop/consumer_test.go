@@ -414,6 +414,8 @@ var testOperations = map[string]interface{}{
 	cashpkt.CashShopOperationNameChangeBuyDone:                float64(70),
 	cashpkt.CashShopOperationTransferWorldDone:                float64(71),
 	cashpkt.CashShopOperationTransferWorldFailed:              float64(72),
+	// BUY_NORMAL_SUCCESS 141 is template_gms_83_1.json's real value.
+	cashpkt.CashShopOperationBuyNormalDone: float64(141),
 	// POP_UP is the WorldMessageMode key handleStatusEventError's name-change
 	// pink-text fallback resolves (socket/writer/world_message.go's
 	// getWorldMessageMode), not a CashShopOperation* key.

@@ -26,6 +26,7 @@ import (
 	"atlas-saga-orchestrator/monster"
 	"atlas-saga-orchestrator/mts"
 	"atlas-saga-orchestrator/note"
+	"atlas-saga-orchestrator/parcel"
 	"atlas-saga-orchestrator/party"
 	party_quest "atlas-saga-orchestrator/party_quest"
 	"atlas-saga-orchestrator/pending_change"
@@ -75,6 +76,7 @@ type Handler interface {
 	WithPortalBlockingProcessor(portalBlocking.Processor) Handler
 	WithCashshopProcessor(cashshop.Processor) Handler
 	WithMtsProcessor(mts.Processor) Handler
+	WithParcelProcessor(parcel.Processor) Handler
 	WithTradeProcessor(tradesvc.Processor) Handler
 	WithSystemMessageProcessor(system_message.Processor) Handler
 	WithQuestProcessor(quest.Processor) Handler
@@ -147,6 +149,8 @@ type Handler interface {
 	handleReleaseFromCashShop(s Saga, st Step[any]) error
 	handleAcceptToMtsListing(s Saga, st Step[any]) error
 	handleReleaseFromMtsHolding(s Saga, st Step[any]) error
+	handleAcceptToParcel(s Saga, st Step[any]) error
+	handleReleaseFromParcel(s Saga, st Step[any]) error
 	handleAcceptToTrade(s Saga, st Step[any]) error
 	handleReleaseFromTrade(s Saga, st Step[any]) error
 	handleMtsMoveListingToHolding(s Saga, st Step[any]) error
@@ -218,6 +222,7 @@ type HandlerImpl struct {
 	portalBlockingP portalBlocking.Processor
 	cashshopP       cashshop.Processor
 	mtsP            mts.Processor
+	parcelP         parcel.Processor
 	tradeP          tradesvc.Processor
 	systemMessageP  system_message.Processor
 	questP          quest.Processor
@@ -255,6 +260,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		portalBlockingP: portalBlocking.NewProcessor(l, ctx),
 		cashshopP:       cashshop.NewProcessor(l, ctx),
 		mtsP:            mts.NewProcessor(l, ctx),
+		parcelP:         parcel.NewProcessor(l, ctx),
 		tradeP:          tradesvc.NewProcessor(l, ctx),
 		systemMessageP:  system_message.NewProcessor(l, ctx),
 		questP:          quest.NewProcessor(l, ctx),
@@ -525,6 +531,15 @@ func (h *HandlerImpl) WithMtsProcessor(mtsP mts.Processor) Handler {
 	// never drop a field as HandlerImpl grows — the same pattern the compensator uses.
 	c := *h
 	c.mtsP = mtsP
+	return &c
+}
+
+// WithParcelProcessor uses the same shallow-copy form as WithMtsProcessor, and
+// for the reason spelled out there: the field-by-field siblings silently nil any
+// field they forget.
+func (h *HandlerImpl) WithParcelProcessor(parcelP parcel.Processor) Handler {
+	c := *h
+	c.parcelP = parcelP
 	return &c
 }
 
@@ -924,6 +939,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleAcceptToMtsListing, true
 	case ReleaseFromMtsHolding:
 		return h.handleReleaseFromMtsHolding, true
+	case AcceptToParcel:
+		return h.handleAcceptToParcel, true
+	case ReleaseFromParcel:
+		return h.handleReleaseFromParcel, true
 	case AcceptToTrade:
 		return h.handleAcceptToTrade, true
 	case ReleaseFromTrade:
@@ -933,8 +952,10 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 	case MtsBidEscrow:
 		// MtsBidEscrow is a single-step wallet adjust — reuse the cash-shop
 		// wallet AwardCurrency dispatch (no duplicate). The composites
-		// TransferToMts / WithdrawFromMts / MtsSettlePurchase are expanded, not
-		// dispatched through GetHandler (see expandAndProcessStep).
+		// TransferToMts / WithdrawFromMts / MtsSettlePurchase — and, for parcel
+		// custody (task-241), TransferToParcel / WithdrawFromParcel — are
+		// expanded, not dispatched through GetHandler (see
+		// expandAndProcessStep).
 		return h.handleMtsBidEscrow, true
 	case PlayPortalSound:
 		return h.handlePlayPortalSound, true
@@ -2501,6 +2522,89 @@ func (h *HandlerImpl) handleReleaseFromMtsHolding(s Saga, st Step[any]) error {
 	err := h.mtsP.ReleaseFromMtsHoldingAndEmit(payload.TransactionId, payload.HoldingId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to release MTS holding.")
+		return err
+	}
+
+	return nil
+}
+
+// handleAcceptToParcel handles the AcceptToParcel action.
+// Dispatches an ACCEPT_TO_PARCEL command to atlas-parcel's custody consumer
+// (COMMAND_TOPIC_PARCEL_CUSTODY); atlas-parcel CREATEs the parcel row from the
+// carried snapshot (the item, if any, has already left inventory via
+// ReleaseFromCharacter). Mirrors handleAcceptToMtsListing.
+func (h *HandlerImpl) handleAcceptToParcel(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(AcceptToParcelPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Accepting parcel [%s] into custody for recipient [%d]", payload.ParcelId, payload.RecipientId)
+
+	err := h.parcelP.AcceptToParcelAndEmit(payload.TransactionId, parcel.AcceptToParcelParams{
+		ParcelId:           payload.ParcelId,
+		CharacterId:        payload.CharacterId,
+		WorldId:            payload.WorldId,
+		SenderAccountId:    payload.SenderAccountId,
+		SenderName:         payload.SenderName,
+		RecipientId:        payload.RecipientId,
+		RecipientAccountId: payload.RecipientAccountId,
+		MesoAmount:         payload.MesoAmount,
+		FeePaid:            payload.FeePaid,
+		Quick:              payload.Quick,
+		Message:            payload.Message,
+		ReceivableAt:       payload.ReceivableAt,
+		ExpiresAt:          payload.ExpiresAt,
+		HasItem:            payload.HasItem,
+		TemplateId:         payload.TemplateId,
+		Quantity:           payload.Quantity,
+		Strength:           payload.Strength,
+		Dexterity:          payload.Dexterity,
+		Intelligence:       payload.Intelligence,
+		Luck:               payload.Luck,
+		HP:                 payload.HP,
+		MP:                 payload.MP,
+		WeaponAttack:       payload.WeaponAttack,
+		MagicAttack:        payload.MagicAttack,
+		WeaponDefense:      payload.WeaponDefense,
+		MagicDefense:       payload.MagicDefense,
+		Accuracy:           payload.Accuracy,
+		Avoidability:       payload.Avoidability,
+		Hands:              payload.Hands,
+		Speed:              payload.Speed,
+		Jump:               payload.Jump,
+		Slots:              payload.Slots,
+		Level:              payload.Level,
+		ItemLevel:          payload.ItemLevel,
+		ItemExp:            payload.ItemExp,
+		RingId:             payload.RingId,
+		ViciousCount:       payload.ViciousCount,
+		Flags:              payload.Flags,
+		Owner:              payload.Owner,
+	})
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to accept parcel to custody.")
+		return err
+	}
+
+	return nil
+}
+
+// handleReleaseFromParcel handles the ReleaseFromParcel action.
+// Dispatches a RELEASE_FROM_PARCEL command to atlas-parcel (transition the
+// parcel row to received) before the item, if any, is re-granted to the
+// recipient's character. Mirrors handleReleaseFromMtsHolding.
+func (h *HandlerImpl) handleReleaseFromParcel(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ReleaseFromParcelPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.Debugf("Releasing parcel [%s] to recipient [%d]", payload.ParcelId, payload.RecipientId)
+
+	err := h.parcelP.ReleaseFromParcelAndEmit(payload.TransactionId, payload.ParcelId, payload.RecipientId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to release parcel from custody.")
 		return err
 	}
 

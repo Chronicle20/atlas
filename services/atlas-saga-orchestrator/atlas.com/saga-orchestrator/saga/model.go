@@ -57,6 +57,10 @@ const (
 	// Scripted item / remote NPC saga types (task-230)
 	ScriptedItemUse = sharedsaga.ScriptedItemUse
 	RemoteNpcUse    = sharedsaga.RemoteNpcUse
+
+	// Duey parcel-delivery saga types (task-241)
+	ParcelSend    = sharedsaga.ParcelSend
+	ParcelReceive = sharedsaga.ParcelReceive
 )
 
 // Status constants

@@ -11,6 +11,7 @@ import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	sagaMsg "atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/mts"
+	"atlas-saga-orchestrator/parcel"
 	"atlas-saga-orchestrator/pending_change"
 	"atlas-saga-orchestrator/pet"
 	"atlas-saga-orchestrator/skill"
@@ -41,6 +42,7 @@ type Compensator interface {
 	WithInviteProcessor(invite.Processor) Compensator
 	WithCashshopProcessor(cashshop.Processor) Compensator
 	WithMtsProcessor(mts.Processor) Compensator
+	WithParcelProcessor(parcel.Processor) Compensator
 	WithTradeProcessor(trade.Processor) Compensator
 	WithBuddyListProcessor(buddylist.Processor) Compensator
 	WithPendingChangeProcessor(pending_change.Processor) Compensator
@@ -180,6 +182,24 @@ type Compensator interface {
 	// never in none) rests on this plus change_character_world being the last
 	// step of the saga.
 	DispatchWorldTransferRollbacks(s Saga)
+
+	// DispatchParcelSendRollbacks reverse-walks the completed steps of a
+	// parcel_send saga (task-241) and dispatches the inverse for each:
+	// AwardMesos → negated re-credit (mesoAmount+fee), ReleaseFromCharacter →
+	// AcceptToCharacter (re-grant from the sibling AcceptToParcel snapshot,
+	// guarded on HasItem — a meso-only send never re-grants). Mirrors
+	// DispatchMtsOperationRollbacks. No lifecycle transitions, no Failed
+	// emission, no cache eviction — callers handle those.
+	DispatchParcelSendRollbacks(s Saga)
+
+	// DispatchParcelReceiveRollbacks reverse-walks the completed steps of a
+	// parcel_receive saga (task-241) and dispatches the inverse for each:
+	// AcceptToCharacter → DestroyItem (undo the grant), ReleaseFromParcel →
+	// RestoreParcel (un-soft-delete the custody row), AwardMesos → negated
+	// re-debit. Mirrors DispatchMtsOperationRollbacks. No lifecycle
+	// transitions, no Failed emission, no cache eviction — callers handle
+	// those.
+	DispatchParcelReceiveRollbacks(s Saga)
 }
 
 type CompensatorImpl struct {
@@ -194,6 +214,7 @@ type CompensatorImpl struct {
 	inviteP   invite.Processor
 	cashshopP cashshop.Processor
 	mtsP      mts.Processor
+	parcelP   parcel.Processor
 	tradeP    trade.Processor
 	buddyP    buddylist.Processor
 	pcP       pending_change.Processor
@@ -213,6 +234,7 @@ func NewCompensator(l logrus.FieldLogger, ctx context.Context) Compensator {
 		inviteP:   invite.NewProcessor(l, ctx),
 		cashshopP: cashshop.NewProcessor(l, ctx),
 		mtsP:      mts.NewProcessor(l, ctx),
+		parcelP:   parcel.NewProcessor(l, ctx),
 		tradeP:    trade.NewProcessor(l, ctx),
 		buddyP:    buddylist.NewProcessor(l, ctx),
 		pcP:       pending_change.NewProcessor(l, ctx),
@@ -272,6 +294,12 @@ func (c *CompensatorImpl) WithCashshopProcessor(cashshopP cashshop.Processor) Co
 func (c *CompensatorImpl) WithMtsProcessor(mtsP mts.Processor) Compensator {
 	n := c.copy()
 	n.mtsP = mtsP
+	return n
+}
+
+func (c *CompensatorImpl) WithParcelProcessor(parcelP parcel.Processor) Compensator {
+	n := c.copy()
+	n.parcelP = parcelP
 	return n
 }
 
@@ -422,6 +450,22 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	// guild, their party and every buddy, permanently and silently.
 	if s.SagaType() == WorldTransfer {
 		return c.compensateWorldTransfer(s, failedStep)
+	}
+
+	// Parcel-send reverse-walk (task-241). A failed accept_to_parcel must undo
+	// every already-completed step — re-credit the debited mesoAmount+fee and
+	// re-grant the released item from the sibling AcceptToParcel snapshot —
+	// rather than only compensating the failed step. Mirrors compensateMtsOperation.
+	if s.SagaType() == ParcelSend {
+		return c.compensateParcelSend(s, failedStep)
+	}
+
+	// Parcel-receive reverse-walk (task-241). A failed accept_to_character (or
+	// award_mesos) must undo every already-completed step — restore the parcel
+	// from custody and destroy any item already granted to the recipient —
+	// rather than only compensating the failed step. Mirrors compensateMtsOperation.
+	if s.SagaType() == ParcelReceive {
+		return c.compensateParcelReceive(s, failedStep)
 	}
 
 	c.l.WithFields(logrus.Fields{
@@ -2426,6 +2470,233 @@ func (c *CompensatorImpl) DispatchMtsOperationRollbacks(s Saga) {
 	}
 }
 
+// compensateParcelSend is the parcel_send reverse-walk compensator (task-241).
+// On a failed TransferToParcel (expanded to release_from_character +
+// accept_to_parcel), it walks the saga's completed steps in reverse,
+// dispatches the inverse for each, emits exactly one StatusEventTypeFailed,
+// cancels the Phase-4 timer, and evicts the saga. Mirrors compensateMtsOperation.
+func (c *CompensatorImpl) compensateParcelSend(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Parcel-send saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchParcelSendRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Parcel send failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after parcel-send compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Parcel-send reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchParcelSendRollbacks reverse-walks the saga's completed steps and
+// dispatches the inverse compensation command for each. Pure dispatch half —
+// no lifecycle transitions, no event emission, no cache eviction. An error
+// dispatching one inverse does not abort the chain.
+//
+// Inverses (mirrors DispatchMtsOperationRollbacks):
+//   - AwardMesos (the sender's mesoAmount+fee debit) → AwardMesos with -Amount,
+//     re-crediting the sender.
+//   - ReleaseFromCharacter (item left inventory) → re-grant the item to the
+//     character via RequestAcceptAsset, reconstructing the equip snapshot from
+//     the saga's AcceptToParcel step so stats survive. Guarded on the
+//     snapshot's HasItem: a meso-only send has no ReleaseFromCharacter step at
+//     all, so this arm never fires for one, and a snapshot that somehow
+//     carries HasItem==false is never awarded.
+//
+// AcceptToParcel failing leaves no parcel row (its own atomic tx rolled back),
+// so there is nothing to un-accept; the ReleaseFromCharacter inverse above
+// re-grants the item.
+func (c *CompensatorImpl) DispatchParcelSendRollbacks(s Saga) {
+	// Locate the AcceptToParcel snapshot (if any) so a ReleaseFromCharacter
+	// inverse can re-grant with the original equip stats. Not status-filtered:
+	// the snapshot is typically carried on the failed step itself.
+	var parcelSnapshot *AcceptToParcelPayload
+	for _, step := range s.Steps() {
+		if step.Action() != AcceptToParcel {
+			continue
+		}
+		if p, ok := step.Payload().(AcceptToParcelPayload); ok {
+			pc := p
+			parcelSnapshot = &pc
+			break
+		}
+	}
+
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		switch step.Action() {
+		case AwardMesos:
+			if payload, ok := step.Payload().(AwardMesosPayload); ok {
+				ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+				if err := c.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.CharacterId, "SYSTEM", -payload.Amount, false); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+						"amount":         payload.Amount,
+					}).Error("Reverse-walk: parcel-send AwardMesos reversal dispatch failed; continuing chain.")
+				}
+			}
+		case ReleaseFromCharacter:
+			if payload, ok := step.Payload().(ReleaseFromCharacterPayload); ok {
+				if parcelSnapshot == nil || !parcelSnapshot.HasItem {
+					c.l.WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+					}).Error("Reverse-walk: ReleaseFromCharacter has no HasItem AcceptToParcel snapshot to re-grant; skipping.")
+					continue
+				}
+				assetData := assetDataFromParcelSnapshot(*parcelSnapshot)
+				if err := c.compP.RequestAcceptAsset(s.TransactionId(), payload.CharacterId, payload.InventoryType, parcelSnapshot.TemplateId, assetData); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+						"template_id":    parcelSnapshot.TemplateId,
+					}).Error("Reverse-walk: ReleaseFromCharacter → AcceptToCharacter re-grant dispatch failed; continuing chain.")
+				}
+			}
+		}
+	}
+}
+
+// compensateParcelReceive is the parcel_receive reverse-walk compensator
+// (task-241). On a failed WithdrawFromParcel (expanded to release_from_parcel
+// + accept_to_character), it walks the saga's completed steps in reverse,
+// dispatches the inverse for each, emits exactly one StatusEventTypeFailed,
+// cancels the Phase-4 timer, and evicts the saga. Mirrors compensateMtsOperation.
+func (c *CompensatorImpl) compensateParcelReceive(s Saga, failedStep Step[any]) error {
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"failed_step":    failedStep.StepId(),
+		"failed_action":  failedStep.Action(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Parcel-receive saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchParcelReceiveRollbacks(s)
+
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Parcel receive failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after parcel-receive compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Parcel-receive reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchParcelReceiveRollbacks reverse-walks the saga's completed steps and
+// dispatches the inverse compensation command for each. Pure dispatch half —
+// no lifecycle transitions, no event emission, no cache eviction. An error
+// dispatching one inverse does not abort the chain.
+//
+// Inverses:
+//   - AcceptToCharacter (item granted to the recipient) → RequestDestroyItem,
+//     undoing the grant so a subsequent RestoreParcel does not leave the item
+//     in two places. Mirrors the trade-settlement AcceptToCharacter arm.
+//   - ReleaseFromParcel (parcel row transitioned to received) → RestoreParcel,
+//     un-transitioning the row back to custody.
+//   - AwardMesos (mesos credited to the recipient) → AwardMesos with -Amount,
+//     re-debiting the recipient.
+func (c *CompensatorImpl) DispatchParcelReceiveRollbacks(s Saga) {
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		switch step.Action() {
+		case AcceptToCharacter:
+			if payload, ok := step.Payload().(AcceptToCharacterPayload); ok {
+				qty := payload.AssetData.Quantity
+				if qty == 0 {
+					qty = 1
+				}
+				if err := c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.TemplateId, qty, false); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+						"template_id":    payload.TemplateId,
+					}).Error("Reverse-walk: AcceptToCharacter → DestroyItem dispatch failed; continuing chain.")
+				}
+			}
+		case ReleaseFromParcel:
+			if payload, ok := step.Payload().(ReleaseFromParcelPayload); ok {
+				if err := c.parcelP.RestoreParcelAndEmit(s.TransactionId(), payload.ParcelId); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"parcel_id":      payload.ParcelId.String(),
+					}).Error("Reverse-walk: ReleaseFromParcel → RestoreParcel dispatch failed; continuing chain.")
+				}
+			}
+		case AwardMesos:
+			if payload, ok := step.Payload().(AwardMesosPayload); ok {
+				ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+				if err := c.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.CharacterId, "SYSTEM", -payload.Amount, false); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"character_id":   payload.CharacterId,
+						"amount":         payload.Amount,
+					}).Error("Reverse-walk: parcel-receive AwardMesos reversal dispatch failed; continuing chain.")
+				}
+			}
+		}
+	}
+}
+
 // compensateTradeTransaction is the trade_settlement reverse-walk compensator
 // (task-205). A settlement moves goods in BOTH directions, so unlike the
 // storage flows it can fail in a state where value has already changed hands:
@@ -2635,6 +2906,37 @@ func assetDataFromMtsListingSnapshot(p AcceptToMtsListingPayload) asset2.AssetDa
 	}
 }
 
+// assetDataFromParcelSnapshot reconstructs an inventory AssetData from the
+// item snapshot carried on an AcceptToParcel step, so a TransferToParcel
+// compensation re-grants the released item with its original equip stats
+// intact. Mirrors assetDataFromMtsListingSnapshot.
+func assetDataFromParcelSnapshot(p AcceptToParcelPayload) asset2.AssetData {
+	return asset2.AssetData{
+		Quantity:      p.Quantity,
+		Strength:      p.Strength,
+		Dexterity:     p.Dexterity,
+		Intelligence:  p.Intelligence,
+		Luck:          p.Luck,
+		Hp:            p.HP,
+		Mp:            p.MP,
+		WeaponAttack:  p.WeaponAttack,
+		MagicAttack:   p.MagicAttack,
+		WeaponDefense: p.WeaponDefense,
+		MagicDefense:  p.MagicDefense,
+		Accuracy:      p.Accuracy,
+		Avoidability:  p.Avoidability,
+		Hands:         p.Hands,
+		Speed:         p.Speed,
+		Jump:          p.Jump,
+		Slots:         p.Slots,
+		LevelType:     p.ItemLevel,
+		Level:         p.Level,
+		Experience:    p.ItemExp,
+		Flag:          p.Flags,
+		Owner:         p.Owner,
+	}
+}
+
 // extractCharacterCreationWorldId reads the WorldId out of the CharacterCreate
 // step's payload. Returns 0 if the step is not present.
 func extractCharacterCreationWorldId(s Saga) world.Id {
@@ -2690,6 +2992,14 @@ var lateCompensableActions = map[Action]struct{}{
 	ReleaseFromMtsHolding:   {},
 	AcceptToMtsListing:      {},
 	MtsMoveListingToHolding: {},
+	// Parcel custody (task-241). AcceptToParcel (send) → RemoveParcel
+	// hard-deletes a still-active parcel row a late accept created after the
+	// send saga's compensation already re-granted the item to the sender.
+	// ReleaseFromParcel (receive) → RestoreParcel un-transitions a row a late
+	// release moved to received after the receive saga's compensation already
+	// undid the character grant. Mirrors the MTS custody entries above.
+	AcceptToParcel:    {},
+	ReleaseFromParcel: {},
 }
 
 // tradeLateCompensableActions extends lateCompensableActions for TradeTransaction
@@ -2990,6 +3300,24 @@ func (c *CompensatorImpl) dispatchLateInverse(s Saga, step Step[any]) error {
 			return fmt.Errorf("invalid payload for late MtsMoveListingToHolding compensation")
 		}
 		return c.mtsP.RestoreListingFromHoldingAndEmit(s.TransactionId(), payload.ListingId, payload.BuyerId)
+	case AcceptToParcel:
+		// A late send-accept created the parcel row after the send saga's
+		// compensation already re-granted the item to the sender: remove the
+		// now-duplicate parcel.
+		payload, ok := step.Payload().(AcceptToParcelPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late AcceptToParcel compensation")
+		}
+		return c.parcelP.RemoveParcelAndEmit(s.TransactionId(), payload.ParcelId)
+	case ReleaseFromParcel:
+		// A late receive-release transitioned the parcel row to received after
+		// the receive saga's compensation already undid the recipient's grant
+		// (or never granted it): restore the row to custody.
+		payload, ok := step.Payload().(ReleaseFromParcelPayload)
+		if !ok {
+			return fmt.Errorf("invalid payload for late ReleaseFromParcel compensation")
+		}
+		return c.parcelP.RestoreParcelAndEmit(s.TransactionId(), payload.ParcelId)
 	}
 	return fmt.Errorf("no late inverse registered for action %s", step.Action())
 }

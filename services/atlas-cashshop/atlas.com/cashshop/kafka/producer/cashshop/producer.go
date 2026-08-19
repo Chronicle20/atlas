@@ -157,6 +157,29 @@ func PackagePurchasedStatusEventProvider(characterId uint32, transactionId uuid.
 	return producer.SingleMessageProvider(key, value)
 }
 
+// RingPurchasedStatusEventProvider builds the RING_PURCHASED status event
+// (task-240 task 19). characterId is the BUYER (the actor keying the
+// outbound message, same convention as every other status event here);
+// compartmentId/assetId name the asset created in the BUYER's own locker.
+func RingPurchasedStatusEventProvider(characterId uint32, transactionId uuid.UUID, compartmentId uuid.UUID, assetId uint32, partnerName string, templateId uint32, quantity uint16, ringType string, pairId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.StatusEvent[cashshop.RingPurchasedBody]{
+		CharacterId: characterId,
+		Type:        cashshop.StatusEventTypeRingPurchased,
+		Body: cashshop.RingPurchasedBody{
+			TransactionId: transactionId,
+			CompartmentId: compartmentId,
+			AssetId:       assetId,
+			PartnerName:   partnerName,
+			TemplateId:    templateId,
+			Quantity:      quantity,
+			RingType:      ringType,
+			PairId:        pairId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func SurpriseFailedStatusEventProvider(characterId uint32, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.StatusEvent[cashshop.SurpriseFailedEventBody]{

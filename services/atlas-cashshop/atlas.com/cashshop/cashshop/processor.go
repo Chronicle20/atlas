@@ -99,6 +99,7 @@ type Processor interface {
 	RebateAndEmit(characterId uint32, accountId uint32, cashId int64, transactionId uuid.UUID) error
 	GiftAndEmit(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, giftMessage string) error
 	PurchasePackageAndEmit(characterId uint32, transactionId uuid.UUID, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error
+	PurchaseRingAndEmit(characterId uint32, transactionId uuid.UUID, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error
 }
 
 type ProcessorImpl struct {

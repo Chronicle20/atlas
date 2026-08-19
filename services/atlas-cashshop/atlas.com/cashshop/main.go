@@ -145,6 +145,7 @@ func main() {
 		AddRouteInitializer(coupon.InitResource(GetServer())(db)).
 		AddRouteInitializer(batch.InitResource(GetServer())(db)).
 		AddRouteInitializer(redemption.InitResource(GetServer())(db)).
+		AddRouteInitializer(ring.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

@@ -184,3 +184,25 @@ durable in the recipient's locker either way (FR-GIFT-6, delivered by the `atlas
 gift transaction, Task 13); the recipient sees it on their next locker load. A future task that
 resolves a real `REFRESH_LOCKER` mode byte (or an equivalent client-confirmed push arm) can add the
 recipient-side announce without touching this task's sender-side path.
+
+## 7. Task 19 — ring purchase: same-template halves shipped, distinct-halves rejection left undetectable
+
+R1 asked whether couple rings need distinct male/female templates or share one template across both
+halves. `PurchaseRingAndEmit` (`cashshop/ring.go`) ships the same-template path unconditionally: both
+halves of every pair — couple or friendship — are minted from the resolved commodity's `ItemId`. This
+is the confirmed-correct case for friendship rings (design.md §4.3).
+
+There is deliberately **no runtime branch** that detects "this commodity needs distinct halves" and
+answers a typed `COUPLE_FAILED`/`FRIENDSHIP_FAILED` rejection instead. That branch was scoped by the
+OQ-R1 ruling as the fallback for if a commodity turns out to need distinct halves — but nothing in this
+service's data (the `Commodity` catalog, `item.Classification`, or anywhere else reachable from
+`atlas-cashshop`) distinguishes a couple-ring commodity that needs a second, different template from an
+ordinary same-template ring. Without that signal there is no condition to test, so writing the branch
+would mean inventing the very detection rule OQ-R1 forbids guessing at (no `+1` offset, no
+gender-derived template). The two typed operation labels this rejection would report on —
+`cashshop.ErrorOperationCouple` ("COUPLE") and `cashshop.ErrorOperationFriendship` ("FRIENDSHIP") —
+already exist and are exercised today by every other rejection on this path (locker full, insufficient
+funds, unknown commodity), so a future task that resolves real couple-ring half data (from
+`Etc.wz`/`Character.wz`, per R1's own resolution note) can add the distinct-halves check and the
+`*_FAILED` rejection without changing either constant or the operation-selection wiring
+(`ringTypeAndOperation` in `cashshop/ring.go`).

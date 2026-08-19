@@ -196,6 +196,23 @@ func mtsHoldingOpen(l logrus.FieldLogger, ctx context.Context, characterId uint3
 	return len(listings) > 0, nil
 }
 
+// --- Gate 12: atlas-parcel -----------------------------------------------
+
+func parcelBaseUrl() string { return requests.RootUrl("PARCEL") }
+
+func requestParcelStatus(characterId uint32) requests.Request[parcelStatusRestModel] {
+	return requests.GetRequest[parcelStatusRestModel](fmt.Sprintf(parcelBaseUrl()+"characters/%d/parcel-status", characterId))
+}
+
+// parcelPending implements gateDeps.parcelPending.
+func parcelPending(l logrus.FieldLogger, ctx context.Context, characterId uint32) (bool, error) {
+	rm, err := requestParcelStatus(characterId)(l, ctx)
+	if err != nil {
+		return false, err
+	}
+	return rm.InFlight, nil
+}
+
 // --- World-transfer severance snapshot ------------------------------------
 //
 // The five-step WorldTransfer saga (design §3.11) needs the character's guild,

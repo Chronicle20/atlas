@@ -47,6 +47,10 @@ type gateDeps struct {
 	// mtsHolding reports whether the character has any live MTS holding
 	// (unsold/expired listing proceeds or items awaiting take-home).
 	mtsHolding func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (bool, error)
+	// parcelPending reports whether atlas-parcel has a parcel in flight to or
+	// from the character (GET /characters/{characterId}/parcel-status,
+	// attribute inFlight).
+	parcelPending func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (bool, error)
 }
 
 // productionGateDeps wires every gate to its real REST client
@@ -55,14 +59,15 @@ type gateDeps struct {
 // dependency.
 func productionGateDeps() gateDeps {
 	return gateDeps{
-		worldStatus:  worldStatus,
-		accountSlots: accountSlots,
-		banned:       banned,
-		guildTitle:   guildTitle,
-		inFamily:     inFamily,
-		tradeOpen:    tradeOpen,
-		merchantOpen: merchantOpen,
-		mtsHolding:   mtsHoldingOpen,
+		worldStatus:   worldStatus,
+		accountSlots:  accountSlots,
+		banned:        banned,
+		guildTitle:    guildTitle,
+		inFamily:      inFamily,
+		tradeOpen:     tradeOpen,
+		merchantOpen:  merchantOpen,
+		mtsHolding:    mtsHoldingOpen,
+		parcelPending: parcelPending,
 	}
 }
 
@@ -199,6 +204,11 @@ func (p *ProcessorImpl) evaluateTransferEligibility(c character.Model, destinati
 		func() (string, bool, error) { return p.checkMerchantOpen(c) },
 		// Gate 11 (destination-INDEPENDENT): live MTS listings or bids.
 		func() (string, bool, error) { return p.checkMtsHolding(c) },
+		// Gate 12 (destination-INDEPENDENT): a parcel in flight in either
+		// direction. Same-world delivery means a transfer would strand it, and
+		// auto-returning during a transfer would itself be a cross-world asset
+		// movement (design §9.1, FR-31).
+		func() (string, bool, error) { return p.checkParcelPending(c) },
 	}
 	return runGates(gates, reject)
 }
@@ -225,6 +235,11 @@ func (p *ProcessorImpl) evaluateTransferEligibilityIndependent(c character.Model
 		func() (string, bool, error) { return p.checkTradeOpen(c) },
 		func() (string, bool, error) { return p.checkMerchantOpen(c) },
 		func() (string, bool, error) { return p.checkMtsHolding(c) },
+		// Gate 12 (destination-INDEPENDENT): a parcel in flight in either
+		// direction. Same-world delivery means a transfer would strand it, and
+		// auto-returning during a transfer would itself be a cross-world asset
+		// movement (design §9.1, FR-31).
+		func() (string, bool, error) { return p.checkParcelPending(c) },
 	}
 	return runGates(gates, reject)
 }
@@ -379,6 +394,22 @@ func (p *ProcessorImpl) checkMtsHolding(c character.Model) (string, bool, error)
 	}
 	if mtsOpen {
 		return "mts_listings_open", true, nil
+	}
+	return "", false, nil
+}
+
+// checkParcelPending is gate 12 (destination-INDEPENDENT). A parcel in
+// flight in either direction: same-world delivery means a transfer would
+// strand it, and auto-returning during a transfer would itself be a
+// cross-world asset movement (design §3.6).
+func (p *ProcessorImpl) checkParcelPending(c character.Model) (string, bool, error) {
+	pending, err := p.gates.parcelPending(p.l, p.ctx, c.Id())
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to check parcel status for character [%d].", c.Id())
+		return "", false, err
+	}
+	if pending {
+		return "parcel_pending", true, nil
 	}
 	return "", false, nil
 }

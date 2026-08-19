@@ -24,7 +24,6 @@ type discoverOpsOpts struct {
 	RegistryDir string
 	Dispatchers []string // one or more dispatcher names/addresses
 	IDAURL      string
-	IDAPort     int
 	IDADatabase string // session id for the session-based IDA-MCP server
 	Out         string // worklist markdown path
 	Apply       bool
@@ -42,8 +41,7 @@ func runDiscoverOps(args []string, stderr io.Writer) int {
 	fs.StringVar(&opts.RegistryDir, "registry-dir", "docs/packets/registry", "directory containing <version>.yaml registry files")
 	fs.StringVar(&dispatcherFlag, "dispatcher", "CClientSocket::ProcessPacket", "comma-separated list of dispatcher function names and/or hex addresses")
 	fs.StringVar(&opts.IDAURL, "ida-url", "http://192.168.20.3:13337/mcp", "IDA-MCP HTTP endpoint")
-	fs.IntVar(&opts.IDAPort, "ida-port", 0, "IDA-MCP instance port to select (0 = default active instance) — deprecated, use -ida-database")
-	fs.StringVar(&opts.IDADatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly — the session-based successor to -ida-port; preferred when many IDBs are open on one server")
+	fs.StringVar(&opts.IDADatabase, "ida-database", "", "IDA-MCP session id (database) from idb_list to target directly; preferred when many IDBs are open on one server")
 	fs.StringVar(&opts.Out, "out", "", "worklist markdown output path (default: docs/packets/registry/discover_<version>.md)")
 	fs.BoolVar(&opts.Apply, "apply", false, "when true, append discovered ops to the registry YAML")
 
@@ -74,7 +72,7 @@ func runDiscoverOps(args []string, stderr io.Writer) int {
 		return 3
 	}
 
-	client := newIDAClient(opts.IDAURL, 60*time.Second, opts.IDAPort, opts.IDADatabase)
+	client := newIDAClient(opts.IDAURL, 60*time.Second, opts.IDADatabase)
 	return discoverOpsRun(opts, client, stderr)
 }
 

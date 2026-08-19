@@ -19,6 +19,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	kafkamessage "github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	socketwriter "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -192,26 +193,64 @@ func whisperEvent() message3.ChatEvent[message3.WhisperChatBody] {
 	}
 }
 
-// TestHandleWhisperChat_RecipientChannel_DeliversReceiveOnly is scenario 1:
-// the handler bound to the recipient's channel (not the sender's) must
-// deliver WhisperReceive and must NOT emit the sender's WhisperSendResult.
-func TestHandleWhisperChat_RecipientChannel_DeliversReceiveOnly(t *testing.T) {
+// chatHandler is the signature every handleXxxChat constructor shares
+// (handleWhisperChat, handleMultiChat, handleMessengerChat, handlePinkChat),
+// parameterized over the chat type's event body. It lets the fan-out
+// scenarios below run once per chat type as table rows instead of once per
+// chat type as a whole duplicated test function.
+type chatHandler[B any] func(sc server.Model, wp writer.Producer) kafkamessage.Handler[message3.ChatEvent[B]]
+
+// runRecipientChannelDelivers is scenario 1, shared by every fan-out chat
+// type (whisper, multi, messenger, pink): a handler bound to the
+// recipient's channel (not necessarily the sender's) must deliver.
+func runRecipientChannelDelivers[B any](t *testing.T, needsCharServer bool, handler chatHandler[B], event message3.ChatEvent[B]) {
+	t.Helper()
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 	defer session.ClearRegistryForTenant(tm.Id())
 
-	srv := characterServer(t, map[uint32]string{senderCharId: senderName})
-	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
+	if needsCharServer {
+		srv := characterServer(t, map[uint32]string{senderCharId: senderName})
+		t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
+	}
 
 	recipCh := channel.NewModel(worldId, recipChannelId)
 	recipReads, cleanup := pipedSession(t, ctx, recipCh, recipientCharId)
 	defer cleanup()
 
 	sc := newServerModel(worldId, recipChannelId, tm)
-	h := handleWhisperChat(sc, fakeWriterProducer())
-	h(nullLogger(), ctx, whisperEvent())
+	h := handler(sc, fakeWriterProducer())
+	h(nullLogger(), ctx, event)
 
 	expectPacket(t, recipReads, "recipient (bound channel)")
+}
+
+// TestHandleChat_RecipientChannel_Delivers covers, per chat type, the
+// handler bound to the recipient's channel delivering successfully.
+// This collapses what used to be TestHandleWhisperChat_RecipientChannel_DeliversReceiveOnly,
+// TestHandleMultiChat_RecipientChannel_Delivers, TestHandleMessengerChat_RecipientChannel_Delivers,
+// and TestHandlePinkChat_RecipientChannel_Delivers.
+func TestHandleChat_RecipientChannel_Delivers(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{"whisper", func(t *testing.T) {
+			runRecipientChannelDelivers[message3.WhisperChatBody](t, true, handleWhisperChat, whisperEvent())
+		}},
+		{"multi", func(t *testing.T) {
+			runRecipientChannelDelivers[message3.MultiChatBody](t, true, handleMultiChat, multiChatEvent(recipientCharId))
+		}},
+		{"messenger", func(t *testing.T) {
+			runRecipientChannelDelivers[message3.MessengerChatBody](t, false, handleMessengerChat, messengerChatEvent(recipientCharId))
+		}},
+		{"pink", func(t *testing.T) {
+			runRecipientChannelDelivers[message3.PinkTextChatBody](t, true, handlePinkChat, pinkChatEvent(recipientCharId))
+		}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, tc.run)
+	}
 }
 
 // TestHandleWhisperChat_SenderChannel_DeliversResultOnly is scenario 2: the
@@ -273,26 +312,6 @@ func TestHandleWhisperChat_SameChannel_DeliversBothOnce(t *testing.T) {
 	expectNoPacket(t, recipReads, "recipient (same channel, second packet)")
 }
 
-// TestHandleWhisperChat_DifferentWorld_NoAnnounce is scenario 4: a handler
-// bound to a different world than the event must not attempt either
-// announcement at all — proven by never resolving a writer.
-func TestHandleWhisperChat_DifferentWorld_NoAnnounce(t *testing.T) {
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-	defer session.ClearRegistryForTenant(tm.Id())
-
-	otherWorld := world.Id(1)
-	sc := newServerModel(otherWorld, senderChannelId, tm)
-
-	wp := writer.Producer(func(name string) (socketwriter.BodyFunc, error) {
-		t.Fatalf("writer %q resolved for an event outside this handler's world", name)
-		return nil, nil
-	})
-
-	h := handleWhisperChat(sc, wp)
-	h(nullLogger(), ctx, whisperEvent())
-}
-
 // The following regression guards cover the sibling bug reported in
 // docs/tasks/fix-whisper-cross-channel-delivery/bug-cross-channel-chat-siblings.md:
 // handleMultiChat, handleMessengerChat, and handlePinkChat carried the same
@@ -311,72 +330,6 @@ func multiChatEvent(recipients ...uint32) message3.ChatEvent[message3.MultiChatB
 	}
 }
 
-func TestHandleMultiChat_RecipientChannel_Delivers(t *testing.T) {
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-	defer session.ClearRegistryForTenant(tm.Id())
-
-	srv := characterServer(t, map[uint32]string{senderCharId: senderName})
-	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
-
-	recipCh := channel.NewModel(worldId, recipChannelId)
-	recipReads, cleanup := pipedSession(t, ctx, recipCh, recipientCharId)
-	defer cleanup()
-
-	sc := newServerModel(worldId, recipChannelId, tm)
-	h := handleMultiChat(sc, fakeWriterProducer())
-	h(nullLogger(), ctx, multiChatEvent(recipientCharId))
-
-	expectPacket(t, recipReads, "recipient (bound channel)")
-}
-
-func TestHandleMultiChat_TwoRecipientsTwoChannels_EachDeliversOwnOnly(t *testing.T) {
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-	defer session.ClearRegistryForTenant(tm.Id())
-
-	srv := characterServer(t, map[uint32]string{senderCharId: senderName})
-	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
-
-	ch1 := channel.NewModel(worldId, recipChannelId)
-	reads1, cleanup1 := pipedSession(t, ctx, ch1, recipientCharId)
-	defer cleanup1()
-
-	ch2 := channel.NewModel(worldId, recipChannelId2)
-	reads2, cleanup2 := pipedSession(t, ctx, ch2, recipientCharId2)
-	defer cleanup2()
-
-	evt := multiChatEvent(recipientCharId, recipientCharId2)
-
-	sc1 := newServerModel(worldId, recipChannelId, tm)
-	handleMultiChat(sc1, fakeWriterProducer())(nullLogger(), ctx, evt)
-
-	sc2 := newServerModel(worldId, recipChannelId2, tm)
-	handleMultiChat(sc2, fakeWriterProducer())(nullLogger(), ctx, evt)
-
-	expectPacket(t, reads1, "recipient 1 (own channel)")
-	expectNoPacket(t, reads1, "recipient 1 (second delivery)")
-	expectPacket(t, reads2, "recipient 2 (own channel)")
-	expectNoPacket(t, reads2, "recipient 2 (second delivery)")
-}
-
-func TestHandleMultiChat_DifferentWorld_NoAnnounce(t *testing.T) {
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-	defer session.ClearRegistryForTenant(tm.Id())
-
-	otherWorld := world.Id(1)
-	sc := newServerModel(otherWorld, senderChannelId, tm)
-
-	wp := writer.Producer(func(name string) (socketwriter.BodyFunc, error) {
-		t.Fatalf("writer %q resolved for an event outside this handler's world", name)
-		return nil, nil
-	})
-
-	h := handleMultiChat(sc, wp)
-	h(nullLogger(), ctx, multiChatEvent(recipientCharId))
-}
-
 func messengerChatEvent(recipients ...uint32) message3.ChatEvent[message3.MessengerChatBody] {
 	return message3.ChatEvent[message3.MessengerChatBody]{
 		WorldId:   worldId,
@@ -386,66 +339,6 @@ func messengerChatEvent(recipients ...uint32) message3.ChatEvent[message3.Messen
 		Type:      message3.ChatTypeMessenger,
 		Body:      message3.MessengerChatBody{Recipients: recipients},
 	}
-}
-
-func TestHandleMessengerChat_RecipientChannel_Delivers(t *testing.T) {
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-	defer session.ClearRegistryForTenant(tm.Id())
-
-	recipCh := channel.NewModel(worldId, recipChannelId)
-	recipReads, cleanup := pipedSession(t, ctx, recipCh, recipientCharId)
-	defer cleanup()
-
-	sc := newServerModel(worldId, recipChannelId, tm)
-	h := handleMessengerChat(sc, fakeWriterProducer())
-	h(nullLogger(), ctx, messengerChatEvent(recipientCharId))
-
-	expectPacket(t, recipReads, "recipient (bound channel)")
-}
-
-func TestHandleMessengerChat_TwoRecipientsTwoChannels_EachDeliversOwnOnly(t *testing.T) {
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-	defer session.ClearRegistryForTenant(tm.Id())
-
-	ch1 := channel.NewModel(worldId, recipChannelId)
-	reads1, cleanup1 := pipedSession(t, ctx, ch1, recipientCharId)
-	defer cleanup1()
-
-	ch2 := channel.NewModel(worldId, recipChannelId2)
-	reads2, cleanup2 := pipedSession(t, ctx, ch2, recipientCharId2)
-	defer cleanup2()
-
-	evt := messengerChatEvent(recipientCharId, recipientCharId2)
-
-	sc1 := newServerModel(worldId, recipChannelId, tm)
-	handleMessengerChat(sc1, fakeWriterProducer())(nullLogger(), ctx, evt)
-
-	sc2 := newServerModel(worldId, recipChannelId2, tm)
-	handleMessengerChat(sc2, fakeWriterProducer())(nullLogger(), ctx, evt)
-
-	expectPacket(t, reads1, "recipient 1 (own channel)")
-	expectNoPacket(t, reads1, "recipient 1 (second delivery)")
-	expectPacket(t, reads2, "recipient 2 (own channel)")
-	expectNoPacket(t, reads2, "recipient 2 (second delivery)")
-}
-
-func TestHandleMessengerChat_DifferentWorld_NoAnnounce(t *testing.T) {
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-	defer session.ClearRegistryForTenant(tm.Id())
-
-	otherWorld := world.Id(1)
-	sc := newServerModel(otherWorld, senderChannelId, tm)
-
-	wp := writer.Producer(func(name string) (socketwriter.BodyFunc, error) {
-		t.Fatalf("writer %q resolved for an event outside this handler's world", name)
-		return nil, nil
-	})
-
-	h := handleMessengerChat(sc, wp)
-	h(nullLogger(), ctx, messengerChatEvent(recipientCharId))
 }
 
 func pinkChatEvent(recipients ...uint32) message3.ChatEvent[message3.PinkTextChatBody] {
@@ -459,32 +352,21 @@ func pinkChatEvent(recipients ...uint32) message3.ChatEvent[message3.PinkTextCha
 	}
 }
 
-func TestHandlePinkChat_RecipientChannel_Delivers(t *testing.T) {
+// runTwoRecipientsTwoChannelsEachDeliversOwnOnly is the two-recipient
+// fan-out scenario shared by multi, messenger, and pink chat (whisper has no
+// equivalent — it always addresses exactly one recipient): two recipients
+// on two different channels, each handler invocation only reaches the
+// recipient on its own bound channel, exactly once.
+func runTwoRecipientsTwoChannelsEachDeliversOwnOnly[B any](t *testing.T, needsCharServer bool, handler chatHandler[B], event message3.ChatEvent[B]) {
+	t.Helper()
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 	defer session.ClearRegistryForTenant(tm.Id())
 
-	srv := characterServer(t, map[uint32]string{senderCharId: senderName})
-	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
-
-	recipCh := channel.NewModel(worldId, recipChannelId)
-	recipReads, cleanup := pipedSession(t, ctx, recipCh, recipientCharId)
-	defer cleanup()
-
-	sc := newServerModel(worldId, recipChannelId, tm)
-	h := handlePinkChat(sc, fakeWriterProducer())
-	h(nullLogger(), ctx, pinkChatEvent(recipientCharId))
-
-	expectPacket(t, recipReads, "recipient (bound channel)")
-}
-
-func TestHandlePinkChat_TwoRecipientsTwoChannels_EachDeliversOwnOnly(t *testing.T) {
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-	defer session.ClearRegistryForTenant(tm.Id())
-
-	srv := characterServer(t, map[uint32]string{senderCharId: senderName})
-	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
+	if needsCharServer {
+		srv := characterServer(t, map[uint32]string{senderCharId: senderName})
+		t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
+	}
 
 	ch1 := channel.NewModel(worldId, recipChannelId)
 	reads1, cleanup1 := pipedSession(t, ctx, ch1, recipientCharId)
@@ -494,13 +376,11 @@ func TestHandlePinkChat_TwoRecipientsTwoChannels_EachDeliversOwnOnly(t *testing.
 	reads2, cleanup2 := pipedSession(t, ctx, ch2, recipientCharId2)
 	defer cleanup2()
 
-	evt := pinkChatEvent(recipientCharId, recipientCharId2)
-
 	sc1 := newServerModel(worldId, recipChannelId, tm)
-	handlePinkChat(sc1, fakeWriterProducer())(nullLogger(), ctx, evt)
+	handler(sc1, fakeWriterProducer())(nullLogger(), ctx, event)
 
 	sc2 := newServerModel(worldId, recipChannelId2, tm)
-	handlePinkChat(sc2, fakeWriterProducer())(nullLogger(), ctx, evt)
+	handler(sc2, fakeWriterProducer())(nullLogger(), ctx, event)
 
 	expectPacket(t, reads1, "recipient 1 (own channel)")
 	expectNoPacket(t, reads1, "recipient 1 (second delivery)")
@@ -508,7 +388,35 @@ func TestHandlePinkChat_TwoRecipientsTwoChannels_EachDeliversOwnOnly(t *testing.
 	expectNoPacket(t, reads2, "recipient 2 (second delivery)")
 }
 
-func TestHandlePinkChat_DifferentWorld_NoAnnounce(t *testing.T) {
+// TestHandleChat_TwoRecipientsTwoChannels_EachDeliversOwnOnly collapses what
+// used to be TestHandleMultiChat_TwoRecipientsTwoChannels_EachDeliversOwnOnly,
+// TestHandleMessengerChat_TwoRecipientsTwoChannels_EachDeliversOwnOnly, and
+// TestHandlePinkChat_TwoRecipientsTwoChannels_EachDeliversOwnOnly.
+func TestHandleChat_TwoRecipientsTwoChannels_EachDeliversOwnOnly(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{"multi", func(t *testing.T) {
+			runTwoRecipientsTwoChannelsEachDeliversOwnOnly[message3.MultiChatBody](t, true, handleMultiChat, multiChatEvent(recipientCharId, recipientCharId2))
+		}},
+		{"messenger", func(t *testing.T) {
+			runTwoRecipientsTwoChannelsEachDeliversOwnOnly[message3.MessengerChatBody](t, false, handleMessengerChat, messengerChatEvent(recipientCharId, recipientCharId2))
+		}},
+		{"pink", func(t *testing.T) {
+			runTwoRecipientsTwoChannelsEachDeliversOwnOnly[message3.PinkTextChatBody](t, true, handlePinkChat, pinkChatEvent(recipientCharId, recipientCharId2))
+		}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, tc.run)
+	}
+}
+
+// runDifferentWorldNoAnnounce is scenario 4, shared by every chat type: a
+// handler bound to a different world than the event must not attempt any
+// announcement at all — proven by never resolving a writer.
+func runDifferentWorldNoAnnounce[B any](t *testing.T, handler chatHandler[B], event message3.ChatEvent[B]) {
+	t.Helper()
 	tm := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tm)
 	defer session.ClearRegistryForTenant(tm.Id())
@@ -521,6 +429,32 @@ func TestHandlePinkChat_DifferentWorld_NoAnnounce(t *testing.T) {
 		return nil, nil
 	})
 
-	h := handlePinkChat(sc, wp)
-	h(nullLogger(), ctx, pinkChatEvent(recipientCharId))
+	h := handler(sc, wp)
+	h(nullLogger(), ctx, event)
+}
+
+// TestHandleChat_DifferentWorld_NoAnnounce collapses what used to be
+// TestHandleWhisperChat_DifferentWorld_NoAnnounce, TestHandleMultiChat_DifferentWorld_NoAnnounce,
+// TestHandleMessengerChat_DifferentWorld_NoAnnounce, and TestHandlePinkChat_DifferentWorld_NoAnnounce.
+func TestHandleChat_DifferentWorld_NoAnnounce(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{"whisper", func(t *testing.T) {
+			runDifferentWorldNoAnnounce[message3.WhisperChatBody](t, handleWhisperChat, whisperEvent())
+		}},
+		{"multi", func(t *testing.T) {
+			runDifferentWorldNoAnnounce[message3.MultiChatBody](t, handleMultiChat, multiChatEvent(recipientCharId))
+		}},
+		{"messenger", func(t *testing.T) {
+			runDifferentWorldNoAnnounce[message3.MessengerChatBody](t, handleMessengerChat, messengerChatEvent(recipientCharId))
+		}},
+		{"pink", func(t *testing.T) {
+			runDifferentWorldNoAnnounce[message3.PinkTextChatBody](t, handlePinkChat, pinkChatEvent(recipientCharId))
+		}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, tc.run)
+	}
 }

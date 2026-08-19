@@ -26,8 +26,9 @@ import (
 //	+0       uint32 parcelId        CTabReceive::ReceiveParcel encodes
 //	                                 *(parcel+0) as the outbound RECEIVE
 //	                                 request's id (v83 @0x6F0D66,
-//	                                 COutPacket::Encode4); RemoveParcel does
-//	                                 the same for DISCARD (@0x6F0DC3 region).
+//	                                 COutPacket::Encode4); the unnamed
+//	                                 sub_6F0DC3 does the same for DISCARD
+//	                                 (@0x6F0DC3 region).
 //	+4       char[13] senderName    SetParcel formats SP_3878 with
 //	                                 ZXString<char>::Format(..., parcel+4)
 //	                                 (v83 @0x6EF7A1).
@@ -38,6 +39,10 @@ import (
 //	          (FILETIME)             its 30-day eligibility window from
 //	                                 *(uint64*)(parcel+21) (design.md §5.3,
 //	                                 v72 ReceiveParcel @0x65AF41 region).
+//	                                 Corroborated directly in v83:
+//	                                 CTabReceive::ReceiveParcel @0x6F0D11
+//	                                 computes the same <30-day check off
+//	                                 *(parcel+21).
 //	+29..233 message + padding      No client consumer in the v83 IDB reads
 //	          (205 bytes)            this span field-by-field — SetParcel and
 //	                                 OnPacket only ever dereference offsets

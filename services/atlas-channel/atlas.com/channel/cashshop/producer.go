@@ -154,3 +154,17 @@ func OpenSurpriseCommandProvider(characterId uint32, transactionId uuid.UUID, ac
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func RequestLockerRebateCommandProvider(characterId uint32, transactionId uuid.UUID, accountId uint32, cashId int64) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.RequestLockerRebateCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestLockerRebate,
+		Body: cashshop.RequestLockerRebateCommandBody{
+			TransactionId: transactionId,
+			AccountId:     accountId,
+			CashId:        cashId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -19,6 +19,7 @@ const (
 	CommandTypeMoveFromCashInventory              = "MOVE_FROM_CASH_INVENTORY"
 	CommandTypeOpenSurprise                       = "OPEN_SURPRISE"
 	CommandTypeRequestCouponRedemption            = "REQUEST_COUPON_REDEMPTION"
+	CommandTypeRequestLockerRebate                = "REQUEST_LOCKER_REBATE"
 )
 
 type Command[E any] struct {
@@ -100,6 +101,18 @@ type RequestCouponRedemptionCommandBody struct {
 	Code string `json:"code"`
 }
 
+// RequestLockerRebateCommandBody refunds one locker asset. CashId is the
+// client's GW_ItemSlotBase::liCashItemSN (cash_assets.CashId), NOT the row id
+// -- see shop_operation_rebate_locker_item.go:18-21. TransactionId is the
+// idempotency key, mirroring OpenSurpriseCommandBody: a Kafka redelivery
+// replays the same id and is rejected as success-without-effect by the
+// ledger, while a genuine second click gets a new one.
+type RequestLockerRebateCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	AccountId     uint32    `json:"accountId"`
+	CashId        int64     `json:"cashId"`
+}
+
 const (
 	EnvEventTopicStatus                       = "EVENT_TOPIC_CASH_SHOP_STATUS"
 	EventCashShopStatusTypeCharacterEnter     = "CHARACTER_ENTER"
@@ -112,6 +125,7 @@ const (
 	StatusEventTypeSurpriseFailed             = "SURPRISE_FAILED"
 	StatusEventTypeCouponRedeemed             = "COUPON_REDEEMED"
 	StatusEventTypeCouponFailed               = "COUPON_FAILED"
+	StatusEventTypeLockerRebated              = "LOCKER_REBATED"
 )
 
 // TODO multiple services have different impl of this
@@ -225,4 +239,18 @@ type CouponRedeemedBody struct {
 // ERROR would force the channel to guess which failure arm an error belongs to.
 type CouponFailedBody struct {
 	Error string `json:"error"`
+}
+
+// LockerRebatedBody describes one successful REBATE. Currency is the wallet
+// bucket credited (wallet.Model.Balance's convention: 1 = credit/NX, 2 =
+// Maple Points, anything else = prepaid) -- see asset.Entity.Currency's doc
+// comment for how 0 on the refunded asset resolves to the ordinary credit/NX
+// bucket rather than being echoed here as a literal 0. Mirrored for wire
+// compatibility with atlas-cashshop; the client-facing announce ignores it
+// (CashShopRebateDoneBody carries only sn/amount).
+type LockerRebatedBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	CashId        int64     `json:"cashId"`
+	Amount        int32     `json:"amount"`
+	Currency      uint32    `json:"currency"`
 }

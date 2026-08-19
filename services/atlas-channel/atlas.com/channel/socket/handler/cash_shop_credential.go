@@ -35,8 +35,6 @@ func credentialMatches(usesPIC bool, storedPIC string, storedBirthDate uint32, s
 // verifySecondaryCredential resolves the session's account, applies
 // credentialMatches, records the attempt, and returns ErrCredentialMismatch
 // on failure.
-//
-//nolint:unused // First consumers land in plan Tasks 12/14/17/20 (gift, ring, rebate arms); remove this directive when Task 12 wires the first caller.
 func verifySecondaryCredential(l logrus.FieldLogger, ctx context.Context) func(s session.Model, spw string, birthday uint32) error {
 	return func(s session.Model, spw string, birthday uint32) error {
 		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())

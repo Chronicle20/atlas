@@ -102,6 +102,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLockerRebated(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -311,6 +316,27 @@ func handleStatusEventCouponFailed(sc server.Model, wp writer.Producer) message.
 		}
 
 		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopUseCouponFailedBody(e.Body.Error))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
+	}
+}
+
+// handleStatusEventLockerRebated announces the REBATE_SUCCESS arm. Currency
+// is mirrored on LockerRebatedBody for wire compatibility with
+// atlas-cashshop but is deliberately not read here: CashShopRebateDoneBody
+// takes only sn/amount (shop_operation_body.go:600-604), so there is nothing
+// for this arm to do with it.
+func handleStatusEventLockerRebated(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.LockerRebatedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.LockerRebatedBody]) {
+		if e.Type != cashshop2.StatusEventTypeLockerRebated {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopRebateDoneBody(e.Body.CashId, e.Body.Amount))
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
 	}
 }

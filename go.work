@@ -67,6 +67,7 @@ use (
 	./services/atlas-notes/atlas.com/notes
 	./services/atlas-npc-conversations/atlas.com/npc
 	./services/atlas-npc-shops/atlas.com/npc
+	./services/atlas-parcel/atlas.com/parcel
 	./services/atlas-parties/atlas.com/parties
 	./services/atlas-party-quests/atlas.com/party-quests
 	./services/atlas-pets/atlas.com/pets

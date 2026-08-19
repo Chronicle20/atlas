@@ -3,21 +3,23 @@ module atlas-parcel
 go 1.25.5
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-database v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0
+	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-service v0.0.0-00010101000000-000000000000
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/sirupsen/logrus v1.10.0
+	github.com/stretchr/testify v1.12.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2
 )
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-env v0.0.0 // indirect
-	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0 // indirect
@@ -62,6 +64,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d // indirect
 	google.golang.org/grpc v1.83.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/driver/postgres v1.6.2 // indirect
 )
 

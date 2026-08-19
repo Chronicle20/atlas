@@ -132,18 +132,14 @@ func (t *ExpiryTask) run() {
 // which is exactly what the Returned flag exists to guarantee: without it,
 // a return leg's own expiry would recurse forever.
 //
-// RecipientName sourcing (a named, in-progress gap): the return leg's
-// SenderName is the ORIGINAL parcel's RecipientName — the person who never
-// claimed it. That field is not yet populated by the currently-landed
-// atlas-channel send saga (Task 17's TransferToParcelPayload/
-// AcceptToParcelPayload carry no such field), so today every claimed row's
-// RecipientName is "" and every return leg's SenderName will be empty
-// rather than a display name, until a follow-up task threads it through
-// libs/atlas-saga's TransferToParcelPayload and AcceptToParcelPayload, the
-// orchestrator's TransferToParcel expansion, and this service's own
-// custody.AcceptToParcelCommandBody. See entity.go's RecipientName doc
-// comment for the exact wiring. The sweep itself is correct and complete
-// for every other field.
+// RecipientName sourcing: the return leg's SenderName is the ORIGINAL
+// parcel's RecipientName — the person who never claimed it. That field is
+// populated end-to-end by the send saga (libs/atlas-saga's
+// TransferToParcelPayload/AcceptToParcelPayload carry it, the orchestrator's
+// TransferToParcel expansion copies it, and this service's own
+// custody.AcceptToParcelCommandBody maps it onto the row), so every claimed
+// row's RecipientName reflects the original send and the return leg's
+// SenderName is a real display name, not empty.
 func (t *ExpiryTask) Run() {
 	noTenantCtx := database.WithoutTenantFilter(t.ctx)
 	now := t.now()

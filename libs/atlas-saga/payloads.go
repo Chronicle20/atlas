@@ -996,6 +996,7 @@ type TransferToParcelPayload struct {
 	SenderName          string    `json:"senderName"`
 	RecipientId         uint32    `json:"recipientId"`
 	RecipientAccountId  uint32    `json:"recipientAccountId"`
+	RecipientName       string    `json:"recipientName"` // Recipient character name; carried into the accept step so a return leg's SenderName is populated (design §7.4)
 	MesoAmount          uint32    `json:"mesoAmount"`
 	FeePaid             uint32    `json:"feePaid"`
 	Quick               bool      `json:"quick"`
@@ -1022,6 +1023,7 @@ type AcceptToParcelPayload struct {
 	SenderName         string    `json:"senderName"`
 	RecipientId        uint32    `json:"recipientId"`
 	RecipientAccountId uint32    `json:"recipientAccountId"`
+	RecipientName      string    `json:"recipientName"` // Recipient character name; the return leg's SenderName (design §7.4)
 	MesoAmount         uint32    `json:"mesoAmount"`
 	FeePaid            uint32    `json:"feePaid"`
 	Quick              bool      `json:"quick"`

@@ -57,6 +57,7 @@ type AcceptToParcelCommandBody struct {
 	SenderName         string    `json:"senderName"`
 	RecipientId        uint32    `json:"recipientId"`
 	RecipientAccountId uint32    `json:"recipientAccountId"`
+	RecipientName      string    `json:"recipientName"`
 	MesoAmount         uint32    `json:"mesoAmount"`
 	FeePaid            uint32    `json:"feePaid"`
 	Quick              bool      `json:"quick"`

@@ -70,6 +70,7 @@ func TestExpandTransferToParcel(t *testing.T) {
 			SenderName:          "Sender",
 			RecipientId:         2002,
 			RecipientAccountId:  20,
+			RecipientName:       "Bob",
 			MesoAmount:          500,
 			FeePaid:             100,
 			Quick:               true,
@@ -99,6 +100,7 @@ func TestExpandTransferToParcel(t *testing.T) {
 		require.Equal(t, "Alice", acc.Owner)
 		require.Equal(t, parcelId, acc.ParcelId)
 		require.Equal(t, uint32(2002), acc.RecipientId)
+		require.Equal(t, "Bob", acc.RecipientName)
 		require.Equal(t, uint32(500), acc.MesoAmount)
 	})
 

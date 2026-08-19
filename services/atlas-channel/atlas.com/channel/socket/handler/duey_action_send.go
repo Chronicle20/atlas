@@ -260,6 +260,7 @@ func buildParcelSendSaga(transactionId uuid.UUID, parcelId uuid.UUID, now time.T
 			SenderName:          sender.Name(),
 			RecipientId:         recipient.Id(),
 			RecipientAccountId:  recipient.AccountId(),
+			RecipientName:       recipient.Name(),
 			MesoAmount:          mesoAmount,
 			FeePaid:             feePaid,
 			Quick:               quick,

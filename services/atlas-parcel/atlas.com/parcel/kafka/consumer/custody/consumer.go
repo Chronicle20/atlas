@@ -88,6 +88,7 @@ func handleAcceptToParcel(pf providerFn) func(db *gorm.DB) message.Handler[custo
 				SenderName:         b.SenderName,
 				RecipientId:        b.RecipientId,
 				RecipientAccountId: b.RecipientAccountId,
+				RecipientName:      b.RecipientName,
 				MesoAmount:         b.MesoAmount,
 				FeePaid:            b.FeePaid,
 				Quick:              b.Quick,

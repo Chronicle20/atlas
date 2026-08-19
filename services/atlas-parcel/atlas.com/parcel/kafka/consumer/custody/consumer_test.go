@@ -89,6 +89,7 @@ func newAcceptCommand(transactionId uuid.UUID, parcelId uuid.UUID) custody.Comma
 			SenderName:         "Sender",
 			RecipientId:        100,
 			RecipientAccountId: 2,
+			RecipientName:      "Bob",
 			MesoAmount:         0,
 			FeePaid:            5000,
 			Quick:              false,
@@ -130,6 +131,10 @@ func TestCustodyCommands(t *testing.T) {
 		assert.Equal(t, byte(3), m.ItemSnapshot().LevelType, "ItemLevel must map to AssetData.LevelType")
 		assert.Equal(t, uint32(777), m.ItemSnapshot().RingId, "RingId must survive the parcel round-trip")
 		assert.Equal(t, uint32(12), m.ItemSnapshot().ViciousCount, "ViciousCount must survive the parcel round-trip")
+		// RecipientName must round-trip from the custody command onto the row,
+		// so an eventual return leg's SenderName (design §7.4) is populated
+		// rather than empty.
+		assert.Equal(t, "Bob", m.RecipientName())
 
 		accepted := eventsOfType(rp.events, custody.StatusEventAccepted)
 		require.Len(t, accepted, 1)

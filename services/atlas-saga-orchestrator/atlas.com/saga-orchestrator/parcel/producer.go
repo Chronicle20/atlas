@@ -28,6 +28,7 @@ func AcceptToParcelProvider(transactionId uuid.UUID, params AcceptToParcelParams
 			SenderName:         params.SenderName,
 			RecipientId:        params.RecipientId,
 			RecipientAccountId: params.RecipientAccountId,
+			RecipientName:      params.RecipientName,
 			MesoAmount:         params.MesoAmount,
 			FeePaid:            params.FeePaid,
 			Quick:              params.Quick,

@@ -2552,6 +2552,7 @@ func (h *HandlerImpl) handleAcceptToParcel(s Saga, st Step[any]) error {
 		SenderName:         payload.SenderName,
 		RecipientId:        payload.RecipientId,
 		RecipientAccountId: payload.RecipientAccountId,
+		RecipientName:      payload.RecipientName,
 		MesoAmount:         payload.MesoAmount,
 		FeePaid:            payload.FeePaid,
 		Quick:              payload.Quick,

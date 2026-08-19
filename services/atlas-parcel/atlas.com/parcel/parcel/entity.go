@@ -48,18 +48,14 @@ type Entity struct {
 
 	RecipientId        uint32 `gorm:"not null;index:idx_parcels_recipient,priority:2"`
 	RecipientAccountId uint32 `gorm:"not null"`
-	// RecipientName is not populated by the currently-landed atlas-channel
-	// send saga (Task 17's TransferToParcelPayload/AcceptToParcelPayload
-	// carry no such field yet) — it exists for the expiry sweep's return
-	// leg (task-23, design §7.4), which needs the original recipient's
-	// display name for the returned parcel's SenderName. Until a follow-up
-	// task threads RecipientName through
-	// libs/atlas-saga.TransferToParcelPayload/AcceptToParcelPayload, the
-	// orchestrator's TransferToParcel expansion, and atlas-parcel's own
-	// custody.AcceptToParcelCommandBody, every parcel created through that
-	// path will have RecipientName == "" and a return leg's SenderName will
-	// be empty rather than a display name. This is a known, named gap — see
-	// the expiry sweep's doc comment in task.go.
+	// RecipientName is populated by the send saga end-to-end (the channel's
+	// buildParcelSendSaga sets it from the resolved recipient's Name(); it
+	// rides libs/atlas-saga.TransferToParcelPayload/AcceptToParcelPayload,
+	// the orchestrator's TransferToParcel expansion, and atlas-parcel's own
+	// custody.AcceptToParcelCommandBody unchanged onto this column) — it
+	// exists for the expiry sweep's return leg (task-23, design §7.4), which
+	// needs the original recipient's display name for the returned parcel's
+	// SenderName.
 	RecipientName string `gorm:"not null;default:''"`
 
 	Message    string

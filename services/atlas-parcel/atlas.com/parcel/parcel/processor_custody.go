@@ -31,6 +31,7 @@ type AcceptParams struct {
 	SenderName         string
 	RecipientId        uint32
 	RecipientAccountId uint32
+	RecipientName      string
 	MesoAmount         uint32
 	FeePaid            uint32
 	Quick              bool
@@ -89,6 +90,7 @@ func (p *ProcessorImpl) AcceptCustody(params AcceptParams) (Model, error) {
 			SetSenderName(params.SenderName).
 			SetRecipientId(params.RecipientId).
 			SetRecipientAccountId(params.RecipientAccountId).
+			SetRecipientName(params.RecipientName).
 			SetMessage(params.Message).
 			SetMesoAmount(params.MesoAmount).
 			SetFeePaid(params.FeePaid).

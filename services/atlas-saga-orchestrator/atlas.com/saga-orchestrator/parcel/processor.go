@@ -31,6 +31,7 @@ type AcceptToParcelParams struct {
 	SenderName         string
 	RecipientId        uint32
 	RecipientAccountId uint32
+	RecipientName      string
 	MesoAmount         uint32
 	FeePaid            uint32
 	Quick              bool

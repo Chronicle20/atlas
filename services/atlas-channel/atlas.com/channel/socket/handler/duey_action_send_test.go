@@ -399,6 +399,9 @@ func TestDueyActionSend(t *testing.T) {
 				if tp.SourceInventoryType != tc.want.sourceInventoryType {
 					t.Errorf("transfer_to_parcel sourceInventoryType = %d, want %d", tp.SourceInventoryType, tc.want.sourceInventoryType)
 				}
+				if tp.RecipientName != f.recipientCandidates[0].Name() {
+					t.Errorf("transfer_to_parcel recipientName = %q, want %q", tp.RecipientName, f.recipientCandidates[0].Name())
+				}
 			}
 
 			if tc.want.reason == "" {

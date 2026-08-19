@@ -32,6 +32,7 @@ type Processor interface {
 	RequestLockerRebate(accountId uint32, characterId uint32, cashId int64, transactionId uuid.UUID) error
 	RequestGiftPurchase(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) error
 	RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error
+	RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -269,4 +270,18 @@ func (p *ProcessorImpl) RequestPackagePurchase(characterId uint32, transactionId
 	currency = resolvePurchaseCurrency(isPoints, currency)
 	p.l.Debugf("Character [%d] purchasing package serial [%d] with currency [%d] for recipient [%d]. Transaction [%s].", characterId, serialNumber, currency, recipientCharacterId, transactionId)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPackagePurchaseCommandProvider(characterId, transactionId, currency, serialNumber, recipientCharacterId, senderName))
+}
+
+// RequestRingPurchase forwards a RING pair purchase request (BUY_COUPLE /
+// BUY_FRIENDSHIP, task-240 task 20, atlas-channel half of task 19's
+// REQUEST_RING_PURCHASE command). TransactionId is minted by the caller
+// (once per click, mirroring RequestGiftPurchase/RequestPackagePurchase's
+// idempotency pattern) so a Kafka redelivery replays this id and is
+// rejected by atlas-cashshop's ring ledger while a genuine second click
+// gets a fresh one. isPoints/currency go through resolvePurchaseCurrency
+// exactly like RequestPurchase/RequestPackagePurchase above.
+func (p *ProcessorImpl) RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error {
+	currency = resolvePurchaseCurrency(isPoints, currency)
+	p.l.Debugf("Character [%d] purchasing ring serial [%d] with currency [%d] for partner [%d]. Transaction [%s].", characterId, serialNumber, currency, partnerCharacterId, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestRingPurchaseCommandProvider(characterId, transactionId, currency, serialNumber, partnerCharacterId, senderName, message, ringType))
 }

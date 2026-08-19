@@ -94,6 +94,24 @@ This is the same silent-empty-value failure mode as defect 2's `uuidgen`.
 - `shellcheck` clean on the changed file (the four remaining findings are
   pre-existing SC1091/SC2034 on untouched lines).
 
+### Ingress query-string pass-through (review finding, resolved)
+
+The canonical read appends `?scope=shared` to a URL routed through
+`$ATLAS_UI_BASE`, which in the PR namespace resolves to
+`http://atlas-ingress.atlas-pr-1411.svc.cluster.local`. Code review flagged
+that an ingress stripping query strings would hard-fail every bootstrap at
+"could not read the canonical document count" — fail-closed, but an abort.
+
+Checked live against that exact Service (not against atlas-data directly):
+
+    GET /api/data/status                  → id ec876921-…,  documentCount 0
+    GET /api/data/status?scope=shared     → id 144ba144-…,  documentCount 49049
+      (with X-Atlas-Operator: 1)
+
+Both the query string and the operator header survive the hop. With these
+values the new guard computes `docs=0, canon=49049` and skips the restore —
+the intended outcome for a sparse environment.
+
 ## Not addressed here
 
 `baseline.Restorer` remains unsafe against any populated database — this

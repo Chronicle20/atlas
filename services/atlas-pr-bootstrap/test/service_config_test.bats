@@ -2,6 +2,12 @@
 
 setup() {
     PROJECT_ROOT="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+    # lib.sh first, mirroring bootstrap.sh's own order: service-config.sh
+    # calls log() but does not source it, so without this the error paths
+    # below die with "log: command not found" (127) instead of emitting the
+    # message they are asserting.
+    # shellcheck source=../scripts/lib.sh
+    . "$PROJECT_ROOT/scripts/lib.sh"
     # shellcheck source=../scripts/service-config.sh
     . "$PROJECT_ROOT/scripts/service-config.sh"
     export TENANT_ID="11111111-1111-1111-1111-111111111111"
@@ -121,4 +127,83 @@ setup() {
     [ "$(echo "$output" | jq '.data.attributes.tenants | length')" -eq 1 ]
     [ "$(echo "$output" | jq -r '.data.attributes.tenants[0].id')" = "$TENANT_ID" ]
     [ "$(echo "$output" | jq -r '.data.attributes.tenants[0].worlds[0].channels[0].port')" = "8401" ]
+}
+
+# --- sparse service-row id generation ------------------------------------
+#
+# The sparse env shipped broken because `uuidgen` was absent from the image
+# and `--arg id "$(uuidgen)"` turned that into an empty string. The
+# pre-existing "sparse mode never reads or writes the pinned main service
+# row" test above did not catch it: it asserts only `!= pinned` and
+# `!= "null"`, and "" satisfies both. These assert the id is actually a
+# well-formed UUID.
+
+UUID_RE='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+
+@test "new_uuid: emits a well-formed UUID" {
+    run new_uuid
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ $UUID_RE ]]
+}
+
+@test "new_uuid: emits distinct values across calls" {
+    a="$(new_uuid)"
+    b="$(new_uuid)"
+    [ "$a" != "$b" ]
+}
+
+@test "new_uuid: falls back to the kernel source when uuidgen is absent" {
+    [ -r /proc/sys/kernel/random/uuid ] || skip "no /proc uuid source on this host"
+    local bindir="$BATS_TEST_TMPDIR/emptybin"
+    mkdir -p "$bindir"
+    # The function is already sourced by setup(); restrict PATH only around
+    # the call itself. Re-sourcing under a bare PATH would instead fail in
+    # the script's own `dirname` preamble and prove nothing about new_uuid.
+    local oldpath="$PATH"
+    PATH="$bindir"
+    run new_uuid
+    PATH="$oldpath"
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ $UUID_RE ]]
+}
+
+@test "new_uuid: fails loudly when no UUID source is available" {
+    local bindir="$BATS_TEST_TMPDIR/emptybin2"
+    mkdir -p "$bindir"
+    local oldpath="$PATH"
+    PATH="$bindir"
+    _SC_UUID_PROC="$BATS_TEST_TMPDIR/definitely-absent" run new_uuid
+    PATH="$oldpath"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"could not generate a UUID"* ]]
+}
+
+# Shape assertion only: on a host that HAS uuidgen this also passed before
+# the fix, so it is not the regression test — the "no UUID source available"
+# case below is. It is still worth asserting, because "" and "null" both slip
+# past the older test's `!= pinned` / `!= "null"` checks.
+@test "build_service_config: sparse id is a well-formed UUID, not empty" {
+    export ATLAS_MODE=sparse
+    export ATLAS_ENVIRONMENT="pr-999"
+    run build_service_config login "$CANONICAL/login-service.json"
+    [ "$status" -eq 0 ]
+    got=$(echo "$output" | jq -r '.data.id')
+    [[ "$got" =~ $UUID_RE ]]
+}
+
+@test "build_service_config: sparse fails when no UUID source is available" {
+    # jq is still reachable, so this fails on the UUID source specifically
+    # rather than on a missing tool somewhere earlier.
+    local bindir="$BATS_TEST_TMPDIR/emptybin3"
+    mkdir -p "$bindir"
+    ln -sf "$(command -v jq)" "$bindir/jq"
+    export ATLAS_MODE=sparse
+    export ATLAS_ENVIRONMENT="pr-999"
+    local oldpath="$PATH"
+    PATH="$bindir"
+    _SC_UUID_PROC="$BATS_TEST_TMPDIR/definitely-absent" \
+        run build_service_config login "$CANONICAL/login-service.json"
+    PATH="$oldpath"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"could not generate a UUID"* ]]
 }

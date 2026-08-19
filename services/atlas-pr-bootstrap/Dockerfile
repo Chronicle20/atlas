@@ -34,7 +34,8 @@ RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
         ca-certificates \
         github-cli \
         kubectl \
-        unzip
+        unzip \
+        util-linux
 
 # Fetch rpk static binary. Pin version so JSON output schema and admin
 # RPC semantics are deterministic; bumping is a deliberate Dockerfile

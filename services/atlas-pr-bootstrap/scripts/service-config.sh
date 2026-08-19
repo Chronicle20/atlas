@@ -14,6 +14,42 @@ else
 fi
 unset _sc_dir
 
+# Echo a fresh RFC 4122 UUID, or fail.
+#
+# `uuidgen` (util-linux) was missing from the image, and because
+# `--arg id "$(uuidgen)"` swallows a missing-binary failure into an empty
+# string, sparse mode POSTed `.data.id = ""`. atlas-configurations then
+# minted its own id server-side (configurations/services/processor.go —
+# "Use ID from input if provided and valid, otherwise generate a new one"),
+# so bootstrap never learned the real row id and pushed the empty string on
+# to `kubectl set env SERVICE_ID=`, which writes an env entry with NO value.
+# atlas-channel and atlas-login then panicked at startup on
+# `uuid.MustParse("")` and crash-looped.
+#
+# Three independent layers now prevent that: the Dockerfile installs
+# util-linux; /proc/sys/kernel/random/uuid is a kernel-provided fallback
+# needing no package at all; and the shape check below means a malformed or
+# empty value fails the caller loudly instead of travelling onward as "".
+# _SC_UUID_PROC is a test seam, not a tunable: it exists so the
+# no-UUID-source-available failure path is reachable from bats (point it at
+# a nonexistent file). Production never sets it.
+new_uuid() {
+    local id="" proc="${_SC_UUID_PROC-/proc/sys/kernel/random/uuid}"
+    if command -v uuidgen >/dev/null 2>&1; then
+        id=$(uuidgen)
+    elif [ -r "$proc" ]; then
+        # `read` builtin rather than cat(1): new_uuid must not itself depend
+        # on a binary being present on PATH.
+        read -r id < "$proc" || id=""
+    fi
+    # Bash-native match, for the same reason.
+    if [[ ! "$id" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]]; then
+        log error "new_uuid: could not generate a UUID (got '${id}'); is util-linux installed?"
+        return 1
+    fi
+    printf '%s' "$id"
+}
+
 # Echo the login tenant entry {id, port} with the version-derived login port.
 build_login_entry() {
     local port
@@ -79,7 +115,12 @@ build_service_config() {
     esac
 
     if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
-        jq -c --arg id "$(uuidgen)" --arg envn "$ATLAS_ENVIRONMENT" --argjson entry "${entry:-null}" '
+        local id
+        # Not inlined as `--arg id "$(uuidgen)"`: command substitution
+        # swallows a missing-binary failure into an empty string, which is
+        # exactly how this shipped broken. See new_uuid's header.
+        id=$(new_uuid) || return 1
+        jq -c --arg id "$id" --arg envn "$ATLAS_ENVIRONMENT" --argjson entry "${entry:-null}" '
             .data.id = $id
             | .data.attributes.environment = $envn
             | if $entry == null then . else .data.attributes.tenants = [$entry] end

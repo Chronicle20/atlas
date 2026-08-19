@@ -387,11 +387,34 @@ create_service_config() {
     local tmpl="$1" shape="$2" deployment="$3" body svc_id
     body=$(build_service_config "$shape" "$tmpl") || return 1
     svc_id=$(echo "$body" | jq -r '.data.id')
+
+    # Refuse to continue on an id we cannot use. Without this, an empty id
+    # flowed all the way to `kubectl set env SERVICE_ID=` below, which does
+    # not fail — it writes an env entry with no value, and the service
+    # panics on uuid.MustParse(""). Fail the step loudly instead.
+    if [ -z "$svc_id" ] || [ "$svc_id" = "null" ]; then
+        log error "create_service_config: refusing to continue with empty service id (type=$shape)"
+        return 1
+    fi
+
+    # The ENVIRONMENT header is what stamps the row's environment column:
+    # it is server-owned and the request body's
+    # .data.attributes.environment is deliberately ignored
+    # (configurations/services/administrator.go's INSERT takes
+    # env.MustFromContext(ctx); processor.go notes "Environment is
+    # server-owned ... the Entity column always wins"). Without the header
+    # the caller is the legacy "" environment, so every sparse row landed
+    # with environment='' in the SHARED baseline atlas-configurations —
+    # invisible to cleanup.sh's environment-scoped reclaim, which selects
+    # on `.attributes.environment == $env`, and therefore leaked three rows
+    # per bootstrap run permanently.
     curl -fsS -X POST \
         -H 'Accept: application/vnd.api+json' \
         -H 'Content-Type: application/vnd.api+json' \
+        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
         -d "$body" \
-        "$ATLAS_UI_BASE/api/configurations/services" >/dev/null
+        "$ATLAS_UI_BASE/api/configurations/services" >/dev/null \
+        || { log error "create_service_config: POST failed (type=$shape, id=$svc_id)"; return 1; }
     log info "sparse service config $svc_id created (type=$shape, environment=$ATLAS_ENVIRONMENT)"
 
     # SERVICE_ID routing (task-47): base/atlas-<svc>.yaml bakes the pinned
@@ -412,9 +435,18 @@ create_service_config() {
 
 if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
     # Sparse mode: fresh Id-keyed rows, never main's pinned rows (G7/NG6).
-    create_service_config /atlas/canonical/services/login-service.json login atlas-login
-    create_service_config /atlas/canonical/services/channel-service.json channel atlas-channel
-    create_service_config /atlas/canonical/services/drops-service.json none atlas-drops
+    #
+    # What actually makes a bad row fatal is create_service_config's own
+    # guards returning non-zero — line 21 restores `set -e` after lib.sh
+    # relaxes it, so a bare call already aborts. The `|| exit 1` is
+    # belt-and-braces for that dependency: it keeps these three calls fatal
+    # if `set -e` is ever relaxed again (lib.sh has done exactly that once
+    # already), and states the intent at the call site. Failing the PostSync
+    # hook is the point — better a visible hook failure in Argo than
+    # restarting Deployments whose SERVICE_ID is wrong or absent.
+    create_service_config /atlas/canonical/services/login-service.json login atlas-login || exit 1
+    create_service_config /atlas/canonical/services/channel-service.json channel atlas-channel || exit 1
+    create_service_config /atlas/canonical/services/drops-service.json none atlas-drops || exit 1
 else
     # login-service: version-derived login port, id-keyed merge.
     upsert_service_config /atlas/canonical/services/login-service.json login

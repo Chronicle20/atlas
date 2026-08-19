@@ -92,3 +92,32 @@ EOF
     [[ "$output" != *"no canonical baseline"* ]]
     [ ! -f "$BATS_TEST_TMPDIR/kubectl-ran" ]
 }
+
+# --- sparse service-config creation (task-232 follow-up) ------------------
+
+@test "create_service_config sends the ENVIRONMENT header on POST" {
+    # The row's environment column is server-owned — atlas-configurations
+    # stamps it from env.MustFromContext(ctx) and deliberately ignores the
+    # body's .data.attributes.environment. Without this header every sparse
+    # row landed with environment='' in the SHARED baseline, where
+    # cleanup.sh's environment-scoped reclaim can never match it.
+    local fn
+    fn=$(sed -n '/^create_service_config()/,/^}/p' "$PROJECT_ROOT/scripts/bootstrap.sh")
+    [ -n "$fn" ]
+    [[ "$fn" == *'-H "ENVIRONMENT: $ATLAS_ENVIRONMENT"'* ]]
+}
+
+@test "create_service_config refuses an empty service id" {
+    # `kubectl set env SERVICE_ID=` does not fail on an empty value — it
+    # writes an env entry with no value, which panics the consumer at
+    # startup. The guard must sit before that call.
+    local fn
+    fn=$(sed -n '/^create_service_config()/,/^}/p' "$PROJECT_ROOT/scripts/bootstrap.sh")
+    local guard_line set_env_line
+    guard_line=$(printf '%s\n' "$fn" | grep -n 'refusing to continue with empty service id' | cut -d: -f1 | head -1)
+    # anchored: the phrase also appears in this function's comments
+    set_env_line=$(printf '%s\n' "$fn" | grep -n '^ *kubectl set env' | cut -d: -f1 | head -1)
+    [ -n "$guard_line" ]
+    [ -n "$set_env_line" ]
+    [ "$guard_line" -lt "$set_env_line" ]
+}

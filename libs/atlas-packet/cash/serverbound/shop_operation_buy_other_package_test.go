@@ -35,8 +35,8 @@ func TestShopOperationBuyOtherPackageRoundTrip(t *testing.T) {
 
 // TestShopOperationBuyOtherPackageV95Bytes pins the field order behind the
 // round-trip test above -- derivation.md D3a (§4, CCashShop::OnGiftPackage
-// @ 0x4907b0, the same address the round-trip test's own
-// packet-audit:verify marker above already cites): the body after the mode
+// @ 0x4907b0, the same address the round-trip test's own verify marker
+// above already cites): the body after the mode
 // byte is spw (asciiString), serialNumber (uint32 LE), name (asciiString),
 // message (asciiString) -- no pointType, no option. A round-trip test alone
 // cannot see a self-consistent field-order defect (e.g. name/message

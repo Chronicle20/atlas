@@ -36,6 +36,68 @@ CANONICAL_TENANT_JSON="${CANONICAL_TENANT_JSON:-/atlas/canonical/tenant.json}"
 MINIO_PROBE_RETRIES="${MINIO_PROBE_RETRIES:-5}"
 MINIO_PROBE_SLEEP="${MINIO_PROBE_SLEEP:-5}"
 
+# ENV_HEADER is the control-plane environment tag every scoped request
+# carries. It is an ARRAY, not a string: a string would word-split on the
+# space in "ENVIRONMENT: pr-1411" and curl would see two broken arguments.
+#
+# Gating on ATLAS_MODE rather than on "does an environment record exist"
+# (cleanup.sh:135-137's live check) is deliberate. Teardown must not trust a
+# build-time flag because it is *reacting* to whatever got deployed;
+# bootstrap is *establishing* the state and must send the header on its very
+# first call, before any record could answer the question. ATLAS_MODE is
+# also the signal the neighbouring create_service_config already keys on.
+#
+# In isolated mode the array is empty, so every curl argv below is
+# byte-identical to what it was before this existed (FR-2.5) — one code
+# path, not two.
+env_header_init() {
+    ENV_HEADER=()
+    if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+        require_env ATLAS_ENVIRONMENT
+        ENV_HEADER=(-H "ENVIRONMENT: $ATLAS_ENVIRONMENT")
+    fi
+}
+env_header_init
+
+# find_environment_tenant <region> <major> <minor> — echoes THIS
+# environment's tenant id for that version triple, or nothing.
+#
+# The ENVIRONMENT header is the entire fix for the adopt-main's-tenant
+# defect. atlas-tenants' getAll already applies scope.Strict to the caller's
+# environment (tenant/provider.go:27-32); without the header the caller is
+# the legacy "" environment and sees the unfiltered union, in which main's
+# canonical tenant ALWAYS matches the canonical version triple — because a
+# sparse tenant deliberately shares that triple and is distinguished only by
+# its environment and its generated UUID.
+find_environment_tenant() {
+    curl -fsS -H 'Accept: application/vnd.api+json' \
+        "${ENV_HEADER[@]}" \
+        "$ATLAS_UI_BASE/api/tenants" \
+        | jq -r --arg r "$1" --arg M "$2" --arg m "$3" \
+            '.data[] | select(.attributes.region == $r and (.attributes.majorVersion|tostring) == $M and (.attributes.minorVersion|tostring) == $m) | .id' \
+        | head -1
+}
+
+# create_environment_tenant — POSTs the canonical tenant payload and echoes
+# the assigned id. Entity.Environment is server-owned from request context
+# (tenant/entity.go:16), so the ENVIRONMENT header is the ONLY way to stamp
+# the new row with this environment; the request body cannot carry it.
+create_environment_tenant() {
+    local created id
+    created=$(curl -fsS -X POST \
+        -H 'Accept: application/vnd.api+json' \
+        -H 'Content-Type: application/vnd.api+json' \
+        "${ENV_HEADER[@]}" \
+        -d @"$CANONICAL_TENANT_JSON" \
+        "$ATLAS_UI_BASE/api/tenants") || { log error "tenant POST failed"; return 1; }
+    id=$(printf '%s' "$created" | jq -r '.data.id // empty')
+    if [ -z "$id" ] || [ "$id" = "null" ]; then
+        log error "tenant POST returned no id"
+        return 1
+    fi
+    printf '%s' "$id"
+}
+
 # Sanity-check TENANT_ID shape. The libs/atlas-rest middleware that
 # tenant-aware endpoints route through (ParseTenant) requires the
 # header to be UUID-parseable; a non-UUID value would return 400 from
@@ -233,35 +295,19 @@ canonical_region=$(jq -r '.data.attributes.region' "$CANONICAL_TENANT_JSON")
 canonical_major=$(jq -r '.data.attributes.majorVersion' "$CANONICAL_TENANT_JSON")
 canonical_minor=$(jq -r '.data.attributes.minorVersion' "$CANONICAL_TENANT_JSON")
 
-existing=$(curl -fsS -H 'Accept: application/vnd.api+json' \
-    "$ATLAS_UI_BASE/api/tenants" \
-    | jq -r --arg r "$canonical_region" --arg M "$canonical_major" --arg m "$canonical_minor" \
-        '.data[] | select(.attributes.region == $r and (.attributes.majorVersion|tostring) == $M and (.attributes.minorVersion|tostring) == $m) | .id' \
-    | head -1)
+existing=$(find_environment_tenant "$canonical_region" "$canonical_major" "$canonical_minor")
 
 if [ -n "$existing" ] && [ "$existing" != "null" ]; then
-    log info "canonical tenant already present: $existing"
+    log info "tenant already present for environment=${ATLAS_ENVIRONMENT:-<legacy>}: $existing"
     TENANT_ID="$existing"
 else
-    log info "creating canonical tenant ($canonical_region v$canonical_major.$canonical_minor)"
-    created=$(curl -fsS -X POST \
-        -H 'Accept: application/vnd.api+json' \
-        -H 'Content-Type: application/vnd.api+json' \
-        -d @/atlas/canonical/tenant.json \
-        "$ATLAS_UI_BASE/api/tenants")
-    TENANT_ID=$(echo "$created" | jq -r '.data.id')
-    if [ -z "$TENANT_ID" ] || [ "$TENANT_ID" = "null" ]; then
-        log error "tenant POST returned no id"
-        exit 1
-    fi
+    log info "creating tenant for environment=${ATLAS_ENVIRONMENT:-<legacy>} ($canonical_region v$canonical_major.$canonical_minor)"
+    TENANT_ID=$(create_environment_tenant) || exit 1
 
-    # Wait for tenant.status Kafka event to settle. Atlas-tenants writes
-    # the DB row before the emit; if Kafka is unreachable, the emit fails
-    # and the next caller would see a tenant via REST but no event was
-    # published. We poll the GET endpoint until the tenant is present —
-    # which it already is post-POST — and additionally wait a short window
-    # for downstream services to reconcile via the Kafka event. This mirrors
-    # the onboarding doc pitfall #1.
+    # Wait for the tenant.status Kafka event to settle. atlas-tenants writes
+    # the DB row before the emit; if Kafka is unreachable the emit fails and
+    # the next caller would see a tenant via REST with no event published.
+    # This mirrors the onboarding doc's pitfall #1.
     sleep 10
 fi
 

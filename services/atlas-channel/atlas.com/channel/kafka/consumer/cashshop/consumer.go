@@ -107,6 +107,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventGiftPurchased(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -337,6 +342,29 @@ func handleStatusEventLockerRebated(sc server.Model, wp writer.Producer) message
 		}
 
 		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopRebateDoneBody(e.Body.CashId, e.Body.Amount))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
+	}
+}
+
+// handleStatusEventGiftPurchased announces the GIFT_SUCCESS arm to the
+// SENDER's session (e.CharacterId, per GiftPurchasedStatusEventProvider's
+// convention of keying the status event on the sender). Recipient-side live
+// refresh is deliberately out of scope: REFRESH_LOCKER (mode 162) is not
+// bound in the "operations" table of any GMS seed template, so announcing it
+// would resolve to the ResolveCode sentinel. The gifted asset is durable in
+// the recipient's locker either way; they see it on their next locker load.
+func handleStatusEventGiftPurchased(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.GiftPurchasedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.GiftPurchasedBody]) {
+		if e.Type != cashshop2.StatusEventTypeGiftPurchased {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopGiftDoneBody(e.Body.RecipientName, int32(e.Body.TemplateId), e.Body.Quantity, int32(e.Body.Price)))
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
 	}
 }

@@ -20,6 +20,7 @@ const (
 	CommandTypeOpenSurprise                       = "OPEN_SURPRISE"
 	CommandTypeRequestCouponRedemption            = "REQUEST_COUPON_REDEMPTION"
 	CommandTypeRequestLockerRebate                = "REQUEST_LOCKER_REBATE"
+	CommandTypeRequestGiftPurchase                = "REQUEST_GIFT_PURCHASE"
 )
 
 type Command[E any] struct {
@@ -113,6 +114,22 @@ type RequestLockerRebateCommandBody struct {
 	CashId        int64     `json:"cashId"`
 }
 
+// RequestGiftPurchaseCommandBody requests one GIFT purchase (task-240 task
+// 13): the sender's wallet is charged and the commodity is delivered into
+// the RECIPIENT's locker. The channel resolves the recipient NAME to a
+// character id before sending, because atlas-cashshop's character client has
+// only GetById -- there is no name lookup there. TransactionId is the
+// idempotency key, mirroring RequestLockerRebateCommandBody: a Kafka
+// redelivery replays the same id and is rejected as success-without-effect
+// by the ledger, while a genuine second click gets a new one.
+type RequestGiftPurchaseCommandBody struct {
+	TransactionId        uuid.UUID `json:"transactionId"`
+	SerialNumber         uint32    `json:"serialNumber"`
+	RecipientCharacterId uint32    `json:"recipientCharacterId"`
+	SenderName           string    `json:"senderName"`
+	Message              string    `json:"message"`
+}
+
 const (
 	EnvEventTopicStatus                       = "EVENT_TOPIC_CASH_SHOP_STATUS"
 	EventCashShopStatusTypeCharacterEnter     = "CHARACTER_ENTER"
@@ -126,6 +143,7 @@ const (
 	StatusEventTypeCouponRedeemed             = "COUPON_REDEEMED"
 	StatusEventTypeCouponFailed               = "COUPON_FAILED"
 	StatusEventTypeLockerRebated              = "LOCKER_REBATED"
+	StatusEventTypeGiftPurchased              = "GIFT_PURCHASED"
 )
 
 // TODO multiple services have different impl of this
@@ -253,4 +271,19 @@ type LockerRebatedBody struct {
 	CashId        int64     `json:"cashId"`
 	Amount        int32     `json:"amount"`
 	Currency      uint32    `json:"currency"`
+}
+
+// GiftPurchasedBody describes one successful GIFT. RecipientName is
+// resolved server-side (the command only carries RecipientCharacterId) so
+// the channel can render the recipient's name without a second round trip.
+// There is deliberately no Currency field: a gift is always charged to the
+// sender's credit/NX bucket, so there is nothing to echo back that the
+// caller does not already know (task-240 task 13/C4).
+type GiftPurchasedBody struct {
+	TransactionId        uuid.UUID `json:"transactionId"`
+	RecipientName        string    `json:"recipientName"`
+	TemplateId           uint32    `json:"templateId"`
+	Quantity             uint16    `json:"quantity"`
+	Price                uint32    `json:"price"`
+	RecipientCharacterId uint32    `json:"recipientCharacterId"`
 }

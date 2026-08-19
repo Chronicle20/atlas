@@ -172,3 +172,15 @@ These are real and must not be closed by an invented value.
 - `transactionId` is minted **at the channel, per click**, never derived from a character id or a timestamp. A genuine second click gets a new id and legitimately charges twice; only a Kafka redelivery replays the same one.
 - `uuid.Nil` means "no correlation" on `RequestPurchaseCommandBody`. The ledger must reject it outright rather than let it become a shared uniqueness claim that blocks every uncorrelated command (Task 10).
 - Every failure path announces something. A silent return leaves the client's cash shop dialog wedged, and that is the failure mode this whole task exists to remove.
+
+## 6. Task 14 — GIFT recipient-side live refresh is deliberately out of scope
+
+`handleStatusEventGiftPurchased` (`kafka/consumer/cashshop/consumer.go`) only announces the
+GIFT_SUCCESS arm to the **sender's** session. It does not push any live update to the
+**recipient's** session. `REFRESH_LOCKER` (mode 162) returns zero matches in the `operations`
+table of every GMS seed template (`template_gms_95_1.json` grepped at plan time), so announcing it
+would resolve through `ResolveCode`'s sentinel rather than a real mode byte. The gifted asset is
+durable in the recipient's locker either way (FR-GIFT-6, delivered by the `atlas-cashshop`-side
+gift transaction, Task 13); the recipient sees it on their next locker load. A future task that
+resolves a real `REFRESH_LOCKER` mode byte (or an equivalent client-confirmed push arm) can add the
+recipient-side announce without touching this task's sender-side path.

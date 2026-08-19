@@ -30,6 +30,7 @@ type Processor interface {
 	MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error
 	OpenSurprise(accountId uint32, characterId uint32, cashId int64) error
 	RequestLockerRebate(accountId uint32, characterId uint32, cashId int64, transactionId uuid.UUID) error
+	RequestGiftPurchase(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -232,4 +233,14 @@ func (p *ProcessorImpl) OpenSurprise(accountId uint32, characterId uint32, cashI
 func (p *ProcessorImpl) RequestLockerRebate(accountId uint32, characterId uint32, cashId int64, transactionId uuid.UUID) error {
 	p.l.Debugf("Character [%d] requesting locker rebate for cash item [%d]. Transaction [%s].", characterId, cashId, transactionId)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestLockerRebateCommandProvider(characterId, transactionId, accountId, cashId))
+}
+
+// RequestGiftPurchase forwards a GIFT purchase request. TransactionId is
+// minted by the caller (once per click, mirroring OpenSurprise/RequestLockerRebate's
+// idempotency pattern) so a Kafka redelivery replays this id and is rejected
+// by atlas-cashshop's gift ledger while a genuine second click gets a fresh
+// one.
+func (p *ProcessorImpl) RequestGiftPurchase(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) error {
+	p.l.Debugf("Character [%d] gifting serial [%d] to character [%d]. Transaction [%s].", characterId, serialNumber, recipientCharacterId, transactionId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestGiftPurchaseCommandProvider(characterId, transactionId, serialNumber, recipientCharacterId, senderName, message))
 }

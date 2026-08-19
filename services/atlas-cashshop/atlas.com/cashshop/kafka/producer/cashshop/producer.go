@@ -180,6 +180,24 @@ func RingPurchasedStatusEventProvider(characterId uint32, transactionId uuid.UUI
 	return producer.SingleMessageProvider(key, value)
 }
 
+// EquipSlotIncreasedStatusEventProvider builds the EQUIP_SLOT_INCREASED
+// status event (task-240 task 23). slotIndex is the Atlas canonical
+// equipped-inventory position (R1, the pendant2 constant) -- NOT the wire
+// value the channel must send (always 0).
+func EquipSlotIncreasedStatusEventProvider(characterId uint32, transactionId uuid.UUID, slotIndex int16, days uint16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.StatusEvent[cashshop.EquipSlotIncreasedBody]{
+		CharacterId: characterId,
+		Type:        cashshop.StatusEventTypeEquipSlotIncreased,
+		Body: cashshop.EquipSlotIncreasedBody{
+			TransactionId: transactionId,
+			SlotIndex:     slotIndex,
+			Days:          days,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func SurpriseFailedStatusEventProvider(characterId uint32, reason string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.StatusEvent[cashshop.SurpriseFailedEventBody]{

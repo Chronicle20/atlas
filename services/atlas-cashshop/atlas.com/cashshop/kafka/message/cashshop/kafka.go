@@ -21,6 +21,7 @@ const (
 	CommandTypeRequestGiftPurchase                = "REQUEST_GIFT_PURCHASE"
 	CommandTypeRequestPackagePurchase             = "REQUEST_PACKAGE_PURCHASE"
 	CommandTypeRequestRingPurchase                = "REQUEST_RING_PURCHASE"
+	CommandTypeRequestEquipSlotIncrease           = "REQUEST_EQUIP_SLOT_INCREASE"
 )
 
 type Command[E any] struct {
@@ -161,6 +162,22 @@ type RequestRingPurchaseCommandBody struct {
 	RingType           string    `json:"ringType"`
 }
 
+// RequestEquipSlotIncreaseCommandBody requests one ENABLE_EQUIP_SLOT
+// purchase (task-240 task 23, mode 9/10). Unlike every other purchase
+// command here, this carries no item-locker effect: the commodity buys an
+// EXTENSION on a fixed equipped-inventory slot (the pendant2 constant,
+// libs/atlas-constants/inventory/slot -- see derivation-equip-slot.md E1 /
+// R1), recorded by atlas-character's equipslot domain, not by an asset
+// row. TransactionId is the idempotency key, mirroring every other
+// per-click command here: a Kafka redelivery replays the same id and is
+// rejected as success-without-effect by the ledger, while a genuine second
+// click gets a new one.
+type RequestEquipSlotIncreaseCommandBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	Currency      uint32    `json:"currency"`
+	SerialNumber  uint32    `json:"serialNumber"`
+}
+
 const (
 	EnvEventTopicStatus                       = "EVENT_TOPIC_CASH_SHOP_STATUS"
 	StatusEventTypeInventoryCapacityIncreased = "INVENTORY_CAPACITY_INCREASED"
@@ -174,6 +191,7 @@ const (
 	StatusEventTypeGiftPurchased              = "GIFT_PURCHASED"
 	StatusEventTypePackagePurchased           = "PACKAGE_PURCHASED"
 	StatusEventTypeRingPurchased              = "RING_PURCHASED"
+	StatusEventTypeEquipSlotIncreased         = "EQUIP_SLOT_INCREASED"
 )
 
 type StatusEvent[E any] struct {
@@ -361,4 +379,17 @@ type RingPurchasedBody struct {
 	Quantity      uint16    `json:"quantity"`
 	RingType      string    `json:"ringType"`
 	PairId        uuid.UUID `json:"pairId"`
+}
+
+// EquipSlotIncreasedBody describes one successful ENABLE_EQUIP_SLOT
+// purchase (task-240 task 23). SlotIndex is the Atlas CANONICAL
+// equipped-inventory position (R1 -- the pendant2 constant,
+// libs/atlas-constants/inventory/slot), NOT the wire value: the
+// EnableEquipSlotExtSuccess packet body's slotIndex is always 0 (it indexes
+// a one-element client-side array), and the channel must encode that 0
+// itself rather than passing this field straight into the packet body.
+type EquipSlotIncreasedBody struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	SlotIndex     int16     `json:"slotIndex"`
+	Days          uint16    `json:"days"`
 }

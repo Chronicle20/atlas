@@ -77,6 +77,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestRingPurchase(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestEquipSlotIncrease(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -241,6 +244,21 @@ func handleCommandRequestRingPurchase(db *gorm.DB) message.Handler[cashshop.Comm
 		// needs logging here.
 		if err := cashshop3.NewProcessor(l, ctx, db).PurchaseRingAndEmit(c.CharacterId, c.Body.TransactionId, c.Body.Currency, c.Body.SerialNumber, c.Body.PartnerCharacterId, c.Body.SenderName, c.Body.Message, c.Body.RingType); err != nil {
 			l.WithError(err).Errorf("Ring purchase for character [%d], partner [%d] did not succeed.", c.CharacterId, c.Body.PartnerCharacterId)
+		}
+	}
+}
+
+func handleCommandRequestEquipSlotIncrease(db *gorm.DB) message.Handler[cashshop.Command[cashshop.RequestEquipSlotIncreaseCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c cashshop.Command[cashshop.RequestEquipSlotIncreaseCommandBody]) {
+		if c.Type != cashshop.CommandTypeRequestEquipSlotIncrease {
+			return
+		}
+		// PurchaseEquipSlotAndEmit owns the whole outcome, including
+		// emitting the EQUIP_SLOT_INCREASED / ERROR event on the
+		// appropriate path, so a returned error has already been reported
+		// to the player and only needs logging here.
+		if err := cashshop3.NewProcessor(l, ctx, db).PurchaseEquipSlotAndEmit(c.CharacterId, c.Body.Currency, c.Body.SerialNumber, c.Body.TransactionId); err != nil {
+			l.WithError(err).Errorf("Equip slot purchase for character [%d] did not succeed.", c.CharacterId)
 		}
 	}
 }

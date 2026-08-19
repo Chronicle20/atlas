@@ -112,4 +112,33 @@ Put the decision in the **serverbound handler**, not in the Kafka consumer.
 
 ## Resolution
 
-_(pending)_
+Fixed in `services/atlas-channel/atlas.com/channel/socket/handler/character_chat_whisper.go`.
+
+The `WhisperModeChat` arm of `CharacterChatWhisperHandleFunc` no longer produces the
+chat command unconditionally. It now resolves reachability first, via a new pure
+decision function `whisperDecision`, which mirrors the existing `findDecision` idiom:
+
+- Reuses `findCharacterByNameFunc` to resolve the target by name.
+- Reuses `findCharacterLocationFunc` (`location.Get`) to read presence.
+- Table: unresolvable name → `false`/no produce; `location.ErrNotFound` → `false`/no
+  produce; `PresenceStateOffline` → `false`/no produce; `PresenceStateInCashShop` →
+  `false`/no produce; `PresenceStateInField` → produce, `success: true` still comes
+  from the Kafka consumer's round trip as before; any other lookup error → log at
+  error level and fail open (produce as today).
+
+The production step itself moved behind a new package-level seam,
+`produceWhisperChatFunc` (wrapping `message.NewProcessor(...).WhisperChat`), so the
+decision and its side effect are both unit-testable without a live Kafka broker. The
+whole WhisperModeChat body was extracted into `produceWhisperChatResult`, the
+counterpart of the existing `produceFindResultBody`, so the handler function itself
+stays a thin dispatcher.
+
+`kafka/consumer/message/consumer.go` was not touched, per the brief — a sibling
+branch owns that file.
+
+Tests added in `character_chat_whisper_test.go`: `TestWhisperChat_Decision` (one
+subtest per decision-table row, asserting both the announced packet and whether
+`produceWhisperChatFunc` was called) and `TestWhisperChat_ProduceFailure` (the
+existing produce-error behaviour is preserved). All pass; module-local
+`go build ./... && go test ./...` from
+`services/atlas-channel/atlas.com/channel` is clean.

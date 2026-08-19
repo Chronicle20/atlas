@@ -68,6 +68,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestLockerRebate(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestGiftPurchase(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -187,6 +190,21 @@ func handleCommandRequestLockerRebate(db *gorm.DB) message.Handler[cashshop.Comm
 		// needs logging here.
 		if err := cashshop3.NewProcessor(l, ctx, db).RebateAndEmit(c.CharacterId, c.Body.AccountId, c.Body.CashId, c.Body.TransactionId); err != nil {
 			l.WithError(err).Errorf("Locker rebate for character [%d], cashId [%d] did not succeed.", c.CharacterId, c.Body.CashId)
+		}
+	}
+}
+
+func handleCommandRequestGiftPurchase(db *gorm.DB) message.Handler[cashshop.Command[cashshop.RequestGiftPurchaseCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c cashshop.Command[cashshop.RequestGiftPurchaseCommandBody]) {
+		if c.Type != cashshop.CommandTypeRequestGiftPurchase {
+			return
+		}
+		// GiftAndEmit owns the whole outcome, including emitting the
+		// GIFT_PURCHASED / ERROR event on the appropriate path, so a
+		// returned error has already been reported to the player and only
+		// needs logging here.
+		if err := cashshop3.NewProcessor(l, ctx, db).GiftAndEmit(c.CharacterId, c.Body.TransactionId, c.Body.SerialNumber, c.Body.RecipientCharacterId, c.Body.SenderName, c.Body.Message); err != nil {
+			l.WithError(err).Errorf("Gift purchase for character [%d], recipient [%d] did not succeed.", c.CharacterId, c.Body.RecipientCharacterId)
 		}
 	}
 }

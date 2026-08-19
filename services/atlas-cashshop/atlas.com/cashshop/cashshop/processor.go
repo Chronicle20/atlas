@@ -96,6 +96,7 @@ type Processor interface {
 	PurchaseInventoryIncreaseByTypeAndEmit(characterId uint32, currency uint32, inventoryType inventory.Type) error
 	PurchaseInventoryIncrease(mb *message.Buffer) func(characterId uint32, currency uint32, inventoryType inventory.Type, cost uint32, amount uint32) error
 	RebateAndEmit(characterId uint32, accountId uint32, cashId int64, transactionId uuid.UUID) error
+	GiftAndEmit(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, giftMessage string) error
 }
 
 type ProcessorImpl struct {

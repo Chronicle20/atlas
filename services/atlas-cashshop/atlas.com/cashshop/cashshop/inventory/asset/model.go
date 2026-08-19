@@ -19,6 +19,8 @@ type Model struct {
 	purchasedBy   uint32
 	expiration    time.Time
 	createdAt     time.Time
+	giftFrom      string
+	giftMessage   string
 }
 
 func (m Model) Id() uint32 {
@@ -72,6 +74,20 @@ func (m Model) CreatedAt() time.Time {
 	return m.createdAt
 }
 
+// GiftFrom is the sender's character name for a GIFT purchase (task-240 task
+// 13); empty for every other asset. See Entity.GiftFrom's doc comment for
+// the 13-character wire bound.
+func (m Model) GiftFrom() string {
+	return m.giftFrom
+}
+
+// GiftMessage is the sender's message for a GIFT purchase; empty for every
+// other asset. See Entity.GiftMessage's doc comment for the 73-character
+// wire bound.
+func (m Model) GiftMessage() string {
+	return m.giftMessage
+}
+
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
 		id:            m.id,
@@ -86,6 +102,8 @@ func Clone(m Model) *ModelBuilder {
 		purchasedBy:   m.purchasedBy,
 		expiration:    m.expiration,
 		createdAt:     m.createdAt,
+		giftFrom:      m.giftFrom,
+		giftMessage:   m.giftMessage,
 	}
 }
 
@@ -102,6 +120,8 @@ type ModelBuilder struct {
 	purchasedBy   uint32
 	expiration    time.Time
 	createdAt     time.Time
+	giftFrom      string
+	giftMessage   string
 }
 
 func NewBuilder(compartmentId uuid.UUID, templateId uint32) *ModelBuilder {
@@ -171,6 +191,16 @@ func (b *ModelBuilder) SetCreatedAt(createdAt time.Time) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetGiftFrom(giftFrom string) *ModelBuilder {
+	b.giftFrom = giftFrom
+	return b
+}
+
+func (b *ModelBuilder) SetGiftMessage(giftMessage string) *ModelBuilder {
+	b.giftMessage = giftMessage
+	return b
+}
+
 func (b *ModelBuilder) Build() Model {
 	return Model{
 		id:            b.id,
@@ -185,5 +215,7 @@ func (b *ModelBuilder) Build() Model {
 		purchasedBy:   b.purchasedBy,
 		expiration:    b.expiration,
 		createdAt:     b.createdAt,
+		giftFrom:      b.giftFrom,
+		giftMessage:   b.giftMessage,
 	}
 }

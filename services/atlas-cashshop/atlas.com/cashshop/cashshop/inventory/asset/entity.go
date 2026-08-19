@@ -38,13 +38,23 @@ type Entity struct {
 	// value unchanged). A rebate therefore safely treats a stored 0 as the
 	// ordinary credit/NX bucket (the user's ruling, C2) and every other
 	// stored value as itself, with no further guessing.
-	Currency    uint32         `gorm:"not null;default:0"`
-	Quantity    uint32         `gorm:"not null"`
-	Flag        uint16         `gorm:"not null"`
-	PetId       uint32         `gorm:"not null;default:0"`
-	PurchasedBy uint32         `gorm:"not null"`
-	Expiration  time.Time      `gorm:"not null"`
-	CreatedAt   time.Time      `gorm:"not null"`
+	Currency    uint32    `gorm:"not null;default:0"`
+	Quantity    uint32    `gorm:"not null"`
+	Flag        uint16    `gorm:"not null"`
+	PetId       uint32    `gorm:"not null;default:0"`
+	PurchasedBy uint32    `gorm:"not null"`
+	Expiration  time.Time `gorm:"not null"`
+	CreatedAt   time.Time `gorm:"not null"`
+	// GiftFrom is the sender's character name for a GIFT purchase (task-240
+	// task 13), empty for every other asset. Bounded at 13 characters -- the
+	// padded encode width of CashInventoryItem.GiftFrom
+	// (libs/atlas-packet/cash/clientbound/shop_inventory.go:35).
+	GiftFrom string `gorm:"size:13;not null;default:''"`
+	// GiftMessage is the sender's message for a GIFT purchase, empty for
+	// every other asset. Bounded at 73 characters -- the padded encode width
+	// of GiftListEntry.Text
+	// (libs/atlas-packet/cash/clientbound/shop_operation_result_gift.go:43).
+	GiftMessage string         `gorm:"size:73;not null;default:''"`
 	DeletedAt   gorm.DeletedAt `gorm:"index"`
 }
 
@@ -64,5 +74,7 @@ func Make(e Entity) (Model, error) {
 		SetPurchasedBy(e.PurchasedBy).
 		SetExpiration(e.Expiration).
 		SetCreatedAt(e.CreatedAt).
+		SetGiftFrom(e.GiftFrom).
+		SetGiftMessage(e.GiftMessage).
 		Build(), nil
 }

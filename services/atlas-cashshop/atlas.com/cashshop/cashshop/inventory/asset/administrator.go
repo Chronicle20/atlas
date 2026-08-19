@@ -23,7 +23,7 @@ func generateUniqueCashId(db *gorm.DB) (int64, error) {
 	}
 }
 
-func create(db *gorm.DB, tenantId uuid.UUID, compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32, expiration time.Time) model.Provider[Entity] {
+func create(db *gorm.DB, tenantId uuid.UUID, compartmentId uuid.UUID, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32, expiration time.Time, giftFrom string, giftMessage string) model.Provider[Entity] {
 	cashId, err := generateUniqueCashId(db)
 	if err != nil {
 		return model.ErrorProvider[Entity](err)
@@ -42,6 +42,8 @@ func create(db *gorm.DB, tenantId uuid.UUID, compartmentId uuid.UUID, templateId
 		PurchasedBy:   purchasedBy,
 		Expiration:    expiration,
 		CreatedAt:     time.Now(),
+		GiftFrom:      giftFrom,
+		GiftMessage:   giftMessage,
 	}
 
 	if err := db.Create(&entity).Error; err != nil {

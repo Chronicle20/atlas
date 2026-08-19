@@ -267,6 +267,22 @@ func (m *Asset) encodeEquipableInfo(l logrus.FieldLogger, ctx context.Context) f
 					w.WriteInt(m.hammersApplied)
 				}
 
+				// nGrade/nCHUC + nOption1-3/nSocket1-2: GMS v92+ equip trailer
+				// addition (GW_ItemSlotEquip::RawDecode @0x4f35d0, offsets
+				// +263/+269/+277/+285/+293/+301/+309 -- two Decode1 reads then five
+				// Decode2 reads, before the conditional DecodeBuffer). Absent on
+				// v84 (@0x4eaf34) and v87, which go straight from the third
+				// Decode4 (hammersApplied) to the conditional buffer. IDA-verified.
+				if t.IsRegion("GMS") && t.MajorAtLeast(92) {
+					w.WriteByte(0)
+					w.WriteByte(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+					w.WriteShort(0)
+				}
+
 				if t.Region() == "JMS" {
 					w.WriteByte(0)
 					w.WriteShort(0)
@@ -608,6 +624,18 @@ func (m *Asset) decodeEquipableInfo(r *request.Reader, t tenant.Model, isCash bo
 					// hammersApplied (nIUC): v79+ only (mirror of Encode).
 					if (t.IsRegion("GMS") && t.MajorAtLeast(79)) || t.Region() == "JMS" {
 						m.hammersApplied = r.ReadUint32()
+					}
+
+					// nGrade/nCHUC + nOption1-3/nSocket1-2: GMS v92+ (mirror of Encode;
+					// see GW_ItemSlotEquip::RawDecode @0x4f35d0 citation there).
+					if t.IsRegion("GMS") && t.MajorAtLeast(92) {
+						_ = r.ReadByte()
+						_ = r.ReadByte()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
+						_ = r.ReadUint16()
 					}
 
 					if t.Region() == "JMS" {

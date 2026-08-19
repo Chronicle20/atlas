@@ -110,3 +110,35 @@ func StampNotified(db *gorm.DB) func(ids []uuid.UUID, at time.Time) error {
 			Update("last_notified", at).Error
 	}
 }
+
+// ClaimNotifiable is the notification sweep's claim-by-update (design §8.1,
+// last paragraph: "the notification sweep uses the same claim-by-update
+// shape on LastNotified"): one UPDATE both selects and stamps up to batch
+// newly-receivable, not-yet-notified rows. Stamping LastNotified as part of
+// the SAME statement that claims the row is the concurrency guard — exactly
+// ClaimExpired's shape, with LastNotified IS NULL standing in for
+// status='pending' as the compare-and-swap predicate. Under concurrent
+// replicas, whichever UPDATE's write commits first is the only one whose
+// WHERE clause (last_notified IS NULL) still matches that row; the loser
+// claims zero of it, so at most one Kafka PARCEL_ARRIVED event is ever
+// emitted per parcel.
+func ClaimNotifiable(db *gorm.DB) func(now time.Time, batch int) ([]Model, error) {
+	return func(now time.Time, batch int) ([]Model, error) {
+		candidates := db.Model(&Entity{}).
+			Select("id").
+			Where("last_notified IS NULL AND status = ? AND receivable_at <= ?", StatusPending, now).
+			Order("receivable_at ASC").
+			Limit(batch)
+
+		var entities []Entity
+		err := db.Clauses(clause.Returning{}).
+			Model(&entities).
+			Where("last_notified IS NULL AND status = ? AND receivable_at <= ?", StatusPending, now).
+			Where("id IN (?)", candidates).
+			Update("last_notified", now).Error
+		if err != nil {
+			return nil, err
+		}
+		return model.SliceMap(Make)(model.FixedProvider(entities))()()
+	}
+}

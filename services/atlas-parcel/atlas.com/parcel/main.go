@@ -3,11 +3,13 @@ package main
 import (
 	custodyConsumer "atlas-parcel/kafka/consumer/custody"
 	"atlas-parcel/parcel"
+	"context"
 	"os"
 	"strconv"
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -44,9 +46,8 @@ func main() {
 	l := rt.Logger()
 
 	db := database.Connect(l, database.SetMigrations(parcel.Migration))
-	// db is also threaded through the kafka consumer and periodic tasks that
-	// later tasks in this plan register (kafka consumer, expiry sweep,
-	// notification task).
+	// db is also threaded through the kafka consumer and both periodic
+	// tasks registered below (expiry sweep, notification sweep).
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {
 		if database.IsTransientConnectionError(err) {
@@ -56,8 +57,6 @@ func main() {
 		return false
 	})
 
-	// Periodic tasks (notification) are registered by later tasks in the
-	// Duey parcel-delivery plan.
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	custodyConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := custodyConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
@@ -71,6 +70,21 @@ func main() {
 	expiryTask := parcel.NewExpiryTask(l, rt.Context(), db, getExpirationInterval())
 	expiryTask.Start()
 	rt.TeardownFunc(expiryTask.Stop)
+
+	// envContext originates this pod's own environment identity onto a
+	// background task's per-tenant context before it reaches a Kafka emit
+	// (mirrors services/atlas-merchant/atlas.com/merchant/main.go's own
+	// envContext, task-232).
+	envContext := func(ctx context.Context) context.Context {
+		return env.WithContext(ctx, env.Self())
+	}
+
+	// DB-driven notification sweep: notifies recipients of newly-receivable
+	// parcels via a PARCEL_ARRIVED status event and stamps LastNotified so
+	// it fires at most once per parcel (design §7.1 / §8).
+	notificationTask := parcel.NewNotificationTask(l, rt.Context(), db, getNotificationInterval(), envContext)
+	notificationTask.Start()
+	rt.TeardownFunc(notificationTask.Stop)
 
 	srv := server.New(l).
 		WithContext(rt.Context()).
@@ -97,6 +111,21 @@ func getExpirationInterval() time.Duration {
 	seconds, err := strconv.Atoi(intervalStr)
 	if err != nil || seconds <= 0 {
 		return parcel.DefaultExpiryInterval
+	}
+	return time.Duration(seconds) * time.Second
+}
+
+// getNotificationInterval reads the notification sweep cadence from
+// PARCEL_NOTIFICATION_INTERVAL_SECONDS, falling back to
+// parcel.DefaultNotificationInterval when unset or invalid.
+func getNotificationInterval() time.Duration {
+	intervalStr := os.Getenv("PARCEL_NOTIFICATION_INTERVAL_SECONDS")
+	if intervalStr == "" {
+		return parcel.DefaultNotificationInterval
+	}
+	seconds, err := strconv.Atoi(intervalStr)
+	if err != nil || seconds <= 0 {
+		return parcel.DefaultNotificationInterval
 	}
 	return time.Duration(seconds) * time.Second
 }

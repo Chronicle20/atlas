@@ -5,13 +5,17 @@ go 1.25.5
 require (
 	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-database v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-env v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0
+	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-service v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
+	github.com/segmentio/kafka-go v0.4.51
 	github.com/sirupsen/logrus v1.10.0
 	github.com/stretchr/testify v1.12.0
 	gorm.io/driver/sqlite v1.6.0
@@ -19,10 +23,7 @@ require (
 )
 
 require (
-	github.com/Chronicle20/atlas/libs/atlas-env v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
-	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000 // indirect
-	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
@@ -46,7 +47,6 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
-	github.com/segmentio/kafka-go v0.4.51 // indirect
 	go.elastic.co/ecslogrus v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.45.0 // indirect

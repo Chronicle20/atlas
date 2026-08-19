@@ -1,6 +1,7 @@
 package main
 
 import (
+	custodyConsumer "atlas-parcel/kafka/consumer/custody"
 	"atlas-parcel/parcel"
 	"os"
 
@@ -14,13 +15,6 @@ import (
 
 const serviceName = "atlas-parcel"
 
-// consumerGroupId is resolved ahead of its consumer registration: the custody
-// consumer that consumes it is Task 15 of the Duey parcel-delivery plan and
-// has not been implemented yet. Keep this declaration in place — do not
-// delete it — so Task 15 wires the existing group id rather than re-adding
-// it from scratch.
-//
-//nolint:unused // consumed by Task 15's custody consumer, not yet implemented
 var consumerGroupId = consumergroup.Resolve("Parcel Service")
 
 type Server struct {
@@ -60,9 +54,13 @@ func main() {
 		return false
 	})
 
-	// Kafka consumers, handlers and periodic tasks are registered by later
-	// tasks in the Duey parcel-delivery plan; nothing to wire yet.
-	_ = consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
+	// Periodic tasks (expiry sweep, notification) are registered by later
+	// tasks in the Duey parcel-delivery plan.
+	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
+	custodyConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := custodyConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatalf("Unable to register parcel custody command handlers.")
+	}
 
 	rt.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 

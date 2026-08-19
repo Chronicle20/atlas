@@ -9,7 +9,7 @@ Tool: `8ef468cdc57ed6513f972b5eabe890dff99d4a1d0f1f57bf42f69efc445c8ddb`
 - export gms_v48: `f46a1c091a8f557a7a0a47c295bed12c56e0f70e23552726d1ca6586eadbf0dd`
 - export gms_v61: `6c974c037a17229958f04d245f414de004f5530852466818e48167a4172e7c70`
 - export gms_v72: `de06b77032045627c7a386ab6a30f43894b4c3b28915a69de478929874edf8bc`
-- export gms_v79: `efa7d503bee32a270bf80e0d437259e1b4e13e7d7bab2058427def64e781a2a3`
+- export gms_v79: `883b29f836c42d0c7645338c2a3c9b81f72c45fc5be1fb500e6f028f90648dfd`
 - export gms_v83: `9dff2df7617fcaa60f123937c5dc3cdd85356e84a697776b010daab1144482f3`
 - export gms_v84: `16832eea1aedc71e48c73e047e4fca66fef8d2bfdc1901f2b5f00ac1286c40ce`
 - export gms_v87: `dcb1d52ed4c88dcef1d351e698a21c647b3bdd82a3c79b7bfc9c39682e15ab02`
@@ -452,7 +452,7 @@ Tool: `8ef468cdc57ed6513f972b5eabe890dff99d4a1d0f1f57bf42f69efc445c8ddb`
 | WITCH_TOWER_SCORE_UPDATE | CField::OnChaosZakumTimer; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldWitchTowerScoreUpdate (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x117 | ✅ | 0x12D | ✅ | 0x134 | ✅ | 0x13E | ✅ | 0x15E | 🟡ᶠ | 0x168 | ✅ | 0x146 | ✅ |
 | IDA_0X11A | CNpc::OnUpdateLimitedInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11A | ❌ |
 | IDA_0X11B | CNpc::OnSetSpecialAction |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11B | ❌ |
-| PARCEL | CParcelDlg::OnPacket | parcel/clientbound/ParcelAlarmGeneric |  | ⬜ |  | ⬜ | 0x120 | ✅ | 0x12C | ❌ | 0x142 | ✅ | 0x149 | ❌ | 0x153 | ❌ | 0x175 | ❌ | 0x17D | ❌ | 0x160 | ❌ |
+| PARCEL | CParcelDlg::OnPacket | parcel/clientbound/ParcelAlarmGeneric |  | ⬜ |  | ⬜ | 0x120 | ✅ | 0x12C | ✅ | 0x142 | ✅ | 0x149 | ❌ | 0x153 | ❌ | 0x175 | ❌ | 0x17D | ❌ | 0x160 | ❌ |
 | TOURNAMENT | CField_Tournament::OnTournament | field/clientbound/FieldTournament (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x125 | ✅ | 0x13B | ✅ | 0x142 | ✅ | 0x14C | ✅ | 0x16E | ❌ | 0x176 | ✅ | 0x154 | ✅ |
 | TOURNAMENT_MATCH_TABLE | CField_Tournament::OnTournamentMatchTable | field/clientbound/FieldTournamentMatchTable (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x126 | ✅ | 0x13C | ✅ | 0x143 | ✅ | 0x14D | ✅ | 0x16F | ❌ | 0x177 | ✅ | 0x155 | ✅ |
 | TOURNAMENT_SET_PRIZE | CField_Tournament::OnTournamentSetPrize | field/clientbound/FieldTournamentSetPrize (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x127 | ✅ | 0x13D | ✅ | 0x144 | ✅ | 0x14E | ✅ | 0x170 | 🟡ᶠ | 0x178 | ✅ | 0x156 | ✅ |
@@ -590,7 +590,7 @@ Tool: `8ef468cdc57ed6513f972b5eabe890dff99d4a1d0f1f57bf42f69efc445c8ddb`
 | USE_CASH_ITEM | CItemSpeakerDlg::_SendConsumeCashItemUseRequest; CUICharacterSaleDlg::SendCreateNewCharacter; CUIIncubator::OnButtonClicked; CUIKarmaDlg::_SendConsumeCashItemUseRequest; CUIUnreleaseDlg::UnreleaseEquipItem; CWvsContext::SendConsumeCashItemUseRequest | cash/serverbound/CashItemUseMegaphone (T1) | 0x03E | ✅ | 0x049 | ✅ | 0x04E | ✅ | 0x04D | ✅ | 0x04F | ❌ | 0x04F | ❌ | 0x052 | ✅ | 0x056 | ❌ | 0x055 | ✅ | 0x047 | ✅ |
 | OWL_WARP | CUIShopScanResult::OnButtonClicked | merchant/serverbound/OwlWarp (T1) |  | ⬜ | 0x03F | ✅ | 0x042 | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ❌ | 0x046 | ❌ | 0x04A | ❌ | 0x049 | ✅ | 0x03B | ❌ |
 | USE_CATCH_ITEM | CWvsContext::SendBridleItemUseRequest | monster/serverbound/MonsterUseCatchItem (T1) | 0x03F | ✅ | 0x04A | ✅ | 0x050 | ✅ | 0x04F | ✅ | 0x051 | ✅ | 0x051 | ✅ | 0x054 | ✅ | 0x058 | ✅ | 0x057 | ✅ | 0x049 | ✅ |
-| DUEY_ACTION | CParcelDlg::CloseParcelDlg; CTabQuickSend::SendQuickDelivery; CTabReceive::DiscardParcel; CTabReceive::ReceiveParcel; CTabSend::SendParcel; CUIFadeYesNo::OnButtonClicked | parcel/serverbound/ParcelActionReceive |  | ⬜ |  | ⬜ | 0x040 | ✅ | 0x03F | ❌ | 0x041 | ✅ | 0x041 | ❌ | 0x044 | ❌ | 0x047 | ❌ | 0x046 | ❌ | 0x039 | ❌ |
+| DUEY_ACTION | CParcelDlg::CloseParcelDlg; CTabQuickSend::SendQuickDelivery; CTabReceive::DiscardParcel; CTabReceive::ReceiveParcel; CTabSend::SendParcel; CUIFadeYesNo::OnButtonClicked | parcel/serverbound/ParcelActionReceive |  | ⬜ |  | ⬜ | 0x040 | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x041 | ❌ | 0x044 | ❌ | 0x047 | ❌ | 0x046 | ❌ | 0x039 | ❌ |
 | FREDRICK_ACTION | CStoreBankDlg::SendCalculateFeeRequest; CStoreBankDlg::SendGetAllRequest; CStoreBankDlg::SetRet |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ | 0x043 | ❌ | 0x046 | ❌ | 0x045 | ❌ | 0x038 | ❌ |
 | ITEM_SORT | CWvsContext::SendGatherItemRequest; sub_954C6B | inventory/serverbound/InventoryCompartmentMergeRequest (T1) |  | ⬜ | 0x040 | ✅ | 0x044 | ✅ | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x048 | ✅ | 0x04C | 🟡ᶠ | 0x04B | ✅ | 0x03D | ✅ |
 | USE_SKILL_BOOK | CWvsContext::SendSkillLearnItemUseRequest | character/serverbound/CharacterUseSkillBook (T1) | 0x040 | ✅ | 0x04B | ✅ | 0x051 | ✅ | 0x050 | ✅ | 0x052 | ✅ | 0x052 | ✅ | 0x055 | ✅ | 0x059 | 🟡ᶠ | 0x058 | ✅ | 0x04A | ✅ |
@@ -1029,9 +1029,9 @@ Tool: `8ef468cdc57ed6513f972b5eabe890dff99d4a1d0f1f57bf42f69efc445c8ddb`
 | npc/serverbound/NpcShopRecharge (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcShopSell (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcStartConversation (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
-| parcel/serverbound/ParcelActionClose |  |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| parcel/serverbound/ParcelActionDiscard |  |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| parcel/serverbound/ParcelActionReceive |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| parcel/serverbound/ParcelActionClose |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| parcel/serverbound/ParcelActionDiscard |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| parcel/serverbound/ParcelActionReceive |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | parcel/serverbound/ParcelActionSend |  |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | party/serverbound/PartyOperation (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | party/serverbound/PartyOperationChangeLeader (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
@@ -1063,7 +1063,7 @@ Tool: `8ef468cdc57ed6513f972b5eabe890dff99d4a1d0f1f57bf42f69efc445c8ddb`
 | v48 | 212 | 0 | 19 | 198 | 595 | 0 | 49.4% |
 | v61 | 278 | 0 | 56 | 232 | 458 | 0 | 49.1% |
 | v72 | 301 | 0 | 69 | 241 | 413 | 0 | 49.3% |
-| v79 | 342 | 0 | 68 | 242 | 372 | 0 | 52.5% |
+| v79 | 347 | 0 | 68 | 237 | 372 | 0 | 53.2% |
 | v83 | 473 | 0 | 0 | 323 | 228 | 0 | 59.4% |
 | v84 | 442 | 0 | 0 | 335 | 247 | 0 | 56.9% |
 | v87 | 476 | 0 | 0 | 358 | 190 | 0 | 57.1% |

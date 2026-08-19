@@ -1,0 +1,11 @@
+{
+  "WriterName": "ParcelActionClose",
+  "IDAName": "CParcelDlg::CloseParcelDlg",
+  "Address": "0x6836b0",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/parcel/serverbound/action_parcel_id.go",
+  "Rows": null,
+  "Verdict": 0,
+  "FlatInvalid": false
+}

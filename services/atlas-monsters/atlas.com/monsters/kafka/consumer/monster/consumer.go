@@ -75,6 +75,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyFieldCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyBySourceCommand))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnFieldCommand))); err != nil {
 			return err
 		}
@@ -318,6 +321,17 @@ func handleDestroyFieldCommand(l logrus.FieldLogger, ctx context.Context, c fiel
 	}
 }
 
+func handleDestroyBySourceCommand(l logrus.FieldLogger, ctx context.Context, c fieldCommand[destroyBySourceCommandBody]) {
+	if c.Type != CommandTypeDestroyBySource {
+		return
+	}
+
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	if err := monster.NewProcessor(l, ctx).DestroyBySource(f, normalizeSpawnSourceType(c.Body.SpawnSourceType), c.Body.SpawnSourceId); err != nil {
+		l.WithError(err).Errorf("DESTROY_BY_SOURCE failed for source [%s/%s] in field [%s].", c.Body.SpawnSourceType, c.Body.SpawnSourceId, f.Id())
+	}
+}
+
 func handleUseSkillFieldCommand(l logrus.FieldLogger, ctx context.Context, c fieldCommand[useSkillFieldCommandBody]) {
 	if c.Type != CommandTypeUseSkillField {
 		return
@@ -336,6 +350,17 @@ func handleUseSkillFieldCommand(l logrus.FieldLogger, ctx context.Context, c fie
 	}
 }
 
+// normalizeSpawnSourceType is the single enforcement point for FR-P1's
+// backward-compatibility rule: an absent or empty spawnSourceType means the
+// legacy cyclic spawn path. Doing it here means no read site downstream has to
+// handle the empty case.
+func normalizeSpawnSourceType(s string) string {
+	if s == "" {
+		return monster.SpawnSourceTypeCyclic
+	}
+	return s
+}
+
 func handleSpawnFieldCommand(l logrus.FieldLogger, ctx context.Context, c fieldCommand[spawnFieldCommandBody]) {
 	if c.Type != CommandTypeSpawnField {
 		return
@@ -344,11 +369,13 @@ func handleSpawnFieldCommand(l logrus.FieldLogger, ctx context.Context, c fieldC
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
 	p := monster.NewProcessor(l, ctx)
 	_, err := p.Create(f, monster.RestModel{
-		MonsterId: c.Body.MonsterId,
-		X:         c.Body.X,
-		Y:         c.Body.Y,
-		Fh:        c.Body.Fh,
-		Team:      c.Body.Team,
+		MonsterId:       c.Body.MonsterId,
+		X:               c.Body.X,
+		Y:               c.Body.Y,
+		Fh:              c.Body.Fh,
+		Team:            c.Body.Team,
+		SpawnSourceType: normalizeSpawnSourceType(c.Body.SpawnSourceType),
+		SpawnSourceId:   c.Body.SpawnSourceId,
 	})
 	if err != nil {
 		l.WithError(err).Errorf("SPAWN_FIELD failed for template [%d] in field [%s].", c.Body.MonsterId, f.Id())

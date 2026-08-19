@@ -25,16 +25,16 @@ func mistCreateCommandProvider(t tenant.Model, body mistKafka.CreateCommandBody)
 }
 
 func createdStatusEventProvider(m Model) model.Provider[[]kafka.Message] {
-	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusCreated, statusEventCreatedBody{ActorId: 0})
+	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusCreated, statusEventCreatedBody{ActorId: 0}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 func destroyedStatusEventProvider(m Model) model.Provider[[]kafka.Message] {
-	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusDestroyed, statusEventDestroyedBody{ActorId: 0})
+	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusDestroyed, statusEventDestroyedBody{ActorId: 0}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
-func statusEventProvider[E any](f field.Model, uniqueId uint32, monsterId uint32, theType string, body E) model.Provider[[]kafka.Message] {
+func statusEventProvider[E any](f field.Model, uniqueId uint32, monsterId uint32, theType string, body E, spawnSourceType string, spawnSourceId string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(f.MapId()))
-	value := statusEventFromField(f, uniqueId, monsterId, theType, body)
+	value := statusEventFromField(f, uniqueId, monsterId, theType, body, spawnSourceType, spawnSourceId)
 	return producer.SingleMessageProvider(key, &value)
 }
 
@@ -47,18 +47,18 @@ func startControlStatusEventProvider(m Model) model.Provider[[]kafka.Message] {
 		FH:                 m.Fh(),
 		Team:               m.Team(),
 		ControllerHasAggro: m.ControllerHasAggro(),
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 func aggroChangedStatusEventProvider(m Model, controllerCharacterId uint32, hasAggro bool) model.Provider[[]kafka.Message] {
 	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusAggroChanged, statusEventAggroChangedBody{
 		ControllerCharacterId: controllerCharacterId,
 		ControllerHasAggro:    hasAggro,
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 func stopControlStatusEventProvider(m Model, characterId uint32) model.Provider[[]kafka.Message] {
-	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusStopControl, statusEventStopControlBody{ActorId: characterId})
+	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusStopControl, statusEventStopControlBody{ActorId: characterId}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 // damagedStatusEventProvider builds the DAMAGED event. damage is the amount
@@ -82,7 +82,7 @@ func damagedStatusEventProvider(m Model, observerId uint32, actorId uint32, boss
 		Damage:        damage,
 		DamageSource:  damageSource,
 		DamageEntries: damageEntries,
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 func statusEffectAppliedEventProvider(m Model, effect StatusEffect) model.Provider[[]kafka.Message] {
@@ -101,21 +101,21 @@ func statusEffectAppliedEventProvider(m Model, effect StatusEffect) model.Provid
 		ReflectRbX:        effect.ReflectRbX(),
 		ReflectRbY:        effect.ReflectRbY(),
 		ReflectMaxDamage:  effect.ReflectMaxDamage(),
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 func statusEffectExpiredEventProvider(m Model, effect StatusEffect) model.Provider[[]kafka.Message] {
 	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusEffectExpired, statusEffectExpiredBody{
 		EffectId: effect.EffectId().String(),
 		Statuses: effect.Statuses(),
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 func statusEffectCancelledEventProvider(m Model, effect StatusEffect) model.Provider[[]kafka.Message] {
 	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusEffectCancelled, statusEffectCancelledBody{
 		EffectId: effect.EffectId().String(),
 		Statuses: effect.Statuses(),
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 func damageReflectedEventProvider(m Model, characterId uint32, reflectDamage uint32, reflectType string) model.Provider[[]kafka.Message] {
@@ -123,7 +123,7 @@ func damageReflectedEventProvider(m Model, characterId uint32, reflectDamage uin
 		CharacterId:   characterId,
 		ReflectDamage: reflectDamage,
 		ReflectType:   reflectType,
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 // mpChangedStatusEventProvider builds a MP_CHANGED status event for any
@@ -139,11 +139,11 @@ func mpChangedStatusEventProvider(m Model, characterId uint32, skillId uint32, r
 		Reason:         reason,
 		Amount:         amount,
 		MonsterMpAfter: m.Mp(),
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
-func friendlyDropStatusEventProvider(f field.Model, uniqueId uint32, monsterId uint32, itemCount uint32) model.Provider[[]kafka.Message] {
-	return statusEventProvider(f, uniqueId, monsterId, EventMonsterStatusFriendlyDrop, statusEventFriendlyDropBody{ItemCount: itemCount})
+func friendlyDropStatusEventProvider(m Model, itemCount uint32) model.Provider[[]kafka.Message] {
+	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusFriendlyDrop, statusEventFriendlyDropBody{ItemCount: itemCount}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 func killedStatusEventProvider(m Model, killerId uint32, boss bool, damageSummary []entry) model.Provider[[]kafka.Message] {
@@ -161,7 +161,7 @@ func killedStatusEventProvider(m Model, killerId uint32, boss bool, damageSummar
 		ActorId:       killerId,
 		Boss:          boss,
 		DamageEntries: damageEntries,
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 // catchResolvedEventProvider keys on the character, not the map: the dedicated
@@ -174,7 +174,7 @@ func catchResolvedEventProvider(m Model, characterId uint32, itemId uint32, succ
 		ItemId:      itemId,
 		Success:     success,
 		Cause:       cause,
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 	return producer.SingleMessageProvider(key, &value)
 }
 
@@ -182,7 +182,7 @@ func caughtStatusEventProvider(m Model, characterId uint32, itemId uint32) model
 	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusCaught, statusEventCaughtBody{
 		CharacterId: characterId,
 		ItemId:      itemId,
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 func catchFailedStatusEventProvider(m Model, characterId uint32, itemId uint32, cause string) model.Provider[[]kafka.Message] {
@@ -190,7 +190,7 @@ func catchFailedStatusEventProvider(m Model, characterId uint32, itemId uint32, 
 		CharacterId: characterId,
 		ItemId:      itemId,
 		Cause:       cause,
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 // nextSkillDecidedStatusEventProvider partitions on uniqueId so per-monster
@@ -202,6 +202,6 @@ func nextSkillDecidedStatusEventProvider(m Model, d nextSkillDecision) model.Pro
 		SkillLevel:             d.skillLevel,
 		DecidedAtMs:            d.decidedAtMs,
 		NextEligibleRepickAtMs: d.nextEligibleRepickAtMs,
-	})
+	}, m.SpawnSourceType(), m.SpawnSourceId())
 	return producer.SingleMessageProvider(key, &value)
 }

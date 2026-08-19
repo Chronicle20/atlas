@@ -205,6 +205,23 @@ export type {
 export { fetchPaged, fetchAll } from "./pagination";
 export type { PageMeta, PagedResult } from "./pagination";
 
+// Generalized events service (task-231)
+export { eventsService } from "./events.service";
+export {
+  EVENT_DEFINITION_TYPE,
+  EVENT_OCCURRENCE_TYPE,
+  EVENT_OCCURRENCE_TRANSITION_TYPE,
+} from "./events.service";
+export type {
+  EventDefinition,
+  EventDefinitionAttributes,
+  EventDefinitionFilters,
+  EventOccurrence,
+  EventOccurrenceAttributes,
+  EventOccurrenceFilters,
+  EventOccurrenceTransition,
+} from "@/types/models/events";
+
 // Cash-shop pending changes (task-227)
 export type {
   PendingChange,

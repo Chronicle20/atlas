@@ -63,19 +63,27 @@ type statusEvent[E any] struct {
 	UniqueId  uint32     `json:"uniqueId"`
 	MonsterId uint32     `json:"monsterId"`
 	Type      string     `json:"type"`
-	Body      E          `json:"body"`
+	// SpawnSourceType / SpawnSourceId echo the monster's provenance on EVERY
+	// status type (FR-P3 requires CREATED/KILLED/DESTROYED; the envelope gives
+	// the superset for free and makes forgetting one impossible). omitempty so
+	// a cyclic monster's events are byte-identical to today.
+	SpawnSourceType string `json:"spawnSourceType,omitempty"`
+	SpawnSourceId   string `json:"spawnSourceId,omitempty"`
+	Body            E      `json:"body"`
 }
 
-func statusEventFromField[E any](f field.Model, uniqueId uint32, monsterId uint32, theType string, body E) statusEvent[E] {
+func statusEventFromField[E any](f field.Model, uniqueId uint32, monsterId uint32, theType string, body E, spawnSourceType string, spawnSourceId string) statusEvent[E] {
 	return statusEvent[E]{
-		WorldId:   f.WorldId(),
-		ChannelId: f.ChannelId(),
-		MapId:     f.MapId(),
-		Instance:  f.Instance(),
-		UniqueId:  uniqueId,
-		MonsterId: monsterId,
-		Type:      theType,
-		Body:      body,
+		WorldId:         f.WorldId(),
+		ChannelId:       f.ChannelId(),
+		MapId:           f.MapId(),
+		Instance:        f.Instance(),
+		UniqueId:        uniqueId,
+		MonsterId:       monsterId,
+		Type:            theType,
+		SpawnSourceType: spawnSourceType,
+		SpawnSourceId:   spawnSourceId,
+		Body:            body,
 	}
 }
 

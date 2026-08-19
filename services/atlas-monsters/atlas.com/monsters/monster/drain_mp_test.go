@@ -32,7 +32,7 @@ func TestDrainMp_HappyPath_EmitsMpChanged(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 1000)
+	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 1000, "", "")
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
@@ -101,7 +101,7 @@ func TestDrainMp_ClampsAtZero(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 1000)
+	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 1000, "", "")
 	uniqueId := m.UniqueId()
 	// Manually reduce MP to 50 by deducting 950.
 	if _, err := r.DeductMp(ten, uniqueId, 950); err != nil {
@@ -149,7 +149,7 @@ func TestDrainMp_SkipsZeroMaxMp(t *testing.T) {
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 	// Create with mp=0 → MaxMp==0.
-	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 0)
+	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 0, "", "")
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
@@ -180,7 +180,7 @@ func TestDrainMp_DryMonsterStillEmits(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 1000)
+	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 1000, "", "")
 	uniqueId := m.UniqueId()
 	// Drain all MP first.
 	if _, err := r.DeductMp(ten, uniqueId, 1000); err != nil {
@@ -226,7 +226,7 @@ func TestDrainMp_SkipsZeroRequest(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 1000)
+	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 1000, "", "")
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
@@ -301,7 +301,7 @@ func TestDrainMp_SkipsBoss(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 8800000, 0, 0, 0, 5, 0, 50000, 3000)
+	m := r.CreateMonster(ctx, ten, f, 8800000, 0, 0, 0, 5, 0, 50000, 3000, "", "")
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)

@@ -79,7 +79,7 @@ func mskill(t *testing.T, id, lvl uint16, prop, mpCon, hp uint32, interval uint3
 
 func newPickerTestMonster(t *testing.T, hp, mp uint32) Model {
 	t.Helper()
-	return NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, hp, mp)
+	return NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, hp, mp, "", "")
 }
 
 func TestPicker_EmptySkillList_ReturnsSentinel(t *testing.T) {
@@ -399,7 +399,7 @@ func TestRepickAndEmit_AlwaysEmits(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tm)
 	r.Clear(ctx)
 
-	GetMonsterRegistry().CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	GetMonsterRegistry().CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	mons := GetMonsterRegistry().GetMonstersInMap(tm, testField())
 	if len(mons) != 1 {
 		t.Fatalf("expected 1 monster; got %d", len(mons))

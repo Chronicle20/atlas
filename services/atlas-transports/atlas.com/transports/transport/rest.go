@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -8,6 +9,7 @@ import (
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // RestModel is the JSON:API resource for a transport route.
@@ -34,9 +36,15 @@ type RestModel struct {
 	// instant after the server's `now`. Empty when the route is out of
 	// service. Clients count down to this rather than reconstructing the
 	// scheduler.
-	NextTransitionAt string                  `json:"nextTransitionAt"`
-	NextState        string                  `json:"nextState"`
-	Schedule         []TripScheduleRestModel `json:"-"`
+	NextTransitionAt string `json:"nextTransitionAt"`
+	NextState        string `json:"nextState"`
+	// VoyageID identifies the concrete trip currently under way. Empty unless
+	// State is in_transit. A consumer holding a voyage id from VOYAGE_DEPARTED
+	// tests "is my voyage still under way?" by comparing this for equality —
+	// comparing State alone would read the NEXT trip's transit as its own
+	// (design §7.4).
+	VoyageID string                  `json:"voyageId,omitempty"`
+	Schedule []TripScheduleRestModel `json:"-"`
 }
 
 // GetID returns the resource ID
@@ -118,21 +126,30 @@ func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 	return nil
 }
 
-// TransformSummary converts a Model to a RestModel without its trip schedule.
-// The board renders entirely from these attributes; a full day's schedule is
-// ~96 rows per route and is fetched only where it is actually read.
+// TransformSummaryAt converts a Model to a RestModel without its trip
+// schedule, evaluating state at `now`. The board renders entirely from these
+// attributes; a full day's schedule is ~96 rows per route and is fetched
+// only where it is actually read.
 //
 // State and NextState/NextTransitionAt all come from one Evaluate call on one
 // `now`, so a response can never report a state that disagrees with its own
-// countdown.
-func TransformSummary(m Model) (RestModel, error) {
-	transition := m.Evaluate(timeNow().UTC())
+// countdown. VoyageID is populated only when the evaluated transition is
+// in_transit: a route that is out of service, boarding, or between legs is
+// not on any voyage, and a client comparing a stale voyage id for equality
+// must see an unambiguous "no voyage" rather than a fabricated zero id.
+func TransformSummaryAt(ctx context.Context, m Model, now time.Time) (RestModel, error) {
+	transition := m.Evaluate(now)
 
 	nextAt := ""
 	nextState := ""
 	if transition.State != OutOfService && !transition.NextAt.IsZero() {
 		nextAt = transition.NextAt.Format(time.RFC3339)
 		nextState = string(transition.NextState)
+	}
+
+	voyageId := ""
+	if transition.State == InTransit {
+		voyageId = VoyageId(tenant.MustFromContext(ctx), m.Id(), transition.TripId, transition.DepartedAt).String()
 	}
 
 	return RestModel{
@@ -151,12 +168,20 @@ func TransformSummary(m Model) (RestModel, error) {
 		CycleIntervalSeconds:  uint32(m.CycleInterval().Seconds()),
 		NextTransitionAt:      nextAt,
 		NextState:             nextState,
+		VoyageID:              voyageId,
 	}, nil
 }
 
-// Transform converts a Model to a RestModel with its trip schedule attached.
-func Transform(m Model) (RestModel, error) {
-	rm, err := TransformSummary(m)
+// TransformSummary converts a Model to a RestModel without its trip
+// schedule, evaluating state at the current time. See TransformSummaryAt.
+func TransformSummary(ctx context.Context, m Model) (RestModel, error) {
+	return TransformSummaryAt(ctx, m, timeNow().UTC())
+}
+
+// TransformAt converts a Model to a RestModel with its trip schedule
+// attached, evaluating state at `now`.
+func TransformAt(ctx context.Context, m Model, now time.Time) (RestModel, error) {
+	rm, err := TransformSummaryAt(ctx, m, now)
 	if err != nil {
 		return RestModel{}, err
 	}
@@ -168,6 +193,12 @@ func Transform(m Model) (RestModel, error) {
 	rm.Schedule = schedule
 
 	return rm, nil
+}
+
+// Transform converts a Model to a RestModel with its trip schedule attached,
+// evaluating state at the current time. See TransformAt.
+func Transform(ctx context.Context, m Model) (RestModel, error) {
+	return TransformAt(ctx, m, timeNow().UTC())
 }
 
 func Extract(r RestModel) (Model, error) {

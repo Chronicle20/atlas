@@ -1,4 +1,11 @@
-import { Cog, MonitorCog, Shield, Wrench, type LucideIcon } from "lucide-react";
+import {
+  CalendarClock,
+  Cog,
+  MonitorCog,
+  Shield,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 
 interface SidebarChildItem {
   title: string;
@@ -41,6 +48,15 @@ export const sidebarItems: SidebarGroupItem[] = [
       { title: "Reward Pools", url: "/reward-pools" },
       { title: "Coupons", url: "/coupons" },
       { title: "Transports", url: "/transports" },
+    ],
+  },
+  {
+    title: "Events",
+    url: "#",
+    icon: CalendarClock,
+    children: [
+      { title: "Definitions", url: "/events/definitions" },
+      { title: "Occurrences", url: "/events/occurrences" },
     ],
   },
   {

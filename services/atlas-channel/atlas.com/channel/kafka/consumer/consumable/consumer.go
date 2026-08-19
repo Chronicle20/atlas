@@ -140,6 +140,10 @@ func handleErrorConsumableEvent(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
+		// ErrorTypeConsumeFailed (and any other/unrecognized error type) has no
+		// dialog- or dedicated-packet-specific reaction — the minimum bar is
+		// re-enabling client actions so a failed consume (e.g. an atlas-data
+		// lookup miss) doesn't leave the item-use exclusive-request lock stuck.
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)

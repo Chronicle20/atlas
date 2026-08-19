@@ -59,12 +59,24 @@ func postSeed(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, src Catalo
 				}).Error("Seed failed")
 				return
 			}
-			l.WithFields(logrus.Fields{
-				"tenant_id":        t.Id(),
-				"group_name":       g.Name,
-				"catalog_revision": res.CatalogRevision,
-				"subdomains":       summarize(res.Subdomains),
-			}).Info("Seed complete")
+			if outcome := classifyOutcome(res.Subdomains); outcome != "success" {
+				l.WithFields(logrus.Fields{
+					"tenant_id":        t.Id(),
+					"group_name":       g.Name,
+					"catalog_revision": res.CatalogRevision,
+					"subdomains":       summarize(res.Subdomains),
+					"outcome":          outcome,
+					"failed":           summarizeFailed(res.Subdomains),
+					"errors":           summarizeErrors(res.Subdomains),
+				}).Error("Seed complete")
+			} else {
+				l.WithFields(logrus.Fields{
+					"tenant_id":        t.Id(),
+					"group_name":       g.Name,
+					"catalog_revision": res.CatalogRevision,
+					"subdomains":       summarize(res.Subdomains),
+				}).Info("Seed complete")
+			}
 			if g.AfterSeed == nil {
 				return
 			}
@@ -103,6 +115,31 @@ func summarize(m map[string]SubdomainCounts) map[string]int64 {
 	out := make(map[string]int64, len(m))
 	for k, v := range m {
 		out[k] = v.Created
+	}
+	return out
+}
+
+// summarizeFailed projects each subdomain's Failed count, omitting
+// subdomains with no failures so a mostly-successful run's log stays
+// readable.
+func summarizeFailed(m map[string]SubdomainCounts) map[string]int64 {
+	out := make(map[string]int64, len(m))
+	for k, v := range m {
+		if v.Failed > 0 {
+			out[k] = v.Failed
+		}
+	}
+	return out
+}
+
+// summarizeErrors projects each subdomain's error detail, omitting
+// subdomains with no errors.
+func summarizeErrors(m map[string]SubdomainCounts) map[string][]string {
+	out := make(map[string][]string, len(m))
+	for k, v := range m {
+		if len(v.Errors) > 0 {
+			out[k] = v.Errors
+		}
 	}
 	return out
 }

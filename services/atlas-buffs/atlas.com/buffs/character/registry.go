@@ -67,7 +67,7 @@ func statKey(sourceId int32, statType string) string {
 // (sourceId, statType), each with its own expiry; other stats of the same source
 // are left intact, so the source's buffs accumulate one-at-a-time. Returns one
 // buff per change.
-func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool, noExpiry bool) ([]buff.Model, error) {
+func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model, accumulate bool, noExpiry bool, correlationId string) ([]buff.Model, error) {
 	t := tenant.MustFromContext(ctx)
 
 	m, err := r.characters.Get(ctx, t, characterId)
@@ -84,9 +84,9 @@ func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channe
 
 	newBuff := func(cs []stat.Model) (buff.Model, error) {
 		if noExpiry {
-			return buff.NewNoExpiryBuff(sourceId, level, cs)
+			return buff.NewNoExpiryBuff(sourceId, level, cs, correlationId)
 		}
-		return buff.NewBuff(sourceId, level, duration, cs)
+		return buff.NewBuff(sourceId, level, duration, cs, correlationId)
 	}
 
 	var applied []buff.Model
@@ -278,6 +278,44 @@ func (r *Registry) CancelByStatTypes(ctx context.Context, characterId uint32, ty
 	return cancelled, nil
 }
 
+// CancelByCorrelation removes every buff on one character whose
+// CorrelationId() matches correlationId. Mirrors CancelByStatTypes's
+// read-modify-write shape, matching on correlation id instead of stat type.
+// Returns the cancelled buffs (caller emits EXPIRED events). Guarding against
+// an empty correlationId is ProcessorImpl.CancelByCorrelation's
+// responsibility, not this method's.
+func (r *Registry) CancelByCorrelation(ctx context.Context, characterId uint32, correlationId string) ([]buff.Model, error) {
+	t := tenant.MustFromContext(ctx)
+
+	m, err := r.characters.Get(ctx, t, characterId)
+	if errors.Is(err, atlas.ErrNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	cancelled := make([]buff.Model, 0)
+	keep := make(map[string]buff.Model)
+	for id, b := range m.buffs {
+		if b.CorrelationId() == correlationId {
+			cancelled = append(cancelled, b)
+		} else {
+			keep[id] = b
+		}
+	}
+
+	if len(cancelled) == 0 {
+		return nil, nil
+	}
+
+	m.buffs = keep
+	if err := r.characters.Put(ctx, t, characterId, m); err != nil {
+		return nil, err
+	}
+	return cancelled, nil
+}
+
 func (r *Registry) HasImmunity(ctx context.Context, characterId uint32) bool {
 	t := tenant.MustFromContext(ctx)
 	m, err := r.characters.Get(ctx, t, characterId)
@@ -348,7 +386,7 @@ func (r *Registry) UpdateStatValue(ctx context.Context, worldId world.Id, channe
 		if u.Cap > 0 && initial > u.Cap {
 			initial = u.Cap
 		}
-		created, cerr := buff.NewNoExpiryBuff(u.SourceId, u.Level, []stat.Model{stat.NewStat(u.StatType, initial)})
+		created, cerr := buff.NewNoExpiryBuff(u.SourceId, u.Level, []stat.Model{stat.NewStat(u.StatType, initial)}, "")
 		if cerr != nil {
 			return buff.Model{}, false, false, cerr
 		}

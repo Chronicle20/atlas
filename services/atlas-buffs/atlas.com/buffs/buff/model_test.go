@@ -3,6 +3,7 @@ package buff
 import (
 	"atlas-buffs/buff/stat"
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func TestNewNoExpiryBuff(t *testing.T) {
-	b, err := NewNoExpiryBuff(int32(5211006), byte(1), setupTestChanges())
+	b, err := NewNoExpiryBuff(int32(5211006), byte(1), setupTestChanges(), "")
 
 	assert.NoError(t, err)
 	assert.True(t, b.NoExpiry())
@@ -21,19 +22,19 @@ func TestNewNoExpiryBuff(t *testing.T) {
 }
 
 func TestNewNoExpiryBuff_EmptyChanges(t *testing.T) {
-	_, err := NewNoExpiryBuff(int32(5211006), byte(1), []stat.Model{})
+	_, err := NewNoExpiryBuff(int32(5211006), byte(1), []stat.Model{}, "")
 	assert.ErrorIs(t, err, ErrEmptyChanges)
 }
 
 func TestNewBuff_StillRejectsNonPositiveDuration(t *testing.T) {
-	_, err := NewBuff(int32(2001001), byte(5), 0, setupTestChanges())
+	_, err := NewBuff(int32(2001001), byte(5), 0, setupTestChanges(), "")
 	assert.ErrorIs(t, err, ErrInvalidDuration)
-	_, err = NewBuff(int32(2001001), byte(5), -1, setupTestChanges())
+	_, err = NewBuff(int32(2001001), byte(5), -1, setupTestChanges(), "")
 	assert.ErrorIs(t, err, ErrInvalidDuration)
 }
 
 func TestNoExpiryBuff_JSONRoundTrip(t *testing.T) {
-	b, err := NewNoExpiryBuff(int32(5220011), byte(10), setupTestChanges())
+	b, err := NewNoExpiryBuff(int32(5220011), byte(10), setupTestChanges(), "")
 	assert.NoError(t, err)
 
 	data, err := json.Marshal(b)
@@ -48,7 +49,7 @@ func TestNoExpiryBuff_JSONRoundTrip(t *testing.T) {
 // A finite buff marshalled before this change has no noExpiry field; it must
 // unmarshal to noExpiry=false so previously Redis-persisted buffs are unaffected.
 func TestFiniteBuff_JSONAbsentNoExpiryDefaultsFalse(t *testing.T) {
-	b, err := NewBuff(int32(2001001), byte(5), 60000, setupTestChanges())
+	b, err := NewBuff(int32(2001001), byte(5), 60000, setupTestChanges(), "")
 	assert.NoError(t, err)
 
 	data, err := json.Marshal(b)
@@ -72,7 +73,7 @@ func TestNewBuff(t *testing.T) {
 	duration := int32(60)
 	changes := setupTestChanges()
 
-	b, err := NewBuff(sourceId, byte(5), duration, changes)
+	b, err := NewBuff(sourceId, byte(5), duration, changes, "")
 
 	assert.NoError(t, err)
 	assert.Equal(t, sourceId, b.SourceId())
@@ -87,7 +88,7 @@ func TestBuff_Timestamps(t *testing.T) {
 	changes := setupTestChanges()
 
 	before := time.Now().Add(-time.Millisecond) // Small buffer for timing
-	b, err := NewBuff(sourceId, byte(5), duration, changes)
+	b, err := NewBuff(sourceId, byte(5), duration, changes, "")
 	assert.NoError(t, err)
 	after := time.Now().Add(time.Millisecond) // Small buffer for timing
 
@@ -107,7 +108,7 @@ func TestBuff_Expired_NotExpired(t *testing.T) {
 	duration := int32(60) // 60 seconds - should not be expired
 	changes := setupTestChanges()
 
-	b, err := NewBuff(sourceId, byte(5), duration, changes)
+	b, err := NewBuff(sourceId, byte(5), duration, changes, "")
 	assert.NoError(t, err)
 
 	assert.False(t, b.Expired())
@@ -118,7 +119,7 @@ func TestBuff_Expired_ZeroDuration(t *testing.T) {
 	duration := int32(0) // 0 seconds - should be rejected
 	changes := setupTestChanges()
 
-	_, err := NewBuff(sourceId, byte(5), duration, changes)
+	_, err := NewBuff(sourceId, byte(5), duration, changes, "")
 
 	assert.ErrorIs(t, err, ErrInvalidDuration)
 }
@@ -128,7 +129,7 @@ func TestBuff_Expired_NegativeDuration(t *testing.T) {
 	duration := int32(-1) // Negative duration - should be rejected
 	changes := setupTestChanges()
 
-	_, err := NewBuff(sourceId, byte(5), duration, changes)
+	_, err := NewBuff(sourceId, byte(5), duration, changes, "")
 
 	assert.ErrorIs(t, err, ErrInvalidDuration)
 }
@@ -142,7 +143,7 @@ func TestBuff_Changes(t *testing.T) {
 		stat.NewStat("INT", 15),
 	}
 
-	b, err := NewBuff(sourceId, byte(5), duration, changes)
+	b, err := NewBuff(sourceId, byte(5), duration, changes, "")
 	assert.NoError(t, err)
 
 	resultChanges := b.Changes()
@@ -162,9 +163,9 @@ func TestBuff_UniqueIds(t *testing.T) {
 	duration := int32(60)
 	changes := setupTestChanges()
 
-	b1, err1 := NewBuff(sourceId, byte(5), duration, changes)
+	b1, err1 := NewBuff(sourceId, byte(5), duration, changes, "")
 	assert.NoError(t, err1)
-	b2, err2 := NewBuff(sourceId, byte(5), duration, changes)
+	b2, err2 := NewBuff(sourceId, byte(5), duration, changes, "")
 	assert.NoError(t, err2)
 
 	// Each buff should have a unique ID
@@ -176,7 +177,7 @@ func TestBuff_EmptyChanges(t *testing.T) {
 	duration := int32(60)
 	changes := []stat.Model{}
 
-	_, err := NewBuff(sourceId, byte(5), duration, changes)
+	_, err := NewBuff(sourceId, byte(5), duration, changes, "")
 
 	assert.ErrorIs(t, err, ErrEmptyChanges)
 }
@@ -186,7 +187,7 @@ func TestBuff_Accessors(t *testing.T) {
 	duration := int32(60)
 	changes := setupTestChanges()
 
-	b, err := NewBuff(sourceId, byte(5), duration, changes)
+	b, err := NewBuff(sourceId, byte(5), duration, changes, "")
 	assert.NoError(t, err)
 
 	// Test all accessors return expected values
@@ -205,7 +206,7 @@ func TestBuff_DurationInMilliseconds(t *testing.T) {
 	duration := int32(60000) // 60 seconds expressed in ms
 	changes := setupTestChanges()
 
-	b, err := NewBuff(sourceId, byte(5), duration, changes)
+	b, err := NewBuff(sourceId, byte(5), duration, changes, "")
 	assert.NoError(t, err)
 
 	gap := b.ExpiresAt().Sub(b.CreatedAt())
@@ -221,7 +222,7 @@ func TestBuff_DurationInMilliseconds(t *testing.T) {
 
 func TestModel_WithStatAmount_ReplacesTargetStat(t *testing.T) {
 	changes := []stat.Model{stat.NewStat("COMBO", 1), stat.NewStat("WATK", 20)}
-	m, err := NewBuff(1111002, 20, 150000, changes)
+	m, err := NewBuff(1111002, 20, 150000, changes, "")
 	if err != nil {
 		t.Fatalf("NewBuff: %v", err)
 	}
@@ -249,7 +250,7 @@ func TestModel_WithStatAmount_ReplacesTargetStat(t *testing.T) {
 }
 
 func TestModel_WithStatAmount_PreservesIdentityAndExpiry(t *testing.T) {
-	m, err := NewBuff(1111002, 20, 150000, []stat.Model{stat.NewStat("COMBO", 1)})
+	m, err := NewBuff(1111002, 20, 150000, []stat.Model{stat.NewStat("COMBO", 1)}, "")
 	if err != nil {
 		t.Fatalf("NewBuff: %v", err)
 	}
@@ -271,7 +272,7 @@ func TestModel_WithStatAmount_PreservesIdentityAndExpiry(t *testing.T) {
 }
 
 func TestModel_WithStatAmount_MissingStatType(t *testing.T) {
-	m, err := NewBuff(1111002, 20, 150000, []stat.Model{stat.NewStat("WATK", 20)})
+	m, err := NewBuff(1111002, 20, 150000, []stat.Model{stat.NewStat("WATK", 20)}, "")
 	if err != nil {
 		t.Fatalf("NewBuff: %v", err)
 	}
@@ -285,7 +286,7 @@ func TestModel_WithStatAmount_MissingStatType(t *testing.T) {
 // no-expiry buffs (e.g. HOMING_BEACON locks) so they are never reaped by
 // the expiration ticker.
 func TestModel_WithStatAmount_PreservesNoExpiry(t *testing.T) {
-	m, err := NewNoExpiryBuff(5211006, 1, []stat.Model{stat.NewStat("LOCK", 1)})
+	m, err := NewNoExpiryBuff(5211006, 1, []stat.Model{stat.NewStat("LOCK", 1)}, "")
 	if err != nil {
 		t.Fatalf("NewNoExpiryBuff: %v", err)
 	}
@@ -308,5 +309,46 @@ func TestModel_WithStatAmount_PreservesNoExpiry(t *testing.T) {
 	// Expired() must short-circuit and return false.
 	if updated.Expired() {
 		t.Fatal("no-expiry buff must never report expired")
+	}
+}
+
+func TestCorrelationSurvivesTheRedisRoundTrip(t *testing.T) {
+	b, err := NewBuff(9000, 1, 60000, []stat.Model{stat.NewStat("EXP_BUFF_RATE", 200)}, "occ-1")
+	if err != nil {
+		t.Fatalf("NewBuff: %v", err)
+	}
+
+	raw, err := json.Marshal(b)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var back Model
+	if err := json.Unmarshal(raw, &back); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if back.CorrelationId() != "occ-1" {
+		t.Fatalf("correlation lost: %q", back.CorrelationId())
+	}
+}
+
+// An existing buff in Redis has no correlationId key. It must unmarshal to
+// empty — no migration, no backfill.
+func TestLegacyBuffPayloadUnmarshalsWithEmptyCorrelation(t *testing.T) {
+	raw := `{"id":"11111111-1111-1111-1111-111111111111","sourceId":9000,"level":1,"duration":60000,"changes":[],"createdAt":"2026-08-15T00:00:00Z","expiresAt":"2026-08-15T00:01:00Z"}`
+	var m Model
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if m.CorrelationId() != "" {
+		t.Fatalf("correlation = %q, want empty", m.CorrelationId())
+	}
+}
+
+// An ordinary buff (no correlation) must marshal byte-identically to today.
+func TestUncorrelatedBuffMarshalsWithoutTheKey(t *testing.T) {
+	b, _ := NewBuff(9000, 1, 60000, []stat.Model{stat.NewStat("EXP_BUFF_RATE", 200)}, "")
+	raw, _ := json.Marshal(b)
+	if strings.Contains(string(raw), "correlationId") {
+		t.Fatalf("uncorrelated buff carries the key: %s", raw)
 	}
 }

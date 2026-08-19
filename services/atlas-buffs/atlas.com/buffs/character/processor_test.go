@@ -4,12 +4,14 @@ import (
 	"atlas-buffs/buff/stat"
 	character2 "atlas-buffs/kafka/message/character"
 	"context"
+	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -59,7 +61,7 @@ func TestProcessor_GetById_AfterApply(t *testing.T) {
 	sourceId := int32(2001001)
 	duration := int32(60)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false, false, "")
 
 	m, err := processor.GetById(characterId)
 	assert.NoError(t, err)
@@ -79,7 +81,7 @@ func TestProcessor_Apply(t *testing.T) {
 	sourceId := int32(2001001)
 	duration := int32(60)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false, false, "")
 
 	m, err := GetRegistry().Get(ctx, characterId)
 	assert.NoError(t, err)
@@ -99,9 +101,9 @@ func TestProcessor_Apply_MultipleBuffs(t *testing.T) {
 	characterId := uint32(1000)
 	fromId := uint32(2000)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001001), byte(5), int32(60), changes, false, false)
-	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001002), byte(5), int32(120), changes, false, false)
-	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001003), byte(5), int32(180), changes, false, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001001), byte(5), int32(60), changes, false, false, "")
+	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001002), byte(5), int32(120), changes, false, false, "")
+	_ = processor.Apply(worldId, channelId, characterId, fromId, int32(2001003), byte(5), int32(180), changes, false, false, "")
 
 	m, err := GetRegistry().Get(ctx, characterId)
 	assert.NoError(t, err)
@@ -119,7 +121,7 @@ func TestProcessor_Cancel(t *testing.T) {
 	sourceId := int32(2001001)
 	duration := int32(60)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false, false, "")
 
 	m, _ := GetRegistry().Get(ctx, characterId)
 	assert.Len(t, m.Buffs(), 1)
@@ -148,7 +150,7 @@ func TestProcessor_Cancel_WrongSourceId(t *testing.T) {
 	sourceId := int32(2001001)
 	duration := int32(60)
 
-	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false, false)
+	_ = processor.Apply(worldId, channelId, characterId, fromId, sourceId, byte(5), duration, changes, false, false, "")
 
 	err := processor.Cancel(worldId, characterId, int32(9999))
 	assert.NoError(t, err)
@@ -177,7 +179,7 @@ func TestProcessor_CancelByStatTypes_NoMatch(t *testing.T) {
 	worldId := world.Id(0)
 	characterId := uint32(1000)
 	holy := []stat.Model{stat.NewStat("HOLY_SYMBOL", 30)}
-	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(2311003), byte(1), int32(60), holy, false, false)
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(2311003), byte(1), int32(60), holy, false, false, "")
 
 	err := processor.CancelByStatTypes(worldId, characterId, []string{"POISON"})
 	assert.NoError(t, err)
@@ -192,9 +194,9 @@ func TestProcessor_CancelByStatTypes_MultiMatch(t *testing.T) {
 	worldId := world.Id(0)
 	characterId := uint32(1000)
 
-	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)}, false, false)
-	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(125), byte(1), int32(60), []stat.Model{stat.NewStat("CURSE", -50)}, false, false)
-	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(126), byte(1), int32(60), []stat.Model{stat.NewStat("WEAKEN", -20)}, false, false)
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)}, false, false, "")
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(125), byte(1), int32(60), []stat.Model{stat.NewStat("CURSE", -50)}, false, false, "")
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(126), byte(1), int32(60), []stat.Model{stat.NewStat("WEAKEN", -20)}, false, false, "")
 
 	err := processor.CancelByStatTypes(worldId, characterId, []string{"POISON", "CURSE", "WEAKEN", "DARKNESS", "SEAL"})
 	assert.NoError(t, err)
@@ -213,8 +215,8 @@ func TestProcessor_CancelByStatTypes_HolyShieldDoesNotBlockRemoval(t *testing.T)
 
 	// Insert a POISON buff via the registry directly so the immunity check on
 	// Apply can't refuse it once HOLY_SHIELD is present.
-	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)}, false, false)
-	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2311005), byte(1), int32(60), []stat.Model{stat.NewStat("HOLY_SHIELD", 1)}, false, false)
+	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)}, false, false, "")
+	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2311005), byte(1), int32(60), []stat.Model{stat.NewStat("HOLY_SHIELD", 1)}, false, false, "")
 
 	err := processor.CancelByStatTypes(worldId, characterId, []string{"POISON"})
 	assert.NoError(t, err)
@@ -242,7 +244,7 @@ func TestProcessor_TenantContext(t *testing.T) {
 
 	changes := setupProcessorTestChanges()
 
-	_ = processor1.Apply(world.Id(0), channel.Id(0), uint32(1000), uint32(2000), int32(2001001), byte(5), int32(60), changes, false, false)
+	_ = processor1.Apply(world.Id(0), channel.Id(0), uint32(1000), uint32(2000), int32(2001001), byte(5), int32(60), changes, false, false, "")
 
 	m, err := processor1.GetById(uint32(1000))
 	assert.NoError(t, err)
@@ -256,7 +258,7 @@ func TestProcessor_UpdateStatValue_Increment(t *testing.T) {
 	processor, _, ctx := setupProcessorTest(t)
 
 	changes := []stat.Model{stat.NewStat("COMBO", 1)}
-	_ = processor.Apply(world.Id(0), channel.Id(0), 1000, 1000, 1111002, byte(20), int32(150000), changes, false, false)
+	_ = processor.Apply(world.Id(0), channel.Id(0), 1000, 1000, 1111002, byte(20), int32(150000), changes, false, false, "")
 
 	_ = processor.UpdateStatValue(world.Id(0), channel.Id(0), 1000,
 		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: character2.StatOperationIncrement, Amount: 2, Cap: 6})
@@ -271,7 +273,7 @@ func TestProcessor_UpdateStatValue_UnknownOperationIsNoOp(t *testing.T) {
 	processor, _, ctx := setupProcessorTest(t)
 
 	changes := []stat.Model{stat.NewStat("COMBO", 1)}
-	_ = processor.Apply(world.Id(0), channel.Id(0), 1000, 1000, 1111002, byte(20), int32(150000), changes, false, false)
+	_ = processor.Apply(world.Id(0), channel.Id(0), 1000, 1000, 1111002, byte(20), int32(150000), changes, false, false, "")
 
 	err := processor.UpdateStatValue(world.Id(0), channel.Id(0), 1000,
 		StatValueUpdate{SourceId: 1111002, StatType: "COMBO", Operation: "MULTIPLY", Amount: 2, Cap: 6})
@@ -329,7 +331,7 @@ func TestProcessor_ExpireForCharacter_PrunesLapsedBuff(t *testing.T) {
 	processor, _, ctx := setupProcessorTest(t)
 
 	const characterId = uint32(5001)
-	assert.NoError(t, processor.Apply(world.Id(0), channel.Id(0), characterId, 0, 1002, 1, 1, setupProcessorTestChanges(), false, false))
+	assert.NoError(t, processor.Apply(world.Id(0), channel.Id(0), characterId, 0, 1002, 1, 1, setupProcessorTestChanges(), false, false, ""))
 	time.Sleep(5 * time.Millisecond)
 
 	assert.NoError(t, processor.ExpireForCharacter(world.Id(0), characterId))
@@ -345,7 +347,7 @@ func TestProcessor_ExpireForCharacter_NothingExpired(t *testing.T) {
 
 	const characterId = uint32(5000)
 	const sourceId = int32(1001)
-	assert.NoError(t, processor.Apply(world.Id(0), channel.Id(0), characterId, 0, sourceId, 1, 60_000, setupProcessorTestChanges(), false, false))
+	assert.NoError(t, processor.Apply(world.Id(0), channel.Id(0), characterId, 0, sourceId, 1, 60_000, setupProcessorTestChanges(), false, false, ""))
 
 	assert.NoError(t, processor.ExpireForCharacter(world.Id(0), characterId))
 
@@ -362,12 +364,113 @@ func TestProcessor_ExpireBuffs_StillSweepsFleetWide(t *testing.T) {
 
 	const charA = uint32(5002)
 	const charB = uint32(5003)
-	assert.NoError(t, processor.Apply(world.Id(0), channel.Id(0), charA, 0, 1003, 1, 1, setupProcessorTestChanges(), false, false))
-	assert.NoError(t, processor.Apply(world.Id(0), channel.Id(0), charB, 0, 1004, 1, 1, setupProcessorTestChanges(), false, false))
+	assert.NoError(t, processor.Apply(world.Id(0), channel.Id(0), charA, 0, 1003, 1, 1, setupProcessorTestChanges(), false, false, ""))
+	assert.NoError(t, processor.Apply(world.Id(0), channel.Id(0), charB, 0, 1004, 1, 1, setupProcessorTestChanges(), false, false, ""))
 	time.Sleep(5 * time.Millisecond)
 
 	assert.NoError(t, processor.ExpireBuffs())
 
 	assert.Empty(t, GetRegistry().GetExpired(ctx, charA))
 	assert.Empty(t, GetRegistry().GetExpired(ctx, charB))
+}
+
+// TestCancelByCorrelationSweepsEveryCharacter — FR-A15: one command cancels
+// the occurrence's buff for every affected online character, without waiting
+// for logout or expiry.
+func TestCancelByCorrelationSweepsEveryCharacter(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+	changes := setupProcessorTestChanges()
+
+	assert.NoError(t, processor.Apply(world.Id(1), channel.Id(4), 100, 0, 9000, 1, 60000, changes, false, false, "occ-1"))
+	assert.NoError(t, processor.Apply(world.Id(2), channel.Id(5), 200, 0, 9000, 1, 60000, changes, false, false, "occ-1"))
+	assert.NoError(t, processor.Apply(world.Id(1), channel.Id(4), 300, 0, 9001, 1, 60000, changes, false, false, "occ-2"))
+	assert.NoError(t, processor.Apply(world.Id(1), channel.Id(4), 400, 0, 1004, 1, 60000, changes, false, false, ""))
+
+	assert.NoError(t, processor.CancelByCorrelation("occ-1"))
+
+	m100, err := GetRegistry().Get(ctx, 100)
+	assert.NoError(t, err)
+	assert.Empty(t, m100.Buffs())
+
+	m200, err := GetRegistry().Get(ctx, 200)
+	assert.NoError(t, err)
+	assert.Empty(t, m200.Buffs())
+
+	m300, err := GetRegistry().Get(ctx, 300)
+	assert.NoError(t, err)
+	assert.Len(t, m300.Buffs(), 1)
+
+	m400, err := GetRegistry().Get(ctx, 400)
+	assert.NoError(t, err)
+	assert.Len(t, m400.Buffs(), 1)
+}
+
+// TestCancelByCorrelationEmitsExpiredPerRemovedBuff — one EXPIRED per removed
+// buff, carrying that character's OWN world. The command envelope's world is
+// not authoritative for a tenant-wide sweep, so the two correlated characters
+// are seeded on DIFFERENT worlds: if the implementation used a single
+// (envelope) world for every emission, one of these assertions would fail.
+func TestCancelByCorrelationEmitsExpiredPerRemovedBuff(t *testing.T) {
+	processor, _, _ := setupProcessorTest(t)
+	emitted.Reset()
+	changes := setupProcessorTestChanges()
+
+	worldA := world.Id(1)
+	worldB := world.Id(2)
+	assert.NoError(t, processor.Apply(worldA, channel.Id(4), 100, 0, 9000, 1, 60000, changes, false, false, "occ-1"))
+	assert.NoError(t, processor.Apply(worldB, channel.Id(5), 200, 0, 9000, 1, 60000, changes, false, false, "occ-1"))
+
+	emitted.Reset()
+	assert.NoError(t, processor.CancelByCorrelation("occ-1"))
+
+	byCharacter := make(map[uint32]character2.StatusEvent[character2.ExpiredStatusEventBody])
+	for _, msg := range emitted.Messages(character2.EnvEventStatusTopic) {
+		var evt character2.StatusEvent[character2.ExpiredStatusEventBody]
+		require.NoError(t, json.Unmarshal(msg.Value, &evt))
+		if evt.Type != character2.EventStatusTypeBuffExpired {
+			continue
+		}
+		byCharacter[evt.CharacterId] = evt
+	}
+
+	require.Contains(t, byCharacter, uint32(100))
+	require.Contains(t, byCharacter, uint32(200))
+	assert.Equal(t, worldA, byCharacter[100].WorldId)
+	assert.Equal(t, worldB, byCharacter[200].WorldId)
+}
+
+// TestCancelByEmptyCorrelationMatchesNothing — an empty correlation id
+// matches nothing, rather than cancelling every uncorrelated buff in the
+// tenant.
+func TestCancelByEmptyCorrelationMatchesNothing(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+	changes := setupProcessorTestChanges()
+
+	assert.NoError(t, processor.Apply(world.Id(1), channel.Id(4), 100, 0, 1004, 1, 60000, changes, false, false, ""))
+
+	assert.NoError(t, processor.CancelByCorrelation(""))
+
+	m, err := GetRegistry().Get(ctx, 100)
+	assert.NoError(t, err)
+	assert.Len(t, m.Buffs(), 1)
+}
+
+// TestCancelByCorrelationIsIdempotent — re-issuing the command after the
+// sweep is a no-op (FR-N4).
+func TestCancelByCorrelationIsIdempotent(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+	changes := setupProcessorTestChanges()
+
+	assert.NoError(t, processor.Apply(world.Id(1), channel.Id(4), 100, 0, 9000, 1, 60000, changes, false, false, "occ-1"))
+
+	assert.NoError(t, processor.CancelByCorrelation("occ-1"))
+	m, err := GetRegistry().Get(ctx, 100)
+	assert.NoError(t, err)
+	assert.Empty(t, m.Buffs())
+
+	// Second sweep: nothing left to cancel, no error, no panic.
+	assert.NoError(t, processor.CancelByCorrelation("occ-1"))
+	m, err = GetRegistry().Get(ctx, 100)
+	assert.NoError(t, err)
+	assert.Empty(t, m.Buffs())
 }

@@ -49,6 +49,8 @@ type storedMonster struct {
 	StatusEffects          statusEffectList `json:"statusEffects"`
 	NextEligibleRepickAtMs int64            `json:"nextEligibleRepickAtMs,omitempty"`
 	LastDamageTakenMs      int64            `json:"lastDamageTakenMs,omitempty"`
+	SpawnSourceType        string           `json:"spawnSourceType,omitempty"`
+	SpawnSourceId          string           `json:"spawnSourceId,omitempty"`
 }
 
 // damageEntryList and statusEffectList tolerate the empty-object form ("{}")
@@ -162,6 +164,8 @@ func toStored(t tenant.Model, m Model) storedMonster {
 		StatusEffects:          ses,
 		NextEligibleRepickAtMs: m.nextSkillDecision.nextEligibleRepickAtMs,
 		LastDamageTakenMs:      m.lastDamageTakenMs,
+		SpawnSourceType:        m.spawnSourceType,
+		SpawnSourceId:          m.spawnSourceId,
 	}
 }
 
@@ -253,6 +257,8 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 			nextEligibleRepickAtMs: sm.NextEligibleRepickAtMs,
 		},
 		lastDamageTakenMs: sm.LastDamageTakenMs,
+		spawnSourceType:   sm.SpawnSourceType,
+		spawnSourceId:     sm.SpawnSourceId,
 	}, nil
 }
 
@@ -349,9 +355,9 @@ func (r *Registry) atomicUpdate(ctx context.Context, t tenant.Model, uniqueId ui
 	return m, err
 }
 
-func (r *Registry) CreateMonster(ctx context.Context, t tenant.Model, f field.Model, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
+func (r *Registry) CreateMonster(ctx context.Context, t tenant.Model, f field.Model, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32, spawnSourceType string, spawnSourceId string) Model {
 	uniqueId := GetIdAllocator().Allocate(ctx, t)
-	m := NewMonster(f, uniqueId, monsterId, x, y, fh, stance, team, hp, mp)
+	m := NewMonster(f, uniqueId, monsterId, x, y, fh, stance, team, hp, mp, spawnSourceType, spawnSourceId)
 
 	// The old pipeline issued Set+SAdd ignoring errors; sequential calls match.
 	_ = r.reg.Put(ctx, t, uniqueId, toStored(t, m))

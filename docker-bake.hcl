@@ -52,6 +52,7 @@ go_services = [
   "atlas-drop-information",
   "atlas-drops",
   "atlas-effective-stats",
+  "atlas-events",
   "atlas-expressions",
   "atlas-fame",
   "atlas-families",

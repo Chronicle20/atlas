@@ -10,6 +10,7 @@ import {
   seedService,
   type DataStatus,
   type DropsSeedStatus,
+  type EventDefinitionsSeedStatus,
   type GachaponsSeedStatus,
   type IngestRun,
   type InstanceRoutesSeedStatus,
@@ -17,6 +18,7 @@ import {
   type MapActionScriptsSeedStatus,
   type NpcConversationsSeedStatus,
   type NpcShopsSeedStatus,
+  type PartyQuestDefinitionsSeedStatus,
   type PortalScriptsSeedStatus,
   type QuestConversationsSeedStatus,
   type ReactorScriptsSeedStatus,
@@ -70,6 +72,10 @@ const transportVesselsSeedStatusKey = (tenantId: string) =>
   ["transportVesselsSeedStatus", tenantId] as const;
 const instanceRoutesSeedStatusKey = (tenantId: string) =>
   ["instanceRoutesSeedStatus", tenantId] as const;
+const eventDefinitionsSeedStatusKey = (tenantId: string) =>
+  ["eventDefinitionsSeedStatus", tenantId] as const;
+const partyQuestDefinitionsSeedStatusKey = (tenantId: string) =>
+  ["partyQuestDefinitionsSeedStatus", tenantId] as const;
 
 export function useSeedDrops(): UseMutationResult<void, Error, void> {
   const { activeTenant } = useTenant();
@@ -262,6 +268,42 @@ export function useSeedInstanceRoutes(): UseMutationResult<void, Error, void> {
       if (!activeTenant) return;
       void queryClient.invalidateQueries({
         queryKey: instanceRoutesSeedStatusKey(activeTenant.id),
+      });
+    },
+  });
+}
+
+export function useSeedEventDefinitions(): UseMutationResult<
+  void,
+  Error,
+  void
+> {
+  const { activeTenant } = useTenant();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => seedService.seedEventDefinitions(),
+    onSuccess: () => {
+      if (!activeTenant) return;
+      void queryClient.invalidateQueries({
+        queryKey: eventDefinitionsSeedStatusKey(activeTenant.id),
+      });
+    },
+  });
+}
+
+export function useSeedPartyQuestDefinitions(): UseMutationResult<
+  void,
+  Error,
+  void
+> {
+  const { activeTenant } = useTenant();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => seedService.seedPartyQuestDefinitions(),
+    onSuccess: () => {
+      if (!activeTenant) return;
+      void queryClient.invalidateQueries({
+        queryKey: partyQuestDefinitionsSeedStatusKey(activeTenant.id),
       });
     },
   });
@@ -531,6 +573,39 @@ export function useInstanceRoutesSeedStatus(): UseQueryResult<
       ? instanceRoutesSeedStatusKey(activeTenant.id)
       : ["instanceRoutesSeedStatus", "none"],
     queryFn: () => seedService.getInstanceRoutesSeedStatus(activeTenant!),
+    enabled: !!activeTenant,
+    staleTime: 0,
+    refetchInterval: 5000,
+  });
+}
+
+export function useEventDefinitionsSeedStatus(): UseQueryResult<
+  EventDefinitionsSeedStatus,
+  Error
+> {
+  const { activeTenant } = useTenant();
+  return useQuery({
+    queryKey: activeTenant
+      ? eventDefinitionsSeedStatusKey(activeTenant.id)
+      : ["eventDefinitionsSeedStatus", "none"],
+    queryFn: () => seedService.getEventDefinitionsSeedStatus(activeTenant!),
+    enabled: !!activeTenant,
+    staleTime: 0,
+    refetchInterval: 5000,
+  });
+}
+
+export function usePartyQuestDefinitionsSeedStatus(): UseQueryResult<
+  PartyQuestDefinitionsSeedStatus,
+  Error
+> {
+  const { activeTenant } = useTenant();
+  return useQuery({
+    queryKey: activeTenant
+      ? partyQuestDefinitionsSeedStatusKey(activeTenant.id)
+      : ["partyQuestDefinitionsSeedStatus", "none"],
+    queryFn: () =>
+      seedService.getPartyQuestDefinitionsSeedStatus(activeTenant!),
     enabled: !!activeTenant,
     staleTime: 0,
     refetchInterval: 5000,

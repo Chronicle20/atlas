@@ -96,7 +96,7 @@ func spawnCatchable(t *testing.T, ten tenant.Model, monsterId uint32, hp uint32,
 	t.Helper()
 	r := GetMonsterRegistry()
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(context.Background(), ten, f, monsterId, 0, 0, 0, 5, 0, maxHp, 100)
+	m := r.CreateMonster(context.Background(), ten, f, monsterId, 0, 0, 0, 5, 0, maxHp, 100, "", "")
 	if hp != maxHp {
 		if _, err := r.ApplyDamage(ten, 1, maxHp-hp, m.UniqueId(), time.Now().UnixMilli()); err != nil {
 			t.Fatalf("apply damage: %v", err)

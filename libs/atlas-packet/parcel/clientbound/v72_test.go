@@ -7,9 +7,43 @@ import (
 
 	testlog "github.com/sirupsen/logrus/hooks/test"
 
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/parcel"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
+
+// wantEquipItemBytesV72 hand-builds the wire encoding of a bare equipment
+// asset (model.NewAsset(false, 1, 1302000, time.Time{})) under GMS v72, per
+// model.Asset.encodeEquipableInfo (libs/atlas-packet/model/asset.go). v72
+// sits below BOTH the MajorAtLeast(79) hammersApplied gate (asset.go:266)
+// and the MajorAtLeast(83) short-slot gate (asset.go:507): slot encodes as a
+// single byte and no hammersApplied field is written — the shortest of the
+// three versions' encodings (77 bytes here vs 81 for v79 and 82 for v83).
+// Every numeric field on this asset is its zero value, so each gated region
+// below is either absent or all-zero-bytes of its fixed width; only the
+// fixed byte offsets differ per version (RULING 22 retro-fit, task-241 Task
+// 28).
+func wantEquipItemBytesV72() []byte {
+	var b []byte
+	b = append(b, 0x01)                                           // encodeSlot: byte slot (MajorAtLeast(83) false, asset.go:507)
+	b = append(b, 0x01)                                           // cash-type-byte marker (MajorVersion>12)
+	b = append(b, 0xf0, 0xdd, 0x13, 0x00)                         // templateId 1302000 LE
+	b = append(b, 0x00)                                           // WriteBool(false) -- not cash
+	b = append(b, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff) // MsTime(zero) = -1
+	b = append(b, 0x00)                                           // slots = 0
+	b = append(b, 0x00)                                           // level = 0
+	b = append(b, make([]byte, 30)...)                            // 15 zero equipment stat shorts
+	b = append(b, 0x00, 0x00)                                     // WriteAsciiString("") -> short length 0
+	b = append(b, 0x00, 0x00)                                     // flag short = 0
+	b = append(b, 0x00)                                           // levelType = 0
+	b = append(b, 0x00)                                           // level = 0
+	b = append(b, 0x00, 0x00, 0x00, 0x00)                         // experience = 0
+	// no hammersApplied on v72 (asset.go:266 gate, MajorAtLeast(79), not satisfied)
+	b = append(b, make([]byte, 8)...)                             // WriteLong(0) trailing buffer
+	b = append(b, 0x00, 0x40, 0xe0, 0xfd, 0x3b, 0x37, 0x4f, 0x01) // 94354848000000000
+	b = append(b, 0xff, 0xff, 0xff, 0xff)                         // -1
+	return b
+}
 
 // v72 PARCEL (op 0x120) family verification — task-241 Task 28, session
 // f2a2e7c1 (GMS_v72.1_U_DEVM.exe.i64). Every byte below is derived from
@@ -134,6 +168,50 @@ func TestParcelArrivedV72(t *testing.T) {
 	}
 }
 
+// TestParcelArrivedV72WithItem is a RULING 22 retro-fit (task-241 Task 28):
+// the embedded Parcel's asset branch (parcel.go:157-173, HasItem/WriteBool +
+// conditional item.Encode) is otherwise unexercised on every version, since
+// every existing marked fixture builds a bare Parcel with no item attached.
+// The parcel family itself carries no version gates
+// (grep -rn 'MajorAtLeast|MajorVersion' libs/atlas-packet/parcel/ is empty);
+// the only version-divergent bytes here belong to model.Asset, asserted
+// independently per version via wantEquipItemBytesV72.
+func TestParcelArrivedV72WithItem(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
+	item := model.NewAsset(false, 1, 1302000, time.Time{})
+	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
+
+	name := make([]byte, 13)
+	copy(name, "Alice")
+	msg := make([]byte, 205)
+	copy(msg, "hi")
+	filetime := model.MsTimeBytes(sentAt)
+
+	var pBytes []byte
+	pBytes = append(pBytes, 0x07, 0x00, 0x00, 0x00)
+	pBytes = append(pBytes, name...)
+	pBytes = append(pBytes, 0xe8, 0x03, 0x00, 0x00)
+	pBytes = append(pBytes, filetime[:]...)
+	pBytes = append(pBytes, msg...)
+	pBytes = append(pBytes, 0x01) // hasItem = true
+	pBytes = append(pBytes, wantEquipItemBytesV72()...)
+
+	got := p.Encode(l, ctx)(nil)
+	if !bytes.Equal(got, pBytes) {
+		t.Fatalf("parcel with item: got % x\nwant % x", got, pBytes)
+	}
+
+	gotArrived := NewParcelArrived(0x18, p).Encode(l, ctx)(nil)
+	var wantArrived []byte
+	wantArrived = append(wantArrived, 0x18)
+	wantArrived = append(wantArrived, pBytes...)
+	if !bytes.Equal(gotArrived, wantArrived) {
+		t.Errorf("ParcelArrived with item: got % x want % x", gotArrived, wantArrived)
+	}
+}
+
 // packet-audit:verify packet=parcel/clientbound/ParcelAlarmNamed version=gms_v72 ida=0x65fb00
 func TestParcelAlarmNamedV72(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
@@ -175,5 +253,41 @@ func TestParcelOpenV72(t *testing.T) {
 	want = append(want, pBytes...)
 	if !bytes.Equal(got, want) {
 		t.Errorf("Open: got % x want % x", got, want)
+	}
+}
+
+// TestParcelOpenV72WithItem is a RULING 22 retro-fit companion to
+// TestParcelArrivedV72WithItem: it exercises the same asset-bearing Parcel
+// through the OPEN arm's mailbox/arrived slices.
+func TestParcelOpenV72WithItem(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := pt.CreateContext("GMS", 72, 1)
+	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
+	item := model.NewAsset(false, 1, 1302000, time.Time{})
+	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
+
+	name := make([]byte, 13)
+	copy(name, "Alice")
+	msg := make([]byte, 205)
+	copy(msg, "hi")
+	filetime := model.MsTimeBytes(sentAt)
+
+	var pBytes []byte
+	pBytes = append(pBytes, 0x07, 0x00, 0x00, 0x00)
+	pBytes = append(pBytes, name...)
+	pBytes = append(pBytes, 0xe8, 0x03, 0x00, 0x00)
+	pBytes = append(pBytes, filetime[:]...)
+	pBytes = append(pBytes, msg...)
+	pBytes = append(pBytes, 0x01) // hasItem = true
+	pBytes = append(pBytes, wantEquipItemBytesV72()...)
+
+	got := NewParcelOpen(8, true, []parcel.Parcel{p}, []parcel.Parcel{p}).Encode(l, ctx)(nil)
+	var want []byte
+	want = append(want, 0x08, 0x01, 0x01)
+	want = append(want, pBytes...)
+	want = append(want, 0x01)
+	want = append(want, pBytes...)
+	if !bytes.Equal(got, want) {
+		t.Errorf("Open with item: got % x want % x", got, want)
 	}
 }

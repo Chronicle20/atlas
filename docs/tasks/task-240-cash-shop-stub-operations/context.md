@@ -206,3 +206,65 @@ funds, unknown commodity), so a future task that resolves real couple-ring half 
 `Etc.wz`/`Character.wz`, per R1's own resolution note) can add the distinct-halves check and the
 `*_FAILED` rejection without changing either constant or the operation-selection wiring
 (`ringTypeAndOperation` in `cashshop/ring.go`).
+
+## 8. Final state (task 24 closing)
+
+Every deliberately-deferred item and every UNRESOLVED derivation left standing after task 24's sweep,
+seam trace, and cross-service fixes (task-24a, task-24c, and the v72 reconciliation), each with its
+reason and the FR it leaves unsatisfied.
+
+1. **v72 equip-slot effect — OPEN.** The *identity* of `0x468e43` is settled: it is
+   `CCashShop::OnBuySlotInc` (the raw linked symbol; the decompiler's pretty-printed header name
+   `OnIncCharacterSlotCount` is a stale display artifact, not the real identity), and it is the
+   pre-split ancestor of v79's `OnEnableEquipSlotExt` — same size (`0x407`), same StringPool ids, same
+   slot-cap logic, same field order (`Encode1(mode 6|7)`, `Encode1(pointType)`, `Encode4(currency)`,
+   `Encode1(1)`, `Encode4(serialNumber)`) — not of v79's `OnIncCharacterSlotCount` (`0x21d`,
+   structurally different) or `OnBuySlotInc` proper (also structurally different). This corrects
+   `derivation-equip-slot.md` §1.7, which took the stale pretty-name at face value and concluded "no
+   client-side effect" from the absence of a handler named exactly `OnCashItemResEnableEquipSlotExtDone`.
+   That absence does not prove absence of effect: v72 has a generic
+   `OnCashItemResIncSlotCountDone`/`Failed` pair at `0x472686`/`0x47277a` that was **not decompiled** in
+   the reconciliation pass, so whether the equip-slot-extension effect actually *applies* on v72 through
+   that generic handler remains explicitly unresolved. Do not close this by inference — it needs the
+   `0x472686`/`0x47277a` pair decompiled against a live v72 IDB.
+   (`.superpowers/sdd/plan/task-24-v72-reconciliation-report.md`)
+2. **Post-commit equip-slot extension write is fire-and-forget** (task-24c). `PurchaseEquipSlotAndEmit`
+   no longer calls `atlas-character`'s `ExtendEquipSlot` inside the purchase transaction; it mints an
+   `EXTEND_EQUIP_SLOT` outbox command instead, durable only if the debit + purchase-record commit, and a
+   same-service consumer (`handleCommandExtendEquipSlot` → `CompleteEquipSlotExtension`) performs the
+   HTTP call after commit and emits `EQUIP_SLOT_INCREASED` only on success. A failed `ExtendEquipSlot`
+   call at that point is logged and dropped — the wallet is already debited and the purchase already
+   recorded, so there is no reversible failure path left; retrying or refunding from there would
+   reintroduce the exact cross-service-rollback hazard this task exists to remove. This matches every
+   other post-commit consumer side effect already in this codebase (fire-and-forget, no
+   redelivery-on-error in `libs/atlas-kafka/message/handler.go`'s `Handler[M]`), not a new failure mode.
+   Recoverable by manual reconciliation (a charged-but-not-yet-extended character). Named as a possible
+   follow-up if a stronger retry/redelivery guarantee is wanted.
+   (`.superpowers/sdd/plan/task-24c-report.md`)
+3. **`equipslot.Entity.TransactionId` GORM default-value tag** (task-24c),
+   `default:'00000000-0000-0000-0000-000000000000'` (mirroring the existing `default:''` precedent in
+   the same service's `pending_change/entity.go`), was exercised against sqlite in module-local tests
+   only, not against a real Postgres instance. sqlite does not enforce column-default DDL the same way
+   Postgres does, so a syntax defect in the tag (e.g. `default=uuid` vs `default:'uuid'`) would look
+   correct locally and only surface as a `AutoMigrate` DDL error against Postgres. Flagged as residual,
+   small uncertainty on this one line specifically — if the flagless `tools/verify.sh`'s Postgres
+   integration path fails on this column, this is the first thing to check.
+4. **Fail-open equip-slot fetch**, `services/atlas-channel/atlas.com/channel/socket/writer/character_data.go:120-126`
+   (`buildInventoryData`): `equipslot.NewProcessor(l, ctx).GetActive(c.Id())` failing logs a warning and
+   proceeds with `exts = nil`, sending the client the zero-time "no active extension" value on
+   `SET_FIELD` rather than blocking login. Accepted as least-bad — there is no cache to fall back to,
+   and fail-closed would block login entirely on a transient equip-slot-service hiccup. Self-healing on
+   the character's next successful `SET_FIELD` once the fetch succeeds. Confirmed unchanged by task-24a
+   (write-up/confirmation only, no code change).
+5. **`ring.go` does NOT share the transaction defect that task-24c fixed in `equipslot.go`.**
+   `PurchaseRingAndEmit`'s in-transaction external calls (`p.chaP.GetById()` for the buyer, then the
+   partner) are reads, not writes — a failure on either aborts the transaction via `reject(...)` before
+   any local write happens, so there is no external side effect left dangling for the DB rollback to
+   miss. The general anti-pattern (a network round trip held open inside a DB transaction, risking
+   row/table locks across an external call's latency) still applies to `ring.go` as it does to any
+   in-transaction HTTP call, but the specific double-write hazard task-24c fixed in `equipslot.go` — an
+   external write applied and then NOT rolled back when the local transaction fails afterward — has no
+   equivalent in `ring.go` today, because `ring.go` has no write call inside its transaction at all. This
+   corrects an earlier note (task-24 brief's Step 3 framing) that treated `ring.go` as sharing
+   `equipslot.go`'s defect; the correction is recorded here explicitly so it is not lost.
+   (`.superpowers/sdd/plan/task-24a-report.md`, Item 4)

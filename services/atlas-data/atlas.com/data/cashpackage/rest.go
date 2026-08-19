@@ -25,3 +25,14 @@ func (r *RestModel) SetID(strId string) error {
 	r.Id = uint32(id)
 	return nil
 }
+
+// SetToOneReferenceID and SetToManyReferenceIDs satisfy jsonapi's
+// EditToOneRelations/EditToManyRelations interfaces. RestModel carries no
+// relationships, so both are no-ops.
+func (r *RestModel) SetToOneReferenceID(_ string, _ string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}

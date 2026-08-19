@@ -59,19 +59,3 @@ func Extend(db *gorm.DB, tenantId uuid.UUID, characterId uint32, slotIndex int16
 	}
 	return expiresAt, nil
 }
-
-// GetActive returns the character's currently-active extensions, i.e. those
-// whose ExpiresAt is in the future. An expired row is not returned and is not
-// deleted -- the history is kept.
-func GetActive(db *gorm.DB, tenantId uuid.UUID, characterId uint32) ([]Model, error) {
-	var es []Entity
-	err := db.Where("tenant_id = ? AND character_id = ? AND expires_at > ?", tenantId, characterId, time.Now()).Find(&es).Error
-	if err != nil {
-		return nil, err
-	}
-	ms := make([]Model, 0, len(es))
-	for _, e := range es {
-		ms = append(ms, modelFromEntity(e))
-	}
-	return ms, nil
-}

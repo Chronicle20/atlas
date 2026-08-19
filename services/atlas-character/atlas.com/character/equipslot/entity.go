@@ -39,3 +39,30 @@ func (e Entity) TableName() string { return "character_equip_slot_extensions" }
 func Migration(db *gorm.DB) error {
 	return db.AutoMigrate(&Entity{})
 }
+
+// Make converts a persisted Entity into its domain Model. TransactionId is a
+// write-path idempotency key (see the field doc above) and is not part of
+// the domain Model -- it never leaves the persistence layer.
+func Make(e Entity) (Model, error) {
+	return NewBuilder().
+		SetId(e.Id).
+		SetTenantId(e.TenantId).
+		SetCharacterId(e.CharacterId).
+		SetSlotIndex(e.SlotIndex).
+		SetExpiresAt(e.ExpiresAt).
+		Build()
+}
+
+// ToEntity is the inverse of Make for the fields the Model owns. It leaves
+// TransactionId at its zero value: Model does not carry that write-path
+// dedupe key, and Extend (administrator.go) sets it directly when persisting
+// a purchase, so this method is not on that path.
+func (m Model) ToEntity() Entity {
+	return Entity{
+		Id:          m.id,
+		TenantId:    m.tenantId,
+		CharacterId: m.characterId,
+		SlotIndex:   m.slotIndex,
+		ExpiresAt:   m.expiresAt,
+	}
+}

@@ -70,6 +70,13 @@ const (
 	// RemoteNpcUse is the classification-239 flow: open the named NPC's shop or
 	// conversation from anywhere, then consume the item.
 	RemoteNpcUse Type = "remote_npc_use"
+
+	// ParcelSend and ParcelReceive are the Duey parcel-delivery sagas
+	// (task-241): ParcelSend moves an item/meso bundle into custody at send
+	// time, ParcelReceive moves it out of custody to the recipient (or back to
+	// the sender on discard/expiry).
+	ParcelSend    Type = "parcel_send"
+	ParcelReceive Type = "parcel_receive"
 )
 
 // Status represents the status of a saga step
@@ -221,6 +228,13 @@ const (
 	MtsSettlePurchase       Action = "mts_settle_purchase"
 	MtsMoveListingToHolding Action = "mts_move_listing_to_holding"
 	MtsBidEscrow            Action = "mts_bid_escrow"
+
+	// Parcel custody (task-241). transfer_to_parcel is a COMPOSITE expanded into
+	// release_from_character + accept_to_parcel, the same shape as transfer_to_mts.
+	TransferToParcel   Action = "transfer_to_parcel"
+	AcceptToParcel     Action = "accept_to_parcel"
+	ReleaseFromParcel  Action = "release_from_parcel"
+	WithdrawFromParcel Action = "withdraw_from_parcel"
 
 	// Guild actions
 	RequestGuildName             Action = "request_guild_name"

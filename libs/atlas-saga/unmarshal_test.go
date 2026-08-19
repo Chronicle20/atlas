@@ -733,6 +733,196 @@ func TestUnmarshalMtsBidEscrowStep(t *testing.T) {
 	}
 }
 
+func TestUnmarshalTransferToParcelStep(t *testing.T) {
+	raw := `{
+		"stepId": "transfer_to_parcel-1",
+		"status": "pending",
+		"action": "transfer_to_parcel",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"parcelId": "22222222-2222-2222-2222-222222222222",
+			"characterId": 100,
+			"worldId": 0,
+			"sourceInventoryType": 1,
+			"assetId": 555,
+			"quantity": 1,
+			"senderAccountId": 10,
+			"senderName": "Sender",
+			"recipientId": 200,
+			"recipientAccountId": 20,
+			"mesoAmount": 1000,
+			"feePaid": 100,
+			"quick": true,
+			"message": "hello",
+			"receivableAt": "2026-06-17T00:00:00Z",
+			"expiresAt": "2026-06-24T00:00:00Z"
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != TransferToParcel {
+		t.Fatalf("expected action TransferToParcel, got %q", step.Action)
+	}
+	p, ok := step.Payload.(TransferToParcelPayload)
+	if !ok {
+		t.Fatalf("expected TransferToParcelPayload, got %T", step.Payload)
+	}
+	if p.ParcelId.String() != "22222222-2222-2222-2222-222222222222" {
+		t.Errorf("parcelId mismatch, got %s", p.ParcelId)
+	}
+	if p.CharacterId != 100 {
+		t.Errorf("characterId: expected 100, got %d", p.CharacterId)
+	}
+	if p.AssetId != 555 {
+		t.Errorf("assetId: expected 555, got %d", p.AssetId)
+	}
+	if p.MesoAmount != 1000 {
+		t.Errorf("mesoAmount: expected 1000, got %d", p.MesoAmount)
+	}
+	if p.FeePaid != 100 {
+		t.Errorf("feePaid: expected 100, got %d", p.FeePaid)
+	}
+	if !p.Quick {
+		t.Errorf("quick: expected true, got %v", p.Quick)
+	}
+	if !p.ReceivableAt.Equal(time.Date(2026, 6, 17, 0, 0, 0, 0, time.UTC)) {
+		t.Errorf("receivableAt: expected 2026-06-17T00:00:00Z, got %v", p.ReceivableAt)
+	}
+}
+
+func TestUnmarshalAcceptToParcelStep(t *testing.T) {
+	raw := `{
+		"stepId": "accept_to_parcel-1",
+		"status": "pending",
+		"action": "accept_to_parcel",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"parcelId": "22222222-2222-2222-2222-222222222222",
+			"characterId": 100,
+			"worldId": 0,
+			"senderAccountId": 10,
+			"senderName": "Sender",
+			"recipientId": 200,
+			"recipientAccountId": 20,
+			"mesoAmount": 1000,
+			"feePaid": 100,
+			"quick": true,
+			"message": "hello",
+			"receivableAt": "2026-06-17T00:00:00Z",
+			"expiresAt": "2026-06-24T00:00:00Z",
+			"hasItem": true,
+			"templateId": 1302000,
+			"quantity": 1,
+			"owner": "Sender"
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != AcceptToParcel {
+		t.Fatalf("expected action AcceptToParcel, got %q", step.Action)
+	}
+	p, ok := step.Payload.(AcceptToParcelPayload)
+	if !ok {
+		t.Fatalf("expected AcceptToParcelPayload, got %T", step.Payload)
+	}
+	if p.ParcelId.String() != "22222222-2222-2222-2222-222222222222" {
+		t.Errorf("parcelId mismatch, got %s", p.ParcelId)
+	}
+	if p.RecipientId != 200 {
+		t.Errorf("recipientId: expected 200, got %d", p.RecipientId)
+	}
+	if p.TemplateId != 1302000 {
+		t.Errorf("templateId: expected 1302000, got %d", p.TemplateId)
+	}
+	if !p.HasItem {
+		t.Errorf("hasItem: expected true, got %v", p.HasItem)
+	}
+	if p.Owner != "Sender" {
+		t.Errorf("owner: expected Sender, got %q", p.Owner)
+	}
+}
+
+func TestUnmarshalReleaseFromParcelStep(t *testing.T) {
+	raw := `{
+		"stepId": "release_from_parcel-1",
+		"status": "pending",
+		"action": "release_from_parcel",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"parcelId": "22222222-2222-2222-2222-222222222222",
+			"recipientId": 200
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != ReleaseFromParcel {
+		t.Fatalf("expected action ReleaseFromParcel, got %q", step.Action)
+	}
+	p, ok := step.Payload.(ReleaseFromParcelPayload)
+	if !ok {
+		t.Fatalf("expected ReleaseFromParcelPayload, got %T", step.Payload)
+	}
+	if p.ParcelId.String() != "22222222-2222-2222-2222-222222222222" {
+		t.Errorf("parcelId mismatch, got %s", p.ParcelId)
+	}
+	if p.RecipientId != 200 {
+		t.Errorf("recipientId: expected 200, got %d", p.RecipientId)
+	}
+}
+
+func TestUnmarshalWithdrawFromParcelStep(t *testing.T) {
+	raw := `{
+		"stepId": "withdraw_from_parcel-1",
+		"status": "pending",
+		"action": "withdraw_from_parcel",
+		"payload": {
+			"transactionId": "11111111-1111-1111-1111-111111111111",
+			"parcelId": "22222222-2222-2222-2222-222222222222",
+			"characterId": 100,
+			"worldId": 0,
+			"inventoryType": 2
+		},
+		"createdAt": "2026-06-17T00:00:00Z",
+		"updatedAt": "2026-06-17T00:00:00Z"
+	}`
+
+	var step Step[any]
+	if err := json.Unmarshal([]byte(raw), &step); err != nil {
+		t.Fatalf("unmarshal failed: %v", err)
+	}
+	if step.Action != WithdrawFromParcel {
+		t.Fatalf("expected action WithdrawFromParcel, got %q", step.Action)
+	}
+	p, ok := step.Payload.(WithdrawFromParcelPayload)
+	if !ok {
+		t.Fatalf("expected WithdrawFromParcelPayload, got %T", step.Payload)
+	}
+	if p.ParcelId.String() != "22222222-2222-2222-2222-222222222222" {
+		t.Errorf("parcelId mismatch, got %s", p.ParcelId)
+	}
+	if p.CharacterId != 100 {
+		t.Errorf("characterId: expected 100, got %d", p.CharacterId)
+	}
+	if p.InventoryType != 2 {
+		t.Errorf("inventoryType: expected 2, got %d", p.InventoryType)
+	}
+}
+
 func TestUnmarshalAwaitInventoryCreatedStep_ZeroCharacterId(t *testing.T) {
 	// Mirrors the sentinel-payload shape that character-factory emits before
 	// orchestrator result-forwarding substitutes the real characterId.

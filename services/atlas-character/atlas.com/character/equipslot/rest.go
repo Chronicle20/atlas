@@ -35,3 +35,27 @@ func Transform(m Model) (RestModel, error) {
 		ExpiresAt:   m.ExpiresAt(),
 	}, nil
 }
+
+// ExtendInputRestModel is the POST write route's request body (task-240 task
+// 23, R2 -- the write side task 22's InitResource deferred). SlotIndex
+// carries the caller's already-resolved Atlas canonical position (R1); this
+// route persists it as given and does not resolve or invent it. Days is the
+// extension length in days.
+type ExtendInputRestModel struct {
+	Id        string `json:"-"`
+	SlotIndex int16  `json:"slotIndex"`
+	Days      uint16 `json:"days"`
+}
+
+func (r ExtendInputRestModel) GetName() string {
+	return "equip-slot-extensions"
+}
+
+func (r ExtendInputRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *ExtendInputRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}

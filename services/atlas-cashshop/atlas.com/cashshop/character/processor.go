@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-cashshop/character/inventory"
 	"context"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -14,6 +15,7 @@ import (
 type Processor interface {
 	GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error)
 	InventoryDecorator(m Model) Model
+	ExtendEquipSlot(characterId uint32, slotIndex int16, days uint16) (time.Time, error)
 }
 
 type ProcessorImpl struct {
@@ -48,4 +50,12 @@ func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 		return m
 	}
 	return m.SetInventory(i)
+}
+
+// ExtendEquipSlot extends the character's equip-slot extension via
+// atlas-character's write route (task-240 task 23, R2 -- the write side
+// task 22 deferred). slotIndex is the Atlas canonical position (R1); this
+// call carries it through unchanged, it does not resolve or invent it.
+func (p *ProcessorImpl) ExtendEquipSlot(characterId uint32, slotIndex int16, days uint16) (time.Time, error) {
+	return requests.Provider[EquipSlotExtensionRestModel, time.Time](p.l, p.ctx)(requestExtendEquipSlot(p.ctx, characterId, slotIndex, days), ExtractEquipSlotExtension)()
 }

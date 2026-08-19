@@ -225,6 +225,10 @@ func (s stubCharacterProcessor) GetById(_ ...model.Decorator[character.Model]) f
 
 func (s stubCharacterProcessor) InventoryDecorator(m character.Model) character.Model { return m }
 
+func (s stubCharacterProcessor) ExtendEquipSlot(_ uint32, _ int16, _ uint16) (time.Time, error) {
+	return time.Time{}, s.err
+}
+
 // testCharacter is an Explorer (job type 0), which resolves to
 // compartment.TypeExplorer — the type seedCompartment writes.
 func testCharacter(t *testing.T) character.Model {

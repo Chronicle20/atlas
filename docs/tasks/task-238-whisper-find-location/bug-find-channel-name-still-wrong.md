@@ -17,107 +17,110 @@ both.
 
 **Expected:** the channel-1 (internal id 1) target renders `Scania - 2`.
 
-## Root cause: NOT established. The server is provably correct on this build.
+**Confirmed with a fresh client** (reporter, second round): `Atlas` on internal
+channel 0, `Chronicle` on internal channel 1; `/find chronicle` → `Scania - 1`
+AND `/find atlas` → `Scania - 1`. Both array positions render the same name.
 
-The whole server-side chain is confirmed from live logs, not inferred:
+## Root cause: atlas-login never reads the `included` channel attributes, so every channel's `ChannelId` is 0
 
-1. **atlas-world channel registry** (live REST, `/api/worlds/?include=channels`):
-   world 0 has channels `{id 0, port 8301}` and `{id 1, port 7901}`. Two channels.
-2. **atlas-maps location rows** (live REST): character 1 (`atlas`) → `channelId 0`,
-   character 2 (`Chronicle`) → `channelId 1`.
-3. **The client selected the right positions.** atlas-login logged
-   `[CharacterListWorldHandle] read [gameStartMode [2], worldId [0], channelId [0]]`
-   at `13:33:53Z` (session `1fea9191…`) and `channelId [1]` at `13:34:03Z`
-   (session `f0323b77…`). `CLogin::SendLoginPacket` @0x5f6d6a encodes the selected
-   **list position** as that byte, so the two clients picked positions 0 and 1 and
-   landed on channels 0 and 1. Position→channel is now correct.
-4. **/find read the correct channel.** atlas-channel logged the atlas-maps
-   response inline at `13:34:21.262Z`:
-   `path=…/api/characters/2/location response={"worldId":0,"channelId":1,"mapId":240000000,…,"state":"IN_FIELD"}`,
-   followed at `13:34:21.263Z` by `/find resolved branch=channel-remote requester_id=1 target_name=chronicle`.
-   So the value handed to the codec was **1**, not 0.
-5. **The codec writes it verbatim.** `WhisperFindResultChannel.Encode`
-   (`libs/atlas-packet/field/clientbound/whisper.go:220-229`) writes
-   `mode, name, byte(3), WriteInt(channelId)` with no adjustment and no version gate.
-6. **The client uses it as an array index.** `CField::OnWhisper` @0x53228e, both
-   the `0x09` and `0x48` arms, `case 3`:
-   `GetChannelName(v118, v2, v122)` where `v122 = Decode4`. `CWvsContext::GetChannelName`
-   @0x532f73 is a bounds-checked index into `m_asChannelName`; out of range it
-   substitutes the global `WindowName`, not another channel's name.
-7. **The array is filled in packet order.** `CLogin::OnWorldInformation` @0x5f95b7
-   appends each channel entry as it decodes it (`{DecodeStr name, Decode4 capacity,
-   Decode1 worldId, Decode1 channelNo, Decode1 adult}`); the `channelNo` byte at
-   entry+12 is stored and never used for placement. `SendLoginPacket` copies
-   name[i] → `m_asChannelName[i]` and calls `CWvsContext::SetWorldInfo` @0xa02dde.
-   `SetWorldInfo` has exactly two xrefs, both in CLogin — nothing on the channel
-   server re-writes the array.
-8. **Both announce call sites go through the sort.**
-   `socket/handler/server_list.go:97` and
-   `kafka/consumer/account/session/consumer.go:286` both call
-   `writer.ServerListEntryBody`, which copies and sorts ascending by `ChannelId`
-   before encoding. `server_list_entry.go:94` then names entry *i* with
-   `ChannelId()+1`.
+`world.RestModel` (`services/atlas-login/atlas.com/login/world/rest.go:12-27`)
+carries `Channels []channel.RestModel` and implements the marshal-side
+`GetReferences` / `GetReferencedIDs` / `GetReferencedStructs`, plus the
+unmarshal-side `SetToManyReferenceIDs` (`:78-90`). `SetToManyReferenceIDs`
+builds one `channel.RestModel{}` per relationship id and sets **only the UUID**:
 
-Steps 1-8 predict the array `[0]="Scania - 1"` (ch 0), `[1]="Scania - 2"` (ch 1),
-and therefore `Chronicle is at 'Scania - 2'`. The reporter saw `Scania - 1`.
+```go
+r.Channels[i] = channel.RestModel{}
+err := r.Channels[i].SetID(id)
+```
 
-**The break is between the packet atlas-login sent and the array the client held.**
-No server-side artifact I can read contradicts the fix.
+The channel attributes live in the document's `included` array. api2go copies
+those into the target **only** if the target implements
+`jsonapi.UnmarshalIncludedRelations`, i.e. `SetReferencedStructs`
+(`api2go@v1.0.4/jsonapi/unmarshal.go:173-195` — `setIncludedIntoTarget` type-asserts
+and silently returns when the assertion fails). `world.RestModel` does not
+implement it. Nothing errors; `Channels` simply comes back as N structs with a
+UUID and **zero values everywhere else** — `ChannelId 0`, `CurrentCapacity 0`,
+`Port 0`.
+
+So `announceServerList` (`socket/handler/server_list.go:91-94` and the
+duplicate at `kafka/consumer/account/session/consumer.go:281-284`) builds
+`model2.NewChannelLoad(c.ChannelId(), c.CurrentCapacity())` = `(0, 0)` for
+**every** channel, and `server_list_entry.go:94` names each entry
+`fmt.Sprintf("%s - %d", worldName, 0+1)` → `"Scania - 1"` for both. The client's
+`m_asChannelName` is `["Scania - 1", "Scania - 1"]`, and `GetChannelName`
+returns `Scania - 1` for any index — exactly the reported symptom.
+
+This is also the real cause of the ORIGINAL bug. Before `682739570` the same
+zeroed id rendered `"Scania - 0"` at every position, which is why `/find` "named
+channel 0 regardless of which channel the target is actually on". The
+`[1, 0]` ordering observed in atlas-world's response was real but was never the
+mechanism: `ceb83cc09`'s sort is a **no-op today** because every sort key is 0.
+Keep it — it becomes load-bearing the moment the ids are populated.
+
+### Why connecting to a channel still worked
+
+The client encodes the selected **list position** and atlas-login uses that
+value as a channel *id* to re-fetch the endpoint directly
+(`GET /api/worlds/0/channels/{n}`, visible in the login log). That path never
+reads `world.Model.Channels()`, so routing was correct while the names were not.
+The reporter's `Atlas`→channel 0 / `Chronicle`→channel 1 placements are genuine
+(confirmed against atlas-maps).
+
+### Blast radius beyond the channel name
+
+Same zeroed structs feed the per-channel **capacity** in WORLD_INFORMATION, so
+the world-select load gauge has always read empty. `?include=channels` has
+exactly one consumer in the repo (`world/requests.go:13`); atlas-channel's
+mirror deliberately omits the include, so no other service is affected.
 
 ### Ruled out, with evidence
 
-- Wrong channel in atlas-maps — live REST and the inline request log both say 1.
+- Wrong channel in atlas-maps — live REST and the inline request log at
+  `13:34:21.262Z` both return `channelId 1` for character 2.
 - Wrong decision branch — `branch=channel-remote` on both finds.
-- Codec dropping/rewriting the value — `whisper.go:220-229`, unconditional `WriteInt`.
-- A second, unsorted announce path in atlas-login — grep shows only the two call
-  sites, both funnelled through `ServerListEntryBody`.
-- The inert `byte(ChannelId()-1)` at `server_list_entry.go:96` — `OnWorldInformation`
-  stores it at entry+12 and `SendLoginPacket` never reads it (it reads entry+16,
-  the adult flag).
-- An out-of-bounds index — that path returns the `WindowName` global, which would
-  render as the window title, not as another `Scania - N`.
-
-### Leading hypothesis (unconfirmed): stale client-side world list
-
-`CLogin::OnWorldInformation` @0x5f95b7 **appends** to `m_WorldItem`
-(`sub_5FDE1F(&this->m_WorldItem, -1)`) and never clears it, and
-`SendLoginPacket` @0x5f6d6a linearly scans for the **first** entry whose worldId
-matches. A client process that has been through more than one world-list round —
-including one that was already running before the `13:09` rollout — therefore
-keeps using the **oldest** copy of world 0, i.e. the pre-fix channel array, no
-matter how many times it returns to the login screen. Only killing and relaunching
-`MapleStory.exe` discards it.
-
-This is consistent with the reported symptom but does not fully explain it: the
-pre-fix array was `[0]="Scania - 1"` (ch 1), `[1]="Scania - 0"` (ch 0), which
-would render `Chronicle is at 'Scania - 0'`, not `'Scania - 1'`. So either the
-client held some third array, or the "both said Scania - 1" report conflates the
-two results (the `atlas` find, from requester 2, correctly reads `Scania - 1`
-under *every* hypothesis).
+- Codec dropping/rewriting the value — `whisper.go:220-229` writes `WriteInt`
+  unconditionally, no version gate.
+- Client-side indexing — `CField::OnWhisper` @0x53228e case 3 →
+  `CWvsContext::GetChannelName` @0x532f73, a bounds-checked index into an array
+  filled in packet order by `CLogin::OnWorldInformation` @0x5f95b7 /
+  `SendLoginPacket` @0x5f6d6a. `SetWorldInfo` @0xa02dde has two xrefs, both in
+  CLogin. The client behaves exactly as documented; it was handed two identical
+  names.
+- A stale client-side world list (the earlier hypothesis) — the reporter
+  re-tested on a freshly launched client and the symptom is unchanged.
 
 ## Fix
 
-None yet — do not dispatch an implementer against a root cause that is not
-established. The next step is an observation, not a code change.
+- `services/atlas-login/atlas.com/login/world/rest.go` — add
+  `func (r *RestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error`
+  so `world.RestModel` satisfies `jsonapi.UnmarshalIncludedRelations`. Populate
+  `r.Channels` from `references["channels"]`, keyed by the ids
+  `SetToManyReferenceIDs` already stored, using `jsonapi.ProcessIncludeData` and
+  re-applying `SetID` afterwards. The pattern to copy verbatim is
+  `services/atlas-channel/atlas.com/channel/party/rest.go:91-109`. Preserve the
+  relationship order — do not sort here; `ServerListEntryBody` owns ordering.
+- `services/atlas-login/atlas.com/login/world/rest_test.go` — new. Unmarshal a
+  JSON:API document for one world whose `channels` relationship lists two ids and
+  whose `included` carries their attributes **in `[1, 0]` order** (what
+  atlas-world actually returns), then assert each extracted channel's
+  `ChannelId`, `CurrentCapacity` and `Port` survive. Must fail before the change
+  (today every field is zero).
+- Do NOT touch `libs/atlas-packet/login/clientbound/server_list_entry.go` or
+  `services/atlas-login/atlas.com/login/socket/writer/server_list.go` — the
+  `+1` label and the sort are both correct and become load-bearing once the ids
+  are real. The existing `server_list_test.go` ordering test still passes.
 
-## Not yet answered — need the reporter
+## Not yet answered
 
-Run this on a **freshly launched** client (kill `MapleStory.exe` first; do not
-just back out to the login screen — see the hypothesis above), and report verbatim:
-
-1. On the world-select screen, the exact text of **every** channel entry, in
-   screen order. Expected after the fix: `Scania - 1`, `Scania - 2`.
-2. Which entry you clicked for each of the two accounts.
-3. The exact `/find` line **in both directions** — the message the channel-0
-   character sees for the channel-1 target, and the message the channel-1
-   character sees for the channel-0 target.
-
-(3) is the discriminator. If the channel-0→channel-1 find reads `Scania - 2`
-after a client restart, the server fixes are correct and the earlier observation
-was a stale client. If it still reads `Scania - 1` on a fresh client, the world
-list the client received is not what the code above produces, and the next step
-is to capture the WORLD_INFORMATION bytes on the wire.
+- `server_list_entry.go:96` still writes `byte(x.ChannelId() - 1)`, underflowing
+  to `255` for channel 0, with the decoder at `:138` compensating with `+1`. The
+  v83 client stores this at channel-entry+12 and never reads it, so it stays
+  inert — but encoder, decoder and the 0-based registry disagree. Unchanged from
+  the previous bug file; still deserves its own task.
+- Whether any other atlas-login `RestModel` with a to-many relationship has the
+  same missing `SetReferencedStructs`. Out of scope for this fix, worth a sweep.
 
 ## Outcome
 
-Open.
+Open — fix not yet applied.

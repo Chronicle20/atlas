@@ -119,7 +119,15 @@ func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[messag
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
+			return
+		}
+
+		// Every channel handler in the world reaches this point; only the
+		// channel(s) actually holding a recipient should pay for the sender
+		// character GET below.
+		present := presentRecipients(l, ctx, sc, e.Body.Recipients)
+		if len(present) == 0 {
 			return
 		}
 
@@ -129,13 +137,27 @@ func handleMultiChat(sc server.Model, wp writer.Producer) message.Handler[messag
 			return
 		}
 
-		for _, cid := range e.Body.Recipients {
+		for _, cid := range present {
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cid, sendMultiChat(l)(ctx)(wp)(c.Name(), e.Message, message2.MultiChatTypeStrToInd(e.Type)))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)
 			}
 		}
 	}
+}
+
+// presentRecipients filters recipients down to those with a session on this
+// handler's own channel. Used to avoid paying for a REST lookup (e.g. the
+// sender character fetch) on every channel handler in a world when at most
+// one channel actually holds any given recipient.
+func presentRecipients(l logrus.FieldLogger, ctx context.Context, sc server.Model, recipients []uint32) []uint32 {
+	var present []uint32
+	for _, cid := range recipients {
+		if _, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(cid); err == nil {
+			present = append(present, cid)
+		}
+	}
+	return present
 }
 
 func sendMultiChat(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(name string, message string, mode byte) model.Operator[session.Model] {
@@ -219,7 +241,7 @@ func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[me
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
 			return
 		}
 
@@ -259,7 +281,15 @@ func handlePinkChat(sc server.Model, wp writer.Producer) message.Handler[message
 			return
 		}
 
-		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+		if !sc.IsWorld(tenant.MustFromContext(ctx), e.WorldId) {
+			return
+		}
+
+		// Every channel handler in the world reaches this point; only the
+		// channel(s) actually holding a recipient should pay for the sender
+		// character GET below.
+		present := presentRecipients(l, ctx, sc, e.Body.Recipients)
+		if len(present) == 0 {
 			return
 		}
 
@@ -271,7 +301,7 @@ func handlePinkChat(sc server.Model, wp writer.Producer) message.Handler[message
 		}
 
 		// TODO retrieve medal name
-		for _, cid := range e.Body.Recipients {
+		for _, cid := range present {
 			bp := session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePinkTextBody("", characterName, e.Message))
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cid, bp)
 			if err != nil {

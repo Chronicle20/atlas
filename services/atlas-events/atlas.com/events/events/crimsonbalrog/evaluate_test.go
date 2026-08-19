@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -37,6 +38,31 @@ type fakes struct {
 	charactersErr   error
 
 	roll func() float64
+
+	// logHook captures what handler()'s logger emitted, so a test can assert
+	// WHICH gate rejected an evaluation. That is the whole point of the gate
+	// logging: every rejection returns the same (nil, nil), so the log line
+	// is the only thing distinguishing them.
+	logHook *test.Hook
+}
+
+// rejectedGate returns the `gate` field of the single
+// crimsonbalrog.evaluate_rejected line the handler emitted, failing the test
+// unless there was exactly one.
+func (f *fakes) rejectedGate() string {
+	f.t.Helper()
+	entries := f.logHook.AllEntries()
+	if len(entries) != 1 {
+		f.t.Fatalf("expected exactly 1 log entry, got %d", len(entries))
+	}
+	if got := entries[0].Message; got != "crimsonbalrog.evaluate_rejected" {
+		f.t.Fatalf("expected a rejection entry, got message %q", got)
+	}
+	gate, ok := entries[0].Data["gate"]
+	if !ok {
+		f.t.Fatalf("rejection entry carries no gate field: %v", entries[0].Data)
+	}
+	return gate.(string)
 }
 
 // newFakes returns a fakes where every FR-B5 gate passes: the voyage is
@@ -114,11 +140,19 @@ func (f *fakes) handler() *Handler {
 		maps: func(context.Context) maps.Processor {
 			return fakeMapsProcessor{byMap: f.charactersByMap, err: f.charactersErr}
 		},
-		// l is only exercised by Start (Task 25), via message.Emit; every
-		// Evaluate test path is silent on it. A discarding logger keeps test
-		// output pristine regardless.
-		l: logrus.New(),
+		// Evaluate names its rejecting gate on this logger, and Start (Task
+		// 25) threads it into message.Emit. A null logger keeps test output
+		// pristine while its hook keeps every entry assertable.
+		l: f.logger(),
 	}
+}
+
+// logger builds the null logger handler() installs, retaining its hook on
+// the fakes so rejectedGate can read back what was emitted.
+func (f *fakes) logger() logrus.FieldLogger {
+	l, hook := test.NewNullLogger()
+	f.logHook = hook
+	return l
 }
 
 type fakeTransportsProcessor struct {
@@ -149,15 +183,19 @@ var _ maps.Processor = fakeMapsProcessor{}
 // Each rejection path asserts NO occurrence is seeded — that is what preserves
 // the occurrence table's meaning as a history of real events (§4).
 func TestEvaluateRejectionPaths(t *testing.T) {
+	// Every case asserts the logged gate as well as the nil seed: the seed
+	// alone cannot tell these five apart, which is exactly the ambiguity the
+	// gate field exists to remove.
 	for _, tc := range []struct {
 		name  string
 		setup func(*fakes)
+		gate  string
 	}{
-		{"voyage already arrived", func(f *fakes) { f.route.State = "awaiting_return" }},
-		{"voyage replaced by the next trip", func(f *fakes) { f.route.VoyageID = uuid.New().String() }},
-		{"definition disabled since departure", func(f *fakes) { f.definition.Enabled = false }},
-		{"probability roll failed", func(f *fakes) { f.roll = func() float64 { return 0.99 } }},
-		{"nobody aboard", func(f *fakes) { f.charactersByMap = map[_map.Id][]uint32{} }},
+		{"voyage already arrived", func(f *fakes) { f.route.State = "awaiting_return" }, gateNotUnderway},
+		{"voyage replaced by the next trip", func(f *fakes) { f.route.VoyageID = uuid.New().String() }, gateNotUnderway},
+		{"definition disabled since departure", func(f *fakes) { f.definition.Enabled = false }, gateNotEnabled},
+		{"probability roll failed", func(f *fakes) { f.roll = func() float64 { return 0.99 } }, gateRoll},
+		{"nobody aboard", func(f *fakes) { f.charactersByMap = map[_map.Id][]uint32{} }, gateNobodyAboard},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			f := newFakes(t)
@@ -168,6 +206,9 @@ func TestEvaluateRejectionPaths(t *testing.T) {
 			}
 			if seed != nil {
 				t.Fatalf("expected no occurrence, got %+v", seed)
+			}
+			if got := f.rejectedGate(); got != tc.gate {
+				t.Fatalf("logged gate = %q, want %q", got, tc.gate)
 			}
 		})
 	}
@@ -266,5 +307,34 @@ func TestCrimsonBalrogEvaluateIgnoresAnEmptyWorkContext(t *testing.T) {
 	}
 	if seed != nil {
 		t.Fatalf("created an occurrence with no voyage: %+v", seed)
+	}
+	if got := f.rejectedGate(); got != gateNoVoyage {
+		t.Fatalf("logged gate = %q, want %q", got, gateNoVoyage)
+	}
+}
+
+// A successful evaluation says so, and names the roll that carried it: a
+// silent success would leave the operator unable to distinguish "the event
+// fired" from "the log line for this voyage is missing".
+func TestSuccessfulEvaluationLogsTheSeed(t *testing.T) {
+	f := newFakes(t)
+
+	seed, err := f.handler().Evaluate(f.ctx, f.definition, f.work)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	if seed == nil {
+		t.Fatal("expected an occurrence seed")
+	}
+
+	entries := f.logHook.AllEntries()
+	if len(entries) != 1 {
+		t.Fatalf("expected exactly 1 log entry, got %d", len(entries))
+	}
+	if got := entries[0].Message; got != "crimsonbalrog.evaluate_seeded" {
+		t.Fatalf("log message = %q, want crimsonbalrog.evaluate_seeded", got)
+	}
+	if _, ok := entries[0].Data["rolled"]; !ok {
+		t.Fatalf("seeded entry carries no rolled field: %v", entries[0].Data)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -59,6 +60,33 @@ func DecodeOccurrenceContext(raw json.RawMessage) (OccurrenceContext, error) {
 	return oc, nil
 }
 
+// Gate names carried on the `gate` field of every
+// crimsonbalrog.evaluate_rejected log line. They name WHICH of Evaluate's
+// silent (nil, nil) returns fired: without them a lost roll, an empty boat,
+// and a disabled definition are indistinguishable in the
+// scheduled_event_work table, which records only that the row COMPLETED.
+const (
+	gateNoVoyage     = "no_voyage"
+	gateNotUnderway  = "voyage_not_underway"
+	gateNotEnabled   = "definition_disabled"
+	gateRoll         = "roll_failed"
+	gateNobodyAboard = "nobody_aboard"
+)
+
+// evalLog tags an evaluation's log lines with the identity a reader needs to
+// correlate a decision back to its scheduled_event_work row: the definition
+// and the voyage are exactly the discriminating parts of that row's
+// dedupe_key.
+func (h *Handler) evalLog(d registry.Definition, wc WorkContext) logrus.FieldLogger {
+	return h.l.WithFields(logrus.Fields{
+		"definitionId": d.Id,
+		"routeId":      wc.RouteId,
+		"voyageId":     wc.VoyageId,
+		"worldId":      wc.WorldId,
+		"channelId":    wc.ChannelId,
+	})
+}
+
 // Evaluate applies FR-B5's gates in order, cheapest first. Returning
 // (nil, nil) is the ORDINARY "no occurrence" outcome (FR-B7, FR-B8), not an
 // error: the work row completes and no history is written, which is what
@@ -85,8 +113,11 @@ func (h *Handler) Evaluate(ctx context.Context, d registry.Definition, w registr
 	// Not an error: the work row completes normally, same as any other
 	// ordinary "no occurrence" outcome (FR-B7, FR-B8).
 	if wc.VoyageId == uuid.Nil {
+		h.evalLog(d, wc).WithField("gate", gateNoVoyage).Info("crimsonbalrog.evaluate_rejected")
 		return nil, nil
 	}
+
+	l := h.evalLog(d, wc)
 
 	// 1. Is the voyage still underway?
 	route, err := h.transports(ctx).GetRoute(wc.RouteId)
@@ -94,17 +125,32 @@ func (h *Handler) Evaluate(ctx context.Context, d registry.Definition, w registr
 		return nil, err
 	}
 	if !transports.VoyageUnderway(route, wc.VoyageId) {
+		l.WithFields(logrus.Fields{
+			"gate":        gateNotUnderway,
+			"routeState":  route.State,
+			"routeVoyage": route.VoyageID,
+		}).Info("crimsonbalrog.evaluate_rejected")
 		return nil, nil
 	}
 
 	// 2. Is the definition still enabled? (It may have been disabled between
 	//    departure and now — FR-D4.)
 	if !d.Enabled {
+		l.WithField("gate", gateNotEnabled).Info("crimsonbalrog.evaluate_rejected")
 		return nil, nil
 	}
 
-	// 3. The roll.
-	if h.roll() >= c.AttackProbability {
+	// 3. The roll. The rolled value and the threshold both ride on the log
+	//    line: "the roll missed" is only a satisfying answer if you can see
+	//    what it missed by, and a definition patched to a lower probability
+	//    than the operator remembers looks identical otherwise.
+	rolled := h.roll()
+	if rolled >= c.AttackProbability {
+		l.WithFields(logrus.Fields{
+			"gate":              gateRoll,
+			"rolled":            rolled,
+			"attackProbability": c.AttackProbability,
+		}).Info("crimsonbalrog.evaluate_rejected")
 		return nil, nil
 	}
 
@@ -115,14 +161,32 @@ func (h *Handler) Evaluate(ctx context.Context, d registry.Definition, w registr
 		return nil, err
 	}
 	if !aboard {
+		l.WithFields(logrus.Fields{
+			"gate":          gateNobodyAboard,
+			"attackMaps":    mapIds(c.AttackMaps),
+			"relatedMapIds": c.RelatedMapIds,
+		}).Info("crimsonbalrog.evaluate_rejected")
 		return nil, nil
 	}
+
+	l.WithField("rolled", rolled).Info("crimsonbalrog.evaluate_seeded")
 
 	key, err := h.ConcurrencyKey(ctx, w.Context)
 	if err != nil {
 		return nil, err
 	}
 	return h.seed(c, wc, key)
+}
+
+// mapIds projects the attack maps down to the ids alone, for the
+// nobody_aboard log line: the spawn positions are noise there, and what a
+// reader wants is which maps were actually queried.
+func mapIds(ams []AttackMap) []_map.Id {
+	ids := make([]_map.Id, 0, len(ams))
+	for _, am := range ams {
+		ids = append(ids, am.MapId)
+	}
+	return ids
 }
 
 // anyoneAboard reports whether any character is present in the UNION of the

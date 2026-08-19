@@ -9,15 +9,17 @@ import (
 	"atlas-cashshop/coupon/redemption"
 	"atlas-cashshop/kafka/consumer/account"
 	"atlas-cashshop/kafka/consumer/cashshop"
-	compartment2 "atlas-cashshop/kafka/consumer/cashshop/compartment"
 	"atlas-cashshop/kafka/consumer/character"
-	itemConsumer "atlas-cashshop/kafka/consumer/item"
-	walletConsumer "atlas-cashshop/kafka/consumer/wallet"
+	"atlas-cashshop/purchaserecord"
 	"atlas-cashshop/surprise/opening"
 	"atlas-cashshop/wallet"
 	"atlas-cashshop/wishlist"
 	"context"
 	"os"
+
+	compartment2 "atlas-cashshop/kafka/consumer/cashshop/compartment"
+	itemConsumer "atlas-cashshop/kafka/consumer/item"
+	walletConsumer "atlas-cashshop/kafka/consumer/wallet"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
@@ -59,7 +61,7 @@ func main() {
 	rt := service.Bootstrap(serviceName, service.WithEnvironmentRegistry(serviceName))
 	l := rt.Logger()
 
-	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, opening.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration, database.IdempotencyMigration))
+	db := database.Connect(l, database.SetMigrations(wallet.Migration, wishlist.Migration, compartment.Migration, asset.Migration, opening.Migration, purchaserecord.Migration, coupon.Migration, batch.Migration, redemption.Migration, outboxlib.Migration, database.IdempotencyMigration))
 
 	// ACCEPT/RELEASE claim an idempotency key so an at-least-once redelivery
 	// cannot duplicate or double-release a cash asset (task-208).

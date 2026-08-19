@@ -84,6 +84,33 @@ func Transform(m Model) (RestModel, error) {
 	}, nil
 }
 
+// DiscardRestModel is the PATCH /parcels/{parcelId} request body
+// (design §4.4 / §7.3, Task 18's atlas-channel discard arm): the caller
+// supplies recipientId so a discard issued by anyone but the parcel's own
+// recipient is rejected rather than silently applied.
+type DiscardRestModel struct {
+	Id          string `json:"-"`
+	RecipientId uint32 `json:"recipientId"`
+}
+
+func (r DiscardRestModel) GetName() string {
+	return "parcels"
+}
+
+func (r DiscardRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *DiscardRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
+}
+
+// Required JSON:API relationship stubs — see RestModel's identical comment.
+func (r *DiscardRestModel) SetToOneReferenceID(_, _ string) error { return nil }
+
+func (r *DiscardRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
 // parcelStatusRestModel is a narrow, one-attribute resource answering "does
 // this character have a pending parcel" — a single round trip for
 // task-26's world-transfer gate 12, rather than a full mailbox fetch.

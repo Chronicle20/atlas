@@ -2,6 +2,7 @@ package parcel
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -40,6 +41,12 @@ type RestModel struct {
 	Status   string `json:"status"`
 	Quick    bool   `json:"quick"`
 	Returned bool   `json:"returned"`
+
+	// ReceivableAt gates Task 18's receive pre-flight (design §7.2): a
+	// pending parcel addressed to the caller is not receivable until this
+	// passes. Not carried by Task 17's send-side pre-flight, which never
+	// reads an individual parcel's timing.
+	ReceivableAt time.Time `json:"receivableAt"`
 }
 
 func (r RestModel) GetName() string { return "parcels" }
@@ -76,6 +83,7 @@ type Model struct {
 	status             string
 	quick              bool
 	returned           bool
+	receivableAt       time.Time
 }
 
 func (m Model) Id() uuid.UUID              { return m.id }
@@ -94,6 +102,7 @@ func (m Model) Quantity() uint16           { return m.quantity }
 func (m Model) Status() string             { return m.status }
 func (m Model) Quick() bool                { return m.quick }
 func (m Model) Returned() bool             { return m.returned }
+func (m Model) ReceivableAt() time.Time    { return m.receivableAt }
 
 // Extract builds a Model from the wire RestModel.
 func Extract(rm RestModel) (Model, error) {
@@ -118,6 +127,7 @@ func Extract(rm RestModel) (Model, error) {
 		status:             rm.Status,
 		quick:              rm.Quick,
 		returned:           rm.Returned,
+		receivableAt:       rm.ReceivableAt,
 	}, nil
 }
 
@@ -160,6 +170,18 @@ func (p *Processor) CountPending(recipientId uint32, worldId world.Id) (int, err
 // GetById retrieves a single parcel by id (Task 18's receive/discard arms).
 func (p *Processor) GetById(id uuid.UUID) (Model, error) {
 	rm, err := requestById(p.ctx, id)(p.l, p.ctx)
+	if err != nil {
+		return Model{}, err
+	}
+	return Extract(rm)
+}
+
+// Discard marks parcelId discarded on behalf of recipientId (design §4.4 /
+// §7.3): discard is deliberately not a saga, so this is a direct
+// PATCH /parcels/{id} against atlas-parcel, which owns the recipient/status
+// validation server-side (parcel.ProcessorImpl.Discard).
+func (p *Processor) Discard(id uuid.UUID, recipientId uint32) (Model, error) {
+	rm, err := discardRequest(p.ctx, id, recipientId)(p.l, p.ctx)
 	if err != nil {
 		return Model{}, err
 	}

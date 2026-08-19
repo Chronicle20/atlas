@@ -61,7 +61,8 @@ type (
 	StartNpcConversationPayload  = sharedsaga.StartNpcConversationPayload
 
 	// Parcel custody payload types (task-241)
-	TransferToParcelPayload = sharedsaga.TransferToParcelPayload
+	TransferToParcelPayload   = sharedsaga.TransferToParcelPayload
+	WithdrawFromParcelPayload = sharedsaga.WithdrawFromParcelPayload
 )
 
 // Re-export constants from atlas-saga shared library
@@ -88,6 +89,7 @@ const (
 	ScriptedItemUse       = sharedsaga.ScriptedItemUse
 	RemoteNpcUse          = sharedsaga.RemoteNpcUse
 	ParcelSend            = sharedsaga.ParcelSend
+	ParcelReceive         = sharedsaga.ParcelReceive
 
 	// Status constants
 	Pending   = sharedsaga.Pending
@@ -132,6 +134,7 @@ const (
 	StartItemConversation = sharedsaga.StartItemConversation
 	StartNpcConversation  = sharedsaga.StartNpcConversation
 	TransferToParcel      = sharedsaga.TransferToParcel
+	WithdrawFromParcel    = sharedsaga.WithdrawFromParcel
 )
 
 // TransferToCashShopPayload is kept local because CashId is uint64 here

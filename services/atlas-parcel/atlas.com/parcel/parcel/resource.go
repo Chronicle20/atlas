@@ -31,14 +31,20 @@ import (
 //   - GET /characters/{characterId}/parcel-status                       — a
 //     narrow "does this character have a pending parcel" lookup (task-26's
 //     world-transfer gate 12), one round trip instead of a full mailbox fetch
+//   - PATCH /parcels/{parcelId}                                          — Task
+//     18's discard arm. Discard is deliberately NOT a saga (design §4.4):
+//     nothing leaves custody, so atlas-channel PATCHes this route directly
+//     instead of going through the Kafka custody consumer.
 func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteInitializer {
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerGet := rest.RegisterHandler(l)(db)(si)
+			registerPatch := rest.RegisterInputHandler[DiscardRestModel](l)(db)(si)
 
 			pr := router.PathPrefix("/parcels").Subrouter()
 			pr.HandleFunc("", registerGet("get_parcels", handleGetParcels)).Methods(http.MethodGet)
 			pr.HandleFunc("/{parcelId}", registerGet("get_parcel", handleGetParcel)).Methods(http.MethodGet)
+			pr.HandleFunc("/{parcelId}", registerPatch("discard_parcel", handleDiscardParcel)).Methods(http.MethodPatch)
 
 			cr := router.PathPrefix("/characters/{characterId}").Subrouter()
 			cr.HandleFunc("/parcel-status", registerGet("get_character_parcel_status", handleGetParcelStatus)).Methods(http.MethodGet)
@@ -158,6 +164,52 @@ func handleGetParcel(d *rest.HandlerDependency, c *rest.HandlerContext) http.Han
 			}
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving parcel [%s].", parcelId)
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			res, err := model.Map(Transform)(model.FixedProvider(m))()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				server.WriteErrorResponse(d.Logger())(w)(err)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
+}
+
+// handleDiscardParcel marks a pending parcel discarded on behalf of the
+// caller-supplied recipientId (design §4.4 / §7.3). The Processor rejects a
+// requester who is not the parcel's recipient or a parcel that is no longer
+// pending (ErrNotRecipient / ErrNotPending) — both map to 409, never a
+// disconnect, since atlas-channel already re-validates the same facts
+// before issuing this PATCH and a 409 here means the two disagreed (a race,
+// not caller error).
+func handleDiscardParcel(d *rest.HandlerDependency, c *rest.HandlerContext, input DiscardRestModel) http.HandlerFunc {
+	return rest.ParseParcelId(d.Logger(), func(parcelIdStr string) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			parcelId, err := uuid.Parse(parcelIdStr)
+			if err != nil {
+				d.Logger().WithError(err).Warnf("Unable to parse parcelId [%s].", parcelIdStr)
+				server.WriteBadRequest(d.Logger(), w, "parcelId must be a uuid")
+				return
+			}
+
+			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Discard(parcelId, input.RecipientId)
+			if errors.Is(err, ErrNotFound) {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			if errors.Is(err, ErrNotRecipient) || errors.Is(err, ErrNotPending) {
+				w.WriteHeader(http.StatusConflict)
+				return
+			}
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Discarding parcel [%s] for recipient [%d].", parcelId, input.RecipientId)
 				server.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}

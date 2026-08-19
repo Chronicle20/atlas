@@ -13,7 +13,7 @@ import (
 
 // DueyActionMode names a DUEY_ACTION arm. Values match the config keys in
 // docs/packets/dispatchers/duey_action.yaml — SEND is wired by Task 17;
-// RECEIVE, DISCARD and CLOSE are wired by Task 18.
+// RECEIVE, DISCARD and CLOSE are wired by this file (Task 18).
 type DueyActionMode string
 
 const (
@@ -38,6 +38,24 @@ func DueyActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			sp := &parcelsb.ActionSend{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			handleDueyActionSend(l, ctx, wp)(s, sp)
+			return
+		}
+		if isDueyAction(l)(readerOptions, mode, DueyActionModeReceive) {
+			sp := &parcelsb.ActionReceive{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			handleDueyActionReceive(l, ctx, wp)(s, sp)
+			return
+		}
+		if isDueyAction(l)(readerOptions, mode, DueyActionModeDiscard) {
+			sp := &parcelsb.ActionDiscard{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			handleDueyActionDiscard(l, ctx, wp)(s, sp)
+			return
+		}
+		if isDueyAction(l)(readerOptions, mode, DueyActionModeClose) {
+			sp := &parcelsb.ActionClose{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			handleDueyActionClose(l, ctx, wp)(s, sp)
 			return
 		}
 		l.Warnf("Character [%d] issued an unhandled DUEY_ACTION mode [%d].", s.CharacterId(), mode)

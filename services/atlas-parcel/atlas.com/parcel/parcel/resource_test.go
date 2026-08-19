@@ -2,6 +2,7 @@ package parcel_test
 
 import (
 	"atlas-parcel/parcel"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -53,6 +55,30 @@ func withTenant(t *testing.T, tenantId uuid.UUID, method, url string) *http.Requ
 	req.Header.Set("MAJOR_VERSION", "83")
 	req.Header.Set("MINOR_VERSION", "1")
 	return req
+}
+
+// withTenantBody is withTenant plus a JSON:API-marshaled body, for the PATCH
+// discard route.
+func withTenantBody(t *testing.T, tenantId uuid.UUID, method, url string, body []byte) *http.Request {
+	t.Helper()
+	req, err := http.NewRequest(method, url, bytes.NewReader(body))
+	require.NoError(t, err)
+	req.Header.Set("TENANT_ID", tenantId.String())
+	req.Header.Set("REGION", "GMS")
+	req.Header.Set("MAJOR_VERSION", "83")
+	req.Header.Set("MINOR_VERSION", "1")
+	req.Header.Set("Content-Type", "application/json")
+	return req
+}
+
+// discardBody marshals a DiscardRestModel the way atlas-channel's PATCH
+// request does (github.com/Chronicle20/atlas/libs/atlas-rest/requests'
+// PatchRequest uses jsonapi.Marshal on the same interface).
+func discardBody(t *testing.T, parcelId uuid.UUID, recipientId uint32) []byte {
+	t.Helper()
+	b, err := jsonapi.Marshal(parcel.DiscardRestModel{Id: parcelId.String(), RecipientId: recipientId})
+	require.NoError(t, err)
+	return b
 }
 
 // seedParcel builds and persists one pending parcel under tenantId, returning
@@ -230,6 +256,59 @@ func TestParcelResource(t *testing.T) {
 		var attrs parcelStatusAttributes
 		require.NoError(t, json.Unmarshal(env.Data, &attrs))
 		require.False(t, attrs.Attributes.InFlight)
+	})
+
+	t.Run("discard", func(t *testing.T) {
+		db := newParcelTestDB(t)
+		tid := uuid.New()
+		created := seedParcel(t, db, tid, 300, 100)
+
+		srv := newParcelServer(db)
+		defer srv.Close()
+
+		body := discardBody(t, created.Id(), 100)
+		resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s", srv.URL, created.Id().String()), body))
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		require.Equal(t, http.StatusOK, resp.StatusCode)
+
+		m, err := parcel.NewProcessor(logrus.New(), databasetest.TenantContext(tid), db).GetById(created.Id())
+		require.NoError(t, err)
+		require.Equal(t, parcel.StatusDiscarded, m.Status())
+	})
+
+	t.Run("discard not the recipient", func(t *testing.T) {
+		db := newParcelTestDB(t)
+		tid := uuid.New()
+		created := seedParcel(t, db, tid, 300, 100)
+
+		srv := newParcelServer(db)
+		defer srv.Close()
+
+		body := discardBody(t, created.Id(), 999)
+		resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s", srv.URL, created.Id().String()), body))
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		require.Equal(t, http.StatusConflict, resp.StatusCode)
+
+		m, err := parcel.NewProcessor(logrus.New(), databasetest.TenantContext(tid), db).GetById(created.Id())
+		require.NoError(t, err)
+		require.Equal(t, parcel.StatusPending, m.Status())
+	})
+
+	t.Run("discard missing", func(t *testing.T) {
+		db := newParcelTestDB(t)
+		tid := uuid.New()
+
+		srv := newParcelServer(db)
+		defer srv.Close()
+
+		missing := uuid.New()
+		body := discardBody(t, missing, 100)
+		resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s", srv.URL, missing.String()), body))
+		require.NoError(t, err)
+		defer func() { _ = resp.Body.Close() }()
+		require.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 
 	t.Run("tenant isolation", func(t *testing.T) {

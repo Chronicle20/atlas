@@ -215,7 +215,7 @@ func TestDueyActionSend(t *testing.T) {
 		quick               bool
 		message             string
 		mesoAmount          uint32
-		sourceInventoryType byte
+		sourceInventoryType inventory.Type
 		assetId             uint32
 		quantity            uint32
 	}
@@ -229,12 +229,12 @@ func TestDueyActionSend(t *testing.T) {
 		{
 			name: "npc send item and meso",
 			sp:   newActionSendBytes(byte(inventory.TypeValueUse), 5, 1, 1000, "Bob", false, "", 0),
-			want: expect{sagaLen: 1, mesoAmount: 1000, sourceInventoryType: byte(inventory.TypeValueUse), assetId: 5, quantity: 1},
+			want: expect{sagaLen: 1, mesoAmount: 1000, sourceInventoryType: inventory.TypeValueUse, assetId: 5, quantity: 1},
 		},
 		{
 			name: "quick send",
 			sp:   newActionSendBytes(byte(inventory.TypeValueUse), 5, 1, 1000, "Bob", true, "hi", 0),
-			want: expect{sagaLen: 1, quick: true, message: "hi", mesoAmount: 1000, sourceInventoryType: byte(inventory.TypeValueUse), assetId: 5, quantity: 1},
+			want: expect{sagaLen: 1, quick: true, message: "hi", mesoAmount: 1000, sourceInventoryType: inventory.TypeValueUse, assetId: 5, quantity: 1},
 		},
 		{
 			name: "meso only",

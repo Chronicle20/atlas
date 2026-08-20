@@ -2197,7 +2197,7 @@ func (p *ProcessorImpl) expandTransferToParcel(st Step[any]) ([]Step[any], error
 	p.l.Debugf("Looking up source asset for character [%d] inventory [%d] assetId [%d]",
 		payload.CharacterId, payload.SourceInventoryType, payload.AssetId)
 
-	comp, err := compartment.RequestCompartment(p.l, p.ctx)(payload.CharacterId, payload.SourceInventoryType)
+	comp, err := compartment.RequestCompartment(p.l, p.ctx)(payload.CharacterId, byte(payload.SourceInventoryType))
 	if err != nil {
 		return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", payload.CharacterId, err)
 	}
@@ -2235,7 +2235,7 @@ func (p *ProcessorImpl) expandTransferToParcel(st Step[any]) ([]Step[any], error
 			ReleaseFromCharacterPayload{
 				TransactionId: payload.TransactionId,
 				CharacterId:   payload.CharacterId,
-				InventoryType: payload.SourceInventoryType,
+				InventoryType: byte(payload.SourceInventoryType),
 				AssetId:       payload.AssetId,
 				Quantity:      payload.Quantity,
 			},
@@ -2341,7 +2341,7 @@ func (p *ProcessorImpl) expandWithdrawFromParcel(st Step[any]) ([]Step[any], err
 			AcceptToCharacterPayload{
 				TransactionId: payload.TransactionId,
 				CharacterId:   payload.CharacterId,
-				InventoryType: payload.InventoryType,
+				InventoryType: byte(payload.InventoryType),
 				TemplateId:    *pm.ItemId,
 				AssetData: asset2.AssetData{
 					Expiration:     pm.ItemSnapshot.Expiration,

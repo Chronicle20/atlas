@@ -985,24 +985,24 @@ type MtsBidEscrowPayload struct {
 // into the accept step along with the item snapshot looked up from inventory
 // during expansion (NOT carried here). Mirrors TransferToMtsPayload.
 type TransferToParcelPayload struct {
-	TransactionId       uuid.UUID `json:"transactionId"`
-	ParcelId            uuid.UUID `json:"parcelId"`
-	CharacterId         uint32    `json:"characterId"`
-	WorldId             world.Id  `json:"worldId"`
-	SourceInventoryType byte      `json:"sourceInventoryType"`
-	AssetId             uint32    `json:"assetId"`
-	Quantity            uint32    `json:"quantity"`
-	SenderAccountId     uint32    `json:"senderAccountId"`
-	SenderName          string    `json:"senderName"`
-	RecipientId         uint32    `json:"recipientId"`
-	RecipientAccountId  uint32    `json:"recipientAccountId"`
-	RecipientName       string    `json:"recipientName"` // Recipient character name; carried into the accept step so a return leg's SenderName is populated (design §7.4)
-	MesoAmount          uint32    `json:"mesoAmount"`
-	FeePaid             uint32    `json:"feePaid"`
-	Quick               bool      `json:"quick"`
-	Message             string    `json:"message"`
-	ReceivableAt        time.Time `json:"receivableAt"`
-	ExpiresAt           time.Time `json:"expiresAt"`
+	TransactionId       uuid.UUID      `json:"transactionId"`
+	ParcelId            uuid.UUID      `json:"parcelId"`
+	CharacterId         uint32         `json:"characterId"`
+	WorldId             world.Id       `json:"worldId"`
+	SourceInventoryType inventory.Type `json:"sourceInventoryType"`
+	AssetId             uint32         `json:"assetId"`
+	Quantity            uint32         `json:"quantity"`
+	SenderAccountId     uint32         `json:"senderAccountId"`
+	SenderName          string         `json:"senderName"`
+	RecipientId         uint32         `json:"recipientId"`
+	RecipientAccountId  uint32         `json:"recipientAccountId"`
+	RecipientName       string         `json:"recipientName"` // Recipient character name; carried into the accept step so a return leg's SenderName is populated (design §7.4)
+	MesoAmount          uint32         `json:"mesoAmount"`
+	FeePaid             uint32         `json:"feePaid"`
+	Quick               bool           `json:"quick"`
+	Message             string         `json:"message"`
+	ReceivableAt        time.Time      `json:"receivableAt"`
+	ExpiresAt           time.Time      `json:"expiresAt"`
 }
 
 // AcceptToParcelPayload (atomic, dispatched to atlas-parcel custody consumer).
@@ -1075,11 +1075,11 @@ type ReleaseFromParcelPayload struct {
 
 // WithdrawFromParcelPayload — expanded into release_from_parcel + accept_to_character.
 type WithdrawFromParcelPayload struct {
-	TransactionId uuid.UUID `json:"transactionId"`
-	ParcelId      uuid.UUID `json:"parcelId"`
-	CharacterId   uint32    `json:"characterId"`
-	WorldId       world.Id  `json:"worldId"`
-	InventoryType byte      `json:"inventoryType"`
+	TransactionId uuid.UUID      `json:"transactionId"`
+	ParcelId      uuid.UUID      `json:"parcelId"`
+	CharacterId   uint32         `json:"characterId"`
+	WorldId       world.Id       `json:"worldId"`
+	InventoryType inventory.Type `json:"inventoryType"`
 }
 
 // ShowParcelPayload represents the payload required to show the Duey parcel

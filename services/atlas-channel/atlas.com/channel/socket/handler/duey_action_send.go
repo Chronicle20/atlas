@@ -176,7 +176,7 @@ func sendParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s
 		}
 	}
 
-	var sourceInventoryType byte
+	var sourceInventoryType inventory.Type
 	var assetId uint32
 	var quantity uint32
 	if sp.Quantity() > 0 {
@@ -187,7 +187,7 @@ func sendParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s
 			reject(parcelcb.ParcelIncorrectRequestBody())
 			return
 		}
-		sourceInventoryType = byte(it)
+		sourceInventoryType = it
 		assetId = a.Id()
 		quantity = uint32(sp.Quantity())
 	}
@@ -205,7 +205,7 @@ func sendParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s
 // destroy-first), then the conditional destroy_asset (the Quick Delivery
 // Ticket, only when quick — FR-26, consumed on send, not on open), then
 // transfer_to_parcel (composite → release_from_character + accept_to_parcel).
-func buildParcelSendSaga(transactionId uuid.UUID, parcelId uuid.UUID, now time.Time, s session.Model, sender character.Model, recipient character.Model, mesoAmount uint32, quick bool, message string, sourceInventoryType byte, assetId uint32, quantity uint32) saga.Saga {
+func buildParcelSendSaga(transactionId uuid.UUID, parcelId uuid.UUID, now time.Time, s session.Model, sender character.Model, recipient character.Model, mesoAmount uint32, quick bool, message string, sourceInventoryType inventory.Type, assetId uint32, quantity uint32) saga.Saga {
 	total, _ := dueyparcel.TotalCost(mesoAmount, quick) // ValidateSend already confirmed this fits uint32
 	feePaid := uint32(total) - mesoAmount
 

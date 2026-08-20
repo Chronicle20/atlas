@@ -159,7 +159,7 @@ func TestDueyActionReceive(t *testing.T) {
 	type expect struct {
 		reason  string
 		sagaLen int
-		invType byte
+		invType inventory.Type
 	}
 
 	cases := []struct {
@@ -175,7 +175,7 @@ func TestDueyActionReceive(t *testing.T) {
 			parcel: func() dueyparcel.Model {
 				return mustParcelModel(t, pendingId, 100, 0, "", time.Now().Add(-time.Hour), 5000, &itemId, byte(inventory.TypeValueEquip))
 			},
-			want: expect{sagaLen: 1, invType: byte(inventory.TypeValueEquip)},
+			want: expect{sagaLen: 1, invType: inventory.TypeValueEquip},
 		},
 		{
 			name: "receive meso only",

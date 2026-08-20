@@ -199,7 +199,7 @@ func buildParcelReceiveSaga(transactionId uuid.UUID, now time.Time, s session.Mo
 			ParcelId:      p.Id(),
 			CharacterId:   s.CharacterId(),
 			WorldId:       s.WorldId(),
-			InventoryType: p.ItemType(),
+			InventoryType: inventory.Type(p.ItemType()),
 		},
 		CreatedAt: now,
 		UpdatedAt: now,

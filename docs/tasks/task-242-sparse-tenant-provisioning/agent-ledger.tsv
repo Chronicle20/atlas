@@ -1,0 +1,20 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-19T22:58:21Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	1147693f0	-	-	-	-
+2026-08-19T22:59:27Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	1147693f0	APPROVED	no	-	-
+2026-08-19T23:01:58Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE	82a34ffe9	-	-	-	-
+2026-08-19T23:03:45Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	82a34ffe9	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-19T23:06:29Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	0c0b1cef8	-	-	-	-
+2026-08-19T23:09:07Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	0c0b1cef8	APPROVED	no	-	-
+2026-08-19T23:09:07Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	e0722217b	-	-	-	-
+2026-08-20T01:20:29Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	DONE	9333f9cea	-	-	-	-
+2026-08-20T01:25:00Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DONE	9333f9cea	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-20T01:27:58Z	agent	Task 6	atlas-implementer	sonnet	-	-	-	-	DONE	3ac3d2b46	-	-	-	-
+2026-08-20T01:29:56Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	DONE	c5a299163	-	-	-	-
+2026-08-20T01:32:01Z	agent	Task 6	atlas-reviewer	sonnet	-	-	-	-	DONE	3ac3d2b46	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-20T01:32:01Z	agent	Task 7	atlas-reviewer	sonnet	-	-	-	-	DONE	c5a299163	APPROVED	no	-	-
+2026-08-20T01:33:19Z	agent	Task 8	controller	opus	-	-	-	-	DONE	37cf4f08e	-	-	-	-
+2026-08-20T01:39:47Z	agent	Pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	dispatched	1eeb1e223	-	-	-	-
+2026-08-20T01:39:48Z	agent	Pre-PR review	backend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	1eeb1e223	-	-	-	-
+2026-08-20T01:41:36Z	agent	Pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	complete	1eeb1e223	APPROVED	no	-	-
+2026-08-20T01:45:16Z	agent	Pre-PR review	backend-guidelines-reviewer	sonnet	-	-	-	-	complete	1eeb1e223	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-20T01:48:59Z	handoff	PR	-	-	-	-	-	-	complete	a40d997ff	-	-	-	-

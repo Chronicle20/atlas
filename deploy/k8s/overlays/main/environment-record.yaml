@@ -1,0 +1,86 @@
+# The baseline's own control-plane environment record. Three independent
+# mechanisms need it to exist, and all three are broken today because
+# nothing creates it:
+#
+#   - MapRegistry.EnvironmentsOwnedBy (libs/atlas-env/registry.go:225-247)
+#     returns the legacy [""] ONLY while no records are projected. The
+#     moment any sparse PR registers one, main's pods have a non-empty
+#     record set and admit a record only when rec.Baseline == r.self — so
+#     without a `main` record AND ATLAS_ENVIRONMENT=main, every
+#     ForEachOwnedEnvironment ticker in main iterates nothing for the whole
+#     lifetime of that PR environment.
+#   - environments.StartHeartbeat republishes envlib.Self()
+#     (atlas-configurations/.../environments/heartbeat.go:27). Republish on a
+#     name with no record fails, so nothing is published, so every pod's
+#     registry ages into Stale() and the Kafka gate starts dropping messages
+#     as unresolvable rather than skipping them as not-owned.
+#   - ParseEnvironment (libs/atlas-rest/server/handler.go:68) 400s an
+#     unknown environment id, and once the ingress default lands main stamps
+#     ENVIRONMENT: main on browser traffic.
+#
+# POSTs to the ClusterIP, NOT the ingress. Once the ingress default lands it
+# stamps ENVIRONMENT: main on everything — including the very request that
+# creates the `main` record, which ParseEnvironment would then 400. An
+# in-cluster caller that sets no header is the legacy "" environment, which
+# ParseEnvironment admits unconditionally.
+#
+# sync-wave 11: the base pushes every Deployment to wave 10
+# (deploy/k8s/base/kustomization.yaml:97-106), so this runs after
+# atlas-configurations is healthy. On a FRESH atlas-main bring-up that
+# leaves a seconds-long window where atlas-ingress is Ready and stamping
+# `main` before this Job has created the record, and every REST call 400s.
+# Argo gates wave 11 on wave-10 health, so the window is bounded and
+# self-healing; it is accepted deliberately (design D1).
+#
+# `Force=true,Replace=true` (delete+recreate every sync, the same idiom as
+# the base Kafka precreate Jobs and pr-sparse's own environment-record Job)
+# means the body must be idempotent: it GETs by name first and only POSTs
+# when absent, so a re-sync against an existing record is a no-op rather
+# than a duplicate-name 500 (environments.Name carries a uniqueIndex).
+#
+# `tenant` stays "" here on purpose. do_sweep_tenant is sparse-only
+# (services/atlas-pr-bootstrap/scripts/cleanup.sh:335-341) and never runs
+# against main; populating it would add a value nothing reads and one more
+# way to point a sweep at main's own tenant.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-environment-record
+  annotations:
+    argocd.argoproj.io/sync-wave: "11"
+    argocd.argoproj.io/sync-options: Force=true,Replace=true
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: environment-record
+          image: alpine:3.20
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              apk add --no-cache --quiet curl >/dev/null
+              base="http://atlas-configurations.atlas-main.svc.cluster.local:8080/api/configurations/environments"
+              name="main"
+              if curl -fsS "$base/$name" >/dev/null 2>&1; then
+                echo "environment record $name already exists, skipping"
+                exit 0
+              fi
+              curl -fsS -X POST "$base" \
+                -H "Content-Type: application/vnd.api+json" \
+                -d '{
+                      "data": {
+                        "type": "environments",
+                        "attributes": {
+                          "name": "main",
+                          "baseline": "main",
+                          "namespace": "atlas-main",
+                          "tenant": "",
+                          "overrides": {},
+                          "phase": "ACTIVE"
+                        }
+                      }
+                    }'
+              echo "created environment record $name"

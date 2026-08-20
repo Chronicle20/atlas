@@ -1,0 +1,23 @@
+# Rendered to /etc/nginx/conf.d/env-default.conf by the nginx image's
+# envsubst entrypoint (docker-entrypoint.d/20-envsubst-on-templates.sh) and
+# included from nginx.conf's http {} block.
+#
+# $atlas_environment is the RESOLVED environment for a request: the caller's
+# own ENVIRONMENT header when it sent one, this deployment's environment
+# otherwise. In-cluster service-to-service calls already set the header via
+# EnvHeaderDecorator (libs/atlas-rest/requests/header.go:46) and must win,
+# which is what the `default` arm does. A browser sends nothing, which is
+# what the "" arm catches: without it the request reaches atlas-tenants as
+# the legacy "" environment and scope.Strict applies no filter at all,
+# returning the unfiltered union of every environment's rows.
+#
+# ${ATLAS_ENVIRONMENT_DEFAULT} comes from the atlas-env ConfigMap's
+# ATLAS_ENVIRONMENT key — the SAME key env.Self() reads — so the ingress
+# default can never drift from what the pods behind it believe they are.
+# Empty in the base and in overlays/pr, which renders `"" "";` and makes
+# this file a no-op: nginx does not emit a proxy_set_header with an empty
+# value, so untagged requests stay untagged exactly as they are today.
+map $http_environment $atlas_environment {
+    ""      "${ATLAS_ENVIRONMENT_DEFAULT}";
+    default $http_environment;
+}

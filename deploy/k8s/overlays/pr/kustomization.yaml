@@ -157,6 +157,12 @@ configMapGenerator:
     behavior: replace
     literals:
       # Infrastructure literals.
+      # Isolated mode registers no control-plane environment record, so it
+      # must keep env.Self()=="" (FR-1.5). Present-but-empty rather than
+      # absent, because this generator is `behavior: replace` and would
+      # otherwise drop the base key that atlas-ingress's envsubst needs to
+      # be defined — see deploy/k8s/base/env-configmap.yaml.
+      - ATLAS_ENVIRONMENT=
       - BASE_SERVICE_URL=http://atlas-ingress.atlas-pr-PLACEHOLDER_PR_NUMBER.svc.cluster.local:80/api/
       - BOOTSTRAP_SERVERS=kafka-broker.kafka.svc.cluster.local:9093
       - DB_HOST=postgres.home

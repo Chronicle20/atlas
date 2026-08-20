@@ -62,6 +62,40 @@ func TestReconcileWithNeitherIsTheLegacyValue(t *testing.T) {
 	}
 }
 
+func TestReconcileTrustsTheHeaderForALegacyTenant(t *testing.T) {
+	// FR-3.1: a tenant projected with an EMPTY environment is legacy, not a
+	// hard mismatch against a sparse environment's header.
+	r := NewMapRegistry(Id("main"), time.Now)
+	r.ApplyTenant("t-1", Id(""))
+
+	got, err := Reconcile(r, Id("pr-1411"), "t-1")
+	if err != nil || got != Id("pr-1411") {
+		t.Fatalf("got (%q, %v), want (\"pr-1411\", nil)", got, err)
+	}
+}
+
+func TestReconcileStillRejectsTwoNonEmptyDisagreements(t *testing.T) {
+	// FR-3.2: two distinct non-baseline environments are still a hard
+	// mismatch; TestReconcileRejectsADisagreement covers header=main.
+	r := NewMapRegistry(Id("main"), time.Now)
+	r.ApplyTenant("t-1", Id("pr-123"))
+
+	got, err := Reconcile(r, Id("pr-1411"), "t-1")
+	if !errors.Is(err, ErrEnvironmentMismatch) || got != Id("") {
+		t.Fatalf("got (%q, %v), want (\"\", ErrEnvironmentMismatch)", got, err)
+	}
+}
+
+func TestReconcileWithALegacyTenantAndNoHeaderIsTheLegacyValue(t *testing.T) {
+	r := NewMapRegistry(Id("main"), time.Now)
+	r.ApplyTenant("t-1", Id(""))
+
+	got, err := Reconcile(r, Id(""), "t-1")
+	if err != nil || got != Id("") {
+		t.Fatalf("got (%q, %v), want (\"\", nil)", got, err)
+	}
+}
+
 func TestMismatchedIsFalseByDefault(t *testing.T) {
 	if Mismatched(context.Background()) {
 		t.Fatal("expected a fresh context to not be mismatched")

@@ -64,6 +64,16 @@ func Reconcile(r Registry, headerEnv Id, tenantId string) (Id, error) {
 	if !known {
 		return headerEnv, nil
 	}
+	// A tenant projected with an EMPTY environment is LEGACY, not
+	// "definitely belongs to no environment": a pre-#1427 tenant-status
+	// event carried no environment attribute and MapRegistry.ApplyTenant
+	// stores unconditionally (registry.go:67). Everywhere else in this
+	// codebase "" means legacy-don't-filter (FR-1.8); treating it as a hard
+	// mismatch here was the asymmetry that dropped every message a sparse
+	// environment produced against a legacy tenant (FR-3.1).
+	if tenantEnv == "" {
+		return headerEnv, nil
+	}
 	if headerEnv == "" {
 		return tenantEnv, nil
 	}

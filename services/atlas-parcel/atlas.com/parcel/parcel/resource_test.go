@@ -136,241 +136,241 @@ type parcelStatusAttributes struct {
 }
 
 // TestParcelResource exercises the four parcel routes end to end over HTTP,
-// against an in-memory tenant-scoped DB.
+// against an in-memory tenant-scoped DB. It is table-driven over run: every
+// case hits a different route/method/body combination with a distinct
+// assertion set, so the scenario itself is carried as a closure rather than
+// shared data fields.
 func TestParcelResource(t *testing.T) {
 	client := &http.Client{}
 
-	t.Run("list by recipient", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tid := uuid.New()
-		seedParcel(t, db, tid, 900, 100)
-		seedParcel(t, db, tid, 901, 100)
-		seedParcel(t, db, tid, 902, 200)
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{name: "list by recipient", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tid := uuid.New()
+			seedParcel(t, db, tid, 900, 100)
+			seedParcel(t, db, tid, 901, 100)
+			seedParcel(t, db, tid, 902, 200)
 
-		srv := newParcelServer(db)
-		defer srv.Close()
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels?filter[recipientId]=100&filter[worldId]=0&filter[status]=pending", srv.URL)))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusOK, resp.StatusCode)
+			resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels?filter[recipientId]=100&filter[worldId]=0&filter[status]=pending", srv.URL)))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 
-		var env dataList
-		require.NoError(t, json.NewDecoder(resp.Body).Decode(&env))
-		require.Len(t, env.Data, 2)
-	})
+			var env dataList
+			require.NoError(t, json.NewDecoder(resp.Body).Decode(&env))
+			require.Len(t, env.Data, 2)
+		}},
+		// list by recipient without filter[worldId] must be a clean 400,
+		// never a silent default to world 0 — world 0 is an ordinary real
+		// world, not a sentinel, and a tenant has many worlds.
+		{name: "list by recipient missing worldId", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tid := uuid.New()
+			seedParcel(t, db, tid, 900, 100)
 
-	// list by recipient without filter[worldId] must be a clean 400, never a
-	// silent default to world 0 — world 0 is an ordinary real world, not a
-	// sentinel, and a tenant has many worlds.
-	t.Run("list by recipient missing worldId", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tid := uuid.New()
-		seedParcel(t, db, tid, 900, 100)
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-		srv := newParcelServer(db)
-		defer srv.Close()
+			resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels?filter[recipientId]=100&filter[status]=pending", srv.URL)))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusBadRequest, resp.StatusCode)
+		}},
+		{name: "list by sender", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tid := uuid.New()
+			seedParcel(t, db, tid, 300, 100)
 
-		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels?filter[recipientId]=100&filter[status]=pending", srv.URL)))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusBadRequest, resp.StatusCode)
-	})
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-	t.Run("list by sender", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tid := uuid.New()
-		seedParcel(t, db, tid, 300, 100)
+			resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels?filter[senderId]=300&filter[status]=pending", srv.URL)))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 
-		srv := newParcelServer(db)
-		defer srv.Close()
+			var env dataList
+			require.NoError(t, json.NewDecoder(resp.Body).Decode(&env))
+			require.Len(t, env.Data, 1)
+		}},
+		{name: "get by id", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tid := uuid.New()
+			created := seedParcel(t, db, tid, 300, 100)
 
-		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels?filter[senderId]=300&filter[status]=pending", srv.URL)))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusOK, resp.StatusCode)
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-		var env dataList
-		require.NoError(t, json.NewDecoder(resp.Body).Decode(&env))
-		require.Len(t, env.Data, 1)
-	})
+			resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels/%s", srv.URL, created.Id().String())))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 
-	t.Run("get by id", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tid := uuid.New()
-		created := seedParcel(t, db, tid, 300, 100)
+			var env envelope
+			require.NoError(t, json.NewDecoder(resp.Body).Decode(&env))
+			var ri resourceIdentifier
+			require.NoError(t, json.Unmarshal(env.Data, &ri))
+			require.Equal(t, created.Id().String(), ri.Id)
+		}},
+		{name: "get by id missing", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tid := uuid.New()
 
-		srv := newParcelServer(db)
-		defer srv.Close()
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels/%s", srv.URL, created.Id().String())))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusOK, resp.StatusCode)
+			missing := uuid.New().String()
+			resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels/%s", srv.URL, missing)))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusNotFound, resp.StatusCode)
+		}},
+		{name: "parcel-status true", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tid := uuid.New()
+			seedParcel(t, db, tid, 100, 200)
 
-		var env envelope
-		require.NoError(t, json.NewDecoder(resp.Body).Decode(&env))
-		var ri resourceIdentifier
-		require.NoError(t, json.Unmarshal(env.Data, &ri))
-		require.Equal(t, created.Id().String(), ri.Id)
-	})
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-	t.Run("get by id missing", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tid := uuid.New()
+			resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/characters/100/parcel-status", srv.URL)))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 
-		srv := newParcelServer(db)
-		defer srv.Close()
+			var env envelope
+			require.NoError(t, json.NewDecoder(resp.Body).Decode(&env))
+			var attrs parcelStatusAttributes
+			require.NoError(t, json.Unmarshal(env.Data, &attrs))
+			require.True(t, attrs.Attributes.InFlight)
+		}},
+		{name: "parcel-status false", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tid := uuid.New()
 
-		missing := uuid.New().String()
-		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/parcels/%s", srv.URL, missing)))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusNotFound, resp.StatusCode)
-	})
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-	t.Run("parcel-status true", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tid := uuid.New()
-		seedParcel(t, db, tid, 100, 200)
+			resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/characters/100/parcel-status", srv.URL)))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 
-		srv := newParcelServer(db)
-		defer srv.Close()
+			var env envelope
+			require.NoError(t, json.NewDecoder(resp.Body).Decode(&env))
+			var attrs parcelStatusAttributes
+			require.NoError(t, json.Unmarshal(env.Data, &attrs))
+			require.False(t, attrs.Attributes.InFlight)
+		}},
+		{name: "discard", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tid := uuid.New()
+			created := seedParcel(t, db, tid, 300, 100)
 
-		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/characters/100/parcel-status", srv.URL)))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusOK, resp.StatusCode)
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-		var env envelope
-		require.NoError(t, json.NewDecoder(resp.Body).Decode(&env))
-		var attrs parcelStatusAttributes
-		require.NoError(t, json.Unmarshal(env.Data, &attrs))
-		require.True(t, attrs.Attributes.InFlight)
-	})
+			body := discardBody(t, created.Id(), 100)
+			resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s", srv.URL, created.Id().String()), body))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 
-	t.Run("parcel-status false", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tid := uuid.New()
+			m, err := parcel.NewProcessor(logrus.New(), databasetest.TenantContext(tid), db).GetById(created.Id())
+			require.NoError(t, err)
+			require.Equal(t, parcel.StatusDiscarded, m.Status())
+		}},
+		{name: "discard not the recipient", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tid := uuid.New()
+			created := seedParcel(t, db, tid, 300, 100)
 
-		srv := newParcelServer(db)
-		defer srv.Close()
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-		resp, err := client.Do(withTenant(t, tid, http.MethodGet, fmt.Sprintf("%s/characters/100/parcel-status", srv.URL)))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusOK, resp.StatusCode)
+			body := discardBody(t, created.Id(), 999)
+			resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s", srv.URL, created.Id().String()), body))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusConflict, resp.StatusCode)
 
-		var env envelope
-		require.NoError(t, json.NewDecoder(resp.Body).Decode(&env))
-		var attrs parcelStatusAttributes
-		require.NoError(t, json.Unmarshal(env.Data, &attrs))
-		require.False(t, attrs.Attributes.InFlight)
-	})
+			m, err := parcel.NewProcessor(logrus.New(), databasetest.TenantContext(tid), db).GetById(created.Id())
+			require.NoError(t, err)
+			require.Equal(t, parcel.StatusPending, m.Status())
+		}},
+		{name: "discard missing", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tid := uuid.New()
 
-	t.Run("discard", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tid := uuid.New()
-		created := seedParcel(t, db, tid, 300, 100)
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-		srv := newParcelServer(db)
-		defer srv.Close()
+			missing := uuid.New()
+			body := discardBody(t, missing, 100)
+			resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s", srv.URL, missing.String()), body))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusNotFound, resp.StatusCode)
+		}},
+		{name: "notify", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tid := uuid.New()
+			created := seedParcel(t, db, tid, 300, 100)
+			require.Nil(t, created.LastNotified())
 
-		body := discardBody(t, created.Id(), 100)
-		resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s", srv.URL, created.Id().String()), body))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusOK, resp.StatusCode)
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-		m, err := parcel.NewProcessor(logrus.New(), databasetest.TenantContext(tid), db).GetById(created.Id())
-		require.NoError(t, err)
-		require.Equal(t, parcel.StatusDiscarded, m.Status())
-	})
+			body := notifyBody(t, created.Id())
+			resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s/notify", srv.URL, created.Id().String()), body))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusNoContent, resp.StatusCode)
 
-	t.Run("discard not the recipient", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tid := uuid.New()
-		created := seedParcel(t, db, tid, 300, 100)
+			m, err := parcel.NewProcessor(logrus.New(), databasetest.TenantContext(tid), db).GetById(created.Id())
+			require.NoError(t, err)
+			require.NotNil(t, m.LastNotified())
+		}},
+		{name: "notify missing", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tid := uuid.New()
 
-		srv := newParcelServer(db)
-		defer srv.Close()
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-		body := discardBody(t, created.Id(), 999)
-		resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s", srv.URL, created.Id().String()), body))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusConflict, resp.StatusCode)
+			missing := uuid.New()
+			body := notifyBody(t, missing)
+			resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s/notify", srv.URL, missing.String()), body))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusNotFound, resp.StatusCode)
+		}},
+		{name: "tenant isolation", run: func(t *testing.T) {
+			db := newParcelTestDB(t)
+			tidA, tidB := uuid.New(), uuid.New()
+			seedParcel(t, db, tidA, 900, 100)
 
-		m, err := parcel.NewProcessor(logrus.New(), databasetest.TenantContext(tid), db).GetById(created.Id())
-		require.NoError(t, err)
-		require.Equal(t, parcel.StatusPending, m.Status())
-	})
+			srv := newParcelServer(db)
+			defer srv.Close()
 
-	t.Run("discard missing", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tid := uuid.New()
+			resp, err := client.Do(withTenant(t, tidB, http.MethodGet, fmt.Sprintf("%s/parcels?filter[recipientId]=100&filter[worldId]=0", srv.URL)))
+			require.NoError(t, err)
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusOK, resp.StatusCode)
 
-		srv := newParcelServer(db)
-		defer srv.Close()
+			var env dataList
+			require.NoError(t, json.NewDecoder(resp.Body).Decode(&env))
+			require.Len(t, env.Data, 0)
+		}},
+	}
 
-		missing := uuid.New()
-		body := discardBody(t, missing, 100)
-		resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s", srv.URL, missing.String()), body))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusNotFound, resp.StatusCode)
-	})
-
-	t.Run("notify", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tid := uuid.New()
-		created := seedParcel(t, db, tid, 300, 100)
-		require.Nil(t, created.LastNotified())
-
-		srv := newParcelServer(db)
-		defer srv.Close()
-
-		body := notifyBody(t, created.Id())
-		resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s/notify", srv.URL, created.Id().String()), body))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusNoContent, resp.StatusCode)
-
-		m, err := parcel.NewProcessor(logrus.New(), databasetest.TenantContext(tid), db).GetById(created.Id())
-		require.NoError(t, err)
-		require.NotNil(t, m.LastNotified())
-	})
-
-	t.Run("notify missing", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tid := uuid.New()
-
-		srv := newParcelServer(db)
-		defer srv.Close()
-
-		missing := uuid.New()
-		body := notifyBody(t, missing)
-		resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s/notify", srv.URL, missing.String()), body))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusNotFound, resp.StatusCode)
-	})
-
-	t.Run("tenant isolation", func(t *testing.T) {
-		db := newParcelTestDB(t)
-		tidA, tidB := uuid.New(), uuid.New()
-		seedParcel(t, db, tidA, 900, 100)
-
-		srv := newParcelServer(db)
-		defer srv.Close()
-
-		resp, err := client.Do(withTenant(t, tidB, http.MethodGet, fmt.Sprintf("%s/parcels?filter[recipientId]=100&filter[worldId]=0", srv.URL)))
-		require.NoError(t, err)
-		defer func() { _ = resp.Body.Close() }()
-		require.Equal(t, http.StatusOK, resp.StatusCode)
-
-		var env dataList
-		require.NoError(t, json.NewDecoder(resp.Body).Decode(&env))
-		require.Len(t, env.Data, 0)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, tt.run)
+	}
 }

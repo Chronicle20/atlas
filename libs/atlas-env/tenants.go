@@ -55,6 +55,27 @@ type TenantResolver interface {
 // both take this same path and both trust the header unconditionally. If
 // messages start bypassing reconciliation unexpectedly, check parser
 // registration order first.
+// ForTenant resolves the environment for tenant-scoped work that arrived
+// with no environment of its own (a background sweep, not a request). It
+// type-asserts r to TenantResolver exactly as Reconcile does; if the assert
+// fails, tenantId is empty, the tenant is unknown, or its projected
+// environment is "" (legacy -- see the comment on Reconcile explaining why
+// empty means "don't filter", not "belongs to nothing"), it falls back to
+// self. Otherwise it returns the tenant's environment. ForTenant never
+// returns "" when self is non-empty -- the FR-1.8 guarantee NewTimeout's
+// doc comment depends on must survive.
+func ForTenant(r Registry, tenantId string, self Id) Id {
+	tr, ok := r.(TenantResolver)
+	if !ok || tenantId == "" {
+		return self
+	}
+	tenantEnv, known := tr.EnvironmentOfTenant(tenantId)
+	if !known || tenantEnv == "" {
+		return self
+	}
+	return tenantEnv
+}
+
 func Reconcile(r Registry, headerEnv Id, tenantId string) (Id, error) {
 	tr, ok := r.(TenantResolver)
 	if !ok || tenantId == "" {

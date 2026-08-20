@@ -283,15 +283,7 @@ func main() {
 		UnregisterChannel: func(ch channel2.Model) error {
 			return channel3.NewProcessor(l, rt.Context()).Unregister(ch)
 		},
-		SessionsForKey: func(key server.Key) []listener.Session {
-			// TODO: wire session.Processor lookup-by-key once available.
-			// Returning nil yields an empty drain phase 2, which is safe
-			// — phase 4 still cancels the ctx so handlers stop.
-			return nil
-		},
-		SendShutdownNotice: func(listener.Session) {},
-		DestroySession:     func(listener.Session) error { return nil },
-		RemoveHandler:      consumer.GetManager().RemoveHandler,
+		RemoveHandler: consumer.GetManager().RemoveHandler,
 	}, listener.Config{
 		DrainDeadline: parseDrainDeadline(),
 	})

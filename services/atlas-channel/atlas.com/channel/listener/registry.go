@@ -3,6 +3,8 @@ package listener
 import (
 	"atlas-channel/server"
 	"context"
+	"errors"
+	"net"
 	"sync"
 	"time"
 
@@ -23,21 +25,7 @@ type Dependencies struct {
 	// 404 from upstream is success.
 	UnregisterChannel func(ch channel.Model) error
 
-	// SessionsForKey enumerates sessions currently bound to the
-	// (tenant, world, channel) named by key. The returned slice is a
-	// snapshot — drain iterates it without re-querying.
-	SessionsForKey func(key server.Key) []Session
-
-	// SendShutdownNotice writes the server-shutdown packet to s. Best
-	// effort — failures are logged, not returned.
-	SendShutdownNotice func(s Session)
-
-	// DestroySession invokes the session.Processor.Destroy path for s.
-	// Returns an error so drain can record it; the drain continues to
-	// the next session either way.
-	DestroySession func(s Session) error
-
-	// RemoveHandler maps to consumer.Manager.RemoveHandler — invoked
+	// RemoveHandler maps to consumer.Manager.RemoveHandler -- invoked
 	// once per HandlerHandle during phase 4.
 	RemoveHandler func(topic, id string) error
 }
@@ -56,6 +44,12 @@ type Config struct {
 	// apply loop clamps operator input to a 10s ceiling.
 	DrainDeadline time.Duration
 }
+
+// ErrDraining is returned by Add when a Handle for the key exists but is
+// mid-Drain. Add does not race a Drain to revive a terminal Handle; the
+// projection apply loop retries the op on its next tick
+// (task-244 design.md §4.6).
+var ErrDraining = errors.New("listener: handle is draining")
 
 // Registry is the per-process owner of all live Handles. Methods are
 // safe for concurrent use; Drain is idempotent (a second call on a
@@ -97,13 +91,20 @@ func NewRegistry(l logrus.FieldLogger, deps Dependencies, cfg Config) *Registry 
 //
 // Returns the new Handle on success. If a Handle for key already exists
 // and is Active, returns it (idempotent re-add). If it exists but is in
-// Draining/Removed state, the caller must wait — Add does not race a
-// Drain to revive a terminal Handle.
+// Draining state, Add returns ErrDraining and the caller retries — Add
+// does not race a Drain to revive a terminal Handle.
 func (r *Registry) Add(parent context.Context, key server.Key, sc server.Model, body func(h *Handle) ([]HandlerHandle, error)) (*Handle, error) {
 	r.mu.Lock()
-	if existing, ok := r.entries[key]; ok && existing.State == Active {
+	if existing, ok := r.entries[key]; ok {
+		if existing.State == Active {
+			r.mu.Unlock()
+			return existing, nil
+		}
+		// Draining: inserting a second Handle here would let the old
+		// drain's phase-4 delete(r.entries, key) remove the NEW handle and
+		// decrement refs for it. Refuse; the apply loop retries.
 		r.mu.Unlock()
-		return existing, nil
+		return nil, ErrDraining
 	}
 	ctx, cancel := context.WithCancel(parent)
 	h := &Handle{
@@ -165,10 +166,9 @@ func (r *Registry) Snapshot() []*Handle {
 // from the projection apply loop and SIGTERM handler are safe.
 //
 //	Phase 1 (quiesce): mark Draining, deregister from server.Registry,
-//	         call atlas-world DELETE so new clients can't pick this
-//	         channel.
-//	Phase 2 (save-and-kick): enumerate sessions for key, send shutdown
-//	         notice, destroy each.
+//	         call atlas-world DELETE, then CLOSE THE LISTENER so no new
+//	         client can connect and no Accept can race phase 3's Wait.
+//	Phase 2 (save-and-kick): enumerate h.Sessions(), h.Kick each one.
 //	Phase 3 (deadline): wait up to cfg.DrainDeadline for h.Wg; warn on
 //	         timeout.
 //	Phase 4 (teardown): cancel ctx, RemoveHandler per kafka handle, mark
@@ -192,17 +192,27 @@ func (r *Registry) Drain(key server.Key) error {
 	if err := r.deps.UnregisterChannel(h.ServerModel.Channel()); err != nil {
 		r.l.WithError(err).WithField("key", key).Warn("listener.drain.unregister_channel_failed")
 	}
-	r.l.WithField("key", key).Info("listener.drain_phase phase=1")
-
-	// Phase 2: save-and-kick existing sessions.
-	sessions := r.deps.SessionsForKey(key)
-	for _, s := range sessions {
-		r.deps.SendShutdownNotice(s)
-		if err := r.deps.DestroySession(s); err != nil {
-			r.l.WithError(err).WithField("key", key).Warn("listener.drain.destroy_session_failed")
+	if h.CloseListener != nil {
+		if err := h.CloseListener(); err != nil && !errors.Is(err, net.ErrClosed) {
+			r.l.WithError(err).WithField("key", key).Warn("listener.drain.close_listener_failed")
 		}
 	}
-	r.l.WithField("key", key).WithField("sessions", len(sessions)).Info("listener.drain_phase phase=2")
+	r.l.WithField("key", key).Info("listener.drain_phase phase=1")
+
+	// Phase 2: save-and-kick existing sessions. Kicking is what makes
+	// phase 3 a real bounded wait rather than a guaranteed deadline burn:
+	// Kick ends in session.Model.Disconnect(), which closes the conn so
+	// the session's run() goroutine returns and releases h.Wg.
+	var kicked int
+	if h.Sessions != nil && h.Kick != nil {
+		for _, s := range h.Sessions() {
+			if err := h.Kick(s); err != nil {
+				r.l.WithError(err).WithField("key", key).Warn("listener.drain.kick_session_failed")
+			}
+			kicked++
+		}
+	}
+	r.l.WithField("key", key).WithField("sessions", kicked).Info("listener.drain_phase phase=2")
 
 	// Phase 3: bounded wait on session goroutines.
 	done := make(chan struct{})
@@ -245,15 +255,25 @@ func (r *Registry) Drain(key server.Key) error {
 	return nil
 }
 
-// DrainAll iterates the current snapshot and drains every Handle.
-// Concurrent calls are safe; the per-Handle Drain serializes itself.
-// Used on SIGTERM so the pod stops serving traffic cleanly.
+// DrainAll drains every Handle in the current snapshot concurrently, so
+// total SIGTERM drain time is bounded by one DrainDeadline rather than
+// N x DrainDeadline -- sequential drains blow past a typical
+// terminationGracePeriod once phase 3 is a real wait
+// (task-244 design.md §4.4). Concurrent calls are safe; each Drain
+// serializes itself and touches only its own handle. A plain `go` rather
+// than routine.Go because DrainAll must join.
 func (r *Registry) DrainAll() {
+	var wg sync.WaitGroup
 	for _, h := range r.Snapshot() {
-		if err := r.Drain(h.Key); err != nil {
-			r.l.WithError(err).WithField("key", h.Key).Warn("listener.drain_all.failed")
-		}
+		wg.Add(1)
+		go func(h *Handle) {
+			defer wg.Done()
+			if err := r.Drain(h.Key); err != nil {
+				r.l.WithError(err).WithField("key", h.Key).Warn("listener.drain_all.failed")
+			}
+		}(h)
 	}
+	wg.Wait()
 }
 
 // fireEvictors is a package-level shim around evict.go so the registry

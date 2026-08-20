@@ -13,13 +13,14 @@ import (
 // test below fails if acceptanceTable lacks an entry for any of these.
 var allActions = []sharedsaga.Action{
 	sharedsaga.AwardAsset, sharedsaga.AwardExperience, sharedsaga.AwardLevel, sharedsaga.AwardMesos,
-	sharedsaga.AwardCurrency, sharedsaga.AwardFame, sharedsaga.DestroyAsset, sharedsaga.DestroyAssetFromSlot,
+	sharedsaga.AwardCurrency, sharedsaga.AwardFame, sharedsaga.DestroyAsset, sharedsaga.DestroyAllAssets,
+	sharedsaga.DestroyAssetFromSlot,
 	sharedsaga.EquipAsset, sharedsaga.UnequipAsset, sharedsaga.CreateAndEquipAsset,
 	sharedsaga.WarpToRandomPortal, sharedsaga.WarpToPortal, sharedsaga.WarpToSavedLocation, sharedsaga.SaveLocation,
 	sharedsaga.ChangeJob, sharedsaga.ChangeHair, sharedsaga.ChangeFace, sharedsaga.ChangeSkin, sharedsaga.SetHP,
 	sharedsaga.DeductExperience, sharedsaga.CancelAllBuffs, sharedsaga.ResetStats, sharedsaga.RebalanceAP,
 	sharedsaga.ValidateCharacterState, sharedsaga.IncreaseBuddyCapacity, sharedsaga.GainCloseness,
-	sharedsaga.EvolvePet, sharedsaga.RevivePet,
+	sharedsaga.EvolvePet, sharedsaga.RevivePet, sharedsaga.RenamePet,
 	sharedsaga.CreateSkill, sharedsaga.UpdateSkill,
 	sharedsaga.CompleteQuest, sharedsaga.StartQuest, sharedsaga.SetQuestProgress, sharedsaga.ForfeitQuest,
 	sharedsaga.ApplyConsumableEffect, sharedsaga.CancelConsumableEffect,

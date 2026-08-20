@@ -84,4 +84,34 @@ partial_coverage:
 
 out_of_scope:
   - CASHSHOP_OPERATION            # parcel_pending alias only (Task 27); the op row itself is untouched
-  - model/asset                   # shared item-slot blob encoded inside Parcel (incidental)
+
+# DECLARED shared-codec change (was previously mis-filed under out_of_scope as
+# "incidental"; corrected after packet-completeness-critic flagged it
+# CHANGED-BUT-UNCLAIMED, and after the controller measured its actual reach).
+#
+# RULING 24, commit a8adafb12, added a `GMS && MajorAtLeast(92)` equip
+# potential/socket trailer (nGrade, nCHUC, nOption1-3, nSocket1-2 = 2 bytes +
+# 5 shorts = 12 bytes) to encodeEquipableInfo/decodeEquipableInfo in
+# libs/atlas-packet/model/asset.go. This is NOT incidental: model.Asset is
+# consumed by ~19 files across character, inventory, storage, cash, field, and
+# merchant, so the change alters real wire output at gms_v92+ for every op that
+# encodes an Equip-type asset — not only PARCEL.
+shared_codec_changes:
+  - file: libs/atlas-packet/model/asset.go
+    gate: 'IsRegion("GMS") && MajorAtLeast(92)'
+    commit: a8adafb12
+    delta_bytes: 12
+    derived_from: GW_ItemSlotEquip::RawDecode  # v92 @0x4f35d0, v95 @0x4f8360; jms_v185 @0x50feb9 confirmed DISTINCT (15-byte branch, trailing int)
+    # Measured reach, not assumed. The controller temporarily widened the gate
+    # from 92 to 84 and ran the full libs/atlas-packet suite: exactly two
+    # packages failed — model (TestEquipableV84ExtraInt) and parcel/clientbound
+    # (the v84/v87 with-item fixtures). Nothing else moved. Gate restored, suite
+    # green.
+    #
+    # What that proves: no non-parcel fixture exercises equip encoding at v92+
+    # at all, so this change could not have silently broken another op's test.
+    # What it does NOT prove: that the other ops' v92/v95 wire output is right.
+    # Equip coverage in model/ stops at asset_v84_test.go; there is no
+    # asset_v92_test.go. The only v92+ equip fixtures on disk are PARCEL's.
+    other_ops_fixture_coverage: none      # coverage gap, not a regression
+    follow_up: "Add an asset_v92_test.go equivalent of TestEquipableV84ExtraInt, and sweep the verified gms_v92/gms_v95 cells of asset-bearing ops (character data, inventory change, storage show, trade, cash shop, merchant) for equip-payload fixtures."

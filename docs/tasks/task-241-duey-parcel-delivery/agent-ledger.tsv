@@ -139,3 +139,11 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-20T01:55:52Z	agent	Task 28 batch 7 review	packet-verifier	sonnet	-	-	-	-	DONE	7da71c2d3	APPROVE	yes	-	-
 2026-08-20T02:08:45Z	agent	Task 28 batch 8 (jms_v185)	packet-verifier	sonnet	-	-	-	-	DONE	f12826669	-	-	-	-
 2026-08-20T02:11:33Z	agent	Task 28 batch 8 gate	verify.sh-quick	-	-	-	-	-	PASS	f12826669	-	-	-	-
+2026-08-20T02:18:26Z	agent	Task 28 batch 8 review	packet-verifier	sonnet	-	-	-	-	DONE	f12826669	APPROVE	no	-	-
+2026-08-20T02:20:07Z	agent	Branch end: plan adherence 11-20	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	-	APPROVED	no	-	-
+2026-08-20T02:20:20Z	agent	Branch end: plan adherence 1-10	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	-	APPROVED	no	-	-
+2026-08-20T02:25:22Z	agent	Branch end: completeness critic	packet-completeness-critic	sonnet	-	-	-	-	DONE	-	FINDINGS	yes	-	-
+2026-08-20T02:26:53Z	agent	Branch end: plan adherence 21-28	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	-	APPROVED	no	-	-
+2026-08-20T02:29:21Z	agent	Branch end: backend audit atlas-parcel	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	-	CHANGES_REQUIRED	yes	-	-
+2026-08-20T02:31:15Z	agent	Branch end: backend audit services	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	-	CHANGES_REQUIRED	yes	-	-
+2026-08-20T02:31:16Z	agent	Branch end: ParcelActionClose diagnosis	general-purpose	sonnet	-	-	-	-	DONE	-	FINDINGS	no	-	-

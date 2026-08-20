@@ -352,8 +352,9 @@ DB_HOST=... DB_PORT=5432 DB_USER=... DB_PASSWORD=... \
 
 ## Upgrading to durable service-config binding (task-243, D9)
 
-`services.Migration` builds a unique index on `services (type, environment)`
-at `atlas-configurations` startup. That index rejects any pre-existing
+`servicesuniq.Migration` builds a unique index on `services (type,
+environment)` at `atlas-configurations` startup, after `services.Migration`
+(plain `AutoMigrate`, no index) has run. That index rejects any pre-existing
 duplicate group (task-232's non-idempotent bootstrap left several — five
 `login-service` rows and five `channel-service` rows were observed for one
 environment, one per bootstrap re-run), so a duplicate present at rollout

@@ -551,12 +551,13 @@ else
     skip "hook test suites (no .claude/hooks/ change)"
 fi
 
-if touched '^(deploy/|tools/gen-lb-ports\.sh|.*versions\.json)'; then
+if touched '^(deploy/|tools/gen-lb-ports\.sh|tools/overlay-env-guard\.sh|.*versions\.json)'; then
     step "LB port drift"       ./tools/gen-lb-ports.sh --check
     step "routes drift"        ./tools/gen-routes.sh --check
     step "version coverage"    ./tools/check-version-coverage.sh
+    step "overlay env drift"   ./tools/overlay-env-guard.sh
 else
-    skip "LB port / version coverage (no deploy or versions.json change)"
+    skip "LB port / version coverage / overlay env (no deploy or versions.json change)"
 fi
 
 if touched '^(deploy/k8s/base/atlas-.*\.yaml|docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit\.md|tools/gen-tenant-tables(_test)?\.sh|services/atlas-pr-bootstrap/scripts/tenant-tables\.txt)'; then

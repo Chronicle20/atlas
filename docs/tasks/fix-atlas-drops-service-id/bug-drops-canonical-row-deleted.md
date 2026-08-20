@@ -134,3 +134,34 @@ Required change: a created service-config row must never land with an empty
 environment. Absent/empty resolved environment → fall back to the service's own
 configured environment; if that is also empty, reject the request rather than
 inserting an unscoped row.
+
+## Handoff state (end of the incident session)
+
+- Branch `fix-atlas-drops-service-id`: `d03d34a2b` (fix 1) + `1fef53a9c` (these docs).
+- Fix 1 reviewed APPROVED by `atlas-reviewer`; it verified structurally that the
+  `ExecuteTransaction`/`DELETE` block is unreachable when `resolveGroup` errors,
+  and that the rewritten tests assert the new contract rather than being edited
+  to pass. Artifact: `docs/tasks/fix-atlas-drops-service-id/review.md`.
+- Flagless `tools/verify.sh` PASSED on `d03d34a2b`+`5c6993106`. `5c6993106` was
+  then dropped; fix 1's code is byte-identical to what was gated, and a
+  confirming flagless re-run was launched over the final tree.
+- Production is repaired and healthy: atlas-drops 2/2, Argo `atlas-main`
+  Synced/Healthy.
+
+### Still open, in order
+
+1. Open the PR for this branch (fix 1 only).
+2. **pr-1411 cannot be reused.** Its `environments` record is stuck at
+   `DEACTIVATING`; `processor.go:52` forbids reverting a phase, there is no
+   DELETE route for environments, and `Name` carries a `uniqueIndex`. Close
+   PR #1411, merge `main` into `fix-whisper-cross-channel-delivery` (3 commits
+   behind, lacks `af2defbc7`), and open a NEW PR — the new number sidesteps the
+   stuck record. Its 3 stale `pr-1411` services rows become harmless orphans.
+3. **task-243's live acceptance run** is still unperformed: three-run
+   idempotency, Argo hard refresh, socket binding, automatic ACTIVE, real login,
+   against that fresh sparse environment. `prd.md` §10 stays unchecked until it
+   is done, and `docs/runbooks/sparse-environments.md` still deliberately
+   records no readiness/catch-up number — do not invent one.
+   Neither fix here is a prerequisite: fix 1 only runs on a duplicate group
+   (main has none), and the sparse bootstrap always sends the `ENVIRONMENT`
+   header.

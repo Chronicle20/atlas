@@ -34,3 +34,6 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-20T15:57:53Z	agent	Task 9	atlas-implementer	sonnet	-	-	-	-	DONE	a4f2a6244	-	-	-	-
 2026-08-20T15:58:23Z	handoff	after Task 9 fix	-	-	-	-	-	-	-	-	-	-	-	120000
 2026-08-20T16:09:16Z	agent	Gate (Tasks 2-13 partial)	atlas-verifier	haiku	-	-	-	-	PASS	5671346	-	-	-	-
+2026-08-20T16:41:23Z	agent	Branch-end	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	-	APPROVED_WITH_FINDINGS	no	docs/tasks/task-243-sparse-env-scoping-activation/audit.md	-
+2026-08-20T16:46:42Z	agent	Branch-end	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	-	CHANGES_REQUIRED	no	docs/tasks/task-243-sparse-env-scoping-activation/backend-audit.md	-
+2026-08-20T17:03:23Z	agent	Branch-end	atlas-verifier	haiku	-	-	-	-	PASS	3f974c63f	-	-	flagless tools/verify.sh	-

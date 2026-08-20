@@ -494,7 +494,7 @@
       {
         "opCode": "0x047",
         "handler": "DueyActionHandle",
-        "fname": "CTabSend::SendParcel",
+        "fname": "CParcelDlg::CloseParcelDlg",
         "options": {
           "operations": {
             "SEND": 2,

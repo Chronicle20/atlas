@@ -533,7 +533,7 @@
       {
         "opCode": "0x040",
         "handler": "DueyActionHandle",
-        "fname": "CTabSend::SendParcel",
+        "fname": "CTabReceive::ReceiveParcel",
         "options": {
           "operations": {
             "SEND": 2,

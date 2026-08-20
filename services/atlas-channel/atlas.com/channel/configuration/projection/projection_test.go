@@ -4,17 +4,22 @@ import (
 	"atlas-channel/configuration"
 	"atlas-channel/configuration/projection"
 	"atlas-channel/configuration/tenant"
+	"atlas-channel/listener"
 	"atlas-channel/server"
 	"context"
 	"encoding/json"
+	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenantpkg "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestDecodeServiceEnvelope_ParsesShape(t *testing.T) {
@@ -250,4 +255,194 @@ func TestHasServiceIsFalseAfterOnlyATenantIsApplied(t *testing.T) {
 		Config:        trmBts,
 	}))
 	require.False(t, s.HasService())
+}
+
+// applyOneChannel puts exactly one (tid, w, c) channel into s, so the next
+// ComputeOps diff against an empty prev emits a single OpAdd for key.
+func applyOneChannel(t *testing.T, s *projection.State, tid uuid.UUID, w world.Id, c channel.Id, port int) {
+	cfg := configuration.RestModel{
+		Tenants: []configuration.ChannelTenantRestModel{{
+			Id:        tid.String(),
+			IPAddress: "127.0.0.1",
+			Worlds: []configuration.ChannelWorldRestModel{{
+				Id: byte(w),
+				Channels: []configuration.ChannelChannelRestModel{
+					{Id: byte(c), Port: port},
+				},
+			}},
+		}},
+	}
+	cfgBts, err := json.Marshal(cfg)
+	require.NoError(t, err)
+	require.NoError(t, s.ApplyService(projection.ServiceEnvelope{
+		SchemaVersion: 1, Id: uuid.New().String(), Config: cfgBts,
+	}))
+
+	trm := tenant.RestModel{Region: "GMS", MajorVersion: 83, MinorVersion: 1}
+	trmBts, err := json.Marshal(trm)
+	require.NoError(t, err)
+	require.NoError(t, s.ApplyTenant(projection.TenantEnvelope{
+		SchemaVersion: 1, Id: tid.String(), Config: trmBts,
+	}))
+}
+
+// stubServerModel builds the ServerModelFn the apply loop needs to call
+// listener.Registry.Add. It mirrors listener/registry_test.go's
+// makeServerModel, deriving the tenant.Model and channel.Model from the Op
+// fields rather than a fixed value, since ComputeOps produces the key.
+func stubServerModel(key server.Key, cfg projection.ListenerConfig) server.Model {
+	tm, _ := tenantpkg.Create(key.TenantId, cfg.Region, cfg.MajorVersion, cfg.MinorVersion)
+	return server.NewProcessor(logrus.New(), context.Background()).
+		Register(tm, channel.NewModel(key.WorldId, key.ChannelId), cfg.IPAddress, cfg.Port)
+}
+
+func nullLogger() logrus.FieldLogger {
+	l := logrus.New()
+	l.SetLevel(logrus.PanicLevel)
+	return l
+}
+
+func TestApplyLoop_AddBodyReceivesAContextCanceledByDrain(t *testing.T) {
+	tid := uuid.New()
+	key := server.Key{TenantId: tid, WorldId: world.Id(1), ChannelId: channel.Id(0)}
+	defer server.GetRegistry().Deregister(key)
+
+	got := make(chan context.Context, 1)
+
+	s := projection.NewState()
+	applyOneChannel(t, s, tid, key.WorldId, key.ChannelId, 8585)
+
+	c := projection.NewCaughtUp()
+	c.SetEndOffsets("T", map[int]int64{})
+
+	registry := listener.NewRegistry(nullLogger(), listener.Dependencies{
+		UnregisterChannel: func(channel.Model) error { return nil },
+		RemoveHandler:     func(string, string) error { return nil },
+	}, listener.Config{})
+
+	loop := &projection.ApplyLoop{
+		State:    s,
+		CaughtUp: c,
+		Registry: registry,
+		AddBody: func(parent context.Context, key server.Key, cfg projection.ListenerConfig, h *listener.Handle) ([]listener.HandlerHandle, error) {
+			select {
+			case got <- parent:
+			default:
+			}
+			return nil, nil
+		},
+		ServerModel: stubServerModel,
+		Interval:    10 * time.Millisecond,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go loop.Run(ctx, nullLogger())
+
+	var parent context.Context
+	select {
+	case parent = <-got:
+	case <-time.After(2 * time.Second):
+		t.Fatal("AddBody was never called")
+	}
+	require.NoError(t, parent.Err())
+
+	require.NoError(t, registry.Drain(key))
+
+	// This is the assertion that pins defect 1: with loop.go still
+	// passing the apply loop's own ctx into AddBody, the captured ctx is
+	// still live (derived from ctx, canceled only at ctx.Done()), and
+	// this fails.
+	require.Equal(t, context.Canceled, parent.Err())
+}
+
+func TestApplyLoop_RetriesAFailedAddOnTheNextTick(t *testing.T) {
+	tid := uuid.New()
+	key := server.Key{TenantId: tid, WorldId: world.Id(1), ChannelId: channel.Id(0)}
+	defer server.GetRegistry().Deregister(key)
+
+	s := projection.NewState()
+	applyOneChannel(t, s, tid, key.WorldId, key.ChannelId, 8586)
+
+	c := projection.NewCaughtUp()
+	c.SetEndOffsets("T", map[int]int64{})
+
+	registry := listener.NewRegistry(nullLogger(), listener.Dependencies{
+		UnregisterChannel: func(channel.Model) error { return nil },
+		RemoveHandler:     func(string, string) error { return nil },
+	}, listener.Config{})
+
+	var calls atomic.Int32
+	loop := &projection.ApplyLoop{
+		State:    s,
+		CaughtUp: c,
+		Registry: registry,
+		AddBody: func(parent context.Context, key server.Key, cfg projection.ListenerConfig, h *listener.Handle) ([]listener.HandlerHandle, error) {
+			if calls.Add(1) == 1 {
+				return nil, errors.New("bind failed")
+			}
+			return nil, nil
+		},
+		ServerModel: stubServerModel,
+		Interval:    10 * time.Millisecond,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go loop.Run(ctx, nullLogger())
+
+	deadline := time.Now().Add(2 * time.Second)
+	for calls.Load() < 2 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	require.GreaterOrEqual(t, calls.Load(), int32(2), "the failed add must be retried on a later tick")
+
+	_, ok := registry.Get(key)
+	require.True(t, ok, "the retried add must have succeeded and registered the handle")
+}
+
+func TestApplyLoop_DropsAPendingAddWhenTheKeyLeavesConfig(t *testing.T) {
+	tid := uuid.New()
+	key := server.Key{TenantId: tid, WorldId: world.Id(1), ChannelId: channel.Id(0)}
+	defer server.GetRegistry().Deregister(key)
+
+	s := projection.NewState()
+	applyOneChannel(t, s, tid, key.WorldId, key.ChannelId, 8587)
+
+	c := projection.NewCaughtUp()
+	c.SetEndOffsets("T", map[int]int64{})
+
+	registry := listener.NewRegistry(nullLogger(), listener.Dependencies{
+		UnregisterChannel: func(channel.Model) error { return nil },
+		RemoveHandler:     func(string, string) error { return nil },
+	}, listener.Config{})
+
+	var calls atomic.Int32
+	loop := &projection.ApplyLoop{
+		State:    s,
+		CaughtUp: c,
+		Registry: registry,
+		AddBody: func(parent context.Context, key server.Key, cfg projection.ListenerConfig, h *listener.Handle) ([]listener.HandlerHandle, error) {
+			calls.Add(1)
+			return nil, errors.New("bind failed")
+		},
+		ServerModel: stubServerModel,
+		Interval:    10 * time.Millisecond,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go loop.Run(ctx, nullLogger())
+
+	deadline := time.Now().Add(2 * time.Second)
+	for calls.Load() < 1 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	require.GreaterOrEqual(t, calls.Load(), int32(1), "the first tick must have attempted the add")
+
+	s.ApplyServiceTombstone()
+
+	countAtTombstone := calls.Load()
+	time.Sleep(100 * time.Millisecond) // >= 5 ticks at 10ms
+	require.Equal(t, countAtTombstone, calls.Load(), "a pending add for a key no longer in config must not be retried")
 }

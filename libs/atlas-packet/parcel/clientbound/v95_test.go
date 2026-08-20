@@ -19,8 +19,8 @@ import (
 // Re-decompiled GW_ItemSlotEquip::RawDecode @0x4f8360 on session ecc757f4
 // (GMS_v95.0_U_DEVM.exe.i64), per RULING 24's instruction not to inherit the
 // shape unconfirmed. Full read order after GW_ItemSlotBase::RawDecode:
-// Decode1(nRUC)+Decode1(nCUC)+7x Decode2(niSTR/niDEX/niINT/niLUK/niMaxHP/
-// niMaxMP -- wait, actually 15 total Decode2 stat shorts)+DecodeStr(sTitle)+
+// Decode1(nRUC)+Decode1(nCUC)+15x Decode2 (the stat shorts, matching
+// model.Asset.encodeEquipmentStats at asset.go:530-545)+DecodeStr(sTitle)+
 // Decode2(nAttribute)+Decode1(nLevelUpType)+Decode1(nLevel)+Decode4(nEXP)+
 // Decode4(nDurability @0x4f8587)+Decode4(nIUC/hammersApplied @0x4f85a1)+
 // Decode1(nGrade @0x4f85bb)+Decode1(nCHUC @0x4f85d4)+Decode2(nOption1

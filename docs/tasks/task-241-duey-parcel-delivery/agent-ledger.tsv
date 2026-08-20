@@ -133,3 +133,6 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-19T23:38:37Z	agent	Task 28 batch 6 fix (RULING 24)	packet-verifier	sonnet	-	-	-	-	completed	a8adafb12	-	-	-	-
 2026-08-20T01:28:07Z	agent	RULING 25 fix	atlas-implementer	sonnet	-	-	-	-	DONE	681ebfdcc	-	-	-	-
 2026-08-20T01:28:12Z	handoff	after RULING 25 fix	-	-	-	-	-	-	-	-	-	-	-	195000
+2026-08-20T01:40:10Z	agent	Task 28 batch 7 (gms_v95)	packet-verifier	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-20T01:50:58Z	agent	Task 28 batch 7 (gms_v95)	packet-verifier	sonnet	-	-	-	-	DONE	8c6cdac73	-	-	-	-
+2026-08-20T01:54:29Z	agent	Task 28 batch 7 gate	verify.sh-quick	-	-	-	-	-	PASS	8c6cdac73	-	-	-	-

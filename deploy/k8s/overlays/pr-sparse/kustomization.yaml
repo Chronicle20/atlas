@@ -254,6 +254,29 @@ patches:
   # parser, so this file still parses raw), this overlay builds every
   # base Deployment, same as overlays/pr — the smoke-test shape exercised
   # by Task 44 Step 4.
+  # The SERVICE_ID anchor (same lone-comment-line convention as the
+  # delete-set anchor above — see this file's header for why). CI fills
+  # this line with one inline strategic-merge patch per override-set
+  # Deployment that carries a SERVICE_ID in base, setting that
+  # Deployment's SERVICE_ID to uuid5(ATLAS_SERVICE_NS, "<type>/<env>") —
+  # tools/derive-service-id.sh, the single derivation site (task-243 D1/D2).
+  # THIS is what makes the binding survive Argo's selfHeal (FR-1.2): the value
+  # is in the manifest Argo renders, so there is nothing to revert. The same
+  # CI loop also emits a JSON-6902 patch adding SERVICE_ID_<TYPE> to the
+  # atlas-pr-bootstrap Job, so bootstrap POSTs the id it rendered rather than
+  # deriving one itself. Filled by .github/workflows/pr-validation.yml's
+  # update-pr-overlay job; sparse mode only.
+  #PLACEHOLDER_SERVICE_ID_BLOCK
+  # The PRECREATE_GROUPS anchor (same convention). CI fills this line
+  # with a JSON-6902 patch adding a newline-delimited KAFKA_CONSUMER_GROUP
+  # to the wave-0 atlas-kafka-precreate Job, so seed_override_offsets /
+  # verify_group_offsets stop taking their unset-guard early return
+  # (kafka-precreate.sh:176, task-243 design §1.1 — the mechanism exists and
+  # was one wire short). Patched onto the JOB, deliberately NOT added to the
+  # atlas-env ConfigMap: every container in the namespace reads atlas-env via
+  # envFrom, and a multi-line group list there would become the consumer
+  # group of any container without a container-level override.
+  #PLACEHOLDER_PRECREATE_GROUPS_BLOCK
   #PLACEHOLDER_DELETE_BLOCK
 
 # Per-env atlas-env ConfigMap. `merge` (not `replace`, unlike overlays/pr)

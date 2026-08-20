@@ -47,7 +47,7 @@ MINIO_PROBE_SLEEP="${MINIO_PROBE_SLEEP:-5}"
 # build-time flag because it is *reacting* to whatever got deployed;
 # bootstrap is *establishing* the state and must send the header on its very
 # first call, before any record could answer the question. ATLAS_MODE is
-# also the signal the neighbouring create_service_config already keys on.
+# also the signal the neighbouring upsert_sparse_service_config already keys on.
 #
 # In isolated mode the array is empty, so every curl argv below is
 # byte-identical to what it was before this existed (FR-2.5) — one code
@@ -123,6 +123,26 @@ record_environment_tenant() {
     namespace=$(printf '%s' "$body" | jq -r '.data.attributes.namespace // ""' 2>/dev/null)
     overrides=$(printf '%s' "$body" | jq -c '.data.attributes.overrides // {}' 2>/dev/null)
     env_record_patch "$phase" "$baseline" "$namespace" "$tenant" "$overrides"
+}
+
+# activation_decision <phase> — pure decision for whether the tail-end
+# activation step (below) should activate, skip, or fail, echoing one of
+# activate / skip / fail. Split out from the block itself so it is testable
+# without a cluster (bootstrap_test.bats).
+#
+# PROVISIONING is the only phase activation is meant to advance FROM.
+# ACTIVE is already the target phase, so re-running is a no-op (skip), not
+# an error — that is what makes a re-sync of an already-ACTIVE environment
+# idempotent. Every other phase (DEACTIVATING, DELETED, empty/no record) is
+# a hard fail: activating an environment that is tearing down, gone, or has
+# no control-plane record at all would resurrect or fabricate a phase it
+# never legitimately reached.
+activation_decision() {
+    case "$1" in
+        PROVISIONING) printf 'activate' ;;
+        ACTIVE)       printf 'skip' ;;
+        *)            printf 'fail' ;;
+    esac
 }
 
 # Sanity-check TENANT_ID shape. The libs/atlas-rest middleware that
@@ -355,7 +375,7 @@ log info "using TENANT_ID=$TENANT_ID for downstream calls"
 #
 # `|| exit 1` is belt-and-braces for `set -e` (restored at line 22 after
 # lib.sh relaxes it), stated at the call site for the same reason the
-# create_service_config calls below do. An environment that provisions a
+# upsert_sparse_service_config loop below does. An environment that provisions a
 # tenant but never records it produces exactly the residue this exists to
 # prevent (FR-3.5).
 if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
@@ -494,78 +514,143 @@ upsert_service_config() {
     fi
 }
 
-# Sparse mode (ATLAS_MODE=sparse): create a brand-new services row scoped to
-# this environment instead of merging into the canonical (main-owned) row.
-# main's row is never read, written or merged into (G7/NG6) — the whole
-# point of this function existing separately from upsert_service_config.
-#   $1 = canonical template path
-#   $2 = shape: login | channel | none (tenant-agnostic, e.g. drops)
-#   $3 = the override Deployment whose SERVICE_ID env var must be repointed
-#        at the freshly created row (see the SERVICE_ID-routing note below).
-create_service_config() {
-    local tmpl="$1" shape="$2" deployment="$3" body svc_id
-    body=$(build_service_config "$shape" "$tmpl") || return 1
-    svc_id=$(echo "$body" | jq -r '.data.id')
+# Sparse mode (ATLAS_MODE=sparse): upsert a services row scoped to this
+# environment instead of merging into the canonical (main-owned) row. main's
+# row is never read, written or merged into (G7/NG6) — the whole point of
+# this function existing separately from upsert_service_config.
+#
+# svc_table_lookup <deployment> — echoes "type shape template" for a
+# SERVICE_ID-carrying override deployment, or returns non-zero if unmapped.
+# Only atlas-login/atlas-channel/atlas-drops are listed: they are the only
+# override deployments with a canonical template baked into this image
+# today (see canonical/services/ — no world-service.json,
+# character-factory.json or drops-information-service.json exists yet). An
+# override deployment with no template is deliberately left unmapped rather
+# than fabricated — upsert_sparse_service_config's caller treats "unmapped"
+# and "no template" identically (log info, skip); add a case here the day
+# the template lands.
+svc_table_lookup() {
+    local type shape
+    case "$1" in
+        atlas-login)   type=login-service shape=login ;;
+        atlas-channel) type=channel-service shape=channel ;;
+        atlas-drops)   type=drops-service shape=none ;;
+        *) return 1 ;;
+    esac
+    printf '%s %s /atlas/canonical/services/%s.json' "$type" "$shape" "$type"
+}
 
-    # Refuse to continue on an id we cannot use. Without this, an empty id
-    # flowed all the way to `kubectl set env SERVICE_ID=` below, which does
-    # not fail — it writes an env entry with no value, and the service
-    # panics on uuid.MustParse(""). Fail the step loudly instead.
-    if [ -z "$svc_id" ] || [ "$svc_id" = "null" ]; then
-        log error "create_service_config: refusing to continue with empty service id (type=$shape)"
+# svc_id_var_name <service-type> — the SERVICE_ID_<TYPE> env var name the CI
+# rendering step (tools/derive-service-id.sh) is expected to have exported
+# before this Job runs. Uppercase, `-` → `_`.
+svc_id_var_name() {
+    printf 'SERVICE_ID_%s' "$(printf '%s' "$1" | tr '[:lower:]-' '[:upper:]_')"
+}
+
+# upsert_sparse_service_config <deployment> — GET/compare/PATCH-or-POST a
+# services row keyed on the id the CI rendering derived via
+# tools/derive-service-id.sh and exposed as SERVICE_ID_<TYPE>. That id is
+# NEVER re-derived here — a second derivation site is exactly the D2 defect
+# this design forecloses (the sparse row's id and the Deployment's
+# SERVICE_ID env var would drift the moment either derivation changed).
+# Unlike the removed create_service_config, this only creates a row for a
+# service actually deployed in this environment (the override set) and
+# never mutates main's pinned row (G7/NG6).
+upsert_sparse_service_config() {
+    local deployment="$1" resolved type shape tmpl svc_id_var svc_id existing
+    resolved=$(svc_table_lookup "$deployment") || {
+        log info "no service-config mapping for $deployment; skipping"
+        return 0
+    }
+    read -r type shape tmpl <<<"$resolved"
+
+    svc_id_var=$(svc_id_var_name "$type")
+    svc_id="${!svc_id_var:-}"
+    if [ -z "$svc_id" ]; then
+        log error "no $svc_id_var in environment; the CI rendering did not run"
         return 1
     fi
 
-    # The ENVIRONMENT header is what stamps the row's environment column:
-    # it is server-owned and the request body's
-    # .data.attributes.environment is deliberately ignored
-    # (configurations/services/administrator.go's INSERT takes
-    # env.MustFromContext(ctx); processor.go notes "Environment is
-    # server-owned ... the Entity column always wins"). Without the header
-    # the caller is the legacy "" environment, so every sparse row landed
-    # with environment='' in the SHARED baseline atlas-configurations —
-    # invisible to cleanup.sh's environment-scoped reclaim, which selects
-    # on `.attributes.environment == $env`, and therefore leaked three rows
-    # per bootstrap run permanently.
-    curl -fsS -X POST \
-        -H 'Accept: application/vnd.api+json' \
-        -H 'Content-Type: application/vnd.api+json' \
-        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
-        -d "$body" \
-        "$ATLAS_UI_BASE/api/configurations/services" >/dev/null \
-        || { log error "create_service_config: POST failed (type=$shape, id=$svc_id)"; return 1; }
-    log info "sparse service config $svc_id created (type=$shape, environment=$ATLAS_ENVIRONMENT)"
+    existing=$(curl -fsS -H 'Accept: application/vnd.api+json' \
+        "$ATLAS_UI_BASE/api/configurations/services/$svc_id" 2>/dev/null || true)
 
-    # SERVICE_ID routing (task-47): base/atlas-<svc>.yaml bakes the pinned
-    # canonical SERVICE_ID into the Deployment at kustomize-build time, so
-    # $deployment starts pointed at main's row until this patch lands. The
-    # row id does not exist until this function runs, so the sparse overlay
-    # cannot set it statically — a hardcoded SERVICE_ID there would just
-    # reintroduce the pinned-row problem in a new place. Instead, patch the
-    # already-running Deployment directly: atlas-pr-bootstrap's Role already
-    # grants get/patch/update on deployments (it needs them for the restart
-    # loop below), and the bootstrap Job and the override Deployments both
-    # apply in sync-wave 10 in parallel, so this patch racing the
-    # Deployment's own rollout is fine — the pod that lands from this
-    # `kubectl set env` triggered restart is the one that ends up Ready.
-    kubectl set env deployment/"$deployment" SERVICE_ID="$svc_id" 2>/dev/null \
-        || log warn "could not set SERVICE_ID=$svc_id on deployment/$deployment"
+    if echo "$existing" | jq -e '.data.id' >/dev/null 2>&1; then
+        # Merge this environment's tenant entry into the LIVE attributes
+        # (id-keyed), preserving every foreign tenants[] entry. Tenant-agnostic
+        # configs (shape=none) pass the live attributes through unchanged. Same
+        # jq -cS comparison as upsert_service_config above — it dodges the
+        # PATCH-handler panic on tenant-agnostic configs too.
+        local entry live_attrs new_attrs
+        case "$shape" in
+            login)   entry=$(build_login_entry) ;;
+            channel) entry=$(build_channel_entry "$tmpl") ;;
+            none)    entry="" ;;
+        esac
+        live_attrs=$(echo "$existing" | jq -c '.data.attributes')
+        if [ -n "$entry" ]; then
+            new_attrs=$(printf '%s' "$live_attrs" | merge_tenant_entry "$entry")
+        else
+            new_attrs="$live_attrs"
+        fi
+
+        if [ "$(printf '%s' "$live_attrs" | jq -cS .)" = "$(printf '%s' "$new_attrs" | jq -cS .)" ]; then
+            log info "sparse service config $svc_id matches; skipping PATCH"
+        else
+            log info "sparse service config $svc_id exists; PATCH (merged)"
+            local body
+            body=$(echo "$existing" | jq -c --argjson a "$new_attrs" '.data.attributes = $a')
+            curl -fsS -X PATCH \
+                -H 'Accept: application/vnd.api+json' \
+                -H 'Content-Type: application/vnd.api+json' \
+                -d "$body" \
+                "$ATLAS_UI_BASE/api/configurations/services/$svc_id" >/dev/null \
+                || { log error "upsert_sparse_service_config: PATCH failed (type=$type, id=$svc_id)"; return 1; }
+        fi
+    else
+        # First write: build_service_config seeds tenants[] with just this
+        # environment's entry (or posts the canonical payload verbatim for
+        # tenant-agnostic configs). The ENVIRONMENT header is what stamps the
+        # row's environment column — it is server-owned and the request
+        # body's .data.attributes.environment is deliberately ignored
+        # (configurations/services/administrator.go's INSERT takes
+        # env.MustFromContext(ctx); processor.go notes "Environment is
+        # server-owned ... the Entity column always wins"). Omitting it is
+        # what put every sparse row in the legacy '' environment, invisible
+        # to cleanup.sh's environment-scoped reclaim.
+        local body
+        body=$(build_service_config "$shape" "$tmpl" "$svc_id") || return 1
+        log info "sparse service config $svc_id absent; POST (type=$type, environment=$ATLAS_ENVIRONMENT)"
+        curl -fsS -X POST \
+            -H 'Accept: application/vnd.api+json' \
+            -H 'Content-Type: application/vnd.api+json' \
+            "${ENV_HEADER[@]}" \
+            -d "$body" \
+            "$ATLAS_UI_BASE/api/configurations/services" >/dev/null \
+            || { log error "upsert_sparse_service_config: POST failed (type=$type, id=$svc_id)"; return 1; }
+    fi
 }
 
 if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
-    # Sparse mode: fresh Id-keyed rows, never main's pinned rows (G7/NG6).
+    # Sparse mode: fresh Id-keyed rows, never main's pinned rows (G7/NG6),
+    # and only for a service actually deployed here — reading the override
+    # set from the environment record this bootstrap run already fetched
+    # (record_environment_tenant, above) is what removes the orphan rows a
+    # fixed three-call list would otherwise create in every namespace that
+    # does not override all three, and is why there is no longer a `kubectl
+    # set env` here: the id now arrives pre-rendered in the manifest CI
+    # produced, so Argo's selfHeal has nothing of ours to revert (FR-1.2).
     #
-    # What actually makes a bad row fatal is create_service_config's own
-    # guards returning non-zero — line 21 restores `set -e` after lib.sh
-    # relaxes it, so a bare call already aborts. The `|| exit 1` is
-    # belt-and-braces for that dependency: it keeps these three calls fatal
-    # if `set -e` is ever relaxed again (lib.sh has done exactly that once
+    # What actually makes a bad row fatal is upsert_sparse_service_config's
+    # own guards returning non-zero — line 21 restores `set -e` after
+    # lib.sh relaxes it, so a bare call already aborts. The `|| exit 1` is
+    # belt-and-braces for that dependency: it keeps this loop fatal if
+    # `set -e` is ever relaxed again (lib.sh has done exactly that once
     # already), and states the intent at the call site. Failing the PostSync
     # hook is the point — better a visible hook failure in Argo than
     # restarting Deployments whose SERVICE_ID is wrong or absent.
-    create_service_config /atlas/canonical/services/login-service.json login atlas-login || exit 1
-    create_service_config /atlas/canonical/services/channel-service.json channel atlas-channel || exit 1
-    create_service_config /atlas/canonical/services/drops-service.json none atlas-drops || exit 1
+    overrides=$(env_record_get | jq -r '.data.attributes.overrides // {} | keys[]') \
+        || { log error "could not read the environment record's override set"; exit 1; }
+    for d in $overrides; do upsert_sparse_service_config "$d" || exit 1; done
 else
     # login-service: version-derived login port, id-keyed merge.
     upsert_service_config /atlas/canonical/services/login-service.json login
@@ -584,14 +669,6 @@ fi
 # defeat the whole point of the dynamic-config feature.
 ATLAS_STEP=service-restart
 restart_targets="atlas-drops atlas-character-factory atlas-world"
-if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
-    # In sparse mode, create_service_config just repointed atlas-login's and
-    # atlas-channel's SERVICE_ID at a freshly created row (above) — unlike
-    # isolated mode, where SERVICE_ID is the pinned canonical id both before
-    # and after bootstrap runs, here the env var actually changed, and it is
-    # only read at process start. They must restart to pick it up.
-    restart_targets="atlas-login atlas-channel $restart_targets"
-fi
 for d in $restart_targets; do
     kubectl rollout restart deployment/"$d" 2>/dev/null || log warn "could not restart $d"
 done
@@ -672,5 +749,74 @@ for ep in "${endpoints[@]}"; do
     ( post "$ATLAS_UI_BASE$ep" >/dev/null && log info "seeded $ep" ) &
 done
 wait
+
+# --- Activation (task-243 FR-4.1/FR-4.2/D5) --------------------------------
+#
+# Sparse-only [FR-4.1]: an isolated environment has no shared control-plane
+# phase to advance, and no override set to roll out — activation is
+# meaningless outside the shared-cluster model this gates.
+#
+# Observed, not assumed (FR-4.2). Readiness comes from `kubectl rollout
+# status`, never from an assumption that an earlier step succeeded.
+# Consumer-group initialization comes from the wave-0 precreate Job's own
+# exit code, which Argo enforces as a precondition of wave 10 (this Job)
+# existing at all — FR-4.3/FR-4.4 are structural, not re-checked here.
+#
+# Composes with FR-1.5. With Task 7's readiness probe, a pod whose
+# service-config row never arrived is never Ready, so `rollout status`
+# times out and activation fails — the environment stays PROVISIONING
+# rather than advertising a capability it does not have.
+#
+# Idempotent. env_record_patch/UpdateByName accepts a same-phase transition
+# and rejects skips and reverts (activation_decision, above), so a re-sync
+# of an already-ACTIVE environment is a no-op and a re-sync during teardown
+# cannot resurrect it.
+if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+    ATLAS_STEP=activate
+
+    # Same override-set jq read as the sparse service-config loop above:
+    # only roll-check deployments this environment actually overrides.
+    overrides=$(env_record_get | jq -r '.data.attributes.overrides // {} | keys[]') \
+        || { log error "could not read the environment record's override set"; exit 1; }
+    login_rolled=0
+    channel_rolled=0
+    for d in $overrides; do
+        kubectl rollout status deployment/"$d" --timeout="${ACTIVATION_ROLLOUT_TIMEOUT:-300s}" \
+            || { log error "activation: $d not ready"; exit 1; }
+        case "$d" in
+            atlas-login)   login_rolled=1 ;;
+            atlas-channel) channel_rolled=1 ;;
+        esac
+    done
+
+    # FR-4.2 mandatory sockets: activation requires both atlas-login and
+    # atlas-channel to be part of the override set (and thus rolled out
+    # above) — a sparse environment missing either is not activatable.
+    if [ "$login_rolled" -ne 1 ] || [ "$channel_rolled" -ne 1 ]; then
+        log error "activation requires atlas-login and atlas-channel in the override set (login=$login_rolled channel=$channel_rolled)"
+        exit 1
+    fi
+
+    body=$(env_record_get) || body=""
+    phase=$(printf '%s' "$body" | jq -r '.data.attributes.phase // empty')
+    case "$(activation_decision "$phase")" in
+        skip)
+            log info "environment $ATLAS_ENVIRONMENT already ACTIVE"
+            ;;
+        fail)
+            log error "environment $ATLAS_ENVIRONMENT is in phase '${phase:-<none>}'; refusing to activate"
+            exit 1
+            ;;
+        activate)
+            baseline=$(printf '%s' "$body" | jq -r '.data.attributes.baseline // ""')
+            namespace=$(printf '%s' "$body" | jq -r '.data.attributes.namespace // ""')
+            tenant=$(printf '%s' "$body" | jq -r '.data.attributes.tenant // ""')
+            overrides=$(printf '%s' "$body" | jq -c '.data.attributes.overrides // {}')
+            env_record_patch ACTIVE "$baseline" "$namespace" "$tenant" "$overrides" \
+                || { log error "activation PATCH failed"; exit 1; }
+            log info "environment $ATLAS_ENVIRONMENT is ACTIVE"
+            ;;
+    esac
+fi
 
 ATLAS_STEP=done log info "bootstrap complete"

@@ -349,3 +349,159 @@ DB_HOST=... DB_PORT=5432 DB_USER=... DB_PASSWORD=... \
     --sweep-tenant <tenant-uuid>          # list mode — prints what would delete
     # add --apply to actually delete
 ```
+
+## Upgrading to durable service-config binding (task-243, D9)
+
+`servicesuniq.Migration` builds a unique index on `services (type,
+environment)` at `atlas-configurations` startup, after `services.Migration`
+(plain `AutoMigrate`, no index) has run. That index rejects any pre-existing
+duplicate group (task-232's non-idempotent bootstrap left several — five
+`login-service` rows and five `channel-service` rows were observed for one
+environment, one per bootstrap re-run), so a duplicate present at rollout
+crash-loops the control plane for the baseline **and** every environment
+routed through it.
+
+**Every existing sparse environment must be torn down before this change is
+deployed.** This is not optional cleanup — it is the primary mitigation
+(design §4.3 Layer 1). Run `cleanup.sh` for each one. Its environment-scoped
+reclaim goes through `ProcessorImpl.DeleteById`, which enqueues the
+nil-value tombstone a compacted topic requires to stop replaying the deleted
+row; a raw `DELETE` against the `services` table does not do this and must
+never be used as a substitute. The rollout is a recreate, not an in-place
+reconciliation: open a fresh PR in sparse mode afterward rather than trying
+to migrate a torn-down environment's state forward.
+
+### Pre-flight: checking for duplicate service-config groups (§4.3 Layer 3)
+
+Before rolling `atlas-configurations`, inspect the baseline database for any
+`(type, environment)` group the startup migration would have to dedupe. The
+migration's own read-only check (`servicesuniq.Preflight`) is not exposed as
+a standalone CLI; run the equivalent query directly against the baseline
+database:
+
+```sql
+SELECT type, environment, COUNT(*) AS count
+FROM services
+GROUP BY type, environment
+HAVING COUNT(*) > 1;
+```
+
+Every row named is a group the startup migration will dedupe automatically —
+keeping the row whose id equals the derived id if one exists, else the row
+with the newest `service_history.created_at`, else the lowest id — and
+tombstone the rest.
+
+That automatic rule is a mechanical tiebreak, not a judgment about whether
+the duplicate is legitimate. Read the named groups by hand: **if any group
+represents a genuine co-resident row rather than a non-idempotent-bootstrap
+artifact — including a legitimate co-resident `login-service` row on
+`main`, which the PRD records as an accepted multi-tenant case — the dedupe
+rule cannot resolve it correctly.** The unique index forbids re-creating
+that row once deleted. Stop the rollout and re-decide D3 rather than letting
+the migration silently delete a row that was supposed to stay.
+
+### Precondition: `ATLAS_ENVIRONMENT` must be rolled to baseline deployments (§5.4)
+
+Activation depends on `IsOwner`, which reads `r.self` from
+`ATLAS_ENVIRONMENT`. A ConfigMap change does not roll the Deployments that
+consume it via `envFrom`, so a baseline deployment can be running with
+`Self() == ""` long after the ConfigMap itself was updated. **This is a PRD
+non-goal and a separate defect** — it is not fixed by this change — but it
+is a live-environment precondition of the end-to-end acceptance test:
+without it, the baseline cannot resolve its own environment and the
+ownership gate behaves incorrectly for baseline traffic.
+
+Check for it before running the end-to-end test:
+
+```sh
+kubectl -n <namespace> get pods -l app=<service> -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].env[?(@.name=="ATLAS_ENVIRONMENT")].value}{"\n"}{end}'
+```
+
+A pod whose `ATLAS_ENVIRONMENT` column is empty predates the ConfigMap
+change reaching it. Roll every affected baseline Deployment (a normal
+rolling restart is sufficient — the value comes from `envFrom` on pod start,
+not a live watch) before running the test; do not treat this runbook as the
+place that fixes the underlying drift, only as the place that names it as a
+pre-test step.
+
+## Verifying a service-config binding (FR-1.1–FR-1.4)
+
+To confirm an override Deployment is bound to its own environment's
+service-config row rather than a stale or wrong one:
+
+1. Read `SERVICE_ID` off the running override Deployment:
+
+   ```sh
+   kubectl -n <namespace> get deployment <deployment> \
+       -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="SERVICE_ID")].value}'
+   ```
+
+2. Re-derive the expected id independently:
+
+   ```sh
+   tools/derive-service-id.sh <service-type> <environment>
+   ```
+
+3. Confirm the two values match. If they do not, the binding is wrong —
+   Argo's `selfHeal` may have reverted a hand-patched value, or the
+   deployment predates this design.
+4. Confirm the `services` row with that id actually carries the expected
+   environment: `GET /api/configurations/services/{id}` and check
+   `attributes.environment` equals the environment's own name. A match on
+   step 3 alone is not sufficient — the id must also resolve to a row scoped
+   to the right environment, not a stray row that happens to share the id.
+
+### Verifying a seeded consumer group for that binding
+
+Once a binding is confirmed, confirm the group it joins actually has
+committed offsets — the full procedure and failure semantics are covered
+above under "Verifying a consumer group is seeded"; the one-line check:
+
+```sh
+kafka-consumer-groups.sh --bootstrap-server <broker> \
+    --group "<resolved group name>" --describe
+```
+
+Every row's `CURRENT-OFFSET` column must be a number. A `-` means the group
+was never seeded before this Deployment started consuming — the FR-4.4
+failure the wave-0 precreate Job exists to prevent.
+
+## Readiness probe timing (design §8)
+
+`atlas-login` and `atlas-channel`'s `readinessProbe` blocks
+(`initialDelaySeconds: 10, periodSeconds: 10, failureThreshold: 30`) give a
+5-minute catch-up budget before an override pod whose service-config row has
+not yet been projected (`projection.State.HasService` still false) is marked
+NotReady. These are conservative defaults chosen because the baseline's
+actual projection catch-up time had not been measured at the time this
+design was written; design §8 calls for the numbers to be validated against
+a live baseline and tightened here if the measurement supports it.
+
+**No live measurement has been recorded here yet** — record it once a
+sparse environment has been created against this rollout: the wall-clock
+time from pod start to the first successful `/api/readyz` response, taken
+from `kubectl -n <namespace> describe pod <pod>` events or from Loki
+(`{service_name="atlas-login"} | environment="pr-<N>"`). Until a real
+number is recorded, treat the 5-minute budget as untightened and do not
+narrow `failureThreshold`/`initialDelaySeconds` from an assumption.
+
+## The activation window (D8)
+
+The transition from `PROVISIONING` to `ACTIVE` is not instantaneous across
+every pod's cached view of the registry — registry caches update per-pod off
+the environment-status topic, so for up to one heartbeat interval different
+pods can disagree about which environment owns a given service. This window
+is accepted and bounded, not eliminated:
+
+- During the window, a message for the affected service/environment pair is
+  either dropped as not-yet-`ACTIVE` (a pod still on the old cached state)
+  or processed by the baseline — **never processed twice**, because
+  `IsOwner` is a single-winner predicate on a record every pod eventually
+  converges to.
+- In practice the window is empty: the ingress does not route traffic for an
+  environment while it is `PROVISIONING`, so there is no traffic for the
+  affected environment before the flip to `ACTIVE` completes.
+
+No operator action is required for this window; it is documented here so a
+transient, self-resolving disagreement between pods immediately around
+activation is not mistaken for the P0 leakage alert above.

@@ -1,0 +1,79 @@
+{
+  "service": "task-243-sparse-env-scoping-activation (Go diff: atlas-channel, atlas-configurations, atlas-login, libs/atlas-env, libs/atlas-kafka)",
+  "path": "services/atlas-channel, services/atlas-configurations, services/atlas-login, libs/atlas-env, libs/atlas-kafka",
+  "date": "2026-08-20",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "libs/atlas-env",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No package-named catch-all file carrying >=2 responsibilities", "status": "pass", "evidence": "tenants.go is single-purpose (mismatch-context helpers + Reconcile)"},
+        {"id": "DOM-31", "name": "Tenant identifiers travel in context only on the public surface", "status": "pass", "evidence": "tenants.go:58 Reconcile(tenantId string) is an internal library function, not a REST model"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "tenants_test.go:65-100 adds three independent Test funcs for Reconcile scenarios instead of one table + t.Run"}
+      ]
+    },
+    {
+      "name": "libs/atlas-kafka/consumer",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "gate.go is single-purpose (gateVerdict, gateReason, decide, metrics)"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "gate_test.go:99-224 TestGateDropReasons uses tests := []struct{...} + t.Run"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "n-a", "evidence": "no `go` statement added in gate.go/manager.go"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/configuration/projection",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "state.go:80-84 HasService follows the existing State-struct method pattern"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "projection_test.go new block: 4 sequential HasService tests as separate Test funcs, not a table + t.Run"},
+        {"id": "DOM-25", "name": "Client-interpreted bytes from writer-options table", "status": "n-a", "evidence": "no dispatcher/opcode/writer byte touched; only readiness-gate wiring at main.go:196-198"}
+      ]
+    },
+    {
+      "name": "services/atlas-login/configuration/projection",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "state.go:80-84 HasService mirrors atlas-channel"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "projection_test.go new block: same 4 HasService tests duplicated, not table-driven"}
+      ]
+    },
+    {
+      "name": "services/atlas-configurations (main.go)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "main.go:49-51 only wires servicesuniq.Migration into the existing migration list"}
+      ]
+    },
+    {
+      "name": "services/atlas-configurations/servicesuniq",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-04", "name": "Entity struct / func Migration( / TableName() live in entity.go", "status": "fail", "evidence": "migration.go:70 func Migration( is defined outside any entity.go; the package has no entity.go"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "migration.go is single-purpose dedupe+index logic"},
+        {"id": "DOM-21", "name": "No redeclaration of a libs/atlas-constants symbol", "status": "n-a", "evidence": "EnvServiceStatusTopic (migration.go:26) duplicates services.EnvServiceStatusTopic, an intra-service constant, not a libs/atlas-constants symbol"},
+        {"id": "DOM-30", "name": "DB write + Kafka event atomic via AndEmit/message.Buffer", "status": "n-a", "evidence": "no AndEmit/message.Emit/producer.ProviderImpl call site; uses outboxlib.Enqueue inside database.ExecuteTransaction (migration.go:92-109)"},
+        {"id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "n-a", "evidence": "services/service_history tables carry no TenantId column (migration_test.go:26-44 shadow entities)"},
+        {"id": "DOM-24", "name": "Test package reaching an emit path installs producertest", "status": "n-a", "evidence": "no AndEmit/message.Emit/producer.Produce call in migration_test.go"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "warn", "evidence": "migration_test.go: 9 new Test funcs, each a distinct scenario, not consolidated into a table + t.Run"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "SCAFFOLD-09: tools/service-registration-guard.sh not run (no new service directory in this diff; shell/CI surface not swept)",
+    "atlasServiceNS/derive-service-id.sh cross-process UUIDv5 derivation not executed end-to-end; only textual literal match confirmed"
+  ],
+  "blocking": [
+    "FILE-04: services/atlas-configurations/atlas.com/configurations/servicesuniq/migration.go:70 - func Migration( is not in an entity.go; package has no entity.go"
+  ],
+  "nonBlocking": [
+    "DOM-20: libs/atlas-env/tenants_test.go:65-100 - three new Reconcile tests not table-driven",
+    "DOM-20: atlas-channel configuration/projection/projection_test.go - four HasService tests not table-driven",
+    "DOM-20: atlas-login configuration/projection/projection_test.go - same four HasService tests duplicated, not table-driven",
+    "DOM-20: atlas-configurations servicesuniq/migration_test.go - nine scenario tests not table-driven"
+  ]
+}

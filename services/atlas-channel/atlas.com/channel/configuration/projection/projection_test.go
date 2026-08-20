@@ -201,3 +201,53 @@ func TestCaughtUp_EmptyPartitionTriviallyCaughtUp(t *testing.T) {
 	c.SetEndOffsets("T", map[int]int64{0: 0})
 	require.True(t, c.CaughtUpNow(), "end=0 must count as already caught up")
 }
+
+// FR-1.5/D6: HasService is the readiness signal — a pod whose own
+// service-config row never arrives must never report Ready. The
+// "different service's row" case is enforced one layer up: subscriber.go
+// returns early on env.Id != s.ServiceId.String() (subscriber.go:112),
+// so a foreign row never reaches State and is not re-tested here.
+
+func TestHasServiceIsFalseBeforeAnyServiceIsApplied(t *testing.T) {
+	s := projection.NewState()
+	require.False(t, s.HasService())
+}
+
+func TestHasServiceIsTrueAfterTheMatchingServiceIsApplied(t *testing.T) {
+	s := projection.NewState()
+	cfg := configuration.RestModel{}
+	cfgBts, _ := json.Marshal(cfg)
+	require.NoError(t, s.ApplyService(projection.ServiceEnvelope{
+		SchemaVersion: 1,
+		Id:            "5a86d8e6-3167-5e74-9fc5-021d94001da2",
+		Config:        cfgBts,
+	}))
+	require.True(t, s.HasService())
+}
+
+func TestHasServiceIsFalseAgainAfterATombstone(t *testing.T) {
+	s := projection.NewState()
+	cfg := configuration.RestModel{}
+	cfgBts, _ := json.Marshal(cfg)
+	require.NoError(t, s.ApplyService(projection.ServiceEnvelope{
+		SchemaVersion: 1,
+		Id:            "5a86d8e6-3167-5e74-9fc5-021d94001da2",
+		Config:        cfgBts,
+	}))
+	require.True(t, s.HasService())
+
+	s.ApplyServiceTombstone()
+	require.False(t, s.HasService())
+}
+
+func TestHasServiceIsFalseAfterOnlyATenantIsApplied(t *testing.T) {
+	s := projection.NewState()
+	trm := tenant.RestModel{Region: "GMS", MajorVersion: 83, MinorVersion: 1}
+	trmBts, _ := json.Marshal(trm)
+	require.NoError(t, s.ApplyTenant(projection.TenantEnvelope{
+		SchemaVersion: 1,
+		Id:            uuid.New().String(),
+		Config:        trmBts,
+	}))
+	require.False(t, s.HasService())
+}

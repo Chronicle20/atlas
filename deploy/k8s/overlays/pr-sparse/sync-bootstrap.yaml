@@ -14,6 +14,12 @@ rules:
     verbs: ["get"]
   - apiGroups: ["apps"]
     resources: ["deployments"]
+    # patch/update (re-examined task-243): sparse mode no longer needs to
+    # repoint SERVICE_ID via `kubectl set env` (the id now arrives
+    # pre-rendered in the manifest), but the restart loop still issues
+    # `kubectl rollout restart deployment/atlas-{drops,world,
+    # character-factory}` in BOTH modes — that call needs patch. Do not
+    # drop these verbs without also removing that restart loop.
     verbs: ["get", "list", "patch", "update"]
   - apiGroups: ["apps"]
     resources: ["deployments/status"]

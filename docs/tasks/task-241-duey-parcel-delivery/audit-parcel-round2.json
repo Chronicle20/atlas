@@ -1,0 +1,125 @@
+{
+  "service": "atlas-parcel",
+  "path": "services/atlas-parcel",
+  "date": "2026-08-20",
+  "build": "pass",
+  "testsPassed": 2,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "round": 2,
+  "baseline": "docs/tasks/task-241-duey-parcel-delivery/audit-parcel.json",
+  "fixCommitsExamined": [
+    "b550d80d9",
+    "8f23610d8",
+    "a95b7c067",
+    "a6e5e529f",
+    "3468f1370",
+    "ce05ea9db",
+    "93347e924"
+  ],
+  "round1FindingsDisposition": [
+    {"id": "DOM-02", "status": "cleared", "evidence": "parcel/entity.go:130 - func (m Model) ToEntity() Entity"},
+    {"id": "DOM-03", "status": "cleared", "evidence": "parcel/entity.go:107 - func Make(e Entity) (Model, error)"},
+    {"id": "DOM-05", "status": "cleared", "evidence": "parcel/rest.go:91 TransformSlice; parcel/resource.go:142 calls it"},
+    {"id": "DOM-08", "status": "cleared", "evidence": "parcel/resource.go:47,53 - RegisterInputHandler[NotifyRestModel]; resource_test.go:87,330,348 exercises jsonapi body"},
+    {"id": "DOM-11", "status": "cleared", "evidence": "parcel/provider.go:18,29,41,53,70 all compose database.Query/SliceQuery lazily"},
+    {"id": "DOM-30", "status": "cleared", "evidence": "parcel/notification_task.go:167-169 wraps emit in buffer.Emit; kafka/message/message.go verified line-for-line structural match to atlas-npc-shops/kafka/message/message.go, the repo's canonical AndEmit idiom"},
+    {"id": "DOM-30", "status": "cleared", "evidence": "kafka/consumer/custody/consumer.go:86-131 (accept), :156-163 (release) wrap DB write + emit in buffer.Emit; remaining direct calls (:132,:165) are on the post-failure branch, documented exception 1"},
+    {"id": "DOM-20", "status": "cleared", "evidence": "8/9 test files now use tests := []struct{...} + t.Run (administrator_test.go:25, builder_test.go, provider_tenant_test.go, task_test.go, processor_test.go x4, resource_test.go, notification_task_test.go, consumer_test.go); entity_test.go has 0 t.Run calls and 5 independent top-level Test funcs - N/A, nothing to convert"},
+    {"id": "SCAFFOLD-06", "status": "cleared", "evidence": "deploy/compose/docker-compose.core.yml:481-497 atlas-parcel entry, matches atlas-storage peer convention"},
+    {"id": "SCAFFOLD-08", "status": "cleared", "evidence": "services/atlas-parcel/.bruno/ - bruno.json, collection.bru, environments, 6 .bru requests covering every resource.go route"},
+    {"id": "DOM-21", "status": "cleared", "evidence": "libs/atlas-saga/payloads.go:992,1082 now inventory.Type; compiler-followed conversions in saga-orchestrator/saga/processor.go:2200,2238,2344 and atlas-channel/socket/handler/duey_action_send.go:43,61, duey_action_receive.go - all builds/tests green"}
+  ],
+  "judgmentCalls": [
+    {
+      "topic": "DOM-30 Kafka emit form (AndEmit vs outbox)",
+      "ruling": "AndEmit + message.Buffer is sufficient; checklist's own patterns-kafka.md:58-90 verification procedure names this exact shape as the pass criterion and does not require the atlas-fame outbox form. kafka/message/message.go verified as a structural mirror of atlas-npc-shops's canonical example.",
+      "verifiedBy": "diff comparison of kafka/message/message.go against services/atlas-npc-shops/.../kafka/message/message.go; reading patterns-kafka.md's Audit verification - DOM-30 section"
+    },
+    {
+      "topic": "WithoutTenantFilter sweeps (notification_task.go:144, task.go:144)",
+      "ruling": "Legitimate, verified cross-tenant background sweeps - not a finding. Both Run() bodies read directly, not accepted on allowlist rationale text alone.",
+      "verifiedBy": "task.go:144 (noTenantCtx scopes only ClaimExpired at :148), :164 (tenant.Create per claimed row), :174 (tenant.WithContext built from t.ctx, NOT noTenantCtx), :205 (Create runs under the reconstructed tenantCtx). notification_task.go:144 (noTenantCtx scopes only ClaimNotifiable at :148), :159 (tenant.Create), :164 (tenantCtx with envContext layered on), :166-169 (Kafka emit under tenantCtx). tools/scopeguard/callsite-allowlist.txt:36-37 line numbers cross-checked against code and matched exactly. ./tools/scope-guard.sh exits 0 across 89 modules."
+    }
+  ],
+  "domains": [
+    {
+      "name": "parcel",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go builder pattern", "status": "pass", "evidence": "parcel/builder.go:14,41 - Builder/NewBuilder/setters/validate/Build, no residual Make/ToEntity"},
+        {"id": "DOM-02", "name": "Model.ToEntity() defined in entity.go", "status": "pass", "evidence": "parcel/entity.go:130"},
+        {"id": "DOM-03", "name": "Make(Entity) (Model, error) defined in entity.go", "status": "pass", "evidence": "parcel/entity.go:107"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) defined in rest.go", "status": "pass", "evidence": "parcel/rest.go:61-87"},
+        {"id": "DOM-05", "name": "TransformSlice defined in rest.go and used by list handlers", "status": "pass", "evidence": "parcel/rest.go:91; parcel/resource.go:142"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "parcel/processor.go:42"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger() into NewProcessor", "status": "pass", "evidence": "parcel/resource.go handler call sites"},
+        {"id": "DOM-08", "name": "POST/PATCH routes register via RegisterInputHandler[T]", "status": "pass", "evidence": "parcel/resource.go:46-47,52-53"},
+        {"id": "DOM-09", "name": "Every Transform/TransformSlice call site checks its error", "status": "pass", "evidence": "parcel/resource.go:142-146"},
+        {"id": "DOM-11", "name": "Providers evaluate lazily via database.Query/SliceQuery", "status": "pass", "evidence": "parcel/provider.go:18,29,41,53,70"},
+        {"id": "DOM-16", "name": "administrator.go holds the write functions", "status": "pass", "evidence": "parcel/administrator.go:77 ClaimExpired, :118 ClaimNotifiable, plus round-1 writes"},
+        {"id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "pass", "evidence": "parcel/resource.go:251-253"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "parcel/rest.go:140-156 NotifyRestModel"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "pass", "evidence": "parcel/rest.go:136-138 NotifyRestModel single field"},
+        {"id": "DOM-27", "name": "Handler error branches use server.WriteErrorResponse", "status": "pass", "evidence": "parcel/resource.go:258,264"},
+        {"id": "DOM-30", "name": "DB writes emit through AndEmit + message.Buffer", "status": "pass", "evidence": "parcel/notification_task.go:167-169"},
+        {"id": "DOM-31", "name": "Tenant/trace identifiers travel in context only", "status": "pass", "evidence": "NotifyRestModel carries no tenant field; sweep tasks pass tenant via tenant.WithContext"},
+        {"id": "DOM-32", "name": "Routes register through server.RegisterHandler/RegisterInputHandler[T]", "status": "pass", "evidence": "parcel/resource.go:45-47"},
+        {"id": "FILE-01", "name": "Processor file placement", "status": "pass", "evidence": "parcel/processor.go + processor_custody.go, unchanged"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API in rest.go", "status": "pass", "evidence": "parcel/rest.go"},
+        {"id": "FILE-04", "name": "Entity/Migration/TableName in entity.go", "status": "pass", "evidence": "parcel/entity.go:39,90,102"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/readers placement", "status": "pass", "evidence": "builder.go now holds only Builder/setters/validate/Build; Make/ToEntity correctly relocated to entity.go"},
+        {"id": "FILE-06", "name": "No package-named catch-all", "status": "pass", "evidence": "builder.go trimmed, no residual mapping functions; kafka/message/message.go is single-purpose"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "administrator_test.go:25, builder_test.go, provider_tenant_test.go, task_test.go, processor_test.go(x4), resource_test.go, notification_task_test.go, consumer_test.go all use tests := []struct{...} + t.Run; entity_test.go n/a (0 t.Run calls, independent top-level Test funcs)"},
+        {"id": "DOM-24", "name": "Emit-reaching test packages stub the producer", "status": "pass", "evidence": "notification_task_test.go producertest.InstallCapturing() in TestMain; consumer_test.go per-test injection, re-verified against buffer.Emit-wrapped handlers via passing go test"}
+      ]
+    },
+    {
+      "name": "kafka/message",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "message.go is single-purpose Buffer/Emit, structural mirror of atlas-npc-shops's canonical file"}
+      ]
+    },
+    {
+      "name": "kafka/consumer/custody",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-30", "name": "DB writes emit through AndEmit + message.Buffer", "status": "pass", "evidence": "consumer.go:86-131 (accept), :156-163 (release); remaining direct calls at :132,:165 are post-failure branch, documented exception"},
+        {"id": "DOM-24", "name": "Emit-reaching test packages stub the producer", "status": "pass", "evidence": "consumer_test.go per-test injection unchanged"}
+      ]
+    },
+    {
+      "name": "scaffolding",
+      "type": "n/a",
+      "checks": [
+        {"id": "SCAFFOLD-06", "name": "docker-compose entry present alongside peers", "status": "pass", "evidence": "deploy/compose/docker-compose.core.yml:481-497"},
+        {"id": "SCAFFOLD-08", "name": "Bruno collection present", "status": "pass", "evidence": "services/atlas-parcel/.bruno/*"}
+      ]
+    },
+    {
+      "name": "libs/atlas-saga",
+      "type": "n/a",
+      "checks": [
+        {"id": "DOM-21", "name": "InventoryType reuses libs/atlas-constants/inventory.Type", "status": "pass", "evidence": "libs/atlas-saga/payloads.go:992,1082"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/parcel",
+      "type": "domain",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor file placement (fix-commit-scoped check only, not a full audit)", "status": "pass", "evidence": "processor.go now holds only Processor/NewProcessor/methods"},
+        {"id": "FILE-02", "name": "RestModel/Extract/JSON:API in rest.go", "status": "pass", "evidence": "rest.go:17,69-86"},
+        {"id": "FILE-05", "name": "Model in model.go, Builder in builder.go", "status": "pass", "evidence": "model.go:16 Model + accessors + WireId + ToPacket; builder.go:13-... Builder"},
+        {"id": "FILE-06", "name": "No package catch-all", "status": "pass", "evidence": "four single-purpose files, no cross-contamination per grep of ^type/^func"},
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder/setters/validate/Build", "status": "pass", "evidence": "builder.go:36,40-... , validate/Build"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "Full DOM/FILE/REST sweep of services/atlas-channel/atlas.com/channel/parcel and duey_action_{send,receive}.go beyond the fix-commit-scoped checks - a sibling reviewer owns atlas-channel's own audit",
+    "SCAFFOLD-07/DOM-25: channel opcode-template seeding and packet dispatcher codecs, carried forward from round 1's scope boundary"
+  ],
+  "blocking": [],
+  "nonBlocking": []
+}

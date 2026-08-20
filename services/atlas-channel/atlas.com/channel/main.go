@@ -624,7 +624,19 @@ func buildListener(
 		}
 
 		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantCfg.Socket.Handlers, validatorMap, handlerMap)
-		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, sc, cfg.IPAddress, cfg.Port)
+		// tdm.WaitGroup() brackets the accept-loop goroutine (process-wide
+		// shutdown bookkeeping, unchanged); h.Wg additionally sees every
+		// accepted connection, which is what makes drain phase 3 a real
+		// bounded wait (task-244 design.md §4.3).
+		lis, err := socket.CreateSocketService(fl, tctx, tdm.WaitGroup(), h.Wg)(hp, rw, wp, sc, cfg.IPAddress, cfg.Port)
+		if err != nil {
+			// A non-nil error here is what fires Registry.Add's existing
+			// rollback: no entry is left for a channel that never bound.
+			return nil, err
+		}
+		h.CloseListener = lis.Close
+		h.Sessions = socket.SessionsForHandle(fl, tctx, sc)
+		h.Kick = socket.KickSession(fl, tctx, wp, sc)
 
 		return handles, nil
 	}

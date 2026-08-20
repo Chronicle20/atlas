@@ -11,8 +11,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
+	"fmt"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -53,72 +53,98 @@ func WithSelfEnvironment(ctx context.Context) context.Context {
 	return env.WithContext(ctx, env.Self())
 }
 
-func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) {
-	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) {
+// dualWaitGroup fans Add/Done out to two waitgroups so a caller can track
+// the same event in a handle-scoped waitgroup and the process-wide one at
+// once. Held as the interface, not *sync.WaitGroup, so it is exercisable
+// against a counting fake.
+type dualWaitGroup struct{ a, b socket.WaitGrouper }
+
+func (d dualWaitGroup) Add(n int) { d.a.Add(n); d.b.Add(n) }
+func (d dualWaitGroup) Done()     { d.a.Done(); d.b.Done() }
+
+// CreateSocketService binds the listener SYNCHRONOUSLY and returns it, so
+// listener.Registry.Add can surface a bind failure through its existing
+// rollback path and buildListener can install Handle.CloseListener. The
+// accept loop and per-connection handling stay asynchronous -- only the
+// bind result is observable before this returns (task-244 design.md §4.2).
+//
+// wg brackets the accept-loop goroutine only (process-wide bookkeeping).
+// sessionWg is fanned out per accepted connection, so a handle-scoped
+// waitgroup sees real session lifetime without also counting the
+// accept loop, which lives as long as the handle does.
+func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg socket.WaitGrouper, sessionWg socket.WaitGrouper) func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) (net.Listener, error) {
+	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) (net.Listener, error) {
+		// Bind before any other side effect: a failed bind must leave
+		// nothing for Registry.Add's rollback to unwind.
+		lis, err := socket.Bind(l, ipAddress, port)
+		if err != nil {
+			return nil, fmt.Errorf("bind %s:%d: %w", ipAddress, port, err)
+		}
+
+		l.Infof("Creating channel socket service for [%s] on port [%d].", sc.String(), port)
+
 		chakra.GetRegistry().StartSweeper(l, ctx)
 
+		hasMapleEncryption := true
+		t := sc.Tenant()
+		if t.Region() == "JMS" {
+			hasMapleEncryption = false
+			l.Debugf("Service does not expect Maple encryption.")
+		}
+
+		locale := byte(8)
+		if t.Region() == "JMS" {
+			locale = 3
+		}
+		l.Debugf("Service locale [%d].", locale)
+
+		sp := session.NewProcessor(l, ctx)
+		fanOut := dualWaitGroup{a: wg, b: sessionWg}
+
 		routine.Go(l, ctx, func(_ context.Context) {
-			l.Infof("Creating channel socket service for [%s] on port [%d].", sc.String(), port)
-
-			hasMapleEncryption := true
-			t := sc.Tenant()
-			if t.Region() == "JMS" {
-				hasMapleEncryption = false
-				l.Debugf("Service does not expect Maple encryption.")
-			}
-
-			locale := byte(8)
-			if t.Region() == "JMS" {
-				locale = 3
-			}
-
-			l.Debugf("Service locale [%d].", locale)
-
-			routine.Go(l, ctx, func(_ context.Context) {
-				sp := session.NewProcessor(l, ctx)
-				err := socket.Run(l, ctx, wg,
-					socket.SetHandlers(hp),
-					socket.SetPort(port),
-					socket.SetCreator(sp.Create(sc.Channel(), locale)),
-					socket.SetMessageDecryptor(sp.Decrypt(true, hasMapleEncryption)),
-					socket.SetDestroyer(func(sessionId uuid.UUID) {
-						sp.IfPresentById(sessionId, func(s session.Model) error {
-							shopscanner.GetRegistry().ClearCharacter(t, s.CharacterId())
-							// Without this the throttle map leaks one entry per
-							// character ever seen by this pod (task-190).
-							statreset.GetRegistry().ClearCharacter(t, s.CharacterId())
-							// Channel change and disconnect both destroy the
-							// session; without this the window map leaks one
-							// entry per character ever seen by this pod
-							// (PRD FR-5.5, FR-2.2).
-							chakra.GetRegistry().Clear(t, s.CharacterId())
-							// Channel change and disconnect both destroy the
-							// session; without this the pending-unlock map
-							// leaks one entry per character ever seen by this
-							// pod (task-221).
-							remotemerchant.GetRegistry().ClearCharacter(t, s.CharacterId())
-							return nil
-						})
-						sp.DestroyByIdWithSpan(sessionId)
-					}),
-					socket.SetReadWriter(rw),
-					socket.SetIdleNotifier(session.SendPing(l, ctx, wp), idleThreshold),
-				)
-				if err != nil {
-					if errors.Is(err, net.ErrClosed) {
-						return
-					}
-					l.WithError(err).Errorf("Socket service encountered error")
-				}
-			})
-
-			err := channel.NewProcessor(l, ctx).Register(sc.Channel(), ipAddress, port)
+			err := socket.Serve(l, ctx, wg, fanOut, lis,
+				socket.SetHandlers(hp),
+				socket.SetCreator(sp.Create(sc.Channel(), locale)),
+				socket.SetMessageDecryptor(sp.Decrypt(true, hasMapleEncryption)),
+				socket.SetDestroyer(func(sessionId uuid.UUID) {
+					sp.IfPresentById(sessionId, func(s session.Model) error {
+						shopscanner.GetRegistry().ClearCharacter(t, s.CharacterId())
+						// Without this the throttle map leaks one entry per
+						// character ever seen by this pod (task-190).
+						statreset.GetRegistry().ClearCharacter(t, s.CharacterId())
+						// Channel change and disconnect both destroy the
+						// session; without this the window map leaks one
+						// entry per character ever seen by this pod
+						// (PRD FR-5.5, FR-2.2).
+						chakra.GetRegistry().Clear(t, s.CharacterId())
+						// Channel change and disconnect both destroy the
+						// session; without this the pending-unlock map
+						// leaks one entry per character ever seen by this
+						// pod (task-221).
+						remotemerchant.GetRegistry().ClearCharacter(t, s.CharacterId())
+						return nil
+					})
+					sp.DestroyByIdWithSpan(sessionId)
+				}),
+				socket.SetReadWriter(rw),
+				socket.SetIdleNotifier(session.SendPing(l, ctx, wp), idleThreshold),
+			)
 			if err != nil {
+				if errors.Is(err, net.ErrClosed) {
+					return
+				}
+				l.WithError(err).Errorf("Socket service encountered error")
+			}
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			if err := channel.NewProcessor(l, ctx).Register(sc.Channel(), ipAddress, port); err != nil {
 				l.WithError(err).Errorf("Socket service registration error.")
 			}
-
 			<-ctx.Done()
 			l.Infof("Shutting down server on port %d", port)
 		})
+
+		return lis, nil
 	}
 }

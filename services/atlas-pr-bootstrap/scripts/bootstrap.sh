@@ -648,7 +648,8 @@ if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
     # already), and states the intent at the call site. Failing the PostSync
     # hook is the point — better a visible hook failure in Argo than
     # restarting Deployments whose SERVICE_ID is wrong or absent.
-    overrides=$(env_record_get | jq -r '.data.attributes.overrides // {} | keys[]')
+    overrides=$(env_record_get | jq -r '.data.attributes.overrides // {} | keys[]') \
+        || { log error "could not read the environment record's override set"; exit 1; }
     for d in $overrides; do upsert_sparse_service_config "$d" || exit 1; done
 else
     # login-service: version-derived login port, id-keyed merge.
@@ -775,7 +776,8 @@ if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
 
     # Same override-set jq read as the sparse service-config loop above:
     # only roll-check deployments this environment actually overrides.
-    overrides=$(env_record_get | jq -r '.data.attributes.overrides // {} | keys[]')
+    overrides=$(env_record_get | jq -r '.data.attributes.overrides // {} | keys[]') \
+        || { log error "could not read the environment record's override set"; exit 1; }
     login_rolled=0
     channel_rolled=0
     for d in $overrides; do

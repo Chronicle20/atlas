@@ -83,6 +83,7 @@ configMapGenerator:
   - name: atlas-ingress-routes
     files:
       - routes.conf.template=routes.conf.template.generated
+      - env-default.conf.template
   # The atlas-kafka-precreate Job's script body, extracted (task-232 Task 45)
   # so atlas-kafka-precreate_test.sh can source it and exercise seed_group
   # directly. See atlas-kafka-precreate.yaml.

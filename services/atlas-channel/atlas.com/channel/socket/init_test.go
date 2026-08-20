@@ -49,7 +49,7 @@ func TestCreateSocketServiceReturnsErrorWhenPortIsAlreadyBound(t *testing.T) {
 	if err != nil {
 		t.Fatalf("bind a port to occupy: %v", err)
 	}
-	defer pre.Close()
+	defer func() { _ = pre.Close() }()
 	port := pre.Addr().(*net.TCPAddr).Port
 
 	tm := testTenant(t)

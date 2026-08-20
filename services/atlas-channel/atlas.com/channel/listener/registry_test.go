@@ -335,7 +335,7 @@ func TestRegistry_AddReturnsErrorAndLeavesNoEntryWhenBodyFails(t *testing.T) {
 
 	occupied, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
-	defer occupied.Close()
+	defer func() { _ = occupied.Close() }()
 	occupiedPort := occupied.Addr().(*net.TCPAddr).Port
 
 	var evictCalls atomic.Int32

@@ -9,13 +9,19 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
+	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 )
 
-// The production entities (services.Entity, outbox.Entity) declare
-// postgres-only column defaults/types that SQLite's CREATE TABLE syntax
-// cannot express. This test follows the same shadow-entity pattern as
+// The production services.Entity declares postgres-only column
+// defaults/types that SQLite's CREATE TABLE syntax cannot express. This
+// test follows the same shadow-entity pattern as
 // environmentcol/migration_test.go rather than AutoMigrate-ing the
-// production structs directly.
+// production struct directly. outbox_entries has no such incompatibility,
+// so it is migrated with the library's own outboxlib.Migration(db) instead
+// of a local shadow struct — the fleet convention, e.g.
+// services/atlas-tenants/atlas.com/tenants/configuration/rankings_handler_test.go
+// and services/atlas-guilds/.../thread/processor_outbox_test.go.
 
 type testServiceEntity struct {
 	Id          uuid.UUID       `gorm:"type:text;primaryKey"`
@@ -37,24 +43,9 @@ type testServiceHistoryEntity struct {
 
 func (testServiceHistoryEntity) TableName() string { return "service_history" }
 
-// testOutboxEntity mirrors outbox.Entity's columns so outboxlib.Enqueue can
-// insert against this test database, and so tests can query what it wrote.
-type testOutboxEntity struct {
-	ID           uint64     `gorm:"primaryKey;column:id"`
-	Topic        string     `gorm:"column:topic;not null"`
-	MessageKey   []byte     `gorm:"column:message_key;not null"`
-	MessageValue []byte     `gorm:"column:message_value"`
-	Headers      string     `gorm:"column:headers;not null;default:'{}'"`
-	EnqueuedAt   time.Time  `gorm:"column:enqueued_at;not null;default:CURRENT_TIMESTAMP"`
-	SentAt       *time.Time `gorm:"column:sent_at"`
-	Attempts     int        `gorm:"column:attempts;not null;default:0"`
-	LastError    *string    `gorm:"column:last_error"`
-}
-
-func (testOutboxEntity) TableName() string { return "outbox_entries" }
-
 // testDatabase creates an in-memory SQLite database migrated with the
-// SQLite-compatible shadow entities servicesuniq touches.
+// SQLite-compatible shadow entities servicesuniq touches, plus the real
+// outbox_entries table via outboxlib.Migration.
 func testDatabase(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
@@ -73,8 +64,12 @@ func testDatabase(t *testing.T) *gorm.DB {
 		_ = sqlDB.Close()
 	})
 
-	if err := db.AutoMigrate(&testServiceEntity{}, &testServiceHistoryEntity{}, &testOutboxEntity{}); err != nil {
+	if err := db.AutoMigrate(&testServiceEntity{}, &testServiceHistoryEntity{}); err != nil {
 		t.Fatalf("Failed to migrate test database: %v", err)
+	}
+
+	if err := outboxlib.Migration(db); err != nil {
+		t.Fatalf("Failed to migrate outbox_entries: %v", err)
 	}
 
 	return db
@@ -175,7 +170,7 @@ func TestDedupeEnqueuesATombstoneForEveryDeletedRow(t *testing.T) {
 		t.Fatalf("outbox_entries row count = %d, want 2", got)
 	}
 
-	var rows []testOutboxEntity
+	var rows []outboxlib.Entity
 	if err := db.Find(&rows).Error; err != nil {
 		t.Fatalf("query outbox_entries: %v", err)
 	}

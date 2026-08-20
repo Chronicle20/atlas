@@ -71,6 +71,7 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 - Preserve existing line endings when editing; do not normalize CRLF→LF as a side effect.
 - Ask the toolchain (`go list -m -f '{{.Dir}}' <module>`) rather than sweeping the filesystem for a Go dependency's source.
 - Never spend inference turns polling a process — launch it with a bound (`run_in_background`, or Monitor with an until-loop) and hand back or do something else in the meantime. The same applies to waiting on a child agent: completions arrive as notifications, so there is nothing to wait for. *(enforced)*
+- Batch a gate-log or review-artifact read with the `progress.md`/`agent-ledger.sh` append that records its verdict into the *same* tool call, not a separate turn. A turn whose only content is writing up a conclusion the prior read already established pays full session context for zero new information — every such split costs a full extra turn at whatever context the session has reached by then.
 - Slice a large artifact before reading it whole — `tools/doc-slice.sh --outline/--section/--rows`, `git diff --stat` before hunks, `tools/task-brief.sh` before `plan.md`. A default with an escalation path, not a ban: read the whole file when correctness needs it.
 - Ask the tooling for a mechanical fact rather than deriving it — `tools/task-facts.sh <task>` for branch/worktree/surfaces/guards, `tools/verify.sh --facts` for what the gate selects.
 - When updating `TODO.md` or other tracking docs, use `Glob`/`Grep` to find the file first rather than assuming a path.

@@ -1,0 +1,11 @@
+meta {
+  name: Get Character Parcel Status
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/parcel-status
+  body: none
+  auth: inherit
+}

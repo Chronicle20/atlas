@@ -31,6 +31,18 @@ spec:
         - containerPort: 18501
         # END generated:container-ports
         - containerPort: 8080
+        # FR-1.5 / task-243 D6: not Ready until this pod's OWN service-config
+        # row has been projected (projection.State.HasService). atlas-login is
+        # projection-driven — with no row it binds no socket, and before this
+        # probe existed it reported Ready anyway, which is how a wrong
+        # SERVICE_ID survived five sparse deploys undetected.
+        readinessProbe:
+          httpGet:
+            path: /api/readyz
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 30
         envFrom:
         - configMapRef:
             name: atlas-env

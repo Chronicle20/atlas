@@ -573,6 +573,12 @@ else
     skip "pr-sparse mirror drift (neither overlay changed)"
 fi
 
+if touched '^(deploy/k8s/base/|deploy/k8s/overlays/pr-sparse/|tools/sparse-baseline-scoping-guard\.sh)'; then
+    step "sparse baseline scoping" ./tools/sparse-baseline-scoping-guard.sh
+else
+    skip "sparse baseline scoping (no base manifest or pr-sparse change)"
+fi
+
 if touched '^(tools/mode-select(_test)?\.sh|\.github/actions/detect-changes/action\.yml)'; then
     step "mode select decision table" ./tools/mode-select_test.sh
 else

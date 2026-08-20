@@ -481,9 +481,10 @@ is resolved at runtime by `libs/atlas-kafka/consumergroup/resolver.go:38-50`
 and patched per-PR by `deploy/k8s/overlays/pr/patches/consumer-group-env.yaml`
 (F9). Nothing changes there.
 
-What changes is that sparse environments consume the **unsuffixed baseline
-topics** (FR-4.8), so a new group on a long-lived topic has a real offset
-problem:
+What changes is that sparse environments consume the **baseline's topics**
+(FR-4.8) — named with the baseline's own environment suffix, not unsuffixed;
+see the correction note on FR-4.8 — so a new group on a long-lived topic has a
+real offset problem:
 
 - `kafka.FirstOffset` is the library default
   (`libs/atlas-kafka/consumer/config.go:37`). A new override group would
@@ -745,10 +746,23 @@ Disposition:
 - **The bare constructors** are unexported or removed; `tools/rediskeyguard`
   (which already exists) is extended to fail CI on new bare `keyFn` use
   (FR-8.5).
-- **`ATLAS_ENV` prefixing** stays in force for isolated mode and becomes inert
-  in sparse mode by not setting the variable in the sparse overlay. No code
-  change to `computeKeyPrefix`; the empty-string branch is already the
-  legacy/main path.
+- **`ATLAS_ENV` prefixing** stays in force for isolated mode. In sparse mode
+  the keyspace must be the **baseline's** (`main:atlas:…`), set via a
+  dedicated `ATLAS_REDIS_ENV` in the sparse overlay.
+
+  *Corrected 2026-08-20.* This bullet originally read "becomes inert in sparse
+  mode by not setting the variable in the sparse overlay… no code change".
+  Both halves were wrong. (a) `patches/consumer-group-env.yaml` sets
+  `ATLAS_ENV` on every container regardless of the ConfigMap, so it was never
+  unset — `atlas-pr-1411`'s pods ran with `ATLAS_ENV=a435`. (b) "Inert" would
+  not have been correct either: `overlays/main` sets `ATLAS_ENV=main`, so the
+  baseline's prefix is `main:atlas`, not the empty-env `atlas`. And the
+  variable cannot simply be pointed at the baseline, because `libs/atlas-lock`
+  reads the same variable to scope leader-election leases and MUST stay
+  per-deployment (the task-200 defect). `libs/atlas-redis` therefore reads
+  `ATLAS_REDIS_ENV` in preference to `ATLAS_ENV`, falling back when unset so
+  isolated mode and the baseline are byte-identical to before. See
+  [bug-sparse-baseline-scoping.md](bug-sparse-baseline-scoping.md).
 
 `NewGlobalIDGenerator`, `NewLock`, `NewLockWithTTL` each need a stated intent
 per surviving call site (isolation-audit §4.3). A lock that is global by

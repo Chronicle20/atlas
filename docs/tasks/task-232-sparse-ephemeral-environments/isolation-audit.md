@@ -34,9 +34,18 @@ shared by every tenant on a version.
 
 | Substrate | Current isolation | Source | Sparse-mode disposition |
 |---|---|---|---|
-| Postgres | `DB_NAME` → `<db>-<ATLAS_ENV>` | `overlays/pr/scripts/gen-db-name-suffix.sh` | Removed; shared DB |
-| Kafka topics | all `COMMAND_TOPIC_*`/`EVENT_TOPIC_*` → `-<ATLAS_ENV>` | `overlays/pr/scripts/gen-topic-config.sh` | Removed; shared topics + ownership gate |
-| Redis | prefix `<ATLAS_ENV>:atlas` | `libs/atlas-redis/keys.go:15-24` | Removed; must be inert in sparse mode |
+| Postgres | `DB_NAME` → `<db>-<ATLAS_ENV>` | `overlays/pr/scripts/gen-db-name-suffix.sh` | Repointed at the baseline: `<db>-<baseline env>` |
+| Kafka topics | all `COMMAND_TOPIC_*`/`EVENT_TOPIC_*` → `-<ATLAS_ENV>` | `overlays/pr/scripts/gen-topic-config.sh` | Repointed at the baseline: `-<baseline env>` + ownership gate |
+| Redis | prefix `<ATLAS_ENV>:atlas` | `libs/atlas-redis/keys.go:15-24` | Repointed at the baseline via `ATLAS_REDIS_ENV` |
+
+**Corrected 2026-08-20.** These three dispositions originally read "Removed;
+shared DB / shared topics / must be inert". "Removed" was read as "let
+`deploy/k8s/base`'s unsuffixed defaults stand", and that is not the same thing
+as "the baseline's". Every Atlas substrate in the cluster is named for the
+environment that owns it — `EVENT_TOPIC_X-main`, `atlas-characters-main`,
+`main:atlas:…` — so the unsuffixed name is a fourth, empty namespace rather
+than the shared one. Sharing a substrate means *adopting the baseline's name
+for it*. See [bug-sparse-baseline-scoping.md](bug-sparse-baseline-scoping.md).
 
 The Redis prefix is computed in a **package-level `var` initializer** from
 `os.Getenv("ATLAS_ENV")`, so it cannot vary per operation without restructuring.

@@ -380,8 +380,16 @@ port-registered and therefore belongs in the mandatory floor —
 - **FR-4.7** A message whose environment is unknown to the cached registry is not
   processed by any deployment, is acknowledged, and emits a distinct alertable
   metric and log line (D4).
-- **FR-4.8** Sparse environments consume the **unsuffixed** baseline topics. Topic
-  suffixing (F4) applies to isolated mode only.
+- **FR-4.8** Sparse environments consume the **baseline's** topics — which means
+  they must name them the way the baseline names them, suffixed with the
+  *baseline's* environment id (`-main` today). Per-environment topic suffixing
+  (F4, `-<ATLAS_ENV>`) applies to isolated mode only.
+
+  *Corrected 2026-08-20.* This requirement originally read "the **unsuffixed**
+  baseline topics", treating "unsuffixed" as a synonym for "the baseline's".
+  It is not: `overlays/main` suffixes all 170 topics with `-main`, so an
+  unsuffixed name addresses a topic nobody publishes to. See
+  [bug-sparse-baseline-scoping.md](bug-sparse-baseline-scoping.md).
 - **FR-4.9** New ephemeral consumer groups must not skip messages by starting at
   `latest`. Design must define offset initialization and prove a message produced
   between group creation and first poll is not lost.

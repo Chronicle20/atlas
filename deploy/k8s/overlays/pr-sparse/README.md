@@ -16,14 +16,46 @@ the per-service `NS_*` variables Task 43 wired into every nginx upstream.
 | `environment-record.yaml` | Sync-wave-1 Job that POSTs the new environment's record (`phase: PROVISIONING`) to the baseline's `atlas-configurations`, idempotently (GET-then-POST) since `sync-options: Force=true,Replace=true` reruns it on every sync. |
 | `README.md` | This file. |
 
-## What it does NOT carry, relative to `overlays/pr` (the whole point of D1 — shared substrates)
+## Shared substrates: it uses the baseline's names, not base's defaults (D1)
+
+**This section said the opposite until 2026-08-20**, and the difference put
+`atlas-login` in CrashLoopBackOff in `atlas-pr-1411`. "Sharing the baseline's
+Kafka / Postgres / Redis" is not the same as "letting `deploy/k8s/base`'s
+unsuffixed defaults stand". Every Atlas substrate in the cluster is named for
+the environment that owns it, the baseline included:
+
+```
+topics     EVENT_TOPIC_X-main        (overlays/main suffixes all 170)
+databases  atlas-characters-main     (no unsuffixed database exists)
+redis      main:atlas:<ns>:...       (overlays/main sets ATLAS_ENV=main)
+```
+
+So an unsuffixed name is a fourth, empty namespace nobody publishes to — not
+the shared one. Sharing a substrate means adopting the **baseline's** name for
+it, via `PLACEHOLDER_BASELINE_ENVIRONMENT` (resolved by CI from the ACTIVE
+baseline environment record, never a hard-coded `main`), exactly as
+`ns-overrides.yaml` already does for REST routing.
+
+| Substrate | How this overlay names it |
+|---|---|
+| Kafka topics | `<TOPIC>-PLACEHOLDER_BASELINE_ENVIRONMENT`, all 170, in the `atlas-env` `configMapGenerator`. Regenerate with `../pr/scripts/gen-topic-config.sh PLACEHOLDER_BASELINE_ENVIRONMENT`. Consumers are kept from double-processing by the ownership gate (FR-4.4/4.6), not by the topic name. |
+| Postgres | `patches/db-name-suffix.yaml`, suffixing `<db>-PLACEHOLDER_BASELINE_ENVIRONMENT`. Regenerate with `../pr/scripts/gen-db-name-suffix.sh pr-sparse PLACEHOLDER_BASELINE_ENVIRONMENT`. |
+| Redis | `ATLAS_REDIS_ENV=PLACEHOLDER_BASELINE_ENVIRONMENT` in the `atlas-env` ConfigMap. `libs/atlas-redis` prefers it over `ATLAS_ENV`, falling back when unset so isolated mode and the baseline are unchanged. |
+
+`tools/sparse-baseline-scoping-guard.sh` asserts all of the above against the
+rendered overlay, and is wired into `tools/verify.sh`.
+
+### What stays per-deployment
+
+| Kept per-env | Why |
+|---|---|
+| `ATLAS_ENV` (container-level, via `patches/consumer-group-env.yaml`) | `KAFKA_CONSUMER_GROUP` uniqueness, and `libs/atlas-lock`'s `atlas:lock:<ATLAS_ENV>:` lease — an override sharing the baseline's lease loses every leader-gated sweep to the baseline's pod (the task-200 defect). This is why the Redis keyspace needed its own variable rather than repointing this one. |
+
+## What it still does NOT carry, relative to `overlays/pr`
 
 | Removed | Why |
 |---|---|
-| `patches/db-name-suffix.yaml` | Shared databases — no per-environment `DB_NAME` suffix. |
-| Topic suffixing in the `atlas-env` `configMapGenerator` | Sparse consumes the unsuffixed baseline topics (FR-4.8); the generator uses `behavior: merge`, not `replace`, so base's unsuffixed `COMMAND_TOPIC_*`/`EVENT_TOPIC_*` literals pass through untouched. |
-| `ATLAS_ENV` in the `atlas-env` ConfigMap | Makes the Redis key prefix inert (design §9); `computeKeyPrefix("")` is already the legacy path, so no code change. (Individual Deployments still get a container-level `ATLAS_ENV` via `patches/consumer-group-env.yaml`, for `KAFKA_CONSUMER_GROUP` uniqueness only.) |
-| `wave0-create-dbs.yaml` | No per-environment databases to pre-create. |
+| `wave0-create-dbs.yaml` | The baseline's databases already exist — there is nothing to pre-create. (The `DB_NAME` *patch* is carried; only the creation Job is dropped.) |
 
 ## What it keeps, unchanged
 

@@ -22,6 +22,33 @@ func TestComputeKeyPrefix_envSet(t *testing.T) {
 	}
 }
 
+func TestKeyEnv_fallsBackToAtlasEnv(t *testing.T) {
+	t.Setenv("ATLAS_ENV", "a435")
+	t.Setenv("ATLAS_REDIS_ENV", "")
+	if got := keyEnv(); got != "a435" {
+		t.Fatalf("keyEnv() = %q, want %q", got, "a435")
+	}
+}
+
+// A sparse overlay sets ATLAS_REDIS_ENV to the baseline's environment id so
+// its override pods address the same keyspace as the baseline pods, while
+// ATLAS_ENV stays per-deployment for libs/atlas-lock's lease scoping.
+func TestKeyEnv_redisEnvOverridesAtlasEnv(t *testing.T) {
+	t.Setenv("ATLAS_ENV", "a435")
+	t.Setenv("ATLAS_REDIS_ENV", "main")
+	if got := keyEnv(); got != "main" {
+		t.Fatalf("keyEnv() = %q, want %q", got, "main")
+	}
+}
+
+func TestKeyEnv_bothUnset(t *testing.T) {
+	t.Setenv("ATLAS_ENV", "")
+	t.Setenv("ATLAS_REDIS_ENV", "")
+	if got := keyEnv(); got != "" {
+		t.Fatalf("keyEnv() = %q, want %q", got, "")
+	}
+}
+
 func TestKeyPrefix_returnsBaseWhenEnvUnset(t *testing.T) {
 	if got := KeyPrefix(); got == "" {
 		t.Fatalf("KeyPrefix() returned empty string")

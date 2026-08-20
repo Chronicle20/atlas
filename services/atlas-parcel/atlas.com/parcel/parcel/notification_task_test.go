@@ -112,139 +112,146 @@ func decodedArrivals(t *testing.T) []parcelmsg.StatusEvent[parcelmsg.StatusEvent
 	return out
 }
 
+// TestNotificationSweep is table-driven over run: each row exercises a
+// distinct sweep scenario (seed shape, env state, or a direct
+// ClaimNotifiable call) with a distinct assertion set, so the scenario
+// itself is carried as a closure rather than shared data fields.
 func TestNotificationSweep(t *testing.T) {
-	t.Run("notifies a newly receivable parcel", func(t *testing.T) {
-		notificationCapture.Reset()
-		t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
-		db := newNotificationTestDB(t)
-		tid := uuid.New()
-		id := seedNotifiableParcel(t, db, tid, nil)
-		task := newNotificationTestTask(t, db, notifyClock)
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{name: "notifies a newly receivable parcel", run: func(t *testing.T) {
+			notificationCapture.Reset()
+			t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
+			db := newNotificationTestDB(t)
+			tid := uuid.New()
+			id := seedNotifiableParcel(t, db, tid, nil)
+			task := newNotificationTestTask(t, db, notifyClock)
 
-		task.Run()
+			task.Run()
 
-		arrivals := decodedArrivals(t)
-		require.Len(t, arrivals, 1)
-		assert.Equal(t, parcelmsg.StatusEventParcelArrived, arrivals[0].Type)
-		assert.EqualValues(t, 200, arrivals[0].CharacterId)
-		assert.Equal(t, "Alice", arrivals[0].Body.SenderName)
-		assert.True(t, arrivals[0].Body.HasItem)
+			arrivals := decodedArrivals(t)
+			require.Len(t, arrivals, 1)
+			assert.Equal(t, parcelmsg.StatusEventParcelArrived, arrivals[0].Type)
+			assert.EqualValues(t, 200, arrivals[0].CharacterId)
+			assert.Equal(t, "Alice", arrivals[0].Body.SenderName)
+			assert.True(t, arrivals[0].Body.HasItem)
 
-		m := getNotificationParcel(t, db, tid, id)
-		require.NotNil(t, m.LastNotified())
-		assert.True(t, m.LastNotified().Equal(notifyClock))
-	})
+			m := getNotificationParcel(t, db, tid, id)
+			require.NotNil(t, m.LastNotified())
+			assert.True(t, m.LastNotified().Equal(notifyClock))
+		}},
+		{name: "does not renotify", run: func(t *testing.T) {
+			notificationCapture.Reset()
+			t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
+			db := newNotificationTestDB(t)
+			tid := uuid.New()
+			seedNotifiableParcel(t, db, tid, func(b *Builder) {
+				b.SetLastNotified(ptrTime(notifyClock.Add(-time.Hour)))
+			})
+			task := newNotificationTestTask(t, db, notifyClock)
 
-	t.Run("does not renotify", func(t *testing.T) {
-		notificationCapture.Reset()
-		t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
-		db := newNotificationTestDB(t)
-		tid := uuid.New()
-		seedNotifiableParcel(t, db, tid, func(b *Builder) {
-			b.SetLastNotified(ptrTime(notifyClock.Add(-time.Hour)))
-		})
-		task := newNotificationTestTask(t, db, notifyClock)
+			task.Run()
 
-		task.Run()
+			assert.Empty(t, decodedArrivals(t))
+		}},
+		{name: "not yet receivable", run: func(t *testing.T) {
+			notificationCapture.Reset()
+			t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
+			db := newNotificationTestDB(t)
+			tid := uuid.New()
+			id := seedNotifiableParcel(t, db, tid, func(b *Builder) {
+				b.SetReceivableAt(notifyClock.Add(time.Hour))
+			})
+			task := newNotificationTestTask(t, db, notifyClock)
 
-		assert.Empty(t, decodedArrivals(t))
-	})
+			task.Run()
 
-	t.Run("not yet receivable", func(t *testing.T) {
-		notificationCapture.Reset()
-		t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
-		db := newNotificationTestDB(t)
-		tid := uuid.New()
-		id := seedNotifiableParcel(t, db, tid, func(b *Builder) {
-			b.SetReceivableAt(notifyClock.Add(time.Hour))
-		})
-		task := newNotificationTestTask(t, db, notifyClock)
+			assert.Empty(t, decodedArrivals(t))
+			m := getNotificationParcel(t, db, tid, id)
+			assert.Nil(t, m.LastNotified())
+		}},
+		{name: "resolved parcel", run: func(t *testing.T) {
+			notificationCapture.Reset()
+			t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
+			db := newNotificationTestDB(t)
+			tid := uuid.New()
+			seedNotifiableParcel(t, db, tid, func(b *Builder) {
+				b.SetStatus(StatusReceived)
+			})
+			task := newNotificationTestTask(t, db, notifyClock)
 
-		task.Run()
+			task.Run()
 
-		assert.Empty(t, decodedArrivals(t))
-		m := getNotificationParcel(t, db, tid, id)
-		assert.Nil(t, m.LastNotified())
-	})
+			assert.Empty(t, decodedArrivals(t))
+		}},
+		{name: "offline recipient still stamps", run: func(t *testing.T) {
+			// No session lookup happens in this sweep at all (FR-24 is served by
+			// the OPEN packet's second list, design §7.1), so there is nothing
+			// session-shaped to seed here — the point of this subtest is that
+			// the sweep does not skip a recipient just because it has no way of
+			// knowing whether they are online.
+			notificationCapture.Reset()
+			t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
+			db := newNotificationTestDB(t)
+			tid := uuid.New()
+			id := seedNotifiableParcel(t, db, tid, nil)
+			task := newNotificationTestTask(t, db, notifyClock)
 
-	t.Run("resolved parcel", func(t *testing.T) {
-		notificationCapture.Reset()
-		t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
-		db := newNotificationTestDB(t)
-		tid := uuid.New()
-		seedNotifiableParcel(t, db, tid, func(b *Builder) {
-			b.SetStatus(StatusReceived)
-		})
-		task := newNotificationTestTask(t, db, notifyClock)
+			task.Run()
 
-		task.Run()
+			require.Len(t, decodedArrivals(t), 1)
+			m := getNotificationParcel(t, db, tid, id)
+			require.NotNil(t, m.LastNotified())
+		}},
+		{name: "topic not configured", run: func(t *testing.T) {
+			notificationCapture.Reset()
+			unsetEnv(t, parcelmsg.EnvStatusEventTopic)
+			db := newNotificationTestDB(t)
+			tid := uuid.New()
+			id := seedNotifiableParcel(t, db, tid, nil)
+			task := newNotificationTestTask(t, db, notifyClock)
 
-		assert.Empty(t, decodedArrivals(t))
-	})
+			task.Run()
 
-	t.Run("offline recipient still stamps", func(t *testing.T) {
-		// No session lookup happens in this sweep at all (FR-24 is served by
-		// the OPEN packet's second list, design §7.1), so there is nothing
-		// session-shaped to seed here — the point of this subtest is that
-		// the sweep does not skip a recipient just because it has no way of
-		// knowing whether they are online.
-		notificationCapture.Reset()
-		t.Setenv(parcelmsg.EnvStatusEventTopic, parcelmsg.EnvStatusEventTopic)
-		db := newNotificationTestDB(t)
-		tid := uuid.New()
-		id := seedNotifiableParcel(t, db, tid, nil)
-		task := newNotificationTestTask(t, db, notifyClock)
+			assert.Empty(t, decodedArrivals(t))
+			m := getNotificationParcel(t, db, tid, id)
+			assert.Nil(t, m.LastNotified(), "an unconfigured topic must not stamp a parcel it never notified")
+		}},
+		{name: "concurrent claim", run: func(t *testing.T) {
+			// This exercises ClaimNotifiable's own compare-and-swap UPDATE
+			// directly, sequentially, rather than a genuine simultaneous race:
+			// databasetest's sqlite-in-memory harness serializes all access
+			// through a single *gorm.DB handle, so it cannot express two
+			// replicas' UPDATEs actually overlapping in time — a real race needs
+			// two independent DB connections against a shared backing store
+			// (production postgres), which this in-memory harness does not
+			// have. What IS verified here, faithfully: the SECOND claim attempt
+			// against an ALREADY-claimed row affects zero rows — the row-level
+			// guard design §8.1 relies on to make concurrent replicas safe
+			// without leader election, so at most one PARCEL_ARRIVED is ever
+			// emitted for a given parcel.
+			db := newNotificationTestDB(t)
+			tid := uuid.New()
+			seedNotifiableParcel(t, db, tid, nil)
 
-		task.Run()
+			ctx := databasetest.TenantContext(tid)
+			tdb := db.WithContext(ctx)
 
-		require.Len(t, decodedArrivals(t), 1)
-		m := getNotificationParcel(t, db, tid, id)
-		require.NotNil(t, m.LastNotified())
-	})
+			first, err := ClaimNotifiable(tdb)(notifyClock, 10)
+			require.NoError(t, err)
+			require.Len(t, first, 1)
 
-	t.Run("topic not configured", func(t *testing.T) {
-		notificationCapture.Reset()
-		unsetEnv(t, parcelmsg.EnvStatusEventTopic)
-		db := newNotificationTestDB(t)
-		tid := uuid.New()
-		id := seedNotifiableParcel(t, db, tid, nil)
-		task := newNotificationTestTask(t, db, notifyClock)
+			second, err := ClaimNotifiable(tdb)(notifyClock, 10)
+			require.NoError(t, err)
+			assert.Len(t, second, 0, "a second claim attempt against an already-claimed row must affect zero rows")
+		}},
+	}
 
-		task.Run()
-
-		assert.Empty(t, decodedArrivals(t))
-		m := getNotificationParcel(t, db, tid, id)
-		assert.Nil(t, m.LastNotified(), "an unconfigured topic must not stamp a parcel it never notified")
-	})
-
-	t.Run("concurrent claim", func(t *testing.T) {
-		// This exercises ClaimNotifiable's own compare-and-swap UPDATE
-		// directly, sequentially, rather than a genuine simultaneous race:
-		// databasetest's sqlite-in-memory harness serializes all access
-		// through a single *gorm.DB handle, so it cannot express two
-		// replicas' UPDATEs actually overlapping in time — a real race needs
-		// two independent DB connections against a shared backing store
-		// (production postgres), which this in-memory harness does not
-		// have. What IS verified here, faithfully: the SECOND claim attempt
-		// against an ALREADY-claimed row affects zero rows — the row-level
-		// guard design §8.1 relies on to make concurrent replicas safe
-		// without leader election, so at most one PARCEL_ARRIVED is ever
-		// emitted for a given parcel.
-		db := newNotificationTestDB(t)
-		tid := uuid.New()
-		seedNotifiableParcel(t, db, tid, nil)
-
-		ctx := databasetest.TenantContext(tid)
-		tdb := db.WithContext(ctx)
-
-		first, err := ClaimNotifiable(tdb)(notifyClock, 10)
-		require.NoError(t, err)
-		require.Len(t, first, 1)
-
-		second, err := ClaimNotifiable(tdb)(notifyClock, 10)
-		require.NoError(t, err)
-		assert.Len(t, second, 0, "a second claim attempt against an already-claimed row must affect zero rows")
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, tt.run)
+	}
 }
 
 func ptrTime(t time.Time) *time.Time { return &t }

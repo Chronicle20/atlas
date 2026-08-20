@@ -108,259 +108,263 @@ func newAcceptCommand(transactionId uuid.UUID, parcelId uuid.UUID) custody.Comma
 	}
 }
 
+// TestCustodyCommands is table-driven over run: each row exercises a
+// distinct custody command sequence (accept/release/restore/remove, replay,
+// wrong-recipient) with a distinct assertion set, so the scenario itself is
+// carried as a closure rather than shared data fields.
 func TestCustodyCommands(t *testing.T) {
-	t.Run("accept with item", func(t *testing.T) {
-		db, tid := newTestDB(t)
-		ctx := databasetest.TenantContext(tid)
-		l, _ := test.NewNullLogger()
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{name: "accept with item", run: func(t *testing.T) {
+			db, tid := newTestDB(t)
+			ctx := databasetest.TenantContext(tid)
+			l, _ := test.NewNullLogger()
 
-		rp := &recordingProducer{}
-		transactionId := uuid.New()
-		parcelId := uuid.New()
-		cmd := newAcceptCommand(transactionId, parcelId)
+			rp := &recordingProducer{}
+			transactionId := uuid.New()
+			parcelId := uuid.New()
+			cmd := newAcceptCommand(transactionId, parcelId)
 
-		handleAcceptToParcel(rp.provider())(db)(l, ctx, cmd)
+			handleAcceptToParcel(rp.provider())(db)(l, ctx, cmd)
 
-		m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
-		require.NoError(t, err)
-		require.NotNil(t, m.ItemId())
-		assert.Equal(t, uint32(1302000), *m.ItemId())
-		assert.Equal(t, uint16(5), m.ItemSnapshot().Strength)
-		// task-15 review B1/B2: ItemLevel/RingId/ViciousCount must round-trip
-		// through AssetData, not be silently dropped on the parcel snapshot.
-		assert.Equal(t, byte(3), m.ItemSnapshot().LevelType, "ItemLevel must map to AssetData.LevelType")
-		assert.Equal(t, uint32(777), m.ItemSnapshot().RingId, "RingId must survive the parcel round-trip")
-		assert.Equal(t, uint32(12), m.ItemSnapshot().ViciousCount, "ViciousCount must survive the parcel round-trip")
-		// RecipientName must round-trip from the custody command onto the row,
-		// so an eventual return leg's SenderName (design §7.4) is populated
-		// rather than empty.
-		assert.Equal(t, "Bob", m.RecipientName())
+			m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
+			require.NoError(t, err)
+			require.NotNil(t, m.ItemId())
+			assert.Equal(t, uint32(1302000), *m.ItemId())
+			assert.Equal(t, uint16(5), m.ItemSnapshot().Strength)
+			// task-15 review B1/B2: ItemLevel/RingId/ViciousCount must round-trip
+			// through AssetData, not be silently dropped on the parcel snapshot.
+			assert.Equal(t, byte(3), m.ItemSnapshot().LevelType, "ItemLevel must map to AssetData.LevelType")
+			assert.Equal(t, uint32(777), m.ItemSnapshot().RingId, "RingId must survive the parcel round-trip")
+			assert.Equal(t, uint32(12), m.ItemSnapshot().ViciousCount, "ViciousCount must survive the parcel round-trip")
+			// RecipientName must round-trip from the custody command onto the row,
+			// so an eventual return leg's SenderName (design §7.4) is populated
+			// rather than empty.
+			assert.Equal(t, "Bob", m.RecipientName())
 
-		accepted := eventsOfType(rp.events, custody.StatusEventAccepted)
-		require.Len(t, accepted, 1)
-		assert.Equal(t, transactionId, accepted[0].transactionId)
-	})
+			accepted := eventsOfType(rp.events, custody.StatusEventAccepted)
+			require.Len(t, accepted, 1)
+			assert.Equal(t, transactionId, accepted[0].transactionId)
+		}},
+		{name: "accept meso only", run: func(t *testing.T) {
+			db, tid := newTestDB(t)
+			ctx := databasetest.TenantContext(tid)
+			l, _ := test.NewNullLogger()
 
-	t.Run("accept meso only", func(t *testing.T) {
-		db, tid := newTestDB(t)
-		ctx := databasetest.TenantContext(tid)
-		l, _ := test.NewNullLogger()
+			rp := &recordingProducer{}
+			transactionId := uuid.New()
+			parcelId := uuid.New()
+			cmd := newAcceptCommand(transactionId, parcelId)
+			cmd.Body.HasItem = false
+			cmd.Body.MesoAmount = 5000
 
-		rp := &recordingProducer{}
-		transactionId := uuid.New()
-		parcelId := uuid.New()
-		cmd := newAcceptCommand(transactionId, parcelId)
-		cmd.Body.HasItem = false
-		cmd.Body.MesoAmount = 5000
+			handleAcceptToParcel(rp.provider())(db)(l, ctx, cmd)
 
-		handleAcceptToParcel(rp.provider())(db)(l, ctx, cmd)
+			m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
+			require.NoError(t, err)
+			assert.Nil(t, m.ItemId())
+			assert.Equal(t, uint32(5000), m.MesoAmount())
+		}},
+		{name: "accept replay", run: func(t *testing.T) {
+			db, tid := newTestDB(t)
+			ctx := databasetest.TenantContext(tid)
+			l, _ := test.NewNullLogger()
 
-		m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
-		require.NoError(t, err)
-		assert.Nil(t, m.ItemId())
-		assert.Equal(t, uint32(5000), m.MesoAmount())
-	})
+			rp := &recordingProducer{}
+			transactionId := uuid.New()
+			parcelId := uuid.New()
+			cmd := newAcceptCommand(transactionId, parcelId)
 
-	t.Run("accept replay", func(t *testing.T) {
-		db, tid := newTestDB(t)
-		ctx := databasetest.TenantContext(tid)
-		l, _ := test.NewNullLogger()
+			handleAcceptToParcel(rp.provider())(db)(l, ctx, cmd)
+			handleAcceptToParcel(rp.provider())(db)(l, ctx, cmd)
 
-		rp := &recordingProducer{}
-		transactionId := uuid.New()
-		parcelId := uuid.New()
-		cmd := newAcceptCommand(transactionId, parcelId)
-
-		handleAcceptToParcel(rp.provider())(db)(l, ctx, cmd)
-		handleAcceptToParcel(rp.provider())(db)(l, ctx, cmd)
-
-		all, err := parcel.NewProcessor(l, ctx, db).GetForRecipient(100, 0)
-		require.NoError(t, err)
-		count := 0
-		for _, m := range all {
-			if m.Id() == parcelId {
-				count++
+			all, err := parcel.NewProcessor(l, ctx, db).GetForRecipient(100, 0)
+			require.NoError(t, err)
+			count := 0
+			for _, m := range all {
+				if m.Id() == parcelId {
+					count++
+				}
 			}
-		}
-		assert.Equal(t, 1, count)
-	})
+			assert.Equal(t, 1, count)
+		}},
+		{name: "release", run: func(t *testing.T) {
+			db, tid := newTestDB(t)
+			ctx := databasetest.TenantContext(tid)
+			l, _ := test.NewNullLogger()
 
-	t.Run("release", func(t *testing.T) {
-		db, tid := newTestDB(t)
-		ctx := databasetest.TenantContext(tid)
-		l, _ := test.NewNullLogger()
+			rp := &recordingProducer{}
+			acceptTx := uuid.New()
+			parcelId := uuid.New()
+			handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(acceptTx, parcelId))
 
-		rp := &recordingProducer{}
-		acceptTx := uuid.New()
-		parcelId := uuid.New()
-		handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(acceptTx, parcelId))
+			releaseTx := uuid.New()
+			releaseCmd := custody.Command[custody.ReleaseFromParcelCommandBody]{
+				TransactionId: releaseTx,
+				Type:          custody.CommandReleaseFromParcel,
+				Body:          custody.ReleaseFromParcelCommandBody{ParcelId: parcelId, RecipientId: 100},
+			}
+			handleReleaseFromParcel(rp.provider())(db)(l, ctx, releaseCmd)
 
-		releaseTx := uuid.New()
-		releaseCmd := custody.Command[custody.ReleaseFromParcelCommandBody]{
-			TransactionId: releaseTx,
-			Type:          custody.CommandReleaseFromParcel,
-			Body:          custody.ReleaseFromParcelCommandBody{ParcelId: parcelId, RecipientId: 100},
-		}
-		handleReleaseFromParcel(rp.provider())(db)(l, ctx, releaseCmd)
+			m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
+			require.NoError(t, err)
+			assert.Equal(t, parcel.StatusReceived, m.Status())
+			require.NotNil(t, m.ResolvedAt())
 
-		m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
-		require.NoError(t, err)
-		assert.Equal(t, parcel.StatusReceived, m.Status())
-		require.NotNil(t, m.ResolvedAt())
+			released := eventsOfType(rp.events, custody.StatusEventReleased)
+			require.Len(t, released, 1)
+			assert.Equal(t, releaseTx, released[0].transactionId)
+		}},
+		{name: "release replay", run: func(t *testing.T) {
+			db, tid := newTestDB(t)
+			ctx := databasetest.TenantContext(tid)
+			l, _ := test.NewNullLogger()
 
-		released := eventsOfType(rp.events, custody.StatusEventReleased)
-		require.Len(t, released, 1)
-		assert.Equal(t, releaseTx, released[0].transactionId)
-	})
+			rp := &recordingProducer{}
+			parcelId := uuid.New()
+			handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(uuid.New(), parcelId))
 
-	t.Run("release replay", func(t *testing.T) {
-		db, tid := newTestDB(t)
-		ctx := databasetest.TenantContext(tid)
-		l, _ := test.NewNullLogger()
+			releaseTx := uuid.New()
+			releaseCmd := custody.Command[custody.ReleaseFromParcelCommandBody]{
+				TransactionId: releaseTx,
+				Type:          custody.CommandReleaseFromParcel,
+				Body:          custody.ReleaseFromParcelCommandBody{ParcelId: parcelId, RecipientId: 100},
+			}
+			handleReleaseFromParcel(rp.provider())(db)(l, ctx, releaseCmd)
+			handleReleaseFromParcel(rp.provider())(db)(l, ctx, releaseCmd)
 
-		rp := &recordingProducer{}
-		parcelId := uuid.New()
-		handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(uuid.New(), parcelId))
+			released := eventsOfType(rp.events, custody.StatusEventReleased)
+			require.Len(t, released, 1, "replay must not re-emit RELEASED")
 
-		releaseTx := uuid.New()
-		releaseCmd := custody.Command[custody.ReleaseFromParcelCommandBody]{
-			TransactionId: releaseTx,
-			Type:          custody.CommandReleaseFromParcel,
-			Body:          custody.ReleaseFromParcelCommandBody{ParcelId: parcelId, RecipientId: 100},
-		}
-		handleReleaseFromParcel(rp.provider())(db)(l, ctx, releaseCmd)
-		handleReleaseFromParcel(rp.provider())(db)(l, ctx, releaseCmd)
+			errored := eventsOfType(rp.events, custody.StatusEventError)
+			assert.Empty(t, errored, "replay must still report success (no ERROR ack)")
 
-		released := eventsOfType(rp.events, custody.StatusEventReleased)
-		require.Len(t, released, 1, "replay must not re-emit RELEASED")
+			m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
+			require.NoError(t, err)
+			assert.Equal(t, parcel.StatusReceived, m.Status())
+		}},
+		{name: "release wrong recipient", run: func(t *testing.T) {
+			db, tid := newTestDB(t)
+			ctx := databasetest.TenantContext(tid)
+			l, _ := test.NewNullLogger()
 
-		errored := eventsOfType(rp.events, custody.StatusEventError)
-		assert.Empty(t, errored, "replay must still report success (no ERROR ack)")
+			rp := &recordingProducer{}
+			parcelId := uuid.New()
+			handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(uuid.New(), parcelId))
 
-		m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
-		require.NoError(t, err)
-		assert.Equal(t, parcel.StatusReceived, m.Status())
-	})
+			releaseTx := uuid.New()
+			releaseCmd := custody.Command[custody.ReleaseFromParcelCommandBody]{
+				TransactionId: releaseTx,
+				Type:          custody.CommandReleaseFromParcel,
+				Body:          custody.ReleaseFromParcelCommandBody{ParcelId: parcelId, RecipientId: 999},
+			}
+			handleReleaseFromParcel(rp.provider())(db)(l, ctx, releaseCmd)
 
-	t.Run("release wrong recipient", func(t *testing.T) {
-		db, tid := newTestDB(t)
-		ctx := databasetest.TenantContext(tid)
-		l, _ := test.NewNullLogger()
+			errored := eventsOfType(rp.events, custody.StatusEventError)
+			require.Len(t, errored, 1)
+			assert.Equal(t, releaseTx, errored[0].transactionId)
 
-		rp := &recordingProducer{}
-		parcelId := uuid.New()
-		handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(uuid.New(), parcelId))
+			m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
+			require.NoError(t, err)
+			assert.Equal(t, parcel.StatusPending, m.Status())
+		}},
+		{name: "restore", run: func(t *testing.T) {
+			db, tid := newTestDB(t)
+			ctx := databasetest.TenantContext(tid)
+			l, _ := test.NewNullLogger()
 
-		releaseTx := uuid.New()
-		releaseCmd := custody.Command[custody.ReleaseFromParcelCommandBody]{
-			TransactionId: releaseTx,
-			Type:          custody.CommandReleaseFromParcel,
-			Body:          custody.ReleaseFromParcelCommandBody{ParcelId: parcelId, RecipientId: 999},
-		}
-		handleReleaseFromParcel(rp.provider())(db)(l, ctx, releaseCmd)
+			rp := &recordingProducer{}
+			parcelId := uuid.New()
+			handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(uuid.New(), parcelId))
+			handleReleaseFromParcel(rp.provider())(db)(l, ctx, custody.Command[custody.ReleaseFromParcelCommandBody]{
+				TransactionId: uuid.New(),
+				Type:          custody.CommandReleaseFromParcel,
+				Body:          custody.ReleaseFromParcelCommandBody{ParcelId: parcelId, RecipientId: 100},
+			})
 
-		errored := eventsOfType(rp.events, custody.StatusEventError)
-		require.Len(t, errored, 1)
-		assert.Equal(t, releaseTx, errored[0].transactionId)
+			handleRestoreParcel(rp.provider())(db)(l, ctx, custody.Command[custody.RestoreParcelCommandBody]{
+				TransactionId: uuid.New(),
+				Type:          custody.CommandRestoreParcel,
+				Body:          custody.RestoreParcelCommandBody{ParcelId: parcelId},
+			})
 
-		m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
-		require.NoError(t, err)
-		assert.Equal(t, parcel.StatusPending, m.Status())
-	})
+			m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
+			require.NoError(t, err)
+			assert.Equal(t, parcel.StatusPending, m.Status())
+			assert.Nil(t, m.ResolvedAt())
+		}},
+		{name: "restore on a pending row", run: func(t *testing.T) {
+			db, tid := newTestDB(t)
+			ctx := databasetest.TenantContext(tid)
+			l, _ := test.NewNullLogger()
 
-	t.Run("restore", func(t *testing.T) {
-		db, tid := newTestDB(t)
-		ctx := databasetest.TenantContext(tid)
-		l, _ := test.NewNullLogger()
+			rp := &recordingProducer{}
+			parcelId := uuid.New()
+			handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(uuid.New(), parcelId))
 
-		rp := &recordingProducer{}
-		parcelId := uuid.New()
-		handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(uuid.New(), parcelId))
-		handleReleaseFromParcel(rp.provider())(db)(l, ctx, custody.Command[custody.ReleaseFromParcelCommandBody]{
-			TransactionId: uuid.New(),
-			Type:          custody.CommandReleaseFromParcel,
-			Body:          custody.ReleaseFromParcelCommandBody{ParcelId: parcelId, RecipientId: 100},
-		})
+			handleRestoreParcel(rp.provider())(db)(l, ctx, custody.Command[custody.RestoreParcelCommandBody]{
+				TransactionId: uuid.New(),
+				Type:          custody.CommandRestoreParcel,
+				Body:          custody.RestoreParcelCommandBody{ParcelId: parcelId},
+			})
 
-		handleRestoreParcel(rp.provider())(db)(l, ctx, custody.Command[custody.RestoreParcelCommandBody]{
-			TransactionId: uuid.New(),
-			Type:          custody.CommandRestoreParcel,
-			Body:          custody.RestoreParcelCommandBody{ParcelId: parcelId},
-		})
+			errored := eventsOfType(rp.events, custody.StatusEventError)
+			assert.Empty(t, errored)
 
-		m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
-		require.NoError(t, err)
-		assert.Equal(t, parcel.StatusPending, m.Status())
-		assert.Nil(t, m.ResolvedAt())
-	})
+			m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
+			require.NoError(t, err)
+			assert.Equal(t, parcel.StatusPending, m.Status())
+		}},
+		{name: "remove", run: func(t *testing.T) {
+			db, tid := newTestDB(t)
+			ctx := databasetest.TenantContext(tid)
+			l, _ := test.NewNullLogger()
 
-	t.Run("restore on a pending row", func(t *testing.T) {
-		db, tid := newTestDB(t)
-		ctx := databasetest.TenantContext(tid)
-		l, _ := test.NewNullLogger()
+			rp := &recordingProducer{}
+			parcelId := uuid.New()
+			handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(uuid.New(), parcelId))
 
-		rp := &recordingProducer{}
-		parcelId := uuid.New()
-		handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(uuid.New(), parcelId))
+			handleRemoveParcel(rp.provider())(db)(l, ctx, custody.Command[custody.RemoveParcelCommandBody]{
+				TransactionId: uuid.New(),
+				Type:          custody.CommandRemoveParcel,
+				Body:          custody.RemoveParcelCommandBody{ParcelId: parcelId},
+			})
 
-		handleRestoreParcel(rp.provider())(db)(l, ctx, custody.Command[custody.RestoreParcelCommandBody]{
-			TransactionId: uuid.New(),
-			Type:          custody.CommandRestoreParcel,
-			Body:          custody.RestoreParcelCommandBody{ParcelId: parcelId},
-		})
+			_, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
+			assert.ErrorIs(t, err, parcel.ErrNotFound)
+		}},
+		{name: "remove on a received row", run: func(t *testing.T) {
+			db, tid := newTestDB(t)
+			ctx := databasetest.TenantContext(tid)
+			l, _ := test.NewNullLogger()
 
-		errored := eventsOfType(rp.events, custody.StatusEventError)
-		assert.Empty(t, errored)
+			rp := &recordingProducer{}
+			parcelId := uuid.New()
+			handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(uuid.New(), parcelId))
+			handleReleaseFromParcel(rp.provider())(db)(l, ctx, custody.Command[custody.ReleaseFromParcelCommandBody]{
+				TransactionId: uuid.New(),
+				Type:          custody.CommandReleaseFromParcel,
+				Body:          custody.ReleaseFromParcelCommandBody{ParcelId: parcelId, RecipientId: 100},
+			})
 
-		m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
-		require.NoError(t, err)
-		assert.Equal(t, parcel.StatusPending, m.Status())
-	})
+			handleRemoveParcel(rp.provider())(db)(l, ctx, custody.Command[custody.RemoveParcelCommandBody]{
+				TransactionId: uuid.New(),
+				Type:          custody.CommandRemoveParcel,
+				Body:          custody.RemoveParcelCommandBody{ParcelId: parcelId},
+			})
 
-	t.Run("remove", func(t *testing.T) {
-		db, tid := newTestDB(t)
-		ctx := databasetest.TenantContext(tid)
-		l, _ := test.NewNullLogger()
+			errored := eventsOfType(rp.events, custody.StatusEventError)
+			assert.Empty(t, errored)
 
-		rp := &recordingProducer{}
-		parcelId := uuid.New()
-		handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(uuid.New(), parcelId))
+			m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
+			require.NoError(t, err)
+			assert.Equal(t, parcel.StatusReceived, m.Status())
+		}},
+	}
 
-		handleRemoveParcel(rp.provider())(db)(l, ctx, custody.Command[custody.RemoveParcelCommandBody]{
-			TransactionId: uuid.New(),
-			Type:          custody.CommandRemoveParcel,
-			Body:          custody.RemoveParcelCommandBody{ParcelId: parcelId},
-		})
-
-		_, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
-		assert.ErrorIs(t, err, parcel.ErrNotFound)
-	})
-
-	t.Run("remove on a received row", func(t *testing.T) {
-		db, tid := newTestDB(t)
-		ctx := databasetest.TenantContext(tid)
-		l, _ := test.NewNullLogger()
-
-		rp := &recordingProducer{}
-		parcelId := uuid.New()
-		handleAcceptToParcel(rp.provider())(db)(l, ctx, newAcceptCommand(uuid.New(), parcelId))
-		handleReleaseFromParcel(rp.provider())(db)(l, ctx, custody.Command[custody.ReleaseFromParcelCommandBody]{
-			TransactionId: uuid.New(),
-			Type:          custody.CommandReleaseFromParcel,
-			Body:          custody.ReleaseFromParcelCommandBody{ParcelId: parcelId, RecipientId: 100},
-		})
-
-		handleRemoveParcel(rp.provider())(db)(l, ctx, custody.Command[custody.RemoveParcelCommandBody]{
-			TransactionId: uuid.New(),
-			Type:          custody.CommandRemoveParcel,
-			Body:          custody.RemoveParcelCommandBody{ParcelId: parcelId},
-		})
-
-		errored := eventsOfType(rp.events, custody.StatusEventError)
-		assert.Empty(t, errored)
-
-		m, err := parcel.NewProcessor(l, ctx, db).GetById(parcelId)
-		require.NoError(t, err)
-		assert.Equal(t, parcel.StatusReceived, m.Status())
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, tt.run)
+	}
 }

@@ -215,6 +215,30 @@ func TestRegistry_EvictorFiresWhenLastListenerForTenantRemoved(t *testing.T) {
 	evMu.Unlock()
 }
 
+// acceptNotifyWG wraps a *sync.WaitGroup so a test can observe the
+// instant the accept loop calls Add(1) via a channel receive, rather
+// than by reading the WaitGroup's own state. Without this, a test that
+// dials a connection and then immediately calls Drain has no
+// happens-before edge between the accept site's h.Wg.Add(1) (in the
+// Serve goroutine) and Drain phase 3's h.Wg.Wait() (in a
+// routine.Go-spawned goroutine) -- both touch h.Wg with nothing tying
+// the two goroutines together, which is a genuine sync.WaitGroup
+// "Add concurrently with Wait" race, not a timing artifact.
+type acceptNotifyWG struct {
+	inner *sync.WaitGroup
+	once  sync.Once
+	ready chan struct{}
+}
+
+func (w *acceptNotifyWG) Add(delta int) {
+	w.inner.Add(delta)
+	if delta > 0 {
+		w.once.Do(func() { close(w.ready) })
+	}
+}
+
+func (w *acceptNotifyWG) Done() { w.inner.Done() }
+
 func TestRegistry_DrainClosesTheBoundSocket(t *testing.T) {
 	tm := makeTenant(t)
 	sc := makeServerModel(t, tm, 6, 0)
@@ -223,13 +247,15 @@ func TestRegistry_DrainClosesTheBoundSocket(t *testing.T) {
 
 	r := listener.NewRegistry(nullLogger(), nopDeps(), listener.Config{DrainDeadline: 200 * time.Millisecond})
 
+	accepted := make(chan struct{})
 	var port int
 	h, err := r.Add(context.Background(), key, sc, func(h *listener.Handle) ([]listener.HandlerHandle, error) {
 		lis, err := socket.Bind(nullLogger(), "127.0.0.1", 0)
 		require.NoError(t, err)
 		port = lis.Addr().(*net.TCPAddr).Port
 		h.CloseListener = lis.Close
-		go func() { _ = socket.Serve(nullLogger(), h.Ctx, &sync.WaitGroup{}, h.Wg, lis) }()
+		sessionWg := &acceptNotifyWG{inner: h.Wg, ready: accepted}
+		go func() { _ = socket.Serve(nullLogger(), h.Ctx, &sync.WaitGroup{}, sessionWg, lis) }()
 		return nil, nil
 	})
 	require.NoError(t, err)
@@ -239,6 +265,12 @@ func TestRegistry_DrainClosesTheBoundSocket(t *testing.T) {
 	conn, err := net.DialTimeout("tcp", addr, time.Second)
 	require.NoError(t, err, "port must be live before drain")
 	require.NoError(t, conn.Close())
+
+	select {
+	case <-accepted:
+	case <-time.After(2 * time.Second):
+		t.Fatal("server never accepted the dialed connection")
+	}
 
 	require.NoError(t, r.Drain(key))
 
@@ -353,8 +385,8 @@ func TestRegistry_AddRefusesADrainingHandle(t *testing.T) {
 	go func() { drainDone <- r.Drain(key) }()
 
 	require.Eventually(t, func() bool {
-		h, ok := r.Get(key)
-		return ok && h.State == listener.Draining
+		state, ok := r.State(key)
+		return ok && state == listener.Draining
 	}, time.Second, 5*time.Millisecond, "handle never reported Draining")
 
 	h2, addErr := r.Add(context.Background(), key, sc, func(*listener.Handle) ([]listener.HandlerHandle, error) {

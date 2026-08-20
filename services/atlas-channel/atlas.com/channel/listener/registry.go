@@ -142,11 +142,30 @@ func (r *Registry) Add(parent context.Context, key server.Key, sc server.Model, 
 
 // Get returns the live Handle for key. Useful for projection diff loops
 // that need to confirm whether a key is already known.
+//
+// The returned *Handle is the same pointer Drain mutates under r.mu; do
+// not read mutable fields (State in particular) off it without further
+// synchronization. Use State below to observe a Handle's lifecycle state
+// safely.
 func (r *Registry) Get(key server.Key) (*Handle, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	h, ok := r.entries[key]
 	return h, ok
+}
+
+// State returns the current lifecycle State for key under the registry
+// lock. Prefer this over reading a Handle's State field directly off a
+// pointer obtained from Get/Snapshot -- Drain mutates State under r.mu,
+// so an unsynchronized read of the field races it.
+func (r *Registry) State(key server.Key) (State, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	h, ok := r.entries[key]
+	if !ok {
+		return 0, false
+	}
+	return h.State, true
 }
 
 // Snapshot returns a slice copy of every Handle currently tracked,
@@ -260,18 +279,20 @@ func (r *Registry) Drain(key server.Key) error {
 // N x DrainDeadline -- sequential drains blow past a typical
 // terminationGracePeriod once phase 3 is a real wait
 // (task-244 design.md §4.4). Concurrent calls are safe; each Drain
-// serializes itself and touches only its own handle. A plain `go` rather
-// than routine.Go because DrainAll must join.
+// serializes itself and touches only its own handle. Uses routine.Go so a
+// panic in one handle's Drain is recovered and logged rather than killing
+// the process mid-shutdown; wg.Done is deferred inside fn, ahead of
+// routine.Go's own recover, so wg.Wait() still joins correctly.
 func (r *Registry) DrainAll() {
 	var wg sync.WaitGroup
 	for _, h := range r.Snapshot() {
 		wg.Add(1)
-		go func(h *Handle) {
+		routine.Go(r.l, h.Ctx, func(_ context.Context) {
 			defer wg.Done()
 			if err := r.Drain(h.Key); err != nil {
 				r.l.WithError(err).WithField("key", h.Key).Warn("listener.drain_all.failed")
 			}
-		}(h)
+		})
 	}
 	wg.Wait()
 }

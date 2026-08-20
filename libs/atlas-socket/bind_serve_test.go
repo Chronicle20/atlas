@@ -39,7 +39,7 @@ func TestBindSucceedsOnEphemeralPort(t *testing.T) {
 	if lis == nil {
 		t.Fatal("Bind returned a nil listener")
 	}
-	defer lis.Close()
+	defer func() { _ = lis.Close() }()
 
 	addr, ok := lis.Addr().(*net.TCPAddr)
 	if !ok {
@@ -55,7 +55,7 @@ func TestBindFailsWhenPortAlreadyBound(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to bind a port to occupy: %v", err)
 	}
-	defer held.Close()
+	defer func() { _ = held.Close() }()
 
 	port := held.Addr().(*net.TCPAddr).Port
 

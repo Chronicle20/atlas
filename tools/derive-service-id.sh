@@ -24,7 +24,9 @@ SERVICE_TYPE="$1"
 ENVIRONMENT="$2"
 
 # ATLAS_SERVICE_NS — the UUIDv5 namespace every derived SERVICE_ID depends
-# on. It appears here and NOWHERE else. Never regenerate it: changing it
+# on. It appears here and in exactly one other place, atlasServiceNS in
+# services/atlas-configurations/atlas.com/configurations/servicesuniq/migration.go,
+# which carries the reciprocal reference. Never regenerate it: changing it
 # re-keys every sparse environment's service-config row.
 # Reproducible rather than arbitrary, so the value can be re-derived if this
 # line is ever lost:

@@ -1,0 +1,10 @@
+packet: parcel/serverbound/ParcelActionReceive
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CTabReceive::ReceiveParcel
+    address: "0x75110b"
+    decompile_sha256: 8d2017d4069c25313772651b1494f9d1e260f8ba8b0095c1af6daa0538599e65
+verifies:
+    - parcel/serverbound/v185_test.go#TestActionReceiveV185

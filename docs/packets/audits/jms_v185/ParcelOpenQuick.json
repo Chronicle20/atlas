@@ -1,0 +1,21 @@
+{
+  "WriterName": "ParcelOpenQuick",
+  "IDAName": "CParcelDlg::OnPacket#OpenQuick",
+  "Address": "0x755bcf",
+  "Variant": "JMS/v185",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/parcel/clientbound/parcel.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (27 OPEN_QUICK; dispatch byte, no body, jms_v185 shift from v83's mode 26)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

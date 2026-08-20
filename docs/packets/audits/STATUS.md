@@ -14,7 +14,7 @@ Tool: `8ef468cdc57ed6513f972b5eabe890dff99d4a1d0f1f57bf42f69efc445c8ddb`
 - export gms_v84: `3cdb538eb12dfee22f9045e663724e555a12021fe7f8ac489b93ebc8b0dae55c`
 - export gms_v87: `d5144815873e58d1f25e587f13b481f26f74b30d8fac938d95b38ffd6b61b0b1`
 - export gms_v92: `91557e9b5cdd1f65f400f02f7a175f0f382242f9981f3b52138e0f784d2ead05`
-- export gms_v95: `fa56a542eabc75d20d5ba920b272ad990f1abe0fe99f346bb4ad96d950f7ca09`
+- export gms_v95: `bde4c862657c8eefce04469586c7beb5a08556c36cc7d6463c11f7b5b1f571d9`
 - export jms_v185: `576eda436b95b42e99f3bb0a6343964695a5c0732b95beed1593bab25f78df3c`
 
 ## Clientbound
@@ -452,7 +452,7 @@ Tool: `8ef468cdc57ed6513f972b5eabe890dff99d4a1d0f1f57bf42f69efc445c8ddb`
 | WITCH_TOWER_SCORE_UPDATE | CField::OnChaosZakumTimer; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldWitchTowerScoreUpdate (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x117 | ✅ | 0x12D | ✅ | 0x134 | ✅ | 0x13E | ✅ | 0x15E | 🟡ᶠ | 0x168 | ✅ | 0x146 | ✅ |
 | IDA_0X11A | CNpc::OnUpdateLimitedInfo |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11A | ❌ |
 | IDA_0X11B | CNpc::OnSetSpecialAction |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x11B | ❌ |
-| PARCEL | CParcelDlg::OnPacket | parcel/clientbound/ParcelAlarmGeneric |  | ⬜ |  | ⬜ | 0x120 | ✅ | 0x12C | ✅ | 0x142 | ✅ | 0x149 | ✅ | 0x153 | ✅ | 0x175 | ✅ | 0x17D | ❌ | 0x160 | ❌ |
+| PARCEL | CParcelDlg::OnPacket | parcel/clientbound/ParcelAlarmGeneric |  | ⬜ |  | ⬜ | 0x120 | ✅ | 0x12C | ✅ | 0x142 | ✅ | 0x149 | ✅ | 0x153 | ✅ | 0x175 | ✅ | 0x17D | ✅ | 0x160 | ❌ |
 | TOURNAMENT | CField_Tournament::OnTournament | field/clientbound/FieldTournament (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x125 | ✅ | 0x13B | ✅ | 0x142 | ✅ | 0x14C | ✅ | 0x16E | ❌ | 0x176 | ✅ | 0x154 | ✅ |
 | TOURNAMENT_MATCH_TABLE | CField_Tournament::OnTournamentMatchTable | field/clientbound/FieldTournamentMatchTable (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x126 | ✅ | 0x13C | ✅ | 0x143 | ✅ | 0x14D | ✅ | 0x16F | ❌ | 0x177 | ✅ | 0x155 | ✅ |
 | TOURNAMENT_SET_PRIZE | CField_Tournament::OnTournamentSetPrize | field/clientbound/FieldTournamentSetPrize (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x127 | ✅ | 0x13D | ✅ | 0x144 | ✅ | 0x14E | ✅ | 0x170 | 🟡ᶠ | 0x178 | ✅ | 0x156 | ✅ |
@@ -590,7 +590,7 @@ Tool: `8ef468cdc57ed6513f972b5eabe890dff99d4a1d0f1f57bf42f69efc445c8ddb`
 | USE_CASH_ITEM | CItemSpeakerDlg::_SendConsumeCashItemUseRequest; CUICharacterSaleDlg::SendCreateNewCharacter; CUIIncubator::OnButtonClicked; CUIKarmaDlg::_SendConsumeCashItemUseRequest; CUIUnreleaseDlg::UnreleaseEquipItem; CWvsContext::SendConsumeCashItemUseRequest | cash/serverbound/CashItemUseMegaphone (T1) | 0x03E | ✅ | 0x049 | ✅ | 0x04E | ✅ | 0x04D | ✅ | 0x04F | ❌ | 0x04F | ❌ | 0x052 | ✅ | 0x056 | ❌ | 0x055 | ✅ | 0x047 | ✅ |
 | OWL_WARP | CUIShopScanResult::OnButtonClicked | merchant/serverbound/OwlWarp (T1) |  | ⬜ | 0x03F | ✅ | 0x042 | ✅ | 0x041 | ✅ | 0x043 | ✅ | 0x043 | ❌ | 0x046 | ❌ | 0x04A | ❌ | 0x049 | ✅ | 0x03B | ❌ |
 | USE_CATCH_ITEM | CWvsContext::SendBridleItemUseRequest | monster/serverbound/MonsterUseCatchItem (T1) | 0x03F | ✅ | 0x04A | ✅ | 0x050 | ✅ | 0x04F | ✅ | 0x051 | ✅ | 0x051 | ✅ | 0x054 | ✅ | 0x058 | ✅ | 0x057 | ✅ | 0x049 | ✅ |
-| DUEY_ACTION | CParcelDlg::CloseParcelDlg; CTabQuickSend::SendQuickDelivery; CTabReceive::DiscardParcel; CTabReceive::ReceiveParcel; CTabSend::SendParcel; CUIFadeYesNo::OnButtonClicked | parcel/serverbound/ParcelActionReceive |  | ⬜ |  | ⬜ | 0x040 | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x044 | ✅ | 0x047 | ✅ | 0x046 | ❌ | 0x039 | ❌ |
+| DUEY_ACTION | CParcelDlg::CloseParcelDlg; CTabQuickSend::SendQuickDelivery; CTabReceive::DiscardParcel; CTabReceive::ReceiveParcel; CTabSend::SendParcel; CUIFadeYesNo::OnButtonClicked | parcel/serverbound/ParcelActionReceive |  | ⬜ |  | ⬜ | 0x040 | ✅ | 0x03F | ✅ | 0x041 | ✅ | 0x041 | ✅ | 0x044 | ✅ | 0x047 | ✅ | 0x046 | ✅ | 0x039 | ❌ |
 | FREDRICK_ACTION | CStoreBankDlg::SendCalculateFeeRequest; CStoreBankDlg::SendGetAllRequest; CStoreBankDlg::SetRet |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x040 | ❌ | 0x040 | ❌ | 0x043 | ❌ | 0x046 | ❌ | 0x045 | ❌ | 0x038 | ❌ |
 | ITEM_SORT | CWvsContext::SendGatherItemRequest; sub_954C6B | inventory/serverbound/InventoryCompartmentMergeRequest (T1) |  | ⬜ | 0x040 | ✅ | 0x044 | ✅ | 0x043 | ✅ | 0x045 | ✅ | 0x045 | ✅ | 0x048 | ✅ | 0x04C | 🟡ᶠ | 0x04B | ✅ | 0x03D | ✅ |
 | USE_SKILL_BOOK | CWvsContext::SendSkillLearnItemUseRequest | character/serverbound/CharacterUseSkillBook (T1) | 0x040 | ✅ | 0x04B | ✅ | 0x051 | ✅ | 0x050 | ✅ | 0x052 | ✅ | 0x052 | ✅ | 0x055 | ✅ | 0x059 | 🟡ᶠ | 0x058 | ✅ | 0x04A | ✅ |
@@ -1030,9 +1030,9 @@ Tool: `8ef468cdc57ed6513f972b5eabe890dff99d4a1d0f1f57bf42f69efc445c8ddb`
 | npc/serverbound/NpcShopSell (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | npc/serverbound/NpcStartConversation (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | parcel/serverbound/ParcelActionClose |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| parcel/serverbound/ParcelActionDiscard |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |
-| parcel/serverbound/ParcelActionReceive |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |
-| parcel/serverbound/ParcelActionSend |  |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ❌ |
+| parcel/serverbound/ParcelActionDiscard |  |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| parcel/serverbound/ParcelActionReceive |  |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
+| parcel/serverbound/ParcelActionSend |  |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |
 | party/serverbound/PartyOperation (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | party/serverbound/PartyOperationChangeLeader (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
 | party/serverbound/PartyOperationExpel (T1) |  |  | ✅ |  | 🟡ᶠ |  | 🟡ᶠ |  | 🟡ᶠ |  | ✅ |  | ✅ |  | ✅ |  | 🟡ᶠ |  | ✅ |  | ✅ |
@@ -1068,7 +1068,7 @@ Tool: `8ef468cdc57ed6513f972b5eabe890dff99d4a1d0f1f57bf42f69efc445c8ddb`
 | v84 | 447 | 0 | 0 | 330 | 247 | 0 | 57.5% |
 | v87 | 481 | 0 | 0 | 353 | 190 | 0 | 57.7% |
 | v92 | 56 | 0 | 148 | 679 | 141 | 0 | 6.3% |
-| v95 | 501 | 0 | 0 | 417 | 106 | 0 | 54.6% |
+| v95 | 506 | 0 | 0 | 412 | 106 | 0 | 55.1% |
 | JMS185 | 442 | 0 | 0 | 385 | 197 | 0 | 53.4% |
 
 ## Conflicts

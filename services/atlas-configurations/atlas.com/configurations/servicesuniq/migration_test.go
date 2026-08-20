@@ -106,7 +106,7 @@ func TestDedupeKeepsTheDerivedIdRow(t *testing.T) {
 	}
 }
 
-func TestDedupeKeepsTheNewestWhenNoDerivedIdMatches(t *testing.T) {
+func TestDedupeErrorsWhenNoDerivedIdMatchesEvenWithHistory(t *testing.T) {
 	db := testDatabase(t)
 
 	db.Exec(`INSERT INTO services (id, type, data, environment) VALUES (?, 'drops-service', '{}', 'pr-1411')`, "11111111-1111-1111-1111-111111111111")
@@ -117,39 +117,61 @@ func TestDedupeKeepsTheNewestWhenNoDerivedIdMatches(t *testing.T) {
 	db.Exec(`INSERT INTO service_history (id, service_id, type, data, created_at, environment) VALUES (?, ?, 'drops-service', '{}', ?, 'pr-1411')`,
 		uuid.New(), "22222222-2222-2222-2222-222222222222", time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC))
 
-	if err := Migration(db); err != nil {
-		t.Fatalf("Migration: %v", err)
+	if err := Migration(db); err == nil {
+		t.Fatal("Migration: expected an unresolvable-group error, got nil")
 	}
 
-	if got := rowCount(t, db, "services"); got != 1 {
-		t.Fatalf("services row count = %d, want 1", got)
-	}
-
-	var got string
-	db.Raw(`SELECT id FROM services LIMIT 1`).Scan(&got)
-	if got != "22222222-2222-2222-2222-222222222222" {
-		t.Fatalf("surviving id = %q, want the newest-history id", got)
+	if got := rowCount(t, db, "services"); got != 2 {
+		t.Fatalf("services row count = %d, want 2 (nothing deleted)", got)
 	}
 }
 
-func TestDedupeFallsBackToTheLowestIdWithNoHistory(t *testing.T) {
+func TestDedupeErrorsWhenNoDerivedIdMatchesAndNoHistory(t *testing.T) {
 	db := testDatabase(t)
 
 	db.Exec(`INSERT INTO services (id, type, data, environment) VALUES (?, 'world-service', '{}', 'pr-1411')`, "22222222-2222-2222-2222-222222222222")
 	db.Exec(`INSERT INTO services (id, type, data, environment) VALUES (?, 'world-service', '{}', 'pr-1411')`, "11111111-1111-1111-1111-111111111111")
 
-	if err := Migration(db); err != nil {
-		t.Fatalf("Migration: %v", err)
+	if err := Migration(db); err == nil {
+		t.Fatal("Migration: expected an unresolvable-group error, got nil")
 	}
 
-	if got := rowCount(t, db, "services"); got != 1 {
-		t.Fatalf("services row count = %d, want 1", got)
+	if got := rowCount(t, db, "services"); got != 2 {
+		t.Fatalf("services row count = %d, want 2 (nothing deleted)", got)
+	}
+}
+
+// TestDedupeErrorsAndDeletesNothingWhenCanonicalRowLosesOnHistory is the
+// regression test for the atlas-drops outage: a canonical-id row (which
+// carries no matching service_history entry in this reproduction) sits
+// alongside two newer-history interlopers. Before this fix, rule 2 picked
+// the newest-history row and deleted the canonical row outright — exactly
+// what happened to drops-service in production. Now resolveGroup must
+// refuse to resolve the group and delete nothing.
+func TestDedupeErrorsAndDeletesNothingWhenCanonicalRowLosesOnHistory(t *testing.T) {
+	db := testDatabase(t)
+
+	canonicalId := "00000000-0000-0000-0000-000000000000"
+	interloperA := "3ff23568-b4ef-44c6-b538-6f576a861a6b"
+	interloperB := "bc06161e-0604-4cf3-8580-59b8717e4db7"
+
+	db.Exec(`INSERT INTO services (id, type, data, environment) VALUES (?, 'drops-service', '{}', 'main')`, canonicalId)
+	db.Exec(`INSERT INTO services (id, type, data, environment) VALUES (?, 'drops-service', '{}', 'main')`, interloperA)
+	db.Exec(`INSERT INTO services (id, type, data, environment) VALUES (?, 'drops-service', '{}', 'main')`, interloperB)
+
+	db.Exec(`INSERT INTO service_history (id, service_id, type, data, created_at, environment) VALUES (?, ?, 'drops-service', '{}', ?, 'main')`,
+		uuid.New(), canonicalId, time.Date(2026, 7, 8, 11, 43, 36, 0, time.UTC))
+	db.Exec(`INSERT INTO service_history (id, service_id, type, data, created_at, environment) VALUES (?, ?, 'drops-service', '{}', ?, 'main')`,
+		uuid.New(), interloperA, time.Date(2026, 8, 19, 17, 15, 9, 0, time.UTC))
+	db.Exec(`INSERT INTO service_history (id, service_id, type, data, created_at, environment) VALUES (?, ?, 'drops-service', '{}', ?, 'main')`,
+		uuid.New(), interloperB, time.Date(2026, 8, 19, 17, 15, 9, 0, time.UTC))
+
+	if err := Migration(db); err == nil {
+		t.Fatal("Migration: expected an unresolvable-group error, got nil")
 	}
 
-	var got string
-	db.Raw(`SELECT id FROM services LIMIT 1`).Scan(&got)
-	if got != "11111111-1111-1111-1111-111111111111" {
-		t.Fatalf("surviving id = %q, want the lowest id", got)
+	if got := rowCount(t, db, "services"); got != 3 {
+		t.Fatalf("services row count = %d, want 3 (nothing deleted, including canonical row %s)", got, canonicalId)
 	}
 }
 

@@ -179,11 +179,14 @@ func newestHistoryFor(db *gorm.DB, id uuid.UUID) (time.Time, bool, error) {
 	return time.Time{}, false, fmt.Errorf("unparseable created_at value %q", s)
 }
 
-// resolveGroup applies the keeper rule, in order: the row whose id equals
-// uuid5(atlasServiceNS, type+"/"+environment); else the row with the newest
-// service_history.created_at; else the lowest id lexicographically. Any tie
-// that survives all three rules is unresolvable and returns an error naming
-// every candidate.
+// resolveGroup applies the keeper rule: the row whose id equals
+// uuid5(atlasServiceNS, type+"/"+environment) is kept and every other row in
+// the group is a loser. If no row matches the derived id, the group is
+// unresolvable and resolveGroup returns an error naming every candidate
+// rather than falling back to a heuristic that could delete a row the
+// system depends on (e.g. a canonical pinned id whose history happens to be
+// older than an interloper's). An operator must resolve such a group by
+// hand; see docs/runbooks/sparse-environments.md §"Pre-flight".
 func resolveGroup(g DuplicateGroup, rows []candidateRow) (keeper uuid.UUID, losers []uuid.UUID, err error) {
 	derived := uuid.NewSHA1(atlasServiceNS, []byte(g.Type+"/"+g.Environment))
 
@@ -191,41 +194,6 @@ func resolveGroup(g DuplicateGroup, rows []candidateRow) (keeper uuid.UUID, lose
 		if r.Id == derived {
 			keeper = r.Id
 			break
-		}
-	}
-
-	if keeper == uuid.Nil {
-		var newestRows []candidateRow
-		var newest time.Time
-		for _, r := range rows {
-			if !r.HasHistory {
-				continue
-			}
-			if r.NewestHistory.After(newest) {
-				newest = r.NewestHistory
-				newestRows = []candidateRow{r}
-			} else if r.NewestHistory.Equal(newest) {
-				newestRows = append(newestRows, r)
-			}
-		}
-		if len(newestRows) == 1 {
-			keeper = newestRows[0].Id
-		}
-	}
-
-	if keeper == uuid.Nil {
-		lowestCount := 0
-		var lowest uuid.UUID
-		for _, r := range rows {
-			if lowest == uuid.Nil || r.Id.String() < lowest.String() {
-				lowest = r.Id
-				lowestCount = 1
-			} else if r.Id.String() == lowest.String() {
-				lowestCount++
-			}
-		}
-		if lowestCount == 1 {
-			keeper = lowest
 		}
 	}
 

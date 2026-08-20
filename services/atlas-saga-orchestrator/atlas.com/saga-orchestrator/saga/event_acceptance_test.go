@@ -56,6 +56,8 @@ var allActions = []sharedsaga.Action{
 	sharedsaga.ValidateWorldTransfer, sharedsaga.LeaveGuildForTransfer, sharedsaga.LeavePartyForTransfer,
 	sharedsaga.SeverBuddiesForTransfer, sharedsaga.ChangeCharacterWorld,
 	sharedsaga.StartItemConversation, sharedsaga.StartNpcConversation,
+	sharedsaga.TransferToParcel, sharedsaga.AcceptToParcel, sharedsaga.ReleaseFromParcel,
+	sharedsaga.WithdrawFromParcel, sharedsaga.ShowParcel,
 }
 
 // TestAcceptanceTable_EveryActionRepresented asserts every Action constant

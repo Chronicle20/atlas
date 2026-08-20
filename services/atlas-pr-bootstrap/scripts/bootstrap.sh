@@ -125,6 +125,26 @@ record_environment_tenant() {
     env_record_patch "$phase" "$baseline" "$namespace" "$tenant" "$overrides"
 }
 
+# activation_decision <phase> — pure decision for whether the tail-end
+# activation step (below) should activate, skip, or fail, echoing one of
+# activate / skip / fail. Split out from the block itself so it is testable
+# without a cluster (bootstrap_test.bats).
+#
+# PROVISIONING is the only phase activation is meant to advance FROM.
+# ACTIVE is already the target phase, so re-running is a no-op (skip), not
+# an error — that is what makes a re-sync of an already-ACTIVE environment
+# idempotent. Every other phase (DEACTIVATING, DELETED, empty/no record) is
+# a hard fail: activating an environment that is tearing down, gone, or has
+# no control-plane record at all would resurrect or fabricate a phase it
+# never legitimately reached.
+activation_decision() {
+    case "$1" in
+        PROVISIONING) printf 'activate' ;;
+        ACTIVE)       printf 'skip' ;;
+        *)            printf 'fail' ;;
+    esac
+}
+
 # Sanity-check TENANT_ID shape. The libs/atlas-rest middleware that
 # tenant-aware endpoints route through (ParseTenant) requires the
 # header to be UUID-parseable; a non-UUID value would return 400 from
@@ -728,5 +748,73 @@ for ep in "${endpoints[@]}"; do
     ( post "$ATLAS_UI_BASE$ep" >/dev/null && log info "seeded $ep" ) &
 done
 wait
+
+# --- Activation (task-243 FR-4.1/FR-4.2/D5) --------------------------------
+#
+# Sparse-only [FR-4.1]: an isolated environment has no shared control-plane
+# phase to advance, and no override set to roll out — activation is
+# meaningless outside the shared-cluster model this gates.
+#
+# Observed, not assumed (FR-4.2). Readiness comes from `kubectl rollout
+# status`, never from an assumption that an earlier step succeeded.
+# Consumer-group initialization comes from the wave-0 precreate Job's own
+# exit code, which Argo enforces as a precondition of wave 10 (this Job)
+# existing at all — FR-4.3/FR-4.4 are structural, not re-checked here.
+#
+# Composes with FR-1.5. With Task 7's readiness probe, a pod whose
+# service-config row never arrived is never Ready, so `rollout status`
+# times out and activation fails — the environment stays PROVISIONING
+# rather than advertising a capability it does not have.
+#
+# Idempotent. env_record_patch/UpdateByName accepts a same-phase transition
+# and rejects skips and reverts (activation_decision, above), so a re-sync
+# of an already-ACTIVE environment is a no-op and a re-sync during teardown
+# cannot resurrect it.
+if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
+    ATLAS_STEP=activate
+
+    # Same override-set jq read as the sparse service-config loop above:
+    # only roll-check deployments this environment actually overrides.
+    overrides=$(env_record_get | jq -r '.data.attributes.overrides // {} | keys[]')
+    login_rolled=0
+    channel_rolled=0
+    for d in $overrides; do
+        kubectl rollout status deployment/"$d" --timeout="${ACTIVATION_ROLLOUT_TIMEOUT:-300s}" \
+            || { log error "activation: $d not ready"; exit 1; }
+        case "$d" in
+            atlas-login)   login_rolled=1 ;;
+            atlas-channel) channel_rolled=1 ;;
+        esac
+    done
+
+    # FR-4.2 mandatory sockets: activation requires both atlas-login and
+    # atlas-channel to be part of the override set (and thus rolled out
+    # above) — a sparse environment missing either is not activatable.
+    if [ "$login_rolled" -ne 1 ] || [ "$channel_rolled" -ne 1 ]; then
+        log error "activation requires atlas-login and atlas-channel in the override set (login=$login_rolled channel=$channel_rolled)"
+        exit 1
+    fi
+
+    body=$(env_record_get) || body=""
+    phase=$(printf '%s' "$body" | jq -r '.data.attributes.phase // empty')
+    case "$(activation_decision "$phase")" in
+        skip)
+            log info "environment $ATLAS_ENVIRONMENT already ACTIVE"
+            ;;
+        fail)
+            log error "environment $ATLAS_ENVIRONMENT is in phase '${phase:-<none>}'; refusing to activate"
+            exit 1
+            ;;
+        activate)
+            baseline=$(printf '%s' "$body" | jq -r '.data.attributes.baseline // ""')
+            namespace=$(printf '%s' "$body" | jq -r '.data.attributes.namespace // ""')
+            tenant=$(printf '%s' "$body" | jq -r '.data.attributes.tenant // ""')
+            overrides=$(printf '%s' "$body" | jq -c '.data.attributes.overrides // {}')
+            env_record_patch ACTIVE "$baseline" "$namespace" "$tenant" "$overrides" \
+                || { log error "activation PATCH failed"; exit 1; }
+            log info "environment $ATLAS_ENVIRONMENT is ACTIVE"
+            ;;
+    esac
+fi
 
 ATLAS_STEP=done log info "bootstrap complete"

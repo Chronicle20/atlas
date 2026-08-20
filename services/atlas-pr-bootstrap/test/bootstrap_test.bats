@@ -166,3 +166,53 @@ load_fn() {
     [ "$status" -ne 0 ]
     [[ "$output" == *"no SERVICE_ID_"* ]]
 }
+
+# --- activation (task-243 FR-4.1/FR-4.2/D5) --------------------------------
+
+@test "activation_decision: PROVISIONING activates" {
+    load_fn activation_decision
+    run activation_decision PROVISIONING
+    [ "$status" -eq 0 ]
+    [ "$output" = "activate" ]
+}
+
+@test "activation_decision: ACTIVE skips" {
+    load_fn activation_decision
+    run activation_decision ACTIVE
+    [ "$status" -eq 0 ]
+    [ "$output" = "skip" ]
+}
+
+@test "activation_decision: DEACTIVATING fails" {
+    load_fn activation_decision
+    run activation_decision DEACTIVATING
+    [ "$status" -eq 0 ]
+    [ "$output" = "fail" ]
+}
+
+@test "activation_decision: DELETED fails" {
+    load_fn activation_decision
+    run activation_decision DELETED
+    [ "$status" -eq 0 ]
+    [ "$output" = "fail" ]
+}
+
+@test "activation_decision: no record (empty phase) fails" {
+    load_fn activation_decision
+    run activation_decision ""
+    [ "$status" -eq 0 ]
+    [ "$output" = "fail" ]
+}
+
+@test "activation is sparse-only" {
+    # bootstrap_test.bats has no existing seam that runs the script far
+    # enough (past require_env / the network-hitting preflight steps) to
+    # observe ATLAS_STEP=activate never being set under ATLAS_MODE=isolated
+    # without a live cluster + atlas-ui-base to talk to. Absent that seam,
+    # this pins the guard expression itself by grepping the script — a weak
+    # test (it would not catch e.g. the condition being inverted and then
+    # separately negated), but it is honest about what it checks rather
+    # than inventing a black-box seam that doesn't exist yet.
+    run grep -F '[ "${ATLAS_MODE:-isolated}" = "sparse" ]' "$PROJECT_ROOT/scripts/bootstrap.sh"
+    [ "$status" -eq 0 ]
+}

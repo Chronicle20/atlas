@@ -193,6 +193,9 @@ func main() {
 			return service.ProjectionFuncs{StartFunc: sub.Start, WaitCaughtUpFunc: caughtUp.WaitCaughtUp}
 		}),
 		service.WithReadinessGate(caughtUp.CaughtUpNow),
+		// FR-1.5/D6: never report Ready without a projected service-config row
+		// for this deployment's own SERVICE_ID.
+		service.WithReadinessGate(state.HasService),
 		service.WithEnvironmentRegistry(serviceName),
 	)
 	l := rt.Logger()

@@ -1087,6 +1087,11 @@ jobs:
             # both patches living under this one token).
             SERVICE_ID_BLOCK="${SERVICE_ID_BLOCK}$(printf '\\\n  - target:\\\n      kind: Job\\\n      name: atlas-pr-bootstrap\\\n    patch: |-')${JOB_ENV_OPS}"
 
+            # `add` targets the whole `env` path, not `env/-`, because
+            # deploy/k8s/base/atlas-kafka-precreate.yaml's container has
+            # envFrom only, no pre-existing `env:` key — whole-path `add`
+            # creates it. If a future commit adds an `env:` key there,
+            # this REPLACES it instead of extending it, silently.
             PRECREATE_GROUPS_BLOCK="$(printf '\\\n  - target:\\\n      kind: Job\\\n      name: atlas-kafka-precreate\\\n    patch: |-\\\n      - op: add\\\n        path: /spec/template/spec/containers/0/env\\\n        value:\\\n          - name: KAFKA_CONSUMER_GROUP\\\n            value: |-')${GROUP_LIST}"
 
             echo "Override set (+ atlas-ingress): $KEEP"

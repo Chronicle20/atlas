@@ -83,14 +83,14 @@ setup() {
     export LB_IP=192.168.23.211
     export ATLAS_ENVIRONMENT="pr-999"
 
-    run build_service_config login "$CANONICAL/login-service.json"
+    run build_service_config login "$CANONICAL/login-service.json" e7ae96a2-c484-5617-8e28-2178b60a8378
     [ "$status" -eq 0 ]
 
-    # A fresh id, NOT the canonical pinned one.
-    pinned=$(jq -r '.data.id' "$CANONICAL/login-service.json")
+    # The id is exactly the one supplied by the caller — not the canonical
+    # pinned one, and not minted here (D2: derive-service-id.sh is the single
+    # derivation site).
     got=$(echo "$output" | jq -r '.data.id')
-    [ "$got" != "$pinned" ]
-    [ "$got" != "null" ]
+    [ "$got" = "e7ae96a2-c484-5617-8e28-2178b60a8378" ]
 
     # Exactly this environment's one tenant — never a merge of main's list.
     [ "$(echo "$output" | jq '.data.attributes.tenants | length')" -eq 1 ]
@@ -98,6 +98,22 @@ setup() {
 
     # The environment is stamped so teardown and write-authorisation can scope it.
     [ "$(echo "$output" | jq -r '.data.attributes.environment')" = "$ATLAS_ENVIRONMENT" ]
+}
+
+@test "build_service_config: sparse fails loudly when no id is supplied" {
+    export ATLAS_MODE=sparse
+    export ATLAS_ENVIRONMENT="pr-999"
+    run build_service_config login "$CANONICAL/login-service.json"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"requires a service id"* ]]
+}
+
+@test "build_service_config: sparse rejects a malformed id" {
+    export ATLAS_MODE=sparse
+    export ATLAS_ENVIRONMENT="pr-999"
+    run build_service_config login "$CANONICAL/login-service.json" not-a-uuid
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"requires a service id"* ]]
 }
 
 @test "isolated mode still merges into the pinned row" {
@@ -127,83 +143,4 @@ setup() {
     [ "$(echo "$output" | jq '.data.attributes.tenants | length')" -eq 1 ]
     [ "$(echo "$output" | jq -r '.data.attributes.tenants[0].id')" = "$TENANT_ID" ]
     [ "$(echo "$output" | jq -r '.data.attributes.tenants[0].worlds[0].channels[0].port')" = "8401" ]
-}
-
-# --- sparse service-row id generation ------------------------------------
-#
-# The sparse env shipped broken because `uuidgen` was absent from the image
-# and `--arg id "$(uuidgen)"` turned that into an empty string. The
-# pre-existing "sparse mode never reads or writes the pinned main service
-# row" test above did not catch it: it asserts only `!= pinned` and
-# `!= "null"`, and "" satisfies both. These assert the id is actually a
-# well-formed UUID.
-
-UUID_RE='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
-
-@test "new_uuid: emits a well-formed UUID" {
-    run new_uuid
-    [ "$status" -eq 0 ]
-    [[ "$output" =~ $UUID_RE ]]
-}
-
-@test "new_uuid: emits distinct values across calls" {
-    a="$(new_uuid)"
-    b="$(new_uuid)"
-    [ "$a" != "$b" ]
-}
-
-@test "new_uuid: falls back to the kernel source when uuidgen is absent" {
-    [ -r /proc/sys/kernel/random/uuid ] || skip "no /proc uuid source on this host"
-    local bindir="$BATS_TEST_TMPDIR/emptybin"
-    mkdir -p "$bindir"
-    # The function is already sourced by setup(); restrict PATH only around
-    # the call itself. Re-sourcing under a bare PATH would instead fail in
-    # the script's own `dirname` preamble and prove nothing about new_uuid.
-    local oldpath="$PATH"
-    PATH="$bindir"
-    run new_uuid
-    PATH="$oldpath"
-    [ "$status" -eq 0 ]
-    [[ "$output" =~ $UUID_RE ]]
-}
-
-@test "new_uuid: fails loudly when no UUID source is available" {
-    local bindir="$BATS_TEST_TMPDIR/emptybin2"
-    mkdir -p "$bindir"
-    local oldpath="$PATH"
-    PATH="$bindir"
-    _SC_UUID_PROC="$BATS_TEST_TMPDIR/definitely-absent" run new_uuid
-    PATH="$oldpath"
-    [ "$status" -ne 0 ]
-    [[ "$output" == *"could not generate a UUID"* ]]
-}
-
-# Shape assertion only: on a host that HAS uuidgen this also passed before
-# the fix, so it is not the regression test — the "no UUID source available"
-# case below is. It is still worth asserting, because "" and "null" both slip
-# past the older test's `!= pinned` / `!= "null"` checks.
-@test "build_service_config: sparse id is a well-formed UUID, not empty" {
-    export ATLAS_MODE=sparse
-    export ATLAS_ENVIRONMENT="pr-999"
-    run build_service_config login "$CANONICAL/login-service.json"
-    [ "$status" -eq 0 ]
-    got=$(echo "$output" | jq -r '.data.id')
-    [[ "$got" =~ $UUID_RE ]]
-}
-
-@test "build_service_config: sparse fails when no UUID source is available" {
-    # jq is still reachable, so this fails on the UUID source specifically
-    # rather than on a missing tool somewhere earlier.
-    local bindir="$BATS_TEST_TMPDIR/emptybin3"
-    mkdir -p "$bindir"
-    ln -sf "$(command -v jq)" "$bindir/jq"
-    export ATLAS_MODE=sparse
-    export ATLAS_ENVIRONMENT="pr-999"
-    local oldpath="$PATH"
-    PATH="$bindir"
-    _SC_UUID_PROC="$BATS_TEST_TMPDIR/definitely-absent" \
-        run build_service_config login "$CANONICAL/login-service.json"
-    PATH="$oldpath"
-    [ "$status" -ne 0 ]
-    [[ "$output" == *"could not generate a UUID"* ]]
 }

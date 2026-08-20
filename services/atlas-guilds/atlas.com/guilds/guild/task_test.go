@@ -45,16 +45,19 @@ func buildExpiredCoordination(t *testing.T, ten tenant.Model, leaderId uint32) c
 }
 
 // TestProcessExpiredCoordinationsAppliesEnvContextToAct pins the review fix:
-// this pod's own environment identity must be threaded onto the context
-// passed to act for each expired guild-creation coordination. Without this,
-// decide() would fail open per FR-1.8 and every live deployment, not just
-// this pod's, would act on the expired coordination.
+// the tenant the expired coordination belongs to must already be on the
+// context envContext receives, so envContext resolves that tenant's owning
+// environment rather than falling back to this pod's own environment
+// identity. Without this, decide() would fail open per FR-1.8 and every live
+// deployment, not just this pod's, would act on the expired coordination.
 func TestProcessExpiredCoordinationsAppliesEnvContextToAct(t *testing.T) {
 	l := setupTestLogger(t)
 	ten := setupTestTenant(t)
 	g := buildExpiredCoordination(t, ten, 100)
 
+	var gotInputTenant tenant.Model
 	envContext := func(ctx context.Context) context.Context {
+		gotInputTenant = tenant.MustFromContext(ctx)
 		return context.WithValue(ctx, envMarkerKey("marker"), "stamped")
 	}
 
@@ -69,6 +72,9 @@ func TestProcessExpiredCoordinationsAppliesEnvContextToAct(t *testing.T) {
 		envContext,
 	)
 
+	if gotInputTenant != ten {
+		t.Fatalf("envContext did not receive the coordination's tenant on ctx: got %v, want %v", gotInputTenant, ten)
+	}
 	if gotMarker != "stamped" {
 		t.Fatalf("envContext was not applied to the act context: got %v, want \"stamped\"", gotMarker)
 	}

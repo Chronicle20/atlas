@@ -139,12 +139,13 @@ load_fn() {
     [ "$(svc_id_var_name character-factory)" = "SERVICE_ID_CHARACTER_FACTORY" ]
 }
 
-@test "svc_id_var_name does not assume or append a trailing newline" {
-    # tools/derive-service-id.sh (task-243 Task 1) emits its id with NO
-    # trailing newline. svc_id_var_name is the boundary that turns a
-    # SERVICE_ID_<TYPE> lookup into the exact key the CI rendering wrote —
-    # pin that its own output carries no stray newline either, so a caller
-    # concatenating it (e.g. `${!svc_id_var}`) never silently picks up one.
+@test "svc_id_var_name itself carries no incidental trailing newline" {
+    # NOT the Task 1 no-trailing-newline contract (svc_id_var_name builds an
+    # env-VAR-NAME string like SERVICE_ID_LOGIN_SERVICE from a service-type
+    # string — it never touches a derived UUID). This just pins that its own
+    # output is exactly the expected bytes, via printf rather than echo. The
+    # real Task 1 call boundary is svc_id="${!svc_id_var:-}" in
+    # upsert_sparse_service_config, pinned separately below.
     load_fn svc_id_var_name
     local out
     out=$(svc_id_var_name login-service | wc -c)
@@ -165,6 +166,74 @@ load_fn() {
     run upsert_sparse_service_config atlas-login
     [ "$status" -ne 0 ]
     [[ "$output" == *"no SERVICE_ID_"* ]]
+}
+
+@test "a no-trailing-newline derived id flows through svc_id=\"\${!svc_id_var:-}\" to the GET URL intact" {
+    # The actual Task 1 call boundary: bootstrap.sh's
+    # svc_id="${!svc_id_var:-}" reads the id tools/derive-service-id.sh
+    # derived and the CI rendering exported as SERVICE_ID_LOGIN_SERVICE, and
+    # the very next line uses it unmodified as
+    # "$ATLAS_UI_BASE/api/configurations/services/$svc_id" in the GET. Drive
+    # the REAL id (no trailing newline, per derive-service-id.sh) through the
+    # real assignment and the real GET, and capture the exact URL curl was
+    # invoked with: a stray appended newline or a silently truncated id would
+    # show up there byte-for-byte.
+    #
+    # The GET (not the POST) is the boundary to pin here: build_service_config
+    # (the POST path) needs a real canonical template file on disk, which
+    # only exists inside the built image (/atlas/...), not on a bats host.
+    # The GET fires unconditionally, before any template is read, so it is
+    # both the true first use of svc_id AND reachable without one.
+    command -v python3 >/dev/null || skip "python3 required"
+    local repo_root id
+    repo_root="$(cd "$PROJECT_ROOT/../.." && pwd)"
+    id=$("$repo_root/tools/derive-service-id.sh" login-service pr-test)
+    [[ "$id" != *$'\n'* ]]
+
+    load_fn svc_table_lookup
+    load_fn svc_id_var_name
+    load_fn upsert_sparse_service_config
+    # shellcheck source=../scripts/lib.sh
+    . "$PROJECT_ROOT/scripts/lib.sh"
+    # shellcheck source=../scripts/version-ports.sh
+    . "$PROJECT_ROOT/scripts/version-ports.sh"
+    # shellcheck source=../scripts/service-config.sh
+    . "$PROJECT_ROOT/scripts/service-config.sh"
+
+    export ATLAS_MODE=sparse ATLAS_ENVIRONMENT=pr-test
+    export ATLAS_UI_BASE=http://atlas-ingress.test.svc.cluster.local
+    export TENANT_ID=11111111-1111-1111-1111-111111111111 MAJOR_VERSION=83
+    export SERVICE_ID_LOGIN_SERVICE="$id"
+    ENV_HEADER=(-H "ENVIRONMENT: $ATLAS_ENVIRONMENT")
+
+    # curl shim: captures the GET's URL (its last argv) byte-for-byte, and
+    # answers with an existing row whose tenants[] already equals what
+    # build_login_entry would compute — so upsert_sparse_service_config takes
+    # the "matches; skip PATCH" branch and issues no second curl call. $id
+    # and $TENANT_ID are interpolated at script-generation time (this
+    # heredoc is unquoted), not read from the shim's own environment.
+    local dir="$BATS_TEST_TMPDIR/bin" url_capture="$BATS_TEST_TMPDIR/get-url.txt"
+    mkdir -p "$dir"
+    cat >"$dir/curl" <<EOF
+#!/usr/bin/env bash
+last="\${*: -1}"
+printf '%s' "\$last" > "$url_capture"
+printf '{"data":{"id":"%s","attributes":{"tenants":[{"id":"%s","port":8300}]}}}' "$id" "$TENANT_ID"
+exit 0
+EOF
+    chmod +x "$dir/curl"
+    ln -sf "$(command -v jq)" "$dir/jq"
+
+    PATH="$dir:$PATH" run upsert_sparse_service_config atlas-login
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"matches; skipping PATCH"* ]]
+    [ -f "$url_capture" ]
+    # wc -c on the raw captured file (not a $()-captured comparand) so a
+    # stray trailing newline the boundary might append cannot be silently
+    # stripped by command substitution before the check sees it.
+    local expected="$ATLAS_UI_BASE/api/configurations/services/$id"
+    [ "$(wc -c <"$url_capture")" -eq "${#expected}" ]
+    [ "$(cat "$url_capture")" = "$expected" ]
 }
 
 # --- activation (task-243 FR-4.1/FR-4.2/D5) --------------------------------

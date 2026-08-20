@@ -532,6 +532,7 @@
       },
       {
         "opCode": "0x040",
+        "validator": "LoggedInValidator",
         "handler": "DueyActionHandle",
         "fname": "CTabReceive::ReceiveParcel",
         "options": {

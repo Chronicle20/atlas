@@ -449,6 +449,7 @@
       },
       {
         "opCode": "0x039",
+        "validator": "LoggedInValidator",
         "handler": "DueyActionHandle",
         "fname": "CParcelDlg::CloseParcelDlg",
         "options": {

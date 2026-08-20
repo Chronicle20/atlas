@@ -544,6 +544,7 @@
       },
       {
         "opCode": "0x044",
+        "validator": "LoggedInValidator",
         "handler": "DueyActionHandle",
         "fname": "CParcelDlg::CloseParcelDlg",
         "options": {

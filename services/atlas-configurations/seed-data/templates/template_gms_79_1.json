@@ -532,6 +532,7 @@
       },
       {
         "opCode": "0x03F",
+        "validator": "LoggedInValidator",
         "handler": "DueyActionHandle",
         "fname": "CTabSend::SendParcel",
         "options": {

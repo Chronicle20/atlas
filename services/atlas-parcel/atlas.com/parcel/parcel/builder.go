@@ -48,7 +48,7 @@ func (b *Builder) SetId(id uuid.UUID) *Builder {
 }
 
 // SetTenantId sets the row's tenant — read-path only (Make populates it from
-// a persisted Entity). Create's entityFromModel deliberately ignores it; see
+// a persisted Entity). Create's Model.ToEntity deliberately ignores it; see
 // model.go's TenantId() doc comment.
 func (b *Builder) SetTenantId(tenantId uuid.UUID) *Builder {
 	b.tenantId = tenantId
@@ -211,69 +211,4 @@ func (b *Builder) Build() (Model, error) {
 		resolvedAt:         b.resolvedAt,
 		lastNotified:       b.lastNotified,
 	}, nil
-}
-
-// Make converts a persisted Entity to a Model. Entities read back from the
-// database are trusted; a validation failure here indicates a corrupt row
-// rather than caller error.
-func Make(e Entity) (Model, error) {
-	return NewBuilder().
-		SetId(e.Id).
-		SetTenantId(e.TenantId).
-		SetWorldId(world.Id(e.WorldId)).
-		SetSenderId(e.SenderId).
-		SetSenderAccountId(e.SenderAccountId).
-		SetSenderName(e.SenderName).
-		SetRecipientId(e.RecipientId).
-		SetRecipientAccountId(e.RecipientAccountId).
-		SetRecipientName(e.RecipientName).
-		SetMessage(e.Message).
-		SetMesoAmount(e.MesoAmount).
-		SetFeePaid(e.FeePaid).
-		SetItemId(e.ItemId).
-		SetItemType(e.ItemType).
-		SetQuantity(e.Quantity).
-		SetItemSnapshot(e.ItemSnapshot).
-		SetStatus(e.Status).
-		SetQuick(e.Quick).
-		SetReturned(e.Returned).
-		SetCreatedAt(e.CreatedAt).
-		SetReceivableAt(e.ReceivableAt).
-		SetExpiresAt(e.ExpiresAt).
-		SetResolvedAt(e.ResolvedAt).
-		SetLastNotified(e.LastNotified).
-		Build()
-}
-
-// entityFromModel maps a Model back to its persisted Entity shape, for
-// Create. TenantId is deliberately left zero — atlas-database's
-// tenant:create callback injects it from context when zero (see
-// libs/atlas-database/tenant_scope.go), matching every other tenant-scoped
-// entity in this repo (frederick, storage).
-func entityFromModel(m Model) Entity {
-	return Entity{
-		Id:                 m.id,
-		WorldId:            byte(m.worldId),
-		SenderId:           m.senderId,
-		SenderAccountId:    m.senderAccountId,
-		SenderName:         m.senderName,
-		RecipientId:        m.recipientId,
-		RecipientAccountId: m.recipientAccountId,
-		RecipientName:      m.recipientName,
-		Message:            m.message,
-		MesoAmount:         m.mesoAmount,
-		FeePaid:            m.feePaid,
-		ItemId:             m.itemId,
-		ItemType:           m.itemType,
-		Quantity:           m.quantity,
-		ItemSnapshot:       m.itemSnapshot,
-		Status:             m.status,
-		Quick:              m.quick,
-		Returned:           m.returned,
-		CreatedAt:          m.createdAt,
-		ReceivableAt:       m.receivableAt,
-		ExpiresAt:          m.expiresAt,
-		ResolvedAt:         m.resolvedAt,
-		LastNotified:       m.lastNotified,
-	}
 }

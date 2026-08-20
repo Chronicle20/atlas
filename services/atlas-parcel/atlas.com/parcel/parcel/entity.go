@@ -5,6 +5,8 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // Status values for a parcel's custody lifecycle.
@@ -85,4 +87,70 @@ func (e *Entity) TableName() string {
 // Migration creates/updates the parcels table.
 func Migration(db *gorm.DB) error {
 	return db.AutoMigrate(&Entity{})
+}
+
+// Make converts a persisted Entity to a Model. Entities read back from the
+// database are trusted; a validation failure here indicates a corrupt row
+// rather than caller error.
+func Make(e Entity) (Model, error) {
+	return NewBuilder().
+		SetId(e.Id).
+		SetTenantId(e.TenantId).
+		SetWorldId(world.Id(e.WorldId)).
+		SetSenderId(e.SenderId).
+		SetSenderAccountId(e.SenderAccountId).
+		SetSenderName(e.SenderName).
+		SetRecipientId(e.RecipientId).
+		SetRecipientAccountId(e.RecipientAccountId).
+		SetRecipientName(e.RecipientName).
+		SetMessage(e.Message).
+		SetMesoAmount(e.MesoAmount).
+		SetFeePaid(e.FeePaid).
+		SetItemId(e.ItemId).
+		SetItemType(e.ItemType).
+		SetQuantity(e.Quantity).
+		SetItemSnapshot(e.ItemSnapshot).
+		SetStatus(e.Status).
+		SetQuick(e.Quick).
+		SetReturned(e.Returned).
+		SetCreatedAt(e.CreatedAt).
+		SetReceivableAt(e.ReceivableAt).
+		SetExpiresAt(e.ExpiresAt).
+		SetResolvedAt(e.ResolvedAt).
+		SetLastNotified(e.LastNotified).
+		Build()
+}
+
+// ToEntity maps a Model back to its persisted Entity shape, for Create.
+// TenantId is deliberately left zero — atlas-database's tenant:create
+// callback injects it from context when zero (see
+// libs/atlas-database/tenant_scope.go), matching every other tenant-scoped
+// entity in this repo (frederick, storage). See model.go's TenantId() doc
+// comment.
+func (m Model) ToEntity() Entity {
+	return Entity{
+		Id:                 m.id,
+		WorldId:            byte(m.worldId),
+		SenderId:           m.senderId,
+		SenderAccountId:    m.senderAccountId,
+		SenderName:         m.senderName,
+		RecipientId:        m.recipientId,
+		RecipientAccountId: m.recipientAccountId,
+		RecipientName:      m.recipientName,
+		Message:            m.message,
+		MesoAmount:         m.mesoAmount,
+		FeePaid:            m.feePaid,
+		ItemId:             m.itemId,
+		ItemType:           m.itemType,
+		Quantity:           m.quantity,
+		ItemSnapshot:       m.itemSnapshot,
+		Status:             m.status,
+		Quick:              m.quick,
+		Returned:           m.returned,
+		CreatedAt:          m.createdAt,
+		ReceivableAt:       m.receivableAt,
+		ExpiresAt:          m.expiresAt,
+		ResolvedAt:         m.resolvedAt,
+		LastNotified:       m.lastNotified,
+	}
 }

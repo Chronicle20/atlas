@@ -2,6 +2,7 @@ package custody
 
 import (
 	"atlas-parcel/kafka/consumer"
+	buffer "atlas-parcel/kafka/message"
 	"atlas-parcel/kafka/message/custody"
 	custodyproducer "atlas-parcel/kafka/producer/custody"
 	"atlas-parcel/parcel"
@@ -80,54 +81,59 @@ func handleAcceptToParcel(pf providerFn) func(db *gorm.DB) message.Handler[custo
 			b := c.Body
 			p := pf(ctx)
 
-			m, err := processor(l, ctx, db).AcceptCustody(parcel.AcceptParams{
-				ParcelId:           b.ParcelId,
-				CharacterId:        b.CharacterId,
-				WorldId:            b.WorldId,
-				SenderAccountId:    b.SenderAccountId,
-				SenderName:         b.SenderName,
-				RecipientId:        b.RecipientId,
-				RecipientAccountId: b.RecipientAccountId,
-				RecipientName:      b.RecipientName,
-				MesoAmount:         b.MesoAmount,
-				FeePaid:            b.FeePaid,
-				Quick:              b.Quick,
-				Message:            b.Message,
-				ReceivableAt:       b.ReceivableAt,
-				ExpiresAt:          b.ExpiresAt,
-				HasItem:            b.HasItem,
-				TemplateId:         b.TemplateId,
-				Quantity:           b.Quantity,
-				Strength:           b.Strength,
-				Dexterity:          b.Dexterity,
-				Intelligence:       b.Intelligence,
-				Luck:               b.Luck,
-				HP:                 b.HP,
-				MP:                 b.MP,
-				WeaponAttack:       b.WeaponAttack,
-				MagicAttack:        b.MagicAttack,
-				WeaponDefense:      b.WeaponDefense,
-				MagicDefense:       b.MagicDefense,
-				Accuracy:           b.Accuracy,
-				Avoidability:       b.Avoidability,
-				Hands:              b.Hands,
-				Speed:              b.Speed,
-				Jump:               b.Jump,
-				Slots:              b.Slots,
-				Level:              b.Level,
-				ItemLevel:          b.ItemLevel,
-				ItemExp:            b.ItemExp,
-				RingId:             b.RingId,
-				ViciousCount:       b.ViciousCount,
-				Flags:              b.Flags,
-				Owner:              b.Owner,
+			err := buffer.Emit(p)(func(mb *buffer.Buffer) error {
+				m, aerr := processor(l, ctx, db).AcceptCustody(parcel.AcceptParams{
+					ParcelId:           b.ParcelId,
+					CharacterId:        b.CharacterId,
+					WorldId:            b.WorldId,
+					SenderAccountId:    b.SenderAccountId,
+					SenderName:         b.SenderName,
+					RecipientId:        b.RecipientId,
+					RecipientAccountId: b.RecipientAccountId,
+					RecipientName:      b.RecipientName,
+					MesoAmount:         b.MesoAmount,
+					FeePaid:            b.FeePaid,
+					Quick:              b.Quick,
+					Message:            b.Message,
+					ReceivableAt:       b.ReceivableAt,
+					ExpiresAt:          b.ExpiresAt,
+					HasItem:            b.HasItem,
+					TemplateId:         b.TemplateId,
+					Quantity:           b.Quantity,
+					Strength:           b.Strength,
+					Dexterity:          b.Dexterity,
+					Intelligence:       b.Intelligence,
+					Luck:               b.Luck,
+					HP:                 b.HP,
+					MP:                 b.MP,
+					WeaponAttack:       b.WeaponAttack,
+					MagicAttack:        b.MagicAttack,
+					WeaponDefense:      b.WeaponDefense,
+					MagicDefense:       b.MagicDefense,
+					Accuracy:           b.Accuracy,
+					Avoidability:       b.Avoidability,
+					Hands:              b.Hands,
+					Speed:              b.Speed,
+					Jump:               b.Jump,
+					Slots:              b.Slots,
+					Level:              b.Level,
+					ItemLevel:          b.ItemLevel,
+					ItemExp:            b.ItemExp,
+					RingId:             b.RingId,
+					ViciousCount:       b.ViciousCount,
+					Flags:              b.Flags,
+					Owner:              b.Owner,
+				})
+				if aerr != nil {
+					return aerr
+				}
+				return mb.Put(custody.EnvStatusTopic, custodyproducer.AcceptedStatusEventProvider(c.TransactionId, m.Id()))
 			})
 			if err != nil {
 				l.WithError(err).Errorf("Failed to accept parcel [%s] for transaction [%s].", b.ParcelId.String(), c.TransactionId.String())
 				_ = p(custody.EnvStatusTopic)(custodyproducer.ErrorStatusEventProvider(c.TransactionId, err.Error()))
 				return
 			}
-			_ = p(custody.EnvStatusTopic)(custodyproducer.AcceptedStatusEventProvider(c.TransactionId, m.Id()))
 		}
 	}
 }
@@ -145,7 +151,13 @@ func handleReleaseFromParcel(pf providerFn) func(db *gorm.DB) message.Handler[cu
 			b := c.Body
 			p := pf(ctx)
 
-			m, err := processor(l, ctx, db).ReleaseCustody(b.ParcelId, b.RecipientId)
+			err := buffer.Emit(p)(func(mb *buffer.Buffer) error {
+				m, rerr := processor(l, ctx, db).ReleaseCustody(b.ParcelId, b.RecipientId)
+				if rerr != nil {
+					return rerr
+				}
+				return mb.Put(custody.EnvStatusTopic, custodyproducer.ReleasedStatusEventProvider(c.TransactionId, m.Id()))
+			})
 			if errors.Is(err, parcel.ErrAlreadyReleased) {
 				l.Infof("ReleaseFromParcel: parcel [%s] already released; replay is a no-op, transaction [%s].", b.ParcelId.String(), c.TransactionId.String())
 				return
@@ -155,7 +167,6 @@ func handleReleaseFromParcel(pf providerFn) func(db *gorm.DB) message.Handler[cu
 				_ = p(custody.EnvStatusTopic)(custodyproducer.ErrorStatusEventProvider(c.TransactionId, err.Error()))
 				return
 			}
-			_ = p(custody.EnvStatusTopic)(custodyproducer.ReleasedStatusEventProvider(c.TransactionId, m.Id()))
 		}
 	}
 }

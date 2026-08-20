@@ -86,6 +86,20 @@ func Transform(m Model) (RestModel, error) {
 	}, nil
 }
 
+// TransformSlice maps a slice of domain Models to their REST projections.
+// Returns the first transform error encountered, if any.
+func TransformSlice(ms []Model) ([]RestModel, error) {
+	out := make([]RestModel, 0, len(ms))
+	for _, m := range ms {
+		rm, err := Transform(m)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, rm)
+	}
+	return out, nil
+}
+
 // DiscardRestModel is the PATCH /parcels/{parcelId} request body
 // (design §4.4 / §7.3, Task 18's atlas-channel discard arm): the caller
 // supplies recipientId so a discard issued by anyone but the parcel's own
@@ -112,6 +126,34 @@ func (r *DiscardRestModel) SetID(idStr string) error {
 func (r *DiscardRestModel) SetToOneReferenceID(_, _ string) error { return nil }
 
 func (r *DiscardRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+
+// NotifyRestModel is the PATCH /parcels/{parcelId}/notify request body
+// (task-241 Task 21's SHOW_PARCEL consumer). The body carries no attributes
+// atlas-parcel reads — atlas-channel's caller sends the resource identifier
+// only because requests.PatchRequest needs a jsonapi-marshalable value — but
+// registering the route via RegisterInputHandler still parses and validates
+// it as a body-bearing PATCH (DOM-08).
+type NotifyRestModel struct {
+	Id string `json:"-"`
+}
+
+func (r NotifyRestModel) GetName() string {
+	return "parcels"
+}
+
+func (r NotifyRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *NotifyRestModel) SetID(idStr string) error {
+	r.Id = idStr
+	return nil
+}
+
+// Required JSON:API relationship stubs — see RestModel's identical comment.
+func (r *NotifyRestModel) SetToOneReferenceID(_, _ string) error { return nil }
+
+func (r *NotifyRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
 // parcelStatusRestModel is a narrow, one-attribute resource answering "does
 // this character have a pending parcel" — a single round trip for

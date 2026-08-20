@@ -16,7 +16,7 @@ import (
 // tenant_id itself.
 func Create(db *gorm.DB) func(m Model) (Model, error) {
 	return func(m Model) (Model, error) {
-		e := entityFromModel(m)
+		e := m.ToEntity()
 		if e.Id == uuid.Nil {
 			e.Id = uuid.New()
 		}

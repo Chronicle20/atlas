@@ -16,12 +16,7 @@ import (
 // must NOT add a manual tenant_id predicate.
 func ById(id uuid.UUID) database.EntityProvider[Model] {
 	return func(db *gorm.DB) model.Provider[Model] {
-		var e Entity
-		err := db.Where("id = ?", id).First(&e).Error
-		if err != nil {
-			return model.ErrorProvider[Model](err)
-		}
-		return model.Map(Make)(model.FixedProvider(e))
+		return model.Map(Make)(database.Query[Entity](db.Where("id = ?", id), &Entity{}))
 	}
 }
 
@@ -32,16 +27,11 @@ func ById(id uuid.UUID) database.EntityProvider[Model] {
 // elision.
 func ByRecipient(recipientId uint32, worldId world.Id, status string) database.EntityProvider[[]Model] {
 	return func(db *gorm.DB) model.Provider[[]Model] {
-		var results []Entity
-		err := db.Where(map[string]interface{}{
+		return model.SliceMap(Make)(database.SliceQuery[Entity](db.Where(map[string]interface{}{
 			"recipient_id": recipientId,
 			"world_id":     byte(worldId),
 			"status":       status,
-		}).Find(&results).Error
-		if err != nil {
-			return model.ErrorProvider[[]Model](err)
-		}
-		return model.SliceMap(Make)(model.FixedProvider(results))()
+		}), &Entity{}))()
 	}
 }
 
@@ -49,15 +39,10 @@ func ByRecipient(recipientId uint32, worldId world.Id, status string) database.E
 // idx_parcels_sender (tenant_id, sender_id, status).
 func BySender(senderId uint32, status string) database.EntityProvider[[]Model] {
 	return func(db *gorm.DB) model.Provider[[]Model] {
-		var results []Entity
-		err := db.Where(map[string]interface{}{
+		return model.SliceMap(Make)(database.SliceQuery[Entity](db.Where(map[string]interface{}{
 			"sender_id": senderId,
 			"status":    status,
-		}).Find(&results).Error
-		if err != nil {
-			return model.ErrorProvider[[]Model](err)
-		}
-		return model.SliceMap(Make)(model.FixedProvider(results))()
+		}), &Entity{}))()
 	}
 }
 
@@ -65,16 +50,11 @@ func BySender(senderId uint32, status string) database.EntityProvider[[]Model] {
 // whose ReceivableAt has passed as of now — the mailbox-open query.
 func ReceivableByRecipient(recipientId uint32, worldId world.Id, now time.Time) database.EntityProvider[[]Model] {
 	return func(db *gorm.DB) model.Provider[[]Model] {
-		var results []Entity
-		err := db.Where(map[string]interface{}{
+		return model.SliceMap(Make)(database.SliceQuery[Entity](db.Where(map[string]interface{}{
 			"recipient_id": recipientId,
 			"world_id":     byte(worldId),
 			"status":       StatusPending,
-		}).Where("receivable_at <= ?", now).Find(&results).Error
-		if err != nil {
-			return model.ErrorProvider[[]Model](err)
-		}
-		return model.SliceMap(Make)(model.FixedProvider(results))()
+		}).Where("receivable_at <= ?", now), &Entity{}))()
 	}
 }
 
@@ -87,14 +67,9 @@ func ReceivableByRecipient(recipientId uint32, worldId world.Id, now time.Time) 
 // world_id residual filter does not lose the index.
 func ReceivableByRecipientAnyWorld(recipientId uint32, now time.Time) database.EntityProvider[[]Model] {
 	return func(db *gorm.DB) model.Provider[[]Model] {
-		var results []Entity
-		err := db.Where(map[string]interface{}{
+		return model.SliceMap(Make)(database.SliceQuery[Entity](db.Where(map[string]interface{}{
 			"recipient_id": recipientId,
 			"status":       StatusPending,
-		}).Where("receivable_at <= ?", now).Find(&results).Error
-		if err != nil {
-			return model.ErrorProvider[[]Model](err)
-		}
-		return model.SliceMap(Make)(model.FixedProvider(results))()
+		}).Where("receivable_at <= ?", now), &Entity{}))()
 	}
 }

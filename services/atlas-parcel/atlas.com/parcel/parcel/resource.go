@@ -43,13 +43,14 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerGet := rest.RegisterHandler(l)(db)(si)
-			registerPatch := rest.RegisterInputHandler[DiscardRestModel](l)(db)(si)
+			registerDiscardPatch := rest.RegisterInputHandler[DiscardRestModel](l)(db)(si)
+			registerNotifyPatch := rest.RegisterInputHandler[NotifyRestModel](l)(db)(si)
 
 			pr := router.PathPrefix("/parcels").Subrouter()
 			pr.HandleFunc("", registerGet("get_parcels", handleGetParcels)).Methods(http.MethodGet)
 			pr.HandleFunc("/{parcelId}", registerGet("get_parcel", handleGetParcel)).Methods(http.MethodGet)
-			pr.HandleFunc("/{parcelId}", registerPatch("discard_parcel", handleDiscardParcel)).Methods(http.MethodPatch)
-			pr.HandleFunc("/{parcelId}/notify", registerGet("notify_parcel", handleNotifyParcel)).Methods(http.MethodPatch)
+			pr.HandleFunc("/{parcelId}", registerDiscardPatch("discard_parcel", handleDiscardParcel)).Methods(http.MethodPatch)
+			pr.HandleFunc("/{parcelId}/notify", registerNotifyPatch("notify_parcel", handleNotifyParcel)).Methods(http.MethodPatch)
 
 			cr := router.PathPrefix("/characters/{characterId}").Subrouter()
 			cr.HandleFunc("/parcel-status", registerGet("get_character_parcel_status", handleGetParcelStatus)).Methods(http.MethodGet)
@@ -138,7 +139,7 @@ func handleGetParcels(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 }
 
 func writeParcels(d *rest.HandlerDependency, c *rest.HandlerContext, w http.ResponseWriter, r *http.Request, ms []Model) {
-	res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+	res, err := TransformSlice(ms)
 	if err != nil {
 		d.Logger().WithError(err).Errorf("Creating REST model.")
 		server.WriteErrorResponse(d.Logger())(w)(err)
@@ -238,7 +239,7 @@ func handleDiscardParcel(d *rest.HandlerDependency, c *rest.HandlerContext, inpu
 // recipient-gated: it is atlas-channel's own bookkeeping, invisible to the
 // player, so no caller-supplied ownership check applies. A missing id is
 // still a clean 404, never a disconnect.
-func handleNotifyParcel(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func handleNotifyParcel(d *rest.HandlerDependency, c *rest.HandlerContext, _ NotifyRestModel) http.HandlerFunc {
 	return rest.ParseParcelId(d.Logger(), func(parcelIdStr string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			parcelId, err := uuid.Parse(parcelIdStr)

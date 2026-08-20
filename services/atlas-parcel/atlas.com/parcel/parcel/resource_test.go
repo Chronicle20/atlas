@@ -81,6 +81,16 @@ func discardBody(t *testing.T, parcelId uuid.UUID, recipientId uint32) []byte {
 	return b
 }
 
+// notifyBody marshals a NotifyRestModel the way atlas-channel's PATCH
+// /parcels/{id}/notify request does — see requests.go's notifyRestModel in
+// atlas-channel, whose only content is the resource identifier.
+func notifyBody(t *testing.T, parcelId uuid.UUID) []byte {
+	t.Helper()
+	b, err := jsonapi.Marshal(parcel.NotifyRestModel{Id: parcelId.String()})
+	require.NoError(t, err)
+	return b
+}
+
 // seedParcel builds and persists one pending parcel under tenantId, returning
 // the created Model.
 func seedParcel(t *testing.T, db *gorm.DB, tenantId uuid.UUID, senderId, recipientId uint32) parcel.Model {
@@ -320,7 +330,8 @@ func TestParcelResource(t *testing.T) {
 		srv := newParcelServer(db)
 		defer srv.Close()
 
-		resp, err := client.Do(withTenant(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s/notify", srv.URL, created.Id().String())))
+		body := notifyBody(t, created.Id())
+		resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s/notify", srv.URL, created.Id().String()), body))
 		require.NoError(t, err)
 		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusNoContent, resp.StatusCode)
@@ -337,8 +348,9 @@ func TestParcelResource(t *testing.T) {
 		srv := newParcelServer(db)
 		defer srv.Close()
 
-		missing := uuid.New().String()
-		resp, err := client.Do(withTenant(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s/notify", srv.URL, missing)))
+		missing := uuid.New()
+		body := notifyBody(t, missing)
+		resp, err := client.Do(withTenantBody(t, tid, http.MethodPatch, fmt.Sprintf("%s/parcels/%s/notify", srv.URL, missing.String()), body))
 		require.NoError(t, err)
 		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusNotFound, resp.StatusCode)

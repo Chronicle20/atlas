@@ -1,6 +1,7 @@
 package parcel
 
 import (
+	buffer "atlas-parcel/kafka/message"
 	parcelmsg "atlas-parcel/kafka/message/parcel"
 	parcelproducer "atlas-parcel/kafka/producer/parcel"
 	"context"
@@ -163,7 +164,10 @@ func (t *NotificationTask) Run() {
 		tenantCtx := t.envContext(tenant.WithContext(t.ctx, tm))
 
 		kp := producer.ProviderImpl(t.l)(tenantCtx)
-		if perr := kp(parcelmsg.EnvStatusEventTopic)(parcelproducer.ParcelArrivedStatusEventProvider(m.RecipientId(), m.SenderName(), m.ItemId() != nil)); perr != nil {
+		perr := buffer.Emit(kp)(func(mb *buffer.Buffer) error {
+			return mb.Put(parcelmsg.EnvStatusEventTopic, parcelproducer.ParcelArrivedStatusEventProvider(m.RecipientId(), m.SenderName(), m.ItemId() != nil))
+		})
+		if perr != nil {
 			t.l.WithError(perr).Warnf("Parcel notification sweep: failed to emit PARCEL_ARRIVED for parcel [%s].", m.Id())
 			continue
 		}

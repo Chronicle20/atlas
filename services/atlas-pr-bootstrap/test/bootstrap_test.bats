@@ -93,31 +93,76 @@ EOF
     [ ! -f "$BATS_TEST_TMPDIR/kubectl-ran" ]
 }
 
-# --- sparse service-config creation (task-232 follow-up) ------------------
+# --- sparse service-config upsert (task-243) -------------------------------
+#
+# bootstrap.sh's top-level code runs on source (require_env exits
+# immediately), so these tests extract just the pure/guard-only function
+# bodies with sed and eval them into the current shell — the same seam the
+# two pre-existing service-config tests above use, extended here to
+# actually invoke (not just grep) the extracted functions.
 
-@test "create_service_config sends the ENVIRONMENT header on POST" {
-    # The row's environment column is server-owned — atlas-configurations
-    # stamps it from env.MustFromContext(ctx) and deliberately ignores the
-    # body's .data.attributes.environment. Without this header every sparse
-    # row landed with environment='' in the SHARED baseline, where
-    # cleanup.sh's environment-scoped reclaim can never match it.
-    local fn
-    fn=$(sed -n '/^create_service_config()/,/^}/p' "$PROJECT_ROOT/scripts/bootstrap.sh")
-    [ -n "$fn" ]
-    [[ "$fn" == *'-H "ENVIRONMENT: $ATLAS_ENVIRONMENT"'* ]]
+load_fn() {
+    eval "$(sed -n "/^$1() {/,/^}/p" "$PROJECT_ROOT/scripts/bootstrap.sh")"
 }
 
-@test "create_service_config refuses an empty service id" {
-    # `kubectl set env SERVICE_ID=` does not fail on an empty value — it
-    # writes an env entry with no value, which panics the consumer at
-    # startup. The guard must sit before that call.
-    local fn
-    fn=$(sed -n '/^create_service_config()/,/^}/p' "$PROJECT_ROOT/scripts/bootstrap.sh")
-    local guard_line set_env_line
-    guard_line=$(printf '%s\n' "$fn" | grep -n 'refusing to continue with empty service id' | cut -d: -f1 | head -1)
-    # anchored: the phrase also appears in this function's comments
-    set_env_line=$(printf '%s\n' "$fn" | grep -n '^ *kubectl set env' | cut -d: -f1 | head -1)
-    [ -n "$guard_line" ]
-    [ -n "$set_env_line" ]
-    [ "$guard_line" -lt "$set_env_line" ]
+@test "sparse service table maps every SERVICE_ID-carrying deployment" {
+    load_fn svc_table_lookup
+
+    run svc_table_lookup atlas-login
+    [ "$status" -eq 0 ]
+    [ "$output" = "login-service login /atlas/canonical/services/login-service.json" ]
+
+    run svc_table_lookup atlas-channel
+    [ "$status" -eq 0 ]
+    [ "$output" = "channel-service channel /atlas/canonical/services/channel-service.json" ]
+
+    run svc_table_lookup atlas-drops
+    [ "$status" -eq 0 ]
+    [ "$output" = "drops-service none /atlas/canonical/services/drops-service.json" ]
+
+    # atlas-world / atlas-character-factory / atlas-drop-information have no
+    # canonical template baked into this image today (only login-service,
+    # channel-service and drops-service do — see canonical/services/), so
+    # they are deliberately left unmapped rather than fabricated.
+    run svc_table_lookup atlas-world
+    [ "$status" -ne 0 ]
+    run svc_table_lookup atlas-character-factory
+    [ "$status" -ne 0 ]
+    run svc_table_lookup atlas-drop-information
+    [ "$status" -ne 0 ]
+}
+
+@test "service id env var name is derived from the service type" {
+    load_fn svc_id_var_name
+    [ "$(svc_id_var_name login-service)" = "SERVICE_ID_LOGIN_SERVICE" ]
+    [ "$(svc_id_var_name drops-information-service)" = "SERVICE_ID_DROPS_INFORMATION_SERVICE" ]
+    [ "$(svc_id_var_name character-factory)" = "SERVICE_ID_CHARACTER_FACTORY" ]
+}
+
+@test "svc_id_var_name does not assume or append a trailing newline" {
+    # tools/derive-service-id.sh (task-243 Task 1) emits its id with NO
+    # trailing newline. svc_id_var_name is the boundary that turns a
+    # SERVICE_ID_<TYPE> lookup into the exact key the CI rendering wrote —
+    # pin that its own output carries no stray newline either, so a caller
+    # concatenating it (e.g. `${!svc_id_var}`) never silently picks up one.
+    load_fn svc_id_var_name
+    local out
+    out=$(svc_id_var_name login-service | wc -c)
+    # "SERVICE_ID_LOGIN_SERVICE" is 24 bytes; wc -c on a $()-captured,
+    # already-newline-stripped string only equals 24 if printf (not echo)
+    # produced it with nothing appended.
+    [ "$out" -eq 24 ]
+}
+
+@test "sparse service-config step fails when the CI-rendered id is absent" {
+    load_fn svc_table_lookup
+    load_fn svc_id_var_name
+    load_fn upsert_sparse_service_config
+    # shellcheck source=../scripts/lib.sh
+    . "$PROJECT_ROOT/scripts/lib.sh"
+
+    unset SERVICE_ID_LOGIN_SERVICE
+    run upsert_sparse_service_config atlas-login
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"no SERVICE_ID_"* ]]
 }

@@ -1,0 +1,10 @@
+packet: cash/serverbound/CashItemUseSongPlayer
+direction: serverbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendConsumeCashItemUseRequest
+    address: "0x9bfe10"
+    decompile_sha256: a25b0ca86fd5c466d61a1666d1d43abf94d5838bcd6b76c18b96b6d4086ccddb
+verifies:
+    - libs/atlas-packet/cash/serverbound/item_use_song_player_test.go#TestItemUseSongPlayerBytesV92

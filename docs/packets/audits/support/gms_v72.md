@@ -668,7 +668,7 @@ None.
 | op | SLIDE_REQUEST | serverbound |  | n-a |  |
 | op | STRANGE_DATA | serverbound |  | n-a |  |
 | op | SUMMON_REMOVE | serverbound |  | n-a |  |
-| op | TOUCHING_REACTOR | serverbound |  | n-a |  |
+| op | TOUCHING_REACTOR | serverbound | 0x0C4 | incomplete | task-249 Task 1: CReactorPool::FindTouchReactorAroundLocalUser @0x692bb0, COutPacket(196) |
 | op | UI_OPEN_ITEM_USE_REQUEST | serverbound |  | n-a |  |
 | op | UNNAMED_R149 | serverbound |  | n-a |  |
 | op | UNNAMED_R18 | serverbound |  | n-a |  |

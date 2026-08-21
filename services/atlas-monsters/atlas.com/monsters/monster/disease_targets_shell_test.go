@@ -32,13 +32,16 @@ func diseaseTargetTenant() tenant.Model {
 // position lookup. positionCalls records every id positionFn was asked for,
 // so a test can assert the single-target path made no lookup at all.
 func diseaseTargetProcessor(inField []uint32, positions map[uint32][2]int16, positionErr map[uint32]error, positionCalls *[]uint32) *ProcessorImpl {
+	var mu sync.Mutex
 	emitted := 0
 	p := recordingProcessor(context.Background(), diseaseTargetTenant(), &emitted)
 	p.inFieldFn = func(_ field.Model) ([]uint32, error) {
 		return inField, nil
 	}
 	p.positionFn = func(id uint32) (int16, int16, error) {
+		mu.Lock()
 		*positionCalls = append(*positionCalls, id)
+		mu.Unlock()
 		if err, ok := positionErr[id]; ok {
 			return 0, 0, err
 		}

@@ -7,8 +7,8 @@ records the evidence search and its result.
 
 WZ trees (per design §1 C-1, the two stock checkouts on this machine):
 
-- `/mnt/d/Source/ms_1172/wz/String.wz`, `/mnt/d/Source/ms_1172/wz/Character.wz`
-- `/mnt/d/Source/AtlasMS/wz/String.wz`, `/mnt/d/Source/AtlasMS/wz/Character.wz`
+- `ms_1172` checkout's `wz/String.wz`, `wz/Character.wz`
+- `AtlasMS` checkout's `wz/String.wz`, `wz/Character.wz`
 
 Commands run:
 
@@ -64,8 +64,9 @@ level-cap comparison. A listing-wide regex sweep for `cygnus|blockedJob|maxLevel
 returned only that helper and `SKILLENTRY::GetMaxLevel` (`0x50a020`), which is a **skill**
 level ceiling read from `SKILLENTRY+0x70`, not a character level cap.
 
-Result for this leg: **negative, and now actually checked** — the v95 client enforces no
-Cygnus character-level cap.
+Result for this leg: **negative, and now actually checked** — no Cygnus character-level cap is
+reachable from the client's only Cygnus-classification helper, and no level-cap symbol or string
+surfaced in a listing-wide sweep.
 
 ## Result
 

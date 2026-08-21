@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	EnvCommandTopic = "COMMAND_TOPIC_REACTOR"
-	CommandTypeHit  = "HIT"
+	EnvCommandTopic  = "COMMAND_TOPIC_REACTOR"
+	CommandTypeHit   = "HIT"
+	CommandTypeTouch = "TOUCH"
 )
 
 type Command[E any] struct {
@@ -29,6 +30,12 @@ type HitCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 	Stance      uint16 `json:"stance"`
 	SkillId     uint32 `json:"skillId"`
+}
+
+type TouchCommandBody struct {
+	ReactorId   uint32 `json:"reactorId"`
+	CharacterId uint32 `json:"characterId"`
+	Touching    bool   `json:"touching"`
 }
 
 const (

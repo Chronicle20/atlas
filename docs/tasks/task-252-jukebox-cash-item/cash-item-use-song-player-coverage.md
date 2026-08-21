@@ -151,3 +151,14 @@ go run ./tools/packet-audit dispatcher-lint      # clean
 
 `go build ./... && go test ./...` clean in `libs/atlas-packet` and
 `tools/packet-audit`.
+
+**Correction:** the `STATUS.md`/`status.json` committed alongside the earlier
+version of this document (through commit `8765e7009`) carried a stale
+`Tool:`/`toolSha` value (`f8153f5c...`) that did not match what
+`go run ./tools/packet-audit matrix` regenerates from that same commit's
+`tools/packet-audit` tree (`1baff988...`), so `matrix --check` did not
+actually reproduce exit 0 at that commit — the prior claim above was false.
+The regeneration has since been committed (Tool: `1baff988...`); with that
+fix in place all four gates listed above do reproduce clean, each verified
+independently with its exit code checked directly (not piped through a
+pass/fail wrapper).

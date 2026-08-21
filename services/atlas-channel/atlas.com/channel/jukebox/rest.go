@@ -32,3 +32,7 @@ func (m *RestModel) SetToOneReferenceID(_, _ string) error {
 func (m *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
+
+func Extract(m RestModel) (RestModel, error) {
+	return m, nil
+}

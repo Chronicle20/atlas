@@ -27,7 +27,3 @@ var _ Processor = (*ProcessorImpl)(nil)
 func (p *ProcessorImpl) GetActive(f field.Model) (RestModel, error) {
 	return requests.Provider[RestModel, RestModel](p.l, p.ctx)(requestJukeboxInMap(p.ctx, f), Extract)()
 }
-
-func Extract(m RestModel) (RestModel, error) {
-	return m, nil
-}

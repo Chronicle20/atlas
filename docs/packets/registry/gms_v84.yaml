@@ -1784,6 +1784,7 @@
   direction: clientbound
   opcode: 265
   fname: CNpcPool::OnNpcLeaveField
+  packet: npc/clientbound/NpcRemove
   provenance: ida-discovered
   ida:
     address: 7276855

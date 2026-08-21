@@ -9,15 +9,12 @@ import (
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
-	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-player-npcs"
-
-var consumerGroupId = consumergroup.Resolve("Player NPC Service")
 
 type Server struct {
 	baseUrl string

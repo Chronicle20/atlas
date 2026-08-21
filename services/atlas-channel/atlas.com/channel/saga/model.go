@@ -26,6 +26,7 @@ type (
 	WarpToRandomPortalPayload    = sharedsaga.WarpToRandomPortalPayload
 	ApplyConsumableEffectPayload = sharedsaga.ApplyConsumableEffectPayload
 	FieldEffectWeatherPayload    = sharedsaga.FieldEffectWeatherPayload
+	PlayJukeboxPayload           = sharedsaga.PlayJukeboxPayload
 	SetAssetOwnerPayload         = sharedsaga.SetAssetOwnerPayload
 	ApplyAssetLockPayload        = sharedsaga.ApplyAssetLockPayload
 	ApplyAssetKarmaPayload       = sharedsaga.ApplyAssetKarmaPayload
@@ -119,6 +120,7 @@ const (
 	WarpToPortal          = sharedsaga.WarpToPortal
 	WarpToRandomPortal    = sharedsaga.WarpToRandomPortal
 	FieldEffectWeather    = sharedsaga.FieldEffectWeather
+	PlayJukebox           = sharedsaga.PlayJukebox
 	ApplyConsumableEffect = sharedsaga.ApplyConsumableEffect
 	SetAssetOwner         = sharedsaga.SetAssetOwner
 	ApplyAssetLock        = sharedsaga.ApplyAssetLock

@@ -2533,6 +2533,10 @@
         ]
       },
       {
+        "opCode": "0x4E",
+        "writer": "ImitatedNPCData"
+      },
+      {
         "opCode": "0x4F",
         "writer": "MonsterBookSetCard",
         "fname": "CWvsContext::OnMonsterBookSetCard",
@@ -3611,6 +3615,10 @@
         "services": [
           "channel"
         ]
+      },
+      {
+        "opCode": "0xC3",
+        "writer": "RemoveNPC"
       },
       {
         "opCode": "0xC4",

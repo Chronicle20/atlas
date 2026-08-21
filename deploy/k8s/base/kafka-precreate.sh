@@ -113,6 +113,26 @@ precreate_topics() {
     echo "[$(date -u +%FT%TZ)] reconciled $count topics"
 }
 
+# Classify a consumer-group state token as seedable (offsets may be reset) or
+# active (a live member holds the group; Kafka will refuse the reset).
+#
+# Deliberately an ALLOWLIST: Empty, Dead and "" are seedable, everything else
+# is active. "" covers an absent group, unparseable --describe --state output,
+# and a failed probe (FR-1.4) — all of which must fall through to seed_group,
+# whose own message classifier then governs. A state token Kafka adds in a
+# future version falls into "active" and is skipped, which is the safe
+# direction: skipping never mutates a committed offset (FR-5.2), whereas a
+# denylist would reset a group in an unrecognised live state.
+#
+# Pure — no Kafka call, no I/O — so atlas-kafka-precreate_test.sh asserts the
+# whole truth table without a broker (design §3.1).
+state_is_seedable() {
+    case "$1" in
+        Empty|Dead|"") return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 # Commit end-of-log offsets for an override consumer group on one or more
 # topics in a SINGLE kafka-consumer-groups.sh invocation, while the group is
 # empty and therefore resettable. Runs at sync-wave 0, before any Deployment

@@ -39,6 +39,27 @@ case "$skip_out" in
 esac
 echo "PASS: seed_override_offsets skips when KAFKA_CONSUMER_GROUP is unset (NG6)"
 
+# state_is_seedable is an ALLOWLIST, not a denylist (design §3.1): only
+# Empty, Dead and the empty string (absent group / unparseable output /
+# failed probe, FR-1.4) are seedable. Anything else — including a state
+# token Kafka adds in a future version — is treated as active and skipped,
+# because skipping never mutates a committed offset (FR-5.2) whereas
+# resetting an unrecognised live state does. Asserted without a broker, so
+# this contract is enforced on every run of this script.
+for state in Empty Dead ""; do
+    if ! state_is_seedable "$state"; then
+        echo "FAIL: state_is_seedable rejected seedable state '$state'"
+        exit 1
+    fi
+done
+for state in Stable PreparingRebalance CompletingRebalance SomeNewState STATE; do
+    if state_is_seedable "$state"; then
+        echo "FAIL: state_is_seedable accepted active state '$state'"
+        exit 1
+    fi
+done
+echo "PASS: state_is_seedable allowlists Empty/Dead/unknown and rejects every active state"
+
 [ -n "${BOOTSTRAP_SERVERS:-}" ] || { echo "SKIP: BOOTSTRAP_SERVERS unset"; exit 0; }
 
 TOPIC="atlas-precreate-test-$$"

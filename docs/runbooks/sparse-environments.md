@@ -178,7 +178,8 @@ Reading the Job log, per group, there are three outcomes:
 | `skipping group '<g>': already active (Stable) — offsets already initialized` | Re-sync of a live environment. Normal. |
 | `skipping group '<g>': reset refused, group became active during seeding — offsets already initialized` | A pod joined the group between the state probe and the reset. Same outcome, same normality. |
 | `skipped group '<g>': committed offsets present on all <N> topics` | The common re-sync case — skipped, and nothing is missing. |
-| `WARN: skipped group '<g>' has no committed offset on <K> of <N> topics: <names> (+<M> more)` | Skipped, and these union topics were never seeded for it. Not a failure. |
+| `WARN: skipped group '<g>' has no committed offset on <K> of <N> topics: <names>` | Skipped, and these union topics were never seeded for it. Not a failure. |
+| `WARN: skipped group '<g>' has no committed offset on <K> of <N> topics: <names> (+<M> more)` | The same, when `<K>` exceeds 10 — the name list is capped at 10 and `<M>` is the remainder. |
 | `override consumer group offsets seeded (<S> seeded, <K> skipped)` | Terminal summary. |
 | `all <K> override consumer groups were already active — nothing seeded this run (re-sync no-op)` | Every group was skipped: this run did nothing, by design. |
 

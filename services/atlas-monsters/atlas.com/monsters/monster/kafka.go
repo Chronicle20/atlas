@@ -53,6 +53,15 @@ const (
 	CatchCauseHpTooHigh       = "HP_TOO_HIGH"
 	CatchCauseRollFailed      = "ROLL_FAILED"
 	CatchCauseUnresolved      = "UNRESOLVED"
+
+	// DeathType* mirror libs/atlas-packet monster/clientbound DestroyType, which
+	// is CMob::m_nDeadType. DeathTypeUnset is what an omitting producer sends
+	// (rolling deploy); every consumer maps it to fade-out, so the wire stays
+	// byte-identical to pre-task-253 behaviour. Wire dead-type 0 ("remove with
+	// no animation") is therefore inexpressible through this event — nothing
+	// emits it and no WZ selfDestruction.action uses it (task-253 design D9).
+	DeathTypeUnset   byte = 0
+	DeathTypeFadeOut byte = 1
 )
 
 type statusEvent[E any] struct {
@@ -92,7 +101,8 @@ type statusEventCreatedBody struct {
 }
 
 type statusEventDestroyedBody struct {
-	ActorId uint32 `json:"actorId"`
+	ActorId   uint32 `json:"actorId"`
+	DeathType byte   `json:"deathType"`
 }
 
 type statusEventStartControlBody struct {
@@ -135,6 +145,7 @@ type statusEventKilledBody struct {
 	ActorId       uint32        `json:"actorId"`
 	Boss          bool          `json:"boss"`
 	DamageEntries []damageEntry `json:"damageEntries"`
+	DeathType     byte          `json:"deathType"`
 }
 
 type damageEntry struct {

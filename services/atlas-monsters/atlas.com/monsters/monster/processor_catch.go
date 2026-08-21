@@ -167,7 +167,7 @@ func (p *ProcessorImpl) Catch(uniqueId uint32, characterId uint32, itemId uint32
 
 	_ = p.emit(EnvEventTopicMonsterCatch, catchResolvedEventProvider(claimed, characterId, itemId, true, ""))
 	_ = p.emit(EnvEventTopicMonsterStatus, caughtStatusEventProvider(claimed, characterId, itemId))
-	_ = p.emit(EnvEventTopicMonsterStatus, destroyedStatusEventProvider(claimed))
+	_ = p.emit(EnvEventTopicMonsterStatus, destroyedStatusEventProvider(claimed, DeathTypeUnset))
 }
 
 func (p *ProcessorImpl) emitCatchFailure(m Model, characterId uint32, itemId uint32, cause string) {

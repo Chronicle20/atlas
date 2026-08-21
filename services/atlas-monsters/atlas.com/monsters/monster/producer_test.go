@@ -71,3 +71,80 @@ func TestAggroChangedBodyEncoding(t *testing.T) {
 		t.Errorf("body unexpected: %+v", env.Body)
 	}
 }
+
+func TestKilledBodyCarriesDeathType(t *testing.T) {
+	tests := []struct {
+		name          string
+		deathType     byte
+		killerId      uint32
+		wantDeathType byte
+		wantActorId   uint32
+	}{
+		{"ordinary kill", DeathTypeFadeOut, 42, 1, 42},
+		{"self-destruct action 3", 3, 42, 3, 42},
+		{"no killer", 5, 0, 5, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := Clone(NewMonster(field.NewBuilder(0, 0, 40000).Build(), 1, 5100002, 0, 0, 0, 5, 0, 100, 50, "", "")).Build()
+			msgs, err := killedStatusEventProvider(m, tt.killerId, false, nil, tt.deathType)()
+			if err != nil {
+				t.Fatalf("provider error: %v", err)
+			}
+			if len(msgs) != 1 {
+				t.Fatalf("expected 1 message, got %d", len(msgs))
+			}
+			var env struct {
+				Type string                `json:"type"`
+				Body statusEventKilledBody `json:"body"`
+			}
+			if err := json.Unmarshal(msgs[0].Value, &env); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if env.Type != EventMonsterStatusKilled {
+				t.Errorf("type=%s, want %s", env.Type, EventMonsterStatusKilled)
+			}
+			if env.Body.DeathType != tt.wantDeathType {
+				t.Errorf("DeathType=%d, want %d", env.Body.DeathType, tt.wantDeathType)
+			}
+			if env.Body.ActorId != tt.wantActorId {
+				t.Errorf("ActorId=%d, want %d", env.Body.ActorId, tt.wantActorId)
+			}
+		})
+	}
+}
+
+func TestDestroyedBodyCarriesDeathType(t *testing.T) {
+	m := Clone(NewMonster(field.NewBuilder(0, 0, 40000).Build(), 1, 5100002, 0, 0, 0, 5, 0, 100, 50, "", "")).Build()
+	msgs, err := destroyedStatusEventProvider(m, DeathTypeUnset)()
+	if err != nil {
+		t.Fatalf("provider error: %v", err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("expected 1 message, got %d", len(msgs))
+	}
+	var env struct {
+		Type string                   `json:"type"`
+		Body statusEventDestroyedBody `json:"body"`
+	}
+	if err := json.Unmarshal(msgs[0].Value, &env); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if env.Type != EventMonsterStatusDestroyed {
+		t.Errorf("type=%s, want %s", env.Type, EventMonsterStatusDestroyed)
+	}
+	if env.Body.DeathType != 0 {
+		t.Errorf("DeathType=%d, want 0", env.Body.DeathType)
+	}
+}
+
+func TestKilledBodyDeathTypeIsOmittedShapeCompatible(t *testing.T) {
+	raw := `{"x":0,"y":0,"actorId":9,"boss":false,"damageEntries":null}`
+	var body statusEventKilledBody
+	if err := json.Unmarshal([]byte(raw), &body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.DeathType != 0 {
+		t.Errorf("DeathType=%d, want 0", body.DeathType)
+	}
+}

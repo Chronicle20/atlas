@@ -23,3 +23,4 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T00:22:49Z	agent	Fix round 3	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	9233f9339	-	-	-	-
 2026-08-21T00:25:45Z	agent	Fix round 3	atlas-reviewer	sonnet	-	-	-	-	DONE	9233f9339	APPROVED_WITH_FINDINGS	no	docs/tasks/task-244-listener-drain-socket-close/review-fix-3.md	-
 2026-08-21T00:29:22Z	handoff	Branch	-	-	-	-	-	-	PR_OPENED	3907f0404	-	-	-	-
+2026-08-21T11:44:28Z	agent	bug-listener-binds-advertised-ip	atlas-implementer	sonnet	-	-	-	-	DONE	f66935f2b	-	-	-	-

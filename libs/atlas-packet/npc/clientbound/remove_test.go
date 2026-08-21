@@ -6,7 +6,16 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=npc/clientbound/NpcRemove version=gms_v48 ida=0x56d5b9
+// packet-audit:verify packet=npc/clientbound/NpcRemove version=gms_v61 ida=0x5efe4b
+// packet-audit:verify packet=npc/clientbound/NpcRemove version=gms_v72 ida=0x645f45
+// packet-audit:verify packet=npc/clientbound/NpcRemove version=gms_v79 ida=0x668ad6
 // packet-audit:verify packet=npc/clientbound/NpcRemove version=gms_v83 ida=0x6d9a25
+// packet-audit:verify packet=npc/clientbound/NpcRemove version=gms_v84 ida=0x6f0bc8
+// packet-audit:verify packet=npc/clientbound/NpcRemove version=gms_v87 ida=0x71706a
+// packet-audit:verify packet=npc/clientbound/NpcRemove version=gms_v92 ida=0x66bd70
+// packet-audit:verify packet=npc/clientbound/NpcRemove version=gms_v95 ida=0x6792c0
+// packet-audit:verify packet=npc/clientbound/NpcRemove version=jms_v185 ida=0x720724
 func TestNpcRemove(t *testing.T) {
 	input := NewNpcRemove(100123)
 

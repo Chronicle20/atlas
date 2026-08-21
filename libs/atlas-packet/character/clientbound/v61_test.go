@@ -721,7 +721,7 @@ func TestEffectQuestByteOutputV61(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v61 ida=0x43e877
 func TestCharacterExpressionByteOutputV61(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 61, 1)
-	got := NewCharacterExpression(12345, 5, 3000).Encode(nil, ctx)(nil)
+	got := NewCharacterExpression(12345, 5, 3000, false).Encode(nil, ctx)(nil)
 	want := []byte{
 		0x39, 0x30, 0x00, 0x00, // characterId 12345 (dispatcher Decode4)
 		0x05, 0x00, 0x00, 0x00, // expression 5 (Decode4)

@@ -59,7 +59,7 @@ func handleEvent(sc server.Model, wp writer.Producer) message.Handler[expression
 		// byItemOption=false. Extend kafka/message/expression/kafka.go to carry the
 		// fields end-to-end (producer side too). Tracked in
 		// docs/tasks/task-028-character-domain-audit/post-phase-b.md "Remaining work".
-		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.CharacterId, session.Announce(l)(ctx)(wp)(charpkt.CharacterExpressionWriter)(charpkt.NewCharacterExpression(e.CharacterId, e.Expression, 0).Encode))
+		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.CharacterId, session.Announce(l)(ctx)(wp)(charpkt.CharacterExpressionWriter)(charpkt.NewCharacterExpression(e.CharacterId, e.Expression, 0, false).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce character [%d] expression [%d] change to characters in map [%d].", e.CharacterId, e.Expression, e.MapId)
 		}

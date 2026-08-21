@@ -17,6 +17,7 @@ type Processor interface {
 	InMapModelProvider(f field.Model) model.Provider[[]Model]
 	ForEachInMap(f field.Model, o model.Operator[Model]) error
 	Hit(f field.Model, reactorId uint32, characterId uint32, stance uint16, skillId uint32) error
+	Touch(f field.Model, reactorId uint32, characterId uint32, touching bool) error
 }
 
 type ProcessorImpl struct {
@@ -55,4 +56,9 @@ func (p *ProcessorImpl) ForEachInMap(f field.Model, o model.Operator[Model]) err
 func (p *ProcessorImpl) Hit(f field.Model, reactorId uint32, characterId uint32, stance uint16, skillId uint32) error {
 	p.l.Debugf("Sending hit command for reactor [%d]. CharacterId [%d]. Stance [%d]. SkillId [%d].", reactorId, characterId, stance, skillId)
 	return producer.ProviderImpl(p.l)(p.ctx)(reactor2.EnvCommandTopic)(HitCommandProvider(f, reactorId, characterId, stance, skillId))
+}
+
+func (p *ProcessorImpl) Touch(f field.Model, reactorId uint32, characterId uint32, touching bool) error {
+	p.l.Debugf("Sending touch command for reactor [%d]. CharacterId [%d]. Touching [%t].", reactorId, characterId, touching)
+	return producer.ProviderImpl(p.l)(p.ctx)(reactor2.EnvCommandTopic)(TouchCommandProvider(f, reactorId, characterId, touching))
 }

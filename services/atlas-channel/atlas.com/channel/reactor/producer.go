@@ -27,3 +27,20 @@ func HitCommandProvider(f field.Model, reactorId uint32, characterId uint32, sta
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func TouchCommandProvider(f field.Model, reactorId uint32, characterId uint32, touching bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(reactorId))
+	value := &reactor2.Command[reactor2.TouchCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		Type:      reactor2.CommandTypeTouch,
+		Body: reactor2.TouchCommandBody{
+			ReactorId:   reactorId,
+			CharacterId: characterId,
+			Touching:    touching,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

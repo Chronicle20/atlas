@@ -19,6 +19,24 @@ func IsMount(m Model) bool {
 	return false
 }
 
+// IsZombified reports whether bs contains an unexpired buff carrying an
+// UNDEAD stat change -- the ZOMBIFY disease. Slice-level because every caller
+// already holds the drained list and the question is "does any of these".
+// See task-256 FR-1.
+func IsZombified(bs []Model) bool {
+	for _, b := range bs {
+		if b.Expired() {
+			continue
+		}
+		for _, c := range b.changes {
+			if c.Type() == string(charconst.TemporaryStatTypeUndead) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 type Model struct {
 	sourceId  int32
 	level     byte

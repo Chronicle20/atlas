@@ -148,24 +148,23 @@ func (f fakeMapleLifeProcessor) CreateMapleLife(ctx context.Context, in MapleLif
 }
 
 // postMapleLife issues a POST to the handleCreateMapleLife input handler, going through
-// ParseInput so JSON:API unmarshalling happens exactly as in production.
+// ParseInput so JSON:API unmarshalling happens exactly as in production. The handler
+// under test is built via newMapleLifeHandler with a fake Processor factory, avoiding
+// the real HTTP clients NewProcessor wires up.
 func postMapleLife(t *testing.T, body string) *httptest.ResponseRecorder {
 	t.Helper()
 	d, c := newTestDeps(t)
+	handler := newMapleLifeHandler(func(l logrus.FieldLogger) Processor {
+		return fakeMapleLifeProcessor{transactionId: "tx-1"}
+	})
 	req := httptest.NewRequest(http.MethodPost, "/factory/characters/maple-life", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/vnd.api+json")
 	rr := httptest.NewRecorder()
-	server.ParseInput[MapleLifeCreateRestModel](d, c, handleCreateMapleLife)(rr, req)
+	server.ParseInput[MapleLifeCreateRestModel](d, c, handler)(rr, req)
 	return rr
 }
 
 func TestMapleLifeRouteReturnsAcceptedWithTransactionId(t *testing.T) {
-	original := mapleLifeProcessor
-	mapleLifeProcessor = func(l logrus.FieldLogger) Processor {
-		return fakeMapleLifeProcessor{transactionId: "tx-1"}
-	}
-	defer func() { mapleLifeProcessor = original }()
-
 	body := `{"data":{"type":"maple-life-create","attributes":{"accountId":1,"worldId":0,"name":"Hero","classOrdinal":0,"gender":0,"face":20000,"hair":30030,"hairColor":2,"skinColor":1,"sp":5}}}`
 	rr := postMapleLife(t, body)
 

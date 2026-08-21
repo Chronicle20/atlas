@@ -1,12 +1,13 @@
 // Package snapshot captures the appearance/equipment/rank inputs a Player
 // NPC deploy freezes at deploy time (design §6.1). Capture fans out to the
-// Task 13 read clients (character, ranking) and assembles the frozen
-// snapshot; it does not decide eligibility (see eligibility/) or resolve a
-// script id, position, or object id (Task 15/16's job).
+// Task 13 read clients (character, inventory, ranking) and assembles the
+// frozen snapshot; it does not decide eligibility (see eligibility/) or
+// resolve a script id, position, or object id (Task 15/16's job).
 package snapshot
 
 import (
 	"atlas-player-npcs/character"
+	"atlas-player-npcs/inventory"
 	"atlas-player-npcs/ranking"
 	"atlas-player-npcs/routing"
 	"sort"
@@ -66,14 +67,21 @@ var equipmentPositions = func() map[slot.Position]struct{} {
 }()
 
 // Capture fetches a character's appearance, equipped items and current
-// ranks and assembles the frozen deploy snapshot. jobId is stored as the
+// ranks and assembles the frozen deploy snapshot. Equipment comes from
+// atlas-inventory's equip compartment, not atlas-character (design §6.1
+// correction; see the Task 13/14 fix round brief). jobId is stored as the
 // job *category* (design §6.1, `(jobId/100)*100`), reusing
 // routing.JobCategory rather than re-deriving the same arithmetic. A
 // character with no computed ranking yields WorldRank()/OverallRank() of
 // 0 with no error -- ranking.Processor already turns a 404 into the
 // zero-value Model (design §6.3).
-func Capture(characterId uint32, worldId world.Id, cp character.Processor, rp ranking.Processor) (Model, error) {
+func Capture(characterId uint32, worldId world.Id, cp character.Processor, ip inventory.Processor, rp ranking.Processor) (Model, error) {
 	c, err := cp.GetById(characterId)
+	if err != nil {
+		return Model{}, err
+	}
+
+	inv, err := ip.GetByCharacterId(characterId)
 	if err != nil {
 		return Model{}, err
 	}
@@ -89,7 +97,7 @@ func Capture(characterId uint32, worldId world.Id, cp character.Processor, rp ra
 		face:        c.Face(),
 		hair:        c.Hair(),
 		jobId:       job.Id(routing.JobCategory(c.JobId())),
-		equipment:   captureEquipment(c.Equipment()),
+		equipment:   captureEquipment(inv.Equipment()),
 		worldRank:   r.Rank(),
 		overallRank: r.Rank(),
 	}, nil
@@ -104,15 +112,15 @@ type equipmentPair struct {
 
 // captureEquipment applies the repo's raw-asset-slot cash convention
 // (services/atlas-channel/atlas.com/channel/character/model.go: `cash :=
-// s < -100; s += 100`) to the unfiltered equipped items atlas-character
-// returns, then re-expresses each occupied body position as the
-// deploy-snapshot's visible/masked slot pair (avatar.go:10-31's
+// s < -100; s += 100`) to the unfiltered equip-compartment assets
+// atlas-inventory returns, then re-expresses each occupied body position
+// as the deploy-snapshot's visible/masked slot pair (avatar.go:10-31's
 // convention, restated for a flat signed-slot schema instead of two
 // packet maps): the visible slot (Position*-1) prefers the cash item when
 // one is present; the masked slot (Position*-1+100) holds the real item
 // only when a cash item is masking it. Positions outside the classic
 // 1-11 equip range are dropped (FR-5.2).
-func captureEquipment(items []character.EquippedItem) []EquipmentRow {
+func captureEquipment(items []inventory.Asset) []EquipmentRow {
 	byPosition := make(map[slot.Position]*equipmentPair)
 
 	for _, item := range items {

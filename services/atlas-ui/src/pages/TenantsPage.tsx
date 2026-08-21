@@ -9,6 +9,10 @@ import { tenantsService } from "@/services/api";
 import type { Tenant } from "@/types/models/tenant";
 import { TenantPageSkeleton } from "@/components/common/skeletons/TenantPageSkeleton";
 import {
+  useGridRefresh,
+  type RefreshableQuery,
+} from "@/lib/hooks/useGridRefresh";
+import {
   tenantNameSchema,
   type TenantNameFormData,
 } from "@/lib/schemas/tenant.schema";
@@ -42,7 +46,26 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export function TenantsPage() {
-  const { tenants, loading, refreshTenants } = useTenant();
+  const { tenants, loading, refreshTenants, tenantsUpdatedAt } = useTenant();
+  const [isRefreshingTenants, setIsRefreshingTenants] = useState(false);
+  const tenantsSource: RefreshableQuery = {
+    isFetching: isRefreshingTenants,
+    dataUpdatedAt: tenantsUpdatedAt,
+    refetch: async () => {
+      setIsRefreshingTenants(true);
+      try {
+        const result = await refreshTenants();
+        return result && result.ok === false
+          ? { isError: true, error: result.error }
+          : { isError: false, error: null };
+      } finally {
+        setIsRefreshingTenants(false);
+      }
+    },
+  };
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    tenantsSource,
+  ]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tenantToDelete, setTenantToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -125,7 +148,7 @@ export function TenantsPage() {
     onRename: openRenameDialog,
   });
 
-  if (loading) {
+  if (loading && !isRefreshingTenants) {
     return <TenantPageSkeleton />;
   }
 
@@ -143,6 +166,9 @@ export function TenantsPage() {
         <DataTableWrapper
           columns={columns}
           data={tenants}
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
+          lastUpdatedAt={lastUpdatedAt}
           emptyState={{
             title: "No tenants found",
             description: "There are no tenants to display at this time.",

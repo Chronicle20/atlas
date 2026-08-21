@@ -29,7 +29,10 @@ vi.mock("sonner", () => ({
   },
 }));
 
+vi.mock("@/lib/utils/toast", () => ({ success: vi.fn(), error: vi.fn() }));
+
 import { TenantsPage } from "@/pages/TenantsPage";
+import * as gridToast from "@/lib/utils/toast";
 
 function makeTenant(id: string, name: string): Tenant {
   return {
@@ -50,6 +53,7 @@ function defaultUseTenantValue() {
   return {
     tenants: [tenantA, tenantB],
     loading: false,
+    tenantsUpdatedAt: 0,
     refreshTenants: refreshTenantsMock,
     activeTenant: tenantA,
     setActiveTenant: vi.fn(),
@@ -76,6 +80,7 @@ async function openRenameDialogFor(tenantId: string) {
 describe("TenantsPage rename flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    refreshTenantsMock.mockResolvedValue({ ok: true });
     useTenantMock.mockReturnValue(defaultUseTenantValue());
   });
 
@@ -202,5 +207,118 @@ describe("TenantsPage rename flow", () => {
     expect(consoleErrorSpy).toHaveBeenCalled();
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     consoleErrorSpy.mockRestore();
+  });
+});
+
+describe("TenantsPage empty-state refresh", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    refreshTenantsMock.mockResolvedValue({ ok: true });
+  });
+
+  function renderPage() {
+    return render(
+      <MemoryRouter>
+        <TenantsPage />
+      </MemoryRouter>,
+    );
+  }
+
+  it("offers a refresh control when no tenants exist", () => {
+    useTenantMock.mockReturnValue({ ...defaultUseTenantValue(), tenants: [] });
+    renderPage();
+
+    expect(screen.getByText("No tenants found")).toBeInTheDocument();
+    expect(screen.getByTestId("empty-state-refresh")).toBeInTheDocument();
+  });
+
+  it("clicking refresh calls refreshTenants and toasts success", async () => {
+    useTenantMock.mockReturnValue({ ...defaultUseTenantValue(), tenants: [] });
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("empty-state-refresh"));
+
+    await waitFor(() => {
+      expect(refreshTenantsMock).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(gridToast.success).toHaveBeenCalledWith("Data refreshed");
+    });
+    expect(gridToast.error).not.toHaveBeenCalled();
+  });
+
+  it("toasts an error when the refresh reports failure", async () => {
+    useTenantMock.mockReturnValue({ ...defaultUseTenantValue(), tenants: [] });
+    const failure = new Error("network down");
+    refreshTenantsMock.mockResolvedValue({ ok: false, error: failure });
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("empty-state-refresh"));
+
+    await waitFor(() => {
+      expect(gridToast.error).toHaveBeenCalledTimes(1);
+    });
+    expect(gridToast.error).toHaveBeenCalledWith(failure, {
+      context: { action: "refresh" },
+    });
+    expect(gridToast.success).not.toHaveBeenCalled();
+  });
+
+  it("treats an undefined refresh result as success", async () => {
+    useTenantMock.mockReturnValue({ ...defaultUseTenantValue(), tenants: [] });
+    refreshTenantsMock.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderPage();
+
+    await user.click(screen.getByTestId("empty-state-refresh"));
+
+    await waitFor(() => {
+      expect(gridToast.success).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("shows the grid, not the skeleton, while refreshing", async () => {
+    let resolveRefresh: (value: { ok: true }) => void;
+    refreshTenantsMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRefresh = resolve;
+      }),
+    );
+    const value = { ...defaultUseTenantValue(), tenants: [tenantA, tenantB] };
+    useTenantMock.mockReturnValue(value);
+    const user = userEvent.setup();
+    const { rerender } = renderPage();
+
+    const refreshButtons = screen.getAllByRole("button", { name: /refresh/i });
+    await user.click(refreshButtons[0] as HTMLElement);
+
+    useTenantMock.mockReturnValue({ ...value, loading: true });
+    rerender(
+      <MemoryRouter>
+        <TenantsPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Tenants" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Acme")).toBeInTheDocument();
+
+    resolveRefresh!({ ok: true });
+  });
+
+  it("renders the skeleton on first load", () => {
+    useTenantMock.mockReturnValue({
+      ...defaultUseTenantValue(),
+      loading: true,
+    });
+    renderPage();
+
+    expect(
+      screen.queryByRole("heading", { name: "Tenants" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("No tenants found")).not.toBeInTheDocument();
   });
 });

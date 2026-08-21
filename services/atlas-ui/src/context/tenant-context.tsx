@@ -13,12 +13,15 @@ import { api } from "@/lib/api/client";
 import type { Tenant, TenantConfig } from "@/types/models/tenant";
 import { createErrorFromUnknown } from "@/types/api/errors";
 
+export type TenantRefreshResult = { ok: true } | { ok: false; error: unknown };
+
 type TenantContextType = {
   tenants: Tenant[];
   activeTenant: Tenant | null;
   loading: boolean;
+  tenantsUpdatedAt: number;
   setActiveTenant: (tenant: Tenant) => void;
-  refreshTenants: () => Promise<void>;
+  refreshTenants: () => Promise<TenantRefreshResult>;
   refreshAndSelectTenant: (tenantId: string) => Promise<Tenant | null>;
   fetchTenantConfiguration: (tenantId: string) => Promise<TenantConfig>;
 };
@@ -35,6 +38,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [_error, setError] = useState<string | null>(null);
+  const [tenantsUpdatedAt, setTenantsUpdatedAt] = useState<number>(0);
 
   const LOCAL_STORAGE_KEY = "activeTenantId";
 
@@ -78,6 +82,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       .getAllTenants()
       .then((data) => {
         setTenants(data);
+        setTenantsUpdatedAt(Date.now());
 
         const storedId = localStorage.getItem(LOCAL_STORAGE_KEY);
         const storedTenant = data.find((t) => t.id === storedId);
@@ -105,12 +110,13 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   };
 
   // Function to refresh tenants list
-  const refreshTenants = async () => {
+  const refreshTenants = async (): Promise<TenantRefreshResult> => {
     try {
       setLoading(true);
       setError(null); // Clear previous errors
       const data = await tenantsService.getAllTenants();
       setTenants(data);
+      setTenantsUpdatedAt(Date.now());
 
       if (activeTenant) {
         const refreshedActive = data.find((t) => t.id === activeTenant.id);
@@ -126,6 +132,8 @@ export function TenantProvider({ children }: { children: ReactNode }) {
           setActiveTenantState(storedTenant ?? data[0] ?? null);
         }
       }
+
+      return { ok: true };
     } catch (err: unknown) {
       const errorInfo = createErrorFromUnknown(
         err,
@@ -133,6 +141,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       );
       setError(errorInfo.message);
       console.error("Failed to refresh tenants:", errorInfo);
+      return { ok: false, error: errorInfo };
     } finally {
       setLoading(false);
     }
@@ -148,6 +157,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       setError(null);
       const data = await tenantsService.getAllTenants();
       setTenants(data);
+      setTenantsUpdatedAt(Date.now());
 
       // Find and select the specified tenant
       const newTenant = data.find((t) => t.id === tenantId);
@@ -190,6 +200,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         tenants,
         activeTenant,
         loading,
+        tenantsUpdatedAt,
         setActiveTenant,
         refreshTenants,
         refreshAndSelectTenant,

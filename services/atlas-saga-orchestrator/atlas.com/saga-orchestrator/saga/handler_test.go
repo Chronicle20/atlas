@@ -1666,3 +1666,30 @@ func TestHandleStartNpcConversation_DoesNotSelfComplete(t *testing.T) {
 	assert.Equal(t, Pending, got.Steps()[0].Status(),
 		"start_npc_conversation must stay Pending after the handler returns — only STARTED/START_ERROR may complete or fail it")
 }
+
+// TestHandlePlayJukebox_InvalidPayload proves handlePlayJukebox rejects a step
+// whose payload is not a PlayJukeboxPayload before touching Kafka. The happy
+// path is not covered here for the same reason handleFieldEffectWeather is
+// not: no fixture in this package stubs the atlas-kafka producer's
+// WriterFactory/env-topic resolution. Message-shape coverage lives in
+// TestPlayJukeboxCommandProvider (map_command/producer_test.go).
+func TestHandlePlayJukebox_InvalidPayload(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	_, ctx := setupContext()
+
+	saga, err := NewBuilder().
+		SetTransactionId(uuid.New()).
+		SetSagaType(QuestReward). // any type; this test never reaches the saga body
+		SetInitiatedBy("test").
+		Build()
+	assert.NoError(t, err)
+
+	step := NewStep[any]("play-jukebox-step", Pending, PlayJukebox, "invalid-payload-type")
+
+	err = NewHandler(logger, ctx).handlePlayJukebox(saga, step)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid payload")
+}

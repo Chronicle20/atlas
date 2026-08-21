@@ -246,6 +246,9 @@ const (
 	// Field effect actions
 	FieldEffectWeather = sharedsaga.FieldEffectWeather
 
+	// Jukebox actions
+	PlayJukebox = sharedsaga.PlayJukebox
+
 	// Note actions
 	CreateNote = sharedsaga.CreateNote
 
@@ -384,6 +387,7 @@ type (
 	BroadcastPqMessagePayload           = sharedsaga.BroadcastPqMessagePayload
 	StageClearAttemptPqPayload          = sharedsaga.StageClearAttemptPqPayload
 	FieldEffectWeatherPayload           = sharedsaga.FieldEffectWeatherPayload
+	PlayJukeboxPayload                  = sharedsaga.PlayJukeboxPayload
 	ExperienceDistributions             = sharedsaga.ExperienceDistributions
 	SetAssetOwnerPayload                = sharedsaga.SetAssetOwnerPayload
 	ApplyAssetLockPayload               = sharedsaga.ApplyAssetLockPayload
@@ -1703,6 +1707,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case FieldEffectWeather:
 		var payload FieldEffectWeatherPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case PlayJukebox:
+		var payload PlayJukeboxPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

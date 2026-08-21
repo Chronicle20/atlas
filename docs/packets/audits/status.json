@@ -3,7 +3,7 @@
   "exportHashes": {
     "gms_v48": "b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6",
     "gms_v61": "af9ddeaff46dc92af0cf2199a33d7ef60fdf01db6423d5f396a55c0389a3c745",
-    "gms_v72": "0d3e12b8d5d6945bedf48664207eb78fabe45152f35aff3b2715de0173d31c1c",
+    "gms_v72": "de3fa5f9749f4f41ef7334eb4c18d9c08c7ea09c222e460fd8a384037a3a56d8",
     "gms_v79": "b7e7015800918afe24beff39ecd48ad41ebcee47588d6c2bca1c033b79efd636",
     "gms_v83": "dd8bace2c2f0a1c106fbbdbd95c22491341d7fd34b6ce5ac07dfbd74ef8da439",
     "gms_v84": "2bbc30efdc7355eaa7953cfbb459d09646a090a539a8ef79c5d10e8affb6ef11",
@@ -11825,8 +11825,7 @@
           "opcode": 78
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 78
         },
         "gms_v79": {

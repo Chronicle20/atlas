@@ -8,7 +8,7 @@ Tool: `b8d1364d56eb63803a6a2a83255442bf34c87a3f7e66050d6521890ff216b0c5`
 
 - export gms_v48: `b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6`
 - export gms_v61: `af9ddeaff46dc92af0cf2199a33d7ef60fdf01db6423d5f396a55c0389a3c745`
-- export gms_v72: `0d3e12b8d5d6945bedf48664207eb78fabe45152f35aff3b2715de0173d31c1c`
+- export gms_v72: `de3fa5f9749f4f41ef7334eb4c18d9c08c7ea09c222e460fd8a384037a3a56d8`
 - export gms_v79: `b7e7015800918afe24beff39ecd48ad41ebcee47588d6c2bca1c033b79efd636`
 - export gms_v83: `dd8bace2c2f0a1c106fbbdbd95c22491341d7fd34b6ce5ac07dfbd74ef8da439`
 - export gms_v84: `2bbc30efdc7355eaa7953cfbb459d09646a090a539a8ef79c5d10e8affb6ef11`
@@ -131,7 +131,7 @@ Tool: `b8d1364d56eb63803a6a2a83255442bf34c87a3f7e66050d6521890ff216b0c5`
 | IMITATED_NPC_RESULT | CWvsContext::OnImitatedNPCResult; sub_830AFF; sub_902E77 |  |  | ⬜ | 0x04D | ❌ | 0x04D | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x052 | ❌ | 0x052 | ❌ | 0x054 | ❌ | 0x053 | ❌ |  | ⬜ |
 | BLOCKED_SERVER | CField::OnTransferChannelReqIgnored | field/clientbound/FieldBlockedServer (T1) | 0x04E | ✅ | 0x062 | 🟡ᶠ | 0x078 | 🟡ᶠ | 0x07C | 🟡ᶠ | 0x084 | ✅ | 0x087 | ✅ | 0x08C | ✅ | 0x093 | 🟡ᶠ | 0x094 | ✅ | 0x082 | ✅ |
 | IDA_0X04E | sub_B0FDF2 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04E | ❌ |
-| IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_830B0B; sub_902E83; sub_AEC92E |  |  | ⬜ | 0x04E | ✅ | 0x04E | ❌ | 0x04E | ✅ | 0x051 | ❌ | 0x053 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x054 | ❌ | 0x055 | ❌ |
+| IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_830B0B; sub_902E83; sub_AEC92E |  |  | ⬜ | 0x04E | ✅ | 0x04E | ✅ | 0x04E | ✅ | 0x051 | ❌ | 0x053 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x054 | ❌ | 0x055 | ❌ |
 | FORCED_MAP_EQUIP | CField::OnFieldSpecificData | field/clientbound/FieldForcedMapEquip (T1) | 0x04F | ✅ | 0x063 | 🟡ᶠ | 0x079 | 🟡ᶠ | 0x07D | 🟡ᶠ | 0x085 | ✅ | 0x088 | ✅ | 0x08D | ✅ | 0x094 | 🟡ᶠ | 0x095 | ✅ | 0x083 | ✅ |
 | IDA_0X04F | sub_AEC942 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04F | ❌ |
 | LIMITED_NPC_DISABLE_INFO | CNpcPool::OnUpdateLimitedDisableInfo; CWvsContext::OnLimitedNPCDisableInfo; sub_AECCBF |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x04F | ❌ | 0x052 | ❌ | 0x054 | ❌ | 0x054 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x056 | ❌ |
@@ -1065,7 +1065,7 @@ Tool: `b8d1364d56eb63803a6a2a83255442bf34c87a3f7e66050d6521890ff216b0c5`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 214 | 0 | 19 | 199 | 595 | 0 | 49.5% |
 | v61 | 281 | 0 | 56 | 232 | 458 | 0 | 49.4% |
-| v72 | 305 | 0 | 69 | 242 | 411 | 0 | 49.5% |
+| v72 | 306 | 0 | 69 | 241 | 411 | 0 | 49.7% |
 | v79 | 352 | 0 | 68 | 237 | 370 | 0 | 53.6% |
 | v83 | 480 | 0 | 0 | 319 | 228 | 0 | 60.1% |
 | v84 | 451 | 0 | 0 | 326 | 250 | 0 | 58.0% |

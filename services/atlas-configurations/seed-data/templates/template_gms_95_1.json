@@ -2430,6 +2430,15 @@
         "services": [
           "channel"
         ]
+      },
+      {
+        "opCode": "0x137",
+        "validator": "LoggedInValidator",
+        "handler": "MapleLifeCheckNameHandle",
+        "fname": "CUICharacterSaleDlg::SendCheckDuplicateIDPacket",
+        "services": [
+          "channel"
+        ]
       }
     ],
     "writers": [
@@ -5270,6 +5279,36 @@
             "RESULT_SUCCESS": 69,
             "RESULT_FAILURE": 71,
             "INVALID": 66
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x19D",
+        "writer": "MapleLifeResult",
+        "fname": "CUICharacterSaleDlg::OnCheckDuplicatedIDResult",
+        "options": {
+          "operations": {
+            "AVAILABLE": 0,
+            "TAKEN": 1,
+            "UNKNOWN_ERROR": 255
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x19E",
+        "writer": "MapleLifeError",
+        "fname": "CUICharacterSaleDlg::OnCreateNewCharacterResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 56,
+            "NAME_TAKEN_AT_SUBMIT": 58,
+            "UNKNOWN_ERROR": 255
           }
         },
         "services": [

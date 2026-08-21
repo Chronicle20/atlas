@@ -11,7 +11,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -107,8 +106,13 @@ func TestForCharacter_WritesLastPosition(t *testing.T) {
 // this pins Fh == 0 as a deliberate, load-bearing wire value rather than an
 // oversight the next refactor could silently regress.
 func TestTeleportCharacter_EmitsFhZeroOnWire(t *testing.T) {
-	capture := producertest.InstallCapturing()
-	t.Cleanup(producertest.InstallNoop)
+	// sharedCapture is installed once for the whole package (testmain_test.go)
+	// rather than per-test: producertest.InstallCapturing resets the producer
+	// manager singleton, and doing that mid-run would race a still-in-flight
+	// async emit from an earlier test's TeleportCharacter/ForCharacter call.
+	// Reset here only clears previously recorded messages -- it does not touch
+	// the singleton -- so it stays safe to call per-test.
+	sharedCapture.Reset()
 
 	p, _ := newMovementTestProcessor(t)
 	f := movementTestField()
@@ -119,7 +123,7 @@ func TestTeleportCharacter_EmitsFhZeroOnWire(t *testing.T) {
 
 	deadline := time.Now().Add(time.Second)
 	for {
-		got := capture.Messages(movement2.EnvCommandCharacterMovement)
+		got := sharedCapture.Messages(movement2.EnvCommandCharacterMovement)
 		if len(got) > 0 {
 			var cmd movement2.Command[any]
 			if err := json.Unmarshal(got[0].Value, &cmd); err != nil {

@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
@@ -50,9 +51,10 @@ func TestHandleDueyCouponUse(t *testing.T) {
 		s, ctx, cleanup := newCashItemUseTestSession(t, charId)
 		defer cleanup()
 
+		rec := &gaugeProducerRecorder{}
 		req := request.Request(cashItemUsePrefix(srcSlot, itemId))
 		reader := request.NewRequestReader(&req, 0)
-		CharacterCashItemUseHandleFunc(logrus.New(), ctx, nil)(s, &reader, map[string]interface{}{})
+		CharacterCashItemUseHandleFunc(logrus.New(), ctx, rec.producer())(s, &reader, map[string]interface{}{})
 
 		if len(*sagas) != 1 {
 			t.Fatalf("sagas created = %d, want 1", len(*sagas))
@@ -94,7 +96,8 @@ func TestHandleDueyCouponUse(t *testing.T) {
 		raw := append([]byte{0x2A, 0x00, 0x00, 0x00}, cashItemUsePrefix(srcSlot, itemId)...)
 		req := request.Request(raw)
 		reader := request.NewRequestReader(&req, 0)
-		CharacterCashItemUseHandleFunc(logrus.New(), ctx, nil)(s, &reader, map[string]interface{}{})
+		rec := &gaugeProducerRecorder{}
+		CharacterCashItemUseHandleFunc(logrus.New(), ctx, rec.producer())(s, &reader, map[string]interface{}{})
 
 		if len(*sagas) != 1 {
 			t.Fatalf("sagas created = %d, want 1", len(*sagas))
@@ -127,9 +130,10 @@ func TestHandleDueyCouponUse(t *testing.T) {
 		s, ctx, cleanup := newCashItemUseTestSession(t, charId)
 		defer cleanup()
 
+		rec := &gaugeProducerRecorder{}
 		req := request.Request(cashItemUsePrefix(srcSlot, itemId))
 		reader := request.NewRequestReader(&req, 0)
-		CharacterCashItemUseHandleFunc(logrus.New(), ctx, nil)(s, &reader, map[string]interface{}{})
+		CharacterCashItemUseHandleFunc(logrus.New(), ctx, rec.producer())(s, &reader, map[string]interface{}{})
 
 		if len(*sagas) != 1 {
 			t.Fatalf("sagas created = %d, want 1", len(*sagas))
@@ -138,6 +142,42 @@ func TestHandleDueyCouponUse(t *testing.T) {
 			if step.Action == saga.DestroyAssetFromSlot || step.Action == saga.DestroyAsset {
 				t.Errorf("saga destroys the ticket via step %q — FR-26 says it is consumed only by parcel_send", step.StepId)
 			}
+		}
+	})
+
+	// Regression for the bug this fix addresses: the ticket is deliberately
+	// not consumed (FR-26), so no INVENTORY_OPERATION follows, and
+	// PARCEL[OPEN_QUICK] is neither STAT_CHANGED nor SET_FIELD either. Without
+	// an explicit session.EnableActions announce, the client's
+	// m_bExclRequestSent lock is never released and the player is wedged.
+	t.Run("unlocks the client's exclusive-request lock", func(t *testing.T) {
+		restoreSlot := installCashItemInSlotSeam(t, srcSlot, itemId)
+		defer restoreSlot()
+		_, restoreSaga := installDueyCouponSagaSeam(t)
+		defer restoreSaga()
+
+		s, ctx, cleanup := newCashItemUseTestSession(t, charId)
+		defer cleanup()
+
+		rec := &gaugeProducerRecorder{}
+		req := request.Request(cashItemUsePrefix(srcSlot, itemId))
+		reader := request.NewRequestReader(&req, 0)
+		CharacterCashItemUseHandleFunc(logrus.New(), ctx, rec.producer())(s, &reader, map[string]interface{}{})
+
+		if rec.calls != 1 {
+			t.Fatalf("producer calls = %d, want 1 (the enable-actions unlock)", rec.calls)
+		}
+		if rec.lastName != statpkt.StatChangedWriter {
+			t.Errorf("announce = %q, want %q", rec.lastName, statpkt.StatChangedWriter)
+		}
+		if len(rec.lastBody) < 1 || rec.lastBody[0] != 1 {
+			t.Fatalf("body = %v, want leading byte 1 (exclRequestSent = true)", rec.lastBody)
+		}
+		if len(rec.lastBody) < 5 {
+			t.Fatalf("body = %v, want at least 5 bytes (exclRequestSent bool + updateMask)", rec.lastBody)
+		}
+		if updateMask := uint32(rec.lastBody[1]) | uint32(rec.lastBody[2])<<8 | uint32(rec.lastBody[3])<<16 | uint32(rec.lastBody[4])<<24; updateMask != 0 {
+			t.Errorf("updateMask = %#x, want 0 (empty Update set)", updateMask)
 		}
 	})
 

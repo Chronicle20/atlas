@@ -143,7 +143,8 @@ func TestHandleChalkboardCollision(t *testing.T) {
 		raw := append([]byte{0x2A, 0x00, 0x00, 0x00}, cashItemUsePrefix(srcSlot, item.QuickDeliveryTicketId)...)
 		req := request.Request(raw)
 		reader := request.NewRequestReader(&req, 0)
-		CharacterCashItemUseHandleFunc(logrus.New(), ctx, nil)(s, &reader, map[string]interface{}{})
+		rec := &gaugeProducerRecorder{}
+		CharacterCashItemUseHandleFunc(logrus.New(), ctx, rec.producer())(s, &reader, map[string]interface{}{})
 
 		msgs := (*captured)[chalkboardMsg.EnvCommandTopic]
 		if len(msgs) != 0 {

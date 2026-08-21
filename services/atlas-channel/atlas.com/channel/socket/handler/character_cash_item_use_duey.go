@@ -70,7 +70,11 @@ func dueyCouponEnabled(t tenant.Model) bool {
 // FR-26), and the client itself pre-checks CWvsContext::IsExist(5330000)
 // before letting the player reach that send. There is no sub-body to
 // decode; CASH_ITEM_USE's common header (source slot, item id) is all this
-// operation carries.
+// operation carries. Precisely because the ticket is not consumed here, no
+// INVENTORY_OPERATION follows the success path either, so it must call
+// session.EnableActions itself — PARCEL[OPEN_QUICK] is neither
+// STAT_CHANGED, INVENTORY_OPERATION, nor SET_FIELD, and none of those ever
+// arrives on its own to release the client's exclusive-request lock.
 func handleDueyCouponUse(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, t tenant.Model, itemId item.Id, source slot.Position, it CashSlotItemType) {
 	return func(s session.Model, t tenant.Model, itemId item.Id, source slot.Position, it CashSlotItemType) {
 		enableActions := func() {
@@ -122,5 +126,12 @@ func handleDueyCouponUse(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			"source_slot":    int16(source),
 			"transaction_id": transactionId.String(),
 		}).Info("Quick delivery dialog open requested.")
+
+		// PARCEL[OPEN_QUICK] is the only response this success path sends, and
+		// it clears none of the client's three unlock arms (STAT_CHANGED,
+		// INVENTORY_OPERATION, SET_FIELD). Without this, the client's
+		// m_bExclRequestSent lock — armed by the item use that got us here —
+		// is never released, wedging the player for the rest of the session.
+		enableActions()
 	}
 }

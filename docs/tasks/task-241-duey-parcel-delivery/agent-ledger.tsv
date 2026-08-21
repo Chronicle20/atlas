@@ -165,3 +165,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-20T10:26:02Z	agent	Fix round C	atlas-implementer	sonnet	-	-	-	-	DONE	f5482cf21	-	-	-	-
 2026-08-21T17:20:47Z	agent	bug-duey-click-no-dialog	atlas-implementer	sonnet	-	-	-	-	DONE	ce894c841	-	-	-	-
 2026-08-21T17:52:41Z	agent	bug-duey-click-no-dialog	atlas-verifier	haiku	-	-	-	-	PASS	8acb7af09	-	-	-	-
+2026-08-21T21:37:22Z	agent	bug-quick-send-ticket-wrong-compartment	atlas-implementer	sonnet	-	-	-	-	DONE	7c09672dd	-	-	-	-
+2026-08-21T21:37:22Z	agent	bug-quick-delivery-ticket-wedges-client	atlas-implementer	sonnet	-	-	-	-	DONE	cd84cf08e	-	-	-	-

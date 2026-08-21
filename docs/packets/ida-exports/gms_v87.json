@@ -16071,6 +16071,20 @@
       "address": "0xab501c",
       "direction": "serverbound",
       "calls": []
+    },
+    "CMob::ApplyControl": {
+      "address": "0x6a9061",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
     }
   }
 }

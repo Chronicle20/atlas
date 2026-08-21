@@ -16120,6 +16120,20 @@
           "comment": ""
         }
       ]
+    },
+    "CMob::ApplyControl": {
+      "address": "0x66e146",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
     }
   }
 }

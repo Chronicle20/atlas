@@ -17103,6 +17103,22 @@
           "comment": "nItemID (v4/nItemID; COutPacket::Encode4 at 0x9da5d7; opcode 123/0x7B from COutPacket::COutPacket(&oPacket, 123) at 0x9da5b7; task-230 verify gms_v95)"
         }
       ]
+    },
+    "CMob::ApplyControl": {
+      "address": "0x640d20",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(_ZtlSecureFuse<int>(m_pTemplate->_ZtlSecureTear_bPickUpDrop, m_pTemplate->_ZtlSecureTear_bPickUpDrop_CS"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(_ZtlSecureFuse<int>(m_pTemplate->_ZtlSecureTear_bPickUpDrop, m_pTemplate->_ZtlSecureTear_bPickUpDrop_CS"
+        }
+      ]
     }
   }
 }

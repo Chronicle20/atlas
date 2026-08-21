@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/google/uuid"
@@ -468,20 +469,47 @@ type jukeboxAnnounce struct {
 	Body   []byte
 }
 
+// jukeboxAnnounceRecorder collects jukeboxAnnounce invocations made
+// concurrently -- handleStatusEventJukeboxStart/End fan the announce out
+// through map.(*ProcessorImpl).ForSessionsInMap, which runs the operator on
+// one goroutine per session (libs/atlas-model ExecuteForEachSlice), so a
+// bare captured slice races. The mutex is held only around the append and
+// around the snapshot the test body reads back after the fan-out completes.
+type jukeboxAnnounceRecorder struct {
+	mu   sync.Mutex
+	seen []jukeboxAnnounce
+}
+
+func (r *jukeboxAnnounceRecorder) record(a jukeboxAnnounce) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.seen = append(r.seen, a)
+}
+
+// snapshot returns a copy of every call recorded so far, so the test body
+// can range/index it without holding the lock itself.
+func (r *jukeboxAnnounceRecorder) snapshot() []jukeboxAnnounce {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := make([]jukeboxAnnounce, len(r.seen))
+	copy(out, r.seen)
+	return out
+}
+
 // stubDoorAnnounceForJukebox swaps doorAnnounce for a recording stub and
-// returns a restore func plus the calls it captured -- the -1 stop signal
-// is a correctness requirement, not a convention (design §3.2).
-func stubDoorAnnounceForJukebox(t *testing.T) (restore func(), calls *[]jukeboxAnnounce) {
+// returns a restore func plus the recorder it captured into -- the -1 stop
+// signal is a correctness requirement, not a convention (design §3.2).
+func stubDoorAnnounceForJukebox(t *testing.T) (restore func(), rec *jukeboxAnnounceRecorder) {
 	t.Helper()
-	var seen []jukeboxAnnounce
+	rec = &jukeboxAnnounceRecorder{}
 
 	orig := doorAnnounce
 	doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, _ writer.Producer, writerName string, enc packet.Encode, _ session.Model) error {
-		seen = append(seen, jukeboxAnnounce{Writer: writerName, Body: enc(l, ctx)(nil)})
+		rec.record(jukeboxAnnounce{Writer: writerName, Body: enc(l, ctx)(nil)})
 		return nil
 	}
 
-	return func() { doorAnnounce = orig }, &seen
+	return func() { doorAnnounce = orig }, rec
 }
 
 // decodePlayJukebox decodes a captured PlayJukebox wire body via the real
@@ -515,7 +543,7 @@ func TestHandleStatusEventJukeboxStart_BroadcastsToEverySessionInField(t *testin
 	addFieldSession(t, ctx, l, 1001, f)
 	addFieldSession(t, ctx, l, 1002, f)
 
-	restore, calls := stubDoorAnnounceForJukebox(t)
+	restore, rec := stubDoorAnnounceForJukebox(t)
 	defer restore()
 
 	sc := newTestServerModel(t, ctx)
@@ -529,10 +557,11 @@ func TestHandleStatusEventJukeboxStart_BroadcastsToEverySessionInField(t *testin
 	}
 	handleStatusEventJukeboxStart(sc, nil)(l, ctx, e)
 
-	if len(*calls) != 2 {
-		t.Fatalf("announce count = %d, want 2", len(*calls))
+	calls := rec.snapshot()
+	if len(calls) != 2 {
+		t.Fatalf("announce count = %d, want 2", len(calls))
 	}
-	for _, c := range *calls {
+	for _, c := range calls {
 		if c.Writer != fieldcb.PlayJukeboxWriter {
 			t.Fatalf("writer = %s, want %s", c.Writer, fieldcb.PlayJukeboxWriter)
 		}
@@ -556,7 +585,7 @@ func TestHandleStatusEventJukeboxStart_IgnoresOtherEventTypes(t *testing.T) {
 	addFieldSession(t, ctx, l, 1001, f)
 	addFieldSession(t, ctx, l, 1002, f)
 
-	restore, calls := stubDoorAnnounceForJukebox(t)
+	restore, rec := stubDoorAnnounceForJukebox(t)
 	defer restore()
 
 	sc := newTestServerModel(t, ctx)
@@ -570,8 +599,8 @@ func TestHandleStatusEventJukeboxStart_IgnoresOtherEventTypes(t *testing.T) {
 	}
 	handleStatusEventJukeboxStart(sc, nil)(l, ctx, e)
 
-	if len(*calls) != 0 {
-		t.Fatalf("announce count = %d, want 0", len(*calls))
+	if calls := rec.snapshot(); len(calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(calls))
 	}
 }
 
@@ -585,7 +614,7 @@ func TestHandleStatusEventJukeboxStart_IgnoresOtherWorldChannel(t *testing.T) {
 	addFieldSession(t, ctx, l, 1001, f)
 	addFieldSession(t, ctx, l, 1002, f)
 
-	restore, calls := stubDoorAnnounceForJukebox(t)
+	restore, rec := stubDoorAnnounceForJukebox(t)
 	defer restore()
 
 	sc := newTestServerModel(t, ctx)
@@ -599,8 +628,8 @@ func TestHandleStatusEventJukeboxStart_IgnoresOtherWorldChannel(t *testing.T) {
 	}
 	handleStatusEventJukeboxStart(sc, nil)(l, ctx, e)
 
-	if len(*calls) != 0 {
-		t.Fatalf("announce count = %d, want 0", len(*calls))
+	if calls := rec.snapshot(); len(calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(calls))
 	}
 }
 
@@ -614,7 +643,7 @@ func TestHandleStatusEventJukeboxEnd_BroadcastsExactlyMinusOne(t *testing.T) {
 	addFieldSession(t, ctx, l, 1001, f)
 	addFieldSession(t, ctx, l, 1002, f)
 
-	restore, calls := stubDoorAnnounceForJukebox(t)
+	restore, rec := stubDoorAnnounceForJukebox(t)
 	defer restore()
 
 	sc := newTestServerModel(t, ctx)
@@ -628,10 +657,11 @@ func TestHandleStatusEventJukeboxEnd_BroadcastsExactlyMinusOne(t *testing.T) {
 	}
 	handleStatusEventJukeboxEnd(sc, nil)(l, ctx, e)
 
-	if len(*calls) != 2 {
-		t.Fatalf("announce count = %d, want 2", len(*calls))
+	calls := rec.snapshot()
+	if len(calls) != 2 {
+		t.Fatalf("announce count = %d, want 2", len(calls))
 	}
-	for _, c := range *calls {
+	for _, c := range calls {
 		if c.Writer != fieldcb.PlayJukeboxWriter {
 			t.Fatalf("writer = %s, want %s", c.Writer, fieldcb.PlayJukeboxWriter)
 		}
@@ -661,7 +691,7 @@ func TestHandleStatusEventJukeboxEnd_IgnoresOtherWorldChannel(t *testing.T) {
 	addFieldSession(t, ctx, l, 1001, f)
 	addFieldSession(t, ctx, l, 1002, f)
 
-	restore, calls := stubDoorAnnounceForJukebox(t)
+	restore, rec := stubDoorAnnounceForJukebox(t)
 	defer restore()
 
 	sc := newTestServerModel(t, ctx)
@@ -675,8 +705,8 @@ func TestHandleStatusEventJukeboxEnd_IgnoresOtherWorldChannel(t *testing.T) {
 	}
 	handleStatusEventJukeboxEnd(sc, nil)(l, ctx, e)
 
-	if len(*calls) != 0 {
-		t.Fatalf("announce count = %d, want 0", len(*calls))
+	if calls := rec.snapshot(); len(calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(calls))
 	}
 }
 
@@ -703,15 +733,16 @@ func TestAnnounceActiveJukebox_ReplaysToTheEnteringSession(t *testing.T) {
 
 	jukeboxServer(t, http.StatusOK, `{"data":{"type":"jukebox","id":"5100000","attributes":{"itemId":5100000,"playerName":"Chronicle"}}}`)
 
-	restore, calls := stubDoorAnnounceForJukebox(t)
+	restore, rec := stubDoorAnnounceForJukebox(t)
 	defer restore()
 
 	announceActiveJukebox(l, ctx, nil, f, session.Model{})
 
-	if len(*calls) != 1 {
-		t.Fatalf("announce count = %d, want 1", len(*calls))
+	calls := rec.snapshot()
+	if len(calls) != 1 {
+		t.Fatalf("announce count = %d, want 1", len(calls))
 	}
-	c := (*calls)[0]
+	c := calls[0]
 	if c.Writer != fieldcb.PlayJukeboxWriter {
 		t.Fatalf("writer = %s, want %s", c.Writer, fieldcb.PlayJukeboxWriter)
 	}
@@ -731,12 +762,12 @@ func TestAnnounceActiveJukebox_FailsOpenWhenMapsUnreachable(t *testing.T) {
 
 	jukeboxServer(t, http.StatusNotFound, "")
 
-	restore, calls := stubDoorAnnounceForJukebox(t)
+	restore, rec := stubDoorAnnounceForJukebox(t)
 	defer restore()
 
 	announceActiveJukebox(l, ctx, nil, f, session.Model{})
 
-	if len(*calls) != 0 {
-		t.Fatalf("announce count = %d, want 0", len(*calls))
+	if calls := rec.snapshot(); len(calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(calls))
 	}
 }

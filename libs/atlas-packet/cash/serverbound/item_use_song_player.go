@@ -10,8 +10,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 )
 
-// packet-audit:fname CWvsContext::SendConsumeCashItemUseRequest
-//
 // ItemUseSongPlayer is the USE_CASH_ITEM sub-body for a song player (jukebox)
 // cash item, item classification 510 — cash-slot type 20 on every version
 // examined (get_cashslot_item_type @0x488c70 on GMS v95.0: `case 510: result = 20`).
@@ -36,6 +34,7 @@ import (
 // The server never resolves the BGM. The client reads the item's own
 // info/path node in CMapLoadable::PlayNextMusic @0x61dab0 and hands it to
 // CSoundMan::PlayBGM, so no BGM name crosses the wire in either direction.
+// packet-audit:fname CWvsContext::SendConsumeCashItemUseRequest
 type ItemUseSongPlayer struct {
 	soundLengthMs   uint32
 	updateTime      uint32

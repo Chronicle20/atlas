@@ -1,6 +1,7 @@
 package handler
 
 import (
+	character2 "atlas-channel/character"
 	"atlas-channel/maplelife"
 	"atlas-channel/session"
 	"context"
@@ -17,6 +18,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	swriter "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
@@ -34,8 +36,8 @@ func mapleLifeNoopWP(_ string) (swriter.BodyFunc, error) {
 }
 
 // newMapleLifeArmTestSession is newCashItemUseTestSessionForVersion plus an
-// AccountId stamp (via Processor.Create, see maple_life_open_test.go), so the
-// Maple Life row can assert against the registry's account-keyed entry.
+// AccountId stamp, so the Maple Life row's session carries an account the
+// submit flow can act on.
 func newMapleLifeArmTestSession(t *testing.T, region string, major uint16, characterId uint32, accountId uint32) (session.Model, context.Context, tenant.Model, func()) {
 	t.Helper()
 	ten := mustTenant(t, region, major, 1)
@@ -66,6 +68,51 @@ func cashItemUsePrefixForVersion(updateTimeFirst bool, updateTime uint32, slot i
 	raw = append(raw, byte(slot), byte(slot>>8))
 	raw = append(raw, byte(itemId), byte(itemId>>8), byte(itemId>>16), byte(itemId>>24))
 	return raw
+}
+
+// installMapleLifeCreateObservationSeams swaps every seam
+// handleMapleLifeCreate's gates 3-4 call so that, IF the classification-543
+// arm is reached, it sails through them and reaches seedCharacterFunc --
+// which is what this test actually observes. Under the task-13 rewire, a
+// maplelife registry entry is written only AFTER a successful factory call
+// (bug-543-is-the-submit-not-the-open.md), so "was there a registry entry"
+// no longer distinguishes "the arm was reached" from "the arm was reached
+// AND every downstream gate happened to pass AND the factory call
+// succeeded" -- three unrelated things. seedCharacterFunc is the narrowest
+// seam only the Maple Life arm ever calls, so swapping it is what makes this
+// suite's classification-first assertion (PRD FR-2.2) observe arm SELECTION
+// again, not an accident of what a live REST call to atlas-account would
+// have returned.
+func installMapleLifeCreateObservationSeams(t *testing.T) *bool {
+	t.Helper()
+	called := false
+
+	origSlots := accountSlotsFunc
+	accountSlotsFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (int16, error) {
+		return 10, nil
+	}
+	t.Cleanup(func() { accountSlotsFunc = origSlots })
+
+	origChars := charactersInWorldFunc
+	charactersInWorldFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id) ([]character2.Model, error) {
+		return nil, nil
+	}
+	t.Cleanup(func() { charactersInWorldFunc = origChars })
+
+	origValidity := mapleLifeNameValidityFunc
+	mapleLifeNameValidityFunc = func(_ logrus.FieldLogger, _ context.Context, _ string, _ world.Id, _ character2.NameScope) (character2.NameValidityResult, error) {
+		return character2.NameValidityResult{Valid: true}, nil
+	}
+	t.Cleanup(func() { mapleLifeNameValidityFunc = origValidity })
+
+	origSeed := seedCharacterFunc
+	seedCharacterFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id, _ cashsb.ItemUseMapleLife) (string, error) {
+		called = true
+		return "tx-test", nil
+	}
+	t.Cleanup(func() { seedCharacterFunc = origSeed })
+
+	return &called
 }
 
 func TestCashItemNeighbourArmsUnaffectedByMapleLife(t *testing.T) {
@@ -106,10 +153,11 @@ func TestCashItemNeighbourArmsUnaffectedByMapleLife(t *testing.T) {
 
 				restoreSlot := installCashItemInSlotSeam(t, testSlot, c.itemId)
 				defer restoreSlot()
+				seedCalled := installMapleLifeCreateObservationSeams(t)
 
 				const accountId = uint32(900)
 				const characterId = uint32(901)
-				s, ctx, sessTen, cleanup := newMapleLifeArmTestSession(t, "GMS", v.major, characterId, accountId)
+				s, ctx, _, cleanup := newMapleLifeArmTestSession(t, "GMS", v.major, characterId, accountId)
 				defer cleanup()
 
 				updateTimeFirst := v.major >= 87
@@ -155,9 +203,8 @@ func TestCashItemNeighbourArmsUnaffectedByMapleLife(t *testing.T) {
 				handlerFunc := CharacterCashItemUseHandleFunc(logrus.New(), ctx, mapleLifeNoopWP)
 				handlerFunc(s, &reader, map[string]interface{}{})
 
-				_, ok := maplelife.GetRegistry().Get(sessTen, accountId)
-				if ok != c.wantMapleLife {
-					t.Fatalf("maplelife.Get() ok = %v, want %v (arm reached should%s be Maple Life)", ok, c.wantMapleLife, negate(c.wantMapleLife))
+				if *seedCalled != c.wantMapleLife {
+					t.Fatalf("seedCharacterFunc called = %v, want %v (arm reached should%s be Maple Life)", *seedCalled, c.wantMapleLife, negate(c.wantMapleLife))
 				}
 			})
 		}

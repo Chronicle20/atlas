@@ -804,10 +804,10 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}
 			sp := cashsb.NewItemUseMapleLife(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
-			if !updateTimeFirst {
-				updateTime = sp.UpdateTime()
-			}
-			beginMapleLife(l, ctx, wp)(s, itemId, source, updateTime)
+			// sp's own trailing update_time is authoritative here (see
+			// item_use_maple_life.go's doc comment on the doubled write) --
+			// this arm has no further use for the header's copy.
+			handleMapleLifeCreate(l, ctx, wp)(s, itemId, source, *sp)
 			return
 		}
 		if category == item.ClassificationMegaphones || category == item.ClassificationAvatarMegaphone {

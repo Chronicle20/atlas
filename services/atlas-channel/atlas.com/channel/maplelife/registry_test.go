@@ -21,13 +21,19 @@ func mustTenant(t *testing.T) tenant.Model {
 	return m
 }
 
-func openEntry(at time.Time) Entry {
+// submittedEntry builds a complete PhaseSubmitted entry, the shape
+// handleMapleLifeCreate writes on a successful factory call -- entries are
+// no longer created any other way (bug-543-is-the-submit-not-the-open.md;
+// PhaseOpen and OpenTTL are gone).
+func submittedEntry(at time.Time) Entry {
 	return Entry{
-		WorldId: world.Id(0),
-		ItemId:  item.Id(5420000),
-		Slot:    slot.Position(0),
-		Phase:   PhaseOpen,
-		At:      at,
+		WorldId:       world.Id(0),
+		ItemId:        item.Id(5420000),
+		Slot:          slot.Position(0),
+		Phase:         PhaseSubmitted,
+		TransactionId: "tx-1",
+		CandidateName: "Chronicle",
+		At:            at,
 	}
 }
 
@@ -36,13 +42,13 @@ func TestPutThenGet(t *testing.T) {
 	r := GetRegistry()
 	t.Cleanup(func() { r.ClearAccount(a, 7) })
 
-	r.Put(a, 7, openEntry(time.Now()))
+	r.Put(a, 7, submittedEntry(time.Now()))
 
 	e, ok := r.Get(a, 7)
 	if !ok {
 		t.Fatal("Get(a, 7): want hit")
 	}
-	if e.Phase != PhaseOpen {
+	if e.Phase != PhaseSubmitted {
 		t.Errorf("entry = %+v", e)
 	}
 	if _, ok := r.Get(a, 8); ok {
@@ -58,9 +64,9 @@ func TestPutIsIdempotentPerAccount(t *testing.T) {
 	r := GetRegistry()
 	t.Cleanup(func() { r.ClearAccount(a, 7) })
 
-	first := openEntry(time.Now().Add(-time.Minute))
+	first := submittedEntry(time.Now().Add(-time.Minute))
 	first.CandidateName = "First"
-	second := openEntry(time.Now())
+	second := submittedEntry(time.Now())
 	second.CandidateName = "Second"
 
 	r.Put(a, 7, first)
@@ -80,60 +86,17 @@ func TestTakeRemoves(t *testing.T) {
 	r := GetRegistry()
 	t.Cleanup(func() { r.ClearAccount(a, 7) })
 
-	r.Put(a, 7, openEntry(time.Now()))
+	r.Put(a, 7, submittedEntry(time.Now()))
 
 	e, ok := r.Take(a, 7)
 	if !ok {
 		t.Fatal("first Take: want hit")
 	}
-	if e.Phase != PhaseOpen {
+	if e.Phase != PhaseSubmitted {
 		t.Errorf("entry = %+v", e)
 	}
 	if _, ok := r.Take(a, 7); ok {
 		t.Error("second Take: want miss — a CREATED and a FAILED racing must consume exactly once")
-	}
-}
-
-func TestSubmitTransitionsPhase(t *testing.T) {
-	a := mustTenant(t)
-	r := GetRegistry()
-	t.Cleanup(func() { r.ClearAccount(a, 7) })
-
-	putAt := time.Now().Add(-time.Minute)
-	r.Put(a, 7, openEntry(putAt))
-
-	before := time.Now()
-	e, ok := r.Submit(a, 7, "tx-1", "Chronicle")
-	after := time.Now()
-	if !ok {
-		t.Fatal("Submit: want hit")
-	}
-	if e.Phase != PhaseSubmitted || e.TransactionId != "tx-1" || e.CandidateName != "Chronicle" {
-		t.Errorf("returned entry = %+v", e)
-	}
-	if e.At.Before(before) || e.At.After(after) {
-		t.Errorf("At = %v, want refreshed to between %v and %v (not left at the original Put time %v)", e.At, before, after, putAt)
-	}
-
-	stored, ok := r.Get(a, 7)
-	if !ok {
-		t.Fatal("Get after Submit: want hit")
-	}
-	if stored.Phase != PhaseSubmitted || stored.TransactionId != "tx-1" || stored.CandidateName != "Chronicle" {
-		t.Errorf("stored entry = %+v", stored)
-	}
-}
-
-func TestSubmitWithoutOpenFails(t *testing.T) {
-	a := mustTenant(t)
-	r := GetRegistry()
-
-	e, ok := r.Submit(a, 999, "tx-2", "Nobody")
-	if ok {
-		t.Fatalf("Submit without a prior Open: want miss, got %+v", e)
-	}
-	if _, ok := r.Get(a, 999); ok {
-		t.Error("Submit without a prior Open must not store anything")
 	}
 }
 
@@ -142,10 +105,7 @@ func TestTakeByTransactionId(t *testing.T) {
 	r := GetRegistry()
 	t.Cleanup(func() { r.ClearAccount(a, 7) })
 
-	r.Put(a, 7, openEntry(time.Now()))
-	if _, ok := r.Submit(a, 7, "tx-1", "Chronicle"); !ok {
-		t.Fatal("Submit: want hit")
-	}
+	r.Put(a, 7, submittedEntry(time.Now()))
 
 	accountId, e, ok := r.TakeByTransactionId(a, "tx-1")
 	if !ok {
@@ -175,10 +135,12 @@ func TestTakeByTransactionIdIsTenantScoped(t *testing.T) {
 		r.ClearAccount(b, 7)
 	})
 
-	r.Put(a, 7, openEntry(time.Now()))
-	r.Submit(a, 7, "tx-1", "A")
-	r.Put(b, 7, openEntry(time.Now()))
-	r.Submit(b, 7, "tx-1", "B")
+	eA := submittedEntry(time.Now())
+	eA.CandidateName = "A"
+	r.Put(a, 7, eA)
+	eB := submittedEntry(time.Now())
+	eB.CandidateName = "B"
+	r.Put(b, 7, eB)
 
 	if _, _, ok := r.TakeByTransactionId(a, "tx-1"); !ok {
 		t.Fatal("TakeByTransactionId(a): want hit")
@@ -197,7 +159,7 @@ func TestClearAccount(t *testing.T) {
 	a := mustTenant(t)
 	r := GetRegistry()
 
-	r.Put(a, 7, openEntry(time.Now()))
+	r.Put(a, 7, submittedEntry(time.Now()))
 	r.ClearAccount(a, 7)
 
 	if _, ok := r.Get(a, 7); ok {
@@ -205,48 +167,30 @@ func TestClearAccount(t *testing.T) {
 	}
 }
 
-func TestSweepUsesPhaseSpecificTTL(t *testing.T) {
+func TestSweepUsesSubmittedTTL(t *testing.T) {
 	a := mustTenant(t)
 	r := GetRegistry()
 	t.Cleanup(func() {
-		r.ClearAccount(a, 100)
-		r.ClearAccount(a, 200)
 		r.ClearAccount(a, 300)
 		r.ClearAccount(a, 400)
 	})
 
 	now := time.Now()
 
-	x := openEntry(now.Add(-(OpenTTL + time.Second)))
-	y := openEntry(now.Add(-time.Minute))
-	z := openEntry(now.Add(-(SubmittedTTL + time.Second)))
-	z.Phase = PhaseSubmitted
-	w := openEntry(now.Add(-5 * time.Second))
-	w.Phase = PhaseSubmitted
+	expiredEntry := submittedEntry(now.Add(-(SubmittedTTL + time.Second)))
+	freshEntry := submittedEntry(now.Add(-5 * time.Second))
 
-	r.Put(a, 100, x)
-	r.Put(a, 200, y)
-	r.Put(a, 300, z)
-	r.Put(a, 400, w)
+	r.Put(a, 300, expiredEntry)
+	r.Put(a, 400, freshEntry)
 
 	expired := r.Sweep(a, now)
-	if len(expired) != 2 {
-		t.Fatalf("Sweep = %+v, want exactly 2 entries (X and Z)", expired)
+	if len(expired) != 1 {
+		t.Fatalf("Sweep = %+v, want exactly 1 entry (account 300)", expired)
 	}
-	got := map[uint32]bool{}
-	for _, ex := range expired {
-		got[ex.AccountId] = true
-	}
-	if !got[100] || !got[300] {
-		t.Fatalf("Sweep expired accounts = %+v, want 100 and 300", got)
+	if expired[0].AccountId != 300 {
+		t.Fatalf("Sweep expired account = %d, want 300", expired[0].AccountId)
 	}
 
-	if _, ok := r.Get(a, 100); ok {
-		t.Error("account 100 (expired OPEN) should have been removed")
-	}
-	if _, ok := r.Get(a, 200); !ok {
-		t.Error("account 200 (fresh OPEN, aged 1min < OpenTTL) should still be present")
-	}
 	if _, ok := r.Get(a, 300); ok {
 		t.Error("account 300 (expired SUBMITTED) should have been removed")
 	}
@@ -264,8 +208,8 @@ func TestSweepIsTenantScoped(t *testing.T) {
 	})
 
 	now := time.Now()
-	r.Put(a, 10, openEntry(now.Add(-(OpenTTL + time.Second))))
-	r.Put(b, 20, openEntry(now.Add(-(OpenTTL + time.Second))))
+	r.Put(a, 10, submittedEntry(now.Add(-(SubmittedTTL + time.Second))))
+	r.Put(b, 20, submittedEntry(now.Add(-(SubmittedTTL + time.Second))))
 
 	expiredA := r.Sweep(a, now)
 	if len(expiredA) != 1 || expiredA[0].AccountId != 10 {

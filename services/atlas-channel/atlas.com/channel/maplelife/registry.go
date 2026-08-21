@@ -26,19 +26,14 @@ import (
 type Phase string
 
 const (
-	// PhaseOpen is a dialog that has been offered to the client but not yet
-	// submitted (the player has not picked a name / confirmed creation).
-	PhaseOpen Phase = "OPEN"
 	// PhaseSubmitted is a dialog whose creation request has been sent to the
-	// character-creation saga and is awaiting CREATED/FAILED.
+	// character-creation saga and is awaiting CREATED/FAILED. It is the ONLY
+	// phase an entry is ever created in: there is no open-time packet at all
+	// (bug-543-is-the-submit-not-the-open.md) -- the client opens its own
+	// CUICharacterSaleDlg locally, and the first serverbound signal this
+	// registry ever sees for an account is already the submit.
 	PhaseSubmitted Phase = "SUBMITTED"
 )
-
-// OpenTTL bounds how long an offered-but-unanswered dialog is kept. A dropped
-// client, or a player who simply never responds, would otherwise leave the
-// entry (and the reserved item/slot it represents) pinned forever; the sweep
-// clears it instead.
-const OpenTTL = 5 * time.Minute
 
 // SubmittedTTL bounds how long a submitted dialog waits for the saga's
 // CREATED/FAILED outcome. It must outlive the orchestrator's 10s
@@ -123,8 +118,7 @@ func (r *Registry) Take(t tenant.Model, accountId uint32) (Entry, bool) {
 // TakeByTransactionId returns and removes the pending dialog matching
 // transactionId for tenant t, along with the account it belongs to. An empty
 // transactionId never matches, even against an entry whose TransactionId is
-// also empty (a PhaseOpen entry that was never Submitted), since an empty id
-// identifies no saga.
+// also empty, since an empty id identifies no saga.
 func (r *Registry) TakeByTransactionId(t tenant.Model, transactionId string) (uint32, Entry, bool) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -143,27 +137,6 @@ func (r *Registry) TakeByTransactionId(t tenant.Model, transactionId string) (ui
 	return 0, Entry{}, false
 }
 
-// Submit transitions a PhaseOpen entry to PhaseSubmitted, stamping the
-// transaction id, the candidate name, and refreshing At (so the submitted
-// dialog gets its own SubmittedTTL window rather than inheriting the time it
-// was first opened). It fails without storing anything if no entry is
-// pending for the account.
-func (r *Registry) Submit(t tenant.Model, accountId uint32, transactionId string, name string) (Entry, bool) {
-	k := Key{Tenant: t, AccountId: accountId}
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	e, ok := r.pending[k]
-	if !ok {
-		return Entry{}, false
-	}
-	e.Phase = PhaseSubmitted
-	e.TransactionId = transactionId
-	e.CandidateName = name
-	e.At = time.Now()
-	r.pending[k] = e
-	return e, true
-}
-
 // ClearAccount drops the pending dialog for an account (session destroy).
 // Without this the map leaks one entry per account ever seen by this pod.
 func (r *Registry) ClearAccount(t tenant.Model, accountId uint32) {
@@ -173,9 +146,9 @@ func (r *Registry) ClearAccount(t tenant.Model, accountId uint32) {
 }
 
 // Sweep removes and returns every entry belonging to t whose age has passed
-// its phase's TTL — OpenTTL for PhaseOpen, SubmittedTTL for PhaseSubmitted.
-// The caller notifies each expired account so a lost status event or an
-// unanswered dialog cannot leave a session permanently stuck.
+// SubmittedTTL -- the only phase an entry now exists in. The caller notifies
+// each expired account so a lost status event cannot leave a session
+// permanently stuck.
 //
 // Sweep is scoped to a single tenant deliberately: atlas-channel starts one
 // sweep goroutine per (tenant, world, channel) listener key, and on a pod
@@ -194,11 +167,7 @@ func (r *Registry) Sweep(t tenant.Model, now time.Time) []Expired {
 		if !k.Tenant.Is(t) {
 			continue
 		}
-		ttl := OpenTTL
-		if e.Phase == PhaseSubmitted {
-			ttl = SubmittedTTL
-		}
-		if now.Sub(e.At) >= ttl {
+		if now.Sub(e.At) >= SubmittedTTL {
 			out = append(out, Expired{Tenant: k.Tenant, AccountId: k.AccountId, Entry: e})
 			delete(r.pending, k)
 		}

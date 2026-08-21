@@ -1618,6 +1618,7 @@
   direction: clientbound
   opcode: 304
   fname: CNpcPool::OnNpcLeaveField
+  packet: npc/clientbound/NpcRemove
   provenance: csv-import
   note: 'Not IDA-confirmed by the gms_v92 discover-ops pass (task-26): routed via an if/else or nested-switch arm inside CField::OnPacket / CLogin::OnPacket that ParseDispatch cannot enumerate (only the outer switch is parsed). See Adjudications in discover_gms_v92.md.'
 - op: SPAWN_NPC_REQUEST_CONTROLLER

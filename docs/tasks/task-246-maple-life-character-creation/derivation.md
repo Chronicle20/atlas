@@ -498,6 +498,391 @@ contradicting it.
 
 ---
 
-<!-- Task 2 appends §4 (OnCreateNewCharacterResult decode),
-     §5 (OnCheckDuplicatedIDResult decode / item-id table), and
-     §6 below this line. Do not edit §1–§3 above without re-deriving. -->
+<!-- Task 2 appends §4 (OnCheckDuplicatedIDResult decode), §5
+     (OnCreateNewCharacterResult decode), and §6 (duplicate-probe opcodes /
+     C1) below this line. NOTE: Task 1's placeholder comment above numbered
+     these §4=OnCreateNewCharacterResult/§5=OnCheckDuplicatedIDResult (reversed)
+     and folded the item-id table into §5; Task 2's actual brief
+     (.superpowers/sdd/plan/task-2-brief.md Steps 1–3) numbers them the other
+     way and has no item-id-table deliverable (that table is §1.4, already
+     written). This task follows the brief's numbering, which is authoritative
+     for Task 2's own deliverable. Do not edit §1–§3 above without re-deriving. -->
+
+## §4. `CUICharacterSaleDlg::OnCheckDuplicatedIDResult` — the duplicate-name-check result
+
+All five in-scope versions carry this receiver; v84 is VERSION-ABSENT (§2.0,
+re-confirmed below). On every present version the function is field-for-field
+identical: `DecodeStr sName` (decoded but only used for formatting/UI, not a
+routing key), then `Decode1 nResult` as a **SIGNED** byte, three-way branch —
+structurally identical to the sibling `CCashShop::OnCheckDuplicatedIDResult`
+precedent in `libs/atlas-packet/cash/clientbound/check_name_change.go:22-53`.
+
+`decompile_sha256`: **PENDING** on all versions, same reason as §2.1 —
+`CUICharacterSaleDlg::OnCheckDuplicatedIDResult` is absent as a key in every
+in-scope `docs/packets/ida-exports/<version>.json` (confirmed by direct
+key-scan of the `functions` map on all four present versions; each export
+only carries the unrelated `CLogin::OnCheckDuplicatedIDResult` and
+`CCashShop::OnCheckDuplicatedIDResult` keys). This is the same blocking
+dependency §2.1 already escalated for Tasks 4–6.
+
+### §4.1 — how the receiver was located (all versions)
+
+`func_query` for `*CUICharacterSaleDlg*` does **not** return an
+`OnCheckDuplicatedIDResult`/`OnCreateNewCharacterResult`/`OnPacket` triad by
+name on v83/v87 (IDA/PDB only resolved the class's UI-flow methods —
+`ShowWindow`, `OnButtonClicked`, `Send*` — for those two binaries); v92/v95
+resolve the full set including `OnPacket` directly. Where the names are
+unresolved, the receivers were located by scanning for
+`CInPacket::DecodeStr`/`Decode1`/`Decode4` call sites inside the address
+range spanned by the class's other known methods, then confirmed by finding
+the dialog's own `OnPacket` dispatcher via `xrefs_to` on the two candidate
+functions (the dispatcher is always the sole caller of both). This dispatcher
+is reached from `CField::OnPacket`'s bound-check ladder via a per-field
+vtable-slot-`0x3C` indirect call (`mov eax,[ecx]; call [eax+3Ch]`) — on v83
+the field the client's own PDB names `CField::OnItemUpgrade`
+(`ecx+0x1F4`, covering `CField::OnPacket`'s `0x15D–0x160` (349–352) bound
+check) is the one that actually forwards to the Maple-Life dialog's
+`OnPacket`, **not** the field/bound-check pair the client names
+`CField::OnCharacterSale` (`ecx+0x1F8`, `0x161–0x164`/353–356) — the PDB's
+"ItemUpgrade"/"CharacterSale" function names do not line up with which
+field routes which opcode range on v83; this is a client-internal naming
+quirk, not a registry error (the *registry's* MAPLELIFE opcodes 349/350 are
+independently confirmed correct below).
+
+### §4.2 — gms_v83 (`0x7d768a`, size `0x126`, unnamed `sub_7D768A` — PDB does
+not resolve `CUICharacterSaleDlg::OnCheckDuplicatedIDResult` on this binary)
+
+Reached via `CField::OnPacket`(`0x531325`)'s `0x15D–0x160` arm →
+`CField::OnItemUpgrade`(`0x537f8c`, `ecx+0x1F4`, virtual+`0x3C`) →
+`CUICharacterSaleDlg::OnPacket` (`0x7d7586`, unnamed, confirmed by
+`xrefs_to` on both `0x7d768a` and `0x7d77b0`):
+
+```
+if (a2 == 349) OnCheckDuplicatedIDResult(this, a3);   // 0x7d768a
+else if (a2 == 350) OnCreateNewCharacterResult(this, a3); // 0x7d77b0
+```
+
+Opcode **349** confirmed for `MAPLELIFE_RESULT` (matches
+`docs/packets/registry/gms_v83.yaml:1805-1808` exactly). Decode order:
+
+1. `DecodeStr sName`
+2. `Decode1 nResult` (**SIGNED**)
+
+Branch enumeration (identical shape to `check_name_change.go`'s three-way
+arm, disassembly-confirmed `jle`/signed compare pattern via decompiler's
+`if (v4 <= 0) { if (v4) {…} else {…} } else {…}`):
+
+| arm | UI action |
+|---|---|
+| `nResult > 0` | `StringPool` SP_5047 "this name is currently being used, please check again" `Notice`; dialog virtual+0x20 call with code `1001` |
+| `nResult == 0` | enables the "next" button (`this[61]+4`'s vtable+28 call with `1`); dialog virtual+0x20 call with code `1000` |
+| `nResult < 0` | `StringPool` SP_5595 "unknown error (%d)" `Notice`, formatted with `nResult`; dialog virtual+0x20 call with code `1001` |
+
+(`1000`/`1001` are the dialog's own internal UI-transition codes passed to
+its `OnButtonClicked`-family virtual, confirmed by name on v95 §4.5 — not
+wire values.)
+
+### §4.3 — gms_v84 — VERSION-ABSENT, independently re-confirmed
+
+`func_query *CUICharacterSaleDlg*` and `*CharacterSale*` on v84
+(session `46c2a2eb`) return **zero** matches beyond the unrelated
+`CField::OnCharacterSale`(`0x5443af`). That function itself carries a
+pre-existing task-129 IDA comment (read directly from the decompile, not
+authored by this task): *"IDB symbol says CField::OnCharacterSale, but THIS
+is the Vicious Hammer forwarder (functional CField::OnItemUpgrade)... The
+IDB-named CField::OnItemUpgrade @0x544395 (this[134]) routes 359/360 to the
+name/world-transfer dialog, NOT the hammer."* — independent, pre-existing
+confirmation that **no** Maple-Life/CharacterSaleDlg code path exists on
+v84 under either PDB-named forwarder. `func_query *DuplicateID*` on v84
+returns only the unrelated `CLogin::SendCheckDuplicateIDPacket`
+(login-socket ordinary duplicate-name check, opcode 8 — §6.2). This
+corroborates §2.0's VERSION-ABSENT finding a second, independent way for
+this task's own functions.
+
+### §4.4 — gms_v87 (`0x82e12c`, size `0x126`, unnamed `sub_82E12C`)
+
+Reached via `CUICharacterSaleDlg::OnPacket` dispatcher `0x82e028` (unnamed,
+confirmed via `xrefs_to` on `0x82e12c`/`0x82e252`):
+
+```
+if (a2 == 370) OnCheckDuplicatedIDResult(this, a3);   // 0x82e12c
+else if (a2 == 371) OnCreateNewCharacterResult(this, a3); // 0x82e252
+```
+
+Opcode **370** confirmed for `MAPLELIFE_RESULT` (matches
+`docs/packets/registry/gms_v87.yaml` exactly, brief's expected value).
+Decode order and branch shape **byte-for-byte identical** to v83
+(`DecodeStr sName; Decode1 nResult SIGNED`, same three-way arm); only the
+`StringPool` string IDs differ (5910 unknown-error, 5058 taken — cosmetic
+resource-ID renumbering, not a wire change).
+
+### §4.5 — gms_v92 (`0x756370`, **named**
+`CUICharacterSaleDlg::OnCheckDuplicatedIDResult`)
+
+`CUICharacterSaleDlg::OnPacket` is directly named on v92 (`0x757180`):
+
+```c
+if (a2 == 404) return OnCheckDuplicatedIDResult(this, a3);
+result = a2 - 405;
+if (a2 == 405) return OnCreateNewCharacterResult(this, a3);
+return result;
+```
+
+Opcode **404** confirmed (matches brief's expected value and
+`docs/packets/registry/gms_v92.yaml`). Decode order/branch identical to
+v83/v87 (`DecodeStr sName; Decode1 nResult SIGNED`; string IDs 6348/5125).
+
+### §4.6 — gms_v95 (`0x777e40`, **named**
+`CUICharacterSaleDlg::OnCheckDuplicatedIDResult`)
+
+`CUICharacterSaleDlg::OnPacket` (`0x778c50`):
+
+```c
+if (nType == 0x19D) OnCheckDuplicatedIDResult(this, iPacket);
+else if (nType == 0x19E) OnCreateNewCharacterResult(this, iPacket);
+```
+
+0x19D = **413**, matches brief and `docs/packets/registry/gms_v95.yaml`
+exactly. Decode order/branch identical to all prior versions (`DecodeStr
+sName; Decode1 nResult SIGNED`; string IDs `0x1A86` unknown-error, `0x13C9`
+taken). This version's decompile resolves the dialog-state virtual call by
+name — `this->OnButtonClicked(this, 1000u)` / `this->OnButtonClicked(this,
+1001u)` — confirming the `1000`/`1001` codes noted in §4.2 are
+`OnButtonClicked`-family UI-transition codes, not wire fields.
+
+### §4.7 — cross-version summary and version gate
+
+| version | receiver addr | opcode | decode order | branch shape |
+|---|---|---|---|---|
+| gms_v83 | `0x7d768a` | 349 | DecodeStr sName; Decode1 nResult(SIGNED) | >0 taken / ==0 available+enable-next / <0 unknown-error(fmt) |
+| gms_v84 | — | — | **VERSION-ABSENT** | — |
+| gms_v87 | `0x82e12c` | 370 | (same) | (same) |
+| gms_v92 | `0x756370` | 404 | (same) | (same) |
+| gms_v95 | `0x777e40` | 413 | (same) | (same) |
+
+**No field, width, order, or branch-arm divergence across any present
+version** — the codec needs no `MajorAtLeast` gate for its body shape. Only
+the **opcode** (a per-tenant-template value, resolved via
+`WithResolvedCode`/template `operations` table per DOM-25, never a Go
+literal) and v84's absence differ.
+
+---
+
+## §5. `CUICharacterSaleDlg::OnCreateNewCharacterResult` — the full error-code enumeration
+
+`decompile_sha256`: **PENDING** on all versions, same reason as §4/§2.1 (key
+absent from every in-scope export; only unrelated `CLogin::*` and
+`CCashShop::*` same-named functions are present — confirmed by direct
+key-scan).
+
+### §5.1 — gms_v83 (`0x7d77b0`, size `0x1b0`, unnamed `sub_7D77B0`)
+
+Reached from the same `0x7d7586` dispatcher as §4.2 (opcode 350). Decode
+order:
+
+1. `Decode1 nType` (unsigned byte)
+2. `Decode4 nParam` (4-byte)
+
+Then: reset a "request sent" flag and an unrelated field-state cleanup, plus
+a dialog virtual+0x34 call with `1` (`(*(*this+52))(this,1)`, UI-state, not
+wire). **Full branch enumeration** (exact-equality switch on `nType`, not a
+range/signed test):
+
+| `nType` | `nParam` | UI outcome |
+|---|---|---|
+| 52 (`0x34`) | `== 0` | **SUCCESS** — `StringPool` SP_5048 "creation has completed successfully" `Notice`; increments a `CWvsContext`-local character-slot-usage counter (client-side bookkeeping, not wire) |
+| 52 (`0x34`) | `!= 0` | `StringPool` SP_5595 "unknown error (%d)" `Notice`, formatted with `nParam` |
+| 54 (`0x36`) | *(any)* | `StringPool` SP_5046 "you can not use this name, please check again" `Notice` — duplicate-name-at-submit |
+| *(any other `nType`)* | *(any)* | `StringPool` SP_5595 "unknown error (%d)" `Notice`, formatted with `nParam` — generic fallback |
+
+This is the design §5.4-required deliverable: **SUCCESS = `nType==52 &&
+nParam==0`**; the "duplicate at submit" arm is `nType==54`; the generic
+fallback carries `nParam` as a formatted diagnostic code, not a fixed
+enum member.
+
+### §5.2 — gms_v87 (`0x82e252`, size `0x1b0`, unnamed `sub_82E252`)
+
+Opcode 371 (§4.4). Identical decode order (`Decode1 nType; Decode4 nParam`)
+and identical branch **shape**, but the `nType` literals shift by **+2**:
+success/error-format arm is `nType==54`, duplicate-at-submit arm is
+`nType==56`. String IDs: 5059 (success), 6348 (unknown error fmt), 5057
+(duplicate-at-submit).
+
+### §5.3 — gms_v92 (`0x7564f0`, **named**
+`CUICharacterSaleDlg::OnCreateNewCharacterResult`)
+
+Opcode 405 (§4.5). Same decode order and shape; literals shift by **+1**
+from v87: success/error-format arm `nType==55`, duplicate-at-submit arm
+`nType==57`. String IDs: 5126 (success), 6348 (unknown error fmt), 5124
+(duplicate-at-submit). `nType` is decoded via `Decode1` and compared as an
+`unsigned __int8`-cast value here (vs. plain `char`/signed on v83/v87) —
+decompiler artifact of the same kind flagged in §2.3 (does not change the
+wire width; `Decode1` is always a 1-byte field on every version).
+
+### §5.4 — gms_v95 (`0x777fc0`, **named**
+`CUICharacterSaleDlg::OnCreateNewCharacterResult`)
+
+Opcode 414 (§4.6). Same decode order and shape; literals shift by **+2**
+from v92 (matching the v83→v87 shift): success/error-format arm
+`nType==56`, duplicate-at-submit arm `nType==58`. String IDs: `0x13CA`
+(success), `0x1A86` (unknown error fmt), `0x13C8` (duplicate-at-submit).
+Also gates on `g_pStage` being a live `CField`-kind stage before clearing a
+per-stage flag — in-game-only client bookkeeping, not a wire field.
+
+### §5.5 — cross-version summary, error-code enumeration, and version gate
+
+| version | receiver addr | opcode | `nType` SUCCESS | `nType` duplicate-at-submit | fallback |
+|---|---|---|---|---|---|
+| gms_v83 | `0x7d77b0` | 350 | 52 (`nParam==0`) | 54 | 52+`nParam!=0`, or any other `nType` → unknown-error(`nParam`) |
+| gms_v84 | — | — | **VERSION-ABSENT** | — | — |
+| gms_v87 | `0x82e252` | 371 | 54 (`nParam==0`) | 56 | (same shape) |
+| gms_v92 | `0x7564f0` | 405 | 55 (`nParam==0`) | 57 | (same shape) |
+| gms_v95 | `0x777fc0` | 414 | 56 (`nParam==0`) | 58 | (same shape) |
+
+The **closed enumeration is three semantic arms** on every version —
+SUCCESS, DUPLICATE-NAME-AT-SUBMIT, UNKNOWN-ERROR(param) — with the raw
+`nType` literal for each arm being a per-version, per-tenant-template
+config value (never a Go literal; resolve via the template `operations`
+table, DOM-25) and `nParam` carried through as a formatted diagnostic value
+on the UNKNOWN-ERROR arm only. No design-anticipated "invalid look" arm was
+found on any version — a client-side validity failure never reaches the
+wire on the create-character path; the two rejectable-at-server outcomes
+the client renders are duplicate-name-at-submit and the generic
+unknown-error fallback. Tasks 5/7's `options` keys should be exactly
+`{SUCCESS, NAME_TAKEN_AT_SUBMIT, UNKNOWN_ERROR}` (naming is Task 5's call;
+the three-arm closure itself is this task's finding). No `MajorAtLeast` gate
+is needed for field shape (identical on all four present versions); only the
+opcode and the per-version `nType` literal values are tenant-template
+config, not a code branch.
+
+---
+
+## §6. Duplicate-probe sender (`SendCheckDuplicateIDPacket`) and C1
+
+### §6.1 — per-version derivation
+
+| version | sender address | opcode emitted | body encode order | collides with `CHECK_CHAR_NAME` (21)? |
+|---|---|---|---|---|
+| gms_v83 | `0x7d75ab` | **256** (`0x100`) | `EncodeStr sCharName` only | no |
+| gms_v84 | — | — (VERSION-ABSENT) | — | n/a |
+| gms_v87 | `0x82e04d` | **270** (`0x10E`) | `EncodeStr sCharName` only | no |
+| gms_v92 | `0x756250` (unnamed; reached via `xrefs_to` on `SendRequest@CUICharacterSaleDlg`) | **301** (`0x12D`) | `EncodeStr sCharName` only | no |
+| gms_v95 | `0x777d20` | **311** | `EncodeStr sCharName` only | no |
+
+All four present versions: client-side validates the name via
+`is_valid_character_name(sCharName, !isUnderCover)` first (rejects locally
+with a "cannot use this name" `Notice` + dialog code `1001`, **no packet
+sent**, if invalid); only a client-side-valid name is sent to the server.
+Every version's wire body is a single `EncodeStr` field — no length prefix
+beyond the standard string encoding, no other fields. `decompile_sha256`:
+**PENDING** for `CUICharacterSaleDlg::SendCheckDuplicateIDPacket` on v87/v92
+(absent from those exports' `functions` keys, same reasoning as §4/§5); v83's
+export (`docs/packets/ida-exports/gms_v83.json`) already carries a
+**pre-existing note** on the `CLogin::SendCheckDuplicateIDPacket` key stating
+verbatim: *"v83 character-name duplicate check. The actual sender is
+CUICharacterSaleDlg::SendCheckDuplicateIDPacket@0x7d75ab (v83 routes name
+checks through the character-sale dialog): COutPacket(0x100) +
+EncodeStr(sCharName)."* — this independently, exactly corroborates this
+task's own v83 finding (address, opcode, and body all match). v95's export
+carries no such note but its `functions` map also lacks the direct key;
+v92 was independently derived above via the unnamed `sub_756250`.
+
+**Registry cross-check:** v87 opcode 270 and v95 opcode 311 exactly match
+the `fname: CUICharacterSaleDlg::SendCheckDuplicateIDPacket` rows already
+present in `docs/packets/registry/gms_v87.yaml:3651-3655` and
+`gms_v95.yaml:4100-4104` — both currently filed under the op name
+`JMS_SLASH_COMMAND` (§6.3 explains why that name is wrong). v83's opcode 256
+and v92's opcode 301 have **no row at all** in their registries (confirmed
+by direct grep/YAML-parse of both files for `opcode: 256`/`opcode: 301` +
+`direction: serverbound` — zero matches on either) — these two are
+previously-undiscovered opcodes this task surfaces for the first time.
+(v92's registry does have an unrelated **clientbound** `opcode: 301`
+row — `MOB_ATTACKED_BY_MOB`/`CMob::OnMobAttackedByMob` — clientbound and
+serverbound opcode spaces are numbered independently in this protocol, so
+this is not a collision.)
+
+### §6.2 — routing consequence: **(A)**
+
+Every in-scope GMS version with the feature present (v83, v87, v92, v95)
+has its **own dedicated Maple-Life-specific probe opcode** — none of them
+reuse `CHECK_CHAR_NAME` (21, the ordinary login-socket duplicate-name-check
+opcode bound to `CashShopCheckNameChangeHandle`/other login flows per
+`template_gms_83_1.json:161-169`). v84 has no probe at all (feature absent).
+**Task 12 writes a standalone handler** for this op; the pending-record
+disambiguation design (routing consequence B) is **not needed** for this
+feature. (v83/v84's other `CLogin::SendCheckDuplicateIDPacket` /
+`CCashShop::OnCheckDuplicatedIDResult` functions found during this search
+are the pre-existing, unrelated ordinary-login and cash-shop-rename probes
+respectively — confirmed by their own distinct opcodes, 8 and 328 — and
+must not be confused with the Maple-Life probe.)
+
+### §6.3 — jms_v185 opcode 271: **UNRESOLVED — could not positively identify within this pass**
+
+`func_query *CUICharacterSaleDlg*` on jms_v185 (session `a977912e`) returns
+**zero** matches — unlike every in-scope GMS version, JMS does not carry a
+distinct `CUICharacterSaleDlg` class at all. The wizard-step methods that on
+GMS belong to `CUICharacterSaleDlg` (`SetStep1`–`SetStep5`,
+`ShiftNewCharEquip`, `GetSelectedAL`, `LoadNewCharInfo`) are, on JMS,
+**folded directly into the `CLogin` class** (`CLogin::LoadNewCharInfo`
+`0x671842`, `CLogin::ShiftNewCharEquip` `0x6724bd`,
+`CLogin::GetSelectedAL` `0x6725a9`/`0x6725fc` — confirmed via `func_query`)
+— an architectural difference from every GMS build checked, where this
+functionality lives in its own dialog class. `CField::OnCharacterSale`
+(`0x57528c`) exists on JMS with the same `mov ecx,[ecx+214h]; call
+[eax+3Ch]` forwarder shape seen on GMS, but the object it forwards to was
+not identified.
+
+**Searches performed and their results:**
+- `func_query` for `*SendCheckDuplicateIDPacket*`/`*DuplicateID*`: only
+  `CLogin::SendCheckDuplicateIDPacket` (`0x66e467`) resolves — decompiled
+  and confirmed to be the **ordinary login-socket** duplicate-check
+  (`COutPacket::COutPacket(v9, 8)` — opcode **8**, not 271; unrelated to
+  Maple Life).
+- `insn_query` for `push 271` (0x10F immediate) and for any operand `==271`,
+  scoped to the `CLogin`-cluster address range `0x670000–0x674000` (where
+  the folded-in wizard-step methods live): **zero matches**.
+- `insn_query` for `push 271` unscoped (`allow_broad`): the query's
+  200,000-instruction scan cap is exhausted before covering the binary's
+  full `.text` section (a multi-megabyte region), so this search is
+  **inconclusive**, not a negative result.
+- `find` (string) for `"CUICharacterSaleDlg"`: zero matches (no RTTI string
+  on this build, matching every GMS build checked too — expected, not
+  informative either way).
+- A `Decode1`/`DecodeStr`-call scan of the `CLogin` cluster
+  (`0x670000–0x673000`) surfaced `sub_671717`, which was decompiled and
+  ruled out — it is `CLogin`'s GameGuard-update-check flow (sends opcode
+  `0x19`=25), unrelated.
+
+**What is known, not invented:** `docs/packets/registry/jms_v185.yaml:3640-
+3644` already carries `fname: CUICharacterSaleDlg::SendCheckDuplicateIDPacket`
+for opcode 271 (csv-import provenance, i.e. not yet IDA-verified by any
+prior pass either). Given (a) this fname exactly matches the confirmed-real
+function this task independently verified at three other GMS opcodes
+(270/301/311, §6.1), and (b) JMS folds the surrounding character-sale
+wizard functionality into `CLogin` rather than a separate class, the
+circumstantial hypothesis is that JMS opcode 271 is this same probe
+(implemented as an as-yet-unlocated `CLogin` method on this build) rather
+than a genuine JMS-only slash command — but this task did **not** obtain a
+decompile-confirmed send site for opcode 271, so this is a hypothesis, not
+a derived fact, and per the brief's Step 4 instruction this must not be
+treated as settled. **Escalating**: neither the "split" nor the "rename"
+resolution in the brief's Step 4 can be safely chosen without positive
+confirmation of what jms_v185 opcode 271 actually is. Recommend a follow-up
+pass scoped narrowly to locating the `COutPacket` construction site for the
+literal `271` inside the `CLogin` translation unit on jms_v185 (likely a
+wider address sweep of the `CLogin`-cluster than the `0x670000–0x674000`
+window checked here, since `CLogin` is a very large class on this build).
+Task 3 should **not** split or rename the `JMS_SLASH_COMMAND` registry row
+until this is resolved.
+
+### §6.4 — summary
+
+- **C1 answer for GMS (v83/v87/v92/v95): (A)** — each has its own
+  Maple-Life-specific probe opcode (256/270/301/311 respectively); no
+  `CHECK_CHAR_NAME`(21) collision on any of them; v84 has no probe (feature
+  absent).
+- **jms_v185 opcode 271: unresolved**, evidence of a genuine (not
+  perfunctory) search recorded above; Task 3's registry-row decision for
+  `JMS_SLASH_COMMAND` should wait on a follow-up derivation pass rather than
+  guess.
+

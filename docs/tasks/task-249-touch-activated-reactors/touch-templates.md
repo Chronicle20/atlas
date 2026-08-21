@@ -33,8 +33,8 @@ The nine-item lists that predate this task — the deferred bullet formerly at
 `docs/TODO.md:280` and `docs/tasks/task-019-reactor-type-semantics/prd.md:32`
 — omit `2406000` (나인스피릿의둥지, the Nine Spirit nest). That template is a
 Horntail prequest reactor rather than a GPQ one, which is why the GPQ-focused
-lists missed it. The ten-item list in
-`docs/research/missing-features/maps-portals-reactors.md:35` is correct.
+lists missed it. The ten-item list above, sourced from design.md §1.5, is the
+authoritative correction.
 
 ## Per-mounted-WZ, not universal
 

@@ -26,7 +26,7 @@ versions:
   - jms_v185
 
 fields:
-  - "monster/serverbound/MonsterAutoAggro (AUTO_AGGRO, CMob::ApplyControl): fixed body Decode4(uniqueId) + Decode1(moveActionOrDistanceHint) on all ten versions; no version gates on the wire layout. Opcodes per version: gms_v48 0x82(130), gms_v61 0x9C(156), gms_v72 0xB3(179), gms_v79 0xB5(181), gms_v83 0xBD(189), gms_v84 0xC2(194), gms_v87 0xC9(201), gms_v92 0xDD(221), gms_v95 0xE4(228), jms_v185 0xC3(195). All ten status.json cells are state=verified."
+  - "monster/serverbound/MonsterAutoAggro (AUTO_AGGRO, CMob::ApplyControl): fixed body Decode4(mobId) + Decode4(distance) on all ten versions; no version gates on the wire layout. Opcodes per version: gms_v48 0x82(130), gms_v61 0x9C(156), gms_v72 0xB3(179), gms_v79 0xB5(181), gms_v83 0xBD(189), gms_v84 0xC2(194), gms_v87 0xC9(201), gms_v92 0xDD(221), gms_v95 0xE4(228), jms_v185 0xC3(195). All ten status.json cells are state=verified."
 
 out_of_scope:
   - monster-aggro-lease            # atlas-monsters server-authoritative aggro lease (registry, aggro.go, aggro_task.go); domain state, not a wire packet

@@ -1,0 +1,40 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-21T12:12:31Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	650bf48	-	-	-	-
+2026-08-21T12:13:50Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	650bf48	APPROVED	no	-	-
+2026-08-21T12:15:21Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE	ba81811	-	-	-	-
+2026-08-21T12:15:21Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	ba81811	APPROVED	no	-	-
+2026-08-21T12:19:45Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	8fba7b6	-	-	-	-
+2026-08-21T12:19:47Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	8fba7b6	APPROVED	no	-	-
+2026-08-21T12:21:47Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	3278606	-	-	-	-
+2026-08-21T12:21:49Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	3278606	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T12:21:51Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	40000
+2026-08-21T12:25:07Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T12:28:33Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	DONE	fab90ab	-	-	-	-
+2026-08-21T12:28:39Z	agent	Task 6	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T12:30:48Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DONE	fab90ab	APPROVED_WITH_FINDINGS	no	.superpowers/sdd/plan/review-5-artifact.md	-
+2026-08-21T12:31:54Z	agent	Task 6	atlas-implementer	sonnet	-	-	-	-	DONE	74d2200	-	-	-	-
+2026-08-21T12:31:57Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T12:32:57Z	agent	Task 6	atlas-reviewer	sonnet	-	-	-	-	DONE	74d2200	APPROVED	no	.superpowers/sdd/plan/review-6-artifact.md	-
+2026-08-21T12:36:36Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	DONE	1886ade	-	-	-	-
+2026-08-21T12:36:38Z	agent	Task 8	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T12:38:14Z	agent	Task 7	atlas-reviewer	sonnet	-	-	-	-	DONE	1886ade	APPROVED	no	.superpowers/sdd/plan/review-7-artifact.md	-
+2026-08-21T12:47:02Z	agent	Task 8	atlas-implementer	sonnet	-	-	-	-	DONE	720374a	-	-	-	-
+2026-08-21T12:50:06Z	agent	Task 8	atlas-reviewer	sonnet	-	-	-	-	DONE	720374a	APPROVED	no	.superpowers/sdd/plan/review-8-artifact.md	-
+2026-08-21T12:55:24Z	agent	Task 7 fix	atlas-implementer	sonnet	-	-	-	-	DONE	6360d75	-	-	-	-
+2026-08-21T12:59:22Z	agent	pre-PR	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	6360d75	APPROVED	no	docs/tasks/task-252-jukebox-cash-item/audit.md	-
+2026-08-21T13:06:52Z	agent	pre-PR	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	6360d75	CHANGES_REQUIRED	yes	docs/tasks/task-252-jukebox-cash-item/backend-audit.md	-
+2026-08-21T13:17:05Z	agent	EXT-01 fix	atlas-implementer	sonnet	-	-	-	-	DONE	0c47815	-	-	-	-
+2026-08-21T13:17:09Z	handoff	after Task 8 + pre-PR review	-	-	-	-	-	-	-	-	-	-	-	60000
+2026-08-21T13:23:08Z	agent	Task 9	packet-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:45:09Z	agent	Task 9	packet-implementer	sonnet	-	-	-	-	PARTIAL	3ab503d	-	-	.superpowers/sdd/plan/task-9-report.md	-
+2026-08-21T13:57:44Z	agent	race fix	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:58:34Z	agent	Task 9 cont	packet-implementer	sonnet	-	-	-	-	DONE	8765e70	-	-	.superpowers/sdd/plan/task-9-report.md	-
+2026-08-21T14:11:37Z	agent	Task 9 blocking fix	atlas-implementer	sonnet	-	-	-	-	DONE	a3f2519	-	-	-	-
+2026-08-21T14:11:40Z	handoff	after Task 9 + race fix	-	-	-	-	-	-	-	-	-	-	-	95000
+2026-08-21T14:13:26Z	agent	pre-PR roster (session 4)	plan-adherence-reviewer	sonnet	-	-	-	-	dispatched	a3f2519e9	-	-	-	-
+2026-08-21T14:13:29Z	agent	pre-PR roster (session 4)	backend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	a3f2519e9	-	-	-	-
+2026-08-21T14:13:35Z	agent	pre-PR roster (session 4)	packet-completeness-critic	sonnet	-	-	-	-	dispatched	a3f2519e9	-	-	-	-
+2026-08-21T14:14:46Z	agent	pre-PR roster (session 4)	packet-completeness-critic	sonnet	-	-	-	-	complete	a3f2519e9	CLEAN	no	-	-
+2026-08-21T16:09:29Z	agent	pre-PR roster (session 4)	plan-adherence-reviewer	sonnet	-	-	-	-	complete	a3f2519e9	APPROVED	no	-	-
+2026-08-21T16:09:30Z	agent	pre-PR roster (session 4)	backend-guidelines-reviewer	sonnet	-	-	-	-	died-session-limit	a3f2519e9	-	-	-	-
+2026-08-21T16:24:16Z	agent	pre-PR roster (session 4)	backend-guidelines-reviewer	sonnet	-	-	-	-	complete	a3f2519e9	CHANGES_REQUIRED	yes	-	-

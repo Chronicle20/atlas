@@ -1,0 +1,103 @@
+# coverage-manifest — task-252 jukebox cash item
+#
+# Written by Task 9 (packet coverage: derive, codec, wire, verify the
+# CashItemUseSongPlayer serverbound cell), the packet-audit task of this
+# branch. Declares every op x version this BRANCH adds/changes coverage for
+# in libs/atlas-packet, per docs/packets/PROCESS.md's coverage-manifest
+# schema, so packet-completeness-critic can diff this against the branch's
+# actual git + matrix delta at review time.
+
+ops:
+  # cash/serverbound/CashItemUseSongPlayer (Task 1 of this branch,
+  # libs/atlas-packet/cash/serverbound/item_use_song_player.go): the
+  # USE_CASH_ITEM cash-slot type-20 (song player / jukebox, item
+  # classification 510) sub-body of CWvsContext::SendConsumeCashItemUseRequest.
+  # Not its own status.json op row — it is a shared-dispatcher sub-struct
+  # (kind: sub-struct), the same pattern as its megaphone/teleport-rock/pet-
+  # skill siblings under the same fname. Exactly one field on the wire: a
+  # single Encode4 of the WZ sound's own IWzSound::Getlength result (the
+  # sound-length in milliseconds), reached via
+  # IWzResMan::GetObjectA->cast-to-IWzSound->Getlength, on every version from
+  # gms_v72 through jms_v185 identically. No BGM name/path crosses the wire
+  # in either direction — the client re-resolves the item's own info/path
+  # node locally in CMapLoadable::PlayNextMusic. The trailing update_time (on
+  # GMS<=v84) is the shared dispatcher-tail field, gated by the pre-existing
+  # cashsb.UpdateTimeFirst(tenant) helper, unchanged by this task.
+  #
+  # Task 9 (this task): added the tools/packet-audit/cmd/run.go
+  # candidatesFromFName linkage (without which no audit report could ever be
+  # generated for this struct), byte-fixture tests + packet-audit:verify
+  # markers for all 8 non-n-a versions, pinned evidence for each, and
+  # dispositioned gms_v48/gms_v61 as version-absent (n-a) with positive IDA
+  # proof recorded in their _unimplemented.json (see below). A continuation
+  # pass (still Task 9) then: normalized the packet-audit:fname comment
+  # position (fname-doc --check was failing — the comment sat above the
+  # struct's doc-comment block instead of immediately above `type`); and
+  # fixed a matrix-builder writer-consumption collision
+  # (legacyConsumedSiblingWriters, tools/packet-audit/internal/matrix/build.go)
+  # that was gap-filling the gms_v72/gms_v79 cells to "no audit report" even
+  # though their evidence/marker/report triple was already correct — see
+  # docs/tasks/task-252-jukebox-cash-item/cash-item-use-song-player-coverage.md
+  # ("gms_v72 / gms_v79 grading gap — resolved") for the full root-cause
+  # writeup. That fix adds exactly one allow-list entry
+  # (USE_CASH_ITEM|serverbound -> CashItemUseSongPlayer) and does not
+  # force-promote any other cell; four sibling writers with the same fname
+  # collision on v72/v79 are deliberately NOT added (out of scope, see below).
+  - cash/serverbound/CashItemUseSongPlayer
+
+versions:
+  # n-a dispositions, positive proof recorded in
+  # docs/packets/audits/<version>/_unimplemented.json
+  # (packet: cash/serverbound/CashItemUseSongPlayer):
+  #   - gms_v48: case 20 IS uniquely dispatched, but it is a DIFFERENT
+  #     feature — teleport rock (CWvsContext::RunMapTransferItem), not song
+  #     player. v48's cash-slot type mapping (sub_47742E @0x47742e) is a
+  #     WZ-driven ZMap<long,ZRef<CItemInfo::LOTTERYITEM>,long> lookup, NOT
+  #     the hardcoded get_cashslot_item_type switch v83+ use (`case 510:
+  #     result = 20` @0x488c70 on gms_v95.0), so the same case number is not
+  #     guaranteed to carry the same feature identity across the two
+  #     schemes — confirmed different from the arm body itself, not just
+  #     from the number.
+  #   - gms_v61: case 20 is absent from the switch entirely (every
+  #     jumptable case comment across the function's full body was
+  #     enumerated; 20 appears in neither the explicit case list nor the
+  #     compiler default-case list).
+  - gms_v48   # n-a — different feature at case 20 (teleport rock)
+  - gms_v61   # n-a — case 20 absent from the switch
+  - gms_v72   # verified
+  - gms_v79   # verified
+  - gms_v83   # verified (re-confirmed live; codec's pre-existing citation)
+  - gms_v84   # verified
+  - gms_v87   # verified
+  - gms_v92   # verified
+  - gms_v95   # verified (re-confirmed live; codec's pre-existing citation)
+  - jms_v185  # verified
+
+fields:
+  - "cash/serverbound/CashItemUseSongPlayer: exactly one field, soundLengthMs (Encode4, the WZ sound's own IWzSound::Getlength() in milliseconds). No BGM name/path/index is ever sent by the client for this case — the server never resolves the BGM. Trailing update_time follows the pre-existing cashsb.UpdateTimeFirst(tenant) gate (GMS<=v84 trails, GMS>=87/JMS leads), unchanged by this task."
+
+out_of_scope:
+  # libs/atlas-packet/field/clientbound/play_jukebox.go — the CLIENTBOUND
+  # side of the jukebox feature (server->client broadcast/replay of the
+  # currently playing song, landed earlier in this branch via services/
+  # atlas-channel, commits 1886ade90/720374ab5/6360d7538/0c478156f). This
+  # struct was deliberately NOT touched by Task 9: its own coverage (if any)
+  # is a separate concern from the serverbound USE_CASH_ITEM sub-body this
+  # task derives and verifies. No packet-audit changes were made to it.
+  - field/clientbound/PlayJukebox
+
+  # The four other USE_CASH_ITEM case-arm siblings sharing the exact same
+  # fname collision (CWvsContext::SendConsumeCashItemUseRequest) on
+  # gms_v72/gms_v79 as CashItemUseSongPlayer: CashItemUseSuperMegaphone,
+  # CashItemUseMapleTV, CashItemUseMegaphone, CashItemUseTripleMegaphone.
+  # These still grade incomplete/n-a on gms_v72/gms_v79 in STATUS.md after
+  # this task (some already carry pinned evidence for those versions, e.g.
+  # CashItemUseSuperMegaphone, but were never independently re-verified
+  # there by task-252) and are NOT added to
+  # legacyConsumedSiblingWriters[USE_CASH_ITEM|serverbound] by this task —
+  # doing so would require per-cell re-verification of each sibling on
+  # gms_v72/gms_v79, which is a separate task's scope, not this one's.
+  - cash/serverbound/CashItemUseSuperMegaphone
+  - cash/serverbound/CashItemUseMapleTV
+  - cash/serverbound/CashItemUseMegaphone
+  - cash/serverbound/CashItemUseTripleMegaphone

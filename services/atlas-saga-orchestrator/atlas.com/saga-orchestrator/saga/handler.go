@@ -182,6 +182,7 @@ type Handler interface {
 	handleStageClearAttemptPq(s Saga, st Step[any]) error
 	handleEnterPartyQuestBonus(s Saga, st Step[any]) error
 	handleFieldEffectWeather(s Saga, st Step[any]) error
+	handlePlayJukebox(s Saga, st Step[any]) error
 	handleStartRPSGame(s Saga, st Step[any]) error
 	handleIncubatorResult(s Saga, st Step[any]) error
 	handleEmitMegaphone(s Saga, st Step[any]) error
@@ -1002,6 +1003,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleEnterPartyQuestBonus, true
 	case FieldEffectWeather:
 		return h.handleFieldEffectWeather, true
+	case PlayJukebox:
+		return h.handlePlayJukebox, true
 	case StartRPSGame:
 		return h.handleStartRPSGame, true
 	case SetAssetOwner:
@@ -3597,6 +3600,36 @@ func (h *HandlerImpl) handleFieldEffectWeather(s Saga, st Step[any]) error {
 	err := h.mapCommandP.FieldEffectWeather(s.TransactionId(), f, payload.ItemId, payload.Message, durationMs)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to show field effect weather.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+	return nil
+}
+
+// handlePlayJukebox handles the PlayJukebox action.
+// Produces a PLAY_JUKEBOX command to COMMAND_TOPIC_MAP. DurationMs is passed
+// through in MILLISECONDS -- unlike FieldEffectWeather, whose payload carries
+// seconds. The value is the client's own IWzSound::length; atlas-maps caps it.
+func (h *HandlerImpl) handlePlayJukebox(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(PlayJukeboxPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"map_id":         payload.MapId,
+		"item_id":        payload.ItemId,
+	}).Debug("Starting jukebox")
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	err := h.mapCommandP.PlayJukebox(s.TransactionId(), f, payload.ItemId, payload.PlayerName, payload.DurationMs)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to start jukebox.")
 		return err
 	}
 

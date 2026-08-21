@@ -28,3 +28,21 @@ func WeatherStartCommandProvider(transactionId uuid.UUID, f field.Model, itemId 
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func PlayJukeboxCommandProvider(transactionId uuid.UUID, f field.Model, itemId uint32, playerName string, durationMs uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(f.MapId()))
+	value := &mapKafka.Command[mapKafka.PlayJukeboxCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       f.WorldId(),
+		ChannelId:     f.ChannelId(),
+		MapId:         f.MapId(),
+		Instance:      f.Instance(),
+		Type:          mapKafka.CommandTypePlayJukebox,
+		Body: mapKafka.PlayJukeboxCommandBody{
+			ItemId:     itemId,
+			PlayerName: playerName,
+			DurationMs: durationMs,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

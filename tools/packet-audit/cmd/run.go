@@ -2319,6 +2319,15 @@ func candidatesFromFName(fname string) []candidate {
 			// update_time" shape as every other sibling in this list. See
 			// item_use_pet_name_tag_test.go for the byte fixtures.
 			{name: "ItemUsePetNameTag", dir: csvpkg.DirServerbound, pkg: "cash"},
+			// Song Player / jukebox (task-252, cash-slot type 20, item
+			// classification 510): get_cashslot_item_type @0x488c70 (gms_v95.0)
+			// maps 510 -> case 20. The arm reads the item's info/path WZ node,
+			// resolves it via IWzResMan::GetObjectA, casts to IWzSound, calls
+			// IWzSound::Getlength, and Encode4's the result -- gms_v95.0
+			// @0x9ed51e (Encode4 @0x9ed7b9), gms_v83 @0xa0c1a2 (Encode4
+			// @0xa0c3f6). See item_use_song_player_test.go for the byte
+			// fixtures and the full per-version sweep.
+			{name: "ItemUseSongPlayer", dir: csvpkg.DirServerbound, pkg: "cash"},
 		}
 	// Item Megaphone (cash-slot type 14): the REAL send function, separate
 	// from the main dispatcher above (task-123 phase 19, gms_v95

@@ -41,3 +41,6 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T13:48:17Z	agent	pre-PR	backend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
 2026-08-21T13:50:35Z	agent	pre-PR shard 8-13	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	22b8b603c	APPROVED	no	-	-
 2026-08-21T13:50:53Z	agent	pre-PR shard 1-7	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	22b8b603c	APPROVED	no	-	-
+2026-08-21T14:03:27Z	agent	pre-PR	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	22b8b603c	CHANGES_REQUIRED	yes	-	-
+2026-08-21T14:07:31Z	agent	audit fix	atlas-implementer	sonnet	-	-	-	-	DONE	b53d4bc25	-	-	-	-
+2026-08-21T14:15:40Z	agent	audit fix	atlas-reviewer	sonnet	-	-	-	-	DONE	b53d4bc25	CHANGES_REQUIRED	no	-	-

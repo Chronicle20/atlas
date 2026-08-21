@@ -69,6 +69,19 @@ No defects found.
   `useGridRefresh` call and no refresh capability anywhere (grep confirms
   no `useGridRefresh(` hit for this file); it is a static detail page
   outside FR-6.5's grid-refresh scope, not a grid missing instrumentation.
+- `services/atlas-ui/src/components/features/characters/presets/PresetLibrary.tsx`
+  — **not applicable**. The `<EmptyState>` at line 55 is a bespoke no-data
+  panel for the preset library list, not a `DataTableWrapper` grid; this
+  page has no `useGridRefresh` call. Bespoke no-data panels outside the
+  grid-refresh pattern are explicitly out of scope per the PRD non-goal
+  (`docs/tasks/task-258-refreshable-empty-states/prd.md:51-52`).
+- `services/atlas-ui/src/components/features/characters/templates/CharacterTemplatesEditor.tsx`
+  — **not applicable**. The `<EmptyState>` at line 186 is a bespoke no-data
+  panel for the character templates editor's template list, not a
+  `DataTableWrapper` grid; this component has no `useGridRefresh` call.
+  Bespoke no-data panels outside the grid-refresh pattern are explicitly out
+  of scope per the PRD non-goal
+  (`docs/tasks/task-258-refreshable-empty-states/prd.md:51-52`).
 
 ## `useGridRefresh(` call sites
 
@@ -99,6 +112,8 @@ and its test, `services/atlas-ui/src/lib/hooks/__tests__/useGridRefresh.test.ts`
 
 No defects found. Every `DataTableWrapper` and non-wrapper grid empty state
 wires `onRefresh`, `isRefreshing`, and `lastUpdatedAt` (or omits
-`lastUpdatedAt` per the documented D7 exception on `TransportsPage`). All
-other sites the sweep surfaces are documented exceptions or pre-existing,
-recorded gaps, not FR-6.5 defects.
+`lastUpdatedAt` per the documented D7 exception on `TransportsPage`). Every
+other `<EmptyState`, `<DataTableWrapper>`, and `useGridRefresh(` hit the
+sweep surfaces is accounted for above — either as a `DataTableWrapper` grid
+in the table, a non-wrapper grid in the table, or a documented
+not-applicable/pre-existing exception — not an FR-6.5 defect.

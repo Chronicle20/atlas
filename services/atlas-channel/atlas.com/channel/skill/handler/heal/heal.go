@@ -214,7 +214,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 			// XP gate: skip when sole recipient AND no undead targets in this cast.
 			// Also skipped entirely on a negated cast -- HealXp derives from the
 			// applied heal, and a zombified cast heals nobody (task-256 FR-15).
-			if !zombified && !(len(recipients) == 1 && len(info.AffectedMobIds()) == 0) {
+			if !zombified && (len(recipients) != 1 || len(info.AffectedMobIds()) != 0) {
 				xp := HealXp(perTarget, recipients, info.SkillLevel())
 				if xp > 0 {
 					if xpErr := awardExperienceFunc(cp, f, characterId, []character2.ExperienceDistributions{{

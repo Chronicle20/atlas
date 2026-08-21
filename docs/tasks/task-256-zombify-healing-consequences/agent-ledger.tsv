@@ -1,0 +1,9 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-21T13:07:44Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	8dcf10ba1	-	-	-	-
+2026-08-21T13:07:45Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	253764d3c	-	-	-	-
+2026-08-21T13:09:23Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	253764d3c	APPROVED	no	-	-
+2026-08-21T13:12:28Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	8dcf10ba1	APPROVED	no	-	-
+2026-08-21T13:15:01Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE	9fab72cbd	-	-	-	-
+2026-08-21T13:15:52Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	a9b2cd460	-	-	-	-
+2026-08-21T13:17:03Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	9fab72cbd	APPROVED	no	-	-
+2026-08-21T13:17:52Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	a9b2cd460	APPROVED	no	-	-

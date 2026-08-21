@@ -1,0 +1,26 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-20T22:36:39Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	23cc82c5c	-	-	-	-
+2026-08-20T22:41:32Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	23cc82c5c	APPROVED	no	-	-
+2026-08-20T22:41:33Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE	a2fe09919	-	-	-	-
+2026-08-20T22:45:30Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	a2fe09919	APPROVED	no	-	-
+2026-08-20T22:45:30Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	dbb7fcb1e	-	-	-	-
+2026-08-20T22:47:23Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	dbb7fcb1e	APPROVED	no	-	-
+2026-08-20T22:47:23Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	345593a61	-	-	-	-
+2026-08-20T22:48:41Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	345593a61	APPROVED	no	-	-
+2026-08-20T22:49:12Z	agent	Tasks 1-4 gate	verify.sh	-	-	-	-	-	FAIL	345593a61	-	-	-	-
+2026-08-20T22:53:37Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	92ae4c4	-	-	-	-
+2026-08-20T22:53:37Z	handoff	after Task 5 implementer	-	-	-	-	-	-	-	-	-	-	-	62000
+2026-08-20T22:56:45Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DISPATCHED	92ae4c480	-	-	-	-
+2026-08-20T22:56:45Z	agent	Fix round 1	atlas-implementer	sonnet	-	-	-	-	DISPATCHED	92ae4c480	-	-	-	-
+2026-08-20T22:58:30Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DONE	92ae4c480	APPROVED_WITH_FINDINGS	no	docs/tasks/task-244-listener-drain-socket-close/review-task-5.md	-
+2026-08-20T23:09:18Z	agent	Fix round 1	atlas-implementer	sonnet	-	-	-	-	DONE	901b64606	-	-	-	-
+2026-08-20T23:09:19Z	agent	Fix round 1	atlas-reviewer	sonnet	-	-	-	-	DONE	901b64606	APPROVED	no	docs/tasks/task-244-listener-drain-socket-close/review-fix-1.md	-
+2026-08-20T23:11:59Z	agent	Tasks 1-5 + fix 1 gate	verify.sh	-	-	-	-	-	FAIL	901b64606	-	-	-	-
+2026-08-20T23:13:28Z	agent	Fix round 2	atlas-implementer	sonnet	-	-	-	-	DONE	1e1042a10	-	-	-	-
+2026-08-20T23:14:55Z	agent	Branch	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	1e1042a10	APPROVED	no	docs/tasks/task-244-listener-drain-socket-close/audit.md	-
+2026-08-20T23:22:56Z	agent	Branch	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	1e1042a10	CHANGES_REQUIRED	yes	docs/tasks/task-244-listener-drain-socket-close/backend-audit.md	-
+2026-08-21T00:16:37Z	agent	Branch	verify.sh	-	-	-	-	-	FAIL	1e1042a10	-	-	-	-
+2026-08-21T00:22:49Z	agent	Fix round 3	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	9233f9339	-	-	-	-
+2026-08-21T00:25:45Z	agent	Fix round 3	atlas-reviewer	sonnet	-	-	-	-	DONE	9233f9339	APPROVED_WITH_FINDINGS	no	docs/tasks/task-244-listener-drain-socket-close/review-fix-3.md	-
+2026-08-21T00:29:22Z	handoff	Branch	-	-	-	-	-	-	PR_OPENED	3907f0404	-	-	-	-
+2026-08-21T11:44:28Z	agent	bug-listener-binds-advertised-ip	atlas-implementer	sonnet	-	-	-	-	DONE	f66935f2b	-	-	-	-

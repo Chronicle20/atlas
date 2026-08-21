@@ -1,0 +1,72 @@
+{
+  "service": "atlas-channel",
+  "path": "services/atlas-channel/atlas.com/channel (+ libs/atlas-socket)",
+  "date": "2026-08-20",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "libs/atlas-socket",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement", "status": "n-a", "evidence": "No Processor/RestModel/requests/entity/Builder markers present; grep for all FILE-01..05 markers returns zero hits"},
+        {"id": "DOM-21", "name": "No redeclaration of a type/const already in libs/atlas-constants", "status": "pass", "evidence": "libs/atlas-socket/server.go:103-106 WaitGrouper is novel; grep -rn WaitGrouper libs/atlas-constants/ returns no hits"},
+        {"id": "DOM-26", "name": "Every goroutine via routine.Go", "status": "pass", "evidence": "libs/atlas-socket/server.go:163,201,233 all use routine.Go; tools/goroutine-guard.sh exit 0"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "libs/atlas-socket/bind_serve_test.go:34,53,71,101 - 4 discrete func Test..., none use tests := []struct{...} + t.Run"},
+        {"id": "DOM-24", "name": "Emit-path stub installed", "status": "n-a", "evidence": "bind_serve_test.go tests exercise Bind/Serve bind/accept/waitgroup behavior only; no AndEmit/message.Emit reachable"},
+        {"id": "DOM-33", "name": "Mock updated for changed interface", "status": "n-a", "evidence": "WaitGrouper is not a Processor/Provider/Administrator interface; *sync.WaitGroup satisfies it with no caller changes, confirmed by services/atlas-login building unedited"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/listener",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "No Processor/RestModel/requests/entity/Builder/db markers in handle.go or registry.go (grep empty); State enum + Handle/HandlerHandle structs in handle.go do not match model.go's private-field+accessor definition"},
+        {"id": "DOM-26", "name": "Every goroutine via routine.Go", "status": "pass", "evidence": "listener/registry.go:238,290 use routine.Go; tools/goroutine-guard.sh exit 0"},
+        {"id": "RUNTIME-rollback-leak", "name": "Registry.Add rollback deregisters Kafka handlers registered before a bind failure", "status": "fail", "evidence": "services/atlas-channel/atlas.com/channel/listener/registry.go:122-134 (rollback only deletes registry entry/decrements refs, never calls deps.RemoveHandler) combined with services/atlas-channel/atlas.com/channel/main.go:624-630 (bind failure now propagates and triggers that rollback for the first time in production). ~20 Kafka handlers registered earlier in the same body call (main.go:445-618) leak permanently on a late bind failure. Untested: registry_test.go:330 only covers a body registering zero handlers before failing."},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "listener/registry_test.go:50-455 - 12 discrete func Test..., none table-driven"},
+        {"id": "DOM-24", "name": "Emit-path stub installed", "status": "n-a", "evidence": "registry_test.go uses nopDeps() and per-test h.Kick/h.Sessions fakes (registry_test.go:91,379,440); no test reaches AndEmit/message.Emit"},
+        {"id": "DOM-33", "name": "Mock updated for changed interface", "status": "n-a", "evidence": "listener.Dependencies is a plain callback struct, not a Processor/Provider/Administrator interface"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/socket",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement", "status": "n-a", "evidence": "No Processor/RestModel/requests/entity/Builder markers in drain.go/init.go (grep empty)"},
+        {"id": "DOM-26", "name": "Every goroutine via routine.Go", "status": "pass", "evidence": "socket/init.go:104,140 use routine.Go; the :140-146 goroutine tracked by neither waitgroup matches the pre-image exactly (git show 0b6917b6e) and is an explicit PRD non-goal, not re-reported"},
+        {"id": "DOM-25", "name": "Client-interpreted wire values resolved from tenant table", "status": "n-a", "evidence": "socket/drain.go:52 reuses unmodified socket/writer/world_message.go writer-options-table machinery; no new Go literal wire byte"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "socket/drain_test.go:19 (1 func) and socket/init_test.go:47-158 (6 funcs), none table-driven"},
+        {"id": "DOM-24", "name": "Emit-path stub installed", "status": "n-a", "evidence": "drain_test.go's single test returns before reaching session.Processor.Destroy's emit (session/processor.go:427); init_test.go exercises bind-failure/waitgroup-fanout only"},
+        {"id": "DOM-33", "name": "Mock updated for changed interface", "status": "n-a", "evidence": "CreateSocketService is a package function, not a Processor/Provider/Administrator interface method; its only call site (main.go:624) updated in the same diff"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/configuration/projection",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement", "status": "n-a", "evidence": "No Processor/RestModel/requests/entity/Builder markers in loop.go (grep empty); state.go untouched by this diff"},
+        {"id": "DOM-26", "name": "Every goroutine via routine.Go", "status": "n-a", "evidence": "loop.go's diff adds no new goroutine spawn"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "projection_test.go:25-404+ - 17 discrete func Test..., none table-driven"},
+        {"id": "DOM-24", "name": "Emit-path stub installed", "status": "n-a", "evidence": "AddBody is a test-supplied closure (projection_test.go:327,380) that never reaches Kafka"},
+        {"id": "DOM-33", "name": "Mock updated for changed interface", "status": "n-a", "evidence": "ApplyLoop.execute changed its own return type, not a Processor/Provider/Administrator interface method"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel (main)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement", "status": "n-a", "evidence": "main.go carries no Processor/RestModel/requests/entity/Builder markers (grep empty)"},
+        {"id": "DOM-26", "name": "Every goroutine via routine.Go", "status": "pass", "evidence": "No new bare go in main.go's diff; tools/goroutine-guard.sh exit 0 covers the whole repo"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "DOM-20: bind_serve_test.go, registry_test.go, drain_test.go, init_test.go, projection_test.go: ~30 new/changed test functions across this diff do not use the table-driven tests := []struct{...} + t.Run pattern required by the checklist's DOM-20 verification procedure",
+    "RUNTIME (unnumbered, Registry.Add rollback): services/atlas-channel/atlas.com/channel/listener/registry.go:122-134 + main.go:624-630 - a bind failure now propagates and triggers Add's rollback for the first time in production, but the rollback never deregisters Kafka consumer handlers already registered earlier in the same body call - a permanent handler leak, untested"
+  ],
+  "nonBlocking": []
+}

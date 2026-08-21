@@ -49,3 +49,69 @@ destination portal's `targetX`/`targetY`). **No `MajorAtLeast` gate is
 required** for the field layout — only the opcode differs per version, which
 is resolved through the existing per-tenant `operations` opcode table, not a
 field-shape gate.
+
+**Task 2 update:** this ruling holds only across the six versions Task 1
+scoped. Task 2's re-derivation of v48/v61/v72/v79
+(`../version-coverage.md`) found all four **present** — v61/v72/v79 match
+this six-field shape, but **v48 omits the `fieldKey` byte** (5 fields, no
+`Encode1` call at its send site). If the plan is amended to bring v48 into
+scope, the "no gate is required" ruling above no longer holds and a real
+field-shape gate is needed for v48. See `../version-coverage.md` for the
+full finding.
+
+## Threshold derivation
+
+Collision rect half-extents (CUserLocal::CheckPortal_Collision @0x919a10):
+
+`CheckPortal_Collision` itself does not inline the rect test — it calls
+`CPortalList::FindPortal_Collision(v2, *v4, *(v5+4))` (`0x6ab310`), which
+builds the actual collision rectangle:
+
+```c
+ZAPI.SetRect(
+  &rc,
+  p->ptPos.x - p->nHRange / 2,
+  p->ptPos.y - p->nVRange / 2,
+  p->ptPos.x + p->nHRange / 2,
+  p->ptPos.y + p->nVRange / 2);
+result = ZAPI.PtInRect(&rc, __PAIR64__(y, x));
+```
+
+`nHRange`/`nVRange` are per-portal fields loaded from WZ map data in
+`CPortalList::RestorePortal` (`0x6ad3c0`), each read via a
+`get_int32(propertyValue, defaultValue)` call keyed by property id. Both
+reads pass a literal default when the map's portal node omits the property:
+
+```c
+v122.llVal = v33 | 0x6400000000LL;     // high dword = 0x64 = 100 (default)
+...
+v35 = IWzProperty::Getitem(v14, &v157, /* prop id 5122 = "hRange" */);
+p_t->nHRange = get_int32(v35, v122.cyVal.Hi);   // default 100
+
+v122.llVal = v36 | 0x6400000000LL;     // high dword = 0x64 = 100 (default)
+...
+v38 = IWzProperty::Getitem(v14, &v148, /* prop id 5215 = "vRange" */);
+p_t->nVRange = get_int32(v38, v122.cyVal.Hi);   // default 100
+```
+
+So on the common case — a portal whose WZ node does not override
+`hRange`/`vRange` — the client uses:
+
+  halfWidth  = 100 / 2 = 50
+  halfHeight = 100 / 2 = 50
+
+Diagonal bound: ceil(sqrt(halfWidth^2 + halfHeight^2)) = ceil(sqrt(50^2 + 50^2)) = ceil(70.7107) = 71
+
+Movement-latency margin: 10 map units, because `CUserLocal::TryRegisterTeleport`
+(the send site this collision check leads into) itself uses a 10-unit
+positional-tolerance literal at the only other place in this call path where
+the client tests "close enough" to a portal: `v16 = PortalByName->ptPos.y - 10`
+before probing `CWvsPhysicalSpace2D::GetFootholdUnderneath` for the
+destination portal's ground. The client's actual walk-speed-per-tick
+distance (`max_walk_speed`, `0x992b20`) is not a static constant — it scales
+a runtime `CONSTANTS.dWalkSpeed` value loaded from WZ `Physics.img` at
+runtime, which is not resolvable as a literal from this IDB — so rather than
+invent a px/tick figure, the margin reuses the one concrete positional-slop
+literal the client itself applies in this exact code path.
+
+maxPortalEntryDistance = 81   # map coordinate units (71 diagonal bound + 10 margin)

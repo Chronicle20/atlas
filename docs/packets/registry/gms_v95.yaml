@@ -456,6 +456,7 @@
   fname: CWvsContext::OnImitatedNPCData
   fname_alts:
     - CNpcPool::OnNpcImitateData
+  packet: npc/clientbound/ImitatedNpcData
   provenance: manual
   note: 'IDA v95: opcode 84 is routed by CClientSocket::ProcessPacket (0x4B00F0, range 28-140) to CWvsContext::OnPacket (0x9E5830) case 84 -> CWvsContext::OnImitatedNPCData (0x9CCDF0). CNpcPool::OnPacket (0x679770) also has a dead case 84 -> CNpcPool::OnNpcImitateData (never reached; CField routes only 311-318 to CNpcPool) - kept as alt. Same dead-code family as v83/v87.'
 - op: LIMITED_NPC_DISABLE_INFO

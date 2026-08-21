@@ -1,0 +1,10 @@
+packet: npc/clientbound/ImitatedNpcData
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CNpcPool::OnNpcImitateData
+    address: "0x679500"
+    decompile_sha256: 1aa86cba318a24bd356947c1a60958d6bd89c287670c134b759c54e71667a224
+verifies:
+    - libs/atlas-packet/npc/clientbound/imitated_npc_data_test.go#TestImitatedNpcData

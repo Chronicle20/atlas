@@ -327,6 +327,58 @@ func (r *PositionRestModel) SetID(strId string) error {
 	return nil
 }
 
+type GroundPointRestModel struct {
+	X int16 `json:"x"`
+	Y int16 `json:"y"`
+}
+
+type GroundRequestRestModel struct {
+	Id     uint32                 `json:"-"`
+	Points []GroundPointRestModel `json:"points"`
+}
+
+func (r GroundRequestRestModel) GetName() string {
+	return "grounds"
+}
+
+func (r GroundRequestRestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *GroundRequestRestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
+}
+
+type GroundResultRestModel struct {
+	Id    uint32 `json:"-"`
+	X     int16  `json:"x"`
+	Y     int16  `json:"y"`
+	Fh    uint32 `json:"fh"`
+	Found bool   `json:"found"`
+}
+
+func (r GroundResultRestModel) GetName() string {
+	return "grounds"
+}
+
+func (r GroundResultRestModel) GetID() string {
+	return strconv.Itoa(int(r.Id))
+}
+
+func (r *GroundResultRestModel) SetID(strId string) error {
+	id, err := strconv.Atoi(strId)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
+}
+
 type FootholdRestModel struct {
 	Id     uint32           `json:"id"`
 	First  *point.RestModel `json:"first,omitempty"`

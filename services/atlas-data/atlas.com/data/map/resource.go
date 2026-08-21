@@ -42,6 +42,7 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 			r.HandleFunc("/{mapId}/monsters", registerGet("get_map_monsters", handleGetMapMonstersRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{mapId}/drops/position", rest.RegisterInputHandler[DropPositionRestModel](l)(si)("get_map_drop_position", handleGetMapDropPositionRequest(db))).Methods(http.MethodPost)
 			r.HandleFunc("/{mapId}/footholds/below", rest.RegisterInputHandler[PositionRestModel](l)(si)("get_map_foothold_below", handleGetMapFootholdBelowRequest(db))).Methods(http.MethodPost)
+			r.HandleFunc("/{mapId}/ground", rest.RegisterInputHandler[GroundRequestRestModel](l)(si)("get_map_ground", handleGetMapGroundRequest(db))).Methods(http.MethodPost)
 		}
 	}
 }
@@ -417,6 +418,46 @@ func handleGetMapFootholdBelowRequest(db *gorm.DB) func(d *rest.HandlerDependenc
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
 				server.MarshalResponse[FootholdRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+			}
+		})
+	}
+}
+
+func handleGetMapGroundRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext, i GroundRequestRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, i GroundRequestRestModel) http.HandlerFunc {
+		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				if len(i.Points) == 0 {
+					server.WriteBadRequest(d.Logger(), w, "points must not be empty")
+					return
+				}
+
+				s := NewStorage(d.Logger(), db)
+				m, err := s.GetById(d.Context())(strconv.Itoa(int(mapId)))
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to retrieve map %d for ground lookup.", mapId)
+					server.WriteErrorResponse(d.Logger())(w)(err)
+					return
+				}
+
+				results := make([]GroundResultRestModel, 0, len(i.Points))
+				for idx, ip := range i.Points {
+					p := point.RestModel{X: ip.X, Y: ip.Y}
+					snapped, ok := calcPointBelow(m.FootholdTree, p)
+					if !ok {
+						results = append(results, GroundResultRestModel{Id: uint32(idx), Found: false})
+						continue
+					}
+					fhId := uint32(0)
+					if fh := m.FootholdTree.findBelow(p); fh != nil {
+						fhId = fh.Id
+					}
+					results = append(results, GroundResultRestModel{Id: uint32(idx), X: snapped.X, Y: snapped.Y, Fh: fhId, Found: true})
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]GroundResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(results)
 			}
 		})
 	}

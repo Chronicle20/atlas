@@ -2,9 +2,11 @@ package snapshot
 
 import (
 	"atlas-player-npcs/character"
+	"atlas-player-npcs/inventory"
 	"atlas-player-npcs/ranking"
 	"testing"
 
+	invtype "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
@@ -30,6 +32,19 @@ func (s stubCharacterProcessor) GetByName(name string) (character.Model, error) 
 
 var _ character.Processor = stubCharacterProcessor{}
 
+// stubInventoryProcessor drives Capture off a fixed inventory.Model rather
+// than an HTTP call.
+type stubInventoryProcessor struct {
+	model inventory.Model
+	err   error
+}
+
+func (s stubInventoryProcessor) GetByCharacterId(characterId uint32) (inventory.Model, error) {
+	return s.model, s.err
+}
+
+var _ inventory.Processor = stubInventoryProcessor{}
+
 // stubRankingProcessor drives Capture off a fixed ranking.Model rather
 // than an HTTP call.
 type stubRankingProcessor struct {
@@ -52,6 +67,23 @@ func extractCharacter(t *testing.T, rm character.RestModel) character.Model {
 	return m
 }
 
+// extractInventory builds an inventory.Model whose equip compartment
+// holds the given assets, mirroring the shape atlas-inventory's
+// characters/{id}/inventory decodes into (see inventory/rest_test.go).
+func extractInventory(t *testing.T, equipAssets []inventory.AssetRestModel) inventory.Model {
+	t.Helper()
+	rm := inventory.RestModel{
+		Compartments: []inventory.CompartmentRestModel{
+			{InventoryType: invtype.TypeValueEquip, Assets: equipAssets},
+		},
+	}
+	m, err := inventory.Extract(rm)
+	if err != nil {
+		t.Fatalf("inventory.Extract returned error: %v", err)
+	}
+	return m
+}
+
 func extractRanking(t *testing.T, rm ranking.RestModel) ranking.Model {
 	t.Helper()
 	m, err := ranking.Extract(rm)
@@ -64,7 +96,8 @@ func extractRanking(t *testing.T, rm ranking.RestModel) ranking.Model {
 func TestCaptureSnapshot(t *testing.T) {
 	t.Run("appearance", func(t *testing.T) {
 		c := extractCharacter(t, character.RestModel{Gender: 0, SkinColor: 3, Face: 20000, Hair: 30030})
-		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubRankingProcessor{})
+		inv := extractInventory(t, nil)
+		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubInventoryProcessor{model: inv}, stubRankingProcessor{})
 		if err != nil {
 			t.Fatalf("Capture returned error: %v", err)
 		}
@@ -84,7 +117,8 @@ func TestCaptureSnapshot(t *testing.T) {
 
 	t.Run("job category", func(t *testing.T) {
 		c := extractCharacter(t, character.RestModel{JobId: 112})
-		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubRankingProcessor{})
+		inv := extractInventory(t, nil)
+		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubInventoryProcessor{model: inv}, stubRankingProcessor{})
 		if err != nil {
 			t.Fatalf("Capture returned error: %v", err)
 		}
@@ -94,10 +128,9 @@ func TestCaptureSnapshot(t *testing.T) {
 	})
 
 	t.Run("visible equip", func(t *testing.T) {
-		c := extractCharacter(t, character.RestModel{
-			Equipment: []character.EquippedItemRestModel{{Slot: -5, TemplateId: 1050000}},
-		})
-		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubRankingProcessor{})
+		c := extractCharacter(t, character.RestModel{})
+		inv := extractInventory(t, []inventory.AssetRestModel{{Slot: -5, TemplateId: 1050000}})
+		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubInventoryProcessor{model: inv}, stubRankingProcessor{})
 		if err != nil {
 			t.Fatalf("Capture returned error: %v", err)
 		}
@@ -110,13 +143,12 @@ func TestCaptureSnapshot(t *testing.T) {
 	})
 
 	t.Run("cash equip masks", func(t *testing.T) {
-		c := extractCharacter(t, character.RestModel{
-			Equipment: []character.EquippedItemRestModel{
-				{Slot: -5, TemplateId: 1050000},   // real
-				{Slot: -105, TemplateId: 1053000}, // cash, masks -5
-			},
+		c := extractCharacter(t, character.RestModel{})
+		inv := extractInventory(t, []inventory.AssetRestModel{
+			{Slot: -5, TemplateId: 1050000},   // real
+			{Slot: -105, TemplateId: 1053000}, // cash, masks -5
 		})
-		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubRankingProcessor{})
+		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubInventoryProcessor{model: inv}, stubRankingProcessor{})
 		if err != nil {
 			t.Fatalf("Capture returned error: %v", err)
 		}
@@ -132,10 +164,9 @@ func TestCaptureSnapshot(t *testing.T) {
 	})
 
 	t.Run("out-of-range slot dropped", func(t *testing.T) {
-		c := extractCharacter(t, character.RestModel{
-			Equipment: []character.EquippedItemRestModel{{Slot: -60, TemplateId: 9999999}},
-		})
-		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubRankingProcessor{})
+		c := extractCharacter(t, character.RestModel{})
+		inv := extractInventory(t, []inventory.AssetRestModel{{Slot: -60, TemplateId: 9999999}})
+		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubInventoryProcessor{model: inv}, stubRankingProcessor{})
 		if err != nil {
 			t.Fatalf("Capture returned error: %v", err)
 		}
@@ -146,8 +177,9 @@ func TestCaptureSnapshot(t *testing.T) {
 
 	t.Run("ranks", func(t *testing.T) {
 		c := extractCharacter(t, character.RestModel{})
+		inv := extractInventory(t, nil)
 		r := extractRanking(t, ranking.RestModel{Rank: 42, JobRank: 7})
-		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubRankingProcessor{model: r})
+		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubInventoryProcessor{model: inv}, stubRankingProcessor{model: r})
 		if err != nil {
 			t.Fatalf("Capture returned error: %v", err)
 		}
@@ -163,7 +195,8 @@ func TestCaptureSnapshot(t *testing.T) {
 		// ranking.Processor already turns a 404 into the zero-value Model
 		// with a nil error (design §6.3); the stub mirrors that contract.
 		c := extractCharacter(t, character.RestModel{})
-		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubRankingProcessor{})
+		inv := extractInventory(t, nil)
+		snap, err := Capture(1001, world.Id(0), stubCharacterProcessor{model: c}, stubInventoryProcessor{model: inv}, stubRankingProcessor{})
 		if err != nil {
 			t.Fatalf("Capture returned error: %v", err)
 		}

@@ -9,8 +9,8 @@ import (
 
 const (
 	Resource = "characters"
-	ById     = Resource + "/%d?include=inventory"
-	ByName   = Resource + "?name=%s&include=inventory"
+	ById     = Resource + "/%d"
+	ByName   = Resource + "?name=%s"
 )
 
 func getBaseRequest(ctx context.Context) (string, error) {

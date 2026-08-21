@@ -130,6 +130,7 @@ import (
 	notesb "github.com/Chronicle20/atlas/libs/atlas-packet/note/serverbound"
 	npccb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	npcsb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/serverbound"
+	parcelcb "github.com/Chronicle20/atlas/libs/atlas-packet/parcel/clientbound"
 	parcelsb "github.com/Chronicle20/atlas/libs/atlas-packet/parcel/serverbound"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	partysb "github.com/Chronicle20/atlas/libs/atlas-packet/party/serverbound"
@@ -896,6 +897,7 @@ func produceWriters() []string {
 		reportcb.ClaimResultWriter,
 		reportcb.ClaimAvailableTimeWriter,
 		reportcb.ClaimSvrStatusChangedWriter,
+		parcelcb.ParcelWriter,
 	}
 }
 

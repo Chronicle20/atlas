@@ -401,6 +401,7 @@
   fname: CNpcPool::OnNpcImitateData
   fname_alts:
     - sub_AEC92E
+  packet: npc/clientbound/ImitatedNpcData
   provenance: manual
   note: 'IDA jms185: unlike GMS (where the CNpcPool 0x55 case is dead code), CWvsContext::OnPacket (0xAEBFE7) case 0x55 dispatches to wrapper sub_AEC92E (0xAEC92E) which re-calls CNpcPool::OnPacket(85) -> CNpcPool::OnNpcImitateData (0x7204C2). CSV fname is the live handler; wrapper recorded as alt.'
 - op: LIMITED_NPC_DISABLE_INFO

@@ -1,0 +1,113 @@
+{
+  "service": "task-250-inner-portal-registration",
+  "path": "services/atlas-channel, services/atlas-character, libs/atlas-packet, tools/packet-audit",
+  "date": "2026-08-21",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "libs/atlas-packet/portal/serverbound",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client-interpreted wire bytes resolved from tenant table", "status": "n-a", "evidence": "No dispatcher-mode/sub-op/fail-reason byte — plain field decode (inner_portal.go:57-63)"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "inner_portal_test.go:21-33,54-59 cases:=[]struct{}+t.Run"},
+        {"id": "FILE-06", "name": "No catch-all bundling >=2 responsibilities", "status": "pass", "evidence": "inner_portal.go is a single-purpose codec file"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/channel/portal",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:54"},
+        {"id": "FILE-01", "name": "Processor interface/impl in processor.go", "status": "pass", "evidence": "processor.go (Processor, ProcessorImpl, EnterInner)"},
+        {"id": "DOM-33", "name": "Mock updated for interface change", "status": "pass", "evidence": "portal/mock/processor.go:12,39-45"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "processor_test.go:76-79,187 TestEnterInner"},
+        {"id": "DOM-29", "name": "Cache scope", "status": "n-a", "evidence": "package holds no cache state itself"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/channel/movement",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:59"},
+        {"id": "DOM-33", "name": "Mock updated for interface change", "status": "pass", "evidence": "movement/mock/processor.go:11,47-52"},
+        {"id": "DOM-26", "name": "Goroutine via routine.Go", "status": "pass", "evidence": "processor.go:94"},
+        {"id": "DOM-30", "name": "DB write + emit atomicity", "status": "pass", "evidence": "processor.go:93-102 documented non-DB-state exception (patterns-kafka.md)"},
+        {"id": "DOM-24", "name": "Test package reaching emit path installs producertest stub", "status": "fail", "evidence": "teleport_test.go:22-41,43-67,70-105 reach producer.ProviderImpl (processor.go:97) without producertest.InstallNoop/InstallCapturing; no TestMain in movement package"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "teleport_test.go: 4 standalone Test funcs, distinct properties each — cf testing-guide.md:24-28 single-scenario example"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/channel/position",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-29", "name": "Singleton cache via accessor", "status": "pass", "evidence": "registry.go:35-40 GetRegistry() sync.Once; mutex-guarded Put/Lookup/Clear"},
+        {"id": "FILE-06", "name": "No catch-all bundling >=2 responsibilities", "status": "pass", "evidence": "registry.go matches documented cache.go bundling pattern"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "registry_test.go: 5 standalone Test funcs, distinct methods"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/channel/session",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-31", "name": "Tenant travels via context only", "status": "pass", "evidence": "processor.go:472-476 clearLastPositionOnDestroy"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "position_hook_test.go:35,58 positive/negative pair not tabled"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/channel/data/portal",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:27"},
+        {"id": "DOM-29", "name": "Cache is a singleton reached via GetCache() accessor", "status": "fail", "evidence": "processor.go:52-53 bare package sync.Map, no CacheInterface/GetCache()/sync.Once"},
+        {"id": "FILE-06", "name": "No file bundling >=2 responsibilities", "status": "fail", "evidence": "processor.go:34-79 bundles Processor logic and cache-implementation logic in one file"},
+        {"id": "EXT-01", "name": "RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "rest.go:19-31 no such methods; cf data/consumable/rest.go:51,55"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "no httptest server in data/portal/*_test.go; processor_test.go:17-21 uses a FakeClient-style seam"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "processor.go:56-79,90-100 propagate raw error; synthesized error only after successful fetch"},
+        {"id": "EXT-04", "name": "URL composed via requests.RootUrl/RootUrlFor", "status": "pass", "evidence": "requests.go:16"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "processor_test.go: 4 standalone Test funcs, plausible table-driven candidate"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/channel/socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-06", "name": "N/A trigger", "status": "n-a", "evidence": "no processor.go in this package"},
+        {"id": "FILE-06", "name": "No catch-all bundling >=2 responsibilities", "status": "pass", "evidence": "portal_inner.go single handler function"}
+      ]
+    },
+    {
+      "name": "services/atlas-character/character/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-33", "name": "N/A trigger", "status": "n-a", "evidence": "Move signature unchanged"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "temporal_position_test.go:27,43,59 three fh-variant funcs not tabled"}
+      ]
+    },
+    {
+      "name": "tools/packet-audit/internal/idasrc",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-26", "name": "Goroutine via routine.Go", "status": "n-a", "evidence": "no go statement added"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "export_test.go:448,537 single-scenario pins, documented exception shape"},
+        {"id": "DOM-21", "name": "No redeclaration of shared type/constant", "status": "pass", "evidence": "Selector/exportFn fields are tool-internal JSON shapes"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-11: data/portal has no provider.go — graded under DOM-29/FILE-06 instead",
+    "EXT-01: whether the data/portal RestModel gap predates this task is not determinable from the diff alone; flagged as FAIL regardless since the package-level trigger fired",
+    "DOM-29/FILE-06 precedent claim: data/map/processor.go (cited in a comment as the cacheKey precedent) was not read — out of scope, unchanged file"
+  ],
+  "blocking": [
+    "DOM-24: services/atlas-channel/atlas.com/channel/movement/teleport_test.go:22,43,70 — TestTeleportCharacter_WritesLastPosition, TestTeleportCharacter_NoClientboundBroadcast, TestForCharacter_WritesLastPosition reach producer.ProviderImpl without installing the producertest stub",
+    "DOM-29/FILE-06: services/atlas-channel/atlas.com/channel/data/portal/processor.go:34-79 — package-level sync.Map cache with no GetCache() singleton accessor, co-located inside processor.go instead of cache.go",
+    "EXT-01: services/atlas-channel/atlas.com/channel/data/portal/rest.go — RestModel missing SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-02: services/atlas-channel/atlas.com/channel/data/portal/processor_test.go — no httptest-backed integration test for the DATA-service REST client"
+  ],
+  "nonBlocking": [
+    "DOM-20: movement/teleport_test.go, position/registry_test.go, session/position_hook_test.go, data/portal/processor_test.go, character/temporal_position_test.go are not table-driven; clearest candidates are session/position_hook_test.go and character/temporal_position_test.go"
+  ]
+}

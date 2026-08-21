@@ -41,3 +41,7 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T17:07:41Z	agent	Task 12 fix 2	atlas-reviewer	sonnet	-	-	-	-	dispatched	a175e81d7	-	-	-	-
 2026-08-21T17:07:42Z	handoff	after Task 12	-	-	-	-	-	-	-	-	-	-	-	130000
 2026-08-21T17:09:29Z	agent	Task 12 fix 2	atlas-reviewer	sonnet	-	-	-	-	complete	a175e81d7	APPROVED	no	-	-
+2026-08-21T17:14:51Z	agent	close-out	packet-completeness-critic	sonnet	-	-	-	-	complete	d051c2420	CLEAN	no	-	-
+2026-08-21T17:20:03Z	agent	close-out	plan-adherence-reviewer	sonnet	-	-	-	-	complete	d051c2420	APPROVED	no	-	-
+2026-08-21T17:28:13Z	agent	close-out	backend-guidelines-reviewer	sonnet	-	-	-	-	complete	d051c2420	CHANGES_REQUIRED	yes	-	-
+2026-08-21T17:35:15Z	agent	DOM-24 fix	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	c2a430a32	-	-	-	-

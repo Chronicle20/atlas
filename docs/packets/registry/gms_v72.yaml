@@ -2952,6 +2952,14 @@
   ida:
     address: 6890967
   note: 'v72 COutPacket(195) verified via global COutPacket-ctor harvest @0x6925d7; Δ-2 vs v79 op 197 (deep (pet/summon/mob/npc/reactor/minigame/cashshop) Δ-2).'
+- op: TOUCHING_REACTOR
+  direction: serverbound
+  opcode: 196
+  fname: CReactorPool::FindTouchReactorAroundLocalUser
+  provenance: ida-discovered
+  ida:
+    address: 6892464
+  note: 'task-249 Task 1: CReactorPool::FindTouchReactorAroundLocalUser @0x692bb0, COutPacket(196); Encode4(dwID); Encode1(touching) in both enter and leave arms.'
 - op: SNOWBALL
   direction: serverbound
   opcode: 201

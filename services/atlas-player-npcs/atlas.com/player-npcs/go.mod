@@ -39,12 +39,14 @@ replace github.com/Chronicle20/atlas/libs/atlas-routine => ../../../../libs/atla
 replace github.com/Chronicle20/atlas/libs/atlas-env => ../../../../libs/atlas-env
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-database v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-outbox v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-routine v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-service v0.0.0-00010101000000-000000000000
+	github.com/google/uuid v1.6.0
 )
 
 require (
@@ -61,7 +63,6 @@ require (
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect

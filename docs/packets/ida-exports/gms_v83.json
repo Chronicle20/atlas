@@ -209,6 +209,7 @@
     "CCashShop::OnCashItemGachaponResult": {
       "address": "0x47c75e",
       "direction": "clientbound",
+      "note": "CASHSHOP_CASH_ITEM_GACHAPON_RESULT (task-207). mode(Decode1) unconditional. SUCCESS (mode=229): sn:DecodeBuffer(8, LARGE_INTEGER int64, matched against m_aCashItemInfo[i].liSN) + remain:Decode4 (int32 new quantity) + newItem:DecodeBuffer(0x37=55, GW_CashItemInfo, UNCONDITIONAL) + delegate to CUICashItemGachapon::OnCashItemGachaponResult for itemId/count/jackpot. FAILED (mode=228): no further reads, StringPool notice only.",
       "calls": [
         {
           "op": "Decode1",
@@ -2660,6 +2661,7 @@
     "CField::OnWhisper#Error": {
       "address": "0x53228e",
       "direction": "clientbound",
+      "note": "mode=0x22 (ERROR). Wire version-invariant.",
       "calls": [
         {
           "op": "Decode1",
@@ -2678,6 +2680,7 @@
     "CField::OnWhisper#FindResultCashShop": {
       "address": "0x53228e",
       "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=2 (FIND in cash shop). Wire version-invariant.",
       "calls": [
         {
           "op": "Decode1",
@@ -2700,6 +2703,7 @@
     "CField::OnWhisper#FindResultChannel": {
       "address": "0x53228e",
       "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=3 (FIND on channel). Wire version-invariant.",
       "calls": [
         {
           "op": "Decode1",
@@ -2722,6 +2726,7 @@
     "CField::OnWhisper#FindResultError": {
       "address": "0x53228e",
       "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=0/else (FIND not found). Wire version-invariant.",
       "calls": [
         {
           "op": "Decode1",
@@ -2744,6 +2749,7 @@
     "CField::OnWhisper#FindResultMap": {
       "address": "0x53228e",
       "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=1 (FIND on map). x/y are Decode4 (int32, IDA-confirmed v83 AND v95) when mode 0x09. Wire version-invariant.",
       "calls": [
         {
           "op": "Decode1",
@@ -2776,6 +2782,7 @@
     "CField::OnWhisper#Receive": {
       "address": "0x53228e",
       "direction": "clientbound",
+      "note": "mode=0x12 (RECEIVE). Wire version-invariant v83=v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -2802,6 +2809,7 @@
     "CField::OnWhisper#SendResult": {
       "address": "0x53228e",
       "direction": "clientbound",
+      "note": "mode=0x0A/0x8A (SEND_RESULT). Wire version-invariant v83=v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -2820,6 +2828,7 @@
     "CField::OnWhisper#Weather": {
       "address": "0x53228e",
       "direction": "clientbound",
+      "note": "mode=0x92 (WEATHER). Wire version-invariant.",
       "calls": [
         {
           "op": "Decode1",
@@ -2886,6 +2895,7 @@
     "CField::SendChatMsg": {
       "address": "0x52c315",
       "direction": "serverbound",
+      "note": "v83 SendChatMsg@0x52c315. Confirmed: EncodeStr(text)+Encode1(balloon) only. NO updateTime field (absent in v83; present in v87+ via >83 gate already correct in atlas). Wire identical to what atlas already gates correctly.",
       "calls": [
         {
           "op": "EncodeStr",
@@ -3048,6 +3058,7 @@
     "CField::SendInviteGuildMsg": {
       "address": "0x0",
       "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v83 GUILD_OPERATION sub-op 5 (0x5), COutPacket(0x7E)+Encode1(0x5)+body. Body verified at 0x5306d5. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
       "calls": [
         {
           "op": "EncodeStr",
@@ -3084,6 +3095,7 @@
     "CField::SendKickGuildMsg": {
       "address": "0x0",
       "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v83 GUILD_OPERATION sub-op 8 (0x8), COutPacket(0x7E)+Encode1(0x8)+body. Body verified at 0x530a0d. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
       "calls": [
         {
           "op": "Encode4",
@@ -3130,6 +3142,7 @@
     "CField::SendSetGradeNameMsg": {
       "address": "0x530e1e",
       "direction": "serverbound",
+      "note": "task-103 re-pin: gms_v83 GUILD_OPERATION sub-op 13 (0xD), CField::SendSetGradeNameMsg @0x530e1e = COutPacket(GUILD_OPERATION)+Encode1(0xD)+5xEncodeStr(title). [Prior key CWvsContext::SendSetGuildTitleNames did not exist as a real symbol; correct emit site is CField::SendSetGradeNameMsg. IDA-verified.] op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only.",
       "calls": [
         {
           "op": "EncodeStr",
@@ -3182,6 +3195,7 @@
     "CField::SendSetGuildNoticeMsg": {
       "address": "0x0",
       "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v83 GUILD_OPERATION sub-op 16 (0x10), COutPacket(0x7E)+Encode1(0x10)+body. Body verified at 0x530fa9. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
       "calls": [
         {
           "op": "EncodeStr",
@@ -3192,6 +3206,7 @@
     "CField::SendSetMemberGradeMsg": {
       "address": "0x530dba",
       "direction": "serverbound",
+      "note": "task-103 re-pin: gms_v83 GUILD_OPERATION sub-op 14 (0xE), CField::SendSetMemberGradeMsg @0x530dba = COutPacket(GUILD_OPERATION)+Encode1(0xE)+Encode4(targetId)+Encode1(newTitle). [Prior key CTabGuildAlliance::OnGradeChange was WRONG - that fn emits ALLIANCE_OPERATION sub-op 9. IDA-verified.] op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only.",
       "calls": [
         {
           "op": "Encode4",
@@ -3266,6 +3281,7 @@
     "CField::SendWithdrawGuildMsg": {
       "address": "0x0",
       "direction": "serverbound",
+      "note": "task-103 serverbound campaign: gms_v83 GUILD_OPERATION sub-op 7 (0x7), COutPacket(0x7E)+Encode1(0x7)+body. Body verified at 0x5308e0. op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only (mirrors gms_v95 curated stub).",
       "calls": [
         {
           "op": "Encode4",
@@ -3915,6 +3931,7 @@
     "CITC::OnBuy": {
       "address": "0x59f697",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x10 buy-fixed-price (CITC::OnBuy @0x59f697 [inlined sender renamed from sub_59F697], COutPacket(253) @0x59f6b5, gms_v83 MapleStory_dump.exe IDA port 13342). Encode1(0x10) mode, Encode4 nITCSN (*(*(a2+4)+32)). Serial-only (no item-slot blob). this[6] double-send latch not on wire. Maps atlas field/serverbound ItcOperationBuy. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -3930,6 +3947,7 @@
     "CITC::OnBuyAuctionImm": {
       "address": "0x59f70a",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x14 buy-now-on-auction (CITC::OnBuyAuctionImm @0x59f70a [inlined sender renamed from sub_59F70A], COutPacket(253) @0x59f728, gms_v83). Encode1(0x14) mode, Encode4 nITCSN. Serial-only. Maps atlas field/serverbound ItcOperationBuyAuctionImm. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -3945,6 +3963,7 @@
     "CITC::OnBuyWish": {
       "address": "0x59fa94",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x0C buy-wish (CITC::OnBuyWish @0x59fa94 [inlined sender renamed from sub_59FA94], COutPacket(253) @0x59fab2, gms_v83). Encode1(0xC) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationBuyWish. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -3960,6 +3979,7 @@
     "CITC::OnBuyZzim": {
       "address": "0x59f910",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x11 buy-zzim (CITC::OnBuyZzim @0x59f910 [inlined sender renamed from sub_59F910], gms_v83). YesNo confirm (SP_4803 ARE_YOU_SURE_YOU_WANT_TO_BUY_THIS) gate @0x59f94f; not on wire. COutPacket(253) @0x59f959. Encode1(0x11) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationBuyZzim. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -3975,6 +3995,7 @@
     "CITC::OnCancelSaleItem": {
       "address": "0x59fb7a",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x07 cancel-sale (CITC::OnCancelSaleItem @0x59fb7a [inlined sender renamed from sub_59FB7A], gms_v83). YesNo confirm (SP_4777 CANCEL_THE_SALE) gate @0x59fbc6; suppressed when listing has bids (!*(*(a2+4)+12) = !nBidCount) @0x59fb99 - neither on wire. COutPacket(253) @0x59fbd0. Encode1(7) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationCancelSale. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -3990,6 +4011,7 @@
     "CITC::OnCancelWish": {
       "address": "0x59fb07",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x0D cancel-wish (CITC::OnCancelWish @0x59fb07 [inlined sender renamed from sub_59FB07], COutPacket(253) @0x59fb25, gms_v83). Encode1(0xD) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationCancelWish. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -4005,6 +4027,7 @@
     "CITC::OnChangedCategory": {
       "address": "0x59f297",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x05 change-browse-category (CITC::OnChangedCategory @0x59f297 [inlined sender renamed from sub_59F297], COutPacket(253) @0x59f2df, gms_v83). Only nCategory (a2) variable; rest const. Encode1(5) mode, Encode4 category, Encode4 0 categorySub, Encode4 0 page, Encode1 1 sortType, Encode1 1 sortColumn, Encode4 1 searchOption, EncodeStr empty searchCondition. Maps atlas field/serverbound ItcOperationChangedCategory. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -4044,6 +4067,7 @@
     "CITC::OnChangedCategorySub": {
       "address": "0x59f376",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x05 change-sub-category (CITC::OnChangedCategorySub @0x59f376 [inlined sender renamed from sub_59F376], COutPacket(253) @0x59f39b, gms_v83). page=0 const. Encode1(5) mode, Encode4 category (*(this+104)), Encode4 categorySub (arg0), Encode4 0 page, Encode1 sortType (a2), Encode1 sortColumn (a4), Encode4 searchOption (state/else-const-1), EncodeStr searchCondition. Both branches keep same wire shape. Maps atlas field/serverbound ItcOperationChangedCategorySub. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -4083,6 +4107,7 @@
     "CITC::OnChangedPage": {
       "address": "0x59f465",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x05 change-browse-page (CITC::OnChangedPage @0x59f465 [inlined sender renamed from sub_59F465], COutPacket(253) @0x59f487, gms_v83). All 8 fields from CITC state. Encode1(5) mode, Encode4 category (*(this+104)), Encode4 categorySub (*(this+108)), Encode4 page (a2), Encode1 sortType (*(this+96)), Encode1 sortColumn (*(this+100)), Encode4 searchOption (*(this+7820)), EncodeStr searchCondition (this+7824). Maps atlas field/serverbound ItcOperationChangedPage. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -4127,6 +4152,7 @@
     "CITC::OnDeleteZzim": {
       "address": "0x59f9ae",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x0A delete-zzim (CITC::OnDeleteZzim @0x59f9ae [inlined sender renamed from sub_59F9AE], COutPacket(253) @0x59f9cc, gms_v83). Encode1(0xA) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationDeleteZzim. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -4142,6 +4168,7 @@
     "CITC::OnMoveITCPurchaseItemLtoS": {
       "address": "0x59fc23",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x08 take-home (CITC::OnMoveITCPurchaseItemLtoS @0x59fc23 [inlined sender renamed from sub_59FC23], COutPacket(253) @0x59fc41, gms_v83). nTI/nPos args (a3/a4) NOT written. Encode1(8) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationMoveLtoS. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -4376,6 +4403,7 @@
     },
     "CITC::OnNormalItemResult#BidAuctionFailed": {
       "address": "0x5a5444",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x3C BidAuctionFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBidAuctionFailed.",
       "calls": [
@@ -4387,6 +4415,7 @@
     },
     "CITC::OnNormalItemResult#BuyItemDone": {
       "address": "0x5a5114",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x33 BuyItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyItemDone.",
       "calls": [
@@ -4398,6 +4427,7 @@
     },
     "CITC::OnNormalItemResult#BuyItemFailed": {
       "address": "0x5a513f",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x34 BuyItemFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyItemFailed.",
       "calls": [
@@ -4409,6 +4439,7 @@
     },
     "CITC::OnNormalItemResult#BuyWishDone": {
       "address": "0x5a5011",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2F BuyWishDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyWishDone.",
       "calls": [
@@ -4420,6 +4451,7 @@
     },
     "CITC::OnNormalItemResult#BuyWishFailed": {
       "address": "0x5a503c",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x30 BuyWishFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyWishFailed.",
       "calls": [
@@ -4431,6 +4463,7 @@
     },
     "CITC::OnNormalItemResult#BuyZzimItemDone": {
       "address": "0x5a5174",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x35 BuyZzimItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyZzimItemDone.",
       "calls": [
@@ -4442,6 +4475,7 @@
     },
     "CITC::OnNormalItemResult#BuyZzimItemFailed": {
       "address": "0x5a519f",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x36 BuyZzimItemFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultBuyZzimItemFailed.",
       "calls": [
@@ -4453,6 +4487,7 @@
     },
     "CITC::OnNormalItemResult#CancelSaleItemDone": {
       "address": "0x5a4d14",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x25 CancelSaleItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelSaleItemDone.",
       "calls": [
@@ -4464,6 +4499,7 @@
     },
     "CITC::OnNormalItemResult#CancelSaleItemFailed": {
       "address": "0x5a4d49",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x26 CancelSaleItemFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelSaleItemFailed.",
       "calls": [
@@ -4479,6 +4515,7 @@
     },
     "CITC::OnNormalItemResult#CancelWishDone": {
       "address": "0x5a5071",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x31 CancelWishDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelWishDone.",
       "calls": [
@@ -4490,6 +4527,7 @@
     },
     "CITC::OnNormalItemResult#CancelWishFailed": {
       "address": "0x5a50df",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x32 CancelWishFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultCancelWishFailed.",
       "calls": [
@@ -4501,6 +4539,7 @@
     },
     "CITC::OnNormalItemResult#DeleteZzimDone": {
       "address": "0x5a4e66",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2B DeleteZzimDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultDeleteZzimDone.",
       "calls": [
@@ -4512,6 +4551,7 @@
     },
     "CITC::OnNormalItemResult#DeleteZzimFailed": {
       "address": "0x5a4e91",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2C DeleteZzimFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultDeleteZzimFailed.",
       "calls": [
@@ -4523,6 +4563,7 @@
     },
     "CITC::OnNormalItemResult#GetItcListDone": {
       "address": "0x5a48af",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x15 GetITCListDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
       "calls": [
@@ -4571,6 +4612,7 @@
     },
     "CITC::OnNormalItemResult#GetItcListFailed": {
       "address": "0x5a4882",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x16 GetItcListFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetItcListFailed.",
       "calls": [
@@ -4586,6 +4628,7 @@
     },
     "CITC::OnNormalItemResult#GetSearchItcListDone": {
       "address": "0x5a4a02",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x17 GetSearchITCListDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
       "calls": [
@@ -4622,6 +4665,7 @@
     },
     "CITC::OnNormalItemResult#GetSearchItcListFailed": {
       "address": "0x5a49e3",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x18 GetSearchItcListFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetSearchItcListFailed.",
       "calls": [
@@ -4637,6 +4681,7 @@
     },
     "CITC::OnNormalItemResult#GetUserPurchaseItemDone": {
       "address": "0x5a4af3",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x21 GetUserPurchaseItemDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
       "calls": [
@@ -4665,6 +4710,7 @@
     },
     "CITC::OnNormalItemResult#GetUserPurchaseItemFailed": {
       "address": "0x5a4c2a",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x22 GetUserPurchaseItemFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetUserPurchaseItemFailed.",
       "calls": [
@@ -4680,6 +4726,7 @@
     },
     "CITC::OnNormalItemResult#GetUserSaleItemDone": {
       "address": "0x5a4c57",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x23 GetUserSaleItemDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
       "calls": [
@@ -4700,6 +4747,7 @@
     },
     "CITC::OnNormalItemResult#GetUserSaleItemFailed": {
       "address": "0x5a4ce7",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x24 GetUserSaleItemFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultGetUserSaleItemFailed.",
       "calls": [
@@ -4715,6 +4763,7 @@
     },
     "CITC::OnNormalItemResult#LoadWishSaleListDone": {
       "address": "0x5a4ec6",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 6): 0x2D LoadWishSaleListDone list arm of CITC::OnNormalItemResult. Reads a count then count*ITCITEM::Decode (collapsed to one loop-guarded opaque representative, mirroring the atlas MtsItem recurse). The full per-field ITCITEM read order is byte-fixture verified (round-trip across all variants). Maps atlas field/clientbound.",
       "calls": [
@@ -4735,6 +4784,7 @@
     },
     "CITC::OnNormalItemResult#LoadWishSaleListFailed": {
       "address": "0x5a4fdc",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2E LoadWishSaleListFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultLoadWishSaleListFailed.",
       "calls": [
@@ -4746,6 +4796,7 @@
     },
     "CITC::OnNormalItemResult#Mode": {
       "address": "0x5a4311",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic OP-MODE-PREFIX entry (task-096): CITC::OnNormalItemResult reads Decode1(mode) then switch-dispatches to 35 cash-shop/MTS sub-handlers (0x15-0x3E). Only the leading mode byte is on the wire contract; per-mode tails are mode-opaque.",
       "calls": [
@@ -4757,6 +4808,7 @@
     },
     "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSDone": {
       "address": "0x5a4d68",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x27 MoveItcPurchaseItemLtoSDone arm of CITC::OnNormalItemResult. TwoInts-shape: the sub-handler reads Decode1(mode) then Decode4 then Decode4. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultMoveItcPurchaseItemLtoSDone.",
       "calls": [
@@ -4776,6 +4828,7 @@
     },
     "CITC::OnNormalItemResult#MoveItcPurchaseItemLtoSFailed": {
       "address": "0x5a4dcf",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x28 MoveItcPurchaseItemLtoSFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultMoveItcPurchaseItemLtoSFailed.",
       "calls": [
@@ -4791,6 +4844,7 @@
     },
     "CITC::OnNormalItemResult#NotifyCancelWishResult": {
       "address": "0x5a523e",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x3D NotifyCancelWishResult arm of CITC::OnNormalItemResult. TwoInts-shape: the sub-handler reads Decode1(mode) then Decode4 then Decode4. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultNotifyCancelWishResult.",
       "calls": [
@@ -4810,6 +4864,7 @@
     },
     "CITC::OnNormalItemResult#RegisterSaleEntryDone": {
       "address": "0x5a4674",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x1D RegisterSaleEntryDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultRegisterSaleEntryDone.",
       "calls": [
@@ -4821,6 +4876,7 @@
     },
     "CITC::OnNormalItemResult#RegisterSaleEntryFailed": {
       "address": "0x5a4581",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 5): 0x1E RegisterSaleEntryFailed arm of CITC::OnNormalItemResult. Reads Decode1(reason) -> NoticeFailReason; ONLY when reason==0x48 (sale-limit) it then reads a trailing Decode2 sale-limit short (Format StringPool 0x12BB). The trailing Decode2 is the maximal (reason==0x48) read shape the codec encodes; the cell is byte-fixture verified for both the plain and sale-limit reasons. Maps atlas field/clientbound MtsResultRegisterSaleEntryFailed.",
       "calls": [
@@ -4840,6 +4896,7 @@
     },
     "CITC::OnNormalItemResult#RegisterWishItemDone": {
       "address": "0x5a51d4",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x37 RegisterWishItemDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultRegisterWishItemDone.",
       "calls": [
@@ -4851,6 +4908,7 @@
     },
     "CITC::OnNormalItemResult#RegisterWishItemFailed": {
       "address": "0x5a5209",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x38 RegisterWishItemFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultRegisterWishItemFailed.",
       "calls": [
@@ -4862,6 +4920,7 @@
     },
     "CITC::OnNormalItemResult#SaleCurrentItemToWishDone": {
       "address": "0x5a46b2",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x1F SaleCurrentItemToWishDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSaleCurrentItemToWishDone.",
       "calls": [
@@ -4873,6 +4932,7 @@
     },
     "CITC::OnNormalItemResult#SaleCurrentItemToWishFailed": {
       "address": "0x5a46f0",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x20 SaleCurrentItemToWishFailed arm of CITC::OnNormalItemResult. Reason-shape: the sub-handler reads Decode1(mode) then Decode1(reason) (the reason==73/65 transfer-field re-send branches read NO further bytes). Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSaleCurrentItemToWishFailed.",
       "calls": [
@@ -4888,6 +4948,7 @@
     },
     "CITC::OnNormalItemResult#SetZzimDone": {
       "address": "0x5a4dfc",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x29 SetZzimDone arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSetZzimDone.",
       "calls": [
@@ -4899,6 +4960,7 @@
     },
     "CITC::OnNormalItemResult#SetZzimFailed": {
       "address": "0x5a4e31",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096): 0x2A SetZzimFailed arm of CITC::OnNormalItemResult. Notice-only (\"Empty-shape\"): the sub-handler shows a StringPool::GetString + CUtilDlg::Notice and reads NOTHING after the dispatcher Decode1(mode) (the trailing m_bITCRequestSent=0 store is a member write, not a wire read). Wire = exactly the mode byte. Per-version sub-handler address pinned. Maps atlas field/clientbound MtsResultSetZzimFailed.",
       "calls": [
@@ -4910,6 +4972,7 @@
     },
     "CITC::OnNormalItemResult#SuccessBidInfo": {
       "address": "0x5a52de",
+      "region": "GMS",
       "direction": "clientbound",
       "notes": "synthetic MTS_OPERATION per-mode body entry (task-096 iter 5): 0x3E SuccessBidInfoResult arm of CITC::OnNormalItemResult. Reads Decode1(soldFlag) + Decode4(itemId); ONLY when itemId>0 it then reads Decode4(price) + DecodeBuffer(8) FILETIME contract date. The trailing Decode4+DecodeBuffer(8) is the maximal (itemId>0) read shape the codec encodes; the cell is byte-fixture verified for both the no-item and with-item paths. Maps atlas field/clientbound MtsResultSuccessBidInfo.",
       "calls": [
@@ -4952,6 +5015,7 @@
     "CITC::OnRegisterSaleEntry": {
       "address": "0x59ec36",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "Serverbound ITC_OPERATION register-sale dispatcher (gms_v83 opcode 0xFD/253 @0x59ec63). Maps the atlas field/serverbound ItcOperationRegisterSale codec (mode 2 register-fixed-price, arg0==0 branch @0x59ed92). The register-auction arm (mode 0x12, arg0==1 @0x59ecc8) of this same function is carried by the synthetic #RegisterAuction entry. Encode order (fixed-price arm): Encode1(2) mode, sub_4E33D8 item-slot blob (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse, opaque to the flat differ), Encode4 quantity/commodityId/price, Encode1 type/flag. Byte-fixture verified.",
       "calls": [
         {
@@ -4987,6 +5051,7 @@
     "CITC::OnRegisterSaleEntry#RegisterAuction": {
       "address": "0x59ecc8",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "synthetic ITC_OPERATION per-mode body entry: mode 0x12 register-auction arm of CITC::OnRegisterSaleEntry (arg0==1 branch @0x59ecc8). Encode1(0x12) mode, sub_4E33D8 item-slot blob, Encode4 quantity/commodityId/arg0(==1)/buyNowPrice, Encode1 type/flag, Encode4 durationHrs. Maps atlas field/serverbound ItcOperationRegisterAuction. Byte-fixture verified.",
       "calls": [
         {
@@ -5030,6 +5095,7 @@
     "CITC::OnRegisterWishEntry": {
       "address": "0x59f542",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x04 register-wish-entry (CITC::OnRegisterWishEntry @0x59f542 [inlined sender renamed from sub_59F542], gms_v83). 110-NX floor + 9999999 ceiling guard (a3>9999999||a3<=109) @0x59f573 (not on wire). COutPacket(253) @0x59f5bc. Encode1(4) mode, Encode4 itemId (this+7768), Encode4 price (this+7772), Encode4 count (this+7776), Encode1 duration (this+7781), Encode1 feeOption (this+7780), EncodeStr description (this+7784). Maps atlas field/serverbound ItcOperationRegisterWishEntry. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -5065,6 +5131,7 @@
     "CITC::OnSaleCurrentItem": {
       "address": "0x59ee3f",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 3 sell-currently-selected-item (CITC::OnSaleCurrentItem @0x59ee3f, COutPacket(253) @0x59ee5d). Encode1(3) mode, Encode1 type, Encode4 slotPos, sub_4E33D8 item-slot blob, Encode4 commodityId. Maps atlas field/serverbound ItcOperationSaleCurrentItem. Byte-fixture verified.",
       "calls": [
         {
@@ -5092,6 +5159,7 @@
     "CITC::OnSetZzim": {
       "address": "0x59f89d",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x09 set-zzim (CITC::OnSetZzim @0x59f89d [inlined sender renamed from sub_59F89D], COutPacket(253) @0x59f8bb, gms_v83). this[6] double-send latch not on wire. Encode1(9) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationSetZzim. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -5112,6 +5180,7 @@
     "CITC::OnViewWish": {
       "address": "0x59fa21",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x0B view-wish (CITC::OnViewWish @0x59fa21 [inlined sender renamed from sub_59FA21], COutPacket(253) @0x59fa3f, gms_v83). Encode1(0xB) mode, Encode4 nITCSN. Maps atlas field/serverbound ItcOperationViewWish. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -5132,6 +5201,7 @@
     "CITCBidAuctionDlg::OnButtonClicked": {
       "address": "0x5c373e",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x13 place-bid, send inlined into CITCBidAuctionDlg::OnButtonClicked @0x5c373e [renamed from sub_5C373E] (a2==1 confirm-bid branch; COutPacket(253) @0x5c38df, gms_v83). Balance check (SP_535 YOU_DONT_HAVE_ENOUGH_CASH) and bid<buyNow guard gate the send; not on wire. Encode1(0x13) mode, Encode4 nITCSN (*(this[47]+32)), Encode4 bidPrice (this[40]), Encode4 bidRange (this[39]). Maps atlas field/serverbound ItcOperationPlaceBid. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -5155,6 +5225,7 @@
     "CITCWnd_Tab::OnButtonClicked": {
       "address": "0x5b7106",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "ITC_OPERATION mode 0x06 tab/search-by-name, send inlined into CITCWnd_Tab::OnButtonClicked @0x5b7106 [renamed from sub_5B7106] (arg0==1004 search button; COutPacket(253) @0x5b71a5 char-name branch / @0x5b726e advanced-search branch, gms_v83). 6-field body, NO sort bytes (distinct from mode 5). Both inner branches send identical wire shape. Encode1(6) mode, Encode4 category (m_nSelect+1), Encode4 categorySub, Encode4 0 page, Encode4 searchOption (0 char-name / state advanced), EncodeStr searchName. Maps atlas field/serverbound ItcOperationTabSearch. Body shape identical to gms_v84/v87/v95. Byte-fixture verified.",
       "calls": [
         {
@@ -5186,6 +5257,7 @@
     "CLogin::ChangeStepImmediate": {
       "address": "0x5f53c0",
       "direction": "serverbound",
+      "note": "v83 inlines the immediate server-list-request send into CLogin::ChangeStep @0x5f53c0 (no separate ChangeStepImmediate symbol exists in this build, unlike v87/v95/jms). The send is COutPacket(opcode 4)+SendPacket in the m_nBaseStep==1 block with no Encode calls \u2014 bodyless wire shape, matching the bodyless atlas ServerListRequest decoder. IDA-verified gms_v83.",
       "calls": []
     },
     "CLogin::MakeVACDlg": {
@@ -6357,6 +6429,7 @@
     "CLogin::SendCheckDuplicateIDPacket": {
       "address": "0x7d75ab",
       "direction": "serverbound",
+      "_note": "v83 character-name duplicate check. The actual sender is CUICharacterSaleDlg::SendCheckDuplicateIDPacket@0x7d75ab (v83 routes name checks through the character-sale dialog): COutPacket(0x100) + EncodeStr(sCharName). Keyed under the registry/CSV primary fname CLogin::SendCheckDuplicateIDPacket (same convention as v87/v95).",
       "calls": [
         {
           "op": "EncodeStr",
@@ -8667,6 +8740,7 @@
     "CPet::ParseCommand": {
       "address": "0x704d5d",
       "direction": "serverbound",
+      "note": "COutPacket(0xA9)+EncodeBuffer(petLockerSN,8)+Encode1(commandWithName)+Encode1(command) (verified live v83 @0x704d5d). Corrected: the prior baseline traced a phantom 4th Encode1 'success flag' that the client never sends \u2014 the real send is exactly 3 fields, matching Atlas command.go [WriteLong, WriteBool, WriteByte].",
       "calls": [
         {
           "op": "EncodeBuf",
@@ -9827,6 +9901,7 @@
     "CSummoned::SetDamaged": {
       "address": "0x7a607a",
       "direction": "serverbound",
+      "note": "DAMAGE_SUMMON send (CMSG 177/0xB1). CSummoned::SetDamaged (v83 @0x7a607a): COutPacket(0xB1)@0x7a6282 + Encode4(summonId = [obj+0xAC] = owner cid)@0x7a6297, then (mob-present path, edi!=0 @0x7a629e) Encode1(attackIdx)@0x7a62be + Encode4(damage)@0x7a62c7 + Encode4(mobTemplateId)@0x7a62e4 + Encode1(nDir<0)@0x7a62f4. (No-mob path @0x7a62a0: Encode1(0xFE)@0x7a62a8 + Encode4(damage)@0x7a62b1.) The trailing dir byte and the 0xFE no-mob branch BOTH exist on v83 (corrects the prior Cosmic-derived decoder). v87 @0x7f879a and v95 @0x74b730 are byte-identical body. v83/v87 identity = owner cid; v95 = m_dwSummonedID. Atlas serverbound Damage decodes summonId+attackIdx(or 0xFE)+damage(+templateId+dir for the mob path). v83 reference (IDB asm-confirmed, summon-wire-truth.md).",
       "calls": [
         {
           "op": "Encode4",
@@ -9855,6 +9930,7 @@
     "CSummoned::TryDoingAttackManual": {
       "address": "0x7a4d42",
       "direction": "serverbound",
+      "note": "SUMMON_ATTACK send (CMSG 176/0xB0). CSummoned::TryDoingAttackManual (v83 sub_7A4D42, send block @0x7a57dc). v83 header is LEAN \u2014 NO anti-hack envelope: Encode4(summonId = [obj+0xAC] = owner cid)@0x7a57f1 + Encode4(updateTime)@0x7a57ff + Encode1(action|left<<7)@0x7a5814 + Encode1(count)@0x7a5820 + Encode2(userX,userY,summonX,summonY)@0x7a5839..0x7a587e. Per-target block (26 bytes, identical across versions): Encode4(mobOid)@0x7a58aa + Encode4(templateId)@0x7a58dc + Encode1(hitAction)@0x7a58ea + Encode1(foreAction|left)@0x7a5905 + Encode1(frameIdx)@0x7a5913 + Encode1(calcDamageStatIndex)@0x7a5923 + Encode2(curX)@0x7a5939 + Encode2(curY)@0x7a5950 + Encode2(hitX)@0x7a5966 + Encode2(hitY)@0x7a597d + Encode2(tDelay)@0x7a598c + Encode4(damage)@0x7a5997. Trailer Encode4(skillCRC)@0x7a59bd. v87 adds the drInfo/dwKey/crc32 envelope (>=87); v95 adds repeatSkillPoint (>=95). v83/v87 identity = owner cid; v95 = m_dwSummonedID. Atlas serverbound Attack decodes the lean v83 layout (no envelope) and surfaces summonId+direction+per{mobOid,templateId,delay,damage}. v83 reference (IDB asm-confirmed, summon-wire-truth.md).",
       "calls": [
         {
           "op": "Encode4",
@@ -9957,6 +10033,7 @@
     "CSummonedPool::OnAttack": {
       "address": "0x7a6882",
       "direction": "clientbound",
+      "note": "SUMMON_ATTACK (op 178/0xB2). CSummonedPool::OnPacket@0x938dd7 reads Decode4(cid), op 0xB2 -> OnAttack@0x7a6882 reads Decode1(charLevel)@0x7a6908 (-> [edi+0B8h]) + Decode1(action: bit7=left @0x7a6920, &0x7F @0x7a692c)@0x7a6916 + Decode1(count)@0x7a6932 + per-target loop{Decode4(mobOid)@0x7a6966; if mobOid!=0: Decode1@0x7a6974 + Decode4(damage)@0x7a6982}. There is NO trailing byte after the loop on v83 (the v95 trailing Decode1@0x7534e1 is a v95 addition) and NO oid (dispatcher consumes only cid). Atlas SummonAttack (gated oid >=95, trailing byte >=95) writes cid+0(charLevel)+direction+count+per{mobOid+6+damage} for v83. v83 reference (IDB asm-confirmed, summon-wire-truth.md).",
       "calls": [
         {
           "op": "Decode4",
@@ -9994,6 +10071,7 @@
     "CSummonedPool::OnCreated": {
       "address": "0x95adec",
       "direction": "clientbound",
+      "note": "SPAWN_SPECIAL_MAPOBJECT (op 175/0xAF). The ACTIVE field-path target is the vtable+0x2C spawn handler CSummonedPool::OnCreated@0x95ADEC (task-088 live x32dbg-confirmed; the inactive twin sub_938F61 reads the SAME field order but is the wrong instance). CUserPool::OnUserCommonPacket@0x972401 reads cid (Decode4@0x97240c) and routes op 0xAF to CSummonedPool::OnPacket@0x972490, whose 0xAF arm vtable-calls OnCreated. OnCreated@0x95ADEC then reads (cid already consumed upstream): Decode4(oid)@0x95ae0e [v5 -> CSummoned ctor object id], Decode4(skillId)@0x95ae17 [nSkillID], Decode1(charLevel)@0x95ae21, Decode1(SLV)@0x95ae30, then the Init blob via CSummoned::Init@0x7a379b. Init reads Decode2(x)@0x7a37b2, Decode2(y)@0x7a37bf, Decode1(stance/moveAction)@0x7a37cc, Decode2(foothold)@0x7a37cf, Decode1(movementType/moveAbility)@0x7a37e3, Decode1(assistType=!puppet attack flag)@0x7a37fa, then [if Skill: Decode1(enterType=!animated)@0x7a3821]. NO avatar-look byte on v83 (v95+/JMS185 only). Atlas SummonSpawn writes cid+oid+skillId+0x0A(charLevel)+level(SLV)+x+y+stance+foothold(0)+movementType+!puppet+!animated for v83 \u2014 byte-faithful. v83 reference (IDB asm-confirmed; summon-wire-truth.md spawn row, re-pointed to the active 0x95ADEC under task-106).",
       "calls": [
         {
           "op": "Decode4",
@@ -10048,6 +10126,7 @@
     "CSummonedPool::OnHit": {
       "address": "0x7a6ebe",
       "direction": "clientbound",
+      "note": "DAMAGE_SUMMON (op 180/0xB4 \u2014 the HIGHER of the swapped skill/damage opcodes). CSummonedPool::OnPacket@0x938dd7 reads Decode4(cid), op 0xB4 -> OnSkill@0x7a6ebe which reads Decode1(attackIdx, signed)@0x7a6eef + Decode4(damage)@0x7a6efc + if attackIdx>-2 (cmp 0xFFFFFFFE; jle @0x7a6f01): Decode4(mobTemplateId)@0x7a6f0f (-> GetMobTemplate) + Decode1(bLeft)@0x7a6f19. (The client fname is OnSkill but the BEHAVIOR is summon-damage; name is misleading \u2014 summon-wire-truth.md.) NO oid (dispatcher consumes only cid). Atlas SummonDamage (writer 'SummonDamage', gated oid >=95) writes cid+12(attackIdx)+damage+monsterIdFrom(templateId)+0(bLeft) for v83. v83 reference (IDB asm-confirmed). NOTE: candidatesFromFName maps CSummonedPool::OnHit -> SummonDamage writer; the DAMAGE behavior lives at the OnSkill address on v83 (opcode-driven, not name-driven).",
       "calls": [
         {
           "op": "Decode4",
@@ -10076,6 +10155,7 @@
     "CSummonedPool::OnMove": {
       "address": "0x7a6861",
       "direction": "clientbound",
+      "note": "MOVE_SUMMON (op 177/0xB1). CSummonedPool::OnPacket@0x938dd7 reads Decode4(cid), pool-lookup by cid, op 0xB1 -> OnMove@0x7a6861 which calls CMovePath::OnMovePacket@0x7a687a (the movement blob; startX/startY are its first 4 bytes). NO oid on v83 (the v95+ oid is absent; dispatcher consumes only the leading cid). Atlas SummonMove (gated oid >=95) writes cid+startX+startY+rawMovement for v83. v83 reference (IDB asm-confirmed, summon-wire-truth.md).",
       "calls": [
         {
           "op": "Decode4",
@@ -10098,6 +10178,7 @@
     "CSummonedPool::OnRemoved": {
       "address": "0x7a64eb",
       "direction": "clientbound",
+      "note": "REMOVE_SPECIAL_MAPOBJECT (op 176/0xB0). CSummonedPool::OnPacket@0x938dd7 reads Decode4(cid), pool-lookup by cid, then op 0xB0 -> remove (sub_7A64EB). v83/v87 key off the dispatcher-consumed cid and read NO oid (the v95+ oid is absent). The remove then consumes a trailing Decode1 animated flag (4=animated leave, 1=immediate) consistent with the spawn path. Atlas SummonRemove (gated oid >=95) writes cid + byte(4|1) for v83. v83 reference (IDB asm-confirmed, summon-wire-truth.md).",
       "calls": [
         {
           "op": "Decode4",
@@ -10112,6 +10193,7 @@
     "CSummonedPool::OnSkill": {
       "address": "0x7a6e5a",
       "direction": "clientbound",
+      "note": "SUMMON_SKILL (op 179/0xB3 \u2014 the LOWER of the swapped skill/damage opcodes). CSummonedPool::OnPacket@0x938dd7 reads Decode4(cid), op 0xB3 -> OnHit@0x7a6e5a which reads a single Decode1@0x7a6ea9, masks &0x7F @0x7a6eb0, and passes it to sub_7A601D (SetAttackAction) to replay the summon's skill animation. (The client fname is OnHit but the BEHAVIOR is summon-skill; name is misleading \u2014 summon-wire-truth.md.) Just ONE byte: NO summonSkillId int, NO oid. Atlas SummonSkill (writer 'SummonSkill', gated oid >=95) writes cid + byte(newStance) for v83. v83 reference (IDB asm-confirmed). NOTE: candidatesFromFName maps CSummonedPool::OnSkill -> SummonSkill writer; the SKILL behavior lives at the OnHit address on v83 (opcode-driven, not name-driven).",
       "calls": [
         {
           "op": "Decode4",
@@ -10293,6 +10375,7 @@
     "CTradingRoomDlg::OnTrade#TradeConfirm": {
       "address": "0x7c20bc",
       "direction": "clientbound",
+      "note": "Clientbound receive arm of CTradingRoomDlg::OnTrade. Same function as the serverbound TRANSACTION sender (interaction/serverbound/InteractionOperationTransaction), which is keyed on the un-suffixed CTradingRoomDlg::OnTrade; the #TradeConfirm suffix separates the two wire shapes (this arm is bodyless; the send carries count + {itemId, crc} pairs).",
       "calls": [
         {
           "op": "Decode1",
@@ -10556,6 +10639,7 @@
     "CUICashItemGachapon::OnButtonClicked": {
       "address": "0x99a9a7",
       "direction": "serverbound",
+      "note": "CUICashItemGachapon::OnButtonClicked (task-207) \u2014 nId==2000 (Open button): COutPacket(<op>) + EncodeBuffer(&m_liItemSN, 8), no other fields.",
       "calls": [
         {
           "op": "EncodeBuffer",
@@ -10566,6 +10650,7 @@
     "CUICashItemGachapon::OnCashItemGachaponResult": {
       "address": "0x99aa92",
       "direction": "clientbound",
+      "note": "CUICashItemGachapon::OnCashItemGachaponResult (task-207) \u2014 reads the trailing itemId/count/jackpot fields of CASHSHOP_CASH_ITEM_GACHAPON_RESULT's SUCCESS arm, delegated to by CCashShop::OnCashItemGachaponResult.",
       "calls": [
         {
           "op": "Decode4",
@@ -10594,6 +10679,7 @@
     "CUIFadeYesNo::OnButtonClicked#Join": {
       "address": "0x522585",
       "direction": "serverbound",
+      "note": "task-103 re-pin: gms_v83 GUILD_OPERATION sub-op 6 (0x6 JOIN), CUIFadeYesNo::OnButtonClicked case 8 (fn entry @0x522585) = COutPacket(GUILD_OPERATION)+Encode1(0x6)+Encode4(guildId)+Encode4(characterId). [Prior key CWvsContext::SendGuildJoinMsg did not exist as a real symbol; correct emit site is OnButtonClicked case 8 (guild-invite YES). IDA-verified.] op+subtype consumed by Atlas guild Operation wrapper; calls list the wire body only.",
       "calls": [
         {
           "op": "Encode4",
@@ -10608,6 +10694,7 @@
     "CUIGuildBBS::OnComment": {
       "address": "0x816994",
       "direction": "serverbound",
+      "note": "task-103: v83 BBS_OPERATION (155/0x9B) sub-op 4 (reply to thread), sub_816994 @0x816994. IDA-verified. [Prior \"ABSENT\" note incorrect.] op+subtype consumed by Atlas wrapper; calls list the wire body only.",
       "calls": [
         {
           "op": "Encode4",
@@ -10622,6 +10709,7 @@
     "CUIGuildBBS::OnCommentDelete": {
       "address": "0x816aa8",
       "direction": "serverbound",
+      "note": "task-103: v83 BBS_OPERATION (155/0x9B) sub-op 5 (delete reply), sub_816AA8 @0x816aa8. IDA-verified. [Prior \"ABSENT\" note incorrect.] op+subtype consumed by Atlas wrapper; calls list the wire body only.",
       "calls": [
         {
           "op": "Encode4",
@@ -10636,6 +10724,7 @@
     "CUIGuildBBS::OnDelete": {
       "address": "0x8168db",
       "direction": "serverbound",
+      "note": "task-103: v83 BBS_OPERATION (155/0x9B) sub-op 1 (delete thread), sub_8168DB @0x8168db. IDA-verified. [Prior \"ABSENT\" note incorrect.] op+subtype consumed by Atlas wrapper; calls list the wire body only.",
       "calls": [
         {
           "op": "Encode4",
@@ -10646,6 +10735,7 @@
     "CUIGuildBBS::OnGuildBBSPacket#BBSEntryNotFound": {
       "address": "0x816c32",
       "direction": "clientbound",
+      "note": "task-103 (Decode1-6)==2 OnEntryNotFound mode 8; mode-only.",
       "calls": [
         {
           "op": "Decode1",
@@ -10656,6 +10746,7 @@
     "CUIGuildBBS::OnGuildBBSPacket#BBSThread": {
       "address": "0xa1233f",
       "direction": "clientbound",
+      "note": "v83 BBSThread sub-handler. Address is the outer thunk; inner function not separately named. Wire assumed identical to v95. Audit cannot confirm without decompiling inner function.",
       "calls": [
         {
           "op": "Decode1",
@@ -10714,11 +10805,13 @@
     "CUIGuildBBS::OnGuildBBSPacket#BBSThreadList": {
       "address": "0xa1233f",
       "direction": "clientbound",
+      "note": "v83 BBSThreadList sub-handler. Address is the outer thunk; inner function not separately named. Wire assumed identical to v95 (same packet format). Audit cannot confirm without decompiling inner function.",
       "calls": []
     },
     "CUIGuildBBS::OnRegister": {
       "address": "0x8166f6",
       "direction": "serverbound",
+      "note": "task-103: v83 BBS_OPERATION (COutPacket 155/0x9B) sub-op 0 (create/edit thread), sub_8166F6 @0x8166f6 (CUIGuildBBS member). IDA-verified. [Prior \"ABSENT/inlined\" note was incorrect - the v83 send sites exist as unnamed sub_816xxx in the CUIGuildBBS UI cluster.] op+subtype consumed by Atlas guild BBS wrapper; calls list the wire body only.",
       "calls": [
         {
           "op": "Encode1",
@@ -10749,6 +10842,7 @@
     "CUIGuildBBS::SendLoadListRequest": {
       "address": "0x816b69",
       "direction": "serverbound",
+      "note": "task-103: v83 BBS_OPERATION (155/0x9B) sub-op 2 (load thread list), sub_816B69 @0x816b69. IDA-verified. [Prior \"ABSENT/inlined\" note incorrect.] op+subtype consumed by Atlas wrapper; calls list the wire body only.",
       "calls": [
         {
           "op": "Encode4",
@@ -10759,6 +10853,7 @@
     "CUIGuildBBS::SendViewEntryRequest": {
       "address": "0x816bca",
       "direction": "serverbound",
+      "note": "task-103: v83 BBS_OPERATION (155/0x9B) sub-op 3 (view thread), sub_816BCA @0x816bca. IDA-verified. [Prior \"ABSENT\" note incorrect.] op+subtype consumed by Atlas wrapper; calls list the wire body only.",
       "calls": [
         {
           "op": "Encode4",
@@ -10784,6 +10879,7 @@
     "CUIMessenger::OnCreate": {
       "address": "0x8511fc",
       "direction": "serverbound",
+      "note": "Client sends op=0+messengerId when accepting invite. Wire identical to v95.",
       "calls": [
         {
           "op": "Encode1",
@@ -10798,6 +10894,7 @@
     "CUIMessenger::OnDestroy": {
       "address": "0x8511fc",
       "direction": "serverbound",
+      "note": "Client sends op=2 when closing window. Wire identical to v95.",
       "calls": [
         {
           "op": "Encode1",
@@ -10808,6 +10905,7 @@
     "CUIMessenger::OnPacket#Add": {
       "address": "0x8511fc",
       "direction": "clientbound",
+      "note": "mode=0 (OnEnter). v83 dispatcher confirmed. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -10838,6 +10936,7 @@
     "CUIMessenger::OnPacket#Chat": {
       "address": "0x8511fc",
       "direction": "clientbound",
+      "note": "mode=6 (OnChat). v83 dispatcher confirmed. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -10852,6 +10951,7 @@
     "CUIMessenger::OnPacket#InviteDeclined": {
       "address": "0x8511fc",
       "direction": "clientbound",
+      "note": "mode=5 (OnBlocked). v83 dispatcher confirmed. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -10870,6 +10970,7 @@
     "CUIMessenger::OnPacket#InviteSent": {
       "address": "0x8511fc",
       "direction": "clientbound",
+      "note": "mode=4 (OnInviteResult). v83 dispatcher confirmed. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -10888,6 +10989,7 @@
     "CUIMessenger::OnPacket#Join": {
       "address": "0x8511fc",
       "direction": "clientbound",
+      "note": "mode=1 (OnSelfEnterResult). v83 dispatcher confirmed. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -10902,6 +11004,7 @@
     "CUIMessenger::OnPacket#Remove": {
       "address": "0x8511fc",
       "direction": "clientbound",
+      "note": "mode=2 (OnLeave). v83 dispatcher confirmed. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -10916,6 +11019,7 @@
     "CUIMessenger::OnPacket#RequestInvite": {
       "address": "0x8511fc",
       "direction": "clientbound",
+      "note": "mode=3 (OnInvite). v83 dispatcher confirmed. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -10942,6 +11046,7 @@
     "CUIMessenger::OnPacket#Update": {
       "address": "0x8511fc",
       "direction": "clientbound",
+      "note": "mode=7 (OnAvatar). v83 dispatcher confirmed. Wire identical to v95. Note: v83 OnPacket also has mode=8 (OnMigrated) absent from v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -10960,6 +11065,7 @@
     "CUIMessenger::ProcessChat": {
       "address": "0x8511fc",
       "direction": "serverbound",
+      "note": "Client sends messenger chat op=6+text. Wire identical to v95.",
       "calls": [
         {
           "op": "Encode1",
@@ -10974,6 +11080,7 @@
     "CUIMessenger::SendInviteMsg": {
       "address": "0x8511fc",
       "direction": "serverbound",
+      "note": "Client sends op=5+fromName+myName when declining. Wire identical to v95.",
       "calls": [
         {
           "op": "Encode1",
@@ -11114,6 +11221,7 @@
     "CUser::OnEmotion": {
       "address": "0x9724f9",
       "direction": "clientbound",
+      "_note": "In v83 handled inline in CUserPool::OnUserRemotePacket case 0xC1 (@0x9724f9): reads Decode4(expressionId) only and calls CAvatar::SetEmotion(avatar, expr, -1). No separate OnEmotion function (same as v87). duration and byItemOption are v95+ only; JMS v185 has its own OnEmotion with duration but no byItemOption.",
       "calls": [
         {
           "op": "Decode4",
@@ -12256,6 +12364,7 @@
     "CUserRemote::OnSetActivePortableChair": {
       "address": "0x9724f9",
       "direction": "clientbound",
+      "_note": "In v83 handled inline in CUserPool::OnUserRemotePacket case 0xC4 (@0x9724f9): RemoteUser[3567] = CInPacket::Decode4(a3) reads chairId directly. No separate OnSetActivePortableChair receive function (same inline shape as v87 case 0xD1). The CUser send side is CUser::SetActivePortableChair@0x93c7c3.",
       "calls": [
         {
           "op": "Decode4",
@@ -12369,6 +12478,7 @@
     "CVecCtrlSummoned::EndUpdateActive": {
       "address": "0x9c84e9",
       "direction": "serverbound",
+      "note": "MOVE_SUMMON send (CMSG 175/0xAF). CVecCtrlSummoned::EndUpdateActive (v83 sub_9C84E9): COutPacket(op) + Encode4(summonId = ctrl[0x248] = owner cid; @0x9c853d) + CMovePath::Flush movement blob (CMovePath::Encode@0x68a563: Encode2 startX, Encode2 startY, Encode1 count, count moves, keypad run, bounding box). v83/v87 identity = owner cid (no oid concept; pool is cid-keyed); v95 = m_dwSummonedID. Atlas serverbound Move Encode writes summonId + rawMovement (the opaque blob, startX/startY being its first 4 bytes), so the read order is modeled as Encode4 + EncodeBuf to match the opaque rebroadcast shape. v83 reference (IDB asm-confirmed, summon-wire-truth.md).",
       "calls": [
         {
           "op": "Encode4",
@@ -12874,6 +12984,7 @@
     "CWvsContext::OnFriendResult#AlreadyBuddy": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=13. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -12884,6 +12995,7 @@
     "CWvsContext::OnFriendResult#CannotBuddyGm": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=14. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -12894,6 +13006,7 @@
     "CWvsContext::OnFriendResult#CapacityUpdate": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=0x15. Reads buddyListCapacity byte. Wire identical to v95.",
       "dispatch": [
         {
           "discriminator": "switch",
@@ -12914,6 +13027,7 @@
     "CWvsContext::OnFriendResult#ChannelChange": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=0x14. Reads characterId + channelId + mapId. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -12936,6 +13050,7 @@
     "CWvsContext::OnFriendResult#CharacterNotFound": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=15. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -12946,6 +13061,7 @@
     "CWvsContext::OnFriendResult#Error": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=0xB/0xC/0xD/0xE/0xF. No extra fields beyond mode. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -12956,6 +13072,7 @@
     "CWvsContext::OnFriendResult#Invite": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=9 (INVITE). v83 wire: Decode4(characterId) + DecodeStr(name) + sub_A40028(friendList,packet). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -12990,6 +13107,7 @@
     "CWvsContext::OnFriendResult#ListFull": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=11. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -13000,6 +13118,7 @@
     "CWvsContext::OnFriendResult#ListUpdate": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=7/0xA/0x12. Calls CWvsContext::CFriend::Reset which reads the full buddy list. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13022,6 +13141,7 @@
     "CWvsContext::OnFriendResult#OtherListFull": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=12. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -13032,6 +13152,7 @@
     "CWvsContext::OnFriendResult#UnknownError": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=16. GMS reads a trailing CInPacket::Decode1 (extra byte).",
       "calls": [
         {
           "op": "Decode1",
@@ -13046,6 +13167,7 @@
     "CWvsContext::OnFriendResult#UnknownError2": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=17. GMS reads a trailing CInPacket::Decode1 (extra byte).",
       "calls": [
         {
           "op": "Decode1",
@@ -13060,6 +13182,7 @@
     "CWvsContext::OnFriendResult#UnknownError3": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=19. GMS reads a trailing CInPacket::Decode1 (extra byte).",
       "calls": [
         {
           "op": "Decode1",
@@ -13074,6 +13197,7 @@
     "CWvsContext::OnFriendResult#UnknownError4": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=22. GMS reads a trailing CInPacket::Decode1 (extra byte).",
       "calls": [
         {
           "op": "Decode1",
@@ -13088,6 +13212,7 @@
     "CWvsContext::OnFriendResult#Update": {
       "address": "0xa3f2e8",
       "direction": "clientbound",
+      "note": "mode=8. UpdateFriend reads characterId+channelId+mapId. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13181,11 +13306,13 @@
     "CWvsContext::OnGuildBBSPacket": {
       "address": "0xa1233f",
       "direction": "clientbound",
+      "note": "v83 OnGuildBBSPacket is a 0x16-byte thunk \u2014 too small to decompile. Delegates to an inner handler. v83 guild BBS functions (BBSThreadList, BBSThread) appear to exist as inner sub-functions called from this thunk. Serverbound BBS functions (SendLoadListRequest, SendViewEntryRequest, OnCommentDelete etc.) are absent as standalone named functions in v83.",
       "calls": []
     },
     "CWvsContext::OnGuildResult": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "v83 OnGuildResult dispatcher. Mode byte consumed; social invite case (mode=5) confirmed: Decode4(guildId)+DecodeStr(inviterName) only \u2014 no unknown/skillId fields. Those were added in v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13196,6 +13323,7 @@
     "CWvsContext::OnGuildResult#AgreementResponse": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x03 RequestAgreement path (v4==3). v83: Decode4(partyId)+DecodeStr(leaderName)+DecodeStr(guildName). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13218,6 +13346,7 @@
     "CWvsContext::OnGuildResult#BoardAuthKeyUpdate": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13232,6 +13361,7 @@
     "CWvsContext::OnGuildResult#CapacityChange": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x3A. v83: Decode4(guildId)+Decode1(capacity). Wire identical to v95. Fix in v95 audit: capacity is byte (Decode1), not int (Decode4).",
       "calls": [
         {
           "op": "Decode1",
@@ -13250,6 +13380,7 @@
     "CWvsContext::OnGuildResult#CreateError": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13260,6 +13391,7 @@
     "CWvsContext::OnGuildResult#CreateErrorCannotAsAdmin": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13270,6 +13402,7 @@
     "CWvsContext::OnGuildResult#CreateErrorDisagreed": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13280,6 +13413,7 @@
     "CWvsContext::OnGuildResult#CreateErrorNameInUse": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13290,6 +13424,7 @@
     "CWvsContext::OnGuildResult#Disband": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x21 (Decode4(guildId)+GuildData::Clear). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13304,6 +13439,7 @@
     "CWvsContext::OnGuildResult#DisbandError": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13314,6 +13450,7 @@
     "CWvsContext::OnGuildResult#EmblemChange": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x42. v83: Decode4(guildId)+Decode2(logoBackground)+Decode1(bgColor)+Decode2(logo)+Decode1(logoColor). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13344,6 +13481,7 @@
     "CWvsContext::OnGuildResult#ErrorMessage": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x1F+n (error-only modes). No extra reads. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13354,6 +13492,7 @@
     "CWvsContext::OnGuildResult#ErrorMessageWithTarget": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x35/0x36/0x37 (invite rejected/busy/denied). v83: DecodeStr(targetName). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13368,6 +13507,7 @@
     "CWvsContext::OnGuildResult#IncreaseCapacityError": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13378,6 +13518,7 @@
     "CWvsContext::OnGuildResult#Info": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x1E (v4-1=30, v5=29, v6=27 \u2192 v40=0 branch). Calls sub_4E4553 to read full GUILDDATA. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13388,6 +13529,7 @@
     "CWvsContext::OnGuildResult#Invite": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=5 (INVITE). v83 wire: Decode4(guildId) + DecodeStr(inviterName). NO unknown/skillId \u2014 those were added in v95. Fix gates both fields behind v95+.",
       "calls": [
         {
           "op": "Decode1",
@@ -13406,6 +13548,7 @@
     "CWvsContext::OnGuildResult#InviteDenied": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13420,6 +13563,7 @@
     "CWvsContext::OnGuildResult#InviteErrorAnotherInvite": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13434,6 +13578,7 @@
     "CWvsContext::OnGuildResult#InviteErrorNotAcceptingInvites": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13448,6 +13593,7 @@
     "CWvsContext::OnGuildResult#JoinErrorAlreadyJoined": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13458,6 +13604,7 @@
     "CWvsContext::OnGuildResult#JoinErrorMaxMembers": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13468,6 +13615,7 @@
     "CWvsContext::OnGuildResult#JoinErrorNotInChannel": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13478,6 +13626,7 @@
     "CWvsContext::OnGuildResult#MemberExpel": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x2F. v83: Decode4(guildId)+Decode4(characterId)+DecodeStr(name). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13500,6 +13649,7 @@
     "CWvsContext::OnGuildResult#MemberExpelledErrorNotInGuild": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13510,6 +13660,7 @@
     "CWvsContext::OnGuildResult#MemberJoined": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x27. v83: Decode4(guildId)+Decode4(characterId)+sub_4E4445(member struct 0x24 bytes)+1 byte online. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13532,6 +13683,7 @@
     "CWvsContext::OnGuildResult#MemberLeft": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x2C. v83: Decode4(guildId)+Decode4(characterId)+DecodeStr(name). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13554,6 +13706,7 @@
     "CWvsContext::OnGuildResult#MemberQuitErrorNotInGuild": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13564,6 +13717,7 @@
     "CWvsContext::OnGuildResult#MemberStatusUpdate": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x3D. v83: Decode4(guildId)+Decode4(characterId)+Decode1(online). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13586,6 +13740,7 @@
     "CWvsContext::OnGuildResult#MemberTitleUpdate": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x40. v83: Decode4(guildId)+Decode4(characterId)+Decode1(title). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13608,6 +13763,7 @@
     "CWvsContext::OnGuildResult#MemberUpdate": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13634,6 +13790,7 @@
     "CWvsContext::OnGuildResult#NoticeChange": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x44. v83: Decode4(guildId)+DecodeStr(notice). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13652,6 +13809,7 @@
     "CWvsContext::OnGuildResult#QuestErrorDisconnected": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13662,6 +13820,7 @@
     "CWvsContext::OnGuildResult#QuestErrorLessThanSixMembers": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13672,6 +13831,7 @@
     "CWvsContext::OnGuildResult#QuestWaitingNotice": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13690,6 +13850,7 @@
     "CWvsContext::OnGuildResult#RequestAgreement": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=3. v83: Decode4(partyId)+DecodeStr(leaderName)+DecodeStr(guildName). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13712,6 +13873,7 @@
     "CWvsContext::OnGuildResult#RequestEmblem": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13722,6 +13884,7 @@
     "CWvsContext::OnGuildResult#RequestName": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13732,6 +13895,7 @@
     "CWvsContext::OnGuildResult#SetSkillResponse": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13750,6 +13914,7 @@
     "CWvsContext::OnGuildResult#ShowTitles": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "task-103 discrete-per-mode arm; OnGuildResult@0xa37490.",
       "calls": [
         {
           "op": "Decode1",
@@ -13792,6 +13957,7 @@
     "CWvsContext::OnGuildResult#TitleChange": {
       "address": "0xa37490",
       "direction": "clientbound",
+      "note": "mode=0x3E. v83: Decode4(guildId)+5\u00d7DecodeStr(titles). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -13826,6 +13992,7 @@
     "CWvsContext::OnIncubatorResult": {
       "address": "0xa28298",
       "direction": "clientbound",
+      "note": "task-19: itemId<=0 renders the failure dialog (no further reads); read order confirmed unchanged from v84.",
       "calls": [
         {
           "op": "Decode4",
@@ -14009,6 +14176,7 @@
     "CWvsContext::OnMapTransferResult": {
       "address": "0xa25268",
       "direction": "clientbound",
+      "note": "MAP_TRANSFER_RESULT (task-124). mode(Decode1)+targetList(Decode1), then for mode in {2,3} (list-refresh form) exactly 5 (targetList==0) or 10 (targetList==1) x Decode4 mapId; modes 5-11 are the error/notice form with no further payload.",
       "calls": [
         {
           "op": "Decode1",
@@ -14039,6 +14207,7 @@
     "CWvsContext::OnMemoResult": {
       "address": "0xa2508b",
       "direction": "clientbound",
+      "note": "v83 OnMemoResult dispatcher. Mode byte consumed by dispatcher; mode=3 (DISPLAY) reads count+items. Wire shape identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -14049,6 +14218,7 @@
     "CWvsContext::OnMemoResult#Display": {
       "address": "0xa2508b",
       "direction": "clientbound",
+      "note": "mode=3 (DISPLAY). Reads item count then loops calling sub_4E4ADB per item. Wire identical to v95.",
       "dispatch": [
         {
           "case": 0,
@@ -14094,6 +14264,7 @@
     "CWvsContext::OnMemoResult#Refresh": {
       "address": "0xa2508b",
       "direction": "clientbound",
+      "note": "mode=8 (REFRESH). OnMemoNotify_Receive called, no further reads. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -14104,6 +14275,7 @@
     "CWvsContext::OnMemoResult#SendError": {
       "address": "0xa2508b",
       "direction": "clientbound",
+      "note": "mode=5 (SEND_ERROR). errorCode selects string pool notice. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -14118,6 +14290,7 @@
     "CWvsContext::OnMemoResult#SendSuccess": {
       "address": "0xa2508b",
       "direction": "clientbound",
+      "note": "mode=4 (SEND_SUCCESS). No extra fields; dispatcher reads mode byte then falls into string-pool notice. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -14777,6 +14950,7 @@
     "CWvsContext::OnPartyResult#AlreadyJoined1": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=9. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -14787,6 +14961,7 @@
     "CWvsContext::OnPartyResult#AlreadyJoined2": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=16. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -14797,6 +14972,7 @@
     "CWvsContext::OnPartyResult#BeginnerCannotCreate": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=10. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -14807,6 +14983,7 @@
     "CWvsContext::OnPartyResult#BlockingInvitations": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=21. Invite-target notice: mode + DecodeStr(name).",
       "calls": [
         {
           "op": "Decode1",
@@ -14821,6 +14998,7 @@
     "CWvsContext::OnPartyResult#CannotKick": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=25. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -14831,6 +15009,7 @@
     "CWvsContext::OnPartyResult#ChangeLeader": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=27 (CHANGE_LEADER). v83: Decode4(newLeaderId) + Decode1(disconnected). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -14849,6 +15028,7 @@
     "CWvsContext::OnPartyResult#Created": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=8 (CREATED). v83: Decode4(partyId) + Decode4(memberId) + Decode4(mapId) + Decode2(jobId) + Decode2(level) + memset(3732,0,0x12A=298). Self-creation path, no PARTYDATA::Decode called externally.",
       "calls": [
         {
           "op": "Decode1",
@@ -14879,6 +15059,7 @@
     "CWvsContext::OnPartyResult#Disband": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=12/Left with forcedByte=0. v83: Decode4(partyId) + Decode4(targetId) + Decode1(forced) [branch 0=disband] + PARTYDATA::Decode(298). Wire shape identical to v95 except PARTYDATA size.",
       "calls": [
         {
           "op": "Decode1",
@@ -14905,6 +15086,7 @@
     "CWvsContext::OnPartyResult#Error": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=9/10/13/16/17/19/21/22/23/25/28/29/30/32/33/35/36. Error codes \u2014 no further reads or trivial string decode. Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -14919,6 +15101,7 @@
     "CWvsContext::OnPartyResult#GmCannotCreate": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=32. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -14929,6 +15112,7 @@
     "CWvsContext::OnPartyResult#Invite": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=4 (INVITE). v83 wire: Decode4(partyId) + DecodeStr(inviterName) + Decode1(autoJoin). NO inviterJobId/inviterLevel \u2014 those were added in v95. Atlas Invite previously wrote mode+partyId+name+jobId+level+autoJoin; fix gates jobId/level behind v95+.",
       "calls": [
         {
           "op": "Decode1",
@@ -14951,6 +15135,7 @@
     "CWvsContext::OnPartyResult#InviteReject": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=21/22/23 (invite reject variants). v83: DecodeStr(targetName). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -14965,6 +15150,7 @@
     "CWvsContext::OnPartyResult#Join": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=15. v83: Decode4(partyId) + DecodeStr(joinedName) + PARTYDATA::Decode(298). Wire shape identical to v95 except PARTYDATA size (298 vs 378).",
       "calls": [
         {
           "op": "Decode1",
@@ -14987,6 +15173,7 @@
     "CWvsContext::OnPartyResult#Left": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=12. v83: Decode4(partyId)+Decode4(targetId)+Decode1(forced)+DecodeStr(targetName)+PARTYDATA::Decode(298). Forced branch reads PARTYDATA. Wire shape identical to v95 except PARTYDATA size.",
       "calls": [
         {
           "op": "Decode1",
@@ -15021,6 +15208,7 @@
     "CWvsContext::OnPartyResult#NotInParty": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=13. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -15031,6 +15219,7 @@
     "CWvsContext::OnPartyResult#OnlySameChannel": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=30. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -15041,6 +15230,7 @@
     "CWvsContext::OnPartyResult#OnlyWithinVicinity": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=28. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -15051,6 +15241,7 @@
     "CWvsContext::OnPartyResult#OperationBody": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=35 (member HP update index). v83: Decode4(memberId)+Decode4(hp)+Decode4(maxHp). Wire identical to v95.",
       "calls": [
         {
           "op": "Decode1",
@@ -15073,6 +15264,7 @@
     "CWvsContext::OnPartyResult#PartyFull": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=17. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -15083,6 +15275,7 @@
     "CWvsContext::OnPartyResult#RequestDenied": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=23. Invite-target notice: mode + DecodeStr(name).",
       "calls": [
         {
           "op": "Decode1",
@@ -15097,6 +15290,7 @@
     "CWvsContext::OnPartyResult#TakingCareOfInvitation": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=22. Invite-target notice: mode + DecodeStr(name).",
       "calls": [
         {
           "op": "Decode1",
@@ -15111,6 +15305,7 @@
     "CWvsContext::OnPartyResult#UnableToFindCharacter": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=33. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -15121,6 +15316,7 @@
     "CWvsContext::OnPartyResult#UnableToFindInChannel": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=19. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -15131,6 +15327,7 @@
     "CWvsContext::OnPartyResult#UnableToHandOver": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=29. Error/notice arm: mode-only (no body).",
       "calls": [
         {
           "op": "Decode1",
@@ -15141,6 +15338,7 @@
     "CWvsContext::OnPartyResult#Update": {
       "address": "0xa3e31c",
       "direction": "clientbound",
+      "note": "mode=7/34. v83: Decode4(partyId)+PARTYDATA::Decode(0x12A=298 bytes). Confirmed via qmemcpy(v111,&szCookie[3732],0x12A). PARTYDATA in v83 has 4-int portals (no m_nSKillID) and no PQ fields. v95 extended to 0x17A=378.",
       "calls": [
         {
           "op": "Decode1",
@@ -15369,6 +15567,7 @@
     "CWvsContext::OnSkillLearnItemResult": {
       "address": "0xa1e5af",
       "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v83 IDA-verified: CWvsContext::OnPacket case 0x33 (51) delegates directly. v83 body (no leading byte \u2014 MajorVersion()<84): Decode4 characterId (CUserPool::GetUser lookup), then under an if(user-found) guard (v36): Decode1 isMasteryBook (gates MASTERY_BOOK vs SKILL_BOOK message), Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse (gates avatar glow effect + \"cannot use\" message), Decode1 success (gates success/failure sound+message). select_instance() is dead on the live MCP server, so this entry was spliced by hand from a live decompile via the session-based idb tool, database=ce4ff298, filename MapleStory_dump.exe.i64, path ...\\\\GMS\\\\v83_Me\\\\...",
       "calls": [
         {
           "op": "Decode4",
@@ -15632,6 +15831,7 @@
     "CWvsContext::RunMapTransferItem": {
       "address": "0xa0a4aa",
       "direction": "serverbound",
+      "note": "Shared teleport-rock target-payload helper (task-124), called by both SendMapTransferItemUseRequest and the cash-item-use teleport-rock branch (case 22 of SendConsumeCashItemUseRequest @0xa0cab0). Live decompile (port 13342): shows a CDialog target-picker; on DoModal()==1, if a name was resolved: Encode1(1) then EncodeStr(name); else if a2 (selected map id) is set and != 999999999 (EmptyMapId): Encode1(0) then Encode4(a2); otherwise no payload bytes are written at all (dialog confirmed with no selection). The parser cannot descend into this call because the caller consumes its return value in an if-condition (treated as a guard, not a Delegate) \u2014 calls intentionally left absent (opaque relative to this static export); the payload derivation above is hand-verified from the live IDA decompile, not fabricated.",
       "calls": null
     },
     "CWvsContext::SendAbilityUpRequest#AutoDistributeAp": {
@@ -15685,6 +15885,7 @@
     "CWvsContext::SendBridleItemUseRequest": {
       "address": "0xa09bdf",
       "direction": "serverbound",
+      "note": "USE_CATCH_ITEM (task-212). CWvsContext::SendBridleItemUseRequest: update_time(Encode4), nPOS(Encode2), nItemID(Encode4), then the FindHitMobInRect-derived hit-mob object id (Encode4). Body is byte-identical to gms_v48/v61/v72/v79/v95's already-pinned layout; resolved via idb_open/func_query/decompile (idb_list session, matched by binary name) since the mangled symbol was already present (v83/v87/v92/jms_185) or renamed live to it (v84).",
       "calls": [
         {
           "op": "Decode4",
@@ -15872,6 +16073,7 @@
     "CWvsContext::SendMapTransferItemUseRequest": {
       "address": "0xa0a3bb",
       "direction": "serverbound",
+      "note": "USE_TELEPORT_ROCK (task-124). nPOS(Encode2)+nItemID(Encode4), then the RunMapTransferItem target payload (byName flag + name/mapId) under the success guard, then trailing update_time. The guarded call absorbs RunMapTransferItem's own writes (parser treats an if-condition call as a guard, not a Delegate) \u2014 see CWvsContext::RunMapTransferItem below for that payload's derivation.",
       "calls": [
         {
           "op": "Decode2",
@@ -15891,6 +16093,7 @@
     "CWvsContext::SendMapTransferRequest": {
       "address": "0xa261bc",
       "direction": "serverbound",
+      "note": "TROCK_ADD_MAP (task-124). Unnamed in the v83 IDB (sub_A261BC) until this task; mangled symbol ?SendMapTransferRequest@CWvsContext@@QAEXJKH@Z was already present, so it was renamed live to the demangled registry fname (\u00a710 unnamed-sender convention) to resolve for harvesting. Encode1(nType)+Encode1(bCanTransferContinent), then Encode4(dwTargetField) only when nType==0 (delete).",
       "calls": [
         {
           "op": "Decode1",
@@ -15915,6 +16118,7 @@
     "CWvsContext::SendMobSummonItemUseRequest": {
       "address": "0xa0977b",
       "direction": "serverbound",
+      "note": "USE_SUMMON_BAG (task-229, opcode 75/0x4B, InventorySummonBagItemUse). Decompiled v83 @0xa09896: under CWvsContext::CanSendExclRequest(this, 200, 0) (after the optional YesNo interest-warning dialog), COutPacket::COutPacket(&pkt, 0x4B) then Encode4(get_update_time())@0xa098ad + Encode2(a2/nPOS slot)@0xa098b8 + Encode4(a3/itemId)@0xa098c3. Same updateTime+slot+itemId shape as InventoryItemUse/InventoryReturnScrollItemUse but a distinct send site gated on the mob-summon guard (get_field()+324 bit2 / sub_5DCF70 confirm-summon check), matching the gms_v61 structural twin CWvsContext::SendMobSummonItemUseRequest @0x832003.",
       "calls": [
         {
           "op": "Decode4",
@@ -15954,6 +16158,7 @@
     "CWvsContext::SendPortalScrollUseRequest": {
       "address": "0xa1e1ce",
       "direction": "serverbound",
+      "note": "USE_RETURN_SCROLL (task-229, opcode 85/0x55, InventoryReturnScrollItemUse). Decompiled v83 @0xa1e3e9: CWvsContext::SendPortalScrollUseRequest reads the item's own Return Scroll WZ props via IWzProperty::GetItem (StringPool ids 2306/'spec', 2307, 2309, all resolved off CItemInfo::GetItemProp(a3) \u2014 the item being used), with NO RunMapTransferItem call and NO by-name/target-name branch (the trap documented for gms_v72.yaml:2414 and gms_v79.yaml:2798 where the era's SendMapTransferItemUseRequest symbol is a mislabel for the teleport-rock sender \u2014 the v83 teleport-rock sender is the distinct CWvsContext::SendMapTransferItemUseRequest @0xa0a3bb entry above, USE_TELEPORT_ROCK/task-124). Under the int32==999999999 (no destination-map override) success path, COutPacket::COutPacket(&pkt, 0x55) then Encode4(get_update_time())@0xa1e400 + Encode2(a2/nPOS slot)@0xa1e40b + Encode4(a3/itemId)@0xa1e416 \u2014 same updateTime+slot+itemId shape as InventoryItemUse/InventorySummonBagItemUse.",
       "calls": [
         {
           "op": "Decode4",

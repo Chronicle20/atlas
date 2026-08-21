@@ -2386,6 +2386,7 @@
     "CFadeWnd::SendCloseMessage": {
       "address": "0x4bce54",
       "direction": "serverbound",
+      "note": "mode=5 (DECLINE). BODY-VERIFIED v48 send sub_4BCE54 @0x4bce54 arm this[47]==0: COutPacket(92)+Encode1(5)+EncodeStr(fromName)+EncodeStr(myName)+Encode1(0). Atlas OperationDeclineInvite models the body after the dispatcher-consumed mode: fromName+myName+trailing byte.",
       "calls": [
         {
           "op": "Encode1",
@@ -6122,6 +6123,7 @@
     "CMob::OnCatchEffect": {
       "address": "0x5511f4",
       "direction": "clientbound",
+      "note": "Unnamed in the v48 IDB as sub_5511F4 until task-212; CMobPool::OnMobPacket (0x559390) case 172 (0x0AC) dispatches here. Reads a single Decode1 (-> sub_54E7D3), no trailing success byte (design.md F-1/F-4). Canonical fname CMob::OnCatchEffect kept as best-effort label per precedent (gms_v92.yaml CATCH_MONSTER); unnamed function recorded in the registry as fname_alts: sub_5511F4.",
       "calls": [
         {
           "op": "Decode1",
@@ -6180,6 +6182,7 @@
     "CMob::OnEffectByItem": {
       "address": "0x551481",
       "direction": "clientbound",
+      "note": "Unnamed in the v48 IDB as sub_551481 until task-212; CMobPool::OnMobPacket (0x559390) case 173 (0x0AD) dispatches here. Reads a single Decode4 (-> sub_54E82D) ONLY \u2014 no trailing result byte, one field shorter than every later version's OnEffectByItem (design.md F-2). Canonical fname CMob::OnEffectByItem kept as best-effort label per precedent; unnamed function recorded in the registry as fname_alts: sub_551481.",
       "calls": [
         {
           "op": "Decode4",
@@ -10259,6 +10262,7 @@
     "CTradingRoomDlg::OnTrade#TradeConfirm": {
       "address": "0x5e6bd3",
       "direction": "clientbound",
+      "note": "Clientbound receive arm of CTradingRoomDlg::OnTrade. Same function as the serverbound TRANSACTION sender (interaction/serverbound/InteractionOperationTransaction), which is keyed on the un-suffixed CTradingRoomDlg::OnTrade; the #TradeConfirm suffix separates the two wire shapes (this arm is bodyless; the send carries count + {itemId, crc} pairs).",
       "calls": [
         {
           "op": "Decode1",
@@ -10700,6 +10704,7 @@
     "CUIMessenger::OnCreate": {
       "address": "0x61a701",
       "direction": "serverbound",
+      "note": "mode=0 (self-enter / answer-invite). BODY-VERIFIED v48 send sub_61A701 @0x61a701: COutPacket(92)+Encode1(0)+Encode4(messengerId=a2).",
       "calls": [
         {
           "op": "Encode1",
@@ -10714,6 +10719,7 @@
     "CUIMessenger::OnDestroy": {
       "address": "0x61ac75",
       "direction": "serverbound",
+      "note": "mode=2 (leave). BODY-VERIFIED v48 send sub_61AC75 @0x61ac75: COutPacket(92)+Encode1(2).",
       "calls": [
         {
           "op": "Encode1",
@@ -10784,6 +10790,7 @@
     "CUIMessenger::OnPacket#Add": {
       "address": "0x61d8b8",
       "direction": "clientbound",
+      "note": "mode=0 (OnEnter). v48 dispatcher sub_61D8B8 @0x61d8b8 case 0 -> sub_61B860 @0x61b860. channelId+pad present from v48. Avatar is the v48 single-pet look.",
       "calls": [
         {
           "op": "Decode1",
@@ -10814,6 +10821,7 @@
     "CUIMessenger::OnPacket#Chat": {
       "address": "0x61d8b8",
       "direction": "clientbound",
+      "note": "mode=6 (OnChat). v48 case 6 -> sub_61DC8C @0x61dc8c.",
       "calls": [
         {
           "op": "Decode1",
@@ -10828,6 +10836,7 @@
     "CUIMessenger::OnPacket#InviteDeclined": {
       "address": "0x61d8b8",
       "direction": "clientbound",
+      "note": "mode=5 (OnBlocked). v48 case 5 -> sub_61DA3F @0x61da3f.",
       "calls": [
         {
           "op": "Decode1",
@@ -10846,6 +10855,7 @@
     "CUIMessenger::OnPacket#InviteSent": {
       "address": "0x61d8b8",
       "direction": "clientbound",
+      "note": "mode=4 (OnInviteResult). v48 case 4 -> sub_61D94F @0x61d94f.",
       "calls": [
         {
           "op": "Decode1",
@@ -10864,6 +10874,7 @@
     "CUIMessenger::OnPacket#Join": {
       "address": "0x61d8b8",
       "direction": "clientbound",
+      "note": "mode=1 (OnSelfEnterResult). v48 case 1 -> sub_61BA71 @0x61ba71.",
       "calls": [
         {
           "op": "Decode1",
@@ -10878,6 +10889,7 @@
     "CUIMessenger::OnPacket#Remove": {
       "address": "0x61d8b8",
       "direction": "clientbound",
+      "note": "mode=2 (OnLeave). v48 case 2 -> sub_61BB63 @0x61bb63.",
       "calls": [
         {
           "op": "Decode1",
@@ -10892,6 +10904,7 @@
     "CUIMessenger::OnPacket#RequestInvite": {
       "address": "0x61d8b8",
       "direction": "clientbound",
+      "note": "mode=3 (OnInvite). v48 dispatcher special-case -> sub_61DB2C @0x61db2c.",
       "calls": [
         {
           "op": "Decode1",
@@ -10918,6 +10931,7 @@
     "CUIMessenger::OnPacket#Update": {
       "address": "0x61d8b8",
       "direction": "clientbound",
+      "note": "mode=7 (OnAvatar). v48 case 7 -> sub_61DF11 @0x61df11.",
       "calls": [
         {
           "op": "Decode1",
@@ -10946,6 +10960,7 @@
     "CUIMessenger::ProcessChat": {
       "address": "0x61b27c",
       "direction": "serverbound",
+      "note": "mode=6 (chat). BODY-VERIFIED v48 send sub_61B27C @0x61b27c: COutPacket(92)+Encode1(6)+EncodeStr(charName+text).",
       "calls": [
         {
           "op": "Encode1",
@@ -10960,6 +10975,7 @@
     "CUIMessenger::SendInviteMsg": {
       "address": "0x61d8b8",
       "direction": "serverbound",
+      "note": "mode=3 (INVITE). Real send-site not located in the CUIMessenger UI region (as in v83, where SendInviteMsg is likewise synthetic); pinned at the messenger dispatcher sub_61D8B8 @0x61d8b8. Mode 3 is grounded: v83 verified body uses sub-op 3, and the v48 clientbound dispatcher reserves case 3 for the reciprocal RequestInvite (sub_61DB2C).",
       "calls": [
         {
           "op": "Encode1",
@@ -15707,6 +15723,7 @@
     "CWvsContext::OnSkillLearnItemResult": {
       "address": "0x71a135",
       "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v48 IDA-verified: CWvsContext::OnPacket case 43 (0x2B, @0x70d3aa) delegates directly to CWvsContext::OnSkillLearnItemResult (already named in the v48 IDB, session 0bb5f11a, GMS_v48_1_DEVM.exe.i64). v48 body (no leading byte -- MajorVersion()<84): Decode4 characterId (CUserPool::GetUser lookup), then under an if(user-found) guard (v29): Decode1 isMasteryBook, Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse, Decode1 success. Supersedes the prior sub_71A135 placeholder entry (same address, same call sequence, unnamed).",
       "calls": [
         {
           "op": "Decode4",
@@ -15939,6 +15956,7 @@
     "CWvsContext::SendBridleItemUseRequest": {
       "address": "0x70e0c5",
       "direction": "serverbound",
+      "note": "USE_CATCH_ITEM (task-212). CWvsContext::SendBridleItemUseRequest: update_time(Encode4), nPOS(Encode2), nItemID(Encode4), then the FindHitMobInRect-derived hit-mob object id (Encode4). Address per design.md/plan.md task-212 citation; confirmed via live decompile (idb_open/decompile) showing the item-class-227 gate and the GetBridleItem-equivalent lookup feeding COutPacket at the registry's USE_CATCH_ITEM opcode for this version.",
       "calls": [
         {
           "op": "Decode4",
@@ -16186,6 +16204,7 @@
     "CWvsContext::SendSkillLearnItemUseRequest": {
       "address": "0x70e3e7",
       "direction": "serverbound",
+      "note": "USE_SKILL_BOOK (task-125). v48 IDA-verified, session 0bb5f11a, GMS_v48_1_DEVM.exe.i64 -- already named in the IDB. Caller sub_4A1DDC (UI skill-book use handler) at 0x4a2396. item-class gate a3/10000 in {228,229} (skill-book prefix); guard sub_4A2518(this,200,0) (CanSendExclRequest twin); COutPacket::COutPacket(&pkt, 64); SetExclRequestSent before+after send.",
       "calls": [
         {
           "op": "Encode4",

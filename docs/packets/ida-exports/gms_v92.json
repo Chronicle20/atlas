@@ -124,6 +124,7 @@
     "CCashShop::OnCashItemGachaponResult": {
       "address": "0x491530",
       "direction": "clientbound",
+      "note": "CASHSHOP_CASH_ITEM_GACHAPON_RESULT (task-207). mode(Decode1) unconditional. SUCCESS (mode=190): sn:DecodeBuffer(8, LARGE_INTEGER int64, matched against m_aCashItemInfo[i].liSN) + remain:Decode4 (int32 new quantity) + newItem:DecodeBuffer(0x37=55, GW_CashItemInfo, UNCONDITIONAL) + delegate to CUICashItemGachapon::OnCashItemGachaponResult for itemId/count/jackpot. FAILED (mode=189): no further reads, StringPool notice only.",
       "calls": [
         {
           "op": "Decode1",
@@ -2524,6 +2525,7 @@
     "CField::OnWhisper#Error": {
       "address": "0x53e2a0",
       "direction": "clientbound",
+      "note": "mode=0x22 (ERROR). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2542,6 +2544,7 @@
     "CField::OnWhisper#FindResultCashShop": {
       "address": "0x53e2a0",
       "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=2 (FIND in cash shop). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2564,6 +2567,7 @@
     "CField::OnWhisper#FindResultChannel": {
       "address": "0x53e2a0",
       "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=3 (FIND on channel). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2586,6 +2590,7 @@
     "CField::OnWhisper#FindResultError": {
       "address": "0x53e2a0",
       "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=0/else (FIND not found). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2608,6 +2613,7 @@
     "CField::OnWhisper#FindResultMap": {
       "address": "0x53e2a0",
       "direction": "clientbound",
+      "note": "mode=0x09/0x48 sub=1 (FIND on map). x/y are Decode4 (int32) only when the mode is ODD (0x09): CField::OnWhisper @0x53e2a0 gates the even arm on `if ((v4 & 1) == 0)` and returns via LABEL_121 without a further decode; the odd arm's `case 1:` reads v36=Decode4(x), v67=Decode4(y). Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2640,6 +2646,7 @@
     "CField::OnWhisper#Receive": {
       "address": "0x53e2a0",
       "direction": "clientbound",
+      "note": "mode=0x12 (RECEIVE). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2666,6 +2673,7 @@
     "CField::OnWhisper#SendResult": {
       "address": "0x53e2a0",
       "direction": "clientbound",
+      "note": "mode=0x0A/0x8A (SEND_RESULT). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2684,6 +2692,7 @@
     "CField::OnWhisper#Weather": {
       "address": "0x53e2a0",
       "direction": "clientbound",
+      "note": "mode=0x92 (WEATHER). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -8488,6 +8497,7 @@
     "CTradingRoomDlg::OnMesoLimitRefused": {
       "address": "0x744680",
       "direction": "clientbound",
+      "note": "This version's IDB spells the arm CTradingRoomDlg::OnExceedLimit; the v83 MSVC symbol CTradingRoomDlg::OnMesoLimitRefused is held as the stable export key across versions. Same arm, same (bodyless) shape.",
       "calls": [
         {
           "op": "Decode1",
@@ -8556,6 +8566,7 @@
     "CTradingRoomDlg::OnTrade#TradeConfirm": {
       "address": "0x744440",
       "direction": "clientbound",
+      "note": "Clientbound receive arm of CTradingRoomDlg::OnTrade. Same function as the serverbound TRANSACTION sender (interaction/serverbound/InteractionOperationTransaction), which is keyed on the un-suffixed CTradingRoomDlg::OnTrade; the #TradeConfirm suffix separates the two wire shapes (this arm is bodyless; the send carries count + {itemId, crc} pairs).",
       "calls": [
         {
           "op": "Decode1",
@@ -8770,6 +8781,7 @@
     "CUICashItemGachapon::OnButtonClicked": {
       "address": "0x944110",
       "direction": "serverbound",
+      "note": "CUICashItemGachapon::OnButtonClicked (task-207) \u2014 nId==2000 (Open button): COutPacket(<op>) + EncodeBuffer(&m_liItemSN, 8), no other fields.",
       "calls": [
         {
           "op": "EncodeBuffer",
@@ -8780,6 +8792,7 @@
     "CUICashItemGachapon::OnCashItemGachaponResult": {
       "address": "0x943680",
       "direction": "clientbound",
+      "note": "CUICashItemGachapon::OnCashItemGachaponResult (task-207) \u2014 reads the trailing itemId/count/jackpot fields of CASHSHOP_CASH_ITEM_GACHAPON_RESULT's SUCCESS arm, delegated to by CCashShop::OnCashItemGachaponResult.",
       "calls": [
         {
           "op": "Decode4",
@@ -9661,6 +9674,7 @@
     "CUserLocal::OnIncComboResponse": {
       "address": "0x8fe8e0",
       "direction": "clientbound",
+      "note": "Hex-Rays decompile of 0x8fe8e0 fails (\"Decompilation failed at 0x8fe8e0 (address: 0x8fe8ff)\" on `call sub_8FBD50`). Hand-traced from disasm instead (task-217): push esi; mov esi,ecx; mov ecx,[esp+4+arg_0]; call CInPacket::Decode4 /*0x8fe8e7*/; mov [esi+4358h],eax /*0x8fe8ec*/; call sub_936E80 /*0x8fe8f2*/ (get_update_time analogue); mov ecx,esi; mov [esi+435Ch],eax /*0x8fe8f9*/; call sub_8FBD50 /*0x8fe8ff*/ (DrawCombo analogue, unnamed in this IDB); pop esi; retn 4. Exactly one CInPacket read (Decode4) in the whole function body; the two helper calls are opaque non-packet subs (neither takes the CInPacket*).",
       "calls": [
         {
           "op": "Decode4",
@@ -9912,6 +9926,7 @@
     "CUserLocal__RequestIncCombo_send_0xBA": {
       "address": "0x8ef840",
       "direction": "serverbound",
+      "note": "v92 synthetic rename (task-217 Task 12, idb_save'd). Registry primary fname is the canonical CUserLocal::RequestIncCombo (task-217); candidatesFromFName carries a case for this literal IDB symbol too.",
       "calls": null
     },
     "CUserPool::OnUserEnterField": {
@@ -13155,6 +13170,7 @@
     "CWvsContext::SendBridleItemUseRequest": {
       "address": "0x9b5830",
       "direction": "serverbound",
+      "note": "USE_CATCH_ITEM (task-212). CWvsContext::SendBridleItemUseRequest: update_time(Encode4), nPOS(Encode2), nItemID(Encode4), then the FindHitMobInRect-derived hit-mob object id (Encode4). Body is byte-identical to gms_v48/v61/v72/v79/v95's already-pinned layout; resolved via idb_open/func_query/decompile (idb_list session, matched by binary name) since the mangled symbol was already present (v83/v87/v92/jms_185) or renamed live to it (v84).",
       "calls": [
         {
           "op": "Decode4",

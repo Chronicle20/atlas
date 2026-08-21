@@ -4269,6 +4269,7 @@
     "CITC::OnBuy": {
       "address": "0x562009",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnBuy @0x562009. ITC_OPERATION 0xF1/241 mode 0x10. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -4284,6 +4285,7 @@
     "CITC::OnBuyAuctionImm": {
       "address": "0x56207c",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnBuyAuctionImm @0x56207c. ITC_OPERATION 0xF1/241 mode 0x14. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -4309,6 +4311,7 @@
     "CITC::OnBuyWish": {
       "address": "0x562406",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnBuyWish @0x562406. ITC_OPERATION 0xF1/241 mode 0xC. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -4334,6 +4337,7 @@
     "CITC::OnBuyZzim": {
       "address": "0x562282",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnBuyZzim @0x562282. ITC_OPERATION 0xF1/241 mode 0x11 (YesNo-gated). Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -4359,6 +4363,7 @@
     "CITC::OnCancelSaleItem": {
       "address": "0x5624ec",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnCancelSaleItem @0x5624ec. ITC_OPERATION 0xF1/241 mode 7 (YesNo-gated). Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -4389,6 +4394,7 @@
     "CITC::OnCancelWish": {
       "address": "0x562479",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnCancelWish @0x562479. ITC_OPERATION 0xF1/241 mode 0xD. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -4414,6 +4420,7 @@
     "CITC::OnChangedCategory": {
       "address": "0x561c09",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnChangedCategory @0x561c09. ITC_OPERATION 0xF1/241 mode 5 (browse). Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -4453,6 +4460,7 @@
     "CITC::OnChangedCategorySub": {
       "address": "0x561ce8",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnChangedCategorySub @0x561ce8. ITC_OPERATION 0xF1/241 mode 5 (browse). Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -4492,6 +4500,7 @@
     "CITC::OnChangedPage": {
       "address": "0x561dd7",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnChangedPage @0x561dd7. ITC_OPERATION 0xF1/241 mode 5 (browse). Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -4536,6 +4545,7 @@
     "CITC::OnDeleteZzim": {
       "address": "0x562320",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnDeleteZzim @0x562320. ITC_OPERATION 0xF1/241 mode 0xA. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -4738,6 +4748,7 @@
     "CITC::OnMoveITCPurchaseItemLtoS": {
       "address": "0x562595",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnMoveITCPurchaseItemLtoS @0x562595. ITC_OPERATION 0xF1/241 mode 8. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -5438,6 +5449,7 @@
     "CITC::OnRegisterSaleEntry": {
       "address": "0x5615e1",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnRegisterSaleEntry @0x5615e1. ITC_OPERATION 0xF1/241 mode 2 (arg0==0 fixed-sale); send @0x56173d. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -5473,6 +5485,7 @@
     "CITC::OnRegisterSaleEntry#RegisterAuction": {
       "address": "0x5615e1",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnRegisterSaleEntry @0x5615e1. ITC_OPERATION 0xF1/241 mode 0x12 (arg0==1 auction); send @0x561673. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -5516,6 +5529,7 @@
     "CITC::OnRegisterWishEntry": {
       "address": "0x561eb4",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnRegisterWishEntry @0x561eb4. ITC_OPERATION 0xF1/241 mode 4. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -5561,6 +5575,7 @@
     "CITC::OnSaleCurrentItem": {
       "address": "0x5617ea",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnSaleCurrentItem @0x5617ea. ITC_OPERATION 0xF1/241 mode 3. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -5603,6 +5618,7 @@
     "CITC::OnSetZzim": {
       "address": "0x56220f",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnSetZzim @0x56220f. ITC_OPERATION 0xF1/241 mode 9. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -5628,6 +5644,7 @@
     "CITC::OnStatusCharge": {
       "address": "0x561585",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnStatusCharge @0x561585. opcode 239/0xEF; @0x561585; bodiless (latch set before send). Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": []
     },
@@ -5664,6 +5681,7 @@
     "CITC::OnViewWish": {
       "address": "0x562393",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::OnViewWish @0x562393. ITC_OPERATION 0xF1/241 mode 0xB. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -5679,12 +5697,14 @@
     "CITC::TrySendQueryCashRequest": {
       "address": "0x561879",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITC::TrySendQueryCashRequest @0x561879. opcode 240/0xF0; @0x561879; bodiless. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": []
     },
     "CITCBidAuctionDlg::OnButtonClicked": {
       "address": "0x584a31",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITCBidAuctionDlg::OnButtonClicked @0x584a31. ITC_OPERATION 0xF1/241 mode 0x13 (nId==1 confirm branch). Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -5708,6 +5728,7 @@
     "CITCWnd_Tab::OnButtonClicked": {
       "address": "0x578c91",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CITCWnd_Tab::OnButtonClicked @0x578c91. ITC_OPERATION 0xF1/241 mode 6 (char-name search, btn 1004). Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": [
         {
@@ -10061,6 +10082,7 @@
     "CTradingRoomDlg::OnTrade#TradeConfirm": {
       "address": "0x6fddec",
       "direction": "clientbound",
+      "note": "Clientbound receive arm of CTradingRoomDlg::OnTrade. Same function as the serverbound TRANSACTION sender (interaction/serverbound/InteractionOperationTransaction), which is keyed on the un-suffixed CTradingRoomDlg::OnTrade; the #TradeConfirm suffix separates the two wire shapes (this arm is bodyless; the send carries count + {itemId, crc} pairs).",
       "calls": [
         {
           "op": "Decode1",
@@ -16600,6 +16622,7 @@
     "CWvsContext::OnSkillLearnItemResult": {
       "address": "0x9175e6",
       "direction": "clientbound",
+      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v72 IDA-verified, session 90e36cb0, GMS_v72.1_U_DEVM.exe.i64. Hex-Rays displays sub_9175E6 in the pseudocode, but xrefs_to the CWvsContext::OnPacket case 48 (0x30, @0x902791) dispatch call resolves this address to the mangled symbol CWvsContext::OnSkillLearnItemResult -- already named in the IDB (the prior registry note claiming it was unnamed was stale, corrected in docs/packets/registry/gms_v72.yaml, same class as the v61 correction). v72 body (no leading byte -- MajorVersion()<84): Decode4 characterId (CUserPool::GetUser lookup), then under an if(user-found) guard (v28): Decode1 isMasteryBook, Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse, Decode1 success.",
       "calls": [
         {
           "op": "Decode4",
@@ -16834,6 +16857,7 @@
     "CWvsContext::SendBridleItemUseRequest": {
       "address": "0x90457d",
       "direction": "serverbound",
+      "note": "USE_CATCH_ITEM (task-212). CWvsContext::SendBridleItemUseRequest: update_time(Encode4), nPOS(Encode2), nItemID(Encode4), then the FindHitMobInRect-derived hit-mob object id (Encode4). Address per design.md/plan.md task-212 citation; confirmed via live decompile (idb_open/decompile) showing the item-class-227 gate and the GetBridleItem-equivalent lookup feeding COutPacket at the registry's USE_CATCH_ITEM opcode for this version.",
       "calls": [
         {
           "op": "Decode4",
@@ -17066,6 +17090,7 @@
     "CWvsContext::SendMigrateToITCRequest": {
       "address": "0x90c9bd",
       "direction": "serverbound",
+      "region": "GMS",
       "notes": "gms_v72 (GMS_v72.1_U_DEVM.exe, IDA port 13339). CWvsContext::SendMigrateToITCRequest @0x90c9bd. opcode 154/0x9A; send @0x90cad6; bodiless. Wire shape byte-identical to gms_v83; each v72 send-site was decompiled and its mode byte + body re-verified (task-113 v72 MTS port).",
       "calls": []
     },
@@ -17185,6 +17210,7 @@
     "CWvsContext::SendSkillLearnItemUseRequest": {
       "address": "0x904b55",
       "direction": "serverbound",
+      "note": "USE_SKILL_BOOK (task-125). v72 IDA-verified, session 90e36cb0, GMS_v72.1_U_DEVM.exe.i64 -- was unnamed (sub_904B55) in this IDB, renamed live this pass; cross-checked against caller CDraggableItem::OnDoubleClicked @0x4db880, a skill-book item double-click handler. Op was entirely ABSENT from the v72 registry prior to this pass (matrix showed v72 n-a) despite v48/v61/v83 all carrying it -- a stale n-a, corrected in docs/packets/registry/gms_v72.yaml. item-class gate a3/10000 in {228,229} (skill-book prefix); guard sub_4DBE16(200,0) (CanSendExclRequest twin); COutPacket::COutPacket(&pkt, 81).",
       "calls": [
         {
           "op": "Encode4",

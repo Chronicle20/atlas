@@ -51,8 +51,24 @@ wedged this way.
 **Fix:** read the tenant from `d.Context()`, the convention used by 13 other
 handlers (`grep -rn "tenant.MustFromContext(d.Context())" services/`).
 
-**Same bug, second site:** `services/atlas-renders/atlas.com/renders/mapr/handler.go:52`
-is the only other `r.Context()` caller and panics identically. Fix both.
+**Correction (2026-08-21, after implementation):** an earlier version of this
+doc claimed `services/atlas-renders/atlas.com/renders/mapr/handler.go:52` was
+the same bug because it is the only other `r.Context()` caller. That was wrong,
+and it was wrong because it generalised from a grep without checking which
+middleware each service uses. atlas-renders does not use atlas-rest's
+`ParseTenant` at all — it has its own `tenantMiddleware`
+(`services/atlas-renders/atlas.com/renders/main.go:78-93`) which ends in
+
+```go
+next.ServeHTTP(w, r.WithContext(ctx))
+```
+
+i.e. it *does* reassign the request context, so `r.Context()` there is correct.
+The only bypass is `/healthz` and `/readyz`, which do not route to `mapr`, and
+malformed headers return 400 before the handler runs. Verified empirically by
+driving the real router+middleware with tenant headers: no panic, 302 as
+expected. **No change to that file.** The `r.Context()` vs `d.Context()` split
+is a per-service middleware question, not a repo-wide rule.
 
 Add a regression test that exercises the handler through `ParseTenant` rather
 than injecting a pre-populated context — the existing

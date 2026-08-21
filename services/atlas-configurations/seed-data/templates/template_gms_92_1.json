@@ -2364,6 +2364,10 @@
         ]
       },
       {
+        "opCode": "0x56",
+        "writer": "ImitatedNPCData"
+      },
+      {
         "opCode": "0x73",
         "writer": "AvatarMegaphoneResult",
         "fname": "CWvsContext::OnAvatarMegaphoneRes",
@@ -2984,6 +2988,10 @@
         "services": [
           "channel"
         ]
+      },
+      {
+        "opCode": "0x130",
+        "writer": "RemoveNPC"
       },
       {
         "opCode": "0x131",

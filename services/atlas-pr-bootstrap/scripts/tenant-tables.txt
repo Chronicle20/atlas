@@ -80,6 +80,7 @@ atlas-party-quests definitions
 atlas-pets excludes
 atlas-pets pets
 atlas-portal-actions portal_scripts
+atlas-quest quest_medal_maps
 atlas-quest quest_progress
 atlas-quest quest_statuses
 atlas-rankings character_rankings

@@ -1,4 +1,8 @@
-package _map
+package map_
+
+import (
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+)
 
 // Rectangle is a bounding box, used for the map's mapArea (FR-4.2 grid
 // positioning bounds).
@@ -16,11 +20,11 @@ func (r Rectangle) Height() int16 { return r.height }
 
 // Model is the deploy-time map metadata read from atlas-data.
 type Model struct {
-	id      uint32
+	id      _map.Id
 	mapArea *Rectangle
 }
 
-func (m Model) Id() uint32          { return m.id }
+func (m Model) Id() _map.Id         { return m.id }
 func (m Model) MapArea() *Rectangle { return m.mapArea }
 
 // GroundPoint is a single query point in a ground-snap request (design

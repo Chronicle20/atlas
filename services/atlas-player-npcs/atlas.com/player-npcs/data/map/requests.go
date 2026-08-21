@@ -1,9 +1,10 @@
-package _map
+package map_
 
 import (
 	"context"
 	"fmt"
 
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
@@ -17,7 +18,7 @@ func getBaseRequest(ctx context.Context) (string, error) {
 	return requests.RootUrlFor(ctx, "DATA")
 }
 
-func requestById(ctx context.Context, id uint32) requests.Request[RestModel] {
+func requestById(ctx context.Context, id _map.Id) requests.Request[RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[RestModel](err)
@@ -25,7 +26,7 @@ func requestById(ctx context.Context, id uint32) requests.Request[RestModel] {
 	return requests.GetRequest[RestModel](fmt.Sprintf(root+ById, id))
 }
 
-func requestGround(ctx context.Context, mapId uint32, points []GroundPointRestModel) requests.Request[[]GroundResultRestModel] {
+func requestGround(ctx context.Context, mapId _map.Id, points []GroundPointRestModel) requests.Request[[]GroundResultRestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]GroundResultRestModel](err)

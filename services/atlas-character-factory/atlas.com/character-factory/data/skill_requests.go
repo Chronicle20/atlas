@@ -10,10 +10,22 @@ import (
 
 const skillsPath = "data/skills"
 
+// SkillEffectRestModel carries only the field Maple Life's HP/MP arithmetic
+// needs from atlas-data's per-level skill effect resource
+// (services/atlas-data/atlas.com/data/skill/effect/rest.go): the level-up
+// HP/MP gain bonus atlas-character's own resolveHPMPGainParams reads as
+// se.X() (services/atlas-character/atlas.com/character/character/processor.go:1810,1817).
+type SkillEffectRestModel struct {
+	X int16 `json:"x"`
+}
+
 type SkillRestModel struct {
 	Id       uint32 `json:"-"`
 	Name     string `json:"name"`
 	MaxLevel uint8  `json:"maxLevel"`
+	// Effects is one entry per skill level, index 0 == level 1 (matching
+	// atlas-data's own GetEffect(level) convention: Effects()[level-1]).
+	Effects []SkillEffectRestModel `json:"effects"`
 }
 
 func (s SkillRestModel) GetName() string { return "skills" }

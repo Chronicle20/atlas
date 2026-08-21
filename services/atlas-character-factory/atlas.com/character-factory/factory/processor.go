@@ -45,6 +45,7 @@ func (e *NameInvalidError) Error() string { return "invalid name: " + e.Reason }
 type Processor interface {
 	Create(ctx context.Context, input RestModel) (string, error)
 	CreateFromPreset(ctx context.Context, in PresetCreateRestModel) (string, error)
+	CreateMapleLife(ctx context.Context, in MapleLifeCreateRestModel) (string, error)
 }
 
 // ProcessorImpl implements the Processor interface
@@ -392,6 +393,8 @@ func buildPresetCharacterCreationSaga(
 		MapId:        _map.Id(a.MapId),
 		Gm:           a.Gm,
 		Meso:         a.Meso,
+		AP:           a.AP,
+		SP:           a.SP,
 	})
 
 	// Step 2: Await inventory-compartment creation. See buildCharacterCreationSaga

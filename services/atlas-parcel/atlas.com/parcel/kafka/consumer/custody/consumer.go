@@ -4,7 +4,9 @@ import (
 	"atlas-parcel/kafka/consumer"
 	buffer "atlas-parcel/kafka/message"
 	"atlas-parcel/kafka/message/custody"
+	parcelmsg "atlas-parcel/kafka/message/parcel"
 	custodyproducer "atlas-parcel/kafka/producer/custody"
+	parcelproducer "atlas-parcel/kafka/producer/parcel"
 	"atlas-parcel/parcel"
 	"context"
 	"errors"
@@ -127,7 +129,19 @@ func handleAcceptToParcel(pf providerFn) func(db *gorm.DB) message.Handler[custo
 				if aerr != nil {
 					return aerr
 				}
-				return mb.Put(custody.EnvStatusTopic, custodyproducer.AcceptedStatusEventProvider(c.TransactionId, m.Id()))
+				if perr := mb.Put(custody.EnvStatusTopic, custodyproducer.AcceptedStatusEventProvider(c.TransactionId, m.Id())); perr != nil {
+					return perr
+				}
+				// accept_to_parcel is the LAST step of parcel_send, so this
+				// ack is also the sender's "it went out" signal: tell the
+				// sender's channel so it can announce
+				// PARCEL[SUCCESSFULLY_SENT] and the client re-enables its
+				// send tab. b.CharacterId is the sender (the saga's
+				// AcceptToParcelPayload.CharacterId comes from the sending
+				// session), not the recipient. A replayed delivery re-emits
+				// the notice — harmless, and cheaper than tracking notice
+				// state on a row whose create is already idempotent.
+				return mb.Put(parcelmsg.EnvStatusEventTopic, parcelproducer.ParcelSentStatusEventProvider(b.CharacterId))
 			})
 			if err != nil {
 				l.WithError(err).Errorf("Failed to accept parcel [%s] for transaction [%s].", b.ParcelId.String(), c.TransactionId.String())

@@ -38,9 +38,15 @@ type ShowParcelCommand struct {
 // exactly since these are separate Go modules.
 const EnvStatusEventTopic = "EVENT_TOPIC_PARCEL_STATUS"
 
-// StatusEventParcelArrived is the only status event this topic carries
-// today (design §7.1 — no notification tier ladder, one arrival event).
+// StatusEventParcelArrived notifies a parcel's RECIPIENT that a parcel has
+// become receivable (design §7.1 — no notification tier ladder, one arrival
+// event).
 const StatusEventParcelArrived = "PARCEL_ARRIVED"
+
+// StatusEventParcelSent notifies a parcel's SENDER that their parcel_send
+// saga completed — atlas-parcel emits it from handleAcceptToParcel, the
+// saga's last step. The channel answers with PARCEL[SUCCESSFULLY_SENT].
+const StatusEventParcelSent = "PARCEL_SENT"
 
 // StatusEvent is the generic parcel status event envelope, addressed to the
 // parcel's recipient by CharacterId — mirrors atlas-parcel's producer-side
@@ -62,3 +68,9 @@ type StatusEventParcelArrivedBody struct {
 	SenderName string `json:"senderName"`
 	HasItem    bool   `json:"hasItem"`
 }
+
+// StatusEventParcelSentBody carries nothing — PARCEL[SUCCESSFULLY_SENT] is a
+// bare mode byte (design §5.2, 0x12) and the addressee is the envelope's
+// CharacterId. Mirrors atlas-parcel's producer-side body; field-for-field
+// identity matters because these are separate Go modules.
+type StatusEventParcelSentBody struct{}

@@ -53,6 +53,12 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleParcelSentEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+
 				return handles, nil
 			}
 		}
@@ -190,6 +196,35 @@ func handleParcelArrivedEvent(sc server.Model, wp writer.Producer) message.Handl
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(parcelcb.ParcelWriter)(parcelcb.ParcelAlarmNamedBody(e.Body.SenderName, e.Body.HasItem)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce parcel arrival to character [%d].", e.CharacterId)
+		}
+	}
+}
+
+// handleParcelSentEvent announces PARCEL[SUCCESSFULLY_SENT] (0x12) to a
+// parcel's SENDER when atlas-parcel publishes PARCEL_SENT — the last step of
+// the parcel_send saga having landed. Without it the client never learns the
+// send finished: 0x12 is the arm that raises SP_3901 and, through
+// CParcelDlg::OnPacket's default arm, calls SetCtrlEnabled(1) plus
+// ResetSendInfo/CloseParcelDlg (v83 @0x6f579d), so the send tab stays
+// greyed out until the dialog is reopened.
+//
+// Same guards and posture as handleParcelArrivedEvent: event type, tenant,
+// then IfPresentByCharacterId — a sender who left the channel is a silent
+// no-op.
+func handleParcelSentEvent(sc server.Model, wp writer.Producer) message.Handler[parcelmsg.StatusEvent[parcelmsg.StatusEventParcelSentBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e parcelmsg.StatusEvent[parcelmsg.StatusEventParcelSentBody]) {
+		if e.Type != parcelmsg.StatusEventParcelSent {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(parcelcb.ParcelWriter)(parcelcb.ParcelSuccessfullySentBody()))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce parcel send completion to character [%d].", e.CharacterId)
 		}
 	}
 }

@@ -2,6 +2,7 @@ package custody
 
 import (
 	"atlas-parcel/kafka/message/custody"
+	parcelmsg "atlas-parcel/kafka/message/parcel"
 	"atlas-parcel/parcel"
 	"context"
 	"encoding/json"
@@ -22,9 +23,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-// recordedEvent is a decoded custody status ack captured by the test producer.
+// recordedEvent is a decoded event captured by the test producer. It spans
+// both envelopes this handler emits: the custody status ack (transactionId +
+// type) and the player-facing parcel status event (characterId + type).
 type recordedEvent struct {
 	transactionId uuid.UUID
+	characterId   uint32
 	eventType     string
 }
 
@@ -48,11 +52,15 @@ func (r *recordingProducer) provider() func(ctx context.Context) kprod.Provider 
 				r.mu.Lock()
 				defer r.mu.Unlock()
 				for _, m := range ms {
-					var ev custody.StatusEvent[json.RawMessage]
+					var ev struct {
+						TransactionId uuid.UUID `json:"transactionId"`
+						CharacterId   uint32    `json:"characterId"`
+						Type          string    `json:"type"`
+					}
 					if err := json.Unmarshal(m.Value, &ev); err != nil {
 						return err
 					}
-					r.events = append(r.events, recordedEvent{transactionId: ev.TransactionId, eventType: ev.Type})
+					r.events = append(r.events, recordedEvent{transactionId: ev.TransactionId, characterId: ev.CharacterId, eventType: ev.Type})
 				}
 				return nil
 			}
@@ -147,6 +155,15 @@ func TestCustodyCommands(t *testing.T) {
 			accepted := eventsOfType(rp.events, custody.StatusEventAccepted)
 			require.Len(t, accepted, 1)
 			assert.Equal(t, transactionId, accepted[0].transactionId)
+
+			// accept_to_parcel is parcel_send's last step, so the same
+			// delivery must tell the SENDER's channel the send completed —
+			// that event is what makes the client's send tab usable again
+			// (PARCEL[SUCCESSFULLY_SENT]). Addressed to CharacterId (200,
+			// the sender), never to RecipientId (100).
+			sent := eventsOfType(rp.events, parcelmsg.StatusEventParcelSent)
+			require.Len(t, sent, 1)
+			assert.Equal(t, uint32(200), sent[0].characterId)
 		}},
 		{name: "accept meso only", run: func(t *testing.T) {
 			db, tid := newTestDB(t)

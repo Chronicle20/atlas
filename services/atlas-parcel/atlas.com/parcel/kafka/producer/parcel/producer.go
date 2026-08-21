@@ -27,3 +27,17 @@ func ParcelArrivedStatusEventProvider(characterId uint32, senderName string, has
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// ParcelSentStatusEventProvider builds a PARCEL_SENT status event addressed
+// to characterId — the parcel's SENDER — so the channel can announce
+// PARCEL[SUCCESSFULLY_SENT] and the client re-enables its send tab. Keyed by
+// characterId for the same per-character ordering as the arrival event.
+func ParcelSentStatusEventProvider(characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &parcelmsg.StatusEvent[parcelmsg.StatusEventParcelSentBody]{
+		CharacterId: characterId,
+		Type:        parcelmsg.StatusEventParcelSent,
+		Body:        parcelmsg.StatusEventParcelSentBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

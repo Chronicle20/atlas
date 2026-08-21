@@ -43,7 +43,7 @@ Module root: `services/atlas-monsters/atlas.com/monsters`.
 
 Patterns to copy: `services/atlas-monsters/atlas.com/monsters/monster/registry.go:436-495` (`ApplyDamage`'s aggregation loop — match its semantics exactly). Test setup: `services/atlas-monsters/atlas.com/monsters/monster/builder_test.go:7-9` (`emptyBuilder()` helper already exists in the file).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `builder_test.go`. `emptyBuilder()` and `testField()` already exist in the package — do not redefine them.
 
@@ -62,7 +62,7 @@ Assert `len`, then each element's `CharacterId`, `Damage`, and `LastHitMs` field
 
 `TestDamageLeader_OverBuilderAggregatedEntries` (PRD acceptance) — on `emptyBuilder()`, call `AddDamageEntry(1, 100)` three times and `AddDamageEntry(2, 250)` once, `Build()`, then assert `len(m.DamageSummary()) == 2` and `m.DamageLeader() == 1` (300 > 250 — a per-hit append would give 250 > 100 and return 2).
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run from `services/atlas-monsters/atlas.com/monsters`:
 
@@ -72,7 +72,7 @@ go test ./monster/ -run 'TestAddDamageEntry|TestDamageLeader_OverBuilder' -v
 
 Expected: FAIL — `TestAddDamageEntry_AggregatesByCharacter/same character sums` reports 3 entries, and `TestDamageLeader_OverBuilderAggregatedEntries` reports leader 2.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 Replace `AddDamageEntry` in `builder.go`:
 
@@ -98,7 +98,7 @@ func (b *ModelBuilder) AddDamageEntry(characterId uint32, damage uint32) *ModelB
 }
 ```
 
-- [ ] **Step 4: Run the full module test suite**
+- [x] **Step 4: Run the full module test suite**
 
 ```
 go build ./... && go test ./...
@@ -106,7 +106,7 @@ go build ./... && go test ./...
 
 Expected: PASS. `clear_aggro_test.go:51` (3 distinct characters → 3 entries), `aggro_task_test.go:168` (1 character → 1 entry), and `model_test.go:23-51` (entries constructed directly) are all unaffected — confirm they stay green rather than editing them.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/builder.go services/atlas-monsters/atlas.com/monsters/monster/builder_test.go
@@ -136,7 +136,7 @@ Module root: `services/atlas-monster-death/atlas.com/monster`.
 
 Patterns to copy: `services/atlas-channel/atlas.com/channel/party/rest.go` (port verbatim — `GetReferencedIDs`, `GetReferencedStructs`, `SetToManyReferenceIDs`, `SetReferencedStructs`, `MemberRestModel`, `Extract`, `ExtractMember`) and `services/atlas-channel/atlas.com/channel/party/model.go:13-80` (the `Model`/`MemberModel` shape). One deliberate divergence from the channel copy: its `SetToManyReferenceIDs` seed literal omits `Instance`; include `Instance: uuid.Nil` in ours so every field of the seeded struct is written explicitly.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 New file `party/rest_test.go`, package `party`. Setup is plain struct literals plus `jsonapi` — no builder needed for the REST assertions themselves.
 
@@ -157,7 +157,7 @@ Call `Extract(rm)` and assert: `m.Id() == 7`, `m.LeaderId() == 11`, `len(m.Membe
 
 `TestBuilders_ProduceReadableModel` — `NewBuilder(7).SetLeaderId(11).AddMember(NewMemberBuilder(11).SetLevel(120).SetName("Leader").SetOnline(true).Build()).Build()`, assert `Id()`, `LeaderId()`, `len(Members()) == 1`, `Members()[0].Level() == 120`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```
 go test ./party/ -v
@@ -165,7 +165,7 @@ go test ./party/ -v
 
 Expected: FAIL to compile — `RestModel` has no `LeaderId`/`Members` field, `Model` has no `Members`, `NewBuilder` undefined.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `party/model.go`:
 
@@ -208,7 +208,7 @@ func (m MemberModel) Online() bool        { return m.online }
 
 `party/builder.go` (new): `Builder{id, leaderId uint32; members []MemberModel}` with `NewBuilder(id uint32) *Builder`, `SetLeaderId(uint32) *Builder`, `AddMember(MemberModel) *Builder`, `Build() Model`; and `MemberBuilder{...}` with `NewMemberBuilder(id uint32) *MemberBuilder`, `SetName(string)`, `SetLevel(byte)`, `SetJobId(job.Id)`, `SetField(field.Model)`, `SetOnline(bool)`, `Build() MemberModel`. Builders return `Model`/`MemberModel` directly (no error) — this package has no validation to perform.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```
 go build ./... && go test ./party/... -v
@@ -216,7 +216,7 @@ go build ./... && go test ./party/... -v
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/party/
@@ -248,7 +248,7 @@ Module root: `services/atlas-monster-death/atlas.com/monster`.
 
 Patterns to copy: `services/atlas-monster-death/atlas.com/monster/party/processor.go` (Processor/ProcessorImpl/NewProcessor + `var _ Processor = (*ProcessorImpl)(nil)`) and `services/atlas-monster-death/atlas.com/monster/party/mock/processor.go` (nil-func fallthrough to a zero value).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 New file `monster/information/rest_test.go`, package `information`.
 
@@ -256,7 +256,7 @@ New file `monster/information/rest_test.go`, package `information`.
 
 `TestBuilder_SetsLevelAndName` — `NewBuilder().SetHp(1000).SetExperience(500).SetLevel(125).SetName("Zakum").Build()`, assert all four accessors.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```
 go test ./monster/information/ -v
@@ -264,7 +264,7 @@ go test ./monster/information/ -v
 
 Expected: FAIL to compile — `Model` has no `Level`/`Name`, `Builder` has no `SetLevel`/`SetName`.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `model.go` gains `level uint32` and `name string` with `Level() uint32` and `Name() string` value-receiver accessors. `builder.go` gains matching fields (zero defaults — do not invent a non-zero level or name) and `SetLevel(level uint32) *Builder` / `SetName(name string) *Builder`, both wired into `Build()`. `rest.go`'s `Extract` gains `level: rm.Level, name: rm.Name`.
 
@@ -301,7 +301,7 @@ func (p *ProcessorImpl) GetById(monsterId uint32) (Model, error) {
 
 `monster/information/mock/processor.go` (new): package `mock`, `ProcessorMock{GetByIdFunc func(monsterId uint32) (information.Model, error)}`, `var _ information.Processor = (*ProcessorMock)(nil)`, nil-func fallthrough returning `information.Model{}, nil`.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```
 go build ./... && go test ./monster/information/... -v
@@ -309,7 +309,7 @@ go build ./... && go test ./monster/information/... -v
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/monster/information/
@@ -341,7 +341,7 @@ Module root: `services/atlas-monster-death/atlas.com/monster`. The `map` package
 
 Patterns to copy: `services/atlas-monster-death/atlas.com/monster/party/processor.go` and `.../party/mock/processor.go`. Builder pattern: `services/atlas-monster-death/atlas.com/monster/monster/information/builder.go`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 New file `rates/builder_test.go`, package `rates`.
 
@@ -349,7 +349,7 @@ New file `rates/builder_test.go`, package `rates`.
 
 `TestBuilder_SetsEachRate` — `NewBuilder().SetExpRate(2.5).SetMesoRate(3.0).SetItemDropRate(4.0).SetQuestExpRate(5.0).Build()`, assert `ExpRate() == 2.5`, `MesoRate() == 3.0`, `ItemDropRate() == 4.0`, `QuestExpRate() == 5.0`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```
 go test ./rates/ -v
@@ -357,7 +357,7 @@ go test ./rates/ -v
 
 Expected: FAIL to compile — `NewBuilder` undefined.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `rates/builder.go` (new): `Builder` with the four `float64` fields, `NewBuilder()` seeding all four to `1.0`, the four `Set*` methods, and `Build() Model` (no error — nothing to validate).
 
@@ -406,7 +406,7 @@ func (p *ProcessorImpl) CharacterIdsInField(f field.Model) ([]uint32, error) {
 
 `map/mock/processor.go` (new): `ProcessorMock{CharacterIdsInFieldFunc func(f field.Model) ([]uint32, error)}`, nil-func fallthrough returning `[]uint32{}, nil`.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```
 go build ./... && go test ./rates/... ./map/... -v
@@ -414,7 +414,7 @@ go build ./... && go test ./rates/... ./map/... -v
 
 Expected: PASS. `map/provider_drain_test.go` must stay green untouched.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/rates/ services/atlas-monster-death/atlas.com/monster/map/
@@ -447,7 +447,7 @@ Module root: `services/atlas-monster-death/atlas.com/monster`.
 
 Patterns to copy: `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/system_message/producer.go:94-110` (`ShowHintCommandProvider` — the exact wire shape) and `.../system_message/processor.go:1-60` (Processor/NewProcessor). Struct definitions: `services/atlas-channel/atlas.com/channel/kafka/message/system_message/kafka.go:11-33` and `:62-67`. Only the `SHOW_HINT` command is needed — do **not** port the other ten command types.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 New file `system_message/producer_test.go`, package `system_message`.
 
@@ -475,7 +475,7 @@ Assert `err == nil`, `len(msgs) == 1`, `bytes.Equal(msgs[0].Key, producer.Create
 
 Also assert the raw JSON key names by unmarshalling into `map[string]any` and checking the exact keys `transactionId`, `worldId`, `channelId`, `characterId`, `type`, `body`, and inside `body`: `hint`, `width`, `height`. This is the contract `atlas-channel` consumes; a renamed tag is a silent break.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```
 go test ./system_message/ -v
@@ -483,7 +483,7 @@ go test ./system_message/ -v
 
 Expected: FAIL to compile — package does not exist.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `system_message/kafka.go`:
 
@@ -536,7 +536,7 @@ func (p *ProcessorImpl) ShowHint(transactionId uuid.UUID, ch channel.Model, char
 
 `system_message/mock/processor.go`: `ProcessorMock{ShowHintFunc func(transactionId uuid.UUID, ch channel.Model, characterId uint32, hint string, width uint16, height uint16) error}`, `var _ system_message.Processor = (*ProcessorMock)(nil)`, nil-func fallthrough returning `nil`.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```
 go build ./... && go test ./system_message/... -v
@@ -544,7 +544,7 @@ go build ./... && go test ./system_message/... -v
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/system_message/
@@ -569,7 +569,7 @@ D10: an in-process, per-replica throttle keyed by `(tenantId, characterId)` with
 
 Module root: `services/atlas-monster-death/atlas.com/monster`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 New file `system_message/throttle_test.go`, package `system_message`. Every case drives a fake clock through a captured `time.Time` variable and `func() time.Time { return clock }` — no `time.Sleep`, no real clock.
 
@@ -588,7 +588,7 @@ New file `system_message/throttle_test.go`, package `system_message`. Every case
 
 `TestThrottle_ConcurrentAllowIsRaceFree` — 50 goroutines each calling `Allow(tA, uint32(i))` on a shared throttle with `time.Now`, joined by a `sync.WaitGroup`. Assert no panic; the value assertion is that exactly 50 distinct characters were admitted. This exists so `go test -race` covers the mutex.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```
 go test ./system_message/ -run TestThrottle -v
@@ -596,7 +596,7 @@ go test ./system_message/ -run TestThrottle -v
 
 Expected: FAIL to compile — `NewThrottle` undefined.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `system_message/throttle.go`:
 
@@ -644,7 +644,7 @@ func (t *Throttle) Allow(tenantId uuid.UUID, characterId uint32) bool
 
 `GetHintThrottle` uses a package-level `sync.Once` plus a package-level `*Throttle`, mirroring how `GetMonsterRegistry()` is done in `atlas-monsters` (`services/atlas-monsters/atlas.com/monsters/monster/registry.go`).
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```
 go build ./... && go test ./system_message/... -race -v
@@ -652,7 +652,7 @@ go build ./... && go test ./system_message/... -race -v
 
 Expected: PASS with no race reports.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/system_message/throttle.go services/atlas-monster-death/atlas.com/monster/system_message/throttle_test.go
@@ -678,7 +678,7 @@ Arithmetic is done in `int` with a `lo < 0 → 0` clamp, because mob level is `u
 
 Module root: `services/atlas-monster-death/atlas.com/monster`. Package `monster` (the same package as `processor.go`), so `calculateExperienceStandardDeviationThreshold` and `isWhiteExperienceGain` stay reachable without export churn.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 New file `monster/interval_test.go`, package `monster`.
 
@@ -701,7 +701,7 @@ The `PRD worked example` row is FR-6.2 verbatim (contributors at 30 and 120, mob
 
 `TestIntervalSet_BuildIsIdempotent` — `build()` on an already-built set returns an equal set (`reflect.DeepEqual`).
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```
 go test ./monster/ -run TestIntervalSet -v
@@ -709,7 +709,7 @@ go test ./monster/ -run TestIntervalSet -v
 
 Expected: FAIL to compile — `intervalSet` undefined.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `monster/interval.go`:
 
@@ -757,7 +757,7 @@ func (s intervalSet) contains(v int) bool { /* linear scan over s.ivs */ }
 
 Fill the two elided bodies. `build` must not mutate the receiver's backing array — copy `s.ivs` into a fresh slice before sorting, so `TestIntervalSet_BuildIsIdempotent` holds and a caller that keeps the unbuilt set is not surprised.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```
 go test ./monster/ -run TestIntervalSet -v && go build ./...
@@ -765,7 +765,7 @@ go test ./monster/ -run TestIntervalSet -v && go build ./...
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/monster/interval.go services/atlas-monster-death/atlas.com/monster/monster/interval_test.go
@@ -791,7 +791,7 @@ D9: a struct built from Go defaults, with the three gate settings overridable by
 
 Module root: `services/atlas-monster-death/atlas.com/monster`. Package `monster`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 New file `monster/config_test.go`, package `monster`. Each case sets env with `t.Setenv` (which restores automatically) and calls `LoadExperienceConfig()`.
 
@@ -810,7 +810,7 @@ New file `monster/config_test.go`, package `monster`. Each case sets env with `t
 | `zero interval is honoured` | `LEVEL_INTERVAL=0` | `LevelInterval == 0` (0 is a valid tightening, not a parse failure) |
 | `balance constants are never env-driven` | `SPLIT_COMMON_MOD=9`, `MVP_MOD=9`, `PARTY_BONUS_PER_MEMBER=9` | `SplitCommonMod == 0.8`, `MvpMod == 0.2`, `PartyBonusPerMember == 0.05` |
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```
 go test ./monster/ -run TestLoadExperienceConfig -v
@@ -818,7 +818,7 @@ go test ./monster/ -run TestLoadExperienceConfig -v
 
 Expected: FAIL to compile — `LoadExperienceConfig` undefined.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `monster/config.go`:
 
@@ -871,7 +871,7 @@ Fill `LoadExperienceConfig`.
 
 Then add to `deploy/k8s/base/env-configmap.yaml`, keeping the file's alphabetical grouping: `LEACH_INTERVAL: "5"` and `LEVEL_INTERVAL: "5"` immediately before `REDIS_URL` (currently line 193), and `USE_ENFORCE_MOB_LEVEL_RANGE: "true"` after `TRACE_SAMPLING_RATIO` (currently line 196).
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```
 go build ./... && go test ./monster/ -run 'TestDefaultExperienceConfig|TestLoadExperienceConfig' -v
@@ -879,7 +879,7 @@ go build ./... && go test ./monster/ -run 'TestDefaultExperienceConfig|TestLoadE
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/monster/config.go services/atlas-monster-death/atlas.com/monster/monster/config_test.go deploy/k8s/base/env-configmap.yaml
@@ -906,7 +906,7 @@ The pure award arithmetic and the value types the planner will produce. `planDis
 
 Module root: `services/atlas-monster-death/atlas.com/monster`. Package `monster`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 New file `monster/experience_test.go`, package `monster`. `cfg := DefaultExperienceConfig()` unless a row says otherwise. Compare floats-turned-uint32 exactly; compare no floats.
 
@@ -946,7 +946,7 @@ You have gained #rno experience#k from defeating #e#bBlue Snail#k#n (lv. #b2#k)!
 
 Assert with `!=` on the whole string, not `strings.Contains`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```
 go test ./monster/ -run 'TestComputeAward|TestLevelGateHintText' -v
@@ -954,7 +954,7 @@ go test ./monster/ -run 'TestComputeAward|TestLevelGateHintText' -v
 
 Expected: FAIL to compile — `Recipient` and `computeAward` undefined.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 `monster/experience.go`:
 
@@ -1081,7 +1081,7 @@ func levelGateHintText(name string, level uint32) string {
 }
 ```
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```
 go build ./... && go test ./monster/ -run 'TestComputeAward|TestLevelGateHintText' -v
@@ -1089,7 +1089,7 @@ go build ./... && go test ./monster/ -run 'TestComputeAward|TestLevelGateHintTex
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/monster/experience.go services/atlas-monster-death/atlas.com/monster/monster/experience_test.go
@@ -1117,7 +1117,7 @@ Gate ordering is fixed and matters: **the gate selects recipients only.** `party
 
 Module root: `services/atlas-monster-death/atlas.com/monster`. Package `monster`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `monster/experience_test.go`.
 
@@ -1150,7 +1150,7 @@ Append to `monster/experience_test.go`.
 
 `TestPlanDistribution_TotalEntriesComposition` (PRD white/yellow acceptance) — one input with 2 solo damagers, 2 participating parties, and 3 out-of-field damagers; assert `TotalEntries == 7` directly. `totalEntries` is otherwise observable only through the stddev threshold.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```
 go test ./monster/ -run TestPlanDistribution -v
@@ -1158,7 +1158,7 @@ go test ./monster/ -run TestPlanDistribution -v
 
 Expected: FAIL to compile — `planDistribution` undefined.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Append `planDistribution` to `monster/experience.go`. The algorithm, in order:
 
@@ -1183,7 +1183,7 @@ Append `planDistribution` to `monster/experience.go`. The algorithm, in order:
     - One `Recipient` per `expMember` with `PooledExp: participationExp`, `TotalPartyLevel: totalPartyLevel`, `PartyBonusMod: partyBonusMod`, `IsMvp: m.CharacterId == mvpId`, `PartyId: p.PartyId`, `White: isWhiteExperienceGain(m.CharacterId, personalRatio, stdr)`.
 11. Sort `Recipients` and `Exclusions` ascending `CharacterId` and return the plan with `TotalDamage`, `TotalEntries`, `ExperiencePerDamage: epd`, `StandardDeviationRatio: stdr`.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```
 go build ./... && go test ./monster/ -v
@@ -1191,7 +1191,7 @@ go build ./... && go test ./monster/ -v
 
 Expected: PASS, including the pre-existing `processor_test.go` and `characterization_test.go`, which must not need any edit.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/monster/experience.go services/atlas-monster-death/atlas.com/monster/monster/experience_test.go
@@ -1219,7 +1219,7 @@ The `atlas-pets` comment at `processor.go:106-114` documents the one hazard — 
 
 Module root: `services/atlas-monster-death/atlas.com/monster`. Package `monster`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 New file `monster/processor_di_test.go`, package `monster`. Imports the mocks: `charactermock "atlas-monster-death/character/mock"`, `partymock "atlas-monster-death/party/mock"`, `ratesmock "atlas-monster-death/rates/mock"`, `informationmock "atlas-monster-death/monster/information/mock"`, `mapmock "atlas-monster-death/map/mock"`, `systemmessagemock "atlas-monster-death/system_message/mock"`. Build the logger with `logrus.New()` and the context with `tenant.WithContext(context.Background(), ten)` where `ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)` — the same setup `atlas-monsters`' `processor_test.go:1904-1905` uses.
 
@@ -1229,7 +1229,7 @@ New file `monster/processor_di_test.go`, package `monster`. Imports the mocks: `
 
 `TestNewProcessor_BindsProductionDefaults` — assert every collaborator field on a bare `NewProcessor(l, ctx).(*ProcessorImpl)` is non-nil, and that `cfg` equals `LoadExperienceConfig()`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```
 go test ./monster/ -run 'TestWith_|TestNewProcessor_' -v
@@ -1237,7 +1237,7 @@ go test ./monster/ -run 'TestWith_|TestNewProcessor_' -v
 
 Expected: FAIL to compile — `ProcessorOption` and the `With*` functions are undefined.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 In `processor.go`, extend the struct and constructor:
 
@@ -1288,7 +1288,7 @@ Finally, replace the inline constructions in the existing bodies with the fields
 
 **Behaviour must be identical after this task.** The `DistributeExperience` rewrite is Task 12.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```
 go build ./... && go test ./monster/... -v
@@ -1296,7 +1296,7 @@ go build ./... && go test ./monster/... -v
 
 Expected: PASS, including every pre-existing test in the package.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/monster/processor.go services/atlas-monster-death/atlas.com/monster/monster/processor_di_test.go
@@ -1329,7 +1329,7 @@ Module root: `services/atlas-monster-death/atlas.com/monster`.
 
 The mock-driven tests for this behaviour are Task 13. This task's own gate is that the package still builds and every pre-existing test stays green.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `monster/experience_test.go` the one piece of this task that is pure and therefore testable without mocks:
 
@@ -1346,7 +1346,7 @@ Append to `monster/experience_test.go` the one piece of this task that is pure a
 
 The `accumulates, does not assign` row is the PRD acceptance bullet: today's `soloDistribution[de.characterId] = de.damage` (`processor.go:167`) assigns, so an un-aggregated entry list silently drops all but the last hit.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```
 go test ./monster/ -run TestAggregateDamageEntries -v
@@ -1354,7 +1354,7 @@ go test ./monster/ -run TestAggregateDamageEntries -v
 
 Expected: FAIL to compile — `aggregateDamageEntries` undefined.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 Add to `experience.go`:
 
@@ -1415,7 +1415,7 @@ Build `[]PartyInput` from `parties`: for each, `Members` = `pt.Members()` filter
 
 Delete `produceDistribution` and `distributeCharacterExperience` entirely. In `model.go`, delete `DamageDistributionModel` and its `Solo`, `ExperiencePerDamage`, `PersonalRatio`, and `StandardDeviationRatio` accessors — `ExperiencePlan` carries all of it now, including the `TotalDamage` the PRD asked for. Keep `DamageEntryModel`, `NewDamageEntryModel`, and its two accessors.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 ```
 go build ./... && go test ./... -v
@@ -1423,7 +1423,7 @@ go build ./... && go test ./... -v
 
 Expected: PASS. Confirm with `grep -rn 'TODO parties\|TODO account for healing' services/atlas-monster-death/` that neither comment survives, and with `grep -n 'totalPartyLevel byte' services/atlas-monster-death/atlas.com/monster/monster/processor.go` that the `byte` signature is gone (both greps must print nothing).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/monster/processor.go services/atlas-monster-death/atlas.com/monster/monster/model.go services/atlas-monster-death/atlas.com/monster/monster/experience.go services/atlas-monster-death/atlas.com/monster/monster/experience_test.go
@@ -1447,7 +1447,7 @@ The I/O-shaped acceptance criteria: lookup counts, tenant propagation, failure i
 
 Module root: `services/atlas-monster-death/atlas.com/monster`. Package `monster`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 New file `monster/processor_experience_test.go`, package `monster`. Shared setup per test: `l := logrus.New()` with `l.SetOutput(io.Discard)`; `ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)`; `ctx := tenant.WithContext(context.Background(), ten)`; `f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).SetInstance(uuid.Nil).Build()`. Mocks are wired through `NewProcessor(l, ctx).(*ProcessorImpl).With(...)`. Counters are plain `int` variables closed over by the mock funcs — no mocking library.
 
@@ -1473,7 +1473,7 @@ Each test injects `WithHintThrottle(system_message.NewThrottle(time.Minute, 4096
 
 Tenant/span header propagation (the remaining cross-cutting acceptance bullet) is covered structurally: `system_message.ProcessorImpl.ShowHint` uses the same `producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopic)(...)` call as `character.ProcessorImpl.AwardExperience`, and the headers are attached by `libs/atlas-kafka`, not by this code. Assert that equivalence by reading both bodies rather than by writing a broker-dependent test.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 ```
 go test ./monster/ -run TestDistributeExperience -v
@@ -1481,11 +1481,11 @@ go test ./monster/ -run TestDistributeExperience -v
 
 Expected: FAIL — the mocks compile but assertions fail until Task 12's rewrite is in place. If Task 12 already landed, these should be written and then confirmed one at a time.
 
-- [ ] **Step 3: Fix whatever the tests catch**
+- [x] **Step 3: Fix whatever the tests catch**
 
 These tests are written against the Task 12 implementation. If any fails, fix `processor.go` — not the test — unless the test's own expectation contradicts a requirement quoted in this plan.
 
-- [ ] **Step 4: Run the full suite with the race detector**
+- [x] **Step 4: Run the full suite with the race detector**
 
 ```
 go build ./... && go test ./... -race
@@ -1493,7 +1493,7 @@ go build ./... && go test ./... -race
 
 Expected: PASS with no race reports (the resolve phase's concurrent monster/field fetch and the hint throttle's mutex are both exercised).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/monster/processor_experience_test.go
@@ -1504,7 +1504,7 @@ git commit -m "test(atlas-monster-death): cover party EXP distribution I/O behav
 
 ## Final gate (controller, not an implementer task)
 
-- [ ] Flagless `tools/verify.sh` exits 0. Only the flagless invocation counts — `--quick`/`--no-docker` skip the bake and `-race`.
-- [ ] `backend-guidelines-reviewer` passes on both `services/atlas-monster-death` and `services/atlas-monsters`.
-- [ ] `grep -rn 'TODO parties\|TODO account for healing' services/atlas-monster-death/` prints nothing.
-- [ ] No `*_testhelpers.go` file was introduced anywhere in the branch.
+- [x] Flagless `tools/verify.sh` exits 0. Only the flagless invocation counts — `--quick`/`--no-docker` skip the bake and `-race`.
+- [x] `backend-guidelines-reviewer` passes on both `services/atlas-monster-death` and `services/atlas-monsters`.
+- [x] `grep -rn 'TODO parties\|TODO account for healing' services/atlas-monster-death/` prints nothing.
+- [x] No `*_testhelpers.go` file was introduced anywhere in the branch.

@@ -1,0 +1,43 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-21T12:27:27Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	f4c17c98e	-	-	-	-
+2026-08-21T12:31:01Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	f4c17c98e	APPROVED	no	-	-
+2026-08-21T12:31:01Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	b2e9d21ee	-	-	-	-
+2026-08-21T12:33:45Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	8f24b5d	-	-	-	-
+2026-08-21T12:34:02Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	b2e9d21ee	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T12:35:37Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	8f24b5dc4	APPROVED	no	-	-
+2026-08-21T12:36:27Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	2f91e3c	-	-	-	-
+2026-08-21T12:37:59Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	2f91e3cc0	APPROVED	no	-	-
+2026-08-21T12:38:24Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	DONE	7e2278f81	-	-	-	-
+2026-08-21T12:38:25Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	-
+2026-08-21T12:41:04Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DONE	7e2278f81	APPROVED	no	docs/tasks/task-254-party-experience-sharing/review-task-5.md	-
+2026-08-21T12:41:48Z	agent	Task 6	atlas-implementer	sonnet	-	-	-	-	DONE	72b4f73	-	-	-	-
+2026-08-21T12:43:19Z	agent	Task 6	atlas-reviewer	sonnet	-	-	-	-	DONE	72b4f7332	APPROVED	no	docs/tasks/task-254-party-experience-sharing/review-task-6.md	-
+2026-08-21T12:43:39Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	DONE	e22deb1cb	-	-	-	-
+2026-08-21T12:45:21Z	agent	Task 7	atlas-reviewer	sonnet	-	-	-	-	DONE	e22deb1cb	APPROVED	no	docs/tasks/task-254-party-experience-sharing/review-task-7.md	-
+2026-08-21T12:45:52Z	agent	Task 8	atlas-implementer	sonnet	-	-	-	-	DONE	b1a00f6	-	-	-	-
+2026-08-21T12:47:26Z	agent	Task 8	atlas-reviewer	sonnet	-	-	-	-	DONE	b1a00f68f	APPROVED	no	docs/tasks/task-254-party-experience-sharing/review-task-8.md	-
+2026-08-21T12:55:22Z	agent	Task 8 fix 1	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	e774a09bb	-	-	-	-
+2026-08-21T12:57:52Z	agent	Task 9	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T12:59:49Z	agent	Task 9	atlas-implementer	sonnet	-	-	-	-	DONE	ccf674ea1	-	-	-	-
+2026-08-21T12:59:53Z	agent	Task 10	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:01:36Z	agent	Task 9	atlas-reviewer	sonnet	-	-	-	-	DONE	ccf674ea1	APPROVED	no	-	-
+2026-08-21T13:06:21Z	agent	Task 10	atlas-implementer	sonnet	-	-	-	-	DONE	c386b7a06	-	-	-	-
+2026-08-21T13:06:23Z	agent	Task 11	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:08:50Z	agent	Task 10	atlas-reviewer	sonnet	-	-	-	-	DONE	c386b7a06	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T13:10:05Z	agent	Task 11	atlas-implementer	sonnet	-	-	-	-	DONE	b99352738	-	-	-	-
+2026-08-21T13:10:14Z	agent	Task 12	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:11:41Z	agent	Task 11	atlas-reviewer	sonnet	-	-	-	-	DONE	b99352738	APPROVED	no	-	-
+2026-08-21T13:16:07Z	agent	Task 12	atlas-implementer	sonnet	-	-	-	-	DONE	5218f8aba	-	-	-	-
+2026-08-21T13:23:25Z	agent	Task 12	atlas-reviewer	sonnet	-	-	-	-	DONE	5218f8aba	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T13:23:28Z	agent	Task 12 fix 1	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:26:47Z	agent	Task 12 fix 1	atlas-implementer	sonnet	-	-	-	-	DONE	21df4197c	-	-	-	-
+2026-08-21T13:26:50Z	handoff	after Task 12	-	opus	-	-	-	-	DONE	-	-	-	-	-
+2026-08-21T13:32:31Z	agent	Task 13	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:43:13Z	agent	Task 13	atlas-implementer	sonnet	-	-	-	-	DONE	22b8b603c	-	-	-	-
+2026-08-21T13:43:21Z	agent	Task 13	atlas-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:45:33Z	agent	Task 13	atlas-verifier	-	-	-	-	-	PASS	22b8b603c	-	-	-	-
+2026-08-21T13:47:03Z	agent	Task 13	atlas-reviewer	sonnet	-	-	-	-	DONE	22b8b603c	APPROVED	no	-	-
+2026-08-21T13:48:13Z	agent	pre-PR	plan-adherence-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:48:17Z	agent	pre-PR	backend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:50:35Z	agent	pre-PR shard 8-13	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	22b8b603c	APPROVED	no	-	-
+2026-08-21T13:50:53Z	agent	pre-PR shard 1-7	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	22b8b603c	APPROVED	no	-	-

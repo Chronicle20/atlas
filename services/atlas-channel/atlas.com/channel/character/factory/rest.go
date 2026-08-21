@@ -50,6 +50,33 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// MapleLifeCreateRestModel mirrors the factory's MapleLifeCreateRestModel
+// (services/atlas-character-factory/atlas.com/character-factory/factory/maple_life.go)
+// field-for-field: only what the player chose in the Maple Life dialog --
+// the class ordinal, gender, the four look values, and the SP level -- is
+// sent. The factory owns what a Maple Life character of that class actually
+// is (design.md §11 A5).
+type MapleLifeCreateRestModel struct {
+	AccountId    uint32 `json:"accountId"`
+	WorldId      byte   `json:"worldId"`
+	Name         string `json:"name"`
+	ClassOrdinal uint32 `json:"classOrdinal"`
+	Gender       byte   `json:"gender"`
+	Face         uint32 `json:"face"`
+	Hair         uint32 `json:"hair"`
+	HairColor    uint32 `json:"hairColor"`
+	SkinColor    byte   `json:"skinColor"`
+	SP           byte   `json:"sp"`
+}
+
+// GetName, GetID, and SetID satisfy jsonapi.MarshalIdentifier /
+// jsonapi.UnmarshalIdentifier so MapleLifeCreateRestModel encodes as JSON:API
+// type "maple-life-create", matching the factory's
+// MapleLifeCreateRestModel.GetName() in factory/resource.go.
+func (r MapleLifeCreateRestModel) GetName() string     { return "maple-life-create" }
+func (r MapleLifeCreateRestModel) GetID() string       { return "" }
+func (r *MapleLifeCreateRestModel) SetID(string) error { return nil }
+
 // CreateCharacterResponse represents the response for character creation requests
 type CreateCharacterResponse struct {
 	TransactionId string `json:"transactionId"`

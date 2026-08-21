@@ -1,6 +1,10 @@
-package _map
+package map_
 
-import "strconv"
+import (
+	"strconv"
+
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+)
 
 // RectangleRestModel mirrors atlas-data's map rectangle shape (see
 // services/atlas-data/atlas.com/data/map/rest.go:270-275).
@@ -46,7 +50,7 @@ func Extract(rm RestModel) (Model, error) {
 		}
 	}
 	return Model{
-		id:      rm.Id,
+		id:      _map.Id(rm.Id),
 		mapArea: area,
 	}, nil
 }

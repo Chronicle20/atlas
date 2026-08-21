@@ -33,6 +33,7 @@ type jsonReactorScript struct {
 	Description string     `json:"description,omitempty"`
 	HitRules    []jsonRule `json:"hitRules"`
 	ActRules    []jsonRule `json:"actRules"`
+	TouchRules  []jsonRule `json:"touchRules,omitempty"`
 }
 
 // jsonRule represents a rule in JSON format
@@ -82,6 +83,14 @@ func Make(e Entity) (ReactorScript, error) {
 			return ReactorScript{}, err
 		}
 		builder.AddActRule(rule)
+	}
+
+	for _, jr := range data.TouchRules {
+		rule, err := convertJsonRule(jr)
+		if err != nil {
+			return ReactorScript{}, err
+		}
+		builder.AddTouchRule(rule)
 	}
 
 	return builder.Build(), nil
@@ -155,11 +164,19 @@ func ToEntity(m ReactorScript, tenantId uuid.UUID) (Entity, error) {
 		jsonActRules = append(jsonActRules, jr)
 	}
 
+	// Convert touch rules to JSON format
+	jsonTouchRules := make([]jsonRule, 0, len(m.TouchRules()))
+	for _, rule := range m.TouchRules() {
+		jr := convertRuleToJson(rule)
+		jsonTouchRules = append(jsonTouchRules, jr)
+	}
+
 	data := jsonReactorScript{
 		ReactorId:   m.ReactorId(),
 		Description: m.Description(),
 		HitRules:    jsonHitRules,
 		ActRules:    jsonActRules,
+		TouchRules:  jsonTouchRules,
 	}
 
 	jsonData, err := json.Marshal(data)

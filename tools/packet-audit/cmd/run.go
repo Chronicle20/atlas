@@ -1343,7 +1343,7 @@ func candidatesFromFName(fname string) []candidate {
 	// dispatches on a leading mode byte; docs/packets/dispatchers/parcel.yaml is
 	// the mode-resolution source of truth (task-241 Task 6/7).
 	case "CParcelDlg::OnPacket#Open":
-		// mode=8 (OPEN, jms_v185 mode=10): bool quickEnabled + mailbox list +
+		// mode=8 (OPEN, jms_v185 mode=10): bool receiveOnly + mailbox list +
 		// arrived list, each entry a PARCEL::Decode (parcel.Parcel).
 		// Atlas struct: parcel/clientbound/parcel.go Open.
 		return []candidate{{name: "Open", pkg: "parcel", dir: csvpkg.DirClientbound}}

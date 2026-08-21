@@ -10,7 +10,7 @@ func TestPlayerNpcObjectIdBandDoesNotCollide(t *testing.T) {
 	})
 
 	t.Run("below the shared allocator", func(t *testing.T) {
-		if !(PlayerNpcObjectIdBase < MinId) {
+		if PlayerNpcObjectIdBase >= MinId {
 			t.Fatalf("expected PlayerNpcObjectIdBase (%d) < MinId (%d)", PlayerNpcObjectIdBase, MinId)
 		}
 	})

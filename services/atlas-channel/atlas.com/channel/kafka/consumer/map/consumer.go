@@ -13,6 +13,7 @@ import (
 	"atlas-channel/drop"
 	"atlas-channel/events"
 	"atlas-channel/guild"
+	"atlas-channel/jukebox"
 	consumer2 "atlas-channel/kafka/consumer"
 	event2 "atlas-channel/kafka/message/event"
 	_map3 "atlas-channel/kafka/message/map"
@@ -105,6 +106,16 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapTimerStarted(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventJukeboxStart(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventJukeboxEnd(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -365,6 +376,10 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 
 		routine.Go(l, ctx, func(_ context.Context) {
 			announceActiveVisuals(l, ctx, wp, f, s)
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			announceActiveJukebox(l, ctx, wp, f, s)
 		})
 
 		return nil
@@ -1076,4 +1091,72 @@ func handleStatusEventWeatherEnd(sc server.Model, wp writer.Producer) func(l log
 			l.WithError(err).Errorf("Unable to broadcast weather end to map [%d] instance [%s].", e.MapId, e.Instance)
 		}
 	}
+}
+
+// jukeboxStopItemId is the EXACT value CMapLoadable::PlayNextMusic branches on
+// to restore the map's own BGM (@0x61dab0: `if (m_nJukeBoxItemID == -1)`). Any
+// other negative id falls into the else branch, fails CItemInfo::GetItemInfo,
+// and returns WITHOUT clearing m_nJukeBoxItemID -- so CMapLoadable::Update
+// re-enters PlayNextMusic every frame, forever. This is a correctness
+// requirement, not a convention.
+const jukeboxStopItemId = int32(-1)
+
+func handleStatusEventJukeboxStart(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.JukeboxStart]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.JukeboxStart]) {
+		if e.Type != _map3.EventTopicMapStatusTypeJukeboxStart {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		l.Debugf("Jukebox started in map [%d] instance [%s] with item [%d] by [%s].", e.MapId, e.Instance, e.Body.ItemId, e.Body.PlayerName)
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		// Broadcast to everyone in the field INCLUDING the user: the sending
+		// client applies nothing locally (m_bJukeBoxPlaying is written only
+		// inside PlayNextMusic, reachable only from OnPlayJukeBox), and its own
+		// m_bJukeBoxPlaying pre-gate prevents a second send, so no double-apply
+		// is possible.
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+			return doorAnnounce(l, ctx, wp, fieldcb.PlayJukeboxWriter, fieldcb.NewPlayJukebox(int32(e.Body.ItemId), e.Body.PlayerName).Encode, s)
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast jukebox start to map [%d] instance [%s].", e.MapId, e.Instance)
+		}
+	}
+}
+
+func handleStatusEventJukeboxEnd(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.JukeboxEnd]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.JukeboxEnd]) {
+		if e.Type != _map3.EventTopicMapStatusTypeJukeboxEnd {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		l.Debugf("Jukebox ended in map [%d] instance [%s].", e.MapId, e.Instance)
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		// No BGM FieldEffect on the restore: that packet sets
+		// m_sChangedBgmUOL, which CMapLoadable::RestoreBGM prefers over the
+		// map's own music -- sending one would leave the field permanently
+		// playing the jukebox track. The stop signal alone drives the restore.
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+			return doorAnnounce(l, ctx, wp, fieldcb.PlayJukeboxWriter, fieldcb.NewPlayJukebox(jukeboxStopItemId, "").Encode, s)
+		})
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast jukebox end to map [%d] instance [%s].", e.MapId, e.Instance)
+		}
+	}
+}
+
+// announceActiveJukebox replays an in-progress song to a single entering
+// session. Fails open: an unreachable atlas-maps costs the song, not the map
+// entry.
+func announceActiveJukebox(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, s session.Model) {
+	jb, jerr := jukebox.NewProcessor(l, ctx).GetActive(f)
+	if jerr != nil {
+		return
+	}
+	_ = doorAnnounce(l, ctx, wp, fieldcb.PlayJukeboxWriter, fieldcb.NewPlayJukebox(int32(jb.ItemId), jb.PlayerName).Encode, s)
 }

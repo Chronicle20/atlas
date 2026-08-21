@@ -2,6 +2,8 @@ package _map
 
 import (
 	"atlas-channel/door"
+	_map3 "atlas-channel/kafka/message/map"
+	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -22,6 +24,7 @@ import (
 	doorcb "github.com/Chronicle20/atlas/libs/atlas-packet/door/clientbound"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -454,5 +457,286 @@ func TestAnnounceActiveVisuals_FailOpenAnnouncesNothing(t *testing.T) {
 
 	if len(*calls) != 0 {
 		t.Fatalf("writer calls = %v, want none when atlas-events is unreachable", *calls)
+	}
+}
+
+// jukeboxAnnounce records a single doorAnnounce invocation made by a jukebox
+// handler, capturing the encoded PlayJukebox body so the exact item id on
+// the wire can be asserted.
+type jukeboxAnnounce struct {
+	Writer string
+	Body   []byte
+}
+
+// stubDoorAnnounceForJukebox swaps doorAnnounce for a recording stub and
+// returns a restore func plus the calls it captured -- the -1 stop signal
+// is a correctness requirement, not a convention (design §3.2).
+func stubDoorAnnounceForJukebox(t *testing.T) (restore func(), calls *[]jukeboxAnnounce) {
+	t.Helper()
+	var seen []jukeboxAnnounce
+
+	orig := doorAnnounce
+	doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, _ writer.Producer, writerName string, enc packet.Encode, _ session.Model) error {
+		seen = append(seen, jukeboxAnnounce{Writer: writerName, Body: enc(l, ctx)(nil)})
+		return nil
+	}
+
+	return func() { doorAnnounce = orig }, &seen
+}
+
+// decodePlayJukebox decodes a captured PlayJukebox wire body via the real
+// codec, so the assertion exercises the same decode path the client would.
+func decodePlayJukebox(t *testing.T, body []byte) fieldcb.PlayJukebox {
+	t.Helper()
+	req := request.Request(body)
+	reader := request.NewRequestReader(&req, 0)
+	var m fieldcb.PlayJukebox
+	m.Decode(logrus.New(), context.Background())(&reader, nil)
+	return m
+}
+
+// newTestServerModel registers a real server.Model for ctx's tenant at
+// world/channel 0, matching newTestField -- sc.Is compares the full tenant,
+// not just world/channel, so a zero-value server.Model{} (unset tenant)
+// never matches a real context tenant.
+func newTestServerModel(t *testing.T, ctx context.Context) server.Model {
+	t.Helper()
+	ten := tenant.MustFromContext(ctx)
+	return server.NewProcessor(logrus.New(), ctx).Register(ten, channel.NewModel(world.Id(0), channel.Id(0)), "", 0)
+}
+
+func TestHandleStatusEventJukeboxStart_BroadcastsToEverySessionInField(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+	addFieldSession(t, ctx, l, 1002, f)
+
+	restore, calls := stubDoorAnnounceForJukebox(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	e := _map3.StatusEvent[_map3.JukeboxStart]{
+		Type:      _map3.EventTopicMapStatusTypeJukeboxStart,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.JukeboxStart{ItemId: 5100000, PlayerName: "Chronicle"},
+	}
+	handleStatusEventJukeboxStart(sc, nil)(l, ctx, e)
+
+	if len(*calls) != 2 {
+		t.Fatalf("announce count = %d, want 2", len(*calls))
+	}
+	for _, c := range *calls {
+		if c.Writer != fieldcb.PlayJukeboxWriter {
+			t.Fatalf("writer = %s, want %s", c.Writer, fieldcb.PlayJukeboxWriter)
+		}
+		m := decodePlayJukebox(t, c.Body)
+		if m.ItemId() != 5100000 {
+			t.Fatalf("itemId = %d, want 5100000", m.ItemId())
+		}
+		if m.PlayerName() != "Chronicle" {
+			t.Fatalf("playerName = %s, want Chronicle", m.PlayerName())
+		}
+	}
+}
+
+func TestHandleStatusEventJukeboxStart_IgnoresOtherEventTypes(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+	addFieldSession(t, ctx, l, 1002, f)
+
+	restore, calls := stubDoorAnnounceForJukebox(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	e := _map3.StatusEvent[_map3.JukeboxStart]{
+		Type:      "SOMETHING_ELSE",
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.JukeboxStart{ItemId: 5100000, PlayerName: "Chronicle"},
+	}
+	handleStatusEventJukeboxStart(sc, nil)(l, ctx, e)
+
+	if len(*calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(*calls))
+	}
+}
+
+func TestHandleStatusEventJukeboxStart_IgnoresOtherWorldChannel(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+	addFieldSession(t, ctx, l, 1002, f)
+
+	restore, calls := stubDoorAnnounceForJukebox(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	e := _map3.StatusEvent[_map3.JukeboxStart]{
+		Type:      _map3.EventTopicMapStatusTypeJukeboxStart,
+		WorldId:   world.Id(1),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.JukeboxStart{ItemId: 5100000, PlayerName: "Chronicle"},
+	}
+	handleStatusEventJukeboxStart(sc, nil)(l, ctx, e)
+
+	if len(*calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(*calls))
+	}
+}
+
+func TestHandleStatusEventJukeboxEnd_BroadcastsExactlyMinusOne(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+	addFieldSession(t, ctx, l, 1002, f)
+
+	restore, calls := stubDoorAnnounceForJukebox(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	e := _map3.StatusEvent[_map3.JukeboxEnd]{
+		Type:      _map3.EventTopicMapStatusTypeJukeboxEnd,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(0),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.JukeboxEnd{ItemId: 5100000},
+	}
+	handleStatusEventJukeboxEnd(sc, nil)(l, ctx, e)
+
+	if len(*calls) != 2 {
+		t.Fatalf("announce count = %d, want 2", len(*calls))
+	}
+	for _, c := range *calls {
+		if c.Writer != fieldcb.PlayJukeboxWriter {
+			t.Fatalf("writer = %s, want %s", c.Writer, fieldcb.PlayJukeboxWriter)
+		}
+		if len(c.Body) < 4 {
+			t.Fatalf("body too short: %v", c.Body)
+		}
+		if c.Body[0] != 0xff || c.Body[1] != 0xff || c.Body[2] != 0xff || c.Body[3] != 0xff {
+			t.Fatalf("raw itemId bytes = % x, want ff ff ff ff", c.Body[:4])
+		}
+		m := decodePlayJukebox(t, c.Body)
+		if m.ItemId() != -1 {
+			t.Fatalf("itemId = %d, want -1", m.ItemId())
+		}
+		if m.PlayerName() != "" {
+			t.Fatalf("playerName = %q, want empty", m.PlayerName())
+		}
+	}
+}
+
+func TestHandleStatusEventJukeboxEnd_IgnoresOtherWorldChannel(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	ten := tenant.MustFromContext(ctx)
+	defer session.ClearRegistryForTenant(ten.Id())
+	f := newTestField()
+
+	addFieldSession(t, ctx, l, 1001, f)
+	addFieldSession(t, ctx, l, 1002, f)
+
+	restore, calls := stubDoorAnnounceForJukebox(t)
+	defer restore()
+
+	sc := newTestServerModel(t, ctx)
+	e := _map3.StatusEvent[_map3.JukeboxEnd]{
+		Type:      _map3.EventTopicMapStatusTypeJukeboxEnd,
+		WorldId:   world.Id(0),
+		ChannelId: channel.Id(3),
+		MapId:     _map.Id(100000000),
+		Instance:  uuid.Nil,
+		Body:      _map3.JukeboxEnd{ItemId: 5100000},
+	}
+	handleStatusEventJukeboxEnd(sc, nil)(l, ctx, e)
+
+	if len(*calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(*calls))
+	}
+}
+
+// jukeboxServer starts an httptest server that answers the atlas-maps
+// jukebox resource with body, and points MAPS_SERVICE_URL at it.
+func jukeboxServer(t *testing.T, status int, body string) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		if status != http.StatusOK {
+			w.WriteHeader(status)
+			return
+		}
+		_, _ = w.Write([]byte(body))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("MAPS_SERVICE_URL", srv.URL+"/")
+}
+
+func TestAnnounceActiveJukebox_ReplaysToTheEnteringSession(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	jukeboxServer(t, http.StatusOK, `{"data":{"type":"jukebox","id":"5100000","attributes":{"itemId":5100000,"playerName":"Chronicle"}}}`)
+
+	restore, calls := stubDoorAnnounceForJukebox(t)
+	defer restore()
+
+	announceActiveJukebox(l, ctx, nil, f, session.Model{})
+
+	if len(*calls) != 1 {
+		t.Fatalf("announce count = %d, want 1", len(*calls))
+	}
+	c := (*calls)[0]
+	if c.Writer != fieldcb.PlayJukeboxWriter {
+		t.Fatalf("writer = %s, want %s", c.Writer, fieldcb.PlayJukeboxWriter)
+	}
+	m := decodePlayJukebox(t, c.Body)
+	if m.ItemId() != 5100000 {
+		t.Fatalf("itemId = %d, want 5100000", m.ItemId())
+	}
+	if m.PlayerName() != "Chronicle" {
+		t.Fatalf("playerName = %s, want Chronicle", m.PlayerName())
+	}
+}
+
+func TestAnnounceActiveJukebox_FailsOpenWhenMapsUnreachable(t *testing.T) {
+	l := logrus.New()
+	ctx := newTestCtx(t)
+	f := newTestField()
+
+	jukeboxServer(t, http.StatusNotFound, "")
+
+	restore, calls := stubDoorAnnounceForJukebox(t)
+	defer restore()
+
+	announceActiveJukebox(l, ctx, nil, f, session.Model{})
+
+	if len(*calls) != 0 {
+		t.Fatalf("announce count = %d, want 0", len(*calls))
 	}
 }

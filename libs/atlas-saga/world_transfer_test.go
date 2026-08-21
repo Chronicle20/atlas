@@ -117,6 +117,7 @@ var knownActions = []Action{
 	RegisterPartyQuest, WarpPartyQuestMembersToMap, LeavePartyQuest, EnterPartyQuestBonus,
 	UpdatePqCustomData, HitReactor, BroadcastPqMessage, StageClearAttemptPq,
 	FieldEffectWeather,
+	PlayJukebox,
 	CreateNote,
 	SetAssetOwner, ApplyAssetLock, ExtendAssetExpiration, IncubatorResult,
 	EmitMegaphone, EnqueueWorldBroadcast,

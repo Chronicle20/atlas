@@ -278,6 +278,10 @@ const (
 
 	// Field effect actions
 	FieldEffectWeather Action = "field_effect_weather"
+	// PlayJukebox starts a song in one field. DurationMs is the client's own
+	// IWzSound::length; atlas-maps caps it. The BGM name is never carried --
+	// the client resolves it from the item's WZ info/path node itself.
+	PlayJukebox Action = "play_jukebox"
 
 	// Note actions
 	CreateNote Action = "create_note"

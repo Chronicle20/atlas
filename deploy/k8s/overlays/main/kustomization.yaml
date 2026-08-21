@@ -332,6 +332,8 @@ images:
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-pets/atlas-pets
     newTag: main-b284bce
+  - name: ghcr.io/chronicle20/atlas-player-npcs/atlas-player-npcs
+    newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals

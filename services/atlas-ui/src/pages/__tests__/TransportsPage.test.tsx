@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -249,5 +250,24 @@ describe("TransportsPage", () => {
     ).toBeInTheDocument();
     // Must not read as a failure — that's a different state.
     expect(screen.queryByText(/failed to load/i)).toBeNull();
+  });
+
+  it("offers a refresh control on the empty scheduled tab", async () => {
+    vi.mocked(transportsService.getScheduledRoutes).mockResolvedValue([]);
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await screen.findByText(/no scheduled routes configured/i);
+    const refreshButton = screen.getByTestId("empty-state-refresh");
+
+    await user.click(refreshButton);
+
+    await waitFor(() => {
+      expect(transportsService.getScheduledRoutes).toHaveBeenCalledTimes(2);
+    });
+    // Only the header FreshnessIndicator renders a freshness readout — the
+    // EmptyState does not duplicate it (D7: no lastUpdatedAt here).
+    expect(screen.getAllByText(/updated \d+s ago/i)).toHaveLength(1);
   });
 });

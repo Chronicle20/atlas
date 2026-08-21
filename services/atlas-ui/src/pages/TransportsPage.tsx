@@ -3,8 +3,10 @@ import { useSearchParams } from "react-router-dom";
 import { AlertTriangle, Ship } from "lucide-react";
 
 import { DataTable } from "@/components/data-table";
+import { EmptyState } from "@/components/common/EmptyState";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTenant } from "@/context/tenant-context";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import {
   useInstanceRoutes,
   useScheduledRoutes,
@@ -47,6 +49,8 @@ function TransportsPageContent() {
   // zero until the tab was first opened. React Query dedupes this against the
   // table's own identical query, so the tab label costs no extra request.
   const instanceRoutesQuery = useInstanceRoutes();
+
+  const { isRefreshing, onRefresh } = useGridRefresh([scheduledQuery]);
 
   const routes = useMemo(
     () =>
@@ -117,9 +121,11 @@ function TransportsPageContent() {
               Failed to load scheduled routes.
             </p>
           ) : routes.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No scheduled routes configured.
-            </p>
+            <EmptyState
+              title="No scheduled routes configured"
+              onRefresh={onRefresh}
+              isRefreshing={isRefreshing}
+            />
           ) : (
             <DataTable
               columns={scheduledColumns}

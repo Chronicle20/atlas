@@ -4,18 +4,18 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `4359387696eccd263d9b78c2a606c38e240302cb16bf8b8d7e3372affc3a0b99`
+Tool: `7d9951e5dadc9eb47411c89af5d01b0e8f1edb8f276d431688d2992092608d61`
 
-- export gms_v48: `f46a1c091a8f557a7a0a47c295bed12c56e0f70e23552726d1ca6586eadbf0dd`
-- export gms_v61: `6c974c037a17229958f04d245f414de004f5530852466818e48167a4172e7c70`
-- export gms_v72: `de06b77032045627c7a386ab6a30f43894b4c3b28915a69de478929874edf8bc`
-- export gms_v79: `883b29f836c42d0c7645338c2a3c9b81f72c45fc5be1fb500e6f028f90648dfd`
-- export gms_v83: `9dff2df7617fcaa60f123937c5dc3cdd85356e84a697776b010daab1144482f3`
-- export gms_v84: `3cdb538eb12dfee22f9045e663724e555a12021fe7f8ac489b93ebc8b0dae55c`
-- export gms_v87: `d5144815873e58d1f25e587f13b481f26f74b30d8fac938d95b38ffd6b61b0b1`
-- export gms_v92: `4ba747e0530ab36bbaf22f444900d420a0e5bd24bd58d5d82008e90cd9684b74`
-- export gms_v95: `bde4c862657c8eefce04469586c7beb5a08556c36cc7d6463c11f7b5b1f571d9`
-- export jms_v185: `ceaf578adfe8bfe3b998ff88ad4f7174b7dd72884513281ddd5fbbd70864ac1b`
+- export gms_v48: `b1ad3cd025dc09d81f41d3cebeaa59d5b8615e8ab7a42d9f3fe6cdc6105673e5`
+- export gms_v61: `dbe9bf62ebadb8489bc6ace8b7524fa555f0fa289fa265a84d19b8326fa1dba4`
+- export gms_v72: `74e1b7ca009ea2a9176e1e151f33a0fecd19259a43e2ba20c772ee57e10ce976`
+- export gms_v79: `ab2dba2c8912350dd9714563be3714a64fac7128dda6d9c9cfe7d41e67f84e26`
+- export gms_v83: `98304b497d0f94fafb82e68c29bf4c848bbf5ce5b99411a9b444c9776e015c03`
+- export gms_v84: `8ec02cc15ab1e964fc5eef92b12c5d62b4c7ab17df08fb27f4e4c6e1531ff945`
+- export gms_v87: `41d3775ce23dc29e217fa94108cc53f7ebab5d4ff37aa9a227bc6a998681c0a6`
+- export gms_v92: `eb71a21cddc9548673742e379db5e68b88ec39c201484ed9317a17100f06c7af`
+- export gms_v95: `c1a80a704d18aaf9b0a3a0ec9018ef2fff5d0ce548f4e5a64a65db32236155a8`
+- export jms_v185: `5b59a14a9b25c88312d4f71bbc97fdfd515c4e839685d7aab5f6a7a6311954d9`
 
 ## Clientbound
 
@@ -674,6 +674,7 @@ Tool: `4359387696eccd263d9b78c2a606c38e240302cb16bf8b8d7e3372affc3a0b99`
 | ADMIN_COMMAND | CField::SendChatMsgSlash; CStage::OnSetField; CUserLocal::OnKey; sub_80C896 | field/serverbound/FieldAdminCommand (T1) |  | ⬜ | 0x07E | ✅ | 0x07E | ✅ | 0x07D | ✅ | 0x080 | ✅ | 0x084 | ✅ | 0x088 | ✅ | 0x094 | ❌ | 0x097 | ✅ | 0x083 | ✅ |
 | ADMIN_LOG | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) |  | ⬜ |  | ⬜ | 0x07F | ✅ | 0x07E | ✅ | 0x081 | ✅ | 0x085 | ✅ | 0x089 | ✅ | 0x095 | ❌ | 0x098 | ✅ | 0x084 | ✅ |
 | MOVE_LIFE | CMob::GenerateMovePath; sub_550383 | monster/serverbound/MonsterMovementRequest (T1) | 0x081 | ✅ | 0x09B | ✅ | 0x0B2 | ✅ | 0x0B4 | ✅ | 0x0BC | ✅ | 0x0C1 | ✅ | 0x0C8 | ✅ | 0x0DC | ❌ | 0x0E3 | ✅ | 0x0C2 | ✅ |
+| AUTO_AGGRO | CMob::ApplyControl | monster/serverbound/MonsterAutoAggro (T1) | 0x082 | ✅ | 0x09C | ✅ | 0x0B3 | ✅ | 0x0B5 | ✅ | 0x0BD | ✅ | 0x0C2 | ✅ | 0x0C9 | ✅ | 0x0DD | ✅ | 0x0E4 | ✅ | 0x0C3 | ✅ |
 | MOB_DROP_PICKUP_REQUEST | CMob::SendDropPickUpRequest | monster/serverbound/MonsterMobDropPickupRequest (T1) | 0x083 | ✅ | 0x09D | ✅ | 0x0B4 | ✅ | 0x0B6 | ✅ | 0x0BE | ✅ | 0x0C3 | ✅ | 0x0CA | ✅ | 0x0DE | 🟡ᶠ | 0x0E5 | ✅ | 0x0C4 | ✅ |
 | PARTY_RESULT | CFadeWnd::SendCloseMessage; CUIFadeYesNo::OnButtonClicked; CWvsContext::OnPartyResult | messenger/serverbound/MessengerOperationDeclineInvite (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x083 | ✅ | 0x08F | ❌ | 0x092 | ✅ | 0x07E | ✅ |
 | EXPEDITION_OPERATION | ExpeditionIntermediary::OnPacketExpNoti_Invite; ExpeditionIntermediary::SendExpChangeBossPacket; ExpeditionIntermediary::SendExpChangeMasterPacket; ExpeditionIntermediary::SendExpCreatePacket; ExpeditionIntermediary::SendExpInvitePacket; ExpeditionIntermediary::SendExpKickPacket; ExpeditionIntermediary::SendExpRelocatePartyPacket; ExpeditionIntermediary::SendResponseInvitePacket; ExpeditionIntermediary::SendWithdrawPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x084 | ❌ | 0x090 | ❌ | 0x093 | ❌ | 0x07F | ❌ |
@@ -743,7 +744,6 @@ Tool: `4359387696eccd263d9b78c2a606c38e240302cb16bf8b8d7e3372affc3a0b99`
 | CHANGE_QUICKSLOT | CQuickslotKeyMappedMan::SaveQuickslotKeyMap; CQuickslotKeyMappedMan__SaveQuickslotKeyMap_send_0xBC |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B7 | ❌ | 0x0BC | ❌ | 0x0C3 | ❌ | 0x0D5 | ❌ | 0x0D8 | ❌ | 0x0BB | ❌ |
 | MONSTER_CARNIVAL | CUIMonsterCarnival::RequestSend; sub_6F0D5F | monster/carnival/serverbound/MonsterCarnival (T1) |  | ⬜ | 0x0B7 | ❌ | 0x0D0 | ❌ | 0x0D2 | 🟡ᶠ | 0x0DA | ✅ | 0x0E0 | ✅ | 0x0E7 | ✅ | 0x0FF | ❌ | 0x106 | ✅ | 0x0E5 | ✅ |
 | REQUEST_SESSION_VALUE | CWvsContext::SendRequestSessionValue |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BC | ❌ | 0x0BF | ❌ | 0x09F | ❌ |
-| AUTO_AGGRO | CMob::ApplyControl |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0BD | ❌ | 0x0BD | ❌ | 0x0C9 | ❌ | 0x0DD | ❌ | 0x0E4 | ❌ | 0x0C3 | ❌ |
 | ASK_AP_SP_EVENT | CUserLocal::OnAskAPSPEvent |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C0 | ❌ | 0x0C3 | ❌ |  | ⬜ |
 | DRAGON_BALL_BOX_REQUEST | CWvsContext::SendDragonBallBoxRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C1 | ❌ | 0x0C4 | ❌ |  | ⬜ |
 | DRAGON_BALL_SUMMON_REQUEST | CWvsContext::SendDragonBallSummonRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C2 | ❌ | 0x0C5 | ❌ |  | ⬜ |
@@ -1061,16 +1061,16 @@ Tool: `4359387696eccd263d9b78c2a606c38e240302cb16bf8b8d7e3372affc3a0b99`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 212 | 0 | 19 | 198 | 596 | 0 | 49.4% |
-| v61 | 278 | 0 | 56 | 232 | 459 | 0 | 49.1% |
-| v72 | 302 | 0 | 69 | 241 | 413 | 0 | 49.3% |
-| v79 | 348 | 0 | 68 | 237 | 372 | 0 | 53.3% |
-| v83 | 474 | 0 | 0 | 323 | 228 | 0 | 59.5% |
-| v84 | 448 | 0 | 0 | 330 | 247 | 0 | 57.6% |
-| v87 | 482 | 0 | 0 | 353 | 190 | 0 | 57.7% |
-| v92 | 58 | 0 | 148 | 678 | 141 | 0 | 6.6% |
-| v95 | 507 | 0 | 0 | 412 | 106 | 0 | 55.2% |
-| JMS185 | 448 | 0 | 0 | 380 | 197 | 0 | 54.1% |
+| v48 | 213 | 0 | 19 | 198 | 595 | 0 | 49.5% |
+| v61 | 279 | 0 | 56 | 232 | 458 | 0 | 49.2% |
+| v72 | 303 | 0 | 69 | 241 | 412 | 0 | 49.4% |
+| v79 | 349 | 0 | 68 | 237 | 371 | 0 | 53.4% |
+| v83 | 475 | 0 | 0 | 322 | 228 | 0 | 59.6% |
+| v84 | 449 | 0 | 0 | 329 | 247 | 0 | 57.7% |
+| v87 | 483 | 0 | 0 | 352 | 190 | 0 | 57.8% |
+| v92 | 59 | 0 | 148 | 677 | 141 | 0 | 6.7% |
+| v95 | 508 | 0 | 0 | 411 | 106 | 0 | 55.3% |
+| JMS185 | 449 | 0 | 0 | 379 | 197 | 0 | 54.2% |
 
 ## Conflicts
 

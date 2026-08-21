@@ -1199,6 +1199,10 @@ func candidatesFromFName(fname string) []candidate {
 		// task-092 Cluster-D: MOB_DROP_PICKUP_REQUEST — atlas MobDropPickupRequest
 		// (handle = "MobDropPickupRequest"). Two Encode4 (mobCrc, dropId).
 		return []candidate{{name: "MobDropPickupRequest", pkg: "monster", dir: csvpkg.DirServerbound}}
+	case "CMob::ApplyControl":
+		// task-255: AUTO_AGGRO — atlas AutoAggro (handle = "AutoAggro").
+		// Two Encode4 (mobId, distance), identical on all ten versions.
+		return []candidate{{name: "AutoAggro", pkg: "monster", dir: csvpkg.DirServerbound}}
 	case "CWvsContext::SendBridleItemUseRequest":
 		// task-212: USE_CATCH_ITEM — atlas UseCatchItem (handle =
 		// "MonsterCatchItemUseHandle"), in monster/serverbound because the

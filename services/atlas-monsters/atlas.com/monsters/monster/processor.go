@@ -1322,7 +1322,7 @@ func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId byte, 
 	targets := p.getDiseaseTargets(m, sd, skillId)
 
 	for _, characterId := range targets {
-		err := producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopicCharacterBuff)(applyDiseaseCommandProvider(m.Field(), characterId, uint16(skillId), uint16(skillLevel), diseaseName, value, duration))
+		err := p.emit(EnvCommandTopicCharacterBuff, applyDiseaseCommandProvider(m.Field(), characterId, uint16(skillId), uint16(skillLevel), diseaseName, value, duration))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to apply disease [%s] to character [%d] from monster [%d].", diseaseName, characterId, m.UniqueId())
 		}
@@ -1409,7 +1409,7 @@ func (p *ProcessorImpl) executeBanish(m Model, sd mobskill.Model, skillId byte) 
 func (p *ProcessorImpl) executeDispel(m Model, sd mobskill.Model, skillId byte) {
 	targets := p.getDiseaseTargets(m, sd, skillId)
 	for _, characterId := range targets {
-		err := producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopicCharacterBuff)(cancelAllBuffsCommandProvider(m.Field(), characterId))
+		err := p.emit(EnvCommandTopicCharacterBuff, cancelAllBuffsCommandProvider(m.Field(), characterId))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to dispel buffs from character [%d] from monster [%d].", characterId, m.UniqueId())
 		}

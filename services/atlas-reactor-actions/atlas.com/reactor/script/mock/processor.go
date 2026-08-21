@@ -18,6 +18,7 @@ type ProcessorMock struct {
 	DeleteFunc              func(id uuid.UUID) error
 	ProcessHitFunc          func(reactorId string, reactorState int8, characterId uint32) script.ProcessResult
 	ProcessTriggerFunc      func(reactorId string, reactorState int8, characterId uint32) script.ProcessResult
+	ProcessTouchFunc        func(reactorId string, reactorState int8, characterId uint32) script.ProcessResult
 	CountFunc               func() (int64, *time.Time, error)
 }
 
@@ -75,6 +76,13 @@ func (m *ProcessorMock) ProcessHit(reactorId string, reactorState int8, characte
 func (m *ProcessorMock) ProcessTrigger(reactorId string, reactorState int8, characterId uint32) script.ProcessResult {
 	if m.ProcessTriggerFunc != nil {
 		return m.ProcessTriggerFunc(reactorId, reactorState, characterId)
+	}
+	return script.ProcessResult{}
+}
+
+func (m *ProcessorMock) ProcessTouch(reactorId string, reactorState int8, characterId uint32) script.ProcessResult {
+	if m.ProcessTouchFunc != nil {
+		return m.ProcessTouchFunc(reactorId, reactorState, characterId)
 	}
 	return script.ProcessResult{}
 }

@@ -10,6 +10,16 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 )
 
+// packet-audit:verify packet=portal/serverbound/PortalInnerPortal version=gms_v48 ida=0x6a5462
+// packet-audit:verify packet=portal/serverbound/PortalInnerPortal version=gms_v61 ida=0x7aa1e3
+// packet-audit:verify packet=portal/serverbound/PortalInnerPortal version=gms_v72 ida=0x864562
+// packet-audit:verify packet=portal/serverbound/PortalInnerPortal version=gms_v79 ida=0x8afc42
+// packet-audit:verify packet=portal/serverbound/PortalInnerPortal version=gms_v83 ida=0x957b74
+// packet-audit:verify packet=portal/serverbound/PortalInnerPortal version=gms_v84 ida=0x995c92
+// packet-audit:verify packet=portal/serverbound/PortalInnerPortal version=gms_v87 ida=0x9da037
+// packet-audit:verify packet=portal/serverbound/PortalInnerPortal version=gms_v92 ida=0x8f85c0
+// packet-audit:verify packet=portal/serverbound/PortalInnerPortal version=gms_v95 ida=0x913690
+// packet-audit:verify packet=portal/serverbound/PortalInnerPortal version=jms_v185 ida=0xa2218f
 func TestInnerPortalGoldenBytes(t *testing.T) {
 	sixField := []byte{0x01, 0x02, 0x00, 0x73, 0x70, 0x64, 0x00, 0xC8, 0x00, 0x2C, 0x01, 0xCE, 0xFF}
 	// gms_v48 has no fieldKey on the wire (structures/gms_v48.md); leading

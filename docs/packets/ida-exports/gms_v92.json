@@ -3,195 +3,6 @@
   "md5": "bdef16653b92eefca2361fd5668cc509",
   "generated_at": "2026-08-05T00:00:00Z",
   "functions": {
-    "CCashShop::OnCheckTransferWorldPossibleResult": {
-      "address": "0x494040",
-      "direction": "",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode4",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "CInPacket::Decode1(a2)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "",
-          "guard": "CInPacket::Decode1(a2) && count > 0"
-        }
-      ]
-    },
-    "CCashShop::OnCheckNameChangePossibleResult": {
-      "address": "0x4913a0",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode4",
-          "comment": ""
-        }
-      ]
-    },
-    "CCashShop::SendCheckTransferWorldPossiblePacket": {
-      "address": "0x47f8c0",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": ""
-        },
-        {
-          "op": "Decode4",
-          "comment": ""
-        }
-      ]
-    },
-    "CCashShop::SendCheckNameChangePossiblePacket": {
-      "address": "0x47f830",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": ""
-        },
-        {
-          "op": "Decode4",
-          "comment": ""
-        }
-      ]
-    },
-    "CPet::OnNameChanged": {
-      "address": "0x6967c0",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "DecodeStr",
-          "comment": "name"
-        },
-        {
-          "op": "Decode1",
-          "comment": "name-tag decoration layer selector (CLife::MakeNameTag)"
-        }
-      ]
-    },
-    "CUserLocal__RequestIncCombo_send_0xBA": {
-      "address": "0x8ef840",
-      "direction": "serverbound",
-      "note": "v92 synthetic rename (task-217 Task 12, idb_save'd). Registry primary fname is the canonical CUserLocal::RequestIncCombo (task-217); candidatesFromFName carries a case for this literal IDB symbol too.",
-      "calls": null
-    },
-    "CUserLocal::OnIncComboResponse": {
-      "address": "0x8fe8e0",
-      "direction": "clientbound",
-      "note": "Hex-Rays decompile of 0x8fe8e0 fails (\"Decompilation failed at 0x8fe8e0 (address: 0x8fe8ff)\" on `call sub_8FBD50`). Hand-traced from disasm instead (task-217): push esi; mov esi,ecx; mov ecx,[esp+4+arg_0]; call CInPacket::Decode4 /*0x8fe8e7*/; mov [esi+4358h],eax /*0x8fe8ec*/; call sub_936E80 /*0x8fe8f2*/ (get_update_time analogue); mov ecx,esi; mov [esi+435Ch],eax /*0x8fe8f9*/; call sub_8FBD50 /*0x8fe8ff*/ (DrawCombo analogue, unnamed in this IDB); pop esi; retn 4. Exactly one CInPacket read (Decode4) in the whole function body; the two helper calls are opaque non-packet subs (neither takes the CInPacket*).",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "count (CUserLocal::OnIncComboResponse: Decode4 store to the m_nCombo mirror, then get_update_time() timestamp, then DrawCombo(this); task-217, design.md \u00a72.2)"
-        }
-      ]
-    },
-    "CTradingRoomDlg::OnPutItem": {
-      "address": "0x743f80",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (15 TRADE_PUT_ITEM; CTradingRoomDlg::OnPacket @0x744ec0 dispatch byte)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "side (recipient-relative room side; indexes this[side + N] item grid)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "tradeSlot (1..9 within that side's grid)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "asset (GW_ItemSlotBase::Decode; model.Asset substruct)"
-        }
-      ]
-    },
-    "CTradingRoomDlg::OnPutMoney": {
-      "address": "0x743e70",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (16 TRADE_ADD_MESO; CTradingRoomDlg::OnPacket @0x744ec0 dispatch byte)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "side (recipient-relative room side)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "amount (ASSIGNED: this[side + N] = Decode4(), not accumulated)"
-        }
-      ]
-    },
-    "CTradingRoomDlg::OnTrade#TradeConfirm": {
-      "address": "0x744440",
-      "direction": "clientbound",
-      "note": "Clientbound receive arm of CTradingRoomDlg::OnTrade. Same function as the serverbound TRANSACTION sender (interaction/serverbound/InteractionOperationTransaction), which is keyed on the un-suffixed CTradingRoomDlg::OnTrade; the #TradeConfirm suffix separates the two wire shapes (this arm is bodyless; the send carries count + {itemId, crc} pairs).",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (17 TRADE_CONFIRM; CTradingRoomDlg::OnPacket @0x744ec0 dispatch byte). The arm reads NO body."
-        }
-      ]
-    },
-    "CTradingRoomDlg::OnMesoLimitRefused": {
-      "address": "0x744680",
-      "direction": "clientbound",
-      "note": "This version's IDB spells the arm CTradingRoomDlg::OnExceedLimit; the v83 MSVC symbol CTradingRoomDlg::OnMesoLimitRefused is held as the stable export key across versions. Same arm, same (bodyless) shape.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (21 TRADE_MESO_LIMIT; CTradingRoomDlg::OnPacket @0x744ec0 dispatch byte). The arm reads NO body."
-        }
-      ]
-    },
-    "CTradingRoomDlg::OnTrade": {
-      "address": "0x744440",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "count (number of crc entries)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "data/itemId (per-entry first)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "crc (per-entry second)"
-        }
-      ]
-    },
     "CAffectedAreaPool::OnAffectedAreaCreated": {
       "address": "0x4392a0",
       "direction": "clientbound",
@@ -307,6 +118,37 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemGachaponResult": {
+      "address": "0x491530",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn: 8 bytes LARGE_INTEGER (int64)",
+          "guard": "mode == 190"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remain (int32, new box quantity)",
+          "guard": "mode == 190"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "newItem: 55 bytes GW_CashItemInfo blob, unconditional within SUCCESS arm",
+          "guard": "mode == 190"
+        },
+        {
+          "op": "Delegate",
+          "comment": "trailing itemId/count/jackpot read by the UI class, not CCashShop",
+          "guard": "mode == 190",
+          "ref": "CUICashItemGachapon::OnCashItemGachaponResult"
         }
       ]
     },
@@ -1010,6 +852,70 @@
         }
       ]
     },
+    "CCashShop::OnCheckDuplicatedIDResult": {
+      "address": "0x493f40",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCheckNameChangePossibleResult": {
+      "address": "0x4913a0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::OnCheckTransferWorldPossibleResult": {
+      "address": "0x494040",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a2)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "CInPacket::Decode1(a2) && count > 0"
+        }
+      ]
+    },
     "CCashShop::OnEnableEquipSlotExt": {
       "address": "",
       "direction": "serverbound",
@@ -1154,6 +1060,34 @@
         }
       ]
     },
+    "CCashShop::SendCheckNameChangePossiblePacket": {
+      "address": "0x47f830",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendCheckTransferWorldPossiblePacket": {
+      "address": "0x47f8c0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
     "CCashShop::SendGiftsPacket": {
       "address": "0x483f10",
       "direction": "serverbound",
@@ -1283,6 +1217,45 @@
           "op": "Decode2",
           "comment": "",
           "guard": "(unsigned __int8)CInPacket::Decode1()"
+        }
+      ]
+    },
+    "CDragon::OnCreated": {
+      "address": "0x5084c0",
+      "direction": "clientbound",
+      "notes": "SPAWN_DRAGON body. CDragon::OnCreated@0x5084c0 (GMS_v92_1_DEVM.exe.i64, session acdfccff), reached via CUser::OnDragonPacket@0x8ce880's a2==209 branch, itself routed by CUserPool::OnUserCommonPacket@0x929750's range test (unsigned int)(v6 - 209) <= 2 @0x9298b9. Reads, in order: Decode4 x @0x5084f9, Decode4 y @0x50850c, Decode1 stance @0x508547 (secured via _ZtlSecureTear into this+37/this[37]), Decode2 <read, discarded -- return value never assigned> @0x508564, Decode2 jobId (this+71/this[71]) @0x508573. 13-byte body, byte-identical to the already-verified v84/v87/v95 shape. v92 CONFIRMS the spawnHasJobId gate boundary (GMS MajorAtLeast(84)): v92 carries jobId. Match (task-225).",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "x @0x5084f9"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y @0x50850c"
+        },
+        {
+          "op": "Decode1",
+          "comment": "stance -> secured into this+37 via _ZtlSecureTear @0x508547/0x50855e"
+        },
+        {
+          "op": "Decode2",
+          "comment": "read and discarded -- return value never assigned @0x508564"
+        },
+        {
+          "op": "Decode2",
+          "comment": "jobId -> this+71 @0x508573"
+        }
+      ]
+    },
+    "CDragon::OnMove": {
+      "address": "0x505560",
+      "direction": "clientbound",
+      "notes": "MOVE_DRAGON body. CDragon::OnMove@0x505560 (GMS_v92_1_DEVM.exe.i64, session acdfccff) is a single delegating call: CMovePath::OnMovePacket(this[55]!=0 ? this[55]-12+580 : 580, a2, 0) -- identical shape to v83/v84/v87/v95's CDragon::OnMove (only the per-version fallback constant differs; the wire shape is unaffected). Reached via CUser::OnDragonPacket@0x8ce880's a2==210 branch (gated on this[2792]). The whole remaining body is the opaque CMovePath blob. Matches the committed DragonMove codec exactly. Match (task-225).",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "opaque CMovePath blob @0x505560",
+          "ref": "CMovePath::OnMovePacket"
         }
       ]
     },
@@ -2551,7 +2524,6 @@
     "CField::OnWhisper#Error": {
       "address": "0x53e2a0",
       "direction": "clientbound",
-      "note": "mode=0x22 (ERROR). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2570,7 +2542,6 @@
     "CField::OnWhisper#FindResultCashShop": {
       "address": "0x53e2a0",
       "direction": "clientbound",
-      "note": "mode=0x09/0x48 sub=2 (FIND in cash shop). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2593,7 +2564,6 @@
     "CField::OnWhisper#FindResultChannel": {
       "address": "0x53e2a0",
       "direction": "clientbound",
-      "note": "mode=0x09/0x48 sub=3 (FIND on channel). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2616,7 +2586,6 @@
     "CField::OnWhisper#FindResultError": {
       "address": "0x53e2a0",
       "direction": "clientbound",
-      "note": "mode=0x09/0x48 sub=0/else (FIND not found). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2639,7 +2608,6 @@
     "CField::OnWhisper#FindResultMap": {
       "address": "0x53e2a0",
       "direction": "clientbound",
-      "note": "mode=0x09/0x48 sub=1 (FIND on map). x/y are Decode4 (int32) only when the mode is ODD (0x09): CField::OnWhisper @0x53e2a0 gates the even arm on `if ((v4 & 1) == 0)` and returns via LABEL_121 without a further decode; the odd arm's `case 1:` reads v36=Decode4(x), v67=Decode4(y). Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2672,7 +2640,6 @@
     "CField::OnWhisper#Receive": {
       "address": "0x53e2a0",
       "direction": "clientbound",
-      "note": "mode=0x12 (RECEIVE). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2699,7 +2666,6 @@
     "CField::OnWhisper#SendResult": {
       "address": "0x53e2a0",
       "direction": "clientbound",
-      "note": "mode=0x0A/0x8A (SEND_RESULT). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -2718,7 +2684,6 @@
     "CField::OnWhisper#Weather": {
       "address": "0x53e2a0",
       "direction": "clientbound",
-      "note": "mode=0x92 (WEATHER). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
           "op": "Decode1",
@@ -5624,6 +5589,17 @@
         }
       ]
     },
+    "CMacroSysMan::FlushToSvr": {
+      "address": "0x602ed0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "task-226 harvest: CMacroSysMan::FlushToSvr constructs the COutPacket locally then hands the entire write off to MACROSYSDATA::Encode as a single call; the harvester's alias-seed regex only fires on a literal COutPacket::EncodeN(...) call inside the SAME function body, so this function's own text yields zero matches even though it fully implements the wire write via delegation. Hand-spliced after verifying the call by decompile (VERIFYING_A_PACKET.md \u00a710).",
+          "ref": "MACROSYSDATA::Encode"
+        }
+      ]
+    },
     "CMapleTVMan::OnClearMessage": {
       "address": "0x6037a0",
       "direction": "clientbound",
@@ -6111,6 +6087,22 @@
         {
           "op": "Unresolved",
           "comment": "dispatcher-family arm not harvested for gms_v92 (see notes)"
+        }
+      ]
+    },
+    "CMob::ApplyControl": {
+      "address": "0x636320",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2 - result >= 1000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2 - result >= 1000"
         }
       ]
     },
@@ -6769,6 +6761,289 @@
         }
       ]
     },
+    "CParcelDlg::CloseParcelDlg": {
+      "address": "0x680740",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). DUEY_ACTION mode 7 (CLOSE). COutPacket(&pkt, 0x47) @0x68076c; Encode1(7) @0x68077f; no further bytes -- the mode byte itself is written by the shared Action wrapper (action.go), not ActionClose. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/serverbound/action_parcel_id.go ActionClose.",
+      "calls": []
+    },
+    "CParcelDlg::OnPacket#AlarmGeneric": {
+      "address": "0x6895fe",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Case 27 @0x6895fe: CInPacket::Decode1 (hasItem) only, driving the generic (unnamed-sender) fade window. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go AlarmGeneric.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (27/0x1B ALARM_GENERIC; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasItem"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#AlarmNamed": {
+      "address": "0x6894d6",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Case 25 @0x6894d6: CInPacket::DecodeStr (senderName) then Decode1 (hasItem) @0x6894f7, driving the named-sender fade window. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go AlarmNamed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (25/0x19 ALARM_NAMED; dispatch byte)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "senderName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasItem"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#IncorrectRequest": {
+      "address": "0x68081b",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 11 @0x68081b selects StringPool id 3977, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go IncorrectRequest.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (11 INCORRECT_REQUEST; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#MesoLimit": {
+      "address": "0x6807e7",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 17 @0x6807e7 selects StringPool id 4051, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go MesoLimit.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (17 MESO_LIMIT; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#NameDoesNotExist": {
+      "address": "0x680834",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 12 @0x680834 selects StringPool id 3978, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go NameDoesNotExist.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (12 NAME_DOES_NOT_EXIST; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#NotEnoughMesos": {
+      "address": "0x680801",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 10 @0x680801 selects StringPool id 6352, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go NotEnoughMesos.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (10 NOT_ENOUGH_MESOS; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#Open": {
+      "address": "0x689293",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Mode consumed by CParcelDlg::OnPacket's outer Decode1 @0x6891c8; case 8 reads quickEnabled Decode1 @0x689293, then CParcelDlg::SetParcelDlg @0x689180 -> CTabReceive::SetParcel @0x688da0 does the mailbox/arrived reads: count Decode1 @0x688dd6 + count*PARCEL::Decode (loop @0x688dec-0x688ea7), then count Decode1 @0x688eff + count*PARCEL::Decode (loop @0x688f11-0x689164). PARCEL::Decode @0x4f3b10: CInPacket::DecodeBuffer(0xEA=234) @0x4f3b43, then Decode1(hasItem) @0x4f3b4f, optional GW_ItemSlotBase::Decode @0x4f3b5c. Byte-identical shape to v83/v84/v87, confirmed on this IDB. Atlas struct: parcel/clientbound/parcel.go Open + parcel/parcel.go Parcel.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (8 OPEN; dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "quickEnabled"
+        },
+        {
+          "op": "Decode1",
+          "comment": "mailbox count"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "one parcel entry (PARCEL::Decode: 234-byte fixed id/senderName/mesos/expiresAt/message block + hasItem + optional GW_ItemSlotBase item) -- loop body",
+          "guard": "loop mailbox count"
+        },
+        {
+          "op": "Decode1",
+          "comment": "arrived count"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "one parcel entry (PARCEL::Decode, same shape as mailbox) -- loop body",
+          "guard": "loop arrived count"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#OpenQuick": {
+      "address": "0x689235",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Case 26 @0x6891eb-0x68924d: no wire reads beyond the mode byte -- TSingleton disconnect-guard then CParcelDlg construction @0x689235 only. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go OpenQuick.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (26/0x1A OPEN_QUICK; dispatch byte, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ParcelArrived": {
+      "address": "0x689466",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Case 24: a single PARCEL::Decode call @0x689466, then a StringPool-id-3976-class notice (no further wire bytes). Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go ParcelArrived + parcel/parcel.go Parcel.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (24/0x18 PARCEL_ARRIVED; dispatch byte)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "one parcel entry (PARCEL::Decode: 234-byte fixed id/senderName/mesos/expiresAt/message block + hasItem + optional GW_ItemSlotBase item)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ParcelRemoved": {
+      "address": "0x6892ea",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Case 23 @0x6892ea: CInPacket::Decode4 (parcelId) then Decode1 (kind) @0x6892f1; kind==3 selects one StringPool id (3973), else another (3974). Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go ParcelRemoved.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (23/0x17 PARCEL_REMOVED; dispatch byte)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "parcelId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "kind (3 = deleted; else = claimed)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ReceiverStorageFull": {
+      "address": "0x680868",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 14 @0x680868 selects StringPool id 3980, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go ReceiverStorageFull.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (14 RECEIVER_STORAGE_FULL; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ReceiverUnableToReceive": {
+      "address": "0x680881",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 15 @0x680881 selects StringPool id 3981, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go ReceiverUnableToReceive.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (15 RECEIVER_UNABLE_TO_RECEIVE; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#RecvEnableActions": {
+      "address": "0x6807e0",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Mode 20 falls to OnPacket's default arm -> sub_6807D0 @0x6807d0 (NoticeResult-equivalent), whose switch @0x6807e0 has no case 20 -- returns without a notice (client-side re-enable only). No body beyond the mode byte. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go RecvEnableActions.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (20 RECV_ENABLE_ACTIONS; dispatch byte, no notice text, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#RecvNoFreeSlots": {
+      "address": "0x6808dc",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 21 @0x6808dc selects StringPool id 3984, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go RecvNoFreeSlots.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (21 RECV_NO_FREE_SLOTS; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#RecvUniqueConflict": {
+      "address": "0x6808f3",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 22 @0x6808f3 selects StringPool id 3985, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go RecvUniqueConflict.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (22 RECV_UNIQUE_CONFLICT; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SameAccount": {
+      "address": "0x68084e",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 13 @0x68084e selects StringPool id 3979, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go SameAccount.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (13 SAME_ACCOUNT; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SendEnableActions": {
+      "address": "0x6807e0",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Mode 9 falls to OnPacket's default arm -> sub_6807D0 @0x6807d0 (NoticeResult-equivalent), whose switch @0x6807e0 has no case 9 -- returns without a notice (client-side re-enable only). No body beyond the mode byte. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go SendEnableActions.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (9 SEND_ENABLE_ACTIONS; dispatch byte, no notice text, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SenderUniqueConflict": {
+      "address": "0x680898",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 16 @0x680898 selects StringPool id 3982, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go SenderUniqueConflict.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (16 SENDER_UNIQUE_CONFLICT; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SuccessfullySent": {
+      "address": "0x6896e1",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 18 @0x6808af selects StringPool id 3975. OnPacket's default arm additionally checks a1==18 @0x6896e1 to trigger CParcelDlg::CloseParcelDlg (@0x680740) as a side effect (via a refcount check on v18+144). No body beyond the mode byte. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go SuccessfullySent.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (18/0x12 SUCCESSFULLY_SENT; dispatch byte, notice-only, no body; also gates the CloseParcelDlg side effect)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#UnknownError": {
+      "address": "0x6808c5",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 19 (shared with 28) @0x6808c5 selects StringPool id 3983, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go UnknownError.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (19 UNKNOWN_ERROR; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#UnknownError2": {
+      "address": "0x6808c5",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 28 (shared with 19) @0x6808c5 selects StringPool id 3983, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go UnknownError2.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (28 UNKNOWN_ERROR_2; dispatch byte, notice-only, no body)"
+        }
+      ]
+    },
     "CPersonalShopDlg::BuyItem": {
       "address": "",
       "direction": "serverbound",
@@ -6975,6 +7250,20 @@
         {
           "op": "Unresolved",
           "comment": "resolved address/decompile but zero recognized Decode/Encode calls found; see notes"
+        }
+      ]
+    },
+    "CPet::OnNameChanged": {
+      "address": "0x6967c0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "name"
+        },
+        {
+          "op": "Decode1",
+          "comment": "name-tag decoration layer selector (CLife::MakeNameTag)"
         }
       ]
     },
@@ -8087,6 +8376,69 @@
         }
       ]
     },
+    "CTabReceive::DiscardParcel": {
+      "address": "0x680e20",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). DUEY_ACTION mode 5 (DISCARD). COutPacket(&pkt, 0x47) @0x680e9f; Encode1(5) @0x680eb2; Encode4(parcelId) @0x680ec7. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/serverbound/action_parcel_id.go ActionDiscard.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "parcelId"
+        }
+      ]
+    },
+    "CTabReceive::ReceiveParcel": {
+      "address": "0x680cb0",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). DUEY_ACTION mode 4 (RECEIVE). Gated on the 30-day expiry countdown @0x680d53. COutPacket(&pkt, 0x47) @0x680d75; Encode1(4) @0x680d88; Encode4(parcelId) @0x680d9d. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/serverbound/action_parcel_id.go ActionReceive.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "parcelId"
+        }
+      ]
+    },
+    "CTabSend::SendParcel": {
+      "address": "0x682da0",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). DUEY_ACTION mode 2 (SEND). Two independent client call sites share this fname: the NPC-path CTabSend::SendParcel itself @0x683c20 (quick=0, stops after the quick flag) and the quick-send path sub_682DA0 @0x682da0 (quick=1, appends message+ticketRef) -- named CTabQuickSend::SendQuickDelivery in prior batches' IDBs, unnamed in this one (task-092 'distrust IDB names'; located via byte-signature match on the '6A 47 8D 4C 24' push-opcode/lea-ecx/call-COutPacket-ctor pattern, same discipline as batch 5). Both: COutPacket(&pkt, 0x47u) @0x683d98/0x682fd6; Encode1(2) mode @0x683da8/0x682fe6; Encode1(invType) @0x683db6/0x682ff4; Encode2(slot) @0x683dc4/0x683002; Encode2(quantity) @0x683dd2/0x683010; Encode4(mesos) @0x683ddf/0x68301d; EncodeStr(recipientName) @0x683dfb/0x683039; Encode1(quick) @0x683e05 (=0)/0x683044 (=1). Quick path only: EncodeStr(message) @0x683060, Encode4(ticketRef) @0x68306d. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/serverbound/action_send.go ActionSend.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "inventoryType"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mesos"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "quick"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message -- quick-send path only (sub_682DA0 @0x682da0); the NPC path (CTabSend::SendParcel @0x683c20) stops after the quick flag",
+          "guard": "quick != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ticketRef -- quick-send path only",
+          "guard": "quick != 0"
+        }
+      ]
+    },
     "CTownPortalPool::OnTownPortalCreated": {
       "address": "0x743120",
       "direction": "clientbound",
@@ -8130,6 +8482,84 @@
         {
           "op": "Decode4",
           "comment": ""
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnMesoLimitRefused": {
+      "address": "0x744680",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (21 TRADE_MESO_LIMIT; CTradingRoomDlg::OnPacket @0x744ec0 dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnPutItem": {
+      "address": "0x743f80",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (15 TRADE_PUT_ITEM; CTradingRoomDlg::OnPacket @0x744ec0 dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side; indexes this[side + N] item grid)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tradeSlot (1..9 within that side's grid)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "asset (GW_ItemSlotBase::Decode; model.Asset substruct)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnPutMoney": {
+      "address": "0x743e70",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (16 TRADE_ADD_MESO; CTradingRoomDlg::OnPacket @0x744ec0 dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount (ASSIGNED: this[side + N] = Decode4(), not accumulated)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnTrade": {
+      "address": "0x744440",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "count (number of crc entries)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "data/itemId (per-entry first)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "crc (per-entry second)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnTrade#TradeConfirm": {
+      "address": "0x744440",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (17 TRADE_CONFIRM; CTradingRoomDlg::OnPacket @0x744ec0 dispatch byte). The arm reads NO body."
         }
       ]
     },
@@ -8334,6 +8764,34 @@
           "op": "Decode2",
           "comment": "",
           "guard": "v2 >= 0 && sub_950640(v23, v24, v25, v26, v27) == 6 && !v20"
+        }
+      ]
+    },
+    "CUICashItemGachapon::OnButtonClicked": {
+      "address": "0x944110",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeBuffer",
+          "comment": "cashId: 8 bytes LARGE_INTEGER (int64), the cash serial (m_liItemSN)"
+        }
+      ]
+    },
+    "CUICashItemGachapon::OnCashItemGachaponResult": {
+      "address": "0x943680",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "itemId (int32, rewarded template id)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "jackpot (byte, selects CashGachaponJackpot vs CashGachaponNormal sfx)"
         }
       ]
     },
@@ -8741,6 +9199,18 @@
           "ref": "sub_543810"
         }
       ]
+    },
+    "CUser::OnDragonPacket": {
+      "address": "0x8ce880",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "discriminator": "switch",
+          "case": 211
+        }
+      ],
+      "notes": "REMOVE_DRAGON body. CUser::OnDragonPacket@0x8ce880 (GMS_v92_1_DEVM.exe.i64, session acdfccff, renamed from sub_8CE880 during this verification) handles only a2==209 (spawn, CDragon::OnCreated@0x5084c0) and this[2792]&&a2==210 (move, CDragon::OnMove@0x505560). THERE IS NO CASE FOR 211 (REMOVE_DRAGON) -- the outer dispatcher CUserPool::OnUserCommonPacket@0x929750 routes the range (unsigned int)(v6 - 209) <= 2 into this function (test @0x9298b9, call @0x9298bf), so 211 enters and falls through both branches with zero effect: no field is read, no dragon state changes. Same routed-but-unhandled shape already recorded for v83/v84/v87/v95 (docs/packets/registry/gms_v84.yaml:1254). Sending REMOVE_DRAGON is correct and harmless; the client silently discards it. Match (task-225).",
+      "calls": []
     },
     "CUser::OnEffect": {
       "address": "0x8e5510",
@@ -9188,6 +9658,16 @@
         }
       ]
     },
+    "CUserLocal::OnIncComboResponse": {
+      "address": "0x8fe8e0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "count (CUserLocal::OnIncComboResponse: Decode4 store to the m_nCombo mirror, then get_update_time() timestamp, then DrawCombo(this); task-217, design.md \u00a72.2)"
+        }
+      ]
+    },
     "CUserLocal::OnOpenUI": {
       "address": "0x8ebf80",
       "direction": "clientbound",
@@ -9380,6 +9860,59 @@
           "comment": "function not found in IDB"
         }
       ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x8f85c0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!a5",
+          "ref": "dword_C38B14"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!a5",
+          "ref": "sub_64AAC0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "Src"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "Src"
+        }
+      ]
+    },
+    "CUserLocal__RequestIncCombo_send_0xBA": {
+      "address": "0x8ef840",
+      "direction": "serverbound",
+      "calls": null
     },
     "CUserPool::OnUserEnterField": {
       "address": "0x92a4e0",
@@ -9828,6 +10361,18 @@
         }
       ]
     },
+    "CVecCtrlDragon::EndUpdateActive": {
+      "address": "0x96f190",
+      "direction": "serverbound",
+      "notes": "MOVE_DRAGON (serverbound) send site. CVecCtrlDragon::EndUpdateActive@0x96f190 (GMS_v92_1_DEVM.exe.i64, session acdfccff): if sub_659CB0(0,0), builds COutPacket(211=0xD3)@0x96f1d2 then CMovePath::Flush(v1,&v3,0,0)@0x96f1ea and sends via CClientSocket::SendPacket@0x96f1fe. There is NO leading identity field -- same shape as v83/v84/v87/v95's CVecCtrlDragon::EndUpdateActive. Opcode 211 confirmed from the COutPacket construction site itself, matching the registry opcode (211) for serverbound MOVE_DRAGON on v92. Match (task-225).",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "opaque CMovePath blob, opcode 211 @0x96f1d2/0x96f1ea",
+          "ref": "CMovePath::Flush"
+        }
+      ]
+    },
     "CVecCtrlPet::EndUpdateActive": {
       "address": "0x9781a0",
       "direction": "serverbound",
@@ -10077,6 +10622,51 @@
         {
           "op": "Unresolved",
           "comment": "dispatcher-family arm not harvested for gms_v92 (see notes)"
+        }
+      ]
+    },
+    "CWvsContext::OnCancelNameChangeResult": {
+      "address": "0x9d64a0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nResult"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bHasMessage",
+          "guard": "nResult != 0x00 && nResult != 0xFF"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sMessage",
+          "guard": "nResult != 0x00 && nResult != 0xFF && bHasMessage"
+        }
+      ]
+    },
+    "CWvsContext::OnCancelNameChangebyOther": {
+      "address": "0x9cc170",
+      "direction": "clientbound",
+      "calls": []
+    },
+    "CWvsContext::OnCancelTransferWorldResult": {
+      "address": "0x9d6680",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nResult"
+        },
+        {
+          "op": "Decode1",
+          "comment": "bHasMessage",
+          "guard": "nResult != 0x00 && nResult != 0x01"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "sMessage",
+          "guard": "nResult != 0x00 && nResult != 0x01 && bHasMessage"
         }
       ]
     },
@@ -11487,6 +12077,17 @@
         }
       ]
     },
+    "CWvsContext::OnMacroSysDataInit": {
+      "address": "0x9c5390",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "task-226 harvest: CWvsContext::OnMacroSysDataInit calls CMacroSysMan::Reset(instance) (no packet arg, omitted) then MACROSYSDATA::Decode(a2) DIRECTLY (v92 has no separate CMacroSysMan::SetMacro wrapper -- inlined/optimized away relative to other versions); no direct CInPacket::DecodeN(...) call of its own, so the alias-seed regex never fires. Hand-spliced after verifying the call by decompile.",
+          "ref": "MACROSYSDATA::Decode"
+        }
+      ]
+    },
     "CWvsContext::OnMapTransferResult": {
       "address": "0x9cead0",
       "direction": "clientbound",
@@ -12551,6 +13152,28 @@
         }
       ]
     },
+    "CWvsContext::SendBridleItemUseRequest": {
+      "address": "0x9b5830",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hit-mob object id (FindHitMobInRect)"
+        }
+      ]
+    },
     "CWvsContext::SendChangeSlotPositionRequest": {
       "address": "0x9af740",
       "direction": "serverbound",
@@ -12877,6 +13500,43 @@
         }
       ]
     },
+    "CWvsContext::SendScriptRunItemRequest": {
+      "address": "0x9b3da0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 500 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 500 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 500 && result"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0x9aff40",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 200 && <default>"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "(__int16)result > 0 && result >= 200 && <default>"
+        }
+      ]
+    },
     "CWvsContext::SendSetGuildTitleNames": {
       "address": "",
       "direction": "",
@@ -13140,6 +13800,75 @@
         }
       ]
     },
+    "MACROSYSDATA::Decode": {
+      "address": "0x4f4c50",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "task-226: the harvester's auto-detected Delegate for MACROSYSDATA::Decode pointed at sub_4EF7F0 (ZArray<SINGLEMACRO>::_Realloc, a buffer-resize helper reached via '&a2' in the arg list) instead of the real wire-reading callee SINGLEMACRO::Decode, because Hex-Rays aliases the packet arg through 'v2 = (volatile LONG *)a2;' (a cast the alias-propagation regex does not follow) so the real SINGLEMACRO::Decode(ptr, v2) call was never recognized. Corrected after verifying the call by decompile (the _Realloc call is stripped, matching the COutPacket-delegate-artifact precedent in VERIFYING_A_PACKET.md \u00a710).",
+          "guard": "v4 > 0",
+          "ref": "SINGLEMACRO::Decode"
+        }
+      ]
+    },
+    "MACROSYSDATA::Encode": {
+      "address": "0x4f4c00",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "task-226: MACROSYSDATA::Encode's own Decode1-equivalent primitive is real (auto-harvested), but the harvester missed the Delegate to SINGLEMACRO::Encode because Hex-Rays emits the packet arg as a cast '(unsigned int *)a2', which the alias-seed regex requires to be a bare identifier. Hand-added after verifying the call by decompile.",
+          "guard": "v4 > 0",
+          "ref": "SINGLEMACRO::Encode"
+        }
+      ]
+    },
+    "SINGLEMACRO::Decode": {
+      "address": "0x4f4b90",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2"
+        }
+      ]
+    },
+    "SINGLEMACRO::Encode": {
+      "address": "0x4f4ab0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": "task-226: hand-added -- Hex-Rays emits this as an inlined manual buffer write (direct pointer store + ZArray growth), not a textual COutPacket::Encode4(...) call, so the regex parser cannot see it; verified by decompile against the 3x uint32 skill-id fields (matches the DecodeStr/Decode1/Decode4 shape of every sibling version's SINGLEMACRO::Encode/Decode)."
+        }
+      ]
+    },
     "SKILLENTRY::GetSpecialUOL": {
       "address": "",
       "direction": "",
@@ -13307,703 +14036,6 @@
       "address": "0x9df210",
       "direction": "",
       "calls": null
-    },
-    "CCashShop::OnCashItemGachaponResult": {
-      "address": "0x491530",
-      "direction": "clientbound",
-      "note": "CASHSHOP_CASH_ITEM_GACHAPON_RESULT (task-207). mode(Decode1) unconditional. SUCCESS (mode=190): sn:DecodeBuffer(8, LARGE_INTEGER int64, matched against m_aCashItemInfo[i].liSN) + remain:Decode4 (int32 new quantity) + newItem:DecodeBuffer(0x37=55, GW_CashItemInfo, UNCONDITIONAL) + delegate to CUICashItemGachapon::OnCashItemGachaponResult for itemId/count/jackpot. FAILED (mode=189): no further reads, StringPool notice only.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode byte"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "sn: 8 bytes LARGE_INTEGER (int64)",
-          "guard": "mode == 190"
-        },
-        {
-          "op": "Decode4",
-          "comment": "remain (int32, new box quantity)",
-          "guard": "mode == 190"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "newItem: 55 bytes GW_CashItemInfo blob, unconditional within SUCCESS arm",
-          "guard": "mode == 190"
-        },
-        {
-          "op": "Delegate",
-          "comment": "trailing itemId/count/jackpot read by the UI class, not CCashShop",
-          "guard": "mode == 190",
-          "ref": "CUICashItemGachapon::OnCashItemGachaponResult"
-        }
-      ]
-    },
-    "CUICashItemGachapon::OnCashItemGachaponResult": {
-      "address": "0x943680",
-      "direction": "clientbound",
-      "note": "CUICashItemGachapon::OnCashItemGachaponResult (task-207) \u2014 reads the trailing itemId/count/jackpot fields of CASHSHOP_CASH_ITEM_GACHAPON_RESULT's SUCCESS arm, delegated to by CCashShop::OnCashItemGachaponResult.",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "itemId (int32, rewarded template id)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "count (byte)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "jackpot (byte, selects CashGachaponJackpot vs CashGachaponNormal sfx)"
-        }
-      ]
-    },
-    "CUICashItemGachapon::OnButtonClicked": {
-      "address": "0x944110",
-      "direction": "serverbound",
-      "note": "CUICashItemGachapon::OnButtonClicked (task-207) \u2014 nId==2000 (Open button): COutPacket(<op>) + EncodeBuffer(&m_liItemSN, 8), no other fields.",
-      "calls": [
-        {
-          "op": "EncodeBuffer",
-          "comment": "cashId: 8 bytes LARGE_INTEGER (int64), the cash serial (m_liItemSN)"
-        }
-      ]
-    },
-    "CWvsContext::SendBridleItemUseRequest": {
-      "address": "0x9b5830",
-      "direction": "serverbound",
-      "note": "USE_CATCH_ITEM (task-212). CWvsContext::SendBridleItemUseRequest: update_time(Encode4), nPOS(Encode2), nItemID(Encode4), then the FindHitMobInRect-derived hit-mob object id (Encode4). Body is byte-identical to gms_v48/v61/v72/v79/v95's already-pinned layout; resolved via idb_open/func_query/decompile (idb_list session, matched by binary name) since the mangled symbol was already present (v83/v87/v92/jms_185) or renamed live to it (v84).",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "updateTime (get_update_time)"
-        },
-        {
-          "op": "Decode2",
-          "comment": "nPOS"
-        },
-        {
-          "op": "Decode4",
-          "comment": "nItemID"
-        },
-        {
-          "op": "Decode4",
-          "comment": "hit-mob object id (FindHitMobInRect)"
-        }
-      ]
-    },
-    "CDragon::OnCreated": {
-      "address": "0x5084c0",
-      "direction": "clientbound",
-      "notes": "SPAWN_DRAGON body. CDragon::OnCreated@0x5084c0 (GMS_v92_1_DEVM.exe.i64, session acdfccff), reached via CUser::OnDragonPacket@0x8ce880's a2==209 branch, itself routed by CUserPool::OnUserCommonPacket@0x929750's range test (unsigned int)(v6 - 209) <= 2 @0x9298b9. Reads, in order: Decode4 x @0x5084f9, Decode4 y @0x50850c, Decode1 stance @0x508547 (secured via _ZtlSecureTear into this+37/this[37]), Decode2 <read, discarded -- return value never assigned> @0x508564, Decode2 jobId (this+71/this[71]) @0x508573. 13-byte body, byte-identical to the already-verified v84/v87/v95 shape. v92 CONFIRMS the spawnHasJobId gate boundary (GMS MajorAtLeast(84)): v92 carries jobId. Match (task-225).",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "x @0x5084f9"
-        },
-        {
-          "op": "Decode4",
-          "comment": "y @0x50850c"
-        },
-        {
-          "op": "Decode1",
-          "comment": "stance -> secured into this+37 via _ZtlSecureTear @0x508547/0x50855e"
-        },
-        {
-          "op": "Decode2",
-          "comment": "read and discarded -- return value never assigned @0x508564"
-        },
-        {
-          "op": "Decode2",
-          "comment": "jobId -> this+71 @0x508573"
-        }
-      ]
-    },
-    "CDragon::OnMove": {
-      "address": "0x505560",
-      "direction": "clientbound",
-      "notes": "MOVE_DRAGON body. CDragon::OnMove@0x505560 (GMS_v92_1_DEVM.exe.i64, session acdfccff) is a single delegating call: CMovePath::OnMovePacket(this[55]!=0 ? this[55]-12+580 : 580, a2, 0) -- identical shape to v83/v84/v87/v95's CDragon::OnMove (only the per-version fallback constant differs; the wire shape is unaffected). Reached via CUser::OnDragonPacket@0x8ce880's a2==210 branch (gated on this[2792]). The whole remaining body is the opaque CMovePath blob. Matches the committed DragonMove codec exactly. Match (task-225).",
-      "calls": [
-        {
-          "op": "Delegate",
-          "comment": "opaque CMovePath blob @0x505560",
-          "ref": "CMovePath::OnMovePacket"
-        }
-      ]
-    },
-    "CUser::OnDragonPacket": {
-      "address": "0x8ce880",
-      "direction": "clientbound",
-      "dispatch": [
-        {
-          "discriminator": "switch",
-          "case": 211
-        }
-      ],
-      "notes": "REMOVE_DRAGON body. CUser::OnDragonPacket@0x8ce880 (GMS_v92_1_DEVM.exe.i64, session acdfccff, renamed from sub_8CE880 during this verification) handles only a2==209 (spawn, CDragon::OnCreated@0x5084c0) and this[2792]&&a2==210 (move, CDragon::OnMove@0x505560). THERE IS NO CASE FOR 211 (REMOVE_DRAGON) -- the outer dispatcher CUserPool::OnUserCommonPacket@0x929750 routes the range (unsigned int)(v6 - 209) <= 2 into this function (test @0x9298b9, call @0x9298bf), so 211 enters and falls through both branches with zero effect: no field is read, no dragon state changes. Same routed-but-unhandled shape already recorded for v83/v84/v87/v95 (docs/packets/registry/gms_v84.yaml:1254). Sending REMOVE_DRAGON is correct and harmless; the client silently discards it. Match (task-225).",
-      "calls": []
-    },
-    "CVecCtrlDragon::EndUpdateActive": {
-      "address": "0x96f190",
-      "direction": "serverbound",
-      "notes": "MOVE_DRAGON (serverbound) send site. CVecCtrlDragon::EndUpdateActive@0x96f190 (GMS_v92_1_DEVM.exe.i64, session acdfccff): if sub_659CB0(0,0), builds COutPacket(211=0xD3)@0x96f1d2 then CMovePath::Flush(v1,&v3,0,0)@0x96f1ea and sends via CClientSocket::SendPacket@0x96f1fe. There is NO leading identity field -- same shape as v83/v84/v87/v95's CVecCtrlDragon::EndUpdateActive. Opcode 211 confirmed from the COutPacket construction site itself, matching the registry opcode (211) for serverbound MOVE_DRAGON on v92. Match (task-225).",
-      "calls": [
-        {
-          "op": "Delegate",
-          "comment": "opaque CMovePath blob, opcode 211 @0x96f1d2/0x96f1ea",
-          "ref": "CMovePath::Flush"
-        }
-      ]
-    },
-    "CMacroSysMan::FlushToSvr": {
-      "address": "0x602ed0",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Delegate",
-          "comment": "task-226 harvest: CMacroSysMan::FlushToSvr constructs the COutPacket locally then hands the entire write off to MACROSYSDATA::Encode as a single call; the harvester's alias-seed regex only fires on a literal COutPacket::EncodeN(...) call inside the SAME function body, so this function's own text yields zero matches even though it fully implements the wire write via delegation. Hand-spliced after verifying the call by decompile (VERIFYING_A_PACKET.md \u00a710).",
-          "ref": "MACROSYSDATA::Encode"
-        }
-      ]
-    },
-    "CWvsContext::OnMacroSysDataInit": {
-      "address": "0x9c5390",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Delegate",
-          "comment": "task-226 harvest: CWvsContext::OnMacroSysDataInit calls CMacroSysMan::Reset(instance) (no packet arg, omitted) then MACROSYSDATA::Decode(a2) DIRECTLY (v92 has no separate CMacroSysMan::SetMacro wrapper -- inlined/optimized away relative to other versions); no direct CInPacket::DecodeN(...) call of its own, so the alias-seed regex never fires. Hand-spliced after verifying the call by decompile.",
-          "ref": "MACROSYSDATA::Decode"
-        }
-      ]
-    },
-    "MACROSYSDATA::Encode": {
-      "address": "0x4f4c00",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "task-226: MACROSYSDATA::Encode's own Decode1-equivalent primitive is real (auto-harvested), but the harvester missed the Delegate to SINGLEMACRO::Encode because Hex-Rays emits the packet arg as a cast '(unsigned int *)a2', which the alias-seed regex requires to be a bare identifier. Hand-added after verifying the call by decompile.",
-          "guard": "v4 > 0",
-          "ref": "SINGLEMACRO::Encode"
-        }
-      ]
-    },
-    "MACROSYSDATA::Decode": {
-      "address": "0x4f4c50",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "task-226: the harvester's auto-detected Delegate for MACROSYSDATA::Decode pointed at sub_4EF7F0 (ZArray<SINGLEMACRO>::_Realloc, a buffer-resize helper reached via '&a2' in the arg list) instead of the real wire-reading callee SINGLEMACRO::Decode, because Hex-Rays aliases the packet arg through 'v2 = (volatile LONG *)a2;' (a cast the alias-propagation regex does not follow) so the real SINGLEMACRO::Decode(ptr, v2) call was never recognized. Corrected after verifying the call by decompile (the _Realloc call is stripped, matching the COutPacket-delegate-artifact precedent in VERIFYING_A_PACKET.md \u00a710).",
-          "guard": "v4 > 0",
-          "ref": "SINGLEMACRO::Decode"
-        }
-      ]
-    },
-    "SINGLEMACRO::Decode": {
-      "address": "0x4f4b90",
-      "direction": "",
-      "calls": [
-        {
-          "op": "DecodeStr",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "a2"
-        }
-      ]
-    },
-    "SINGLEMACRO::Encode": {
-      "address": "0x4f4ab0",
-      "direction": "",
-      "calls": [
-        {
-          "op": "DecodeStr",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode4",
-          "comment": "task-226: hand-added -- Hex-Rays emits this as an inlined manual buffer write (direct pointer store + ZArray growth), not a textual COutPacket::Encode4(...) call, so the regex parser cannot see it; verified by decompile against the 3x uint32 skill-id fields (matches the DecodeStr/Decode1/Decode4 shape of every sibling version's SINGLEMACRO::Encode/Decode)."
-        }
-      ]
-    },
-    "CCashShop::OnCheckDuplicatedIDResult": {
-      "address": "0x493f40",
-      "direction": "",
-      "calls": [
-        {
-          "op": "DecodeStr",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
-        }
-      ]
-    },
-    "CWvsContext::OnCancelNameChangeResult": {
-      "address": "0x9d64a0",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "nResult"
-        },
-        {
-          "op": "Decode1",
-          "comment": "bHasMessage",
-          "guard": "nResult != 0x00 && nResult != 0xFF"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "sMessage",
-          "guard": "nResult != 0x00 && nResult != 0xFF && bHasMessage"
-        }
-      ]
-    },
-    "CWvsContext::OnCancelNameChangebyOther": {
-      "address": "0x9cc170",
-      "direction": "clientbound",
-      "calls": []
-    },
-    "CWvsContext::OnCancelTransferWorldResult": {
-      "address": "0x9d6680",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "nResult"
-        },
-        {
-          "op": "Decode1",
-          "comment": "bHasMessage",
-          "guard": "nResult != 0x00 && nResult != 0x01"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "sMessage",
-          "guard": "nResult != 0x00 && nResult != 0x01 && bHasMessage"
-        }
-      ]
-    },
-    "CWvsContext::SendScriptRunItemRequest": {
-      "address": "0x9b3da0",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "(__int16)result > 0 && result >= 500 && result"
-        },
-        {
-          "op": "Decode2",
-          "comment": "",
-          "guard": "(__int16)result > 0 && result >= 500 && result"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "(__int16)result > 0 && result >= 500 && result"
-        }
-      ]
-    },
-    "CWvsContext::SendSelectNpcItemUseRequest": {
-      "address": "0x9aff40",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode2",
-          "comment": "",
-          "guard": "(__int16)result > 0 && result >= 200 && <default>"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "(__int16)result > 0 && result >= 200 && <default>"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#Open": {
-      "address": "0x689293",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Mode consumed by CParcelDlg::OnPacket's outer Decode1 @0x6891c8; case 8 reads quickEnabled Decode1 @0x689293, then CParcelDlg::SetParcelDlg @0x689180 -> CTabReceive::SetParcel @0x688da0 does the mailbox/arrived reads: count Decode1 @0x688dd6 + count*PARCEL::Decode (loop @0x688dec-0x688ea7), then count Decode1 @0x688eff + count*PARCEL::Decode (loop @0x688f11-0x689164). PARCEL::Decode @0x4f3b10: CInPacket::DecodeBuffer(0xEA=234) @0x4f3b43, then Decode1(hasItem) @0x4f3b4f, optional GW_ItemSlotBase::Decode @0x4f3b5c. Byte-identical shape to v83/v84/v87, confirmed on this IDB. Atlas struct: parcel/clientbound/parcel.go Open + parcel/parcel.go Parcel.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (8 OPEN; dispatch byte)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "quickEnabled"
-        },
-        {
-          "op": "Decode1",
-          "comment": "mailbox count"
-        },
-        {
-          "op": "DecodeBuf",
-          "comment": "one parcel entry (PARCEL::Decode: 234-byte fixed id/senderName/mesos/expiresAt/message block + hasItem + optional GW_ItemSlotBase item) -- loop body",
-          "guard": "loop mailbox count"
-        },
-        {
-          "op": "Decode1",
-          "comment": "arrived count"
-        },
-        {
-          "op": "DecodeBuf",
-          "comment": "one parcel entry (PARCEL::Decode, same shape as mailbox) -- loop body",
-          "guard": "loop arrived count"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#SendEnableActions": {
-      "address": "0x6807e0",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Mode 9 falls to OnPacket's default arm -> sub_6807D0 @0x6807d0 (NoticeResult-equivalent), whose switch @0x6807e0 has no case 9 -- returns without a notice (client-side re-enable only). No body beyond the mode byte. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go SendEnableActions.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (9 SEND_ENABLE_ACTIONS; dispatch byte, no notice text, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#NotEnoughMesos": {
-      "address": "0x680801",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 10 @0x680801 selects StringPool id 6352, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go NotEnoughMesos.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (10 NOT_ENOUGH_MESOS; dispatch byte, notice-only, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#IncorrectRequest": {
-      "address": "0x68081b",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 11 @0x68081b selects StringPool id 3977, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go IncorrectRequest.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (11 INCORRECT_REQUEST; dispatch byte, notice-only, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#NameDoesNotExist": {
-      "address": "0x680834",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 12 @0x680834 selects StringPool id 3978, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go NameDoesNotExist.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (12 NAME_DOES_NOT_EXIST; dispatch byte, notice-only, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#SameAccount": {
-      "address": "0x68084e",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 13 @0x68084e selects StringPool id 3979, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go SameAccount.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (13 SAME_ACCOUNT; dispatch byte, notice-only, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#ReceiverStorageFull": {
-      "address": "0x680868",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 14 @0x680868 selects StringPool id 3980, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go ReceiverStorageFull.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (14 RECEIVER_STORAGE_FULL; dispatch byte, notice-only, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#ReceiverUnableToReceive": {
-      "address": "0x680881",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 15 @0x680881 selects StringPool id 3981, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go ReceiverUnableToReceive.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (15 RECEIVER_UNABLE_TO_RECEIVE; dispatch byte, notice-only, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#SenderUniqueConflict": {
-      "address": "0x680898",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 16 @0x680898 selects StringPool id 3982, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go SenderUniqueConflict.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (16 SENDER_UNIQUE_CONFLICT; dispatch byte, notice-only, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#MesoLimit": {
-      "address": "0x6807e7",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 17 @0x6807e7 selects StringPool id 4051, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go MesoLimit.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (17 MESO_LIMIT; dispatch byte, notice-only, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#SuccessfullySent": {
-      "address": "0x6896e1",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 18 @0x6808af selects StringPool id 3975. OnPacket's default arm additionally checks a1==18 @0x6896e1 to trigger CParcelDlg::CloseParcelDlg (@0x680740) as a side effect (via a refcount check on v18+144). No body beyond the mode byte. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go SuccessfullySent.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (18/0x12 SUCCESSFULLY_SENT; dispatch byte, notice-only, no body; also gates the CloseParcelDlg side effect)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#UnknownError": {
-      "address": "0x6808c5",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 19 (shared with 28) @0x6808c5 selects StringPool id 3983, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go UnknownError.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (19 UNKNOWN_ERROR; dispatch byte, notice-only, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#RecvEnableActions": {
-      "address": "0x6807e0",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Mode 20 falls to OnPacket's default arm -> sub_6807D0 @0x6807d0 (NoticeResult-equivalent), whose switch @0x6807e0 has no case 20 -- returns without a notice (client-side re-enable only). No body beyond the mode byte. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go RecvEnableActions.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (20 RECV_ENABLE_ACTIONS; dispatch byte, no notice text, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#RecvNoFreeSlots": {
-      "address": "0x6808dc",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 21 @0x6808dc selects StringPool id 3984, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go RecvNoFreeSlots.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (21 RECV_NO_FREE_SLOTS; dispatch byte, notice-only, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#RecvUniqueConflict": {
-      "address": "0x6808f3",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 22 @0x6808f3 selects StringPool id 3985, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go RecvUniqueConflict.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (22 RECV_UNIQUE_CONFLICT; dispatch byte, notice-only, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#ParcelRemoved": {
-      "address": "0x6892ea",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Case 23 @0x6892ea: CInPacket::Decode4 (parcelId) then Decode1 (kind) @0x6892f1; kind==3 selects one StringPool id (3973), else another (3974). Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go ParcelRemoved.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (23/0x17 PARCEL_REMOVED; dispatch byte)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "parcelId"
-        },
-        {
-          "op": "Decode1",
-          "comment": "kind (3 = deleted; else = claimed)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#ParcelArrived": {
-      "address": "0x689466",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Case 24: a single PARCEL::Decode call @0x689466, then a StringPool-id-3976-class notice (no further wire bytes). Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go ParcelArrived + parcel/parcel.go Parcel.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (24/0x18 PARCEL_ARRIVED; dispatch byte)"
-        },
-        {
-          "op": "DecodeBuf",
-          "comment": "one parcel entry (PARCEL::Decode: 234-byte fixed id/senderName/mesos/expiresAt/message block + hasItem + optional GW_ItemSlotBase item)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#AlarmNamed": {
-      "address": "0x6894d6",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Case 25 @0x6894d6: CInPacket::DecodeStr (senderName) then Decode1 (hasItem) @0x6894f7, driving the named-sender fade window. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go AlarmNamed.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (25/0x19 ALARM_NAMED; dispatch byte)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "senderName"
-        },
-        {
-          "op": "Decode1",
-          "comment": "hasItem"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#OpenQuick": {
-      "address": "0x689235",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Case 26 @0x6891eb-0x68924d: no wire reads beyond the mode byte -- TSingleton disconnect-guard then CParcelDlg construction @0x689235 only. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go OpenQuick.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (26/0x1A OPEN_QUICK; dispatch byte, no body)"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#AlarmGeneric": {
-      "address": "0x6895fe",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). Case 27 @0x6895fe: CInPacket::Decode1 (hasItem) only, driving the generic (unnamed-sender) fade window. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go AlarmGeneric.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (27/0x1B ALARM_GENERIC; dispatch byte)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "hasItem"
-        }
-      ]
-    },
-    "CParcelDlg::OnPacket#UnknownError2": {
-      "address": "0x6808c5",
-      "direction": "clientbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). sub_6807D0 case 28 (shared with 19) @0x6808c5 selects StringPool id 3983, no further wire bytes. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/clientbound/parcel.go UnknownError2.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (28 UNKNOWN_ERROR_2; dispatch byte, notice-only, no body)"
-        }
-      ]
-    },
-    "CTabSend::SendParcel": {
-      "address": "0x682da0",
-      "direction": "serverbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). DUEY_ACTION mode 2 (SEND). Two independent client call sites share this fname: the NPC-path CTabSend::SendParcel itself @0x683c20 (quick=0, stops after the quick flag) and the quick-send path sub_682DA0 @0x682da0 (quick=1, appends message+ticketRef) -- named CTabQuickSend::SendQuickDelivery in prior batches' IDBs, unnamed in this one (task-092 'distrust IDB names'; located via byte-signature match on the '6A 47 8D 4C 24' push-opcode/lea-ecx/call-COutPacket-ctor pattern, same discipline as batch 5). Both: COutPacket(&pkt, 0x47u) @0x683d98/0x682fd6; Encode1(2) mode @0x683da8/0x682fe6; Encode1(invType) @0x683db6/0x682ff4; Encode2(slot) @0x683dc4/0x683002; Encode2(quantity) @0x683dd2/0x683010; Encode4(mesos) @0x683ddf/0x68301d; EncodeStr(recipientName) @0x683dfb/0x683039; Encode1(quick) @0x683e05 (=0)/0x683044 (=1). Quick path only: EncodeStr(message) @0x683060, Encode4(ticketRef) @0x68306d. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/serverbound/action_send.go ActionSend.",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "inventoryType"
-        },
-        {
-          "op": "Decode2",
-          "comment": "slot"
-        },
-        {
-          "op": "Decode2",
-          "comment": "quantity"
-        },
-        {
-          "op": "Decode4",
-          "comment": "mesos"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "recipientName"
-        },
-        {
-          "op": "Decode1",
-          "comment": "quick"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "message -- quick-send path only (sub_682DA0 @0x682da0); the NPC path (CTabSend::SendParcel @0x683c20) stops after the quick flag",
-          "guard": "quick != 0"
-        },
-        {
-          "op": "Decode4",
-          "comment": "ticketRef -- quick-send path only",
-          "guard": "quick != 0"
-        }
-      ]
-    },
-    "CTabReceive::ReceiveParcel": {
-      "address": "0x680cb0",
-      "direction": "serverbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). DUEY_ACTION mode 4 (RECEIVE). Gated on the 30-day expiry countdown @0x680d53. COutPacket(&pkt, 0x47) @0x680d75; Encode1(4) @0x680d88; Encode4(parcelId) @0x680d9d. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/serverbound/action_parcel_id.go ActionReceive.",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "parcelId"
-        }
-      ]
-    },
-    "CTabReceive::DiscardParcel": {
-      "address": "0x680e20",
-      "direction": "serverbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). DUEY_ACTION mode 5 (DISCARD). COutPacket(&pkt, 0x47) @0x680e9f; Encode1(5) @0x680eb2; Encode4(parcelId) @0x680ec7. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/serverbound/action_parcel_id.go ActionDiscard.",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "parcelId"
-        }
-      ]
-    },
-    "CParcelDlg::CloseParcelDlg": {
-      "address": "0x680740",
-      "direction": "serverbound",
-      "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). DUEY_ACTION mode 7 (CLOSE). COutPacket(&pkt, 0x47) @0x68076c; Encode1(7) @0x68077f; no further bytes -- the mode byte itself is written by the shared Action wrapper (action.go), not ActionClose. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/serverbound/action_parcel_id.go ActionClose.",
-      "calls": []
-    },
-    "CMob::ApplyControl": {
-      "address": "0x636320",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "a2 - result >= 1000"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "a2 - result >= 1000"
-        }
-      ]
     }
   }
 }

@@ -85,7 +85,7 @@ shape is what makes §5's validation cheap and strong.
 |---|---|---|---|
 | gms_v95 | `0x913690` (named) | `push 113` (`0x071`) | `Encode1, EncodeStr, Encode2 ×4` |
 | gms_v87 | `0x9da037` (named) | at `0x9da1c0` | `Encode1, EncodeStr, Encode2 ×4` |
-| jms_v185 | `0xa2218f` (named) | `push 60h` at `0xa2230e` | `Encode1, EncodeStr, Encode2 ×4` |
+| jms_v185 | `0xa2218f` (named) | `push 60h` at `0xa22313` (corrected during Task 12 promotion — this row originally read `0xa2230e`; the opcode, 96 / `0x060`, is unaffected) | `Encode1, EncodeStr, Encode2 ×4` |
 
 All three are byte-identical. **No `MajorAtLeast` gate is required** (PRD
 FR-2.3 is satisfied vacuously). If the v83/v84/v92 derivation in §7.1 finds a

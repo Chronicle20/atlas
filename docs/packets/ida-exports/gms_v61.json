@@ -3,289 +3,6 @@
   "md5": "",
   "generated_at": "2026-07-02T05:12:39Z",
   "functions": {
-    "CCashShop::SendCheckTransferWorldPossiblePacket": {
-      "address": "0x45cefd",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": ""
-        },
-        {
-          "op": "Decode4",
-          "comment": ""
-        }
-      ]
-    },
-    "CCashShop::SendCheckNameChangePossiblePacket": {
-      "address": "0x45cd72",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": ""
-        },
-        {
-          "op": "Decode4",
-          "comment": ""
-        }
-      ]
-    },
-    "CPet::OnNameChanged": {
-      "address": "0x6135d6",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "DecodeStr",
-          "comment": "name"
-        },
-        {
-          "op": "Decode1",
-          "comment": "name-tag decoration layer selector (CLife::MakeNameTag)"
-        }
-      ]
-    },
-    "CTradingRoomDlg::OnPutItem": {
-      "address": "0x68b37f",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (14 TRADE_PUT_ITEM; CTradingRoomDlg::OnPacket @0x68b335 dispatch byte)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "side (recipient-relative room side; indexes this[side + N] item grid)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "tradeSlot (1..9 within that side's grid)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "asset (GW_ItemSlotBase::Decode; model.Asset substruct)"
-        }
-      ]
-    },
-    "CTradingRoomDlg::OnPutMoney": {
-      "address": "0x68b456",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (15 TRADE_ADD_MESO; CTradingRoomDlg::OnPacket @0x68b335 dispatch byte)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "side (recipient-relative room side)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "amount (ASSIGNED: this[side + N] = Decode4(), not accumulated)"
-        }
-      ]
-    },
-    "CTradingRoomDlg::OnTrade#TradeConfirm": {
-      "address": "0x68b484",
-      "direction": "clientbound",
-      "note": "Clientbound receive arm of CTradingRoomDlg::OnTrade. Same function as the serverbound TRANSACTION sender (interaction/serverbound/InteractionOperationTransaction), which is keyed on the un-suffixed CTradingRoomDlg::OnTrade; the #TradeConfirm suffix separates the two wire shapes (this arm is bodyless; the send carries count + {itemId, crc} pairs).",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (16 TRADE_CONFIRM; CTradingRoomDlg::OnPacket @0x68b335 dispatch byte). The arm reads NO body."
-        }
-      ]
-    },
-    "CTradingRoomDlg::OnMesoLimitRefused": {
-      "address": "0x68b498",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (19 TRADE_MESO_LIMIT; CTradingRoomDlg::OnPacket @0x68b335 dispatch byte). The arm reads NO body."
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#LOAD_GIFT_FAILED": {
-      "address": "0x461989",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x32 LOAD_GIFT_FAILED; op-byte consumed by dispatcher before OnCashItemResLoadGiftFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#LOAD_WISH_FAILED": {
-      "address": "0x4619eb",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x34 LOAD_WISH_FAILED; op-byte consumed by dispatcher before OnCashItemResLoadWishFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#SET_WISH_FAILED": {
-      "address": "0x461a6e",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x3A SET_WISH_FAILED; op-byte consumed by dispatcher before OnCashItemResSetWishFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#BUY_FAILED": {
-      "address": "0x461b47",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x3C BUY_FAILED; op-byte consumed by dispatcher before OnCashItemResBuyFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#USE_COUPON_FAILED": {
-      "address": "0x462936",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x40 USE_COUPON_FAILED; op-byte consumed by dispatcher before OnCashItemResUseCouponFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#GIFT_FAILED": {
-      "address": "0x462a5f",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x43 GIFT_FAILED; op-byte consumed by dispatcher before OnCashItemResGiftFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#INC_TRUNK_COUNT_FAILED": {
-      "address": "0x462c65",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x47 INC_TRUNK_COUNT_FAILED; op-byte consumed by dispatcher before OnCashItemResIncTrunkCountFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_FAILED": {
-      "address": "0x462d31",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x49 INC_CHARACTER_SLOT_COUNT_FAILED; op-byte consumed by dispatcher before OnCashItemResIncCharacterSlotCountFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#MOVE_L_TO_S_FAILED": {
-      "address": "0x462ec0",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x4B MOVE_L_TO_S_FAILED; op-byte consumed by dispatcher before OnCashItemResMoveLtoSFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#MOVE_S_TO_L_FAILED": {
-      "address": "0x463131",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x4D MOVE_S_TO_L_FAILED; op-byte consumed by dispatcher before OnCashItemResMoveStoLFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnStatusCoupon": {
-      "address": "0x45a6b5",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "DecodeStr",
-          "comment": "",
-          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v15) == 1 && v4"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "",
-          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v15) == 1 && v4"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "",
-          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v15) == 1 && v4 && v14"
-        }
-      ]
-    },
-    "CUser::OnMiniRoomBalloon#Remove": {
-      "address": "0x7920b9",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "roomType (0 -> CChatBalloon::DestroyMiniRoomBalloon; no trailing fields)"
-        }
-      ]
-    },
-    "CITC::OnChargeParamResult": {
-      "address": "0x52d691",
-      "direction": "clientbound",
-      "calls": null
-    },
     "ALLIANCEDATA::Decode": {
       "address": "0x4b580b",
       "direction": "",
@@ -939,6 +656,130 @@
         }
       ]
     },
+    "CCashShop::OnCashItemResult#BUY_FAILED": {
+      "address": "0x461b47",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x3C BUY_FAILED; op-byte consumed by dispatcher before OnCashItemResBuyFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_NORMAL_FAILED": {
+      "address": "0x463443",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6E BUY_NORMAL_FAILED; op-byte consumed by dispatcher before OnCashItemResBuyNormalFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_NORMAL_SUCCESS": {
+      "address": "0x46332f",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6d BUY_NORMAL_SUCCESS; op-byte consumed by dispatcher before OnCashItemResBuyNormalDone)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "count (int32, count-prefix for the packed-ref list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "packed _ULARGE_INTEGER-shaped record (8B: quantity u16@0, slotPos u16@2, itemId i32@4) \u2014 same shape as USE_COUPON_SUCCESS's second list",
+          "guard": "loop count"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_PACKAGE_FAILED": {
+      "address": "0x461d5a",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6A BUY_PACKAGE_FAILED; op-byte consumed by dispatcher before OnCashItemResBuyPackageFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#BUY_PACKAGE_SUCCESS": {
+      "address": "0x461bda",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x69 BUY_PACKAGE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResBuyPackageDone)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "itemCount (byte, count-prefix for the item list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo entry (55B CashInventoryItem blob)",
+          "guard": "loop itemCount"
+        },
+        {
+          "op": "Decode2",
+          "comment": "trailingCount (uint16; branches notice-text format client-side)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#COUPLE_FAILED": {
+      "address": "0x4635e1",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x68 COUPLE_FAILED; op-byte consumed by dispatcher before OnCashItemResCoupleFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#COUPLE_SUCCESS": {
+      "address": "0x4634b2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x67 COUPLE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResCoupleDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo blob (55B, single \u2014 appended to m_aCashItemInfo)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (second/separate reference, used only for CItemInfo::GetItemName in notice text)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        }
+      ]
+    },
     "CCashShop::OnCashItemResult#CashItemMovedToCashInventory": {
       "address": "",
       "direction": "clientbound",
@@ -983,6 +824,255 @@
         }
       ]
     },
+    "CCashShop::OnCashItemResult#DESTROY_FAILED": {
+      "address": "0x4631f3",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4F DESTROY_FAILED; op-byte consumed by dispatcher before OnCashItemResDestroyFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#DESTROY_SUCCESS": {
+      "address": "0x463150",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4E DESTROY_SUCCESS; op-byte consumed by dispatcher before OnCashItemResDestroyDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn (8B _LARGE_INTEGER SN; matched against existing m_aCashItemInfo[i].liSN, find-and-remove pattern)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#EXPIRE_DONE": {
+      "address": "0x462edf",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x50 EXPIRE_DONE; op-byte consumed by dispatcher before OnCashItemResExpireDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn (8B _LARGE_INTEGER SN; matched against existing m_aCashItemInfo[i].liSN)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#FRIENDSHIP_FAILED": {
+      "address": "0x463787",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x72 FRIENDSHIP_FAILED; op-byte consumed by dispatcher before OnCashItemResFriendShipFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#FRIENDSHIP_SUCCESS": {
+      "address": "0x463658",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x71 FRIENDSHIP_SUCCESS; op-byte consumed by dispatcher before OnCashItemResFriendShipDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo blob (55B, single \u2014 appended to m_aCashItemInfo)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_COUPON_SUCCESS": {
+      "address": "0x4624f7",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x3f GIFT_COUPON_SUCCESS; op-byte consumed by dispatcher before OnCashItemResGiftCouponDone)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "itemCount (byte, count-prefix for the item list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo entry (55B CashInventoryItem blob)",
+          "guard": "loop itemCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "maplePoint"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_FAILED": {
+      "address": "0x462a5f",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x43 GIFT_FAILED; op-byte consumed by dispatcher before OnCashItemResGiftFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_PACKAGE_FAILED": {
+      "address": "0x461ec5",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6C GIFT_PACKAGE_FAILED; op-byte consumed by dispatcher before OnCashItemResGiftPackageFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_PACKAGE_SUCCESS": {
+      "address": "0x461dd9",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x6b GIFT_PACKAGE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResGiftPackageDone)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "packageId (CItemInfo::GetSpecialName key)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "unused1 (read; discarded/used only for notice-format branch client-side)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "unused2 (read; discarded/used only for notice-format branch client-side)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nxCashSpent (GMS-only; JMS build omits this trailing field \u2014 confirmed absent live)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#GIFT_SUCCESS": {
+      "address": "0x462972",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x42 GIFT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResGiftDone)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (name-lookup key only; item never inserted into m_aCashItemInfo)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nxCashSpent (GMS-only; JMS build omits this trailing field \u2014 confirmed absent live)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_FAILED": {
+      "address": "0x462d31",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x49 INC_CHARACTER_SLOT_COUNT_FAILED; op-byte consumed by dispatcher before OnCashItemResIncCharacterSlotCountFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_SUCCESS": {
+      "address": "0x462ca2",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x48 INC_CHARACTER_SLOT_COUNT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResIncCharacterSlotCountDone)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slotCount (new absolute m_nCharacterSlotCount)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#INC_TRUNK_COUNT_FAILED": {
+      "address": "0x462c65",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x47 INC_TRUNK_COUNT_FAILED; op-byte consumed by dispatcher before OnCashItemResIncTrunkCountFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#INC_TRUNK_COUNT_SUCCESS": {
+      "address": "0x462bcb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x46 INC_TRUNK_COUNT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResIncTrunkCountDone)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "trunkCount (new absolute m_nTrunkCount)"
+        }
+      ]
+    },
     "CCashShop::OnCashItemResult#InventoryCapacityFailed": {
       "address": "",
       "direction": "clientbound",
@@ -1002,6 +1092,61 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#LIMIT_GOODS_COUNT_CHANGED": {
+      "address": "0x4612a4",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x2B LIMIT_GOODS_COUNT_CHANGED; op-byte consumed by dispatcher before OnCashItemResLimitGoodsCountChanged)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "sn"
+        },
+        {
+          "op": "Decode4",
+          "comment": "remainCount"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#LOAD_GIFT_FAILED": {
+      "address": "0x461989",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x32 LOAD_GIFT_FAILED; op-byte consumed by dispatcher before OnCashItemResLoadGiftFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#LOAD_GIFT_SUCCESS": {
+      "address": "0x461758",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x31 LOAD_GIFT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResLoadGiftDone)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "count (uint16, count-prefix for the gift list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_GiftList entry (98B: liSN i64@0, nItemID i32@8, sBuyCharacterName char[13]@12, sText char[73]@25)",
+          "guard": "loop count"
         }
       ]
     },
@@ -1027,6 +1172,136 @@
         }
       ]
     },
+    "CCashShop::OnCashItemResult#LOAD_WISH_FAILED": {
+      "address": "0x4619eb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x34 LOAD_WISH_FAILED; op-byte consumed by dispatcher before OnCashItemResLoadWishFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#MOVE_L_TO_S_FAILED": {
+      "address": "0x462ec0",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4B MOVE_L_TO_S_FAILED; op-byte consumed by dispatcher before OnCashItemResMoveLtoSFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#MOVE_S_TO_L_FAILED": {
+      "address": "0x463131",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x4D MOVE_S_TO_L_FAILED; op-byte consumed by dispatcher before OnCashItemResMoveStoLFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#NAME_CHANGE_BUY_DONE": {
+      "address": "0x463adb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x7D NAME_CHANGE_BUY_DONE; op-byte consumed by dispatcher before OnCashItemNameChangeResBuyDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo blob (55B, single; decoded into a freshly-inserted m_aCashItemInfo slot)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#REBATE_FAILED": {
+      "address": "0x463310",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x66 REBATE_FAILED; op-byte consumed by dispatcher before OnCashItemResRebateFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#REBATE_SUCCESS": {
+      "address": "0x463212",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x65 REBATE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResRebateDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "sn (8B _LARGE_INTEGER SN; matched against existing m_aCashItemInfo[i].liSN, find-and-remove pattern)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#SET_WISH_FAILED": {
+      "address": "0x461a6e",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x3A SET_WISH_FAILED; op-byte consumed by dispatcher before OnCashItemResSetWishFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#TRANSFER_WORLD_FAILED": {
+      "address": "0x463e61",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x7E TRANSFER_WORLD_FAILED; op-byte consumed by dispatcher before OnCashItemResTransferWorldFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#TRANSFER_WORLD_SUCCESS": {
+      "address": "0x463d96",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x7B TRANSFER_WORLD_SUCCESS; op-byte consumed by dispatcher before OnCashItemResTransferWorldDone)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo blob (55B, single)"
+        }
+      ]
+    },
     "CCashShop::OnCashItemResult#UPDATE_WISHLIST": {
       "address": "",
       "direction": "clientbound",
@@ -1035,6 +1310,56 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#USE_COUPON_FAILED": {
+      "address": "0x462936",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x40 USE_COUPON_FAILED; op-byte consumed by dispatcher before OnCashItemResUseCouponFailed)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "errorCode (reason byte)"
+        }
+      ]
+    },
+    "CCashShop::OnCashItemResult#USE_COUPON_SUCCESS": {
+      "address": "0x461f3c",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (0x3d USE_COUPON_SUCCESS; op-byte consumed by dispatcher before OnCashItemResUseCouponDone)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "itemCount (byte, count-prefix for the item list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_CashItemInfo entry (55B CashInventoryItem blob)",
+          "guard": "loop itemCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "maplePoint"
+        },
+        {
+          "op": "Decode4",
+          "comment": "uliCount (count-prefix for the packed-ref list)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "packed _ULARGE_INTEGER-shaped record (8B: quantity u16@0, slotPos u16@2, itemId i32@4)",
+          "guard": "loop uliCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "meso"
         }
       ]
     },
@@ -1266,6 +1591,27 @@
         }
       ]
     },
+    "CCashShop::OnStatusCoupon": {
+      "address": "0x45a6b5",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v15) == 1 && v4"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v15) == 1 && v4"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "!*((_DWORD *)this + 6) && CCouponUseSelectDlg::Confirm(&v15) == 1 && v4 && v14"
+        }
+      ]
+    },
     "CCashShop::SendBuyAvatarPacket": {
       "address": "0x456a42",
       "direction": "",
@@ -1290,6 +1636,34 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CCashShop::SendCheckNameChangePossiblePacket": {
+      "address": "0x45cd72",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "CCashShop::SendCheckTransferWorldPossiblePacket": {
+      "address": "0x45cefd",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
         }
       ]
     },
@@ -1675,28 +2049,6 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "sub_6D3765": {
-      "address": "0x6d3765",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(110); sub-op 5 = DECLINE (sub_6D3765 @0x6d3765, auto-decline path)"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "fromName (inviter)"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "myName (CWvsContext::GetCharacterName)"
-        },
-        {
-          "op": "Encode1",
-          "comment": "trailing flag Encode1(1u)"
         }
       ]
     },
@@ -2513,25 +2865,6 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "sub_4E8635": {
-      "address": "0x4e8635",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "Encode1 mode=(!msgEmpty+1)|4 @0x4e870a"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "EncodeStr targetName @0x4e8722"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "EncodeStr msg @0x4e8742",
-          "guard": "*a2 && **a2"
         }
       ]
     },
@@ -3353,6 +3686,36 @@
       "direction": "",
       "calls": null
     },
+    "CITC::OnBuy": {
+      "address": "0x529964",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnBuy @0x529964. ITC_OPERATION 0xD7/215 mode 0x10. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x10) @0x59f6c3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59f6d4"
+        }
+      ]
+    },
+    "CITC::OnBuyAuctionImm": {
+      "address": "0x5299d9",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnBuyAuctionImm @0x5299d9 (named). ITC_OPERATION 0xD7/215 mode 0x14. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x14) @0x59f736"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59f747"
+        }
+      ]
+    },
     "CITC::OnBuyItemDone": {
       "address": "0x52e503",
       "direction": "",
@@ -3362,6 +3725,21 @@
       "address": "0x52e52c",
       "direction": "",
       "calls": null
+    },
+    "CITC::OnBuyWish": {
+      "address": "0x529d6a",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnBuyWish @0x529d6a. ITC_OPERATION 0xD7/215 mode 0xC. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xC) @0x59fac0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59fad1"
+        }
+      ]
     },
     "CITC::OnBuyWishDone": {
       "address": "0x52e441",
@@ -3373,6 +3751,21 @@
       "direction": "",
       "calls": null
     },
+    "CITC::OnBuyZzim": {
+      "address": "0x529be3",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnBuyZzim @0x529be3 (YesNo-gated). ITC_OPERATION 0xD7/215 mode 0x11. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x11) @0x59f966"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59f977"
+        }
+      ]
+    },
     "CITC::OnBuyZzimItemDone": {
       "address": "0x52e55f",
       "direction": "",
@@ -3382,6 +3775,21 @@
       "address": "0x52e588",
       "direction": "",
       "calls": null
+    },
+    "CITC::OnCancelSaleItem": {
+      "address": "0x529e54",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnCancelSaleItem @0x529e54 (YesNo-gated). ITC_OPERATION 0xD7/215 mode 7. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (7) @0x59fbdd"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59fbeb"
+        }
+      ]
     },
     "CITC::OnCancelSaleItemDone": {
       "address": "0x52e154",
@@ -3398,6 +3806,21 @@
         }
       ]
     },
+    "CITC::OnCancelWish": {
+      "address": "0x529ddf",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnCancelWish @0x529ddf. ITC_OPERATION 0xD7/215 mode 0xD. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xD) @0x59fb33"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59fb44"
+        }
+      ]
+    },
     "CITC::OnCancelWishDone": {
       "address": "0x52e49d",
       "direction": "",
@@ -3407,6 +3830,143 @@
       "address": "0x52e4d0",
       "direction": "",
       "calls": null
+    },
+    "CITC::OnChangedCategory": {
+      "address": "0x529560",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnChangedCategory @0x529560. ITC_OPERATION 0xD7/215 mode 5 (GetItcList browse). Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (5) @0x59f2ec"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category @0x59f2f7"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub (const 0) @0x59f300"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (const 0) @0x59f309"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortType (const 1) @0x59f315"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortColumn (const 1) @0x59f31e"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption (const 1) @0x59f327"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchCondition (const empty) @0x59f33f"
+        }
+      ]
+    },
+    "CITC::OnChangedCategorySub": {
+      "address": "0x529640",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnChangedCategorySub @0x529640. ITC_OPERATION 0xD7/215 mode 5 (GetItcList browse). Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (5) @0x59f3a8"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category @0x59f3b3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub @0x59f3bf"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (const 0) @0x59f3c8"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortType @0x59f3d3"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortColumn @0x59f3de"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption @0x59f3ed/@0x59f411"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchCondition @0x59f42d"
+        }
+      ]
+    },
+    "CITC::OnChangedPage": {
+      "address": "0x529730",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnChangedPage @0x529730. ITC_OPERATION 0xD7/215 mode 5 (GetItcList browse). Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (5) @0x59f495"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category @0x59f4a0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub @0x59f4ab"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page @0x59f4b6"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortType @0x59f4c4"
+        },
+        {
+          "op": "Encode1",
+          "comment": "sortColumn @0x59f4d2"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption @0x59f4e0"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchCondition @0x59f4fd"
+        }
+      ]
+    },
+    "CITC::OnChargeParamResult": {
+      "address": "0x52d691",
+      "direction": "clientbound",
+      "calls": null
+    },
+    "CITC::OnDeleteZzim": {
+      "address": "0x529c80",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnDeleteZzim @0x529c80. ITC_OPERATION 0xD7/215 mode 0xA. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xA) @0x59f9da"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59f9eb"
+        }
+      ]
     },
     "CITC::OnDeleteZzimDone": {
       "address": "0x52e29e",
@@ -3594,6 +4154,21 @@
       "address": "0x52e40e",
       "direction": "",
       "calls": null
+    },
+    "CITC::OnMoveITCPurchaseItemLtoS": {
+      "address": "0x529efc",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnMoveITCPurchaseItemLtoS @0x529efc. ITC_OPERATION 0xD7/215 mode 8. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (8) @0x59fc4f"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59fc60"
+        }
+      ]
     },
     "CITC::OnMoveITCPurchaseItemLtoSDone": {
       "address": "0x52e1a6",
@@ -4280,6 +4855,119 @@
         }
       ]
     },
+    "CITC::OnRegisterSaleEntry": {
+      "address": "0x528f35",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnRegisterSaleEntry @0x528f35. ITC_OPERATION 0xD7/215 mode 2 (a2==0 fixed-sale); send @0x528f5b. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (2 register-fixed-price) @0x59ed92"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "item-slot blob sub_4E33D8 @0x59ed9e (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "quantity @0x59eda9"
+        },
+        {
+          "op": "Encode4",
+          "comment": "commodityId @0x59edb4"
+        },
+        {
+          "op": "Encode4",
+          "comment": "price @0x59edbf"
+        },
+        {
+          "op": "Encode1",
+          "comment": "type @0x59edca"
+        },
+        {
+          "op": "Encode1",
+          "comment": "flag @0x59edd5"
+        }
+      ]
+    },
+    "CITC::OnRegisterSaleEntry#RegisterAuction": {
+      "address": "0x528f35",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnRegisterSaleEntry @0x528f35. ITC_OPERATION 0xD7/215 mode 0x12 (a2==1 auction); send @0x528f5b. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x12 register-auction) @0x59ecc8"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "item-slot blob sub_4E33D8 @0x59ecd4 (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "quantity @0x59ecdf"
+        },
+        {
+          "op": "Encode4",
+          "comment": "commodityId @0x59ecea"
+        },
+        {
+          "op": "Encode4",
+          "comment": "arg0 selector (==1) @0x59ecf5"
+        },
+        {
+          "op": "Encode4",
+          "comment": "buyNowPrice @0x59ed00"
+        },
+        {
+          "op": "Encode1",
+          "comment": "type @0x59ed0b"
+        },
+        {
+          "op": "Encode1",
+          "comment": "flag @0x59ed16"
+        },
+        {
+          "op": "Encode4",
+          "comment": "durationHrs @0x59ed21"
+        }
+      ]
+    },
+    "CITC::OnRegisterWishEntry": {
+      "address": "0x52980f",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnRegisterWishEntry @0x52980f. ITC_OPERATION 0xD7/215 mode 4. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (4) @0x59f5cc"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId @0x59f5da"
+        },
+        {
+          "op": "Encode4",
+          "comment": "price @0x59f5e8"
+        },
+        {
+          "op": "Encode4",
+          "comment": "count @0x59f5f6"
+        },
+        {
+          "op": "Encode1",
+          "comment": "duration @0x59f607"
+        },
+        {
+          "op": "Encode1",
+          "comment": "feeOption @0x59f618"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "description @0x59f62f"
+        }
+      ]
+    },
     "CITC::OnRegisterWishItemDone": {
       "address": "0x52e5bb",
       "direction": "",
@@ -4289,6 +4977,33 @@
       "address": "0x52e5ee",
       "direction": "",
       "calls": null
+    },
+    "CITC::OnSaleCurrentItem": {
+      "address": "0x52913b",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnSaleCurrentItem @0x52913b. ITC_OPERATION 0xD7/215 mode 3. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (3) @0x59ee6b"
+        },
+        {
+          "op": "Encode1",
+          "comment": "type @0x59ee76"
+        },
+        {
+          "op": "Encode4",
+          "comment": "slotPos @0x59ee81"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "item-slot blob sub_4E33D8 @0x59ee8d (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "commodityId @0x59ee98"
+        }
+      ]
     },
     "CITC::OnSaleCurrentItemToWishDone": {
       "address": "0x52dafa",
@@ -4305,6 +5020,21 @@
         }
       ]
     },
+    "CITC::OnSetZzim": {
+      "address": "0x529b6e",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnSetZzim @0x529b6e. ITC_OPERATION 0xD7/215 mode 9. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (9) @0x59f8c9"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59f8da"
+        }
+      ]
+    },
     "CITC::OnSetZzimDone": {
       "address": "0x52e238",
       "direction": "",
@@ -4314,6 +5044,12 @@
       "address": "0x52e26b",
       "direction": "",
       "calls": null
+    },
+    "CITC::OnStatusCharge": {
+      "address": "0x528ed7",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnStatusCharge @0x528ed7 (nId 1000 charge button). opcode 213/0xD5; bodiless (latch set before send). Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": []
     },
     "CITC::OnSuccessBidInfoResult": {
       "address": "0x52e6bf",
@@ -4351,6 +5087,81 @@
         }
       ]
     },
+    "CITC::OnViewWish": {
+      "address": "0x529cf5",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnViewWish @0x529cf5. ITC_OPERATION 0xD7/215 mode 0xB. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0xB) @0x59fa4d"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x59fa5e"
+        }
+      ]
+    },
+    "CITC::TrySendQueryCashRequest": {
+      "address": "0x5291cc",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::TrySendQueryCashRequest @0x5291cc (nId 1001 query button). opcode 214/0xD6; bodiless (latch set after send). Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": []
+    },
+    "CITCBidAuctionDlg::OnButtonClicked": {
+      "address": "0x549672",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITCBidAuctionDlg::OnButtonClicked @0x549672 (nId==1 confirm-bid). ITC_OPERATION 0xD7/215 mode 0x13; send @0x549809. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (0x13) @0x5c38ec"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nITCSN @0x5c38fd"
+        },
+        {
+          "op": "Encode4",
+          "comment": "bidPrice @0x5c390b"
+        },
+        {
+          "op": "Encode4",
+          "comment": "bidRange @0x5c3919"
+        }
+      ]
+    },
+    "CITCWnd_Tab::OnButtonClicked": {
+      "address": "0x53e6a9",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITCWnd_Tab::OnButtonClicked @0x53e6a9 (nId==1004 search). ITC_OPERATION 0xD7/215 mode 6; send @0x53e741. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "mode byte (6) @0x5b71b3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "category (m_nSelect+1) @0x5b71bc"
+        },
+        {
+          "op": "Encode4",
+          "comment": "categorySub @0x5b71c7"
+        },
+        {
+          "op": "Encode4",
+          "comment": "page (const 0) @0x5b71d0"
+        },
+        {
+          "op": "Encode4",
+          "comment": "searchOption @0x5b71d9"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "searchName @0x5b71f2"
+        }
+      ]
+    },
     "CItemInfo::GetItemDesc": {
       "address": "0x752c50",
       "direction": "",
@@ -4365,6 +5176,46 @@
       "address": "0x54f6c4",
       "direction": "",
       "calls": null
+    },
+    "CItemSpeakerDlg::_SendConsumeCashItemUseRequest": {
+      "address": "0x55dc01",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "slot (*(WORD*)(this+120)) @0x55dce7"
+        },
+        {
+          "op": "Encode4",
+          "comment": "itemId (*(DWORD*)(this+124)) @0x55dcf2"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "message (CCtrlEdit::GetText()) @0x55dd13"
+        },
+        {
+          "op": "Encode1",
+          "comment": "whisper (*(DWORD*)(*(DWORD*)(this+1396)+72)) @0x55dd24"
+        },
+        {
+          "op": "Encode1",
+          "comment": "hasItem (*(DWORD*)(this+140)!=0) @0x55dd36"
+        },
+        {
+          "op": "Encode4",
+          "comment": "invType (*(DWORD*)(this+128)) @0x55dd4c",
+          "guard": "hasItem"
+        },
+        {
+          "op": "Encode4",
+          "comment": "slot (*(DWORD*)(this+132)) @0x55dd5a",
+          "guard": "hasItem"
+        },
+        {
+          "op": "Encode4",
+          "comment": "updateTime (SetExclRequestSent() return) @0x55dd68"
+        }
+      ]
     },
     "CLogin::ChangeStepImmediate": {
       "address": "0x56261b",
@@ -5297,6 +6148,28 @@
       "notes": "v61 VIEW_ALL_CHAR (COutPacket op 13) send sub_567117 @0x567117: COutPacket(13)@0x567165 + SendPacket@0x567177 with no Encode -> empty body (first sends op 12 when this[79]!=1). Surgically spliced (live v61 IDB names it sub_567117); mirrors the v79 empty-body entry.",
       "calls": []
     },
+    "CMacroSysMan::FlushToSvr": {
+      "address": "0x59746c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "task-226 Step 0 harvest (v61 send-chain gap, na-recheck.md): CMacroSysMan::FlushToSvr forwards its COutPacket arg wholesale to MACROSYSDATA::Encode with no direct COutPacket::EncodeN(...) call of its own, so the alias-seed regex never fires inside this function. Hand-spliced after verifying the call by decompile (COutPacket::COutPacket(&pkt, 101); sub_4B7928(pkt); CClientSocket::SendPacket(...); ZArray::RemoveAll(...)).",
+          "ref": "MACROSYSDATA::Encode"
+        }
+      ]
+    },
+    "CMacroSysMan::SetMacro": {
+      "address": "0x59744b",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "task-226 harvest: CMacroSysMan::SetMacro forwards its CInPacket arg wholesale to MACROSYSDATA::Decode with no direct CInPacket::DecodeN(...) call of its own, so the alias-seed regex never fires inside this function. Hand-spliced after verifying the call by decompile.",
+          "ref": "MACROSYSDATA::Decode"
+        }
+      ]
+    },
     "CMapLoadable::OnSetBackEffect": {
       "address": "",
       "direction": "",
@@ -5602,6 +6475,22 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CMob::ApplyControl": {
+      "address": "0x5ccf1c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a2 - result >= 1000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a2 - result >= 1000"
         }
       ]
     },
@@ -6547,6 +7436,78 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnBtStart": {
+      "address": "0x63c30e",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "sub-op byte (0=OnBtStart @0x63c30e/COutPacket(124); bodyless arm, no further fields -- docs/tasks/task-132-rps-npc-game/ida-rps-legacy-reaudit.md; live IDA port 13338 2026-07-16)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#END": {
+      "address": "0x63bfbb",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 13 = CLOSE; CWnd::Destroy @0x63bfbb, no further wire reads)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#OPEN": {
+      "address": "0x63c009",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (real dispatcher @0x63bf0e (labeled CTrunkDlg::OnPacket in the v61 IDB -- confirmed mislabel, ground truth per docs/tasks/task-132-rps-npc-game/ida-rps-legacy-reaudit.md), Decode1 @0x63bf20; case 8 = OPEN; live IDA port 13338 2026-07-16)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ante -- participation fee (CInPacket::Decode4 @0x63c009; StringPool(3593) notice that follows is a static resource, not a packet field)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#RESULT": {
+      "address": "0x63c1b3",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte (dispatcher @0x63bf0e delegates modes 6/7/9-12/14 to sub_63C166 @0x63c166; case 11 = RESULT)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "npcThrow (CInPacket::Decode1 @0x63c1b3)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "straightVictoryCount, SIGNED int8 (CInPacket::Decode1 @0x63c1be; client treats as signed __int8, branches on <0)"
+        }
+      ]
+    },
+    "CRPSGameDlg::OnPacket#START_SELECT": {
+      "address": "0x63c204",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode byte only (case 9 = START_SELECT; enable R/P/S buttons + arm selection timer, no further wire reads)"
+        }
+      ]
+    },
+    "CRPSGameDlg::SendSelection": {
+      "address": "0x63c4e6",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "throw (0=Rock/1=Paper/2=Scissors, RAW passthrough; CRPSGameDlg::SendSelection @0x63c4b4, COutPacket(124)+Encode1(1)+Encode1(throw) @0x63c4e6; sub-op mode byte 1 written earlier by the same sender, excluded here per the storage OperationMeso/StoreAsset/RetrieveAsset convention; live IDA port 13338 2026-07-16)"
         }
       ]
     },
@@ -7848,6 +8809,66 @@
         }
       ]
     },
+    "CTradingRoomDlg::OnMesoLimitRefused": {
+      "address": "0x68b498",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (19 TRADE_MESO_LIMIT; CTradingRoomDlg::OnPacket @0x68b335 dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnPutItem": {
+      "address": "0x68b37f",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (14 TRADE_PUT_ITEM; CTradingRoomDlg::OnPacket @0x68b335 dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side; indexes this[side + N] item grid)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "tradeSlot (1..9 within that side's grid)"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "asset (GW_ItemSlotBase::Decode; model.Asset substruct)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnPutMoney": {
+      "address": "0x68b456",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (15 TRADE_ADD_MESO; CTradingRoomDlg::OnPacket @0x68b335 dispatch byte)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "side (recipient-relative room side)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "amount (ASSIGNED: this[side + N] = Decode4(), not accumulated)"
+        }
+      ]
+    },
+    "CTradingRoomDlg::OnTrade#TradeConfirm": {
+      "address": "0x68b484",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (16 TRADE_CONFIRM; CTradingRoomDlg::OnPacket @0x68b335 dispatch byte). The arm reads NO body."
+        }
+      ]
+    },
     "CTradingRoomDlg::PutItem": {
       "address": "",
       "direction": "serverbound",
@@ -8328,7 +9349,6 @@
     "CUIMessenger::OnPacket#Add": {
       "address": "0x6d144e",
       "direction": "clientbound",
-      "note": "mode=0 (OnEnter). CORRECTED: real v61 messenger dispatcher CUIMessenger::OnPacket sub_6D34F1 @0x6d34f1 case 0 -> sub_6D144E @0x6d144e reads position+avatar+name+channelId+pad == v83. Prior 0x5bf5ae entry was a CMiniRoomBaseDlg arm (sub_5BEC69), not messenger.",
       "calls": [
         {
           "op": "Decode1",
@@ -8470,6 +9490,20 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CUIShopScanResult::OnButtonClicked": {
+      "address": "0x718c84",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "ownerId (dwMiniRoomSN; ITEMDATA+16) - owl-warp button send, COutPacket owl-warp opcode"
+        },
+        {
+          "op": "Encode4",
+          "comment": "mapId (dwFieldID; ITEMDATA+20)"
         }
       ]
     },
@@ -8754,6 +9788,20 @@
         {
           "op": "Decode1",
           "comment": ""
+        }
+      ]
+    },
+    "CUser::OnMiniRoomBalloon#Remove": {
+      "address": "0x7920b9",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "characterId (consumed by CUserPool::OnUserCommonPacket GetUser)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "roomType (0 -> CChatBalloon::DestroyMiniRoomBalloon; no trailing fields)"
         }
       ]
     },
@@ -9262,6 +10310,16 @@
         }
       ]
     },
+    "CUserLocal::SetMonsterBookCover": {
+      "address": "0x6e78f2",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "coverCardId @0x6e7935 (COutPacket(53) ctor @0x6e7922)"
+        }
+      ]
+    },
     "CUserLocal::TalkToNpc": {
       "address": "0x7b1403",
       "direction": "serverbound",
@@ -9719,6 +10777,42 @@
         {
           "op": "Decode2",
           "comment": ""
+        }
+      ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x7aa1e3",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) && Src"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) && Src"
         }
       ]
     },
@@ -10273,6 +11367,11 @@
         }
       ]
     },
+    "CWvsContext::CheckTemporaryStatDuration": {
+      "address": "0x84374e",
+      "direction": "serverbound",
+      "calls": []
+    },
     "CWvsContext::GetCharacterData": {
       "address": "0x454c8e",
       "direction": "",
@@ -10629,6 +11728,42 @@
           "op": "Decode4",
           "comment": "",
           "guard": "switch == 7"
+        }
+      ]
+    },
+    "CWvsContext::OnBroadcastMsg#Megaphone": {
+      "address": "0x844d49",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=2, MEGAPHONE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message - mode 2 has no header-extras arm (only mode 3/8 read extras); case 2 does chatlog display only (task-123 legacy phase 1, IDA-verified)"
+        }
+      ]
+    },
+    "CWvsContext::OnBroadcastMsg#SuperMegaphone": {
+      "address": "0x844d49",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=3, SUPER_MEGAPHONE)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId (task-123 legacy phase 1, IDA-verified)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersOn"
         }
       ]
     },
@@ -13711,10 +14846,96 @@
       "direction": "",
       "calls": null
     },
+    "CWvsContext::OnShopScannerResult#HotList": {
+      "address": "0x849800",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=7; #HotList). switch(Decode1()-6)==1"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count (byte; hot-list length)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (m_anHotList entry)",
+          "guard": "loop count"
+        }
+      ]
+    },
+    "CWvsContext::OnShopScannerResult#Result": {
+      "address": "0x849800",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (=6; #Result). switch(Decode1()-6)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nCount (result record count)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "ownerName (sCharacterName)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mapId (dwFieldID)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "title (sTitle)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "bundles (nNumber)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "bundleSize (nSet)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "price (nPrice)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ownerId (dwMiniRoomSN)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channelId (nChannelID)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "Decode1",
+          "comment": "inventoryType (nTI)",
+          "guard": "loop nCount"
+        },
+        {
+          "op": "DecodeBuffer",
+          "comment": "GW_ItemSlotBase::Decode(&pItem) = model.Asset; only when nTI==1",
+          "guard": "loop nCount; if nTI==1"
+        }
+      ]
+    },
     "CWvsContext::OnSkillLearnItemResult": {
       "address": "0x841e5f",
       "direction": "clientbound",
-      "note": "SKILL_LEARN_ITEM_RESULT (task-125). v61 IDA-verified, session 965202bf, GMS_v61.1_U_DEVM.exe.i64. IDB already carries the mangled symbol ?OnSkillLearnItemResult@CWvsContext@@QAEXAAVCInPacket@@@Z at this address (Hex-Rays displayed sub_841E5F in pseudocode; func_query confirms the real name). CWvsContext::OnPacket case 48 (0x30, @0x8305b4) delegates directly. v61 body (no leading byte -- MajorVersion()<84): Decode4 characterId (CUserPool::GetUser lookup), then under an if(user-found) guard (v28): Decode1 isMasteryBook, Decode4 skillId (decoded, discarded), Decode4 masterLevel (decoded, discarded), Decode1 canUse, Decode1 success.",
       "calls": [
         {
           "op": "Decode4",
@@ -13945,6 +15166,28 @@
         }
       ]
     },
+    "CWvsContext::SendBridleItemUseRequest": {
+      "address": "0x832005",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "updateTime (get_update_time)"
+        },
+        {
+          "op": "Decode2",
+          "comment": "nPOS"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nItemID"
+        },
+        {
+          "op": "Decode4",
+          "comment": "hit-mob object id (FindHitMobInRect)"
+        }
+      ]
+    },
     "CWvsContext::SendChangeSlotPositionRequest": {
       "address": "",
       "direction": "serverbound",
@@ -13990,32 +15233,6 @@
         {
           "op": "Encode4",
           "comment": "amount"
-        }
-      ]
-    },
-    "sub_8316B8": {
-      "address": "0x8316b8",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "Encode1 fieldKey=*((_BYTE*)get_field()+248) @0x831721"
-        },
-        {
-          "op": "Decode4",
-          "comment": "Encode4 updateTime @0x83172f"
-        },
-        {
-          "op": "Decode2",
-          "comment": "Encode2 x=*a2 @0x831740"
-        },
-        {
-          "op": "Decode2",
-          "comment": "Encode2 y=a2[2] @0x83174f"
-        },
-        {
-          "op": "Decode4",
-          "comment": "Encode4 dropId=a3 @0x83175a"
         }
       ]
     },
@@ -14090,10 +15307,37 @@
         }
       ]
     },
+    "CWvsContext::SendMigrateToITCRequest": {
+      "address": "0x839b94",
+      "direction": "serverbound",
+      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CWvsContext::SendMigrateToITCRequest @0x839b94. opcode 135/0x87; send @0x839ca3; bodiless. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
+      "calls": []
+    },
     "CWvsContext::SendMigrateToShopRequest": {
       "address": "0x82e811",
       "direction": "",
       "calls": null
+    },
+    "CWvsContext::SendMobSummonItemUseRequest": {
+      "address": "0x831c83",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && !result && result == 6 && result"
+        }
+      ]
     },
     "CWvsContext::SendPetFoodItemUseRequest": {
       "address": "",
@@ -14103,6 +15347,20 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "CWvsContext::SendSelectNpcItemUseRequest": {
+      "address": "0x83778d",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode2",
+          "comment": "source (nPOS / a2), int16 slot"
+        },
+        {
+          "op": "Decode4",
+          "comment": "itemId (nItemID / a3)"
         }
       ]
     },
@@ -14120,7 +15378,6 @@
     "CWvsContext::SendSkillLearnItemUseRequest": {
       "address": "0x8325d2",
       "direction": "serverbound",
-      "note": "USE_SKILL_BOOK (task-125). v61 IDA-verified, session 965202bf, GMS_v61.1_U_DEVM.exe.i64 -- already named in the IDB. item-class gate a3/10000 in {228,229} (skill-book prefix); guard sub_4BDB9F(200,0) (CanSendExclRequest twin); COutPacket::COutPacket(&pkt, 75); SetExclRequestSent before+after send. Supersedes the prior batch-harvest entry that mislabeled this address as PET_FOOD (shared placeholder ctor-site address 0x5ffc4f).",
       "calls": [
         {
           "op": "Encode4",
@@ -14226,6 +15483,27 @@
         {
           "op": "Encode1",
           "comment": "option @0x842236"
+        }
+      ]
+    },
+    "CWvsContext::SendTamingMobFoodItemUseRequest": {
+      "address": "0x831f44",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a3 / 10000 == 226 && result"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "result && a3 / 10000 == 226 && result"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a3 / 10000 == 226 && result"
         }
       ]
     },
@@ -14798,6 +16076,38 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
+        }
+      ]
+    },
+    "MACROSYSDATA::Decode": {
+      "address": "0x4b796d",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v3 > 0",
+          "ref": "sub_4B78D5"
+        }
+      ]
+    },
+    "MACROSYSDATA::Encode": {
+      "address": "0x4b7928",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v3 > 0",
+          "ref": "sub_4B7884"
         }
       ]
     },
@@ -16104,6 +17414,42 @@
         }
       ]
     },
+    "sub_4B7884": {
+      "address": "0x4b7884",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
+    "sub_4B78D5": {
+      "address": "0x4b78d5",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
+    },
     "sub_4B818A": {
       "address": "0x4b818a",
       "direction": "",
@@ -16118,6 +17464,67 @@
       "address": "0x4c12e7",
       "direction": "",
       "calls": null
+    },
+    "sub_4E8635": {
+      "address": "0x4e8635",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "Encode1 mode=(!msgEmpty+1)|4 @0x4e870a"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "EncodeStr targetName @0x4e8722"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "EncodeStr msg @0x4e8742",
+          "guard": "*a2 && **a2"
+        }
+      ]
+    },
+    "sub_4E87E1": {
+      "address": "0x4e87e1",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 2 = INVITE trading-room (sub_4E87E1 @0x4e8915)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "targetCharacterId"
+        }
+      ]
+    },
+    "sub_4EF97F": {
+      "address": "0x4ef97f",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 0x1D = FIELD add-blacklist (sub_4EF97F @0x4ef97f)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "name"
+        }
+      ]
+    },
+    "sub_4EF9F9": {
+      "address": "0x4ef9f9",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 0x1E = FIELD remove-blacklist (sub_4EF9F9 @0x4ef9f9)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "name"
+        }
+      ]
     },
     "sub_52C5FE": {
       "address": "0x52c5fe",
@@ -16199,10 +17606,78 @@
       "direction": "",
       "calls": null
     },
+    "sub_56688D": {
+      "address": "0x56688d",
+      "direction": "clientbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "status @0x5668e5"
+        },
+        {
+          "op": "Decode1",
+          "comment": "count @0x566a4c"
+        },
+        {
+          "op": "Delegate",
+          "comment": "GW_CharacterStat::Decode @0x566a72",
+          "ref": "GW_CharacterStat::Decode"
+        },
+        {
+          "op": "Delegate",
+          "comment": "AvatarLook::Decode @0x566a80",
+          "ref": "AvatarLook::Decode"
+        },
+        {
+          "op": "Decode1",
+          "comment": "rankEnabled @0x566a88"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "rank16 @0x566aa3"
+        },
+        {
+          "op": "Decode4",
+          "comment": "slots @0x566b02"
+        }
+      ]
+    },
     "sub_5A6A6A": {
       "address": "0x5a6a6a",
       "direction": "",
       "calls": null
+    },
+    "sub_5B10FA": {
+      "address": "0x5b10fa",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 0x3E = memory-game turn-up-card (sub_5B10FA @0x5b10fa)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "first (bool)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "index"
+        }
+      ]
+    },
+    "sub_5BFCE3": {
+      "address": "0x5bfce3",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 6 = CHAT (sub_5BFCE3 @0x5bfce3)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "message"
+        }
+      ]
     },
     "sub_5D3958": {
       "address": "0x5d3958",
@@ -16258,10 +17733,154 @@
         }
       ]
     },
+    "sub_5F7BA3": {
+      "address": "0x5f7ba3",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 0x2D = omok retreat-answer (sub_5F7BA3 @0x5f7ba3)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "response (YesNo==6 bool)"
+        }
+      ]
+    },
+    "sub_5F7C60": {
+      "address": "0x5f7c60",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 0x31 = memory-game tie-answer (sub_5F7C60 @0x5f7c60)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "response (YesNo==6 bool)"
+        }
+      ]
+    },
+    "sub_5FC4D7": {
+      "address": "0x5fc4d7",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 0x3A = omok put-stone (sub_5FC4D7 @0x5fc4d7)"
+        },
+        {
+          "op": "EncodeBuffer",
+          "comment": "point (int64, 8 bytes)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "color"
+        }
+      ]
+    },
     "sub_607831": {
       "address": "0x607831",
       "direction": "",
       "calls": null
+    },
+    "sub_60D81E": {
+      "address": "0x60d81e",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode isMerchant?0x20:0x15 = BUY (sub_60D81E @0x60db63)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "index"
+        },
+        {
+          "op": "Encode2",
+          "comment": "quantity"
+        }
+      ]
+    },
+    "sub_60DBE2": {
+      "address": "0x60dbe2",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode isMerchant?0x1F:0x14 = PUT-ITEM (sub_60DBE2 @0x60de56)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "inventoryType"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot"
+        },
+        {
+          "op": "Encode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Encode2",
+          "comment": "set"
+        },
+        {
+          "op": "Encode4",
+          "comment": "price"
+        }
+      ]
+    },
+    "sub_60DF59": {
+      "address": "0x60df59",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode isMerchant?0x24:0x19 = REMOVE-ITEM (sub_60DF59 @0x60e019)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "index"
+        }
+      ]
+    },
+    "sub_60E154": {
+      "address": "0x60e154",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 0x1C = personal-store set-blacklist (sub_60E154 @0x60e185)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "count"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "name (loop x count)"
+        }
+      ]
+    },
+    "sub_60E20A": {
+      "address": "0x60e20a",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 0x1A = personal-store add-blacklist (sub_60E20A @0x60e2b2)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "slot"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "name"
+        }
+      ]
     },
     "sub_61219E": {
       "address": "0x61219e",
@@ -16483,6 +18102,78 @@
       "direction": "",
       "calls": null
     },
+    "sub_68C7E6": {
+      "address": "0x68c7e6",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 0xE = TRADE put-item (sub_68C7E6 @0x68c96c)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "inventoryType"
+        },
+        {
+          "op": "Encode2",
+          "comment": "slot"
+        },
+        {
+          "op": "Encode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Encode1",
+          "comment": "targetSlot"
+        }
+      ]
+    },
+    "sub_68CA10": {
+      "address": "0x68ca10",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 0xF = TRADE add-meso (sub_68CA10 @0x68cb76)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "amount"
+        }
+      ]
+    },
+    "sub_68CBE3": {
+      "address": "0x68cbe3",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(111); mode 0x10 = TRADE confirm; bodyless (sub_68CBE3 @0x68cc56). Cash trade-room (Transaction) shares this bodyless base confirm."
+        }
+      ]
+    },
+    "sub_6D3765": {
+      "address": "0x6d3765",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode1",
+          "comment": "COutPacket(110); sub-op 5 = DECLINE (sub_6D3765 @0x6d3765, auto-decline path)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "fromName (inviter)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "myName (CWvsContext::GetCharacterName)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "trailing flag Encode1(1u)"
+        }
+      ]
+    },
     "sub_762EF8": {
       "address": "0x762ef8",
       "direction": "",
@@ -16533,6 +18224,11 @@
           "guard": "a1"
         }
       ]
+    },
+    "sub_7A3981": {
+      "address": "0x7a3981",
+      "direction": "serverbound",
+      "calls": []
     },
     "sub_7AF775": {
       "address": "0x7af775",
@@ -16765,6 +18461,53 @@
       "address": "0x7eb12b",
       "direction": "",
       "calls": null
+    },
+    "sub_8316B8": {
+      "address": "0x8316b8",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "Encode1 fieldKey=*((_BYTE*)get_field()+248) @0x831721"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Encode4 updateTime @0x83172f"
+        },
+        {
+          "op": "Decode2",
+          "comment": "Encode2 x=*a2 @0x831740"
+        },
+        {
+          "op": "Decode2",
+          "comment": "Encode2 y=a2[2] @0x83174f"
+        },
+        {
+          "op": "Decode4",
+          "comment": "Encode4 dropId=a3 @0x83175a"
+        }
+      ]
+    },
+    "sub_841AA5": {
+      "address": "0x841aa5",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v36 == (void *)999999999"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "v36 == (void *)999999999"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v36 == (void *)999999999"
+        }
+      ]
     },
     "sub_8438B5": {
       "address": "0x8438b5",
@@ -17290,1755 +19033,6 @@
         {
           "op": "Unresolved",
           "comment": "function not found in IDB"
-        }
-      ]
-    },
-    "sub_5BFCE3": {
-      "address": "0x5bfce3",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 6 = CHAT (sub_5BFCE3 @0x5bfce3)"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "message"
-        }
-      ]
-    },
-    "sub_4EF97F": {
-      "address": "0x4ef97f",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 0x1D = FIELD add-blacklist (sub_4EF97F @0x4ef97f)"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "name"
-        }
-      ]
-    },
-    "sub_4EF9F9": {
-      "address": "0x4ef9f9",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 0x1E = FIELD remove-blacklist (sub_4EF9F9 @0x4ef9f9)"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "name"
-        }
-      ]
-    },
-    "sub_4E87E1": {
-      "address": "0x4e87e1",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 2 = INVITE trading-room (sub_4E87E1 @0x4e8915)"
-        },
-        {
-          "op": "Encode4",
-          "comment": "targetCharacterId"
-        }
-      ]
-    },
-    "sub_5B10FA": {
-      "address": "0x5b10fa",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 0x3E = memory-game turn-up-card (sub_5B10FA @0x5b10fa)"
-        },
-        {
-          "op": "Encode1",
-          "comment": "first (bool)"
-        },
-        {
-          "op": "Encode1",
-          "comment": "index"
-        }
-      ]
-    },
-    "sub_5FC4D7": {
-      "address": "0x5fc4d7",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 0x3A = omok put-stone (sub_5FC4D7 @0x5fc4d7)"
-        },
-        {
-          "op": "EncodeBuffer",
-          "comment": "point (int64, 8 bytes)"
-        },
-        {
-          "op": "Encode1",
-          "comment": "color"
-        }
-      ]
-    },
-    "sub_5F7BA3": {
-      "address": "0x5f7ba3",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 0x2D = omok retreat-answer (sub_5F7BA3 @0x5f7ba3)"
-        },
-        {
-          "op": "Encode1",
-          "comment": "response (YesNo==6 bool)"
-        }
-      ]
-    },
-    "sub_5F7C60": {
-      "address": "0x5f7c60",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 0x31 = memory-game tie-answer (sub_5F7C60 @0x5f7c60)"
-        },
-        {
-          "op": "Encode1",
-          "comment": "response (YesNo==6 bool)"
-        }
-      ]
-    },
-    "sub_60D81E": {
-      "address": "0x60d81e",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode isMerchant?0x20:0x15 = BUY (sub_60D81E @0x60db63)"
-        },
-        {
-          "op": "Encode1",
-          "comment": "index"
-        },
-        {
-          "op": "Encode2",
-          "comment": "quantity"
-        }
-      ]
-    },
-    "sub_60DBE2": {
-      "address": "0x60dbe2",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode isMerchant?0x1F:0x14 = PUT-ITEM (sub_60DBE2 @0x60de56)"
-        },
-        {
-          "op": "Encode1",
-          "comment": "inventoryType"
-        },
-        {
-          "op": "Encode2",
-          "comment": "slot"
-        },
-        {
-          "op": "Encode2",
-          "comment": "quantity"
-        },
-        {
-          "op": "Encode2",
-          "comment": "set"
-        },
-        {
-          "op": "Encode4",
-          "comment": "price"
-        }
-      ]
-    },
-    "sub_60DF59": {
-      "address": "0x60df59",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode isMerchant?0x24:0x19 = REMOVE-ITEM (sub_60DF59 @0x60e019)"
-        },
-        {
-          "op": "Encode2",
-          "comment": "index"
-        }
-      ]
-    },
-    "sub_60E20A": {
-      "address": "0x60e20a",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 0x1A = personal-store add-blacklist (sub_60E20A @0x60e2b2)"
-        },
-        {
-          "op": "Encode1",
-          "comment": "slot"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "name"
-        }
-      ]
-    },
-    "sub_60E154": {
-      "address": "0x60e154",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 0x1C = personal-store set-blacklist (sub_60E154 @0x60e185)"
-        },
-        {
-          "op": "Encode2",
-          "comment": "count"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "name (loop x count)"
-        }
-      ]
-    },
-    "sub_68C7E6": {
-      "address": "0x68c7e6",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 0xE = TRADE put-item (sub_68C7E6 @0x68c96c)"
-        },
-        {
-          "op": "Encode1",
-          "comment": "inventoryType"
-        },
-        {
-          "op": "Encode2",
-          "comment": "slot"
-        },
-        {
-          "op": "Encode2",
-          "comment": "quantity"
-        },
-        {
-          "op": "Encode1",
-          "comment": "targetSlot"
-        }
-      ]
-    },
-    "sub_68CA10": {
-      "address": "0x68ca10",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 0xF = TRADE add-meso (sub_68CA10 @0x68cb76)"
-        },
-        {
-          "op": "Encode4",
-          "comment": "amount"
-        }
-      ]
-    },
-    "sub_68CBE3": {
-      "address": "0x68cbe3",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "COutPacket(111); mode 0x10 = TRADE confirm; bodyless (sub_68CBE3 @0x68cc56). Cash trade-room (Transaction) shares this bodyless base confirm."
-        }
-      ]
-    },
-    "sub_56688D": {
-      "address": "0x56688d",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "status @0x5668e5"
-        },
-        {
-          "op": "Decode1",
-          "comment": "count @0x566a4c"
-        },
-        {
-          "op": "Delegate",
-          "comment": "GW_CharacterStat::Decode @0x566a72",
-          "ref": "GW_CharacterStat::Decode"
-        },
-        {
-          "op": "Delegate",
-          "comment": "AvatarLook::Decode @0x566a80",
-          "ref": "AvatarLook::Decode"
-        },
-        {
-          "op": "Decode1",
-          "comment": "rankEnabled @0x566a88"
-        },
-        {
-          "op": "DecodeBuf",
-          "comment": "rank16 @0x566aa3"
-        },
-        {
-          "op": "Decode4",
-          "comment": "slots @0x566b02"
-        }
-      ]
-    },
-    "sub_7A3981": {
-      "address": "0x7a3981",
-      "direction": "serverbound",
-      "calls": []
-    },
-    "CUserLocal::SetMonsterBookCover": {
-      "address": "0x6e78f2",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode4",
-          "comment": "coverCardId @0x6e7935 (COutPacket(53) ctor @0x6e7922)"
-        }
-      ]
-    },
-    "CWvsContext::SendMigrateToITCRequest": {
-      "address": "0x839b94",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CWvsContext::SendMigrateToITCRequest @0x839b94. opcode 135/0x87; send @0x839ca3; bodiless. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": []
-    },
-    "CITC::OnStatusCharge": {
-      "address": "0x528ed7",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnStatusCharge @0x528ed7 (nId 1000 charge button). opcode 213/0xD5; bodiless (latch set before send). Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": []
-    },
-    "CITC::TrySendQueryCashRequest": {
-      "address": "0x5291cc",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::TrySendQueryCashRequest @0x5291cc (nId 1001 query button). opcode 214/0xD6; bodiless (latch set after send). Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": []
-    },
-    "CITC::OnRegisterSaleEntry": {
-      "address": "0x528f35",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnRegisterSaleEntry @0x528f35. ITC_OPERATION 0xD7/215 mode 2 (a2==0 fixed-sale); send @0x528f5b. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (2 register-fixed-price) @0x59ed92"
-        },
-        {
-          "op": "EncodeBuf",
-          "comment": "item-slot blob sub_4E33D8 @0x59ed9e (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse)"
-        },
-        {
-          "op": "Encode4",
-          "comment": "quantity @0x59eda9"
-        },
-        {
-          "op": "Encode4",
-          "comment": "commodityId @0x59edb4"
-        },
-        {
-          "op": "Encode4",
-          "comment": "price @0x59edbf"
-        },
-        {
-          "op": "Encode1",
-          "comment": "type @0x59edca"
-        },
-        {
-          "op": "Encode1",
-          "comment": "flag @0x59edd5"
-        }
-      ]
-    },
-    "CITC::OnRegisterSaleEntry#RegisterAuction": {
-      "address": "0x528f35",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnRegisterSaleEntry @0x528f35. ITC_OPERATION 0xD7/215 mode 0x12 (a2==1 auction); send @0x528f5b. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (0x12 register-auction) @0x59ecc8"
-        },
-        {
-          "op": "EncodeBuf",
-          "comment": "item-slot blob sub_4E33D8 @0x59ecd4 (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse)"
-        },
-        {
-          "op": "Encode4",
-          "comment": "quantity @0x59ecdf"
-        },
-        {
-          "op": "Encode4",
-          "comment": "commodityId @0x59ecea"
-        },
-        {
-          "op": "Encode4",
-          "comment": "arg0 selector (==1) @0x59ecf5"
-        },
-        {
-          "op": "Encode4",
-          "comment": "buyNowPrice @0x59ed00"
-        },
-        {
-          "op": "Encode1",
-          "comment": "type @0x59ed0b"
-        },
-        {
-          "op": "Encode1",
-          "comment": "flag @0x59ed16"
-        },
-        {
-          "op": "Encode4",
-          "comment": "durationHrs @0x59ed21"
-        }
-      ]
-    },
-    "CITC::OnSaleCurrentItem": {
-      "address": "0x52913b",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnSaleCurrentItem @0x52913b. ITC_OPERATION 0xD7/215 mode 3. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (3) @0x59ee6b"
-        },
-        {
-          "op": "Encode1",
-          "comment": "type @0x59ee76"
-        },
-        {
-          "op": "Encode4",
-          "comment": "slotPos @0x59ee81"
-        },
-        {
-          "op": "EncodeBuf",
-          "comment": "item-slot blob sub_4E33D8 @0x59ee8d (GW_ItemSlotBase Encode1 type + RawEncode; model.Asset recurse)"
-        },
-        {
-          "op": "Encode4",
-          "comment": "commodityId @0x59ee98"
-        }
-      ]
-    },
-    "CITC::OnBuy": {
-      "address": "0x529964",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnBuy @0x529964. ITC_OPERATION 0xD7/215 mode 0x10. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (0x10) @0x59f6c3"
-        },
-        {
-          "op": "Encode4",
-          "comment": "nITCSN @0x59f6d4"
-        }
-      ]
-    },
-    "CITC::OnBuyAuctionImm": {
-      "address": "0x5299d9",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnBuyAuctionImm @0x5299d9 (named). ITC_OPERATION 0xD7/215 mode 0x14. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (0x14) @0x59f736"
-        },
-        {
-          "op": "Encode4",
-          "comment": "nITCSN @0x59f747"
-        }
-      ]
-    },
-    "CITC::OnCancelSaleItem": {
-      "address": "0x529e54",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnCancelSaleItem @0x529e54 (YesNo-gated). ITC_OPERATION 0xD7/215 mode 7. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (7) @0x59fbdd"
-        },
-        {
-          "op": "Encode4",
-          "comment": "nITCSN @0x59fbeb"
-        }
-      ]
-    },
-    "CITC::OnMoveITCPurchaseItemLtoS": {
-      "address": "0x529efc",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnMoveITCPurchaseItemLtoS @0x529efc. ITC_OPERATION 0xD7/215 mode 8. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (8) @0x59fc4f"
-        },
-        {
-          "op": "Encode4",
-          "comment": "nITCSN @0x59fc60"
-        }
-      ]
-    },
-    "CITCBidAuctionDlg::OnButtonClicked": {
-      "address": "0x549672",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITCBidAuctionDlg::OnButtonClicked @0x549672 (nId==1 confirm-bid). ITC_OPERATION 0xD7/215 mode 0x13; send @0x549809. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (0x13) @0x5c38ec"
-        },
-        {
-          "op": "Encode4",
-          "comment": "nITCSN @0x5c38fd"
-        },
-        {
-          "op": "Encode4",
-          "comment": "bidPrice @0x5c390b"
-        },
-        {
-          "op": "Encode4",
-          "comment": "bidRange @0x5c3919"
-        }
-      ]
-    },
-    "CITC::OnSetZzim": {
-      "address": "0x529b6e",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnSetZzim @0x529b6e. ITC_OPERATION 0xD7/215 mode 9. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (9) @0x59f8c9"
-        },
-        {
-          "op": "Encode4",
-          "comment": "nITCSN @0x59f8da"
-        }
-      ]
-    },
-    "CITC::OnBuyZzim": {
-      "address": "0x529be3",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnBuyZzim @0x529be3 (YesNo-gated). ITC_OPERATION 0xD7/215 mode 0x11. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (0x11) @0x59f966"
-        },
-        {
-          "op": "Encode4",
-          "comment": "nITCSN @0x59f977"
-        }
-      ]
-    },
-    "CITC::OnDeleteZzim": {
-      "address": "0x529c80",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnDeleteZzim @0x529c80. ITC_OPERATION 0xD7/215 mode 0xA. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (0xA) @0x59f9da"
-        },
-        {
-          "op": "Encode4",
-          "comment": "nITCSN @0x59f9eb"
-        }
-      ]
-    },
-    "CITC::OnViewWish": {
-      "address": "0x529cf5",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnViewWish @0x529cf5. ITC_OPERATION 0xD7/215 mode 0xB. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (0xB) @0x59fa4d"
-        },
-        {
-          "op": "Encode4",
-          "comment": "nITCSN @0x59fa5e"
-        }
-      ]
-    },
-    "CITC::OnBuyWish": {
-      "address": "0x529d6a",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnBuyWish @0x529d6a. ITC_OPERATION 0xD7/215 mode 0xC. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (0xC) @0x59fac0"
-        },
-        {
-          "op": "Encode4",
-          "comment": "nITCSN @0x59fad1"
-        }
-      ]
-    },
-    "CITC::OnCancelWish": {
-      "address": "0x529ddf",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnCancelWish @0x529ddf. ITC_OPERATION 0xD7/215 mode 0xD. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (0xD) @0x59fb33"
-        },
-        {
-          "op": "Encode4",
-          "comment": "nITCSN @0x59fb44"
-        }
-      ]
-    },
-    "CITC::OnRegisterWishEntry": {
-      "address": "0x52980f",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnRegisterWishEntry @0x52980f. ITC_OPERATION 0xD7/215 mode 4. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (4) @0x59f5cc"
-        },
-        {
-          "op": "Encode4",
-          "comment": "itemId @0x59f5da"
-        },
-        {
-          "op": "Encode4",
-          "comment": "price @0x59f5e8"
-        },
-        {
-          "op": "Encode4",
-          "comment": "count @0x59f5f6"
-        },
-        {
-          "op": "Encode1",
-          "comment": "duration @0x59f607"
-        },
-        {
-          "op": "Encode1",
-          "comment": "feeOption @0x59f618"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "description @0x59f62f"
-        }
-      ]
-    },
-    "CITC::OnChangedCategory": {
-      "address": "0x529560",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnChangedCategory @0x529560. ITC_OPERATION 0xD7/215 mode 5 (GetItcList browse). Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (5) @0x59f2ec"
-        },
-        {
-          "op": "Encode4",
-          "comment": "category @0x59f2f7"
-        },
-        {
-          "op": "Encode4",
-          "comment": "categorySub (const 0) @0x59f300"
-        },
-        {
-          "op": "Encode4",
-          "comment": "page (const 0) @0x59f309"
-        },
-        {
-          "op": "Encode1",
-          "comment": "sortType (const 1) @0x59f315"
-        },
-        {
-          "op": "Encode1",
-          "comment": "sortColumn (const 1) @0x59f31e"
-        },
-        {
-          "op": "Encode4",
-          "comment": "searchOption (const 1) @0x59f327"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "searchCondition (const empty) @0x59f33f"
-        }
-      ]
-    },
-    "CITC::OnChangedCategorySub": {
-      "address": "0x529640",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnChangedCategorySub @0x529640. ITC_OPERATION 0xD7/215 mode 5 (GetItcList browse). Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (5) @0x59f3a8"
-        },
-        {
-          "op": "Encode4",
-          "comment": "category @0x59f3b3"
-        },
-        {
-          "op": "Encode4",
-          "comment": "categorySub @0x59f3bf"
-        },
-        {
-          "op": "Encode4",
-          "comment": "page (const 0) @0x59f3c8"
-        },
-        {
-          "op": "Encode1",
-          "comment": "sortType @0x59f3d3"
-        },
-        {
-          "op": "Encode1",
-          "comment": "sortColumn @0x59f3de"
-        },
-        {
-          "op": "Encode4",
-          "comment": "searchOption @0x59f3ed/@0x59f411"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "searchCondition @0x59f42d"
-        }
-      ]
-    },
-    "CITC::OnChangedPage": {
-      "address": "0x529730",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITC::OnChangedPage @0x529730. ITC_OPERATION 0xD7/215 mode 5 (GetItcList browse). Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (5) @0x59f495"
-        },
-        {
-          "op": "Encode4",
-          "comment": "category @0x59f4a0"
-        },
-        {
-          "op": "Encode4",
-          "comment": "categorySub @0x59f4ab"
-        },
-        {
-          "op": "Encode4",
-          "comment": "page @0x59f4b6"
-        },
-        {
-          "op": "Encode1",
-          "comment": "sortType @0x59f4c4"
-        },
-        {
-          "op": "Encode1",
-          "comment": "sortColumn @0x59f4d2"
-        },
-        {
-          "op": "Encode4",
-          "comment": "searchOption @0x59f4e0"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "searchCondition @0x59f4fd"
-        }
-      ]
-    },
-    "CITCWnd_Tab::OnButtonClicked": {
-      "address": "0x53e6a9",
-      "direction": "serverbound",
-      "region": "GMS",
-      "notes": "gms_v61 (GMS_v61.1_U_DEVM.exe, IDA port 13338). CITCWnd_Tab::OnButtonClicked @0x53e6a9 (nId==1004 search). ITC_OPERATION 0xD7/215 mode 6; send @0x53e741. Wire shape byte-identical to gms_v83; each v61 send-site was decompiled and its mode byte + body re-verified (task-113 v61 MTS port).",
-      "calls": [
-        {
-          "op": "Encode1",
-          "comment": "mode byte (6) @0x5b71b3"
-        },
-        {
-          "op": "Encode4",
-          "comment": "category (m_nSelect+1) @0x5b71bc"
-        },
-        {
-          "op": "Encode4",
-          "comment": "categorySub @0x5b71c7"
-        },
-        {
-          "op": "Encode4",
-          "comment": "page (const 0) @0x5b71d0"
-        },
-        {
-          "op": "Encode4",
-          "comment": "searchOption @0x5b71d9"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "searchName @0x5b71f2"
-        }
-      ]
-    },
-    "CUIShopScanResult::OnButtonClicked": {
-      "address": "0x718c84",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode4",
-          "comment": "ownerId (dwMiniRoomSN; ITEMDATA+16) - owl-warp button send, COutPacket owl-warp opcode"
-        },
-        {
-          "op": "Encode4",
-          "comment": "mapId (dwFieldID; ITEMDATA+20)"
-        }
-      ]
-    },
-    "CWvsContext::OnShopScannerResult#Result": {
-      "address": "0x849800",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (=6; #Result). switch(Decode1()-6)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "itemId (nItemID)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "nCount (result record count)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "ownerName (sCharacterName)",
-          "guard": "loop nCount"
-        },
-        {
-          "op": "Decode4",
-          "comment": "mapId (dwFieldID)",
-          "guard": "loop nCount"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "title (sTitle)",
-          "guard": "loop nCount"
-        },
-        {
-          "op": "Decode4",
-          "comment": "bundles (nNumber)",
-          "guard": "loop nCount"
-        },
-        {
-          "op": "Decode4",
-          "comment": "bundleSize (nSet)",
-          "guard": "loop nCount"
-        },
-        {
-          "op": "Decode4",
-          "comment": "price (nPrice)",
-          "guard": "loop nCount"
-        },
-        {
-          "op": "Decode4",
-          "comment": "ownerId (dwMiniRoomSN)",
-          "guard": "loop nCount"
-        },
-        {
-          "op": "Decode1",
-          "comment": "channelId (nChannelID)",
-          "guard": "loop nCount"
-        },
-        {
-          "op": "Decode1",
-          "comment": "inventoryType (nTI)",
-          "guard": "loop nCount"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "GW_ItemSlotBase::Decode(&pItem) = model.Asset; only when nTI==1",
-          "guard": "loop nCount; if nTI==1"
-        }
-      ]
-    },
-    "CWvsContext::OnShopScannerResult#HotList": {
-      "address": "0x849800",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (=7; #HotList). switch(Decode1()-6)==1"
-        },
-        {
-          "op": "Decode1",
-          "comment": "count (byte; hot-list length)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "itemId (m_anHotList entry)",
-          "guard": "loop count"
-        }
-      ]
-    },
-    "CRPSGameDlg::OnPacket#OPEN": {
-      "address": "0x63c009",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode byte (real dispatcher @0x63bf0e (labeled CTrunkDlg::OnPacket in the v61 IDB -- confirmed mislabel, ground truth per docs/tasks/task-132-rps-npc-game/ida-rps-legacy-reaudit.md), Decode1 @0x63bf20; case 8 = OPEN; live IDA port 13338 2026-07-16)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "ante -- participation fee (CInPacket::Decode4 @0x63c009; StringPool(3593) notice that follows is a static resource, not a packet field)"
-        }
-      ]
-    },
-    "CRPSGameDlg::OnPacket#RESULT": {
-      "address": "0x63c1b3",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode byte (dispatcher @0x63bf0e delegates modes 6/7/9-12/14 to sub_63C166 @0x63c166; case 11 = RESULT)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "npcThrow (CInPacket::Decode1 @0x63c1b3)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "straightVictoryCount, SIGNED int8 (CInPacket::Decode1 @0x63c1be; client treats as signed __int8, branches on <0)"
-        }
-      ]
-    },
-    "CRPSGameDlg::OnPacket#START_SELECT": {
-      "address": "0x63c204",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode byte only (case 9 = START_SELECT; enable R/P/S buttons + arm selection timer, no further wire reads)"
-        }
-      ]
-    },
-    "CRPSGameDlg::OnPacket#END": {
-      "address": "0x63bfbb",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode byte only (case 13 = CLOSE; CWnd::Destroy @0x63bfbb, no further wire reads)"
-        }
-      ]
-    },
-    "CRPSGameDlg::OnBtStart": {
-      "address": "0x63c30e",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "sub-op byte (0=OnBtStart @0x63c30e/COutPacket(124); bodyless arm, no further fields -- docs/tasks/task-132-rps-npc-game/ida-rps-legacy-reaudit.md; live IDA port 13338 2026-07-16)"
-        }
-      ]
-    },
-    "CRPSGameDlg::SendSelection": {
-      "address": "0x63c4e6",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "throw (0=Rock/1=Paper/2=Scissors, RAW passthrough; CRPSGameDlg::SendSelection @0x63c4b4, COutPacket(124)+Encode1(1)+Encode1(throw) @0x63c4e6; sub-op mode byte 1 written earlier by the same sender, excluded here per the storage OperationMeso/StoreAsset/RetrieveAsset convention; live IDA port 13338 2026-07-16)"
-        }
-      ]
-    },
-    "CItemSpeakerDlg::_SendConsumeCashItemUseRequest": {
-      "address": "0x55dc01",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Encode2",
-          "comment": "slot (*(WORD*)(this+120)) @0x55dce7"
-        },
-        {
-          "op": "Encode4",
-          "comment": "itemId (*(DWORD*)(this+124)) @0x55dcf2"
-        },
-        {
-          "op": "EncodeStr",
-          "comment": "message (CCtrlEdit::GetText()) @0x55dd13"
-        },
-        {
-          "op": "Encode1",
-          "comment": "whisper (*(DWORD*)(*(DWORD*)(this+1396)+72)) @0x55dd24"
-        },
-        {
-          "op": "Encode1",
-          "comment": "hasItem (*(DWORD*)(this+140)!=0) @0x55dd36"
-        },
-        {
-          "op": "Encode4",
-          "comment": "invType (*(DWORD*)(this+128)) @0x55dd4c",
-          "guard": "hasItem"
-        },
-        {
-          "op": "Encode4",
-          "comment": "slot (*(DWORD*)(this+132)) @0x55dd5a",
-          "guard": "hasItem"
-        },
-        {
-          "op": "Encode4",
-          "comment": "updateTime (SetExclRequestSent() return) @0x55dd68"
-        }
-      ]
-    },
-    "CWvsContext::OnBroadcastMsg#Megaphone": {
-      "address": "0x844d49",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (=2, MEGAPHONE)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "message - mode 2 has no header-extras arm (only mode 3/8 read extras); case 2 does chatlog display only (task-123 legacy phase 1, IDA-verified)"
-        }
-      ]
-    },
-    "CWvsContext::OnBroadcastMsg#SuperMegaphone": {
-      "address": "0x844d49",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (=3, SUPER_MEGAPHONE)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "message"
-        },
-        {
-          "op": "Decode1",
-          "comment": "channelId (task-123 legacy phase 1, IDA-verified)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "whispersOn"
-        }
-      ]
-    },
-    "CWvsContext::SendTamingMobFoodItemUseRequest": {
-      "address": "0x831f44",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "result && a3 / 10000 == 226 && result"
-        },
-        {
-          "op": "Decode2",
-          "comment": "",
-          "guard": "result && a3 / 10000 == 226 && result"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "result && a3 / 10000 == 226 && result"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#DESTROY_FAILED": {
-      "address": "0x4631f3",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x4F DESTROY_FAILED; op-byte consumed by dispatcher before OnCashItemResDestroyFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#REBATE_FAILED": {
-      "address": "0x463310",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x66 REBATE_FAILED; op-byte consumed by dispatcher before OnCashItemResRebateFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#COUPLE_FAILED": {
-      "address": "0x4635e1",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x68 COUPLE_FAILED; op-byte consumed by dispatcher before OnCashItemResCoupleFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#BUY_PACKAGE_FAILED": {
-      "address": "0x461d5a",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x6A BUY_PACKAGE_FAILED; op-byte consumed by dispatcher before OnCashItemResBuyPackageFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#GIFT_PACKAGE_FAILED": {
-      "address": "0x461ec5",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x6C GIFT_PACKAGE_FAILED; op-byte consumed by dispatcher before OnCashItemResGiftPackageFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#BUY_NORMAL_FAILED": {
-      "address": "0x463443",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x6E BUY_NORMAL_FAILED; op-byte consumed by dispatcher before OnCashItemResBuyNormalFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#FRIENDSHIP_FAILED": {
-      "address": "0x463787",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x72 FRIENDSHIP_FAILED; op-byte consumed by dispatcher before OnCashItemResFriendShipFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#TRANSFER_WORLD_FAILED": {
-      "address": "0x463e61",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x7E TRANSFER_WORLD_FAILED; op-byte consumed by dispatcher before OnCashItemResTransferWorldFailed)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "errorCode (reason byte)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#GIFT_SUCCESS": {
-      "address": "0x462972",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x42 GIFT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResGiftDone)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "recipientName"
-        },
-        {
-          "op": "Decode4",
-          "comment": "itemId (name-lookup key only; item never inserted into m_aCashItemInfo)"
-        },
-        {
-          "op": "Decode2",
-          "comment": "quantity"
-        },
-        {
-          "op": "Decode4",
-          "comment": "nxCashSpent (GMS-only; JMS build omits this trailing field \u2014 confirmed absent live)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#LOAD_GIFT_SUCCESS": {
-      "address": "0x461758",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x31 LOAD_GIFT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResLoadGiftDone)"
-        },
-        {
-          "op": "Decode2",
-          "comment": "count (uint16, count-prefix for the gift list)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "GW_GiftList entry (98B: liSN i64@0, nItemID i32@8, sBuyCharacterName char[13]@12, sText char[73]@25)",
-          "guard": "loop count"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#USE_COUPON_SUCCESS": {
-      "address": "0x461f3c",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x3d USE_COUPON_SUCCESS; op-byte consumed by dispatcher before OnCashItemResUseCouponDone)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "itemCount (byte, count-prefix for the item list)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "GW_CashItemInfo entry (55B CashInventoryItem blob)",
-          "guard": "loop itemCount"
-        },
-        {
-          "op": "Decode4",
-          "comment": "maplePoint"
-        },
-        {
-          "op": "Decode4",
-          "comment": "uliCount (count-prefix for the packed-ref list)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "packed _ULARGE_INTEGER-shaped record (8B: quantity u16@0, slotPos u16@2, itemId i32@4)",
-          "guard": "loop uliCount"
-        },
-        {
-          "op": "Decode4",
-          "comment": "meso"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#GIFT_COUPON_SUCCESS": {
-      "address": "0x4624f7",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x3f GIFT_COUPON_SUCCESS; op-byte consumed by dispatcher before OnCashItemResGiftCouponDone)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "recipientName"
-        },
-        {
-          "op": "Decode1",
-          "comment": "itemCount (byte, count-prefix for the item list)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "GW_CashItemInfo entry (55B CashInventoryItem blob)",
-          "guard": "loop itemCount"
-        },
-        {
-          "op": "Decode4",
-          "comment": "maplePoint"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#BUY_PACKAGE_SUCCESS": {
-      "address": "0x461bda",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x69 BUY_PACKAGE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResBuyPackageDone)"
-        },
-        {
-          "op": "Decode1",
-          "comment": "itemCount (byte, count-prefix for the item list)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "GW_CashItemInfo entry (55B CashInventoryItem blob)",
-          "guard": "loop itemCount"
-        },
-        {
-          "op": "Decode2",
-          "comment": "trailingCount (uint16; branches notice-text format client-side)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#GIFT_PACKAGE_SUCCESS": {
-      "address": "0x461dd9",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x6b GIFT_PACKAGE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResGiftPackageDone)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "recipientName"
-        },
-        {
-          "op": "Decode4",
-          "comment": "packageId (CItemInfo::GetSpecialName key)"
-        },
-        {
-          "op": "Decode2",
-          "comment": "unused1 (read; discarded/used only for notice-format branch client-side)"
-        },
-        {
-          "op": "Decode2",
-          "comment": "unused2 (read; discarded/used only for notice-format branch client-side)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "nxCashSpent (GMS-only; JMS build omits this trailing field \u2014 confirmed absent live)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#BUY_NORMAL_SUCCESS": {
-      "address": "0x46332f",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x6d BUY_NORMAL_SUCCESS; op-byte consumed by dispatcher before OnCashItemResBuyNormalDone)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "count (int32, count-prefix for the packed-ref list)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "packed _ULARGE_INTEGER-shaped record (8B: quantity u16@0, slotPos u16@2, itemId i32@4) \u2014 same shape as USE_COUPON_SUCCESS's second list",
-          "guard": "loop count"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#FRIENDSHIP_SUCCESS": {
-      "address": "0x463658",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x71 FRIENDSHIP_SUCCESS; op-byte consumed by dispatcher before OnCashItemResFriendShipDone)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "GW_CashItemInfo blob (55B, single \u2014 appended to m_aCashItemInfo)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "recipientName"
-        },
-        {
-          "op": "Decode4",
-          "comment": "itemId"
-        },
-        {
-          "op": "Decode2",
-          "comment": "quantity"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#REBATE_SUCCESS": {
-      "address": "0x463212",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x65 REBATE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResRebateDone)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "sn (8B _LARGE_INTEGER SN; matched against existing m_aCashItemInfo[i].liSN, find-and-remove pattern)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "amount"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#COUPLE_SUCCESS": {
-      "address": "0x4634b2",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x67 COUPLE_SUCCESS; op-byte consumed by dispatcher before OnCashItemResCoupleDone)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "GW_CashItemInfo blob (55B, single \u2014 appended to m_aCashItemInfo)"
-        },
-        {
-          "op": "DecodeStr",
-          "comment": "recipientName"
-        },
-        {
-          "op": "Decode4",
-          "comment": "itemId (second/separate reference, used only for CItemInfo::GetItemName in notice text)"
-        },
-        {
-          "op": "Decode2",
-          "comment": "quantity"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#LIMIT_GOODS_COUNT_CHANGED": {
-      "address": "0x4612a4",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x2B LIMIT_GOODS_COUNT_CHANGED; op-byte consumed by dispatcher before OnCashItemResLimitGoodsCountChanged)"
-        },
-        {
-          "op": "Decode4",
-          "comment": "itemId"
-        },
-        {
-          "op": "Decode4",
-          "comment": "sn"
-        },
-        {
-          "op": "Decode4",
-          "comment": "remainCount"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#INC_TRUNK_COUNT_SUCCESS": {
-      "address": "0x462bcb",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x46 INC_TRUNK_COUNT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResIncTrunkCountDone)"
-        },
-        {
-          "op": "Decode2",
-          "comment": "trunkCount (new absolute m_nTrunkCount)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#INC_CHARACTER_SLOT_COUNT_SUCCESS": {
-      "address": "0x462ca2",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x48 INC_CHARACTER_SLOT_COUNT_SUCCESS; op-byte consumed by dispatcher before OnCashItemResIncCharacterSlotCountDone)"
-        },
-        {
-          "op": "Decode2",
-          "comment": "slotCount (new absolute m_nCharacterSlotCount)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#DESTROY_SUCCESS": {
-      "address": "0x463150",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x4E DESTROY_SUCCESS; op-byte consumed by dispatcher before OnCashItemResDestroyDone)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "sn (8B _LARGE_INTEGER SN; matched against existing m_aCashItemInfo[i].liSN, find-and-remove pattern)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#EXPIRE_DONE": {
-      "address": "0x462edf",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x50 EXPIRE_DONE; op-byte consumed by dispatcher before OnCashItemResExpireDone)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "sn (8B _LARGE_INTEGER SN; matched against existing m_aCashItemInfo[i].liSN)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#NAME_CHANGE_BUY_DONE": {
-      "address": "0x463adb",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x7D NAME_CHANGE_BUY_DONE; op-byte consumed by dispatcher before OnCashItemNameChangeResBuyDone)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "GW_CashItemInfo blob (55B, single; decoded into a freshly-inserted m_aCashItemInfo slot)"
-        }
-      ]
-    },
-    "CCashShop::OnCashItemResult#TRANSFER_WORLD_SUCCESS": {
-      "address": "0x463d96",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": "mode (0x7B TRANSFER_WORLD_SUCCESS; op-byte consumed by dispatcher before OnCashItemResTransferWorldDone)"
-        },
-        {
-          "op": "DecodeBuffer",
-          "comment": "GW_CashItemInfo blob (55B, single)"
-        }
-      ]
-    },
-    "CWvsContext::CheckTemporaryStatDuration": {
-      "address": "0x84374e",
-      "direction": "serverbound",
-      "calls": []
-    },
-    "CWvsContext::SendBridleItemUseRequest": {
-      "address": "0x832005",
-      "direction": "serverbound",
-      "note": "USE_CATCH_ITEM (task-212). CWvsContext::SendBridleItemUseRequest: update_time(Encode4), nPOS(Encode2), nItemID(Encode4), then the FindHitMobInRect-derived hit-mob object id (Encode4). Address per design.md/plan.md task-212 citation; confirmed via live decompile (idb_open/decompile) showing the item-class-227 gate and the GetBridleItem-equivalent lookup feeding COutPacket at the registry's USE_CATCH_ITEM opcode for this version.",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "updateTime (get_update_time)"
-        },
-        {
-          "op": "Decode2",
-          "comment": "nPOS"
-        },
-        {
-          "op": "Decode4",
-          "comment": "nItemID"
-        },
-        {
-          "op": "Decode4",
-          "comment": "hit-mob object id (FindHitMobInRect)"
-        }
-      ]
-    },
-    "CWvsContext::SendSelectNpcItemUseRequest": {
-      "address": "0x83778d",
-      "direction": "serverbound",
-      "note": "task-230: NPC_ITEM_USE_REQUEST (opcode 102 / 0x066). COutPacket(102) @0x837851, Encode2(a2=source) @0x837863, Encode4(a3=itemId) @0x83786e. No leading updateTime. Two refusal arms (field flag bit 18; CUniqueModeless open) send nothing. Confirmed via live decompile (mcp__ida-pro__decompile) against IDA session 415bf585 (GMS_v61.1_U_DEVM.exe.i64).",
-      "calls": [
-        {
-          "op": "Decode2",
-          "comment": "source (nPOS / a2), int16 slot"
-        },
-        {
-          "op": "Decode4",
-          "comment": "itemId (nItemID / a3)"
-        }
-      ]
-    },
-    "CMacroSysMan::SetMacro": {
-      "address": "0x59744b",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Delegate",
-          "comment": "task-226 harvest: CMacroSysMan::SetMacro forwards its CInPacket arg wholesale to MACROSYSDATA::Decode with no direct CInPacket::DecodeN(...) call of its own, so the alias-seed regex never fires inside this function. Hand-spliced after verifying the call by decompile.",
-          "ref": "MACROSYSDATA::Decode"
-        }
-      ]
-    },
-    "MACROSYSDATA::Decode": {
-      "address": "0x4b796d",
-      "direction": "clientbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3 > 0",
-          "ref": "sub_4B78D5"
-        }
-      ]
-    },
-    "sub_4B78D5": {
-      "address": "0x4b78d5",
-      "direction": "",
-      "calls": [
-        {
-          "op": "DecodeStr",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode4",
-          "comment": ""
-        }
-      ]
-    },
-    "CMacroSysMan::FlushToSvr": {
-      "address": "0x59746c",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Delegate",
-          "comment": "task-226 Step 0 harvest (v61 send-chain gap, na-recheck.md): CMacroSysMan::FlushToSvr forwards its COutPacket arg wholesale to MACROSYSDATA::Encode with no direct COutPacket::EncodeN(...) call of its own, so the alias-seed regex never fires inside this function. Hand-spliced after verifying the call by decompile (COutPacket::COutPacket(&pkt, 101); sub_4B7928(pkt); CClientSocket::SendPacket(...); ZArray::RemoveAll(...)).",
-          "ref": "MACROSYSDATA::Encode"
-        }
-      ]
-    },
-    "MACROSYSDATA::Encode": {
-      "address": "0x4b7928",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Delegate",
-          "comment": "",
-          "guard": "v3 > 0",
-          "ref": "sub_4B7884"
-        }
-      ]
-    },
-    "sub_4B7884": {
-      "address": "0x4b7884",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "DecodeStr",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
-        },
-        {
-          "op": "Decode4",
-          "comment": ""
-        }
-      ]
-    },
-    "CWvsContext::SendMobSummonItemUseRequest": {
-      "address": "0x831c83",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "result && !result && result == 6 && result"
-        },
-        {
-          "op": "Decode2",
-          "comment": "",
-          "guard": "result && !result && result == 6 && result"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "result && !result && result == 6 && result"
-        }
-      ]
-    },
-    "sub_841AA5": {
-      "address": "0x841aa5",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "v36 == (void *)999999999"
-        },
-        {
-          "op": "Decode2",
-          "comment": "",
-          "guard": "v36 == (void *)999999999"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "v36 == (void *)999999999"
-        }
-      ]
-    },
-    "CMob::ApplyControl": {
-      "address": "0x5ccf1c",
-      "direction": "serverbound",
-      "calls": [
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "result && a2 - result >= 1000"
-        },
-        {
-          "op": "Decode4",
-          "comment": "",
-          "guard": "result && a2 - result >= 1000"
         }
       ]
     }

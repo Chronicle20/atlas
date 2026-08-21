@@ -1469,6 +1469,7 @@
   direction: clientbound
   opcode: 275
   fname: CNpcPool::OnNpcLeaveField
+  packet: npc/clientbound/NpcRemove
   provenance: csv-import
 - op: SPAWN_NPC_REQUEST_CONTROLLER
   direction: clientbound

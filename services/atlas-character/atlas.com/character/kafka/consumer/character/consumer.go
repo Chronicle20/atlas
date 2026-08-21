@@ -386,6 +386,8 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 			SetSkinColor(c.Body.SkinColor).
 			SetGm(c.Body.Gm).
 			SetMeso(c.Body.Meso).
+			SetAp(c.Body.AP).
+			SetSp(c.Body.SP).
 			Build()
 
 		// PRD §4.6 / plan Phase 9: capture and log the CreateAndEmit error

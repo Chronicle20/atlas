@@ -3,6 +3,7 @@ package _map
 import (
 	consumer2 "atlas-maps/kafka/consumer"
 	mapKafka "atlas-maps/kafka/message/map"
+	"atlas-maps/map/jukebox"
 	"atlas-maps/map/weather"
 	"context"
 	"time"
@@ -35,6 +36,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleWeatherStartCommand()))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handlePlayJukeboxCommand()))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -61,6 +65,37 @@ func handleWeatherStartCommand() func(l logrus.FieldLogger, ctx context.Context,
 		err := producer.ProviderImpl(l)(ctx)(mapKafka.EnvEventTopicMapStatus)(weather.WeatherStartEventProvider(c.TransactionId, f, c.Body.ItemId, c.Body.Message))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to produce weather start event for map [%d] instance [%s].", c.MapId, c.Instance)
+		}
+	}
+}
+
+// maxJukeboxDuration bounds a crafted or buggy PLAY_JUKEBOX command. The
+// duration is the client's own IWzSound::length, so a real track is well
+// under this; ten minutes is an order of magnitude above any real WZ sound
+// while still preventing a field's BGM from being pinned indefinitely.
+const maxJukeboxDuration = 10 * time.Minute
+
+func handlePlayJukeboxCommand() func(l logrus.FieldLogger, ctx context.Context, c mapKafka.Command[mapKafka.PlayJukeboxCommandBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, c mapKafka.Command[mapKafka.PlayJukeboxCommandBody]) {
+		if c.Type != mapKafka.CommandTypePlayJukebox {
+			return
+		}
+
+		f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+		duration := time.Duration(c.Body.DurationMs) * time.Millisecond
+
+		if duration > maxJukeboxDuration {
+			l.Warnf("Jukebox duration [%s] for map [%d] instance [%s] exceeds maximum, capping at [%s].", duration, c.MapId, c.Instance, maxJukeboxDuration)
+			duration = maxJukeboxDuration
+		}
+
+		l.Debugf("Received play jukebox command for map [%d] instance [%s] item [%d] duration [%s].", c.MapId, c.Instance, c.Body.ItemId, duration)
+
+		jukebox.NewProcessor(l, ctx).Start(f, c.Body.ItemId, c.Body.PlayerName, duration)
+
+		err := producer.ProviderImpl(l)(ctx)(mapKafka.EnvEventTopicMapStatus)(jukebox.JukeboxStartEventProvider(c.TransactionId, f, c.Body.ItemId, c.Body.PlayerName))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to produce jukebox start event for map [%d] instance [%s].", c.MapId, c.Instance)
 		}
 	}
 }

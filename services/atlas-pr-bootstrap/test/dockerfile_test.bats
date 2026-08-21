@@ -44,6 +44,15 @@ setup() {
     fi
 }
 
+@test "Dockerfile copies tenant-tables.txt (sweep_tenant's data dependency)" {
+    # sweep-orphans.sh's sweep_tenant reads "$(dirname "$0")/tenant-tables.txt"
+    # at runtime — a missing COPY means --sweep-tenant dies in-cluster with
+    # "missing /atlas/tenant-tables.txt" the first time the documented
+    # recovery path (sweep-orphans.sh --apply) is actually run, six hours
+    # after the image shipped. Fail the build instead.
+    grep -qE '^COPY scripts/tenant-tables\.txt /atlas/tenant-tables\.txt$' "$PROJECT_ROOT/Dockerfile"
+}
+
 @test "Dockerfile installs util-linux (provides uuidgen for sparse service rows)" {
     # sparse mode's create_service_config mints a fresh services-row id with
     # uuidgen. It was absent from the apk list, so the id came out empty and

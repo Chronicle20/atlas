@@ -45,7 +45,7 @@ func purgeInner(db *gorm.DB, mc *minio.Client) func(d *rest.HandlerDependency, c
 				http.Error(w, "bad tenant id", http.StatusBadRequest)
 				return
 			}
-			t := tenant.MustFromContext(r.Context())
+			t := tenant.MustFromContext(d.Context())
 			if id.String() == canonical.TenantUUID || canonical.IsCanonical(id, t.Region(), t.MajorVersion(), t.MinorVersion()) {
 				http.Error(w, ErrCanonicalRefused.Error(), http.StatusForbidden)
 				return

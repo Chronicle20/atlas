@@ -46,9 +46,9 @@ func newMapleLifeArmTestSession(t *testing.T, region string, major uint16, chara
 	ch := channel.NewModel(world.Id(1), channel.Id(0))
 	sp.Create(ch, 0)(sessionId, discardConn{})
 	sp.SetCharacterId(sessionId, characterId)
-	updated := sp.SetAccountId(sessionId, accountId)
+	sp.SetAccountId(sessionId, accountId)
 	f := field.NewBuilder(world.Id(1), channel.Id(0), _map.Id(100000000)).Build()
-	updated = sp.SetField(sessionId, f)
+	updated := sp.SetField(sessionId, f)
 
 	return updated, ctx, ten, func() { session.ClearRegistryForTenant(ten.Id()) }
 }
@@ -275,7 +275,15 @@ func TestMapleLifeUnsupportedVersionWritesNothing(t *testing.T) {
 			defer cleanup()
 
 			calls := &wpCallCounter{}
+			// updateTimeFirst is false for both v79 and v84 (GMS < 87), so
+			// the common prefix is exactly 6 bytes: int16 source + uint32
+			// itemId (cash/serverbound/item_use.go). Nothing beyond it
+			// belongs to this arm at all on an unsupported version.
+			const commonPrefixLen = 6
 			raw := cashItemUsePrefixForVersion(false, 42, testSlot, itemId)
+			if len(raw) != commonPrefixLen {
+				t.Fatalf("test fixture prefix length = %d, want %d", len(raw), commonPrefixLen)
+			}
 			req := request.Request(raw)
 			reader := request.NewRequestReader(&req, 0)
 
@@ -287,6 +295,15 @@ func TestMapleLifeUnsupportedVersionWritesNothing(t *testing.T) {
 			}
 			if _, ok := maplelife.GetRegistry().Get(ten, accountId); ok {
 				t.Errorf("expected no maplelife registry entry on an unsupported version")
+			}
+			// FR-2.4's third half: the sub-body was never decoded. mapleLifeSupported
+			// gates BEFORE cashsb.NewItemUseMapleLife(...).Decode(...) is ever reached
+			// (character_cash_item_use.go, the `if !mapleLifeSupported(t) { ...; return }`
+			// guard precedes the Decode call), so the reader must be left exactly where
+			// the common ItemUse prefix decode left it -- nothing past commonPrefixLen
+			// consumed.
+			if got := reader.Position(); got != commonPrefixLen {
+				t.Errorf("reader.Position() = %d, want %d (sub-body must be left unconsumed)", got, commonPrefixLen)
 			}
 		})
 	}

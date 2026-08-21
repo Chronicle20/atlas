@@ -1563,8 +1563,8 @@ the Cosmic `Reactor.wz` set (design §1.5):
 State explicitly: the nine-item lists in `docs/TODO.md` and
 `docs/tasks/task-019-reactor-type-semantics/prd.md:32` undercount by omitting
 `2406000` (나인스피릿의둥지, a Horntail prequest reactor rather than a GPQ one);
-the ten-item list in `docs/research/missing-features/maps-portals-reactors.md:35`
-is correct. Note that the count is per-mounted-WZ — other sets on this machine
+the ten-item list recorded in `design.md` §1.5 is the authoritative one. Note
+that the count is per-mounted-WZ — other sets on this machine
 carry 9, 10 and 19 — so this list is authoritative for the Cosmic/v83-era data
 Atlas reads, not universally.
 

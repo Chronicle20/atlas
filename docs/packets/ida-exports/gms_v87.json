@@ -16493,6 +16493,20 @@
           "guard": "a6 && PortalByName && CWvsPhysicalSpace2D::GetFootholdUnderneath(v81, v75, v14, 0, 0x7FFFFFFF, 1) && Src"
         }
       ]
+    },
+    "CUICharacterSaleDlg::OnCheckDuplicatedIDResult": {
+      "address": "0x82e12c",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
     }
   }
 }

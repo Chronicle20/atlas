@@ -14078,6 +14078,26 @@
           "guard": "Src"
         }
       ]
+    },
+    "CUICharacterSaleDlg::OnCheckDuplicatedIDResult": {
+      "address": "0x756370",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "v4 <= 0 && v4",
+          "ref": "sub_403B30"
+        }
+      ]
     }
   }
 }

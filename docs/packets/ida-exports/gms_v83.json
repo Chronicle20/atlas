@@ -16542,6 +16542,20 @@
           "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v64, v12, 0, 0x7FFFFFFF, 1) && a4"
         }
       ]
+    },
+    "CUICharacterSaleDlg::OnCheckDuplicatedIDResult": {
+      "address": "0x7d768a",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
     }
   }
 }

@@ -17571,6 +17571,20 @@
           "guard": "sPortalName"
         }
       ]
+    },
+    "CUICharacterSaleDlg::OnCheckDuplicatedIDResult": {
+      "address": "0x777e40",
+      "direction": "",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": ""
+        },
+        {
+          "op": "Decode1",
+          "comment": ""
+        }
+      ]
     }
   }
 }

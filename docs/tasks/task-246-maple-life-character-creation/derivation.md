@@ -517,13 +517,33 @@ routing key), then `Decode1 nResult` as a **SIGNED** byte, three-way branch —
 structurally identical to the sibling `CCashShop::OnCheckDuplicatedIDResult`
 precedent in `libs/atlas-packet/cash/clientbound/check_name_change.go:22-53`.
 
-`decompile_sha256`: **PENDING** on all versions, same reason as §2.1 —
-`CUICharacterSaleDlg::OnCheckDuplicatedIDResult` is absent as a key in every
-in-scope `docs/packets/ida-exports/<version>.json` (confirmed by direct
-key-scan of the `functions` map on all four present versions; each export
-only carries the unrelated `CLogin::OnCheckDuplicatedIDResult` and
-`CCashShop::OnCheckDuplicatedIDResult` keys). This is the same blocking
-dependency §2.1 already escalated for Tasks 4–6.
+`decompile_sha256`: **RESOLVED** (Task 4, this pass) on all four in-scope
+versions. The blocking gap was that `CUICharacterSaleDlg::OnCheckDuplicatedIDResult`
+was absent as a key in every in-scope `docs/packets/ida-exports/<version>.json`
+(confirmed by direct key-scan of the `functions` map on all four present
+versions — each export only carried the unrelated `CLogin::OnCheckDuplicatedIDResult`
+and `CCashShop::OnCheckDuplicatedIDResult` keys). This was the same blocking
+dependency §2.1 escalated for Tasks 4–6; Task 4 closed it for this receiver by:
+renaming the unnamed v83/v87 IDB functions (`sub_7D768A`, `sub_82E12C`) to the
+mangled symbol `?OnCheckDuplicatedIDResult@CUICharacterSaleDlg@@AAEXAAVCInPacket@@@Z`
+(matching the already-named v92/v95 twin, confirmed via `func_query`), then
+harvesting each version with `go run ./tools/packet-audit export -splice
+"CUICharacterSaleDlg::OnCheckDuplicatedIDResult" -ida-database <session>
+-ida-url http://192.168.20.3:8745/mcp` (the working IDA-MCP endpoint — the
+CLI's own `-ida-url` default, `http://192.168.20.3:13337/mcp`, is a known-stale
+value per `docs/TODO.md`'s "Tooling defects found in `tools/packet-audit`"
+entry) and surgically splicing only that one entry into the committed export
+(the CLI's own struct round-trip was found to silently drop a legacy
+singular-`note` field present on ~200 unrelated entries per file — worked
+around by textual insertion of only the new key, verified byte-identical
+elsewhere by post-hoc JSON diff). `evidence pin` then computed the real
+hashes: v83 `9643707ade90f59a9f5238724e975b0a78c9ca1400d118d1879b51ae53a0d61a`,
+v87 `bfbf959f72435f5b48b6ebe51af277d146bed0593862418a0b9ad5070cd89523`,
+v92 `0e5899046bd788bfc4fbdd05d06876d04a590cb0d6746fb5efa0405e7e3e8b19`,
+v95 `956ddb8de90e489899a016a58572bb41c81b0455f3bff99e31efc33002940574` — see
+`docs/packets/evidence/gms_v8{3,7}/maplelife.clientbound.MapleLifeResult.yaml`,
+`docs/packets/evidence/gms_v92/maplelife.clientbound.MapleLifeResult.yaml`,
+`docs/packets/evidence/gms_v95/maplelife.clientbound.MapleLifeResult.yaml`.
 
 ### §4.1 — how the receiver was located (all versions)
 

@@ -698,6 +698,60 @@ func reverseMembers(in []MemberInput) []MemberInput {
 	return out
 }
 
+func TestAggregateDamageEntries(t *testing.T) {
+	tests := []struct {
+		name  string
+		input []DamageEntryModel
+		want  []DamageInput
+	}{
+		{
+			name:  "already aggregated",
+			input: []DamageEntryModel{NewDamageEntryModel(1, 100), NewDamageEntryModel(2, 200)},
+			want:  []DamageInput{{CharacterId: 1, Damage: 100}, {CharacterId: 2, Damage: 200}},
+		},
+		{
+			name:  "accumulates, does not assign",
+			input: []DamageEntryModel{NewDamageEntryModel(1, 100), NewDamageEntryModel(1, 100), NewDamageEntryModel(1, 50)},
+			want:  []DamageInput{{CharacterId: 1, Damage: 250}},
+		},
+		{
+			name:  "sorts ascending by characterId",
+			input: []DamageEntryModel{NewDamageEntryModel(9, 10), NewDamageEntryModel(2, 20), NewDamageEntryModel(5, 30)},
+			want:  []DamageInput{{CharacterId: 2, Damage: 20}, {CharacterId: 5, Damage: 30}, {CharacterId: 9, Damage: 10}},
+		},
+		{
+			name: "interleaved duplicates",
+			input: []DamageEntryModel{
+				NewDamageEntryModel(2, 10), NewDamageEntryModel(1, 5),
+				NewDamageEntryModel(2, 10), NewDamageEntryModel(1, 5),
+			},
+			want: []DamageInput{{CharacterId: 1, Damage: 10}, {CharacterId: 2, Damage: 20}},
+		},
+		{
+			name:  "empty",
+			input: []DamageEntryModel{},
+			want:  []DamageInput{},
+		},
+		{
+			name:  "zero damage preserved",
+			input: []DamageEntryModel{NewDamageEntryModel(1, 0)},
+			want:  []DamageInput{{CharacterId: 1, Damage: 0}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := aggregateDamageEntries(tt.input)
+			if got == nil {
+				t.Fatalf("aggregateDamageEntries() returned nil, want a non-nil slice")
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("aggregateDamageEntries() = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestPlanDistribution_TotalEntriesComposition(t *testing.T) {
 	in := ExperienceInput{
 		MonsterExperience: 1000,

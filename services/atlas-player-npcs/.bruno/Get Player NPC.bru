@@ -1,0 +1,11 @@
+meta {
+  name: Get Player NPC
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/player-npcs/{{playerNpcId}}
+  body: none
+  auth: inherit
+}

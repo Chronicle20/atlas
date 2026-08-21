@@ -2,6 +2,7 @@ package playernpc
 
 import (
 	"atlas-player-npcs/character"
+	"atlas-player-npcs/eligibility"
 	"atlas-player-npcs/inventory"
 	"bytes"
 	"encoding/json"
@@ -648,6 +649,13 @@ func TestPlayerNpcResource(t *testing.T) {
 	})
 
 	t.Run("eligibility endpoint", func(t *testing.T) {
+		// No TENANTS_SERVICE_URL is set for this subtest, so the
+		// configuration processor falls back to configuration.DefaultModel(),
+		// whose autoDeployEnabled is true (see resource_test.go's
+		// externalMocks doc comment above). The endpoint is the conversation
+		// engine's canSpawnPlayerNpc predicate (design §9.1), so it evaluates
+		// with conversationPath=true: cfg.AutoDeployEnabled() true makes the
+		// character ineligible regardless of level/GM/duplicate state.
 		mocks.setCharacter(primaryTenant, warriorCharacter(171, "EligibleHero", 200))
 
 		url := fmt.Sprintf("%s/player-npcs/eligibility?characterId=171&mapId=555000230", srv.URL)
@@ -665,8 +673,70 @@ func TestPlayerNpcResource(t *testing.T) {
 		if err := json.Unmarshal(b, &er); err != nil {
 			t.Fatalf("decode: %v", err)
 		}
-		if !er.Eligible {
-			t.Fatalf("eligibilityResponse = %+v, want eligible", er)
+		if er.Eligible || er.Reason != eligibility.ReasonIneligible {
+			t.Fatalf("eligibilityResponse = %+v, want ineligible/%s (autoDeployEnabled default true)", er, eligibility.ReasonIneligible)
 		}
 	})
+
+	t.Run("eligibility endpoint varies with tenant AutoDeployEnabled", func(t *testing.T) {
+		// Asserts the endpoint's verdict actually tracks
+		// cfg.AutoDeployEnabled(), i.e. that handleGetEligibility calls
+		// eligibility.Evaluate with conversationPath=true (design §9.1: this
+		// endpoint is the conversation engine's sole caller of that flag).
+		mocks.setCharacter(primaryTenant, warriorCharacter(172, "AutoDeployVariesHero", 200))
+		url := fmt.Sprintf("%s/player-npcs/eligibility?characterId=172&mapId=555000231", srv.URL)
+
+		getEligibility := func(t *testing.T) eligibilityResponse {
+			t.Helper()
+			req := requestWithTenant(http.MethodGet, url, primaryTenant)
+			resp, err := (&http.Client{}).Do(req)
+			if err != nil {
+				t.Fatalf("request: %v", err)
+			}
+			defer func() { _ = resp.Body.Close() }()
+			b, _ := io.ReadAll(resp.Body)
+			if resp.StatusCode != http.StatusOK {
+				t.Fatalf("status = %d, want 200: %s", resp.StatusCode, string(b))
+			}
+			var er eligibilityResponse
+			if err := json.Unmarshal(b, &er); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			return er
+		}
+
+		t.Run("autoDeployEnabled true -> ineligible", func(t *testing.T) {
+			setTenantConfig(t, primaryTenant, true)
+			er := getEligibility(t)
+			if er.Eligible || er.Reason != eligibility.ReasonIneligible {
+				t.Fatalf("eligibilityResponse = %+v, want ineligible/%s", er, eligibility.ReasonIneligible)
+			}
+		})
+
+		t.Run("autoDeployEnabled false -> eligible", func(t *testing.T) {
+			setTenantConfig(t, primaryTenant, false)
+			er := getEligibility(t)
+			if !er.Eligible {
+				t.Fatalf("eligibilityResponse = %+v, want eligible", er)
+			}
+		})
+	})
+}
+
+// setTenantConfig points TENANTS_SERVICE_URL at a one-shot server serving
+// the tenant's player-npcs configuration with the given autoDeployEnabled,
+// and every other field at configuration.DefaultModel()'s values -- see
+// configuration/rest_test.go's TestGetByTenantId_Configured for the JSON:API
+// payload shape this copies.
+func setTenantConfig(t *testing.T, tenantId uuid.UUID, autoDeployEnabled bool) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(fmt.Sprintf(`{"data":{"type":"player-npcs","id":"%s","attributes":{
+			"initialX":262,"initialY":262,"areaX":320,"areaY":160,"areaSteps":4,
+			"organizeArea":true,"autoDeployEnabled":%t
+		}}}`, tenantId, autoDeployEnabled)))
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("TENANTS_SERVICE_URL", srv.URL+"/")
 }

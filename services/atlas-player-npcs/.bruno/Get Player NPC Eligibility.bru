@@ -1,0 +1,11 @@
+meta {
+  name: Get Player NPC Eligibility
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/player-npcs/eligibility?characterId={{characterId}}&mapId={{mapId}}&worldId={{worldId}}
+  body: none
+  auth: inherit
+}

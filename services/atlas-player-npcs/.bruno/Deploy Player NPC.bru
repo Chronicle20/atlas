@@ -1,0 +1,25 @@
+meta {
+  name: Deploy Player NPC
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/player-npcs
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data": {
+      "type": "player-npcs",
+      "id": "",
+      "attributes": {
+        "characterId": {{characterId}},
+        "worldId": {{worldId}},
+        "mapId": {{mapId}}
+      }
+    }
+  }
+}

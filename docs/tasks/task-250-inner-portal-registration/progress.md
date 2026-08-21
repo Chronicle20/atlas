@@ -277,3 +277,10 @@ Notes the close-out must carry:
 ## Close-out result
 
 All 12 plan tasks + Task 2b complete. All three pre-PR reviewers run. Two gate/review-driven fixes landed on top (`c2a430a32` DOM-24, `a20119b2b` corpus guard). Branch HEAD `59a725c18`, working tree clean, flagless gate green.
+
+## PR
+
+- Pushed `task-250-inner-portal-registration` → origin. **PR #1461: https://github.com/Chronicle20/atlas/pull/1461** (base `main`).
+- Branch contributes 107 files, +8562/-109 over fork point `5f299e4bb`. Branch is 10 commits behind `main`; not merged, since it does not conflict and a plain push triggers the workflows.
+- Worktree preserved at `.worktrees/task-250-inner-portal-registration/` for PR feedback (Phase 5 / `/fix-pr-bug`).
+- PR body carries the three things a reviewer cannot infer: the `MajorAtLeast(61)` v48 divergence, the `Fh = 0` wire contract and why it is load-bearing, and the out-of-domain `packet-audit` SpliceExport fix. It also surfaces both rejected-finding areas for a second opinion rather than presenting the branch as unanimously clean.

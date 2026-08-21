@@ -8,6 +8,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
+// packet-audit:verify packet=npc/clientbound/ImitatedNpcData version=gms_v61 ida=0x5efc2e
 // packet-audit:verify packet=npc/clientbound/ImitatedNpcData version=gms_v79 ida=0x9540ff
 func TestImitatedNpcData(t *testing.T) {
 	input := NewImitatedNpcData([]ImitatedNpc{

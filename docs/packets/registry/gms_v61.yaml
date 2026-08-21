@@ -529,6 +529,7 @@
   fname: sub_830B0B
   fname_alts:
   - CNpcPool::OnNpcImitateData
+  packet: npc/clientbound/ImitatedNpcData
   provenance: ida-discovered
   ida:
     address: 8588043

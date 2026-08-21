@@ -259,3 +259,55 @@ regardless of the source and does not change.
 
 Fix round brief: `.superpowers/sdd/plan/task-13-brief-fix.md` — the `_map.Id` blocker from the
 Task 13 review plus the inventory rewire, in one commit range.
+
+# Task 13/14 fix round — closed
+
+`cc6851b6e` (Fix 1, `_map.Id` retype) + `7f26d416c` (Fix 2, equipment from `atlas-inventory`).
+Gate 20 PASS at `7f26d416c` — **last gated commit**. Re-review **APPROVED**, 0 blocking,
+0 non-blocking (`.superpowers/sdd/plan/task-13-fix-review.md`).
+
+The reviewer diffed `snapshot.Capture`/`captureEquipment` byte-for-byte pre- vs post-fix and
+confirmed the masking arithmetic and the 1–11 / 101–111 range gate did **not** move — only the
+parameter type and call site changed, which was the regression risk in this round. It also
+verified the fix report's registration claim rather than taking it: `characters/{id}/inventory`
+is already routed to `atlas-inventory` at `deploy/k8s/base/routes.conf.template.generated:135-138`,
+`atlas-player-npcs.yaml` carries no per-domain `_SERVICE_URL` override for any of its domains,
+and `RootUrlFor` resolves purely by env lookup — so no deploy change was needed and none is
+missing.
+
+## New signature Task 15 consumes
+
+```
+snapshot.Capture(characterId uint32, worldId world.Id,
+                 cp character.Processor, ip inventory.Processor, rp ranking.Processor) (Model, error)
+```
+
+Call site needs `inventory.NewProcessor(l, ctx)`.
+
+# Session 5 handoff (after Tasks 13, 14 and the fix round)
+
+**Last gated commit: `7f26d416c`** (gate 20 PASS). Tasks 1–14 are complete, reviewed and gated.
+Nothing is in flight; the tree is clean.
+
+**NEXT ACTION: Task 15 (the deploy transaction, plan.md:1037).** Its brief is already
+generated, fact-blocked at base `7f26d416c`, and annotated with the three rulings it must
+consume: `.superpowers/sdd/plan/task-15-brief.md`. Dispatch an `atlas-implementer` (sonnet)
+against it — no brief regeneration needed.
+
+Open decision Task 15 owns: **`Placement.Step` is computed but not persisted.** Design §3.1
+persists only `x, cy, fh, rx0, rx1, dir`, so a new deploy has no stored "current step". Task 15
+must either derive the step by retrying `NextGridPosition` from step 0, or add the column —
+and write down which.
+
+Standing operating rules on this branch, unchanged:
+ - Only ONE mutating agent may hold the worktree at a time; a gate may never run alongside a
+   writer. A read-only reviewer MAY run alongside one writer, but only with the explicit
+   no-mutation constraint block.
+ - Treat plan.md's TABLES as authoritative and its PROSE as suspect — six defects found and
+   fixed so far. Verify every named symbol against source before use.
+ - The `skill/job id guard` has tripped twice on this module: resolve job ids through the
+   version-aware `constants.SkillJobSet`, never a raw wire id against a `job.*Id` constant.
+
+Two operator hand-backs still outstanding (unchanged, recorded above under Task 8): create
+`atlas-player-npcs-main` on `postgres.home`, and flip the GHCR package public after the first
+image push.

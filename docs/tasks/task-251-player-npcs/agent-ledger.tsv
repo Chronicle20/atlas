@@ -77,3 +77,7 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T19:00:24Z	agent	Task 14	atlas-implementer	sonnet	-	-	-	-	DONE	0d8a8257b	-	-	-	-
 2026-08-21T19:00:24Z	agent	Gate 19	gate	-	-	-	-	-	PASS	0d8a8257b	-	-	-	-
 2026-08-21T19:00:24Z	agent	Task 14	atlas-reviewer	sonnet	-	-	-	-	DONE	0d8a8257b	APPROVED	no	-	-
+2026-08-21T19:13:14Z	agent	Task 13/14 fix	atlas-implementer	sonnet	-	-	-	-	DONE	7f26d416c	-	-	-	-
+2026-08-21T19:13:14Z	agent	Gate 20	gate	-	-	-	-	-	PASS	7f26d416c	-	-	-	-
+2026-08-21T19:13:15Z	agent	Task 13/14 fix	atlas-reviewer	sonnet	-	-	-	-	DONE	7f26d416c	APPROVED	no	-	-
+2026-08-21T19:13:15Z	handoff	after Task 14 + fix round	-	-	-	-	-	-	-	-	-	-	-	120000

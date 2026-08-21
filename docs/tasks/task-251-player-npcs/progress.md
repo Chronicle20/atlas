@@ -432,3 +432,28 @@ Gate 23 FAILED on 7 `errcheck` `Body.Close()` findings. The implementer found th
 in the same file. It fixed all **16** occurrences rather than the 7 quoted, so the next
 `--quick` run does not fail again on a newly un-capped batch. Worth remembering when reading any
 future lint block on this branch: **the quoted count is a floor, not a total.**
+
+## Task 16 fix round — `d908c3c95`
+
+`rest.go:496` `conversationPath` `false` → `true`; the stale "eligibility endpoint" fixture
+expectation corrected (now ineligible under `DefaultModel()`'s `autoDeployEnabled: true`
+fallback); a new subtest mocks `TENANTS_SERVICE_URL` to vary `AutoDeployEnabled` across both
+values and asserts the verdict tracks it; 7 `.bruno/*.bru` request files added, one per route,
+on the `services/atlas-notes/.bruno/` convention.
+
+## Task 15/16 combined fix review — APPROVED, 0 findings
+
+`.superpowers/sdd/plan/task-15-16-fix-review.md`, over `92be6a7cc` + `f75b7e0e0` + `d908c3c95`.
+The reviewer did not take the fix reports' claims — it re-derived them:
+
+- `routing/routing.go:26-46,71-104` — each podium map really is 1:1 with one job category.
+- `playernpc/builder.go:109-111` — the stored `job_id` column holds `routing.JobCategory`,
+  which is what `nextWorldJobRank` queries by. That is the link that makes `world_job_rank - 1`
+  correct.
+- `processor_test.go:503-587` — **hand-verified all 5 podium slot assertions independently**;
+  all match, so the new test is not back-filled from observed output.
+- `resource_test.go:684-742` — traced the new subtest against *both* the old and new
+  `conversationPath` values to confirm it is genuinely non-vacuous.
+- `.bruno/*.bru` — mapped 1:1 against `rest.go:173-183`'s registered routes.
+
+Both blocking findings are closed. The `worldId` gap was correctly left untouched.

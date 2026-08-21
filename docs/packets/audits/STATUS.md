@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
+Tool: `46d5ca743da4fe06357af74efae0a869c4b5845ac7b48088c7b910391b0b37af`
 
 - export gms_v48: `f46a1c091a8f557a7a0a47c295bed12c56e0f70e23552726d1ca6586eadbf0dd`
 - export gms_v61: `6c974c037a17229958f04d245f414de004f5530852466818e48167a4172e7c70`
 - export gms_v72: `f22e6d780c0ca97b845d09876f2a4724b612189f9d9d353451be062bcb741c56`
 - export gms_v79: `efa7d503bee32a270bf80e0d437259e1b4e13e7d7bab2058427def64e781a2a3`
-- export gms_v83: `c67683456e4e217a15427236874415a157607029f75dad557220dda1698df343`
+- export gms_v83: `b52bac5f07c3762626731588fd689598a937222a8bb1cea6f9dbcf8107a31e74`
 - export gms_v84: `16832eea1aedc71e48c73e047e4fca66fef8d2bfdc1901f2b5f00ac1286c40ce`
-- export gms_v87: `a98d58925e1727eb5b35711081abaa018b3545422d7a66e12c7fd2acd82fdf26`
-- export gms_v92: `920f3d727bd6af89b456954ae73a113db8e02b731dc0ec2b351b158fe7ed6d55`
-- export gms_v95: `1d14be339484361977a0e52643ef208957c18a3b1e0e73aa41222c3158d71f08`
+- export gms_v87: `ec11d59b3153821f1d458eb606734780deecc24a9180f40646828ad9976f7c94`
+- export gms_v92: `e2c3e093edfc4b28460aea777eb241d2c5f474439b0ee230702b0c1ef5f56b3c`
+- export gms_v95: `4ebb3ef155f3abf5f065f0340732626320aa404aa76f167adef42228630a9659`
 - export jms_v185: `576eda436b95b42e99f3bb0a6343964695a5c0732b95beed1593bab25f78df3c`
 
 ## Clientbound
@@ -488,7 +488,7 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 | ARIANT_SCORE | CField_Witchtower::OnPacket; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldAriantScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ | 0x166 | ✅ |  | ⬜ |
 | MAPLELIFE_RESULT | CUICharacterSaleDlg::OnCheckDuplicatedIDResult | maplelife/clientbound/MaplelifeMapleLifeResult |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ✅ | 0x15D | ❌ | 0x172 | ✅ | 0x194 | ✅ | 0x19D | ✅ |  | ⬜ |
 | SHOOT_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ |
-| MAPLELIFE_ERROR | CUICharacterSaleDlg::OnCreateNewCharacterResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15E | ❌ | 0x15E | ❌ | 0x173 | ❌ | 0x195 | ❌ | 0x19E | ❌ |  | ⬜ |
+| MAPLELIFE_ERROR | CUICharacterSaleDlg::OnCreateNewCharacterResult | maplelife/clientbound/MaplelifeMapleLifeError |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15E | ✅ | 0x15E | ❌ | 0x173 | ✅ | 0x195 | ✅ | 0x19E | ✅ |  | ⬜ |
 | SOMETHING_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15E | ❌ |
 | UPDATE_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15F | ❌ |
 | ONE_A_DAY | CCashShop::OnOneADay |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x161 | ❌ | 0x183 | ❌ | 0x18B | ❌ |  | ⬜ |
@@ -1061,11 +1061,11 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 | v61 | 278 | 0 | 56 | 228 | 459 | 0 | 49.5% |
 | v72 | 296 | 0 | 69 | 241 | 415 | 0 | 48.8% |
 | v79 | 342 | 0 | 68 | 237 | 374 | 0 | 52.9% |
-| v83 | 469 | 0 | 0 | 324 | 228 | 0 | 59.1% |
+| v83 | 470 | 0 | 0 | 323 | 228 | 0 | 59.3% |
 | v84 | 442 | 0 | 0 | 331 | 248 | 0 | 57.2% |
-| v87 | 477 | 0 | 0 | 353 | 191 | 0 | 57.5% |
-| v92 | 53 | 0 | 148 | 679 | 141 | 0 | 6.0% |
-| v95 | 502 | 0 | 0 | 412 | 107 | 0 | 54.9% |
+| v87 | 478 | 0 | 0 | 352 | 191 | 0 | 57.6% |
+| v92 | 54 | 0 | 148 | 678 | 141 | 0 | 6.1% |
+| v95 | 503 | 0 | 0 | 411 | 107 | 0 | 55.0% |
 | JMS185 | 442 | 0 | 0 | 381 | 198 | 0 | 53.7% |
 
 ## Conflicts

@@ -16134,6 +16134,20 @@
           "comment": ""
         }
       ]
+    },
+    "CUICharacterSaleDlg::OnCreateNewCharacterResult": {
+      "address": "0x7d77b0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
     }
   }
 }

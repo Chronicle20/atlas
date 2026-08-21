@@ -13662,6 +13662,20 @@
           "ref": "sub_403B30"
         }
       ]
+    },
+    "CUICharacterSaleDlg::OnCreateNewCharacterResult": {
+      "address": "0x7564f0",
+      "direction": "",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
     }
   }
 }

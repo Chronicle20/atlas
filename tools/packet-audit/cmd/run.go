@@ -2629,6 +2629,18 @@ func candidatesFromFName(fname string) []candidate {
 	// (docs/tasks/task-246-maple-life-character-creation/derivation.md §4).
 	case "CUICharacterSaleDlg::OnCheckDuplicatedIDResult":
 		return []candidate{{name: "MapleLifeResult", dir: csvpkg.DirClientbound, pkg: "maplelife"}}
+	// Clientbound MAPLELIFE_ERROR (task-246): the create-character result
+	// receiver for the same Maple Life naming dialog — renders the terminal
+	// SUCCESS / NAME_TAKEN_AT_SUBMIT / UNKNOWN_ERROR(param) outcome of
+	// SendCreateNewCharacter, including the success arm (design §5.4; this op
+	// is not a failure-only channel). Struct is MapleLifeError
+	// (libs/atlas-packet/maplelife/clientbound/error.go). Body is Decode1
+	// (nType) + Decode4 (nParam) on every in-scope version (gms_v83/v87/v92/
+	// v95); the nType literal per arm shifts per-version (tenant-template
+	// config, DOM-25), field shape does not
+	// (docs/tasks/task-246-maple-life-character-creation/derivation.md §5).
+	case "CUICharacterSaleDlg::OnCreateNewCharacterResult":
+		return []candidate{{name: "MapleLifeError", dir: csvpkg.DirClientbound, pkg: "maplelife"}}
 	// Clientbound CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT (task-227): the
 	// server's answer to the WORLD_TRANSFER request above. Routed by
 	// CCashShop::OnPacket as its own case, NOT by the OnCashItemResult mode

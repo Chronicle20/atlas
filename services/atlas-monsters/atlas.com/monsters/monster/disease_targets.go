@@ -2,9 +2,11 @@ package monster
 
 import (
 	"atlas-monsters/monster/mobskill"
+	"context"
 	"sync"
 
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 )
 
 // positionedCharacter pairs a character id with the world coordinates that
@@ -68,7 +70,7 @@ func (p *ProcessorImpl) resolvePositions(uniqueId uint32, ids []uint32) []positi
 	var wg sync.WaitGroup
 	for i, id := range ids {
 		wg.Add(1)
-		go func(i int, id uint32) {
+		routine.Go(p.l, p.ctx, func(_ context.Context) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
@@ -78,7 +80,7 @@ func (p *ProcessorImpl) resolvePositions(uniqueId uint32, ids []uint32) []positi
 				return
 			}
 			slots[i] = &positionedCharacter{id: id, x: x, y: y}
-		}(i, id)
+		})
 	}
 	wg.Wait()
 

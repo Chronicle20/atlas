@@ -550,6 +550,34 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 // boss guard, and deliberately never rolls reflect — the channel already
 // gated the triggering hit on reflect, and a kill "attack" has no attack
 // type.
+// finalizeKill is the single kill epilogue. Every death — ordinary damage,
+// Mortal Blow, and all three self-destruct triggers — runs exactly this
+// sequence, so a self-destruct cannot drift from an ordinary kill (task-253
+// design D5, FR-6.5). deathType is the wire dead-type the channel renders;
+// ordinary deaths pass DeathTypeFadeOut.
+func (p *ProcessorImpl) finalizeKill(m Model, killerId uint32, isBoss bool, revives []uint32, deathType byte) {
+	GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
+	GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
+	GetDropTimerRegistry().Unregister(p.ctx, p.t, m.UniqueId())
+
+	// Emit cancellation events for any active status effects before death
+	for _, se := range m.StatusEffects() {
+		_ = p.emit(EnvEventTopicMonsterStatus, statusEffectCancelledEventProvider(m, se))
+	}
+
+	if err := p.emit(EnvEventTopicMonsterStatus, killedStatusEventProvider(m, killerId, isBoss, m.DamageSummary(), deathType)); err != nil {
+		p.l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the field.", m.UniqueId())
+	}
+	if _, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, m.UniqueId()); err != nil {
+		p.l.WithError(err).Errorf("Monster [%d] killed, but not removed from registry.", m.UniqueId())
+	}
+
+	// Boss revive: spawn next phase monsters
+	if len(revives) > 0 {
+		p.spawnRevives(m, revives)
+	}
+}
+
 func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32) {
 	// Fetch monster info for boss flag and revives
 	var isBoss bool
@@ -608,27 +636,7 @@ func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32
 	}
 
 	if killed {
-		// Clear cooldowns and drop timer on death
-		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
-		GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
-		GetDropTimerRegistry().Unregister(p.ctx, p.t, m.UniqueId())
-
-		// Emit cancellation events for any active status effects before death
-		for _, se := range last.Monster.StatusEffects() {
-			_ = p.emit(EnvEventTopicMonsterStatus, statusEffectCancelledEventProvider(last.Monster, se))
-		}
-
-		if err := p.emit(EnvEventTopicMonsterStatus, killedStatusEventProvider(last.Monster, last.CharacterId, isBoss, last.Monster.DamageSummary())); err != nil {
-			p.l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the field.", last.Monster.UniqueId())
-		}
-		if _, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, last.Monster.UniqueId()); err != nil {
-			p.l.WithError(err).Errorf("Monster [%d] killed, but not removed from registry.", last.Monster.UniqueId())
-		}
-
-		// Boss revive: spawn next phase monsters
-		if len(revives) > 0 {
-			p.spawnRevives(last.Monster, revives)
-		}
+		p.finalizeKill(last.Monster, last.CharacterId, isBoss, revives, DeathTypeFadeOut)
 		return
 	}
 
@@ -729,7 +737,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 			_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(statusEffectCancelledEventProvider(s.Monster, se))
 		}
 
-		err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(killedStatusEventProvider(s.Monster, 0, false, s.Monster.DamageSummary()))
+		err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(killedStatusEventProvider(s.Monster, 0, false, s.Monster.DamageSummary(), DeathTypeFadeOut))
 		if err != nil {
 			p.l.WithError(err).Errorf("Friendly monster [%d] killed, but unable to emit killed event.", s.Monster.UniqueId())
 		}
@@ -1345,7 +1353,7 @@ func (p *ProcessorImpl) Destroy(uniqueId uint32) error {
 		return err
 	}
 
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(destroyedStatusEventProvider(m))
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(destroyedStatusEventProvider(m, DeathTypeUnset))
 }
 
 // DestroyInField destroys all monsters in a field

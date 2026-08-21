@@ -28,8 +28,8 @@ func createdStatusEventProvider(m Model) model.Provider[[]kafka.Message] {
 	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusCreated, statusEventCreatedBody{ActorId: 0}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
-func destroyedStatusEventProvider(m Model) model.Provider[[]kafka.Message] {
-	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusDestroyed, statusEventDestroyedBody{ActorId: 0}, m.SpawnSourceType(), m.SpawnSourceId())
+func destroyedStatusEventProvider(m Model, deathType byte) model.Provider[[]kafka.Message] {
+	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusDestroyed, statusEventDestroyedBody{ActorId: 0, DeathType: deathType}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
 func statusEventProvider[E any](f field.Model, uniqueId uint32, monsterId uint32, theType string, body E, spawnSourceType string, spawnSourceId string) model.Provider[[]kafka.Message] {
@@ -146,7 +146,7 @@ func friendlyDropStatusEventProvider(m Model, itemCount uint32) model.Provider[[
 	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusFriendlyDrop, statusEventFriendlyDropBody{ItemCount: itemCount}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 
-func killedStatusEventProvider(m Model, killerId uint32, boss bool, damageSummary []entry) model.Provider[[]kafka.Message] {
+func killedStatusEventProvider(m Model, killerId uint32, boss bool, damageSummary []entry, deathType byte) model.Provider[[]kafka.Message] {
 	var damageEntries []damageEntry
 	for _, e := range damageSummary {
 		damageEntries = append(damageEntries, damageEntry{
@@ -161,6 +161,7 @@ func killedStatusEventProvider(m Model, killerId uint32, boss bool, damageSummar
 		ActorId:       killerId,
 		Boss:          boss,
 		DamageEntries: damageEntries,
+		DeathType:     deathType,
 	}, m.SpawnSourceType(), m.SpawnSourceId())
 }
 

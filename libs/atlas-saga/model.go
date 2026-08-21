@@ -70,6 +70,12 @@ const (
 	// RemoteNpcUse is the classification-239 flow: open the named NPC's shop or
 	// conversation from anywhere, then consume the item.
 	RemoteNpcUse Type = "remote_npc_use"
+
+	// MapleLifeUse is the classification-543 flow: create the character through
+	// atlas-character-factory FIRST, then destroy the cash item once the seed
+	// saga reports CREATED. One step, so there is nothing to reverse-walk — the
+	// item survives every failure by construction (task-246 design §5.4).
+	MapleLifeUse Type = "maple_life_use"
 )
 
 // Status represents the status of a saga step

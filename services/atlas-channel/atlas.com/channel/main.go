@@ -58,6 +58,7 @@ import (
 	"atlas-channel/kafka/consumer/route"
 	rpsConsumer "atlas-channel/kafka/consumer/rps"
 	"atlas-channel/kafka/consumer/saga"
+	seedConsumer "atlas-channel/kafka/consumer/seed"
 	session2 "atlas-channel/kafka/consumer/session"
 	"atlas-channel/kafka/consumer/skill"
 	storage3 "atlas-channel/kafka/consumer/storage"
@@ -115,6 +116,7 @@ import (
 	interactionsb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/serverbound"
 	invcb "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/clientbound"
 	invsb "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/serverbound"
+	mlcb "github.com/Chronicle20/atlas/libs/atlas-packet/maplelife/clientbound"
 	msb "github.com/Chronicle20/atlas/libs/atlas-packet/maplelife/serverbound"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	merchantsb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/serverbound"
@@ -256,6 +258,7 @@ func main() {
 	conversation_reward_notice.InitConsumers(l)(cmf)(consumerGroupId)
 	system_message.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
+	seedConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshopCompartment.InitConsumers(l)(cmf)(consumerGroupId)
 	mtsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	walletConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -577,6 +580,9 @@ func buildListener(
 		if err := register(cashshop.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(seedConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(cashshopCompartment.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -684,6 +690,8 @@ func produceWriters() []string {
 		cashcb.CashItemGachaponResultWriter,
 		cashcb.VegaScrollWriter,
 		cashcb.CashShopCheckNameChangeWriter,
+		mlcb.MapleLifeResultWriter,
+		mlcb.MapleLifeErrorWriter,
 		cashcb.CashShopCheckNameChangePossibleResultWriter,
 		cashcb.CashShopCheckTransferWorldPossibleResultWriter,
 		cashcb.CashShopCancelNameChangeResultWriter,

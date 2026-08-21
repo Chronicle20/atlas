@@ -84,6 +84,7 @@ const (
 	PetRevive             = sharedsaga.PetRevive
 	ScriptedItemUse       = sharedsaga.ScriptedItemUse
 	RemoteNpcUse          = sharedsaga.RemoteNpcUse
+	MapleLifeUse          = sharedsaga.MapleLifeUse
 
 	// Status constants
 	Pending   = sharedsaga.Pending

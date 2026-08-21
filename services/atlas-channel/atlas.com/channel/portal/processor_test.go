@@ -78,6 +78,7 @@ func TestEnterInner(t *testing.T) {
 		name             string
 		mutate           func(t *testing.T, f *enterInnerFixture, pd *portalDataMock.ProcessorMock)
 		seedRegistry     func(t *testing.T, ctx context.Context)
+		noSeed           bool // opt out of the harness's default seedRegistry fallback, to produce a genuine registry miss
 		expectTeleport   bool
 		expectTeleportTo [2]int16
 	}{
@@ -153,6 +154,7 @@ func TestEnterInner(t *testing.T) {
 		},
 		{
 			name:             "last-position registry miss",
+			noSeed:           true,
 			expectTeleport:   true,
 			expectTeleportTo: [2]int16{300, -50},
 		},
@@ -192,7 +194,7 @@ func TestEnterInner(t *testing.T) {
 
 			if tc.seedRegistry != nil {
 				tc.seedRegistry(t, ctx)
-			} else {
+			} else if !tc.noSeed {
 				position.GetRegistry().Put(tenant.MustFromContext(ctx), enterInnerTestCharacterId, position.Position{X: 100, Y: 200})
 			}
 			t.Cleanup(func() {

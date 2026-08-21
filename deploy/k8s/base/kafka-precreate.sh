@@ -339,6 +339,18 @@ seed_override_offsets() {
 # creates --partitions 1), so checking one row per (group, topic) suffices.
 # One --describe call per group (not per (group, topic) pair) already
 # reports every topic/partition that group has offsets on.
+#
+# A group in $skipped_groups was skipped by seed_override_offsets because it
+# is already ACTIVE — which means a live consumer is joined to it, which is
+# the very state this gate exists to establish (FR-3.1). Re-proving it against
+# the full topic union would fail the Job the first time a topic is added to a
+# live environment. So for a skipped group the gate degrades to a report:
+# union topics with no committed offset are named in a WARN: line and the Job
+# stays green (an unseeded topic falls back to the consumer's own
+# auto.offset.reset). For every other group the gate is unchanged and still
+# exits 1 (FR-3.3). $skipped_groups may be unset — a test can source this file
+# and call verify_group_offsets without seed_override_offsets — in which case
+# nothing was skipped and every group takes the hard-gate path.
 verify_group_offsets() {
     if [ -z "${KAFKA_CONSUMER_GROUP:-}" ]; then
         return 0
@@ -352,9 +364,17 @@ verify_group_offsets() {
 
     while IFS= read -r group; do
         [ -n "$group" ] || continue
+        group_skipped=0
+        if [ -n "${skipped_groups:-}" ] && [ -f "${skipped_groups:-}" ] && grep -Fxq -- "$group" "$skipped_groups"; then
+            group_skipped=1
+        fi
         described="$("$KAFKA_BIN/kafka-consumer-groups.sh" --bootstrap-server "$BOOTSTRAP_SERVERS" --group "$group" --describe 2>/dev/null || true)"
+        topic_total=0
+        missing_total=0
+        missing_names=""
         while IFS= read -r topic; do
             [ -n "$topic" ] || continue
+            topic_total=$(( topic_total + 1 ))
             # GROUP is column 1 in --describe output, but real group names
             # contain spaces (e.g. "Account Service [pr-123]"), which shift
             # every fixed column number — confirmed empirically (task-232
@@ -369,10 +389,32 @@ verify_group_offsets() {
             # whitespace-separated tokens GROUP itself contributes.
             off="$(printf '%s\n' "$described" | awk -v t="$topic" 'NF>=9 && $(NF-7)==t {print $(NF-5)}' | head -n1)"
             if [ -z "$off" ] || [ "$off" = "-" ]; then
-                echo "FAIL: group '$group' has no committed offset on topic '$topic'" >&2
-                exit 1
+                if [ "$group_skipped" -eq 0 ]; then
+                    echo "FAIL: group '$group' has no committed offset on topic '$topic'" >&2
+                    exit 1
+                fi
+                missing_total=$(( missing_total + 1 ))
+                # Bounded at 10 names plus a count (OQ-1): the union is ~170
+                # topics and deliberately a superset, so a genuine gap list is
+                # either tiny or large enough that the count is the signal.
+                if [ "$missing_total" -le 10 ]; then
+                    if [ -z "$missing_names" ]; then
+                        missing_names="$topic"
+                    else
+                        missing_names="$missing_names, $topic"
+                    fi
+                fi
             fi
         done < "$all_topics"
+        if [ "$group_skipped" -eq 1 ]; then
+            if [ "$missing_total" -eq 0 ]; then
+                echo "[$(date -u +%FT%TZ)] skipped group '$group': committed offsets present on all $topic_total topics"
+            elif [ "$missing_total" -gt 10 ]; then
+                echo "WARN: skipped group '$group' has no committed offset on $missing_total of $topic_total topics: $missing_names (+$(( missing_total - 10 )) more)" >&2
+            else
+                echo "WARN: skipped group '$group' has no committed offset on $missing_total of $topic_total topics: $missing_names" >&2
+            fi
+        fi
     done < "$groups_file"
     echo "[$(date -u +%FT%TZ)] override consumer group offsets verified"
 }

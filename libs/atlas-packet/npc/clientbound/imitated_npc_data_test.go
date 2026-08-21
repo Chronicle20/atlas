@@ -14,6 +14,7 @@ import (
 // packet-audit:verify packet=npc/clientbound/ImitatedNpcData version=gms_v84 ida=0x6f0966
 // packet-audit:verify packet=npc/clientbound/ImitatedNpcData version=gms_v87 ida=0x716e08
 // packet-audit:verify packet=npc/clientbound/ImitatedNpcData version=gms_v92 ida=0x66bfb0
+// packet-audit:verify packet=npc/clientbound/ImitatedNpcData version=gms_v95 ida=0x679500
 // packet-audit:verify packet=npc/clientbound/ImitatedNpcData version=gms_v79 ida=0x668877
 func TestImitatedNpcData(t *testing.T) {
 	input := NewImitatedNpcData([]ImitatedNpc{

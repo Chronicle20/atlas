@@ -252,3 +252,10 @@ client behaviour:
 
 No evidence found in this session contradicts design §5.1's formula; Step 3/4
 proceed with it unchanged.
+
+**Direct WZ cross-check.** The mounted Cosmic WZ tree's
+`Reactor.wz/2406000.img.xml` (`<wz-mount-root>/wz/Reactor.wz/2406000.img.xml`)
+confirms the Step 2 fixture figures verbatim: state `0` canvas `0` is
+`115×45` origin `(53,-24)`; state `1` canvas `0` is `122×137` origin
+`(56,68)`; state `2` canvas `0` is `1×1` origin `(0,0)`. This is not
+fabricated test data — it is copied from the actual mounted WZ file.

@@ -222,3 +222,26 @@ func ForceControlCommandProvider(f field.Model, monsterId uint32, characterId ui
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// BanishCommandProvider asks atlas-monsters to honor a client MOB_BANISH_PLAYER
+// request. Keyed on the character id rather than the monster id — unlike every
+// other monster command here — because the command is about a character's map
+// transition, and the ordering that matters is this character's banish requests
+// against each other. MonsterId is 0: the client supplies a template id, and
+// the envelope field means *unique* id everywhere else on this topic.
+func BanishCommandProvider(f field.Model, characterId uint32, monsterTemplateId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &monster2.Command[monster2.BanishCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		MonsterId: 0,
+		Type:      monster2.CommandTypeBanish,
+		Body: monster2.BanishCommandBody{
+			CharacterId:       characterId,
+			MonsterTemplateId: monsterTemplateId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

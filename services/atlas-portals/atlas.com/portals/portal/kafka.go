@@ -39,6 +39,11 @@ type warpBody struct {
 	CharacterId    uint32  `json:"characterId"`
 	TargetMapId    _map.Id `json:"targetMapId"`
 	TargetPortalId uint32  `json:"targetPortalId"` // non-zero: land at this portal instead of a random spawn
+	// TargetPortalName, when non-empty and TargetPortalId is zero, lands the
+	// character on the portal of that name in the target map. Resolution
+	// failure falls back to the random-spawn Warp rather than dropping the
+	// warp — failing to banish is worse than banishing to a default spawn.
+	TargetPortalName string `json:"targetPortalName"`
 	// UseTargetPosition, when true, lands the character at the exact (TargetX,
 	// TargetY) coordinate instead of a portal — used by Mystic Door.
 	UseTargetPosition bool  `json:"useTargetPosition"`

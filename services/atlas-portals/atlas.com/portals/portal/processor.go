@@ -26,6 +26,7 @@ type Processor interface {
 	Warp(f field.Model, characterId uint32, targetMapId _map.Id)
 	Enter(f field.Model, portalId uint32, characterId uint32)
 	WarpById(f field.Model, characterId uint32, targetMapId _map.Id, portalId uint32)
+	WarpByName(f field.Model, characterId uint32, targetMapId _map.Id, name string)
 	WarpToPosition(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16)
 	WarpToPortal(f field.Model, characterId uint32, targetMapId _map.Id, portalProvider model.Provider[uint32])
 }
@@ -136,6 +137,20 @@ func (p *ProcessorImpl) Enter(f field.Model, portalId uint32, characterId uint32
 
 func (p *ProcessorImpl) WarpById(f field.Model, characterId uint32, targetMapId _map.Id, portalId uint32) {
 	p.WarpToPortal(f, characterId, targetMapId, model.FixedProvider(portalId))
+}
+
+// WarpByName lands the character on the named portal of the target map. A name
+// that does not resolve falls back to the random-spawn Warp with a warning
+// rather than dropping the warp; the same resolve-warn-default shape Enter
+// uses for a portal's declared target.
+func (p *ProcessorImpl) WarpByName(f field.Model, characterId uint32, targetMapId _map.Id, name string) {
+	tp, err := p.GetInMapByName(targetMapId, name)
+	if err != nil {
+		p.l.WithError(err).Warnf("Unable to locate portal [%s] in map [%d] for character [%d]. Falling back to a random spawn point.", name, targetMapId, characterId)
+		p.Warp(f, characterId, targetMapId)
+		return
+	}
+	p.WarpById(f, characterId, targetMapId, tp.Id())
 }
 
 // WarpToPosition warps the character to an exact (x, y) coordinate in the

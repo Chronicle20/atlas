@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/monster"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -16,6 +17,6 @@ func MobBanishPlayerHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writ
 		p := serverbound.MobBanishPlayer{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
-		// behavior: deferred (decode-and-log only)
+		_ = monster.NewProcessor(l, ctx).Banish(s.Field(), s.CharacterId(), p.MobTemplateId())
 	}
 }

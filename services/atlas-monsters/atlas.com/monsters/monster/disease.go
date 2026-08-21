@@ -1,6 +1,8 @@
 package monster
 
 import (
+	"atlas-monsters/kafka/message/system_message"
+
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 
@@ -97,9 +99,13 @@ type warpCommand struct {
 type warpBody struct {
 	CharacterId uint32  `json:"characterId"`
 	TargetMapId _map.Id `json:"targetMapId"`
+	// TargetPortalName, when non-empty, lands the character on the portal of
+	// that name in the target map (WZ ban/banMap/0/portal). omitempty keeps an
+	// omitting producer's bytes byte-identical to today.
+	TargetPortalName string `json:"targetPortalName,omitempty"`
 }
 
-func warpCommandProvider(f field.Model, characterId uint32, targetMapId _map.Id) model.Provider[[]kafka.Message] {
+func warpCommandProvider(f field.Model, characterId uint32, targetMapId _map.Id, portalName string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &warpCommand{
 		WorldId:   f.WorldId(),
@@ -108,8 +114,27 @@ func warpCommandProvider(f field.Model, characterId uint32, targetMapId _map.Id)
 		Instance:  f.Instance(),
 		Type:      "WARP",
 		Body: warpBody{
-			CharacterId: characterId,
-			TargetMapId: targetMapId,
+			CharacterId:      characterId,
+			TargetMapId:      targetMapId,
+			TargetPortalName: portalName,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// sendMessageProvider builds a SEND_MESSAGE command for atlas-channel to
+// announce text to a character's session. Used for the WZ banish message.
+func sendMessageProvider(f field.Model, characterId uint32, messageType string, msg string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.SendMessageBody]{
+		TransactionId: uuid.Nil,
+		WorldId:       f.WorldId(),
+		ChannelId:     f.ChannelId(),
+		CharacterId:   characterId,
+		Type:          system_message.CommandSendMessage,
+		Body: system_message.SendMessageBody{
+			MessageType: messageType,
+			Message:     msg,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

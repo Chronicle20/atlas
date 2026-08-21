@@ -22,6 +22,7 @@ import (
 	doorConsumer "atlas-channel/kafka/consumer/door"
 	dragonConsumer "atlas-channel/kafka/consumer/dragon"
 	"atlas-channel/kafka/consumer/drop"
+	eventConsumer "atlas-channel/kafka/consumer/event"
 	"atlas-channel/kafka/consumer/expression"
 	"atlas-channel/kafka/consumer/fame"
 	"atlas-channel/kafka/consumer/gachapon"
@@ -194,6 +195,9 @@ func main() {
 			return service.ProjectionFuncs{StartFunc: sub.Start, WaitCaughtUpFunc: caughtUp.WaitCaughtUp}
 		}),
 		service.WithReadinessGate(caughtUp.CaughtUpNow),
+		// FR-1.5/D6: never report Ready without a projected service-config row
+		// for this deployment's own SERVICE_ID.
+		service.WithReadinessGate(state.HasService),
 		service.WithEnvironmentRegistry(serviceName),
 	)
 	l := rt.Logger()
@@ -260,6 +264,7 @@ func main() {
 	reportstatus.InitConsumers(l)(cmf)(consumerGroupId)
 	quest.InitConsumers(l)(cmf)(consumerGroupId)
 	route.InitConsumers(l)(cmf)(consumerGroupId)
+	eventConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	rpsConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	instance_transport.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
@@ -338,13 +343,16 @@ func main() {
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
 		// character/combo sits outside env-domain-guard's permitted
-		// atlas-env import list (main.go, kafka/, rest/, socket/), so
-		// this pod's environment identity is threaded in as a plain
-		// function value (socket.WithSelfEnvironment) rather than the
-		// package importing atlas-env itself. Without it, DecayTick's
-		// per-character buff-cancel Kafka events would carry an empty
-		// environment header and fail decide() open per FR-1.8.
-		tasks.Register(l, rt.Context())(combo.NewDecayTick(l, rt.Context(), time.Second, socket.WithSelfEnvironment))
+		// atlas-env import list (main.go, kafka/, rest/, socket/), so the
+		// environment that owns each expired combo's tenant (falling back
+		// to this pod's own, env.Self(), when the tenant is unknown) is
+		// threaded in as a plain function value (service.TenantEnvironment)
+		// rather than the package importing atlas-env itself. Without it,
+		// DecayTick's per-character buff-cancel Kafka events would carry an
+		// empty or wrong environment header and either fail decide() open
+		// per FR-1.8 or be dropped by every consumer's ownership gate per
+		// FR-7.7.
+		tasks.Register(l, rt.Context())(combo.NewDecayTick(l, rt.Context(), time.Second, service.TenantEnvironment))
 	})
 
 	rt.TeardownFunc(session.Teardown(l))
@@ -587,6 +595,9 @@ func buildListener(
 			return nil, err
 		}
 		if err := register(route.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
+		if err := register(eventConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(rpsConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {

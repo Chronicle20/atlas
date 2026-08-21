@@ -11,8 +11,10 @@ import (
 	"atlas-channel/door"
 	dragoncmd "atlas-channel/dragon"
 	"atlas-channel/drop"
+	"atlas-channel/events"
 	"atlas-channel/guild"
 	consumer2 "atlas-channel/kafka/consumer"
+	event2 "atlas-channel/kafka/message/event"
 	_map3 "atlas-channel/kafka/message/map"
 	"atlas-channel/kite"
 	"atlas-channel/listener"
@@ -359,6 +361,10 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 			if ci.StateChangeItem > 0 {
 				applyConsumableEffectSaga(l, saga.NewProcessor(l, ctx), s.CharacterId(), f, ci.StateChangeItem)
 			}
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
+			announceActiveVisuals(l, ctx, wp, f, s)
 		})
 
 		return nil
@@ -752,6 +758,37 @@ func spawnReactorsForSession(l logrus.FieldLogger) func(ctx context.Context) fun
 // writerName and body.
 var doorAnnounce = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, writerName string, enc packet.Encode, s session.Model) error {
 	return session.Announce(l)(ctx)(wp)(writerName)(enc)(s)
+}
+
+// announceActiveVisuals looks up the event visuals currently active on f
+// and, for each recognized visual, announces it to the entering session s.
+// Extracted from SpawnForSelf's routine.Go block so it is directly
+// unit-testable via the doorAnnounce seam (the same package-level
+// session.Announce seam used by spawnDoorsForSession) without a real socket
+// writer.
+//
+// Fail open (FR-B16, FR-N15): the character entered the map; an unreachable
+// atlas-events costs the visual, not the entry.
+func announceActiveVisuals(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, s session.Model) {
+	vs, verr := events.NewProcessor(l, ctx).ActiveVisualsInMap(f)
+	if verr != nil {
+		l.WithError(verr).Debugf("SpawnForSelf: unable to retrieve active event visuals for map [%d].", f.MapId())
+		return
+	}
+	for _, v := range vs {
+		if v.Visual != event2.VisualContiMove {
+			l.Debugf("SpawnForSelf: unrecognized event visual [%s] for map [%d]; no writer for it.", v.Visual, f.MapId())
+			continue
+		}
+		// ActiveVisualsInMap returns only visuals currently shown -- a
+		// hidden visual is never active -- so this site always resolves the
+		// SHOW pair. State/subState are client wire bytes resolved from the
+		// tenant's ContiMove writer options table (DOM-25), not read off v.
+		_ = doorAnnounce(l, ctx, wp, fieldcb.ContiMoveWriter, writer.ContiMoveBody(writer.ContiMoveShow), s)
+		if v.Bgm != "" {
+			_ = doorAnnounce(l, ctx, wp, fieldcb.FieldEffectWriter, fieldpkt.FieldEffectBackgroundMusicBody(v.Bgm), s)
+		}
+	}
 }
 
 // spawnDoorsForSession returns a door.Model operator that announces the

@@ -77,7 +77,7 @@ func TestGetBuffsPaginates(t *testing.T) {
 	// reverse (300, then 100, then 200) so map insertion order can never be
 	// mistaken for the sort that actually determines page contents.
 	for _, sourceId := range []int32{300, 100, 200} {
-		_, err := GetRegistry().Apply(ctx, 0, 0, characterId, sourceId, 1, 60000, []stat.Model{stat.NewStat("HP", 10)}, false, false)
+		_, err := GetRegistry().Apply(ctx, 0, 0, characterId, sourceId, 1, 60000, []stat.Model{stat.NewStat("HP", 10)}, false, false, "")
 		require.NoError(t, err)
 	}
 

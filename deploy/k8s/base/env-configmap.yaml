@@ -3,6 +3,19 @@ kind: ConfigMap
 metadata:
   name: atlas-env
 data:
+  # env.Self() reads this (libs/atlas-env SelfVar). Empty in the base and in
+  # the isolated PR overlay: an environment that registers no control-plane
+  # record must keep Self()=="" so EnvironmentsOwnedBy still returns [""]
+  # and the legacy single-iteration path is preserved
+  # (libs/atlas-env/registry.go:227).
+  #
+  # It must be DEFINED even when empty. atlas-ingress renders its
+  # environment default from this key through the nginx image's envsubst
+  # entrypoint, and envsubst only substitutes variables that are actually
+  # present in the process environment — an undefined one is copied through
+  # as the literal "${ATLAS_ENVIRONMENT_DEFAULT}", which every REST call
+  # would then 400 on. Empty-here is what keeps that from happening.
+  ATLAS_ENVIRONMENT: ""
   BASE_SERVICE_URL: "http://atlas-ingress.atlas.svc.cluster.local:80/api/"
   BOOTSTRAP_SERVERS: "kafka.home:9093"
   COMMAND_TOPIC_ACCOUNT: "COMMAND_TOPIC_ACCOUNT"
@@ -118,6 +131,7 @@ data:
   EVENT_TOPIC_DRAGON_STATUS: "EVENT_TOPIC_DRAGON_STATUS"
   EVENT_TOPIC_DROP_STATUS: "EVENT_TOPIC_DROP_STATUS"
   EVENT_TOPIC_EQUIP_CHANGED: "EVENT_TOPIC_EQUIP_CHANGED"
+  EVENT_TOPIC_EVENT_VISUAL: "EVENT_TOPIC_EVENT_VISUAL"
   EVENT_TOPIC_EXPRESSION: "EVENT_TOPIC_EXPRESSION"
   EVENT_TOPIC_FAME_STATUS: "EVENT_TOPIC_FAME_STATUS"
   EVENT_TOPIC_FAMILY_ERRORS: "EVENT_TOPIC_FAMILY_ERRORS"

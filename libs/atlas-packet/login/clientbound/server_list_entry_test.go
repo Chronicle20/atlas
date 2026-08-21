@@ -103,6 +103,40 @@ func TestServerListEntryWorldIdInChannels(t *testing.T) {
 	}
 }
 
+// Retail labels channels 1-based; atlas-constants and the wire protocol
+// remain 0-based internally, so the encoder must add 1 only for the
+// rendered name.
+func TestServerListEntryChannelNameIsOneBased(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	input := NewServerListEntry(
+		world.Id(0), "Scania", 0, "",
+		[]model.ChannelLoad{
+			model.NewChannelLoad(channel.Id(0), 100),
+		},
+		nil,
+	)
+	l, _ := testlog.NewNullLogger()
+	b := input.Encode(l, ctx)(nil)
+
+	req := request.Request(b)
+	r := request.NewRequestReader(&req, 0)
+
+	_ = r.ReadByte()        // worldId
+	_ = r.ReadAsciiString() // worldName
+	_ = r.ReadByte()        // state
+	_ = r.ReadAsciiString() // eventMessage
+	_ = r.ReadUint16()      // expRate
+	_ = r.ReadUint16()      // dropRate
+	_ = r.ReadByte()        // block char creation
+	_ = r.ReadByte()        // channel count
+
+	gotName := r.ReadAsciiString()
+	wantName := "Scania - 1"
+	if gotName != wantName {
+		t.Errorf("channel 0 name: got %q, want %q", gotName, wantName)
+	}
+}
+
 func TestServerListEntryRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

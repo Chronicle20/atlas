@@ -1,0 +1,95 @@
+{
+  "service": "task-238-whisper-find-location (atlas-channel, atlas-maps, atlas-constants, atlas-packet)",
+  "path": "services/atlas-channel, services/atlas-maps, libs/atlas-constants, libs/atlas-packet",
+  "date": "2026-08-18",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-channel/socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/socket/handler/character_chat_whisper.go:44-223"},
+        {"id": "DOM-25", "name": "Client wire values resolved from a table, not literals", "status": "pass", "evidence": "resultMode 0x09/0x48 pre-existing, unchanged (git show 6fb58bdc5); no new literal introduced"},
+        {"id": "DOM-26", "name": "No bare go statements", "status": "pass", "evidence": "git diff grep for '^\\+.*\\bgo (func|[A-Za-z_])' returned zero hits"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "character_chat_whisper_test.go:147-154,236-247,397-420"},
+        {"id": "DOM-13/14/15", "name": "No cross-domain orchestration/provider calls/writes in handlers", "status": "n-a", "evidence": "package has no resource.go"}
+      ]
+    },
+    {
+      "name": "atlas-channel/maps/location",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API methods live in rest.go", "status": "fail", "evidence": "services/atlas-channel/atlas.com/channel/maps/location/requests.go:33-56 — RestModel + GetName/GetID/SetID in requests.go"},
+        {"id": "FILE-05", "name": "Domain Model lives in model.go", "status": "fail", "evidence": "services/atlas-channel/atlas.com/channel/maps/location/requests.go:88-133 — new Model type in requests.go; package has no model.go"},
+        {"id": "FILE-06", "name": "No catch-all file bundling >=2 responsibilities", "status": "warn", "evidence": "requests.go carries RestModel + requests + domain Model; literal 'package-named catch-all' wording does not fire on requests.go but the substance matches the task-102 wallet.go precedent"},
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "pass", "evidence": "requests.go:55-56"},
+        {"id": "EXT-02", "name": "httptest-backed integration test with populated domain struct", "status": "pass", "evidence": "requests_test.go TestGet_DecodesState / TestGet_DecodesInField / TestGet_AbsentStateIsOffline / TestGet_UnrecognisedStateIsOffline"},
+        {"id": "EXT-03", "name": "Only genuine 404 maps to not-found; 5xx/transport bubble up", "status": "pass", "evidence": "requests.go:117-124; requests_test.go TestGet_NotFoundIsErrNotFound / TestGet_InfrastructureErrorIsNotErrNotFound"},
+        {"id": "EXT-04", "name": "Service URL via requests.RootUrl/RootUrlFor, no hardcoded DNS", "status": "pass", "evidence": "requests.go:58-60"},
+        {"id": "DOM-31", "name": "Tenant/trace never on a REST model/request body/query param", "status": "pass", "evidence": "requests.go:33-40,91-98"}
+      ]
+    },
+    {
+      "name": "atlas-maps/character/location",
+      "type": "domain",
+      "checks": [
+        {"id": "FILE-04", "name": "entity/Migration/TableName in entity.go", "status": "pass", "evidence": "entity.go:15-32"},
+        {"id": "DOM-16", "name": "Writes live in administrator.go", "status": "pass", "evidence": "administrator.go upsertLocation, setLocationState"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:34"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger() into NewProcessor", "status": "pass", "evidence": "resource.go:52,104 (unchanged by this diff, targeted grep)"},
+        {"id": "DOM-27", "name": "DB-backed handler 500s use WriteErrorResponse", "status": "pass", "evidence": "resource.go:56,111,118 (unchanged by this diff)"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "n-a", "evidence": "no mock implementation of location.Processor exists anywhere in the service"},
+        {"id": "DOM-10", "name": "Test DB bootstrap calls database.RegisterTenantCallbacks(l, db)", "status": "fail", "evidence": "processor_test.go:102-112 newTestDB has no RegisterTenantCallbacks call; new tests at :193+ exercise it"},
+        {"id": "DOM-28", "name": "Fallible enrichment paths degrade loudly via model.ErrDecorator+degrade.Observe", "status": "n-a", "evidence": "no model.Decorator[...] implementation changed; SetState/SetStateIfOnline are administrator writes, not a remote-fetch enrichment path"}
+      ]
+    },
+    {
+      "name": "atlas-maps/kafka/consumer/cashshop",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-10", "name": "Test DB bootstrap calls database.RegisterTenantCallbacks(l, db)", "status": "fail", "evidence": "consumer_test.go:23-33 newTestDB, brand-new file, no RegisterTenantCallbacks call"},
+        {"id": "DOM-24", "name": "Test packages reaching an emit path install producertest or per-test no-op", "status": "fail", "evidence": "consumer_test.go tests call handleStatusEventEnterFunc/ExitFunc which reach producer.ProviderImpl via _map.Processor.EnterAndEmit/ExitAndEmit (map/processor.go:99-116); zero producertest/TestMain/WithProducer hits in package; corroborated by 98.985s package runtime"}
+      ]
+    },
+    {
+      "name": "atlas-maps/kafka/consumer/character",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-24", "name": "Test packages reaching an emit path install producertest or per-test no-op", "status": "fail", "evidence": "consumer_test.go:123+ new tests call handleStatusEventLoginFunc/LogoutFunc/ChannelChangedFunc which reach producer.ProviderImpl via _map.Processor.EnterAndEmit/ExitAndEmit/TransitionChannelAndEmit (consumer.go:101-102,143-144,155-156); zero producertest/TestMain/WithProducer hits; corroborated by 59.521s package runtime"},
+        {"id": "DOM-30", "name": "Writes emit via AndEmit+message.Buffer, not a bare producer call from success path", "status": "pass", "evidence": "map/processor.go:99-145 message.Emit(p.p)(...) pattern, unchanged pre-existing"}
+      ]
+    },
+    {
+      "name": "libs/atlas-constants/character",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "No redeclaration of a shared type", "status": "pass", "evidence": "PresenceState in presence.go is a new shared type consumed identically by both services"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "presence_test.go:8-21,24-39"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet/field/clientbound",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client wire literals only inside libs/atlas-packet codec internals", "status": "pass", "evidence": "all literals in whisper_test.go are inside libs/atlas-packet, covered by the documented codec-internals exemption"},
+        {"id": "DOM-20", "name": "Table-driven / version-fixture tests", "status": "pass", "evidence": "pt.Variants loop with t.Run; per-version byte-pin tests follow the documented byte-fixture playbook"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "packet-audit byte-fixture accuracy against IDA addresses cited in whisper_test.go — requires IDA/binary access outside this review's surface; owned by docs/packets/PROCESS.md, not this checklist",
+    "accuracy of the GM-level claim in character/model.go's comment referencing libs/atlas-saga/validation.go and atlas-query-aggregator — those locations are outside the changed-package surface"
+  ],
+  "blocking": [
+    "FILE-02: services/atlas-channel/atlas.com/channel/maps/location/requests.go:33-56 — RestModel and its JSON:API methods must live in rest.go, not requests.go",
+    "FILE-05: services/atlas-channel/atlas.com/channel/maps/location/requests.go:88-139 — the new domain Model (and Get/NewModelForTest) must live in model.go",
+    "DOM-10: services/atlas-maps/atlas.com/maps/character/location/processor_test.go:102-112 and services/atlas-maps/atlas.com/maps/kafka/consumer/cashshop/consumer_test.go:23-33 — GORM test bootstraps missing database.RegisterTenantCallbacks(l, db)",
+    "DOM-24: services/atlas-maps/atlas.com/maps/kafka/consumer/cashshop/consumer_test.go and services/atlas-maps/atlas.com/maps/kafka/consumer/character/consumer_test.go — new tests reach a live, unstubbed Kafka producer with no producertest/WithProducer stub anywhere in either package"
+  ],
+  "nonBlocking": [
+    "FILE-06 (informational): atlas-channel/maps/location/requests.go bundles RestModel + requests + domain Model in one file — substance of the wallet.go precedent, resolved by fixing FILE-02/FILE-05"
+  ]
+}

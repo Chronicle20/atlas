@@ -78,7 +78,7 @@ func TestDamageMultiLineKillOnLastLine(t *testing.T) {
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 	monsterId := uint32(9300018)
-	m := r.CreateMonster(ctx, ten, f, monsterId, 0, 0, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, monsterId, 0, 0, 0, 5, 0, 100, 50, "", "")
 	uniqueId := m.UniqueId()
 
 	charId := uint32(1)
@@ -115,7 +115,7 @@ func TestDamageMultiLineKillOnMiddleLine(t *testing.T) {
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 	monsterId := uint32(9300018)
-	m := r.CreateMonster(ctx, ten, f, monsterId, 0, 0, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, monsterId, 0, 0, 0, 5, 0, 100, 50, "", "")
 	uniqueId := m.UniqueId()
 
 	charId := uint32(1)
@@ -150,7 +150,7 @@ func TestDamageSingleLineKill(t *testing.T) {
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 	monsterId := uint32(9300018)
-	m := r.CreateMonster(ctx, ten, f, monsterId, 0, 0, 0, 5, 0, 50, 50)
+	m := r.CreateMonster(ctx, ten, f, monsterId, 0, 0, 0, 5, 0, 50, 50, "", "")
 	uniqueId := m.UniqueId()
 
 	charId := uint32(1)
@@ -182,7 +182,7 @@ func TestDamageEmptySlice(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 100, 50, "", "")
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessor(t, ten)
@@ -211,7 +211,7 @@ func TestDamageAlreadyDeadMonster(t *testing.T) {
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 	// Create with HP=1, then kill it directly via the registry so HP=0.
-	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 1, 50)
+	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 1, 50, "", "")
 	uniqueId := m.UniqueId()
 	// Apply a killing hit directly via the registry (no emit).
 	r.ApplyDamage(ten, 1, 999, uniqueId, time.Now().UnixMilli())
@@ -274,7 +274,7 @@ func TestDamageControllerSwitchOnDpsLead(t *testing.T) {
 	ctx := context.Background()
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	uniqueId := m.UniqueId()
 	// Pre-populate: character 1 controls and leads damage.
 	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
@@ -330,7 +330,7 @@ func TestDamageDPSLeadSwitchSkippedWhenLeaderHidden(t *testing.T) {
 	ctx := context.Background()
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	uniqueId := m.UniqueId()
 	// Pre-populate: character 1 controls and leads damage.
 	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
@@ -369,7 +369,7 @@ func TestDamageNoSwitchWhenLeaderUnchanged(t *testing.T) {
 	ctx := context.Background()
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	uniqueId := m.UniqueId()
 	// Controller is set; controllerHasAggro starts false.
 	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
@@ -407,7 +407,7 @@ func TestDamageAggroChangedSuppressedOnSwitch(t *testing.T) {
 	ctx := context.Background()
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	uniqueId := m.UniqueId()
 	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
@@ -443,7 +443,7 @@ func TestDamageFR9NoStopWhenControllerZero(t *testing.T) {
 	ctx := context.Background()
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
@@ -479,7 +479,7 @@ func TestStartControl_NoAggro_SkipsRepick(t *testing.T) {
 	ctx := context.Background()
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	uniqueId := m.UniqueId()
 	if m.ControllerHasAggro() {
 		t.Fatalf("precondition: fresh monster must have ControllerHasAggro=false")
@@ -526,7 +526,7 @@ func TestStartControl_AggroTrue_StillRepicks(t *testing.T) {
 	ctx := context.Background()
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	uniqueId := m.UniqueId()
 	// Seed: prior controller (1) damaged the mob, flipping controllerHasAggro.
 	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
@@ -567,7 +567,7 @@ func TestDamageFR10OutOfFieldSkipsSwitch(t *testing.T) {
 	ctx := context.Background()
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	uniqueId := m.UniqueId()
 	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
@@ -651,7 +651,7 @@ func TestApplyAnimationDelayedEffect_DeadMonsterSkipsExecute(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, tm, f, 9000000, 0, 0, 0, 0, 0, 100, 50)
+	m := r.CreateMonster(ctx, tm, f, 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	// Mark the monster dead by zeroing its HP directly in the registry.
 	dead := Clone(m).SetHp(0).Build()
 	r.UpdateMonster(tm, m.UniqueId(), dead)
@@ -680,7 +680,7 @@ func TestApplyAnimationDelayedEffect_AliveMonsterRunsBoth(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, tm, f, 9000000, 0, 0, 0, 0, 0, 100, 50)
+	m := r.CreateMonster(ctx, tm, f, 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 
 	executed, posted := false, false
 	p := &ProcessorImpl{
@@ -706,7 +706,7 @@ func TestDamage_TriggersRepick(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 1000, 50, "", "")
 	uniqueId := m.UniqueId()
 
 	countByType := make(map[string]int)
@@ -789,7 +789,7 @@ func TestSpawnPickerGuardOnAggro(t *testing.T) {
 	// "post-aggro-flip" monster, and confirm the guard logic by reading the
 	// flag through the public getter. This is a sanity test for the guard
 	// expression itself, since the production Create() path is not unit-isolated.
-	fresh := NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50)
+	fresh := NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	if fresh.ControllerHasAggro() {
 		t.Fatalf("fresh monster should have ControllerHasAggro=false")
 	}
@@ -810,7 +810,7 @@ func TestApplyAnimationDelayedEffect_PostExecuteSkippedWhenAggroFalse(t *testing
 	tm := newTestTenant(t)
 	tctx := tenant.WithContext(ctx, tm)
 
-	m := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	m := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	// Monster has no aggro and is alive.
 
 	p := &ProcessorImpl{l: newPickerLogger(), ctx: tctx, t: tm}
@@ -840,8 +840,8 @@ func TestPostExecuteAggroGate_LogicTable(t *testing.T) {
 	tm := newTestTenant(t)
 	tctx := tenant.WithContext(ctx, tm)
 
-	noAggro := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
-	withAggro := r.CreateMonster(tctx, tm, testField(), 9000000, 1, 1, 0, 0, 0, 100, 50)
+	noAggro := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
+	withAggro := r.CreateMonster(tctx, tm, testField(), 9000000, 1, 1, 0, 0, 0, 100, 50, "", "")
 	if _, err := r.ControlMonster(tm, withAggro.UniqueId(), 99); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
 	}
@@ -884,7 +884,7 @@ func TestExecuteStatBuff_ReflectStatus_PopulatesReflectMetadata(t *testing.T) {
 	r.Clear(ctx)
 
 	f := testField()
-	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	skillId := byte(monster2.SkillTypePhysicalCounter) // 143
 	skillLevel := byte(1)
@@ -981,7 +981,7 @@ func TestExecuteStatBuff_PhysicalImmune_CancelsActiveMagicImmune(t *testing.T) {
 	r.Clear(ctx)
 
 	f := testField()
-	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	p := &ProcessorImpl{
 		l:   logrus.New(),
@@ -1040,7 +1040,7 @@ func TestExecuteStatBuff_MagicImmune_CancelsActivePhysicalImmune(t *testing.T) {
 	r.Clear(ctx)
 
 	f := testField()
-	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	p := &ProcessorImpl{
 		l:   logrus.New(),
@@ -1096,7 +1096,7 @@ func TestExecuteStatBuff_PhysicalImmune_NoMagicImmune_DoesNotCancel(t *testing.T
 	r.Clear(ctx)
 
 	f := testField()
-	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	p := &ProcessorImpl{
 		l:   logrus.New(),
@@ -1172,7 +1172,7 @@ func TestBuildMistCreateBody(t *testing.T) {
 
 	instance := uuid.New()
 	f := field.NewBuilder(world.Id(7), channel.Id(2), _map.Id(100020000)).SetInstance(instance).Build()
-	m := r.CreateMonster(ctx, ten, f, uint32(8800002), 300, 400, 0, 5, 0, 1000, 200)
+	m := r.CreateMonster(ctx, ten, f, uint32(8800002), 300, 400, 0, 5, 0, 1000, 200, "", "")
 
 	sd := mobskill.NewModelBuilder().
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
@@ -1238,7 +1238,7 @@ func TestBuildMistCreateBody_DurationCap(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 100, 50, "", "")
 
 	sd := mobskill.NewModelBuilder().
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
@@ -1265,7 +1265,7 @@ func TestBuildMistCreateBody_UnderCapIsNotClamped(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100020000)).SetInstance(uuid.New()).Build()
-	m := r.CreateMonster(ctx, ten, f, uint32(8800002), 300, 400, 0, 5, 0, 1000, 200)
+	m := r.CreateMonster(ctx, ten, f, uint32(8800002), 300, 400, 0, 5, 0, 1000, 200, "", "")
 
 	sd := mobskill.NewModelBuilder().
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
@@ -1296,7 +1296,7 @@ func TestExecuteMist_ProducesMistCreateCommand(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 300, 400, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 300, 400, 0, 5, 0, 100, 50, "", "")
 
 	sd := mobskill.NewModelBuilder().
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
@@ -1389,7 +1389,7 @@ func TestStatusCancel_PhysicalSkill_RejectedWhilePhysicalReflectActive(t *testin
 	r.Clear(ctx)
 
 	f := testField()
-	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	applyReflectForTest(t, tm, m.UniqueId(), "PHYSICAL", "WEAPON_COUNTER")
 	applyPlainStatusForTest(t, tm, m.UniqueId(), "FREEZE")
@@ -1425,7 +1425,7 @@ func TestStatusCancel_MagicSkill_RejectedWhileMagicalReflectActive(t *testing.T)
 	r.Clear(ctx)
 
 	f := testField()
-	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	applyReflectForTest(t, tm, m.UniqueId(), "MAGICAL", "MAGIC_COUNTER")
 	applyPlainStatusForTest(t, tm, m.UniqueId(), "FREEZE")
@@ -1462,7 +1462,7 @@ func TestStatusCancel_PhysicalSkill_AllowedWhileMagicalReflectActive(t *testing.
 	r.Clear(ctx)
 
 	f := testField()
-	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	applyReflectForTest(t, tm, m.UniqueId(), "MAGICAL", "MAGIC_COUNTER")
 	applyPlainStatusForTest(t, tm, m.UniqueId(), "FREEZE")
@@ -1500,7 +1500,7 @@ func TestStatusCancel_NoSkillClass_FallsThroughToNormalCancel(t *testing.T) {
 	r.Clear(ctx)
 
 	f := testField()
-	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	applyReflectForTest(t, tm, m.UniqueId(), "PHYSICAL", "WEAPON_COUNTER")
 	applyPlainStatusForTest(t, tm, m.UniqueId(), "FREEZE")
@@ -1536,7 +1536,7 @@ func TestStatusCancel_TargetingReflectItself_AllowedRegardlessOfClass(t *testing
 	r.Clear(ctx)
 
 	f := testField()
-	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	applyReflectForTest(t, tm, m.UniqueId(), "PHYSICAL", "WEAPON_COUNTER")
 
@@ -1601,7 +1601,7 @@ func TestUseBasicAttack_HappyPath_DeductsMpAndRegistersCooldown(t *testing.T) {
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 	monsterId := uint32(5100004)
-	m := r.CreateMonster(ctx, ten, f, monsterId, 0, 0, 0, 5, 0, 3000, 100)
+	m := r.CreateMonster(ctx, ten, f, monsterId, 0, 0, 0, 5, 0, 3000, 100, "", "")
 	uniqueId := m.UniqueId()
 
 	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten, emit: func(string, model.Provider[[]kafka.Message]) error { return nil }}
@@ -1645,7 +1645,7 @@ func TestUseBasicAttack_OnCooldown_Skips(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100, "", "")
 	uniqueId := m.UniqueId()
 
 	// Pre-register a cooldown
@@ -1682,7 +1682,7 @@ func TestUseBasicAttack_InsufficientMp_Skips(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 10)
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 10, "", "")
 	uniqueId := m.UniqueId()
 
 	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
@@ -1718,7 +1718,7 @@ func TestUseBasicAttack_NoAttackInfo_Skips(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 7130003, 0, 0, 0, 5, 0, 500, 0)
+	m := r.CreateMonster(ctx, ten, f, 7130003, 0, 0, 0, 5, 0, 500, 0, "", "")
 	uniqueId := m.UniqueId()
 
 	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
@@ -1753,7 +1753,7 @@ func TestUseBasicAttack_ZeroConMpAndZeroAttackAfter_NoOp(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 6090003, 0, 0, 0, 5, 0, 500, 0)
+	m := r.CreateMonster(ctx, ten, f, 6090003, 0, 0, 0, 5, 0, 500, 0, "", "")
 	uniqueId := m.UniqueId()
 
 	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
@@ -1824,7 +1824,7 @@ func TestApplyStatusEffect_Doom_BypassesElementalImmunity(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	// Resist every element including poison and ice, which would otherwise
 	// fall through the existing POISON/FREEZE gates.
@@ -1867,7 +1867,7 @@ func TestApplyStatusEffect_Doom_RejectedOnBoss(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 8800000, 0, 0, 0, 0, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 8800000, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
 		return information.NewModelBuilder().
@@ -1906,7 +1906,7 @@ func TestApplyStatusEffect_Doom_ReapplyReplacesExisting(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
 		return information.NewModelBuilder().Build(), nil
@@ -1960,9 +1960,9 @@ func TestGetInFieldRect_Inside(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	r.CreateMonster(ctx, ten, f, 9300018, 10, 10, 0, 0, 0, 100, 50)
-	r.CreateMonster(ctx, ten, f, 9300018, 50, 50, 0, 0, 0, 100, 50)
-	r.CreateMonster(ctx, ten, f, 9300018, 200, 200, 0, 0, 0, 100, 50)
+	r.CreateMonster(ctx, ten, f, 9300018, 10, 10, 0, 0, 0, 100, 50, "", "")
+	r.CreateMonster(ctx, ten, f, 9300018, 50, 50, 0, 0, 0, 100, 50, "", "")
+	r.CreateMonster(ctx, ten, f, 9300018, 200, 200, 0, 0, 0, 100, 50, "", "")
 
 	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
 	got, err := p.GetInFieldRect(f, -100, -100, 100, 100, 0)
@@ -1984,7 +1984,7 @@ func TestGetInFieldRect_LimitTruncates(t *testing.T) {
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 	for i := int16(0); i < 10; i++ {
-		r.CreateMonster(ctx, ten, f, 9300018, i*10, 0, 0, 0, 0, 100, 50)
+		r.CreateMonster(ctx, ten, f, 9300018, i*10, 0, 0, 0, 0, 100, 50, "", "")
 	}
 
 	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
@@ -2006,7 +2006,7 @@ func TestGetInFieldRect_BoundsInclusive(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 0, 0, 100, 50)
+	r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 0, 0, 100, 50, "", "")
 
 	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
 	got, err := p.GetInFieldRect(f, -100, -100, 100, 100, 0)
@@ -2028,8 +2028,8 @@ func TestGetInFieldRect_OtherFieldsExcluded(t *testing.T) {
 
 	f1 := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 	f2 := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40001)).Build()
-	r.CreateMonster(ctx, ten, f1, 9300018, 0, 0, 0, 0, 0, 100, 50)
-	r.CreateMonster(ctx, ten, f2, 9300018, 0, 0, 0, 0, 0, 100, 50)
+	r.CreateMonster(ctx, ten, f1, 9300018, 0, 0, 0, 0, 0, 100, 50, "", "")
+	r.CreateMonster(ctx, ten, f2, 9300018, 0, 0, 0, 0, 0, 100, 50, "", "")
 
 	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
 	got, err := p.GetInFieldRect(f1, -100, -100, 100, 100, 0)
@@ -2050,7 +2050,7 @@ func TestGetInFieldRect_NormalizesCornerOrder(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	r.CreateMonster(ctx, ten, f, 9300018, 50, 50, 0, 0, 0, 100, 50)
+	r.CreateMonster(ctx, ten, f, 9300018, 50, 50, 0, 0, 0, 100, 50, "", "")
 
 	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
 	// Corners passed in (high, low) order — should still find the (50,50) mob.
@@ -2109,7 +2109,7 @@ func TestUseBasicAttack_Deduct_EmitsMpChanged(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100, "", "")
 
 	var emitted []statusEvent[statusEventMpChangedBody]
 	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten, emit: mpChangedRecorder(t, &emitted)}
@@ -2159,7 +2159,7 @@ func TestUseBasicAttack_NoDeduct_NoMpChanged(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100, "", "")
 
 	var emitted []statusEvent[statusEventMpChangedBody]
 	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten, emit: mpChangedRecorder(t, &emitted)}
@@ -2200,7 +2200,7 @@ func TestUseSkill_Deduct_EmitsMpChanged(t *testing.T) {
 	defer func() { testMobSkillLookup = prevSkill }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100, "", "")
 
 	var emitted []statusEvent[statusEventMpChangedBody]
 	p := &ProcessorImpl{
@@ -2259,7 +2259,7 @@ func TestUseSkill_ZeroMpCon_NoMpChanged(t *testing.T) {
 	defer func() { testMobSkillLookup = prevSkill }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100, "", "")
 
 	var emitted []statusEvent[statusEventMpChangedBody]
 	p := &ProcessorImpl{
@@ -2370,7 +2370,7 @@ func TestControlCountsDoNotResurrectNonPoolControllers(t *testing.T) {
 	GetPuppetRegistry().Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
 	if _, err := r.ControlMonster(ten, m.UniqueId(), 9); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
 	}
@@ -2394,7 +2394,7 @@ func TestFindNextControllerNoCandidateIsNoop(t *testing.T) {
 	GetPuppetRegistry().Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
 
 	p := testProcessorWithHidden(t, ten, map[uint32]struct{}{1: {}}, nil)
 	if err := p.FindNextController(idsProvider(1))(m); err != nil {
@@ -2422,7 +2422,7 @@ func TestPuppetBiasSkipsHiddenOwner(t *testing.T) {
 	pr.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 5, 0, 100, 50, "", "")
 
 	// Puppet owner (char 1) is GM-hidden; in vicinity at (110,110): distanceSq=200 < 177777.
 	hiddenOwner := uint32(1)
@@ -2480,8 +2480,8 @@ func TestRelinquishOnHideReassignsControlledMobs(t *testing.T) {
 	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
 
 	f := testField()
-	mob1 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
-	mob2 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	mob1 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
+	mob2 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
 	if _, err := r.ControlMonster(ten, mob1.UniqueId(), 1); err != nil {
 		t.Fatalf("ControlMonster mob1: %v", err)
 	}
@@ -2521,7 +2521,7 @@ func TestRelinquishOnHideOnlyHiddenLeftLeavesUncontrolled(t *testing.T) {
 	t.Cleanup(func() { hidden.GetRegistry().Clear(context.Background()) })
 
 	f := testField()
-	mob := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	mob := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
 	if _, err := r.ControlMonster(ten, mob.UniqueId(), 1); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
 	}
@@ -2562,7 +2562,7 @@ func TestRestoreCandidacyOnRevealRemovesFromSetAndSweeps(t *testing.T) {
 	}
 
 	f := testField()
-	mob := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	mob := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
 
 	p := NewProcessor(newPickerLogger(), ctx).(*ProcessorImpl)
 	p.locationFn = func(uint32) (field.Model, error) { return f, nil }
@@ -2586,5 +2586,84 @@ func TestRestoreCandidacyOnRevealRemovesFromSetAndSweeps(t *testing.T) {
 	}
 	if m.ControlCharacterId() != 1 {
 		t.Fatalf("reveal sweep must elect the revealed character, got %d", m.ControlCharacterId())
+	}
+}
+
+// ctxFor returns a bare background context for DestroyBySource tests. Kept
+// separate from tenantFor so both compose the same way the file's other
+// direct-struct-literal ProcessorImpl constructions do (tenant.WithContext
+// wraps it where a tenant needs to travel with the context).
+func ctxFor(t *testing.T) context.Context {
+	t.Helper()
+	return context.Background()
+}
+
+// tenantFor derives a stable per-test tenant so repeated calls within the
+// same test (one per CreateMonster call site) resolve to the identical
+// tenant partition instead of scattering monsters across unrelated tenants.
+func tenantFor(t *testing.T) tenant.Model {
+	t.Helper()
+	id := uuid.NewSHA1(uuid.NameSpaceOID, []byte(t.Name()))
+	ten, err := tenant.Create(id, "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+	return ten
+}
+
+// newTestProcessor builds a ProcessorImpl for the given test's tenant,
+// following the file's established direct-struct-literal construction
+// convention (see newRecordingProcessor, testProcessorWithHidden).
+func newTestProcessor(t *testing.T) *ProcessorImpl {
+	t.Helper()
+	ten := tenantFor(t)
+	return &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: tenant.WithContext(ctxFor(t), ten),
+		t:   ten,
+		emit: func(_ string, provider model.Provider[[]kafka.Message]) error {
+			_, err := provider()
+			return err
+		},
+	}
+}
+
+// FR-P4 / FR-B20: destroying by a source that matches nothing is success, not
+// an error — arrival cleanup runs routinely after every monster was already
+// killed.
+func TestDestroyBySourceMatchingNothingSucceeds(t *testing.T) {
+	p := newTestProcessor(t)
+	f := field.NewBuilder(1, 4, 200090010).Build()
+
+	if err := p.DestroyBySource(f, SpawnSourceTypeEvent, "no-such-occurrence"); err != nil {
+		t.Fatalf("expected success for zero matches, got %v", err)
+	}
+}
+
+// Only monsters matching BOTH halves of the pair are destroyed; a cyclic
+// monster sharing the map is untouched.
+func TestDestroyBySourceMatchesOnBothHalves(t *testing.T) {
+	p := newTestProcessor(t)
+	f := field.NewBuilder(1, 4, 200090010).Build()
+	ten := tenantFor(t)
+
+	mine := GetMonsterRegistry().CreateMonster(ctxFor(t), ten, f, 8150000, 0, 0, 0, 5, 0, 100, 0, SpawnSourceTypeEvent, "occ-1")
+	other := GetMonsterRegistry().CreateMonster(ctxFor(t), ten, f, 8150000, 0, 0, 0, 5, 0, 100, 0, SpawnSourceTypeEvent, "occ-2")
+	cyclic := GetMonsterRegistry().CreateMonster(ctxFor(t), ten, f, 100100, 0, 0, 0, 5, 0, 100, 0, SpawnSourceTypeCyclic, "")
+
+	if err := p.DestroyBySource(f, SpawnSourceTypeEvent, "occ-1"); err != nil {
+		t.Fatalf("DestroyBySource: %v", err)
+	}
+
+	left := GetMonsterRegistry().GetMonstersInMap(ten, f)
+	ids := map[uint32]bool{}
+	for _, m := range left {
+		ids[m.UniqueId()] = true
+	}
+	if ids[mine.UniqueId()] {
+		t.Fatalf("matching monster survived")
+	}
+	if !ids[other.UniqueId()] || !ids[cyclic.UniqueId()] {
+		t.Fatalf("non-matching monsters were destroyed")
 	}
 }

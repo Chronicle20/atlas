@@ -215,9 +215,9 @@ a disposition: **scope it**, or **forces isolated mode**.
 
 | Resource | Where | Current isolation | Disposition |
 |---|---|---|---|
-| Redis key prefix | `libs/atlas-redis/keys.go:15` | `ATLAS_ENV` package-level var | Scoped: data plane → tenant-scoped API (Tasks 4–8); prefix stays load-bearing for isolated mode only |
-| Kafka topic names | `overlays/pr/scripts/gen-topic-config.sh` | `-<ATLAS_ENV>` suffix | Scoped: sparse consumes unsuffixed topics + ownership gate (Task 25) |
-| Postgres DB names | `overlays/pr/scripts/gen-db-name-suffix.sh` | `<db>-<ATLAS_ENV>` | Scoped: sparse shares `main`'s databases (D1) |
+| Redis key prefix | `libs/atlas-redis/keys.go:15` | `ATLAS_ENV` package-level var | Scoped: data plane → tenant-scoped API (Tasks 4–8); prefix stays load-bearing for isolated mode, and sparse adopts the **baseline's** prefix via `ATLAS_REDIS_ENV` (corrected 2026-08-20) |
+| Kafka topic names | `overlays/pr/scripts/gen-topic-config.sh` | `-<ATLAS_ENV>` suffix | Scoped: sparse consumes the **baseline's** topics — `-<baseline env>`, not unsuffixed (corrected 2026-08-20) — plus the ownership gate (Task 25) |
+| Postgres DB names | `overlays/pr/scripts/gen-db-name-suffix.sh` | `<db>-<ATLAS_ENV>` | Scoped: sparse shares `main`'s databases (D1), which means naming them `<db>-<baseline env>` (corrected 2026-08-20) |
 | Consumer group ids | `libs/atlas-kafka/consumergroup/resolver.go` | runtime-resolved | Already correct; no change |
 | Object id allocation | `libs/atlas-object-id` | *fill in from reading* | *fill in* |
 | Outbox advisory lock | `libs/atlas-outbox/lock.go` | single constant key per DB | Deliberately global; now serialises drainers across environments — throughput coupling, not correctness (design §8.4) |
@@ -6309,9 +6309,9 @@ git commit -m "feat(deploy): per-service namespace variables in the ingress rout
 
 | Removed | Why |
 |---|---|
-| `patches/db-name-suffix.yaml` | Shared databases (D1) |
-| topic suffixing in the `atlas-env` `configMapGenerator` | Sparse consumes the unsuffixed baseline topics (FR-4.8) |
-| `ATLAS_ENV` in the `atlas-env` ConfigMap | Makes the Redis key prefix inert (design §9); `computeKeyPrefix("")` is already the legacy path, so no code change |
+| ~~`patches/db-name-suffix.yaml`~~ | ~~Shared databases (D1)~~ — **reversed 2026-08-20**: the patch is included, suffixing with the *baseline's* env id. "Shared databases" means the baseline's databases, and every one of them is `-main` suffixed; there is no unsuffixed database to connect to |
+| ~~topic suffixing in the `atlas-env` `configMapGenerator`~~ | ~~Sparse consumes the unsuffixed baseline topics (FR-4.8)~~ — **reversed 2026-08-20**: suffixing is restored with the *baseline's* env id. Unsuffixed is not the baseline's name; it is a topic nobody publishes to |
+| `ATLAS_ENV` in the `atlas-env` ConfigMap | Still absent — but this does NOT make the Redis prefix inert (`patches/consumer-group-env.yaml` sets `ATLAS_ENV` per container anyway, and the baseline's prefix is `main:atlas`, not `atlas`). The keyspace is pointed at the baseline by `ATLAS_REDIS_ENV` instead; `ATLAS_ENV` stays per-deployment for consumer groups and `libs/atlas-lock` leases |
 | `wave0-create-dbs.yaml` | No per-environment databases |
 
 **What it keeps:** `patches/lb-allocate.yaml`, `patches/ingress-host.yaml`,

@@ -18,6 +18,8 @@ set -uo pipefail
 
 # shellcheck source=lib.sh
 . "$(dirname "$0")/lib.sh"
+# shellcheck source=env-record.sh
+. "$(dirname "$0")/env-record.sh"
 
 # Phase 0 Task 0.1 finding: db-credentials secret values carry trailing
 # whitespace (literal space + CR + LF). Strip BEFORE require_env so an
@@ -88,12 +90,11 @@ fi
 # body (the full JSON:API document), or nothing if no record exists (a 404
 # from the GET) or ATLAS_UI_BASE/ATLAS_ENVIRONMENT are unset. Exit status
 # mirrors curl's.
+#
+# Body now lives in env-record.sh (env_record_get), shared with
+# bootstrap.sh — see that file for the full rationale.
 _dcp_env_get() {
-    [ -z "${ATLAS_UI_BASE:-}" ] && return 1
-    [ -z "${ATLAS_ENVIRONMENT:-}" ] && return 1
-    curl -fsS -H 'Accept: application/vnd.api+json' \
-        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
-        "$ATLAS_UI_BASE/api/configurations/environments/$ATLAS_ENVIRONMENT" 2>/dev/null
+    env_record_get
 }
 
 # _dcp_env_phase — echoes this environment's current control-plane phase
@@ -147,22 +148,11 @@ _dcp_env_phase() {
 # own plan Step 3 sample showed — would silently wipe baseline/namespace/
 # tenant/overrides on every DEACTIVATING/DELETED transition (task-48 fix
 # round 2 Critical 2). GET-then-PATCH-with-everything is the fix.
+#
+# Body now lives in env-record.sh (env_record_patch), shared with
+# bootstrap.sh — see that file for the full rationale.
 _dcp_patch_phase() {
-    local phase="$1" baseline="$2" namespace="$3" tenant="$4" overrides="$5"
-    local payload
-    payload=$(jq -nc \
-        --arg id "$ATLAS_ENVIRONMENT" \
-        --arg baseline "$baseline" \
-        --arg namespace "$namespace" \
-        --arg tenant "$tenant" \
-        --argjson overrides "$overrides" \
-        --arg phase "$phase" \
-        '{data:{type:"environments",id:$id,attributes:{baseline:$baseline,namespace:$namespace,tenant:$tenant,overrides:$overrides,phase:$phase}}}')
-    curl -fsS -X PATCH \
-        -H 'Content-Type: application/vnd.api+json' \
-        -H "ENVIRONMENT: $ATLAS_ENVIRONMENT" \
-        -d "$payload" \
-        "$ATLAS_UI_BASE/api/configurations/environments/$ATLAS_ENVIRONMENT" >/dev/null
+    env_record_patch "$@"
 }
 
 do_deactivate() {
@@ -442,11 +432,21 @@ do_drop_groups() {
 
 do_drop_redis() {
     if [ "${ATLAS_MODE:-isolated}" = "sparse" ]; then
-        # Sparse mode never prefixes Redis keys with ATLAS_ENV — the
-        # per-env key prefix is inert there (design §9,
-        # computeKeyPrefix("") is the legacy/shared path). Nothing per-env
-        # to delete; log the skip explicitly rather than silently
-        # returning 0 from a scan that would find nothing anyway.
+        # Sparse mode's Redis keys are the BASELINE's: libs/atlas-redis
+        # prefixes them with ATLAS_REDIS_ENV, which the sparse overlay sets
+        # to the baseline's environment id, so they read `main:atlas:…`.
+        # The scan below looks for `${ATLAS_ENV}:*` — this environment's own
+        # prefix — and in sparse mode nothing is keyed that way. Skipping is
+        # therefore not merely a no-op but load-bearing: a scan on the
+        # baseline's prefix would delete main's live state.
+        #
+        # (This comment previously cited design §9's "the per-env prefix is
+        # inert in sparse mode, computeKeyPrefix("") is the shared path".
+        # That premise was retracted on 2026-08-20 — the overlay set
+        # ATLAS_ENV per container regardless, and the baseline's prefix is
+        # `main:atlas`, not the empty-env `atlas`. See docs/tasks/
+        # task-232-sparse-ephemeral-environments/bug-sparse-baseline-scoping.md.
+        # The skip was correct then and is correct now, for a better reason.)
         ATLAS_STEP=drop-redis log info "skipped (sparse) — keys are shared with main"
         return 0
     fi

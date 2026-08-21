@@ -1,0 +1,101 @@
+package crimsonbalrog
+
+import (
+	event "atlas-events/kafka/message/event"
+	monster "atlas-events/kafka/message/monster"
+
+	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	monsterconst "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+)
+
+// showVisualEventProvider announces the boat-attack visual for one map. Keyed
+// on the map id so a SHOW and its later HIDE for the same map land on one
+// partition and cannot be reordered. Carries no state/subState bytes -- those
+// are client wire bytes atlas-channel resolves per tenant from the ContiMove
+// writer options table (DOM-25), not free-form config from this event.
+func showVisualEventProvider(occurrenceId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, visual string, bgm string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := &event.VisualEvent[event.ShowVisualBody]{
+		OccurrenceId: occurrenceId,
+		WorldId:      worldId,
+		ChannelId:    channelId,
+		MapId:        mapId,
+		Type:         event.VisualTypeShow,
+		Body: event.ShowVisualBody{
+			Visual: visual,
+			Bgm:    bgm,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// hideVisualEventProvider retires the boat-attack visual for one map, on
+// elimination (FR-B18/FR-B20). Keyed on the map id, same as the SHOW, so the
+// pair cannot be reordered across partitions. It does not restore the BGM
+// (design §15.4: atlas-data exposes no Map.wz info/bgm default to restore).
+// Carries no state/subState bytes -- see showVisualEventProvider.
+func hideVisualEventProvider(occurrenceId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id, visual string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := &event.VisualEvent[event.HideVisualBody]{
+		OccurrenceId: occurrenceId,
+		WorldId:      worldId,
+		ChannelId:    channelId,
+		MapId:        mapId,
+		Type:         event.VisualTypeHide,
+		Body: event.HideVisualBody{
+			Visual: visual,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// spawnFieldCommandProvider asks atlas-monsters to spawn one monster at pos,
+// tagged with the occurrence's provenance (FR-B22) so DESTROY_BY_SOURCE
+// (Task 27) can later clean up exactly what this occurrence spawned. Keyed on
+// the map id, same as the visual, so a map's spawns land on one partition.
+func spawnFieldCommandProvider(worldId world.Id, channelId channel.Id, mapId _map.Id, monsterId monsterconst.Id, pos Position, occurrenceId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := &monster.FieldCommand[monster.SpawnFieldCommandBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MapId:     mapId,
+		Type:      monster.CommandTypeSpawnField,
+		Body: monster.SpawnFieldCommandBody{
+			MonsterId:       uint32(monsterId),
+			X:               pos.X,
+			Y:               pos.Y,
+			SpawnSourceType: monsterSourceEvent,
+			SpawnSourceId:   occurrenceId.String(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// destroyBySourceCommandProvider asks atlas-monsters to despawn every field
+// monster carrying this occurrence's provenance (FR-B22), on voyage-arrival
+// cleanup (Task 27). Issued unconditionally per attack map rather than gated
+// on a tally: the tally can only be stale by the time this runs, and issuing
+// the command against zero survivors costs one harmless message. Keyed on
+// the map id, same as the spawn/visual pair, so it cannot be reordered
+// against them across partitions.
+func destroyBySourceCommandProvider(worldId world.Id, channelId channel.Id, mapId _map.Id, occurrenceId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := &monster.FieldCommand[monster.DestroyBySourceCommandBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MapId:     mapId,
+		Type:      monster.CommandTypeDestroyBySource,
+		Body: monster.DestroyBySourceCommandBody{
+			SpawnSourceType: monsterSourceEvent,
+			SpawnSourceId:   occurrenceId.String(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

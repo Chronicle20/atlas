@@ -11,6 +11,17 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
+// Spawn provenance types (FR-P1). The set is open — atlas-monsters never
+// interprets these beyond equality, so a new producer may introduce a value
+// without a change here. CYCLIC is the normalization target for an absent or
+// empty value, applied once at the Kafka consumer boundary.
+const (
+	SpawnSourceTypeCyclic = "CYCLIC"
+	SpawnSourceTypeEvent  = "EVENT"
+	SpawnSourceTypeScript = "SCRIPT"
+	SpawnSourceTypeGM     = "GM"
+)
+
 // nextSkillDecision is the picker's decision for the next skill (if any) the
 // monster should fire on the controller's next tick. Held in-memory only;
 // not persisted to Redis. Zero value is the sentinel "no skill, no scheduled
@@ -53,6 +64,13 @@ type Model struct {
 	statusEffects      []StatusEffect
 	nextSkillDecision  nextSkillDecision
 	lastDamageTakenMs  int64
+	// spawnSourceType / spawnSourceId are opaque provenance, set by whatever
+	// asked for the spawn (FR-P1). atlas-monsters stores, echoes and compares
+	// them for equality; it never interprets spawnSourceId (FR-P6). Empty means
+	// the producer omitted them; normalization to CYCLIC happens once, at the
+	// consumer boundary.
+	spawnSourceType string
+	spawnSourceId   string
 }
 
 type entry struct {
@@ -61,7 +79,7 @@ type entry struct {
 	LastHitMs   int64
 }
 
-func NewMonster(f field.Model, uniqueId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
+func NewMonster(f field.Model, uniqueId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32, spawnSourceType string, spawnSourceId string) Model {
 	return Model{
 		uniqueId:           uniqueId,
 		worldId:            f.WorldId(),
@@ -81,6 +99,8 @@ func NewMonster(f field.Model, uniqueId uint32, monsterId uint32, x int16, y int
 		team:               team,
 		damageEntries:      make([]entry, 0),
 		statusEffects:      make([]StatusEffect, 0),
+		spawnSourceType:    spawnSourceType,
+		spawnSourceId:      spawnSourceId,
 	}
 }
 
@@ -300,3 +320,6 @@ func (m Model) HpPercentage() uint32 {
 func (m Model) LastDamageTakenMs() int64 {
 	return m.lastDamageTakenMs
 }
+
+func (m Model) SpawnSourceType() string { return m.spawnSourceType }
+func (m Model) SpawnSourceId() string   { return m.spawnSourceId }

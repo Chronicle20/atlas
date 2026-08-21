@@ -105,7 +105,7 @@ func (t *DropTimerTask) produceDrop(ctx context.Context, m Model, e DropTimerEnt
 	}
 
 	if dropCount > 0 {
-		err := producer.ProviderImpl(t.l)(ctx)(EnvEventTopicMonsterStatus)(friendlyDropStatusEventProvider(f, m.UniqueId(), e.MonsterId(), dropCount))
+		err := producer.ProviderImpl(t.l)(ctx)(EnvEventTopicMonsterStatus)(friendlyDropStatusEventProvider(m, dropCount))
 		if err != nil {
 			t.l.WithError(err).Errorf("Unable to emit friendly drop event for monster [%d].", m.UniqueId())
 		}

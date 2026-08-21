@@ -15,6 +15,8 @@ import {
   useTransportRoutesSeedStatus,
   useTransportVesselsSeedStatus,
   useInstanceRoutesSeedStatus,
+  useEventDefinitionsSeedStatus,
+  usePartyQuestDefinitionsSeedStatus,
   useWzInputStatus,
   useDataStatus,
   useSeedDrops,
@@ -29,6 +31,8 @@ import {
   useSeedTransportRoutes,
   useSeedTransportVessels,
   useSeedInstanceRoutes,
+  useSeedEventDefinitions,
+  useSeedPartyQuestDefinitions,
 } from "../useSeed";
 import { seedService } from "@/services/api/seed.service";
 import * as tenantContext from "@/context/tenant-context";
@@ -47,6 +51,8 @@ vi.mock("@/services/api/seed.service", () => ({
     getTransportRoutesSeedStatus: vi.fn(),
     getTransportVesselsSeedStatus: vi.fn(),
     getInstanceRoutesSeedStatus: vi.fn(),
+    getEventDefinitionsSeedStatus: vi.fn(),
+    getPartyQuestDefinitionsSeedStatus: vi.fn(),
     getWzInputStatus: vi.fn(),
     getDataStatus: vi.fn(),
     seedDrops: vi.fn(),
@@ -61,6 +67,8 @@ vi.mock("@/services/api/seed.service", () => ({
     seedRoutes: vi.fn(),
     seedVessels: vi.fn(),
     seedInstanceRoutes: vi.fn(),
+    seedEventDefinitions: vi.fn(),
+    seedPartyQuestDefinitions: vi.fn(),
   },
 }));
 
@@ -163,6 +171,18 @@ describe.each([
     useInstanceRoutesSeedStatus,
     "getInstanceRoutesSeedStatus",
     "instanceRoutesSeedStatus",
+  ],
+  [
+    "useEventDefinitionsSeedStatus",
+    useEventDefinitionsSeedStatus,
+    "getEventDefinitionsSeedStatus",
+    "eventDefinitionsSeedStatus",
+  ],
+  [
+    "usePartyQuestDefinitionsSeedStatus",
+    usePartyQuestDefinitionsSeedStatus,
+    "getPartyQuestDefinitionsSeedStatus",
+    "partyQuestDefinitionsSeedStatus",
   ],
 ] as const)("%s", (_, hook, method, key) => {
   it("enables polling and keys by tenant id when a tenant is active", async () => {
@@ -334,6 +354,28 @@ describe("transport seed mutations", () => {
       .spyOn(seedService, "seedInstanceRoutes")
       .mockResolvedValue(undefined);
     const { result } = renderHook(() => useSeedInstanceRoutes(), {
+      wrapper: makeWrapper().wrapper,
+    });
+    result.current.mutate();
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+  });
+
+  it("useSeedEventDefinitions posts to the event definitions seed endpoint", async () => {
+    const spy = vi
+      .spyOn(seedService, "seedEventDefinitions")
+      .mockResolvedValue(undefined);
+    const { result } = renderHook(() => useSeedEventDefinitions(), {
+      wrapper: makeWrapper().wrapper,
+    });
+    result.current.mutate();
+    await waitFor(() => expect(spy).toHaveBeenCalledTimes(1));
+  });
+
+  it("useSeedPartyQuestDefinitions posts to the party quest definitions seed endpoint", async () => {
+    const spy = vi
+      .spyOn(seedService, "seedPartyQuestDefinitions")
+      .mockResolvedValue(undefined);
+    const { result } = renderHook(() => useSeedPartyQuestDefinitions(), {
       wrapper: makeWrapper().wrapper,
     });
     result.current.mutate();

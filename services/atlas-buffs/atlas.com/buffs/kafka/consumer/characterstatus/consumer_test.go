@@ -45,7 +45,7 @@ func tracked(t *testing.T, ctx context.Context, characterId uint32) {
 func seedBeacon(t *testing.T, ctx context.Context, characterId uint32) {
 	t.Helper()
 	_, err := character.GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, int32(5211006), byte(1),
-		0, []buffstat.Model{buffstat.NewStat(string(charconst.TemporaryStatTypeHomingBeacon), 1000001)}, false, true)
+		0, []buffstat.Model{buffstat.NewStat(string(charconst.TemporaryStatTypeHomingBeacon), 1000001)}, false, true, "")
 	assert.NoError(t, err)
 }
 
@@ -175,7 +175,7 @@ func TestHandleMapChangedLeavesOtherBuffsForHomingBeacon(t *testing.T) {
 	characterId := uint32(2002)
 	seedBeacon(t, ctx, characterId)
 	_, err := character.GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, int32(2001001), byte(5),
-		60000, []buffstat.Model{buffstat.NewStat("SPEED", 20)}, false, false)
+		60000, []buffstat.Model{buffstat.NewStat("SPEED", 20)}, false, false, "")
 	assert.NoError(t, err)
 
 	handleStatusEventMapChanged(l, ctx, characterstatus2.StatusEvent[characterstatus2.StatusEventMapChangedBody]{

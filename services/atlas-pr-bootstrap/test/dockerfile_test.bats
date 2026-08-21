@@ -33,6 +33,7 @@ setup() {
         [ "$base" = "lib.sh" ] && continue
         [ "$base" = "version-ports.sh" ] && continue
         [ "$base" = "service-config.sh" ] && continue
+        [ "$base" = "env-record.sh" ] && continue
         if ! printf '%s\n' "$chmod_line" | grep -qF "/atlas/${base}"; then
             missing+=("$base")
         fi
@@ -41,4 +42,13 @@ setup() {
         echo "Dockerfile chmod +x line missing entries for: ${missing[*]}" >&2
         return 1
     fi
+}
+
+@test "Dockerfile installs util-linux (provides uuidgen for sparse service rows)" {
+    # sparse mode's create_service_config mints a fresh services-row id with
+    # uuidgen. It was absent from the apk list, so the id came out empty and
+    # atlas-channel/atlas-login crash-looped on uuid.MustParse(""). new_uuid
+    # now fails loudly instead, but the package must still be here or every
+    # sparse environment falls back to /proc — assert the intended source.
+    grep -qE '^[[:space:]]*util-linux[[:space:]]*\\?$' "$PROJECT_ROOT/Dockerfile"
 }

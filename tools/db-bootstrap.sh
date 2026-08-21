@@ -67,6 +67,7 @@ DBS=(
   atlas-configurations
   atlas-data
   atlas-drops
+  atlas-events
   atlas-families
   atlas-fame
   atlas-reward-pools

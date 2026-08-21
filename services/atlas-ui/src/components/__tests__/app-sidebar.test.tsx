@@ -41,11 +41,12 @@ describe("AppSidebar", () => {
   it("declares groups in blast-radius order with the Deployment children ordered", () => {
     expect(sidebarItems.map((g) => g.title)).toEqual([
       "Operations",
+      "Events",
       "Security",
       "Setup",
       "Deployment",
     ]);
-    const deployment = sidebarItems[3]!;
+    const deployment = sidebarItems[4]!;
     expect(deployment.children.map((c) => c.title)).toEqual([
       "Templates",
       "Tenants",
@@ -55,7 +56,7 @@ describe("AppSidebar", () => {
     ]);
     expect(deployment.separated).toBe(true);
     expect(deployment.caption).toBe("Applies to all tenants");
-    const setup = sidebarItems[2]!;
+    const setup = sidebarItems[3]!;
     expect(setup.children).toEqual([{ title: "Setup", url: "/setup" }]);
   });
 

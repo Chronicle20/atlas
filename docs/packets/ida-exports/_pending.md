@@ -234,7 +234,8 @@ bug surfaced (BuddyInvite, section 9) was **fixed in-task**, so nothing is hande
 
 ## 11. Workflow reference (refresh / regen procedure)
 
-1. `mcp__ida-pro__list_functions_filter` -> `get_function_by_name` -> `decompile_function`.
+1. `mcp__ida-pro__idb_list` (resolve the IDB's session id) -> `mcp__ida-pro__func_query`
+   -> `mcp__ida-pro__decompile`, passing that session id as `database` on each call.
 2. Parse the `CInPacket::DecodeN` / `COutPacket::EncodeN` sequence in lexical order
    (success path; multi-branch functions need manual filtering).
 3. Add the entry to `gms_v{83,87,95}.json` / `gms_jms_185.json` and the

@@ -75,6 +75,18 @@ func (s *State) ApplyTenantTombstone(id uuid.UUID) {
 	delete(s.tenants, id)
 }
 
+// HasService reports whether a service-config row for THIS deployment's
+// SERVICE_ID has been projected. It is the FR-1.5 readiness signal: a pod
+// whose row never arrives binds no socket, and before task-243 it reported
+// Ready anyway — which is how a wrong SERVICE_ID survived five deploys.
+// The subscriber filters foreign rows out before they reach State
+// (subscriber.go:111), so a non-nil service is by construction our own.
+func (s *State) HasService() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.service != nil
+}
+
 // Snapshot returns the current service config + a copy of the tenants
 // map. The tenants map is copied so apply-loop iteration is decoupled
 // from concurrent writes.

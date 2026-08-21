@@ -33,7 +33,7 @@ func TestKill_NonBoss_KilledAndRemoved(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 100)
+	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 100, "", "")
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
@@ -86,7 +86,7 @@ func TestKill_Boss_Dropped(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 8800000, 0, 0, 0, 5, 0, 50000, 3000)
+	m := r.CreateMonster(ctx, ten, f, 8800000, 0, 0, 0, 5, 0, 50000, 3000, "", "")
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
@@ -121,7 +121,7 @@ func TestKill_InfoLookupError_DroppedFailClosed(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 100)
+	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 100, "", "")
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
@@ -171,7 +171,7 @@ func TestKill_DeadMonster_NoOp(t *testing.T) {
 	defer func() { testInformationLookup = prevHook }()
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 1, 50)
+	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 1, 50, "", "")
 	uniqueId := m.UniqueId()
 	// Kill it directly via the registry (no emit) so HP=0 but it remains present.
 	if _, err := r.ApplyDamage(ten, 1, 999, uniqueId, 1); err != nil {

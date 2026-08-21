@@ -70,11 +70,16 @@ GOLANGCI="$TOOLS_BIN/golangci-lint-$GOLANGCI_LINT_VERSION"
 #   "failed to parse file: .worktrees/.../processor_test.go: no such file or directory"
 # Keying the cache to $ROOT gives each worktree its own and removes the crosstalk.
 #
-# NOTE: this does NOT make concurrent golangci-lint runs safe. The tool takes an
-# exclusive lock that separate cache directories do not isolate — a second run
-# exits non-zero with "parallel golangci-lint is running" and "0 issues", which
-# is a spurious failure. The per-module loop below is therefore deliberately
-# SEQUENTIAL; do not parallelize it. Run only one lint.sh per machine at a time.
+# The per-tree cache is NOT enough on its own: `golangci-lint run` also takes an
+# exclusive flock on $TMPDIR/golangci-lint.lock, a machine-global path that no
+# cache setting isolates. Any two concurrent `run` invocations sharing a
+# $TMPDIR contend on it — two worktrees running verify.sh is just the common
+# case — and the loser exited 3 with "parallel golangci-lint is running" and no
+# findings, a spurious guard failure rather than a lint result. `run` is passed
+# --allow-parallel-runners below to skip that lock. What the lock protects
+# against is concurrent writers to ONE cache, which the per-tree keying above
+# already rules out; if you override GOLANGCI_LINT_CACHE to a path shared
+# between trees, you give that protection up.
 export GOLANGCI_LINT_CACHE="${GOLANGCI_LINT_CACHE:-$ROOT/.cache/golangci-lint}"
 mkdir -p "$GOLANGCI_LINT_CACHE"
 
@@ -195,7 +200,9 @@ run_go() {
 
         # ---- linter layer: rev-gated to new code (design.md §5) ------------
         if [ "$FMT_ONLY" -eq 0 ]; then
-            local -a lintargs=(run -c "$ROOT/.golangci.yml")
+            # --allow-parallel-runners: skip the machine-global flock so two
+            # worktrees can run the guard concurrently (see the cache note above).
+            local -a lintargs=(run --allow-parallel-runners -c "$ROOT/.golangci.yml")
             if [ "$CHECK" -eq 0 ]; then
                 lintargs+=(--fix)
             fi

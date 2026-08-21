@@ -57,7 +57,7 @@ func TestRegistry_Apply(t *testing.T) {
 	duration := int32(60)
 	changes := setupTestChanges()
 
-	applied, err := GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(5), duration, changes, false, false)
+	applied, err := GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(5), duration, changes, false, false, "")
 
 	assert.NoError(t, err)
 	assert.Len(t, applied, 1)
@@ -79,7 +79,7 @@ func TestRegistry_Get(t *testing.T) {
 	duration := int32(60)
 	changes := setupTestChanges()
 
-	_, err := GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(5), duration, changes, false, false)
+	_, err := GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(5), duration, changes, false, false, "")
 	assert.NoError(t, err)
 
 	m, err := GetRegistry().Get(ctx, characterId)
@@ -109,7 +109,7 @@ func TestRegistry_Cancel(t *testing.T) {
 	duration := int32(60)
 	changes := setupTestChanges()
 
-	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(5), duration, changes, false, false)
+	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(5), duration, changes, false, false, "")
 
 	cancelled, err := GetRegistry().Cancel(ctx, characterId, sourceId)
 	assert.NoError(t, err)
@@ -138,9 +138,9 @@ func TestRegistry_MultipleBuffs(t *testing.T) {
 	characterId := uint32(1000)
 	changes := setupTestChanges()
 
-	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2001001), byte(5), int32(60), changes, false, false)
-	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2001002), byte(5), int32(120), changes, false, false)
-	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2001003), byte(5), int32(180), changes, false, false)
+	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2001001), byte(5), int32(60), changes, false, false, "")
+	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2001002), byte(5), int32(120), changes, false, false, "")
+	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2001003), byte(5), int32(180), changes, false, false, "")
 
 	m, err := GetRegistry().Get(ctx, characterId)
 	assert.NoError(t, err)
@@ -174,7 +174,7 @@ func TestRegistry_TenantIsolation(t *testing.T) {
 	sourceId := int32(2001001)
 	changes := setupTestChanges()
 
-	_, _ = GetRegistry().Apply(ctx1, worldId, channel.Id(0), characterId, sourceId, byte(5), int32(60), changes, false, false)
+	_, _ = GetRegistry().Apply(ctx1, worldId, channel.Id(0), characterId, sourceId, byte(5), int32(60), changes, false, false, "")
 
 	m1, err := GetRegistry().Get(ctx1, characterId)
 	assert.NoError(t, err)
@@ -193,8 +193,8 @@ func TestRegistry_GetTenants(t *testing.T) {
 	ctx2 := setupTestContext(t, ten2)
 	changes := setupTestChanges()
 
-	_, _ = GetRegistry().Apply(ctx1, world.Id(0), channel.Id(0), 1000, int32(2001001), byte(5), int32(60), changes, false, false)
-	_, _ = GetRegistry().Apply(ctx2, world.Id(0), channel.Id(0), 2000, int32(2001002), byte(5), int32(60), changes, false, false)
+	_, _ = GetRegistry().Apply(ctx1, world.Id(0), channel.Id(0), 1000, int32(2001001), byte(5), int32(60), changes, false, false, "")
+	_, _ = GetRegistry().Apply(ctx2, world.Id(0), channel.Id(0), 2000, int32(2001002), byte(5), int32(60), changes, false, false, "")
 
 	tenants, err := GetRegistry().GetTenants(context.Background())
 	assert.NoError(t, err)
@@ -207,9 +207,9 @@ func TestRegistry_GetCharacters(t *testing.T) {
 	ctx := setupTestContext(t, ten)
 	changes := setupTestChanges()
 
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), 1000, int32(2001001), byte(5), int32(60), changes, false, false)
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), 2000, int32(2001002), byte(5), int32(60), changes, false, false)
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), 3000, int32(2001003), byte(5), int32(60), changes, false, false)
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), 1000, int32(2001001), byte(5), int32(60), changes, false, false, "")
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), 2000, int32(2001002), byte(5), int32(60), changes, false, false, "")
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), 3000, int32(2001003), byte(5), int32(60), changes, false, false, "")
 
 	chars := GetRegistry().GetCharacters(ctx)
 	assert.Len(t, chars, 3)
@@ -230,7 +230,7 @@ func TestRegistry_ConcurrentApply(t *testing.T) {
 			defer wg.Done()
 			characterId := uint32(1000 + idx)
 			sourceId := int32(2001000 + idx)
-			_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(5), int32(60), changes, false, false)
+			_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(5), int32(60), changes, false, false, "")
 		}(i)
 	}
 
@@ -255,7 +255,7 @@ func TestRegistry_ConcurrentMultipleTenants(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			_, _ = GetRegistry().Apply(ctx1, world.Id(0), channel.Id(0), uint32(1000+idx), int32(2001000+idx), byte(5), int32(60), changes, false, false)
+			_, _ = GetRegistry().Apply(ctx1, world.Id(0), channel.Id(0), uint32(1000+idx), int32(2001000+idx), byte(5), int32(60), changes, false, false, "")
 		}(i)
 	}
 
@@ -263,7 +263,7 @@ func TestRegistry_ConcurrentMultipleTenants(t *testing.T) {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			_, _ = GetRegistry().Apply(ctx2, world.Id(0), channel.Id(0), uint32(1000+idx), int32(2001000+idx), byte(5), int32(60), changes, false, false)
+			_, _ = GetRegistry().Apply(ctx2, world.Id(0), channel.Id(0), uint32(1000+idx), int32(2001000+idx), byte(5), int32(60), changes, false, false, "")
 		}(i)
 	}
 
@@ -286,12 +286,12 @@ func TestRegistry_BuffReplacement(t *testing.T) {
 	characterId := uint32(1000)
 	sourceId := int32(2001001)
 
-	b1, err := GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(5), int32(60), changes, false, false)
+	b1, err := GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(5), int32(60), changes, false, false, "")
 	assert.NoError(t, err)
 	assert.Len(t, b1, 1)
 	assert.Equal(t, int32(60), b1[0].Duration())
 
-	b2, err := GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(5), int32(120), changes, false, false)
+	b2, err := GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(5), int32(120), changes, false, false, "")
 	assert.NoError(t, err)
 	assert.Len(t, b2, 1)
 	assert.Equal(t, int32(120), b2[0].Duration())
@@ -312,7 +312,7 @@ func TestRegistry_ApplyAndCancel(t *testing.T) {
 	// Apply 50 buffs sequentially
 	for i := 0; i < 50; i++ {
 		sourceId := int32(2001000 + i)
-		_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(5), int32(60), changes, false, false)
+		_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(5), int32(60), changes, false, false, "")
 	}
 
 	m, err := GetRegistry().Get(ctx, characterId)
@@ -337,7 +337,7 @@ func TestRegistry_CancelByStatTypes_EmptyTypes(t *testing.T) {
 
 	// Apply a POISON buff so we can prove an empty type set leaves it alone.
 	changes := []stat.Model{stat.NewStat("POISON", -10)}
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(124), byte(1), int32(60), changes, false, false)
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(124), byte(1), int32(60), changes, false, false, "")
 
 	cancelled, err := GetRegistry().CancelByStatTypes(ctx, uint32(1000), map[string]bool{})
 	assert.NoError(t, err)
@@ -354,7 +354,7 @@ func TestRegistry_CancelByStatTypes_NoMatch(t *testing.T) {
 
 	// Character has only HOLY_SYMBOL, ask to cancel POISON — should keep the buff.
 	changes := []stat.Model{stat.NewStat("HOLY_SYMBOL", 30)}
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(2311003), byte(1), int32(60), changes, false, false)
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(2311003), byte(1), int32(60), changes, false, false, "")
 
 	cancelled, err := GetRegistry().CancelByStatTypes(ctx, uint32(1000), map[string]bool{"POISON": true})
 	assert.NoError(t, err)
@@ -371,8 +371,8 @@ func TestRegistry_CancelByStatTypes_SingleMatch(t *testing.T) {
 
 	poison := []stat.Model{stat.NewStat("POISON", -10)}
 	holy := []stat.Model{stat.NewStat("HOLY_SYMBOL", 30)}
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(124), byte(1), int32(60), poison, false, false)
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(2311003), byte(1), int32(60), holy, false, false)
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(124), byte(1), int32(60), poison, false, false, "")
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(2311003), byte(1), int32(60), holy, false, false, "")
 
 	cancelled, err := GetRegistry().CancelByStatTypes(ctx, uint32(1000), map[string]bool{"POISON": true})
 	assert.NoError(t, err)
@@ -393,9 +393,9 @@ func TestRegistry_CancelByStatTypes_MultiMatch(t *testing.T) {
 	poison := []stat.Model{stat.NewStat("POISON", -10)}
 	curse := []stat.Model{stat.NewStat("CURSE", -50)}
 	weaken := []stat.Model{stat.NewStat("WEAKEN", -20)}
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(124), byte(1), int32(60), poison, false, false)
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(125), byte(1), int32(60), curse, false, false)
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(126), byte(1), int32(60), weaken, false, false)
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(124), byte(1), int32(60), poison, false, false, "")
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(125), byte(1), int32(60), curse, false, false, "")
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(126), byte(1), int32(60), weaken, false, false, "")
 
 	cancelled, err := GetRegistry().CancelByStatTypes(ctx, uint32(1000), map[string]bool{
 		"POISON": true,
@@ -433,10 +433,10 @@ func TestRegistry_Apply_Accumulate_DistinctStatsCoexist(t *testing.T) {
 	characterId := uint32(1000)
 	sourceId := int32(1320009) // HEX_OF_THE_BEHOLDER
 
-	a1, err := GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(25), int32(99000), []stat.Model{stat.NewStat("WEAPON_DEFENSE", 100)}, true, false)
+	a1, err := GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(25), int32(99000), []stat.Model{stat.NewStat("WEAPON_DEFENSE", 100)}, true, false, "")
 	assert.NoError(t, err)
 	assert.Len(t, a1, 1)
-	_, err = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(25), int32(99000), []stat.Model{stat.NewStat("MAGIC_DEFENSE", 100)}, true, false)
+	_, err = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, sourceId, byte(25), int32(99000), []stat.Model{stat.NewStat("MAGIC_DEFENSE", 100)}, true, false, "")
 	assert.NoError(t, err)
 
 	m, err := GetRegistry().Get(ctx, characterId)
@@ -463,8 +463,8 @@ func TestRegistry_Apply_Accumulate_SameStatRefreshes(t *testing.T) {
 	characterId := uint32(1000)
 	sourceId := int32(1320009)
 
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(25), int32(60000), []stat.Model{stat.NewStat("WEAPON_DEFENSE", 100)}, true, false)
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(25), int32(99000), []stat.Model{stat.NewStat("WEAPON_DEFENSE", 100)}, true, false)
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(25), int32(60000), []stat.Model{stat.NewStat("WEAPON_DEFENSE", 100)}, true, false, "")
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(25), int32(99000), []stat.Model{stat.NewStat("WEAPON_DEFENSE", 100)}, true, false, "")
 
 	m, _ := GetRegistry().Get(ctx, characterId)
 	assert.Len(t, m.Buffs(), 1)
@@ -481,8 +481,8 @@ func TestRegistry_Apply_Accumulate_PerStatExpiry(t *testing.T) {
 	characterId := uint32(1000)
 	sourceId := int32(1320009)
 
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(25), int32(1), []stat.Model{stat.NewStat("WEAPON_DEFENSE", 100)}, true, false) // 1ms
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(25), int32(99000), []stat.Model{stat.NewStat("MAGIC_DEFENSE", 100)}, true, false)
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(25), int32(1), []stat.Model{stat.NewStat("WEAPON_DEFENSE", 100)}, true, false, "") // 1ms
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(25), int32(99000), []stat.Model{stat.NewStat("MAGIC_DEFENSE", 100)}, true, false, "")
 	time.Sleep(10 * time.Millisecond)
 
 	expired := GetRegistry().GetExpired(ctx, characterId)
@@ -506,7 +506,7 @@ func TestRegistry_Cancel_Accumulate_ReturnsAllStats(t *testing.T) {
 	characterId := uint32(1000)
 	sourceId := int32(1320009)
 	for _, st := range []string{"WEAPON_DEFENSE", "MAGIC_DEFENSE", "WEAPON_ATTACK"} {
-		_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(25), int32(99000), []stat.Model{stat.NewStat(st, 50)}, true, false)
+		_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(25), int32(99000), []stat.Model{stat.NewStat(st, 50)}, true, false, "")
 	}
 
 	cancelled, err := GetRegistry().Cancel(ctx, characterId, sourceId)
@@ -527,8 +527,8 @@ func TestRegistry_Apply_DefaultReplacesWholeSource(t *testing.T) {
 	characterId := uint32(1000)
 	sourceId := int32(2001001)
 
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(5), int32(60), []stat.Model{stat.NewStat("STR", 10), stat.NewStat("DEX", 5)}, false, false)
-	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(5), int32(60), []stat.Model{stat.NewStat("STR", 20), stat.NewStat("DEX", 9)}, false, false)
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(5), int32(60), []stat.Model{stat.NewStat("STR", 10), stat.NewStat("DEX", 5)}, false, false, "")
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(5), int32(60), []stat.Model{stat.NewStat("STR", 20), stat.NewStat("DEX", 9)}, false, false, "")
 
 	m, _ := GetRegistry().Get(ctx, characterId)
 	assert.Len(t, m.Buffs(), 1) // single whole-source entry, overwritten
@@ -542,7 +542,7 @@ func TestRegistry_TenantSetIsPrefixed(t *testing.T) {
 	ctx := setupTestContext(t, ten)
 	changes := setupTestChanges()
 
-	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(2001001), byte(5), int32(60), changes, false, false)
+	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(2001001), byte(5), int32(60), changes, false, false, "")
 	assert.NoError(t, err)
 
 	tenants, err := GetRegistry().GetTenants(context.Background())
@@ -555,7 +555,7 @@ func TestRegistry_TenantSetIsPrefixed(t *testing.T) {
 func setupComboBuff(t *testing.T, ctx context.Context, characterId uint32, sourceId int32) {
 	t.Helper()
 	changes := []stat.Model{stat.NewStat("COMBO", 1)}
-	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(20), int32(150000), changes, false, false)
+	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, sourceId, byte(20), int32(150000), changes, false, false, "")
 	if err != nil {
 		t.Fatalf("Apply: %v", err)
 	}
@@ -698,7 +698,7 @@ func TestRegistry_UpdateStatValue_ExpiredBuffNoOp(t *testing.T) {
 	ctx := setupTestContext(t, setupTestTenant(t))
 
 	changes := []stat.Model{stat.NewStat("COMBO", 1)}
-	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), 1000, 1111002, byte(20), int32(1), changes, false, false)
+	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), 1000, 1111002, byte(20), int32(1), changes, false, false, "")
 	assert.NoError(t, err)
 	time.Sleep(5 * time.Millisecond) // duration is 1ms; let it lapse
 
@@ -831,7 +831,7 @@ func TestRegistry_UpdateStatValue_ChargedSentinelBlocksGain(t *testing.T) {
 	ctx := setupTestContext(t, ten)
 
 	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), 1000, 5110001, 20, 31000,
-		[]stat.Model{stat.NewStat("ENERGY_CHARGE", 15000)}, false, false)
+		[]stat.Model{stat.NewStat("ENERGY_CHARGE", 15000)}, false, false, "")
 	assert.NoError(t, err)
 
 	_, changed, created, err := GetRegistry().UpdateStatValue(ctx, world.Id(0), channel.Id(0), 1000,
@@ -848,7 +848,7 @@ func TestRegistry_ApplyNoExpiry(t *testing.T) {
 	ctx := setupTestContext(t, ten)
 
 	changes := []stat.Model{stat.NewStat("HOMING_BEACON", 1000001)}
-	applied, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(5211006), byte(1), 0, changes, false, true)
+	applied, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(5211006), byte(1), 0, changes, false, true, "")
 
 	assert.NoError(t, err)
 	assert.Len(t, applied, 1)
@@ -865,10 +865,10 @@ func TestRegistry_GetExpiredKeepsNoExpiry(t *testing.T) {
 	characterId := uint32(1001)
 
 	// Finite 1ms buff → expired after the sleep below.
-	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, int32(2001001), byte(5), 1, setupTestChanges(), false, false)
+	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, int32(2001001), byte(5), 1, setupTestChanges(), false, false, "")
 	assert.NoError(t, err)
 	// No-expiry beacon.
-	_, err = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, int32(5211006), byte(1), 0, []stat.Model{stat.NewStat("HOMING_BEACON", 1000001)}, false, true)
+	_, err = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, int32(5211006), byte(1), 0, []stat.Model{stat.NewStat("HOMING_BEACON", 1000001)}, false, true, "")
 	assert.NoError(t, err)
 
 	time.Sleep(5 * time.Millisecond)
@@ -888,7 +888,7 @@ func TestRegistry_CancelByStatTypesRemovesNoExpiry(t *testing.T) {
 	ctx := setupTestContext(t, ten)
 	characterId := uint32(1002)
 
-	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, int32(5211006), byte(1), 0, []stat.Model{stat.NewStat("HOMING_BEACON", 1000001)}, false, true)
+	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, int32(5211006), byte(1), 0, []stat.Model{stat.NewStat("HOMING_BEACON", 1000001)}, false, true, "")
 	assert.NoError(t, err)
 
 	cancelled, err := GetRegistry().CancelByStatTypes(ctx, characterId, map[string]bool{"HOMING_BEACON": true})
@@ -904,7 +904,7 @@ func TestRegistry_CancelAllRemovesNoExpiry(t *testing.T) {
 	ctx := setupTestContext(t, ten)
 	characterId := uint32(1003)
 
-	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, int32(5220011), byte(10), 0, []stat.Model{stat.NewStat("HOMING_BEACON", 1000001)}, false, true)
+	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), characterId, int32(5220011), byte(10), 0, []stat.Model{stat.NewStat("HOMING_BEACON", 1000001)}, false, true, "")
 	assert.NoError(t, err)
 
 	all := GetRegistry().CancelAll(ctx, characterId)

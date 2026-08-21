@@ -40,6 +40,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelByTypes))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelByCorrelation))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateStatValue))); err != nil {
 			return err
 		}
@@ -65,7 +68,7 @@ func handleApply(l logrus.FieldLogger, ctx context.Context, c character2.Command
 		statChanges = append(statChanges, stat.NewStat(cs.Type, cs.Amount))
 	}
 
-	if err := character.NewProcessor(l, ctx).Apply(c.WorldId, c.ChannelId, c.CharacterId, c.Body.FromId, c.Body.SourceId, c.Body.Level, c.Body.Duration, statChanges, c.Body.Accumulate, c.Body.NoExpiry); err != nil {
+	if err := character.NewProcessor(l, ctx).Apply(c.WorldId, c.ChannelId, c.CharacterId, c.Body.FromId, c.Body.SourceId, c.Body.Level, c.Body.Duration, statChanges, c.Body.Accumulate, c.Body.NoExpiry, c.Body.CorrelationId); err != nil {
 		l.WithError(err).Errorf("Unable to apply buff [%d] to character [%d].", c.Body.SourceId, c.CharacterId)
 	}
 }
@@ -97,6 +100,19 @@ func handleCancelByTypes(l logrus.FieldLogger, ctx context.Context, c character2
 
 	if err := character.NewProcessor(l, ctx).CancelByStatTypes(c.WorldId, c.CharacterId, c.Body.Types); err != nil {
 		l.WithError(err).Errorf("Unable to cancel buffs by types %v for character [%d].", c.Body.Types, c.CharacterId)
+	}
+}
+
+// handleCancelByCorrelation sweeps the whole tenant; the envelope's
+// characterId and worldId are not consulted. Emitters send a single command
+// with characterId 0.
+func handleCancelByCorrelation(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.CancelByCorrelationCommandBody]) {
+	if c.Type != character2.CommandTypeCancelByCorrelation {
+		return
+	}
+
+	if err := character.NewProcessor(l, ctx).CancelByCorrelation(c.Body.CorrelationId); err != nil {
+		l.WithError(err).Errorf("Unable to cancel buffs for correlation [%s].", c.Body.CorrelationId)
 	}
 }
 

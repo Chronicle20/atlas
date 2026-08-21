@@ -66,7 +66,7 @@ func TestSunnyDay(t *testing.T) {
 	hp := uint32(50)
 	mp := uint32(50)
 
-	m := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
+	m := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 	if !valid(f, monsterId, x, y, fh, stance, team, hp, mp)(m) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
@@ -92,11 +92,11 @@ func TestSunnyDay(t *testing.T) {
 		t.Fatal("Unexpected Control CharacterId.")
 	}
 
-	m2 := r.CreateMonster(ctx, ten, f, monsterId, 50, y, fh, stance, team, hp, mp)
+	m2 := r.CreateMonster(ctx, ten, f, monsterId, 50, y, fh, stance, team, hp, mp, "", "")
 	if !valid(f, monsterId, 50, y, fh, stance, team, hp, mp)(m2) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
-	m3 := r.CreateMonster(ctx, ten, f, monsterId, 100, y, fh, stance, team, hp, mp)
+	m3 := r.CreateMonster(ctx, ten, f, monsterId, 100, y, fh, stance, team, hp, mp, "", "")
 	if !valid(f, monsterId, 100, y, fh, stance, team, hp, mp)(m3) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
@@ -165,17 +165,17 @@ func TestIdReuse(t *testing.T) {
 	hp := uint32(50)
 	mp := uint32(50)
 
-	m := r.CreateMonster(ctx1, tenant1, f, monsterId, x, y, fh, stance, team, hp, mp)
+	m := r.CreateMonster(ctx1, tenant1, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 	if !valid(f, monsterId, x, y, fh, stance, team, hp, mp)(m) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
 
-	m2 := r.CreateMonster(ctx2, tenant2, f, monsterId, x, y, fh, stance, team, hp, mp)
+	m2 := r.CreateMonster(ctx2, tenant2, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 	if !valid(f, monsterId, x, y, fh, stance, team, hp, mp)(m2) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
 
-	m3 := r.CreateMonster(ctx1, tenant1, f, monsterId, x, y, fh, stance, team, hp, mp)
+	m3 := r.CreateMonster(ctx1, tenant1, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 	if !valid(f, monsterId, x, y, fh, stance, team, hp, mp)(m3) {
 		t.Fatal("Monster created with incorrect properties.")
 	}
@@ -283,9 +283,9 @@ func TestDestroyAll(t *testing.T) {
 	hp := uint32(50)
 	mp := uint32(50)
 
-	_ = r.CreateMonster(ctx1, tenant1, f, monsterId, x, y, fh, stance, team, hp, mp)
-	_ = r.CreateMonster(ctx2, tenant2, f, monsterId, x, y, fh, stance, team, hp, mp)
-	_ = r.CreateMonster(ctx1, tenant1, f, monsterId, x, y, fh, stance, team, hp, mp)
+	_ = r.CreateMonster(ctx1, tenant1, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
+	_ = r.CreateMonster(ctx2, tenant2, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
+	_ = r.CreateMonster(ctx1, tenant1, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 
 	ms := r.GetMonsters()
 	count := 0
@@ -316,11 +316,11 @@ func TestIdRecyclingAfterRemoval(t *testing.T) {
 	mp := uint32(50)
 
 	// Create first monster
-	m1 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
+	m1 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 	firstId := m1.UniqueId()
 
 	// Create second monster
-	m2 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
+	m2 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 	if m2.UniqueId() == firstId {
 		t.Fatalf("Expected second monster to have different ID from first")
 	}
@@ -334,13 +334,13 @@ func TestIdRecyclingAfterRemoval(t *testing.T) {
 	}
 
 	// Create third monster - should NOT reuse firstId; counter must advance.
-	m3 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
+	m3 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 	if m3.UniqueId() == firstId || m3.UniqueId() == m2.UniqueId() {
 		t.Fatalf("Expected fresh monster ID, got recycled %d (firstId=%d, m2=%d)", m3.UniqueId(), firstId, m2.UniqueId())
 	}
 
 	// Create fourth monster - should get another fresh ID.
-	m4 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
+	m4 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 	if m4.UniqueId() == firstId || m4.UniqueId() == m2.UniqueId() || m4.UniqueId() == m3.UniqueId() {
 		t.Fatalf("Expected fourth monster to have a new unique ID")
 	}
@@ -365,9 +365,9 @@ func TestIdRecyclingLIFOOrder(t *testing.T) {
 	mp := uint32(50)
 
 	// Create 3 monsters
-	m1 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
-	m2 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
-	m3 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
+	m1 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
+	m2 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
+	m3 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 
 	// Remove in order: m1, m2, m3. While the counter is still fresh, released
 	// oids must stay out of circulation so the client never sees two objects
@@ -383,7 +383,7 @@ func TestIdRecyclingLIFOOrder(t *testing.T) {
 	}
 
 	for i := 0; i < 3; i++ {
-		n := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
+		n := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 		if _, reused := removed[n.UniqueId()]; reused {
 			t.Fatalf("Expected fresh monster id, got recycled %d", n.UniqueId())
 		}
@@ -420,7 +420,7 @@ func TestConcurrentMonsterCreation(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < monstersPerGoroutine; j++ {
-				m := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
+				m := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 				idChan <- m.UniqueId()
 			}
 		}()
@@ -451,7 +451,7 @@ func TestCreateMoveDamageKill(t *testing.T) {
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
 	if m.Hp() != 100 || m.Mp() != 50 {
 		t.Fatalf("Expected HP=100 MP=50, got HP=%d MP=%d", m.Hp(), m.Mp())
 	}
@@ -506,7 +506,7 @@ func TestConcurrentDamage(t *testing.T) {
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 10000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 10000, 50, "", "")
 
 	numAttackers := 10
 	hitsPerAttacker := 50
@@ -546,7 +546,7 @@ func TestStatusEffectLifecycle(t *testing.T) {
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 
 	// Apply status effect
 	effect := NewStatusEffect(SourceTypePlayerSkill, 100, 2111003, 20,
@@ -585,7 +585,7 @@ func TestStatusEffectVenomStacking(t *testing.T) {
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 
 	// Apply 4 VENOM effects - should cap at 3 (removing oldest)
 	for i := 0; i < 4; i++ {
@@ -610,7 +610,7 @@ func TestDeductMp(t *testing.T) {
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
 
 	// Deduct 20 MP
 	updated, err := r.DeductMp(ten, m.UniqueId(), 20)
@@ -638,7 +638,7 @@ func TestCancelAllStatusEffects(t *testing.T) {
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 
 	// Apply two different effects
 	e1 := NewStatusEffect(SourceTypePlayerSkill, 100, 2111003, 20,
@@ -867,7 +867,7 @@ func TestConcurrentCreateAndRemove(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < iterations; j++ {
-				m := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
+				m := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp, "", "")
 				r.RemoveMonster(ctx, ten, m.UniqueId())
 			}
 		}()
@@ -892,7 +892,7 @@ func TestLoadMonsterWithCjsonEmptyObjectArrays(t *testing.T) {
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
-	m := r.CreateMonster(ctx, ten, f, 9300018, 10, 20, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 10, 20, 0, 5, 0, 100, 50, "", "")
 
 	corrupted := `{"uniqueId":` + strconv.FormatUint(uint64(m.UniqueId()), 10) +
 		`,"tenantId":"` + ten.Id().String() + `","tenantRegion":"GMS"` +
@@ -936,7 +936,7 @@ func TestControllerHasAggroRoundTrip(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
 	if m.ControllerHasAggro() {
 		t.Fatal("freshly spawned monster should default ControllerHasAggro=false")
 	}
@@ -983,7 +983,7 @@ func TestApplyDamageWasFirstHit(t *testing.T) {
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
 	// (a) No controller -> WasFirstHit is always false.
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	now := int64(1_000_000)
 	s, err := r.ApplyDamage(ten, 1, 10, m.UniqueId(), now)
 	if err != nil {
@@ -994,7 +994,7 @@ func TestApplyDamageWasFirstHit(t *testing.T) {
 	}
 
 	// (b) With controller -> first hit flips aggro and reports true.
-	m2 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m2 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 	if _, err := r.ControlMonster(ten, m2.UniqueId(), 42); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
 	}
@@ -1028,7 +1028,7 @@ func TestApplyDamageAggregatesByCharacterId(t *testing.T) {
 	ctx := testContext(ten)
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 
 	if _, err := r.ApplyDamage(ten, 1, 10, m.UniqueId(), 100); err != nil {
 		t.Fatalf("ApplyDamage 1: %v", err)
@@ -1061,7 +1061,7 @@ func TestDecayDamageEntriesIdleEntriesDecay(t *testing.T) {
 	ctx := testContext(ten)
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 
 	// Two entries: one idle (lastHitMs=0), one fresh (lastHitMs=now).
 	now := int64(20_000)
@@ -1101,7 +1101,7 @@ func TestDecayDamageEntriesPrunesBelowFloor(t *testing.T) {
 	ctx := testContext(ten)
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 
 	if _, err := r.ApplyDamage(ten, 1, 100, m.UniqueId(), 0); err != nil {
 		t.Fatalf("ApplyDamage: %v", err)
@@ -1143,7 +1143,7 @@ func TestDecayDamageEntriesFlipsAggroOffKeepingController(t *testing.T) {
 	ctx := testContext(ten)
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 
 	if _, err := r.ControlMonster(ten, m.UniqueId(), 42); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
@@ -1180,7 +1180,7 @@ func TestDecayDamageEntriesNoFlipWhenAggroAlreadyOff(t *testing.T) {
 	ctx := testContext(ten)
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 
 	// No controller set -> ApplyDamage cannot flip aggro on.
 	if _, err := r.ApplyDamage(ten, 1, 1, m.UniqueId(), 0); err != nil {
@@ -1205,7 +1205,7 @@ func TestDecayDamageEntriesLegacyEntryWithoutLastHitMs(t *testing.T) {
 	ctx := testContext(ten)
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 
 	legacy := `{"uniqueId":` + strconv.FormatUint(uint64(m.UniqueId()), 10) +
 		`,"tenantId":"` + ten.Id().String() + `","tenantRegion":"GMS"` +
@@ -1240,7 +1240,7 @@ func TestDecayDamageEntriesNoOpWhenAllFresh(t *testing.T) {
 	ctx := testContext(ten)
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 
 	now := int64(20_000)
 	if _, err := r.ApplyDamage(ten, 1, 100, m.UniqueId(), now); err != nil {
@@ -1265,7 +1265,7 @@ func TestApplyDamageWritesLastDamageTakenMs(t *testing.T) {
 	ctx := testContext(ten)
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
 
 	now := int64(1_700_000_000_000)
 	if _, err := r.ApplyDamage(ten, 1, 10, m.UniqueId(), now); err != nil {
@@ -1287,7 +1287,7 @@ func TestApplyRecovery_AppliesMpUnconditionally(t *testing.T) {
 	ctx := testContext(ten)
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 100)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 100, "", "")
 	if _, err := r.DeductMp(ten, m.UniqueId(), 50); err != nil {
 		t.Fatalf("DeductMp: %v", err)
 	}
@@ -1313,7 +1313,7 @@ func TestApplyRecovery_ClampsAtMax(t *testing.T) {
 	ctx := testContext(ten)
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 100)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 100, "", "")
 	if _, err := r.DeductMp(ten, m.UniqueId(), 5); err != nil {
 		t.Fatalf("DeductMp: %v", err)
 	}
@@ -1333,7 +1333,7 @@ func TestApplyRecovery_HpGatedByIdleWindow(t *testing.T) {
 	ctx := testContext(ten)
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 100)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 100, "", "")
 	if _, err := r.ControlMonster(ten, m.UniqueId(), 99); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
 	}
@@ -1374,7 +1374,7 @@ func TestApplyRecovery_SkipsDeadMob(t *testing.T) {
 	ctx := testContext(ten)
 	r.Clear(ctx)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1, 100)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1, 100, "", "")
 
 	if _, err := r.ApplyDamage(ten, 99, 1, m.UniqueId(), time.Now().UnixMilli()); err != nil {
 		t.Fatalf("ApplyDamage: %v", err)
@@ -1402,7 +1402,7 @@ func TestFromStoredCollapsesLegacyDamageEntries(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
 
 	legacy := `{"uniqueId":` + strconv.FormatUint(uint64(m.UniqueId()), 10) +
 		`,"tenantId":"` + ten.Id().String() + `","tenantRegion":"GMS"` +
@@ -1451,7 +1451,7 @@ func TestClaimMonster_ExactlyOneWinner(t *testing.T) {
 	r.Clear(ctx)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, 9300101, 0, 0, 0, 5, 0, 500, 100)
+	m := r.CreateMonster(ctx, ten, f, 9300101, 0, 0, 0, 5, 0, 500, 100, "", "")
 
 	const racers = 8
 	var wg sync.WaitGroup
@@ -1483,6 +1483,56 @@ func TestClaimMonster_ExactlyOneWinner(t *testing.T) {
 	}
 }
 
+func testTenant(t *testing.T) tenant.Model {
+	t.Helper()
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+	return tm
+}
+
+func TestStoredMonsterRoundTripsSpawnSource(t *testing.T) {
+	tm := testTenant(t)
+	f := field.NewBuilder(1, 4, 200090010).Build()
+	m := NewMonster(f, 7, 8150000, 10, 20, 30, 5, 0, 100, 0, "EVENT", "occ-1")
+
+	_, back, err := fromStored(toStored(tm, m))
+	if err != nil {
+		t.Fatalf("fromStored: %v", err)
+	}
+	if back.SpawnSourceType() != "EVENT" || back.SpawnSourceId() != "occ-1" {
+		t.Fatalf("provenance lost: type=%q id=%q", back.SpawnSourceType(), back.SpawnSourceId())
+	}
+}
+
+// An old Redis payload has neither field. It must unmarshal to empty strings —
+// normalization to CYCLIC happens at the consumer boundary (Task 2), not here,
+// so the storage layer stays free of the enum.
+func TestStoredMonsterTolueratesLegacyPayload(t *testing.T) {
+	tm := testTenant(t)
+	f := field.NewBuilder(1, 4, 200090010).Build()
+	m := NewMonster(f, 7, 8150000, 10, 20, 30, 5, 0, 100, 0, "", "")
+
+	_, back, err := fromStored(toStored(tm, m))
+	if err != nil {
+		t.Fatalf("fromStored: %v", err)
+	}
+	if back.SpawnSourceType() != "" || back.SpawnSourceId() != "" {
+		t.Fatalf("expected empty provenance, got type=%q id=%q", back.SpawnSourceType(), back.SpawnSourceId())
+	}
+}
+
+func TestCloneCarriesSpawnSource(t *testing.T) {
+	f := field.NewBuilder(1, 4, 200090010).Build()
+	m := NewMonster(f, 7, 8150000, 10, 20, 30, 5, 0, 100, 0, "EVENT", "occ-1")
+
+	c := Clone(m).SetX(99).Build()
+	if c.SpawnSourceType() != "EVENT" || c.SpawnSourceId() != "occ-1" {
+		t.Fatalf("Clone dropped provenance: type=%q id=%q", c.SpawnSourceType(), c.SpawnSourceId())
+	}
+}
+
 // TestMonsterRegistryIsTenantScoped asserts the "monster" namespace's Redis
 // key carries the tenant, not just the stored payload: two tenants' id
 // allocators both hand out the same first uniqueId in a fresh field, so a
@@ -1496,7 +1546,7 @@ func TestMonsterRegistryIsTenantScoped(t *testing.T) {
 	t2, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
-	m1 := r.CreateMonster(ctx, t1, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	m1 := r.CreateMonster(ctx, t1, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
 
 	if _, err := r.GetMonster(t2, m1.UniqueId()); err == nil {
 		t.Fatalf("tenant 2 resolved tenant 1's monster [%d] — key is not tenant-scoped", m1.UniqueId())
@@ -1515,7 +1565,7 @@ func TestMonsterMapIndexIsTenantScoped(t *testing.T) {
 	t2, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 
-	r.CreateMonster(ctx, t1, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	r.CreateMonster(ctx, t1, f, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")
 
 	got := r.GetMonstersInMap(t2, f)
 	if len(got) != 0 {

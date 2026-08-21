@@ -1,0 +1,9 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-18T11:25:19Z	agent	bug-no-event-definition-seed-control	atlas-implementer	sonnet	-	-	-	-	DONE	03e870091	-	-	-	-
+2026-08-18T12:06:54Z	agent	bug-event-definition-seed-yields-zero	atlas-implementer	sonnet	-	-	-	-	DONE	c5e8b8bbe	-	-	-	-
+2026-08-18T12:06:54Z	agent	bug-event-definition-seed-yields-zero	atlas-reviewer	sonnet	-	-	-	-	DONE	c5e8b8bbe	APPROVED	no	-	-
+2026-08-18T14:33:31Z	agent	bug-consumable-error-type	atlas-implementer	sonnet	-	-	-	-	DONE	f1d8bb567	-	-	-	-
+2026-08-18T15:17:01Z	agent	bug-voyage-arrived-identity-mismatch	atlas-implementer	sonnet	-	-	-	-	DONE	aeb23694b	-	-	-	-
+2026-08-18T15:17:02Z	agent	bug-voyage-arrived-identity-mismatch	atlas-reviewer	sonnet	-	-	-	-	DONE	aeb23694b	APPROVED	no	-	-
+2026-08-18T19:37:34Z	agent	bug-arrival-side-effects-skipped	atlas-implementer	sonnet	-	-	-	-	DONE	77b87db91	-	-	-	-
+2026-08-18T19:37:34Z	agent	bug-arrival-side-effects-skipped	atlas-reviewer	sonnet	-	-	-	-	DONE	77b87db91	APPROVED	no	-	-

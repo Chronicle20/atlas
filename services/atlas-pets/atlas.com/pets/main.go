@@ -13,7 +13,6 @@ import (
 	"time"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	outboxlib "github.com/Chronicle20/atlas/libs/atlas-outbox"
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
 
@@ -107,14 +106,15 @@ func main() {
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
 		// pet/task.go sits outside env-domain-guard's permitted atlas-env
-		// import list (main.go, kafka/, rest/, socket/), so this pod's
-		// environment identity is threaded in as a plain function value
-		// rather than the package importing atlas-env itself. Without it,
-		// HungerTask's per-owner hunger Kafka events would carry an empty
-		// environment header and fail decide() open per FR-1.8.
-		tasks.Register(l, rt.Context())(pet.NewHungerTask(l, db, time.Minute*time.Duration(3), func(ctx context.Context) context.Context {
-			return env.WithContext(ctx, env.Self())
-		}))
+		// import list (main.go, kafka/, rest/, socket/), so the environment
+		// that owns each owner's tenant (falling back to this pod's own,
+		// env.Self(), when the tenant is unknown) is threaded in as a plain
+		// function value rather than the package importing atlas-env
+		// itself. Without it, HungerTask's per-owner hunger Kafka events
+		// would carry an empty or wrong environment header and either fail
+		// decide() open per FR-1.8 or be dropped by every consumer's
+		// ownership gate per FR-7.7.
+		tasks.Register(l, rt.Context())(pet.NewHungerTask(l, db, time.Minute*time.Duration(3), service.TenantEnvironment))
 	})
 
 	rt.Wait()

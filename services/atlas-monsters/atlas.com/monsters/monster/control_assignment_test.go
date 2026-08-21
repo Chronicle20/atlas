@@ -49,7 +49,7 @@ func TestFindNextController_EnteringPlayerEmitsStartControl(t *testing.T) {
 	r.Clear(ctx)
 
 	const enter = uint32(7)
-	r.CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	r.CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	mons := r.GetMonstersInMap(tm, testField())
 	if len(mons) != 1 {
 		t.Fatalf("expected 1 monster; got %d", len(mons))
@@ -86,7 +86,7 @@ func TestFindNextController_AlreadyPresentPlayerEmitsStartControl(t *testing.T) 
 	r.Clear(ctx)
 
 	const existing = uint32(9)
-	r.CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	r.CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	mons := r.GetMonstersInMap(tm, testField())
 	if len(mons) != 1 {
 		t.Fatalf("expected 1 monster; got %d", len(mons))
@@ -129,7 +129,7 @@ func TestFindNextController_NoAggroDoesNotRepick(t *testing.T) {
 	r.Clear(ctx)
 
 	const enter = uint32(7)
-	r.CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	r.CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	mons := r.GetMonstersInMap(tm, testField())
 	if len(mons) != 1 {
 		t.Fatalf("expected 1 monster; got %d", len(mons))

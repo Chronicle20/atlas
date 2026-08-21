@@ -628,14 +628,17 @@ func (c *Consumer) processMessage(l logrus.FieldLogger, ctx context.Context, msg
 	// offset advances. A drop is not a failure — returning false would
 	// block the prefix-commit cursor and wedge the partition.
 	msgEnv, _ := env.FromContext(wctx)()
-	switch decide(env.CurrentRegistry(), env.Self(), c.service, msgEnv, env.Mismatched(wctx)) {
+	verdict, reason := decide(env.CurrentRegistry(), env.Self(), c.service, msgEnv, env.Mismatched(wctx))
+	switch verdict {
 	case gateDropUnresolvable:
-		gateDroppedUnresolvable.WithLabelValues(c.service, string(msgEnv)).Inc()
-		l.WithField("environment", string(msgEnv)).WithField("topic", msg.Topic).
+		gateDroppedUnresolvable.WithLabelValues(c.service, string(msgEnv), string(reason)).Inc()
+		l.WithField("environment", string(msgEnv)).WithField("topic", msg.Topic).WithField("reason", string(reason)).
 			Error("Dropping message: environment is unresolvable. No deployment will process it.")
 		return true
 	case gateSkipNotOwner:
 		gateSkippedNotOwner.WithLabelValues(c.service, string(msgEnv)).Inc()
+		l.WithField("environment", string(msgEnv)).WithField("topic", msg.Topic).WithField("reason", string(reason)).
+			Debug("Skipping message: this deployment is not the environment owner.")
 		return true
 	}
 	gateProcessed.WithLabelValues(c.service, string(msgEnv)).Inc()

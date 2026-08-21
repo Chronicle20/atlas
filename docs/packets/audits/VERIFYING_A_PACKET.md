@@ -34,9 +34,10 @@ done. If you need a visible STATUS.md flip, pick a single-writer op; for
 campaign work on a family, plan to verify every sibling.
 
 ## 3. Decompile the client side
-- Enumerate live instances (`mcp__ida-pro__list_instances`) and
-  `select_instance` the one whose loaded IDB matches the target version —
-  ports vary by IDA launch order, NEVER hardcode them.
+- Resolve the IDA session with `mcp__ida-pro__idb_list` and match the loaded
+  IDB to the target version **by binary name**, then pass that session id as
+  the `database` argument on every subsequent call. Port-based selection
+  (`select_instance`) is dead — see [`docs/reverse-engineering.md`](../../reverse-engineering.md).
 - Decompile the registry entry's `fname` (batch `decompile`); descend into
   helper reads (address-based descent, same rule as the exporter).
 - Write down the full ordered read/write list including guards and loop bounds.
@@ -156,8 +157,10 @@ the production handler keeps decoding the shared model directly.
   surgically splice ONLY the needed entries into the committed export (absent-only for
   helpers; overwrite the one sender). A committed entry can be a stub (`calls: null`) —
   overwrite it with the harvested real-calls version.
-- **Per-instance export.** The tool connects to ONE IDA instance:
-  `-ida-url http://<host>:<port>/mcp -ida-port <port>` must point at the TARGET version.
+- **Per-IDB export.** The tool harvests ONE IDB: `-ida-url http://<host>:<port>/mcp
+  -ida-database <session id>` must target the IDB for the TARGET version. Get the
+  session id from `mcp__ida-pro__idb_list`; omitting `-ida-database` silently hits
+  whichever IDB the server considers active.
 - **`COutPacket`-delegate harvest artifact.** On some send functions the harvester
   records the `COutPacket` ctor as `{op: Delegate, ref: COutPacket}`; report-gen descent
   then fails ("delegate to COutPacket: not in export") and the report isn't written.
@@ -173,7 +176,7 @@ the production handler keeps decoding the shared model directly.
 - **Naming unnamed senders** across versions: the byte signature
   `6A <op> 8D 8D ?? ?? ?? ?? E8` (push opcode; lea ecx; call COutPacket ctor) uniquely
   locates a send site; structure-match to a named twin in another version. Batch via
-  IDA-harvest subagents, ONE IDB at a time (`select_instance` is shared global state).
+  IDA-harvest subagents, ONE IDB at a time (each agent pins its own `database` session id).
 
 ## Is this cell `n-a`? (proving absence)
 

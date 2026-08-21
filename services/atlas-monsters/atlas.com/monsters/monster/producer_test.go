@@ -14,7 +14,7 @@ import (
 
 func TestStartControlBodyEncodesControllerHasAggro(t *testing.T) {
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := Clone(NewMonster(f, 1, 9300018, 0, 0, 0, 5, 0, 100, 50)).
+	m := Clone(NewMonster(f, 1, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")).
 		SetControlCharacterId(42).
 		SetControllerHasAggro(true).
 		Build()
@@ -46,7 +46,7 @@ func TestStartControlBodyEncodesControllerHasAggro(t *testing.T) {
 func TestAggroChangedBodyEncoding(t *testing.T) {
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).
 		SetInstance(uuid.Nil).Build()
-	m := Clone(NewMonster(f, 5, 9300018, 0, 0, 0, 5, 0, 100, 50)).
+	m := Clone(NewMonster(f, 5, 9300018, 0, 0, 0, 5, 0, 100, 50, "", "")).
 		SetControlCharacterId(7).
 		SetControllerHasAggro(true).
 		Build()

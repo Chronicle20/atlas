@@ -50,7 +50,7 @@ func TestServerListEntryBytesV48(t *testing.T) {
 		0x64, 0x00, // eventDropRate 100    — Decode2 @0x501348
 		0x00,                                                         // blockCharCreation 0  — Decode1 @0x501355
 		0x01,                                                         // channelCount 1       — Decode1 @0x50135d
-		0x0A, 0x00, 'S', 'c', 'a', 'n', 'i', 'a', ' ', '-', ' ', '1', // channel name
+		0x0A, 0x00, 'S', 'c', 'a', 'n', 'i', 'a', ' ', '-', ' ', '2', // channel name (retail 1-based label; channel.Id(1) -> "2")
 		0x64, 0x00, 0x00, 0x00, // capacity 100         — Decode4 @0x5013af
 		0x00, // per-channel worldId  — Decode1 @0x5013bc
 		0x00, // channelId - 1        — Decode1 @0x5013c9

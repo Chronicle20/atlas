@@ -22,15 +22,16 @@ type Timeout struct {
 	envContext func(context.Context) context.Context
 }
 
-// NewHungerTask builds the periodic hunger sweep. envContext originates this
-// pod's own environment identity onto each owner's per-tenant context before
-// EvaluateHungerAndEmit runs -- EvaluateHungerAndEmit emits a real Kafka
-// event, and task sits outside env-domain-guard's permitted atlas-env import
-// list (main.go, kafka/, rest/, socket/), so the caller (main.go) threads
-// this in as a plain function value rather than the package importing
-// atlas-env itself. Without it, the hunger event would carry an empty
-// ENVIRONMENT header and fail decide() open per FR-1.8: every live
-// deployment, not just this pod's, would act on it.
+// NewHungerTask builds the periodic hunger sweep. envContext originates the
+// environment that owns each owner's tenant (falling back to this pod's
+// own, env.Self(), when the tenant is unknown) onto that owner's per-tenant
+// context before EvaluateHungerAndEmit runs -- EvaluateHungerAndEmit emits a
+// real Kafka event, and task sits outside env-domain-guard's permitted
+// atlas-env import list (main.go, kafka/, rest/, socket/), so the caller
+// (main.go) threads this in as a plain function value rather than the
+// package importing atlas-env itself. Without it, the hunger event would
+// carry an empty or wrong ENVIRONMENT header and either fail decide() open
+// per FR-1.8 or be dropped by every consumer's ownership gate per FR-7.7.
 func NewHungerTask(l logrus.FieldLogger, db *gorm.DB, interval time.Duration, envContext func(context.Context) context.Context) *Timeout {
 	l.Infof("Initializing %s task to run every %dms", HungerTask, interval.Milliseconds())
 	return &Timeout{l: l, db: db, interval: interval, envContext: envContext}
@@ -54,8 +55,8 @@ func (t *Timeout) Run() {
 }
 
 // ownerTenantContext builds the per-owner context EvaluateHungerAndEmit runs
-// under: the owner's tenant, then envContext to originate this pod's own
-// environment identity on top. Extracted so the origination itself is
+// under: the owner's tenant, then envContext to originate the environment
+// that owns that tenant on top. Extracted so the origination itself is
 // directly testable without standing up a DB or the registry Run's other
 // callers require.
 func (t *Timeout) ownerTenantContext(sctx context.Context, tn tenant.Model) context.Context {

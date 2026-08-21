@@ -2,6 +2,12 @@
 
 setup() {
     PROJECT_ROOT="$(cd "$BATS_TEST_DIRNAME/.." && pwd)"
+    # lib.sh first, mirroring bootstrap.sh's own order: service-config.sh
+    # calls log() but does not source it, so without this the error paths
+    # below die with "log: command not found" (127) instead of emitting the
+    # message they are asserting.
+    # shellcheck source=../scripts/lib.sh
+    . "$PROJECT_ROOT/scripts/lib.sh"
     # shellcheck source=../scripts/service-config.sh
     . "$PROJECT_ROOT/scripts/service-config.sh"
     export TENANT_ID="11111111-1111-1111-1111-111111111111"
@@ -77,14 +83,14 @@ setup() {
     export LB_IP=192.168.23.211
     export ATLAS_ENVIRONMENT="pr-999"
 
-    run build_service_config login "$CANONICAL/login-service.json"
+    run build_service_config login "$CANONICAL/login-service.json" e7ae96a2-c484-5617-8e28-2178b60a8378
     [ "$status" -eq 0 ]
 
-    # A fresh id, NOT the canonical pinned one.
-    pinned=$(jq -r '.data.id' "$CANONICAL/login-service.json")
+    # The id is exactly the one supplied by the caller — not the canonical
+    # pinned one, and not minted here (D2: derive-service-id.sh is the single
+    # derivation site).
     got=$(echo "$output" | jq -r '.data.id')
-    [ "$got" != "$pinned" ]
-    [ "$got" != "null" ]
+    [ "$got" = "e7ae96a2-c484-5617-8e28-2178b60a8378" ]
 
     # Exactly this environment's one tenant — never a merge of main's list.
     [ "$(echo "$output" | jq '.data.attributes.tenants | length')" -eq 1 ]
@@ -92,6 +98,22 @@ setup() {
 
     # The environment is stamped so teardown and write-authorisation can scope it.
     [ "$(echo "$output" | jq -r '.data.attributes.environment')" = "$ATLAS_ENVIRONMENT" ]
+}
+
+@test "build_service_config: sparse fails loudly when no id is supplied" {
+    export ATLAS_MODE=sparse
+    export ATLAS_ENVIRONMENT="pr-999"
+    run build_service_config login "$CANONICAL/login-service.json"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"requires a service id"* ]]
+}
+
+@test "build_service_config: sparse rejects a malformed id" {
+    export ATLAS_MODE=sparse
+    export ATLAS_ENVIRONMENT="pr-999"
+    run build_service_config login "$CANONICAL/login-service.json" not-a-uuid
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"requires a service id"* ]]
 }
 
 @test "isolated mode still merges into the pinned row" {

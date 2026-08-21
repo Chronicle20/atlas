@@ -2549,98 +2549,192 @@
       ]
     },
     "CField::OnWhisper#Error": {
-      "address": "",
+      "address": "0x53e2a0",
       "direction": "clientbound",
-      "notes": "dispatcher-family arm not harvested for gms_v92 (task-27 scope): synthetic 'Parent::Method#ARM' key \u2014 never resolves via IDA name lookup in any version (the '#'-suffix is a packet-audit tool convention, not an IDB symbol), and v95's per-arm address/read-order is version-specific, so it cannot be carried across. Producing this requires a per-arm decompile pass against the v92 IDB (dispatcher-family-implementer/family-auditor scope). See docs/packets/registry/discover_gms_v92.md \u00a7 Export run record (task-27).",
-      "unresolved": true,
+      "note": "mode=0x22 (ERROR). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "dispatcher-family arm not harvested for gms_v92 (see notes)"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "whispersEnabled"
         }
       ]
     },
     "CField::OnWhisper#FindResultCashShop": {
-      "address": "",
+      "address": "0x53e2a0",
       "direction": "clientbound",
-      "notes": "dispatcher-family arm not harvested for gms_v92 (task-27 scope): synthetic 'Parent::Method#ARM' key \u2014 never resolves via IDA name lookup in any version (the '#'-suffix is a packet-audit tool convention, not an IDB symbol), and v95's per-arm address/read-order is version-specific, so it cannot be carried across. Producing this requires a per-arm decompile pass against the v92 IDB (dispatcher-family-implementer/family-auditor scope). See docs/packets/registry/discover_gms_v92.md \u00a7 Export run record (task-27).",
-      "unresolved": true,
+      "note": "mode=0x09/0x48 sub=2 (FIND in cash shop). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "dispatcher-family arm not harvested for gms_v92 (see notes)"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=2)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "-1"
         }
       ]
     },
     "CField::OnWhisper#FindResultChannel": {
-      "address": "",
+      "address": "0x53e2a0",
       "direction": "clientbound",
-      "notes": "dispatcher-family arm not harvested for gms_v92 (task-27 scope): synthetic 'Parent::Method#ARM' key \u2014 never resolves via IDA name lookup in any version (the '#'-suffix is a packet-audit tool convention, not an IDB symbol), and v95's per-arm address/read-order is version-specific, so it cannot be carried across. Producing this requires a per-arm decompile pass against the v92 IDB (dispatcher-family-implementer/family-auditor scope). See docs/packets/registry/discover_gms_v92.md \u00a7 Export run record (task-27).",
-      "unresolved": true,
+      "note": "mode=0x09/0x48 sub=3 (FIND on channel). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "dispatcher-family arm not harvested for gms_v92 (see notes)"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=3)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "channel"
         }
       ]
     },
     "CField::OnWhisper#FindResultError": {
-      "address": "",
+      "address": "0x53e2a0",
       "direction": "clientbound",
-      "notes": "dispatcher-family arm not harvested for gms_v92 (task-27 scope): synthetic 'Parent::Method#ARM' key \u2014 never resolves via IDA name lookup in any version (the '#'-suffix is a packet-audit tool convention, not an IDB symbol), and v95's per-arm address/read-order is version-specific, so it cannot be carried across. Producing this requires a per-arm decompile pass against the v92 IDB (dispatcher-family-implementer/family-auditor scope). See docs/packets/registry/discover_gms_v92.md \u00a7 Export run record (task-27).",
-      "unresolved": true,
+      "note": "mode=0x09/0x48 sub=0/else (FIND not found). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "dispatcher-family arm not harvested for gms_v92 (see notes)"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "0"
         }
       ]
     },
     "CField::OnWhisper#FindResultMap": {
-      "address": "",
+      "address": "0x53e2a0",
       "direction": "clientbound",
-      "notes": "dispatcher-family arm not harvested for gms_v92 (task-27 scope): synthetic 'Parent::Method#ARM' key \u2014 never resolves via IDA name lookup in any version (the '#'-suffix is a packet-audit tool convention, not an IDB symbol), and v95's per-arm address/read-order is version-specific, so it cannot be carried across. Producing this requires a per-arm decompile pass against the v92 IDB (dispatcher-family-implementer/family-auditor scope). See docs/packets/registry/discover_gms_v92.md \u00a7 Export run record (task-27).",
-      "unresolved": true,
+      "note": "mode=0x09/0x48 sub=1 (FIND on map). x/y are Decode4 (int32) only when the mode is ODD (0x09): CField::OnWhisper @0x53e2a0 gates the even arm on `if ((v4 & 1) == 0)` and returns via LABEL_121 without a further decode; the odd arm's `case 1:` reads v36=Decode4(x), v67=Decode4(y). Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "dispatcher-family arm not harvested for gms_v92 (see notes)"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "findMode (=1)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mapId"
+        },
+        {
+          "op": "Decode4",
+          "comment": "x (mode 0x09 only)",
+          "guard": "mode == 0x09"
+        },
+        {
+          "op": "Decode4",
+          "comment": "y (mode 0x09 only)",
+          "guard": "mode == 0x09"
         }
       ]
     },
     "CField::OnWhisper#Receive": {
-      "address": "",
+      "address": "0x53e2a0",
       "direction": "clientbound",
-      "notes": "dispatcher-family arm not harvested for gms_v92 (task-27 scope): synthetic 'Parent::Method#ARM' key \u2014 never resolves via IDA name lookup in any version (the '#'-suffix is a packet-audit tool convention, not an IDB symbol), and v95's per-arm address/read-order is version-specific, so it cannot be carried across. Producing this requires a per-arm decompile pass against the v92 IDB (dispatcher-family-implementer/family-auditor scope). See docs/packets/registry/discover_gms_v92.md \u00a7 Export run record (task-27).",
-      "unresolved": true,
+      "note": "mode=0x12 (RECEIVE). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "dispatcher-family arm not harvested for gms_v92 (see notes)"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "from"
+        },
+        {
+          "op": "Decode1",
+          "comment": "channel"
+        },
+        {
+          "op": "Decode1",
+          "comment": "gm"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "msg"
         }
       ]
     },
     "CField::OnWhisper#SendResult": {
-      "address": "",
+      "address": "0x53e2a0",
       "direction": "clientbound",
-      "notes": "dispatcher-family arm not harvested for gms_v92 (task-27 scope): synthetic 'Parent::Method#ARM' key \u2014 never resolves via IDA name lookup in any version (the '#'-suffix is a packet-audit tool convention, not an IDB symbol), and v95's per-arm address/read-order is version-specific, so it cannot be carried across. Producing this requires a per-arm decompile pass against the v92 IDB (dispatcher-family-implementer/family-auditor scope). See docs/packets/registry/discover_gms_v92.md \u00a7 Export run record (task-27).",
-      "unresolved": true,
+      "note": "mode=0x0A/0x8A (SEND_RESULT). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "dispatcher-family arm not harvested for gms_v92 (see notes)"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "target"
+        },
+        {
+          "op": "Decode1",
+          "comment": "result"
         }
       ]
     },
     "CField::OnWhisper#Weather": {
-      "address": "",
+      "address": "0x53e2a0",
       "direction": "clientbound",
-      "notes": "dispatcher-family arm not harvested for gms_v92 (task-27 scope): synthetic 'Parent::Method#ARM' key \u2014 never resolves via IDA name lookup in any version (the '#'-suffix is a packet-audit tool convention, not an IDB symbol), and v95's per-arm address/read-order is version-specific, so it cannot be carried across. Producing this requires a per-arm decompile pass against the v92 IDB (dispatcher-family-implementer/family-auditor scope). See docs/packets/registry/discover_gms_v92.md \u00a7 Export run record (task-27).",
-      "unresolved": true,
+      "note": "mode=0x92 (WEATHER). CField::OnWhisper @0x53e2a0. Wire version-invariant v83=v92=v95. Derived task-238.",
       "calls": [
         {
-          "op": "Unresolved",
-          "comment": "dispatcher-family arm not harvested for gms_v92 (see notes)"
+          "op": "Decode1",
+          "comment": "mode"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "from"
+        },
+        {
+          "op": "Decode1",
+          "comment": "flag (always true)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "msg"
         }
       ]
     },

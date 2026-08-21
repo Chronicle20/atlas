@@ -1,0 +1,52 @@
+{
+  "service": "atlas-pr-bootstrap",
+  "path": "services/atlas-pr-bootstrap",
+  "date": "2026-08-19",
+  "build": "n-a",
+  "testsPassed": 34,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "atlas-pr-bootstrap/scripts",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-22", "name": "New libs/atlas-* wired into Dockerfile/go.work", "status": "n-a", "evidence": "No libs/ module added in this diff"},
+        {"id": "DOM-23", "name": "Kafka topic env var naming/configmap/overlay parity", "status": "n-a", "evidence": "No COMMAND_TOPIC_*/EVENT_TOPIC_* var added or renamed; ATLAS_ENVIRONMENT is not a topic var"},
+        {"id": "SEC-04", "name": "No hardcoded secrets", "status": "pass", "evidence": "grep of full diff for password/secret/token/apikey found only a pre-existing comment (cleanup.sh:29) and an unrelated filename reference (docs runbook:234); no literal credential"},
+        {"id": "shell-safety", "name": "Quoting / set -uo pipefail interaction / injection (foundational, no rule ID)", "status": "pass", "evidence": "bootstrap.sh:14,21 restore set -e after lib.sh relaxes it; bootstrap.sh:41-44,76,92 use ENV_HEADER as an array to avoid word-splitting; bootstrap.sh:135-138 validates TENANT_ID as UUID before header use; env-record.sh:38-54 builds JSON via jq --arg/--argjson, no string interpolation into JSON"},
+        {"id": "multi-tenancy", "name": "Tenant lookup does not cross environment boundaries (foundational, no rule ID)", "status": "pass", "evidence": "bootstrap.sh:74-81,87-101 send ENV_HEADER on GET/POST /api/tenants; services/atlas-tenants/atlas.com/tenants/tenant/provider.go:19-33 enforces scope.Strict(db, env.MustFromContext(ctx)) server-side; tenant/entity.go:16 Environment column is server-owned; isolated mode's ENV_HEADER is empty (bootstrap.sh:56-61), confirmed by passing bats tests"},
+        {"id": "idempotent-patch", "name": "env_record_patch sends all five attributes; record_environment_tenant preserves current phase", "status": "pass", "evidence": "env-record.sh:38-54; bootstrap.sh:114-126; bats tests 'carries baseline, namespace and overrides through unchanged' and 'carries the record's current phase' pass"}
+      ]
+    },
+    {
+      "name": "tools/overlay-env-guard.sh",
+      "type": "support",
+      "checks": [
+        {"id": "script-verified", "name": "Guard renders and asserts on all three overlays; wired into verify.sh", "status": "pass", "evidence": "bash tools/overlay-env-guard.sh exit 0 (19 PASS, 1 documented SKIP, 0 FAIL); tools/verify.sh:551-559 adds it to the deploy-touched gate"},
+        {"id": "guard-assertion-9", "name": "check_ingress_default_env ATLAS_ENVIRONMENT_DEFAULT substring match", "status": "warn", "evidence": "tools/overlay-env-guard.sh:107-110 contains() is grep -qF substring; assertion 9 (lines 204-209) checks three substrings independently, not as one anchored block"},
+        {"id": "guard-assertion-10", "name": "NGINX_ENVSUBST_FILTER full-literal pin", "status": "warn", "evidence": "tools/overlay-env-guard.sh:212 pins the entire filter value as one literal string — brittle but not a false-pass risk today"}
+      ]
+    },
+    {
+      "name": "services/atlas-pr-bootstrap/scripts/bootstrap.sh (prior-reviewer findings, confirmed/refuted)",
+      "type": "support",
+      "checks": [
+        {"id": "prior-1", "name": "POST uses -d @\"$CANONICAL_TENANT_JSON\" rather than a hardcoded path", "status": "n-a", "evidence": "bootstrap.sh:35 declares CANONICAL_TENANT_JSON with a documented default and test seam — this is the intended pattern, not a defect; refuted as a finding"},
+        {"id": "prior-2", "name": "env_record_patch's exit code flattened by || exit 1", "status": "warn", "evidence": "bootstrap.sh:362; comment at 356-360 states this is deliberate belt-and-braces; non-blocking"},
+        {"id": "prior-3", "name": "env_record_test.bats CURL_ARGS write changed from truncate to append", "status": "pass", "evidence": "env_record_test.bats:51 >>\"$CURL_ARGS\"; comment lines 46-49 explains two-call visibility need; fresh BATS_TEST_TMPDIR per test prevents cross-test leakage; not a defect"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "atlas-configurations environments administrator.go/processor.go PATCH-zeroing/backfill behavior: not read, not in this diff's changed-file set",
+    "libs/atlas-env registry.go MapRegistry.EnvironmentsOwnedBy/IsOwner exact behavior: not read, not in this diff's changed-file set",
+    "Live-cluster runtime behavior of the new atlas-environment-record Job and env-default.conf.template nginx map block: verified only by static read and overlay-env-guard.sh's rendered-YAML assertions, not a live kubectl apply"
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "guard-assertion-9: tools/overlay-env-guard.sh:204-209 — three independent substring checks, not anchored to one block",
+    "guard-assertion-10: tools/overlay-env-guard.sh:212 — full-literal NGINX_ENVSUBST_FILTER pin is brittle",
+    "prior-2: bootstrap.sh:362 — env_record_patch's real exit code is flattened by || exit 1 (intentional, documented)"
+  ]
+}

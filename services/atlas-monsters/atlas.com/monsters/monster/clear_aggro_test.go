@@ -13,7 +13,7 @@ import (
 func newAggroedMonster(t *testing.T, ctx context.Context, tm tenant.Model, controllerId uint32, attackers []uint32) uint32 {
 	t.Helper()
 	r := GetMonsterRegistry()
-	r.CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100000, 50)
+	r.CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100000, 50, "", "")
 	mons := r.GetMonstersInMap(tm, testField())
 	if len(mons) != 1 {
 		t.Fatalf("expected 1 monster; got %d", len(mons))

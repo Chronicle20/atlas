@@ -16,6 +16,21 @@ const (
 	gateDropUnresolvable
 )
 
+// gateReason names WHICH arm of decide produced the verdict. Three drop
+// arms previously emitted identical log text and shared one unlabelled
+// counter; telling them apart cost several hours of task-243's diagnosis
+// (FR-3.3).
+type gateReason string
+
+const (
+	reasonMismatched gateReason = "mismatched" // FR-7.7
+	reasonStale      gateReason = "stale"      // registry staleness, design §4.3
+	reasonNotActive  gateReason = "not_active" // FR-4.7 / D4
+	reasonNotOwner   gateReason = "not_owner"  // FR-4.4
+	reasonOwner      gateReason = "owner"
+	reasonLegacy     gateReason = "legacy" // FR-1.8
+)
+
 var (
 	gateProcessed = promauto.NewCounterVec(
 		prometheus.CounterOpts{
@@ -38,7 +53,7 @@ var (
 			Name: "atlas_kafka_gate_dropped_unresolvable_total",
 			Help: "Messages acknowledged and dropped because their environment could not be resolved to any owning deployment (FR-4.7, D4).",
 		},
-		[]string{"service", "environment"},
+		[]string{"service", "environment", "reason"},
 	)
 )
 
@@ -49,23 +64,23 @@ var (
 // the ENVIRONMENT header and the tenant it names (FR-7.7); the message is
 // unresolvable and must be dropped rather than executed under either
 // candidate environment.
-func decide(r env.Registry, self env.Id, service string, msgEnv env.Id, mismatched bool) gateVerdict {
+func decide(r env.Registry, self env.Id, service string, msgEnv env.Id, mismatched bool) (gateVerdict, gateReason) {
 	if mismatched {
-		return gateDropUnresolvable // FR-7.7
+		return gateDropUnresolvable, reasonMismatched // FR-7.7
 	}
 	if msgEnv == "" {
-		return gateProcess // FR-1.8
+		return gateProcess, reasonLegacy // FR-1.8
 	}
 	if r.Stale() && msgEnv != self {
 		// A pod's own environment comes from an env var and cannot go
 		// stale; every other environment fails closed (design §4.3).
-		return gateDropUnresolvable
+		return gateDropUnresolvable, reasonStale
 	}
 	if !r.IsActive(msgEnv) {
-		return gateDropUnresolvable // FR-4.7 / D4
+		return gateDropUnresolvable, reasonNotActive // FR-4.7 / D4
 	}
 	if !r.IsOwner(msgEnv, service) {
-		return gateSkipNotOwner // FR-4.4
+		return gateSkipNotOwner, reasonNotOwner // FR-4.4
 	}
-	return gateProcess
+	return gateProcess, reasonOwner
 }

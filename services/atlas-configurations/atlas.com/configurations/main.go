@@ -5,6 +5,7 @@ import (
 	"atlas-configurations/environments"
 	"atlas-configurations/seeder"
 	"atlas-configurations/services"
+	"atlas-configurations/servicesuniq"
 	"atlas-configurations/templates"
 	"atlas-configurations/tenants"
 	"context"
@@ -48,7 +49,8 @@ func main() {
 	db := database.Connect(l, database.SetMigrations(
 		templates.Migration, tenants.Migration, services.Migration, outboxlib.Migration,
 		environments.Migration,
-		environmentcol.Migration, // must run last: it backfills the columns the three above create
+		environmentcol.Migration, // backfills the columns the three above create
+		servicesuniq.Migration,   // must run last: it depends on environmentcol's backfilled column
 	))
 
 	server.RegisterTransientErrorClassifier(func(err error) bool {

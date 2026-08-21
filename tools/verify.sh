@@ -262,6 +262,27 @@ fi
 #
 # `go build` against the workspace go.work does NOT catch a missing
 # `COPY libs/...` in the shared root Dockerfile. Only the bake does.
+#
+# This bake is a BUILD CHECK, not an image build: nothing downstream in this
+# script consumes its output. It is therefore run with output=cacheonly, so it
+# never writes to the docker image store.
+#
+# That matters because the store is machine-global while worktrees are not.
+# docker-bake.hcl tags targets `<svc>:${ATLAS_IMAGE_TAG}` (default `local`),
+# the same tag deploy/compose/docker-compose.*.yml runs — so a verify.sh in one
+# worktree used to silently replace the `<svc>:local` image built from another
+# tree's code, and two trees verifying the same service raced for the tag.
+# cacheonly removes the write entirely rather than renaming it: the collision
+# is gone and the images stop accumulating. The buildkit solve cache is still
+# populated, so a later real build reuses this one's work — measured on
+# atlas-ban with a source edit: the cacheonly run compiled it (27 CACHED
+# steps), the normal bake that followed reported the go-build step itself
+# CACHED (64 CACHED steps).
+#
+# A broken build still FAILS under cacheonly (every stage runs; only the export
+# is dropped) — verified against both a bad COPY path and a Go type error.
+# To actually PRODUCE runnable `<svc>:local` images, use tools/build-services.sh.
+BAKE_OUTPUT='*.output=type=cacheonly'
 
 bake_targets() {
     # services whose go.mod (or the shared Dockerfile / bake file) changed
@@ -313,7 +334,7 @@ else
         skip "docker buildx bake (no go.mod touched)"
     else
         for t in "${TARGETS[@]}"; do
-            step "docker buildx bake $t" docker buildx bake "$t"
+            step "docker buildx bake $t" docker buildx bake --set "$BAKE_OUTPUT" "$t"
         done
     fi
 fi
@@ -488,6 +509,28 @@ else
     skip "tools test suites (no tools/ script changed)"
 fi
 
+# atlas-pr-bootstrap's shell is the PR environment's whole control plane —
+# bootstrap.sh, cleanup.sh and their helpers create and reclaim every
+# ephemeral env. It ships a substantial bats suite, but nothing ran it: the
+# tools/ gate above only reaches tools/, only matches *_test.sh (these are
+# *.bats), and `bats` appears nowhere in .github/workflows. So the suite was
+# advisory, and the sparse SERVICE_ID defect (empty uuidgen output silently
+# becoming an empty env var, crash-looping atlas-channel/atlas-login) shipped
+# past a test file that could have expressed it. Gate it like any other suite.
+if touched '^services/atlas-pr-bootstrap/'; then
+    if command -v bats >/dev/null 2>&1; then
+        step "atlas-pr-bootstrap bats suite" bats services/atlas-pr-bootstrap/test
+    else
+        # Deliberately a hard failure, not a skip. A silent skip is how this
+        # suite went unrun in the first place; `bats` is already part of the
+        # toolchain tools/task-facts.sh probes for.
+        step "atlas-pr-bootstrap bats suite" \
+            sh -c 'echo "bats is not installed — install it to verify services/atlas-pr-bootstrap (see tools/task-facts.sh toolchain probe)" >&2; exit 1'
+    fi
+else
+    skip "atlas-pr-bootstrap bats suite (service unchanged)"
+fi
+
 # The PreToolUse/PostToolUse hooks are shell too, and they gate every tool call
 # in every session — a broken one is not a lint problem, it is a workflow
 # outage. Their suites live beside them rather than under tools/, so the
@@ -508,12 +551,13 @@ else
     skip "hook test suites (no .claude/hooks/ change)"
 fi
 
-if touched '^(deploy/|tools/gen-lb-ports\.sh|.*versions\.json)'; then
+if touched '^(deploy/|tools/gen-lb-ports\.sh|tools/overlay-env-guard\.sh|.*versions\.json)'; then
     step "LB port drift"       ./tools/gen-lb-ports.sh --check
     step "routes drift"        ./tools/gen-routes.sh --check
     step "version coverage"    ./tools/check-version-coverage.sh
+    step "overlay env drift"   ./tools/overlay-env-guard.sh
 else
-    skip "LB port / version coverage (no deploy or versions.json change)"
+    skip "LB port / version coverage / overlay env (no deploy or versions.json change)"
 fi
 
 if touched '^(deploy/k8s/base/atlas-.*\.yaml|docs/tasks/task-232-sparse-ephemeral-environments/query-scope-audit\.md|tools/gen-tenant-tables(_test)?\.sh|services/atlas-pr-bootstrap/scripts/tenant-tables\.txt)'; then
@@ -527,6 +571,12 @@ if touched '^(deploy/k8s/overlays/pr/|deploy/k8s/overlays/pr-sparse/|tools/pr-sp
     step "pr-sparse mirror drift" ./tools/pr-sparse-mirror-guard.sh
 else
     skip "pr-sparse mirror drift (neither overlay changed)"
+fi
+
+if touched '^(deploy/k8s/base/|deploy/k8s/overlays/pr-sparse/|tools/sparse-baseline-scoping-guard\.sh)'; then
+    step "sparse baseline scoping" ./tools/sparse-baseline-scoping-guard.sh
+else
+    skip "sparse baseline scoping (no base manifest or pr-sparse change)"
 fi
 
 if touched '^(tools/mode-select(_test)?\.sh|\.github/actions/detect-changes/action\.yml)'; then

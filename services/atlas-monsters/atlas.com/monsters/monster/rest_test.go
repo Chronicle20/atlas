@@ -3,7 +3,7 @@ package monster
 import "testing"
 
 func TestTransform_IncludesAggroAndRepickFields(t *testing.T) {
-	m := NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50)
+	m := NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	m = Clone(m).
 		SetControllerHasAggro(true).
 		SetNextSkillDecision(nextSkillDecision{nextEligibleRepickAtMs: 1730000005000}).
@@ -25,7 +25,7 @@ func TestTransform_OmitsZeroNextEligibleRepick(t *testing.T) {
 	// Marshal output should not contain nextEligibleRepickAtMs when it is 0.
 	// We encode the struct via encoding/json since RestModel is a plain struct
 	// with json tags.
-	m := NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50)
+	m := NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50, "", "")
 	rm, err := Transform(m)
 	if err != nil {
 		t.Fatalf("Transform: %v", err)

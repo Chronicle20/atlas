@@ -385,19 +385,30 @@ func (p *ProcessorImpl) ConsumeError(characterId uint32, transactionId uuid.UUID
 		p.l.WithError(cErr).Errorf("Unable to cancel item reservation at inventory [%d] slot [%d] for character [%d] as part of transaction [%d].", inventoryType, slot, characterId, transactionId)
 	}
 
-	errorType := ""
-	if errors.Is(err, ErrPetCannotConsume) {
-		errorType = consumable.ErrorTypePetCannotConsume
-	}
-	if errors.Is(err, ErrPetCannotLearn) {
-		errorType = consumable.ErrorTypePetCannotLearn
-	}
+	errorType := consumeErrorType(err)
 
 	cErr = producer.ProviderImpl(p.l)(p.ctx)(consumable.EnvEventTopic)(ErrorEventProvider(ts.Id(characterId), errorType))
 	if cErr != nil {
 		p.l.WithError(cErr).Errorf("Unable to issue consumption error [%v] on event topic. Character [%d] likely going to be stuck.", err, characterId)
 	}
 	return err
+}
+
+// consumeErrorType classifies a consume failure into the errorType carried on
+// the EVENT_TOPIC_CONSUMABLE_STATUS ERROR event. Every failure that is not
+// one of the recognized pet errors previously emitted an empty errorType —
+// a wire value the channel's consumer has nothing to map to a client message
+// or unstick action for. ErrorTypeConsumeFailed gives every other failure
+// (missing data document, reservation failure, etc.) a distinct, non-empty
+// type so the channel can act on it.
+func consumeErrorType(err error) string {
+	if errors.Is(err, ErrPetCannotConsume) {
+		return consumable.ErrorTypePetCannotConsume
+	}
+	if errors.Is(err, ErrPetCannotLearn) {
+		return consumable.ErrorTypePetCannotLearn
+	}
+	return consumable.ErrorTypeConsumeFailed
 }
 
 // ConsumeBare commits the reserved item with no further side-effects.

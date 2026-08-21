@@ -89,7 +89,7 @@ func TestGetMonstersInMapPaginates(t *testing.T) {
 	reg := monster.GetMonsterRegistry()
 	var ids []uint32
 	for i := 0; i < 3; i++ {
-		m := reg.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 0, 0, 100, 100)
+		m := reg.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 0, 0, 100, 100, "", "")
 		ids = append(ids, m.UniqueId())
 	}
 
@@ -170,9 +170,9 @@ func TestGetMonstersInMapRectPaginates(t *testing.T) {
 	f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 
 	reg := monster.GetMonsterRegistry()
-	far := reg.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 0, 0, 100, 100)
-	near := reg.CreateMonster(ctx, ten, f, 9300018, 10, 10, 0, 0, 0, 100, 100)
-	mid := reg.CreateMonster(ctx, ten, f, 9300018, 50, 50, 0, 0, 0, 100, 100)
+	far := reg.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 0, 0, 100, 100, "", "")
+	near := reg.CreateMonster(ctx, ten, f, 9300018, 10, 10, 0, 0, 0, 100, 100, "", "")
+	mid := reg.CreateMonster(ctx, ten, f, 9300018, 50, 50, 0, 0, 0, 100, 100, "", "")
 
 	srv := httptest.NewServer(setupWorldRouter())
 	defer srv.Close()
@@ -230,8 +230,8 @@ func TestGetMonstersInMapRectCapIsMaxNotLimit(t *testing.T) {
 	f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
 
 	reg := monster.GetMonsterRegistry()
-	reg.CreateMonster(ctx, ten, f, 9300018, 10, 10, 0, 0, 0, 100, 100)
-	reg.CreateMonster(ctx, ten, f, 9300018, 50, 50, 0, 0, 0, 100, 100)
+	reg.CreateMonster(ctx, ten, f, 9300018, 10, 10, 0, 0, 0, 100, 100, "", "")
+	reg.CreateMonster(ctx, ten, f, 9300018, 50, 50, 0, 0, 0, 100, 100, "", "")
 
 	srv := httptest.NewServer(setupWorldRouter())
 	defer srv.Close()

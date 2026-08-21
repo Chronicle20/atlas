@@ -34,14 +34,40 @@ type EnvironmentHandler func(logrus.FieldLogger, context.Context) http.HandlerFu
 // ParseEnvironment reads the ENVIRONMENT header onto the context. An absent
 // header is the legacy value and passes through unchanged (FR-1.8). A
 // present header naming an environment the registry does not know, or knows
-// as inactive, is rejected with 400 — never served by the baseline (FR-3.6,
-// D4).
+// as DEACTIVATING or DELETED, is rejected with 400 — never served by the
+// baseline. A known environment in PROVISIONING or ACTIVE is admitted: this
+// gate only puts the id on the context, it does not itself grant access.
+//
+// PROVISIONING must be admitted so an environment can write its own rows
+// while it is still being set up — atlas-pr-bootstrap's service-config
+// self-writes are part of provisioning, so requiring ACTIVE here made the
+// lifecycle unsatisfiable (it deadlocks against the rule that the phase is
+// flipped to ACTIVE last). This relaxes FR-3.6, which as originally written
+// rejected every non-ACTIVE environment at this gate.
+//
+// Be precise about what confines an admitted request, because it is NOT
+// uniform across services. atlas-configurations and atlas-tenants implement
+// the scope layer (scope.Strict filters reads to the caller's environment,
+// scope.AuthorizeWrite rejects writes targeting another environment's rows),
+// so for those two a PROVISIONING caller genuinely reaches only its own
+// rows. Every OTHER service behind this gate has no such layer: admitting
+// the header there means the request is served exactly as any untagged
+// request would be, against whatever data that deployment holds. That is
+// the intended sparse-mode behaviour — non-overridden services ARE the
+// baseline's, and a request tagged with a provisioning environment is
+// answered from baseline data — but it is not "confinement", and this
+// comment must not claim it is.
+//
+// Traffic ownership is a separate mechanism and is unchanged: Registry
+// .IsOwner still requires ACTIVE, which is what keeps FR-5.2's guarantee
+// that during PROVISIONING the baseline still owns the environment's
+// services and overrides receive no work.
 //
 //goland:noinspection GoUnusedExportedFunction
 func ParseEnvironment(l logrus.FieldLogger, ctx context.Context, next EnvironmentHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := env.Id(r.Header.Get(env.Key))
-		if id != "" && !env.CurrentRegistry().IsActive(id) {
+		if id != "" && !env.CurrentRegistry().IsProvisionable(id) {
 			l.WithField(env.Key, string(id)).Error("Request names an unknown or inactive environment.")
 			w.WriteHeader(http.StatusBadRequest)
 			return

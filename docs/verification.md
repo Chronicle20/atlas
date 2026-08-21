@@ -124,6 +124,15 @@ cycle and turns "verified" into a lie.
 Build everything: `docker buildx bake all-go-services` (or `tools/build-services.sh`,
 a thin wrapper).
 
+`verify.sh` runs its bake as a **build check only** — it passes
+`--set '*.output=type=cacheonly'`, so it never writes to the docker image store.
+That keeps a run in one worktree from replacing the `<svc>:local` image another
+tree built, since `docker-bake.hcl` tags every target `<svc>:${ATLAS_IMAGE_TAG}`
+(default `local`) — the same tag `deploy/compose/docker-compose.*.yml` runs, and
+the image store is machine-global while worktrees are not. A broken build still
+fails; only the export is dropped. To actually **produce** runnable
+`<svc>:local` images, run `tools/build-services.sh` — `verify.sh` will not.
+
 Adding a new shared lib requires two `COPY` lines in the root `Dockerfile` (one
 in the mod-only block, one in the source block) and one `./libs/<name>` line in
 `go.work`. That is all — no per-service edits.
@@ -269,6 +278,31 @@ path filtering would cost more than it saves).
 
 ---
 
+**atlas-pr-bootstrap bats suite** — `bats services/atlas-pr-bootstrap/test`, when
+anything under `services/atlas-pr-bootstrap/` changed.
+
+That service's shell *is* the ephemeral-environment control plane:
+`bootstrap.sh`, `cleanup.sh`, `sweep-orphans.sh` and their helpers create and
+reclaim every PR namespace. It has shipped a substantial suite for a long time
+and **nothing ran it** — the shell-tooling gate above reaches only `tools/` and
+discovers only `*_test.sh`, while these are `*.bats`; `bats` appears nowhere in
+`.github/workflows`; and `tools/task-facts.sh` merely probes whether the binary
+is installed. The suite was therefore advisory, which is how the sparse
+`SERVICE_ID` defect (a missing `uuidgen` silently yielding an empty id, then an
+empty env var, crash-looping atlas-channel and atlas-login) reached a live
+cluster past a test file well placed to have caught it.
+
+- A missing `bats` is a hard failure, not a skip — the same reasoning as
+  `--require-shellcheck` above. A silent skip is precisely how this suite went
+  unrun for so long.
+- The whole suite runs, not a per-file mapping: these files do not follow the
+  `foo.sh` → `foo_test.sh` convention, and the suite is fast enough that
+  selecting within it would buy nothing.
+
+CI mirror: **none.** See "Known drift" below.
+
+---
+
 ## Lint & format
 
 `tools/lint.sh --check` (task-171). golangci-lint v2 formatters (gofumpt +
@@ -301,6 +335,11 @@ superset of the other; CI is the authority for everything it does run.
   will pass CI today.
 - CI's `atlas-constants-drift-guard` (generator output drift) has no local
   equivalent in the gate; `go test` in `libs/atlas-constants` covers most of it.
+- CI runs **no** `bats` anywhere, so `services/atlas-pr-bootstrap`'s suite is
+  gate-only. CI does not run `tools/verify.sh` either, so a PR touching that
+  service passes CI without its suite ever executing — the local gate is the
+  only thing standing behind it. Anyone wiring a CI job for it should mirror
+  the hard-fail-on-missing-`bats` behaviour rather than skipping.
 - Neither side covers the Go modules under `tools/` — CI's `detect-changes`
   matrix enumerates `services/` and `libs/` only, and the gate mirrors that.
   The analyzer guards' own sources are compiled as a side effect of building

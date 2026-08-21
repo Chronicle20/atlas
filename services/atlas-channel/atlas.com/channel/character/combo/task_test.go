@@ -10,6 +10,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // identityEnvContext is a no-op envContext for tests that don't care about
@@ -65,17 +66,20 @@ type envMarkerKey string
 
 // TestProcessExpiriesAppliesEnvContextToCancel pins the review fix
 // (task-32-review.md Major): processExpiries must run each expired combo's
-// per-character context through envContext before calling cancel, so this
-// per-character lifecycle event carries the pod's own environment identity
-// rather than an empty one. Without this the DecayTick sweep would fail
-// FR-1.8's decide() open, and the cancel would be actioned by every live
-// deployment, not just the originating one.
+// per-character context through envContext before calling cancel, and the
+// expired entry's own tenant must already be on that context when envContext
+// runs, so envContext resolves that tenant's owning environment rather than
+// falling back to this pod's own environment identity. Without this the
+// DecayTick sweep would fail FR-1.8's decide() open, and the cancel would be
+// actioned by every live deployment, not just the originating one.
 func TestProcessExpiriesAppliesEnvContextToCancel(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	tn := testTenant(t)
 	expired := []Expired{{t: tn, characterId: 1, f: testField(), comboId: skill.AranStage1ComboAbilityId}}
 
+	var gotInputTenant tenant.Model
 	envContext := func(ctx context.Context) context.Context {
+		gotInputTenant = tenant.MustFromContext(ctx)
 		return context.WithValue(ctx, envMarkerKey("marker"), "stamped")
 	}
 
@@ -87,6 +91,9 @@ func TestProcessExpiriesAppliesEnvContextToCancel(t *testing.T) {
 
 	if n != 1 {
 		t.Fatalf("want 1 cancel, got %d", n)
+	}
+	if gotInputTenant != tn {
+		t.Fatalf("envContext did not receive the expired entry's tenant on ctx: got %v, want %v", gotInputTenant, tn)
 	}
 	if gotMarker != "stamped" {
 		t.Fatalf("envContext was not applied to the cancel context: got %v, want \"stamped\"", gotMarker)

@@ -73,6 +73,12 @@ var buffToRateMappings = map[character.TemporaryStatType]RateMapping{
 	character.TemporaryStatTypeHolySymbol: {RateType: "exp", Conversion: ConversionAdditive},
 	character.TemporaryStatTypeMesoUp:     {RateType: "meso", Conversion: ConversionDirect},
 	character.TemporaryStatTypeCurse:      {RateType: "exp", Conversion: ConversionFixed, Multiplier: 0.5},
+	// Anniversary (task-231). ConversionDirect matches MESO_UP's established
+	// percent-of-base meaning and is exactly invertible, so amount = 200 reads
+	// back as the configured 2.0x. EVENT_RATE is deliberately absent — it is in
+	// the JMS movement-affecting set (design §10.3).
+	character.TemporaryStatTypeExpBuffRate:  {RateType: "exp", Conversion: ConversionDirect},
+	character.TemporaryStatTypeItemUpByItem: {RateType: "item_drop", Conversion: ConversionDirect},
 }
 
 // IsRateStatType checks if a stat change type affects rates

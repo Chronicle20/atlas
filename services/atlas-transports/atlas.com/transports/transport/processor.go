@@ -10,6 +10,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/segmentio/kafka-go"
+
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 
 	"github.com/google/uuid"
@@ -44,11 +46,32 @@ type ProcessorImpl struct {
 	chanP channel.Processor
 	charP character.Processor
 	mp    _map.Processor
+	// now supplies the instant UpdateRoute evaluates state against. Nil means
+	// "use the real wall clock" (see nowFunc) - the zero value of a struct
+	// literal built outside NewProcessor (as tests do) must keep production
+	// behavior, not silently freeze at time.Time{}.
+	now func() time.Time
+}
+
+// ProcessorOption configures a ProcessorImpl at construction. The only
+// current use is SetNow, letting tests pin the clock UpdateRoute evaluates
+// against instead of depending on the real wall clock.
+type ProcessorOption func(*ProcessorImpl)
+
+// SetNow overrides the clock UpdateRoute uses to evaluate route state.
+// Production callers never need this - NewProcessor already defaults to
+// time.Now. It exists so tests can pin a fixed instant and stop being
+// sensitive to when (in real time, including near a UTC midnight rollover)
+// they happen to run.
+func SetNow(now func() time.Time) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.now = now
+	}
 }
 
 // NewProcessor creates a new processor implementation
-func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	return &ProcessorImpl{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, opts ...ProcessorOption) Processor {
+	p := &ProcessorImpl{
 		l:     l,
 		ctx:   ctx,
 		t:     tenant.MustFromContext(ctx),
@@ -56,10 +79,26 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		chanP: channel.NewProcessor(l, ctx),
 		charP: character.NewProcessor(l, ctx),
 		mp:    _map.NewProcessor(l, ctx),
+		now:   time.Now,
 	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
+
+// nowFunc returns the clock UpdateRoute evaluates against, falling back to
+// the real wall clock when the processor was built as a bare struct literal
+// (as several pre-existing tests in this package do) rather than through
+// NewProcessor.
+func (p *ProcessorImpl) nowFunc() time.Time {
+	if p.now != nil {
+		return p.now()
+	}
+	return time.Now()
+}
 
 func (p *ProcessorImpl) AddTenant(distinctRoutes []Model, sharedVessels []SharedVesselModel) error {
 	p.l.Debugf("Adding [%d] routes for tenant [%s].", len(distinctRoutes), p.t.Id())
@@ -135,8 +174,8 @@ func (p *ProcessorImpl) UpdateRouteAndEmit(route Model) error {
 
 func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error {
 	return func(route Model) error {
-		now := time.Now()
-		r, changed, err := route.UpdateState(now)
+		now := p.nowFunc()
+		r, changed, tr, err := route.UpdateStateWithTransition(now)
 		if err != nil {
 			p.l.WithError(err).Errorf("Error updating state for route [%s].", route.Id())
 			return err
@@ -146,7 +185,14 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 			if err != nil {
 				p.l.WithError(err).Errorf("Error updating route [%s].", route.Id())
 			}
-			if r.State() == AwaitingReturn {
+			// A voyage has just ended if this tick left InTransit (the common
+			// case) or if the route restarted mid-voyage and landed directly
+			// in AwaitingReturn (the registry's prior state on restart is not
+			// InTransit, so the first disjunct alone would miss it). A
+			// duplicate VOYAGE_ARRIVED when both are true is harmless -
+			// atlas-events completes it via a guarded UPDATE and the warp
+			// loop no-ops on an empty en-route map.
+			if route.State() == InTransit || r.State() == AwaitingReturn {
 				p.l.Infof("Transport for route [%s] has arrived at [%d].", r.Id(), r.DestinationMapId())
 				for _, enRouteMapId := range r.EnRouteMapIds() {
 					err = model.ForEachSlice(model.FixedProvider(p.chanP.GetAll()), func(c channel2.Model) error {
@@ -158,6 +204,12 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 						p.l.WithError(err).Errorf("Error warping characters from enroute map [%d] to destination map [%d].", enRouteMapId, r.DestinationMapId())
 						return err
 					}
+				}
+				if tr.ArrivedTripId == uuid.Nil {
+					p.l.Errorf("Route [%s] arrived but no arrived trip identity was reported; skipping voyage arrival event.", r.Id())
+				} else if err = p.emitVoyageEvent(mb)(r, tr.ArrivedTripId, tr.ArrivedDepartedAt, VoyageArrivedStatusEventProvider); err != nil {
+					p.l.WithError(err).Errorf("Error sending voyage arrival event for route [%s].", r.Id())
+					return err
 				}
 			}
 			if r.State() == OpenEntry {
@@ -179,6 +231,10 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 					p.l.WithError(err).Errorf("Error warping characters from staging map [%d] to enroute map.", r.StagingMapId())
 					return err
 				}
+				if err = p.emitVoyageEvent(mb)(r, tr.TripId, tr.DepartedAt, VoyageDepartedStatusEventProvider); err != nil {
+					p.l.WithError(err).Errorf("Error sending voyage departure event for route [%s].", r.Id())
+					return err
+				}
 				err = mb.Put(transport.EnvEventTopicStatus, DepartedStatusEventProvider(r.Id(), r.ObservationMapId()))
 				if err != nil {
 					p.l.WithError(err).Errorf("Error sending status event for route [%s].", r.Id())
@@ -197,6 +253,35 @@ func (p *ProcessorImpl) warpTo(mb *message.Buffer) func(fromField field.Model, t
 			p.l.Infof("Warping character [%d] from map [%d] to map [%d].", characterId, ff.MapId(), tf.MapId())
 			return p.charP.WarpRandom(mb)(characterId)(tf.Id())
 		})
+	}
+}
+
+// emitVoyageEvent puts one voyage event per channel on mb. atlas-events has no
+// channel identity of its own, so unlike the observation-deck ARRIVED/DEPARTED
+// pair these must be per (world, channel) — the same fan-out shape the warp
+// loops in this function already use (design G1).
+//
+// tripId/departedAt are the identity of the voyage this event is about, given
+// explicitly by the caller rather than read off a shared Transition — arrival
+// and departure each name a different trip on the same tick (the transition's
+// TripId/DepartedAt for departure, ArrivedTripId/ArrivedDepartedAt for
+// arrival), so there is no single field pair a shared caller could read.
+func (p *ProcessorImpl) emitVoyageEvent(mb *message.Buffer) func(r Model, tripId uuid.UUID, departedAt time.Time, provider func(uuid.UUID, transport.VoyageStatusEventBody) model.Provider[[]kafka.Message]) error {
+	return func(r Model, tripId uuid.UUID, departedAt time.Time, provider func(uuid.UUID, transport.VoyageStatusEventBody) model.Provider[[]kafka.Message]) error {
+		t := tenant.MustFromContext(p.ctx)
+		voyageId := VoyageId(t, r.Id(), tripId, departedAt)
+		return model.ForEachSlice(model.FixedProvider(p.chanP.GetAll()), func(c channel2.Model) error {
+			return mb.Put(transport.EnvEventTopicStatus, provider(r.Id(), transport.VoyageStatusEventBody{
+				VoyageId:         voyageId,
+				WorldId:          c.WorldId(),
+				ChannelId:        c.Id(),
+				StagingMapId:     r.StagingMapId(),
+				EnRouteMapIds:    r.EnRouteMapIds(),
+				DestinationMapId: r.DestinationMapId(),
+				ObservationMapId: r.ObservationMapId(),
+				DepartedAt:       departedAt,
+			}))
+		}, model.ParallelExecute())
 	}
 }
 

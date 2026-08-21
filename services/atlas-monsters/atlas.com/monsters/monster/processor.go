@@ -54,6 +54,7 @@ type Processor interface {
 	Move(id uint32, x int16, y int16, fh int16, stance byte) error
 	Destroy(uniqueId uint32) error
 	DestroyInField(f field.Model) error
+	DestroyBySource(f field.Model, sourceType string, sourceId string) error
 	UseSkill(uniqueId uint32, characterId uint32, skillId byte, skillLevel byte)
 	UseSkillGM(uniqueId uint32, skillId byte, skillLevel byte)
 	UseBasicAttack(uniqueId uint32, attackPos uint8)
@@ -221,7 +222,7 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	m := GetMonsterRegistry().CreateMonster(p.ctx, p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.Hp(), ma.Mp())
+	m := GetMonsterRegistry().CreateMonster(p.ctx, p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.Hp(), ma.Mp(), input.SpawnSourceType, input.SpawnSourceId)
 
 	// FR-2.1: Only fire the spawn picker when the freshly-created monster
 	// already has aggro. In practice this is always false at spawn (no damage
@@ -1352,6 +1353,23 @@ func (p *ProcessorImpl) DestroyInField(f field.Model) error {
 	return model.ForEachSlice(model.SliceMap[Model, uint32](IdTransformer)(p.ByFieldProvider(f))(model.ParallelMap()), p.Destroy, model.ParallelExecute())
 }
 
+// DestroyBySource despawns every live monster in f whose provenance pair equals
+// (sourceType, sourceId). Zero matches is success (FR-P4): the caller's
+// cleanup is idempotent by construction, and arrival-after-everything-died is
+// the ordinary case, not an error path. atlas-monsters never interprets
+// sourceId — it compares it for equality and nothing else (FR-P6).
+func (p *ProcessorImpl) DestroyBySource(f field.Model, sourceType string, sourceId string) error {
+	for _, m := range GetMonsterRegistry().GetMonstersInMap(p.t, f) {
+		if m.SpawnSourceType() != sourceType || m.SpawnSourceId() != sourceId {
+			continue
+		}
+		if err := p.Destroy(m.UniqueId()); err != nil {
+			p.l.WithError(err).Warnf("Unable to destroy monster [%d] for source [%s/%s].", m.UniqueId(), sourceType, sourceId)
+		}
+	}
+	return nil
+}
+
 // ApplyStatusEffect applies a status effect to a monster after checking immunities
 func (p *ProcessorImpl) ApplyStatusEffect(uniqueId uint32, effect StatusEffect) error {
 	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
@@ -1701,7 +1719,8 @@ func (p *ProcessorImpl) DrainMp(f field.Model, uniqueId uint32, characterId uint
 		// on the envelope are not consulted for this Reason. Build via
 		// NewMonster so the Model carries the kafka envelope's field —
 		// the only piece the provider needs.
-		post = NewMonster(f, uniqueId, 0, 0, 0, 0, 0, 0, 0, 0)
+		// Synthetic model, never persisted — no spawn provenance to carry.
+		post = NewMonster(f, uniqueId, 0, 0, 0, 0, 0, 0, 0, 0, "", "")
 	}
 
 	return p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, characterId, skillId, MpChangeReasonMpEater, requestedAmount))

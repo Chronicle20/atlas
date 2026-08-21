@@ -34,7 +34,8 @@ RUN --mount=type=cache,target=/var/cache/apk,sharing=locked \
         ca-certificates \
         github-cli \
         kubectl \
-        unzip
+        unzip \
+        util-linux
 
 # Fetch rpk static binary. Pin version so JSON output schema and admin
 # RPC semantics are deterministic; bumping is a deliberate Dockerfile
@@ -56,6 +57,7 @@ WORKDIR /atlas
 COPY scripts/lib.sh /atlas/lib.sh
 COPY scripts/version-ports.sh /atlas/version-ports.sh
 COPY scripts/service-config.sh /atlas/service-config.sh
+COPY scripts/env-record.sh /atlas/env-record.sh
 COPY scripts/bootstrap.sh /atlas/bootstrap.sh
 COPY scripts/cleanup.sh /atlas/cleanup.sh
 COPY scripts/sweep-orphans.sh /atlas/sweep-orphans.sh

@@ -62,12 +62,19 @@ connected IDA-MCP session with the matching binary loaded:
     packet-audit export \
       --version   gms_v95 \
       --output    docs/packets/ida-exports/gms_v95.json \
-      --ida-url   http://<host>:<port>/mcp \
-      --ida-port  13337
+      --ida-url      http://<host>:<port>/mcp \
+      --ida-database <session id>
+
+`--ida-database` is the session id from `idb_list`; it is injected as the
+`database` argument on every MCP call so the harvest targets the intended IDB
+regardless of which others are open. Omitting it hits whichever IDB the server
+considers active.
 
 `export` flags (source: `runExport` in `cmd/root.go`): `--version` (required),
 `--output` (required), `--ida-url` (default `http://192.168.20.3:13337/mcp`),
-`--ida-port` (0 = default active instance), `--ida-timeout` (default 60s),
+`--ida-database` (session id from `idb_list`; preferred), `--ida-port`
+(deprecated — the legacy per-port server only; fails against the session
+server, whose `select_instance` was removed), `--ida-timeout` (default 60s),
 `--descent-depth` (default 6), `--generated-at` (fixed provenance timestamp;
 default now / `$PACKET_AUDIT_GENERATED_AT`), `--prior-export` (default
 `docs/packets/ida-exports/<version>.json`; pass `""` for a targeted harvest),

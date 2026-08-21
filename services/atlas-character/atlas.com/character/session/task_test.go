@@ -18,10 +18,10 @@ type envMarkerKey string
 // TestTimeoutSessionTenantContextAppliesEnvContext pins the task-232 batch-2
 // origination-audit fix: sessionTenantContext must run the per-character
 // tenant context through envContext before LogoutAndEmit/EndSession see it,
-// so a timed-out session's logout carries this pod's own environment
-// identity rather than an empty one. Without this, the Timeout sweep would
-// fail FR-1.8's decide() open, and the logout Kafka event would be actioned
-// by every live deployment, not just the originating one.
+// so a timed-out session's logout carries the tenant-owning environment
+// rather than an empty one. Without this, the Timeout sweep would fail
+// FR-1.8's decide() open, and the logout Kafka event would be actioned by
+// every live deployment, not just the originating one.
 func TestTimeoutSessionTenantContextAppliesEnvContext(t *testing.T) {
 	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
 	if err != nil {

@@ -62,6 +62,40 @@ func TestReconcileWithNeitherIsTheLegacyValue(t *testing.T) {
 	}
 }
 
+func TestReconcileTrustsTheHeaderForALegacyTenant(t *testing.T) {
+	// FR-3.1: a tenant projected with an EMPTY environment is legacy, not a
+	// hard mismatch against a sparse environment's header.
+	r := NewMapRegistry(Id("main"), time.Now)
+	r.ApplyTenant("t-1", Id(""))
+
+	got, err := Reconcile(r, Id("pr-1411"), "t-1")
+	if err != nil || got != Id("pr-1411") {
+		t.Fatalf("got (%q, %v), want (\"pr-1411\", nil)", got, err)
+	}
+}
+
+func TestReconcileStillRejectsTwoNonEmptyDisagreements(t *testing.T) {
+	// FR-3.2: two distinct non-baseline environments are still a hard
+	// mismatch; TestReconcileRejectsADisagreement covers header=main.
+	r := NewMapRegistry(Id("main"), time.Now)
+	r.ApplyTenant("t-1", Id("pr-123"))
+
+	got, err := Reconcile(r, Id("pr-1411"), "t-1")
+	if !errors.Is(err, ErrEnvironmentMismatch) || got != Id("") {
+		t.Fatalf("got (%q, %v), want (\"\", ErrEnvironmentMismatch)", got, err)
+	}
+}
+
+func TestReconcileWithALegacyTenantAndNoHeaderIsTheLegacyValue(t *testing.T) {
+	r := NewMapRegistry(Id("main"), time.Now)
+	r.ApplyTenant("t-1", Id(""))
+
+	got, err := Reconcile(r, Id(""), "t-1")
+	if err != nil || got != Id("") {
+		t.Fatalf("got (%q, %v), want (\"\", nil)", got, err)
+	}
+}
+
 func TestMismatchedIsFalseByDefault(t *testing.T) {
 	if Mismatched(context.Background()) {
 		t.Fatal("expected a fresh context to not be mismatched")
@@ -87,6 +121,83 @@ func TestMustFromContextStillReturnsTheHeaderIdAfterAMismatchIsRecorded(t *testi
 	}
 	if !Mismatched(ctx) {
 		t.Fatal("expected Mismatched to still report true")
+	}
+}
+
+// fakeRegistryWithoutTenantResolver implements Registry but deliberately
+// not TenantResolver, exercising ForTenant's type-assertion fallback.
+type fakeRegistryWithoutTenantResolver struct{}
+
+func (fakeRegistryWithoutTenantResolver) EnvironmentNamespace(Id) (string, error) { return "", nil }
+func (fakeRegistryWithoutTenantResolver) ServiceNamespace(Id, string) (string, error) {
+	return "", nil
+}
+func (fakeRegistryWithoutTenantResolver) EnvironmentsOwnedBy(string) []Id { return nil }
+func (fakeRegistryWithoutTenantResolver) IsOwner(Id, string) bool         { return false }
+func (fakeRegistryWithoutTenantResolver) IsActive(Id) bool                { return false }
+func (fakeRegistryWithoutTenantResolver) IsProvisionable(Id) bool         { return false }
+func (fakeRegistryWithoutTenantResolver) Stale() bool                     { return false }
+func (fakeRegistryWithoutTenantResolver) BaselineOf(Id) (Id, bool)        { return "", false }
+
+func TestForTenant(t *testing.T) {
+	withTenant := NewMapRegistry(Id("main"), time.Now)
+	withTenant.ApplyTenant("t-1", Id("pr-1412"))
+
+	legacyTenant := NewMapRegistry(Id("main"), time.Now)
+	legacyTenant.ApplyTenant("t-1", Id(""))
+
+	unknownTenant := NewMapRegistry(Id("main"), time.Now)
+
+	tests := []struct {
+		name     string
+		r        Registry
+		tenantId string
+		self     Id
+		want     Id
+	}{
+		{
+			name:     "tenant belongs to another environment -> that environment, not self",
+			r:        withTenant,
+			tenantId: "t-1",
+			self:     Id("main"),
+			want:     Id("pr-1412"),
+		},
+		{
+			name:     "empty tenantId -> self",
+			r:        withTenant,
+			tenantId: "",
+			self:     Id("main"),
+			want:     Id("main"),
+		},
+		{
+			name:     "unknown tenant -> self",
+			r:        unknownTenant,
+			tenantId: "t-unknown",
+			self:     Id("main"),
+			want:     Id("main"),
+		},
+		{
+			name:     "legacy tenant (empty projected environment) -> self",
+			r:        legacyTenant,
+			tenantId: "t-1",
+			self:     Id("main"),
+			want:     Id("main"),
+		},
+		{
+			name:     "registry does not implement TenantResolver -> self",
+			r:        fakeRegistryWithoutTenantResolver{},
+			tenantId: "t-1",
+			self:     Id("main"),
+			want:     Id("main"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ForTenant(tt.r, tt.tenantId, tt.self); got != tt.want {
+				t.Fatalf("ForTenant() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 

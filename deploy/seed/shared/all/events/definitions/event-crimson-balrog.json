@@ -1,0 +1,40 @@
+{
+  "data": {
+    "id": "crimson-balrog",
+    "type": "event-definition",
+    "attributes": {
+      "type": "CRIMSON_BALROG",
+      "name": "Crimson Balrog",
+      "enabled": false,
+      "configuration": {
+        "applicableRouteIds": ["boat-ellinia-orbis", "boat-orbis-ellinia"],
+        "triggerDelay": "3m",
+        "triggerDelayJitter": "60s",
+        "attackProbability": 0.42,
+        "monsterId": 8150000,
+        "monsterCount": 2,
+        "attackMaps": [
+          {
+            "mapId": 200090010,
+            "spawnPositions": [
+              {"x": 339, "y": 148},
+              {"x": 339, "y": 148}
+            ]
+          },
+          {
+            "mapId": 200090000,
+            "spawnPositions": [
+              {"x": -538, "y": 143},
+              {"x": -538, "y": 143}
+            ]
+          }
+        ],
+        "relatedMapIds": [200090011, 200090001],
+        "backgroundMusic": "Bgm04/ArabPirate",
+        "visual": {
+          "name": "CONTI_MOVE"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-18T13:03:40Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	6839f59	-	-	-	-
+2026-08-18T13:03:55Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	6839f59	APPROVED	no	-	-
+2026-08-18T13:07:02Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE	c99525e21	-	-	-	-
+2026-08-18T13:10:24Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	c99525e21	APPROVED	no	-	-
+2026-08-18T13:11:41Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	a56c5b15d	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-18T13:14:43Z	agent	Task 1-3 gate	atlas-verifier	haiku	-	-	-	-	ERROR	a56c5b15d	-	-	-	-
+2026-08-18T13:15:39Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	9254bd6b5	-	-	-	-
+2026-08-18T13:17:21Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	9254bd6b5	APPROVED	no	-	-
+2026-08-18T13:21:08Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	DONE	296ae8b40	-	-	-	-
+2026-08-18T13:22:30Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DONE	296ae8b40	APPROVED	no	-	-
+2026-08-18T13:25:58Z	agent	Tasks 1-5 gate	atlas-verifier	haiku	-	-	-	-	PASS	296ae8b40	-	-	-	-
+2026-08-18T13:35:03Z	agent	Task 6	atlas-implementer	sonnet	-	-	-	-	DONE	e09eee916	-	-	-	-
+2026-08-18T13:36:40Z	agent	Task 6	atlas-reviewer	sonnet	-	-	-	-	DONE	e09eee916	APPROVED	no	docs/tasks/task-238-whisper-find-location/review-task-6.md	-
+2026-08-18T13:37:01Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	DONE	98ec7fd7f	-	-	-	-
+2026-08-18T13:38:33Z	agent	Task 7	atlas-reviewer	sonnet	-	-	-	-	DONE	98ec7fd7f	APPROVED	no	docs/tasks/task-238-whisper-find-location/review-task-7.md	-
+2026-08-18T13:42:23Z	agent	Task 8	atlas-implementer	sonnet	-	-	-	-	DONE	8ca62121b	-	-	-	-
+2026-08-18T13:44:03Z	agent	Task 9	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	17873fb17	-	-	-	-
+2026-08-18T13:47:14Z	agent	Task 9	atlas-reviewer	sonnet	-	-	-	-	DONE	17873fb17	APPROVED	no	docs/tasks/task-238-whisper-find-location/review-task-9.md	-
+2026-08-18T13:47:45Z	agent	Task 8	atlas-reviewer	sonnet	-	-	-	-	DONE	8ca62121b	APPROVED	no	docs/tasks/task-238-whisper-find-location/review-task-8.md	-
+2026-08-18T13:48:40Z	agent	Tasks 6-9 gate	atlas-verifier	haiku	-	-	-	-	PASS	17873fb17	-	-	-	-
+2026-08-18T13:48:40Z	handoff	after Task 9	-	-	-	-	-	-	-	-	-	-	-	80000
+2026-08-18T13:57:58Z	agent	branch-end	plan-adherence-reviewer	sonnet	-	-	-	-	-	1104053da	-	-	docs/tasks/task-238-whisper-find-location/audit.md	-
+2026-08-18T13:59:33Z	agent	branch-end	packet-completeness-critic	sonnet	-	-	-	-	DONE	1104053da	CLEAN	no	docs/tasks/task-238-whisper-find-location/completeness-critic.md	-
+2026-08-18T14:02:50Z	agent	branch-end	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	1104053da	APPROVED	no	docs/tasks/task-238-whisper-find-location/audit.md	-
+2026-08-18T14:08:33Z	agent	branch-end	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	1104053da	CHANGES_REQUIRED	yes	docs/tasks/task-238-whisper-find-location/backend-audit.md	-
+2026-08-18T14:24:31Z	agent	Fix round 1	atlas-implementer	sonnet	-	-	-	-	DONE	2413cbf29	-	-	.superpowers/sdd/plan/fix-round-1-report.md	-
+2026-08-18T14:33:24Z	agent	Fix round 1	atlas-reviewer	sonnet	-	-	-	-	DONE	2413cbf29	APPROVED	no	docs/tasks/task-238-whisper-find-location/review-fix-round-1.md	-
+2026-08-18T14:54:56Z	agent	branch-end gate	atlas-verifier	haiku	-	-	-	-	PASS	a9bb5d83d	-	-	-	-
+2026-08-19T11:43:11Z	agent	bug-find-channel-always-zero	atlas-implementer	sonnet	-	-	-	-	DONE	ceb83cc09	-	-	-	-
+2026-08-19T11:47:40Z	agent	channel-label-one-based	atlas-implementer	sonnet	-	-	-	-	DONE	6827395704f0	-	-	-	-
+2026-08-19T14:45:16Z	agent	bug-find-channel-name-still-wrong	atlas-implementer	sonnet	-	-	-	-	DONE	53537cf58	-	-	-	-
+2026-08-19T14:48:32Z	agent	bug-find-channel-name-still-wrong	atlas-reviewer	sonnet	-	-	-	-	DONE	53537cf58	APPROVED	no	-	-

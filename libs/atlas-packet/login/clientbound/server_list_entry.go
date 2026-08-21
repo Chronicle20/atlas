@@ -90,7 +90,7 @@ func (m ServerListEntry) Encode(l logrus.FieldLogger, ctx context.Context) func(
 
 		w.WriteByte(byte(len(m.channelLoads)))
 		for _, x := range m.channelLoads {
-			w.WriteAsciiString(fmt.Sprintf("%s - %d", m.worldName, x.ChannelId()))
+			w.WriteAsciiString(fmt.Sprintf("%s - %d", m.worldName, x.ChannelId()+1))
 			w.WriteInt(x.Capacity())
 			w.WriteByte(byte(m.worldId))
 			w.WriteByte(byte(x.ChannelId() - 1))

@@ -814,9 +814,13 @@ jobs:
   # After build-docker completes, create/update a derived branch
   # `bot/pr-<N>-resolved` that:
   #   1. Substitutes every PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_PR_NUMBER /
-  #      PLACEHOLDER_FULL_SHA token in deploy/k8s/overlays/pr/ AND
-  #      deploy/k8s/overlays/pr-cleanup/ with the actual per-PR value
+  #      PLACEHOLDER_FULL_SHA token in the mode-selected main overlay
+  #      (deploy/k8s/overlays/pr/ for isolated/full, pr-sparse/ for sparse)
+  #      AND deploy/k8s/overlays/pr-cleanup/ with the actual per-PR value
   #      (sed across both directories).
+  #   1b. In sparse mode, relocates the resolved pr-sparse/ onto
+  #      deploy/k8s/overlays/pr/ before staging, because the out-of-repo
+  #      ApplicationSet hard-codes that path (see the Force-push step).
   #   2. Bumps deploy/k8s/overlays/pr/kustomization.yaml's `images:` block
   #      so only the just-built services point at pr-<N>-<sha>; unchanged
   #      services keep `newTag: latest` (which option-b's main-publish
@@ -1005,6 +1009,91 @@ jobs:
               NS_OVERRIDES="${NS_OVERRIDES}$(printf '\\\n            - name: %s\\\n              value: %s' "$nsvar" "$BASELINE_NAMESPACE")"
             done < <(sed -n 's/^- name: \(NS_[A-Z_]*\)$/\1/p' deploy/k8s/base/ns-vars.generated.yaml)
 
+            # PLACEHOLDER_SERVICE_ID_BLOCK / PLACEHOLDER_PRECREATE_GROUPS_BLOCK
+            # (task-243 D1/D2/D6, design §3.2/§6). One pass over the override
+            # set derives every override-set Deployment's SERVICE_ID
+            # (tools/derive-service-id.sh, the single derivation site) and
+            # produces three things from it:
+            #   1. a strategic-merge patch pinning that Deployment's own
+            #      SERVICE_ID env var to the derived value — this is what
+            #      survives Argo's selfHeal, because the value lives in the
+            #      manifest Argo renders instead of being minted at runtime;
+            #   2. a JSON-6902 entry adding SERVICE_ID_<TYPE> to the
+            #      atlas-pr-bootstrap Job, so bootstrap POSTs the id it
+            #      rendered rather than re-deriving one itself;
+            #   3. the RESOLVED consumer group name for the precreate Job,
+            #      read from patches/consumer-group-env.yaml (already
+            #      PLACEHOLDER_ATLAS_ENV-substituted by the scalar pass
+            #      above). atlas-login/atlas-channel carry a literal "%s"
+            #      that libs/atlas-kafka/consumergroup.Resolve fills with
+            #      serviceId.String() at runtime — seeding the template
+            #      verbatim would create a group no consumer ever joins, so
+            #      it is filled here too.
+            # GROUP_LIST, not GROUPS: `GROUPS` is bash's own reserved array
+            # variable (the caller's group-membership list) — assigning to
+            # it is silently ignored, not an error, which would make this
+            # loop appear to work while producing an empty precreate patch
+            # (confirmed directly: `GROUPS="a"; echo "${#GROUPS}"` -> 0).
+            SERVICE_ID_BLOCK=""
+            JOB_ENV_OPS=""
+            GROUP_LIST=""
+            for svc in $OVERRIDE_SERVICES; do
+              base="deploy/k8s/base/$svc.yaml"
+              [ -f "$base" ] || continue
+              # Only the six base Deployments that carry SERVICE_ID participate.
+              stype=$(yq eval-all 'select(.kind=="Deployment") | .spec.template.spec.containers[0].env[]
+                        | select(.name=="SERVICE_TYPE") | .value' "$base" | head -1)
+              [ -n "$stype" ] && [ "$stype" != "null" ] || continue
+              cname=$(yq eval-all 'select(.kind=="Deployment") | .spec.template.spec.containers[0].name' "$base" | head -1)
+              sid=$(tools/derive-service-id.sh "$stype" "pr-${PR_NUMBER}")
+              echo "Derived SERVICE_ID for $svc ($stype): $sid"
+
+              # 1. the Deployment's own SERVICE_ID
+              SERVICE_ID_BLOCK="${SERVICE_ID_BLOCK}$(printf '\\\n  - patch: |-\\\n      apiVersion: apps/v1\\\n      kind: Deployment\\\n      metadata:\\\n        name: %s\\\n      spec:\\\n        template:\\\n          spec:\\\n            containers:\\\n              - name: %s\\\n                env:\\\n                  - name: SERVICE_ID\\\n                    value: %s' "$svc" "$cname" "$sid")"
+
+              # 2. the bootstrap Job's SERVICE_ID_<TYPE> (matches
+              # services/atlas-pr-bootstrap/scripts/bootstrap.sh's own
+              # svc_id_var_name derivation exactly).
+              var="SERVICE_ID_$(printf '%s' "$stype" | tr '[:lower:]-' '[:upper:]_')"
+              JOB_ENV_OPS="${JOB_ENV_OPS}$(printf '\\\n      - op: add\\\n        path: /spec/template/spec/containers/0/env/-\\\n        value:\\\n          name: %s\\\n          value: %s' "$var" "$sid")"
+
+              # 3. the RESOLVED consumer group name for the precreate Job
+              grp=$(yq eval-all 'select(.kind=="Deployment") | select(.metadata.name=="'"$svc"'")
+                      | .spec.template.spec.containers[0].env[] | select(.name=="KAFKA_CONSUMER_GROUP") | .value' \
+                    deploy/k8s/overlays/pr-sparse/patches/consumer-group-env.yaml | head -1)
+              [ -n "$grp" ] && [ "$grp" != "null" ] || continue
+              grp=$(printf "$grp" "$sid")
+              echo "Resolved consumer group for $svc: $grp"
+              GROUP_LIST="${GROUP_LIST}$(printf '\\\n              %s' "$grp")"
+            done
+
+            if [ -z "$SERVICE_ID_BLOCK" ]; then
+              echo "::error::sparse mode has no SERVICE_ID-carrying override-set Deployment — this environment would bind nothing" >&2
+              exit 1
+            fi
+            if [ -z "$GROUP_LIST" ]; then
+              echo "::error::no KAFKA_CONSUMER_GROUP resolved for the override set — activating without seeded offsets is not allowed (FR-4.4)" >&2
+              exit 1
+            fi
+            case "$GROUP_LIST" in
+              *%*)
+                echo "::error::resolved consumer group list still carries an unfilled %% template — a templated caller's format string was seeded verbatim" >&2
+                exit 1
+                ;;
+            esac
+
+            # Append the bootstrap-Job JSON-6902 patch onto the same token
+            # (task-11's comment for PLACEHOLDER_SERVICE_ID_BLOCK documents
+            # both patches living under this one token).
+            SERVICE_ID_BLOCK="${SERVICE_ID_BLOCK}$(printf '\\\n  - target:\\\n      kind: Job\\\n      name: atlas-pr-bootstrap\\\n    patch: |-')${JOB_ENV_OPS}"
+
+            # `add` targets the whole `env` path, not `env/-`, because
+            # deploy/k8s/base/atlas-kafka-precreate.yaml's container has
+            # envFrom only, no pre-existing `env:` key — whole-path `add`
+            # creates it. If a future commit adds an `env:` key there,
+            # this REPLACES it instead of extending it, silently.
+            PRECREATE_GROUPS_BLOCK="$(printf '\\\n  - target:\\\n      kind: Job\\\n      name: atlas-kafka-precreate\\\n    patch: |-\\\n      - op: add\\\n        path: /spec/template/spec/containers/0/env\\\n        value:\\\n          - name: KAFKA_CONSUMER_GROUP\\\n            value: |-')${GROUP_LIST}"
+
             echo "Override set (+ atlas-ingress): $KEEP"
 
             # The three block payloads can't use `|` as the sed delimiter —
@@ -1022,6 +1111,8 @@ jobs:
                 -e "s${D}PLACEHOLDER_DELETE_BLOCK${D}${DELETE_BLOCK}${D}g" \
                 -e "s${D}PLACEHOLDER_NS_OVERRIDES${D}${NS_OVERRIDES}${D}g" \
                 -e "s${D}PLACEHOLDER_OVERRIDES_JSON${D}${OVERRIDES_JSON}${D}g" \
+                -e "s${D}PLACEHOLDER_SERVICE_ID_BLOCK${D}${SERVICE_ID_BLOCK}${D}g" \
+                -e "s${D}PLACEHOLDER_PRECREATE_GROUPS_BLOCK${D}${PRECREATE_GROUPS_BLOCK}${D}g" \
                 {} +
           fi
 
@@ -1040,6 +1131,65 @@ jobs:
             exit 1
           fi
           echo "(clean)"
+
+          if [ "$MODE" = "sparse" ]; then
+            # Offline half of design.md §11's "Rendered-manifest" tests (the
+            # overlays/main / overlays/pr byte-identity half lives in Task
+            # 7's mirror guard). Renders the just-substituted overlay and
+            # checks the SERVICE_ID / consumer-group bindings actually
+            # landed where the runtime reads them from, not merely that the
+            # PLACEHOLDER_ tokens were replaced with *something*.
+            echo "=== Rendering $OVERLAY_DIR to verify SERVICE_ID / KAFKA_CONSUMER_GROUP bindings ==="
+            RENDERED=$(mktemp)
+            kustomize build "$OVERLAY_DIR" > "$RENDERED"
+
+            for svc in $OVERRIDE_SERVICES; do
+              base="deploy/k8s/base/$svc.yaml"
+              [ -f "$base" ] || continue
+              stype=$(yq eval-all 'select(.kind=="Deployment") | .spec.template.spec.containers[0].env[]
+                        | select(.name=="SERVICE_TYPE") | .value' "$base" | head -1)
+              [ -n "$stype" ] && [ "$stype" != "null" ] || continue
+              base_sid=$(yq eval-all 'select(.kind=="Deployment") | .spec.template.spec.containers[0].env[]
+                        | select(.name=="SERVICE_ID") | .value' "$base" | head -1)
+              want_sid=$(tools/derive-service-id.sh "$stype" "pr-${PR_NUMBER}")
+
+              rendered_sid=$(yq eval-all 'select(.kind=="Deployment" and .metadata.name=="'"$svc"'")
+                        | .spec.template.spec.containers[0].env[] | select(.name=="SERVICE_ID") | .value' "$RENDERED" | head -1)
+              if [ "$rendered_sid" != "$want_sid" ]; then
+                echo "::error::rendered $svc SERVICE_ID=$rendered_sid, want derived $want_sid" >&2
+                exit 1
+              fi
+              if [ "$rendered_sid" = "$base_sid" ]; then
+                echo "::error::rendered $svc SERVICE_ID still matches the base literal $base_sid — PLACEHOLDER_SERVICE_ID_BLOCK did not override it" >&2
+                exit 1
+              fi
+
+              var="SERVICE_ID_$(printf '%s' "$stype" | tr '[:lower:]-' '[:upper:]_')"
+              job_sid=$(yq eval-all 'select(.kind=="Job" and .metadata.name=="atlas-pr-bootstrap")
+                        | .spec.template.spec.containers[0].env[] | select(.name=="'"$var"'") | .value' "$RENDERED" | head -1)
+              if [ "$job_sid" != "$want_sid" ]; then
+                echo "::error::atlas-pr-bootstrap Job $var=$job_sid, want $want_sid" >&2
+                exit 1
+              fi
+              echo "OK: $svc SERVICE_ID=$rendered_sid, atlas-pr-bootstrap $var matches"
+            done
+
+            precreate_groups=$(yq eval-all 'select(.kind=="Job" and .metadata.name=="atlas-kafka-precreate")
+                      | .spec.template.spec.containers[0].env[] | select(.name=="KAFKA_CONSUMER_GROUP") | .value' "$RENDERED")
+            if [ -z "$precreate_groups" ]; then
+              echo "::error::atlas-kafka-precreate Job carries no KAFKA_CONSUMER_GROUP after render" >&2
+              exit 1
+            fi
+            case "$precreate_groups" in
+              *%*)
+                echo "::error::rendered atlas-kafka-precreate KAFKA_CONSUMER_GROUP still contains an unresolved %% template" >&2
+                exit 1
+                ;;
+            esac
+            echo "OK: atlas-kafka-precreate KAFKA_CONSUMER_GROUP:"
+            echo "$precreate_groups"
+            rm -f "$RENDERED"
+          fi
 
       - name: Stamp CATALOG_REVISION (PR)
         run: |
@@ -1120,15 +1270,50 @@ jobs:
           git config user.name 'atlas-image-bot'
           git config user.email 'atlas-image-bot@users.noreply.github.com'
 
+          # Argo CD's ApplicationSet(atlas-pr) hard-codes
+          # `path: deploy/k8s/overlays/pr` for its main source, and it lives
+          # in cluster-infra — outside this repo, so no in-repo guard can
+          # see it. Sparse mode therefore CANNOT publish its resolved output
+          # under `pr-sparse/`: Argo would render the untouched `pr/`, whose
+          # `namespace: atlas-pr-PLACEHOLDER_PR_NUMBER` is not a valid
+          # RFC 1123 label, and the sync retry-loops forever having created
+          # nothing (observed on PR #1411, the first sparse-mode PR).
+          #
+          # Instead the mode-selected overlay is published AT the fixed path
+          # the ApplicationSet already expects. The bot branch is generated
+          # and disposable, so relocating a directory on it costs nothing and
+          # keeps the mode decision entirely in this workflow. `pr-sparse/`
+          # and `pr/` sit at the same depth, so the shared `../../base`
+          # resource reference resolves identically after the move.
+          #
+          # This must run AFTER the CATALOG_REVISION stamp, the image-tag
+          # bump, and gen-cleanup-env.sh — the last of those reads
+          # `deploy/k8s/overlays/pr/scripts/`, which sparse mode does not
+          # carry and which the move removes.
           if [ "$MODE" = "sparse" ]; then
-            MAIN_OVERLAY=deploy/k8s/overlays/pr-sparse
-          else
-            MAIN_OVERLAY=deploy/k8s/overlays/pr
+            rm -rf deploy/k8s/overlays/pr
+            mv deploy/k8s/overlays/pr-sparse deploy/k8s/overlays/pr
           fi
 
-          # Stage the substituted overlays (mode-selected main overlay +
-          # pr-cleanup) + bumped image tags + stamped CATALOG_REVISION.
-          git add "$MAIN_OVERLAY" deploy/k8s/overlays/pr-cleanup deploy/seed
+          # The substitution step's leak guard only ever scanned the
+          # mode-selected source directory, which is why a fully-resolved
+          # `pr-sparse/` reported clean while the `pr/` Argo actually
+          # rendered was still full of placeholders. Re-check the published
+          # path — the one thing Argo reads — after the move.
+          LEAKS=$(find deploy/k8s/overlays/pr deploy/k8s/overlays/pr-cleanup \
+              -type f \( -name '*.yaml' -o -name '*.yml' \) \
+            -exec grep -n 'PLACEHOLDER_' {} + || true)
+          if [ -n "$LEAKS" ]; then
+            echo "$LEAKS"
+            echo "::error::unfilled PLACEHOLDER_ token(s) in the published overlay — Argo would render these verbatim" >&2
+            exit 1
+          fi
+
+          # Stage the resolved overlays (published `pr/` + `pr-cleanup`) +
+          # bumped image tags + stamped CATALOG_REVISION. `-A` is required:
+          # sparse mode's move deletes `pr-sparse/` and rewrites `pr/`, and
+          # a plain `git add <path>` would not stage the removals.
+          git add -A deploy/k8s/overlays deploy/seed
 
           if git diff --cached --quiet; then
               echo "::warning::No changes to commit — PR overlay was already resolved? Skipping force-push."

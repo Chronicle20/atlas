@@ -416,11 +416,11 @@ func TestMCPHTTPGetBinaryInfo(t *testing.T) {
 }
 
 // TestMCPHTTPDatabaseInjectedInArgs asserts the session-based Database
-// targeting (the successor to select_instance/port): a configured Database is
-// injected as the "database" tools/call argument on a session-scoped call
-// (decompile), an empty Database leaves the request with no "database" key at
-// all (legacy behaviour preserved), and an args map that already carries a
-// "database" key is left untouched (callStructured only sets it when absent).
+// targeting: a configured Database is injected as the "database" tools/call
+// argument on a session-scoped call (decompile), an empty Database leaves the
+// request with no "database" key at all (legacy behaviour preserved), and an
+// args map that already carries a "database" key is left untouched
+// (callStructured only sets it when absent).
 func TestMCPHTTPDatabaseInjectedInArgs(t *testing.T) {
 	decompileRT := func(capture *json.RawMessage) http.RoundTripper {
 		return rtFunc(func(r *http.Request) (*http.Response, error) {
@@ -488,76 +488,6 @@ func TestMCPHTTPDatabaseInjectedInArgs(t *testing.T) {
 			t.Errorf(`args["database"] = %v (present=%v), want "preset" (must not be overwritten)`, got, ok)
 		}
 	})
-}
-
-// TestMCPHTTPSelectInstance asserts SelectInstance issues select_instance with
-// {port:N}.
-func TestMCPHTTPSelectInstance(t *testing.T) {
-	var gotTool string
-	var gotPort int
-	rt := rtFunc(func(r *http.Request) (*http.Response, error) {
-		method, name, args := readMethodAndArgs(r)
-		if resp, ok := handshakeOK(method); ok {
-			return resp, nil
-		}
-		gotTool = name
-		var a struct {
-			Port int `json:"port"`
-		}
-		_ = json.Unmarshal(args, &a)
-		gotPort = a.Port
-		return structuredResp(map[string]any{"ok": true}), nil
-	})
-	c := NewMCPHTTPClient("http://test/mcp", &http.Client{Transport: rt})
-	if err := c.SelectInstance(context.Background(), 13338); err != nil {
-		t.Fatalf("SelectInstance: %v", err)
-	}
-	if gotTool != "select_instance" {
-		t.Errorf("tool = %q, want select_instance", gotTool)
-	}
-	if gotPort != 13338 {
-		t.Errorf("port = %d, want 13338", gotPort)
-	}
-}
-
-// TestMCPHTTPInstancePortSelectedAfterHandshake asserts a configured instance
-// port triggers a select_instance call once, after the handshake, before the
-// first tool call.
-func TestMCPHTTPInstancePortSelectedAfterHandshake(t *testing.T) {
-	var methods []string
-	rt := rtFunc(func(r *http.Request) (*http.Response, error) {
-		method, name, _ := readMethodAndArgs(r)
-		if name != "" {
-			methods = append(methods, name)
-		} else {
-			methods = append(methods, method)
-		}
-		if resp, ok := handshakeOK(method); ok {
-			return resp, nil
-		}
-		if name == "select_instance" {
-			return structuredResp(map[string]any{"ok": true}), nil
-		}
-		return structuredResp(map[string]any{
-			"result": []map[string]any{{"query": "x", "fn": map[string]any{"addr": "0x1"}, "error": nil}},
-		}), nil
-	})
-	c := NewMCPHTTPClientWithInstance("http://test/mcp", &http.Client{Transport: rt}, 13339)
-	if _, _, err := c.GetFunctionByName(context.Background(), "x"); err != nil {
-		t.Fatalf("GetFunctionByName: %v", err)
-	}
-	if _, _, err := c.GetFunctionByName(context.Background(), "y"); err != nil {
-		t.Fatalf("GetFunctionByName 2: %v", err)
-	}
-	want := []string{"initialize", "notifications/initialized", "select_instance", "lookup_funcs", "lookup_funcs"}
-	if len(methods) != len(want) {
-		t.Fatalf("methods = %v, want %v", methods, want)
-	}
-	for i := range want {
-		if methods[i] != want[i] {
-			t.Errorf("methods[%d] = %q, want %q", i, methods[i], want[i])
-		}
-	}
 }
 
 // TestMCPHTTPSessionIDReplayed asserts the Mcp-Session-Id from the initialize

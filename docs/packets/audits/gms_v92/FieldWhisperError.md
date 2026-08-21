@@ -1,16 +1,16 @@
 # FieldWhisperError (← `CField::OnWhisper#Error`)
 
-- **IDA:** 
+- **IDA:** 0x53e2a0
 - **Atlas file:** `libs/atlas-packet/field/clientbound/whisper.go`
 - **Variant:** GMS/v92
 - **Branch depth:** 0
-- **Verdict:** ❌
+- **Verdict:** ✅
 
 ## Wire-level diff
 
 | # | Atlas writes | v? reads | Verdict | Note |
 |---|---|---|---|---|
-| 0 | byte | unresolved `dispatcher-family arm not harvested for gms_v92 (see notes)` | 🚫 | IDA read-order unresolved: dispatcher-family arm not harvested for gms_v92 (see notes) |
-| 1 | string | byte `` | ❌ | atlas: extra — client never reads this field |
-| 2 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
+| 0 | byte | byte `mode` | ✅ |  |
+| 1 | string | string `target` | ✅ |  |
+| 2 | byte | byte `whispersEnabled` | ✅ |  |
 

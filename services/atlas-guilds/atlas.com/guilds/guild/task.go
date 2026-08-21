@@ -24,14 +24,16 @@ type Timeout struct {
 }
 
 // NewTransitionTimeout builds the guild-creation-coordination expiry sweep.
-// envContext originates this pod's own environment identity (env.Self())
-// onto each expired guild's per-tenant context before
+// envContext originates the environment that owns each expired guild's
+// tenant (falling back to this pod's own, env.Self(), when the tenant is
+// unknown) onto that guild's per-tenant context before
 // CreationAgreementResponseAndEmit produces a real Kafka event -- guild is
 // outside env-domain-guard's permitted atlas-env import list, so the caller
 // (main.go) threads this in as a plain function value rather than the
-// package importing atlas-env itself. Without it, decide() sees an empty
-// ENVIRONMENT header and fails open per FR-1.8: every live deployment, not
-// just this pod's, would act on the expired coordination.
+// package importing atlas-env itself. Without it, decide() sees an empty or
+// wrong ENVIRONMENT header and either fails open per FR-1.8 or is dropped by
+// every consumer's ownership gate per FR-7.7, depending on which fallback
+// would otherwise be used.
 func NewTransitionTimeout(l logrus.FieldLogger, db *gorm.DB, interval time.Duration, envContext func(context.Context) context.Context) *Timeout {
 	var to int64 = 5000
 	timeout := time.Duration(to) * time.Millisecond
@@ -61,14 +63,14 @@ func (t *Timeout) rejectExpiredCoordination(l logrus.FieldLogger, ctx context.Co
 	return NewProcessor(l, ctx, t.db).CreationAgreementResponseAndEmit(leaderId, false, uuid.New())
 }
 
-// processExpiredCoordinations originates this pod's own environment identity
-// onto each expired guild-creation coordination's per-tenant context before
-// calling act -- coordination timeout is per-character lifecycle state driven
-// by real gameplay, so an empty ENVIRONMENT header would make decide() fail
-// open per FR-1.8 and every live deployment, not just this pod's, would act
-// on the expired coordination. A nil envContext is a caller bug; tests
-// exercise this directly since NewTransitionTimeout's own tests can't
-// observe the resulting context.
+// processExpiredCoordinations originates the environment that owns each
+// expired guild-creation coordination's tenant onto that coordination's
+// per-tenant context before calling act -- coordination timeout is per-
+// character lifecycle state driven by real gameplay, so an empty or wrong
+// ENVIRONMENT header would either make decide() fail open per FR-1.8 or be
+// dropped at every consumer's ownership gate per FR-7.7. A nil envContext is
+// a caller bug; tests exercise this directly since NewTransitionTimeout's
+// own tests can't observe the resulting context.
 func processExpiredCoordinations(l logrus.FieldLogger, ctx context.Context, gs []coordinator.Model, act func(l logrus.FieldLogger, ctx context.Context, leaderId uint32) error, envContext func(context.Context) context.Context) {
 	for _, g := range gs {
 		l.Infof("Guild creation coordination expired for guild [%s].", g.Name())

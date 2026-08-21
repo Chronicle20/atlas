@@ -81,3 +81,21 @@ atlas-data/searchindex/searchindex.go:235 # SearchWithFilter — same resolved-p
 atlas-data/searchindex/searchindex.go:264 # Count — same resolved-partition shape as Search/SearchWithFilter.
 atlas-data/searchindex/searchindex.go:304 # CountWithFilter — same resolved-partition shape as Count; WHERE re-applies `tenant_id = ?` (searchindex.go:306) against the resolved partition id.
 atlas-data/data/status.go:148 # handleGetStatus — bypasses so a `scope=shared` request (X-Atlas-Operator gated, resolveStatusTenantId:124-130) can read the canonical baseline tenant's rows instead of being AND-ed with the caller's own tenant_id; comment status.go:145-148 states this explicitly. queryStatus (not shown in this file) filters tenant_id explicitly to the resolved scope.
+
+# task-231 (atlas-events): the scheduled-work poller is the one deliberate
+# cross-tenant reader in this service — a single ticker must see every
+# tenant's due work, so it cannot run under the GORM tenant filter (design
+# §4.2, FR-N13/FR-N14). Two independent scopings replace it: every row
+# carries its own tenant identity (tenant_id + region/major/minor, the
+# atlas-saga-orchestrator saga/entity.go shape), and ProcessorImpl.dispatch
+# rebuilds a tenant-scoped context per claimed row via tenantContext()
+# BEFORE any handler or tenant-filtered query runs. task-232 adds the second
+# dimension: ProcessorImpl.owns (scheduling.TenantOwnership, injected from
+# services/atlas-events/atlas.com/events/main.go's ownsTenant because
+# libs/atlas-env may not be imported from a domain package) filters both the
+# claim and the reclaim to environments this deployment actually serves, so
+# a baseline pod never claims or reclaims a PR environment's row.
+atlas-events/event/scheduling/processor.go:151 # ClaimBatch — the FR-S6 due-work SELECT ... FOR UPDATE SKIP LOCKED across every tenant. The rows it returns are filtered by p.ownsTenant before the claiming UPDATE below (task-232), and each row's tenant context is rebuilt in dispatch() before execution.
+atlas-events/event/scheduling/processor.go:184 # ClaimBatch — the paired PENDING -> PROCESSING UPDATE, addressed by the surrogate ids of the rows the SELECT above already resolved and ownership-filtered; same statement, same transaction.
+atlas-events/event/scheduling/processor.go:215 # Reclaim — the FR-S7 lease sweep for work abandoned by a dead replica, cross-tenant by the same design as ClaimBatch. When an ownership predicate is installed this is the read half only; the reset is the ownership-filtered UPDATE at :244.
+atlas-events/event/scheduling/processor.go:244 # Reclaim — resets only the due rows p.ownsTenant admitted, addressed by their own surrogate ids (task-232), so a baseline pod cannot bump attempts on a PR environment's in-flight row.

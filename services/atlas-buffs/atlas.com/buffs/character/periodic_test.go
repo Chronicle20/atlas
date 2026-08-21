@@ -28,7 +28,7 @@ func TestGetPeriodicEntriesIgnoresNonPeriodicStats(t *testing.T) {
 	ctx := setupTestContext(t, setupTestTenant(t))
 
 	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(1), 100, 2001001, 1, 600000,
-		[]stat.Model{stat.NewStat("WEAPON_ATTACK", 30)}, false, false)
+		[]stat.Model{stat.NewStat("WEAPON_ATTACK", 30)}, false, false, "")
 	require.NoError(t, err)
 
 	entries, err := GetRegistry().GetPeriodicEntries(ctx)
@@ -48,7 +48,7 @@ func TestGetPeriodicEntriesYieldsEveryPeriodicStatOnOneBuff(t *testing.T) {
 			stat.NewStat("DRAGON_BLOOD", 48),
 			stat.NewStat("POISON", 25),
 			stat.NewStat("WEAPON_ATTACK", 30),
-		}, false, false)
+		}, false, false, "")
 	require.NoError(t, err)
 
 	entries, err := GetRegistry().GetPeriodicEntries(ctx)
@@ -71,10 +71,10 @@ func TestGetPeriodicEntriesDedupesByMaxAmount(t *testing.T) {
 	ctx := setupTestContext(t, setupTestTenant(t))
 
 	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(1), 100, 5001, 1, 600000,
-		[]stat.Model{stat.NewStat("POISON", 10)}, false, false)
+		[]stat.Model{stat.NewStat("POISON", 10)}, false, false, "")
 	require.NoError(t, err)
 	_, err = GetRegistry().Apply(ctx, world.Id(0), channel.Id(1), 100, 5002, 1, 600000,
-		[]stat.Model{stat.NewStat("POISON", 25)}, false, false)
+		[]stat.Model{stat.NewStat("POISON", 25)}, false, false, "")
 	require.NoError(t, err)
 
 	entries, err := GetRegistry().GetPeriodicEntries(ctx)
@@ -91,7 +91,7 @@ func TestGetPeriodicEntriesSkipsExpiredBuffs(t *testing.T) {
 	// reads the real wall clock, so a 1ms buff plus a short sleep is the only
 	// way to produce a lapsed buff.
 	_, err := GetRegistry().Apply(ctx, world.Id(0), channel.Id(1), 100, 5001, 1, 1,
-		[]stat.Model{stat.NewStat("POISON", 25)}, false, false)
+		[]stat.Model{stat.NewStat("POISON", 25)}, false, false, "")
 	require.NoError(t, err)
 	time.Sleep(10 * time.Millisecond)
 

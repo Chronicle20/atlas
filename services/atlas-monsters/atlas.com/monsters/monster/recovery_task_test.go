@@ -17,7 +17,7 @@ func TestRecoveryTask_AppliesMpAndEmitsHp(t *testing.T) {
 	tm := newTestTenant(t)
 	tctx := tenant.WithContext(ctx, tm)
 
-	m := r.CreateMonster(tctx, tm, testField(), 9300018, 0, 0, 0, 5, 0, 1000, 100)
+	m := r.CreateMonster(tctx, tm, testField(), 9300018, 0, 0, 0, 5, 0, 1000, 100, "", "")
 	if _, err := r.ControlMonster(tm, m.UniqueId(), 99); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
 	}
@@ -71,7 +71,7 @@ func TestRecoveryTask_SkipsBothZero(t *testing.T) {
 	tm := newTestTenant(t)
 	tctx := tenant.WithContext(ctx, tm)
 
-	m := r.CreateMonster(tctx, tm, testField(), 9300018, 0, 0, 0, 5, 0, 1000, 100)
+	m := r.CreateMonster(tctx, tm, testField(), 9300018, 0, 0, 0, 5, 0, 1000, 100, "", "")
 	if _, err := r.DeductMp(tm, m.UniqueId(), 50); err != nil {
 		t.Fatalf("DeductMp: %v", err)
 	}
@@ -106,7 +106,7 @@ func TestRecoveryTask_SkipsFullHpAndFullMp(t *testing.T) {
 	tm := newTestTenant(t)
 	tctx := tenant.WithContext(ctx, tm)
 
-	_ = r.CreateMonster(tctx, tm, testField(), 9300018, 0, 0, 0, 5, 0, 1000, 100)
+	_ = r.CreateMonster(tctx, tm, testField(), 9300018, 0, 0, 0, 5, 0, 1000, 100, "", "")
 
 	infoCalls := 0
 	tk := &MonsterRecoveryTask{
@@ -136,7 +136,7 @@ func TestRecoveryTask_SkipsDeadMob(t *testing.T) {
 	tm := newTestTenant(t)
 	tctx := tenant.WithContext(ctx, tm)
 
-	m := r.CreateMonster(tctx, tm, testField(), 9300018, 0, 0, 0, 5, 0, 1, 100)
+	m := r.CreateMonster(tctx, tm, testField(), 9300018, 0, 0, 0, 5, 0, 1, 100, "", "")
 	if _, err := r.ApplyDamage(tm, 99, 1, m.UniqueId(), time.Now().UnixMilli()); err != nil {
 		t.Fatalf("ApplyDamage: %v", err)
 	}
@@ -170,7 +170,7 @@ func TestRecovery_MpApplied_EmitsMpChanged(t *testing.T) {
 	tctx := tenant.WithContext(ctx, tm)
 
 	// Below max MP so Run() processes the monster (maxMp seeds from mp=100).
-	m := r.CreateMonster(tctx, tm, testField(), 9300018, 0, 0, 0, 5, 0, 1000, 100)
+	m := r.CreateMonster(tctx, tm, testField(), 9300018, 0, 0, 0, 5, 0, 1000, 100, "", "")
 	if _, err := r.DeductMp(tm, m.UniqueId(), 60); err != nil {
 		t.Fatalf("DeductMp: %v", err)
 	}
@@ -214,7 +214,7 @@ func TestRecovery_MpNotApplied_NoMpChangedEmit(t *testing.T) {
 	tm := newTestTenant(t)
 	tctx := tenant.WithContext(ctx, tm)
 
-	m := r.CreateMonster(tctx, tm, testField(), 9300018, 0, 0, 0, 5, 0, 1000, 100)
+	m := r.CreateMonster(tctx, tm, testField(), 9300018, 0, 0, 0, 5, 0, 1000, 100, "", "")
 	if _, err := r.DeductMp(tm, m.UniqueId(), 60); err != nil {
 		t.Fatalf("DeductMp: %v", err)
 	}

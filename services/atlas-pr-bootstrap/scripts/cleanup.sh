@@ -335,15 +335,26 @@ do_sweep_tenant() {
         ATLAS_STEP=sweep-tenant log info "skipped — no control-plane environment record for $ATLAS_ENVIRONMENT (nothing registered to reclaim)"
         return 0
     fi
-    local body tenant
+    local body tenant baseline
     body=$(_dcp_env_get)
     tenant=$(printf '%s' "${body:-}" | jq -r '.data.attributes.tenant // empty' 2>/dev/null)
     if [ -z "$tenant" ]; then
         ATLAS_STEP=sweep-tenant log warn "control-plane environment record for $ATLAS_ENVIRONMENT has no tenant attribute; cannot reclaim tenant-keyed rows"
         return 1
     fi
-    ATLAS_STEP=sweep-tenant log info "reclaiming tenant-keyed rows for tenant=$tenant across shared databases"
-    if ! "$(dirname "$0")/sweep-orphans.sh" --sweep-tenant "$tenant" --apply; then
+    # The database suffix sweep_tenant DELETEs from is the baseline's, not
+    # ATLAS_ENVIRONMENT's (design §7.5, D1), and the baseline is a field on
+    # the record — never assumed to be "main" (design.md:271, FR-1.5).
+    # do_deactivate above reads baseline from this same fetched body; follow
+    # that precedent rather than hard-coding it downstream in
+    # sweep-orphans.sh.
+    baseline=$(printf '%s' "${body:-}" | jq -r '.data.attributes.baseline // empty' 2>/dev/null)
+    if [ -z "$baseline" ]; then
+        ATLAS_STEP=sweep-tenant log warn "control-plane environment record for $ATLAS_ENVIRONMENT has no baseline attribute; cannot reclaim tenant-keyed rows"
+        return 1
+    fi
+    ATLAS_STEP=sweep-tenant log info "reclaiming tenant-keyed rows for tenant=$tenant across shared databases (baseline=$baseline)"
+    if ! "$(dirname "$0")/sweep-orphans.sh" --sweep-tenant "$tenant" --baseline "$baseline" --apply; then
         ATLAS_STEP=sweep-tenant log warn "sweep-orphans.sh --sweep-tenant reported failures"
         return 1
     fi

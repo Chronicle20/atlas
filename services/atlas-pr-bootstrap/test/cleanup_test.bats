@@ -486,7 +486,7 @@ echo "curl $*" >> "$STUB_LOG"
 url="${@: -1}"
 case "$url" in
     */configurations/environments/*)
-        echo '{"data":{"attributes":{"phase":"ACTIVE","tenant":"99999999-9999-9999-9999-999999999999"}}}'
+        echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"main","tenant":"99999999-9999-9999-9999-999999999999"}}}'
         exit 0
         ;;
     *)
@@ -639,7 +639,7 @@ printf '%s\n' "curl \$*" >> "$CALL_LOG"
 url="\${@: -1}"
 case "\$url" in
     */configurations/environments/*)
-        echo '{"data":{"attributes":{"phase":"ACTIVE","tenant":"88888888-8888-8888-8888-888888888888"}}}'
+        echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"main","tenant":"88888888-8888-8888-8888-888888888888"}}}'
         ;;
     *)
         echo '{"data":[]}'
@@ -684,7 +684,7 @@ EOF
     rm -rf "$SHIM_DIR"
 }
 
-@test "cleanup.sh sweep-tenant reclaims this environment's tenant via sweep-orphans.sh --sweep-tenant --apply" {
+@test "cleanup.sh sweep-tenant reclaims this environment's tenant via sweep-orphans.sh --sweep-tenant --apply, deriving the DB suffix from a non-main baseline" {
     SHIM_DIR="$(mktemp -d)"
     CALL_LOG="$BATS_TEST_TMPDIR/dcp-calls.log"
     cat > "$SHIM_DIR/curl" <<CURLEOF
@@ -693,7 +693,7 @@ printf '%s\n' "curl \$*" >> "$CALL_LOG"
 url="\${@: -1}"
 case "\$url" in
     */configurations/environments/*)
-        echo '{"data":{"attributes":{"phase":"ACTIVE","tenant":"77777777-7777-7777-7777-777777777777"}}}'
+        echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"release-7","tenant":"77777777-7777-7777-7777-777777777777"}}}'
         ;;
     *)
         echo '{"data":[]}'
@@ -734,6 +734,10 @@ EOF
     [ "$status" -eq 0 ]
     [[ "$output" == *'sweep-tenant'*'reclaiming tenant-keyed rows for tenant=77777777-7777-7777-7777-777777777777'* ]]
     grep -F "tenant_id = '77777777-7777-7777-7777-777777777777'" "$CALL_LOG"
+    # The database suffix comes from the record's baseline attribute
+    # (release-7), never the literal "main" (design.md:271, FR-1.5).
+    grep -F -- "-d atlas-characters-release-7" "$CALL_LOG"
+    ! grep -F -- "-d atlas-characters-main" "$CALL_LOG"
 
     rm -rf "$SHIM_DIR"
 }
@@ -791,6 +795,60 @@ EOF
     rm -rf "$SHIM_DIR"
 }
 
+@test "cleanup.sh sweep-tenant fails the phase (not the whole script) when the environment record has no baseline attribute" {
+    SHIM_DIR="$(mktemp -d)"
+    cat > "$SHIM_DIR/curl" <<'CURLEOF'
+#!/usr/bin/env bash
+url="${@: -1}"
+case "$url" in
+    */configurations/environments/*)
+        echo '{"data":{"attributes":{"phase":"ACTIVE","tenant":"66666666-6666-6666-6666-666666666666"}}}'
+        ;;
+    *)
+        echo '{"data":[]}'
+        ;;
+esac
+exit 0
+CURLEOF
+    chmod +x "$SHIM_DIR/curl"
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/gh" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" ATLAS_MODE=sparse run env \
+        PR_NUMBER=99 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        ATLAS_UI_BASE=http://fake-ui ATLAS_DEACTIVATE_SETTLE_S=0 ATLAS_MODE=sparse \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    # A tenant with no baseline must never fall back to sweeping "-main"
+    # (design.md:271, FR-1.5) — the phase fails loudly instead, but every
+    # other phase still runs.
+    [[ "$output" == *'sweep-tenant'*'no baseline attribute'* ]]
+    [[ "$output" == *'failed_phases'*'sweep-tenant'* ]]
+    [[ "$output" == *'drop-branch'*'phase complete'* ]]
+
+    rm -rf "$SHIM_DIR"
+}
+
 @test "cleanup.sh drop-control-plane deletes every row for this environment, including duplicates, and never a foreign row" {
     # task-47 review finding: create_service_config is not idempotent
     # across a retried bootstrap Job, so a crashed attempt can leave an
@@ -822,7 +880,7 @@ done
 url="\${@: -1}"
 case "\$url" in
     */configurations/environments/*)
-        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE","tenant":"66666666-6666-6666-6666-666666666666"}}}'
+        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"main","tenant":"66666666-6666-6666-6666-666666666666"}}}'
         ;;
     */configurations/services*)
         [ "\$method" = "GET" ] && cat "$JSON_FIXTURE"
@@ -902,7 +960,7 @@ done
 url="\${@: -1}"
 case "\$url" in
     */configurations/environments/*)
-        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE","tenant":"66666666-6666-6666-6666-666666666666"}}}'
+        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"main","tenant":"66666666-6666-6666-6666-666666666666"}}}'
         ;;
     */configurations/services*'page[number]=2'*)
         [ "\$method" = "GET" ] && cat "$PAGE2"
@@ -974,7 +1032,7 @@ done
 url="\${@: -1}"
 case "\$url" in
     */configurations/environments/*)
-        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE","tenant":"66666666-6666-6666-6666-666666666666"}}}'
+        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"main","tenant":"66666666-6666-6666-6666-666666666666"}}}'
         ;;
     *)
         [ "\$method" = "GET" ] && echo '{"data":[]}'

@@ -393,6 +393,7 @@ EOF
     TMP_SCRIPTS="$(mktemp -d)"
     cp "$SCRIPT" "$TMP_SCRIPTS/sweep-orphans.sh"
     cp "$PROJECT_ROOT/scripts/lib.sh" "$TMP_SCRIPTS/lib.sh"
+    cp "$PROJECT_ROOT/scripts/env-record.sh" "$TMP_SCRIPTS/env-record.sh"
     cat > "$TMP_SCRIPTS/tenant-tables.txt" <<'EOF'
 atlas-characters characters
 atlas-accounts accounts
@@ -407,13 +408,13 @@ EOF
 
     run env PATH="$SHIM_DIR:$PATH" DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
         bash "$TMP_SCRIPTS/sweep-orphans.sh" \
-        --sweep-tenant "11111111-1111-1111-1111-111111111111" --apply
+        --sweep-tenant "11111111-1111-1111-1111-111111111111" --baseline main --apply
 
     [ "$status" -eq 0 ]
     # tenant-tables.txt lists bare base names; the actual database is that
-    # base suffixed with -main (sparse mode's shared databases are the
-    # baseline's, never suffixed by ATLAS_ENV — a bare base name doesn't
-    # exist).
+    # base suffixed with the resolved baseline (sparse mode's shared
+    # databases are the baseline's, never suffixed by ATLAS_ENV — a bare
+    # base name doesn't exist).
     grep -F -- "-d atlas-characters-main" "$CALL_LOG"
     grep -F "DELETE FROM \"characters\" WHERE tenant_id = '11111111-1111-1111-1111-111111111111'" "$CALL_LOG"
     grep -F -- "-d atlas-accounts-main" "$CALL_LOG"
@@ -426,11 +427,63 @@ EOF
     rm -rf "$SHIM_DIR" "$TMP_SCRIPTS"
 }
 
+@test "sweep-orphans.sh --sweep-tenant derives the database suffix from a non-main baseline" {
+    SHIM_DIR="$(mktemp -d)"
+    TMP_SCRIPTS="$(mktemp -d)"
+    cp "$SCRIPT" "$TMP_SCRIPTS/sweep-orphans.sh"
+    cp "$PROJECT_ROOT/scripts/lib.sh" "$TMP_SCRIPTS/lib.sh"
+    cp "$PROJECT_ROOT/scripts/env-record.sh" "$TMP_SCRIPTS/env-record.sh"
+    cat > "$TMP_SCRIPTS/tenant-tables.txt" <<'EOF'
+atlas-characters characters
+EOF
+    CALL_LOG="$BATS_TEST_TMPDIR/calls.log"
+    cat > "$SHIM_DIR/psql" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "psql \$*" >> "$CALL_LOG"
+exit 0
+EOF
+    chmod +x "$SHIM_DIR/psql" "$TMP_SCRIPTS/sweep-orphans.sh"
+
+    # --baseline explicitly overrides — no ATLAS_UI_BASE/ATLAS_ENVIRONMENT
+    # needed, and no curl stub is provided (a call would fail loudly).
+    run env PATH="$SHIM_DIR:$PATH" DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        bash "$TMP_SCRIPTS/sweep-orphans.sh" \
+        --sweep-tenant "11111111-1111-1111-1111-111111111111" \
+        --baseline "release-42" --apply
+
+    [ "$status" -eq 0 ]
+    grep -F -- "-d atlas-characters-release-42" "$CALL_LOG"
+    ! grep -F -- "-d atlas-characters-main" "$CALL_LOG"
+
+    rm -rf "$SHIM_DIR" "$TMP_SCRIPTS"
+}
+
+@test "sweep-orphans.sh --sweep-tenant fails loudly instead of guessing -main when the baseline cannot be resolved" {
+    TMP_SCRIPTS="$(mktemp -d)"
+    cp "$SCRIPT" "$TMP_SCRIPTS/sweep-orphans.sh"
+    cp "$PROJECT_ROOT/scripts/lib.sh" "$TMP_SCRIPTS/lib.sh"
+    cp "$PROJECT_ROOT/scripts/env-record.sh" "$TMP_SCRIPTS/env-record.sh"
+    printf 'atlas-characters characters\n' > "$TMP_SCRIPTS/tenant-tables.txt"
+    chmod +x "$TMP_SCRIPTS/sweep-orphans.sh"
+
+    # No --baseline, and no ATLAS_UI_BASE/ATLAS_ENVIRONMENT to fall back to
+    # a live lookup — must refuse rather than silently sweeping "-main".
+    run env DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        bash "$TMP_SCRIPTS/sweep-orphans.sh" \
+        --sweep-tenant "11111111-1111-1111-1111-111111111111" --apply
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"cannot resolve baseline"* ]]
+
+    rm -rf "$TMP_SCRIPTS"
+}
+
 @test "sweep-orphans.sh --sweep-tenant surfaces psql stderr in the failure warning" {
     SHIM_DIR="$(mktemp -d)"
     TMP_SCRIPTS="$(mktemp -d)"
     cp "$SCRIPT" "$TMP_SCRIPTS/sweep-orphans.sh"
     cp "$PROJECT_ROOT/scripts/lib.sh" "$TMP_SCRIPTS/lib.sh"
+    cp "$PROJECT_ROOT/scripts/env-record.sh" "$TMP_SCRIPTS/env-record.sh"
     printf 'atlas-characters characters\n' > "$TMP_SCRIPTS/tenant-tables.txt"
     cat > "$SHIM_DIR/psql" <<'EOF'
 #!/usr/bin/env bash
@@ -441,7 +494,7 @@ EOF
 
     run env PATH="$SHIM_DIR:$PATH" DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
         bash "$TMP_SCRIPTS/sweep-orphans.sh" \
-        --sweep-tenant "11111111-1111-1111-1111-111111111111" --apply
+        --sweep-tenant "11111111-1111-1111-1111-111111111111" --baseline main --apply
 
     [ "$status" -ne 0 ]
     [[ "$output" == *"delete from atlas-characters-main.characters failed"* ]]
@@ -463,6 +516,7 @@ EOF
     TMP_SCRIPTS="$(mktemp -d)"
     cp "$SCRIPT" "$TMP_SCRIPTS/sweep-orphans.sh"
     cp "$PROJECT_ROOT/scripts/lib.sh" "$TMP_SCRIPTS/lib.sh"
+    cp "$PROJECT_ROOT/scripts/env-record.sh" "$TMP_SCRIPTS/env-record.sh"
     printf 'atlas-characters characters\n' > "$TMP_SCRIPTS/tenant-tables.txt"
     cat > "$SHIM_DIR/psql" <<'EOF'
 #!/usr/bin/env bash
@@ -472,7 +526,8 @@ EOF
     chmod +x "$SHIM_DIR/psql" "$TMP_SCRIPTS/sweep-orphans.sh"
 
     run env PATH="$SHIM_DIR:$PATH" DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
-        bash "$TMP_SCRIPTS/sweep-orphans.sh" --sweep-tenant "33333333-3333-3333-3333-333333333333"
+        bash "$TMP_SCRIPTS/sweep-orphans.sh" --sweep-tenant "33333333-3333-3333-3333-333333333333" \
+        --baseline main
 
     [ "$status" -eq 0 ]
     [[ "$output" == *"sweep-tenant atlas-characters-main.characters"* ]]
@@ -484,6 +539,7 @@ EOF
     TMP_SCRIPTS="$(mktemp -d)"
     cp "$SCRIPT" "$TMP_SCRIPTS/sweep-orphans.sh"
     cp "$PROJECT_ROOT/scripts/lib.sh" "$TMP_SCRIPTS/lib.sh"
+    cp "$PROJECT_ROOT/scripts/env-record.sh" "$TMP_SCRIPTS/env-record.sh"
     chmod +x "$TMP_SCRIPTS/sweep-orphans.sh"
 
     run env DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \

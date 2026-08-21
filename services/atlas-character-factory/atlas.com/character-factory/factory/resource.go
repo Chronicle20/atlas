@@ -78,27 +78,31 @@ func categorizeMapleLifeError(err error) int {
 	}
 }
 
-// mapleLifeProcessor constructs the Processor used by handleCreateMapleLife.
-// It is a package-level var (rather than an inline NewProcessor(d.Logger())
-// call) so tests can substitute a fake Processor without reaching the real
-// HTTP clients NewProcessor wires up.
-var mapleLifeProcessor = NewProcessor
-
 // handleCreateMapleLife handles POST /factory/characters/maple-life.
 // The request body must be JSON:API encoded with type "maple-life-create".
 func handleCreateMapleLife(d *rest.HandlerDependency, c *rest.HandlerContext, in MapleLifeCreateRestModel) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		processor := mapleLifeProcessor(d.Logger())
-		transactionId, err := processor.CreateMapleLife(d.Context(), in)
-		if err != nil {
-			statusCode := categorizeMapleLifeError(err)
-			w.WriteHeader(statusCode)
-			return
-		}
+	return newMapleLifeHandler(NewProcessor)(d, c, in)
+}
 
-		response := CreateCharacterResponse{TransactionId: transactionId}
-		w.WriteHeader(http.StatusAccepted)
-		server.MarshalResponse[CreateCharacterResponse](d.Logger())(w)(c.ServerInformation())(map[string][]string{})(response)
+// newMapleLifeHandler builds the handleCreateMapleLife handler around a Processor
+// factory. Production wiring always passes NewProcessor (see handleCreateMapleLife
+// above); tests inject a factory that returns a fake Processor, avoiding the real
+// HTTP clients NewProcessor wires up without resorting to package-level mutable state.
+func newMapleLifeHandler(newProcessor func(logrus.FieldLogger) Processor) func(d *rest.HandlerDependency, c *rest.HandlerContext, in MapleLifeCreateRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, in MapleLifeCreateRestModel) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			processor := newProcessor(d.Logger())
+			transactionId, err := processor.CreateMapleLife(d.Context(), in)
+			if err != nil {
+				statusCode := categorizeMapleLifeError(err)
+				w.WriteHeader(statusCode)
+				return
+			}
+
+			response := CreateCharacterResponse{TransactionId: transactionId}
+			w.WriteHeader(http.StatusAccepted)
+			server.MarshalResponse[CreateCharacterResponse](d.Logger())(w)(c.ServerInformation())(map[string][]string{})(response)
+		}
 	}
 }
 

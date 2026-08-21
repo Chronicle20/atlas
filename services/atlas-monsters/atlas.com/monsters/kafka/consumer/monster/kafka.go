@@ -29,6 +29,7 @@ const (
 	CommandTypeCatch             = "CATCH"
 	CommandTypeClearAggro        = "CLEAR_AGGRO"
 	CommandTypeForceControl      = "FORCE_CONTROL"
+	CommandTypeSelfDestruct      = "SELF_DESTRUCT"
 
 	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
@@ -145,6 +146,20 @@ type killCommandBody struct {
 // message. characterId and itemId are both uint32 and both already appear with
 // that type in sibling bodies (damageCommandBody.CharacterId,
 // drainMpCommandBody.SkillId).
+// selfDestructCommandBody asks the processor to detonate a self-destructing
+// monster with the animation its WZ selfDestruction block specifies.
+// CharacterId is the character who reported the contact (MONSTER_BOMB), or 0
+// when there is none; the processor re-derives every predicate itself, so this
+// carries no animation and no reason discriminator — the animation must never
+// come from a client-influenceable field (task-253 design D7).
+//
+// CharacterId matches the field name and type used by damageCommandBody,
+// killCommandBody and forceControlCommandBody, so it introduces no unmarshal
+// collision on the shared command topic.
+type selfDestructCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
 type catchCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 	ItemId      uint32 `json:"itemId"`

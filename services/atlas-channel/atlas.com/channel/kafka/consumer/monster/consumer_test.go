@@ -663,27 +663,28 @@ func TestBridleFailReason(t *testing.T) {
 	}
 }
 
-// TestDestroyTypeFor maps a KILLED/DESTROYED event's deathType byte onto the
-// wire dead-type. 0 means "the producer did not set it" -- an old
-// atlas-monsters mid-rolling-deploy -- and renders as fade-out, byte-identical
-// to the pre-task-253 hardcode (task-253 design D9).
-func TestDestroyTypeFor(t *testing.T) {
+// TestDestroyCodeFor maps a KILLED/DESTROYED event's DeathType* semantic key
+// onto the DestroyMonster writer's operations-table key (DOM-25). The empty
+// string means "the producer did not set it" -- an old atlas-monsters
+// mid-rolling-deploy -- and renders as fade-out, byte-identical to the
+// pre-task-253 hardcode (task-253 design D9).
+func TestDestroyCodeFor(t *testing.T) {
 	tests := []struct {
 		name      string
-		deathType byte
-		want      monsterpkt.DestroyType
+		deathType string
+		want      writer.DestroyMonsterCode
 	}{
-		{"producer omitted the field", 0, monsterpkt.DestroyTypeFadeOut},
-		{"ordinary fade-out", 1, monsterpkt.DestroyTypeFadeOut},
-		{"bomb", 2, monsterpkt.DestroyTypeBomb},
-		{"destruct-by-miss", 3, monsterpkt.DestroyTypeDestructByMiss},
-		{"swallow", 4, monsterpkt.DestroyTypeSwallow},
-		{"self-destruct", 5, monsterpkt.DestroyTypeSelfDestruct},
+		{"producer omitted the field", "", writer.DestroyMonsterFadeOut},
+		{"ordinary fade-out", "FADE_OUT", writer.DestroyMonsterFadeOut},
+		{"bomb", "BOMB", writer.DestroyMonsterBomb},
+		{"destruct-by-miss", "DESTRUCT_BY_MISS", writer.DestroyMonsterDestructByMiss},
+		{"swallow", "SWALLOW", writer.DestroyMonsterSwallow},
+		{"self-destruct", "SELF_DESTRUCT", writer.DestroyMonsterSelfDestruct},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := destroyTypeFor(tt.deathType); got != tt.want {
-				t.Fatalf("destroyTypeFor(%d) = %d, want %d", tt.deathType, got, tt.want)
+			if got := destroyCodeFor(tt.deathType); got != tt.want {
+				t.Fatalf("destroyCodeFor(%q) = %q, want %q", tt.deathType, got, tt.want)
 			}
 		})
 	}
@@ -691,22 +692,22 @@ func TestDestroyTypeFor(t *testing.T) {
 
 // TestStatusEventKilledBodyDecodesDeathType asserts the rolling-deploy
 // compatibility contract (task-253 design D9): an old atlas-monsters that
-// never emits "deathType" decodes to the zero value, which destroyTypeFor
+// never emits "deathType" decodes to the empty string, which destroyCodeFor
 // renders as fade-out.
 func TestStatusEventKilledBodyDecodesDeathType(t *testing.T) {
 	var withField monster2.StatusEventKilledBody
-	if err := json.Unmarshal([]byte(`{"x":0,"y":0,"actorId":9,"boss":false,"damageEntries":null,"deathType":3}`), &withField); err != nil {
+	if err := json.Unmarshal([]byte(`{"x":0,"y":0,"actorId":9,"boss":false,"damageEntries":null,"deathType":"DESTRUCT_BY_MISS"}`), &withField); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if withField.DeathType != 3 {
-		t.Fatalf("DeathType = %d, want 3", withField.DeathType)
+	if withField.DeathType != "DESTRUCT_BY_MISS" {
+		t.Fatalf("DeathType = %q, want DESTRUCT_BY_MISS", withField.DeathType)
 	}
 
 	var withoutField monster2.StatusEventKilledBody
 	if err := json.Unmarshal([]byte(`{"x":0,"y":0,"actorId":9,"boss":false,"damageEntries":null}`), &withoutField); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if withoutField.DeathType != 0 {
-		t.Fatalf("DeathType = %d, want 0", withoutField.DeathType)
+	if withoutField.DeathType != "" {
+		t.Fatalf("DeathType = %q, want empty", withoutField.DeathType)
 	}
 }

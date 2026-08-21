@@ -189,10 +189,11 @@ type StatusEventCreatedBody struct {
 
 type StatusEventDestroyedBody struct {
 	ActorId uint32 `json:"actorId"`
-	// DeathType is the wire dead-type atlas-monsters resolved for this
-	// destruction. 0 means the producer did not set it (rolling-deploy
-	// compatibility, task-253 design D9) and renders as fade-out.
-	DeathType byte `json:"deathType"`
+	// DeathType is the DeathType* semantic key (SPECIES_MISMATCH-style,
+	// DOM-25) atlas-monsters resolved for this destruction. The empty string
+	// means the producer did not set it (rolling-deploy compatibility,
+	// task-253 design D9) and renders as fade-out.
+	DeathType string `json:"deathType"`
 }
 
 type StatusEventStartControlBody struct {
@@ -230,10 +231,11 @@ type StatusEventKilledBody struct {
 	ActorId       uint32        `json:"actorId"`
 	Boss          bool          `json:"boss"`
 	DamageEntries []DamageEntry `json:"damageEntries"`
-	// DeathType is the wire dead-type atlas-monsters resolved for this
-	// kill. 0 means the producer did not set it (rolling-deploy
-	// compatibility, task-253 design D9) and renders as fade-out.
-	DeathType byte `json:"deathType"`
+	// DeathType is the DeathType* semantic key (SPECIES_MISMATCH-style,
+	// DOM-25) atlas-monsters resolved for this kill. The empty string means
+	// the producer did not set it (rolling-deploy compatibility, task-253
+	// design D9) and renders as fade-out.
+	DeathType string `json:"deathType"`
 }
 
 type DamageEntry struct {

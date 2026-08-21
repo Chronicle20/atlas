@@ -53,7 +53,7 @@ func TestDamageCoreCrossingThresholdDetonates(t *testing.T) {
 		sd             information.SelfDestruction
 		damages        []uint32
 		wantKilled     int
-		wantDeathType  byte
+		wantDeathType  string
 		wantActorId    uint32
 		checkDeathType bool
 	}{
@@ -63,7 +63,7 @@ func TestDamageCoreCrossingThresholdDetonates(t *testing.T) {
 			sd:             boomerSelfDestruction(),
 			damages:        []uint32{2300},
 			wantKilled:     1,
-			wantDeathType:  1,
+			wantDeathType:  DeathTypeFadeOut,
 			wantActorId:    55,
 			checkDeathType: true,
 		},
@@ -73,7 +73,7 @@ func TestDamageCoreCrossingThresholdDetonates(t *testing.T) {
 			sd:             boomerSelfDestruction(),
 			damages:        []uint32{2200},
 			wantKilled:     1,
-			wantDeathType:  1,
+			wantDeathType:  DeathTypeFadeOut,
 			wantActorId:    55,
 			checkDeathType: true,
 		},
@@ -90,7 +90,7 @@ func TestDamageCoreCrossingThresholdDetonates(t *testing.T) {
 			sd:             boomerSelfDestruction(),
 			damages:        []uint32{1500, 1500},
 			wantKilled:     1,
-			wantDeathType:  1,
+			wantDeathType:  DeathTypeFadeOut,
 			wantActorId:    55,
 			checkDeathType: true,
 		},
@@ -100,7 +100,7 @@ func TestDamageCoreCrossingThresholdDetonates(t *testing.T) {
 			sd:             boomerSelfDestruction(),
 			damages:        []uint32{1},
 			wantKilled:     1,
-			wantDeathType:  1,
+			wantDeathType:  DeathTypeFadeOut,
 			wantActorId:    55,
 			checkDeathType: true,
 		},
@@ -110,7 +110,7 @@ func TestDamageCoreCrossingThresholdDetonates(t *testing.T) {
 			sd:             boomerSelfDestruction(),
 			damages:        []uint32{4000},
 			wantKilled:     1,
-			wantDeathType:  1,
+			wantDeathType:  DeathTypeFadeOut,
 			wantActorId:    55,
 			checkDeathType: true,
 		},
@@ -120,7 +120,7 @@ func TestDamageCoreCrossingThresholdDetonates(t *testing.T) {
 			sd:             information.NewSelfDestruction(false, 0, -1, -1),
 			damages:        []uint32{4000},
 			wantKilled:     1,
-			wantDeathType:  1,
+			wantDeathType:  DeathTypeFadeOut,
 			wantActorId:    55,
 			checkDeathType: true,
 		},
@@ -162,7 +162,7 @@ func TestDamageCoreCrossingThresholdDetonates(t *testing.T) {
 					t.Fatalf("expected a KILLED body, got none")
 				}
 				if body.DeathType != tt.wantDeathType {
-					t.Errorf("DeathType = %d, want %d", body.DeathType, tt.wantDeathType)
+					t.Errorf("DeathType = %s, want %s", body.DeathType, tt.wantDeathType)
 				}
 				if body.ActorId != tt.wantActorId {
 					t.Errorf("ActorId = %d, want %d", body.ActorId, tt.wantActorId)
@@ -274,8 +274,8 @@ func TestSelfDestructRejects(t *testing.T) {
 				if body == nil {
 					t.Fatalf("expected a KILLED body")
 				}
-				if body.DeathType != 3 {
-					t.Errorf("DeathType = %d, want 3", body.DeathType)
+				if body.DeathType != DeathTypeDestructByMiss {
+					t.Errorf("DeathType = %s, want %s", body.DeathType, DeathTypeDestructByMiss)
 				}
 			}
 		})

@@ -75,14 +75,14 @@ func TestAggroChangedBodyEncoding(t *testing.T) {
 func TestKilledBodyCarriesDeathType(t *testing.T) {
 	tests := []struct {
 		name          string
-		deathType     byte
+		deathType     string
 		killerId      uint32
-		wantDeathType byte
+		wantDeathType string
 		wantActorId   uint32
 	}{
-		{"ordinary kill", DeathTypeFadeOut, 42, 1, 42},
-		{"self-destruct action 3", 3, 42, 3, 42},
-		{"no killer", 5, 0, 5, 0},
+		{"ordinary kill", DeathTypeFadeOut, 42, DeathTypeFadeOut, 42},
+		{"self-destruct action 3", DeathTypeDestructByMiss, 42, DeathTypeDestructByMiss, 42},
+		{"no killer", DeathTypeSelfDestruct, 0, DeathTypeSelfDestruct, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -105,7 +105,7 @@ func TestKilledBodyCarriesDeathType(t *testing.T) {
 				t.Errorf("type=%s, want %s", env.Type, EventMonsterStatusKilled)
 			}
 			if env.Body.DeathType != tt.wantDeathType {
-				t.Errorf("DeathType=%d, want %d", env.Body.DeathType, tt.wantDeathType)
+				t.Errorf("DeathType=%s, want %s", env.Body.DeathType, tt.wantDeathType)
 			}
 			if env.Body.ActorId != tt.wantActorId {
 				t.Errorf("ActorId=%d, want %d", env.Body.ActorId, tt.wantActorId)
@@ -133,8 +133,8 @@ func TestDestroyedBodyCarriesDeathType(t *testing.T) {
 	if env.Type != EventMonsterStatusDestroyed {
 		t.Errorf("type=%s, want %s", env.Type, EventMonsterStatusDestroyed)
 	}
-	if env.Body.DeathType != 0 {
-		t.Errorf("DeathType=%d, want 0", env.Body.DeathType)
+	if env.Body.DeathType != "" {
+		t.Errorf("DeathType=%q, want empty", env.Body.DeathType)
 	}
 }
 
@@ -144,7 +144,7 @@ func TestKilledBodyDeathTypeIsOmittedShapeCompatible(t *testing.T) {
 	if err := json.Unmarshal([]byte(raw), &body); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if body.DeathType != 0 {
-		t.Errorf("DeathType=%d, want 0", body.DeathType)
+	if body.DeathType != "" {
+		t.Errorf("DeathType=%q, want empty", body.DeathType)
 	}
 }

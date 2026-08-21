@@ -598,7 +598,7 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 // sequence, so a self-destruct cannot drift from an ordinary kill (task-253
 // design D5, FR-6.5). deathType is the wire dead-type the channel renders;
 // ordinary deaths pass DeathTypeFadeOut.
-func (p *ProcessorImpl) finalizeKill(m Model, killerId uint32, isBoss bool, revives []uint32, deathType byte) {
+func (p *ProcessorImpl) finalizeKill(m Model, killerId uint32, isBoss bool, revives []uint32, deathType string) {
 	GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
 	GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
 	GetDropTimerRegistry().Unregister(p.ctx, p.t, m.UniqueId())
@@ -692,7 +692,7 @@ func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32
 	// when the attack did not already kill — so a mob that crosses its
 	// threshold produces exactly one death, never two.
 	if !killed && sd.OnHpThreshold() && int64(last.Monster.Hp()) <= int64(sd.Hp()) {
-		p.selfDestructFrom(last.Monster, last.CharacterId, sd.Action(), TriggerThreshold)
+		p.selfDestructFrom(last.Monster, last.CharacterId, deathTypeForAction(p.l, sd.Action()), TriggerThreshold)
 		return
 	}
 
@@ -1864,13 +1864,42 @@ func (p *ProcessorImpl) SelfDestruct(uniqueId uint32, characterId uint32, trigge
 		p.l.Debugf("SELF_DESTRUCT: monster [%d] (template [%d]) carries no selfDestruction block; dropping.", uniqueId, m.MonsterId())
 		return
 	}
-	p.selfDestructFrom(m, characterId, sd.Action(), trigger)
+	p.selfDestructFrom(m, characterId, deathTypeForAction(p.l, sd.Action()), trigger)
+}
+
+// deathTypeForAction maps the WZ selfDestruction.action byte to its
+// DeathType* semantic key at the point atlas-monsters reads it (DOM-25) --
+// downstream (the event body, the channel consumer) only ever sees the key,
+// never the raw wire byte. The mapping is 1:1 onto the closed DestroyType
+// enum (libs/atlas-packet monster/clientbound); an action outside 0..5 is not
+// expressible as a key, so it is logged and falls back to fade-out rather
+// than inventing one (task-253 fix-dom25 brief; D2 rejected pattern-matching
+// on action != 0).
+func deathTypeForAction(l logrus.FieldLogger, action byte) string {
+	switch action {
+	case 0:
+		return DeathTypeDisappear
+	case 1:
+		return DeathTypeFadeOut
+	case 2:
+		return DeathTypeBomb
+	case 3:
+		return DeathTypeDestructByMiss
+	case 4:
+		return DeathTypeSwallow
+	case 5:
+		return DeathTypeSelfDestruct
+	default:
+		l.Warnf("selfDestruction.action [%d] is outside the expressible 0..5 range; falling back to fade-out.", action)
+		return DeathTypeFadeOut
+	}
 }
 
 // selfDestructFrom is the shared detonation epilogue. Callers have already
 // established that the mob self-destructs; this owns the exactly-once
-// transition and the kill bookkeeping.
-func (p *ProcessorImpl) selfDestructFrom(m Model, characterId uint32, action byte, trigger SelfDestructTrigger) {
+// transition and the kill bookkeeping. deathType is the already-resolved
+// DeathType* semantic key (see deathTypeForAction).
+func (p *ProcessorImpl) selfDestructFrom(m Model, characterId uint32, deathType string, trigger SelfDestructTrigger) {
 	s, err := GetMonsterRegistry().SelfDestruct(p.t, m.UniqueId())
 	if err != nil {
 		p.l.WithError(err).Debugf("Self-destruct of monster [%d] failed; it is likely already gone.", m.UniqueId())
@@ -1895,8 +1924,8 @@ func (p *ProcessorImpl) selfDestructFrom(m Model, characterId uint32, action byt
 		revives = ma.Revives()
 	}
 
-	p.l.Debugf("Monster [%d] (template [%d]) self-destructed via [%s] with action [%d]; credited to character [%d].", m.UniqueId(), m.MonsterId(), trigger, action, killerId)
-	p.finalizeKill(s.Monster, killerId, isBoss, revives, action)
+	p.l.Debugf("Monster [%d] (template [%d]) self-destructed via [%s] with deathType [%s]; credited to character [%d].", m.UniqueId(), m.MonsterId(), trigger, deathType, killerId)
+	p.finalizeKill(s.Monster, killerId, isBoss, revives, deathType)
 }
 
 func DestroyAll(l logrus.FieldLogger, ctx context.Context) error {

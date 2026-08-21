@@ -153,7 +153,7 @@ func TestSelfDestructTimerTaskFiresOnElapsedEntry(t *testing.T) {
 
 	bodies := killedEvents(t, capture)
 	require.Len(t, bodies, 1)
-	require.Equal(t, byte(4), bodies[0].DeathType)
+	require.Equal(t, DeathTypeSwallow, bodies[0].DeathType)
 	require.Equal(t, uint32(0), bodies[0].ActorId)
 
 	_, err := r.GetMonster(ten, uid)

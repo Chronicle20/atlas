@@ -1,0 +1,13 @@
+packet: maplelife/clientbound/MaplelifeMapleLifeError
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CUICharacterSaleDlg::OnCreateNewCharacterResult
+    address: "0x777fc0"
+    decompile_sha256: 9d64bc8fbd5cb82d6df5c8c2a566c19a55fbe71a71c0366a7aae95191443e079
+verifies:
+    - libs/atlas-packet/maplelife/clientbound/error_test.go#TestMapleLifeErrorByteFixture
+    - libs/atlas-packet/maplelife/clientbound/error_test.go#TestMapleLifeErrorRoundTrip
+    - libs/atlas-packet/maplelife/clientbound/error_test.go#TestMapleLifeErrorCodesAreConfigResolved
+    - libs/atlas-packet/maplelife/clientbound/error_test.go#TestMapleLifeErrorArmsAreExhaustive

@@ -17,3 +17,7 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T11:55:56Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	DONE	78b692e	-	-	-	-
 2026-08-21T11:57:12Z	agent	Task 7	atlas-reviewer	sonnet	-	-	-	-	DONE	78b692e	APPROVED	no	-	-
 2026-08-21T11:59:54Z	agent	Tasks 1-5 gate	atlas-verifier	-	-	-	-	-	PASS	a9f733017	-	-	-	-
+2026-08-21T12:49:29Z	agent	pre-PR	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	-	APPROVED	no	-	-
+2026-08-21T12:49:30Z	agent	pre-PR	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	-	APPROVED	no	-	-
+2026-08-21T12:53:20Z	agent	fix: Event TransactionId	atlas-implementer	sonnet	-	-	-	-	DONE	8fcdda8cf	-	-	-	-
+2026-08-21T13:48:56Z	agent	branch-end gate	atlas-verifier	-	-	-	-	-	PASS	8fcdda8cf	-	-	-	-

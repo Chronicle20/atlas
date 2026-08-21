@@ -119,6 +119,25 @@ func reservedEventStatusProvider(transactionId uuid.UUID, field field.Model, d M
 	return producer.SingleMessageProvider(key, value)
 }
 
+func mesoAwardedEventStatusProvider(transactionId uuid.UUID, f field.Model, dropId uint32, r Recipient) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(dropId))
+	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventMesoAwardedBody]{
+		TransactionId: transactionId,
+		WorldId:       f.WorldId(),
+		ChannelId:     f.ChannelId(),
+		MapId:         f.MapId(),
+		Instance:      f.Instance(),
+		DropId:        dropId,
+		Type:          messageDropKafka.StatusEventTypeMesoAwarded,
+		Body: messageDropKafka.StatusEventMesoAwardedBody{
+			CharacterId: r.CharacterId,
+			Amount:      r.Amount,
+			Picker:      r.Picker,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func consumedEventStatusProvider(transactionId uuid.UUID, field field.Model, dropId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
 	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventConsumedBody]{

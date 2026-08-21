@@ -19,6 +19,7 @@ const (
 	StatusEventTypeReserved           = "RESERVED"
 	StatusEventTypeReservationFailure = "RESERVATION_FAILURE"
 	StatusEventTypeConsumed           = "CONSUMED"
+	StatusEventTypeMesoAwarded        = "MESO_AWARDED"
 )
 
 // Command topic and type constants
@@ -112,6 +113,15 @@ type StatusEventReservedBody struct {
 	Quantity    uint32 `json:"quantity"`
 	Meso        uint32 `json:"meso"`
 	EquipmentData
+}
+
+// StatusEventMesoAwardedBody is the body for MESO_AWARDED status events. One
+// event is emitted per recipient of a split meso drop; exactly one carries
+// Picker: true, and that recipient's handler completes the pickup.
+type StatusEventMesoAwardedBody struct {
+	CharacterId uint32 `json:"characterId"`
+	Amount      uint32 `json:"amount"`
+	Picker      bool   `json:"picker"`
 }
 
 // StatusEventReservationFailureBody is the body for RESERVATION_FAILURE status events

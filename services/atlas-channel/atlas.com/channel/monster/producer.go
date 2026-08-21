@@ -222,3 +222,21 @@ func ForceControlCommandProvider(f field.Model, monsterId uint32, characterId ui
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// SetAggroCommandProvider asks atlas-monsters to grant auto-aggro on a
+// client AUTO_AGGRO claim.
+func SetAggroCommandProvider(f field.Model, monsterId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(monsterId))
+	value := &monster2.Command[monster2.SetAggroCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		MonsterId: monsterId,
+		Type:      monster2.CommandTypeSetAggro,
+		Body: monster2.SetAggroCommandBody{
+			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -171,6 +171,9 @@ configMapGenerator:
       - TRACE_ENDPOINT=tempo.home:4317
       - TRACE_SAMPLING_RATIO=1.0
       - REST_PORT=8080
+      - LEACH_INTERVAL=5
+      - LEVEL_INTERVAL=5
+      - USE_ENFORCE_MOB_LEVEL_RANGE=true
       # Topic env vars (suffixed -PLACEHOLDER_ATLAS_ENV; auto-generated
       # below from deploy/k8s/base/env-configmap.yaml via
       # scripts/gen-topic-config.sh).

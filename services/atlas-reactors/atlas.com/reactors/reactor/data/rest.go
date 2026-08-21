@@ -1,6 +1,7 @@
 package data
 
 import (
+	"atlas-reactors/reactor/data/area"
 	"atlas-reactors/reactor/data/point"
 	"atlas-reactors/reactor/data/state"
 	"strconv"
@@ -13,6 +14,8 @@ type RestModel struct {
 	Name                 string                     `json:"name"`
 	TL                   point.RestModel            `json:"tl"`
 	BR                   point.RestModel            `json:"br"`
+	ActivateByTouch      bool                       `json:"activateByTouch"`
+	TouchAreaInfo        map[int8]area.RestModel    `json:"touchAreaInfo"`
 	StateInfo            map[int8][]state.RestModel `json:"stateInfo"`
 	TimeoutInfo          map[int8]int32             `json:"timeoutInfo"`
 	TimeoutNextStateInfo map[int8]int8              `json:"timeoutNextStateInfo"`
@@ -57,10 +60,24 @@ func Extract(rm RestModel) (Model, error) {
 		}
 	}
 
+	var tai map[int8]area.Model
+	if rm.TouchAreaInfo != nil {
+		tai = make(map[int8]area.Model)
+		for k, v := range rm.TouchAreaInfo {
+			am, err := area.Extract(v)
+			if err != nil {
+				return Model{}, err
+			}
+			tai[k] = am
+		}
+	}
+
 	return Model{
 		name:                 rm.Name,
 		tl:                   tl,
 		br:                   br,
+		activateByTouch:      rm.ActivateByTouch,
+		touchAreaInfo:        tai,
 		stateInfo:            si,
 		timeoutInfo:          rm.TimeoutInfo,
 		timeoutNextStateInfo: rm.TimeoutNextStateInfo,

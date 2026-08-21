@@ -1,6 +1,7 @@
 package data
 
 import (
+	"atlas-reactors/reactor/data/area"
 	"atlas-reactors/reactor/data/point"
 	"atlas-reactors/reactor/data/state"
 	"encoding/json"
@@ -10,6 +11,8 @@ type modelJSON struct {
 	Name                 string                 `json:"name"`
 	Tl                   point.Model            `json:"tl"`
 	Br                   point.Model            `json:"br"`
+	ActivateByTouch      bool                   `json:"activateByTouch"`
+	TouchAreaInfo        map[int8]area.Model    `json:"touchAreaInfo"`
 	StateInfo            map[int8][]state.Model `json:"stateInfo"`
 	TimeoutInfo          map[int8]int32         `json:"timeoutInfo"`
 	TimeoutNextStateInfo map[int8]int8          `json:"timeoutNextStateInfo"`
@@ -20,6 +23,8 @@ func (m Model) MarshalJSON() ([]byte, error) {
 		Name:                 m.name,
 		Tl:                   m.tl,
 		Br:                   m.br,
+		ActivateByTouch:      m.activateByTouch,
+		TouchAreaInfo:        m.touchAreaInfo,
 		StateInfo:            m.stateInfo,
 		TimeoutInfo:          m.timeoutInfo,
 		TimeoutNextStateInfo: m.timeoutNextStateInfo,
@@ -34,6 +39,8 @@ func (m *Model) UnmarshalJSON(data []byte) error {
 	m.name = j.Name
 	m.tl = j.Tl
 	m.br = j.Br
+	m.activateByTouch = j.ActivateByTouch
+	m.touchAreaInfo = j.TouchAreaInfo
 	m.stateInfo = j.StateInfo
 	m.timeoutInfo = j.TimeoutInfo
 	m.timeoutNextStateInfo = j.TimeoutNextStateInfo

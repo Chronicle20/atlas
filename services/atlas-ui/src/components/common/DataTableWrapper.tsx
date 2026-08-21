@@ -16,6 +16,7 @@ interface DataTableWrapperProps<TData extends RowData> {
   initialVisibilityState?: string[];
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  lastUpdatedAt?: number | null;
   headerActions?: Array<{
     icon?: React.ReactNode;
     label: string;
@@ -41,6 +42,7 @@ export function DataTableWrapper<TData extends RowData>({
   initialVisibilityState,
   onRefresh,
   isRefreshing,
+  lastUpdatedAt,
   headerActions,
   emptyState,
   className,
@@ -74,7 +76,12 @@ export function DataTableWrapper<TData extends RowData>({
 
     return (
       <div className={cn("w-full", className)}>
-        <EmptyState {...defaultEmptyState} />
+        <EmptyState
+          {...defaultEmptyState}
+          {...(onRefresh && { onRefresh })}
+          {...(typeof isRefreshing === "boolean" && { isRefreshing })}
+          {...(lastUpdatedAt != null && { lastUpdatedAt })}
+        />
       </div>
     );
   }

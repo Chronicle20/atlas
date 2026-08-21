@@ -11864,8 +11864,7 @@
           "opcode": 84
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 85
         }
       }

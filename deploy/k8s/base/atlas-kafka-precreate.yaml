@@ -45,11 +45,50 @@ spec:
   backoffLimit: 3
   ttlSecondsAfterFinished: 600
   template:
+    metadata:
+      labels:
+        app: atlas-kafka-precreate
     spec:
       restartPolicy: OnFailure
+      # Every namespace (main + each open PR) runs its own copy of this Job, and
+      # Argo recreates it on every sync (Force=true,Replace=true above), so
+      # several fire within seconds of each other. Without this they all land on
+      # whichever node has room and stack their JVM fan-outs on one machine
+      # (2026-08-21: three copies took 6.5 of eos's 8 cores). Spread them across
+      # nodes instead. Preferred, not required: a single-node cluster, or more
+      # concurrent PR envs than nodes, must still schedule.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app: atlas-kafka-precreate
+                # The copies we are spreading apart live in DIFFERENT
+                # namespaces (atlas-main, atlas-pr-<n>, ...), and pod
+                # anti-affinity defaults to same-namespace only — without an
+                # empty namespaceSelector this term matches nothing and the
+                # spread silently does not happen.
+                namespaceSelector: {}
       containers:
         - name: kafka-precreate
           image: apache/kafka:3.7.2
+          # Uncapped, this Job is BestEffort and its JVM fan-out will consume
+          # every spare core on its node. The work is a fixed number of ~1s JVM
+          # cold starts, so a cap costs wall-clock and nothing else, while an
+          # overrun starves the game services sharing the node.
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              # Headroom for the -P 4 fan-out: each kafka-topics.sh JVM can
+              # take its default max heap, so the ceiling must clear 4 of them
+              # at once. An OOMKill here is a wave-0 stall for the whole env.
+              memory: 2Gi
           envFrom:
             - configMapRef:
                 name: atlas-env

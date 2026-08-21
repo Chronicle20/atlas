@@ -23,6 +23,14 @@ set -euo pipefail
 # set -euo pipefail — and every Deployment sits at sync-wave 10 behind it.
 KAFKA_BIN="/opt/kafka/bin"
 
+# precreate_topics diffs the desired topic list against the broker's with comm,
+# which requires both sides sorted under the SAME collation. Topic names mix `_`
+# and `-` (COMMAND_TOPIC_ACCOUNT_LOGOUT-main), exactly where locale collation
+# and byte order disagree — a mismatch makes comm emit spurious "missing"
+# entries and silently skip real ones. Pin every sort and comm here to byte
+# order so the diff can never depend on the image's locale.
+export LC_ALL=C
+
 # Pre-create every Kafka topic this env will use, before any service consumer
 # starts. Atlas services rely on Kafka topic auto-create on first publish, and
 # many subscribe to the same topic concurrently at startup — the result is a
@@ -74,20 +82,47 @@ precreate_topics() {
     mv "${topics}.plain" "$topics"
     count=$(( $(wc -l < "$topics") + $(wc -l < "$compact_topics") ))
 
-    # Each kafka-topics.sh --create is a full JVM cold start (~1-1.5s) and only
-    # creates one topic per call, so a serial loop over ~140 topics takes minutes.
-    # Fan out with xargs -P so the JVM starts overlap; --if-not-exists keeps it
-    # idempotent and concurrent creates of distinct topics don't conflict. xargs
-    # exits non-zero if any child fails, which set -e turns into a Job retry.
-    echo "[$(date -u +%FT%TZ)] creating $count topics (concurrency 16)"
-    xargs -P 16 -I {} \
+    # Every kafka-topics.sh call is a full JVM cold start (~1-1.5s of almost
+    # pure CPU: classload, JIT warmup, admin-client bootstrap, one metadata
+    # fetch) and creates exactly ONE topic — the CreateTopics RPC itself is a
+    # rounding error inside that. Blindly running --create --if-not-exists once
+    # per topic therefore costs ~170 JVM starts on EVERY sync, even though on a
+    # re-sync all 170 already exist and every one of those JVMs does nothing but
+    # confirm it. Three environments syncing together pegged an 8-core node at
+    # 99% for minutes at a time (2026-08-21, eos).
+    #
+    # So: ask the broker ONCE which topics exist (one JVM), and only create the
+    # difference. Steady-state re-sync collapses from ~170 JVM starts to 1.
+    existing="$(mktemp)"
+    /opt/kafka/bin/kafka-topics.sh \
+        --bootstrap-server "$BOOTSTRAP_SERVERS" \
+        --list \
+        | sort -u > "$existing"
+
+    # comm needs both sides sorted; $topics and $compact_topics already are.
+    missing="$(mktemp)"
+    missing_compact="$(mktemp)"
+    comm -23 "$topics" "$existing" > "$missing"
+    comm -23 "$compact_topics" "$existing" > "$missing_compact"
+    missing_count=$(( $(wc -l < "$missing") + $(wc -l < "$missing_compact") ))
+
+    # Fan out the remainder so the JVM starts overlap, but at -P 4 rather than
+    # -P 16: the Job is one of several syncing concurrently on a shared node and
+    # 16 JVM cold starts saturate a whole node's CPU on their own. With the
+    # existing-topic filter above, the fan-out now only ever runs on a genuinely
+    # new set, where a lower width costs seconds, not minutes. --if-not-exists
+    # is kept as a race guard (another env's Job may create the same topic
+    # between our --list and our --create). xargs exits non-zero if any child
+    # fails, which set -e turns into a Job retry.
+    echo "[$(date -u +%FT%TZ)] $count topics desired, $missing_count missing — creating (concurrency 4)"
+    xargs -P 4 -I {} \
         /opt/kafka/bin/kafka-topics.sh \
             --bootstrap-server "$BOOTSTRAP_SERVERS" \
             --create --if-not-exists \
             --topic {} \
             --partitions 1 \
             --replication-factor 1 \
-        < "$topics" >/dev/null
+        < "$missing" >/dev/null
 
     # The compacted config-projection topics (only a handful) are
     # created serially with cleanup.policy=compact.
@@ -100,9 +135,13 @@ precreate_topics() {
             --replication-factor 1 \
             --config cleanup.policy=compact \
             >/dev/null
-        # --create --if-not-exists skips existing topics, so also
-        # alter (idempotent) to converge topics created before this
-        # policy existed.
+    done < "$missing_compact"
+
+    # Topics created before the compact policy existed still need converging,
+    # and those are by definition ones that ALREADY exist — so this alter pass
+    # runs over $compact_topics, not $missing_compact. It is a handful of
+    # topics, and --add-config is idempotent.
+    while read -r topic; do
         /opt/kafka/bin/kafka-configs.sh \
             --bootstrap-server "$BOOTSTRAP_SERVERS" \
             --alter --entity-type topics --entity-name "$topic" \
@@ -110,7 +149,11 @@ precreate_topics() {
             >/dev/null
     done < "$compact_topics"
 
-    echo "[$(date -u +%FT%TZ)] reconciled $count topics"
+    # Name the created count explicitly: before the existing-topic diff above,
+    # this line meant "issued a create for all $count". It now means "$count
+    # desired, of which $missing_count were actually created", and a reader
+    # tracking down a missing topic needs to see which.
+    echo "[$(date -u +%FT%TZ)] reconciled $count topics ($missing_count created, $(( count - missing_count )) already present)"
 }
 
 # Probe one consumer group's state. Echoes the state token (Empty, Dead,

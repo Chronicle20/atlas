@@ -7,3 +7,7 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T13:15:52Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	a9b2cd460	-	-	-	-
 2026-08-21T13:17:03Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	9fab72cbd	APPROVED	no	-	-
 2026-08-21T13:17:52Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	a9b2cd460	APPROVED	no	-	-
+2026-08-21T13:28:20Z	agent	branch	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	072017280	APPROVED	no	docs/tasks/task-256-zombify-healing-consequences/audit.md	-
+2026-08-21T13:40:59Z	agent	branch	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	072017280	CHANGES_REQUIRED	yes	docs/tasks/task-256-zombify-healing-consequences/backend-audit/audit.md	-
+2026-08-21T13:44:27Z	agent	fix EXT-02	atlas-implementer	sonnet	-	-	-	-	DONE	48ed1a885	-	-	-	-
+2026-08-21T13:44:32Z	agent	fix EXT-02	atlas-reviewer	sonnet	-	-	-	-	DONE	48ed1a885	APPROVED	no	.superpowers/sdd/plan/fix-ext02-review.md	-

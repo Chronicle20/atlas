@@ -1,0 +1,118 @@
+{
+  "service": "atlas-channel, atlas-consumables",
+  "path": "services/atlas-channel/atlas.com/channel, services/atlas-consumables/atlas.com/consumables",
+  "date": "2026-08-21",
+  "build": "pass",
+  "testsPassed": 2548,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-channel/character/buff",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder()/setters/Build()", "status": "fail", "evidence": "no builder.go in package; construction via NewBuff(...) at model.go:81"},
+        {"id": "DOM-02", "name": "Model.ToEntity() defined in entity.go", "status": "n-a", "evidence": "no entity.go in package"},
+        {"id": "DOM-03", "name": "Make(Entity) (Model, error) in entity.go", "status": "n-a", "evidence": "no entity.go in package"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "fail", "evidence": "rest.go:34 defines Extract only, no Transform"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "n-a", "evidence": "no resource.go / list handler in package"},
+        {"id": "DOM-11", "name": "Providers evaluate lazily via database.Query/SliceQuery", "status": "n-a", "evidence": "no provider.go in package"},
+        {"id": "DOM-16", "name": "administrator.go holds write functions", "status": "n-a", "evidence": "package performs no local DB writes (Kafka/REST client to atlas-buffs, no gorm.DB)"},
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "processor.go defines Processor interface and ProcessorImpl methods"},
+        {"id": "FILE-02", "name": "RestModel/Transform/Extract/JSON:API methods in rest.go", "status": "pass", "evidence": "rest.go:10-49"},
+        {"id": "FILE-03", "name": "cross-service request functions in requests.go", "status": "pass", "evidence": "requests.go:14-28"},
+        {"id": "FILE-06", "name": "no package-named catch-all file", "status": "pass", "evidence": "no buff.go file exists"},
+        {"id": "DOM-18", "name": "RestModel implements GetName/GetID/SetID", "status": "pass", "evidence": "rest.go:21,25,29"},
+        {"id": "DOM-19", "name": "request models flat", "status": "pass", "evidence": "RestModel has no nested Data/Type/Attributes"},
+        {"id": "EXT-01", "name": "target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "rest.go has neither method; processor.go:64 calls requests.DrainProvider[RestModel, Model] against atlas-buffs"},
+        {"id": "EXT-02", "name": "httptest fixture asserts populated domain struct", "status": "pass", "evidence": "processor_drain_test.go:45 TestByCharacterIdProviderDrainsBeyondOnePage serves multi-page fixtures and drains real Extract path"},
+        {"id": "EXT-03", "name": "only genuine 404 maps to not-found", "status": "pass", "evidence": "processor.go:67 errors.Is(err, requests.ErrNotFound)"},
+        {"id": "EXT-04", "name": "URL composed via root-url helper", "status": "pass", "evidence": "requests.go:15 requests.RootUrlFor(ctx, \"BUFFS\")"},
+        {"id": "DOM-20", "name": "table-driven tests", "status": "pass", "evidence": "model_test.go:11 TestIsZombified uses tests:=[]struct{...}+t.Run"},
+        {"id": "DOM-33", "name": "mocks updated for interface change", "status": "n-a", "evidence": "buff.Processor interface unchanged; GetByCharacterId pre-existed at processor.go:74; IsZombified is a package function not an interface method"}
+      ]
+    },
+    {
+      "name": "atlas-channel/skill/handler/heal",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "file placement", "status": "pass", "evidence": "heal.go (package-named) holds only handler wiring/seam vars, not >=2 of the FILE-01..05 responsibilities"},
+        {"id": "DOM-20", "name": "table-driven tests", "status": "warn", "evidence": "formula_test.go:97 TestHealDelta is table-driven; heal_apply_test.go:138,184,219 (TestApply_NotZombified_HealsEveryRecipient, TestApply_ZombifiedCaster_DamagesEveryRecipient, TestApply_ZombifyReadIsCasterOnlyAndIssuedOnce) are separate scenario functions, not a table"},
+        {"id": "DOM-24", "name": "producertest stub for reachable emit path", "status": "n-a", "evidence": "heal_apply_test.go:62-136 installHealSeams replaces changeHpFunc/awardExperienceFunc/announceCastFunc with fakes; no real producer reached"},
+        {"id": "DOM-25", "name": "client-interpreted bytes via writer-options table", "status": "n-a", "evidence": "no dispatcher mode/sub-op/message-code literal added or changed"},
+        {"id": "DOM-26", "name": "goroutines via routine.Go", "status": "n-a", "evidence": "no go statement added"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/character/buff",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "fail", "evidence": "no builder.go; constructed via NewBuff(...) model.go:51"},
+        {"id": "DOM-02", "name": "ToEntity in entity.go", "status": "n-a", "evidence": "no entity.go"},
+        {"id": "DOM-03", "name": "Make in entity.go", "status": "n-a", "evidence": "no entity.go"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "fail", "evidence": "rest.go:34 defines Extract only, no Transform"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "n-a", "evidence": "no resource.go / list handler"},
+        {"id": "DOM-11", "name": "lazy providers", "status": "n-a", "evidence": "no provider.go"},
+        {"id": "DOM-16", "name": "administrator.go for writes", "status": "n-a", "evidence": "no local DB writes; package is a Kafka/REST client only"},
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "processor.go:18-72"},
+        {"id": "FILE-02", "name": "RestModel/Extract in rest.go", "status": "pass", "evidence": "rest.go:10-49"},
+        {"id": "FILE-03", "name": "cross-service requests in requests.go", "status": "pass", "evidence": "requests.go:14-28"},
+        {"id": "FILE-06", "name": "no package-named catch-all", "status": "pass", "evidence": "no buff.go file"},
+        {"id": "DOM-18", "name": "RestModel implements JSON:API interface", "status": "pass", "evidence": "rest.go:21,25,29"},
+        {"id": "DOM-19", "name": "flat request models", "status": "pass", "evidence": "no nested Data/Type/Attributes"},
+        {"id": "DOM-31", "name": "tenant/trace via context only", "status": "pass", "evidence": "requests.go passes ctx; requests.RootUrlFor(ctx, \"BUFFS\"); no tenant field on RestModel"},
+        {"id": "EXT-01", "name": "SetToOneReferenceID/SetToManyReferenceIDs present", "status": "fail", "evidence": "rest.go:10-32 has neither method; processor.go:67 calls requests.DrainProvider[RestModel, Model]"},
+        {"id": "EXT-02", "name": "httptest fixture asserts populated struct", "status": "fail", "evidence": "only httptest test is processor_notfound_test.go:22 which serves a 404 and asserts empty slice; no test serves a populated buff fixture through Extract/unmarshal"},
+        {"id": "EXT-03", "name": "only genuine 404 maps to not-found", "status": "pass", "evidence": "processor.go:68 errors.Is(err, requests.ErrNotFound)"},
+        {"id": "EXT-04", "name": "URL via root-url helper", "status": "pass", "evidence": "requests.go:15 requests.RootUrlFor(ctx, \"BUFFS\")"},
+        {"id": "DOM-20", "name": "table-driven tests", "status": "pass", "evidence": "model_test.go:11 TestIsZombified"},
+        {"id": "DOM-33", "name": "mocks updated for interface change", "status": "pass", "evidence": "processor.go:22 adds GetByCharacterId; mock/processor.go:15,43-48 implements it in same diff"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/character/buff/stat",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "fail", "evidence": "no builder.go; Model{Type, Amount} is a plain struct literal"},
+        {"id": "DOM-04", "name": "Transform in rest.go", "status": "fail", "evidence": "stat/rest.go:10 defines Extract only"},
+        {"id": "DOM-18", "name": "RestModel implements JSON:API interface", "status": "n-a", "evidence": "stat.RestModel is a nested attribute type embedded in buff.RestModel.Changes (rest.go:15), never unmarshaled as a standalone resource; unmodified atlas-channel/character/buff/stat/rest.go follows the identical shape"},
+        {"id": "FILE-01..06", "name": "file placement", "status": "pass", "evidence": "Model in model.go (pre-existing), RestModel/Extract in rest.go; no catch-all"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/character/buff/mock",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-33", "name": "mock matches interface", "status": "pass", "evidence": "mock/processor.go:11-16,43-48"},
+        {"id": "FILE-01..06", "name": "file placement", "status": "pass", "evidence": "single-purpose mock file"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/consumable",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:95"},
+        {"id": "DOM-33", "name": "mocks updated for interface change", "status": "n-a", "evidence": "consumable.Processor interface unchanged; only unexported helpers gained a zombified parameter"},
+        {"id": "DOM-30", "name": "DB write + Kafka emit via AndEmit/message.Buffer", "status": "n-a", "evidence": "ApplyItemEffects/consumeMorphCoupon call bp.Apply/d.buff.Apply which reach producer.ProviderImpl directly (character/buff/processor.go:42), but neither function performs a local DB write on any path — documented no-DB-state exception"},
+        {"id": "DOM-20", "name": "table-driven tests", "status": "pass", "evidence": "processor_test.go TestComputeEffectPlan_Zombify (8-case table); morph_coupon_test.go TestComputeMorphCouponPlan (extended table)"},
+        {"id": "DOM-24", "name": "producertest stub for reachable emit path", "status": "pass", "evidence": "morph_coupon_test.go new tests inject buffmock.ProcessorMock; no real producer reached"},
+        {"id": "FILE-01..06", "name": "file placement", "status": "pass", "evidence": "morph_coupon.go/processor.go are not package-named (package is consumable)"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "DOM-01: services/atlas-channel/atlas.com/channel/character/buff (package) — no builder.go",
+    "DOM-01: services/atlas-consumables/atlas.com/consumables/character/buff (package) — no builder.go",
+    "DOM-01: services/atlas-consumables/atlas.com/consumables/character/buff/stat (package) — no builder.go",
+    "DOM-04: services/atlas-channel/atlas.com/channel/character/buff/rest.go — no func Transform(",
+    "DOM-04: services/atlas-consumables/atlas.com/consumables/character/buff/rest.go — no func Transform(",
+    "DOM-04: services/atlas-consumables/atlas.com/consumables/character/buff/stat/rest.go — no func Transform(",
+    "EXT-01: services/atlas-channel/atlas.com/channel/character/buff/rest.go — RestModel missing SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-01: services/atlas-consumables/atlas.com/consumables/character/buff/rest.go — RestModel missing SetToOneReferenceID/SetToManyReferenceIDs",
+    "EXT-02: services/atlas-consumables/atlas.com/consumables/character/buff — no httptest test serves a populated JSON:API buff fixture and asserts a populated []Model; only the 404-path test exists"
+  ],
+  "nonBlocking": [
+    "DOM-20: services/atlas-channel/atlas.com/channel/skill/handler/heal/heal_apply_test.go — three TestApply_* scenario tests are not table-driven"
+  ]
+}

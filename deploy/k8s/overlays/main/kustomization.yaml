@@ -252,7 +252,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-24a33a2
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-24a33a2
+    newTag: main-2080dc7
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-24a33a2
   - name: ghcr.io/chronicle20/atlas-dragons/atlas-dragons
@@ -326,7 +326,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
     newTag: main-24a33a2
   - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
-    newTag: main-af2defb
+    newTag: main-2080dc7
   - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
     newTag: main-24a33a2
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest

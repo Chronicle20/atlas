@@ -693,8 +693,8 @@ ids**; all ten already exist (design §1 C-2, verified at lines 69, 103, 162, 19
 | beginner | 0 / 130000110 | 22 |
 | noblesse | 1000 / 130000110 | 23 |
 | legend | 2000 / 130000110 | 24 |
-| GM deploy, non-HoF map, continent 1 | 100 / 100000000 | 27 (`26 + 4*1`) |
-| GM deploy, non-HoF map, continent 2 | 100 / 200000000 | 30 (`26 + 4*2`) |
+| GM deploy, non-HoF map, continent 1 | 100 / 100000000 | 30 (`26 + 4*1`) |
+| GM deploy, non-HoF map, continent 2 | 100 / 200000000 | 34 (`26 + 4*2`) |
 
 `TestAllocate` — the allocator is pure: it takes `usable map[uint32]bool`,
 `inUse map[uint32]bool`, `branch uint32` and returns `(uint32, error)`.
@@ -707,7 +707,7 @@ ids**; all ten already exist (design §1 C-2, verified at lines 69, 103, 162, 19
 | branch exhausted → global fallback | `{9901000, 9901500}` | `{9901000}` | 10 | `9901500` |
 | whole pool exhausted | `{9901000}` | `{9901000}` | 10 | `ErrPoolExhausted` |
 | empty usable set | `{}` | `{}` | 10 | `ErrPoolExhausted` |
-| GM branch, nothing in branch, fallback wins | `{9901000}` | `{}` | 27 | `9901000` |
+| GM branch, nothing in branch, fallback wins | `{9901000}` | `{}` | 30 | `9901000` |
 
 `TestUsablePool` — the usable-set builder is given a lookup
 `func(uint32) (exists bool, imitate bool, err error)`:

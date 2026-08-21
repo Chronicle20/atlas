@@ -227,3 +227,35 @@ shipped a grounded decode shape (modelled on `atlas-channel/asset`) that will de
 once a server side exists, but **nothing populates it now**, so Task 14's snapshot will capture
 zero equipment against a live `atlas-character`. Needs a ruling: extend `atlas-character` on
 this branch, split it to its own task, or ship Player NPCs without equipment for now.
+
+# Task 14 — `snapshot/` and `eligibility/`
+
+Landed `0d8a8257b`. Gate 19 PASS at `0d8a8257b` (last gated commit). Review **APPROVED** —
+0 blocking, 1 cosmetic non-blocking (`snapshot.go:44-51` builds `equipmentPositions` via an
+IIFE var rather than an init function).
+
+The reviewer traced every load-bearing claim to source rather than to the brief: the
+cash/masked slot convention (`cash := s < -100; s += 100`) against
+`atlas-channel/character/model.go:317-343` and `socket/model/avatar.go:10-31`; the FR-5.2
+1–11 / 101–111 boundary against `libs/atlas-constants/inventory/slot`; `112 → 100` job-category
+derivation; the FR-6.1 predicate gating; and `overall_rank == world_rank` as design D-3's
+deliberate single-source assignment, not a fabricated cross-world value.
+
+# Controller ruling — equipment comes from `atlas-inventory`
+
+The Task 13 "atlas-character doesn't serve equipment" concern was a **wrong premise on both
+sides**, and the earlier entry in this file overstated it. `atlas-character`'s
+`?include=inventory` is not how anything fetches equipment. `atlas-channel` and `atlas-login`
+both call the separate **`atlas-inventory`** service:
+
+- `services/atlas-channel/atlas.com/channel/inventory/requests.go:11,16` — `characters/%d/inventory`, root url key `INVENTORY`
+- `services/atlas-channel/atlas.com/channel/compartment/model.go` — compartments carry `[]asset.Model`
+- `services/atlas-channel/atlas.com/channel/asset/rest.go:10-12` — assets carry `slot` (`int16`) and `templateId` (`uint32`)
+- `services/atlas-login/atlas.com/login/inventory/requests.go:11,16` — the same client again
+
+So there is **no missing server-side work and no follow-up ticket** — Task 13 simply copied the
+wrong client. Fixed on this branch in the round below. Task 14's slot arithmetic is correct
+regardless of the source and does not change.
+
+Fix round brief: `.superpowers/sdd/plan/task-13-brief-fix.md` — the `_map.Id` blocker from the
+Task 13 review plus the inventory rewire, in one commit range.

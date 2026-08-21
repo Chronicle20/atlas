@@ -2,7 +2,9 @@ package expression
 
 import (
 	"atlas-expressions/kafka/message"
+	expression2 "atlas-expressions/kafka/message/expression"
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
@@ -87,7 +89,7 @@ func TestProcessor_Change(t *testing.T) {
 	expr := uint32(5)
 
 	f := field.NewBuilder(worldId, channelId, mapId).Build()
-	model, err := p.Change(mb, transactionId, characterId, f, expr)
+	model, err := p.Change(mb, transactionId, characterId, f, expr, 0, false)
 
 	assert.NoError(t, err)
 	assert.Equal(t, characterId, model.CharacterId())
@@ -109,7 +111,7 @@ func TestProcessor_Change_AddsToRegistry(t *testing.T) {
 	characterId := uint32(1000)
 
 	f := field.NewBuilder(0, 1, 100000000).Build()
-	_, _ = p.Change(mb, uuid.New(), characterId, f, 5)
+	_, _ = p.Change(mb, uuid.New(), characterId, f, 5, 0, false)
 
 	retrieved, found := GetRegistry().get(ctx, characterId)
 	assert.True(t, found)
@@ -126,7 +128,7 @@ func TestProcessor_Change_AddsMessageToBuffer(t *testing.T) {
 	mb := message.NewBuffer()
 
 	f := field.NewBuilder(0, 1, 100000000).Build()
-	_, err := p.Change(mb, uuid.New(), 1000, f, 5)
+	_, err := p.Change(mb, uuid.New(), 1000, f, 5, 0, false)
 
 	assert.NoError(t, err)
 
@@ -185,7 +187,7 @@ func TestProcessor_MultipleChanges(t *testing.T) {
 	for i := uint32(0); i < 10; i++ {
 		mb := message.NewBuffer()
 		f := field.NewBuilder(0, 1, 100000000).Build()
-		_, err := p.Change(mb, uuid.New(), 1000+i, f, i)
+		_, err := p.Change(mb, uuid.New(), 1000+i, f, i, 0, false)
 		assert.NoError(t, err)
 	}
 
@@ -207,12 +209,56 @@ func TestProcessor_ChangeReplacesPrevious(t *testing.T) {
 	f := field.NewBuilder(0, 1, 100000000).Build()
 
 	mb1 := message.NewBuffer()
-	_, _ = p.Change(mb1, uuid.New(), characterId, f, 5)
+	_, _ = p.Change(mb1, uuid.New(), characterId, f, 5, 0, false)
 
 	mb2 := message.NewBuffer()
-	_, _ = p.Change(mb2, uuid.New(), characterId, f, 10)
+	_, _ = p.Change(mb2, uuid.New(), characterId, f, 10, 0, false)
 
 	retrieved, found := GetRegistry().get(ctx, characterId)
 	assert.True(t, found)
 	assert.Equal(t, uint32(10), retrieved.Expression())
+}
+
+func TestProcessor_Change_PropagatesDurationAndByItemOption(t *testing.T) {
+	setupProcessorTest(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+	l := setupTestLogger(t)
+
+	p := NewProcessor(l, ctx)
+	mb := message.NewBuffer()
+
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	_, err := p.Change(mb, uuid.New(), 1000, f, 8, int32(-1), true)
+
+	assert.NoError(t, err)
+
+	messages := mb.GetAll()[expression2.EnvExpressionEvent]
+	assert.Len(t, messages, 1)
+
+	var event expression2.StatusEvent
+	err = json.Unmarshal(messages[0].Value, &event)
+	assert.NoError(t, err)
+
+	assert.Equal(t, uint32(8), event.Expression)
+	assert.Equal(t, int32(-1), event.Duration)
+	assert.Equal(t, true, event.ByItemOption)
+}
+
+func TestRevertExpressionEmitsZeroDurationAndFalseByItemOption(t *testing.T) {
+	f := field.NewBuilder(0, 1, 100000000).Build()
+
+	provider := expressionEventProvider(uuid.New(), 1000, f, 0, 0, false)
+	messages, err := provider()
+
+	assert.NoError(t, err)
+	assert.Len(t, messages, 1)
+
+	var event expression2.StatusEvent
+	err = json.Unmarshal(messages[0].Value, &event)
+	assert.NoError(t, err)
+
+	assert.Equal(t, uint32(0), event.Expression)
+	assert.Equal(t, int32(0), event.Duration)
+	assert.Equal(t, false, event.ByItemOption)
 }

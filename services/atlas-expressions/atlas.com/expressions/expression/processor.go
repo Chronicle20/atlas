@@ -17,9 +17,9 @@ import (
 // Processor interface defines the operations for managing expressions
 type Processor interface {
 	// Change changes the expression for a character
-	Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32) (Model, error)
+	Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32, duration int32, byItemOption bool) (Model, error)
 	// ChangeAndEmit changes the expression for a character and emits an event
-	ChangeAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32) (Model, error)
+	ChangeAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32, duration int32, byItemOption bool) (Model, error)
 	// Clear clears the expression for a character
 	Clear(mb *message.Buffer, transactionId uuid.UUID, characterId uint32) (Model, error)
 	// ClearAndEmit clears the expression for a character and emits an event
@@ -46,12 +46,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 // Change changes the expression for a character
-func (p *ProcessorImpl) Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32) (Model, error) {
+func (p *ProcessorImpl) Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32, duration int32, byItemOption bool) (Model, error) {
 	p.l.Debugf("Changing expression to [%d] for character [%d] in field [%s].", expression, characterId, field.Id())
 	m := GetRegistry().add(p.ctx, characterId, field, expression)
 
 	// Add message to buffer
-	err := mb.Put(expression2.EnvExpressionEvent, expressionEventProvider(transactionId, characterId, field, expression))
+	err := mb.Put(expression2.EnvExpressionEvent, expressionEventProvider(transactionId, characterId, field, expression, duration, byItemOption))
 	if err != nil {
 		return Model{}, err
 	}
@@ -60,18 +60,20 @@ func (p *ProcessorImpl) Change(mb *message.Buffer, transactionId uuid.UUID, char
 }
 
 // ChangeAndEmit changes the expression for a character and emits an event
-func (p *ProcessorImpl) ChangeAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32) (Model, error) {
+func (p *ProcessorImpl) ChangeAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32, duration int32, byItemOption bool) (Model, error) {
 	return message.EmitWithResult[Model, changeInput](
 		producer.ProviderImpl(p.l)(p.ctx),
 	)(func(mb *message.Buffer) func(input changeInput) (Model, error) {
 		return func(input changeInput) (Model, error) {
-			return p.Change(mb, input.transactionId, input.characterId, input.field, input.expression)
+			return p.Change(mb, input.transactionId, input.characterId, input.field, input.expression, input.duration, input.byItemOption)
 		}
 	})(changeInput{
 		transactionId: transactionId,
 		characterId:   characterId,
 		field:         field,
 		expression:    expression,
+		duration:      duration,
+		byItemOption:  byItemOption,
 	})
 }
 
@@ -81,6 +83,8 @@ type changeInput struct {
 	characterId   uint32
 	field         field.Model
 	expression    uint32
+	duration      int32
+	byItemOption  bool
 }
 
 // Clear clears the expression for a character

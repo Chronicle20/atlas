@@ -47,7 +47,7 @@ The new test file is `package portal_test` (like `processor_test.go`), so it can
 
 `WarpToPortal` publishes to Kafka, which is absent in tests. Assertions are therefore on **which data-service paths the mock was asked for** and on the logged warning — the same style the existing `Enter` tests use. The new test file adds its own recording mock (`setupRecordingDataServer`) because `setupMockDataServer` does not record paths.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 New file `portal/warp_by_name_test.go`, `package portal_test`.
 
@@ -71,7 +71,7 @@ Logger for both: `logger, hook := logtest.NewNullLogger(); logger.SetLevel(logru
 
 Assert the log substrings with the existing `containsAll` helper (`consumer_test.go:232`). Serve `/api/data/maps/200000000/portals?name=st00` → one portal resource and `/api/data/maps/200000000/portals` → one portal resource so no case errors out.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd services/atlas-portals/atlas.com/portals && go test ./portal/... -run 'WarpByName|HandleWarpCommand_Precedence' -v
@@ -79,7 +79,7 @@ cd services/atlas-portals/atlas.com/portals && go test ./portal/... -run 'WarpBy
 
 Expected: compile failure — `WarpByName` undefined, `warpBody` has no field `TargetPortalName`.
 
-- [ ] **Step 3: Add `TargetPortalName` to `warpBody`**
+- [x] **Step 3: Add `TargetPortalName` to `warpBody`**
 
 In `portal/kafka.go`, inside `warpBody` after `TargetPortalId`:
 
@@ -91,7 +91,7 @@ In `portal/kafka.go`, inside `warpBody` after `TargetPortalId`:
 	TargetPortalName string `json:"targetPortalName"`
 ```
 
-- [ ] **Step 4: Add `WarpByName` to the interface and impl**
+- [x] **Step 4: Add `WarpByName` to the interface and impl**
 
 In `portal/processor.go`, add to the `Processor` interface after `WarpById`:
 
@@ -117,7 +117,7 @@ func (p *ProcessorImpl) WarpByName(f field.Model, characterId uint32, targetMapI
 }
 ```
 
-- [ ] **Step 5: Insert the precedence branch in `handleWarpCommand`**
+- [x] **Step 5: Insert the precedence branch in `handleWarpCommand`**
 
 In `portal/consumer.go`, between the `TargetPortalId != 0` branch and the trailing random-spawn call:
 
@@ -129,7 +129,7 @@ In `portal/consumer.go`, between the `TargetPortalId != 0` branch and the traili
 	}
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 ```bash
 cd services/atlas-portals/atlas.com/portals && go test ./portal/... -run 'WarpByName|HandleWarpCommand_Precedence' -v
@@ -137,7 +137,7 @@ cd services/atlas-portals/atlas.com/portals && go test ./portal/... -run 'WarpBy
 
 Expected: PASS.
 
-- [ ] **Step 7: Run the module build and full test suite**
+- [x] **Step 7: Run the module build and full test suite**
 
 ```bash
 cd services/atlas-portals/atlas.com/portals && go build ./... && go test ./...
@@ -145,7 +145,7 @@ cd services/atlas-portals/atlas.com/portals && go build ./... && go test ./...
 
 Expected: all packages ok.
 
-- [ ] **Step 8: Update `services/atlas-portals/docs/kafka.md`**
+- [x] **Step 8: Update `services/atlas-portals/docs/kafka.md`**
 
 In the `warpEvent` field table, insert a row directly after the `body.targetPortalId` row:
 
@@ -153,7 +153,7 @@ In the `warpEvent` field table, insert a row directly after the `body.targetPort
 | body.targetPortalName | string | Target portal name; used when targetPortalId is 0. Unresolvable names fall back to a random spawn point |
 ```
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add services/atlas-portals/atlas.com/portals/portal/kafka.go \
@@ -189,7 +189,7 @@ Patterns to copy:
 - `services/atlas-channel/atlas.com/channel/monster/producer.go:208-224` — `ForceControlCommandProvider`
 - `services/atlas-channel/atlas.com/channel/monster/producer_magnet_test.go:13-72` — provider-shape test, including `magnetTestField()`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 New file `monster/producer_banish_test.go`, `package monster` (internal, like `producer_magnet_test.go`). It reuses `magnetTestField()` from `producer_magnet_test.go` — do not redeclare it.
 
@@ -214,7 +214,7 @@ force, err := ForceControlCommandProvider(magnetTestField(), 4242, 777)()
 ```
 Assert `string(banish[0].Key) == string(force[0].Key)` — `ForceControlCommandProvider(f, 4242, 777)` keys on monster id `4242` and `BanishCommandProvider(f, 4242, ...)` keys on character id `4242`, so identical keys prove `BanishCommandProvider` keyed on its *first* uint32 argument (the character id) rather than on the template id `9500324`. Add a comment saying exactly that, so the equality is not misread as "both key on monster id".
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./monster/... -run Banish -v
@@ -222,7 +222,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./monster/... -run Banish
 
 Expected: compile failure — `BanishCommandProvider` undefined, `monster2.CommandTypeBanish` undefined.
 
-- [ ] **Step 3: Add the command type and body**
+- [x] **Step 3: Add the command type and body**
 
 In `kafka/message/monster/kafka.go`, add to the const block after `CommandTypeForceControl`:
 
@@ -249,7 +249,7 @@ type BanishCommandBody struct {
 }
 ```
 
-- [ ] **Step 4: Add the provider**
+- [x] **Step 4: Add the provider**
 
 Append to `monster/producer.go`:
 
@@ -278,7 +278,7 @@ func BanishCommandProvider(f field.Model, characterId uint32, monsterTemplateId 
 }
 ```
 
-- [ ] **Step 5: Add `Banish` to the processor**
+- [x] **Step 5: Add `Banish` to the processor**
 
 In `monster/processor.go`, add to the `Processor` interface after `ForceControl`:
 
@@ -299,7 +299,7 @@ func (p *ProcessorImpl) Banish(f field.Model, characterId uint32, monsterTemplat
 }
 ```
 
-- [ ] **Step 6: Run the test to verify it passes**
+- [x] **Step 6: Run the test to verify it passes**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./monster/... -run Banish -v
@@ -307,7 +307,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./monster/... -run Banish
 
 Expected: PASS.
 
-- [ ] **Step 7: Wire the handler**
+- [x] **Step 7: Wire the handler**
 
 In `socket/handler/mob_banish_player.go`, replace line 19 (`// behavior: deferred (decode-and-log only)`) with:
 
@@ -317,7 +317,7 @@ In `socket/handler/mob_banish_player.go`, replace line 19 (`// behavior: deferre
 
 and add `"atlas-channel/monster"` to the import block as the first entry (matching `monster_damage_friendly.go:4`). Keep the existing `l.Debugf` line above it. No stub, no TODO, and nothing is written back to the socket.
 
-- [ ] **Step 8: Run the module build and full test suite**
+- [x] **Step 8: Run the module build and full test suite**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./...
@@ -325,7 +325,7 @@ cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./...
 
 Expected: all packages ok.
 
-- [ ] **Step 9: Update `services/atlas-channel/docs/kafka.md`**
+- [x] **Step 9: Update `services/atlas-channel/docs/kafka.md`**
 
 In the `### COMMAND_TOPIC_MONSTER` entry, extend the `Message Type:` line with `, Command[BanishCommandBody]` and append to the `Purpose:` sentence:
 
@@ -333,7 +333,7 @@ In the `### COMMAND_TOPIC_MONSTER` entry, extend the `Message Type:` line with `
 BANISH forwards a client MOB_BANISH_PLAYER request (CharacterId, MonsterTemplateId) with MonsterId 0; atlas-monsters validates the client-supplied template id against live field state before acting.
 ```
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/message/monster/kafka.go \
@@ -377,7 +377,7 @@ Patterns to copy:
 - `services/atlas-monsters/atlas.com/monsters/monster/information/builder.go:41-56` — existing setter shape
 - `services/atlas-monsters/atlas.com/monsters/monster/producer_test.go:15-44` — provider-shape test shape (`package monster`, decode `msgs[0].Value` into an anonymous envelope struct)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 New file `monster/banish_producer_test.go`, `package monster`. Field for both: `field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).SetInstance(uuid.Nil).Build()`.
 
@@ -417,7 +417,7 @@ m := information.NewModelBuilder().SetBanish(b).Build()
 ```
 assert `m.Banish() == b` (a comparable struct of three scalars). Import `"atlas-monsters/monster/information"`.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/... -run 'WarpCommandProvider|SendMessageProvider|SetBanish' -v
@@ -425,7 +425,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/... -run 'War
 
 Expected: compile failure — package `atlas-monsters/kafka/message/system_message` does not exist, `sendMessageProvider` undefined, `SetBanish` undefined, and `warpCommandProvider` takes 3 arguments not 4.
 
-- [ ] **Step 3: Create the local `system_message` package**
+- [x] **Step 3: Create the local `system_message` package**
 
 New file `kafka/message/system_message/kafka.go` — the same shapes as `services/atlas-party-quests/atlas.com/party-quests/kafka/message/system_message/kafka.go`, with a package doc comment in the `mist` convention:
 
@@ -465,7 +465,7 @@ type SendMessageBody struct {
 }
 ```
 
-- [ ] **Step 4: Widen `warpBody` and `warpCommandProvider`, add `sendMessageProvider`**
+- [x] **Step 4: Widen `warpBody` and `warpCommandProvider`, add `sendMessageProvider`**
 
 In `monster/disease.go`, replace the `warpBody` struct and `warpCommandProvider`:
 
@@ -521,7 +521,7 @@ func sendMessageProvider(f field.Model, characterId uint32, messageType string, 
 
 Add `system_message "atlas-monsters/kafka/message/system_message"` to the import block. `uuid` is already imported (`disease.go:4`).
 
-- [ ] **Step 5: Update the one existing `warpCommandProvider` call site**
+- [x] **Step 5: Update the one existing `warpCommandProvider` call site**
 
 In `monster/processor.go:1263`, inside `executeBanish`, change
 
@@ -537,7 +537,7 @@ to pass the portal name as the new fourth argument:
 
 (This call site is rewritten again in Task 4; passing the name here keeps the tree compiling and correct in between.)
 
-- [ ] **Step 6: Add `SetBanish` to `ModelBuilder`**
+- [x] **Step 6: Add `SetBanish` to `ModelBuilder`**
 
 In `monster/information/builder.go`, add `banish Banish` to the `ModelBuilder` struct, then after `SetResistances`:
 
@@ -552,7 +552,7 @@ func (b *ModelBuilder) SetBanish(banish Banish) *ModelBuilder {
 
 and add `banish: b.banish,` to the struct literal returned by `Build()`.
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/... -run 'WarpCommandProvider|SendMessageProvider|SetBanish' -v
@@ -560,7 +560,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/... -run 'War
 
 Expected: PASS.
 
-- [ ] **Step 8: Run the module build and full test suite**
+- [x] **Step 8: Run the module build and full test suite**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./...
@@ -568,7 +568,7 @@ cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./...
 
 Expected: all packages ok.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/kafka/message/system_message/kafka.go \
@@ -603,7 +603,7 @@ Patterns to copy:
 - `services/atlas-monsters/atlas.com/monsters/monster/processor_test.go:236-263` — `newRecordingProcessorWithBodies` and the `emittedBody{Topic, Type, Body}` shape
 - `services/atlas-monsters/atlas.com/monsters/kafka/consumer/monster/consumer.go:229-238` — `handleAddPuppetCommand`'s field construction
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 New file `monster/banish_test.go`, `package monster`. Every case follows `kill_test.go`'s opening: `r := GetMonsterRegistry()`, `ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)`, `ctx := context.Background()`, `r.Clear(ctx)`, then save/restore `testInformationLookup` with `defer`. Field: `f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()`. Live monsters are created with `r.CreateMonster(ctx, ten, f, <templateId>, 0, 0, 0, 5, 0, 5000, 100, "", "")`. Processor: `p, events := newRecordingProcessorWithBodies(t, ten)`.
 
@@ -649,7 +649,7 @@ No bounding box and no count are set, so `HasBoundingBox()` is false and `Count(
 
 If `executeBanish` still calls `information.NewProcessor(...).GetById` directly rather than the `testInformationLookup` hook, Step 5 routes it through the hook; the test is written against the post-Step-5 behavior.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/... -run 'TestBanish|TestExecuteBanish' -v
@@ -657,7 +657,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/... -run 'Tes
 
 Expected: compile failure — `p.Banish` undefined.
 
-- [ ] **Step 3: Add the shared executor and `Banish`**
+- [x] **Step 3: Add the shared executor and `Banish`**
 
 In `monster/processor.go`, add to the `Processor` interface under `// Commands`, after `ForceControl`:
 
@@ -737,7 +737,7 @@ func (p *ProcessorImpl) Banish(f field.Model, characterId uint32, monsterTemplat
 
 Add `system_message "atlas-monsters/kafka/message/system_message"` and `"fmt"` to the import block if not already present.
 
-- [ ] **Step 4: Run the `Banish` tests to verify they pass**
+- [x] **Step 4: Run the `Banish` tests to verify they pass**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/... -run TestBanish -v
@@ -745,7 +745,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/... -run Test
 
 Expected: PASS.
 
-- [ ] **Step 5: Rewrite `executeBanish` onto the shared executor**
+- [x] **Step 5: Rewrite `executeBanish` onto the shared executor**
 
 Replace the body of `executeBanish` (`monster/processor.go:1247-1268`), keeping its existing target selection and its two guards, and routing the information fetch through the hook so the convergence test can stub it:
 
@@ -775,7 +775,7 @@ func (p *ProcessorImpl) executeBanish(m Model, sd mobskill.Model) {
 }
 ```
 
-- [ ] **Step 6: Run the convergence test to verify it passes**
+- [x] **Step 6: Run the convergence test to verify it passes**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/... -run 'TestBanish|TestExecuteBanish' -v
@@ -783,7 +783,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/... -run 'Tes
 
 Expected: PASS.
 
-- [ ] **Step 7: Add the consumer command type, body and handler**
+- [x] **Step 7: Add the consumer command type, body and handler**
 
 In `kafka/consumer/monster/kafka.go`, add to the const block after `CommandTypeForceControl`:
 
@@ -831,7 +831,7 @@ func handleBanishCommand(l logrus.FieldLogger, ctx context.Context, c command[ba
 }
 ```
 
-- [ ] **Step 8: Run the module build and full test suite**
+- [x] **Step 8: Run the module build and full test suite**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./...
@@ -839,7 +839,7 @@ cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./...
 
 Expected: all packages ok.
 
-- [ ] **Step 9: Update `services/atlas-monsters/docs/kafka.md`**
+- [x] **Step 9: Update `services/atlas-monsters/docs/kafka.md`**
 
 In the `#### WARP` block, add `"targetPortalName": "st00"` to the JSON body and change the section blurb from "produced when monster banish skills target players" to "produced when a monster banish (skill 129 or a client MOB_BANISH_PLAYER request) ejects a player". Then add, after the `WARP` block:
 
@@ -892,7 +892,7 @@ Asks the processor to banish a character out of a field. Emitted by atlas-channe
 ```
 ````
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/kafka/consumer/monster/kafka.go \
@@ -911,7 +911,7 @@ git commit -m "feat(atlas-monsters): validate and execute client-initiated banis
 
 - No source files. Read-only across the three touched services.
 
-- [ ] **Step 1: Run the flagless verification gate**
+- [x] **Step 1: Run the flagless verification gate**
 
 ```bash
 tools/verify.sh
@@ -919,11 +919,11 @@ tools/verify.sh
 
 Expected: exit 0. Only the flagless invocation counts — `--quick` / `--no-docker` skip the bake and `-race`.
 
-- [ ] **Step 2: Fix any failure and re-run**
+- [x] **Step 2: Fix any failure and re-run**
 
 If a guard fails, read `docs/verification.md` for that guard's invariant, fix the cause (not the guard), and re-run the flagless script until it exits 0. Do not claim the branch done from a flagged or partial run.
 
-- [ ] **Step 3: Commit any fixes**
+- [x] **Step 3: Commit any fixes**
 
 ```bash
 git add -A

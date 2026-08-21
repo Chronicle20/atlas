@@ -156,10 +156,36 @@ type effectPlan struct {
 	duration  int32        // WZ `time` spec in ms; atlas-buffs expiry = now + duration*time.Millisecond
 }
 
+// halveIfZombified halves an HP restoration amount when the recipient is
+// zombified, using Go integer division (truncation toward zero) to match the
+// reference's `hpchange /= 2` on an int. Order matters for hpR: the reference
+// computes (int)(maxHp * hpR) / 2 -- cast first, then integer-divide -- which
+// is what passing the already-floored int16 here reproduces. (task-256 FR-5/FR-6)
+func halveIfZombified(amount int16, zombified bool) int16 {
+	if !zombified {
+		return amount
+	}
+	return amount / 2
+}
+
+// resolveZombified reads the character's live buffs and resolves the zombify
+// predicate. A failed read resolves to false and logs at Warn (task-256 FR-3):
+// an atlas-buffs outage must degrade to "the debuff has no effect", never to a
+// mis-halved heal. Takes the Processor rather than constructing one so the
+// fail-open branch is directly unit-testable.
+func resolveZombified(l logrus.FieldLogger, bp buff.Processor, characterId uint32) bool {
+	bs, err := bp.GetByCharacterId(characterId)
+	if err != nil {
+		l.WithError(err).Warnf("Unable to read buffs for character [%d]; treating as not zombified.", characterId)
+		return false
+	}
+	return buff.IsZombified(bs)
+}
+
 // computeEffectPlan interprets a consumable's specs against a character with
 // no side effects. ApplyItemEffects executes the plan; keeping the decision
 // pure is what makes the morph/hp paths pinnable by plain unit tests.
-func computeEffectPlan(l logrus.FieldLogger, c character.Model, ci consumable3.Model) effectPlan {
+func computeEffectPlan(l logrus.FieldLogger, c character.Model, ci consumable3.Model, zombified bool) effectPlan {
 	plan := effectPlan{
 		cureTypes: collectCureTypes(ci),
 		hpChanges: make([]int16, 0, 2),
@@ -168,11 +194,22 @@ func computeEffectPlan(l logrus.FieldLogger, c character.Model, ci consumable3.M
 	}
 
 	if val, ok := ci.GetSpec(consumable3.SpecTypeHP); ok && val > 0 {
-		plan.hpChanges = append(plan.hpChanges, int16(val))
+		if amt := halveIfZombified(int16(val), zombified); amt > 0 {
+			plan.hpChanges = append(plan.hpChanges, amt)
+			if zombified {
+				l.Debugf("Zombify halved flat HP restoration for character [%d]: [%d] -> [%d].", c.Id(), int16(val), amt)
+			}
+		}
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeHPRecovery); ok && val > 0 {
 		pct := float64(val) / float64(100)
-		plan.hpChanges = append(plan.hpChanges, int16(math.Floor(float64(c.MaxHp())*pct)))
+		preAmt := int16(math.Floor(float64(c.MaxHp()) * pct))
+		if amt := halveIfZombified(preAmt, zombified); amt > 0 {
+			plan.hpChanges = append(plan.hpChanges, amt)
+			if zombified {
+				l.Debugf("Zombify halved percent HP restoration for character [%d]: [%d] -> [%d].", c.Id(), preAmt, amt)
+			}
+		}
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeMP); ok && val > 0 {
 		plan.mpChanges = append(plan.mpChanges, int16(val))
@@ -233,7 +270,8 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 	bp := buff.NewProcessor(l, ctx)
 	cp := character.NewProcessor(l, ctx)
 
-	plan := computeEffectPlan(l, c, ci)
+	zombified := resolveZombified(l, bp, characterId)
+	plan := computeEffectPlan(l, c, ci, zombified)
 
 	// 1. Cure first. Cure runs before HP/MP recovery so a queued poison tick
 	// (also routed through atlas-buffs's per-character partition) lands behind

@@ -2,13 +2,16 @@ package consumable
 
 import (
 	"atlas-consumables/cash"
+	"atlas-consumables/character/buff"
 	"atlas-consumables/character/buff/stat"
 	"bytes"
 	"context"
 	"errors"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 
 	cashmock "atlas-consumables/cash/mock"
 	buffmock "atlas-consumables/character/buff/mock"
@@ -18,6 +21,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	ts "github.com/Chronicle20/atlas/libs/atlas-constants/character"
@@ -47,6 +51,7 @@ func TestComputeMorphCouponPlan(t *testing.T) {
 	tests := []struct {
 		name         string
 		spec         map[cash.SpecType]int32
+		zombified    bool
 		wantHp       int16
 		wantMorph    int32 // 0 = expect no morph statup
 		wantDuration int32
@@ -54,6 +59,7 @@ func TestComputeMorphCouponPlan(t *testing.T) {
 		{
 			name:         "full spec (5300000)",
 			spec:         map[cash.SpecType]int32{cash.SpecTypeMorph: 1, cash.SpecTypeHp: 50, cash.SpecTypeTime: 600000},
+			zombified:    false,
 			wantHp:       50,
 			wantMorph:    1,
 			wantDuration: 600000,
@@ -61,6 +67,7 @@ func TestComputeMorphCouponPlan(t *testing.T) {
 		{
 			name:         "morph 3 (5300002)",
 			spec:         map[cash.SpecType]int32{cash.SpecTypeMorph: 3, cash.SpecTypeHp: 50, cash.SpecTypeTime: 600000},
+			zombified:    false,
 			wantHp:       50,
 			wantMorph:    3,
 			wantDuration: 600000,
@@ -68,6 +75,7 @@ func TestComputeMorphCouponPlan(t *testing.T) {
 		{
 			name:         "morph absent: heals, does not morph",
 			spec:         map[cash.SpecType]int32{cash.SpecTypeHp: 50, cash.SpecTypeTime: 600000},
+			zombified:    false,
 			wantHp:       50,
 			wantMorph:    0,
 			wantDuration: 600000,
@@ -75,6 +83,7 @@ func TestComputeMorphCouponPlan(t *testing.T) {
 		{
 			name:         "morph zero: heals, does not morph",
 			spec:         map[cash.SpecType]int32{cash.SpecTypeMorph: 0, cash.SpecTypeHp: 50, cash.SpecTypeTime: 600000},
+			zombified:    false,
 			wantHp:       50,
 			wantMorph:    0,
 			wantDuration: 600000,
@@ -82,6 +91,7 @@ func TestComputeMorphCouponPlan(t *testing.T) {
 		{
 			name:         "hp absent: morphs, does not heal",
 			spec:         map[cash.SpecType]int32{cash.SpecTypeMorph: 2, cash.SpecTypeTime: 600000},
+			zombified:    false,
 			wantHp:       0,
 			wantMorph:    2,
 			wantDuration: 600000,
@@ -89,6 +99,7 @@ func TestComputeMorphCouponPlan(t *testing.T) {
 		{
 			name:         "hp zero: morphs, does not heal",
 			spec:         map[cash.SpecType]int32{cash.SpecTypeMorph: 2, cash.SpecTypeHp: 0, cash.SpecTypeTime: 600000},
+			zombified:    false,
 			wantHp:       0,
 			wantMorph:    2,
 			wantDuration: 600000,
@@ -96,6 +107,7 @@ func TestComputeMorphCouponPlan(t *testing.T) {
 		{
 			name:         "both absent: does nothing (stale ingest)",
 			spec:         map[cash.SpecType]int32{cash.SpecTypeTime: 600000},
+			zombified:    false,
 			wantHp:       0,
 			wantMorph:    0,
 			wantDuration: 600000,
@@ -103,6 +115,7 @@ func TestComputeMorphCouponPlan(t *testing.T) {
 		{
 			name:         "empty spec: does nothing, duration zero",
 			spec:         map[cash.SpecType]int32{},
+			zombified:    false,
 			wantHp:       0,
 			wantMorph:    0,
 			wantDuration: 0,
@@ -110,15 +123,40 @@ func TestComputeMorphCouponPlan(t *testing.T) {
 		{
 			name:         "time absent: morph applied with zero duration",
 			spec:         map[cash.SpecType]int32{cash.SpecTypeMorph: 1, cash.SpecTypeHp: 50},
+			zombified:    false,
 			wantHp:       50,
 			wantMorph:    1,
 			wantDuration: 0,
+		},
+		{
+			name:         "full spec zombified",
+			spec:         map[cash.SpecType]int32{cash.SpecTypeMorph: 1, cash.SpecTypeHp: 50, cash.SpecTypeTime: 600000},
+			zombified:    true,
+			wantHp:       25,
+			wantMorph:    1,
+			wantDuration: 600000,
+		},
+		{
+			name:         "odd hp zombified truncates down",
+			spec:         map[cash.SpecType]int32{cash.SpecTypeHp: 51, cash.SpecTypeTime: 600000},
+			zombified:    true,
+			wantHp:       25,
+			wantMorph:    0,
+			wantDuration: 600000,
+		},
+		{
+			name:         "hp 1 zombified truncates to zero",
+			spec:         map[cash.SpecType]int32{cash.SpecTypeHp: 1, cash.SpecTypeTime: 600000},
+			zombified:    true,
+			wantHp:       0,
+			wantMorph:    0,
+			wantDuration: 600000,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			plan := computeMorphCouponPlan(extractCash(t, tc.spec))
+			plan := computeMorphCouponPlan(extractCash(t, tc.spec), tc.zombified)
 
 			if plan.hp != tc.wantHp {
 				t.Errorf("hp = %d, want %d", plan.hp, tc.wantHp)
@@ -421,6 +459,104 @@ func TestConsumeMorphCouponReuseWhileMorphedApplies(t *testing.T) {
 func TestConsumeMorphCouponBindsRealProcessors(t *testing.T) {
 	if ConsumeMorphCoupon(uuid.New(), 555, 3, 5300000) == nil {
 		t.Fatal("ConsumeMorphCoupon returned a nil ItemConsumer")
+	}
+}
+
+// TestConsumeMorphCouponZombifiedHalvesHeal pins task-256 FR-5/FR-6 through the
+// consumer: a zombified character's coupon heal is halved, but the morph
+// statup and duration are untouched.
+func TestConsumeMorphCouponZombifiedHalvesHeal(t *testing.T) {
+	h := newMorphCouponHarness(t, extractCash(t, fullMorphSpec()), nil)
+	h.deps.buff = &buffmock.ProcessorMock{
+		ApplyFunc: func(_ fieldc.Model, fromId uint32, sourceId int32, level byte, duration int32, statups []stat.Model) model.Operator[uint32] {
+			h.applies = append(h.applies, applyCall{fromId, sourceId, level, duration, statups})
+			return func(uint32) error { return nil }
+		},
+		GetByCharacterIdFunc: func(uint32) ([]buff.Model, error) {
+			return []buff.Model{buff.NewBuff(1, 0, 0, []stat.Model{{Type: ts.TemporaryStatTypeUndead, Amount: 1}}, time.Now(), time.Now().Add(time.Hour), false)}, nil
+		},
+	}
+
+	if err := consumeMorphCoupon(logrus.New(), context.Background(), h.deps, uuid.New(), 555, 3, 5300000); err != nil {
+		t.Fatalf("consumeMorphCoupon: %v", err)
+	}
+
+	if len(h.consumeItems) != 1 {
+		t.Fatalf("ConsumeItem call count = %d, want 1", len(h.consumeItems))
+	}
+	want := []changeHPCall{{555, 25}}
+	if !reflect.DeepEqual(h.hpChanges, want) {
+		t.Errorf("hpChanges = %+v, want %+v", h.hpChanges, want)
+	}
+	if len(h.applies) != 1 {
+		t.Fatalf("Apply call count = %d, want 1", len(h.applies))
+	}
+	if h.applies[0].duration != 600000 {
+		t.Errorf("Apply duration = %d, want 600000 (untouched by zombify)", h.applies[0].duration)
+	}
+	wantStatup := stat.Model{Type: ts.TemporaryStatTypeMorph, Amount: 1}
+	if len(h.applies[0].statups) != 1 || h.applies[0].statups[0] != wantStatup {
+		t.Errorf("Apply statups = %+v, want [%+v] (untouched by zombify)", h.applies[0].statups, wantStatup)
+	}
+	if len(h.errors) != 0 {
+		t.Errorf("errors = %v, want none", h.errors)
+	}
+}
+
+// TestConsumeMorphCouponBuffReadFailureHealsFullValue pins FR-3: a buff-read
+// failure must never bounce a paid coupon, nor mis-halve its heal.
+func TestConsumeMorphCouponBuffReadFailureHealsFullValue(t *testing.T) {
+	h := newMorphCouponHarness(t, extractCash(t, fullMorphSpec()), nil)
+	h.deps.buff = &buffmock.ProcessorMock{
+		ApplyFunc: func(_ fieldc.Model, fromId uint32, sourceId int32, level byte, duration int32, statups []stat.Model) model.Operator[uint32] {
+			h.applies = append(h.applies, applyCall{fromId, sourceId, level, duration, statups})
+			return func(uint32) error { return nil }
+		},
+		GetByCharacterIdFunc: func(uint32) ([]buff.Model, error) {
+			return nil, errors.New("boom")
+		},
+	}
+
+	if err := consumeMorphCoupon(logrus.New(), context.Background(), h.deps, uuid.New(), 555, 3, 5300000); err != nil {
+		t.Fatalf("consumeMorphCoupon: %v", err)
+	}
+
+	want := []changeHPCall{{555, 50}}
+	if !reflect.DeepEqual(h.hpChanges, want) {
+		t.Errorf("hpChanges = %+v, want %+v", h.hpChanges, want)
+	}
+	if len(h.errors) != 0 {
+		t.Errorf("errors = %v, want none — a buff-read failure must never bounce a paid coupon", h.errors)
+	}
+}
+
+// TestConsumeMorphCouponZombifiedZeroHealDoesNotWarnAboutCashData pins the
+// warning gate: a heal that truncates to zero under zombify must not trip the
+// "neither a morph nor an hp" diagnostic, which blames the tenant's cash WZ
+// ingest.
+func TestConsumeMorphCouponZombifiedZeroHealDoesNotWarnAboutCashData(t *testing.T) {
+	h := newMorphCouponHarness(t, extractCash(t, map[cash.SpecType]int32{cash.SpecTypeHp: 1, cash.SpecTypeTime: 600000}), nil)
+	h.deps.buff = &buffmock.ProcessorMock{
+		GetByCharacterIdFunc: func(uint32) ([]buff.Model, error) {
+			return []buff.Model{buff.NewBuff(1, 0, 0, []stat.Model{{Type: ts.TemporaryStatTypeUndead, Amount: 1}}, time.Now(), time.Now().Add(time.Hour), false)}, nil
+		},
+	}
+	logger, hook := test.NewNullLogger()
+
+	if err := consumeMorphCoupon(logger, context.Background(), h.deps, uuid.New(), 555, 3, 5300000); err != nil {
+		t.Fatalf("consumeMorphCoupon: %v", err)
+	}
+
+	if len(h.hpChanges) != 0 {
+		t.Errorf("hpChanges = %+v, want none", h.hpChanges)
+	}
+	if len(h.applies) != 0 {
+		t.Errorf("applies = %+v, want none", h.applies)
+	}
+	for _, e := range hook.AllEntries() {
+		if strings.Contains(e.Message, "neither a morph nor an hp") {
+			t.Errorf("logged %q — a zombify-truncated heal must not be misdiagnosed as broken cash WZ data", e.Message)
+		}
 	}
 }
 

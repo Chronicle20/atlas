@@ -487,7 +487,7 @@ EOF
     printf 'atlas-characters characters\n' > "$TMP_SCRIPTS/tenant-tables.txt"
     cat > "$SHIM_DIR/psql" <<'EOF'
 #!/usr/bin/env bash
-echo 'psql: error: relation "characters" does not exist' >&2
+echo 'psql: error: permission denied for table characters' >&2
 exit 1
 EOF
     chmod +x "$SHIM_DIR/psql" "$TMP_SCRIPTS/sweep-orphans.sh"
@@ -500,7 +500,79 @@ EOF
     [[ "$output" == *"delete from atlas-characters-main.characters failed"* ]]
     # log() JSON-encodes the message (jq -Rs), so an embedded double quote
     # comes back backslash-escaped in $output.
-    [[ "$output" == *'relation \"characters\" does not exist'* ]]
+    [[ "$output" == *'permission denied for table characters'* ]]
+
+    rm -rf "$SHIM_DIR" "$TMP_SCRIPTS"
+}
+
+@test "sweep-orphans.sh --sweep-tenant treats a missing relation as an info-level skip, not a failure" {
+    # tenant-tables.txt legitimately lists tables a lagging deployed image
+    # may not have migrated yet — "relation does not exist" is expected,
+    # not an error.
+    SHIM_DIR="$(mktemp -d)"
+    TMP_SCRIPTS="$(mktemp -d)"
+    cp "$SCRIPT" "$TMP_SCRIPTS/sweep-orphans.sh"
+    cp "$PROJECT_ROOT/scripts/lib.sh" "$TMP_SCRIPTS/lib.sh"
+    cp "$PROJECT_ROOT/scripts/env-record.sh" "$TMP_SCRIPTS/env-record.sh"
+    printf 'atlas-quest quest_medal_maps\n' > "$TMP_SCRIPTS/tenant-tables.txt"
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+echo 'ERROR:  relation "quest_medal_maps" does not exist' >&2
+exit 1
+EOF
+    chmod +x "$SHIM_DIR/psql" "$TMP_SCRIPTS/sweep-orphans.sh"
+
+    run env PATH="$SHIM_DIR:$PATH" DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        bash "$TMP_SCRIPTS/sweep-orphans.sh" \
+        --sweep-tenant "11111111-1111-1111-1111-111111111111" --baseline main --apply
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"skipping atlas-quest-main.quest_medal_maps"* ]]
+    [[ "$output" == *"relation does not exist"* ]]
+    [[ "$output" != *"failed"* ]]
+
+    rm -rf "$SHIM_DIR" "$TMP_SCRIPTS"
+}
+
+@test "sweep-orphans.sh --sweep-tenant still fails the sweep when a later table has a real psql error after an earlier missing-relation skip" {
+    SHIM_DIR="$(mktemp -d)"
+    TMP_SCRIPTS="$(mktemp -d)"
+    cp "$SCRIPT" "$TMP_SCRIPTS/sweep-orphans.sh"
+    cp "$PROJECT_ROOT/scripts/lib.sh" "$TMP_SCRIPTS/lib.sh"
+    cp "$PROJECT_ROOT/scripts/env-record.sh" "$TMP_SCRIPTS/env-record.sh"
+    cat > "$TMP_SCRIPTS/tenant-tables.txt" <<'EOF'
+atlas-quest quest_medal_maps
+atlas-characters characters
+EOF
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+for a in "$@"; do
+    if [ "$prev" = "-c" ]; then
+        case "$a" in
+            *quest_medal_maps*)
+                echo 'ERROR:  relation "quest_medal_maps" does not exist' >&2
+                exit 1
+                ;;
+            *characters*)
+                echo 'psql: error: connection refused' >&2
+                exit 1
+                ;;
+        esac
+    fi
+    prev="$a"
+done
+exit 0
+EOF
+    chmod +x "$SHIM_DIR/psql" "$TMP_SCRIPTS/sweep-orphans.sh"
+
+    run env PATH="$SHIM_DIR:$PATH" DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        bash "$TMP_SCRIPTS/sweep-orphans.sh" \
+        --sweep-tenant "11111111-1111-1111-1111-111111111111" --baseline main --apply
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"skipping atlas-quest-main.quest_medal_maps"* ]]
+    [[ "$output" == *"delete from atlas-characters-main.characters failed"* ]]
+    [[ "$output" == *"connection refused"* ]]
 
     rm -rf "$SHIM_DIR" "$TMP_SCRIPTS"
 }

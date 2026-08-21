@@ -270,8 +270,19 @@ sweep_tenant() {
         if [ "$APPLY" = "1" ]; then
             if ! psql_err=$(PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$db" \
                 -c "DELETE FROM \"$table\" WHERE tenant_id = '$tenant';" 2>&1 >/dev/null); then
-                ATLAS_STEP=sweep-tenant log warn "delete from ${db}.${table} failed: ${psql_err}"
-                rc=1
+                # tenant-tables.txt legitimately lists tables a lagging
+                # deployed image may not have migrated yet (e.g. a table
+                # whose Migration was only just registered) — Postgres's
+                # "relation ... does not exist" for THAT is an expected,
+                # info-level skip, not a failure. Any other psql error
+                # (permissions, connection, syntax, ...) still warns and
+                # fails the sweep — never blanket-swallow psql stderr.
+                if printf '%s' "$psql_err" | grep -qi 'relation .* does not exist'; then
+                    ATLAS_STEP=sweep-tenant log info "skipping ${db}.${table}: relation does not exist (not yet migrated)"
+                else
+                    ATLAS_STEP=sweep-tenant log warn "delete from ${db}.${table} failed: ${psql_err}"
+                    rc=1
+                fi
             fi
         fi
     done < "$tenant_tables"

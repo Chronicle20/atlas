@@ -66,7 +66,7 @@ func TestHandleGetMapGroundRequest(t *testing.T) {
 		req := postGroundRequest(url, body, tn.Id().String())
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var doc jsonapi.Document
@@ -86,7 +86,7 @@ func TestHandleGetMapGroundRequest(t *testing.T) {
 		req := postGroundRequest(url, body, tn.Id().String())
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		require.Equal(t, http.StatusOK, resp.StatusCode)
 
 		var doc jsonapi.Document
@@ -111,7 +111,7 @@ func TestHandleGetMapGroundRequest(t *testing.T) {
 		req := postGroundRequest(url, body, tn.Id().String())
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 }

@@ -9,6 +9,11 @@ import (
 
 const (
 	Resource = "characters/seed"
+
+	// MapleLifeResource is the factory's Maple Life character-creation
+	// route, registered in
+	// services/atlas-character-factory/atlas.com/character-factory/factory/resource.go.
+	MapleLifeResource = "factory/characters/maple-life"
 )
 
 func getBaseRequest(ctx context.Context) (string, error) {
@@ -47,4 +52,24 @@ func requestCreate(ctx context.Context, accountId uint32, worldId world.Id, name
 		MapId:        0,
 	}
 	return requests.PostRequest[CreateCharacterResponse](root+Resource, i)
+}
+
+func requestCreateMapleLife(ctx context.Context, accountId uint32, worldId world.Id, name string, classOrdinal uint32, gender byte, face uint32, hair uint32, hairColor uint32, skinColor byte, sp byte) requests.Request[CreateCharacterResponse] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[CreateCharacterResponse](err)
+	}
+	i := MapleLifeCreateRestModel{
+		AccountId:    accountId,
+		WorldId:      byte(worldId),
+		Name:         name,
+		ClassOrdinal: classOrdinal,
+		Gender:       gender,
+		Face:         face,
+		Hair:         hair,
+		HairColor:    hairColor,
+		SkinColor:    skinColor,
+		SP:           sp,
+	}
+	return requests.PostRequest[CreateCharacterResponse](root+MapleLifeResource, i)
 }

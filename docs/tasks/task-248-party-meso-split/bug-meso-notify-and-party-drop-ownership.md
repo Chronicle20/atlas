@@ -183,9 +183,13 @@ owner and any party member.
 
 ## Resolution
 
-- Fix commit: see `bug-fix-report-meso-notify-and-ownership.md` in this
-  directory for the implementer's report and commit SHA.
-- Gate: module-local `go build ./... && go test ./...` for atlas-channel and
-  atlas-character (verified); repo-wide `tools/verify.sh` pending the
-  controller's dispatch.
-- Live re-test: pending.
+- Fix commits: `35462cc0b` (both bugs) and `19f19f229` (review fix-up: guard the
+  meso-only pickup from a spurious `DropPickUpStackableItem(0, 0)` packet).
+- Review: `reviews/review-bug-meso-notify-and-ownership.md` — CHANGES_REQUIRED,
+  one blocking finding, fixed by `19f19f229`.
+- Gate: `tools/verify.sh --quick --base 3b055a922` exit 0 after `19f19f229`
+  (12 changed paths, 2 Go modules, all checks passed).
+- Live re-test: pending — re-test in the PR-1446 environment after the rollout
+  picks up these commits. Confirm (a) each party member sees their own share as
+  a meso pickup notification and no chat line, and (b) the killer can pick a
+  party-owned drop up immediately rather than after 15 seconds.

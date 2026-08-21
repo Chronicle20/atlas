@@ -11,3 +11,6 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T12:07:17Z	agent	final	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	23d12c455	CHANGES_REQUIRED	yes	-	-
 2026-08-21T12:12:55Z	agent	final fix	atlas-implementer	sonnet	-	-	-	-	DONE	e1f509056	-	-	-	-
 2026-08-21T12:15:19Z	agent	final fix	atlas-reviewer	sonnet	-	-	-	-	DONE	e1f509056	APPROVED	no	-	-
+2026-08-21T14:06:04Z	agent	bug-meso-notify-and-ownership	atlas-implementer	sonnet	-	-	-	-	DONE	35462cc0b	-	-	-	-
+2026-08-21T14:06:05Z	agent	bug-meso-notify-and-ownership-fixup	atlas-implementer	sonnet	-	-	-	-	DONE	19f19f229	-	-	-	-
+2026-08-21T14:06:19Z	agent	bug-meso-notify-and-ownership	atlas-reviewer	sonnet	-	-	-	-	DONE	35462cc0b	CHANGES_REQUIRED	yes	-	-

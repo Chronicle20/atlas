@@ -1,16 +1,19 @@
 # coverage-manifest
 #
-# NOTE: version-coverage.md records a blocking finding that gms_v48,
-# gms_v61, gms_v72, and gms_v79 are all PRESENT (not absent as the plan
-# assumed). This manifest deliberately does NOT claim cells for those four
-# versions — Task 2 is docs-only and does no registry/template/codec/fixture
-# work for them, so claiming those cells here would misrepresent what this
-# task actually did. The plan must be amended (Tasks 1/10/12 scope) before
-# those four versions' cells can be claimed and verified. See
-# version-coverage.md "Blocking finding" for the full detail.
+# NOTE: scope-amendment.md (ruled 2026-08-21) supersedes the six-version
+# scope this manifest originally declared. gms_v48, gms_v61, gms_v72, and
+# gms_v79 all carry a live CUserLocal::TryRegisterTeleport send site
+# (version-coverage.md "Step 2") and are now in scope. Only gms_v12 remains
+# confirmed absent. Structure docs for the four added versions live at
+# structures/gms_v48.md, structures/gms_v61.md, structures/gms_v72.md,
+# structures/gms_v79.md.
 ops:
   - USE_INNER_PORTAL
 versions:
+  - gms_v48
+  - gms_v61
+  - gms_v72
+  - gms_v79
   - gms_v83
   - gms_v84
   - gms_v87
@@ -18,4 +21,4 @@ versions:
   - gms_v95
   - jms_v185
 fields:
-  - "portal/serverbound/PortalInnerPortal: no version gates across these six versions — body identical (fieldKey:byte, portalName:string, x:i16, y:i16, targetX:i16, targetY:i16); only the per-tenant opcode differs (see structures/gms_v95.md). This ruling does NOT extend to gms_v48, which version-coverage.md found omits fieldKey (5 fields) — that version is not claimed by this manifest."
+  - "portal/serverbound/PortalInnerPortal: one real version gate — fieldKey:byte is present from gms_v61 upward (MajorAtLeast(61)) and absent only on gms_v48 (5 fields: portalName, x, y, targetX, targetY; no fieldKey). Every other field (portalName:string, x:i16, y:i16, targetX:i16, targetY:i16) is ungated and identical across all ten in-scope versions; only the per-tenant opcode differs (see structures/gms_v48.md, structures/gms_v61.md, structures/gms_v95.md)."

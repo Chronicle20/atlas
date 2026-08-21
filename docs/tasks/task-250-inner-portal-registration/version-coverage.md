@@ -127,7 +127,27 @@ finding** — see "Blocking finding" below.
 - **Outcome: PRESENT.** Export `0x8afc42`, opcode `99` (0x063), 6-field
   layout (matches v95 shape).
 
-## Blocking finding
+## Ruling applied (Task 2b, 2026-08-21)
+
+The blocking finding below was resolved by the user during `/execute-task`:
+**all ten versions are in scope** (`docs/tasks/task-250-inner-portal-registration/scope-amendment.md`).
+Only gms_v12 remains confirmed absent. Task 2b re-confirmed the v48/v61/v72/v79
+send sites directly against their IDBs (not merely carrying forward this
+file's findings) and produced full structure docs at `structures/gms_v48.md`,
+`structures/gms_v61.md`, `structures/gms_v72.md`, `structures/gms_v79.md`.
+
+The v48 field-shape divergence recorded below (5 fields, no `fieldKey`) holds
+under re-derivation. The gate boundary is now settled: `fieldKey` is present
+from gms_v61 upward and absent only on gms_v48 — `MajorAtLeast(61)`. See
+`structures/gms_v61.md` "Gate decision" for the two-sided confirmation
+(gms_v48 read as absent, gms_v61 read as present, both in the same pass).
+
+`coverage-manifest.yaml` now lists all ten versions and its `fields:` line
+records this gate. The "blocking finding" framing below is preserved as the
+historical record of Task 2's original derivation; it is superseded by this
+ruling, not deleted.
+
+## Blocking finding (historical — resolved, see ruling above)
 
 **All four of v48, v61, v72, v79 are present, not absent.** Per the task
 brief: *"If any version is present, it joins the Task 1 / Task 10 / Task 12
@@ -137,7 +157,8 @@ fixture — and this plan must be amended before those tasks run."*
 This is reported here as a blocking finding and **not** actioned by this
 task — no registry entries, template routes, codec version-gates, or
 fixtures for v48/v61/v72/v79 are added by Task 2. Consequences for the rest
-of the task-250 plan:
+of the task-250 plan (as originally scoped by Task 2; superseded by the
+ruling above, which brings all four into full scope for Task 2b onward):
 
 - **Task 1** (`structures/gms_v95.md`, coverage-manifest scope) needs its
   version list widened from six to ten versions

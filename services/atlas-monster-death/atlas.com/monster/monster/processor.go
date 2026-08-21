@@ -8,6 +8,7 @@ import (
 	"atlas-monster-death/party"
 	"atlas-monster-death/quest"
 	"atlas-monster-death/rates"
+	"atlas-monster-death/system_message"
 	"context"
 	"math"
 	"math/rand"
@@ -26,16 +27,91 @@ type Processor interface {
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
+	cp  character.Processor
+	pp  party.Processor
+	rp  rates.Processor
+	ip  information.Processor
+	fp  _map.Processor
+	smp system_message.Processor
+	ht  *system_message.Throttle
+	cfg ExperienceConfig
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
+		cp:  character.NewProcessor(l, ctx),
+		pp:  party.NewProcessor(l, ctx),
+		rp:  rates.NewProcessor(l, ctx),
+		ip:  information.NewProcessor(l, ctx),
+		fp:  _map.NewProcessor(l, ctx),
+		smp: system_message.NewProcessor(l, ctx),
+		ht:  system_message.GetHintThrottle(),
+		cfg: LoadExperienceConfig(),
 	}
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
+
+type ProcessorOption func(*ProcessorImpl)
+
+func WithCharacterProcessor(cp character.Processor) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.cp = cp
+	}
+}
+
+func WithPartyProcessor(pp party.Processor) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.pp = pp
+	}
+}
+
+func WithRatesProcessor(rp rates.Processor) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.rp = rp
+	}
+}
+
+func WithInformationProcessor(ip information.Processor) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.ip = ip
+	}
+}
+
+func WithFieldProcessor(fp _map.Processor) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.fp = fp
+	}
+}
+
+func WithSystemMessageProcessor(smp system_message.Processor) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.smp = smp
+	}
+}
+
+func WithHintThrottle(ht *system_message.Throttle) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.ht = ht
+	}
+}
+
+func WithExperienceConfig(cfg ExperienceConfig) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.cfg = cfg
+	}
+}
+
+func (p *ProcessorImpl) With(opts ...ProcessorOption) Processor {
+	clone := *p
+	cp := &clone
+	for _, opt := range opts {
+		opt(cp)
+	}
+	return cp
+}
 
 func (p *ProcessorImpl) CreateDrops(f field.Model, id uint32, monsterId uint32, x int16, y int16, killerId uint32) error {
 	// TODO determine type of drop
@@ -52,13 +128,13 @@ func (p *ProcessorImpl) CreateDrops(f field.Model, id uint32, monsterId uint32, 
 	p.l.Debugf("After quest filtering, [%d] drops remain.", len(ds))
 
 	// Get rates for the killer
-	r := rates.GetForCharacter(p.l)(p.ctx)(f.Channel(), killerId)
+	r := p.rp.GetForCharacter(f.Channel(), killerId)
 	p.l.Debugf("Character [%d] rates: itemDrop=%.2f, meso=%.2f", killerId, r.ItemDropRate(), r.MesoRate())
 
 	ds = getSuccessfulDrops(ds, r.ItemDropRate())
 
 	var ownerPartyId uint32
-	pt, perr := party.NewProcessor(p.l, p.ctx).GetByMemberId(killerId)
+	pt, perr := p.pp.GetByMemberId(killerId)
 	if perr == nil {
 		ownerPartyId = pt.Id()
 	}
@@ -127,12 +203,12 @@ func (p *ProcessorImpl) DistributeExperience(f field.Model, monsterId uint32, da
 	d, _ := p.produceDistribution(f, monsterId, damageEntries)()
 	for k, v := range d.Solo() {
 		exp := float64(v) * d.ExperiencePerDamage()
-		c, err := character.NewProcessor(p.l, p.ctx).GetById(k)
+		c, err := p.cp.GetById(k)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to locate character %d whose for distributing experience from monster death.", k)
 		} else {
 			// Get rates for the character and apply exp rate
-			r := rates.GetForCharacter(p.l)(p.ctx)(f.Channel(), c.Id())
+			r := p.rp.GetForCharacter(f.Channel(), c.Id())
 			exp = exp * r.ExpRate()
 			p.l.Debugf("Character [%d] exp rate: %.2f, adjusted exp: %.2f", c.Id(), r.ExpRate(), exp)
 
@@ -144,18 +220,18 @@ func (p *ProcessorImpl) DistributeExperience(f field.Model, monsterId uint32, da
 }
 
 func (p *ProcessorImpl) produceDistribution(f field.Model, monsterId uint32, damageEntries []DamageEntryModel) model.Provider[DamageDistributionModel] {
-	mi, err := information.GetById(p.l)(p.ctx)(monsterId)
+	mi, err := p.ip.GetById(monsterId)
 	if err != nil {
 		return model.ErrorProvider[DamageDistributionModel](err)
 	}
 
-	cim, err := model.CollectToMap[uint32, uint32, bool](_map.CharacterIdsInFieldModelProvider(p.l)(p.ctx)(f), func(m uint32) uint32 {
-		return m
-	}, func(m uint32) bool {
-		return true
-	})()
+	fieldCharacterIds, err := p.fp.CharacterIdsInField(f)
 	if err != nil {
 		return model.ErrorProvider[DamageDistributionModel](err)
+	}
+	cim := make(map[uint32]bool)
+	for _, m := range fieldCharacterIds {
+		cim[m] = true
 	}
 
 	totalEntries := 0
@@ -237,5 +313,5 @@ func (p *ProcessorImpl) distributeCharacterExperience(f field.Model, characterId
 	characterExperience *= experience
 	bonusExperience := partyBonusMod * characterExperience
 
-	_ = character.NewProcessor(p.l, p.ctx).AwardExperience(f.Channel(), characterId, whiteExperienceGain, uint32(characterExperience), uint32(bonusExperience))
+	_ = p.cp.AwardExperience(f.Channel(), characterId, whiteExperienceGain, uint32(characterExperience), uint32(bonusExperience))
 }

@@ -87,5 +87,7 @@ func Extract(rm RestModel) (Model, error) {
 	return Model{
 		hp:         rm.Hp,
 		experience: rm.Experience,
+		level:      rm.Level,
+		name:       rm.Name,
 	}, nil
 }

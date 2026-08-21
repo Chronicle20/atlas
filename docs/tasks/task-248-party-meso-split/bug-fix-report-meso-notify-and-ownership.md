@@ -152,3 +152,96 @@ All packages `ok`, including `atlas-character/character`, no `FAIL`.
   `atlas-monster-death`'s dropType TODO, zero-share exclusive-lock behavior)
   are explicitly out of scope for this fix and were left untouched as
   directed.
+
+## Fix-up: review finding — spurious `StackableItem(0,0)` status packet on meso-only pickup
+
+`docs/tasks/task-248-party-meso-split/reviews/review-bug-meso-notify-and-ownership.md`
+flagged one blocking finding: after the meso branch was removed,
+`handleStatusEventPickedUp` fell through to
+`CharacterStatusMessageOperationDropPickUpStackableItemBody(0, 0)` for a
+meso-only pickup (`ItemId`/`EquipmentId`/`Quantity` all `0`), sending a
+second, spurious status packet in addition to the correct `MESO_AWARDED` ->
+`DropPickUpMeso` message. The "harmless" claim in the original report had no
+client evidence, so per the reviewer's ruling this is guarded rather than
+argued away.
+
+### Change
+
+`services/atlas-channel/atlas.com/channel/kafka/consumer/drop/consumer.go`:
+extracted the branch-selection logic into a new pure function,
+`pickupStatusMessagePacket(body drop2.PickedUpStatusEventBody) (packet.Encode, bool)`,
+placed next to the existing `isConsumedOnPickupCard` helper (same extraction
+pattern, for the same reason: testability without spinning up the async
+goroutine/session/producer machinery). It returns `(nil, false)` when
+`body.Meso > 0` — meso-only pickups have nothing to announce here, since
+`handleStatusEventMesoAwarded` already wrote the `DropPickUpMeso` message
+with the correct per-recipient share — and otherwise returns the
+stackable/unstackable packet exactly as before. `handleStatusEventPickedUp`
+now calls this helper and returns without announcing anything when `ok` is
+`false`; the old explanatory comment (which asserted "the client ignores"
+the spurious packet, the assertion the reviewer rejected) is replaced by one
+that states the guard's reason.
+
+### Test
+
+`services/atlas-channel/atlas.com/channel/kafka/consumer/drop/consumer_test.go`
+(same package, Builder/plain-function style already used by
+`TestIsConsumedOnPickupCard` — no `*_testhelpers.go`):
+
+- `TestPickupStatusMessagePacket_MesoOnly_NoAnnounce` — a meso-only body
+  (`ItemId: 0, EquipmentId: 0, Quantity: 0, Meso: 471`) returns `ok = false`
+  and a `nil` `packet.Encode`, i.e. no `CharacterStatusMessage` is announced.
+- `TestPickupStatusMessagePacket_Item_Announces` — a stackable item body and
+  an equipment (unstackable) body both return `ok = true` with a non-nil
+  encoder that produces non-empty encoded bytes, i.e. the item-pickup status
+  message is still announced.
+
+### Verification
+
+```
+cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./...
+```
+
+`go build ./...`: clean, no output.
+
+`go test ./kafka/consumer/drop/... -v` (targeted run of the touched
+package):
+
+```
+=== RUN   TestIsConsumedOnPickupCard
+--- PASS: TestIsConsumedOnPickupCard (0.00s)
+    (7 subtests, all PASS)
+=== RUN   TestPickupStatusMessagePacket_MesoOnly_NoAnnounce
+--- PASS: TestPickupStatusMessagePacket_MesoOnly_NoAnnounce (0.00s)
+=== RUN   TestPickupStatusMessagePacket_Item_Announces
+--- PASS: TestPickupStatusMessagePacket_Item_Announces (0.00s)
+    --- PASS: TestPickupStatusMessagePacket_Item_Announces/stackable_item (0.00s)
+    --- PASS: TestPickupStatusMessagePacket_Item_Announces/equipment_(unstackable)_item (0.00s)
+PASS
+ok  	atlas-channel/kafka/consumer/drop	0.018s
+```
+
+`go test ./...` (full module): all packages `ok` or `[no test files]`, no
+`FAIL`.
+
+### Files changed (this fix-up)
+
+- `services/atlas-channel/atlas.com/channel/kafka/consumer/drop/consumer.go`
+- `services/atlas-channel/atlas.com/channel/kafka/consumer/drop/consumer_test.go`
+- `docs/tasks/task-248-party-meso-split/bug-fix-report-meso-notify-and-ownership.md`
+  (this section)
+
+### Self-review
+
+- The guard matches the reviewer's exact ruling: `e.Body.Meso > 0` short-
+  circuits with no pickup status message, `MESO_AWARDED` remains the sole
+  source of the per-recipient meso notification.
+- Chose extraction into a pure, directly-testable function over mocking the
+  full async `routine.Go` + `session.NewProcessor(...).IfPresentByCharacterId`
+  + `writer.Producer` stack, because a goroutine-timing-based test for "no
+  packet was written" would be inherently flaky (no synchronization
+  primitive is available without further production changes the brief did
+  not ask for); the extracted function is unit-testable deterministically and
+  is exercised by the exact same call site.
+- No scope creep: did not touch the `isConsumedOnPickupCard` card branch, the
+  second `routine.Go` (drop-destroy broadcast), or any Bug 2 code.

@@ -39,6 +39,23 @@ func isConsumedOnPickupCard(itemId uint32) bool {
 	return item.GetClassification(item.Id(itemId)) == item.ClassificationConsumableMonsterCard
 }
 
+// pickupStatusMessagePacket returns the generic pickup CharacterStatusMessage
+// packet to announce for a picked-up drop, and false when there is nothing to
+// announce. A meso-only pickup (ItemId/EquipmentId/Quantity all 0) returns
+// false: MESO_AWARDED already wrote the DropPickUpMeso message with the
+// correct per-recipient share, and without this guard the branches below
+// would additionally encode a spurious DropPickUpStackableItem(itemId=0,
+// amount=0) status message for the same pickup.
+func pickupStatusMessagePacket(body drop2.PickedUpStatusEventBody) (packet.Encode, bool) {
+	if body.Meso > 0 {
+		return nil, false
+	}
+	if body.EquipmentId > 0 {
+		return charpkt.CharacterStatusMessageOperationDropPickUpUnStackableItemBody(body.ItemId), true
+	}
+	return charpkt.CharacterStatusMessageOperationDropPickUpStackableItemBody(body.ItemId, body.Quantity), true
+}
+
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
@@ -210,17 +227,9 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 					return nil
 				}
 
-				// The meso branch that used to live here is gone: MESO_AWARDED
-				// now owns the meso pickup notification (with the correct
-				// per-recipient share), so a meso-only pickup falls through to
-				// the stackable-item branch below with ItemId/Quantity both 0,
-				// which the client ignores because MESO_AWARDED already wrote
-				// the DropPickUpMeso message for this drop.
-				var bp packet.Encode
-				if e.Body.EquipmentId > 0 {
-					bp = charpkt.CharacterStatusMessageOperationDropPickUpUnStackableItemBody(e.Body.ItemId)
-				} else {
-					bp = charpkt.CharacterStatusMessageOperationDropPickUpStackableItemBody(e.Body.ItemId, e.Body.Quantity)
+				bp, ok := pickupStatusMessagePacket(e.Body)
+				if !ok {
+					return nil
 				}
 
 				err := session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(bp)(s)

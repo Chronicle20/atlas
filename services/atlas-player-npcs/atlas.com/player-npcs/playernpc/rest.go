@@ -70,7 +70,7 @@ func parseInput[M any](d *HandlerDependency, c *HandlerContext, next InputHandle
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		defer r.Body.Close()
+		defer func() { _ = r.Body.Close() }()
 
 		if err := jsonapi.Unmarshal(body, &m); err != nil {
 			d.l.WithError(err).Errorln("Deserializing input.")

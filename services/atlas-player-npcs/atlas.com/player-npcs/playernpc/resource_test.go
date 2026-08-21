@@ -313,7 +313,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("status = %d, want 200", resp.StatusCode)
 		}
@@ -337,7 +337,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("status = %d, want 200", resp.StatusCode)
 		}
@@ -360,7 +360,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("status = %d, want 200", resp.StatusCode)
 		}
@@ -385,7 +385,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("status = %d, want 200", resp.StatusCode)
 		}
@@ -398,7 +398,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusNotFound {
 			t.Fatalf("status = %d, want 404", resp.StatusCode)
 		}
@@ -430,7 +430,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		mocks.setMap(mapWithId(555000210, 1000, 1000))
 
 		resp := postDeploy(t, primaryTenant, deployBody(210, 0, 555000210, nil))
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusCreated {
 			b, _ := io.ReadAll(resp.Body)
 			t.Fatalf("status = %d, want 201: %s", resp.StatusCode, string(b))
@@ -450,7 +450,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		mocks.setMap(mapWithId(555000211, 100, 100))
 
 		resp := postDeploy(t, primaryTenant, deployBody(211, 0, 555000211, &PositionRestModel{X: 5, Y: 7}))
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		b, _ := io.ReadAll(resp.Body)
 		if resp.StatusCode != http.StatusCreated {
 			t.Fatalf("status = %d, want 201: %s", resp.StatusCode, string(b))
@@ -469,13 +469,13 @@ func TestPlayerNpcResource(t *testing.T) {
 		mocks.setMap(mapWithId(555000212, 1000, 1000))
 
 		first := postDeploy(t, primaryTenant, deployBody(212, 0, 555000212, nil))
-		first.Body.Close()
+		_ = first.Body.Close()
 		if first.StatusCode != http.StatusCreated {
 			t.Fatalf("first deploy status = %d, want 201", first.StatusCode)
 		}
 
 		second := postDeploy(t, primaryTenant, deployBody(212, 0, 555000212, nil))
-		defer second.Body.Close()
+		defer func() { _ = second.Body.Close() }()
 		if second.StatusCode != http.StatusConflict {
 			t.Fatalf("second deploy status = %d, want 409", second.StatusCode)
 		}
@@ -496,7 +496,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		}
 
 		resp := postDeploy(t, poolTenant, deployBody(213, 0, 555000213, nil))
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusConflict {
 			b, _ := io.ReadAll(resp.Body)
 			t.Fatalf("status = %d, want 409: %s", resp.StatusCode, string(b))
@@ -512,7 +512,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		mocks.setMap(mapWithId(555000214, 100, 0)) // zero-height bounds -> no candidate slot at any step
 
 		resp := postDeploy(t, primaryTenant, deployBody(214, 0, 555000214, nil))
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusConflict {
 			b, _ := io.ReadAll(resp.Body)
 			t.Fatalf("status = %d, want 409: %s", resp.StatusCode, string(b))
@@ -528,7 +528,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		mocks.setMap(mapWithId(555000215, 100, 100))
 
 		resp := postDeploy(t, primaryTenant, deployBody(215, 0, 555000215, nil))
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusConflict {
 			b, _ := io.ReadAll(resp.Body)
 			t.Fatalf("status = %d, want 409: %s", resp.StatusCode, string(b))
@@ -541,7 +541,7 @@ func TestPlayerNpcResource(t *testing.T) {
 
 	t.Run("unresolvable character", func(t *testing.T) {
 		resp := postDeploy(t, primaryTenant, deployBody(999999, 0, 555000216, nil))
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusUnprocessableEntity {
 			b, _ := io.ReadAll(resp.Body)
 			t.Fatalf("status = %d, want 422: %s", resp.StatusCode, string(b))
@@ -554,7 +554,7 @@ func TestPlayerNpcResource(t *testing.T) {
 
 		created := postDeploy(t, primaryTenant, deployBody(216, 0, 555000217, nil))
 		b, _ := io.ReadAll(created.Body)
-		created.Body.Close()
+		_ = created.Body.Close()
 		if created.StatusCode != http.StatusCreated {
 			t.Fatalf("deploy status = %d, want 201: %s", created.StatusCode, string(b))
 		}
@@ -568,7 +568,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		rb, _ := io.ReadAll(resp.Body)
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("status = %d, want 200: %s", resp.StatusCode, string(rb))
@@ -593,7 +593,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusNoContent {
 			t.Fatalf("status = %d, want 204", resp.StatusCode)
 		}
@@ -609,7 +609,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusNoContent {
 			t.Fatalf("status = %d, want 204", resp.StatusCode)
 		}
@@ -633,7 +633,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusNoContent {
 			t.Fatalf("status = %d, want 204", resp.StatusCode)
 		}
@@ -656,7 +656,7 @@ func TestPlayerNpcResource(t *testing.T) {
 		if err != nil {
 			t.Fatalf("request: %v", err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		b, _ := io.ReadAll(resp.Body)
 		if resp.StatusCode != http.StatusOK {
 			t.Fatalf("status = %d, want 200: %s", resp.StatusCode, string(b))

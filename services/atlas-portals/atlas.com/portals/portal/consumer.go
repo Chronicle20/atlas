@@ -67,6 +67,11 @@ func handleWarpCommand(l logrus.FieldLogger, ctx context.Context, command warpEv
 		NewProcessor(l, ctx).WarpById(f, command.Body.CharacterId, command.Body.TargetMapId, command.Body.TargetPortalId)
 		return
 	}
+	if command.Body.TargetPortalName != "" {
+		l.Debugf("Received command for Character [%d] to warp to map [%d] portal [%s] from map [%d].", command.Body.CharacterId, command.Body.TargetMapId, command.Body.TargetPortalName, command.MapId)
+		NewProcessor(l, ctx).WarpByName(f, command.Body.CharacterId, command.Body.TargetMapId, command.Body.TargetPortalName)
+		return
+	}
 	l.Debugf("Received command for Character [%d] to warp to map [%d] from map [%d].", command.Body.CharacterId, command.Body.TargetMapId, command.MapId)
 	NewProcessor(l, ctx).Warp(f, command.Body.CharacterId, command.Body.TargetMapId)
 }

@@ -14,6 +14,22 @@ import (
 // (PRD §6 migration note) -- the administrator never populates or relies on
 // GORM's association save/preload for it, inserting/reading child rows
 // itself instead.
+//
+// Step is an addition beyond design §3.1's literal column list (Task 15's
+// resolution of that section's open question: the positioner step was
+// "computed but not persisted"). Deriving it instead -- replaying
+// NextGridPosition from step 0 on every deploy -- would mean reconstructing
+// a map's entire placement history through repeated ground-snap network
+// calls every time, and that reconstruction's correctness silently depends
+// on the snap endpoint staying byte-for-byte deterministic across however
+// many historical calls a busy map has accumulated. A persisted column
+// costs one more not-null byte per row, no worse than rx0/rx1 (already
+// stored rather than recomputed, by the same section's own reasoning), and
+// is exact rather than replayed. All Player NPCs on one map share the same
+// Step after any reorganize (design §5.4 rewrites every row in the map in
+// one transaction), so reading any one row's Step (or 0 when the map has
+// none yet) gives the map's current step; see administrator.go's
+// currentStepForMap.
 type Entity struct {
 	Id             uuid.UUID         `gorm:"primaryKey;type:uuid"`
 	TenantId       uuid.UUID         `gorm:"not null;type:uuid;uniqueIndex:idx_pn_tw_script,priority:1;uniqueIndex:idx_pn_tw_map_name,priority:1;uniqueIndex:idx_pn_tw_map_object,priority:1;index:idx_pn_tw_map,priority:1;index:idx_pn_tw_character,priority:1"`
@@ -34,6 +50,7 @@ type Entity struct {
 	RX0            int16             `gorm:"not null"`
 	RX1            int16             `gorm:"not null"`
 	Dir            byte              `gorm:"not null;default:1"`
+	Step           byte              `gorm:"not null;default:0"`
 	WorldRank      uint32            `gorm:"not null;default:0"`
 	OverallRank    uint32            `gorm:"not null;default:0"`
 	WorldJobRank   uint32            `gorm:"not null;default:0"`
@@ -116,6 +133,7 @@ func Make(e Entity, equipmentEntities []EquipmentEntity) (Model, error) {
 		SetRX0(e.RX0).
 		SetRX1(e.RX1).
 		SetDir(e.Dir).
+		SetStep(e.Step).
 		SetWorldRank(e.WorldRank).
 		SetOverallRank(e.OverallRank).
 		SetWorldJobRank(e.WorldJobRank).
@@ -159,6 +177,7 @@ func MakeEntity(tenantId uuid.UUID, m Model) Entity {
 		RX0:            m.RX0(),
 		RX1:            m.RX1(),
 		Dir:            m.Dir(),
+		Step:           m.Step(),
 		WorldRank:      m.WorldRank(),
 		OverallRank:    m.OverallRank(),
 		WorldJobRank:   m.WorldJobRank(),

@@ -33,6 +33,7 @@ type Builder struct {
 	rx0            int16
 	rx1            int16
 	dir            byte
+	step           byte
 	worldRank      uint32
 	overallRank    uint32
 	worldJobRank   uint32
@@ -159,6 +160,14 @@ func (b *Builder) SetDir(dir byte) *Builder {
 	return b
 }
 
+// SetStep sets the grid/podium positioner step this NPC was placed at
+// (design 5.1/5.2, Task 15's resolution of design 3.1's open question --
+// see processor.go's package doc for the rationale).
+func (b *Builder) SetStep(step byte) *Builder {
+	b.step = step
+	return b
+}
+
 func (b *Builder) SetWorldRank(worldRank uint32) *Builder {
 	b.worldRank = worldRank
 	return b
@@ -224,6 +233,7 @@ func (b *Builder) Build() (Model, error) {
 		rx0:            b.rx0,
 		rx1:            b.rx1,
 		dir:            b.dir,
+		step:           b.step,
 		worldRank:      b.worldRank,
 		overallRank:    b.overallRank,
 		worldJobRank:   b.worldJobRank,

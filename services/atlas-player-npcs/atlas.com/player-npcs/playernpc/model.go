@@ -35,6 +35,7 @@ type Model struct {
 	rx0            int16
 	rx1            int16
 	dir            byte
+	step           byte
 	worldRank      uint32
 	overallRank    uint32
 	worldJobRank   uint32
@@ -44,24 +45,30 @@ type Model struct {
 	equipment      []EquipmentModel
 }
 
-func (m Model) Id() uuid.UUID          { return m.id }
-func (m Model) CharacterId() uint32    { return m.characterId }
-func (m Model) Name() string           { return m.name }
-func (m Model) WorldId() byte          { return m.worldId }
-func (m Model) MapId() uint32          { return m.mapId }
-func (m Model) ScriptId() uint32       { return m.scriptId }
-func (m Model) ObjectId() uint32       { return m.objectId }
-func (m Model) Gender() byte           { return m.gender }
-func (m Model) Skin() byte             { return m.skin }
-func (m Model) Face() uint32           { return m.face }
-func (m Model) Hair() uint32           { return m.hair }
-func (m Model) JobId() uint16          { return m.jobId }
-func (m Model) X() int16               { return m.x }
-func (m Model) Cy() int16              { return m.cy }
-func (m Model) Fh() uint16             { return m.fh }
-func (m Model) RX0() int16             { return m.rx0 }
-func (m Model) RX1() int16             { return m.rx1 }
-func (m Model) Dir() byte              { return m.dir }
+func (m Model) Id() uuid.UUID       { return m.id }
+func (m Model) CharacterId() uint32 { return m.characterId }
+func (m Model) Name() string        { return m.name }
+func (m Model) WorldId() byte       { return m.worldId }
+func (m Model) MapId() uint32       { return m.mapId }
+func (m Model) ScriptId() uint32    { return m.scriptId }
+func (m Model) ObjectId() uint32    { return m.objectId }
+func (m Model) Gender() byte        { return m.gender }
+func (m Model) Skin() byte          { return m.skin }
+func (m Model) Face() uint32        { return m.face }
+func (m Model) Hair() uint32        { return m.hair }
+func (m Model) JobId() uint16       { return m.jobId }
+func (m Model) X() int16            { return m.x }
+func (m Model) Cy() int16           { return m.cy }
+func (m Model) Fh() uint16          { return m.fh }
+func (m Model) RX0() int16          { return m.rx0 }
+func (m Model) RX1() int16          { return m.rx1 }
+func (m Model) Dir() byte           { return m.dir }
+
+// Step is the grid/podium positioner step this NPC was last placed at
+// (design 5.1/5.2). It is persisted, not recomputed on read, per Task 15's
+// resolution of design 3.1's open question -- see processor.go's package
+// doc for the rationale.
+func (m Model) Step() byte             { return m.step }
 func (m Model) WorldRank() uint32      { return m.worldRank }
 func (m Model) OverallRank() uint32    { return m.overallRank }
 func (m Model) WorldJobRank() uint32   { return m.worldJobRank }

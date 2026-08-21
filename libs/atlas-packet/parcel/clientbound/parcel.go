@@ -15,27 +15,43 @@ import (
 // (docs/packets/dispatchers/parcel.yaml, fname CParcelDlg::OnPacket).
 const ParcelWriter = "Parcel"
 
-// Open - mode, quickEnabled, mailbox parcels, newly-arrived parcels.
+// Open - mode, receiveOnly, mailbox parcels, newly-arrived parcels.
 //
-// CTabReceive::SetParcel @0x6EF69C: bool quickEnabled (Decode1), byte
+// CTabReceive::SetParcel @0x6EF69C: bool receiveOnly (Decode1), byte
 // count + count*PARCEL::Decode (the mailbox), byte newCount +
 // newCount*PARCEL::Decode (parcels arrived since the last open — each one
 // separately raised as a CUtilDlg::Notice, design.md §5.3).
 //
+// The bool is a DIALOG-MODE selector, not a "quick delivery is available"
+// flag — design.md §5.2 recorded the construction but not what the mode
+// does to the tab set. CParcelDlg::OnPacket case 8 constructs
+// CParcelDlg(receiveOnly ? 2 : 0) (v83 @0x6f5b32), the ctor stores it as
+// m_nMode (v95 @0x6907f0, field +0x94), and CParcelDlg::OnCreate's tab
+// loop (v83 @0x6f4a50, v95 @0x691d87) inserts:
+//
+//	m_nMode == 0 -> tabs 0,1,2: Receive + Send + QuickSend (the NPC dialog)
+//	m_nMode == 1 -> tab 2 only: the quick-send dialog OPEN_QUICK builds
+//	m_nMode == 2 -> tab 0 only: Receive, with NO way to send
+//
+// Tab 0 is Receive: the ctor's button arrays are m_pBtReceive[2],
+// m_pBtSend[4], m_pBtQuickSend[4] (v95 names), and CParcelDlg::SetCtrl's
+// page-0 branch drives exactly the 2-button group plus the parcel list.
+// So the full Duey dialog needs FALSE here.
+//
 // packet-audit:fname CParcelDlg::OnPacket#Open
 type Open struct {
-	mode         byte
-	quickEnabled bool
-	mailbox      []parcel.Parcel
-	arrived      []parcel.Parcel
+	mode        byte
+	receiveOnly bool
+	mailbox     []parcel.Parcel
+	arrived     []parcel.Parcel
 }
 
-func NewParcelOpen(mode byte, quickEnabled bool, mailbox []parcel.Parcel, arrived []parcel.Parcel) Open {
-	return Open{mode: mode, quickEnabled: quickEnabled, mailbox: mailbox, arrived: arrived}
+func NewParcelOpen(mode byte, receiveOnly bool, mailbox []parcel.Parcel, arrived []parcel.Parcel) Open {
+	return Open{mode: mode, receiveOnly: receiveOnly, mailbox: mailbox, arrived: arrived}
 }
 
 func (m Open) Mode() byte               { return m.mode }
-func (m Open) QuickEnabled() bool       { return m.quickEnabled }
+func (m Open) ReceiveOnly() bool        { return m.receiveOnly }
 func (m Open) Mailbox() []parcel.Parcel { return m.mailbox }
 func (m Open) Arrived() []parcel.Parcel { return m.arrived }
 func (m Open) Operation() string        { return ParcelWriter }
@@ -48,7 +64,7 @@ func (m Open) Encode(l logrus.FieldLogger, ctx context.Context) func(options map
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteBool(m.quickEnabled)
+		w.WriteBool(m.receiveOnly)
 		w.WriteByte(byte(len(m.mailbox)))
 		for _, p := range m.mailbox {
 			w.WriteByteArray(p.Encode(l, ctx)(options))

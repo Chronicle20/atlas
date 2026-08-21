@@ -43,10 +43,10 @@ func newTestTenant(t *testing.T) tenant.Model {
 	return tm
 }
 
-// newQuickDisabledTenant is a GMS build below quickDeliveryEnabled's
-// MajorAtLeast(72) floor, for the subtest that proves quickEnabled is
-// derived per tenant rather than hard-coded true.
-func newQuickDisabledTenant(t *testing.T) tenant.Model {
+// newOldGmsTenant is an early GMS build, paired with newJmsTenant so the
+// OPEN subtests prove the receiveOnly bool is FALSE on both — the NPC
+// dialog is never opened receive-only, whatever the tenant.
+func newOldGmsTenant(t *testing.T) tenant.Model {
 	t.Helper()
 	tm, err := tenant.Create(uuid.New(), "GMS", 61, 1)
 	if err != nil {
@@ -55,11 +55,10 @@ func newQuickDisabledTenant(t *testing.T) tenant.Model {
 	return tm
 }
 
-// newJmsQuickEnabledTenant is a JMS build at quickDeliveryEnabled's
-// MajorAtLeast(185) floor, for the subtest that proves the JMS half of the
-// gate (task-241 task-22 controller addendum) is wired, not just the GMS
-// half.
-func newJmsQuickEnabledTenant(t *testing.T) tenant.Model {
+// newJmsTenant is a JMS v185 build — the column that used to take the
+// "quick enabled" half of the old per-tenant gate, and so the one most
+// likely to regress back to receiveOnly=true.
+func newJmsTenant(t *testing.T) tenant.Model {
 	t.Helper()
 	tm, err := tenant.Create(uuid.New(), "JMS", 185, 1)
 	if err != nil {
@@ -84,15 +83,15 @@ var operations = map[string]interface{}{
 }
 
 // openCounts reads the raw OPEN body's mailbox/arrived counts. Layout
-// (CTabReceive::SetParcel @0x6EF69C): mode byte, quickEnabled bool, count
+// (CTabReceive::SetParcel @0x6EF69C): mode byte, receiveOnly bool, count
 // byte, count*PARCEL, newCount byte, newCount*PARCEL — every PARCEL here is
 // exactly parcelEntryWidth bytes (no item attached).
-func openCounts(t *testing.T, b []byte) (quickEnabled bool, mailbox, arrived int) {
+func openCounts(t *testing.T, b []byte) (receiveOnly bool, mailbox, arrived int) {
 	t.Helper()
 	if len(b) < 3 {
 		t.Fatalf("open body too short: % x", b)
 	}
-	quickEnabled = b[1] != 0
+	receiveOnly = b[1] != 0
 	mailbox = int(b[2])
 	off := 3 + mailbox*parcelEntryWidth
 	if len(b) <= off {
@@ -171,7 +170,7 @@ func TestShowParcelCommand(t *testing.T) {
 	worldId := world.Id(0)
 
 	t.Run("open with mailbox", func(t *testing.T) {
-		tm := newQuickDisabledTenant(t)
+		tm := newOldGmsTenant(t)
 		ctx := tenant.WithContext(context.Background(), tm)
 		s, cleanup := newRealSession(tm, ctx, 100)
 		defer cleanup()
@@ -186,15 +185,15 @@ func TestShowParcelCommand(t *testing.T) {
 		}
 
 		e := parcelmsg.ShowParcelCommand{CharacterId: 100, WorldId: worldId, Quick: false}
-		if err := showParcel(nullLogger(), ctx, wp(&captured), tm, e, deps)(s); err != nil {
+		if err := showParcel(nullLogger(), ctx, wp(&captured), e, deps)(s); err != nil {
 			t.Fatalf("showParcel: %v", err)
 		}
 		if len(captured) != 1 {
 			t.Fatalf("announces = %d, want 1", len(captured))
 		}
-		quickEnabled, mailbox, arrived := openCounts(t, captured[0])
-		if quickEnabled {
-			t.Error("quickEnabled = true, want false")
+		receiveOnly, mailbox, arrived := openCounts(t, captured[0])
+		if receiveOnly {
+			t.Error("receiveOnly = true, want false — CParcelDlg(2) has no Send tab")
 		}
 		if mailbox != 2 {
 			t.Errorf("mailbox = %d, want 2", mailbox)
@@ -207,8 +206,8 @@ func TestShowParcelCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("open with mailbox jms quick enabled", func(t *testing.T) {
-		tm := newJmsQuickEnabledTenant(t)
+	t.Run("open with mailbox jms is not receive only", func(t *testing.T) {
+		tm := newJmsTenant(t)
 		ctx := tenant.WithContext(context.Background(), tm)
 		s, cleanup := newRealSession(tm, ctx, 100)
 		defer cleanup()
@@ -222,12 +221,12 @@ func TestShowParcelCommand(t *testing.T) {
 		}
 
 		e := parcelmsg.ShowParcelCommand{CharacterId: 100, WorldId: worldId, Quick: false}
-		if err := showParcel(nullLogger(), ctx, wp(&captured), tm, e, deps)(s); err != nil {
+		if err := showParcel(nullLogger(), ctx, wp(&captured), e, deps)(s); err != nil {
 			t.Fatalf("showParcel: %v", err)
 		}
-		quickEnabled, _, _ := openCounts(t, captured[0])
-		if !quickEnabled {
-			t.Error("quickEnabled = false, want true for a JMS v185 tenant")
+		receiveOnly, _, _ := openCounts(t, captured[0])
+		if receiveOnly {
+			t.Error("receiveOnly = true for a JMS v185 tenant, want false — the NPC dialog needs all three tabs")
 		}
 	})
 
@@ -248,7 +247,7 @@ func TestShowParcelCommand(t *testing.T) {
 		}
 
 		e := parcelmsg.ShowParcelCommand{CharacterId: 100, WorldId: worldId, Quick: false}
-		if err := showParcel(nullLogger(), ctx, wp(&captured), tm, e, deps)(s); err != nil {
+		if err := showParcel(nullLogger(), ctx, wp(&captured), e, deps)(s); err != nil {
 			t.Fatalf("showParcel: %v", err)
 		}
 		_, mailbox, arrived := openCounts(t, captured[0])
@@ -280,7 +279,7 @@ func TestShowParcelCommand(t *testing.T) {
 		}
 
 		e := parcelmsg.ShowParcelCommand{CharacterId: 100, WorldId: worldId, Quick: true}
-		if err := showParcel(nullLogger(), ctx, wp(&captured), tm, e, deps)(s); err != nil {
+		if err := showParcel(nullLogger(), ctx, wp(&captured), e, deps)(s); err != nil {
 			t.Fatalf("showParcel: %v", err)
 		}
 		if len(captured) != 1 {
@@ -312,7 +311,7 @@ func TestShowParcelCommand(t *testing.T) {
 		}
 
 		e := parcelmsg.ShowParcelCommand{CharacterId: 100, WorldId: worldId, Quick: false}
-		if err := showParcel(nullLogger(), ctx, wp(&captured), tm, e, deps)(s); err != nil {
+		if err := showParcel(nullLogger(), ctx, wp(&captured), e, deps)(s); err != nil {
 			t.Fatalf("showParcel: %v", err)
 		}
 		_, mailbox, _ := openCounts(t, captured[0])

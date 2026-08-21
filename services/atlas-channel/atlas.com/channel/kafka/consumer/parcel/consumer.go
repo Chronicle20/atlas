@@ -97,7 +97,7 @@ func handleShowParcelCommand(sc server.Model, wp writer.Producer) message.Handle
 			},
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, showParcel(l, ctx, wp, t, e, deps))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, showParcel(l, ctx, wp, e, deps))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show parcel dialog to character [%d].", e.CharacterId)
 		}
@@ -108,11 +108,13 @@ func handleShowParcelCommand(sc server.Model, wp writer.Producer) message.Handle
 // circuits before any mailbox fetch (design §5.2/§9.5 — OPEN_QUICK carries
 // no list at all).
 //
-// For the non-quick path, quickEnabled reflects whether this tenant's
-// client can even reach the Quick Delivery Ticket path — the same
-// classification-533 version gate Task 22's handler uses to decide whether
-// to open that dialog in the first place (quickDeliveryEnabled below);
-// passed through rather than hard-coded true.
+// The non-quick path passes receiveOnly=FALSE. That bool is the client's
+// CParcelDlg m_nMode, not a "quick delivery is available" flag: false
+// builds CParcelDlg(0) with all three tabs (Receive + Send + QuickSend),
+// true builds CParcelDlg(2), a Receive-only window with no way to send at
+// all (parcel/clientbound/parcel.go's Open doc records the IDA addresses
+// on v83 and v95). The NPC entry point is the full dialog, so it is false
+// unconditionally — there is no tenant condition to consult.
 //
 // The mailbox excludes parcels not yet receivable (FR-12 — the client shows
 // those with a countdown from a different surface, not Duey's OPEN list;
@@ -123,7 +125,7 @@ func handleShowParcelCommand(sc server.Model, wp writer.Producer) message.Handle
 // extra packet. A stamp failure is logged and otherwise ignored: it only
 // risks a parcel appearing in "new arrivals" again next open, never data
 // loss.
-func showParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, t tenant.Model, e parcelmsg.ShowParcelCommand, deps showParcelDeps) func(s session.Model) error {
+func showParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, e parcelmsg.ShowParcelCommand, deps showParcelDeps) func(s session.Model) error {
 	return func(s session.Model) error {
 		if e.Quick {
 			return session.Announce(l)(ctx)(wp)(parcelcb.ParcelWriter)(parcelcb.ParcelOpenQuickBody())(s)
@@ -156,38 +158,8 @@ func showParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, t
 			}
 		}
 
-		return session.Announce(l)(ctx)(wp)(parcelcb.ParcelWriter)(parcelcb.ParcelOpenBody(quickDeliveryEnabled(t), mailbox, arrived))(s)
+		return session.Announce(l)(ctx)(wp)(parcelcb.ParcelWriter)(parcelcb.ParcelOpenBody(false, mailbox, arrived))(s)
 	}
-}
-
-// quickDeliveryEnabled reports whether this tenant's client can reach the
-// Quick Delivery Ticket path (classification 533). This is the same
-// condition as socket/handler/character_cash_item_use_duey.go's
-// dueyCouponEnabled, in a different package — the two packages can't share
-// code across the boundary, so keep them in sync by hand.
-//
-// GMS half: t.IsRegion("GMS") && t.MajorAtLeast(72), mirroring
-// remoteMerchantEnabled's identical gate for classification 545
-// (socket/handler/character_cash_item_use_remote_merchant.go).
-//
-// JMS half: JMS v185 is enabled. Two facts settle it (task-241 task-22
-// controller addendum, IDA-verified, MapleStory_dump_SCY.exe session
-// 05eb9c27):
-//  1. get_cashslot_item_type @0x49a1ee contains `case 533: return 32;` — JMS
-//     routes classification 533 to cash-slot type 32.
-//  2. CWvsContext::SendConsumeCashItemUseRequest @0xaef2f5 dispatches through
-//     a jump table at @0xaef3a8, and IDA's own default-arm annotation on the
-//     bound check at @0xaef3a2 reads verbatim: "ja def_AEF3A8; jumptable
-//     00AEF3A8 default case, cases 34,35,37,40,45,46,53,54,62,65-68". 32 is
-//     not in that default set, so type 32 has a real, non-default arm — the
-//     JMS client actually sends this op.
-//
-// docs/packets/dispatchers/parcel.yaml:67 gives jms_v185: 10 for OPEN and
-// :85 gives jms_v185: 27 for OPEN_QUICK, so PARCEL[OPEN_QUICK] renders on
-// jms_v185 too.
-func quickDeliveryEnabled(t tenant.Model) bool {
-	return (t.IsRegion("GMS") && t.MajorAtLeast(72)) ||
-		(t.IsRegion("JMS") && t.MajorAtLeast(185))
 }
 
 // handleParcelArrivedEvent announces PARCEL[ALARM_NAMED] to a parcel's

@@ -39,9 +39,9 @@ const (
 
 // ParcelOpenBody resolves the OPEN mode from the tenant operations table and
 // constructs the Open arm.
-func ParcelOpenBody(quickEnabled bool, mailbox []parcel.Parcel, arrived []parcel.Parcel) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+func ParcelOpenBody(receiveOnly bool, mailbox []parcel.Parcel, arrived []parcel.Parcel) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", ParcelOperationOpen, func(mode byte) packet.Encoder {
-		return NewParcelOpen(mode, quickEnabled, mailbox, arrived)
+		return NewParcelOpen(mode, receiveOnly, mailbox, arrived)
 	})
 }
 

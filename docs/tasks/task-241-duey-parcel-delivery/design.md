@@ -319,7 +319,7 @@ on GMS v83. Cosmic's enum is superseded; where the two disagree, this table is r
 
 | Mode | Key | Body | Client effect |
 |---|---|---|---|
-| 0x08 | `OPEN` | `bool quickEnabled`, then the parcel list (§5.3) | constructs `CParcelDlg(quickEnabled ? 2 : 0)` |
+| 0x08 | `OPEN` | `bool receiveOnly`, then the parcel list (§5.3) | constructs `CParcelDlg(receiveOnly ? 2 : 0)` — see §5.3's note: mode 2 is a Receive-ONLY window |
 | 0x09 | `SEND_ENABLE_ACTIONS` | — | re-enables the dialog; `NoticeResult` shows nothing |
 | 0x0A | `NOT_ENOUGH_MESOS` | — | SP_5599 |
 | 0x0B | `INCORRECT_REQUEST` | — | SP_3903 |
@@ -374,7 +374,7 @@ is why a quick-send message is visible to the recipient at all.
 `OPEN` (0x08) body, from `CTabReceive::SetParcel` @0x6EF69C:
 
 ```
-bool  quickEnabled
+bool  receiveOnly     ; false for the NPC dialog -- see the note below
 byte  count            ; the mailbox
 PARCEL x count
 byte  newCount         ; parcels arrived since the last open
@@ -385,6 +385,24 @@ The second list is the client's own "what showed up while you were away" mechani
 Atlas populates it from parcels whose `LastNotified` is null, and stamps
 `LastNotified` when the open packet is built — this is the cheapest correct
 implementation of FR-24 and it needs no extra packet.
+
+**The leading bool is a dialog-mode selector, not a "quick delivery is available"
+flag.** This design originally named it `quickEnabled` and the first implementation
+derived it per tenant, which produced a Duey window with no Send tab. `OnPacket` case 8
+constructs `CParcelDlg(bool ? 2 : 0)` (v83 @0x6f5b32); the ctor stores it as `m_nMode`
+(v95 @0x6907f0, field +0x94); and `CParcelDlg::OnCreate`'s tab loop (v83 @0x6f4a50,
+v95 @0x691d87) inserts tabs by mode:
+
+| `m_nMode` | Tabs inserted |
+|---|---|
+| 0 | 0, 1, 2 — Receive + Send + QuickSend (the NPC dialog) |
+| 1 | 2 only — the quick-send window `OPEN_QUICK` builds |
+| 2 | 0 only — Receive, with no way to send |
+
+Tab 0 is Receive: the ctor's button arrays are `m_pBtReceive[2]`, `m_pBtSend[4]`,
+`m_pBtQuickSend[4]` (v95 names), and `CParcelDlg::SetCtrl`'s page-0 branch drives
+exactly that 2-button group plus the parcel list. So the NPC path sends **false**,
+unconditionally — there is no tenant condition to consult.
 
 ### 5.4 `DUEY_ACTION` arms, and OQ-2 — closed
 

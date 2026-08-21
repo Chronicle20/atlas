@@ -83,7 +83,7 @@ func TestParcelEncode(t *testing.T) {
 
 // TestParcelOpenEncode pins the OPEN (mode 8, jms_v185 mode 10) and
 // OPEN_QUICK (mode 0x1A, jms_v185 mode 0x1B) arm bodies.
-// CTabReceive::SetParcel @0x6EF69C: bool quickEnabled, byte count +
+// CTabReceive::SetParcel @0x6EF69C: bool receiveOnly, byte count +
 // count*PARCEL (mailbox), byte newCount + newCount*PARCEL (arrived since
 // last open). Mode bytes per docs/packets/dispatchers/parcel.yaml (Task 6).
 //

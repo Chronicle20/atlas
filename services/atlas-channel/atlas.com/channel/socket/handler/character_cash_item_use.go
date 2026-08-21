@@ -879,6 +879,28 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			handleDueyCouponUse(l, ctx, wp)(s, t, itemId, source, it)
 			return
 		}
+		// Classification-FIRST, same reason as the arms above and below:
+		// GetCashSlotItemType's 543 branch (:1457-1469) returns 57/58/65/66,
+		// and every one of those cash-slot-type values is claimed elsewhere --
+		// 57/58 by ClassificationPetMultiConsumable (:1485-1490), 65 by
+		// CashSlotItemTypeSealTimedV95 (:970), 66 by
+		// CashSlotItemTypeViciousHammer (:991). A type-keyed arm for Maple
+		// Life would therefore steal a neighbour's dispatch on whichever
+		// version made the values collide; classification 543 never collides
+		// with anything (task-246 design §1, PRD FR-2.2).
+		if category == item.ClassificationCharacterCreation {
+			if !mapleLifeSupported(t) {
+				l.Warnf("Character [%d] used Maple Life item [%d] on an unsupported client; ignoring.", s.CharacterId(), itemId)
+				return
+			}
+			sp := cashsb.NewItemUseMapleLife(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			if !updateTimeFirst {
+				updateTime = sp.UpdateTime()
+			}
+			beginMapleLife(l, ctx, wp)(s, itemId, source, updateTime)
+			return
+		}
 		if category == item.ClassificationMegaphones || category == item.ClassificationAvatarMegaphone {
 			// Legacy GMS (v48/61/72/79, MajorVersion < 83) item-loss guard.
 			// task-123 legacy-phase-1 (.superpowers/sdd/legacy-megaphone-protocol.md)
@@ -1188,6 +1210,23 @@ func viciousHammerCashSlotItemType(t tenant.Model) CashSlotItemType {
 		return CashSlotItemTypeViciousHammerV95
 	}
 	return CashSlotItemTypeViciousHammer
+}
+
+// mapleLifeSupported reports whether the tenant's client has the Maple Life
+// dialog at all. GMS v83+ only, EXCLUDING v84: USE_MAPLELIFE, MAPLELIFE_RESULT
+// and MAPLELIFE_ERROR are all n-a on gms_v48/61/72/79 and on jms_v185
+// (docs/packets/audits/status.json). v84 is the non-obvious exclusion --
+// task-246 Task 1 found CUICharacterSaleDlg::SendCreateNewCharacter itself
+// VERSION-ABSENT on gms_v84 (re-confirmed by Task 2 for the receivers and
+// the duplicate-name probe), so v84 got no registry row, no codec version
+// arm, and no template routing (template_gms_84_1.json carries neither
+// MapleLifeResult nor MapleLifeError). Acting on v84 here would decode a
+// sub-body the client never sends and route it to a writer no template
+// wires -- worse than doing nothing. Read-only guard either way: a tenant
+// this returns false for gets no sub-body decode and no wire change (PRD
+// FR-2.4).
+func mapleLifeSupported(t tenant.Model) bool {
+	return t.IsRegion("GMS") && t.MajorAtLeast(83) && t.MajorVersion() != 84
 }
 
 // nameChangeCashSlotItemType returns the version-scoped CashSlotItemType for

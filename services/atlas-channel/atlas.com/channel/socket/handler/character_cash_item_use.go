@@ -191,9 +191,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		if it == CashSlotItemTypeSongPlayer {
 			sp := cashsb.NewItemUseSongPlayer(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
-			if !updateTimeFirst {
-				updateTime = sp.UpdateTime()
-			}
+
+			// Unlike the pet-consumable/morph-coupon arms, this arm never
+			// forwards updateTime anywhere: neither DestroyAssetPayload nor
+			// PlayJukeboxPayload carries it, so sp.UpdateTime() is read only
+			// to advance the reader past the trailing field on GMS <= v84 --
+			// NewItemUseSongPlayer(updateTimeFirst) already does that inside
+			// Decode regardless of whether the value is captured here.
 
 			// The client sends the song's own length (IWzSound::length) and
 			// resolves the BGM itself from the item's WZ info/path node

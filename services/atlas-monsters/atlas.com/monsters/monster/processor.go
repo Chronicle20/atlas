@@ -2,6 +2,7 @@ package monster
 
 import (
 	"atlas-monsters/character/hidden"
+	"atlas-monsters/character/position"
 	mistKafka "atlas-monsters/kafka/message/mist"
 	_map "atlas-monsters/map"
 	"atlas-monsters/monster/information"
@@ -99,6 +100,7 @@ type ProcessorImpl struct {
 	inFieldFn  func(f field.Model) ([]uint32, error)
 	hiddenFn   func() (map[uint32]struct{}, error)
 	locationFn func(characterId uint32) (field.Model, error)
+	positionFn func(characterId uint32) (int16, int16, error)
 }
 
 // NewProcessor creates a new Processor
@@ -122,6 +124,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 	p.locationFn = func(characterId uint32) (field.Model, error) {
 		return _map.NewProcessor(p.l, p.ctx).GetCharacterField(characterId)
+	}
+	p.positionFn = func(characterId uint32) (int16, int16, error) {
+		return position.NewProcessor(p.l, p.ctx).GetPosition(characterId)
 	}
 	return p
 }
@@ -1216,13 +1221,13 @@ func (p *ProcessorImpl) executeHeal(m Model, observerId uint32, sd mobskill.Mode
 func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId byte, skillLevel byte) {
 	// Special handling for dispel
 	if uint16(skillId) == monster2.SkillTypeDispel {
-		p.executeDispel(m, sd)
+		p.executeDispel(m, sd, skillId)
 		return
 	}
 
 	// Special handling for banish
 	if uint16(skillId) == monster2.SkillTypeBanish {
-		p.executeBanish(m, sd)
+		p.executeBanish(m, sd, skillId)
 		return
 	}
 
@@ -1234,7 +1239,7 @@ func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId byte, 
 
 	value := debuffWireValue(uint16(skillId), sd.X())
 	duration := int32(sd.Duration())
-	targets := p.getDiseaseTargets(m, sd)
+	targets := p.getDiseaseTargets(m, sd, skillId)
 
 	for _, characterId := range targets {
 		err := producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopicCharacterBuff)(applyDiseaseCommandProvider(m.Field(), characterId, uint16(skillId), uint16(skillLevel), diseaseName, value, duration))
@@ -1245,7 +1250,7 @@ func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId byte, 
 }
 
 // executeBanish warps target players to the monster's banish map
-func (p *ProcessorImpl) executeBanish(m Model, sd mobskill.Model) {
+func (p *ProcessorImpl) executeBanish(m Model, sd mobskill.Model, skillId byte) {
 	ma, err := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get monster info for banish from monster [%d].", m.UniqueId())
@@ -1258,7 +1263,7 @@ func (p *ProcessorImpl) executeBanish(m Model, sd mobskill.Model) {
 		return
 	}
 
-	targets := p.getDiseaseTargets(m, sd)
+	targets := p.getDiseaseTargets(m, sd, skillId)
 	for _, characterId := range targets {
 		err := producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopicPortal)(warpCommandProvider(m.Field(), characterId, map2.Id(banishMapId)))
 		if err != nil {
@@ -1268,40 +1273,14 @@ func (p *ProcessorImpl) executeBanish(m Model, sd mobskill.Model) {
 }
 
 // executeDispel removes all buffs from target players
-func (p *ProcessorImpl) executeDispel(m Model, sd mobskill.Model) {
-	targets := p.getDiseaseTargets(m, sd)
+func (p *ProcessorImpl) executeDispel(m Model, sd mobskill.Model, skillId byte) {
+	targets := p.getDiseaseTargets(m, sd, skillId)
 	for _, characterId := range targets {
 		err := producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopicCharacterBuff)(cancelAllBuffsCommandProvider(m.Field(), characterId))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to dispel buffs from character [%d] from monster [%d].", characterId, m.UniqueId())
 		}
 	}
-}
-
-// getDiseaseTargets returns the character IDs that should be affected by a debuff skill
-func (p *ProcessorImpl) getDiseaseTargets(m Model, sd mobskill.Model) []uint32 {
-	// Single-target: use controlling character
-	if !sd.HasBoundingBox() && sd.Count() <= 1 {
-		if m.ControlCharacterId() == 0 {
-			return nil
-		}
-		return []uint32{m.ControlCharacterId()}
-	}
-
-	// AoE: get all characters in the field
-	ids, err := _map.NewProcessor(p.l, p.ctx).CharacterIdsInFieldProvider(m.Field())()
-	if err != nil {
-		p.l.WithError(err).Errorf("Unable to get characters in field for monster [%d] disease targeting.", m.UniqueId())
-		return nil
-	}
-
-	// Apply target limit
-	if sd.Count() > 0 && uint32(len(ids)) > sd.Count() {
-		rand.Shuffle(len(ids), func(i, j int) { ids[i], ids[j] = ids[j], ids[i] })
-		ids = ids[:sd.Count()]
-	}
-
-	return ids
 }
 
 // executeSummon spawns monsters defined by the summon skill

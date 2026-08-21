@@ -2,6 +2,7 @@ package monster
 
 import (
 	"atlas-monsters/monster/mobskill"
+	"sync"
 
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 )
@@ -41,4 +42,80 @@ func selectDiseaseTargets(mobX, mobY int16, sd mobskill.Model, skillId byte, can
 		ids = ids[:sd.Count()]
 	}
 	return ids
+}
+
+// positionLookupConcurrency bounds the number of in-flight atlas-character
+// reads for a single AoE cast. A crowded field must not serialize N round
+// trips into the mob's skill execution path (FR-5.3), and must not open N
+// sockets at once either.
+const positionLookupConcurrency = 8
+
+// resolvePositions looks up each character's world position through the
+// positionFn seam, bounded to positionLookupConcurrency in flight.
+//
+// Results are assembled by input index, not by completion order, so the
+// returned slice is always in field-listing order no matter how the
+// goroutines interleave — that is what makes the concurrency compatible
+// with the selector's determinism guarantee (FR-4.1).
+//
+// A character whose position cannot be resolved is logged at warn and
+// dropped. One unresolvable character never aborts the cast for the others
+// (FR-1.4), and the candidate set only ever shrinks — it never widens back
+// to "everyone in the field".
+func (p *ProcessorImpl) resolvePositions(uniqueId uint32, ids []uint32) []positionedCharacter {
+	slots := make([]*positionedCharacter, len(ids))
+	sem := make(chan struct{}, positionLookupConcurrency)
+	var wg sync.WaitGroup
+	for i, id := range ids {
+		wg.Add(1)
+		go func(i int, id uint32) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			x, y, err := p.positionFn(id)
+			if err != nil {
+				p.l.WithError(err).Warnf("Unable to resolve position for character [%d] targeted by monster [%d].", id, uniqueId)
+				return
+			}
+			slots[i] = &positionedCharacter{id: id, x: x, y: y}
+		}(i, id)
+	}
+	wg.Wait()
+
+	out := make([]positionedCharacter, 0, len(ids))
+	for _, s := range slots {
+		if s != nil {
+			out = append(out, *s)
+		}
+	}
+	return out
+}
+
+// getDiseaseTargets returns the character ids a mob skill's disease, banish,
+// or dispel applies to.
+//
+// A skill with no bounding box targets the mob's controller and nothing
+// else, regardless of the skill's count (FR-2.1) — that path makes no
+// position lookup at all. A skill with a bounding box lists the field,
+// resolves each character's position, and hands the ordered candidate list
+// to selectDiseaseTargets.
+func (p *ProcessorImpl) getDiseaseTargets(m Model, sd mobskill.Model, skillId byte) []uint32 {
+	if !sd.HasBoundingBox() {
+		if m.ControlCharacterId() == 0 {
+			return nil
+		}
+		return []uint32{m.ControlCharacterId()}
+	}
+
+	ids, err := p.inFieldFn(m.Field())
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to get characters in field for monster [%d] disease targeting.", m.UniqueId())
+		return nil
+	}
+
+	candidates := p.resolvePositions(m.UniqueId(), ids)
+	targets := selectDiseaseTargets(m.X(), m.Y(), sd, skillId, candidates)
+	p.l.Debugf("Monster [%d] skill [%d] AoE: [%d] in field, [%d] positioned, [%d] targeted.",
+		m.UniqueId(), skillId, len(ids), len(candidates), len(targets))
+	return targets
 }

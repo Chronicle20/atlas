@@ -457,3 +457,55 @@ The reviewer did not take the fix reports' claims — it re-derived them:
 - `.bruno/*.bru` — mapped 1:1 against `rest.go:173-183`'s registered routes.
 
 Both blocking findings are closed. The `worldId` gap was correctly left untouched.
+
+## Task 16 lint follow-up — `1e4ac4f53`
+
+Gate 24's one staticcheck QF1012 (`Write([]byte(fmt.Sprintf(...)))` in the new test mock),
+closed. `TestPlayerNpcResource` now 18 subtests + 2 `AutoDeployEnabled` variants, all passing.
+
+**Tooling note worth keeping:** bare `tools/lint.sh <path>` runs *both* ecosystems tree-wide
+and does not scope to the path. Use `tools/lint.sh --go <module>` to actually lint just the Go
+module. The first agent on this fix also stalled by backgrounding its lint run and ending its
+turn waiting for a notification that only ever goes to the controller — run lint synchronously.
+
+# Session 6 handoff (after Tasks 15 and 16, both fix rounds closed)
+
+Tasks **1–16 are complete and reviewed**. Six tasks remain: **17–22**.
+
+**Gate 25 was still in flight at handoff** — `tools/verify.sh --quick --base 3c5a3fd82`,
+log at `.superpowers/sdd/plan/gates/gate-25.log`. It covers `3c5a3fd82..HEAD`, i.e. Task 16
+(`a24feca93`), the Task 15 podium fix (`92be6a7cc`), both lint rounds (`f75b7e0e0`,
+`1e4ac4f53`) and the Task 16 eligibility fix (`d908c3c95`). **Read that log first and ledger
+its verdict before dispatching anything.** Last *confirmed* gated commit is `3c5a3fd82`
+(gate 22 PASS); gates 23 and 24 both FAILED on lint only and were fixed.
+
+**NEXT ACTION: Task 17 (Kafka — messages, producer, consumers, plan.md:1161).** Its brief is
+already generated, fact-blocked, and annotated with the processor contract, the
+partial-success constraint and the fixture gotcha: `.superpowers/sdd/plan/task-17-brief.md`.
+Dispatch an `atlas-implementer` (sonnet) against it — no brief regeneration needed.
+
+Standing operating rules on this branch, unchanged:
+
+- Only ONE mutating agent may hold the worktree at a time; a gate may never run alongside a
+  writer. A read-only reviewer MAY run alongside one writer, but only with an explicit
+  no-mutation constraint block, and it must review the *commit range* rather than the moving
+  working tree.
+- Treat plan.md's TABLES as authoritative and its PROSE as suspect — six defects found and
+  fixed so far. Verify every named symbol against source before use.
+- The `skill/job id guard` has tripped twice on this module: resolve job ids through the
+  version-aware `constants.SkillJobSet`, never a raw wire id against a `job.*Id` constant.
+- **A lint block's quoted finding count is a floor, not a total** — golangci-lint's
+  `max-same-issues: 3` capped one round at 7 when there were really 16. Always drive
+  `tools/lint.sh --go <module>` to exit 0 rather than fixing only the quoted lines.
+
+Two constraints later tasks must consume:
+
+- **Task 21** — bulk `Remove` (`processor.go:567-581`) is N transactions and N emits, not one
+  atomic operation. The GM handler must treat a mid-loop failure as a **partial success**.
+- **Task 22** — the eligibility endpoint defaults `worldId` to `0`, which silently mis-scopes
+  the duplicate check for any non-zero world. The endpoint already accepts `worldId`
+  optionally, so the conversation-engine condition **must pass it explicitly**.
+
+Two operator hand-backs still outstanding (unchanged, recorded under Task 8): create
+`atlas-player-npcs-main` on `postgres.home`, and flip the GHCR package public after the first
+image push.

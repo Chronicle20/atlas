@@ -36,9 +36,9 @@ func newMapleLifeOpenTestSession(t *testing.T, accountId uint32, characterId uin
 	ch := channel.NewModel(worldId, channel.Id(0))
 	sp.Create(ch, 0)(sessionId, discardConn{})
 	sp.SetCharacterId(sessionId, characterId)
-	updated := sp.SetAccountId(sessionId, accountId)
+	sp.SetAccountId(sessionId, accountId)
 	f := field.NewBuilder(worldId, channel.Id(0), _map.Id(100000000)).Build()
-	updated = sp.SetField(sessionId, f)
+	updated := sp.SetField(sessionId, f)
 
 	return updated, ctx, ten, func() { session.ClearRegistryForTenant(ten.Id()) }
 }

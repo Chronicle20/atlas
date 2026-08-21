@@ -11,11 +11,11 @@ Tool: `b8d1364d56eb63803a6a2a83255442bf34c87a3f7e66050d6521890ff216b0c5`
 - export gms_v72: `de3fa5f9749f4f41ef7334eb4c18d9c08c7ea09c222e460fd8a384037a3a56d8`
 - export gms_v79: `b7e7015800918afe24beff39ecd48ad41ebcee47588d6c2bca1c033b79efd636`
 - export gms_v83: `66c2bbd85305973c5c8b41b666d70cbc69eb7ac91be07f23dfb9633cc8b75152`
-- export gms_v84: `c21773bd2f069dd86dfd87b212dba8f87691f34707066b9adb48d443c1887478`
-- export gms_v87: `ae094dce96d43d31fda7da98a55618d2d645a2cb29773ff89ea9d2673c4d5f3a`
-- export gms_v92: `1fd8b5a31fdc91ac20f232797ec98c620fdbab244e036db9eb7e74f52d987812`
-- export gms_v95: `72d955c285b40d73a4e4bc20dc63d37948166b3622163d84d07f9dd9fabe9c71`
-- export jms_v185: `ebc20a3c7f410ee0ad38d2e8df1894c071fee52a1f38551f4cf1de1358ca9113`
+- export gms_v84: `7ed1846d069c9ef3ed294a6c4fbbdfb2ff44338656375961f2d184c2909b6ea3`
+- export gms_v87: `78a1b773d3a290e80a4603c5cc3b74d224658d5ca962713346f45e8ad971b221`
+- export gms_v92: `34abd641270185e4deab5593acc45758d280699f588e924f0858cebbae5bef5a`
+- export gms_v95: `163890ec8c4db24c7b98de2dea83036a6f74cb2bd107623ff7ccf3b815436209`
+- export jms_v185: `ccc1f003cdd9ad784b0e094a2aa4ccb90873865b6458981e0a44958af7f876ee`
 
 ## Clientbound
 
@@ -301,7 +301,7 @@ Tool: `b8d1364d56eb63803a6a2a83255442bf34c87a3f7e66050d6521890ff216b0c5`
 | SHOW_UPGRADE_TOMB_EFFECT | CUserRemote::OnShowUpgradeTombEffect | character/clientbound/ShowUpgradeTombEffect (T1) |  | ⬜ |  | ⬜ | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0C3 | ✅ | 0x0C7 | ✅ | 0x0D0 | ✅ | 0x0DF | ✅ | 0x0DD | ✅ | 0x0C9 | ✅ |
 | SPAWN_NPC | CNpcPool::OnNpcEnterField | npc/clientbound/NpcSpawn (T1) | 0x0B1 | ✅ | 0x0C2 | 🟡ᶠ | 0x0E3 | 🟡ᶠ | 0x0EB | 🟡ᶠ | 0x101 | ✅ | 0x108 | ✅ | 0x112 | ✅ | 0x12F | ❌ | 0x137 | ✅ | 0x116 | ✅ |
 | MOVE_MONSTER | CMob::OnMove | monster/clientbound/MonsterMovement (T1) |  | ⬜ | 0x0B2 | ✅ | 0x0D3 | ✅ | 0x0D9 | ✅ | 0x0EF | ✅ | 0x0F5 | ✅ | 0x0FF | ✅ | 0x117 | ❌ | 0x11F | ✅ | 0x100 | ✅ |
-| REMOVE_NPC | CNpcPool::OnNpcLeaveField |  | 0x0B2 | ❌ | 0x0C3 | ❌ | 0x0E4 | ❌ | 0x0EC | ❌ | 0x102 | ✅ | 0x109 | ❌ | 0x113 | ❌ | 0x130 | ❌ | 0x138 | ❌ | 0x117 | ❌ |
+| REMOVE_NPC | CNpcPool::OnNpcLeaveField |  | 0x0B2 | ✅ | 0x0C3 | ✅ | 0x0E4 | ✅ | 0x0EC | ✅ | 0x102 | ✅ | 0x109 | ✅ | 0x113 | ✅ | 0x130 | ✅ | 0x138 | ✅ | 0x117 | ✅ |
 | MOVE_MONSTER_RESPONSE | CMob::OnCtrlAck | monster/clientbound/MonsterMovementAck (T1) |  | ⬜ | 0x0B3 | ✅ | 0x0D4 | ✅ | 0x0DA | ✅ | 0x0F0 | ✅ | 0x0F6 | ✅ | 0x100 | ✅ | 0x118 | ❌ | 0x120 | ✅ | 0x101 | ✅ |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0B9 | ❌ | 0x0BB | ❌ |  | ⬜ |
 | SPAWN_NPC_REQUEST_CONTROLLER | CNpcPool::OnNpcChangeController | npc/clientbound/NpcSpawnRequestController (T1) | 0x0B3 | ✅ | 0x0C4 | 🟡ᶠ | 0x0E5 | 🟡ᶠ | 0x0ED | 🟡ᶠ | 0x103 | ✅ | 0x10A | ✅ | 0x114 | ✅ | 0x131 | ❌ | 0x139 | ✅ | 0x118 | ✅ |
@@ -1063,16 +1063,16 @@ Tool: `b8d1364d56eb63803a6a2a83255442bf34c87a3f7e66050d6521890ff216b0c5`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 214 | 0 | 19 | 199 | 595 | 0 | 49.5% |
-| v61 | 281 | 0 | 56 | 232 | 458 | 0 | 49.4% |
-| v72 | 306 | 0 | 69 | 241 | 411 | 0 | 49.7% |
-| v79 | 352 | 0 | 68 | 237 | 370 | 0 | 53.6% |
+| v48 | 215 | 0 | 19 | 198 | 595 | 0 | 49.8% |
+| v61 | 282 | 0 | 56 | 231 | 458 | 0 | 49.6% |
+| v72 | 307 | 0 | 69 | 240 | 411 | 0 | 49.8% |
+| v79 | 353 | 0 | 68 | 236 | 370 | 0 | 53.7% |
 | v83 | 482 | 0 | 0 | 317 | 228 | 0 | 60.3% |
-| v84 | 452 | 0 | 0 | 325 | 250 | 0 | 58.2% |
-| v87 | 489 | 0 | 0 | 347 | 191 | 0 | 58.5% |
-| v92 | 68 | 0 | 147 | 671 | 141 | 0 | 7.7% |
-| v95 | 525 | 0 | 0 | 394 | 108 | 0 | 57.1% |
-| JMS185 | 452 | 0 | 0 | 377 | 198 | 0 | 54.5% |
+| v84 | 453 | 0 | 0 | 324 | 250 | 0 | 58.3% |
+| v87 | 490 | 0 | 0 | 346 | 191 | 0 | 58.6% |
+| v92 | 69 | 0 | 147 | 670 | 141 | 0 | 7.8% |
+| v95 | 526 | 0 | 0 | 393 | 108 | 0 | 57.2% |
+| JMS185 | 453 | 0 | 0 | 376 | 198 | 0 | 54.6% |
 
 ## Conflicts
 

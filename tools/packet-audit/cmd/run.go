@@ -2647,17 +2647,22 @@ func candidatesFromFName(fname string) []candidate {
 	// Struct is ItemUseMapleLife (libs/atlas-packet/cash/serverbound/
 	// item_use_maple_life.go); carries only the fields AFTER the shared
 	// ItemUse header's nPOS/nItemID pair, same convention as the other
-	// item_use_*.go sub-bodies. Body is EncodeStr(sName) + Encode4(al[0..3])
-	// + Encode4(nGender) + Encode4(nCurrentClass) + Encode4(nSP) +
-	// Encode4(update_time, TRAILING) on every in-scope version (gms_v83/
-	// v87/v92/v95); the trailing update_time write is UNCONDITIONAL here
-	// (not gated by UpdateTimeFirst like the sibling sub-bodies) — raw
-	// disassembly confirms the client writes update_time TWICE on v87+ (once
-	// via the shared header's leading copy, once via this sub-body's own
-	// trailing copy) and once on v83 (trailing only, via this sub-body)
-	// (docs/tasks/task-246-maple-life-character-creation/derivation.md §2).
-	case "CUICharacterSaleDlg::SendCreateNewCharacter":
-		return []candidate{{name: "ItemUseMapleLife", dir: csvpkg.DirServerbound, pkg: "cash", prefixName: "ItemUse", prefixPkg: "cash"}}
+	// item_use_*.go sub-bodies. Deliberately NOT linked here: the header
+	// prefix composition (prefixName: "ItemUse") needs guardFromIf to
+	// resolve `if UpdateTimeFirst(t) { ... }` (a call to a package-level
+	// bool helper) to a real version predicate; the resolver's current
+	// AST-to-string reparse can't compile a bare call, so it always
+	// evaluates true and FlattenWithRegistry keeps the leading update_time
+	// write unconditionally, misaligning the composed header against
+	// gms_v83's export (no leading write). A prior attempt at extending the
+	// resolver to inline single-statement bool helpers land-tested clean on
+	// this cell but changed report content for unrelated already-audited
+	// packets that use the same shape (e.g. chat/serverbound Whisper's
+	// whisperHasUpdateTime, cash/serverbound shop_operation_buy*'s
+	// legacyGMS/buyOmitsCurrency) — see the packet-audit tooling-defects
+	// entry in docs/TODO.md. The codec and its tests
+	// (item_use_maple_life.go / _test.go) stand on their own, unlinked from
+	// the matrix, same state every sibling item_use_*.go sub-body is in.
 	// Serverbound MAPLELIFE_CHECK_NAME (task-246): the Maple Life
 	// duplicate-name probe — CUICharacterSaleDlg::SendCheckDuplicateIDPacket.
 	// Struct is CheckName (libs/atlas-packet/maplelife/serverbound/

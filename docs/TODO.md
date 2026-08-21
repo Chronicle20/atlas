@@ -503,6 +503,27 @@ Deferred from task-145 (player sue/claim reports). Design/plan/findings live und
   serve as a freshness anchor that can never match a real hash. Currently latent only because
   every affected export on this branch used `--splice`. Fix: treat `"unavailable"` (and any
   other non-hex string) as an error, not a value, before any full re-export.
+- [ ] **`guardFromIf` can't resolve a bare call to a package-level bool helper as a version
+  guard.** `internal/atlaspacket/analyzer.go`'s `guardFromIf` re-prints an `if` condition's AST
+  to text and reparses it via `ParseGuard`, which only compiles `t.Region()`/`t.MajorVersion()`/
+  `t.MinorVersion()` comparisons combined with `&&`/`||`/`!`; a bare call like
+  `if UpdateTimeFirst(t) { ... }` (`cash/serverbound/item_use.go`) fails to parse and falls back
+  to an always-true guard, so `FlattenWithRegistry` keeps every branch under that guard
+  unconditionally regardless of version. Confirmed live on task-246: this stranded
+  `CashItemUseMapleLife`'s `prefixName: "ItemUse"` header composition (the composed prefix
+  needs `UpdateTimeFirst`'s version predicate to align the leading `update_time` write against
+  each version's real header shape), so the candidate was left unlinked
+  (`tools/packet-audit/cmd/run.go`, `CUICharacterSaleDlg::SendCreateNewCharacter`) rather than
+  landing on a guard the resolver can't model faithfully. A prototype fix (inline a
+  package-level, single-parameter, single-statement `return <expr>` bool helper's body into the
+  guard before parsing) closed this cell cleanly but changed report content for other,
+  already-audited packets sharing the same shape — `chat/serverbound/whisper.go`'s
+  `whisperHasUpdateTime(t)` and `cash/serverbound/shop_operation_buy*.go`'s
+  `legacyGMS(t)`/`buyOmitsCurrency(t)` at minimum (observed via full-directory regen diff
+  against the previously-committed `docs/packets/audits/gms_v83/`) — too broad a blast radius
+  to land without re-verifying every affected sibling cell by hand. A scoped fix (e.g. resolving
+  only when the guard sits directly under the `prefixName`-composed method, or requiring an
+  explicit per-candidate opt-in) is likely lower-risk than the general resolver change.
 
 ## task-081 packet-audit validation follow-ups
 

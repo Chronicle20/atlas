@@ -1,6 +1,8 @@
 package monster
 
 import (
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -91,5 +93,47 @@ func TestRegistrySelfDestructUnknownMonster(t *testing.T) {
 	}
 	if s.Killed {
 		t.Fatal("expected Killed == false for unknown monster")
+	}
+}
+
+// TestRegistrySelfDestructConcurrentCallersExactlyOneWins fires many
+// concurrent SelfDestruct calls at the same monster and asserts exactly one
+// observes Killed == true. Run under -race: `go test ./monster/ -race -run
+// TestRegistrySelfDestructConcurrentCallersExactlyOneWins`.
+func TestRegistrySelfDestructConcurrentCallersExactlyOneWins(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+
+	f := field.NewBuilder(0, 0, 40000).Build()
+	m := r.CreateMonster(ctx, ten, f, 5100002, 0, 0, 0, 5, 0, 4000, 0, "", "")
+
+	const callers = 50
+	var wg sync.WaitGroup
+	var killedCount int64
+	var errCount int64
+
+	wg.Add(callers)
+	for i := 0; i < callers; i++ {
+		go func() {
+			defer wg.Done()
+			s, err := r.SelfDestruct(ten, m.UniqueId())
+			if err != nil {
+				atomic.AddInt64(&errCount, 1)
+				return
+			}
+			if s.Killed {
+				atomic.AddInt64(&killedCount, 1)
+			}
+		}()
+	}
+	wg.Wait()
+
+	if errCount != 0 {
+		t.Fatalf("expected 0 errors across %d concurrent callers, got %d", callers, errCount)
+	}
+	if killedCount != 1 {
+		t.Fatalf("expected exactly 1 caller to observe Killed == true across %d concurrent callers, got %d", callers, killedCount)
 	}
 }

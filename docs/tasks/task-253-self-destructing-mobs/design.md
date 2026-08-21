@@ -288,10 +288,20 @@ Cost of D2: the `self_destruction` object in `GET /monsters/{id}` changes from
 `{"action":0,"remove_after":0,"hp":0}` to `{"action":0,"remove_after":-1,"hp":-1}` for every
 non-self-destructing monster. The only consumers are atlas-monsters (new code, expects the new
 sentinel) and `atlas-monster-death`'s `information/rest.go:37`, which mirrors the field and
-never reads it. Rolling-deploy safe in both orders, because atlas-monsters' predicate
-(`Hp > -1 || RemoveAfter > -1`) is false under the old `{0,0,0}` sentinel too — an old
-atlas-data simply reports "not self-destructing" for everything, which is exactly today's
-behavior.
+never reads it. Rolling-deploy safe in the recommended order (atlas-data first, atlas-monsters
+second), but not for the reason a first read of the predicate suggests: `Hp > -1 || RemoveAfter
+> -1` is **not** false under the old pre-D2 `{0,0,0}` sentinel — `0 > -1` is true in Go, so a
+new atlas-monsters paired with an old atlas-data reports `Present() == true` for every ordinary
+monster (every monster's Hp defaults to 0, not -1, under the pre-D2 contract). The traced blast
+radius during that window is narrower than "every monster self-destructs," though: `OnTimer()`
+is `present && hp <= -1`, which stays false at `hp == 0`, so there is no timer storm. Only
+`OnHpThreshold()` (`present && hp > -1`) goes true, with a threshold of 0 — coinciding with,
+not preceding, the ordinary kill point. `Registry.SelfDestruct` is exactly-once (D3) regardless
+of which path (ordinary kill or the coincident false threshold) reaches it, so the mob still
+dies exactly once. The visible defect in the deploy window is confined to a wrong death-animation
+byte (`action` defaults to 0, so the mob's ordinary kill would carry a self-destruct `action` of
+0 instead of `DeathTypeFadeOut`), which is why the deploy order (atlas-data before atlas-monsters)
+is the mitigation, not a claim that the predicate is false under the old sentinel.
 
 ### D3 — One atomic registry primitive, `Registry.SelfDestruct`, owns exactly-once
 

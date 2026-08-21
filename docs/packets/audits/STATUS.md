@@ -10,7 +10,7 @@ Tool: `b8d1364d56eb63803a6a2a83255442bf34c87a3f7e66050d6521890ff216b0c5`
 - export gms_v61: `af9ddeaff46dc92af0cf2199a33d7ef60fdf01db6423d5f396a55c0389a3c745`
 - export gms_v72: `de3fa5f9749f4f41ef7334eb4c18d9c08c7ea09c222e460fd8a384037a3a56d8`
 - export gms_v79: `b7e7015800918afe24beff39ecd48ad41ebcee47588d6c2bca1c033b79efd636`
-- export gms_v83: `8f0cc59ceda2c3a818134c58a236ff43c4bdb011dbb0a7ad267819389b7a1d4c`
+- export gms_v83: `66c2bbd85305973c5c8b41b666d70cbc69eb7ac91be07f23dfb9633cc8b75152`
 - export gms_v84: `c21773bd2f069dd86dfd87b212dba8f87691f34707066b9adb48d443c1887478`
 - export gms_v87: `ae094dce96d43d31fda7da98a55618d2d645a2cb29773ff89ea9d2673c4d5f3a`
 - export gms_v92: `1fd8b5a31fdc91ac20f232797ec98c620fdbab244e036db9eb7e74f52d987812`
@@ -301,7 +301,7 @@ Tool: `b8d1364d56eb63803a6a2a83255442bf34c87a3f7e66050d6521890ff216b0c5`
 | SHOW_UPGRADE_TOMB_EFFECT | CUserRemote::OnShowUpgradeTombEffect | character/clientbound/ShowUpgradeTombEffect (T1) |  | ⬜ |  | ⬜ | 0x0B1 | ✅ | 0x0B5 | ✅ | 0x0C3 | ✅ | 0x0C7 | ✅ | 0x0D0 | ✅ | 0x0DF | ✅ | 0x0DD | ✅ | 0x0C9 | ✅ |
 | SPAWN_NPC | CNpcPool::OnNpcEnterField | npc/clientbound/NpcSpawn (T1) | 0x0B1 | ✅ | 0x0C2 | 🟡ᶠ | 0x0E3 | 🟡ᶠ | 0x0EB | 🟡ᶠ | 0x101 | ✅ | 0x108 | ✅ | 0x112 | ✅ | 0x12F | ❌ | 0x137 | ✅ | 0x116 | ✅ |
 | MOVE_MONSTER | CMob::OnMove | monster/clientbound/MonsterMovement (T1) |  | ⬜ | 0x0B2 | ✅ | 0x0D3 | ✅ | 0x0D9 | ✅ | 0x0EF | ✅ | 0x0F5 | ✅ | 0x0FF | ✅ | 0x117 | ❌ | 0x11F | ✅ | 0x100 | ✅ |
-| REMOVE_NPC | CNpcPool::OnNpcLeaveField |  | 0x0B2 | ❌ | 0x0C3 | ❌ | 0x0E4 | ❌ | 0x0EC | ❌ | 0x102 | ❌ | 0x109 | ❌ | 0x113 | ❌ | 0x130 | ❌ | 0x138 | ❌ | 0x117 | ❌ |
+| REMOVE_NPC | CNpcPool::OnNpcLeaveField |  | 0x0B2 | ❌ | 0x0C3 | ❌ | 0x0E4 | ❌ | 0x0EC | ❌ | 0x102 | ✅ | 0x109 | ❌ | 0x113 | ❌ | 0x130 | ❌ | 0x138 | ❌ | 0x117 | ❌ |
 | MOVE_MONSTER_RESPONSE | CMob::OnCtrlAck | monster/clientbound/MonsterMovementAck (T1) |  | ⬜ | 0x0B3 | ✅ | 0x0D4 | ✅ | 0x0DA | ✅ | 0x0F0 | ✅ | 0x0F6 | ✅ | 0x100 | ✅ | 0x118 | ❌ | 0x120 | ✅ | 0x101 | ✅ |
 | SHOW_ITEM_HYPER_UPGRADE_EFFECT | CUser::OnHitByUser; CUser::ShowItemHyperUpgradeEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0B3 | ❌ | 0x0B9 | ❌ | 0x0BB | ❌ |  | ⬜ |
 | SPAWN_NPC_REQUEST_CONTROLLER | CNpcPool::OnNpcChangeController | npc/clientbound/NpcSpawnRequestController (T1) | 0x0B3 | ✅ | 0x0C4 | 🟡ᶠ | 0x0E5 | 🟡ᶠ | 0x0ED | 🟡ᶠ | 0x103 | ✅ | 0x10A | ✅ | 0x114 | ✅ | 0x131 | ❌ | 0x139 | ✅ | 0x118 | ✅ |
@@ -1067,7 +1067,7 @@ Tool: `b8d1364d56eb63803a6a2a83255442bf34c87a3f7e66050d6521890ff216b0c5`
 | v61 | 281 | 0 | 56 | 232 | 458 | 0 | 49.4% |
 | v72 | 306 | 0 | 69 | 241 | 411 | 0 | 49.7% |
 | v79 | 352 | 0 | 68 | 237 | 370 | 0 | 53.6% |
-| v83 | 481 | 0 | 0 | 318 | 228 | 0 | 60.2% |
+| v83 | 482 | 0 | 0 | 317 | 228 | 0 | 60.3% |
 | v84 | 452 | 0 | 0 | 325 | 250 | 0 | 58.2% |
 | v87 | 489 | 0 | 0 | 347 | 191 | 0 | 58.5% |
 | v92 | 68 | 0 | 147 | 671 | 141 | 0 | 7.7% |

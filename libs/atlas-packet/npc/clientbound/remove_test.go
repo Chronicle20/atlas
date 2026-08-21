@@ -6,7 +6,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// packet-audit:verify packet=npc/clientbound/Remove version=gms_v83 ida=0x6d9a25
+// packet-audit:verify packet=npc/clientbound/NpcRemove version=gms_v83 ida=0x6d9a25
 func TestNpcRemove(t *testing.T) {
 	input := NewNpcRemove(100123)
 

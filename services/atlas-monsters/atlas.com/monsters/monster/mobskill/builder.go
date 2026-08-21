@@ -11,6 +11,7 @@ type ModelBuilder struct {
 	hp       uint32
 	interval uint32
 	duration uint32
+	count    uint32
 	x        int32
 	ltX      int32
 	ltY      int32
@@ -65,6 +66,14 @@ func (b *ModelBuilder) SetDuration(duration uint32) *ModelBuilder {
 	return b
 }
 
+// SetCount sets the maximum number of targets the skill affects. Only the
+// SEDUCE disease honours this cap (task-259 FR-3.1); it is carried on every
+// skill because the WZ data declares it on every skill.
+func (b *ModelBuilder) SetCount(count uint32) *ModelBuilder {
+	b.count = count
+	return b
+}
+
 // SetX sets the primary numeric parameter (e.g. reflect percent, heal amount,
 // stat magnitude) used by the executor for this skill.
 func (b *ModelBuilder) SetX(x int32) *ModelBuilder {
@@ -92,6 +101,7 @@ func (b *ModelBuilder) Build() Model {
 		hp:       b.hp,
 		interval: b.interval,
 		duration: b.duration,
+		count:    b.count,
 		x:        b.x,
 		ltX:      b.ltX,
 		ltY:      b.ltY,

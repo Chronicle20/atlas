@@ -1264,6 +1264,9 @@ func candidatesFromFName(fname string) []candidate {
 	case "CReactorPool::FindHitReactor":
 		// CSV: DAMAGE_REACTOR — atlas HitRequest (handle = "ReactorHitHandle").
 		return []candidate{{name: "HitRequest", pkg: "reactor", dir: csvpkg.DirServerbound}}
+	case "CReactorPool::FindTouchReactorAroundLocalUser":
+		// CSV: TOUCHING_REACTOR — atlas TouchingRequest (handle = "TouchReactorHandle").
+		return []candidate{{name: "TouchingRequest", pkg: "reactor", dir: csvpkg.DirServerbound}}
 
 	// --- Combat: pet (serverbound) ---
 	case "CWvsContext::SendActivatePetRequest":

@@ -1,15 +1,15 @@
 {
-  "toolSha": "46d5ca743da4fe06357af74efae0a869c4b5845ac7b48088c7b910391b0b37af",
+  "toolSha": "892f07a29e7976d61dfc7aea4957f18b2bfa6aa942609a705d4fee0dbad3e926",
   "exportHashes": {
     "gms_v48": "f46a1c091a8f557a7a0a47c295bed12c56e0f70e23552726d1ca6586eadbf0dd",
     "gms_v61": "6c974c037a17229958f04d245f414de004f5530852466818e48167a4172e7c70",
     "gms_v72": "f22e6d780c0ca97b845d09876f2a4724b612189f9d9d353451be062bcb741c56",
     "gms_v79": "efa7d503bee32a270bf80e0d437259e1b4e13e7d7bab2058427def64e781a2a3",
-    "gms_v83": "b52bac5f07c3762626731588fd689598a937222a8bb1cea6f9dbcf8107a31e74",
+    "gms_v83": "0b189c4b9d946ac3545fcc41c93833ada3d18063f0a92698ab18de17763ce6e6",
     "gms_v84": "16832eea1aedc71e48c73e047e4fca66fef8d2bfdc1901f2b5f00ac1286c40ce",
-    "gms_v87": "ec11d59b3153821f1d458eb606734780deecc24a9180f40646828ad9976f7c94",
-    "gms_v92": "e2c3e093edfc4b28460aea777eb241d2c5f474439b0ee230702b0c1ef5f56b3c",
-    "gms_v95": "4ebb3ef155f3abf5f065f0340732626320aa404aa76f167adef42228630a9659",
+    "gms_v87": "63cf3b87a5006b35c15ad40ff40098e2b47f9e2294cccb0a214f3421fc901311",
+    "gms_v92": "9bfe486e327a30a5419d064f2a9b9f5aaebf74d095ef405f2814f2e2b04e4ae8",
+    "gms_v95": "fc0514ccf05ef04e3f96d978f362fde8b92269592da010d92f3e776424281e5e",
     "jms_v185": "576eda436b95b42e99f3bb0a6343964695a5c0732b95beed1593bab25f78df3c"
   },
   "rows": [
@@ -37821,6 +37821,7 @@
     {
       "kind": "op",
       "op": "MAPLELIFE_CHECK_NAME",
+      "packet": "maplelife/serverbound/MaplelifeCheckName",
       "direction": "serverbound",
       "tier1": false,
       "fnames": [
@@ -37844,8 +37845,7 @@
           "opcode": -1
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 256
         },
         "gms_v84": {
@@ -37853,18 +37853,15 @@
           "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 270
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 301
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 311
         },
         "jms_v185": {

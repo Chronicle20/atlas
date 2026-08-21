@@ -486,7 +486,7 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 | TIP_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15B | ❌ |
 | OPEN_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15C | ❌ |
 | ARIANT_SCORE | CField_Witchtower::OnPacket; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldAriantScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ | 0x166 | ✅ |  | ⬜ |
-| MAPLELIFE_RESULT | CUICharacterSaleDlg::OnCheckDuplicatedIDResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ | 0x15D | ❌ | 0x172 | ❌ | 0x194 | ❌ | 0x19D | ❌ |  | ⬜ |
+| MAPLELIFE_RESULT | CUICharacterSaleDlg::OnCheckDuplicatedIDResult | maplelife/clientbound/MaplelifeMapleLifeResult |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ✅ | 0x15D | ❌ | 0x172 | ✅ | 0x194 | ✅ | 0x19D | ✅ |  | ⬜ |
 | SHOOT_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ |
 | MAPLELIFE_ERROR | CUICharacterSaleDlg::OnCreateNewCharacterResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15E | ❌ | 0x15E | ❌ | 0x173 | ❌ | 0x195 | ❌ | 0x19E | ❌ |  | ⬜ |
 | SOMETHING_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15E | ❌ |
@@ -1061,11 +1061,11 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 | v61 | 278 | 0 | 56 | 228 | 459 | 0 | 49.5% |
 | v72 | 296 | 0 | 69 | 241 | 415 | 0 | 48.8% |
 | v79 | 342 | 0 | 68 | 237 | 374 | 0 | 52.9% |
-| v83 | 468 | 0 | 0 | 325 | 228 | 0 | 59.0% |
+| v83 | 469 | 0 | 0 | 324 | 228 | 0 | 59.1% |
 | v84 | 442 | 0 | 0 | 331 | 248 | 0 | 57.2% |
-| v87 | 476 | 0 | 0 | 354 | 191 | 0 | 57.3% |
-| v92 | 52 | 0 | 148 | 680 | 141 | 0 | 5.9% |
-| v95 | 501 | 0 | 0 | 413 | 107 | 0 | 54.8% |
+| v87 | 477 | 0 | 0 | 353 | 191 | 0 | 57.5% |
+| v92 | 53 | 0 | 148 | 679 | 141 | 0 | 6.0% |
+| v95 | 502 | 0 | 0 | 412 | 107 | 0 | 54.9% |
 | JMS185 | 442 | 0 | 0 | 381 | 198 | 0 | 53.7% |
 
 ## Conflicts

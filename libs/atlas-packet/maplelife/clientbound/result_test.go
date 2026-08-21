@@ -25,10 +25,10 @@ import (
 // (derivation.md §4.7).
 // ---------------------------------------------------------------------------
 
-// packet-audit:verify packet=maplelife/clientbound/MapleLifeResult version=gms_v83 ida=0x7d768a
-// packet-audit:verify packet=maplelife/clientbound/MapleLifeResult version=gms_v87 ida=0x82e12c
-// packet-audit:verify packet=maplelife/clientbound/MapleLifeResult version=gms_v92 ida=0x756370
-// packet-audit:verify packet=maplelife/clientbound/MapleLifeResult version=gms_v95 ida=0x777e40
+// packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeResult version=gms_v83 ida=0x7d768a
+// packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeResult version=gms_v87 ida=0x82e12c
+// packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeResult version=gms_v92 ida=0x756370
+// packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeResult version=gms_v95 ida=0x777e40
 func TestMapleLifeResultRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

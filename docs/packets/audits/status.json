@@ -43016,6 +43016,7 @@
     {
       "kind": "op",
       "op": "MAPLELIFE_RESULT",
+      "packet": "maplelife/clientbound/MaplelifeMapleLifeResult",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -43039,8 +43040,7 @@
           "opcode": -1
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 349
         },
         "gms_v84": {
@@ -43049,18 +43049,15 @@
           "opcode": 349
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 370
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 404
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 413
         },
         "jms_v185": {

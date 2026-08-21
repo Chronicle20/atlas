@@ -3,8 +3,8 @@ direction: clientbound
 version: gms_v79
 category: TIER1-FIXTURE
 ida:
-    function: CWvsContext::OnImitatedNPCData
-    address: "0x9540ff"
-    decompile_sha256: 479c658023d9fde77cf69bb8cc6fac51d296677377befc8cbaeef28b845da658
+    function: CNpcPool::OnNpcImitateData
+    address: "0x668877"
+    decompile_sha256: 1f393c1e2ea6ed6ad80bd9b39c5963fd5a0492b4be669f741e809a86a8a7f7fa
 verifies:
     - libs/atlas-packet/npc/clientbound/imitated_npc_data_test.go#TestImitatedNpcData

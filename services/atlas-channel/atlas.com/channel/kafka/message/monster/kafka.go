@@ -20,6 +20,7 @@ const (
 	CommandTypeKill           = "KILL"
 	CommandTypeClearAggro     = "CLEAR_AGGRO"
 	CommandTypeForceControl   = "FORCE_CONTROL"
+	CommandTypeSelfDestruct   = "SELF_DESTRUCT"
 )
 
 type DamageFriendlyCommandBody struct {
@@ -123,6 +124,14 @@ type ForceControlCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 
+// SelfDestructCommandBody asks atlas-monsters to detonate a self-destructing
+// monster. The channel supplies only the reporting character; atlas-monsters
+// owns the animation (from WZ) and every predicate, because the trigger
+// originates in a client-controlled packet (task-253 design D7/D8).
+type SelfDestructCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
 const (
 	EnvEventTopicStatus = "EVENT_TOPIC_MONSTER_STATUS"
 
@@ -180,6 +189,10 @@ type StatusEventCreatedBody struct {
 
 type StatusEventDestroyedBody struct {
 	ActorId uint32 `json:"actorId"`
+	// DeathType is the wire dead-type atlas-monsters resolved for this
+	// destruction. 0 means the producer did not set it (rolling-deploy
+	// compatibility, task-253 design D9) and renders as fade-out.
+	DeathType byte `json:"deathType"`
 }
 
 type StatusEventStartControlBody struct {
@@ -217,6 +230,10 @@ type StatusEventKilledBody struct {
 	ActorId       uint32        `json:"actorId"`
 	Boss          bool          `json:"boss"`
 	DamageEntries []DamageEntry `json:"damageEntries"`
+	// DeathType is the wire dead-type atlas-monsters resolved for this
+	// kill. 0 means the producer did not set it (rolling-deploy
+	// compatibility, task-253 design D9) and renders as fade-out.
+	DeathType byte `json:"deathType"`
 }
 
 type DamageEntry struct {

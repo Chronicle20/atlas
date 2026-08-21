@@ -198,7 +198,7 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), destroyForSession(l)(ctx)(wp)(e.UniqueId))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), destroyForSession(l)(ctx)(wp)(e.UniqueId, destroyTypeFor(e.Body.DeathType)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
@@ -209,11 +209,22 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 	}
 }
 
-func destroyForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
-		return func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
-			return func(uniqueId uint32) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDestroyWriter)(monsterpkt.NewMonsterDestroy(uniqueId, monsterpkt.DestroyTypeFadeOut).Encode)
+// destroyTypeFor maps a KILLED/DESTROYED event's deathType byte onto the wire
+// dead-type. 0 means "the producer did not set it" — an old atlas-monsters
+// mid-rolling-deploy — and renders as fade-out, byte-identical to the
+// pre-task-253 hardcode (task-253 design D9).
+func destroyTypeFor(deathType byte) monsterpkt.DestroyType {
+	if deathType == 0 {
+		return monsterpkt.DestroyTypeFadeOut
+	}
+	return monsterpkt.DestroyType(deathType)
+}
+
+func destroyForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32, dt monsterpkt.DestroyType) model2.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32, dt monsterpkt.DestroyType) model2.Operator[session.Model] {
+		return func(wp writer.Producer) func(uniqueId uint32, dt monsterpkt.DestroyType) model2.Operator[session.Model] {
+			return func(uniqueId uint32, dt monsterpkt.DestroyType) model2.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDestroyWriter)(monsterpkt.NewMonsterDestroy(uniqueId, dt).Encode)
 			}
 		}
 	}
@@ -298,7 +309,7 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), killForSession(l)(ctx)(wp)(e.UniqueId))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), killForSession(l)(ctx)(wp)(e.UniqueId, destroyTypeFor(e.Body.DeathType)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to kill monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
@@ -307,11 +318,11 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 	}
 }
 
-func killForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
-		return func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
-			return func(uniqueId uint32) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDestroyWriter)(monsterpkt.NewMonsterDestroy(uniqueId, monsterpkt.DestroyTypeFadeOut).Encode)
+func killForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32, dt monsterpkt.DestroyType) model2.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32, dt monsterpkt.DestroyType) model2.Operator[session.Model] {
+		return func(wp writer.Producer) func(uniqueId uint32, dt monsterpkt.DestroyType) model2.Operator[session.Model] {
+			return func(uniqueId uint32, dt monsterpkt.DestroyType) model2.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDestroyWriter)(monsterpkt.NewMonsterDestroy(uniqueId, dt).Encode)
 			}
 		}
 	}

@@ -98,3 +98,105 @@ service can run end-to-end:
    default (GHCR default for a repo's first push of a new image name). Flip it to public in the
    GitHub Packages UI, matching every other `atlas-*` image, or the cluster's anonymous pull
    will fail.
+
+# Task 10 — `allocation/` script-id pool
+
+Landed `63cd38e46` (implementation) + `288586406` (version-aware Pirate branch). Gate 14 PASS
+at `288586406`; Task 10 review APPROVED, 0 blocking, 0 non-blocking.
+
+## Controller rulings carried forward
+
+1. **GM branch formula is literal.** PRD FR-3.3 is `26 + 4*(mapId/100000000)` with 400-id
+   continent blocks starting at 9902600, so continent 1 → branch **30** and continent 2 →
+   branch **34**. The plan's Task 10 `expect` column read 27/30, which contradicted its own
+   shown derivation; the implementer flagged it and the table was corrected in `6701fbe33`.
+   Tasks 12/15 inherit 30/34.
+2. **`Allocate`'s global fallback needs no second validation.** It scans the same validated
+   `usable` set (design D-1), so a fallback-allocated id is exactly as safe as a
+   branch-allocated one — no extra check, no distinct error path.
+
+## Signature change Tasks 12/15 must consume
+
+The `skill/job id guard` rejected the original `BranchFor`, exactly as it rejected Task 9's
+routing. The fix mirrors Task 9's `routing.HallOfFameMapFor` (`66071a227`) byte for byte:
+resolve through the version-aware Identity before the raw category switch.
+
+```
+func BranchFor(set constants.SkillJobSet, jobId job.Id, mapId _map.Id) uint32
+```
+
+This is now the real contract — the plan's older two-argument form is superseded. This module
+has tripped that guard on two consecutive tasks, so any later task comparing a `job.*Id`
+constant should resolve through `constants.SkillJobSet` rather than comparing raw.
+
+# Task 11 — `position/` grid and podium positioners
+
+Landed `14300ea56`. Gate 15 PASS at `14300ea56`; review APPROVED_WITH_FINDINGS — 0 blocking,
+2 non-blocking, both Task 15-facing.
+
+The implementer designed `Placement`'s field set and `RaisePodiumStep` itself: the brief's test
+table required them but its Step-2 signature list never named them. The reviewer read plan
+Task 15 and confirmed the invented shapes are functionally sufficient for Task 15's grid and
+podium reorganization paths — `Reorganize` reads only `Placement.ScriptId`, never `.Rect` or
+`.Point`, so Task 15 can build its input from a bare script-id list. Not a redesign trigger.
+
+## Two rulings for Task 15
+
+1. **`Placement.ScriptId` must become `uint32`.** It is currently `int32`
+   (`position/types.go:37`), while `allocation.Allocate` (`allocation/allocation.go:116`) and
+   the entire script-id pool are `uint32`. No overflow risk — the values fit — but as it stands
+   Task 15 needs an unenforced cast at the boundary. Align the type rather than carrying the
+   cast forward. **This fix is pending and should land before Task 15 consumes it.**
+2. **`Placement.Step` is computed but not persisted.** Plan Task 12 and design §3.1 list only
+   `x, cy, fh, rx0, rx1, dir`, so Task 15 computes `Step` and discards it, and has no persisted
+   "current step" to read for a *new* deploy. Task 15 must therefore derive the step by retrying
+   `NextGridPosition` from step 0 — a mechanism no artifact names yet. Task 15 must either
+   implement that derivation explicitly or add the column; decide there, and write down which.
+
+# Task 12 — `playernpc/` persistence layer
+
+Landed `4afd98e44`. Gate 16 PASS at `4afd98e44` — 106 tests across 5 packages, output pristine.
+Entity, model, builder, administrator and provider, copied from the
+`services/atlas-notes/atlas.com/notes/note/` house shape.
+
+## Flagged for verification, beyond this task
+
+The implementer reports that the test DSN other Atlas services use, `_pragma=foreign_keys(1)`,
+is glebarez/modernc syntax and **silently does not enable foreign-key enforcement** under
+`mattn/go-sqlite3` — which is the driver this module actually resolves to via
+`gorm.io/driver/sqlite`. It used `_foreign_keys=1` instead and documented why in
+`testDatabase`'s comment. If the claim holds, other services' FK-constraint tests are not
+asserting what they appear to, which is a finding wider than task-251. The Task 12 reviewer was
+asked to confirm the driver and the claim rather than take it on trust — read
+`.superpowers/sdd/plan/task-12-review.md` for its verdict before acting on this.
+
+# Task 11 follow-up — `Placement.ScriptId` aligned to `uint32`
+
+Landed `5dd60245a`, closing non-blocking finding 2 of the Task 11 review. `position` tests
+22/22. Task 15 no longer needs an unenforced cast at the `allocation.Allocate` boundary.
+
+Ruling 2 of the Task 11 block (`Placement.Step` computed but not persisted) is **still open**
+and is Task 15's to decide.
+
+## Task 12 review — APPROVED_WITH_FINDINGS, 0 blocking
+
+Three non-blocking findings (`.superpowers/sdd/plan/task-12-review.md`):
+
+1. `playernpc/model_test.go` — round-trip tests never assert `EquipmentModel.Id()` survives
+   (only `Slot`/`ItemId`). Test-coverage gap, not a production defect.
+2. `playernpc/administrator.go:34-35` — `createPlayerNpc` re-fetches the row in a second DB
+   round trip after commit instead of building the Model from the in-memory entity/equipment it
+   already holds with assigned ids. Correct, just extra I/O.
+3. **The SQLite FK-pragma claim is confirmed, and it is repo-wide.** The reviewer verified it
+   independently — `go list -m` to resolve the driver, plus an empirical `PRAGMA foreign_keys`
+   probe against `mattn/go-sqlite3` — rather than taking the implementer's word. Six
+   `services/atlas-data/atlas.com/data/{npc,reactor,searchindex,monster,map,item}` test files
+   use `_pragma=foreign_keys(1)`, which silently does **not** enable FK enforcement under this
+   repo's actual driver. Those tests are not asserting what they appear to. Out of scope for
+   task-251 — **worth its own follow-up ticket**, and it should not be lost when this branch
+   merges.
+
+Reviewer note: it reported being unable to find `prd.md`/`design.md`, so PRD §6 and design §3.1
+/§8 were checked only against the brief's verbatim quotes (which matched field-for-field). Both
+files do exist at `docs/tasks/task-251-player-npcs/` — this was a reviewer lookup miss, not a
+missing artifact. A later reviewer should read them directly.

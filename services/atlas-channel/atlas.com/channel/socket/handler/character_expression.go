@@ -17,6 +17,6 @@ func CharacterExpressionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ 
 		p := character2.ExpressionRequest{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
-		_ = expression.NewProcessor(l, ctx).Change(s.CharacterId(), s.Field(), p.Emote())
+		_ = expression.NewProcessor(l, ctx).Change(s.CharacterId(), s.Field(), p.Emote(), p.Duration(), p.ByItemOption())
 	}
 }

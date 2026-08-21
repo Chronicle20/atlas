@@ -10,15 +10,17 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-func SetCommandProvider(characterId uint32, f field.Model, expression uint32) model.Provider[[]kafka.Message] {
+func SetCommandProvider(characterId uint32, f field.Model, expression uint32, duration int32, byItemOption bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &expression2.Command{
-		CharacterId: characterId,
-		WorldId:     f.WorldId(),
-		ChannelId:   f.ChannelId(),
-		MapId:       f.MapId(),
-		Instance:    f.Instance(),
-		Expression:  expression,
+		CharacterId:  characterId,
+		WorldId:      f.WorldId(),
+		ChannelId:    f.ChannelId(),
+		MapId:        f.MapId(),
+		Instance:     f.Instance(),
+		Expression:   expression,
+		Duration:     duration,
+		ByItemOption: byItemOption,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

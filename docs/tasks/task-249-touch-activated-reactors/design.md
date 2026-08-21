@@ -122,9 +122,9 @@ symbol, but unlike v48/v61 this is an IDB-naming gap, not evidence of absence:
 
 ### 1.5 Reactor bounds are absent for every touch template (invalidates FR-14 as written)
 
-Enumerated from `Reactor.wz` (Cosmic set — the ten-item list in
-`docs/research/missing-features/maps-portals-reactors.md:35` is correct; the
-nine-item lists in `docs/TODO.md:280` and task-019's PRD undercount):
+Enumerated from `Reactor.wz` (Cosmic set — the ten-item list below is the
+authoritative one; the nine-item lists in `docs/TODO.md:280` and task-019's PRD
+undercount):
 
 ```
 2406000  6109013  6109014  6109021  6109022  6109023

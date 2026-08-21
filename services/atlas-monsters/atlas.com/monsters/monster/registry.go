@@ -473,6 +473,42 @@ func (r *Registry) SetAggro(t tenant.Model, uniqueId uint32, characterId uint32,
 	}, nil
 }
 
+// ReleaseAggroLease clears controllerHasAggro on a monster whose auto-aggro
+// lease has expired, leaving the controller and the (empty) damage-entry list
+// alone. Returns a DecaySummary so the sweep's emit decision is identical to
+// the damage-decay path's.
+func (r *Registry) ReleaseAggroLease(t tenant.Model, uniqueId uint32) (DecaySummary, error) {
+	ctx := context.Background()
+
+	var aggroFlippedOff bool
+	var controllerCharacterId uint32
+	sm, err := r.reg.Update(ctx, t, uniqueId, func(cur storedMonster) storedMonster {
+		aggroFlippedOff = false
+
+		controllerCharacterId = cur.ControlCharacterId
+		if cur.ControllerHasAggro {
+			cur.ControllerHasAggro = false
+			aggroFlippedOff = true
+		}
+		return cur
+	})
+	if errors.Is(err, atlasredis.ErrNotFound) {
+		return DecaySummary{}, errMonsterNotFound
+	}
+	if err != nil {
+		return DecaySummary{}, err
+	}
+	_, m, err := fromStored(sm)
+	if err != nil {
+		return DecaySummary{}, err
+	}
+	return DecaySummary{
+		Monster:               m,
+		ControllerCharacterId: controllerCharacterId,
+		AggroFlippedOff:       aggroFlippedOff,
+	}, nil
+}
+
 func (r *Registry) ClearControl(tenant tenant.Model, uniqueId uint32) (Model, error) {
 	return r.atomicUpdate(context.Background(), tenant, uniqueId, func(m Model) Model {
 		return m.ClearControl()

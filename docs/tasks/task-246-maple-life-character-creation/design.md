@@ -1,6 +1,6 @@
 # Maple Life — In-Game Character Creation (`Cash/0543`) — Design
 
-Version: v1
+Version: v2 (amended — see §11)
 Status: Draft
 Created: 2026-08-21
 Input: `docs/tasks/task-246-maple-life-character-creation/prd.md` (approved)
@@ -198,6 +198,10 @@ not worth reintroducing a collision the PRD explicitly forbids (FR-2.2).
 
 ## 3. Two entry points, one internal flow
 
+> **SUPERSEDED by §11 A1.** There is no dialog-open packet: `Cash/0543` is the
+> submit (`SendCreateNewCharacter`), and `USE_MAPLELIFE` (303) was struck as an
+> orphan. This section's `beginMapleLife` normalisation is withdrawn.
+
 PRD Open Question 1 asks whether v95 uses `USE_MAPLELIFE` (303) instead of, or
 in addition to, the `USE_CASH_ITEM` sub-body. The design does not need the
 answer to be structured correctly — only to be *wired* correctly.
@@ -228,6 +232,11 @@ answer OQ-1 either way without restructuring anything downstream.
 ## 4. State and correlation
 
 ### 4.1 Why any state at all
+
+> **PARTIALLY SUPERSEDED by §11 A1.** Item 1 below is void: the probe has its own
+> opcode (routing outcome (A)) and is answered statelessly. Items 2 and 3 stand,
+> but the `Open` phase in §4.2 does not — a record is created at submit time, in
+> `Submitted`, and the open-phase machinery must be deleted.
 
 Three things force a small amount of per-account transient state:
 
@@ -336,6 +345,9 @@ caller differs.
 
 ### 5.2 Submit-time pre-checks, in order
 
+> **SUPERSEDED by §11 A7.** Gate 1 has no subject and is dropped; gate 2 sources
+> item id and slot from the submit packet's own header; a class/SP gate is added.
+
 All run before `POST characters/seed`. Each has a distinct client-rendered
 `MAPLELIFE_ERROR` code; none consumes the item.
 
@@ -362,6 +374,11 @@ surfaces as a saga `FAILED` → mapped error → item retained. The failure mode
 correct, just later.
 
 ### 5.3 Look validation — the factory is the single validator
+
+> **SUPERSEDED by §11 A5.** The factory is still the single validator, but Maple
+> Life does not go through `POST characters/seed` or its creation-template rules
+> at all. The eleven-rule table below does not apply to this path; the HTTP
+> status-mapping table further down does.
 
 **Decision.** The channel does **not** re-implement look validation. It submits
 and maps the factory's synchronous rejection.
@@ -587,3 +604,268 @@ Still open, for the user rather than for derivation:
 - **§4.3** — adding `TransactionId` to the seed status envelope touches
   `atlas-character-factory`'s message + bridge (additive, login unaffected).
   PRD §7 permits a narrow factory addition; confirm this counts.
+
+---
+
+## 11. Amendment 1 — the submit rewire and the level-30 first-job contract
+
+Version: v2
+Amended: 2026-08-21
+Supersedes: §3 in full, §4.1 item 1, §4.2's `Open` phase, §5.2 gate 1, §5.3 in
+full, and §10's first "still open" bullet.
+Sources: `bug-543-is-the-submit-not-the-open.md`, `derivation.md` §2,
+`selected-al-derivation.md`, this pass's gms_v95 decompiles (session
+`ecc757f4`), a user ruling recorded below, and the MapleSEA "Maple Life Item
+Guide" the user supplied.
+
+### A1 — there is no dialog-open packet; `Cash/0543` is the submit
+
+§3 was written before `derivation.md` existed and assumed the `Cash/0543`
+`ItemUse` sub-body signalled *dialog open*. It does not. The sub-body is
+`CUICharacterSaleDlg::SendCreateNewCharacter`
+(`libs/atlas-packet/cash/serverbound/item_use_maple_life.go:13-14`), and
+gms_v95 `0x77a240` confirms its body verbatim:
+
+```c
+COutPacket::Encode4(&oPacket, get_update_time());
+COutPacket::Encode2(&oPacket, this->m_nPOS);
+COutPacket::Encode4(&oPacket, this->m_nItemID);
+COutPacket::EncodeStr(&oPacket, CCtrlEdit::GetText(this->m_pEdit.p));
+for (v2 = 0; v2 <= 3; ++v2)
+    COutPacket::Encode4(&oPacket, CUICharacterSaleDlg::GetSelectedAL(this, v2));
+COutPacket::Encode4(&oPacket, this->m_nGender);
+COutPacket::Encode4(&oPacket, this->m_nCurrentClass);
+COutPacket::Encode4(&oPacket, this->m_nSP);
+COutPacket::Encode4(&oPacket, get_update_time());
+```
+
+The dialog is opened locally by the client. `USE_MAPLELIFE` (303) was struck in
+Task 1 as an orphan CSV placeholder no client path constructs, so the feature's
+**entire serverbound surface is two messages**: the duplicate-name probe
+(`SendCheckDuplicateIDPacket`, its own opcode, routing outcome (A)) and this
+submit.
+
+Consequences, all of which the branch has already absorbed (`50c79fadf`,
+`0777d508c`):
+
+- §3's `beginMapleLife` normalisation and its "two entry points" framing are
+  **withdrawn**. One arm, one flow: decode → gates → create.
+- §4.1 item 1 ("the probe may share `CHECK_CHAR_NAME`'s opcode and need
+  disambiguating") is **void** under routing outcome (A). The probe is answered
+  statelessly.
+- The pending registry keeps `Take`, `TakeByTransactionId`, `Submit`,
+  `SubmittedTTL`; `PhaseOpen`, `OpenTTL` and the open-phase sweep are
+  **vestigial and must be removed**, not left dormant.
+- §5.2 gate 1 ("a live pending record, phase `Open`") has no subject and is
+  **dropped**; the item id and slot it would have compared against come from the
+  submit packet's own `ItemUse` header.
+
+### A2 — what Maple Life actually creates
+
+**User ruling (2026-08-21):** Maple Life produces a **level 30, first-job**
+character. It does not fit the existing `jobIndex`/`subJobIndex` creation
+modelling.
+
+The MapleSEA guide the user supplied states the same behaviour and adds the
+detail the wire cannot carry:
+
+- Five classes at 1st-job status: Warrior, Magician, Bowman, Thief, Pirate.
+- "Basic items and equipment and minimum AP points needed for your chosen 1st
+  job"; all remaining AP and SP left unspent.
+- Warrior and Magician only: an option to spend SP on Improved Max HP / Max MP
+  Increase before creation.
+- Every Maple Life character also receives a fixed package — basic equipment and
+  weapon, 100 White Potion, 100 Mana Elixir, 100,000 mesos, The Relaxer.
+- Gender is not player-selectable in the dialog.
+
+The client corroborates the class count and the SP gate directly. gms_v95
+`CUICharacterSaleDlg::OnButtonClicked` (`0x77edc0`):
+
+```c
+case 0x3ECu: this->m_nCurrentClass = (this->m_nCurrentClass + 1) % 5;   // 0..4
+case 0x3EFu: this->m_nSP          = (this->m_nSP + 1) % 11;             // 0..10
+case 0x3E8u: if (this->m_nCurrentStep == 4 && this->m_nCurrentClass >= 2u)
+                 this->m_nCurrentStep = 5;      // SP step skipped for class >= 2
+```
+
+The step-skip for `m_nCurrentClass >= 2` is the client's own encoding of "only
+Warrior and Magician get the SP choice", which pins **ordinal 0 = Warrior,
+1 = Magician**. The struct layout agrees: `CUICharacterSaleDlg` carries
+`strSPWarrior[11]`, `strSPMagician[11]`, `m_strStep4Text_Warrior` and
+`m_strStep4Text_Magician`, and `LoadSPInfo` (`0x776d00`) fills
+`strSPWarrior[0..10]` from consecutive StringPool ids `0x13AE..0x13B8` before
+starting `strSPMagician`.
+
+### A3 — the four `SelectedAL` values, derived
+
+`CUICharacterSaleDlg::GetSelectedAL(AvatarLook&)` (gms_v95 `0x778d80`), in full:
+
+```c
+al->nFace          = GetSelectedAL(this, 0);
+al->anHairEquip[0] = GetSelectedAL(this, 2) + 10 * (GetSelectedAL(this, 1) / 10);
+al->nSkin          = GetSelectedAL(this, 3);
+```
+
+`GetSelectedAL(this, i)` returns `ASITEM.nItemId` from element 0 of a
+per-gender `ZArray<ASITEM>[i]`, so the wire carries **values, not indices** —
+Q2 of `open-selected-al-mapping.md` is moot, not unanswered. The arrays are
+built by `LoadNewCharInfo` (`0x777790`) from a per-gender WZ property, and its
+loop is `for (nType = 0; nType < 4; ++nType)` — **the dialog offers exactly four
+choices and no equipment choice at all.**
+
+| Wire field | Slot | Domain | How it was closed |
+|---|---|---|---|
+| `al0` | face | full template id (`2000x`) | `GetNewCharItemName` (`0x778980`) resolves type 0 through `CItemInfo::GetItemName(nItemId)` — a real item id — while types 1..3 take the WZ-path-format branch |
+| `al1` | hair **style** | full hair id, style component (`3xxx0`) | the client itself normalises with `10 * (al1 / 10)`; server passes `(al1 / 10) * 10` |
+| `al2` | hair **colour** | bare digit `0..9` | `anHairEquip[0]` must hold a real `3xxxx` hair equip id, and `10 * (al1/10)` already supplies the full style id, so any `al2 > 9` overflows past a valid id; server passes `al2 % 10` |
+| `al3` | skin | bare ordinal | **closed this pass** — `al3` lands in `AvatarLook.nSkin`, and `AvatarLook::Decode` (`0x4f2c00`) reads `this->nSkin = CInPacket::Decode1(iPacket)`: a byte-domain ordinal, the same quantity Atlas already sends as `skinColor`. Not an item id |
+
+`al3`'s closure is the same destination-field argument that closed `al2`: what
+the field must hold, read out of the client's own code, is evidence. The earlier
+"do not close `al3` by analogy with `al2`" note in
+`open-selected-al-mapping-round2.md` is satisfied — this is not the analogy, it
+is `nSkin`'s own decoder.
+
+### A4 — `nSP` is a skill level, not a stat
+
+`m_nSP` cycles `% 11`, giving `0..10`, and `LoadSPInfo` loads exactly eleven
+description strings per class family. Combined with the guide, `nSP` is **the
+level the player chose for Improved Max HP Increase (Warrior) or Improved Max MP
+Increase (Magician)**, offered only for class ordinals 0 and 1.
+
+**Ruling: honour it.** On creation, for class 0/1 only, the new character
+receives that skill at level `nSP`, and `nSP` is deducted from its SP pool; all
+remaining AP and SP stay unspent. For class ordinals ≥ 2 the field is decoded,
+required to be `0`, and otherwise logged and clamped to `0` — the client never
+offers the step there.
+
+`selected-al-derivation.md`'s "`nSP` has no destination in `SeedCharacter`'s
+18-argument signature" remains true and is now the *reason* the seed contract
+changes rather than a reason to discard the field.
+
+### A5 — the seed contract: a Maple Life creation path, not `POST characters/seed`
+
+`POST characters/seed` cannot express this feature, on three independent counts:
+
+1. **Job.** `buildCharacterCreationSaga` sets
+   `JobId: job2.JobFromIndex(input.JobIndex, input.SubJobIndex)`
+   (`services/atlas-character-factory/.../factory/processor.go`), and
+   `JobFromIndex` yields only Noblesse / Beginner / Legend / Evan
+   (`.../job/model.go`). There is no input that names Warrior-at-first-job.
+2. **Level.** `RestModel` carries `Level`, but the channel's client
+   (`services/atlas-channel/.../character/factory/processor.go:36-40`) does not
+   pass it, and no creation template describes a level-30 starting state.
+3. **Equipment and items.** `Create` validates `Top`/`Bottom`/`Shoes`/`Weapon`
+   against a creation template found by `(jobIndex, subJobIndex, gender)`. The
+   Maple Life dialog sends none of those, and no such template exists for a
+   level-30 first-job character. The placeholder currently landed in
+   `seedCharacterFunc` sends `0` for all four and would be rejected on every
+   creation.
+
+**Chosen design (user ruling): a new tenant configuration block plus a Maple
+Life creation path in `atlas-character-factory`.** The channel forwards only what
+the player chose; the factory owns what a Maple Life character *is*.
+
+Tenant configuration gains a `mapleLife` block: an **ordered five-entry class
+table** (index = the client's `nCurrentClass` ordinal), each entry naming
+
+- the `jobId` to create at (first job of that class family),
+- `level`,
+- the stat allotment — the minimum AP the job requires, with the remainder left
+  unspent,
+- basic equipment: top, bottom, shoes, weapon template ids,
+- the item/meso package (White Potion ×100, Mana Elixir ×100, 100,000 mesos, The
+  Relaxer — values are tenant data, not constants in code),
+- the starting map,
+- optionally, the SP skill id offered at creation (Improved Max HP / MP
+  Increase); absent means the class offers no SP step.
+
+The factory's Maple Life path validates the four look values against the same
+per-gender WZ-derived option lists the client draws from (face, hair style, hair
+colour, skin), resolves the class ordinal through the table, rejects an ordinal
+with no entry, and builds a saga that creates the character at the configured
+job and level, awards the package, equips the basic equipment, and — for class
+0/1 with `nSP > 0` — creates the configured skill at level `nSP`.
+
+**This supersedes §5.3.** The factory remains the single validator, but it is no
+longer the *creation-template* validator: §5.3's table of eleven template rules
+does not apply to this path. The channel still does not re-implement validation;
+it maps the factory's synchronous rejection exactly as §5.3's status table
+describes, and that table stands.
+
+**Rejected alternatives.**
+
+- *Extend `characters/seed` with optional `jobId` + `level` + explicit
+  equipment.* One endpoint, smaller diff — but it loosens a contract
+  `atlas-login` also calls, and it pushes the per-class data (equipment, AP,
+  package) into `atlas-channel`, which is the wrong owner.
+- *Model the five class families as five more creation templates under a new
+  `jobIndex` range.* No new factory code, but it overloads `jobIndex` with a
+  second meaning and still cannot express level 30 or the SP skill.
+
+### A6 — the class ordinal table
+
+Derived: **0 = Warrior, 1 = Magician** (A2). The order of 2/3/4 within
+{Bowman, Thief, Pirate} is **not** derived, and the user-supplied guide
+contradicts itself on it — its section (a) lists "Warrior, Magician, Thief,
+Bowman and Pirate", its point 5 lists "Warrior, Magician, Bowman, Thief and
+Pirate".
+
+**Ruling: the table is ordered tenant configuration**, so the ordinal→job
+mapping is data, not code. Ship with the order flagged in seed data as
+unconfirmed, and pin it before live testing by either continuing the IDA pass
+into `CUICharacterSaleDlg::OnCreate` (`0x77adc0`) to resolve the
+`m_strClassName[5]` / `m_apCanvasClass` sources, or by reading the received
+ordinal from channel logs while picking each class in a real client. A wrong
+order is then a seed-data fix, not a code change.
+
+### A7 — revised submit-time gates (replaces §5.2)
+
+All run in the `Cash/0543` arm before the factory call; none consumes the item;
+each maps to a distinct `MAPLELIFE_ERROR` code.
+
+1. **Ownership** (FR-5.3) — `cashItemInSlotFunc(l, ctx, s.CharacterId(),
+   int16(source))` still returns `itemId`, and that item classifies as 543.
+   Sourced from the submit packet's own header, not from a pending record. The
+   common `ItemUse` prefix already runs this upstream at
+   `character_cash_item_use.go:61-66`.
+2. **Slot limit** (FR-4.4) — unchanged from §5.2 step 3.
+3. **Name re-check** (FR-4.5) — unchanged from §5.2 step 4; still the only
+   duplicate gate.
+4. **Account / world from session** (FR-4.2) — unchanged from §5.2 step 5.
+5. **Class ordinal and SP** — `nCurrentClass` must resolve to a configured class
+   entry; `nSP` must be `0..10`, and `0` for ordinals with no configured SP
+   skill. A packet failing either is rejected, not clamped-and-created.
+
+On success the arm records a `PhaseSubmitted` registry entry carrying the
+returned `transactionId`. §4.3's correlation and §5.4's create-then-consume are
+unaffected.
+
+### A8 — impact on what has already landed
+
+- Tasks 1–10 stand: codecs, evidence records, template routing, the registry's
+  `Submit`/`Take`/`TakeByTransactionId` surface, the factory REST client, and
+  the `transactionId` on the seed status envelope.
+- Task 11's `beginMapleLife` open flow is withdrawn (already replaced by
+  `50c79fadf`); the registry's open-phase machinery must now be deleted.
+- Task 13's `seedCharacterFunc` placeholder — `al0..al3` positional,
+  `nCurrentClass` as `jobIndex`, zeros elsewhere — is **wrong in kind on three
+  counts** and must be replaced wholesale by the A5 contract. Its own doc
+  comment already names it unverified; no test asserts it, because
+  `seedCharacterFunc` is swapped in every test. That absence of coverage is
+  itself a finding: the new path needs a test that asserts the request body the
+  channel sends, not just that a seam was called.
+- Task 14's `CREATED`/`FAILED` consumer contract is unaffected.
+
+### A9 — open items after this amendment
+
+- **Class ordinals 2/3/4** — see A6. Config-ordered; pin before live testing.
+- **The WZ property backing `LoadNewCharInfo`** — the two per-gender resource
+  paths are fetched via `StringPool` ids 1525 / 1526 and were not resolved to
+  literal WZ paths this pass. It matters only for building the factory's look
+  option lists; the paths must be read from local WZ data at implementation
+  time rather than guessed.
+- **Gender** — the guide says gender is not player-selectable, yet gms_v95
+  `OnButtonClicked` toggles `m_nGender` on control index 4 and the wire carries
+  it. The channel takes the packet's value; whether to override it from the
+  account's existing characters is not decided and is not blocking.

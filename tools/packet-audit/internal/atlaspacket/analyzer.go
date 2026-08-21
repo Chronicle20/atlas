@@ -427,7 +427,7 @@ func (cc *callCtx) walk(node ast.Node) {
 			cc.walk(n.Body)
 			return
 		}
-		g := guardFromIf(n, cc.fset)
+		g := guardFromIf(n, cc.fset, cc.file)
 		*cc.stack = append(*cc.stack, g)
 		cc.walk(n.Body)
 		*cc.stack = (*cc.stack)[:len(*cc.stack)-1]
@@ -1108,14 +1108,142 @@ func wrappedEncodeForeignRecurseType(outerMethod string, args []ast.Expr) (strin
 // If parsing fails (e.g. field-presence checks like `m.ipAddr != ""`), returns a
 // GuardExpr that always evaluates true: we assume the common/full-payload code path
 // for audit purposes.
-func guardFromIf(n *ast.IfStmt, fset *token.FileSet) *GuardExpr {
+//
+// When file is non-nil, a bare call to a package-level, single-statement,
+// single-parameter boolean helper (e.g. `if UpdateTimeFirst(t) { ... }`) is
+// inlined to that helper's return expression before parsing, so the guard
+// resolves the same as if the condition had been written inline. Helpers with
+// a multi-statement body (e.g. `t := tenant.MustFromContext(ctx); return ...`)
+// are left unresolved, matching the existing "assume true" fallback.
+func guardFromIf(n *ast.IfStmt, fset *token.FileSet, file *ast.File) *GuardExpr {
+	cond := n.Cond
+	if file != nil {
+		cond = inlineBoolCalls(cond, localBoolFuncs(file), map[string]bool{})
+	}
 	var buf strings.Builder
-	printer.Fprint(&buf, fset, n.Cond)
+	printer.Fprint(&buf, fset, cond)
 	g, err := ParseGuard(buf.String())
 	if err != nil {
-		return &GuardExpr{eval: func(GuardContext) bool { return true }, text: "<unparsed:" + buf.String() + ">"}
+		var raw strings.Builder
+		printer.Fprint(&raw, fset, n.Cond)
+		return &GuardExpr{eval: func(GuardContext) bool { return true }, text: "<unparsed:" + raw.String() + ">"}
 	}
 	return g
+}
+
+// localBoolFuncs collects package-level (no-receiver), single-parameter,
+// bool-returning functions in file whose body is exactly one `return <expr>`
+// statement — the shape a version-guard helper like UpdateTimeFirst takes.
+// Helpers with an intermediate statement (e.g. deriving a tenant.Model from a
+// context.Context first) are intentionally excluded; inlining those would
+// require statement-level substitution this resolver doesn't attempt.
+func localBoolFuncs(file *ast.File) map[string]*ast.FuncDecl {
+	out := map[string]*ast.FuncDecl{}
+	for _, decl := range file.Decls {
+		fd, ok := decl.(*ast.FuncDecl)
+		if !ok || fd.Recv != nil || fd.Body == nil {
+			continue
+		}
+		if fd.Type.Params == nil || len(fd.Type.Params.List) != 1 || len(fd.Type.Params.List[0].Names) != 1 {
+			continue
+		}
+		if fd.Type.Results == nil || len(fd.Type.Results.List) != 1 {
+			continue
+		}
+		resIdent, ok := fd.Type.Results.List[0].Type.(*ast.Ident)
+		if !ok || resIdent.Name != "bool" {
+			continue
+		}
+		if len(fd.Body.List) != 1 {
+			continue
+		}
+		ret, ok := fd.Body.List[0].(*ast.ReturnStmt)
+		if !ok || len(ret.Results) != 1 {
+			continue
+		}
+		out[fd.Name.Name] = fd
+	}
+	return out
+}
+
+// inlineBoolCalls rewrites e, replacing any call to a helper in funcs with
+// that helper's return expression (the helper's parameter substituted with
+// the actual argument at the call site). Recurses through parens, `!`, and
+// `&&`/`||` combinators — the shapes a guard condition is built from — and
+// into the substituted expression itself, guarding against self-recursive
+// helpers via visited.
+func inlineBoolCalls(e ast.Expr, funcs map[string]*ast.FuncDecl, visited map[string]bool) ast.Expr {
+	switch v := e.(type) {
+	case *ast.ParenExpr:
+		return &ast.ParenExpr{X: inlineBoolCalls(v.X, funcs, visited)}
+	case *ast.UnaryExpr:
+		if v.Op == token.NOT {
+			return &ast.UnaryExpr{Op: token.NOT, X: inlineBoolCalls(v.X, funcs, visited)}
+		}
+	case *ast.BinaryExpr:
+		if v.Op == token.LAND || v.Op == token.LOR {
+			return &ast.BinaryExpr{
+				X:  inlineBoolCalls(v.X, funcs, visited),
+				Op: v.Op,
+				Y:  inlineBoolCalls(v.Y, funcs, visited),
+			}
+		}
+	case *ast.CallExpr:
+		id, ok := v.Fun.(*ast.Ident)
+		if !ok || len(v.Args) != 1 {
+			break
+		}
+		fd, ok := funcs[id.Name]
+		if !ok || visited[id.Name] {
+			break
+		}
+		visited = mergeVisited(visited, id.Name)
+		param := fd.Type.Params.List[0].Names[0].Name
+		ret := fd.Body.List[0].(*ast.ReturnStmt).Results[0]
+		substituted := substituteIdent(ret, param, v.Args[0])
+		return inlineBoolCalls(substituted, funcs, visited)
+	}
+	return e
+}
+
+// mergeVisited returns a copy of visited with name added, so sibling
+// branches of a guard don't share (and corrupt) the same recursion-guard map.
+func mergeVisited(visited map[string]bool, name string) map[string]bool {
+	out := make(map[string]bool, len(visited)+1)
+	for k := range visited {
+		out[k] = true
+	}
+	out[name] = true
+	return out
+}
+
+// substituteIdent returns a deep copy of e with every bare Ident matching
+// name replaced by replacement.
+func substituteIdent(e ast.Expr, name string, replacement ast.Expr) ast.Expr {
+	switch v := e.(type) {
+	case *ast.Ident:
+		if v.Name == name {
+			return replacement
+		}
+		return v
+	case *ast.ParenExpr:
+		return &ast.ParenExpr{X: substituteIdent(v.X, name, replacement)}
+	case *ast.UnaryExpr:
+		return &ast.UnaryExpr{Op: v.Op, X: substituteIdent(v.X, name, replacement)}
+	case *ast.BinaryExpr:
+		return &ast.BinaryExpr{X: substituteIdent(v.X, name, replacement), Op: v.Op, Y: substituteIdent(v.Y, name, replacement)}
+	case *ast.CallExpr:
+		fun := substituteIdent(v.Fun, name, replacement)
+		args := make([]ast.Expr, len(v.Args))
+		for i, a := range v.Args {
+			args[i] = substituteIdent(a, name, replacement)
+		}
+		return &ast.CallExpr{Fun: fun, Args: args}
+	case *ast.SelectorExpr:
+		return &ast.SelectorExpr{X: substituteIdent(v.X, name, replacement), Sel: v.Sel}
+	default:
+		return e
+	}
 }
 
 // conjoin combines a stack of guards into a single AND-ed GuardExpr.

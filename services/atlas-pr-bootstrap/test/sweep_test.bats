@@ -410,12 +410,44 @@ EOF
         --sweep-tenant "11111111-1111-1111-1111-111111111111" --apply
 
     [ "$status" -eq 0 ]
-    grep -F -- "-d atlas-characters" "$CALL_LOG"
+    # tenant-tables.txt lists bare base names; the actual database is that
+    # base suffixed with -main (sparse mode's shared databases are the
+    # baseline's, never suffixed by ATLAS_ENV — a bare base name doesn't
+    # exist).
+    grep -F -- "-d atlas-characters-main" "$CALL_LOG"
     grep -F "DELETE FROM \"characters\" WHERE tenant_id = '11111111-1111-1111-1111-111111111111'" "$CALL_LOG"
-    grep -F -- "-d atlas-accounts" "$CALL_LOG"
+    grep -F -- "-d atlas-accounts-main" "$CALL_LOG"
     grep -F "DELETE FROM \"accounts\" WHERE tenant_id = '11111111-1111-1111-1111-111111111111'" "$CALL_LOG"
+    # Never a bare (unsuffixed) database name.
+    ! grep -F -- "-d atlas-characters " "$CALL_LOG"
     # Never scoped to any OTHER tenant.
     ! grep -F "tenant_id = '22222222" "$CALL_LOG"
+
+    rm -rf "$SHIM_DIR" "$TMP_SCRIPTS"
+}
+
+@test "sweep-orphans.sh --sweep-tenant surfaces psql stderr in the failure warning" {
+    SHIM_DIR="$(mktemp -d)"
+    TMP_SCRIPTS="$(mktemp -d)"
+    cp "$SCRIPT" "$TMP_SCRIPTS/sweep-orphans.sh"
+    cp "$PROJECT_ROOT/scripts/lib.sh" "$TMP_SCRIPTS/lib.sh"
+    printf 'atlas-characters characters\n' > "$TMP_SCRIPTS/tenant-tables.txt"
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+echo 'psql: error: relation "characters" does not exist' >&2
+exit 1
+EOF
+    chmod +x "$SHIM_DIR/psql" "$TMP_SCRIPTS/sweep-orphans.sh"
+
+    run env PATH="$SHIM_DIR:$PATH" DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        bash "$TMP_SCRIPTS/sweep-orphans.sh" \
+        --sweep-tenant "11111111-1111-1111-1111-111111111111" --apply
+
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"delete from atlas-characters-main.characters failed"* ]]
+    # log() JSON-encodes the message (jq -Rs), so an embedded double quote
+    # comes back backslash-escaped in $output.
+    [[ "$output" == *'relation \"characters\" does not exist'* ]]
 
     rm -rf "$SHIM_DIR" "$TMP_SCRIPTS"
 }
@@ -443,7 +475,7 @@ EOF
         bash "$TMP_SCRIPTS/sweep-orphans.sh" --sweep-tenant "33333333-3333-3333-3333-333333333333"
 
     [ "$status" -eq 0 ]
-    [[ "$output" == *"sweep-tenant atlas-characters.characters"* ]]
+    [[ "$output" == *"sweep-tenant atlas-characters-main.characters"* ]]
 
     rm -rf "$SHIM_DIR" "$TMP_SCRIPTS"
 }

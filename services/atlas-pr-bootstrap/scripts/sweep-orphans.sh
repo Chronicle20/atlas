@@ -222,15 +222,21 @@ sweep_tenant() {
 
     ATLAS_STEP=sweep-tenant log info "sweeping tenant-keyed rows for tenant=${tenant}"
     local rc=0
-    local db table
-    while read -r db table; do
-        [ -z "$db" ] && continue
-        case "$db" in \#*) continue ;; esac
+    local db base_db table psql_err
+    while read -r base_db table; do
+        [ -z "$base_db" ] && continue
+        case "$base_db" in \#*) continue ;; esac
+        # tenant-tables.txt lists the base name deploy/k8s/base/atlas-<svc>.yaml
+        # sets; the actual database sparse-mode rows live in is that base
+        # suffixed with -main (design §7.5, D1: sparse mode's shared
+        # databases are the baseline's, never suffixed by ATLAS_ENV). A bare
+        # base name does not exist as a database.
+        db="${base_db}-main"
         echo "sweep-tenant ${db}.${table}"
         if [ "$APPLY" = "1" ]; then
-            if ! PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$db" \
-                -c "DELETE FROM \"$table\" WHERE tenant_id = '$tenant';" >/dev/null 2>&1; then
-                ATLAS_STEP=sweep-tenant log warn "delete from ${db}.${table} failed"
+            if ! psql_err=$(PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$db" \
+                -c "DELETE FROM \"$table\" WHERE tenant_id = '$tenant';" 2>&1 >/dev/null); then
+                ATLAS_STEP=sweep-tenant log warn "delete from ${db}.${table} failed: ${psql_err}"
                 rc=1
             fi
         fi

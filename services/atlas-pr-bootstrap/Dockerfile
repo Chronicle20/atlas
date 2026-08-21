@@ -64,6 +64,7 @@ COPY scripts/sweep-orphans.sh /atlas/sweep-orphans.sh
 COPY scripts/reclaim-main-bare-keys.sh /atlas/reclaim-main-bare-keys.sh
 COPY scripts/predelete-purge.sh /atlas/predelete-purge.sh
 COPY scripts/reconcile-minio.sh /atlas/reconcile-minio.sh
+COPY scripts/tenant-tables.txt /atlas/tenant-tables.txt
 COPY canonical/ /atlas/canonical/
 
 RUN chmod +x /atlas/bootstrap.sh /atlas/cleanup.sh /atlas/sweep-orphans.sh /atlas/reclaim-main-bare-keys.sh /atlas/predelete-purge.sh /atlas/reconcile-minio.sh

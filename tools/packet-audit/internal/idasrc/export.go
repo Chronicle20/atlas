@@ -35,17 +35,18 @@ type exportFn struct {
 	// ignored (no prefix added) — this is a forward-compat hook for new
 	// dispatcher chains.
 	Dispatcher string `json:"dispatcher,omitempty"`
-	// Notes is free-form documentation that does not affect resolution. The
-	// on-disk key spelling is inconsistent across the committed exports:
-	// "notes" (plural — e.g. 157 entries in gms_v83.json, and the sole
-	// spelling insertDispatchField's auto-provenance note writer emits, per
-	// internal/idasrc/baseline_write.go) and "note" (singular, legacy — 147
-	// entries in the same file). Both spellings genuinely appear on disk, so
-	// both are read (UnmarshalJSON below); notesKey records which one this
-	// entry used so MarshalJSON re-emits the same key rather than silently
-	// normalizing (or dropping) it on a round-trip/splice.
-	Notes    string `json:"-"`
-	notesKey string `json:"-"`
+	// Notes and Note are free-form documentation that does not affect
+	// resolution. The on-disk key spelling is inconsistent across the
+	// committed exports: "notes" (plural — e.g. 157 entries in gms_v83.json,
+	// and the sole spelling insertDispatchField's auto-provenance note writer
+	// emits, per internal/idasrc/baseline_write.go) and "note" (singular,
+	// legacy — 147 entries in the same file). Both spellings genuinely appear
+	// on disk, and an entry may carry BOTH keys with different content (e.g.
+	// CUIFadeYesNo::OnButtonClicked#Join in gms_jms_185.json), so both fields
+	// are kept independently — neither one is dropped or normalized into the
+	// other on a round-trip/splice.
+	Notes string `json:"notes,omitempty"`
+	Note  string `json:"note,omitempty"`
 	// Unresolved marks a function the parser could not faithfully trace.
 	// The audit treats it as a known gap, never a false verdict.
 	Unresolved bool `json:"unresolved,omitempty"`
@@ -60,70 +61,6 @@ type exportFn struct {
 	// layout; does NOT affect Resolve (which returns all calls verbatim).
 	Dispatch []Selector `json:"dispatch,omitempty"`
 	Calls    []rawCall  `json:"calls"`
-}
-
-// exportFnWire mirrors exportFn's on-disk shape but carries both the "notes"
-// and legacy "note" key variants explicitly, so UnmarshalJSON/MarshalJSON can
-// detect and preserve whichever one an entry used.
-type exportFnWire struct {
-	Address    string     `json:"address"`
-	Direction  string     `json:"direction"`
-	Dispatcher string     `json:"dispatcher,omitempty"`
-	Notes      string     `json:"notes,omitempty"`
-	Note       string     `json:"note,omitempty"`
-	Unresolved bool       `json:"unresolved,omitempty"`
-	Absent     bool       `json:"absent,omitempty"`
-	Dispatch   []Selector `json:"dispatch,omitempty"`
-	Calls      []rawCall  `json:"calls"`
-}
-
-// UnmarshalJSON reads either the "notes" or legacy "note" key and records
-// which one was present (notesKey), so a subsequent MarshalJSON round-trips
-// the exact spelling this entry used on disk rather than normalizing it.
-func (e *exportFn) UnmarshalJSON(b []byte) error {
-	var w exportFnWire
-	if err := json.Unmarshal(b, &w); err != nil {
-		return err
-	}
-	*e = exportFn{
-		Address:    w.Address,
-		Direction:  w.Direction,
-		Dispatcher: w.Dispatcher,
-		Unresolved: w.Unresolved,
-		Absent:     w.Absent,
-		Dispatch:   w.Dispatch,
-		Calls:      w.Calls,
-	}
-	switch {
-	case w.Notes != "":
-		e.Notes = w.Notes
-		e.notesKey = "notes"
-	case w.Note != "":
-		e.Notes = w.Note
-		e.notesKey = "note"
-	}
-	return nil
-}
-
-// MarshalJSON re-emits Notes under whichever key (notesKey) it was read from
-// ("note" or "notes"), defaulting to the canonical "notes" for entries with
-// no recorded key (e.g. freshly harvested).
-func (e exportFn) MarshalJSON() ([]byte, error) {
-	w := exportFnWire{
-		Address:    e.Address,
-		Direction:  e.Direction,
-		Dispatcher: e.Dispatcher,
-		Unresolved: e.Unresolved,
-		Absent:     e.Absent,
-		Dispatch:   e.Dispatch,
-		Calls:      e.Calls,
-	}
-	if e.notesKey == "note" {
-		w.Note = e.Notes
-	} else {
-		w.Notes = e.Notes
-	}
-	return json.Marshal(w)
 }
 
 type rawCall struct {

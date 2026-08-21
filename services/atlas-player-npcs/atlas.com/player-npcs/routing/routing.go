@@ -1,11 +1,14 @@
 // Package routing maps a character's job to the Hall of Fame map its Player
 // NPC belongs in, and answers which Hall of Fame maps use the podium
-// positioner. It is a pure, dependency-free lookup over
-// libs/atlas-constants values; it holds no state and calls no other
-// service.
+// positioner. It is a dependency-free lookup over libs/atlas-constants
+// values; it holds no state and calls no other service. HallOfFameMapFor
+// takes a resolved constants.SkillJobSet (rather than a tenant/context) so
+// the package stays free of tenant imports while still being able to
+// resolve the one job wire id (500) that is version-divergent (task-187).
 package routing
 
 import (
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
@@ -48,8 +51,17 @@ var podiumMaps = map[_map.Id]struct{}{
 // HallOfFameMapFor returns the automatic-deployment target map for jobId,
 // per FR-2.1:
 //
-//   - Explorer branches (Warrior/Magician/Bowman/Thief/Pirate) route by
-//     JobCategory to their branch's Hall.
+//   - Explorer branches (Warrior/Magician/Bowman/Thief) route by JobCategory
+//     to their branch's Hall.
+//   - Pirate is the one DIVERGENT branch (task-187 audit): wire id 500 is
+//     Pirate at GMS v61+ but Gm at GMS v48 (job.GetType/JobCategory alone
+//     cannot tell them apart -- both are raw wire ids). jobId is resolved
+//     through set.Job.Resolve to this tenant version's Identity first, and
+//     only an Identity confirmed as Pirate-or-descendant
+//     (job.IsAIdentity(jid, job.Pirate) -- also catches Brawler/Gunslinger
+//     sub-jobs, 510/520) routes to the Nautilus. Warrior/Magician/Bowman/
+//     Rogue and the Cygnus/Aran/Evan roots are version-stable per that same
+//     audit and stay category-keyed.
 //   - The Aran branch (all AranStageNId) routes to the Palace of the
 //     Master; it shares JobCategory (2100) across every stage, and is
 //     distinct from Legend/Evan (JobCategory 2000/2200), which fall
@@ -58,7 +70,11 @@ var podiumMaps = map[_map.Id]struct{}{
 //     Chamber.
 //   - Everything else (Beginner, Noblesse, Legend, Evan, unclassified)
 //     defaults to Knights' Chamber 2nd Floor.
-func HallOfFameMapFor(jobId job.Id) _map.Id {
+func HallOfFameMapFor(set constants.SkillJobSet, jobId job.Id) _map.Id {
+	if jid, ok := set.Job.Resolve(jobId); ok && job.IsAIdentity(jid, job.Pirate) {
+		return _map.TheNautilusTrainingRoom2Id
+	}
+
 	switch JobCategory(jobId) {
 	case uint16(job.WarriorId):
 		return _map.VictoriaRoadHallOfWarriors1Id
@@ -68,8 +84,6 @@ func HallOfFameMapFor(jobId job.Id) _map.Id {
 		return _map.VictoriaRoadHallOfBowmen1Id
 	case uint16(job.RogueId):
 		return _map.VictoriaRoadHallOfThieves1Id
-	case uint16(job.PirateId):
-		return _map.TheNautilusTrainingRoom2Id
 	case uint16(job.AranStage1Id):
 		return _map.SnowIslandPalaceOfTheMaster1Id
 	}

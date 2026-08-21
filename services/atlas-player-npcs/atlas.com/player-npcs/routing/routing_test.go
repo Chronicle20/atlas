@@ -4,33 +4,43 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func TestHallOfFameMapFor(t *testing.T) {
+	// v611 (GMS 61.1) is a provisioned post-Pirate version: wire 500 resolves
+	// to job.Pirate there. v481 (GMS 48.1) is a provisioned pre-Pirate
+	// version: wire 500 resolves to job.Gm there instead (task-187 audit).
+	v611 := constants.For("GMS", 61, 1)
+	v481 := constants.For("GMS", 48, 1)
+
 	tests := []struct {
 		name  string
+		set   constants.SkillJobSet
 		jobId job.Id
 		want  _map.Id
 	}{
-		{"warrior", job.WarriorId, _map.VictoriaRoadHallOfWarriors1Id},
-		{"fighter (sub-job)", job.Id(110), _map.VictoriaRoadHallOfWarriors1Id},
-		{"magician", job.MagicianId, _map.VictoriaRoadHallOfMagicians1Id},
-		{"bowman", job.BowmanId, _map.VictoriaRoadHallOfBowmen1Id},
-		{"thief", job.RogueId, _map.VictoriaRoadHallOfThieves1Id},
-		{"pirate", job.PirateId, _map.TheNautilusTrainingRoom2Id},
-		{"dawn warrior", job.Id(1100), _map.EmpressRoadKnightsChamber1Id},
-		{"thunder breaker", job.Id(1500), _map.EmpressRoadKnightsChamber1Id},
-		{"aran", job.Id(2100), _map.SnowIslandPalaceOfTheMaster1Id},
-		{"beginner", job.BeginnerId, _map.EmpressRoadKnightsChamber2ndFloorId},
-		{"noblesse", job.NoblesseId, _map.EmpressRoadKnightsChamber2ndFloorId},
-		{"evan", job.EvanId, _map.EmpressRoadKnightsChamber2ndFloorId},
+		{"warrior", v611, job.WarriorId, _map.VictoriaRoadHallOfWarriors1Id},
+		{"fighter (sub-job)", v611, job.Id(110), _map.VictoriaRoadHallOfWarriors1Id},
+		{"magician", v611, job.MagicianId, _map.VictoriaRoadHallOfMagicians1Id},
+		{"bowman", v611, job.BowmanId, _map.VictoriaRoadHallOfBowmen1Id},
+		{"thief", v611, job.RogueId, _map.VictoriaRoadHallOfThieves1Id},
+		{"pirate wire 500 at v61+", v611, job.PirateId, _map.TheNautilusTrainingRoom2Id},
+		{"pirate wire 500 at v48 (Gm there, not Pirate)", v481, job.PirateId, _map.EmpressRoadKnightsChamber2ndFloorId},
+		{"pirate sub-job (brawler) at v61+", v611, job.Id(510), _map.TheNautilusTrainingRoom2Id},
+		{"dawn warrior", v611, job.Id(1100), _map.EmpressRoadKnightsChamber1Id},
+		{"thunder breaker", v611, job.Id(1500), _map.EmpressRoadKnightsChamber1Id},
+		{"aran", v611, job.Id(2100), _map.SnowIslandPalaceOfTheMaster1Id},
+		{"beginner", v611, job.BeginnerId, _map.EmpressRoadKnightsChamber2ndFloorId},
+		{"noblesse", v611, job.NoblesseId, _map.EmpressRoadKnightsChamber2ndFloorId},
+		{"evan", v611, job.EvanId, _map.EmpressRoadKnightsChamber2ndFloorId},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := HallOfFameMapFor(tt.jobId)
+			got := HallOfFameMapFor(tt.set, tt.jobId)
 			if got != tt.want {
 				t.Errorf("HallOfFameMapFor(%v) = %v, want %v", tt.jobId, got, tt.want)
 			}

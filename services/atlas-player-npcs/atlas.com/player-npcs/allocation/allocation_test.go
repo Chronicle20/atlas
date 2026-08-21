@@ -6,42 +6,52 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func TestBranchFor(t *testing.T) {
+	// v611 (GMS 61.1) is a provisioned post-Pirate version: wire 500 resolves
+	// to job.Pirate there. v481 (GMS 48.1) is a provisioned pre-Pirate
+	// version: wire 500 resolves to job.Gm there instead (task-187 audit).
+	v611 := constants.For("GMS", 61, 1)
+	v481 := constants.For("GMS", 48, 1)
+
 	tests := []struct {
 		name  string
+		set   constants.SkillJobSet
 		jobId job.Id
 		mapId _map.Id
 		want  uint32
 	}{
-		{"warrior, hall of warriors", job.Id(100), _map.VictoriaRoadHallOfWarriors1Id, 10},
-		{"magician, hall of magicians", job.Id(200), _map.VictoriaRoadHallOfMagicians1Id, 11},
-		{"bowman", job.Id(300), _map.VictoriaRoadHallOfBowmen1Id, 12},
-		{"thief", job.Id(400), _map.VictoriaRoadHallOfThieves1Id, 13},
-		{"pirate", job.Id(500), _map.TheNautilusTrainingRoom2Id, 14},
-		{"dawn warrior", job.Id(1100), _map.EmpressRoadKnightsChamber1Id, 15},
-		{"blaze wizard", job.Id(1200), _map.EmpressRoadKnightsChamber1Id, 16},
-		{"wind archer", job.Id(1300), _map.EmpressRoadKnightsChamber1Id, 17},
-		{"night walker", job.Id(1400), _map.EmpressRoadKnightsChamber1Id, 18},
-		{"thunder breaker", job.Id(1500), _map.EmpressRoadKnightsChamber1Id, 19},
-		{"aran", job.Id(2100), _map.SnowIslandPalaceOfTheMaster1Id, 20},
-		{"evan", job.Id(2001), _map.EmpressRoadKnightsChamber1Id, 21},
-		{"beginner", job.Id(0), _map.EmpressRoadKnightsChamber1Id, 22},
-		{"noblesse", job.Id(1000), _map.EmpressRoadKnightsChamber1Id, 23},
-		{"legend", job.Id(2000), _map.EmpressRoadKnightsChamber1Id, 24},
+		{"warrior, hall of warriors", v611, job.Id(100), _map.VictoriaRoadHallOfWarriors1Id, 10},
+		{"magician, hall of magicians", v611, job.Id(200), _map.VictoriaRoadHallOfMagicians1Id, 11},
+		{"bowman", v611, job.Id(300), _map.VictoriaRoadHallOfBowmen1Id, 12},
+		{"thief", v611, job.Id(400), _map.VictoriaRoadHallOfThieves1Id, 13},
+		{"pirate wire 500 at v61+", v611, job.Id(500), _map.TheNautilusTrainingRoom2Id, 14},
+		{"pirate sub-job (brawler) at v61+", v611, job.Id(510), _map.TheNautilusTrainingRoom2Id, 14},
+		{"pirate wire 500 at v48 (Gm there, not Pirate)", v481, job.Id(500), _map.EmpressRoadKnightsChamber1Id, 24},
+		{"dawn warrior", v611, job.Id(1100), _map.EmpressRoadKnightsChamber1Id, 15},
+		{"blaze wizard", v611, job.Id(1200), _map.EmpressRoadKnightsChamber1Id, 16},
+		{"wind archer", v611, job.Id(1300), _map.EmpressRoadKnightsChamber1Id, 17},
+		{"night walker", v611, job.Id(1400), _map.EmpressRoadKnightsChamber1Id, 18},
+		{"thunder breaker", v611, job.Id(1500), _map.EmpressRoadKnightsChamber1Id, 19},
+		{"aran", v611, job.Id(2100), _map.SnowIslandPalaceOfTheMaster1Id, 20},
+		{"evan", v611, job.Id(2001), _map.EmpressRoadKnightsChamber1Id, 21},
+		{"beginner", v611, job.Id(0), _map.EmpressRoadKnightsChamber1Id, 22},
+		{"noblesse", v611, job.Id(1000), _map.EmpressRoadKnightsChamber1Id, 23},
+		{"legend", v611, job.Id(2000), _map.EmpressRoadKnightsChamber1Id, 24},
 		// FR-3.3 GM-deploy formula: 26 + 4*(mapId/100000000). jobId is
 		// irrelevant here — a non-Hall-of-Fame map always uses the GM
 		// formula regardless of the deploying character's job.
-		{"GM deploy, non-HoF map, continent 1", job.Id(100), _map.Id(100000000), 30},
-		{"GM deploy, non-HoF map, continent 2", job.Id(100), _map.Id(200000000), 34},
+		{"GM deploy, non-HoF map, continent 1", v611, job.Id(100), _map.Id(100000000), 30},
+		{"GM deploy, non-HoF map, continent 2", v611, job.Id(100), _map.Id(200000000), 34},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := BranchFor(tt.jobId, tt.mapId)
+			got := BranchFor(tt.set, tt.jobId, tt.mapId)
 			if got != tt.want {
 				t.Errorf("BranchFor(%v, %v) = %v, want %v", tt.jobId, tt.mapId, got, tt.want)
 			}

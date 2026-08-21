@@ -141,7 +141,8 @@ describe("TenantsPage rename flow", () => {
     const dialog = await screen.findByRole("dialog");
     const input = within(dialog).getByLabelText("Name");
     await user.clear(input);
-    await user.type(input, "x".repeat(101));
+    await user.click(input);
+    await user.paste("x".repeat(101));
 
     await waitFor(() => {
       expect(

@@ -164,3 +164,113 @@ suite runs above passed cleanly at branch HEAD with only the
 the gate. If this class of flake resurfaces in unrelated files under CI load,
 the same `{ delay: null }` treatment is the applicable fix there too, but
 that is outside this branch's scope.
+
+## Round 3: `delay: null` alone was insufficient — remaining timeout root cause
+
+Round 2's `{ delay: null }` fix was correct and necessary (it eliminated the
+cascade failure and removed all real per-keystroke `setTimeout`s), but the
+branch-end gate still failed once more, per
+`.superpowers/sdd/plan/gates/verify-final-3.log`:
+
+```
+     × rejects name longer than 100 chars with inline error 5030ms
+ FAIL  src/pages/__tests__/TenantsPage.test.tsx > TenantsPage rename flow > rejects name longer than 100 chars with inline error
+Error: Test timed out in 5000ms.
+ Test Files  1 failed | 258 passed (259)
+      Tests  1 failed | 2130 passed (2131)
+```
+
+The cascade (`"xxAcme Renamed"`) is confirmed gone in this log — only the
+timeout remains, exactly as round 2 predicted would be the residual risk.
+
+### Root cause (confirmed)
+
+`delay: null` removes the real-timer cost per keystroke, but
+`user.type(input, "x".repeat(101))` still dispatches 101 discrete
+keydown/keypress/input/keyup event sequences through `user-event`'s internal
+microtask queue. Each of the 101 `input` events fires react-hook-form's
+`mode: "onChange"` validation (the field is registered under
+`tenantNameSchema`, `.max(100, ...)`), which re-runs the Zod validator and
+triggers a React re-render of the rename dialog stacked on top of the
+already-rendered tenants table. Under the CPU contention produced by
+Vitest's default multi-worker full-suite run (259 files, hundreds of
+concurrent renders across worker threads), 101 synchronous
+validate-then-render cycles is enough wall-clock cost on its own — even with
+zero artificial timer delay — to occasionally brush the file's 5000ms
+`testTimeout`. `delay: null` fixed the timer-multiplication half of the
+mechanism; the render-multiplication half (101 renders vs. 1) was the
+remaining, still-marginal cost.
+
+### Fix
+
+Replaced the 101-keystroke `user.type()` call with a single
+`user.click(input)` (to focus/select, mirroring the other tests in the file)
+followed by one `user.paste("x".repeat(101))` call. `user-event`'s `paste()`
+API dispatches a single `paste` event plus a single synthetic `input` event
+carrying the full pasted value — exactly one react-hook-form `onChange`
+validation cycle and one re-render, instead of 101. The other `user.type()`
+calls in this file (`"   Acme   "`, `"   "`, `"Acme Renamed"`,
+`"Something New"`) are all ≤13 characters and were left untouched — they are
+not a meaningful render-count cost and are not part of the observed
+timeout/cascade pattern.
+
+Test-honesty check performed: temporarily changed
+`tenantNameSchema`'s `.max(100, ...)` to `.max(200, ...)` in
+`services/atlas-ui/src/lib/schemas/tenant.schema.ts` and reran the single
+test in isolation — it failed as expected (`within(dialog).getByText(/100
+characters or less/i)` never appeared, because a 101-char paste no longer
+tripped the loosened schema), confirming the test still asserts the real
+validation path rather than passing for an unrelated reason. The schema
+change was then reverted (`git diff` on that file is empty).
+
+### Files changed (round 3)
+
+- `services/atlas-ui/src/pages/__tests__/TenantsPage.test.tsx` — the
+  `rejects name longer than 100 chars with inline error` test now uses
+  `user.click(input)` + `user.paste("x".repeat(101))` instead of
+  `user.type(input, "x".repeat(101))`. Assertions unchanged.
+
+### Verification (round 3)
+
+Single file:
+```
+cd services/atlas-ui && npx vitest run src/pages/__tests__/TenantsPage.test.tsx
+ Test Files  1 passed (1)
+      Tests  12 passed (12)
+```
+
+Full suite, two consecutive runs (`--reporter=verbose` to capture per-test
+durations):
+
+Run 1:
+```
+ Test Files  259 passed (259)
+      Tests  2131 passed (2131)
+   Duration  43.19s
+```
+Previously-failing test: `rejects name longer than 100 chars with inline
+error 740ms` (vs. the 5000ms budget it was previously timing out against,
+and the 5030ms it hit in `verify-final-3.log`).
+
+Run 2:
+```
+ Test Files  259 passed (259)
+      Tests  2131 passed (2131)
+   Duration  37.28s
+```
+Previously-failing test: `rejects name longer than 100 chars with inline
+error 584ms`.
+
+`TenantsPage.test.tsx`'s 12-test summed durations across the full-suite runs
+were 7029ms (run 1) and 5998ms (run 2) — no per-file summary line is emitted
+by the verbose reporter for a fast, passing file, so the sum of the file's
+own 12 test durations is reported here as the closest available proxy for
+the file's total wall-clock cost.
+
+`npx tsc -b` — clean, no output.
+
+### Scope note (round 3)
+
+`PoolItemDialog.test.tsx` and `NpcShopCommodityDialog.test.tsx`, noted in
+round 2 as sharing the same shared-CPU-budget class of flake, were not
+touched — same reasoning as round 2: they are unmodified by this branch.

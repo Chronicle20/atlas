@@ -2,6 +2,7 @@ package tenant
 
 import (
 	"atlas-character-factory/configuration/tenant/characters"
+	"atlas-character-factory/configuration/tenant/maplelife"
 	"atlas-character-factory/configuration/tenant/npcs"
 	"atlas-character-factory/configuration/tenant/socket"
 	"atlas-character-factory/configuration/tenant/worlds"
@@ -17,6 +18,7 @@ type RestModel struct {
 	Characters   characters.RestModel `json:"characters"`
 	NPCs         []npcs.RestModel     `json:"npcs"`
 	Worlds       []worlds.RestModel   `json:"worlds"`
+	MapleLife    maplelife.RestModel  `json:"mapleLife"`
 }
 
 func (r RestModel) GetName() string {

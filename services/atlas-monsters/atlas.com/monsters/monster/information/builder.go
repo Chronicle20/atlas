@@ -10,6 +10,7 @@ type ModelBuilder struct {
 	boss        bool
 	firstAttack bool
 	resistances map[string]string
+	banish      Banish
 }
 
 // NewModelBuilder returns a new ModelBuilder with zero values.
@@ -63,6 +64,13 @@ func (b *ModelBuilder) SetResistances(r map[string]string) *ModelBuilder {
 	return b
 }
 
+// SetBanish sets the banish node on the builder. Used by tests that drive the
+// banish paths in Banish and executeBanish.
+func (b *ModelBuilder) SetBanish(banish Banish) *ModelBuilder {
+	b.banish = banish
+	return b
+}
+
 // Build constructs an immutable Model from the builder state.
 func (b *ModelBuilder) Build() Model {
 	skills := b.skills
@@ -81,5 +89,6 @@ func (b *ModelBuilder) Build() Model {
 		boss:        b.boss,
 		firstAttack: b.firstAttack,
 		resistances: b.resistances,
+		banish:      b.banish,
 	}
 }

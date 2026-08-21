@@ -12,26 +12,10 @@ func NewDamageEntryModel(characterId uint32, damage uint32) DamageEntryModel {
 	}
 }
 
-type DamageDistributionModel struct {
-	solo                   map[uint32]uint32
-	party                  map[uint32]map[uint32]uint32
-	personalRatio          map[uint32]float64
-	experiencePerDamage    float64
-	standardDeviationRatio float64
+func (d DamageEntryModel) CharacterId() uint32 {
+	return d.characterId
 }
 
-func (d DamageDistributionModel) Solo() map[uint32]uint32 {
-	return d.solo
-}
-
-func (d DamageDistributionModel) ExperiencePerDamage() float64 {
-	return d.experiencePerDamage
-}
-
-func (d DamageDistributionModel) PersonalRatio() map[uint32]float64 {
-	return d.personalRatio
-}
-
-func (d DamageDistributionModel) StandardDeviationRatio() float64 {
-	return d.standardDeviationRatio
+func (d DamageEntryModel) Damage() uint32 {
+	return d.damage
 }

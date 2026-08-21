@@ -13,6 +13,30 @@ type DamageInput struct {
 	Damage      uint32
 }
 
+// aggregateDamageEntries folds a KILLED event's damage entries into one entry
+// per character, ascending by characterId. atlas-monsters already aggregates
+// on both its write paths, so this is the service-boundary defence FR-1.4
+// asks for: it accumulates rather than assigns, so an un-aggregated list from
+// any future producer cannot silently drop all but the last hit.
+func aggregateDamageEntries(des []DamageEntryModel) []DamageInput {
+	totals := make(map[uint32]uint32)
+	var order []uint32
+	for _, de := range des {
+		if _, ok := totals[de.CharacterId()]; !ok {
+			order = append(order, de.CharacterId())
+		}
+		totals[de.CharacterId()] += de.Damage()
+	}
+
+	sort.Slice(order, func(i, j int) bool { return order[i] < order[j] })
+
+	out := make([]DamageInput, 0, len(order))
+	for _, characterId := range order {
+		out = append(out, DamageInput{CharacterId: characterId, Damage: totals[characterId]})
+	}
+	return out
+}
+
 // SoloInput is an in-field damager with no party.
 type SoloInput struct {
 	CharacterId uint32

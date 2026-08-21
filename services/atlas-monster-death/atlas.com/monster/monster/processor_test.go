@@ -214,30 +214,3 @@ func TestNewDamageEntryModel(t *testing.T) {
 		t.Errorf("Expected damage 5000, got %d", entry.damage)
 	}
 }
-
-func TestDamageDistributionModel_Accessors(t *testing.T) {
-	solo := map[uint32]uint32{1: 100}
-	party := map[uint32]map[uint32]uint32{}
-	pr := map[uint32]float64{1: 0.5}
-
-	ddm := DamageDistributionModel{
-		solo:                   solo,
-		party:                  party,
-		personalRatio:          pr,
-		experiencePerDamage:    2.5,
-		standardDeviationRatio: 0.3,
-	}
-
-	if ddm.Solo()[1] != 100 {
-		t.Errorf("Expected solo[1] = 100, got %d", ddm.Solo()[1])
-	}
-	if ddm.ExperiencePerDamage() != 2.5 {
-		t.Errorf("Expected experiencePerDamage 2.5, got %f", ddm.ExperiencePerDamage())
-	}
-	if ddm.PersonalRatio()[1] != 0.5 {
-		t.Errorf("Expected personalRatio[1] = 0.5, got %f", ddm.PersonalRatio()[1])
-	}
-	if ddm.StandardDeviationRatio() != 0.3 {
-		t.Errorf("Expected standardDeviationRatio 0.3, got %f", ddm.StandardDeviationRatio())
-	}
-}

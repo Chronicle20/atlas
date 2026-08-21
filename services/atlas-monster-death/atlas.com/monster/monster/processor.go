@@ -12,11 +12,13 @@ import (
 	"context"
 	"math"
 	"math/rand"
+	"sync"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Processor interface {
@@ -199,85 +201,153 @@ func (p *ProcessorImpl) filterByQuestState(characterId uint32, drops []drop.Mode
 	return result
 }
 
+// DistributeExperience resolves, plans, and awards experience for a KILLED
+// event: resolve the monster and field, resolve parties for in-field
+// damagers, plan the split with planDistribution, then award and finally send
+// level-gate hints. Hints run last so a publish failure there can never
+// affect an EXP award (FR-6.10).
 func (p *ProcessorImpl) DistributeExperience(f field.Model, monsterId uint32, damageEntries []DamageEntryModel) error {
-	d, _ := p.produceDistribution(f, monsterId, damageEntries)()
-	for k, v := range d.Solo() {
-		exp := float64(v) * d.ExperiencePerDamage()
-		c, err := p.cp.GetById(k)
-		if err != nil {
-			p.l.WithError(err).Errorf("Unable to locate character %d whose for distributing experience from monster death.", k)
-		} else {
-			// Get rates for the character and apply exp rate
-			r := p.rp.GetForCharacter(f.Channel(), c.Id())
-			exp = exp * r.ExpRate()
-			p.l.Debugf("Character [%d] exp rate: %.2f, adjusted exp: %.2f", c.Id(), r.ExpRate(), exp)
+	// 1. RESOLVE damage
+	damages := aggregateDamageEntries(damageEntries)
+	var totalDamage uint32
+	for _, d := range damages {
+		totalDamage += d.Damage
+	}
+	if totalDamage == 0 {
+		p.l.Warnf("Monster [%d] died with no recorded damage. No experience distributed.", monsterId)
+		return nil
+	}
 
-			whiteExperienceGain := isWhiteExperienceGain(c.Id(), d.PersonalRatio(), d.StandardDeviationRatio())
-			p.distributeCharacterExperience(f, c.Id(), c.Level(), exp, 0.0, c.Level(), true, whiteExperienceGain, false)
+	// monster information and the field character list are independent;
+	// issue them concurrently.
+	var wg sync.WaitGroup
+	var mi information.Model
+	var miErr error
+	var fieldCharacterIds []uint32
+	var idsErr error
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		mi, miErr = p.ip.GetById(monsterId)
+	}()
+	go func() {
+		defer wg.Done()
+		fieldCharacterIds, idsErr = p.fp.CharacterIdsInField(f)
+	}()
+	wg.Wait()
+
+	if miErr != nil {
+		p.l.WithError(miErr).Errorf("Unable to locate monster information [%d] for distributing experience from monster death.", monsterId)
+		return miErr
+	}
+	if idsErr != nil {
+		p.l.WithError(idsErr).Errorf("Unable to locate field characters for monster [%d] for distributing experience from monster death.", monsterId)
+		return idsErr
+	}
+
+	inField := make(map[uint32]bool, len(fieldCharacterIds))
+	for _, id := range fieldCharacterIds {
+		inField[id] = true
+	}
+
+	// 2. RESOLVE parties for in-field damagers, memoising by partyId.
+	parties := make(map[uint32]party.Model)
+	partyOf := make(map[uint32]uint32)
+	var solos []SoloInput
+
+	for _, d := range damages {
+		characterId := d.CharacterId
+		if !inField[characterId] {
+			// An out-of-field damager is never party-resolved (D12) -- it
+			// closes the tag-and-walk-away leech vector and still counts
+			// toward totalDamage and totalEntries via planDistribution.
+			continue
+		}
+		if _, ok := partyOf[characterId]; ok {
+			// Already accounted for by a previously fetched party.
+			continue
+		}
+
+		pt, err := p.pp.GetByMemberId(characterId)
+		if err != nil {
+			// A party-service outage must degrade to today's solo
+			// behaviour, never to zero EXP (FR-2.3).
+			p.l.WithError(err).Warnf("Unable to locate party for character [%d]; treating as solo.", characterId)
+			solos = append(solos, p.soloInputFor(characterId))
+			continue
+		}
+		if pt.Id() == 0 {
+			solos = append(solos, p.soloInputFor(characterId))
+			continue
+		}
+
+		parties[pt.Id()] = pt
+		for _, m := range pt.Members() {
+			partyOf[m.Id()] = pt.Id()
 		}
 	}
+
+	partyInputs := make([]PartyInput, 0, len(parties))
+	for _, pt := range parties {
+		members := make([]MemberInput, 0, len(pt.Members()))
+		for _, m := range pt.Members() {
+			if !inField[m.Id()] {
+				continue
+			}
+			members = append(members, MemberInput{CharacterId: m.Id(), Level: m.Level()})
+		}
+		partyInputs = append(partyInputs, PartyInput{PartyId: pt.Id(), Members: members})
+	}
+
+	// 3. PLAN
+	plan := planDistribution(ExperienceInput{
+		MonsterExperience: mi.Experience(),
+		MonsterLevel:      mi.Level(),
+		Damages:           damages,
+		Solos:             solos,
+		Parties:           partyInputs,
+	}, p.cfg)
+
+	// 4. AWARD
+	for _, r := range plan.Recipients {
+		rate := p.rp.GetForCharacter(f.Channel(), r.CharacterId)
+		personal, bonus, guarded := computeAward(r, rate.ExpRate(), p.cfg)
+		if guarded {
+			p.l.Warnf("Computed experience award for monster [%d] character [%d] was not representable and was guarded.", monsterId, r.CharacterId)
+		}
+		if err := p.cp.AwardExperience(f.Channel(), r.CharacterId, r.White, personal, bonus); err != nil {
+			// One recipient's failure must not abort the others (FR-9.2).
+			p.l.WithError(err).Warnf("Unable to award experience to character [%d] for monster [%d] death.", r.CharacterId, monsterId)
+			continue
+		}
+	}
+
+	// 5. HINTS, always last so a hint failure cannot affect EXP.
+	t := tenant.MustFromContext(p.ctx)
+	tenantId := t.Id()
+	for _, e := range plan.Exclusions {
+		if !p.ht.Allow(tenantId, e.CharacterId) {
+			continue
+		}
+		if err := p.smp.ShowHint(uuid.New(), f.Channel(), e.CharacterId, levelGateHintText(mi.Name(), mi.Level()), 0, 0); err != nil {
+			p.l.WithError(err).Warnf("Unable to publish level-gate hint to character [%d] for monster [%d] death.", e.CharacterId, monsterId)
+		}
+	}
+
 	return nil
 }
 
-func (p *ProcessorImpl) produceDistribution(f field.Model, monsterId uint32, damageEntries []DamageEntryModel) model.Provider[DamageDistributionModel] {
-	mi, err := p.ip.GetById(monsterId)
+// soloInputFor fetches a character's level for solo attribution. On error
+// this matches today's behaviour: log and skip only that character, never
+// aborting the rest of the distribution.
+func (p *ProcessorImpl) soloInputFor(characterId uint32) SoloInput {
+	c, err := p.cp.GetById(characterId)
 	if err != nil {
-		return model.ErrorProvider[DamageDistributionModel](err)
+		p.l.WithError(err).Errorf("Unable to locate character [%d] for distributing experience from monster death.", characterId)
+		return SoloInput{CharacterId: characterId, Level: 0}
 	}
-
-	fieldCharacterIds, err := p.fp.CharacterIdsInField(f)
-	if err != nil {
-		return model.ErrorProvider[DamageDistributionModel](err)
-	}
-	cim := make(map[uint32]bool)
-	for _, m := range fieldCharacterIds {
-		cim[m] = true
-	}
-
-	totalEntries := 0
-	// TODO parties
-	partyDistribution := make(map[uint32]map[uint32]uint32)
-	soloDistribution := make(map[uint32]uint32)
-
-	for _, de := range damageEntries {
-		if _, ok := cim[de.characterId]; ok {
-			soloDistribution[de.characterId] = de.damage
-		}
-		totalEntries += 1
-	}
-
-	// TODO account for healing
-	totalDamage := mi.Hp()
-	epd := float64(mi.Experience()) / float64(totalDamage)
-
-	personalRatio := make(map[uint32]float64)
-	entryExperienceRatio := make([]float64, 0)
-
-	for k, v := range soloDistribution {
-		ratio := float64(v) / float64(totalDamage)
-		personalRatio[k] = ratio
-		entryExperienceRatio = append(entryExperienceRatio, ratio)
-	}
-
-	for _, party := range partyDistribution {
-		ratio := 0.0
-		for k, v := range party {
-			cr := float64(v) / float64(totalDamage)
-			personalRatio[k] = cr
-			ratio += cr
-		}
-		entryExperienceRatio = append(entryExperienceRatio, ratio)
-	}
-
-	stdr := calculateExperienceStandardDeviationThreshold(entryExperienceRatio, totalEntries)
-	m := DamageDistributionModel{
-		solo:                   soloDistribution,
-		party:                  partyDistribution,
-		personalRatio:          personalRatio,
-		experiencePerDamage:    epd,
-		standardDeviationRatio: stdr,
-	}
-	return model.FixedProvider(m)
+	return SoloInput{CharacterId: characterId, Level: c.Level()}
 }
 
 func calculateExperienceStandardDeviationThreshold(entryExperienceRatio []float64, totalEntries int) float64 {
@@ -302,16 +372,4 @@ func isWhiteExperienceGain(characterId uint32, personalRatio map[uint32]float64,
 	} else {
 		return false
 	}
-}
-
-func (p *ProcessorImpl) distributeCharacterExperience(f field.Model, characterId uint32, level byte, experience float64, partyBonusMod float64, totalPartyLevel byte, hightestPartyDamage bool, whiteExperienceGain bool, hasPartySharers bool) {
-	expSplitCommonMod := 0.8
-	characterExperience := (expSplitCommonMod * float64(level)) / float64(totalPartyLevel)
-	if hightestPartyDamage {
-		characterExperience += 0.2
-	}
-	characterExperience *= experience
-	bonusExperience := partyBonusMod * characterExperience
-
-	_ = p.cp.AwardExperience(f.Channel(), characterId, whiteExperienceGain, uint32(characterExperience), uint32(bonusExperience))
 }

@@ -3855,10 +3855,12 @@
   note: v84 serverbound opcode verified from IDB COutPacket send-site (task-085)
 - op: AUTO_AGGRO
   direction: serverbound
-  opcode: 189
+  opcode: 194
   fname: CMob::ApplyControl
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 6833298
+  note: 'task-255: opcode corrected 189->194 (0xBD->0xC2). The prior 189 was seeded from the v83 CSV column (the CSVs have no v84 column) and is stale — the v84 serverbound table shifts in this cluster. IDA v84 CMob::ApplyControl @0x684492 builds COutPacket(194); Encode4(fused mobId)+Encode4(proximity score). Adjacent pair with MOB_DROP_PICKUP_REQUEST=195 (@0x684CDF), which was corrected the same way in task-092. No other serverbound entry in this file claims 189 or 194.'
 - op: MOB_DROP_PICKUP_REQUEST
   direction: serverbound
   opcode: 195

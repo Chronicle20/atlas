@@ -13,6 +13,7 @@ type RestModel struct {
 	DcRight   int32  `json:"dc_right"`
 	DcTop     int32  `json:"dc_top"`
 	DcBottom  int32  `json:"dc_bottom"`
+	Imitate   bool   `json:"imitate"`
 }
 
 func (r RestModel) GetName() string {

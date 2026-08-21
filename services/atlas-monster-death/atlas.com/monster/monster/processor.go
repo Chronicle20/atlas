@@ -18,6 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -227,14 +228,14 @@ func (p *ProcessorImpl) DistributeExperience(f field.Model, monsterId uint32, da
 	var idsErr error
 
 	wg.Add(2)
-	go func() {
+	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		defer wg.Done()
 		mi, miErr = p.ip.GetById(monsterId)
-	}()
-	go func() {
+	})
+	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		defer wg.Done()
 		fieldCharacterIds, idsErr = p.fp.CharacterIdsInField(f)
-	}()
+	})
 	wg.Wait()
 
 	if miErr != nil {

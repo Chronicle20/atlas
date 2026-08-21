@@ -101,10 +101,17 @@ const (
 // self-destruct paths and damageCore need the same seam because the threshold
 // and the animation both come from this data.
 func (p *ProcessorImpl) monsterInformation(monsterId uint32) (information.Model, error) {
+	return resolveMonsterInformation(p.l, p.ctx, monsterId)
+}
+
+// resolveMonsterInformation is the free-function form of monsterInformation,
+// honouring the same test-only lookup override, for callers that do not hold
+// a ProcessorImpl (the status expiration task's DoT tick).
+func resolveMonsterInformation(l logrus.FieldLogger, ctx context.Context, monsterId uint32) (information.Model, error) {
 	if testInformationLookup != nil {
 		return testInformationLookup(monsterId)
 	}
-	return information.NewProcessor(p.l, p.ctx).GetById(monsterId)
+	return information.NewProcessor(l, ctx).GetById(monsterId)
 }
 
 // ErrNoControllerCandidate reports that an election found no eligible

@@ -3,6 +3,11 @@
   "md5": "",
   "generated_at": "2026-06-13T12:51:12Z",
   "functions": {
+    "CNpcPool::OnNpcLeaveField": {
+      "address": "0x6f0bc8",
+      "direction": "",
+      "calls": null
+    },
     "CNpcPool::OnNpcImitateData": {
       "address": "0x6f0966",
       "direction": "",

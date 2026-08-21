@@ -270,6 +270,20 @@ func TestAggroDecayTaskReleasesExpiredAutoAggroLease(t *testing.T) {
 			wantAggroLeft: true,
 		},
 		{
+			name: "lease at exact ttl boundary is kept",
+			setup: func(r *Registry, ten tenant.Model, uid uint32) {
+				if _, err := r.ControlMonsterWithAggro(ten, uid, 7, 1000); err != nil {
+					t.Fatalf("ControlMonsterWithAggro: %v", err)
+				}
+			},
+			// age == AutoAggroLeaseTtlMs (15_000) exactly: nowMs - AggroRefreshedMs
+			// == 15_000, and the release guard is strict (`>`), so the lease must
+			// survive one more tick past this boundary before it releases.
+			nowMs:         1000 + AutoAggroLeaseTtlMs,
+			wantEvents:    0,
+			wantAggroLeft: true,
+		},
+		{
 			name: "damage entries take the existing path",
 			setup: func(r *Registry, ten tenant.Model, uid uint32) {
 				if _, err := r.ControlMonsterWithAggro(ten, uid, 7, 1000); err != nil {

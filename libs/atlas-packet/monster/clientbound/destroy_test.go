@@ -10,11 +10,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
-// packet-audit:verify packet=monster/clientbound/MonsterDestroy version=gms_v83 ida=0x67961d
-// packet-audit:verify packet=monster/clientbound/MonsterDestroy version=gms_v87 ida=0x6b5169
-// packet-audit:verify packet=monster/clientbound/MonsterDestroy version=gms_v95 ida=0x658b90
-// packet-audit:verify packet=monster/clientbound/MonsterDestroy version=jms_v185 ida=0x6f8a1f
-// packet-audit:verify packet=monster/clientbound/MonsterDestroy version=gms_v84 ida=0x6901b3
 func TestMonsterDestroy(t *testing.T) {
 	input := NewMonsterDestroy(5001, DestroyTypeFadeOut)
 	for _, v := range test.Variants {
@@ -37,8 +32,6 @@ func TestMonsterDestroy(t *testing.T) {
 // arm and no trailing swallowCharacterId read (that path is v95+). The codec's
 // swallow branch is gated on destroyType==4, which v79 never emits, so the
 // standard FadeOut(1) shape is byte-identical to v83.
-//
-// packet-audit:verify packet=monster/clientbound/MonsterDestroy version=gms_v79 ida=0x646ff6
 func TestMonsterDestroyBytesV79(t *testing.T) {
 	input := NewMonsterDestroy(5001, DestroyTypeFadeOut)
 	ctx := test.CreateContext("GMS", 79, 1)
@@ -60,8 +53,6 @@ func TestMonsterDestroyBytesV79(t *testing.T) {
 //
 // v72 reads ONLY uniqueId(4)+destroyType(1); no destroyType==4 swallow arm
 // (v95+). Byte-identical to v79.
-//
-// packet-audit:verify packet=monster/clientbound/MonsterDestroy version=gms_v72 ida=0x6258a1
 func TestMonsterDestroyBytesV72(t *testing.T) {
 	input := NewMonsterDestroy(5001, DestroyTypeFadeOut)
 	ctx := test.CreateContext("GMS", 72, 1)

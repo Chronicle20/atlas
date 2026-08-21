@@ -17,6 +17,11 @@ import (
 // inside listener.Registry.Add (so it's already serialized for this key)
 // and returns the kafka HandlerHandles collected from every InitHandlers
 // call so Drain can deregister them later.
+//
+// It must return every HandlerHandle already registered even when it
+// also returns a non-nil error (see listener.HandlerHandle's doc
+// comment) -- Registry.Add's rollback deregisters exactly what this
+// returns.
 type AddBody func(parent context.Context, key server.Key, cfg ListenerConfig, h *listener.Handle) ([]listener.HandlerHandle, error)
 
 // ServerModelFn builds the server.Model that the listener tracks. Passed

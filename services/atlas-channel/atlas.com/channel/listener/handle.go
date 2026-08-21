@@ -28,6 +28,14 @@ const (
 // HandlerHandle identifies a registered kafka consumer handler. Returned
 // by InitHandlers (post Phase H sweep) and stored on Handle so Drain
 // can call consumer.Manager.RemoveHandler for each.
+//
+// Registry.Add's body callback (projection.AddBody in main.go's
+// buildListener) MUST return every HandlerHandle it has already
+// registered even when it also returns a non-nil error -- e.g. a bind
+// failure partway through startup, after ~20 kafka consumer handlers are
+// already live. Add's rollback deregisters exactly the handles body
+// returns; a nil slice on error means Add believes nothing was
+// registered and leaks whatever body registered before the failure.
 type HandlerHandle struct {
 	Topic string
 	Id    string

@@ -365,6 +365,49 @@ func TestRegistry_AddReturnsErrorAndLeavesNoEntryWhenBodyFails(t *testing.T) {
 	require.EqualValues(t, 1, evictCalls.Load(), "refs must not have leaked from the failed Add")
 }
 
+func TestRegistry_AddRollsBackHandlersRegisteredBeforeBodyFails(t *testing.T) {
+	tm := makeTenant(t)
+	sc := makeServerModel(t, tm, 6, 4)
+	key := server.KeyOf(sc)
+	defer server.GetRegistry().Deregister(key)
+
+	var removed []listener.HandlerHandle
+	var mu sync.Mutex
+	deps := listener.Dependencies{
+		UnregisterChannel: func(channel.Model) error { return nil },
+		RemoveHandler: func(topic, id string) error {
+			mu.Lock()
+			defer mu.Unlock()
+			removed = append(removed, listener.HandlerHandle{Topic: topic, Id: id})
+			return nil
+		},
+	}
+
+	r := listener.NewRegistry(nullLogger(), deps, listener.Config{})
+
+	registered := []listener.HandlerHandle{
+		{Topic: "topic-a", Id: "id-a"},
+		{Topic: "topic-b", Id: "id-b"},
+		{Topic: "topic-c", Id: "id-c"},
+	}
+	bodyErr := errors.New("bind failed")
+
+	_, err := r.Add(context.Background(), key, sc, func(h *listener.Handle) ([]listener.HandlerHandle, error) {
+		// Simulates buildListener: every InitHandlers call registers a
+		// handler before the socket bind that fails last.
+		return registered, bodyErr
+	})
+	require.ErrorIs(t, err, bodyErr)
+
+	_, ok := r.Get(key)
+	require.False(t, ok, "a failed Add must leave no entry")
+	require.Empty(t, r.Snapshot())
+
+	mu.Lock()
+	defer mu.Unlock()
+	require.ElementsMatch(t, registered, removed, "every handle body registered before failing must be deregistered")
+}
+
 func TestRegistry_AddRefusesADrainingHandle(t *testing.T) {
 	tm := makeTenant(t)
 	sc := makeServerModel(t, tm, 6, 4)

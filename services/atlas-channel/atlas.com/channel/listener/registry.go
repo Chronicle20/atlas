@@ -89,6 +89,14 @@ func NewRegistry(l logrus.FieldLogger, deps Dependencies, cfg Config) *Registry 
 // InitHandlers, socket service). body returns the kafka HandlerHandles
 // so Drain can deregister them later.
 //
+// body MUST return every HandlerHandle it has already registered even
+// when it also returns a non-nil error (see HandlerHandle's doc
+// comment): if it fails partway through startup -- e.g. a bind error
+// after ~20 kafka consumer handlers are already live -- Add's rollback
+// deregisters exactly the handles body returns via
+// Dependencies.RemoveHandler, mirroring Drain phase 4, so a failed Add
+// never leaks kafka consumer registrations.
+//
 // Returns the new Handle on success. If a Handle for key already exists
 // and is Active, returns it (idempotent re-add). If it exists but is in
 // Draining state, Add returns ErrDraining and the caller retries — Add
@@ -121,7 +129,20 @@ func (r *Registry) Add(parent context.Context, key server.Key, sc server.Model, 
 
 	handlers, err := body(h)
 	if err != nil {
-		// Rollback: body failed before the handle was usable.
+		// Rollback: body failed before the handle was usable. body still
+		// returns whatever kafka consumer handlers it had already
+		// registered (see HandlerHandle's doc comment) -- deregister
+		// every one of them the same way Drain phase 4 does, or a
+		// bind-error retry leaks ~20 handler registrations per tick
+		// (task-244 fix round 3, finding A).
+		for _, hh := range handlers {
+			if rmErr := r.deps.RemoveHandler(hh.Topic, hh.Id); rmErr != nil {
+				r.l.WithError(rmErr).WithFields(logrus.Fields{
+					"key":   key,
+					"topic": hh.Topic,
+				}).Warn("listener.add.rollback_remove_handler_failed")
+			}
+		}
 		r.mu.Lock()
 		delete(r.entries, key)
 		r.refs[key.TenantId]--

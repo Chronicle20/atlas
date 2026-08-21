@@ -49,6 +49,7 @@ type storedMonster struct {
 	StatusEffects          statusEffectList `json:"statusEffects"`
 	NextEligibleRepickAtMs int64            `json:"nextEligibleRepickAtMs,omitempty"`
 	LastDamageTakenMs      int64            `json:"lastDamageTakenMs,omitempty"`
+	AggroRefreshedMs       int64            `json:"aggroRefreshedMs,omitempty"`
 	SpawnSourceType        string           `json:"spawnSourceType,omitempty"`
 	SpawnSourceId          string           `json:"spawnSourceId,omitempty"`
 }
@@ -164,6 +165,7 @@ func toStored(t tenant.Model, m Model) storedMonster {
 		StatusEffects:          ses,
 		NextEligibleRepickAtMs: m.nextSkillDecision.nextEligibleRepickAtMs,
 		LastDamageTakenMs:      m.lastDamageTakenMs,
+		AggroRefreshedMs:       m.aggroRefreshedMs,
 		SpawnSourceType:        m.spawnSourceType,
 		SpawnSourceId:          m.spawnSourceId,
 	}
@@ -257,6 +259,7 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 			nextEligibleRepickAtMs: sm.NextEligibleRepickAtMs,
 		},
 		lastDamageTakenMs: sm.LastDamageTakenMs,
+		aggroRefreshedMs:  sm.AggroRefreshedMs,
 		spawnSourceType:   sm.SpawnSourceType,
 		spawnSourceId:     sm.SpawnSourceId,
 	}, nil
@@ -415,10 +418,59 @@ func (r *Registry) ControlMonster(tenant tenant.Model, uniqueId uint32, characte
 // ControlMonsterWithAggro assigns the controller and sets the aggro flag in one
 // atomic transition. Used by the forced-control path so the resulting
 // START_CONTROL event carries controllerHasAggro = true.
-func (r *Registry) ControlMonsterWithAggro(tenant tenant.Model, uniqueId uint32, characterId uint32) (Model, error) {
+func (r *Registry) ControlMonsterWithAggro(tenant tenant.Model, uniqueId uint32, characterId uint32, nowMs int64) (Model, error) {
 	return r.atomicUpdate(context.Background(), tenant, uniqueId, func(m Model) Model {
-		return m.ControlWithAggro(characterId)
+		return m.ControlWithAggro(characterId, nowMs)
 	})
+}
+
+// AggroSummary is returned by SetAggro.
+type AggroSummary struct {
+	Monster   Model
+	Changed   bool // controllerHasAggro flipped false -> true on this call
+	LeaseOnly bool // already aggro'd by this controller; only the lease was stamped
+}
+
+// SetAggro stamps the aggro lease for the monster's CURRENT controller and
+// flips controllerHasAggro true if it was not already. It is a no-op when
+// characterId is not the current controller — arbitration for a non-controller
+// claimant is the processor's job (design §2), not the registry's. No damage
+// entry is created on any path (FR-4.5).
+func (r *Registry) SetAggro(t tenant.Model, uniqueId uint32, characterId uint32, nowMs int64) (AggroSummary, error) {
+	ctx := context.Background()
+
+	var changed bool
+	var leaseOnly bool
+	sm, err := r.reg.Update(ctx, t, uniqueId, func(cur storedMonster) storedMonster {
+		changed = false
+		leaseOnly = false
+		if cur.ControlCharacterId != characterId {
+			return cur
+		}
+		cur.AggroRefreshedMs = nowMs
+		if cur.ControllerHasAggro {
+			leaseOnly = true
+		} else {
+			cur.ControllerHasAggro = true
+			changed = true
+		}
+		return cur
+	})
+	if errors.Is(err, atlasredis.ErrNotFound) {
+		return AggroSummary{}, errMonsterNotFound
+	}
+	if err != nil {
+		return AggroSummary{}, err
+	}
+	_, m, err := fromStored(sm)
+	if err != nil {
+		return AggroSummary{}, err
+	}
+	return AggroSummary{
+		Monster:   m,
+		Changed:   changed,
+		LeaseOnly: leaseOnly,
+	}, nil
 }
 
 func (r *Registry) ClearControl(tenant tenant.Model, uniqueId uint32) (Model, error) {

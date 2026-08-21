@@ -411,7 +411,7 @@ func (p *ProcessorImpl) startControl(uniqueId uint32, controllerId uint32, force
 	}
 
 	if forceAggro {
-		m, err = GetMonsterRegistry().ControlMonsterWithAggro(p.t, uniqueId, controllerId)
+		m, err = GetMonsterRegistry().ControlMonsterWithAggro(p.t, uniqueId, controllerId, time.Now().UnixMilli())
 	} else {
 		m, err = GetMonsterRegistry().ControlMonster(p.t, uniqueId, controllerId)
 	}

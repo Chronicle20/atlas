@@ -81,6 +81,7 @@ go_services = [
   "atlas-parties",
   "atlas-party-quests",
   "atlas-pets",
+  "atlas-player-npcs",
   "atlas-portal-actions",
   "atlas-portals",
   "atlas-query-aggregator",

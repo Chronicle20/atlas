@@ -75,3 +75,26 @@ surfaced in a listing-wide sweep.
 not a finding. Per the brief, `MaxLevelFor` and its Cygnus test rows are left unchanged (still
 200 for all job lines). Both legs of Step 1 have now been searched and both are negative, so this is settled:
 no local evidence supports a Cygnus cap below 200.
+
+# Task 8 — `atlas-player-npcs` service scaffold and registration
+
+Service scaffold and registration checklist landed (see task-8-report.md for the full list
+of files touched). `tools/service-registration-guard.sh` exits 0, both `deploy/k8s/overlays/pr`
+and `deploy/k8s/overlays/main` render clean via `kubectl kustomize`, and `go build ./...` from
+`services/atlas-player-npcs/atlas.com/player-npcs` exits 0.
+
+## Operator hand-backs
+
+Two checklist steps this task cannot perform and must be actioned by the operator before the
+service can run end-to-end:
+
+1. **§6.1 — create the database.** Create `atlas-player-npcs-main` on `postgres.home` (the same
+   Postgres instance/role the other `atlas-*-main` service databases live on). This task only
+   registered `atlas-player-npcs` in `tools/db-bootstrap.sh`'s `DBS` list and the `main`/`pr`
+   overlay `DB_NAME` patches — none of that creates the database itself on the `main`
+   environment's Postgres instance.
+2. **§6b — flip the GHCR package public.** After the first `atlas-player-npcs` image is pushed
+   to `ghcr.io/chronicle20/atlas-player-npcs/atlas-player-npcs`, the package will be private by
+   default (GHCR default for a repo's first push of a new image name). Flip it to public in the
+   GitHub Packages UI, matching every other `atlas-*` image, or the cluster's anonymous pull
+   will fail.

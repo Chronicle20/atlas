@@ -87,6 +87,7 @@ DBS=(
   atlas-npc-shops
   atlas-party-quests
   atlas-pets
+  atlas-player-npcs
   atlas-portal-actions
   atlas-quest
   atlas-rankings

@@ -54,6 +54,7 @@ resources:
   - atlas-parties.yaml
   - atlas-party-quests.yaml
   - atlas-pets.yaml
+  - atlas-player-npcs.yaml
   - atlas-portal-actions.yaml
   - atlas-portals.yaml
   - atlas-query-aggregator.yaml

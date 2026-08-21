@@ -71,6 +71,7 @@ use (
 	./services/atlas-parties/atlas.com/parties
 	./services/atlas-party-quests/atlas.com/party-quests
 	./services/atlas-pets/atlas.com/pets
+	./services/atlas-player-npcs/atlas.com/player-npcs
 	./services/atlas-portal-actions/atlas.com/portal
 	./services/atlas-portals/atlas.com/portals
 	./services/atlas-query-aggregator/atlas.com/query-aggregator

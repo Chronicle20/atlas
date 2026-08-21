@@ -1260,7 +1260,7 @@ func (p *ProcessorImpl) executeBanish(m Model, sd mobskill.Model) {
 
 	targets := p.getDiseaseTargets(m, sd)
 	for _, characterId := range targets {
-		err := producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopicPortal)(warpCommandProvider(m.Field(), characterId, map2.Id(banishMapId)))
+		err := producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopicPortal)(warpCommandProvider(m.Field(), characterId, map2.Id(banishMapId), ma.Banish().PortalName))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to banish character [%d] from monster [%d] to map [%d].", characterId, m.UniqueId(), banishMapId)
 		}

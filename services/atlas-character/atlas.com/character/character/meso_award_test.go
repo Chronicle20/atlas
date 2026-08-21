@@ -92,7 +92,10 @@ func TestAwardPickedUpMeso(t *testing.T) {
 				var mesoBody character2.MesoChangedStatusEventBody
 				require.NoError(t, json.Unmarshal(mesoChanged.Body, &mesoBody))
 				require.Equal(t, int32(33), mesoBody.Amount)
-				require.True(t, mesoBody.ShowEffect)
+				// showEffect is false: the drop-sourced award is announced via
+				// the channel's MESO_AWARDED -> DropPickUpMeso pickup message,
+				// not the generic MESO_CHANGED -> chat-line path.
+				require.False(t, mesoBody.ShowEffect)
 				require.Equal(t, uint32(4242), mesoBody.ActorId)
 				require.Equal(t, "DROP", mesoBody.ActorType)
 

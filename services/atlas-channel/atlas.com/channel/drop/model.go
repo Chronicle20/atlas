@@ -92,3 +92,25 @@ func (m Model) Owner() uint32 {
 	}
 	return m.ownerId
 }
+
+// OwnType returns the ownership-window discriminant that must accompany
+// Owner() in DropSpawn/DropEnterField. Client evidence (GMS v83.1
+// MapleStory_dump.exe.i64, session 754107bf): CDropPool::TryPickUpDrop
+// @0x50463c gates SendDropPickUpRequest on
+//
+//	ownType == 0 -> owner (dwOwner, +0x24) must equal the local character id
+//	ownType == 1 -> owner must equal the local party id
+//	ownType >= 2 -> no owner check (FFA / explosive drop types)
+//
+// Owner() substitutes the party id for the character id whenever the drop is
+// party-owned, so OwnType must switch to 1 in lockstep or every client's
+// comparison fails and the 15s ownership window never lifts.
+func (m Model) OwnType() byte {
+	if m.dropType >= 2 {
+		return m.dropType
+	}
+	if m.ownerPartyId != 0 {
+		return 1
+	}
+	return 0
+}

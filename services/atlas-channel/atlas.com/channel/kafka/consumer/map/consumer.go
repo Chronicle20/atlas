@@ -730,7 +730,7 @@ func spawnDropsForSession(l logrus.FieldLogger) func(ctx context.Context) func(w
 				return func(d drop.Model) error {
 					return session.Announce(l)(ctx)(wp)(droppkt.DropSpawnWriter)(droppkt.NewDropSpawn(
 						droppkt.DropEnterTypeExisting, d.Id(), d.Meso(), d.ItemId(),
-						d.Owner(), d.Type(), d.X(), d.Y(), d.DropperId(),
+						d.Owner(), d.OwnType(), d.X(), d.Y(), d.DropperId(),
 						d.DropperX(), d.DropperY(), 0, d.CharacterDrop(),
 					).Encode)(s)
 				}

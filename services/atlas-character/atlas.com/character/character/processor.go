@@ -962,7 +962,11 @@ func (p *ProcessorImpl) AwardPickedUpMeso(transactionId uuid.UUID, f field.Model
 				return err
 			}
 			return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
-				if err = buf.Put(character2.EnvEventTopicCharacterStatus, mesoChangedStatusEventProvider(transactionId, characterId, c.WorldId(), int32(meso), dropId, actorTypeDrop, true)); err != nil {
+				// showEffect: false — the drop-sourced award is announced via
+				// the channel's MESO_AWARDED -> DropPickUpMeso pickup message,
+				// not the generic MESO_CHANGED -> chat-line path. This event
+				// still drives stat/saga consumers.
+				if err = buf.Put(character2.EnvEventTopicCharacterStatus, mesoChangedStatusEventProvider(transactionId, characterId, c.WorldId(), int32(meso), dropId, actorTypeDrop, false)); err != nil {
 					return err
 				}
 				return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(f.WorldId(), f.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))

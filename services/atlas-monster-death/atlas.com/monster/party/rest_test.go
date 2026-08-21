@@ -1,13 +1,28 @@
 package party
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+func newTestTenant(t *testing.T) tenant.Model {
+	t.Helper()
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant: %v", err)
+	}
+	return tm
+}
 
 func TestExtract_MapsMembers(t *testing.T) {
 	rm := RestModel{
@@ -152,5 +167,103 @@ func TestBuilders_ProduceReadableModel(t *testing.T) {
 	}
 	if m.Members()[0].Level() != 120 {
 		t.Errorf("expected member[0].Level() == 120, got %d", m.Members()[0].Level())
+	}
+}
+
+// TestRequestByMemberId_RoundTrip stands up an httptest server returning a
+// realistic JSON:API document for a party resource, INCLUDING a
+// relationships block that carries the to-many "members" relationship, and
+// drives it through the real requests.GetRequest decode path. This proves
+// the SetToOneReferenceID/SetToManyReferenceIDs stubs added per
+// libs/atlas-rest/CLAUDE.md let api2go decode a response that carries
+// relationships, and pins the wire-tag mapping for leaderId/members.
+func TestRequestByMemberId_RoundTrip(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, "/parties") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if !strings.Contains(r.URL.RawQuery, "filter[members.id]=11") {
+			t.Errorf("unexpected query: %s", r.URL.RawQuery)
+		}
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{
+			"data": [
+				{
+					"type": "parties",
+					"id": "7",
+					"attributes": {
+						"leaderId": 11
+					},
+					"relationships": {
+						"members": {
+							"data": [
+								{"type": "members", "id": "11"},
+								{"type": "members", "id": "12"}
+							]
+						}
+					}
+				}
+			],
+			"included": [
+				{
+					"type": "members",
+					"id": "11",
+					"attributes": {
+						"name": "Leader",
+						"level": 120,
+						"jobId": 112,
+						"worldId": 0,
+						"channelId": 1,
+						"mapId": 100000000,
+						"instance": "00000000-0000-0000-0000-000000000000",
+						"online": true
+					}
+				},
+				{
+					"type": "members",
+					"id": "12",
+					"attributes": {
+						"name": "Member",
+						"level": 30,
+						"jobId": 100,
+						"worldId": 0,
+						"channelId": 1,
+						"mapId": 100000000,
+						"instance": "00000000-0000-0000-0000-000000000000",
+						"online": false
+					}
+				}
+			]
+		}`))
+	}))
+	defer srv.Close()
+
+	t.Setenv("PARTIES_SERVICE_URL", srv.URL+"/")
+
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+
+	rms, err := requestByMemberId(ctx, 11)(logrus.New(), ctx)
+	if err != nil {
+		t.Fatalf("requestByMemberId: %v", err)
+	}
+	if len(rms) != 1 {
+		t.Fatalf("expected 1 party, got %d", len(rms))
+	}
+	rm := rms[0]
+	if rm.Id != 7 {
+		t.Errorf("Id = %d, want 7", rm.Id)
+	}
+	if rm.LeaderId != 11 {
+		t.Errorf("LeaderId = %d, want 11", rm.LeaderId)
+	}
+	if len(rm.Members) != 2 {
+		t.Fatalf("expected 2 members, got %d", len(rm.Members))
+	}
+	if rm.Members[0].Name != "Leader" || rm.Members[0].Level != 120 {
+		t.Errorf("member[0] = %+v, want Leader/120", rm.Members[0])
+	}
+	if rm.Members[1].Name != "Member" || rm.Members[1].Level != 30 {
+		t.Errorf("member[1] = %+v, want Member/30", rm.Members[1])
 	}
 }

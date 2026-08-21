@@ -66,6 +66,12 @@ func (r RestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return result
 }
 
+// SetToOneReferenceID is required by api2go (jsonapi.Unmarshal) if the
+// upstream response ever carries a to-one relationship in its
+// `relationships` block, even when this client doesn't care about the
+// relationship payload. See libs/atlas-rest/CLAUDE.md.
+func (r *RestModel) SetToOneReferenceID(_, _ string) error { return nil }
+
 func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 	if name == "members" {
 		for _, ID := range IDs {
@@ -168,3 +174,10 @@ func (r *MemberRestModel) SetID(idStr string) error {
 	r.Id = uint32(id)
 	return nil
 }
+
+// SetToOneReferenceID and SetToManyReferenceIDs are required by api2go
+// (jsonapi.Unmarshal) if the upstream response ever carries a
+// `relationships` block, even when this client doesn't care about the
+// relationship payload. See libs/atlas-rest/CLAUDE.md.
+func (r *MemberRestModel) SetToOneReferenceID(_, _ string) error            { return nil }
+func (r *MemberRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }

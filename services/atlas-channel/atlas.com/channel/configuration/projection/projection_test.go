@@ -442,6 +442,29 @@ func TestApplyLoop_DropsAPendingAddWhenTheKeyLeavesConfig(t *testing.T) {
 
 	s.ApplyServiceTombstone()
 
+	// A tick already in flight when ApplyServiceTombstone() is called may
+	// have taken its State.Snapshot() a moment earlier and still see the
+	// tenant present, landing one more legitimate retry after this call
+	// returns -- the loop is a single goroutine and only re-reads State at
+	// the top of each tick, so that is the only extra call possible. Wait
+	// for the count to stabilize (unchanged across several tick intervals)
+	// before treating it as final, rather than assuming the tombstone is
+	// visible to the loop the instant ApplyServiceTombstone() returns.
+	settleDeadline := time.Now().Add(2 * time.Second)
+	last := calls.Load()
+	stableSince := time.Now()
+	for time.Since(stableSince) < 50*time.Millisecond {
+		if time.Now().After(settleDeadline) {
+			t.Fatal("apply loop never settled after ApplyServiceTombstone")
+		}
+		time.Sleep(10 * time.Millisecond)
+		cur := calls.Load()
+		if cur != last {
+			last = cur
+			stableSince = time.Now()
+		}
+	}
+
 	countAtTombstone := calls.Load()
 	time.Sleep(100 * time.Millisecond) // >= 5 ticks at 10ms
 	require.Equal(t, countAtTombstone, calls.Load(), "a pending add for a key no longer in config must not be retried")

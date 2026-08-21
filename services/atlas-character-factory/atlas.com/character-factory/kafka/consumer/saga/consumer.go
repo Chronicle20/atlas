@@ -64,7 +64,7 @@ func handleSagaCompletedEvent(l logrus.FieldLogger, ctx context.Context, e saga.
 	l.Debugf("CharacterCreation saga [%s] completed for account [%d] character [%d], emitting seed completion event",
 		e.TransactionId.String(), accountId, characterId)
 
-	seedEventProvider := seed.CreatedEventStatusProvider(accountId, characterId)
+	seedEventProvider := seed.CreatedEventStatusProvider(accountId, characterId, e.TransactionId.String())
 	seedProducer := producer.ProviderImpl(l)(ctx)(seedMessage.EnvEventTopicStatus)
 	err := seedProducer(seedEventProvider)
 	if err != nil {
@@ -117,7 +117,7 @@ func handleSagaFailedEvent(l logrus.FieldLogger, ctx context.Context, e saga.Sta
 	}).Info("Re-emitting character-creation FAILED as seed FAILED for login handoff.")
 
 	seedProducer := producer.ProviderImpl(l)(ctx)(seedMessage.EnvEventTopicStatus)
-	if err := seedProducer(seed.FailedEventStatusProvider(accountId, e.Body.Reason)); err != nil {
+	if err := seedProducer(seed.FailedEventStatusProvider(accountId, e.Body.Reason, e.TransactionId.String())); err != nil {
 		l.WithError(err).WithFields(logrus.Fields{
 			"transaction_id": e.TransactionId.String(),
 			"account_id":     accountId,

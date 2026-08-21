@@ -102,223 +102,293 @@ func TestBanish(t *testing.T) {
 // TestBanish_PortalNamePresent — the happy path with a WZ portal name: exactly
 // one WARP carrying the target map and portal name.
 func TestBanish_PortalNamePresent(t *testing.T) {
-	r := GetMonsterRegistry()
-	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	ctx := context.Background()
-	r.Clear(ctx)
+	tests := []struct {
+		name   string
+		banish information.Banish
+	}{
+		{
+			name:   "warp carries the WZ portal name",
+			banish: information.Banish{MapId: banishMapId, PortalName: banishPortal},
+		},
+	}
 
-	prevHook := testInformationLookup
-	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBanish(information.Banish{MapId: banishMapId, PortalName: banishPortal}).Build(), nil
-	}
-	defer func() { testInformationLookup = prevHook }()
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := GetMonsterRegistry()
+			ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+			ctx := context.Background()
+			r.Clear(ctx)
 
-	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	r.CreateMonster(ctx, ten, f, banishTemplateId, 0, 0, 0, 5, 0, 5000, 100, "", "")
+			prevHook := testInformationLookup
+			testInformationLookup = func(_ uint32) (information.Model, error) {
+				return information.NewModelBuilder().SetBanish(tc.banish).Build(), nil
+			}
+			defer func() { testInformationLookup = prevHook }()
 
-	p, events := newRecordingProcessorWithBodies(t, ten)
-	err := p.Banish(f, banishCharacter, banishTemplateId)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(*events) != 1 {
-		t.Fatalf("expected 1 event, got %d: %v", len(*events), *events)
-	}
-	if (*events)[0].Topic != EnvCommandTopicPortal {
-		t.Errorf("event[0].Topic = %q, want %q", (*events)[0].Topic, EnvCommandTopicPortal)
-	}
-	if (*events)[0].Type != "WARP" {
-		t.Errorf("event[0].Type = %q, want WARP", (*events)[0].Type)
-	}
-	var body warpBody
-	if err := json.Unmarshal((*events)[0].Body, &body); err != nil {
-		t.Fatalf("decode WARP body: %v", err)
-	}
-	if body.CharacterId != banishCharacter {
-		t.Errorf("CharacterId = %d, want %d", body.CharacterId, banishCharacter)
-	}
-	if body.TargetMapId != _map.Id(banishMapId) {
-		t.Errorf("TargetMapId = %d, want %d", body.TargetMapId, banishMapId)
-	}
-	if body.TargetPortalName != banishPortal {
-		t.Errorf("TargetPortalName = %q, want %q", body.TargetPortalName, banishPortal)
+			f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+			r.CreateMonster(ctx, ten, f, banishTemplateId, 0, 0, 0, 5, 0, 5000, 100, "", "")
+
+			p, events := newRecordingProcessorWithBodies(t, ten)
+			err := p.Banish(f, banishCharacter, banishTemplateId)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(*events) != 1 {
+				t.Fatalf("expected 1 event, got %d: %v", len(*events), *events)
+			}
+			if (*events)[0].Topic != EnvCommandTopicPortal {
+				t.Errorf("event[0].Topic = %q, want %q", (*events)[0].Topic, EnvCommandTopicPortal)
+			}
+			if (*events)[0].Type != "WARP" {
+				t.Errorf("event[0].Type = %q, want WARP", (*events)[0].Type)
+			}
+			var body warpBody
+			if err := json.Unmarshal((*events)[0].Body, &body); err != nil {
+				t.Fatalf("decode WARP body: %v", err)
+			}
+			if body.CharacterId != banishCharacter {
+				t.Errorf("CharacterId = %d, want %d", body.CharacterId, banishCharacter)
+			}
+			if body.TargetMapId != _map.Id(banishMapId) {
+				t.Errorf("TargetMapId = %d, want %d", body.TargetMapId, banishMapId)
+			}
+			if body.TargetPortalName != banishPortal {
+				t.Errorf("TargetPortalName = %q, want %q", body.TargetPortalName, banishPortal)
+			}
+		})
 	}
 }
 
 // TestBanish_PortalNameAbsent — omitempty keeps the key entirely off the wire
 // when there is no WZ portal name.
 func TestBanish_PortalNameAbsent(t *testing.T) {
-	r := GetMonsterRegistry()
-	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	ctx := context.Background()
-	r.Clear(ctx)
+	tests := []struct {
+		name   string
+		banish information.Banish
+	}{
+		{
+			name:   "omitempty keeps the key off the wire",
+			banish: information.Banish{MapId: banishMapId, PortalName: ""},
+		},
+	}
 
-	prevHook := testInformationLookup
-	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBanish(information.Banish{MapId: banishMapId, PortalName: ""}).Build(), nil
-	}
-	defer func() { testInformationLookup = prevHook }()
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := GetMonsterRegistry()
+			ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+			ctx := context.Background()
+			r.Clear(ctx)
 
-	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	r.CreateMonster(ctx, ten, f, banishTemplateId, 0, 0, 0, 5, 0, 5000, 100, "", "")
+			prevHook := testInformationLookup
+			testInformationLookup = func(_ uint32) (information.Model, error) {
+				return information.NewModelBuilder().SetBanish(tc.banish).Build(), nil
+			}
+			defer func() { testInformationLookup = prevHook }()
 
-	p, events := newRecordingProcessorWithBodies(t, ten)
-	err := p.Banish(f, banishCharacter, banishTemplateId)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(*events) != 1 {
-		t.Fatalf("expected 1 event, got %d: %v", len(*events), *events)
-	}
-	if (*events)[0].Type != "WARP" {
-		t.Errorf("event[0].Type = %q, want WARP", (*events)[0].Type)
-	}
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal((*events)[0].Body, &raw); err != nil {
-		t.Fatalf("decode WARP body: %v", err)
-	}
-	if _, ok := raw["targetPortalName"]; ok {
-		t.Errorf("expected no targetPortalName key, got %v", raw)
+			f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+			r.CreateMonster(ctx, ten, f, banishTemplateId, 0, 0, 0, 5, 0, 5000, 100, "", "")
+
+			p, events := newRecordingProcessorWithBodies(t, ten)
+			err := p.Banish(f, banishCharacter, banishTemplateId)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(*events) != 1 {
+				t.Fatalf("expected 1 event, got %d: %v", len(*events), *events)
+			}
+			if (*events)[0].Type != "WARP" {
+				t.Errorf("event[0].Type = %q, want WARP", (*events)[0].Type)
+			}
+			var raw map[string]json.RawMessage
+			if err := json.Unmarshal((*events)[0].Body, &raw); err != nil {
+				t.Fatalf("decode WARP body: %v", err)
+			}
+			if _, ok := raw["targetPortalName"]; ok {
+				t.Errorf("expected no targetPortalName key, got %v", raw)
+			}
+		})
 	}
 }
 
 // TestBanish_MessagePresent — warp then message, in that order, is the point.
 func TestBanish_MessagePresent(t *testing.T) {
-	r := GetMonsterRegistry()
-	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	ctx := context.Background()
-	r.Clear(ctx)
+	tests := []struct {
+		name   string
+		banish information.Banish
+	}{
+		{
+			name:   "warp then message, in that order",
+			banish: information.Banish{MapId: banishMapId, PortalName: banishPortal, Message: banishMessage},
+		},
+	}
 
-	prevHook := testInformationLookup
-	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBanish(information.Banish{MapId: banishMapId, PortalName: banishPortal, Message: banishMessage}).Build(), nil
-	}
-	defer func() { testInformationLookup = prevHook }()
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := GetMonsterRegistry()
+			ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+			ctx := context.Background()
+			r.Clear(ctx)
 
-	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	r.CreateMonster(ctx, ten, f, banishTemplateId, 0, 0, 0, 5, 0, 5000, 100, "", "")
+			prevHook := testInformationLookup
+			testInformationLookup = func(_ uint32) (information.Model, error) {
+				return information.NewModelBuilder().SetBanish(tc.banish).Build(), nil
+			}
+			defer func() { testInformationLookup = prevHook }()
 
-	p, events := newRecordingProcessorWithBodies(t, ten)
-	err := p.Banish(f, banishCharacter, banishTemplateId)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(*events) != 2 {
-		t.Fatalf("expected 2 events, got %d: %v", len(*events), *events)
-	}
-	if (*events)[0].Topic != EnvCommandTopicPortal || (*events)[0].Type != "WARP" {
-		t.Errorf("event[0] = %+v, want WARP on %s", (*events)[0], EnvCommandTopicPortal)
-	}
-	if (*events)[1].Topic != system_message.EnvCommandTopic || (*events)[1].Type != system_message.CommandSendMessage {
-		t.Errorf("event[1] = %+v, want %s on %s", (*events)[1], system_message.CommandSendMessage, system_message.EnvCommandTopic)
-	}
-	var msgBody system_message.SendMessageBody
-	if err := json.Unmarshal((*events)[1].Body, &msgBody); err != nil {
-		t.Fatalf("decode SEND_MESSAGE body: %v", err)
-	}
-	if msgBody.MessageType != "PINK_TEXT" {
-		t.Errorf("MessageType = %q, want PINK_TEXT", msgBody.MessageType)
-	}
-	if msgBody.Message != banishMessage {
-		t.Errorf("Message = %q, want %q", msgBody.Message, banishMessage)
+			f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+			r.CreateMonster(ctx, ten, f, banishTemplateId, 0, 0, 0, 5, 0, 5000, 100, "", "")
+
+			p, events := newRecordingProcessorWithBodies(t, ten)
+			err := p.Banish(f, banishCharacter, banishTemplateId)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(*events) != 2 {
+				t.Fatalf("expected 2 events, got %d: %v", len(*events), *events)
+			}
+			if (*events)[0].Topic != EnvCommandTopicPortal || (*events)[0].Type != "WARP" {
+				t.Errorf("event[0] = %+v, want WARP on %s", (*events)[0], EnvCommandTopicPortal)
+			}
+			if (*events)[1].Topic != system_message.EnvCommandTopic || (*events)[1].Type != system_message.CommandSendMessage {
+				t.Errorf("event[1] = %+v, want %s on %s", (*events)[1], system_message.CommandSendMessage, system_message.EnvCommandTopic)
+			}
+			var msgBody system_message.SendMessageBody
+			if err := json.Unmarshal((*events)[1].Body, &msgBody); err != nil {
+				t.Fatalf("decode SEND_MESSAGE body: %v", err)
+			}
+			if msgBody.MessageType != "PINK_TEXT" {
+				t.Errorf("MessageType = %q, want PINK_TEXT", msgBody.MessageType)
+			}
+			if msgBody.Message != banishMessage {
+				t.Errorf("Message = %q, want %q", msgBody.Message, banishMessage)
+			}
+		})
 	}
 }
 
 // TestBanish_MessageAbsent — no WZ banish message means no SEND_MESSAGE.
 func TestBanish_MessageAbsent(t *testing.T) {
-	r := GetMonsterRegistry()
-	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	ctx := context.Background()
-	r.Clear(ctx)
-
-	prevHook := testInformationLookup
-	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBanish(information.Banish{MapId: banishMapId, PortalName: banishPortal, Message: ""}).Build(), nil
+	tests := []struct {
+		name   string
+		banish information.Banish
+	}{
+		{
+			name:   "no WZ banish message means no SEND_MESSAGE",
+			banish: information.Banish{MapId: banishMapId, PortalName: banishPortal, Message: ""},
+		},
 	}
-	defer func() { testInformationLookup = prevHook }()
 
-	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	r.CreateMonster(ctx, ten, f, banishTemplateId, 0, 0, 0, 5, 0, 5000, 100, "", "")
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := GetMonsterRegistry()
+			ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+			ctx := context.Background()
+			r.Clear(ctx)
 
-	p, events := newRecordingProcessorWithBodies(t, ten)
-	err := p.Banish(f, banishCharacter, banishTemplateId)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(*events) != 1 {
-		t.Fatalf("expected 1 event, got %d: %v", len(*events), *events)
-	}
-	for _, e := range *events {
-		if e.Type == system_message.CommandSendMessage {
-			t.Errorf("unexpected SEND_MESSAGE event: %+v", e)
-		}
+			prevHook := testInformationLookup
+			testInformationLookup = func(_ uint32) (information.Model, error) {
+				return information.NewModelBuilder().SetBanish(tc.banish).Build(), nil
+			}
+			defer func() { testInformationLookup = prevHook }()
+
+			f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+			r.CreateMonster(ctx, ten, f, banishTemplateId, 0, 0, 0, 5, 0, 5000, 100, "", "")
+
+			p, events := newRecordingProcessorWithBodies(t, ten)
+			err := p.Banish(f, banishCharacter, banishTemplateId)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(*events) != 1 {
+				t.Fatalf("expected 1 event, got %d: %v", len(*events), *events)
+			}
+			for _, e := range *events {
+				if e.Type == system_message.CommandSendMessage {
+					t.Errorf("unexpected SEND_MESSAGE event: %+v", e)
+				}
+			}
+		})
 	}
 }
 
 // TestExecuteBanish_ConvergesOnSharedExecutor — the skill-129 path must reach
 // the same banishCharacter as the client-initiated path.
 func TestExecuteBanish_ConvergesOnSharedExecutor(t *testing.T) {
-	r := GetMonsterRegistry()
-	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	ctx := context.Background()
-	r.Clear(ctx)
-
-	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-	m := r.CreateMonster(ctx, ten, f, banishTemplateId, 0, 0, 0, 5, 0, 5000, 100, "", "")
-	uniqueId := m.UniqueId()
-	if _, err := r.ControlMonster(ten, uniqueId, banishCharacter); err != nil {
-		t.Fatalf("ControlMonster: %v", err)
-	}
-	m, err := r.GetMonster(ten, uniqueId)
-	if err != nil {
-		t.Fatalf("GetMonster: %v", err)
+	tests := []struct {
+		name   string
+		banish information.Banish
+	}{
+		{
+			name:   "the skill-129 path reaches the same banishCharacter as the client-initiated path",
+			banish: information.Banish{MapId: banishMapId, PortalName: banishPortal, Message: banishMessage},
+		},
 	}
 
-	prevHook := testInformationLookup
-	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBanish(information.Banish{MapId: banishMapId, PortalName: banishPortal, Message: banishMessage}).Build(), nil
-	}
-	defer func() { testInformationLookup = prevHook }()
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := GetMonsterRegistry()
+			ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+			ctx := context.Background()
+			r.Clear(ctx)
 
-	sd := mobskill.NewModelBuilder().
-		SetSkillId(uint16(monster2.SkillTypeBanish)).
-		SetLevel(1).
-		Build()
+			f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+			m := r.CreateMonster(ctx, ten, f, banishTemplateId, 0, 0, 0, 5, 0, 5000, 100, "", "")
+			uniqueId := m.UniqueId()
+			if _, err := r.ControlMonster(ten, uniqueId, banishCharacter); err != nil {
+				t.Fatalf("ControlMonster: %v", err)
+			}
+			m, err := r.GetMonster(ten, uniqueId)
+			if err != nil {
+				t.Fatalf("GetMonster: %v", err)
+			}
 
-	p, events := newRecordingProcessorWithBodies(t, ten)
-	p.executeBanish(m, sd)
+			prevHook := testInformationLookup
+			testInformationLookup = func(_ uint32) (information.Model, error) {
+				return information.NewModelBuilder().SetBanish(tc.banish).Build(), nil
+			}
+			defer func() { testInformationLookup = prevHook }()
 
-	if len(*events) != 2 {
-		t.Fatalf("expected 2 events, got %d: %v", len(*events), *events)
-	}
-	if (*events)[0].Topic != EnvCommandTopicPortal || (*events)[0].Type != "WARP" {
-		t.Errorf("event[0] = %+v, want WARP on %s", (*events)[0], EnvCommandTopicPortal)
-	}
-	var warp warpBody
-	if err := json.Unmarshal((*events)[0].Body, &warp); err != nil {
-		t.Fatalf("decode WARP body: %v", err)
-	}
-	if warp.CharacterId != banishCharacter {
-		t.Errorf("CharacterId = %d, want %d", warp.CharacterId, banishCharacter)
-	}
-	if warp.TargetMapId != _map.Id(banishMapId) {
-		t.Errorf("TargetMapId = %d, want %d", warp.TargetMapId, banishMapId)
-	}
-	if warp.TargetPortalName != banishPortal {
-		t.Errorf("TargetPortalName = %q, want %q", warp.TargetPortalName, banishPortal)
-	}
+			sd := mobskill.NewModelBuilder().
+				SetSkillId(uint16(monster2.SkillTypeBanish)).
+				SetLevel(1).
+				Build()
 
-	if (*events)[1].Topic != system_message.EnvCommandTopic || (*events)[1].Type != system_message.CommandSendMessage {
-		t.Errorf("event[1] = %+v, want %s on %s", (*events)[1], system_message.CommandSendMessage, system_message.EnvCommandTopic)
-	}
-	var msgBody system_message.SendMessageBody
-	if err := json.Unmarshal((*events)[1].Body, &msgBody); err != nil {
-		t.Fatalf("decode SEND_MESSAGE body: %v", err)
-	}
-	if msgBody.MessageType != "PINK_TEXT" {
-		t.Errorf("MessageType = %q, want PINK_TEXT", msgBody.MessageType)
-	}
-	if msgBody.Message != banishMessage {
-		t.Errorf("Message = %q, want %q", msgBody.Message, banishMessage)
+			p, events := newRecordingProcessorWithBodies(t, ten)
+			p.executeBanish(m, sd)
+
+			if len(*events) != 2 {
+				t.Fatalf("expected 2 events, got %d: %v", len(*events), *events)
+			}
+			if (*events)[0].Topic != EnvCommandTopicPortal || (*events)[0].Type != "WARP" {
+				t.Errorf("event[0] = %+v, want WARP on %s", (*events)[0], EnvCommandTopicPortal)
+			}
+			var warp warpBody
+			if err := json.Unmarshal((*events)[0].Body, &warp); err != nil {
+				t.Fatalf("decode WARP body: %v", err)
+			}
+			if warp.CharacterId != banishCharacter {
+				t.Errorf("CharacterId = %d, want %d", warp.CharacterId, banishCharacter)
+			}
+			if warp.TargetMapId != _map.Id(banishMapId) {
+				t.Errorf("TargetMapId = %d, want %d", warp.TargetMapId, banishMapId)
+			}
+			if warp.TargetPortalName != banishPortal {
+				t.Errorf("TargetPortalName = %q, want %q", warp.TargetPortalName, banishPortal)
+			}
+
+			if (*events)[1].Topic != system_message.EnvCommandTopic || (*events)[1].Type != system_message.CommandSendMessage {
+				t.Errorf("event[1] = %+v, want %s on %s", (*events)[1], system_message.CommandSendMessage, system_message.EnvCommandTopic)
+			}
+			var msgBody system_message.SendMessageBody
+			if err := json.Unmarshal((*events)[1].Body, &msgBody); err != nil {
+				t.Fatalf("decode SEND_MESSAGE body: %v", err)
+			}
+			if msgBody.MessageType != "PINK_TEXT" {
+				t.Errorf("MessageType = %q, want PINK_TEXT", msgBody.MessageType)
+			}
+			if msgBody.Message != banishMessage {
+				t.Errorf("Message = %q, want %q", msgBody.Message, banishMessage)
+			}
+		})
 	}
 }

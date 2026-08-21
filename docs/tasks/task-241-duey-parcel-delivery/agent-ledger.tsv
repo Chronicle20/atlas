@@ -163,3 +163,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-20T10:23:55Z	agent	Re-audit services	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	-	APPROVED_WITH_FINDINGS	yes	-	-
 2026-08-20T10:23:55Z	agent	Fix round C	atlas-implementer	sonnet	-	-	-	-	in-flight	-	-	-	-	-
 2026-08-20T10:26:02Z	agent	Fix round C	atlas-implementer	sonnet	-	-	-	-	DONE	f5482cf21	-	-	-	-
+2026-08-21T17:20:47Z	agent	bug-duey-click-no-dialog	atlas-implementer	sonnet	-	-	-	-	DONE	ce894c841	-	-	-	-
+2026-08-21T17:52:41Z	agent	bug-duey-click-no-dialog	atlas-verifier	haiku	-	-	-	-	PASS	8acb7af09	-	-	-	-

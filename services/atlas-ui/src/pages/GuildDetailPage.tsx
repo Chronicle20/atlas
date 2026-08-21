@@ -9,6 +9,7 @@ import type { DataTableColumnDef } from "@/components/data-table-features";
 import { useTenant } from "@/context/tenant-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useJobNameLookup } from "@/lib/hooks/api/useJobGraph";
+import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import {
   Tooltip,
   TooltipContent,
@@ -23,6 +24,10 @@ export function GuildDetailPage() {
   const jobName = useJobNameLookup();
   const guildQuery = useGuild(activeTenant!, id ?? "");
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    guildQuery,
+    tenantConfigQuery,
+  ]);
 
   const guild = guildQuery.data ?? null;
   const tenantConfig = tenantConfigQuery.data ?? null;
@@ -121,6 +126,9 @@ export function GuildDetailPage() {
             title: "No guild members found",
             description: "This guild currently has no members.",
           }}
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
+          lastUpdatedAt={lastUpdatedAt}
         />
       </div>
       <Toaster richColors />

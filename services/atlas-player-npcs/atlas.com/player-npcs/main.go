@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-player-npcs/playernpc"
 	"context"
 	"os"
 
@@ -41,7 +42,7 @@ func main() {
 	l := rt.Logger()
 
 	// Connect to the database
-	db := database.Connect(l, database.SetMigrations(outboxlib.Migration))
+	db := database.Connect(l, database.SetMigrations(outboxlib.Migration, playernpc.Migration))
 
 	// Boot the outbox drainer: publishes the transactional outbox to Kafka.
 	// Leadership is gated by a postgres advisory lock — replicas are safe.
@@ -70,6 +71,7 @@ func main() {
 		WithWaitGroup(rt.WaitGroup()).
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(playernpc.InitializeRoutes(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		AddRouteInitializer(server.MountReadiness("/readyz", rt.Ready)).
 		Run()

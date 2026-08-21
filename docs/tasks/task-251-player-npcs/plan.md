@@ -111,7 +111,7 @@ fixtures).
 | warrior | `job.WarriorId` (100) | `200` |
 | magician | `job.MagicianId` (200) | `200` |
 | bowman | `job.BowmanId` (300) | `200` |
-| thief | `job.ThiefId` (400) | `200` |
+| thief | `job.RogueId` (400) | `200` |
 | pirate | `job.PirateId` (500) | `200` |
 | noblesse | `job.NoblesseId` (1000) | `200` |
 | dawn warrior | `job.Id(1100)` | `200` |

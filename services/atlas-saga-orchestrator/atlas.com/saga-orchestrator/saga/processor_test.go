@@ -82,7 +82,7 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 			processor, hook := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mocks
-			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id, gm int, meso uint32) error {
+			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id, gm int, meso uint32, ap uint16, sp string) error {
 				return tt.characterCreationResult
 			}
 
@@ -278,7 +278,7 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mocks to fail at specific step
-			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id, gm int, meso uint32) error {
+			charP.RequestCreateCharacterFunc = func(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id, gm int, meso uint32, ap uint16, sp string) error {
 				if tt.failureAtStep == 0 {
 					return errors.New("character creation failed")
 				}

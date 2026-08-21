@@ -38,7 +38,7 @@ type ProcessorMock struct {
 	ChangeFaceFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId uint32) error
 	ChangeSkinAndEmitFunc       func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId byte) error
 	ChangeSkinFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId byte) error
-	RequestCreateCharacterFunc  func(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id, gm int, meso uint32) error
+	RequestCreateCharacterFunc  func(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id, gm int, meso uint32, ap uint16, sp string) error
 	RequestDeleteCharacterFunc  func(transactionId uuid.UUID, characterId uint32, worldId world.Id) error
 	SetHPAndEmitFunc            func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error
 	SetHPFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error
@@ -247,9 +247,9 @@ func (m *ProcessorMock) ChangeSkin(mb *message.Buffer) func(transactionId uuid.U
 }
 
 // RequestCreateCharacter is a mock implementation of the character.Processor.RequestCreateCharacter method
-func (m *ProcessorMock) RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id, gm int, meso uint32) error {
+func (m *ProcessorMock) RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id, gm int, meso uint32, ap uint16, sp string) error {
 	if m.RequestCreateCharacterFunc != nil {
-		return m.RequestCreateCharacterFunc(transactionId, accountId, worldId, name, level, strength, dexterity, intelligence, luck, hp, mp, jobId, gender, face, hair, skin, mapId, gm, meso)
+		return m.RequestCreateCharacterFunc(transactionId, accountId, worldId, name, level, strength, dexterity, intelligence, luck, hp, mp, jobId, gender, face, hair, skin, mapId, gm, meso, ap, sp)
 	}
 	return nil
 }

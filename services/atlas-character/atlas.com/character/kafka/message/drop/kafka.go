@@ -50,18 +50,20 @@ type RequestPickUpCommandBody struct {
 }
 
 const (
-	EnvEventTopicDropStatus = "EVENT_TOPIC_DROP_STATUS"
-	StatusEventTypeReserved = "RESERVED"
+	EnvEventTopicDropStatus    = "EVENT_TOPIC_DROP_STATUS"
+	StatusEventTypeReserved    = "RESERVED"
+	StatusEventTypeMesoAwarded = "MESO_AWARDED"
 )
 
 type StatusEvent[E any] struct {
-	WorldId   world.Id   `json:"worldId"`
-	ChannelId channel.Id `json:"channelId"`
-	MapId     _map.Id    `json:"mapId"`
-	Instance  uuid.UUID  `json:"instance"`
-	DropId    uint32     `json:"dropId"`
-	Type      string     `json:"type"`
-	Body      E          `json:"body"`
+	TransactionId uuid.UUID  `json:"transactionId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
+	DropId        uint32     `json:"dropId"`
+	Type          string     `json:"type"`
+	Body          E          `json:"body"`
 }
 
 type ReservedStatusEventBody struct {
@@ -70,4 +72,13 @@ type ReservedStatusEventBody struct {
 	EquipmentId uint32 `json:"equipmentId"`
 	Quantity    uint32 `json:"quantity"`
 	Meso        uint32 `json:"meso"`
+}
+
+// MesoAwardedStatusEventBody mirrors atlas-drops' StatusEventMesoAwardedBody.
+// One event per recipient of a split meso drop; exactly one carries
+// Picker: true, and only that one completes the pickup.
+type MesoAwardedStatusEventBody struct {
+	CharacterId uint32 `json:"characterId"`
+	Amount      uint32 `json:"amount"`
+	Picker      bool   `json:"picker"`
 }

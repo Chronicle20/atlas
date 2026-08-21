@@ -6,6 +6,8 @@ import (
 
 	expression2 "atlas-channel/kafka/message/expression"
 
+	"github.com/google/uuid"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -60,5 +62,39 @@ func TestSetCommandProviderCarriesDurationAndByItemOption(t *testing.T) {
 				t.Errorf("byItemOption: got %v, want %v", cmd.ByItemOption, tc.byItemOption)
 			}
 		})
+	}
+}
+
+// TestSetCommandProviderSetsTransactionId verifies that SetCommandProvider
+// assigns a fresh, non-nil transaction id to every command it emits.
+func TestSetCommandProviderSetsTransactionId(t *testing.T) {
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+
+	msgs1, err := SetCommandProvider(1000, f, 8, -1, false)()
+	if err != nil {
+		t.Fatalf("SetCommandProvider error: %v", err)
+	}
+	var cmd1 expression2.Command
+	if err := json.Unmarshal(msgs1[0].Value, &cmd1); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	msgs2, err := SetCommandProvider(1000, f, 8, -1, false)()
+	if err != nil {
+		t.Fatalf("SetCommandProvider error: %v", err)
+	}
+	var cmd2 expression2.Command
+	if err := json.Unmarshal(msgs2[0].Value, &cmd2); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+
+	if cmd1.TransactionId == uuid.Nil {
+		t.Errorf("cmd1.TransactionId: got nil uuid")
+	}
+	if cmd2.TransactionId == uuid.Nil {
+		t.Errorf("cmd2.TransactionId: got nil uuid")
+	}
+	if cmd1.TransactionId == cmd2.TransactionId {
+		t.Errorf("expected distinct transaction ids, got the same value for both commands: %s", cmd1.TransactionId)
 	}
 }

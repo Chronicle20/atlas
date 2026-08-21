@@ -74,15 +74,20 @@ func GetAttestationTimers() *attestationTimers {
 // all rebuild a per-row context from context.Background() plus a restored
 // tenant, with no request in flight to inherit ENVIRONMENT from — an
 // attestation deadline fires long after its arming command's context is gone,
-// and a boot sweep runs before any request has arrived at all. Without this
-// pod's own environment identity applied, every REST call and Kafka emit those
-// paths originate would silently resolve to the baseline URL/topic regardless
-// of which environment the pod actually belongs to (FR-1.8, FR-3.1/FR-3.2).
+// and a boot sweep runs before any request has arrived at all. Without the
+// environment that owns the row's own tenant applied, every REST call and
+// Kafka emit those paths originate would either resolve to the baseline
+// URL/topic regardless of which environment the pod actually belongs to
+// (FR-1.8, FR-3.1/FR-3.2), or — for a baseline pod serving a sparse
+// environment's tenant — be rejected outright by the ownership reconciliation
+// those paths hit (FR-7.7).
 //
 // trade/ is outside env-domain-guard's permitted atlas-env import list, so the
-// real env.WithContext/env.Self() implementation is threaded in from main.go
-// as a plain function value instead of the package importing atlas-env itself
-// (matches socket.WithSelfEnvironment, 99c0e598d, and
+// real origination (service.TenantEnvironment: the environment that owns the
+// tenant already on ctx, falling back to this pod's own env.Self() when the
+// tenant is unknown) is threaded in from main.go as a plain function value
+// instead of the package importing atlas-env itself (matches
+// socket.WithSelfEnvironment, 99c0e598d, and
 // saga.SagaTimers().SetEnvContext, bfe36ebfe). The default is the identity
 // function, which is what every existing test exercises unless it calls
 // SetEnvContext.

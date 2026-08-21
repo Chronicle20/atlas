@@ -479,6 +479,169 @@ func TestFind_ArmSymmetry(t *testing.T) {
 	}
 }
 
+// decodeWhisperSendResult decodes a WhisperSendResult body and returns the
+// echoed name and success flag.
+func decodeWhisperSendResult(t *testing.T, ctx context.Context, l logrus.FieldLogger, b []byte) (string, bool) {
+	t.Helper()
+	req := request.Request(b)
+	reader := request.NewRequestReader(&req, 0)
+	var m fieldcb.WhisperSendResult
+	m.Decode(l, ctx)(&reader, nil)
+	return m.TargetName(), m.Success()
+}
+
+// dispatchWhisperChat drives produceWhisperChatResult directly, mirroring
+// findEnv.dispatch, and returns the announced body (nil if nothing was
+// announced, which is the "produced, success comes from the Kafka round
+// trip" case).
+func (e *findEnv) dispatchWhisperChat(msg, targetName string) []byte {
+	e.t.Helper()
+	e.announced = nil
+	if err := produceWhisperChatResult(e.l)(e.ctx)(e.wp)(msg, targetName)(e.s); err != nil {
+		e.t.Fatalf("produceWhisperChatResult: %v", err)
+	}
+	if len(e.announced) == 0 {
+		return nil
+	}
+	if len(e.announced) != 1 {
+		e.t.Fatalf("announced %d packets, want 0 or 1", len(e.announced))
+	}
+	return e.announced[0]
+}
+
+// TestWhisperChat_Decision covers every row of the WhisperModeChat decision
+// table: whether WhisperSendResult(false) is announced without producing the
+// chat command, or the chat command is produced (success comes from the
+// Kafka round trip, not from here).
+func TestWhisperChat_Decision(t *testing.T) {
+	cases := []struct {
+		name           string
+		setup          func(*findEnv)
+		wantBranch     string
+		wantAnnounced  bool // announced WhisperSendResult(false)
+		wantProduced   bool
+		wantErrorLevel bool
+	}{
+		{
+			name:          "unresolvable name",
+			setup:         func(e *findEnv) { e.targetErr = errors.New("no such character") },
+			wantBranch:    "unresolved",
+			wantAnnounced: true,
+			wantProduced:  false,
+		},
+		{
+			name:          "never logged in",
+			setup:         func(e *findEnv) { e.locErr = location.ErrNotFound },
+			wantBranch:    "never-logged-in",
+			wantAnnounced: true,
+			wantProduced:  false,
+		},
+		{
+			name: "offline",
+			setup: func(e *findEnv) {
+				e.loc = locationFixture(characterconst.PresenceStateOffline, findRemoteChannel)
+				e.locErr = nil
+			},
+			wantBranch:    "offline",
+			wantAnnounced: true,
+			wantProduced:  false,
+		},
+		{
+			name: "in cash shop",
+			setup: func(e *findEnv) {
+				e.loc = locationFixture(characterconst.PresenceStateInCashShop, findRemoteChannel)
+				e.locErr = nil
+			},
+			wantBranch:    "cash-shop",
+			wantAnnounced: true,
+			wantProduced:  false,
+		},
+		{
+			name: "in field",
+			setup: func(e *findEnv) {
+				e.loc = locationFixture(characterconst.PresenceStateInField, findRemoteChannel)
+				e.locErr = nil
+			},
+			wantBranch:    "in-field",
+			wantAnnounced: false,
+			wantProduced:  true,
+		},
+		{
+			name:           "infrastructure error fails open",
+			setup:          func(e *findEnv) { e.locErr = errors.New("500 from atlas-maps") },
+			wantBranch:     "lookup-failed",
+			wantAnnounced:  false,
+			wantProduced:   true,
+			wantErrorLevel: true,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			env := newFindEnv(t)
+			c.setup(env)
+
+			var produced bool
+			origProduce := produceWhisperChatFunc
+			produceWhisperChatFunc = func(_ logrus.FieldLogger, _ context.Context, _ field.Model, _ uint32, _ string, _ string) error {
+				produced = true
+				return nil
+			}
+			t.Cleanup(func() { produceWhisperChatFunc = origProduce })
+
+			b := env.dispatchWhisperChat("hi", "Bob")
+
+			if produced != c.wantProduced {
+				t.Errorf("produced = %v, want %v", produced, c.wantProduced)
+			}
+			if c.wantAnnounced {
+				if b == nil {
+					t.Fatalf("no packet announced, want WhisperSendResult(false)")
+				}
+				name, success := decodeWhisperSendResult(t, env.ctx, env.l, b)
+				if name != "Bob" {
+					t.Errorf("echoed name = %q, want Bob", name)
+				}
+				if success {
+					t.Errorf("success = true, want false")
+				}
+			} else if b != nil {
+				t.Errorf("announced a packet, want none: %v", b)
+			}
+			if !bytes.Contains(env.logs.Bytes(), []byte(c.wantBranch)) {
+				t.Errorf("no branch=%s log line in %s", c.wantBranch, env.logs.String())
+			}
+			if c.wantErrorLevel && !bytes.Contains(env.logs.Bytes(), []byte("level=error")) {
+				t.Errorf("infrastructure failure was not logged at error level: %s", env.logs.String())
+			}
+		})
+	}
+}
+
+// TestWhisperChat_ProduceFailure asserts the existing behaviour is preserved:
+// a deliverable target whose chat command production itself fails still
+// answers WhisperSendResult(false).
+func TestWhisperChat_ProduceFailure(t *testing.T) {
+	env := newFindEnv(t)
+	env.loc = locationFixture(characterconst.PresenceStateInField, findRemoteChannel)
+	env.locErr = nil
+
+	origProduce := produceWhisperChatFunc
+	produceWhisperChatFunc = func(_ logrus.FieldLogger, _ context.Context, _ field.Model, _ uint32, _ string, _ string) error {
+		return errors.New("kafka unavailable")
+	}
+	t.Cleanup(func() { produceWhisperChatFunc = origProduce })
+
+	b := env.dispatchWhisperChat("hi", "Bob")
+	if b == nil {
+		t.Fatalf("no packet announced, want WhisperSendResult(false)")
+	}
+	name, success := decodeWhisperSendResult(t, env.ctx, env.l, b)
+	if name != "Bob" || success {
+		t.Errorf("name=%q success=%v, want Bob/false", name, success)
+	}
+}
+
 // locationFixture builds a location.Model in the given state on the given
 // channel, at map 100000000.
 func locationFixture(state characterconst.PresenceState, ch channel.Id) location.Model {

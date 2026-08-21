@@ -13,6 +13,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	fieldconst "github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	chat "github.com/Chronicle20/atlas/libs/atlas-packet/chat/serverbound"
 	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
@@ -30,11 +31,7 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 		if p.Mode() == chat.WhisperModeChat {
-			err := message.NewProcessor(l, ctx).WhisperChat(s.Field(), s.CharacterId(), p.Msg(), p.TargetName())
-			if err != nil {
-				_ = session.Announce(l)(ctx)(wp)(fieldcb.WhisperWriter)(fieldcb.NewWhisperSendResult(0x0A, p.TargetName(), false).Encode)(s)
-				return
-			}
+			_ = produceWhisperChatResult(l)(ctx)(wp)(p.Msg(), p.TargetName())(s)
 			return
 		}
 		l.Warnf("Character [%d] using unhandled whisper mode [%d]. Target [%s], Message [%s], UpdateTime [%d]", s.CharacterId(), p.Mode(), p.TargetName(), p.Msg(), p.UpdateTime())
@@ -47,6 +44,13 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 // them and restore via t.Cleanup.
 var findCharacterByNameFunc = func(l logrus.FieldLogger, ctx context.Context, name string) (character.Model, error) {
 	return character.NewProcessor(l, ctx).GetByName(name)
+}
+
+// produceWhisperChatFunc is the seam over the chat command production for
+// WhisperModeChat, so the whisper handler test can assert whether it was
+// called without a live Kafka broker.
+var produceWhisperChatFunc = func(l logrus.FieldLogger, ctx context.Context, f fieldconst.Model, actorId uint32, msg string, recipientName string) error {
+	return message.NewProcessor(l, ctx).WhisperChat(f, actorId, msg, recipientName)
 }
 
 var findLocalSessionFunc = func(l logrus.FieldLogger, ctx context.Context, ch channel.Model, characterId uint32) (session.Model, error) {
@@ -158,6 +162,89 @@ func findDecision(l logrus.FieldLogger, ctx context.Context, s session.Model, ta
 		// FR-7a. OFFLINE, and anything unrecognised, which ParsePresenceState
 		// has already narrowed to OFFLINE.
 		return findOutcome{kind: findOutcomeError, branch: "offline", name: targetName}
+	}
+}
+
+// whisperOutcome is the result of whisperDecision: whether the target can
+// receive a chat whisper right now, the rule name that matched (for logs),
+// and — only for the infrastructure-error, fail-open branch — the underlying
+// error.
+type whisperOutcome struct {
+	deliverable bool
+	branch      string
+	err         error
+}
+
+// whisperDecision is the pure core of the WhisperModeChat arm. Unlike /find,
+// an infrastructure failure from the location lookup fails OPEN (deliverable
+// stays true): this path has a real side effect (the chat command) to
+// preserve, and a transport blip must not turn a deliverable whisper into a
+// reported failure.
+func whisperDecision(l logrus.FieldLogger, ctx context.Context, targetName string) whisperOutcome {
+	tc, err := findCharacterByNameFunc(l, ctx, targetName)
+	if err != nil {
+		return whisperOutcome{deliverable: false, branch: "unresolved"}
+	}
+
+	loc, err := findCharacterLocationFunc(l, ctx, tc.Id())
+	if err != nil {
+		if errors.Is(err, location.ErrNotFound) {
+			return whisperOutcome{deliverable: false, branch: "never-logged-in"}
+		}
+		// Infrastructure failure: fail open.
+		return whisperOutcome{deliverable: true, branch: "lookup-failed", err: err}
+	}
+
+	switch loc.State() {
+	case characterconst.PresenceStateInField:
+		return whisperOutcome{deliverable: true, branch: "in-field"}
+	case characterconst.PresenceStateInCashShop:
+		return whisperOutcome{deliverable: false, branch: "cash-shop"}
+	default:
+		return whisperOutcome{deliverable: false, branch: "offline"}
+	}
+}
+
+// produceWhisperChatResult is the WhisperModeChat counterpart to
+// produceFindResultBody: it runs whisperDecision, logs the branch, and either
+// announces WhisperSendResult(false) without producing the chat command, or
+// produces the chat command (its own success:true round-trips back through
+// the Kafka consumer's handleWhisperChat, not from here) and announces
+// WhisperSendResult(false) only if production itself fails.
+func produceWhisperChatResult(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(msg string, targetName string) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(msg string, targetName string) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(msg string, targetName string) model.Operator[session.Model] {
+			return func(msg string, targetName string) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					o := whisperDecision(l, ctx, targetName)
+
+					entry := l.WithFields(logrus.Fields{
+						"requester_id": s.CharacterId(),
+						"target_name":  targetName,
+						"branch":       o.branch,
+					})
+					if o.err != nil {
+						entry.WithError(o.err).Error("whisper location lookup failed")
+					} else {
+						entry.Debug("whisper resolved")
+					}
+
+					// Undeliverable target and a failed produce answer the
+					// client identically; build the failure announce once so
+					// the mode byte appears at a single call site.
+					announceFailure := session.Announce(l)(ctx)(wp)(fieldcb.WhisperWriter)(fieldcb.NewWhisperSendResult(0x0A, targetName, false).Encode)
+
+					if !o.deliverable {
+						return announceFailure(s)
+					}
+
+					if err := produceWhisperChatFunc(l, ctx, s.Field(), s.CharacterId(), msg, targetName); err != nil {
+						return announceFailure(s)
+					}
+					return nil
+				}
+			}
+		}
 	}
 }
 

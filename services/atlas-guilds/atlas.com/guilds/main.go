@@ -14,7 +14,6 @@ import (
 	"os"
 	"time"
 
-	env "github.com/Chronicle20/atlas/libs/atlas-env"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 
 	character2 "atlas-guilds/kafka/consumer/character"
@@ -119,9 +118,7 @@ func main() {
 		Run()
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
-		tasks.Register(l, rt.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35), func(ctx context.Context) context.Context {
-			return env.WithContext(ctx, env.Self())
-		}))
+		tasks.Register(l, rt.Context())(guild.NewTransitionTimeout(l, db, time.Second*time.Duration(35), service.TenantEnvironment))
 	})
 
 	rt.Wait()

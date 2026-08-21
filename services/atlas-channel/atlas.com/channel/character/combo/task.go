@@ -26,15 +26,16 @@ type DecayTick struct {
 	envContext func(context.Context) context.Context
 }
 
-// NewDecayTick builds the idle-combo sweep. envContext originates this
-// pod's own environment identity (env.Self()) onto each expired combo's
+// NewDecayTick builds the idle-combo sweep. envContext originates the
+// environment that owns each expired combo's tenant (falling back to this
+// pod's own, env.Self(), when the tenant is unknown) onto that combo's
 // per-character context before the buff-cancel Kafka event is produced --
 // character/combo is outside env-domain-guard's permitted atlas-env import
 // list, so the caller (main.go) threads this in as a plain function value
-// (socket.WithSelfEnvironment) rather than the package importing atlas-env
-// itself. Without it, decide() sees an empty ENVIRONMENT header and fails
-// open per FR-1.8: every live deployment, not just this pod's, would act
-// on the cancel.
+// (service.TenantEnvironment) rather than the package importing atlas-env
+// itself. Without it, decide() sees an empty or wrong ENVIRONMENT header and
+// either fails open per FR-1.8 or is dropped by every consumer's ownership
+// gate per FR-7.7.
 func NewDecayTick(l logrus.FieldLogger, ctx context.Context, interval time.Duration, envContext func(context.Context) context.Context) *DecayTick {
 	return &DecayTick{l: l, ctx: ctx, interval: interval, envContext: envContext}
 }
@@ -68,13 +69,14 @@ func cancelComboBuff(l logrus.FieldLogger, ctx context.Context, e Expired) error
 // next sweep will not retry because the count is already zero -- an orphaned
 // buff icon is strictly better than a stalled tick.
 //
-// envContext must attach this pod's own environment identity (env.Self())
-// alongside the per-character tenant -- this is per-character lifecycle
-// state driven by real gameplay, not one of the periodic multi-tenant
-// background sweeps (session/task.go, session/processor.go, channel/task.go)
-// that legitimately omit the environment. A nil envContext is a caller bug;
-// tests exercise it directly since NewDecayTick's own tests can't observe
-// the resulting context.
+// envContext must attach the environment that owns the tenant already on
+// ctx (falling back to this pod's own, env.Self(), when the tenant is
+// unknown) alongside the per-character tenant -- this is per-character
+// lifecycle state driven by real gameplay, not one of the periodic
+// multi-tenant background sweeps (session/task.go, session/processor.go,
+// channel/task.go) that legitimately omit the environment. A nil envContext
+// is a caller bug; tests exercise it directly since NewDecayTick's own
+// tests can't observe the resulting context.
 func processExpiries(l logrus.FieldLogger, ctx context.Context, expired []Expired, cancel func(l logrus.FieldLogger, ctx context.Context, e Expired) error, envContext func(context.Context) context.Context) int {
 	n := 0
 	for _, e := range expired {

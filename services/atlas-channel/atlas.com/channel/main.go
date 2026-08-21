@@ -340,13 +340,16 @@ func main() {
 
 	routine.Go(l, rt.Context(), func(_ context.Context) {
 		// character/combo sits outside env-domain-guard's permitted
-		// atlas-env import list (main.go, kafka/, rest/, socket/), so
-		// this pod's environment identity is threaded in as a plain
-		// function value (socket.WithSelfEnvironment) rather than the
-		// package importing atlas-env itself. Without it, DecayTick's
-		// per-character buff-cancel Kafka events would carry an empty
-		// environment header and fail decide() open per FR-1.8.
-		tasks.Register(l, rt.Context())(combo.NewDecayTick(l, rt.Context(), time.Second, socket.WithSelfEnvironment))
+		// atlas-env import list (main.go, kafka/, rest/, socket/), so the
+		// environment that owns each expired combo's tenant (falling back
+		// to this pod's own, env.Self(), when the tenant is unknown) is
+		// threaded in as a plain function value (service.TenantEnvironment)
+		// rather than the package importing atlas-env itself. Without it,
+		// DecayTick's per-character buff-cancel Kafka events would carry an
+		// empty or wrong environment header and either fail decide() open
+		// per FR-1.8 or be dropped by every consumer's ownership gate per
+		// FR-7.7.
+		tasks.Register(l, rt.Context())(combo.NewDecayTick(l, rt.Context(), time.Second, service.TenantEnvironment))
 	})
 
 	rt.TeardownFunc(session.Teardown(l))

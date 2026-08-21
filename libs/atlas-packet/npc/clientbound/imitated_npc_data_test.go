@@ -9,7 +9,7 @@ import (
 )
 
 // packet-audit:verify packet=npc/clientbound/ImitatedNpcData version=gms_v61 ida=0x5efc2e
-// packet-audit:verify packet=npc/clientbound/ImitatedNpcData version=gms_v79 ida=0x9540ff
+// packet-audit:verify packet=npc/clientbound/ImitatedNpcData version=gms_v79 ida=0x668877
 func TestImitatedNpcData(t *testing.T) {
 	input := NewImitatedNpcData([]ImitatedNpc{
 		NewImitatedNpc(9901000, "Hero", packetmodel.NewAvatar(

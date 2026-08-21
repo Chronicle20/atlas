@@ -311,3 +311,76 @@ Standing operating rules on this branch, unchanged:
 Two operator hand-backs still outstanding (unchanged, recorded above under Task 8): create
 `atlas-player-npcs-main` on `postgres.home`, and flip the GHCR package public after the first
 image push.
+
+# Task 15 — the deploy transaction
+
+Landed `811c296af` (12/12 `TestDeploy` subtests). Gate 21 FAILED on one staticcheck QF1008
+selector nit in `playernpc/administrator.go:110`; everything else in that gate passed.
+Fixed in `3c5a3fd82`. **Gate 22 PASS at `3c5a3fd82` — last gated commit.**
+
+`playernpc.Processor` composes Tasks 9–14 into the design §8.1 transaction and is the
+contract Tasks 16/17/21 build against:
+
+```
+Deploy(characterId uint32, worldId world.Id, mapId _map.Id, enforceEligibility bool, explicit *Position) (Model, error)
+Redeploy(id uuid.UUID) (Model, error)
+RemoveById(id uuid.UUID) (Model, error)
+Remove(characterId uint32, mapId *_map.Id) ([]Model, error)
+GetById(id uuid.UUID) (Model, error)
+GetByMap(worldId world.Id, mapId _map.Id, page model.Page) ([]Model, error)
+
+NewProcessor(l, ctx, db, cp character.Processor, ip inventory.Processor,
+             rp ranking.Processor, cfgp configuration.Processor,
+             np npcdata.Processor, mp mapdata.Processor, emit EventEmitter) Processor
+```
+
+Two things the implementer flagged, carried into the Task 16 brief:
+
+- `resolvePodiumPosition` reads design §5.2's "rank" as `world_job_rank - 1`. That is the
+  implementer's own inference — §5.2 does not say which counter feeds it — grounded in podium
+  maps routing 1:1 with a single job branch, but not table-verified. Worth re-checking when
+  Task 16/19 exercise a live podium map.
+- Task 16's REST body must be confirmed against `Position`'s two fields before wiring.
+
+**Test-fixture gotcha worth keeping:** `102000004` is `_map.VictoriaRoadHallOfWarriors1Id`, a
+real Hall of Fame *and* podium map. Task 12's `administrator_test.go` uses it harmlessly for
+persistence-only fixtures, but reusing it by habit elsewhere produces confusing
+podium-dispatch failures. `processor_test.go` uses `555000004` — outside both `hallOfFameMaps`
+and `podiumMaps` — for grid-path tests.
+
+Task 15's review was still in flight when Task 16 was dispatched; its verdict is recorded
+below when it lands.
+
+## Task 15 review — APPROVED_WITH_FINDINGS, 1 blocking
+
+`.superpowers/sdd/plan/task-15-review.md`. The reviewer traced the deploy transaction,
+event-after-commit discipline, `Redeploy`'s non-touching of position, the prior fix round's
+signatures (`snapshot.Capture`, `_map.Id`, `Placement.ScriptId uint32`) and job-id typing
+(via `constants.SkillJobSet`, never a raw wire comparison) to source — all check out. It also
+confirmed the **`Step` column decision is complete via GORM `AutoMigrate`**, not a
+hand-migration gap.
+
+**Blocking:** `processor.go:414-469` — the podium deploy path (`resolvePodiumPosition` /
+`podiumRank`) ships the implementer's admitted-unverified `world_job_rank - 1` reading of
+design §5.2 with **zero test coverage**; every `TestDeploy` subtest uses the deliberately
+non-podium `555000004`. Fix brief: `.superpowers/sdd/plan/task-15-brief-fix.md` — settle the
+semantics against source *and* pin them with a podium subtest.
+
+**Non-blocking, accepted not fixed — carried forward as a Task 21 constraint:**
+`processor.go:567-581` bulk `Remove` runs N separate transactions/emits rather than one atomic
+operation. That matches design's per-NPC REMOVED shape, so the code stands, but **Task 21's GM
+handler must treat a mid-loop failure as a partial success, not all-or-nothing.**
+
+# Task 16 — REST resource
+
+Landed `a24feca93` (`playernpc/{rest.go,resource.go,requests.go,resource_test.go}` new,
+`main.go` edited; `TestPlayerNpcResource` 17/17). Not yet gated — its commit joins the next
+gate's range together with the Task 15 fix.
+
+Two implementer concerns handed to the Task 16 reviewer:
+
+- The eligibility endpoint defaults `worldId` to `0`. Design's literal signature omits it but
+  the duplicate check needs it, so this is the implementer's inference — needs a ruling on
+  whether it silently checks the wrong world.
+- No `.bruno/` collection entry was added; the implementer argues that file belongs to Task 8's
+  inventory, not Task 16's. Reviewer to check the convention.

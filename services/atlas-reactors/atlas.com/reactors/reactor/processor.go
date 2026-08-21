@@ -163,7 +163,6 @@ func (p *ProcessorImpl) Destroy() model.Operator[Model] {
 }
 
 func (p *ProcessorImpl) Hit(reactorId uint32, characterId uint32, skillId uint32) error {
-	t := tenant.MustFromContext(p.ctx)
 	r, err := p.GetById(reactorId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get reactor [%d] for hit.", reactorId)
@@ -188,20 +187,32 @@ func (p *ProcessorImpl) Hit(reactorId uint32, characterId uint32, skillId uint32
 		return p.TriggerAndDestroy(r, characterId)
 	}
 
-	var nextState int8 = -1
-	var matchedEventType int32 = 0
-	for _, event := range stateEvents {
-		if len(event.ActiveSkills()) == 0 || containsSkill(event.ActiveSkills(), skillId) {
-			nextState = event.NextState()
-			matchedEventType = event.Type()
-			break
-		}
-	}
+	nextState, matchedEventType := selectNextState(stateEvents, skillId)
 
 	if nextState == -1 {
 		p.l.Debugf("Reactor [%d] reached terminal state. Triggering and destroying.", reactorId)
 		return p.TriggerAndDestroy(r, characterId)
 	}
+
+	return p.advance(r, characterId, nextState, matchedEventType)
+}
+
+// selectNextState applies the hit path's skill-gating predicate to a state's
+// events. Returns (-1, 0) when no event matches. Touch does NOT use this --
+// see Touch's own selection (FR-16).
+func selectNextState(stateEvents []state.Model, skillId uint32) (int8, int32) {
+	for _, event := range stateEvents {
+		if len(event.ActiveSkills()) == 0 || containsSkill(event.ActiveSkills(), skillId) {
+			return event.NextState(), event.Type()
+		}
+	}
+	return -1, 0
+}
+
+func (p *ProcessorImpl) advance(r Model, characterId uint32, nextState int8, matchedEventType int32) error {
+	t := tenant.MustFromContext(p.ctx)
+	reactorId := r.Id()
+	stateInfo := r.Data().StateInfo()
 
 	_, hasNextState := stateInfo[nextState]
 	if !hasNextState {

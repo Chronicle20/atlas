@@ -225,6 +225,10 @@ func (m Model) Alive() bool {
 	return m.Hp() > 0
 }
 
+// DamageLeader returns the characterId with the highest recorded damage, or
+// 0 when the monster carries no damage entries at all — a self-destruct
+// (task-253) can detonate a mob nobody has hit yet, and 0 is the "no killer"
+// sentinel every consumer already tolerates.
 func (m Model) DamageLeader() uint32 {
 	index := -1
 	for i, x := range m.damageEntries {
@@ -233,6 +237,9 @@ func (m Model) DamageLeader() uint32 {
 		} else if m.damageEntries[index].Damage < x.Damage {
 			index = i
 		}
+	}
+	if index == -1 {
+		return 0
 	}
 	return m.damageEntries[index].CharacterId
 }

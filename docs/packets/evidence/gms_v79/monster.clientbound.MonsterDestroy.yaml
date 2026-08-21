@@ -8,3 +8,5 @@ ida:
     decompile_sha256: a2c88236ff1ceef1db60c226fbd42f0db8d4f9eb21823e8635b217400a60ce2c
 verifies:
   - libs/atlas-packet/monster/clientbound/destroy_test.go#TestMonsterDestroyBytesV79
+  - libs/atlas-packet/monster/clientbound/destroy_test.go#TestMonsterDestroySwallowGate
+  - libs/atlas-packet/monster/clientbound/destroy_test.go#TestMonsterDestroyNonSwallowTypesAreFiveBytes

@@ -54,6 +54,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleKillCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSelfDestructCommand))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCatchCommand))); err != nil {
 			return err
 		}
@@ -193,6 +196,14 @@ func handleKillCommand(l logrus.FieldLogger, ctx context.Context, c command[kill
 
 	p := monster.NewProcessor(l, ctx)
 	p.Kill(c.MonsterId, c.Body.CharacterId)
+}
+
+func handleSelfDestructCommand(l logrus.FieldLogger, ctx context.Context, c command[selfDestructCommandBody]) {
+	if c.Type != CommandTypeSelfDestruct {
+		return
+	}
+
+	monster.NewProcessor(l, ctx).SelfDestruct(c.MonsterId, c.Body.CharacterId, monster.TriggerContact)
 }
 
 func handleCatchCommand(l logrus.FieldLogger, ctx context.Context, c command[catchCommandBody]) {

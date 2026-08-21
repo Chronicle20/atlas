@@ -301,6 +301,7 @@ func main() {
 		account.GetRegistry().EvictTenant(tid)
 		monsterDomain.GetStatusMirror().EvictTenant(tid)
 		monsterDomain.GetLiveMirror().EvictTenant(tid)
+		monsterDomain.GetAutoAggroGate().EvictTenant(tid)
 		monsterinfo.EvictTenant(tid)
 		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
 			inbox.EvictTenant(tid)

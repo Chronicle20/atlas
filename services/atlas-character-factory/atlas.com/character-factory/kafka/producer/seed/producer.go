@@ -9,11 +9,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-func CreatedEventStatusProvider(accountId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+func CreatedEventStatusProvider(accountId uint32, characterId uint32, transactionId string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &seed.StatusEvent[seed.CreatedStatusEventBody]{
-		AccountId: accountId,
-		Type:      seed.StatusEventTypeCreated,
+		AccountId:     accountId,
+		TransactionId: transactionId,
+		Type:          seed.StatusEventTypeCreated,
 		Body: seed.CreatedStatusEventBody{
 			CharacterId: characterId,
 		},
@@ -24,11 +25,12 @@ func CreatedEventStatusProvider(accountId uint32, characterId uint32) model.Prov
 // FailedEventStatusProvider emits a FAILED event on EVENT_TOPIC_SEED_STATUS,
 // mirroring CreatedEventStatusProvider. Used by the factory saga-status bridge
 // to re-emit CharacterCreation failures toward atlas-login.
-func FailedEventStatusProvider(accountId uint32, reason string) model.Provider[[]kafka.Message] {
+func FailedEventStatusProvider(accountId uint32, reason string, transactionId string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &seed.StatusEvent[seed.FailedStatusEventBody]{
-		AccountId: accountId,
-		Type:      seed.StatusEventTypeFailed,
+		AccountId:     accountId,
+		TransactionId: transactionId,
+		Type:          seed.StatusEventTypeFailed,
 		Body: seed.FailedStatusEventBody{
 			Reason: reason,
 		},

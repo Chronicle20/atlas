@@ -272,3 +272,8 @@ Notes the close-out must carry:
   - The guard's per-file `Validate(in)` passed on all ten new bindings; **only** the total assertion failed. The bindings are well-formed — this is bookkeeping, not a malformed route.
   - Fix dispatched (`atlas-implementer`, sonnet): bump to 3327 in both the condition and the `want` message text, and append a task-250 clause to the narrative.
 - **Corpus guard fix: complete** (commit `a20119b2b`), DONE, no concerns — `fix-corpus-count-report.md`. Controller verified directly: `grep -c 3327` = 2, `grep -c 3317` = **0**, so the condition and the `want` message text were both updated and no stale number survives to mislead a future failure. Narrative clause appended in house style.
+- **Flagless `tools/verify.sh` at `59a725c18`: PASS — exit 0, "All checks passed."** No FAIL lines. This is the run that counts per CLAUDE.md (bakes + `-race`, whole-branch merge-base diff, 89 modules). **The branch is verified.**
+
+## Close-out result
+
+All 12 plan tasks + Task 2b complete. All three pre-PR reviewers run. Two gate/review-driven fixes landed on top (`c2a430a32` DOM-24, `a20119b2b` corpus guard). Branch HEAD `59a725c18`, working tree clean, flagless gate green.

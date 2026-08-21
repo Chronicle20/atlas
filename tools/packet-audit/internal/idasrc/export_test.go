@@ -526,3 +526,81 @@ func TestSpliceExportPreservesCuratedProvenanceKeys(t *testing.T) {
 		t.Fatal("Foo::Splice missing from spliced output")
 	}
 }
+
+// TestSpliceExportPreservesOmittedDiscriminator pins the other discriminator
+// state that TestSpliceExportPreservesCuratedProvenanceKeys does not cover: a
+// dispatch selector that OMITS the "discriminator" key entirely — the state
+// ~65 existing dispatch selectors are in. SpliceExport's round trip must keep
+// it omitted, not silently synthesize an explicit `"discriminator": ""`; this
+// is the other half of the "both discriminator states" case, and the class of
+// bug that caused the original data loss (task-250 fix round 2).
+func TestSpliceExportPreservesOmittedDiscriminator(t *testing.T) {
+	existing := `{
+  "binary": "test.exe",
+  "md5": "abc",
+  "generated_at": "2026-01-01",
+  "functions": {
+    "Foo::KeptNoDiscriminator": {
+      "address": "0x3",
+      "direction": "clientbound",
+      "dispatch": [
+        {
+          "case": 0
+        }
+      ],
+      "calls": [
+        {"op": "Decode1", "comment": "x"}
+      ]
+    }
+  }
+}
+`
+	p := filepath.Join(t.TempDir(), "existing.json")
+	if err := os.WriteFile(p, []byte(existing), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	fresh := exportFile{Functions: map[string]exportFn{
+		"Foo::Splice": {
+			Address:   "0x2",
+			Direction: "serverbound",
+			Calls:     []rawCall{{Op: "Decode1", Comment: "y"}},
+		},
+	}}
+
+	out, err := SpliceExport(p, fresh, "Foo::Splice")
+	if err != nil {
+		t.Fatalf("SpliceExport: %v", err)
+	}
+
+	var merged exportFile
+	if err := json.Unmarshal(out, &merged); err != nil {
+		t.Fatalf("unmarshal spliced output: %v", err)
+	}
+	kept, ok := merged.Functions["Foo::KeptNoDiscriminator"]
+	if !ok {
+		t.Fatal("Foo::KeptNoDiscriminator dropped by splice")
+	}
+	if len(kept.Dispatch) != 1 || kept.Dispatch[0].Discriminator != "" {
+		t.Fatalf("dispatch = %+v", kept.Dispatch)
+	}
+
+	// Key-presence check: re-marshal the round-tripped Selector through the
+	// same custom MarshalJSON SpliceExport used, and confirm the
+	// "discriminator" key is absent — not silently promoted to an explicit
+	// `"": ""`. A value-only comparison (Discriminator == "") cannot
+	// distinguish "omitted" from "explicit empty"; only a raw-byte
+	// presence/absence check on the marshaled selector can.
+	selBytes, err := json.Marshal(kept.Dispatch[0])
+	if err != nil {
+		t.Fatalf("marshal round-tripped selector: %v", err)
+	}
+	if strings.Contains(string(selBytes), `"discriminator"`) {
+		t.Errorf("round trip synthesized a \"discriminator\" key for a selector that omitted it:\n%s", selBytes)
+	}
+
+	// The spliced entry itself must be present and untouched by this round trip.
+	if _, ok := merged.Functions["Foo::Splice"]; !ok {
+		t.Fatal("Foo::Splice missing from spliced output")
+	}
+}

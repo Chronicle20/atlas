@@ -3471,6 +3471,20 @@
     - CITCWnd_Tab::OnButtonClicked
     - CITCBidAuctionDlg::OnButtonClicked
   provenance: csv-import
+- op: MAPLELIFE_CHECK_NAME
+  direction: serverbound
+  opcode: 256
+  fname: CUICharacterSaleDlg::SendCheckDuplicateIDPacket
+  provenance: ida-discovered
+  ida:
+    address: 0x7d75ab
+  note: >-
+    task-246 Task 3: previously-undiscovered opcode, surfaced by
+    derivation.md §6.1 (v83 sender @0x7d75ab, COutPacket(0x100) +
+    EncodeStr(sCharName) only). No prior registry row existed at opcode
+    256/serverbound. Split from the JMS_SLASH_COMMAND row per §6.2/§6.3:
+    jms_v185 opcode 271 remains unresolved and is not the same op as this
+    Maple-Life-specific duplicate-name probe.
 - op: ITEM_UPGRADE_UPDATE
   direction: serverbound
   opcode: 260

@@ -4101,11 +4101,19 @@
   fname: ""
   provenance: csv-import
   note: 'CSV serverbound row 420: op name unknown — rename via discover-ops adjudication (provenance: manual)'
-- op: JMS_SLASH_COMMAND
+- op: MAPLELIFE_CHECK_NAME
   direction: serverbound
   opcode: 311
   fname: CUICharacterSaleDlg::SendCheckDuplicateIDPacket
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 0x777d20
+  note: >-
+    task-246 Task 3: renamed from JMS_SLASH_COMMAND (derivation.md §6.1
+    confirms sender @0x777d20, COutPacket(311) + EncodeStr(sCharName)
+    only). Split from jms_v185 opcode 271 per §6.2/§6.3: JMS's opcode 271
+    identity is unresolved and must not be assumed identical to this
+    GMS-confirmed Maple-Life duplicate-name probe.
 - op: UNNAMED_R422
   direction: serverbound
   opcode: 312

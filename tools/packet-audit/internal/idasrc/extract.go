@@ -1,6 +1,7 @@
 package idasrc
 
 import (
+	"encoding/json"
 	"strconv"
 	"strings"
 )
@@ -14,13 +15,71 @@ const DefaultGuardToken = "<default>"
 // case label against the parser-emitted guard. Discriminator "" matches any
 // discriminator (only the case value must match). Default selects the
 // default/else arm (reads carrying DefaultGuardToken) instead of a case value.
+//
+// Discriminator has no `,omitempty` json tag: a bare `omitempty` fix would make
+// every future marshal of a Selector emit an explicit `"discriminator": ""` —
+// including the ~60 existing dispatch entries across these export files that
+// legitimately omit the key (verified: `WriteDispatch`/`infer.go` also marshal
+// Selector directly for `Default`-only and `Guard`-only arms, which never carry
+// a discriminator), turning every future splice or `infer`-driven dispatch
+// write into a large, unrelated diff. Instead Selector has custom
+// Marshal/UnmarshalJSON (below) that tracks whether the source JSON carried an
+// explicit "discriminator" key and reproduces that exact presence on
+// remarshal — an entry that omitted the key keeps omitting it, and a
+// hand-authored `"discriminator": ""` keeps being written explicitly. (task-250
+// fix round 1; docs/tasks/task-250-inner-portal-registration/review-task-12.md)
 type Selector struct {
-	Discriminator string `json:"discriminator,omitempty"` // "" matches any discriminator
-	Case          int64  `json:"case"`
-	Default       bool   `json:"default,omitempty"` // matches the default/else arm
+	Discriminator string // "" matches any discriminator
+	Case          int64
+	Default       bool // matches the default/else arm
 	// Guard, when set, matches a read whose composed guard contains this exact
 	// branch-condition clause (a non-equality dispatch arm, e.g. "v5 < 5").
-	Guard string `json:"guard,omitempty"`
+	Guard string
+
+	// discriminatorExplicit records whether the JSON this Selector was
+	// unmarshaled from carried an explicit "discriminator" key (even an empty
+	// one), so MarshalJSON can reproduce that presence instead of guessing.
+	// Selectors built directly in Go (tests, infer.go) leave this false, which
+	// reproduces the pre-fix `omitempty` behavior for programmatically-built
+	// values: the key is omitted whenever Discriminator == "".
+	discriminatorExplicit bool
+}
+
+// selectorJSON is Selector's wire shape. Discriminator is a pointer so
+// encoding/json's `omitempty` can distinguish "key absent" (nil) from "key
+// present with an empty value" (non-nil, pointing at "").
+type selectorJSON struct {
+	Discriminator *string `json:"discriminator,omitempty"`
+	Case          int64   `json:"case"`
+	Default       bool    `json:"default,omitempty"`
+	Guard         string  `json:"guard,omitempty"`
+}
+
+func (s Selector) MarshalJSON() ([]byte, error) {
+	sj := selectorJSON{Case: s.Case, Default: s.Default, Guard: s.Guard}
+	if s.Discriminator != "" || s.discriminatorExplicit {
+		d := s.Discriminator
+		sj.Discriminator = &d
+	}
+	return json.Marshal(sj)
+}
+
+func (s *Selector) UnmarshalJSON(b []byte) error {
+	var sj selectorJSON
+	if err := json.Unmarshal(b, &sj); err != nil {
+		return err
+	}
+	s.Case = sj.Case
+	s.Default = sj.Default
+	s.Guard = sj.Guard
+	if sj.Discriminator != nil {
+		s.Discriminator = *sj.Discriminator
+		s.discriminatorExplicit = true
+	} else {
+		s.Discriminator = ""
+		s.discriminatorExplicit = false
+	}
+	return nil
 }
 
 // ExtractShape returns the per-dispatch-path wire-shape reads from a resolved

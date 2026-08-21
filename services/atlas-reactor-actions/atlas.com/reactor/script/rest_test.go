@@ -373,6 +373,69 @@ func TestExtract_WithReferenceId(t *testing.T) {
 	}
 }
 
+func TestTransformAndExtract_RoundTripsTouchRules(t *testing.T) {
+	cond, _ := condition.NewBuilder().
+		SetType("reactor_state").
+		SetOperator("=").
+		SetValue("0").
+		Build()
+
+	op, _ := operation.NewBuilder().
+		SetType("spawn_monster").
+		SetParams(map[string]string{"monsterId": "100100"}).
+		Build()
+
+	touchRule := NewRuleBuilder().
+		SetId("touch_rule").
+		AddCondition(cond).
+		AddOperation(op).
+		Build()
+
+	original := NewReactorScriptBuilder().
+		SetReactorId("6109013").
+		AddTouchRule(touchRule).
+		Build()
+
+	rm, err := Transform(original)
+	if err != nil {
+		t.Fatalf("Transform() error = %v", err)
+	}
+
+	if len(rm.TouchRules) != 1 {
+		t.Fatalf("Transform() len(TouchRules) = %v, want 1", len(rm.TouchRules))
+	}
+	if rm.TouchRules[0].Id != "touch_rule" {
+		t.Errorf("Transform() touch rule Id = %v, want %v", rm.TouchRules[0].Id, "touch_rule")
+	}
+
+	restored, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract() error = %v", err)
+	}
+
+	if len(restored.TouchRules()) != len(original.TouchRules()) {
+		t.Errorf("Round trip len(TouchRules): got %v, want %v", len(restored.TouchRules()), len(original.TouchRules()))
+	}
+	if restored.TouchRules()[0].Id() != original.TouchRules()[0].Id() {
+		t.Errorf("Round trip TouchRules[0].Id: got %v, want %v", restored.TouchRules()[0].Id(), original.TouchRules()[0].Id())
+	}
+}
+
+func TestTransform_EmptyTouchRules(t *testing.T) {
+	script := NewReactorScriptBuilder().
+		SetReactorId("no_touch_reactor").
+		Build()
+
+	rm, err := Transform(script)
+	if err != nil {
+		t.Fatalf("Transform() error = %v", err)
+	}
+
+	if len(rm.TouchRules) != 0 {
+		t.Errorf("Expected 0 touch rules, got %d", len(rm.TouchRules))
+	}
+}
+
 func TestExtract_WithOperationParams(t *testing.T) {
 	rm := RestModel{
 		ReactorId:   "params_reactor",

@@ -11,13 +11,15 @@ type ReactorScriptBuilder struct {
 	description string
 	hitRules    []Rule
 	actRules    []Rule
+	touchRules  []Rule
 }
 
 // NewReactorScriptBuilder creates a new builder
 func NewReactorScriptBuilder() *ReactorScriptBuilder {
 	return &ReactorScriptBuilder{
-		hitRules: make([]Rule, 0),
-		actRules: make([]Rule, 0),
+		hitRules:   make([]Rule, 0),
+		actRules:   make([]Rule, 0),
+		touchRules: make([]Rule, 0),
 	}
 }
 
@@ -45,6 +47,12 @@ func (b *ReactorScriptBuilder) AddActRule(rule Rule) *ReactorScriptBuilder {
 	return b
 }
 
+// AddTouchRule adds a touch rule to the script
+func (b *ReactorScriptBuilder) AddTouchRule(rule Rule) *ReactorScriptBuilder {
+	b.touchRules = append(b.touchRules, rule)
+	return b
+}
+
 // Build builds the ReactorScript
 func (b *ReactorScriptBuilder) Build() ReactorScript {
 	return ReactorScript{
@@ -52,6 +60,7 @@ func (b *ReactorScriptBuilder) Build() ReactorScript {
 		description: b.description,
 		hitRules:    b.hitRules,
 		actRules:    b.actRules,
+		touchRules:  b.touchRules,
 	}
 }
 

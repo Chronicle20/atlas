@@ -11844,8 +11844,7 @@
           "opcode": 78
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 81
         },
         "gms_v84": {

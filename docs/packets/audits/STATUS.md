@@ -131,7 +131,7 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 | IMITATED_NPC_RESULT | CWvsContext::OnImitatedNPCResult; sub_830AFF; sub_902E77 |  |  | ⬜ | 0x04D | ❌ | 0x04D | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x052 | ❌ | 0x052 | ❌ | 0x054 | ❌ | 0x053 | ❌ |  | ⬜ |
 | BLOCKED_SERVER | CField::OnTransferChannelReqIgnored | field/clientbound/FieldBlockedServer (T1) | 0x04E | ✅ | 0x062 | 🟡ᶠ | 0x078 | 🟡ᶠ | 0x07C | 🟡ᶠ | 0x084 | ✅ | 0x087 | ✅ | 0x08C | ✅ | 0x093 | 🟡ᶠ | 0x094 | ✅ | 0x082 | ✅ |
 | IDA_0X04E | sub_B0FDF2 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04E | ❌ |
-| IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_830B0B; sub_902E83; sub_AEC92E |  |  | ⬜ | 0x04E | ✅ | 0x04E | ✅ | 0x04E | ✅ | 0x051 | ❌ | 0x053 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x054 | ❌ | 0x055 | ❌ |
+| IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_830B0B; sub_902E83; sub_AEC92E |  |  | ⬜ | 0x04E | ✅ | 0x04E | ✅ | 0x04E | ✅ | 0x051 | ✅ | 0x053 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x054 | ❌ | 0x055 | ❌ |
 | FORCED_MAP_EQUIP | CField::OnFieldSpecificData | field/clientbound/FieldForcedMapEquip (T1) | 0x04F | ✅ | 0x063 | 🟡ᶠ | 0x079 | 🟡ᶠ | 0x07D | 🟡ᶠ | 0x085 | ✅ | 0x088 | ✅ | 0x08D | ✅ | 0x094 | 🟡ᶠ | 0x095 | ✅ | 0x083 | ✅ |
 | IDA_0X04F | sub_AEC942 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04F | ❌ |
 | LIMITED_NPC_DISABLE_INFO | CNpcPool::OnUpdateLimitedDisableInfo; CWvsContext::OnLimitedNPCDisableInfo; sub_AECCBF |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x04F | ❌ | 0x052 | ❌ | 0x054 | ❌ | 0x054 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x056 | ❌ |
@@ -1060,7 +1060,7 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 | v61 | 279 | 0 | 56 | 227 | 458 | 0 | 49.6% |
 | v72 | 297 | 0 | 69 | 240 | 414 | 0 | 49.0% |
 | v79 | 343 | 0 | 68 | 236 | 373 | 0 | 53.0% |
-| v83 | 468 | 0 | 0 | 324 | 228 | 0 | 59.1% |
+| v83 | 469 | 0 | 0 | 323 | 228 | 0 | 59.2% |
 | v84 | 442 | 0 | 0 | 331 | 247 | 0 | 57.2% |
 | v87 | 476 | 0 | 0 | 354 | 190 | 0 | 57.3% |
 | v92 | 52 | 0 | 148 | 679 | 141 | 0 | 5.9% |

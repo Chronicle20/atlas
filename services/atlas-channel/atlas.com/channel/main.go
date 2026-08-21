@@ -116,6 +116,7 @@ import (
 	interactionsb "github.com/Chronicle20/atlas/libs/atlas-packet/interaction/serverbound"
 	invcb "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/clientbound"
 	invsb "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/serverbound"
+	msb "github.com/Chronicle20/atlas/libs/atlas-packet/maplelife/serverbound"
 	merchantcb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/clientbound"
 	merchantsb "github.com/Chronicle20/atlas/libs/atlas-packet/merchant/serverbound"
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
@@ -1022,6 +1023,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[cashsb.CashItemGachaponHandle] = handler.CashItemGachaponHandleFunc
 	handlerMap[cashsb.CashShopCouponCodeHandle] = handler.CashShopCouponCodeHandleFunc
 	handlerMap[cashsb.CashShopCheckNameChangeHandle] = handler.CashShopCheckNameChangeHandleFunc
+	handlerMap[msb.MapleLifeCheckNameHandle] = handler.MapleLifeCheckNameHandleFunc
 	handlerMap[cashsb.CashShopCheckNameChangePossibleHandle] = handler.CashShopCheckNameChangePossibleHandleFunc
 	handlerMap[cashsb.CashShopCheckTransferWorldPossibleHandle] = handler.CashShopCheckTransferWorldPossibleHandleFunc
 	handlerMap[npcsb.NPCShopHandle] = handler.NPCShopHandleFunc

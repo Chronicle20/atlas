@@ -136,8 +136,19 @@ func (b *ModelBuilder) SetSpawnSource(sourceType string, sourceId string) *Model
 	return b
 }
 
-// AddDamageEntry appends a damage entry to the damage tracking list.
+// AddDamageEntry credits damage to a character's damage entry, aggregating by
+// characterId. A repeat call for the same character sums into the existing
+// entry and leaves its LastHitMs alone (this signature carries no timestamp);
+// a first call appends, so slice order records first contact. This mirrors
+// Registry.ApplyDamage (registry.go:436-495) so both write paths agree, which
+// is what makes Model.DamageSummary()'s "pre-aggregated" contract true.
 func (b *ModelBuilder) AddDamageEntry(characterId uint32, damage uint32) *ModelBuilder {
+	for i := range b.damageEntries {
+		if b.damageEntries[i].CharacterId == characterId {
+			b.damageEntries[i].Damage += damage
+			return b
+		}
+	}
 	b.damageEntries = append(b.damageEntries, entry{
 		CharacterId: characterId,
 		Damage:      damage,

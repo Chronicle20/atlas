@@ -88,3 +88,102 @@ func TestAddStatusEffect_VenomConcurrentApplies_NeverExceedsThree(t *testing.T) 
 		t.Fatalf("expected VENOM cap=3 after 100 applies; got %d", got)
 	}
 }
+
+// TestAddDamageEntry_AggregatesByCharacter verifies that AddDamageEntry sums
+// damage into the existing entry for a repeat characterId rather than
+// appending a new one, and that entries appear in first-contact order.
+func TestAddDamageEntry_AggregatesByCharacter(t *testing.T) {
+	tests := []struct {
+		name  string
+		calls [][2]uint32 // characterId, damage
+		want  []entry
+	}{
+		{
+			name:  "same character sums",
+			calls: [][2]uint32{{1, 100}, {1, 100}, {1, 100}},
+			want:  []entry{{CharacterId: 1, Damage: 300, LastHitMs: 0}},
+		},
+		{
+			name:  "two characters keep first-contact order",
+			calls: [][2]uint32{{2, 50}, {1, 10}, {2, 25}},
+			want: []entry{
+				{CharacterId: 2, Damage: 75, LastHitMs: 0},
+				{CharacterId: 1, Damage: 10, LastHitMs: 0},
+			},
+		},
+		{
+			name:  "single entry unchanged",
+			calls: [][2]uint32{{7, 42}},
+			want:  []entry{{CharacterId: 7, Damage: 42, LastHitMs: 0}},
+		},
+		{
+			name:  "zero damage still creates an entry",
+			calls: [][2]uint32{{3, 0}},
+			want:  []entry{{CharacterId: 3, Damage: 0, LastHitMs: 0}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := emptyBuilder()
+			for _, c := range tt.calls {
+				b.AddDamageEntry(c[0], c[1])
+			}
+
+			if len(b.damageEntries) != len(tt.want) {
+				t.Fatalf("expected %d entries, got %d: %+v", len(tt.want), len(b.damageEntries), b.damageEntries)
+			}
+			for i, want := range tt.want {
+				got := b.damageEntries[i]
+				if got.CharacterId != want.CharacterId {
+					t.Errorf("entry[%d].CharacterId = %d, want %d", i, got.CharacterId, want.CharacterId)
+				}
+				if got.Damage != want.Damage {
+					t.Errorf("entry[%d].Damage = %d, want %d", i, got.Damage, want.Damage)
+				}
+				if got.LastHitMs != want.LastHitMs {
+					t.Errorf("entry[%d].LastHitMs = %d, want %d", i, got.LastHitMs, want.LastHitMs)
+				}
+			}
+		})
+	}
+}
+
+// TestAddDamageEntry_PreservesExistingLastHitMs verifies that aggregating into
+// an existing entry does not modify that entry's LastHitMs, since
+// AddDamageEntry's signature carries no timestamp to update it with.
+func TestAddDamageEntry_PreservesExistingLastHitMs(t *testing.T) {
+	b := emptyBuilder()
+	b.damageEntries = []entry{{CharacterId: 5, Damage: 100, LastHitMs: 900}}
+
+	b.AddDamageEntry(5, 50)
+
+	if len(b.damageEntries) != 1 {
+		t.Fatalf("expected 1 entry, got %d: %+v", len(b.damageEntries), b.damageEntries)
+	}
+	got := b.damageEntries[0]
+	want := entry{CharacterId: 5, Damage: 150, LastHitMs: 900}
+	if got != want {
+		t.Errorf("entry = %+v, want %+v", got, want)
+	}
+}
+
+// TestDamageLeader_OverBuilderAggregatedEntries is a PRD acceptance check: the
+// damage leader must be determined from aggregated per-character totals, not
+// per-hit entries. A per-hit append would leave character 2's single 250-damage
+// hit ranked above character 1's three 100-damage hits (250 > 100), when the
+// correct leader is character 1 (300 > 250).
+func TestDamageLeader_OverBuilderAggregatedEntries(t *testing.T) {
+	b := emptyBuilder()
+	b.AddDamageEntry(1, 100).AddDamageEntry(1, 100).AddDamageEntry(1, 100)
+	b.AddDamageEntry(2, 250)
+
+	m := b.Build()
+
+	if got := len(m.DamageSummary()); got != 2 {
+		t.Fatalf("expected 2 aggregated damage entries, got %d", got)
+	}
+	if got := m.DamageLeader(); got != 1 {
+		t.Errorf("DamageLeader() = %d, want 1", got)
+	}
+}

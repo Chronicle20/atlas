@@ -246,7 +246,7 @@ func (p *ProcessorImpl) GetInFieldRect(f field.Model, x1, y1, x2, y2 int16, limi
 // Create creates a new monster in a field
 func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	p.l.Debugf("Attempting to create monster [%d] in field [%s].", input.MonsterId, f.Id())
-	ma, err := information.NewProcessor(p.l, p.ctx).GetById(input.MonsterId)
+	ma, err := p.monsterInformation(input.MonsterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve information necessary to create monster [%d].", input.MonsterId)
 		return Model{}, err
@@ -304,6 +304,19 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 			lastDropAt:   now,
 			lastHitAt:    time.Time{},
 		})
+	}
+
+	// FR-3.1/3.5: arm the detonation timer for a mob whose selfDestruction
+	// block carries no HP predicate. removeAfter is read as SECONDS, matching
+	// Cosmic MapleMap.java:1868 (task-253 design §2.4); a value <= 0 yields a
+	// fireAt of now, which the next sweep tick fires.
+	if sd := ma.SelfDestruction(); sd.OnTimer() {
+		delay := sd.RemoveAfter()
+		if delay < 0 {
+			delay = 0
+		}
+		p.l.Debugf("Arming self-destruct timer for monster [%d] (template [%d]) in [%d]s with action [%d].", m.UniqueId(), m.MonsterId(), delay, sd.Action())
+		GetSelfDestructTimerRegistry().Register(p.ctx, p.t, m.UniqueId(), NewSelfDestructTimerEntry(m.MonsterId(), f, sd.Action(), time.Now().Add(time.Duration(delay)*time.Second)))
 	}
 
 	return m, nil
@@ -589,6 +602,7 @@ func (p *ProcessorImpl) finalizeKill(m Model, killerId uint32, isBoss bool, revi
 	GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
 	GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
 	GetDropTimerRegistry().Unregister(p.ctx, p.t, m.UniqueId())
+	GetSelfDestructTimerRegistry().Unregister(p.ctx, p.t, m.UniqueId())
 
 	// Emit cancellation events for any active status effects before death
 	for _, se := range m.StatusEffects() {
@@ -1388,6 +1402,7 @@ func (p *ProcessorImpl) executeSummon(m Model, sd mobskill.Model) {
 
 // Destroy destroys a monster
 func (p *ProcessorImpl) Destroy(uniqueId uint32) error {
+	GetSelfDestructTimerRegistry().Unregister(p.ctx, p.t, uniqueId)
 	GetDropTimerRegistry().Unregister(p.ctx, p.t, uniqueId)
 	GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, uniqueId)
 	m, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, uniqueId)

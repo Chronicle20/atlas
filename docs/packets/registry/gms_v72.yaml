@@ -1584,6 +1584,7 @@
   direction: clientbound
   opcode: 228
   fname: CNpcPool::OnNpcLeaveField
+  packet: npc/clientbound/NpcRemove
   provenance: manual
   ida:
     address: 6577989

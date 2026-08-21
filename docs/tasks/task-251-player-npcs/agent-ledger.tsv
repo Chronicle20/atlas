@@ -93,3 +93,9 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T20:00:49Z	agent	Task 16	atlas-implementer	sonnet	-	-	-	-	DONE	a24feca93	-	-	-	-
 2026-08-21T20:00:49Z	agent	Task 15 fix	atlas-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
 2026-08-21T20:00:49Z	agent	Task 16	atlas-reviewer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-08-21T20:03:59Z	agent	Task 15 fix	atlas-implementer	sonnet	-	-	-	-	DONE	92be6a7cc	-	-	-	-
+2026-08-21T20:04:32Z	agent	Gate 23	gate	-	-	-	-	-	FAIL	92be6a7cc	-	-	-	-
+2026-08-21T20:06:28Z	agent	Task 16	atlas-reviewer	sonnet	-	-	-	-	DONE	a24feca93	CHANGES_REQUIRED	yes	.superpowers/sdd/plan/task-16-review.md	-
+2026-08-21T20:09:35Z	agent	Task 16 lintfix	atlas-implementer	sonnet	-	-	-	-	DONE	f75b7e0e0	-	-	-	-
+2026-08-21T20:09:35Z	agent	Task 16 fix	atlas-implementer	sonnet	-	-	-	-	DISPATCHED	-	-	-	-	-
+2026-08-21T20:12:33Z	agent	Task 16 fix	atlas-implementer	sonnet	-	-	-	-	DONE	d908c3c95	-	-	-	-

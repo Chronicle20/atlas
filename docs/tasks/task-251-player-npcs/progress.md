@@ -384,3 +384,51 @@ Two implementer concerns handed to the Task 16 reviewer:
   whether it silently checks the wrong world.
 - No `.bruno/` collection entry was added; the implementer argues that file belongs to Task 8's
   inventory, not Task 16's. Reviewer to check the convention.
+
+## Task 15 fix round — closed
+
+`92be6a7cc`. The implementer **verified** the `world_job_rank - 1` reading rather than
+re-asserting it: every podium map routes 1:1 to a single job category (`routing.go`
+`HallOfFameMapFor`) and `nextWorldJobRank` is a gapless per-`(world, job category)` `MAX+1`
+counter, so it lines up exactly with `PodiumPosition`'s 0-based rank. **No arithmetic changed**
+— only the doc comment, which now cites the evidence instead of admitting it was unverified. A
+new `podium deploy` subtest deploys 3 NPCs to `VictoriaRoadHallOfWarriors1Id` and pins the
+non-raise, raise+reposition and new-slot branches (`TestDeploy` 13/13).
+
+## Task 16 review — CHANGES_REQUIRED, 1 blocking
+
+`.superpowers/sdd/plan/task-16-review.md`. The Task 15 `Position` seam checks out
+(`PositionRestModel{X,Y int16}` vs `Position{X,Y int16}`), as does `Deploy(..., true, explicit)`
+pass-through, backed by a non-vacuous assertion.
+
+**Blocking:** `rest.go:496` — `handleGetEligibility` hardcodes `conversationPath=false`, so the
+tenant's `AutoDeployEnabled` setting is **never** consulted. Design §9.1 defines this endpoint's
+predicate as including that clause, and it only applies when `conversationPath=true`
+(`eligibility/eligibility.go:24-30`). The conversation engine's `canSpawnPlayerNpc` is that
+flag's sole intended caller, so as shipped it contradicts the single-predicate guarantee §9.1
+gives as the reason for the shared endpoint. The existing subtest is **vacuous on this axis** —
+it never varies `AutoDeployEnabled` — so the fix needs a corrected fixture and genuinely varying
+coverage, not a one-line flip. Fix brief: `.superpowers/sdd/plan/task-16-brief-fix.md`, which
+also sweeps in the missing per-endpoint `.bruno/*.bru` files (non-blocking 3 — every sibling
+REST service has them; player-npcs had only Task 8's scaffolding).
+
+### Constraint for Task 22 — the eligibility endpoint's `worldId`
+
+Review non-blocking 2 is a **real, live defect that Task 16 cannot fix**. Design §9.1's literal
+signature omits `worldId`, but `countByName` (`administrator.go:119`) is scoped by
+`(world_id, map_id, name)`, matching PRD §6's `(tenant, world, map, name)` unique index.
+`character.Model` carries no world field, so the handler defaults to `0` — silently wrong for
+any non-zero world (a false negative or a false positive, never an error).
+
+The endpoint **already accepts `worldId` optionally**, so the resolution is caller-side:
+**Task 22's conversation-engine condition MUST pass `worldId` explicitly.** Recorded here as a
+Task 22 constraint rather than an external follow-up ticket, because it is producible on this
+branch.
+
+## Task 16 lint fix — `f75b7e0e0`
+
+Gate 23 FAILED on 7 `errcheck` `Body.Close()` findings. The implementer found the gate log was
+**under-reporting**: golangci-lint's default `max-same-issues: 3` cap hid 9 more identical hits
+in the same file. It fixed all **16** occurrences rather than the 7 quoted, so the next
+`--quick` run does not fail again on a newly un-capped batch. Worth remembering when reading any
+future lint block on this branch: **the quoted count is a floor, not a total.**

@@ -68,19 +68,22 @@ func minimalDB(t *testing.T) *gorm.DB {
 }
 
 // purgeViaRouter routes DELETE /{id} through a gorilla mux so mux.Vars is
-// populated and injects a tenant model into the request context.
+// populated and injects a tenant model into the HandlerDependency's context,
+// mirroring what ParseTenant actually does in production: it builds a NEW
+// context and passes it to the handler as an argument (d.Context()) — it
+// never reassigns *http.Request, so *http.Request.Context() never carries
+// the tenant. Putting the tenant on the request context here (as this
+// helper used to) exercises a path production traffic never takes.
 func purgeViaRouter(t *testing.T, db *gorm.DB, mc *minio.Client, tenantCtx tenant.Model, targetID string) *httptest.ResponseRecorder {
 	t.Helper()
 	router := mux.NewRouter()
-	d := server.NewHandlerDependency(logrus.New(), context.Background())
+	d := server.NewHandlerDependency(logrus.New(), tenant.WithContext(context.Background(), tenantCtx))
 	c := server.NewHandlerContext(nil)
 	inner := purgeInner(db, mc)(&d, &c)
 	router.HandleFunc("/{id}", inner).Methods(http.MethodDelete)
 
 	req := httptest.NewRequest(http.MethodDelete, "/"+targetID, nil)
 	req.Header.Set("X-Atlas-Operator", "1")
-	// Inject tenant into request context (mimics ParseTenant middleware).
-	req = req.WithContext(tenant.WithContext(req.Context(), tenantCtx))
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 	return rr
@@ -122,6 +125,40 @@ func TestHandlerRefusesAllZerosSentinel(t *testing.T) {
 	rr := purgeViaRouter(t, nil, mc, tnt, canonical.TenantUUID)
 	if rr.Code != http.StatusForbidden {
 		t.Fatalf("expected 403 for all-zeros sentinel, got %d", rr.Code)
+	}
+}
+
+// TestPurgeThroughParseTenantMiddleware drives the purge handler through the
+// real server.RegisterHandler chain (RetrieveSpan -> ParseEnvironment ->
+// ParseTenant -> handler), the same path production traffic takes. Unlike
+// purgeViaRouter, it never injects a tenant into the request context by
+// hand — ParseTenant builds a NEW context and passes it as an argument, it
+// never reassigns *http.Request, so a handler reading tenant.MustFromContext
+// off r.Context() panics here even though it passes purgeViaRouter (#bug1).
+func TestPurgeThroughParseTenantMiddleware(t *testing.T) {
+	const region = "GMS"
+	normalID := "22222222-2222-2222-2222-222222222222"
+
+	db := minimalDB(t)
+	mc := stubMC(t)
+
+	handlerFunc := server.RegisterHandler(logrus.New())(nil)("tenant_purge", purgeInner(db, mc))
+
+	router := mux.NewRouter()
+	router.HandleFunc("/{id}", handlerFunc).Methods(http.MethodDelete)
+
+	req := httptest.NewRequest(http.MethodDelete, "/"+normalID, nil)
+	req.Header.Set("X-Atlas-Operator", "1")
+	req.Header.Set(tenant.ID, "33333333-3333-3333-3333-333333333333")
+	req.Header.Set(tenant.Region, region)
+	req.Header.Set(tenant.MajorVersion, "83")
+	req.Header.Set(tenant.MinorVersion, "1")
+
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusAccepted {
+		t.Fatalf("expected 202 via ParseTenant middleware, got %d body=%s", rr.Code, rr.Body.String())
 	}
 }
 

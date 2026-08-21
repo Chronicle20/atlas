@@ -157,6 +157,57 @@ override group. A completed, healthy `atlas-kafka-precreate` Job is therefore
 itself the observable readiness signal (FR-5.3): no separate inference is
 needed.
 
+### Re-syncs: an active group is skipped, not re-seeded (task-245)
+
+The Job carries `argocd.argoproj.io/sync-options: Force=true,Replace=true`, so
+Argo CD deletes and recreates it on **every** sync — including a re-sync of an
+environment whose Deployments have been running, and joined to those very
+groups, for hours. Kafka refuses `--reset-offsets` on a group that is not
+inactive, so on a re-sync the pass **probes each group's state first and skips
+any group that is already active**. An active group is by definition already
+initialized, which is the end state the seeding pass exists to reach.
+
+This is also the safety property: an environment that has been consuming for
+hours must never be silently fast-forwarded past unprocessed messages by a
+routine re-sync.
+
+Reading the Job log, per group, there are three outcomes:
+
+| Log line | Meaning |
+|---|---|
+| `skipping group '<g>': already active (Stable) — offsets already initialized` | Re-sync of a live environment. Normal. |
+| `skipping group '<g>': reset refused, group became active during seeding — offsets already initialized` | A pod joined the group between the state probe and the reset. Same outcome, same normality. |
+| `skipped group '<g>': committed offsets present on all <N> topics` | The common re-sync case — skipped, and nothing is missing. |
+| `WARN: skipped group '<g>' has no committed offset on <K> of <N> topics: <names>` | Skipped, and these union topics were never seeded for it. Not a failure. |
+| `WARN: skipped group '<g>' has no committed offset on <K> of <N> topics: <names> (+<M> more)` | The same, when `<K>` exceeds 10 — the name list is capped at 10 and `<M>` is the remainder. |
+| `override consumer group offsets seeded (<S> seeded, <K> skipped)` | Terminal summary. |
+| `all <K> override consumer groups were already active — nothing seeded this run (re-sync no-op)` | Every group was skipped: this run did nothing, by design. |
+
+A `WARN:` line usually means a **topic was added to the environment after the
+group went live**. A live group cannot be re-seeded, so that topic keeps no
+committed offset for it and the consumer's own `auto.offset.reset` governs
+where it starts. The Job stays green: failing here would wedge an environment
+on a benign mid-life topic addition. If the WARN names topics the group
+actually consumes and the starting position matters, delete the environment's
+Deployments (emptying the groups) and re-sync, or accept the
+`auto.offset.reset` position.
+
+The skip covers every shape that reaches the pass with a pre-existing active
+group, not only a re-sync: a re-created override reusing a previous
+environment's `ATLAS_ENV` suffix, or an environment whose baseline was
+switched, are handled identically.
+
+A fresh environment is unaffected. Its groups are `Empty`, every one is reset
+to end-of-log, and `verify_group_offsets` still hard-fails the Job (`FAIL:
+group '<g>' has no committed offset on topic '<t>'`, exit 1) if any is missing
+— the activation gate is narrowed to exactly the groups where it is
+unprovable, and is preserved everywhere it can still be enforced.
+
+The behaviour is covered by `deploy/k8s/base/atlas-kafka-precreate_test.sh`:
+the `state_is_seedable` truth table runs without a broker, and the
+active-group skip and two-pass idempotence assertions run when
+`BOOTSTRAP_SERVERS` is set.
+
 To check a specific group by hand:
 
 ```sh

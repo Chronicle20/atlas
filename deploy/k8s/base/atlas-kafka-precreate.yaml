@@ -15,13 +15,21 @@
 # is picked up on the next sync.
 #
 # Also seeds (task-232 Task 45, design §6.3) committed end-of-log offsets for
-# every override consumer group named in KAFKA_CONSUMER_GROUP, while each
-# group is still empty and therefore resettable — see kafka-precreate.sh for
-# the mechanism and NG6 (main is inert: the pass is skipped whenever
-# KAFKA_CONSUMER_GROUP is unset). The script is mounted from the
-# atlas-kafka-precreate-script ConfigMap (kustomization.yaml) instead of
-# living inline here so it is independently sourceable and testable
-# (atlas-kafka-precreate_test.sh).
+# every override consumer group named in KAFKA_CONSUMER_GROUP — see
+# kafka-precreate.sh for the mechanism and NG6 (main is inert: the pass is
+# skipped whenever KAFKA_CONSUMER_GROUP is unset). Whether a group is
+# resettable depends on which sync this is. On a FIRST sync the group is still
+# empty, and every Deployment sits at sync-wave 10 behind this Job, so the
+# reset lands before any consumer joins. On a RE-SYNC of a live environment
+# the Force=true,Replace=true above deletes and recreates this Job while the
+# environment's Deployments have been joined to those groups for hours: the
+# group is active, Kafka refuses the reset, and the pass SKIPS it (task-245).
+# An active group is already initialized, which is the end state the pass
+# exists to reach, so skipping is both correct and the safety property — a
+# routine re-sync must never fast-forward a live environment past unprocessed
+# messages. The script is mounted from the atlas-kafka-precreate-script
+# ConfigMap (kustomization.yaml) instead of living inline here so it is
+# independently sourceable and testable (atlas-kafka-precreate_test.sh).
 apiVersion: batch/v1
 kind: Job
 metadata:

@@ -238,10 +238,9 @@ func TestSetAggro_Arbitration(t *testing.T) {
 		}
 		// STOP_CONTROL + START_CONTROL, plus RepickAndEmit's unconditional
 		// NEXT_SKILL_DECIDED once ControllerHasAggro flips true (same
-		// startControl(forceAggro=true) path ForceControl uses) — see
-		// TestForceControl_HandsOverWithAggroFlagSet's ">= 2" assertion.
-		if emitted < 2 {
-			t.Fatalf("emitted %d events, want at least 2 (stop then start)", emitted)
+		// startControl(forceAggro=true) path ForceControl uses).
+		if emitted != 3 {
+			t.Fatalf("emitted %d events, want 3 (stop, start, next-skill)", emitted)
 		}
 		got, err := p.GetById(uid)
 		if err != nil {
@@ -308,8 +307,8 @@ func TestSetAggro_Arbitration(t *testing.T) {
 		// START_CONTROL, plus RepickAndEmit's unconditional NEXT_SKILL_DECIDED
 		// once ControllerHasAggro flips true — see the note on the
 		// "non-controller takes control with aggro" case above.
-		if emitted < 1 {
-			t.Fatalf("emitted %d events, want at least 1 (START_CONTROL)", emitted)
+		if emitted != 2 {
+			t.Fatalf("emitted %d events, want 2 (start, next-skill)", emitted)
 		}
 		got, err := p.GetById(uid)
 		if err != nil {

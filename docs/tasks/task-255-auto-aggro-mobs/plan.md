@@ -528,10 +528,17 @@ verifies:
 
 - [ ] **Step 3: Regenerate and check the matrix**
 
+`tools/packet-audit` is its own Go module, and these subcommands resolve their
+default paths relative to the **repo root** — running them from the module
+directory emits "no template for gms_v87"-style warnings and can write a stray
+`tools/packet-audit/docs/packets/...` tree. Build the binary once, then run it
+from the repo root:
+
 ```bash
-cd tools/packet-audit && go run . matrix && go run . matrix --check
-cd tools/packet-audit && go run . fname-doc --check
-cd tools/packet-audit && go run . operations --check
+go build -o /tmp/task255/packet-audit ./tools/packet-audit   # from the module dir or via -C
+/tmp/task255/packet-audit matrix && /tmp/task255/packet-audit matrix --check
+/tmp/task255/packet-audit fname-doc --check
+/tmp/task255/packet-audit operations --check
 ```
 
 Expected: `matrix --check` exits 0; `fname-doc --check` and `operations --check` exit 0. (`fname-doc` may need a non-`--check` regeneration run first if it reports the new struct's comment — the codec already carries `packet-audit:fname CMob::ApplyControl`, so it should be clean.)

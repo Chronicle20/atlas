@@ -1,0 +1,85 @@
+{
+  "service": "task-253-self-destructing-mobs",
+  "path": "services/atlas-channel, services/atlas-data, services/atlas-monsters, services/atlas-monster-death, libs/atlas-packet",
+  "date": "2026-08-21",
+  "build": "pass",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "services/atlas-monsters/atlas.com/monsters/monster",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()", "status": "pass", "evidence": "builder.go unchanged, pre-existing compliant builder used by new tests"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger, never *logrus.Logger", "status": "pass", "evidence": "processor.go:135 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor"},
+        {"id": "DOM-25", "name": "Bytes the client interprets are resolved from a tenant writer-options table; domain services emit semantic keys, not client bytes", "status": "fail", "evidence": "kafka.go:63-64 DeathTypeUnset/DeathTypeFadeOut byte consts explicitly mirror libs/atlas-packet DestroyType (CMob::m_nDeadType); kafka.go:104-105,148 add DeathType byte fields to statusEventDestroyedBody/statusEventKilledBody; processor.go:600,687,796,1413 populate that field with the raw WZ selfDestruction.action byte or DeathTypeFadeOut/DeathTypeUnset literals"},
+        {"id": "DOM-26", "name": "Every goroutine is spawned via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0; only bare go in changed surface is self_destruct_registry_test.go:119, a _test.go file"},
+        {"id": "DOM-30", "name": "DB-writing operation emits through AndEmit + message.Buffer, not a direct producer.ProviderImpl call", "status": "n-a", "evidence": "SelfDestruct/finalizeKill write to the Redis-backed Registry, not a GORM database; the emit-after-mutation shape is the pre-existing pattern this file already used before task-253"},
+        {"id": "DOM-31", "name": "Tenant/trace identifiers travel in context only", "status": "pass", "evidence": "self_destruct_timer_registry.go:73 Register(ctx context.Context, t tenant.Model, ...) — tenant passed as typed param/context, never a REST field"},
+        {"id": "FILE-01", "name": "Processor lives in processor.go", "status": "pass", "evidence": "SelfDestruct/selfDestructFrom/finalizeKill/monsterInformation all added to processor.go"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/readers placed per file table", "status": "pass", "evidence": "SelfDestruct write in registry.go:494-524 alongside ApplyDamage/ApplyRecovery; SelfDestructTimerEntry/Registry in self_destruct_timer_registry.go; SelfDestructTimerTask in self_destruct_timer_task.go"},
+        {"id": "FILE-06", "name": "No package-named catch-all file carrying >=2 responsibilities", "status": "pass", "evidence": "new files each carry a single responsibility (registry, sweep task)"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "Processor.SelfDestruct added at processor.go:68; no external mock of monster.Processor exists in this service"}
+      ]
+    },
+    {
+      "name": "services/atlas-monsters/atlas.com/monsters/monster/information",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go fluent + validating Build()", "status": "pass", "evidence": "builder.go:59-64 adds SetSelfDestruction; Build() at builder.go:74-84 still assembles immutable Model"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) defined in rest.go", "status": "pass", "evidence": "pre-existing Transform in rest.go untouched, compiles with the new field"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "information/processor.go:22 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "information/rest.go:76,80 GetName()/GetID() unaffected by new field"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "pass", "evidence": "SelfDestruction is a nested value struct on the response RestModel, not a request body"},
+        {"id": "DOM-21", "name": "No redeclaration of a libs/atlas-constants type", "status": "pass", "evidence": "libs/atlas-constants has no SelfDestruction/DeathType/DestroyType equivalent"},
+        {"id": "DOM-29", "name": "Caches are singletons via GetCache()", "status": "pass", "evidence": "information/cache.go untouched by this diff, no new cache construction site added"},
+        {"id": "FILE-05", "name": "Model/Builder placed per file table", "status": "pass", "evidence": "model.go:1-54 adds SelfDestruction struct + accessor; builder.go mirrors it"}
+      ]
+    },
+    {
+      "name": "services/atlas-data/atlas.com/data/monster",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic not in handler", "status": "n-a", "evidence": "resource.go not touched by this diff; only reader.go/reader_test.go changed"},
+        {"id": "SUB-02", "name": "Writes go through administrator", "status": "n-a", "evidence": "resource.go not touched by this diff"},
+        {"id": "SUB-03", "name": "POST routes use RegisterInputHandler[T]", "status": "n-a", "evidence": "resource.go not touched by this diff"},
+        {"id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "n-a", "evidence": "resource.go not touched by this diff"},
+        {"id": "FILE-05", "name": "Readers placed per file table", "status": "n-a", "evidence": "not evaluable from the diff — reader.go naming predates this diff; see notEvaluable"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/monster",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "SelfDestruct method added to existing ProcessorImpl, constructor unchanged"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "Processor.SelfDestruct added at processor.go:33; mock/processor.go:26,138-143 adds SelfDestructFunc + method with nil-check default"},
+        {"id": "DOM-25", "name": "Client wire codes not hardcoded outside packet internals", "status": "pass", "evidence": "SelfDestructCommandProvider (producer.go:191-208) carries only CharacterId uint32, no client byte"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/kafka/consumer/monster",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client wire codes resolved from a tenant writer-options table", "status": "fail", "evidence": "consumer.go:216-221 destroyTypeFor casts the raw deathType byte straight into monsterpkt.DestroyType(deathType) with no WithResolvedCode/tenant table lookup, unlike claim_result.go:24,30 and sue_character_result.go:21 in the same service"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0; no bare go added in this file"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet/monster/clientbound",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "No client wire code as a Go literal outside libs/atlas-packet codec internals", "status": "pass", "evidence": "DestroyType constants and hasSwallowCharacterId version-gating (destroy.go:14-53) live entirely inside libs/atlas-packet, the codec-internal exemption"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "FILE-05: atlas-data monster/reader.go vs provider.go naming convention predates this diff; full assessment requires reading atlas-data's service-wide file layout beyond the two changed files",
+    "DOM-20: single-scenario test functions in self_destruct_test.go and self_destruct_dot_test.go (e.g. TestSelfDestructAttributesToDamageLeader, TestSelfDestructIsIdempotent) have no natural table; whether DOM-20 exempts single-case tests is not settled from this diff's surface"
+  ],
+  "blocking": [
+    "DOM-25: services/atlas-monsters/atlas.com/monsters/monster/kafka.go:63-64,104-105,148 and processor.go:600,687,796,1413 — atlas-monsters emits a raw client dead-type byte (DeathType) on KILLED/DESTROYED Kafka events instead of a semantic key",
+    "DOM-25: services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:216-221 — destroyTypeFor casts the domain-emitted byte straight into monsterpkt.DestroyType with no tenant writer-options table resolution"
+  ],
+  "nonBlocking": []
+}

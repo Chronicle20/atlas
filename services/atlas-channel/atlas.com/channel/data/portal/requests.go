@@ -24,3 +24,11 @@ func requestInMapByName(ctx context.Context, mapId _map.Id, name string) request
 	}
 	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+portalsByName, mapId, name))
 }
+
+func requestInMap(ctx context.Context, mapId _map.Id) requests.Request[[]RestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[[]RestModel](err)
+	}
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+portalsInMap, mapId))
+}

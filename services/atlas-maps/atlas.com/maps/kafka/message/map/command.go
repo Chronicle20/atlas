@@ -11,6 +11,7 @@ import (
 const (
 	EnvCommandTopicMap      = "COMMAND_TOPIC_MAP"
 	CommandTypeWeatherStart = "WEATHER_START"
+	CommandTypePlayJukebox  = "PLAY_JUKEBOX"
 )
 
 type Command[E any] struct {
@@ -26,5 +27,11 @@ type Command[E any] struct {
 type WeatherStartCommandBody struct {
 	ItemId     uint32 `json:"itemId"`
 	Message    string `json:"message"`
+	DurationMs uint32 `json:"durationMs"`
+}
+
+type PlayJukeboxCommandBody struct {
+	ItemId     uint32 `json:"itemId"`
+	PlayerName string `json:"playerName"`
 	DurationMs uint32 `json:"durationMs"`
 }

@@ -34,7 +34,7 @@ type Point struct {
 // Placement pairs a script id with its resolved footprint/point and the
 // step it was placed at -- the unit Reorganize walks and re-derives.
 type Placement struct {
-	ScriptId int32
+	ScriptId uint32
 	Rect     Rect
 	Point    Point
 	Step     byte

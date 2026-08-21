@@ -56,7 +56,7 @@
 
 Module root for `go build`/`go test`: `services/atlas-data/atlas.com/data`.
 
-- [ ] **Step 1: Update the failing expectation**
+- [x] **Step 1: Update the failing expectation**
 
 In `reader_test.go`, the existing assertion at line 1267 reads:
 
@@ -68,12 +68,12 @@ if rm.SelfDestruction != (selfDestruction{0, 0, 0}) {
 
 Change both literals to `selfDestruction{0, -1, -1}`. Field order is `{Action, RemoveAfter, Hp}`.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-data/atlas.com/data && go test ./monster/ -run TestRead -v`
 Expected: FAIL, `SelfDestruction mismatch: got {Action:0 RemoveAfter:0 Hp:0}, expected {Action:0 RemoveAfter:-1 Hp:-1}`
 
-- [ ] **Step 3: Fix the sentinel**
+- [x] **Step 3: Fix the sentinel**
 
 In `reader.go`, `getSelfDestruction`:
 
@@ -99,12 +99,12 @@ func getSelfDestruction(node *xml.Node) selfDestruction {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd services/atlas-data/atlas.com/data && go build ./... && go test ./monster/`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-data/atlas.com/data/monster/reader.go services/atlas-data/atlas.com/data/monster/reader_test.go
@@ -132,7 +132,7 @@ Module root: `libs/atlas-packet`.
 
 Patterns to copy: `libs/atlas-packet/reactor/clientbound/spawn.go:16-31` (gate function + doc comment shape), `libs/atlas-packet/reactor/clientbound/spawn.go:60-70` (taking the tenant from `ctx` inside `Encode`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `destroy_test.go`. `TestMonsterDestroySwallowGate` is table-driven over the version keys below; `TestMonsterDestroyNonSwallowTypesAreFiveBytes` covers the non-gated dead-types.
 
@@ -173,12 +173,12 @@ Add these `packet-audit:verify` markers above `TestMonsterDestroySwallowGate` (a
 // packet-audit:verify packet=monster/clientbound/MonsterDestroy version=jms_v185 ida=0x6f8a1f
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd libs/atlas-packet && go test ./monster/clientbound/ -run 'TestMonsterDestroySwallowGate|TestMonsterDestroyNonSwallowTypes' -v`
 Expected: FAIL — `gms_v48`…`gms_v87` encode 9 bytes, want 5; `DestroyTypeDestructByMiss` / `DestroyTypeSelfDestruct` are undefined identifiers (compile error).
 
-- [ ] **Step 3: Add the constants and the gate**
+- [x] **Step 3: Add the constants and the gate**
 
 In `destroy.go`, replace the constant block and add the gate above the struct:
 
@@ -222,7 +222,7 @@ func hasSwallowCharacterId(t tenant.Model) bool {
 
 Add `tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"` to the imports.
 
-- [ ] **Step 4: Gate `Encode` and `Decode`**
+- [x] **Step 4: Gate `Encode` and `Decode`**
 
 ```go
 func (m Destroy) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -252,17 +252,17 @@ func (m *Destroy) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *requ
 
 Also update `NewMonsterDestroyBySwallow`'s doc comment to say the trailing field is version-gated to GMS ≥ 92 / JMS.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd libs/atlas-packet && go build ./... && go test ./monster/clientbound/`
 Expected: PASS, including the pre-existing `TestMonsterDestroy`, `TestMonsterDestroyBytesV79`, `TestMonsterDestroyBytesV72` and `TestMonsterDestroyBySwallow`.
 
-- [ ] **Step 6: Confirm no raw version comparison was introduced**
+- [x] **Step 6: Confirm no raw version comparison was introduced**
 
 Run: `go run ./tools/packet-audit gate-lint --check`
 Expected: exit 0.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add libs/atlas-packet/monster/clientbound/destroy.go libs/atlas-packet/monster/clientbound/destroy_test.go
@@ -294,7 +294,7 @@ git commit -m "fix(atlas-packet): version-gate the dead-type-4 trailing int32 on
 
 `gms_v48` is `incomplete` and explicitly out of scope — do not attempt to promote it.
 
-- [ ] **Step 1: Pin the v92 evidence record**
+- [x] **Step 1: Pin the v92 evidence record**
 
 ```bash
 go run ./tools/packet-audit evidence pin \
@@ -304,7 +304,7 @@ go run ./tools/packet-audit evidence pin \
 
 Expected: writes `docs/packets/evidence/gms_v92/monster.clientbound.MonsterDestroy.yaml` with `address: "0x64bb90"` resolved from `docs/packets/ida-exports/gms_v92.json`.
 
-- [ ] **Step 2: Add `verifies:` to all nine evidence records**
+- [x] **Step 2: Add `verifies:` to all nine evidence records**
 
 Append to each of the nine YAMLs (the v92 one just written plus the eight existing):
 
@@ -316,7 +316,7 @@ verifies:
 
 Preserve each file's existing indentation style (four spaces under `ida:` in the current records).
 
-- [ ] **Step 3: Register the gate**
+- [x] **Step 3: Register the gate**
 
 Append to `docs/packets/gates.yaml`, in a new `# ---- boundary v87 / v92 ----` group placed in version order:
 
@@ -330,7 +330,7 @@ Append to `docs/packets/gates.yaml`, in a new `# ---- boundary v87 / v92 ----` g
     upper_version_key: gms_v92
 ```
 
-- [ ] **Step 4: Regenerate the matrix**
+- [x] **Step 4: Regenerate the matrix**
 
 ```bash
 go run ./tools/packet-audit matrix
@@ -339,7 +339,7 @@ go run ./tools/packet-audit matrix --check
 
 Expected: `matrix --check` exits 0, and the `KILL_MONSTER` row's `gms_v92` cell is now `"state": "verified"` in `docs/packets/audits/status.json` (it was `"partial"`).
 
-- [ ] **Step 5: Run the remaining `--check` passes**
+- [x] **Step 5: Run the remaining `--check` passes**
 
 ```bash
 go run ./tools/packet-audit fname-doc --check
@@ -350,7 +350,7 @@ go run ./tools/packet-audit gate-lint --check
 
 Expected: all exit 0.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add docs/packets/gates.yaml docs/packets/audits/STATUS.md docs/packets/audits/status.json docs/packets/evidence
@@ -381,7 +381,7 @@ git commit -m "docs(packets): re-verify MonsterDestroy cells behind the v92 swal
 
 Module root: `services/atlas-monsters/atlas.com/monsters`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 New file `self_destruction_test.go`, package `information`. No fixtures or servers needed — `Extract` takes a `RestModel` literal.
 
@@ -408,12 +408,12 @@ The last row pins design D2's rolling-deploy claim: under the OLD `{0,0,0}` sent
 
 `TestBuilderSetsSelfDestruction` — `NewModelBuilder().SetSelfDestruction(NewSelfDestruction(true, 3, -1, 5000)).Build().SelfDestruction()` must report `Present() == true`, `Action() == 3`, `Hp() == 5000`.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go test ./monster/information/ -run 'SelfDestruction' -v`
 Expected: FAIL — `undefined: NewSelfDestruction`, `m.SelfDestruction undefined`.
 
-- [ ] **Step 3: Add the value type and the model field**
+- [x] **Step 3: Add the value type and the model field**
 
 In `model.go`, add the field `selfDestruction SelfDestruction` to `Model` (after `attacks`), and:
 
@@ -451,7 +451,7 @@ func (m Model) SelfDestruction() SelfDestruction {
 }
 ```
 
-- [ ] **Step 4: Add the builder setter**
+- [x] **Step 4: Add the builder setter**
 
 In `builder.go`, add `selfDestruction SelfDestruction` to `ModelBuilder`, then:
 
@@ -466,7 +466,7 @@ func (b *ModelBuilder) SetSelfDestruction(sd SelfDestruction) *ModelBuilder {
 
 and add `selfDestruction: b.selfDestruction,` to the `Model{...}` literal in `Build`.
 
-- [ ] **Step 5: Map it in `Extract`**
+- [x] **Step 5: Map it in `Extract`**
 
 In `rest.go`, inside `Extract`, before the `return`:
 
@@ -483,12 +483,12 @@ and add to the returned `Model{...}` literal:
 		selfDestruction: NewSelfDestruction(sdPresent, rm.SelfDestruction.Action, rm.SelfDestruction.RemoveAfter, rm.SelfDestruction.Hp),
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./monster/information/`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/information/
@@ -515,7 +515,7 @@ Module root: `services/atlas-monsters/atlas.com/monsters`.
 
 Patterns to copy: `registry.go:436-492` (`ApplyDamage`'s `r.reg.Update` + `fromStored` shape), `registry_test.go:26-51` (`TestMain` with miniredis, `testContext`, `r.Clear(ctx)`, `r.CreateMonster(...)`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 New file `self_destruct_registry_test.go`, package `monster`. It reuses the package's existing `TestMain` (miniredis + `producertest.InstallNoop()`) and the `testContext` helper — do not add another `TestMain`.
 
@@ -532,12 +532,12 @@ New file `self_destruct_registry_test.go`, package `monster`. It reuses the pack
 `TestRegistrySelfDestructUnknownMonster`:
 - `r.SelfDestruct(ten, 999999)` → a non-nil error; assert the call does not panic and `s.Killed == false`.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestRegistrySelfDestruct' -v`
 Expected: FAIL — `r.SelfDestruct undefined`.
 
-- [ ] **Step 3: Implement `SelfDestruct`**
+- [x] **Step 3: Implement `SelfDestruct`**
 
 Add to `registry.go` immediately after `ApplyDamage`:
 
@@ -576,17 +576,17 @@ func (r *Registry) SelfDestruct(t tenant.Model, uniqueId uint32) (DamageSummary,
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./monster/ -run 'TestRegistrySelfDestruct'`
 Expected: PASS
 
-- [ ] **Step 5: Run the full package suite**
+- [x] **Step 5: Run the full package suite**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go test ./monster/`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/registry.go services/atlas-monsters/atlas.com/monsters/monster/self_destruct_registry_test.go
@@ -619,7 +619,7 @@ Module root: `services/atlas-monsters/atlas.com/monsters`.
 
 Patterns to copy: `producer_test.go:14-44` (`TestStartControlBodyEncodesControllerHasAggro` — build a `Model` via `Clone(NewMonster(...))`, call the provider, `json.Unmarshal` into an anonymous envelope struct).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `producer_test.go`.
 
@@ -641,12 +641,12 @@ provider `killedStatusEventProvider(m, 42, false, nil, deathType)`, envelope
 `statusEventKilledBody`; `DeathType` must be `0`. This pins design D9's
 rolling-deploy claim: an omitting producer's event decodes to 0.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'DeathType' -v`
 Expected: FAIL — `undefined: DeathTypeFadeOut`, `too many arguments in call to killedStatusEventProvider`.
 
-- [ ] **Step 3: Add the constants and body fields**
+- [x] **Step 3: Add the constants and body fields**
 
 In `kafka.go`, add to the existing `const (...)` block:
 
@@ -663,7 +663,7 @@ In `kafka.go`, add to the existing `const (...)` block:
 
 Add `DeathType byte \`json:"deathType"\`` as the last field of both `statusEventKilledBody` and `statusEventDestroyedBody`.
 
-- [ ] **Step 4: Thread `deathType` through the providers**
+- [x] **Step 4: Thread `deathType` through the providers**
 
 In `producer.go`:
 
@@ -675,7 +675,7 @@ func destroyedStatusEventProvider(m Model, deathType byte) model.Provider[[]kafk
 
 and add `deathType byte` as the last parameter of `killedStatusEventProvider`, setting `DeathType: deathType` in `statusEventKilledBody{...}`.
 
-- [ ] **Step 5: Extract `finalizeKill` and update the call sites**
+- [x] **Step 5: Extract `finalizeKill` and update the call sites**
 
 In `processor.go`, add above `damageCore`:
 
@@ -720,12 +720,12 @@ Replace the whole body of `damageCore`'s `if killed { ... return }` block with:
 
 In `Destroy` (line 1340), change the emit to `destroyedStatusEventProvider(m, DeathTypeUnset)`.
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./monster/`
 Expected: PASS. `processor_test.go`'s existing kill assertions must still pass unchanged — the epilogue is a pure extraction.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/kafka.go services/atlas-monsters/atlas.com/monsters/monster/producer.go services/atlas-monsters/atlas.com/monsters/monster/processor.go services/atlas-monsters/atlas.com/monsters/monster/producer_test.go
@@ -757,7 +757,7 @@ Module root: `services/atlas-monsters/atlas.com/monsters`.
 
 Patterns to copy: `processor_test.go:1594-1600` (swapping `testInformationLookup` and restoring it with `defer`), `registry_test.go:51-70` (miniredis-backed monster creation).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 New file `self_destruct_test.go`, package `monster`. Every test swaps `testInformationLookup` and restores it with `defer`, and asserts emitted events by installing a recording `emit` on a directly-constructed `&ProcessorImpl{l: l, ctx: ctx, t: ten, emit: rec}` — the same pattern `processor_test.go` uses for kill assertions.
 
@@ -805,12 +805,12 @@ must be `0`.
 `TestSelfDestructIsIdempotent` — call `p.SelfDestruct(uid, 0, TriggerContact)`
 twice on a valid target. Exactly one KILLED across both calls.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'SelfDestruct|Threshold' -v`
 Expected: FAIL — `undefined: TriggerContact`, `p.SelfDestruct undefined`.
 
-- [ ] **Step 3: Add the trigger type and the information seam**
+- [x] **Step 3: Add the trigger type and the information seam**
 
 In `processor.go`, add near the top-level declarations:
 
@@ -840,7 +840,7 @@ func (p *ProcessorImpl) monsterInformation(monsterId uint32) (information.Model,
 
 Replace the `testInformationLookup` branch inside `Kill` (processor.go:1763-1769) with a single `info, infoErr := p.monsterInformation(m.MonsterId())`.
 
-- [ ] **Step 4: Add `selfDestructFrom` and the exported `SelfDestruct`**
+- [x] **Step 4: Add `selfDestructFrom` and the exported `SelfDestruct`**
 
 Add `SelfDestruct(uniqueId uint32, characterId uint32, trigger SelfDestructTrigger)` to the `Processor` interface, in the `// Commands` block after `Kill`. Then:
 
@@ -907,7 +907,7 @@ func (p *ProcessorImpl) selfDestructFrom(m Model, characterId uint32, action byt
 }
 ```
 
-- [ ] **Step 5: Wire the threshold check into `damageCore`**
+- [x] **Step 5: Wire the threshold check into `damageCore`**
 
 In `damageCore`, extend the information fetch at the top to capture the block:
 
@@ -937,12 +937,12 @@ Then, immediately before the `if killed {` block:
 	}
 ```
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./monster/`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/processor.go services/atlas-monsters/atlas.com/monsters/monster/self_destruct_test.go
@@ -969,7 +969,7 @@ Module root: `services/atlas-monsters/atlas.com/monsters`.
 
 Patterns to copy: `poison_damage_test.go` (constructing a `StatusExpirationTask` and a poisoned monster), `processor_test.go:1594-1600` (`testInformationLookup` swap).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 New file `self_destruct_dot_test.go`, package `monster`.
 
@@ -990,12 +990,12 @@ New file `self_destruct_dot_test.go`, package `monster`.
 - Boomer at HP `1810`, `selfDestruction` `{1, -1, 1800}`, poison magnitude `5000`.
 - The cap clamps the tick to `1809`, landing on HP `1`, which is `<= 1800` — so the mob detonates. Exactly one `EventMonsterStatusKilled`, `DeathType == 1`.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestDoTTick' -v`
 Expected: FAIL — no KILLED is emitted on the crossing cases.
 
-- [ ] **Step 3: Add the threshold check to `processDoTTick`**
+- [x] **Step 3: Add the threshold check to `processDoTTick`**
 
 In `status_task.go`, after the "Emit damaged event" line at the end of `processDoTTick`, append:
 
@@ -1015,12 +1015,12 @@ In `status_task.go`, after the "Emit damaged event" line at the end of `processD
 
 Add `"atlas-monsters/monster/information"` to the file's imports.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./monster/`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/status_task.go services/atlas-monsters/atlas.com/monsters/monster/self_destruct_dot_test.go
@@ -1055,7 +1055,7 @@ Module root: `services/atlas-monsters/atlas.com/monsters`.
 
 Patterns to copy: `monster/drop_timer_registry.go` in full (entry type, `stored*` struct, `sync.Once` init, `Register`/`Unregister`/`GetAll`, `fromStored*`), `monster/drop_timer_task.go` in full (`Run`, `processEntry`, `SleepTime`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 New file `self_destruct_timer_test.go`, package `monster`. Timer mob template: monsterId `9300166`, `selfDestruction` `{action: 4, removeAfter: 0, hp: -1}`. `now` is captured once per test and passed to `processEntry` explicitly — never `time.Sleep`.
 
@@ -1084,12 +1084,12 @@ New file `self_destruct_timer_test.go`, package `monster`. Timer mob template: m
 
 `TestDestroyAllLeavesNoTimers` — arm timers for two mobs in the tenant, call `DestroyAll(l, ctx)`, assert `GetAll(ctx)` is empty (FR-3.6).
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'Timer' -v`
 Expected: FAIL — `undefined: GetSelfDestructTimerRegistry`.
 
-- [ ] **Step 3: Write the registry**
+- [x] **Step 3: Write the registry**
 
 New file `self_destruct_timer_registry.go`, package `monster`. Mirror `drop_timer_registry.go` exactly:
 
@@ -1192,7 +1192,7 @@ func fromStoredSelfDestructTimer(sd storedSelfDestructTimer) (tenant.Model, Self
 
 Imports match `drop_timer_registry.go`'s.
 
-- [ ] **Step 4: Write the sweep task**
+- [x] **Step 4: Write the sweep task**
 
 New file `self_destruct_timer_task.go`, package `monster`:
 
@@ -1239,7 +1239,7 @@ func (t *SelfDestructTimerTask) SleepTime() time.Duration {
 }
 ```
 
-- [ ] **Step 5: Arm and cancel the timer in the processor**
+- [x] **Step 5: Arm and cancel the timer in the processor**
 
 In `Create` (`processor.go:217`), after the existing friendly/drop-period block:
 
@@ -1270,19 +1270,19 @@ In `finalizeKill` (Task 6), add after the `GetDropTimerRegistry().Unregister(...
 	GetSelfDestructTimerRegistry().Unregister(p.ctx, p.t, m.UniqueId())
 ```
 
-- [ ] **Step 6: Wire the registry and task into `main.go` and `TestMain`**
+- [x] **Step 6: Wire the registry and task into `main.go` and `TestMain`**
 
 In `main.go`, add `monster.InitSelfDestructTimerRegistry(rc)` immediately after `monster.InitDropTimerRegistry(rc)` (line 65), and inside `registerSweepTasks` add
 `tasks.Register(l, ctx)(monster.NewSelfDestructTimerTask(l, ctx, time.Second))` immediately after the `NewDropTimerTask` line (line 104).
 
 In `registry_test.go`'s `TestMain`, add `InitSelfDestructTimerRegistry(rc)` after `InitDropTimerRegistry(rc)`.
 
-- [ ] **Step 7: Run the tests to verify they pass**
+- [x] **Step 7: Run the tests to verify they pass**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./...`
 Expected: PASS
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/self_destruct_timer_registry.go services/atlas-monsters/atlas.com/monsters/monster/self_destruct_timer_task.go services/atlas-monsters/atlas.com/monsters/monster/self_destruct_timer_test.go services/atlas-monsters/atlas.com/monsters/monster/processor.go services/atlas-monsters/atlas.com/monsters/monster/registry_test.go services/atlas-monsters/atlas.com/monsters/main.go
@@ -1310,7 +1310,7 @@ Module root: `services/atlas-monsters/atlas.com/monsters`.
 
 Patterns to copy: `consumer.go:189-196` (`handleKillCommand`), `consumer.go:54-56` (its `rf(t, message.AdaptHandler(message.PersistentConfig(...)))` registration), `kafka.go:128-139` (`killCommandBody` and its "why no extra fields" comment).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `kafka_test.go`:
 
@@ -1324,12 +1324,12 @@ into `command[selfDestructCommandBody]` and assert `Type == CommandTypeSelfDestr
 
 `TestSelfDestructCommandTypeValue` — assert `CommandTypeSelfDestruct == "SELF_DESTRUCT"`, so the channel's mirror constant cannot drift silently.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go test ./kafka/consumer/monster/ -run SelfDestruct -v`
 Expected: FAIL — `undefined: CommandTypeSelfDestruct`.
 
-- [ ] **Step 3: Add the contract**
+- [x] **Step 3: Add the contract**
 
 In `kafka/consumer/monster/kafka.go`, add `CommandTypeSelfDestruct = "SELF_DESTRUCT"` to the command-type const block, and:
 
@@ -1349,7 +1349,7 @@ type selfDestructCommandBody struct {
 }
 ```
 
-- [ ] **Step 4: Add the handler and register it**
+- [x] **Step 4: Add the handler and register it**
 
 In `consumer.go`, after `handleKillCommand`:
 
@@ -1371,12 +1371,12 @@ and register it in `InitHandlers` immediately after the `handleKillCommand` regi
 		}
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./...`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/kafka/consumer/monster/
@@ -1412,7 +1412,7 @@ Module root: `services/atlas-channel/atlas.com/channel`.
 
 Patterns to copy: `monster/producer.go:175-189` (`KillCommandProvider`), `monster/processor.go:155-158` (`Kill`), `monster/mock/processor.go:25,130-133` (mock field + method).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `kafka/consumer/monster/consumer_test.go`.
 
@@ -1444,12 +1444,12 @@ behind the damage that preceded it (design §7). Put this test in
 `services/atlas-channel/atlas.com/channel/monster/producer_test.go` if that
 file exists; otherwise create it in package `monster`.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./kafka/consumer/monster/ ./monster/ -run 'DestroyTypeFor|DeathType|SelfDestruct' -v`
 Expected: FAIL — `undefined: destroyTypeFor`, `undefined: SelfDestructCommandProvider`.
 
-- [ ] **Step 3: Extend the message contract**
+- [x] **Step 3: Extend the message contract**
 
 In `kafka/message/monster/kafka.go`, add `CommandTypeSelfDestruct = "SELF_DESTRUCT"` to the command-type const block, add `DeathType byte \`json:"deathType"\`` as the last field of both `StatusEventKilledBody` and `StatusEventDestroyedBody`, and:
 
@@ -1463,7 +1463,7 @@ type SelfDestructCommandBody struct {
 }
 ```
 
-- [ ] **Step 4: Add the producer and processor method**
+- [x] **Step 4: Add the producer and processor method**
 
 In `monster/producer.go`, after `KillCommandProvider`:
 
@@ -1501,7 +1501,7 @@ In `monster/mock/processor.go`, add the field
 `SelfDestructFunc func(f field.Model, monsterId uint32, characterId uint32) error`
 and the method returning `nil` when the func is nil, matching `Kill`'s shape.
 
-- [ ] **Step 5: Pass the death type through the consumer**
+- [x] **Step 5: Pass the death type through the consumer**
 
 In `kafka/consumer/monster/consumer.go`, add above `destroyForSession`:
 
@@ -1523,12 +1523,12 @@ Change `killForSession` and `destroyForSession` to take a
 `monsterpkt.NewMonsterDestroy(uniqueId, dt)`. Update both call sites to pass
 `destroyTypeFor(e.Body.DeathType)`.
 
-- [ ] **Step 6: Run the tests to verify they pass**
+- [x] **Step 6: Run the tests to verify they pass**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./...`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/message/monster/kafka.go services/atlas-channel/atlas.com/channel/monster/ services/atlas-channel/atlas.com/channel/kafka/consumer/monster/
@@ -1558,7 +1558,7 @@ Module root: `services/atlas-channel/atlas.com/channel`.
 
 Patterns to copy: `socket/handler/cash_shop_check_name_change.go:26` (package-level `var …Func = func(...)` seam), `socket/handler/character_chat_whisper_test.go:62-85` (building a session with `session.NewSession` + `session.NewProcessor(...).SetCharacterId/SetField`), `socket/handler/monster_catch_item_use_test.go:14-30` (encoding a serverbound packet into a `request.Reader`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 New file `monster_bomb_test.go`, package `handler`. Each test swaps both package seams and restores them with `defer`, records whether `monsterBombSelfDestructFunc` was called, and drives the handler with a real encoded packet:
 
@@ -1597,12 +1597,12 @@ same valid setup. The seam is called twice and neither call errors; idempotence
 is enforced by atlas-monsters (`Registry.SelfDestruct`), not by the channel, so
 the handler must not try to dedupe.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -run MonsterBomb -v`
 Expected: FAIL — `undefined: monsterBombSelfDestructFunc`.
 
-- [ ] **Step 3: Implement the handler**
+- [x] **Step 3: Implement the handler**
 
 Replace `socket/handler/monster_bomb.go` in full:
 
@@ -1683,17 +1683,17 @@ func MonsterBombHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.P
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./socket/handler/ ./monster/`
 Expected: PASS
 
-- [ ] **Step 5: Confirm the deferred-behavior marker is gone**
+- [x] **Step 5: Confirm the deferred-behavior marker is gone**
 
 Run: `grep -rn "behavior: deferred" services/atlas-channel/atlas.com/channel/socket/handler/monster_bomb.go`
 Expected: no output (PRD acceptance: "the handler no longer contains a `// behavior: deferred` comment").
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/monster_bomb.go services/atlas-channel/atlas.com/channel/socket/handler/monster_bomb_test.go
@@ -1721,7 +1721,7 @@ Service URL env keys (from each package's `getBaseRequest`): quests `QUESTS_SERV
 
 Patterns to copy: `quest/provider_drain_test.go:48-62` (`httptest.NewServer` + `t.Setenv("<KEY>_SERVICE_URL", srv.URL+"/")` + `tenant.Create` + `tenant.WithContext`), `monster/characterization_test.go` (pure-function assertions).
 
-- [ ] **Step 1: Write the tests**
+- [x] **Step 1: Write the tests**
 
 New file `actor_zero_test.go`, package `monster`.
 
@@ -1800,19 +1800,19 @@ stub serving a monster with `hp` `4000` and `experience` `150`, and
 called. `DistributeExperience(f, 8500003, nil)` must return `nil` and the
 character server must record zero requests.
 
-- [ ] **Step 2: Run the tests**
+- [x] **Step 2: Run the tests**
 
 Run: `cd services/atlas-monster-death/atlas.com/monster && go test ./monster/ -run 'NoKiller|EmptyEntries|EmptyIsNaN|FilterByQuestState' -v`
 Expected: PASS. If any fails, the behaviour FR-6.4 assumes is not actually
 present — fix the production code in this task rather than adjusting the
 assertion.
 
-- [ ] **Step 3: Run the module suite**
+- [x] **Step 3: Run the module suite**
 
 Run: `cd services/atlas-monster-death/atlas.com/monster && go build ./... && go test ./...`
 Expected: PASS
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add services/atlas-monster-death/atlas.com/monster/monster/actor_zero_test.go
@@ -1823,12 +1823,12 @@ git commit -m "test(atlas-monster-death): pin ActorId=0 drop and experience beha
 
 ## Final gates (controller, not an implementer)
 
-- [ ] **Flagless verification**
+- [x] **Flagless verification**
 
 Run: `tools/verify.sh`
 Expected: exit 0. `--quick`/`--no-docker` do not count — they skip the bake and `-race`.
 
-- [ ] **Packet audit checks**
+- [x] **Packet audit checks**
 
 ```bash
 go run ./tools/packet-audit matrix --check
@@ -1840,11 +1840,11 @@ go run ./tools/packet-audit dispatcher-lint
 
 Expected: all exit 0.
 
-- [ ] **Code review**
+- [x] **Code review**
 
 Dispatch `backend-guidelines-reviewer` (atlas-monsters, atlas-channel, atlas-data, atlas-monster-death) and `plan-adherence-reviewer` before opening the PR. Neither is optional.
 
-- [ ] **Live observation**
+- [x] **Live observation**
 
 On a running channel, damage a Boomer (`5100002`) from full HP past `1800` and
 confirm it plays its death animation and drops. Then attempt the Papulatus bomb

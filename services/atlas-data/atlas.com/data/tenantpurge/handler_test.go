@@ -14,6 +14,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -64,6 +65,7 @@ func minimalDB(t *testing.T) *gorm.DB {
 			t.Fatalf("create table: %v", err)
 		}
 	}
+	database.RegisterTenantCallbacks(logrus.StandardLogger(), db)
 	return db
 }
 

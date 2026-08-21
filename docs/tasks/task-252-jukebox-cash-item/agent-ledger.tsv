@@ -29,3 +29,12 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T13:45:09Z	agent	Task 9	packet-implementer	sonnet	-	-	-	-	PARTIAL	3ab503d	-	-	.superpowers/sdd/plan/task-9-report.md	-
 2026-08-21T13:57:44Z	agent	race fix	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
 2026-08-21T13:58:34Z	agent	Task 9 cont	packet-implementer	sonnet	-	-	-	-	DONE	8765e70	-	-	.superpowers/sdd/plan/task-9-report.md	-
+2026-08-21T14:11:37Z	agent	Task 9 blocking fix	atlas-implementer	sonnet	-	-	-	-	DONE	a3f2519	-	-	-	-
+2026-08-21T14:11:40Z	handoff	after Task 9 + race fix	-	-	-	-	-	-	-	-	-	-	-	95000
+2026-08-21T14:13:26Z	agent	pre-PR roster (session 4)	plan-adherence-reviewer	sonnet	-	-	-	-	dispatched	a3f2519e9	-	-	-	-
+2026-08-21T14:13:29Z	agent	pre-PR roster (session 4)	backend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	a3f2519e9	-	-	-	-
+2026-08-21T14:13:35Z	agent	pre-PR roster (session 4)	packet-completeness-critic	sonnet	-	-	-	-	dispatched	a3f2519e9	-	-	-	-
+2026-08-21T14:14:46Z	agent	pre-PR roster (session 4)	packet-completeness-critic	sonnet	-	-	-	-	complete	a3f2519e9	CLEAN	no	-	-
+2026-08-21T16:09:29Z	agent	pre-PR roster (session 4)	plan-adherence-reviewer	sonnet	-	-	-	-	complete	a3f2519e9	APPROVED	no	-	-
+2026-08-21T16:09:30Z	agent	pre-PR roster (session 4)	backend-guidelines-reviewer	sonnet	-	-	-	-	died-session-limit	a3f2519e9	-	-	-	-
+2026-08-21T16:24:16Z	agent	pre-PR roster (session 4)	backend-guidelines-reviewer	sonnet	-	-	-	-	complete	a3f2519e9	CHANGES_REQUIRED	yes	-	-

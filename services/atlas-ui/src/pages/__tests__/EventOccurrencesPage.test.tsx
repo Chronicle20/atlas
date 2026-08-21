@@ -46,6 +46,8 @@ vi.mock("@/services/api/events.service", () => ({
   },
 }));
 
+vi.mock("@/lib/utils/toast", () => ({ success: vi.fn(), error: vi.fn() }));
+
 const useTenantMock = vi.hoisted(() => vi.fn());
 vi.mock("@/context/tenant-context", () => ({
   useTenant: useTenantMock,
@@ -152,5 +154,18 @@ describe("EventOccurrencesPage", () => {
         expect.objectContaining({ state: "ACTIVE" }),
       ),
     );
+  });
+
+  it("offers a refresh control when no occurrences match", async () => {
+    const get = vi.mocked(eventsService.getOccurrences).mockResolvedValue({
+      data: [],
+      meta: null,
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await screen.findByText("No event occurrences found");
+    const refreshButton = screen.getByTestId("empty-state-refresh");
+    await user.click(refreshButton);
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
   });
 });

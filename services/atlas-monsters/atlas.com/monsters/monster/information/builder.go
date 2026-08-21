@@ -8,6 +8,7 @@ type ModelBuilder struct {
 	hpRecovery  uint32
 	mpRecovery  uint32
 	boss        bool
+	firstAttack bool
 	resistances map[string]string
 }
 
@@ -46,6 +47,13 @@ func (b *ModelBuilder) SetBoss(boss bool) *ModelBuilder {
 	return b
 }
 
+// SetFirstAttack sets the aggressive-template flag on the builder. Used by
+// tests that drive the firstAttack gate in ProcessorImpl.SetAggro.
+func (b *ModelBuilder) SetFirstAttack(v bool) *ModelBuilder {
+	b.firstAttack = v
+	return b
+}
+
 // SetResistances sets the elemental resistance map on the builder. Keys are
 // element letters ("P", "I", "F", "S", "L"); value "1" means immune (per
 // Model.IsImmuneToElement). Used by tests that drive elemental-immunity
@@ -71,6 +79,7 @@ func (b *ModelBuilder) Build() Model {
 		hpRecovery:  b.hpRecovery,
 		mpRecovery:  b.mpRecovery,
 		boss:        b.boss,
+		firstAttack: b.firstAttack,
 		resistances: b.resistances,
 	}
 }

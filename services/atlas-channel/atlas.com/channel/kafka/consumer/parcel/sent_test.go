@@ -48,89 +48,95 @@ func sentWp(captured *[][]byte) writer.Producer {
 // that runs SetCtrlEnabled(1) plus ResetSendInfo/CloseParcelDlg
 // (CParcelDlg::OnPacket default arm, v83 @0x6f579d).
 func TestParcelSentEvent(t *testing.T) {
-	t.Run("online sender", func(t *testing.T) {
-		tm := newTestTenant(t)
-		ctx := tenant.WithContext(context.Background(), tm)
-		s, cleanup := newRealSession(tm, ctx, 200)
-		defer cleanup()
-		sc := newTestServer(t, tm)
-		_ = s
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{name: "online sender", run: func(t *testing.T) {
+			tm := newTestTenant(t)
+			ctx := tenant.WithContext(context.Background(), tm)
+			s, cleanup := newRealSession(tm, ctx, 200)
+			defer cleanup()
+			sc := newTestServer(t, tm)
+			_ = s
 
-		var captured [][]byte
-		h := handleParcelSentEvent(sc, sentWp(&captured))
-		h(nullLogger(), ctx, parcelmsg.StatusEvent[parcelmsg.StatusEventParcelSentBody]{
-			CharacterId: 200,
-			Type:        parcelmsg.StatusEventParcelSent,
-			Body:        parcelmsg.StatusEventParcelSentBody{},
-		})
+			var captured [][]byte
+			h := handleParcelSentEvent(sc, sentWp(&captured))
+			h(nullLogger(), ctx, parcelmsg.StatusEvent[parcelmsg.StatusEventParcelSentBody]{
+				CharacterId: 200,
+				Type:        parcelmsg.StatusEventParcelSent,
+				Body:        parcelmsg.StatusEventParcelSentBody{},
+			})
 
-		if len(captured) != 1 {
-			t.Fatalf("announces = %d, want 1", len(captured))
-		}
-		// SUCCESSFULLY_SENT is a bare mode byte — no body follows it.
-		if len(captured[0]) != 1 || captured[0][0] != 0x12 {
-			t.Errorf("body = % x, want 12", captured[0])
-		}
-	})
+			if len(captured) != 1 {
+				t.Fatalf("announces = %d, want 1", len(captured))
+			}
+			// SUCCESSFULLY_SENT is a bare mode byte — no body follows it.
+			if len(captured[0]) != 1 || captured[0][0] != 0x12 {
+				t.Errorf("body = % x, want 12", captured[0])
+			}
+		}},
+		{name: "offline sender", run: func(t *testing.T) {
+			tm := newTestTenant(t)
+			ctx := tenant.WithContext(context.Background(), tm)
+			sc := newTestServer(t, tm)
 
-	t.Run("offline sender", func(t *testing.T) {
-		tm := newTestTenant(t)
-		ctx := tenant.WithContext(context.Background(), tm)
-		sc := newTestServer(t, tm)
+			var captured [][]byte
+			h := handleParcelSentEvent(sc, sentWp(&captured))
+			h(nullLogger(), ctx, parcelmsg.StatusEvent[parcelmsg.StatusEventParcelSentBody]{
+				CharacterId: 999,
+				Type:        parcelmsg.StatusEventParcelSent,
+				Body:        parcelmsg.StatusEventParcelSentBody{},
+			})
 
-		var captured [][]byte
-		h := handleParcelSentEvent(sc, sentWp(&captured))
-		h(nullLogger(), ctx, parcelmsg.StatusEvent[parcelmsg.StatusEventParcelSentBody]{
-			CharacterId: 999,
-			Type:        parcelmsg.StatusEventParcelSent,
-			Body:        parcelmsg.StatusEventParcelSentBody{},
-		})
+			if len(captured) != 0 {
+				t.Errorf("announces = %d, want 0", len(captured))
+			}
+		}},
+		{name: "wrong tenant", run: func(t *testing.T) {
+			tm := newTestTenant(t)
+			other := newTestTenant(t)
+			ctx := tenant.WithContext(context.Background(), other)
+			s, cleanup := newRealSession(tm, ctx, 200)
+			defer cleanup()
+			sc := newTestServer(t, tm)
+			_ = s
 
-		if len(captured) != 0 {
-			t.Errorf("announces = %d, want 0", len(captured))
-		}
-	})
+			var captured [][]byte
+			h := handleParcelSentEvent(sc, sentWp(&captured))
+			h(nullLogger(), ctx, parcelmsg.StatusEvent[parcelmsg.StatusEventParcelSentBody]{
+				CharacterId: 200,
+				Type:        parcelmsg.StatusEventParcelSent,
+				Body:        parcelmsg.StatusEventParcelSentBody{},
+			})
 
-	t.Run("wrong tenant", func(t *testing.T) {
-		tm := newTestTenant(t)
-		other := newTestTenant(t)
-		ctx := tenant.WithContext(context.Background(), other)
-		s, cleanup := newRealSession(tm, ctx, 200)
-		defer cleanup()
-		sc := newTestServer(t, tm)
-		_ = s
+			if len(captured) != 0 {
+				t.Errorf("announces = %d, want 0", len(captured))
+			}
+		}},
+		{name: "wrong event type", run: func(t *testing.T) {
+			tm := newTestTenant(t)
+			ctx := tenant.WithContext(context.Background(), tm)
+			s, cleanup := newRealSession(tm, ctx, 200)
+			defer cleanup()
+			sc := newTestServer(t, tm)
+			_ = s
 
-		var captured [][]byte
-		h := handleParcelSentEvent(sc, sentWp(&captured))
-		h(nullLogger(), ctx, parcelmsg.StatusEvent[parcelmsg.StatusEventParcelSentBody]{
-			CharacterId: 200,
-			Type:        parcelmsg.StatusEventParcelSent,
-			Body:        parcelmsg.StatusEventParcelSentBody{},
-		})
+			var captured [][]byte
+			h := handleParcelSentEvent(sc, sentWp(&captured))
+			h(nullLogger(), ctx, parcelmsg.StatusEvent[parcelmsg.StatusEventParcelSentBody]{
+				CharacterId: 200,
+				Type:        parcelmsg.StatusEventParcelArrived,
+				Body:        parcelmsg.StatusEventParcelSentBody{},
+			})
 
-		if len(captured) != 0 {
-			t.Errorf("announces = %d, want 0", len(captured))
-		}
-	})
+			if len(captured) != 0 {
+				t.Errorf("announces = %d, want 0", len(captured))
+			}
+		}},
+	}
 
-	t.Run("wrong event type", func(t *testing.T) {
-		tm := newTestTenant(t)
-		ctx := tenant.WithContext(context.Background(), tm)
-		s, cleanup := newRealSession(tm, ctx, 200)
-		defer cleanup()
-		sc := newTestServer(t, tm)
-		_ = s
-
-		var captured [][]byte
-		h := handleParcelSentEvent(sc, sentWp(&captured))
-		h(nullLogger(), ctx, parcelmsg.StatusEvent[parcelmsg.StatusEventParcelSentBody]{
-			CharacterId: 200,
-			Type:        parcelmsg.StatusEventParcelArrived,
-			Body:        parcelmsg.StatusEventParcelSentBody{},
-		})
-
-		if len(captured) != 0 {
-			t.Errorf("announces = %d, want 0", len(captured))
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, tt.run)
+	}
 }

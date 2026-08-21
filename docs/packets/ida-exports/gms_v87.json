@@ -16521,6 +16521,70 @@
           "comment": ""
         }
       ]
+    },
+    "CUICharacterSaleDlg::SendCreateNewCharacter": {
+      "address": "0x82e402",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time = get_update_time(); LEADING"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nPOS = *(this+232)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID = *(this+236)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sName, CCtrlEdit::GetText via sub_82C6F7(this)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "al[0] = sub_82C6F7(v2), loop iter 0/3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "al[1] = sub_82C6F7(v2), loop iter 1/3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "al[2] = sub_82C6F7(v2), loop iter 2/3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "al[3] = sub_82C6F7(v2), loop iter 3/3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nGender = *(this+520)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nCurrentClass = *(this+456)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nSP = *(this+464)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "update_time = get_update_time(); TRAILING, second occurrence (doubled write, raw-disasm confirmed 0x82e4fd/0x82e506)"
+        }
+      ]
+    },
+    "CUICharacterSaleDlg::SendCheckDuplicateIDPacket": {
+      "address": "0x82e04d",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "sCharName; MAPLELIFE_CHECK_NAME opcode 270 (0x10E)"
+        }
+      ]
     }
   }
 }

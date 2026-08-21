@@ -1,0 +1,21 @@
+{
+  "WriterName": "MaplelifeCheckName",
+  "IDAName": "CUICharacterSaleDlg::SendCheckDuplicateIDPacket",
+  "Address": "0x777d20",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/maplelife/serverbound/check_name.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sCharName; MAPLELIFE_CHECK_NAME opcode 311",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

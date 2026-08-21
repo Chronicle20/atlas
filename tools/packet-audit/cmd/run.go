@@ -2792,6 +2792,33 @@ func candidatesFromFName(fname string) []candidate {
 	// (docs/tasks/task-246-maple-life-character-creation/derivation.md §5).
 	case "CUICharacterSaleDlg::OnCreateNewCharacterResult":
 		return []candidate{{name: "MapleLifeError", dir: csvpkg.DirClientbound, pkg: "maplelife"}}
+	// Serverbound USE_CASH_ITEM 543 sub-body (task-246): the
+	// character-creation ("Maple Life", Cash/0543 05431000/05432000)
+	// slot-purchase submit — CUICharacterSaleDlg::SendCreateNewCharacter.
+	// Struct is ItemUseMapleLife (libs/atlas-packet/cash/serverbound/
+	// item_use_maple_life.go); carries only the fields AFTER the shared
+	// ItemUse header's nPOS/nItemID pair, same convention as the other
+	// item_use_*.go sub-bodies. Body is EncodeStr(sName) + Encode4(al[0..3])
+	// + Encode4(nGender) + Encode4(nCurrentClass) + Encode4(nSP) +
+	// Encode4(update_time, TRAILING) on every in-scope version (gms_v83/
+	// v87/v92/v95); the trailing update_time write is UNCONDITIONAL here
+	// (not gated by UpdateTimeFirst like the sibling sub-bodies) — raw
+	// disassembly confirms the client writes update_time TWICE on v87+ (once
+	// via the shared header's leading copy, once via this sub-body's own
+	// trailing copy) and once on v83 (trailing only, via this sub-body)
+	// (docs/tasks/task-246-maple-life-character-creation/derivation.md §2).
+	case "CUICharacterSaleDlg::SendCreateNewCharacter":
+		return []candidate{{name: "ItemUseMapleLife", dir: csvpkg.DirServerbound, pkg: "cash", prefixName: "ItemUse", prefixPkg: "cash"}}
+	// Serverbound MAPLELIFE_CHECK_NAME (task-246): the Maple Life
+	// duplicate-name probe — CUICharacterSaleDlg::SendCheckDuplicateIDPacket.
+	// Struct is CheckName (libs/atlas-packet/maplelife/serverbound/
+	// check_name.go). Body is a single EncodeStr(sCharName) on every
+	// in-scope version (gms_v83/v87/v92/v95); each version has its OWN
+	// dedicated opcode (256/270/301/311) — no CHECK_CHAR_NAME(21) collision
+	// on any of them, unlike the cash-shop rename probe
+	// (docs/tasks/task-246-maple-life-character-creation/derivation.md §6).
+	case "CUICharacterSaleDlg::SendCheckDuplicateIDPacket":
+		return []candidate{{name: "CheckName", dir: csvpkg.DirServerbound, pkg: "maplelife"}}
 	// Clientbound CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT (task-227): the
 	// server's answer to the WORLD_TRANSFER request above. Routed by
 	// CCashShop::OnPacket as its own case, NOT by the OnCashItemResult mode

@@ -244,8 +244,14 @@ derivation-only task's scope.
 
 ### §2.1 — gms_v83 (`0x7d7960`, size `0x121`)
 
-`decompile_sha256`: **PENDING — not computable this task.**
-`CUICharacterSaleDlg::SendCreateNewCharacter` is **absent as a key** in
+`decompile_sha256`: **RESOLVED** (Task 6). `CUICharacterSaleDlg::SendCreateNewCharacter`
+was re-harvested and spliced into `docs/packets/ida-exports/gms_v83.json`
+this pass (function was already named in the IDB — no rename needed) — value
+`40ac1642353a50211515916e1b0ade437e69256cf827317ae304b554eb067983`. See
+`docs/packets/evidence/gms_v83/cash.serverbound.CashItemUseMapleLife.yaml`.
+
+Original PENDING note, kept for context:
+`CUICharacterSaleDlg::SendCreateNewCharacter` was **absent as a key** in
 `docs/packets/ida-exports/gms_v83.json`'s `functions` map (confirmed by
 direct grep of the export — zero matches for `SendCreateNewCharacter` or
 `CharacterSaleDlg` in any of the five in-scope exports). `tools/packet-audit
@@ -289,8 +295,11 @@ GMS v83 trails.
 
 ### §2.2 — gms_v87 (`0x82e402`, size `0x12f`)
 
-`decompile_sha256`: **PENDING**, same reason as §2.1 (function absent from
-`gms_v87.json`'s export).
+`decompile_sha256`: **RESOLVED** (Task 6) —
+`1b18651d77d7af253eb8e72ab2aef44f0c97ff290917eab9dd9a2b930b75a861`, spliced
+into `docs/packets/ida-exports/gms_v87.json` (function already named, no
+rename needed). See
+`docs/packets/evidence/gms_v87/cash.serverbound.CashItemUseMapleLife.yaml`.
 
 Opcode: `COutPacket::COutPacket(v12, 0x52)` — **0x52 = 82**. Matches
 `docs/packets/registry/gms_v87.yaml` `USE_CASH_ITEM` (serverbound, opcode
@@ -325,7 +334,11 @@ have exactly two, one leading + one trailing).
 
 ### §2.3 — gms_v92 (`0x758770`, size `0x178`)
 
-`decompile_sha256`: **PENDING**, same reason.
+`decompile_sha256`: **RESOLVED** (Task 6) —
+`05ac2d0ed80fc2d326a63351d8119e39a2dc762004cbbc80a87886327a1ec0d2`, spliced
+into `docs/packets/ida-exports/gms_v92.json` (function already named, no
+rename needed). See
+`docs/packets/evidence/gms_v92/cash.serverbound.CashItemUseMapleLife.yaml`.
 
 Opcode: `COutPacket::COutPacket((COutPacket*)&v13, 0x56u)` — **0x56 = 86**.
 Matches `docs/packets/registry/gms_v92.yaml` `USE_CASH_ITEM` (serverbound,
@@ -360,7 +373,11 @@ Same double-update_time shape as v87.
 
 ### §2.4 — gms_v95 (`0x77a240`, size `0x178`)
 
-`decompile_sha256`: **PENDING**, same reason.
+`decompile_sha256`: **RESOLVED** (Task 6) —
+`adbf4df033dab6757dfc025fbe2cb3f51a521c47f50c47f5a67dfd320117dc42`, spliced
+into `docs/packets/ida-exports/gms_v95.json` (function already named, no
+rename needed). See
+`docs/packets/evidence/gms_v95/cash.serverbound.CashItemUseMapleLife.yaml`.
 
 Opcode: `COutPacket::COutPacket(&oPacket, 85)` — **85 decimal = 0x55**.
 Matches `docs/packets/registry/gms_v95.yaml` `USE_CASH_ITEM` (serverbound,
@@ -690,10 +707,17 @@ literal) and v84's absence differ.
 
 ## §5. `CUICharacterSaleDlg::OnCreateNewCharacterResult` — the full error-code enumeration
 
-`decompile_sha256`: **PENDING** on all versions, same reason as §4/§2.1 (key
-absent from every in-scope export; only unrelated `CLogin::*` and
-`CCashShop::*` same-named functions are present — confirmed by direct
-key-scan).
+`decompile_sha256`: **RESOLVED** (Task 5, carried forward here by Task 6 per
+the controller's Task-5-review addendum). Task 5 re-harvested the export the
+same way Task 4 did for §4 (rename + splice) and pinned the real hashes into
+`docs/packets/evidence/gms_v8{3,7}/maplelife.clientbound.MapleLifeError.yaml`,
+`docs/packets/evidence/gms_v92/maplelife.clientbound.MapleLifeError.yaml`,
+`docs/packets/evidence/gms_v95/maplelife.clientbound.MapleLifeError.yaml` —
+values taken verbatim from those four pinned records, not re-derived here:
+v83 `1c9c197af60b2741ba35a05de501060e7c9ea151d54a990476d164d3f6ac60c9`,
+v87 `281b1504d26f78299a70c4bd4c3466ae7588a177edc1251d1901803289eed3b0`,
+v92 `be406086de1e689fc3dbf876b1e156c46bb32faed09a297aa7634e24dabc28bb`,
+v95 `9d64bc8fbd5cb82d6df5c8c2a566c19a55fbe71a71c0366a7aae95191443e079`.
 
 ### §5.1 — gms_v83 (`0x7d77b0`, size `0x1b0`, unnamed `sub_7D77B0`)
 
@@ -795,8 +819,23 @@ with a "cannot use this name" `Notice` + dialog code `1001`, **no packet
 sent**, if invalid); only a client-side-valid name is sent to the server.
 Every version's wire body is a single `EncodeStr` field — no length prefix
 beyond the standard string encoding, no other fields. `decompile_sha256`:
-**PENDING** for `CUICharacterSaleDlg::SendCheckDuplicateIDPacket` on v87/v92
-(absent from those exports' `functions` keys, same reasoning as §4/§5); v83's
+**RESOLVED** (Task 6) on all four in-scope versions —
+`CUICharacterSaleDlg::SendCheckDuplicateIDPacket` was spliced into each
+version's `docs/packets/ida-exports/<version>.json` this pass: v83
+`edb0261730d6141c43fc3f1861a7ebf8bc6e0b8c02213d0b60aa6fdd95f3bfd6`, v87
+`4421824b03fb872407d05ccf9745fc55bd9d075e31002469128dc39f72fa7321`, v92
+`cc9ce2f7d6f7b1b2ab72b5cae80239040969dba3e572fa681fb15f26376d44b4` (v92's
+`sub_756250` was renamed to the mangled
+`?SendCheckDuplicateIDPacket@CUICharacterSaleDlg@@QAEXABV?$ZXString@D@@@Z`
+symbol this pass, matching the already-named v83/v87/v95 twins), v95
+`fd119d83db7897762dee55fc8fa94eb8396b8490e19efd7623e9371d8df681aa`. See
+`docs/packets/evidence/gms_v8{3,7}/maplelife.serverbound.MaplelifeCheckName.yaml`,
+`docs/packets/evidence/gms_v92/maplelife.serverbound.MaplelifeCheckName.yaml`,
+`docs/packets/evidence/gms_v95/maplelife.serverbound.MaplelifeCheckName.yaml`.
+
+Original PENDING note, kept for context (v87/v92 the two that had been
+absent from the export's `functions` keys before this pass's splice, same
+reasoning as §4/§5): v83's
 export (`docs/packets/ida-exports/gms_v83.json`) already carries a
 **pre-existing note** on the `CLogin::SendCheckDuplicateIDPacket` key stating
 verbatim: *"v83 character-name duplicate check. The actual sender is

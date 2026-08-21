@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -195,7 +196,7 @@ func (p *ProcessorImpl) Reserve(msgBuf *message.Buffer) func(transactionId uuid.
 func (p *ProcessorImpl) resolveMembers(characterId uint32) []party.MemberModel {
 	m, err := p.pp.GetByMemberId(characterId)
 	if err != nil {
-		p.l.WithError(err).Errorf("Unable to resolve the party for character [%d]. Awarding the full amount to them alone.", characterId)
+		degrade.Observe(p.l, "drops.meso_split.party", characterId, err)
 		return nil
 	}
 	return m.Members()

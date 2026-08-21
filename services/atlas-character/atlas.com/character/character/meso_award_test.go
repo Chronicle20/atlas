@@ -51,166 +51,190 @@ func testField() field.Model {
 	return field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).SetInstance(uuid.MustParse("00000000-0000-0000-0000-00000000000a")).Build()
 }
 
-func TestAwardPickedUpMeso_CreditsAndEmitsMesoChangedAndStatChanged(t *testing.T) {
-	capture := producertest.InstallCapturing()
-	t.Cleanup(producertest.InstallNoop)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	db := outboxTestDb(t)
+func TestAwardPickedUpMeso(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{
+			name: "credits and emits meso changed and stat changed",
+			run: func(t *testing.T) {
+				capture := producertest.InstallCapturing()
+				t.Cleanup(producertest.InstallNoop)
+				tctx := tenant.WithContext(context.Background(), testTenant())
+				db := outboxTestDb(t)
 
-	c := createTestCharacter(t, tctx, db, 0)
-	p := character.NewProcessor(testLogger(), tctx, db)
+				c := createTestCharacter(t, tctx, db, 0)
+				p := character.NewProcessor(testLogger(), tctx, db)
 
-	before := outboxRowCount(t, db)
-	txId := uuid.New()
-	f := testField()
+				before := outboxRowCount(t, db)
+				txId := uuid.New()
+				f := testField()
 
-	err := p.AwardPickedUpMeso(txId, f, c.Id(), 4242, 33, false)
-	require.NoError(t, err)
+				err := p.AwardPickedUpMeso(txId, f, c.Id(), 4242, 33, false)
+				require.NoError(t, err)
 
-	got, gerr := p.GetById()(c.Id())
-	require.NoError(t, gerr)
-	require.Equal(t, uint32(33), got.Meso())
+				got, gerr := p.GetById()(c.Id())
+				require.NoError(t, gerr)
+				require.Equal(t, uint32(33), got.Meso())
 
-	require.Equal(t, before+2, outboxRowCount(t, db))
+				require.Equal(t, before+2, outboxRowCount(t, db))
 
-	events := outboxEvents(t, db)
-	require.Len(t, events, 2)
-	mesoChanged := events[len(events)-2]
-	statChanged := events[len(events)-1]
-	require.Equal(t, character2.StatusEventTypeMesoChanged, mesoChanged.Type)
-	require.Equal(t, character2.StatusEventTypeStatChanged, statChanged.Type)
-	require.Equal(t, txId, mesoChanged.TransactionId)
-	require.Equal(t, txId, statChanged.TransactionId)
+				events := outboxEvents(t, db)
+				require.Len(t, events, 2)
+				mesoChanged := events[len(events)-2]
+				statChanged := events[len(events)-1]
+				require.Equal(t, character2.StatusEventTypeMesoChanged, mesoChanged.Type)
+				require.Equal(t, character2.StatusEventTypeStatChanged, statChanged.Type)
+				require.Equal(t, txId, mesoChanged.TransactionId)
+				require.Equal(t, txId, statChanged.TransactionId)
 
-	var mesoBody character2.MesoChangedStatusEventBody
-	require.NoError(t, json.Unmarshal(mesoChanged.Body, &mesoBody))
-	require.Equal(t, int32(33), mesoBody.Amount)
-	require.True(t, mesoBody.ShowEffect)
-	require.Equal(t, uint32(4242), mesoBody.ActorId)
-	require.Equal(t, "DROP", mesoBody.ActorType)
+				var mesoBody character2.MesoChangedStatusEventBody
+				require.NoError(t, json.Unmarshal(mesoChanged.Body, &mesoBody))
+				require.Equal(t, int32(33), mesoBody.Amount)
+				require.True(t, mesoBody.ShowEffect)
+				require.Equal(t, uint32(4242), mesoBody.ActorId)
+				require.Equal(t, "DROP", mesoBody.ActorType)
 
-	require.Empty(t, pickUpCommands(t, capture))
-}
+				require.Empty(t, pickUpCommands(t, capture))
+			},
+		},
+		{
+			name: "picker completes the pick up",
+			run: func(t *testing.T) {
+				capture := producertest.InstallCapturing()
+				t.Cleanup(producertest.InstallNoop)
+				tctx := tenant.WithContext(context.Background(), testTenant())
+				db := outboxTestDb(t)
 
-func TestAwardPickedUpMeso_PickerCompletesThePickUp(t *testing.T) {
-	capture := producertest.InstallCapturing()
-	t.Cleanup(producertest.InstallNoop)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	db := outboxTestDb(t)
+				c := createTestCharacter(t, tctx, db, 0)
+				p := character.NewProcessor(testLogger(), tctx, db)
 
-	c := createTestCharacter(t, tctx, db, 0)
-	p := character.NewProcessor(testLogger(), tctx, db)
+				txId := uuid.New()
+				f := testField()
 
-	txId := uuid.New()
-	f := testField()
+				err := p.AwardPickedUpMeso(txId, f, c.Id(), 4242, 33, true)
+				require.NoError(t, err)
 
-	err := p.AwardPickedUpMeso(txId, f, c.Id(), 4242, 33, true)
-	require.NoError(t, err)
+				cmds := pickUpCommands(t, capture)
+				require.Len(t, cmds, 1)
+				require.Equal(t, uint32(4242), cmds[0].Body.DropId)
+				require.Equal(t, c.Id(), cmds[0].Body.CharacterId)
+				require.Equal(t, world.Id(0), cmds[0].WorldId)
+				require.Equal(t, channel.Id(1), cmds[0].ChannelId)
+				require.Equal(t, _map.Id(100000000), cmds[0].MapId)
+				require.Equal(t, f.Instance(), cmds[0].Instance)
+			},
+		},
+		{
+			name: "non-picker does not complete the pick up",
+			run: func(t *testing.T) {
+				capture := producertest.InstallCapturing()
+				t.Cleanup(producertest.InstallNoop)
+				tctx := tenant.WithContext(context.Background(), testTenant())
+				db := outboxTestDb(t)
 
-	cmds := pickUpCommands(t, capture)
-	require.Len(t, cmds, 1)
-	require.Equal(t, uint32(4242), cmds[0].Body.DropId)
-	require.Equal(t, c.Id(), cmds[0].Body.CharacterId)
-	require.Equal(t, world.Id(0), cmds[0].WorldId)
-	require.Equal(t, channel.Id(1), cmds[0].ChannelId)
-	require.Equal(t, _map.Id(100000000), cmds[0].MapId)
-	require.Equal(t, f.Instance(), cmds[0].Instance)
-}
+				c := createTestCharacter(t, tctx, db, 0)
+				p := character.NewProcessor(testLogger(), tctx, db)
 
-func TestAwardPickedUpMeso_NonPickerDoesNotCompleteThePickUp(t *testing.T) {
-	capture := producertest.InstallCapturing()
-	t.Cleanup(producertest.InstallNoop)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	db := outboxTestDb(t)
+				txId := uuid.New()
+				f := testField()
 
-	c := createTestCharacter(t, tctx, db, 0)
-	p := character.NewProcessor(testLogger(), tctx, db)
+				err := p.AwardPickedUpMeso(txId, f, c.Id(), 4242, 33, false)
+				require.NoError(t, err)
 
-	txId := uuid.New()
-	f := testField()
+				got, gerr := p.GetById()(c.Id())
+				require.NoError(t, gerr)
+				require.Equal(t, uint32(33), got.Meso())
+				require.Empty(t, pickUpCommands(t, capture))
+			},
+		},
+		{
+			name: "zero amount runs no transaction but completes the pick up",
+			run: func(t *testing.T) {
+				capture := producertest.InstallCapturing()
+				t.Cleanup(producertest.InstallNoop)
+				tctx := tenant.WithContext(context.Background(), testTenant())
+				db := outboxTestDb(t)
 
-	err := p.AwardPickedUpMeso(txId, f, c.Id(), 4242, 33, false)
-	require.NoError(t, err)
+				c := createTestCharacter(t, tctx, db, 500)
+				p := character.NewProcessor(testLogger(), tctx, db)
 
-	got, gerr := p.GetById()(c.Id())
-	require.NoError(t, gerr)
-	require.Equal(t, uint32(33), got.Meso())
-	require.Empty(t, pickUpCommands(t, capture))
-}
+				before := outboxRowCount(t, db)
+				txId := uuid.New()
+				f := testField()
 
-func TestAwardPickedUpMeso_ZeroAmountRunsNoTransactionButCompletesThePickUp(t *testing.T) {
-	capture := producertest.InstallCapturing()
-	t.Cleanup(producertest.InstallNoop)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	db := outboxTestDb(t)
+				err := p.AwardPickedUpMeso(txId, f, c.Id(), 4242, 0, true)
+				require.NoError(t, err)
 
-	c := createTestCharacter(t, tctx, db, 500)
-	p := character.NewProcessor(testLogger(), tctx, db)
+				got, gerr := p.GetById()(c.Id())
+				require.NoError(t, gerr)
+				require.Equal(t, uint32(500), got.Meso())
+				require.Equal(t, before, outboxRowCount(t, db))
 
-	before := outboxRowCount(t, db)
-	txId := uuid.New()
-	f := testField()
+				cmds := pickUpCommands(t, capture)
+				require.Len(t, cmds, 1)
+			},
+		},
+		{
+			name: "overflow skips the credit but still completes the pick up",
+			run: func(t *testing.T) {
+				capture := producertest.InstallCapturing()
+				t.Cleanup(producertest.InstallNoop)
+				tctx := tenant.WithContext(context.Background(), testTenant())
+				db := outboxTestDb(t)
 
-	err := p.AwardPickedUpMeso(txId, f, c.Id(), 4242, 0, true)
-	require.NoError(t, err)
+				c := createTestCharacter(t, tctx, db, 1000000000)
+				p := character.NewProcessor(testLogger(), tctx, db)
+				require.NoError(t, p.RequestChangeMeso(uuid.New(), c.Id(), 2147483647, 0, "SYSTEM", false))
+				capture.Reset()
 
-	got, gerr := p.GetById()(c.Id())
-	require.NoError(t, gerr)
-	require.Equal(t, uint32(500), got.Meso())
-	require.Equal(t, before, outboxRowCount(t, db))
+				before := outboxRowCount(t, db)
+				txId := uuid.New()
+				f := testField()
 
-	cmds := pickUpCommands(t, capture)
-	require.Len(t, cmds, 1)
-}
+				err := p.AwardPickedUpMeso(txId, f, c.Id(), 4242, 2147483647, true)
+				require.ErrorIs(t, err, character.ErrMesoOverflow)
 
-func TestAwardPickedUpMeso_OverflowSkipsTheCreditButStillCompletesThePickUp(t *testing.T) {
-	capture := producertest.InstallCapturing()
-	t.Cleanup(producertest.InstallNoop)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	db := outboxTestDb(t)
+				got, gerr := p.GetById()(c.Id())
+				require.NoError(t, gerr)
+				require.Equal(t, uint32(3147483647), got.Meso())
+				require.Equal(t, before, outboxRowCount(t, db))
 
-	c := createTestCharacter(t, tctx, db, 1000000000)
-	p := character.NewProcessor(testLogger(), tctx, db)
-	require.NoError(t, p.RequestChangeMeso(uuid.New(), c.Id(), 2147483647, 0, "SYSTEM", false))
-	capture.Reset()
+				cmds := pickUpCommands(t, capture)
+				require.Len(t, cmds, 1)
+			},
+		},
+		{
+			name: "amount above int32 is rejected",
+			run: func(t *testing.T) {
+				capture := producertest.InstallCapturing()
+				t.Cleanup(producertest.InstallNoop)
+				tctx := tenant.WithContext(context.Background(), testTenant())
+				db := outboxTestDb(t)
 
-	before := outboxRowCount(t, db)
-	txId := uuid.New()
-	f := testField()
+				c := createTestCharacter(t, tctx, db, 0)
+				p := character.NewProcessor(testLogger(), tctx, db)
 
-	err := p.AwardPickedUpMeso(txId, f, c.Id(), 4242, 2147483647, true)
-	require.ErrorIs(t, err, character.ErrMesoOverflow)
+				before := outboxRowCount(t, db)
+				txId := uuid.New()
+				f := testField()
 
-	got, gerr := p.GetById()(c.Id())
-	require.NoError(t, gerr)
-	require.Equal(t, uint32(3147483647), got.Meso())
-	require.Equal(t, before, outboxRowCount(t, db))
+				err := p.AwardPickedUpMeso(txId, f, c.Id(), 4242, 2147483648, true)
+				require.ErrorIs(t, err, character.ErrMesoOverflow)
 
-	cmds := pickUpCommands(t, capture)
-	require.Len(t, cmds, 1)
-}
+				got, gerr := p.GetById()(c.Id())
+				require.NoError(t, gerr)
+				require.Equal(t, uint32(0), got.Meso())
+				require.Equal(t, before, outboxRowCount(t, db))
 
-func TestAwardPickedUpMeso_AmountAboveInt32IsRejected(t *testing.T) {
-	capture := producertest.InstallCapturing()
-	t.Cleanup(producertest.InstallNoop)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	db := outboxTestDb(t)
+				cmds := pickUpCommands(t, capture)
+				require.Len(t, cmds, 1)
+			},
+		},
+	}
 
-	c := createTestCharacter(t, tctx, db, 0)
-	p := character.NewProcessor(testLogger(), tctx, db)
-
-	before := outboxRowCount(t, db)
-	txId := uuid.New()
-	f := testField()
-
-	err := p.AwardPickedUpMeso(txId, f, c.Id(), 4242, 2147483648, true)
-	require.ErrorIs(t, err, character.ErrMesoOverflow)
-
-	got, gerr := p.GetById()(c.Id())
-	require.NoError(t, gerr)
-	require.Equal(t, uint32(0), got.Meso())
-	require.Equal(t, before, outboxRowCount(t, db))
-
-	cmds := pickUpCommands(t, capture)
-	require.Len(t, cmds, 1)
+	for _, tc := range tests {
+		t.Run(tc.name, tc.run)
+	}
 }

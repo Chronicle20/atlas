@@ -25,6 +25,7 @@ type Registry struct {
 	mapSets   *atlas.TenantKeyedSet[MapKey]
 	cooldowns *atlas.TenantKeyedHash[MapKey] // field=class:x:y -> expiry unix ms
 	spots     *atlas.TenantKeyedHash[MapKey] // field=class:x:y -> "1"
+	touches   *atlas.TenantKeyedHash[uint32] // field=characterId -> "1"
 	allocator objectid.Allocator
 }
 
@@ -43,6 +44,7 @@ func InitRegistry(client *goredis.Client) {
 		mapSets:   atlas.NewTenantKeyedSet[MapKey](client, "reactors:map", mapKeyFn),
 		cooldowns: atlas.NewTenantKeyedHash[MapKey](client, "reactor:cd", mapKeyFn),
 		spots:     atlas.NewTenantKeyedHash[MapKey](client, "reactor:spot", mapKeyFn),
+		touches:   atlas.NewTenantKeyedHash[uint32](client, "reactor:touch", reactorIdStr),
 		allocator: objectid.NewRedisAllocator(client),
 	}
 }
@@ -248,6 +250,7 @@ func (r *Registry) Remove(t tenant.Model, id uint32) {
 	_ = r.all.Remove(ctx, allSetMember(t, id))
 	_ = r.mapSets.Remove(ctx, t, mk, reactorIdStr(id))
 	_ = r.allocator.Release(ctx, t, id)
+	_ = r.touches.DeleteKey(ctx, t, id)
 }
 
 func (r *Registry) RecordCooldown(t tenant.Model, mk MapKey, classification uint32, x int16, y int16, delay uint32) {
@@ -303,4 +306,25 @@ func (r *Registry) ReleaseSpot(t tenant.Model, mk MapKey, classification uint32,
 
 func (r *Registry) ClearAllSpotsForMap(t tenant.Model, mk MapKey) {
 	_ = r.spots.DeleteKey(context.Background(), t, mk)
+}
+
+// TryLatchTouch atomically records that characterId has entered reactorId's
+// touch area. Returns true if this caller set the latch -- false means the
+// character is already inside and the touch must be ignored (FR-18).
+func (r *Registry) TryLatchTouch(t tenant.Model, reactorId uint32, characterId uint32) bool {
+	ok, err := r.touches.SetNX(context.Background(), t, reactorId, strconv.FormatUint(uint64(characterId), 10), "1")
+	if err != nil {
+		return false
+	}
+	return ok
+}
+
+// ClearTouch releases one character's latch, on the client's touching=0.
+func (r *Registry) ClearTouch(t tenant.Model, reactorId uint32, characterId uint32) {
+	_ = r.touches.Del(context.Background(), t, reactorId, strconv.FormatUint(uint64(characterId), 10))
+}
+
+// ClearAllTouches drops every latch for a reactor, on removal or teardown.
+func (r *Registry) ClearAllTouches(t tenant.Model, reactorId uint32) {
+	_ = r.touches.DeleteKey(context.Background(), t, reactorId)
 }

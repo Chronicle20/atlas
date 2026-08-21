@@ -124,6 +124,7 @@ func TestWorldTransferActionConstantsAreUnique(t *testing.T) {
 		RegisterPartyQuest, WarpPartyQuestMembersToMap, LeavePartyQuest, EnterPartyQuestBonus,
 		UpdatePqCustomData, HitReactor, BroadcastPqMessage, StageClearAttemptPq,
 		FieldEffectWeather,
+		PlayJukebox,
 		CreateNote,
 		SetAssetOwner, ApplyAssetLock, ExtendAssetExpiration, IncubatorResult,
 		EmitMegaphone, EnqueueWorldBroadcast,

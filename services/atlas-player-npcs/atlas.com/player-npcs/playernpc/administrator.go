@@ -107,7 +107,7 @@ func advisoryLockKey(tenantId uuid.UUID, worldId byte, mapId uint32) int64 {
 // dialect-aware convention -- a single-threaded test process needs no real
 // mutual exclusion.
 func advisoryLock(tx *gorm.DB, tenantId uuid.UUID, worldId byte, mapId uint32) error {
-	if tx.Dialector.Name() != "postgres" {
+	if tx.Name() != "postgres" {
 		return nil
 	}
 	return tx.Exec("SELECT pg_advisory_xact_lock(?)", advisoryLockKey(tenantId, worldId, mapId)).Error

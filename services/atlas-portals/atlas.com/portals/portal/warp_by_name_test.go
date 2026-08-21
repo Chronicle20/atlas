@@ -11,6 +11,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/require"
 )
 
 // setupRecordingDataServer creates an httptest server that mocks the DATA
@@ -39,25 +40,29 @@ func setupRecordingDataServer(t *testing.T, responses map[string]interface{}) (*
 		}
 		if ok {
 			w.Header().Set("Content-Type", "application/vnd.api+json")
-			json.NewEncoder(w).Encode(response)
+			if err := json.NewEncoder(w).Encode(response); err != nil {
+				t.Errorf("failed to encode response: %v", err)
+			}
 			return
 		}
 
 		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		if err := json.NewEncoder(w).Encode(map[string]interface{}{
 			"errors": []map[string]string{{"detail": "not found"}},
-		})
+		}); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
 	}))
 
 	originalURL := os.Getenv("DATA_SERVICE_URL")
-	os.Setenv("DATA_SERVICE_URL", server.URL+"/api/")
+	require.NoError(t, os.Setenv("DATA_SERVICE_URL", server.URL+"/api/"))
 
 	cleanup := func() {
 		server.Close()
 		if originalURL != "" {
-			os.Setenv("DATA_SERVICE_URL", originalURL)
+			require.NoError(t, os.Setenv("DATA_SERVICE_URL", originalURL))
 		} else {
-			os.Unsetenv("DATA_SERVICE_URL")
+			require.NoError(t, os.Unsetenv("DATA_SERVICE_URL"))
 		}
 	}
 

@@ -874,7 +874,12 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.U
 }
 
 func (p *ProcessorImpl) Move(characterId uint32, x int16, y int16, fh int16, stance byte) error {
-	GetTemporalRegistry().Update(p.ctx, tenant.MustFromContext(p.ctx), characterId, x, y, fh, stance)
+	t := tenant.MustFromContext(p.ctx)
+	if fh == 0 {
+		GetTemporalRegistry().UpdatePosition(p.ctx, t, characterId, x, y, stance)
+		return nil
+	}
+	GetTemporalRegistry().Update(p.ctx, t, characterId, x, y, fh, stance)
 	return nil
 }
 

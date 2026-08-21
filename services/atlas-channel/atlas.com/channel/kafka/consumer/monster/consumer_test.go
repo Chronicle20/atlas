@@ -8,6 +8,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -659,5 +660,53 @@ func TestBridleFailReason(t *testing.T) {
 				t.Fatalf("bridleFailReason(%q) = (%d, %t), want (%d, %t)", tc.cause, reason, send, tc.wantReason, tc.wantSend)
 			}
 		})
+	}
+}
+
+// TestDestroyTypeFor maps a KILLED/DESTROYED event's deathType byte onto the
+// wire dead-type. 0 means "the producer did not set it" -- an old
+// atlas-monsters mid-rolling-deploy -- and renders as fade-out, byte-identical
+// to the pre-task-253 hardcode (task-253 design D9).
+func TestDestroyTypeFor(t *testing.T) {
+	tests := []struct {
+		name      string
+		deathType byte
+		want      monsterpkt.DestroyType
+	}{
+		{"producer omitted the field", 0, monsterpkt.DestroyTypeFadeOut},
+		{"ordinary fade-out", 1, monsterpkt.DestroyTypeFadeOut},
+		{"bomb", 2, monsterpkt.DestroyTypeBomb},
+		{"destruct-by-miss", 3, monsterpkt.DestroyTypeDestructByMiss},
+		{"swallow", 4, monsterpkt.DestroyTypeSwallow},
+		{"self-destruct", 5, monsterpkt.DestroyTypeSelfDestruct},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := destroyTypeFor(tt.deathType); got != tt.want {
+				t.Fatalf("destroyTypeFor(%d) = %d, want %d", tt.deathType, got, tt.want)
+			}
+		})
+	}
+}
+
+// TestStatusEventKilledBodyDecodesDeathType asserts the rolling-deploy
+// compatibility contract (task-253 design D9): an old atlas-monsters that
+// never emits "deathType" decodes to the zero value, which destroyTypeFor
+// renders as fade-out.
+func TestStatusEventKilledBodyDecodesDeathType(t *testing.T) {
+	var withField monster2.StatusEventKilledBody
+	if err := json.Unmarshal([]byte(`{"x":0,"y":0,"actorId":9,"boss":false,"damageEntries":null,"deathType":3}`), &withField); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if withField.DeathType != 3 {
+		t.Fatalf("DeathType = %d, want 3", withField.DeathType)
+	}
+
+	var withoutField monster2.StatusEventKilledBody
+	if err := json.Unmarshal([]byte(`{"x":0,"y":0,"actorId":9,"boss":false,"damageEntries":null}`), &withoutField); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if withoutField.DeathType != 0 {
+		t.Fatalf("DeathType = %d, want 0", withoutField.DeathType)
 	}
 }

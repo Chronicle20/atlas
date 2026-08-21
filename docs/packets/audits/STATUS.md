@@ -8,14 +8,14 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 
 - export gms_v48: `f46a1c091a8f557a7a0a47c295bed12c56e0f70e23552726d1ca6586eadbf0dd`
 - export gms_v61: `4e11a8f067df26f942bb5674aa553acbe19b1e59b57f899c01119025805464e2`
-- export gms_v72: `f22e6d780c0ca97b845d09876f2a4724b612189f9d9d353451be062bcb741c56`
+- export gms_v72: `caff0d30936f0a939a1ead9d55591344ab4602773f8b730ff76e5ffd6df9d997`
 - export gms_v79: `d3b64607255c494eb2eda92732bcc4de01d02f280ffac965e592cb6a8f1f931b`
-- export gms_v83: `9b938038def5da2b3e98681db301b5299a0c35274b2d71b92be3b364505d57d8`
-- export gms_v84: `16832eea1aedc71e48c73e047e4fca66fef8d2bfdc1901f2b5f00ac1286c40ce`
-- export gms_v87: `dcb1d52ed4c88dcef1d351e698a21c647b3bdd82a3c79b7bfc9c39682e15ab02`
-- export gms_v92: `c152d5ac734c4ea19cda05c81358e440f693e2399fdf1a4de1b1bf81319bb5e4`
-- export gms_v95: `fa56a542eabc75d20d5ba920b272ad990f1abe0fe99f346bb4ad96d950f7ca09`
-- export jms_v185: `576eda436b95b42e99f3bb0a6343964695a5c0732b95beed1593bab25f78df3c`
+- export gms_v83: `4b99788de5792dc941152ab06da658ff06b351695cad72ee0b71a8aecde53907`
+- export gms_v84: `7e4e693494170d8126df12422eb9a88aa8ce8391daa38d0405e59d95afe351a1`
+- export gms_v87: `96baddd900d403193f28726db3a407fe3b8c81a2486041ccc0a08961708a6147`
+- export gms_v92: `cf6ab3eab88b22e5536c7317c5930a6dbcda2d1e4716fcc7c9d73d017aec9b7b`
+- export gms_v95: `ae7c64cacf27edf6253154f752716f063c178904288d7716b1a34eacf16184db`
+- export jms_v185: `0a2991935e38530c0ccf7a61ddae4f87ecd7df5eb5379715814dae8edf634dc7`
 
 ## Clientbound
 
@@ -131,7 +131,7 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 | IMITATED_NPC_RESULT | CWvsContext::OnImitatedNPCResult; sub_830AFF; sub_902E77 |  |  | ⬜ | 0x04D | ❌ | 0x04D | ❌ | 0x04D | ❌ | 0x050 | ❌ | 0x052 | ❌ | 0x052 | ❌ | 0x054 | ❌ | 0x053 | ❌ |  | ⬜ |
 | BLOCKED_SERVER | CField::OnTransferChannelReqIgnored | field/clientbound/FieldBlockedServer (T1) | 0x04E | ✅ | 0x062 | 🟡ᶠ | 0x078 | 🟡ᶠ | 0x07C | 🟡ᶠ | 0x084 | ✅ | 0x087 | ✅ | 0x08C | ✅ | 0x093 | 🟡ᶠ | 0x094 | ✅ | 0x082 | ✅ |
 | IDA_0X04E | sub_B0FDF2 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04E | ❌ |
-| IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_830B0B; sub_902E83; sub_AEC92E |  |  | ⬜ | 0x04E | ✅ | 0x04E | ❌ | 0x04E | ✅ | 0x051 | ❌ | 0x053 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x054 | ❌ | 0x055 | ❌ |
+| IMITATED_NPC_DATA | CNpcPool::OnNpcImitateData; CWvsContext::OnImitatedNPCData; sub_830B0B; sub_902E83; sub_AEC92E |  |  | ⬜ | 0x04E | ✅ | 0x04E | ✅ | 0x04E | ✅ | 0x051 | ❌ | 0x053 | ❌ | 0x053 | ❌ | 0x056 | ❌ | 0x054 | ❌ | 0x055 | ❌ |
 | FORCED_MAP_EQUIP | CField::OnFieldSpecificData | field/clientbound/FieldForcedMapEquip (T1) | 0x04F | ✅ | 0x063 | 🟡ᶠ | 0x079 | 🟡ᶠ | 0x07D | 🟡ᶠ | 0x085 | ✅ | 0x088 | ✅ | 0x08D | ✅ | 0x094 | 🟡ᶠ | 0x095 | ✅ | 0x083 | ✅ |
 | IDA_0X04F | sub_AEC942 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x04F | ❌ |
 | LIMITED_NPC_DISABLE_INFO | CNpcPool::OnUpdateLimitedDisableInfo; CWvsContext::OnLimitedNPCDisableInfo; sub_AECCBF |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x04F | ❌ | 0x052 | ❌ | 0x054 | ❌ | 0x054 | ❌ | 0x055 | ❌ | 0x055 | ❌ | 0x056 | ❌ |
@@ -1058,7 +1058,7 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 212 | 0 | 19 | 194 | 595 | 0 | 49.9% |
 | v61 | 279 | 0 | 56 | 227 | 458 | 0 | 49.6% |
-| v72 | 296 | 0 | 69 | 241 | 414 | 0 | 48.8% |
+| v72 | 297 | 0 | 69 | 240 | 414 | 0 | 49.0% |
 | v79 | 343 | 0 | 68 | 236 | 373 | 0 | 53.0% |
 | v83 | 468 | 0 | 0 | 324 | 228 | 0 | 59.1% |
 | v84 | 442 | 0 | 0 | 331 | 247 | 0 | 57.2% |

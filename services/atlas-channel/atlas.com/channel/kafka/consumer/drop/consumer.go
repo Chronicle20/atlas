@@ -39,6 +39,23 @@ func isConsumedOnPickupCard(itemId uint32) bool {
 	return item.GetClassification(item.Id(itemId)) == item.ClassificationConsumableMonsterCard
 }
 
+// pickupStatusMessagePacket returns the generic pickup CharacterStatusMessage
+// packet to announce for a picked-up drop, and false when there is nothing to
+// announce. A meso-only pickup (ItemId/EquipmentId/Quantity all 0) returns
+// false: MESO_AWARDED already wrote the DropPickUpMeso message with the
+// correct per-recipient share, and without this guard the branches below
+// would additionally encode a spurious DropPickUpStackableItem(itemId=0,
+// amount=0) status message for the same pickup.
+func pickupStatusMessagePacket(body drop2.PickedUpStatusEventBody) (packet.Encode, bool) {
+	if body.Meso > 0 {
+		return nil, false
+	}
+	if body.EquipmentId > 0 {
+		return charpkt.CharacterStatusMessageOperationDropPickUpUnStackableItemBody(body.ItemId), true
+	}
+	return charpkt.CharacterStatusMessageOperationDropPickUpStackableItemBody(body.ItemId, body.Quantity), true
+}
+
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
@@ -74,6 +91,11 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return nil, err
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMesoAwarded(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				return handles, nil
 			}
 		}
@@ -105,7 +127,7 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(droppkt.DropSpawnWriter)(droppkt.NewDropSpawn(
 			droppkt.DropEnterTypeFresh, d.Id(), d.Meso(), d.ItemId(),
-			d.Owner(), d.Type(), d.X(), d.Y(), d.DropperId(),
+			d.Owner(), d.OwnType(), d.X(), d.Y(), d.DropperId(),
 			d.DropperX(), d.DropperY(), int16(e.Body.Mod), d.CharacterDrop(),
 		).Encode))
 		if err != nil {
@@ -150,6 +172,34 @@ func handleStatusEventConsumed(sc server.Model, wp writer.Producer) message.Hand
 	}
 }
 
+// handleStatusEventMesoAwarded announces one recipient's share of a split
+// meso drop via the drop-pickup meso mechanism. One event is emitted per
+// recipient (task-248's party meso split); this is the only channel consumer
+// that renders MESO_AWARDED, replacing the generic MESO_CHANGED chat line and
+// the full-drop-amount branch that used to live in handleStatusEventPickedUp.
+func handleStatusEventMesoAwarded(sc server.Model, wp writer.Producer) message.Handler[drop2.StatusEvent[drop2.MesoAwardedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e drop2.StatusEvent[drop2.MesoAwardedStatusEventBody]) {
+		if e.Type != drop2.StatusEventTypeMesoAwarded {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		// A zero share is emitted only to complete the picker's pickup; there
+		// is nothing to announce for it.
+		if e.Body.Amount == 0 {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationDropPickUpMesoBody(false, e.Body.Amount, 0)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to notify character [%d] of their [%d] meso share of drop [%d].", e.Body.CharacterId, e.Body.Amount, e.DropId)
+		}
+	}
+}
+
 func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Handler[drop2.StatusEvent[drop2.PickedUpStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e drop2.StatusEvent[drop2.PickedUpStatusEventBody]) {
 		if e.Type != drop2.StatusEventTypePickedUp {
@@ -177,13 +227,9 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 					return nil
 				}
 
-				var bp packet.Encode
-				if e.Body.Meso > 0 {
-					bp = charpkt.CharacterStatusMessageOperationDropPickUpMesoBody(false, e.Body.Meso, 0)
-				} else if e.Body.EquipmentId > 0 {
-					bp = charpkt.CharacterStatusMessageOperationDropPickUpUnStackableItemBody(e.Body.ItemId)
-				} else {
-					bp = charpkt.CharacterStatusMessageOperationDropPickUpStackableItemBody(e.Body.ItemId, e.Body.Quantity)
+				bp, ok := pickupStatusMessagePacket(e.Body)
+				if !ok {
+					return nil
 				}
 
 				err := session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(bp)(s)

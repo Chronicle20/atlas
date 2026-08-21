@@ -2,7 +2,12 @@ package drop
 
 import (
 	"atlas-drops/kafka/message"
+	messageDropKafka "atlas-drops/kafka/message/drop"
+	"atlas-drops/party"
+	partymock "atlas-drops/party/mock"
 	"context"
+	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/alicebob/miniredis/v2"
@@ -986,5 +991,298 @@ func TestProcessor_GetForMap_FiltersInstancesCorrectly(t *testing.T) {
 	}
 	if drops[0].Instance() != instance1 {
 		t.Fatal("Drop should have instance1 UUID")
+	}
+}
+
+func awardedFrom(t *testing.T, buf *message.Buffer) []messageDropKafka.StatusEvent[messageDropKafka.StatusEventMesoAwardedBody] {
+	t.Helper()
+	var out []messageDropKafka.StatusEvent[messageDropKafka.StatusEventMesoAwardedBody]
+	for _, m := range buf.GetAll()[messageDropKafka.EnvEventTopicDropStatus] {
+		var e messageDropKafka.StatusEvent[messageDropKafka.StatusEventMesoAwardedBody]
+		if err := json.Unmarshal(m.Value, &e); err != nil {
+			t.Fatalf("unable to decode buffered message: %v", err)
+		}
+		if e.Type == messageDropKafka.StatusEventTypeMesoAwarded {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+func TestProcessor_Reserve_MesoSplit(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{
+			name: "meso drop splits among co-located party members",
+			run: func(t *testing.T) {
+				setupProcessorTestRegistry(t)
+				ctx, ten := createTestContext(t)
+				l := createTestLogger()
+
+				p := NewProcessor(l, ctx)
+				spawnBuf := message.NewBuffer()
+
+				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+				mb := NewModelBuilder(ten, f).SetMeso(100)
+				d, _ := p.SpawnForCharacter(spawnBuf)(mb)
+
+				members := []party.MemberModel{
+					party.NewMemberBuilder().SetId(12345).SetField(f).SetOnline(true).Build(),
+					party.NewMemberBuilder().SetId(22222).SetField(f).SetOnline(true).Build(),
+					party.NewMemberBuilder().SetId(33333).SetField(f).SetOnline(true).Build(),
+				}
+				pm := &partymock.ProcessorMock{
+					GetByMemberIdFunc: func(memberId uint32) (party.Model, error) {
+						return party.NewBuilder().SetId(1).SetMembers(members).Build(), nil
+					},
+				}
+
+				reserveBuf := message.NewBuffer()
+				txId := uuid.New()
+				_, err := p.With(WithPartyProcessor(pm)).Reserve(reserveBuf)(txId, f, d.Id(), 12345, 0, -1)
+				if err != nil {
+					t.Fatalf("Failed to reserve drop: %v", err)
+				}
+
+				awards := awardedFrom(t, reserveBuf)
+				if len(awards) != 3 {
+					t.Fatalf("Expected 3 awards, got %d", len(awards))
+				}
+
+				expected := []struct {
+					characterId uint32
+					amount      uint32
+					picker      bool
+				}{
+					{12345, 33, true},
+					{22222, 33, false},
+					{33333, 33, false},
+				}
+				pickerCount := 0
+				for i, a := range awards {
+					if a.DropId != d.Id() {
+						t.Fatalf("Expected dropId %d, got %d", d.Id(), a.DropId)
+					}
+					if a.Type != messageDropKafka.StatusEventTypeMesoAwarded {
+						t.Fatalf("Expected type %s, got %s", messageDropKafka.StatusEventTypeMesoAwarded, a.Type)
+					}
+					if a.Body.CharacterId != expected[i].characterId || a.Body.Amount != expected[i].amount || a.Body.Picker != expected[i].picker {
+						t.Fatalf("Award %d mismatch: got %+v, expected %+v", i, a.Body, expected[i])
+					}
+					if a.Body.Picker {
+						pickerCount++
+					}
+				}
+				if pickerCount != 1 {
+					t.Fatalf("Expected exactly 1 picker award, got %d", pickerCount)
+				}
+			},
+		},
+		{
+			name: "meso drop excludes members not co-located",
+			run: func(t *testing.T) {
+				setupProcessorTestRegistry(t)
+				ctx, ten := createTestContext(t)
+				l := createTestLogger()
+
+				p := NewProcessor(l, ctx)
+				spawnBuf := message.NewBuffer()
+
+				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+				otherMap := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(200000000)).Build()
+				mb := NewModelBuilder(ten, f).SetMeso(100)
+				d, _ := p.SpawnForCharacter(spawnBuf)(mb)
+
+				members := []party.MemberModel{
+					party.NewMemberBuilder().SetId(12345).SetField(f).SetOnline(true).Build(),
+					party.NewMemberBuilder().SetId(22222).SetField(f).SetOnline(false).Build(),
+					party.NewMemberBuilder().SetId(33333).SetField(otherMap).SetOnline(true).Build(),
+				}
+				pm := &partymock.ProcessorMock{
+					GetByMemberIdFunc: func(memberId uint32) (party.Model, error) {
+						return party.NewBuilder().SetId(1).SetMembers(members).Build(), nil
+					},
+				}
+
+				reserveBuf := message.NewBuffer()
+				txId := uuid.New()
+				_, err := p.With(WithPartyProcessor(pm)).Reserve(reserveBuf)(txId, f, d.Id(), 12345, 0, -1)
+				if err != nil {
+					t.Fatalf("Failed to reserve drop: %v", err)
+				}
+
+				awards := awardedFrom(t, reserveBuf)
+				if len(awards) != 1 {
+					t.Fatalf("Expected 1 award, got %d", len(awards))
+				}
+				if awards[0].Body.CharacterId != 12345 || awards[0].Body.Amount != 100 || !awards[0].Body.Picker {
+					t.Fatalf("Unexpected award: %+v", awards[0].Body)
+				}
+			},
+		},
+		{
+			name: "item drop makes no party lookup",
+			run: func(t *testing.T) {
+				setupProcessorTestRegistry(t)
+				ctx, ten := createTestContext(t)
+				l := createTestLogger()
+
+				p := NewProcessor(l, ctx)
+				spawnBuf := message.NewBuffer()
+
+				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+				mb := NewModelBuilder(ten, f).SetItem(1000000, 10)
+				d, _ := p.SpawnForCharacter(spawnBuf)(mb)
+
+				calls := 0
+				pm := &partymock.ProcessorMock{
+					GetByMemberIdFunc: func(memberId uint32) (party.Model, error) {
+						calls++
+						return party.Model{}, nil
+					},
+				}
+
+				reserveBuf := message.NewBuffer()
+				txId := uuid.New()
+				_, err := p.With(WithPartyProcessor(pm)).Reserve(reserveBuf)(txId, f, d.Id(), 12345, 0, -1)
+				if err != nil {
+					t.Fatalf("Failed to reserve drop: %v", err)
+				}
+
+				if calls != 0 {
+					t.Fatalf("Expected no party lookup for item drop, got %d calls", calls)
+				}
+				if awards := awardedFrom(t, reserveBuf); len(awards) != 0 {
+					t.Fatalf("Expected no awards for item drop, got %d", len(awards))
+				}
+				if len(reserveBuf.GetAll()) == 0 {
+					t.Fatal("Expected RESERVED event to still be buffered")
+				}
+			},
+		},
+		{
+			name: "party lookup error awards full amount to picker",
+			run: func(t *testing.T) {
+				setupProcessorTestRegistry(t)
+				ctx, ten := createTestContext(t)
+				l := createTestLogger()
+
+				p := NewProcessor(l, ctx)
+				spawnBuf := message.NewBuffer()
+
+				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+				mb := NewModelBuilder(ten, f).SetMeso(100)
+				d, _ := p.SpawnForCharacter(spawnBuf)(mb)
+
+				pm := &partymock.ProcessorMock{
+					GetByMemberIdFunc: func(memberId uint32) (party.Model, error) {
+						return party.Model{}, errors.New("unreachable")
+					},
+				}
+
+				reserveBuf := message.NewBuffer()
+				txId := uuid.New()
+				_, err := p.With(WithPartyProcessor(pm)).Reserve(reserveBuf)(txId, f, d.Id(), 12345, 0, -1)
+				if err != nil {
+					t.Fatalf("Failed to reserve drop: %v", err)
+				}
+
+				awards := awardedFrom(t, reserveBuf)
+				if len(awards) != 1 {
+					t.Fatalf("Expected 1 award, got %d", len(awards))
+				}
+				if awards[0].Body.CharacterId != 12345 || awards[0].Body.Amount != 100 || !awards[0].Body.Picker {
+					t.Fatalf("Unexpected award: %+v", awards[0].Body)
+				}
+			},
+		},
+		{
+			name: "failed reservation emits no awards",
+			run: func(t *testing.T) {
+				setupProcessorTestRegistry(t)
+				ctx, ten := createTestContext(t)
+				l := createTestLogger()
+
+				p := NewProcessor(l, ctx)
+				spawnBuf := message.NewBuffer()
+
+				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+				mb := NewModelBuilder(ten, f).SetMeso(100)
+				d, _ := p.SpawnForCharacter(spawnBuf)(mb)
+
+				calls := 0
+				pm := &partymock.ProcessorMock{
+					GetByMemberIdFunc: func(memberId uint32) (party.Model, error) {
+						calls++
+						return party.Model{}, nil
+					},
+				}
+
+				txId := uuid.New()
+				reserveBuf1 := message.NewBuffer()
+				_, _ = p.With(WithPartyProcessor(pm)).Reserve(reserveBuf1)(txId, f, d.Id(), 11111, 0, -1)
+
+				calls = 0
+				reserveBuf2 := message.NewBuffer()
+				_, err := p.With(WithPartyProcessor(pm)).Reserve(reserveBuf2)(txId, f, d.Id(), 22222, 0, -1)
+				if err == nil {
+					t.Fatal("Expected error when reserving already reserved drop")
+				}
+
+				if awards := awardedFrom(t, reserveBuf2); len(awards) != 0 {
+					t.Fatalf("Expected no awards on failed reservation, got %d", len(awards))
+				}
+				if calls != 0 {
+					t.Fatalf("Expected no party lookup on failed reservation, got %d calls", calls)
+				}
+			},
+		},
+		{
+			name: "zero share suppresses non-pickers only",
+			run: func(t *testing.T) {
+				setupProcessorTestRegistry(t)
+				ctx, ten := createTestContext(t)
+				l := createTestLogger()
+
+				p := NewProcessor(l, ctx)
+				spawnBuf := message.NewBuffer()
+
+				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+				mb := NewModelBuilder(ten, f).SetMeso(2)
+				d, _ := p.SpawnForCharacter(spawnBuf)(mb)
+
+				members := []party.MemberModel{
+					party.NewMemberBuilder().SetId(12345).SetField(f).SetOnline(true).Build(),
+					party.NewMemberBuilder().SetId(22222).SetField(f).SetOnline(true).Build(),
+					party.NewMemberBuilder().SetId(33333).SetField(f).SetOnline(true).Build(),
+				}
+				pm := &partymock.ProcessorMock{
+					GetByMemberIdFunc: func(memberId uint32) (party.Model, error) {
+						return party.NewBuilder().SetId(1).SetMembers(members).Build(), nil
+					},
+				}
+
+				reserveBuf := message.NewBuffer()
+				txId := uuid.New()
+				_, err := p.With(WithPartyProcessor(pm)).Reserve(reserveBuf)(txId, f, d.Id(), 12345, 0, -1)
+				if err != nil {
+					t.Fatalf("Failed to reserve drop: %v", err)
+				}
+
+				awards := awardedFrom(t, reserveBuf)
+				if len(awards) != 1 {
+					t.Fatalf("Expected 1 award, got %d", len(awards))
+				}
+				if awards[0].Body.CharacterId != 12345 || awards[0].Body.Amount != 0 || !awards[0].Body.Picker {
+					t.Fatalf("Unexpected award: %+v", awards[0].Body)
+				}
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, tc.run)
 	}
 }

@@ -3,9 +3,11 @@ package drop
 import (
 	"atlas-drops/kafka/message"
 	"atlas-drops/kafka/message/drop"
+	"atlas-drops/party"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -17,6 +19,9 @@ import (
 
 // Processor defines the interface for drop processing operations
 type Processor interface {
+	// With returns a clone of the processor with the given options applied.
+	With(opts ...ProcessorOption) Processor
+
 	// Spawn creates a new drop
 	Spawn(mb *message.Buffer) func(mb *ModelBuilder) (Model, error)
 	// SpawnAndEmit creates a new drop and emits a Kafka message
@@ -68,6 +73,7 @@ type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	t   tenant.Model
+	pp  party.Processor
 }
 
 // NewProcessor creates a new drop processor
@@ -76,10 +82,32 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		l:   l,
 		ctx: ctx,
 		t:   tenant.MustFromContext(ctx),
+		pp:  party.NewProcessor(l, ctx),
 	}
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
+
+// ProcessorOption customizes a ProcessorImpl clone produced by With.
+type ProcessorOption func(*ProcessorImpl)
+
+// WithPartyProcessor overrides the atlas-parties client. Tests inject a mock;
+// production always uses the default from NewProcessor.
+func WithPartyProcessor(pp party.Processor) ProcessorOption {
+	return func(p *ProcessorImpl) {
+		p.pp = pp
+	}
+}
+
+// With returns a clone of the processor with the given options applied.
+func (p *ProcessorImpl) With(opts ...ProcessorOption) Processor {
+	clone := *p
+	cp := &clone
+	for _, opt := range opts {
+		opt(cp)
+	}
+	return cp
+}
 
 // Spawn creates a new drop (equipment stats already inline from command)
 func (p *ProcessorImpl) Spawn(msgBuf *message.Buffer) func(mb *ModelBuilder) (Model, error) {
@@ -133,17 +161,45 @@ func (p *ProcessorImpl) SpawnForCharacterAndEmit(mb *ModelBuilder) (Model, error
 
 // Reserve reserves a drop for a character
 func (p *ProcessorImpl) Reserve(msgBuf *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error) {
-	return func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error) {
+	return func(transactionId uuid.UUID, f field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error) {
 		d, err := GetRegistry().ReserveDrop(p.t, dropId, characterId, partyId, petSlot)
-		if err == nil {
-			p.l.Debugf("Reserving [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservedEventStatusProvider(transactionId, field, d, characterId))
-		} else {
+		if err != nil {
 			p.l.Debugf("Failed reserving [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(transactionId, field, dropId, characterId))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(transactionId, f, dropId, characterId))
+			return d, err
 		}
-		return d, err
+		p.l.Debugf("Reserving [%d] for [%d].", dropId, characterId)
+		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservedEventStatusProvider(transactionId, f, d, characterId))
+		if d.Meso() == 0 {
+			return d, nil
+		}
+		rs := splitMeso(f, d.Meso(), characterId, p.resolveMembers(characterId))
+		p.l.Debugf("Splitting [%d] meso from drop [%d] among [%d] recipient(s).", d.Meso(), dropId, len(rs))
+		for _, r := range rs {
+			// A zero share is suppressed for everyone but the picker: the
+			// picker's award is what completes the pickup, so it must be
+			// emitted even at Amount 0 or the drop never leaves the map.
+			if r.Amount == 0 && !r.Picker {
+				continue
+			}
+			p.l.Debugf("Awarding [%d] meso from drop [%d] to character [%d].", r.Amount, dropId, r.CharacterId)
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, mesoAwardedEventStatusProvider(transactionId, f, dropId, r))
+		}
+		return d, nil
 	}
+}
+
+// resolveMembers returns the picker's party roster, or nil when the lookup
+// fails. It deliberately returns no error: an atlas-parties outage degrades to
+// a full-amount award to the picker and must never fail the pickup, and this
+// signature makes that impossible to get wrong at a call site.
+func (p *ProcessorImpl) resolveMembers(characterId uint32) []party.MemberModel {
+	m, err := p.pp.GetByMemberId(characterId)
+	if err != nil {
+		degrade.Observe(p.l, "drops.meso_split.party", characterId, err)
+		return nil
+	}
+	return m.Members()
 }
 
 // ReserveAndEmit reserves a drop for a character and emits a Kafka message

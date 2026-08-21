@@ -124,3 +124,36 @@ func TestAppliedPerRecipient_HpAboveMaxReturnsZero(t *testing.T) {
 		t.Fatalf("appliedPerRecipient(380, hp>max) = %d, want 0", got)
 	}
 }
+
+func TestHealDelta(t *testing.T) {
+	tests := []struct {
+		name      string
+		perTarget int16
+		hp, maxHp uint16
+		zombified bool
+		want      int16
+	}{
+		{"not zombified full headroom", 80, 900, 1000, false, 80},
+		{"not zombified headroom clamp", 80, 950, 1000, false, 50},
+		{"not zombified at max hp", 80, 1000, 1000, false, 0},
+		{"zombified full magnitude", 80, 900, 1000, true, -80},
+		{"zombified clamped to current hp", 80, 50, 1000, true, -50},
+		{"zombified exact kill", 80, 80, 1000, true, -80},
+		{"zombified recipient already dead", 80, 0, 1000, true, 0},
+		{"zombified zero magnitude", 0, 500, 1000, true, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := recipient{Id: 1, Hp: tt.hp, MaxHp: tt.maxHp}
+			got := healDelta(tt.perTarget, r, tt.zombified)
+			if got != tt.want {
+				t.Fatalf("healDelta(%d, %+v, %v) = %d, want %d", tt.perTarget, r, tt.zombified, got, tt.want)
+			}
+			if !tt.zombified {
+				if want := appliedPerRecipient(tt.perTarget, r); got != want {
+					t.Fatalf("healDelta(%d, %+v, false) = %d, want equal to appliedPerRecipient = %d", tt.perTarget, r, got, want)
+				}
+			}
+		})
+	}
+}

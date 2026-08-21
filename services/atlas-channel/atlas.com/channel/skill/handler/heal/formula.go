@@ -58,6 +58,38 @@ func appliedPerRecipient(perTarget int16, r recipient) int16 {
 	return int16(applied)
 }
 
+// healDelta returns the ChangeHP delta for one recipient of a Heal cast.
+//
+// Non-zombified: the existing headroom clamp -- never push Hp past MaxHp.
+// Zombified: the reference negates the heal (StatEffect.calcHPChange), so the
+// delta is damage. It is clamped to the recipient's CURRENT Hp so a cast never
+// removes more HP than the recipient has; landing exactly on 0 kills them,
+// which is intended (atlas-character emits DIED at adjusted == 0).
+// appliedPerRecipient is deliberately never handed a negative value: its
+// headroom clamp would mangle one. (task-256 FR-12/FR-13/FR-14)
+func healDelta(perTarget int16, r recipient, zombified bool) int16 {
+	if !zombified {
+		return appliedPerRecipient(perTarget, r)
+	}
+	if r.Hp == 0 {
+		return 0
+	}
+	magnitude := int32(perTarget)
+	if magnitude < 0 {
+		magnitude = 0
+	}
+	if magnitude > int32(r.Hp) {
+		magnitude = int32(r.Hp)
+	}
+	// Unreachable from today's inputs: perTarget is int16, so
+	// -magnitude >= -32767 > math.MinInt16. Kept as a defensive guard
+	// against a future widening of perTarget's type.
+	if -magnitude < math.MinInt16 {
+		return math.MinInt16
+	}
+	return int16(-magnitude)
+}
+
 // HealXp computes the experience awarded to the caster from the heal
 // portion of the cast. Per recipient, the contribution is the amount
 // actually applied (see appliedPerRecipient); the sum is divided by 10

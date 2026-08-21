@@ -3,17 +3,21 @@ package consumable
 import (
 	"atlas-consumables/asset"
 	"atlas-consumables/character"
+	"atlas-consumables/character/buff"
+	buffmock "atlas-consumables/character/buff/mock"
 	"atlas-consumables/character/buff/stat"
 	"atlas-consumables/equipable"
 	"atlas-consumables/kafka/message/consumable"
 	"errors"
 	"io"
 	"testing"
+	"time"
 
 	consumable3 "atlas-consumables/data/consumable"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -491,7 +495,7 @@ func TestComputeEffectPlan_CurePotWithHp(t *testing.T) {
 			consumable3.SpecTypeHP:     300,
 		},
 	})
-	plan := computeEffectPlan(discardLogger(), c, ci)
+	plan := computeEffectPlan(discardLogger(), c, ci, false)
 	assert.Equal(t, []string{"POISON"}, plan.cureTypes)
 	assert.Equal(t, []int16{300}, plan.hpChanges)
 	assert.Empty(t, plan.mpChanges)
@@ -507,7 +511,7 @@ func TestComputeEffectPlan_StatPotWithTime(t *testing.T) {
 			consumable3.SpecTypeTime:         300000,
 		},
 	})
-	plan := computeEffectPlan(discardLogger(), c, ci)
+	plan := computeEffectPlan(discardLogger(), c, ci, false)
 	assert.Empty(t, plan.cureTypes)
 	assert.Empty(t, plan.hpChanges)
 	assert.Empty(t, plan.mpChanges)
@@ -525,7 +529,7 @@ func TestComputeEffectPlan_HpRecoveryPercent(t *testing.T) {
 			consumable3.SpecTypeHPRecovery: 60,
 		},
 	})
-	plan := computeEffectPlan(discardLogger(), c, ci)
+	plan := computeEffectPlan(discardLogger(), c, ci, false)
 	assert.Equal(t, []int16{928}, plan.hpChanges)
 }
 
@@ -540,7 +544,7 @@ func TestComputeEffectPlan_FixedMorphWithHp(t *testing.T) {
 			consumable3.SpecTypeHP:    50,
 		},
 	})
-	plan := computeEffectPlan(discardLogger(), c, ci)
+	plan := computeEffectPlan(discardLogger(), c, ci, false)
 	assert.Equal(t, []stat.Model{{Type: ts.TemporaryStatTypeMorph, Amount: 2}}, plan.statups)
 	assert.Equal(t, int32(600000), plan.duration)
 	assert.Equal(t, []int16{50}, plan.hpChanges)
@@ -558,7 +562,7 @@ func TestComputeEffectPlan_RandomMorphOnly(t *testing.T) {
 		},
 		Morphs: morphs,
 	})
-	plan := computeEffectPlan(discardLogger(), c, ci)
+	plan := computeEffectPlan(discardLogger(), c, ci, false)
 	if assert.Len(t, plan.statups, 1) {
 		s := plan.statups[0]
 		assert.Equal(t, ts.TemporaryStatTypeMorph, s.Type)
@@ -575,7 +579,7 @@ func TestComputeEffectPlan_FixedMorphPrecedence(t *testing.T) {
 		Spec:   map[consumable3.SpecType]int32{consumable3.SpecTypeMorph: 2},
 		Morphs: map[uint32]uint32{20: 100},
 	})
-	plan := computeEffectPlan(discardLogger(), character.NewModelBuilder().Build(), ci)
+	plan := computeEffectPlan(discardLogger(), character.NewModelBuilder().Build(), ci, false)
 	assert.Equal(t, []stat.Model{{Type: ts.TemporaryStatTypeMorph, Amount: 2}}, plan.statups)
 }
 
@@ -586,7 +590,7 @@ func TestComputeEffectPlan_ZeroWeightMorphTableSkipsMorphOnly(t *testing.T) {
 		Spec:   map[consumable3.SpecType]int32{consumable3.SpecTypeHP: 50},
 		Morphs: map[uint32]uint32{20: 0},
 	})
-	plan := computeEffectPlan(discardLogger(), character.NewModelBuilder().Build(), ci)
+	plan := computeEffectPlan(discardLogger(), character.NewModelBuilder().Build(), ci, false)
 	assert.Empty(t, plan.statups)
 	assert.Equal(t, []int16{50}, plan.hpChanges)
 }
@@ -620,5 +624,188 @@ func TestPetSkillPouchClassification(t *testing.T) {
 		if usesStandardConsumer(id) {
 			t.Errorf("usesStandardConsumer(%d) = true, want false", id)
 		}
+	}
+}
+
+// TestComputeEffectPlan_Zombify pins FR-5/FR-6: HP restoration -- both the
+// flat `hp` spec and the percent-of-maxHp `hpR` spec -- is halved (Go integer
+// division) when the recipient is zombified; MP and every other field are
+// untouched.
+func TestComputeEffectPlan_Zombify(t *testing.T) {
+	tests := []struct {
+		name          string
+		spec          map[consumable3.SpecType]int32
+		maxHp         uint16
+		maxMp         uint16
+		zombified     bool
+		wantHpChanges []int16
+		wantMpChanges []int16
+	}{
+		{
+			name:          "flat hp not zombified",
+			spec:          map[consumable3.SpecType]int32{consumable3.SpecTypeHP: 300},
+			maxHp:         500,
+			maxMp:         500,
+			zombified:     false,
+			wantHpChanges: []int16{300},
+			wantMpChanges: []int16{},
+		},
+		{
+			name:          "flat hp zombified",
+			spec:          map[consumable3.SpecType]int32{consumable3.SpecTypeHP: 300},
+			maxHp:         500,
+			maxMp:         500,
+			zombified:     true,
+			wantHpChanges: []int16{150},
+			wantMpChanges: []int16{},
+		},
+		{
+			name:          "flat hp odd truncates down",
+			spec:          map[consumable3.SpecType]int32{consumable3.SpecTypeHP: 301},
+			maxHp:         500,
+			maxMp:         500,
+			zombified:     true,
+			wantHpChanges: []int16{150},
+			wantMpChanges: []int16{},
+		},
+		{
+			name:          "ratio hp not zombified",
+			spec:          map[consumable3.SpecType]int32{consumable3.SpecTypeHPRecovery: 25},
+			maxHp:         1000,
+			maxMp:         500,
+			zombified:     false,
+			wantHpChanges: []int16{250},
+			wantMpChanges: []int16{},
+		},
+		{
+			name:          "ratio hp zombified",
+			spec:          map[consumable3.SpecType]int32{consumable3.SpecTypeHPRecovery: 25},
+			maxHp:         1000,
+			maxMp:         500,
+			zombified:     true,
+			wantHpChanges: []int16{125},
+			wantMpChanges: []int16{},
+		},
+		{
+			name:          "flat and ratio zombified keep order",
+			spec:          map[consumable3.SpecType]int32{consumable3.SpecTypeHP: 300, consumable3.SpecTypeHPRecovery: 25},
+			maxHp:         1000,
+			maxMp:         500,
+			zombified:     true,
+			wantHpChanges: []int16{150, 125},
+			wantMpChanges: []int16{},
+		},
+		{
+			name:          "halved to zero is dropped",
+			spec:          map[consumable3.SpecType]int32{consumable3.SpecTypeHP: 1},
+			maxHp:         500,
+			maxMp:         500,
+			zombified:     true,
+			wantHpChanges: []int16{},
+			wantMpChanges: []int16{},
+		},
+		{
+			name:          "mp untouched by zombify",
+			spec:          map[consumable3.SpecType]int32{consumable3.SpecTypeHP: 300, consumable3.SpecTypeMP: 200, consumable3.SpecTypeMPRecovery: 50},
+			maxHp:         1000,
+			maxMp:         1000,
+			zombified:     true,
+			wantHpChanges: []int16{150},
+			wantMpChanges: []int16{200, 500},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := character.NewModelBuilder().SetMaxHp(tc.maxHp).SetMaxMp(tc.maxMp).Build()
+			ci := extractConsumable(t, consumable3.RestModel{Spec: tc.spec})
+			plan := computeEffectPlan(discardLogger(), c, ci, tc.zombified)
+			assert.Equal(t, tc.wantHpChanges, plan.hpChanges)
+			assert.Equal(t, tc.wantMpChanges, plan.mpChanges)
+		})
+	}
+}
+
+// TestComputeEffectPlan_ZombifyLeavesNonHpFieldsIdentical pins the scope of
+// FR-5/FR-6: only hpChanges differs between a zombified and a non-zombified
+// plan for the same consumable.
+func TestComputeEffectPlan_ZombifyLeavesNonHpFieldsIdentical(t *testing.T) {
+	c := character.NewModelBuilder().SetMaxHp(1000).Build()
+	ci := extractConsumable(t, consumable3.RestModel{
+		Spec: map[consumable3.SpecType]int32{
+			consumable3.SpecTypePoison:       1,
+			consumable3.SpecTypeHP:           300,
+			consumable3.SpecTypeWeaponAttack: 12,
+			consumable3.SpecTypeTime:         300000,
+		},
+	})
+
+	notZombified := computeEffectPlan(discardLogger(), c, ci, false)
+	zombified := computeEffectPlan(discardLogger(), c, ci, true)
+
+	assert.Equal(t, notZombified.cureTypes, zombified.cureTypes)
+	assert.Equal(t, notZombified.mpChanges, zombified.mpChanges)
+	assert.Equal(t, notZombified.statups, zombified.statups)
+	assert.Equal(t, notZombified.duration, zombified.duration)
+
+	assert.Equal(t, []int16{300}, notZombified.hpChanges)
+	assert.Equal(t, []int16{150}, zombified.hpChanges)
+}
+
+// TestResolveZombified pins FR-3: a failed buff read resolves to "not
+// zombified" (fail open -> full-value healing) and logs exactly one Warn.
+func TestResolveZombified(t *testing.T) {
+	undeadBuff := buff.NewBuff(1, 0, 0, []stat.Model{{Type: ts.TemporaryStatTypeUndead, Amount: 1}}, time.Now(), time.Now().Add(time.Hour), false)
+	speedBuff := buff.NewBuff(1, 0, 0, []stat.Model{{Type: ts.TemporaryStatTypeSpeed, Amount: 50}}, time.Now(), time.Now().Add(time.Hour), false)
+
+	tests := []struct {
+		name         string
+		getFunc      func(characterId uint32) ([]buff.Model, error)
+		want         bool
+		wantWarnLogs int
+	}{
+		{
+			name:         "undead buff",
+			getFunc:      func(uint32) ([]buff.Model, error) { return []buff.Model{undeadBuff}, nil },
+			want:         true,
+			wantWarnLogs: 0,
+		},
+		{
+			name:         "no buffs",
+			getFunc:      func(uint32) ([]buff.Model, error) { return []buff.Model{}, nil },
+			want:         false,
+			wantWarnLogs: 0,
+		},
+		{
+			name:         "non-undead buff",
+			getFunc:      func(uint32) ([]buff.Model, error) { return []buff.Model{speedBuff}, nil },
+			want:         false,
+			wantWarnLogs: 0,
+		},
+		{
+			name:         "read failure fails open",
+			getFunc:      func(uint32) ([]buff.Model, error) { return nil, errors.New("boom") },
+			want:         false,
+			wantWarnLogs: 1,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			logger, hook := test.NewNullLogger()
+			bp := &buffmock.ProcessorMock{GetByCharacterIdFunc: tc.getFunc}
+
+			got := resolveZombified(logger, bp, 555)
+
+			assert.Equal(t, tc.want, got)
+
+			warnCount := 0
+			for _, e := range hook.AllEntries() {
+				if e.Level == logrus.WarnLevel {
+					warnCount++
+				}
+			}
+			assert.Equal(t, tc.wantWarnLogs, warnCount)
+		})
 	}
 }

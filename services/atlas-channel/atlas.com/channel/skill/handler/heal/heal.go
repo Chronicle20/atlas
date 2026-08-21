@@ -2,6 +2,7 @@ package heal
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/character/buff"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/effective_stats"
 	"atlas-channel/session"
@@ -18,8 +19,10 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
@@ -36,6 +39,68 @@ func effectiveMaxHpOrBase(effective uint32, base uint16) uint16 {
 		return math.MaxUint16
 	}
 	return uint16(effective)
+}
+
+// loadCasterFunc is the caster-load seam tests can replace. Production
+// delegates to character.Processor.GetById.
+var loadCasterFunc = func(cp character.Processor, characterId uint32) (character.Model, error) {
+	return cp.GetById()(characterId)
+}
+
+// effectiveStatsFunc is the effective-stats seam tests can replace.
+// Production delegates to effective_stats.Processor.GetByCharacterId.
+var effectiveStatsFunc = func(esp effective_stats.Processor, worldId world.Id, channelId channel.Id, characterId uint32) (effective_stats.RestModel, error) {
+	return esp.GetByCharacterId(worldId, channelId, characterId)
+}
+
+// selectPartyMembersFunc is the party-selection seam tests can replace.
+// Production delegates to channelhandler.SelectInRangePartyMembers.
+var selectPartyMembersFunc = channelhandler.SelectInRangePartyMembers
+
+// varianceFunc is the [0.9, 1.1] heal roll, seamed so a cast's arithmetic is
+// pinnable end-to-end.
+var varianceFunc = func() float64 {
+	return 0.9 + rand.Float64()*0.2
+}
+
+// casterZombifiedFunc is the zombify-state seam tests can replace. Production
+// drains the caster's buffs from atlas-buffs and applies buff.IsZombified.
+// Per task-256 FR-3 a failed read resolves to false (not zombified): a
+// buff-service fault must never turn a Cleric's Heal into party-wide damage.
+var casterZombifiedFunc = func(l logrus.FieldLogger, ctx context.Context, characterId uint32) bool {
+	bs, err := buff.NewProcessor(l, ctx).GetByCharacterId(characterId)
+	if err != nil {
+		l.WithError(err).Warnf("Heal: buff read failed for caster [%d]; treating as not zombified.", characterId)
+		return false
+	}
+	return buff.IsZombified(bs)
+}
+
+// changeHpFunc is the HP-change seam tests can replace. Production
+// delegates to character.Processor.ChangeHP.
+var changeHpFunc = func(cp character.Processor, f field.Model, characterId uint32, amount int16) error {
+	return cp.ChangeHP(f, characterId, amount)
+}
+
+// awardExperienceFunc is the experience-award seam tests can replace.
+// Production delegates to character.Processor.AwardExperience.
+var awardExperienceFunc = func(cp character.Processor, f field.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error {
+	return cp.AwardExperience(f, characterId, distributions, showEffect)
+}
+
+// announceCastFunc broadcasts the cast to the caster and to every other
+// session in the map. Seamed as one unit because both announcements are
+// unconditional on every cast, negated or not (task-256 FR-16).
+var announceCastFunc = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, characterId uint32, casterLevel byte, skillId uint32, skillLevel byte) {
+	sp := session.NewProcessor(l, ctx)
+	_ = sp.IfPresentByCharacterId(f.Channel())(
+		characterId,
+		socketHandler.AnnounceSkillUse(l)(ctx)(wp)(skillId, casterLevel, skillLevel),
+	)
+	_ = channelmap.NewProcessor(l, ctx).ForOtherSessionsInMap(
+		f, characterId,
+		socketHandler.AnnounceForeignSkillUse(l)(ctx)(wp)(characterId, skillId, casterLevel, skillLevel),
+	)
 }
 
 func init() {
@@ -80,14 +145,14 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 			info packetmodel.SkillUsageInfo, e effect.Model,
 		) error {
 			cp := character.NewProcessor(l, ctx)
-			c, err := cp.GetById()(characterId)
+			c, err := loadCasterFunc(cp, characterId)
 			if err != nil {
 				l.WithError(err).Errorf("Heal: failed to load caster [%d].", characterId)
 				return nil
 			}
 
 			esp := effective_stats.NewProcessor(l, ctx)
-			stats, sErr := esp.GetByCharacterId(f.WorldId(), f.ChannelId(), characterId)
+			stats, sErr := effectiveStatsFunc(esp, f.WorldId(), f.ChannelId(), characterId)
 			if sErr != nil {
 				l.WithError(sErr).Warnf("Heal: failed to load effective stats for caster [%d]; falling back to base character INT.", characterId)
 				stats = effective_stats.RestModel{Intelligence: uint32(c.Intelligence())}
@@ -97,7 +162,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				l.Warnf("Heal: skill effect [%d] level [%d] has no LT/RB rectangle — falling back to caster-only.", info.SkillId(), info.SkillLevel())
 			})
 
-			party := channelhandler.SelectInRangePartyMembers(l, ctx, f, characterId, c.X(), c.Y(), e, info.AffectedPartyMemberBitmap())
+			party := selectPartyMembersFunc(l, ctx, f, characterId, c.X(), c.Y(), e, info.AffectedPartyMemberBitmap())
 			caster := recipient{
 				Id:       characterId,
 				X:        c.X(),
@@ -115,7 +180,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				if recipients[i].IsCaster {
 					continue
 				}
-				rs, rErr := esp.GetByCharacterId(f.WorldId(), f.ChannelId(), recipients[i].Id)
+				rs, rErr := effectiveStatsFunc(esp, f.WorldId(), f.ChannelId(), recipients[i].Id)
 				if rErr != nil {
 					l.WithError(rErr).Debugf("Heal: effective stats fetch failed for recipient [%d]; using base MaxHp [%d].", recipients[i].Id, recipients[i].MaxHp)
 					continue
@@ -123,7 +188,11 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				recipients[i].MaxHp = effectiveMaxHpOrBase(rs.MaxHp, recipients[i].MaxHp)
 			}
 
-			variance := 0.9 + rand.Float64()*0.2
+			// Resolved once, before the recipient loop and after the MaxHp
+			// hydration above -- never per-recipient (FR-11).
+			zombified := casterZombifiedFunc(l, ctx, characterId)
+
+			variance := varianceFunc()
 			perTarget := HealAmount(
 				e.HP(),
 				int(stats.MagicAttack),
@@ -133,20 +202,22 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 			)
 
 			for _, r := range recipients {
-				delta := appliedPerRecipient(perTarget, r)
+				delta := healDelta(perTarget, r, zombified)
 				if delta == 0 {
 					continue
 				}
-				if hpErr := cp.ChangeHP(f, r.Id, delta); hpErr != nil {
+				if hpErr := changeHpFunc(cp, f, r.Id, delta); hpErr != nil {
 					l.WithError(hpErr).Errorf("Heal: ChangeHP failed for recipient [%d] from caster [%d].", r.Id, characterId)
 				}
 			}
 
 			// XP gate: skip when sole recipient AND no undead targets in this cast.
-			if !(len(recipients) == 1 && len(info.AffectedMobIds()) == 0) {
+			// Also skipped entirely on a negated cast -- HealXp derives from the
+			// applied heal, and a zombified cast heals nobody (task-256 FR-15).
+			if !zombified && (len(recipients) != 1 || len(info.AffectedMobIds()) != 0) {
 				xp := HealXp(perTarget, recipients, info.SkillLevel())
 				if xp > 0 {
-					if xpErr := cp.AwardExperience(f, characterId, []character2.ExperienceDistributions{{
+					if xpErr := awardExperienceFunc(cp, f, characterId, []character2.ExperienceDistributions{{
 						ExperienceType: character2.ExperienceDistributionTypeWhite,
 						Amount:         xp,
 					}}, false); xpErr != nil {
@@ -155,18 +226,10 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				}
 			}
 
-			sp := session.NewProcessor(l, ctx)
-			_ = sp.IfPresentByCharacterId(f.Channel())(
-				characterId,
-				socketHandler.AnnounceSkillUse(l)(ctx)(wp)(info.SkillId(), c.Level(), info.SkillLevel()),
-			)
-			_ = channelmap.NewProcessor(l, ctx).ForOtherSessionsInMap(
-				f, characterId,
-				socketHandler.AnnounceForeignSkillUse(l)(ctx)(wp)(characterId, info.SkillId(), c.Level(), info.SkillLevel()),
-			)
+			announceCastFunc(l, ctx, wp, f, characterId, c.Level(), info.SkillId(), info.SkillLevel())
 
-			l.Debugf("Heal: caster=[%d] level=[%d] recipients=[%d] perTarget=[%d].",
-				characterId, info.SkillLevel(), len(recipients), perTarget)
+			l.Debugf("Heal: caster=[%d] level=[%d] recipients=[%d] perTarget=[%d] zombified=[%t].",
+				characterId, info.SkillLevel(), len(recipients), perTarget, zombified)
 
 			return nil
 		}

@@ -1,0 +1,15 @@
+packet: cash/serverbound/CashItemUseMapleLife
+direction: serverbound
+version: gms_v83
+category: TIER1-FIXTURE
+ida:
+    function: CUICharacterSaleDlg::SendCreateNewCharacter
+    address: "0x7d7960"
+    decompile_sha256: 40ac1642353a50211515916e1b0ade437e69256cf827317ae304b554eb067983
+verifies:
+    - libs/atlas-packet/cash/serverbound/item_use_maple_life_test.go#TestItemUseMapleLifeRoundTrip
+    - libs/atlas-packet/cash/serverbound/item_use_maple_life_test.go#TestItemUseMapleLifeUpdateTimeTrailing
+    - libs/atlas-packet/cash/serverbound/item_use_maple_life_test.go#TestItemUseMapleLifeOperation
+    - libs/atlas-packet/cash/serverbound/item_use_maple_life_test.go#TestItemUseMapleLifeByteFixture
+    - libs/atlas-packet/cash/serverbound/item_use_maple_life_test.go#TestItemUseMapleLifeFieldOrder
+    - libs/atlas-packet/cash/serverbound/item_use_maple_life_test.go#TestItemUseMapleLifeV83Bytes

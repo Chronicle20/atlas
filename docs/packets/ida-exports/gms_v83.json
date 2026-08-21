@@ -16148,6 +16148,66 @@
           "comment": ""
         }
       ]
+    },
+    "CUICharacterSaleDlg::SendCreateNewCharacter": {
+      "address": "0x7d7960",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode2",
+          "comment": "nPOS = *(this+216); 543 sub-body of USE_CASH_ITEM"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nItemID = *(this+220)"
+        },
+        {
+          "op": "EncodeStr",
+          "comment": "sName, CCtrlEdit::GetText(this+0xE4)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "al[0] = sub_7D5C57(this, 0), loop iter 0/3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "al[1] = sub_7D5C57(this, 1), loop iter 1/3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "al[2] = sub_7D5C57(this, 2), loop iter 2/3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "al[3] = sub_7D5C57(this, 3), loop iter 3/3"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nGender = *(this+504) [byte ptr this+0x1F8]"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nCurrentClass = *(this+440)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nSP = *(this+448)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "update_time = get_update_time(); TRAILING, only occurrence on v83 (no leading write)"
+        }
+      ]
+    },
+    "CUICharacterSaleDlg::SendCheckDuplicateIDPacket": {
+      "address": "0x7d75ab",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "sCharName; MAPLELIFE_CHECK_NAME opcode 256 (0x100)"
+        }
+      ]
     }
   }
 }

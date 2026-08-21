@@ -413,12 +413,20 @@ func (p *ProcessorImpl) resolveGridPosition(tx *gorm.DB, worldId byte, mapId uin
 
 // resolvePodiumPosition finds a podium slot for the new NPC by rank
 // (worldJobRank-1, design §5.2's "rank" being the deployment ordinal on
-// the podium's single job branch). A raised step (design §5.2: occupancy
-// reaches 3*step) repositions every existing occupant at the new step,
-// persisted inside tx, and their ids are returned for the REPOSITIONED
-// event. A podium map with no rows yet starts at step 1, not 0 (design
-// §5.2: PodiumPosition divides by step and treats the encoded pair as
-// starting at 1 for the podium path).
+// the podium's single job branch). This reading is verified, not assumed:
+// every routing.podiumMaps entry maps 1:1 to exactly one JobCategory
+// (routing.HallOfFameMapFor's switch), so every occupant of a given podium
+// map shares one job category, and worldJobRank -- nextWorldJobRank's
+// MAX(world_job_rank)+1 over (world, job category), starting at 1 -- runs
+// gapless from 1 across that map's occupants. worldJobRank-1 therefore
+// lands exactly on PodiumPosition's 0-based rank with no gaps or
+// collisions; processor_test.go's "podium deploy" subtest pins the
+// resulting slot for three sequential ranks, including the step raise.
+// A raised step (design §5.2: occupancy reaches 3*step) repositions every
+// existing occupant at the new step, persisted inside tx, and their ids
+// are returned for the REPOSITIONED event. A podium map with no rows yet
+// starts at step 1, not 0 (design §5.2: PodiumPosition divides by step and
+// treats the encoded pair as starting at 1 for the podium path).
 func (p *ProcessorImpl) resolvePodiumPosition(tx *gorm.DB, worldId byte, mapId uint32, cfg configuration.Model, worldJobRank uint32) (position.Point, byte, []uuid.UUID, error) {
 	t := tuningFor(cfg)
 

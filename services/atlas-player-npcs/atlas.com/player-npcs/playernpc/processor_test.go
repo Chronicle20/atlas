@@ -499,4 +499,89 @@ func TestDeploy(t *testing.T) {
 			t.Fatalf("first NPC's persisted Step() = %v, want 1 after reorganize", refreshed.Step())
 		}
 	})
+
+	t.Run("podium deploy", func(t *testing.T) {
+		// _map.VictoriaRoadHallOfWarriors1Id (102000004) is both a Hall of
+		// Fame map (routing.IsHallOfFameMap) and a podium map
+		// (routing.IsPodiumMap); it routes 1:1 with job.WarriorId's job
+		// category (routing.HallOfFameMapFor), so every occupant here
+		// shares one job category and world_job_rank -- a plain
+		// MAX(rank)+1 counter over (world, job category) -- runs gapless
+		// across them, matching design §5.2's rank ordinal exactly.
+		podiumMapId := uint32(_map.VictoriaRoadHallOfWarriors1Id)
+		env := newDeployTestEnv(t, podiumMapId)
+		first := buildCharacterModel(t, 1, "First", 200, job.WarriorId, false)
+		second := buildCharacterModel(t, 2, "Second", 200, job.WarriorId, false)
+		third := buildCharacterModel(t, 3, "Third", 200, job.WarriorId, false)
+
+		// rank 1 -> podiumRank 0: step stays at the map's starting step
+		// (1), platform 0 / relative 1 -> x = -50 + 100*1/(1+1) = 0.
+		m1, err := env.processorFor(first).Deploy(1, world.Id(0), _map.Id(podiumMapId), true, nil)
+		if err != nil {
+			t.Fatalf("first Deploy() unexpected err = %v", err)
+		}
+		if m1.WorldJobRank() != 1 {
+			t.Fatalf("first WorldJobRank() = %v, want 1", m1.WorldJobRank())
+		}
+		if m1.Step() != 1 || m1.X() != 0 || m1.Cy() != -47 {
+			t.Fatalf("first Step()/X()/Cy() = %v/%v/%v, want 1/0/-47", m1.Step(), m1.X(), m1.Cy())
+		}
+
+		// rank 2 -> podiumRank 1: count (2) < 3*step (3), no raise. Still
+		// step 1, platform 1 / relative 1 -> x = -170 + 100*1/(1+1) = -120.
+		m2, err := env.processorFor(second).Deploy(2, world.Id(0), _map.Id(podiumMapId), true, nil)
+		if err != nil {
+			t.Fatalf("second Deploy() unexpected err = %v", err)
+		}
+		if m2.WorldJobRank() != 2 {
+			t.Fatalf("second WorldJobRank() = %v, want 2", m2.WorldJobRank())
+		}
+		if m2.Step() != 1 || m2.X() != -120 || m2.Cy() != 40 {
+			t.Fatalf("second Step()/X()/Cy() = %v/%v/%v, want 1/-120/40", m2.Step(), m2.X(), m2.Cy())
+		}
+		env.events = nil
+
+		// rank 3 -> podiumRank 2: count (3) >= 3*step (3) raises step to
+		// 2, repositioning both existing occupants at the new step before
+		// the new occupant's own slot is resolved: platform 1 / relative
+		// 1 -> x = -170 + 100*1/(2+1) = -137.
+		m3, err := env.processorFor(third).Deploy(3, world.Id(0), _map.Id(podiumMapId), true, nil)
+		if err != nil {
+			t.Fatalf("third Deploy() unexpected err = %v", err)
+		}
+		if m3.WorldJobRank() != 3 {
+			t.Fatalf("third WorldJobRank() = %v, want 3", m3.WorldJobRank())
+		}
+		if m3.Step() != 2 || m3.X() != -137 || m3.Cy() != 40 {
+			t.Fatalf("third Step()/X()/Cy() = %v/%v/%v, want 2/-137/40", m3.Step(), m3.X(), m3.Cy())
+		}
+
+		var repositioned []Event
+		for _, ev := range env.events {
+			if ev.Type == EventTypeRepositioned {
+				repositioned = append(repositioned, ev)
+			}
+		}
+		if len(repositioned) != 1 || len(repositioned[0].Models) != 2 {
+			t.Fatalf("REPOSITIONED events = %+v, want exactly 1 carrying both existing occupants", repositioned)
+		}
+
+		refreshedFirst, err := env.processorFor(first).GetById(m1.Id())
+		if err != nil {
+			t.Fatalf("GetById(first) unexpected err = %v", err)
+		}
+		// podiumRank(1)=0: platform 0/2=0, relative (0%2)+1=1 -> x = -50 + 100*1/3 = -17.
+		if refreshedFirst.Step() != 2 || refreshedFirst.X() != -17 || refreshedFirst.Cy() != -47 {
+			t.Fatalf("first NPC's repositioned Step()/X()/Cy() = %v/%v/%v, want 2/-17/-47", refreshedFirst.Step(), refreshedFirst.X(), refreshedFirst.Cy())
+		}
+
+		refreshedSecond, err := env.processorFor(second).GetById(m2.Id())
+		if err != nil {
+			t.Fatalf("GetById(second) unexpected err = %v", err)
+		}
+		// podiumRank(2)=1: platform 1/2=0, relative (1%2)+1=2 -> x = -50 + 100*2/3 = 16.
+		if refreshedSecond.Step() != 2 || refreshedSecond.X() != 16 || refreshedSecond.Cy() != -47 {
+			t.Fatalf("second NPC's repositioned Step()/X()/Cy() = %v/%v/%v, want 2/16/-47", refreshedSecond.Step(), refreshedSecond.X(), refreshedSecond.Cy())
+		}
+	})
 }

@@ -763,6 +763,15 @@
         ]
       },
       {
+        "opCode": "0x5D",
+        "validator": "LoggedInValidator",
+        "handler": "InnerPortalHandle",
+        "fname": "CUserLocal::TryRegisterTeleport",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x5E",
         "validator": "LoggedInValidator",
         "handler": "TeleportRockAddMapHandle",

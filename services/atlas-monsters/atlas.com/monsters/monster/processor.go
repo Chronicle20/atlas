@@ -3,11 +3,13 @@ package monster
 import (
 	"atlas-monsters/character/hidden"
 	mistKafka "atlas-monsters/kafka/message/mist"
+	"atlas-monsters/kafka/message/system_message"
 	_map "atlas-monsters/map"
 	"atlas-monsters/monster/information"
 	"atlas-monsters/monster/mobskill"
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"math/rand"
 	"sort"
@@ -69,6 +71,7 @@ type Processor interface {
 	ClearAggro(uniqueId uint32) error
 	SetAggro(uniqueId uint32, characterId uint32) error
 	ForceControl(uniqueId uint32, characterId uint32) error
+	Banish(f field.Model, characterId uint32, monsterTemplateId uint32) error
 }
 
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses
@@ -1257,25 +1260,88 @@ func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId byte, 
 	}
 }
 
-// executeBanish warps target players to the monster's banish map
+// monsterInformation resolves a monster template's information, honoring the
+// test-only lookup hook so the banish paths are unit-testable without a live
+// atlas-data.
+func (p *ProcessorImpl) monsterInformation(monsterId uint32) (information.Model, error) {
+	if testInformationLookup != nil {
+		return testInformationLookup(monsterId)
+	}
+	return information.NewProcessor(p.l, p.ctx).GetById(monsterId)
+}
+
+// banishCharacter emits the two commands a banish is made of: the map change,
+// then the WZ banish message. Shared by the skill-129 path (executeBanish) and
+// the client-initiated path (Banish) so portal and message handling can never
+// diverge between them. Warp first: a message emitted before a failed warp
+// would tell a player they were banished when they were not. A message emit
+// failure after a successful warp is logged and swallowed — the banish already
+// happened and there is nothing to roll back.
+func (p *ProcessorImpl) banishCharacter(f field.Model, characterId uint32, b information.Banish) error {
+	if err := p.emit(EnvCommandTopicPortal, warpCommandProvider(f, characterId, map2.Id(b.MapId), b.PortalName)); err != nil {
+		return err
+	}
+	if b.Message != "" {
+		if err := p.emit(system_message.EnvCommandTopic, sendMessageProvider(f, characterId, "PINK_TEXT", b.Message)); err != nil {
+			p.l.WithError(err).Warnf("Banished character [%d] but unable to send banish message.", characterId)
+		}
+	}
+	return nil
+}
+
+// Banish honors a client-initiated MOB_BANISH_PLAYER request. The template id
+// arrives from the client and is untrusted: the banish executes only when a
+// monster of that template is actually alive in the requesting character's
+// field, which is the trust boundary for this path. Every failure returns an
+// error naming the character, template and field, and takes no action; the
+// caller logs once.
+func (p *ProcessorImpl) Banish(f field.Model, characterId uint32, monsterTemplateId uint32) error {
+	ms, err := p.GetInField(f)
+	if err != nil {
+		return fmt.Errorf("unable to read monsters in field [%s] for banish of character [%d] template [%d]: %w", f.Id(), characterId, monsterTemplateId, err)
+	}
+	alive := false
+	for _, m := range ms {
+		if m.MonsterId() == monsterTemplateId {
+			alive = true
+			break
+		}
+	}
+	if !alive {
+		return fmt.Errorf("no live monster of template [%d] in field [%s] for banish of character [%d]", monsterTemplateId, f.Id(), characterId)
+	}
+	info, err := p.monsterInformation(monsterTemplateId)
+	if err != nil {
+		return fmt.Errorf("unable to get information for template [%d] banishing character [%d] in field [%s]: %w", monsterTemplateId, characterId, f.Id(), err)
+	}
+	b := info.Banish()
+	if b.MapId == 0 {
+		return fmt.Errorf("template [%d] has no banish map; not banishing character [%d] in field [%s]", monsterTemplateId, characterId, f.Id())
+	}
+	p.l.Debugf("Banishing character [%d] to map [%d] portal [%s] via template [%d].", characterId, b.MapId, b.PortalName, monsterTemplateId)
+	return p.banishCharacter(f, characterId, b)
+}
+
+// executeBanish warps target players to the monster's banish map. Shares
+// banishCharacter with the client-initiated Banish path so the portal name and
+// the WZ banish message are honored identically on both.
 func (p *ProcessorImpl) executeBanish(m Model, sd mobskill.Model) {
-	ma, err := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
+	ma, err := p.monsterInformation(m.MonsterId())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get monster info for banish from monster [%d].", m.UniqueId())
 		return
 	}
 
-	banishMapId := ma.Banish().MapId
-	if banishMapId == 0 {
+	b := ma.Banish()
+	if b.MapId == 0 {
 		p.l.Debugf("Monster [%d] has no banish map configured.", m.UniqueId())
 		return
 	}
 
 	targets := p.getDiseaseTargets(m, sd)
 	for _, characterId := range targets {
-		err := producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopicPortal)(warpCommandProvider(m.Field(), characterId, map2.Id(banishMapId), ma.Banish().PortalName))
-		if err != nil {
-			p.l.WithError(err).Errorf("Unable to banish character [%d] from monster [%d] to map [%d].", characterId, m.UniqueId(), banishMapId)
+		if err := p.banishCharacter(m.Field(), characterId, b); err != nil {
+			p.l.WithError(err).Errorf("Unable to banish character [%d] from monster [%d] to map [%d].", characterId, m.UniqueId(), b.MapId)
 		}
 	}
 }

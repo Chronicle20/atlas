@@ -66,6 +66,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSetAggroCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBanishCommand))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyStatusFieldCommand))); err != nil {
 			return err
 		}
@@ -237,6 +240,16 @@ func handleSetAggroCommand(l logrus.FieldLogger, ctx context.Context, c command[
 	p := monster.NewProcessor(l, ctx)
 	if err := p.SetAggro(c.MonsterId, c.Body.CharacterId); err != nil {
 		l.WithError(err).Errorf("SET_AGGRO failed for monster [%d] character [%d].", c.MonsterId, c.Body.CharacterId)
+	}
+}
+
+func handleBanishCommand(l logrus.FieldLogger, ctx context.Context, c command[banishCommandBody]) {
+	if c.Type != CommandTypeBanish {
+		return
+	}
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	if err := monster.NewProcessor(l, ctx).Banish(f, c.Body.CharacterId, c.Body.MonsterTemplateId); err != nil {
+		l.WithError(err).Debugf("BANISH rejected for character [%d] template [%d] field [%s].", c.Body.CharacterId, c.Body.MonsterTemplateId, f.Id())
 	}
 }
 

@@ -3,6 +3,7 @@ package tenants
 import (
 	"atlas-configurations/tenants/cashshop"
 	"atlas-configurations/tenants/characters"
+	"atlas-configurations/tenants/maplelife"
 	"atlas-configurations/tenants/npcs"
 	"atlas-configurations/tenants/socket"
 	"atlas-configurations/tenants/worlds"
@@ -19,6 +20,7 @@ type RestModel struct {
 	NPCs         []npcs.RestModel     `json:"npcs"`
 	Worlds       []worlds.RestModel   `json:"worlds"`
 	CashShop     cashshop.RestModel   `json:"cashShop"`
+	MapleLife    maplelife.RestModel  `json:"mapleLife"`
 	// Environment is server-owned and read-only (task-232 FR-7.3): it always
 	// reflects Entity.Environment, set once by the write path's existing
 	// scoping (task-232 D5). Make() overwrites whatever this field held

@@ -3,6 +3,7 @@ package templates
 import (
 	"atlas-configurations/templates/cashshop"
 	"atlas-configurations/templates/characters"
+	"atlas-configurations/templates/maplelife"
 	"atlas-configurations/templates/npcs"
 	"atlas-configurations/templates/socket"
 	"atlas-configurations/templates/worlds"
@@ -19,6 +20,7 @@ type RestModel struct {
 	NPCs         []npcs.RestModel     `json:"npcs"`
 	Worlds       []worlds.RestModel   `json:"worlds"`
 	CashShop     cashshop.RestModel   `json:"cashShop"`
+	MapleLife    maplelife.RestModel  `json:"mapleLife"`
 	// Environment is server-owned and read-only (task-232 FR-7.3): it always
 	// reflects Entity.Environment, set once by Create from the caller's
 	// context. Make() overwrites whatever this field held after

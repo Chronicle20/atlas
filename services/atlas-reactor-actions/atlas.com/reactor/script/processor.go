@@ -27,6 +27,7 @@ type Processor interface {
 
 	ProcessHit(reactorId string, reactorState int8, characterId uint32) ProcessResult
 	ProcessTrigger(reactorId string, reactorState int8, characterId uint32) ProcessResult
+	ProcessTouch(reactorId string, reactorState int8, characterId uint32) ProcessResult
 
 	// Count returns the number of reactor scripts for the current tenant and the max updated_at timestamp.
 	// Returns (0, nil, nil) when the tenant has no rows.
@@ -155,6 +156,38 @@ func (p *ProcessorImpl) ProcessTrigger(reactorId string, reactorState int8, char
 
 	// Evaluate act rules in order - first matching rule wins
 	return p.evaluateRules(script.ActRules(), reactorId, reactorState, characterId, "trigger")
+}
+
+// ProcessTouch processes a reactor touch event
+func (p *ProcessorImpl) ProcessTouch(reactorId string, reactorState int8, characterId uint32) ProcessResult {
+	p.l.Debugf("Processing reactor touch [%s] state [%d] for character [%d]", reactorId, reactorState, characterId)
+
+	// Load the reactor script from database
+	script, err := p.ByReactorIdProvider(reactorId)()
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			p.l.Debugf("No reactor script found for [%s] - no action", reactorId)
+			return ProcessResult{
+				MatchedRule: "no_script",
+				Error:       nil,
+			}
+		}
+		p.l.WithError(err).Warnf("Failed to load reactor script [%s]", reactorId)
+		return ProcessResult{
+			MatchedRule: "no_script",
+			Error:       nil,
+		}
+	}
+
+	// Evaluate touch rules in order - first matching rule wins. Fall back to hit
+	// rules when the script declares no touch rules, since none of the ten
+	// activateByTouch templates has an authored script yet.
+	rules := script.TouchRules()
+	if len(rules) == 0 {
+		p.l.Debugf("Reactor script [%s] declares no touchRules; falling back to hitRules.", reactorId)
+		rules = script.HitRules()
+	}
+	return p.evaluateRules(rules, reactorId, reactorState, characterId, "touch")
 }
 
 // evaluateRules evaluates a list of rules and returns the result

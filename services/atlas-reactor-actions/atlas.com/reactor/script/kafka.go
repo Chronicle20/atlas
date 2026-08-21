@@ -9,4 +9,5 @@ const (
 const (
 	CommandTypeHit     = "HIT"
 	CommandTypeTrigger = "TRIGGER"
+	CommandTypeTouch   = "TOUCH"
 )

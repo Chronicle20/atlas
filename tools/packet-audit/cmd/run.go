@@ -2618,6 +2618,17 @@ func candidatesFromFName(fname string) []candidate {
 	// (docs/tasks/task-227-cash-name-change-world-transfer/derivation.md §2.3, §4.4, §5).
 	case "CCashShop::OnCheckDuplicatedIDResult":
 		return []candidate{{name: "CheckNameChange", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Clientbound MAPLELIFE_RESULT (task-246): the CUICharacterSaleDlg
+	// (Maple Life character-creation naming dialog) duplicate-name answer.
+	// Distinct dialog/fname/opcode from the cash-shop CCashShop::
+	// OnCheckDuplicatedIDResult sibling above; struct is MapleLifeResult
+	// (libs/atlas-packet/maplelife/clientbound/result.go). Body is DecodeStr
+	// (name, echoed back) + Decode1 (nResult, SIGNED: >0 taken, ==0
+	// available, <0 unknown error) on every in-scope version (gms_v83/v87/
+	// v92/v95); no field/width/order divergence across those versions
+	// (docs/tasks/task-246-maple-life-character-creation/derivation.md §4).
+	case "CUICharacterSaleDlg::OnCheckDuplicatedIDResult":
+		return []candidate{{name: "MapleLifeResult", dir: csvpkg.DirClientbound, pkg: "maplelife"}}
 	// Clientbound CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT (task-227): the
 	// server's answer to the WORLD_TRANSFER request above. Routed by
 	// CCashShop::OnPacket as its own case, NOT by the OnCashItemResult mode

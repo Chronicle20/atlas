@@ -1,4 +1,4 @@
-packet: maplelife/clientbound/MapleLifeResult
+packet: maplelife/clientbound/MaplelifeMapleLifeResult
 direction: clientbound
 version: gms_v87
 category: TIER1-FIXTURE

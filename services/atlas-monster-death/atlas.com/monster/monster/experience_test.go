@@ -2,6 +2,7 @@ package monster
 
 import (
 	"math"
+	"reflect"
 	"testing"
 )
 
@@ -269,5 +270,457 @@ func TestLevelGateHintText(t *testing.T) {
 	want := "You have gained #rno experience#k from defeating #e#bBlue Snail#k#n (lv. #b2#k)! Take note you must have around the same level as the mob to start earning EXP from it."
 	if got != want {
 		t.Errorf("levelGateHintText() = %q, want %q", got, want)
+	}
+}
+
+// partyBonusMod computes cfg.PartyBonusPerMember * n at runtime rather than
+// as a constant expression, so the expected value has the same float64
+// rounding as the implementation's runtime multiplication (e.g. 0.05*3 !=
+// the constant-folded 0.15).
+func partyBonusMod(n float64) float64 {
+	return DefaultExperienceConfig().PartyBonusPerMember * n
+}
+
+func TestPlanDistribution(t *testing.T) {
+	tests := []struct {
+		name           string
+		input          ExperienceInput
+		cfg            func() ExperienceConfig
+		wantTotalDmg   uint32
+		wantEntries    int
+		wantRecipients []Recipient
+		wantExclusions []Exclusion
+	}{
+		{
+			name: "solo single damager",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      100,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 500}},
+				Solos:             []SoloInput{{CharacterId: 1, Level: 50}},
+			},
+			wantTotalDmg: 500,
+			wantEntries:  1,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 50, PartyId: 0, PooledExp: 1000, TotalPartyLevel: 50, PartyBonusMod: 0, IsMvp: true, White: true},
+			},
+		},
+		{
+			name: "two solo damagers",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      100,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 750}, {CharacterId: 2, Damage: 250}},
+				Solos:             []SoloInput{{CharacterId: 1, Level: 50}, {CharacterId: 2, Level: 50}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  2,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 50, PartyId: 0, PooledExp: 750, TotalPartyLevel: 50, PartyBonusMod: 0, IsMvp: true, White: true},
+				{CharacterId: 2, Level: 50, PartyId: 0, PooledExp: 250, TotalPartyLevel: 50, PartyBonusMod: 0, IsMvp: true, White: false},
+			},
+		},
+		{
+			name: "zero total damage",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      100,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 0}},
+				Solos:             []SoloInput{{CharacterId: 1, Level: 50}},
+			},
+			wantTotalDmg: 0,
+			wantEntries:  1,
+		},
+		{
+			name: "empty input",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      100,
+			},
+			wantTotalDmg: 0,
+			wantEntries:  0,
+		},
+		{
+			name: "two-member party, one damager (FR-5.3)",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      100,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 1000}},
+				Parties:           []PartyInput{{PartyId: 9, Members: []MemberInput{{CharacterId: 1, Level: 50}, {CharacterId: 2, Level: 50}}}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  1,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 50, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 100, PartyBonusMod: 0.10, IsMvp: true, White: true},
+				{CharacterId: 2, Level: 50, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 100, PartyBonusMod: 0.10, IsMvp: false, White: false},
+			},
+		},
+		{
+			name: "one-member party equals solo (FR-5.11)",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      100,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 1000}},
+				Parties:           []PartyInput{{PartyId: 9, Members: []MemberInput{{CharacterId: 1, Level: 50}}}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  1,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 50, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 50, PartyBonusMod: 0.0, IsMvp: true, White: true},
+			},
+		},
+		{
+			name: "four-member party bonus (FR-5.8)",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      100,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 1000}},
+				Parties: []PartyInput{{PartyId: 9, Members: []MemberInput{
+					{CharacterId: 1, Level: 50}, {CharacterId: 2, Level: 50}, {CharacterId: 3, Level: 50}, {CharacterId: 4, Level: 50},
+				}}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  1,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 50, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 200, PartyBonusMod: 0.20, IsMvp: true, White: true},
+				{CharacterId: 2, Level: 50, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 200, PartyBonusMod: 0.20, IsMvp: false, White: false},
+				{CharacterId: 3, Level: 50, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 200, PartyBonusMod: 0.20, IsMvp: false, White: false},
+				{CharacterId: 4, Level: 50, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 200, PartyBonusMod: 0.20, IsMvp: false, White: false},
+			},
+		},
+		{
+			name: "MVP is highest damager in expMembers",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      100,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 100}, {CharacterId: 2, Damage: 900}},
+				Parties:           []PartyInput{{PartyId: 9, Members: []MemberInput{{CharacterId: 1, Level: 50}, {CharacterId: 2, Level: 50}}}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  1,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 50, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 100, PartyBonusMod: 0.10, IsMvp: false, White: false},
+				{CharacterId: 2, Level: 50, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 100, PartyBonusMod: 0.10, IsMvp: true, White: false},
+			},
+		},
+		{
+			name: "MVP tie breaks to lowest characterId (D13)",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      100,
+				Damages:           []DamageInput{{CharacterId: 2, Damage: 500}, {CharacterId: 1, Damage: 500}},
+				Parties:           []PartyInput{{PartyId: 9, Members: []MemberInput{{CharacterId: 1, Level: 50}, {CharacterId: 2, Level: 50}}}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  1,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 50, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 100, PartyBonusMod: 0.10, IsMvp: true, White: false},
+				{CharacterId: 2, Level: 50, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 100, PartyBonusMod: 0.10, IsMvp: false, White: false},
+			},
+		},
+		{
+			name: "MVP falls to a non-damager when no member damaged",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      50,
+				Damages:           []DamageInput{{CharacterId: 7, Damage: 1000}},
+				Parties:           []PartyInput{{PartyId: 9, Members: []MemberInput{{CharacterId: 1, Level: 50}, {CharacterId: 2, Level: 50}}}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  2,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 50, PartyId: 9, PooledExp: 0, TotalPartyLevel: 100, PartyBonusMod: 0.10, IsMvp: true, White: false},
+				{CharacterId: 2, Level: 50, PartyId: 9, PooledExp: 0, TotalPartyLevel: 100, PartyBonusMod: 0.10, IsMvp: false, White: false},
+			},
+		},
+		{
+			name: "out-of-field damager counts but receives nothing (D12)",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      100,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 500}, {CharacterId: 7, Damage: 500}},
+				Solos:             []SoloInput{{CharacterId: 1, Level: 50}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  2,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 50, PartyId: 0, PooledExp: 500, TotalPartyLevel: 50, PartyBonusMod: 0, IsMvp: true, White: true},
+			},
+		},
+		{
+			name: "level gate excludes and does not count (FR-6.1)",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      125,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 1000}},
+				Parties: []PartyInput{{PartyId: 9, Members: []MemberInput{
+					{CharacterId: 1, Level: 120}, {CharacterId: 2, Level: 32}, {CharacterId: 3, Level: 70},
+				}}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  1,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 120, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 120, PartyBonusMod: 0.0, IsMvp: true, White: true},
+			},
+			wantExclusions: []Exclusion{{CharacterId: 2}, {CharacterId: 3}},
+		},
+		{
+			name: "interval union admits and rejects (FR-6.2)",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      125,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 600}, {CharacterId: 2, Damage: 400}},
+				Parties: []PartyInput{{PartyId: 9, Members: []MemberInput{
+					{CharacterId: 1, Level: 120}, {CharacterId: 2, Level: 30}, {CharacterId: 3, Level: 32}, {CharacterId: 4, Level: 70},
+				}}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  1,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 120, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 182, PartyBonusMod: partyBonusMod(3), IsMvp: true, White: false},
+				{CharacterId: 2, Level: 30, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 182, PartyBonusMod: partyBonusMod(3), IsMvp: false, White: false},
+				{CharacterId: 3, Level: 32, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 182, PartyBonusMod: partyBonusMod(3), IsMvp: false, White: false},
+			},
+			wantExclusions: []Exclusion{{CharacterId: 4}},
+		},
+		{
+			name: "gate disabled admits everyone",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      125,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 600}, {CharacterId: 2, Damage: 400}},
+				Parties: []PartyInput{{PartyId: 9, Members: []MemberInput{
+					{CharacterId: 1, Level: 120}, {CharacterId: 2, Level: 30}, {CharacterId: 3, Level: 32}, {CharacterId: 4, Level: 70},
+				}}},
+			},
+			cfg: func() ExperienceConfig {
+				c := DefaultExperienceConfig()
+				c.EnforceMobLevelRange = false
+				return c
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  1,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 120, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 252, PartyBonusMod: 0.20, IsMvp: true, White: false},
+				{CharacterId: 2, Level: 30, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 252, PartyBonusMod: 0.20, IsMvp: false, White: false},
+				{CharacterId: 3, Level: 32, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 252, PartyBonusMod: 0.20, IsMvp: false, White: false},
+				{CharacterId: 4, Level: 70, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 252, PartyBonusMod: 0.20, IsMvp: false, White: false},
+			},
+		},
+		{
+			name: "gate never applies to solo (FR-6.3)",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      125,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 1000}},
+				Solos:             []SoloInput{{CharacterId: 1, Level: 5}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  1,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 5, PartyId: 0, PooledExp: 1000, TotalPartyLevel: 5, PartyBonusMod: 0, IsMvp: true, White: true},
+			},
+		},
+		{
+			name: "a contributor's band widens the set and their damage feeds the pool (D14)",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      200,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 500}, {CharacterId: 2, Damage: 500}},
+				Parties: []PartyInput{{PartyId: 9, Members: []MemberInput{
+					{CharacterId: 1, Level: 30}, {CharacterId: 2, Level: 199}, {CharacterId: 3, Level: 32}, {CharacterId: 4, Level: 100},
+				}}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  1,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 30, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 261, PartyBonusMod: partyBonusMod(3), IsMvp: true, White: false},
+				{CharacterId: 2, Level: 199, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 261, PartyBonusMod: partyBonusMod(3), IsMvp: false, White: false},
+				{CharacterId: 3, Level: 32, PartyId: 9, PooledExp: 1000, TotalPartyLevel: 261, PartyBonusMod: partyBonusMod(3), IsMvp: false, White: false},
+			},
+			wantExclusions: []Exclusion{{CharacterId: 4}},
+		},
+		{
+			name: "party with no eligible members is skipped (FR-5.10)",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      200,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 1000}},
+				Parties:           []PartyInput{{PartyId: 9, Members: []MemberInput{{CharacterId: 5, Level: 10}}}},
+			},
+			wantTotalDmg:   1000,
+			wantEntries:    2,
+			wantExclusions: []Exclusion{{CharacterId: 5}},
+		},
+		{
+			name: "zero totalPartyLevel yields no recipients (FR-5.6)",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      100,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 1000}},
+				Parties:           []PartyInput{{PartyId: 9, Members: []MemberInput{{CharacterId: 1, Level: 0}}}},
+			},
+			cfg: func() ExperienceConfig {
+				c := DefaultExperienceConfig()
+				c.EnforceMobLevelRange = false
+				return c
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  1,
+		},
+		{
+			name: "mixed solo and party",
+			input: ExperienceInput{
+				MonsterExperience: 1000,
+				MonsterLevel:      100,
+				Damages:           []DamageInput{{CharacterId: 1, Damage: 600}, {CharacterId: 2, Damage: 400}},
+				Solos:             []SoloInput{{CharacterId: 1, Level: 50}},
+				Parties:           []PartyInput{{PartyId: 9, Members: []MemberInput{{CharacterId: 2, Level: 50}, {CharacterId: 3, Level: 50}}}},
+			},
+			wantTotalDmg: 1000,
+			wantEntries:  2,
+			wantRecipients: []Recipient{
+				{CharacterId: 1, Level: 50, PartyId: 0, PooledExp: 600, TotalPartyLevel: 50, PartyBonusMod: 0, IsMvp: true, White: true},
+				{CharacterId: 2, Level: 50, PartyId: 9, PooledExp: 400, TotalPartyLevel: 100, PartyBonusMod: 0.10, IsMvp: true, White: false},
+				{CharacterId: 3, Level: 50, PartyId: 9, PooledExp: 400, TotalPartyLevel: 100, PartyBonusMod: 0.10, IsMvp: false, White: false},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := DefaultExperienceConfig()
+			if tt.cfg != nil {
+				cfg = tt.cfg()
+			}
+
+			got := planDistribution(tt.input, cfg)
+
+			if got.TotalDamage != tt.wantTotalDmg {
+				t.Errorf("TotalDamage = %d, want %d", got.TotalDamage, tt.wantTotalDmg)
+			}
+			if got.TotalEntries != tt.wantEntries {
+				t.Errorf("TotalEntries = %d, want %d", got.TotalEntries, tt.wantEntries)
+			}
+			if !reflect.DeepEqual(got.Recipients, tt.wantRecipients) {
+				t.Errorf("Recipients = %+v, want %+v", got.Recipients, tt.wantRecipients)
+			}
+			if !reflect.DeepEqual(got.Exclusions, tt.wantExclusions) {
+				t.Errorf("Exclusions = %+v, want %+v", got.Exclusions, tt.wantExclusions)
+			}
+		})
+	}
+}
+
+func TestPlanDistribution_PartiesOrderedByPartyIdMembersByCharacterId(t *testing.T) {
+	in := ExperienceInput{
+		MonsterExperience: 1000,
+		MonsterLevel:      100,
+		Damages:           []DamageInput{{CharacterId: 4, Damage: 100}, {CharacterId: 2, Damage: 100}},
+		Parties: []PartyInput{
+			{PartyId: 9, Members: []MemberInput{{CharacterId: 4, Level: 50}, {CharacterId: 3, Level: 50}}},
+			{PartyId: 2, Members: []MemberInput{{CharacterId: 2, Level: 50}, {CharacterId: 1, Level: 50}}},
+		},
+	}
+
+	got := planDistribution(in, DefaultExperienceConfig())
+
+	var ids []uint32
+	for _, r := range got.Recipients {
+		ids = append(ids, r.CharacterId)
+	}
+	want := []uint32{1, 2, 3, 4}
+	if !reflect.DeepEqual(ids, want) {
+		t.Errorf("recipient CharacterId order = %v, want %v", ids, want)
+	}
+}
+
+func TestPlanDistribution_IsDeterministicUnderShuffledInput(t *testing.T) {
+	cfg := DefaultExperienceConfig()
+	in := ExperienceInput{
+		MonsterExperience: 1000,
+		MonsterLevel:      100,
+		Damages:           []DamageInput{{CharacterId: 1, Damage: 600}, {CharacterId: 2, Damage: 400}},
+		Solos:             []SoloInput{{CharacterId: 1, Level: 50}},
+		Parties:           []PartyInput{{PartyId: 9, Members: []MemberInput{{CharacterId: 2, Level: 50}, {CharacterId: 3, Level: 50}}}},
+	}
+
+	want := planDistribution(in, cfg)
+
+	for i := 0; i < 20; i++ {
+		shuffled := ExperienceInput{
+			MonsterExperience: in.MonsterExperience,
+			MonsterLevel:      in.MonsterLevel,
+			Damages:           reverseDamages(in.Damages),
+			Solos:             reverseSolos(in.Solos),
+			Parties:           reverseParties(in.Parties),
+		}
+
+		got := planDistribution(shuffled, cfg)
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("iteration %d: planDistribution(shuffled) = %+v, want %+v", i, got, want)
+		}
+	}
+}
+
+func reverseDamages(in []DamageInput) []DamageInput {
+	out := make([]DamageInput, len(in))
+	for i, v := range in {
+		out[len(in)-1-i] = v
+	}
+	return out
+}
+
+func reverseSolos(in []SoloInput) []SoloInput {
+	out := make([]SoloInput, len(in))
+	for i, v := range in {
+		out[len(in)-1-i] = v
+	}
+	return out
+}
+
+func reverseParties(in []PartyInput) []PartyInput {
+	out := make([]PartyInput, len(in))
+	for i, v := range in {
+		out[len(in)-1-i] = PartyInput{
+			PartyId: v.PartyId,
+			Members: reverseMembers(v.Members),
+		}
+	}
+	return out
+}
+
+func reverseMembers(in []MemberInput) []MemberInput {
+	out := make([]MemberInput, len(in))
+	for i, v := range in {
+		out[len(in)-1-i] = v
+	}
+	return out
+}
+
+func TestPlanDistribution_TotalEntriesComposition(t *testing.T) {
+	in := ExperienceInput{
+		MonsterExperience: 1000,
+		MonsterLevel:      100,
+		Damages: []DamageInput{
+			{CharacterId: 1, Damage: 100},
+			{CharacterId: 2, Damage: 100},
+			{CharacterId: 3, Damage: 100},
+			{CharacterId: 4, Damage: 100},
+			{CharacterId: 5, Damage: 100},
+			{CharacterId: 6, Damage: 100},
+			{CharacterId: 7, Damage: 100},
+		},
+		Solos: []SoloInput{{CharacterId: 1, Level: 50}, {CharacterId: 2, Level: 50}},
+		Parties: []PartyInput{
+			{PartyId: 9, Members: []MemberInput{{CharacterId: 3, Level: 50}}},
+			{PartyId: 10, Members: []MemberInput{{CharacterId: 4, Level: 50}}},
+		},
+	}
+
+	got := planDistribution(in, DefaultExperienceConfig())
+
+	if got.TotalEntries != 7 {
+		t.Errorf("TotalEntries = %d, want 7", got.TotalEntries)
 	}
 }

@@ -97,9 +97,21 @@ case "$cmd" in
     scan | sort -u
     ;;
   next)
-    used="$(scan | awk '{print $1}' | sort -un)"
+    # Membership is an in-process hash lookup, NOT `printf "$used" | grep -qx`.
+    # That older form was a latent SIGPIPE bug: under `set -o pipefail`,
+    # `grep -q` exits the moment it matches, the upstream `printf` dies of
+    # SIGPIPE (141), and pipefail surfaces 141 as the loop condition — so the
+    # scan ended at a race-dependent n and handed out an ALREADY-USED number
+    # (observed: 002, 032, 047 on consecutive runs of the same repo state).
+    declare -A used_set=()
+    while read -r num; do
+      [ -n "$num" ] || continue
+      used_set["$num"]=1
+    done < <(scan | awk '{print $1}')
     n=1
-    while printf '%s\n' "$used" | grep -qx "$(printf '%03d' "$n")"; do
+    while :; do
+      printf -v candidate '%03d' "$n"
+      [ -n "${used_set[$candidate]:-}" ] || break
       n=$((n + 1))
     done
     printf '%03d\n' "$n"

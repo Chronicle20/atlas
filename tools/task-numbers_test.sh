@@ -84,6 +84,29 @@ check_rc=$?
 set -e
 assert_eq "check is clean (no false history collision)" "0" "$check_rc"
 
+# --- regression: `next` must not short-circuit on a large used-set -----------
+# The membership test used to be `printf '%s\n' "$used" | grep -qx "$cand"`.
+# With `set -o pipefail`, grep -q exits on its first match, printf dies of
+# SIGPIPE (141), and pipefail turns that into a false "not used" — ending the
+# scan early and re-issuing a taken number. Below 64KB (the pipe buffer) the
+# failure is a race; above it, it is certain. This fixture pushes the used-set
+# well past 64KB so the assertion is deterministic in both directions.
+big="$(mktemp -d)"
+git -C "$big" init -q
+git -C "$big" config user.email t@t.t
+git -C "$big" config user.name t
+git -C "$big" config commit.gpgsign false
+# One commit subject carrying task-00001 .. task-11000; the history source
+# mines every token out of it, so 001..11000 are all "used" and 11001 is the
+# smallest free number.
+subject="$(seq -f 'task-%05g' 1 11000 | tr '\n' ' ')"
+git -C "$big" commit -q --allow-empty -m "$subject"
+cd "$big"
+big_next="$("$SCRIPT" next)"
+assert_eq "next survives a >64KB used-set (no SIGPIPE short-circuit)" "11001" "$big_next"
+cd "$tmp"
+rm -rf "$big"
+
 if [ "$fails" -ne 0 ]; then
   echo "$fails assertion(s) failed" >&2
   exit 1

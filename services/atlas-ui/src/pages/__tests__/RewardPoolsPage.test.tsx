@@ -118,14 +118,22 @@ describe("RewardPoolsPage", () => {
     expect(screen.getByText("Surprise Style Box")).toBeInTheDocument();
   });
 
-  it("renders a single refresh control next to the tabs", async () => {
+  it("renders exactly one refresh control on a pool tab", async () => {
     renderPage();
     await waitFor(() =>
       expect(screen.getByText("Henesys")).toBeInTheDocument(),
     );
-    expect(
-      screen.getByRole("button", { name: /refresh/i }),
-    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /refresh/i })).toHaveLength(1);
+  });
+
+  it("renders exactly one refresh control on the Global tab", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("Henesys")).toBeInTheDocument(),
+    );
+    await user.click(screen.getByRole("tab", { name: /global/i }));
+    expect(screen.getAllByRole("button", { name: /refresh/i })).toHaveLength(1);
   });
 
   it("Incubators tab filters out gachapon pools", async () => {

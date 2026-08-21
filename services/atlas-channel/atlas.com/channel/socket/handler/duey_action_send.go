@@ -46,6 +46,32 @@ type dueySendDeps struct {
 	createSaga       func(s saga.Saga) error
 }
 
+// dueyQuickTicketCompartmentFetch is a test seam for the compartment lookup
+// hasQuickDeliveryTicket makes, so a regression test can assert the
+// inventory type actually requested rather than a stubbed bool.
+var dueyQuickTicketCompartmentFetch = func(l logrus.FieldLogger, ctx context.Context, characterId uint32, it inventory.Type) (compartment.Model, error) {
+	return compartment.NewProcessor(l, ctx).GetByType(characterId, it)
+}
+
+// hasQuickDeliveryTicket reports whether characterId holds a Quick Delivery
+// Ticket, looking it up in the compartment the ticket actually lives in
+// rather than a hard-coded constant. Item 5330000 is classification 533, a
+// cash item, so inventory.TypeFromItemId resolves it to TypeValueCash — not
+// TypeValueETC, where a prior version of this lookup mistakenly searched
+// (task-241 bug: every quick send was rejected in production).
+func hasQuickDeliveryTicket(l logrus.FieldLogger, ctx context.Context, characterId uint32) (bool, error) {
+	it, ok := inventory.TypeFromItemId(item.Id(item.QuickDeliveryTicketId))
+	if !ok {
+		it = inventory.TypeValueCash
+	}
+	cp, err := dueyQuickTicketCompartmentFetch(l, ctx, characterId, it)
+	if err != nil {
+		return false, err
+	}
+	_, found := cp.FindFirstByItemId(item.QuickDeliveryTicketId)
+	return found, nil
+}
+
 // handleDueyActionSend wires sendParcel's dependencies to the real
 // atlas-character / atlas-compartment / atlas-parcel / saga-orchestrator
 // collaborators.
@@ -62,12 +88,7 @@ func handleDueyActionSend(l logrus.FieldLogger, ctx context.Context, wp writer.P
 				return character.NewProcessor(l, ctx).GetItemInSlot(characterId, it, slot)()
 			},
 			hasTicket: func(characterId uint32) (bool, error) {
-				cp, err := compartment.NewProcessor(l, ctx).GetByType(characterId, inventory.TypeValueETC)
-				if err != nil {
-					return false, err
-				}
-				_, found := cp.FindFirstByItemId(item.QuickDeliveryTicketId)
-				return found, nil
+				return hasQuickDeliveryTicket(l, ctx, characterId)
 			},
 			countPending: func(recipientId uint32, worldId world.Id) (int, error) {
 				return dueyparcel.NewProcessor(l, ctx).CountPending(recipientId, worldId)

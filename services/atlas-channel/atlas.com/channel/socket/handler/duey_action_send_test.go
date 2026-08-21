@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/asset"
 	"atlas-channel/character"
+	"atlas-channel/compartment"
 	dueyparcel "atlas-channel/parcel"
 	"atlas-channel/saga"
 	"atlas-channel/session"
@@ -429,5 +430,42 @@ func TestDueyActionSend(t *testing.T) {
 				t.Errorf("expected a warn-level log about the missing ticket, got: %s", logs.String())
 			}
 		})
+	}
+}
+
+// TestHasQuickDeliveryTicketQueriesCashCompartment pins the compartment
+// type the PRODUCTION wiring requests, not a stubbed bool. Item 5330000 is
+// classification 533, a cash item, so hasQuickDeliveryTicket must ask for
+// TypeValueCash (5) — asking TypeValueETC (4), as a prior version of this
+// lookup did, made every quick send unreachable in production even though
+// dueySendFixture.hasTicket always stubbed true (task-241 bug).
+func TestHasQuickDeliveryTicketQueriesCashCompartment(t *testing.T) {
+	orig := dueyQuickTicketCompartmentFetch
+	defer func() { dueyQuickTicketCompartmentFetch = orig }()
+
+	var gotType inventory.Type
+	var gotCharacterId uint32
+	dueyQuickTicketCompartmentFetch = func(_ logrus.FieldLogger, _ context.Context, characterId uint32, it inventory.Type) (compartment.Model, error) {
+		gotCharacterId = characterId
+		gotType = it
+		return compartment.Model{}, nil
+	}
+
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+	ctx := context.Background()
+
+	found, err := hasQuickDeliveryTicket(l, ctx, 100)
+	if err != nil {
+		t.Fatalf("hasQuickDeliveryTicket returned an error: %v", err)
+	}
+	if found {
+		t.Errorf("found = true, want false (empty compartment.Model has no assets)")
+	}
+	if gotCharacterId != 100 {
+		t.Errorf("GetByType characterId = %d, want 100", gotCharacterId)
+	}
+	if gotType != inventory.TypeValueCash {
+		t.Errorf("GetByType inventoryType = %d, want %d (TypeValueCash)", gotType, inventory.TypeValueCash)
 	}
 }

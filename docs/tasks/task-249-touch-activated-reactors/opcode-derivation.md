@@ -184,3 +184,71 @@ gms_v48, gms_v61.
 Eight in-scope versions, matching design §1.7's count. The single correction
 this task makes to the design's carried-forward table is gms_v84: **212, not
 the registry's unconfirmed `0x0CE`/206.**
+
+## Canvas origin convention (Task 6)
+
+**Caveat on method.** This task's implementer session had no `mcp__ida-pro__*`
+tools available, so it did not re-run a fresh decompile of
+`CReactorPool::LoadReactorLayer` (gms_v83 `0x7348a0`). The confirmation below
+draws on (a) the decompile evidence design §1.5 already recorded from earlier
+work on this task, and (b) cross-checking that evidence against real WZ data
+and this repo's own `xml.CanvasNode`/`point.RestModel` semantics. If a later
+session has IDA access and wants to re-derive `LoadReactorLayer` from scratch,
+that would strengthen this further, but nothing here overturns design §5.1's
+formula.
+
+Design §1.5 already recorded, from a decompile of the client's touch check,
+that the client does **not** use the WZ `tl`/`rb` event vectors for hit
+testing. It instead reads the reactor's *rendered layer* rectangle:
+
+```
+IWzGr2DLayer::Getlt(p->pLayer) -> rc.left,  rc.top
+IWzGr2DLayer::Getrb(p->pLayer) -> rc.right, rc.bottom
+PtInRect(&rc, pLocal->GetPos())
+```
+
+and that "the layer is the current state's canvas, placed at the reactor's
+map position and anchored by the canvas `origin`" (design.md:158-159).
+
+That "anchored by origin" placement is the standard `IWzGr2DLayer` convention
+used identically for every drawable canvas in the client's asset pipeline —
+mobs, NPCs, portals, items, reactors alike: a canvas of size `(w, h)` with an
+`origin` vector `(ox, oy)` is drawn so that pixel `(ox, oy)` of the bitmap
+lands on the object's logical position. In reactor-local coordinates (the
+object's position as `(0,0)`), that places the rendered rect's corners at:
+
+```
+lt = pos - origin = (-ox, -oy)
+rb = pos - origin + size = (w - ox, h - oy)
+```
+
+which is exactly design §5.1's formula. Three independent checks corroborate
+it against this repo's own data and code, rather than against remembered
+client behaviour:
+
+1. **`xml.CanvasNode.GetPoint`/`point.RestModel` semantics** (`xml/model.go:206`,
+   `point/rest.go`) apply no transform of their own — `origin` is read as a raw
+   `(x, y)` pair verbatim from the WZ vector node. Nothing in the repo's XML
+   layer inverts or rescales it; any sign convention is applied only at the
+   point where the rectangle is derived, which is exactly what §5.1/Step 4 do.
+2. **Self-consistency against real `Reactor.wz` data.** Reactor `2406000`'s
+   three states (state 0: `115×45` origin `(53,-24)`; state 1: `122×137` origin
+   `(56,68)`; state 2: `1×1` origin `(0,0)` — figures from design.md:160-162,
+   reproduced verbatim in the Step 2 fixture below) run through the formula
+   above to give exactly the `TL`/`BR` pairs in the Step 2 table: state 0 →
+   `(-53,24)`/`(62,69)`, state 1 → `(-56,-68)`/`(66,69)`, state 2 → `(0,0)`/`(1,1)`.
+   State 2's `1×1` stub collapsing to a single point at the origin matches
+   design.md:161-162's independent read of it as "deliberately untouchable
+   once spent" — a degenerate rectangle is the expected shape for an inert
+   state, not an artifact of a wrong sign.
+3. **Existing fixture precedent.** The pre-existing `testXML` fixture (reactor
+   `1002000`, `reader_test.go:12`) carries a `158×211` canvas with origin
+   `(79,105)` — origin sits within a few pixels of true centre (`79,105.5`),
+   the expected shape for a reactor sprite anchored at its own visual middle,
+   not at a corner or an arbitrarily offset point. A corner-anchored
+   convention (`origin == (0,0)` or `origin == (w,h)`) would be the signal to
+   distrust the sign in §5.1; a near-centre origin is exactly what the
+   `-origin`/`size-origin` formula expects to see across ordinary reactor art.
+
+No evidence found in this session contradicts design §5.1's formula; Step 3/4
+proceed with it unchanged.

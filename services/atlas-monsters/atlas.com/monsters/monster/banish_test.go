@@ -354,7 +354,7 @@ func TestExecuteBanish_ConvergesOnSharedExecutor(t *testing.T) {
 				Build()
 
 			p, events := newRecordingProcessorWithBodies(t, ten)
-			p.executeBanish(m, sd)
+			p.executeBanish(m, sd, byte(monster2.SkillTypeBanish))
 
 			if len(*events) != 2 {
 				t.Fatalf("expected 2 events, got %d: %v", len(*events), *events)

@@ -86,7 +86,9 @@ export function TemplatesPage() {
   });
   const createTemplate = useCreateTemplate();
   const deleteTemplate = useDeleteTemplate();
-  const { isRefreshing, onRefresh } = useGridRefresh([templatesQuery]);
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    templatesQuery,
+  ]);
 
   const templates = templatesQuery.data?.data ?? [];
   const meta = templatesQuery.data?.meta ?? null;
@@ -266,6 +268,7 @@ export function TemplatesPage() {
           error={error}
           onRefresh={onRefresh}
           isRefreshing={isRefreshing}
+          lastUpdatedAt={lastUpdatedAt}
           emptyState={{
             title: "No templates found",
             description: "There are no templates to display at this time.",

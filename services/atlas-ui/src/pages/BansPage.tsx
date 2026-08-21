@@ -73,7 +73,9 @@ export function BansPage() {
     bansQueryOptions,
   );
   const { invalidateAll } = useInvalidateBans();
-  const { isRefreshing, onRefresh } = useGridRefresh([bansQuery]);
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    bansQuery,
+  ]);
 
   const bans = bansQuery.data?.data ?? [];
   const meta = bansQuery.data?.meta ?? null;
@@ -149,6 +151,7 @@ export function BansPage() {
           error={error}
           onRefresh={onRefresh}
           isRefreshing={isRefreshing}
+          lastUpdatedAt={lastUpdatedAt}
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No bans found",

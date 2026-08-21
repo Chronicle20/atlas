@@ -81,7 +81,9 @@ export function CouponsPage() {
   );
 
   const couponsQuery = useCoupons(page, filters);
-  const { isRefreshing, onRefresh } = useGridRefresh([couponsQuery]);
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    couponsQuery,
+  ]);
   const updateCoupon = useUpdateCoupon();
   const deleteCoupon = useDeleteCoupon();
 
@@ -226,6 +228,7 @@ export function CouponsPage() {
           error={couponsQuery.error?.message ?? null}
           onRefresh={() => void onRefresh()}
           isRefreshing={isRefreshing}
+          lastUpdatedAt={lastUpdatedAt}
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No coupons found",

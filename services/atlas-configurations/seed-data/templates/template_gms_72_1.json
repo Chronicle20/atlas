@@ -1749,6 +1749,15 @@
         ]
       },
       {
+        "opCode": "0xC4",
+        "validator": "LoggedInValidator",
+        "handler": "TouchReactorHandle",
+        "fname": "CReactorPool::FindTouchReactorAroundLocalUser",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xC9",
         "validator": "LoggedInValidator",
         "handler": "Snowball",

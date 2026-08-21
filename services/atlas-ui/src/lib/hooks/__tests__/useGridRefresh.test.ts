@@ -16,6 +16,7 @@ function makeQuery(
 ): RefreshableQuery {
   return {
     isFetching: false,
+    dataUpdatedAt: 0,
     refetch: vi.fn().mockResolvedValue({ isError: false, error: null }),
     ...overrides,
   } as unknown as RefreshableQuery;
@@ -101,5 +102,49 @@ describe("useGridRefresh", () => {
     expect(alsoRefresh).toHaveBeenCalledTimes(1);
     expect(q1.refetch).toHaveBeenCalledTimes(1);
     expect(toast.success).toHaveBeenCalledTimes(1);
+  });
+
+  describe("lastUpdatedAt", () => {
+    it("is the minimum non-zero stamp across queries", () => {
+      const { result } = renderHook(() =>
+        useGridRefresh([
+          makeQuery({ dataUpdatedAt: 5000 }),
+          makeQuery({ dataUpdatedAt: 9000 }),
+        ]),
+      );
+      expect(result.current.lastUpdatedAt).toBe(5000);
+    });
+
+    it("ignores zero stamps when some query has resolved", () => {
+      const { result } = renderHook(() =>
+        useGridRefresh([
+          makeQuery({ dataUpdatedAt: 0 }),
+          makeQuery({ dataUpdatedAt: 9000 }),
+        ]),
+      );
+      expect(result.current.lastUpdatedAt).toBe(9000);
+    });
+
+    it("is null when no query has ever resolved", () => {
+      const { result } = renderHook(() =>
+        useGridRefresh([
+          makeQuery({ dataUpdatedAt: 0 }),
+          makeQuery({ dataUpdatedAt: 0 }),
+        ]),
+      );
+      expect(result.current.lastUpdatedAt).toBeNull();
+    });
+
+    it("is null for an empty query list", () => {
+      const { result } = renderHook(() => useGridRefresh([]));
+      expect(result.current.lastUpdatedAt).toBeNull();
+    });
+
+    it("is the single stamp for a single query", () => {
+      const { result } = renderHook(() =>
+        useGridRefresh([makeQuery({ dataUpdatedAt: 7000 })]),
+      );
+      expect(result.current.lastUpdatedAt).toBe(7000);
+    });
   });
 });

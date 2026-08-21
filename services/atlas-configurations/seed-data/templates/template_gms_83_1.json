@@ -2154,19 +2154,19 @@
         ]
       },
       {
-        "opCode": "0x104",
+        "opCode": "0x100",
         "validator": "LoggedInValidator",
-        "handler": "ItemUpgradeUpdateHandle",
-        "fname": "CUIItemUpgrade::Update",
+        "handler": "MapleLifeCheckNameHandle",
+        "fname": "CUICharacterSaleDlg::SendCheckDuplicateIDPacket",
         "services": [
           "channel"
         ]
       },
       {
-        "opCode": "0x100",
+        "opCode": "0x104",
         "validator": "LoggedInValidator",
-        "handler": "MapleLifeCheckNameHandle",
-        "fname": "CUICharacterSaleDlg::SendCheckDuplicateIDPacket",
+        "handler": "ItemUpgradeUpdateHandle",
+        "fname": "CUIItemUpgrade::Update",
         "services": [
           "channel"
         ]
@@ -5371,6 +5371,36 @@
         ]
       },
       {
+        "opCode": "0x15D",
+        "writer": "MapleLifeResult",
+        "fname": "CUICharacterSaleDlg::OnCheckDuplicatedIDResult",
+        "options": {
+          "operations": {
+            "AVAILABLE": 0,
+            "TAKEN": 1,
+            "UNKNOWN_ERROR": 255
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x15E",
+        "writer": "MapleLifeError",
+        "fname": "CUICharacterSaleDlg::OnCreateNewCharacterResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 52,
+            "NAME_TAKEN_AT_SUBMIT": 54,
+            "UNKNOWN_ERROR": 255
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x162",
         "writer": "ViciousHammer",
         "fname": "CField::OnItemUpgrade",
@@ -5402,36 +5432,6 @@
             "RESULT_SUCCESS": 65,
             "RESULT_FAILURE": 67,
             "INVALID": 66
-          }
-        },
-        "services": [
-          "channel"
-        ]
-      },
-      {
-        "opCode": "0x15D",
-        "writer": "MapleLifeResult",
-        "fname": "CUICharacterSaleDlg::OnCheckDuplicatedIDResult",
-        "options": {
-          "operations": {
-            "AVAILABLE": 0,
-            "TAKEN": 1,
-            "UNKNOWN_ERROR": 255
-          }
-        },
-        "services": [
-          "channel"
-        ]
-      },
-      {
-        "opCode": "0x15E",
-        "writer": "MapleLifeError",
-        "fname": "CUICharacterSaleDlg::OnCreateNewCharacterResult",
-        "options": {
-          "operations": {
-            "SUCCESS": 52,
-            "NAME_TAKEN_AT_SUBMIT": 54,
-            "UNKNOWN_ERROR": 255
           }
         },
         "services": [

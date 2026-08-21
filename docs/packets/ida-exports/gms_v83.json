@@ -3,6 +3,11 @@
   "md5": "80ff438ced539b831f0d2ed95099275d",
   "generated_at": "2026-05-14T00:00:00Z",
   "functions": {
+    "CNpcPool::OnNpcImitateData": {
+      "address": "0x6d97c6",
+      "direction": "",
+      "calls": null
+    },
     "CCashShop::OnCheckTransferWorldPossibleResult": {
       "address": "0x47bd9b",
       "direction": "",

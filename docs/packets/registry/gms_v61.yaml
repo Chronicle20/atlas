@@ -2089,6 +2089,15 @@
   ida:
     address: 6291023
   note: 'v61 send-site harvest (COutPacket ctor @0x5ffc4f): CUserLocal::SendSkillCancelRequest. COutPacket(84); Δ-7 vs v72 op91.'
+- op: USE_INNER_PORTAL
+  direction: serverbound
+  opcode: 93
+  fname: CUserLocal::TryRegisterTeleport
+  provenance: ida-discovered
+  ida:
+    address: 8036835
+  note: 'task-11 v61 verify pass (structures/gms_v61.md): CUserLocal::TryRegisterTeleport @0x7aa1e3 (already named in the IDB, session 921fdbb5, GMS_v61.1_U_DEVM.exe.i64). COutPacket::COutPacket(v49, 93) @0x7aa2fb — opcode 93 (0x05D). Field sequence Encode1(fieldKey)+EncodeStr(portalName)+Encode2(x)+Encode2(y)+Encode2(targetX)+Encode2(targetY) — 6 fields, matching the gms_v95 reference shape.'
+  packet: portal/serverbound/PortalInnerPortal
 - op: TROCK_ADD_MAP
   direction: serverbound
   opcode: 94

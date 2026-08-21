@@ -2570,6 +2570,15 @@
   ida:
     address: 8763824
   note: 'v72 COutPacket(99) verified via global COutPacket-ctor harvest @0x85b9b0; Δ+1 vs v79 op 98 (mid/field/social Δ+1).'
+- op: USE_INNER_PORTAL
+  direction: serverbound
+  opcode: 100
+  fname: CUserLocal::TryRegisterTeleport
+  provenance: ida-discovered
+  ida:
+    address: 8799586
+  note: 'task-11 v72 verify pass (structures/gms_v72.md): CUserLocal::TryRegisterTeleport @0x864562 (already named in the IDB, session 99e435d8, GMS_v72.1_U_DEVM.exe.i64). COutPacket::COutPacket(v59, 100) @0x864676 — opcode 100 (0x064). Field sequence Encode1(fieldKey)+EncodeStr(portalName)+Encode2(x)+Encode2(y)+Encode2(targetX)+Encode2(targetY) — 6 fields, matching the gms_v95 reference shape.'
+  packet: portal/serverbound/PortalInnerPortal
 - op: TROCK_ADD_MAP
   direction: serverbound
   opcode: 101

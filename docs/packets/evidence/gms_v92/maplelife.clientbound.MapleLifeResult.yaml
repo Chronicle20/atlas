@@ -1,0 +1,13 @@
+packet: maplelife/clientbound/MapleLifeResult
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CUICharacterSaleDlg::OnCheckDuplicatedIDResult
+    address: "0x756370"
+    decompile_sha256: 0e5899046bd788bfc4fbdd05d06876d04a590cb0d6746fb5efa0405e7e3e8b19
+verifies:
+    - libs/atlas-packet/maplelife/clientbound/result_test.go#TestMapleLifeResultByteFixture
+    - libs/atlas-packet/maplelife/clientbound/result_test.go#TestMapleLifeResultRoundTrip
+    - libs/atlas-packet/maplelife/clientbound/result_test.go#TestMapleLifeResultCodesAreConfigResolved
+    - libs/atlas-packet/maplelife/clientbound/result_test.go#TestMapleLifeResultReasonMapping

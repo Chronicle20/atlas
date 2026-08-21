@@ -174,3 +174,194 @@ Stop and ask the user rather than deciding, if:
 - **§6.3 finds jms_v185 opcode 271 is the sale dialog's own probe.** PRD scope says jms stays untouched; that finding contradicts it. A rename plus a scope change is the user's call, not a silent widening.
 - **§4/§5 find a clientbound arm that requires server state the design did not anticipate** — e.g. the dialog expecting an in-session character-list refresh (design OQ-6 assumed none, since the channel has no character-select list).
 - **§2 finds the submit sub-body carries an operation beyond creation** — the fname is `CharacterSale`, and PRD §2 puts anything beyond creation out of scope unless the derivation proves the same sub-body carries it.
+
+---
+
+# Amendment 1 context (Tasks 16–26)
+
+Added at the second `/plan-task` pass, after `design.md` §11 was appended
+(`fb70df66d`) and Tasks 1–14 had already landed and been reviewed. Everything
+above this line describes the original plan and still stands except where §11
+supersedes it.
+
+## A. Where Tasks 1–15 actually stand
+
+- **Tasks 1–14: implemented, reviewed, committed** — `ddef3d665` … `0777d508c`,
+  with `review-task-1.md` … `review-task-14.md`. The plan's checkboxes were
+  never ticked; the commits and review artifacts are the record, not the boxes.
+- **Task 15: never run.** Superseded by Task 26, which runs the same steps plus
+  this amendment's blast-radius checks.
+- **§11 A1's "the open-phase machinery must be deleted" is already done.**
+  `maplelife/registry.go` carries only `PhaseSubmitted` and `SubmittedTTL`;
+  there is no `PhaseOpen`, no `OpenTTL`, and `Sweep` is scoped to the one phase.
+  Verified by reading the file at plan time, so no task was written for it.
+
+## B. The finding that reshaped A5
+
+§11 A5 argues at length that `POST characters/seed` cannot express a level-30
+first-job character, and concludes "a Maple Life creation path in
+`atlas-character-factory`" is needed. That is right, but A5 was written without
+knowing that a *second* creation path already exists.
+
+`POST /factory/characters/from-preset` and `buildPresetCharacterCreationSaga`
+predate this branch entirely (`origin/main`, `0e3c15927` / `bd1447a73`,
+task-171 era). `preset.Attributes` already carries `JobId`, `Level`, `MapId`,
+`Meso`, `Stats`, `Equipment`, `Inventory` and `Skills[]{SkillId, Level}`, and
+the builder already emits `CreateCharacter` + `AwaitInventoryCreated` +
+`AwardAsset` per item + `CreateAndEquipAsset` per equip + `CreateSkill` per
+skill, with atlas-data revalidation and a step-count-scaled timeout. That is
+A5's contract minus three things: the player's look, the player's gender, and
+the player's SP level.
+
+**Decision (user ruling, this pass):** the `mapleLife` block is *self-contained
+and ordinal-addressed* exactly as A5/A6 specify — it does **not** reference
+admin preset UUIDs, so an admin editing or deleting a preset cannot change game
+behaviour — but Task 22 converts a resolved class entry into a
+`preset.RestModel` and reuses `buildPresetCharacterCreationSaga` rather than
+writing a second saga builder. Rejected: pointing `mapleLife` entries at preset
+ids (couples game content to admin data), and a dedicated
+`buildMapleLifeCreationSaga` (duplicates the item/equip/skill construction and
+its revalidation).
+
+**Also discovered:** design C2's "the factory's seed path performs no duplicate
+check of its own" is true of `Create` but **false of `CreateFromPreset`**, which
+calls `p.nameClient.Check` at `factory/processor.go:286-296`. The new Maple
+Life path inherits that check, so the channel's gate 4 name re-check is now a
+second gate rather than the only one. Kept anyway — it produces the specific
+`NAME_TAKEN_AT_SUBMIT` arm one round-trip earlier, and §5.2's TOCTOU note
+already covers the window between them.
+
+## C. The AP/SP gap and why it crosses three modules
+
+§11 A2 requires "all remaining AP and SP left unspent" and A4 requires `nSP` to
+be deducted from the SP pool. Neither is expressible today:
+`saga.CharacterCreatePayload` (`libs/atlas-saga/payloads.go:1021-1044`) carries
+`Level`, `Meso`, `Gm` and the four spent stats but **no AP or SP**, and neither
+does the orchestrator's `CreateCharacterCommandBody` or `atlas-character`'s
+`create(...)`. The storage already exists (`character/entity.go:57-58`:
+`AP uint16`, `SP string`). There is no `AwardAP`/`AwardSP` saga action — only
+`RebalanceAP` and `TransferAP`, which move *already-spent* points.
+
+**Decision (user ruling):** extend the contract additively — `ap`/`sp` with
+`omitempty` at every layer (Tasks 17–18). Rejected: creating at level 1 and
+emitting 29 `AwardLevel` steps so `computeOnLevelAddedAP`/`computeOnLevelAddedSP`
+grant the points (correct totals, but makes the result a function of
+`atlas-character`'s level-up code rather than configuration, and inflates every
+creation's saga); and shipping with `AP=0`/`SP=0` (contradicts A2/A4 outright).
+
+Two deliberate choices inside that change:
+
+- **`sp` is a `string`, not `[]uint32`.** `atlas-character` persists a ten-slot
+  comma list (`entity.go:58`, parsed by `Model.SPs()` at `model.go:124-135`).
+  Passing the same representation avoids a second shape of one value on the
+  wire.
+- **`RequestCreateCharacterProvider` stays positional at 21 parameters.** It is
+  already 19. A struct refactor touches a contract `atlas-login`'s path also
+  drives and is out of this amendment's scope — noted and declined, not
+  overlooked. Task 17 Step 2 says so in the plan so a reviewer does not
+  re-raise it as an oversight.
+
+**Pre-existing bug found while reading that path, fixed in Task 18.**
+`character/administrator.go:40` writes `SP: "0, 0, 0, 0, 0, 0, 0, 0, 0, 0"` —
+with spaces — while `Model.SPs()` splits on `","` and `Atoi`s each element,
+returning early on the first failure. `strconv.Atoi(" 0")` errors, so `SPs()`
+has been returning a **one-element** slice for every character created through
+this path instead of ten zeroes. Task 18's second test case asserts
+`len(SPs()) == 10`, which fails against today's code.
+
+## D. Two places the plan overrides `design.md` §11
+
+Both because derived evidence outranks the amendment's prose (CLAUDE.md,
+"Evidence & grounding"):
+
+1. **A7: "each maps to a distinct `MAPLELIFE_ERROR` code."** No such enumeration
+   exists. `CUICharacterSaleDlg::OnCreateNewCharacterResult` is a closed
+   three-semantic-arm switch — `SUCCESS`, `NAME_TAKEN_AT_SUBMIT`,
+   `UNKNOWN_ERROR` — decompiled on gms_v83 `0x7d77b0`, v87 `0x82e252`,
+   v92 `0x7564f0`, v95 `0x777fc0` (`error.go:22-46`). Every gate that is not a
+   name collision writes `UNKNOWN_ERROR` and is distinguished in the log.
+   The one gain: a factory `409` now maps onto `NAME_TAKEN_AT_SUBMIT` instead of
+   the generic arm.
+2. **A4: `nSP` on ordinals ≥ 2 "logged and clamped to `0`."** A7 is the later
+   clause and says "rejected, not clamped-and-created". The plan rejects — a
+   clamped submit silently creates a character the player did not ask for.
+
+## E. Why Task 16 exists
+
+None of the Maple Life *content* is derivable from anything in this repo:
+
+- WZ data is not checked in — `atlas-data` ingests
+  `Etc.wz/MakeCharInfo.img.xml` at runtime (`data/data/processor.go:190`).
+- The two per-gender WZ paths `LoadNewCharInfo` (gms_v95 `0x777790`) uses come
+  from `StringPool::GetBSTR(1525)` / `(1526)`, and the literal is **not in the
+  binary**: searching the gms_v95 IDB for `MakeCharInfo` as UTF-16LE returns
+  zero matches, so `StringPool` is not plain-literal backed.
+- No item-name catalogue exists in-repo; `2000002` appears only in
+  `atlas-reward-pools` **test fixtures**.
+- The seeded `characters.presets` are all level 120–200 admin GM presets — no
+  first-job grounding.
+
+So Task 16 derives it all into `maple-life-content.md` first, and Task 20 reads
+`<content §N>` markers from it. This mirrors exactly how Tasks 1–2 handled wire
+facts, including the placeholder-scan note.
+
+**Strong lead, not a finding:** `atlas-data`'s own reader treats every
+root-level `MakeCharInfo.img` node that is not `Info` or `Name` as a character
+type (`characters/templates/reader.go:31-38`), and its test fixture carries a
+`PremiumCharMale` beside `Info/CharMale` and `Info/CharFemale`
+(`reader_test.go:103`). Task 16 must confirm `PremiumChar{Male,Female}` against
+real WZ data before recording it, and must not fall back to copying the
+`CharMale`/`CharFemale` lists — those are a different node and may legitimately
+differ.
+
+**`GET /data/characters/templates` already exposes this data** and nothing in
+the repo consumes it. The plan does not have the factory call it: the factory
+validates against tenant configuration everywhere else (`validOption`,
+`processor.go:474-485`), and the option lists are content an operator should be
+able to correct without a redeploy. The endpoint is the source operators
+populate the seed data *from*.
+
+## F. Task sizing
+
+`tools/plan-lint.sh` F4 warns on any task over ~6 files or crossing more than
+one service. Two amendment tasks trip it deliberately:
+
+- **Task 17** spans `libs/atlas-saga` and `atlas-saga-orchestrator` (6 files).
+  Splitting it would land a payload field nothing reads, which is a stub by
+  another name. It is a single mechanical addition repeated at six sites — the
+  "same mechanical change repeated" case the sizing rule exempts.
+- **Task 22** carries the widening of `preset.Attributes` with `AP`/`SP` across
+  three mirrors plus the conversion and the saga hand-off. Its Step 2 carries an
+  explicit `PARTIAL` instruction: if the widening reaches beyond those four
+  files, hand back rather than grow, and it splits into "widen the preset
+  attributes" / "convert and build".
+
+Everything else is one module and ≤ 6 files.
+
+`tools/plan-lint.sh` exits 0 on the combined document. Its four remaining
+F4 warnings are all in the ORIGINAL plan's Tasks 5, 9, 10 and 14 — already
+implemented and reviewed — not in this amendment; no amendment task trips
+F4.
+
+## G. Still open after this plan
+
+- **Class ordinals 2/3/4.** §11 A6 — config-ordered, so a wrong order is a
+  seed-data fix. Task 16 Step 2 attempts `CUICharacterSaleDlg::OnCreate`
+  (gms_v95 `0x77adc0`) and its `m_strClassName[5]` / `m_apCanvasClass` sources;
+  if that fails, the value ships marked UNCONFIRMED and **must be pinned before
+  live testing** by reading the received ordinal from channel logs while
+  picking each class in a real client.
+- **Gender.** §11 A9 — the MapleSEA guide says gender is not player-selectable,
+  yet gms_v95 `OnButtonClicked` toggles `m_nGender` on control index 4 and the
+  wire carries it. Decided for now: the channel forwards the packet's value and
+  the factory validates it is `0` or `1`. Whether to override it from the
+  account's existing characters is not decided and is not blocking.
+- **SP slot 0.** The plan spends the player's `nSP` out of slot 0 of the
+  configured pool. That is right for Explorer-family first jobs; the ten-slot
+  array exists for Evan. Recorded here because it is an assumption, not a
+  derivation.
+- **The `MAPLELIFE_ERROR` `nParam` diagnostic** is still always sent as `0`
+  (`error.go`'s `MapleLifeErrorBody`). Threading a real diagnostic value through
+  would let the client's "unknown error (%d)" string distinguish the gates the
+  three-arm enumeration collapses. Out of scope; noted as the natural follow-up
+  if operators find `UNKNOWN_ERROR` too coarse in practice.

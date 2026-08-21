@@ -1,0 +1,84 @@
+package jukebox
+
+import (
+	"sync"
+	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+)
+
+type FieldKey struct {
+	Tenant tenant.Model
+	Field  field.Model
+}
+
+type JukeboxEntry struct {
+	ItemId     uint32
+	PlayerName string
+	ExpiresAt  time.Time
+}
+
+type Registry struct {
+	mutex   sync.RWMutex
+	entries map[FieldKey]JukeboxEntry
+}
+
+var (
+	registry *Registry
+	once     sync.Once
+)
+
+func getRegistry() *Registry {
+	once.Do(func() {
+		registry = &Registry{}
+		registry.entries = make(map[FieldKey]JukeboxEntry)
+	})
+	return registry
+}
+
+func (r *Registry) Set(key FieldKey, entry JukeboxEntry) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	r.entries[key] = entry
+}
+
+func (r *Registry) Get(key FieldKey) (JukeboxEntry, bool) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+	e, ok := r.entries[key]
+	return e, ok
+}
+
+func (r *Registry) Delete(key FieldKey) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+	delete(r.entries, key)
+}
+
+type ExpiredEntry struct {
+	Key   FieldKey
+	Entry JukeboxEntry
+}
+
+func (r *Registry) GetExpired() []ExpiredEntry {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	now := time.Now()
+	result := make([]ExpiredEntry, 0)
+	for k, e := range r.entries {
+		if now.After(e.ExpiresAt) {
+			result = append(result, ExpiredEntry{Key: k, Entry: e})
+		}
+	}
+	return result
+}
+
+func GetExpired() []ExpiredEntry {
+	return getRegistry().GetExpired()
+}
+
+func DeleteEntry(key FieldKey) {
+	getRegistry().Delete(key)
+}

@@ -3935,10 +3935,12 @@
   note: v84 serverbound opcode verified from IDB COutPacket send-site (task-085)
 - op: TOUCHING_REACTOR
   direction: serverbound
-  opcode: 206
+  opcode: 212
   fname: CReactorPool::FindTouchReactorAroundLocalUser
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
+  provenance: ida-discovered
+  ida:
+    address: 7680888
+  note: 'task-249 Task 1: prior csv-import value of 206 (seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83) was wrong for this op. Live decompile of CReactorPool::FindTouchReactorAroundLocalUser @0x753378 shows COutPacket(212); Encode4(dwID); Encode1(touching) in both enter (@0x7535b5) and leave (@0x75361b) arms — a +6 shift vs v83, consistent with DAMAGE_REACTOR''s v83→v84 shift (205→211).'
 - op: PLAYER_MAP_TRANSFER
   direction: serverbound
   opcode: 207

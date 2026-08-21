@@ -683,7 +683,7 @@ None.
 | op | SPAWN_PET | serverbound |  | n-a |  |
 | op | STRANGE_DATA | serverbound |  | n-a |  |
 | op | SUMMON_REMOVE | serverbound |  | n-a |  |
-| op | TOUCHING_REACTOR | serverbound |  | n-a |  |
+| op | TOUCHING_REACTOR | serverbound |  | n-a | task-249 Task 1: measured absent — 186 whole-binary "push 1; push opcode" hits, none inside or adjacent to the CReactorPool cluster [0x633133,0x633d3f]; OnPacket dispatches only opcodes 214/216/217, no touch arm |
 | op | UI_OPEN_ITEM_USE_REQUEST | serverbound |  | n-a |  |
 | op | UNNAMED_R149 | serverbound |  | n-a |  |
 | op | UNNAMED_R18 | serverbound |  | n-a |  |

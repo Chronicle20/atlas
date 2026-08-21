@@ -13642,6 +13642,32 @@
           "guard": "(__int16)result > 0 && result >= 200 && <default>"
         }
       ]
+    },
+    "CReactorPool::FindTouchReactorAroundLocalUser": {
+      "address": "0x6c1630",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 && v15 && !sub_47A6A0(v23, 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 && v15 && !sub_47A6A0(v23, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v4 && sub_47A6A0(v23, 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v4 && sub_47A6A0(v23, 0)"
+        }
+      ]
     }
   }
 }

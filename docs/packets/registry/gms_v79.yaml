@@ -2567,6 +2567,14 @@
   ida:
     address: 7044374
   note: 'COutPacket(197)+Enc4(reactorId)+Enc4(0)+Enc4(state)+Enc2+Enc4; v83 DAMAGE_REACTOR=205 (d-8).'
+- op: TOUCHING_REACTOR
+  direction: serverbound
+  opcode: 198
+  fname: CReactorPool::FindTouchReactorAroundLocalUser
+  provenance: ida-discovered
+  ida:
+    address: 7045986
+  note: 'task-249 Task 1: CReactorPool::FindTouchReactorAroundLocalUser @0x6b8362, COutPacket(198); Encode4(dwID); Encode1(touching) in both enter and leave arms.'
 - op: MONSTER_CARNIVAL
   direction: serverbound
   opcode: 210

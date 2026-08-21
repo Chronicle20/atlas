@@ -10,9 +10,16 @@ type RestModel struct {
 	Name                 string                           `json:"name"`
 	TL                   point.RestModel                  `json:"tl"`
 	BR                   point.RestModel                  `json:"br"`
+	ActivateByTouch      bool                             `json:"activateByTouch"`
+	TouchAreaInfo        map[int8]AreaRestModel           `json:"touchAreaInfo"`
 	StateInfo            map[int8][]ReactorStateRestModel `json:"stateInfo"`
 	TimeoutInfo          map[int8]int32                   `json:"timeoutInfo"`
 	TimeoutNextStateInfo map[int8]int8                    `json:"timeoutNextStateInfo"`
+}
+
+type AreaRestModel struct {
+	TL point.RestModel `json:"tl"`
+	BR point.RestModel `json:"br"`
 }
 
 func (r RestModel) GetName() string {

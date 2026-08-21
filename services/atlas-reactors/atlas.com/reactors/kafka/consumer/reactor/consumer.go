@@ -34,6 +34,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleHit))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleTouch))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyInField))); err != nil {
 			return err
 		}
@@ -68,6 +71,23 @@ func handleHit(l logrus.FieldLogger, ctx context.Context, c reactor.Command[reac
 	err := reactor.NewProcessor(l, ctx).Hit(c.Body.ReactorId, c.Body.CharacterId, c.Body.SkillId)
 	if err != nil {
 		l.WithError(err).Errorf("Failed to process hit for reactor [%d].", c.Body.ReactorId)
+	}
+}
+
+func handleTouch(l logrus.FieldLogger, ctx context.Context, c reactor.Command[reactor.TouchCommandBody]) {
+	handleTouchFor(reactor.NewProcessor(l, ctx), l, c)
+}
+
+// handleTouchFor is factored out of handleTouch so tests can inject a
+// reactor.mock.ProcessorMock and assert on the resulting Touch call without
+// standing up the real registry/tenant plumbing.
+func handleTouchFor(p reactor.Processor, l logrus.FieldLogger, c reactor.Command[reactor.TouchCommandBody]) {
+	if c.Type != reactor.CommandTypeTouch {
+		return
+	}
+	err := p.Touch(c.Body.ReactorId, c.Body.CharacterId, c.Body.Touching)
+	if err != nil {
+		l.WithError(err).Errorf("Failed to process touch for reactor [%d].", c.Body.ReactorId)
 	}
 }
 

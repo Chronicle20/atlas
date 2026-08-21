@@ -279,6 +279,116 @@ func TestMakeAndToEntity_RoundTrip(t *testing.T) {
 	}
 }
 
+func TestMakeTouchRules(t *testing.T) {
+	tests := []struct {
+		name   string
+		entity Entity
+		want   struct {
+			touchRules int
+			touchId    string
+			hitRules   int
+		}
+	}{
+		{
+			name: "touchRules present",
+			entity: Entity{
+				ID:        uuid.New(),
+				TenantID:  uuid.New(),
+				ReactorID: "6109013",
+				Data:      `{"reactorId":"6109013","hitRules":[],"actRules":[],"touchRules":[{"id":"r1","conditions":[],"operations":[]}]}`,
+			},
+			want: struct {
+				touchRules int
+				touchId    string
+				hitRules   int
+			}{
+				touchRules: 1,
+				touchId:    "r1",
+				hitRules:   0,
+			},
+		},
+		{
+			name: "touchRules absent",
+			entity: Entity{
+				ID:        uuid.New(),
+				TenantID:  uuid.New(),
+				ReactorID: "6109013",
+				Data:      `{"reactorId":"6109013","hitRules":[{"id":"h1","conditions":[],"operations":[]}],"actRules":[]}`,
+			},
+			want: struct {
+				touchRules int
+				touchId    string
+				hitRules   int
+			}{
+				touchRules: 0,
+				touchId:    "",
+				hitRules:   1,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m, err := Make(tt.entity)
+			if err != nil {
+				t.Fatalf("Make() unexpected error = %v", err)
+			}
+			if len(m.TouchRules()) != tt.want.touchRules {
+				t.Errorf("Make() len(TouchRules) = %v, want %v", len(m.TouchRules()), tt.want.touchRules)
+			}
+			if tt.want.touchId != "" && m.TouchRules()[0].Id() != tt.want.touchId {
+				t.Errorf("Make() TouchRules[0].Id = %v, want %v", m.TouchRules()[0].Id(), tt.want.touchId)
+			}
+			if len(m.HitRules()) != tt.want.hitRules {
+				t.Errorf("Make() len(HitRules) = %v, want %v", len(m.HitRules()), tt.want.hitRules)
+			}
+		})
+	}
+}
+
+func TestToEntityRoundTripsTouchRules(t *testing.T) {
+	tenantId := uuid.New()
+
+	cond, _ := condition.NewBuilder().
+		SetType("reactor_state").
+		SetOperator("=").
+		SetValue("0").
+		Build()
+
+	op, _ := operation.NewBuilder().
+		SetType("spawn_monster").
+		SetParams(map[string]string{"monsterId": "100100"}).
+		Build()
+
+	rule := NewRuleBuilder().
+		SetId("touch_rule1").
+		AddCondition(cond).
+		AddOperation(op).
+		Build()
+
+	script := NewReactorScriptBuilder().
+		SetReactorId("6109013").
+		AddTouchRule(rule).
+		Build()
+
+	entity, err := ToEntity(script, tenantId)
+	if err != nil {
+		t.Fatalf("ToEntity() error = %v", err)
+	}
+
+	var data jsonReactorScript
+	if err := json.Unmarshal([]byte(entity.Data), &data); err != nil {
+		t.Fatalf("ToEntity() Data is not valid JSON: %v", err)
+	}
+
+	if len(data.TouchRules) != 1 {
+		t.Fatalf("ToEntity() len(Data.TouchRules) = %v, want 1", len(data.TouchRules))
+	}
+	if data.TouchRules[0].Id != "touch_rule1" {
+		t.Errorf("ToEntity() Data.TouchRules[0].Id = %v, want %v", data.TouchRules[0].Id, "touch_rule1")
+	}
+}
+
 func TestEntity_TableName(t *testing.T) {
 	e := Entity{}
 	if e.TableName() != "reactor_scripts" {

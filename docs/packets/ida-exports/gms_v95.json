@@ -17103,6 +17103,32 @@
           "comment": "nItemID (v4/nItemID; COutPacket::Encode4 at 0x9da5d7; opcode 123/0x7B from COutPacket::COutPacket(&oPacket, 123) at 0x9da5b7; task-230 verify gms_v95)"
         }
       ]
+    },
+    "CReactorPool::FindTouchReactorAroundLocalUser": {
+      "address": "0x6cded0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "pTemplate->m_bActivateByTouch && v14 && !ZMap<long,long,long>::GetAt(m_reactorOnLocalUser, key, 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "pTemplate->m_bActivateByTouch && v14 && !ZMap<long,long,long>::GetAt(m_reactorOnLocalUser, key, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "pTemplate->m_bActivateByTouch && ZMap<long,long,long>::GetAt(m_reactorOnLocalUser, key, 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "pTemplate->m_bActivateByTouch && ZMap<long,long,long>::GetAt(m_reactorOnLocalUser, key, 0)"
+        }
+      ]
     }
   }
 }

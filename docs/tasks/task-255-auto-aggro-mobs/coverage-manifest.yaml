@@ -1,0 +1,34 @@
+# coverage-manifest — task-255-auto-aggro-mobs
+#
+# This task adds exactly one op to the coverage matrix: AUTO_AGGRO
+# (monster/serverbound/MonsterAutoAggro, CMob::ApplyControl). It is a new
+# standalone opcode routed on all ten catalog versions, wired via
+# libs/atlas-packet/monster/serverbound/auto_aggro.go and status.json
+# (all ten cells state: verified). Everything else this task touches
+# (atlas-monsters aggro lease, SET_AGGRO Kafka command, atlas-channel
+# proximity gate/rate throttle) is server-side behavior with no codec/wire
+# surface and is listed under out_of_scope so it is not read as an
+# unclaimed matrix change.
+
+ops:
+  - AUTO_AGGRO
+
+versions:
+  - gms_v48
+  - gms_v61
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v92
+  - gms_v95
+  - jms_v185
+
+fields:
+  - "monster/serverbound/MonsterAutoAggro (AUTO_AGGRO, CMob::ApplyControl): fixed body Decode4(uniqueId) + Decode1(moveActionOrDistanceHint) on all ten versions; no version gates on the wire layout. Opcodes per version: gms_v48 0x82(130), gms_v61 0x9C(156), gms_v72 0xB3(179), gms_v79 0xB5(181), gms_v83 0xBD(189), gms_v84 0xC2(194), gms_v87 0xC9(201), gms_v92 0xDD(221), gms_v95 0xE4(228), jms_v185 0xC3(195). All ten status.json cells are state=verified."
+
+out_of_scope:
+  - monster-aggro-lease            # atlas-monsters server-authoritative aggro lease (registry, aggro.go, aggro_task.go); domain state, not a wire packet
+  - SET_AGGRO                      # Kafka command/event pair between atlas-channel and atlas-monsters; internal service messaging, not a client-facing opcode
+  - auto-aggro-proximity-gate      # atlas-channel monster.AutoAggroProximityThreshold/AutoAggroRefreshInterval gate; server-side throttle logic, no codec change

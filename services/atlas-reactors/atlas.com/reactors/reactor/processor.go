@@ -31,6 +31,7 @@ type Processor interface {
 	DestroyInTenant(envContext func(context.Context) context.Context, t tenant.Model) model.Operator[[]Model]
 	Destroy() model.Operator[Model]
 	Hit(reactorId uint32, characterId uint32, skillId uint32) error
+	Touch(reactorId uint32, characterId uint32, touching bool) error
 	Trigger(r Model, characterId uint32)
 	TriggerAndDestroy(r Model, characterId uint32) error
 }
@@ -195,6 +196,19 @@ func (p *ProcessorImpl) Hit(reactorId uint32, characterId uint32, skillId uint32
 	}
 
 	return p.advance(r, characterId, nextState, matchedEventType)
+}
+
+// Touch handles a TOUCHING_REACTOR command. On leave (touching == false), it
+// releases the character's touch latch. On enter, Task 12 replaces the
+// trailing return with the rejection ladder (design §6.1).
+func (p *ProcessorImpl) Touch(reactorId uint32, characterId uint32, touching bool) error {
+	t := tenant.MustFromContext(p.ctx)
+	if !touching {
+		GetRegistry().ClearTouch(t, reactorId, characterId)
+		p.l.Debugf("Character [%d] left touch area of reactor [%d].", characterId, reactorId)
+		return nil
+	}
+	return nil
 }
 
 // selectNextState applies the hit path's skill-gating predicate to a state's

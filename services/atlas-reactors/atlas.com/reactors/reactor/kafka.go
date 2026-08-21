@@ -15,6 +15,7 @@ const (
 	EnvCommandTopic           = "COMMAND_TOPIC_REACTOR"
 	CommandTypeCreate         = "CREATE"
 	CommandTypeHit            = "HIT"
+	CommandTypeTouch          = "TOUCH"
 	CommandTypeDestroyInField = "DESTROY_IN_FIELD"
 )
 
@@ -44,6 +45,12 @@ type HitCommandBody struct {
 	SkillId     uint32 `json:"skillId"`
 }
 
+type TouchCommandBody struct {
+	ReactorId   uint32 `json:"reactorId"`
+	CharacterId uint32 `json:"characterId"`
+	Touching    bool   `json:"touching"`
+}
+
 type DestroyInFieldCommandBody struct{}
 
 // Reactor Actions topic and commands
@@ -51,6 +58,7 @@ const (
 	EnvCommandReactorActionsTopic = "COMMAND_TOPIC_REACTOR_ACTIONS"
 	CommandTypeActionsHit         = "HIT"
 	CommandTypeActionsTrigger     = "TRIGGER"
+	CommandTypeActionsTouch       = "TOUCH"
 )
 
 // reactorActionsCommand represents a command sent to atlas-reactor-actions
@@ -78,6 +86,11 @@ type hitActionsBody struct {
 
 // triggerActionsBody represents the body of a TRIGGER command to atlas-reactor-actions
 type triggerActionsBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
+// touchActionsBody represents the body of a TOUCH command to atlas-reactor-actions
+type touchActionsBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 

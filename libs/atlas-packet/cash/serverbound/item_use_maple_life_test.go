@@ -19,9 +19,17 @@ import (
 // VERSION-ABSENT — no CUICharacterSaleDlg code path exists on that binary
 // (derivation.md §2.0) — no marker, no fixture.
 //
-// The `ida=` address on each marker is that version's SENDER, decompiled
-// this pass: gms_v83 @0x7d7960, gms_v87 @0x82e402, gms_v92 @0x758770,
-// gms_v95 @0x77a240.
+// Each version's SENDER, decompiled this pass: gms_v83 @0x7d7960,
+// gms_v87 @0x82e402, gms_v92 @0x758770, gms_v95 @0x77a240.
+//
+// NOT LINKED to the packet-audit matrix (no `packet-audit:verify` marker, no
+// evidence record): the prefix composition this cell needs (this sub-body
+// excludes the shared ItemUse header's nPOS/nItemID/update_time fields, same
+// convention as every other item_use_*.go sub-body) requires guardFromIf to
+// resolve `if UpdateTimeFirst(t) { ... }` in cash/serverbound/item_use.go, a
+// call to a package-level bool helper the analyzer's guard resolver can't
+// compile to a version predicate — see the packet-audit tooling-defects
+// entry in docs/TODO.md. The tests below stand on their own.
 //
 // IMPORTANT DEVIATION FROM item_use_incubator.go's convention: this
 // sub-body's trailing update_time write is UNCONDITIONAL on every version,
@@ -35,10 +43,6 @@ import (
 // sibling sub-bodies but does not gate anything here.
 // ---------------------------------------------------------------------------
 
-// packet-audit:verify packet=cash/serverbound/CashItemUseMapleLife version=gms_v83 ida=0x7d7960
-// packet-audit:verify packet=cash/serverbound/CashItemUseMapleLife version=gms_v87 ida=0x82e402
-// packet-audit:verify packet=cash/serverbound/CashItemUseMapleLife version=gms_v92 ida=0x758770
-// packet-audit:verify packet=cash/serverbound/CashItemUseMapleLife version=gms_v95 ida=0x77a240
 func TestItemUseMapleLifeRoundTrip(t *testing.T) {
 	inScope := []pt.TenantVariant{
 		{Name: "GMS v83", Region: "GMS", MajorVersion: 83, MinorVersion: 1},

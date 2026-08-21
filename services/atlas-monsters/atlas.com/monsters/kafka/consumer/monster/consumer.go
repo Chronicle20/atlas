@@ -63,6 +63,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleForceControlCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSetAggroCommand))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyStatusFieldCommand))); err != nil {
 			return err
 		}
@@ -223,6 +226,17 @@ func handleForceControlCommand(l logrus.FieldLogger, ctx context.Context, c comm
 	p := monster.NewProcessor(l, ctx)
 	if err := p.ForceControl(c.MonsterId, c.Body.CharacterId); err != nil {
 		l.WithError(err).Errorf("FORCE_CONTROL failed for monster [%d] character [%d].", c.MonsterId, c.Body.CharacterId)
+	}
+}
+
+func handleSetAggroCommand(l logrus.FieldLogger, ctx context.Context, c command[setAggroCommandBody]) {
+	if c.Type != CommandTypeSetAggro {
+		return
+	}
+
+	p := monster.NewProcessor(l, ctx)
+	if err := p.SetAggro(c.MonsterId, c.Body.CharacterId); err != nil {
+		l.WithError(err).Errorf("SET_AGGRO failed for monster [%d] character [%d].", c.MonsterId, c.Body.CharacterId)
 	}
 }
 

@@ -394,12 +394,14 @@ func handleStatusEventAggroChanged(sc server.Model, wp writer.Producer) message.
 
 		monster.GetLiveMirror().UpdateAggro(tenant.MustFromContext(ctx), e.UniqueId, e.Body.ControllerHasAggro)
 
-		m, err := monster.NewProcessor(l, ctx).GetById(e.UniqueId)
+		m, err := monsterGetByIdFn(l, ctx, e.UniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve monster [%d] for aggro change.", e.UniqueId)
 			return
 		}
-		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, e.Body.ControllerHasAggro))
+		sf := func(s session.Model) error {
+			return announceFn(l, ctx, wp, monsterpkt.MonsterControlWriter, writer.StartControlMonsterBody(m, e.Body.ControllerHasAggro), s)
+		}
 		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ControllerCharacterId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to refresh control state for monster [%d] for character [%d].", e.UniqueId, e.Body.ControllerCharacterId)

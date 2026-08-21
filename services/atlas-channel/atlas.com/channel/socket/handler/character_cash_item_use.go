@@ -180,6 +180,81 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			})
 			return
 		}
+		if it == CashSlotItemTypeSongPlayer {
+			sp := cashsb.NewItemUseSongPlayer(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			if !updateTimeFirst {
+				updateTime = sp.UpdateTime()
+			}
+
+			// The client sends the song's own length (IWzSound::length) and
+			// resolves the BGM itself from the item's WZ info/path node
+			// (CMapLoadable::PlayNextMusic). The server carries neither the BGM
+			// name nor a duration constant -- only the client's value, which
+			// atlas-maps caps.
+			//
+			// A zero length is a broken or spoofed client: the song would end
+			// the instant it started. Reject before consuming anything.
+			if sp.SoundLengthMs() == 0 {
+				l.Warnf("Character [%d] sent song player [%d] use with a zero sound length; ignoring without consuming.", s.CharacterId(), itemId)
+				return
+			}
+
+			// PlayJukebox carries the starting player's name, which is not on
+			// the wire -- resolve it from server-side character state, the same
+			// source the kite arm uses.
+			c, cerr := character2.NewProcessor(l, ctx).GetById()(s.CharacterId())
+			if cerr != nil {
+				l.WithError(cerr).Debugf("Unable to resolve character [%d] for jukebox use.", s.CharacterId())
+				return
+			}
+
+			// No EnableActions: the non-silent INVENTORY_OPERATION emitted by
+			// the consume commit already clears the client's exclusive-request
+			// lock -- the same reasoning recorded on the field-effect and
+			// morph-coupon arms.
+			transactionId := uuid.New()
+			now := time.Now()
+			f := s.Field()
+			steps := []saga.Step{
+				{
+					StepId: "consume_song_player_item",
+					Status: saga.Pending,
+					Action: saga.DestroyAsset,
+					Payload: saga.DestroyAssetPayload{
+						CharacterId: s.CharacterId(),
+						TemplateId:  uint32(itemId),
+						Quantity:    1,
+						RemoveAll:   false,
+					},
+					CreatedAt: now,
+					UpdatedAt: now,
+				},
+				{
+					StepId: "play_jukebox",
+					Status: saga.Pending,
+					Action: saga.PlayJukebox,
+					Payload: saga.PlayJukeboxPayload{
+						WorldId:    f.WorldId(),
+						ChannelId:  f.ChannelId(),
+						MapId:      f.MapId(),
+						Instance:   f.Instance(),
+						ItemId:     uint32(itemId),
+						PlayerName: c.Name(),
+						DurationMs: sp.SoundLengthMs(),
+					},
+					CreatedAt: now,
+					UpdatedAt: now,
+				},
+			}
+			_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
+				TransactionId: transactionId,
+				SagaType:      saga.FieldEffectUse,
+				InitiatedBy:   "CASH_ITEM_USE",
+				Steps:         steps,
+			})
+			return
+		}
 		if it == CashSlotItemTypeNote {
 			sp := cashsb.NewItemUseNote(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
@@ -1004,6 +1079,13 @@ const (
 	// CashSlotItemTypeCurrencySack above) even though the v48 client's own
 	// table says 17 — so gating the arm on `it` alone is unambiguous.
 	CashSlotItemTypePetNameTag = CashSlotItemType(17)
+
+	// CashSlotItemTypeSongPlayer is classification 510 (jukebox). Unlike the
+	// 530 morph coupon, which had to be classification-keyed because its type
+	// byte moves across versions, 20 is stable: get_cashslot_item_type maps
+	// 510 -> 20 on every version examined (GMS v95.0 @0x488c70, GMS v83) and
+	// no other classification yields 20 in that function.
+	CashSlotItemTypeSongPlayer = CashSlotItemType(20)
 )
 
 // cashItemInSlotFunc is a test seam for the cash-inventory ownership check

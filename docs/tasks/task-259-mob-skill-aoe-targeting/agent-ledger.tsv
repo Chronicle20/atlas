@@ -29,3 +29,6 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T13:49:42Z	agent	Final review	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	20f4ed8	APPROVED	no	docs/tasks/task-259-mob-skill-aoe-targeting/audit.md	-
 2026-08-21T13:57:08Z	agent	Final review	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	20f4ed8	CHANGES_REQUIRED	yes	docs/tasks/task-259-mob-skill-aoe-targeting/backend-audit.md	-
 2026-08-21T13:57:08Z	agent	Audit fix	atlas-implementer	sonnet	-	-	-	-	dispatched	20f4ed8	-	-	-	-
+2026-08-21T14:02:47Z	agent	Audit fix	atlas-implementer	sonnet	-	-	-	-	DONE	1f90e30	-	-	-	-
+2026-08-21T14:02:48Z	agent	Audit fix	atlas-reviewer	sonnet	-	-	-	-	dispatched	1f90e30	-	-	-	-
+2026-08-21T14:04:39Z	agent	Audit fix	atlas-reviewer	sonnet	-	-	-	-	DONE	1f90e30	APPROVED	no	docs/tasks/task-259-mob-skill-aoe-targeting/review-audit-fix.md	-

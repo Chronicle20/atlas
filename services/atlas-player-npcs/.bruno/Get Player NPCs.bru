@@ -1,0 +1,11 @@
+meta {
+  name: Get Player NPCs
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/player-npcs?filter[worldId]={{worldId}}&filter[mapId]={{mapId}}
+  body: none
+  auth: inherit
+}

@@ -493,7 +493,7 @@ func handleGetEligibility(d *HandlerDependency, _ *HandlerContext) http.HandlerF
 			return
 		}
 
-		eligible, reason := eligibility.Evaluate(cfg, c, existingCount, false)
+		eligible, reason := eligibility.Evaluate(cfg, c, existingCount, true)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)

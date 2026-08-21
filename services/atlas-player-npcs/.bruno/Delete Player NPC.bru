@@ -1,0 +1,11 @@
+meta {
+  name: Delete Player NPC
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{scheme}}://{{host}}:{{port}}/api/player-npcs/{{playerNpcId}}
+  body: none
+  auth: inherit
+}

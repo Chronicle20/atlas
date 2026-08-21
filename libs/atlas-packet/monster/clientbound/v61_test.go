@@ -58,7 +58,6 @@ func TestMonsterSpawnBytesV61(t *testing.T) {
 
 // TestMonsterDestroyBytesV61 pins the v61 destroy wire = v72 against
 // CMobPool::OnMobLeaveField @0x5d4b87 (Decode4 uniqueId + Decode1 destroyType).
-// packet-audit:verify packet=monster/clientbound/MonsterDestroy version=gms_v61 ida=0x5d4b87
 func TestMonsterDestroyBytesV61(t *testing.T) {
 	input := NewMonsterDestroy(5001, DestroyTypeFadeOut)
 	ctx := test.CreateContext("GMS", 61, 1)

@@ -115,6 +115,14 @@ gates:
     lower_version_key: gms_v84
     upper_version_key: gms_v87
 
+  # ---- boundary v87 / v92 ------------------------------------------------
+  - packet: monster/clientbound/MonsterDestroy
+    direction: clientbound
+    field: dead-type-4 trailing swallowCharacterId (read v92+; `(GMS>=92)||JMS`)
+    boundary: ">=92"
+    lower_version_key: gms_v87
+    upper_version_key: gms_v92
+
   # ---- boundary v87 / v95 ------------------------------------------------
   - packet: character/clientbound/CharacterSpawn
     direction: clientbound

@@ -63,7 +63,7 @@ function defaultUseTenantValue() {
 }
 
 async function openRenameDialogFor(tenantId: string) {
-  const user = userEvent.setup();
+  const user = userEvent.setup({ delay: null });
   const row = screen
     .getByText(tenantId === "aaa" ? "Acme" : "Beta")
     .closest("tr");
@@ -234,7 +234,7 @@ describe("TenantsPage empty-state refresh", () => {
 
   it("clicking refresh calls refreshTenants and toasts success", async () => {
     useTenantMock.mockReturnValue({ ...defaultUseTenantValue(), tenants: [] });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderPage();
 
     await user.click(screen.getByTestId("empty-state-refresh"));
@@ -252,7 +252,7 @@ describe("TenantsPage empty-state refresh", () => {
     useTenantMock.mockReturnValue({ ...defaultUseTenantValue(), tenants: [] });
     const failure = new Error("network down");
     refreshTenantsMock.mockResolvedValue({ ok: false, error: failure });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderPage();
 
     await user.click(screen.getByTestId("empty-state-refresh"));
@@ -269,7 +269,7 @@ describe("TenantsPage empty-state refresh", () => {
   it("treats an undefined refresh result as success", async () => {
     useTenantMock.mockReturnValue({ ...defaultUseTenantValue(), tenants: [] });
     refreshTenantsMock.mockResolvedValue(undefined);
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     renderPage();
 
     await user.click(screen.getByTestId("empty-state-refresh"));
@@ -288,7 +288,7 @@ describe("TenantsPage empty-state refresh", () => {
     );
     const value = { ...defaultUseTenantValue(), tenants: [tenantA, tenantB] };
     useTenantMock.mockReturnValue(value);
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const { rerender } = renderPage();
 
     const refreshButtons = screen.getAllByRole("button", { name: /refresh/i });

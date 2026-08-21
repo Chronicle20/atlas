@@ -3143,6 +3143,7 @@
   direction: serverbound
   opcode: 101
   fname: CUserLocal::TryRegisterTeleport
+  packet: portal/serverbound/PortalInnerPortal
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: TROCK_ADD_MAP

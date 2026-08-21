@@ -2831,6 +2831,15 @@
   ida:
     address: 9070994
   note: 'COutPacket(98)+Enc1(fieldKey)+EncStr(portalName)+Enc2(x)+Enc2(y) scripted portal (types 7/8/11); v83 CHANGE_MAP_SPECIAL=0x64=100 (d-2).'
+- op: USE_INNER_PORTAL
+  direction: serverbound
+  opcode: 99
+  fname: CUserLocal::TryRegisterTeleport
+  provenance: ida-discovered
+  ida:
+    address: 9108546
+  note: 'task-11 v79 verify pass (structures/gms_v79.md): CUserLocal::TryRegisterTeleport @0x8afc42 (already named in the IDB, session 5a1cd4f3, GMS_v79_1_DEVM.exe.i64). COutPacket::COutPacket(v58, 99) @0x8afd58 — opcode 99 (0x063). Field sequence Encode1(fieldKey)+EncodeStr(portalName)+Encode2(x)+Encode2(y)+Encode2(targetX)+Encode2(targetY) — 6 fields, matching the gms_v95 reference shape.'
+  packet: portal/serverbound/PortalInnerPortal
 - op: TROCK_ADD_MAP
   direction: serverbound
   opcode: 100

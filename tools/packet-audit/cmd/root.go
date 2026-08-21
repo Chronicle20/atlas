@@ -123,7 +123,7 @@ func runExport(args []string, stderr io.Writer) int {
 	fs := flag.NewFlagSet("packet-audit export", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	var eo exportOpts
-	fs.StringVar(&eo.IDAURL, "ida-url", "http://192.168.20.3:13337/mcp", "IDA-MCP HTTP endpoint")
+	fs.StringVar(&eo.IDAURL, "ida-url", "http://192.168.20.3:8745/mcp", "IDA-MCP HTTP endpoint")
 	fs.DurationVar(&eo.IDATimeout, "ida-timeout", 60*time.Second, "per-call IDA-MCP timeout")
 	fs.StringVar(&eo.Version, "version", "", "target version key, e.g. gms_v95 (required)")
 	fs.IntVar(&eo.DescentDepth, "descent-depth", 6, "max helper-descent recursion depth")

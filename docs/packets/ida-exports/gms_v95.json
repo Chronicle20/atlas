@@ -17504,6 +17504,32 @@
           "guard": "(_ZtlSecureFuse<int>(m_pTemplate->_ZtlSecureTear_bPickUpDrop, m_pTemplate->_ZtlSecureTear_bPickUpDrop_CS"
         }
       ]
+    },
+    "CReactorPool::FindTouchReactorAroundLocalUser": {
+      "address": "0x6cded0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "pTemplate->m_bActivateByTouch && v14 && !ZMap<long,long,long>::GetAt(m_reactorOnLocalUser, key, 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "pTemplate->m_bActivateByTouch && v14 && !ZMap<long,long,long>::GetAt(m_reactorOnLocalUser, key, 0)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "pTemplate->m_bActivateByTouch && ZMap<long,long,long>::GetAt(m_reactorOnLocalUser, key, 0)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "pTemplate->m_bActivateByTouch && ZMap<long,long,long>::GetAt(m_reactorOnLocalUser, key, 0)"
+        }
+      ]
     }
   }
 }

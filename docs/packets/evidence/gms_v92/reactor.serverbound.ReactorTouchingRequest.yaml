@@ -1,0 +1,10 @@
+packet: reactor/serverbound/ReactorTouchingRequest
+direction: serverbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CReactorPool::FindTouchReactorAroundLocalUser
+    address: "0x6c1630"
+    decompile_sha256: de20a2d395ea76a0998aef4775d0c70c076e4e7e14718b211de2883bacaf4ac1
+verifies:
+    - libs/atlas-packet/reactor/serverbound/touching_test.go#TestTouchingBytes

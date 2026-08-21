@@ -29664,6 +29664,32 @@
           "guard": "result && a2 - result >= 1000"
         }
       ]
+    },
+    "CReactorPool::FindTouchReactorAroundLocalUser": {
+      "address": "0x753378",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && dword_C49B84(&rc, *v14, v14[1])"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result && dword_C49B84(&rc, *v14, v14[1])"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "result && <default>"
+        }
+      ]
     }
   }
 }

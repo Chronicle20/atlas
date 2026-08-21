@@ -16071,6 +16071,32 @@
       "address": "0xab501c",
       "direction": "serverbound",
       "calls": []
+    },
+    "CReactorPool::FindTouchReactorAroundLocalUser": {
+      "address": "0x77bca7",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v2 && dword_CA3044(&rc, *v14, v14[1])"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v2 && dword_CA3044(&rc, *v14, v14[1])"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "v2 && <default>"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "v2 && <default>"
+        }
+      ]
     }
   }
 }

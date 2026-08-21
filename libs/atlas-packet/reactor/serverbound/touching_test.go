@@ -51,10 +51,10 @@ func TestTouchingRoundTrip(t *testing.T) {
 //
 // packet-audit:verify packet=reactor/serverbound/ReactorTouchingRequest version=gms_v72 ida=0x692bb0
 // packet-audit:verify packet=reactor/serverbound/ReactorTouchingRequest version=gms_v79 ida=0x6b8362
-// packet-audit:verify packet=reactor/serverbound/ReactorTouchingRequest version=gms_v83 ida=0x735D90
+// packet-audit:verify packet=reactor/serverbound/ReactorTouchingRequest version=gms_v83 ida=0x735d90
 // packet-audit:verify packet=reactor/serverbound/ReactorTouchingRequest version=gms_v84 ida=0x753378
 // packet-audit:verify packet=reactor/serverbound/ReactorTouchingRequest version=gms_v87 ida=0x77bca7
-// packet-audit:verify packet=reactor/serverbound/ReactorTouchingRequest version=gms_v92 ida=0x6C1630
+// packet-audit:verify packet=reactor/serverbound/ReactorTouchingRequest version=gms_v92 ida=0x6c1630
 // packet-audit:verify packet=reactor/serverbound/ReactorTouchingRequest version=gms_v95 ida=0x6cded0
 // packet-audit:verify packet=reactor/serverbound/ReactorTouchingRequest version=jms_v185 ida=0x79f0aa
 func TestTouchingBytes(t *testing.T) {

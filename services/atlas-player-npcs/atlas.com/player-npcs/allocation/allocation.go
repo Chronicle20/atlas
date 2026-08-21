@@ -11,6 +11,7 @@ import (
 	"atlas-player-npcs/routing"
 	"errors"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/constants"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
@@ -41,9 +42,23 @@ var ErrPoolExhausted = errors.New("pool_exhausted")
 // map: several distinct jobs (the five Cygnus sub-branches, in particular)
 // route to the same Hall of Fame map via routing.HallOfFameMapFor, but each
 // gets its own script-id branch here.
-func BranchFor(jobId job.Id, mapId _map.Id) uint32 {
+//
+// Pirate is the one DIVERGENT branch (task-187 audit): wire id 500 is
+// Pirate at GMS v61+ but Gm at GMS v48 (job.GetType/JobCategory alone
+// cannot tell them apart -- both are raw wire ids), same as
+// routing.HallOfFameMapFor. jobId is resolved through set.Job.Resolve to
+// this tenant version's Identity first, and only an Identity confirmed as
+// Pirate-or-descendant (job.IsAIdentity(jid, job.Pirate) -- also catches
+// Brawler/Gunslinger sub-jobs, 510/520) gets branch 14. Every other job
+// row stays a raw, version-stable category lookup per the
+// skill-job-id-guard's own excluded-id list.
+func BranchFor(set constants.SkillJobSet, jobId job.Id, mapId _map.Id) uint32 {
 	if !routing.IsHallOfFameMap(mapId) {
 		return 26 + 4*(uint32(mapId)/100000000)
+	}
+
+	if jid, ok := set.Job.Resolve(jobId); ok && job.IsAIdentity(jid, job.Pirate) {
+		return 14
 	}
 
 	switch routing.JobCategory(jobId) {
@@ -55,8 +70,6 @@ func BranchFor(jobId job.Id, mapId _map.Id) uint32 {
 		return 12
 	case uint16(job.RogueId):
 		return 13
-	case uint16(job.PirateId):
-		return 14
 	case uint16(job.DawnWarriorStage1Id):
 		return 15
 	case uint16(job.BlazeWizardStage1Id):

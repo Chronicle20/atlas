@@ -295,7 +295,7 @@ wherever the WZ actually supports it.
 
 ```
 Allocate(tenant, world, jobId, mapId) -> scriptId | pool_exhausted
-  branch := BranchFor(jobId, mapId)            // PRD §4.3 table, or the FR-3.3 GM formula
+  branch := BranchFor(set, jobId, mapId)       // PRD §4.3 table, or the FR-3.3 GM formula
   inUse  := scriptIds already deployed for (tenant, world)
   1. for id in branch range, ascending:
          if id not in inUse and Usable(id): return id

@@ -732,14 +732,19 @@ const BranchSize = uint32(100)
 
 var ErrPoolExhausted = errors.New("pool_exhausted")
 
-func BranchFor(jobId job.Id, mapId _map.Id) uint32
+func BranchFor(set constants.SkillJobSet, jobId job.Id, mapId _map.Id) uint32
 func BranchRange(branch uint32) (uint32, uint32)
 func Allocate(usable map[uint32]bool, inUse map[uint32]bool, branch uint32) (uint32, error)
 ```
 
 `BranchFor` implements the PRD FR-3.2 table for Hall of Fame maps (via
 `routing.IsHallOfFameMap`) and the FR-3.3 GM formula `26 + 4*(mapId/100000000)`
-otherwise. `Allocate` scans the branch range ascending, then the whole `usable` set
+otherwise. It takes a resolved `constants.SkillJobSet` (the same fix task-9 applied to
+`routing.HallOfFameMapFor`) because wire job id 500 is Pirate at GMS v61+ but Gm at
+GMS v48 (task-187 audit): `jobId` is resolved through `set.Job.Resolve` and only an
+Identity confirmed as Pirate-or-descendant (`job.IsAIdentity(jid, job.Pirate)`) gets
+branch 14; every other job stays a raw, version-stable category lookup.
+`Allocate` scans the branch range ascending, then the whole `usable` set
 ascending as the global fallback (design D-1). The fallback scans the *same* validated
 set, so a fallback-allocated id is exactly as safe as a branch-allocated one.
 

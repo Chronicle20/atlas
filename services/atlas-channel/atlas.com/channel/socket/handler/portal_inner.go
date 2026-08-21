@@ -1,0 +1,24 @@
+package handler
+
+import (
+	"atlas-channel/portal"
+	"atlas-channel/session"
+	"atlas-channel/socket/writer"
+	"context"
+
+	"github.com/sirupsen/logrus"
+
+	portal2 "github.com/Chronicle20/atlas/libs/atlas-packet/portal/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+)
+
+func InnerPortalHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		p := portal2.InnerPortal{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+
+		_ = portal.NewProcessor(l, ctx).EnterInner(s.Field(), s.CharacterId(),
+			p.PortalName(), p.X(), p.Y(), p.TargetX(), p.TargetY())
+	}
+}

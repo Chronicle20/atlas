@@ -176,10 +176,9 @@ Non-goals:
 - **FR-20.** The set of templates carrying `activateByTouch` MUST be enumerated from
   the WZ data during design rather than taken from prose. Two prior enumerations
   disagree: `docs/TODO.md:280` and `docs/tasks/task-019-reactor-type-semantics/prd.md:32`
-  list nine (`6109013`, `6109014`, `6109021`–`6109027`), while
-  `docs/research/missing-features/maps-portals-reactors.md:35` lists ten, adding
-  `2406000`. The design phase MUST resolve this against `Reactor.wz` and record the
-  authoritative list.
+  list nine (`6109013`, `6109014`, `6109021`–`6109027`), while another enumeration
+  lists ten, adding `2406000`. The design phase MUST resolve this against
+  `Reactor.wz` and record the authoritative list.
 
 ## 5. API Surface
 

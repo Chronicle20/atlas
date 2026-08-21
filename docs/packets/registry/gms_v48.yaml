@@ -997,6 +997,15 @@
     address: 7445977
   note: 'task-229 CORRECTION: this opcode/address was previously registered as USE_ITEM under fname sub_719DD9 — that was a mislabel. The function is already named CWvsContext::SendPortalScrollUseRequest in the v48 IDB (session 93cc947e, GMS_v48_1_DEVM.exe.i64) and is the canonical USE_RETURN_SCROLL fname on v83/v87/v95 (same name, same role, different opcode per version). Full re-decompile @0x719dd9 confirms: sub_713039(itemId) inventory-validate, sub_4A2518(500,0) excl-request guard, reads the item''s own WZ props via IWzProperty::Getitem (StringPool ids 2089@0x719e3e and 2090@0x719eb7, off CItemInfo/ZRef item data) with NO RunMapTransferItem call and NO by-name/target-name branch — the exact structural signature that separates USE_RETURN_SCROLL from the teleport-rock sender across every other verified version (gms_v72.yaml:2414, gms_v79.yaml:2798, gms_v83.yaml:2300). A field-restriction bitmask (get_field()+232 >>5/>>8, "cannot use here") gates a CUtilDlg::Notice(270); when the target-map WZ prop resolves to a real value (not the 999999999 sentinel), a target-map validity check sub_71E860(currentMapId, targetMapId) runs — decompiled: rejects same-map "block 9" special zones (mapId/1000000%100==9) and 20009-prefixed maps for either side, then compares each map''s continent group (mapId/10000000) via sub_721D6C and requires them equal — a classic "return scroll target must be reachable from the current continent" check; on failure, Notice(2678). Category gate confirmed from caller dispatcher sub_4A1DDC (right-click item-use jumptable, case 2): itemId/10000==203 is the SOLE category routed here (Return Scroll itemId 2030000 falls in category 203). Builds COutPacket(65)@0x719f88 then Encode4(updateTime)@0x719fa0 + Encode2(slot)@0x719fab + Encode4(itemId)@0x719fb6, SetExclRequestSent. Sibling cross-check: MAP_TRANSFER_RESULT (clientbound, the warp-completion receive path a successful return-scroll use triggers) already exists on v48 at opcode 35 (CWvsContext::OnMapTransferResult). Re-pinned USE_ITEM''s evidence/report/marker off this same address to its correct sender (see USE_ITEM entry above) so the two ops no longer share a false attribution.'
   packet: inventory/serverbound/InventoryReturnScrollItemUse
+- op: USE_INNER_PORTAL
+  direction: serverbound
+  opcode: 80
+  fname: CUserLocal::TryRegisterTeleport
+  provenance: ida-discovered
+  ida:
+    address: 6968418
+  note: 'task-11 v48 verify pass (structures/gms_v48.md): CUserLocal::TryRegisterTeleport @0x6a5462 (already named in the IDB, session 12a398ce, GMS_v48_1_DEVM.exe.i64). COutPacket::COutPacket(v47, 80) @0x6a557a — opcode 80 (0x050). Field sequence EncodeStr(portalName)+Encode2(x)+Encode2(y)+Encode2(targetX)+Encode2(targetY) — 5 fields; the function has zero Encode1 calls, so gms_v48 is the only in-scope version that omits the fieldKey byte carried from gms_v61 upward.'
+  packet: portal/serverbound/PortalInnerPortal
 - op: TROCK_ADD_MAP
   direction: serverbound
   opcode: 81

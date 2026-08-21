@@ -907,6 +907,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[socketsb.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
 	handlerMap[npcsb.NPCActionHandle] = handler.NPCActionHandleFunc
 	handlerMap[portal2.PortalScriptHandle] = handler.PortalScriptHandleFunc
+	handlerMap[portal2.InnerPortalHandle] = handler.InnerPortalHandleFunc
 	handlerMap[doorsb.EnterDoorHandle] = handler.MysticDoorEnterHandleFunc
 	handlerMap[fieldsb.MapChangeHandle] = handler.MapChangeHandleFunc
 	handlerMap[charsb.CharacterMoveHandle] = handler.CharacterMoveHandleFunc

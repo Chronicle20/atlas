@@ -21638,6 +21638,37 @@
           "comment": "hit-mob object id (FindHitMobInRect)"
         }
       ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x6a5462",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v56, v51, v12, 0, 0x7FFFFFFF, v46) \u0026\u0026 a4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v56, v51, v12, 0, 0x7FFFFFFF, v46) \u0026\u0026 a4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v56, v51, v12, 0, 0x7FFFFFFF, v46) \u0026\u0026 a4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v56, v51, v12, 0, 0x7FFFFFFF, v46) \u0026\u0026 a4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v56, v51, v12, 0, 0x7FFFFFFF, v46) \u0026\u0026 a4"
+        }
+      ]
     }
   }
 }

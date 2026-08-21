@@ -1,0 +1,10 @@
+packet: portal/serverbound/PortalInnerPortal
+direction: serverbound
+version: gms_v48
+category: TIER1-FIXTURE
+ida:
+    function: CUserLocal::TryRegisterTeleport
+    address: "0x6a5462"
+    decompile_sha256: d6423f039866e2d2559e18c3612427f0640e23d541bdc2d46a18f66916a930c5
+verifies:
+    - libs/atlas-packet/portal/serverbound/inner_portal_test.go#TestInnerPortalGoldenBytes

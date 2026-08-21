@@ -19025,6 +19025,42 @@
           "guard": "v36 == (void *)999999999"
         }
       ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x7aa1e3",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) \u0026\u0026 Src"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) \u0026\u0026 Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) \u0026\u0026 Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) \u0026\u0026 Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) \u0026\u0026 Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) \u0026\u0026 Src"
+        }
+      ]
     }
   }
 }

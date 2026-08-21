@@ -15277,6 +15277,42 @@
           "comment": "nItemID"
         }
       ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0xa2218f",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "sTargetPortalName \u0026\u0026 v12 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v13, v14, 0, 0x7FFFFFFF, 1) \u0026\u0026 sPortalName"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "sTargetPortalName \u0026\u0026 v12 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v13, v14, 0, 0x7FFFFFFF, 1) \u0026\u0026 sPortalName"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sTargetPortalName \u0026\u0026 v12 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v13, v14, 0, 0x7FFFFFFF, 1) \u0026\u0026 sPortalName"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sTargetPortalName \u0026\u0026 v12 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v13, v14, 0, 0x7FFFFFFF, 1) \u0026\u0026 sPortalName"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sTargetPortalName \u0026\u0026 v12 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v13, v14, 0, 0x7FFFFFFF, 1) \u0026\u0026 sPortalName"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sTargetPortalName \u0026\u0026 v12 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v13, v14, 0, 0x7FFFFFFF, 1) \u0026\u0026 sPortalName"
+        }
+      ]
     }
   }
 }

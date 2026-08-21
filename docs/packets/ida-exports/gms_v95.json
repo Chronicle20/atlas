@@ -17103,6 +17103,47 @@
           "comment": "nItemID (v4/nItemID; COutPacket::Encode4 at 0x9da5d7; opcode 123/0x7B from COutPacket::COutPacket(&oPacket, 123) at 0x9da5b7; task-230 verify gms_v95)"
         }
       ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x913690",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Unresolved",
+          "comment": "packet var passed to unresolved/indirect call; hand-trace",
+          "guard": "!sTargetPortalName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "sPortalName"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "sPortalName"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sPortalName"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sPortalName"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sPortalName"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "sPortalName"
+        }
+      ]
     }
   }
 }

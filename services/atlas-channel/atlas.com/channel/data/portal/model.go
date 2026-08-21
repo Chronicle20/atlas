@@ -16,3 +16,31 @@ type Model struct {
 func (m Model) Id() uint32 {
 	return m.id
 }
+
+func (m Model) Name() string {
+	return m.name
+}
+
+func (m Model) Target() string {
+	return m.target
+}
+
+func (m Model) Type() uint8 {
+	return m.portalType
+}
+
+func (m Model) X() int16 {
+	return m.x
+}
+
+func (m Model) Y() int16 {
+	return m.y
+}
+
+func (m Model) TargetMapId() _map.Id {
+	return m.targetMapId
+}
+
+func (m Model) ScriptName() string {
+	return m.scriptName
+}

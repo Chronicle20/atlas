@@ -20342,6 +20342,42 @@
           "guard": "(a3 / 10000 == 545 || a3 / 10000 == 239) && sub_4DBE16(200, 0) && !flag18 && !dword_A9F430"
         }
       ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x864562",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v69, v63, v12, 0, 0x7FFFFFFF, v56) \u0026\u0026 Src"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v69, v63, v12, 0, 0x7FFFFFFF, v56) \u0026\u0026 Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v69, v63, v12, 0, 0x7FFFFFFF, v56) \u0026\u0026 Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v69, v63, v12, 0, 0x7FFFFFFF, v56) \u0026\u0026 Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v69, v63, v12, 0, 0x7FFFFFFF, v56) \u0026\u0026 Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 \u0026\u0026 v10 \u0026\u0026 CWvsPhysicalSpace2D::GetFootholdUnderneath(v69, v63, v12, 0, 0x7FFFFFFF, v56) \u0026\u0026 Src"
+        }
+      ]
     }
   }
 }

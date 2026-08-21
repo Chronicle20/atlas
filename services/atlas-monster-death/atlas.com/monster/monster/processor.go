@@ -18,6 +18,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -273,8 +274,13 @@ func (p *ProcessorImpl) DistributeExperience(f field.Model, monsterId uint32, da
 		pt, err := p.pp.GetByMemberId(characterId)
 		if err != nil {
 			// A party-service outage must degrade to today's solo
-			// behaviour, never to zero EXP (FR-2.3).
+			// behaviour, never to zero EXP (FR-2.3). This also fires for
+			// the ordinary "character is not in a party" case
+			// (party.ErrEmptySlice), which is indistinguishable here from
+			// a real outage; that ambiguity is a known, accepted, deferred
+			// issue and does not change this observability shape.
 			p.l.WithError(err).Warnf("Unable to locate party for character [%d]; treating as solo.", characterId)
+			degrade.Observe(p.l, "monster_death.party.lookup", characterId, err)
 			solos = append(solos, p.soloInputFor(characterId))
 			continue
 		}
@@ -346,6 +352,7 @@ func (p *ProcessorImpl) soloInputFor(characterId uint32) SoloInput {
 	c, err := p.cp.GetById(characterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to locate character [%d] for distributing experience from monster death.", characterId)
+		degrade.Observe(p.l, "monster_death.character.solo_level", characterId, err)
 		return SoloInput{CharacterId: characterId, Level: 0}
 	}
 	return SoloInput{CharacterId: characterId, Level: c.Level()}

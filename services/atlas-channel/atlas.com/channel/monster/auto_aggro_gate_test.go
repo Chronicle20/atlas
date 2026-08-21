@@ -76,6 +76,27 @@ func TestAutoAggroGateAdmit(t *testing.T) {
 			},
 			expected: []bool{true, true},
 		},
+		{
+			// age == interval exactly (autoAggroMinInterval, 1s): Admit's guard is
+			// strict (`<`), so a claim exactly one interval old is not "inside" the
+			// throttle window and must be admitted, matching LiveMirror's boundary.
+			name: "unaggroed repeat at exact interval boundary admits",
+			calls: []call{
+				{7, 42, false, base},
+				{7, 42, false, base.Add(1 * time.Second)},
+			},
+			expected: []bool{true, true},
+		},
+		{
+			// age == interval exactly (AutoAggroRefreshInterval, 5s) on the aggroed
+			// (refresh) path.
+			name: "aggroed refresh at exact interval boundary admits",
+			calls: []call{
+				{7, 42, false, base},
+				{7, 42, true, base.Add(5 * time.Second)},
+			},
+			expected: []bool{true, true},
+		},
 	}
 
 	for _, tc := range tests {
@@ -121,6 +142,30 @@ func TestAutoAggroGateSweepStale(t *testing.T) {
 
 	if got := g.Admit(tm, 7, 42, false, base.Add(31*time.Minute)); !got {
 		t.Errorf("Admit() after sweep = %v, want true", got)
+	}
+}
+
+// TestAutoAggroGateSweepStaleAtExactMaxAgeBoundary pins age == maxAge:
+// SweepStale's guard is strict (`>`), so an entry exactly maxAge old is not
+// yet stale and must survive the sweep, matching LiveMirror's boundary shape.
+func TestAutoAggroGateSweepStaleAtExactMaxAgeBoundary(t *testing.T) {
+	base := time.Unix(1_700_000_000, 0)
+	g := &AutoAggroGate{perTenant: map[uuid.UUID]map[autoAggroKey]time.Time{}}
+	tm := newTestTenant(t)
+
+	if got := g.Admit(tm, 7, 42, false, base); !got {
+		t.Fatalf("Admit() = %v, want true", got)
+	}
+
+	if got := g.SweepStale(base.Add(30*time.Minute), 30*time.Minute); got != 0 {
+		t.Errorf("SweepStale() at exact maxAge boundary = %d, want 0 (not yet stale)", got)
+	}
+
+	g.mu.RLock()
+	_, stillPresent := g.perTenant[tm.Id()][autoAggroKey{characterId: 7, mobId: 42}]
+	g.mu.RUnlock()
+	if !stillPresent {
+		t.Error("entry evicted at exact maxAge boundary, want it to survive")
 	}
 }
 

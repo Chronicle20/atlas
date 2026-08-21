@@ -244,10 +244,19 @@ The schema is PRD §6 as written, with one addition and one clarification:
 
 ### 3.2 Routing (`routing/`)
 
-`HallOfFameMapFor(jobId job.Id) _map.Id` implements PRD FR-2.1's table by job category, referencing
-the existing constants from C-2. `IsPodiumMap(mapId) bool` is FR-2.3's five-element set. Both are
-pure lookups over `libs/atlas-constants` values with table-driven tests; neither carries a literal
-map id, satisfying FR-2.4's intent.
+`HallOfFameMapFor(set constants.SkillJobSet, jobId job.Id) _map.Id` implements PRD FR-2.1's table by
+job category, referencing the existing constants from C-2. `IsPodiumMap(mapId) bool` is FR-2.3's
+five-element set. Neither carries a literal map id, satisfying FR-2.4's intent.
+
+`HallOfFameMapFor` takes a resolved `constants.SkillJobSet` rather than being a pure lookup over
+`jobId` alone: job wire id 500 is version-divergent (task-187 audit) — it means Pirate at GMS v61+
+but Gm at GMS v48, and a raw `JobCategory`/`job.IsA` compare against the wire id cannot tell them
+apart. The Pirate row resolves `jobId` through `set.Job.Resolve` to this tenant version's `Identity`
+and branches on `job.IsAIdentity(jid, job.Pirate)` (which also covers the Brawler/Gunslinger
+sub-jobs, wire 510/520), following the `atlas-character` `processor.go` house pattern
+(`p.set().Job.Resolve` + `job.IsAIdentity`). Every other row — Warrior/Magician/Bowman/Rogue and the
+Cygnus/Aran/Evan roots — is version-stable per that same audit and stays keyed on the raw
+`JobCategory`/`job.GetType` category, as a pure lookup, with table-driven tests.
 
 ### 3.3 Max class level (FR-1.2)
 

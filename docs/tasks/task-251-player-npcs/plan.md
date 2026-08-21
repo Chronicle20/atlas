@@ -604,13 +604,15 @@ This task is deliberately large — it is one registration checklist, not six ch
 | fighter (sub-job) | `job.Id(110)` | `_map.VictoriaRoadHallOfWarriors1Id` |
 | magician | `job.MagicianId` (200) | `_map.VictoriaRoadHallOfMagicians1Id` |
 | bowman | `job.BowmanId` (300) | `_map.VictoriaRoadHallOfBowmen1Id` |
-| thief | `job.ThiefId` (400) | `_map.VictoriaRoadHallOfThieves1Id` |
-| pirate | `job.PirateId` (500) | `_map.TheNautilusTrainingRoom2Id` |
+| thief | `job.RogueId` (400) | `_map.VictoriaRoadHallOfThieves1Id` |
+| pirate wire 500 at v61+ | `job.PirateId` (500), resolved via a v61+ `constants.SkillJobSet` | `_map.TheNautilusTrainingRoom2Id` |
+| pirate wire 500 at v48 (Gm there, not Pirate) | `job.PirateId` (500), resolved via the v48 `constants.SkillJobSet` | `_map.EmpressRoadKnightsChamber2ndFloorId` (falls through to the default; task-187 audit) |
+| pirate sub-job (brawler) at v61+ | `job.Id(510)`, resolved via a v61+ `constants.SkillJobSet` | `_map.TheNautilusTrainingRoom2Id` |
 | dawn warrior | `job.Id(1100)` | `_map.EmpressRoadKnightsChamber1Id` |
 | thunder breaker | `job.Id(1500)` | `_map.EmpressRoadKnightsChamber1Id` |
 | aran | `job.Id(2100)` | `_map.SnowIslandPalaceOfTheMaster1Id` |
 | beginner | `job.BeginnerId` (0) | `_map.EmpressRoadKnightsChamber2ndFloorId` |
-| noblesse | `job.NoblesseId` (1000) | `_map.EmpressRoadKnightsChamber2ndFloorId` |
+| noblesse | `job.NoblesseId` (1000) | `_map.EmpressRoadKnightsChamber2ndFloorId` (falls through: NoblesseId would otherwise satisfy the Cygnus type check, but is explicitly excluded) |
 | evan | `job.EvanId` (2001) | `_map.EmpressRoadKnightsChamber2ndFloorId` |
 
 `TestIsPodiumMap`:
@@ -632,18 +634,26 @@ This task is deliberately large — it is one registration checklist, not six ch
 - [ ] **Step 2: Implement**
 
 ```go
-func HallOfFameMapFor(jobId job.Id) _map.Id
+func HallOfFameMapFor(set constants.SkillJobSet, jobId job.Id) _map.Id
 func IsPodiumMap(mapId _map.Id) bool
 func IsHallOfFameMap(mapId _map.Id) bool
 func JobCategory(jobId job.Id) uint16   // (jobId / 100) * 100
 ```
 
-`HallOfFameMapFor` switches on `JobCategory` for Explorer lines and on
-`job.GetType(jobId) == job.TypeCygnus` for the Cygnus branches, defaulting to
-`EmpressRoadKnightsChamber2ndFloorId`. Reference the existing constants from
-`libs/atlas-constants/map/constants.go` — **do not declare parallel map ids**; all ten
-already exist (design §1 C-2, verified at lines 69, 103, 162, 191, 527, 535, 536, 537,
-538, 566). No literal map id appears in this package.
+`HallOfFameMapFor` resolves `jobId` once through `set.Job.Resolve` and routes to the
+Nautilus when the resolved `Identity` is Pirate-or-descendant
+(`job.IsAIdentity(jid, job.Pirate)` — also catches the Brawler/Gunslinger sub-jobs, wire
+510/520). This is the one DIVERGENT branch (task-187 audit): wire id 500 is Pirate at
+GMS v61+ but Gm at GMS v48, so it cannot be a raw category compare. Every other branch
+stays a raw, version-stable lookup: `JobCategory` for the Warrior/Magician/Bowman/Rogue
+Explorer lines, `JobCategory` again for the Aran branch (all `AranStageNId` share category
+2100, distinct from Legend/Evan at 2000/2200), and `job.GetType(jobId) == job.TypeCygnus`
+for the Cygnus branches — except `job.NoblesseId` (1000), which is excluded even though it
+would otherwise satisfy the Cygnus type check, and falls through to the default instead.
+Everything else defaults to `EmpressRoadKnightsChamber2ndFloorId`. Reference the existing
+constants from `libs/atlas-constants/map/constants.go` — **do not declare parallel map
+ids**; all ten already exist (design §1 C-2, verified at lines 69, 103, 162, 191, 527, 535,
+536, 537, 538, 566). No literal map id appears in this package.
 
 - [ ] **Step 3: Verify** — `go build ./... && go test ./...` from
   `services/atlas-player-npcs/atlas.com/player-npcs`.
@@ -655,6 +665,8 @@ already exist (design §1 C-2, verified at lines 69, 103, 162, 191, 527, 535, 53
 - `libs/atlas-constants/map/constants.go` — read-only; the ten map constants
 - `libs/atlas-constants/job/model.go` — read-only; `GetType`, `IsBeginner`
 - `libs/atlas-constants/job/constants.go` — read-only; `TypeCygnus` at :183
+- `libs/atlas-constants/constants/for.go` — read-only; `constants.For`/`SkillJobSet` (task-187)
+- `libs/atlas-constants/job/identity.go` — read-only; `Set.Resolve`, `IsAIdentity`
 
 ---
 
@@ -1160,7 +1172,7 @@ Wire `playernpc.InitializeRoutes(GetServer())(db)` into the Task 8 `main.go`.
 
 | case | event body | tenant config | expect |
 |---|---|---|---|
-| at max level, eligible | `current: 200` | `autoDeployEnabled: true` | character fetched; `DEPLOY` command emitted for `HallOfFameMapFor(job)` |
+| at max level, eligible | `current: 200` | `autoDeployEnabled: true` | character fetched; `DEPLOY` command emitted for `HallOfFameMapFor(constants.For(tenant.Region(), tenant.MajorVersion(), tenant.MinorVersion()), jobId)` |
 | below max level | `current: 199` | any | **no character fetch at all**, no command |
 | auto-deploy disabled | `current: 200` | `autoDeployEnabled: false` | no command |
 | character is a GM | `current: 200` | enabled | no command |

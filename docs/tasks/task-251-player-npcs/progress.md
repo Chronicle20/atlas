@@ -41,14 +41,36 @@ No `Npc.img.xml`/`Ins.img.xml` hits tying Cygnus to an explicit level ceiling we
 
 ## IDB (v95, session `ecc757f4`)
 
-Not checked — no `mcp__ida-pro__*` IDA tools were available in this agent's tool set. Cygnus's
-level cap via the v95 IDB job/level UI path is **unverified for lack of access** in this
-environment, not ruled out.
+Checked by the controller after the fact (the implementing agent had no `mcp__ida-pro__*`
+tools). The client has exactly one Cygnus-classification helper,
+`is_cygnus_job(long)` at `0x47ca80` — a pure `nJob / 1000 == 1` test with no level term.
+All 15 of its call sites were enumerated (`xrefs_to 0x47ca80`):
+
+| caller | address |
+|---|---|
+| `CLogin::SendDeleteCharPacket` | `0x5d5517` |
+| `CSkillInfo::GetShootSkillRange` | `0x7097e2`, `0x709843` |
+| `get_weapon_mastery` | `0x709ba3`, `0x709cd5`, `0x709d7a` |
+| `get_critical_skill_level` | `0x70a2d8`, `0x70a333` |
+| `CUserLocal::TryDoingNormalAttack` | `0x912551` |
+| `CUserLocal::TryDoingMeleeAttack` | `0x91ff79`, `0x920152` |
+| `CUserLocal::HandleCtrlKeyDown` | `0x932a5d` |
+| `CUserLocal::SetDamaged` | `0x935236` |
+| `CUserLocal::DoActiveSkill` | `0x947009` |
+| `CWvsContext::SendActivatePetRequest` | `0x9f6c1c` |
+
+Every one is a combat, skill-range, mastery, pet or character-delete path. None is a
+level-cap comparison. A listing-wide regex sweep for `cygnus|blockedJob|maxLevel|levelLimit`
+returned only that helper and `SKILLENTRY::GetMaxLevel` (`0x50a020`), which is a **skill**
+level ceiling read from `SKILLENTRY+0x70`, not a character level cap.
+
+Result for this leg: **negative, and now actually checked** — the v95 client enforces no
+Cygnus character-level cap.
 
 ## Result
 
 **Not confirmed.** No local WZ evidence establishes an explicit 120-level cap for
 `job.TypeCygnus`; the closest hits are flavor-text milestones stopping at 120, which is a lead,
 not a finding. Per the brief, `MaxLevelFor` and its Cygnus test rows are left unchanged (still
-200 for all job lines). If IDB access becomes available, task 2's Step 1 item 2 (the v95 IDB
-job/level UI path) should be revisited before treating this as fully settled.
+200 for all job lines). Both legs of Step 1 have now been searched and both are negative, so this is settled:
+no local evidence supports a Cygnus cap below 200.

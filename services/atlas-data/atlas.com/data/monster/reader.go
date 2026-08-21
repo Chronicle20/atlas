@@ -206,7 +206,12 @@ func getFirstAttack(node *xml.Node) bool {
 func getSelfDestruction(node *xml.Node) selfDestruction {
 	c, err := node.ChildByName("selfDestruction")
 	if err != nil {
-		return selfDestruction{}
+		// Absent block. The -1 sentinels match the present-but-omitted-field
+		// defaults below, so every consumer has ONE shape to read: hp == -1 and
+		// removeAfter == -1 together mean "this monster does not self-destruct"
+		// (task-253 design D2). Returning the zero value here would make hp == 0
+		// — a legal threshold — for every ordinary monster in the game.
+		return selfDestruction{Action: 0, RemoveAfter: -1, Hp: -1}
 	}
 	action := byte(c.GetIntegerWithDefault("action", 0))
 	removeAfter := c.GetIntegerWithDefault("removeAfter", -1)

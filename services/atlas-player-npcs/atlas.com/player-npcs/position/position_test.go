@@ -198,7 +198,7 @@ func TestReorganize(t *testing.T) {
 		if len(result) != 3 {
 			t.Fatalf("got %d results, want 3", len(result))
 		}
-		want := []int32{9901000, 9901001, 9901002}
+		want := []uint32{9901000, 9901001, 9901002}
 		for i, w := range want {
 			if result[i].ScriptId != w {
 				t.Fatalf("result[%d].ScriptId = %d, want %d", i, result[i].ScriptId, w)

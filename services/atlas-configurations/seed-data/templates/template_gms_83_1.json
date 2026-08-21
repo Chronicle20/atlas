@@ -1961,6 +1961,15 @@
         ]
       },
       {
+        "opCode": "0xCE",
+        "validator": "LoggedInValidator",
+        "handler": "TouchReactorHandle",
+        "fname": "CReactorPool::FindTouchReactorAroundLocalUser",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xD3",
         "validator": "LoggedInValidator",
         "handler": "Snowball",

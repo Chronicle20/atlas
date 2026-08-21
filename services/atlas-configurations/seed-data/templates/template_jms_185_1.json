@@ -1924,6 +1924,15 @@
         ]
       },
       {
+        "opCode": "0xD9",
+        "validator": "LoggedInValidator",
+        "handler": "TouchReactorHandle",
+        "fname": "CReactorPool::FindTouchReactorAroundLocalUser",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xDE",
         "validator": "LoggedInValidator",
         "handler": "Snowball",

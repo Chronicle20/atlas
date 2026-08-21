@@ -9,141 +9,123 @@ import (
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 )
 
-// TestExecuteDispel_TargetsOnlyInBoxCharacters verifies that executeDispel
-// inherits box scoping purely by sharing getDiseaseTargets: of the three
-// characters on the field, only the two inside the mob's bounding box are
-// dispelled.
-func TestExecuteDispel_TargetsOnlyInBoxCharacters(t *testing.T) {
-	p, events := newRecordingProcessor(t, newTestTenant(t))
-	p.inFieldFn = func(_ field.Model) ([]uint32, error) {
-		return []uint32{1, 2, 3}, nil
-	}
-	positions := map[uint32][2]int16{
-		1: {110, 205},
-		2: {400, 205},
-		3: {112, 205},
-	}
-	p.positionFn = func(id uint32) (int16, int16, error) {
-		pos := positions[id]
-		return pos[0], pos[1], nil
-	}
-
-	m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
-	sd := mobskill.NewModelBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(2).Build()
-
-	p.executeDispel(m, sd, byte(monster2.SkillTypeDispel))
-
-	if len(*events) != 2 {
-		t.Fatalf("expected 2 events; got %d (%v)", len(*events), *events)
-	}
-	for _, e := range *events {
-		if e.Topic != EnvCommandTopicCharacterBuff {
-			t.Fatalf("expected topic %s; got %s", EnvCommandTopicCharacterBuff, e.Topic)
-		}
-	}
-}
-
-// TestExecuteDispel_NoCapForNonSeduce verifies FR-3.1: the SEDUCE-only cap
-// does not limit dispel, even when the box holds more characters than
-// SetCount specifies.
-func TestExecuteDispel_NoCapForNonSeduce(t *testing.T) {
-	p, events := newRecordingProcessor(t, newTestTenant(t))
-	p.inFieldFn = func(_ field.Model) ([]uint32, error) {
-		return []uint32{1, 2, 3, 4}, nil
-	}
-	positions := map[uint32][2]int16{
-		1: {110, 205},
-		2: {111, 205},
-		3: {112, 205},
-		4: {113, 205},
-	}
-	p.positionFn = func(id uint32) (int16, int16, error) {
-		pos := positions[id]
-		return pos[0], pos[1], nil
-	}
-
-	m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
-	sd := mobskill.NewModelBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(2).Build()
-
-	p.executeDispel(m, sd, byte(monster2.SkillTypeDispel))
-
-	if len(*events) != 4 {
-		t.Fatalf("expected 4 events; got %d (%v)", len(*events), *events)
-	}
-	for _, e := range *events {
-		if e.Topic != EnvCommandTopicCharacterBuff {
-			t.Fatalf("expected topic %s; got %s", EnvCommandTopicCharacterBuff, e.Topic)
-		}
-	}
-}
-
-// TestExecuteBanish_TargetsOnlyInBoxCharacters verifies that executeBanish
-// inherits box scoping purely by sharing getDiseaseTargets.
-func TestExecuteBanish_TargetsOnlyInBoxCharacters(t *testing.T) {
-	prevHook := testInformationLookup
-	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetBanish(information.Banish{MapId: 104000000}).Build(), nil
-	}
-	defer func() { testInformationLookup = prevHook }()
-
-	p, events := newRecordingProcessor(t, newTestTenant(t))
-	p.inFieldFn = func(_ field.Model) ([]uint32, error) {
-		return []uint32{1, 2, 3}, nil
-	}
-	positions := map[uint32][2]int16{
-		1: {110, 205},
-		2: {400, 205},
-		3: {112, 205},
-	}
-	p.positionFn = func(id uint32) (int16, int16, error) {
-		pos := positions[id]
-		return pos[0], pos[1], nil
+// TestExecuteDiseaseCaller verifies executeDispel and executeBanish inherit
+// box (and, for banish, banish-map) scoping purely by sharing
+// getDiseaseTargets.
+func TestExecuteDiseaseCaller(t *testing.T) {
+	tests := []struct {
+		name           string
+		inField        []uint32
+		positions      map[uint32][2]int16
+		count          uint32
+		infoModel      func() information.Model
+		execute        func(p *ProcessorImpl, m Model, sd mobskill.Model)
+		wantEventCount int
+		wantTopic      string
+	}{
+		{
+			name:    "dispel targets only in-box characters",
+			inField: []uint32{1, 2, 3},
+			positions: map[uint32][2]int16{
+				1: {110, 205},
+				2: {400, 205},
+				3: {112, 205},
+			},
+			count: 2,
+			execute: func(p *ProcessorImpl, m Model, sd mobskill.Model) {
+				p.executeDispel(m, sd, byte(monster2.SkillTypeDispel))
+			},
+			wantEventCount: 2,
+			wantTopic:      EnvCommandTopicCharacterBuff,
+		},
+		{
+			name:    "dispel has no cap for non-seduce",
+			inField: []uint32{1, 2, 3, 4},
+			positions: map[uint32][2]int16{
+				1: {110, 205},
+				2: {111, 205},
+				3: {112, 205},
+				4: {113, 205},
+			},
+			count: 2,
+			execute: func(p *ProcessorImpl, m Model, sd mobskill.Model) {
+				p.executeDispel(m, sd, byte(monster2.SkillTypeDispel))
+			},
+			wantEventCount: 4,
+			wantTopic:      EnvCommandTopicCharacterBuff,
+		},
+		{
+			name:    "banish targets only in-box characters",
+			inField: []uint32{1, 2, 3},
+			positions: map[uint32][2]int16{
+				1: {110, 205},
+				2: {400, 205},
+				3: {112, 205},
+			},
+			count: 2,
+			infoModel: func() information.Model {
+				return information.NewModelBuilder().SetBanish(information.Banish{MapId: 104000000}).Build()
+			},
+			execute: func(p *ProcessorImpl, m Model, sd mobskill.Model) {
+				p.executeBanish(m, sd, byte(monster2.SkillTypeBanish))
+			},
+			wantEventCount: 2,
+			wantTopic:      EnvCommandTopicPortal,
+		},
+		{
+			name:    "banish with no banish map emits nothing",
+			inField: []uint32{1, 2, 3},
+			positions: map[uint32][2]int16{
+				1: {110, 205},
+				2: {400, 205},
+				3: {112, 205},
+			},
+			count: 2,
+			infoModel: func() information.Model {
+				return information.NewModelBuilder().Build()
+			},
+			execute: func(p *ProcessorImpl, m Model, sd mobskill.Model) {
+				p.executeBanish(m, sd, byte(monster2.SkillTypeBanish))
+			},
+			wantEventCount: 0,
+		},
 	}
 
-	m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
-	sd := mobskill.NewModelBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(2).Build()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.infoModel != nil {
+				prevHook := testInformationLookup
+				testInformationLookup = func(_ uint32) (information.Model, error) {
+					return tt.infoModel(), nil
+				}
+				defer func() { testInformationLookup = prevHook }()
+			}
 
-	p.executeBanish(m, sd, byte(monster2.SkillTypeBanish))
+			p, events := newRecordingProcessor(t, newTestTenant(t))
+			p.inFieldFn = func(_ field.Model) ([]uint32, error) {
+				return tt.inField, nil
+			}
+			p.positionFn = func(id uint32) (int16, int16, error) {
+				pos := tt.positions[id]
+				return pos[0], pos[1], nil
+			}
 
-	if len(*events) != 2 {
-		t.Fatalf("expected 2 events; got %d (%v)", len(*events), *events)
-	}
-	for _, e := range *events {
-		if e.Topic != EnvCommandTopicPortal {
-			t.Fatalf("expected topic %s; got %s", EnvCommandTopicPortal, e.Topic)
-		}
-	}
-}
+			m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
+			sd := mobskill.NewModelBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(tt.count).Build()
 
-// TestExecuteBanish_NoBanishMapEmitsNothing verifies the early-return
-// behavior when the monster has no banish map configured is unchanged.
-func TestExecuteBanish_NoBanishMapEmitsNothing(t *testing.T) {
-	prevHook := testInformationLookup
-	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().Build(), nil
-	}
-	defer func() { testInformationLookup = prevHook }()
+			tt.execute(p, m, sd)
 
-	p, events := newRecordingProcessor(t, newTestTenant(t))
-	p.inFieldFn = func(_ field.Model) ([]uint32, error) {
-		return []uint32{1, 2, 3}, nil
-	}
-	positions := map[uint32][2]int16{
-		1: {110, 205},
-		2: {400, 205},
-		3: {112, 205},
-	}
-	p.positionFn = func(id uint32) (int16, int16, error) {
-		pos := positions[id]
-		return pos[0], pos[1], nil
-	}
-
-	m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
-	sd := mobskill.NewModelBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(2).Build()
-
-	p.executeBanish(m, sd, byte(monster2.SkillTypeBanish))
-
-	if len(*events) != 0 {
-		t.Fatalf("expected 0 events; got %d (%v)", len(*events), *events)
+			if len(*events) != tt.wantEventCount {
+				t.Fatalf("expected %d events; got %d (%v)", tt.wantEventCount, len(*events), *events)
+			}
+			if tt.wantTopic == "" {
+				return
+			}
+			for _, e := range *events {
+				if e.Topic != tt.wantTopic {
+					t.Fatalf("expected topic %s; got %s", tt.wantTopic, e.Topic)
+				}
+			}
+		})
 	}
 }

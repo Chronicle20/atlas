@@ -51,176 +51,194 @@ func diseaseTargetProcessor(inField []uint32, positions map[uint32][2]int16, pos
 	return p
 }
 
-func TestGetDiseaseTargets_BoxlessWithMultiCountReturnsControllerOnly(t *testing.T) {
-	var positionCalls []uint32
-	p := diseaseTargetProcessor([]uint32{7, 8, 9}, nil, nil, &positionCalls)
+func TestGetDiseaseTargets(t *testing.T) {
+	slow := byte(monster2.SkillTypeSlow)
+	seduce := byte(monster2.SkillTypeSeduce)
 
-	m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
-	sd := mobskill.NewModelBuilder().SetCount(3).Build()
+	tests := []struct {
+		name                string
+		build               func(positionCalls *[]uint32) *ProcessorImpl
+		controlCharacterId  uint32
+		useBoundingBox      bool
+		count               uint32
+		skillId             byte
+		want                []uint32
+		wantNoPositionCalls bool
+	}{
+		{
+			name: "boxless with multi-count returns controller only",
+			build: func(positionCalls *[]uint32) *ProcessorImpl {
+				return diseaseTargetProcessor([]uint32{7, 8, 9}, nil, nil, positionCalls)
+			},
+			controlCharacterId:  7,
+			useBoundingBox:      false,
+			count:               3,
+			skillId:             slow,
+			want:                []uint32{7},
+			wantNoPositionCalls: true,
+		},
+		{
+			name: "boxless with no controller returns nothing",
+			build: func(positionCalls *[]uint32) *ProcessorImpl {
+				return diseaseTargetProcessor([]uint32{7, 8, 9}, nil, nil, positionCalls)
+			},
+			controlCharacterId:  0,
+			useBoundingBox:      false,
+			count:               3,
+			skillId:             slow,
+			want:                nil,
+			wantNoPositionCalls: true,
+		},
+		{
+			name: "filters by bounding box",
+			build: func(positionCalls *[]uint32) *ProcessorImpl {
+				positions := map[uint32][2]int16{
+					1: {120, 210},
+					2: {400, 210},
+					3: {90, 190},
+				}
+				return diseaseTargetProcessor([]uint32{1, 2, 3}, positions, nil, positionCalls)
+			},
+			controlCharacterId: 7,
+			useBoundingBox:     true,
+			count:              0,
+			skillId:            slow,
+			want:               []uint32{1, 3},
+		},
+		{
+			name: "preserves field listing order",
+			build: func(positionCalls *[]uint32) *ProcessorImpl {
+				positions := map[uint32][2]int16{
+					1: {120, 210},
+					2: {400, 210},
+					3: {90, 190},
+				}
+				return diseaseTargetProcessor([]uint32{3, 1}, positions, nil, positionCalls)
+			},
+			controlCharacterId: 7,
+			useBoundingBox:     true,
+			count:              0,
+			skillId:            slow,
+			want:               []uint32{3, 1},
+		},
+		{
+			name: "position failure excludes only that character",
+			build: func(positionCalls *[]uint32) *ProcessorImpl {
+				positions := map[uint32][2]int16{
+					1: {110, 205},
+					3: {112, 205},
+				}
+				positionErr := map[uint32]error{2: errors.New("boom")}
+				return diseaseTargetProcessor([]uint32{1, 2, 3}, positions, positionErr, positionCalls)
+			},
+			controlCharacterId: 7,
+			useBoundingBox:     true,
+			count:              0,
+			skillId:            slow,
+			want:               []uint32{1, 3},
+		},
+		{
+			name: "field listing failure returns nothing",
+			build: func(positionCalls *[]uint32) *ProcessorImpl {
+				emitted := 0
+				p := recordingProcessor(context.Background(), diseaseTargetTenant(), &emitted)
+				p.inFieldFn = func(_ field.Model) ([]uint32, error) {
+					return nil, errors.New("boom")
+				}
+				p.positionFn = func(id uint32) (int16, int16, error) {
+					*positionCalls = append(*positionCalls, id)
+					return 0, 0, nil
+				}
+				return p
+			},
+			controlCharacterId:  7,
+			useBoundingBox:      true,
+			count:               0,
+			skillId:             slow,
+			want:                nil,
+			wantNoPositionCalls: true,
+		},
+		{
+			name: "seduce caps across the shell",
+			build: func(positionCalls *[]uint32) *ProcessorImpl {
+				positions := map[uint32][2]int16{
+					1: {110, 205},
+					2: {111, 205},
+					3: {112, 205},
+					4: {113, 205},
+				}
+				return diseaseTargetProcessor([]uint32{1, 2, 3, 4}, positions, nil, positionCalls)
+			},
+			controlCharacterId: 7,
+			useBoundingBox:     true,
+			count:              2,
+			skillId:            seduce,
+			want:               []uint32{1, 2},
+		},
+		{
+			name: "concurrent lookups preserve order",
+			build: func(positionCalls *[]uint32) *ProcessorImpl {
+				var mu sync.Mutex
+				inField := make([]uint32, 20)
+				for i := range inField {
+					inField[i] = uint32(i + 1)
+				}
 
-	got := p.getDiseaseTargets(m, sd, byte(monster2.SkillTypeSlow))
-
-	if !reflect.DeepEqual(got, []uint32{7}) {
-		t.Fatalf("expected [7]; got %v", got)
+				emitted := 0
+				p := recordingProcessor(context.Background(), diseaseTargetTenant(), &emitted)
+				p.inFieldFn = func(_ field.Model) ([]uint32, error) {
+					return inField, nil
+				}
+				p.positionFn = func(id uint32) (int16, int16, error) {
+					mu.Lock()
+					*positionCalls = append(*positionCalls, id)
+					mu.Unlock()
+					if id%2 == 1 {
+						time.Sleep(5 * time.Millisecond)
+					}
+					return 110, 205, nil
+				}
+				return p
+			},
+			controlCharacterId: 7,
+			useBoundingBox:     true,
+			count:              0,
+			skillId:            slow,
+			want: func() []uint32 {
+				want := make([]uint32, 20)
+				for i := range want {
+					want[i] = uint32(i + 1)
+				}
+				return want
+			}(),
+		},
 	}
-	if len(positionCalls) != 0 {
-		t.Fatalf("expected no position lookups; got %v", positionCalls)
-	}
-}
 
-func TestGetDiseaseTargets_BoxlessWithNoControllerReturnsNothing(t *testing.T) {
-	var positionCalls []uint32
-	p := diseaseTargetProcessor([]uint32{7, 8, 9}, nil, nil, &positionCalls)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var positionCalls []uint32
+			p := tt.build(&positionCalls)
 
-	m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(0).Build()
-	sd := mobskill.NewModelBuilder().SetCount(3).Build()
+			m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(tt.controlCharacterId).Build()
+			builder := mobskill.NewModelBuilder().SetCount(tt.count)
+			if tt.useBoundingBox {
+				builder = builder.SetBoundingBox(-50, -30, 50, 30)
+			}
+			sd := builder.Build()
 
-	got := p.getDiseaseTargets(m, sd, byte(monster2.SkillTypeSlow))
+			got := p.getDiseaseTargets(m, sd, tt.skillId)
 
-	if len(got) != 0 {
-		t.Fatalf("expected no targets; got %v", got)
-	}
-	if len(positionCalls) != 0 {
-		t.Fatalf("expected no position lookups; got %v", positionCalls)
-	}
-}
+			if tt.want == nil {
+				if len(got) != 0 {
+					t.Fatalf("expected no targets; got %v", got)
+				}
+			} else if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("expected %v; got %v", tt.want, got)
+			}
 
-func TestGetDiseaseTargets_FiltersByBoundingBox(t *testing.T) {
-	var positionCalls []uint32
-	positions := map[uint32][2]int16{
-		1: {120, 210},
-		2: {400, 210},
-		3: {90, 190},
-	}
-	p := diseaseTargetProcessor([]uint32{1, 2, 3}, positions, nil, &positionCalls)
-
-	m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
-	sd := mobskill.NewModelBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(0).Build()
-
-	got := p.getDiseaseTargets(m, sd, byte(monster2.SkillTypeSlow))
-
-	if !reflect.DeepEqual(got, []uint32{1, 3}) {
-		t.Fatalf("expected [1 3]; got %v", got)
-	}
-}
-
-func TestGetDiseaseTargets_PreservesFieldListingOrder(t *testing.T) {
-	var positionCalls []uint32
-	positions := map[uint32][2]int16{
-		1: {120, 210},
-		2: {400, 210},
-		3: {90, 190},
-	}
-	p := diseaseTargetProcessor([]uint32{3, 1}, positions, nil, &positionCalls)
-
-	m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
-	sd := mobskill.NewModelBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(0).Build()
-
-	got := p.getDiseaseTargets(m, sd, byte(monster2.SkillTypeSlow))
-
-	if !reflect.DeepEqual(got, []uint32{3, 1}) {
-		t.Fatalf("expected [3 1]; got %v", got)
-	}
-}
-
-func TestGetDiseaseTargets_PositionFailureExcludesOnlyThatCharacter(t *testing.T) {
-	var positionCalls []uint32
-	positions := map[uint32][2]int16{
-		1: {110, 205},
-		3: {112, 205},
-	}
-	positionErr := map[uint32]error{2: errors.New("boom")}
-	p := diseaseTargetProcessor([]uint32{1, 2, 3}, positions, positionErr, &positionCalls)
-
-	m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
-	sd := mobskill.NewModelBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(0).Build()
-
-	got := p.getDiseaseTargets(m, sd, byte(monster2.SkillTypeSlow))
-
-	if !reflect.DeepEqual(got, []uint32{1, 3}) {
-		t.Fatalf("expected [1 3]; got %v", got)
-	}
-}
-
-func TestGetDiseaseTargets_FieldListingFailureReturnsNothing(t *testing.T) {
-	var positionCalls []uint32
-	emitted := 0
-	p := recordingProcessor(context.Background(), diseaseTargetTenant(), &emitted)
-	p.inFieldFn = func(_ field.Model) ([]uint32, error) {
-		return nil, errors.New("boom")
-	}
-	p.positionFn = func(id uint32) (int16, int16, error) {
-		positionCalls = append(positionCalls, id)
-		return 0, 0, nil
-	}
-
-	m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
-	sd := mobskill.NewModelBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(0).Build()
-
-	got := p.getDiseaseTargets(m, sd, byte(monster2.SkillTypeSlow))
-
-	if len(got) != 0 {
-		t.Fatalf("expected no targets; got %v", got)
-	}
-	if len(positionCalls) != 0 {
-		t.Fatalf("expected no position lookups; got %v", positionCalls)
-	}
-}
-
-func TestGetDiseaseTargets_SeduceCapsAcrossTheShell(t *testing.T) {
-	var positionCalls []uint32
-	positions := map[uint32][2]int16{
-		1: {110, 205},
-		2: {111, 205},
-		3: {112, 205},
-		4: {113, 205},
-	}
-	p := diseaseTargetProcessor([]uint32{1, 2, 3, 4}, positions, nil, &positionCalls)
-
-	m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
-	sd := mobskill.NewModelBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(2).Build()
-
-	got := p.getDiseaseTargets(m, sd, byte(monster2.SkillTypeSeduce))
-
-	if !reflect.DeepEqual(got, []uint32{1, 2}) {
-		t.Fatalf("expected [1 2]; got %v", got)
-	}
-}
-
-func TestGetDiseaseTargets_ConcurrentLookupsPreserveOrder(t *testing.T) {
-	var mu sync.Mutex
-	var positionCalls []uint32
-
-	inField := make([]uint32, 20)
-	for i := range inField {
-		inField[i] = uint32(i + 1)
-	}
-
-	emitted := 0
-	p := recordingProcessor(context.Background(), diseaseTargetTenant(), &emitted)
-	p.inFieldFn = func(_ field.Model) ([]uint32, error) {
-		return inField, nil
-	}
-	p.positionFn = func(id uint32) (int16, int16, error) {
-		mu.Lock()
-		positionCalls = append(positionCalls, id)
-		mu.Unlock()
-		if id%2 == 1 {
-			time.Sleep(5 * time.Millisecond)
-		}
-		return 110, 205, nil
-	}
-
-	m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(7).Build()
-	sd := mobskill.NewModelBuilder().SetBoundingBox(-50, -30, 50, 30).SetCount(0).Build()
-
-	got := p.getDiseaseTargets(m, sd, byte(monster2.SkillTypeSlow))
-
-	want := make([]uint32, 20)
-	for i := range want {
-		want[i] = uint32(i + 1)
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("expected ascending 1..20; got %v", got)
+			if tt.wantNoPositionCalls && len(positionCalls) != 0 {
+				t.Fatalf("expected no position lookups; got %v", positionCalls)
+			}
+		})
 	}
 }

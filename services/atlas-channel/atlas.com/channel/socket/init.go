@@ -68,6 +68,14 @@ func (d dualWaitGroup) Done()     { d.a.Done(); d.b.Done() }
 // accept loop and per-connection handling stay asynchronous -- only the
 // bind result is observable before this returns (task-244 design.md §4.2).
 //
+// ipAddress is advertisement-only: it is the address this channel hands to
+// clients (see the Register call below), never the bind address. The pod
+// this listener runs in is not guaranteed to have the advertised host
+// address assigned to any interface -- e.g. a LAN IP the deployment
+// advertises to clients outside the pod -- so binding it directly fails
+// with EADDRNOTAVAIL. The listener always binds the wildcard address and
+// lets the kernel accept connections on whichever interface they arrive at.
+//
 // wg brackets the accept-loop goroutine only (process-wide bookkeeping).
 // sessionWg is fanned out per accepted connection, so a handle-scoped
 // waitgroup sees real session lifetime without also counting the
@@ -75,10 +83,11 @@ func (d dualWaitGroup) Done()     { d.a.Done(); d.b.Done() }
 func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg socket.WaitGrouper, sessionWg socket.WaitGrouper) func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) (net.Listener, error) {
 	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) (net.Listener, error) {
 		// Bind before any other side effect: a failed bind must leave
-		// nothing for Registry.Add's rollback to unwind.
-		lis, err := socket.Bind(l, ipAddress, port)
+		// nothing for Registry.Add's rollback to unwind. Bind the wildcard
+		// address, not ipAddress -- ipAddress is advertisement-only.
+		lis, err := socket.Bind(l, "0.0.0.0", port)
 		if err != nil {
-			return nil, fmt.Errorf("bind %s:%d: %w", ipAddress, port, err)
+			return nil, fmt.Errorf("bind port %d: %w", port, err)
 		}
 
 		l.Infof("Creating channel socket service for [%s] on port [%d].", sc.String(), port)

@@ -114,6 +114,50 @@ func TestCreateSocketServiceReturnsTheBoundListener(t *testing.T) {
 	}
 }
 
+// TestCreateSocketServiceBindsTheWildcardAddressNotTheAdvertisedAddress
+// pins the separation between the advertised address (ipAddress, handed to
+// clients) and the bind address (always wildcard). 192.0.2.1 is TEST-NET-1
+// (RFC 5737): guaranteed non-assignable on the test host, standing in for a
+// pod's advertised LAN address that is not bound to any local interface. On
+// the buggy code -- binding ipAddress directly -- this fails with
+// EADDRNOTAVAIL; the fix must return a bound listener and a nil error.
+func TestCreateSocketServiceBindsTheWildcardAddressNotTheAdvertisedAddress(t *testing.T) {
+	const advertisedIpAddress = "192.0.2.1"
+
+	tm := testTenant(t)
+	ctx, cancel := context.WithCancel(NewListenerContext(context.Background(), tm))
+	defer cancel()
+
+	sc := server.NewProcessor(logrus.New(), ctx).Register(tm, channel.NewModel(1, 0), advertisedIpAddress, 0)
+	t.Cleanup(func() { server.GetRegistry().Deregister(server.KeyOf(sc)) })
+
+	wg := &countingWG{}
+	sessionWg := &countingWG{}
+
+	hp := func() map[uint16]request.Handler { return nil }
+	rw := socket.ShortReadWriter{}
+
+	lis, err := CreateSocketService(logrus.New(), ctx, wg, sessionWg)(hp, rw, nil, sc, advertisedIpAddress, 0)
+	if err != nil {
+		t.Fatalf("CreateSocketService returned an error binding the advertised address: %v", err)
+	}
+	if lis == nil {
+		t.Fatal("CreateSocketService returned a nil listener")
+	}
+	defer func() { _ = lis.Close() }()
+
+	addr, ok := lis.Addr().(*net.TCPAddr)
+	if !ok {
+		t.Fatalf("listener address is not *net.TCPAddr: %T", lis.Addr())
+	}
+	if addr.IP.String() == advertisedIpAddress {
+		t.Fatalf("listener bound the advertised address %s, want a wildcard bind", advertisedIpAddress)
+	}
+	if !addr.IP.IsUnspecified() {
+		t.Fatalf("listener bound %s, want the wildcard address", addr.IP.String())
+	}
+}
+
 func TestDualWaitGroupFansOutAddAndDone(t *testing.T) {
 	a, b := &countingWG{}, &countingWG{}
 	d := dualWaitGroup{a: a, b: b}

@@ -27,7 +27,7 @@ Implements D1, D2 (FR-5.1 … FR-5.5).
 Patterns to copy: the existing suite in the same test file (mock of
 `@/lib/utils/toast`, `renderHook` + `act`).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add `dataUpdatedAt: 0` to `makeQuery`'s default object (before the
 `...overrides` spread) so every existing case keeps compiling, then add a
@@ -49,7 +49,7 @@ Existing cases (`isRefreshing`, success/error toast, `alsoRefresh`) must be
 left byte-identical apart from the `makeQuery` default — that is the FR-5.5
 backward-compatibility proof.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Replace the type alias:
 
@@ -87,7 +87,7 @@ const lastUpdatedAt = stamps.length ? Math.min(...stamps) : null;
 
 and return it alongside the existing two values.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 ```
 npm test -- src/lib/hooks/__tests__/useGridRefresh.test.ts
@@ -114,7 +114,7 @@ Patterns to copy: `services/atlas-ui/src/components/__tests__/data-table.test.ts
 `services/atlas-ui/src/components/common/__tests__/Pager.test.tsx:1-20`
 (plain `render` + `screen`, no providers needed).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 New file `src/components/common/__tests__/EmptyState.test.tsx`.
 Fixture constant: `const TS = 1_735_732_920_000;` (assert the ISO string as
@@ -149,7 +149,7 @@ Fixture constant: `const TS = 1_735_732_920_000;` (assert the ISO string as
 | `renders no caption when absent` | prop omitted | `queryByTestId("empty-state-last-updated")` is `null` |
 | `advances the caption when the timestamp changes` | `TS` then rerender with `TS + 3_600_000` | after `rerender`, the `title` attribute equals `new Date(TS + 3_600_000).toISOString()` |
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Extend the props interface (exported shape per PRD §5):
 
@@ -198,7 +198,7 @@ caption:
 
 No timer, no clock subscription (NFR performance; FR-3.5).
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 ```
 npm test -- src/components/common/__tests__/EmptyState.test.tsx
@@ -219,7 +219,7 @@ Implements D5 (FR-4.*).
 Patterns to copy: `services/atlas-ui/src/components/__tests__/data-table.test.tsx:1-12`
 (the `Row` type + `DataTableColumnDef<Row>[]` fixture; no providers required).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 New file `src/components/common/__tests__/DataTableWrapper.test.tsx`.
 Fixtures:
@@ -243,7 +243,7 @@ const TS = 1_735_732_920_000;
 | `renders the loader on the loading branch` | `data={[]}`, `loading`, `onRefresh={fn}` | `queryByTestId("empty-state")` is `null` |
 | `renders the error branch with a retry, not an empty state` | `data={[]}`, `error="boom"`, `onRefresh={fn}` | `queryByTestId("empty-state")` is `null`; a button with an accessible name matching `/try again/i` is present |
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Add `lastUpdatedAt?: number | null;` to `DataTableWrapperProps` next to
 `isRefreshing`, destructure it, and change the empty branch's render to:
@@ -262,7 +262,7 @@ already used on the data branch. Do **not** add a nested
 `emptyState.onRefresh` (FR-4.3). Loading, error, and data branches are
 untouched (FR-4.4).
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 ```
 npm test -- src/components/common/__tests__/DataTableWrapper.test.tsx
@@ -296,7 +296,7 @@ Each file gets two edits: destructure `lastUpdatedAt` from the existing
 
 Line numbers are from the pre-change tree and are a locator, not an assertion.
 
-- [ ] **Step 1: Apply the pass-through**
+- [x] **Step 1: Apply the pass-through**
 
 For each file:
 
@@ -319,7 +319,7 @@ pages that call `useGridRefresh` are deliberately **not** in this list —
 `EventDefinitionsPage` and `RewardPoolsPage` are Task 5, and
 `EventOccurrencesPage` is Task 8.
 
-- [ ] **Step 2: Verify**
+- [x] **Step 2: Verify**
 
 ```
 npx tsc -b
@@ -352,7 +352,7 @@ single-control property explicitly, so this is enforced, not cosmetic.
 - `services/atlas-ui/src/pages/__tests__/EventDefinitionsPage.test.tsx` —
   read-only; confirm nothing asserts the removed header button
 
-- [ ] **Step 1: `EventDefinitionsPage`**
+- [x] **Step 1: `EventDefinitionsPage`**
 
 Delete the header `<Button …><RefreshCw …/></Button>` block, leaving the
 title row as `<div className="flex items-center justify-between">` with the
@@ -374,7 +374,7 @@ directly — this is what `AccountsPage.tsx:162` already does. If eslint's
 `onRefresh={() => void onRefresh()}` (the idiom at
 `services/atlas-ui/src/pages/CouponsPage.tsx:227`).
 
-- [ ] **Step 2: `RewardPoolsPage`**
+- [x] **Step 2: `RewardPoolsPage`**
 
 Give `poolTable` the refresh wiring (it closes over `onRefresh`,
 `isRefreshing`, `lastUpdatedAt` from the existing hook call at :51):
@@ -403,7 +403,7 @@ the existing `Add Item` button in the
 `<RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />`.
 Keep `RefreshCw` and `cn` imported for it.
 
-- [ ] **Step 3: Update the `RewardPoolsPage` test**
+- [x] **Step 3: Update the `RewardPoolsPage` test**
 
 Replace the single case at :121 with two, keeping the "exactly one" property
 per tab (Radix unmounts inactive `TabsContent`, so `getByRole` remains
@@ -414,7 +414,7 @@ unambiguous):
 | `renders exactly one refresh control on a pool tab` | render, `await waitFor` on `getByText("Henesys")` | `getAllByRole("button", { name: /refresh/i })` has length 1 |
 | `renders exactly one refresh control on the Global tab` | render, wait, `user.click(screen.getByRole("tab", { name: /global/i }))` | `getAllByRole("button", { name: /refresh/i })` has length 1 |
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 ```
 npm test -- src/pages/__tests__/RewardPoolsPage.test.tsx src/pages/__tests__/EventDefinitionsPage.test.tsx
@@ -441,7 +441,7 @@ layer.
   read-only; it awaits `refreshTenants()` and ignores the result, so it must
   keep passing untouched
 
-- [ ] **Step 1: Widen the context**
+- [x] **Step 1: Widen the context**
 
 In `src/context/tenant-context.tsx`:
 
@@ -468,7 +468,7 @@ export type TenantRefreshResult = { ok: true } | { ok: false; error: unknown };
 callback typed `() => void`; a function returning a value is assignable to a
 `void`-returning type, so that call site needs no change.
 
-- [ ] **Step 2: Wire `TenantsPage`**
+- [x] **Step 2: Wire `TenantsPage`**
 
 Destructure `tenantsUpdatedAt` alongside the existing
 `{ tenants, loading, refreshTenants }`, then add:
@@ -515,7 +515,7 @@ First load is unaffected — `isRefreshingTenants` starts `false`.
 Pass the three props to the wrapper at :143 alongside the existing
 `columns`/`data`/`emptyState`.
 
-- [ ] **Step 3: Extend the `TenantsPage` tests**
+- [x] **Step 3: Extend the `TenantsPage` tests**
 
 Existing file edits:
 - In `beforeEach`, add `refreshTenantsMock.mockResolvedValue({ ok: true });`
@@ -544,7 +544,7 @@ New `describe("TenantsPage empty-state refresh")` — each case overrides
 
 The existing rename/delete cases must keep passing untouched.
 
-- [ ] **Step 4: Verify**
+- [x] **Step 4: Verify**
 
 ```
 npm test -- src/pages/__tests__/TenantsPage.test.tsx src/context/__tests__/tenant-context.test.tsx
@@ -565,7 +565,7 @@ Implements the design's "Pages — new wiring" row for `GuildDetailPage`.
 Patterns to copy: `services/atlas-ui/src/pages/GuildsPage.tsx:65-70`
 (multi-query `useGridRefresh` over the same two query hooks).
 
-- [ ] **Step 1: Implement**
+- [x] **Step 1: Implement**
 
 Immediately after `const tenantConfigQuery = useTenantConfiguration(...)` —
 and before any early return, so the hook order is unconditional — add:
@@ -587,7 +587,7 @@ loading and error branches remain unreached, which is unchanged behavior. As
 D5 notes, the members grid also gains a toolbar refresh on the populated
 branch — that is intended, not scope creep.
 
-- [ ] **Step 2: Verify**
+- [x] **Step 2: Verify**
 
 ```
 npx tsc -b
@@ -612,7 +612,7 @@ Implements D8. The page renders `EmptyState` directly, not through
 - `services/atlas-ui/src/pages/__tests__/EventOccurrencesPage.test.tsx` — new
   empty-branch case
 
-- [ ] **Step 1: Implement**
+- [x] **Step 1: Implement**
 
 Destructure `lastUpdatedAt` from the existing
 `useGridRefresh([occurrencesQuery])` and pass all three to the `EmptyState`:
@@ -631,7 +631,7 @@ The page's own header refresh button stays — it is the only control on the
 loading and error branches, and it sits in the page header rather than beside
 the empty-state button.
 
-- [ ] **Step 2: Write the test**
+- [x] **Step 2: Write the test**
 
 Add to `src/pages/__tests__/EventOccurrencesPage.test.tsx`:
 
@@ -643,7 +643,7 @@ If the click's toast trips on the unmocked `@/lib/utils/toast`, add
 `vi.mock("@/lib/utils/toast", () => ({ success: vi.fn(), error: vi.fn() }))`
 to the file rather than skipping the assertion.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 ```
 npm test -- src/pages/__tests__/EventOccurrencesPage.test.tsx
@@ -662,7 +662,7 @@ Implements D7 (FR-7.1 / Q1: in place, no `DataTableWrapper` migration).
 - `services/atlas-ui/src/pages/__tests__/TransportsPage.test.tsx` — extend the
   zero-routes case (:242-252)
 
-- [ ] **Step 1: Implement**
+- [x] **Step 1: Implement**
 
 Add `const { isRefreshing, onRefresh } = useGridRefresh([scheduledQuery]);`
 near the other page state, and replace the empty `<p>` branch with:
@@ -687,7 +687,7 @@ exactly as it is. D7 scopes this task to the empty branch; changing the
 populated branch's refresh to the toasting hook is a behavior change the design
 does not sanction.
 
-- [ ] **Step 2: Extend the test**
+- [x] **Step 2: Extend the test**
 
 Keep the existing zero-routes case (its `findByText(/no scheduled routes
 configured/i)` still matches the `EmptyState` title) and add to it, or add a
@@ -697,7 +697,7 @@ sibling case:
 |---|---|---|
 | `offers a refresh control on the empty scheduled tab` | `getScheduledRoutes` resolves `[]` | `await screen.findByText(/no scheduled routes configured/i)`; `getByTestId("empty-state-refresh")` present; `user.click` it → `transportsService.getScheduledRoutes` called a second time; `screen.getAllByText(/updated \d+s ago/i)` has length 1 (the header `FreshnessIndicator` at `src/components/features/transports/FreshnessIndicator.tsx:48`, still unduplicated) |
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 ```
 npm test -- src/pages/__tests__/TransportsPage.test.tsx
@@ -711,7 +711,7 @@ npm test -- src/pages/__tests__/TransportsPage.test.tsx
 
 - `docs/tasks/task-258-refreshable-empty-states/call-site-sweep.md` — new file
 
-- [ ] **Step 1: Re-run the sweep against the finished branch**
+- [x] **Step 1: Re-run the sweep against the finished branch**
 
 From the repo root:
 
@@ -721,7 +721,7 @@ grep -rn "<EmptyState" services/atlas-ui/src
 grep -rn "useGridRefresh(" services/atlas-ui/src
 ```
 
-- [ ] **Step 2: Write the artifact**
+- [x] **Step 2: Write the artifact**
 
 `call-site-sweep.md` records one row per site with the three props ticked:
 
@@ -742,7 +742,7 @@ grep -rn "useGridRefresh(" services/atlas-ui/src
 Any site the sweep finds without the props is a defect to fix in this task,
 not a note to leave behind.
 
-- [ ] **Step 3: Verify**
+- [x] **Step 3: Verify**
 
 ```
 tools/verify.sh

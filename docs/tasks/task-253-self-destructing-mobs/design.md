@@ -95,6 +95,20 @@ desync. The only wire-level hazard in the whole space is the dead-type-4 trailin
 remap per version.** Remapping would mean inventing an animation the data did not ask for;
 per-version rendering is the client's business.
 
+**Post-implementation update (fix-dom25 brief):** the byte-stability finding above is not
+disputed — it stays true and the IDA evidence stays as written. What changed is *how* the
+still-unremapped byte reaches the wire: the backend-guidelines audit (DOM-25) flagged the
+atlas-monsters → atlas-channel Kafka seam carrying a raw `CMob::m_nDeadType` byte and the
+channel bare-casting it straight onto the wire, instead of going through the tenant
+`operations` writer-options table every other resolved code in the service uses (task-102/
+task-103 precedent). atlas-monsters now maps the WZ `selfDestruction.action` byte to a
+`DeathType*` semantic key (`DISAPPEAR`/`FADE_OUT`/`BOMB`/`DESTRUCT_BY_MISS`/`SWALLOW`/
+`SELF_DESTRUCT`) at the point it reads the byte; the Kafka event, the channel consumer, and
+the `DestroyMonster` writer's `operations` table (added to all 11 seed templates, all six
+entries 0..5, identical across versions) carry only that key. The resolved byte the table
+produces is the same byte this section derived — the table is adopted for uniformity with
+the rest of the service, not because the per-version rendering facts above changed.
+
 ### 2.3 `CMob::TryFirstSelfDestruction` — what the client actually reports
 
 v95 `0x640ee0`:

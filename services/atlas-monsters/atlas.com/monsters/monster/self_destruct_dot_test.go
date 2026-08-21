@@ -82,7 +82,7 @@ func TestDoTTickCrossingThresholdDetonates(t *testing.T) {
 
 	bodies := killedEvents(t, capture)
 	require.Len(t, bodies, 1, "expected exactly one KILLED event")
-	require.Equal(t, byte(1), bodies[0].DeathType)
+	require.Equal(t, DeathTypeFadeOut, bodies[0].DeathType)
 	require.Equal(t, uint32(88), bodies[0].ActorId)
 }
 
@@ -144,5 +144,5 @@ func TestDoTTickThresholdMobStillCannotBeReducedToZero(t *testing.T) {
 
 	bodies := killedEvents(t, capture)
 	require.Len(t, bodies, 1, "expected exactly one KILLED event")
-	require.Equal(t, byte(1), bodies[0].DeathType)
+	require.Equal(t, DeathTypeFadeOut, bodies[0].DeathType)
 }

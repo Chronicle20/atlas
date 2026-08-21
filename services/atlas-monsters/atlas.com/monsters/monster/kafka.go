@@ -54,14 +54,22 @@ const (
 	CatchCauseRollFailed      = "ROLL_FAILED"
 	CatchCauseUnresolved      = "UNRESOLVED"
 
-	// DeathType* mirror libs/atlas-packet monster/clientbound DestroyType, which
-	// is CMob::m_nDeadType. DeathTypeUnset is what an omitting producer sends
-	// (rolling deploy); every consumer maps it to fade-out, so the wire stays
-	// byte-identical to pre-task-253 behaviour. Wire dead-type 0 ("remove with
-	// no animation") is therefore inexpressible through this event — nothing
-	// emits it and no WZ selfDestruction.action uses it (task-253 design D9).
-	DeathTypeUnset   byte = 0
-	DeathTypeFadeOut byte = 1
+	// DeathType* are the semantic keys atlas-channel resolves through the
+	// tenant's `operations` writer-options table for the DestroyMonster writer
+	// (DOM-25) -- the same pattern as CatchCause* above. They map 1:1 onto the
+	// closed DestroyType enum in libs/atlas-packet monster/clientbound
+	// (CMob::m_nDeadType). DeathTypeUnset is what an omitting producer sends
+	// (rolling deploy); every consumer treats the empty string as fade-out, so
+	// the wire stays byte-identical to pre-task-253 behaviour. DeathTypeUnset
+	// is a documentation alias for "" — the JSON zero value for a string field
+	// — not a distinct wire state.
+	DeathTypeUnset          = ""
+	DeathTypeDisappear      = "DISAPPEAR"
+	DeathTypeFadeOut        = "FADE_OUT"
+	DeathTypeBomb           = "BOMB"
+	DeathTypeDestructByMiss = "DESTRUCT_BY_MISS"
+	DeathTypeSwallow        = "SWALLOW"
+	DeathTypeSelfDestruct   = "SELF_DESTRUCT"
 )
 
 type statusEvent[E any] struct {
@@ -102,7 +110,7 @@ type statusEventCreatedBody struct {
 
 type statusEventDestroyedBody struct {
 	ActorId   uint32 `json:"actorId"`
-	DeathType byte   `json:"deathType"`
+	DeathType string `json:"deathType"`
 }
 
 type statusEventStartControlBody struct {
@@ -145,7 +153,7 @@ type statusEventKilledBody struct {
 	ActorId       uint32        `json:"actorId"`
 	Boss          bool          `json:"boss"`
 	DamageEntries []damageEntry `json:"damageEntries"`
-	DeathType     byte          `json:"deathType"`
+	DeathType     string        `json:"deathType"`
 }
 
 type damageEntry struct {

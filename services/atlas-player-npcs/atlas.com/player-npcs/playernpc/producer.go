@@ -76,7 +76,7 @@ func statusEventProvider(e Event) (model.Provider[[]kafka.Message], error) {
 // REMOVED's single-occupant contract (processor.go's Event doc).
 func singleModel(e Event) (Model, error) {
 	if len(e.Models) != 1 {
-		return Model{}, fmt.Errorf("Player NPC event %q expected exactly one model, got %d", e.Type, len(e.Models))
+		return Model{}, fmt.Errorf("player NPC event %q expected exactly one model, got %d", e.Type, len(e.Models))
 	}
 	return e.Models[0], nil
 }

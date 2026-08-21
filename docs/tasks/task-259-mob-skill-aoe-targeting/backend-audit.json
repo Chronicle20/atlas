@@ -1,0 +1,79 @@
+{
+  "service": "atlas-monsters",
+  "path": "services/atlas-monsters/atlas.com/monsters",
+  "date": "2026-08-21",
+  "range": "33e4cc7..HEAD",
+  "build": "pass",
+  "testsPassed": 13,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "character/position",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface/ctor/methods in processor.go", "status": "pass", "evidence": "character/position/processor.go:11,18,24,31"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API methods in rest.go", "status": "pass", "evidence": "character/position/rest.go:9,16,21,26"},
+        {"id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "pass", "evidence": "character/position/requests.go:20-26"},
+        {"id": "FILE-04", "name": "entity struct/Migration/TableName in entity.go", "status": "n-a", "evidence": "package has no entity.go; no entity symbols present"},
+        {"id": "FILE-05", "name": "Builder/domain Model/writes/readers/enums placed correctly", "status": "n-a", "evidence": "package declares none of these symbols (pure read-only client)"},
+        {"id": "FILE-06", "name": "No <pkgname>.go bundling >=2 responsibilities", "status": "pass", "evidence": "no position.go catch-all file; split across processor.go/rest.go/requests.go"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "character/position/processor.go:24"},
+        {"id": "DOM-18", "name": "RestModel implements GetName/GetID/SetID", "status": "pass", "evidence": "character/position/rest.go:16,21,26"},
+        {"id": "DOM-19", "name": "Request models flat, no nested Data/Type/Attributes", "status": "n-a", "evidence": "package declares no request/create/update models"},
+        {"id": "DOM-31", "name": "Tenant/trace travel via context only", "status": "pass", "evidence": "character/position/requests.go:18,21; RestModel (rest.go:9-13) carries no tenant field"},
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOne/SetToMany ReferenceID(s)", "status": "pass", "evidence": "character/position/rest.go:38-39"},
+        {"id": "EXT-02", "name": "httptest-backed integration test with representative fixture", "status": "pass", "evidence": "character/position/processor_test.go:21-32,42-64"},
+        {"id": "EXT-03", "name": "Only genuine 404 maps to not-found; other errors bubble", "status": "pass", "evidence": "character/position/processor.go:32-35; processor_test.go:66-80"},
+        {"id": "EXT-04", "name": "URL composed via requests.RootUrl family, not hardcoded DNS", "status": "pass", "evidence": "character/position/requests.go:18 (requests.RootUrlFor); libs/atlas-rest/requests/url.go:20,34"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "character/position/processor_test.go:42-80 — two standalone Test functions, no tests := []struct{} table, no t.Run"},
+        {"id": "DOM-24", "name": "Test package reaching emit path stubs the producer", "status": "n-a", "evidence": "package makes no Kafka emit calls (read-only HTTP client)"},
+        {"id": "DOM-33", "name": "Mock updated alongside interface change", "status": "pass", "evidence": "character/position/mock/processor.go:7-18 implements position.Processor in same diff"}
+      ]
+    },
+    {
+      "name": "monster",
+      "type": "domain",
+      "checks": [
+        {"id": "FILE-01", "name": "ProcessorImpl methods in processor.go or processor_<group>.go", "status": "fail", "evidence": "monster/disease_targets.go:67 (resolvePositions), :104 (getDiseaseTargets) — bare topic-named file, not processor.go or processor_<group>.go; cf. monster/processor_catch.go which follows the convention"},
+        {"id": "FILE-06", "name": "No file bundling >=2 responsibilities", "status": "pass", "evidence": "disease_targets.go carries only one FILE-0105 category (ProcessorImpl methods)"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "pass", "evidence": "monster/rest.go:64 — pre-existing, unchanged by this diff"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "monster/processor.go:107"},
+        {"id": "DOM-21", "name": "No redeclaration of a shared constant", "status": "pass", "evidence": "monster/disease_targets.go:43 reuses monster2.SkillTypeSeduce (libs/atlas-constants/monster/skill.go:40)"},
+        {"id": "DOM-26", "name": "Every goroutine via routine.Go(l, ctx, fn)", "status": "pass", "evidence": "monster/disease_targets.go:73; libs/atlas-routine/routine.go:15; tools/goroutine-guard.sh exit 0"},
+        {"id": "DOM-30", "name": "DB-writing operation emits via AndEmit+message.Buffer", "status": "n-a", "evidence": "monster package holds no DB-backed write path (no gorm/db.Create/database.Connect in monster/*.go); in-memory registry.go; documented non-DB-state exception applies (patterns-kafka.md)"},
+        {"id": "DOM-31", "name": "Tenant/trace travel via context only", "status": "pass", "evidence": "monster/processor.go:110 (tenant.MustFromContext(ctx)); disease_targets.go functions take no tenant parameter"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "monster/disease_targets_shell_test.go:54,71,88,107,126,145,170,190 — 8 standalone Test functions, no table; monster/disease_callers_test.go:16,49,82,120 — 4 standalone Test functions, no table"},
+        {"id": "DOM-24", "name": "Test package reaching emit path stubs the producer", "status": "pass", "evidence": "monster/disease_callers_test.go:17,50,89,127 use newRecordingProcessor (monster/processor_test.go:39), per-test no-op emitter injection"},
+        {"id": "DOM-33", "name": "Mock updated alongside interface change", "status": "n-a", "evidence": "monster.Processor (monster/processor.go:32-73) unchanged by this diff; changed methods are unexported and not interface members"}
+      ]
+    },
+    {
+      "name": "monster/information",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go has NewBuilder()/fluent setters/validating Build()", "status": "pass", "evidence": "monster/information/builder.go:61-64 (SetBanish), :67-85 (Build())"},
+        {"id": "FILE-05", "name": "Builder in builder.go", "status": "pass", "evidence": "new setter added to existing builder.go, no new file"}
+      ]
+    },
+    {
+      "name": "monster/mobskill",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go has NewBuilder()/fluent setters/validating Build()", "status": "pass", "evidence": "monster/mobskill/builder.go:72-75 (SetCount), :95-111 (Build())"},
+        {"id": "FILE-05", "name": "Builder in builder.go", "status": "pass", "evidence": "new setter added to existing builder.go, no new file"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-02/03/11/16: monster package's entity.go/provider.go/administrator.go are absent and unrelated to this diff; not evaluated to avoid surveying beyond the changed files",
+    "DOM-05: monster/resource.go was not changed by this diff; would require reading the unchanged file to determine pre-existing TransformSlice usage"
+  ],
+  "blocking": [
+    "FILE-01: monster/disease_targets.go:67,104 — ProcessorImpl methods (resolvePositions, getDiseaseTargets) live in a bare topic-named file instead of processor.go or a processor_<group>.go split",
+    "DOM-20: character/position/processor_test.go:42-80 — two new tests are not table-driven",
+    "DOM-20: monster/disease_targets_shell_test.go:54-226 — 8 new tests are not table-driven",
+    "DOM-20: monster/disease_callers_test.go:16-149 — 4 new tests are not table-driven"
+  ],
+  "nonBlocking": []
+}

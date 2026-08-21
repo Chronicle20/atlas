@@ -200,3 +200,30 @@ Reviewer note: it reported being unable to find `prd.md`/`design.md`, so PRD §6
 /§8 were checked only against the brief's verbatim quotes (which matched field-for-field). Both
 files do exist at `docs/tasks/task-251-player-npcs/` — this was a reviewer lookup miss, not a
 missing artifact. A later reviewer should read them directly.
+
+# Task 13 — read clients
+
+Landed `6c373b7d9`. Gate 18 PASS at `6c373b7d9` (last gated commit). Review
+APPROVED_WITH_FINDINGS — 1 blocking, 2 non-blocking
+(`.superpowers/sdd/plan/task-13-review.md`).
+
+**Blocking, fix queued behind Task 14** (only one mutating agent may hold the worktree):
+`data/map/{model.go:20,processor.go:15-16+29,requests.go:20+28}` types the map id as raw
+`uint32` instead of `_map.Id` from `libs/atlas-constants/map`. Every other `data/map` client
+in the repo (atlas-channel, atlas-doors, atlas-messages) and this service's own
+`routing`/`allocation` packages use `_map.Id`. The Task 13 report's self-review wrongly
+claimed `_map.Id` was already reused here.
+
+Non-blocking: the report's sweep claim ("every `SetReferencedStructs` in the repo is a dead
+stub") is false — `services/atlas-npc-shops/atlas.com/npc/inventory/rest.go:82-96` is a real
+decoder. The narrower true claim (the brief's *cited* precedents are stubs) would have
+sufficed and does not change the shipped code.
+
+## Open cross-service question — equipment capture
+
+`atlas-character` does not serve an equipment/inventory relationship today; the reviewer
+confirmed the seam independently. PRD/design both assumed `?include=inventory` works. Task 13
+shipped a grounded decode shape (modelled on `atlas-channel/asset`) that will decode correctly
+once a server side exists, but **nothing populates it now**, so Task 14's snapshot will capture
+zero equipment against a live `atlas-character`. Needs a ruling: extend `atlas-character` on
+this branch, split it to its own task, or ship Player NPCs without equipment for now.

@@ -732,10 +732,10 @@ func setTenantConfig(t *testing.T, tenantId uuid.UUID, autoDeployEnabled bool) {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(fmt.Sprintf(`{"data":{"type":"player-npcs","id":"%s","attributes":{
+		_, _ = fmt.Fprintf(w, `{"data":{"type":"player-npcs","id":"%s","attributes":{
 			"initialX":262,"initialY":262,"areaX":320,"areaY":160,"areaSteps":4,
 			"organizeArea":true,"autoDeployEnabled":%t
-		}}}`, tenantId, autoDeployEnabled)))
+		}}}`, tenantId, autoDeployEnabled)
 	}))
 	t.Cleanup(srv.Close)
 	t.Setenv("TENANTS_SERVICE_URL", srv.URL+"/")

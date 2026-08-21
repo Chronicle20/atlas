@@ -87,10 +87,34 @@ func opKey(op string, dir opregistry.Direction) string {
 // another op develops the same defect, add its specific sibling WriterName
 // here explicitly after the same per-cell verification NOTE_ACTION got, not
 // by broadening this predicate.
+// USE_CASH_ITEM/serverbound: on gms_v72/v79 the op's registry primary
+// `fname` is CWvsContext::SendConsumeCashItemUseRequest, which is ALSO the
+// exact IDAName of several separately-reported, separately-fixtured
+// per-case sub-struct writers (CashItemUseSongPlayer among them — the
+// jukebox/song-player cash item, task-252) — so those writers get consumed
+// into the USE_CASH_ITEM op row and skipped in the sub-struct pass on those
+// two versions. On gms_v83/84/87/92/95/jms_v185 the op's primary `fname` is
+// a DIFFERENT writer (CItemSpeakerDlg::_SendConsumeCashItemUseRequest), so
+// the sub-struct writers are never consumed there and grade independently
+// already (✅ on all six once individually verified).
+//
+// Only CashItemUseSongPlayer is listed here: it alone has its own pinned
+// TIER1 evidence + byte-fixture marker + audit report for gms_v72 AND
+// gms_v79 (task-252). Per the protectedWriters gate in Build, listing a
+// sibling here only lets it escape the automatic skip WHEN its own
+// gradeSubStructCell independently reaches StateVerified — it is not a
+// force-promote. The other USE_CASH_ITEM siblings that share this same
+// fname collision on v72/v79 (CashItemUseSuperMegaphone,
+// CashItemUseMapleTV, CashItemUseMegaphone, CashItemUseTripleMegaphone)
+// are NOT added here: fixing their v72/v79 cells is out of scope for
+// task-252 and is left for whichever task next verifies them per-version.
 var legacyConsumedSiblingWriters = map[string]map[string]bool{
 	opKey("NOTE_ACTION", opregistry.DirServerbound): {
 		"NoteOperationDiscard": true,
 		"NoteOperationSend":    true,
+	},
+	opKey("USE_CASH_ITEM", opregistry.DirServerbound): {
+		"CashItemUseSongPlayer": true,
 	},
 }
 

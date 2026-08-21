@@ -4,7 +4,7 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
+Tool: `f8153f5ca71ce37c2e12463b8416921c93c0b101c4759ce5e105f232559d76f1`
 
 - export gms_v48: `f46a1c091a8f557a7a0a47c295bed12c56e0f70e23552726d1ca6586eadbf0dd`
 - export gms_v61: `6c974c037a17229958f04d245f414de004f5530852466818e48167a4172e7c70`
@@ -842,7 +842,7 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 | cash/serverbound/CashItemUsePetNameTag (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
 | cash/serverbound/CashItemUsePetSkill (T1) |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ✅ |
 | cash/serverbound/CashItemUsePointReset (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
-| cash/serverbound/CashItemUseSongPlayer (T1) |  |  | ⬜ |  | ⬜ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
+| cash/serverbound/CashItemUseSongPlayer (T1) |  |  | ⬜ |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |
 | cash/serverbound/CashItemUseSuperMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | cash/serverbound/CashItemUseTeleportRock (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | cash/serverbound/CashItemUseTripleMegaphone (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -1059,8 +1059,8 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 212 | 0 | 19 | 194 | 596 | 0 | 49.9% |
 | v61 | 278 | 0 | 56 | 228 | 459 | 0 | 49.5% |
-| v72 | 296 | 0 | 69 | 242 | 414 | 0 | 48.8% |
-| v79 | 342 | 0 | 68 | 238 | 373 | 0 | 52.8% |
+| v72 | 297 | 0 | 69 | 241 | 414 | 0 | 48.9% |
+| v79 | 343 | 0 | 68 | 237 | 373 | 0 | 52.9% |
 | v83 | 469 | 0 | 0 | 324 | 228 | 0 | 59.1% |
 | v84 | 443 | 0 | 0 | 331 | 247 | 0 | 57.2% |
 | v87 | 477 | 0 | 0 | 354 | 190 | 0 | 57.4% |

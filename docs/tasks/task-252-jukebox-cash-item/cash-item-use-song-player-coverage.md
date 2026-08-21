@@ -71,6 +71,74 @@ the `packet-audit:verify` markers, and the evidence file paths all read
 `Cash` prefix; the prefix is a matrix/report naming convention, not part of
 the codec).
 
+## gms_v72 / gms_v79 grading gap — resolved (task-9 continuation)
+
+The initial pass on this task landed with gms_v72 and gms_v79 grading ❌
+("no audit report") despite carrying the identical marker + evidence +
+report triple as the other seven verified versions. This was NOT an
+evidence or fixture defect — it was a matrix-builder writer-consumption
+collision, the same class of bug `legacyConsumedSiblingWriters`
+(`tools/packet-audit/internal/matrix/build.go`) already documents and fixes
+for `NOTE_ACTION`/serverbound (task-137).
+
+**Root cause.** `Build()` indexes every audit report by its IDA function
+name (`IDAName`, the parent client function the report was harvested
+against) and, for each registry op row, marks every report sharing that
+op's `fname` as "consumed" by the op row (`usedWriters`) — a consumed
+sub-struct writer is skipped in the sub-struct pass rather than graded on
+its own evidence, unless it is explicitly allow-listed AND its own grade is
+independently `StateVerified` (`protectedWriters`).
+
+On gms_v72 and gms_v79, `USE_CASH_ITEM`'s registry primary `fname` is
+`CWvsContext::SendConsumeCashItemUseRequest` — the exact `IDAName` on the
+`CashItemUseSongPlayer` audit report (and four of its case-arm siblings:
+`CashItemUseMapleTV`, `CashItemUseMegaphone`, `CashItemUseSuperMegaphone`,
+`CashItemUseTripleMegaphone`; confirmed via `grep -l '"IDAName":
+"CWvsContext::SendConsumeCashItemUseRequest"'
+docs/packets/audits/gms_v{72,79}/*.json`). So the `USE_CASH_ITEM` op row
+swallowed the `CashItemUseSongPlayer` writer on those two versions,
+gap-filling it to "no audit report" even though its own report/evidence/
+marker triple was correct and fresh. On gms_v83 onward, `USE_CASH_ITEM`'s
+registry `fname` is instead `CItemSpeakerDlg::_SendConsumeCashItemUseRequest`
+(confirmed for v83/84/87/92/95/jms_v185) — a *different* string — so no
+collision occurs there and those five... six cells always graded correctly
+on their own evidence.
+
+**This is a grader defect, not a missing artifact** — the marker, evidence,
+and report for v72/v79 were already correct and identical in shape to
+v83's. The fix (`tools/packet-audit/internal/matrix/build.go`,
+`legacyConsumedSiblingWriters`) adds exactly one new allow-list entry:
+
+```go
+opKey("USE_CASH_ITEM", opregistry.DirServerbound): {
+    "CashItemUseSongPlayer": true,
+},
+```
+
+This does not force a green cell: the `protectedWriters` gate still
+requires `gradeSubStructCell` to independently reach `StateVerified` before
+the cell is allowed to surface instead of being skipped — for
+`CashItemUseSongPlayer` on v72/v79 that grade is now reachable because its
+own evidence is fresh and its marker is present, exactly as it already is
+on the other eight versions. Re-running `packet-audit matrix` after the fix
+flips `STATUS.md`'s `cash/serverbound/CashItemUseSongPlayer` row from
+`❌ ❌` to `✅ ✅` on gms_v72/gms_v79 and changes nothing else in the file
+except the two version-summary row counts at the bottom (verified `git diff`
+touches only that one row plus the tool-hash line and the v72/v79 summary
+counts).
+
+**Deliberately out of scope.** The four sibling writers sharing the same
+fname collision on v72/v79 (`CashItemUseSuperMegaphone`, `CashItemUseMapleTV`,
+`CashItemUseMegaphone`, `CashItemUseTripleMegaphone`) are NOT added to the
+allow-list by this task even though some of them (e.g.
+`CashItemUseSuperMegaphone`) already carry pinned evidence for v72/v79 —
+per the CLAUDE.md scope-discipline rule and the packet-family precedent in
+`legacyConsumedSiblingWriters`'s own doc comment, each sibling should be
+added only after being independently re-verified for those versions on its
+own task, not opportunistically bundled here. `STATUS.md` still shows those
+four as ❌ on gms_v72/v79 after this task — that is the honest state; they
+were never (re)verified by task-252.
+
 ## Verification
 
 ```

@@ -2,6 +2,7 @@ package handler
 
 import (
 	character2 "atlas-channel/character"
+	"atlas-channel/character/factory"
 	"atlas-channel/maplelife"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -47,6 +48,58 @@ const (
 	mapleLifeCreateByteUnknown         = 0x62
 )
 
+// originalCreateMapleLifeFunc captures the real createMapleLifeFunc -- the
+// one that runs the al0..al3/gender/currentClass/sp mapping (design.md §11
+// A3) -- before newMapleLifeCreateEnv overrides the package var with a
+// capturing stub. TestMapleLifeCreateMapsTheWireToTheFactoryRequest restores
+// this so the mapping runs for real, and intercepts one level below it via
+// newFactoryProcessorFunc instead.
+var originalCreateMapleLifeFunc = createMapleLifeFunc
+
+// fakeFactoryProcessor is a factory.Processor test double that records
+// CreateMapleLife's arguments -- the mapped ints createMapleLifeFunc actually
+// forwards -- rather than the raw wire sub the createMapleLifeFunc-level seam
+// captures. SeedCharacter is unused by the Maple Life create path and panics
+// if called.
+type fakeFactoryProcessor struct {
+	createMapleLifeCalls []struct {
+		accountId    uint32
+		worldId      world.Id
+		name         string
+		classOrdinal uint32
+		gender       byte
+		face         uint32
+		hair         uint32
+		hairColor    uint32
+		skinColor    byte
+		sp           byte
+	}
+	transactionId string
+	err           error
+}
+
+func (f *fakeFactoryProcessor) SeedCharacter(uint32, world.Id, string, uint32, uint16, uint32, uint32, uint32, uint32, byte, uint32, uint32, uint32, uint32, byte, byte, byte, byte) (string, error) {
+	panic("fakeFactoryProcessor.SeedCharacter: not used by the Maple Life create path")
+}
+
+func (f *fakeFactoryProcessor) CreateMapleLife(accountId uint32, worldId world.Id, name string, classOrdinal uint32, gender byte, face uint32, hair uint32, hairColor uint32, skinColor byte, sp byte) (string, error) {
+	f.createMapleLifeCalls = append(f.createMapleLifeCalls, struct {
+		accountId    uint32
+		worldId      world.Id
+		name         string
+		classOrdinal uint32
+		gender       byte
+		face         uint32
+		hair         uint32
+		hairColor    uint32
+		skinColor    byte
+		sp           byte
+	}{accountId: accountId, worldId: worldId, name: name, classOrdinal: classOrdinal, gender: gender, face: face, hair: hair, hairColor: hairColor, skinColor: skinColor, sp: sp})
+	return f.transactionId, f.err
+}
+
+var _ factory.Processor = (*fakeFactoryProcessor)(nil)
+
 type mapleLifeCreateEnv struct {
 	t         *testing.T
 	ctx       context.Context
@@ -79,9 +132,9 @@ type mapleLifeCreateEnv struct {
 		scope   character2.NameScope
 	}
 
-	seedTransactionId string
-	seedErr           error
-	seedCalls         []struct {
+	mapleLifeTransactionId string
+	mapleLifeErr           error
+	mapleLifeCalls         []struct {
 		accountId uint32
 		worldId   world.Id
 		sub       cashsb.ItemUseMapleLife
@@ -113,7 +166,7 @@ func newMapleLifeCreateEnv(t *testing.T) *mapleLifeCreateEnv {
 	env.accountSlots = 3
 	env.charactersInWorld = 0
 	env.validity = character2.NameValidityResult{Valid: true}
-	env.seedTransactionId = "tx-1"
+	env.mapleLifeTransactionId = "tx-1"
 
 	env.wp = func(name string) (swriter.BodyFunc, error) {
 		return func(bl logrus.FieldLogger, bctx context.Context) func(encoder packet.Encode) []byte {
@@ -170,16 +223,16 @@ func newMapleLifeCreateEnv(t *testing.T) *mapleLifeCreateEnv {
 	}
 	t.Cleanup(func() { mapleLifeNameValidityFunc = origValidity })
 
-	origSeed := seedCharacterFunc
-	seedCharacterFunc = func(_ logrus.FieldLogger, _ context.Context, accountId uint32, worldId world.Id, sub cashsb.ItemUseMapleLife) (string, error) {
-		env.seedCalls = append(env.seedCalls, struct {
+	origMapleLife := createMapleLifeFunc
+	createMapleLifeFunc = func(_ logrus.FieldLogger, _ context.Context, accountId uint32, worldId world.Id, sub cashsb.ItemUseMapleLife) (string, error) {
+		env.mapleLifeCalls = append(env.mapleLifeCalls, struct {
 			accountId uint32
 			worldId   world.Id
 			sub       cashsb.ItemUseMapleLife
 		}{accountId: accountId, worldId: worldId, sub: sub})
-		return env.seedTransactionId, env.seedErr
+		return env.mapleLifeTransactionId, env.mapleLifeErr
 	}
-	t.Cleanup(func() { seedCharacterFunc = origSeed })
+	t.Cleanup(func() { createMapleLifeFunc = origMapleLife })
 
 	return env
 }
@@ -188,19 +241,40 @@ func (e *mapleLifeCreateEnv) tenant() tenant.Model {
 	return tenant.MustFromContext(e.ctx)
 }
 
+// mapleLifeSubmitParams is the full set of ItemUseMapleLife fields a submit
+// sub-body carries (derivation.md §2: sName, al[0..3], nGender,
+// nCurrentClass, nSP, update_time).
+type mapleLifeSubmitParams struct {
+	name         string
+	al0          int32
+	al1          int32
+	al2          int32
+	al3          int32
+	gender       int32
+	currentClass int32
+	sp           int32
+}
+
 // mapleLifeSubmitSub builds a real decoded ItemUseMapleLife the same way the
 // classification-543 arm would (character_cash_item_use.go), by round
 // tripping through its own wire codec -- littleEndianInt32/encodeAsciiString
 // are shared with character_cash_item_use_maple_life_test.go.
 func mapleLifeSubmitSub(name string) cashsb.ItemUseMapleLife {
-	raw := append([]byte{}, encodeAsciiString(name)...)
-	raw = append(raw, littleEndianInt32(0)...) // al0
-	raw = append(raw, littleEndianInt32(0)...) // al1
-	raw = append(raw, littleEndianInt32(0)...) // al2
-	raw = append(raw, littleEndianInt32(0)...) // al3
-	raw = append(raw, littleEndianInt32(0)...) // gender
-	raw = append(raw, littleEndianInt32(0)...) // currentClass
-	raw = append(raw, littleEndianInt32(0)...) // sp
+	return mapleLifeSubmitSubWith(mapleLifeSubmitParams{name: name})
+}
+
+// mapleLifeSubmitSubWith is mapleLifeSubmitSub's general form, for cases that
+// need to control al0..al3/gender/currentClass/sp rather than accept the
+// all-zero defaults.
+func mapleLifeSubmitSubWith(p mapleLifeSubmitParams) cashsb.ItemUseMapleLife {
+	raw := append([]byte{}, encodeAsciiString(p.name)...)
+	raw = append(raw, littleEndianInt32(p.al0)...)
+	raw = append(raw, littleEndianInt32(p.al1)...)
+	raw = append(raw, littleEndianInt32(p.al2)...)
+	raw = append(raw, littleEndianInt32(p.al3)...)
+	raw = append(raw, littleEndianInt32(p.gender)...)
+	raw = append(raw, littleEndianInt32(p.currentClass)...)
+	raw = append(raw, littleEndianInt32(p.sp)...)
 	raw = append(raw, littleEndianInt32(1)...) // updateTime
 
 	req := request.Request(raw)
@@ -285,8 +359,8 @@ func TestMapleLifeCreatePreCheckOrder(t *testing.T) {
 			if got != tc.wantArm {
 				t.Errorf("arm = %#x, want %#x", got, tc.wantArm)
 			}
-			if len(e.seedCalls) != 0 {
-				t.Errorf("seedCharacterFunc calls = %d, want 0", len(e.seedCalls))
+			if len(e.mapleLifeCalls) != 0 {
+				t.Errorf("createMapleLifeFunc calls = %d, want 0", len(e.mapleLifeCalls))
 			}
 			assertNoDestroySaga(t)
 		})
@@ -311,12 +385,12 @@ func TestMapleLifeCreateSlotLimitBoundary(t *testing.T) {
 			e.dispatch(mapleLifeSubmitSub("Chronicle"))
 
 			if tc.wantProceed {
-				if len(e.seedCalls) != 1 {
-					t.Fatalf("seedCharacterFunc calls = %d, want 1 (chars=%d, slots=%d)", len(e.seedCalls), tc.charactersInWorld, e.accountSlots)
+				if len(e.mapleLifeCalls) != 1 {
+					t.Fatalf("createMapleLifeFunc calls = %d, want 1 (chars=%d, slots=%d)", len(e.mapleLifeCalls), tc.charactersInWorld, e.accountSlots)
 				}
 			} else {
-				if len(e.seedCalls) != 0 {
-					t.Fatalf("seedCharacterFunc calls = %d, want 0 (chars=%d, slots=%d)", len(e.seedCalls), tc.charactersInWorld, e.accountSlots)
+				if len(e.mapleLifeCalls) != 0 {
+					t.Fatalf("createMapleLifeFunc calls = %d, want 0 (chars=%d, slots=%d)", len(e.mapleLifeCalls), tc.charactersInWorld, e.accountSlots)
 				}
 				got, ok := e.lastArm()
 				if !ok || got != mapleLifeCreateByteUnknown {
@@ -354,16 +428,16 @@ func TestMapleLifeCreateReChecksName(t *testing.T) {
 // nGender, nCurrentClass, nSP, update_time) -- unlike the brief's original
 // description of this test, there is no packet-carried value to substitute
 // or to assert a mismatch-log against. See task-13-report.md. This test is
-// therefore narrowed to what IS satisfiable: seedCharacterFunc must receive
+// therefore narrowed to what IS satisfiable: createMapleLifeFunc must receive
 // the SESSION's account/world.
 func TestMapleLifeCreateUsesSessionAccountAndWorld(t *testing.T) {
 	e := newMapleLifeCreateEnv(t)
 	e.dispatch(mapleLifeSubmitSub("Chronicle"))
 
-	if len(e.seedCalls) != 1 {
-		t.Fatalf("seedCharacterFunc calls = %d, want 1", len(e.seedCalls))
+	if len(e.mapleLifeCalls) != 1 {
+		t.Fatalf("createMapleLifeFunc calls = %d, want 1", len(e.mapleLifeCalls))
 	}
-	c := e.seedCalls[0]
+	c := e.mapleLifeCalls[0]
 	if c.accountId != e.s.AccountId() {
 		t.Errorf("accountId = %d, want session's %d", c.accountId, e.s.AccountId())
 	}
@@ -375,8 +449,8 @@ func TestMapleLifeCreateUsesSessionAccountAndWorld(t *testing.T) {
 func TestMapleLifeCreateMapsFactoryOutcomes(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		e := newMapleLifeCreateEnv(t)
-		e.seedTransactionId = "tx-1"
-		e.seedErr = nil
+		e.mapleLifeTransactionId = "tx-1"
+		e.mapleLifeErr = nil
 
 		e.dispatch(mapleLifeSubmitSub("Chronicle"))
 
@@ -397,8 +471,8 @@ func TestMapleLifeCreateMapsFactoryOutcomes(t *testing.T) {
 
 	t.Run("400 invalid look or name", func(t *testing.T) {
 		e := newMapleLifeCreateEnv(t)
-		e.seedTransactionId = ""
-		e.seedErr = requests.ErrBadRequest
+		e.mapleLifeTransactionId = ""
+		e.mapleLifeErr = requests.ErrBadRequest
 
 		e.dispatch(mapleLifeSubmitSub("Chronicle"))
 
@@ -413,8 +487,8 @@ func TestMapleLifeCreateMapsFactoryOutcomes(t *testing.T) {
 
 	t.Run("500 server error", func(t *testing.T) {
 		e := newMapleLifeCreateEnv(t)
-		e.seedTransactionId = ""
-		e.seedErr = errors.New("unknown error")
+		e.mapleLifeTransactionId = ""
+		e.mapleLifeErr = errors.New("unknown error")
 
 		e.dispatch(mapleLifeSubmitSub("Chronicle"))
 
@@ -429,8 +503,8 @@ func TestMapleLifeCreateMapsFactoryOutcomes(t *testing.T) {
 
 	t.Run("transport error", func(t *testing.T) {
 		e := newMapleLifeCreateEnv(t)
-		e.seedTransactionId = ""
-		e.seedErr = errors.New("dial tcp: connection refused")
+		e.mapleLifeTransactionId = ""
+		e.mapleLifeErr = errors.New("dial tcp: connection refused")
 
 		e.dispatch(mapleLifeSubmitSub("Chronicle"))
 
@@ -442,6 +516,210 @@ func TestMapleLifeCreateMapsFactoryOutcomes(t *testing.T) {
 			t.Error("expected no registry entry after a rejected seed")
 		}
 	})
+}
+
+// TestMapleLifeCreateMapsTheWireToTheFactoryRequest is the assertion §11 A8
+// says was missing: not just that a seam was called, but that the request the
+// channel actually sends carries the al0..al3/gender/currentClass/sp mapping
+// (design.md §11 A3). It restores the real createMapleLifeFunc -- the
+// harness's own capturing stub would bypass the mapping entirely -- and
+// intercepts one level below it, at newFactoryProcessorFunc, so the mapping
+// arithmetic runs for real and fakeFactoryProcessor records what it actually
+// forwards.
+func TestMapleLifeCreateMapsTheWireToTheFactoryRequest(t *testing.T) {
+	cases := []struct {
+		name             string
+		params           mapleLifeSubmitParams
+		wantFace         uint32
+		wantHair         uint32
+		wantHairColor    uint32
+		wantSkinColor    byte
+		wantGender       byte
+		wantClassOrdinal uint32
+		wantSP           byte
+	}{
+		{
+			name:             "plain values",
+			params:           mapleLifeSubmitParams{name: "Bob", al0: 20000, al1: 30030, al2: 2, al3: 1, gender: 0, currentClass: 0, sp: 5},
+			wantFace:         20000,
+			wantHair:         30030,
+			wantHairColor:    2,
+			wantSkinColor:    1,
+			wantGender:       0,
+			wantClassOrdinal: 0,
+			wantSP:           5,
+		},
+		{
+			name:             "hair needs normalising",
+			params:           mapleLifeSubmitParams{name: "Bob", al0: 20000, al1: 30034, al2: 2, al3: 1, gender: 0, currentClass: 0, sp: 5},
+			wantFace:         20000,
+			wantHair:         30030,
+			wantHairColor:    2,
+			wantSkinColor:    1,
+			wantGender:       0,
+			wantClassOrdinal: 0,
+			wantSP:           5,
+		},
+		{
+			name:             "colour needs normalising",
+			params:           mapleLifeSubmitParams{name: "Bob", al0: 20000, al1: 30030, al2: 12, al3: 1, gender: 0, currentClass: 0, sp: 5},
+			wantFace:         20000,
+			wantHair:         30030,
+			wantHairColor:    2,
+			wantSkinColor:    1,
+			wantGender:       0,
+			wantClassOrdinal: 0,
+			wantSP:           5,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newMapleLifeCreateEnv(t)
+			createMapleLifeFunc = originalCreateMapleLifeFunc
+			t.Cleanup(func() { createMapleLifeFunc = originalCreateMapleLifeFunc })
+
+			fp := &fakeFactoryProcessor{transactionId: "tx-1"}
+			origNewProc := newFactoryProcessorFunc
+			newFactoryProcessorFunc = func(_ logrus.FieldLogger, _ context.Context) factory.Processor { return fp }
+			t.Cleanup(func() { newFactoryProcessorFunc = origNewProc })
+
+			e.dispatch(mapleLifeSubmitSubWith(tc.params))
+
+			if len(fp.createMapleLifeCalls) != 1 {
+				t.Fatalf("CreateMapleLife calls = %d, want 1", len(fp.createMapleLifeCalls))
+			}
+			c := fp.createMapleLifeCalls[0]
+			if c.accountId != e.s.AccountId() {
+				t.Errorf("accountId = %d, want session's %d", c.accountId, e.s.AccountId())
+			}
+			if c.worldId != e.s.WorldId() {
+				t.Errorf("worldId = %d, want session's %d", c.worldId, e.s.WorldId())
+			}
+			if c.name != tc.params.name {
+				t.Errorf("name = %q, want %q", c.name, tc.params.name)
+			}
+			if c.face != tc.wantFace {
+				t.Errorf("face = %d, want %d", c.face, tc.wantFace)
+			}
+			if c.hair != tc.wantHair {
+				t.Errorf("hair = %d, want %d", c.hair, tc.wantHair)
+			}
+			if c.hairColor != tc.wantHairColor {
+				t.Errorf("hairColor = %d, want %d", c.hairColor, tc.wantHairColor)
+			}
+			if c.skinColor != tc.wantSkinColor {
+				t.Errorf("skinColor = %d, want %d", c.skinColor, tc.wantSkinColor)
+			}
+			if c.gender != tc.wantGender {
+				t.Errorf("gender = %d, want %d", c.gender, tc.wantGender)
+			}
+			if c.classOrdinal != tc.wantClassOrdinal {
+				t.Errorf("classOrdinal = %d, want %d", c.classOrdinal, tc.wantClassOrdinal)
+			}
+			if c.sp != tc.wantSP {
+				t.Errorf("sp = %d, want %d", c.sp, tc.wantSP)
+			}
+		})
+	}
+}
+
+// TestMapleLifeCreateRejectsAnUnconfiguredClassOrdinal covers design.md §11
+// A7's gate 5: m_nCurrentClass cycles % 5 in the client's own OnButtonClicked
+// (gms_v95 @0x77edc0), so anything outside 0..4 did not come from the dialog
+// and is rejected, never clamped.
+func TestMapleLifeCreateRejectsAnUnconfiguredClassOrdinal(t *testing.T) {
+	cases := []struct {
+		name        string
+		class       int32
+		wantProceed bool
+	}{
+		{name: "min in range", class: 0, wantProceed: true},
+		{name: "max in range", class: 4, wantProceed: true},
+		{name: "above range", class: 5, wantProceed: false},
+		{name: "negative", class: -1, wantProceed: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newMapleLifeCreateEnv(t)
+			e.dispatch(mapleLifeSubmitSubWith(mapleLifeSubmitParams{name: "Chronicle", currentClass: tc.class}))
+
+			if tc.wantProceed {
+				if len(e.mapleLifeCalls) != 1 {
+					t.Fatalf("createMapleLifeFunc calls = %d, want 1", len(e.mapleLifeCalls))
+				}
+			} else {
+				if len(e.mapleLifeCalls) != 0 {
+					t.Fatalf("createMapleLifeFunc calls = %d, want 0", len(e.mapleLifeCalls))
+				}
+				got, ok := e.lastArm()
+				if !ok || got != mapleLifeCreateByteUnknown {
+					t.Errorf("arm = %#x, ok=%v, want %#x", got, ok, mapleLifeCreateByteUnknown)
+				}
+				assertNoDestroySaga(t)
+			}
+		})
+	}
+}
+
+// TestMapleLifeCreateRejectsAnOutOfRangeSP covers design.md §11 A7's gate 5:
+// m_nSP cycles % 11 in the client's own OnButtonClicked, so anything outside
+// 0..10 did not come from the dialog and is rejected, never clamped.
+func TestMapleLifeCreateRejectsAnOutOfRangeSP(t *testing.T) {
+	cases := []struct {
+		name        string
+		sp          int32
+		wantProceed bool
+	}{
+		{name: "min in range", sp: 0, wantProceed: true},
+		{name: "max in range", sp: 10, wantProceed: true},
+		{name: "above range", sp: 11, wantProceed: false},
+		{name: "negative", sp: -1, wantProceed: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newMapleLifeCreateEnv(t)
+			e.dispatch(mapleLifeSubmitSubWith(mapleLifeSubmitParams{name: "Chronicle", sp: tc.sp}))
+
+			if tc.wantProceed {
+				if len(e.mapleLifeCalls) != 1 {
+					t.Fatalf("createMapleLifeFunc calls = %d, want 1", len(e.mapleLifeCalls))
+				}
+			} else {
+				if len(e.mapleLifeCalls) != 0 {
+					t.Fatalf("createMapleLifeFunc calls = %d, want 0", len(e.mapleLifeCalls))
+				}
+				got, ok := e.lastArm()
+				if !ok || got != mapleLifeCreateByteUnknown {
+					t.Errorf("arm = %#x, ok=%v, want %#x", got, ok, mapleLifeCreateByteUnknown)
+				}
+				assertNoDestroySaga(t)
+			}
+		})
+	}
+}
+
+// TestMapleLifeCreateMapsConflictToNameTaken: the factory's own name check
+// (design.md §5.2's TOCTOU note -- the window between gate 4's re-check and
+// the factory call) surfaces as requests.ErrConflict, which must resolve to
+// the same NAME_TAKEN_AT_SUBMIT arm gate 4 itself would have written, not the
+// generic UNKNOWN_ERROR every other factory error maps to.
+func TestMapleLifeCreateMapsConflictToNameTaken(t *testing.T) {
+	e := newMapleLifeCreateEnv(t)
+	e.mapleLifeTransactionId = ""
+	e.mapleLifeErr = requests.ErrConflict
+
+	e.dispatch(mapleLifeSubmitSub("Chronicle"))
+
+	got, ok := e.lastArm()
+	if !ok || got != mapleLifeCreateByteNameTakenSubmit {
+		t.Errorf("arm = %#x, ok=%v, want %#x (NAME_TAKEN_AT_SUBMIT)", got, ok, mapleLifeCreateByteNameTakenSubmit)
+	}
+	if _, ok := maplelife.GetRegistry().Get(e.tenant(), mapleLifeCreateTestAccountId); ok {
+		t.Error("expected no registry entry after a rejected create")
+	}
 }
 
 // FR-5.1: consumption belongs to Task 14's CREATED path alone. Every row of

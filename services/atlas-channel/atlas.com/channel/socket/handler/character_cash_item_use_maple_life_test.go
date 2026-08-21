@@ -72,13 +72,13 @@ func cashItemUsePrefixForVersion(updateTimeFirst bool, updateTime uint32, slot i
 
 // installMapleLifeCreateObservationSeams swaps every seam
 // handleMapleLifeCreate's gates 3-4 call so that, IF the classification-543
-// arm is reached, it sails through them and reaches seedCharacterFunc --
+// arm is reached, it sails through them and reaches createMapleLifeFunc --
 // which is what this test actually observes. Under the task-13 rewire, a
 // maplelife registry entry is written only AFTER a successful factory call
 // (bug-543-is-the-submit-not-the-open.md), so "was there a registry entry"
 // no longer distinguishes "the arm was reached" from "the arm was reached
 // AND every downstream gate happened to pass AND the factory call
-// succeeded" -- three unrelated things. seedCharacterFunc is the narrowest
+// succeeded" -- three unrelated things. createMapleLifeFunc is the narrowest
 // seam only the Maple Life arm ever calls, so swapping it is what makes this
 // suite's classification-first assertion (PRD FR-2.2) observe arm SELECTION
 // again, not an accident of what a live REST call to atlas-account would
@@ -105,12 +105,12 @@ func installMapleLifeCreateObservationSeams(t *testing.T) *bool {
 	}
 	t.Cleanup(func() { mapleLifeNameValidityFunc = origValidity })
 
-	origSeed := seedCharacterFunc
-	seedCharacterFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id, _ cashsb.ItemUseMapleLife) (string, error) {
+	origCreate := createMapleLifeFunc
+	createMapleLifeFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id, _ cashsb.ItemUseMapleLife) (string, error) {
 		called = true
 		return "tx-test", nil
 	}
-	t.Cleanup(func() { seedCharacterFunc = origSeed })
+	t.Cleanup(func() { createMapleLifeFunc = origCreate })
 
 	return &called
 }

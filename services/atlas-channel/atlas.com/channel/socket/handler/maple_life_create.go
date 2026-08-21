@@ -42,37 +42,35 @@ var charactersInWorldFunc = func(l logrus.FieldLogger, ctx context.Context, acco
 	return character2.NewProcessor(l, ctx).GetForAccountInWorld(accountId, worldId)
 }
 
-// seedCharacterFunc is the test seam over the atlas-character-factory
-// `POST characters/seed` call (package-var injection precedent:
-// requestItemConsumeFunc in character_cash_item_use.go). Tests substitute
-// this so the five gates can be asserted without a live REST round trip.
-//
-// Field mapping from the decoded submit sub-body to factory.Processor's
-// SeedCharacter parameters is a GAP this task found and could not close from
-// any material in scope (task-13-report.md): ItemUseMapleLife carries only
-// name, al[0..3], gender, currentClass and sp -- four "avatar-look selection"
-// ints, not the eight independent face/hair/hairColor/skinColor/top/bottom/
-// shoes/weapon values SeedCharacter's signature expects (contrast
-// atlas-login's create_character.go, whose CLIENT packet carries all eight
-// explicitly). This implementation forwards al0..al3 positionally into
-// face/hair/hairColor/skinColor, currentClass into jobIndex, and sends
-// subJobIndex/top/bottom/shoes/weapon/strength/dexterity/intelligence/luck as
-// 0 -- the packet carries no wire value for any of those. This is a channel
-// wiring decision, not a verified fact about the client's al[] encoding; it
-// is safe only because "look fields go to the factory unvalidated by the
-// channel, by design" (services/atlas-character-factory/atlas.com/
-// character-factory/factory/processor.go:100-155, resource.go:73-101):
-// atlas-character-factory validates every one of these against the tenant's
-// creation template and returns 400 for a bad value, which this handler
-// already folds into MapleLifeErrorUnknownError.
-var seedCharacterFunc = func(l logrus.FieldLogger, ctx context.Context, accountId uint32, worldId world.Id, sub cashsb.ItemUseMapleLife) (string, error) {
-	return factory.NewProcessor(l, ctx).SeedCharacter(
+// newFactoryProcessorFunc is the test seam over factory.NewProcessor itself,
+// one level below createMapleLifeFunc (package-var injection precedent:
+// cashItemInSlotFunc in character_cash_item_use.go). design.md §11 A8's
+// finding was that the prior placeholder could ship a wrong wire mapping
+// undetected because every test swapped that placeholder wholesale -- so this
+// task puts the seam here instead, letting createMapleLifeFunc's own
+// al0..al3/gender/currentClass/sp mapping run for real in tests, and letting
+// a test observe the mapped ints it actually forwards to the factory.
+var newFactoryProcessorFunc = func(l logrus.FieldLogger, ctx context.Context) factory.Processor {
+	return factory.NewProcessor(l, ctx)
+}
+
+// createMapleLifeFunc is the test seam over the atlas-character-factory
+// Maple Life creation call (package-var injection precedent:
+// cashItemInSlotFunc in character_cash_item_use.go). It replaces Task 13's
+// prior placeholder, which forwarded al0..al3 positionally into
+// face/hair/hairColor/skinColor and nCurrentClass into the seed contract's
+// class index -- wrong on all three counts (design.md §11 A8). The channel
+// now forwards only what the player chose; the factory owns what a Maple
+// Life character is.
+var createMapleLifeFunc = func(l logrus.FieldLogger, ctx context.Context, accountId uint32, worldId world.Id, sub cashsb.ItemUseMapleLife) (string, error) {
+	return newFactoryProcessorFunc(l, ctx).CreateMapleLife(
 		accountId, worldId, sub.Name(),
-		uint32(sub.CurrentClass()), 0,
-		uint32(sub.AL0()), uint32(sub.AL1()), uint32(sub.AL2()), uint32(sub.AL3()),
-		byte(sub.Gender()),
-		0, 0, 0, 0,
-		0, 0, 0, 0,
+		uint32(sub.CurrentClass()), byte(sub.Gender()),
+		uint32(sub.AL0()),
+		uint32(sub.AL1()/10)*10,
+		uint32(sub.AL2()%10),
+		byte(sub.AL3()),
+		byte(sub.SP()),
 	)
 }
 
@@ -92,7 +90,7 @@ var seedCharacterFunc = func(l logrus.FieldLogger, ctx context.Context, accountI
 //  2. slot limit
 //  3. name re-check (FR-4.5) -- the only duplicate gate, since design C2 found
 //     the factory's seed path performs no duplicate check of its own
-//  4. account and world sourced from the session (FR-4.2)
+//  4. class ordinal and SP, wire-range only (design.md §11 A7)
 //
 // Nothing here consumes the item (FR-5.1): every gate below leaves the cash
 // slot untouched, and consumption belongs to Task 14's CREATED path alone.
@@ -170,10 +168,10 @@ func handleMapleLifeCreate(l logrus.FieldLogger, ctx context.Context, wp writer.
 			return
 		}
 
-		// Gate 5 -- account and world are sourced from the session, never
-		// the packet (FR-4.2): the same reasoning Task 11's beginMapleLife
-		// doc comment gave for the (now-removed) open path applies unchanged
-		// to the submit -- the session is the only trustworthy source of
+		// Note: account and world are sourced from the session, never the
+		// packet (FR-4.2): the same reasoning Task 11's beginMapleLife doc
+		// comment gave for the (now-removed) open path applies unchanged to
+		// the submit -- the session is the only trustworthy source of
 		// "which account is this" for an entry point that exists precisely
 		// because the account has no character yet to authenticate through.
 		// Unlike the brief's original description, ItemUseMapleLife (Task 6)
@@ -183,10 +181,33 @@ func handleMapleLifeCreate(l logrus.FieldLogger, ctx context.Context, wp writer.
 		// against or log a mismatch for. This is a defect in the brief the
 		// controller addendum did not resolve; see task-13-report.md.
 
-		transactionId, err := seedCharacterFunc(l, ctx, accountId, worldId, sub)
+		// Gate 5 -- class ordinal and SP (design.md §11 A7). The channel
+		// checks only what the WIRE constrains: m_nCurrentClass cycles % 5
+		// and m_nSP cycles % 11 in the client's own OnButtonClicked
+		// (gms_v95 @0x77edc0), so anything outside those ranges did not
+		// come from the dialog. WHICH ordinals are actually configured, and
+		// whether the class offers an SP step at all, is the factory's call
+		// -- the channel does not read the mapleLife block.
+		//
+		// Rejected, never clamped: A7 supersedes A4's earlier
+		// clamp-and-continue, because a clamped submit silently creates a
+		// character the player did not ask for.
+		if sub.CurrentClass() < 0 || sub.CurrentClass() > 4 {
+			fail("Character [%d] submitted Maple Life creation with class ordinal [%d], outside the client's 0..4 range.", s.CharacterId(), sub.CurrentClass())
+			return
+		}
+		if sub.SP() < 0 || sub.SP() > 10 {
+			fail("Character [%d] submitted Maple Life creation with sp [%d], outside the client's 0..10 range.", s.CharacterId(), sub.SP())
+			return
+		}
+
+		transactionId, err := createMapleLifeFunc(l, ctx, accountId, worldId, sub)
 		if err != nil {
-			logSeedFailure(l, accountId, err)
-			fail("Maple Life character creation for account [%d] was rejected by the factory.", accountId)
+			arm := logCreateFailure(l, accountId, err)
+			l.Warnf("Maple Life character creation for account [%d] was rejected by the factory.", accountId)
+			if announceErr := session.Announce(l)(ctx)(wp)(mlcb.MapleLifeErrorWriter)(mlcb.MapleLifeErrorBody(arm))(s); announceErr != nil {
+				l.WithError(announceErr).Errorf("Unable to write Maple Life error for account [%d].", accountId)
+			}
 			return
 		}
 
@@ -206,15 +227,22 @@ func handleMapleLifeCreate(l logrus.FieldLogger, ctx context.Context, wp writer.
 	}
 }
 
-// logSeedFailure classifies a seedCharacterFunc error by HTTP status for the
-// log line only -- the wire arm is MapleLifeErrorUnknownError regardless
-// (there are only three MAPLELIFE_ERROR arms; see
-// libs/atlas-packet/maplelife/clientbound/error.go:51,55,60), so the status
-// distinction is diagnostic, not client-visible.
-func logSeedFailure(l logrus.FieldLogger, accountId uint32, err error) {
+// logCreateFailure classifies a createMapleLifeFunc error by HTTP status for
+// the log line, and returns the MAPLELIFE_ERROR arm the caller should write.
+// requests.ErrConflict -- the factory's own name-collision check -- maps onto
+// the same NAME_TAKEN_AT_SUBMIT arm gate 4's re-check writes; every other
+// error (bad request, transport, unknown) maps onto the generic
+// MapleLifeErrorUnknownError, since there are only three MAPLELIFE_ERROR arms
+// (libs/atlas-packet/maplelife/clientbound/error.go:51,55,60).
+func logCreateFailure(l logrus.FieldLogger, accountId uint32, err error) string {
+	if errors.Is(err, requests.ErrConflict) {
+		l.WithError(err).Warnf("Account [%d]'s Maple Life submission was rejected because the name was taken by the time the character factory processed it.", accountId)
+		return mlcb.MapleLifeErrorNameTakenAtSubmit
+	}
 	if errors.Is(err, requests.ErrBadRequest) {
 		l.WithError(err).Warnf("Account [%d]'s Maple Life submission was rejected as invalid (look or name) by the character factory.", accountId)
-		return
+		return mlcb.MapleLifeErrorUnknownError
 	}
 	l.WithError(err).Errorf("Account [%d]'s Maple Life submission failed calling the character factory.", accountId)
+	return mlcb.MapleLifeErrorUnknownError
 }

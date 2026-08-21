@@ -8,10 +8,11 @@ import (
 )
 
 type ProcessorMock struct {
-	ForCharacterFunc func(f field.Model, characterId uint32, movement model.Movement) error
-	ForNPCFunc       func(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error
-	ForPetFunc       func(f field.Model, characterId uint32, petId uint32, movement model.Movement) error
-	ForMonsterFunc   func(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error
+	ForCharacterFunc      func(f field.Model, characterId uint32, movement model.Movement) error
+	ForNPCFunc            func(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error
+	ForPetFunc            func(f field.Model, characterId uint32, petId uint32, movement model.Movement) error
+	ForMonsterFunc        func(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error
+	TeleportCharacterFunc func(f field.Model, characterId uint32, x int16, y int16) error
 }
 
 var _ movement.Processor = (*ProcessorMock)(nil)
@@ -40,6 +41,13 @@ func (m *ProcessorMock) ForPet(f field.Model, characterId uint32, petId uint32, 
 func (m *ProcessorMock) ForMonster(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, mv model.Movement) error {
 	if m.ForMonsterFunc != nil {
 		return m.ForMonsterFunc(f, characterId, objectId, moveId, skillPossible, skill, skillId, skillLevel, mt, rt, mv)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) TeleportCharacter(f field.Model, characterId uint32, x int16, y int16) error {
+	if m.TeleportCharacterFunc != nil {
+		return m.TeleportCharacterFunc(f, characterId, x, y)
 	}
 	return nil
 }

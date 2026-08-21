@@ -9,6 +9,7 @@ import (
 	monsterinfo "atlas-channel/monster/information"
 	controllernpc "atlas-channel/npc/controller"
 	"atlas-channel/pet"
+	"atlas-channel/position"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
@@ -41,6 +42,18 @@ type Processor interface {
 	ForNPC(f field.Model, characterId uint32, objectId uint32, unk byte, unk2 byte, movement model.Movement) error
 	ForPet(f field.Model, characterId uint32, petId uint32, movement model.Movement) error
 	ForMonster(f field.Model, characterId uint32, objectId uint32, moveId int16, skillPossible bool, skill int8, skillId int16, skillLevel int16, mt model.MultiTargetForBall, rt model.RandTimeForAreaAttack, movement model.Movement) error
+	// TeleportCharacter publishes an authoritative position for a character that
+	// relocated without a movement path — an inner portal. It emits the SAME
+	// COMMAND_TOPIC_CHARACTER_MOVEMENT command ForCharacter emits, so
+	// atlas-character remains the single position authority, and it emits NO
+	// clientbound broadcast: the client performed the teleport locally and its
+	// next MOVE carries the TELEPORT element that relays it to the field
+	// (design §4.4).
+	//
+	// fh is published as 0 — portal data carries no foothold and inventing one is
+	// not an option. atlas-character preserves the stored foothold on a zero fh
+	// (see services/atlas-character/.../character/processor.go Move).
+	TeleportCharacter(f field.Model, characterId uint32, x int16, y int16) error
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) Processor {
@@ -69,7 +82,20 @@ func (p *ProcessorImpl) ForCharacter(f field.Model, characterId uint32, movement
 		if err != nil {
 			return
 		}
+		position.GetRegistry().Put(p.t, characterId, position.Position{X: ms.X, Y: ms.Y})
 		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
+		}
+	})
+	return nil
+}
+
+// TeleportCharacter is documented on the Processor interface.
+func (p *ProcessorImpl) TeleportCharacter(f field.Model, characterId uint32, x int16, y int16) error {
+	position.GetRegistry().Put(p.t, characterId, position.Position{X: x, Y: y})
+	routine.Go(p.l, p.ctx, func(_ context.Context) {
+		err := producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, x, y, 0, 0))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}

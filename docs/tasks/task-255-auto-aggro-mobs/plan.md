@@ -693,7 +693,14 @@ Append to `services/atlas-monsters/atlas.com/monsters/monster/registry_test.go` 
 | `controller without aggro flips` | `ControlMonster(tm, uid, 7)` | `SetAggro(tm, uid, 7, 5000)` | `true` | `false` | `true` | `5000` |
 | `controller with aggro stamps lease only` | `ControlMonsterWithAggro(tm, uid, 7, 1000)` | `SetAggro(tm, uid, 7, 9000)` | `false` | `true` | `true` | `9000` |
 | `non-controller is not applied` | `ControlMonster(tm, uid, 7)` | `SetAggro(tm, uid, 9, 5000)` | `false` | `false` | `false` | `0` |
-| `damage entries untouched` | `ControlMonster(tm, uid, 7)` then `ApplyDamage(tm, 8, 100, uid, 1000)` | `SetAggro(tm, uid, 7, 5000)` | `true` | `false` | `true` | `5000` |
+| `damage entries untouched` | `ControlMonster(tm, uid, 7)` then `ApplyDamage(tm, 8, 100, uid, 1000)` | `SetAggro(tm, uid, 7, 5000)` | `false` | `true` | `true` | `5000` |
+
+> Corrected during execution (Task 7 review, adjudicated against design.md §6.5/§10):
+> the last row originally read `Changed=true, LeaseOnly=false`. `ApplyDamage`
+> flips `ControllerHasAggro` on the first hit against *any* controlled monster,
+> regardless of who dealt the damage, so the given-sequence already leaves
+> `ControllerHasAggro=true` before `SetAggro` runs — making this a
+> controller-with-aggro call, which stamps the lease and emits nothing.
 
 The last case additionally asserts `len(got.Monster.DamageEntries()) == 1` and `got.Monster.DamageEntries()[0].CharacterId == 8` — `SetAggro` must never write a damage entry (FR-4.5).
 

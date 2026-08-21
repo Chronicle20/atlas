@@ -83,6 +83,20 @@ func (tk *MonsterAggroDecayTask) Run() {
 			}
 			entries := m.DamageEntries()
 			if len(entries) == 0 {
+				// Auto-aggro lease (design §4): a mob aggro'd with no damage entries is
+				// invisible to the damage-decay path below, so it would stay aggro'd
+				// forever and keep making skill decisions against nobody.
+				if m.ControllerHasAggro() && nowMs-m.AggroRefreshedMs() > AutoAggroLeaseTtlMs {
+					summary, err := GetMonsterRegistry().ReleaseAggroLease(ten, m.UniqueId())
+					if err != nil {
+						tk.l.WithError(err).Errorf("Aggro lease release failed for monster [%d].", m.UniqueId())
+						continue
+					}
+					if summary.AggroFlippedOff {
+						_ = tk.emit(ten, EnvEventTopicMonsterStatus, aggroChangedStatusEventProvider(summary.Monster, summary.ControllerCharacterId, false))
+						tk.l.Debugf("Auto-aggro lease expired; monster [%d] released from controller [%d].", summary.Monster.UniqueId(), summary.ControllerCharacterId)
+					}
+				}
 				continue
 			}
 			needsWork := false

@@ -15277,6 +15277,22 @@
           "comment": "nItemID"
         }
       ]
+    },
+    "CMob::ApplyControl": {
+      "address": "0x6eba3c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "sub_6EBB7D(this->m_pTemplate"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "sub_6EBB7D(this->m_pTemplate"
+        }
+      ]
     }
   }
 }

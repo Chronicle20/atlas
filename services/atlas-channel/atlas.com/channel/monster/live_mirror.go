@@ -27,6 +27,7 @@ type LiveEntry struct {
 	Mp                 uint32
 	MaxMp              uint32
 	ControllerHasAggro bool
+	ControlCharacterId uint32
 	LastWrite          time.Time
 }
 
@@ -73,6 +74,7 @@ func LiveEntryFromModel(mo Model) LiveEntry {
 		Mp:                 mo.Mp(),
 		MaxMp:              mo.MaxMp(),
 		ControllerHasAggro: mo.ControllerHasAggro(),
+		ControlCharacterId: mo.ControlCharacterId(),
 	}
 }
 
@@ -142,6 +144,26 @@ func (m *LiveMirror) UpdateAggro(t tenant.Model, uniqueId uint32, aggro bool) {
 		return
 	}
 	e.ControllerHasAggro = aggro
+	e.LastWrite = time.Now()
+	tenantMap[uniqueId] = e
+}
+
+// UpdateControl sets the entry's current controller. Update only — see
+// UpdateMp for why events never create entries. This is an optimisation for
+// the auto-aggro rate gate (it lets the channel prefer "am I the controller"
+// without a REST call); it is never an authority.
+func (m *LiveMirror) UpdateControl(t tenant.Model, uniqueId uint32, controllerId uint32) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	tenantMap, ok := m.perTenant[t.Id()]
+	if !ok {
+		return
+	}
+	e, ok := tenantMap[uniqueId]
+	if !ok {
+		return
+	}
+	e.ControlCharacterId = controllerId
 	e.LastWrite = time.Now()
 	tenantMap[uniqueId] = e
 }

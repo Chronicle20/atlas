@@ -71,7 +71,9 @@ regardless of which others are open. Omitting it hits whichever IDB the server
 considers active.
 
 `export` flags (source: `runExport` in `cmd/root.go`): `--version` (required),
-`--output` (required), `--ida-url` (default `http://192.168.20.3:13337/mcp`),
+`--output` (required), `--ida-url` (default `http://192.168.20.3:8745/mcp` —
+the multiplexing proxy; the legacy single-instance server at `:13337` has no
+`database` parameter support, so `--splice` fails against it),
 `--ida-database` (session id from `idb_list`; preferred), `--ida-port`
 (deprecated — the legacy per-port server only; fails against the session
 server, whose `select_instance` was removed), `--ida-timeout` (default 60s),

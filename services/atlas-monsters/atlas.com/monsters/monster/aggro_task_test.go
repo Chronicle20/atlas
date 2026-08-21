@@ -233,3 +233,167 @@ func TestAggroDecayTaskSleepTime(t *testing.T) {
 		t.Errorf("SleepTime=%v, want 1500ms", tk.SleepTime())
 	}
 }
+
+// TestAggroDecayTaskReleasesExpiredAutoAggroLease covers the lease branch
+// added for auto-aggro (design §4): a monster with controllerHasAggro but no
+// damage entries is invisible to the damage-entry decay path, so the lease
+// stamped by ControlMonsterWithAggro/SetAggro is the only thing that can
+// eventually release it.
+func TestAggroDecayTaskReleasesExpiredAutoAggroLease(t *testing.T) {
+	tests := []struct {
+		name          string
+		setup         func(r *Registry, ten tenant.Model, uid uint32)
+		nowMs         int64
+		wantEvents    int
+		wantAggroLeft bool
+	}{
+		{
+			name: "expired lease releases",
+			setup: func(r *Registry, ten tenant.Model, uid uint32) {
+				if _, err := r.ControlMonsterWithAggro(ten, uid, 7, 1000); err != nil {
+					t.Fatalf("ControlMonsterWithAggro: %v", err)
+				}
+			},
+			nowMs:         20_000,
+			wantEvents:    1,
+			wantAggroLeft: false,
+		},
+		{
+			name: "lease inside ttl is kept",
+			setup: func(r *Registry, ten tenant.Model, uid uint32) {
+				if _, err := r.ControlMonsterWithAggro(ten, uid, 7, 1000); err != nil {
+					t.Fatalf("ControlMonsterWithAggro: %v", err)
+				}
+			},
+			nowMs:         10_000,
+			wantEvents:    0,
+			wantAggroLeft: true,
+		},
+		{
+			name: "lease at exact ttl boundary is kept",
+			setup: func(r *Registry, ten tenant.Model, uid uint32) {
+				if _, err := r.ControlMonsterWithAggro(ten, uid, 7, 1000); err != nil {
+					t.Fatalf("ControlMonsterWithAggro: %v", err)
+				}
+			},
+			// age == AutoAggroLeaseTtlMs (15_000) exactly: nowMs - AggroRefreshedMs
+			// == 15_000, and the release guard is strict (`>`), so the lease must
+			// survive one more tick past this boundary before it releases.
+			nowMs:         1000 + AutoAggroLeaseTtlMs,
+			wantEvents:    0,
+			wantAggroLeft: true,
+		},
+		{
+			name: "damage entries take the existing path",
+			setup: func(r *Registry, ten tenant.Model, uid uint32) {
+				if _, err := r.ControlMonsterWithAggro(ten, uid, 7, 1000); err != nil {
+					t.Fatalf("ControlMonsterWithAggro: %v", err)
+				}
+				if _, err := r.ApplyDamage(ten, 7, 100, uid, 19_000); err != nil {
+					t.Fatalf("ApplyDamage: %v", err)
+				}
+			},
+			nowMs:         20_000,
+			wantEvents:    0,
+			wantAggroLeft: true,
+		},
+		{
+			name: "no aggro, no work",
+			setup: func(r *Registry, ten tenant.Model, uid uint32) {
+				if _, err := r.ControlMonster(ten, uid, 7); err != nil {
+					t.Fatalf("ControlMonster: %v", err)
+				}
+			},
+			nowMs:         20_000,
+			wantEvents:    0,
+			wantAggroLeft: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := GetMonsterRegistry()
+			ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+			ctx := context.Background()
+			r.Clear(ctx)
+			f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+			m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
+
+			tt.setup(r, ten, m.UniqueId())
+
+			tk, events, _ := newAggroTaskWithRecorder(t, nil)
+			tk.nowFn = func() int64 { return tt.nowMs }
+			tk.Run()
+
+			if len(*events) != tt.wantEvents {
+				t.Fatalf("expected %d events, got %d (%+v)", tt.wantEvents, len(*events), *events)
+			}
+			if tt.wantEvents == 1 {
+				if (*events)[0].Type != EventMonsterStatusAggroChanged {
+					t.Errorf("type=%s, want AGGRO_CHANGED", (*events)[0].Type)
+				}
+				if (*events)[0].ControllerCharacterId != 7 {
+					t.Errorf("ControllerCharacterId=%d, want 7", (*events)[0].ControllerCharacterId)
+				}
+				if (*events)[0].ControllerHasAggro {
+					t.Errorf("ControllerHasAggro=%v, want false", (*events)[0].ControllerHasAggro)
+				}
+			}
+
+			got, _ := r.GetMonster(ten, m.UniqueId())
+			if got.ControllerHasAggro() != tt.wantAggroLeft {
+				t.Errorf("ControllerHasAggro()=%v, want %v", got.ControllerHasAggro(), tt.wantAggroLeft)
+			}
+		})
+	}
+}
+
+// TestAggroDecayTaskLeaseSkipsBosses verifies the boss skip guards the lease
+// branch just like it guards the damage-decay branch above it.
+func TestAggroDecayTaskLeaseSkipsBosses(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
+	if _, err := r.ControlMonsterWithAggro(ten, m.UniqueId(), 7, 1000); err != nil {
+		t.Fatalf("ControlMonsterWithAggro: %v", err)
+	}
+
+	tk, events, _ := newAggroTaskWithRecorder(t, map[uint32]bool{9300018: true})
+	tk.nowFn = func() int64 { return 20_000 }
+	tk.Run()
+
+	if len(*events) != 0 {
+		t.Fatalf("boss should be skipped, got %d events", len(*events))
+	}
+	got, _ := r.GetMonster(ten, m.UniqueId())
+	if !got.ControllerHasAggro() {
+		t.Error("boss aggro flag released unexpectedly")
+	}
+}
+
+// TestAggroDecayTaskLeaseLeavesControllerIntact confirms that releasing an
+// expired lease does not clear the controller — losing aggro is not losing
+// control, matching DecayDamageEntries.
+func TestAggroDecayTaskLeaseLeavesControllerIntact(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50, "", "")
+	if _, err := r.ControlMonsterWithAggro(ten, m.UniqueId(), 7, 1000); err != nil {
+		t.Fatalf("ControlMonsterWithAggro: %v", err)
+	}
+
+	tk, _, _ := newAggroTaskWithRecorder(t, nil)
+	tk.nowFn = func() int64 { return 20_000 }
+	tk.Run()
+
+	got, _ := r.GetMonster(ten, m.UniqueId())
+	if got.ControlCharacterId() != 7 {
+		t.Errorf("ControlCharacterId()=%d, want 7", got.ControlCharacterId())
+	}
+}

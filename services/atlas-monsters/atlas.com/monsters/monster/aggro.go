@@ -26,3 +26,10 @@ const AggroSweepInterval = 1500 * time.Millisecond
 func IsAggroIdle(e entry, nowMs int64) bool {
 	return nowMs-e.LastHitMs > AggroIdleThresholdMs
 }
+
+// AutoAggroLeaseTtlMs is how long an auto-aggro claim survives without a
+// refresh. Auto-aggro creates no damage entry (FR-4.5), so the damage-entry
+// decay path can never release it; this lease is what does. The channel
+// forwards a refresh at most once per AutoAggroRefreshInterval (5s), so 15s
+// tolerates two missed refreshes before the mob goes passive.
+const AutoAggroLeaseTtlMs = int64(15_000)

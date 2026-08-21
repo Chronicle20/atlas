@@ -29302,6 +29302,22 @@
       "direction": "",
       "note": "Non-packet helper delegated to from CUser::OnChat's <default> arm. Decompiled at 0x97a035 (task-230): signature sub_97A035(_DWORD *this, char *SubStr) takes no CInPacket*, and the body makes no CInPacket::Decode* calls (only sub_AABF64/sub_44484B/sub_4463C8/sub_602B18, a chat-string path). calls:null therefore records a verified absence of wire reads, not an unfilled placeholder. Added to unblock report-gen descent through CUser::OnChat; unrelated to task-230's ops.",
       "calls": null
+    },
+    "CMob::ApplyControl": {
+      "address": "0x684492",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a2 - result >= 1000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a2 - result >= 1000"
+        }
+      ]
     }
   }
 }

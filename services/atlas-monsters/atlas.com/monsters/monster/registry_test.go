@@ -3,6 +3,7 @@ package monster
 import (
 	"atlas-monsters/character/hidden"
 	"context"
+	"errors"
 	"os"
 	"strconv"
 	"sync"
@@ -1570,5 +1571,183 @@ func TestMonsterMapIndexIsTenantScoped(t *testing.T) {
 	got := r.GetMonstersInMap(t2, f)
 	if len(got) != 0 {
 		t.Fatalf("tenant 2 saw %d of tenant 1's monsters in the same field, want 0", len(got))
+	}
+}
+
+// TestRegistrySetAggro covers the aggro-lease claim path: stamping the lease
+// for the current controller, flipping controllerHasAggro when it was not
+// already set, and rejecting a claim from a non-controller.
+func TestRegistrySetAggro(t *testing.T) {
+	tests := []struct {
+		name             string
+		given            func(t *testing.T, r *Registry, tm tenant.Model, uid uint32)
+		callCharacterId  uint32
+		callNowMs        int64
+		wantChanged      bool
+		wantLeaseOnly    bool
+		wantHasAggro     bool
+		wantAggroRefresh int64
+	}{
+		{
+			name: "controller without aggro flips",
+			given: func(t *testing.T, r *Registry, tm tenant.Model, uid uint32) {
+				if _, err := r.ControlMonster(tm, uid, 7); err != nil {
+					t.Fatalf("ControlMonster: %v", err)
+				}
+			},
+			callCharacterId:  7,
+			callNowMs:        5000,
+			wantChanged:      true,
+			wantLeaseOnly:    false,
+			wantHasAggro:     true,
+			wantAggroRefresh: 5000,
+		},
+		{
+			name: "controller with aggro stamps lease only",
+			given: func(t *testing.T, r *Registry, tm tenant.Model, uid uint32) {
+				if _, err := r.ControlMonsterWithAggro(tm, uid, 7, 1000); err != nil {
+					t.Fatalf("ControlMonsterWithAggro: %v", err)
+				}
+			},
+			callCharacterId:  7,
+			callNowMs:        9000,
+			wantChanged:      false,
+			wantLeaseOnly:    true,
+			wantHasAggro:     true,
+			wantAggroRefresh: 9000,
+		},
+		{
+			name: "non-controller is not applied",
+			given: func(t *testing.T, r *Registry, tm tenant.Model, uid uint32) {
+				if _, err := r.ControlMonster(tm, uid, 7); err != nil {
+					t.Fatalf("ControlMonster: %v", err)
+				}
+			},
+			callCharacterId:  9,
+			callNowMs:        5000,
+			wantChanged:      false,
+			wantLeaseOnly:    false,
+			wantHasAggro:     false,
+			wantAggroRefresh: 0,
+		},
+		{
+			// ApplyDamage flips controllerHasAggro true on the first hit of any
+			// controlled monster (TestApplyDamageWasFirstHit), regardless of which
+			// character dealt the damage. So by the time SetAggro runs here the
+			// monster is already aggro'd — a lease-only refresh, not a flip — per
+			// design.md §6.5/§10 ("controller-with-aggro emits nothing but stamps
+			// the lease"). The case still proves FR-4.5: SetAggro must not touch
+			// the damage entry ApplyDamage wrote.
+			name: "damage entries untouched",
+			given: func(t *testing.T, r *Registry, tm tenant.Model, uid uint32) {
+				if _, err := r.ControlMonster(tm, uid, 7); err != nil {
+					t.Fatalf("ControlMonster: %v", err)
+				}
+				if _, err := r.ApplyDamage(tm, 8, 100, uid, 1000); err != nil {
+					t.Fatalf("ApplyDamage: %v", err)
+				}
+			},
+			callCharacterId:  7,
+			callNowMs:        5000,
+			wantChanged:      false,
+			wantLeaseOnly:    true,
+			wantHasAggro:     true,
+			wantAggroRefresh: 5000,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tm := newTestTenant(t)
+			ctx := tenant.WithContext(context.Background(), tm)
+			r := GetMonsterRegistry()
+			r.Clear(ctx)
+
+			m := r.CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100000, 50, "", "")
+			uid := m.UniqueId()
+			tc.given(t, r, tm, uid)
+
+			got, err := r.SetAggro(tm, uid, tc.callCharacterId, tc.callNowMs)
+			if err != nil {
+				t.Fatalf("SetAggro: %v", err)
+			}
+			if got.Changed != tc.wantChanged {
+				t.Fatalf("Changed = %v, want %v", got.Changed, tc.wantChanged)
+			}
+			if got.LeaseOnly != tc.wantLeaseOnly {
+				t.Fatalf("LeaseOnly = %v, want %v", got.LeaseOnly, tc.wantLeaseOnly)
+			}
+			if got.Monster.ControllerHasAggro() != tc.wantHasAggro {
+				t.Fatalf("ControllerHasAggro() = %v, want %v", got.Monster.ControllerHasAggro(), tc.wantHasAggro)
+			}
+			if got.Monster.AggroRefreshedMs() != tc.wantAggroRefresh {
+				t.Fatalf("AggroRefreshedMs() = %d, want %d", got.Monster.AggroRefreshedMs(), tc.wantAggroRefresh)
+			}
+			if tc.name == "damage entries untouched" {
+				if len(got.Monster.DamageEntries()) != 1 {
+					t.Fatalf("DamageEntries() len = %d, want 1", len(got.Monster.DamageEntries()))
+				}
+				if got.Monster.DamageEntries()[0].CharacterId != 8 {
+					t.Fatalf("DamageEntries()[0].CharacterId = %d, want 8", got.Monster.DamageEntries()[0].CharacterId)
+				}
+			}
+		})
+	}
+}
+
+func TestRegistrySetAggroMissingMonster(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	GetMonsterRegistry().Clear(ctx)
+
+	_, err := GetMonsterRegistry().SetAggro(tm, 4242, 7, 5000)
+	if !errors.Is(err, errMonsterNotFound) {
+		t.Fatalf("SetAggro on a missing monster: err = %v, want errMonsterNotFound", err)
+	}
+}
+
+func TestControlMonsterWithAggroStampsLease(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r := GetMonsterRegistry()
+	r.Clear(ctx)
+
+	m := r.CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100000, 50, "", "")
+	uid := m.UniqueId()
+
+	got, err := r.ControlMonsterWithAggro(tm, uid, 9, 7777)
+	if err != nil {
+		t.Fatalf("ControlMonsterWithAggro: %v", err)
+	}
+	if !got.ControllerHasAggro() {
+		t.Fatal("ControllerHasAggro() = false, want true")
+	}
+	if got.ControlCharacterId() != 9 {
+		t.Fatalf("ControlCharacterId() = %d, want 9", got.ControlCharacterId())
+	}
+	if got.AggroRefreshedMs() != 7777 {
+		t.Fatalf("AggroRefreshedMs() = %d, want 7777", got.AggroRefreshedMs())
+	}
+}
+
+func TestAggroRefreshedMsRoundTripsThroughRedis(t *testing.T) {
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r := GetMonsterRegistry()
+	r.Clear(ctx)
+
+	m := r.CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100000, 50, "", "")
+	uid := m.UniqueId()
+
+	if _, err := r.ControlMonsterWithAggro(tm, uid, 9, 7777); err != nil {
+		t.Fatalf("ControlMonsterWithAggro: %v", err)
+	}
+
+	got, err := r.GetMonster(tm, uid)
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.AggroRefreshedMs() != 7777 {
+		t.Fatalf("AggroRefreshedMs() = %d, want 7777", got.AggroRefreshedMs())
 	}
 }

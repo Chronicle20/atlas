@@ -13642,6 +13642,22 @@
           "guard": "(__int16)result > 0 && result >= 200 && <default>"
         }
       ]
+    },
+    "CMob::ApplyControl": {
+      "address": "0x636320",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2 - result >= 1000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2 - result >= 1000"
+        }
+      ]
     }
   }
 }

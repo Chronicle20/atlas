@@ -1793,6 +1793,15 @@
         ]
       },
       {
+        "opCode": "0xBD",
+        "validator": "LoggedInValidator",
+        "handler": "AutoAggro",
+        "fname": "CMob::ApplyControl",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xBE",
         "validator": "LoggedInValidator",
         "handler": "MobDropPickupRequest",

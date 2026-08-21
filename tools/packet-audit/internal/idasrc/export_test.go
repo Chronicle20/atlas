@@ -1,7 +1,9 @@
 package idasrc
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -406,6 +408,91 @@ func TestResolveUnresolvedCall(t *testing.T) {
 	}
 	if got.Calls[1].Op != Unresolved {
 		t.Errorf("call[1].Op = %v, want Unresolved", got.Calls[1].Op)
+	}
+}
+
+// TestSpliceExportPreservesNoteFields is a regression test for a data-loss bug:
+// exportFn's on-disk "note" (singular, legacy) and "notes" (plural, canonical)
+// key variants must both round-trip through SpliceExport untouched, since the
+// splice re-marshals every existing entry through the exportFn struct. Before
+// the fix, exportFn only recognized "notes", so every "note" entry silently
+// lost its note on any splice. This must fail against the pre-fix tag (Notes
+// string `json:"notes,omitempty"` with no legacy-key handling).
+func TestSpliceExportPreservesNoteFields(t *testing.T) {
+	existing := `{"functions":{
+	  "Legacy::HasNote":{"address":"0x1","direction":"clientbound","note":"legacy singular key","calls":[{"op":"Decode1","comment":"x"}]},
+	  "Canonical::HasNotes":{"address":"0x2","direction":"clientbound","notes":"canonical plural key","calls":[{"op":"Decode1","comment":"x"}]},
+	  "Splice::Target":{"address":"0x3","direction":"clientbound","calls":[]}
+	}}`
+	p := filepath.Join(t.TempDir(), "notes.json")
+	if err := os.WriteFile(p, []byte(existing), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fresh := exportFile{Functions: map[string]exportFn{
+		"Splice::Target": {Address: "0x3", Direction: "clientbound", Calls: []rawCall{{Op: "Decode2", Comment: "y"}}},
+	}}
+	out, err := SpliceExport(p, fresh, "Splice::Target")
+	if err != nil {
+		t.Fatalf("SpliceExport: %v", err)
+	}
+	var merged exportFile
+	if err := json.Unmarshal(out, &merged); err != nil {
+		t.Fatalf("unmarshal spliced output: %v", err)
+	}
+	if got := merged.Functions["Legacy::HasNote"].Note; got != "legacy singular key" {
+		t.Errorf("Legacy::HasNote note dropped by splice: got %q, want %q", got, "legacy singular key")
+	}
+	if got := merged.Functions["Canonical::HasNotes"].Notes; got != "canonical plural key" {
+		t.Errorf("Canonical::HasNotes note dropped by splice: got %q, want %q", got, "canonical plural key")
+	}
+	// The original key spelling is preserved on disk, not normalized.
+	if !bytes.Contains(out, []byte(`"note": "legacy singular key"`)) {
+		t.Errorf("expected legacy singular \"note\" key preserved verbatim in output:\n%s", out)
+	}
+	if !bytes.Contains(out, []byte(`"notes": "canonical plural key"`)) {
+		t.Errorf("expected canonical \"notes\" key preserved verbatim in output:\n%s", out)
+	}
+}
+
+// TestSpliceExportPreservesBothNoteFieldsWhenBothPresent is a regression test
+// for round 2 of the note/notes data-loss bug: an entry that carries BOTH the
+// "note" and "notes" keys with genuinely distinct content (as seen on disk in
+// docs/packets/ida-exports/gms_jms_185.json, e.g.
+// CUIFadeYesNo::OnButtonClicked#Join and CField::SendSetMemberGradeMsg) must
+// round-trip through SpliceExport with both values intact under their
+// original key names. Before this fix, exportFn's switch recognized only one
+// of "note"/"notes" per entry, so the non-"notes" value was silently dropped.
+func TestSpliceExportPreservesBothNoteFieldsWhenBothPresent(t *testing.T) {
+	existing := `{"functions":{
+	  "Both::HasNoteAndNotes":{"address":"0x1","direction":"clientbound","note":"NOTE-VALUE","notes":"NOTES-VALUE","calls":[{"op":"Decode1","comment":"x"}]},
+	  "Splice::Target":{"address":"0x3","direction":"clientbound","calls":[]}
+	}}`
+	p := filepath.Join(t.TempDir(), "both_notes.json")
+	if err := os.WriteFile(p, []byte(existing), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	fresh := exportFile{Functions: map[string]exportFn{
+		"Splice::Target": {Address: "0x3", Direction: "clientbound", Calls: []rawCall{{Op: "Decode2", Comment: "y"}}},
+	}}
+	out, err := SpliceExport(p, fresh, "Splice::Target")
+	if err != nil {
+		t.Fatalf("SpliceExport: %v", err)
+	}
+	var merged exportFile
+	if err := json.Unmarshal(out, &merged); err != nil {
+		t.Fatalf("unmarshal spliced output: %v", err)
+	}
+	if got := merged.Functions["Both::HasNoteAndNotes"].Note; got != "NOTE-VALUE" {
+		t.Errorf("Both::HasNoteAndNotes.note dropped by splice: got %q, want %q", got, "NOTE-VALUE")
+	}
+	if got := merged.Functions["Both::HasNoteAndNotes"].Notes; got != "NOTES-VALUE" {
+		t.Errorf("Both::HasNoteAndNotes.notes dropped by splice: got %q, want %q", got, "NOTES-VALUE")
+	}
+	if !bytes.Contains(out, []byte(`"note": "NOTE-VALUE"`)) {
+		t.Errorf("expected \"note\" key preserved verbatim in output:\n%s", out)
+	}
+	if !bytes.Contains(out, []byte(`"notes": "NOTES-VALUE"`)) {
+		t.Errorf("expected \"notes\" key preserved verbatim in output:\n%s", out)
 	}
 }
 

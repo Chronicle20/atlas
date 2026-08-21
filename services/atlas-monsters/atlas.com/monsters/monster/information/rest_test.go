@@ -41,3 +41,35 @@ func TestExtract_PopulatesRecoveryFields(t *testing.T) {
 		t.Errorf("MpRecovery: got %d, want 5", m.MpRecovery())
 	}
 }
+
+func TestExtractFirstAttack(t *testing.T) {
+	tests := []struct {
+		name string
+		in   bool
+		want bool
+	}{
+		{name: "aggressive template", in: true, want: true},
+		{name: "passive template", in: false, want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rm := RestModel{FirstAttack: tt.in}
+			got, err := Extract(rm)
+			if err != nil {
+				t.Fatalf("Extract: %v", err)
+			}
+			if got.FirstAttack() != tt.want {
+				t.Fatalf("FirstAttack() = %v, want %v", got.FirstAttack(), tt.want)
+			}
+		})
+	}
+}
+
+func TestModelBuilderSetFirstAttack(t *testing.T) {
+	if got := NewModelBuilder().SetFirstAttack(true).Build().FirstAttack(); got != true {
+		t.Fatalf("SetFirstAttack(true).Build().FirstAttack() = %v, want true", got)
+	}
+	if got := NewModelBuilder().Build().FirstAttack(); got != false {
+		t.Fatalf("Build().FirstAttack() zero value = %v, want false", got)
+	}
+}

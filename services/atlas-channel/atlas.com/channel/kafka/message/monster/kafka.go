@@ -20,6 +20,7 @@ const (
 	CommandTypeKill           = "KILL"
 	CommandTypeClearAggro     = "CLEAR_AGGRO"
 	CommandTypeForceControl   = "FORCE_CONTROL"
+	CommandTypeSetAggro       = "SET_AGGRO"
 )
 
 type DamageFriendlyCommandBody struct {
@@ -120,6 +121,16 @@ type ClearAggroCommandBody struct{}
 // that exact name and type in DamageCommandBody, KillCommandBody and the
 // catch body, so it introduces no unmarshal collision on the shared topic.
 type ForceControlCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
+// SetAggroCommandBody asks atlas-monsters to grant auto-aggro on a client
+// AUTO_AGGRO claim. characterId is the claimant. The proximity score the
+// packet carries is deliberately NOT on this command: it is a channel-side
+// admission criterion, and atlas-monsters makes no decision from it.
+//
+// Mirrors atlas-monsters' setAggroCommandBody — edit both together.
+type SetAggroCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 

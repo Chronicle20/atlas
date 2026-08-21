@@ -58,6 +58,29 @@ func TestUseBasicAttackCommandBody_Decode(t *testing.T) {
 	}
 }
 
+func TestSetAggroCommandUnmarshal(t *testing.T) {
+	raw := []byte(`{"worldId":1,"channelId":2,"mapId":100000000,"instance":"00000000-0000-0000-0000-000000000000","monsterId":4242,"type":"SET_AGGRO","body":{"characterId":777}}`)
+	var c command[setAggroCommandBody]
+	if err := json.Unmarshal(raw, &c); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if c.Type != CommandTypeSetAggro {
+		t.Errorf("Type = %s, want %s", c.Type, CommandTypeSetAggro)
+	}
+	if c.MonsterId != 4242 {
+		t.Errorf("MonsterId = %d, want 4242", c.MonsterId)
+	}
+	if c.Body.CharacterId != 777 {
+		t.Errorf("Body.CharacterId = %d, want 777", c.Body.CharacterId)
+	}
+}
+
+func TestSetAggroCommandTypeConstant(t *testing.T) {
+	if CommandTypeSetAggro != "SET_AGGRO" {
+		t.Errorf("CommandTypeSetAggro = %s, want SET_AGGRO", CommandTypeSetAggro)
+	}
+}
+
 func TestSpawnFieldCommandBody_Decode(t *testing.T) {
 	raw := []byte(`{"monsterId":100100,"x":250,"y":-130,"fh":7,"team":0}`)
 	var body spawnFieldCommandBody

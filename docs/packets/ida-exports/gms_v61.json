@@ -19026,5 +19026,11 @@
         }
       ]
     }
+,
+    "CNpcPool::OnNpcImitateData": {
+      "address": "0x5efc2e",
+      "direction": "",
+      "calls": null
+    }
   }
 }

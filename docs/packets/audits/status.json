@@ -2,7 +2,7 @@
   "toolSha": "95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad",
   "exportHashes": {
     "gms_v48": "f46a1c091a8f557a7a0a47c295bed12c56e0f70e23552726d1ca6586eadbf0dd",
-    "gms_v61": "6c974c037a17229958f04d245f414de004f5530852466818e48167a4172e7c70",
+    "gms_v61": "4e11a8f067df26f942bb5674aa553acbe19b1e59b57f899c01119025805464e2",
     "gms_v72": "f22e6d780c0ca97b845d09876f2a4724b612189f9d9d353451be062bcb741c56",
     "gms_v79": "efa7d503bee32a270bf80e0d437259e1b4e13e7d7bab2058427def64e781a2a3",
     "gms_v83": "9b938038def5da2b3e98681db301b5299a0c35274b2d71b92be3b364505d57d8",
@@ -11832,8 +11832,7 @@
           "opcode": -1
         },
         "gms_v61": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 78
         },
         "gms_v72": {

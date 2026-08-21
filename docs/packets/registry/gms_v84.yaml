@@ -512,6 +512,7 @@
   direction: clientbound
   opcode: 83
   fname: CNpcPool::OnNpcImitateData
+  packet: npc/clientbound/ImitatedNpcData
   provenance: ida-discovered
   ida:
     address: 7276891

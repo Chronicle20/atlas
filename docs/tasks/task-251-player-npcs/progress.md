@@ -1176,3 +1176,144 @@ Carry these into the pre-PR review — all still open, none introduced by Task 2
   conversation step fails with `errorCode` set rather than timing out.
 
 Standing operating rules on this branch are unchanged — see the Session 7 handoff above.
+
+# Session 10 — pre-PR gate sequence
+
+Started from `9c35b3870`, tree clean, all implementation complete.
+
+**Guards (step 2 of the Final gate) — all pass:**
+
+| Guard | Result |
+|---|---|
+| `go run ./tools/packet-audit matrix --check` | exit 0 |
+| `tools/service-registration-guard.sh` | exit 0 |
+| `tools/plan-lint.sh docs/tasks/task-251-player-npcs/plan.md` | exit 0 — 0 errors, 9 advisory F4 warnings (oversized/multi-service tasks 7, 8, 14, 16, 17, 20, 22; all already executed, two of them via the recorded PARTIAL split) |
+
+**Flagless `tools/verify.sh`** launched against the full merge base (`5f299e4bb`) — running.
+
+**Code-review roster dispatched** (all `model: sonnet`, all read-only, artifacts under `docs/tasks/task-251-player-npcs/`):
+
+| Agent | Scope | Artifact |
+|---|---|---|
+| `backend-guidelines-reviewer` | `services/atlas-player-npcs` in full (greenfield, 68 files) | `audit-backend-player-npcs.md` |
+| `backend-guidelines-reviewer` | changed files in the other 7 services + 4 libs | `audit-backend-consumers.md` |
+| `plan-adherence-reviewer` | Tasks 1-8 | `audit-adherence-1-8.md` |
+| `plan-adherence-reviewer` | Tasks 9-16 | `audit-adherence-9-16.md` |
+| `plan-adherence-reviewer` | Tasks 17-23 (incl. 23a/b/c) | `audit-adherence-17-23.md` |
+| `packet-completeness-critic` | Tasks 5-7 packet surface | `completeness-critic.md` |
+
+Adherence shards are non-overlapping and no unscoped run was dispatched alongside them.
+
+## Review results — all six agents reported
+
+| Agent | Verdict | Blocking |
+|---|---|---|
+| `plan-adherence-reviewer` 1-8 | APPROVED | 0 |
+| `plan-adherence-reviewer` 9-16 | APPROVED | 0 |
+| `plan-adherence-reviewer` 17-23 | APPROVED | 0 |
+| `packet-completeness-critic` | CLEAN (after manifest) | 0 |
+| `backend-guidelines-reviewer` consumers | CHANGES_REQUIRED | 4 (1 rejected → 3) |
+| `backend-guidelines-reviewer` atlas-player-npcs | CHANGES_REQUIRED | 12 |
+
+Plan adherence is fully covered by three non-overlapping shards, no unscoped run alongside them.
+All three came back zero-findings, and shard 9-16 independently re-confirmed the two mid-plan
+controller rulings are in shipped source rather than only claimed.
+
+### Coverage manifest — written at the gate, not deferred
+
+The packet critic's first pass returned one blocking finding: `coverage-manifest.yaml` never
+existed. This task was scoped as a feature task whose plan Tasks 5-7 happen to carry a packet
+surface, so no manifest was declared up front.
+
+Rather than record a documented gap, the manifest was produced from the branch's actual delta:
+`libs/atlas-packet` changed exactly two codecs (`npc/clientbound/imitated_npc_data.go`,
+`npc/clientbound/remove.go`) and `status.json` moved exactly two rows
+(`IMITATED_NPC_DATA`, `REMOVE_NPC`, both clientbound, every cell `incomplete -> verified`).
+The two sets agree 1:1. The file's header states plainly that it was written late.
+
+**Corrected count: 19 cells promoted, not the 28 the critic's first pass reported.** `REMOVE_NPC`
+covers all ten versions; `IMITATED_NPC_DATA` covers nine, being `n-a` on `gms_v48`. Confirmed
+from three directions: the `status.json` row states, adherence shard 1-8's independent STATUS.md
+read, and the critic's own re-run.
+
+The critic was re-dispatched with an explicit instruction to confirm the two-file claim itself
+rather than accept the controller's derivation. It did, and returned CLEAN/0.
+
+### One rejected finding — DOM-31, `atlas-tenants`
+
+The consumers audit flagged the four new Player NPC config handlers for resolving tenant identity
+via `rest.ParseTenantId` (URL path) instead of `tenant.MustFromContext(ctx)`.
+
+**Rejected as a task defect.** All 45 handlers in
+`services/atlas-tenants/atlas.com/tenants/configuration/resource.go` use `rest.ParseTenantId`;
+zero use `MustFromContext`. The new four follow the file's universal existing pattern — correctly,
+since atlas-tenants is the tenant-administration service, where the tenant is the resource being
+addressed rather than ambient caller context. Changing only the new four would leave them
+inconsistent with the other 41. If the convention is wrong it is wrong repo-wide and is not this
+branch's to fix.
+
+### Controller spot-checks before accepting the rest
+
+Two claims from each audit were verified directly rather than taken at face value, since one
+finding had already proven false:
+
+- DOM-01 (channel builder): genuine. 20 sibling builders in atlas-channel use
+  `Build() (Model, error)` + `MustBuild()`; only 5 are bare. The new one is bare.
+- SCAFFOLD-06: genuine. `deploy/compose/docker-compose.core.yml` carries 53 `atlas-` services and
+  no `atlas-player-npcs`.
+- DOM-04/FILE-02: genuine. `Transform` sits at `playernpc/resource.go:73`; the `atlas-notes`
+  reference convention puts it at `note/rest.go:44`.
+- FILE-05 / EXT-02 (query-aggregator): genuine. `EligibilityModel` and its constructors are in
+  `processor.go`, and the package has no test file at all.
+
+**15 blocking findings accepted** (12 + 3), one rejected.
+
+### Verify run discarded
+
+The flagless `tools/verify.sh` launched at the top of this session was stopped, not read. The fix
+rounds below change the tree substantially, so its verdict would describe a state that no longer
+exists. **No verification result is claimed from it.** The authoritative flagless run happens once,
+after the fixes land and the docs are committed.
+
+## Fix rounds A/B/C — all DONE
+
+| Round | Scope | Commit |
+|---|---|---|
+| C | `atlas-channel` builder, `atlas-query-aggregator` `playernpc/` | `b9ebb8883` |
+| B | `atlas-player-npcs` client packages, compose entry | `8a74e2f53` |
+| A | `atlas-player-npcs` `playernpc/` re-sort | `15f6cb629` |
+
+Ran in parallel on disjoint file sets; each reported clean module-local build/test.
+
+### The Task 18 equipment-decode carry is CLOSED, not carried
+
+Both rounds B and C were told to test the nested `equipment` JSON:API decode and to report a bug if
+it were broken rather than assert the broken shape. Both round-tripped the real production type
+through actual `jsonapi.Marshal`/`Unmarshal`, independently, on their own side of the seam.
+
+**The decode is not broken.** Round B established why: `Equipment` is a plain JSON attribute, not a
+relationship, so it never reaches the code path `SetToOneReferenceID`/`SetToManyReferenceIDs`
+guard. This was an assumption carried since the Task 18 review; it is now tested on both sides and
+should not be listed as a PR-time carry.
+
+### Deviations the implementers reasoned about — all accepted
+
+- **Round A kept `writeError`** rather than deleting it as DOM-32 literally directs. No
+  `libs/atlas-rest/server` primitive carries a `code` field, and dropping it would silently break
+  the design §8.3 error-code contract. It now reuses `api2go/jsonapi.Error` instead of a private
+  struct. Accepted: the finding's intent was "stop hand-rolling"; the contract outranks the letter.
+- **Round A widened `Processor`** with `GetByMapPaged` and `Eligibility` to satisfy DOM-13/14
+  without reshaping `GetByMap`, which two Kafka consumers use unmodified. It updated both mocks in
+  the same diff per DOM-33, touching two files outside its brief's inventory
+  (`kafka/consumer/playernpc/consumer_test.go`, `kafka/consumer/character/consumer_test.go`).
+  Correct call — an interface change that leaves a mock stale is a broken build, not a scope win.
+- **Round B applied EXT-01 stubs to `GroundRequestRestModel`**, a POST body. Literal to the audit's
+  wording; flagged to the fix review as possibly over-applied.
+- **Round B placed the equipment round-trip test at the module root in package `main`**
+  (`playernpc_equipment_decode_test.go`) rather than in a package. This is an artifact of the
+  controller's own "stay out of `playernpc/`" parallelism constraint, not the implementer's
+  preference. Flagged to the fix review: with round A's re-sort now landed, the file may belong
+  inside `playernpc/`.
+
+The last two are controller-caused or literalist, so they go to the fix reviewer rather than being
+accepted silently.

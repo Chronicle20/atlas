@@ -1087,3 +1087,18 @@ Both non-blocking items are **accepted as-is, no fix**:
 2. `kafka/consumer/playernpc/consumer.go:48-53` — both handlers register on the one topic and filter
    internally. That is the `npcconversation` reference's own fan-out shape, not something introduced
    here.
+
+## Task 23b complete — `d92561b85`
+
+`atlas-saga-orchestrator`: contract mirror, `s.TransactionId()` threaded onto the command, new status
+consumer, and `deploy_player_npc` moved out of the fire-and-forget set — it is now event-driven.
+Folds in both Task 22 non-blocking findings (`playernpc/mock/mock.go` → `processor.go` with the
+compile-time assertion and a new `processor_test.go`; the overstated "field for field" doc comment).
+Implementer reported DONE, no concerns; module builds and tests green both untagged and under
+`-tags test`.
+
+Review dispatched over `d92561b85`, weighted toward the self-completing → event-driven change: the
+question that matters is whether a saga whose downstream never replies now wedges in `Pending` where
+it previously always advanced, or degrades the way every other event-driven action does.
+
+Gate 35 launched for `2ae390710..HEAD` (covers 23c and 23b as one range).

@@ -50,17 +50,6 @@ type Position struct {
 	Y int16
 }
 
-// EventType names the four design §7/§8.3 domain events a state-changing
-// operation can emit.
-type EventType string
-
-const (
-	EventTypeDeployed     EventType = "DEPLOYED"
-	EventTypeUpdated      EventType = "UPDATED"
-	EventTypeRemoved      EventType = "REMOVED"
-	EventTypeRepositioned EventType = "REPOSITIONED"
-)
-
 // Event is what a state-changing operation emits, always after the
 // transaction that produced it has committed (design §8.1). Repositioned
 // carries every repositioned NPC in Models (design §5.4's single event
@@ -105,6 +94,17 @@ type Processor interface {
 	// GetByMap fetches every Player NPC deployed on (worldId, mapId) --
 	// the map-enter read path (design §6).
 	GetByMap(worldId world.Id, mapId _map.Id, page model.Page) ([]Model, error)
+	// GetByMapPaged is GetByMap's pagination-aware sibling -- it keeps the
+	// provider's Total/Page alongside the hydrated Models, which the REST
+	// list endpoint's pagination envelope needs and GetByMap's shared
+	// (Kafka-consumer) signature does not carry.
+	GetByMapPaged(worldId world.Id, mapId _map.Id, page model.Page) (model.Paged[Model], error)
+	// Eligibility evaluates the FR-6.1 predicate (design §9.1) for
+	// characterId on (worldId, mapId) -- the single place the automatic
+	// deploy check (FR-1.1) and the conversation condition (FR-6.1) both
+	// evaluate through, via eligibility.Evaluate with conversationPath
+	// true (this is REST's sole caller of that flag).
+	Eligibility(characterId uint32, worldId byte, mapId uint32) (eligible bool, reason string, err error)
 }
 
 type ProcessorImpl struct {
@@ -145,6 +145,31 @@ func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {
 
 func (p *ProcessorImpl) GetByMap(worldId world.Id, mapId _map.Id, page model.Page) ([]Model, error) {
 	return playerNpcsByMap(p.db.WithContext(p.ctx), byte(worldId), uint32(mapId), page)
+}
+
+func (p *ProcessorImpl) GetByMapPaged(worldId world.Id, mapId _map.Id, page model.Page) (model.Paged[Model], error) {
+	return playerNpcsByMapPaged(p.db.WithContext(p.ctx), byte(worldId), uint32(mapId), page)
+}
+
+// Eligibility mirrors Deploy's own character/config/duplicate-count lookup
+// (see below), evaluated with enforceEligibility's conversationPath=true
+// rather than actually deploying.
+func (p *ProcessorImpl) Eligibility(characterId uint32, worldId byte, mapId uint32) (bool, string, error) {
+	te := tenant.MustFromContext(p.ctx)
+
+	c, err := p.cp.GetById(characterId)
+	if err != nil {
+		return false, "", err
+	}
+	cfg := p.cfgp.GetByTenantId(te.Id())
+
+	existingCount, err := countByName(p.db.WithContext(p.ctx), worldId, mapId, c.Name())
+	if err != nil {
+		return false, "", err
+	}
+
+	eligible, reason := eligibility.Evaluate(cfg, c, existingCount, true)
+	return eligible, reason, nil
 }
 
 func (p *ProcessorImpl) Deploy(characterId uint32, worldId world.Id, mapId _map.Id, enforceEligibility bool, explicit *Position) (Model, error) {
@@ -298,20 +323,12 @@ func (p *ProcessorImpl) Deploy(characterId uint32, worldId world.Id, mapId _map.
 			return err
 		}
 
-		entity := MakeEntity(tenantId, m)
-		entity.Id = uuid.Nil
-		if err := tx.Create(&entity).Error; err != nil {
+		newId, err := createPlayerNpcTx(tx, tenantId, m)
+		if err != nil {
 			return err
 		}
-		eqEntities := MakeEquipmentEntities(tenantId, entity.Id, m)
-		for i := range eqEntities {
-			eqEntities[i].Id = uuid.Nil
-			if err := tx.Create(&eqEntities[i]).Error; err != nil {
-				return err
-			}
-		}
 
-		hydrated, err := getPlayerNpcModel(tx, entity.Id)
+		hydrated, err := getPlayerNpcModel(tx, newId)
 		if err != nil {
 			return err
 		}

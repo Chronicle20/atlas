@@ -2,7 +2,7 @@
 // identity, placement, frozen appearance/equipment, frozen ranks, and
 // resolved position. It follows the repo's immutable-model convention
 // (services/atlas-notes/atlas.com/notes/note) -- unexported fields,
-// accessors, a Builder, and Make/MakeEntity between the domain model and
+// accessors, a Builder, and Make/ToEntity between the domain model and
 // the GORM entity. No *_testhelpers.go: test setup goes through the
 // Builder.
 package playernpc

@@ -993,3 +993,48 @@ Still open at handoff, unchanged:
   `postgres.home`, and flip the GHCR package public after the first image push.
 
 Standing operating rules on this branch are unchanged — see the Session 7 handoff above.
+
+# Session 9 — Task 23 contract design and split
+
+**Ruling: the correlation shape.** Task 23 extends `COMMAND_TOPIC_PLAYER_NPC` with two additive,
+optional envelope fields — `transactionId` (uuid, `uuid.Nil` when not saga-driven) and an opaque
+`requester` block (`characterId`, `worldId`, `channelId`, `mapId`) — and adds two new event types
+on the **existing** `EVENT_TOPIC_PLAYER_NPC_STATUS` topic: `COMMAND_SUCCEEDED` / `COMMAND_FAILED`,
+carrying `StatusCommandOutcomeBody` (`transactionId`, `characterId`, `commandType`, `code`,
+`message`, `requester`). One event serves both consumers: the saga correlates on `transactionId`,
+`atlas-messages` routes on `requester`, each ignoring the other's field.
+
+Rejected: an in-memory correlation map in `atlas-messages`. Verified against source —
+`services/atlas-messages/atlas.com/messages/main.go:33` resolves a **shared** consumer group
+(`consumergroup.Resolve("Messages Service")`), so the pod that handled the GM command is not
+necessarily the pod that consumes the outcome. Local correlation state is unsound across pods; only
+a self-describing event routes correctly.
+
+Rejected: threading `transactionId`/`requester` through the domain and stamping the existing
+`DEPLOYED`/`REMOVED` events. The command consumer is the only place holding both the command's
+correlation fields and the `Processor` error, so it emits the outcome itself. The four domain
+events are untouched.
+
+**No new topic and no deploy change.** Verified: `COMMAND_TOPIC_PLAYER_NPC` (line 78) and
+`EVENT_TOPIC_PLAYER_NPC_STATUS` (line 173) are already in `deploy/k8s/base/env-configmap.yaml`, and
+`atlas-messages` / `atlas-saga-orchestrator` take them via `envFrom: atlas-env`
+(`deploy/k8s/base/atlas-messages.yaml:21-23`).
+
+**FR-6.3's carrier is the existing `errorCode` result convention** —
+`StepCompletedWithResult(txId, false, map[string]any{"errorCode": code})`, the same shape
+`kafka/consumer/skill/consumer.go:115` and `kafka/consumer/character/consumer.go:202,226` already
+use. No new saga plumbing needed; `DeployPlayerNpc` simply moves out of the fire-and-forget set in
+`saga/event_acceptance.go`.
+
+**Split into three dispatches** (23a is authoritative and lands first; 23b and 23c mirror it and
+are independent of each other):
+
+- **Task 23a** — `atlas-player-npcs`: the wire contract, `playernpc.CodeFor` shared by REST and
+  Kafka, outcome emission on all three consumer arms. Brief:
+  `.superpowers/sdd/plan/task-23a-brief.md`.
+- **Task 23b** — `atlas-saga-orchestrator`: mirror, thread `s.TransactionId()`, new status
+  consumer, `DeployPlayerNpc` becomes event-driven. Folds in Task 22 non-blocking finding #1
+  (`playernpc/mock/mock.go` → `processor.go` + `var _` assertion) and #2 (the overstated
+  "field for field" doc comment). Brief: `.superpowers/sdd/plan/task-23b-brief.md`.
+- **Task 23c** — `atlas-messages`: mirror, set `requester` on both GM commands, first status
+  consumer in the service, per-code pink text. Brief: `.superpowers/sdd/plan/task-23c-brief.md`.

@@ -39,7 +39,7 @@ export function QuestsPage() {
   const { activeTenant } = useTenant();
   const questsQuery = useQuests(activeTenant);
   const categoriesQuery = useQuestCategories(activeTenant);
-  const { isRefreshing, onRefresh } = useGridRefresh([
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
     questsQuery,
     categoriesQuery,
   ]);
@@ -100,6 +100,7 @@ export function QuestsPage() {
           error={error}
           onRefresh={onRefresh}
           isRefreshing={isRefreshing}
+          lastUpdatedAt={lastUpdatedAt}
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No quests found",

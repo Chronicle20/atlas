@@ -119,7 +119,9 @@ function MerchantsPageContent() {
     placeholderData: keepPreviousData,
   });
 
-  const { isRefreshing, onRefresh } = useGridRefresh([shopsQuery]);
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    shopsQuery,
+  ]);
 
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
 
@@ -207,6 +209,7 @@ function MerchantsPageContent() {
             error={error}
             onRefresh={onRefresh}
             isRefreshing={isRefreshing}
+            lastUpdatedAt={lastUpdatedAt}
             initialVisibilityState={hiddenColumns}
             emptyState={{
               title: "No merchant shops found",

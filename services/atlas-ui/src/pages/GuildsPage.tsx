@@ -62,7 +62,7 @@ export function GuildsPage() {
 
   const charactersQuery = useCharacters(activeTenant!);
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
-  const { isRefreshing, onRefresh } = useGridRefresh([
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
     guildsQuery,
     charactersQuery,
     tenantConfigQuery,
@@ -119,6 +119,7 @@ export function GuildsPage() {
           error={error}
           onRefresh={onRefresh}
           isRefreshing={isRefreshing}
+          lastUpdatedAt={lastUpdatedAt}
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No guilds found",

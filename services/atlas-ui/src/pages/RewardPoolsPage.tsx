@@ -48,7 +48,10 @@ export function RewardPoolsPage() {
   const { activeTenant } = useTenant();
   const poolsQuery = useRewardPools();
   const globalQuery = useGlobalRewardItems();
-  const { isRefreshing, onRefresh } = useGridRefresh([poolsQuery, globalQuery]);
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    poolsQuery,
+    globalQuery,
+  ]);
   const deleteGlobal = useDeleteGlobalItem();
 
   const [createOpen, setCreateOpen] = useState(false);
@@ -94,6 +97,9 @@ export function RewardPoolsPage() {
       columns={poolColumns}
       data={data}
       error={error}
+      onRefresh={onRefresh}
+      isRefreshing={isRefreshing}
+      lastUpdatedAt={lastUpdatedAt}
       emptyState={{ title: emptyTitle, description: emptyDescription }}
     />
   );
@@ -122,18 +128,6 @@ export function RewardPoolsPage() {
               Global Pool ({globalItems.length})
             </TabsTrigger>
           </TabsList>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={onRefresh}
-            disabled={isRefreshing}
-            title="Refresh"
-            aria-busy={isRefreshing}
-          >
-            <RefreshCw
-              className={cn("h-4 w-4", isRefreshing && "animate-spin")}
-            />
-          </Button>
         </div>
 
         <TabsContent value="all" className="mt-4">
@@ -170,7 +164,19 @@ export function RewardPoolsPage() {
             Global items merge into every gachapon machine's roll for their
             tier. They never apply to incubator pools.
           </p>
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              title="Refresh"
+              aria-busy={isRefreshing}
+            >
+              <RefreshCw
+                className={cn("h-4 w-4", isRefreshing && "animate-spin")}
+              />
+            </Button>
             <Button onClick={() => setGlobalDialog({ open: true })}>
               Add Item
             </Button>

@@ -33,7 +33,7 @@ export function CharactersPage() {
   const accountsQuery = useAccounts(activeTenant!);
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
   const queryClient = useQueryClient();
-  const { isRefreshing, onRefresh } = useGridRefresh(
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh(
     [charactersQuery, accountsQuery, tenantConfigQuery],
     {
       alsoRefresh: () =>
@@ -90,6 +90,7 @@ export function CharactersPage() {
           error={error}
           onRefresh={onRefresh}
           isRefreshing={isRefreshing}
+          lastUpdatedAt={lastUpdatedAt}
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No characters found",

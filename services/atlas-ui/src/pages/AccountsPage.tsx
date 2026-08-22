@@ -30,7 +30,9 @@ export function AccountsPage() {
     number: pageNumber,
     size: PAGE_SIZE,
   });
-  const { isRefreshing, onRefresh } = useGridRefresh([accountsQuery]);
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    accountsQuery,
+  ]);
 
   const accounts = accountsQuery.data?.data ?? [];
   const meta = accountsQuery.data?.meta ?? null;
@@ -165,6 +167,7 @@ export function AccountsPage() {
           error={error}
           onRefresh={onRefresh}
           isRefreshing={isRefreshing}
+          lastUpdatedAt={lastUpdatedAt}
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No accounts found",

@@ -1107,3 +1107,72 @@ Gate 35 launched for `2ae390710..HEAD` (covers 23c and 23b as one range).
 
 `tools/verify.sh --quick --base 2ae390710`, exit 0 — covers Tasks 23c and 23b as one range.
 **Last gated commit: `d92561b85`.**
+
+## Task 23b review — APPROVED, 0 blocking, 0 non-blocking, 2 not-evaluable
+
+`.superpowers/sdd/plan/task-23b-review.md`, over `d92561b85`. The liveness question — the one real
+risk in moving `deploy_player_npc` off the fire-and-forget path — came back clean:
+`saga/processor.go:322-326` arms `SagaTimers().Schedule` unconditionally on every `Put`, regardless
+of action, so `DeployPlayerNpc` now degrades **identically to `StartNpcConversation`/`OpenNpcShop`**
+on timeout. No new hang mode; a saga whose downstream never replies times out the way every other
+event-driven action does.
+
+The reviewer traced the transaction id by hand across the service boundary and confirmed the JSON
+tags match character-for-character: `saga/handler.go:1421` → `saga/producer.go:469-479`
+(`json:"transactionId"`) → atlas-player-npcs' `StatusCommandOutcomeBody.TransactionId`
+(`json:"transactionId"`) → `kafka/consumer/playernpc/consumer.go:60,89` reading `e.Body.TransactionId`.
+The envelope-vs-body copy-paste hazard I flagged in the brief turns out to be structurally
+impossible here — this service's `StatusEvent[E]` has no envelope-level `TransactionId` field at all.
+FR-6.3's carrier is the literal `"errorCode"` key at `consumer.go:105`, asserted directly by
+`TestHandleCommandFailedEventThreadsErrorCode`. Q7 was answered from `git show`, not assumed: the
+pre-change `handleDeployPlayerNpc` never called `StepCompleted`.
+
+Both not-evaluable items are scope statements, not gaps: `AcceptEvent`'s redelivery internals are
+pre-existing shared infra untouched by this diff, and live-broker redelivery is not exercisable
+module-locally.
+
+# Session 9 handoff — Task 23 complete
+
+**Task 23 is done in all three services, each reviewed APPROVED with zero blocking findings, and
+the whole range is gated.** Last gated commit: **`d92561b85`** (gate 35 PASS). Tree is clean; no
+writer in flight; no review outstanding.
+
+| Task | Service | Commit | Review |
+|---|---|---|---|
+| 23a | `atlas-player-npcs` (authoritative contract) | `2ae390710` | APPROVED, 0/0 |
+| 23c | `atlas-messages` | `ee5640d83` | APPROVED, 0 blocking, 2 non-blocking accepted as-is |
+| 23b | `atlas-saga-orchestrator` | `d92561b85` | APPROVED, 0/0 |
+
+FR-8.3 and FR-6.3 are now implemented rather than deferred, and the two Task 22 non-blocking
+findings are folded in. **There is no remaining implementation work on this branch.**
+
+**NEXT ACTION: the pre-PR sequence from `plan.md`'s Final gate.** In order:
+
+1. Flagless `tools/verify.sh` against the full merge base — only the flagless run counts as
+   verified; every gate so far has been `--quick`.
+2. `go run ./tools/packet-audit matrix --check`, `tools/service-registration-guard.sh`,
+   `tools/plan-lint.sh`.
+3. The code-review roster: `backend-guidelines-reviewer`, `plan-adherence-reviewer` (shard by task
+   range — the plan has 22 tasks plus Task 23's three parts), and `packet-completeness-critic` for
+   Tasks 5-7.
+4. `superpowers:finishing-a-development-branch`.
+
+Carry these into the pre-PR review — all still open, none introduced by Task 23:
+
+- **The nested-`equipment` JSON:API decode gap** (Task 18 review). Neither
+  `services/atlas-channel/.../playernpc/rest_test.go:157` nor
+  `services/atlas-player-npcs/.../playernpc/resource_test.go:183` exercises api2go/jsonapi decoding
+  a non-empty nested struct-slice attribute — both build the model directly. Repo-wide pattern, not
+  a task defect, but that seam's decode is unverified on both sides. Close it before the PR or
+  record it as a deliberate carry.
+- **Two Task 19 not-evaluable items**: the multi-pod "every channel of the world" broadcast
+  (live-verification territory), and player-NPC vs ordinary-NPC object-id collision (never
+  affirmatively cleared).
+- **Two operator hand-backs** (recorded under Task 8): create `atlas-player-npcs-main` on
+  `postgres.home`, and flip the GHCR package public after the first image push.
+- **New from Task 23, for live testing rather than review**: the outcome path is only verifiable
+  end-to-end against a real broker. Worth an explicit live check that a GM `@playernpc add` against
+  a full map pink-texts `map_full` (not a generic message), and that a `deploy_player_npc`
+  conversation step fails with `errorCode` set rather than timing out.
+
+Standing operating rules on this branch are unchanged — see the Session 7 handoff above.

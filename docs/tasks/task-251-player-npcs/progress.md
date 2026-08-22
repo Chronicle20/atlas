@@ -509,3 +509,218 @@ Two constraints later tasks must consume:
 Two operator hand-backs still outstanding (unchanged, recorded under Task 8): create
 `atlas-player-npcs-main` on `postgres.home`, and flip the GHCR package public after the first
 image push.
+
+# Gate 25 — PASS at `1e4ac4f53`
+
+Reconciled at the start of session 7. `tools/verify.sh --quick --base 3c5a3fd82` covered
+`3c5a3fd82..1e4ac4f53` — Task 16 (`a24feca93`), the Task 15 podium fix (`92be6a7cc`), both lint
+rounds (`f75b7e0e0`, `1e4ac4f53`) and the Task 16 eligibility fix (`d908c3c95`). All 8 selected
+gates green (go build/vet, analyzer guards, skill/job id, scope, producer seam, env domain, env
+bootstrap, lint & format). **Last gated commit: `1e4ac4f53`.**
+
+# Task 17 — Kafka messages, consumers, producer
+
+Landed `4fc4a4ec7` (10 files, 1355 insertions): `kafka/message/{playernpc,character}/kafka.go`,
+`kafka/consumer/{playernpc,character}/consumer.go` + tests, `playernpc/producer.go` + test,
+`kafka/consumer/consumer.go`, `main.go` wiring. `TestPlayerNpcCommandConsumer` 7/7,
+`TestLevelChangedConsumer` 7/7, `TestNewEmitter` 4/4; `go vet ./...` clean.
+
+**Gate 26 FAILED** on one staticcheck ST1005 (capitalized error string,
+`playernpc/producer.go:79`); every other gate in that run passed. Fix round dispatched back to
+the same implementer with the "quoted count is a floor" instruction. Last *confirmed* gated
+commit remains `1e4ac4f53`.
+
+Three implementer deviations handed to the Task 17 reviewer rather than accepted:
+
+1. REDEPLOY's command body gained a `WorldId` field beyond plan.md's literal `(characterId,
+   mapId)` table — justified as forced by `Processor.Redeploy` resolving via
+   `GetByMap(worldId, mapId, page)` with no narrower lookup exposed. Reviewer to verify the
+   claim against `processor.go`/`administrator.go`.
+2. LEVEL_CHANGED's "fetch fails" log line omits the target map (design §8.2 implies it) because
+   the map derives from the job id in the very fetch that failed. Reviewer to rule forced vs
+   convenient.
+3. `kafka/consumer/consumer.go` (local `NewConfig` wrapper) added outside the brief's file list
+   as required plumbing. Reviewer to confirm it matches the sibling-service shape.
+
+**Brief-vs-source discrepancy for Task 18:** the Task 18 brief says to copy
+`services/atlas-channel/atlas.com/channel/kite/`'s "neighbouring `rest.go` test". That package
+has **no `rest_test.go`** — its only test is `processor_drain_test.go`. The client *shape*
+(`model/builder/rest/requests/processor.go`) is there to copy; the test shape must come from
+another channel read client.
+
+## Task 17 lint fix — PARTIAL hand-back
+
+The Task 17 implementer reported **PARTIAL** on the lint round: it diagnosed the ST1005 finding
+but hit the 120 tool-call cap before committing the fix or finishing the sweep for sibling
+capitalized error strings. Task 17's implementation commit `4fc4a4ec7` is unaffected and stands.
+
+Continuation brief: `.superpowers/sdd/plan/task-17-brief-cont.md`; a fresh `atlas-implementer`
+was dispatched against it with the same report file as persistent memory. This is the **first**
+PARTIAL on Task 17 — a second would mean the plan under-decomposed it, but a lint round handed
+back at the cap is the designed outcome, not a sizing signal.
+
+## Task 17 lint fix — closed
+
+`78b6026fc`. Lowercased the ST1005 error string at `playernpc/producer.go:79`.
+`tools/lint.sh --go services/atlas-player-npcs/atlas.com/player-npcs` → `0 issues. lint.sh: OK`;
+module `go build ./... && go test ./...` green. The sweep for sibling capitalized error strings
+found none — this round the quoted count really was the total, unlike the earlier 7-vs-16 round.
+Gate 27 launched over `1e4ac4f53..78b6026fc`.
+
+## Task 17 review — APPROVED, 0 blocking
+
+`.superpowers/sdd/plan/task-17-review.md`, over `1e4ac4f53..4fc4a4ec7`. The reviewer traced all
+three implementer deviations to source rather than accepting them:
+
+1. **REDEPLOY's added `WorldId` stands.** `Processor.Redeploy` takes only a `uuid.UUID`
+   (`processor.go:514`), and the one lookup resolving `(characterId, mapId)` without a world —
+   `entitiesByCharacter` (`administrator.go:151`) — is package-private and reachable only from
+   `Remove`/`RemoveById`, not from the consumer package. Exported `GetByMap` requires `worldId`.
+   Given the plan's constraint against changing exported `Processor` signatures, this was the
+   only viable path; it is documented on the wire type.
+2. **The LEVEL_CHANGED log omission is forced, not convenient.** `targetMapId` derives from
+   `c.JobId()`, which comes from the very fetch that failed. Every *other* failure branch in
+   that handler does log the target map.
+3. **`kafka/consumer/consumer.go` is the standard wrapper** — diffed byte-for-byte against
+   `services/atlas-notes/.../kafka/consumer/consumer.go`, identical but for a doc comment, and
+   present in 58 other Atlas services.
+
+Also independently confirmed: event-after-commit discipline intact (emit only from the existing
+post-`ExecuteTransaction` call sites), bulk `Remove` really emits N REMOVED events, job ids route
+through typed `job.Id`/`constants.SkillJobSet` with no raw wire comparison, and both new topic
+env vars are already registered in `deploy/k8s/base/env-configmap.yaml`.
+
+Non-blocking (1, accepted): `kafka/consumer/character/consumer_test.go:283-289` — the "fetch
+fails" subtest asserts the log message is non-empty rather than checking a structured field. The
+subtest's primary assertions (0 emitted commands, WarnLevel) are real, and the weakness is
+self-documented in the test comment.
+
+# Gate 27 — PASS at `78b6026fc`
+
+`tools/verify.sh --quick --base 1e4ac4f53` over `1e4ac4f53..78b6026fc` (Task 17 `4fc4a4ec7` plus
+the lint fix). All 8 selected gates green. **Last gated commit: `78b6026fc`.** Task 17 is
+complete, reviewed (APPROVED) and gated.
+
+# Task 18 — `atlas-channel` `playernpc/` read client
+
+Landed `897c828c2` (6 new files under `services/atlas-channel/atlas.com/channel/playernpc/`).
+`TestRestModel_Unmarshal`, `TestExtract_EquipmentOrder`, `TestForEachInMap_RequestsByMapAndWorld`
+3/3; module `go build ./... && go test ./...` clean. Gate 28 launched over `78b6026fc..897c828c2`.
+
+Reported **DONE_WITH_CONCERNS**: the implementer did not follow test-first ordering — the tests
+and implementation were written together with no captured RED — and said so rather than
+fabricating a transcript. The risk that creates is a back-filled test, so the Task 18 reviewer
+was directed to check all three tests against the **producing** side
+(`services/atlas-player-npcs/.../playernpc/{rest.go,resource.go}`) rather than against the client
+that produced them. Its verdict is recorded below when it lands.
+
+It also reports no deploy/routing change was needed — `/api/player-npcs` already present in
+`deploy/shared/routes.conf` and `deploy/compose/routes.conf` from an earlier task. Handed to the
+reviewer to verify rather than accepted.
+
+# Gate 28 — PASS at `897c828c2`
+
+`tools/verify.sh --quick --base 78b6026fc` over `78b6026fc..897c828c2` (Task 18). All selected
+gates green. **Last gated commit: `897c828c2`.**
+
+## Task 18 review — APPROVED_WITH_FINDINGS, 0 blocking
+
+`.superpowers/sdd/plan/task-18-review.md`. The no-RED concern is **resolved**: the reviewer
+checked the tests against the producing side rather than against the client that generated them.
+
+- `playernpc/rest.go`'s `RestModel`/`EquipmentRestModel` compared field-for-field against
+  `services/atlas-player-npcs/.../playernpc/resource.go` — identical JSON tags in identical
+  order, `overallJobRank` included. `world.Id`/`_map.Id`/`job.Id` are plain `byte`/`uint32`/
+  `uint16` definitions with **no** `MarshalJSON`/`UnmarshalJSON` override, so they encode
+  byte-identically to the producer's raw wire types. The tests assert the real server contract,
+  not a self-consistent round-trip.
+- The filter string (`requests.go:15`) matches the producer's `parseListFilters` param names and
+  integer widths exactly.
+- The no-deploy-change claim **verified**: `deploy/shared/routes.conf:561` and
+  `deploy/compose/routes.conf:561` already route `/api/player-npcs`, and `git diff --stat --
+  deploy/` is empty for the range. `RootUrlFor(ctx, "PLAYER_NPCS")` needs no per-domain
+  registration — same as `kite/`'s `RootUrlFor(ctx, "KITES")`.
+- `tools/skill-job-id-guard.sh` on the new package: 0 findings. The client only forwards job ids,
+  so it correctly needs no `constants.SkillJobSet` resolution.
+
+**Non-blocking (1) + not-evaluable (1) — one issue, worth a follow-up beyond this task:**
+`rest_test.go:157`'s `TestExtract_EquipmentOrder` builds `RestModel` directly instead of going
+through `jsonapi.Unmarshal`, so the nested `equipment` attribute's real JSON:API decode with
+non-empty data is never exercised. **This is a repo-wide gap, not a Task 18 defect** — the
+producer's own `resource_test.go:183` has it identically. Consequence: api2go/jsonapi's decode
+behaviour for non-empty nested struct-slice attributes is unverified on both sides of this seam.
+Task 20 exercises the seam end-to-end and is the natural place to close it; if it does not, this
+should not be lost at merge.
+
+# Task 19 — `atlas-channel` spawn, broadcast, controller exclusion
+
+Landed `7a3d648dd`. Module `go build ./... && go test ./...` from
+`services/atlas-channel/atlas.com/channel` clean; `go vet` on touched packages clean. Files:
+`kafka/consumer/map/{player_npc.go,player_npc_test.go}`, `kafka/consumer/map/consumer.go`,
+`kafka/consumer/playernpc/{kafka.go,consumer.go,consumer_test.go}`, `main.go`. Gate 29 launched
+over `897c828c2..7a3d648dd`.
+
+One implementer concern handed to the reviewer rather than accepted: **REPOSITIONED handling
+adds an extra `atlas-player-npcs` read-back** for appearance data not carried in the event body —
+the implementer's own inference from the brief's test table. The reviewer was asked to rule both
+halves: is the read-back *necessary* (check Task 17's envelope in
+`kafka/message/playernpc/kafka.go` — if the data is already there, the read-back is waste), and
+is it *correct* (scope, no N+1 per character or per channel, failure handling).
+
+# Gate 29 — PASS at `7a3d648dd`
+
+`tools/verify.sh --quick --base 897c828c2` over `897c828c2..7a3d648dd` (Task 19). All selected
+gates green. **Last gated commit: `7a3d648dd`.**
+
+# Session 7 handoff (after Tasks 17, 18 and 19)
+
+Tasks **1–19 are complete and gated**. Three remain: **20, 21, 22**.
+
+**Last gated commit: `7a3d648dd`** (gate 29 PASS). Tree is clean; no writer in flight.
+
+**The Task 19 review was still running at handoff.** Dispatched `atlas-reviewer` over
+`897c828c2..7a3d648dd`; its artifact will be at `.superpowers/sdd/plan/task-19-review.md`.
+**Read that artifact first and ledger its verdict before dispatching anything.** Its load-bearing
+question is the implementer's flagged REPOSITIONED read-back (see the Task 19 entry above); the
+reviewer was also asked to rule on design D-4 controller exclusion, `SpawnNPC`-before-
+`ImitatedNPCData` ordering under the `routine.Go` block, and N-spawn/one-`ImitatedNPCData`
+batching.
+
+**NEXT ACTION: Task 20 (`atlas-tenants` `player-npcs` configuration resource, plan.md).** Its
+brief is already generated, fact-blocked at base `897c828c2`, and annotated:
+`.superpowers/sdd/plan/task-20-brief.md`. Dispatch an `atlas-implementer` (sonnet) against it —
+no brief regeneration needed.
+
+Standing operating rules on this branch, unchanged:
+
+- Only ONE mutating agent may hold the worktree at a time; a gate may never run alongside a
+  writer. A read-only reviewer MAY run alongside one writer, but only with an explicit
+  no-mutation constraint block, and it must review the *commit range* rather than the moving
+  working tree.
+- Treat plan.md's TABLES as authoritative and its PROSE as suspect — six defects found and fixed
+  so far. Verify every named symbol and cited line number against source.
+- The `skill/job id guard` has tripped twice on this module: resolve job ids through the
+  version-aware `constants.SkillJobSet`, never a raw wire id against a `job.*Id` constant.
+- A lint block's quoted finding count is a floor, not a total (`max-same-issues: 3` hid 9 of 16
+  in one round). Drive `tools/lint.sh --go <module>` to exit 0; the bare form runs tree-wide.
+
+Constraints later tasks must consume:
+
+- **Task 20** — attribute names must match Task 13's already-shipped consuming client at
+  `services/atlas-player-npcs/.../configuration/` field for field.
+- **Task 21** — bulk `Remove` (`playernpc/processor.go`) is N transactions and N emits, not one
+  atomic operation. The GM handler must treat a mid-loop failure as a **partial success**.
+- **Task 22** — the eligibility endpoint defaults `worldId` to `0`, silently mis-scoping the
+  duplicate check for any non-zero world. The endpoint already accepts `worldId` optionally, so
+  the conversation-engine condition **must pass it explicitly**.
+
+Open finding not owned by any remaining task: **the nested-`equipment` JSON:API decode gap**
+(Task 18 review). Neither `services/atlas-channel/.../playernpc/rest_test.go:157` nor
+`services/atlas-player-npcs/.../playernpc/resource_test.go:183` exercises api2go/jsonapi decoding
+a non-empty nested struct-slice attribute — both build the model directly. Repo-wide pattern, not
+a Task 18 defect, but it means that seam's decode is unverified on both sides. Close it before
+the PR or record it as a deliberate carry.
+
+Two operator hand-backs still outstanding (unchanged, recorded under Task 8): create
+`atlas-player-npcs-main` on `postgres.home`, and flip the GHCR package public after the first
+image push.

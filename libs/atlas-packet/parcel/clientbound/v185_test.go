@@ -132,7 +132,7 @@ func TestParcelOpenV185WithItem(t *testing.T) {
 
 	name := make([]byte, 13)
 	copy(name, "Alice")
-	msg := make([]byte, 205)
+	msg := make([]byte, 201)
 	copy(msg, "hi")
 	filetime := model.MsTimeBytes(sentAt)
 
@@ -141,6 +141,7 @@ func TestParcelOpenV185WithItem(t *testing.T) {
 	pBytes = append(pBytes, name...)
 	pBytes = append(pBytes, 0xe8, 0x03, 0x00, 0x00)
 	pBytes = append(pBytes, filetime[:]...)
+	pBytes = append(pBytes, 0x01, 0x00, 0x00, 0x00) // hasMessage flag LE (message is non-empty)
 	pBytes = append(pBytes, msg...)
 	pBytes = append(pBytes, 0x01) // hasItem = true
 	pBytes = append(pBytes, wantEquipItemBytesV185()...)
@@ -200,7 +201,7 @@ func TestParcelArrivedV185WithItem(t *testing.T) {
 
 	name := make([]byte, 13)
 	copy(name, "Alice")
-	msg := make([]byte, 205)
+	msg := make([]byte, 201)
 	copy(msg, "hi")
 	filetime := model.MsTimeBytes(sentAt)
 
@@ -209,6 +210,7 @@ func TestParcelArrivedV185WithItem(t *testing.T) {
 	pBytes = append(pBytes, name...)
 	pBytes = append(pBytes, 0xe8, 0x03, 0x00, 0x00)
 	pBytes = append(pBytes, filetime[:]...)
+	pBytes = append(pBytes, 0x01, 0x00, 0x00, 0x00) // hasMessage flag LE (message is non-empty)
 	pBytes = append(pBytes, msg...)
 	pBytes = append(pBytes, 0x01) // hasItem = true
 	pBytes = append(pBytes, wantEquipItemBytesV185()...)

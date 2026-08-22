@@ -71,28 +71,30 @@ import (
 //	                                 resolution, docs/tasks/
 //	                                 task-241-duey-parcel-delivery/context.md
 //	                                 §11).
-//	+29..233 message + padding      No client consumer in the v83 IDB reads
-//	          (205 bytes)            this span field-by-field — SetParcel and
-//	                                 OnPacket only ever dereference offsets
-//	                                 0, 4, 17, 21 (and, on the C++ object,
-//	                                 238, unrelated to the wire buffer) of
-//	                                 the decoded PARCEL; the 234-byte block
-//	                                 itself is copied opaquely by
-//	                                 DecodeBuffer. The exact message/padding
-//	                                 boundary within this span is therefore
-//	                                 NOT independently decompile-confirmed.
-//	                                 Modeled per design.md §5.3 ("message
-//	                                 lives inside it") as a single
-//	                                 zero-padded ASCII buffer, using the same
-//	                                 fixed-raw-buffer encoding style as the
-//	                                 confirmed senderName[13] neighbor field;
-//	                                 this is a design-level inference, not an
-//	                                 IDA-cited fact — flagged here rather
-//	                                 than asserted as verified. The 205-byte
-//	                                 width itself IS derived: DecodeBuffer's
-//	                                 total is 234, and the four confirmed
-//	                                 leading fields consume exactly
-//	                                 4+13+4+8 = 29 bytes, leaving 234-29=205.
+//	+29      uint32 hasMessage      CTabReceive::Draw @0x6EFA1F is the ONLY
+//	          (flag)                 consumer that reads the tail of the
+//	                                 234-byte block. Row rendering
+//	                                 (@0x6EFF31/@0x6EFF78) draws a static
+//	                                 note-marker string only when
+//	                                 `*(parcel + 29)` is non-zero; the detail
+//	                                 pane (@0x6F07AB) does a 32-bit compare
+//	                                 `cmp [eax+1Dh], edi` (edi == 0) on the
+//	                                 same offset to decide whether to clear
+//	                                 the note control or read the note text.
+//	                                 When the flag is set but the string at
+//	                                 +33 is empty, the client substitutes
+//	                                 StringPool 3886 (@0x6F07C1) — so this
+//	                                 flag must track "message is non-empty",
+//	                                 not "a message field exists".
+//	+33      char[201] message      NUL-terminated ASCII, read via
+//	          (201 bytes)            `ZXString<char>::GetBuffer(..., parcel +
+//	                                 33, -1)` @0x6F0801 and passed to
+//	                                 sub_6F5D37 (@0x6F080C) to populate the
+//	                                 note text control. Width is derived:
+//	                                 DecodeBuffer's total is 234, and the
+//	                                 leading fields (4+13+4+8 = 29 bytes) plus
+//	                                 the +29 flag (4 bytes) consume 33 bytes,
+//	                                 leaving 234-33=201.
 //	+234     bool hasItem           CInPacket::Decode1 call immediately
 //	                                 after the 234-byte DecodeBuffer, inside
 //	                                 PARCEL::Decode itself (v83 @0x4E4365).
@@ -112,7 +114,7 @@ import (
 //	                                 attached asset.
 const (
 	parcelSenderNameWidth = 13
-	parcelMessageWidth    = 205
+	parcelMessageWidth    = 201
 )
 
 // Parcel is one mailbox/arrival entry.
@@ -177,6 +179,11 @@ func (p Parcel) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 		w.WriteInt(p.mesos)
 		expiresAt := model.MsTimeBytes(p.expiresAt)
 		w.WriteByteArray(expiresAt[:])
+		if p.message != "" {
+			w.WriteInt(uint32(1))
+		} else {
+			w.WriteInt(uint32(0))
+		}
 		writeFixedAscii(w, p.message, parcelMessageWidth)
 		w.WriteBool(p.HasItem())
 		if p.item != nil {

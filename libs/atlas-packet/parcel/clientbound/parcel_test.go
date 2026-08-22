@@ -12,7 +12,7 @@ import (
 
 // TestParcelEncode pins the PARCEL::Decode @0x4E4345 wire shape (v83): a
 // fixed 234-byte block (id[4] + senderName[13] + mesos[4] + sentAt FILETIME[8]
-// + message/padding[205]) then a hasItem bool and, if set, one
+// + hasMessage flag[4] + message[201]) then a hasItem bool and, if set, one
 // GW_ItemSlotBase (model.Asset). The mode-prefix dispatcher these arms live
 // under (CParcelDlg::OnPacket) decompiles byte-identically across all eight
 // versions in docs/packets/dispatchers/parcel.yaml (Task 6 header
@@ -33,7 +33,7 @@ func TestParcelEncode(t *testing.T) {
 
 		name := make([]byte, 13)
 		copy(name, "Alice")
-		msg := make([]byte, 205)
+		msg := make([]byte, 201)
 		copy(msg, "hi")
 		filetime := model.MsTimeBytes(sentAt)
 
@@ -42,6 +42,7 @@ func TestParcelEncode(t *testing.T) {
 		want = append(want, name...)
 		want = append(want, 0xe8, 0x03, 0x00, 0x00) // mesos LE (1000)
 		want = append(want, filetime[:]...)
+		want = append(want, 0x01, 0x00, 0x00, 0x00) // hasMessage flag LE (message is non-empty)
 		want = append(want, msg...)
 		want = append(want, 0x00) // hasItem = false
 
@@ -65,7 +66,7 @@ func TestParcelEncode(t *testing.T) {
 
 		name := make([]byte, 13)
 		copy(name, "Alice")
-		msg := make([]byte, 205)
+		msg := make([]byte, 201)
 		copy(msg, "hi")
 		filetime := model.MsTimeBytes(sentAt)
 		zeroItem, _ := p.Item()
@@ -76,6 +77,7 @@ func TestParcelEncode(t *testing.T) {
 		want = append(want, name...)
 		want = append(want, 0xe8, 0x03, 0x00, 0x00)
 		want = append(want, filetime[:]...)
+		want = append(want, 0x01, 0x00, 0x00, 0x00) // hasMessage flag LE (message is non-empty)
 		want = append(want, msg...)
 		want = append(want, 0x01) // hasItem = true
 		want = append(want, itemBytes...)

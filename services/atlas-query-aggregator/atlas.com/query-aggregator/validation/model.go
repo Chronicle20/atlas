@@ -59,6 +59,7 @@ const (
 	PqCustomDataCondition           ConditionType = ConditionType(sharedsaga.PqCustomDataCondition)
 	MonsterBookCountCondition       ConditionType = ConditionType(sharedsaga.MonsterBookCountCondition)
 	PetTamenessCondition            ConditionType = ConditionType(sharedsaga.PetTamenessCondition)
+	CanSpawnPlayerNpcCondition      ConditionType = ConditionType(sharedsaga.CanSpawnPlayerNpcCondition)
 )
 
 // Operator represents the comparison operator in a condition
@@ -127,7 +128,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition, PqCustomDataCondition, MonsterBookCountCondition, PetTamenessCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition, PqCustomDataCondition, MonsterBookCountCondition, PetTamenessCondition, CanSpawnPlayerNpcCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -256,6 +257,10 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 		if input.ReferenceId == 0 {
 			b.err = fmt.Errorf("referenceId is required for transportAvailable conditions")
 		}
+	case CanSpawnPlayerNpcCondition:
+		if input.ReferenceId == 0 {
+			b.err = fmt.Errorf("referenceId (mapId) is required for canSpawnPlayerNpc conditions")
+		}
 	case SkillLevelCondition:
 		if input.ReferenceId == 0 {
 			b.err = fmt.Errorf("referenceId is required for skillLevel conditions")
@@ -333,6 +338,11 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 	case TransportAvailableCondition:
 		if b.referenceId == nil {
 			b.err = fmt.Errorf("referenceId is required for transportAvailable conditions")
+			return b
+		}
+	case CanSpawnPlayerNpcCondition:
+		if b.referenceId == nil {
+			b.err = fmt.Errorf("referenceId (mapId) is required for canSpawnPlayerNpc conditions")
 			return b
 		}
 	case SkillLevelCondition:
@@ -823,6 +833,28 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 			}
 			return "not available"
 		}(), state)
+
+	case CanSpawnPlayerNpcCondition:
+		// Delegate to the single eligibility predicate atlas-player-npcs
+		// exposes (design §9.1) so this conversation-script check and
+		// FR-1.1's automatic deploy check can never disagree.
+		elig := ctx.GetPlayerNpcEligibility(_map.Id(c.referenceId))
+
+		if elig.Eligible() {
+			actualValue = 1
+		} else {
+			actualValue = 0
+		}
+
+		description = fmt.Sprintf("Player NPC spawn for map %d is %s", c.referenceId, func() string {
+			if actualValue == 1 {
+				return "eligible"
+			}
+			if elig.Reason() != "" {
+				return fmt.Sprintf("not eligible (%s)", elig.Reason())
+			}
+			return "not eligible"
+		}())
 
 	case SkillLevelCondition:
 		// Get skill level for the specified skill ID

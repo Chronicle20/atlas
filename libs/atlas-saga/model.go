@@ -159,6 +159,12 @@ const (
 	SpawnMonster      Action = "spawn_monster"
 	SpawnReactorDrops Action = "spawn_reactor_drops"
 
+	// DeployPlayerNpc deploys the character's player NPC (FR-6.2). It is not a
+	// local operation in atlas-npc-conversations: it mutates cross-service state
+	// (atlas-player-npcs), so it is dispatched through the saga orchestrator like
+	// StartNpcConversation.
+	DeployPlayerNpc Action = "deploy_player_npc"
+
 	// Storage actions
 	ShowStorage          Action = "show_storage"
 	DepositToStorage     Action = "deposit_to_storage"

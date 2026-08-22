@@ -522,6 +522,16 @@ type SpawnMonsterPayload struct {
 	Count       int        `json:"count"`     // Number of monsters to spawn (optional, defaults to 1)
 }
 
+// DeployPlayerNpcPayload represents the payload required to deploy a
+// character's own player NPC (FR-6.2). MapId is optional: nil means deploy
+// on the character's current map (design §9.1); a caller supplying it —
+// e.g. a conversation script that already knows where the character stands
+// — is explicit rather than re-deriving it from a lazy lookup.
+type DeployPlayerNpcPayload struct {
+	CharacterId uint32  `json:"characterId"`
+	MapId       *uint32 `json:"mapId,omitempty"`
+}
+
 // SpawnReactorDropsPayload represents the payload for spawning drops from a reactor.
 type SpawnReactorDropsPayload struct {
 	CharacterId    uint32     `json:"characterId"` // Character who triggered the reactor

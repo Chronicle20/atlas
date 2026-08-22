@@ -1,40 +1,14 @@
 package factory
 
 import (
-	"atlas-character-factory/configuration"
 	"atlas-character-factory/configuration/tenant/characters/preset"
 	"atlas-character-factory/configuration/tenant/maplelife"
-	"atlas-character-factory/data"
-	"atlas-character-factory/saga"
-	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/google/uuid"
-
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
-
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
-
-// MapleLifeCreateRestModel is the player's own submission from the Maple
-// Life dialog (design.md §11 A5): the class they picked (by ordinal, not
-// job id -- the dialog itself never shows a job id), their look choices, and
-// the level (0..10) they chose for the class's SP skill.
-type MapleLifeCreateRestModel struct {
-	AccountId    uint32 `json:"accountId"`
-	WorldId      byte   `json:"worldId"`
-	Name         string `json:"name"`
-	ClassOrdinal uint32 `json:"classOrdinal"`
-	Gender       byte   `json:"gender"`
-	Face         uint32 `json:"face"`
-	Hair         uint32 `json:"hair"`
-	HairColor    uint32 `json:"hairColor"`
-	SkinColor    byte   `json:"skinColor"`
-	SP           byte   `json:"sp"`
-}
 
 var (
 	ErrMapleLifeNotConfigured = errors.New("maple life not configured for tenant")
@@ -42,157 +16,6 @@ var (
 	ErrLookInvalid            = errors.New("maple life look selection invalid")
 	ErrSPInvalid              = errors.New("maple life sp selection invalid")
 )
-
-// CreateMapleLife resolves the tenant's Maple Life class table, validates the
-// player's look and SP choices against it, and builds the same
-// CharacterCreation saga CreateFromPreset does -- by projecting the resolved
-// class plus the player's choices onto a preset.RestModel and handing it to
-// buildPresetCharacterCreationSaga. The eleven characters.Templates rules
-// (findCreationTemplate and friends) never apply to this path: Maple Life's
-// own class table is the only source of truth (design.md §11 A5).
-func (p *ProcessorImpl) CreateMapleLife(ctx context.Context, in MapleLifeCreateRestModel) (string, error) {
-	pr, skillsById, err := p.resolveMapleLifePreset(ctx, in)
-	if err != nil {
-		return "", err
-	}
-
-	presetIn := PresetCreateRestModel{
-		AccountId: in.AccountId,
-		WorldId:   in.WorldId,
-		Name:      in.Name,
-	}
-
-	transactionId := uuid.New()
-	sg := buildPresetCharacterCreationSaga(transactionId, presetIn, pr, skillsById)
-	if err := saga.NewProcessor(p.l, ctx).Create(sg); err != nil {
-		p.l.WithError(err).Errorf("Unable to emit maple life character creation saga for character [%s].", in.Name)
-		return "", err
-	}
-	return transactionId.String(), nil
-}
-
-// resolveMapleLifePreset runs every validation step against the tenant's
-// Maple Life configuration and projects the result onto a preset.RestModel,
-// stopping short of building or emitting the saga. Split out from
-// CreateMapleLife so the conversion is directly testable against
-// buildPresetCharacterCreationSaga without a Kafka round-trip.
-func (p *ProcessorImpl) resolveMapleLifePreset(ctx context.Context, in MapleLifeCreateRestModel) (preset.RestModel, map[uint32]data.SkillInfo, error) {
-	t := tenant.MustFromContext(ctx)
-	tc, err := configuration.GetTenantConfig(t.Id())
-	if err != nil {
-		p.l.WithError(err).Errorf("Unable to find maple life configuration.")
-		return preset.RestModel{}, nil, err
-	}
-	ml := tc.MapleLife
-	if len(ml.Classes) == 0 {
-		return preset.RestModel{}, nil, ErrMapleLifeNotConfigured
-	}
-
-	if !validGender(in.Gender) {
-		return preset.RestModel{}, nil, ErrLookInvalid
-	}
-
-	entry, entryFound := findMapleLifeClass(ml.Classes, in.ClassOrdinal, in.Gender)
-	if !entryFound {
-		return preset.RestModel{}, nil, ErrClassOrdinalUnknown
-	}
-
-	look, lookFound := findMapleLifeLook(ml.Looks, in.Gender)
-	if !lookFound {
-		return preset.RestModel{}, nil, ErrMapleLifeNotConfigured
-	}
-
-	if !validOption(look.Faces, in.Face) {
-		p.l.Errorf("Chosen face [%d] is not offered for maple life class [%d].", in.Face, in.ClassOrdinal)
-		return preset.RestModel{}, nil, ErrLookInvalid
-	}
-	if !validOption(look.Hairs, in.Hair) {
-		p.l.Errorf("Chosen hair [%d] is not offered for maple life class [%d].", in.Hair, in.ClassOrdinal)
-		return preset.RestModel{}, nil, ErrLookInvalid
-	}
-	if !validOption(look.HairColors, in.HairColor) {
-		p.l.Errorf("Chosen hair color [%d] is not offered for maple life class [%d].", in.HairColor, in.ClassOrdinal)
-		return preset.RestModel{}, nil, ErrLookInvalid
-	}
-	if !validOption(look.SkinColors, uint32(in.SkinColor)) {
-		p.l.Errorf("Chosen skin color [%d] is not offered for maple life class [%d].", in.SkinColor, in.ClassOrdinal)
-		return preset.RestModel{}, nil, ErrLookInvalid
-	}
-
-	if entry.SpSkillId == 0 {
-		if in.SP != 0 {
-			return preset.RestModel{}, nil, ErrSPInvalid
-		}
-	} else {
-		pool, ok := parseSPPool(entry.SP)
-		if !ok || len(pool) == 0 || in.SP > 10 || int(in.SP) > pool[0] {
-			return preset.RestModel{}, nil, ErrSPInvalid
-		}
-	}
-
-	nv, err := p.nameClient.Check(ctx, in.Name, in.WorldId)
-	if err != nil {
-		return preset.RestModel{}, nil, err
-	}
-	if !nv.Valid {
-		if nv.Reason == "duplicate" {
-			return preset.RestModel{}, nil, ErrNameDuplicate
-		}
-		return preset.RestModel{}, nil, &NameInvalidError{Reason: nv.Reason, Detail: nv.Detail}
-	}
-
-	// Re-validate equipment + inventory against atlas-data, exactly as
-	// CreateFromPreset does for an admin-authored preset -- a Maple Life
-	// class entry is configuration data too, and can go stale the same way.
-	seenSlots := map[uint32]bool{}
-	for _, eq := range entry.Equipment {
-		info, err := p.dataClient.GetItemById(ctx, eq.TemplateId)
-		if err != nil {
-			return preset.RestModel{}, nil, fmt.Errorf("%w: equipment %d", ErrPresetValidation, eq.TemplateId)
-		}
-		if !info.Equipable {
-			return preset.RestModel{}, nil, fmt.Errorf("%w: not equippable: %d", ErrPresetValidation, eq.TemplateId)
-		}
-		bucket := eq.TemplateId / 10000
-		if seenSlots[bucket] {
-			return preset.RestModel{}, nil, fmt.Errorf("%w: equipment slot collision: %d", ErrPresetValidation, eq.TemplateId)
-		}
-		seenSlots[bucket] = true
-	}
-	for _, inv := range entry.Inventory {
-		if _, err := p.dataClient.GetItemById(ctx, inv.TemplateId); err != nil {
-			return preset.RestModel{}, nil, fmt.Errorf("%w: inventory %d", ErrPresetValidation, inv.TemplateId)
-		}
-	}
-
-	// Only ordinals with a spSkillId ever consult atlas-data for the skill
-	// -- ordinals 2/3/4 offer no SP step and never reach here with SP > 0.
-	skillsById := map[uint32]data.SkillInfo{}
-	var effectX int16
-	if entry.SpSkillId != 0 {
-		got, err := p.dataClient.GetSkillsByIds(ctx, []uint32{entry.SpSkillId})
-		if err != nil {
-			return preset.RestModel{}, nil, ErrAtlasDataUnreachable
-		}
-		for _, sk := range got {
-			skillsById[sk.Id] = sk
-		}
-		info, ok := skillsById[entry.SpSkillId]
-		if !ok {
-			return preset.RestModel{}, nil, fmt.Errorf("%w: skill not found: %d", ErrPresetValidation, entry.SpSkillId)
-		}
-		if in.SP > 0 {
-			x, ok := info.EffectXAt(in.SP)
-			if !ok {
-				return preset.RestModel{}, nil, fmt.Errorf("%w: sp skill %d has no effect at level %d", ErrPresetValidation, entry.SpSkillId, in.SP)
-			}
-			effectX = x
-		}
-	}
-
-	pr := toPreset(entry, in, effectX)
-	return pr, skillsById, nil
-}
 
 func findMapleLifeClass(classes []maplelife.ClassEntry, ordinal uint32, gender byte) (maplelife.ClassEntry, bool) {
 	for _, c := range classes {

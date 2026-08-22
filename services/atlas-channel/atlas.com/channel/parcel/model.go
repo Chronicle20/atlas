@@ -94,7 +94,7 @@ func (m Model) ToPacket() packetparcel.Parcel {
 		return p
 	}
 
-	item := packetmodel.NewAsset(false, 0, *m.ItemId(), time.Time{})
+	item := packetmodel.NewAsset(true, 0, *m.ItemId(), time.Time{})
 	if inventory.Type(m.ItemType()) != inventory.TypeValueEquip {
 		item = item.SetStackableInfo(uint32(m.Quantity()), 0, 0)
 	}

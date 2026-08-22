@@ -13,18 +13,19 @@ import (
 )
 
 // wantEquipItemBytesV79 hand-builds the wire encoding of a bare equipment
-// asset (model.NewAsset(false, 1, 1302000, time.Time{})) under GMS v79, per
+// asset (model.NewAsset(true, 0, 1302000, time.Time{})) under GMS v79, per
 // model.Asset.encodeEquipableInfo (libs/atlas-packet/model/asset.go). v79 is
-// on the far side of the MajorAtLeast(79) hammersApplied gate (asset.go:266)
-// but below the MajorAtLeast(83) short-slot gate (asset.go:507): slot
-// encodes as a single byte (like v72), but hammersApplied IS written (unlike
-// v72) — 81 bytes here vs 77 for v72 and 82 for v83. Every numeric field on
-// this asset is its zero value, so each gated region below is either absent
-// or all-zero-bytes of its fixed width; only the fixed byte offsets differ
-// per version (RULING 22 retro-fit, task-241 Task 28).
+// on the far side of the MajorAtLeast(79) hammersApplied gate (asset.go:266),
+// so hammersApplied IS written (unlike v72) — 80 bytes here vs 76 for v72
+// and 80 for v83. No slot prefix is present in any of the three: the item is
+// attached via Parcel.SetItem, which forces zero-position
+// (GW_ItemSlotBase::Decode @0x4E33F9 reads the item TYPE byte first, never a
+// slot byte). Every numeric field on this asset is its zero value, so each
+// gated region below is either absent or all-zero-bytes of its fixed width;
+// only the fixed byte offsets differ per version (RULING 22 retro-fit,
+// task-241 Task 28).
 func wantEquipItemBytesV79() []byte {
 	var b []byte
-	b = append(b, 0x01)                                           // encodeSlot: byte slot (MajorAtLeast(83) false, asset.go:507)
 	b = append(b, 0x01)                                           // cash-type-byte marker (MajorVersion>12)
 	b = append(b, 0xf0, 0xdd, 0x13, 0x00)                         // templateId 1302000 LE
 	b = append(b, 0x00)                                           // WriteBool(false) -- not cash
@@ -179,7 +180,7 @@ func TestParcelArrivedV79WithItem(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 79, 1)
 	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
-	item := model.NewAsset(false, 1, 1302000, time.Time{})
+	item := model.NewAsset(true, 0, 1302000, time.Time{})
 	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
 
 	name := make([]byte, 13)
@@ -262,7 +263,7 @@ func TestParcelOpenV79WithItem(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 79, 1)
 	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
-	item := model.NewAsset(false, 1, 1302000, time.Time{})
+	item := model.NewAsset(true, 0, 1302000, time.Time{})
 	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
 
 	name := make([]byte, 13)

@@ -13,7 +13,7 @@ import (
 )
 
 // wantEquipItemBytesV185 hand-builds the wire encoding of a bare equipment
-// asset (model.NewAsset(false, 1, 1302000, time.Time{})) under JMS v185, per
+// asset (model.NewAsset(true, 0, 1302000, time.Time{})) under JMS v185, per
 // model.Asset.encodeEquipableInfo (libs/atlas-packet/model/asset.go).
 //
 // Independently decompiled GW_ItemSlotEquip::RawDecode @0x50feb9 (and its
@@ -38,7 +38,6 @@ import (
 // codec change needed (task-241 Task 28 batch 8/8).
 func wantEquipItemBytesV185() []byte {
 	var b []byte
-	b = append(b, 0x01, 0x00)                                                 // encodeSlot: short slot (JMS always short, asset.go:523)
 	b = append(b, 0x01)                                                       // cash-type-byte marker (JMS always writes 1, asset.go:232-234)
 	b = append(b, 0xf0, 0xdd, 0x13, 0x00)                                     // templateId 1302000 LE
 	b = append(b, 0x00)                                                       // WriteBool(false) -- not cash
@@ -128,7 +127,7 @@ func TestParcelOpenV185WithItem(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("JMS", 185, 1)
 	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
-	item := model.NewAsset(false, 1, 1302000, time.Time{})
+	item := model.NewAsset(true, 0, 1302000, time.Time{})
 	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
 
 	name := make([]byte, 13)
@@ -196,7 +195,7 @@ func TestParcelArrivedV185WithItem(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("JMS", 185, 1)
 	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
-	item := model.NewAsset(false, 1, 1302000, time.Time{})
+	item := model.NewAsset(true, 0, 1302000, time.Time{})
 	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
 
 	name := make([]byte, 13)

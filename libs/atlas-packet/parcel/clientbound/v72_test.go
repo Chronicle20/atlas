@@ -13,19 +13,20 @@ import (
 )
 
 // wantEquipItemBytesV72 hand-builds the wire encoding of a bare equipment
-// asset (model.NewAsset(false, 1, 1302000, time.Time{})) under GMS v72, per
+// asset (model.NewAsset(true, 0, 1302000, time.Time{})) under GMS v72, per
 // model.Asset.encodeEquipableInfo (libs/atlas-packet/model/asset.go). v72
-// sits below BOTH the MajorAtLeast(79) hammersApplied gate (asset.go:266)
-// and the MajorAtLeast(83) short-slot gate (asset.go:507): slot encodes as a
-// single byte and no hammersApplied field is written — the shortest of the
-// three versions' encodings (77 bytes here vs 81 for v79 and 82 for v83).
+// sits below the MajorAtLeast(79) hammersApplied gate (asset.go:266), so no
+// hammersApplied field is written — the shortest of the three versions'
+// encodings (76 bytes here vs 80 for v79 and 80 for v83). No slot prefix is
+// present in any of the three: the item is attached via Parcel.SetItem,
+// which forces zero-position (GW_ItemSlotBase::Decode @0x4E33F9 reads the
+// item TYPE byte first, never a slot byte).
 // Every numeric field on this asset is its zero value, so each gated region
 // below is either absent or all-zero-bytes of its fixed width; only the
 // fixed byte offsets differ per version (RULING 22 retro-fit, task-241 Task
 // 28).
 func wantEquipItemBytesV72() []byte {
 	var b []byte
-	b = append(b, 0x01)                                           // encodeSlot: byte slot (MajorAtLeast(83) false, asset.go:507)
 	b = append(b, 0x01)                                           // cash-type-byte marker (MajorVersion>12)
 	b = append(b, 0xf0, 0xdd, 0x13, 0x00)                         // templateId 1302000 LE
 	b = append(b, 0x00)                                           // WriteBool(false) -- not cash
@@ -180,7 +181,7 @@ func TestParcelArrivedV72WithItem(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 72, 1)
 	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
-	item := model.NewAsset(false, 1, 1302000, time.Time{})
+	item := model.NewAsset(true, 0, 1302000, time.Time{})
 	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
 
 	name := make([]byte, 13)
@@ -263,7 +264,7 @@ func TestParcelOpenV72WithItem(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 72, 1)
 	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
-	item := model.NewAsset(false, 1, 1302000, time.Time{})
+	item := model.NewAsset(true, 0, 1302000, time.Time{})
 	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
 
 	name := make([]byte, 13)

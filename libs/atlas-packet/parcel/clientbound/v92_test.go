@@ -13,7 +13,7 @@ import (
 )
 
 // wantEquipItemBytesV92 hand-builds the wire encoding of a bare equipment
-// asset (model.NewAsset(false, 1, 1302000, time.Time{})) under GMS v92, per
+// asset (model.NewAsset(true, 0, 1302000, time.Time{})) under GMS v92, per
 // model.Asset.encodeEquipableInfo (libs/atlas-packet/model/asset.go).
 //
 // CORRECTED (task-241 Task 28 batch-6 fix round, bug
@@ -34,7 +34,6 @@ import (
 // writes 1 byte + 5 shorts + 1 int = 15 bytes) -- v92 has no trailing int.
 func wantEquipItemBytesV92() []byte {
 	var b []byte
-	b = append(b, 0x01, 0x00)                                                 // encodeSlot: short slot (MajorAtLeast(83) true, asset.go:507)
 	b = append(b, 0x01)                                                       // cash-type-byte marker (MajorVersion>12)
 	b = append(b, 0xf0, 0xdd, 0x13, 0x00)                                     // templateId 1302000 LE
 	b = append(b, 0x00)                                                       // WriteBool(false) -- not cash
@@ -183,7 +182,7 @@ func TestParcelArrivedV92WithItem(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 92, 1)
 	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
-	item := model.NewAsset(false, 1, 1302000, time.Time{})
+	item := model.NewAsset(true, 0, 1302000, time.Time{})
 	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
 
 	name := make([]byte, 13)
@@ -266,7 +265,7 @@ func TestParcelOpenV92WithItem(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 92, 1)
 	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
-	item := model.NewAsset(false, 1, 1302000, time.Time{})
+	item := model.NewAsset(true, 0, 1302000, time.Time{})
 	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
 
 	name := make([]byte, 13)

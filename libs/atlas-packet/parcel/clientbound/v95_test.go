@@ -13,7 +13,7 @@ import (
 )
 
 // wantEquipItemBytesV95 hand-builds the wire encoding of a bare equipment
-// asset (model.NewAsset(false, 1, 1302000, time.Time{})) under GMS v95, per
+// asset (model.NewAsset(true, 0, 1302000, time.Time{})) under GMS v95, per
 // model.Asset.encodeEquipableInfo (libs/atlas-packet/model/asset.go).
 //
 // Re-decompiled GW_ItemSlotEquip::RawDecode @0x4f8360 on session ecc757f4
@@ -36,7 +36,6 @@ import (
 // 7/8, RULING 22 retro-fit).
 func wantEquipItemBytesV95() []byte {
 	var b []byte
-	b = append(b, 0x01, 0x00)                                                 // encodeSlot: short slot (MajorAtLeast(83) true, asset.go:523)
 	b = append(b, 0x01)                                                       // cash-type-byte marker (MajorVersion>12)
 	b = append(b, 0xf0, 0xdd, 0x13, 0x00)                                     // templateId 1302000 LE
 	b = append(b, 0x00)                                                       // WriteBool(false) -- not cash
@@ -188,7 +187,7 @@ func TestParcelArrivedV95WithItem(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 95, 1)
 	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
-	item := model.NewAsset(false, 1, 1302000, time.Time{})
+	item := model.NewAsset(true, 0, 1302000, time.Time{})
 	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
 
 	name := make([]byte, 13)
@@ -271,7 +270,7 @@ func TestParcelOpenV95WithItem(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	ctx := pt.CreateContext("GMS", 95, 1)
 	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
-	item := model.NewAsset(false, 1, 1302000, time.Time{})
+	item := model.NewAsset(true, 0, 1302000, time.Time{})
 	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
 
 	name := make([]byte, 13)

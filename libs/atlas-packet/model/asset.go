@@ -194,6 +194,14 @@ func (m Asset) SetPetFlag(flag uint16) Asset {
 	return m
 }
 
+// SetZeroPosition clears the wire slot prefix, matching the
+// GW_ItemSlotBase::Decode call sites (e.g. PARCEL::Decode @0x4E33F9) that
+// read the item TYPE byte first and never a leading slot byte.
+func (m Asset) SetZeroPosition(v bool) Asset {
+	m.zeroPosition = v
+	return m
+}
+
 func (m Asset) SetOwner(owner string) Asset {
 	m.owner = owner
 	return m

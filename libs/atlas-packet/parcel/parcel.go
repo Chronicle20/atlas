@@ -99,7 +99,17 @@ import (
 //	+235..   GW_ItemSlotBase item    GW_ItemSlotBase::Decode, only when
 //	          (optional)             hasItem is set (v83 @0x4E4378);
 //	                                 encoded here via the existing
-//	                                 version-aware model.Asset codec.
+//	                                 version-aware model.Asset codec. No slot
+//	                                 prefix: GW_ItemSlotBase::Decode
+//	                                 @0x4E33F9's first two statements are
+//	                                 `v2 = CInPacket::Decode1(a2);
+//	                                 GW_ItemSlotBase::CreateItem(&v6, v2)` —
+//	                                 the very first byte read is the item
+//	                                 TYPE, unlike the inventory/storage call
+//	                                 sites where the caller reads a slot
+//	                                 byte before invoking Decode. SetItem
+//	                                 therefore forces zero-position on every
+//	                                 attached asset.
 const (
 	parcelSenderNameWidth = 13
 	parcelMessageWidth    = 205
@@ -137,8 +147,13 @@ func (p Parcel) Item() (model.Asset, bool) {
 	return *p.item, true
 }
 
-// SetItem returns a copy of p with the given asset attached.
+// SetItem returns a copy of p with the given asset attached. The asset is
+// always normalized to zero-position before attachment — see the +235..
+// field doc above: GW_ItemSlotBase::Decode reads the item TYPE byte first,
+// with no leading slot prefix, so the PARCEL wire form can never carry a
+// slot, regardless of what the caller passed in.
 func (p Parcel) SetItem(a model.Asset) Parcel {
+	a = a.SetZeroPosition(true)
 	p.item = &a
 	return p
 }

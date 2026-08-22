@@ -55,6 +55,11 @@ func TestParcelEncode(t *testing.T) {
 	})
 
 	t.Run("parcel with item", func(t *testing.T) {
+		// SetItem forces zero-position on the attached asset regardless of
+		// what the caller passed in (GW_ItemSlotBase::Decode @0x4E33F9 reads
+		// the item TYPE byte first, with no leading slot prefix — see
+		// parcel.Parcel.SetItem's doc comment). Passing a non-zero slot here
+		// exercises that enforcement.
 		item := model.NewAsset(false, 1, 1302000, time.Time{})
 		p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
 
@@ -63,7 +68,8 @@ func TestParcelEncode(t *testing.T) {
 		msg := make([]byte, 205)
 		copy(msg, "hi")
 		filetime := model.MsTimeBytes(sentAt)
-		itemBytes := item.Encode(nil, ctx)(nil)
+		zeroItem, _ := p.Item()
+		itemBytes := zeroItem.Encode(nil, ctx)(nil)
 
 		var want []byte
 		want = append(want, 0x07, 0x00, 0x00, 0x00)

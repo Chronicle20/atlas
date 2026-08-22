@@ -6,6 +6,7 @@ import (
 	mock2 "atlas-saga-orchestrator/compartment/mock"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 	notemock "atlas-saga-orchestrator/note/mock"
+	playernpcmock "atlas-saga-orchestrator/playernpc/mock"
 	"atlas-saga-orchestrator/validation"
 	mock3 "atlas-saga-orchestrator/validation/mock"
 	"encoding/json"
@@ -1699,4 +1700,123 @@ func TestHandlePlayJukebox_InvalidPayload(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid payload")
+}
+
+// TestDeployPlayerNpcAction covers handleDeployPlayerNpc (FR-6.2).
+//
+// The "failure code surfaces" row from the design's test matrix is
+// deliberately NOT covered here: event_acceptance.go's doc comment on
+// sharedsaga.DeployPlayerNpc records that the shipped atlas-player-npcs
+// consumer (kafka/consumer/playernpc/consumer.go) is fire-and-forget, with
+// downstream errors logged and swallowed rather than surfaced on any reply
+// topic. There is no path by which a domain failure code (e.g.
+// pool_exhausted) could reach this handler, so a test asserting that path
+// would be asserting behavior that cannot occur. What IS asserted below is
+// the contract that actually exists: the step is self-completing (present
+// in event_acceptance.go's fire-and-forget table) and returns an error only
+// when resolving the character's location or emitting the Kafka command
+// itself fails. A follow-up task extending the Kafka contract with a reply
+// topic can pick this note up.
+func TestDeployPlayerNpcAction(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	t.Run("explicit MapId wins over the resolved location", func(t *testing.T) {
+		_, ctx := setupContext()
+
+		explicitMapId := uint32(100000001)
+		locationCalls := 0
+		locP := &playernpcmock.ProcessorMock{
+			GetCurrentLocationFunc: func(characterId uint32) (world.Id, _map.Id, channel.Id, error) {
+				locationCalls++
+				return world.Id(1), _map.Id(999999999), channel.Id(2), nil
+			},
+		}
+
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(QuestReward).
+			SetInitiatedBy("test").
+			Build()
+		require.NoError(t, err)
+
+		step := NewStep[any]("deploy-player-npc", Pending, DeployPlayerNpc, DeployPlayerNpcPayload{
+			CharacterId: 12345,
+			MapId:       &explicitMapId,
+		})
+
+		err = NewHandler(logger, ctx).WithPlayerNpcLocationProcessor(locP).handleDeployPlayerNpc(s, step)
+		assert.NoError(t, err)
+		// WorldId has no source but the location lookup (per the controller's
+		// ruling), so it is always resolved even when MapId is explicit.
+		assert.Equal(t, 1, locationCalls)
+	})
+
+	t.Run("default map resolves both world and map from current location", func(t *testing.T) {
+		_, ctx := setupContext()
+
+		locP := &playernpcmock.ProcessorMock{
+			GetCurrentLocationFunc: func(characterId uint32) (world.Id, _map.Id, channel.Id, error) {
+				assert.Equal(t, uint32(54321), characterId)
+				return world.Id(3), _map.Id(200000000), channel.Id(4), nil
+			},
+		}
+
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(QuestReward).
+			SetInitiatedBy("test").
+			Build()
+		require.NoError(t, err)
+
+		step := NewStep[any]("deploy-player-npc", Pending, DeployPlayerNpc, DeployPlayerNpcPayload{
+			CharacterId: 54321,
+		})
+
+		err = NewHandler(logger, ctx).WithPlayerNpcLocationProcessor(locP).handleDeployPlayerNpc(s, step)
+		assert.NoError(t, err)
+	})
+
+	t.Run("invalid payload is rejected", func(t *testing.T) {
+		_, ctx := setupContext()
+
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(QuestReward).
+			SetInitiatedBy("test").
+			Build()
+		require.NoError(t, err)
+
+		step := NewStep[any]("deploy-player-npc", Pending, DeployPlayerNpc, "invalid-payload-type")
+
+		err = NewHandler(logger, ctx).handleDeployPlayerNpc(s, step)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid payload")
+	})
+
+	t.Run("location lookup failure is returned, not swallowed", func(t *testing.T) {
+		_, ctx := setupContext()
+
+		locErr := errors.New("atlas-maps unreachable")
+		locP := &playernpcmock.ProcessorMock{
+			GetCurrentLocationFunc: func(characterId uint32) (world.Id, _map.Id, channel.Id, error) {
+				return 0, 0, 0, locErr
+			},
+		}
+
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(QuestReward).
+			SetInitiatedBy("test").
+			Build()
+		require.NoError(t, err)
+
+		step := NewStep[any]("deploy-player-npc", Pending, DeployPlayerNpc, DeployPlayerNpcPayload{
+			CharacterId: 999,
+		})
+
+		err = NewHandler(logger, ctx).WithPlayerNpcLocationProcessor(locP).handleDeployPlayerNpc(s, step)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "atlas-maps unreachable")
+	})
 }

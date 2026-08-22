@@ -8,6 +8,7 @@ import (
 	"atlas-saga-orchestrator/kafka/message/megaphone"
 	"atlas-saga-orchestrator/kafka/message/npc"
 	npcshop "atlas-saga-orchestrator/kafka/message/npcshop"
+	"atlas-saga-orchestrator/kafka/message/playernpc"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"context"
 
@@ -15,6 +16,8 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
@@ -454,6 +457,24 @@ func NpcConversationStartNpcCommandProvider(transactionId uuid.UUID, payload Sta
 			MapId:     payload.MapId,
 			Instance:  payload.Instance,
 			AccountId: payload.AccountId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// DeployPlayerNpcCommandProvider builds the COMMAND_TOPIC_PLAYER_NPC DEPLOY
+// command for a deploy_player_npc step (FR-6.2). Eligibility is always
+// enforced here -- the GM bypass (enforceEligibility: false) belongs to
+// atlas-messages' own path (design §9.2), not this saga operation.
+func DeployPlayerNpcCommandProvider(characterId uint32, worldId world.Id, mapId _map.Id) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &playernpc.Command[playernpc.CommandDeployBody]{
+		CharacterId: characterId,
+		Type:        playernpc.CommandTypeDeploy,
+		Body: playernpc.CommandDeployBody{
+			WorldId:            worldId,
+			MapId:              mapId,
+			EnforceEligibility: true,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

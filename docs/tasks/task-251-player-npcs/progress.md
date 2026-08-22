@@ -1038,3 +1038,14 @@ are independent of each other):
   "field for field" doc comment). Brief: `.superpowers/sdd/plan/task-23b-brief.md`.
 - **Task 23c** — `atlas-messages`: mirror, set `requester` on both GM commands, first status
   consumer in the service, per-code pink text. Brief: `.superpowers/sdd/plan/task-23c-brief.md`.
+
+## Task 23a complete — `2ae390710`
+
+`atlas-player-npcs` contract + `playernpc.CodeFor` (shared by REST and Kafka) + outcome emission on
+all three consumer arms. Implementer reported DONE, no concerns; module `go build`/`go test` green.
+Note carried forward: this module's REST test file is `resource_test.go`, not `rest_test.go` as the
+brief said — the 409/422 coverage was already there and still passes.
+
+# Gate 34 — PASS at `2ae390710`
+
+`tools/verify.sh --quick --base c0b78bb9d`, exit 0. **Last gated commit: `2ae390710`.**

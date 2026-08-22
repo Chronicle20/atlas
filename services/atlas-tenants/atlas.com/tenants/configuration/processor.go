@@ -188,6 +188,24 @@ type Processor interface {
 	// KiteConfigProvider returns a provider for the kite-configs configuration
 	KiteConfigProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}]
 
+	// Player NPC config operations
+	// CreatePlayerNpcConfig creates (or replaces) the tenant's player-npcs configuration
+	CreatePlayerNpcConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error)
+	// CreatePlayerNpcConfigAndEmit creates the player-npcs configuration and emits events
+	CreatePlayerNpcConfigAndEmit(tenantId uuid.UUID, cfg map[string]interface{}) (Model, error)
+	// UpdatePlayerNpcConfig updates the existing player-npcs configuration
+	UpdatePlayerNpcConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error)
+	// UpdatePlayerNpcConfigAndEmit updates the player-npcs configuration and emits events
+	UpdatePlayerNpcConfigAndEmit(tenantId uuid.UUID, cfg map[string]interface{}) (Model, error)
+	// DeletePlayerNpcConfig deletes the player-npcs configuration
+	DeletePlayerNpcConfig(mb *message.Buffer) func(tenantId uuid.UUID) error
+	// DeletePlayerNpcConfigAndEmit deletes the player-npcs configuration and emits events
+	DeletePlayerNpcConfigAndEmit(tenantId uuid.UUID) error
+	// GetPlayerNpcConfig gets the player-npcs configuration for a tenant
+	GetPlayerNpcConfig(tenantId uuid.UUID) (map[string]interface{}, error)
+	// PlayerNpcConfigProvider returns a provider for the player-npcs configuration
+	PlayerNpcConfigProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}]
+
 	// Imprint config operations (FR-2.6 pending-change expiry; see imprint_handler.go)
 	// CreateImprintConfig creates a new imprint config configuration
 	CreateImprintConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(config map[string]interface{}) (Model, error)
@@ -2247,4 +2265,163 @@ func (p *ProcessorImpl) GetKiteConfig(tenantId uuid.UUID) (map[string]interface{
 // KiteConfigProvider returns a provider for the kite-configs configuration
 func (p *ProcessorImpl) KiteConfigProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}] {
 	return GetKiteConfigProvider(tenantId)(p.db)
+}
+
+// CreatePlayerNpcConfig creates (or replaces) the tenant's player-npcs configuration
+func (p *ProcessorImpl) CreatePlayerNpcConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error) {
+		return func(cfg map[string]interface{}) (Model, error) {
+			playerNpcConfigId := ""
+			if id, ok := cfg["id"].(string); ok {
+				playerNpcConfigId = id
+			}
+
+			resourceData, err := CreateSinglePlayerNpcConfigJsonData(cfg)
+			if err != nil {
+				return Model{}, err
+			}
+
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "player-npcs")(p.db)
+			existing, err := existingProvider()
+			if err == nil {
+				existing.ResourceData = resourceData
+				if err := UpdateConfiguration(p.db, existing); err != nil {
+					return Model{}, err
+				}
+				m, err := Make(existing)
+				if err != nil {
+					return Model{}, err
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreatePlayerNpcConfigStatusEventProvider(tenantId, EventTypePlayerNpcConfigUpdated, playerNpcConfigId)); err != nil {
+					return Model{}, err
+				}
+				return m, nil
+			} else if errors.Is(err, gorm.ErrRecordNotFound) {
+				entity := Entity{
+					ID:           uuid.New(),
+					TenantId:     tenantId,
+					ResourceName: "player-npcs",
+					ResourceData: resourceData,
+				}
+				if err := CreateConfiguration(p.db, entity); err != nil {
+					return Model{}, err
+				}
+				m, err := Make(entity)
+				if err != nil {
+					return Model{}, err
+				}
+				if err := mb.Put(EventTopicConfigurationStatus, CreatePlayerNpcConfigStatusEventProvider(tenantId, EventTypePlayerNpcConfigCreated, playerNpcConfigId)); err != nil {
+					return Model{}, err
+				}
+				return m, nil
+			}
+			return Model{}, err
+		}
+	}
+}
+
+// CreatePlayerNpcConfigAndEmit creates the player-npcs configuration and emits events
+func (p *ProcessorImpl) CreatePlayerNpcConfigAndEmit(tenantId uuid.UUID, cfg map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, ctx, tx).CreatePlayerNpcConfig(mb)(tenantId)(cfg)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// UpdatePlayerNpcConfig updates the existing player-npcs configuration
+func (p *ProcessorImpl) UpdatePlayerNpcConfig(mb *message.Buffer) func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(cfg map[string]interface{}) (Model, error) {
+		return func(cfg map[string]interface{}) (Model, error) {
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "player-npcs")(p.db)
+			existing, err := existingProvider()
+			if err != nil {
+				return Model{}, err
+			}
+
+			playerNpcConfigId := ""
+			if id, ok := cfg["id"].(string); ok {
+				playerNpcConfigId = id
+			}
+
+			resourceData, err := CreateSinglePlayerNpcConfigJsonData(cfg)
+			if err != nil {
+				return Model{}, err
+			}
+			existing.ResourceData = resourceData
+			if err := UpdateConfiguration(p.db, existing); err != nil {
+				return Model{}, err
+			}
+			m, err := Make(existing)
+			if err != nil {
+				return Model{}, err
+			}
+			if err := mb.Put(EventTopicConfigurationStatus, CreatePlayerNpcConfigStatusEventProvider(tenantId, EventTypePlayerNpcConfigUpdated, playerNpcConfigId)); err != nil {
+				return Model{}, err
+			}
+			return m, nil
+		}
+	}
+}
+
+// UpdatePlayerNpcConfigAndEmit updates the player-npcs configuration and emits events
+func (p *ProcessorImpl) UpdatePlayerNpcConfigAndEmit(tenantId uuid.UUID, cfg map[string]interface{}) (Model, error) {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return Model{}, err
+	}
+	var result Model
+	txErr := database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		var err error
+		result, err = message.EmitWithResult[Model, uuid.UUID](outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
+			return func(tenantId uuid.UUID) (Model, error) {
+				return NewProcessor(p.l, ctx, tx).UpdatePlayerNpcConfig(mb)(tenantId)(cfg)
+			}
+		})(tenantId)
+		return err
+	})
+	return result, txErr
+}
+
+// DeletePlayerNpcConfig deletes the player-npcs configuration
+func (p *ProcessorImpl) DeletePlayerNpcConfig(mb *message.Buffer) func(tenantId uuid.UUID) error {
+	return func(tenantId uuid.UUID) error {
+		if _, err := DeleteConfigurationByResourceName(p.db, tenantId, "player-npcs"); err != nil {
+			return err
+		}
+		return mb.Put(EventTopicConfigurationStatus, CreatePlayerNpcConfigStatusEventProvider(tenantId, EventTypePlayerNpcConfigDeleted, ""))
+	}
+}
+
+// DeletePlayerNpcConfigAndEmit deletes the player-npcs configuration and emits events
+func (p *ProcessorImpl) DeletePlayerNpcConfigAndEmit(tenantId uuid.UUID) error {
+	ctx, err := p.tenantCtx(tenantId)
+	if err != nil {
+		return err
+	}
+	return database.ExecuteTransaction(p.db.WithContext(ctx), func(tx *gorm.DB) error {
+		return message.Emit(outbox.EmitProvider(p.l, ctx, tx))(func(mb *message.Buffer) error {
+			return NewProcessor(p.l, ctx, tx).DeletePlayerNpcConfig(mb)(tenantId)
+		})
+	})
+}
+
+// GetPlayerNpcConfig gets the player-npcs configuration for a tenant
+func (p *ProcessorImpl) GetPlayerNpcConfig(tenantId uuid.UUID) (map[string]interface{}, error) {
+	return p.PlayerNpcConfigProvider(tenantId)()
+}
+
+// PlayerNpcConfigProvider returns a provider for the player-npcs configuration
+func (p *ProcessorImpl) PlayerNpcConfigProvider(tenantId uuid.UUID) model.Provider[map[string]interface{}] {
+	return GetPlayerNpcConfigProvider(tenantId)(p.db)
 }

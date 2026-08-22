@@ -1102,3 +1102,8 @@ question that matters is whether a saga whose downstream never replies now wedge
 it previously always advanced, or degrades the way every other event-driven action does.
 
 Gate 35 launched for `2ae390710..HEAD` (covers 23c and 23b as one range).
+
+# Gate 35 — PASS at `d92561b85`
+
+`tools/verify.sh --quick --base 2ae390710`, exit 0 — covers Tasks 23c and 23b as one range.
+**Last gated commit: `d92561b85`.**

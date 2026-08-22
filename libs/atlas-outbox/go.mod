@@ -9,13 +9,15 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/segmentio/kafka-go v0.4.51
 	github.com/sirupsen/logrus v1.10.1
-	github.com/stretchr/testify v1.12.0
+	github.com/stretchr/testify v1.12.1
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.44.0
 	gorm.io/datatypes v1.2.7
 	gorm.io/driver/postgres v1.6.2
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2
 )
+
+require go.yaml.in/yaml/v3 v3.0.5 // indirect
 
 require (
 	dario.cat/mergo v1.0.2 // indirect

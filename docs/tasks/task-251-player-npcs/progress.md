@@ -744,3 +744,252 @@ limits, not passes:
 
 Neither blocks Task 19. Item 1 belongs to end-to-end validation once the service is deployed;
 item 2 is worth a deliberate look during the pre-PR review rather than being treated as closed.
+
+# Task 20 — `atlas-tenants` `player-npcs` configuration resource
+
+**Commit `c08704867`**, "feat(atlas-tenants): add player-npcs configuration resource". Implementer
+reported **DONE**, no concerns. Module-local `go build ./... && go test ./...` green from
+`services/atlas-tenants/atlas.com/tenants`; `TestPlayerNpcConfigHandlerWireRoundTrip`
+(create/get/update/delete/unconfigured/type-fidelity) passes; `gofmt -l` clean.
+
+One deliberate deviation from the brief's file table: **`AreaSteps` is `int`, not `byte`**, to
+match Task 13's already-shipped consumer field for field. Documented in
+`.superpowers/sdd/plan/task-20-report.md`; handed to the Task 20 review as its load-bearing
+question.
+
+# Gate 30 — PASS at `c08704867`
+
+`tools/verify.sh --quick --base 7a3d648dd`, exit 0. Selected gates green: go build/vet
+(`services/atlas-tenants/atlas.com/tenants`), go analyzer guards, skill/job id guard, scope
+guard, producer seam guard, env domain guard, lint & format guard (1 module). Docker bake
+skipped as expected for `--quick`. **Last gated commit: `c08704867`.**
+
+## Task 20 review — APPROVED, 0 blocking, 1 non-blocking
+
+`.superpowers/sdd/plan/task-20-review.md`, over `c08704867`. The reviewer cross-checked the new
+`services/atlas-tenants/atlas.com/tenants/configuration/` surface field for field against Task
+13's shipped consumer (`services/atlas-player-npcs/.../configuration/{rest,model,requests}.go`)
+and Task 16's `AutoDeployEnabled` usage. **The `AreaSteps` `int` deviation is confirmed correct** —
+it matches the shipped consumer. No scope drift.
+
+Non-blocking (report accuracy only, not code): `task-20-report.md`'s rationale for picking the
+Rankings nested-attributes storage shape over KiteConfig's flat shape overstates the wire-contract
+stakes — the wire shape is storage-shape-agnostic, produced uniformly by
+`server.MarshalResponse`/`RegisterInputHandler` via struct-tag reflection. The code is correct.
+
+Not-evaluable (an honest scope limit, not a pass): no cross-service integration test spins up
+`atlas-tenants` and `atlas-player-npcs` together, and none is expected under this repo's
+per-service conventions. The seam was instead verified by direct source comparison of both
+sides' encode/decode contracts.
+
+# Task 21 — `atlas-messages` `@playernpc` GM commands
+
+**Commit `0142ff469`**, "feat(atlas-messages): add @playernpc GM commands (Task 21)". Implementer
+reported **DONE_WITH_CONCERNS**. Module-local `go build ./... && go test ./...` green from
+`services/atlas-messages/atlas.com/messages`; `command/playernpc` 12/12 subtests pass.
+
+Two things handed to the Task 21 review:
+
+1. **The failure-reporting path may not exist.** The implementer reports the shipped Task 17
+   consumer in `atlas-player-npcs` has no synchronous reply or failure-event path back to
+   `atlas-messages` — commands are fire-and-forget and downstream errors are logged and
+   swallowed. The brief's "failure reported back — `pool_exhausted`" row could therefore only be
+   satisfied by surfacing the *Kafka-publish-layer* error, not a real domain failure code. If
+   confirmed, **FR-8.3 is not implementable without a status-event contract no task on this
+   branch owns** — a branch-level finding, not a Task 21 defect. Task 22's FR-6.3 row depends on
+   the same seam; its brief carries a note to verify before implementing.
+2. **New test seams** — `characterLookup`, `commandPublisher`, `pinkTextSender` interfaces, added
+   because no existing `command/*` package in this service mocks the Kafka/HTTP layer. Handed to
+   review to rule on production-shaped seam vs. test-only scaffolding in production code.
+
+# Gate 31 — PASS at `0142ff469`
+
+`tools/verify.sh --quick --base c08704867`, exit 0. Selected gates green: go build/vet
+(`services/atlas-messages/atlas.com/messages`), go analyzer guards, skill/job id guard, scope
+guard, producer seam guard, env domain guard, env bootstrap guard, lint & format guard (1
+module). Docker bake skipped as expected for `--quick`. **Last gated commit: `0142ff469`.**
+
+## Task 21 review — APPROVED_WITH_FINDINGS, 1 blocking (branch-level, not a Task 21 defect)
+
+`.superpowers/sdd/plan/task-21-review.md`, over `c08704867..0142ff469`. Diff matches the brief's
+file list exactly; no scope drift. Task 21's own code is a faithful best-effort.
+
+**BLOCKING — FR-8.3 is genuinely unimplementable as specified.** Task 17's shipped consumer
+(`services/atlas-player-npcs/atlas.com/player-npcs/kafka/consumer/playernpc/consumer.go:66-82,
+114-122`) only logs and swallows domain failures — there is no reply or status-event path, so no
+domain failure code (`pool_exhausted` et al.) can ever reach `atlas-messages`. The implementer's
+concern is **confirmed against source**. This cannot be fixed inside Task 21's four files.
+
+`design.md:637-666` (§8.3/§9.1) has **Task 22 about to build a saga step on the identical false
+assumption** (FR-6.3, "failure code surfaces"). Task 22's brief already carries a controller note
+to verify this seam against shipped source and report the gap rather than fabricate a passing
+test around a path that cannot fire.
+
+Resolution is one of two, and it is a design decision, not a defect fix:
+
+- **(A) Extend Task 17's contract** — add a status/failure event from `atlas-player-npcs` back to
+  its command producers, and consume it in `atlas-messages` (FR-8.3) and
+  `atlas-saga-orchestrator` (FR-6.3). Real work across three services; makes both requirements
+  true as written.
+- **(B) Formally narrow FR-8.3 and FR-6.3** in `prd.md`, `design.md` §8.3/§9.1 and the affected
+  briefs to what fire-and-forget can actually deliver, and record the deferral.
+
+**Escalated to the operator; the branch cannot be called done until one is chosen.**
+
+Non-blocking (visibility only): the new `characterLookup`/`commandPublisher`/`pinkTextSender`
+seams are new to `atlas-messages/command/*` but mirror Task 17's own `ProcessorProvider` seam
+pattern (`consumer.go:33-37`) — not a `*_testhelpers.go` file, not a test-only exported
+constructor, production wires real implementations inline. Acceptable.
+
+# Operator ruling — FR-8.3 / FR-6.3: extend the Kafka contract
+
+Presented with the Task 21 blocking finding, the operator chose **option (A): extend Task 17's
+Kafka contract.** A status/failure event will be emitted by `atlas-player-npcs` back to its
+command producers and consumed by `atlas-messages` (FR-8.3) and `atlas-saga-orchestrator`
+(FR-6.3), making both requirements true as written. Option (B) — narrowing the requirements in
+the PRD and design — was declined.
+
+This is **a new plan task on this branch (Task 23), dispatched after Task 22 closes.** It is
+explicitly NOT Task 22's work: Task 22 asserts the contract that exists today and leaves the
+FR-6.3 gap documented in `saga/event_acceptance.go` so Task 23 can find it. Per CLAUDE.md, triage
+and fix stay on the same branch; the clean PR branch comes from a rebase at PR time.
+
+Scope Task 23 must cover:
+
+- `atlas-player-npcs`: emit a status/failure event carrying the design §8.3 reason codes
+  (`pool_exhausted` et al.) instead of logging and swallowing
+  (`kafka/consumer/playernpc/consumer.go:66-82,114-122`).
+- `atlas-messages`: consume it and surface the reason via `IssuePinkText` to the invoking GM
+  (FR-8.3) — replacing Task 21's publish-layer-error-only best effort.
+- `atlas-saga-orchestrator`: consume it so a step's failure status carries the code and a script
+  can branch (FR-6.3) — which also makes the step no longer purely self-completing, so
+  `saga/event_acceptance.go` changes with it.
+
+# Task 22 — PARTIAL (commit `fcbe53c04`, cap reached)
+
+"feat(task-22): canSpawnPlayerNpc condition and deploy_player_npc scaffolding". 134 tool calls;
+committed what works and handed back per contract. **Not a failure.**
+
+**Complete:** `libs/atlas-saga` (condition + action constants, `DeployPlayerNpcPayload`,
+`unmarshal.go` case) and **FR-6.1 in full** — `atlas-query-aggregator`'s condition, the lazy
+`GetPlayerNpcEligibility` accessor, the `playernpc/` eligibility client, and
+`TestCanSpawnPlayerNpcCondition` (4/4 subtests). `atlas-saga-orchestrator` has scaffolding only
+(re-exports, `kafka/message/playernpc`, the `playernpc/` location client).
+
+**Remains:** FR-6.2's handler — `saga/handler.go` wiring and `handleDeployPlayerNpc`,
+`saga/producer.go`'s `DeployPlayerNpcCommandProvider`, `TestDeployPlayerNpcAction`, and the three
+documentation edits. Detail in `.superpowers/sdd/plan/task-22-report.md` §"What remains".
+
+**Controller ruling — the `WorldId` source (option (a)).** `DeployPlayerNpcPayload` carries no
+`WorldId` field and will not gain one. World and map both resolve through
+`GetCurrentLocation(characterId)`; an explicit payload `MapId` still wins for the map, the lookup
+supplies the world. This avoids touching `libs/atlas-saga` and both consuming services a second
+time. Recorded in `.superpowers/sdd/plan/task-22-brief-cont.md`.
+
+The implementer independently verified FR-6.3 unsatisfiable against the shipped consumer —
+matching the Task 21 reviewer's finding from a separate context.
+
+Continuation brief written: `.superpowers/sdd/plan/task-22-brief-cont.md`. The task review and
+gate run once over the whole Task 22 range (`0142ff469`..final HEAD), not per segment.
+
+# Gate 32 — PASS at `fcbe53c04`
+
+`tools/verify.sh --quick --base 0142ff469`, exit 0. Docker bake skipped as expected for
+`--quick`. **Last gated commit: `fcbe53c04`.** Note this gates the PARTIAL segment only; the
+Task 22 review still runs once over the whole range once the continuation lands.
+
+# Task 22 continuation — DONE (commit `c0b78bb9d`)
+
+"feat(saga-orchestrator): wire deploy_player_npc handler (FR-6.2)". A fresh implementer took the
+continuation brief; **DONE, no concerns**. Module-local `go build ./... && go test ./...` green
+from `services/atlas-saga-orchestrator/atlas.com/saga-orchestrator`; `TestDeployPlayerNpcAction`
+4/4 subtests pass; `gofmt -l` clean.
+
+Landed: `saga/handler.go` (the handler + `HandlerImpl` wiring + dispatch case),
+`saga/producer.go` (`DeployPlayerNpcCommandProvider`), `saga/handler_test.go`,
+`playernpc/mock/mock.go` (new), and the three documentation edits
+(`docs/npc_conversation_conversion_spec.md`, `services/atlas-query-aggregator/docs/rest.md`,
+`services/atlas-query-aggregator/docs/domain.md`).
+
+FR-6.3's failure-code row is **intentionally untested** per the confirmed ruling; the test file
+documents the gap explicitly so Task 23 can find it.
+
+Noted, not acted on: existing `With*` copy-constructors in `saga/handler.go` were already
+inconsistent about which fields they preserve. Pre-existing, not introduced here; the implementer
+followed local convention rather than sweeping it. Handed to the Task 22 review to confirm the
+*new* field is preserved where it matters.
+
+**Task 22 complete — all 22 plan tasks are now implemented.** The review runs once over the whole
+range `0142ff469..c0b78bb9d` (both segments as one unit).
+
+# Gate 33 — PASS at `c0b78bb9d`
+
+`tools/verify.sh --quick --base fcbe53c04`, exit 0. Docker bake skipped as expected for
+`--quick`. **Last gated commit: `c0b78bb9d`.**
+
+## Task 22 review — APPROVED_WITH_FINDINGS, 0 blocking, 2 non-blocking
+
+`.superpowers/sdd/plan/task-22-review.md`, over `0142ff469..c0b78bb9d` — both segments reviewed as
+one unit, cross-checked against the shipped `atlas-player-npcs` REST endpoint and Kafka consumer.
+All five load-bearing questions came back clean: `worldId` is passed explicitly (not defaulted to
+`0`), an explicit payload `MapId` is not overwritten by the lookup, the saga path cannot emit
+`EnforceEligibility: false`, the condition's six wiring points are all present with graceful
+degradation, and FR-6.3 asserts the contract that exists rather than faking one.
+
+Non-blocking, both small and both in files Task 23 will touch anyway — **fold them into Task 23**:
+
+1. `services/atlas-saga-orchestrator/.../playernpc/mock/mock.go` — named `mock.go` where sibling
+   packages use `processor.go`, and missing the
+   `var _ playernpc.Processor = (*ProcessorMock)(nil)` compile-time assertion / `processor_test.go`
+   most sibling `mock/` packages carry. Convention, not a defect.
+2. `services/atlas-saga-orchestrator/.../kafka/message/playernpc/kafka.go:1-7` — the doc comment
+   claims the type mirrors the shipped consumer "field for field," but the shipped
+   `CommandDeployBody` has an extra optional `Position` field this mirror omits. Harmless under
+   `omitempty`; the comment overstates what was mirrored. Fix the comment or add the field.
+
+# Session 8 handoff (after Tasks 20, 21, 22)
+
+**All 22 plan tasks are complete, reviewed and gated.** Last gated commit: **`c0b78bb9d`**
+(gate 33 PASS). Tree is clean; no writer in flight; no review outstanding.
+
+**The branch is NOT ready for PR.** One task remains, and it is new work the operator ruled in
+during this session, not a plan.md task:
+
+**NEXT ACTION: Task 23 — extend the Kafka contract so command failures reach their producers.**
+Scoped in full under "Operator ruling — FR-8.3 / FR-6.3" above. In short: `atlas-player-npcs`
+currently logs and swallows domain failures (`kafka/consumer/playernpc/consumer.go:66-82,114-122`)
+with no reply path, which makes FR-8.3 and FR-6.3 unimplementable as written. Both the Task 21
+reviewer and the Task 22 implementer confirmed this independently against source. The operator
+chose to **extend the contract**, not narrow the requirements. Three services change:
+`atlas-player-npcs` (emit the status/failure event with the design §8.3 reason codes),
+`atlas-messages` (consume it, surface via `IssuePinkText`, replacing Task 21's publish-layer-only
+best effort), and `atlas-saga-orchestrator` (consume it so a step's failure status carries the
+code — which also makes the step no longer purely self-completing, so `saga/event_acceptance.go`
+changes with it).
+
+Task 23 has **no brief yet** — it needs one authored from the design §8.3 reason codes and the
+three shipped consumer/producer surfaces. Fold in the two Task 22 non-blocking findings above
+while there. Findable markers left for it: the doc comment in `saga/event_acceptance.go` and the
+note in `saga/handler_test.go`.
+
+After Task 23: the Final gate from plan.md — flagless `tools/verify.sh` (only the flagless run
+counts), `go run ./tools/packet-audit matrix --check`, `tools/service-registration-guard.sh`,
+`tools/plan-lint.sh` — then the code-review roster (`backend-guidelines-reviewer`,
+`plan-adherence-reviewer`, `packet-completeness-critic` for Tasks 5-7), then
+`superpowers:finishing-a-development-branch`.
+
+Still open at handoff, unchanged:
+
+- **The nested-`equipment` JSON:API decode gap** (Task 18 review). Neither
+  `services/atlas-channel/.../playernpc/rest_test.go:157` nor
+  `services/atlas-player-npcs/.../playernpc/resource_test.go:183` exercises api2go/jsonapi
+  decoding a non-empty nested struct-slice attribute — both build the model directly. Repo-wide
+  pattern, not a task defect, but that seam's decode is unverified on both sides. Close it before
+  the PR or record it as a deliberate carry.
+- **Two Task 19 not-evaluable items** worth a deliberate look in the pre-PR review: the multi-pod
+  "every channel of the world" broadcast (live-verification territory), and player-NPC vs
+  ordinary-NPC object-id collision (out of scope for that diff, never affirmatively cleared).
+- **Two operator hand-backs** (recorded under Task 8): create `atlas-player-npcs-main` on
+  `postgres.home`, and flip the GHCR package public after the first image push.
+
+Standing operating rules on this branch are unchanged — see the Session 7 handoff above.

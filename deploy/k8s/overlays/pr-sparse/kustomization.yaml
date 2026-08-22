@@ -269,9 +269,9 @@ patches:
   #PLACEHOLDER_SERVICE_ID_BLOCK
   # The PRECREATE_GROUPS anchor (same convention). CI fills this line
   # with a JSON-6902 patch adding a newline-delimited KAFKA_CONSUMER_GROUP
-  # to the wave-0 atlas-kafka-precreate Job, so seedOverrideOffsets /
-  # verifyGroupOffsets stop taking their unset-guard early return
-  # (services/atlas-kafka-precreate/internal/groups/, task-243 design §1.1 — the mechanism exists and
+  # to the wave-0 atlas-kafka-precreate Job, so groups.Seed /
+  # groups.Verify stop taking their unset-guard early return
+  # (services/atlas-kafka-precreate/internal/groups/groups.go:46,191, task-243 design §1.1 — the mechanism exists and
   # was one wire short). Patched onto the JOB, deliberately NOT added to the
   # atlas-env ConfigMap: every container in the namespace reads atlas-env via
   # envFrom, and a multi-line group list there would become the consumer

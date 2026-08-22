@@ -2,7 +2,7 @@
 # atlas-env, atlas-env-tokens, and atlas-db-names ConfigMaps this Job used to
 # `envFrom` are gone by the time the hook fires, and the pod would wedge in
 # CreateContainerConfigError. All ConfigMap-sourced values are now inlined
-# below, with the bot-substituted PLACEHOLDER_PR_NUMBER token
+# below, with the bot-substituted 1434 token
 # (resolved by pr-validation.yml's update-pr-overlay).
 #
 # Secrets (db-credentials, pihole-credentials, ghcr-pat) are namespace-replicas
@@ -28,7 +28,7 @@ metadata:
   # stays put) this caused Argo to refuse the next PR's hook with
   # `SharedResourceWarning: Job/atlas-pr-cleanup is part of applications
   # argocd/atlas-pr-<this> and atlas-pr-<that>`.
-  name: atlas-pr-cleanup-PLACEHOLDER_PR_NUMBER
+  name: atlas-pr-cleanup-1434
   # Long-lived namespace. Until task-070, this Job ran in atlas-pr-<N> —
   # the same namespace Argo CD's resources-finalizer prunes during
   # Application deletion. The PostDelete hook fires AFTER prune, so by
@@ -91,7 +91,7 @@ spec:
             # harmless (bug #4 defensive fix; see task-070/design.md §3.4)
             # and neither needs its own manifest wiring.
             - name: PR_NUMBER
-              value: "PLACEHOLDER_PR_NUMBER"
+              value: "1434"
             # ATLAS_UI_BASE — task-48 (deactivate-before-destroy /
             # reclaim-control-plane). do_deactivate and do_drop_control_plane
             # PATCH/DELETE against atlas-configurations' environments/
@@ -104,7 +104,7 @@ spec:
             # reason environment-record.yaml (task-44/47) targets the
             # baseline's ingress rather than the PR's own.
             #
-            # Uses the SAME PLACEHOLDER_BASELINE_NAMESPACE sentinel Task 44
+            # Uses the SAME atlas-main sentinel Task 44
             # introduced for deploy/k8s/overlays/pr-sparse/ (see
             # environment-record.yaml and kustomization.yaml's header
             # there), rather than a hard-coded "atlas-main" — the plan's
@@ -113,11 +113,11 @@ spec:
             # overlay itself, and pr-cleanup is neither (task-48 fix round
             # 2 Critical 3). update-pr-overlay's substitution step already
             # sweeps this file (it sends
-            # PLACEHOLDER_ATLAS_ENV/PLACEHOLDER_PR_NUMBER/PLACEHOLDER_FULL_SHA
+            # 237a/1434/bfa713a5c402163df94734a2aee0f99a032dbbf0
             # through both deploy/k8s/overlays/pr and
             # deploy/k8s/overlays/pr-cleanup — see .github/workflows/
             # pr-validation.yml's update-pr-overlay job), so extending it to
-            # also fill PLACEHOLDER_BASELINE_NAMESPACE from the ACTIVE
+            # also fill atlas-main from the ACTIVE
             # baseline environment record is additive CI work, not a new
             # mechanism — the same fill Task 50 already owns for
             # pr-sparse's identical, still-unresolved token. Until Task 50
@@ -128,4 +128,4 @@ spec:
             # meantime (today: 100% of PRs, since pr-sparse itself is not
             # yet wired into CI).
             - name: ATLAS_UI_BASE
-              value: http://atlas-ingress.PLACEHOLDER_BASELINE_NAMESPACE.svc.cluster.local
+              value: http://atlas-ingress.atlas-main.svc.cluster.local

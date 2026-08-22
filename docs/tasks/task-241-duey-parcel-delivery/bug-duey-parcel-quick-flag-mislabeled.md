@@ -100,16 +100,43 @@ Verification: module-local `go build ./... && go test ./...` in
 
 ## Not yet answered
 
-- **Does the quick bit survive the send path?** `atlas-parcel`
-  `parcel/task.go:194` calls `SetQuick(false)` and
-  `parcel/processor_custody.go:98` sets it from `params.Quick`. Whether the
-  Duey quick-send flow actually populates `params.Quick` is NOT verified here.
-  If, after this fix, a parcel sent with a Quick Delivery ticket still shows no
-  marker and no note, that is a separate defect on the send path, not in the
-  codec.
+- ~~**Does the quick bit survive the send path?**~~ ANSWERED (this session, by
+  reading the path): it does. `atlas-channel`
+  `socket/handler/duey_action_send.go:126` and `:216` carry `sp.Quick()` from
+  the DUEY_ACTION SEND packet into the parcel-send saga, gated at `:186` on the
+  character actually holding the Quick Delivery Ticket
+  (`item.QuickDeliveryTicketId`); `saga/producer.go:124` and
+  `saga/handler.go:2558` forward it to the `custody` Kafka command, which
+  `atlas-parcel` `kafka/consumer/custody/consumer.go:98` maps onto
+  `AcceptParams.Quick` → `processor_custody.go:98` `SetQuick(params.Quick)` →
+  the `Quick` column. The two `SetQuick(false)` / `Quick: false` sites are
+  unrelated paths: `atlas-parcel` `parcel/task.go:194` (expiry task) and
+  `atlas-npc-conversations` `conversation/operation_executor.go:2150`
+  (NPC-initiated send).
 - **`itemType` is always 0** — still out of scope, carried from
   `bug-duey-receive-list-item-slot-desync.md`.
 
 ## Outcome
 
-_(to be filled in by the fix)_
+Fixed by `32c5ad839` ("fix(duey-parcel): drive the PARCEL wire +29 flag from
+quick, not message presence"); fix report in
+`bug-duey-parcel-quick-flag-mislabeled-fix-report.md`.
+`libs/atlas-packet/parcel/parcel.go` carries a `quick bool` with a
+`SetQuick`/`Quick` pair and encodes it at +29; `atlas-channel`'s
+`Model.ToPacket()` projects `m.Quick()` on both the item and no-item paths,
+pinned by `model_test.go`; the nine clientbound fixtures keep both a
+quick=true-with-message and a quick=false-with-message case.
+
+### Gate
+
+- `tools/verify.sh --quick --base 63127e01f` — **PASS** (exit 0; 19 changed
+  paths, 90 changed Go modules). `--quick` skips the docker bake and `-race`;
+  the flagless run is still owed before the branch is called done.
+- No `atlas-reviewer` pass: the change reads an already-plumbed field and
+  introduces no new cross-service contract.
+
+**Live re-test still outstanding.** Expected after this change: a parcel sent
+WITHOUT a Quick Delivery Ticket shows neither the marker nor a note (the client
+clears the note control when the flag is 0 — @0x6F0816); a parcel sent WITH the
+ticket shows its note and the `퀵배송` marker rendered as `Äü¹è¼Û`, which is
+accepted.

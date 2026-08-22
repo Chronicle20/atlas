@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -102,19 +103,48 @@ func addFieldSession(t *testing.T, ctx context.Context, l logrus.FieldLogger, ch
 	sp.SetField(sessionId, f)
 }
 
+// announceCall is one recorded call to the announce seam: the writer name
+// and the recipient's character id (broadcastSpawn/ForSessionsInMap fan out
+// to every session in the map on its own goroutine, so cross-session order
+// between announceCalls is not defined -- only the sequence of calls made
+// to the SAME recipient, within one handler invocation, is).
+type announceCall struct {
+	writerName  string
+	characterId uint32
+}
+
 // stubAnnounce swaps the package's announce seam for a recording stub,
-// capturing writer name (in call order) and the entry count of any
-// ImitatedNpcData/objectId of any Remove/Spawn packet seen.
-func stubAnnounce(t *testing.T) *[]string {
+// capturing each call's writer name and recipient character id. ForSessionsInMap
+// fans out per-session announce calls across goroutines (production
+// behavior, by design), so appends are mutex-guarded here; the resulting
+// slice's element order only reflects real ordering within one recipient's
+// own calls, never across recipients.
+func stubAnnounce(t *testing.T) *[]announceCall {
 	t.Helper()
-	var seen []string
+	var mu sync.Mutex
+	var seen []announceCall
 	orig := announce
-	announce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, _ packet.Encode, _ session.Model) error {
-		seen = append(seen, writerName)
+	announce = func(_ logrus.FieldLogger, _ context.Context, _ writer.Producer, writerName string, _ packet.Encode, s session.Model) error {
+		mu.Lock()
+		seen = append(seen, announceCall{writerName: writerName, characterId: s.CharacterId()})
+		mu.Unlock()
 		return nil
 	}
 	t.Cleanup(func() { announce = orig })
 	return &seen
+}
+
+// callsFor filters calls to the recipient with the given character id,
+// preserving the order they were recorded -- meaningful because all calls
+// to one recipient happen sequentially on that recipient's own goroutine.
+func callsFor(calls []announceCall, characterId uint32) []string {
+	var out []string
+	for _, c := range calls {
+		if c.characterId == characterId {
+			out = append(out, c.writerName)
+		}
+	}
+	return out
 }
 
 func statusModelFixture(objectId, scriptId uint32, worldId world.Id, mapId mapc.Id) StatusModel {
@@ -168,7 +198,7 @@ func TestPlayerNpcStatusConsumer(t *testing.T) {
 		}
 		spawnCount, imitatedCount := 0, 0
 		for _, c := range *calls {
-			switch c {
+			switch c.writerName {
 			case npcpkt.NpcSpawnWriter:
 				spawnCount++
 			case npcpkt.NpcImitatedDataWriter:
@@ -178,11 +208,17 @@ func TestPlayerNpcStatusConsumer(t *testing.T) {
 		if spawnCount != 2 || imitatedCount != 2 {
 			t.Fatalf("spawn=%d imitated=%d, want 2/2 (one pair per session)", spawnCount, imitatedCount)
 		}
-		// Ordering per-recipient: (*calls) is [spawn, imitated, spawn, imitated]
-		// because announceOp/ForSessionsInMap.func for broadcastSpawn issues
-		// spawn-then-imitated per session before moving to the next session.
-		if (*calls)[0] != npcpkt.NpcSpawnWriter || (*calls)[1] != npcpkt.NpcImitatedDataWriter {
-			t.Fatalf("calls = %v, want SpawnNPC before ImitatedNPCData per recipient", *calls)
+		// Ordering within one recipient is guaranteed (broadcastSpawn issues
+		// spawn-then-imitated on that recipient's own goroutine); ordering
+		// across the two recipients (characterId 1 vs 2) is not, since
+		// ForSessionsInMap fans them out concurrently -- so check each
+		// recipient's own sequence rather than the combined slice's.
+		for _, characterId := range []uint32{1, 2} {
+			got := callsFor(*calls, characterId)
+			want := []string{npcpkt.NpcSpawnWriter, npcpkt.NpcImitatedDataWriter}
+			if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
+				t.Fatalf("calls to characterId %d = %v, want %v", characterId, got, want)
+			}
 		}
 	})
 
@@ -215,7 +251,7 @@ func TestPlayerNpcStatusConsumer(t *testing.T) {
 		e := StatusEvent[StatusModel]{Type: EventTypeUpdated, Body: statusModelFixture(100001, 9900001, worldId, mapId)}
 		handleUpdated(sc, nil)(l, ctx, e)
 
-		if len(*calls) != 1 || (*calls)[0] != npcpkt.NpcImitatedDataWriter {
+		if len(*calls) != 1 || (*calls)[0].writerName != npcpkt.NpcImitatedDataWriter {
 			t.Fatalf("calls = %v, want exactly [%s]", *calls, npcpkt.NpcImitatedDataWriter)
 		}
 	})
@@ -239,7 +275,7 @@ func TestPlayerNpcStatusConsumer(t *testing.T) {
 			t.Fatalf("announce calls = %d, want 2 (one RemoveNPC per session)", len(*calls))
 		}
 		for _, c := range *calls {
-			if c != npcpkt.NpcRemoveWriter {
+			if c.writerName != npcpkt.NpcRemoveWriter {
 				t.Fatalf("calls = %v, want only [%s]", *calls, npcpkt.NpcRemoveWriter)
 			}
 		}
@@ -273,14 +309,17 @@ func TestPlayerNpcStatusConsumer(t *testing.T) {
 		if len(*calls) != 5 {
 			t.Fatalf("announce calls = %v (%d), want 5", *calls, len(*calls))
 		}
+		// Only one session is in the map here, so the entire sequence is on
+		// that one recipient's own goroutine and its order is deterministic
+		// (unlike the DEPLOYED/REMOVED cases with multiple recipients).
 		want := []string{
 			npcpkt.NpcRemoveWriter, npcpkt.NpcSpawnWriter,
 			npcpkt.NpcRemoveWriter, npcpkt.NpcSpawnWriter,
 			npcpkt.NpcImitatedDataWriter,
 		}
 		for i, w := range want {
-			if (*calls)[i] != w {
-				t.Fatalf("calls[%d] = %s, want %s (full sequence %v)", i, (*calls)[i], w, *calls)
+			if (*calls)[i].writerName != w {
+				t.Fatalf("calls[%d] = %s, want %s (full sequence %v)", i, (*calls)[i].writerName, w, *calls)
 			}
 		}
 	})

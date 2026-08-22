@@ -1060,3 +1060,13 @@ exactly once (including `handleRedeploy`'s two distinct failure paths), the emit
 and non-fatal, `Requester` passes through unmodified on a `CharacterId` key, and the reviewer
 checked coexistence against **atlas-channel's actual** `EVENT_TOPIC_PLAYER_NPC_STATUS` consumer —
 it strictly type-guards each handler, so the two new `Type` values are inert to it.
+
+## Task 23c complete — `ee5640d83`
+
+`atlas-messages`: contract mirror, `requester` set on both `@playernpc` commands, the service's first
+status-event consumer, per-code pink text. Implementer reported DONE, no concerns; module
+`go build`/`go test` green. Review dispatched over `ee5640d83`.
+
+Gate deliberately held: Task 23b was still writing to `services/atlas-saga-orchestrator/` when 23c
+landed, and running `verify.sh` against a tree another implementer is mid-edit invites a spurious
+FAIL. The next gate covers `2ae390710..HEAD` once 23b commits — one range, both tasks.

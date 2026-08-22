@@ -724,3 +724,23 @@ the PR or record it as a deliberate carry.
 Two operator hand-backs still outstanding (unchanged, recorded under Task 8): create
 `atlas-player-npcs-main` on `postgres.home`, and flip the GHCR package public after the first
 image push.
+
+## Task 19 review — APPROVED, 0 blocking, 0 non-blocking
+
+`.superpowers/sdd/plan/task-19-review.md`, over `897c828c2..7a3d648dd`. Scope confirmed across
+all seven named files plus the read-only contracts they depend on (`npc/controller/processor.go`
+and Task 17's `kafka/message/playernpc/kafka.go` envelope). No scope drift. The implementer's
+flagged REPOSITIONED read-back produced no finding.
+
+Two **not-evaluable** items the reviewer would not claim either way — both are honest scope
+limits, not passes:
+
+1. **Multi-pod "every channel of the world" broadcast.** The per-pod `IsWorld` gating is
+   architecturally sound, but nothing in this unit's surface tests the behaviour across multiple
+   channel pods. Live verification territory.
+2. **Player-NPC vs ordinary-NPC object-id collision.** No path in this diff or its call sites
+   feeds a raw id into `TryClaim`/`ElectFor` outside `ReleaseFor`'s registry filter, so the
+   question is out of scope for this diff — but it was not affirmatively cleared either.
+
+Neither blocks Task 19. Item 1 belongs to end-to-end validation once the service is deployed;
+item 2 is worth a deliberate look during the pre-PR review rather than being treated as closed.

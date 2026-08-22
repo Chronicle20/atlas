@@ -1,0 +1,26 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-22T00:43:41Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	eca439e3d	-	-	-	-
+2026-08-22T00:43:43Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	eca439e3d	APPROVED	no	-	-
+2026-08-22T00:46:05Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE	316097d7c	-	-	-	-
+2026-08-22T00:46:07Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	316097d7c	APPROVED	no	-	-
+2026-08-22T00:51:27Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	1239dcc09	-	-	-	-
+2026-08-22T00:51:30Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	1239dcc09	APPROVED	no	-	-
+2026-08-22T00:55:59Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	d498e8a42	-	-	-	-
+2026-08-22T00:56:03Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	d498e8a42	APPROVED	no	-	-
+2026-08-22T00:56:06Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	60000
+2026-08-22T01:05:00Z	gate	Tasks 2-4	-	-	-	-	-	-	PASS	d498e8a42	-	-	-	-
+2026-08-22T01:20:00Z	agent	Task 5	atlas-implementer	sonnet	-	30	-	-	DONE	edfde09	-	-	-	-
+2026-08-22T01:20:01Z	agent	Task 5	atlas-reviewer	sonnet	-	19	-	-	DONE	cb6e0ba	APPROVED	no	.superpowers/sdd/plan/task-5-review.md	-
+2026-08-22T01:20:02Z	gate	Task 5 (round 1)	-	-	-	-	-	-	FAIL	0b51461	-	yes	-	-
+2026-08-22T01:25:00Z	gate	Task 5 (round 2)	-	-	-	-	-	-	PASS	edfde09	-	-	-	-
+2026-08-22T01:30:00Z	agent	Task 6	atlas-implementer	sonnet	-	21	-	-	DONE	23ecfa0f3	-	-	-	-
+2026-08-22T01:30:01Z	gate	Task 6	-	-	-	-	-	-	PASS	23ecfa0f3	-	-	-	-
+2026-08-22T01:35:00Z	agent	Task 6	atlas-reviewer	sonnet	-	14	-	-	DONE	23ecfa0f3	APPROVED	no	.superpowers/sdd/plan/task-6-review.md	-
+2026-08-22T01:42:00Z	agent	Task 7	atlas-implementer	sonnet	-	16	-	-	DONE	4835e3a66	-	-	-	-
+2026-08-22T01:42:01Z	gate	Task 7	-	-	-	-	-	-	PASS	4835e3a66	-	-	-	-
+2026-08-22T01:48:00Z	agent	Task 7	atlas-reviewer	sonnet	-	30	-	-	DONE	4835e3a66	CHANGES_REQUIRED	yes	.superpowers/sdd/plan/task-7-review.md	-
+2026-08-22T01:48:01Z	agent	Task 7 (fix)	atlas-implementer	sonnet	-	11	-	-	DONE	df0f420d1	-	-	-	-
+2026-08-22T01:48:02Z	handoff	after Task 7	-	-	-	-	-	-	-	-	-	-	-	95000
+2026-08-22T10:02:25Z	agent	Task 8	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-22T10:11:41Z	agent	Task 8	atlas-reviewer	sonnet	-	-	-	-	DONE	fbff7c891	APPROVED	no	-	-
+2026-08-22T11:04:48Z	agent	branch review	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	79fdb0649	APPROVED	no	-	-

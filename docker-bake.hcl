@@ -139,12 +139,20 @@ target "atlas-pr-bootstrap" {
   tags       = ["atlas-pr-bootstrap:${ATLAS_IMAGE_TAG}"]
 }
 
+target "atlas-kafka-precreate" {
+  # Flat Go module with no libs/atlas-* dependency, so the context is the
+  # service directory rather than the repo root (same as atlas-pr-bootstrap).
+  context    = "services/atlas-kafka-precreate"
+  dockerfile = "Dockerfile"
+  tags       = ["atlas-kafka-precreate:${ATLAS_IMAGE_TAG}"]
+}
+
 group "all-go-services" {
   targets = go_services
 }
 
 group "all-services" {
-  targets = concat(go_services, ["atlas-ui", "atlas-pr-bootstrap"])
+  targets = concat(go_services, ["atlas-ui", "atlas-pr-bootstrap", "atlas-kafka-precreate"])
 }
 
 # Default group: build everything (Go + non-Go) so a bare `docker buildx bake`

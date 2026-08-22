@@ -41,6 +41,7 @@ type AcceptToParcelParams struct {
 
 	HasItem bool
 
+	ItemType      byte
 	TemplateId    uint32
 	Quantity      uint32
 	Strength      uint16

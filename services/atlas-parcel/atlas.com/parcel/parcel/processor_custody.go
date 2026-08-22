@@ -42,6 +42,7 @@ type AcceptParams struct {
 	HasItem bool
 
 	// Item snapshot
+	ItemType      byte
 	TemplateId    uint32
 	Quantity      uint32
 	Strength      uint16
@@ -103,6 +104,7 @@ func (p *ProcessorImpl) AcceptCustody(params AcceptParams) (Model, error) {
 		if params.HasItem {
 			templateId := params.TemplateId
 			b.SetItemId(&templateId).
+				SetItemType(params.ItemType).
 				SetQuantity(uint16(params.Quantity)).
 				SetItemSnapshot(AssetData{
 					Quantity:      params.Quantity,

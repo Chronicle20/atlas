@@ -100,6 +100,7 @@ func handleAcceptToParcel(pf providerFn) func(db *gorm.DB) message.Handler[custo
 					ReceivableAt:       b.ReceivableAt,
 					ExpiresAt:          b.ExpiresAt,
 					HasItem:            b.HasItem,
+					ItemType:           b.ItemType,
 					TemplateId:         b.TemplateId,
 					Quantity:           b.Quantity,
 					Strength:           b.Strength,

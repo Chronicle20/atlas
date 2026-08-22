@@ -1036,6 +1036,9 @@ type AcceptToParcelPayload struct {
 	HasItem bool `json:"hasItem"`
 
 	// Item snapshot
+	// ItemType is the source inventory type the item was deposited from
+	// (inventory.Type). Zero when HasItem is false.
+	ItemType      byte   `json:"itemType"`
 	TemplateId    uint32 `json:"templateId"`
 	Quantity      uint32 `json:"quantity"`
 	Strength      uint16 `json:"strength"`

@@ -2560,6 +2560,7 @@ func (h *HandlerImpl) handleAcceptToParcel(s Saga, st Step[any]) error {
 		ReceivableAt:       payload.ReceivableAt,
 		ExpiresAt:          payload.ExpiresAt,
 		HasItem:            payload.HasItem,
+		ItemType:           payload.ItemType,
 		TemplateId:         payload.TemplateId,
 		Quantity:           payload.Quantity,
 		Strength:           payload.Strength,

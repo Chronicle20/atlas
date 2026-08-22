@@ -36,6 +36,7 @@ func AcceptToParcelProvider(transactionId uuid.UUID, params AcceptToParcelParams
 			ReceivableAt:       params.ReceivableAt,
 			ExpiresAt:          params.ExpiresAt,
 			HasItem:            params.HasItem,
+			ItemType:           params.ItemType,
 			TemplateId:         params.TemplateId,
 			Quantity:           params.Quantity,
 			Strength:           params.Strength,

@@ -2263,6 +2263,7 @@ func (p *ProcessorImpl) expandTransferToParcel(st Step[any]) ([]Step[any], error
 				HasItem:            true,
 
 				// Item snapshot captured from inventory.
+				ItemType:      byte(payload.SourceInventoryType),
 				TemplateId:    foundAsset.TemplateId,
 				Quantity:      payload.Quantity,
 				Strength:      foundAsset.Strength,

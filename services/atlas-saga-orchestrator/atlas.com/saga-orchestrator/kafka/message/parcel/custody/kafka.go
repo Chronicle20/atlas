@@ -63,6 +63,7 @@ type AcceptToParcelCommandBody struct {
 	HasItem bool `json:"hasItem"`
 
 	// Item snapshot
+	ItemType      byte   `json:"itemType"`
 	TemplateId    uint32 `json:"templateId"`
 	Quantity      uint32 `json:"quantity"`
 	Strength      uint16 `json:"strength"`

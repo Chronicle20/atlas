@@ -173,3 +173,6 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-22T00:57:18Z	agent	bug-duey-receive-list-item-slot-desync	atlas-verifier	haiku	-	-	-	-	PASS	dd5ad5f2c	-	-	-	-
 2026-08-22T11:43:36Z	agent	bug-duey-parcel-message-offset	atlas-implementer	sonnet	-	-	-	-	DONE	b21783437	-	-	-	-
 2026-08-22T16:05:53Z	agent	bug-duey-parcel-quick-flag-mislabeled	atlas-implementer	sonnet	-	-	-	-	DONE	32c5ad839	-	-	-	-
+2026-08-22T21:58:29Z	agent	bug-duey-receive-item-type-never-persisted	atlas-implementer	sonnet	-	-	-	-	DONE	d41d70d39	-	-	-	-
+2026-08-22T21:58:30Z	agent	bug-duey-receive-item-type-never-persisted	atlas-reviewer	sonnet	-	-	-	-	DONE	d41d70d39	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-22T21:58:31Z	agent	bug-duey-receive-item-type-mapping-tests	atlas-implementer	sonnet	-	-	-	-	DONE	c3af819b2	-	-	-	-

@@ -116,4 +116,22 @@ and is auto-migrated.
 
 ## Resolution
 
-_Pending._
+Fixed by **`d41d70d39`** — "fix(parcel): thread source inventory type through to the parcel
+row". The implementer added `ItemType` to one file beyond the table above:
+`services/atlas-saga-orchestrator/.../kafka/message/parcel/custody/kafka.go`, the
+orchestrator's own byte-for-byte mirror of `AcceptToParcelCommandBody` and what `producer.go`
+actually serializes — without it the field would have compiled but never reached the wire.
+
+**`c3af819b2`** — "test(duey): cover ItemType mapping through parcel accept path" — closes the
+review's non-blocking findings by asserting `ItemType` at the producer and consumer mapping
+hops, which previously had no coverage.
+
+- **Gate**: `tools/verify.sh --quick --base 76a8961ef` → PASS (exit 0; 91 modules, shared-lib
+  fan-out).
+- **Review**: `atlas-reviewer`, verdict `APPROVED_WITH_FINDINGS`, 0 blocking — see
+  `reviews/review-bug-duey-receive-item-type.md`. It traced `ItemType` by hand through all 8
+  mapping sites, confirmed both wire mirrors agree on `json:"itemType"`, that the value is the
+  sender's actual compartment type (never re-derived), and that the meso-only branch stays zero.
+- **Live re-test**: NOT yet confirmed. The two pending parcels in `atlas-pr-1434`
+  (`dce1997d-…`, `3989e2e4-…`) predate the fix and still hold `itemType 0` — they will keep
+  failing. Re-test requires sending a NEW parcel after the PR image rolls out.

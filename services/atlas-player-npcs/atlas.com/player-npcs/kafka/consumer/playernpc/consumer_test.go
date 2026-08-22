@@ -4,6 +4,7 @@ import (
 	msg "atlas-player-npcs/kafka/message/playernpc"
 	"atlas-player-npcs/playernpc"
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/google/uuid"
@@ -27,6 +28,7 @@ type stubProcessor struct {
 
 	getByMapResult []playernpc.Model
 	getByMapErr    error
+	deployErr      error
 	redeployErr    error
 	removeErr      error
 }
@@ -46,7 +48,7 @@ type removeCall struct {
 
 func (s *stubProcessor) Deploy(characterId uint32, worldId world.Id, mapId _map.Id, enforceEligibility bool, explicit *playernpc.Position) (playernpc.Model, error) {
 	s.deployCalls = append(s.deployCalls, deployCall{characterId, worldId, mapId, enforceEligibility, explicit})
-	return playernpc.Model{}, nil
+	return playernpc.Model{}, s.deployErr
 }
 
 func (s *stubProcessor) Redeploy(id uuid.UUID) (playernpc.Model, error) {
@@ -82,6 +84,24 @@ func testLogger() (logrus.FieldLogger, *logtest.Hook) {
 	return l, hook
 }
 
+// captureEmitter returns an OutcomeEmitter that records every emitted
+// event, and a no-op discard emitter for tests that don't assert on
+// emissions.
+func captureEmitter() (*[]msg.StatusEvent[msg.StatusCommandOutcomeBody], OutcomeEmitter) {
+	events := make([]msg.StatusEvent[msg.StatusCommandOutcomeBody], 0)
+	return &events, func(e msg.StatusEvent[msg.StatusCommandOutcomeBody]) {
+		events = append(events, e)
+	}
+}
+
+func discardEmitter() OutcomeEmitter {
+	return func(msg.StatusEvent[msg.StatusCommandOutcomeBody]) {}
+}
+
+// errBoom is an unclassified error (CodeFor's default arm) used to test
+// that a GetByMap resolve failure surfaces as CodeInternal.
+var errBoom = errors.New("boom")
+
 func buildNpc(t *testing.T, id uuid.UUID, characterId uint32) playernpc.Model {
 	t.Helper()
 	m, err := playernpc.NewBuilder().
@@ -113,7 +133,7 @@ func TestPlayerNpcCommandConsumer(t *testing.T) {
 				EnforceEligibility: true,
 			},
 		}
-		handleDeploy(providerFor(s))(l, context.Background(), c)
+		handleDeploy(providerFor(s), discardEmitter())(l, context.Background(), c)
 
 		if len(s.deployCalls) != 1 {
 			t.Fatalf("Deploy call count = %d, want 1", len(s.deployCalls))
@@ -139,7 +159,7 @@ func TestPlayerNpcCommandConsumer(t *testing.T) {
 				Position: &msg.CommandPosition{X: 100, Y: 200},
 			},
 		}
-		handleDeploy(providerFor(s))(l, context.Background(), c)
+		handleDeploy(providerFor(s), discardEmitter())(l, context.Background(), c)
 
 		if len(s.deployCalls) != 1 {
 			t.Fatalf("Deploy call count = %d, want 1", len(s.deployCalls))
@@ -154,7 +174,7 @@ func TestPlayerNpcCommandConsumer(t *testing.T) {
 		s := &stubProcessor{}
 		l, _ := testLogger()
 		c := msg.Command[msg.CommandDeployBody]{Type: msg.CommandTypeRedeploy}
-		handleDeploy(providerFor(s))(l, context.Background(), c)
+		handleDeploy(providerFor(s), discardEmitter())(l, context.Background(), c)
 		if len(s.deployCalls) != 0 {
 			t.Errorf("Deploy call count = %d, want 0", len(s.deployCalls))
 		}
@@ -169,7 +189,7 @@ func TestPlayerNpcCommandConsumer(t *testing.T) {
 			Type:        msg.CommandTypeRedeploy,
 			Body:        msg.CommandRedeployBody{WorldId: world.Id(1), MapId: _map.Id(102000004)},
 		}
-		handleRedeploy(providerFor(s))(l, context.Background(), c)
+		handleRedeploy(providerFor(s), discardEmitter())(l, context.Background(), c)
 
 		if len(s.redeployCalls) != 1 || s.redeployCalls[0] != id {
 			t.Errorf("Redeploy calls = %+v, want [%s]", s.redeployCalls, id)
@@ -184,7 +204,7 @@ func TestPlayerNpcCommandConsumer(t *testing.T) {
 			Type:        msg.CommandTypeRedeploy,
 			Body:        msg.CommandRedeployBody{WorldId: world.Id(1), MapId: _map.Id(102000004)},
 		}
-		handleRedeploy(providerFor(s))(l, context.Background(), c)
+		handleRedeploy(providerFor(s), discardEmitter())(l, context.Background(), c)
 
 		if len(s.redeployCalls) != 0 {
 			t.Errorf("Redeploy calls = %+v, want none", s.redeployCalls)
@@ -202,7 +222,7 @@ func TestPlayerNpcCommandConsumer(t *testing.T) {
 			Type:        msg.CommandTypeRemove,
 			Body:        msg.CommandRemoveBody{},
 		}
-		handleRemove(providerFor(s))(l, context.Background(), c)
+		handleRemove(providerFor(s), discardEmitter())(l, context.Background(), c)
 
 		if len(s.removeCalls) != 1 {
 			t.Fatalf("Remove call count = %d, want 1", len(s.removeCalls))
@@ -221,13 +241,185 @@ func TestPlayerNpcCommandConsumer(t *testing.T) {
 			Type:        msg.CommandTypeRemove,
 			Body:        msg.CommandRemoveBody{MapId: &mapId},
 		}
-		handleRemove(providerFor(s))(l, context.Background(), c)
+		handleRemove(providerFor(s), discardEmitter())(l, context.Background(), c)
 
 		if len(s.removeCalls) != 1 {
 			t.Fatalf("Remove call count = %d, want 1", len(s.removeCalls))
 		}
 		if s.removeCalls[0].mapId == nil || *s.removeCalls[0].mapId != mapId {
 			t.Errorf("Remove called with mapId = %v, want %v", s.removeCalls[0].mapId, mapId)
+		}
+	})
+}
+
+func TestPlayerNpcCommandConsumerOutcomeEmission(t *testing.T) {
+	txnId := uuid.New()
+	requester := &msg.Requester{CharacterId: 7, WorldId: 1, ChannelId: 2, MapId: 999}
+
+	t.Run("deploy success emits COMMAND_SUCCEEDED with empty code", func(t *testing.T) {
+		s := &stubProcessor{}
+		l, _ := testLogger()
+		events, oe := captureEmitter()
+		c := msg.Command[msg.CommandDeployBody]{
+			CharacterId:   42,
+			TransactionId: txnId,
+			Type:          msg.CommandTypeDeploy,
+			Body: msg.CommandDeployBody{
+				WorldId: world.Id(1),
+				MapId:   _map.Id(102000004),
+			},
+		}
+		handleDeploy(providerFor(s), oe)(l, context.Background(), c)
+
+		if len(*events) != 1 {
+			t.Fatalf("emitted event count = %d, want 1", len(*events))
+		}
+		got := (*events)[0]
+		if got.Type != msg.EventTypeCommandSucceeded {
+			t.Errorf("Type = %q, want %q", got.Type, msg.EventTypeCommandSucceeded)
+		}
+		if got.Body.CommandType != msg.CommandTypeDeploy || got.Body.CharacterId != 42 || got.Body.Code != "" {
+			t.Errorf("Body = %+v", got.Body)
+		}
+	})
+
+	t.Run("deploy failure emits COMMAND_FAILED with the classified code", func(t *testing.T) {
+		s := &stubProcessor{deployErr: playernpc.ErrPoolExhausted}
+		l, _ := testLogger()
+		events, oe := captureEmitter()
+		c := msg.Command[msg.CommandDeployBody]{
+			CharacterId:   42,
+			TransactionId: txnId,
+			Type:          msg.CommandTypeDeploy,
+			Body: msg.CommandDeployBody{
+				WorldId: world.Id(1),
+				MapId:   _map.Id(102000004),
+			},
+		}
+		handleDeploy(providerFor(s), oe)(l, context.Background(), c)
+
+		if len(*events) != 1 {
+			t.Fatalf("emitted event count = %d, want 1", len(*events))
+		}
+		got := (*events)[0]
+		if got.Type != msg.EventTypeCommandFailed {
+			t.Errorf("Type = %q, want %q", got.Type, msg.EventTypeCommandFailed)
+		}
+		if got.Body.Code != playernpc.CodePoolExhausted {
+			t.Errorf("Code = %q, want %q", got.Body.Code, playernpc.CodePoolExhausted)
+		}
+		if got.Body.Message != playernpc.ErrPoolExhausted.Error() {
+			t.Errorf("Message = %q, want %q", got.Body.Message, playernpc.ErrPoolExhausted.Error())
+		}
+	})
+
+	t.Run("redeploy resolve failure emits COMMAND_FAILED", func(t *testing.T) {
+		s := &stubProcessor{getByMapErr: errBoom}
+		l, _ := testLogger()
+		events, oe := captureEmitter()
+		c := msg.Command[msg.CommandRedeployBody]{
+			CharacterId:   42,
+			TransactionId: txnId,
+			Type:          msg.CommandTypeRedeploy,
+			Body:          msg.CommandRedeployBody{WorldId: world.Id(1), MapId: _map.Id(102000004)},
+		}
+		handleRedeploy(providerFor(s), oe)(l, context.Background(), c)
+
+		if len(*events) != 1 {
+			t.Fatalf("emitted event count = %d, want 1", len(*events))
+		}
+		got := (*events)[0]
+		if got.Type != msg.EventTypeCommandFailed || got.Body.Code != playernpc.CodeInternal {
+			t.Errorf("Body = %+v", got.Body)
+		}
+	})
+
+	t.Run("redeploy not found emits COMMAND_FAILED with CodeUnresolvable", func(t *testing.T) {
+		s := &stubProcessor{getByMapResult: nil}
+		l, _ := testLogger()
+		events, oe := captureEmitter()
+		c := msg.Command[msg.CommandRedeployBody]{
+			CharacterId:   42,
+			TransactionId: txnId,
+			Type:          msg.CommandTypeRedeploy,
+			Body:          msg.CommandRedeployBody{WorldId: world.Id(1), MapId: _map.Id(102000004)},
+		}
+		handleRedeploy(providerFor(s), oe)(l, context.Background(), c)
+
+		if len(*events) != 1 {
+			t.Fatalf("emitted event count = %d, want 1", len(*events))
+		}
+		got := (*events)[0]
+		if got.Type != msg.EventTypeCommandFailed {
+			t.Errorf("Type = %q, want %q", got.Type, msg.EventTypeCommandFailed)
+		}
+		if got.Body.Code != playernpc.CodeUnresolvable {
+			t.Errorf("Code = %q, want %q", got.Body.Code, playernpc.CodeUnresolvable)
+		}
+		if got.Body.Message == "" {
+			t.Errorf("Message = %q, want a message naming the character and map", got.Body.Message)
+		}
+	})
+
+	t.Run("remove success emits COMMAND_SUCCEEDED", func(t *testing.T) {
+		s := &stubProcessor{}
+		l, _ := testLogger()
+		events, oe := captureEmitter()
+		c := msg.Command[msg.CommandRemoveBody]{
+			CharacterId:   42,
+			TransactionId: txnId,
+			Type:          msg.CommandTypeRemove,
+			Body:          msg.CommandRemoveBody{},
+		}
+		handleRemove(providerFor(s), oe)(l, context.Background(), c)
+
+		if len(*events) != 1 {
+			t.Fatalf("emitted event count = %d, want 1", len(*events))
+		}
+		got := (*events)[0]
+		if got.Type != msg.EventTypeCommandSucceeded || got.Body.CommandType != msg.CommandTypeRemove {
+			t.Errorf("Body = %+v", got.Body)
+		}
+	})
+
+	t.Run("Requester and TransactionId round-trip onto the outcome event", func(t *testing.T) {
+		s := &stubProcessor{}
+		l, _ := testLogger()
+		events, oe := captureEmitter()
+		c := msg.Command[msg.CommandRemoveBody]{
+			CharacterId:   42,
+			TransactionId: txnId,
+			Type:          msg.CommandTypeRemove,
+			Requester:     requester,
+			Body:          msg.CommandRemoveBody{},
+		}
+		handleRemove(providerFor(s), oe)(l, context.Background(), c)
+
+		if len(*events) != 1 {
+			t.Fatalf("emitted event count = %d, want 1", len(*events))
+		}
+		got := (*events)[0].Body
+		if got.TransactionId != txnId {
+			t.Errorf("TransactionId = %s, want %s", got.TransactionId, txnId)
+		}
+		if got.Requester == nil || *got.Requester != *requester {
+			t.Errorf("Requester = %+v, want %+v", got.Requester, requester)
+		}
+	})
+
+	t.Run("nobody listening -> no emit", func(t *testing.T) {
+		s := &stubProcessor{}
+		l, _ := testLogger()
+		events, oe := captureEmitter()
+		c := msg.Command[msg.CommandRemoveBody]{
+			CharacterId: 42,
+			Type:        msg.CommandTypeRemove,
+			Body:        msg.CommandRemoveBody{},
+		}
+		handleRemove(providerFor(s), oe)(l, context.Background(), c)
+
+		if len(*events) != 0 {
+			t.Errorf("emitted event count = %d, want 0 when TransactionId is uuid.Nil and Requester is nil", len(*events))
 		}
 	})
 }

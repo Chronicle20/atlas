@@ -26,15 +26,38 @@ const (
 	EventTypeUpdated      = "UPDATED"
 	EventTypeRemoved      = "REMOVED"
 	EventTypeRepositioned = "REPOSITIONED"
+
+	// EventTypeCommandSucceeded/Failed report the outcome of one consumed
+	// COMMAND_TOPIC_PLAYER_NPC message back to whoever produced it (Task
+	// 23a). Emitted by the command consumer, not playernpc.NewEmitter --
+	// see StatusCommandOutcomeBody's doc.
+	EventTypeCommandSucceeded = "COMMAND_SUCCEEDED"
+	EventTypeCommandFailed    = "COMMAND_FAILED"
 )
 
 // Command is the COMMAND_TOPIC_PLAYER_NPC envelope. Type selects Body's
 // shape: DEPLOY carries CommandDeployBody, REDEPLOY CommandRedeployBody,
-// REMOVE CommandRemoveBody.
+// REMOVE CommandRemoveBody. TransactionId and Requester are additive
+// correlation fields (Task 23a): an existing producer that omits them still
+// decodes -- TransactionId == uuid.Nil / Requester == nil means "no one is
+// listening", the pre-Task-23 behaviour.
 type Command[E any] struct {
+	CharacterId   uint32     `json:"characterId"`
+	TransactionId uuid.UUID  `json:"transactionId"`
+	Type          string     `json:"type"`
+	Requester     *Requester `json:"requester,omitempty"`
+	Body          E          `json:"body"`
+}
+
+// Requester is opaque routing carried on a Command and echoed back
+// unchanged on its StatusCommandOutcomeBody: atlas-player-npcs never
+// interprets it, only passes it through so the producer that set it (e.g.
+// the GM command in atlas-messages) can address the invoking player.
+type Requester struct {
 	CharacterId uint32 `json:"characterId"`
-	Type        string `json:"type"`
-	Body        E      `json:"body"`
+	WorldId     byte   `json:"worldId"`
+	ChannelId   byte   `json:"channelId"`
+	MapId       uint32 `json:"mapId"`
 }
 
 // CommandPosition is DEPLOY's optional explicit position (PRD §5's
@@ -145,4 +168,18 @@ type StatusRepositionedBody struct {
 	WorldId byte                    `json:"worldId"`
 	MapId   uint32                  `json:"mapId"`
 	Npcs    []StatusRepositionedNpc `json:"npcs"`
+}
+
+// StatusCommandOutcomeBody reports the outcome of one consumed
+// COMMAND_TOPIC_PLAYER_NPC message back to whoever produced it (Task 23a).
+// Emitted by the command consumer -- not by playernpc.NewEmitter -- because
+// the consumer is the only place that holds both the command's correlation
+// fields and the Processor's error. Code is empty on COMMAND_SUCCEEDED.
+type StatusCommandOutcomeBody struct {
+	TransactionId uuid.UUID  `json:"transactionId"`
+	CharacterId   uint32     `json:"characterId"`
+	CommandType   string     `json:"commandType"`
+	Code          string     `json:"code,omitempty"`
+	Message       string     `json:"message,omitempty"`
+	Requester     *Requester `json:"requester,omitempty"`
 }

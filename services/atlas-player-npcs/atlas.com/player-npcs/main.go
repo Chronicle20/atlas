@@ -96,7 +96,7 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	npcconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	charconsumer.InitConsumers(l)(cmf)(consumerGroupId)
-	if err := npcconsumer.InitHandlers(l)(playerNpcProcessorFor)(consumer.GetManager().RegisterHandler); err != nil {
+	if err := npcconsumer.InitHandlers(l)(playerNpcProcessorFor)(npcconsumer.NewOutcomeEmitter(l, rt.Context()))(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	charDeps := charconsumer.Dependencies{

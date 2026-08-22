@@ -135,20 +135,22 @@ func writeError(l logrus.FieldLogger, w http.ResponseWriter, status int, code st
 }
 
 // writeDeployError maps a Deploy/Redeploy/Remove failure to its PRD §5
-// status: the four design §8.3 codes are 409, an unresolvable character or
-// map (requests.ErrNotFound) is 422, everything else is the generic error
-// response.
+// status via CodeFor (Task 23a, the classifier the Kafka command consumer
+// also routes through so the two surfaces can never report different
+// codes for the same failure): the four design §8.3 codes are 409, an
+// unresolvable character or map (CodeUnresolvable) is 422, everything else
+// (CodeInternal) is the generic error response.
 func writeDeployError(d *HandlerDependency, w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, requests.ErrNotFound):
-		writeError(d.Logger(), w, http.StatusUnprocessableEntity, "unresolvable", err.Error())
-	case errors.Is(err, ErrDuplicate):
+	switch CodeFor(err) {
+	case CodeUnresolvable:
+		writeError(d.Logger(), w, http.StatusUnprocessableEntity, CodeUnresolvable, err.Error())
+	case CodeDuplicate:
 		writeError(d.Logger(), w, http.StatusConflict, CodeDuplicate, err.Error())
-	case errors.Is(err, ErrPoolExhausted):
+	case CodePoolExhausted:
 		writeError(d.Logger(), w, http.StatusConflict, CodePoolExhausted, err.Error())
-	case errors.Is(err, ErrMapFull):
+	case CodeMapFull:
 		writeError(d.Logger(), w, http.StatusConflict, CodeMapFull, err.Error())
-	case errors.Is(err, ErrIneligible):
+	case CodeIneligible:
 		writeError(d.Logger(), w, http.StatusConflict, CodeIneligible, err.Error())
 	default:
 		server.WriteErrorResponse(d.Logger())(w)(err)

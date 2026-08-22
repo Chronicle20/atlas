@@ -1,0 +1,83 @@
+{
+  "service": "atlas-kafka-precreate",
+  "path": "services/atlas-kafka-precreate",
+  "date": "2026-08-22",
+  "build": "pass",
+  "testsPassed": 4,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "main",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-26", "name": "Every goroutine spawned via routine.Go; bare go needs guard marker", "status": "pass", "evidence": "no `go ` statement in main.go or internal/**/*.go (non-test)"},
+        {"id": "FILE-01", "name": "Processor interface/constructor/methods live in processor.go", "status": "n-a", "evidence": "no Processor interface anywhere in the module"},
+        {"id": "FILE-02", "name": "RestModel/Transform/Extract/JSON:API methods live in rest.go", "status": "n-a", "evidence": "no RestModel anywhere in the module"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "n-a", "evidence": "no requests.RootUrl/GetRequest/PostRequest call anywhere"},
+        {"id": "FILE-04", "name": "Entity struct/Migration/TableName live in entity.go", "status": "n-a", "evidence": "no entity struct anywhere"},
+        {"id": "FILE-05", "name": "Builder/Model/Administrator/Provider placement", "status": "n-a", "evidence": "no Builder/Model/Administrator/Provider symbols anywhere"},
+        {"id": "FILE-06", "name": "No package-named catch-all bundling >=2 responsibilities", "status": "pass", "evidence": "main.go and each internal/*.go file is single-purpose; none bundle two FILE-01..05 responsibility classes"},
+        {"id": "DOM-21", "name": "No redeclaration of a type/helper/constant that exists in libs/atlas-constants/", "status": "pass", "evidence": "internal/discover/discover.go:15-27, internal/topics/topics.go:22 — no match in libs/atlas-constants/"}
+      ]
+    },
+    {
+      "name": "internal/discover",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibility placement", "status": "n-a", "evidence": "pure env-scrape/classification package, no FILE-01..05 subject matter"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "internal/discover/discover_test.go:9,104,167 — tests := []struct + t.Run"}
+      ]
+    },
+    {
+      "name": "internal/groups",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibility placement", "status": "n-a", "evidence": "single-purpose group-coordinator ops file, no FILE-01..05 subject matter"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "internal/groups/groups_test.go:100 TestSeed (table+t.Run:288), :457 TestVerify (table+t.Run:591); focused single-scenario tests elsewhere"},
+        {"id": "N/A-probe", "name": "Consumer-group probe never fails the Job", "status": "pass", "evidence": "internal/groups/groups.go:178-192 probeState has no error return, collapses every failure to \"\"; StateIsSeedable(\"\")=true"},
+        {"id": "N/A-exit-codes", "name": "Real broker errors fatal, expected outcomes tolerated", "status": "pass", "evidence": "internal/topics/topics.go:75-79 tolerates TopicAlreadyExists; internal/groups/groups.go:112-135 tolerates UnknownMemberId as commit-race skip; main.go:27-30 os.Exit(1) on any run() error"}
+      ]
+    },
+    {
+      "name": "internal/kafkaops",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibility placement", "status": "n-a", "evidence": "narrow retry/interface primitive, no FILE-01..05 subject matter"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "internal/kafkaops/ops_test.go:44 TestWithCoordinatorRetry (table:47,t.Run:119), :200 TestWithLeaderRetry (table:203,t.Run:260)"}
+      ]
+    },
+    {
+      "name": "internal/topics",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibility placement", "status": "n-a", "evidence": "controller-facing Kafka ops package, no FILE-01..05 subject matter"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "internal/topics/topics_test.go:183 TestEnsure_CreateErrors (table+t.Run:234); extensive t.Run subtests for Settle/EndOffsets"}
+      ]
+    },
+    {
+      "name": "scaffolding",
+      "type": "support",
+      "checks": [
+        {"id": "SCAFFOLD-01", "name": "services.json has a go-service entry", "status": "fail", "evidence": ".github/config/services.json:224-230 — type: \"support-image\", not \"go-service\""},
+        {"id": "SCAFFOLD-02", "name": "Base manifest exists and is listed in base kustomization", "status": "pass", "evidence": "deploy/k8s/base/atlas-kafka-precreate.yaml exists, no namespace: key, listed at deploy/k8s/base/kustomization.yaml:33; kind:Job by design (one-shot sync-wave-0 tool), not Deployment+Service"},
+        {"id": "SCAFFOLD-03", "name": "Build registration: go_services entry + go.work use(), no per-service Dockerfile", "status": "fail", "evidence": "services/atlas-kafka-precreate/Dockerfile exists (forbidden); docker-bake.hcl:142-148 bespoke target, not in go_services list (docker-bake.hcl:35); overlay-pinned tags do not resolve on ghcr (docker manifest inspect main-2080dc7 and :latest both return \"manifest unknown\", vs. neighbors atlas-invites:main-24a33a2 and atlas-login:main-848eee4 which resolve)"},
+        {"id": "SCAFFOLD-04", "name": "Ingress location block (REST only)", "status": "n-a", "evidence": "no REST surface"},
+        {"id": "SCAFFOLD-05", "name": "routes.conf regenerated", "status": "n-a", "evidence": "deploy/shared/routes.conf untouched in this range"},
+        {"id": "SCAFFOLD-06", "name": "docker-compose entry alongside peers", "status": "n-a", "evidence": "deploy/compose has no Kafka broker service at all; no compose peer model for a wave-0 sync job; peer support-image atlas-pr-bootstrap also absent from compose"},
+        {"id": "SCAFFOLD-07", "name": "New channel Writer/Handler seeded in templates", "status": "n-a", "evidence": "no channel writer/handler registered"},
+        {"id": "SCAFFOLD-08", "name": "Bruno collection (REST only)", "status": "n-a", "evidence": "no REST surface"},
+        {"id": "SCAFFOLD-09", "name": "service-registration-guard.sh exit 0", "status": "pass", "evidence": "tools/service-registration-guard.sh output: \"service-registration-guard: clean\", exit 0"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "SCAFFOLD-03 (CI publish behavior): whether main-publish.yml's build matrix will actually pick up and publish atlas-kafka-precreate post-merge given its docker-services-matrix selection is keyed on docker_image != null (.github/workflows/main-publish.yml:75) rather than type == \"go-service\" — read statically, not executed",
+    "SCAFFOLD-03 (tag self-correction): whether the currently-unresolvable overlay image tags get corrected by a later automated bump commit before actual deploy — outside this diff's range"
+  ],
+  "blocking": [
+    "SCAFFOLD-01: .github/config/services.json:224-230 — atlas-kafka-precreate registered as type \"support-image\" instead of the required \"go-service\"",
+    "SCAFFOLD-03: services/atlas-kafka-precreate/Dockerfile is a forbidden per-service Dockerfile; service is not in docker-bake.hcl's go_services list; overlay-pinned image tags (main-2080dc7, and :latest in pr/pr-sparse) do not exist on ghcr.io as committed"
+  ],
+  "nonBlocking": []
+}

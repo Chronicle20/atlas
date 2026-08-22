@@ -130,6 +130,7 @@ The REST input validation layer accepts the following condition types.
 | pqCustomData | Party-quest custom data value | step (custom data key) required |
 | monsterBookCount | Total unique monster cards collected | No |
 | petTameness | Highest closeness among spawned pets matching the given template IDs (value is minimum closeness; template IDs passed via values array) | No (values array required) |
+| canSpawnPlayerNpc | Character is eligible to deploy a player NPC on the given map (1=eligible, 0=not eligible; only "=" operator) | Map ID (required) |
 
 #### Operators
 

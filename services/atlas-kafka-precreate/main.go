@@ -9,7 +9,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"net"
 	"os"
 	"strings"
 	"time"
@@ -44,7 +43,7 @@ func run() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 240*time.Second)
 	defer cancel()
 
-	var addr net.Addr = kafka.TCP(strings.Split(bootstrap, ",")...)
+	addr := kafka.TCP(strings.Split(bootstrap, ",")...)
 	client := &kafka.Client{
 		Addr:    addr,
 		Timeout: 60 * time.Second,

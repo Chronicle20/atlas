@@ -84,7 +84,10 @@ func Seed(ctx context.Context, c kafkaops.AdminClient, addr net.Addr, groupIDs [
 				MemberID:     "",
 				Topics:       topics,
 			})
-			return innerErr
+			if innerErr != nil {
+				return innerErr
+			}
+			return firstCoordinatorError(resp)
 		})
 		if err != nil {
 			return SeedResult{}, fmt.Errorf("committing seed offsets for group %q: %w", group, err)
@@ -131,6 +134,30 @@ func Seed(ctx context.Context, c kafkaops.AdminClient, addr net.Addr, groupIDs [
 	}
 
 	return result, nil
+}
+
+// firstCoordinatorError returns the first per-partition
+// kafka.NotCoordinatorForGroup or kafka.GroupCoordinatorNotAvailable error
+// found in resp, or nil if none is present. It exists so the fn passed to
+// WithCoordinatorRetry can surface an element-level retriable error and
+// drive the retry loop; kafka.UnknownMemberId (the commit-race signal) and
+// every other per-partition error are left for the caller's own
+// commit-race / fatal handling once the loop returns.
+func firstCoordinatorError(resp *kafka.OffsetCommitResponse) error {
+	if resp == nil {
+		return nil
+	}
+	for topic, parts := range resp.Topics {
+		for _, part := range parts {
+			if part.Error == nil {
+				continue
+			}
+			if errors.Is(part.Error, kafka.NotCoordinatorForGroup) || errors.Is(part.Error, kafka.GroupCoordinatorNotAvailable) {
+				return fmt.Errorf("committing seed offset topic %q partition %d: %w", topic, part.Partition, part.Error)
+			}
+		}
+	}
+	return nil
 }
 
 // probeState returns the group's observed state, collapsing a transport
@@ -207,7 +234,10 @@ func Verify(ctx context.Context, c kafkaops.AdminClient, addr net.Addr, groupIDs
 				GroupID: group,
 				Topics:  partitions,
 			})
-			return innerErr
+			if innerErr != nil {
+				return innerErr
+			}
+			return firstFetchCoordinatorError(resp)
 		})
 		if err != nil {
 			return nil, fmt.Errorf("fetching committed offsets for group %q: %w", group, err)
@@ -262,6 +292,30 @@ func Verify(ctx context.Context, c kafkaops.AdminClient, addr net.Addr, groupIDs
 	}
 
 	return reports, nil
+}
+
+// firstFetchCoordinatorError returns the first per-partition
+// kafka.NotCoordinatorForGroup or kafka.GroupCoordinatorNotAvailable error
+// found in resp, or nil if none is present. It exists so the fn passed to
+// WithCoordinatorRetry can surface an element-level retriable error and
+// drive the retry loop; the top-level resp.Error and every other
+// per-partition error are left for the caller's own fatal handling once the
+// loop returns.
+func firstFetchCoordinatorError(resp *kafka.OffsetFetchResponse) error {
+	if resp == nil {
+		return nil
+	}
+	for topic, parts := range resp.Topics {
+		for _, part := range parts {
+			if part.Error == nil {
+				continue
+			}
+			if errors.Is(part.Error, kafka.NotCoordinatorForGroup) || errors.Is(part.Error, kafka.GroupCoordinatorNotAvailable) {
+				return fmt.Errorf("fetching committed offset topic %q partition %d: %w", topic, part.Partition, part.Error)
+			}
+		}
+	}
+	return nil
 }
 
 func sortedKeys(m map[string][]int) []string {

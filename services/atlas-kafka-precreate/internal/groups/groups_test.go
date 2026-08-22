@@ -382,6 +382,78 @@ func TestSeed_DescribeIsRetried(t *testing.T) {
 	}
 }
 
+func TestSeed_CommitPartitionErrorIsRetried(t *testing.T) {
+	// The __consumer_offsets coordinator can still be electing when the
+	// commit RPC is issued: the transport call succeeds but a per-partition
+	// NotCoordinatorForGroup arrives inside the response. That must drive
+	// the same retry WithCoordinatorRetry already applies to transport-level
+	// errors, since OffsetCommit is idempotent and re-issuing it is safe.
+	partitions, offsets := sharedFixtures()
+
+	attempt := 0
+	stub := &stubClient{
+		describeFn: func(*kafka.DescribeGroupsRequest) (*kafka.DescribeGroupsResponse, error) {
+			return &kafka.DescribeGroupsResponse{Groups: []kafka.DescribeGroupsResponseGroup{
+				{GroupID: chanGroup, GroupState: "Empty"},
+			}}, nil
+		},
+		commitFn: func(*kafka.OffsetCommitRequest) (*kafka.OffsetCommitResponse, error) {
+			attempt++
+			if attempt == 1 {
+				return &kafka.OffsetCommitResponse{Topics: map[string][]kafka.OffsetCommitPartition{
+					"a": {{Partition: 0, Error: kafka.NotCoordinatorForGroup}},
+				}}, nil
+			}
+			return &kafka.OffsetCommitResponse{Topics: map[string][]kafka.OffsetCommitPartition{
+				"a": {{Partition: 0}},
+				"b": {{Partition: 0}},
+			}}, nil
+		},
+	}
+
+	result, err := Seed(context.Background(), stub, nil, []string{chanGroup}, partitions, offsets, noWaitRetry())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !equalStrings(result.Seeded, []string{chanGroup}) {
+		t.Errorf("Seeded = %v, want [%s]", result.Seeded, chanGroup)
+	}
+	if len(stub.commitCalls) != 2 {
+		t.Errorf("commitCalls = %d, want 2", len(stub.commitCalls))
+	}
+}
+
+func TestSeed_CommitPartitionUnknownMemberIdNotRetried(t *testing.T) {
+	// kafka.UnknownMemberId keeps its current meaning (commit race → skip)
+	// and must not be folded into the retriable set: it is a permanent
+	// property of this commit attempt, not a transient coordinator state.
+	partitions, offsets := sharedFixtures()
+
+	stub := &stubClient{
+		describeFn: func(*kafka.DescribeGroupsRequest) (*kafka.DescribeGroupsResponse, error) {
+			return &kafka.DescribeGroupsResponse{Groups: []kafka.DescribeGroupsResponseGroup{
+				{GroupID: chanGroup, GroupState: "Empty"},
+			}}, nil
+		},
+		commitFn: func(*kafka.OffsetCommitRequest) (*kafka.OffsetCommitResponse, error) {
+			return &kafka.OffsetCommitResponse{Topics: map[string][]kafka.OffsetCommitPartition{
+				"a": {{Partition: 0, Error: kafka.UnknownMemberId}},
+			}}, nil
+		},
+	}
+
+	result, err := Seed(context.Background(), stub, nil, []string{chanGroup}, partitions, offsets, noWaitRetry())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !equalStrings(result.Skipped, []string{chanGroup}) {
+		t.Errorf("Skipped = %v, want [%s]", result.Skipped, chanGroup)
+	}
+	if len(stub.commitCalls) != 1 {
+		t.Errorf("commitCalls = %d, want 1", len(stub.commitCalls))
+	}
+}
+
 func TestVerify(t *testing.T) {
 	partitions, _ := sharedFixtures()
 
@@ -481,7 +553,11 @@ func TestVerify(t *testing.T) {
 			},
 		},
 		{
-			name:   "partition-level fetch error on a seeded group",
+			// NotLeaderForPartition is only retried on the ListOffsets path
+			// (topics.EndOffsets); OffsetFetch is a group-coordinator
+			// request, so a partition-level leader error here is not one of
+			// the four codes WithCoordinatorRetry drives and stays fatal.
+			name:   "non-coordinator partition-level fetch error stays fatal",
 			groups: []string{chanGroup},
 			seeded: seededResult,
 			fetchFn: func(*kafka.OffsetFetchRequest) (*kafka.OffsetFetchResponse, error) {
@@ -532,6 +608,45 @@ func TestVerify(t *testing.T) {
 				tc.checkReports(t, reports)
 			}
 		})
+	}
+}
+
+func TestVerify_FetchPartitionErrorIsRetried(t *testing.T) {
+	// Same warmup window as Seed: OffsetFetch's transport call can succeed
+	// while a per-partition NotCoordinatorForGroup arrives because the
+	// __consumer_offsets coordinator is still being (re)elected. OffsetFetch
+	// is idempotent, so re-issuing it under retry is safe.
+	partitions, _ := sharedFixtures()
+	seeded := SeedResult{Seeded: []string{chanGroup}}
+
+	attempt := 0
+	stub := &stubClient{
+		fetchFn: func(*kafka.OffsetFetchRequest) (*kafka.OffsetFetchResponse, error) {
+			attempt++
+			if attempt == 1 {
+				return &kafka.OffsetFetchResponse{Topics: map[string][]kafka.OffsetFetchPartition{
+					"a": {{Partition: 0, Error: kafka.NotCoordinatorForGroup}},
+				}}, nil
+			}
+			return &kafka.OffsetFetchResponse{Topics: map[string][]kafka.OffsetFetchPartition{
+				"a": {{Partition: 0, CommittedOffset: 5}},
+				"b": {{Partition: 0, CommittedOffset: 0}},
+			}}, nil
+		},
+	}
+
+	reports, err := Verify(context.Background(), stub, nil, []string{chanGroup}, partitions, seeded, noWaitRetry())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(reports) != 1 {
+		t.Fatalf("reports = %d, want 1", len(reports))
+	}
+	if len(reports[0].Missing) != 0 {
+		t.Errorf("Missing = %v, want empty", reports[0].Missing)
+	}
+	if len(stub.fetchCalls) != 2 {
+		t.Errorf("fetchCalls = %d, want 2", len(stub.fetchCalls))
 	}
 }
 

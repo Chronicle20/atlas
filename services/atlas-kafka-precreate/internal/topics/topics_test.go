@@ -13,6 +13,7 @@ import (
 	kafka "github.com/segmentio/kafka-go"
 
 	"atlas.com/kafka-precreate/internal/discover"
+	"atlas.com/kafka-precreate/internal/kafkaops"
 )
 
 // stubClient implements kafkaops.AdminClient for tests in this package. The
@@ -583,7 +584,7 @@ func TestEndOffsets(t *testing.T) {
 			},
 		}
 		in := map[string][]int{"a": {0}, "b": {0, 1}}
-		got, err := EndOffsets(context.Background(), stub, testAddr, in)
+		got, err := EndOffsets(context.Background(), stub, testAddr, in, kafkaops.RetryConfig{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -617,7 +618,71 @@ func TestEndOffsets(t *testing.T) {
 		}
 	})
 
-	t.Run("partition error", func(t *testing.T) {
+	t.Run("partition leader error retries then succeeds", func(t *testing.T) {
+		// A partition can be visible in Metadata before it has an elected
+		// leader; ListOffsets against it returns NotLeaderForPartition as a
+		// per-partition error on an otherwise-successful response. The whole
+		// request is idempotent, so it is re-issued under retry.
+		clock := newFakeClock()
+		responses := []*kafka.ListOffsetsResponse{
+			{Topics: map[string][]kafka.PartitionOffsets{
+				"a": {{Partition: 0, Error: kafka.NotLeaderForPartition}},
+			}},
+			{Topics: map[string][]kafka.PartitionOffsets{
+				"a": {{Partition: 0, LastOffset: 5}},
+			}},
+		}
+		call := 0
+		stub := &stubClient{
+			listFn: func(req *kafka.ListOffsetsRequest) (*kafka.ListOffsetsResponse, error) {
+				resp := responses[call]
+				call++
+				return resp, nil
+			},
+		}
+		cfg := kafkaops.RetryConfig{Base: 250 * time.Millisecond, Max: 2 * time.Second, Budget: 60 * time.Second, Sleep: clock.Sleep, Now: clock.Now}
+		got, err := EndOffsets(context.Background(), stub, testAddr, map[string][]int{"a": {0}}, cfg)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := map[string]map[int]int64{"a": {0: 5}}
+		if !endOffsetsEqual(got, want) {
+			t.Errorf("expected %v, got %v", want, got)
+		}
+		if len(stub.listCalls) != 2 {
+			t.Fatalf("expected 2 ListOffsets calls, got %d", len(stub.listCalls))
+		}
+		if len(clock.slept) != 1 {
+			t.Errorf("expected 1 recorded backoff, got %v", clock.slept)
+		}
+	})
+
+	t.Run("non-retriable partition error stays fatal on first call", func(t *testing.T) {
+		clock := newFakeClock()
+		stub := &stubClient{
+			listFn: func(req *kafka.ListOffsetsRequest) (*kafka.ListOffsetsResponse, error) {
+				return &kafka.ListOffsetsResponse{
+					Topics: map[string][]kafka.PartitionOffsets{
+						"a": {{Partition: 0, Error: kafka.UnknownTopicOrPartition}},
+					},
+				}, nil
+			},
+		}
+		cfg := kafkaops.RetryConfig{Base: 250 * time.Millisecond, Max: 2 * time.Second, Budget: 60 * time.Second, Sleep: clock.Sleep, Now: clock.Now}
+		_, err := EndOffsets(context.Background(), stub, testAddr, map[string][]int{"a": {0}}, cfg)
+		if err == nil {
+			t.Fatalf("expected error, got nil")
+		}
+		if !containsSubstring(err.Error(), "a") || !containsSubstring(err.Error(), "0") {
+			t.Errorf("expected error to name topic a and partition 0, got %q", err.Error())
+		}
+		if len(stub.listCalls) != 1 {
+			t.Errorf("expected 1 ListOffsets call, got %d", len(stub.listCalls))
+		}
+	})
+
+	t.Run("leader retry budget exhaustion names topic and partition", func(t *testing.T) {
+		clock := newFakeClock()
 		stub := &stubClient{
 			listFn: func(req *kafka.ListOffsetsRequest) (*kafka.ListOffsetsResponse, error) {
 				return &kafka.ListOffsetsResponse{
@@ -627,12 +692,16 @@ func TestEndOffsets(t *testing.T) {
 				}, nil
 			},
 		}
-		_, err := EndOffsets(context.Background(), stub, testAddr, map[string][]int{"a": {0}})
+		cfg := kafkaops.RetryConfig{Base: 250 * time.Millisecond, Max: 2 * time.Second, Budget: 1 * time.Second, Sleep: clock.Sleep, Now: clock.Now}
+		_, err := EndOffsets(context.Background(), stub, testAddr, map[string][]int{"a": {0}}, cfg)
 		if err == nil {
 			t.Fatalf("expected error, got nil")
 		}
 		if !containsSubstring(err.Error(), "a") || !containsSubstring(err.Error(), "0") {
-			t.Errorf("expected error to name topic a and partition 0, got %q", err.Error())
+			t.Errorf("expected budget-exhaustion error to name topic a and partition 0, got %q", err.Error())
+		}
+		if !errors.Is(err, kafka.LeaderNotAvailable) {
+			t.Errorf("expected errors.Is(err, kafka.LeaderNotAvailable), got %v", err)
 		}
 	})
 
@@ -646,7 +715,7 @@ func TestEndOffsets(t *testing.T) {
 				}, nil
 			},
 		}
-		_, err := EndOffsets(context.Background(), stub, testAddr, map[string][]int{"a": {0, 1}})
+		_, err := EndOffsets(context.Background(), stub, testAddr, map[string][]int{"a": {0, 1}}, kafkaops.RetryConfig{})
 		if err == nil {
 			t.Fatalf("expected error, got nil")
 		}
@@ -661,7 +730,7 @@ func TestEndOffsets(t *testing.T) {
 				return nil, transportErr
 			},
 		}
-		_, err := EndOffsets(context.Background(), stub, testAddr, map[string][]int{"a": {0}})
+		_, err := EndOffsets(context.Background(), stub, testAddr, map[string][]int{"a": {0}}, kafkaops.RetryConfig{})
 		if err == nil {
 			t.Fatalf("expected error, got nil")
 		}
@@ -672,7 +741,7 @@ func TestEndOffsets(t *testing.T) {
 
 	t.Run("empty input", func(t *testing.T) {
 		stub := &stubClient{}
-		got, err := EndOffsets(context.Background(), stub, testAddr, map[string][]int{})
+		got, err := EndOffsets(context.Background(), stub, testAddr, map[string][]int{}, kafkaops.RetryConfig{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

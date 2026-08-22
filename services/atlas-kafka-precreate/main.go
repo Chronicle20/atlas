@@ -92,7 +92,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	offsets, err := topics.EndOffsets(ctx, client, addr, parts)
+	offsets, err := topics.EndOffsets(ctx, client, addr, parts, kafkaops.DefaultRetryConfig())
 	if err != nil {
 		return err
 	}

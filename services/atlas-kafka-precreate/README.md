@@ -33,14 +33,25 @@ how many topics an environment declares.
 3. **Settle** — poll `Metadata` until every created topic is visible in the
    client's own cached cluster view, then read end-of-log offsets for every
    (topic, partition) pair. Skipped when `KAFKA_CONSUMER_GROUP` is unset.
+   Topic visibility is not leader election: immediately after `CreateTopics`
+   on a cold cluster, `ListOffsets` for a just-created partition can return
+   `NotLeaderForPartition`/`LeaderNotAvailable` until a leader is elected.
+   That read is retried, bounded by the same backoff budget as phases 4-5.
 4. **Seed** — for each override group currently in a seedable state
    (`Empty`, `Dead`, or absent — never a group with an active member),
    commit end-of-log offsets as a non-member. A group already active is
-   left untouched and reported as skipped.
+   left untouched and reported as skipped. On a cluster where the
+   `__consumer_offsets` coordinator is still being elected, a commit can
+   return `NotCoordinatorForGroup`/`GroupCoordinatorNotAvailable` for a
+   partition inside an otherwise-successful response; that is retried the
+   same as a transport-level coordinator error, since the commit is
+   idempotent.
 5. **Verify** — for each group, confirm every (topic, partition) in the
    union carries a committed offset. A seeded group missing an offset is a
    fatal error; a skipped (already-active) group missing an offset is a
-   warning, since a live consumer already owns that group's progress.
+   warning, since a live consumer already owns that group's progress. The
+   same per-partition coordinator-election retry as phase 4 applies to the
+   `OffsetFetch` read.
 
 ## Exit codes
 

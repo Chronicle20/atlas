@@ -51,18 +51,45 @@ func isCoordinatorError(err error) bool {
 	return errors.Is(err, kafka.NotCoordinatorForGroup) || errors.Is(err, kafka.GroupCoordinatorNotAvailable)
 }
 
+// isLeaderError reports whether err is one of the two transient
+// partition-leader errors that WithLeaderRetry retries.
+func isLeaderError(err error) bool {
+	return errors.Is(err, kafka.NotLeaderForPartition) || errors.Is(err, kafka.LeaderNotAvailable)
+}
+
 // WithCoordinatorRetry calls fn, retrying with exponential backoff (capped
 // at cfg.Max, bounded by cfg.Budget) only when fn returns
 // kafka.NotCoordinatorForGroup or kafka.GroupCoordinatorNotAvailable — the
 // two codes a client can see while the group coordinator is being
 // (re)elected.
 //
-// This wraps ONLY the three group-coordinator calls: DescribeGroups,
+// This wraps the three group-coordinator calls: DescribeGroups,
 // OffsetCommit, and OffsetFetch. CreateTopics, Metadata, and
 // IncrementalAlterConfigs route to the controller and cannot produce these
 // two codes; retrying anything else would turn a diagnosable failure into a
 // timeout (design §4 OQ-3).
 func WithCoordinatorRetry(ctx context.Context, cfg RetryConfig, fn func() error) error {
+	return withRetry(ctx, cfg, isCoordinatorError, fn)
+}
+
+// WithLeaderRetry calls fn, retrying with exponential backoff (capped at
+// cfg.Max, bounded by cfg.Budget) only when fn returns
+// kafka.NotLeaderForPartition or kafka.LeaderNotAvailable — the two codes a
+// client can see for a partition immediately after CreateTopics, before
+// leader election has completed. Partition visibility in Metadata is not
+// leader election, so ListOffsets against a just-created partition can
+// return these codes even though the topic itself was created successfully.
+//
+// This wraps ListOffsets. Retrying anything else would turn a diagnosable
+// failure into a timeout (design §4 OQ-3).
+func WithLeaderRetry(ctx context.Context, cfg RetryConfig, fn func() error) error {
+	return withRetry(ctx, cfg, isLeaderError, fn)
+}
+
+// withRetry calls fn, retrying with exponential backoff (capped at cfg.Max,
+// bounded by cfg.Budget) only when fn returns an error for which retriable
+// reports true.
+func withRetry(ctx context.Context, cfg RetryConfig, retriable func(error) bool, fn func() error) error {
 	sleep := cfg.Sleep
 	if sleep == nil {
 		sleep = time.Sleep
@@ -98,12 +125,12 @@ func WithCoordinatorRetry(ctx context.Context, cfg RetryConfig, fn func() error)
 		if err == nil {
 			return nil
 		}
-		if !isCoordinatorError(err) {
+		if !retriable(err) {
 			return err
 		}
 
 		if now().Sub(start)+backoff > budget {
-			return fmt.Errorf("coordinator retry budget of %s exhausted: %w", budget, err)
+			return fmt.Errorf("retry budget of %s exhausted: %w", budget, err)
 		}
 
 		sleep(backoff)

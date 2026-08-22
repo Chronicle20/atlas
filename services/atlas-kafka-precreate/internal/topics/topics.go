@@ -223,7 +223,16 @@ func missingTopicsError(names []string, present map[string][]int) error {
 // EndOffsets fetches the end-of-log (last) offset for every (topic,
 // partition) pair in partitions with a single ListOffsets request, and
 // returns them keyed by topic then partition.
-func EndOffsets(ctx context.Context, c kafkaops.AdminClient, addr net.Addr, partitions map[string][]int) (map[string]map[int]int64, error) {
+//
+// A partition can appear in Metadata (which Settle already waited for)
+// before it has an elected leader: partition visibility and leader election
+// are different broker events. ListOffsets against such a partition returns
+// kafka.NotLeaderForPartition or kafka.LeaderNotAvailable as a per-partition
+// error inside an otherwise-successful response, so the whole request is
+// re-issued (idempotent) under a bounded retry (retry) until either a
+// leader is elected or the budget is exhausted. Every other per-partition
+// error stays fatal on the first response that carries it.
+func EndOffsets(ctx context.Context, c kafkaops.AdminClient, addr net.Addr, partitions map[string][]int, retry kafkaops.RetryConfig) (map[string]map[int]int64, error) {
 	if len(partitions) == 0 {
 		return map[string]map[int]int64{}, nil
 	}
@@ -237,7 +246,15 @@ func EndOffsets(ctx context.Context, c kafkaops.AdminClient, addr net.Addr, part
 		req.Topics[topic] = reqs
 	}
 
-	resp, err := c.ListOffsets(ctx, req)
+	var resp *kafka.ListOffsetsResponse
+	err := kafkaops.WithLeaderRetry(ctx, retry, func() error {
+		var innerErr error
+		resp, innerErr = c.ListOffsets(ctx, req)
+		if innerErr != nil {
+			return innerErr
+		}
+		return firstLeaderError(partitions, resp)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("listing end offsets: %w", err)
 	}
@@ -270,4 +287,29 @@ func EndOffsets(ctx context.Context, c kafkaops.AdminClient, addr net.Addr, part
 	}
 
 	return result, nil
+}
+
+// firstLeaderError returns the first NotLeaderForPartition or
+// LeaderNotAvailable per-partition error found in resp for the requested
+// partitions, or nil if none is present. It exists so the fn passed to
+// WithLeaderRetry can surface an element-level retriable error and drive
+// the retry loop; every other per-partition error is left for the caller's
+// own fatal handling once the loop returns.
+func firstLeaderError(partitions map[string][]int, resp *kafka.ListOffsetsResponse) error {
+	for topic, ids := range partitions {
+		byPartition := make(map[int]kafka.PartitionOffsets, len(resp.Topics[topic]))
+		for _, po := range resp.Topics[topic] {
+			byPartition[po.Partition] = po
+		}
+		for _, id := range ids {
+			po, ok := byPartition[id]
+			if !ok || po.Error == nil {
+				continue
+			}
+			if errors.Is(po.Error, kafka.NotLeaderForPartition) || errors.Is(po.Error, kafka.LeaderNotAvailable) {
+				return fmt.Errorf("end offset for topic %q partition %d: %w", topic, id, po.Error)
+			}
+		}
+	}
+	return nil
 }

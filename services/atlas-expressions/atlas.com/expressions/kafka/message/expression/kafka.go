@@ -22,6 +22,8 @@ type StatusEvent struct {
 	MapId         _map.Id    `json:"mapId"`
 	Instance      uuid.UUID  `json:"instance"`
 	Expression    uint32     `json:"expression"`
+	Duration      int32      `json:"duration"`
+	ByItemOption  bool       `json:"byItemOption"`
 }
 
 // Command represents an expression command
@@ -33,4 +35,6 @@ type Command struct {
 	MapId         _map.Id    `json:"mapId"`
 	Instance      uuid.UUID  `json:"instance"`
 	Expression    uint32     `json:"expression"`
+	Duration      int32      `json:"duration"`
+	ByItemOption  bool       `json:"byItemOption"`
 }

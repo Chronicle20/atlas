@@ -54,12 +54,13 @@ func handleEvent(sc server.Model, wp writer.Producer) message.Handler[expression
 			return
 		}
 
-		// TODO(task-028 follow-up): Kafka expression.Event doesn't carry duration
-		// or byItemOption, so v95+ and JMS clients always observe duration=0 and
-		// byItemOption=false. Extend kafka/message/expression/kafka.go to carry the
-		// fields end-to-end (producer side too). Tracked in
-		// docs/tasks/task-028-character-domain-audit/post-phase-b.md "Remaining work".
-		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.CharacterId, session.Announce(l)(ctx)(wp)(charpkt.CharacterExpressionWriter)(charpkt.NewCharacterExpression(e.CharacterId, e.Expression, 0).Encode))
+		// e.Duration is int32 and is -1 for every emote a GMS v95 client
+		// originates (CWvsContext::SendEmotionChange@0xa02c86 and
+		// CUserLocal::UseFuncKeyMapped case 3u@0x933874 both pass nDuration
+		// = -1). Go's int32 -> uint32 conversion preserves the bit pattern, so
+		// -1 reaches the wire as FF FF FF FF — exactly what the sending client
+		// encoded. This is deliberate, not a lost sign.
+		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.CharacterId, session.Announce(l)(ctx)(wp)(charpkt.CharacterExpressionWriter)(charpkt.NewCharacterExpression(e.CharacterId, e.Expression, uint32(e.Duration), e.ByItemOption).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce character [%d] expression [%d] change to characters in map [%d].", e.CharacterId, e.Expression, e.MapId)
 		}

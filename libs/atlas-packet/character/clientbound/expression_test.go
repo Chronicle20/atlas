@@ -1,6 +1,7 @@
 package clientbound
 
 import (
+	"bytes"
 	"testing"
 
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
@@ -10,7 +11,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v84 ida=0x9b2518
 // packet-audit:verify packet=character/clientbound/CharacterExpression version=jms_v185 ida=0x9f636b
 // packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v87 ida=0x9f7492
-// packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v95 ida=0x8e0150
+// gms_v95 is verified by TestCharacterExpressionByteOutputV95NegativeDuration below.
 func TestCharacterExpressionRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -49,5 +50,36 @@ func TestCharacterExpressionRoundTrip(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v95 ida=0x8e0150
+func TestCharacterExpressionByteOutputV95NegativeDuration(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	var negativeOne int32 = -1
+	got := NewCharacterExpression(12345, 8, uint32(negativeOne), false).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x39, 0x30, 0x00, 0x00, // characterId 12345 (dispatcher Decode4)
+		0x08, 0x00, 0x00, 0x00, // expression 8 (Decode4 @CUser::OnEmotion 0x8e0150)
+		0xff, 0xff, 0xff, 0xff, // duration -1 reinterpreted as uint32 (Decode4)
+		0x00, // byItemOption false (Decode1)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v95 CharacterExpression wire: got %x want %x", got, want)
+	}
+}
+
+func TestCharacterExpressionByteOutputV95ByItemOption(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	var negativeOne int32 = -1
+	got := NewCharacterExpression(12345, 8, uint32(negativeOne), true).Encode(nil, ctx)(nil)
+	want := []byte{
+		0x39, 0x30, 0x00, 0x00, // characterId 12345 (dispatcher Decode4)
+		0x08, 0x00, 0x00, 0x00, // expression 8 (Decode4 @CUser::OnEmotion 0x8e0150)
+		0xff, 0xff, 0xff, 0xff, // duration -1 reinterpreted as uint32 (Decode4)
+		0x01, // byItemOption true (Decode1)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v95 CharacterExpression wire: got %x want %x", got, want)
 	}
 }

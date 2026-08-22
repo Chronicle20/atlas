@@ -503,7 +503,7 @@ func TestCharacterDamageByteOutputV72(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v72 ida=0x44cb1a
 func TestCharacterExpressionByteOutputV72(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 72, 1)
-	got := NewCharacterExpression(12345, 5, 3000).Encode(nil, ctx)(nil)
+	got := NewCharacterExpression(12345, 5, 3000, false).Encode(nil, ctx)(nil)
 	want := []byte{
 		0x39, 0x30, 0x00, 0x00, // characterId 12345 (dispatcher Decode4) /*0x87c050*/
 		0x05, 0x00, 0x00, 0x00, // expression 5 (Decode4)                 /*0x87c0c6*/

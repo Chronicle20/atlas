@@ -38,8 +38,8 @@ type CharacterExpression struct {
 	byItemOption bool
 }
 
-func NewCharacterExpression(characterId uint32, expression uint32, duration uint32) CharacterExpression {
-	return CharacterExpression{characterId: characterId, expression: expression, duration: duration}
+func NewCharacterExpression(characterId uint32, expression uint32, duration uint32, byItemOption bool) CharacterExpression {
+	return CharacterExpression{characterId: characterId, expression: expression, duration: duration, byItemOption: byItemOption}
 }
 
 func (m CharacterExpression) CharacterId() uint32 { return m.characterId }

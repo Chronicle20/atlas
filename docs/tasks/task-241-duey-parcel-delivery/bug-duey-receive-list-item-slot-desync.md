@@ -139,3 +139,20 @@ also builds the asset with `zeroPosition = true` explicitly. The nine
 drop the leading slot byte from their expected item blocks, and
 `docs/packets/audits/STATUS.md`/`status.json` were regenerated.
 See `bug-duey-receive-list-item-slot-desync-fix-report.md` for full detail.
+
+### Gate & review
+
+- `tools/verify.sh --quick --base 54a968ccb` — **PASS** (exit 0, 90 changed Go
+  modules fanned out on the shared-lib change). `--quick` skips the docker bake
+  and `-race`; the flagless run is still owed before the branch is called done.
+- `atlas-reviewer` over `54a968ccb..b5efb76e5` — **APPROVED_WITH_FINDINGS**,
+  0 blocking, 1 non-blocking (no channel-layer test pinned the slot-less
+  invariant). Artifact:
+  `reviews/review-bug-duey-receive-list-item-slot-desync.md`.
+- Non-blocking finding closed by `dd5ad5f2c`
+  (`TestToPacketItemHasNoSlotPrefix/{stackable,equip}` in
+  `services/atlas-channel/atlas.com/channel/parcel/model_test.go`).
+
+**Live re-test in `atlas-pr-1434` is still outstanding.** Confirm all three rows
+render sender/mesos/expiry AND their item name — and check whether rows 2 and 3
+show their messages ("lulnub", "lulul"), which is the open question above.

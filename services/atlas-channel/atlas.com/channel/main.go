@@ -52,6 +52,7 @@ import (
 	"atlas-channel/kafka/consumer/party_quest"
 	"atlas-channel/kafka/consumer/pendingchange"
 	"atlas-channel/kafka/consumer/pet"
+	playernpcConsumer "atlas-channel/kafka/consumer/playernpc"
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
 	reportstatus "atlas-channel/kafka/consumer/report"
@@ -248,6 +249,7 @@ func main() {
 	buff.InitConsumers(l)(cmf)(consumerGroupId)
 	chalkboard.InitConsumers(l)(cmf)(consumerGroupId)
 	kiteconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	playernpcConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
 	teleportrockConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
@@ -555,6 +557,9 @@ func buildListener(
 		if err := register(kiteconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
+		if err := register(playernpcConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(messenger.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
@@ -675,6 +680,8 @@ func produceWriters() []string {
 		npccb.NpcSpawnWriter,
 		npccb.NpcSpawnRequestControllerWriter,
 		npccb.NpcActionWriter,
+		npccb.NpcImitatedDataWriter,
+		npccb.NpcRemoveWriter,
 		stat2.StatChangedWriter,
 		channelCB.ChannelChangeWriter,
 		cashcb.CashShopOpenWriter,

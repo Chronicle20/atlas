@@ -13,7 +13,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
-	github.com/sirupsen/logrus v1.10.0
+	github.com/sirupsen/logrus v1.10.1
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2
 )
@@ -36,6 +36,7 @@ require (
 )
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0-00010101000000-000000000000 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0 // indirect
 	github.com/bsm/redislock v0.10.0 // indirect
@@ -54,7 +55,9 @@ require (
 	github.com/klauspost/compress v1.19.1 // indirect
 	github.com/magefile/mage v1.15.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.24 // indirect
+	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/redis/go-redis/v9 v9.22.0 // indirect
+	github.com/segmentio/kafka-go v0.4.51 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel/metric v1.45.0 // indirect
 	go.opentelemetry.io/otel/trace v1.45.0 // indirect

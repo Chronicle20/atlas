@@ -1,0 +1,96 @@
+{
+  "service": "atlas-channel, atlas-expressions (+ libs/atlas-constants, libs/atlas-packet)",
+  "path": "services/atlas-channel, services/atlas-expressions, libs/atlas-constants, libs/atlas-packet",
+  "date": "2026-08-21",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "atlas-channel/character/expression",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor lives in processor.go", "status": "pass", "evidence": "character/expression/processor.go:14-38"},
+        {"id": "FILE-05", "name": "Producer/writer/reader placement", "status": "pass", "evidence": "character/expression/producer.go holds only SetCommandProvider"},
+        {"id": "FILE-06", "name": "No catch-all file mixing >=2 responsibilities", "status": "pass", "evidence": "processor.go and producer.go each single-responsibility"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "character/expression/processor.go:25"},
+        {"id": "DOM-30", "name": "DB writes emit via AndEmit+message.Buffer", "status": "pass", "evidence": "character/expression/processor.go:35-38 — documented non-DB-state exception, no DB write on any path"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "no mock of atlas-channel's expression.Processor exists"}
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/message/expression",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all responsibility collapse", "status": "pass", "evidence": "kafka.go:1-40 holds only Command/Event DTOs and topic consts"},
+        {"id": "DOM-23", "name": "Topic env vars follow convention", "status": "n-a", "evidence": "kafka.go:12,28 topic consts unchanged; only new struct fields added, no topic added/renamed"}
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/consumer/expression",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client-interpreted wire bytes resolved from tenant table", "status": "n-a", "evidence": "consumer.go:63 passes Duration/ByItemOption as raw data fields, not a dispatcher/sub-op/fail-reason code from a lookup switch"},
+        {"id": "seam-check", "name": "int32->uint32 narrowing correctness", "status": "pass", "evidence": "consumer.go:57-63 documented deliberate bit-pattern-preserving cast; matches libs/atlas-packet/character/clientbound/expression_test.go TestCharacterExpressionByteOutputV95NegativeDuration"}
+      ]
+    },
+    {
+      "name": "atlas-channel/socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all responsibility collapse", "status": "pass", "evidence": "character_expression.go holds only the handler function and its test seam"},
+        {"id": "DOM-13/14/15", "name": "Handlers: no cross-domain orchestration / no direct provider calls / no direct DB writes", "status": "n-a", "evidence": "socket/handler package has no resource.go — rule trigger did not fire"},
+        {"id": "DOM-31", "name": "Tenant/trace travel in context only", "status": "pass", "evidence": "character_expression.go:22-23 — expressionItemOwnedFunc(ctx) -> character.NewProcessor(l, ctx); tenant resolved from ctx, never passed as an explicit field"},
+        {"id": "DOM-26", "name": "Every goroutine via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0"},
+        {"id": "gate-check", "name": "Ownership-gate fails closed on lookup error", "status": "pass", "evidence": "character_expression_test.go:91-98 TestCharacterExpressionHandleFunc_Gate/lookup error fails closed asserts 0 commands emitted"},
+        {"id": "gate-check-2", "name": "Emote bound enforced before ownership lookup", "status": "pass", "evidence": "character_expression_test.go out-of-range case (emote 24, expectCalls: 0)"}
+      ]
+    },
+    {
+      "name": "libs/atlas-constants/item",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all responsibility collapse", "status": "pass", "evidence": "expression.go adds only consts/helpers, consistent with death_protection.go/vegas_spell.go siblings"},
+        {"id": "DOM-21", "name": "No redeclaration of existing shared type/const", "status": "pass", "evidence": "expression.go:36 reuses ClassificationExpression from constants.go:96; no prior emote/expression helper found via grep"}
+      ]
+    },
+    {
+      "name": "atlas-expressions/expression",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go has NewBuilder()+fluent Build()", "status": "n-a", "evidence": "builder.go unmodified by this diff — pre-existing NewModelBuilder naming, out of this change's review surface"},
+        {"id": "DOM-02", "name": "Model.ToEntity() in entity.go", "status": "n-a", "evidence": "no entity.go in this package"},
+        {"id": "DOM-03", "name": "Make(Entity) in entity.go", "status": "n-a", "evidence": "no entity.go in this package"},
+        {"id": "DOM-04", "name": "Transform(Model) in rest.go", "status": "n-a", "evidence": "no rest.go in this package"},
+        {"id": "DOM-05", "name": "TransformSlice in rest.go", "status": "n-a", "evidence": "no rest.go in this package"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "expression/processor.go:37"},
+        {"id": "DOM-10", "name": "Test DB setup calls RegisterTenantCallbacks", "status": "n-a", "evidence": "no GORM DB opened directly in changed test files"},
+        {"id": "DOM-11", "name": "Providers lazy via database.Query", "status": "n-a", "evidence": "no provider.go in this package"},
+        {"id": "DOM-16", "name": "administrator.go holds writes", "status": "n-a", "evidence": "no administrator.go; state lives in in-memory registry.go, not a DB"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "character_expression_test.go:40 tests := []struct{...}+t.Run; processor_test.go single-case additions acceptable"},
+        {"id": "DOM-24", "name": "Test packages reaching emit path stub the producer", "status": "pass", "evidence": "expression/testmain_test.go:1-11 producertest.InstallNoop() in TestMain"},
+        {"id": "DOM-30", "name": "DB writes emit via AndEmit+message.Buffer", "status": "pass", "evidence": "expression/processor.go:46-58 Change buffers via mb.Put; processor.go:63-79 ChangeAndEmit wraps via message.EmitWithResult"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "expression/mock/processor.go:13-25 ChangeFunc/ChangeAndEmitFunc updated with duration/byItemOption params"}
+      ]
+    },
+    {
+      "name": "atlas-expressions/kafka/consumer/expression",
+      "type": "support",
+      "checks": [
+        {"id": "passthrough-check", "name": "Command->ChangeAndEmit field passthrough", "status": "pass", "evidence": "consumer.go:41 forwards TransactionId, CharacterId, field, Expression, Duration, ByItemOption"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet/character/clientbound",
+      "type": "support",
+      "checks": [
+        {"id": "codec-symmetry", "name": "Version-gated encode/decode symmetry preserved", "status": "pass", "evidence": "expression.go:54-71 (Encode) and :73-88 (Decode) both gate byItemOption on GMS>87 identically; new tests at expression_test.go:54-86"},
+        {"id": "callsite-update", "name": "Downstream call sites updated for new constructor arity", "status": "pass", "evidence": "v61_test.go:724, v72_test.go:506, v79_test.go:520 all pass explicit false for byItemOption"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [],
+  "nonBlocking": []
+}

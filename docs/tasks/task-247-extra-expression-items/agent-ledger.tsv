@@ -1,0 +1,23 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-21T11:36:52Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	4f4b32b9c	-	-	-	-
+2026-08-21T11:38:03Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	4f4b32b9c	APPROVED	no	-	-
+2026-08-21T11:41:59Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	bb2893c83	-	-	-	-
+2026-08-21T11:43:20Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	bb2893c83	APPROVED	no	-	-
+2026-08-21T11:44:41Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	6c6aac7f9	-	-	-	-
+2026-08-21T11:45:37Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	6c6aac7f9	APPROVED	no	-	-
+2026-08-21T11:47:38Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	676e5e6db	-	-	-	-
+2026-08-21T11:50:01Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	DONE	a9f733017	-	-	-	-
+2026-08-21T11:51:31Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	676e5e6db	APPROVED	no	-	-
+2026-08-21T11:51:46Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DONE	a9f733017	APPROVED	no	-	-
+2026-08-21T11:51:46Z	handoff	after Task 5	-	-	-	-	-	-	-	-	-	-	-	75000
+2026-08-21T11:53:09Z	agent	Task 6	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T11:55:09Z	agent	Task 6	atlas-implementer	sonnet	-	-	-	-	DONE	9a31743	-	-	-	-
+2026-08-21T11:55:09Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T11:55:56Z	agent	Task 6	atlas-reviewer	sonnet	-	-	-	-	DONE	9a31743	APPROVED	no	-	-
+2026-08-21T11:55:56Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	DONE	78b692e	-	-	-	-
+2026-08-21T11:57:12Z	agent	Task 7	atlas-reviewer	sonnet	-	-	-	-	DONE	78b692e	APPROVED	no	-	-
+2026-08-21T11:59:54Z	agent	Tasks 1-5 gate	atlas-verifier	-	-	-	-	-	PASS	a9f733017	-	-	-	-
+2026-08-21T12:49:29Z	agent	pre-PR	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	-	APPROVED	no	-	-
+2026-08-21T12:49:30Z	agent	pre-PR	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	-	APPROVED	no	-	-
+2026-08-21T12:53:20Z	agent	fix: Event TransactionId	atlas-implementer	sonnet	-	-	-	-	DONE	8fcdda8cf	-	-	-	-
+2026-08-21T13:48:56Z	agent	branch-end gate	atlas-verifier	-	-	-	-	-	PASS	8fcdda8cf	-	-	-	-

@@ -47,7 +47,11 @@ func (e *RevertTask) Run() {
 // spy in place of the real Kafka producer call.
 func revertExpression(l logrus.FieldLogger, ctx context.Context, exp Model) error {
 	transactionId := uuid.New() // Generate a new transaction ID for each expired expression
-	return producer.ProviderImpl(l)(ctx)(expression.EnvExpressionEvent)(expressionEventProvider(transactionId, exp.CharacterId(), exp.Field(), 0))
+	// Revert always restores the neutral face: expression 0 with no duration
+	// and no item option (FR-3.7). The registry Model deliberately does not
+	// persist the original duration/byItemOption, so there is nothing to
+	// replay here.
+	return producer.ProviderImpl(l)(ctx)(expression.EnvExpressionEvent)(expressionEventProvider(transactionId, exp.CharacterId(), exp.Field(), 0, 0, false))
 }
 
 // processExpired originates this pod's own environment identity onto each

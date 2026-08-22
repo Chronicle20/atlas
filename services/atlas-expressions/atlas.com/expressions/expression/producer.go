@@ -11,7 +11,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-func expressionEventProvider(transactionId uuid.UUID, characterId uint32, field field.Model, expressionId uint32) model.Provider[[]kafka.Message] {
+func expressionEventProvider(transactionId uuid.UUID, characterId uint32, field field.Model, expressionId uint32, duration int32, byItemOption bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &expression.StatusEvent{
 		TransactionId: transactionId,
@@ -21,6 +21,8 @@ func expressionEventProvider(transactionId uuid.UUID, characterId uint32, field 
 		MapId:         field.MapId(),
 		Instance:      field.Instance(),
 		Expression:    expressionId,
+		Duration:      duration,
+		ByItemOption:  byItemOption,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

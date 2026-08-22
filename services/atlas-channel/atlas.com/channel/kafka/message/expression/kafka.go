@@ -13,12 +13,15 @@ const (
 )
 
 type Command struct {
-	CharacterId uint32     `json:"characterId"`
-	WorldId     world.Id   `json:"worldId"`
-	ChannelId   channel.Id `json:"channelId"`
-	MapId       _map.Id    `json:"mapId"`
-	Instance    uuid.UUID  `json:"instance"`
-	Expression  uint32     `json:"expression"`
+	TransactionId uuid.UUID  `json:"transactionId"`
+	CharacterId   uint32     `json:"characterId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
+	Expression    uint32     `json:"expression"`
+	Duration      int32      `json:"duration"`
+	ByItemOption  bool       `json:"byItemOption"`
 }
 
 const (
@@ -26,10 +29,13 @@ const (
 )
 
 type Event struct {
-	CharacterId uint32     `json:"characterId"`
-	WorldId     world.Id   `json:"worldId"`
-	ChannelId   channel.Id `json:"channelId"`
-	MapId       _map.Id    `json:"mapId"`
-	Instance    uuid.UUID  `json:"instance"`
-	Expression  uint32     `json:"expression"`
+	TransactionId uuid.UUID  `json:"transactionId"`
+	CharacterId   uint32     `json:"characterId"`
+	WorldId       world.Id   `json:"worldId"`
+	ChannelId     channel.Id `json:"channelId"`
+	MapId         _map.Id    `json:"mapId"`
+	Instance      uuid.UUID  `json:"instance"`
+	Expression    uint32     `json:"expression"`
+	Duration      int32      `json:"duration"`
+	ByItemOption  bool       `json:"byItemOption"`
 }

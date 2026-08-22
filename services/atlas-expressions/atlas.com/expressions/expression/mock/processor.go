@@ -10,22 +10,22 @@ import (
 )
 
 type ProcessorMock struct {
-	ChangeFunc        func(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expr uint32) (expression.Model, error)
-	ChangeAndEmitFunc func(transactionId uuid.UUID, characterId uint32, field field.Model, expr uint32) (expression.Model, error)
+	ChangeFunc        func(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expr uint32, duration int32, byItemOption bool) (expression.Model, error)
+	ChangeAndEmitFunc func(transactionId uuid.UUID, characterId uint32, field field.Model, expr uint32, duration int32, byItemOption bool) (expression.Model, error)
 	ClearFunc         func(mb *message.Buffer, transactionId uuid.UUID, characterId uint32) (expression.Model, error)
 	ClearAndEmitFunc  func(transactionId uuid.UUID, characterId uint32) (expression.Model, error)
 }
 
-func (m *ProcessorMock) Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expr uint32) (expression.Model, error) {
+func (m *ProcessorMock) Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expr uint32, duration int32, byItemOption bool) (expression.Model, error) {
 	if m.ChangeFunc != nil {
-		return m.ChangeFunc(mb, transactionId, characterId, field, expr)
+		return m.ChangeFunc(mb, transactionId, characterId, field, expr, duration, byItemOption)
 	}
 	return expression.Model{}, nil
 }
 
-func (m *ProcessorMock) ChangeAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, expr uint32) (expression.Model, error) {
+func (m *ProcessorMock) ChangeAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, expr uint32, duration int32, byItemOption bool) (expression.Model, error) {
 	if m.ChangeAndEmitFunc != nil {
-		return m.ChangeAndEmitFunc(transactionId, characterId, field, expr)
+		return m.ChangeAndEmitFunc(transactionId, characterId, field, expr, duration, byItemOption)
 	}
 	return expression.Model{}, nil
 }

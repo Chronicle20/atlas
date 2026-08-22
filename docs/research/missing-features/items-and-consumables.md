@@ -46,7 +46,21 @@ All mapped in `GetCashSlotItemType` but unimplemented (fall to warn); Cosmic `Us
 | Karma scissors | 5520000 (`Cash/0552`) | 552 (share-tag one trade) | M |
 | Store permit (open hired merchant via item) | category 514→type 4 | 504-adjacent; atlas-merchant service exists (`shop/entity.go` stores `PermitItemId`) but the item-use entry is unimplemented — note `CashSlotItemTypeStoreSearch` (29, Owl) *is* now implemented; the permit type is not | S given merchant exists |
 | Cosmetic coupons (hair/face/skin, types 1/2/3/35) | `Cash/0515x` | 506-family | M |
-| Extra-expression (emote) items | `ClassificationExpression` → type 6 | — | S |
+
+#### Extra-expression (emote) items — closed by task-247, and not a cash-item-use gap
+
+Extra-expression items (`ClassificationExpression` = 516, `Item.wz/Cash/0516.img`,
+`05160000`–`05160014`) are **not** routed through the cash-item-use handler, so a
+`CashSlotItemType(6)` dispatch arm would be dead code.
+`CDraggableItem::OnDoubleClicked` @`0x50814b` (GMS v95) checks
+`get_etc_cash_item_type` first and calls
+`CWvsContext::SendEtcCashItemUseRequest` @`0x508165`, whose `case 6:` @`0xa02c86`
+issues `CWvsContext::SendEmotionChange(nItemID % 100 + 8, 0, -1)`. The keyboard
+path is the same: `CUserLocal::UseFuncKeyMapped` `case 3u` @`0x933874`. GMS v87
+matches (`SendEtcCashItemUseRequest` @`0xab4f91`).
+
+The real gap was on the emote path — `CharacterExpressionHandleFunc` accepted any
+emote id with no range check and no ownership check — and task-247 closes it.
 
 ### 8. Unapplied Item.wz `spec` effect families (use-tab consumables)
 Enumerated every `spec` child across all v83 `Item.wz/Consume/*.img.xml` (counts = occurrences) and diffed against what `atlas-data/consumable/reader.go:118-162` parses and what `ApplyItemEffects` (`atlas-consumables/consumable/processor.go:112-182`) applies. **Not parsed at all** (so no downstream service can act):

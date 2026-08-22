@@ -145,4 +145,24 @@ Verification: module-local `go build ./... && go test ./...` in
 
 ## Outcome
 
-_(to be filled in by the fix)_
+Fixed by `b21783437` ("fix(duey): encode PARCEL's message as a hasMessage flag
++ text, not raw padding"); fix report in
+`bug-duey-parcel-message-offset-fix-report.md` (`968136c1c`).
+`libs/atlas-packet/parcel/parcel.go` now writes a 4-byte `hasMessage` flag at
++29 (set iff the message is non-empty) followed by the NUL-terminated message
+at +33, width 201; the nine clientbound fixtures and
+`docs/packets/audits/STATUS.md` / `status.json` were updated to match.
+
+### Gate
+
+- `tools/verify.sh --quick --base fc9444f1f` — **PASS** (exit 0; shared-lib
+  change fanned out to all 90 changed Go modules). `--quick` skips the docker
+  bake and `-race`; the flagless run is still owed before the branch is done.
+- No `atlas-reviewer` pass: the change is confined to the packet codec and its
+  fixtures and crosses no service boundary or contract.
+
+**Live re-test in `atlas-pr-1434` is still outstanding.** Confirm rows 2 and 3
+show their full messages (`lulnub`, `lulul`) in the note pane. The marker beside
+the name will still look like garbled ASCII on a non-Korean client — that is the
+client's own EUC-KR string constant at `dword_AFCDB0`, expected, and it should
+now appear only for parcels that actually carry a message.

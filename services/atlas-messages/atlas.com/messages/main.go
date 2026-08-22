@@ -16,6 +16,7 @@ import (
 	commandpet "atlas-messages/command/pet"
 	commandplayernpc "atlas-messages/command/playernpc"
 	message2 "atlas-messages/kafka/consumer/message"
+	consumerplayernpc "atlas-messages/kafka/consumer/playernpc"
 	"os"
 
 	service "github.com/Chronicle20/atlas/libs/atlas-service"
@@ -96,6 +97,10 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	message2.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := message2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	consumerplayernpc.InitConsumers(l)(cmf)(consumerGroupId)
+	if err := consumerplayernpc.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 

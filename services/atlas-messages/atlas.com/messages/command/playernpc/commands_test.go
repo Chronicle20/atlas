@@ -95,12 +95,19 @@ func TestPlayerNpcCommands(t *testing.T) {
 		if published.Body.EnforceEligibility {
 			t.Error("EnforceEligibility = true, want false")
 		}
+		if published.Requester == nil {
+			t.Fatal("published.Requester = nil, want populated from f and c")
+		}
+		if published.Requester.CharacterId != c.Id() || published.Requester.WorldId != byte(f.WorldId()) || published.Requester.ChannelId != byte(f.ChannelId()) || published.Requester.MapId != uint32(f.MapId()) {
+			t.Errorf("published.Requester = %+v, want characterId %d, worldId %d, channelId %d, mapId %d", published.Requester, c.Id(), byte(f.WorldId()), byte(f.ChannelId()), uint32(f.MapId()))
+		}
 		if len(pinkTexts) != 1 {
 			t.Fatalf("pink text calls = %d, want 1", len(pinkTexts))
 		}
 	})
 
 	t.Run("remove all", func(t *testing.T) {
+		c := testCharacter(true)
 		target := character.NewModelBuilder().SetId(42).SetName("Hero").Build()
 
 		var published msg.Command[msg.CommandRemoveBody]
@@ -114,7 +121,7 @@ func TestPlayerNpcCommands(t *testing.T) {
 		}
 		pink := func(text string) error { return nil }
 
-		if err := removeWithDeps("Hero", nil, lookup, publish, pink); err != nil {
+		if err := removeWithDeps(f, c, "Hero", nil, lookup, publish, pink); err != nil {
 			t.Fatalf("removeWithDeps err = %v", err)
 		}
 		if published.CharacterId != 42 || published.Type != msg.CommandTypeRemove {
@@ -123,9 +130,13 @@ func TestPlayerNpcCommands(t *testing.T) {
 		if published.Body.MapId != nil {
 			t.Errorf("published body mapId = %v, want nil", published.Body.MapId)
 		}
+		if published.Requester == nil || published.Requester.CharacterId != c.Id() {
+			t.Errorf("published.Requester = %+v, want characterId %d", published.Requester, c.Id())
+		}
 	})
 
 	t.Run("remove map-scoped", func(t *testing.T) {
+		c := testCharacter(true)
 		target := character.NewModelBuilder().SetId(42).SetName("Hero").Build()
 		mapId := f.MapId()
 
@@ -140,11 +151,14 @@ func TestPlayerNpcCommands(t *testing.T) {
 		}
 		pink := func(text string) error { return nil }
 
-		if err := removeWithDeps("Hero", &mapId, lookup, publish, pink); err != nil {
+		if err := removeWithDeps(f, c, "Hero", &mapId, lookup, publish, pink); err != nil {
 			t.Fatalf("removeWithDeps err = %v", err)
 		}
 		if published.Body.MapId == nil || *published.Body.MapId != mapId {
 			t.Errorf("published body mapId = %v, want %v", published.Body.MapId, mapId)
+		}
+		if published.Requester == nil || published.Requester.WorldId != byte(f.WorldId()) || published.Requester.ChannelId != byte(f.ChannelId()) || published.Requester.MapId != uint32(f.MapId()) {
+			t.Errorf("published.Requester = %+v, want worldId %d, channelId %d, mapId %d", published.Requester, byte(f.WorldId()), byte(f.ChannelId()), uint32(f.MapId()))
 		}
 	})
 

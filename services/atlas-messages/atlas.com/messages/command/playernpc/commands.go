@@ -94,6 +94,12 @@ func deployWithDeps(f field.Model, c character.Model, targetName string, lookup 
 	value := msg.Command[msg.CommandDeployBody]{
 		CharacterId: target.Id(),
 		Type:        msg.CommandTypeDeploy,
+		Requester: &msg.Requester{
+			CharacterId: c.Id(),
+			WorldId:     byte(f.WorldId()),
+			ChannelId:   byte(f.ChannelId()),
+			MapId:       uint32(f.MapId()),
+		},
 		Body: msg.CommandDeployBody{
 			WorldId:            f.WorldId(),
 			MapId:              f.MapId(),
@@ -104,15 +110,18 @@ func deployWithDeps(f field.Model, c character.Model, targetName string, lookup 
 	if err := publish(producer.SingleMessageProvider(key, value)); err != nil {
 		return pink(fmt.Sprintf("Failed to deploy Player NPC for %s: %s.", target.Name(), err.Error()))
 	}
-	return pink(fmt.Sprintf("Requested Player NPC deployment for %s.", target.Name()))
+	return pink(fmt.Sprintf("Accepted Player NPC deployment for %s; you will be notified of the result.", target.Name()))
 }
 
 // RemoveCommandProducer matches "@playernpc remove <name> [here]". Bulk
 // removal (FR-8.2) is Processor.Remove in atlas-player-npcs -- N
-// transactions and N emits, not one atomic operation -- and the shipped
-// consumer (handleRemove) only logs a warning on failure, so this command
-// cannot learn or report a per-occupant result; the pink text below is
-// worded as a request, never as a completed all-or-nothing outcome.
+// transactions and N emits, not one atomic operation -- so a single
+// "remove" invocation may produce more than one COMMAND_SUCCEEDED/FAILED
+// outcome event; kafka/consumer/playernpc pink-texts one line per event, so
+// a bulk removal that fails partway through reports each occupant's result
+// individually rather than one atomic all-or-nothing outcome. The pink text
+// below, emitted synchronously here, is worded as an accepted request, not
+// a completed result.
 func RemoveCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
@@ -143,7 +152,7 @@ func RemoveCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(
 						id := f.MapId()
 						mapId = &id
 					}
-					return removeWithDeps(targetName, mapId, lookup, publish, pink)
+					return removeWithDeps(f, c, targetName, mapId, lookup, publish, pink)
 				}
 			}, true
 		}
@@ -152,7 +161,7 @@ func RemoveCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(
 
 // removeWithDeps is RemoveCommandProducer's execution logic, factored out
 // for the same testability reason as deployWithDeps.
-func removeWithDeps(targetName string, mapId *_map.Id, lookup characterLookup, publish commandPublisher, pink pinkTextSender) error {
+func removeWithDeps(f field.Model, c character.Model, targetName string, mapId *_map.Id, lookup characterLookup, publish commandPublisher, pink pinkTextSender) error {
 	target, err := lookup(targetName)
 	if err != nil {
 		return pink(fmt.Sprintf("Character not found: %s.", targetName))
@@ -162,13 +171,19 @@ func removeWithDeps(targetName string, mapId *_map.Id, lookup characterLookup, p
 	value := msg.Command[msg.CommandRemoveBody]{
 		CharacterId: target.Id(),
 		Type:        msg.CommandTypeRemove,
-		Body:        msg.CommandRemoveBody{MapId: mapId},
+		Requester: &msg.Requester{
+			CharacterId: c.Id(),
+			WorldId:     byte(f.WorldId()),
+			ChannelId:   byte(f.ChannelId()),
+			MapId:       uint32(f.MapId()),
+		},
+		Body: msg.CommandRemoveBody{MapId: mapId},
 	}
 	if err := publish(producer.SingleMessageProvider(key, value)); err != nil {
 		return pink(fmt.Sprintf("Failed to remove Player NPC(s) for %s: %s.", target.Name(), err.Error()))
 	}
 	if mapId != nil {
-		return pink(fmt.Sprintf("Requested removal of %s's Player NPC on this map.", target.Name()))
+		return pink(fmt.Sprintf("Accepted removal of %s's Player NPC on this map; you will be notified of the result.", target.Name()))
 	}
-	return pink(fmt.Sprintf("Requested removal of %s's Player NPC(s).", target.Name()))
+	return pink(fmt.Sprintf("Accepted removal of %s's Player NPC(s); you will be notified of the result.", target.Name()))
 }

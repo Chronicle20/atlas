@@ -91,6 +91,35 @@ func TestEtcReaderTradeBlockDefaultsFalse(t *testing.T) {
 	}
 }
 
+// TestEtcReaderSurfacesOnly pins the DUEY receive fix: info/only must be
+// readable for etc items so the recipient-already-holds-it check can be
+// conditioned on one-of-a-kind, not mere template co-occurrence.
+func TestEtcReaderSurfacesOnly(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	res, err := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res[2].Only {
+		t.Error("only: got false, want true (fixture sets only=1)")
+	}
+}
+
+// TestEtcReaderOnlyDefaultsFalse pins that a missing only node must never be
+// read as one-of-a-kind.
+func TestEtcReaderOnlyDefaultsFalse(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	res, err := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res[0].Only {
+		t.Error("only: got true, want false when the WZ node is absent")
+	}
+}
+
 const testXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <imgdir name="0400.img">
   <imgdir name="04000000">
@@ -129,6 +158,7 @@ const testXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
       <int name="price" value="1"/>
       <int name="notSale" value="1"/>
       <int name="slotMax" value="100"/>
+      <int name="only" value="1"/>
     </imgdir>
   </imgdir>
 </imgdir>`

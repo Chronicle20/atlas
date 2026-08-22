@@ -42,6 +42,7 @@ const testXML = `
       <int name="slotMax" value="200"/>
       <int name="cash" value="1"/>
       <int name="tradeBlock" value="1"/>
+      <int name="only" value="1"/>
     </imgdir>
     <imgdir name="spec">
       <int name="inc" value="100"/>
@@ -630,6 +631,47 @@ func TestCashReaderTradeBlockDefaultsFalse(t *testing.T) {
 	}
 	if rm.TradeBlock {
 		t.Error("tradeBlock: got true, want false when the WZ node is absent")
+	}
+}
+
+// TestCashReaderSurfacesOnly pins the DUEY receive fix: info/only must be
+// readable for cash items so the recipient-already-holds-it check can be
+// conditioned on one-of-a-kind, not mere template co-occurrence.
+func TestCashReaderSurfacesOnly(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rm, ok := rmm[strconv.Itoa(5240000)]
+	if !ok {
+		t.Fatalf("rmm[5240000] does not exist.")
+	}
+	if !rm.Only {
+		t.Error("only: got false, want true (fixture sets only=1)")
+	}
+}
+
+// TestCashReaderOnlyDefaultsFalse pins that a missing only node must never
+// be read as one-of-a-kind. 5240001 has no only node.
+func TestCashReaderOnlyDefaultsFalse(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rms := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rm, ok := rmm[strconv.Itoa(5240001)]
+	if !ok {
+		t.Fatalf("rmm[5240001] does not exist.")
+	}
+	if rm.Only {
+		t.Error("only: got true, want false when the WZ node is absent")
 	}
 }
 

@@ -14,9 +14,9 @@ import (
 )
 
 // TestExtractCarriesBothFields proves the shared Extract does not silently drop
-// one of the two fields the karma gates need.
+// any of the three fields the karma gates and the DUEY receive fix need.
 func TestExtractCarriesBothFields(t *testing.T) {
-	m, err := extract(EquipmentRestModel{Id: 1002357, TradeBlock: true, TradeAvailable: 1})
+	m, err := extract(EquipmentRestModel{Id: 1002357, TradeBlock: true, TradeAvailable: 1, Only: true})
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -25,6 +25,9 @@ func TestExtractCarriesBothFields(t *testing.T) {
 	}
 	if m.TradeAvailable() != 1 {
 		t.Fatalf("TradeAvailable() = %d, want 1", m.TradeAvailable())
+	}
+	if !m.Only() {
+		t.Fatal("Only() = false, want true")
 	}
 }
 
@@ -61,11 +64,11 @@ var compartmentFixtures = []compartmentFixture{
 // TestByIdProvider_AllCompartments stands up an httptest server per
 // compartment, serves a JSON:API document whose "type" matches what that
 // compartment's RestModel.GetName() returns, and asserts both the request
-// path the client actually issued and the decoded TradeBlock/TradeAvailable
-// fields. A wrong path constant or a wrong GetName() would either miss the
-// handler (path mismatch, surfaced as a non-200) or fail api2go's type check
-// (resource mismatch) -- either way this test fails rather than passing
-// against a zero-valued decode.
+// path the client actually issued and the decoded
+// TradeBlock/TradeAvailable/Only fields. A wrong path constant or a wrong
+// GetName() would either miss the handler (path mismatch, surfaced as a
+// non-200) or fail api2go's type check (resource mismatch) -- either way
+// this test fails rather than passing against a zero-valued decode.
 func TestByIdProvider_AllCompartments(t *testing.T) {
 	for _, tc := range compartmentFixtures {
 		t.Run(tc.name, func(t *testing.T) {
@@ -73,7 +76,7 @@ func TestByIdProvider_AllCompartments(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				gotPath = r.URL.Path
 				w.Header().Set("Content-Type", "application/vnd.api+json")
-				_, _ = fmt.Fprintf(w, `{"data":{"type":%q,"id":"%d","attributes":{"tradeBlock":true,"tradeAvailable":2}}}`,
+				_, _ = fmt.Fprintf(w, `{"data":{"type":%q,"id":"%d","attributes":{"tradeBlock":true,"tradeAvailable":2,"only":true}}}`,
 					tc.resource, tc.templateId)
 			}))
 			defer srv.Close()
@@ -94,6 +97,38 @@ func TestByIdProvider_AllCompartments(t *testing.T) {
 			}
 			if m.TradeAvailable() != 2 {
 				t.Errorf("TradeAvailable(): want 2, got %d", m.TradeAvailable())
+			}
+			if !m.Only() {
+				t.Errorf("Only(): want true, got false")
+			}
+		})
+	}
+}
+
+// TestByIdProvider_OnlyFalse pins that a false-valued only wire field decodes
+// to Only() == false, and does so for the consumable resource — the DUEY
+// receive fix's own gate — plus one non-consumable resource (equipment), so
+// the extraction is proven for more than the karma path's original two
+// fields on at least two of the five compartments (brief requirement).
+func TestByIdProvider_OnlyFalse(t *testing.T) {
+	for _, tc := range []compartmentFixture{compartmentFixtures[0], compartmentFixtures[1]} {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/vnd.api+json")
+				_, _ = fmt.Fprintf(w, `{"data":{"type":%q,"id":"%d","attributes":{"tradeBlock":false,"tradeAvailable":0,"only":false}}}`,
+					tc.resource, tc.templateId)
+			}))
+			defer srv.Close()
+
+			t.Setenv("DATA_SERVICE_URL", srv.URL+"/")
+
+			p := NewProcessor(logrus.New(), context.Background())
+			m, err := p.Get(tc.inv, tc.templateId)
+			if err != nil {
+				t.Fatalf("Get(%s, %d): %v", tc.name, tc.templateId, err)
+			}
+			if m.Only() {
+				t.Errorf("Only(): want false, got true")
 			}
 		})
 	}

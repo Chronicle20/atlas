@@ -45,6 +45,7 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 			m.RecoveryHP = uint32(i.GetIntegerWithDefault("recoveryHP", 0))
 			m.RecoveryMP = uint32(i.GetIntegerWithDefault("recoveryMP", 0))
 			m.TradeBlock = i.GetBool("tradeBlock", false)
+			m.Only = i.GetBool("only", false)
 			m.TradeAvailable = i.GetIntegerWithDefault("tradeAvailable", 0)
 			m.NotSale = i.GetBool("notSale", false)
 			m.ReqLevel = uint32(i.GetIntegerWithDefault("reqLevel", 0))

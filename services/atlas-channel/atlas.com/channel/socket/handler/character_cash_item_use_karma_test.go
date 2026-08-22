@@ -211,7 +211,7 @@ func TestKarmaArmRefusals(t *testing.T) {
 				return cashData.RestModel{Karma: 0}, nil
 			},
 			tradeFunc: func(_ inventory.Type, _ item.Id) (tradeability.Model, error) {
-				return tradeability.NewModel(false, 0), nil
+				return tradeability.NewModel(false, 0, false), nil
 			},
 			wantUnlock: 1,
 		},
@@ -226,7 +226,7 @@ func TestKarmaArmRefusals(t *testing.T) {
 				return cashData.RestModel{Karma: 2}, nil
 			},
 			tradeFunc: func(_ inventory.Type, _ item.Id) (tradeability.Model, error) {
-				return tradeability.NewModel(false, 5), nil
+				return tradeability.NewModel(false, 5, false), nil
 			},
 			wantUnlock: 1,
 		},
@@ -242,7 +242,7 @@ func TestKarmaArmRefusals(t *testing.T) {
 				return cashData.RestModel{Karma: 0}, nil
 			},
 			tradeFunc: func(_ inventory.Type, _ item.Id) (tradeability.Model, error) {
-				return tradeability.NewModel(false, 1), nil
+				return tradeability.NewModel(false, 1, false), nil
 			},
 			wantUnlock: 1,
 		},
@@ -260,7 +260,7 @@ func TestKarmaArmRefusals(t *testing.T) {
 				return cashData.RestModel{Karma: 0}, nil
 			},
 			tradeFunc: func(_ inventory.Type, _ item.Id) (tradeability.Model, error) {
-				return tradeability.NewModel(false, 1), nil
+				return tradeability.NewModel(false, 1, false), nil
 			},
 			wantUnlock: 1,
 		},
@@ -347,7 +347,7 @@ func TestKarmaArmSuccessCreatesTwoStepSaga(t *testing.T) {
 	})
 	defer restoreCash()
 	restoreTrade := installKarmaTradeabilitySeam(t, func(_ inventory.Type, _ item.Id) (tradeability.Model, error) {
-		return tradeability.NewModel(true, 3), nil
+		return tradeability.NewModel(true, 3, false), nil
 	})
 	defer restoreTrade()
 

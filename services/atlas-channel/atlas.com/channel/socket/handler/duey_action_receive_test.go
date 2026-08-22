@@ -19,6 +19,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	parcelcb "github.com/Chronicle20/atlas/libs/atlas-packet/parcel/clientbound"
@@ -167,6 +168,8 @@ func TestDueyActionReceive(t *testing.T) {
 		parcel       func() dueyparcel.Model
 		compFul      bool // EQUIP compartment reports 0 free slots
 		compDup      bool // EQUIP compartment already holds itemId
+		itemOnly     bool // getItemOnly answer when compDup triggers the check
+		itemOnlyErr  error
 		getParcelErr error
 		want         expect
 	}{
@@ -193,12 +196,40 @@ func TestDueyActionReceive(t *testing.T) {
 			want:    expect{reason: parcelcb.ParcelOperationRecvNoFreeSlots},
 		},
 		{
+			// only == true — the recipient already holds a one-of-a-kind copy
+			// of the same template, so RECV_UNIQUE_CONFLICT is correct.
 			name: "unique conflict",
 			parcel: func() dueyparcel.Model {
 				return mustParcelModel(t, pendingId, 100, 0, "", time.Now().Add(-time.Hour), 5000, &itemId, byte(inventory.TypeValueEquip))
 			},
-			compDup: true,
-			want:    expect{reason: parcelcb.ParcelOperationRecvUniqueConflict},
+			compDup:  true,
+			itemOnly: true,
+			want:     expect{reason: parcelcb.ParcelOperationRecvUniqueConflict},
+		},
+		{
+			// The reported regression: a stackable (only == false) the
+			// recipient already holds one of must NOT be rejected — the
+			// parcel is claimed and the item merges into / lands beside the
+			// existing stack.
+			name: "stackable already held merges, no rejection",
+			parcel: func() dueyparcel.Model {
+				return mustParcelModel(t, pendingId, 100, 0, "", time.Now().Add(-time.Hour), 5000, &itemId, byte(inventory.TypeValueEquip))
+			},
+			compDup:  true,
+			itemOnly: false,
+			want:     expect{sagaLen: 1, invType: inventory.TypeValueEquip},
+		},
+		{
+			// A getItemOnly lookup failure must be treated as a refusal —
+			// never a permissive default — per tradeability's documented
+			// contract.
+			name: "getItemOnly error",
+			parcel: func() dueyparcel.Model {
+				return mustParcelModel(t, pendingId, 100, 0, "", time.Now().Add(-time.Hour), 5000, &itemId, byte(inventory.TypeValueEquip))
+			},
+			compDup:     true,
+			itemOnlyErr: errors.New("atlas-data unavailable"),
+			want:        expect{reason: parcelcb.ParcelOperationIncorrectRequest},
 		},
 		{
 			name: "not receivable yet",
@@ -269,6 +300,12 @@ func TestDueyActionReceive(t *testing.T) {
 						assets = append(assets, mustAssetModel(t, itemId, int16(len(assets))))
 					}
 					return mustCompartmentModel(t, 100, it, capacity, assets), nil
+				},
+				getItemOnly: func(_ inventory.Type, _ item.Id) (bool, error) {
+					if tc.itemOnlyErr != nil {
+						return false, tc.itemOnlyErr
+					}
+					return tc.itemOnly, nil
 				},
 				createSaga: func(sg saga.Saga) error {
 					sagas = append(sagas, sg)

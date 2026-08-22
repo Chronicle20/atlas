@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/compartment"
+	"atlas-channel/data/tradeability"
 	dueyparcel "atlas-channel/parcel"
 	"atlas-channel/saga"
 	"atlas-channel/session"
@@ -14,6 +15,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	parcelcb "github.com/Chronicle20/atlas/libs/atlas-packet/parcel/clientbound"
 	parcelsb "github.com/Chronicle20/atlas/libs/atlas-packet/parcel/serverbound"
@@ -32,8 +34,13 @@ type dueyReceiveDeps struct {
 	// (design §7.2/§7.3).
 	getParcel      func(characterId uint32, worldId world.Id, wireId uint32) (dueyparcel.Model, error)
 	getCompartment func(characterId uint32, it inventory.Type) (compartment.Model, error)
-	createSaga     func(sg saga.Saga) error
-	discardParcel  func(id uuid.UUID, recipientId uint32) (dueyparcel.Model, error)
+	// getItemOnly answers whether a template id is WZ one-of-a-kind
+	// (info/only). An error means the lookup failed — every caller must
+	// treat that as a refusal, never as a permissive default (matching
+	// tradeability's own documented contract).
+	getItemOnly   func(it inventory.Type, templateId item.Id) (bool, error)
+	createSaga    func(sg saga.Saga) error
+	discardParcel func(id uuid.UUID, recipientId uint32) (dueyparcel.Model, error)
 }
 
 // handleDueyActionReceive wires dueyReceiveDeps to the real
@@ -61,6 +68,13 @@ func handleDueyActionReceive(l logrus.FieldLogger, ctx context.Context, wp write
 			},
 			getCompartment: func(characterId uint32, it inventory.Type) (compartment.Model, error) {
 				return compartment.NewProcessor(l, ctx).GetByType(characterId, it)
+			},
+			getItemOnly: func(it inventory.Type, templateId item.Id) (bool, error) {
+				m, err := tradeability.NewProcessor(l, ctx).Get(it, templateId)
+				if err != nil {
+					return false, err
+				}
+				return m.Only(), nil
 			},
 			createSaga: func(sg saga.Saga) error {
 				return saga.NewProcessor(l, ctx).Create(sg)
@@ -165,9 +179,17 @@ func receiveParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer
 			return
 		}
 		if _, found := cp.FindFirstByItemId(*itemId); found {
-			l.Warnf("Character [%d] attempted to receive parcel [%s] but already holds item [%d].", s.CharacterId(), p.Id(), *itemId)
-			reject(parcelcb.ParcelRecvUniqueConflictBody())
-			return
+			only, oerr := deps.getItemOnly(it, item.Id(*itemId))
+			if oerr != nil {
+				l.WithError(oerr).Errorf("Character [%d] DUEY_ACTION RECEIVE: unable to determine whether item [%d] is one-of-a-kind.", s.CharacterId(), *itemId)
+				reject(parcelcb.ParcelIncorrectRequestBody())
+				return
+			}
+			if only {
+				l.Warnf("Character [%d] attempted to receive parcel [%s] but already holds one-of-a-kind item [%d].", s.CharacterId(), p.Id(), *itemId)
+				reject(parcelcb.ParcelRecvUniqueConflictBody())
+				return
+			}
 		}
 	}
 

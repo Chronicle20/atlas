@@ -68,6 +68,7 @@ type RestModel struct {
 	PetSkills   []string           `json:"petSkills,omitempty"`
 	PetSkillAdd bool               `json:"petSkillAdd,omitempty"`
 	TradeBlock  bool               `json:"tradeBlock"`
+	Only        bool               `json:"only"`
 	// TradeAvailable is WZ info/tradeAvailable; see equipment/rest.go.
 	TradeAvailable int32 `json:"tradeAvailable"`
 	// Karma is WZ info/karma — the SCISSORS' OWN karma type, read by

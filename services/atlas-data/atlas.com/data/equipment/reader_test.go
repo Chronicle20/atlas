@@ -606,6 +606,35 @@ func TestEquipmentReaderTradeBlockDefaultsFalse(t *testing.T) {
 	}
 }
 
+// TestEquipmentReaderSurfacesOnly pins the DUEY receive fix: info/only must
+// be readable for equipment so the recipient-already-holds-it check can be
+// conditioned on one-of-a-kind, not mere template co-occurrence.
+func TestEquipmentReaderSurfacesOnly(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rm, err := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !rm.Only {
+		t.Error("only: got false, want true (fixture sets only=1)")
+	}
+}
+
+// TestEquipmentReaderOnlyDefaultsFalse pins that a missing only node must
+// never be read as one-of-a-kind. stringTypedReqLUKXML has no only node.
+func TestEquipmentReaderOnlyDefaultsFalse(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rm, err := Read(l)(xml.FromByteArrayProvider([]byte(stringTypedReqLUKXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rm.Only {
+		t.Error("only: got true, want false when the WZ node is absent")
+	}
+}
+
 // stringTypedReqLUKXML mimics the v83 WZ shape for templateId 1052161,
 // where reqLUK (and other req fields) are typed as <string> rather than
 // <int>. atlas-data's xml accessors must fall back to StringNodes so the

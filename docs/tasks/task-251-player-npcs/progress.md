@@ -1049,3 +1049,14 @@ brief said — the 409/422 coverage was already there and still passes.
 # Gate 34 — PASS at `2ae390710`
 
 `tools/verify.sh --quick --base c0b78bb9d`, exit 0. **Last gated commit: `2ae390710`.**
+
+## Task 23a review — APPROVED, 0 blocking, 0 non-blocking
+
+`.superpowers/sdd/plan/task-23a-review.md`, over `2ae390710`. All seven load-bearing questions came
+back clean: the two new envelope fields decode by standard zero-value semantics with no custom
+unmarshal, `CodeFor`'s `errors.Is` chain is byte-identical to the pre-change `rest.go:143-156`,
+`writeDeployError`'s HTTP behaviour is unchanged and still covered, all three consumer arms emit
+exactly once (including `handleRedeploy`'s two distinct failure paths), the emit is post-Processor
+and non-fatal, `Requester` passes through unmodified on a `CharacterId` key, and the reviewer
+checked coexistence against **atlas-channel's actual** `EVENT_TOPIC_PLAYER_NPC_STATUS` consumer —
+it strictly type-guards each handler, so the two new `Type` values are inert to it.

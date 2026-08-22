@@ -11,7 +11,7 @@ import (
 // packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v84 ida=0x9b2518
 // packet-audit:verify packet=character/clientbound/CharacterExpression version=jms_v185 ida=0x9f636b
 // packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v87 ida=0x9f7492
-// packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v95 ida=0x8e0150
+// gms_v95 is verified by TestCharacterExpressionByteOutputV95NegativeDuration below.
 func TestCharacterExpressionRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -69,7 +69,6 @@ func TestCharacterExpressionByteOutputV95NegativeDuration(t *testing.T) {
 	}
 }
 
-// packet-audit:verify packet=character/clientbound/CharacterExpression version=gms_v95 ida=0x8e0150
 func TestCharacterExpressionByteOutputV95ByItemOption(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 95, 1)
 	var negativeOne int32 = -1

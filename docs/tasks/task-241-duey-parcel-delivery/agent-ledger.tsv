@@ -176,3 +176,6 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-22T21:58:29Z	agent	bug-duey-receive-item-type-never-persisted	atlas-implementer	sonnet	-	-	-	-	DONE	d41d70d39	-	-	-	-
 2026-08-22T21:58:30Z	agent	bug-duey-receive-item-type-never-persisted	atlas-reviewer	sonnet	-	-	-	-	DONE	d41d70d39	APPROVED_WITH_FINDINGS	yes	-	-
 2026-08-22T21:58:31Z	agent	bug-duey-receive-item-type-mapping-tests	atlas-implementer	sonnet	-	-	-	-	DONE	c3af819b2	-	-	-	-
+2026-08-22T23:28:11Z	agent	bug-duey-receive-unique-conflict-on-stackables	atlas-implementer	sonnet	-	-	-	-	DONE	5dabf1e31	-	-	-	-
+2026-08-22T23:28:12Z	agent	bug-duey-receive-free-slot-ignores-stack-merge	atlas-implementer	sonnet	-	-	-	-	DONE	a7adb9d9c	-	-	-	-
+2026-08-22T23:28:12Z	agent	bug-duey-preflight-gates	atlas-reviewer	sonnet	-	-	-	-	DONE	a7adb9d9c	APPROVED	no	-	-

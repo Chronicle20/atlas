@@ -93,3 +93,19 @@ Tests:
 - Not reproduced live before fixing (found by inspection). A live confirmation needs a
   recipient with a full compartment and a partial stack of the parcel's item; worth doing once
   the branch redeploys, but the unit tests are the primary evidence here.
+
+## Resolution
+
+Fixed by **`a7adb9d9c`** — "fix(atlas-channel): defer DUEY_ACTION RECEIVE's slot check to
+atlas-inventory". The hand-rolled slot count was replaced by a client for
+`POST /characters/{id}/inventory/accommodation`, so both defects (no merge consideration,
+equipped items miscounted) are gone with the duplicated logic. Rest models and request builders
+were placed in `rest.go` / `requests.go` per the FILE-rule note.
+
+- **Gate**: `tools/verify.sh --quick --base bfa713a5c` → PASS (exit 0, 91 modules). `--quick`
+  skips the docker bake, so this is not the pre-PR gate.
+- **Review**: `atlas-reviewer`, verdict `APPROVED`, 0 blocking / 0 non-blocking — see
+  `reviews/review-duey-preflight-gates.md`. It confirmed the request path matches what
+  atlas-inventory serves and the rest models match `accommodation_rest.go` field-for-field.
+- **Live re-test**: still outstanding, as this file anticipated — needs a recipient with a full
+  compartment and a partial stack of the parcel's item. Unit tests are the current evidence.

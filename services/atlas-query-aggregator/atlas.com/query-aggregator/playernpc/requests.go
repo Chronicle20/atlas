@@ -27,8 +27,22 @@ const Resource = "player-npcs/eligibility?characterId=%d&mapId=%d&worldId=%d"
 // used to decode it.
 var httpClient = &http.Client{Timeout: 15 * time.Second}
 
-func getBaseRequest(ctx context.Context) (string, error) {
+var baseURLProvider = func(ctx context.Context) (string, error) {
 	return requests.RootUrlFor(ctx, "PLAYER_NPCS")
+}
+
+func getBaseRequest(ctx context.Context) (string, error) {
+	return baseURLProvider(ctx)
+}
+
+// SetBaseURLForTest swaps the base URL for tests using httptest. Only call
+// from a test; production code uses the env-driven default. The injected
+// closure ignores ctx -- tests always exercise the fixed httptest URL
+// regardless of any environment on the context.
+func SetBaseURLForTest(url string) func() {
+	prev := baseURLProvider
+	baseURLProvider = func(_ context.Context) (string, error) { return url + "/", nil }
+	return func() { baseURLProvider = prev }
 }
 
 func eligibilityUrl(ctx context.Context, characterId uint32, mapId uint32, worldId byte) (string, error) {

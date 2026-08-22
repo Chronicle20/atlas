@@ -243,6 +243,12 @@ func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 		})
 
 		routine.Go(l, ctx, func(_ context.Context) {
+			if err := spawnPlayerNpcsForSession(l, ctx, wp, s, f); err != nil {
+				l.WithError(err).Errorf("SpawnForSelf: unable to spawn player npcs for character [%d].", s.CharacterId())
+			}
+		})
+
+		routine.Go(l, ctx, func(_ context.Context) {
 			if err := monster.NewProcessor(l, ctx).ForEachInMap(f, spawnMonsterForSession(l)(ctx)(wp)(s)); err != nil {
 				l.WithError(err).Debugf("SpawnForSelf: unable to spawn monsters for character [%d].", s.CharacterId())
 			}

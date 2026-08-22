@@ -130,3 +130,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-22T11:44:28Z	agent	Task 23c	atlas-implementer	sonnet	-	-	-	-	DONE	ee5640d83	-	-	-	-
 2026-08-22T11:46:05Z	agent	Task 23c	atlas-reviewer	sonnet	-	-	-	-	DONE	ee5640d83	APPROVED	no	-	-
 2026-08-22T11:48:25Z	agent	Task 23b	atlas-implementer	sonnet	-	-	-	-	DONE	d92561b85	-	-	-	-
+2026-08-22T11:50:53Z	agent	Task 23b	atlas-reviewer	sonnet	-	-	-	-	DONE	d92561b85	APPROVED	no	-	-
+2026-08-22T11:50:53Z	handoff	after Task 23	-	-	-	-	-	-	-	-	-	-	-	100000

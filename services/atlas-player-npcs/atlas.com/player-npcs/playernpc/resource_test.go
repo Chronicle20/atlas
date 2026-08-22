@@ -564,7 +564,13 @@ func TestPlayerNpcResource(t *testing.T) {
 			t.Fatalf("decode: %v", err)
 		}
 
+		redeployBody, err := jsonapi.Marshal(RedeployRestModel{})
+		if err != nil {
+			t.Fatalf("marshal redeploy body: %v", err)
+		}
 		req := requestWithTenant(http.MethodPatch, fmt.Sprintf("%s/player-npcs/%s", srv.URL, before.GetID()), primaryTenant)
+		req.Body = io.NopCloser(bytes.NewReader(redeployBody))
+		req.ContentLength = int64(len(redeployBody))
 		resp, err := (&http.Client{}).Do(req)
 		if err != nil {
 			t.Fatalf("request: %v", err)

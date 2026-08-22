@@ -81,7 +81,7 @@ func TestPlayerNpcEntityRoundTrip(t *testing.T) {
 	t.Run("model -> entity -> model round trip", func(t *testing.T) {
 		m := buildFullModel(t)
 
-		entity := playernpc.MakeEntity(tenantId, m)
+		entity := m.ToEntity(tenantId)
 		equipmentEntities := playernpc.MakeEquipmentEntities(tenantId, entity.Id, m)
 
 		got, err := playernpc.Make(entity, equipmentEntities)
@@ -210,7 +210,7 @@ func TestPlayerNpcEntityRoundTrip(t *testing.T) {
 	t.Run("equipment child collection survives in slot order", func(t *testing.T) {
 		m := buildFullModel(t)
 
-		entity := playernpc.MakeEntity(tenantId, m)
+		entity := m.ToEntity(tenantId)
 		equipmentEntities := playernpc.MakeEquipmentEntities(tenantId, entity.Id, m)
 
 		got, err := playernpc.Make(entity, equipmentEntities)

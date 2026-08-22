@@ -18,28 +18,40 @@ import (
 // constraint violation on script id, (map, name), or (map, object id) --
 // PRD §6 -- aborts the transaction and is returned to the caller as-is.
 func createPlayerNpc(db *gorm.DB, tenantId uuid.UUID, m Model) (Model, error) {
-	entity := MakeEntity(tenantId, m)
-	entity.Id = uuid.Nil
-
+	var id uuid.UUID
 	err := database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-		if err := tx.Create(&entity).Error; err != nil {
-			return err
-		}
-
-		equipment := MakeEquipmentEntities(tenantId, entity.Id, m)
-		for i := range equipment {
-			equipment[i].Id = uuid.Nil
-			if err := tx.Create(&equipment[i]).Error; err != nil {
-				return err
-			}
-		}
-		return nil
+		var txErr error
+		id, txErr = createPlayerNpcTx(tx, tenantId, m)
+		return txErr
 	})
 	if err != nil {
 		return Model{}, err
 	}
 
-	return getPlayerNpcModel(db, entity.Id)
+	return getPlayerNpcModel(db, id)
+}
+
+// createPlayerNpcTx inserts the root row and its equipment rows using tx
+// directly, without opening a transaction of its own -- the shape Deploy
+// (processor.go) needs, since it already holds an open transaction (design
+// §8.1's pg_advisory_xact_lock..insert sequence). createPlayerNpc (above)
+// is the top-level entry point that opens the transaction and calls this.
+func createPlayerNpcTx(tx *gorm.DB, tenantId uuid.UUID, m Model) (uuid.UUID, error) {
+	entity := m.ToEntity(tenantId)
+	entity.Id = uuid.Nil
+
+	if err := tx.Create(&entity).Error; err != nil {
+		return uuid.Nil, err
+	}
+
+	equipment := MakeEquipmentEntities(tenantId, entity.Id, m)
+	for i := range equipment {
+		equipment[i].Id = uuid.Nil
+		if err := tx.Create(&equipment[i]).Error; err != nil {
+			return uuid.Nil, err
+		}
+	}
+	return entity.Id, nil
 }
 
 // deletePlayerNpc removes the root row. The `player_npc_equipment` foreign
@@ -81,6 +93,28 @@ func playerNpcsByMap(db *gorm.DB, worldId byte, mapId uint32, page model.Page) (
 		models = append(models, m)
 	}
 	return models, nil
+}
+
+// playerNpcsByMapPaged is playerNpcsByMap, but keeping the provider's
+// Total/Page so the REST list endpoint can build a real pagination
+// envelope -- Processor.GetByMap's signature is shared with the Kafka
+// consumers (Task 17/21/19) and is not REST's to reshape, so
+// Processor.GetByMapPaged is the pagination-aware sibling that carries this
+// instead.
+func playerNpcsByMapPaged(db *gorm.DB, worldId byte, mapId uint32, page model.Page) (model.Paged[Model], error) {
+	entPaged, err := getByMapPagedProvider(worldId, mapId, page)(db)()
+	if err != nil {
+		return model.Paged[Model]{}, err
+	}
+	models := make([]Model, 0, len(entPaged.Items))
+	for _, e := range entPaged.Items {
+		m, err := getPlayerNpcModel(db, e.Id)
+		if err != nil {
+			return model.Paged[Model]{}, err
+		}
+		models = append(models, m)
+	}
+	return model.Paged[Model]{Items: models, Total: entPaged.Total, Page: entPaged.Page}, nil
 }
 
 // advisoryLockKey derives a stable int64 advisory-lock key from

@@ -91,6 +91,14 @@ func (s *stubPlayerNpcProcessor) GetByMap(world.Id, _map.Id, model.Page) ([]play
 	return s.result, s.err
 }
 
+func (s *stubPlayerNpcProcessor) GetByMapPaged(world.Id, _map.Id, model.Page) (model.Paged[playernpc.Model], error) {
+	return model.Paged[playernpc.Model]{Items: s.result}, s.err
+}
+
+func (s *stubPlayerNpcProcessor) Eligibility(uint32, byte, uint32) (bool, string, error) {
+	return false, "", nil
+}
+
 var _ playernpc.Processor = (*stubPlayerNpcProcessor)(nil)
 
 func buildCharacter(t *testing.T, id uint32, name string, level byte, jobId job.Id, gm bool) character.Model {

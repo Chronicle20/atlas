@@ -73,6 +73,14 @@ func (s *stubProcessor) GetByMap(worldId world.Id, mapId _map.Id, page model.Pag
 	return s.getByMapResult, s.getByMapErr
 }
 
+func (s *stubProcessor) GetByMapPaged(worldId world.Id, mapId _map.Id, page model.Page) (model.Paged[playernpc.Model], error) {
+	return model.Paged[playernpc.Model]{Items: s.getByMapResult}, s.getByMapErr
+}
+
+func (s *stubProcessor) Eligibility(characterId uint32, worldId byte, mapId uint32) (bool, string, error) {
+	return false, "", nil
+}
+
 var _ playernpc.Processor = (*stubProcessor)(nil)
 
 func providerFor(s *stubProcessor) ProcessorProvider {

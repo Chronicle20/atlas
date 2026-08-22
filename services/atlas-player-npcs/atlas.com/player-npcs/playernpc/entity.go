@@ -153,10 +153,10 @@ func MakeEquipment(e EquipmentEntity) (EquipmentModel, error) {
 		Build()
 }
 
-// MakeEntity converts a Model's root fields into an Entity. Equipment is
+// ToEntity converts a Model's root fields into an Entity. Equipment is
 // converted separately by MakeEquipmentEntities, since the parent id is
 // only known once the root row has been created.
-func MakeEntity(tenantId uuid.UUID, m Model) Entity {
+func (m Model) ToEntity(tenantId uuid.UUID) Entity {
 	return Entity{
 		Id:             m.Id(),
 		TenantId:       tenantId,

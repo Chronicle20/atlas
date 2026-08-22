@@ -1,0 +1,88 @@
+{
+  "service": "task-246 (factory / saga / character / configurations)",
+  "path": "services/atlas-character-factory, services/atlas-configurations, services/atlas-saga-orchestrator, services/atlas-character",
+  "date": "2026-08-21",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "factory",
+      "type": "sub-domain",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor interface/constructor/ProcessorImpl methods in processor.go or processor_<group>.go", "status": "fail", "evidence": "factory/maple_life.go:53,79 ProcessorImpl methods in bare topic-named file, not processor.go; contrast factory/processor.go:272,360" },
+        { "id": "FILE-02", "name": "RestModel, Transform/Extract, JSON:API methods live in rest.go", "status": "fail", "evidence": "MapleLifeCreateRestModel type at factory/maple_life.go:26, split from its own GetName/GetID/SetID in factory/maple_life_rest.go:8-10; contrast factory/preset_rest.go:3-12" },
+        { "id": "FILE-06", "name": "No single file carries >=2 responsibilities", "status": "fail", "evidence": "factory/maple_life.go carries RestModel type (:26), Processor methods (:53,:79), and a Transform-shaped projection (toPreset, :230)" },
+        { "id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "factory/processor.go:60" },
+        { "id": "DOM-07", "name": "Handlers pass d.Logger() into NewProcessor", "status": "pass", "evidence": "factory/resource.go:94" },
+        { "id": "DOM-08", "name": "POST/PATCH routes use RegisterInputHandler[T]", "status": "pass", "evidence": "factory/resource.go:33" },
+        { "id": "DOM-13", "name": "No cross-domain orchestration in handlers", "status": "pass", "evidence": "factory/resource.go:83,91" },
+        { "id": "DOM-14", "name": "Handlers call processor methods only", "status": "pass", "evidence": "factory/resource.go:95" },
+        { "id": "DOM-15", "name": "No db.Create/Save/Delete in handlers", "status": "pass", "evidence": "factory/resource.go grep negative" },
+        { "id": "DOM-17", "name": "Domain errors map to correct HTTP status", "status": "pass", "evidence": "factory/resource.go:57-79" },
+        { "id": "DOM-18", "name": "JSON:API interface implemented", "status": "pass", "evidence": "factory/maple_life_rest.go:8-10" },
+        { "id": "DOM-19", "name": "Request models flat", "status": "pass", "evidence": "factory/maple_life.go:26-37" },
+        { "id": "DOM-31", "name": "Tenant/trace travel in context only", "status": "pass", "evidence": "factory/maple_life.go:80" },
+        { "id": "SUB-01", "name": "Business logic not in the handler", "status": "pass", "evidence": "factory/maple_life.go ProcessorImpl methods" },
+        { "id": "SUB-02", "name": "No db.Create/Save in resource.go", "status": "pass", "evidence": "factory/resource.go grep negative" },
+        { "id": "SUB-03", "name": "POST endpoints use RegisterInputHandler[T]", "status": "pass", "evidence": "factory/resource.go:33" },
+        { "id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "pass", "evidence": "factory/resource.go grep negative" },
+        { "id": "DOM-20", "name": "Tests table-driven", "status": "fail", "evidence": "factory/maple_life_test.go:334,417,452,481; factory/resource_test.go:46,56,68 near-duplicate single-scenario funcs" },
+        { "id": "DOM-24", "name": "Test packages reaching an emit path stub the producer", "status": "n-a", "evidence": "CreateMapleLife tests never reach AndEmit/message.Emit/producer.Produce; only saga.NewProcessor(...).Create(sg) or a fake Processor" }
+      ]
+    },
+    {
+      "name": "configuration/tenant/maplelife, configuration/tenant/characters/preset",
+      "type": "support",
+      "checks": [
+        { "id": "DOM-04", "name": "Transform(Model)(RestModel,error) in rest.go", "status": "n-a", "evidence": "nested attribute struct of tenant.RestModel (configuration/tenant/rest.go:20); sibling packages worlds/npcs/characters follow identical shape" },
+        { "id": "DOM-18", "name": "JSON:API interface", "status": "n-a", "evidence": "not an independently-addressed JSON:API resource" },
+        { "id": "DOM-19", "name": "Flat request model", "status": "n-a", "evidence": "not a request model" },
+        { "id": "DESIGN-ORDINAL", "name": "mapleLife block is ordinal-addressed, no admin preset UUIDs", "status": "pass", "evidence": "configuration/tenant/maplelife/rest.go:59-68 ClassEntry has no presetId/UUID field; confirmed against seed-data/templates/template_gms_83_1.json" },
+        { "id": "DESIGN-OMITEMPTY", "name": "AP/SP additive, omitempty mirrored identically", "status": "fail", "evidence": "preset/rest.go:46-47 and maplelife/rest.go:59-60 lack omitempty, unlike CreateCharacterCommandBody.AP/.SP (atlas-character kafka.go:83-84, atlas-saga-orchestrator kafka.go:206-207) which have it" }
+      ]
+    },
+    {
+      "name": "atlas-configurations templates/tenants maplelife+preset mirrors",
+      "type": "support",
+      "checks": [
+        { "id": "MIRROR", "name": "Byte-identical mirror of factory config-projection types", "status": "pass", "evidence": "diff between atlas-character-factory and atlas-configurations copies of maplelife/rest.go returns no differences" },
+        { "id": "DOM-04", "name": "Transform in rest.go", "status": "n-a", "evidence": "same nested-attribute reasoning; templates/rest.go:20-23, tenants/rest.go:20-23" },
+        { "id": "DESIGN-OMITEMPTY", "name": "Same AP/SP omitempty gap", "status": "fail", "evidence": "tenants/characters/preset/rest.go byte-identical to factory copy, same missing omitempty" },
+        { "id": "DOM-20", "name": "Tests table-driven", "status": "pass", "evidence": "tenants/maplelife/rest_test.go:82, tenants/rest_test.go:14 both use t.Run sub-cases" }
+      ]
+    },
+    {
+      "name": "saga (atlas-saga-orchestrator)",
+      "type": "domain",
+      "checks": [
+        { "id": "DOM-21", "name": "No redeclaration of a shared lib type/const", "status": "pass", "evidence": "saga/model.go:60-63 MapleLifeUse = sharedsaga.MapleLifeUse" },
+        { "id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "character/processor.go:46,214; character/mock/processor.go:41,251; call sites saga/handler.go:1929, character/producer.go:250,276; tests updated: character/producer_test.go, saga/handler_test.go, saga/processor_test.go" },
+        { "id": "DOM-30", "name": "DB writes emit via AndEmit + message.Buffer", "status": "n-a", "evidence": "no DB write in this package; character/processor.go:214 uses message.Emit(p.p)(...), pre-existing shape" }
+      ]
+    },
+    {
+      "name": "character (atlas-character)",
+      "type": "domain",
+      "checks": [
+        { "id": "DOM-16", "name": "Writes go through administrator.go", "status": "pass", "evidence": "character/administrator.go:17 create(), called from processor.go:383" },
+        { "id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "pass", "evidence": "kafka/consumer/character/consumer_test.go:30" },
+        { "id": "DOM-24", "name": "Test packages reaching an emit path stub the producer", "status": "n-a", "evidence": "CreateAndEmit uses message.Emit(outbox.EmitProvider(...)) - DB outbox sink, not live Kafka; empirically confirmed 0.025s test runtime with no producertest install" }
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "Full row-by-row content sweep of mapleLife.classes[] (40 rows across 4 tenants) against maple-life-content.md: spot-checked Warrior ordinal-0/gender-0 in template_gms_83_1.json (AP, HP/MP midpoint, spSkillId all matched); a full reconciliation would require re-deriving every class's stat floor/AP/HP/MP from the doc's NPC/skill tables",
+    "Whether atlas-login's consumer reads the new EVENT_TOPIC_SEED_STATUS TransactionId field (kafka/message/seed/kafka.go:12) - services/atlas-login is outside this review's assigned scope"
+  ],
+  "blocking": [
+    "FILE-01: services/atlas-character-factory/atlas.com/character-factory/factory/maple_life.go:53,79 - ProcessorImpl methods in a bare topic-named file instead of processor.go/processor_maple_life.go",
+    "FILE-02: services/atlas-character-factory/atlas.com/character-factory/factory/maple_life.go:26 - MapleLifeCreateRestModel type split from its own JSON:API methods in maple_life_rest.go",
+    "FILE-06: services/atlas-character-factory/atlas.com/character-factory/factory/maple_life.go - single file collapses RestModel + Processor + Transform-shaped projection responsibilities"
+  ],
+  "nonBlocking": [
+    "DOM-20: services/atlas-character-factory/atlas.com/character-factory/factory/maple_life_test.go:334,417,452,481 and factory/resource_test.go:46,56,68 - near-duplicate single-scenario test functions should be table-driven",
+    "Design-brief constraint: preset/rest.go:46-47 and maplelife/rest.go:59-60 (both atlas-character-factory and mirrored in atlas-configurations) lack omitempty on AP/SP unlike CreateCharacterCommandBody.AP/.SP - functionally harmless, breaks the stated mirroring claim"
+  ]
+}

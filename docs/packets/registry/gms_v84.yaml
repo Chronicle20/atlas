@@ -2378,18 +2378,6 @@
   fname: CITC::OnNormalItemResult
   provenance: csv-import
   note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: MAPLELIFE_RESULT
-  direction: clientbound
-  opcode: 349
-  fname: CUICharacterSaleDlg::OnCheckDuplicatedIDResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
-- op: MAPLELIFE_ERROR
-  direction: clientbound
-  opcode: 350
-  fname: CUICharacterSaleDlg::OnCreateNewCharacterResult
-  provenance: csv-import
-  note: seeded from the v83 CSV column — the CSVs have no v84 column; task-083 found v84 byte-identical to v83. Corrected by discover-ops against the v84 IDB.
 - op: VICIOUS_HAMMER
   direction: clientbound
   opcode: 364

@@ -222,6 +222,13 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-kafka-precreate",
+      "type": "support-image",
+      "path": "services/atlas-kafka-precreate",
+      "docker_image": "ghcr.io/chronicle20/atlas-kafka-precreate/atlas-kafka-precreate",
+      "docker_context": "services/atlas-kafka-precreate"
+    },
+    {
       "name": "atlas-keys",
       "type": "go-service",
       "path": "services/atlas-keys",

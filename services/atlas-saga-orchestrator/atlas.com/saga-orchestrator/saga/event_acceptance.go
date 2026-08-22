@@ -318,23 +318,30 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.WarpToSavedLocation: {EventKindCharacterMapChanged},
 
 	// Fire-and-forget / self-completing actions (no Kafka event advances them).
-	sharedsaga.SaveLocation:               {},
-	sharedsaga.SendMessage:                {},
-	sharedsaga.FieldEffect:                {},
-	sharedsaga.FieldEffectWeather:         {},
-	sharedsaga.PlayJukebox:                {},
-	sharedsaga.UiLock:                     {},
-	sharedsaga.PlayPortalSound:            {},
-	sharedsaga.UpdateAreaInfo:             {},
-	sharedsaga.ShowInfo:                   {},
-	sharedsaga.ShowInfoText:               {},
-	sharedsaga.ShowIntro:                  {},
-	sharedsaga.ShowHint:                   {},
-	sharedsaga.ShowGuideHint:              {},
-	sharedsaga.BlockPortal:                {},
-	sharedsaga.UnblockPortal:              {},
-	sharedsaga.SpawnMonster:               {},
-	sharedsaga.SpawnReactorDrops:          {},
+	sharedsaga.SaveLocation:       {},
+	sharedsaga.SendMessage:        {},
+	sharedsaga.FieldEffect:        {},
+	sharedsaga.FieldEffectWeather: {},
+	sharedsaga.PlayJukebox:        {},
+	sharedsaga.UiLock:             {},
+	sharedsaga.PlayPortalSound:    {},
+	sharedsaga.UpdateAreaInfo:     {},
+	sharedsaga.ShowInfo:           {},
+	sharedsaga.ShowInfoText:       {},
+	sharedsaga.ShowIntro:          {},
+	sharedsaga.ShowHint:           {},
+	sharedsaga.ShowGuideHint:      {},
+	sharedsaga.BlockPortal:        {},
+	sharedsaga.UnblockPortal:      {},
+	sharedsaga.SpawnMonster:       {},
+	sharedsaga.SpawnReactorDrops:  {},
+	// DeployPlayerNpc is fire-and-forget by necessity, not design: the
+	// shipped COMMAND_TOPIC_PLAYER_NPC consumer (atlas-player-npcs Task 17)
+	// has no synchronous reply or failure-event path back to the producer --
+	// downstream errors are logged and swallowed
+	// (kafka/consumer/playernpc/consumer.go's handleDeploy). There is no
+	// Kafka event this step could wait on.
+	sharedsaga.DeployPlayerNpc:            {},
 	sharedsaga.HitReactor:                 {},
 	sharedsaga.BroadcastPqMessage:         {},
 	sharedsaga.RegisterPartyQuest:         {},

@@ -105,6 +105,7 @@ func newAcceptCommand(transactionId uuid.UUID, parcelId uuid.UUID) custody.Comma
 			ReceivableAt:       time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC),
 			ExpiresAt:          time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
 			HasItem:            true,
+			ItemType:           2,
 			TemplateId:         1302000,
 			Quantity:           1,
 			Strength:           5,
@@ -141,6 +142,7 @@ func TestCustodyCommands(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, m.ItemId())
 			assert.Equal(t, uint32(1302000), *m.ItemId())
+			assert.Equal(t, byte(2), m.ItemType(), "ItemType must round-trip from the custody command onto the row")
 			assert.Equal(t, uint16(5), m.ItemSnapshot().Strength)
 			// task-15 review B1/B2: ItemLevel/RingId/ViciousCount must round-trip
 			// through AssetData, not be silently dropped on the parcel snapshot.

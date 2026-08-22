@@ -41,6 +41,7 @@ func TestParcelProcessorDispatch(t *testing.T) {
 			HasItem:     true,
 			RecipientId: 200200,
 			TemplateId:  1302000,
+			ItemType:    2,
 		}
 
 		if err := p.AcceptToParcel(mb)(txId, params); err != nil {
@@ -73,6 +74,9 @@ func TestParcelProcessorDispatch(t *testing.T) {
 		}
 		if !cmd.Body.HasItem {
 			t.Fatalf("expected HasItem true")
+		}
+		if cmd.Body.ItemType != 2 {
+			t.Fatalf("expected item type 2, got %d", cmd.Body.ItemType)
 		}
 	})
 

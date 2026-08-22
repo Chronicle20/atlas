@@ -2389,6 +2389,15 @@
         "services": [
           "channel"
         ]
+      },
+      {
+        "opCode": "0x137",
+        "validator": "LoggedInValidator",
+        "handler": "MapleLifeCheckNameHandle",
+        "fname": "CUICharacterSaleDlg::SendCheckDuplicateIDPacket",
+        "services": [
+          "channel"
+        ]
       }
     ],
     "writers": [
@@ -5150,6 +5159,36 @@
             "BID_AUCTION_FAILED": 60,
             "NOTIFY_CANCEL_WISH_RESULT": 61,
             "SUCCESS_BID_INFO_RESULT": 62
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x19D",
+        "writer": "MapleLifeResult",
+        "fname": "CUICharacterSaleDlg::OnCheckDuplicatedIDResult",
+        "options": {
+          "operations": {
+            "AVAILABLE": 0,
+            "TAKEN": 1,
+            "UNKNOWN_ERROR": 255
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x19E",
+        "writer": "MapleLifeError",
+        "fname": "CUICharacterSaleDlg::OnCreateNewCharacterResult",
+        "options": {
+          "operations": {
+            "SUCCESS": 56,
+            "NAME_TAKEN_AT_SUBMIT": 58,
+            "UNKNOWN_ERROR": 255
           }
         },
         "services": [
@@ -9126,6 +9165,574 @@
       "questExpRate": 1.0
     }
   ],
+  "mapleLife": {
+    "looks": [
+      {
+        "gender": 0,
+        "faces": [
+          20000,
+          20001,
+          20002
+        ],
+        "hairs": [
+          30030,
+          30020,
+          30000
+        ],
+        "hairColors": [
+          0,
+          7,
+          3,
+          2
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "gender": 1,
+        "faces": [
+          21000,
+          21001,
+          21002
+        ],
+        "hairs": [
+          31000,
+          31040,
+          31050
+        ],
+        "hairColors": [
+          0,
+          7,
+          3,
+          2
+        ],
+        "skinColors": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    ],
+    "classes": [
+      {
+        "ordinal": 0,
+        "gender": 0,
+        "jobId": 100,
+        "level": 30,
+        "mapId": 102000000,
+        "stats": {
+          "str": 35,
+          "dex": 4,
+          "int": 4,
+          "luk": 4,
+          "hp": 804,
+          "mp": 150
+        },
+        "ap": 114,
+        "sp": "87,0,0,0,0,0,0,0,0,0",
+        "spSkillId": 1000001,
+        "meso": 100000,
+        "equipment": [
+          {
+            "templateId": 1040002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1060002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1072001,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1302077,
+            "useAverageStats": true
+          }
+        ],
+        "inventory": [
+          {
+            "templateId": 2000002,
+            "quantity": 100
+          },
+          {
+            "templateId": 2000006,
+            "quantity": 100
+          },
+          {
+            "templateId": 3010000,
+            "quantity": 1
+          }
+        ]
+      },
+      {
+        "ordinal": 0,
+        "gender": 1,
+        "jobId": 100,
+        "level": 30,
+        "mapId": 102000000,
+        "stats": {
+          "str": 35,
+          "dex": 4,
+          "int": 4,
+          "luk": 4,
+          "hp": 804,
+          "mp": 150
+        },
+        "ap": 114,
+        "sp": "87,0,0,0,0,0,0,0,0,0",
+        "spSkillId": 1000001,
+        "meso": 100000,
+        "equipment": [
+          {
+            "templateId": 1041002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1061002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1072001,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1302077,
+            "useAverageStats": true
+          }
+        ],
+        "inventory": [
+          {
+            "templateId": 2000002,
+            "quantity": 100
+          },
+          {
+            "templateId": 2000006,
+            "quantity": 100
+          },
+          {
+            "templateId": 3010000,
+            "quantity": 1
+          }
+        ]
+      },
+      {
+        "ordinal": 1,
+        "gender": 0,
+        "jobId": 200,
+        "level": 30,
+        "mapId": 101000000,
+        "stats": {
+          "str": 4,
+          "dex": 4,
+          "int": 20,
+          "luk": 4,
+          "hp": 398,
+          "mp": 672
+        },
+        "ap": 129,
+        "sp": "87,0,0,0,0,0,0,0,0,0",
+        "spSkillId": 2000001,
+        "meso": 100000,
+        "equipment": [
+          {
+            "templateId": 1040002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1060002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1072001,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1372043,
+            "useAverageStats": true
+          }
+        ],
+        "inventory": [
+          {
+            "templateId": 2000002,
+            "quantity": 100
+          },
+          {
+            "templateId": 2000006,
+            "quantity": 100
+          },
+          {
+            "templateId": 3010000,
+            "quantity": 1
+          }
+        ]
+      },
+      {
+        "ordinal": 1,
+        "gender": 1,
+        "jobId": 200,
+        "level": 30,
+        "mapId": 101000000,
+        "stats": {
+          "str": 4,
+          "dex": 4,
+          "int": 20,
+          "luk": 4,
+          "hp": 398,
+          "mp": 672
+        },
+        "ap": 129,
+        "sp": "87,0,0,0,0,0,0,0,0,0",
+        "spSkillId": 2000001,
+        "meso": 100000,
+        "equipment": [
+          {
+            "templateId": 1041002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1061002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1072001,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1372043,
+            "useAverageStats": true
+          }
+        ],
+        "inventory": [
+          {
+            "templateId": 2000002,
+            "quantity": 100
+          },
+          {
+            "templateId": 2000006,
+            "quantity": 100
+          },
+          {
+            "templateId": 3010000,
+            "quantity": 1
+          }
+        ]
+      },
+      {
+        "ordinal": 2,
+        "gender": 0,
+        "jobId": 300,
+        "level": 30,
+        "mapId": 100000000,
+        "stats": {
+          "str": 4,
+          "dex": 25,
+          "int": 4,
+          "luk": 4,
+          "hp": 688,
+          "mp": 440
+        },
+        "ap": 124,
+        "sp": "87,0,0,0,0,0,0,0,0,0",
+        "meso": 100000,
+        "equipment": [
+          {
+            "templateId": 1040002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1060002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1072001,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1452051,
+            "useAverageStats": true
+          }
+        ],
+        "inventory": [
+          {
+            "templateId": 2000002,
+            "quantity": 100
+          },
+          {
+            "templateId": 2000006,
+            "quantity": 100
+          },
+          {
+            "templateId": 3010000,
+            "quantity": 1
+          }
+        ]
+      },
+      {
+        "ordinal": 2,
+        "gender": 1,
+        "jobId": 300,
+        "level": 30,
+        "mapId": 100000000,
+        "stats": {
+          "str": 4,
+          "dex": 25,
+          "int": 4,
+          "luk": 4,
+          "hp": 688,
+          "mp": 440
+        },
+        "ap": 124,
+        "sp": "87,0,0,0,0,0,0,0,0,0",
+        "meso": 100000,
+        "equipment": [
+          {
+            "templateId": 1041002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1061002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1072001,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1452051,
+            "useAverageStats": true
+          }
+        ],
+        "inventory": [
+          {
+            "templateId": 2000002,
+            "quantity": 100
+          },
+          {
+            "templateId": 2000006,
+            "quantity": 100
+          },
+          {
+            "templateId": 3010000,
+            "quantity": 1
+          }
+        ]
+      },
+      {
+        "ordinal": 3,
+        "gender": 0,
+        "jobId": 400,
+        "level": 30,
+        "mapId": 103000000,
+        "stats": {
+          "str": 4,
+          "dex": 25,
+          "int": 4,
+          "luk": 4,
+          "hp": 688,
+          "mp": 440
+        },
+        "ap": 124,
+        "sp": "87,0,0,0,0,0,0,0,0,0",
+        "meso": 100000,
+        "equipment": [
+          {
+            "templateId": 1040002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1060002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1072001,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1332063,
+            "useAverageStats": true
+          }
+        ],
+        "inventory": [
+          {
+            "templateId": 2000002,
+            "quantity": 100
+          },
+          {
+            "templateId": 2000006,
+            "quantity": 100
+          },
+          {
+            "templateId": 3010000,
+            "quantity": 1
+          }
+        ]
+      },
+      {
+        "ordinal": 3,
+        "gender": 1,
+        "jobId": 400,
+        "level": 30,
+        "mapId": 103000000,
+        "stats": {
+          "str": 4,
+          "dex": 25,
+          "int": 4,
+          "luk": 4,
+          "hp": 688,
+          "mp": 440
+        },
+        "ap": 124,
+        "sp": "87,0,0,0,0,0,0,0,0,0",
+        "meso": 100000,
+        "equipment": [
+          {
+            "templateId": 1041002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1061002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1072001,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1332063,
+            "useAverageStats": true
+          }
+        ],
+        "inventory": [
+          {
+            "templateId": 2000002,
+            "quantity": 100
+          },
+          {
+            "templateId": 2000006,
+            "quantity": 100
+          },
+          {
+            "templateId": 3010000,
+            "quantity": 1
+          }
+        ]
+      },
+      {
+        "ordinal": 4,
+        "gender": 0,
+        "jobId": 500,
+        "level": 30,
+        "mapId": 120000000,
+        "stats": {
+          "str": 4,
+          "dex": 20,
+          "int": 4,
+          "luk": 4,
+          "hp": 775,
+          "mp": 599
+        },
+        "ap": 129,
+        "sp": "87,0,0,0,0,0,0,0,0,0",
+        "meso": 100000,
+        "equipment": [
+          {
+            "templateId": 1040002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1060002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1072001,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1482000,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1492000,
+            "useAverageStats": true
+          }
+        ],
+        "inventory": [
+          {
+            "templateId": 2000002,
+            "quantity": 100
+          },
+          {
+            "templateId": 2000006,
+            "quantity": 100
+          },
+          {
+            "templateId": 3010000,
+            "quantity": 1
+          }
+        ]
+      },
+      {
+        "ordinal": 4,
+        "gender": 1,
+        "jobId": 500,
+        "level": 30,
+        "mapId": 120000000,
+        "stats": {
+          "str": 4,
+          "dex": 20,
+          "int": 4,
+          "luk": 4,
+          "hp": 775,
+          "mp": 599
+        },
+        "ap": 129,
+        "sp": "87,0,0,0,0,0,0,0,0,0",
+        "meso": 100000,
+        "equipment": [
+          {
+            "templateId": 1041002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1061002,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1072001,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1482000,
+            "useAverageStats": true
+          },
+          {
+            "templateId": 1492000,
+            "useAverageStats": true
+          }
+        ],
+        "inventory": [
+          {
+            "templateId": 2000002,
+            "quantity": 100
+          },
+          {
+            "templateId": 2000006,
+            "quantity": 100
+          },
+          {
+            "templateId": 3010000,
+            "quantity": 1
+          }
+        ]
+      }
+    ]
+  },
   "cashShop": {
     "commodities": {
       "hourlyExpirations": [

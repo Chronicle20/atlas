@@ -8,8 +8,12 @@ const (
 
 type StatusEvent[E any] struct {
 	AccountId uint32 `json:"accountId"`
-	Type      string `json:"type"`
-	Body      E      `json:"body"`
+	// TransactionId correlates this event with the POST characters/seed
+	// response that started it. Optional: an older producer omits it and
+	// consumers fall back to AccountId (task-246 design §4.3).
+	TransactionId string `json:"transactionId,omitempty"`
+	Type          string `json:"type"`
+	Body          E      `json:"body"`
 }
 
 type CreatedStatusEventBody struct {

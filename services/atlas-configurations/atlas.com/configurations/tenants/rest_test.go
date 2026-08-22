@@ -11,6 +11,58 @@ import (
 	"testing"
 )
 
+func TestTenantRestModelCarriesMapleLife(t *testing.T) {
+	t.Run("document with mapleLife key", func(t *testing.T) {
+		doc := `{
+			"region": "GMS",
+			"majorVersion": 83,
+			"minorVersion": 1,
+			"mapleLife": {
+				"looks": [
+					{"gender": 0, "faces": [20000], "hairs": [30000], "hairColors": [0], "skinColors": [0]}
+				],
+				"classes": [
+					{"ordinal": 0, "gender": 0, "jobId": 100, "level": 10, "mapId": 10000, "stats": {"str": 35, "dex": 20, "int": 4, "luk": 4, "hp": 100, "mp": 50}, "ap": 5, "sp": "1,0,0,0,0,0,0,0,0,0", "spSkillId": 1000001, "meso": 1000, "equipment": [], "inventory": []}
+				]
+			}
+		}`
+
+		var decoded RestModel
+		if err := json.Unmarshal([]byte(doc), &decoded); err != nil {
+			t.Fatalf("unmarshal failed: %v", err)
+		}
+
+		if len(decoded.MapleLife.Looks) != 1 {
+			t.Errorf("expected 1 look, got %d", len(decoded.MapleLife.Looks))
+		}
+		if len(decoded.MapleLife.Classes) != 1 {
+			t.Errorf("expected 1 class, got %d", len(decoded.MapleLife.Classes))
+		}
+		if decoded.Region != "GMS" {
+			t.Errorf("expected Region 'GMS', got '%s'", decoded.Region)
+		}
+	})
+
+	t.Run("document without mapleLife key", func(t *testing.T) {
+		doc := `{"region": "GMS", "majorVersion": 83, "minorVersion": 1}`
+
+		var decoded RestModel
+		if err := json.Unmarshal([]byte(doc), &decoded); err != nil {
+			t.Fatalf("unmarshal failed: %v", err)
+		}
+
+		if len(decoded.MapleLife.Looks) != 0 {
+			t.Errorf("expected 0 looks, got %d", len(decoded.MapleLife.Looks))
+		}
+		if len(decoded.MapleLife.Classes) != 0 {
+			t.Errorf("expected 0 classes, got %d", len(decoded.MapleLife.Classes))
+		}
+		if decoded.Region != "GMS" {
+			t.Errorf("expected Region 'GMS', got '%s'", decoded.Region)
+		}
+	})
+}
+
 func TestRestModel_GetName(t *testing.T) {
 	rm := RestModel{}
 	expected := "tenants"

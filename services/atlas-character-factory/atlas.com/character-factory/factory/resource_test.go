@@ -1,6 +1,8 @@
 package factory
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -97,5 +99,79 @@ func TestCategorizePresetError(t *testing.T) {
 				t.Errorf("categorizePresetError(%v) = %d, want %d", tt.err, got, tt.wantStatus)
 			}
 		})
+	}
+}
+
+func TestCategorizeMapleLifeError(t *testing.T) {
+	tests := []struct {
+		name       string
+		err        error
+		wantStatus int
+	}{
+		{"ErrClassOrdinalUnknown", ErrClassOrdinalUnknown, http.StatusBadRequest},
+		{"ErrLookInvalid", ErrLookInvalid, http.StatusBadRequest},
+		{"ErrSPInvalid", ErrSPInvalid, http.StatusBadRequest},
+		{"NameInvalidError", &NameInvalidError{Reason: "blocked"}, http.StatusBadRequest},
+		{"ErrPresetValidation", ErrPresetValidation, http.StatusBadRequest},
+		{"ErrNameDuplicate", ErrNameDuplicate, http.StatusConflict},
+		{"ErrAtlasDataUnreachable", ErrAtlasDataUnreachable, http.StatusBadGateway},
+		{"ErrMapleLifeNotConfigured", ErrMapleLifeNotConfigured, http.StatusInternalServerError},
+		{"unknown error", errors.New("boom"), http.StatusInternalServerError},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := categorizeMapleLifeError(tt.err)
+			if got != tt.wantStatus {
+				t.Errorf("categorizeMapleLifeError(%v) = %d, want %d", tt.err, got, tt.wantStatus)
+			}
+		})
+	}
+}
+
+// fakeMapleLifeProcessor is a Processor test double whose CreateMapleLife
+// returns a fixed transaction id without reaching real HTTP clients.
+type fakeMapleLifeProcessor struct {
+	transactionId string
+}
+
+func (f fakeMapleLifeProcessor) Create(ctx context.Context, input RestModel) (string, error) {
+	return "", errors.New("not implemented")
+}
+
+func (f fakeMapleLifeProcessor) CreateFromPreset(ctx context.Context, in PresetCreateRestModel) (string, error) {
+	return "", errors.New("not implemented")
+}
+
+func (f fakeMapleLifeProcessor) CreateMapleLife(ctx context.Context, in MapleLifeCreateRestModel) (string, error) {
+	return f.transactionId, nil
+}
+
+// postMapleLife issues a POST to the handleCreateMapleLife input handler, going through
+// ParseInput so JSON:API unmarshalling happens exactly as in production. The handler
+// under test is built via newMapleLifeHandler with a fake Processor factory, avoiding
+// the real HTTP clients NewProcessor wires up.
+func postMapleLife(t *testing.T, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	d, c := newTestDeps(t)
+	handler := newMapleLifeHandler(func(l logrus.FieldLogger) Processor {
+		return fakeMapleLifeProcessor{transactionId: "tx-1"}
+	})
+	req := httptest.NewRequest(http.MethodPost, "/factory/characters/maple-life", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/vnd.api+json")
+	rr := httptest.NewRecorder()
+	server.ParseInput[MapleLifeCreateRestModel](d, c, handler)(rr, req)
+	return rr
+}
+
+func TestMapleLifeRouteReturnsAcceptedWithTransactionId(t *testing.T) {
+	body := `{"data":{"type":"maple-life-create","attributes":{"accountId":1,"worldId":0,"name":"Hero","classOrdinal":0,"gender":0,"face":20000,"hair":30030,"hairColor":2,"skinColor":1,"sp":5}}}`
+	rr := postMapleLife(t, body)
+
+	if rr.Code != http.StatusAccepted {
+		t.Fatalf("Expected status 202, got %d, body: %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), `"transactionId":"tx-1"`) {
+		t.Errorf("Expected body to carry transactionId \"tx-1\", got: %s", rr.Body.String())
 	}
 }

@@ -91,6 +91,64 @@ func TestCreateSunny(t *testing.T) {
 	}
 }
 
+func TestCreateCharacterPersistsApAndSp(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+
+	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("ApSpTest").SetLevel(1).
+		SetAp(12).SetSp("3,0,0,0,0,0,0,0,0,0").Build()
+
+	c, err := character.NewProcessor(testLogger(), tctx, testDatabase(t)).Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+	if c.AP() != 12 {
+		t.Fatalf("AP should be 12, was %d", c.AP())
+	}
+	if c.SPString() != "3,0,0,0,0,0,0,0,0,0" {
+		t.Fatalf("SP should be 3,0,0,0,0,0,0,0,0,0, was %s", c.SPString())
+	}
+	sps := c.SPs()
+	expected := []uint32{3, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	if len(sps) != len(expected) {
+		t.Fatalf("SPs() should have %d elements, had %d: %v", len(expected), len(sps), sps)
+	}
+	for i, v := range expected {
+		if sps[i] != v {
+			t.Fatalf("SPs()[%d] should be %d, was %d", i, v, sps[i])
+		}
+	}
+}
+
+func TestCreateCharacterDefaultsApAndSp(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+
+	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("ApSpDefault").SetLevel(1).Build()
+
+	c, err := character.NewProcessor(testLogger(), tctx, testDatabase(t)).Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
+	if err != nil {
+		t.Fatalf("Failed to create model: %v", err)
+	}
+	if c.AP() != 0 {
+		t.Fatalf("AP should be 0, was %d", c.AP())
+	}
+	if c.SPString() != "0,0,0,0,0,0,0,0,0,0" {
+		t.Fatalf("SP should be 0,0,0,0,0,0,0,0,0,0, was %s", c.SPString())
+	}
+	// Regression assertion for the whitespace fix in administrator.go: before
+	// the fix, SPString() was "0, 0, 0, ..." (spaced) and Model.SPs() split
+	// on "," then Atoi'd each element, failing on " 0" and truncating the
+	// result to a single element instead of ten zeroes.
+	sps := c.SPs()
+	if len(sps) != 10 {
+		t.Fatalf("SPs() should have 10 elements, had %d: %v", len(sps), sps)
+	}
+	for i, v := range sps {
+		if v != 0 {
+			t.Fatalf("SPs()[%d] should be 0, was %d", i, v)
+		}
+	}
+}
+
 func TestGetByIdWithZeroCharacter(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	// Create a character

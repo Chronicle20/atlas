@@ -253,6 +253,7 @@ var noReverseWalkSagaTypes = []Type{
 	StorageOperation,
 	CharacterRespawn,
 	GachaponTransaction,
+	MapleLifeUse,
 }
 
 // allSagaTypes is every type the orchestrator knows, kept beside the two
@@ -263,6 +264,7 @@ var allSagaTypes = []Type{
 	PetEvolution, ItemTagUse, SealingLockUse, IncubatorUse, ExpirationExtenderUse,
 	KarmaScissorsUse, PointReset,
 	MtsOperation, NoteSend, SkillBookUse, MesoSackUse, WorldTransfer, PetNameTagUse,
+	MapleLifeUse,
 }
 
 // dispatchTimeoutRollbacks fires the reverse walk for a timed-out saga and

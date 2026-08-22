@@ -247,7 +247,7 @@ func RequestDeleteCharacterProvider(transactionId uuid.UUID, characterId uint32,
 	return producer.SingleMessageProvider(key, value)
 }
 
-func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id, gm int, meso uint32) model.Provider[[]kafka.Message] {
+func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id, gm int, meso uint32, ap uint16, sp string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &character2.Command[character2.CreateCharacterCommandBody]{
 		TransactionId: transactionId,
@@ -273,6 +273,8 @@ func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, w
 			MapId:        mapId,
 			Gm:           gm,
 			Meso:         meso,
+			AP:           ap,
+			SP:           sp,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

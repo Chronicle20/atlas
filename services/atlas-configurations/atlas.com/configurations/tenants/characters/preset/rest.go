@@ -25,20 +25,26 @@ type SkillEntry struct {
 }
 
 type Attributes struct {
-	Name        string           `json:"name"`
-	Description string           `json:"description"`
-	Tags        []string         `json:"tags"`
-	JobId       uint32           `json:"jobId"`
-	Gender      byte             `json:"gender"`
-	Face        uint32           `json:"face"`
-	Hair        uint32           `json:"hair"`
-	HairColor   uint32           `json:"hairColor"`
-	SkinColor   byte             `json:"skinColor"`
-	MapId       uint32           `json:"mapId"`
-	Level       byte             `json:"level"`
-	Meso        uint32           `json:"meso"`
-	Gm          int              `json:"gm"`
-	Stats       StatBlock        `json:"stats"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Tags        []string  `json:"tags"`
+	JobId       uint32    `json:"jobId"`
+	Gender      byte      `json:"gender"`
+	Face        uint32    `json:"face"`
+	Hair        uint32    `json:"hair"`
+	HairColor   uint32    `json:"hairColor"`
+	SkinColor   byte      `json:"skinColor"`
+	MapId       uint32    `json:"mapId"`
+	Level       byte      `json:"level"`
+	Meso        uint32    `json:"meso"`
+	Gm          int       `json:"gm"`
+	Stats       StatBlock `json:"stats"`
+	// AP and SP are the unspent ability/skill points the created character
+	// should start with. Zero (omitted) reproduces the pre-Maple-Life
+	// behaviour for every existing preset producer -- neither the admin
+	// preset UI nor its stored configuration sets these today.
+	AP          uint16           `json:"ap"`
+	SP          string           `json:"sp"`
 	DefaultName string           `json:"defaultName"`
 	Equipment   []EquipmentEntry `json:"equipment"`
 	Inventory   []InventoryEntry `json:"inventory"`

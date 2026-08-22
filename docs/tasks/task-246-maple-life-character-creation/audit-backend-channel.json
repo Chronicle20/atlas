@@ -1,0 +1,91 @@
+{
+  "service": "atlas-channel+libs",
+  "path": "services/atlas-channel, libs/atlas-packet, libs/atlas-saga",
+  "date": "2026-08-21",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "character/factory",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface/constructor/impl in processor.go", "status": "pass", "evidence": "character/factory/processor.go:17-39,41-67"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API methods in rest.go", "status": "pass", "evidence": "character/factory/rest.go (all types + methods)"},
+        {"id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "pass", "evidence": "character/factory/requests.go:19-23,60"},
+        {"id": "FILE-06", "name": "No catch-all file carrying >=2 responsibilities", "status": "pass", "evidence": "processor.go/requests.go/rest.go each single-purpose"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "character/factory/processor.go:33"},
+        {"id": "DOM-21", "name": "No redeclaration of existing shared const/type", "status": "pass", "evidence": "item.ClassificationCharacterCreation and character.NameReason* reused, not redeclared"},
+        {"id": "DOM-31", "name": "Tenant travels in context only", "status": "pass", "evidence": "character/factory/rest.go: no tenant field; requests.go:19 passes ctx only"},
+        {"id": "EXT-01", "name": "Target REST model implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "fail", "evidence": "character/factory/rest.go:84-96 CreateCharacterResponse (unmarshal target of requests.PostRequest[CreateCharacterResponse] in requests.go:23,60) lacks both methods"},
+        {"id": "EXT-02", "name": "httptest-backed integration test with representative fixture", "status": "pass", "evidence": "character/factory/processor_test.go:64-98,228-260"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "processor.go:41-48,60-67 passes err through unmodified; handler maple_life_create.go:237-247 only special-cases ErrConflict/ErrBadRequest"},
+        {"id": "EXT-04", "name": "Service URL via requests.RootUrl(<DOMAIN>)", "status": "pass", "evidence": "character/factory/requests.go:19-21 requests.RootUrlFor(ctx, \"CHARACTER_FACTORY\")"}
+      ]
+    },
+    {
+      "name": "maplelife",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "registry.go is a single-purpose in-memory registry"},
+        {"id": "DOM-29", "name": "Cache is app-scoped singleton via accessor", "status": "pass", "evidence": "maplelife/registry.go:76-83 GetRegistry() sync.Once"}
+      ]
+    },
+    {
+      "name": "kafka/consumer/seed + kafka/message/seed",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "kafka.go DTO-only, consumer.go init/handler wiring only"},
+        {"id": "DOM-24", "name": "Test packages reaching emit path install producertest stub", "status": "n-a", "evidence": "consumer_test.go:125-129 substitutes destroyCashItemFunc seam, never reaches real emit path"},
+        {"id": "DOM-30", "name": "DB writes emit through AndEmit+Buffer, not direct producer.ProviderImpl", "status": "n-a", "evidence": "consumer.go calls pre-existing saga.Processor.Create (channel/saga/processor.go:34, unchanged, out of scope)"}
+      ]
+    },
+    {
+      "name": "socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "maple_life_create.go:30,42,54; maple_life_check_name.go:26"},
+        {"id": "DOM-25", "name": "Dispatch on classification, not cash-slot type; no literal wire bytes", "status": "pass", "evidence": "character_cash_item_use.go:783,800 (classification-first); error.go:129-134/result.go:150-154 WithResolvedCode"},
+        {"id": "DOM-25", "name": "Version gating uses MajorAtLeast idiom", "status": "pass", "evidence": "character_cash_item_use.go:1128 mapleLifeSupported uses t.MajorAtLeast(83)"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handlers", "status": "warn", "evidence": "maple_life_create.go:102-231 handleMapleLifeCreate inlines account/character/factory orchestration; rule's literal resource.go trigger absent (socket dispatcher, not REST resource)"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet (cash/serverbound, maplelife/*)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "each codec file defines one wire struct + Encode/Decode/Operation/String"},
+        {"id": "DOM-25", "name": "No hardcoded client-interpreted byte", "status": "pass", "evidence": "error.go:129-134, result.go:150-154 both resolve via atlas_packet.WithResolvedCode"},
+        {"id": "DOM-21", "name": "No redeclaration of existing constant/helper", "status": "pass", "evidence": "WithResolvedCode reused from libs/atlas-packet/resolve.go:41"}
+      ]
+    },
+    {
+      "name": "saga (channel) + libs/atlas-saga",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists for model.go package", "status": "n-a", "evidence": "saga/model.go and libs/atlas-saga/model.go are re-export shims (type aliases/const re-exports), not domain Model definitions; judgment call recorded in audit.md"},
+        {"id": "DOM-02", "name": "Model.ToEntity() in entity.go", "status": "n-a", "evidence": "no entity.go in either package"},
+        {"id": "DOM-03", "name": "Make(Entity) in entity.go", "status": "n-a", "evidence": "no entity.go in either package"},
+        {"id": "DOM-04", "name": "Transform(Model) in rest.go", "status": "n-a", "evidence": "no rest.go in either package"},
+        {"id": "DOM-05", "name": "TransformSlice in rest.go", "status": "n-a", "evidence": "no rest.go in either package"},
+        {"id": "DOM-11", "name": "Providers lazy via database.Query", "status": "n-a", "evidence": "no provider.go in either package"},
+        {"id": "DOM-16", "name": "administrator.go holds writes", "status": "n-a", "evidence": "no administrator.go; package performs no DB writes"},
+        {"id": "DOM-21", "name": "saga.MapleLifeUse const not a redeclaration", "status": "pass", "evidence": "libs/atlas-saga/model.go new const; channel/saga/model.go:84 re-exports the same value"},
+        {"id": "AP-SP-additive", "name": "AP/SP payload addition strictly additive", "status": "pass", "evidence": "libs/atlas-saga/payloads.go AP/SP both omitempty; payloads_test.go:47-83 asserts round-trip and zero-value omission"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "payloads_test.go new test matches existing file's non-table assertion style, consistent with file precedent"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-22/23: EVENT_TOPIC_SEED_STATUS configmap/overlay wiring requires deploy/ manifests, not in changed-file set",
+    "SCAFFOLD-07: writer/handler seeding in services/atlas-configurations seed-data templates is sibling-reviewer scope",
+    "DOM-30 (saga.Processor.Create internals): channel/saga/processor.go:34 is unchanged and out of this diff's scope"
+  ],
+  "blocking": [
+    "EXT-01: services/atlas-channel/atlas.com/channel/character/factory/rest.go:84-96 - CreateCharacterResponse missing SetToOneReferenceID/SetToManyReferenceIDs"
+  ],
+  "nonBlocking": [
+    "DOM-13 (WARN): services/atlas-channel/atlas.com/channel/socket/handler/maple_life_create.go:102-231 - cross-domain orchestration inlined in handler, consistent with existing file idiom"
+  ]
+}

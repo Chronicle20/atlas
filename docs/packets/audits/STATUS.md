@@ -4,17 +4,17 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
+Tool: `97ddbc6c4d2efd0a82fdddd9fce5744dc4e025124999367f6a2ca388bce77c4d`
 
 - export gms_v48: `f46a1c091a8f557a7a0a47c295bed12c56e0f70e23552726d1ca6586eadbf0dd`
 - export gms_v61: `6c974c037a17229958f04d245f414de004f5530852466818e48167a4172e7c70`
 - export gms_v72: `f22e6d780c0ca97b845d09876f2a4724b612189f9d9d353451be062bcb741c56`
 - export gms_v79: `efa7d503bee32a270bf80e0d437259e1b4e13e7d7bab2058427def64e781a2a3`
-- export gms_v83: `9b938038def5da2b3e98681db301b5299a0c35274b2d71b92be3b364505d57d8`
+- export gms_v83: `0b189c4b9d946ac3545fcc41c93833ada3d18063f0a92698ab18de17763ce6e6`
 - export gms_v84: `16832eea1aedc71e48c73e047e4fca66fef8d2bfdc1901f2b5f00ac1286c40ce`
-- export gms_v87: `dcb1d52ed4c88dcef1d351e698a21c647b3bdd82a3c79b7bfc9c39682e15ab02`
-- export gms_v92: `c152d5ac734c4ea19cda05c81358e440f693e2399fdf1a4de1b1bf81319bb5e4`
-- export gms_v95: `fa56a542eabc75d20d5ba920b272ad990f1abe0fe99f346bb4ad96d950f7ca09`
+- export gms_v87: `63cf3b87a5006b35c15ad40ff40098e2b47f9e2294cccb0a214f3421fc901311`
+- export gms_v92: `9bfe486e327a30a5419d064f2a9b9f5aaebf74d095ef405f2814f2e2b04e4ae8`
+- export gms_v95: `fc0514ccf05ef04e3f96d978f362fde8b92269592da010d92f3e776424281e5e`
 - export jms_v185: `576eda436b95b42e99f3bb0a6343964695a5c0732b95beed1593bab25f78df3c`
 
 ## Clientbound
@@ -486,9 +486,9 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 | TIP_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15B | ❌ |
 | OPEN_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15C | ❌ |
 | ARIANT_SCORE | CField_Witchtower::OnPacket; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldAriantScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ | 0x166 | ✅ |  | ⬜ |
-| MAPLELIFE_RESULT | CUICharacterSaleDlg::OnCheckDuplicatedIDResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ | 0x15D | ❌ | 0x172 | ❌ | 0x194 | ❌ | 0x19D | ❌ |  | ⬜ |
+| MAPLELIFE_RESULT | CUICharacterSaleDlg::OnCheckDuplicatedIDResult | maplelife/clientbound/MaplelifeMapleLifeResult |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ✅ |  | ⬜ | 0x172 | ✅ | 0x194 | ✅ | 0x19D | ✅ |  | ⬜ |
 | SHOOT_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ |
-| MAPLELIFE_ERROR | CUICharacterSaleDlg::OnCreateNewCharacterResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15E | ❌ | 0x15E | ❌ | 0x173 | ❌ | 0x195 | ❌ | 0x19E | ❌ |  | ⬜ |
+| MAPLELIFE_ERROR | CUICharacterSaleDlg::OnCreateNewCharacterResult | maplelife/clientbound/MaplelifeMapleLifeError |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15E | ✅ |  | ⬜ | 0x173 | ✅ | 0x195 | ✅ | 0x19E | ✅ |  | ⬜ |
 | SOMETHING_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15E | ❌ |
 | UPDATE_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15F | ❌ |
 | ONE_A_DAY | CCashShop::OnOneADay |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x161 | ❌ | 0x183 | ❌ | 0x18B | ❌ |  | ⬜ |
@@ -808,12 +808,13 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 | UNNAMED_R405 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F8 | ❌ | 0x0F8 | ❌ | 0x106 | ❌ | 0x120 | ❌ | 0x127 | ❌ | 0x109 | ❌ |
 | UNNAMED_R392 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F9 | ❌ | 0x113 | ❌ | 0x11A | ❌ | 0x0FC | ❌ |
 | ITEM_UPGRADE_UPDATE | CUIItemUpgrade::Update | field/serverbound/FieldItemUpgradeUpdate (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0FA | ✅ | 0x104 | ✅ | 0x10B | ✅ | 0x112 | ✅ | 0x12C | ❌ | 0x128 | ✅ | 0x114 | ❌ |
+| MAPLELIFE_CHECK_NAME | CUICharacterSaleDlg::SendCheckDuplicateIDPacket | maplelife/serverbound/MaplelifeCheckName |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x100 | ✅ |  | ⬜ | 0x10E | ✅ | 0x12D | ✅ | 0x137 | ✅ |  | ⬜ |
 | FOOTHOLD_INFO | CField::OnRequestFootHoldInfo | field/serverbound/FieldRequestFootholdInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x107 | ❌ | 0x10E | ✅ | 0x0ED | ✅ |
 | UNNAMED_R378 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x109 | ❌ | 0x110 | ❌ | 0x0F1 | ❌ |
 | UNNAMED_R379 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10A | ❌ | 0x111 | ❌ | 0x0F2 | ❌ |
 | UNNAMED_R419 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10C | ❌ |  | ⬜ | 0x135 | ❌ | 0x10D | ❌ |
 | UNNAMED_R420 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10D | ❌ |  | ⬜ | 0x136 | ❌ | 0x10E | ❌ |
-| JMS_SLASH_COMMAND | CUICharacterSaleDlg::SendCheckDuplicateIDPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10E | ❌ |  | ⬜ | 0x137 | ❌ | 0x10F | ❌ |
+| JMS_SLASH_COMMAND | CUICharacterSaleDlg::SendCheckDuplicateIDPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10F | ❌ |
 | UNNAMED_R422 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10F | ❌ |  | ⬜ | 0x138 | ❌ | 0x110 | ❌ |
 | ON_LOGOUT_GIFT | CUILogoutGift::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x114 | ❌ |  | ⬜ | 0x139 | ❌ | 0x116 | ❌ |
 | UNNAMED_R407 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x129 | ❌ |  | ⬜ |
@@ -1056,16 +1057,16 @@ Tool: `95cea500fa2e248416bb29cd82bf32159e955a6e849bfed26109deade89a64ad`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 212 | 0 | 19 | 194 | 595 | 0 | 49.9% |
-| v61 | 278 | 0 | 56 | 228 | 458 | 0 | 49.5% |
-| v72 | 296 | 0 | 69 | 241 | 414 | 0 | 48.8% |
-| v79 | 342 | 0 | 68 | 237 | 373 | 0 | 52.9% |
-| v83 | 468 | 0 | 0 | 324 | 228 | 0 | 59.1% |
-| v84 | 442 | 0 | 0 | 331 | 247 | 0 | 57.2% |
-| v87 | 476 | 0 | 0 | 354 | 190 | 0 | 57.3% |
-| v92 | 52 | 0 | 148 | 679 | 141 | 0 | 5.9% |
-| v95 | 501 | 0 | 0 | 413 | 106 | 0 | 54.8% |
-| JMS185 | 442 | 0 | 0 | 381 | 197 | 0 | 53.7% |
+| v48 | 212 | 0 | 19 | 194 | 596 | 0 | 49.9% |
+| v61 | 278 | 0 | 56 | 228 | 459 | 0 | 49.5% |
+| v72 | 296 | 0 | 69 | 241 | 415 | 0 | 48.8% |
+| v79 | 342 | 0 | 68 | 237 | 374 | 0 | 52.9% |
+| v83 | 471 | 0 | 0 | 322 | 228 | 0 | 59.4% |
+| v84 | 442 | 0 | 0 | 329 | 250 | 0 | 57.3% |
+| v87 | 479 | 0 | 0 | 351 | 191 | 0 | 57.7% |
+| v92 | 55 | 0 | 148 | 677 | 141 | 0 | 6.2% |
+| v95 | 504 | 0 | 0 | 410 | 107 | 0 | 55.1% |
+| JMS185 | 442 | 0 | 0 | 381 | 198 | 0 | 53.7% |
 
 ## Conflicts
 

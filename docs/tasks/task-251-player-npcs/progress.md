@@ -1317,3 +1317,113 @@ should not be listed as a PR-time carry.
 
 The last two are controller-caused or literalist, so they go to the fix reviewer rather than being
 accepted silently.
+
+## Fix review — APPROVED_WITH_FINDINGS, 0 blocking, 3 non-blocking
+
+`docs/tasks/task-251-player-npcs/fix-review.md`, over `b9ebb8883` / `8a74e2f53` / `15f6cb629`.
+
+The primary question — no behavioral change from three refactors — held under direct diff
+comparison: `Deploy`'s insert logic was extracted verbatim into `createPlayerNpcTx`,
+`handleGetEligibility`'s error-mapping and evaluation sequence survives through the new
+`Processor.Eligibility`, `TransformSlice` is the same inlined call lifted into a named function,
+and the Kafka consumer paths were untouched. The one intentional behavior change is the PATCH
+redeploy body requirement, brief-authorized, breaking no in-repo caller.
+
+All four controller-posed rulings resolved:
+
+1. **`writeError` retention justified.** `libs/atlas-rest/server/error.go` read in full — neither
+   `WriteErrorResponse` nor `WriteBadRequest` carries a `code` field, nor does anything else in the
+   package. Design §8.3 requires one on 409/422. Round A's narrowing was correct.
+2. **`Processor` widening complete.** All three implementations updated in the same commit; the
+   `var _ playernpc.Processor = ...` assertions would fail to compile otherwise.
+3. **EXT-01 on `GroundRequestRestModel` was over-application**, as suspected — it is only ever
+   marshaled outbound, never an `Unmarshal` target, so the stubs are dead code. Non-blocking.
+4. **The module-root `package main` test is established convention** — every service in the repo
+   has one. The controller's suspicion here was WRONG. Moving it into `playernpc/` is optional
+   polish, not a defect.
+
+The three non-blocking findings are all optional polish and none is being actioned before the PR.
+
+# Gate 36 — FAIL at `e00a7abc2` (flagless, authoritative)
+
+The first flagless `tools/verify.sh` on this branch. **1 of ~25 checks failed:**
+`go build/vet/test -race services/atlas-channel/atlas.com/channel`.
+
+```
+--- FAIL: TestPlayerNpcStatusConsumer/DEPLOYED:_SpawnNPC_then_ImitatedNPCData_to_everyone_on_the_map
+--- FAIL: TestPlayerNpcStatusConsumer/REMOVED:_RemoveNPC_for_the_object_id,_to_everyone_on_the_map
+        testing.go:1712: race detected during execution of test
+FAIL	atlas-channel/kafka/consumer/playernpc	0.045s
+```
+
+Everything else passed, including all 20+ guards and the lint/format guard over 90 modules.
+
+### Diagnosis — a TEST defect, not a production one
+
+Both sides of the race are the same line, `consumer_test.go:113` in `stubAnnounce`:
+`seen = append(seen, writerName)`, unsynchronized. `broadcastSpawn` (`consumer.go:140-141`) reaches
+`map.ForSessionsInMap` -> `model.ExecuteForEachSlice` -> `atlas-routine.Go`, which fans the
+per-session announce across goroutines. **That concurrency is by design in production**; the test's
+recording stub simply is not thread-safe.
+
+This originated in Task 19 and every gate since was `--quick`, which skips `-race` — so no earlier
+gate could have caught it. This is precisely why CLAUDE.md counts only the flagless run.
+
+A second problem was identified before dispatching the fix: `stubAnnounce` claims to capture writer
+names "in call order," but call order is undefined across concurrent goroutines. A mutex alone
+would convert a deterministic race failure into a flaky ordering failure. The fix brief requires
+cross-session assertions to become order-insensitive, and reserves sequence assertions for
+same-session callbacks where ordering is genuinely guaranteed.
+
+Fix round D dispatched with that diagnosis; the brief forbids making the production broadcast path
+sequential to satisfy the test, and requires `go test -race -count=4` rather than a single green
+run, since one pass does not distinguish "fixed" from "got lucky."
+
+## Fix round D — DONE (`d555ff9c0`)
+
+`go test -race -count=4 ./kafka/consumer/playernpc/` -> `ok ... 1.053s`, four clean runs, against a
+subtest pair that previously failed reliably. No production code touched; no production race found.
+
+The fix addressed both halves of the problem rather than only the visible one:
+
+- `stubAnnounce`'s recorder is now mutex-guarded and captures `(writerName, characterId)` pairs
+  rather than bare names.
+- A new `callsFor` helper allows per-recipient ordering checks. The DEPLOYED and REMOVED assertions
+  became order-insensitive across sessions; REPOSITIONED's single-session full-sequence assertion
+  was KEPT, with a comment explaining that its ordering is genuinely deterministic.
+
+That last distinction is the point — the fix did not blanket-weaken every assertion to make the
+race go away. Ordering that is real is still asserted.
+
+Flagless `tools/verify.sh` re-launched from scratch at `d555ff9c0`. Gate 36's FAIL stands as the
+record for `e00a7abc2`; it is not amended.
+
+# Gate 37 — PASS at `d555ff9c0` (flagless, authoritative)
+
+`All checks passed.` / `EXIT=0`. Zero failed checks. This is the flagless `tools/verify.sh` against
+the full merge base, so per CLAUDE.md the branch is verified — the `--quick` gates 1-35 never were.
+
+## Branch state at the end of Phase 4
+
+All 23 plan tasks implemented; three non-overlapping plan-adherence shards APPROVED with zero
+findings; packet completeness CLEAN; 15 backend-guideline blocking findings fixed across rounds
+A/B/C and reviewed APPROVED_WITH_FINDINGS / 0 blocking; 1 finding rejected with reasoning; one
+`-race` defect found by the flagless gate and fixed in round D.
+
+Carries closed during this session rather than deferred to the PR:
+
+- The packet coverage manifest (produced, not documented as a gap).
+- The Task 18 nested-`equipment` decode gap (tested on both sides; the decode is sound).
+
+Genuinely open, and not mine to close:
+
+- **Two operator hand-backs**: create `atlas-player-npcs-main` on `postgres.home`, and flip the
+  GHCR package public after the first image push.
+- **Two Task 19 not-evaluable items**, both live-verification territory: the multi-pod "every
+  channel of the world" broadcast, and player-NPC vs ordinary-NPC object-id collision, never
+  affirmatively cleared.
+- **Live end-to-end checks for the Task 23 outcome path**, only exercisable against a real broker:
+  that a GM `@playernpc add` against a full map pink-texts `map_full` rather than a generic
+  message, and that a `deploy_player_npc` conversation step fails with `errorCode` set rather than
+  timing out.
+- **Three non-blocking polish items** from the fix review, deliberately not actioned.

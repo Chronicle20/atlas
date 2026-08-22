@@ -168,6 +168,57 @@ func TestExtract_EquipmentOrder(t *testing.T) {
 	}
 }
 
+// TestRestModel_EquipmentRoundTrip asserts a non-empty equipment slice
+// round-trips through real jsonapi.Marshal/jsonapi.Unmarshal -- the Task 18
+// review left this decode path unexercised (only Extract's own struct
+// literal was tested, not the JSON:API decode into EquipmentRestModel).
+func TestRestModel_EquipmentRoundTrip(t *testing.T) {
+	want := RestModel{
+		Id:          uuid.New(),
+		CharacterId: 42,
+		Name:        "Bowman",
+		Equipment: []EquipmentRestModel{
+			{Slot: -1, ItemId: 1040002},
+			{Slot: -5, ItemId: 1060002},
+			{Slot: -101, ItemId: 1322005},
+		},
+		DeployedAt: time.Now().UTC().Truncate(time.Second),
+	}
+
+	body, err := jsonapi.Marshal(want)
+	if err != nil {
+		t.Fatalf("jsonapi.Marshal: %v", err)
+	}
+
+	var got RestModel
+	if err := jsonapi.Unmarshal(body, &got); err != nil {
+		t.Fatalf("jsonapi.Unmarshal: %v", err)
+	}
+
+	if len(got.Equipment) != len(want.Equipment) {
+		t.Fatalf("Equipment len = %d, want %d (body: %s)", len(got.Equipment), len(want.Equipment), body)
+	}
+	for i, e := range got.Equipment {
+		if e.Slot != want.Equipment[i].Slot || e.ItemId != want.Equipment[i].ItemId {
+			t.Errorf("Equipment[%d] = %+v, want %+v", i, e, want.Equipment[i])
+		}
+	}
+
+	m, err := Extract(got)
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	eq := m.Equipment()
+	if len(eq) != 3 {
+		t.Fatalf("Extract().Equipment() len = %d, want 3", len(eq))
+	}
+	for i, e := range eq {
+		if e.Slot() != want.Equipment[i].Slot || e.ItemId() != want.Equipment[i].ItemId {
+			t.Errorf("Extract().Equipment()[%d] = (%d, %d), want (%d, %d)", i, e.Slot(), e.ItemId(), want.Equipment[i].Slot, want.Equipment[i].ItemId)
+		}
+	}
+}
+
 // TestForEachInMap_RequestsByMapAndWorld asserts ForEachInMap fetches
 // player-npcs?filter[mapId]=%d&filter[worldId]=%d (requests.go's Resource
 // template) against the field's map and world.

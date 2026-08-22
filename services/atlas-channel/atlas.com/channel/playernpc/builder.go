@@ -1,6 +1,7 @@
 package playernpc
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -8,6 +9,19 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+)
+
+var (
+	// ErrMissingId is returned by Build when the player NPC's id is
+	// uuid.Nil -- every deployed player NPC is addressed by this id.
+	ErrMissingId = errors.New("player npc id must not be nil")
+	// ErrMissingCharacterId is returned by Build when characterId is 0 --
+	// a player NPC always mirrors a real character.
+	ErrMissingCharacterId = errors.New("player npc characterId must be greater than 0")
+	// ErrIncoherentPosition is returned by Build when rx0 > rx1 -- rx0/rx1
+	// bound the patrol range the player NPC walks between, so rx0 must not
+	// exceed rx1.
+	ErrIncoherentPosition = errors.New("player npc rx0 must not be greater than rx1")
 )
 
 // Builder constructs a Model. Tests and callers use it instead of a
@@ -124,7 +138,16 @@ func (b *Builder) SetDeployedAt(deployedAt time.Time) *Builder {
 	return b
 }
 
-func (b *Builder) Build() Model {
+func (b *Builder) Build() (Model, error) {
+	if b.id == uuid.Nil {
+		return Model{}, ErrMissingId
+	}
+	if b.characterId == 0 {
+		return Model{}, ErrMissingCharacterId
+	}
+	if b.rx0 > b.rx1 {
+		return Model{}, ErrIncoherentPosition
+	}
 	return Model{
 		id:             b.id,
 		characterId:    b.characterId,
@@ -150,5 +173,13 @@ func (b *Builder) Build() Model {
 		overallJobRank: b.overallJobRank,
 		equipment:      b.equipment,
 		deployedAt:     b.deployedAt,
+	}, nil
+}
+
+func (b *Builder) MustBuild() Model {
+	m, err := b.Build()
+	if err != nil {
+		panic(err)
 	}
+	return m
 }

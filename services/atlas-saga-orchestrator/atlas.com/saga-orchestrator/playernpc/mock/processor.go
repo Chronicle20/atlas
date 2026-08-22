@@ -1,6 +1,8 @@
 package mock
 
 import (
+	"atlas-saga-orchestrator/playernpc"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -10,6 +12,8 @@ import (
 type ProcessorMock struct {
 	GetCurrentLocationFunc func(characterId uint32) (world.Id, _map.Id, channel.Id, error)
 }
+
+var _ playernpc.Processor = (*ProcessorMock)(nil)
 
 // GetCurrentLocation is a mock implementation of the
 // playernpc.Processor.GetCurrentLocation method.

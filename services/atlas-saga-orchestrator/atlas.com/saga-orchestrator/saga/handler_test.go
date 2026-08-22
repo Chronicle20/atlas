@@ -5,6 +5,7 @@ import (
 	"atlas-saga-orchestrator/compartment"
 	mock2 "atlas-saga-orchestrator/compartment/mock"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	playernpcmsg "atlas-saga-orchestrator/kafka/message/playernpc"
 	notemock "atlas-saga-orchestrator/note/mock"
 	playernpcmock "atlas-saga-orchestrator/playernpc/mock"
 	"atlas-saga-orchestrator/validation"
@@ -28,6 +29,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer/producertest"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -1670,19 +1672,16 @@ func TestHandleStartNpcConversation_DoesNotSelfComplete(t *testing.T) {
 
 // TestDeployPlayerNpcAction covers handleDeployPlayerNpc (FR-6.2).
 //
-// The "failure code surfaces" row from the design's test matrix is
-// deliberately NOT covered here: event_acceptance.go's doc comment on
-// sharedsaga.DeployPlayerNpc records that the shipped atlas-player-npcs
-// consumer (kafka/consumer/playernpc/consumer.go) is fire-and-forget, with
-// downstream errors logged and swallowed rather than surfaced on any reply
-// topic. There is no path by which a domain failure code (e.g.
-// pool_exhausted) could reach this handler, so a test asserting that path
-// would be asserting behavior that cannot occur. What IS asserted below is
-// the contract that actually exists: the step is self-completing (present
-// in event_acceptance.go's fire-and-forget table) and returns an error only
-// when resolving the character's location or emitting the Kafka command
-// itself fails. A follow-up task extending the Kafka contract with a reply
-// topic can pick this note up.
+// The step is no longer self-completing (Task 23b): the emitted command
+// carries the saga's transaction id, and event_acceptance.go's acceptance
+// table now waits for COMMAND_SUCCEEDED/COMMAND_FAILED
+// (kafka/consumer/playernpc) to complete or fail it. The FR-6.3
+// failure-code-surfacing row is covered by that consumer's own tests
+// (kafka/consumer/playernpc/errorcode_result_test.go), since the code
+// travels on the status event this handler never sees. What is asserted
+// here is the producer side: the command carries the transaction id, and
+// the handler returns an error only when resolving the character's location
+// or emitting the Kafka command itself fails.
 func TestDeployPlayerNpcAction(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
@@ -1718,8 +1717,11 @@ func TestDeployPlayerNpcAction(t *testing.T) {
 		assert.Equal(t, 1, locationCalls)
 	})
 
-	t.Run("default map resolves both world and map from current location", func(t *testing.T) {
+	t.Run("default map resolves both world and map from current location, command carries transaction id", func(t *testing.T) {
 		_, ctx := setupContext()
+
+		capture := producertest.InstallCapturing()
+		t.Cleanup(producertest.InstallNoop)
 
 		locP := &playernpcmock.ProcessorMock{
 			GetCurrentLocationFunc: func(characterId uint32) (world.Id, _map.Id, channel.Id, error) {
@@ -1728,8 +1730,9 @@ func TestDeployPlayerNpcAction(t *testing.T) {
 			},
 		}
 
+		tx := uuid.New()
 		s, err := NewBuilder().
-			SetTransactionId(uuid.New()).
+			SetTransactionId(tx).
 			SetSagaType(QuestReward).
 			SetInitiatedBy("test").
 			Build()
@@ -1741,6 +1744,12 @@ func TestDeployPlayerNpcAction(t *testing.T) {
 
 		err = NewHandler(logger, ctx).WithPlayerNpcLocationProcessor(locP).handleDeployPlayerNpc(s, step)
 		assert.NoError(t, err)
+
+		msgs := capture.Messages(playernpcmsg.EnvCommandTopic)
+		require.Len(t, msgs, 1, "handler must emit exactly one DEPLOY command")
+		var cmd playernpcmsg.Command[playernpcmsg.CommandDeployBody]
+		require.NoError(t, json.Unmarshal(msgs[0].Value, &cmd))
+		assert.Equal(t, tx, cmd.TransactionId, "emitted command must carry the saga's transaction id")
 	})
 
 	t.Run("invalid payload is rejected", func(t *testing.T) {

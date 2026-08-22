@@ -466,11 +466,14 @@ func NpcConversationStartNpcCommandProvider(transactionId uuid.UUID, payload Sta
 // command for a deploy_player_npc step (FR-6.2). Eligibility is always
 // enforced here -- the GM bypass (enforceEligibility: false) belongs to
 // atlas-messages' own path (design §9.2), not this saga operation.
-func DeployPlayerNpcCommandProvider(characterId uint32, worldId world.Id, mapId _map.Id) model.Provider[[]kafka.Message] {
+// transactionId is what makes the command saga-driven (Task 23a); the
+// command consumer echoes it back on COMMAND_SUCCEEDED/COMMAND_FAILED.
+func DeployPlayerNpcCommandProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, mapId _map.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &playernpc.Command[playernpc.CommandDeployBody]{
-		CharacterId: characterId,
-		Type:        playernpc.CommandTypeDeploy,
+		CharacterId:   characterId,
+		TransactionId: transactionId,
+		Type:          playernpc.CommandTypeDeploy,
 		Body: playernpc.CommandDeployBody{
 			WorldId:            worldId,
 			MapId:              mapId,

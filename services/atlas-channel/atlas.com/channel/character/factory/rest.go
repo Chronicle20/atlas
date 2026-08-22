@@ -94,3 +94,16 @@ func (r *CreateCharacterResponse) SetID(strId string) error {
 	r.TransactionId = strId
 	return nil
 }
+
+// SetToOneReferenceID / SetToManyReferenceIDs are required by api2go's unmarshal
+// even though this client doesn't care about the character resource's
+// relationships (see libs/atlas-rest gotcha): a target struct must implement
+// them or unmarshal errors whenever the upstream response includes a
+// relationships block.
+func (r *CreateCharacterResponse) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *CreateCharacterResponse) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}

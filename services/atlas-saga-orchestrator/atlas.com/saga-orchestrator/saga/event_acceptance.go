@@ -137,6 +137,11 @@ const (
 	// EVENT_TOPIC_NPC_CONVERSATION_STATUS, task-230).
 	EventKindNpcConversationStarted    EventKind = "npcconversation.started"
 	EventKindNpcConversationStartError EventKind = "npcconversation.start_error"
+
+	// Player NPC (atlas-player-npcs acks on EVENT_TOPIC_PLAYER_NPC_STATUS,
+	// task-23a/23b).
+	EventKindPlayerNpcCommandSucceeded EventKind = "playernpc.command_succeeded"
+	EventKindPlayerNpcCommandFailed    EventKind = "playernpc.command_failed"
 )
 
 // acceptanceTable maps each saga.Action to the set of EventKinds that can
@@ -222,14 +227,19 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	// first (task-230).
 	sharedsaga.StartItemConversation: {EventKindNpcConversationStarted, EventKindNpcConversationStartError},
 	sharedsaga.StartNpcConversation:  {EventKindNpcConversationStarted, EventKindNpcConversationStartError},
-	sharedsaga.DepositToStorage:      {EventKindCompartmentAccepted, EventKindCompartmentError},
-	sharedsaga.UpdateStorageMesos:    {EventKindStorageMesosUpdated, EventKindStorageError},
-	sharedsaga.TransferToStorage:     {}, // composite: expanded into sub-steps before dispatch
-	sharedsaga.WithdrawFromStorage:   {}, // composite
-	sharedsaga.AcceptToStorage:       {EventKindStorageCompartmentAccepted, EventKindStorageCompartmentError},
-	sharedsaga.ReleaseFromCharacter:  {EventKindCompartmentReleased, EventKindCompartmentError},
-	sharedsaga.AcceptToCharacter:     {EventKindCompartmentAccepted, EventKindCompartmentError},
-	sharedsaga.ReleaseFromStorage:    {EventKindStorageCompartmentReleased, EventKindStorageCompartmentError},
+	// DeployPlayerNpc is NOT self-completing (Task 23b): the command carries
+	// the saga's transaction id, and atlas-player-npcs' consumer replies with
+	// COMMAND_SUCCEEDED/COMMAND_FAILED (Task 23a) instead of the pre-23a
+	// fire-and-forget behaviour.
+	sharedsaga.DeployPlayerNpc:      {EventKindPlayerNpcCommandSucceeded, EventKindPlayerNpcCommandFailed},
+	sharedsaga.DepositToStorage:     {EventKindCompartmentAccepted, EventKindCompartmentError},
+	sharedsaga.UpdateStorageMesos:   {EventKindStorageMesosUpdated, EventKindStorageError},
+	sharedsaga.TransferToStorage:    {}, // composite: expanded into sub-steps before dispatch
+	sharedsaga.WithdrawFromStorage:  {}, // composite
+	sharedsaga.AcceptToStorage:      {EventKindStorageCompartmentAccepted, EventKindStorageCompartmentError},
+	sharedsaga.ReleaseFromCharacter: {EventKindCompartmentReleased, EventKindCompartmentError},
+	sharedsaga.AcceptToCharacter:    {EventKindCompartmentAccepted, EventKindCompartmentError},
+	sharedsaga.ReleaseFromStorage:   {EventKindStorageCompartmentReleased, EventKindStorageCompartmentError},
 
 	// Trade (task-205).
 	sharedsaga.TradeSettlement:  {}, // composite: expanded into release_from_trade×N + accept_to_character×N + award_mesos
@@ -318,30 +328,23 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.WarpToSavedLocation: {EventKindCharacterMapChanged},
 
 	// Fire-and-forget / self-completing actions (no Kafka event advances them).
-	sharedsaga.SaveLocation:       {},
-	sharedsaga.SendMessage:        {},
-	sharedsaga.FieldEffect:        {},
-	sharedsaga.FieldEffectWeather: {},
-	sharedsaga.PlayJukebox:        {},
-	sharedsaga.UiLock:             {},
-	sharedsaga.PlayPortalSound:    {},
-	sharedsaga.UpdateAreaInfo:     {},
-	sharedsaga.ShowInfo:           {},
-	sharedsaga.ShowInfoText:       {},
-	sharedsaga.ShowIntro:          {},
-	sharedsaga.ShowHint:           {},
-	sharedsaga.ShowGuideHint:      {},
-	sharedsaga.BlockPortal:        {},
-	sharedsaga.UnblockPortal:      {},
-	sharedsaga.SpawnMonster:       {},
-	sharedsaga.SpawnReactorDrops:  {},
-	// DeployPlayerNpc is fire-and-forget by necessity, not design: the
-	// shipped COMMAND_TOPIC_PLAYER_NPC consumer (atlas-player-npcs Task 17)
-	// has no synchronous reply or failure-event path back to the producer --
-	// downstream errors are logged and swallowed
-	// (kafka/consumer/playernpc/consumer.go's handleDeploy). There is no
-	// Kafka event this step could wait on.
-	sharedsaga.DeployPlayerNpc:            {},
+	sharedsaga.SaveLocation:               {},
+	sharedsaga.SendMessage:                {},
+	sharedsaga.FieldEffect:                {},
+	sharedsaga.FieldEffectWeather:         {},
+	sharedsaga.PlayJukebox:                {},
+	sharedsaga.UiLock:                     {},
+	sharedsaga.PlayPortalSound:            {},
+	sharedsaga.UpdateAreaInfo:             {},
+	sharedsaga.ShowInfo:                   {},
+	sharedsaga.ShowInfoText:               {},
+	sharedsaga.ShowIntro:                  {},
+	sharedsaga.ShowHint:                   {},
+	sharedsaga.ShowGuideHint:              {},
+	sharedsaga.BlockPortal:                {},
+	sharedsaga.UnblockPortal:              {},
+	sharedsaga.SpawnMonster:               {},
+	sharedsaga.SpawnReactorDrops:          {},
 	sharedsaga.HitReactor:                 {},
 	sharedsaga.BroadcastPqMessage:         {},
 	sharedsaga.RegisterPartyQuest:         {},
@@ -509,6 +512,10 @@ var outcomeTable = map[EventKind]EventOutcome{
 	// NPC conversation.
 	EventKindNpcConversationStarted:    OutcomeSuccess,
 	EventKindNpcConversationStartError: OutcomeFailure,
+
+	// Player NPC.
+	EventKindPlayerNpcCommandSucceeded: OutcomeSuccess,
+	EventKindPlayerNpcCommandFailed:    OutcomeFailure,
 }
 
 // EventOutcomeOf returns the outcome classification for kind.

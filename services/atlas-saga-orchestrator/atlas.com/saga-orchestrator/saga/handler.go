@@ -1422,12 +1422,11 @@ func (h *HandlerImpl) handleStartNpcConversation(s Saga, st Step[any]) error {
 
 // handleDeployPlayerNpc handles the DeployPlayerNpc action (FR-6.2).
 //
-// Self-completing, like handleSpawnMonster/handleSpawnReactorDrops: the
-// shipped atlas-player-npcs consumer (kafka/consumer/playernpc/consumer.go)
-// is fire-and-forget with no reply topic or status event, so there is
-// nothing for the orchestrator to wait for. FR-6.3's failure-code-surfacing
-// requirement is not satisfiable against that contract today -- see
-// event_acceptance.go's doc comment on sharedsaga.DeployPlayerNpc.
+// Event-driven, not self-completing (Task 23b): the command carries the
+// saga's transaction id, and the step waits for the command consumer's
+// COMMAND_SUCCEEDED/COMMAND_FAILED reply (kafka/consumer/playernpc) to
+// complete it. COMMAND_FAILED's design §8.3 code travels on the step's
+// result via the existing errorCode convention (FR-6.3).
 //
 // DeployPlayerNpcPayload carries no WorldId field, so WorldId is always
 // resolved via playerNpcLocationP.GetCurrentLocation, even when the payload
@@ -1449,7 +1448,7 @@ func (h *HandlerImpl) handleDeployPlayerNpc(s Saga, st Step[any]) error {
 		mapId = _map.Id(*payload.MapId)
 	}
 
-	err = producer.ProviderImpl(h.l)(h.ctx)(playernpcmsg.EnvCommandTopic)(DeployPlayerNpcCommandProvider(payload.CharacterId, worldId, mapId))
+	err = producer.ProviderImpl(h.l)(h.ctx)(playernpcmsg.EnvCommandTopic)(DeployPlayerNpcCommandProvider(s.TransactionId(), payload.CharacterId, worldId, mapId))
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to emit player npc deploy command.")
 		return err

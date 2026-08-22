@@ -32,6 +32,7 @@ import (
 	npcconversationconsumer "atlas-saga-orchestrator/kafka/consumer/npcconversation"
 	npcshopconsumer "atlas-saga-orchestrator/kafka/consumer/npcshop"
 	parcelCustody "atlas-saga-orchestrator/kafka/consumer/parcel/custody"
+	playernpcconsumer "atlas-saga-orchestrator/kafka/consumer/playernpc"
 	tradeCustody "atlas-saga-orchestrator/kafka/consumer/trade/custody"
 
 	saga2 "atlas-saga-orchestrator/kafka/consumer/saga"
@@ -141,6 +142,7 @@ func main() {
 	storage.InitConsumers(l)(cmf)(consumerGroupId)
 	npcshopconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	npcconversationconsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	playernpcconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	storageCompartment.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := asset.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
@@ -204,6 +206,9 @@ func main() {
 	}
 	if err := npcconversationconsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatalf("Unable to register npc conversation status handlers.")
+	}
+	if err := playernpcconsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatalf("Unable to register player npc status handlers.")
 	}
 	if err := storageCompartment.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")

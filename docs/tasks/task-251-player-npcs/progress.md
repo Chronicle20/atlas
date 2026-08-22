@@ -1070,3 +1070,20 @@ status-event consumer, per-code pink text. Implementer reported DONE, no concern
 Gate deliberately held: Task 23b was still writing to `services/atlas-saga-orchestrator/` when 23c
 landed, and running `verify.sh` against a tree another implementer is mid-edit invites a spurious
 FAIL. The next gate covers `2ae390710..HEAD` once 23b commits — one range, both tasks.
+
+## Task 23c review — APPROVED, 0 blocking, 2 non-blocking
+
+`.superpowers/sdd/plan/task-23c-review.md`, over `ee5640d83`. The reviewer diffed the mirror's JSON
+tags character by character against the authoritative contract and checked the consumer's
+header-parser/start-offset posture against the `npcconversation` reference. `Requester` carries the
+invoking GM (`c.Id()`), not the target; no local correlation state was introduced; the consumer
+declines on `Requester == nil` and type-guards the four pre-existing domain event types.
+
+Both non-blocking items are **accepted as-is, no fix**:
+
+1. `kafka/consumer/playernpc/consumer.go:147` — `commandTypeLabel`'s default returns the raw
+   `commandType` verbatim for an unrecognised value. Documented as believed-unreachable and it fails
+   loud rather than silent; the alternative would hide a future contract addition.
+2. `kafka/consumer/playernpc/consumer.go:48-53` — both handlers register on the one topic and filter
+   internally. That is the `npcconversation` reference's own fan-out shape, not something introduced
+   here.

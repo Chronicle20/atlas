@@ -28,6 +28,19 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+// SetToOneReferenceID and SetToManyReferenceIDs are required even though
+// this client no longer requests any relationship — see
+// libs/atlas-rest/CLAUDE.md: api2go errors decoding any resource whose
+// response carries a relationships block unless the target struct
+// implements these, whether or not the caller cares about the data.
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 // DefaultModel is the FR-4.7 fallback: applied when a tenant has no
 // player-npcs configuration (404 — the expected unconfigured state) or any
 // other read error.

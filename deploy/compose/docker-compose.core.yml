@@ -516,6 +516,21 @@ services:
       LOG_LEVEL: debug
       DB_NAME: atlas-pets
 
+  atlas-player-npcs:
+    <<: *atlas-defaults
+    container_name: atlas-player-npcs
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-player-npcs
+    image: atlas-player-npcs:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-player-npcs
+      COMMAND_TOPIC_PLAYER_NPC: COMMAND_TOPIC_PLAYER_NPC
+      EVENT_TOPIC_PLAYER_NPC_STATUS: EVENT_TOPIC_PLAYER_NPC_STATUS
+
   atlas-portal-actions:
     <<: [*atlas-defaults, *seed-catalog]
     container_name: atlas-portal-actions

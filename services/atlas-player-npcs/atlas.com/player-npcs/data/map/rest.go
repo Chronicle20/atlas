@@ -39,6 +39,19 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// SetToOneReferenceID and SetToManyReferenceIDs are required even though
+// this client no longer requests any relationship — see
+// libs/atlas-rest/CLAUDE.md: api2go errors decoding any resource whose
+// response carries a relationships block unless the target struct
+// implements these, whether or not the caller cares about the data.
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	var area *Rectangle
 	if rm.MapArea != nil {
@@ -86,6 +99,14 @@ func (r *GroundRequestRestModel) SetID(strId string) error {
 	return nil
 }
 
+func (r *GroundRequestRestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *GroundRequestRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 // GroundResultRestModel mirrors atlas-data's ground response shape (see
 // services/atlas-data/atlas.com/data/map/rest.go:357-363).
 type GroundResultRestModel struct {
@@ -110,6 +131,14 @@ func (r *GroundResultRestModel) SetID(strId string) error {
 		return err
 	}
 	r.Id = uint32(id)
+	return nil
+}
+
+func (r *GroundResultRestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *GroundResultRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 

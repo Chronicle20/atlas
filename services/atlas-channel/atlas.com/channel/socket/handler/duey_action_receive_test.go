@@ -122,6 +122,8 @@ func mustCompartmentModel(t *testing.T, characterId uint32, it inventory.Type, c
 	return m
 }
 
+func boolPtr(b bool) *bool { return &b }
+
 func mustAssetModel(t *testing.T, templateId uint32, slot int16) asset.Model {
 	t.Helper()
 	a, err := asset.NewBuilder(uuid.New(), templateId).SetId(1).SetSlot(slot).SetQuantity(1).Build()
@@ -164,14 +166,15 @@ func TestDueyActionReceive(t *testing.T) {
 	}
 
 	cases := []struct {
-		name         string
-		parcel       func() dueyparcel.Model
-		compFul      bool // EQUIP compartment reports 0 free slots
-		compDup      bool // EQUIP compartment already holds itemId
-		itemOnly     bool // getItemOnly answer when compDup triggers the check
-		itemOnlyErr  error
-		getParcelErr error
-		want         expect
+		name            string
+		parcel          func() dueyparcel.Model
+		compDup         bool  // EQUIP compartment already holds itemId
+		accommodated    *bool // canAccommodate answer; nil defaults to true
+		accommodatedErr error
+		itemOnly        bool // getItemOnly answer when compDup triggers the check
+		itemOnlyErr     error
+		getParcelErr    error
+		want            expect
 	}{
 		{
 			name: "receive happy path",
@@ -188,12 +191,15 @@ func TestDueyActionReceive(t *testing.T) {
 			want: expect{sagaLen: 1, invType: 0},
 		},
 		{
+			// canAccommodate false announces RECV_NO_FREE_SLOTS and starts no
+			// saga — whether that is a genuinely full compartment or a
+			// non-mergeable item, the verdict is atlas-inventory's alone.
 			name: "no free slot",
 			parcel: func() dueyparcel.Model {
 				return mustParcelModel(t, pendingId, 100, 0, "", time.Now().Add(-time.Hour), 5000, &itemId, byte(inventory.TypeValueEquip))
 			},
-			compFul: true,
-			want:    expect{reason: parcelcb.ParcelOperationRecvNoFreeSlots},
+			accommodated: boolPtr(false),
+			want:         expect{reason: parcelcb.ParcelOperationRecvNoFreeSlots},
 		},
 		{
 			// only == true — the recipient already holds a one-of-a-kind copy
@@ -230,6 +236,16 @@ func TestDueyActionReceive(t *testing.T) {
 			compDup:     true,
 			itemOnlyErr: errors.New("atlas-data unavailable"),
 			want:        expect{reason: parcelcb.ParcelOperationIncorrectRequest},
+		},
+		{
+			// A canAccommodate lookup failure must be treated as a refusal —
+			// never a permissive default — matching getItemOnly's posture.
+			name: "canAccommodate error",
+			parcel: func() dueyparcel.Model {
+				return mustParcelModel(t, pendingId, 100, 0, "", time.Now().Add(-time.Hour), 5000, &itemId, byte(inventory.TypeValueEquip))
+			},
+			accommodatedErr: errors.New("atlas-inventory unavailable"),
+			want:            expect{reason: parcelcb.ParcelOperationIncorrectRequest},
 		},
 		{
 			name: "not receivable yet",
@@ -292,14 +308,19 @@ func TestDueyActionReceive(t *testing.T) {
 				getCompartment: func(_ uint32, it inventory.Type) (compartment.Model, error) {
 					capacity := uint32(24)
 					var assets []asset.Model
-					if tc.compFul {
-						capacity = 1
-						assets = []asset.Model{mustAssetModel(t, 9999999, 0)}
-					}
 					if tc.compDup {
 						assets = append(assets, mustAssetModel(t, itemId, int16(len(assets))))
 					}
 					return mustCompartmentModel(t, 100, it, capacity, assets), nil
+				},
+				canAccommodate: func(_ uint32, _ uint32, _ uint32) (bool, error) {
+					if tc.accommodatedErr != nil {
+						return false, tc.accommodatedErr
+					}
+					if tc.accommodated != nil {
+						return *tc.accommodated, nil
+					}
+					return true, nil
 				},
 				getItemOnly: func(_ inventory.Type, _ item.Id) (bool, error) {
 					if tc.itemOnlyErr != nil {

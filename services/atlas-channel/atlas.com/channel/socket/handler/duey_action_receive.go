@@ -34,6 +34,13 @@ type dueyReceiveDeps struct {
 	// (design §7.2/§7.3).
 	getParcel      func(characterId uint32, worldId world.Id, wireId uint32) (dueyparcel.Model, error)
 	getCompartment func(characterId uint32, it inventory.Type) (compartment.Model, error)
+	// canAccommodate asks atlas-inventory whether it would currently accept
+	// a grant of quantity units of templateId to characterId — merge-aware,
+	// so a full compartment does not block a stackable that fits an
+	// existing stack, and equipped items (negative slots) never count
+	// toward occupancy. An error means the lookup failed and must be
+	// treated as a refusal, never as a permissive default.
+	canAccommodate func(characterId uint32, templateId uint32, quantity uint32) (bool, error)
 	// getItemOnly answers whether a template id is WZ one-of-a-kind
 	// (info/only). An error means the lookup failed — every caller must
 	// treat that as a refusal, never as a permissive default (matching
@@ -68,6 +75,9 @@ func handleDueyActionReceive(l logrus.FieldLogger, ctx context.Context, wp write
 			},
 			getCompartment: func(characterId uint32, it inventory.Type) (compartment.Model, error) {
 				return compartment.NewProcessor(l, ctx).GetByType(characterId, it)
+			},
+			canAccommodate: func(characterId uint32, templateId uint32, quantity uint32) (bool, error) {
+				return compartment.NewProcessor(l, ctx).CanAccommodate(characterId, templateId, quantity)
 			},
 			getItemOnly: func(it inventory.Type, templateId item.Id) (bool, error) {
 				m, err := tradeability.NewProcessor(l, ctx).Get(it, templateId)
@@ -147,10 +157,14 @@ func handleDueyActionClose(l logrus.FieldLogger, _ context.Context, _ writer.Pro
 }
 
 // receiveParcel runs the DUEY_ACTION RECEIVE pre-flight in the brief's
-// order (free-slot check, then unique-item check, then the parcel-state
-// check) and, if every check passes, builds the parcel_receive saga. Every
-// rejection announces a PARCEL result arm inline and starts no saga —
-// mirroring sendParcel's posture (NFR-5: never a disconnect).
+// order (accommodation check, then unique-item check, then the parcel-state
+// check) and, if every check passes, builds the parcel_receive saga. The
+// accommodation check defers to atlas-inventory's own CanAccommodate rather
+// than re-deriving free-slot/merge arithmetic locally — a duplicated
+// version of that rule is what produced RECV_NO_FREE_SLOTS being announced
+// against a mergeable stack. Every rejection announces a PARCEL result arm
+// inline and starts no saga — mirroring sendParcel's posture (NFR-5: never
+// a disconnect).
 func receiveParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, sp *parcelsb.ActionReceive, deps dueyReceiveDeps) {
 	reject := func(body func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte) {
 		_ = session.Announce(l)(ctx)(wp)(parcelcb.ParcelWriter)(body)(s)
@@ -173,7 +187,13 @@ func receiveParcel(l logrus.FieldLogger, ctx context.Context, wp writer.Producer
 			reject(parcelcb.ParcelIncorrectRequestBody())
 			return
 		}
-		if uint32(len(cp.Assets())) >= cp.Capacity() {
+		accommodated, aerr := deps.canAccommodate(s.CharacterId(), *itemId, uint32(p.Quantity()))
+		if aerr != nil {
+			l.WithError(aerr).Errorf("Character [%d] DUEY_ACTION RECEIVE: unable to determine whether item [%d] can be accommodated.", s.CharacterId(), *itemId)
+			reject(parcelcb.ParcelIncorrectRequestBody())
+			return
+		}
+		if !accommodated {
 			l.Warnf("Character [%d] attempted to receive parcel [%s] with no free slot in inventory type [%d].", s.CharacterId(), p.Id(), it)
 			reject(parcelcb.ParcelRecvNoFreeSlotsBody())
 			return

@@ -97,3 +97,73 @@ func TestToPacketItemHasNoSlotPrefix(t *testing.T) {
 		assert.Equal(t, byte(1), encoded[0], "equip item's first wire byte must be the TYPE byte (1), not a slot byte — got % x", encoded[:4])
 	})
 }
+
+// TestToPacketQuick pins the fix for bug-duey-parcel-quick-flag-mislabeled:
+// the wire Parcel's +29 flag is the parcel's quick-delivery bit
+// (CTabReceive::Draw @0x6EFF31/@0x6EFF78 gates a static "퀵배송" label on it,
+// v83 IDA-confirmed), NOT a "has a message" bit. ToPacket must project
+// Model.Quick() onto the wire, independent of whether the parcel carries a
+// message, in both the item and no-item return paths.
+func TestToPacketQuick(t *testing.T) {
+	base := func(quick bool, message string) Model {
+		m, err := NewBuilder().
+			SetId(uuid.New()).
+			SetSenderId(1).
+			SetSenderName("Alice").
+			SetRecipientId(2).
+			SetStatus("pending").
+			SetMessage(message).
+			SetQuick(quick).
+			SetExpiresAt(time.Now().Add(29 * 24 * time.Hour)).
+			Build()
+		require.NoError(t, err)
+		return m
+	}
+
+	t.Run("no item", func(t *testing.T) {
+		t.Run("quick with message", func(t *testing.T) {
+			p := base(true, "hi").ToPacket()
+			assert.True(t, p.Quick(), "wire Parcel must carry Quick()=true, independent of message")
+		})
+
+		t.Run("not quick with message", func(t *testing.T) {
+			p := base(false, "hi").ToPacket()
+			assert.False(t, p.Quick(), "wire Parcel must carry Quick()=false even when a message is present")
+		})
+	})
+
+	t.Run("with item", func(t *testing.T) {
+		templateId := uint32(2000004)
+		withItem := func(quick bool, message string) Model {
+			m, err := NewBuilder().
+				SetId(uuid.New()).
+				SetSenderId(1).
+				SetSenderName("Alice").
+				SetRecipientId(2).
+				SetStatus("pending").
+				SetMessage(message).
+				SetQuick(quick).
+				SetExpiresAt(time.Now().Add(29 * 24 * time.Hour)).
+				SetItemId(&templateId).
+				SetItemType(byte(inventory.TypeValueUse)).
+				SetQuantity(5).
+				Build()
+			require.NoError(t, err)
+			return m
+		}
+
+		t.Run("quick with message", func(t *testing.T) {
+			p := withItem(true, "hi").ToPacket()
+			_, ok := p.Item()
+			require.True(t, ok, "ToPacket must attach the item to the wire Parcel")
+			assert.True(t, p.Quick(), "wire Parcel must carry Quick()=true on the item-attached path")
+		})
+
+		t.Run("not quick with message", func(t *testing.T) {
+			p := withItem(false, "hi").ToPacket()
+			_, ok := p.Item()
+			require.True(t, ok, "ToPacket must attach the item to the wire Parcel")
+			assert.False(t, p.Quick(), "wire Parcel must carry Quick()=false on the item-attached path even with a message")
+		})
+	})
+}

@@ -71,21 +71,37 @@ import (
 //	                                 resolution, docs/tasks/
 //	                                 task-241-duey-parcel-delivery/context.md
 //	                                 §11).
-//	+29      uint32 hasMessage      CTabReceive::Draw @0x6EFA1F is the ONLY
+//	+29      uint32 quick           CTabReceive::Draw @0x6EFA1F is the ONLY
 //	          (flag)                 consumer that reads the tail of the
 //	                                 234-byte block. Row rendering
-//	                                 (@0x6EFF31/@0x6EFF78) draws a static
-//	                                 note-marker string only when
-//	                                 `*(parcel + 29)` is non-zero; the detail
-//	                                 pane (@0x6F07AB) does a 32-bit compare
-//	                                 `cmp [eax+1Dh], edi` (edi == 0) on the
-//	                                 same offset to decide whether to clear
-//	                                 the note control or read the note text.
-//	                                 When the flag is set but the string at
-//	                                 +33 is empty, the client substitutes
-//	                                 StringPool 3886 (@0x6F07C1) — so this
-//	                                 flag must track "message is non-empty",
-//	                                 not "a message field exists".
+//	                                 (@0x6EFF31) gates on `*(parcel + 29)`
+//	                                 non-zero, and when set draws a STATIC
+//	                                 string constant at x=113
+//	                                 (@0x6EFF78, `push offset dword_AFCDB0;
+//	                                 call ??0_bstr_t@@QAE@PBD@Z`) — NOT parcel
+//	                                 data. `dword_AFCDB0` holds the EUC-KR
+//	                                 bytes `C4 FC B9 E8 BC DB 00` = 퀵배송
+//	                                 ("Quick Delivery"), which a cp1252 client
+//	                                 renders as mojibake `Äü¹è¼Û`. The flag is
+//	                                 therefore the parcel's quick-delivery
+//	                                 bit, not a "has a message" bit. The
+//	                                 detail pane (@0x6F07AB) does a 32-bit
+//	                                 compare `cmp [eax+1Dh], edi` (edi == 0)
+//	                                 on the SAME offset: when clear, the
+//	                                 `else` arm @0x6F0816 clears the note
+//	                                 control outright and the +33 note text is
+//	                                 never read — a non-quick parcel can never
+//	                                 display a note client-side, which matches
+//	                                 the game (the note is a Quick Delivery
+//	                                 feature). When the flag is set but the
+//	                                 string at +33 is empty, the client
+//	                                 substitutes StringPool 3886 (@0x6F07C1).
+//	                                 A genuine quick-delivery parcel therefore
+//	                                 always renders the EUC-KR mojibake label
+//	                                 on a non-Korean client — accepted,
+//	                                 intended client behaviour, not a defect
+//	                                 to work around (task-241 bug-duey-parcel-
+//	                                 quick-flag-mislabeled.md).
 //	+33      char[201] message      NUL-terminated ASCII, read via
 //	          (201 bytes)            `ZXString<char>::GetBuffer(..., parcel +
 //	                                 33, -1)` @0x6F0801 and passed to
@@ -124,6 +140,7 @@ type Parcel struct {
 	mesos      uint32
 	expiresAt  time.Time
 	message    string
+	quick      bool
 	item       *model.Asset
 }
 
@@ -139,6 +156,7 @@ func (p Parcel) SenderName() string   { return p.senderName }
 func (p Parcel) Mesos() uint32        { return p.mesos }
 func (p Parcel) ExpiresAt() time.Time { return p.expiresAt }
 func (p Parcel) Message() string      { return p.message }
+func (p Parcel) Quick() bool          { return p.quick }
 func (p Parcel) HasItem() bool        { return p.item != nil }
 
 // Item returns the attached asset and whether one is set.
@@ -157,6 +175,16 @@ func (p Parcel) Item() (model.Asset, bool) {
 func (p Parcel) SetItem(a model.Asset) Parcel {
 	a = a.SetZeroPosition(true)
 	p.item = &a
+	return p
+}
+
+// SetQuick returns a copy of p with the quick-delivery flag (+29) set to
+// quick. This drives the client's static "퀵배송" (Quick Delivery) label at
+// x=113 in CTabReceive::Draw and gates whether the +33 note is ever shown —
+// see the +29 field doc above. It is independent of whether p carries a
+// message.
+func (p Parcel) SetQuick(quick bool) Parcel {
+	p.quick = quick
 	return p
 }
 
@@ -179,7 +207,7 @@ func (p Parcel) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 		w.WriteInt(p.mesos)
 		expiresAt := model.MsTimeBytes(p.expiresAt)
 		w.WriteByteArray(expiresAt[:])
-		if p.message != "" {
+		if p.quick {
 			w.WriteInt(uint32(1))
 		} else {
 			w.WriteInt(uint32(0))

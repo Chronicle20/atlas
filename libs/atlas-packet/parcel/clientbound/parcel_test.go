@@ -29,6 +29,12 @@ func TestParcelEncode(t *testing.T) {
 	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
 
 	t.Run("parcel no item", func(t *testing.T) {
+		// quick is deliberately false here even though a message is present:
+		// the +29 flag is the quick-delivery bit, not a "has a message" bit
+		// (bug-duey-parcel-quick-flag-mislabeled.md) — this and the "parcel
+		// with item" case below pin quick=false and quick=true respectively,
+		// both carrying a message, so the two concepts are never conflated
+		// again.
 		p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi")
 
 		name := make([]byte, 13)
@@ -42,7 +48,7 @@ func TestParcelEncode(t *testing.T) {
 		want = append(want, name...)
 		want = append(want, 0xe8, 0x03, 0x00, 0x00) // mesos LE (1000)
 		want = append(want, filetime[:]...)
-		want = append(want, 0x01, 0x00, 0x00, 0x00) // hasMessage flag LE (message is non-empty)
+		want = append(want, 0x00, 0x00, 0x00, 0x00) // quick flag LE (quick=false, message non-empty)
 		want = append(want, msg...)
 		want = append(want, 0x00) // hasItem = false
 
@@ -62,7 +68,7 @@ func TestParcelEncode(t *testing.T) {
 		// parcel.Parcel.SetItem's doc comment). Passing a non-zero slot here
 		// exercises that enforcement.
 		item := model.NewAsset(false, 1, 1302000, time.Time{})
-		p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
+		p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item).SetQuick(true)
 
 		name := make([]byte, 13)
 		copy(name, "Alice")
@@ -77,7 +83,7 @@ func TestParcelEncode(t *testing.T) {
 		want = append(want, name...)
 		want = append(want, 0xe8, 0x03, 0x00, 0x00)
 		want = append(want, filetime[:]...)
-		want = append(want, 0x01, 0x00, 0x00, 0x00) // hasMessage flag LE (message is non-empty)
+		want = append(want, 0x01, 0x00, 0x00, 0x00) // quick flag LE (quick=true, message non-empty)
 		want = append(want, msg...)
 		want = append(want, 0x01) // hasItem = true
 		want = append(want, itemBytes...)

@@ -182,7 +182,7 @@ func TestParcelArrivedV72WithItem(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 72, 1)
 	sentAt := time.Date(2026, 1, 15, 10, 30, 0, 0, time.UTC)
 	item := model.NewAsset(true, 0, 1302000, time.Time{})
-	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item)
+	p := parcel.NewParcel(7, "Alice", 1000, sentAt, "hi").SetItem(item).SetQuick(true)
 
 	name := make([]byte, 13)
 	copy(name, "Alice")
@@ -195,7 +195,7 @@ func TestParcelArrivedV72WithItem(t *testing.T) {
 	pBytes = append(pBytes, name...)
 	pBytes = append(pBytes, 0xe8, 0x03, 0x00, 0x00)
 	pBytes = append(pBytes, filetime[:]...)
-	pBytes = append(pBytes, 0x01, 0x00, 0x00, 0x00) // hasMessage flag LE (message is non-empty)
+	pBytes = append(pBytes, 0x01, 0x00, 0x00, 0x00) // quick flag LE (quick=true, message non-empty)
 	pBytes = append(pBytes, msg...)
 	pBytes = append(pBytes, 0x01) // hasItem = true
 	pBytes = append(pBytes, wantEquipItemBytesV72()...)
@@ -279,7 +279,7 @@ func TestParcelOpenV72WithItem(t *testing.T) {
 	pBytes = append(pBytes, name...)
 	pBytes = append(pBytes, 0xe8, 0x03, 0x00, 0x00)
 	pBytes = append(pBytes, filetime[:]...)
-	pBytes = append(pBytes, 0x01, 0x00, 0x00, 0x00) // hasMessage flag LE (message is non-empty)
+	pBytes = append(pBytes, 0x00, 0x00, 0x00, 0x00) // quick flag LE (quick=false, message non-empty)
 	pBytes = append(pBytes, msg...)
 	pBytes = append(pBytes, 0x01) // hasItem = true
 	pBytes = append(pBytes, wantEquipItemBytesV72()...)

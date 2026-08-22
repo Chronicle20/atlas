@@ -89,6 +89,7 @@ func WireId(id uuid.UUID) uint32 {
 // invented ones — flagged here rather than silently guessed.
 func (m Model) ToPacket() packetparcel.Parcel {
 	p := packetparcel.NewParcel(WireId(m.Id()), m.SenderName(), m.MesoAmount(), m.ExpiresAt(), m.Message())
+	p = p.SetQuick(m.Quick())
 
 	if m.ItemId() == nil {
 		return p

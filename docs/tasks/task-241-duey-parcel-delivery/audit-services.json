@@ -1,0 +1,125 @@
+{
+  "service": "task-241-duey-parcel-delivery (existing services)",
+  "path": "services/atlas-channel, services/atlas-character, services/atlas-configurations, services/atlas-npc-conversations, services/atlas-saga-orchestrator",
+  "date": "2026-08-19",
+  "build": "pass",
+  "testsPassed": 4,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-channel/parcel",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder() (package has model.go)", "status": "fail", "evidence": "No builder.go in services/atlas-channel/atlas.com/channel/parcel/"},
+        {"id": "DOM-02", "name": "Model.ToEntity() in entity.go", "status": "n-a", "evidence": "No entity.go in package"},
+        {"id": "DOM-03", "name": "Make(Entity) in entity.go", "status": "n-a", "evidence": "No entity.go in package"},
+        {"id": "DOM-04", "name": "Transform(Model) in rest.go", "status": "n-a", "evidence": "No rest.go in package"},
+        {"id": "DOM-05", "name": "TransformSlice in rest.go", "status": "n-a", "evidence": "No rest.go in package"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "parcel/processor.go:188"},
+        {"id": "DOM-11", "name": "provider.go lazy evaluation", "status": "n-a", "evidence": "No provider.go"},
+        {"id": "DOM-16", "name": "administrator.go for writes", "status": "n-a", "evidence": "No local DB writes"},
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "parcel/processor.go:183-245"},
+        {"id": "FILE-02", "name": "RestModel/Extract/JSON:API methods in rest.go", "status": "fail", "evidence": "No rest.go; RestModel/Extract/GetName/GetID/SetID live in parcel/processor.go:22-179"},
+        {"id": "FILE-03", "name": "requests in requests.go", "status": "pass", "evidence": "parcel/requests.go"},
+        {"id": "FILE-04", "name": "entity struct/Migration/TableName in entity.go", "status": "n-a", "evidence": "No entity.go"},
+        {"id": "FILE-05", "name": "Builder/domain Model/writes/readers placement", "status": "fail", "evidence": "Domain Model struct defined in parcel/processor.go:91-112, not model.go"},
+        {"id": "FILE-06", "name": "No single file carrying >=2 responsibilities", "status": "fail", "evidence": "parcel/processor.go carries Processor + RestModel/Extract + domain Model"},
+        {"id": "DOM-25", "name": "Client wire bytes resolved from config table", "status": "pass", "evidence": "duey_action.go:65-86 isDueyAction resolves from readerOptions[\"operations\"]"},
+        {"id": "EXT-01", "name": "Target RestModel implements ref-ID stubs", "status": "pass", "evidence": "parcel/processor.go:86,88; parcel/requests.go:74,76,105,107"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "No httptest anywhere in services/atlas-channel/atlas.com/channel/parcel/"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "No errors.Is(err, requests.ErrNotFound); raw error bubble at processor.go:194,219,231,244"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrl/RootUrlFor", "status": "pass", "evidence": "parcel/requests.go:29 requests.RootUrlFor(ctx, \"PARCEL\")"},
+        {"id": "DOM-30", "name": "AndEmit + Buffer atomicity", "status": "n-a", "evidence": "Package emits no Kafka messages"}
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/consumer/parcel",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "Consumer-package shape", "status": "n-a", "evidence": "No Processor/RestModel/entity/Builder declared in consumer.go; matches repo-wide consumer convention"},
+        {"id": "DOM-25", "name": "Client wire bytes from config", "status": "pass", "evidence": "consumer.go:77-161 builds packet bodies from dueyparcel.Model fields, no literal dispatcher byte"},
+        {"id": "DOM-26", "name": "goroutine safety", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0"},
+        {"id": "DOM-31", "name": "tenant/trace in context only", "status": "pass", "evidence": "consumer.go handlers read tenant.MustFromContext(ctx); no tenant field on message structs"}
+      ]
+    },
+    {
+      "name": "atlas-channel/socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client wire bytes from config", "status": "pass", "evidence": "duey_action.go:65-86; CashSlotItemType(31/32) at character_cash_item_use.go:1422-1431 never flows into a *Body() call (inbound dispatch selector only)"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handlers", "status": "pass", "evidence": "sendParcel/receiveParcel/discardParcel call only injected deps.* functions"},
+        {"id": "DOM-14", "name": "Handlers call processor methods, never providers", "status": "pass", "evidence": "deps wired to dueyparcel.NewProcessor(...) methods"},
+        {"id": "DOM-26", "name": "goroutine safety", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0; only new bare go func() is in a _test.go"}
+      ]
+    },
+    {
+      "name": "atlas-character/pending_change",
+      "type": "domain",
+      "checks": [
+        {"id": "EXT-01", "name": "Ref-ID stubs on target RestModel", "status": "warn", "evidence": "parcelStatusRestModel (rest.go:218-225) has no SetToOneReferenceID/SetToManyReferenceIDs; confirmed relationship-free upstream route (services/atlas-parcel/.../resource.go:273-290)"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "pass", "evidence": "requests_test.go:90-149 parcelStatusDoc fixtures via httptest.NewServer"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "parcelPending (requests.go:207-214) has no special-case; upstream route never 404s"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrl", "status": "pass", "evidence": "requests.go:201 requests.RootUrl(\"PARCEL\")"},
+        {"id": "DOM-21", "name": "No redeclaration of shared constants", "status": "pass", "evidence": "world.Id reused throughout gateDeps"},
+        {"id": "DOM-23", "name": "Topic env vars", "status": "n-a", "evidence": "Gate 12 is a synchronous REST call, not a Kafka topic"}
+      ]
+    },
+    {
+      "name": "atlas-npc-conversations/conversation",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-21", "name": "Reuse shared saga action/payload types", "status": "pass", "evidence": "saga.ShowParcel/saga.ShowParcelPayload re-exported from sharedsaga (saga/model.go:42,125)"},
+        {"id": "SEAM", "name": "open_duey saga step deserializes at orchestrator", "status": "fail", "evidence": "conversation/operation_executor.go:2130-2151 emits saga.Step{Action: saga.ShowParcel}; orchestrator's Step[T].UnmarshalJSON has no case ShowParcel: (see saga-orchestrator finding)"}
+      ]
+    },
+    {
+      "name": "atlas-saga-orchestrator/saga",
+      "type": "domain",
+      "checks": [
+        {"id": "SEAM", "name": "Step[T].UnmarshalJSON covers every declared Action", "status": "fail", "evidence": "saga/model.go:1557-1587 adds cases for TransferToParcel/AcceptToParcel/ReleaseFromParcel/WithdrawFromParcel but NOT ShowParcel, despite ShowParcel being declared (model.go:210,351), in acceptanceTable (event_acceptance.go:264), and dispatched (handler.go:947-948,2618-2639); unmarshal hits default: unknown action (model.go:1800-1801)"},
+        {"id": "DOM-30", "name": "AndEmit + Buffer atomicity", "status": "pass", "evidence": "saga-orchestrator/parcel/processor.go:110-168, every *AndEmit wraps message.Emit"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "parcel.Processor's 8 methods all implemented on parcelTestMock (saga/parcel_compensation_test.go:53-99)"},
+        {"id": "DOM-23", "name": "Topic env vars wired", "status": "pass", "evidence": "deploy/k8s/base/env-configmap.yaml:61-62,155-156; both overlays' kustomization.yaml"},
+        {"id": "DOM-26", "name": "goroutine safety", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0"}
+      ]
+    },
+    {
+      "name": "atlas-saga-orchestrator/parcel",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "parcel/processor.go:77-168"},
+        {"id": "FILE-02", "name": "RestModel in rest.go", "status": "pass", "evidence": "parcel/rest.go:50-94"},
+        {"id": "FILE-03", "name": "requests in requests.go", "status": "pass", "evidence": "parcel/requests.go"},
+        {"id": "FILE-06", "name": "No collapsed catch-all file", "status": "pass", "evidence": "Responsibilities cleanly split across processor.go/producer.go/requests.go/rest.go"},
+        {"id": "EXT-01", "name": "Ref-ID stubs", "status": "pass", "evidence": "parcel/rest.go:92,94"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "grep -rln httptest parcel/ -> no matches; RequestParcel untested against a fixture"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found", "status": "pass", "evidence": "No errors.Is(err, requests.ErrNotFound); raw bubble"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "parcel/requests.go:20"},
+        {"id": "DOM-21", "name": "Shared constants reused", "status": "pass", "evidence": "world.Id, channel.Model reused"}
+      ]
+    },
+    {
+      "name": "atlas-saga-orchestrator/kafka/consumer|message/parcel(/custody)",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "Consumer/message-package shape", "status": "n-a", "evidence": "No domain-file responsibilities declared; mirrors pre-existing MTS custody twin"},
+        {"id": "DOM-30", "name": "Custody status events routed through AcceptEvent/StepCompleted", "status": "pass", "evidence": "kafka/consumer/parcel/custody/consumer.go:48-97"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "EXT-02 risk (atlas-channel/parcel, saga-orchestrator/parcel): whether atlas-parcel's actual REST responses carry a relationships block, requiring atlas-parcel's own rest.go which is the sibling reviewer's surface",
+    "services/atlas-configurations seed-data template correctness for DUEY_ACTION operation codes across all changed template JSON files (not a changed Go package; packet-audit territory already covered by branch commits)",
+    "Whether the saga.ShowParcel UnmarshalJSON gap also affects other consumers of libs/atlas-saga's shared Step[T] type outside these five services' scope"
+  ],
+  "blocking": [
+    "SEAM: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/saga/model.go:1557-1587 — Step[T].UnmarshalJSON missing case ShowParcel:, breaking every saga containing a ShowParcel step (Quick Delivery Ticket flow and open_duey NPC operation) with 'unknown action: show_parcel'",
+    "FILE-02/FILE-05/FILE-06: services/atlas-channel/atlas.com/channel/parcel/processor.go:22-179 — RestModel, Extract, and domain Model collapsed into processor.go with no rest.go",
+    "DOM-01: services/atlas-channel/atlas.com/channel/parcel/ has model.go with no builder.go"
+  ],
+  "nonBlocking": [
+    "EXT-02: services/atlas-channel/atlas.com/channel/parcel/ and services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/parcel/ lack httptest-backed integration tests",
+    "EXT-01: services/atlas-character/atlas.com/character/pending_change/rest.go:218-225 parcelStatusRestModel lacks ref-ID no-op stubs (low risk, upstream confirmed relationship-free)"
+  ]
+}

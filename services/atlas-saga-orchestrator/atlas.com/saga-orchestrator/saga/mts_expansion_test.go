@@ -271,6 +271,7 @@ func TestIsExpandableActionCoversExpansionSwitch(t *testing.T) {
 		TransferToCashShop, WithdrawFromCashShop,
 		TransferToMts, WithdrawFromMts, MtsSettlePurchase,
 		TradeSettlement,
+		TransferToParcel, WithdrawFromParcel,
 	}
 	for _, a := range composites {
 		require.Truef(t, isExpandableAction(a), "composite action %q must be routed to expansion by the Step() gate", a)

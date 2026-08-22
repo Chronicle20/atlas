@@ -1,0 +1,140 @@
+{
+  "service": "atlas-channel, atlas-parcel",
+  "path": "services/atlas-channel, services/atlas-parcel",
+  "commitRange": "5b99d25a4..d9adf914d",
+  "date": "2026-08-21",
+  "build": "pass",
+  "testsPassed": 0,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "kafka/message/parcel",
+      "type": "support",
+      "checks": [
+        {
+          "id": "DOM-21",
+          "name": "No redeclaration of a type, helper, or numeric constant that already exists in libs/atlas-constants/",
+          "status": "pass",
+          "evidence": "grep -rn \"PARCEL_SENT|ParcelSent\" libs/atlas-constants returns nothing"
+        },
+        {
+          "id": "FILE-06",
+          "name": "No package-named catch-all file carrying >=2 responsibilities",
+          "status": "pass",
+          "evidence": "kafka.go carries only message-envelope constants/structs, unchanged shape from pre-existing StatusEventParcelArrived entry"
+        },
+        {
+          "id": "cross-module-mirror",
+          "name": "The two kafka.go files agree field-for-field",
+          "status": "pass",
+          "evidence": "services/atlas-channel/atlas.com/channel/kafka/message/parcel/kafka.go:44,74-77 and services/atlas-parcel/atlas.com/parcel/kafka/message/parcel/kafka.go:16,42-45 both declare const StatusEventParcelSent = \"PARCEL_SENT\" and type StatusEventParcelSentBody struct{}"
+        }
+      ]
+    },
+    {
+      "name": "kafka/producer/parcel",
+      "type": "support",
+      "checks": [
+        {
+          "id": "DOM-30",
+          "name": "Write-then-emit goes through AndEmit/message.Buffer, not direct producer.ProviderImpl from the success path",
+          "status": "pass",
+          "evidence": "services/atlas-parcel/atlas.com/parcel/kafka/producer/parcel/producer.go:33-40 ParcelSentStatusEventProvider invoked via mb.Put(...) inside buffer.Emit(p)(...) in custody/consumer.go:129-142"
+        },
+        {
+          "id": "FILE-01",
+          "name": "Processor lives in processor.go/processor_<group>.go",
+          "status": "n-a",
+          "evidence": "producer.go is a producer file, not a processor"
+        }
+      ]
+    },
+    {
+      "name": "kafka/consumer/custody",
+      "type": "support",
+      "checks": [
+        {
+          "id": "DOM-30",
+          "name": "Same AndEmit/Buffer discipline",
+          "status": "pass",
+          "evidence": "kafka/consumer/custody/consumer.go:129-142 new mb.Put(parcelmsg.EnvStatusEventTopic, parcelproducer.ParcelSentStatusEventProvider(b.CharacterId)) inside the same buffer.Emit closure as the custody ack"
+        },
+        {
+          "id": "correctness-sender-id",
+          "name": "b.CharacterId addresses the parcel's SENDER, not the recipient",
+          "status": "pass",
+          "evidence": "parcel/processor_custody.go:88 AcceptCustody calls .SetSenderId(params.CharacterId); params.CharacterId is populated from b.CharacterId at kafka/consumer/custody/consumer.go:92"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Test package reaching an emit path installs a no-op producer stub",
+          "status": "pass",
+          "evidence": "handleAcceptToParcel(pf providerFn) at kafka/consumer/custody/consumer.go:77 takes the Kafka provider as a parameter; consumer_test.go injects rp := &recordingProducer{} (e.g. line 133) instead of producer.ProviderImpl(...)"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Table-driven tests := []struct{...} + t.Run",
+          "status": "pass",
+          "evidence": "consumer_test.go:124 tests := []struct{ name string; run func(t *testing.T) }{...}, driven at consumer_test.go:385 t.Run(tt.name, tt.run); new assertions at consumer_test.go:158-165 added inside an existing table entry"
+        },
+        {
+          "id": "DOM-26",
+          "name": "No bare go statement",
+          "status": "pass",
+          "evidence": "git diff 5b99d25a4..d9adf914d -- '*.go' | grep bare-go-pattern -- no hits in this file"
+        }
+      ]
+    },
+    {
+      "name": "kafka/consumer/parcel",
+      "type": "support",
+      "checks": [
+        {
+          "id": "registration",
+          "name": "New handler registered on the correct topic/handle list",
+          "status": "pass",
+          "evidence": "kafka/consumer/parcel/consumer.go:57-62 handleParcelSentEvent registered via rf(t, ...) reusing the t resolved for EnvStatusEventTopic at line 47; HandlerHandle appended to handles"
+        },
+        {
+          "id": "DOM-25",
+          "name": "No client wire byte as a Go literal outside libs/atlas-packet codec internals",
+          "status": "pass",
+          "evidence": "kafka/consumer/parcel/consumer.go:214-231 calls parcelcb.ParcelSuccessfullySentBody(), a semantic accessor predating this range (libs/atlas-packet/parcel/clientbound/parcel_body.go:131-133, base commit 5b99d25a4); no literal introduced"
+        },
+        {
+          "id": "DOM-31",
+          "name": "Tenant/trace identifiers travel in context only",
+          "status": "pass",
+          "evidence": "kafka/consumer/parcel/consumer.go:220-223 tenant.MustFromContext(ctx); no tenant field added to any struct/body"
+        },
+        {
+          "id": "DOM-24",
+          "name": "Emit-path stub required",
+          "status": "n-a",
+          "evidence": "grep for AndEmit/message.Emit/producer.Produce/producer.ProviderImpl in kafka/consumer/parcel/*.go returns nothing; handleParcelSentEvent writes to the socket via session.Announce, not Kafka"
+        },
+        {
+          "id": "DOM-26",
+          "name": "No bare go statement",
+          "status": "pass",
+          "evidence": "same repo-wide grep as above -- no hits in this file"
+        },
+        {
+          "id": "DOM-20",
+          "name": "Table-driven tests := []struct{...} + t.Run",
+          "status": "fail",
+          "evidence": "sent_test.go:50-136 TestParcelSentEvent uses four bare t.Run(...) blocks (lines 51, 76, 94, 116) with no tests := []struct{...} table backing them"
+        }
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "SCAFFOLD-07: whether ParcelWriter/ParcelOperationSuccessfullySent are seeded in every targeted tenant's opcode template -- reused not newly registered in this range, would need services/atlas-configurations/seed-data/templates/* which no file in this range touches",
+    "DOM-23: whether the base overlay/configmap and the other (non-pr-sparse) overlay already carry the four re-listed parcel topic vars -- would need deploy/k8s/base/* and any additional overlay, neither in this diff's changed-file set"
+  ],
+  "blocking": [
+    "DOM-20: services/atlas-channel/atlas.com/channel/kafka/consumer/parcel/sent_test.go:50-136 -- TestParcelSentEvent's four sub-cases are plain t.Run(...) calls, not the required tests := []struct{...} + t.Run table-driven form"
+  ],
+  "nonBlocking": []
+}

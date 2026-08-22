@@ -476,6 +476,8 @@ errors:
     alias_of: CANNOT_TRANSFER_OUT
   - key: mts_listings_open
     alias_of: CANNOT_TRANSFER_OUT
+  - key: parcel_pending
+    alias_of: CANNOT_TRANSFER_OUT
   - key: CANNOT_TRANSFER_NO_EMPTY_SLOTS
     modes: { gms_v72: 198, gms_v79: 212, gms_v83: 223, gms_v84: 232, gms_v87: 238, gms_v92: 61, gms_v95: 61 }
   - key: no_character_slot

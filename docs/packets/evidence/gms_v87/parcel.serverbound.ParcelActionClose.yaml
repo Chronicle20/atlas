@@ -1,0 +1,10 @@
+packet: parcel/serverbound/ParcelActionClose
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CParcelDlg::CloseParcelDlg
+    address: "0x734682"
+    decompile_sha256: 31b735dc9d33e5ffcf2081a225e84e35ac6a297bb8a7144f93990158ca68f829
+verifies:
+    - parcel/serverbound/v87_test.go#TestActionCloseV87

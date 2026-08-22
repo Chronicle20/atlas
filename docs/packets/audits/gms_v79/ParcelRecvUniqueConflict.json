@@ -1,0 +1,21 @@
+{
+  "WriterName": "ParcelRecvUniqueConflict",
+  "IDAName": "CParcelDlg::OnPacket#RecvUniqueConflict",
+  "Address": "0x683cf0",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/parcel/clientbound/parcel.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (22/0x16 RecvUniqueConflict; dispatch byte, notice-only, no body)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -1,0 +1,30 @@
+{
+  "data": {
+    "attributes": {
+      "npcId": 9010009,
+      "startState": "openDuey",
+      "states": [
+        {
+          "genericAction": {
+            "operations": [
+              {
+                "params": {},
+                "type": "open_duey"
+              }
+            ],
+            "outcomes": [
+              {
+                "conditions": [],
+                "nextState": null
+              }
+            ]
+          },
+          "id": "openDuey",
+          "type": "genericAction"
+        }
+      ]
+    },
+    "id": "9010009",
+    "type": "npc-conversation"
+  }
+}

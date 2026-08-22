@@ -1,0 +1,10 @@
+packet: parcel/serverbound/ParcelActionClose
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CParcelDlg::CloseParcelDlg
+    address: "0x7559c8"
+    decompile_sha256: 88cc0693113b106814e8ad3f053ca74097a0fce5cd17b90a18d63835dee080fc
+verifies:
+    - parcel/serverbound/v185_test.go#TestActionCloseV185

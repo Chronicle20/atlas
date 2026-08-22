@@ -1,0 +1,154 @@
+{
+  "service": "task-241-duey-parcel-delivery (existing services, round 2)",
+  "path": "services/atlas-channel, services/atlas-character, services/atlas-configurations, services/atlas-npc-conversations, services/atlas-saga-orchestrator, libs/atlas-constants, libs/atlas-packet, libs/atlas-saga",
+  "date": "2026-08-20",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "saga-orchestrator/saga",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "cross-service-seam",
+          "name": "Step[T].UnmarshalJSON covers every declared Action",
+          "status": "pass",
+          "evidence": "saga/model.go:1584-1589 adds case ShowParcel:; all 122 Action constants have a matching case."
+        },
+        {
+          "id": "regression-test",
+          "name": "Round-trip test exists for the fixed action",
+          "status": "pass",
+          "evidence": "saga/show_parcel_roundtrip_test.go:20-38 TestStep_ShowParcel_JSONRoundTrip"
+        },
+        {
+          "id": "allActions-coverage",
+          "name": "allActions coverage list is genuinely complete against the declared Action set",
+          "status": "fail",
+          "evidence": "event_acceptance_test.go:14-61 allActions (120 unique entries) is missing DestroyAllAssets and RenamePet out of 122 declared Action constants in libs/atlas-saga/model.go. Both already have acceptanceTable (event_acceptance.go:151,184) and handler.go (839-840,895-896) coverage, so not a live bug, but the list was only extended by the five entries this branch's own work needed, not audited end-to-end."
+        }
+      ]
+    },
+    {
+      "name": "atlas-channel/parcel",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "DOM-01",
+          "name": "builder.go exists for a package with model.go",
+          "status": "pass",
+          "evidence": "parcel/builder.go:1-165"
+        },
+        {
+          "id": "FILE-01",
+          "name": "Processor confined to processor.go",
+          "status": "pass",
+          "evidence": "parcel/processor.go:16-77"
+        },
+        {
+          "id": "FILE-02",
+          "name": "RestModel/Extract/JSON:API methods in rest.go",
+          "status": "pass",
+          "evidence": "parcel/rest.go:16-108"
+        },
+        {
+          "id": "FILE-05",
+          "name": "Domain Model/Builder placement",
+          "status": "pass",
+          "evidence": "parcel/model.go:17-97, parcel/builder.go"
+        },
+        {
+          "id": "FILE-06",
+          "name": "No collapsed catch-all file",
+          "status": "pass",
+          "evidence": "Responsibilities split across processor.go/rest.go/model.go/builder.go/requests.go"
+        },
+        {
+          "id": "EXT-01",
+          "name": "Ref-ID stubs on target RestModels",
+          "status": "pass",
+          "evidence": "parcel/rest.go:74,76; parcel/requests.go:74,76,105,107"
+        },
+        {
+          "id": "EXT-02",
+          "name": "httptest-backed integration test",
+          "status": "fail",
+          "evidence": "grep -rln httptest services/atlas-channel/atlas.com/channel/parcel/ -> no matches (carried forward from round 1, not in this fix's scope)"
+        }
+      ]
+    },
+    {
+      "name": "atlas-saga-orchestrator/parcel",
+      "type": "support",
+      "checks": [
+        {
+          "id": "EXT-02",
+          "name": "httptest-backed integration test",
+          "status": "fail",
+          "evidence": "grep -rln httptest services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/parcel/ -> no matches (carried forward from round 1)"
+        }
+      ]
+    },
+    {
+      "name": "atlas-configurations",
+      "type": "support",
+      "checks": [
+        {
+          "id": "SEC-handler-gating",
+          "name": "DueyActionHandle carries a validator, and the chosen one is the narrowest available",
+          "status": "pass",
+          "evidence": "All 8 templates bind DueyActionHandle to LoggedInValidator; corpus vocabulary is exactly {LoggedInValidator, NoOpValidator}; LoggedInValidator is a real runtime gate at services/atlas-channel/atlas.com/channel/socket/handler/handle.go:33-44 (destroys the session on failure); five neighbouring NPC/inventory handlers confirmed to use the same validator."
+        },
+        {
+          "id": "validate-membership-gap",
+          "name": "socket.Validate checks validator field is non-empty, not that it names a registered validator",
+          "status": "warn",
+          "evidence": "services/atlas-configurations/atlas.com/configurations/socket/validate.go:122-127 only checks non-empty; pre-existing gap, not introduced by c8579718f"
+        },
+        {
+          "id": "corpus-count",
+          "name": "corpus_test.go literal matches actual template corpus size",
+          "status": "pass",
+          "evidence": "socket/corpus_test.go:63 asserts 3333; go test ./socket/... passes"
+        }
+      ]
+    },
+    {
+      "name": "libs/atlas-saga payloads",
+      "type": "support",
+      "checks": [
+        {
+          "id": "DOM-21",
+          "name": "inventory.Type substitution preserves wire format",
+          "status": "pass",
+          "evidence": "libs/atlas-constants/inventory/constants.go:9 type Type int8, no custom (Un)MarshalJSON; value domain 1-5 (constants.go:12-16) encodes identically to byte"
+        },
+        {
+          "id": "boundary-conversions",
+          "name": "Cross-service call sites convert correctly with no silent truncation",
+          "status": "pass",
+          "evidence": "git show 8f23610d8: saga-orchestrator/saga/processor.go byte(payload.SourceInventoryType); duey_action_receive.go:202 inventory.Type(p.ItemType()); duey_action_send.go:176-190,205"
+        },
+        {
+          "id": "build-test",
+          "name": "libs/atlas-saga, atlas-channel, atlas-saga-orchestrator build and test clean",
+          "status": "pass",
+          "evidence": "go build ./... and go test ./... -count=1 all green in the three affected modules"
+        }
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "allActions-coverage: whether the DestroyAllAssets/RenamePet gap extends to any other action beyond the two flagged, requiring a full sweep of handler.go/event_acceptance.go against all 122 actions",
+    "SEC-handler-gating: whether any other seed-corpus handler besides the five cited neighbours uses NoOpValidator for a comparably NPC-gated action, which would weaken the narrowest-validator claim"
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "allActions-coverage: event_acceptance_test.go:14-61 allActions still missing DestroyAllAssets and RenamePet",
+    "EXT-02: services/atlas-channel/atlas.com/channel/parcel/ has no httptest-backed integration test",
+    "EXT-02: services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/parcel/ has no httptest-backed integration test",
+    "validate-membership-gap: socket.Validate does not check validator names against atlas-channel's registered validatorMap"
+  ]
+}

@@ -15277,6 +15277,198 @@
           "comment": "nItemID"
         }
       ]
+    },
+    "CParcelDlg::OnPacket#Open": {
+      "address": "0x755e7b",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, jms_v185 batch 8/8 (session a977912e, MapleStory_dump_SCY.exe.i64). Mode consumed by CParcelDlg::OnPacket's outer Decode1 @0x755a43; case 10 (jms_v185 shift from v83's mode 8) reads quickEnabled Decode1 @0x755e7b, allocates CParcelDlg @0x755e82-0x755ea3, then sub_75555E(v1) @0x755eaa -> sub_74FAF9 @0x74faf9 does the mailbox/arrived reads: Decode1 mailbox count @0x74fb0e, loop body sub_510691 (PARCEL::Decode) @0x74fb34, Decode1 arrived count @0x74fbaa, loop body sub_510691 @0x74fbcf. sub_510691 @0x510691 = PARCEL::Decode: CInPacket::DecodeBuffer(0xEA=234) @0x5106a9, Decode1(hasItem) @0x5106b6, optional GW_ItemSlotBase::Decode @0x5106c4. Body-matches v83's case 8 shape one arm later (case 9 is a new JMS-only outbound-ack arm with no v83 counterpart -- see parcel.yaml CEILING note). Atlas struct: parcel/clientbound/parcel.go Open + parcel/parcel.go Parcel.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (10 OPEN; dispatch byte, jms_v185 shift from v83's mode 8)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "quickEnabled"
+        },
+        {
+          "op": "Decode1",
+          "comment": "mailbox count"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "one parcel entry (PARCEL::Decode via sub_510691: DecodeBuffer(0xEA=234) fixed block + Decode1 hasItem + optional GW_ItemSlotBase::Decode item) -- loop body",
+          "guard": "loop mailbox count"
+        },
+        {
+          "op": "Decode1",
+          "comment": "arrived count"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "one parcel entry (PARCEL::Decode, same shape as mailbox) -- loop body",
+          "guard": "loop arrived count"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ParcelRemoved": {
+      "address": "0x755d43",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, jms_v185 batch 8/8 (session a977912e, MapleStory_dump_SCY.exe.i64). Case 24 (jms_v185 shift from v83's mode 23): CInPacket::Decode4 (parcelId) @0x755d43 then Decode1 (kind) @0x755d4c; kind==3 selects StringPool id 0xFC0, else 0xFC1. Body-matches v83's case 23 shape. Atlas struct: parcel/clientbound/parcel.go ParcelRemoved.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (24 PARCEL_REMOVED; dispatch byte, jms_v185 shift from v83's mode 23)"
+        },
+        {
+          "op": "Decode4",
+          "comment": "parcelId"
+        },
+        {
+          "op": "Decode1",
+          "comment": "kind (3 = deleted; else = claimed)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#ParcelArrived": {
+      "address": "0x755cdd",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, jms_v185 batch 8/8 (session a977912e, MapleStory_dump_SCY.exe.i64). Case 25 (jms_v185 shift from v83's mode 24): sub_7561EA(v37) allocates the target buffer @0x755ccd, then sub_510691(v1) @0x755cdd decodes a single PARCEL::Decode (DecodeBuffer(0xEA=234) @0x5106a9, Decode1(hasItem) @0x5106b6, optional GW_ItemSlotBase::Decode @0x5106c4), followed by a StringPool id 0xFC3 notice (no further wire bytes). Body-matches v83's case 24 shape. Atlas struct: parcel/clientbound/parcel.go ParcelArrived + parcel/parcel.go Parcel.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (25 PARCEL_ARRIVED; dispatch byte, jms_v185 shift from v83's mode 24)"
+        },
+        {
+          "op": "DecodeBuf",
+          "comment": "one parcel entry (PARCEL::Decode via sub_510691: DecodeBuffer(0xEA=234) fixed block + Decode1 hasItem + optional GW_ItemSlotBase::Decode item)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#AlarmNamed": {
+      "address": "0x755bf5",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, jms_v185 batch 8/8 (session a977912e, MapleStory_dump_SCY.exe.i64). Case 26 (jms_v185 shift from v83's mode 25): CInPacket::DecodeStr (senderName) @0x755bf5 then Decode1 (hasItem) @0x755c0e, driving the named-sender fade window (CUIFadeYesNo). Body-matches v83's case 25 shape. Atlas struct: parcel/clientbound/parcel.go AlarmNamed.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (26 ALARM_NAMED; dispatch byte, jms_v185 shift from v83's mode 25)"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "senderName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasItem"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#OpenQuick": {
+      "address": "0x755bcf",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, jms_v185 batch 8/8 (session a977912e, MapleStory_dump_SCY.exe.i64). Case 27 (jms_v185 shift from v83's mode 26): no wire reads beyond the mode byte -- TSingleton disconnect-guard @0x755b9e then CParcelDlg construction @0x755bcf-0x755be5 only. Body-matches v83's case 26 shape. Atlas struct: parcel/clientbound/parcel.go OpenQuick.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (27 OPEN_QUICK; dispatch byte, no body, jms_v185 shift from v83's mode 26)"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#AlarmGeneric": {
+      "address": "0x755b4b",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, jms_v185 batch 8/8 (session a977912e, MapleStory_dump_SCY.exe.i64). Case 28 (jms_v185 shift from v83's mode 27): CInPacket::Decode1 (hasItem) @0x755b4b only, driving the generic (unnamed-sender) fade window. Body-matches v83's case 27 shape. Atlas struct: parcel/clientbound/parcel.go AlarmGeneric.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (28 ALARM_GENERIC; dispatch byte, jms_v185 shift from v83's mode 27)"
+        },
+        {
+          "op": "Decode1",
+          "comment": "hasItem"
+        }
+      ]
+    },
+    "CParcelDlg::OnPacket#SuccessfullySent": {
+      "address": "0x755ad9",
+      "direction": "clientbound",
+      "notes": "task-241 Task 28, jms_v185 batch 8/8 (session a977912e, MapleStory_dump_SCY.exe.i64). sub_755FD3 (the NoticeResult dispatcher, JMS's own notice ids differ from v83's but the SAME case-19 (18 in v83) special-handling exists) is invoked for every default-arm mode @0x755ac6; OnPacket's default arm additionally checks v1==19 @0x755ad9 to trigger CParcelDlg::CloseParcelDlg (@0x7559c8, via sub_755F66 when m_dwWndKey==0) as a side effect. No body beyond the mode byte. jms_v185 shift from v83's mode 18. Atlas struct: parcel/clientbound/parcel.go SuccessfullySent.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "mode (19 SUCCESSFULLY_SENT; dispatch byte, notice-only, no body; also gates the CloseParcelDlg side effect, jms_v185 shift from v83's mode 18)"
+        }
+      ]
+    },
+    "CTabSend::SendParcel": {
+      "address": "0x753aa5",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, jms_v185 batch 8/8 (session a977912e, MapleStory_dump_SCY.exe.i64). DUEY_ACTION mode 3 (SEND, jms_v185 shift from every GMS build's mode 2). NPC path CTabSend::SendParcel @0x753aa5 (quick=0, stops after the quick flag). COutPacket(&pkt,57) @0x753bbc; Encode1(3) mode @0x753bca; Encode1(invType=*(this+8)) @0x753bd8; Encode2(slot=*(this+12)) @0x753be7; Encode2(quantity=*(this+16)) @0x753bf6; Encode4(mesos=*(this+20)) @0x753c01; EncodeStr(recipientName) @0x753c1a; Encode1(0) @0x753c23 quick=false. The quick-send path is CTabQuickSend::SendQuickDelivery @0x75225f (named directly in this IDB): COutPacket(&pkt,57) @0x752407; Encode1(3) mode @0x752415; Encode1(invType=*(this+8)) @0x752423; Encode2(slot=*(this+12)) @0x752432; Encode2(quantity=*(this+20)) @0x752441; Encode4(mesos=*(this+24)) @0x75244c; EncodeStr(recipientName) @0x752465; Encode1(1) @0x75246f quick=true; EncodeStr(message) @0x752488; Encode4(ticketRef=*(this+16)) @0x752493. Body-matches v83's SendParcel shape one mode later (opcode 0x039, confirmed at both COutPacket call sites). Atlas struct: parcel/serverbound/action_send.go ActionSend.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "inventoryType"
+        },
+        {
+          "op": "Decode2",
+          "comment": "slot"
+        },
+        {
+          "op": "Decode2",
+          "comment": "quantity"
+        },
+        {
+          "op": "Decode4",
+          "comment": "mesos"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "recipientName"
+        },
+        {
+          "op": "Decode1",
+          "comment": "quick"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "message -- quick-send path only (CTabQuickSend::SendQuickDelivery @0x75225f); the NPC path (CTabSend::SendParcel @0x753aa5) stops after the quick flag",
+          "guard": "quick != 0"
+        },
+        {
+          "op": "Decode4",
+          "comment": "ticketRef -- quick-send path only",
+          "guard": "quick != 0"
+        }
+      ]
+    },
+    "CTabReceive::ReceiveParcel": {
+      "address": "0x75110b",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, jms_v185 batch 8/8 (session a977912e, MapleStory_dump_SCY.exe.i64). DUEY_ACTION mode 5 (RECEIVE, jms_v185 shift from every GMS build's mode 4). Gated on the 30-day expiry countdown @0x751196 (v4/0xC92A69C000 < 30). COutPacket(&pkt,0x39) @0x7511ae; Encode1(5) @0x7511bb; Encode4(parcelId) @0x7511ce. Body-matches v83's ReceiveParcel shape one mode later. Atlas struct: parcel/serverbound/action_parcel_id.go ActionReceive.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "parcelId"
+        }
+      ]
+    },
+    "CTabReceive::DiscardParcel": {
+      "address": "0x75122b",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, jms_v185 batch 8/8 (session a977912e, MapleStory_dump_SCY.exe.i64). DUEY_ACTION mode 6 (DISCARD, jms_v185 shift from every GMS build's mode 5). COutPacket(&pkt,57) @0x751295; Encode1(6) @0x7512a2; Encode4(parcelId) @0x7512b5. Body-matches v83's DiscardParcel shape one mode later. Atlas struct: parcel/serverbound/action_parcel_id.go ActionDiscard.",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "parcelId"
+        }
+      ]
+    },
+    "CParcelDlg::CloseParcelDlg": {
+      "address": "0x7559c8",
+      "direction": "serverbound",
+      "notes": "task-241 Task 28, jms_v185 batch 8/8 (session a977912e, MapleStory_dump_SCY.exe.i64). DUEY_ACTION mode 8 (CLOSE, jms_v185 shift from every GMS build's mode 7). COutPacket(&pkt,57) @0x7559dd; Encode1(8) @0x7559eb; no further bytes -- the mode byte itself is written by the shared Action wrapper (action.go), not ActionClose. Body-matches v83's CloseParcelDlg shape one mode later. Atlas struct: parcel/serverbound/action_parcel_id.go ActionClose.",
+      "calls": []
     }
   }
 }

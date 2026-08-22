@@ -1,0 +1,10 @@
+packet: parcel/serverbound/ParcelActionSend
+direction: serverbound
+version: gms_v87
+category: TIER1-FIXTURE
+ida:
+    function: CTabSend::SendParcel
+    address: "0x730de5"
+    decompile_sha256: 8c4541cfc7d2c99f7eb99f442ab4817f8590e5cbe4a78549c8bb730a88f644fa
+verifies:
+    - parcel/serverbound/v87_test.go#TestActionSendV87

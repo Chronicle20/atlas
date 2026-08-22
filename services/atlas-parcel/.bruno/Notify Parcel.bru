@@ -1,0 +1,21 @@
+meta {
+  name: Notify Parcel
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{scheme}}://{{host}}:{{port}}/api/parcels/{{parcelId}}/notify
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "data":
+      {
+        "type": "parcels",
+        "id": "{{parcelId}}"
+      }
+  }
+}

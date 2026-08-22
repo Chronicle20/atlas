@@ -1,0 +1,11 @@
+meta {
+  name: Get Parcel
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/parcels/{{parcelId}}
+  body: none
+  auth: inherit
+}

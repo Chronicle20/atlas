@@ -1,0 +1,87 @@
+# Parcel — CParcelDlg::OnPacket per-version mode table.
+#
+# SOURCE OF TRUTH for the Parcel writer. Derived from CParcelDlg::OnPacket
+# @0x6F56EA and CParcelDlg::NoticeResult @0x6F5BE2 on GMS v83 (task-241
+# design §5.2). Arms 0x00-0x07 do not exist: OnPacket's `default` runs
+# NoticeResult, which returns without a notice for anything below 0x0A, so
+# the observable arm set starts at 0x08.
+#
+# Cosmic's public enum is superseded where the two disagree: 0x17
+# (PARCEL_REMOVED) has a body (uint32 parcelId, byte kind) rather than being
+# a bare "recv successful" notice; 0x18/0x19/0x1B (PARCEL_ARRIVED,
+# ALARM_NAMED, ALARM_GENERIC) are the notification arms, not generic
+# results; and 0x1A/0x1C (OPEN_QUICK, UNKNOWN_ERROR_2) exist at all.
+#
+# Every mode below is v83-derived (task-241 Task 6, Step 1). Each other
+# version column is re-derived per DISPATCHER_FAMILY.md before it is
+# claimed — storage_operation.yaml is the precedent for how a shifted
+# column gets recorded, and JMS is expected to shift.
+#
+# task-241 Task 6 continuation (live IDA decompile, one session per version):
+# gms_v72 (f2a2e7c1, @0x65f93a), gms_v79 (f36df4cd, @0x683709),
+# gms_v84 (306dc69a, @0x70db9f "CParcelDlg__OnPacket_recv_0x149"),
+# gms_v87 (0d9cf8b6, @0x7346db), gms_v92 (e3328b84, @0x689190),
+# gms_v95 (32c8836f, @0x692970) all decompile to the byte-identical switch
+# shape as the v83 anchor: explicit cases 8/23/24/25/26/27, and the default
+# arm's special `a1==18` CloseParcelDlg-trigger check — same case VALUES,
+# same body shapes (Decode4+Decode1 RemoveParcel for 23, DecodeStr+Decode1
+# CUIFadeYesNo for 25, etc.). v79 additionally decompiles its internal
+# NoticeResult dispatcher (sub_683BFE) confirming the full 9-22,28 notice
+# range matches v83's. All six columns below are therefore v83-identical,
+# each independently confirmed against that version's own IDB (not
+# extrapolated from a neighboring version).
+#
+# jms_v185 (05eb9c27, @0x755a21) is NOT byte-identical to v83 — the mode
+# space is shifted, but not by a uniform delta: the OPEN arm body-matches
+# at JMS case 10 (not 9 — case 9 is a genuinely new JMS-only arm sending an
+# outbound ack packet with no v83 counterpart), while PARCEL_REMOVED/
+# PARCEL_ARRIVED/ALARM_NAMED/OPEN_QUICK/ALARM_GENERIC body-match one-for-one
+# at JMS 24/25/26/27/28 (a +1 shift from v83's 23/24/25/26/27), and
+# SUCCESSFULLY_SENT is confirmed via the same CloseParcelDlg side-effect
+# check in OnPacket's default arm, now gated on `a1==19` (+1 from v83's 18).
+# The +2-then-+1 arithmetic implies JMS both added one new arm and removed
+# or merged one somewhere in the 9-22 notice range (confirmed by directly
+# decompiling JMS's NoticeResult equivalent, sub_755FD3: it dispatches
+# 12,13,14,15,16,17,18,19,20(alias 29's string),22,23,29 — one fewer
+# distinct slot than v83's 10,11,12,13,14,15,16,17,18,19(alias 28's
+# string),21,22,28). Without a way to correlate individual StringPool ids
+# to English text, the 14 notice-only keys below cannot be mapped
+# one-for-one without guessing, which task-241/DISPATCHER_FAMILY.md forbid.
+# Only the 7 keys with a direct body-match are populated for jms_v185;
+# the rest are left unset (unverified) rather than filled from a pattern —
+# a future pass should resolve them if jms_v185 needs full parcel coverage.
+writer: Parcel
+fname: CParcelDlg::OnPacket
+op: PARCEL
+direction: clientbound
+opcodes:
+  gms_v72: "0x120"
+  gms_v79: "0x12C"
+  gms_v83: "0x142"
+  gms_v84: "0x149"
+  gms_v87: "0x153"
+  gms_v92: "0x175"
+  gms_v95: "0x17D"
+  jms_v185: "0x160"
+operations:
+  - { key: OPEN,                        modes: { gms_v72: 8,  gms_v79: 8,  gms_v83: 8,  gms_v84: 8,  gms_v87: 8,  gms_v92: 8,  gms_v95: 8,  jms_v185: 10 } }
+  - { key: SEND_ENABLE_ACTIONS,         modes: { gms_v72: 9,  gms_v79: 9,  gms_v83: 9,  gms_v84: 9,  gms_v87: 9,  gms_v92: 9,  gms_v95: 9  } }
+  - { key: NOT_ENOUGH_MESOS,            modes: { gms_v72: 10, gms_v79: 10, gms_v83: 10, gms_v84: 10, gms_v87: 10, gms_v92: 10, gms_v95: 10 } }
+  - { key: INCORRECT_REQUEST,           modes: { gms_v72: 11, gms_v79: 11, gms_v83: 11, gms_v84: 11, gms_v87: 11, gms_v92: 11, gms_v95: 11 } }
+  - { key: NAME_DOES_NOT_EXIST,         modes: { gms_v72: 12, gms_v79: 12, gms_v83: 12, gms_v84: 12, gms_v87: 12, gms_v92: 12, gms_v95: 12 } }
+  - { key: SAME_ACCOUNT,                modes: { gms_v72: 13, gms_v79: 13, gms_v83: 13, gms_v84: 13, gms_v87: 13, gms_v92: 13, gms_v95: 13 } }
+  - { key: RECEIVER_STORAGE_FULL,       modes: { gms_v72: 14, gms_v79: 14, gms_v83: 14, gms_v84: 14, gms_v87: 14, gms_v92: 14, gms_v95: 14 } }
+  - { key: RECEIVER_UNABLE_TO_RECEIVE,  modes: { gms_v72: 15, gms_v79: 15, gms_v83: 15, gms_v84: 15, gms_v87: 15, gms_v92: 15, gms_v95: 15 } }
+  - { key: SENDER_UNIQUE_CONFLICT,      modes: { gms_v72: 16, gms_v79: 16, gms_v83: 16, gms_v84: 16, gms_v87: 16, gms_v92: 16, gms_v95: 16 } }
+  - { key: MESO_LIMIT,                  modes: { gms_v72: 17, gms_v79: 17, gms_v83: 17, gms_v84: 17, gms_v87: 17, gms_v92: 17, gms_v95: 17 } }
+  - { key: SUCCESSFULLY_SENT,           modes: { gms_v72: 18, gms_v79: 18, gms_v83: 18, gms_v84: 18, gms_v87: 18, gms_v92: 18, gms_v95: 18, jms_v185: 19 } }
+  - { key: UNKNOWN_ERROR,               modes: { gms_v72: 19, gms_v79: 19, gms_v83: 19, gms_v84: 19, gms_v87: 19, gms_v92: 19, gms_v95: 19 } }
+  - { key: RECV_ENABLE_ACTIONS,         modes: { gms_v72: 20, gms_v79: 20, gms_v83: 20, gms_v84: 20, gms_v87: 20, gms_v92: 20, gms_v95: 20 } }
+  - { key: RECV_NO_FREE_SLOTS,          modes: { gms_v72: 21, gms_v79: 21, gms_v83: 21, gms_v84: 21, gms_v87: 21, gms_v92: 21, gms_v95: 21 } }
+  - { key: RECV_UNIQUE_CONFLICT,        modes: { gms_v72: 22, gms_v79: 22, gms_v83: 22, gms_v84: 22, gms_v87: 22, gms_v92: 22, gms_v95: 22 } }
+  - { key: PARCEL_REMOVED,              modes: { gms_v72: 23, gms_v79: 23, gms_v83: 23, gms_v84: 23, gms_v87: 23, gms_v92: 23, gms_v95: 23, jms_v185: 24 } }
+  - { key: PARCEL_ARRIVED,              modes: { gms_v72: 24, gms_v79: 24, gms_v83: 24, gms_v84: 24, gms_v87: 24, gms_v92: 24, gms_v95: 24, jms_v185: 25 } }
+  - { key: ALARM_NAMED,                 modes: { gms_v72: 25, gms_v79: 25, gms_v83: 25, gms_v84: 25, gms_v87: 25, gms_v92: 25, gms_v95: 25, jms_v185: 26 } }
+  - { key: OPEN_QUICK,                  modes: { gms_v72: 26, gms_v79: 26, gms_v83: 26, gms_v84: 26, gms_v87: 26, gms_v92: 26, gms_v95: 26, jms_v185: 27 } }
+  - { key: ALARM_GENERIC,               modes: { gms_v72: 27, gms_v79: 27, gms_v83: 27, gms_v84: 27, gms_v87: 27, gms_v92: 27, gms_v95: 27, jms_v185: 28 } }
+  - { key: UNKNOWN_ERROR_2,             modes: { gms_v72: 28, gms_v79: 28, gms_v83: 28, gms_v84: 28, gms_v87: 28, gms_v92: 28, gms_v95: 28 } }

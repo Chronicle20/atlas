@@ -2318,6 +2318,16 @@
   ida:
     address: 9567381
   note: 'v72 COutPacket(62) verified via global COutPacket-ctor harvest @0x91fc95; Δ+1 vs v79 op 61 (mid/field/social Δ+1).'
+- op: DUEY_ACTION
+  direction: serverbound
+  opcode: 64
+  fname: CTabReceive::ReceiveParcel
+  fname_alts:
+    - CTabSend::SendParcel
+  provenance: ida-discovered
+  ida:
+    address: 6663489
+  note: 'v72 COutPacket(64) — CTabReceive::ReceiveParcel @0x65AF41 (=6663489) encodes mode 4 + parcelId; CTabSend::SendParcel @0x65D940 constructs the same opcode with mode 2 (task-241 design §5.4).'
 - op: ITEM_SORT
   direction: serverbound
   opcode: 68

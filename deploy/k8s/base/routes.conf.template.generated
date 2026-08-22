@@ -13,6 +13,11 @@ location ~ ^/api/messengers(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+location ~ ^/api/parcels(/.*)?$ {
+  set $u "atlas-parcel.${NS_ATLAS_PARCEL}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/parties(/.*)?$ {
   set $u "atlas-parties.${NS_ATLAS_PARTIES}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
@@ -140,6 +145,11 @@ location ~ ^/api/characters/[^/]+/inventory(/.*)?$ {
 
 location ~ ^/api/characters/[^/]+/notes(/.*)?$ {
   set $u "atlas-notes.${NS_ATLAS_NOTES}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
+location ~ ^/api/characters/[^/]+/parcel-status(/.*)?$ {
+  set $u "atlas-parcel.${NS_ATLAS_PARCEL}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;
 }
 

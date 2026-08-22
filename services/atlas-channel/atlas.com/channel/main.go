@@ -47,6 +47,7 @@ import (
 	note3 "atlas-channel/kafka/consumer/note"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/npc/shop"
+	parcelConsumer "atlas-channel/kafka/consumer/parcel"
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
 	"atlas-channel/kafka/consumer/party_quest"
@@ -129,6 +130,8 @@ import (
 	notesb "github.com/Chronicle20/atlas/libs/atlas-packet/note/serverbound"
 	npccb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	npcsb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/serverbound"
+	parcelcb "github.com/Chronicle20/atlas/libs/atlas-packet/parcel/clientbound"
+	parcelsb "github.com/Chronicle20/atlas/libs/atlas-packet/parcel/serverbound"
 	partycb "github.com/Chronicle20/atlas/libs/atlas-packet/party/clientbound"
 	partysb "github.com/Chronicle20/atlas/libs/atlas-packet/party/serverbound"
 	petcb "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
@@ -267,6 +270,7 @@ func main() {
 	instance_transport.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
+	parcelConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
 	incubatorconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
@@ -598,6 +602,9 @@ func buildListener(
 		if err := register(saga.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return handles, err
 		}
+		if err := register(parcelConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
+			return nil, err
+		}
 		if err := register(storage3.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return handles, err
 		}
@@ -898,6 +905,7 @@ func produceWriters() []string {
 		reportcb.ClaimResultWriter,
 		reportcb.ClaimAvailableTimeWriter,
 		reportcb.ClaimSvrStatusChangedWriter,
+		parcelcb.ParcelWriter,
 	}
 }
 
@@ -1021,6 +1029,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[notesb.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	handlerMap[questsb.QuestActionHandle] = handler.QuestActionHandleFunc
 	handlerMap[storagesb.StorageOperationHandle] = handler.StorageOperationHandleFunc
+	handlerMap[parcelsb.DueyActionHandle] = handler.DueyActionHandleFunc
 	handlerMap[rpssb.RPSActionHandle] = handler.RPSActionHandleFunc
 	handlerMap[reactorsb.ReactorHitHandle] = handler.ReactorHitHandleFunc
 	handlerMap[socketsb.PongHandle] = handler.PongHandleFunc

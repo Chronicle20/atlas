@@ -1,0 +1,21 @@
+{
+  "WriterName": "ParcelReceiverStorageFull",
+  "IDAName": "CParcelDlg::OnPacket#ReceiverStorageFull",
+  "Address": "0x70e0e0",
+  "Variant": "GMS/v84",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/parcel/clientbound/parcel.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (14/0x0E RECEIVER_STORAGE_FULL; dispatch byte, notice-only, no body)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

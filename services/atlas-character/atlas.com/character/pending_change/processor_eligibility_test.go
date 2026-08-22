@@ -41,6 +41,9 @@ func passingGateDeps() gateDeps {
 		mtsHolding: func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
 			return false, nil
 		},
+		parcelPending: func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+			return false, nil
+		},
 	}
 }
 
@@ -305,6 +308,9 @@ func TestEligibilityOrderingShortCircuitsBeforeAnyRemoteCall(t *testing.T) {
 		mtsHolding: func(logrus.FieldLogger, context.Context, uint32) (bool, error) {
 			panic("gate 11 (mtsHolding) must not be called when gate 1 already rejected")
 		},
+		parcelPending: func(logrus.FieldLogger, context.Context, uint32) (bool, error) {
+			panic("gate 12 (parcelPending) must not be called when gate 1 already rejected")
+		},
 	}
 	p := NewProcessor(testLogger(t), testContext(t), db).(*ProcessorImpl).
 		withTransferEligibilityGates(panicking).(*ProcessorImpl)
@@ -468,6 +474,141 @@ func TestEligibilityGate5NameTakenCheckErrorReportsCheckUnavailable(t *testing.T
 	if ok || reason != "check_unavailable" {
 		t.Fatalf("got ok=%v reason=%s, want ok=false reason=check_unavailable", ok, reason)
 	}
+}
+
+// TestEligibilityGate12ParcelPending covers gate 12 (parcel_pending) on both
+// entry points: it is destination-INDEPENDENT, so it must reject/pass
+// identically whether reached via CheckTransferEligibility (BUY time) or
+// CheckTransferEligibilityIndependent (CHECK time) — the symmetry
+// evaluateTransferEligibility and evaluateTransferEligibilityIndependent
+// document as load-bearing for FR-28. A dependency error must resolve to
+// "check_unavailable", never to the affirmative "parcel_pending" reason
+// (design §6): the server failed closed without asserting a reason it does
+// not actually know to hold.
+func TestEligibilityGate12ParcelPending(t *testing.T) {
+	depErr := errors.New("dependency unavailable")
+
+	newProcessor := func(t *testing.T, name string, deps gateDeps) (Processor, uint32) {
+		db := newProcessorTestDB(t)
+		l, ctx := testLogger(t), testContext(t)
+		characterId := seedCharacter(t, db, name, world.Id(0))
+		p := NewProcessor(l, ctx, db).withTransferEligibilityGates(deps)
+		return p, characterId
+	}
+
+	t.Run("blocks buy-time", func(t *testing.T) {
+		deps := passingGateDeps()
+		deps.parcelPending = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+			return true, nil
+		}
+		p, characterId := newProcessor(t, "ParcelBuy1", deps)
+		ok, reason, err := p.CheckTransferEligibility(characterId, world.Id(1))
+		if err != nil {
+			t.Fatalf("CheckTransferEligibility: %v", err)
+		}
+		if ok || reason != "parcel_pending" {
+			t.Fatalf("got ok=%v reason=%s, want ok=false reason=parcel_pending", ok, reason)
+		}
+	})
+
+	t.Run("blocks check-time", func(t *testing.T) {
+		deps := passingGateDeps()
+		deps.parcelPending = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+			return true, nil
+		}
+		p, characterId := newProcessor(t, "ParcelChk1", deps)
+		ok, reason, err := p.CheckTransferEligibilityIndependent(characterId)
+		if err != nil {
+			t.Fatalf("CheckTransferEligibilityIndependent: %v", err)
+		}
+		if ok || reason != "parcel_pending" {
+			t.Fatalf("got ok=%v reason=%s, want ok=false reason=parcel_pending", ok, reason)
+		}
+	})
+
+	t.Run("passes buy-time", func(t *testing.T) {
+		p, characterId := newProcessor(t, "ParcelBuy2", passingGateDeps())
+		ok, reason, err := p.CheckTransferEligibility(characterId, world.Id(1))
+		if err != nil {
+			t.Fatalf("CheckTransferEligibility: %v", err)
+		}
+		if !ok || reason != "" {
+			t.Fatalf("got ok=%v reason=%s, want eligible", ok, reason)
+		}
+	})
+
+	t.Run("passes check-time", func(t *testing.T) {
+		p, characterId := newProcessor(t, "ParcelChk2", passingGateDeps())
+		ok, reason, err := p.CheckTransferEligibilityIndependent(characterId)
+		if err != nil {
+			t.Fatalf("CheckTransferEligibilityIndependent: %v", err)
+		}
+		if !ok || reason != "" {
+			t.Fatalf("got ok=%v reason=%s, want eligible", ok, reason)
+		}
+	})
+
+	t.Run("dependency error buy-time", func(t *testing.T) {
+		deps := passingGateDeps()
+		deps.parcelPending = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+			return false, depErr
+		}
+		p, characterId := newProcessor(t, "ParcelBuy3", deps)
+		ok, reason, err := p.CheckTransferEligibility(characterId, world.Id(1))
+		if err != nil {
+			t.Fatalf("CheckTransferEligibility: %v", err)
+		}
+		if ok || reason != "check_unavailable" {
+			t.Fatalf("got ok=%v reason=%s, want ok=false reason=check_unavailable", ok, reason)
+		}
+	})
+
+	t.Run("dependency error check-time", func(t *testing.T) {
+		deps := passingGateDeps()
+		deps.parcelPending = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+			return false, depErr
+		}
+		p, characterId := newProcessor(t, "ParcelChk3", deps)
+		ok, reason, err := p.CheckTransferEligibilityIndependent(characterId)
+		if err != nil {
+			t.Fatalf("CheckTransferEligibilityIndependent: %v", err)
+		}
+		if ok || reason != "check_unavailable" {
+			t.Fatalf("got ok=%v reason=%s, want ok=false reason=check_unavailable", ok, reason)
+		}
+	})
+
+	t.Run("runs after mts", func(t *testing.T) {
+		deps := passingGateDeps()
+		deps.mtsHolding = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+			return true, nil
+		}
+		deps.parcelPending = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
+			return true, nil
+		}
+
+		buyDb := newProcessorTestDB(t)
+		buyId := seedCharacter(t, buyDb, "ParcelMts1", world.Id(0))
+		buyP := NewProcessor(testLogger(t), testContext(t), buyDb).withTransferEligibilityGates(deps)
+		ok, reason, err := buyP.CheckTransferEligibility(buyId, world.Id(1))
+		if err != nil {
+			t.Fatalf("CheckTransferEligibility: %v", err)
+		}
+		if ok || reason != "mts_listings_open" {
+			t.Fatalf("got ok=%v reason=%s, want ok=false reason=mts_listings_open (gate 11 precedes gate 12)", ok, reason)
+		}
+
+		checkDb := newProcessorTestDB(t)
+		checkId := seedCharacter(t, checkDb, "ParcelMts2", world.Id(0))
+		checkP := NewProcessor(testLogger(t), testContext(t), checkDb).withTransferEligibilityGates(deps)
+		ok, reason, err = checkP.CheckTransferEligibilityIndependent(checkId)
+		if err != nil {
+			t.Fatalf("CheckTransferEligibilityIndependent: %v", err)
+		}
+		if ok || reason != "mts_listings_open" {
+			t.Fatalf("got ok=%v reason=%s, want ok=false reason=mts_listings_open (gate 11 precedes gate 12)", ok, reason)
+		}
+	})
 }
 
 // CheckTransferEligibility is the read-side entry point the REST endpoint

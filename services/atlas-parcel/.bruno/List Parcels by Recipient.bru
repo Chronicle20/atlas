@@ -1,0 +1,16 @@
+meta {
+  name: List Parcels by Recipient
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/parcels?filter[recipientId]={{recipientId}}&filter[worldId]={{worldId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  filter[recipientId]: {{recipientId}}
+  filter[worldId]: {{worldId}}
+}

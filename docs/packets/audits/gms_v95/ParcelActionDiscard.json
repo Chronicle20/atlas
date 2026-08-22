@@ -1,0 +1,21 @@
+{
+  "WriterName": "ParcelActionDiscard",
+  "IDAName": "CTabReceive::DiscardParcel",
+  "Address": "0x68f5e0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/parcel/serverbound/action_parcel_id.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "parcelId",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

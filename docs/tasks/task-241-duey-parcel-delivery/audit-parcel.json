@@ -1,0 +1,116 @@
+{
+  "service": "atlas-parcel",
+  "path": "services/atlas-parcel",
+  "date": "2026-08-19",
+  "build": "pass",
+  "testsPassed": 2,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "parcel",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()", "status": "pass", "evidence": "parcel/builder.go:41-214"},
+        {"id": "DOM-02", "name": "Model.ToEntity() defined in entity.go", "status": "fail", "evidence": "No ToEntity() method exists; entityFromModel(m Model) Entity is a free function in parcel/builder.go:253-279, not a Model method, and not in entity.go"},
+        {"id": "DOM-03", "name": "Make(Entity) (Model, error) defined in entity.go", "status": "fail", "evidence": "Make defined in parcel/builder.go:219-246, not entity.go"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) defined in rest.go", "status": "pass", "evidence": "parcel/rest.go:61-87"},
+        {"id": "DOM-05", "name": "TransformSlice defined in rest.go and used by list handlers", "status": "fail", "evidence": "rest.go has no TransformSlice; parcel/resource.go:141 inlines model.SliceMap(Transform) in writeParcels"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger, never *logrus.Logger", "status": "pass", "evidence": "parcel/processor.go:42"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger() into NewProcessor", "status": "pass", "evidence": "parcel/resource.go:81,165,207,251,262,279"},
+        {"id": "DOM-08", "name": "POST/PATCH routes register via RegisterInputHandler[T], not RegisterHandler", "status": "fail", "evidence": "parcel/resource.go:52 registers PATCH /parcels/{parcelId}/notify via registerGet (RegisterHandler)"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks its error", "status": "pass", "evidence": "parcel/resource.go:141-146,176-181,222-227"},
+        {"id": "DOM-11", "name": "Providers evaluate lazily via database.Query/SliceQuery, not eager reads wrapped in FixedProvider", "status": "fail", "evidence": "parcel/provider.go:17-100 - every function executes db.Where(...).Find/.First eagerly then wraps in model.FixedProvider"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "no os.Getenv in parcel/resource.go"},
+        {"id": "DOM-13", "name": "Handlers contain no cross-domain orchestration", "status": "pass", "evidence": "resource.go handlers call only the parcel Processor"},
+        {"id": "DOM-14", "name": "Handlers call processor methods, never provider functions directly", "status": "pass", "evidence": "no direct provider call sites in resource.go"},
+        {"id": "DOM-15", "name": "No db.Create/db.Save/db.Delete in handlers", "status": "pass", "evidence": "none present in resource.go"},
+        {"id": "DOM-16", "name": "administrator.go holds the write functions", "status": "pass", "evidence": "parcel/administrator.go:17,33,53,77,103,125"},
+        {"id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "pass", "evidence": "parcel/resource.go:166-169 (404), 208-215 (404/409)"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "rest.go:47-58,98-109,124-135"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "pass", "evidence": "DiscardRestModel, rest.go:93-96"},
+        {"id": "DOM-27", "name": "Handler error branches use server.WriteErrorResponse", "status": "pass", "evidence": "resource.go:109,126,144,172,179,217,224,258,264,281,289; main.go:48 calls database.Connect"},
+        {"id": "DOM-30", "name": "DB writes emit through AndEmit + message.Buffer, not a direct producer.ProviderImpl call", "status": "fail", "evidence": "parcel/notification_task.go:165-166 direct producer.ProviderImpl call after ClaimNotifiable DB write, on the success path, not AndEmit-wrapped"},
+        {"id": "DOM-31", "name": "Tenant/trace identifiers travel in context only", "status": "pass", "evidence": "rest.go RestModels and kafka/message/custody/kafka.go bodies carry no TenantId field"},
+        {"id": "DOM-32", "name": "Routes register through server.RegisterHandler/RegisterInputHandler[T]", "status": "pass", "evidence": "resource.go:45-46 via rest.RegisterHandler/RegisterInputHandler[T], which compose server.RetrieveSpan+server.ParseTenant (rest/handler.go:72-77,87-93), matching atlas-mts's identical idiom"},
+        {"id": "FILE-01", "name": "Processor lives in processor.go or processor_<group>.go split", "status": "pass", "evidence": "parcel/processor.go + parcel/processor_custody.go"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API methods live in rest.go", "status": "pass", "evidence": "parcel/rest.go"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "n-a", "evidence": "no requests.RootUrl/requests.*Request[T] calls anywhere in the service"},
+        {"id": "FILE-04", "name": "Entity struct, Migration, TableName live in entity.go", "status": "pass", "evidence": "parcel/entity.go:39,81,86"},
+        {"id": "FILE-05", "name": "Builder/Model/writes/readers placed per file table", "status": "pass", "evidence": "builder.go/model.go/administrator.go/provider.go respectively (DOM-02/03 Make/ToEntity placement flagged separately)"},
+        {"id": "FILE-06", "name": "No package-named catch-all bundling >=2 responsibilities", "status": "pass", "evidence": "no parcel.go; every file in the package is single-purpose"},
+        {"id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "pass", "evidence": "databasetest.NewInMemoryTenantDB helper calls it internally (libs/atlas-database/databasetest/testdb.go:39)"},
+        {"id": "DOM-20", "name": "Tests are table-driven (tests := []struct{...} + t.Run)", "status": "fail", "evidence": "zero []struct{ tables in any of the 9 new _test.go files; all use bare named t.Run subtests"},
+        {"id": "DOM-24", "name": "Emit-reaching test packages install producertest or inject a no-op producer", "status": "pass", "evidence": "notification_task_test.go:19,31,34 installs producertest.InstallCapturing() in TestMain"}
+      ]
+    },
+    {
+      "name": "rest",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "rest/handler.go is single-purpose REST registration plumbing"}
+      ]
+    },
+    {
+      "name": "kafka/consumer/custody",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "consumer.go is single-purpose"},
+        {"id": "DOM-30", "name": "DB writes emit through AndEmit + message.Buffer, not a direct producer.ProviderImpl call", "status": "fail", "evidence": "kafka/consumer/custody/consumer.go:130 (handleAcceptToParcel) and :158 (handleReleaseFromParcel) ack a DB write via a direct producer call on the success path, not message.Emit/Buffer-wrapped"},
+        {"id": "DOM-24", "name": "Emit-reaching test packages install producertest or inject a no-op producer", "status": "pass", "evidence": "consumer_test.go:33-59 injects a recordingProducer as the handler's providerFn parameter"}
+      ]
+    },
+    {
+      "name": "kafka/message/custody, kafka/message/parcel, kafka/producer/custody, kafka/producer/parcel, kafka/consumer, main",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File placement", "status": "pass", "evidence": "each file single-purpose"},
+        {"id": "DOM-23", "name": "Kafka topic env vars follow convention, in base configmap + both overlays, no literal manifest env value", "status": "pass", "evidence": "deploy/k8s/base/env-configmap.yaml:62,155,156; deploy/k8s/overlays/{pr,main}/kustomization.yaml; deploy/k8s/base/atlas-parcel.yaml:28 carries no literal topic value"},
+        {"id": "DOM-26", "name": "Every goroutine spawned via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0; parcel/task.go:98, notification_task.go:94 use routine.Go"}
+      ]
+    },
+    {
+      "name": "scaffolding",
+      "type": "n/a",
+      "checks": [
+        {"id": "SCAFFOLD-01", "name": "services.json go-service entry", "status": "pass", "evidence": ".github/config/services.json:361-365"},
+        {"id": "SCAFFOLD-02", "name": "K8s base manifest listed in base kustomization.yaml", "status": "pass", "evidence": "deploy/k8s/base/kustomization.yaml:53"},
+        {"id": "SCAFFOLD-03", "name": "docker-bake.hcl + go.work entries", "status": "pass", "evidence": "docker-bake.hcl:80; go.work:70"},
+        {"id": "SCAFFOLD-04", "name": "Ingress block in deploy/shared/routes.conf", "status": "pass", "evidence": "deploy/shared/routes.conf:16-17,151-152"},
+        {"id": "SCAFFOLD-05", "name": "Generated routes template regenerated and committed", "status": "pass", "evidence": "tools/gen-routes.sh --check -> up to date"},
+        {"id": "SCAFFOLD-06", "name": "docker-compose entry present alongside peers", "status": "fail", "evidence": "no atlas-parcel entry in deploy/compose/docker-compose*.yml"},
+        {"id": "SCAFFOLD-08", "name": "Bruno collection present (REST service)", "status": "fail", "evidence": "no .bruno/bruno.json under services/atlas-parcel/"},
+        {"id": "SCAFFOLD-09", "name": "Overlay enumerations, ATLAS_DB_NAMES, DB bootstrap complete", "status": "pass", "evidence": "tools/service-registration-guard.sh -> clean"}
+      ]
+    },
+    {
+      "name": "libs/atlas-constants, libs/atlas-saga, saga-orchestrator/parcel",
+      "type": "n/a",
+      "checks": [
+        {"id": "DOM-21", "name": "No redeclaration of a type already in libs/atlas-constants (world.Id/channel.Id reuse)", "status": "pass", "evidence": "parcel/model.go:17 world.Id; ShowParcelPayload.ChannelId channel.Id"},
+        {"id": "DOM-21", "name": "No redeclaration of a type already in libs/atlas-constants (item classification reuse)", "status": "pass", "evidence": "libs/atlas-constants/item/duey.go:19"},
+        {"id": "DOM-21", "name": "No redeclaration of a type already in libs/atlas-constants (InventoryType)", "status": "fail", "evidence": "libs/atlas-saga/payloads.go:992,1082 declare SourceInventoryType/InventoryType as raw byte though libs/atlas-constants/inventory/constants.go:9 (inventory.Type) already exists and is used at payloads.go:708-712 in the same file"},
+        {"id": "DOM-33", "name": "Interface changes update every mock in the same diff", "status": "pass", "evidence": "saga.Handler gains WithParcelProcessor/handleAcceptToParcel/handleReleaseFromParcel/handleShowParcel (saga/handler.go); mocks updated in saga/parcel_compensation_test.go; go build ./... clean in atlas-saga-orchestrator"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "SCAFFOLD-07: channel writer/handler seeding for handleDueyCouponUse/PARCEL[OPEN_QUICK] lives in services/atlas-channel, outside this audit's assigned scope",
+    "DOM-25: PARCEL/DUEY_ACTION dispatcher codecs live in libs/atlas-packet, outside this audit's assigned scope",
+    "Full DOM/FILE/REST sweep of services/atlas-saga-orchestrator/atlas.com/saga-orchestrator/parcel beyond the DOM-21/DOM-30/DOM-33 spot checks recorded here"
+  ],
+  "blocking": [
+    "DOM-02: parcel/builder.go:253 - entityFromModel is a free function, not Model.ToEntity(), and not in entity.go",
+    "DOM-03: parcel/builder.go:219 - Make(Entity) is defined in builder.go, not entity.go",
+    "DOM-05: parcel/rest.go has no TransformSlice; parcel/resource.go:141 inlines model.SliceMap(Transform) instead",
+    "DOM-08: parcel/resource.go:52 - PATCH /parcels/{parcelId}/notify registers via RegisterHandler, not RegisterInputHandler[T]",
+    "DOM-11: parcel/provider.go:17-100 - every provider function eagerly executes its query then wraps the result in FixedProvider",
+    "DOM-30: parcel/notification_task.go:165-166 - direct producer.ProviderImpl call on the success path of a DB write",
+    "DOM-30: kafka/consumer/custody/consumer.go:130,158 - handleAcceptToParcel/handleReleaseFromParcel ack a DB write via a direct producer call on the success path",
+    "DOM-20: no _test.go file in this diff uses the tests := []struct{...} + t.Run table-driven pattern",
+    "SCAFFOLD-06: no atlas-parcel entry in any deploy/compose/docker-compose*.yml",
+    "SCAFFOLD-08: no Bruno collection under services/atlas-parcel/",
+    "DOM-21: libs/atlas-saga/payloads.go:992,1082 - SourceInventoryType/InventoryType declared as raw byte instead of the existing libs/atlas-constants/inventory.Type"
+  ],
+  "nonBlocking": []
+}

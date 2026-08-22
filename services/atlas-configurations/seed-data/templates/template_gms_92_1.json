@@ -492,6 +492,20 @@
         ]
       },
       {
+        "opCode": "0x047",
+        "validator": "LoggedInValidator",
+        "handler": "DueyActionHandle",
+        "fname": "CParcelDlg::CloseParcelDlg",
+        "options": {
+          "operations": {
+            "SEND": 2,
+            "RECEIVE": 4,
+            "DISCARD": 5,
+            "CLOSE": 7
+          }
+        }
+      },
+      {
         "opCode": "0x49",
         "validator": "LoggedInValidator",
         "handler": "OwlActionHandle",
@@ -3236,6 +3250,36 @@
         ]
       },
       {
+        "opCode": "0x175",
+        "writer": "Parcel",
+        "fname": "CParcelDlg::OnPacket",
+        "options": {
+          "operations": {
+            "OPEN": 8,
+            "SEND_ENABLE_ACTIONS": 9,
+            "NOT_ENOUGH_MESOS": 10,
+            "INCORRECT_REQUEST": 11,
+            "NAME_DOES_NOT_EXIST": 12,
+            "SAME_ACCOUNT": 13,
+            "RECEIVER_STORAGE_FULL": 14,
+            "RECEIVER_UNABLE_TO_RECEIVE": 15,
+            "SENDER_UNIQUE_CONFLICT": 16,
+            "MESO_LIMIT": 17,
+            "SUCCESSFULLY_SENT": 18,
+            "UNKNOWN_ERROR": 19,
+            "RECV_ENABLE_ACTIONS": 20,
+            "RECV_NO_FREE_SLOTS": 21,
+            "RECV_UNIQUE_CONFLICT": 22,
+            "PARCEL_REMOVED": 23,
+            "PARCEL_ARRIVED": 24,
+            "ALARM_NAMED": 25,
+            "OPEN_QUICK": 26,
+            "ALARM_GENERIC": 27,
+            "UNKNOWN_ERROR_2": 28
+          }
+        }
+      },
+      {
         "opCode": "0x177",
         "writer": "CashShopCashQueryResult",
         "fname": "CCashShop::OnQueryCashResult",
@@ -3364,6 +3408,7 @@
             "trade_open": 60,
             "merchant_open": 60,
             "mts_listings_open": 60,
+            "parcel_pending": 60,
             "CANNOT_TRANSFER_NO_EMPTY_SLOTS": 61,
             "no_character_slot": 61,
             "EVENT_ENDED_OR_CANT_BE_FREELY_TESTED": 62,

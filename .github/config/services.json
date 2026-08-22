@@ -373,6 +373,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-parcel",
+      "type": "go-service",
+      "path": "services/atlas-parcel",
+      "module_path": "services/atlas-parcel/atlas.com/parcel",
+      "docker_image": "ghcr.io/chronicle20/atlas-parcel/atlas-parcel",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-parties",
       "type": "go-service",
       "path": "services/atlas-parties",

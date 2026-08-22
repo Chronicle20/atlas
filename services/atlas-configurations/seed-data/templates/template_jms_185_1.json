@@ -448,6 +448,20 @@
         ]
       },
       {
+        "opCode": "0x039",
+        "validator": "LoggedInValidator",
+        "handler": "DueyActionHandle",
+        "fname": "CParcelDlg::CloseParcelDlg",
+        "options": {
+          "operations": {
+            "SEND": 3,
+            "RECEIVE": 5,
+            "DISCARD": 6,
+            "CLOSE": 8
+          }
+        }
+      },
+      {
         "opCode": "0x3A",
         "validator": "LoggedInValidator",
         "handler": "OwlActionHandle",
@@ -4644,6 +4658,22 @@
         "services": [
           "channel"
         ]
+      },
+      {
+        "opCode": "0x160",
+        "writer": "Parcel",
+        "fname": "CParcelDlg::OnPacket",
+        "options": {
+          "operations": {
+            "OPEN": 10,
+            "SUCCESSFULLY_SENT": 19,
+            "PARCEL_REMOVED": 24,
+            "PARCEL_ARRIVED": 25,
+            "ALARM_NAMED": 26,
+            "OPEN_QUICK": 27,
+            "ALARM_GENERIC": 28
+          }
+        }
       },
       {
         "opCode": "0x163",

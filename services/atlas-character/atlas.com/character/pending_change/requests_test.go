@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -84,6 +85,75 @@ func TestMtsGate_NeitherPasses(t *testing.T) {
 	if open {
 		t.Fatal("expected neither holdings nor active listings to report open=false")
 	}
+}
+
+// parcelStatusDoc builds a JSON:API "data" object matching atlas-parcel's GET
+// /characters/{characterId}/parcel-status (rest.go:120,123,138 — resource
+// type "parcel-statuses", the single boolean attribute inFlight).
+func parcelStatusDoc(characterId string, inFlight bool) string {
+	return `{"data":{"type":"parcel-statuses","id":"` + characterId + `","attributes":{"inFlight":` + strconv.FormatBool(inFlight) + `}}}`
+}
+
+// TestParcelPending covers gate 12's REST client: an inFlight true/false
+// attribute maps straight through, and a service-down response must
+// propagate the error rather than silently reporting (false, nil) — which
+// would permit a world transfer that should have been blocked.
+func TestParcelPending(t *testing.T) {
+	t.Run("in flight", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/characters/", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/vnd.api+json")
+			_, _ = w.Write([]byte(parcelStatusDoc("700700", true)))
+		})
+		srv := httptest.NewServer(mux)
+		defer srv.Close()
+		t.Setenv("PARCEL_SERVICE_URL", srv.URL+"/")
+
+		pending, err := parcelPending(testLogger(t), context.Background(), 700700)
+		if err != nil {
+			t.Fatalf("parcelPending: %v", err)
+		}
+		if !pending {
+			t.Fatal("expected inFlight=true to report pending=true")
+		}
+	})
+
+	t.Run("not in flight", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/characters/", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/vnd.api+json")
+			_, _ = w.Write([]byte(parcelStatusDoc("700701", false)))
+		})
+		srv := httptest.NewServer(mux)
+		defer srv.Close()
+		t.Setenv("PARCEL_SERVICE_URL", srv.URL+"/")
+
+		pending, err := parcelPending(testLogger(t), context.Background(), 700701)
+		if err != nil {
+			t.Fatalf("parcelPending: %v", err)
+		}
+		if pending {
+			t.Fatal("expected inFlight=false to report pending=false")
+		}
+	})
+
+	t.Run("service down", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.HandleFunc("/characters/", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		})
+		srv := httptest.NewServer(mux)
+		defer srv.Close()
+		t.Setenv("PARCEL_SERVICE_URL", srv.URL+"/")
+
+		pending, err := parcelPending(testLogger(t), context.Background(), 700702)
+		if err == nil {
+			t.Fatal("expected a 503 to propagate an error, not silently report (false, nil)")
+		}
+		if pending {
+			t.Fatal("expected pending=false alongside the error")
+		}
+	})
 }
 
 // familyTreeDoc builds a JSON:API "data" array of the given number of

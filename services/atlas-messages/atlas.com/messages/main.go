@@ -14,6 +14,7 @@ import (
 	"atlas-messages/command/monster"
 	party_quest "atlas-messages/command/party_quest"
 	commandpet "atlas-messages/command/pet"
+	commandplayernpc "atlas-messages/command/playernpc"
 	"atlas-messages/command/reactor"
 	message2 "atlas-messages/kafka/consumer/message"
 	"os"
@@ -91,6 +92,8 @@ func main() {
 	command.Registry().Add(party_quest.PQRegisterCommandProducer)
 	command.Registry().Add(party_quest.PQStageCommandProducer)
 	command.Registry().Add(_map.WeatherCommandProducer)
+	command.Registry().Add(commandplayernpc.DeployCommandProducer)
+	command.Registry().Add(commandplayernpc.RemoveCommandProducer)
 
 	cmf := consumer.GetManager().AddConsumer(l, rt.Context(), rt.WaitGroup())
 	message2.InitConsumers(l)(cmf)(consumerGroupId)

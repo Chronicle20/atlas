@@ -28,6 +28,19 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// SetToOneReferenceID and SetToManyReferenceIDs are required even though
+// this client no longer requests any relationship — see
+// libs/atlas-rest/CLAUDE.md: api2go errors decoding any resource whose
+// response carries a relationships block unless the target struct
+// implements these, whether or not the caller cares about the data.
+func (r *RestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		rank:    rm.Rank,

@@ -127,7 +127,7 @@ type Processor interface {
 	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
 	Move(characterId uint32, x int16, y int16, fh int16, stance byte) error
 	RequestChangeMeso(transactionId uuid.UUID, characterId uint32, amount int32, actorId uint32, actorType string, showEffect bool) error
-	AttemptMesoPickUp(transactionId uuid.UUID, field field.Model, characterId uint32, dropId uint32, meso uint32) error
+	AwardPickedUpMeso(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, meso uint32, picker bool) error
 	RequestDropMeso(transactionId uuid.UUID, field field.Model, characterId uint32, amount uint32) error
 	RequestChangeFame(transactionId uuid.UUID, characterId uint32, amount int8, actorId uint32, actorType string) error
 	RequestDistributeAp(transactionId uuid.UUID, characterId uint32, distributions []Distribution) error
@@ -925,29 +925,63 @@ func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId u
 	return txErr
 }
 
-func (p *ProcessorImpl) AttemptMesoPickUp(transactionId uuid.UUID, field field.Model, characterId uint32, dropId uint32, meso uint32) error {
-	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		c, err := p.WithTransaction(tx).GetById()(characterId)
-		if err != nil {
-			p.l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
-			return err
-		}
-		if meso > (math.MaxUint32 - c.Meso()) {
-			p.l.Errorf("Transaction for character [%d] would result in a uint32 overflow. Rejecting transaction.", characterId)
-			return ErrMesoOverflow
-		}
+// actorTypeDrop identifies a picked-up drop as the actor behind a meso change.
+// ActorType is a free-form string on the wire; atlas-channel's MESO_CHANGED
+// consumer ignores it, so this value is purely additive.
+const actorTypeDrop = "DROP"
 
-		if err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(meso))))(c); err != nil {
-			return err
-		}
-		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
-			return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
+// AwardPickedUpMeso credits one recipient's share of a split meso drop and,
+// when that recipient is the picker, completes the pickup.
+//
+// Deliberate asymmetry, and the reason this replaced AttemptMesoPickUp: the
+// pickup completion is NOT conditional on the credit succeeding. The old shape
+// returned the transaction error before reaching RequestPickUp, so a picker at
+// the meso ceiling left the drop on the map forever. The credit error is
+// returned for logging only. Do not "harmonise" these two into one branch.
+func (p *ProcessorImpl) AwardPickedUpMeso(transactionId uuid.UUID, f field.Model, characterId uint32, dropId uint32, meso uint32, picker bool) error {
+	var txErr error
+	if meso > 0 {
+		txErr = database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
+				return err
+			}
+			// MESO_CHANGED carries the amount as an int32; an award that
+			// cannot be represented there is rejected rather than emitted
+			// as a negative delta.
+			if meso > math.MaxInt32 {
+				p.l.Errorf("Meso award of [%d] to character [%d] exceeds the int32 MESO_CHANGED amount. Rejecting transaction.", meso, characterId)
+				return ErrMesoOverflow
+			}
+			if meso > (math.MaxUint32 - c.Meso()) {
+				p.l.Errorf("Transaction for character [%d] would result in a uint32 overflow. Rejecting transaction.", characterId)
+				return ErrMesoOverflow
+			}
+			if err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(meso))))(c); err != nil {
+				return err
+			}
+			return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
+				// showEffect: false — the drop-sourced award is announced via
+				// the channel's MESO_AWARDED -> DropPickUpMeso pickup message,
+				// not the generic MESO_CHANGED -> chat-line path. This event
+				// still drives stat/saga consumers.
+				if err = buf.Put(character2.EnvEventTopicCharacterStatus, mesoChangedStatusEventProvider(transactionId, characterId, c.WorldId(), int32(meso), dropId, actorTypeDrop, false)); err != nil {
+					return err
+				}
+				return buf.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel.NewModel(f.WorldId(), f.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
+			})
 		})
-	})
-	if txErr != nil {
-		return txErr
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Unable to credit character [%d] with [%d] meso from drop [%d].", characterId, meso, dropId)
+		}
 	}
-	return drop.NewProcessor(p.l, p.ctx).RequestPickUp(field, dropId, characterId)
+	if picker {
+		if err := drop.NewProcessor(p.l, p.ctx).RequestPickUp(f, dropId, characterId); err != nil {
+			p.l.WithError(err).Errorf("Unable to complete pick up of drop [%d] for character [%d].", dropId, characterId)
+		}
+	}
+	return txErr
 }
 
 func (p *ProcessorImpl) RequestDropMeso(transactionId uuid.UUID, field field.Model, characterId uint32, amount uint32) error {

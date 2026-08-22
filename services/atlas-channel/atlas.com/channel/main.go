@@ -287,15 +287,7 @@ func main() {
 		UnregisterChannel: func(ch channel2.Model) error {
 			return channel3.NewProcessor(l, rt.Context()).Unregister(ch)
 		},
-		SessionsForKey: func(key server.Key) []listener.Session {
-			// TODO: wire session.Processor lookup-by-key once available.
-			// Returning nil yields an empty drain phase 2, which is safe
-			// — phase 4 still cancels the ctx so handlers stop.
-			return nil
-		},
-		SendShutdownNotice: func(listener.Session) {},
-		DestroySession:     func(listener.Session) error { return nil },
-		RemoveHandler:      consumer.GetManager().RemoveHandler,
+		RemoveHandler: consumer.GetManager().RemoveHandler,
 	}, listener.Config{
 		DrainDeadline: parseDrainDeadline(),
 	})
@@ -455,194 +447,210 @@ func buildListener(
 		}
 
 		if err := register(account2.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(asset.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(buddylist.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(reportstatus.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(channel.InitHandlers(fl)(sc)(cfg.IPAddress, cfg.Port)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(character.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(expression.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(guild.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(compartment.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(invite.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(_map.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(message.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(monster.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(summonConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(dragonConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(mbconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(mistConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(doorConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(conversation.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(shop.InitHandlers(fl)(tctx)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(member.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(party.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(party_quest.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(pendingchange.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(session2.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(fame.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(thread.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(chair.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(drop.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(reactor.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(skill.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(macro.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(buff.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(chalkboard.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(kiteconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(messenger.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(teleportrockConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(pet.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(consumable.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(conversation_reward_notice.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(system_message.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(cashshop.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(cashshopCompartment.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(mtsConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(walletConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(note3.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(quest.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(route.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(eventConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(rpsConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(instance_transport.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(saga.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(parcelConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
 			return nil, err
 		}
 		if err := register(storage3.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(gachapon.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(incubatorconsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(merchantConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(minigameConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(tradeConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(mountConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(megaphoneConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 		if err := register(worldbroadcastConsumer.InitHandlers(fl)(sc)(wp)(rh)); err != nil {
-			return nil, err
+			return handles, err
 		}
 
 		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantCfg.Socket.Handlers, validatorMap, handlerMap)
-		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, sc, cfg.IPAddress, cfg.Port)
+		// tdm.WaitGroup() brackets the accept-loop goroutine (process-wide
+		// shutdown bookkeeping, unchanged); h.Wg additionally sees every
+		// accepted connection, which is what makes drain phase 3 a real
+		// bounded wait (task-244 design.md §4.3).
+		lis, err := socket.CreateSocketService(fl, tctx, tdm.WaitGroup(), h.Wg)(hp, rw, wp, sc, cfg.IPAddress, cfg.Port)
+		if err != nil {
+			// A non-nil error here is what fires Registry.Add's rollback:
+			// no entry is left for a channel that never bound. Return the
+			// handles already accumulated above so the rollback can
+			// deregister them -- discarding them here (`nil, err`) leaked
+			// every kafka consumer handler InitHandlers had already
+			// registered (task-244 fix round 3, finding A).
+			return handles, err
+		}
+		h.CloseListener = lis.Close
+		h.Sessions = socket.SessionsForHandle(fl, tctx, sc)
+		h.Kick = socket.KickSession(fl, tctx, wp, sc)
 
 		return handles, nil
 	}

@@ -11,7 +11,7 @@ require (
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/jtumidanski/api2go v1.0.4
-	github.com/sirupsen/logrus v1.10.0
+	github.com/sirupsen/logrus v1.10.1
 	go.elastic.co/ecslogrus v1.0.0
 )
 

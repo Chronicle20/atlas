@@ -477,14 +477,16 @@ EOF
     make_stubs '[]' '[]'
     # Override the default 404 with a live ACTIVE record so do_deactivate's
     # gate (_dcp_env_phase) passes and it actually PATCHes, exercising the
-    # ordering this test is about.
+    # ordering this test is about. Includes a tenant attribute so
+    # do_sweep_tenant (also gated on this same live record now) succeeds
+    # rather than failing the phase on a missing tenant attribute.
     cat > "$STUB_BIN/curl" <<'EOF'
 #!/usr/bin/env bash
 echo "curl $*" >> "$STUB_LOG"
 url="${@: -1}"
 case "$url" in
     */configurations/environments/*)
-        echo '{"data":{"attributes":{"phase":"ACTIVE"}}}'
+        echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"main","tenant":"99999999-9999-9999-9999-999999999999"}}}'
         exit 0
         ;;
     *)
@@ -605,26 +607,30 @@ EOF
 # task-49: sweep-tenant — the tenant-keyed orphan sweeper
 # ----------------------------------------------------------------------------
 
-@test "cleanup.sh sweep-tenant is skipped (isolated) under default ATLAS_MODE" {
+@test "cleanup.sh sweep-tenant is skipped when no control-plane environment record exists" {
+    # Default curl stub 404s the environments GET (isolated mode never
+    # registers one; a sparse PR torn down before registering doesn't
+    # either). No ATLAS_MODE is set here on purpose: this phase must not
+    # depend on it (bug: ATLAS_MODE never reaches the cleanup Job at all —
+    # see do_sweep_tenant's comment).
     make_stubs '[]' '[]'
     run run_cleanup
     [ "$status" -eq 0 ]
-    [[ "$output" == *'sweep-tenant'*'skipped (isolated)'* ]]
+    [[ "$output" == *'sweep-tenant'*'skipped'*'no control-plane environment record'* ]]
     if grep -F -- '--sweep-tenant' "$STUB_LOG"; then
-        echo "ERROR: sweep-tenant invoked under isolated mode" >&2
+        echo "ERROR: sweep-tenant invoked with no environment record" >&2
         return 1
     fi
 }
 
-@test "cleanup.sh sweep-tenant is skipped (no control-plane record) under ATLAS_MODE=sparse" {
-    # Default curl stub 404s the environments GET.
-    make_stubs '[]' '[]'
-    ATLAS_MODE=sparse run run_cleanup
-    [ "$status" -eq 0 ]
-    [[ "$output" == *'sweep-tenant'*'skipped'*'no control-plane environment record'* ]]
-}
-
-@test "cleanup.sh sweep-tenant reclaims this environment's tenant via sweep-orphans.sh --sweep-tenant --apply" {
+@test "cleanup.sh sweep-tenant reclaims this environment's tenant with no ATLAS_MODE set at all" {
+    # Regression for the wiring bug: the atlas-pr-cleanup Job never receives
+    # ATLAS_MODE (deploy/k8s/overlays/pr-cleanup/postdelete-cleanup.yaml is
+    # one shared manifest for isolated and sparse alike, unlike
+    # atlas-pr-bootstrap's pr-sparse-only kustomize patch), so ATLAS_MODE is
+    # unset here on purpose — exactly production reality for every sparse
+    # PR's teardown Job. do_sweep_tenant must still reclaim, driven only by
+    # the live control-plane environment record.
     SHIM_DIR="$(mktemp -d)"
     CALL_LOG="$BATS_TEST_TMPDIR/dcp-calls.log"
     cat > "$SHIM_DIR/curl" <<CURLEOF
@@ -633,7 +639,61 @@ printf '%s\n' "curl \$*" >> "$CALL_LOG"
 url="\${@: -1}"
 case "\$url" in
     */configurations/environments/*)
-        echo '{"data":{"attributes":{"phase":"ACTIVE","tenant":"77777777-7777-7777-7777-777777777777"}}}'
+        echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"main","tenant":"88888888-8888-8888-8888-888888888888"}}}'
+        ;;
+    *)
+        echo '{"data":[]}'
+        ;;
+esac
+exit 0
+CURLEOF
+    chmod +x "$SHIM_DIR/curl"
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/gh" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/psql" <<EOF
+#!/usr/bin/env bash
+printf '%s\n' "psql \$*" >> "$CALL_LOG"
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env \
+        PR_NUMBER=99 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        ATLAS_UI_BASE=http://fake-ui ATLAS_DEACTIVATE_SETTLE_S=0 \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'sweep-tenant'*'reclaiming tenant-keyed rows for tenant=88888888-8888-8888-8888-888888888888'* ]]
+    grep -F "tenant_id = '88888888-8888-8888-8888-888888888888'" "$CALL_LOG"
+
+    rm -rf "$SHIM_DIR"
+}
+
+@test "cleanup.sh sweep-tenant reclaims this environment's tenant via sweep-orphans.sh --sweep-tenant --apply, deriving the DB suffix from a non-main baseline" {
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/dcp-calls.log"
+    cat > "$SHIM_DIR/curl" <<CURLEOF
+#!/usr/bin/env bash
+printf '%s\n' "curl \$*" >> "$CALL_LOG"
+url="\${@: -1}"
+case "\$url" in
+    */configurations/environments/*)
+        echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"release-7","tenant":"77777777-7777-7777-7777-777777777777"}}}'
         ;;
     *)
         echo '{"data":[]}'
@@ -674,6 +734,10 @@ EOF
     [ "$status" -eq 0 ]
     [[ "$output" == *'sweep-tenant'*'reclaiming tenant-keyed rows for tenant=77777777-7777-7777-7777-777777777777'* ]]
     grep -F "tenant_id = '77777777-7777-7777-7777-777777777777'" "$CALL_LOG"
+    # The database suffix comes from the record's baseline attribute
+    # (release-7), never the literal "main" (design.md:271, FR-1.5).
+    grep -F -- "-d atlas-characters-release-7" "$CALL_LOG"
+    ! grep -F -- "-d atlas-characters-main" "$CALL_LOG"
 
     rm -rf "$SHIM_DIR"
 }
@@ -731,6 +795,60 @@ EOF
     rm -rf "$SHIM_DIR"
 }
 
+@test "cleanup.sh sweep-tenant fails the phase (not the whole script) when the environment record has no baseline attribute" {
+    SHIM_DIR="$(mktemp -d)"
+    cat > "$SHIM_DIR/curl" <<'CURLEOF'
+#!/usr/bin/env bash
+url="${@: -1}"
+case "$url" in
+    */configurations/environments/*)
+        echo '{"data":{"attributes":{"phase":"ACTIVE","tenant":"66666666-6666-6666-6666-666666666666"}}}'
+        ;;
+    *)
+        echo '{"data":[]}'
+        ;;
+esac
+exit 0
+CURLEOF
+    chmod +x "$SHIM_DIR/curl"
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/gh" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" ATLAS_MODE=sparse run env \
+        PR_NUMBER=99 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        ATLAS_UI_BASE=http://fake-ui ATLAS_DEACTIVATE_SETTLE_S=0 ATLAS_MODE=sparse \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    # A tenant with no baseline must never fall back to sweeping "-main"
+    # (design.md:271, FR-1.5) — the phase fails loudly instead, but every
+    # other phase still runs.
+    [[ "$output" == *'sweep-tenant'*'no baseline attribute'* ]]
+    [[ "$output" == *'failed_phases'*'sweep-tenant'* ]]
+    [[ "$output" == *'drop-branch'*'phase complete'* ]]
+
+    rm -rf "$SHIM_DIR"
+}
+
 @test "cleanup.sh drop-control-plane deletes every row for this environment, including duplicates, and never a foreign row" {
     # task-47 review finding: create_service_config is not idempotent
     # across a retried bootstrap Job, so a crashed attempt can leave an
@@ -762,7 +880,7 @@ done
 url="\${@: -1}"
 case "\$url" in
     */configurations/environments/*)
-        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE"}}}'
+        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"main","tenant":"66666666-6666-6666-6666-666666666666"}}}'
         ;;
     */configurations/services*)
         [ "\$method" = "GET" ] && cat "$JSON_FIXTURE"
@@ -842,7 +960,7 @@ done
 url="\${@: -1}"
 case "\$url" in
     */configurations/environments/*)
-        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE"}}}'
+        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"main","tenant":"66666666-6666-6666-6666-666666666666"}}}'
         ;;
     */configurations/services*'page[number]=2'*)
         [ "\$method" = "GET" ] && cat "$PAGE2"
@@ -888,6 +1006,78 @@ EOF
     [ "$status" -eq 0 ]
     grep -F -- '-X DELETE' "$CALL_LOG" | grep -F '/configurations/services/svc-p1'
     grep -F -- '-X DELETE' "$CALL_LOG" | grep -F '/configurations/services/svc-p2'
+
+    rm -rf "$SHIM_DIR"
+}
+
+@test "cleanup.sh drop-control-plane passes -g on the paginated list GET (curl glob bug)" {
+    # Without -g, curl parses page[size]=250&page[number]=N as a glob range
+    # and exits 3 ("bad range in position N") on every page — silently
+    # taking the "list failed" path and reclaiming nothing, including the
+    # atlas-tenants registry row this phase is responsible for. Assert the
+    # SHAPE of the emitted command rather than depend on the stub curl
+    # actually glob-parsing (the fake curl in this suite is a bash script,
+    # not real curl, so it never exercises the real bug).
+    SHIM_DIR="$(mktemp -d)"
+    CALL_LOG="$BATS_TEST_TMPDIR/dcp-calls.log"
+    cat > "$SHIM_DIR/curl" <<CURLEOF
+#!/usr/bin/env bash
+printf '%s\n' "curl \$*" >> "$CALL_LOG"
+method="GET"
+prev=""
+for a in "\$@"; do
+    if [ "\$prev" = "-X" ]; then method="\$a"; fi
+    prev="\$a"
+done
+url="\${@: -1}"
+case "\$url" in
+    */configurations/environments/*)
+        [ "\$method" = "GET" ] && echo '{"data":{"attributes":{"phase":"ACTIVE","baseline":"main","tenant":"66666666-6666-6666-6666-666666666666"}}}'
+        ;;
+    *)
+        [ "\$method" = "GET" ] && echo '{"data":[]}'
+        ;;
+esac
+exit 0
+CURLEOF
+    chmod +x "$SHIM_DIR/curl"
+    cat > "$SHIM_DIR/psql" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/rpk" <<'EOF'
+#!/usr/bin/env bash
+case "$1 $2" in
+    "topic list") echo '[]' ;;
+    "group list") printf 'BROKER GROUP STATE\n' ;;
+esac
+exit 0
+EOF
+    cat > "$SHIM_DIR/redis-cli" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    cat > "$SHIM_DIR/gh" <<'EOF'
+#!/usr/bin/env bash
+exit 0
+EOF
+    chmod +x "$SHIM_DIR"/*
+
+    PATH="$SHIM_DIR:$PATH" run env \
+        PR_NUMBER=99 DB_HOST=h DB_PORT=5432 DB_USER=u DB_PASSWORD=p \
+        ATLAS_DB_NAMES="foo" BOOTSTRAP_SERVERS=k REDIS_URL=r \
+        ATLAS_UI_BASE=http://fake-ui ATLAS_DEACTIVATE_SETTLE_S=0 \
+        bash "$PROJECT_ROOT/scripts/cleanup.sh"
+
+    [ "$status" -eq 0 ]
+    list_lines=$(grep -F 'page[size]=250' "$CALL_LOG")
+    [ -n "$list_lines" ]
+    while IFS= read -r line; do
+        [[ "$line" == *' -g '* || "$line" == *' -fsSg '* ]] || {
+            echo "ERROR: paginated GET missing -g: $line" >&2
+            return 1
+        }
+    done <<< "$list_lines"
 
     rm -rf "$SHIM_DIR"
 }

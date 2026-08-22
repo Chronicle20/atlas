@@ -1,0 +1,108 @@
+{
+  "service": "atlas-drops+atlas-character (task-248-party-meso-split changed packages)",
+  "path": "services/atlas-drops/atlas.com/drops/{party,drop,kafka/message/drop}; services/atlas-character/atlas.com/character/{character,kafka/message/drop,kafka/consumer/drop}",
+  "date": "2026-08-21",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "party",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()", "status": "fail", "evidence": "party/model.go:41-83 — modelBuilder/memberBuilder + NewBuilder/NewMemberBuilder inline in model.go, no builder.go"},
+        {"id": "DOM-04", "name": "Model.ToEntity()/Transform(Model) (RestModel, error) defined in rest.go", "status": "n-a", "evidence": "consumer-only external-client package; cross-service-implementation.md's REST Client Pattern (lines 465-533) documents Extract-only rest.go as compliant for this shape"},
+        {"id": "DOM-05", "name": "TransformSlice defined in rest.go and used by list handlers", "status": "n-a", "evidence": "no list handler / resource.go in this consumer-only package"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger, never *logrus.Logger", "status": "pass", "evidence": "party/processor.go:21"},
+        {"id": "DOM-11", "name": "Providers evaluate lazily via database.Query/SliceQuery", "status": "n-a", "evidence": "no provider.go in party/"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "party/rest.go:20-35, 134-150"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "pass", "evidence": "party/rest.go:125-132"},
+        {"id": "DOM-31", "name": "Tenant/trace never a REST-model field", "status": "pass", "evidence": "party/rest.go:15-18, 125-132"},
+        {"id": "FILE-01", "name": "Processor lives in processor.go", "status": "pass", "evidence": "party/processor.go"},
+        {"id": "FILE-02", "name": "RestModel/Transform-Extract/JSON:API methods live in rest.go", "status": "pass", "evidence": "party/rest.go"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "pass", "evidence": "party/requests.go:15-25"},
+        {"id": "FILE-05", "name": "Builder in builder.go, domain Model in model.go", "status": "fail", "evidence": "party/model.go:41-83 — builder logic not in its own builder.go"},
+        {"id": "FILE-06", "name": "No package-named catch-all carrying >=2 responsibilities", "status": "pass", "evidence": "model.go is not package-named; the model+builder collapse is tracked under FILE-05"},
+        {"id": "EXT-01", "name": "Target REST model implements SetToOneReferenceID and SetToManyReferenceIDs", "status": "fail", "evidence": "party/rest.go:67-78 has SetToManyReferenceIDs only; no SetToOneReferenceID anywhere in the file"},
+        {"id": "EXT-02", "name": "httptest-backed integration test with JSON:API fixture asserting populated struct", "status": "fail", "evidence": "party/rest_test.go: TestExtract/TestExtract_NoMembers hand-construct RestModel, no httptest server"},
+        {"id": "EXT-03", "name": "Only genuine 404s map to not-found; other errors bubble", "status": "pass", "evidence": "party/processor.go:30-33 — no custom error reclassification introduced"},
+        {"id": "EXT-04", "name": "Service URL composed via requests.RootUrl", "status": "pass", "evidence": "party/requests.go:16 — requests.RootUrlFor(ctx, \"PARTIES\")"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "party/rest_test.go — two independent Test* funcs, no tests:=[]struct{} table"},
+        {"id": "DOM-24", "name": "producertest stub for emit-reaching tests", "status": "n-a", "evidence": "party/rest_test.go never reaches an emit path"}
+      ]
+    },
+    {
+      "name": "drop",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "drop/processor.go:79"},
+        {"id": "DOM-21", "name": "No redeclaration of an existing libs/atlas-constants type", "status": "pass", "evidence": "drop/split.go:11-15 Recipient — no atlas-constants equivalent"},
+        {"id": "DOM-26", "name": "Every goroutine spawned via routine.Go", "status": "pass", "evidence": "grep for bare `go ` in changed non-test files returns no goroutine spawn"},
+        {"id": "DOM-28", "name": "Fallible enrichment/decorator paths degrade loudly", "status": "fail", "evidence": "drop/processor.go:195-202 resolveMembers — silent nil return, Errorf only, no degrade.Observe / atlas_enrichment_degraded_total increment"},
+        {"id": "DOM-30", "name": "Write + emit stay atomic via AndEmit + message.Buffer", "status": "pass", "evidence": "drop/processor.go:175-186 awards Put into same msgBuf as RESERVED event, wrapped by ReserveAndEmit's message.Emit at :209-214"},
+        {"id": "DOM-33", "name": "Interface change updates every mock implementation", "status": "n-a", "evidence": "drop.Processor gained With(); drop/mock/processor.go doesn't implement full interface and has no var _ drop.Processor assertion — deliberate, documented at plan time"},
+        {"id": "FILE-01", "name": "Processor lives in processor.go", "status": "pass", "evidence": "drop/processor.go"},
+        {"id": "FILE-05/06", "name": "No collapsed-file violation introduced", "status": "pass", "evidence": "drop/split.go is a focused single-responsibility helper file"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "drop/split_test.go PASS (table-driven, lines 25-160); drop/processor_test.go new meso-split tests (lines 1012-1264, six Test* funcs) FAIL — not tabulated"},
+        {"id": "DOM-24", "name": "producertest stub for emit-reaching tests", "status": "n-a", "evidence": "drop/processor_test.go never calls an *AndEmit method or reaches producer.ProviderImpl/message.Emit"}
+      ]
+    },
+    {
+      "name": "drop/mock",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Mock file responsibility", "status": "pass", "evidence": "drop/mock/processor.go holds only ProcessorMock"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "n-a", "evidence": "see drop package row — ProcessorMock intentionally not updated, no assertion, no full-interface implementation"}
+      ]
+    },
+    {
+      "name": "atlas-drops kafka/message/drop",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "No redeclared constants", "status": "pass", "evidence": "kafka.go:36-56 — new event-schema types, not atlas-constants domain types"},
+        {"id": "DOM-23", "name": "Topic env vars follow convention", "status": "n-a", "evidence": "no new topic env var — MESO_AWARDED is a new Type value within the existing EVENT_TOPIC_DROP_STATUS topic"}
+      ]
+    },
+    {
+      "name": "atlas-character kafka/message/drop",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "No redeclared constants", "status": "pass", "evidence": "kafka.go:77-84, 54-55"},
+        {"id": "DOM-23", "name": "Topic env vars follow convention", "status": "n-a", "evidence": "no new topic env var added"}
+      ]
+    },
+    {
+      "name": "atlas-character kafka/consumer/drop",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "no go statement added in consumer.go diff"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "consumer_test.go: single Test* function, no tests:=[]struct{} table (single scenario, but rule text is mechanical)"},
+        {"id": "DOM-24", "name": "producertest stub for emit-reaching tests", "status": "n-a", "evidence": "type-guard short-circuits before reaching AwardPickedUpMeso / any emit path"}
+      ]
+    },
+    {
+      "name": "character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "character/processor.go:172 (pre-existing signature, unchanged)"},
+        {"id": "DOM-21", "name": "No redeclared constants", "status": "pass", "evidence": "processor.go:931 actorTypeDrop; no libs/atlas-constants actor-type equivalent found; sibling values are bare literals themselves"},
+        {"id": "DOM-30", "name": "Write + emit stay atomic", "status": "pass", "evidence": "processor.go:941-981 AwardPickedUpMeso wraps credit in database.ExecuteTransaction with message.Emit(outbox.EmitProvider(...)) inside"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "n-a", "evidence": "AttemptMesoPickUp replaced by AwardPickedUpMeso (processor.go:130); no mock implementing character.Processor exists anywhere in the module"},
+        {"id": "DOM-28", "name": "Enrichment/fallback paths degrade loudly", "status": "n-a", "evidence": "processor.go:975-979 RequestPickUp call is a fire-and-forget command dispatch, not a data-enrichment fetch populating a returned Model — different pattern than DOM-28 targets"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "fail", "evidence": "meso_award_test.go:54-216 — six independent Test* functions, no tests:=[]struct{} table"},
+        {"id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "pass", "evidence": "meso_award_test.go reuses outboxTestDb->testDatabase helper which calls database.RegisterTenantCallbacks at processor_test.go:43"},
+        {"id": "DOM-24", "name": "producertest stub for emit-reaching tests", "status": "pass", "evidence": "meso_award_test.go:55-56 producertest.InstallCapturing / t.Cleanup(producertest.InstallNoop) in every test"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "DOM-01/FILE-05: services/atlas-drops/atlas.com/drops/party/model.go:41-83 — builder logic inline in model.go instead of a separate builder.go",
+    "EXT-01: services/atlas-drops/atlas.com/drops/party/rest.go — RestModel/MemberRestModel missing SetToOneReferenceID stub",
+    "EXT-02: services/atlas-drops/atlas.com/drops/party/rest_test.go — no httptest-backed integration test with a JSON:API fixture",
+    "DOM-28: services/atlas-drops/atlas.com/drops/drop/processor.go:195-202 — resolveMembers degrades silently with no degrade.Observe call and no atlas_enrichment_degraded_total increment",
+    "DOM-20: services/atlas-drops/atlas.com/drops/party/rest_test.go, services/atlas-drops/atlas.com/drops/drop/processor_test.go (new meso-split tests), services/atlas-character/atlas.com/character/character/meso_award_test.go, services/atlas-character/atlas.com/character/kafka/consumer/drop/consumer_test.go — new/changed tests not table-driven"
+  ],
+  "nonBlocking": []
+}

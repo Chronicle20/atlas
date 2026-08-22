@@ -1,0 +1,17 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-21T11:35:19Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	6415c5ce6	-	-	-	-
+2026-08-21T11:36:00Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	6415c5ce6	APPROVED	no	-	-
+2026-08-21T11:36:00Z	agent	Task 1	atlas-verifier	-	-	-	-	-	PASS	6415c5ce6	-	-	-	-
+2026-08-21T11:37:37Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE	073117395	-	-	-	-
+2026-08-21T11:40:27Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	073117395	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T11:40:27Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	457365ea0	-	-	-	-
+2026-08-21T11:41:18Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	457365ea0	APPROVED	no	-	-
+2026-08-21T11:41:52Z	agent	Task 3	atlas-verifier	-	-	-	-	-	PASS	457365ea0	-	-	-	-
+2026-08-21T11:46:29Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	d941053aa	-	-	-	-
+2026-08-21T11:46:30Z	agent	Task 4	atlas-verifier	-	-	-	-	-	PASS	d941053aa	-	-	-	-
+2026-08-21T11:50:59Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	d941053aa	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T11:50:59Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	95000
+2026-08-21T11:54:46Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	DONE	1abf2e390	-	-	-	-
+2026-08-21T11:55:05Z	agent	Task 5	atlas-verifier	-	-	-	-	-	PASS	1abf2e390	-	-	-	-
+2026-08-21T11:56:29Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DONE	1abf2e390	APPROVED	no	docs/tasks/task-245-kafka-precreate-active-group-skip/review-task-5.md	-
+2026-08-21T11:59:28Z	agent	branch	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	1abf2e390	APPROVED_WITH_FINDINGS	no	docs/tasks/task-245-kafka-precreate-active-group-skip/audit.md	-

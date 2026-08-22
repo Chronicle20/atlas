@@ -6,7 +6,6 @@ import (
 	drop2 "atlas-character/kafka/message/drop"
 	"context"
 
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
@@ -31,7 +30,7 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(drop2.EnvEventTopicDropStatus)()
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDropReservation(db)))); err != nil {
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMesoAwarded(db)))); err != nil {
 				return err
 			}
 			return nil
@@ -39,15 +38,14 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 	}
 }
 
-func handleDropReservation(db *gorm.DB) message.Handler[drop2.StatusEvent[drop2.ReservedStatusEventBody]] {
-	return func(l logrus.FieldLogger, ctx context.Context, e drop2.StatusEvent[drop2.ReservedStatusEventBody]) {
-		if e.Type != drop2.StatusEventTypeReserved {
+func handleMesoAwarded(db *gorm.DB) message.Handler[drop2.StatusEvent[drop2.MesoAwardedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e drop2.StatusEvent[drop2.MesoAwardedStatusEventBody]) {
+		if e.Type != drop2.StatusEventTypeMesoAwarded {
 			return
 		}
-		if e.Body.Meso > 0 {
-			f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).Build()
-			_ = character.NewProcessor(l, ctx, db).AttemptMesoPickUp(uuid.New(), f, e.Body.CharacterId, e.DropId, e.Body.Meso)
-			return
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		if err := character.NewProcessor(l, ctx, db).AwardPickedUpMeso(e.TransactionId, f, e.Body.CharacterId, e.DropId, e.Body.Amount, e.Body.Picker); err != nil {
+			l.WithError(err).Errorf("Unable to award [%d] meso from drop [%d] to character [%d].", e.Body.Amount, e.DropId, e.Body.CharacterId)
 		}
 	}
 }

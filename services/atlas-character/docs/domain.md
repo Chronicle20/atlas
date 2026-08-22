@@ -121,7 +121,7 @@ Handles character operations.
 | AwardLevel | Award levels |
 | Move | Update position |
 | RequestChangeMeso | Process meso change |
-| AttemptMesoPickUp | Process meso pickup |
+| AwardPickedUpMeso | Credit a picked-up meso share to a character and, for the picker, emit the pick-up completion command |
 | RequestDropMeso | Process meso drop |
 | RequestChangeFame | Process fame change |
 | RequestDistributeAp | Process AP distribution |

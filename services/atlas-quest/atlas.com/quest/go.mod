@@ -16,7 +16,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/segmentio/kafka-go v0.4.51
-	github.com/sirupsen/logrus v1.10.0
+	github.com/sirupsen/logrus v1.10.1
 	github.com/stretchr/testify v1.12.0
 	go.elastic.co/ecslogrus v1.0.0
 	gorm.io/driver/sqlite v1.6.0

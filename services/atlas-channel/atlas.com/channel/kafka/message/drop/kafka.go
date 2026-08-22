@@ -63,11 +63,12 @@ type SpawnCommandBody struct {
 }
 
 const (
-	EnvEventTopicDropStatus = "EVENT_TOPIC_DROP_STATUS"
-	StatusEventTypeCreated  = "CREATED"
-	StatusEventTypeExpired  = "EXPIRED"
-	StatusEventTypePickedUp = "PICKED_UP"
-	StatusEventTypeConsumed = "CONSUMED"
+	EnvEventTopicDropStatus    = "EVENT_TOPIC_DROP_STATUS"
+	StatusEventTypeCreated     = "CREATED"
+	StatusEventTypeExpired     = "EXPIRED"
+	StatusEventTypePickedUp    = "PICKED_UP"
+	StatusEventTypeConsumed    = "CONSUMED"
+	StatusEventTypeMesoAwarded = "MESO_AWARDED"
 )
 
 type StatusEvent[E any] struct {
@@ -108,4 +109,13 @@ type PickedUpStatusEventBody struct {
 	Quantity    uint32 `json:"quantity"`
 	Meso        uint32 `json:"meso"`
 	PetSlot     int8   `json:"petSlot"`
+}
+
+// MesoAwardedStatusEventBody mirrors atlas-drops' StatusEventMesoAwardedBody.
+// One event per recipient of a split meso drop; exactly one carries
+// Picker: true, and only that one completes the pickup.
+type MesoAwardedStatusEventBody struct {
+	CharacterId uint32 `json:"characterId"`
+	Amount      uint32 `json:"amount"`
+	Picker      bool   `json:"picker"`
 }

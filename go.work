@@ -50,6 +50,7 @@ use (
 	./services/atlas-guilds/atlas.com/guilds
 	./services/atlas-inventory/atlas.com/inventory
 	./services/atlas-invites/atlas.com/invites
+	./services/atlas-kafka-precreate
 	./services/atlas-keys/atlas.com/keys
 	./services/atlas-kites/atlas.com/kites
 	./services/atlas-login/atlas.com/login

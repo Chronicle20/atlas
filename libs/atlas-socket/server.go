@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"sync"
 	"syscall"
 	"time"
 
@@ -97,11 +96,16 @@ type config struct {
 	idleThreshold time.Duration
 }
 
-//goland:noinspection GoUnusedExportedFunction
-func Run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup, configurators ...Configurator) error {
-	wg.Add(1)
-	defer wg.Done()
+// WaitGrouper is the minimal surface Serve/Run needs from a waitgroup. A
+// *sync.WaitGroup satisfies it with no caller changes; atlas-channel uses
+// it to fan Add/Done out to more than one underlying waitgroup
+// (task-244 design.md §3.1).
+type WaitGrouper interface {
+	Add(delta int)
+	Done()
+}
 
+func buildConfig(configurators ...Configurator) *config {
 	c := &config{
 		creator:   defaultCreator,
 		decryptor: defaultMessageDecryptor,
@@ -110,17 +114,41 @@ func Run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup, configur
 		port:      5000,
 		handlers:  make(map[uint16]request.Handler),
 	}
-
 	for _, configurator := range configurators {
 		configurator(c)
 	}
+	return c
+}
 
-	l.Infof("Starting tcp server on [%s:%d]", c.ipAddress, c.port)
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", c.ipAddress, c.port))
+// Bind performs net.Listen synchronously. Callers that must observe a
+// bind failure before starting any side effect -- listener.Registry.Add's
+// rollback path in atlas-channel -- call this instead of Run.
+func Bind(l logrus.FieldLogger, ipAddress string, port int) (net.Listener, error) {
+	l.Infof("Starting tcp server on [%s:%d]", ipAddress, port)
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", ipAddress, port))
 	if err != nil {
-		l.WithError(err).Errorln("Error listening:", err.Error())
-		return err
+		l.WithError(err).Errorf("Error listening on [%s:%d].", ipAddress, port)
+		return nil, err
 	}
+	return lis, nil
+}
+
+// Serve runs the accept loop against an already-bound listener. wg
+// brackets Serve's own lifetime (Add(1) on entry, Done() on return),
+// matching what Run does today. sessionWg is incremented once per
+// accepted connection AT THE ACCEPT SITE and released by the
+// per-connection goroutine, so a caller can track session lifetime
+// independently of the listener's. The accept-site increment is what
+// closes the accept->Add gap and makes a concurrent Wait safe
+// (task-244 design.md §2.3).
+//
+// Serve ignores the ipAddress/port configurators -- the listener is
+// already bound. Every other configurator still applies.
+func Serve(l logrus.FieldLogger, ctx context.Context, wg WaitGrouper, sessionWg WaitGrouper, lis net.Listener, configurators ...Configurator) error {
+	wg.Add(1)
+	defer wg.Done()
+
+	c := buildConfig(configurators...)
 
 	defer func(lis net.Listener) {
 		err := lis.Close()
@@ -147,6 +175,14 @@ func Run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup, configur
 	for {
 		conn, err := lis.Accept()
 		if err != nil {
+			// A closed listener is terminal whether or not ctx has been
+			// canceled -- drain phase 1 closes the listener while the
+			// handle's ctx is still live, and a ctx-only check would spin
+			// a hot loop here (task-244 design.md §3.3).
+			if errors.Is(err, net.ErrClosed) {
+				l.Infof("Listener stopped accepting new connections.")
+				return err
+			}
 			select {
 			case <-ctx.Done():
 				l.Infof("Listener stopped accepting new connections.")
@@ -159,13 +195,27 @@ func Run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup, configur
 
 		l.Infof("Client [%s] connected.", conn.RemoteAddr())
 
-		routine.Go(l, ctx, func(_ context.Context) { run(l, ctx, wg)(c, conn, uuid.New(), 4) })
+		// Add before the goroutine starts: run()'s own Add(1) would race a
+		// concurrent Wait and panic with "WaitGroup misuse".
+		sessionWg.Add(1)
+		routine.Go(l, ctx, func(_ context.Context) { run(l, ctx, sessionWg)(c, conn, uuid.New(), 4) })
 	}
 }
 
-func run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(config *config, conn net.Conn, sessionId uuid.UUID, headerSize int) {
+//goland:noinspection GoUnusedExportedFunction
+func Run(l logrus.FieldLogger, ctx context.Context, wg WaitGrouper, configurators ...Configurator) error {
+	c := buildConfig(configurators...)
+	lis, err := Bind(l, c.ipAddress, c.port)
+	if err != nil {
+		return err
+	}
+	return Serve(l, ctx, wg, wg, lis, configurators...)
+}
+
+func run(l logrus.FieldLogger, ctx context.Context, wg WaitGrouper) func(config *config, conn net.Conn, sessionId uuid.UUID, headerSize int) {
 	return func(config *config, conn net.Conn, sessionId uuid.UUID, headerSize int) {
-		wg.Add(1)
+		// The matching Add(1) happens at Serve's accept site, before this
+		// goroutine is spawned (task-244 design.md §2.3).
 		defer wg.Done()
 
 		defer func(conn net.Conn) {

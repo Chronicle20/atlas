@@ -6,22 +6,30 @@
 #
 # Mechanism: a one-shot Job at sync-wave 0 that reads its own envFrom-injected
 # atlas-env ConfigMap, picks out every COMMAND_TOPIC_* / EVENT_TOPIC_* value,
-# and calls kafka-topics.sh --create --if-not-exists once per topic. Argo CD
+# and issues a single CreateTopics request covering every topic. Argo CD
 # health-checks the Job — Deployments (pushed to sync-wave 10) won't start
 # until this completes.
 #
 # Idempotent: re-applying the manifest re-creates the Job; existing topics are
-# left alone (--if-not-exists). Adding a new topic on main or in a PR overlay
-# is picked up on the next sync.
+# left alone (each topic that already exists surfaces a per-topic
+# TopicAlreadyExists error, which is tolerated rather than failing the Job).
+# Adding a new topic on main or in a PR overlay is picked up on the next sync.
 #
 # Also seeds (task-232 Task 45, design §6.3) committed end-of-log offsets for
-# every override consumer group named in KAFKA_CONSUMER_GROUP, while each
-# group is still empty and therefore resettable — see kafka-precreate.sh for
-# the mechanism and NG6 (main is inert: the pass is skipped whenever
-# KAFKA_CONSUMER_GROUP is unset). The script is mounted from the
-# atlas-kafka-precreate-script ConfigMap (kustomization.yaml) instead of
-# living inline here so it is independently sourceable and testable
-# (atlas-kafka-precreate_test.sh).
+# every override consumer group named in KAFKA_CONSUMER_GROUP — see
+# services/atlas-kafka-precreate/ for the mechanism and NG6 (main is inert:
+# the pass is skipped whenever KAFKA_CONSUMER_GROUP is unset). Whether a group
+# is resettable depends on which sync this is. On a FIRST sync the group is
+# still empty, and every Deployment sits at sync-wave 10 behind this Job, so
+# the reset lands before any consumer joins. On a RE-SYNC of a live
+# environment the Force=true,Replace=true above deletes and recreates this
+# Job while the environment's Deployments have been joined to those groups
+# for hours: the group is active, Kafka refuses the reset, and the pass SKIPS
+# it (task-245). An active group is already initialized, which is the end
+# state the pass exists to reach, so skipping is both correct and the safety
+# property — a routine re-sync must never fast-forward a live environment
+# past unprocessed messages. See services/atlas-kafka-precreate/ for the Go
+# unit tests covering this behaviour.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -36,22 +44,18 @@ metadata:
 spec:
   backoffLimit: 3
   ttlSecondsAfterFinished: 600
+  activeDeadlineSeconds: 300
   template:
     spec:
       restartPolicy: OnFailure
       containers:
         - name: kafka-precreate
-          image: apache/kafka:3.7.2
+          image: ghcr.io/chronicle20/atlas-kafka-precreate/atlas-kafka-precreate:latest
+          # envFrom only — no env: key. .github/workflows/pr-validation.yml's
+          # JSON-6902 patch does `op: add` on /spec/template/spec/containers/0/env`
+          # to inject KAFKA_CONSUMER_GROUP; op: add on an already-present key
+          # REPLACES it, so if this container ever grows an env: key,
+          # KAFKA_CONSUMER_GROUP silently becomes its only entry.
           envFrom:
             - configMapRef:
                 name: atlas-env
-          volumeMounts:
-            - name: kafka-precreate-script
-              mountPath: /scripts
-          command:
-            - /bin/bash
-            - /scripts/kafka-precreate.sh
-      volumes:
-        - name: kafka-precreate-script
-          configMap:
-            name: atlas-kafka-precreate-script

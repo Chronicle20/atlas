@@ -179,3 +179,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-22T23:28:11Z	agent	bug-duey-receive-unique-conflict-on-stackables	atlas-implementer	sonnet	-	-	-	-	DONE	5dabf1e31	-	-	-	-
 2026-08-22T23:28:12Z	agent	bug-duey-receive-free-slot-ignores-stack-merge	atlas-implementer	sonnet	-	-	-	-	DONE	a7adb9d9c	-	-	-	-
 2026-08-22T23:28:12Z	agent	bug-duey-preflight-gates	atlas-reviewer	sonnet	-	-	-	-	DONE	a7adb9d9c	APPROVED	no	-	-
+2026-08-23T00:37:39Z	agent	bug-duey-receive-no-completion-confirmation	atlas-implementer	sonnet	-	-	-	-	DONE	e071e5708	-	-	-	-
+2026-08-23T00:37:39Z	agent	bug-duey-receive-no-completion-confirmation	atlas-reviewer	sonnet	-	-	-	-	DONE	e071e5708	APPROVED	false	-	-

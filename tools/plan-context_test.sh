@@ -72,9 +72,15 @@ cat > "$repo/docs/tasks/task-001-fixture/design.md" <<'EOF'
 Touches `services/atlas-demo/atlas.com/demo/widget/processor.go` and
 `services/atlas-demo/atlas.com/demo/widget/model.go`. A new file lands at
 services/atlas-demo/atlas.com/demo/widget/emitter.go. See also the directory
-services/atlas-demo/atlas.com/demo/widget for context, and a wrapped path like
+services/atlas-demo/atlas.com/demo/widget for context, the trailing-slash
+reference services/atlas-demo/atlas.com/demo/sink/ that the corpus writes
+routinely, and a wrapped path like
 libs/atlas-
 that prose broke across a line.
+EOF
+mkdir -p "$repo/services/atlas-demo/atlas.com/demo/sink"
+cat > "$repo/services/atlas-demo/atlas.com/demo/sink/sink.go" <<'EOF'
+package sink
 EOF
 git -C "$repo" add -A >/dev/null
 git -C "$repo" commit -qm init
@@ -91,6 +97,16 @@ assert_eq "no identifier exits 2" "2" "$?"
 ( cd "$repo" && ./tools/plan-context.sh 001 --siblings abc >/dev/null 2>&1 )
 assert_eq "non-numeric --siblings exits 2" "2" "$?"
 
+# A value-taking flag given as the LAST argument used to hit bash's "shift
+# count out of range" inside `shift 2`, which under `set -e` aborted with
+# status 1 and no message — neither the documented exit 2 nor a usage line.
+for flag in --siblings --max-paths; do
+  err="$( cd "$repo" && ./tools/plan-context.sh 001 "$flag" 2>&1 >/dev/null )"
+  st=$?
+  assert_eq "dangling $flag exits 2, not 1" "2" "$st"
+  assert_has "dangling $flag explains itself" "needs a count" "$err"
+done
+
 out="$(run 001)"
 assert_eq "survey of a resolvable task exits 0" "0" "$?"
 
@@ -101,6 +117,12 @@ assert_has "test-less .go is flagged" "NO test file" "$out"
 assert_has "missing path is unresolved" "emitter.go" "$out"
 assert_has "unresolved section is titled for the planner" "mark 'new file'" "$out"
 assert_not "line-wrap artefact is not reported as a missing file" "- libs/atlas-" "$out"
+
+# The artefact filter must not take real directories with it. A trailing-slash
+# reference (`services/atlas-demo/atlas.com/demo/widget/`) is common in the
+# design corpus, and losing one is silent — it appears in neither the existing
+# nor the unresolved list, so nothing tells the planner it went missing.
+assert_has "trailing-slash directory reference survives extraction" "demo/sink" "$out"
 
 # emitter.go must be UNRESOLVED, not EXISTING. Check it appears after the
 # unresolved heading rather than merely somewhere in the output.

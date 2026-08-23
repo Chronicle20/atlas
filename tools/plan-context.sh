@@ -14,7 +14,7 @@
 # every path design.md names, does it exist, what module does it build from,
 # does it already have a test file, and what siblings could a task's
 # "Patterns to copy:" line point at. This script answers all of that in one
-# call, in under ~8 KB.
+# call: 6.0 KB on task-241 (32 paths), 8.3 KB on task-232.
 #
 # It also pre-empts the two `tools/plan-lint.sh` checks that drive the rewrite
 # passes. Plan-task sessions average 5.5 Write/Edit ops against plan.md for a
@@ -66,8 +66,12 @@ FROM=()
 while [ $# -gt 0 ]; do
     case "$1" in
         --symbols)  SYMBOLS=1; shift ;;
-        --siblings) SIBLINGS="${2:-}"; shift 2 ;;
-        --max-paths) MAX_PATHS="${2:-}"; shift 2 ;;
+        --siblings)
+            [ -n "${2:-}" ] || { echo "plan-context.sh: --siblings needs a count" >&2; exit 2; }
+            SIBLINGS="$2"; shift 2 ;;
+        --max-paths)
+            [ -n "${2:-}" ] || { echo "plan-context.sh: --max-paths needs a count" >&2; exit 2; }
+            MAX_PATHS="$2"; shift 2 ;;
         --from)
             [ -n "${2:-}" ] || { echo "plan-context.sh: --from needs a file" >&2; exit 2; }
             FROM+=("$2"); shift 2 ;;
@@ -124,7 +128,13 @@ extract() {
         # Drop line-wrap artefacts: prose that broke `libs/atlas-kafka` across a
         # newline leaves a bare `libs/atlas-`, which would otherwise be reported
         # as an unresolved path and read as a genuine missing file.
-        grep -vE '[-_/]$' |
+        #
+        # `/` is deliberately NOT in this class. A directory written with a
+        # trailing slash (`cmd/goroutineguard/`) is common in the design corpus,
+        # and dropping it would silently lose a real path. It cannot reach here
+        # anyway — the pattern above ends on a segment, never on the separator —
+        # but listing `/` would state an intent this script must not have.
+        grep -vE '[-_]$' |
         sort -u
 }
 

@@ -322,7 +322,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-parcel/atlas-parcel
-    newTag: main-93db3e2
+    newTag: main-221d490
   - name: ghcr.io/chronicle20/atlas-parties/atlas-parties
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests

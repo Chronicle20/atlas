@@ -235,6 +235,14 @@ func TestCustodyCommands(t *testing.T) {
 			released := eventsOfType(rp.events, custody.StatusEventReleased)
 			require.Len(t, released, 1)
 			assert.Equal(t, releaseTx, released[0].transactionId)
+
+			// The release IS the completion — PARCEL_RECEIVED must land
+			// alongside the custody RELEASED ack, addressed to the
+			// RECIPIENT (100), so the channel can announce
+			// PARCEL[PARCEL_REMOVED] and unlock the dialog.
+			receivedEvents := eventsOfType(rp.events, parcelmsg.StatusEventParcelReceived)
+			require.Len(t, receivedEvents, 1)
+			assert.Equal(t, uint32(100), receivedEvents[0].characterId)
 		}},
 		{name: "release replay", run: func(t *testing.T) {
 			db, tid := newTestDB(t)
@@ -256,6 +264,9 @@ func TestCustodyCommands(t *testing.T) {
 
 			released := eventsOfType(rp.events, custody.StatusEventReleased)
 			require.Len(t, released, 1, "replay must not re-emit RELEASED")
+
+			receivedEvents := eventsOfType(rp.events, parcelmsg.StatusEventParcelReceived)
+			require.Len(t, receivedEvents, 1, "replay must not re-emit PARCEL_RECEIVED")
 
 			errored := eventsOfType(rp.events, custody.StatusEventError)
 			assert.Empty(t, errored, "replay must still report success (no ERROR ack)")

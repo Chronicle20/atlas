@@ -1,5 +1,7 @@
 package parcel
 
+import "github.com/google/uuid"
+
 // EnvStatusEventTopic names the parcel status event topic — the arrival
 // notification channel to the rest of the platform. It is a sibling of
 // custody's EnvStatusTopic (kafka/message/custody/kafka.go), not the same
@@ -18,6 +20,19 @@ const StatusEventParcelArrived = "PARCEL_ARRIVED"
 // ticket destroy → transfer_to_parcel → release_from_character +
 // accept_to_parcel), so the row create IS the completion.
 const StatusEventParcelSent = "PARCEL_SENT"
+
+// StatusEventParcelReceived notifies a parcel's RECIPIENT that
+// handleReleaseFromParcel transitioned the row to received, so the channel
+// can announce PARCEL[PARCEL_REMOVED] (kind Claimed) and the client removes
+// the row, shows SP_3900, and re-enables the dialog controls. Emitted from
+// handleReleaseFromParcel: the release IS the completion, mirroring
+// StatusEventParcelSent's "the row create IS the completion" posture. If the
+// downstream accept_to_character later fails and handleRestoreParcel
+// compensates, the client has already removed the row and will only see it
+// again on reopening the dialog — an accepted trade-off (bug-duey-receive-
+// no-completion-confirmation.md's "Not yet answered" section), not solved
+// here.
+const StatusEventParcelReceived = "PARCEL_RECEIVED"
 
 // StatusEvent is the generic parcel status event envelope, addressed by
 // CharacterId to whichever party the event concerns — the recipient for
@@ -44,3 +59,11 @@ type StatusEventParcelArrivedBody struct {
 // bare mode byte (design §5.2, 0x12 — SP_3901 plus the send-tab reset), and
 // the addressee is already the envelope's CharacterId.
 type StatusEventParcelSentBody struct{}
+
+// StatusEventParcelReceivedBody carries the released parcel's id so the
+// channel-side handler can project it onto the wire's uint32 parcelId
+// (dueyparcel.WireId) for PARCEL[PARCEL_REMOVED]. The addressee is already
+// the envelope's CharacterId (the recipient).
+type StatusEventParcelReceivedBody struct {
+	ParcelId uuid.UUID `json:"parcelId"`
+}

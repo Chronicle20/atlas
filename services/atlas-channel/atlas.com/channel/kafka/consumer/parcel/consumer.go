@@ -59,6 +59,12 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleParcelReceivedEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+
 				return handles, nil
 			}
 		}
@@ -225,6 +231,39 @@ func handleParcelSentEvent(sc server.Model, wp writer.Producer) message.Handler[
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(parcelcb.ParcelWriter)(parcelcb.ParcelSuccessfullySentBody()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce parcel send completion to character [%d].", e.CharacterId)
+		}
+	}
+}
+
+// handleParcelReceivedEvent announces PARCEL[PARCEL_REMOVED] (kind Claimed)
+// to a parcel's RECIPIENT when atlas-parcel publishes PARCEL_RECEIVED —
+// handleReleaseFromParcel having completed. Without it the client never
+// learns the receive finished: CParcelDlg disables its controls the moment
+// it sends CTabReceive::ReceiveParcel and only re-enables them when a PARCEL
+// result packet arrives (CParcelDlg::OnPacket, v83 @0x6f56ea). Case 23
+// (PARCEL_REMOVED) calls RemoveParcel then SetCtrlEnabled(1) itself, so this
+// one packet both removes the row and unlocks the dialog — no separate
+// unlock packet is needed or sent.
+//
+// Same guards and posture as handleParcelSentEvent: event type, tenant, then
+// IfPresentByCharacterId — a recipient who left the channel is a silent
+// no-op. The parcel id is projected through dueyparcel.WireId, the same
+// 4-byte big-endian truncation the OPEN list and RECEIVE resolution already
+// agree on.
+func handleParcelReceivedEvent(sc server.Model, wp writer.Producer) message.Handler[parcelmsg.StatusEvent[parcelmsg.StatusEventParcelReceivedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e parcelmsg.StatusEvent[parcelmsg.StatusEventParcelReceivedBody]) {
+		if e.Type != parcelmsg.StatusEventParcelReceived {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(parcelcb.ParcelWriter)(parcelcb.ParcelRemovedBody(dueyparcel.WireId(e.Body.ParcelId), parcelcb.ParcelRemovedKindClaimed)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce parcel receive completion to character [%d].", e.CharacterId)
 		}
 	}
 }

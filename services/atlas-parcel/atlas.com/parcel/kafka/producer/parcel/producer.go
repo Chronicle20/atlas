@@ -3,6 +3,7 @@ package parcel
 import (
 	parcelmsg "atlas-parcel/kafka/message/parcel"
 
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
@@ -38,6 +39,23 @@ func ParcelSentStatusEventProvider(characterId uint32) model.Provider[[]kafka.Me
 		CharacterId: characterId,
 		Type:        parcelmsg.StatusEventParcelSent,
 		Body:        parcelmsg.StatusEventParcelSentBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// ParcelReceivedStatusEventProvider builds a PARCEL_RECEIVED status event
+// addressed to characterId — the parcel's RECIPIENT — so the channel can
+// announce PARCEL[PARCEL_REMOVED] (kind Claimed) and the client removes the
+// row and re-enables the dialog. Keyed by characterId for the same
+// per-character ordering as its siblings.
+func ParcelReceivedStatusEventProvider(characterId uint32, parcelId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &parcelmsg.StatusEvent[parcelmsg.StatusEventParcelReceivedBody]{
+		CharacterId: characterId,
+		Type:        parcelmsg.StatusEventParcelReceived,
+		Body: parcelmsg.StatusEventParcelReceivedBody{
+			ParcelId: parcelId,
+		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

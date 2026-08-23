@@ -48,6 +48,14 @@ const StatusEventParcelArrived = "PARCEL_ARRIVED"
 // saga's last step. The channel answers with PARCEL[SUCCESSFULLY_SENT].
 const StatusEventParcelSent = "PARCEL_SENT"
 
+// StatusEventParcelReceived notifies a parcel's RECIPIENT that
+// atlas-parcel's handleReleaseFromParcel completed — the row transitioned to
+// received. The channel answers with PARCEL[PARCEL_REMOVED] (kind Claimed),
+// which both removes the row and re-enables the dialog (v83 IDB @0x6f56ea,
+// case 23: it calls RemoveParcel then SetCtrlEnabled(1) itself, so no
+// separate unlock packet is needed).
+const StatusEventParcelReceived = "PARCEL_RECEIVED"
+
 // StatusEvent is the generic parcel status event envelope, addressed to the
 // parcel's recipient by CharacterId — mirrors atlas-parcel's producer-side
 // StatusEvent[E] (task-241 Task 24) and
@@ -74,3 +82,12 @@ type StatusEventParcelArrivedBody struct {
 // CharacterId. Mirrors atlas-parcel's producer-side body; field-for-field
 // identity matters because these are separate Go modules.
 type StatusEventParcelSentBody struct{}
+
+// StatusEventParcelReceivedBody carries the released parcel's id so
+// handleParcelReceivedEvent can project it onto the wire's uint32 parcelId
+// (dueyparcel.WireId) for PARCEL[PARCEL_REMOVED]. Mirrors atlas-parcel's
+// producer-side body; field-for-field identity matters because these are
+// separate Go modules.
+type StatusEventParcelReceivedBody struct {
+	ParcelId uuid.UUID `json:"parcelId"`
+}

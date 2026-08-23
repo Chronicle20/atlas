@@ -156,7 +156,17 @@ func handleAcceptToParcel(pf providerFn) func(db *gorm.DB) message.Handler[custo
 // handleReleaseFromParcel transitions the parcel row to received AND
 // releases custody in one atlas-parcel transaction (design §4.3). A
 // replayed delivery is not an error (parcel.ErrAlreadyReleased) — it re-acks
-// nothing, since the first delivery already emitted the RELEASED event.
+// nothing, since the first delivery already emitted the RELEASED event (and,
+// per below, the PARCEL_RECEIVED player-facing event too).
+//
+// The release IS the completion — the direct analogue of
+// handleAcceptToParcel's PARCEL_SENT emission ("the row create IS the
+// completion"). If the downstream accept_to_character later fails and
+// handleRestoreParcel compensates, the client has already removed the row
+// from PARCEL_RECEIVED and will only see it again on reopening the dialog.
+// Accepted trade-off (bug-duey-receive-no-completion-confirmation.md's "Not
+// yet answered"); the fix if this proves regular in live testing is a re-add
+// packet from handleRestoreParcel, not moving where this is emitted.
 func handleReleaseFromParcel(pf providerFn) func(db *gorm.DB) message.Handler[custody.Command[custody.ReleaseFromParcelCommandBody]] {
 	return func(db *gorm.DB) message.Handler[custody.Command[custody.ReleaseFromParcelCommandBody]] {
 		return func(l logrus.FieldLogger, ctx context.Context, c custody.Command[custody.ReleaseFromParcelCommandBody]) {
@@ -171,7 +181,10 @@ func handleReleaseFromParcel(pf providerFn) func(db *gorm.DB) message.Handler[cu
 				if rerr != nil {
 					return rerr
 				}
-				return mb.Put(custody.EnvStatusTopic, custodyproducer.ReleasedStatusEventProvider(c.TransactionId, m.Id()))
+				if perr := mb.Put(custody.EnvStatusTopic, custodyproducer.ReleasedStatusEventProvider(c.TransactionId, m.Id())); perr != nil {
+					return perr
+				}
+				return mb.Put(parcelmsg.EnvStatusEventTopic, parcelproducer.ParcelReceivedStatusEventProvider(b.RecipientId, m.Id()))
 			})
 			if errors.Is(err, parcel.ErrAlreadyReleased) {
 				l.Infof("ReleaseFromParcel: parcel [%s] already released; replay is a no-op, transaction [%s].", b.ParcelId.String(), c.TransactionId.String())

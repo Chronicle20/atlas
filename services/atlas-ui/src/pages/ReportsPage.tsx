@@ -52,7 +52,9 @@ export function ReportsPage() {
   );
 
   const reportsQuery = useReports(activeTenant, reportsQueryOptions);
-  const { isRefreshing, onRefresh } = useGridRefresh([reportsQuery]);
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    reportsQuery,
+  ]);
 
   const reports = reportsQuery.data ?? [];
   const loading = reportsQuery.isLoading;
@@ -95,6 +97,7 @@ export function ReportsPage() {
           error={error}
           onRefresh={onRefresh}
           isRefreshing={isRefreshing}
+          lastUpdatedAt={lastUpdatedAt}
           initialVisibilityState={hiddenColumns}
           emptyState={{
             title: "No reports found",

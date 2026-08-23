@@ -1,0 +1,38 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-21T13:08:17Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	bd8033925	-	-	-	-
+2026-08-21T13:09:18Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	bd8033925	APPROVED	no	-	-
+2026-08-21T13:14:12Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE	13fb57f35	-	-	-	-
+2026-08-21T13:15:18Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	13fb57f35	APPROVED	no	-	-
+2026-08-21T13:16:41Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	2bbbea51a	-	-	-	-
+2026-08-21T13:17:42Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	2bbbea51a	APPROVED	no	-	-
+2026-08-21T13:40:14Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	b749bf064	-	-	-	-
+2026-08-21T13:41:52Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	b749bf064	APPROVED	no	-	-
+2026-08-21T13:41:55Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	-
+2026-08-21T13:44:36Z	agent	Task 4	atlas-verifier	-	-	-	-	-	PASS	b749bf064	-	-	-	-
+2026-08-21T13:50:20Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	DONE	350430ab1	-	-	-	-
+2026-08-21T13:53:51Z	agent	Task 5	atlas-verifier	-	-	-	-	-	ERROR	350430ab1	-	-	-	-
+2026-08-21T13:57:10Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DONE	350430ab1	APPROVED	no	-	-
+2026-08-21T13:57:11Z	agent	Task 6	atlas-implementer	sonnet	-	-	-	-	DONE	5192874e3	-	-	-	-
+2026-08-21T13:57:57Z	agent	Tasks 5-6	atlas-verifier	-	-	-	-	-	PASS	5192874e3	-	-	-	-
+2026-08-21T13:59:24Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	DONE	511ef9f55	-	-	-	-
+2026-08-21T13:59:49Z	agent	Task 6	atlas-reviewer	sonnet	-	-	-	-	DONE	5192874e3	APPROVED	no	-	-
+2026-08-21T14:00:40Z	agent	Task 7	atlas-verifier	-	-	-	-	-	ERROR	511ef9f55	-	-	-	-
+2026-08-21T14:00:49Z	agent	Task 7	atlas-reviewer	sonnet	-	-	-	-	DONE	511ef9f55	APPROVED	no	-	-
+2026-08-21T14:01:41Z	agent	Task 8	atlas-implementer	sonnet	-	-	-	-	DONE	f16ab125a	-	-	-	-
+2026-08-21T14:03:42Z	agent	Task 8	atlas-reviewer	sonnet	-	-	-	-	DONE	f16ab125a	APPROVED	no	-	-
+2026-08-21T14:03:43Z	handoff	after Task 8	-	-	-	-	-	-	-	-	-	-	-	38000
+2026-08-21T16:29:26Z	agent	Task 9	atlas-implementer	sonnet	-	-	-	-	DONE	112d2cf14	-	-	-	-
+2026-08-21T16:29:30Z	agent	Tasks 7-9	atlas-verifier	-	-	-	-	-	PASS	112d2cf14	-	-	-	-
+2026-08-21T16:29:33Z	agent	Task 9	atlas-reviewer	sonnet	-	-	-	-	DONE	112d2cf14	APPROVED	no	.superpowers/sdd/plan/task-9-review.md	-
+2026-08-21T16:29:35Z	agent	Task 10	atlas-implementer	sonnet	-	-	-	-	DONE	560c8b996	-	-	-	-
+2026-08-21T16:29:37Z	agent	branch-end	atlas-verifier	-	-	-	-	-	FAIL	560c8b996	-	-	.superpowers/sdd/plan/gates/verify-final.log	-
+2026-08-21T16:29:38Z	agent	Task 10	atlas-reviewer	sonnet	-	-	-	-	DONE	560c8b996	CHANGES_REQUIRED	yes	.superpowers/sdd/plan/task-10-review.md	-
+2026-08-21T16:29:38Z	agent	Task 10 fix r1	atlas-implementer	sonnet	-	-	-	-	DONE	fbb9736f7	-	-	-	-
+2026-08-21T16:29:39Z	agent	branch-end 2	atlas-verifier	-	-	-	-	-	FAIL	fbb9736f7	-	-	.superpowers/sdd/plan/gates/verify-final-2.log	-
+2026-08-21T16:29:39Z	agent	fix r2 (suite flake)	atlas-implementer	sonnet	-	-	-	-	DONE	5d42a44c8	-	-	-	-
+2026-08-21T16:29:40Z	agent	branch-end 3	atlas-verifier	-	-	-	-	-	FAIL	5d42a44c8	-	-	.superpowers/sdd/plan/gates/verify-final-3.log	-
+2026-08-21T16:29:40Z	agent	fix r3 (suite flake)	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	51c453c84	-	-	docs/tasks/task-258-refreshable-empty-states/bug-tenants-suite-failure.md	-
+2026-08-21T16:32:30Z	agent	branch-end 4	atlas-verifier	-	-	-	-	-	PASS	b7816937c	-	-	.superpowers/sdd/plan/gates/verify-final-4.log	-
+2026-08-21T16:38:18Z	agent	pre-PR	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	e209ae745	APPROVED	no	docs/tasks/task-258-refreshable-empty-states/audit.md	-
+2026-08-21T16:39:15Z	agent	pre-PR	frontend-guidelines-reviewer	sonnet	-	-	-	-	DONE	e209ae745	APPROVED	no	docs/tasks/task-258-refreshable-empty-states/frontend-audit.md	-
+2026-08-23T11:50:52Z	agent	bug-sparse-env-ui-not-deployed	atlas-implementer	sonnet	-	-	-	-	DONE	cc1c27899	-	-	-	-

@@ -55,7 +55,9 @@ function MapsPageContent() {
     placeholderData: keepPreviousData,
   });
 
-  const { isRefreshing, onRefresh } = useGridRefresh([mapsQuery]);
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    mapsQuery,
+  ]);
 
   const maps = mapsQuery.data ?? [];
   const fetching = mapsQuery.isFetching;
@@ -108,6 +110,7 @@ function MapsPageContent() {
             error={mapsQuery.error?.message ?? null}
             onRefresh={onRefresh}
             isRefreshing={isRefreshing}
+            lastUpdatedAt={lastUpdatedAt}
             initialVisibilityState={hiddenColumns}
             emptyState={{
               title: "No maps found",

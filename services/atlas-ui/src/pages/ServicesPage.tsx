@@ -20,7 +20,9 @@ import type { Service } from "@/types/models/service";
 export function ServicesPage() {
   const servicesQuery = useServices();
   const { data: services, isLoading, error } = servicesQuery;
-  const { isRefreshing, onRefresh } = useGridRefresh([servicesQuery]);
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    servicesQuery,
+  ]);
   const { invalidateAll } = useInvalidateServices();
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -68,6 +70,7 @@ export function ServicesPage() {
         error={error}
         onRefresh={onRefresh}
         isRefreshing={isRefreshing}
+        lastUpdatedAt={lastUpdatedAt}
         emptyState={{
           title: "No services configured",
           description:

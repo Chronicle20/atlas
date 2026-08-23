@@ -198,13 +198,41 @@ if ! OUT=$(cd "$REPO_ROOT" && go run ./tools/cideps \
     exit 0
 fi
 
-SVC_NAMES=$(printf '%s' "$OUT" | jq -r '."go-services"[].name' 2>/dev/null || true)
+SVC_NAMES_GO=$(printf '%s' "$OUT" | jq -r '."go-services"[].name' 2>/dev/null || true)
+SVC_NAMES_DOCKER=$(printf '%s' "$OUT" | jq -r '."docker-services"[].name' 2>/dev/null || true)
 
-OVERRIDES=$(printf '%s\natlas-login\natlas-channel\n' "$SVC_NAMES" | grep -v '^$' | sort -u | tr '\n' ' ')
+# has_base_deployment <svc> — true when deploy/k8s/base/<svc>.yaml exists and
+# declares a Deployment named <svc>. A service with no base Deployment must
+# not enter the override set: it would still land in KEEP
+# (PLACEHOLDER_DELETE_BLOCK) and in the environment-record overrides map
+# while nothing actually deploys it — e.g. atlas-pr-bootstrap, a support
+# image with no k8s Deployment. eval-all (not eval) is required: these are
+# multi-document manifests (Deployment + Service, ...) and plain `yq eval`
+# only evaluates the first document.
+has_base_deployment() {
+    svc="$1"
+    manifest="$REPO_ROOT/deploy/k8s/base/$svc.yaml"
+    [ -f "$manifest" ] || return 1
+    yq eval-all 'select(.kind == "Deployment") | .metadata.name' "$manifest" 2>/dev/null | grep -qx "$svc"
+}
+
+# The override set is the union of Go-affected services (dependency-graph
+# impact) and changed non-Go services (docker-services already carries these
+# back in — see tools/cideps/main.go), filtered down to names with their own
+# base Deployment. A non-Go service such as atlas-ui has no go.mod and can
+# never appear in go-services, but it does have a base Deployment and must
+# still be deployed for a PR that changes only it.
+DEPLOYABLE_NAMES=""
+for svc in $(printf '%s\n%s\n' "$SVC_NAMES_GO" "$SVC_NAMES_DOCKER" | grep -v '^$' | sort -u); do
+    has_base_deployment "$svc" && DEPLOYABLE_NAMES=$(printf '%s\n%s' "$DEPLOYABLE_NAMES" "$svc")
+done
+DEPLOYABLE_NAMES=$(printf '%s\n' "$DEPLOYABLE_NAMES" | grep -v '^$' || true)
+
+OVERRIDES=$(printf '%s\natlas-login\natlas-channel\n' "$DEPLOYABLE_NAMES" | grep -v '^$' | sort -u | tr '\n' ' ')
 OVERRIDES=${OVERRIDES% }
 
-if [ -n "$SVC_NAMES" ]; then
-    REASON="affected services: $(printf '%s' "$SVC_NAMES" | tr '\n' ' ' | sed 's/ *$//')"
+if [ -n "$DEPLOYABLE_NAMES" ]; then
+    REASON="affected services: $(printf '%s' "$DEPLOYABLE_NAMES" | tr '\n' ' ' | sed 's/ *$//')"
 else
     REASON="no service dependency-graph impact; only the mandatory atlas-login/atlas-channel floor deployed"
 fi

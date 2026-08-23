@@ -106,7 +106,9 @@ export function EventOccurrencesPage() {
 
   const occurrences = occurrencesQuery.data?.data ?? [];
 
-  const { isRefreshing, onRefresh } = useGridRefresh([occurrencesQuery]);
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    occurrencesQuery,
+  ]);
 
   const updateForm = (patch: Partial<FilterFormState>) =>
     setForm((prev) => ({ ...prev, ...patch }));
@@ -204,6 +206,9 @@ export function EventOccurrencesPage() {
         <EmptyState
           title="No event occurrences found"
           description="No occurrences match the current filters."
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
+          lastUpdatedAt={lastUpdatedAt}
         />
       ) : (
         <div className="rounded-md border">

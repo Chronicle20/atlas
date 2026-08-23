@@ -1,12 +1,22 @@
-import type { UseQueryResult } from "@tanstack/react-query";
 import * as toast from "@/lib/utils/toast";
 
-/** Minimal slice of a React Query result the refresh hook needs. */
-export type RefreshableQuery = Pick<UseQueryResult, "isFetching" | "refetch">;
+/**
+ * Minimal structural contract the refresh hook needs from a data source.
+ *
+ * A hand-written interface rather than `Pick<UseQueryResult, …>` (D1): a
+ * non-React-Query source — e.g. `TenantsPage`'s tenant-context shim — must
+ * still be expressible as a `RefreshableQuery`.
+ */
+export interface RefreshableQuery {
+  isFetching: boolean;
+  dataUpdatedAt: number;
+  refetch: () => Promise<{ isError: boolean; error: unknown }>;
+}
 
 export interface UseGridRefreshResult {
   isRefreshing: boolean;
   onRefresh: () => Promise<void>;
+  lastUpdatedAt: number | null;
 }
 
 /**
@@ -27,6 +37,9 @@ export function useGridRefresh(
 ): UseGridRefreshResult {
   const isRefreshing = queries.some((q) => q.isFetching);
 
+  const stamps = queries.map((q) => q.dataUpdatedAt).filter((t) => t > 0);
+  const lastUpdatedAt = stamps.length ? Math.min(...stamps) : null;
+
   const onRefresh = async (): Promise<void> => {
     const [results] = await Promise.all([
       Promise.all(queries.map((q) => q.refetch())),
@@ -40,5 +53,5 @@ export function useGridRefresh(
     toast.success(options?.successMessage ?? "Data refreshed");
   };
 
-  return { isRefreshing, onRefresh };
+  return { isRefreshing, onRefresh, lastUpdatedAt };
 }

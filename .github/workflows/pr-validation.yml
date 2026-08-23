@@ -977,13 +977,17 @@ jobs:
             # set. detect-changes' all-go-services is services.json's
             # go-service list, which is NOT the base Deployment set — it
             # includes two services with no base Deployment yet
-            # (atlas-families, atlas-marriages) and excludes atlas-ui
-            # (which DOES have one, deliberately not part of the sparse
-            # override-set computation). Enumerate actual base Deployment
-            # names directly instead — verified against services.json's
-            # list during Task 50 review; the discrepancy would otherwise
-            # produce a kustomize build error ("no resource matches
-            # strategic merge patch") for either stale name.
+            # (atlas-families, atlas-marriages). tools/mode-select.sh's
+            # override set is the union of go-affected services and changed
+            # non-Go services filtered to those WITH a base Deployment
+            # (task-258), so atlas-ui belongs in KEEP whenever it changed —
+            # this loop's own base-Deployment enumeration already reflects
+            # that; only all-go-services (used elsewhere in this workflow)
+            # still diverges from the base Deployment set. Enumerate actual
+            # base Deployment names directly instead — verified against
+            # services.json's list during Task 50 review; the discrepancy
+            # would otherwise produce a kustomize build error ("no resource
+            # matches strategic merge patch") for either stale name.
             DELETE_BLOCK=""
             while IFS= read -r svc; do
               [ -z "$svc" ] && continue

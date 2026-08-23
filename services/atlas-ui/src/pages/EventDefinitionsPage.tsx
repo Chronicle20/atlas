@@ -8,18 +8,15 @@
  */
 
 import { useMemo, useState } from "react";
-import { RefreshCw } from "lucide-react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useTenant } from "@/context/tenant-context";
-import { Button } from "@/components/ui/button";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { PageLoader } from "@/components/common/PageLoader";
 import { useGridRefresh } from "@/lib/hooks/useGridRefresh";
 import { eventsService } from "@/services/api/events.service";
 import { getColumns } from "./event-definitions-columns";
 import { createErrorFromUnknown } from "@/types/api/errors";
-import { cn } from "@/lib/utils";
 
 /** Mirrors atlas-events' occurrence.StateActive (event/occurrence/model.go). */
 const ACTIVE_STATE = "ACTIVE";
@@ -71,7 +68,9 @@ export function EventDefinitionsPage() {
     return counts;
   }, [definitions, activeCountQueries]);
 
-  const { isRefreshing, onRefresh } = useGridRefresh([definitionsQuery]);
+  const { isRefreshing, onRefresh, lastUpdatedAt } = useGridRefresh([
+    definitionsQuery,
+  ]);
 
   const handleToggleEnabled = async (
     id: string,
@@ -110,24 +109,15 @@ export function EventDefinitionsPage() {
     <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Event Definitions</h2>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onRefresh}
-          disabled={isRefreshing}
-          title="Refresh"
-          aria-busy={isRefreshing}
-        >
-          <RefreshCw
-            className={cn("h-4 w-4", isRefreshing && "animate-spin")}
-          />
-        </Button>
       </div>
 
       <DataTableWrapper
         columns={columns}
         data={definitions}
         error={definitionsQuery.error?.message ?? null}
+        onRefresh={onRefresh}
+        isRefreshing={isRefreshing}
+        lastUpdatedAt={lastUpdatedAt}
         emptyState={{
           title: "No event definitions found",
           description: "Event definitions are seeded from the Setup page.",

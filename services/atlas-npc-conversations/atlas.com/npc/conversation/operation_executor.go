@@ -2130,6 +2130,28 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.ShowStorage, payload, nil
 
+	case "open_duey":
+		// Format: open_duey
+		// Params: none required
+		// Opens the Duey parcel delivery dialog for the character via the NPC
+		// they're talking to
+		// Used for Duey parcel delivery NPCs (e.g., NPC 9010009)
+		ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
+		if err != nil {
+			return "", "", "", nil, fmt.Errorf("failed to get conversation context for NPC ID: %w", err)
+		}
+		npcId := ctx.NpcId()
+
+		payload := saga.ShowParcelPayload{
+			CharacterId: characterId,
+			NpcId:       npcId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Quick:       false,
+		}
+
+		return stepId, saga.Pending, saga.ShowParcel, payload, nil
+
 	case "play_portal_sound":
 		// Format: play_portal_sound
 		// Params: none required

@@ -9,6 +9,7 @@ import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/mts"
+	"atlas-saga-orchestrator/parcel"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
 	"atlas-saga-orchestrator/validation"
@@ -1180,7 +1181,8 @@ func isExpandableAction(a Action) bool {
 	case TransferToStorage, WithdrawFromStorage,
 		TransferToCashShop, WithdrawFromCashShop,
 		TransferToMts, WithdrawFromMts, MtsSettlePurchase,
-		TradeSettlement, TransferToTrade, TradeUnwind:
+		TradeSettlement, TransferToTrade, TradeUnwind,
+		TransferToParcel, WithdrawFromParcel:
 		return true
 	default:
 		return false
@@ -1226,6 +1228,10 @@ func (p *ProcessorImpl) expandAndProcessStep(s Saga, st Step[any]) error {
 		newSteps, err = p.expandTransferToTrade(st)
 	case TradeUnwind:
 		newSteps, err = p.expandTradeUnwind(st)
+	case TransferToParcel:
+		newSteps, err = p.expandTransferToParcel(st)
+	case WithdrawFromParcel:
+		newSteps, err = p.expandWithdrawFromParcel(st)
 	default:
 		return fmt.Errorf("unknown high-level action for expansion: %s", st.Action())
 	}
@@ -2133,6 +2139,245 @@ func (p *ProcessorImpl) expandWithdrawFromMts(st Step[any]) ([]Step[any], error)
 				InventoryType: byte(inventoryType),
 				TemplateId:    found.TemplateId,
 				AssetData:     assetData,
+			},
+		),
+	}
+
+	return steps, nil
+}
+
+// expandTransferToParcel expands TransferToParcel into ReleaseFromCharacter +
+// AcceptToParcel. Mirrors expandTransferToMts: it looks up the source asset from
+// the character's inventory by AssetId, captures the full item snapshot, then
+// builds a release step (item leaves inventory FIRST) followed by an accept step
+// that carries the snapshot plus the delivery params (recipient identity, meso,
+// fee, quick flag, message, computed ReceivableAt/ExpiresAt) copied from the
+// TransferToParcelPayload, so atlas-parcel can CREATE the custody row.
+//
+// A meso-only parcel (AssetId == 0, design §12 RISK-2) never touches inventory:
+// the lookup is guarded entirely behind payload.AssetId != 0, and the expansion
+// emits a single accept_to_parcel step with HasItem=false and a zero-valued
+// snapshot — no release_from_character is emitted for an asset that doesn't
+// exist.
+func (p *ProcessorImpl) expandTransferToParcel(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(TransferToParcelPayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for TransferToParcel")
+	}
+
+	if payload.AssetId == 0 {
+		p.l.Debugf("Parcel [%s] for character [%d] is meso-only, skipping inventory lookup", payload.ParcelId, payload.CharacterId)
+		return []Step[any]{
+			NewStep[any](
+				"accept_to_parcel",
+				Pending,
+				AcceptToParcel,
+				AcceptToParcelPayload{
+					TransactionId:      payload.TransactionId,
+					ParcelId:           payload.ParcelId,
+					CharacterId:        payload.CharacterId,
+					WorldId:            payload.WorldId,
+					SenderAccountId:    payload.SenderAccountId,
+					SenderName:         payload.SenderName,
+					RecipientId:        payload.RecipientId,
+					RecipientAccountId: payload.RecipientAccountId,
+					RecipientName:      payload.RecipientName,
+					MesoAmount:         payload.MesoAmount,
+					FeePaid:            payload.FeePaid,
+					Quick:              payload.Quick,
+					Message:            payload.Message,
+					ReceivableAt:       payload.ReceivableAt,
+					ExpiresAt:          payload.ExpiresAt,
+					HasItem:            false,
+				},
+			),
+		}, nil
+	}
+
+	p.l.Debugf("Looking up source asset for character [%d] inventory [%d] assetId [%d]",
+		payload.CharacterId, payload.SourceInventoryType, payload.AssetId)
+
+	comp, err := compartment.RequestCompartment(p.l, p.ctx)(payload.CharacterId, byte(payload.SourceInventoryType))
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup character [%d] inventory compartment: %w", payload.CharacterId, err)
+	}
+
+	// The JSON:API id is a string. One that does not parse is SKIPPED rather than
+	// coerced: an unchecked Sscanf leaves the target at zero, and zero is a
+	// legitimate-looking asset id — so an unparseable id would silently match a
+	// payload asking for asset 0 and stage the wrong item. Mirrors
+	// expandTransferToTrade's asset-lookup loop.
+	var foundAsset *compartment.AssetRestModel
+	for i := range comp.Assets {
+		assetId, perr := strconv.ParseUint(comp.Assets[i].Id, 10, 32)
+		if perr != nil {
+			p.l.WithError(perr).Warnf("Asset id [%s] in character [%d]'s compartment is not numeric. Skipping it.", comp.Assets[i].Id, payload.CharacterId)
+			continue
+		}
+		if uint32(assetId) == payload.AssetId {
+			foundAsset = &comp.Assets[i]
+			break
+		}
+	}
+
+	if foundAsset == nil {
+		return nil, fmt.Errorf("no asset found with id [%d] in character [%d] inventory [%d]",
+			payload.AssetId, payload.CharacterId, payload.SourceInventoryType)
+	}
+
+	p.l.Debugf("Found source asset template [%d] id [%s] for parcel delivery", foundAsset.TemplateId, foundAsset.Id)
+
+	steps := []Step[any]{
+		NewStep[any](
+			"release_from_character",
+			Pending,
+			ReleaseFromCharacter,
+			ReleaseFromCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: byte(payload.SourceInventoryType),
+				AssetId:       payload.AssetId,
+				Quantity:      payload.Quantity,
+			},
+		),
+		NewStep[any](
+			"accept_to_parcel",
+			Pending,
+			AcceptToParcel,
+			AcceptToParcelPayload{
+				TransactionId:      payload.TransactionId,
+				ParcelId:           payload.ParcelId,
+				CharacterId:        payload.CharacterId,
+				WorldId:            payload.WorldId,
+				SenderAccountId:    payload.SenderAccountId,
+				SenderName:         payload.SenderName,
+				RecipientId:        payload.RecipientId,
+				RecipientAccountId: payload.RecipientAccountId,
+				RecipientName:      payload.RecipientName,
+				MesoAmount:         payload.MesoAmount,
+				FeePaid:            payload.FeePaid,
+				Quick:              payload.Quick,
+				Message:            payload.Message,
+				ReceivableAt:       payload.ReceivableAt,
+				ExpiresAt:          payload.ExpiresAt,
+				HasItem:            true,
+
+				// Item snapshot captured from inventory.
+				ItemType:      byte(payload.SourceInventoryType),
+				TemplateId:    foundAsset.TemplateId,
+				Quantity:      payload.Quantity,
+				Strength:      foundAsset.Strength,
+				Dexterity:     foundAsset.Dexterity,
+				Intelligence:  foundAsset.Intelligence,
+				Luck:          foundAsset.Luck,
+				HP:            foundAsset.Hp,
+				MP:            foundAsset.Mp,
+				WeaponAttack:  foundAsset.WeaponAttack,
+				MagicAttack:   foundAsset.MagicAttack,
+				WeaponDefense: foundAsset.WeaponDefense,
+				MagicDefense:  foundAsset.MagicDefense,
+				Accuracy:      foundAsset.Accuracy,
+				Avoidability:  foundAsset.Avoidability,
+				Hands:         foundAsset.Hands,
+				Speed:         foundAsset.Speed,
+				Jump:          foundAsset.Jump,
+				Slots:         foundAsset.Slots,
+				Level:         foundAsset.Level,
+				ItemExp:       foundAsset.Experience,
+				Flags:         foundAsset.Flag,
+				Owner:         foundAsset.Owner,
+			},
+		),
+	}
+
+	return steps, nil
+}
+
+// expandWithdrawFromParcel expands WithdrawFromParcel into ReleaseFromParcel +
+// AcceptToCharacter. Unlike the other withdraw composites, this does not look up
+// an item snapshot at expansion time: the parcel row already holds it, and
+// release_from_parcel is where atlas-parcel transitions the row to received
+// inside its own transaction (design §4.3) — the status change and the custody
+// release are the same fact and must not be two steps that can disagree.
+func (p *ProcessorImpl) expandWithdrawFromParcel(st Step[any]) ([]Step[any], error) {
+	payload, ok := st.Payload().(WithdrawFromParcelPayload)
+	if !ok {
+		return nil, fmt.Errorf("invalid payload type for WithdrawFromParcel")
+	}
+
+	p.l.Debugf("Looking up parcel [%s] for character [%d]", payload.ParcelId, payload.CharacterId)
+
+	pm, err := parcel.RequestParcel(p.l, p.ctx)(payload.ParcelId)
+	if err != nil {
+		return nil, fmt.Errorf("unable to lookup parcel [%s]: %w", payload.ParcelId, err)
+	}
+
+	releaseStep := NewStep[any](
+		"release_from_parcel",
+		Pending,
+		ReleaseFromParcel,
+		ReleaseFromParcelPayload{
+			TransactionId: payload.TransactionId,
+			ParcelId:      payload.ParcelId,
+			RecipientId:   payload.CharacterId,
+		},
+	)
+
+	// Meso-only parcel (design §12 RISK-2): pm.ItemId is nil, nothing to grant
+	// into inventory, so no accept_to_character step is emitted — mirrors
+	// expandTransferToParcel's HasItem=false branch on the send side.
+	if pm.ItemId == nil {
+		p.l.Debugf("Parcel [%s] is meso-only, skipping accept_to_character", payload.ParcelId)
+		return []Step[any]{releaseStep}, nil
+	}
+
+	p.l.Debugf("Found parcel [%s] item template [%d] for withdrawal", payload.ParcelId, *pm.ItemId)
+
+	steps := []Step[any]{
+		releaseStep,
+		NewStep[any](
+			"accept_to_character",
+			Pending,
+			AcceptToCharacter,
+			AcceptToCharacterPayload{
+				TransactionId: payload.TransactionId,
+				CharacterId:   payload.CharacterId,
+				InventoryType: byte(payload.InventoryType),
+				TemplateId:    *pm.ItemId,
+				AssetData: asset2.AssetData{
+					Expiration:     pm.ItemSnapshot.Expiration,
+					CreatedAt:      pm.ItemSnapshot.CreatedAt,
+					Quantity:       uint32(pm.Quantity),
+					OwnerId:        pm.ItemSnapshot.OwnerId,
+					Owner:          pm.ItemSnapshot.Owner,
+					Flag:           pm.ItemSnapshot.Flag,
+					Rechargeable:   pm.ItemSnapshot.Rechargeable,
+					Strength:       pm.ItemSnapshot.Strength,
+					Dexterity:      pm.ItemSnapshot.Dexterity,
+					Intelligence:   pm.ItemSnapshot.Intelligence,
+					Luck:           pm.ItemSnapshot.Luck,
+					Hp:             pm.ItemSnapshot.Hp,
+					Mp:             pm.ItemSnapshot.Mp,
+					WeaponAttack:   pm.ItemSnapshot.WeaponAttack,
+					MagicAttack:    pm.ItemSnapshot.MagicAttack,
+					WeaponDefense:  pm.ItemSnapshot.WeaponDefense,
+					MagicDefense:   pm.ItemSnapshot.MagicDefense,
+					Accuracy:       pm.ItemSnapshot.Accuracy,
+					Avoidability:   pm.ItemSnapshot.Avoidability,
+					Hands:          pm.ItemSnapshot.Hands,
+					Speed:          pm.ItemSnapshot.Speed,
+					Jump:           pm.ItemSnapshot.Jump,
+					Slots:          pm.ItemSnapshot.Slots,
+					LevelType:      pm.ItemSnapshot.LevelType,
+					Level:          pm.ItemSnapshot.Level,
+					Experience:     pm.ItemSnapshot.Experience,
+					HammersApplied: pm.ItemSnapshot.HammersApplied,
+					EquippedSince:  pm.ItemSnapshot.EquippedSince,
+					CashId:         pm.ItemSnapshot.CashId,
+					CommodityId:    pm.ItemSnapshot.CommodityId,
+					PurchaseBy:     pm.ItemSnapshot.PurchaseBy,
+					PetId:          pm.ItemSnapshot.PetId,
+				},
 			},
 		),
 	}

@@ -1338,6 +1338,141 @@ func candidatesFromFName(fname string) []candidate {
 		// Atlas struct: note/clientbound/operation.go Refresh.
 		return []candidate{{name: "Refresh", pkg: "note", dir: csvpkg.DirClientbound}}
 
+	// --- Social: parcel (Duey) ---
+	// CSV: PARCEL (clientbound, opcode 0x142 in GMS v83) → CParcelDlg::OnPacket
+	// dispatches on a leading mode byte; docs/packets/dispatchers/parcel.yaml is
+	// the mode-resolution source of truth (task-241 Task 6/7).
+	case "CParcelDlg::OnPacket#Open":
+		// mode=8 (OPEN, jms_v185 mode=10): bool receiveOnly + mailbox list +
+		// arrived list, each entry a PARCEL::Decode (parcel.Parcel).
+		// Atlas struct: parcel/clientbound/parcel.go Open.
+		return []candidate{{name: "Open", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#OpenQuick":
+		// mode=26/0x1A (OPEN_QUICK): no additional bytes.
+		// Atlas struct: parcel/clientbound/parcel.go OpenQuick.
+		return []candidate{{name: "OpenQuick", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#SendEnableActions":
+		// mode=9 (SEND_ENABLE_ACTIONS): no additional bytes; NoticeResult
+		// shows a StringPool notice and re-enables the send controls.
+		// Atlas struct: parcel/clientbound/parcel.go SendEnableActions.
+		return []candidate{{name: "SendEnableActions", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#NotEnoughMesos":
+		// mode=10/0x0A (NOT_ENOUGH_MESOS): no additional bytes; NoticeResult
+		// text-only error dialog.
+		// Atlas struct: parcel/clientbound/parcel.go NotEnoughMesos.
+		return []candidate{{name: "NotEnoughMesos", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#IncorrectRequest":
+		// mode=11/0x0B (INCORRECT_REQUEST): no additional bytes; NoticeResult
+		// text-only error dialog.
+		// Atlas struct: parcel/clientbound/parcel.go IncorrectRequest.
+		return []candidate{{name: "IncorrectRequest", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#NameDoesNotExist":
+		// mode=12/0x0C (NAME_DOES_NOT_EXIST): no additional bytes;
+		// NoticeResult text-only error dialog.
+		// Atlas struct: parcel/clientbound/parcel.go NameDoesNotExist.
+		return []candidate{{name: "NameDoesNotExist", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#SameAccount":
+		// mode=13/0x0D (SAME_ACCOUNT): no additional bytes; NoticeResult
+		// text-only error dialog.
+		// Atlas struct: parcel/clientbound/parcel.go SameAccount.
+		return []candidate{{name: "SameAccount", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#ReceiverStorageFull":
+		// mode=14/0x0E (RECEIVER_STORAGE_FULL): no additional bytes;
+		// NoticeResult text-only error dialog.
+		// Atlas struct: parcel/clientbound/parcel.go ReceiverStorageFull.
+		return []candidate{{name: "ReceiverStorageFull", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#ReceiverUnableToReceive":
+		// mode=15/0x0F (RECEIVER_UNABLE_TO_RECEIVE): no additional bytes;
+		// NoticeResult text-only error dialog.
+		// Atlas struct: parcel/clientbound/parcel.go ReceiverUnableToReceive.
+		return []candidate{{name: "ReceiverUnableToReceive", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#SenderUniqueConflict":
+		// mode=16/0x10 (SENDER_UNIQUE_CONFLICT): no additional bytes;
+		// NoticeResult text-only error dialog.
+		// Atlas struct: parcel/clientbound/parcel.go SenderUniqueConflict.
+		return []candidate{{name: "SenderUniqueConflict", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#MesoLimit":
+		// mode=17/0x11 (MESO_LIMIT): no additional bytes; NoticeResult
+		// text-only error dialog.
+		// Atlas struct: parcel/clientbound/parcel.go MesoLimit.
+		return []candidate{{name: "MesoLimit", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#SuccessfullySent":
+		// mode=18/0x12 (SUCCESSFULLY_SENT, jms_v185 mode=19): no additional
+		// bytes; NoticeResult notice, and OnPacket's default arm additionally
+		// triggers CloseParcelDlg as a side effect (`a1==18`, JMS `a1==19`).
+		// Atlas struct: parcel/clientbound/parcel.go SuccessfullySent.
+		return []candidate{{name: "SuccessfullySent", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#UnknownError":
+		// mode=19/0x13 (UNKNOWN_ERROR): no additional bytes; NoticeResult
+		// text-only error dialog.
+		// Atlas struct: parcel/clientbound/parcel.go UnknownError.
+		return []candidate{{name: "UnknownError", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#RecvEnableActions":
+		// mode=20/0x14 (RECV_ENABLE_ACTIONS): no additional bytes;
+		// NoticeResult notice re-enabling the receive controls.
+		// Atlas struct: parcel/clientbound/parcel.go RecvEnableActions.
+		return []candidate{{name: "RecvEnableActions", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#RecvNoFreeSlots":
+		// mode=21/0x15 (RECV_NO_FREE_SLOTS): no additional bytes;
+		// NoticeResult text-only error dialog.
+		// Atlas struct: parcel/clientbound/parcel.go RecvNoFreeSlots.
+		return []candidate{{name: "RecvNoFreeSlots", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#RecvUniqueConflict":
+		// mode=22/0x16 (RECV_UNIQUE_CONFLICT): no additional bytes;
+		// NoticeResult text-only error dialog.
+		// Atlas struct: parcel/clientbound/parcel.go RecvUniqueConflict.
+		return []candidate{{name: "RecvUniqueConflict", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#UnknownError2":
+		// mode=28/0x1C (UNKNOWN_ERROR_2): no additional bytes; NoticeResult
+		// text-only error dialog.
+		// Atlas struct: parcel/clientbound/parcel.go UnknownError2.
+		return []candidate{{name: "UnknownError2", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#ParcelRemoved":
+		// mode=23/0x17 (PARCEL_REMOVED, jms_v185 mode=24): uint32 parcelId +
+		// byte kind. kind==3 selects SP_3899 "deleted"; else SP_3900
+		// "claimed" (v83 @0x6F5A62/@0x6F5A8E).
+		// Atlas struct: parcel/clientbound/parcel.go ParcelRemoved.
+		return []candidate{{name: "ParcelRemoved", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#ParcelArrived":
+		// mode=24/0x18 (PARCEL_ARRIVED, jms_v185 mode=25): one PARCEL::Decode
+		// (parcel.Parcel) body.
+		// Atlas struct: parcel/clientbound/parcel.go ParcelArrived.
+		return []candidate{{name: "ParcelArrived", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#AlarmNamed":
+		// mode=25/0x19 (ALARM_NAMED, jms_v185 mode=26): DecodeStr
+		// (senderName) + Decode1 (hasItem).
+		// Atlas struct: parcel/clientbound/parcel.go AlarmNamed.
+		return []candidate{{name: "AlarmNamed", pkg: "parcel", dir: csvpkg.DirClientbound}}
+	case "CParcelDlg::OnPacket#AlarmGeneric":
+		// mode=27/0x1B (ALARM_GENERIC, jms_v185 mode=28): Decode1 (hasItem)
+		// only.
+		// Atlas struct: parcel/clientbound/parcel.go AlarmGeneric.
+		return []candidate{{name: "AlarmGeneric", pkg: "parcel", dir: csvpkg.DirClientbound}}
+
+	// CSV: DUEY_ACTION (serverbound) — four independent client send sites
+	// share one leading mode byte; docs/packets/dispatchers/duey_action.yaml
+	// is the mode-resolution source of truth (task-241 Task 6/10).
+	case "CTabSend::SendParcel":
+		// mode=2 (SEND, jms_v185 mode=3): byte invType, uint16 slot, uint16
+		// quantity, uint32 mesos, string recipientName, bool quick; and only
+		// when quick: string message, uint32 ticketRef (v83 @0x6F36A8
+		// quick=0 / @0x6F1DF5 quick=1, design.md §5.4).
+		// Atlas struct: parcel/serverbound/action_send.go ActionSend.
+		return []candidate{{name: "ActionSend", pkg: "parcel", dir: csvpkg.DirServerbound}}
+	case "CTabReceive::ReceiveParcel":
+		// mode=4 (RECEIVE, jms_v185 mode=5): uint32 parcelId (v83 @0x6F0CA3).
+		// Atlas struct: parcel/serverbound/action_parcel_id.go ActionReceive.
+		return []candidate{{name: "ActionReceive", pkg: "parcel", dir: csvpkg.DirServerbound}}
+	case "CTabReceive::DiscardParcel":
+		// mode=5 (DISCARD, jms_v185 mode=6): uint32 parcelId (v83 @0x6F0DC3).
+		// Atlas struct: parcel/serverbound/action_parcel_id.go ActionDiscard.
+		return []candidate{{name: "ActionDiscard", pkg: "parcel", dir: csvpkg.DirServerbound}}
+	case "CParcelDlg::CloseParcelDlg":
+		// mode=7 (CLOSE, jms_v185 mode=8): no additional bytes (v83
+		// @0x6F5691).
+		// Atlas struct: parcel/serverbound/action_parcel_id.go ActionClose.
+		return []candidate{{name: "ActionClose", pkg: "parcel", dir: csvpkg.DirServerbound}}
+
 	// CSV: NOTE_ACTION (serverbound, opcode 0x9A/154 in GMS v95) — three FNames share
 	// this opcode; each represents a different sub-operation.
 	case "CWvsContext::OnMemoNotify_Receive":

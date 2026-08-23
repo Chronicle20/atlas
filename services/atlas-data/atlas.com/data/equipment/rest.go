@@ -42,6 +42,7 @@ type RestModel struct {
 	Price         uint32 `json:"price"`
 	TimeLimited   bool   `json:"timeLimited"`
 	TradeBlock    bool   `json:"tradeBlock"`
+	Only          bool   `json:"only"`
 	// TradeAvailable is WZ info/tradeAvailable — the item's APPLICABLE KARMA
 	// TYPE, read by CItemInfo::GetAppliableKarmaType (gms_v95 @0x5C09F0) off
 	// BUNDLEITEM/EQUIPITEM+0x14. It is an INT, not a bool: the v87+ client tests

@@ -27,6 +27,12 @@ type Processor interface {
 	Sort(characterId uint32, inventoryType inventory.Type, updateTime uint32) error
 	RequestReserve(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, expiry time.Duration, items []compartment.ItemBody) error
 	Consume(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
+	// CanAccommodate asks atlas-inventory whether it would currently accept a
+	// grant of quantity units of templateId to characterId — merge-aware, so
+	// a full compartment does not block a stackable that fits an existing
+	// stack. Do not re-derive this rule locally; atlas-inventory owns it
+	// (compartment.CanAccommodate/accommodatesOne).
+	CanAccommodate(characterId uint32, templateId uint32, quantity uint32) (bool, error)
 }
 
 type ProcessorImpl struct {
@@ -83,4 +89,11 @@ func (p *ProcessorImpl) RequestReserve(transactionId uuid.UUID, characterId uint
 
 func (p *ProcessorImpl) Consume(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(ConsumeCommandProvider(transactionId, characterId, inventoryType, slot))
+}
+
+func (p *ProcessorImpl) CanAccommodate(characterId uint32, templateId uint32, quantity uint32) (bool, error) {
+	return requests.Provider[accommodationOutputRestModel, bool](p.l, p.ctx)(
+		requestCheckAccommodation(p.ctx, characterId, templateId, quantity),
+		func(rm accommodationOutputRestModel) (bool, error) { return rm.Accommodated, nil },
+	)()
 }

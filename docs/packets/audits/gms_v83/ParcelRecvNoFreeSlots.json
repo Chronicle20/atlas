@@ -1,0 +1,21 @@
+{
+  "WriterName": "ParcelRecvNoFreeSlots",
+  "IDAName": "CParcelDlg::OnPacket#RecvNoFreeSlots",
+  "Address": "0x6f5cd8",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/parcel/clientbound/parcel.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (21/0x15 RECV_NO_FREE_SLOTS; dispatch byte, notice-only, no body)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

@@ -42,6 +42,7 @@ type (
 	SendMessagePayload           = sharedsaga.SendMessagePayload
 	AwardFamePayload             = sharedsaga.AwardFamePayload
 	ShowStoragePayload           = sharedsaga.ShowStoragePayload
+	ShowParcelPayload            = sharedsaga.ShowParcelPayload
 	ExperienceDistributions      = sharedsaga.ExperienceDistributions
 
 	// Portal-specific payload types
@@ -124,6 +125,7 @@ const (
 	SendMessage            = sharedsaga.SendMessage
 	AwardFame              = sharedsaga.AwardFame
 	ShowStorage            = sharedsaga.ShowStorage
+	ShowParcel             = sharedsaga.ShowParcel
 
 	// Portal-specific actions
 	PlayPortalSound = sharedsaga.PlayPortalSound

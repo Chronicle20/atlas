@@ -11,6 +11,7 @@ type RestModel struct {
 	RecoveryHP uint32 `json:"recoveryHP"`
 	RecoveryMP uint32 `json:"recoveryMP"`
 	TradeBlock bool   `json:"tradeBlock"`
+	Only       bool   `json:"only"`
 	// TradeAvailable is WZ info/tradeAvailable; see equipment/rest.go for the derivation.
 	TradeAvailable int32  `json:"tradeAvailable"`
 	NotSale        bool   `json:"notSale"`

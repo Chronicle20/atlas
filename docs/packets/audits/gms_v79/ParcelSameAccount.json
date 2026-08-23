@@ -1,0 +1,21 @@
+{
+  "WriterName": "ParcelSameAccount",
+  "IDAName": "CParcelDlg::OnPacket#SameAccount",
+  "Address": "0x683c6c",
+  "Variant": "GMS/v79",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/parcel/clientbound/parcel.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "mode (13/0x0D SameAccount; dispatch byte, notice-only, no body)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0,
+  "FlatInvalid": false
+}

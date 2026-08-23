@@ -314,6 +314,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: atlas-parcel
+spec:
+  template:
+    spec:
+      containers:
+        - name: parcel
+          env:
+            - name: DB_NAME
+              value: "atlas-parcel-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: atlas-party-quests
 spec:
   template:

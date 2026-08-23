@@ -1,0 +1,15 @@
+meta {
+  name: List Parcels by Sender
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/parcels?filter[senderId]={{senderId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  filter[senderId]: {{senderId}}
+}

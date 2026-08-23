@@ -57,6 +57,10 @@ const (
 	// Scripted item / remote NPC saga types (task-230)
 	ScriptedItemUse = sharedsaga.ScriptedItemUse
 	RemoteNpcUse    = sharedsaga.RemoteNpcUse
+
+	// Duey parcel-delivery saga types (task-241)
+	ParcelSend    = sharedsaga.ParcelSend
+	ParcelReceive = sharedsaga.ParcelReceive
 )
 
 // Status constants
@@ -195,6 +199,16 @@ const (
 	MtsMoveListingToHolding = sharedsaga.MtsMoveListingToHolding
 	MtsBidEscrow            = sharedsaga.MtsBidEscrow
 
+	// Parcel custody actions (task-241). transfer_to_parcel is a COMPOSITE
+	// expanded by expandTransferToParcel into release_from_character /
+	// accept_to_parcel; withdraw_from_parcel is a COMPOSITE expanded by
+	// expandWithdrawFromParcel into release_from_parcel / accept_to_character.
+	TransferToParcel   = sharedsaga.TransferToParcel
+	AcceptToParcel     = sharedsaga.AcceptToParcel
+	ReleaseFromParcel  = sharedsaga.ReleaseFromParcel
+	WithdrawFromParcel = sharedsaga.WithdrawFromParcel
+	ShowParcel         = sharedsaga.ShowParcel
+
 	// Guild actions
 	RequestGuildName             = sharedsaga.RequestGuildName
 	RequestGuildEmblem           = sharedsaga.RequestGuildEmblem
@@ -330,6 +344,11 @@ type (
 	MtsSettlePurchasePayload            = sharedsaga.MtsSettlePurchasePayload
 	MtsMoveListingToHoldingPayload      = sharedsaga.MtsMoveListingToHoldingPayload
 	MtsBidEscrowPayload                 = sharedsaga.MtsBidEscrowPayload
+	TransferToParcelPayload             = sharedsaga.TransferToParcelPayload
+	AcceptToParcelPayload               = sharedsaga.AcceptToParcelPayload
+	ReleaseFromParcelPayload            = sharedsaga.ReleaseFromParcelPayload
+	WithdrawFromParcelPayload           = sharedsaga.WithdrawFromParcelPayload
+	ShowParcelPayload                   = sharedsaga.ShowParcelPayload
 	ReleaseFromCharacterPayload         = sharedsaga.ReleaseFromCharacterPayload
 	ReleaseFromStoragePayload           = sharedsaga.ReleaseFromStoragePayload
 	TradeSettlementPayload              = sharedsaga.TradeSettlementPayload
@@ -1534,6 +1553,36 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case WithdrawFromMts:
 		var payload WithdrawFromMtsPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case TransferToParcel:
+		var payload TransferToParcelPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case AcceptToParcel:
+		var payload AcceptToParcelPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ReleaseFromParcel:
+		var payload ReleaseFromParcelPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case WithdrawFromParcel:
+		var payload WithdrawFromParcelPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case ShowParcel:
+		var payload ShowParcelPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

@@ -1,0 +1,10 @@
+packet: parcel/serverbound/ParcelActionSend
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CTabSend::SendParcel
+    address: "0x753aa5"
+    decompile_sha256: b6aaf3448b0918df3acdbb830ef5f8b4fc93809abbd2db48b8edcc974e4d0816
+verifies:
+    - parcel/serverbound/v185_test.go#TestActionSendV185

@@ -99,10 +99,18 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 		if it == CashSlotItemTypeChalkboard {
-			sp := cashsb.NewItemUseChalkboard(updateTimeFirst)
-			sp.Decode(l, ctx)(r, readerOptions)
-			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), sp.Message())
-			return
+			// Enum 32 is shared on JMS: chalkboards (classification 537) AND the
+			// Quick Delivery Ticket (classification 533 — GetCashSlotItemType's
+			// ClassificationDueyCoupon branch returns 32 on JMS, task-241 task-22).
+			// Only actual chalkboards route into the use-flow here; the ticket
+			// falls through to the classification-first dispatch below, same
+			// precedent as the teleport-rock/megaphone type-12 collision above.
+			if item.GetClassification(itemId) == item.ClassificationChalkboard {
+				sp := cashsb.NewItemUseChalkboard(updateTimeFirst)
+				sp.Decode(l, ctx)(r, readerOptions)
+				_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), sp.Message())
+				return
+			}
 		}
 		if it == CashSlotItemTypeKite {
 			sp := cashsb.NewItemUseKite(updateTimeFirst)
@@ -788,6 +796,10 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			handleRemoteMerchantUse(l, ctx, wp)(s, t, itemId, source, it)
 			return
 		}
+		if category == item.ClassificationDueyCoupon {
+			handleDueyCouponUse(l, ctx, wp)(s, t, itemId, source, it)
+			return
+		}
 		if category == item.ClassificationMegaphones || category == item.ClassificationAvatarMegaphone {
 			// Legacy GMS (v48/61/72/79, MajorVersion < 83) item-loss guard.
 			// task-123 legacy-phase-1 (.superpowers/sdd/legacy-megaphone-protocol.md)
@@ -1408,6 +1420,13 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 			}
 		}
 		if category == item.ClassificationDueyCoupon {
+			// JMS computes 32, not 31, for classification 533
+			// (get_cashslot_item_type @0x49a1ee, task-241 task-22 controller
+			// addendum) — the divergence is genuine, not a copy/paste of the
+			// neighbouring ClassificationTransformationCoupon shape above.
+			if t.IsRegion("JMS") {
+				return CashSlotItemType(32)
+			}
 			return CashSlotItemType(31)
 		}
 		if category == item.ClassificationChalkboard {

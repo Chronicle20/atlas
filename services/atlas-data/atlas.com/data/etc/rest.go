@@ -11,6 +11,7 @@ type RestModel struct {
 	SlotMax     uint32  `json:"slotMax"`
 	TimeLimited bool    `json:"timeLimited"`
 	TradeBlock  bool    `json:"tradeBlock"`
+	Only        bool    `json:"only"`
 	// TradeAvailable is WZ info/tradeAvailable; see equipment/rest.go for the derivation.
 	TradeAvailable int32  `json:"tradeAvailable"`
 	ReplaceItemId  uint32 `json:"replaceItemId,omitempty"`

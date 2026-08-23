@@ -1,0 +1,10 @@
+packet: parcel/serverbound/ParcelActionDiscard
+direction: serverbound
+version: jms_v185
+category: TIER1-FIXTURE
+ida:
+    function: CTabReceive::DiscardParcel
+    address: "0x75122b"
+    decompile_sha256: b7117fbe17bacf25bd4ba04bab891b81432f1919523f7ca5ad3229ad48de9bf8
+verifies:
+    - parcel/serverbound/v185_test.go#TestActionDiscardV185

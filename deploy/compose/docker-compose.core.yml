@@ -478,6 +478,23 @@ services:
       DB_NAME: atlas-npc-shops
       SEED_CATALOG_ROOT: /var/run/seed-catalog
 
+  atlas-parcel:
+    <<: *atlas-defaults
+    container_name: atlas-parcel
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        SERVICE: atlas-parcel
+    image: atlas-parcel:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-parcel
+      COMMAND_TOPIC_PARCEL_CUSTODY: COMMAND_TOPIC_PARCEL_CUSTODY
+      EVENT_TOPIC_PARCEL_CUSTODY_STATUS: EVENT_TOPIC_PARCEL_CUSTODY_STATUS
+      EVENT_TOPIC_PARCEL_STATUS: EVENT_TOPIC_PARCEL_STATUS
+      PARCEL_EXPIRY_INTERVAL_SECONDS: "3600"
+
   atlas-parties:
     <<: *atlas-defaults
     container_name: atlas-parties

@@ -1,0 +1,59 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-parcel
+  labels:
+    atlas.seed-catalog: "true"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: atlas-parcel
+  template:
+    metadata:
+      labels:
+        app: atlas-parcel
+    spec:
+      volumes: []
+      containers:
+      - name: parcel
+        image: ghcr.io/chronicle20/atlas-parcel/atlas-parcel:latest
+        volumeMounts: []
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['app']
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: DB_NAME
+          value: "atlas-parcel"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+        - name: PARCEL_EXPIRY_INTERVAL_SECONDS
+          value: "3600"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-parcel
+spec:
+  selector:
+    app: atlas-parcel
+  ports:
+  - protocol: TCP
+    port: 8080

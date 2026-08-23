@@ -103,6 +103,15 @@ func TestClassificationWaterOfLife(t *testing.T) {
 // the remote-NPC family (verified names "Athena Pierce's Marble",
 // "Traveling Tommy's Ticket"), which resolves an NPC from info/npc and opens
 // that NPC's own shop or conversation.
+func TestQuickDeliveryTicketId(t *testing.T) {
+	if QuickDeliveryTicketId != uint32(5330000) {
+		t.Fatalf("QuickDeliveryTicketId = %d, want 5330000", QuickDeliveryTicketId)
+	}
+	if got := GetClassification(Id(QuickDeliveryTicketId)); got != ClassificationDueyCoupon {
+		t.Fatalf("GetClassification(QuickDeliveryTicketId) = %d, want %d", got, ClassificationDueyCoupon)
+	}
+}
+
 func TestScriptedItemAndRemoteNpcClassifications(t *testing.T) {
 	if got := GetClassification(Id(2430008)); got != ClassificationConsumableScriptedItem {
 		t.Errorf("2430008: got %d, want %d", got, ClassificationConsumableScriptedItem)

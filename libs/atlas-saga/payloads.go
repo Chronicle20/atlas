@@ -980,6 +980,125 @@ type MtsBidEscrowPayload struct {
 	Amount          int32     `json:"amount"` // negative to hold, positive to release
 }
 
+// TransferToParcelPayload — expanded into release_from_character + accept_to_parcel.
+// The sender supplies the delivery parameters at send time; expansion copies them
+// into the accept step along with the item snapshot looked up from inventory
+// during expansion (NOT carried here). Mirrors TransferToMtsPayload.
+type TransferToParcelPayload struct {
+	TransactionId       uuid.UUID      `json:"transactionId"`
+	ParcelId            uuid.UUID      `json:"parcelId"`
+	CharacterId         uint32         `json:"characterId"`
+	WorldId             world.Id       `json:"worldId"`
+	SourceInventoryType inventory.Type `json:"sourceInventoryType"`
+	AssetId             uint32         `json:"assetId"`
+	Quantity            uint32         `json:"quantity"`
+	SenderAccountId     uint32         `json:"senderAccountId"`
+	SenderName          string         `json:"senderName"`
+	RecipientId         uint32         `json:"recipientId"`
+	RecipientAccountId  uint32         `json:"recipientAccountId"`
+	RecipientName       string         `json:"recipientName"` // Recipient character name; carried into the accept step so a return leg's SenderName is populated (design §7.4)
+	MesoAmount          uint32         `json:"mesoAmount"`
+	FeePaid             uint32         `json:"feePaid"`
+	Quick               bool           `json:"quick"`
+	Message             string         `json:"message"`
+	ReceivableAt        time.Time      `json:"receivableAt"`
+	ExpiresAt           time.Time      `json:"expiresAt"`
+}
+
+// AcceptToParcelPayload (atomic, dispatched to atlas-parcel custody consumer).
+// Carries everything atlas-parcel needs to CREATE the parcel row in custody:
+// sender/recipient identity, delivery parameters, and the full item snapshot
+// (looked up from inventory during expansion). Mirrors AcceptToMtsListingPayload
+// carrying its item snapshot.
+//
+// HasItem is the meso-only escape hatch: a parcel can carry mesos with no item,
+// in which case the composite expansion sets HasItem=false and leaves the whole
+// snapshot zero-valued, and atlas-parcel creates the row with a nil item id.
+type AcceptToParcelPayload struct {
+	TransactionId      uuid.UUID `json:"transactionId"`
+	ParcelId           uuid.UUID `json:"parcelId"`
+	CharacterId        uint32    `json:"characterId"`
+	WorldId            world.Id  `json:"worldId"`
+	SenderAccountId    uint32    `json:"senderAccountId"`
+	SenderName         string    `json:"senderName"`
+	RecipientId        uint32    `json:"recipientId"`
+	RecipientAccountId uint32    `json:"recipientAccountId"`
+	RecipientName      string    `json:"recipientName"` // Recipient character name; the return leg's SenderName (design §7.4)
+	MesoAmount         uint32    `json:"mesoAmount"`
+	FeePaid            uint32    `json:"feePaid"`
+	Quick              bool      `json:"quick"`
+	Message            string    `json:"message"`
+	ReceivableAt       time.Time `json:"receivableAt"`
+	ExpiresAt          time.Time `json:"expiresAt"`
+
+	// HasItem is false when the parcel is meso-only; the snapshot fields below
+	// are then all zero-valued and atlas-parcel writes a row with a nil item id.
+	HasItem bool `json:"hasItem"`
+
+	// Item snapshot
+	// ItemType is the source inventory type the item was deposited from
+	// (inventory.Type). Zero when HasItem is false.
+	ItemType      byte   `json:"itemType"`
+	TemplateId    uint32 `json:"templateId"`
+	Quantity      uint32 `json:"quantity"`
+	Strength      uint16 `json:"strength"`
+	Dexterity     uint16 `json:"dexterity"`
+	Intelligence  uint16 `json:"intelligence"`
+	Luck          uint16 `json:"luck"`
+	HP            uint16 `json:"hp"`
+	MP            uint16 `json:"mp"`
+	WeaponAttack  uint16 `json:"weaponAttack"`
+	MagicAttack   uint16 `json:"magicAttack"`
+	WeaponDefense uint16 `json:"weaponDefense"`
+	MagicDefense  uint16 `json:"magicDefense"`
+	Accuracy      uint16 `json:"accuracy"`
+	Avoidability  uint16 `json:"avoidability"`
+	Hands         uint16 `json:"hands"`
+	Speed         uint16 `json:"speed"`
+	Jump          uint16 `json:"jump"`
+	Slots         uint16 `json:"slots"`
+	Level         byte   `json:"level"`
+	ItemLevel     byte   `json:"itemLevel"`
+	ItemExp       uint32 `json:"itemExp"`
+	RingId        uint32 `json:"ringId"`
+	ViciousCount  uint32 `json:"viciousCount"`
+	Flags         uint16 `json:"flags"`
+	Owner         string `json:"owner"`
+}
+
+// ReleaseFromParcelPayload (atomic, dispatched to the atlas-parcel custody
+// consumer). Carries only the parcel row id: the parcel row holds the
+// snapshot, so a release can never disagree with the accept that created it.
+// Mirrors ReleaseFromMtsHoldingPayload.
+type ReleaseFromParcelPayload struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	ParcelId      uuid.UUID `json:"parcelId"`
+	RecipientId   uint32    `json:"recipientId"`
+}
+
+// WithdrawFromParcelPayload — expanded into release_from_parcel + accept_to_character.
+type WithdrawFromParcelPayload struct {
+	TransactionId uuid.UUID      `json:"transactionId"`
+	ParcelId      uuid.UUID      `json:"parcelId"`
+	CharacterId   uint32         `json:"characterId"`
+	WorldId       world.Id       `json:"worldId"`
+	InventoryType inventory.Type `json:"inventoryType"`
+}
+
+// ShowParcelPayload represents the payload required to show the Duey parcel
+// dialog to a character. Quick lets one command serve both entry points: the
+// NPC path sends Quick: false (the channel announces PARCEL[OPEN] with the
+// mailbox) and the Quick Delivery Ticket path sends Quick: true (the channel
+// announces PARCEL[OPEN_QUICK], mode 0x1A, the quick-send-only dialog with no
+// list — task-241 design §5.2, §9.5).
+type ShowParcelPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show the parcel dialog to
+	NpcId       uint32     `json:"npcId"`       // NpcId of the parcel NPC (Duey)
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Quick       bool       `json:"quick"`       // Quick Delivery Ticket entry point
+}
+
 // RequestGuildNamePayload represents the payload required to request a guild name.
 type RequestGuildNamePayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId associated with the action

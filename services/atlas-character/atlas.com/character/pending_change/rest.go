@@ -209,6 +209,21 @@ func (r banCheckRestModel) GetName() string        { return "ban-checks" }
 func (r banCheckRestModel) GetID() string          { return r.Id }
 func (r *banCheckRestModel) SetID(id string) error { r.Id = id; return nil }
 
+// parcelStatusRestModel is the minimal projection of atlas-parcel's GET
+// /characters/{characterId}/parcel-status
+// (services/atlas-parcel/atlas.com/parcel/parcel/resource.go:55; rest.go:120,
+// 123, 138 — resource type "parcel-statuses", attribute InFlight with tag
+// `json:"inFlight"`, id the characterId as a decimal string). No
+// relationships block.
+type parcelStatusRestModel struct {
+	Id       string `json:"-"`
+	InFlight bool   `json:"inFlight"`
+}
+
+func (r parcelStatusRestModel) GetName() string        { return "parcel-statuses" }
+func (r parcelStatusRestModel) GetID() string          { return r.Id }
+func (r *parcelStatusRestModel) SetID(id string) error { r.Id = id; return nil }
+
 // guildMemberRestModel mirrors atlas-guilds' member.RestModel
 // (services/atlas-guilds/atlas.com/guilds/guild/member — same shape as the
 // atlas-channel guild/member client). Title == 1 is the guild master.

@@ -3110,9 +3110,9 @@
             "OUT_OF_STOCK_3": 9,
             "NOT_ENOUGH_MONEY_2": 10,
             "NEED_MORE_ITEMS": 13,
+            "TRADE_LIMIT": 16,
             "GENERIC_ERROR": 14,
-            "GENERIC_ERROR_WITH_REASON": 14,
-            "TRADE_LIMIT": 16
+            "GENERIC_ERROR_WITH_REASON": 14
           }
         },
         "services": [
@@ -3336,7 +3336,8 @@
             "in_family": 155,
             "trade_open": 155,
             "merchant_open": 155,
-            "mts_listings_open": 155
+            "mts_listings_open": 155,
+            "parcel_pending": 155
           }
         },
         "services": [

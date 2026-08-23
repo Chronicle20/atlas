@@ -81,6 +81,47 @@ func TestWorldTransferPayloadWireTags(t *testing.T) {
 	}
 }
 
+// knownActions enumerates every non-world-transfer Action constant in this
+// package. TestWorldTransferActionConstantsAreUnique uses it to check the
+// five world-transfer actions collide with none of them; TestParcelActionsAreKnown
+// uses it to check the four parcel custody actions were added here.
+var knownActions = []Action{
+	AwardAsset, AwardExperience, AwardLevel, AwardMesos, AwardCurrency, AwardFame,
+	DestroyAsset, DestroyAssetFromSlot, EquipAsset, UnequipAsset, CreateAndEquipAsset,
+	WarpToRandomPortal, WarpToPortal, WarpToSavedLocation, SaveLocation,
+	ChangeJob, ChangeHair, ChangeFace, ChangeSkin, SetHP, DeductExperience,
+	CancelAllBuffs, ResetStats, RebalanceAP, ValidateCharacterState,
+	IncreaseBuddyCapacity, GainCloseness, EvolvePet, TransferAP, TransferSP,
+	CreateSkill, UpdateSkill,
+	CompleteQuest, StartQuest, SetQuestProgress, ForfeitQuest,
+	ApplyConsumableEffect, CancelConsumableEffect,
+	SendMessage,
+	FieldEffect, UiLock, PlayPortalSound, UpdateAreaInfo, ShowInfo, ShowInfoText,
+	ShowIntro, ShowHint, ShowGuideHint, BlockPortal, UnblockPortal,
+	SpawnMonster, SpawnReactorDrops,
+	ShowStorage, DepositToStorage, UpdateStorageMesos, TransferToStorage,
+	WithdrawFromStorage, AcceptToStorage, ReleaseFromCharacter, AcceptToCharacter,
+	ReleaseFromStorage,
+	OpenNpcShop,
+	TradeSettlement, TradeUnwind, TransferToTrade, AcceptToTrade, ReleaseFromTrade,
+	TransferToCashShop, WithdrawFromCashShop, AcceptToCashShop, ReleaseFromCashShop,
+	TransferToMts, WithdrawFromMts, AcceptToMtsListing, ReleaseFromMtsHolding,
+	MtsSettlePurchase, MtsMoveListingToHolding, MtsBidEscrow,
+	TransferToParcel, AcceptToParcel, ReleaseFromParcel, WithdrawFromParcel,
+	RequestGuildName, RequestGuildEmblem, RequestGuildDisband,
+	RequestGuildCapacityIncrease, CreateInvite,
+	CreateCharacter, AwaitCharacterCreated, AwaitInventoryCreated,
+	StartInstanceTransport,
+	SelectGachaponReward, EmitGachaponWin,
+	StartRPSGame,
+	RegisterPartyQuest, WarpPartyQuestMembersToMap, LeavePartyQuest, EnterPartyQuestBonus,
+	UpdatePqCustomData, HitReactor, BroadcastPqMessage, StageClearAttemptPq,
+	FieldEffectWeather,
+	CreateNote,
+	SetAssetOwner, ApplyAssetLock, ExtendAssetExpiration, IncubatorResult,
+	EmitMegaphone, EnqueueWorldBroadcast,
+}
+
 // TestWorldTransferActionConstantsAreUnique asserts none of the five new
 // world-transfer Action constants collide with each other or with any
 // pre-existing Action constant in this package.
@@ -93,42 +134,6 @@ func TestWorldTransferActionConstantsAreUnique(t *testing.T) {
 		ChangeCharacterWorld,
 	}
 
-	otherActions := []Action{
-		AwardAsset, AwardExperience, AwardLevel, AwardMesos, AwardCurrency, AwardFame,
-		DestroyAsset, DestroyAssetFromSlot, EquipAsset, UnequipAsset, CreateAndEquipAsset,
-		WarpToRandomPortal, WarpToPortal, WarpToSavedLocation, SaveLocation,
-		ChangeJob, ChangeHair, ChangeFace, ChangeSkin, SetHP, DeductExperience,
-		CancelAllBuffs, ResetStats, RebalanceAP, ValidateCharacterState,
-		IncreaseBuddyCapacity, GainCloseness, EvolvePet, TransferAP, TransferSP,
-		CreateSkill, UpdateSkill,
-		CompleteQuest, StartQuest, SetQuestProgress, ForfeitQuest,
-		ApplyConsumableEffect, CancelConsumableEffect,
-		SendMessage,
-		FieldEffect, UiLock, PlayPortalSound, UpdateAreaInfo, ShowInfo, ShowInfoText,
-		ShowIntro, ShowHint, ShowGuideHint, BlockPortal, UnblockPortal,
-		SpawnMonster, SpawnReactorDrops,
-		ShowStorage, DepositToStorage, UpdateStorageMesos, TransferToStorage,
-		WithdrawFromStorage, AcceptToStorage, ReleaseFromCharacter, AcceptToCharacter,
-		ReleaseFromStorage,
-		OpenNpcShop,
-		TradeSettlement, TradeUnwind, TransferToTrade, AcceptToTrade, ReleaseFromTrade,
-		TransferToCashShop, WithdrawFromCashShop, AcceptToCashShop, ReleaseFromCashShop,
-		TransferToMts, WithdrawFromMts, AcceptToMtsListing, ReleaseFromMtsHolding,
-		MtsSettlePurchase, MtsMoveListingToHolding, MtsBidEscrow,
-		RequestGuildName, RequestGuildEmblem, RequestGuildDisband,
-		RequestGuildCapacityIncrease, CreateInvite,
-		CreateCharacter, AwaitCharacterCreated, AwaitInventoryCreated,
-		StartInstanceTransport,
-		SelectGachaponReward, EmitGachaponWin,
-		StartRPSGame,
-		RegisterPartyQuest, WarpPartyQuestMembersToMap, LeavePartyQuest, EnterPartyQuestBonus,
-		UpdatePqCustomData, HitReactor, BroadcastPqMessage, StageClearAttemptPq,
-		FieldEffectWeather,
-		CreateNote,
-		SetAssetOwner, ApplyAssetLock, ExtendAssetExpiration, IncubatorResult,
-		EmitMegaphone, EnqueueWorldBroadcast,
-	}
-
 	seen := make(map[Action]bool, len(worldTransferActions))
 	for _, a := range worldTransferActions {
 		if seen[a] {
@@ -137,9 +142,26 @@ func TestWorldTransferActionConstantsAreUnique(t *testing.T) {
 		seen[a] = true
 	}
 
-	for _, other := range otherActions {
+	for _, other := range knownActions {
 		if seen[other] {
 			t.Fatalf("world-transfer action collides with existing action constant: %s", other)
+		}
+	}
+}
+
+// TestParcelActionsAreKnown asserts the four parcel custody actions
+// (task-241) appear in knownActions.
+func TestParcelActionsAreKnown(t *testing.T) {
+	parcelActions := []Action{TransferToParcel, AcceptToParcel, ReleaseFromParcel, WithdrawFromParcel}
+
+	seen := make(map[Action]bool, len(knownActions))
+	for _, a := range knownActions {
+		seen[a] = true
+	}
+
+	for _, a := range parcelActions {
+		if !seen[a] {
+			t.Fatalf("parcel action %s not present in the known action list", a)
 		}
 	}
 }

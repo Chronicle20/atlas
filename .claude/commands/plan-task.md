@@ -5,6 +5,27 @@ argument-hint: Task identifier — accepts "task-054-effect-duration-units", "ta
 
 You are starting Phase 3 of the Atlas four-phase development workflow. Argument: **$ARGUMENTS**
 
+## The cost shape of this phase — read once, it explains every rule below
+
+Measured across all 70 `/plan-task` sessions in this repo's transcript history:
+**median 102 turns, median 220k peak context, 204k output tokens/session** —
+the highest per-session output of any command here, above `/execute-task`'s
+168k. It is not a bytes problem: median tool-result volume is 0.5 MB. It is a
+**turn** problem. Each turn replays the whole ~220k window.
+
+Where the turns go, per session: 44.8 Bash calls — 12.8 `cd`, 9.7 `grep`, 8.3
+`sed`, 4.1 `cat`, 3.8 `ls`. That is ~39 of 102 turns spent establishing which
+files exist, what module they build from, and what to copy — facts that are
+mechanical and now come from one script.
+
+The rest: 5.5 Write/Edit ops against `plan.md` for a ~50 KB file (median 91 KB
+of payload — ~1.8x re-emission), driven by the write → lint → fix → fix loop.
+
+**Do not economise by writing a smaller plan.** 94% of `plan.md` is `## Task N`
+bodies (median 11 tasks x 4.4 KB), and Phase 4 extracts those verbatim as the
+implementer's brief. Cutting them moves discovery into the implementer, and
+`/execute-task` is already 55% of task-branch spend. Cut turns, not content.
+
 ## Process
 
 ### Step 1 — Resolve the task
@@ -29,23 +50,81 @@ candidates are on stderr; list them and let the user pick. If `<worktree>` is
 the main repo root the task has no worktree — stop and tell the user it needs
 one.
 
-### Step 2 — Ensure we're in the right worktree
+### Step 2 — Enter the worktree once, then never `cd` again
 
-Run `pwd`. If it does NOT match `<worktree>`, `cd <worktree>` yourself and continue from there. Do NOT ask the user to re-run the command — per CLAUDE.md's "Worktree Discipline" rule, cd into the task worktree yourself.
+Run `pwd`. If it does NOT match `<worktree>`, `cd <worktree>` yourself and
+continue from there. Do NOT ask the user to re-run the command — per CLAUDE.md's
+"Worktree Discipline" rule, cd into the task worktree yourself.
+
+**That is the only `cd` this phase gets.** Sessions currently average 12.8, and
+each one is a whole turn at ~220k context that discovers nothing. Every later
+command uses a path relative to the worktree root you are already standing in,
+or an absolute path under `<worktree>`. If you catch yourself typing `cd`, you
+have lost your place — run `pwd` once and carry on from the answer.
 
 ### Step 3 — Validate inputs
 
 1. Confirm both `prd.md` and `design.md` exist. If either is missing, stop and tell the user to complete the prior phase.
 2. Confirm `plan.md` does NOT already exist. If it does, ask whether to overwrite.
 
-### Step 4 — Load context
+`tools/plan-context.sh` (Step 4) exits **5** when `design.md` is absent, so this
+check and Step 4 collapse into one call in the normal case.
 
-Read:
+### Step 4 — Load context in two calls, not forty
+
+```sh
+tools/task-facts.sh <id>
+tools/plan-context.sh <id> --symbols
+```
+
+`task-facts.sh` gives branch, head, worktree, existing artifacts, change
+surfaces, applicable guards, and toolchain.
+
+`plan-context.sh` gives the code survey this phase used to assemble by hand: for
+every path `design.md` names — whether it exists, its line count, its module
+root (the `go build`/`go test` cwd), whether it already has a `_test.go`, the
+sibling files that are "Patterns to copy:" candidates, and with `--symbols` the
+exported declarations of every touched `.go` file. It ran 6.0 KB on task-241 (32
+paths) and 8.3 KB on task-232; `--symbols` added 8.4 KB on task-241.
+
+Then read, in one batched tool block:
+
 - `<worktree>/docs/tasks/<id>/prd.md`
 - `<worktree>/docs/tasks/<id>/design.md`
 - `<worktree>/CLAUDE.md`
-- `<worktree>/docs/superpowers-integration.md`
-- Code areas the design touches
+
+Read `docs/superpowers-integration.md` only if you need the fuzzy-resolution or
+artifact-location rules; Steps 1–2 already applied them.
+
+**Batch the remainder.** Whatever the survey did not answer, issue as
+independent calls in a single tool block rather than one per turn — that is the
+difference between 4 turns and 26. If you find yourself running `grep` for the
+fourth time, stop: you are rediscovering something `--symbols` already printed.
+
+### Step 4a — Delegate deep discovery when the survey is wide
+
+`plan-context.sh` tells you what exists. It does not tell you how the code
+*works*. If reading that yourself would take more than a handful of targeted
+calls — the survey lists **more than ~15 paths**, or spans **more than one
+service** — dispatch **one** `Explore` agent with `model: sonnet` instead of
+reading it inline.
+
+This inverts the usual inline-vs-delegate default, and the arithmetic is why:
+the break-even is a ~35k dispatch floor against the ~20 controller turns this
+replaces, each replaying ~220k. Below the threshold, read it yourself — a
+dispatch to save three calls is a loss.
+
+Dispatch at most one such agent. Give it the `plan-context.sh` output verbatim
+(it is the inventory — the agent must not re-derive it) and ask for exactly:
+
+- per file, what it currently does and the seam the design touches
+- the concrete `Patterns to copy:` target, as `path:line`
+- the existing test's setup shape per touched package, as `path:line-line`
+- any signature the design assumes that does not match the code
+
+Do NOT ask it to write plan tasks, size them, or draft `### Files` blocks. It
+returns findings; you write the plan. A reviewer never fans out further, and
+neither does this.
 
 ### Step 5 — Invoke writing-plans
 
@@ -57,6 +136,14 @@ Use the Skill tool to invoke `superpowers:writing-plans`. Pass:
 - Do NOT auto-invoke execution.
 
 Run the `writing-plans` skill's self-review (placeholder scan, type consistency, spec coverage) before saving.
+
+**Write `plan.md` once.** Sessions average 5.5 Write/Edit ops and 91 KB of
+payload for a ~50 KB file, because the plan gets written before its Step 5b
+defects are known and then patched twice. Both error classes are already
+answerable from Step 4: F1 is the survey's EXISTING/UNRESOLVED split, F5 is
+`--symbols`. Settle every unresolved path and every invented symbol **before**
+the first Write. Append later task sections if the plan is long; do not re-emit
+sections you already wrote.
 
 ### Step 5a — Atlas plan-task format (required)
 
@@ -83,7 +170,8 @@ Patterns to copy: `services/atlas-y/atlas.com/y/baz/processor.go:88` (same shape
 Paths must be repo-relative and must exist (or be explicitly marked `new
 file`). Mark read-only references as such so the implementer does not edit
 them. Include the module root the task's `go build`/`go test` runs from when
-it is not obvious from the paths.
+it is not obvious from the paths — `plan-context.sh`'s "Module roots" section
+is that answer.
 
 **Test blocks carry the spec, not the scaffolding.** You have no compiler; the
 implementer has one and an adjacent `_test.go` to copy from. In a ```` ```go ````
@@ -157,6 +245,11 @@ which nothing previously enforced:
 
 F1–F3 are errors; fix them. F4 and F5 are advisory.
 
+**If F1 or F5 fires, that is a Step 4 miss, not a normal outcome.** The survey
+already listed every unresolved path and every exported symbol; a failure here
+means the plan was written past evidence that was sitting in context. Note what
+it caught, because that is the loop this phase is trying to stop paying for.
+
 F4: a deliberately large task is allowed provided `context.md` says why, but
 oversized tasks are what produce `PARTIAL` hand-backs and a mid-plan split at a
 worse moment.
@@ -193,5 +286,11 @@ If either is wrong, STOP and report BLOCKED. Then tell the user:
 ## Important Rules
 
 - All file I/O uses absolute paths under `<worktree>`.
+- **One `cd`, in Step 2.** Everything after it is relative to the worktree root
+  or absolute under it.
+- **Independent commands go in one tool block.** A turn that runs a single `ls`
+  costs the same context replay as a turn that runs twelve.
 - Never write plan artifacts under main's `docs/tasks/`.
+- At most one `Explore` dispatch (Step 4a), `model: sonnet`, and only above the
+  stated threshold.
 - DO NOT begin implementation. This phase produces planning documents only.

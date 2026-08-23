@@ -40,3 +40,4 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T16:24:16Z	agent	pre-PR roster (session 4)	backend-guidelines-reviewer	sonnet	-	-	-	-	complete	a3f2519e9	CHANGES_REQUIRED	yes	-	-
 2026-08-21T16:56:33Z	agent	final gate	verify.sh	-	-	-	-	-	PASS	e6800e25b	-	-	-	-
 2026-08-21T17:01:35Z	agent	finish branch	controller	opus	-	-	-	-	complete	e6800e25b	-	-	-	-
+2026-08-23T23:00:51Z	agent	bug-jukebox-replay-route-404	atlas-implementer	sonnet	-	-	-	-	DONE	35a842331	-	-	-	-

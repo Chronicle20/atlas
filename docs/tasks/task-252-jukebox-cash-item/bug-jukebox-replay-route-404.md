@@ -124,9 +124,18 @@ and must not be touched.
   (`gen-routes_test.sh`, `routes drift`, `shell tooling guard`, `overlay env
   drift` all green; Go/UI layers skipped, no Go or TS file changed). Docker
   bake skipped, so this is not a pre-PR pass.
-- Live re-test on `atlas-pr-1457`: **pending** — requires redeploying the PR
-  environment so the ingress ConfigMap picks up the new routing table, then
-  repeating the reproduction (use jukebox, leave and re-enter the map inside
-  the song window, for the caster and an observer). Confirm via
-  `kubectl -n atlas-pr-1457 logs <atlas-ingress-pod> | grep jukebox` that the
-  GET now returns 200 instead of 404.
+- Deployed to `atlas-pr-1457`: branch pushed (`52f8194af`), Argo CD synced the
+  regenerated routes ConfigMap (`atlas-ingress-routes-8cm4g2b9hh`), and the
+  hashed `configMapGenerator` name change rolled the ingress
+  (`atlas-ingress-b4fb7b894-4jf9x`). The rendered `/etc/nginx/conf.d/routes.conf`
+  in the running pod now carries the jukebox block pointing at
+  `atlas-maps.atlas-pr-1457.svc.cluster.local:8080`.
+- Routing confirmed at the ingress: the same GET that previously returned
+  `404` with a 19-byte gorilla-mux `404 page not found` body (atlas-world) now
+  returns `404 Content-Type: application/json Content-Length: 0` — the
+  atlas-maps handler's own "no active jukebox" response, which is correct with
+  no song playing. The request now reaches atlas-maps.
+- Live in-game re-test: **pending the player** — use the jukebox, then leave
+  and re-enter the map inside the song window, as the caster and as an
+  observer. Expect the song to continue on re-entry, and a `200` for the
+  jukebox GET in the ingress access log.

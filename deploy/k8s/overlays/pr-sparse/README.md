@@ -95,12 +95,19 @@ duplication safe in the meantime.
 
 ## The override set
 
-Currently fixed at `atlas-ingress` (always local — it is the routing
-mechanism itself, not a `NS_*`-addressed service), `atlas-login`,
-`atlas-channel`, and `atlas-character`. The delete-set anchor
+Computed per-PR by `tools/mode-select.sh` (task-232, extended by task-258):
+the union of (a) Go services `tools/cideps` reports as affected by the
+changed-file set, and (b) changed non-Go services (e.g. `atlas-ui`) that
+have their own `deploy/k8s/base/<svc>.yaml` Deployment, plus the mandatory
+`atlas-login`/`atlas-channel` floor (FR-9.4). A changed service with no base
+Deployment (e.g. `atlas-pr-bootstrap`, a support image) is excluded — it
+would land in `KEEP` and in `environment-record.yaml`'s `overrides` map
+while nothing deployed it. `atlas-ingress` is always local on top of this
+set — it is the routing mechanism itself, never `NS_*`-addressed, and is
+not part of `mode-select.sh`'s output. The delete-set anchor
 (`kustomization.yaml`) and `environment-record.yaml`'s `overrides`
-attribute both encode this set; Task 50's CI job is the single place that
-computes it, so the two never drift independently.
+attribute both encode this computed set; Task 50's CI job is the single
+place that computes it, so the two never drift independently.
 
 ## Sentinel contract
 

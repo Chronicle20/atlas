@@ -37,6 +37,37 @@ for required in atlas-login atlas-channel atlas-monsters; do
         || fail "override set [$overrides] is missing $required"
 done
 
+# bug-sparse-env-ui-not-deployed: a non-Go service (atlas-ui — node-service,
+# no go.mod, never appears in go-services) must still enter the override
+# set when it has its own base Deployment, or a UI-only PR silently serves
+# main's UI.
+check sparse services/atlas-ui/src/App.tsx
+set -- services/atlas-ui/src/App.tsx
+overrides=$(printf '%s\n' "$@" | ./tools/mode-select.sh | sed -n '2p')
+for required in atlas-login atlas-channel atlas-ui; do
+    echo "$overrides" | tr ' ' '\n' | grep -qx "$required" \
+        || fail "override set [$overrides] is missing $required"
+done
+
+# The existing Go-service case must yield exactly its prior override set —
+# docker-services already carries go-affected services back in (see
+# tools/cideps/main.go), so unioning it in must not add anything spurious.
+set -- services/atlas-monsters/atlas.com/monsters/monster/processor.go
+overrides=$(printf '%s\n' "$@" | ./tools/mode-select.sh | sed -n '2p')
+[ "$overrides" = "atlas-channel atlas-login atlas-monsters" ] \
+    || fail "go-service override set [$overrides] gained a spurious entry"
+
+# A changed service with no base Deployment (atlas-pr-bootstrap: a
+# support-image with docker_image set but no deploy/k8s/base manifest) must
+# not enter the override set — nothing deploys it, and it would still
+# survive PLACEHOLDER_DELETE_BLOCK and land in the environment-record
+# overrides map if it did.
+check sparse services/atlas-pr-bootstrap/main.go
+set -- services/atlas-pr-bootstrap/main.go
+overrides=$(printf '%s\n' "$@" | ./tools/mode-select.sh | sed -n '2p')
+[ "$overrides" = "atlas-channel atlas-login" ] \
+    || fail "override set [$overrides] wrongly includes atlas-pr-bootstrap (no base Deployment)"
+
 # FR-9.5: per-PR mode override labels, in both directions. A forced mode
 # must win regardless of what the escalation table or cideps would
 # otherwise compute. This asserts BOTH the mode line AND the override-set

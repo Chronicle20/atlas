@@ -1,0 +1,142 @@
+{
+  "service": "atlas-channel, atlas-maps, atlas-saga-orchestrator (task-252-jukebox-cash-item)",
+  "path": "d17404dbc..a3f2519e9",
+  "date": "2026-08-21",
+  "build": "pass",
+  "testsPassed": 209,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "services/atlas-channel/atlas.com/channel/jukebox",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "jukebox/processor.go:12-25"},
+        {"id": "FILE-02", "name": "RestModel/Transform/Extract/JSON:API methods in rest.go", "status": "fail", "evidence": "jukebox/processor.go:31-33 defines Extract(); every sibling atlas-channel client places Extract in rest.go (character/rest.go:89, messenger/rest.go:106, chalkboard/rest.go:27, buddylist/rest.go:39, chair/rest.go:28, channel/rest.go:50, door/rest.go:52, guild/rest.go:45, inventory/rest.go:117, kite/rest.go:62, macro/rest.go:46, merchant/rest.go:116, minigame/rest.go:37, drop/rest.go:54, mount/rest.go:21, note/rest.go:56, party/rest.go:113, pet/rest.go:49, account/rest.go:80, incubator/rest.go:38)"},
+        {"id": "FILE-03", "name": "Cross-service requests in requests.go", "status": "pass", "evidence": "jukebox/requests.go:16-25"},
+        {"id": "FILE-04", "name": "entity.go conventions", "status": "n-a", "evidence": "no entity.go; not DB-backed"},
+        {"id": "FILE-05", "name": "Builder/Model/administrator/provider/state placement", "status": "n-a", "evidence": "no builder.go/model.go/administrator.go/provider.go/state.go content"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "processor.go, requests.go, rest.go, mock/processor.go each single-purpose apart from the FILE-02 misplacement"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "jukebox/processor.go:21"},
+        {"id": "DOM-18", "name": "RestModel implements JSON:API interface", "status": "pass", "evidence": "jukebox/rest.go:9-20"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "n-a", "evidence": "GET-only client, no request models"},
+        {"id": "DOM-31", "name": "Tenant/trace via context only", "status": "pass", "evidence": "jukebox/rest.go RestModel carries no tenant field"},
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "pass", "evidence": "jukebox/rest.go:26-34"},
+        {"id": "EXT-02", "name": "httptest-backed integration test, populated struct assertion", "status": "pass", "evidence": "jukebox/requests_test.go:30-47"},
+        {"id": "EXT-03", "name": "Only genuine 404 maps to not-found; other failures bubble", "status": "pass", "evidence": "jukebox/processor.go:27-29 performs no error reclassification"},
+        {"id": "EXT-04", "name": "URL composed via domain-parameterized resolver, no hardcoded DNS", "status": "pass", "evidence": "jukebox/requests.go:16-18 requests.RootUrlFor(ctx, \"MAPS\"); RootUrlFor is the task-232 successor to RootUrl (libs/atlas-rest/requests/url.go:34-65), used identically in all 63 atlas-channel requests.go files"},
+        {"id": "DOM-25", "name": "No client-interpreted wire byte as Go literal outside libs/atlas-packet", "status": "n-a", "evidence": "package writes no wire bytes"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "n-a", "evidence": "no go statement in this package"},
+        {"id": "DOM-29", "name": "Cache scope", "status": "n-a", "evidence": "no cache/singleton state in this package"},
+        {"id": "DOM-30", "name": "AndEmit/message.Buffer for DB writes", "status": "n-a", "evidence": "no DB write, no Kafka emit"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/kafka/consumer/map",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client-interpreted wire byte resolved from tenant table, not literal", "status": "pass", "evidence": "consumer.go:1102 jukeboxStopItemId=int32(-1) is a single-value client-binary sentinel (m_nJukeBoxItemID==-1), not a dispatcher mode/sub-op/message/fail-reason lookup-switch code per anti-patterns.md:136-165 / DISPATCHER_FAMILY.md:103-124 — judgment call, documented in backend-audit.md"},
+        {"id": "DOM-26", "name": "Goroutine via routine.Go", "status": "pass", "evidence": "consumer.go:381"},
+        {"id": "DOM-30", "name": "AndEmit/message.Buffer for DB writes", "status": "n-a", "evidence": "broadcast only, no DB write"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "consumer_test.go:18-107 three near-identical TestHandleStatusEventJukebox* scenarios — already logged in prior pass, unchanged"}
+      ]
+    },
+    {
+      "name": "services/atlas-channel/atlas.com/channel/socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "No client-interpreted wire byte as Go literal", "status": "pass", "evidence": "character_cash_item_use.go:1088-1089 CashSlotItemType(20) classifies an inbound client byte, not an outbound dispatch/reason code"},
+        {"id": "DOM-26", "name": "Goroutine via routine.Go", "status": "n-a", "evidence": "no bare go statement added"},
+        {"id": "DOM-24", "name": "producertest / injected no-op producer for emit-reaching tests", "status": "pass", "evidence": "character_cash_item_use_jukebox_test.go:45-58 calls installCapturingProducer() (cash_item_gachapon_test.go:50)"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "character_cash_item_use_jukebox_test.go:127-213 three near-identical reject-path tests — already logged in prior pass, unchanged"},
+        {"id": "DOM-21", "name": "No redeclared shared constant", "status": "pass", "evidence": "CashSlotItemType type predates diff (line 1035); only a new const value added"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet/cash/serverbound",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Packet codec confined to libs/atlas-packet", "status": "pass", "evidence": "item_use_song_player.go:34 packet-audit:fname annotation with IDA citations"},
+        {"id": "DOM-20", "name": "Table-driven / playbook-governed tests", "status": "n-a", "evidence": "governed by docs/packets/audits/VERIFYING_A_PACKET.md per testing-guide.md:322 carve-out"}
+      ]
+    },
+    {
+      "name": "services/atlas-maps/atlas.com/maps/map/jukebox",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor in processor.go", "status": "pass", "evidence": "processor.go:12-27"},
+        {"id": "FILE-02", "name": "RestModel/Transform in rest.go", "status": "pass", "evidence": "rest.go:5-29"},
+        {"id": "FILE-03", "name": "Cross-service requests in requests.go", "status": "n-a", "evidence": "no outbound cross-service call"},
+        {"id": "FILE-04", "name": "entity.go conventions", "status": "n-a", "evidence": "in-memory registry, not DB-backed"},
+        {"id": "FILE-05", "name": "Builder/Model/administrator/provider/state placement", "status": "n-a", "evidence": "JukeboxEntry/FieldKey are cache-entry/key types co-located with the singleton per the canonical cache.go pattern (patterns-cache.md:31-47)"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "registry.go carries a single (cache) responsibility"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error)", "status": "pass", "evidence": "rest.go:24-29"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "n-a", "evidence": "no list endpoint exists"},
+        {"id": "DOM-06", "name": "Processor ctor takes FieldLogger", "status": "pass", "evidence": "processor.go:23"},
+        {"id": "DOM-07", "name": "Handler passes d.Logger() to NewProcessor", "status": "pass", "evidence": "resource.go:37"},
+        {"id": "DOM-08", "name": "POST/PATCH via RegisterInputHandler", "status": "n-a", "evidence": "only a GET route"},
+        {"id": "DOM-09", "name": "Transform() error checked", "status": "pass", "evidence": "resource.go:44-49"},
+        {"id": "DOM-12", "name": "No os.Getenv in resource.go", "status": "pass", "evidence": "zero matches"},
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handler", "status": "pass", "evidence": "handler calls only jukebox.NewProcessor"},
+        {"id": "DOM-14", "name": "Handler calls processor, not provider", "status": "pass", "evidence": "same call site"},
+        {"id": "DOM-15", "name": "No db.Create/Save/Delete in resource.go", "status": "pass", "evidence": "zero matches"},
+        {"id": "DOM-17", "name": "Error status mapping", "status": "pass", "evidence": "resource.go:39-42 not-found -> 404; no validation/conflict branch exists"},
+        {"id": "DOM-18", "name": "RestModel implements JSON:API interface", "status": "pass", "evidence": "rest.go:11-22"},
+        {"id": "DOM-19", "name": "Request models flat", "status": "n-a", "evidence": "GET-only"},
+        {"id": "DOM-32", "name": "Routes register via server.RegisterHandler/RegisterInputHandler", "status": "pass", "evidence": "resource.go:26 via rest.RegisterHandler = server.RegisterHandler (atlas-maps/rest/handler.go:28)"},
+        {"id": "DOM-29", "name": "Cache is application-scoped singleton via accessor", "status": "pass", "evidence": "registry.go:22-38 sync.Once/RWMutex/getRegistry(); ProcessorImpl holds no cached state itself"},
+        {"id": "DOM-30", "name": "AndEmit/message.Buffer for DB writes", "status": "n-a", "evidence": "documented non-DB-state exception, patterns-kafka.md:83-84"},
+        {"id": "DOM-31", "name": "Tenant via context only", "status": "pass", "evidence": "processor.go:30,42 tenant.MustFromContext(p.ctx)"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "registry_test.go 4 distinct-scenario tests, matching testing-guide.md:23-29 canonical single-scenario Example"}
+      ]
+    },
+    {
+      "name": "services/atlas-maps/atlas.com/maps/kafka/consumer/map + tasks",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-24", "name": "producertest / injected no-op for emit-reaching tests", "status": "pass", "evidence": "kafka/consumer/map/testmain_test.go:7-11 producertest.InstallNoop(); tasks/jukebox_test.go injects noopEmit/spy"},
+        {"id": "DOM-30", "name": "AndEmit/message.Buffer for DB writes", "status": "n-a", "evidence": "documented non-DB-state exception, same as jukebox package"},
+        {"id": "DOM-21", "name": "No redeclared shared constant", "status": "pass", "evidence": "maxJukeboxDuration (consumer.go:76) is package-local, not in libs/atlas-constants"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "tasks/jukebox_test.go two distinct-scenario tests"}
+      ]
+    },
+    {
+      "name": "services/atlas-saga-orchestrator/map_command + saga",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-33", "name": "Mock kept in sync with map_command.Processor", "status": "pass", "evidence": "map_command/processor.go:15 adds PlayJukebox; no mock implements map_command.Processor"},
+        {"id": "DOM-33", "name": "saga.Handler interface change", "status": "n-a", "evidence": "package-private, single implementation HandlerImpl, no mock"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "map_command/producer_test.go:19, saga/handler_test.go:1676 single-scenario, matching testing-guide.md canonical Example"},
+        {"id": "DOM-31", "name": "Tenant/trace via context", "status": "pass", "evidence": "saga/handler.go:3610-3636 reads no tenant/trace field off payload"},
+        {"id": "DOM-24", "name": "producertest for emit-reaching test", "status": "n-a", "evidence": "producer_test.go calls pure model.Provider directly; invalid-payload test returns before reaching producer"}
+      ]
+    },
+    {
+      "name": "libs/atlas-saga",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "No constant/type redeclared vs existing", "status": "pass", "evidence": "PlayJukebox/PlayJukeboxPayload are new symbols, round-tripped in unmarshal_test.go"},
+        {"id": "DOM-34", "name": "Migration hygiene", "status": "n-a", "evidence": "no symbol moved between service and library"},
+        {"id": "DOM-35", "name": "Migration hygiene (dead symbols)", "status": "n-a", "evidence": "same"}
+      ]
+    },
+    {
+      "name": "tools/packet-audit",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "n-a", "evidence": "CLI/reporting tool, not a service domain/sub-domain package"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "n-a", "evidence": "zero bare go statements; tools/goroutine-guard.sh exit 0"},
+        {"id": "DOM-21", "name": "Constants reuse", "status": "n-a", "evidence": "internal packet-audit bookkeeping, no domain constant equivalent"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "FILE-02: services/atlas-channel/atlas.com/channel/jukebox/processor.go:31-33 — Extract() belongs in rest.go per file-responsibilities.md and every sibling atlas-channel client package"
+  ],
+  "nonBlocking": [
+    "DOM-20 (WARN, already logged, unchanged): services/atlas-maps/atlas.com/maps/kafka/consumer/map/consumer_test.go:18-107",
+    "DOM-20 (WARN, already logged, unchanged): services/atlas-channel/atlas.com/channel/socket/handler/character_cash_item_use_jukebox_test.go:127-213",
+    "Already-logged, not re-litigated: services/atlas-maps/atlas.com/maps/map/jukebox/registry.go Get/GetActive do not filter on ExpiresAt (inherited from weather pattern)"
+  ]
+}

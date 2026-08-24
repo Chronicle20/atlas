@@ -14,6 +14,7 @@ import (
 
 type Processor interface {
 	FieldEffectWeather(transactionId uuid.UUID, f field.Model, itemId uint32, message string, durationMs uint32) error
+	PlayJukebox(transactionId uuid.UUID, f field.Model, itemId uint32, playerName string, durationMs uint32) error
 }
 
 type ProcessorImpl struct {
@@ -32,4 +33,8 @@ var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) FieldEffectWeather(transactionId uuid.UUID, f field.Model, itemId uint32, message string, durationMs uint32) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(mapKafka.EnvCommandTopicMap)(WeatherStartCommandProvider(transactionId, f, itemId, message, durationMs))
+}
+
+func (p *ProcessorImpl) PlayJukebox(transactionId uuid.UUID, f field.Model, itemId uint32, playerName string, durationMs uint32) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(mapKafka.EnvCommandTopicMap)(PlayJukeboxCommandProvider(transactionId, f, itemId, playerName, durationMs))
 }

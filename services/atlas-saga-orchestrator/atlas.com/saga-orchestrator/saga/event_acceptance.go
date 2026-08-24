@@ -322,6 +322,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.SendMessage:                {},
 	sharedsaga.FieldEffect:                {},
 	sharedsaga.FieldEffectWeather:         {},
+	sharedsaga.PlayJukebox:                {},
 	sharedsaga.UiLock:                     {},
 	sharedsaga.PlayPortalSound:            {},
 	sharedsaga.UpdateAreaInfo:             {},

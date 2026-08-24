@@ -15,6 +15,8 @@ const (
 	EventTopicMapStatusTypeWeatherStart    = "WEATHER_START"
 	EventTopicMapStatusTypeWeatherEnd      = "WEATHER_END"
 	EventTopicMapStatusTypeMapTimerStarted = "MAP_TIMER_STARTED"
+	EventTopicMapStatusTypeJukeboxStart    = "JUKEBOX_START"
+	EventTopicMapStatusTypeJukeboxEnd      = "JUKEBOX_END"
 )
 
 type StatusEvent[E any] struct {
@@ -47,4 +49,13 @@ type WeatherEnd struct {
 type MapTimerStarted struct {
 	CharacterId uint32 `json:"characterId"`
 	Seconds     uint32 `json:"seconds"`
+}
+
+type JukeboxStart struct {
+	ItemId     uint32 `json:"itemId"`
+	PlayerName string `json:"playerName"`
+}
+
+type JukeboxEnd struct {
+	ItemId uint32 `json:"itemId"`
 }

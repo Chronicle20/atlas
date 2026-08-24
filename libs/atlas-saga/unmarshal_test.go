@@ -1644,3 +1644,21 @@ func TestUnmarshalStartNpcConversationPayload(t *testing.T) {
 		t.Errorf("payload round-trip: %+v", p)
 	}
 }
+
+func TestUnmarshalPlayJukeboxStep(t *testing.T) {
+	data := []byte(`{"stepId":"s1","status":"pending","action":"play_jukebox","payload":{"worldId":0,"channelId":1,"mapId":100000000,"instance":"00000000-0000-0000-0000-000000000000","itemId":5100000,"playerName":"Chronicle","durationMs":45000},"createdAt":"2026-08-21T00:00:00Z","updatedAt":"2026-08-21T00:00:00Z"}`)
+	var s Step[any]
+	if err := json.Unmarshal(data, &s); err != nil {
+		t.Fatal(err)
+	}
+	p, ok := s.Payload.(PlayJukeboxPayload)
+	if !ok {
+		t.Fatalf("payload type = %T", s.Payload)
+	}
+	if p.ItemId != 5100000 || p.PlayerName != "Chronicle" || p.DurationMs != 45000 {
+		t.Fatalf("payload = %+v", p)
+	}
+	if p.WorldId != 0 || p.ChannelId != 1 || p.MapId != 100000000 {
+		t.Fatalf("field coordinates = %+v", p)
+	}
+}

@@ -40,6 +40,8 @@ const testXML = `
     <int name="noFlip" value="1"/>
     <int name="boss" value="1"/>
     <int name="firstAttack" value="1"/>
+    <int name="coolDamage" value="200"/>
+    <int name="coolDamageProb" value="10"/>
     <int name="publicReward" value="1"/>
     <int name="rareItemDropLevel" value="2"/>
     <imgdir name="skill">
@@ -1267,8 +1269,8 @@ func TestReader(t *testing.T) {
 	if rm.SelfDestruction != (selfDestruction{0, 0, 0}) {
 		t.Errorf("SelfDestruction mismatch: got %+v, expected %+v", rm.SelfDestruction, selfDestruction{0, 0, 0})
 	}
-	if rm.CoolDamage != (coolDamage{0, 0}) {
-		t.Errorf("CoolDamage mismatch: got %+v, expected %+v", rm.CoolDamage, coolDamage{0, 0})
+	if rm.CoolDamage != (coolDamage{200, 10}) {
+		t.Errorf("CoolDamage mismatch: got %+v, expected %+v", rm.CoolDamage, coolDamage{200, 10})
 	}
 	if rm.HpRecovery != 10000 {
 		t.Errorf("HpRecovery mismatch: got %d, expected 10000", rm.HpRecovery)
@@ -1514,5 +1516,26 @@ func TestReaderFirstAttackAbsentDefaultsFalse(t *testing.T) {
 	}
 	if rm.FirstAttack != false {
 		t.Fatalf("FirstAttack=%t, want false", rm.FirstAttack)
+	}
+}
+
+func TestReaderCoolDamageAbsentDefaultsZero(t *testing.T) {
+	tt := testTenant()
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), tt)
+
+	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(9300317), name: "FakeNoCoolDamage"})
+
+	body := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="9300317.img">
+  <imgdir name="info"><int name="maxHP" value="100"/></imgdir>
+</imgdir>`
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(body)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rm.CoolDamage != (coolDamage{0, 0}) {
+		t.Fatalf("CoolDamage=%+v, want %+v", rm.CoolDamage, coolDamage{0, 0})
 	}
 }

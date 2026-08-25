@@ -237,13 +237,10 @@ func getLoseItem(node xml.Node) loseItem {
 }
 
 func getCoolDamage(node *xml.Node) coolDamage {
-	c, err := node.ChildByName("coolDamage")
-	if err != nil {
-		return coolDamage{}
+	return coolDamage{
+		Damage:      uint32(node.GetIntegerWithDefault("coolDamage", 0)),
+		Probability: uint32(node.GetIntegerWithDefault("coolDamageProb", 0)),
 	}
-	damage := uint32(c.GetIntegerWithDefault("coolDamage", 0))
-	probability := uint32(c.GetIntegerWithDefault("coolDamageProb", 0))
-	return coolDamage{Damage: damage, Probability: probability}
 }
 
 // getAttacks parses attack{1,2,3}/info subnodes. If any attackN slot has an

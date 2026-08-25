@@ -579,6 +579,39 @@ func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32
 	}, nil
 }
 
+// SelfDestruct atomically drives the monster to 0 HP. Killed is true for the
+// caller that performed the transition and false for every caller that finds
+// it already at 0 — which is what makes concurrent triggers (two damage lines,
+// a timer racing a bomb report) emit exactly one KILLED. Damage entries are
+// left untouched: a detonation is not damage and must not rewrite the damage
+// leader (task-253 design D3).
+//
+// This deliberately does NOT reuse ApplyDamage, whose Killed is `m.Hp() == 0`
+// and is therefore true for every concurrent caller once HP has reached zero.
+func (r *Registry) SelfDestruct(t tenant.Model, uniqueId uint32) (DamageSummary, error) {
+	ctx := context.Background()
+
+	var transitioned bool
+	sm, err := r.reg.Update(ctx, t, uniqueId, func(cur storedMonster) storedMonster {
+		transitioned = cur.Hp > 0
+		cur.Hp = 0
+		return cur
+	})
+	if err != nil {
+		return DamageSummary{}, errMonsterNotFound
+	}
+
+	_, m, err := fromStored(sm)
+	if err != nil {
+		return DamageSummary{}, err
+	}
+
+	return DamageSummary{
+		Monster: m,
+		Killed:  transitioned,
+	}, nil
+}
+
 // ApplyRecovery atomically applies HP/MP recovery to the monster. Returns the
 // updated Model along with flags indicating whether HP and MP were actually
 // changed. HP recovery is gated by the idle window: applies only when

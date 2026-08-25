@@ -1266,8 +1266,8 @@ func TestReader(t *testing.T) {
 	if rm.Banish != (banish{"", 0, ""}) {
 		t.Errorf("Banish mismatch: got %+v, expected %+v", rm.Banish, banish{"", 0, ""})
 	}
-	if rm.SelfDestruction != (selfDestruction{0, 0, 0}) {
-		t.Errorf("SelfDestruction mismatch: got %+v, expected %+v", rm.SelfDestruction, selfDestruction{0, 0, 0})
+	if rm.SelfDestruction != (selfDestruction{0, -1, -1}) {
+		t.Errorf("SelfDestruction mismatch: got %+v, expected %+v", rm.SelfDestruction, selfDestruction{0, -1, -1})
 	}
 	if rm.CoolDamage != (coolDamage{200, 10}) {
 		t.Errorf("CoolDamage mismatch: got %+v, expected %+v", rm.CoolDamage, coolDamage{200, 10})

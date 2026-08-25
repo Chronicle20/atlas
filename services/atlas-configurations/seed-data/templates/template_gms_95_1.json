@@ -4067,6 +4067,16 @@
         "opCode": "0x11D",
         "writer": "DestroyMonster",
         "fname": "CMobPool::OnMobLeaveField",
+        "options": {
+          "operations": {
+            "DISAPPEAR": 0,
+            "FADE_OUT": 1,
+            "BOMB": 2,
+            "DESTRUCT_BY_MISS": 3,
+            "SWALLOW": 4,
+            "SELF_DESTRUCT": 5
+          }
+        },
         "services": [
           "channel"
         ]

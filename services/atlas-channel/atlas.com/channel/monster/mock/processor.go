@@ -23,6 +23,7 @@ type ProcessorMock struct {
 	CancelStatusFunc           func(f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillClass string) error
 	DrainMpFunc                func(f field.Model, monsterId uint32, characterId uint32, skillId uint32, amount uint32) error
 	KillFunc                   func(f field.Model, monsterId uint32, characterId uint32) error
+	SelfDestructFunc           func(f field.Model, monsterId uint32, characterId uint32) error
 	ClearAggroFunc             func(f field.Model, monsterId uint32) error
 	ForceControlFunc           func(f field.Model, monsterId uint32, characterId uint32) error
 	SetAggroFunc               func(f field.Model, monsterId uint32, characterId uint32) error
@@ -131,6 +132,13 @@ func (m *ProcessorMock) DrainMp(f field.Model, monsterId uint32, characterId uin
 func (m *ProcessorMock) Kill(f field.Model, monsterId uint32, characterId uint32) error {
 	if m.KillFunc != nil {
 		return m.KillFunc(f, monsterId, characterId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) SelfDestruct(f field.Model, monsterId uint32, characterId uint32) error {
+	if m.SelfDestructFunc != nil {
+		return m.SelfDestructFunc(f, monsterId, characterId)
 	}
 	return nil
 }

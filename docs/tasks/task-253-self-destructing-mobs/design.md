@@ -83,9 +83,38 @@ if ( deadType <= 1 || deadType == 3 )  CMob::OnDie(mob);
 else                                   sub_69E44A(mob);   // m_nOneTimeAction = 12, mob sound
 ```
 
-So on v87: `{0,1,3}` → `OnDie`; `{2,4,5}` → the action-12 "bomb" animation. On v95: `3` gets a
+v83 (`754107bf`, `CMobPool::Update` `0x679138`) has the identical two-arm shape:
+
+```c
+if ( deadType <= 1 || deadType == 3 )  CMob::OnDie(mob);   // 0x663995
+else                                   CMob::OnBomb(mob);  // 0x663e5b
+```
+
+So on v87/v83: `{0,1,3}` → `OnDie`; `{2,4,5}` → the action-12 "bomb" animation. On v95: `3` gets a
 dedicated destruct animation and `5` renders as a plain die. The mapping genuinely inverts
 between eras.
+
+**Correction (bug-darkstar-no-explosion-or-damage.md, 2026-08-25): dead-type 3 routing to
+`OnDie` on v83/v87 is not "an ordinary death."** `CMob::OnDie` itself branches on
+`m_nDeadType == 3` and picks a dedicated one-time action with no `die1..dieN` fallback (v83
+`0x663a1b`, v95 symbolised twin `0x64e6bc`):
+
+```c
+// v83 @0x663a1b                        // v95 @0x64e6bc (symbolised)
+v6 = m_pTemplate[137];                  nDieCount = m_pTemplate->nDieCount;
+if ( v6 > 0 ) {                         if ( nDieCount > 0 ) {
+  if ( m_nDeadType == 3 )  v8 = 21;       if ( m_nDeadType == 3 )  v13 = 22;
+  else  v8 = rand() % v6 + 9;             else  v13 = rand() % nDieCount + 10;
+  m_nOneTimeAction = v8;                  m_nOneTimeAction = v13;
+  CMob::PrepareActionLayer(this);         CMob::PrepareActionLayer(this);
+```
+
+So `{0,1}` fall into `OnDie`'s ordinary `die1..dieN` random pick, but `3` is diverted to a
+single dedicated one-time action (21 on v83, 22 on v95) with no `die1` fallback. A template
+whose animation set has no art for that action (e.g. `8500003`, animations
+`[attack1, die1, hit1, stand]`) renders nothing — the mob silently vanishes. Only dead-types
+2, 4, 5 reach `CMob::OnBomb`/the bomb arm, the explode action that also carries the attack
+that damages the player. See D2's amendment below for the fix this drove.
 
 **Resolves PRD OQ4.** Every value in the WZ data set (1, 3, 4, 5) is *legal* on every version
 in the sense that no client reads past the byte or faults on it — the worst case is a client
@@ -317,7 +346,22 @@ byte (`action` defaults to 0, so the mob's ordinary kill would carry a self-dest
 0 instead of `DeathTypeFadeOut`), which is why the deploy order (atlas-data before atlas-monsters)
 is the mitigation, not a claim that the predicate is false under the old sentinel.
 
-### D3 — One atomic registry primitive, `Registry.SelfDestruct`, owns exactly-once
+**Amendment (bug-darkstar-no-explosion-or-damage.md, 2026-08-25, reporter approved):** D2 above
+is unchanged — the sentinel fix stands as written. What changed after live testing is a
+separate, additive deviation on top of it: `TriggerContact` detonations
+(`ProcessorImpl.SelfDestruct`) no longer use `deathTypeForAction(sd.Action())` for the resolved
+`deathType`; they always resolve to `DeathTypeBomb`. §2.2's correction above is why — on v83,
+`CMob::OnDie` diverts dead-type 3 to a one-time action with no `die1` fallback, so a mob whose
+template lacks art for that action (`8500003`) renders no explosion and no death animation, and
+only dead-types 2/4/5 reach `CMob::OnBomb`, the explode action that also carries the player-
+damaging attack. `TriggerThreshold` and `TriggerTimer` are unaffected and keep passing
+`deathTypeForAction(sd.Action())` through verbatim (Cosmic parity — Cosmic hardcodes dead-type 4
+for `MONSTER_BOMB`/contact but passes `selfDestruction.action` through on the HP-threshold path;
+Atlas uses `DeathTypeBomb`/byte 2, not Cosmic's literal 4, because 2 reproduces the same v83
+`CMob::OnBomb` behavior while staying correct on v92+/JMS, where byte 4 hits the swallow arm and
+its trailing `swallowCharacterId` field). `BOMB` was already a seeded key in every template's
+`operations` table (§2.2's post-implementation update), so this is a dispatch-time deathType
+choice, not a new wire byte.
 
 ```go
 // SelfDestruct atomically drives the monster to 0 HP. Killed is true for the

@@ -274,9 +274,65 @@ func TestSelfDestructRejects(t *testing.T) {
 				if body == nil {
 					t.Fatalf("expected a KILLED body")
 				}
-				if body.DeathType != DeathTypeDestructByMiss {
-					t.Errorf("DeathType = %s, want %s", body.DeathType, DeathTypeDestructByMiss)
+				// Contact detonations always resolve to DeathTypeBomb
+				// regardless of the WZ action byte (task-253
+				// bug-darkstar-no-explosion-or-damage.md): TryFirstSelfDestruction
+				// (opcode 0xC1) sends TriggerContact, and the WZ action byte
+				// (3, DESTRUCT_BY_MISS) would otherwise divert v83's
+				// CMob::OnDie to a one-time action with no die1..dieN
+				// fallback and no explosion.
+				if body.DeathType != DeathTypeBomb {
+					t.Errorf("DeathType = %s, want %s", body.DeathType, DeathTypeBomb)
 				}
+			}
+		})
+	}
+}
+
+// TestSelfDestructContactAlwaysBomb verifies TriggerContact detonates with
+// DeathTypeBomb regardless of the WZ selfDestruction.action byte, while
+// TriggerThreshold and TriggerTimer keep passing the WZ-derived deathType
+// through unchanged (task-253 bug-darkstar-no-explosion-or-damage.md, Fix —
+// DECIDED 2026-08-25).
+func TestSelfDestructContactAlwaysBomb(t *testing.T) {
+	tests := []struct {
+		name      string
+		trigger   SelfDestructTrigger
+		action    byte
+		wantDeath string
+	}{
+		{name: "contact with WZ action 1 (fadeOut) resolves to bomb", trigger: TriggerContact, action: 1, wantDeath: DeathTypeBomb},
+		{name: "contact with WZ action 3 (destructByMiss) resolves to bomb", trigger: TriggerContact, action: 3, wantDeath: DeathTypeBomb},
+		{name: "threshold keeps WZ-derived deathType", trigger: TriggerThreshold, action: 3, wantDeath: DeathTypeDestructByMiss},
+		{name: "timer keeps WZ-derived deathType", trigger: TriggerTimer, action: 3, wantDeath: DeathTypeDestructByMiss},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := GetMonsterRegistry()
+			ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+			ctx := context.Background()
+			r.Clear(ctx)
+
+			prevHook := testInformationLookup
+			testInformationLookup = func(_ uint32) (information.Model, error) {
+				return information.NewModelBuilder().SetSelfDestruction(information.NewSelfDestruction(true, tt.action, -1, 5000)).Build(), nil
+			}
+			defer func() { testInformationLookup = prevHook }()
+
+			f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+			m := r.CreateMonster(ctx, ten, f, boomerMonsterId, 0, 0, 0, 5, 0, boomerMaxHp, 0, "", "")
+			uid := m.UniqueId()
+
+			p, events := newRecordingProcessorWithBodies(t, ten)
+			p.SelfDestruct(uid, 0, tt.trigger)
+
+			gotKilled, body := countKilled(*events)
+			if gotKilled != 1 {
+				t.Fatalf("KILLED count = %d, want 1: %v", gotKilled, *events)
+			}
+			if body.DeathType != tt.wantDeath {
+				t.Errorf("DeathType = %s, want %s", body.DeathType, tt.wantDeath)
 			}
 		})
 	}

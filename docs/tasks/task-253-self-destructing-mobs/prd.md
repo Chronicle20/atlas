@@ -63,8 +63,8 @@ Non-goals:
   their threshold, so the fight plays out the way the content was designed.
 - As a player fighting Papulatus, I want a bomb that drifts into me to explode on contact, so I
   am punished for standing in it rather than being able to ignore it.
-- As a player killing a Boomer, I want it to play its explosion animation rather than the generic
-  fade-out, so the mob reads as the bomb it is.
+- As a player killing a Firebomb, I want it to play its explosion animation rather than the
+  generic fade-out, so the mob reads as the bomb it is.
 - As a player, I want to receive drops and EXP from a self-destructing mob I damaged, so killing
   it is worth the same as killing anything else.
 - As a server operator, I want mobs with a `selfDestruction` timer to remove themselves on
@@ -299,7 +299,7 @@ its siblings (`GetDropTimerRegistry()`, `GetCooldownRegistry()`).
 | 9300267 | 3 | 5000 | — | HP | |
 | 6300004 | 1 | 5000 | — | HP | |
 | 8510100 | 1 | 5000 | — | HP | |
-| 5100002 | 1 | 1800 | — | HP | Boomer |
+| 5100002 | 1 | 1800 | — | HP | Firebomb |
 | 9400566 | 1 | 99997 | 60 | HP (hp > -1 wins) | Threshold is effectively "any damage" |
 | 9400547 | 5 | 350 | 90000 | HP | Monster Carnival — out of scope as content |
 | 9400550 | 5 | 350 | 90000 | HP | Monster Carnival — out of scope as content |

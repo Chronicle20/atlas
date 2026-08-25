@@ -1844,6 +1844,15 @@ func (p *ProcessorImpl) Kill(uniqueId uint32, characterId uint32) {
 // re-derives every predicate rather than trusting the caller, because the
 // contact path originates in a client-controlled packet naming an arbitrary
 // id (task-253 design D7/D8). Every rejection is a silent debug-level drop.
+//
+// TriggerContact deliberately does not use the WZ action byte: it always
+// detonates with DeathTypeBomb. On v83, CMob::OnDie diverts dead-type 3 to a
+// dedicated one-time action (21) with no die1..dieN fallback, so contact
+// detonations that pass the WZ byte through render nothing at all for
+// templates without art for that action; only dead-types 2, 4, 5 reach
+// CMob::OnBomb, the explode action that also carries the attack that damages
+// the player. TriggerThreshold and TriggerTimer keep the WZ pass-through
+// (Cosmic parity — see docs/tasks/task-253-self-destructing-mobs/bug-darkstar-no-explosion-or-damage.md).
 func (p *ProcessorImpl) SelfDestruct(uniqueId uint32, characterId uint32, trigger SelfDestructTrigger) {
 	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
 	if err != nil {
@@ -1864,7 +1873,11 @@ func (p *ProcessorImpl) SelfDestruct(uniqueId uint32, characterId uint32, trigge
 		p.l.Debugf("SELF_DESTRUCT: monster [%d] (template [%d]) carries no selfDestruction block; dropping.", uniqueId, m.MonsterId())
 		return
 	}
-	p.selfDestructFrom(m, characterId, deathTypeForAction(p.l, sd.Action()), trigger)
+	deathType := deathTypeForAction(p.l, sd.Action())
+	if trigger == TriggerContact {
+		deathType = DeathTypeBomb
+	}
+	p.selfDestructFrom(m, characterId, deathType, trigger)
 }
 
 // deathTypeForAction maps the WZ selfDestruction.action byte to its
@@ -1875,6 +1888,11 @@ func (p *ProcessorImpl) SelfDestruct(uniqueId uint32, characterId uint32, trigge
 // expressible as a key, so it is logged and falls back to fade-out rather
 // than inventing one (task-253 fix-dom25 brief; D2 rejected pattern-matching
 // on action != 0).
+//
+// SelfDestruct's TriggerContact path does not use this function's result:
+// contact detonations always resolve to DeathTypeBomb regardless of the WZ
+// byte (see the SelfDestruct doc comment and
+// docs/tasks/task-253-self-destructing-mobs/bug-darkstar-no-explosion-or-damage.md).
 func deathTypeForAction(l logrus.FieldLogger, action byte) string {
 	switch action {
 	case 0:

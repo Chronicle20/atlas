@@ -251,8 +251,37 @@ with go1.26)` from the cached `golangci-lint-v2.12.2`. Confirmed environmental b
 running the same binary against `atlas-portals`, a module neither commit touches,
 and reproducing the identical panic; no `go.mod` in the tree declares 1.27. The
 binary was rebuilt from source with go1.27.0 into both
-`.cache/tools/bin/golangci-lint-v2.12.2` (main repo and this worktree). **A gate
-over `12dba5cef..bff8b4e89` has not yet returned a verdict.**
+`.cache/tools/bin/golangci-lint-v2.12.2` (main repo and this worktree).
+
+The re-run then FAILED differently — `typedness: panic during analysis: interface
+conversion: interface {} is nil, not *buildir.IR` from
+`honnef.co/go/tools@v0.7.0/analysis/facts/typedness`, i.e. the staticcheck
+vendored by golangci-lint v2.12.2 does not support Go 1.27 either. Both failures
+are the same root problem, and it is **not this branch's code**:
+
+| | Declares | Installed locally |
+|---|---|---|
+| `go.work` / every module `go.mod` | `go 1.26.0` (max) | — |
+| `.github/workflows/pr-validation.yml:41` `GO_VERSION` | `1.26.0` | — |
+| `tools/lint.versions:5` `GOLANGCI_LINT_VERSION` | `v2.12.2` | — |
+| Machine Go toolchain | — | **`go1.27.0`** |
+
+CI is the authority (`docs/verification.md`) and CI runs Go **1.26.0**. The local
+toolchain is a major version ahead of anything the repo pins, so the lint gate
+cannot pass on this machine regardless of the code. **Do not bump
+`tools/lint.versions` to work around this** — that would put the local gate ahead
+of CI, which is the opposite of the intended relationship.
+
+Resolution needed (operator decision, system-level): run the gate under Go
+1.26.0. After switching, delete
+`.cache/tools/bin/golangci-lint-v2.12.2` in both the main repo and this worktree
+so `tools/lint.sh` refetches a matching build — the copy currently on disk was
+rebuilt against go1.27 by this session and should not be kept.
+
+**No gate verdict has been obtained for `12dba5cef..97fed73e9`.** Both commits
+carry a clean `go build ./...` + `go test ./...` at module scope and an approving
+review, but neither substitutes for the gate, and the flagless `tools/verify.sh`
+is still outstanding before any PR.
 
 **Live re-test: NOT DONE.** Required before this bug is closed, and it needs more
 than a redeploy — `atlas-data` stores the *parsed* model as a document

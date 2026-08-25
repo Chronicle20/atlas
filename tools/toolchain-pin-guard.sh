@@ -90,7 +90,11 @@ gomod_check() {
         CHECKED_GOMOD=$((CHECKED_GOMOD + 1))
         local f="$checkdir/$rel"
         local line
-        line="$(grep -n '^go ' "$f" | head -1)"
+        line="$(grep -n '^go ' "$f" | head -1 || true)"
+        if [ -z "$line" ]; then
+            add_violation "${rel}: expected a 'go' directive line, found none"
+            continue
+        fi
         local lineno="${line%%:*}"
         local content="${line#*:}"
         if ! printf '%s\n' "$content" | grep -qE "^go ${ver_esc}\$"; then
@@ -157,7 +161,8 @@ bake_check() {
     local go_content
     go_content="$(printf '%s' "$go_default" | sed 's/^[0-9]*: //')"
     if [ "$go_content" != "  default = \"${GO_VERSION}\"" ]; then
-        add_violation "docker-bake.hcl:${go_lineno}: expected default = \"${GO_VERSION}\", got ${go_content# }"
+        local go_trimmed="${go_content#"${go_content%%[![:space:]]*}"}"
+        add_violation "docker-bake.hcl:${go_lineno}: expected default = \"${GO_VERSION}\", got ${go_trimmed}"
     fi
 
     # ALPINE_VERSION block.
@@ -167,7 +172,8 @@ bake_check() {
     local alpine_content
     alpine_content="$(printf '%s' "$alpine_default" | sed 's/^[0-9]*: //')"
     if [ "$alpine_content" != "  default = \"${ALPINE_VERSION}\"" ]; then
-        add_violation "docker-bake.hcl:${alpine_lineno}: expected default = \"${ALPINE_VERSION}\", got ${alpine_content# }"
+        local alpine_trimmed="${alpine_content#"${alpine_content%%[![:space:]]*}"}"
+        add_violation "docker-bake.hcl:${alpine_lineno}: expected default = \"${ALPINE_VERSION}\", got ${alpine_trimmed}"
     fi
 }
 
@@ -187,7 +193,11 @@ ci_check() {
         case "$file" in
             .github/config/services.json)
                 local jline
-                jline="$(grep -n '"go_version":' "$path" | head -1)"
+                jline="$(grep -n '"go_version":' "$path" | head -1 || true)"
+                if [ -z "$jline" ]; then
+                    add_violation "$file: expected a '\"go_version\":' key, found none"
+                    continue
+                fi
                 local lineno="${jline%%:*}"
                 local val
                 val="$(sed -n "${lineno}p" "$path" | sed -E 's/.*"go_version": *"([^"]*)".*/\1/')"
@@ -197,19 +207,27 @@ ci_check() {
                 ;;
             .github/actions/go-test/action.yml)
                 # `default:` appears more than once in this file (race-detection
-                # also has one); scope the match to the go-version input's block —
-                # the `default: 'X'` line immediately following the `  go-version:`
-                # key.
-                local gv_line
-                gv_line="$(grep -n '^  go-version:' "$path" | head -1)"
-                local gv_lineno="${gv_line%%:*}"
-                local def_lineno=$((gv_lineno + 3))
+                # also has one); scope the match to the go-version input's block
+                # structurally, the same way bake_check scopes `default =` to its
+                # `variable "..." { ... }` block: scan forward from `  go-version:`
+                # for the first `default:` line, stopping at the next top-level
+                # input key (a line matching `^  [a-zA-Z]`, e.g. `  race-detection:`)
+                # so inserting or removing a line in between cannot silently point
+                # the check at the wrong `default:`.
+                local gv_default
+                gv_default="$(awk '/^  go-version:$/{f=1;next} f && /^[[:space:]]+default:/{print NR": "$0; exit} f && /^  [a-zA-Z]/{exit}' "$path")"
+                local def_lineno="${gv_default%%:*}"
                 local def_content
-                def_content="$(sed -n "${def_lineno}p" "$path")"
+                def_content="$(printf '%s' "$gv_default" | sed 's/^[0-9]*: //')"
+                if [ -z "$def_lineno" ]; then
+                    add_violation "$file: expected a 'default:' line inside the go-version input block, found none"
+                    continue
+                fi
                 local val
                 val="$(printf '%s\n' "$def_content" | sed -E "s/^[[:space:]]*default: *'([^']*)'.*/\1/")"
                 if [ "$val" != "$GO_VERSION" ]; then
-                    add_violation "$file:${def_lineno}: expected default: '${GO_VERSION}', got ${def_content# }"
+                    local def_trimmed="${def_content#"${def_content%%[![:space:]]*}"}"
+                    add_violation "$file:${def_lineno}: expected default: '${GO_VERSION}', got ${def_trimmed}"
                 fi
                 ;;
             *)

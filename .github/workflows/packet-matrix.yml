@@ -10,7 +10,7 @@ on:
       - 'services/atlas-configurations/seed-data/templates/**'
 
 env:
-  GO_VERSION: '1.25.5'
+  GO_VERSION: '1.27.0'
 
 jobs:
   check:

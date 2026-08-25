@@ -198,6 +198,45 @@ EXIT=1
 same full-leading-whitespace strip (`${var#"${var%%[![:space:]]*}"}"`) was
 applied at `bake_check`'s ALPINE_VERSION site and `ci_check`'s go-test branch.
 
+**Task 8 addendum — the `ALPINE_VERSION` site independently probed (fix
+review's non-blocking gap).** Probed on a fresh `git clone` under `mktemp -d`
+(`/tmp/tmp.f9IiYAG88o/repo`), never on the real worktree; `git status --short`
+on the real worktree immediately after both probes showed only the
+pre-existing untracked `docs/tasks/task-261-go-1-27-migration/agent-ledger.tsv`
+— nothing else.
+
+`docker-bake.hcl`'s `ALPINE_VERSION` `default =` line (`docker-bake.hcl:30`,
+`  default = "3.24"`) mutated to `3.20`:
+
+```
+docker-bake.hcl:30: expected default = "3.24", got default = "3.20"
+toolchain-pin-guard: violations found (see above)
+EXIT=1
+```
+
+Deletion case (Finding 1's shape, verified for the three other sites but not
+this one): the `ALPINE_VERSION` block's `default =` line removed entirely,
+leaving:
+
+```
+variable "ALPINE_VERSION" {
+}
+```
+
+```
+docker-bake.hcl:: expected default = "3.24", got
+toolchain-pin-guard: violations found (see above)
+EXIT=1
+```
+
+The line number renders empty (the `awk` extraction finds no `default =` line
+inside the block and returns nothing to number) and the `got` side is blank,
+but the guard still reports a violation and exits non-zero — the deletion
+case is caught, closing the gap the fix review flagged. The cosmetic empty
+line number/value is a pre-existing minor rendering quirk shared with the
+other sites' deletion case, not a functional defect (the guard's job — detect
+and fail — is met), and is out of this task's scope to touch.
+
 ### Regression bar (Step 8)
 
 ```

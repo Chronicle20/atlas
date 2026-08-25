@@ -18,3 +18,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T13:48:15Z	agent	final review	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	4cf6d2a3c	CHANGES_REQUIRED	yes	-	-
 2026-08-21T13:56:59Z	agent	fix round 2	atlas-implementer	sonnet	-	-	-	-	DONE	2f0e79523	-	-	-	-
 2026-08-21T13:58:40Z	agent	Task 5	atlas-verifier	haiku	-	-	-	-	PASS	2f0e79523	-	-	-	-
+2026-08-25T22:53:23Z	agent	bug-banish-map-id-always-zero	atlas-implementer	sonnet	-	-	-	-	DONE	1c42f52e0	-	-	-	-
+2026-08-25T22:59:08Z	agent	bug-banish-map-id-always-zero	atlas-reviewer	sonnet	-	-	-	-	DONE	1c42f52e0	APPROVED_WITH_FINDINGS	no	-	-

@@ -301,6 +301,7 @@ func main() {
 		account.GetRegistry().EvictTenant(tid)
 		monsterDomain.GetStatusMirror().EvictTenant(tid)
 		monsterDomain.GetLiveMirror().EvictTenant(tid)
+		monsterDomain.GetAutoAggroGate().EvictTenant(tid)
 		monsterinfo.EvictTenant(tid)
 		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
 			inbox.EvictTenant(tid)
@@ -927,6 +928,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[dragonsb.DragonMoveHandle] = handler.DragonMoveHandleFunc
 	handlerMap[monstersb.MobCrcKeyChangedReplyHandle] = handler.MobCrcKeyChangedReplyHandleFunc
 	handlerMap[monstersb.MobDropPickupRequestHandle] = handler.MobDropPickupRequestHandleFunc
+	handlerMap[monstersb.AutoAggroHandle] = handler.AutoAggroHandleFunc
 	handlerMap[monstersb.UseCatchItemHandle] = handler.MonsterCatchItemUseHandleFunc
 	handlerMap[monstersb.FieldDamageMobHandle] = handler.FieldDamageMobHandleFunc
 	handlerMap[monstersb.MobDamageMobHandle] = handler.MobDamageMobHandleFunc

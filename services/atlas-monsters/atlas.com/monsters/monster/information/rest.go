@@ -101,6 +101,7 @@ func Extract(rm RestModel) (Model, error) {
 		boss:           rm.Boss,
 		undead:         rm.Undead,
 		friendly:       rm.Friendly,
+		firstAttack:    rm.FirstAttack,
 		weaponAttack:   rm.WeaponAttack,
 		dropPeriod:     rm.DropPeriod,
 		resistances:    rm.Resistances,

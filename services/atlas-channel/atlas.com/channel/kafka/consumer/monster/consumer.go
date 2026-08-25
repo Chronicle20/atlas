@@ -328,6 +328,7 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 		}
 
 		monster.GetLiveMirror().UpdateAggro(tenant.MustFromContext(ctx), e.UniqueId, e.Body.ControllerHasAggro)
+		monster.GetLiveMirror().UpdateControl(tenant.MustFromContext(ctx), e.UniqueId, e.Body.ActorId)
 
 		// Prefer the authoritative model: the event envelope carries no status
 		// effects, and the Spawn/Control bodies both encode a temporary-stat
@@ -369,6 +370,7 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 
 		// No controller => no aggro (design §5.2).
 		monster.GetLiveMirror().UpdateAggro(tenant.MustFromContext(ctx), e.UniqueId, false)
+		monster.GetLiveMirror().UpdateControl(tenant.MustFromContext(ctx), e.UniqueId, 0)
 
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		m := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
@@ -392,12 +394,14 @@ func handleStatusEventAggroChanged(sc server.Model, wp writer.Producer) message.
 
 		monster.GetLiveMirror().UpdateAggro(tenant.MustFromContext(ctx), e.UniqueId, e.Body.ControllerHasAggro)
 
-		m, err := monster.NewProcessor(l, ctx).GetById(e.UniqueId)
+		m, err := monsterGetByIdFn(l, ctx, e.UniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve monster [%d] for aggro change.", e.UniqueId)
 			return
 		}
-		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, e.Body.ControllerHasAggro))
+		sf := func(s session.Model) error {
+			return announceFn(l, ctx, wp, monsterpkt.MonsterControlWriter, writer.StartControlMonsterBody(m, e.Body.ControllerHasAggro), s)
+		}
 		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ControllerCharacterId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to refresh control state for monster [%d] for character [%d].", e.UniqueId, e.Body.ControllerCharacterId)

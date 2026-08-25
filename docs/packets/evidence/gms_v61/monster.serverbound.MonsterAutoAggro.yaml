@@ -1,0 +1,10 @@
+packet: monster/serverbound/MonsterAutoAggro
+direction: serverbound
+version: gms_v61
+category: TIER1-FIXTURE
+ida:
+    function: CMob::ApplyControl
+    address: "0x5ccf1c"
+    decompile_sha256: 56d7ff1d9c7f41128fef3ddecabf2c25ec5244338b2dd22e7d0c79c84474e0dc
+verifies:
+    - libs/atlas-packet/monster/serverbound/auto_aggro_test.go#TestAutoAggro

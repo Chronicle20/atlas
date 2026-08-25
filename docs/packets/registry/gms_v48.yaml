@@ -1831,6 +1831,14 @@
   provenance: ida-discovered
   ida:
     address: 7395936
+- op: AUTO_AGGRO
+  direction: serverbound
+  opcode: 130
+  fname: CMob::ApplyControl
+  provenance: ida-discovered
+  ida:
+    address: 5577849
+  note: 'task-255: the registry had NO AUTO_AGGRO entry for this version — the ops CSVs have no column before GMS v83, which is a CSV blind spot, not a client absence. CMob::ApplyControl @0x551c79 builds COutPacket(130) and encodes Encode4(fused mobId)+Encode4(proximity score). Adjacent to MOB_DROP_PICKUP_REQUEST=131.'
 - op: MOB_DROP_PICKUP_REQUEST
   direction: serverbound
   opcode: 131

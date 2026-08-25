@@ -29648,6 +29648,22 @@
           "guard": "quick != 0"
         }
       ]
+    },
+    "CMob::ApplyControl": {
+      "address": "0x684492",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a2 - result >= 1000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a2 - result >= 1000"
+        }
+      ]
     }
   }
 }

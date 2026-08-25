@@ -35,6 +35,7 @@ func Clone(m Model) *ModelBuilder {
 		statusEffects:      effects,
 		nextSkillDecision:  m.nextSkillDecision,
 		lastDamageTakenMs:  m.lastDamageTakenMs,
+		aggroRefreshedMs:   m.aggroRefreshedMs,
 		spawnSourceType:    m.spawnSourceType,
 		spawnSourceId:      m.spawnSourceId,
 	}
@@ -63,6 +64,7 @@ type ModelBuilder struct {
 	statusEffects      []StatusEffect
 	nextSkillDecision  nextSkillDecision
 	lastDamageTakenMs  int64
+	aggroRefreshedMs   int64
 	spawnSourceType    string
 	spawnSourceId      string
 }
@@ -126,6 +128,12 @@ func (b *ModelBuilder) SetNextSkillDecision(d nextSkillDecision) *ModelBuilder {
 // recovery task's HP-regen idle gate.
 func (b *ModelBuilder) SetLastDamageTakenMs(v int64) *ModelBuilder {
 	b.lastDamageTakenMs = v
+	return b
+}
+
+// SetAggroRefreshedMs sets the aggro lease stamp.
+func (b *ModelBuilder) SetAggroRefreshedMs(v int64) *ModelBuilder {
+	b.aggroRefreshedMs = v
 	return b
 }
 
@@ -227,6 +235,7 @@ func (b *ModelBuilder) Build() Model {
 		statusEffects:      b.statusEffects,
 		nextSkillDecision:  b.nextSkillDecision,
 		lastDamageTakenMs:  b.lastDamageTakenMs,
+		aggroRefreshedMs:   b.aggroRefreshedMs,
 		spawnSourceType:    b.spawnSourceType,
 		spawnSourceId:      b.spawnSourceId,
 	}

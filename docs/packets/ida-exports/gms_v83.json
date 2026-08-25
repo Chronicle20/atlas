@@ -16466,6 +16466,20 @@
       "direction": "serverbound",
       "notes": "task-241 Task 28, gms_v83 anchor. DUEY_ACTION mode 7 (CLOSE). COutPacket(&pkt, 65) @0x6f56a6; Encode1(7) @0x6f56b4; no further bytes -- the mode byte itself is written by the shared Action wrapper (action.go), not ActionClose. Atlas struct: parcel/serverbound/action_parcel_id.go ActionClose.",
       "calls": []
+    },
+    "CMob::ApplyControl": {
+      "address": "0x66e146",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": ""
+        },
+        {
+          "op": "Decode4",
+          "comment": ""
+        }
+      ]
     }
   }
 }

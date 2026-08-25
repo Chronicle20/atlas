@@ -71,6 +71,38 @@ func TestForceControlCommandProviderShape(t *testing.T) {
 	}
 }
 
+func TestSetAggroCommandProviderShape(t *testing.T) {
+	msgs, err := SetAggroCommandProvider(magnetTestField(), 4242, 777)()
+	if err != nil {
+		t.Fatalf("provider returned error: %v", err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("provider produced %d messages, want 1", len(msgs))
+	}
+
+	var c monster2.Command[monster2.SetAggroCommandBody]
+	if err := json.Unmarshal(msgs[0].Value, &c); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if c.Type != monster2.CommandTypeSetAggro {
+		t.Fatalf("Type = %q, want %q", c.Type, monster2.CommandTypeSetAggro)
+	}
+	if c.MonsterId != 4242 {
+		t.Fatalf("MonsterId = %d, want 4242", c.MonsterId)
+	}
+	if c.Body.CharacterId != 777 {
+		t.Fatalf("Body.CharacterId = %d, want 777", c.Body.CharacterId)
+	}
+
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(msgs[0].Value, &raw); err != nil {
+		t.Fatalf("unmarshal raw: %v", err)
+	}
+	if string(raw["body"]) != `{"characterId":777}` {
+		t.Fatalf("body = %s, want {\"characterId\":777}", raw["body"])
+	}
+}
+
 // TestMonsterCommandsShareMonsterKey pins the ordering contract: both commands
 // key on the monster id, so CLEAR_AGGRO then FORCE_CONTROL for the same monster
 // land on the same partition in emit order. Reversing them would have the wipe

@@ -238,6 +238,28 @@ jobs:
       - name: npc-conversation contract mirror guard
         run: ./tools/npc-conversation-contract-mirror-guard.sh
 
+  # ============================================
+  # Toolchain Pin Guard
+  # Asserts every Go/Alpine/golangci-lint pin site agrees with
+  # tools/toolchain.versions. The versions are duplicated across ~110 sites
+  # (103 go.mod directives, go.work, 4 Dockerfile ARGs, 2 bake vars, 7 CI
+  # pins, README) that no file format can cross-reference, so a partially
+  # landed bump leaves the tree building against two Go versions with nothing
+  # failing. task-261.
+  # ============================================
+  toolchain-pin-guard:
+    name: Toolchain Pin Guard
+    needs: detect-changes
+    if: needs.detect-changes.outputs.deploy-only != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: toolchain pin guard
+        run: ./tools/toolchain-pin-guard.sh
+
   # LB Port Drift Guard
   # Regenerates the per-version login/channel LB
   # socket port manifests from versions.json and

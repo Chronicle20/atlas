@@ -201,6 +201,16 @@ rather than type-checks, so it is seconds, not minutes, and is not worth gating.
 **Registration lists** — `service-registration-guard.sh`, when `services.json`,
 `deploy/k8s/`, `docker-bake.hcl`, `go.work`, or `tools/db-bootstrap.sh` changed.
 
+**Toolchain pins** — `toolchain-pin-guard.sh`, when a `go.mod`, `go.work`,
+`Dockerfile`, `docker-bake.hcl`, anything under `.github/`, `README.md`,
+`tools/toolchain.versions`, or the guard's own source changed. Asserts every Go
+/ Alpine / golangci-lint pin site agrees with `tools/toolchain.versions`.
+Silent failure it prevents: a partially landed toolchain bump leaves the tree
+building against two Go versions at once with nothing failing — which is how the
+1.24/1.25/1.26 spread task-261 collapsed came to exist. The `tools/cideps`
+fixtures are exempt by path prefix (FR-7); the synthesized workspace directive
+in `Dockerfile` is derived from `ARG GO_VERSION`, not checked.
+
 **Tenant socket-config templates** (`services/atlas-configurations/seed-data/templates/`) —
 see [`docs/packets/TEMPLATE_CONVENTIONS.md`](packets/TEMPLATE_CONVENTIONS.md):
 

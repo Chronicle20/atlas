@@ -1,0 +1,17 @@
+# tools/toolchain.versions — the single source of truth for the repo's
+# toolchain pins (task-261). Shell-sourceable KEY=value; read by tools/lint.sh,
+# .claude/hooks/format-on-write.sh, tools/toolchain-pin-guard.sh, and hashed by
+# the CI lint-tools cache key.
+#
+# Nothing here is read at build time by go.mod, go.work, Dockerfile ARG
+# defaults, or docker-bake.hcl — none of those formats can read an external
+# file. Those pins are duplicated on purpose and machine-checked against this
+# file by tools/toolchain-pin-guard.sh. Bump here, run the guard, fix what it
+# names.
+#
+# gofumpt/goimports versions are embedded in the golangci-lint release;
+# Prettier is pinned exactly in services/atlas-ui/package.json (package.json +
+# lockfile own Node tooling). Originally tools/lint.versions (task-171).
+GO_VERSION=1.27.0
+ALPINE_VERSION=3.24
+GOLANGCI_LINT_VERSION=v2.13.1

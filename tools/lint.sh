@@ -16,8 +16,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-# shellcheck source=lint.versions
-source "$ROOT/tools/lint.versions"
+# shellcheck source=toolchain.versions
+source "$ROOT/tools/toolchain.versions"
 
 NODE_MAJOR_REQUIRED=22
 
@@ -35,7 +35,7 @@ Usage: tools/lint.sh [--check] [--fmt] [--go|--ui] [--base <rev>] [path ...]
   path ...      restrict Go module discovery to modules under these paths
                 (CI passes changed module paths). No paths = whole tree.
 
-Versions are pinned in tools/lint.versions. Exit: 0 clean, 1 violations, 2 usage.
+Versions are pinned in tools/toolchain.versions. Exit: 0 clean, 1 violations, 2 usage.
 EOF
 }
 

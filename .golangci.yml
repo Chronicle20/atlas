@@ -9,7 +9,7 @@ version: "2"
 linters:
   # The v2 `standard` default group: errcheck, govet, ineffassign,
   # staticcheck, unused. Membership is fixed by the version pin in
-  # tools/lint.versions.
+  # tools/toolchain.versions.
   default: standard
 
 formatters:

@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"strconv"
+	"strings"
 )
 
 type Node struct {
@@ -26,9 +27,42 @@ func (n *Node) ChildByName(name string) (*Node, error) {
 	return nil, errors.New("child not found")
 }
 
+// resolve walks a slash-separated path (e.g. "banMap/0/field") through
+// ChildNodes for each leading segment and returns the node holding the final
+// segment together with that final segment's own name, so callers can look
+// it up among the leaf node's typed children (IntegerNodes/StringNodes/...).
+// A name with no "/" is returned unchanged (node=n, leaf=name), which keeps
+// today's exact-match behavior byte-identical for every existing call site.
+// An unresolvable intermediate segment returns (nil, "").
+func (n *Node) resolve(path string) (*Node, string) {
+	if !strings.Contains(path, "/") {
+		return n, path
+	}
+	parts := strings.Split(path, "/")
+	cur := n
+	for _, seg := range parts[:len(parts)-1] {
+		next := (*Node)(nil)
+		for i := range cur.ChildNodes {
+			if cur.ChildNodes[i].Name == seg {
+				next = &cur.ChildNodes[i]
+				break
+			}
+		}
+		if next == nil {
+			return nil, ""
+		}
+		cur = next
+	}
+	return cur, parts[len(parts)-1]
+}
+
 func (n *Node) GetShort(name string, def uint16) uint16 {
-	for _, c := range n.IntegerNodes {
-		if c.Name == name {
+	node, leaf := n.resolve(name)
+	if node == nil {
+		return def
+	}
+	for _, c := range node.IntegerNodes {
+		if c.Name == leaf {
 			res, err := strconv.ParseUint(c.Value, 10, 16)
 			if err != nil {
 				return def
@@ -36,8 +70,8 @@ func (n *Node) GetShort(name string, def uint16) uint16 {
 			return uint16(res)
 		}
 	}
-	for _, c := range n.StringNodes {
-		if c.Name == name {
+	for _, c := range node.StringNodes {
+		if c.Name == leaf {
 			res, err := strconv.ParseUint(c.Value, 10, 16)
 			if err != nil {
 				return def
@@ -49,8 +83,12 @@ func (n *Node) GetShort(name string, def uint16) uint16 {
 }
 
 func (n *Node) GetBool(name string, def bool) bool {
-	for _, c := range n.IntegerNodes {
-		if c.Name == name {
+	node, leaf := n.resolve(name)
+	if node == nil {
+		return def
+	}
+	for _, c := range node.IntegerNodes {
+		if c.Name == leaf {
 			res, err := strconv.ParseUint(c.Value, 10, 16)
 			if err != nil {
 				return def
@@ -58,8 +96,8 @@ func (n *Node) GetBool(name string, def bool) bool {
 			return res == 1
 		}
 	}
-	for _, c := range n.StringNodes {
-		if c.Name == name {
+	for _, c := range node.StringNodes {
+		if c.Name == leaf {
 			res, err := strconv.ParseUint(c.Value, 10, 16)
 			if err != nil {
 				return def
@@ -71,8 +109,12 @@ func (n *Node) GetBool(name string, def bool) bool {
 }
 
 func (n *Node) GetString(name string, def string) string {
-	for _, c := range n.StringNodes {
-		if c.Name == name {
+	node, leaf := n.resolve(name)
+	if node == nil {
+		return def
+	}
+	for _, c := range node.StringNodes {
+		if c.Name == leaf {
 			return c.Value
 		}
 	}
@@ -80,8 +122,12 @@ func (n *Node) GetString(name string, def string) string {
 }
 
 func (n *Node) GetIntegerWithDefault(name string, def int32) int32 {
-	for _, c := range n.IntegerNodes {
-		if c.Name == name {
+	node, leaf := n.resolve(name)
+	if node == nil {
+		return def
+	}
+	for _, c := range node.IntegerNodes {
+		if c.Name == leaf {
 			res, err := strconv.ParseInt(c.Value, 10, 32)
 			if err != nil {
 				return def
@@ -89,8 +135,8 @@ func (n *Node) GetIntegerWithDefault(name string, def int32) int32 {
 			return int32(res)
 		}
 	}
-	for _, c := range n.StringNodes {
-		if c.Name == name {
+	for _, c := range node.StringNodes {
+		if c.Name == leaf {
 			res, err := strconv.ParseInt(c.Value, 10, 32)
 			if err != nil {
 				return def
@@ -102,8 +148,12 @@ func (n *Node) GetIntegerWithDefault(name string, def int32) int32 {
 }
 
 func (n *Node) GetFloatWithDefault(name string, def float64) float64 {
-	for _, c := range n.IntegerNodes {
-		if c.Name == name {
+	node, leaf := n.resolve(name)
+	if node == nil {
+		return def
+	}
+	for _, c := range node.IntegerNodes {
+		if c.Name == leaf {
 			res, err := strconv.ParseFloat(c.Value, 64)
 			if err != nil {
 				return def
@@ -111,8 +161,8 @@ func (n *Node) GetFloatWithDefault(name string, def float64) float64 {
 			return res
 		}
 	}
-	for _, c := range n.StringNodes {
-		if c.Name == name {
+	for _, c := range node.StringNodes {
+		if c.Name == leaf {
 			res, err := strconv.ParseFloat(c.Value, 64)
 			if err != nil {
 				return def
@@ -124,8 +174,12 @@ func (n *Node) GetFloatWithDefault(name string, def float64) float64 {
 }
 
 func (n *Node) GetDouble(name string, def float64) float64 {
-	for _, c := range n.DoubleNodes {
-		if c.Name == name {
+	node, leaf := n.resolve(name)
+	if node == nil {
+		return def
+	}
+	for _, c := range node.DoubleNodes {
+		if c.Name == leaf {
 			// Replace comma with period for proper float parsing
 			value := c.Value
 			for i := 0; i < len(value); i++ {
@@ -145,8 +199,12 @@ func (n *Node) GetDouble(name string, def float64) float64 {
 }
 
 func (n *Node) GetPoint(name string, defX int32, defY int32) (int32, int32) {
-	for _, c := range n.PointNodes {
-		if c.Name == name {
+	node, leaf := n.resolve(name)
+	if node == nil {
+		return defX, defY
+	}
+	for _, c := range node.PointNodes {
+		if c.Name == leaf {
 			x, err := strconv.ParseInt(c.X, 10, 32)
 			if err != nil {
 				return defX, defY

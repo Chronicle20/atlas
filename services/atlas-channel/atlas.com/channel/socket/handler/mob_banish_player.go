@@ -17,6 +17,8 @@ func MobBanishPlayerHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writ
 		p := serverbound.MobBanishPlayer{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
-		_ = monster.NewProcessor(l, ctx).Banish(s.Field(), s.CharacterId(), p.MobTemplateId())
+		if err := monster.NewProcessor(l, ctx).Banish(s.Field(), s.CharacterId(), p.MobTemplateId()); err != nil {
+			l.WithError(err).Warnf("Character [%d] not banished by template [%d].", s.CharacterId(), p.MobTemplateId())
+		}
 	}
 }

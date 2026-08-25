@@ -1539,3 +1539,40 @@ func TestReaderCoolDamageAbsentDefaultsZero(t *testing.T) {
 		t.Fatalf("CoolDamage=%+v, want %+v", rm.CoolDamage, coolDamage{0, 0})
 	}
 }
+
+func TestReaderBanishPopulated(t *testing.T) {
+	tt := testTenant()
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), tt)
+
+	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(5090000), name: "Shade"})
+
+	body := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="5090000.img">
+  <imgdir name="info">
+    <int name="maxHP" value="100"/>
+    <imgdir name="ban">
+      <string name="banMsg" value="As the Pentacle swayed in the shadows, you were brought to the Subway Ticketing Booth."/>
+      <imgdir name="banMap">
+        <imgdir name="0">
+          <int name="field" value="103000100"/>
+          <string name="portal" value="sp"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(body)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := banish{
+		Message:    "As the Pentacle swayed in the shadows, you were brought to the Subway Ticketing Booth.",
+		MapId:      103000100,
+		PortalName: "sp",
+	}
+	if rm.Banish != want {
+		t.Fatalf("Banish=%+v, want %+v", rm.Banish, want)
+	}
+}

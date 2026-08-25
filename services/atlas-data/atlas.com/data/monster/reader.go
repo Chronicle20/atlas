@@ -78,7 +78,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 			m.CoolDamage = getCoolDamage(node)
 			m.LoseItems = getLoseItems(node)
 			m.SelfDestruction = getSelfDestruction(node)
-			m.FirstAttack = getFirstAttack(node)
+			m.FirstAttack = node.GetIntegerWithDefault("firstAttack", 0) > 0
 			m.DropPeriod = uint32(node.GetIntegerWithDefault("dropItemPeriod", 0) * 10000)
 			hpBarBoss := getHPBarBoss(t, monsterId)
 			if hpBarBoss {
@@ -193,14 +193,6 @@ func getHPBarBoss(t tenant.Model, monsterId uint32) bool {
 		return false
 	}
 	return g.Exists()
-}
-
-func getFirstAttack(node *xml.Node) bool {
-	c, err := node.ChildByName("firstAttack")
-	if err != nil {
-		return false
-	}
-	return math.Round(c.GetFloatWithDefault("firstAttack", 0)) > 0
 }
 
 func getSelfDestruction(node *xml.Node) selfDestruction {

@@ -1255,8 +1255,8 @@ func TestReader(t *testing.T) {
 	if rm.FixedStance != 5 {
 		t.Errorf("FixedStance mismatch: got %d, expected 5", rm.FixedStance)
 	}
-	if rm.FirstAttack != false {
-		t.Errorf("FirstAttack mismatch: got %t, expected false", rm.FirstAttack)
+	if rm.FirstAttack != true {
+		t.Errorf("FirstAttack mismatch: got %t, expected true", rm.FirstAttack)
 	}
 	if rm.DropPeriod != 0 {
 		t.Errorf("DropPeriod mismatch: got %d, expected 0", rm.DropPeriod)
@@ -1493,5 +1493,26 @@ func TestReaderFixedDamage(t *testing.T) {
 	}
 	if rm2.FixedDamage != 0 {
 		t.Fatalf("FixedDamage=%d, want 0", rm2.FixedDamage)
+	}
+}
+
+func TestReaderFirstAttackAbsentDefaultsFalse(t *testing.T) {
+	tt := testTenant()
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), tt)
+
+	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(9300316), name: "FakeNoFirstAttack"})
+
+	body := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="9300316.img">
+  <imgdir name="info"><int name="maxHP" value="100"/></imgdir>
+</imgdir>`
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(body)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rm.FirstAttack != false {
+		t.Fatalf("FirstAttack=%t, want false", rm.FirstAttack)
 	}
 }

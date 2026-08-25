@@ -271,7 +271,7 @@ Tool: `7d9951e5dadc9eb47411c89af5d01b0e8f1edb8f276d431688d2992092608d61`
 | GUILD_MARK_CHANGED | CUserRemote::OnGuildMarkChanged | guild/clientbound/GuildForeignEmblemChanged (T1) |  | ⬜ | 0x09E | ✅ | 0x0B9 | ✅ | 0x0BD | ✅ | 0x0CB | ✅ | 0x0CF | ✅ | 0x0D8 | ✅ | 0x0E7 | ❌ | 0x0E5 | ✅ | 0x0D1 | ✅ |
 | PYRAMID_SCORE | CField_MassacreResult::OnMassacreResult | field/clientbound/FieldPyramidScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09E | ✅ | 0x0A1 | ✅ | 0x0A6 | ✅ | 0x0AD | ❌ | 0x0AE | ✅ | 0x09A | ✅ |
 | SPAWN_MONSTER | CMobPool::OnMobEnterField | monster/clientbound/MonsterSpawn (T1) | 0x09E | ✅ | 0x0AF | ✅ | 0x0D0 | ✅ | 0x0D6 | ✅ | 0x0EC | ✅ | 0x0F2 | ✅ | 0x0FC | ✅ | 0x114 | ❌ | 0x11C | ✅ | 0x0FD | ✅ |
-| KILL_MONSTER | CMobPool::OnMobLeaveField | monster/clientbound/MonsterDestroy (T1) | 0x09F | ❌ | 0x0B0 | ✅ | 0x0D1 | ✅ | 0x0D7 | ✅ | 0x0ED | ✅ | 0x0F3 | ✅ | 0x0FD | ✅ | 0x115 | 🟡ᶠ | 0x11D | ✅ | 0x0FE | ✅ |
+| KILL_MONSTER | CMobPool::OnMobLeaveField | monster/clientbound/MonsterDestroy (T1) | 0x09F | ❌ | 0x0B0 | ✅ | 0x0D1 | ✅ | 0x0D7 | ✅ | 0x0ED | ✅ | 0x0F3 | ✅ | 0x0FD | ✅ | 0x115 | ✅ | 0x11D | ✅ | 0x0FE | ✅ |
 | QUICKSLOT_INIT | CQuickslotKeyMappedMan::OnInit |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x09F | ❌ | 0x09F | ❌ | 0x0A7 | ❌ | 0x0AE | ❌ | 0x0AF | ❌ | 0x09B | ❌ |
 | THROW_GRENADE | CUserRemote::OnThrowGrenade |  |  | ⬜ | 0x09F | ❌ | 0x0BA | ❌ | 0x0BE | ❌ | 0x0CC | ❌ | 0x0D0 | ❌ | 0x0D9 | ❌ | 0x0E8 | ❌ | 0x0E6 | ❌ | 0x0D2 | ❌ |
 | CANCEL_CHAIR | CUserLocal::OnSitResult | character/clientbound/CharacterSitResult (T1) |  | ⬜ | 0x0A0 | ✅ | 0x0BB | ✅ | 0x0BF | ✅ | 0x0CD | ✅ | 0x0D1 | ✅ | 0x0DA | ✅ | 0x0E9 | ❌ | 0x0E7 | ✅ | 0x0D3 | ✅ |
@@ -1068,7 +1068,7 @@ Tool: `7d9951e5dadc9eb47411c89af5d01b0e8f1edb8f276d431688d2992092608d61`
 | v83 | 475 | 0 | 0 | 322 | 228 | 0 | 59.6% |
 | v84 | 449 | 0 | 0 | 329 | 247 | 0 | 57.7% |
 | v87 | 483 | 0 | 0 | 352 | 190 | 0 | 57.8% |
-| v92 | 59 | 0 | 148 | 677 | 141 | 0 | 6.7% |
+| v92 | 60 | 0 | 147 | 677 | 141 | 0 | 6.8% |
 | v95 | 508 | 0 | 0 | 411 | 106 | 0 | 55.3% |
 | JMS185 | 449 | 0 | 0 | 379 | 197 | 0 | 54.2% |
 

@@ -95,22 +95,27 @@ func Extract(rm RestModel) (Model, error) {
 	for _, a := range rm.Attacks {
 		attacks = append(attacks, AttackInfo{Pos: a.Pos, ConMP: a.ConMP, AttackAfter: a.AttackAfter})
 	}
+	// Presence: the absent block and the present-but-omitted-field defaults are
+	// both -1 (atlas-data monster/reader.go getSelfDestruction, task-253 D2), so
+	// a block is present iff at least one of the two predicates was written.
+	sdPresent := rm.SelfDestruction.Hp > -1 || rm.SelfDestruction.RemoveAfter > -1
 	return Model{
-		hp:             rm.Hp,
-		mp:             rm.Mp,
-		boss:           rm.Boss,
-		undead:         rm.Undead,
-		friendly:       rm.Friendly,
-		firstAttack:    rm.FirstAttack,
-		weaponAttack:   rm.WeaponAttack,
-		dropPeriod:     rm.DropPeriod,
-		resistances:    rm.Resistances,
-		animationTimes: rm.AnimationTimes,
-		skills:         skills,
-		attacks:        attacks,
-		revives:        rm.Revives,
-		banish:         Banish{Message: rm.Banish.Message, MapId: rm.Banish.MapId, PortalName: rm.Banish.PortalName},
-		hpRecovery:     rm.HpRecovery,
-		mpRecovery:     rm.MpRecovery,
+		hp:              rm.Hp,
+		mp:              rm.Mp,
+		boss:            rm.Boss,
+		undead:          rm.Undead,
+		friendly:        rm.Friendly,
+		firstAttack:     rm.FirstAttack,
+		weaponAttack:    rm.WeaponAttack,
+		dropPeriod:      rm.DropPeriod,
+		resistances:     rm.Resistances,
+		animationTimes:  rm.AnimationTimes,
+		skills:          skills,
+		attacks:         attacks,
+		revives:         rm.Revives,
+		banish:          Banish{Message: rm.Banish.Message, MapId: rm.Banish.MapId, PortalName: rm.Banish.PortalName},
+		selfDestruction: NewSelfDestruction(sdPresent, rm.SelfDestruction.Action, rm.SelfDestruction.RemoveAfter, rm.SelfDestruction.Hp),
+		hpRecovery:      rm.HpRecovery,
+		mpRecovery:      rm.MpRecovery,
 	}, nil
 }

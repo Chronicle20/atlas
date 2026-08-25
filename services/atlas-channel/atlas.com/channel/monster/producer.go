@@ -188,6 +188,25 @@ func KillCommandProvider(f field.Model, monsterId uint32, characterId uint32) mo
 	return producer.SingleMessageProvider(key, value)
 }
 
+// SelfDestructCommandProvider asks atlas-monsters to detonate a monster.
+// Keyed on the monster id like every other monster command, so a contact
+// report lands on the same partition as the damage that preceded it.
+func SelfDestructCommandProvider(f field.Model, monsterId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(monsterId))
+	value := &monster2.Command[monster2.SelfDestructCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		MonsterId: monsterId,
+		Type:      monster2.CommandTypeSelfDestruct,
+		Body: monster2.SelfDestructCommandBody{
+			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // ClearAggroCommandProvider asks atlas-monsters to fully wipe the monster's
 // damage-aggro table. Keyed on the monster id like every other monster command,
 // so it is ordered against ForceControlCommandProvider for the same monster.

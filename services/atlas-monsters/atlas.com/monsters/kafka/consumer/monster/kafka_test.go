@@ -100,3 +100,26 @@ func TestSpawnFieldCommandBody_Decode(t *testing.T) {
 		t.Errorf("Team = %d, want 0", body.Team)
 	}
 }
+
+func TestSelfDestructCommandUnmarshal(t *testing.T) {
+	raw := []byte(`{"worldId":0,"channelId":1,"mapId":100000000,"monsterId":7001,"type":"SELF_DESTRUCT","body":{"characterId":4242}}`)
+	var c command[selfDestructCommandBody]
+	if err := json.Unmarshal(raw, &c); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if c.Type != CommandTypeSelfDestruct {
+		t.Errorf("Type = %s, want %s", c.Type, CommandTypeSelfDestruct)
+	}
+	if c.MonsterId != 7001 {
+		t.Errorf("MonsterId = %d, want 7001", c.MonsterId)
+	}
+	if c.Body.CharacterId != 4242 {
+		t.Errorf("Body.CharacterId = %d, want 4242", c.Body.CharacterId)
+	}
+}
+
+func TestSelfDestructCommandTypeValue(t *testing.T) {
+	if CommandTypeSelfDestruct != "SELF_DESTRUCT" {
+		t.Fatalf("CommandTypeSelfDestruct = %s, want SELF_DESTRUCT", CommandTypeSelfDestruct)
+	}
+}

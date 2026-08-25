@@ -25487,8 +25487,7 @@
           "opcode": 253
         },
         "gms_v92": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 277
         },
         "gms_v95": {

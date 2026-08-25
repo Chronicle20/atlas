@@ -3,14 +3,15 @@ package information
 // ModelBuilder provides a minimal fluent interface for constructing Model
 // instances in tests. Only the fields tests need are settable.
 type ModelBuilder struct {
-	skills      []Skill
-	attacks     []AttackInfo
-	hpRecovery  uint32
-	mpRecovery  uint32
-	boss        bool
-	firstAttack bool
-	resistances map[string]string
-	banish      Banish
+	skills          []Skill
+	attacks         []AttackInfo
+	selfDestruction SelfDestruction
+	hpRecovery      uint32
+	mpRecovery      uint32
+	boss            bool
+	firstAttack     bool
+	resistances     map[string]string
+	banish          Banish
 }
 
 // NewModelBuilder returns a new ModelBuilder with zero values.
@@ -71,6 +72,13 @@ func (b *ModelBuilder) SetBanish(banish Banish) *ModelBuilder {
 	return b
 }
 
+// SetSelfDestruction sets the WZ selfDestruction block on the builder. Used by
+// tests driving the HP-threshold and timer detonation paths.
+func (b *ModelBuilder) SetSelfDestruction(sd SelfDestruction) *ModelBuilder {
+	b.selfDestruction = sd
+	return b
+}
+
 // Build constructs an immutable Model from the builder state.
 func (b *ModelBuilder) Build() Model {
 	skills := b.skills
@@ -82,13 +90,14 @@ func (b *ModelBuilder) Build() Model {
 		attacks = []AttackInfo{}
 	}
 	return Model{
-		skills:      skills,
-		attacks:     attacks,
-		hpRecovery:  b.hpRecovery,
-		mpRecovery:  b.mpRecovery,
-		boss:        b.boss,
-		firstAttack: b.firstAttack,
-		resistances: b.resistances,
-		banish:      b.banish,
+		skills:          skills,
+		attacks:         attacks,
+		selfDestruction: b.selfDestruction,
+		hpRecovery:      b.hpRecovery,
+		mpRecovery:      b.mpRecovery,
+		boss:            b.boss,
+		firstAttack:     b.firstAttack,
+		resistances:     b.resistances,
+		banish:          b.banish,
 	}
 }

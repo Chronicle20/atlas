@@ -67,6 +67,7 @@ type Processor interface {
 	RepickAndEmit(uniqueId uint32, reason RepickReason) error
 	DrainMp(f field.Model, uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error
 	Kill(uniqueId uint32, characterId uint32)
+	SelfDestruct(uniqueId uint32, characterId uint32, trigger SelfDestructTrigger)
 	Catch(uniqueId uint32, characterId uint32, itemId uint32)
 	ClearAggro(uniqueId uint32) error
 	SetAggro(uniqueId uint32, characterId uint32) error
@@ -87,6 +88,35 @@ var testInformationLookup func(monsterId uint32) (information.Model, error)
 // testMobSkillLookup is a test-only override for mobskill.GetByIdAndLevel.
 // When nil (production), UseSkill calls mobskill.GetByIdAndLevel normally.
 var testMobSkillLookup func(skillId uint16, level uint16) (mobskill.Model, error)
+
+// SelfDestructTrigger names which of the four detonation paths fired. It is a
+// log/observability discriminator only — every trigger runs the identical
+// kill (task-253 design D5).
+type SelfDestructTrigger string
+
+const (
+	TriggerThreshold SelfDestructTrigger = "threshold"
+	TriggerTimer     SelfDestructTrigger = "timer"
+	TriggerContact   SelfDestructTrigger = "contact"
+)
+
+// monsterInformation resolves a monster template's information, honouring the
+// test-only lookup override. Kill already routed through the override; the
+// self-destruct paths and damageCore need the same seam because the threshold
+// and the animation both come from this data.
+func (p *ProcessorImpl) monsterInformation(monsterId uint32) (information.Model, error) {
+	return resolveMonsterInformation(p.l, p.ctx, monsterId)
+}
+
+// resolveMonsterInformation is the free-function form of monsterInformation,
+// honouring the same test-only lookup override, for callers that do not hold
+// a ProcessorImpl (the status expiration task's DoT tick).
+func resolveMonsterInformation(l logrus.FieldLogger, ctx context.Context, monsterId uint32) (information.Model, error) {
+	if testInformationLookup != nil {
+		return testInformationLookup(monsterId)
+	}
+	return information.NewProcessor(l, ctx).GetById(monsterId)
+}
 
 // ErrNoControllerCandidate reports that an election found no eligible
 // controller — a legitimate outcome when the field is empty of visible
@@ -222,7 +252,7 @@ func (p *ProcessorImpl) GetInFieldRect(f field.Model, x1, y1, x2, y2 int16, limi
 // Create creates a new monster in a field
 func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	p.l.Debugf("Attempting to create monster [%d] in field [%s].", input.MonsterId, f.Id())
-	ma, err := information.NewProcessor(p.l, p.ctx).GetById(input.MonsterId)
+	ma, err := p.monsterInformation(input.MonsterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve information necessary to create monster [%d].", input.MonsterId)
 		return Model{}, err
@@ -280,6 +310,19 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 			lastDropAt:   now,
 			lastHitAt:    time.Time{},
 		})
+	}
+
+	// FR-3.1/3.5: arm the detonation timer for a mob whose selfDestruction
+	// block carries no HP predicate. removeAfter is read as SECONDS, matching
+	// Cosmic MapleMap.java:1868 (task-253 design §2.4); a value <= 0 yields a
+	// fireAt of now, which the next sweep tick fires.
+	if sd := ma.SelfDestruction(); sd.OnTimer() {
+		delay := sd.RemoveAfter()
+		if delay < 0 {
+			delay = 0
+		}
+		p.l.Debugf("Arming self-destruct timer for monster [%d] (template [%d]) in [%d]s with action [%d].", m.UniqueId(), m.MonsterId(), delay, sd.Action())
+		GetSelfDestructTimerRegistry().Register(p.ctx, p.t, m.UniqueId(), NewSelfDestructTimerEntry(m.MonsterId(), f, sd.Action(), time.Now().Add(time.Duration(delay)*time.Second)))
 	}
 
 	return m, nil
@@ -566,13 +609,46 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 // boss guard, and deliberately never rolls reflect — the channel already
 // gated the triggering hit on reflect, and a kill "attack" has no attack
 // type.
+// finalizeKill is the single kill epilogue. Every death — ordinary damage,
+// Mortal Blow, and all three self-destruct triggers — runs exactly this
+// sequence, so a self-destruct cannot drift from an ordinary kill (task-253
+// design D5, FR-6.5). deathType is the wire dead-type the channel renders;
+// ordinary deaths pass DeathTypeFadeOut.
+func (p *ProcessorImpl) finalizeKill(m Model, killerId uint32, isBoss bool, revives []uint32, deathType string) {
+	GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
+	GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
+	GetDropTimerRegistry().Unregister(p.ctx, p.t, m.UniqueId())
+	GetSelfDestructTimerRegistry().Unregister(p.ctx, p.t, m.UniqueId())
+
+	// Emit cancellation events for any active status effects before death
+	for _, se := range m.StatusEffects() {
+		_ = p.emit(EnvEventTopicMonsterStatus, statusEffectCancelledEventProvider(m, se))
+	}
+
+	if err := p.emit(EnvEventTopicMonsterStatus, killedStatusEventProvider(m, killerId, isBoss, m.DamageSummary(), deathType)); err != nil {
+		p.l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the field.", m.UniqueId())
+	}
+	if _, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, m.UniqueId()); err != nil {
+		p.l.WithError(err).Errorf("Monster [%d] killed, but not removed from registry.", m.UniqueId())
+	}
+
+	// Boss revive: spawn next phase monsters
+	if len(revives) > 0 {
+		p.spawnRevives(m, revives)
+	}
+}
+
 func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32) {
-	// Fetch monster info for boss flag and revives
+	// Fetch monster info for boss flag, revives, and the self-destruct block.
+	// One lookup per damage event, already cache-served — the threshold check
+	// costs the hot path nothing (task-253 design D4).
 	var isBoss bool
 	var revives []uint32
-	if ma, infoErr := information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId()); infoErr == nil {
+	var sd information.SelfDestruction
+	if ma, infoErr := p.monsterInformation(m.MonsterId()); infoErr == nil {
 		isBoss = ma.Boss()
 		revives = ma.Revives()
+		sd = ma.SelfDestruction()
 	}
 
 	oldHpPercentage := m.HpPercentage()
@@ -624,27 +700,15 @@ func (p *ProcessorImpl) damageCore(m Model, characterId uint32, damages []uint32
 	}
 
 	if killed {
-		// Clear cooldowns and drop timer on death
-		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
-		GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, m.UniqueId())
-		GetDropTimerRegistry().Unregister(p.ctx, p.t, m.UniqueId())
+		p.finalizeKill(last.Monster, last.CharacterId, isBoss, revives, DeathTypeFadeOut)
+		return
+	}
 
-		// Emit cancellation events for any active status effects before death
-		for _, se := range last.Monster.StatusEffects() {
-			_ = p.emit(EnvEventTopicMonsterStatus, statusEffectCancelledEventProvider(last.Monster, se))
-		}
-
-		if err := p.emit(EnvEventTopicMonsterStatus, killedStatusEventProvider(last.Monster, last.CharacterId, isBoss, last.Monster.DamageSummary())); err != nil {
-			p.l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the field.", last.Monster.UniqueId())
-		}
-		if _, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, last.Monster.UniqueId()); err != nil {
-			p.l.WithError(err).Errorf("Monster [%d] killed, but not removed from registry.", last.Monster.UniqueId())
-		}
-
-		// Boss revive: spawn next phase monsters
-		if len(revives) > 0 {
-			p.spawnRevives(last.Monster, revives)
-		}
+	// FR-2.1/2.2/2.5: evaluated once per attack, after every line, and only
+	// when the attack did not already kill — so a mob that crosses its
+	// threshold produces exactly one death, never two.
+	if !killed && sd.OnHpThreshold() && int64(last.Monster.Hp()) <= int64(sd.Hp()) {
+		p.selfDestructFrom(last.Monster, last.CharacterId, deathTypeForAction(p.l, sd.Action()), TriggerThreshold)
 		return
 	}
 
@@ -745,7 +809,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 			_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(statusEffectCancelledEventProvider(s.Monster, se))
 		}
 
-		err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(killedStatusEventProvider(s.Monster, 0, false, s.Monster.DamageSummary()))
+		err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(killedStatusEventProvider(s.Monster, 0, false, s.Monster.DamageSummary(), DeathTypeFadeOut))
 		if err != nil {
 			p.l.WithError(err).Errorf("Friendly monster [%d] killed, but unable to emit killed event.", s.Monster.UniqueId())
 		}
@@ -1260,16 +1324,6 @@ func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId byte, 
 	}
 }
 
-// monsterInformation resolves a monster template's information, honoring the
-// test-only lookup hook so the banish paths are unit-testable without a live
-// atlas-data.
-func (p *ProcessorImpl) monsterInformation(monsterId uint32) (information.Model, error) {
-	if testInformationLookup != nil {
-		return testInformationLookup(monsterId)
-	}
-	return information.NewProcessor(p.l, p.ctx).GetById(monsterId)
-}
-
 // banishCharacter emits the two commands a banish is made of: the map change,
 // then the WZ banish message. Shared by the skill-129 path (executeBanish) and
 // the client-initiated path (Banish) so portal and message handling can never
@@ -1417,6 +1471,7 @@ func (p *ProcessorImpl) executeSummon(m Model, sd mobskill.Model) {
 
 // Destroy destroys a monster
 func (p *ProcessorImpl) Destroy(uniqueId uint32) error {
+	GetSelfDestructTimerRegistry().Unregister(p.ctx, p.t, uniqueId)
 	GetDropTimerRegistry().Unregister(p.ctx, p.t, uniqueId)
 	GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, uniqueId)
 	m, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, uniqueId)
@@ -1424,7 +1479,7 @@ func (p *ProcessorImpl) Destroy(uniqueId uint32) error {
 		return err
 	}
 
-	return producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(destroyedStatusEventProvider(m))
+	return producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(destroyedStatusEventProvider(m, DeathTypeUnset))
 }
 
 // DestroyInField destroys all monsters in a field
@@ -1838,13 +1893,7 @@ func (p *ProcessorImpl) Kill(uniqueId uint32, characterId uint32) {
 		return
 	}
 
-	var info information.Model
-	var infoErr error
-	if testInformationLookup != nil {
-		info, infoErr = testInformationLookup(m.MonsterId())
-	} else {
-		info, infoErr = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
-	}
+	info, infoErr := p.monsterInformation(m.MonsterId())
 	if infoErr != nil {
 		p.l.WithError(infoErr).Errorf("KILL: boss lookup failed for monster [%d]; dropping kill (fail-closed).", uniqueId)
 		return
@@ -1856,6 +1905,114 @@ func (p *ProcessorImpl) Kill(uniqueId uint32, characterId uint32) {
 
 	p.l.Debugf("Mortal Blow kill: monster [%d] by character [%d].", uniqueId, characterId)
 	p.damageCore(m, characterId, []uint32{math.MaxUint32})
+}
+
+// SelfDestruct detonates a monster with the animation its WZ selfDestruction
+// block specifies. It is the authoritative entry point for every externally
+// requested detonation (the SELF_DESTRUCT command, the timer sweep): it
+// re-derives every predicate rather than trusting the caller, because the
+// contact path originates in a client-controlled packet naming an arbitrary
+// id (task-253 design D7/D8). Every rejection is a silent debug-level drop.
+//
+// TriggerContact deliberately does not use the WZ action byte: it always
+// detonates with DeathTypeBomb. On v83, CMob::OnDie diverts dead-type 3 to a
+// dedicated one-time action (21) with no die1..dieN fallback, so contact
+// detonations that pass the WZ byte through render nothing at all for
+// templates without art for that action; only dead-types 2, 4, 5 reach
+// CMob::OnBomb, the explode action that also carries the attack that damages
+// the player. TriggerThreshold and TriggerTimer keep the WZ pass-through
+// (Cosmic parity — see docs/tasks/task-253-self-destructing-mobs/bug-darkstar-no-explosion-or-damage.md).
+func (p *ProcessorImpl) SelfDestruct(uniqueId uint32, characterId uint32, trigger SelfDestructTrigger) {
+	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+	if err != nil {
+		p.l.Debugf("SELF_DESTRUCT: monster [%d] not found.", uniqueId)
+		return
+	}
+	if !m.Alive() {
+		p.l.Debugf("SELF_DESTRUCT: monster [%d] already dead.", uniqueId)
+		return
+	}
+	ma, infoErr := p.monsterInformation(m.MonsterId())
+	if infoErr != nil {
+		p.l.WithError(infoErr).Debugf("SELF_DESTRUCT: information lookup failed for monster [%d]; dropping.", uniqueId)
+		return
+	}
+	sd := ma.SelfDestruction()
+	if !sd.Present() {
+		p.l.Debugf("SELF_DESTRUCT: monster [%d] (template [%d]) carries no selfDestruction block; dropping.", uniqueId, m.MonsterId())
+		return
+	}
+	deathType := deathTypeForAction(p.l, sd.Action())
+	if trigger == TriggerContact {
+		deathType = DeathTypeBomb
+	}
+	p.selfDestructFrom(m, characterId, deathType, trigger)
+}
+
+// deathTypeForAction maps the WZ selfDestruction.action byte to its
+// DeathType* semantic key at the point atlas-monsters reads it (DOM-25) --
+// downstream (the event body, the channel consumer) only ever sees the key,
+// never the raw wire byte. The mapping is 1:1 onto the closed DestroyType
+// enum (libs/atlas-packet monster/clientbound); an action outside 0..5 is not
+// expressible as a key, so it is logged and falls back to fade-out rather
+// than inventing one (task-253 fix-dom25 brief; D2 rejected pattern-matching
+// on action != 0).
+//
+// SelfDestruct's TriggerContact path does not use this function's result:
+// contact detonations always resolve to DeathTypeBomb regardless of the WZ
+// byte (see the SelfDestruct doc comment and
+// docs/tasks/task-253-self-destructing-mobs/bug-darkstar-no-explosion-or-damage.md).
+func deathTypeForAction(l logrus.FieldLogger, action byte) string {
+	switch action {
+	case 0:
+		return DeathTypeDisappear
+	case 1:
+		return DeathTypeFadeOut
+	case 2:
+		return DeathTypeBomb
+	case 3:
+		return DeathTypeDestructByMiss
+	case 4:
+		return DeathTypeSwallow
+	case 5:
+		return DeathTypeSelfDestruct
+	default:
+		l.Warnf("selfDestruction.action [%d] is outside the expressible 0..5 range; falling back to fade-out.", action)
+		return DeathTypeFadeOut
+	}
+}
+
+// selfDestructFrom is the shared detonation epilogue. Callers have already
+// established that the mob self-destructs; this owns the exactly-once
+// transition and the kill bookkeeping. deathType is the already-resolved
+// DeathType* semantic key (see deathTypeForAction).
+func (p *ProcessorImpl) selfDestructFrom(m Model, characterId uint32, deathType string, trigger SelfDestructTrigger) {
+	s, err := GetMonsterRegistry().SelfDestruct(p.t, m.UniqueId())
+	if err != nil {
+		p.l.WithError(err).Debugf("Self-destruct of monster [%d] failed; it is likely already gone.", m.UniqueId())
+		return
+	}
+	if !s.Killed {
+		p.l.Debugf("Self-destruct of monster [%d] lost the race; another trigger already detonated it.", m.UniqueId())
+		return
+	}
+
+	// FR-6.3: credit the triggering character, else the damage leader, else
+	// nobody. atlas-monster-death tolerates ActorId 0 and spawns unowned drops.
+	killerId := characterId
+	if killerId == 0 {
+		killerId = s.Monster.DamageLeader()
+	}
+
+	var isBoss bool
+	var revives []uint32
+	if ma, infoErr := p.monsterInformation(m.MonsterId()); infoErr == nil {
+		isBoss = ma.Boss()
+		revives = ma.Revives()
+	}
+
+	p.l.Debugf("Monster [%d] (template [%d]) self-destructed via [%s] with deathType [%s]; credited to character [%d].", m.UniqueId(), m.MonsterId(), trigger, deathType, killerId)
+	p.finalizeKill(s.Monster, killerId, isBoss, revives, deathType)
 }
 
 func DestroyAll(l logrus.FieldLogger, ctx context.Context) error {

@@ -39,6 +39,7 @@ func TestMain(m *testing.M) {
 	InitCooldownRegistry(rc)
 	InitMonsterRegistry(rc)
 	InitDropTimerRegistry(rc)
+	InitSelfDestructTimerRegistry(rc)
 	InitPuppetRegistry(rc)
 	hidden.InitRegistry(rc)
 

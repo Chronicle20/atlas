@@ -1365,7 +1365,7 @@ jobs:
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, go-analyzer-guards, npc-shop-contract-mirror-guard, npc-conversation-contract-mirror-guard, gen-lb-ports, gen-tenant-tables, mode-select, mode-report, service-registration-guard, shell-tooling-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, update-pr-overlay, go-analyzer-guards, npc-shop-contract-mirror-guard, npc-conversation-contract-mirror-guard, gen-lb-ports, gen-tenant-tables, mode-select, mode-report, service-registration-guard, shell-tooling-guard, toolchain-pin-guard, template-opcode-order-guard, template-movement-types-guard, skill-job-id-guard, atlas-constants-drift-guard, lint-go, lint-ui]
     if: always()
     runs-on: ubuntu-latest
 
@@ -1391,6 +1391,7 @@ jobs:
           MODE_REPORT_RESULT="${{ needs.mode-report.result }}"
           SVC_REG_GUARD_RESULT="${{ needs.service-registration-guard.result }}"
           SHELL_GUARD_RESULT="${{ needs.shell-tooling-guard.result }}"
+          TOOLCHAIN_PIN_GUARD_RESULT="${{ needs.toolchain-pin-guard.result }}"
           TMPL_ORDER_GUARD_RESULT="${{ needs.template-opcode-order-guard.result }}"
           TMPL_MOVE_GUARD_RESULT="${{ needs.template-movement-types-guard.result }}"
           SKILL_JOB_ID_GUARD_RESULT="${{ needs.skill-job-id-guard.result }}"
@@ -1442,7 +1443,7 @@ jobs:
           # but never to fail outright. Comparing against "failure" (not
           # against "success") is what makes a skip pass. That tolerance
           # is only safe because detect-changes was verified above.
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$ANALYZER_GUARDS_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$NPC_CONVERSATION_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$TENANT_TABLES_GUARD_RESULT" == "failure" ] || [ "$MODE_SELECT_GUARD_RESULT" == "failure" ] || [ "$MODE_REPORT_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$SHELL_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$OVERLAY_RESULT" == "failure" ] || [ "$ANALYZER_GUARDS_RESULT" == "failure" ] || [ "$NPC_SHOP_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$NPC_CONVERSATION_CONTRACT_GUARD_RESULT" == "failure" ] || [ "$LBPORTS_RESULT" == "failure" ] || [ "$TENANT_TABLES_GUARD_RESULT" == "failure" ] || [ "$MODE_SELECT_GUARD_RESULT" == "failure" ] || [ "$MODE_REPORT_RESULT" == "failure" ] || [ "$SVC_REG_GUARD_RESULT" == "failure" ] || [ "$SHELL_GUARD_RESULT" == "failure" ] || [ "$TOOLCHAIN_PIN_GUARD_RESULT" == "failure" ] || [ "$TMPL_ORDER_GUARD_RESULT" == "failure" ] || [ "$TMPL_MOVE_GUARD_RESULT" == "failure" ] || [ "$SKILL_JOB_ID_GUARD_RESULT" == "failure" ] || [ "$CONSTANTS_DRIFT_GUARD_RESULT" == "failure" ] || [ "$LINT_GO_RESULT" == "failure" ] || [ "$LINT_UI_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

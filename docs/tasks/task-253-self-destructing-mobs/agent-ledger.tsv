@@ -40,3 +40,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T17:02:15Z	agent	DOM-25 fix	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
 2026-08-21T17:12:33Z	agent	DOM-25 fix	atlas-implementer	sonnet	-	-	-	-	DONE	6f986eb88	-	-	-	-
 2026-08-21T17:20:31Z	agent	DOM-25 fix	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	6f986eb88	APPROVED	no	-	-
+2026-08-25T20:06:35Z	agent	bug-contact-bomb	atlas-implementer	sonnet	-	-	-	-	DONE	60ac906d9	-	-	-	-
+2026-08-25T21:48:38Z	agent	bug-contact-bomb	atlas-reviewer	sonnet	-	-	-	-	DONE	60ac906d9	APPROVED	false	-	-

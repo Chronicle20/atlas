@@ -198,4 +198,23 @@ path) and should be its own task.
 
 ## Resolution
 
-Unresolved. No fix dispatched; no commit.
+Fixed in **`60ac906d9`** — "fix(monsters): contact self-destructs detonate as bomb, not
+WZ action byte". `TriggerContact` now emits `DeathTypeBomb`; threshold and timer keep WZ
+pass-through. Covered by `TestSelfDestructContactAlwaysBomb`.
+
+Review: **APPROVED**, zero findings —
+[`reviews/review-bug-contact-bomb.md`](reviews/review-bug-contact-bomb.md). The reviewer
+independently confirmed the atlas-channel seam (`destroyCodeFor` → `DestroyMonsterBomb`)
+and that all 11 seed templates already carry `"BOMB": 2`.
+
+Gate: `tools/verify.sh --quick --base bbe808f7c` **FAILED at the lint guard only**, on
+pre-existing toolchain drift unrelated to this change — the pinned
+`golangci-lint-v2.12.2` is built with go1.26.1 and cannot type-check the go1.27 stdlib
+now on PATH (`panic: file requires newer Go version go1.27`). Confirmed environmental by
+running the same binary against `atlas-buffs`, a module this branch never touches: same
+panic. `go build`, `go vet`, and all tests passed. No `go.mod` in the repo declares
+go 1.27. **A gate fix is coming on a separate branch (reporter, 2026-08-25); the flagless
+gate must be re-run on this branch afterwards before task-253 is called done.**
+
+**Live re-test still outstanding.** Spawn `8500003` *away from* the character —
+`@mob spawn` places it underfoot and the contact trigger detonates it in ~27 ms.

@@ -246,17 +246,17 @@ images:
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-986993d
+    newTag: main-ad96556
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
     newTag: main-986993d
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
     newTag: main-986993d
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
-    newTag: main-93db3e2
+    newTag: main-ad96556
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-5b3c8a1
+    newTag: main-ad96556
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-dragons/atlas-dragons
@@ -290,7 +290,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-kites/atlas-kites
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-login/atlas-login
-    newTag: main-986993d
+    newTag: main-ad96556
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
     newTag: main-986993d
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
@@ -310,7 +310,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
-    newTag: main-93db3e2
+    newTag: main-ad96556
   - name: ghcr.io/chronicle20/atlas-mounts/atlas-mounts
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-mts/atlas-mts

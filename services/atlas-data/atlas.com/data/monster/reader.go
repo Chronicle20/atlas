@@ -124,7 +124,19 @@ func getBanish(node *xml.Node) banish {
 	}
 	message := b.GetString("banMsg", "")
 	mapId := uint32(b.GetIntegerWithDefault("banMap/0/field", 0))
-	portal := b.GetString("banMap/0/portal", "sp")
+	// WZ carries a typo for three GMS 83.1 templates — 9500194, 9500303,
+	// 9500304 — whose banMap/0 portal child is spelled "potal" instead of
+	// "portal". Swept across all serialized WZ scopes (GMS 48/61/72/79/83/
+	// 84/87/92/95.1, JMS 185.1); those three ids are the only occurrences
+	// and no other spelling exists. `portal` still wins when both are
+	// present. Do not "clean this up" without re-sweeping the WZ data.
+	portal := b.GetString("banMap/0/portal", "")
+	if portal == "" {
+		portal = b.GetString("banMap/0/potal", "")
+	}
+	if portal == "" {
+		portal = "sp"
+	}
 	return banish{
 		Message:    message,
 		MapId:      mapId,

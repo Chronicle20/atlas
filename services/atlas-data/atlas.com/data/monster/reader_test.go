@@ -1576,3 +1576,71 @@ func TestReaderBanishPopulated(t *testing.T) {
 		t.Fatalf("Banish=%+v, want %+v", rm.Banish, want)
 	}
 }
+
+// TestReaderBanishPortalTypo covers the `potal` WZ typo (three GMS 83.1
+// templates: 9500194, 9500303, 9500304) — reader.go must resolve
+// banMap/0/portal first, fall back to banMap/0/potal, and default to "sp"
+// only when neither is present.
+func TestReaderBanishPortalTypo(t *testing.T) {
+	tt := testTenant()
+	l, _ := test.NewNullLogger()
+
+	cases := []struct {
+		name       string
+		banMapBody string
+		want       string
+	}{
+		{
+			name: "portal wins when both spellings present",
+			banMapBody: `<imgdir name="0">
+          <int name="field" value="103000100"/>
+          <string name="portal" value="sp"/>
+          <string name="potal" value="out00"/>
+        </imgdir>`,
+			want: "sp",
+		},
+		{
+			name: "potal resolves when portal absent",
+			banMapBody: `<imgdir name="0">
+          <int name="field" value="103000100"/>
+          <string name="potal" value="out00"/>
+        </imgdir>`,
+			want: "out00",
+		},
+		{
+			name: "sp default when neither spelling present",
+			banMapBody: `<imgdir name="0">
+          <int name="field" value="103000100"/>
+        </imgdir>`,
+			want: "sp",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ctx := tenant.WithContext(context.Background(), tt)
+			_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(9500194), name: "Portal Typo Mob"})
+
+			body := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="9500194.img">
+  <imgdir name="info">
+    <int name="maxHP" value="100"/>
+    <imgdir name="ban">
+      <string name="banMsg" value="test"/>
+      <imgdir name="banMap">
+        ` + c.banMapBody + `
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+			rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(body)))()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rm.Banish.PortalName != c.want {
+				t.Fatalf("PortalName=%q, want %q", rm.Banish.PortalName, c.want)
+			}
+		})
+	}
+}

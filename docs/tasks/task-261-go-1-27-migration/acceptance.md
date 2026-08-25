@@ -386,18 +386,52 @@ read in full for this record. Summary of its content:
   base-image bump can auto-merge after this change, regardless of update
   type.
 
-## AC-15 — flagless `tools/verify.sh` (Addendum A2 — deferred)
+## AC-15 — flagless `tools/verify.sh`
 
-Per the controller's binding Addendum A2, the flagless `tools/verify.sh` is
-run concurrently by the controller in its own context, writing to
-`.superpowers/sdd/plan/gate-final-flagless.log`. Running it a second time
-here inside this implementer context is forbidden (a 91-module rebuild plus
-a docker bake), and reading a possibly-mid-run log would risk pasting a
-partial tail as false evidence. Per the addendum's exact instruction:
+**PASS.** Run by the controller in its own context (a 91-module rebuild plus a
+docker bake is out of scope inside an implementer context), against the full
+branch from the merge base `855fef4d1`. Log:
+`.superpowers/sdd/plan/gate-final-flagless.log`.
 
 ```
-AC-15: PENDING — controller's flagless tools/verify.sh run, log at .superpowers/sdd/plan/gate-final-flagless.log
+$ tools/verify.sh
+...
+  ✓ producer seam guard
+  ✓ service registration guard
+  ✓ toolchain pin guard
+  ✓ env domain guard
+  ✓ env bootstrap guard
+  ✓ shell tooling guard
+  ✓ verify_test.sh
+  ✓ wait-loop-guard_test.sh
+  ✓ mode select decision table
+  ✓ lint & format guard (91 module(s))
+
+All checks passed.
 ```
+
+Exit code 0.
+
+The flags are the point of this AC, so the coverage is counted rather than
+asserted — `--quick` / `--no-docker` also exit 0 but skip exactly the two
+things below, which is why neither satisfies AC-15:
+
+```
+$ grep -cE '✓' .superpowers/sdd/plan/gate-final-flagless.log
+171
+$ grep -cE '^.\[1m── go build/vet/test -race' .superpowers/sdd/plan/gate-final-flagless.log
+91
+$ grep -cE '^.\[1m── docker buildx bake' .superpowers/sdd/plan/gate-final-flagless.log
+67
+```
+
+171 checks green, `-race` over all 91 modules, and 67 real `docker buildx bake`
+service builds (the log shows `docker-bake.hcl 4.72kB` actually read from line
+2199 onward). The run carries no `docker bake was skipped — not a pre-PR pass`
+caveat, which every per-task `--quick` gate in this plan did.
+
+Note the `toolchain pin guard` line: the guard Tasks 7-8 added is itself
+exercised by this run, so AC-11's guard and AC-15's gate confirm each other.
 
 ## AC-16 — no unintended `.go` source change
 

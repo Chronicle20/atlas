@@ -61,6 +61,7 @@ func (m MonsterSpecialEffectBySkill) SkillId() int32     { return m.skillId }
 func (m MonsterSpecialEffectBySkill) CharacterId() int32 { return m.characterId }
 func (m MonsterSpecialEffectBySkill) Delay() uint16      { return m.delay }
 func (m MonsterSpecialEffectBySkill) Operation() string  { return MonsterSpecialEffectBySkillWriter }
+
 func (m MonsterSpecialEffectBySkill) String() string {
 	return fmt.Sprintf("skillId [%d], characterId [%d], delay [%d]", m.skillId, m.characterId, m.delay)
 }

@@ -69,11 +69,14 @@ func (b *ModelBuilder) SetNextHealAt(v time.Time) *ModelBuilder       { b.nextHe
 func (b *ModelBuilder) SetNextBuffAt(v time.Time) *ModelBuilder       { b.nextBuffAt = v; return b }
 func (b *ModelBuilder) SetHealAmount(v int16) *ModelBuilder           { b.healAmount = v; return b }
 func (b *ModelBuilder) SetHealInterval(v time.Duration) *ModelBuilder { b.healInterval = v; return b }
+
 func (b *ModelBuilder) SetBuffInterval(v time.Duration) *ModelBuilder { b.buffInterval = v; return b }
-func (b *ModelBuilder) SetBuffSourceId(v int32) *ModelBuilder         { b.buffSourceId = v; return b }
-func (b *ModelBuilder) SetBuffLevel(v byte) *ModelBuilder             { b.buffLevel = v; return b }
-func (b *ModelBuilder) SetBuffDuration(v int32) *ModelBuilder         { b.buffDuration = v; return b }
-func (b *ModelBuilder) SetBuffChanges(v []StatChange) *ModelBuilder   { b.buffChanges = v; return b }
+
+func (b *ModelBuilder) SetBuffSourceId(v int32) *ModelBuilder { b.buffSourceId = v; return b }
+func (b *ModelBuilder) SetBuffLevel(v byte) *ModelBuilder     { b.buffLevel = v; return b }
+func (b *ModelBuilder) SetBuffDuration(v int32) *ModelBuilder { b.buffDuration = v; return b }
+
+func (b *ModelBuilder) SetBuffChanges(v []StatChange) *ModelBuilder { b.buffChanges = v; return b }
 
 func (b *ModelBuilder) Build() Model {
 	return Model{

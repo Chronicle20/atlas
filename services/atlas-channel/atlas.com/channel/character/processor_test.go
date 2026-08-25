@@ -243,7 +243,7 @@ func TestProcessorImpl_PartyDecorator_NotInParty(t *testing.T) {
 
 func TestProcessorImpl_PartyDecorator_InterfaceContract(t *testing.T) {
 	// Compile-time assertion that PartyDecorator is on the interface.
-	var _ func(character.Model) character.Model = (mock.NewMockProcessor()).PartyDecorator
+	var _ func(character.Model) character.Model = mock.NewMockProcessor().PartyDecorator
 }
 
 func TestMonsterBookDecorator_FailOpen(t *testing.T) {

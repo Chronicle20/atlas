@@ -41,6 +41,23 @@ This document tracks planned features and improvements for the Atlas MapleStory 
     `.golangci.yml` carries an explanatory NOTE at the goimports settings. A
     durable fix (rename the package/dir to match, or switch the formatter to
     gci) can retire this convention.
+  - task-261 staticcheck QF1011 exclusion:
+    `services/atlas-channel/atlas.com/channel/character/processor_test.go`
+    carries `var _ func(character.Model) character.Model =
+    mock.NewMockProcessor().PartyDecorator`, a compile-time assertion that
+    `PartyDecorator` has exactly that signature. The go 1.27 / golangci-lint
+    v2.13.1 migration's gofumpt sweep reformatted that line (dropped a
+    redundant paren pair), which put it under `--new-from-rev` and surfaced
+    staticcheck's QF1011 "could omit type" suggestion. Applying QF1011 would
+    replace the explicit type with `var _ = ...`, which still compiles for
+    any signature `PartyDecorator` happens to have and so silently drops the
+    assertion — a behavioral change, not a mechanical one, so `.golangci.yml`
+    carries a path-scoped exclusion instead. Burn down by rewriting the
+    assertion in a form staticcheck accepts without weakening it (e.g. a
+    named `var partyDecorator func(character.Model) character.Model =
+    mock.NewMockProcessor().PartyDecorator` binding used elsewhere in the
+    test, or an explicit interface-conformance check), then remove the
+    exclusion.
 
 ## MTS backend-audit follow-up — pre-existing debt (from task-102)
 

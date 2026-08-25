@@ -31,7 +31,8 @@ func (r *RestModel) SetID(id string) error {
 // JSON:API reference interface methods. Required even though this resource has
 // no relationships we consume: api2go.Unmarshal errors out walking any
 // `relationships` block unless these exist (libs/atlas-rest/CLAUDE.md).
-func (r RestModel) GetReferences() []jsonapi.Reference                { return []jsonapi.Reference{} }
+func (r RestModel) GetReferences() []jsonapi.Reference { return []jsonapi.Reference{} }
+
 func (r RestModel) GetReferencedIDs() []jsonapi.ReferenceID           { return []jsonapi.ReferenceID{} }
 func (r *RestModel) SetToOneReferenceID(_ string, _ string) error     { return nil }
 func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }

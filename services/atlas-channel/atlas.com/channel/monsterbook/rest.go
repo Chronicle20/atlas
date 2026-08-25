@@ -92,7 +92,8 @@ func (r *CardRestModel) SetID(strId string) error {
 	return nil
 }
 
-func (r CardRestModel) GetReferences() []jsonapi.Reference                { return []jsonapi.Reference{} }
+func (r CardRestModel) GetReferences() []jsonapi.Reference { return []jsonapi.Reference{} }
+
 func (r CardRestModel) GetReferencedIDs() []jsonapi.ReferenceID           { return []jsonapi.ReferenceID{} }
 func (r *CardRestModel) SetToOneReferenceID(_ string, _ string) error     { return nil }
 func (r *CardRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }

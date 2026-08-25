@@ -61,7 +61,9 @@ type fakeProcessor struct {
 func (f fakeProcessor) ByCharacterIdProvider(uint32) model.Provider[ranking.Model] {
 	return func() (ranking.Model, error) { return ranking.Model{}, nil }
 }
+
 func (f fakeProcessor) GetByCharacterId(uint32) (ranking.Model, error) { return ranking.Model{}, nil }
+
 func (f fakeProcessor) ByCharacterIdsProvider([]uint32) model.Provider[[]ranking.Model] {
 	return func() ([]ranking.Model, error) { return nil, nil }
 }

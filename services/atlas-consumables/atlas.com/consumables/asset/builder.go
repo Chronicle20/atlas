@@ -184,10 +184,11 @@ func (b *ModelBuilder) RemoveFlag(f af.Flag) *ModelBuilder {
 	b.flag = af.ClearFlag(b.flag, f)
 	return b
 }
-func (b *ModelBuilder) SetLevelType(v byte) *ModelBuilder           { b.levelType = v; return b }
-func (b *ModelBuilder) SetLevel(v byte) *ModelBuilder               { b.level = v; return b }
-func (b *ModelBuilder) SetExperience(v uint32) *ModelBuilder        { b.experience = v; return b }
-func (b *ModelBuilder) SetHammersApplied(v uint32) *ModelBuilder    { b.hammersApplied = v; return b }
+func (b *ModelBuilder) SetLevelType(v byte) *ModelBuilder        { b.levelType = v; return b }
+func (b *ModelBuilder) SetLevel(v byte) *ModelBuilder            { b.level = v; return b }
+func (b *ModelBuilder) SetExperience(v uint32) *ModelBuilder     { b.experience = v; return b }
+func (b *ModelBuilder) SetHammersApplied(v uint32) *ModelBuilder { b.hammersApplied = v; return b }
+
 func (b *ModelBuilder) SetEquippedSince(t *time.Time) *ModelBuilder { b.equippedSince = t; return b }
 func (b *ModelBuilder) SetCashId(v int64) *ModelBuilder             { b.cashId = v; return b }
 func (b *ModelBuilder) SetCommodityId(v uint32) *ModelBuilder       { b.commodityId = v; return b }

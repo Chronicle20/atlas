@@ -78,7 +78,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 			m.CoolDamage = getCoolDamage(node)
 			m.LoseItems = getLoseItems(node)
 			m.SelfDestruction = getSelfDestruction(node)
-			m.FirstAttack = getFirstAttack(node)
+			m.FirstAttack = node.GetIntegerWithDefault("firstAttack", 0) > 0
 			m.DropPeriod = uint32(node.GetIntegerWithDefault("dropItemPeriod", 0) * 10000)
 			hpBarBoss := getHPBarBoss(t, monsterId)
 			if hpBarBoss {
@@ -195,14 +195,6 @@ func getHPBarBoss(t tenant.Model, monsterId uint32) bool {
 	return g.Exists()
 }
 
-func getFirstAttack(node *xml.Node) bool {
-	c, err := node.ChildByName("firstAttack")
-	if err != nil {
-		return false
-	}
-	return math.Round(c.GetFloatWithDefault("firstAttack", 0)) > 0
-}
-
 func getSelfDestruction(node *xml.Node) selfDestruction {
 	c, err := node.ChildByName("selfDestruction")
 	if err != nil {
@@ -250,13 +242,10 @@ func getLoseItem(node xml.Node) loseItem {
 }
 
 func getCoolDamage(node *xml.Node) coolDamage {
-	c, err := node.ChildByName("coolDamage")
-	if err != nil {
-		return coolDamage{}
+	return coolDamage{
+		Damage:      uint32(node.GetIntegerWithDefault("coolDamage", 0)),
+		Probability: uint32(node.GetIntegerWithDefault("coolDamageProb", 0)),
 	}
-	damage := uint32(c.GetIntegerWithDefault("coolDamage", 0))
-	probability := uint32(c.GetIntegerWithDefault("coolDamageProb", 0))
-	return coolDamage{Damage: damage, Probability: probability}
 }
 
 // getAttacks parses attack{1,2,3}/info subnodes. If any attackN slot has an

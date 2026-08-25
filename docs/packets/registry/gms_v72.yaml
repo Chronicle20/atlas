@@ -2880,6 +2880,14 @@
   ida:
     address: 6400596
   note: 'v72 COutPacket(178) verified via global COutPacket-ctor harvest @0x61aa54; Δ-2 vs v79 op 180 (deep (pet/summon/mob/npc/reactor/minigame/cashshop) Δ-2).'
+- op: AUTO_AGGRO
+  direction: serverbound
+  opcode: 179
+  fname: CMob::ApplyControl
+  provenance: ida-discovered
+  ida:
+    address: 6411096
+  note: 'task-255: the registry had NO AUTO_AGGRO entry for this version — the ops CSVs have no column before GMS v83, which is a CSV blind spot, not a client absence. CMob::ApplyControl @0x61d358 builds COutPacket(179) and encodes Encode4(fused mobId)+Encode4(proximity score). Adjacent to MOB_DROP_PICKUP_REQUEST=180.'
 - op: MOB_DROP_PICKUP_REQUEST
   direction: serverbound
   opcode: 180

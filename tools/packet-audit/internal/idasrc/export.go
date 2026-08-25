@@ -35,8 +35,18 @@ type exportFn struct {
 	// ignored (no prefix added) — this is a forward-compat hook for new
 	// dispatcher chains.
 	Dispatcher string `json:"dispatcher,omitempty"`
-	// Notes is free-form documentation that does not affect resolution.
+	// Notes and Note are free-form documentation that does not affect
+	// resolution. The on-disk key spelling is inconsistent across the
+	// committed exports: "notes" (plural — e.g. 157 entries in gms_v83.json,
+	// and the sole spelling insertDispatchField's auto-provenance note writer
+	// emits, per internal/idasrc/baseline_write.go) and "note" (singular,
+	// legacy — 147 entries in the same file). Both spellings genuinely appear
+	// on disk, and an entry may carry BOTH keys with different content (e.g.
+	// CUIFadeYesNo::OnButtonClicked#Join in gms_jms_185.json), so both fields
+	// are kept independently — neither one is dropped or normalized into the
+	// other on a round-trip/splice.
 	Notes string `json:"notes,omitempty"`
+	Note  string `json:"note,omitempty"`
 	// Unresolved marks a function the parser could not faithfully trace.
 	// The audit treats it as a known gap, never a false verdict.
 	Unresolved bool `json:"unresolved,omitempty"`

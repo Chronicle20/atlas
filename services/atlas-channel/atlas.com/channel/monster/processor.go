@@ -33,6 +33,7 @@ type Processor interface {
 	SelfDestruct(f field.Model, monsterId uint32, characterId uint32) error
 	ClearAggro(f field.Model, monsterId uint32) error
 	ForceControl(f field.Model, monsterId uint32, characterId uint32) error
+	SetAggro(f field.Model, monsterId uint32, characterId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -176,4 +177,12 @@ func (p *ProcessorImpl) ClearAggro(f field.Model, monsterId uint32) error {
 func (p *ProcessorImpl) ForceControl(f field.Model, monsterId uint32, characterId uint32) error {
 	p.l.Debugf("Forcing control of monster [%d] to character [%d].", monsterId, characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(ForceControlCommandProvider(f, monsterId, characterId))
+}
+
+// SetAggro asks atlas-monsters to grant auto-aggro on a client AUTO_AGGRO
+// claim. The channel applies only cheap local admission checks; every
+// authoritative gate runs in atlas-monsters.
+func (p *ProcessorImpl) SetAggro(f field.Model, monsterId uint32, characterId uint32) error {
+	p.l.Debugf("Requesting auto-aggro of monster [%d] for character [%d].", monsterId, characterId)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(SetAggroCommandProvider(f, monsterId, characterId))
 }

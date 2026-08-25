@@ -11,89 +11,74 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 - Never open a PR without code review.
 - Never dispatch an agent without an explicit `model`.
 - Never land a placeholder comment, a stubbed handler, or an unimplemented status response.
+- Never spend inference turns polling a process or waiting on a child agent. *(enforced)*
 
 ## Evidence & grounding
 
-- Never invent values, names, opcodes, output, or behavior; unverified is "unknown / unverified," not a plausible guess. "I think it's X" is a lead to check, not a finding. Quote the actual tool output before drawing a conclusion — do not paraphrase numbers from memory.
-- Repo source, WZ data, IDA, and live output outrank remembered general MapleStory knowledge — for game data, packet encoding, protocol details, and service ownership, read the local WZ data or repo source.
-- Confirm the exact server/tenant/client version before investigating any bug; the wrong version sends the whole investigation down the wrong path.
-- Sweep, don't spot-check. A spot-check presented as a full sweep is a false "verified." State findings as hypotheses until confirmed against real evidence.
-- Finish producible work: do not declare a "documented gap," "follow-up task," or "out of scope" when the blocker is a prerequisite you can produce yourself — an unnamed IDB function → name it; an unrouted template → wire it; a missing export → generate it. Do not split work into a new task to avoid finishing this one; keep triage and fix on the same branch, and produce the clean PR branch by rebase at PR time.
-- A genuine external blocker, an ambiguous design decision, or an unresolved packet-audit fname is different — surface it and ask. The bar is: can I produce this myself right now?
-
-## Where you work — branch & worktree
-
-- Check the branch before every commit. Setup work that must precede a feature branch still goes on that branch — create it first; it branches from the same HEAD.
-- Non-trivial tasks live in their own task worktree. Verify cwd is the correct worktree before planning, designing, or executing a task; cd into it yourself rather than asking the user. Search across all worktrees (`git worktree list`) before concluding a task artifact is missing.
-- When dispatching subagents, ensure they operate inside the correct worktree — never write artifacts or edits into the main repo — and verify the tree is clean after they run.
-- After completing a rebase, merge, or history-rewrite, always push (force-push when history was rewritten); do not stop at local-only completion.
-- A plain push to a task branch triggers the PR workflows and the ephemeral rollout; do not merge `origin/main` as a routine build-triggering ritual. The one exception is a branch that conflicts with `main` — there the push does not build, and the merge is the conflict resolution.
-
-## Done means verified
-
-- Before claiming a branch "done," "ready for PR," or invoking `superpowers:finishing-a-development-branch`, the flagless `tools/verify.sh` must exit 0. Only the flagless invocation counts — `--quick`/`--no-docker` also exit 0 but skip the bake and `-race`.
-- Always run the code-review step before opening a PR; do not skip even when the task plan looks complete.
-- Code review is a different gate: a green `tools/verify.sh` does not mean the branch is correct, because it cannot see a cross-service seam defect. When a change crosses a service boundary, trace the event into its consumers by hand and check that a test asserts the NEW contract.
+- Unverified is "unknown / unverified," never a plausible guess. "I think it's X" is a lead to check, not a finding. Quote the actual tool output before concluding; never paraphrase numbers from memory.
+- Repo source, WZ data, IDA, and live output outrank remembered MapleStory knowledge. For game data, packet encoding, protocol details, and service ownership, read the local WZ data or repo source.
+- Confirm the exact server/tenant/client version before investigating any bug.
+- Sweep, don't spot-check. A spot-check presented as a full sweep is a false "verified." Findings are hypotheses until confirmed against real evidence.
+- Finish producible work. Never declare a "documented gap," "follow-up task," or "out of scope" when the blocker is a prerequisite you can produce yourself — an unnamed IDB function, an unrouted template, a missing export. The bar is: can I produce this myself right now? A genuine external blocker, an ambiguous design decision, or an unresolved packet-audit fname is different: surface it and ask.
 
 ## Development workflow
 
-- When asked to understand or plan something, do not start implementing; wait for explicit approval before making any edits. Planning and implementation are separate phases.
-- Any non-trivial change runs the four-phase flow — `/spec-task` → `/design-task` → `/plan-task` → `/execute-task` — each a separate slash command invoked from a fresh (`/clear`'d) session, so the next phase consumes only the prior phase's documented artifacts. `/spec-task` runs from the main repo and creates a dedicated worktree at `.worktrees/task-NNN-slug/`; every later phase runs inside that worktree and never creates a new one, so docs, code, and the eventual PR are one unit.
-- Skip `/spec-task` only for trivial fixes that don't warrant a PRD; document those directly via a brainstorming session.
-- Before planning or designing a task, verify the task is not already planned/implemented and its number does not collide with an in-flight task.
+- Asked to understand or plan? Do not implement. Wait for explicit approval before any edit.
+- Any non-trivial change runs the four-phase flow — `/spec-task` → `/design-task` → `/plan-task` → `/execute-task` — each a separate command from a fresh (`/clear`'d) session, consuming only the prior phase's artifacts.
+- `/spec-task` runs from the main repo and creates the worktree at `.worktrees/task-NNN-slug/`; every later phase runs inside it and never creates a new one. Skip `/spec-task` only for trivial fixes that don't warrant a PRD; document those via a brainstorming session.
+- Before planning or designing, verify the task is not already planned/implemented and its number does not collide with an in-flight task.
+- Verify cwd is the correct worktree before planning, designing, or executing; cd there yourself. Subagents work inside that same worktree, and the tree must be clean after they run.
+- Keep triage and fix on the same branch; produce the clean PR branch by rebase at PR time.
+- Write `design.md`/`plan.md` directly to file; do not walk sections interactively or ask for per-section approval.
 
-**Task lifecycle mechanics** — each phase's command form and output artifact, fuzzy task identifiers, the resolver's output format, the artifact-location override, and the code-review reviewer roster: see [docs/superpowers-integration.md](docs/superpowers-integration.md).
+## Done means verified
+
+- Before calling a branch "done," "ready for PR," or invoking `superpowers:finishing-a-development-branch`, the flagless `tools/verify.sh` must exit 0. `--quick`/`--no-docker` also exit 0 but skip the bake and `-race`; they do not count.
+- Always run code review before opening a PR, even when the plan looks complete.
+- Code review is a separate gate: a green `tools/verify.sh` cannot see a cross-service seam defect. When a change crosses a service boundary, trace the event into its consumers by hand and confirm a test asserts the NEW contract.
 
 ## Dispatching agents
 
-- Pass an explicit `model` on every Agent/Task dispatch; unspecified inherits Opus, and an Opus subagent turn costs a large multiple of a Sonnet one.
-- The pin follows the job, not the `subagent_type` — review/verify/audit runs Sonnet even for an ad-hoc general-purpose agent, scans and inventories run Haiku, implementers run Sonnet unless the plan task is tagged `model: opus`. Never use Fable for background or review workflows.
-- Implementers do not run repo-wide verification; they run module-local `go build ./... && go test ./...` and nothing more.
-- Fan out with fresh-context agents, not `subagent_type: "fork"` — a named agent type plus an explicit brief. Fork only to continue an interactive debugging thread, and say why inline. *(enforced)*
-- Decide inline-vs-delegate on expected turns, not on how big the task sounds: a question you can answer in one or two targeted tool calls costs far less inline than the ~35k dispatch floor. Reviewers never fan out checklist questions to children.
-- Every reviewer writes its reasoning to a durable artifact and returns a compact verdict-first block — see [docs/review-protocol.md](docs/review-protocol.md). Per-unit review is `atlas-reviewer`, never a bare `general-purpose` dispatch.
+- The `model` pin follows the job, not the `subagent_type`; unspecified inherits Opus, which costs a large multiple of Sonnet per turn. Never use Fable for background or review workflows.
+- Fan out with fresh-context agents — a named agent type plus an explicit brief. Fork only to continue an interactive debugging thread, and say why inline. *(enforced)*
+- Per-unit review is `atlas-reviewer`, never a bare `general-purpose` dispatch; reviewers follow their own protocol.
+- Read `docs/agent-dispatch.md` before dispatching, and `docs/review-protocol.md` before dispatching a reviewer.
 
 ## Handing off context
 
-- At every durable boundary — a commit landing, a verification gate returning, a fan-out of agents reporting — ask one question: does the next unit of work depend materially on this conversation's history, or only on repository state? Dependency is the signal, not size; thresholds are backstops.
-- If it can be resumed from repo state, the task's own reports, and a short written diagnosis, hand off. Handing off means delegating, not clearing: dispatch the next unit to a fresh agent with a brief. `/clear` is a user action — an agent cannot clear itself, so only when the next unit is genuinely controller-shaped do you write the diagnosis down and let the user `/clear`.
-- Write the diagnosis before the handoff, not carried in your head — one paragraph into the task folder. A handoff whose reasoning survives only in conversation is not a handoff.
-
-**Dispatch and handoff mechanics** — the full job→model table and its opt-in Opus escalation, the implementer tool-call budget, the verification split, the fork policy, and the handoff thresholds: see [docs/agent-dispatch.md](docs/agent-dispatch.md).
+- At every durable boundary — a commit landing, a gate returning, a fan-out reporting — ask: does the next unit depend materially on this conversation's history, or only on repository state? Dependency is the signal, not size.
+- If it is resumable from repo state, task reports, and a short written diagnosis, hand off. Handing off means delegating to a fresh agent with a brief, not clearing; an agent cannot clear itself.
+- Always write the diagnosis down first — one paragraph into the task folder. A handoff whose reasoning survives only in conversation is not a handoff.
 
 ## Repository conventions
 
-- Before defining a new domain type, alias, or numeric constant, check `libs/atlas-constants/` for an existing equivalent.
-- Prefer straightforward moves over re-exported type aliases when refactoring shared types or common libraries; don't call another layer's internals across a service boundary.
-- Use the project's Builder pattern for test setup; do not create `*_testhelpers.go` files with test-only constructors.
-- When producing `design.md`/`plan.md`, write the full document directly to file; do not walk through sections interactively or ask for per-section approval.
+- Check `libs/atlas-constants/` before defining a new domain type, alias, or numeric constant.
+- Prefer straightforward moves over re-exported type aliases when refactoring shared code; never call another layer's internals across a service boundary.
+- Use the project's Builder pattern for test setup; no `*_testhelpers.go` test-only constructors.
 - Use repo-relative paths or placeholders in committed files; never a literal home/absolute path. *(enforced under `docs/`)*
-- Preserve existing line endings when editing; do not normalize CRLF→LF as a side effect.
-- Ask the toolchain (`go list -m -f '{{.Dir}}' <module>`) rather than sweeping the filesystem for a Go dependency's source.
-- Never spend inference turns polling a process — launch it with a bound (`run_in_background`, or Monitor with an until-loop) and hand back or do something else in the meantime. The same applies to waiting on a child agent: completions arrive as notifications, so there is nothing to wait for. *(enforced)*
-- Batch a gate-log or review-artifact read with the `progress.md`/`agent-ledger.sh` append that records its verdict into the *same* tool call, not a separate turn. A turn whose only content is writing up a conclusion the prior read already established pays full session context for zero new information — every such split costs a full extra turn at whatever context the session has reached by then.
-- Slice a large artifact before reading it whole — `tools/doc-slice.sh --outline/--section/--rows`, `git diff --stat` before hunks, `tools/task-brief.sh` before `plan.md`. A default with an escalation path, not a ban: read the whole file when correctness needs it.
-- Ask the tooling for a mechanical fact rather than deriving it — `tools/task-facts.sh <task>` for branch/worktree/surfaces/guards, `tools/verify.sh --facts` for what the gate selects.
-- When updating `TODO.md` or other tracking docs, use `Glob`/`Grep` to find the file first rather than assuming a path.
-- Send substantive content as its own text-only message before an `AskUserQuestion` — text emitted in the same turn does not render reliably.
-- Do not proactively pitch paid features; if one is genuinely the right tool, lead with what is known and unknown about billing before mentioning it.
-- Prefer portable POSIX shell, and per-file Edit/Write over a shell patch loop.
+- Preserve existing line endings; never normalize CRLF→LF as a side effect.
+- Ask the tooling for a mechanical fact rather than deriving it; find tracking docs with `Glob`/`Grep` rather than assuming a path. Slice a large artifact before reading it whole.
+- Batch a gate-log or review-artifact read with the `progress.md`/`agent-ledger.sh` append recording its verdict into the *same* tool call.
+- Do not proactively pitch paid features; if one is the right tool, lead with what is known and unknown about billing.
+- Send substantive content as its own text-only message before an `AskUserQuestion`.
 
 ## Where the procedures live
 
-| Trigger | Owner | What's there |
-|---|---|---|
-| **A `verify.sh` guard failed, or the script and CI disagree** | [docs/verification.md](docs/verification.md) | Why each check exists, per-guard invariants, escape hatches, known CI drift |
-| **Adding a new service** | [docs/adding-a-new-service.md](docs/adding-a-new-service.md) | Service onboarding checklist |
-| **Packet or protocol work** — new codec, version bring-up, dispatcher family, verifying a cell | [docs/packets/PROCESS.md](docs/packets/PROCESS.md) | Task-type → entry point → canonical playbook |
-| **You have a bare task number, or are invoking a superpowers skill outside a phase command** | [docs/superpowers-integration.md](docs/superpowers-integration.md) | Fuzzy task resolution, artifact-location override, code-review roster, maintenance commands |
-| **You committed to `main`, a push didn't trigger a build, or `gh` returns 401** | [docs/git-workflow.md](docs/git-workflow.md) | Stray-commit recovery, the conflicts-with-main build exception, token auth |
-| **You need to read a client binary** | [docs/reverse-engineering.md](docs/reverse-engineering.md) | `func_query` usage, `idb_list` session resolution |
-| **You need a Go dependency's source, or are waiting on a long-running process** | [docs/tooling-conventions.md](docs/tooling-conventions.md) | Toolchain lookups, the polling anti-pattern |
-| **You are about to dispatch an agent, or to decide whether to hand off** | [docs/agent-dispatch.md](docs/agent-dispatch.md) | Full job→model table, implementer budget, inline-vs-delegate break-even, controller handoff thresholds, the agent ledger |
-| **You are dispatching a reviewer, or writing a review's result** | [docs/review-protocol.md](docs/review-protocol.md) | Verdict vocabulary, the compact return block, the durable-artifact requirement, the controller's read rule |
-| **You are about to read a large document, diff, plan, or offloaded tool result** | [docs/slice-first.md](docs/slice-first.md) | `tools/doc-slice.sh` modes, the per-situation table, when to escalate to a full read |
-| **The PR is open and something is wrong** — validation failure, live-test bug, regression, follow-up fix | [docs/post-implementation.md](docs/post-implementation.md) | Phase 5: reproduce inline, diagnose to `bug-<slug>.md`, delegate the fix, verify fresh (`/fix-pr-bug`) |
-| **You are about to dispatch a second implementer at the same templated transformation** | [docs/codemod-vs-agents.md](docs/codemod-vs-agents.md) | The break-even rule (evaluate before the second dispatch), the task-232 batch-4 worked example, the deferred rewriter's contract |
-| **Runtime or Kubernetes debugging** — diagnosing a wedged deploy or crash-loop | [docs/observability.md](docs/observability.md) | Read pod logs first, and how to reach them |
-| **Writing or changing a Go service** | `backend-dev-guidelines` skill, `backend-guidelines-reviewer` agent | Service patterns and the authoritative audit rule index (`resources/audit-checklist.md`): DOM/FILE/SUB/EXT/SCAFFOLD/SEC rules, constants reuse, service boundaries, test builders |
+Load the owning document before acting in its area; it holds the mechanics this file omits.
+
+| Trigger | Owner |
+|---|---|
+| Dispatching any agent, or deciding whether to hand off | [docs/agent-dispatch.md](docs/agent-dispatch.md) |
+| Dispatching a reviewer, or writing up a review | [docs/review-protocol.md](docs/review-protocol.md) |
+| A `verify.sh` guard failed, or script and CI disagree | [docs/verification.md](docs/verification.md) |
+| A bare task number, or a superpowers skill outside a phase command | [docs/superpowers-integration.md](docs/superpowers-integration.md) |
+| Committing, pushing, rebasing; a stray `main` commit, a push that didn't build, `gh` 401 | [docs/git-workflow.md](docs/git-workflow.md) |
+| A Go dependency's source, a long-running process, a mechanical repo fact, shell/editing conventions | [docs/tooling-conventions.md](docs/tooling-conventions.md) |
+| About to read a large document, diff, plan, or tool result | [docs/slice-first.md](docs/slice-first.md) |
+| The PR is open and something is wrong (Phase 5, `/fix-pr-bug`) | [docs/post-implementation.md](docs/post-implementation.md) |
+| About to dispatch a second implementer at the same transformation | [docs/codemod-vs-agents.md](docs/codemod-vs-agents.md) |
+| Packet or protocol work | [docs/packets/PROCESS.md](docs/packets/PROCESS.md) |
+| Reading a client binary | [docs/reverse-engineering.md](docs/reverse-engineering.md) |
+| Adding a new service | [docs/adding-a-new-service.md](docs/adding-a-new-service.md) |
+| A wedged deploy or crash-loop | [docs/observability.md](docs/observability.md) |
+| Writing or changing a Go service | `backend-dev-guidelines` skill, `backend-guidelines-reviewer` agent |

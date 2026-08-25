@@ -89,6 +89,37 @@ func TestLiveMirror_UpdateMpAndAggro_MutatePresentEntry(t *testing.T) {
 	}
 }
 
+func TestLiveMirrorUpdateControl(t *testing.T) {
+	tests := []struct {
+		name          string
+		lookupId      uint32
+		controllerId  uint32
+		wantControlId uint32
+		wantOk        bool
+	}{
+		{name: "updates an existing entry", lookupId: 42, controllerId: 9, wantControlId: 9, wantOk: true},
+		{name: "clears on handover to nobody", lookupId: 42, controllerId: 0, wantControlId: 0, wantOk: true},
+		{name: "absent entry is not created", lookupId: 99, controllerId: 9, wantOk: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := newTestLiveMirror()
+			tm := newTestTenant(t)
+			m.Put(tm, 42, LiveEntry{ControlCharacterId: 7})
+
+			m.UpdateControl(tm, tt.lookupId, tt.controllerId)
+
+			got, ok := m.Lookup(tm, tt.lookupId)
+			if ok != tt.wantOk {
+				t.Fatalf("ok = %v, want %v", ok, tt.wantOk)
+			}
+			if tt.wantOk && got.ControlCharacterId != tt.wantControlId {
+				t.Fatalf("ControlCharacterId = %d, want %d", got.ControlCharacterId, tt.wantControlId)
+			}
+		})
+	}
+}
+
 func TestLiveMirror_Remove(t *testing.T) {
 	m := newTestLiveMirror()
 	tm := newTestTenant(t)

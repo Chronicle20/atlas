@@ -1572,6 +1572,15 @@
         ]
       },
       {
+        "opCode": "0xB3",
+        "validator": "LoggedInValidator",
+        "handler": "AutoAggro",
+        "fname": "CMob::ApplyControl",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xB4",
         "validator": "LoggedInValidator",
         "handler": "MobDropPickupRequest",

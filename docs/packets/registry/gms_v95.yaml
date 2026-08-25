@@ -3603,7 +3603,10 @@
   direction: serverbound
   opcode: 228
   fname: CMob::ApplyControl
-  provenance: csv-import
+  provenance: ida-discovered
+  ida:
+    address: 6556960
+  note: 'task-255: opcode confirmed against the binary. CMob::ApplyControl @0x640d20 builds COutPacket(228); Encode4(fused mobId)+Encode4(proximity score). Promoted off csv-import.'
 - op: MOB_DROP_PICKUP_REQUEST
   direction: serverbound
   opcode: 229

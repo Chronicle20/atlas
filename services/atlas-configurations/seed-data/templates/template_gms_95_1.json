@@ -1966,6 +1966,15 @@
         ]
       },
       {
+        "opCode": "0xE4",
+        "validator": "LoggedInValidator",
+        "handler": "AutoAggro",
+        "fname": "CMob::ApplyControl",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xE5",
         "validator": "LoggedInValidator",
         "handler": "MobDropPickupRequest",

@@ -30,6 +30,7 @@ const (
 	CommandTypeClearAggro        = "CLEAR_AGGRO"
 	CommandTypeForceControl      = "FORCE_CONTROL"
 	CommandTypeSelfDestruct      = "SELF_DESTRUCT"
+	CommandTypeSetAggro          = "SET_AGGRO"
 
 	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
@@ -176,6 +177,16 @@ type clearAggroCommandBody struct{}
 // named character with the aggro flag set, bypassing the picker. Mirrors
 // atlas-channel's monster2.ForceControlCommandBody — edit both together.
 type forceControlCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
+// setAggroCommandBody asks the processor to grant auto-aggro on a client
+// AUTO_AGGRO claim. characterId is the claimant; every gate is applied by the
+// processor, never by the channel. Mirrors atlas-channel's
+// monster2.SetAggroCommandBody — edit both together. `characterId uint32`
+// already appears with that name and type in sibling bodies, so it introduces
+// no unmarshal collision on this shared, fan-to-every-handler topic.
+type setAggroCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 

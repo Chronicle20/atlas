@@ -1559,6 +1559,15 @@
         ]
       },
       {
+        "opCode": "0xDD",
+        "validator": "LoggedInValidator",
+        "handler": "AutoAggro",
+        "fname": "CMob::ApplyControl",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xEA",
         "validator": "LoggedInValidator",
         "handler": "NPCActionHandle",

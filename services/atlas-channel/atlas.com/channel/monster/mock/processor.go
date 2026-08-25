@@ -26,6 +26,7 @@ type ProcessorMock struct {
 	SelfDestructFunc           func(f field.Model, monsterId uint32, characterId uint32) error
 	ClearAggroFunc             func(f field.Model, monsterId uint32) error
 	ForceControlFunc           func(f field.Model, monsterId uint32, characterId uint32) error
+	SetAggroFunc               func(f field.Model, monsterId uint32, characterId uint32) error
 }
 
 var _ monster.Processor = (*ProcessorMock)(nil)
@@ -152,6 +153,13 @@ func (m *ProcessorMock) ClearAggro(f field.Model, monsterId uint32) error {
 func (m *ProcessorMock) ForceControl(f field.Model, monsterId uint32, characterId uint32) error {
 	if m.ForceControlFunc != nil {
 		return m.ForceControlFunc(f, monsterId, characterId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) SetAggro(f field.Model, monsterId uint32, characterId uint32) error {
+	if m.SetAggroFunc != nil {
+		return m.SetAggroFunc(f, monsterId, characterId)
 	}
 	return nil
 }

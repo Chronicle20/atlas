@@ -1289,6 +1289,15 @@
         ]
       },
       {
+        "opCode": "0x82",
+        "validator": "LoggedInValidator",
+        "handler": "AutoAggro",
+        "fname": "CMob::ApplyControl",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x87",
         "validator": "LoggedInValidator",
         "handler": "MonsterBomb",

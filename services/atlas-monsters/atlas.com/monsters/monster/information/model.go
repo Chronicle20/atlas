@@ -6,6 +6,7 @@ type Model struct {
 	boss            bool
 	undead          bool
 	friendly        bool
+	firstAttack     bool
 	weaponAttack    uint32
 	dropPeriod      uint32
 	resistances     map[string]string
@@ -137,4 +138,11 @@ func (m Model) HpRecovery() uint32 {
 
 func (m Model) MpRecovery() uint32 {
 	return m.mpRecovery
+}
+
+// FirstAttack reports whether the template is aggressive — Mob/<id>.img/info/firstAttack.
+// This is the gate that separates a genuinely aggressive mob from one that
+// merely picks up drops: CMob::ApplyControl fires for bPickUpDrop templates too.
+func (m Model) FirstAttack() bool {
+	return m.firstAttack
 }

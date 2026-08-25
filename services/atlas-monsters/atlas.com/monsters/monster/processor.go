@@ -68,6 +68,7 @@ type Processor interface {
 	SelfDestruct(uniqueId uint32, characterId uint32, trigger SelfDestructTrigger)
 	Catch(uniqueId uint32, characterId uint32, itemId uint32)
 	ClearAggro(uniqueId uint32) error
+	SetAggro(uniqueId uint32, characterId uint32) error
 	ForceControl(uniqueId uint32, characterId uint32) error
 }
 
@@ -129,6 +130,7 @@ type ProcessorImpl struct {
 	inFieldFn  func(f field.Model) ([]uint32, error)
 	hiddenFn   func() (map[uint32]struct{}, error)
 	locationFn func(characterId uint32) (field.Model, error)
+	nowFn      func() int64
 }
 
 // NewProcessor creates a new Processor
@@ -153,6 +155,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	p.locationFn = func(characterId uint32) (field.Model, error) {
 		return _map.NewProcessor(p.l, p.ctx).GetCharacterField(characterId)
 	}
+	p.nowFn = func() int64 { return time.Now().UnixMilli() }
 	return p
 }
 
@@ -322,6 +325,16 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 	return m, nil
 }
 
+// now reads the injected clock seam. Tests constructing ProcessorImpl
+// directly without NewProcessor (e.g. recordingProcessor) leave nowFn nil;
+// production and any test wanting a fixed clock always sets it.
+func (p *ProcessorImpl) now() int64 {
+	if p.nowFn == nil {
+		return time.Now().UnixMilli()
+	}
+	return p.nowFn()
+}
+
 // hiddenSet reads the shared GM-hidden set. On failure (or when no seam is
 // configured, e.g. tests constructing ProcessorImpl directly without
 // NewProcessor) it returns an empty set: fail-open, election degrades to
@@ -454,7 +467,7 @@ func (p *ProcessorImpl) startControl(uniqueId uint32, controllerId uint32, force
 	}
 
 	if forceAggro {
-		m, err = GetMonsterRegistry().ControlMonsterWithAggro(p.t, uniqueId, controllerId)
+		m, err = GetMonsterRegistry().ControlMonsterWithAggro(p.t, uniqueId, controllerId, p.now())
 	} else {
 		m, err = GetMonsterRegistry().ControlMonster(p.t, uniqueId, controllerId)
 	}
@@ -2029,6 +2042,105 @@ func (p *ProcessorImpl) ForceControl(uniqueId uint32, characterId uint32) error 
 
 	if _, serr := p.startControl(uniqueId, characterId, true); serr != nil {
 		p.l.WithError(serr).Warnf("FORCE_CONTROL for monster [%d] to character [%d] failed.", uniqueId, characterId)
+	}
+	return nil
+}
+
+// SetAggro grants auto-aggro on a client AUTO_AGGRO claim (design §2 hybrid).
+// The channel is not the authority: every gate below runs here, in the service
+// that owns the monster registry.
+//
+// Gates, in order — each a Debugf drop naming the failing gate:
+//  1. the monster exists;
+//  2. the monster is alive;
+//  3. the template is aggressive (firstAttack). CMob::ApplyControl also fires
+//     for bPickUpDrop-only templates, so this gate is what keeps drop-picking
+//     mobs passive. A lookup error or cache miss DENIES (FR-5.2);
+//  4. the claimant is in the monster's field;
+//  5. arbitration:
+//     claimant is the controller  -> stamp the lease; flip + emit
+//     AGGRO_CHANGED only if it was not set;
+//     someone else holds aggro    -> drop (anti-thrash, design §2);
+//     otherwise                   -> startControl(..., forceAggro=true),
+//     which emits START_CONTROL with
+//     ControllerHasAggro true and excludes
+//     GM-hidden claimants.
+//
+// No damage entry is written on any path: auto-aggro confers no drop ownership
+// and no kill credit (FR-4.5).
+func (p *ProcessorImpl) SetAggro(uniqueId uint32, characterId uint32) error {
+	m, err := p.GetById(uniqueId)
+	if err != nil {
+		p.l.Debugf("SET_AGGRO for monster [%d]: monster no longer exists; dropping.", uniqueId)
+		return nil
+	}
+
+	if !m.Alive() {
+		p.l.Debugf("SET_AGGRO for monster [%d]: monster is not alive; dropping.", uniqueId)
+		return nil
+	}
+
+	var info information.Model
+	if testInformationLookup != nil {
+		info, err = testInformationLookup(m.MonsterId())
+	} else {
+		info, err = information.NewProcessor(p.l, p.ctx).GetById(m.MonsterId())
+	}
+	if err != nil {
+		p.l.WithError(err).Debugf("SET_AGGRO for monster [%d]: cannot fetch template; dropping (fail-closed).", uniqueId)
+		return nil
+	}
+	if !info.FirstAttack() {
+		p.l.Debugf("SET_AGGRO for monster [%d]: template is not aggressive; dropping.", uniqueId)
+		return nil
+	}
+
+	ids, err := p.inFieldFn(m.Field())
+	if err != nil {
+		p.l.WithError(err).Debugf("SET_AGGRO for monster [%d]: unable to list characters in field [%s]; dropping.", uniqueId, m.Field().Id())
+		return nil
+	}
+	present := false
+	for _, id := range ids {
+		if id == characterId {
+			present = true
+			break
+		}
+	}
+	if !present {
+		p.l.Debugf("SET_AGGRO for monster [%d]: character [%d] is not in field [%s]; dropping.", uniqueId, characterId, m.Field().Id())
+		return nil
+	}
+
+	if m.ControlCharacterId() == characterId {
+		summary, serr := GetMonsterRegistry().SetAggro(p.t, uniqueId, characterId, p.now())
+		if serr != nil {
+			p.l.WithError(serr).Debugf("SET_AGGRO for monster [%d]: unable to stamp aggro lease; dropping.", uniqueId)
+			return nil
+		}
+		if summary.Changed {
+			_ = p.emit(EnvEventTopicMonsterStatus, aggroChangedStatusEventProvider(summary.Monster, characterId, true))
+		}
+		return nil
+	}
+
+	if m.ControlCharacterId() != 0 && m.ControllerHasAggro() {
+		p.l.Debugf("SET_AGGRO for monster [%d]: controller [%d] already holds aggro; dropping claim from character [%d].", uniqueId, m.ControlCharacterId(), characterId)
+		return nil
+	}
+
+	// A GM-hidden character must not be granted control: RelinquishControlOnHide
+	// actively strips control from hidden characters, so granting it here would
+	// produce an immediate flap.
+	if hiddenIds, herr := p.hiddenFn(); herr == nil {
+		if _, isHidden := hiddenIds[characterId]; isHidden {
+			p.l.Debugf("SET_AGGRO for monster [%d]: character [%d] is GM-hidden; dropping.", uniqueId, characterId)
+			return nil
+		}
+	}
+
+	if _, serr := p.startControl(uniqueId, characterId, true); serr != nil {
+		p.l.WithError(serr).Warnf("SET_AGGRO for monster [%d] to character [%d] failed.", uniqueId, characterId)
 	}
 	return nil
 }

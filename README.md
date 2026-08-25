@@ -76,13 +76,25 @@ The system supports **multi-tenancy** — a single deployment can host multiple 
 
 | Dependency | Version | Notes |
 |------------|---------|-------|
-| Go | 1.25.5+ | All backend services |
+| Go | 1.27.0+ | All backend services |
 | Node.js | 22+ | atlas-ui only |
 | Docker | Latest | Service containerization |
 | Kafka | 3.x+ | Event bus between all services |
 | PostgreSQL | 14+ | Per-service databases (e.g., `atlas-accounts`, `atlas-characters`) |
 | Redis | 7+ | Caching layer (effective stats, sessions) |
 | Nginx | Latest | Ingress proxy for inter-service REST routing |
+
+> **Go toolchain.** Every module declares a patch-precise `go 1.27.0` directive.
+> With the default `GOTOOLCHAIN=auto`, a contributor on an older toolchain gets
+> an automatic download of go1.27.0 and nothing else to do. With
+> `GOTOOLCHAIN=local` set, the build fails with a hard error instead — that is a
+> deliberate consequence of the patch-precise choice, not a bug. Install
+> go1.27.0 or unset `GOTOOLCHAIN`.
+>
+> All toolchain versions (Go, Alpine, golangci-lint) are declared once in
+> [`tools/toolchain.versions`](tools/toolchain.versions) and machine-checked
+> against every pin site by `tools/toolchain-pin-guard.sh`. Bump that file, run
+> the guard, and fix what it names.
 
 For Kubernetes deployments, all manifests live under `deploy/k8s/`. Infrastructure secrets (DB credentials, etc.) are in `deploy/k8s/secrets.yaml` (gitignored; copy from `secrets.example.yaml`). The shared ConfigMap (`atlas-env`) in `deploy/k8s/env-configmap.yaml` defines connection endpoints for all services.
 

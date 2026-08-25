@@ -226,4 +226,46 @@ default fix is safe as scoped.
 
 ## Resolution
 
-_(to be filled in: fixing commit, gate verdict, live re-test outcome)_
+**Commits on `task-257-client-initiated-banish`:**
+
+| Commit | What |
+|---|---|
+| `1c42f52e0` | `xml.Node` slash-path traversal (the root-cause fix) + channel handler logs the rejection |
+| `e68ef7313` | `potal` fallback in `getBanish` + the per-version WZ sweep recorded above |
+| `bff8b4e89` | this bug file's review artifact and the agent-ledger rows |
+
+**Review:** `1c42f52e0` — APPROVED_WITH_FINDINGS, 0 blocking
+(`review-bug-banish-map-id-always-zero.md`). Two non-blocking test gaps, neither
+introduced by the commit: nothing pins `getFixedStance`'s output, and nothing
+exercises the new warn-log branch.
+
+The review also **retracted the `fixed_stance` regression this file flagged**: a
+sweep of all 146 `noFlip > 0` monsters found `stand`'s indexed child is always a
+`<canvas>`, absent, or a `<uol>` — never an `<imgdir>` — so
+`GetPoint("stand/0/origin", 0, 0)` still falls through to the default both before
+and after. No behavior change there.
+
+**Gate:** the first `--quick --base 12dba5cef` run FAILED, but on the environment,
+not the code: `panic: file requires newer Go version go1.27 (application built
+with go1.26)` from the cached `golangci-lint-v2.12.2`. Confirmed environmental by
+running the same binary against `atlas-portals`, a module neither commit touches,
+and reproducing the identical panic; no `go.mod` in the tree declares 1.27. The
+binary was rebuilt from source with go1.27.0 into both
+`.cache/tools/bin/golangci-lint-v2.12.2` (main repo and this worktree). **A gate
+over `12dba5cef..bff8b4e89` has not yet returned a verdict.**
+
+**Live re-test: NOT DONE.** Required before this bug is closed, and it needs more
+than a redeploy — `atlas-data` stores the *parsed* model as a document
+(`monster/storage.go`, `document.Storage[...]("MONSTER")`), so the existing
+`banish.map_id = 0` rows in `atlas-pr-1451` persist until the Mob.wz ingestion is
+re-run for tenant `03a434e5-a78f-4ae2-8ce7-258e53a017e9`. Re-test steps:
+
+1. Re-ingest `Mob.wz` for that tenant, then confirm
+   `GET /api/data/monsters/5090000` returns `"map_id":103000100`.
+2. Summon Shade in a field and watch `atlas-monsters` for
+   `"Banishing character [1] to map [103000100] portal [sp] via template
+   [5090000]."`, and `atlas-portals` for the resulting warp.
+3. Note that step 2 exercises the **skill-129** path. The **client-initiated**
+   path (the actual subject of task-257) was never observed firing — see "Why the
+   client never sent `MOB_BANISH_PLAYER`" above. That question is still open and
+   is not resolved by these commits.

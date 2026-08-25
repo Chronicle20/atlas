@@ -1,6 +1,6 @@
 module github.com/Chronicle20/atlas/libs/atlas-opcodes
 
-go 1.25.5
+go 1.27.0
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-socket v0.0.0

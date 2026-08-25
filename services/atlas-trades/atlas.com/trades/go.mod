@@ -1,6 +1,6 @@
 module atlas-trades
 
-go 1.25.5
+go 1.27.0
 
 replace github.com/Chronicle20/atlas/libs/atlas-kafka => ../../../../libs/atlas-kafka
 

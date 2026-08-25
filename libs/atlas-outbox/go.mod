@@ -1,6 +1,6 @@
 module github.com/Chronicle20/atlas/libs/atlas-outbox
 
-go 1.25.5
+go 1.27.0
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0

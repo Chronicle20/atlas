@@ -1,0 +1,15 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-26T18:54:57Z	agent	Task 1	task-implementer	sonnet	-	-	-	-	DONE	708e396	-	-	-	-
+2026-08-26T18:57:38Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	708e396	APPROVED	no	-	-
+2026-08-26T18:57:38Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE	c431891	-	-	-	-
+2026-08-26T18:57:46Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	c431891	APPROVED	no	-	-
+2026-08-26T19:00:57Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	DONE	308c36e	-	-	-	-
+2026-08-26T19:04:01Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	308c36e	APPROVED	no	-	-
+2026-08-26T19:04:48Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	dc17e62	-	-	-	-
+2026-08-26T19:06:52Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	dc17e62	APPROVED	no	-	-
+2026-08-26T19:06:53Z	handoff	after Task 4	controller	opus	-	-	-	-	DONE	-	-	-	-	-
+2026-08-26T19:30:53Z	agent	Gate 2	verify.sh	-	-	-	-	-	PASS	dc17e62	-	-	-	-
+2026-08-26T19:32:21Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	b77baa5	-	-	-	-
+2026-08-26T19:33:10Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	ccbac99	-	-	-	-
+2026-08-26T19:33:30Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	b77baa5	APPROVED_WITH_FINDINGS	no	docs/tasks/task-267-kafka-consumer-missing-topic-recovery/reviews/task-6.md	-
+2026-08-26T19:38:07Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	ccbac99	APPROVED	no	docs/tasks/task-267-kafka-consumer-missing-topic-recovery/reviews/task-5.md	-

@@ -12,6 +12,7 @@ import {
 import { tenantHeaders } from "@/lib/headers";
 import type { Account, AccountAttributes } from "@/types/models/account";
 import type { Tenant } from "@/types/models/tenant";
+import type { ApiSingleResponse } from "@/types/api/responses";
 
 const BASE_PATH = "/api/accounts";
 
@@ -125,12 +126,12 @@ export const accountsService = {
         attributes: { ...account.attributes, birthDate },
       },
     };
-    const updated = await api.patch<Account>(
+    const response = await api.patch<ApiSingleResponse<Account>>(
       `${BASE_PATH}/${account.id}`,
       body,
       options,
     );
-    return transformAccount(updated);
+    return transformAccount(response.data);
   },
 
   async accountExists(id: string, options?: ServiceOptions): Promise<boolean> {

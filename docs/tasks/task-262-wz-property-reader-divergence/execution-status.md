@@ -37,8 +37,8 @@ and were reviewed.
 Flagless `tools/verify.sh` cannot exit 0 in this environment because
 `golangci-lint` is built against go1.26 while the repo toolchain is
 go1.27.0. The most recent gate (`8e1f7201f..36882bf08`) had exactly **one**
-failing check — the lint & format guard — with 75 occurrences of the panic
-signature
+failing check — the lint & format guard — and every failure under it was the
+panic signature
 
 ```
 panic: file requires newer Go version go1.27 (application built with go1.26)

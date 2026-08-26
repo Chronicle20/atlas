@@ -367,8 +367,10 @@ unreachable rather than temporarily unmet:
       archive.
 - [ ] `go test -race ./libs/atlas-wz/...` passes, including the existing
       `parse_race_test.go` and `iteration_contract_test.go`.
-- [ ] `services/atlas-data` builds and its tests pass; no `wztoxml` change was
-      required.
+- [x] `services/atlas-data` builds and its tests pass; the one `wztoxml`
+      change made was the log-level gate in `36882bf08` (Task R3.2, per-archive
+      serialize summary logged at Warn when `failed > 0`, Info otherwise) —
+      not a parser or mapping change.
 - [ ] `libs/atlas-wz/atlas` determinism tests still pass (no unintended packer output
       shift).
 - [ ] Flagless `tools/verify.sh` exits 0. **Note:** currently blocked in this

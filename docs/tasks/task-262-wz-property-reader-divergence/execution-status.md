@@ -6,88 +6,72 @@ this file carries the part a fresh session needs.
 
 ## Where the branch stands
 
-Branch HEAD: `b7048596e`. All commits from the branch base through HEAD have
-passed `tools/verify.sh --quick` except for one environmental guard (below).
+All implementation is complete.
 
-**Complete and reviewed clean:** plan Tasks 1, 2, 3, 4, 8, 9, 10, plus two
-cleanup units (M1, M2) that closed review findings the first session deferred.
+**Landed and reviewed:** plan Tasks 1, 2, 3, 4, 8, 9, 10, and 14. Tasks 6, 7,
+11, 12, 13, and 15 are **WITHDRAWN in place** by the mid-execution re-scope
+(commit `0b3c8b21c`, "oracle withdrawal" — Task 5 found the supplied
+HaRepacker reference dump was never exported from the supplied `$WZ_ARCHIVE`;
+all 21 apparent divergences are `INPUT-MISMATCH`, not parser defects). The
+added Tasks R1 (the re-scope itself), R2 (whole-archive size-accounting
+self-check), R3 (post-review fixups), and R4 (DOM-20 disposition) all landed
+and were reviewed.
 
-**Zero deferred minors.** Ten non-blocking review findings were raised across
-six reviews this session and all ten were closed in fix rounds rather than
-carried. Two of them turned out to be more than cosmetic once someone actually
-tried to fix them:
+## Pre-PR review is complete
 
-- The `wzdiff` duplicate-sibling signature was believed to be a theoretical
-  collision risk. The implementer constructed a real collision under the old
-  format and landed it as a permanent regression test.
-- The trace hook's `Pos()`-counting test seam was exact only by coincidence —
-  it counted `Seek(0, io.SeekCurrent)` by shape, which `Skip(0)` would also
-  produce. `Skip(0)` now short-circuits, making the seam exact by construction.
+- **Plan-adherence audit**, sharded: shard 1-10 is **APPROVED**
+  (`docs/tasks/task-262-wz-property-reader-divergence/audit-plan-1-10.md`);
+  shard 11-15+R is **APPROVED_WITH_FINDINGS, 0 blocking**
+  (`docs/tasks/task-262-wz-property-reader-divergence/audit-plan-11-R.md`).
+- **`backend-guidelines-reviewer`** returned **CHANGES_REQUIRED** with 10
+  DOM-20 findings (flat `func Test...` bodies where a table-driven shape was
+  preferred). All 10 were answered by Task R4 — see
+  `docs/tasks/task-262-wz-property-reader-divergence/dom20-dispositions.md`
+  for the per-finding disposition (5 converted, 5 kept flat with a stated
+  reason) and the basis for treating DOM-20 as a preference rather than a
+  MUST for the kept-flat cases (repo precedent:
+  `docs/tasks/task-085-packet-audit-coverage-matrix/audit-backend.md:39`).
 
-## Why execution stopped — and what has changed since
+## The one open blocker (unchanged, not this branch's fault)
 
-Execution stopped because Tasks 5, 6, 7, 11, 12 and 15 require a real WZ
-archive (`$WZ_ARCHIVE`), which was not present when the session ran. The
-runnable prefix the plan itself names (`context.md` §2) was therefore
-exhausted.
-
-**That blocker is now resolved.** The user supplied the archive after the
-session ended. Both external inputs are present:
-
-| Input | Location (relative to the **main** checkout) |
-|---|---|
-| `$WZ_ARCHIVE` | `tmp/83.1_wz/Reactor.wz` — 51.6 MiB, first four bytes `50 4b 47 31` (`PKG1`), matching the plan's description |
-| `$WZ_REFERENCE` | `tmp/083839c6-c47c-42a6-9585-76492795d123/GMS/83.1/Reactor.wz/` — 421 `.img.xml` files |
-
-`tmp/83.1_wz/` also holds the other 83.1 archives (`Base.wz`, `Character.wz`,
-`Item.wz`, `Map.wz`, `Mob.wz`, `Npc.wz`, `Quest.wz`, `Skill.wz`, `String.wz`,
-`UI.wz`, and others), which the plan does not currently use.
-
-Neither input is committed, and neither may be added to git.
-
-**Watch the worktree/main split.** Both paths are relative to the main
-checkout. The task worktree at `.worktrees/task-262-wz-property-reader-divergence/`
-has its own empty `tmp/`, so a bare relative `tmp/...` resolves to the wrong
-directory from inside it. Export both variables as absolute paths.
-
-Nothing is externally blocked any more. The remaining ordering constraint is
-internal: Task 11 consumes Task 6's `diagnosis.md`, Task 12 consumes
-`diagnosis.md` plus Task 11, and Tasks 13 and 14 sit downstream of Task 12 and
-of Task 7's enumeration diagnosis. Work 5 → 6 → 7 → 11 → 12 → 13 → 14 → 15 in
-order.
-
-## Blocker for a future session: the branch cannot reach "verified"
-
-`tools/verify.sh`'s **lint & format guard** fails in this environment for a
-reason unrelated to this branch: `golangci-lint` is built against go1.26 while
-the repo toolchain is go1.27.0. It panics with
+Flagless `tools/verify.sh` cannot exit 0 in this environment because
+`golangci-lint` is built against go1.26 while the repo toolchain is
+go1.27.0. The most recent gate (`8e1f7201f..36882bf08`) had exactly **one**
+failing check — the lint & format guard — with 75 occurrences of the panic
+signature
 
 ```
-file requires newer Go version go1.27 (application built with go1.26)
+panic: file requires newer Go version go1.27 (application built with go1.26)
 ```
 
-and reports typecheck errors inside the Go standard library itself. It fails
-identically on all 91 modules, including `libs/` modules this branch never
-touches. Two separate gate runs confirmed the same signature.
-
-Every other gate passes: `go build`/`vet` across all 91 modules, the go
-analyzer guards, and the skill/job id, scope, and service registration guards.
+The adjacent `libs/atlas-tracing` failure is a typecheck error inside Go's
+own stdlib (`internal/poll/splice_linux.go:237`, `unknown field rfd in
+struct literal of type splicePipe`). It fails identically on `libs/`
+modules this branch never touched — this is a toolchain fault, not a
+branch defect. Every other check passed: `go build`/`vet` across all 91
+modules, the go analyzer guards, and the skill/job id, scope, and service
+registration guards.
 
 **Consequence:** CLAUDE.md's "done means verified" bar — a flagless
-`tools/verify.sh` exiting 0 — is unreachable until `golangci-lint` is rebuilt
-against go1.27. That is a toolchain fix, not something this plan can resolve.
+`tools/verify.sh` exiting 0 — is unreachable until `golangci-lint` is
+rebuilt against go1.27. That is a toolchain fix, not something this plan
+can resolve.
+
+## Housekeeping still open for whoever finishes the branch
+
+- `go.work.sum` is dirty and **predates this branch** — 3 removed hash lines
+  for `klauspost/compress` and `pierrec/lz4` `/go.mod` entries; no task in
+  this plan staged it. Restore it before the branch-end gate.
+- `docs/tasks/task-262-wz-property-reader-divergence/reviews/` is untracked
+  and holds the durable review artifacts (`R1.md`, `R2.md`, `R3.md`,
+  `task-14.md`, `agent-ledger.tsv`, `tools/`). Decide whether to commit them.
+- The machine's shared `~/.cache/go-build` is corrupted ("could not import
+  internal/runtime/atomic"); every `go` command run on this branch used
+  `GOCACHE=/tmp/gocache-262`. Someone should run `go clean -cache`.
 
 ## Resuming
 
-Export both inputs as absolute paths, then re-run `/execute-task task-262`; it
-resumes from the ledger at the first task with no completion line, which is
-Task 5.
-
-Rebuild `golangci-lint` against go1.27 before attempting the branch-end gate or
-a PR — that blocker is still open and is independent of the archive.
-
-## Note on the working tree
-
-`go.work.sum` is modified and was already dirty before this work began — it was
-carried in from the main repo and is not part of this branch's changes. No task
-staged it. Resolve it before the branch-end gate.
+Nothing left to implement. The next step is to resolve the two housekeeping
+items above, rebuild `golangci-lint` against go1.27 (or otherwise clear the
+toolchain blocker) so the flagless `tools/verify.sh` gate can actually run,
+and then proceed to PR.

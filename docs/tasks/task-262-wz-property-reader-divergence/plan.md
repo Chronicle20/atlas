@@ -73,7 +73,7 @@ Module roots: `libs/atlas-wz` **and** `services/atlas-data/atlas.com/data`. Both
   - `func wzxml.FormatFloat(v float64) string`
 - Consumes: `property.Property` and the 13 concrete `property.*` types (`libs/atlas-wz/wz/property/property.go:30-201`).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `libs/atlas-wz/wz/wzxml/element_test.go`, package `wzxml`. Setup shape copied from `services/atlas-data/atlas.com/data/data/wztoxml/adapter_test.go:14-60` — construct `property.New*` values in memory, call the function, assert on returned fields. No temp dirs, no logrus.
 
@@ -100,35 +100,35 @@ Module roots: `libs/atlas-wz` **and** `services/atlas-data/atlas.com/data`. Both
 
 `TestPropertiesToElements` — `nil` input returns `nil`; a 2-element slice returns 2 elements in order.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd libs/atlas-wz && go test ./wz/wzxml/...`
 Expected: FAIL — `no Go files in .../wz/wzxml` (the package does not exist yet).
 
-- [ ] **Step 3: Create the package by moving the code verbatim**
+- [x] **Step 3: Create the package by moving the code verbatim**
 
 Create `libs/atlas-wz/wz/wzxml/element.go` with package doc, and move `adapter.go:88-163` into it **unchanged except for renames**: `xmlElement`→`Element`, `propertiesToElements`→`PropertiesToElements`, `propertyToElement`→`PropertyToElement`, `formatFloat`→`FormatFloat`, and `[]xmlElement`→`[]Element` inside the struct. Imports become `encoding/xml`, `fmt`, `strconv`, `strings`, and `github.com/Chronicle20/atlas/libs/atlas-wz/wz/property`.
 
 Do **not** change any `XMLName.Local` value, any `omitempty`, or the `formatFloat` decimal-point rule — HaRepacker-compatible output is a wire contract with the existing `.img.xml` consumers.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd libs/atlas-wz && go test ./wz/wzxml/...`
 Expected: PASS.
 
-- [ ] **Step 5: Delegate from `wztoxml` and delete the duplicate**
+- [x] **Step 5: Delegate from `wztoxml` and delete the duplicate**
 
 In `services/atlas-data/atlas.com/data/data/wztoxml/adapter.go`: delete lines 88-163, add the `wzxml` import, and replace the call inside `SerializeImage` that built elements with `wzxml.PropertiesToElements(...)` / `wzxml.PropertyToElement(...)`. `SerializeToDirectory` (`:30-40`), `serializeDirectory` (`:42-58`) and `SerializeImage` (`:61-86`) keep their signatures exactly — `runtime.go:101` must not change.
 
 In `adapter_test.go`, delete the cases that now live in `wzxml`; keep anything exercising `SerializeImage` on disk.
 
-- [ ] **Step 6: Both modules build and test green**
+- [x] **Step 6: Both modules build and test green**
 
 Run: `cd libs/atlas-wz && go build ./... && go test ./...`
 Run: `cd services/atlas-data/atlas.com/data && go build ./... && go test ./...`
 Expected: PASS in both.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add libs/atlas-wz/wz/wzxml services/atlas-data/atlas.com/data/data/wztoxml
@@ -165,7 +165,7 @@ Module root: `libs/atlas-wz`.
 
 `NewSubFile` (`libs/atlas-wz/wz/file.go:115-129`) copies fields explicitly and delegates `parseMu`/`registerImageKey` to `parent`. Follow the same delegation shape for `trace` so the hook fires once per node, not once per view.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `libs/atlas-wz/wz/trace_test.go`, package `wz`.
 
@@ -184,18 +184,18 @@ Module root: `libs/atlas-wz`.
 
 `TestSetTraceOnSubFileDelegatesToParent` — copy the sub-file construction shape from `libs/atlas-wz/wz/subfile_test.go`; assert a trace set on the parent fires for a sub-file's image and that events are not duplicated.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd libs/atlas-wz && go test ./wz/ -run 'TestSetTrace|TestTraceNil'`
 Expected: FAIL — `undefined: TraceEvent`, `f.SetTrace undefined`.
 
-- [ ] **Step 3: Add the type, field, and setter**
+- [x] **Step 3: Add the type, field, and setter**
 
 `libs/atlas-wz/wz/trace.go`: declare `TraceEvent`, `SetTrace`, and an unexported `func (wz *File) emitTrace(ev TraceEvent)` that resolves through `wz.parent` when set and returns immediately when the resolved hook is nil.
 
 `libs/atlas-wz/wz/file.go`: add `trace func(TraceEvent)` to the `File` struct (`:29-50`); no new mutex — the documented contract is set-before-use, matching how `encryptionKey`/`versionHash` are set once during `Open` and never mutated after publication.
 
-- [ ] **Step 4: Add the emit sites**
+- [x] **Step 4: Add the emit sites**
 
 Thread a `path string` argument down the parse chain (`parsePropertyList` → `parsePropertyValue` → `parseExtendedProperty` → `parseCanvasProperty`), rooted at `""` from `parseWithKey` (`image.go:151`). Emit:
 
@@ -207,19 +207,19 @@ Thread a `path string` argument down the parse chain (`parsePropertyList` → `p
 
 `ReadWzStringBlock` emission stays in `image.go` at each of its five call sites (`:141`, `:178`, `:258`, `:300`, `:349`) rather than inside `reader.go` — the `*Reader` has no access to `*File` and must not gain one.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `cd libs/atlas-wz && go test ./wz/ -run 'TestSetTrace|TestTraceNil'`
 Expected: PASS.
 
-- [ ] **Step 6: Prove the existing concurrency contracts still hold**
+- [x] **Step 6: Prove the existing concurrency contracts still hold**
 
 Run: `cd libs/atlas-wz && go test -race ./...`
 Expected: PASS, including `TestLockParseIsExclusive` (`parse_race_test.go:29-63`), `TestPropertiesFastPathSkipsLock` (`:77-92`), `TestPropertiesConcurrentParse` (`:105-138`), `TestImageNameStripsDotImg` (`iteration_contract_test.go:22-45`) and `TestNewFileWithRootRoundTrip` (`:52-79`).
 
 `TestPropertiesFastPathSkipsLock` asserts `Properties()` on an already-parsed `NewParsedImage` never touches `wzFile`. Do not add a trace emit on that fast path — `Image.Properties()` (`image.go:81-102`) must keep returning early before touching `i.wzFile`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add libs/atlas-wz/wz/trace.go libs/atlas-wz/wz/trace_test.go libs/atlas-wz/wz/file.go libs/atlas-wz/wz/image.go
@@ -260,7 +260,7 @@ Module root: `libs/atlas-wz`.
 
 Path rendering rule, taken from the evidence file: a node contributes `/<Kind>:<Name>` and the root image element itself contributes nothing. Attribute rendering: `value=X` for value-bearing kinds, `height=H width=W` for `canvas` (that attribute order, matching the evidence), `x=X y=Y` for `vector`, empty string for containers.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `node_test.go` — `TestNodePath`:
 
@@ -312,23 +312,23 @@ Assert the loader returns 2 top-level nodes (`imgdir:info`, `imgdir:0`), that `i
 
 The last row pins a decision: **the diff is set-based over `(path, attrs)`, not order-sensitive.** HaRepacker's dump order is not our decode order and the evidence file already compares as sets.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd libs/atlas-wz && go test ./wzdiff/...`
 Expected: FAIL — `no Go files in .../wzdiff`.
 
-- [ ] **Step 3: Implement `node.go`, `xmlload.go`, `diff.go`**
+- [x] **Step 3: Implement `node.go`, `xmlload.go`, `diff.go`**
 
 `xmlload.go` uses `encoding/xml`'s `Decoder` token stream (not struct unmarshalling) so unknown attributes and element names are preserved into `Attrs`/`Kind` rather than dropped — a dropped attribute would make the differ lie.
 
 `diff.go` flattens both trees to `map[string]string` (path → attrs), then walks both key sets. A path in one side only yields one `Delta`; a path in both with differing attrs yields two `Delta`s, one per direction. Emit in sorted path order for stable output.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd libs/atlas-wz && go test ./wzdiff/...`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add libs/atlas-wz/wzdiff
@@ -374,7 +374,7 @@ wzdiff --archive <path.wz> --reference <harepacker-dump-dir> [--allowlist <file>
 
 Exit **0** only when there are zero unallowlisted deltas and both sides enumerate the same image set. Exit **1** otherwise, after printing a report in the evidence file's format. `--trace <image>` installs `File.SetTrace` (Task 2) and dumps the trace for that one image to stdout — this is the FR-1 tool.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `allowlist_test.go` — `TestLoadAllowlist`: write a temp file with a comment line, a blank line, and two entries; assert 2 entries parsed with fields intact and that a malformed 3-field line returns an error naming the line number.
 
@@ -392,26 +392,26 @@ Exit **0** only when there are zero unallowlisted deltas and both sides enumerat
 
 `TestRunCleanArchiveHasNoDeltas`: build a `wztest` archive with `Sub("info", Int("state", 1))`, serialize a matching reference `.img.xml` by hand into `t.TempDir()`, assert `len(Result.Divergent) == 0`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd libs/atlas-wz && go test ./wzdiff/ -run 'TestLoadAllowlist|TestAllowed|TestRun'`
 Expected: FAIL — `undefined: LoadAllowlist`, `undefined: Run`.
 
-- [ ] **Step 3: Implement `allowlist.go`, `run.go`, and `cmd/wzdiff/main.go`**
+- [x] **Step 3: Implement `allowlist.go`, `run.go`, and `cmd/wzdiff/main.go`**
 
 `main.go` contains flag parsing, a `logrus.New()` logger, a call to `wzdiff.Run`, report printing, and `os.Exit`. No logic — all of it is in the testable package.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd libs/atlas-wz && go test ./wzdiff/...`
 Expected: PASS.
 
-- [ ] **Step 5: Verify the binary builds and its help is correct**
+- [x] **Step 5: Verify the binary builds and its help is correct**
 
 Run: `cd libs/atlas-wz && go build ./... && go run ./cmd/wzdiff --help`
 Expected: build succeeds; usage lists `--archive`, `--reference`, `--allowlist`, `--trace`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add libs/atlas-wz/wzdiff libs/atlas-wz/cmd/wzdiff
@@ -441,7 +441,7 @@ Module root: `libs/atlas-wz` (for running `wzdiff`).
 - Consumes: `wzdiff` (Tasks 3-4), the trace hook (Task 2).
 - Produces: a `PARSER-DEFECT` / `REFERENCE-RESOLUTION` / `MIXED` label with byte evidence for each of the 19 images and the 2 missing ones; `allowlist.tsv` in `wzdiff.LoadAllowlist` format.
 
-- [ ] **Step 1: Produce the baseline diff**
+- [x] **Step 1: Produce the baseline diff**
 
 Run:
 
@@ -454,7 +454,7 @@ cd libs/atlas-wz && go run ./cmd/wzdiff \
 
 Expected: exit 1, 19 divergent images, image-set mismatch 419 vs 421. **Confirm this reproduces `evidence-wz-parse-divergence-reactor.txt` before trusting the tool.** If the counts differ, the tool is wrong, not the evidence — stop and fix Task 3/4.
 
-- [ ] **Step 2: Adjudicate each disputed image from the bytes**
+- [x] **Step 2: Adjudicate each disputed image from the bytes**
 
 The disputed set is the one design §2.1 names: `2519000`, `2519001`, `2519002`, `2519003`, `2006001`, plus `2618000` (MIXED-suspect) and `3002000` (our parse *gains* a subtree).
 
@@ -476,7 +476,7 @@ The specific questions the bytes must answer:
 
 The remaining 12 images (`2406000`, `2408001`, `2502002`, `2618003`–`2618007`, `9202005`, `9208003`, `9208004`, `2006000`) are pure loss or a mangled name with no `link`/`uol` in play. Confirm each is `PARSER-DEFECT` from its trace — do not assume it. Sweep all 19; a spot-check presented as a full adjudication is a false verified.
 
-- [ ] **Step 3: Write `reference-fidelity.md`**
+- [x] **Step 3: Write `reference-fidelity.md`**
 
 One section per image: the label, the byte offset(s) inspected, the hexdump excerpt, and the decode that justifies the label. Include an explicit table of all 21 items (19 divergent + `9400300` + `9400301`) with their labels, so the count is auditable at a glance.
 
@@ -666,7 +666,7 @@ Module root: `libs/atlas-wz`.
 | `UOL` | tag byte `9`, `int32` inner length, then inner = string block `"UOL"` + **1 skipped byte** + string block target (`:345-353`) |
 | `Convex` | tag byte `9`, `int32` inner length, then inner = string block `"Shape2D#Convex2D"` + WzInt child count + each child encoded as a bare extended property (string block tag + payload, **no name, no length prefix** — `:330-343` recurses into `parseExtendedProperty` directly) |
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `libs/atlas-wz/wz/wztest_kinds_test.go`, package `wz`. `TestBuilderEmitsAllPropertyKinds` — one GMS fixture containing every new kind, round-tripped through the real parser.
 
@@ -705,30 +705,30 @@ Then `Open`, take `f.Root().Images()[0].Properties()`, and assert with `findProp
 
 `TestBuilderFloatZeroWithoutMarker` — assert `wztest.Float("f", 0)` round-trips to `Value() == 0`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd libs/atlas-wz && go test ./wz/ -run TestBuilderEmitsAllPropertyKinds -v`
 Expected: FAIL — `undefined: wztest.Null`, `undefined: wztest.Short`, etc.
 
-- [ ] **Step 3: Extend `Prop`, `Kind`, and the constructors**
+- [x] **Step 3: Extend `Prop`, `Kind`, and the constructors**
 
 Add the `Kind` constants after `KindCanvas` (`builder.go:18-23`), the payload fields on `Prop` (`:26-33`), and the constructors alongside `Int`/`Str`/`Sub`/`Canvas` (`:35-45`). Keep the existing one-line style.
 
-- [ ] **Step 4: Add the `writePropList` arms**
+- [x] **Step 4: Add the `writePropList` arms**
 
 New `case` arms inside the switch at `builder.go:154-195`, each emitting exactly the byte layout in the table above. The extended kinds (`Vector`, `UOL`, `Convex`) build an `inner` buffer and wrap it with tag `9` + `int32(len(inner))`, mirroring `KindSub` at `:164-174`. Convex children are written *bare* — string-block type tag then payload, with no property-name string block and no length prefix, because `parseExtendedProperty` is re-entered directly at `image.go:337`.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd libs/atlas-wz && go test ./wz/ -run TestBuilder -v`
 Expected: PASS.
 
-- [ ] **Step 6: Prove the extension is additive**
+- [x] **Step 6: Prove the extension is additive**
 
 Run: `cd libs/atlas-wz && go build ./... && go test ./...`
 Expected: PASS. `TestFixtureRoundTripGMS` (`fixture_roundtrip_test.go:43-104`) and every other existing `wztest` call site must still compile and pass untouched.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add libs/atlas-wz/wztest/builder.go libs/atlas-wz/wz/wztest_kinds_test.go
@@ -763,7 +763,7 @@ The canvas inner layout `parseCanvasProperty` expects, in order (`image.go:368-4
 
 **Do not change `dataOffset` semantics.** `parseCanvasProperty` records `dataOffset` at `image.go:422` pointing *at* the `0xAB` flag byte, and `File.ReadCanvasData` compensates with `offset+1`/`size-1`. That pairing is load-bearing for `libs/atlas-wz/atlas`'s pack determinism (design §6.4). The builder keeps writing `int32(len(payload)+1)` as `dataSize` followed by `0xAB` then the payload, exactly as `builder.go:187-189` does today. If Task 6 implicates it, it becomes its own defect with its own fixture — not a drive-by here.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `libs/atlas-wz/wz/wztest_canvas_test.go`, package `wz`. `TestBuilderCanvasWithDimensionsAndChildren`:
 
@@ -795,26 +795,26 @@ Assertions on the parsed `*property.CanvasProperty` at `/1/0`:
 
 `TestBuilderCanvasBackCompat` — `wztest.Canvas("icon", payload)` still parses to `Width()==1`, `Height()==1`, `len(Children())==0`, and `ReadCanvasData` returns the payload. This is the additive-only proof for `TestFixtureRoundTripGMS`.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd libs/atlas-wz && go test ./wz/ -run TestBuilderCanvas -v`
 Expected: FAIL — `undefined: wztest.CanvasWith`.
 
-- [ ] **Step 3: Implement `CanvasWith` and rewrite the canvas arm**
+- [x] **Step 3: Implement `CanvasWith` and rewrite the canvas arm**
 
 Keep `Canvas` as a wrapper so no existing call site changes.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd libs/atlas-wz && go test ./wz/ -run TestBuilderCanvas -v`
 Expected: PASS.
 
-- [ ] **Step 5: Full module green**
+- [x] **Step 5: Full module green**
 
 Run: `cd libs/atlas-wz && go test ./...`
 Expected: PASS, including `libs/atlas-wz/icons` and `libs/atlas-wz/mapimage` (both consume canvas offsets from this reader) and `libs/atlas-wz/atlas`'s determinism tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add libs/atlas-wz/wztest/builder.go libs/atlas-wz/wz/wztest_canvas_test.go
@@ -847,7 +847,7 @@ Semantics: with dedup on, the *first* occurrence of a string within an image is 
 
 The string table is per image, not per archive.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `libs/atlas-wz/wz/wztest_dedup_test.go`, package `wz`. `TestBuilderStringDedupRoundTrip`:
 
@@ -880,26 +880,26 @@ Assertions:
 
 `TestBuilderStringDedupOffByDefault` — same image without `SetStringDedup`, assert the built bytes contain no `0x01`/`0x1B` string-block tag and the tree still parses identically. This is the additive-only proof.
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd libs/atlas-wz && go test ./wz/ -run TestBuilderStringDedup -v`
 Expected: FAIL — `undefined: SetStringDedup` on `*wztest.Builder`.
 
-- [ ] **Step 3: Implement the per-image string table and offset patching**
+- [x] **Step 3: Implement the per-image string table and offset patching**
 
 Thread a `map[string]int` (string → offset within the image) through `buildImage`, record a `patch` at each deferred offset field, and resolve them in the same pass as the existing directory-offset patching in `Build()` (`:324-339`).
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd libs/atlas-wz && go test ./wz/ -run TestBuilderStringDedup -v`
 Expected: PASS.
 
-- [ ] **Step 5: Full module green**
+- [x] **Step 5: Full module green**
 
 Run: `cd libs/atlas-wz && go test ./...`
 Expected: PASS. Existing fixtures are byte-identical because dedup defaults off.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add libs/atlas-wz/wztest/builder.go libs/atlas-wz/wz/wztest_dedup_test.go
@@ -1132,7 +1132,7 @@ Module roots: `libs/atlas-wz` **and** `services/atlas-data/atlas.com/data`.
 
 **Blast-radius note, already surveyed:** `parseDirectory` is reached only from `File.parseRoot` (`file.go:525-538`), itself called only from `Open` (`file.go:156`). Every non-test `wz.Open` call site already checks the error — `services/atlas-data/atlas.com/data/data/workers/runtime.go:144-148` and `:209-213`, and `services/atlas-renders/atlas.com/renders/storage/wzcache.go:135` (confirmed safe by the Task 14 reviewer: it checks the error, removes the partial download, and never touches a partial file). No new error handling is needed at any `f.Root()` consumer (`libs/atlas-wz/charparts/extract.go:156`, `zmap.go:34`, `smap.go:32`, `mapimage/layers.go:142`, `index.go:33`, `icons/extract.go:43,116,161`, and the `atlas-data` workers). The behaviour change is entirely in whether `Open` itself now fails hard. Say this out loud in the PR description — it is an operator-visible change.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `libs/atlas-wz/wz/directory_error_test.go`, package `wz`. `TestSubDirectoryParseFailurePropagates` — build a two-level archive with `wztest` (`AddDir` a `Dir` containing a nested `Dir`), then corrupt the nested directory's entry-count bytes in the built output. Assert `wz.Open` returns a non-nil error whose message names the failing sub-directory, and that no partially-populated `*File` is returned.
 
@@ -1140,27 +1140,27 @@ Module roots: `libs/atlas-wz` **and** `services/atlas-data/atlas.com/data`.
 
 `adapter_test.go` — `TestSerializeDirectoryCountsFailures`: serialize a directory containing images where one fails, and assert the logger saw exactly one per-image line for the failure and exactly one summary line per archive reporting `N of M images failed`. **Assert there is no per-property line** — per-property logging is forbidden by the NFR. Capture logrus output with a `logrus.New()` writing to a `bytes.Buffer` (standard logrus test-capture, no new dependency).
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd libs/atlas-wz && go test ./wz/ -run TestSubDirectoryParseFailure -v`
 Run: `cd services/atlas-data/atlas.com/data && go test ./data/wztoxml/ -run TestSerializeDirectoryCountsFailures -v`
 Expected: both FAIL — the error is swallowed, and no summary line exists.
 
-- [ ] **Step 3: Propagate the directory error**
+- [x] **Step 3: Propagate the directory error**
 
 Replace `directory.go:122`'s `Warnf`-and-continue with `return nil, fmt.Errorf("parse sub-directory [%s]: %w", entryName, err)`.
 
-- [ ] **Step 4: Add per-image and per-archive accounting to `wztoxml`**
+- [x] **Step 4: Add per-image and per-archive accounting to `wztoxml`**
 
 `serializeDirectory` accumulates a failure count and an image count and returns them; `SerializeToDirectory` logs one summary line per archive naming the archive path and `N of M`. The existing per-image `Warnf` keeps the image name and gains the archive path. Signatures of the three exported functions do not change — `runtime.go:101` must not be touched.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd libs/atlas-wz && go test -race ./...`
 Run: `cd services/atlas-data/atlas.com/data && go build ./... && go test ./...`
 Expected: PASS in both.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add libs/atlas-wz/wz/directory.go libs/atlas-wz/wz/directory_error_test.go \

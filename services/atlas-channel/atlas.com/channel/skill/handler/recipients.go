@@ -52,8 +52,9 @@ func (b *PartyRecipientBuilder) SetHp(v uint16) *PartyRecipientBuilder    { b.r.
 func (b *PartyRecipientBuilder) SetMaxHp(v uint16) *PartyRecipientBuilder { b.r.maxHp = v; return b }
 func (b *PartyRecipientBuilder) SetMp(v uint16) *PartyRecipientBuilder    { b.r.mp = v; return b }
 func (b *PartyRecipientBuilder) SetMaxMp(v uint16) *PartyRecipientBuilder { b.r.maxMp = v; return b }
-func (b *PartyRecipientBuilder) SetLevel(v byte) *PartyRecipientBuilder   { b.r.level = v; return b }
-func (b *PartyRecipientBuilder) Build() PartyRecipient                    { return b.r }
+
+func (b *PartyRecipientBuilder) SetLevel(v byte) *PartyRecipientBuilder { b.r.level = v; return b }
+func (b *PartyRecipientBuilder) Build() PartyRecipient                  { return b.r }
 
 // loadCasterPartyFunc is the party-load seam tests can replace.
 var loadCasterPartyFunc = func(l logrus.FieldLogger, ctx context.Context, casterId uint32) (party.Model, error) {

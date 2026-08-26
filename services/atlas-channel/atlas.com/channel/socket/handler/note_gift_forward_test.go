@@ -142,8 +142,8 @@ func (r *noteRecorder) producer() writer.Producer {
 func noteDispatchOptions() map[string]interface{} {
 	return map[string]interface{}{
 		"operations": map[string]interface{}{
-			NoteOperationSend:               float64(0),
-			notecb.NoteOperationSendError:   float64(5),
+			NoteOperationSend:             float64(0),
+			notecb.NoteOperationSendError: float64(5),
 		},
 		"errors": map[string]interface{}{
 			notecb.NoteSendErrorNoNoteItem: float64(3),

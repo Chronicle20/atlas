@@ -114,3 +114,6 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-26T19:52:53Z	agent	bug-round-2-review	task-reviewer	sonnet	-	-	-	-	DONE	59916a651	APPROVED	no	-	-
 2026-08-26T20:07:01Z	agent	bug-round-2-defect-f	task-implementer	sonnet	-	-	-	-	DONE	ae4042260	-	-	-	-
 2026-08-26T20:07:02Z	agent	bug-round-2-defect-f-review	task-reviewer	sonnet	-	-	-	-	DONE	ae4042260	APPROVED	no	-	-
+2026-08-26T20:42:27Z	agent	bug-gift-notice	task-implementer	sonnet	-	-	-	-	PARTIAL	7addf1508	-	-	-	-
+2026-08-26T20:42:29Z	agent	bug-gift-notice-step2	task-implementer	sonnet	-	-	-	-	DONE	b525249ed	-	-	-	-
+2026-08-26T20:42:30Z	agent	bug-gift-notice-step2	task-reviewer	sonnet	-	-	-	-	DONE	b525249ed	APPROVED	false	-	-

@@ -97,6 +97,23 @@ field. Check `libs/atlas-constants/` before introducing any new type.
 - Formatting authority is `tools/lint.sh` (no flags = fix mode); bare `gofumpt`
   disagrees with the repo config.
 
+## Resolution
+
+- `7addf1508` — steps 1 and 3 (transaction-tag the gift debit; `handleStatusEventGiftPurchased`
+  announces `GIFT_SUCCESS` then `CashQueryResult`).
+- `b525249ed` — step 2 (`SceneRefreshOwned` flag; `handleWalletUpdated` skips the
+  `CashSceneCashShop` announce when set).
+- Review: `review-bug-round-2-gift-notice.md` — **APPROVED**, 0 blocking, 0 non-blocking.
+  Seam check confirmed `json:"sceneRefreshOwned,omitempty"` identical in both
+  service contract structs.
+- Gate: `tools/verify.sh --quick --base ae4042260` exited **0**, including the
+  lint & format guard over both modules. `--quick` skipped the docker bake and
+  `-race`, so a flagless `tools/verify.sh` is still required before PR.
+- **Live re-test: NOT yet performed.** The unit tests pin the announce order but
+  not that the v83 client's gift batch actually resolves to `SP_561`. Until a
+  tester gifts an item and sees "All the gifts have been sent…", this bug is
+  fixed-in-principle only.
+
 ## Still binding from the original brief
 
 `## Do not touch` — the `GiftDone` codec, the `GIFT_SUCCESS` mode table, and all

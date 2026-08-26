@@ -159,7 +159,7 @@ func TestLoadAllowlistNormalizesWhitespace(t *testing.T) {
 }
 
 func TestLoadAllowlistRejectsBareSlashPath(t *testing.T) {
-	// "/" normalizes to "" (TrimSuffix strips the only "/"), and an empty
+	// "/" normalizes to "" (TrimRight strips all trailing "/"), and an empty
 	// Path must be rejected by the existing blank-path check rather than
 	// silently allowlisting every delta on the image.
 	content := "2519002\t/\treference\tsome reason\n"
@@ -171,6 +171,51 @@ func TestLoadAllowlistRejectsBareSlashPath(t *testing.T) {
 	_, err := LoadAllowlist(path)
 	if err == nil {
 		t.Fatal("LoadAllowlist: want error for path \"/\", got nil")
+	}
+}
+
+func TestLoadAllowlistRejectsRepeatedSlashPath(t *testing.T) {
+	// "//" must normalize to "" the same as "/" does: TrimRight strips ALL
+	// trailing slashes, not just one. A single-slash-strip (TrimSuffix)
+	// would leave "/" behind, which passes the blank-path check and
+	// silently allowlists every delta on the image -- the same
+	// fail-closed footgun the trailing-slash fix was meant to close.
+	content := "2519002\t//\treference\tsome reason\n"
+	path := filepath.Join(t.TempDir(), "allowlist.tsv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+
+	_, err := LoadAllowlist(path)
+	if err == nil {
+		t.Fatal("LoadAllowlist: want error for path \"//\", got nil")
+	}
+}
+
+func TestLoadAllowlistNormalizesRepeatedTrailingSlashOnPath(t *testing.T) {
+	// "/imgdir:0//" (two trailing slashes) must normalize the same as
+	// "/imgdir:0/" (one) does, to "/imgdir:0". A single-slash-strip would
+	// leave "/imgdir:0/", which passes validation but can never match via
+	// Allowed's HasPrefix(d.Path, e.Path+"/") check, since no real delta
+	// path has a double slash.
+	content := "2519002\t/imgdir:0//\treference\tsome reason\n"
+	path := filepath.Join(t.TempDir(), "allowlist.tsv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+
+	entries, err := LoadAllowlist(path)
+	if err != nil {
+		t.Fatalf("LoadAllowlist: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("len(entries) = %d, want 1", len(entries))
+	}
+	if entries[0].Path != "/imgdir:0" {
+		t.Errorf("entries[0].Path = %q, want %q", entries[0].Path, "/imgdir:0")
+	}
+	if !Allowed(entries, "2519002", Delta{Path: "/imgdir:0", OnlyIn: "reference"}) {
+		t.Error("Allowed = false, want true for the normalized path")
 	}
 }
 

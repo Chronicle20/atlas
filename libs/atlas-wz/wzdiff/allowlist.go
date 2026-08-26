@@ -77,19 +77,20 @@ func LoadAllowlist(path string) ([]AllowEntry, error) {
 }
 
 // normalizeAllowEntry trims surrounding whitespace on Image, Path and
-// OnlyIn, and strips a trailing "/" from Path. It runs before
-// validateAllowEntry, and its result -- not the raw parsed fields -- is
-// what gets validated and stored: a whitespace-padded Image/Path/OnlyIn
-// (e.g. " Reactor.img") or a Path with a trailing slash (e.g.
-// "/imgdir:0/", which becomes the prefix "/imgdir:0//" and matches
-// nothing via Allowed's HasPrefix check) would otherwise pass validation
-// but silently never match, a fail-closed footgun with no diagnostic.
-// Normalizing a bare "/" strips to "", which validateAllowEntry then
-// rejects as a blank path rather than letting it silently allowlist the
-// whole image.
+// OnlyIn, and strips ALL trailing "/" characters from Path (not just one).
+// It runs before validateAllowEntry, and its result -- not the raw parsed
+// fields -- is what gets validated and stored: a whitespace-padded
+// Image/Path/OnlyIn (e.g. " Reactor.img") or a Path with one or more
+// trailing slashes (e.g. "/imgdir:0/" or "/imgdir:0//", either of which
+// would become the prefix "/imgdir:0//..." and match nothing via
+// Allowed's HasPrefix check if only a single slash were stripped) would
+// otherwise pass validation but silently never match, a fail-closed
+// footgun with no diagnostic. Normalizing a Path of all slashes ("/",
+// "//", ...) strips to "", which validateAllowEntry then rejects as a
+// blank path rather than letting it silently allowlist the whole image.
 func normalizeAllowEntry(e AllowEntry) AllowEntry {
 	e.Image = strings.TrimSpace(e.Image)
-	e.Path = strings.TrimSuffix(strings.TrimSpace(e.Path), "/")
+	e.Path = strings.TrimRight(strings.TrimSpace(e.Path), "/")
 	e.OnlyIn = strings.TrimSpace(e.OnlyIn)
 	return e
 }

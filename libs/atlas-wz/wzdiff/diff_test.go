@@ -233,6 +233,32 @@ func TestDiff(t *testing.T) {
 		}
 	})
 
+	t.Run("signature does not collide across a delimiter-embedding value", func(t *testing.T) {
+		// A crafted int:value that embeds the format's own delimiter
+		// characters (: { } [ ] ;) can, if unescaped, make a single child
+		// whose value fakes "}[];int:n{value=X}[];" render byte-for-byte
+		// identical to a parent with two REAL children (int:m=Y and
+		// int:n=X). The two subtrees are structurally different -- one
+		// has a single child carrying a booby-trapped value, the other has
+		// two ordinary children -- so their signatures must differ.
+		single := Node{
+			Kind: "imgdir", Name: "p",
+			Children: []Node{
+				{Kind: "int", Name: "m", Attrs: map[string]string{"value": "Y}[];int:n{value=X"}},
+			},
+		}
+		two := Node{
+			Kind: "imgdir", Name: "p",
+			Children: []Node{
+				{Kind: "int", Name: "m", Attrs: map[string]string{"value": "Y"}},
+				{Kind: "int", Name: "n", Attrs: map[string]string{"value": "X"}},
+			},
+		}
+		if signature(single) == signature(two) {
+			t.Fatalf("signature collision: %q == %q for structurally different subtrees", signature(single), signature(two))
+		}
+	})
+
 	t.Run("ordering-insensitive", func(t *testing.T) {
 		ours := []Node{intNode("a", "1"), intNode("b", "2")}
 		reference := []Node{intNode("b", "2"), intNode("a", "1")}

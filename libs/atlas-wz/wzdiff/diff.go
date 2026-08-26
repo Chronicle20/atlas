@@ -122,6 +122,16 @@ func flatten(nodes []Node, prefix string) map[string]string {
 // traversal order at every depth, so two subtrees that are structurally
 // and value-wise identical always produce the same signature regardless
 // of which order either side happened to decode their children in.
+//
+// Kind, Name and the rendered attrs come from WZ string data, which may
+// itself contain any of the structural delimiter characters this format
+// uses (": { } [ ] ;"). escapeSig backslash-escapes every occurrence of a
+// delimiter (and of the escape character itself) in those three fields
+// before they are written, so a delimiter that is part of a value can
+// never be mistaken for structure. Only the literal structural characters
+// this function writes are ever unescaped, which makes the format
+// unambiguous: two nodes produce the same signature if and only if their
+// subtrees are identical.
 func signature(n Node) string {
 	childSigs := make([]string, len(n.Children))
 	for i, c := range n.Children {
@@ -130,11 +140,11 @@ func signature(n Node) string {
 	sort.Strings(childSigs)
 
 	var b strings.Builder
-	b.WriteString(n.Kind)
+	b.WriteString(escapeSig(n.Kind))
 	b.WriteByte(':')
-	b.WriteString(n.Name)
+	b.WriteString(escapeSig(n.Name))
 	b.WriteByte('{')
-	b.WriteString(renderAttrs(n.Kind, n.Attrs))
+	b.WriteString(escapeSig(renderAttrs(n.Kind, n.Attrs)))
 	b.WriteByte('}')
 	b.WriteByte('[')
 	for _, s := range childSigs {
@@ -142,5 +152,30 @@ func signature(n Node) string {
 		b.WriteByte(';')
 	}
 	b.WriteByte(']')
+	return b.String()
+}
+
+// sigDelims are the structural characters signature uses to delimit
+// fields and subtree lists. escapeSig backslash-escapes every occurrence
+// of one of these (and of the backslash itself) in a value before it is
+// interpolated into a signature, so a delimiter that is part of the
+// value's own data can never be confused with the structure signature
+// writes around it.
+const sigDelims = ":{}[];"
+
+// escapeSig backslash-escapes the backslash character and every character
+// in sigDelims within s.
+func escapeSig(s string) string {
+	if !strings.ContainsAny(s, sigDelims) && !strings.ContainsRune(s, '\\') {
+		return s
+	}
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		if r == '\\' || strings.ContainsRune(sigDelims, r) {
+			b.WriteByte('\\')
+		}
+		b.WriteRune(r)
+	}
 	return b.String()
 }

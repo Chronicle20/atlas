@@ -109,3 +109,6 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-26T18:29:05Z	agent	bug-cash-shop-live-testing	atlas-reviewer	sonnet	-	-	-	-	DONE	e6dffd8f6	APPROVED_WITH_FINDINGS	true	-	-
 2026-08-26T18:29:05Z	agent	bug-cash-shop-live-testing-underflow	atlas-implementer	sonnet	-	-	-	-	DONE	e6dffd8f6	-	-	-	-
 2026-08-26T18:29:09Z	agent	bug-cash-shop-live-testing gate	verify.sh	-	-	-	-	-	PASS	56108b790	-	-	-	-
+2026-08-26T19:52:53Z	agent	bug-round-2-defect-d	task-implementer	sonnet	-	-	-	-	DONE	648310b18	-	-	-	-
+2026-08-26T19:52:53Z	agent	bug-round-2-defect-e	task-implementer	sonnet	-	-	-	-	DONE	59916a651	-	-	-	-
+2026-08-26T19:52:53Z	agent	bug-round-2-review	task-reviewer	sonnet	-	-	-	-	DONE	59916a651	APPROVED	no	-	-

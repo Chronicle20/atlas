@@ -312,4 +312,39 @@ investigation. Do not fix speculatively.
 
 ## Outcome
 
-<!-- filled in after the fix lands -->
+| defect | disposition |
+|---|---|
+| D — by-type slot grant | Fixed, `648310b18` |
+| E — package buy-for-self takes the gift arm | Fixed, `59916a651` |
+| F — gift sender/message never reach the recipient | In progress; design ruled and scoped in `bug-round-2-defect-f-brief.md` |
+| G — ring pairing has no in-field behaviour | Out of scope, filed as [issue #1514](https://github.com/Chronicle20/atlas/issues/1514) |
+| gift-failure notice (reported item 1) | **Unresolved**, root cause not established — see the Unresolved symptom section |
+
+**Review (D + E):** `review-bug-round-2.md` — APPROVED, 0 blocking, 0 non-blocking.
+The reviewer hand-traced the producer at `processor_package.go:139-150,226` to
+confirm the status event's `RecipientCharacterId` is genuinely never zero (so
+`!= e.CharacterId` is correct rather than differently-wrong), and swept all 13
+`RecipientCharacterId` references in atlas-channel for any other handler
+applying the command body's convention to a status body. None found.
+
+**Gate (D + E):** `tools/verify.sh --quick --base 56108b790` → **PASS** (exit 0),
+9 changed paths, 2 changed Go modules, 8 checks passed, docker bake skipped for
+`--quick`.
+
+**Why E survived a green gate:** the pre-existing consumer test built its
+buy-for-self fixture with `RecipientCharacterId: 0` — a value atlas-cashshop
+never emits. The test encoded the same wrong assumption as the code, so the two
+agreed and no gate could see it. Confirmed by reverting the discriminator to
+`!= 0` with the new fixture in place: `mode = 153, want the BUY_PACKAGE_SUCCESS
+mode 152` and `items = 5, want 1`.
+
+### Still outstanding
+
+- **The flagless `tools/verify.sh` has NOT been run.** `--quick` skips the bake
+  and `-race`; it does not meet the "done means verified" bar. Run it before
+  updating the PR.
+- **No live re-test of D or E yet.** Re-test in `atlas-pr-1426` on GMS 83.1 with
+  the images rebuilt: buy a package for yourself and confirm the members appear
+  without leaving the shop (E); buy a by-type slot expansion and confirm +4 (D).
+- The unresolved gift-failure notice still needs the verbatim client string and
+  confirmation of whether the recipient actually received the item.

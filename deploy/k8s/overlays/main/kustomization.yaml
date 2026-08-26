@@ -310,7 +310,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
-    newTag: main-c9e533e
+    newTag: main-3227c70
   - name: ghcr.io/chronicle20/atlas-mounts/atlas-mounts
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-mts/atlas-mts

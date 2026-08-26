@@ -408,11 +408,21 @@ All Argo CD-related Secrets live in the `argocd` namespace and are templated by 
 
   ```sh
   # 1. Mint a new PAT with the scope set above.
-  # 2. Update the cluster secret.
+  # 2. Update the cluster secret. This is the only consumer.
   kubectl -n argocd edit secret atlas-pr-cleanup-gh-token   # set key GHCR_TOKEN
-  # 3. Update the repo secret used by .github/workflows/pr-cleanup.yml's image-delete step.
-  gh secret set GHCR_TOKEN --repo Chronicle20/atlas --body "$NEW_PAT"
   ```
+
+  **There is no repo-secret half to this rotation.** Until task-264,
+  `.github/workflows/pr-cleanup.yml` carried a `delete-images` job that read a
+  `GHCR_TOKEN` repository secret, and this procedure had a third step to
+  rotate it. That job was removed — it raced the Argo teardown by deleting
+  ghcr tags an in-flight sync was still pulling, and it duplicated
+  `cleanup.sh::do_drop_images`, which does the same work PostDelete.
+  `pr-cleanup.yml` reads no `GHCR_TOKEN` secret now. **Do not delete the
+  repository-level `GHCR_TOKEN` secret itself** — it is a distinct,
+  still-live secret read by `ghcr-cleanup.yml`, `main-publish.yml`,
+  `pr-env-smoke.yml`, and `pr-validation.yml` for unrelated image-publish and
+  smoke-test work; only this rotation procedure's third step is gone.
 
   The nightly smoke test (§4.5 / `pr-env-smoke.yml`) will catch a missed half-rotation within 24h.
 
@@ -428,16 +438,90 @@ All Argo CD-related Secrets live in the `argocd` namespace and are templated by 
 
 ## §9.6 Bootstrap-duration metrics
 
+### PromQL — this metric was never emitted
+
 ```promql
+# DEAD QUERY. atlas_bootstrap_step_duration_ms_bucket does not exist in
+# Prometheus; the bootstrap Job carries no instrumentation. Kept as a record
+# of intent, not as a runnable query. Use the LogQL method below instead.
 histogram_quantile(0.95,
   rate(atlas_bootstrap_step_duration_ms_bucket{atlas_env!="main"}[1h]))
 ```
 
-Loki: filter the `atlas.step` field for stepwise breakdown:
+The bootstrap Job was never instrumented. Verified 2026-08-26: the Prometheus
+instance carries 922 metric names and **zero** matching `atlas` or
+`bootstrap`. The query is left here rather than deleted because it documents
+an intent — someone meant this metric to exist — and deleting it loses that.
+Until it is emitted, use the Loki method below.
+
+### LogQL — stepwise breakdown
+
+The previously documented selector `{atlas_env="a3f7", job=~"atlas-pr-bootstrap"}`
+matches nothing and always did. Loki's live label set is:
+
+```
+__stream_shard__, container, instance, job, level, namespace, pod, service, service_name
+```
+
+`job` has exactly one value, `loki.source.kubernetes.pod_logs`. There is no
+`atlas_env` stream label — `atlas.env` is a **field inside the JSON payload**,
+so it must be reached through `| json`, not through a stream selector. The
+working query:
 
 ```logql
-{atlas_env="a3f7", job=~"atlas-pr-bootstrap"} | json | atlas_step != ""
+{container="bootstrap", namespace="atlas-pr-<N>"} | json | atlas_step != ""
 ```
+
+which returns lines shaped like:
+
+```json
+{"ts":"2026-08-26T12:21:34Z","level":"info","atlas.env":"2a03",
+ "atlas.step":"wait-ready",
+ "msg":"waiting for atlas-tenants, atlas-configurations, atlas-data, atlas-renders"}
+```
+
+Drop the `namespace` matcher to query across every PR env at once.
+
+### Re-deriving the bootstrap deadline
+
+`deploy/k8s/overlays/pr/sync-bootstrap.yaml` sets
+`spec.activeDeadlineSeconds: 900`. That value came from the distribution
+below; any retune must repeat this method, because the shortcut of eyeballing
+a few recent runs will miss the tail that sets the bound.
+
+Method: port-forward Loki, then run `query_range` over `{container="bootstrap"}`
+in **consecutive 6-hour windows** across the retention period, each with
+`limit=5000`. Group the returned lines by pod and take
+`max(ts) - min(ts)` as that pod's duration. Filter to pods carrying a terminal
+`"atlas.step":"done"` line — those are the successful runs, and they are the
+population the deadline must not truncate. Windowing matters: a single
+30-day query silently truncates at the line limit and biases the result
+toward recent runs.
+
+Result on 2026-08-26 — 120 windows, 4663 lines total, busiest window 153
+lines (nowhere near the cap, so this is the full population, not a sample):
+
+| stat | all 150 pods | 104 successful pods |
+|---|---|---|
+| min | 0s | 6s |
+| p50 | 56s | 68s |
+| p90 | 253s | 115s |
+| p95 | 362s | 162s |
+| p99 | 382s | 542s |
+| max | 542s | 542s |
+
+**Caveat that moves the number:** this is the span of the container's *log*
+stream. It excludes image-pull and scheduling time, both of which precede the
+first log line. The Job's `activeDeadlineSeconds` clock starts earlier, so
+true Job wall-clock exceeds these figures — headroom must absorb that. 900s is
+1.66x the slowest successful run and 5.5x p95.
+
+**Retention caveat.** The earliest bootstrap log in Loki on 2026-08-26 was
+`2026-08-12T10:36:26Z` — **14 days, not 30.** A 30-day query window silently
+returns 14 days of data. Any future retune has at most a fortnight of history,
+and if PR volume drops the population shrinks with it. This is the strongest
+argument for emitting the missing metric above: the log-derived method has a
+hard horizon that a histogram would not.
 
 ## §9.7 Hash-collision resolution
 

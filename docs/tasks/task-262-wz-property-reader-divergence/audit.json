@@ -1,0 +1,88 @@
+{
+  "service": "atlas-wz + atlas-data (task-262-wz-property-reader-divergence)",
+  "path": "libs/atlas-wz; services/atlas-data/atlas.com/data",
+  "date": "2026-08-26",
+  "build": "pass",
+  "testsPassed": 79,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "libs/atlas-wz/wz",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..05", "name": "Domain-file placement", "status": "n-a", "evidence": "No Processor/RestModel/requests/Entity/Builder constructs present in package"},
+        {"id": "FILE-06", "name": "No package-named catch-all bundling >=2 responsibilities", "status": "pass", "evidence": "file.go/reader.go/directory.go/image.go/trace.go each single-concern"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "n-a", "evidence": "no `go` statement added in libs/atlas-wz/wz/*.go"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "libs/atlas-wz/wz/directory_error_test.go:111,142 - flat funcs, no t.Run"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "libs/atlas-wz/wz/trace_test.go:78,160,233,270,299,352,371 - 7 flat funcs, 0 t.Run"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "libs/atlas-wz/wz/wztest_canvas_test.go:18,98 - flat funcs, no t.Run"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "libs/atlas-wz/wz/wztest_dedup_test.go:136,155 - flat funcs, no t.Run"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "libs/atlas-wz/wz/wztest_kinds_test.go:17,105,137 - flat funcs, TestBuilderEmitsAllPropertyKinds covers 10 kinds inline with no table"}
+      ]
+    },
+    {
+      "name": "libs/atlas-wz/wz/wzxml",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..05", "name": "Domain-file placement", "status": "n-a", "evidence": "element.go maps property.Property to generic XML Element, not a JSON:API RestModel"},
+        {"id": "FILE-06", "name": "Catch-all", "status": "pass", "evidence": "single file element.go, single mapping responsibility"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "libs/atlas-wz/wz/wzxml/element_test.go:10,194 - tests := []struct + t.Run"},
+        {"id": "DOM-34", "name": "No aliases/wrappers left after migration", "status": "pass", "evidence": "new home for logic extracted from services/atlas-data/.../wztoxml/adapter.go"}
+      ]
+    },
+    {
+      "name": "libs/atlas-wz/wzdiff",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "Domain-file placement / catch-all", "status": "n-a", "evidence": "no Processor/RestModel/requests/Entity/Builder constructs; run.go bundles Run/Trace/WriteReport but none are FILE-01..05 responsibilities"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "libs/atlas-wz/wzdiff/node_test.go:6,45 and diff_test.go:9 use tests-as-cases with t.Run per named case"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "libs/atlas-wz/wzdiff/allowlist_test.go:10,37,54,67,84,97,110,136,161,177,195 - 10 of 11 tests flat, no t.Run"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "libs/atlas-wz/wzdiff/run_test.go:40,83,132 - flat funcs, no t.Run"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "libs/atlas-wz/wzdiff/selfcheck_test.go:19,68 - flat funcs, no t.Run"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "libs/atlas-wz/wzdiff/xmlload_test.go:33,100,157 - flat funcs, no t.Run"}
+      ]
+    },
+    {
+      "name": "libs/atlas-wz/wztest",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-05", "name": "Builder in builder.go", "status": "pass", "evidence": "libs/atlas-wz/wztest/builder.go:130,138 - type Builder / NewBuilder already in builder.go"},
+        {"id": "FILE-06", "name": "Catch-all", "status": "pass", "evidence": "builder.go carries only fixture-construction responsibility"},
+        {"id": "DOM-21", "name": "No redeclaration of existing atlas-constants type", "status": "n-a", "evidence": "new Kind const values (builder.go:23-31) are WZ-format-internal property tags; no overlapping Kind type in libs/atlas-constants"}
+      ]
+    },
+    {
+      "name": "libs/atlas-wz/cmd/wzdiff",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "Domain-file placement", "status": "n-a", "evidence": "main.go is flag parsing/dispatch only per its own doc comment"},
+        {"id": "DOM-26", "name": "Goroutines", "status": "n-a", "evidence": "no go statement in main.go"}
+      ]
+    },
+    {
+      "name": "services/atlas-data/atlas.com/data/data/wztoxml",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "Domain-file placement", "status": "n-a", "evidence": "adapter.go is serialization orchestration only, no Processor/RestModel/requests/Entity/Builder"},
+        {"id": "DOM-34", "name": "No aliases/wrappers left after migration", "status": "pass", "evidence": "adapter.go:88,96 call wzxml.Element/wzxml.PropertiesToElements directly; grep for xmlElement/propertyToElement/propertiesToElements/formatFloat( under services/atlas-data returns nothing"},
+        {"id": "DOM-35", "name": "Dead symbols removed", "status": "pass", "evidence": "diff deletes old xmlElement type, propertiesToElements, propertyToElement, formatFloat, and unused strconv/strings imports"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "fail", "evidence": "services/atlas-data/atlas.com/data/data/wztoxml/adapter_test.go:23,93,183 - 3 flat funcs, no t.Run"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "DOM-20: libs/atlas-wz/wz/directory_error_test.go: 2 tests not table-driven",
+    "DOM-20: libs/atlas-wz/wz/trace_test.go: 7 tests not table-driven, no t.Run",
+    "DOM-20: libs/atlas-wz/wz/wztest_canvas_test.go: 2 tests not table-driven",
+    "DOM-20: libs/atlas-wz/wz/wztest_dedup_test.go: 2 tests not table-driven",
+    "DOM-20: libs/atlas-wz/wz/wztest_kinds_test.go: 3 tests not table-driven (TestBuilderEmitsAllPropertyKinds covers 10 kinds inline)",
+    "DOM-20: libs/atlas-wz/wzdiff/allowlist_test.go: 10 of 11 tests not table-driven",
+    "DOM-20: libs/atlas-wz/wzdiff/run_test.go: 3 tests not table-driven",
+    "DOM-20: libs/atlas-wz/wzdiff/selfcheck_test.go: 2 tests not table-driven",
+    "DOM-20: libs/atlas-wz/wzdiff/xmlload_test.go: 3 tests not table-driven",
+    "DOM-20: services/atlas-data/atlas.com/data/data/wztoxml/adapter_test.go: 3 tests not table-driven"
+  ],
+  "nonBlocking": []
+}

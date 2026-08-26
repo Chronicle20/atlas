@@ -8,15 +8,36 @@ import (
 	"os"
 )
 
+// readSeekerAt is the minimal file interface Reader needs: buffered reads,
+// absolute/relative seeks, and offset reads that don't move the seek
+// pointer (ReadAt, safe for concurrent callers against the same Reader
+// because os.File.ReadAt is documented concurrent-safe). *os.File satisfies
+// it in production; package-internal tests inject a Seek-counting wrapper
+// via newReaderWithSeeker to prove the trace hook's nil-hook path performs
+// no extra Seek calls (task-262 M1-3), without a test-only field on Reader.
+type readSeekerAt interface {
+	io.Reader
+	io.Seeker
+	io.ReaderAt
+}
+
 // Reader provides WZ-specific binary reading operations.
 type Reader struct {
-	f     *os.File
+	f     readSeekerAt
 	key   []byte
 	order binary.ByteOrder
 }
 
 // NewReader creates a Reader from an open file.
 func NewReader(f *os.File) *Reader {
+	return newReaderWithSeeker(f)
+}
+
+// newReaderWithSeeker constructs a Reader over an arbitrary readSeekerAt.
+// Production code always goes through NewReader with a real *os.File; this
+// seam exists so package-internal tests can substitute a counting wrapper
+// (task-262 M1-3).
+func newReaderWithSeeker(f readSeekerAt) *Reader {
 	return &Reader{
 		f:     f,
 		order: binary.LittleEndian,
@@ -44,7 +65,18 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 }
 
 // Skip advances the reader by n bytes.
+//
+// The n == 0 guard is not just a micro-optimization: without it, Skip(0)
+// issues Seek(0, io.SeekCurrent) against the underlying file — the exact
+// same call shape Pos() emits — which would make it indistinguishable from
+// a Pos() call to any counter keyed on that shape (as
+// TestTraceNilHookCostsNoExtraPosCalls' posCountingFile is, in
+// trace_test.go). Keep this guard even if no current Skip caller ever
+// passes 0 (task-262 fix round 1).
 func (r *Reader) Skip(n int64) error {
+	if n == 0 {
+		return nil
+	}
 	_, err := r.f.Seek(n, io.SeekCurrent)
 	return err
 }

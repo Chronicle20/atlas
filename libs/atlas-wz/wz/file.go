@@ -47,6 +47,12 @@ type File struct {
 	// owns the underlying reader, key table, and parse mutex. nil for
 	// normally-opened files (task-172 C-3, monolithic Data.wz).
 	parent *File
+	// trace is the opt-in parse diagnostic hook (task-262 T2). nil in
+	// production. Set once via SetTrace before any Properties() call — see
+	// trace.go for the full concurrency contract. Only the root File (no
+	// parent) ever has trace set directly; sub-files resolve through
+	// parent via traceHook/SetTrace so a hook fires once per node.
+	trace func(TraceEvent)
 }
 
 // keyRange records that bytes in [start, end) decode with key (a per-image
@@ -134,13 +140,22 @@ func Open(l logrus.FieldLogger, path string) (*File, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to open WZ file: %w", err)
 	}
+	return openWithReader(l, path, f, NewReader(f))
+}
 
+// openWithReader is Open's shared implementation, parameterized on the
+// Reader. Production code always reaches it through Open (reader wraps f
+// via NewReader); package-internal tests call it directly with a Reader
+// wrapping a Seek-counting file to prove the trace hook's nil-hook path
+// performs no extra Seek calls, without a test-only field on Reader
+// (task-262 M1-3). r must read from f.
+func openWithReader(l logrus.FieldLogger, path string, f *os.File, r *Reader) (*File, error) {
 	wz := &File{
 		l:      l,
 		path:   path,
 		name:   strings.TrimSuffix(filepath.Base(path), ".wz"),
 		f:      f,
-		reader: NewReader(f),
+		reader: r,
 	}
 
 	if err := wz.parseHeader(); err != nil {

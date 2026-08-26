@@ -20,11 +20,10 @@ package cashshop
 // stub either.
 
 import (
-	"encoding/json"
-	"testing"
-
 	"atlas-cashshop/kafka/message/cashshop"
 	"atlas-cashshop/wallet"
+	"encoding/json"
+	"testing"
 
 	"github.com/google/uuid"
 	testlog "github.com/sirupsen/logrus/hooks/test"

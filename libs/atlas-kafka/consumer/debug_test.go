@@ -39,6 +39,9 @@ type debugAttributes struct {
 	HandlerCount        int       `json:"handlerCount"`
 	LastTimeoutAt       time.Time `json:"lastTimeoutAt"`
 	ConsecutiveTimeouts int       `json:"consecutiveTimeouts"`
+
+	TopicMissingObservations int       `json:"topicMissingObservations"`
+	LastTopicMissingAt       time.Time `json:"lastTopicMissingAt"`
 }
 
 func decodeDebug(t *testing.T, body []byte) debugDoc {
@@ -176,5 +179,11 @@ func TestDebugHandler_PopulatedConsumer(t *testing.T) {
 	}
 	if !a.LastTimeoutAt.IsZero() {
 		t.Fatalf("expected lastTimeoutAt zero on a consumer that has never timed out, got %v", a.LastTimeoutAt)
+	}
+	if a.TopicMissingObservations != 0 {
+		t.Fatalf("expected topicMissingObservations=0 on a consumer whose topic exists, got %d", a.TopicMissingObservations)
+	}
+	if !a.LastTopicMissingAt.IsZero() {
+		t.Fatalf("expected lastTopicMissingAt zero on a consumer that never saw a missing topic, got %v", a.LastTopicMissingAt)
 	}
 }

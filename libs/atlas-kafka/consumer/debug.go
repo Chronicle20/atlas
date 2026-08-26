@@ -75,6 +75,9 @@ type debugAttributes struct {
 	LastAssignmentAt   time.Time `json:"lastAssignmentAt"`
 	Engine             string    `json:"engine"`
 
+	TopicMissingObservations int       `json:"topicMissingObservations"`
+	LastTopicMissingAt       time.Time `json:"lastTopicMissingAt"`
+
 	TimeToFirstFetchNs    time.Duration `json:"timeToFirstFetchNs"`
 	LastFetchDurationNs   time.Duration `json:"lastFetchDurationNs"`
 	MaxFetchDurationNs    time.Duration `json:"maxFetchDurationNs"`
@@ -106,6 +109,9 @@ func snapshotToAttributes(s Snapshot) debugAttributes {
 		GenerationID:       s.GenerationID,
 		LastAssignmentAt:   s.LastAssignmentAt,
 		Engine:             s.Engine,
+
+		TopicMissingObservations: s.TopicMissingObservations,
+		LastTopicMissingAt:       s.LastTopicMissingAt,
 
 		TimeToFirstFetchNs:    s.TimeToFirstFetch,
 		LastFetchDurationNs:   s.LastFetchDuration,

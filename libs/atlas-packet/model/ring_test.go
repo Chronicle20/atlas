@@ -80,24 +80,42 @@ func TestRingSetEncodeField(t *testing.T) {
 		expected string
 	}{
 		{"GMS empty", "GMS", 83, RingSet{}, "00 00 00"},
-		{"GMS couple only", "GMS", 83, RingSet{Couple: &fixtureCouple},
-			"01 8877665544332211 00FFEEDDCCBBAA99 34120000 00 00"},
-		{"GMS friendship only", "GMS", 83, RingSet{Friendship: &fixtureFriendship},
-			"00 01 0807060504030201 1817161514131211 78560000 00"},
-		{"GMS marriage only", "GMS", 83, RingSet{Marriage: &fixtureMarriage},
-			"00 00 01 AA000000 BB000000 DDCC0000"},
-		{"GMS all three", "GMS", 83, RingSet{Couple: &fixtureCouple, Friendship: &fixtureFriendship, Marriage: &fixtureMarriage},
+		{
+			"GMS couple only", "GMS", 83,
+			RingSet{Couple: &fixtureCouple},
+			"01 8877665544332211 00FFEEDDCCBBAA99 34120000 00 00",
+		},
+		{
+			"GMS friendship only", "GMS", 83,
+			RingSet{Friendship: &fixtureFriendship},
+			"00 01 0807060504030201 1817161514131211 78560000 00",
+		},
+		{
+			"GMS marriage only", "GMS", 83,
+			RingSet{Marriage: &fixtureMarriage},
+			"00 00 01 AA000000 BB000000 DDCC0000",
+		},
+		{
+			"GMS all three", "GMS", 83,
+			RingSet{Couple: &fixtureCouple, Friendship: &fixtureFriendship, Marriage: &fixtureMarriage},
 			"01 8877665544332211 00FFEEDDCCBBAA99 34120000" +
 				"01 0807060504030201 1817161514131211 78560000" +
-				"01 AA000000 BB000000 DDCC0000"},
+				"01 AA000000 BB000000 DDCC0000",
+		},
 		{"GMS v48 empty", "GMS", 48, RingSet{}, "00 00 00"},
-		{"GMS v95 all three", "GMS", 95, RingSet{Couple: &fixtureCouple, Friendship: &fixtureFriendship, Marriage: &fixtureMarriage},
+		{
+			"GMS v95 all three", "GMS", 95,
+			RingSet{Couple: &fixtureCouple, Friendship: &fixtureFriendship, Marriage: &fixtureMarriage},
 			"01 8877665544332211 00FFEEDDCCBBAA99 34120000" +
 				"01 0807060504030201 1817161514131211 78560000" +
-				"01 AA000000 BB000000 DDCC0000"},
+				"01 AA000000 BB000000 DDCC0000",
+		},
 		{"JMS empty", "JMS", 185, RingSet{}, "00 00 00"},
-		{"JMS couple only", "JMS", 185, RingSet{Couple: &fixtureCouple},
-			"01 01000000 8877665544332211 00FFEEDDCCBBAA99 34120000 00 00"},
+		{
+			"JMS couple only", "JMS", 185,
+			RingSet{Couple: &fixtureCouple},
+			"01 01000000 8877665544332211 00FFEEDDCCBBAA99 34120000 00 00",
+		},
 	}
 
 	for _, c := range cases {
@@ -259,16 +277,20 @@ func TestRingRecordsEncode(t *testing.T) {
 		{"empty, modern", "GMS", 83, RingRecords{}, "00 00 00 00 00 00"},
 		{"empty, legacy", "GMS", 28, RingRecords{}, "00 00"},
 		{"empty, JMS", "JMS", 185, RingRecords{}, "00 00 00 00 00 00"},
-		{"one couple record", "GMS", 83,
+		{
+			"one couple record", "GMS", 83,
 			RingRecords{Couple: []CoupleRecord{fixtureCoupleRecord}},
-			"01 00" + coupleRecordHex + "00 00" + "00 00"},
-		{"one of each", "GMS", 83,
+			"01 00" + coupleRecordHex + "00 00" + "00 00",
+		},
+		{
+			"one of each", "GMS", 83,
 			RingRecords{
 				Couple:   []CoupleRecord{fixtureCoupleRecord},
 				Friend:   []FriendRecord{fixtureFriendRecord},
 				Marriage: []MarriageRecord{fixtureMarriageRecord},
 			},
-			"01 00" + coupleRecordHex + "01 00" + friendRecordHex + "01 00" + marriageRecordHex},
+			"01 00" + coupleRecordHex + "01 00" + friendRecordHex + "01 00" + marriageRecordHex,
+		},
 	}
 
 	for _, c := range cases {

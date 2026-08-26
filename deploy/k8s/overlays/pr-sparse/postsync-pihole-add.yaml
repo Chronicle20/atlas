@@ -7,6 +7,13 @@ metadata:
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
     argocd.argoproj.io/sync-wave: "10"
 spec:
+  # Wall-clock bound on the hook. Same deadlock class as
+  # `sync-bootstrap.yaml` — an Argo hook Job that never reaches a terminal
+  # condition holds `argocd.argoproj.io/hook-finalizer`, which wedges the
+  # owning operation and blocks the whole namespace teardown. This hook is
+  # two authenticated HTTP calls to a Pi-hole admin API, so 300s is
+  # generous; it exists to bound the failure, not to bound normal work.
+  activeDeadlineSeconds: 300
   template:
     spec:
       restartPolicy: Never

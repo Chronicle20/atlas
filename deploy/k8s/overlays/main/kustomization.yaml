@@ -284,7 +284,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-invites/atlas-invites
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-kafka-precreate/atlas-kafka-precreate
-    newTag: main-c9e533e
+    newTag: main-182fba2
   - name: ghcr.io/chronicle20/atlas-keys/atlas-keys
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-kites/atlas-kites

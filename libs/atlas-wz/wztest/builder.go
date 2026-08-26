@@ -44,6 +44,7 @@ type Prop struct {
 	Float    float32
 	Double   float64
 	X, Y     int32 // Vector coordinates
+	W, H     int32 // Canvas dimensions
 }
 
 func Int(name string, v int32) Prop { return Prop{Name: name, Kind: KindInt, Int: v} }
@@ -52,8 +53,17 @@ func Sub(name string, children ...Prop) Prop {
 	return Prop{Name: name, Kind: KindSub, Children: children}
 }
 
+// Canvas builds a 1x1, childless canvas property (the historical fixture
+// shape). Equivalent to CanvasWith(name, 1, 1, payload).
 func Canvas(name string, payload []byte) Prop {
-	return Prop{Name: name, Kind: KindCanvas, Canvas: payload}
+	return CanvasWith(name, 1, 1, payload)
+}
+
+// CanvasWith builds a canvas property with real dimensions and, optionally,
+// child properties (e.g. "origin" Vector, "z"/"delay" Int) read back via
+// parseCanvasProperty's hasProperty>0 path.
+func CanvasWith(name string, w, h int32, payload []byte, children ...Prop) Prop {
+	return Prop{Name: name, Kind: KindCanvas, Canvas: payload, W: w, H: h, Children: children}
 }
 
 // UOL builds an extended-type "UOL" property (a symlink-like reference to
@@ -274,11 +284,19 @@ func writeExtendedContent(buf *bytes.Buffer, p Prop, key []byte) error {
 		if err := writeStringBlock(buf, "Canvas", key); err != nil {
 			return err
 		}
-		buf.WriteByte(0)   // skipped byte
-		buf.WriteByte(0)   // hasProperty = 0
-		writeWzInt(buf, 1) // width
-		writeWzInt(buf, 1) // height
-		writeWzInt(buf, 2) // format
+		buf.WriteByte(0) // skipped byte
+		if len(p.Children) > 0 {
+			buf.WriteByte(1) // hasProperty = 1
+			buf.Write([]byte{0, 0})
+			if err := writePropList(buf, p.Children, key); err != nil {
+				return err
+			}
+		} else {
+			buf.WriteByte(0) // hasProperty = 0
+		}
+		writeWzInt(buf, p.W) // width
+		writeWzInt(buf, p.H) // height
+		writeWzInt(buf, 2)   // format
 		buf.WriteByte(0)   // format2
 		buf.Write([]byte{0, 0, 0, 0})
 		_ = binary.Write(buf, binary.LittleEndian, int32(len(p.Canvas)+1))

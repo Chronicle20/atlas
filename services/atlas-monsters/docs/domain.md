@@ -29,7 +29,8 @@ Represents an active monster instance in a map.
 | fh | int16 | Foothold |
 | stance | byte | Animation stance |
 | team | int8 | Team assignment |
-| damageEntries | []entry | List of damage dealt by characters |
+| damageEntries | []entry | Aggro table: per-character damage used for targeting. Decays while idle and is wiped by CLEAR_AGGRO |
+| experienceEntries | []entry | Reward ledger: cumulative per-character damage. Never decayed or wiped; drives EXP, quest kill credit, and drop ownership |
 | statusEffects | []StatusEffect | Active status effects on this monster |
 | nextSkillDecision | nextSkillDecision | Picker's current next-skill decision (skill choice is in-memory only; see Skill Picker) |
 | lastDamageTakenMs | int64 | Unix millis of the last damage applied to this monster (drives HP recovery gating) |
@@ -335,9 +336,9 @@ Singleton Redis-backed store for monster instances.
 - `MoveMonster`: Updates monster position
 - `ControlMonster`: Assigns a controller to a monster
 - `ClearControl`: Removes controller assignment
-- `ApplyDamage`: Applies damage, aggregates the per-character damage entry, stamps lastDamageTakenMs, and flips controllerHasAggro on first hit; returns a damage summary
+- `ApplyDamage`: Applies damage, aggregates the per-character entry into BOTH the aggro table and the experience ledger, stamps lastDamageTakenMs, and flips controllerHasAggro on first hit; returns a damage summary
 - `ApplyRecovery`: Applies HP recovery (gated by the idle-since-last-damage window) and MP recovery (unconditional) to a monster; returns the updated monster and per-stat applied flags
-- `DecayDamageEntries`: Decays and prunes idle damage entries for aggro decay; flips controllerHasAggro false when the entry list empties
+- `DecayDamageEntries`: Decays and prunes idle entries in the aggro table only; flips controllerHasAggro false when that table empties. The experience ledger is untouched
 - `RemoveMonster`: Removes a monster from the registry and releases the unique ID
 - `GetMonsters`: Returns all monsters grouped by tenant
 - `ApplyStatusEffect`: Applies a status effect to a monster in the registry

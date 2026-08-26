@@ -46,6 +46,7 @@ type storedMonster struct {
 	Stance                 byte             `json:"stance"`
 	Team                   int8             `json:"team"`
 	DamageEntries          damageEntryList  `json:"damageEntries"`
+	ExperienceEntries      damageEntryList  `json:"experienceEntries"`
 	StatusEffects          statusEffectList `json:"statusEffects"`
 	NextEligibleRepickAtMs int64            `json:"nextEligibleRepickAtMs,omitempty"`
 	LastDamageTakenMs      int64            `json:"lastDamageTakenMs,omitempty"`
@@ -107,15 +108,67 @@ type storedStatusEffect struct {
 	ReflectMaxDamage  int32            `json:"reflectMaxDamage,omitempty"`
 }
 
-func toStored(t tenant.Model, m Model) storedMonster {
-	des := make([]storedDamageEntry, 0, len(m.damageEntries))
-	for _, e := range m.damageEntries {
-		des = append(des, storedDamageEntry{
-			CharacterId: e.CharacterId,
-			Damage:      e.Damage,
-			LastHitMs:   e.LastHitMs,
-		})
+// creditEntry accumulates damage onto the character's entry, appending a new
+// one on first contact so slice order records first contact. Shared by both
+// ledgers so they can never disagree about what a character dealt.
+func creditEntry(l damageEntryList, characterId uint32, damage uint32, nowMs int64) damageEntryList {
+	for i := range l {
+		if l[i].CharacterId == characterId {
+			l[i].Damage += damage
+			l[i].LastHitMs = nowMs
+			return l
+		}
 	}
+	return append(l, storedDamageEntry{
+		CharacterId: characterId,
+		Damage:      damage,
+		LastHitMs:   nowMs,
+	})
+}
+
+// toStoredEntries projects an in-memory entry list to its stored form. Shared
+// by the aggro ledger and the experience ledger, which are structurally
+// identical and differ only in who is allowed to mutate them.
+func toStoredEntries(es []entry) []storedDamageEntry {
+	out := make([]storedDamageEntry, 0, len(es))
+	for _, e := range es {
+		out = append(out, storedDamageEntry(e))
+	}
+	return out
+}
+
+// fromStoredEntries folds a stored entry list back to one entry per character,
+// preserving first-contact order. Legacy rows written before a given ledger
+// existed simply yield an empty list.
+func fromStoredEntries(l damageEntryList) []entry {
+	agg := make(map[uint32]*entry)
+	order := make([]uint32, 0, len(l))
+	for _, de := range l {
+		if existing, ok := agg[de.CharacterId]; ok {
+			existing.Damage += de.Damage
+			// Take the latest non-zero lastHitMs; legacy rows have 0.
+			if de.LastHitMs > existing.LastHitMs {
+				existing.LastHitMs = de.LastHitMs
+			}
+			continue
+		}
+		agg[de.CharacterId] = &entry{
+			CharacterId: de.CharacterId,
+			Damage:      de.Damage,
+			LastHitMs:   de.LastHitMs,
+		}
+		order = append(order, de.CharacterId)
+	}
+	out := make([]entry, 0, len(order))
+	for _, cid := range order {
+		out = append(out, *agg[cid])
+	}
+	return out
+}
+
+func toStored(t tenant.Model, m Model) storedMonster {
+	des := toStoredEntries(m.damageEntries)
+	xes := toStoredEntries(m.experienceEntries)
 	ses := make([]storedStatusEffect, 0, len(m.statusEffects))
 	for _, se := range m.statusEffects {
 		ses = append(ses, storedStatusEffect{
@@ -162,6 +215,7 @@ func toStored(t tenant.Model, m Model) storedMonster {
 		Stance:                 m.stance,
 		Team:                   m.team,
 		DamageEntries:          des,
+		ExperienceEntries:      xes,
 		StatusEffects:          ses,
 		NextEligibleRepickAtMs: m.nextSkillDecision.nextEligibleRepickAtMs,
 		LastDamageTakenMs:      m.lastDamageTakenMs,
@@ -185,28 +239,8 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 		return tenant.Model{}, Model{}, err
 	}
 
-	agg := make(map[uint32]*entry)
-	order := make([]uint32, 0, len(sm.DamageEntries))
-	for _, de := range sm.DamageEntries {
-		if existing, ok := agg[de.CharacterId]; ok {
-			existing.Damage += de.Damage
-			// Take the latest non-zero lastHitMs; legacy rows have 0.
-			if de.LastHitMs > existing.LastHitMs {
-				existing.LastHitMs = de.LastHitMs
-			}
-			continue
-		}
-		agg[de.CharacterId] = &entry{
-			CharacterId: de.CharacterId,
-			Damage:      de.Damage,
-			LastHitMs:   de.LastHitMs,
-		}
-		order = append(order, de.CharacterId)
-	}
-	des := make([]entry, 0, len(order))
-	for _, cid := range order {
-		des = append(des, *agg[cid])
-	}
+	des := fromStoredEntries(sm.DamageEntries)
+	xes := fromStoredEntries(sm.ExperienceEntries)
 	ses := make([]StatusEffect, 0, len(sm.StatusEffects))
 	for _, sse := range sm.StatusEffects {
 		eid, err := uuid.Parse(sse.EffectId)
@@ -254,6 +288,7 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 		stance:             sm.Stance,
 		team:               sm.Team,
 		damageEntries:      des,
+		experienceEntries:  xes,
 		statusEffects:      ses,
 		nextSkillDecision: nextSkillDecision{
 			nextEligibleRepickAtMs: sm.NextEligibleRepickAtMs,
@@ -536,22 +571,13 @@ func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32
 		}
 		cur.Hp = hp - actual
 
-		found := false
-		for i := range cur.DamageEntries {
-			if cur.DamageEntries[i].CharacterId == characterId {
-				cur.DamageEntries[i].Damage += actual
-				cur.DamageEntries[i].LastHitMs = nowMs
-				found = true
-				break
-			}
-		}
-		if !found {
-			cur.DamageEntries = append(cur.DamageEntries, storedDamageEntry{
-				CharacterId: characterId,
-				Damage:      actual,
-				LastHitMs:   nowMs,
-			})
-		}
+		cur.DamageEntries = creditEntry(cur.DamageEntries, characterId, actual, nowMs)
+		// The experience ledger receives the identical clamped figure, but is
+		// never decayed (DecayDamageEntries) nor wiped (ClearDamageEntries):
+		// aggro is a targeting concern, EXP credit is a reward concern, and
+		// collapsing the two let an idle contributor silently lose EXP, quest
+		// kill credit, and drop ownership.
+		cur.ExperienceEntries = creditEntry(cur.ExperienceEntries, characterId, actual, nowMs)
 		cur.LastDamageTakenMs = nowMs
 
 		wasFirstHit = cur.ControlCharacterId != 0 && !cur.ControllerHasAggro

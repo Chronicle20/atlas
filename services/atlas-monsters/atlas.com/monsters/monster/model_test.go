@@ -16,8 +16,12 @@ func testField() field.Model {
 	return field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 }
 
+// makeModelWithEntries seeds both ledgers with the same entries. DamageSummary
+// and DamageLeader read the experience ledger (a character's damage must survive
+// aggro decay and CLEAR_AGGRO); the aggro ledger is seeded too so the fixture
+// stays representative of a monster mid-fight, before any decay has run.
 func makeModelWithEntries(entries []entry) Model {
-	return Model{damageEntries: entries}
+	return Model{damageEntries: entries, experienceEntries: entries}
 }
 
 func TestDamageSummaryPassthrough(t *testing.T) {

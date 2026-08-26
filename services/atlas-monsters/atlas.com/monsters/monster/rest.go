@@ -29,6 +29,7 @@ type RestModel struct {
 	MaxMp                  uint32              `json:"maxMp"`
 	Mp                     uint32              `json:"mp"`
 	DamageEntries          []DamageEntry       `json:"damageEntries"`
+	ExperienceEntries      []DamageEntry       `json:"experienceEntries"`
 	StatusEffects          []StatusEffectEntry `json:"statusEffects"`
 	ControllerHasAggro     bool                `json:"controllerHasAggro"`
 	NextEligibleRepickAtMs int64               `json:"nextEligibleRepickAtMs,omitempty"`
@@ -62,7 +63,15 @@ func (m RestModel) GetName() string {
 }
 
 func Transform(m Model) (RestModel, error) {
+	// damageEntries is the aggro table (decays, wiped by CLEAR_AGGRO);
+	// experienceEntries is the reward ledger (never decays). Both are exposed
+	// because diagnosing an EXP or drop-ownership complaint needs to compare them.
 	des, err := model.SliceMap(TransformDamageEntry)(model.FixedProvider(m.damageEntries))(model.ParallelMap())()
+	if err != nil {
+		return RestModel{}, err
+	}
+
+	xes, err := model.SliceMap(TransformDamageEntry)(model.FixedProvider(m.experienceEntries))(model.ParallelMap())()
 	if err != nil {
 		return RestModel{}, err
 	}
@@ -95,6 +104,7 @@ func Transform(m Model) (RestModel, error) {
 		MaxMp:                  m.maxMp,
 		Mp:                     m.mp,
 		DamageEntries:          des,
+		ExperienceEntries:      xes,
 		StatusEffects:          ses,
 		ControllerHasAggro:     m.controllerHasAggro,
 		NextEligibleRepickAtMs: m.nextSkillDecision.nextEligibleRepickAtMs,

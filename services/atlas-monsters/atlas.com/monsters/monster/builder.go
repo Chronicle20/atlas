@@ -32,6 +32,7 @@ func Clone(m Model) *ModelBuilder {
 		stance:             m.stance,
 		team:               m.team,
 		damageEntries:      m.damageEntries,
+		experienceEntries:  m.experienceEntries,
 		statusEffects:      effects,
 		nextSkillDecision:  m.nextSkillDecision,
 		lastDamageTakenMs:  m.lastDamageTakenMs,
@@ -61,6 +62,7 @@ type ModelBuilder struct {
 	stance             byte
 	team               int8
 	damageEntries      []entry
+	experienceEntries  []entry
 	statusEffects      []StatusEffect
 	nextSkillDecision  nextSkillDecision
 	lastDamageTakenMs  int64
@@ -151,17 +153,25 @@ func (b *ModelBuilder) SetSpawnSource(sourceType string, sourceId string) *Model
 // Registry.ApplyDamage (registry.go:436-495) so both write paths agree, which
 // is what makes Model.DamageSummary()'s "pre-aggregated" contract true.
 func (b *ModelBuilder) AddDamageEntry(characterId uint32, damage uint32) *ModelBuilder {
-	for i := range b.damageEntries {
-		if b.damageEntries[i].CharacterId == characterId {
-			b.damageEntries[i].Damage += damage
-			return b
+	b.damageEntries = creditModelEntry(b.damageEntries, characterId, damage)
+	b.experienceEntries = creditModelEntry(b.experienceEntries, characterId, damage)
+	return b
+}
+
+// creditModelEntry accumulates damage onto a character's entry, appending on
+// first contact. Shared by the aggro and experience ledgers so the builder
+// write path credits both exactly as Registry.ApplyDamage does.
+func creditModelEntry(es []entry, characterId uint32, damage uint32) []entry {
+	for i := range es {
+		if es[i].CharacterId == characterId {
+			es[i].Damage += damage
+			return es
 		}
 	}
-	b.damageEntries = append(b.damageEntries, entry{
+	return append(es, entry{
 		CharacterId: characterId,
 		Damage:      damage,
 	})
-	return b
 }
 
 // AddStatusEffect adds a status effect, replacing any existing effect with overlapping status types.
@@ -243,6 +253,7 @@ func (b *ModelBuilder) Build() Model {
 		stance:             b.stance,
 		team:               b.team,
 		damageEntries:      b.damageEntries,
+		experienceEntries:  b.experienceEntries,
 		statusEffects:      b.statusEffects,
 		nextSkillDecision:  b.nextSkillDecision,
 		lastDamageTakenMs:  b.lastDamageTakenMs,

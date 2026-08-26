@@ -235,15 +235,57 @@ Covers reported item **1**. **Root cause NOT established. Do not guess one.**
    (the tester saw the slots change), so `IfPresentByCharacterId(sc.Channel())`
    resolves for a cash-shop-resident character.
 
+### Tester follow-up (2026-08-26, after the round-2 fixes)
+
+> "Chronicle does receive the item, however the gifter (Atlas) sees an error
+> 'The gifts could not be sent.'"
+
+This narrows the defect to the **sender's notice only**. Delivery is correct end
+to end; the recipient gets the asset. Two further links were checked and both
+hold, so they are now ruled out as well:
+
+6. **The codec is verified against the v83 client, not inferred from v95.**
+   `docs/packets/evidence/gms_v83/cash.clientbound.CashGiftDone.yaml` is a
+   `TIER1-FIXTURE` record pinned to `CCashShop::OnCashItemResult#GIFT_SUCCESS
+   @ 0x47a856` with a decompile hash, verified by
+   `TestGiftDoneByteFixture` (`libs/atlas-packet/cash/clientbound/shop_operation_result_gift_test.go`).
+   That fixture pins v83's mode at `0x5E` (94) and the body at
+   `mode · str(recipientName) · i32(itemId) · u16(quantity) · i32(nxCashSpent)`
+   — matching both the seed template's `GIFT_SUCCESS: 94` and what the channel
+   encodes. The earlier worry that the v83 shape had been propagated from the
+   v95 derivation rather than derived independently is **wrong**; it was
+   independently pinned.
+7. **`WriteAsciiString` is length-prefixed** (`libs/atlas-socket/response/writer.go:82-93`:
+   Shift-JIS encode, then `WriteShort(len)` + bytes), so the string field cannot
+   be misaligning the trailing scalars. The hypothesis that every
+   `WriteAsciiString`-bearing arm was broken is dead — and is contradicted
+   anyway by COUPLE_SUCCESS/FRIENDSHIP_SUCCESS, which carry the same field and
+   drew no error from the tester.
+
 ### What is still unknown
-Why the client rendered a failure notice when the server sent a correctly-moded,
-correctly-shaped `GIFT_SUCCESS`. The verbatim on-screen string is the missing
-evidence — each v83 failure notice maps to a specific `NoticeFailReason` byte
-under `GIFT_FAILED` (mode 95, `Decode1(mode) · Decode1(errorCode)`), and the
-exact wording discriminates a client-side pre-send refusal from a server-arm
-mismatch. **Ask the tester for the exact text and whether Chronicle actually
-received the Bunny Ears in their cash locker** before opening this line of
-investigation. Do not fix speculatively.
+Why the v83 client renders "The gifts could not be sent." for the SENDER after
+receiving a correctly-moded, correctly-shaped, fixture-verified `GIFT_SUCCESS`.
+
+Every server-side link is now confirmed good: the command is published, the
+purchase commits, the recipient's asset is created, the status event is
+consumed, the session is live (the same session rendered
+`INVENTORY_CAPACITY_INCREASE_SUCCESS` 55 s later), the mode resolves to `0x5E`,
+and the body matches the v83 tier-1 fixture. **The remaining unknown is entirely
+client-side and cannot be resolved from repo source.**
+
+Two ways to close it, both needing evidence this session did not have:
+
+1. **Decompile the v83 handler.** `CCashShop::OnCashItemResult#GIFT_SUCCESS @
+   0x47a856` and its notice branch — under what condition does that arm reach a
+   failure string instead of the success one? This needs the `ida-pro-mcp`
+   session for the v83 IDB (see `docs/reverse-engineering.md`); the MCP was not
+   connected when this was triaged. This is the cheaper and more decisive route.
+2. **Capture the wire.** Log the encoded `CashShopOperation` bytes for the gift
+   announce in `atlas-pr-1426` and confirm what actually reaches the socket,
+   rather than what the encoder is expected to produce.
+
+Route 1 first. Do not change any codec, mode table, or handler on a guess — the
+codec is fixture-pinned and a speculative edit would regress a verified cell.
 
 ---
 

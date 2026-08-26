@@ -36,12 +36,17 @@ func TestGroupConfigMirrorsTodaysTopology(t *testing.T) {
 	if cfg.StartOffset != kafka.FirstOffset {
 		t.Fatalf("StartOffset = %d, want FirstOffset (%d)", cfg.StartOffset, kafka.FirstOffset)
 	}
-	// Today's ReaderConfig never sets WatchPartitionChanges, and kafka-go
-	// forwards that false into its internal ConsumerGroupConfig
-	// (reader.go:731-732). Enabling it here would be a behaviour change
-	// smuggled into a migration (PRD §9.5).
-	if cfg.WatchPartitionChanges {
-		t.Fatal("WatchPartitionChanges = true, want false to match the legacy engine")
+	// Deliberate divergence from the legacy engine (task-267 FR-1.1/FR-1.2).
+	// The `reader` engine inherits kafka-go's ReaderConfig default of false and
+	// cannot be changed without touching the frozen rollback path; the
+	// consumergroup engine enables the watch as one of THREE parts of the
+	// task-267 fix. It is only safe doing so because awaitTopic and
+	// classifyEmptyAssignment keep this member out of the group whenever the
+	// topic is absent — on its own, the watch's startup read fails with
+	// UnknownTopicOrPartition, ends the generation, and rejoins with no
+	// backoff (design §2.1-2.3).
+	if !cfg.WatchPartitionChanges {
+		t.Fatal("WatchPartitionChanges = false, want true (task-267 FR-1.1)")
 	}
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("Validate: %v", err)

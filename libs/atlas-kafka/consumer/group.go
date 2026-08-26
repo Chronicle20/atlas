@@ -176,17 +176,31 @@ func (g *kafkaGeneration) CommitOffsets(offsets map[string]map[int]int64) error 
 	return g.gen.CommitOffsets(offsets)
 }
 
-// groupConfig builds the consumer-group config for this Consumer. It is a
-// deliberate 1:1 mirror of what kafka-go derives internally from today's
-// ReaderConfig (reader.go:717-733): same group ID, same single-topic
-// subscription, same StartOffset, WatchPartitionChanges left false.
+// groupConfig builds the consumer-group config for this Consumer. ID, Brokers,
+// Topics and StartOffset mirror 1:1 what kafka-go derives internally from
+// today's ReaderConfig (reader.go:717-733), so broker-visible group topology is
+// unchanged and a rollback to the reader engine needs no group-state migration
+// (FR-1.4).
+//
+// WatchPartitionChanges is the one deliberate divergence (task-267 FR-1.1). It
+// covers a partition-count change (1 -> N) on a topic that EXISTS.
+// PartitionWatchInterval is left at kafka-go's default (5s;
+// consumergroup.go:203-205) per FR-1.5.
+//
+// It is safe here only because awaitTopic and classifyEmptyAssignment keep this
+// member out of the group whenever the topic is absent. Enabled alone, against
+// a missing topic, kafka-go's watcher startup read returns
+// UnknownTopicOrPartition (consumergroup.go:512-518), the generation ends, and
+// ConsumerGroup.run rejoins with no backoff — a group-wide rebalance storm that
+// also strips the HEALTHY members of their assignments (design §2.3). Do not
+// enable this flag anywhere the two guards are not also present.
 func (c *Consumer) groupConfig() kafka.ConsumerGroupConfig {
 	return kafka.ConsumerGroupConfig{
 		ID:                    c.groupId,
 		Brokers:               append([]string(nil), c.brokers...),
 		Topics:                []string{c.topic},
 		StartOffset:           c.startOffset,
-		WatchPartitionChanges: false,
+		WatchPartitionChanges: true,
 	}
 }
 

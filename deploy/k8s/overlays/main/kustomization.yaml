@@ -246,17 +246,17 @@ images:
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-c9e533e
+    newTag: main-b2aaa10
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
-    newTag: main-c9e533e
+    newTag: main-b2aaa10
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-c9e533e
+    newTag: main-b2aaa10
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-dragons/atlas-dragons
@@ -290,7 +290,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-kites/atlas-kites
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-login/atlas-login
-    newTag: main-c9e533e
+    newTag: main-b2aaa10
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
@@ -300,7 +300,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
-    newTag: main-c9e533e
+    newTag: main-b2aaa10
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-mini-games/atlas-mini-games
@@ -344,9 +344,9 @@ images:
   - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions
-    newTag: main-c9e533e
+    newTag: main-b2aaa10
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
-    newTag: main-c9e533e
+    newTag: main-b2aaa10
   - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
     newTag: main-c9e533e
   - name: ghcr.io/chronicle20/atlas-rps/atlas-rps

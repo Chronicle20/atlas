@@ -30,29 +30,45 @@ func SerializeToDirectory(l logrus.FieldLogger, f *wz.File, outputDir string) er
 	if root == nil {
 		return fmt.Errorf("wz file [%s] has no root directory", f.Name())
 	}
-	wzDir := filepath.Join(outputDir, f.Name()+".wz")
+	archiveName := f.Name() + ".wz"
+	wzDir := filepath.Join(outputDir, archiveName)
 	if err := os.MkdirAll(wzDir, 0o755); err != nil {
 		return fmt.Errorf("create output directory [%s]: %w", wzDir, err)
 	}
-	return serializeDirectory(l, root, wzDir)
+	failed, total, err := serializeDirectory(l, archiveName, root, wzDir)
+	if err != nil {
+		return err
+	}
+	l.Warnf("wz archive [%s]: %d of %d images failed to serialize", archiveName, failed, total)
+	return nil
 }
 
-func serializeDirectory(l logrus.FieldLogger, dir *wz.Directory, outputPath string) error {
+// serializeDirectory recursively serializes dir's images (and its
+// sub-directories') to outputPath, logging one per-image warning for each
+// failure and returning the failure/total image counts so the caller can
+// report one per-archive summary line. It never aggregates per-property
+// detail — that granularity is forbidden by the Observability NFR.
+func serializeDirectory(l logrus.FieldLogger, archiveName string, dir *wz.Directory, outputPath string) (failed int, total int, err error) {
 	for _, img := range dir.Images() {
-		if err := SerializeImage(img, outputPath); err != nil {
-			l.WithError(err).Warnf("unable to serialize image [%s]", img.Name())
+		total++
+		if serr := SerializeImage(img, outputPath); serr != nil {
+			failed++
+			l.WithError(serr).Warnf("wz archive [%s]: unable to serialize image [%s]", archiveName, img.Name())
 		}
 	}
 	for _, sub := range dir.Directories() {
 		subPath := filepath.Join(outputPath, sub.Name())
 		if err := os.MkdirAll(subPath, 0o755); err != nil {
-			return fmt.Errorf("create directory [%s]: %w", subPath, err)
+			return failed, total, fmt.Errorf("create directory [%s]: %w", subPath, err)
 		}
-		if err := serializeDirectory(l, sub, subPath); err != nil {
-			return err
+		subFailed, subTotal, err := serializeDirectory(l, archiveName, sub, subPath)
+		failed += subFailed
+		total += subTotal
+		if err != nil {
+			return failed, total, err
 		}
 	}
-	return nil
+	return failed, total, nil
 }
 
 // SerializeImage writes a single WZ image to {outputPath}/{imageName}.img.xml.

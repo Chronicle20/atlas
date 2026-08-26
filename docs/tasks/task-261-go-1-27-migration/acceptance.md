@@ -487,9 +487,73 @@ change exists.
 
 ## AC-17 — code review verdict
 
-PENDING — filled in after code review runs, per the plan's Step 6
-(`docs/review-protocol.md`). Code review has not yet run against this
-commit.
+**PASS.** Code review ran per the plan's Step 6
+(`superpowers:requesting-code-review`, returns shaped by
+`docs/review-protocol.md`) against `855fef4d1..6d1979fd4` — the full branch
+from the merge base. Two reviewers were dispatched in parallel;
+`frontend-guidelines-reviewer` was deliberately not dispatched, because
+`git diff --name-only 855fef4d1..6d1979fd4 -- '*.ts' '*.tsx'` is empty and
+`task-facts.sh` reports `ts_changed=false` / `frontend_review=false` —
+`atlas-ui` is untouched by this branch.
+
+| Reviewer | Model | Verdict | Blocking | Non-blocking | Not evaluable | Artifact |
+|---|---|---|---|---|---|---|
+| `plan-adherence-reviewer` | sonnet | `APPROVED_WITH_FINDINGS` | 0 | 1 | 1 | `audit.md` |
+| `backend-guidelines-reviewer` | sonnet | `APPROVED_WITH_FINDINGS` | 0 | 7 | 5 | `audit-backend.md` |
+
+**Zero blocking findings across both reviewers.** Neither review caused a
+fix commit (`--caused-fix no` in `agent-ledger.tsv` for both rows).
+
+### Plan adherence
+
+Scope confirmed: all 10 tasks of `plan.md`, no range sharding. Every task
+verified DONE against the repository rather than against this branch's own
+evidence docs — an independent grep sweep found 103 × `go 1.27.0` plus 8 ×
+`go 1.25.5` fixtures across all 111 tracked `go.mod` files, zero
+`toolchain` directives, and a zero-line `go.sum` diff; the guard script was
+re-run clean (`GUARD_EXIT=0`) with `--selftest` passing; the
+`verify.sh` and CI wiring was read directly, confirming the
+`toolchain-pin-guard` job sits in `pr-validation-complete`'s `needs:` gate;
+Renovate's last two `packageRules` were confirmed via `jq`; and the 9 red
+`tools/cideps` unit tests were independently reproduced as pre-existing on
+`main` via `git archive 855fef4d1`, validating the AC-13 deviation.
+
+- Non-blocking (1): the `ci_check` deletion-case for `docker-bake.hcl`'s
+  `ALPINE_VERSION` block renders an empty `file::` line. Cosmetic only —
+  the guard still detects the deletion and fails correctly. Already
+  recorded as Finding 3 in `evidence-guard.md`.
+- Not evaluable (1): the reviewer did not re-run the flagless
+  `tools/verify.sh` (a 91-module `-race` rebuild plus 67 docker bakes is
+  out of scope for a review agent). It verified AC-15 by inspecting the
+  recorded log instead, confirming the 664-line file ends with
+  `All checks passed.` and that the ✓/race/bake counts match this
+  document's claims.
+
+### Backend guidelines
+
+Scope confirmed: the 25 changed `.go` files (7 in `libs/atlas-packet`, 18
+across the 12 services listed in AC-16); build and test green in every
+touched module; `tools/goroutine-guard.sh` exit 0.
+
+The central question for a formatting-driven sweep was whether any hunk
+altered behavior. It did not: **every hunk in the branch's Go diff is
+confirmed pure formatting** — blank-line insertion or gofumpt column
+realignment of adjacent one-liner methods — plus the single redundant-paren
+removal at
+`services/atlas-channel/atlas.com/channel/character/processor_test.go:189`
+already recorded under AC-9/AC-16. No struct-literal field reorder, no
+build-tag change, no import-order change, and no dropped or reworded code
+was found anywhere in the diff. This is an independent confirmation of
+AC-16 by a reviewer that read each changed file in full.
+
+- Non-blocking (7) / not evaluable (5): while reading those files in full
+  the reviewer surfaced 5 genuine checklist deviations (DOM-04 `Transform`
+  missing in 4 read-client `rest.go` files; DOM-01/FILE-05 missing
+  `builder.go` in `atlas-consumables/data/consumable`) plus 2 minor
+  naming/placement deviations. **All are pre-existing** — every line this
+  branch touches in those files is whitespace-only — so none block a
+  toolchain migration PR. They belong to a separate follow-up task; see
+  `audit-backend.md` for the file:line citations.
 
 ## Known conditions (Addendum A3)
 

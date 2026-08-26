@@ -32,3 +32,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-25T22:16:40Z	agent	Task 10	atlas-implementer	sonnet	-	-	-	-	DONE	c177c6edf	-	-	-	-
 2026-08-25T22:18:49Z	agent	Task 10	atlas-reviewer	sonnet	-	-	-	-	DONE	c177c6edf	APPROVED	no	-	-
 2026-08-25T23:23:50Z	handoff	after Task 10	-	-	-	-	-	-	-	776a6bbe8	-	-	-	-
+2026-08-26T00:45:56Z	agent	pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	completed	6d1979fd4	APPROVED_WITH_FINDINGS	no	docs/tasks/task-261-go-1-27-migration/audit.md	-
+2026-08-26T00:51:15Z	agent	pre-PR review	backend-guidelines-reviewer	sonnet	-	-	-	-	completed	6d1979fd4	APPROVED_WITH_FINDINGS	no	docs/tasks/task-261-go-1-27-migration/audit-backend.md	-

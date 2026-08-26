@@ -11,6 +11,7 @@ type recipient struct {
 	Y        int16
 	Hp       uint16
 	MaxHp    uint16
+	Level    byte
 	IsCaster bool
 }
 
@@ -58,19 +59,60 @@ func appliedPerRecipient(perTarget int16, r recipient) int16 {
 	return int16(applied)
 }
 
-// HealXp computes the experience awarded to the caster from the heal
-// portion of the cast. Per recipient, the contribution is the amount
-// actually applied (see appliedPerRecipient); the sum is divided by 10
-// and multiplied by the skill level. Returns 0 on any pathological
-// negative result.
-func HealXp(perTarget int16, recipients []recipient, skillLevel byte) uint32 {
-	var total int64
-	for _, r := range recipients {
-		total += int64(appliedPerRecipient(perTarget, r))
+// healDelta returns the ChangeHP delta for one recipient of a Heal cast.
+//
+// Non-zombified: the existing headroom clamp -- never push Hp past MaxHp.
+// Zombified: the reference negates the heal (StatEffect.calcHPChange), so the
+// delta is damage. It is clamped to the recipient's CURRENT Hp so a cast never
+// removes more HP than the recipient has; landing exactly on 0 kills them,
+// which is intended (atlas-character emits DIED at adjusted == 0).
+// appliedPerRecipient is deliberately never handed a negative value: its
+// headroom clamp would mangle one. (task-256 FR-12/FR-13/FR-14)
+func healDelta(perTarget int16, r recipient, zombified bool) int16 {
+	if !zombified {
+		return appliedPerRecipient(perTarget, r)
 	}
-	xp := total / 10 * int64(skillLevel)
-	if xp < 0 {
+	if r.Hp == 0 {
 		return 0
 	}
-	return uint32(xp)
+	magnitude := int32(perTarget)
+	if magnitude < 0 {
+		magnitude = 0
+	}
+	if magnitude > int32(r.Hp) {
+		magnitude = int32(r.Hp)
+	}
+	// Unreachable from today's inputs: perTarget is int16, so
+	// -magnitude >= -32767 > math.MinInt16. Kept as a defensive guard
+	// against a future widening of perTarget's type.
+	if -magnitude < math.MinInt16 {
+		return math.MinInt16
+	}
+	return int16(-magnitude)
+}
+
+// HealXp computes the experience awarded to the caster from the heal
+// portion of the cast. Per recipient OTHER than the caster, the
+// contribution is:
+//
+//	healExp = floor(actualHeal * casterLevel / recipient.Level / 15)
+//
+// where actualHeal is the amount actually applied (see
+// appliedPerRecipient), so overheal never counts. Recipients with a
+// zero Level are skipped (guards the division; an unpopulated Level is
+// not a real game state). Returns 0 on any pathological negative
+// result.
+func HealXp(perTarget int16, recipients []recipient, casterLevel byte) uint32 {
+	var total int64
+	for _, r := range recipients {
+		if r.IsCaster || r.Level == 0 {
+			continue
+		}
+		applied := int64(appliedPerRecipient(perTarget, r))
+		total += applied * int64(casterLevel) / int64(r.Level) / 15
+	}
+	if total < 0 {
+		return 0
+	}
+	return uint32(total)
 }

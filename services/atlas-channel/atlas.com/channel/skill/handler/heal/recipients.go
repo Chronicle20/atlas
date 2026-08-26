@@ -18,6 +18,7 @@ func selectRecipients(caster recipient, party []handler.PartyRecipient) []recipi
 			Y:     p.Y(),
 			Hp:    p.Hp(),
 			MaxHp: p.MaxHp(),
+			Level: p.Level(),
 		})
 	}
 	return out

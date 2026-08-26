@@ -1,5 +1,23 @@
 # Task 262 — Reference-fidelity adjudication (design §2.2 gate)
 
+> **Provenance-correction note, prepended by Task R1.** The labels in this
+> document were assigned before the dump's provenance was independently
+> established, and they need no change: `INPUT-MISMATCH` for all 21 items is
+> confirmed correct. But the *reason* this document gives below — that the
+> reference dump is an export of "a customised private-server WZ dataset"
+> (§B) — is not the full picture and should not be read as identifying what
+> produced it. The user states the dump was in fact produced by an **earlier
+> version of the `atlas-data` service** (not HaRepacker, and not a foreign
+> private server's export). Independently of that statement, HaRepacker run
+> by the user directly against `$WZ_ARCHIVE`'s `Npc.wz` reports **1620**
+> images — matching our reader and a raw `declaredCount` byte read exactly —
+> while the dump under `$WZ_REFERENCE` holds **6962**. Either way the dump
+> simply is not from `$WZ_ARCHIVE`; see `provenance.md` for the full
+> cross-archive count evidence, and its "what remains open" section for what
+> is and is not known about the dump's actual source. The per-image byte
+> adjudications below are evidence about `$WZ_ARCHIVE` and are **not edited**
+> by this note; only the surrounding provenance story is corrected.
+
 ## Inputs
 
 Neither input is committed. They are referred to here by placeholder:

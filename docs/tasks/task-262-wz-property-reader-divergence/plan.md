@@ -18,7 +18,21 @@
 
 Every task's requirements implicitly include this section.
 
-- **Acceptance bar (user-approved restatement of PRD FR-4/FR-13, design §2.3).** The post-fix whole-archive diff must show **zero `PARSER-DEFECT` deltas**. Every remaining delta must be an adjudicated `REFERENCE-RESOLUTION` entry on a committed, byte-justified allowlist in the task folder. The original "0 divergent in either direction" bar is **superseded** — do not implement link/`_inlink`/`_outlink`/UOL resolution inside the parser.
+- **Acceptance bar — WITHDRAWN and superseded again.** The bullet below (the
+  user-approved restatement of PRD FR-4/FR-13, design §2.3) assumed Task 5's gate
+  would split the 19 divergences into `PARSER-DEFECT` and `REFERENCE-RESOLUTION`.
+  It did not: Task 5 found all 21 items (19 divergent + 2 un-enumerated)
+  `INPUT-MISMATCH` — the HaRepacker dump was never exported from the supplied
+  archive (`docs/tasks/task-262-wz-property-reader-divergence/provenance.md`,
+  `reference-fidelity.md`). There is no allowlist and nothing to fix in
+  `libs/atlas-wz/wz`. Tasks 6, 7, and 11-15 below, which all depend on that
+  allowlist or on a fix landing, are marked **WITHDRAWN** in place. The live
+  acceptance bar is `prd.md` §10 (re-scoped) and Task R2's self-consistency gate.
+  ~~The post-fix whole-archive diff must show **zero `PARSER-DEFECT` deltas**.
+  Every remaining delta must be an adjudicated `REFERENCE-RESOLUTION` entry on a
+  committed, byte-justified allowlist in the task folder. The original "0
+  divergent in either direction" bar is **superseded** — do not implement
+  link/`_inlink`/`_outlink`/UOL resolution inside the parser.~~
 - **`$WZ_ARCHIVE` is present and verified** (supplied by the user after the first execution session; this constraint previously read "NOT on this machine"). The 51.6 MiB PKG1 `GMS/83.1/Reactor.wz` lives at `tmp/83.1_wz/Reactor.wz` (repo-relative to the **main** checkout — see the worktree note below), alongside the other 83.1 archives (`Base.wz`, `Character.wz`, `Item.wz`, `Map.wz`, `Mob.wz`, `Npc.wz`, `Quest.wz`, `Skill.wz`, `String.wz`, `UI.wz`, and others). Verified: 51.6 MiB, first four bytes `50 4b 47 31` (`PKG1`). It is **not** committed and must not be added to git. Every command in this plan that needs it writes `"$WZ_ARCHIVE"`, so export it before running them.
 - **Both external inputs live in the MAIN checkout's `tmp/`, not the task worktree's.** The worktree at `.worktrees/task-262-wz-property-reader-divergence/` has its own (empty) `tmp/`, so a bare relative `tmp/...` resolves to the wrong place from inside it. Set the variables to absolute paths, or reference the main checkout explicitly.
 - **`$WZ_REFERENCE` is present and verified.** The HaRepacker XML dump lives at `tmp/083839c6-c47c-42a6-9585-76492795d123/GMS/83.1/Reactor.wz/` (repo-relative), 421 `.img.xml` files. It is **not** committed and must not be added to git.
@@ -499,7 +513,11 @@ Report the label counts and, specifically, whether any PRD FR-5 row was withdraw
 
 ---
 
-## Task 6: Byte-level diagnosis of the parser defects (FR-1, FR-2) — **requires `$WZ_ARCHIVE`**
+## Task 6: Byte-level diagnosis of the parser defects (FR-1, FR-2) — **WITHDRAWN**
+
+**WITHDRAWN.** Depended on Task 5 producing a `PARSER-DEFECT` set to diagnose. Task 5
+found zero (`reference-fidelity.md`, 21/21 `INPUT-MISMATCH`) — there are no parser
+defects to diagnose an offset for. Text below kept as the original task description.
 
 **Diagnosis only; changes no product code.** Task 12's patch follows these offsets, and design §6.1 rejects at review any fix without one.
 
@@ -555,7 +573,12 @@ Report the defect count, each defect's one-line cause and `file:line`, and the i
 
 ---
 
-## Task 7: Diagnose the enumeration gap (FR-3) — **requires `$WZ_ARCHIVE`**
+## Task 7: Diagnose the enumeration gap (FR-3) — **WITHDRAWN**
+
+**WITHDRAWN.** `9400300.img` and `9400301.img` are absent from `$WZ_ARCHIVE`'s own
+directory entirely (`reference-fidelity.md`) — they are not silently dropped by
+`parseDirectory`; there is no enumeration bug to diagnose. Text below kept as the
+original task description.
 
 `9400300.img` and `9400301.img` are never enumerated. Design §5 gives three candidates in elimination order; the cheapest one is first and must actually be run, not reasoned about.
 
@@ -885,7 +908,12 @@ git commit -m "test(atlas-wz): wztest builder emits offset-referenced string blo
 
 ---
 
-## Task 11: The failing regression fixtures (FR-9, FR-11, FR-12) — **lands against the UNFIXED reader**
+## Task 11: The failing regression fixtures (FR-9, FR-11, FR-12) — **WITHDRAWN**
+
+**WITHDRAWN.** Depended on `diagnosis.md` (Tasks 6-7, withdrawn) naming byte patterns
+to reproduce for defects that Task 5 found do not exist. Task R2 defines its own
+fixture coverage (declared-size overrun/underrun) independent of this task. Text
+below kept as the original task description.
 
 FR-12: a regression test that passes before the fix guards nothing. These tests must be committed **red**, with their failure output committed alongside, so a reviewer can verify from `git log` rather than from a claim.
 
@@ -951,7 +979,12 @@ This commit is expected to leave `go test ./libs/atlas-wz/...` red. That is the 
 
 ---
 
-## Task 12: CHECKPOINT — the decode fix
+## Task 12: CHECKPOINT — the decode fix — **WITHDRAWN**
+
+**WITHDRAWN.** There is no decode fix: Task 6 (its prerequisite) is withdrawn because
+Task 5 found zero `PARSER-DEFECT` images. A patch written without a `diagnosis.md`
+offset is exactly the "plausible-looking patch" this checkpoint's own text (below)
+forbids. Text below kept as the original task description.
 
 **Stop here and re-plan from `diagnosis.md`.** Design §6.1 deliberately leaves the patch unspecified: the offsets come from Task 6 and the patch follows the offsets. Writing speculative code here would be exactly the "plausible-looking patch" PRD §2 rules out.
 
@@ -980,7 +1013,20 @@ Module root: `libs/atlas-wz`.
 
 ---
 
-## Task 13: S1 strictness — bound `parsePropertyList` by its parent's extent
+## Task 13: S1 strictness — bound `parsePropertyList` by its parent's extent — **WITHDRAWN**
+
+**WITHDRAWN.** This task would change `Image.Properties()`'s production error surface
+(a new `ErrPropertyOverrun`) to catch a defect class that Task 5 found no live instance
+of in the one archive this task's evidence base covers — 1136/1136 type-9 sub-objects
+traced clean (`reference-fidelity.md`). Landing a new production error path with no
+known real-world trigger, on the strength of one archive, is a larger and riskier change
+than this re-scoped task should make unilaterally. Task R2 (`plan.md`, below) delivers
+the equivalent detection **without** changing `Image.Properties()`'s behavior: it is a
+separate, read-only `wzdiff --selfcheck` report built on the existing trace hook, so the
+same size-accounting check is available in CI without any production error-surface
+change. If a future sweep (PRD Open Question 2) finds a real violation, *that* is the
+evidence to reopen S1 as a production change. Text below kept as the original task
+description.
 
 `parsePropertyList` (`libs/atlas-wz/wz/image.go:168-198`) has **no end-bound at all**: it reads a `ReadWzInt` count and then trusts it, with nothing checking that the children stayed inside the enclosing block. The only recovery in the whole parser is the type-9 branch's unconditional `Seek(endPos)` at `image.go:285-287`, which silently heals any drift a child introduced — that reseek is precisely why this defect stayed invisible. S1 makes the drift **recorded** instead of hidden. Per design §6.2 it lands unconditionally; S2 is gated (Task 15) and S3 is out of scope.
 
@@ -1046,7 +1092,23 @@ git commit -m "feat(atlas-wz): error on property-list overrun instead of silent 
 
 ## Task 14: Propagate directory-parse failures and make ingest failures countable (FR-8, Observability NFR)
 
-`parseDirectory` logs and drops a failed sub-directory at `libs/atlas-wz/wz/directory.go:122`, losing every image beneath it with no error to the caller — the enumeration-level instance of the exact corruption class this task exists to kill (design §5, §6.3). On the ingest side, `wztoxml.serializeDirectory` does the same per image at `adapter.go:44-46`, producing a wall of individual warnings that an operator cannot act on.
+**KEPT — ruled independent of the withdrawn diagnosis (Task R1 judgment call).**
+Unlike Tasks 6/7/11/12/13/15, this task does not consume `diagnosis.md`,
+`reference-fidelity.md`'s labels, or any allowlist — its Files section names none of
+them, and its test fixtures (below) are synthetic archives built and corrupted by the
+task itself, not reproductions of a `Reactor.wz`-specific byte pattern. It is a direct
+instance of FR-8, which the re-scoped `prd.md` §4.2 keeps as the one requirement that
+survived whole: "make a silently-tolerated decode path an error, wherever doing so does
+not break a legitimate archive." A sub-directory that fails to parse and is silently
+dropped, with every image beneath it disappearing and no error reaching the caller, is
+exactly that failure mode — independent of whether *this* archive happens to trigger it.
+The one thing entangled with the withdrawn narrative is the opening sentence's framing
+("the enumeration-level instance of the exact corruption class this task exists to
+kill," citing design §5/§6.3, which reasoned from the false 19-image diagnosis) — that
+motivating story is wrong, but the engineering conclusion it reaches for does not depend
+on it, so the task proceeds on FR-8's restated grounds instead.
+
+`parseDirectory` logs and drops a failed sub-directory at `libs/atlas-wz/wz/directory.go:122`, losing every image beneath it with no error to the caller — the enumeration-level instance of the exact corruption class this task exists to kill (design §5, §6.3, historical framing; see the note above). On the ingest side, `wztoxml.serializeDirectory` does the same per image at `adapter.go:44-46`, producing a wall of individual warnings that an operator cannot act on.
 
 ### Files
 
@@ -1105,7 +1167,17 @@ git commit -m "feat(atlas-wz): propagate sub-directory parse failures; count ing
 
 ---
 
-## Task 15: Full-archive re-verification, S2 decision, and the final gate (FR-7, FR-13, FR-14) — **requires `$WZ_ARCHIVE`**
+## Task 15: Full-archive re-verification, S2 decision, and the final gate (FR-7, FR-13, FR-14) — **WITHDRAWN**
+
+**WITHDRAWN.** Depends on Task 12's fix (withdrawn) and Task 5's allowlist (never
+produced — `reference-fidelity.md` found `INPUT-MISMATCH` everywhere, not
+`REFERENCE-RESOLUTION`). FR-7/FR-13/FR-14 as written are withdrawn in `prd.md` §4;
+there is no post-fix diff to run because there is no fix. The S2 strictness decision
+(Step 3) is moot for the same reason S1 (Task 13) is withdrawn — no known trigger in
+this task's evidence base. The final gate itself (flagless `tools/verify.sh`, code
+review) is still required, but it now belongs to whichever task lands Task R2, not to
+this withdrawn full-archive-diff step. Text below kept as the original task
+description.
 
 The acceptance evidence. FR-7 is proven here — that the 400 already-matching images are untouched is a measurement, not an inspection.
 
@@ -1174,4 +1246,23 @@ Confirm, and write into `context.md`:
 - [ ] **Step 7: Code review before the PR**
 
 Dispatch `atlas-reviewer` per plan task and `backend-guidelines-reviewer` over the changed Go packages. Both are required gates; a green `verify.sh` cannot see a cross-module seam defect, and this branch crosses `libs/atlas-wz` → `services/atlas-data`.
+
+---
+
+## Task R2: Whole-archive size-accounting self-check
+
+**Added by Task R1's re-scope, replacing the withdrawn Tasks 6-7 and 11-15.** With the
+HaRepacker dump withdrawn as an oracle (`provenance.md`), this task gives task-262 a
+reference that needs no external dump at all: **the archive's own bytes**. Every WZ
+type-9 sub-object declares its own byte length; if a decode ends anywhere other than
+where that declaration says it should, that is a defect, and today it is silently
+healed by the type-9 branch's unconditional recovery reseek (`wz/image.go:285-287`)
+and never surfaces. Task 5 already ran this check by hand across `Reactor.wz` and found
+1136/1136 sub-objects clean (`reference-fidelity.md`); this task turns it into a
+repo-tool gate — a new `wzdiff --selfcheck` mode built on the existing trace hook
+(Task 2), with `wztest`-fixture coverage (a clean archive passes; a sub-object with a
+deliberately corrupted declared size fails) so it runs in CI with no external archive.
+Deliberately **not** a change to `Image.Properties()`'s production error surface — see
+Task 13's withdrawal note for why a new production error path is out of scope on this
+task's evidence base. Full detail: `task-R2-brief.md`.
 

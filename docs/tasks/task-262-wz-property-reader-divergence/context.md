@@ -6,7 +6,18 @@ Companion to `plan.md`. Everything an implementer or reviewer needs that is not 
 
 ## 1. Decisions taken during planning
 
-### 1.1 Acceptance bar — design §10 resolved (user-approved)
+### 1.1 Acceptance bar — design §10 resolved (user-approved), then superseded again
+
+**Superseded.** The paragraphs below record a decision that was made and then overtaken
+by a finding it did not anticipate. Task 5 ran the §2.2 gate this decision rested on
+and found **zero** `REFERENCE-RESOLUTION` deltas and **zero** `PARSER-DEFECT` deltas —
+all 21 items (19 divergent + 2 un-enumerated) came back a third label the gate wasn't
+built to expect, `INPUT-MISMATCH`: the HaRepacker dump was never exported from
+`$WZ_ARCHIVE` at all (`docs/tasks/task-262-wz-property-reader-divergence/provenance.md`,
+`reference-fidelity.md`). No allowlist was produced. Tasks 6, 7, 11-13, and 15 are
+withdrawn in `plan.md`; Task 14 was independently evaluated and kept; Task R2 (added by
+this re-scope) is the live acceptance work. The framing below is kept as the record of
+the decision point, not as a live constraint.
 
 The design's blocking decision was signed off in favour of the **§2.3 restatement**:
 
@@ -14,18 +25,22 @@ The design's blocking decision was signed off in favour of the **§2.3 restateme
 > `REFERENCE-RESOLUTION` deltas produced by the §2.2 gate.
 
 PRD **FR-4 and FR-13's "0 divergent in either direction" bar is superseded.** The
-reason, from the design and confirmed against the code: part of the 19-image delta is
-the HaRepacker dump *resolving* `link` / `_inlink` / `_outlink` / `UOL` references while
-our parser stays deliberately literal, and Atlas resolves those in consumers —
-`services/atlas-data/atlas.com/data/reactor/reader.go:65`
+reason, from the design and confirmed against the code: part of the 19-image delta was
+*believed at the time* to be the HaRepacker dump *resolving* `link` / `_inlink` /
+`_outlink` / `UOL` references while our parser stays deliberately literal, and Atlas
+resolves those in consumers — `services/atlas-data/atlas.com/data/reactor/reader.go:65`
 (`info.GetString("link", "")`), `services/atlas-data/atlas.com/data/map/reader.go:60`,
 `libs/atlas-wz/icons/extract.go:222` (`findInfoLink`). Satisfying FR-13 literally would
 mean implementing resolution inside `Image.Properties()`, double-resolving against those
-consumers and changing the property tree's meaning for every existing caller.
+consumers and changing the property tree's meaning for every existing caller. That
+resolution theory was never actually confirmed against a matching archive (§2.2's
+outcome, above) — the dump simply wasn't an export of `$WZ_ARCHIVE` at all, so the
+question of what it resolved does not arise.
 
-Consequence for review: the allowlist is a **deliverable with byte evidence**, not a
-waiver. Task 15 Step 1 explicitly forbids adding an entry to make a `PARSER-DEFECT`
-disappear.
+Consequence for review, as originally written: the allowlist would have been a
+**deliverable with byte evidence**, not a waiver, and Task 15 Step 1 would have
+forbidden adding an entry to make a `PARSER-DEFECT` disappear. Moot — no allowlist
+exists.
 
 ### 1.2 `wzdiff` lives in `libs/atlas-wz`, not `tools/wzdiff` — deviation from design §4.3
 
@@ -84,13 +99,20 @@ becomes a tracked defect with its own fixture under Task 12.
 
 | Input | Status |
 |---|---|
-| **`$WZ_REFERENCE`** — HaRepacker XML dump | **Present and verified.** `tmp/083839c6-c47c-42a6-9585-76492795d123/GMS/83.1/Reactor.wz/`, 421 `.img.xml` files. Confirmed `2406000.img.xml` contains `<int name="activateByTouch" value="1"/>`, matching the evidence. **Not committed; must not be added to git.** |
-| **`$WZ_ARCHIVE`** — the 51.6 MiB PKG1 `GMS/83.1/Reactor.wz` binary | **Present and verified** (supplied by the user after the first execution session). `tmp/83.1_wz/Reactor.wz`, alongside the other 83.1 archives (`Base.wz`, `Character.wz`, `Item.wz`, `Map.wz`, `Mob.wz`, `Npc.wz`, `Quest.wz`, `Skill.wz`, `String.wz`, `UI.wz`, and others). Confirmed 51.6 MiB with first four bytes `50 4b 47 31` (`PKG1`). **Not committed; must not be added to git.** |
+| **`$WZ_REFERENCE`** — a `.img.xml` dump, provenance unknown | **Present, but not what it was believed to be.** `tmp/083839c6-c47c-42a6-9585-76492795d123/GMS/83.1/Reactor.wz/`, 421 `.img.xml` files. Previously described here as a "HaRepacker XML dump" and marked "Present and verified" — that description is **wrong on both counts**. `provenance.md` and `reference-fidelity.md` establish it was not exported from `$WZ_ARCHIVE`: three independent counts of `Npc.wz` (our reader, a raw `declaredCount` byte read, and HaRepacker run by the user on `$WZ_ARCHIVE` itself) agree on 1620 images, while this dump holds 6962; its `Reactor.wz` entries include two images (`9400300`, `9400301`) absent from `$WZ_ARCHIVE`'s own directory; all 6962 `Npc.wz` files under it share one mtime, `2026-02-12T09:03`, from a single unidentified export run. Its actual exporter is **unknown** — HaRepacker is one candidate among unconfirmed others. It is **retained as historical evidence only** — the record of what was compared against `$WZ_ARCHIVE` when the false diagnosis was produced — not as a live reference for anything. **Not committed; must not be added to git.** |
+| **`$WZ_ARCHIVE`** — the 51.6 MiB PKG1 `GMS/83.1/Reactor.wz` binary | **Present and verified** (supplied by the user after the first execution session). `tmp/83.1_wz/Reactor.wz`, alongside the other 83.1 archives (`Base.wz`, `Character.wz`, `Item.wz`, `Map.wz`, `Mob.wz`, `Npc.wz`, `Quest.wz`, `Skill.wz`, `String.wz`, `UI.wz`, and others). Confirmed 51.6 MiB with first four bytes `50 4b 47 31` (`PKG1`). This is the one input whose provenance and content is verified; it is the sole authority now (`prd.md` §10). **Not committed; must not be added to git.** |
 
 **Both paths above are relative to the MAIN checkout, not the task worktree.** The
 worktree at `.worktrees/task-262-wz-property-reader-divergence/` carries its own
 (empty) `tmp/`, so a bare relative `tmp/...` resolves to the wrong directory from
 inside it. Export `$WZ_ARCHIVE` and `$WZ_REFERENCE` as absolute paths.
+
+**Superseded by the re-scope.** The ordering chain below (`5 → 6 → 7 → 11 → 12 → 13 →
+14 → 15`) assumed Task 5 would hand Task 6 a `PARSER-DEFECT` set to diagnose. It
+handed it an empty one (`reference-fidelity.md`, `provenance.md`) — Tasks 6, 7, 11,
+12, 13, and 15 are withdrawn (`plan.md`), Task 14 was evaluated independently and
+kept, and Task R2 is the remaining implementation work. Kept below as the record of
+the original ordering:
 
 **No task is externally blocked any more.** The original blocking note read: "Tasks
 1-4 and 8-11 have no external dependency and can proceed immediately... the runnable
@@ -101,9 +123,10 @@ constraint is internal, not external: Task 11's fixture byte patterns come from 
 sit downstream of Task 12 and of Task 7's enumeration diagnosis. Work 5 → 6 → 7 → 11
 → 12 → 13 → 14 → 15 in order.
 
-The evidence file records no provenance for either input. Whoever supplies the archive
-should record its size and a hash in `reference-fidelity.md` so a future re-run is
-reproducible (FR-14).
+The evidence file records no provenance for either input. That gap is exactly what
+`provenance.md` (Task R1) fills for `$WZ_REFERENCE`: it was not exported from
+`$WZ_ARCHIVE`, and its actual source remains unidentified — see `provenance.md`,
+"what remains open."
 
 ---
 

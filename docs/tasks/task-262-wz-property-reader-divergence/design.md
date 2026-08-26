@@ -3,12 +3,29 @@
 Task: task-262-wz-property-reader-divergence
 PRD: `docs/tasks/task-262-wz-property-reader-divergence/prd.md`
 Evidence: `docs/tasks/task-262-wz-property-reader-divergence/evidence-wz-parse-divergence-reactor.txt`
-Status: Draft for review
+Status: Historical — see the provenance correction below
 Created: 2026-08-26
+Revised: 2026-08-26 — see `provenance.md` and `reference-fidelity.md`
 
 ---
 
-## 0. Summary of the architectural position
+> **Provenance correction.** §0, §1, §2.1, and §2.3 below were written against a
+> HaRepacker `.img.xml` dump believed to be an export of the same
+> `GMS/83.1/Reactor.wz` archive supplied for this task. Task 5's byte-level
+> adjudication (`reference-fidelity.md`) found the dump was exported from a
+> different, heavily customised WZ dataset — `provenance.md` has the
+> independent count evidence. Both "Population A" (genuine decode defects) and
+> "Population B" (reference-side link/UOL resolution) below turned out to be
+> the same thing: `INPUT-MISMATCH`, 21/21. **§2.1 and §2.3 are kept as
+> historical record of how the premise error was found and reasoned about; they
+> are not a live design position.** §2.2's gate *method* was still the right
+> one — Task 5 ran it and it correctly surfaced the mismatch — but its intended
+> two-way `PARSER-DEFECT`/`REFERENCE-RESOLUTION` split needed a third label.
+> §2.2 is annotated with that outcome below. The live design going forward is
+> the self-consistency gate (Task R2, `plan.md`), which needs no external
+> reference at all.
+
+## 0. Summary of the architectural position — HISTORICAL, see correction above
 
 The PRD frames the whole 19-image delta as one thing: "our parser is wrong,
 HaRepacker is right, make the diff empty." Reading the evidence file against the
@@ -82,7 +99,13 @@ Four structural properties of that code matter for this design:
 
 ## 2. Decision 0 (blocking): establish what the reference actually is
 
-### 2.1 Why this is a decision and not an assumption
+### 2.1 Why this is a decision and not an assumption — HISTORICAL
+
+This subsection reasons from the (false) premise that the dump is a same-archive
+export. Task 5 found it is not (`reference-fidelity.md`); the link/UOL-resolution
+theory below was never actually tested against a matching archive. Kept as the
+record of the reasoning that led to building the §2.2 gate, which is the part
+that survived.
 
 `services/atlas-data/atlas.com/data/reactor/reader.go:65` does
 `link := info.GetString("link", "")` and follows the link itself. So does
@@ -116,7 +139,20 @@ way to satisfy them for these images is to **implement link/UOL resolution insid
 contradict the PRD's own non-goal list, and change the meaning of the property
 tree for every existing consumer. That is the wrong fix.
 
-### 2.2 The gate
+### 2.2 The gate — method survived, outcome differed from what was anticipated
+
+> **Outcome (Task 5, `reference-fidelity.md`).** The gate below was framed as a
+> two-way adjudication, `PARSER-DEFECT` vs. `REFERENCE-RESOLUTION`. Running it
+> produced neither: all 21 items (19 divergent + 2 un-enumerated) came back a
+> third label, `INPUT-MISMATCH` — the dump was never exported from the supplied
+> archive at all (`provenance.md`). Byte adjudication (method 1 below) was
+> exactly what surfaced this: 1136 type-9 sub-objects traced across the 19
+> images with 0 instances of `actualEnd != endPos`, i.e. our reader is
+> byte-faithful to the archive everywhere it was checked, which is
+> incompatible with either of the two labels this section anticipated. The
+> gate mechanism (byte adjudication first, ordered above the other two
+> methods) is exactly right; what follows describes the two outcomes it was
+> built to distinguish between, neither of which occurred.
 
 Before any code change, Phase 4 must produce
 `docs/tasks/task-262-wz-property-reader-divergence/reference-fidelity.md`
@@ -147,7 +183,13 @@ Open Question 4 in the PRD (`3002000`'s phantom `event` subtree) is answered by
 this same gate, in the opposite direction: if the bytes contain that subtree, the
 reference is skipping a record it does not model and **we are right**.
 
-### 2.3 Consequence for acceptance
+### 2.3 Consequence for acceptance — HISTORICAL
+
+This restatement assumed the gate would produce a `REFERENCE-RESOLUTION`
+allowlist. It did not (§2.2 outcome, above) — `allowlist.tsv` was never
+produced because there is nothing to allowlist. Kept as the record of the
+decision the user was asked to sign off on; superseded by the re-scoped §10 of
+`prd.md` and by Task R2's self-consistency criteria.
 
 FR-4/FR-13 are restated as: the post-fix whole-archive diff must show
 **zero `PARSER-DEFECT` deltas**, and every remaining delta must be an
@@ -491,7 +533,13 @@ documented as called under `parseMu` and is nil in production. `go test -race
 
 ---
 
-## 10. Decision needed before Phase 3
+## 10. Decision needed before Phase 3 — RESOLVED, superseded
+
+This decision was made (user approved the §2.3 restatement, `context.md` §1.1) and
+then superseded again by the finding it did not anticipate: §2.2's gate returned
+`INPUT-MISMATCH`, not `REFERENCE-RESOLUTION`, so there was no allowlist to commit.
+The live acceptance criteria are `prd.md` §10 and Task R2. Kept as the historical
+record of the decision point.
 
 **§2.3 — the acceptance restatement.** The PRD's FR-4/FR-13 demand a
 literally-empty bidirectional diff. This design argues that is unreachable

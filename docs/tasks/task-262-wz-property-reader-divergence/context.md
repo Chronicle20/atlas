@@ -85,11 +85,21 @@ becomes a tracked defect with its own fixture under Task 12.
 | Input | Status |
 |---|---|
 | **`$WZ_REFERENCE`** — HaRepacker XML dump | **Present and verified.** `tmp/083839c6-c47c-42a6-9585-76492795d123/GMS/83.1/Reactor.wz/`, 421 `.img.xml` files. Confirmed `2406000.img.xml` contains `<int name="activateByTouch" value="1"/>`, matching the evidence. **Not committed; must not be added to git.** |
-| **`$WZ_ARCHIVE`** — the 51.6 MiB PKG1 `GMS/83.1/Reactor.wz` binary | **NOT on this machine.** `find / -xdev -type f -name '*.wz' -size +10M` returned nothing; the same search over `/mnt/c`, `/mnt/d`, `/mnt/e` found only directories named `Reactor.wz`. **Tasks 5, 6, 7 and 15 are blocked until it is supplied.** |
+| **`$WZ_ARCHIVE`** — the 51.6 MiB PKG1 `GMS/83.1/Reactor.wz` binary | **Present and verified** (supplied by the user after the first execution session). `tmp/83.1_wz/Reactor.wz`, alongside the other 83.1 archives (`Base.wz`, `Character.wz`, `Item.wz`, `Map.wz`, `Mob.wz`, `Npc.wz`, `Quest.wz`, `Skill.wz`, `String.wz`, `UI.wz`, and others). Confirmed 51.6 MiB with first four bytes `50 4b 47 31` (`PKG1`). **Not committed; must not be added to git.** |
 
-Tasks 1-4 and 8-11 have no external dependency and can proceed immediately. Task 11's
-fixture byte patterns come from Task 6's `diagnosis.md`, so in practice the runnable
-prefix without the archive is Tasks 1-4 and 8-10.
+**Both paths above are relative to the MAIN checkout, not the task worktree.** The
+worktree at `.worktrees/task-262-wz-property-reader-divergence/` carries its own
+(empty) `tmp/`, so a bare relative `tmp/...` resolves to the wrong directory from
+inside it. Export `$WZ_ARCHIVE` and `$WZ_REFERENCE` as absolute paths.
+
+**No task is externally blocked any more.** The original blocking note read: "Tasks
+1-4 and 8-11 have no external dependency and can proceed immediately... the runnable
+prefix without the archive is Tasks 1-4 and 8-10." That prefix (Tasks 1-4, 8, 9, 10)
+is now complete and gated — see `execution-status.md`. The remaining ordering
+constraint is internal, not external: Task 11's fixture byte patterns come from Task
+6's `diagnosis.md`, Task 12 consumes `diagnosis.md` plus Task 11, and Tasks 13 and 14
+sit downstream of Task 12 and of Task 7's enumeration diagnosis. Work 5 → 6 → 7 → 11
+→ 12 → 13 → 14 → 15 in order.
 
 The evidence file records no provenance for either input. Whoever supplies the archive
 should record its size and a hash in `reference-fidelity.md` so a future re-run is

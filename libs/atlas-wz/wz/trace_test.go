@@ -1,6 +1,7 @@
 package wz
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -130,6 +131,9 @@ func TestSetTraceEmitsNodeEvents(t *testing.T) {
 			}
 			lastPropStart = ev.StartOff
 		}
+		if ev.Kind != "sub" && (ev.DeclaredEnd != 0 || ev.ActualEnd != 0) {
+			t.Errorf("non-sub event %+v has non-zero DeclaredEnd/ActualEnd", ev)
+		}
 	}
 
 	if !haveExtendedInfo {
@@ -146,6 +150,63 @@ func TestSetTraceEmitsNodeEvents(t *testing.T) {
 	}
 	if !propOrderOK {
 		t.Errorf("prop events not emitted in non-decreasing StartOff order: %+v", events)
+	}
+}
+
+// TestSetTraceEmitsSubEventDeclaredActualEnd proves the Kind: "sub" event
+// populates DeclaredEnd/ActualEnd (matching endPos/actualEnd baked into
+// Detail) so a gate can read them as structured fields instead of parsing
+// the Detail string (task-262 R2).
+func TestSetTraceEmitsSubEventDeclaredActualEnd(t *testing.T) {
+	path := writeFixture(t, gmsFixtureBuilder(), "ItemSubEnd.wz")
+
+	f, err := Open(logrus.StandardLogger(), path)
+	if err != nil {
+		t.Fatalf("open fixture: %v", err)
+	}
+	defer f.Close()
+
+	var events []TraceEvent
+	f.SetTrace(func(ev TraceEvent) {
+		events = append(events, ev)
+	})
+
+	imgs := f.Root().Directories()[0].Images()
+	if _, err := imgs[0].Properties(); err != nil {
+		t.Fatalf("properties: %v", err)
+	}
+
+	var subEvent *TraceEvent
+	for i, ev := range events {
+		if ev.Path == "/info" && ev.Kind == "sub" {
+			subEvent = &events[i]
+		}
+	}
+	if subEvent == nil {
+		t.Fatalf("no event with Path=/info Kind=sub in %+v", events)
+	}
+	if subEvent.DeclaredEnd == 0 {
+		t.Errorf("sub event DeclaredEnd = 0, want the declared-size end position: %+v", *subEvent)
+	}
+	if subEvent.ActualEnd == 0 {
+		t.Errorf("sub event ActualEnd = 0, want the actual decode end position: %+v", *subEvent)
+	}
+	if subEvent.DeclaredEnd != subEvent.ActualEnd {
+		t.Errorf("sub event DeclaredEnd=%d ActualEnd=%d, want them equal for a well-formed fixture", subEvent.DeclaredEnd, subEvent.ActualEnd)
+	}
+	wantDetail := fmt.Sprintf("declaredSize=%d endPos=%d actualEnd=%d",
+		subEvent.DeclaredEnd-subEvent.StartOff-4, subEvent.DeclaredEnd, subEvent.ActualEnd)
+	if subEvent.Detail != wantDetail {
+		t.Errorf("sub event Detail = %q, want %q", subEvent.Detail, wantDetail)
+	}
+
+	for _, ev := range events {
+		if ev.Kind == "sub" {
+			continue
+		}
+		if ev.DeclaredEnd != 0 || ev.ActualEnd != 0 {
+			t.Errorf("non-sub event %+v has non-zero DeclaredEnd/ActualEnd", ev)
+		}
 	}
 }
 

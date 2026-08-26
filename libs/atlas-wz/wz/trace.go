@@ -27,6 +27,12 @@ type TraceEvent struct {
 	// the actualEnd/endPos mismatch is what surfaces an under- or over-read
 	// that the type-9 recovery reseek would otherwise silently heal.
 	Detail string
+	// DeclaredEnd is the reader position a type-9 sub-object's own declared
+	// size says its decode should end at, and ActualEnd is where the decode
+	// actually ended, captured before the recovery reseek heals any drift.
+	// Both are zero for events where Kind != "sub".
+	DeclaredEnd int64
+	ActualEnd   int64
 }
 
 // SetTrace installs fn as the parse trace hook for wz and every sub-file

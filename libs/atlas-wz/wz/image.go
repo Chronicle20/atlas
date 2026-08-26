@@ -355,13 +355,15 @@ func (wz *File) parsePropertyValue(path, name string, propType byte, imageOffset
 				return nil, perr
 			}
 			hook(TraceEvent{
-				Path:     path,
-				Kind:     "sub",
-				Name:     name,
-				Type:     propType,
-				StartOff: start,
-				EndOff:   actualEnd,
-				Detail:   fmt.Sprintf("declaredSize=%d endPos=%d actualEnd=%d", size, endPos, actualEnd),
+				Path:        path,
+				Kind:        "sub",
+				Name:        name,
+				Type:        propType,
+				StartOff:    start,
+				EndOff:      actualEnd,
+				Detail:      fmt.Sprintf("declaredSize=%d endPos=%d actualEnd=%d", size, endPos, actualEnd),
+				DeclaredEnd: endPos,
+				ActualEnd:   actualEnd,
 			})
 		}
 

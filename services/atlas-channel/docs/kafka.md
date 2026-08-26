@@ -489,9 +489,9 @@
 
 ### COMMAND_TOPIC_MONSTER
 - Direction: Command
-- Message Type: `Command[DamageCommandBody]`, `Command[UseSkillCommandBody]`, `Command[ApplyStatusCommandBody]`, `Command[CancelStatusCommandBody]`
+- Message Type: `Command[DamageCommandBody]`, `Command[UseSkillCommandBody]`, `Command[ApplyStatusCommandBody]`, `Command[CancelStatusCommandBody]`, `Command[BanishCommandBody]`
 - Envelope: `Command[E]` with fields: WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), MonsterId (uint32), Type (string), Body (E)
-- Purpose: Issues monster commands. DAMAGE applies damage (CharacterId, Damage, AttackType). USE_SKILL triggers monster skill usage (CharacterId, SkillId, SkillLevel). APPLY_STATUS applies debuffs (SourceType, SourceCharacterId, SourceSkillId, SourceSkillLevel, Statuses map, Duration, TickInterval). CANCEL_STATUS removes status effects (StatusTypes list).
+- Purpose: Issues monster commands. DAMAGE applies damage (CharacterId, Damage, AttackType). USE_SKILL triggers monster skill usage (CharacterId, SkillId, SkillLevel). APPLY_STATUS applies debuffs (SourceType, SourceCharacterId, SourceSkillId, SourceSkillLevel, Statuses map, Duration, TickInterval). CANCEL_STATUS removes status effects (StatusTypes list). BANISH forwards a client MOB_BANISH_PLAYER request (CharacterId, MonsterTemplateId) with MonsterId 0; atlas-monsters validates the client-supplied template id against live field state before acting.
 
 ### COMMAND_TOPIC_MONSTER_BOOK
 - Direction: Command

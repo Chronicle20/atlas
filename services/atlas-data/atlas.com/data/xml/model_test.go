@@ -274,3 +274,44 @@ func TestGetDoubleFromXML(t *testing.T) {
 		t.Errorf("Expected default value 99.99 for nonExistent, got %f", nonExistent)
 	}
 }
+
+func TestSlashPathResolution(t *testing.T) {
+	xmlData := []byte(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="ban">
+  <string name="banMsg" value="You were banished."/>
+  <imgdir name="banMap">
+    <imgdir name="0">
+      <int name="field" value="103000100"/>
+      <string name="portal" value="sp"/>
+    </imgdir>
+  </imgdir>
+</imgdir>`)
+
+	provider := FromByteArrayProvider(xmlData)
+	node, err := provider()
+	if err != nil {
+		t.Fatalf("Failed to parse XML: %v", err)
+	}
+
+	mapId := node.GetIntegerWithDefault("banMap/0/field", 0)
+	if mapId != 103000100 {
+		t.Errorf("GetIntegerWithDefault(\"banMap/0/field\") = %d, want 103000100", mapId)
+	}
+
+	portal := node.GetString("banMap/0/portal", "")
+	if portal != "sp" {
+		t.Errorf("GetString(\"banMap/0/portal\") = %q, want \"sp\"", portal)
+	}
+
+	// Missing intermediate segment returns the default.
+	missing := node.GetIntegerWithDefault("banMap/1/field", -1)
+	if missing != -1 {
+		t.Errorf("GetIntegerWithDefault(\"banMap/1/field\") = %d, want -1 (default)", missing)
+	}
+
+	// A flat name (no "/") still resolves as before.
+	msg := node.GetString("banMsg", "")
+	if msg != "You were banished." {
+		t.Errorf("GetString(\"banMsg\") = %q, want \"You were banished.\"", msg)
+	}
+}

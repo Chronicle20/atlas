@@ -34,6 +34,7 @@ type Processor interface {
 	ClearAggro(f field.Model, monsterId uint32) error
 	ForceControl(f field.Model, monsterId uint32, characterId uint32) error
 	SetAggro(f field.Model, monsterId uint32, characterId uint32) error
+	Banish(f field.Model, characterId uint32, monsterTemplateId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -185,4 +186,13 @@ func (p *ProcessorImpl) ForceControl(f field.Model, monsterId uint32, characterI
 func (p *ProcessorImpl) SetAggro(f field.Model, monsterId uint32, characterId uint32) error {
 	p.l.Debugf("Requesting auto-aggro of monster [%d] for character [%d].", monsterId, characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(SetAggroCommandProvider(f, monsterId, characterId))
+}
+
+// Banish forwards a client MOB_BANISH_PLAYER request to atlas-monsters, which
+// owns live monster state and is the only service that can validate the
+// client-supplied template id against the field. The channel makes no banish
+// decision and resolves no monster data.
+func (p *ProcessorImpl) Banish(f field.Model, characterId uint32, monsterTemplateId uint32) error {
+	p.l.Debugf("Character [%d] requesting banish by monster template [%d].", characterId, monsterTemplateId)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(BanishCommandProvider(f, characterId, monsterTemplateId))
 }

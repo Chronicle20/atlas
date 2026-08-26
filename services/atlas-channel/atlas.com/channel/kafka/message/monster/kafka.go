@@ -22,6 +22,7 @@ const (
 	CommandTypeForceControl   = "FORCE_CONTROL"
 	CommandTypeSelfDestruct   = "SELF_DESTRUCT"
 	CommandTypeSetAggro       = "SET_AGGRO"
+	CommandTypeBanish         = "BANISH"
 )
 
 type DamageFriendlyCommandBody struct {
@@ -141,6 +142,21 @@ type SelfDestructCommandBody struct {
 // Mirrors atlas-monsters' setAggroCommandBody — edit both together.
 type SetAggroCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
+}
+
+// BanishCommandBody asks atlas-monsters to banish a character out of a field on
+// the strength of a client MOB_BANISH_PLAYER request. MonsterTemplateId is
+// client-supplied and untrusted; atlas-monsters revalidates it against live
+// field state before acting. Both fields are uint32: characterId already
+// appears at that name and type in DamageCommandBody / KillCommandBody /
+// ForceControlCommandBody, and monsterTemplateId appears in no sibling body, so
+// neither can collide on the shared, fan-to-every-handler command topic. The
+// envelope's monsterId is deliberately left 0 — it means *unique* id everywhere
+// else on this topic. Mirrors atlas-monsters' banishCommandBody — edit both
+// together.
+type BanishCommandBody struct {
+	CharacterId       uint32 `json:"characterId"`
+	MonsterTemplateId uint32 `json:"monsterTemplateId"`
 }
 
 const (

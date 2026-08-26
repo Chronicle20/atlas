@@ -43,6 +43,7 @@
 | body.characterId | uint32 | Character identifier |
 | body.targetMapId | uint32 | Target map identifier |
 | body.targetPortalId | uint32 | Target portal identifier |
+| body.targetPortalName | string | Target portal name; used when targetPortalId is 0. Unresolvable names fall back to a random spawn point |
 | body.useTargetPosition | bool | Use exact target position flag |
 | body.targetX | int16 | Target X coordinate |
 | body.targetY | int16 | Target Y coordinate |

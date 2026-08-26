@@ -228,6 +228,99 @@ func TestHandleEnterCommand_PortalNotFound(t *testing.T) {
 	}
 }
 
+func TestHandleWarpCommand_Precedence(t *testing.T) {
+	portalResource := map[string]interface{}{
+		"type": "portals",
+		"id":   "1",
+		"attributes": map[string]interface{}{
+			"name":        "st00",
+			"target":      "",
+			"type":        0,
+			"x":           0,
+			"y":           0,
+			"targetMapId": 999999999,
+			"scriptName":  "",
+		},
+	}
+
+	// wantPath documents the data-service path each case is expected to
+	// exercise: "position wins over name" and "portal id wins over name"
+	// hit no lookup at all; "name used when id and position unset" hits
+	// the name lookup; "random spawn when all unset" hits the bare drain.
+	tests := []struct {
+		name       string
+		body       warpBody
+		wantLog    []string
+		wantNotLog []string
+	}{
+		{
+			name:    "position wins over name",
+			body:    warpBody{CharacterId: 1, TargetMapId: 200000000, TargetPortalName: "st00", UseTargetPosition: true, TargetX: 10, TargetY: 20},
+			wantLog: []string{"position"},
+		},
+		{
+			name:    "portal id wins over name",
+			body:    warpBody{CharacterId: 2, TargetMapId: 200000000, TargetPortalId: 5, TargetPortalName: "st00"},
+			wantLog: []string{"portal [5]"},
+		},
+		{
+			name:    "name used when id and position unset",
+			body:    warpBody{CharacterId: 3, TargetMapId: 200000000, TargetPortalName: "st00"},
+			wantLog: []string{"portal [st00]"},
+		},
+		{
+			name:       "random spawn when all unset",
+			body:       warpBody{CharacterId: 4, TargetMapId: 200000000},
+			wantNotLog: []string{"portal [", "position"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, cleanup := setupMockDataServerForConsumer(map[string]interface{}{
+				"/api/data/maps/200000000/portals?name=st00": map[string]interface{}{"data": []interface{}{portalResource}},
+				"/api/data/maps/200000000/portals":           map[string]interface{}{"data": []interface{}{portalResource}},
+			})
+			defer cleanup()
+
+			logger, hook := logtest.NewNullLogger()
+			logger.SetLevel(logrus.DebugLevel)
+			ctx := createTestContext()
+
+			cmd := warpEvent{
+				WorldId:   1,
+				ChannelId: 1,
+				MapId:     100000000,
+				Type:      CommandTypeWarp,
+				Body:      tt.body,
+			}
+
+			handleWarpCommand(logger, ctx, cmd)
+
+			for _, want := range tt.wantLog {
+				found := false
+				for _, entry := range hook.Entries {
+					if entry.Level == logrus.DebugLevel && containsAll(entry.Message, want) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("expected a debug log entry containing %q, entries: %v", want, hook.Entries)
+				}
+			}
+
+			for _, notWant := range tt.wantNotLog {
+				for _, entry := range hook.Entries {
+					if entry.Level == logrus.DebugLevel && containsAll(entry.Message, notWant) {
+						t.Errorf("expected no debug log entry containing %q, got %q", notWant, entry.Message)
+					}
+				}
+			}
+		})
+	}
+}
+
 // containsAll checks if a string contains all the given substrings
 func containsAll(s string, substrings ...string) bool {
 	for _, sub := range substrings {

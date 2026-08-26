@@ -127,8 +127,9 @@ type EnsureResult struct {
 }
 
 // Ensure creates every topic in t.Union() with one CreateTopics request, then
-// applies cleanup.policy=compact to every topic in t.Compact with one
-// IncrementalAlterConfigs request.
+// applies the compacted topic configuration (cleanup.policy,
+// max.compaction.lag.ms, segment.ms, min.cleanable.dirty.ratio) to every
+// topic in t.Compact with one IncrementalAlterConfigs request.
 //
 // There is deliberately no list-then-diff here (FR-2.5): CreateTopics is
 // idempotent per topic on its own — a topic that already exists comes back

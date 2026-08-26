@@ -23,7 +23,7 @@
 # exits 0 — a counter must never break a session.
 #
 # The cap is stated once here and referenced from CLAUDE.md,
-# .claude/agents/atlas-implementer.md, and .claude/hooks/turn-budget-guard.sh
+# .claude/agents/task-implementer.md, and .claude/hooks/turn-budget-guard.sh
 # (which parses CAP out of this file at runtime). Change it in this file only.
 #
 # This hook only NAGS. Enforcement lives in the PreToolUse companion

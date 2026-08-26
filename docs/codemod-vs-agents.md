@@ -31,7 +31,7 @@ Two figures are measured, from task-232's batch 4:
   6,231 ≈ **122,010 tokens per turn** (the brief's own "~122k per turn"
   figure — this recomputation is a consistency check, not a new figure).
 
-One figure is a standing contract, not a measurement: an `atlas-implementer`
+One figure is a standing contract, not a measurement: an `task-implementer`
 dispatch is capped at **120 tool calls** before it must hand back `PARTIAL`
 (`docs/agent-dispatch.md` "The implementer budget").
 

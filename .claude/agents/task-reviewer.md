@@ -1,5 +1,5 @@
 ---
-name: atlas-reviewer
+name: task-reviewer
 description: |
   Use this agent for a per-unit or ad-hoc code review — one plan task's commit
   range, one fix round, one bug fix, one commit you want a second opinion on.
@@ -15,15 +15,15 @@ description: |
   correctness against its brief.
 
   <example>
-  Context: an atlas-implementer just reported DONE for Task 12.
+  Context: an task-implementer just reported DONE for Task 12.
   user: "(controller, mid-plan)"
-  assistant: "Dispatching atlas-reviewer over commits 8c3736a..bcb5cf5 with the task brief."
+  assistant: "Dispatching task-reviewer over commits 8c3736a..bcb5cf5 with the task brief."
   </example>
 
   <example>
   Context: a post-PR fix landed and the controller wants it checked before re-testing.
   user: "(controller)"
-  assistant: "Dispatching atlas-reviewer for the fix commit against bug-world-transfer-client-crash.md."
+  assistant: "Dispatching task-reviewer for the fix commit against bug-world-transfer-client-crash.md."
   </example>
 model: sonnet
 tools: Read, Grep, Glob, Bash, Write

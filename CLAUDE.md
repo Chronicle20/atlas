@@ -41,7 +41,7 @@ Go microservices game server monorepo, 14+ services. Go is the primary language;
 
 - The `model` pin follows the job, not the `subagent_type`; unspecified inherits Opus, which costs a large multiple of Sonnet per turn. Never use Fable for background or review workflows.
 - Fan out with fresh-context agents — a named agent type plus an explicit brief. Fork only to continue an interactive debugging thread, and say why inline. *(enforced)*
-- Per-unit review is `atlas-reviewer`, never a bare `general-purpose` dispatch; reviewers follow their own protocol.
+- Per-unit review is `task-reviewer`, never a bare `general-purpose` dispatch; reviewers follow their own protocol.
 - Read `docs/agent-dispatch.md` before dispatching, and `docs/review-protocol.md` before dispatching a reviewer.
 
 ## Handing off context
@@ -82,3 +82,4 @@ Load the owning document before acting in its area; it holds the mechanics this 
 | Adding a new service | [docs/adding-a-new-service.md](docs/adding-a-new-service.md) |
 | A wedged deploy or crash-loop | [docs/observability.md](docs/observability.md) |
 | Writing or changing a Go service | `backend-dev-guidelines` skill, `backend-guidelines-reviewer` agent |
+| A cross-repository process-parity question (`atlas`, `home-hub`, `Harbormaster`, `MyFleet`) | [docs/process-parity.md](docs/process-parity.md) |

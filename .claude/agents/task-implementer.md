@@ -1,18 +1,18 @@
 ---
-name: atlas-implementer
+name: task-implementer
 description: |
-  Use this agent to implement ONE task from an Atlas plan.md during Phase 4 (`/execute-task` → superpowers:subagent-driven-development). It replaces the generic `general-purpose` implementer dispatch and carries three Atlas contracts the generic template does not: a 120 tool-call budget with a PARTIAL hand-back instead of a 600-turn slog, a narrow verification scope (module-local `go build`/`go test` only — repo-wide verification belongs to atlas-verifier in its own context), and brief-first discovery (the task brief's Files section is the inventory; you do not rediscover it with a grep sweep).
+  Use this agent to implement ONE task from an Atlas plan.md during Phase 4 (`/execute-task` → superpowers:subagent-driven-development). It replaces the generic `general-purpose` implementer dispatch and carries three Atlas contracts the generic template does not: a 120 tool-call budget with a PARTIAL hand-back instead of a 600-turn slog, a narrow verification scope (module-local `go build`/`go test` only — repo-wide verification belongs to task-verifier in its own context), and brief-first discovery (the task brief's Files section is the inventory; you do not rediscover it with a grep sweep).
 
   <example>
   Context: The controller is executing Task 3 of task-207's plan.
   user: "(controller, mid-plan)"
-  assistant: "Dispatching atlas-implementer for Task 3 with the brief path and report path."
+  assistant: "Dispatching task-implementer for Task 3 with the brief path and report path."
   </example>
 
   <example>
   Context: A prior implementer hit the tool-call cap and reported PARTIAL.
   user: "(controller)"
-  assistant: "Dispatching a fresh atlas-implementer with the continuation brief for the remaining files."
+  assistant: "Dispatching a fresh task-implementer with the continuation brief for the remaining files."
   </example>
 model: sonnet
 tools: Read, Write, Edit, Bash, Grep, Glob
@@ -86,7 +86,7 @@ For a `libs/` change, the same two commands from that library's module root.
 - `docker buildx bake` / any docker command
 - repo-wide `go build ./...` across modules or `go vet` sweeps
 
-Repo-wide verification runs in the `atlas-verifier` agent's own clean
+Repo-wide verification runs in the `task-verifier` agent's own clean
 context, dispatched by the controller after you report. A `--quick` run
 inside your context costs a large multiple of the same run in a 20k one, and
 its output — build logs, vet noise, lint diffs — is the single biggest

@@ -70,9 +70,14 @@ type temporalRegistry struct {
 	reg *atlas.TenantCoalescedRegistry[uint32, temporalData]
 }
 
-func (r *temporalRegistry) UpdatePosition(ctx context.Context, t tenant.Model, characterId uint32, x int16, y int16) {
+// UpdatePosition writes an authoritative (x, y, stance) while PRESERVING the
+// stored foothold. Used for movement commands that carry fh == 0 — an
+// inner-portal teleport publishes no foothold because portal data has none,
+// and a zero there means "no foothold information", not "foothold zero".
+// Mirrors the channel-side fold rule (atlas-channel movement/processor.go).
+func (r *temporalRegistry) UpdatePosition(ctx context.Context, t tenant.Model, characterId uint32, x int16, y int16, stance byte) {
 	existing, _ := r.reg.Get(ctx, t, characterId)
-	_ = r.reg.Put(ctx, t, characterId, temporalData{x: x, y: y, fh: existing.fh, stance: existing.stance})
+	_ = r.reg.Put(ctx, t, characterId, temporalData{x: x, y: y, fh: existing.fh, stance: stance})
 }
 
 func (r *temporalRegistry) Update(ctx context.Context, t tenant.Model, characterId uint32, x int16, y int16, fh int16, stance byte) {

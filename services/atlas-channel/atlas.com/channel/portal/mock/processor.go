@@ -11,6 +11,7 @@ type ProcessorMock struct {
 	EnterFunc          func(f field.Model, portalName string, characterId uint32) error
 	WarpFunc           func(f field.Model, characterId uint32, targetMapId _map.Id) error
 	WarpToPositionFunc func(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) error
+	EnterInnerFunc     func(f field.Model, characterId uint32, sourcePortalName string, claimedX int16, claimedY int16, claimedTargetX int16, claimedTargetY int16) error
 }
 
 var _ portal.Processor = (*ProcessorMock)(nil)
@@ -32,6 +33,13 @@ func (m *ProcessorMock) Warp(f field.Model, characterId uint32, targetMapId _map
 func (m *ProcessorMock) WarpToPosition(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16) error {
 	if m.WarpToPositionFunc != nil {
 		return m.WarpToPositionFunc(f, characterId, targetMapId, x, y)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) EnterInner(f field.Model, characterId uint32, sourcePortalName string, claimedX int16, claimedY int16, claimedTargetX int16, claimedTargetY int16) error {
+	if m.EnterInnerFunc != nil {
+		return m.EnterInnerFunc(f, characterId, sourcePortalName, claimedX, claimedY, claimedTargetX, claimedTargetY)
 	}
 	return nil
 }

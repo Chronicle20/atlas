@@ -16506,6 +16506,42 @@
           "guard": "v2 && <default>"
         }
       ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x957b74",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v64, v12, 0, 0x7FFFFFFF, 1) && a4"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v64, v12, 0, 0x7FFFFFFF, 1) && a4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v64, v12, 0, 0x7FFFFFFF, 1) && a4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v64, v12, 0, 0x7FFFFFFF, 1) && a4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v64, v12, 0, 0x7FFFFFFF, 1) && a4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v64, v12, 0, 0x7FFFFFFF, 1) && a4"
+        }
+      ]
     }
   }
 }

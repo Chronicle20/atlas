@@ -46,7 +46,16 @@ type exportFn struct {
 	// are kept independently — neither one is dropped or normalized into the
 	// other on a round-trip/splice.
 	Notes string `json:"notes,omitempty"`
-	Note  string `json:"note,omitempty"`
+	// Note, Region and NoteUnderscore are additional free-form curated
+	// annotation keys ("note", "region", "_note") that hand-authored
+	// ida-exports entries carry alongside or instead of "notes". None of
+	// them affect resolution — they exist purely so SpliceExport's
+	// unmarshal-then-marshal round trip preserves this provenance instead
+	// of silently discarding it as an unknown key (task-250 fix round 1;
+	// docs/tasks/task-250-inner-portal-registration/review-task-12.md).
+	Note           string `json:"note,omitempty"`
+	Region         string `json:"region,omitempty"`
+	NoteUnderscore string `json:"_note,omitempty"`
 	// Unresolved marks a function the parser could not faithfully trace.
 	// The audit treats it as a known gap, never a false verdict.
 	Unresolved bool `json:"unresolved,omitempty"`

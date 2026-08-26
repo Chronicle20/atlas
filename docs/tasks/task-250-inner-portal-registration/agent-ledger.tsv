@@ -1,0 +1,47 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-21T11:57:57Z	agent	Task 1	packet-implementer	sonnet	-	-	-	-	DONE	b0cfe59e4	-	-	-	-
+2026-08-21T12:09:53Z	agent	Task 2	packet-implementer	sonnet	-	-	-	-	DONE	3b6d4c08a	-	-	-	-
+2026-08-21T12:09:54Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	b0cfe59e4	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-21T12:13:03Z	agent	Task 2b	packet-implementer	sonnet	-	-	-	-	DONE	01b9bbf45	-	-	-	-
+2026-08-21T12:13:06Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	DONE	b1ddb4db8	-	-	-	-
+2026-08-21T12:13:09Z	handoff	after Task 2b	-	-	-	-	-	-	-	-	-	-	-	-
+2026-08-21T12:15:00Z	agent	Task 7	atlas-reviewer	sonnet	-	-	-	-	DONE	b1ddb4db8	APPROVED	no	-	-
+2026-08-21T12:16:43Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T12:21:04Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	complete	122fe88c1	APPROVED	no	-	-
+2026-08-21T12:21:05Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	122fe88c1	-	-	-	-
+2026-08-21T12:28:41Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	1182985b8	-	-	-	-
+2026-08-21T12:28:45Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	complete	1182985b8	APPROVED	no	-	-
+2026-08-21T12:37:28Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	DONE	d5433181a	-	-	-	-
+2026-08-21T12:37:30Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	complete	d5433181a	APPROVED	no	-	-
+2026-08-21T12:38:26Z	agent	Task 6	atlas-implementer	sonnet	-	-	-	-	DONE	a1fa2fcfb	-	-	-	-
+2026-08-21T12:40:38Z	agent	Task 6	atlas-reviewer	sonnet	-	-	-	-	complete	a1fa2fcfb	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T12:40:39Z	handoff	after Task 6	-	-	-	-	-	-	-	-	-	-	-	85000
+2026-08-21T12:43:25Z	agent	gate-3-6b	verify	-	-	-	-	-	running	a1fa2fcfb	-	-	-	-
+2026-08-21T13:00:14Z	agent	gate-3-6b	verify	-	-	-	-	-	PASS	a1fa2fcfb	-	-	-	-
+2026-08-21T13:10:46Z	agent	Task 8	atlas-implementer	sonnet	-	-	-	-	DONE	bb38fa567	-	-	-	-
+2026-08-21T13:15:02Z	agent	Task 8	atlas-reviewer	sonnet	-	-	-	-	DONE	bb38fa567	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-21T13:17:41Z	agent	Task 9	atlas-implementer	sonnet	-	-	-	-	DONE	daa49c479	-	-	-	-
+2026-08-21T13:17:42Z	agent	Task 9	atlas-reviewer	sonnet	-	-	-	-	DONE	daa49c479	APPROVED	no	-	-
+2026-08-21T13:18:30Z	agent	Task 8 fix 1	atlas-implementer	sonnet	-	-	-	-	DONE	db5744980	-	-	-	-
+2026-08-21T13:35:12Z	agent	Task 11	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	bb7ec8dbd	-	-	-	-
+2026-08-21T13:36:02Z	agent	Task 10	atlas-implementer	sonnet	-	-	-	-	DONE	836b773b2	-	-	-	-
+2026-08-21T13:39:12Z	agent	Task 11	atlas-reviewer	sonnet	-	-	-	-	DONE	bb7ec8dbd	APPROVED	no	-	-
+2026-08-21T13:41:00Z	agent	Task 10	atlas-reviewer	sonnet	-	-	-	-	DONE	836b773b2	APPROVED	no	-	-
+2026-08-21T13:41:22Z	agent	gate-8-11	verify	-	-	-	-	-	PASS	836b773b2	-	-	-	-
+2026-08-21T13:41:24Z	handoff	after Task 11	-	-	-	-	-	-	-	-	-	-	-	130000
+2026-08-21T13:44:15Z	agent	Task 12	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:59:23Z	agent	Task 12	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	25a72cdbc	-	-	-	-
+2026-08-21T13:59:24Z	agent	Task 12	atlas-reviewer	sonnet	-	-	-	-	dispatched	25a72cdbc	-	-	-	-
+2026-08-21T14:07:08Z	agent	Task 12	atlas-reviewer	sonnet	-	-	-	-	complete	25a72cdbc	CHANGES_REQUIRED	yes	-	-
+2026-08-21T14:07:08Z	agent	Task 12 fix 1	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T16:19:00Z	agent	Task 12 fix 1	atlas-implementer	sonnet	-	-	-	-	killed-session-limit	-	-	-	-	-
+2026-08-21T16:19:02Z	agent	Task 12 fix 1 cont	atlas-implementer	sonnet	-	-	-	-	DONE	3df557498	-	-	-	-
+2026-08-21T16:19:05Z	agent	Task 12 fix 1	atlas-reviewer	sonnet	-	-	-	-	dispatched	3df557498	-	-	-	-
+2026-08-21T17:07:41Z	agent	Task 12 fix 2	atlas-implementer	sonnet	-	-	-	-	DONE	a175e81d7	-	-	-	-
+2026-08-21T17:07:41Z	agent	Task 12 fix 2	atlas-reviewer	sonnet	-	-	-	-	dispatched	a175e81d7	-	-	-	-
+2026-08-21T17:07:42Z	handoff	after Task 12	-	-	-	-	-	-	-	-	-	-	-	130000
+2026-08-21T17:09:29Z	agent	Task 12 fix 2	atlas-reviewer	sonnet	-	-	-	-	complete	a175e81d7	APPROVED	no	-	-
+2026-08-21T17:14:51Z	agent	close-out	packet-completeness-critic	sonnet	-	-	-	-	complete	d051c2420	CLEAN	no	-	-
+2026-08-21T17:20:03Z	agent	close-out	plan-adherence-reviewer	sonnet	-	-	-	-	complete	d051c2420	APPROVED	no	-	-
+2026-08-21T17:28:13Z	agent	close-out	backend-guidelines-reviewer	sonnet	-	-	-	-	complete	d051c2420	CHANGES_REQUIRED	yes	-	-
+2026-08-21T17:35:15Z	agent	DOM-24 fix	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	c2a430a32	-	-	-	-

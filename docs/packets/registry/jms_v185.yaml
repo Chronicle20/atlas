@@ -2548,6 +2548,7 @@
   direction: serverbound
   opcode: 96
   fname: CUserLocal::TryRegisterTeleport
+  packet: portal/serverbound/PortalInnerPortal
   provenance: csv-import
 - op: TROCK_ADD_MAP
   direction: serverbound

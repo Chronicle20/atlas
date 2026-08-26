@@ -29690,6 +29690,42 @@
           "guard": "result && <default>"
         }
       ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x995c92",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a6 && v11 && sub_A912F3(v68, v13, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "a6 && v11 && sub_A912F3(v68, v13, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 && v11 && sub_A912F3(v68, v13, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 && v11 && sub_A912F3(v68, v13, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 && v11 && sub_A912F3(v68, v13, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 && v11 && sub_A912F3(v68, v13, 0, 0x7FFFFFFF, 1) && Src"
+        }
+      ]
     }
   }
 }

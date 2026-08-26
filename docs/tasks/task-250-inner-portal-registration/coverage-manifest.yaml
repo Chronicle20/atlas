@@ -1,0 +1,24 @@
+# coverage-manifest
+#
+# NOTE: scope-amendment.md (ruled 2026-08-21) supersedes the six-version
+# scope this manifest originally declared. gms_v48, gms_v61, gms_v72, and
+# gms_v79 all carry a live CUserLocal::TryRegisterTeleport send site
+# (version-coverage.md "Step 2") and are now in scope. Only gms_v12 remains
+# confirmed absent. Structure docs for the four added versions live at
+# structures/gms_v48.md, structures/gms_v61.md, structures/gms_v72.md,
+# structures/gms_v79.md.
+ops:
+  - USE_INNER_PORTAL
+versions:
+  - gms_v48
+  - gms_v61
+  - gms_v72
+  - gms_v79
+  - gms_v83
+  - gms_v84
+  - gms_v87
+  - gms_v92
+  - gms_v95
+  - jms_v185
+fields:
+  - "portal/serverbound/PortalInnerPortal: one real version gate — fieldKey:byte is present from gms_v61 upward (MajorAtLeast(61)) and absent only on gms_v48 (5 fields: portalName, x, y, targetX, targetY; no fieldKey). Every other field (portalName:string, x:i16, y:i16, targetX:i16, targetY:i16) is ungated and identical across all ten in-scope versions; only the per-tenant opcode differs (see structures/gms_v48.md, structures/gms_v61.md, structures/gms_v95.md)."

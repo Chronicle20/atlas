@@ -21654,6 +21654,37 @@
           "guard": "result && a2 - result >= 1000"
         }
       ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x6a5462",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v56, v51, v12, 0, 0x7FFFFFFF, v46) && a4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v56, v51, v12, 0, 0x7FFFFFFF, v46) && a4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v56, v51, v12, 0, 0x7FFFFFFF, v46) && a4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v56, v51, v12, 0, 0x7FFFFFFF, v46) && a4"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v56, v51, v12, 0, 0x7FFFFFFF, v46) && a4"
+        }
+      ]
     }
   }
 }

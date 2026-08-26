@@ -5,6 +5,6 @@ category: TIER1-FIXTURE
 ida:
     function: CPet::OnNameChanged
     address: "0x690f7f"
-    decompile_sha256: fa12c0e0a22fee59870b862b4342c8370e4228f7517151c132b19af7dd5e26e1
+    decompile_sha256: c8a9951762eb3b997c4bce40a18a01bef302dad3ccbf39c074132f6dde88ff7c
 verifies:
     - libs/atlas-packet/pet/clientbound/name_changed_test.go#TestPetNameChangedBytesV79

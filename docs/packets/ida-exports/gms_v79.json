@@ -8042,20 +8042,6 @@
       "direction": "clientbound",
       "calls": null
     },
-    "CPet::OnNameChanged": {
-      "address": "0x690f7f",
-      "direction": "",
-      "calls": [
-        {
-          "op": "DecodeStr",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
-        }
-      ]
-    },
     "CPet::ParseCommand": {
       "address": "0x6914db",
       "direction": "serverbound",
@@ -22056,6 +22042,42 @@
           "op": "Decode1",
           "comment": "",
           "guard": "result && <default>"
+        }
+      ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x8afc42",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v68, v62, v12, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v68, v62, v12, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v68, v62, v12, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v68, v62, v12, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v68, v62, v12, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v68, v62, v12, 0, 0x7FFFFFFF, 1) && Src"
         }
       ]
     }

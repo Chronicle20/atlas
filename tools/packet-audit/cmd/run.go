@@ -2998,6 +2998,16 @@ func candidatesFromFName(fname string) []candidate {
 	case "CUserLocal::CheckPortal_Collision":
 		return []candidate{{name: "Script", pkg: "portal", dir: csvpkg.DirServerbound}}
 
+	// USE_INNER_PORTAL. The in-map ("inner") portal teleport registration
+	// built by CUserLocal::TryRegisterTeleport (gms_v95 @0x913690, ctor
+	// pushes 113 = 0x071). Wire per IDA: Encode1(fieldKey) +
+	// EncodeStr(sourcePortalName) + Encode2(x) + Encode2(y) +
+	// Encode2(destPortal.x) + Encode2(destPortal.y) — six fields, distinct
+	// from CHANGE_MAP_SPECIAL's four. Matches atlas
+	// portal/serverbound/inner_portal.go InnerPortal.
+	case "CUserLocal::TryRegisterTeleport":
+		return []candidate{{name: "InnerPortal", pkg: "portal", dir: csvpkg.DirServerbound}}
+
 	// --- World: field (serverbound) ---
 	// CSV: CHANGE_MAP (opcode 0x29/41 in GMS v95). The client field-transfer
 	// request built by CField::SendTransferFieldRequest@0x5345c0. Wire (per IDA):

@@ -14030,6 +14030,54 @@
           "guard": "v4 && sub_47A6A0(v23, 0)"
         }
       ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x8f85c0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!a5",
+          "ref": "dword_C38B14"
+        },
+        {
+          "op": "Delegate",
+          "comment": "",
+          "guard": "!a5",
+          "ref": "sub_64AAC0"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "Src"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "Src"
+        }
+      ]
     }
   }
 }

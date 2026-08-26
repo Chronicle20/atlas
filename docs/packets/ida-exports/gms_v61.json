@@ -19041,6 +19041,42 @@
           "guard": "result && a2 - result >= 1000"
         }
       ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x7aa1e3",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) && Src"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a5 && v10 && CWvsPhysicalSpace2D::GetFootholdUnderneath(v58, v53, v12, 0, 0x7FFFFFFF, v48) && Src"
+        }
+      ]
     }
   }
 }

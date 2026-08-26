@@ -16457,6 +16457,42 @@
           "guard": "v2 && <default>"
         }
       ]
+    },
+    "CUserLocal::TryRegisterTeleport": {
+      "address": "0x9da037",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "a6 && PortalByName && CWvsPhysicalSpace2D::GetFootholdUnderneath(v81, v75, v14, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "a6 && PortalByName && CWvsPhysicalSpace2D::GetFootholdUnderneath(v81, v75, v14, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 && PortalByName && CWvsPhysicalSpace2D::GetFootholdUnderneath(v81, v75, v14, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 && PortalByName && CWvsPhysicalSpace2D::GetFootholdUnderneath(v81, v75, v14, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 && PortalByName && CWvsPhysicalSpace2D::GetFootholdUnderneath(v81, v75, v14, 0, 0x7FFFFFFF, 1) && Src"
+        },
+        {
+          "op": "Decode2",
+          "comment": "",
+          "guard": "a6 && PortalByName && CWvsPhysicalSpace2D::GetFootholdUnderneath(v81, v75, v14, 0, 0x7FFFFFFF, 1) && Src"
+        }
+      ]
     }
   }
 }

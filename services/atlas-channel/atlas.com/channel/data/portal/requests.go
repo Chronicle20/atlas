@@ -9,18 +9,17 @@ import (
 )
 
 const (
-	portalsInMap  = "data/maps/%d/portals"
-	portalsByName = portalsInMap + "?name=%s"
+	portalsInMap = "data/maps/%d/portals"
 )
 
 func getBaseRequest(ctx context.Context) (string, error) {
 	return requests.RootUrlFor(ctx, "DATA")
 }
 
-func requestInMapByName(ctx context.Context, mapId _map.Id, name string) requests.Request[[]RestModel] {
+func requestInMap(ctx context.Context, mapId _map.Id) requests.Request[[]RestModel] {
 	root, err := getBaseRequest(ctx)
 	if err != nil {
 		return requests.ErrorRequest[[]RestModel](err)
 	}
-	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+portalsByName, mapId, name))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(root+portalsInMap, mapId))
 }

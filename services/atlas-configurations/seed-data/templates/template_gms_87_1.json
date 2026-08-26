@@ -841,6 +841,15 @@
         ]
       },
       {
+        "opCode": "0x68",
+        "validator": "LoggedInValidator",
+        "handler": "InnerPortalHandle",
+        "fname": "CUserLocal::TryRegisterTeleport",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x69",
         "validator": "LoggedInValidator",
         "handler": "TeleportRockAddMapHandle",

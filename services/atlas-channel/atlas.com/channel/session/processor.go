@@ -5,6 +5,7 @@ import (
 	"atlas-channel/battleship"
 	"atlas-channel/character/combo"
 	session2 "atlas-channel/kafka/message/session"
+	"atlas-channel/position"
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
@@ -416,6 +417,10 @@ func (p *ProcessorImpl) Destroy(s Model) error {
 	// timeout, and channel change all funnel here (task-217 design.md §3.4).
 	clearAranComboOnDestroy(p.ctx, s.CharacterId())
 
+	// The last-known position cannot outlive the session: logout, disconnect,
+	// timeout, and channel change all funnel here (task-250 design.md).
+	clearLastPositionOnDestroy(p.ctx, s.CharacterId())
+
 	// Emit logout and destroyed events BEFORE closing the socket so a
 	// crash-safe ordering exists: a downstream consumer that sees the
 	// destroyed event can no longer race with the socket-close path
@@ -459,6 +464,16 @@ func clearBattleshipOnDestroy(l logrus.FieldLogger, ctx context.Context, charact
 func clearAranComboOnDestroy(ctx context.Context, characterId uint32) {
 	if characterId != 0 {
 		combo.GetMirror().Clear(tenant.MustFromContext(ctx), characterId)
+	}
+}
+
+// clearLastPositionOnDestroy drops any live last-known-position state for a
+// destroyed session's character. Extracted from Destroy so the invariant is
+// unit testable without exercising Destroy's Kafka emit path, mirroring
+// clearAranComboOnDestroy.
+func clearLastPositionOnDestroy(ctx context.Context, characterId uint32) {
+	if characterId != 0 {
+		position.GetRegistry().Clear(tenant.MustFromContext(ctx), characterId)
 	}
 }
 

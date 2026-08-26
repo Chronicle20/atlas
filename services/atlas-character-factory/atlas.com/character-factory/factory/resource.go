@@ -59,6 +59,7 @@ func handleCreateFromPreset(d *rest.HandlerDependency, c *rest.HandlerContext, i
 		processor := NewProcessor(d.Logger())
 		transactionId, err := processor.CreateFromPreset(d.Context(), in)
 		if err != nil {
+			d.Logger().WithError(err).Error("Error creating character from preset.")
 			statusCode := categorizePresetError(err)
 			w.WriteHeader(statusCode)
 			return

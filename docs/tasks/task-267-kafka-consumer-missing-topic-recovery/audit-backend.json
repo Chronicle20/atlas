@@ -1,0 +1,58 @@
+{
+  "service": "libs/atlas-kafka (consumer) + atlas-character-factory (factory)",
+  "path": "libs/atlas-kafka/consumer; services/atlas-character-factory/atlas.com/character-factory/factory",
+  "date": "2026-08-26",
+  "build": "pass",
+  "testsPassed": 11,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "libs/atlas-kafka/consumer",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface/constructor/impl live in processor.go", "status": "n-a", "evidence": "no Processor concept in changed files"},
+        {"id": "FILE-02", "name": "RestModel/Transform/Extract/JSON:API methods live in rest.go", "status": "n-a", "evidence": "no RestModel concept in changed files"},
+        {"id": "FILE-03", "name": "Cross-service request functions live in requests.go", "status": "n-a", "evidence": "no requests.RootUrl/GetRequest/PostRequest call sites"},
+        {"id": "FILE-04", "name": "Entity struct/Migration/TableName live in entity.go", "status": "n-a", "evidence": "no entity struct/Migration/TableName in diff"},
+        {"id": "FILE-05", "name": "Builder/Model/administrator/provider/state.go placement", "status": "n-a", "evidence": "no Builder/Model/writes/readers added"},
+        {"id": "FILE-06", "name": "No package-named catch-all file bundling >=2 responsibilities", "status": "pass", "evidence": "manager.go/group.go/engine_group.go/debug.go each carry a single library-internal concern; no FILE-01..05 responsibilities present to bundle"},
+        {"id": "DOM-21", "name": "No redeclaration of a shared libs/atlas-constants type/const", "status": "pass", "evidence": "libs/atlas-kafka/consumer/engine_group.go:132-142 (emptyAssignmentClass), group.go:60 (ErrTopicNotFound), group.go:65 (topicMetadataTimeout), manager.go (topicMissingWarnInterval) are engine-internal; no match in libs/atlas-constants"},
+        {"id": "DOM-26", "name": "Every goroutine via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0; grep for bare `go` statements in changed non-test files returns nothing"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "warn", "evidence": "libs/atlas-kafka/consumer/engine_group_test.go (TestGateDoesNotJoinUntilTopicExists, TestGroupEngineRecoversWhenTopicAppears, TestGateExitsOnContextCancel, TestNilPartitionCountProducerSkipsGate, TestGateJoinsImmediatelyOnIndeterminateLookup) and state_test.go (TestRecordTopicMissingCountsAndStamps, TestSnapshotTopicMissingSupersededByAssignment) are single-scenario, not tests := []struct{...}+t.Run; group_test.go's TestPartitionCountFromMetadata is correctly table-driven"},
+        {"id": "DOM-24", "name": "Emit-path tests stub the producer", "status": "n-a", "evidence": "no AndEmit/message.Emit/producer.Produce reached in changed files"},
+        {"id": "DOM-33", "name": "Interface method changes update every mock", "status": "n-a", "evidence": "Group/Generation interfaces (group.go:14,:28) and ManagerConfig unchanged in signature by this diff"},
+        {"id": "DOM-22", "name": "New libs/atlas-* module wired into Dockerfile/go.work", "status": "n-a", "evidence": "existing libs/atlas-kafka module edited in place; no new libs/ directory"},
+        {"id": "DOM-23", "name": "Kafka topic env vars follow convention", "status": "n-a", "evidence": "no topic env var added or renamed"}
+      ]
+    },
+    {
+      "name": "services/atlas-character-factory/atlas.com/character-factory/factory",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-07", "name": "Handlers pass d.Logger() into NewProcessor", "status": "pass", "evidence": "resource.go:59 processor := NewProcessor(d.Logger())"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handlers", "status": "pass", "evidence": "resource.go contains no os.Getenv"},
+        {"id": "DOM-13", "name": "Handlers contain no cross-domain orchestration", "status": "pass", "evidence": "resource.go:57-72 only calls processor.CreateFromPreset and maps error"},
+        {"id": "DOM-14", "name": "Handlers call processor methods, never provider functions directly", "status": "pass", "evidence": "same call site, no provider call"},
+        {"id": "DOM-15", "name": "No db.Create/db.Save/db.Delete in handlers", "status": "pass", "evidence": "no such calls in resource.go"},
+        {"id": "DOM-17", "name": "Domain errors map to specific HTTP status", "status": "pass", "evidence": "resource.go:35-53 categorizePresetError, unchanged, invoked at resource.go:63"},
+        {"id": "DOM-27", "name": "503 on transient DB error, not bare 500", "status": "n-a", "evidence": "grep -rn database.Connect across the service returns nothing; not DB-backed"},
+        {"id": "DOM-31", "name": "Tenant/trace identifiers travel in context only", "status": "pass", "evidence": "resource.go:62 is a log statement reading no tenant/trace field; rest.go and preset_rest.go carry no tenantId/trace field on any REST model"},
+        {"id": "FILE-01", "name": "Processor lives in processor.go", "status": "pass", "evidence": "factory/processor.go exists, unchanged; resource.go contains no ProcessorImpl methods"},
+        {"id": "FILE-02", "name": "RestModel/Transform/JSON:API methods live in rest.go", "status": "fail", "evidence": "PresetCreateRestModel and GetName/GetID/SetID live in factory/preset_rest.go:1-12, not factory/rest.go; rest.go:9-58 already holds RestModel and CreateCharacterResponse correctly. Pre-existing (commit 0e3c15927, predates e880af7e4..daf46558c) but in-scope package for FILE-* and the changed handler depends on this type's contract"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "preset_rest.go:9-12 GetName/GetID/SetID present"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "pass", "evidence": "preset_rest.go:3-8 flat struct, no nested Data/Type/Attributes"},
+        {"id": "DOM-20", "name": "New test is table-driven", "status": "warn", "evidence": "resource_test.go TestHandleCreateFromPreset_LogsErrorWithPresetMessage is a single hardcoded scenario, not tests := []struct{...}"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "resource.go has no go statement; tools/goroutine-guard.sh exit 0"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "FILE-02: services/atlas-character-factory/atlas.com/character-factory/factory/preset_rest.go:1-12 - PresetCreateRestModel and its JSON:API methods live outside rest.go, in violation of FILE-02's file placement rule. Pre-existing violation surfaced because this diff's changed handler depends on the type's contract."
+  ],
+  "nonBlocking": [
+    "DOM-20: libs/atlas-kafka/consumer/engine_group_test.go and state_test.go add several single-scenario tests that are not table-driven",
+    "DOM-20: services/atlas-character-factory/atlas.com/character-factory/factory/resource_test.go's new TestHandleCreateFromPreset_LogsErrorWithPresetMessage is a single-scenario test, not table-driven"
+  ]
+}

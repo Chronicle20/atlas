@@ -2,6 +2,8 @@ package consumer
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -53,6 +55,78 @@ func ConfigPartitionReaderProducer(prp PartitionReaderProducer) ManagerConfig {
 	}
 }
 
+// ErrTopicNotFound reports that the broker knows no partitions for the topic:
+// either UNKNOWN_TOPIC_OR_PARTITION, or a successful metadata response whose
+// topic entry carries zero partitions. It is a DEFINITE negative — every other
+// error is indeterminate (FR-2.5), because acting on a broker blip by leaving
+// a group is worse than the deafness this task fixes.
+var ErrTopicNotFound = errors.New("topic not found or has no partitions")
+
+// topicMetadataTimeout bounds a single partition-count lookup, and doubles as
+// the metadata client's own Timeout. 5s is the same order as kafka-go's
+// default PartitionWatchInterval; the lookup is off the message path, so the
+// worst case is a delayed join, never a stalled fetch.
+const topicMetadataTimeout = 5 * time.Second
+
+// PartitionCountProducer reports the current partition count for a topic.
+// Shaped as a producer function, like GroupProducer and
+// PartitionReaderProducer, so both the pre-join gate and the empty-assignment
+// classification can be scripted without a broker (FR-2.2). Group stays a pure
+// subset of *kafka.ConsumerGroup: the gate needs this lookup BEFORE a Group
+// exists at all.
+type PartitionCountProducer func(ctx context.Context, brokers []string, topic string) (int, error)
+
+//goland:noinspection GoUnusedExportedFunction
+func ConfigPartitionCountProducer(pcp PartitionCountProducer) ManagerConfig {
+	return func(m *Manager) {
+		m.pcp = pcp
+	}
+}
+
+// defaultPartitionCountProducer asks the cluster for one topic's metadata.
+//
+// kafka.Client.Metadata, NOT kafka.Conn.ReadPartitions: ReadPartitions sends
+// topicMetadataRequestV6{... AllowAutoTopicCreation: true} (kafka-go
+// conn.go:984-986), and a consumer must never create a topic as a side effect
+// of asking whether it exists. Client.Metadata builds metadataAPI.Request with
+// TopicNames only (kafka-go metadata.go:40-44) and returns the per-topic error
+// as a structured field rather than collapsing the response into one error —
+// which is what lets partitionCountFromMetadata separate "no such topic" from
+// "broker unreachable".
+func defaultPartitionCountProducer(ctx context.Context, brokers []string, topic string) (int, error) {
+	client := &kafka.Client{Addr: kafka.TCP(brokers...), Timeout: topicMetadataTimeout}
+	res, err := client.Metadata(ctx, &kafka.MetadataRequest{Topics: []string{topic}})
+	if err != nil {
+		return 0, err
+	}
+	return partitionCountFromMetadata(topic, res)
+}
+
+// partitionCountFromMetadata is the pure mapping half of
+// defaultPartitionCountProducer, split out so the FR-2.5 boundary is testable
+// without a broker.
+func partitionCountFromMetadata(topic string, res *kafka.MetadataResponse) (int, error) {
+	if res == nil {
+		return 0, ErrTopicNotFound
+	}
+	for _, t := range res.Topics {
+		if t.Name != topic {
+			continue
+		}
+		if t.Error != nil {
+			if errors.Is(t.Error, kafka.UnknownTopicOrPartition) {
+				return 0, ErrTopicNotFound
+			}
+			return 0, t.Error
+		}
+		if len(t.Partitions) == 0 {
+			return 0, ErrTopicNotFound
+		}
+		return len(t.Partitions), nil
+	}
+	return 0, ErrTopicNotFound
+}
+
 // defaultGroupProducer wraps kafka.NewConsumerGroup.
 func defaultGroupProducer(cfg kafka.ConsumerGroupConfig) (Group, error) {
 	cg, err := kafka.NewConsumerGroup(cfg)
@@ -102,17 +176,31 @@ func (g *kafkaGeneration) CommitOffsets(offsets map[string]map[int]int64) error 
 	return g.gen.CommitOffsets(offsets)
 }
 
-// groupConfig builds the consumer-group config for this Consumer. It is a
-// deliberate 1:1 mirror of what kafka-go derives internally from today's
-// ReaderConfig (reader.go:717-733): same group ID, same single-topic
-// subscription, same StartOffset, WatchPartitionChanges left false.
+// groupConfig builds the consumer-group config for this Consumer. ID, Brokers,
+// Topics and StartOffset mirror 1:1 what kafka-go derives internally from
+// today's ReaderConfig (reader.go:717-733), so broker-visible group topology is
+// unchanged and a rollback to the reader engine needs no group-state migration
+// (FR-1.4).
+//
+// WatchPartitionChanges is the one deliberate divergence (task-267 FR-1.1). It
+// covers a partition-count change (1 -> N) on a topic that EXISTS.
+// PartitionWatchInterval is left at kafka-go's default (5s;
+// consumergroup.go:203-205) per FR-1.5.
+//
+// It is safe here only because awaitTopic and classifyEmptyAssignment keep this
+// member out of the group whenever the topic is absent. Enabled alone, against
+// a missing topic, kafka-go's watcher startup read returns
+// UnknownTopicOrPartition (consumergroup.go:512-518), the generation ends, and
+// ConsumerGroup.run rejoins with no backoff — a group-wide rebalance storm that
+// also strips the HEALTHY members of their assignments (design §2.3). Do not
+// enable this flag anywhere the two guards are not also present.
 func (c *Consumer) groupConfig() kafka.ConsumerGroupConfig {
 	return kafka.ConsumerGroupConfig{
 		ID:                    c.groupId,
 		Brokers:               append([]string(nil), c.brokers...),
 		Topics:                []string{c.topic},
 		StartOffset:           c.startOffset,
-		WatchPartitionChanges: false,
+		WatchPartitionChanges: true,
 	}
 }
 

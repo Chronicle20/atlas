@@ -16,22 +16,29 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	statconstant "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-var validDiseases = map[string]string{
-	"SEAL":         "SEAL",
-	"DARKNESS":     "DARKNESS",
-	"WEAKNESS":     "WEAKNESS",
-	"STUN":         "STUN",
-	"CURSE":        "CURSE",
-	"POISON":       "POISON",
-	"SLOW":         "SLOW",
-	"SEDUCE":       "SEDUCE",
-	"ZOMBIFY":      "ZOMBIFY",
-	"CONFUSE":      "CONFUSE",
-	"STOP_PORTION": "STOP_PORTION",
+// validDiseases maps the user-typed GM command word to the canonical
+// character.TemporaryStatType wire value. Both the disease name and the
+// canonical stat name are accepted as keys where they differ (ZOMBIFY/UNDEAD,
+// WEAKNESS/WEAKEN) so existing GM syntax keeps working.
+var validDiseases = map[string]statconstant.TemporaryStatType{
+	"SEAL":         statconstant.TemporaryStatTypeSeal,
+	"DARKNESS":     statconstant.TemporaryStatTypeDarkness,
+	"WEAKNESS":     statconstant.TemporaryStatTypeWeaken,
+	"WEAKEN":       statconstant.TemporaryStatTypeWeaken,
+	"STUN":         statconstant.TemporaryStatTypeStun,
+	"CURSE":        statconstant.TemporaryStatTypeCurse,
+	"POISON":       statconstant.TemporaryStatTypePoison,
+	"SLOW":         statconstant.TemporaryStatTypeSlow,
+	"SEDUCE":       statconstant.TemporaryStatTypeSeduce,
+	"ZOMBIFY":      statconstant.TemporaryStatTypeUndead,
+	"UNDEAD":       statconstant.TemporaryStatTypeUndead,
+	"CONFUSE":      statconstant.TemporaryStatTypeConfuse,
+	"STOP_PORTION": statconstant.TemporaryStatTypeStopPortion,
 }
 
 func DiseaseCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
@@ -109,7 +116,7 @@ func DiseaseCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func
 						return msgProc.IssuePinkText(f, 0, "No targets found.", []uint32{c.Id()})
 					}
 
-					changes := []buff.StatChange{{Type: statName, Amount: value}}
+					changes := []buff.StatChange{{Type: string(statName), Amount: value}}
 
 					for _, id := range ids {
 						err = producer.ProviderImpl(l)(ctx)(buff.EnvCommandTopic)(buff.ApplyCommandProvider(f, id, 0, 0, 1, duration, changes))

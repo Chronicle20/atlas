@@ -107,3 +107,63 @@ cd services/atlas-ui && npm run test
 ## Concerns
 
 None outstanding. All three defects reproduce and fix per the brief's own reproduction evidence; module-local build/test is clean for both touched modules.
+
+## Review fix — `<commit-sha>` uint32 underflow guard in `PurchaseInventoryIncreaseByItemAndEmit`
+
+Addressed the single non-blocking finding from `review-bug-cash-shop-live-testing.md`: `ci.ItemId() - 9110000` is `uint32` arithmetic in `PurchaseInventoryIncreaseByItemAndEmit`, so for a hypothetical commodity with `ItemId() < 9110000` the subtraction underflows before truncation to `inventory.Type` (`int8`), and the truncated byte could coincidentally land in `inventory.Types`, silently defeating `isValidInventoryType`. Only reachable via the server's own commodity table, not client input.
+
+`services/atlas-cashshop/atlas.com/cashshop/cashshop/processor.go`
+
+- Added a guard in `PurchaseInventoryIncreaseByItemAndEmit`, immediately after `p.comP.GetById(serialNumber)` and before the `ci.ItemId() - 9110000` subtraction: if `ci.ItemId() < 9110000`, log, fire `ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", uuid.Nil)` on the direct producer path (same pattern as the existing `isValidInventoryType` reject added in `f64b454a3`), and return `ErrInvalidInventoryType` without ever opening the transaction (so the wallet is never touched). This is defense in depth ahead of the subtraction, not a replacement for the existing post-hoc `isValidInventoryType` check in `PurchaseInventoryIncrease`, which is unchanged.
+- Ran `gofumpt -l`/`-d` over the file per the brief; it flagged a pre-existing import-grouping issue (`context`/`errors` mixed into the `atlas-cashshop/...` group) unrelated to this edit. Applied `gofumpt -w` to keep the file gofumpt-clean, since I was already touching it.
+
+`services/atlas-cashshop/atlas.com/cashshop/cashshop/processor_inventoryincrease_test.go`
+
+- Added `TestPurchaseInventoryIncreaseByItemRejectsItemBelowBaseOffset`, following the shape of `TestPurchaseInventoryIncreaseByItemRejectsOutOfRangeItem`. Uses itemId `95704` — chosen (via brute-force search over `0..9110000`) so that the pre-fix wrapped/truncated computation `int8(uint32(95704-9110000)/1000)` equals `1` (`inventory.TypeValueEquip`), a *member* of `inventory.Types`. This means the existing post-hoc `isValidInventoryType` check alone would NOT have caught it — only the new lower-bound guard does, which is exactly the scenario the review finding describes. Asserts: `PurchaseInventoryIncreaseByItemAndEmit` returns an error, the wallet balance is unchanged, no outbox entries are written, and exactly one direct-producer `UNKNOWN_ERROR` status event fires.
+
+### Testing
+
+```
+cd services/atlas-cashshop/atlas.com/cashshop && go build ./... && go test ./cashshop/...
+```
+```
+ok  	atlas-cashshop/cashshop	7.739s
+?   	atlas-cashshop/cashshop/commodity	[no test files]
+ok  	atlas-cashshop/cashshop/inventory	(cached)
+ok  	atlas-cashshop/cashshop/inventory/asset	(cached)
+ok  	atlas-cashshop/cashshop/inventory/asset/reservation	(cached)
+ok  	atlas-cashshop/cashshop/inventory/compartment	(cached)
+```
+
+Targeted run:
+```
+cd services/atlas-cashshop/atlas.com/cashshop && go test ./cashshop/ -run TestPurchaseInventoryIncreaseByItem -v
+```
+```
+=== RUN   TestPurchaseInventoryIncreaseByItemComputesETCType
+--- PASS: TestPurchaseInventoryIncreaseByItemComputesETCType (0.27s)
+=== RUN   TestPurchaseInventoryIncreaseByItemRejectsOutOfRangeItem
+--- PASS: TestPurchaseInventoryIncreaseByItemRejectsOutOfRangeItem (0.00s)
+=== RUN   TestPurchaseInventoryIncreaseByItemRejectsItemBelowBaseOffset
+--- PASS: TestPurchaseInventoryIncreaseByItemRejectsItemBelowBaseOffset (0.00s)
+PASS
+ok  	atlas-cashshop/cashshop	0.288s
+```
+
+`gofumpt -l` over both touched files after the fix: clean (no output).
+
+### Files changed (this round)
+
+- `services/atlas-cashshop/atlas.com/cashshop/cashshop/processor.go`
+- `services/atlas-cashshop/atlas.com/cashshop/cashshop/processor_inventoryincrease_test.go`
+
+### Self-review
+
+- Guard placed at the earliest possible point (before the subtraction, before the transaction opens), matching the brief's "reject before the subtraction can underflow" instruction exactly.
+- Both guards kept: the new lower-bound check and the existing `isValidInventoryType` post-hoc check in `PurchaseInventoryIncrease` are both present and independently exercised by tests.
+- Scope held to `processor.go` and its test, per the brief's limits; did not touch `services/atlas-configurations/seed-data/templates/` or the already-committed Defect A/B/C fixes.
+- Did not touch other gofumpt-flagged files outside this round's diff.
+
+### Concerns
+
+None outstanding.

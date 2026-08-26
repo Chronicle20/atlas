@@ -1,6 +1,9 @@
 package cashshop
 
 import (
+	"context"
+	"errors"
+
 	"atlas-cashshop/cashshop/commodity"
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
@@ -15,8 +18,6 @@ import (
 	"atlas-cashshop/pet"
 	"atlas-cashshop/purchaserecord"
 	"atlas-cashshop/wallet"
-	"context"
-	"errors"
 
 	"github.com/google/uuid"
 
@@ -328,6 +329,18 @@ func (p *ProcessorImpl) PurchaseInventoryIncreaseByItemAndEmit(characterId uint3
 	ci, err := p.comP.GetById(serialNumber)
 	if err != nil {
 		return err
+	}
+	// ItemId() and 9110000 are both uint32; if ItemId() < 9110000 the
+	// subtraction below underflows before truncation to inventory.Type
+	// (int8), and the truncated byte could coincidentally land in a valid
+	// range, silently defeating isValidInventoryType. Reject here, before
+	// the subtraction can wrap, rather than relying solely on the post-hoc
+	// range check. Only reachable via the server's own commodity table, not
+	// client input.
+	if ci.ItemId() < 9110000 {
+		p.l.Errorf("Character [%d] attempted to purchase inventory increase for commodity item [%d] below the inventory-type base offset. Rejecting without debiting wallet.", characterId, ci.ItemId())
+		_ = producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", uuid.Nil))
+		return ErrInvalidInventoryType
 	}
 	inventoryType := inventory.Type((ci.ItemId() - 9110000) / 1000)
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {

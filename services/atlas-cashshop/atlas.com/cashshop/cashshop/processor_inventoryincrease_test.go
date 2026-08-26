@@ -103,3 +103,47 @@ func TestPurchaseInventoryIncreaseByItemRejectsOutOfRangeItem(t *testing.T) {
 	require.Len(t, errs, 1)
 	require.Equal(t, "UNKNOWN_ERROR", errs[0].Body.Error)
 }
+
+// TestPurchaseInventoryIncreaseByItemRejectsItemBelowBaseOffset proves an
+// item id below the 9110000 inventory-type base offset is rejected before
+// `ci.ItemId() - 9110000` is ever evaluated -- ItemId() and 9110000 are both
+// uint32, so for itemId < 9110000 that subtraction underflows and wraps
+// before truncation to inventory.Type (int8). itemId 95704 is chosen because
+// the wrapped, truncated value coincidentally lands on inventory.TypeValueEquip
+// (1), a member of inventory.Types -- so the post-hoc isValidInventoryType
+// range check alone would NOT have caught it; the lower-bound guard added
+// ahead of the subtraction must reject it instead.
+func TestPurchaseInventoryIncreaseByItemRejectsItemBelowBaseOffset(t *testing.T) {
+	db := purchaseTestDatabase(t)
+	tenantId := uuid.New()
+	accountId := uint32(500)
+	characterId := uint32(1000)
+	serialNumber := uint32(50200098)
+	price := uint32(6800)
+	// 95704 < 9110000: (95704-9110000) underflows as uint32 and, divided by
+	// 1000 and truncated to int8, coincidentally equals 1
+	// (inventory.TypeValueEquip).
+	const belowOffsetItemId = uint32(95704)
+
+	events := captureDirectPurchaseEvents(t)
+	startPurchaseCharacterServer(t, characterId, accountId)
+	startPurchaseCommodityServer(t, serialNumber, belowOffsetItemId, price)
+	seedPurchaseWallet(t, db, tenantId, accountId, 96000)
+
+	ctx := databasetest.TenantContext(tenantId)
+	l, _ := testlog.NewNullLogger()
+
+	err := NewProcessor(l, ctx, db).PurchaseInventoryIncreaseByItemAndEmit(characterId, 1, serialNumber)
+	require.Error(t, err, "item id below the inventory-type base offset must be rejected")
+
+	var w wallet.Entity
+	require.NoError(t, db.Where("tenant_id = ? AND account_id = ?", tenantId, accountId).First(&w).Error)
+	require.Equal(t, uint32(96000), w.Credit, "wallet must be untouched when the item id is below the base offset")
+
+	entries := purchaseOutboxEntries(t, db)
+	require.Len(t, entries, 0, "rejection fires on the direct producer path, not the outbox")
+
+	errs := purchaseErrorEvents(t, events)
+	require.Len(t, errs, 1)
+	require.Equal(t, "UNKNOWN_ERROR", errs[0].Body.Error)
+}

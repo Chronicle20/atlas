@@ -1,0 +1,103 @@
+{
+  "service": "atlas-monster-death, atlas-monsters",
+  "path": "services/atlas-monster-death, services/atlas-monsters",
+  "date": "2026-08-21",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "monster (atlas-monster-death)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()", "status": "n-a", "evidence": "monster/builder.go deleted in this diff; remaining Model (DamageEntryModel) has no builder and no invariant requires one"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger, never *logrus.Logger", "status": "pass", "evidence": "monster/processor.go:43"},
+        {"id": "DOM-26", "name": "Every goroutine is spawned via routine.Go", "status": "pass", "evidence": "monster/processor.go:231,235; tools/goroutine-guard.sh exit 0 (89 modules)"},
+        {"id": "DOM-28", "name": "Fallible enrichment/decorator paths degrade loudly", "status": "fail", "evidence": "monster/processor.go:273-280 (party lookup fallback) and :345-351 (soloInputFor character lookup fallback) log Warn/Error only, never call degrade.Observe(...); libs/atlas-rest/degrade not imported anywhere in atlas-monster-death"},
+        {"id": "DOM-29", "name": "Caches are application-scoped singletons reached through GetCache()-style accessor", "status": "pass", "evidence": "system_message/throttle.go:66-78 GetHintThrottle(); monster/processor.go:53 holds only a reference"},
+        {"id": "DOM-33", "name": "Interface change updates every mock in the same diff", "status": "pass", "evidence": "map/mock/processor.go, rates/mock/processor.go, information/mock/processor.go all shipped with their new interfaces; monster.Processor signature unchanged so monster/mock/processor.go correctly untouched"},
+        {"id": "FILE-01", "name": "Processor content lives in processor.go", "status": "pass", "evidence": "monster/processor.go:43-376 holds all ProcessorImpl methods"},
+        {"id": "FILE-05", "name": "Domain Model in model.go", "status": "pass", "evidence": "monster/model.go:3-21"},
+        {"id": "FILE-06", "name": "No package-named catch-all file", "status": "pass", "evidence": "config.go/experience.go/interval.go/model.go/processor.go, none named monster.go, each single-purpose"},
+        {"id": "DOM-21", "name": "No redeclaration of a type/const already in libs/atlas-constants", "status": "pass", "evidence": "grep of libs/atlas-constants/monster and constants/ for Interval/LevelRange/MobLevel: zero matches"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "experience_test.go TestComputeAward/TestPlanDistribution/TestAggregateDamageEntries use tests:=[]struct{}+t.Run; single-scenario tests match testing-guide.md:24-29 example"},
+        {"id": "DOM-24", "name": "Emit-path tests install producertest stub or inject no-op", "status": "pass", "evidence": "grep of every changed _test.go for AndEmit(/message.Emit(/producer.Produce(: zero matches; full mocks injected in processor_experience_test.go"}
+      ]
+    },
+    {
+      "name": "information",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "EXT-01", "name": "Target REST model implements SetToOneReferenceID and SetToManyReferenceIDs", "status": "fail", "evidence": "information/rest.go:1-93 defines only GetName/GetID/SetID; no SetToOneReferenceID, no SetToManyReferenceIDs"},
+        {"id": "EXT-02", "name": "httptest-backed integration test with representative JSON:API fixture", "status": "fail", "evidence": "information/rest_test.go constructs RestModel literals directly, no httptest.Server"},
+        {"id": "EXT-03", "name": "Only 404 maps to not-found; transport/decode/5xx bubble", "status": "n-a", "evidence": "information/provider.go (unchanged) does no ErrNotFound collapsing"},
+        {"id": "EXT-04", "name": "Service URL via requests.RootUrl", "status": "pass", "evidence": "information/requests.go:16 requests.RootUrlFor(ctx, \"DATA\")"},
+        {"id": "DOM-33", "name": "Mock matches new information.Processor interface", "status": "pass", "evidence": "information/mock/processor.go:7-18 vs information/processor.go:15-18"},
+        {"id": "FILE-01", "name": "Processor content in processor.go", "status": "pass", "evidence": "information/processor.go:14-26"}
+      ]
+    },
+    {
+      "name": "party",
+      "type": "domain",
+      "checks": [
+        {"id": "EXT-01", "name": "Target REST model implements SetToOneReferenceID and SetToManyReferenceIDs", "status": "fail", "evidence": "party/rest.go: SetToManyReferenceIDs at line 69 exists; SetToOneReferenceID absent on RestModel; MemberRestModel implements neither"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "fail", "evidence": "party/rest_test.go builds RestModel/MemberRestModel literals directly, no httptest.Server"},
+        {"id": "EXT-04", "name": "Service URL via requests.RootUrl/RootUrlFor", "status": "pass", "evidence": "party/requests.go:16 requests.RootUrlFor(ctx, \"PARTIES\")"},
+        {"id": "DOM-04", "name": "Transform(Model)(RestModel,error) defined in rest.go", "status": "n-a", "evidence": "documented consumer-only rest.go pattern, cross-service-implementation.md:492-522; party never serializes its own model outward"},
+        {"id": "DOM-31", "name": "Tenant/trace identifiers travel in context only", "status": "pass", "evidence": "party/rest.go RestModel/MemberRestModel carry no tenant/trace field"},
+        {"id": "FILE-05", "name": "Builder in builder.go, Model in model.go", "status": "pass", "evidence": "party/builder.go:1-92, party/model.go:8-57"}
+      ]
+    },
+    {
+      "name": "rates",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "rates/processor.go:16"},
+        {"id": "DOM-33", "name": "Mock matches new rates.Processor", "status": "pass", "evidence": "rates/mock/processor.go:14-19 vs rates/processor.go:12-13"},
+        {"id": "DOM-01", "name": "builder.go with validating Build()", "status": "pass", "evidence": "rates/builder.go:1-47; no documented invariant exists on the four rate multipliers so a vacuous Build() is consistent"},
+        {"id": "FILE-01", "name": "Processor content in processor.go", "status": "pass", "evidence": "rates/processor.go:12-28"}
+      ]
+    },
+    {
+      "name": "map",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "map/processor.go:17"},
+        {"id": "DOM-33", "name": "Mock matches new _map.Processor", "status": "pass", "evidence": "map/mock/processor.go:13-19 vs map/processor.go:11-13"}
+      ]
+    },
+    {
+      "name": "system_message",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "system_message/processor.go:27"},
+        {"id": "DOM-30", "name": "DB write + events emitted via AndEmit/message.Buffer", "status": "n-a", "evidence": "ShowHint has no DB write on any path (no entity.go/administrator.go); matches patterns-kafka.md's 'operations over non-DB state' exception"},
+        {"id": "DOM-24", "name": "Emit-path tests stub the producer", "status": "pass", "evidence": "producer_test.go calls ShowHintCommandProvider(...) directly, a pure function, never reaching producer.Produce"},
+        {"id": "DOM-33", "name": "Mock matches system_message.Processor", "status": "pass", "evidence": "system_message/mock/processor.go:11-22 vs processor.go:15-17"},
+        {"id": "FILE-06", "name": "No package-named catch-all", "status": "pass", "evidence": "kafka.go/processor.go/producer.go/throttle.go each single-purpose"},
+        {"id": "DOM-29", "name": "Singleton reached via accessor", "status": "pass", "evidence": "throttle.go:73-78 GetHintThrottle()"}
+      ]
+    },
+    {
+      "name": "atlas-monsters/monster",
+      "type": "domain",
+      "checks": [
+        {"id": "FILE-05", "name": "Writes/aggregation correctly placed in builder.go", "status": "pass", "evidence": "builder.go:139-152 AddDamageEntry now aggregates by characterId before appending"},
+        {"id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "builder_test.go:95-127 TestAddDamageEntry_AggregatesByCharacter"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "FILE-01..06: atlas-monsters/atlas.com/monsters/monster full-package layout — only builder.go changed in a 20+ file package; resource.go/rest.go/processor.go/registry.go etc. unchanged and out of diff scope",
+    "EXT-01/02/04: map and rates REST-client rest.go — both unchanged in this diff (only new processor.go DI wrappers added)",
+    "DOM-04/05: information/rest.go Transform absence — consistent with a consumer-only pattern but no explicit documented-exception citation located for information the way party's is documented"
+  ],
+  "blocking": [
+    "DOM-28: services/atlas-monster-death/atlas.com/monster/monster/processor.go:273-280,345-351 — remote-fetch fallback paths degrade with only a log, no degrade.Observe metric",
+    "EXT-01: services/atlas-monster-death/atlas.com/monster/party/rest.go — RestModel/MemberRestModel missing SetToOneReferenceID",
+    "EXT-01: services/atlas-monster-death/atlas.com/monster/monster/information/rest.go — RestModel missing SetToOneReferenceID and SetToManyReferenceIDs",
+    "EXT-02: party/rest_test.go and information/rest_test.go — no httptest-backed integration test for either REST client"
+  ],
+  "nonBlocking": []
+}

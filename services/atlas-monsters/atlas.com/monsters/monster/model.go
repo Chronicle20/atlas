@@ -61,9 +61,14 @@ type Model struct {
 	stance             byte
 	team               int8
 	damageEntries      []entry
-	statusEffects      []StatusEffect
-	nextSkillDecision  nextSkillDecision
-	lastDamageTakenMs  int64
+	// experienceEntries is the reward ledger: cumulative clamped damage per
+	// character, written alongside damageEntries but never decayed by the aggro
+	// sweep nor wiped by CLEAR_AGGRO. It is what DamageSummary and DamageLeader
+	// read, and therefore what drives EXP, quest kill credit, and drop ownership.
+	experienceEntries []entry
+	statusEffects     []StatusEffect
+	nextSkillDecision nextSkillDecision
+	lastDamageTakenMs int64
 	// aggroRefreshedMs is the aggro lease stamp: the last time a SET_AGGRO claim
 	// was accepted (or renewed) for this monster. Auto-aggro writes no damage
 	// entry, so the damage-entry decay sweep cannot release it; the lease is what
@@ -103,6 +108,7 @@ func NewMonster(f field.Model, uniqueId uint32, monsterId uint32, x int16, y int
 		stance:             stance,
 		team:               team,
 		damageEntries:      make([]entry, 0),
+		experienceEntries:  make([]entry, 0),
 		statusEffects:      make([]StatusEffect, 0),
 		spawnSourceType:    spawnSourceType,
 		spawnSourceId:      spawnSourceId,
@@ -173,11 +179,16 @@ func (m Model) DamageEntries() []entry {
 	return m.damageEntries
 }
 
-// DamageSummary returns the per-character damage entries. Entries are now
-// pre-aggregated by characterId at write time (Task 1+4), so this is a
-// straight passthrough of m.damageEntries.
+// DamageSummary returns the per-character damage entries that feed the DAMAGED
+// and KILLED events. Entries are pre-aggregated by characterId at write time
+// (Task 1+4), so this is a straight passthrough of the experience ledger.
+//
+// This deliberately reads experienceEntries, NOT damageEntries: the latter is
+// the aggro table, which the decay sweep shrinks and CLEAR_AGGRO wipes. Reading
+// it here under-reported damage on every kill where a contributor idled past
+// AggroIdleThresholdMs.
 func (m Model) DamageSummary() []entry {
-	return m.damageEntries
+	return m.experienceEntries
 }
 
 func (m Model) Move(x int16, y int16, fh int16, stance byte) Model {
@@ -235,19 +246,21 @@ func (m Model) Alive() bool {
 // 0 when the monster carries no damage entries at all — a self-destruct
 // (task-253) can detonate a mob nobody has hit yet, and 0 is the "no killer"
 // sentinel every consumer already tolerates.
+// Reads the experience ledger, not the aggro table, so drop ownership follows
+// damage actually dealt rather than the decayed aggro figure.
 func (m Model) DamageLeader() uint32 {
 	index := -1
-	for i, x := range m.damageEntries {
+	for i, x := range m.experienceEntries {
 		if index == -1 {
 			index = i
-		} else if m.damageEntries[index].Damage < x.Damage {
+		} else if m.experienceEntries[index].Damage < x.Damage {
 			index = i
 		}
 	}
 	if index == -1 {
 		return 0
 	}
-	return m.damageEntries[index].CharacterId
+	return m.experienceEntries[index].CharacterId
 }
 
 func (m Model) MaxHp() uint32 {

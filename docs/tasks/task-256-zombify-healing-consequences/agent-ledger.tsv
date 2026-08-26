@@ -13,3 +13,7 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T13:44:32Z	agent	fix EXT-02	atlas-reviewer	sonnet	-	-	-	-	DONE	48ed1a885	APPROVED	no	.superpowers/sdd/plan/fix-ext02-review.md	-
 2026-08-26T15:07:46Z	agent	bug-disease-command-emits-nonexistent-zombify-stat	atlas-implementer	sonnet	-	-	-	-	DONE	49465ebac	-	-	-	-
 2026-08-26T15:07:47Z	agent	bug-disease-command-emits-nonexistent-zombify-stat	atlas-reviewer	sonnet	-	-	-	-	DONE	49465ebac	APPROVED	no	-	-
+2026-08-26T18:54:34Z	agent	bug-heal-party-xp-magnitude	task-implementer	sonnet	-	-	-	-	DONE	b9904f7f6	-	-	-	-
+2026-08-26T18:57:03Z	agent	bug-heal-party-xp-magnitude	task-reviewer	sonnet	-	-	-	-	DONE	b9904f7f6	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-26T19:08:38Z	agent	bug-zombify-encoder	task-implementer	sonnet	-	-	-	-	DONE	2e91e814d	-	-	-	-
+2026-08-26T19:08:38Z	agent	bug-zombify-encoder	task-reviewer	sonnet	-	-	-	-	DONE	2e91e814d	APPROVED_WITH_FINDINGS	no	-	-

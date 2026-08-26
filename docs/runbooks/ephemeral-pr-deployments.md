@@ -236,6 +236,149 @@ gh api --method DELETE \
     /repos/Chronicle20/atlas/git/refs/heads/bot/pr-<N>-resolved
 ```
 
+### Teardown wedged on a hook Job's finalizer (repeating, non-decreasing object count)
+
+**Do not use the `Recover` recipe above for this failure.** Its step 2 drops
+the *Application's* finalizers, which strips
+`post-delete-finalizer.argocd.argoproj.io/cleanup` and skips PostDelete
+cleanup entirely — the per-PR databases, topics, consumer groups, Redis keys,
+ghcr tags, DNS entry, and bot branch all leak. The recipe below removes only
+the **hook Job's** finalizer and leaves the Application's own finalizers
+intact, so PostDelete still runs.
+
+#### Signal
+
+Two signs together, both of which an operator can string-match:
+
+```sh
+kubectl -n argocd get application atlas-pr-<N> -o json \
+  | jq -c '{fin:.metadata.finalizers, del:.metadata.deletionTimestamp,
+            hasOp:(.operation!=null), phase:.status.operationState.phase,
+            msg:.status.operationState.message}'
+```
+
+prints an operation stuck in `Running` whose message names a hook batch:
+
+```json
+{"fin":["resources-finalizer.argocd.argoproj.io",
+        "post-delete-finalizer.argocd.argoproj.io/cleanup",
+        "pre-delete-finalizer.argocd.argoproj.io/cleanup",
+        "post-delete-finalizer.argocd.argoproj.io"],
+ "del":"2026-08-26T12:12:50Z","hasOp":false,"phase":"Running",
+ "msg":"waiting for completion of hook batch/Job/atlas-pr-bootstrap"}
+```
+
+and the application controller logs `N objects remaining for deletion` on
+every reconcile with **N never decreasing**:
+
+```sh
+kubectl -n argocd logs statefulset/argocd-application-controller --tail=200 \
+  | grep 'objects remaining for deletion'
+```
+
+The mechanism: an Argo hook Job carries the runtime finalizer
+`argocd.argoproj.io/hook-finalizer`, which only the controller removes, and
+only as part of completing or terminating the owning operation. The
+operation's phase is in turn driven by that Job. Neither can advance, so
+`resources-finalizer.argocd.argoproj.io` blocks on the undeletable Job and no
+other namespaced object is ever issued for deletion. On PR #1459 that was 89
+objects — 63 Services, 9 ConfigMaps, the Ingress, ServiceAccounts, Roles —
+stuck for 11 hours.
+
+#### First move, while `.operation` still exists
+
+If the `hasOp` field above is `true`:
+
+```sh
+argocd app terminate-op atlas-pr-<N>
+```
+
+This sets `status.operationState.phase` to `Terminating` while leaving
+`.operation` in place. The controller, still processing the operation, runs
+its termination path: it terminates the sync, reaps the hook resources and
+their finalizers, sets the phase terminal, and clears `.operation` itself.
+
+#### The trap — do not clear `.operation`
+
+```sh
+# WRONG. Do not run this.
+kubectl -n argocd patch application atlas-pr-<N> --type=merge -p '{"operation":null}'
+```
+
+This is **not** equivalent to `terminate-op` and makes the wedge
+**permanent**. It removes the operation spec without transitioning
+`status.operationState.phase`, which stays `Running` — and the controller only
+processes an operation when `app.Operation != nil`. After this patch nothing
+can ever transition the phase or reap the hook finalizer. This was attempted
+on PR #1459 on 2026-08-26; the Application then sat with `hasOp: false` and
+`opPhase: "Running"` for 11 hours, unrecoverable by any operation-level
+action.
+
+#### Recovery once `.operation` is gone
+
+Find the wedging Job by its retained finalizer rather than by name — the hook
+need not be bootstrap:
+
+```sh
+kubectl -n atlas-pr-<N> get jobs -o custom-columns=\
+'NAME:.metadata.name,DEL:.metadata.deletionTimestamp,FIN:.metadata.finalizers'
+```
+
+On PR #1459 this printed:
+
+```
+NAME                       DEL                    FIN
+atlas-minio-init           <none>                 <none>
+atlas-pr-bootstrap         2026-08-26T12:26:27Z   [argocd.argoproj.io/hook-finalizer]
+atlas-pr-predelete-purge   <none>                 <none>
+```
+
+The wedging Job is the one with both a `DEL` timestamp and a retained `FIN`.
+Drop only its finalizer:
+
+```sh
+kubectl -n atlas-pr-<N> patch job <hook-job> \
+    --type=merge -p '{"metadata":{"finalizers":null}}'
+```
+
+Confirm the teardown resumed — the namespace should go and PostDelete should
+fire:
+
+```sh
+kubectl get ns atlas-pr-<N>                       # expect: NotFound
+kubectl -n argocd get jobs -l app=atlas-pr-cleanup,atlas.pr-number=<N>
+```
+
+Executed live on PR #1459 on 2026-08-26. Within about a minute the namespace
+went from 89 objects to `NotFound`, `resources-finalizer.argocd.argoproj.io`
+was reaped, the Application retained its
+`post-delete-finalizer.argocd.argoproj.io[/cleanup]` finalizers, and
+`atlas-pr-cleanup-1459` started in `argocd` — i.e. PostDelete cleanup ran,
+which is the whole reason to prefer this patch over dropping the
+Application's finalizers.
+
+#### This should now be an escalation, not the routine path
+
+Two bounds were added in task-264 and both should fire before an operator
+does:
+
+- `deploy/k8s/overlays/pr/sync-bootstrap.yaml` sets
+  `spec.activeDeadlineSeconds: 900`, so a wedged bootstrap hook reaches
+  terminal `Failed` on its own. Budget `deadline + ~30s`: the Job's
+  finalizer delays the pod-finalizer sweep that promotes `FailureTarget` to
+  `Failed` (measured at 31s). The wedge should self-clear in **~15.5
+  minutes**. `postsync-pihole-add.yaml` is bounded at 300s the same way.
+- A cluster-infra CronJob, `atlas-pr-terminate-stuck-ops` in `argocd`,
+  reproduces `terminate-op` every minute for Applications that are
+  mid-delete with a `Running` operation and a non-nil `.operation` — see
+  `dev/cluster-infra-coordination/task-264-terminate-op.md`. It logs and
+  skips the `.operation == null` zombie state, which is exactly the case the
+  manual recipe above exists for.
+
+If you are hand-patching a finalizer in an environment where both are live,
+something else is wrong — capture the Application JSON and the controller log
+before you patch.
+
 ### Source-branch-missing scenario
 
 If the PostDelete render fails with `unable to resolve 'bot/pr-<N>-resolved' to a commit SHA`, the Application targets a branch that no longer exists. Diagnose: `kubectl -n argocd get application atlas-pr-<N> -o yaml | yq '.status.conditions[] | select(.message | contains("ComparisonError"))'`. Recovery is the same finalizer patch (step 2 above) followed by the sweep (step 1) — the branch is already gone so `drop-branch` is a no-op.

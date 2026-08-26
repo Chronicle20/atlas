@@ -18,6 +18,7 @@ import (
 
 	statconstant "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	monsterconstant "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -39,6 +40,22 @@ var validDiseases = map[string]statconstant.TemporaryStatType{
 	"UNDEAD":       statconstant.TemporaryStatTypeUndead,
 	"CONFUSE":      statconstant.TemporaryStatTypeConfuse,
 	"STOP_PORTION": statconstant.TemporaryStatTypeStopPortion,
+}
+
+// diseaseMobSkill returns the mob skill id and level to carry as the buff
+// APPLY command's sourceId/level for a GM-applied disease, so the resulting
+// wire stat has a real reason to render. The v83 client keys the UNDEAD
+// two-state block's animation off rOption = mobSkillId | (level << 16)
+// (see bug-zombify-no-visible-effect.md "Settled"); a GM-applied zombify with
+// sourceId=0 has no MobSkill to resolve and renders nothing even after the
+// encoder forwards rOption. Only UNDEAD has IDA evidence for this; other
+// diseases keep sourceId=0 until similarly established.
+func diseaseMobSkill(statName statconstant.TemporaryStatType) (sourceId int32, level byte) {
+	level = 1
+	if statName == statconstant.TemporaryStatTypeUndead {
+		sourceId = int32(monsterconstant.SkillTypeUndead)
+	}
+	return sourceId, level
 }
 
 func DiseaseCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
@@ -117,9 +134,10 @@ func DiseaseCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func
 					}
 
 					changes := []buff.StatChange{{Type: string(statName), Amount: value}}
+					sourceId, level := diseaseMobSkill(statName)
 
 					for _, id := range ids {
-						err = producer.ProviderImpl(l)(ctx)(buff.EnvCommandTopic)(buff.ApplyCommandProvider(f, id, 0, 0, 1, duration, changes))
+						err = producer.ProviderImpl(l)(ctx)(buff.EnvCommandTopic)(buff.ApplyCommandProvider(f, id, 0, sourceId, level, duration, changes))
 						if err != nil {
 							l.WithError(err).Errorf("Unable to apply disease [%s] to character [%d].", statName, id)
 						}

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 )
 
 // TestValidDiseasesResolveToCanonicalTemporaryStatTypes is the regression
@@ -65,5 +66,48 @@ func TestZombifyEmitsUndeadStatChange(t *testing.T) {
 
 	if changes[0].Type != string(character.TemporaryStatTypeUndead) {
 		t.Errorf("ZOMBIFY stat change type = %q, want %q", changes[0].Type, character.TemporaryStatTypeUndead)
+	}
+}
+
+// TestDiseaseMobSkillSuppliesUndeadSourceId pins the second, independent
+// contributor from bug-zombify-no-visible-effect.md: the @disease command
+// used to emit sourceId=0, so even a correct encoder had no MobSkill to
+// resolve rOption against. A GM-applied UNDEAD/ZOMBIFY must carry the real
+// mob skill id (monster.SkillTypeUndead, type 133).
+func TestDiseaseMobSkillSuppliesUndeadSourceId(t *testing.T) {
+	sourceId, level := diseaseMobSkill(character.TemporaryStatTypeUndead)
+
+	if sourceId != int32(monster.SkillTypeUndead) {
+		t.Errorf("UNDEAD sourceId = %d, want %d", sourceId, monster.SkillTypeUndead)
+	}
+	if level == 0 {
+		t.Errorf("UNDEAD level = %d, want nonzero", level)
+	}
+}
+
+// TestDiseaseMobSkillLeavesOtherDiseasesUnestablished guards against
+// over-generalizing the UNDEAD fix: only UNDEAD has IDA evidence for what
+// rOption must carry, so every other disease keeps sourceId=0 until
+// similarly established.
+func TestDiseaseMobSkillLeavesOtherDiseasesUnestablished(t *testing.T) {
+	others := []character.TemporaryStatType{
+		character.TemporaryStatTypeSeal,
+		character.TemporaryStatTypeDarkness,
+		character.TemporaryStatTypeWeaken,
+		character.TemporaryStatTypeStun,
+		character.TemporaryStatTypeCurse,
+		character.TemporaryStatTypePoison,
+		character.TemporaryStatTypeSlow,
+		character.TemporaryStatTypeSeduce,
+		character.TemporaryStatTypeConfuse,
+		character.TemporaryStatTypeStopPortion,
+	}
+	for _, st := range others {
+		t.Run(string(st), func(t *testing.T) {
+			sourceId, _ := diseaseMobSkill(st)
+			if sourceId != 0 {
+				t.Errorf("diseaseMobSkill(%q) sourceId = %d, want 0", st, sourceId)
+			}
+		})
 	}
 }

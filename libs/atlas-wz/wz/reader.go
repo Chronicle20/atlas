@@ -6,6 +6,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"sync/atomic"
 )
 
 // Reader provides WZ-specific binary reading operations.
@@ -13,6 +14,11 @@ type Reader struct {
 	f     *os.File
 	key   []byte
 	order binary.ByteOrder
+	// posCalls counts Pos() invocations (each one an f.Seek syscall). It
+	// exists purely as a test seam for proving the trace hook's nil-hook
+	// path performs no extra Pos() calls (task-262 fix round 1) — never
+	// read in production code.
+	posCalls atomic.Int64
 }
 
 // NewReader creates a Reader from an open file.
@@ -35,6 +41,7 @@ func (r *Reader) Key() []byte {
 
 // Pos returns the current file position.
 func (r *Reader) Pos() (int64, error) {
+	r.posCalls.Add(1)
 	return r.f.Seek(0, io.SeekCurrent)
 }
 

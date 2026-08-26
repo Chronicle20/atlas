@@ -131,6 +131,7 @@ func (i *Image) parse() error {
 // to key, restoring the file-level key afterwards. Caller holds parseMu.
 func (i *Image) parseWithKey(key []byte) error {
 	r := i.wzFile.reader
+	hook := i.wzFile.traceHook()
 	savedKey := r.Key()
 	r.SetKey(key)
 	defer r.SetKey(savedKey)
@@ -138,15 +139,19 @@ func (i *Image) parseWithKey(key []byte) error {
 	if _, err := r.Seek(i.dataOffset, io.SeekStart); err != nil {
 		return err
 	}
-	tagStart, err := r.Pos()
-	if err != nil {
-		return err
+	var tagStart int64
+	if hook != nil {
+		var err error
+		tagStart, err = r.Pos()
+		if err != nil {
+			return err
+		}
 	}
 	tag, err := r.ReadWzStringBlock(i.dataOffset)
 	if err != nil {
 		return fmt.Errorf("unable to read image tag: %w", err)
 	}
-	if hook := i.wzFile.traceHook(); hook != nil {
+	if hook != nil {
 		if tagEnd, perr := r.Pos(); perr == nil {
 			hook(TraceEvent{Path: "", Kind: "stringblock", Name: "", StartOff: tagStart, EndOff: tagEnd, Detail: tag})
 		}
@@ -178,9 +183,13 @@ func (wz *File) parsePropertyList(path string, imageOffset int64) ([]property.Pr
 	r := wz.reader
 	hook := wz.traceHook()
 
-	listStart, err := r.Pos()
-	if err != nil {
-		return nil, err
+	var listStart int64
+	var err error
+	if hook != nil {
+		listStart, err = r.Pos()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	count, err := r.ReadWzInt()
@@ -190,9 +199,12 @@ func (wz *File) parsePropertyList(path string, imageOffset int64) ([]property.Pr
 
 	props := make([]property.Property, 0, count)
 	for j := int32(0); j < count; j++ {
-		nameStart, err := r.Pos()
-		if err != nil {
-			return nil, err
+		var nameStart int64
+		if hook != nil {
+			nameStart, err = r.Pos()
+			if err != nil {
+				return nil, err
+			}
 		}
 		name, err := r.ReadWzStringBlock(imageOffset)
 		if err != nil {
@@ -235,9 +247,13 @@ func (wz *File) parsePropertyValue(path, name string, propType byte, imageOffset
 	r := wz.reader
 	hook := wz.traceHook()
 
-	start, err := r.Pos()
-	if err != nil {
-		return nil, err
+	var start int64
+	if hook != nil {
+		var err error
+		start, err = r.Pos()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	switch propType {
@@ -331,12 +347,13 @@ func (wz *File) parsePropertyValue(path, name string, propType byte, imageOffset
 		// actualEnd is captured immediately before the recovery reseek
 		// below — the whole point of this event is to make an over- or
 		// under-read visible before it gets silently healed by the reseek
-		// to endPos (task-262).
-		actualEnd, perr := r.Pos()
-		if perr != nil {
-			return nil, perr
-		}
+		// to endPos (task-262). Only captured when a trace hook is
+		// installed; on the nil-hook path it costs no syscall.
 		if hook != nil {
+			actualEnd, perr := r.Pos()
+			if perr != nil {
+				return nil, perr
+			}
 			hook(TraceEvent{
 				Path:     path,
 				Kind:     "sub",
@@ -366,9 +383,13 @@ func (wz *File) parseExtendedProperty(path, name string, imageOffset int64) (pro
 	r := wz.reader
 	hook := wz.traceHook()
 
-	start, err := r.Pos()
-	if err != nil {
-		return nil, err
+	var start int64
+	var err error
+	if hook != nil {
+		start, err = r.Pos()
+		if err != nil {
+			return nil, err
+		}
 	}
 	tag, err := r.ReadWzStringBlock(imageOffset)
 	if err != nil {
@@ -445,9 +466,13 @@ func (wz *File) parseCanvasProperty(path, name string, imageOffset int64) (prope
 	r := wz.reader
 	hook := wz.traceHook()
 
-	canvasStart, err := r.Pos()
-	if err != nil {
-		return nil, err
+	var canvasStart int64
+	if hook != nil {
+		var err error
+		canvasStart, err = r.Pos()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Skip 1 byte

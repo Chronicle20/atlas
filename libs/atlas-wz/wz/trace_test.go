@@ -106,6 +106,66 @@ func TestSetTraceEmitsNodeEvents(t *testing.T) {
 	}
 }
 
+// wantNoHookPosCalls is the exact number of Reader.Pos() calls (each one an
+// f.Seek syscall, see reader.go's posCalls counter) a fully correct parse of
+// gmsFixtureBuilder's image makes with no trace hook installed: the handful
+// of calls parsing genuinely needs regardless of tracing (e.g. computing a
+// type-9 sub-object's endPos for the recovery reseek), and none of the
+// trace-only position captures, which must all be gated behind
+// "hook != nil". Recompute by temporarily logging
+// f.reader.posCalls.Load() in a no-hook parse of this fixture if the fixture
+// or the parser's required Pos() calls change.
+const wantNoHookPosCalls = 8
+
+// TestTraceNilHookCostsNoExtraPosCalls proves the nil-hook path performs
+// exactly the Pos() calls parsing structurally requires and no more — i.e.
+// every trace-only Pos() capture is gated behind "hook != nil" and costs
+// nothing when unset. It also confirms installing a hook measurably adds
+// calls, so the exact-count assertion isn't vacuously satisfied by a parser
+// that never calls Pos() for tracing at all. If a future change hoists a
+// gated capture above its "hook != nil" check (as commit f780b23ad did),
+// noHookCalls rises above wantNoHookPosCalls and this test fails
+// (task-262 fix round 1).
+func TestTraceNilHookCostsNoExtraPosCalls(t *testing.T) {
+	builder := gmsFixtureBuilder()
+
+	pathNoHook := writeFixture(t, builder, "ItemNoHook.wz")
+	fNoHook, err := Open(logrus.StandardLogger(), pathNoHook)
+	if err != nil {
+		t.Fatalf("open fixture (no hook): %v", err)
+	}
+	defer fNoHook.Close()
+
+	imgsNoHook := fNoHook.Root().Directories()[0].Images()
+	if _, err := imgsNoHook[0].Properties(); err != nil {
+		t.Fatalf("properties (no hook): %v", err)
+	}
+	noHookCalls := fNoHook.reader.posCalls.Load()
+
+	if noHookCalls != wantNoHookPosCalls {
+		t.Fatalf("nil-hook parse made %d Pos() calls, want exactly %d — a trace-only position capture is running unconditionally on the nil-hook path", noHookCalls, wantNoHookPosCalls)
+	}
+
+	pathHook := writeFixture(t, builder, "ItemHook.wz")
+	fHook, err := Open(logrus.StandardLogger(), pathHook)
+	if err != nil {
+		t.Fatalf("open fixture (hook): %v", err)
+	}
+	defer fHook.Close()
+
+	fHook.SetTrace(func(TraceEvent) {})
+
+	imgsHook := fHook.Root().Directories()[0].Images()
+	if _, err := imgsHook[0].Properties(); err != nil {
+		t.Fatalf("properties (hook): %v", err)
+	}
+	hookCalls := fHook.reader.posCalls.Load()
+
+	if hookCalls <= noHookCalls {
+		t.Fatalf("hook-installed parse made %d Pos() calls, no-hook parse made %d — expected strictly more with a hook installed (otherwise this fixture can't distinguish the two paths)", hookCalls, noHookCalls)
+	}
+}
+
 // TestTraceNilByDefault proves a File with no trace installed parses
 // exactly as before — no panic, same tree — so the hook is provably
 // zero-cost when unused.

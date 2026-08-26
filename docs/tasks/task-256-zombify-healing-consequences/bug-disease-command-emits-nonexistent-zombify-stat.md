@@ -116,4 +116,34 @@ Re-tests must pass `60000`.
 
 ## Resolution
 
-_pending_
+Fixed by `49465ebac` — `validDiseases` retyped to
+`map[string]character.TemporaryStatType` and sourced from
+`libs/atlas-constants/character`; `ZOMBIFY`→`TemporaryStatTypeUndead`,
+`WEAKNESS`→`TemporaryStatTypeWeaken`, with `UNDEAD`/`WEAKEN` accepted as
+additional command words. Regression test in `commands_test.go` asserts every
+table value against its canonical constant and pins that the `ZOMBIFY` word
+emits an `UNDEAD` stat change. `98424d31f` applied the gofmt import grouping the
+lint guard required.
+
+Review: APPROVED, 0 blocking / 0 non-blocking — see
+`review-bug-disease-zombify.md`. The reviewer hand-traced the Kafka seam into
+atlas-buffs (`character/immunity.go`), atlas-channel (mask encoding and
+`character/buff.IsZombified`) and atlas-consumables
+(`character/buff.IsZombified`), and confirmed no other producer emits the old
+literals.
+
+Gate: `tools/verify.sh --quick --base b2653c07c` — every check passes except the
+lint & format guard, which aborts on a **pre-existing toolchain mismatch**
+unrelated to this change: the pinned `GOLANGCI_LINT_VERSION=v2.12.2`
+(`tools/lint.versions`) is built with go1.26 and panics with
+`file requires newer Go version go1.27` against the local go1.27.0 toolchain.
+Confirmed environment-wide, not branch-specific: `tools/lint.sh --check --go
+services/atlas-buffs` — a module this branch never touches — panics identically.
+Bumping the pin is a separate tooling change with tree-wide lint-finding
+consequences; it is not made here.
+
+**Live re-test: not yet performed.** The disease command lives in
+atlas-messages, which the `atlas-pr-1449` overlay does not deploy — that
+namespace serves atlas-messages from `main`. Re-testing this fix requires the
+atlas-messages change to reach the namespace serving the command. Use a
+millisecond duration, e.g. `@disease <name> zombify 1 60000`.

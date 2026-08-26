@@ -11,3 +11,5 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-21T13:40:59Z	agent	branch	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	072017280	CHANGES_REQUIRED	yes	docs/tasks/task-256-zombify-healing-consequences/backend-audit/audit.md	-
 2026-08-21T13:44:27Z	agent	fix EXT-02	atlas-implementer	sonnet	-	-	-	-	DONE	48ed1a885	-	-	-	-
 2026-08-21T13:44:32Z	agent	fix EXT-02	atlas-reviewer	sonnet	-	-	-	-	DONE	48ed1a885	APPROVED	no	.superpowers/sdd/plan/fix-ext02-review.md	-
+2026-08-26T15:07:46Z	agent	bug-disease-command-emits-nonexistent-zombify-stat	atlas-implementer	sonnet	-	-	-	-	DONE	49465ebac	-	-	-	-
+2026-08-26T15:07:47Z	agent	bug-disease-command-emits-nonexistent-zombify-stat	atlas-reviewer	sonnet	-	-	-	-	DONE	49465ebac	APPROVED	no	-	-

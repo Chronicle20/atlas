@@ -117,3 +117,8 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-26T20:42:27Z	agent	bug-gift-notice	task-implementer	sonnet	-	-	-	-	PARTIAL	7addf1508	-	-	-	-
 2026-08-26T20:42:29Z	agent	bug-gift-notice-step2	task-implementer	sonnet	-	-	-	-	DONE	b525249ed	-	-	-	-
 2026-08-26T20:42:30Z	agent	bug-gift-notice-step2	task-reviewer	sonnet	-	-	-	-	DONE	b525249ed	APPROVED	false	-	-
+2026-08-26T22:14:19Z	agent	bug-gift-ack-note	task-implementer	sonnet	-	-	-	-	DONE	5ebad82cc	-	-	-	-
+2026-08-26T22:25:36Z	agent	bug-gift-redisplay	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	5b9c5be4e	-	-	-	-
+2026-08-26T22:46:15Z	agent	bug-gift-note-oneshot	task-implementer	sonnet	-	-	-	-	DONE	009bdf195	-	-	-	-
+2026-08-26T22:49:42Z	agent	bug-gift-ack-and-redisplay	task-reviewer	sonnet	-	-	-	-	DONE	5b9c5be4e	APPROVED_WITH_FINDINGS	true	-	-
+2026-08-26T22:49:42Z	agent	bug-gift-note-oneshot	task-reviewer	sonnet	-	-	-	-	DONE	009bdf195	APPROVED	false	-	-

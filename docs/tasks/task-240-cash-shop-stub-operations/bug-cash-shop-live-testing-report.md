@@ -108,7 +108,7 @@ cd services/atlas-ui && npm run test
 
 None outstanding. All three defects reproduce and fix per the brief's own reproduction evidence; module-local build/test is clean for both touched modules.
 
-## Review fix — `<commit-sha>` uint32 underflow guard in `PurchaseInventoryIncreaseByItemAndEmit`
+## Review fix — `e6dffd8f6` uint32 underflow guard in `PurchaseInventoryIncreaseByItemAndEmit`
 
 Addressed the single non-blocking finding from `review-bug-cash-shop-live-testing.md`: `ci.ItemId() - 9110000` is `uint32` arithmetic in `PurchaseInventoryIncreaseByItemAndEmit`, so for a hypothetical commodity with `ItemId() < 9110000` the subtraction underflows before truncation to `inventory.Type` (`int8`), and the truncated byte could coincidentally land in `inventory.Types`, silently defeating `isValidInventoryType`. Only reachable via the server's own commodity table, not client input.
 

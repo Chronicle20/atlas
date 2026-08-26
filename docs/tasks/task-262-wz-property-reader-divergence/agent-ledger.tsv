@@ -31,3 +31,20 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-26T13:01:50Z	agent	Task 10	atlas-reviewer	sonnet	-	-	-	-	DONE	eec8247d8	APPROVED	no	-	-
 2026-08-26T13:12:42Z	agent	Task 9 fix1	atlas-implementer	sonnet	-	-	-	-	DONE	b7048596e	-	-	-	-
 2026-08-26T13:12:42Z	agent	gate f16b37ab9..b7048596e	atlas-verifier	haiku	-	-	-	-	PASS	b7048596e	-	-	-	-
+2026-08-26T13:32:32Z	agent	Task 5	atlas-implementer	opus	-	-	-	-	BLOCKED	2c7405642	-	-	-	-
+2026-08-26T14:34:31Z	agent	Task R1	atlas-implementer	sonnet	-	-	-	-	DONE	0b3c8b21c	-	-	-	-
+2026-08-26T14:34:31Z	agent	Task R1	atlas-reviewer	sonnet	-	-	-	-	DONE	0b3c8b21c	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-26T14:38:34Z	agent	Task R2	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	8c86277	-	-	-	-
+2026-08-26T14:38:34Z	agent	Task R2	atlas-reviewer	sonnet	-	-	-	-	DONE	8c86277	APPROVED	no	-	-
+2026-08-26T14:50:31Z	agent	Task 14	atlas-implementer	sonnet	-	-	-	-	DONE	8e1f7201f	-	-	-	-
+2026-08-26T14:50:31Z	handoff	after Task 14	-	-	-	-	-	-	-	-	-	-	-	-
+2026-08-26T14:58:31Z	agent	Task 14	atlas-reviewer	sonnet	-	-	-	-	DONE	8e1f7201f	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-26T15:03:12Z	agent	Task R3	atlas-implementer	sonnet	-	-	-	-	DONE	36882bf08	-	-	-	-
+2026-08-26T15:03:33Z	agent	Task 14 (resumed sweep)	atlas-reviewer	sonnet	-	-	-	-	DONE	8e1f7201f	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-26T15:05:16Z	agent	Task R3	atlas-reviewer	sonnet	-	-	-	-	DONE	36882bf08	APPROVED	no	-	-
+2026-08-26T15:09:17Z	agent	plan-adherence 1-10	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	36882bf08	APPROVED	no	-	-
+2026-08-26T15:09:55Z	agent	plan-adherence 11-15+R	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	36882bf08	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-26T15:13:18Z	agent	gate 8e1f7201f..36882bf08	atlas-verifier	-	-	-	-	-	FAIL	36882bf08	-	-	-	-
+2026-08-26T15:19:36Z	agent	Task R4	atlas-implementer	sonnet	-	-	-	-	DONE	ca8b7980a	-	-	-	-
+2026-08-26T15:19:36Z	agent	backend-guidelines	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	36882bf08	CHANGES_REQUIRED	yes	-	-
+2026-08-26T15:21:18Z	agent	Task R4	atlas-reviewer	sonnet	-	-	-	-	DONE	ca8b7980a	APPROVED	no	-	-

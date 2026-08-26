@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -163,9 +164,19 @@ func TestEnsure_SingleCreateRequest(t *testing.T) {
 			t.Errorf("topic %s: expected ReplicationFactor 1, got %d", cfg.Topic, cfg.ReplicationFactor)
 		}
 		if _, isCompact := compactSet[cfg.Topic]; isCompact {
-			want := []kafka.ConfigEntry{{ConfigName: "cleanup.policy", ConfigValue: "compact"}}
-			if len(cfg.ConfigEntries) != len(want) || cfg.ConfigEntries[0] != want[0] {
-				t.Errorf("topic %s: expected ConfigEntries %v, got %v", cfg.Topic, want, cfg.ConfigEntries)
+			want := []kafka.ConfigEntry{
+				{ConfigName: "cleanup.policy", ConfigValue: "compact"},
+				{ConfigName: "max.compaction.lag.ms", ConfigValue: "600000"},
+				{ConfigName: "segment.ms", ConfigValue: "600000"},
+				{ConfigName: "min.cleanable.dirty.ratio", ConfigValue: "0.01"},
+			}
+			if len(cfg.ConfigEntries) != len(want) {
+				t.Fatalf("topic %s: expected %d ConfigEntries, got %d", cfg.Topic, len(want), len(cfg.ConfigEntries))
+			}
+			for i, w := range want {
+				if cfg.ConfigEntries[i] != w {
+					t.Errorf("topic %s entry %d: expected %+v, got %+v", cfg.Topic, i, w, cfg.ConfigEntries[i])
+				}
 			}
 		} else if len(cfg.ConfigEntries) != 0 {
 			t.Errorf("topic %s: expected no ConfigEntries, got %v", cfg.Topic, cfg.ConfigEntries)
@@ -312,19 +323,19 @@ func TestEnsure_AlterConfigs(t *testing.T) {
 		if res.ResourceType != kafka.ResourceTypeTopic {
 			t.Errorf("expected ResourceType kafka.ResourceTypeTopic, got %v", res.ResourceType)
 		}
-		if len(res.Configs) != 1 {
-			t.Fatalf("expected exactly 1 config, got %d", len(res.Configs))
+		wantConfigs := []kafka.IncrementalAlterConfigsRequestConfig{
+			{Name: "cleanup.policy", Value: "compact", ConfigOperation: kafka.ConfigOperationSet},
+			{Name: "max.compaction.lag.ms", Value: "600000", ConfigOperation: kafka.ConfigOperationSet},
+			{Name: "segment.ms", Value: "600000", ConfigOperation: kafka.ConfigOperationSet},
+			{Name: "min.cleanable.dirty.ratio", Value: "0.01", ConfigOperation: kafka.ConfigOperationSet},
 		}
-		want := kafka.IncrementalAlterConfigsRequestConfig{
-			Name:            "cleanup.policy",
-			Value:           "compact",
-			ConfigOperation: kafka.ConfigOperationSet,
+		if len(res.Configs) != len(wantConfigs) {
+			t.Fatalf("resource %q: expected %d configs, got %d", res.ResourceName, len(wantConfigs), len(res.Configs))
 		}
-		if res.Configs[0] != want {
-			t.Errorf("expected config %+v, got %+v", want, res.Configs[0])
-		}
-		if res.ResourceName == "p1" {
-			t.Errorf("expected p1 to not appear in alter resources")
+		for j, want := range wantConfigs {
+			if res.Configs[j] != want {
+				t.Errorf("resource %q config %d: expected %+v, got %+v", res.ResourceName, j, want, res.Configs[j])
+			}
 		}
 	}
 }
@@ -368,6 +379,149 @@ func TestEnsure_AlterConfigs_ResourceError(t *testing.T) {
 	}
 	if !containsSubstring(err.Error(), "c2") {
 		t.Errorf("expected error message %q to contain %q", err.Error(), "c2")
+	}
+}
+
+// TestEnsure_CompactConfigsMatchAcrossRequests guards the defect class: a
+// config present in the create-topics builder but absent from the
+// alter-configs builder (or vice versa). It asserts both request bodies
+// carry the same set of name/value pairs for every compacted topic, using
+// literal values rather than the package constants so a change to the
+// constants cannot silently pass.
+func TestEnsure_CompactConfigsMatchAcrossRequests(t *testing.T) {
+	stub := &stubClient{
+		createFn: func(req *kafka.CreateTopicsRequest) (*kafka.CreateTopicsResponse, error) {
+			return &kafka.CreateTopicsResponse{Errors: map[string]error{"p1": nil, "c1": nil, "c2": nil}}, nil
+		},
+	}
+
+	topicsIn := discover.Topics{Plain: []string{"p1"}, Compact: []string{"c1", "c2"}}
+	_, err := Ensure(context.Background(), stub, testAddr, topicsIn)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	wantPairs := map[string]string{
+		"cleanup.policy":            "compact",
+		"max.compaction.lag.ms":     "600000",
+		"segment.ms":                "600000",
+		"min.cleanable.dirty.ratio": "0.01",
+	}
+
+	if len(stub.createCalls) != 1 {
+		t.Fatalf("expected 1 create call, got %d", len(stub.createCalls))
+	}
+	compactCreateNames := map[string]struct{}{"c1": {}, "c2": {}}
+	createMatched := 0
+	for _, cfg := range stub.createCalls[0].Topics {
+		if _, ok := compactCreateNames[cfg.Topic]; !ok {
+			continue
+		}
+		createMatched++
+		got := make(map[string]string, len(cfg.ConfigEntries))
+		for _, e := range cfg.ConfigEntries {
+			if _, dup := got[e.ConfigName]; dup {
+				t.Fatalf("topic %q: duplicate ConfigName %q in create entries", cfg.Topic, e.ConfigName)
+			}
+			got[e.ConfigName] = e.ConfigValue
+		}
+		if !reflect.DeepEqual(got, wantPairs) {
+			t.Errorf("topic %q: create ConfigEntries = %v, want %v", cfg.Topic, got, wantPairs)
+		}
+	}
+	if createMatched == 0 {
+		t.Fatalf("no compacted topics matched in create request; vacuous pass")
+	}
+
+	if len(stub.alterCalls) != 1 {
+		t.Fatalf("expected 1 alter call, got %d", len(stub.alterCalls))
+	}
+	alterMatched := 0
+	for _, res := range stub.alterCalls[0].Resources {
+		alterMatched++
+		got := make(map[string]string, len(res.Configs))
+		for _, c := range res.Configs {
+			if _, dup := got[c.Name]; dup {
+				t.Fatalf("resource %q: duplicate Name %q in alter configs", res.ResourceName, c.Name)
+			}
+			got[c.Name] = c.Value
+			if c.ConfigOperation != kafka.ConfigOperationSet {
+				t.Errorf("resource %q config %q: expected ConfigOperationSet, got %v", res.ResourceName, c.Name, c.ConfigOperation)
+			}
+		}
+		if !reflect.DeepEqual(got, wantPairs) {
+			t.Errorf("resource %q: alter Configs = %v, want %v", res.ResourceName, got, wantPairs)
+		}
+	}
+	if alterMatched == 0 {
+		t.Fatalf("no resources matched in alter request; vacuous pass")
+	}
+}
+
+// TestEnsure_PlainTopicsCarryNoConfig guards the plain-topic-not-configured
+// half of the defect class as a standalone assertion, independent of any
+// loop over compacted resources.
+func TestEnsure_PlainTopicsCarryNoConfig(t *testing.T) {
+	stub := &stubClient{
+		createFn: func(req *kafka.CreateTopicsRequest) (*kafka.CreateTopicsResponse, error) {
+			return &kafka.CreateTopicsResponse{Errors: map[string]error{"p1": nil, "p2": nil, "c1": nil}}, nil
+		},
+	}
+
+	topicsIn := discover.Topics{Plain: []string{"p1", "p2"}, Compact: []string{"c1"}}
+	_, err := Ensure(context.Background(), stub, testAddr, topicsIn)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(stub.createCalls) != 1 {
+		t.Fatalf("expected 1 create call, got %d", len(stub.createCalls))
+	}
+	for _, name := range []string{"p1", "p2"} {
+		found := false
+		for _, cfg := range stub.createCalls[0].Topics {
+			if cfg.Topic != name {
+				continue
+			}
+			found = true
+			if len(cfg.ConfigEntries) != 0 {
+				t.Errorf("topic %q: expected no ConfigEntries, got %v", name, cfg.ConfigEntries)
+			}
+		}
+		if !found {
+			t.Fatalf("expected create request to contain topic %q", name)
+		}
+	}
+
+	if len(stub.alterCalls) != 1 {
+		t.Fatalf("expected 1 alter call, got %d", len(stub.alterCalls))
+	}
+	req := stub.alterCalls[0]
+	if len(req.Resources) != 1 {
+		t.Fatalf("expected 1 alter resource, got %d", len(req.Resources))
+	}
+	if req.Resources[0].ResourceName != "c1" {
+		t.Errorf("expected alter resource name %q, got %q", "c1", req.Resources[0].ResourceName)
+	}
+
+	plainNames := map[string]struct{}{"p1": {}, "p2": {}}
+	for _, res := range req.Resources {
+		if _, isPlain := plainNames[res.ResourceName]; isPlain {
+			t.Errorf("expected plain topic %q to not appear in alter resources", res.ResourceName)
+		}
+	}
+}
+
+func TestCompactConfigNames(t *testing.T) {
+	want := []string{"cleanup.policy", "max.compaction.lag.ms", "segment.ms", "min.cleanable.dirty.ratio"}
+	got := CompactConfigNames()
+	if len(got) != len(want) {
+		t.Fatalf("expected %d names, got %d: %v", len(want), len(got), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("name %d: expected %q, got %q", i, want[i], got[i])
+		}
 	}
 }
 

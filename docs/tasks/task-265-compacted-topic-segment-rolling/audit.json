@@ -1,0 +1,41 @@
+{
+  "service": "atlas-kafka-precreate",
+  "path": "services/atlas-kafka-precreate",
+  "date": "2026-08-26",
+  "build": "pass",
+  "testsPassed": 105,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "internal/topics",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-01", "name": "Processor lives in processor.go", "status": "n-a", "evidence": "No Processor type/interface in this package" },
+        { "id": "FILE-02", "name": "RestModel/Transform in rest.go", "status": "n-a", "evidence": "No RestModel type" },
+        { "id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "n-a", "evidence": "No cross-atlas-service HTTP calls; only kafkaops.AdminClient RPCs" },
+        { "id": "FILE-04", "name": "Entity/Migration/TableName in entity.go", "status": "n-a", "evidence": "No entity struct" },
+        { "id": "FILE-05", "name": "Builder/Model/administrator/provider/state split", "status": "n-a", "evidence": "Package has no domain Model, no DB writes, no state.go enum" },
+        { "id": "FILE-06", "name": "No package-named catch-all carrying >=2 responsibilities", "status": "pass", "evidence": "internal/topics/topics.go:1-6 -- carries 0 of FILE-01..05's responsibilities; it is Kafka-admin orchestration (Ensure/Settle/EndOffsets)" },
+        { "id": "DOM-21", "name": "No redeclaration of an atlas-constants type/const", "status": "pass", "evidence": "internal/topics/topics.go:22-79 (compactTopicConfig, const block) -- grep -rl 'cleanup.policy|max.compaction.lag|segment.ms' libs/atlas-constants/ returns nothing" },
+        { "id": "DOM-10", "name": "Test DB setup calls database.RegisterTenantCallbacks", "status": "n-a", "evidence": "No GORM DB opened in topics_test.go; service has no DB" },
+        { "id": "DOM-20", "name": "Tests are table-driven", "status": "pass", "evidence": "internal/topics/topics_test.go:191-287 (TestEnsure_CreateErrors, table-driven, 6 cases); new single-scenario tests at topics_test.go:391-459 and 464-513 match the guideline's own single-case example at testing-guide.md:22-26" },
+        { "id": "DOM-24", "name": "Emit-path tests stub the producer", "status": "n-a", "evidence": "Ensure/Settle/EndOffsets reach only Kafka admin RPCs, never AndEmit/message.Emit/producer.Produce" },
+        { "id": "DOM-33", "name": "Interface change updates every mock", "status": "n-a", "evidence": "internal/kafkaops/ops.go:17 (AdminClient) unchanged in this diff; stubClient at topics_test.go:25-81 unchanged in shape" },
+        { "id": "DOM-26", "name": "No bare go statement without guard marker", "status": "pass", "evidence": "grep -rnE '^\\s*go (func|[A-Za-z_])' internal/topics main.go -- no hits; tools/goroutine-guard.sh exits 0" }
+      ]
+    },
+    {
+      "name": "main",
+      "type": "support",
+      "checks": [
+        { "id": "FILE-06", "name": "No catch-all collapsing >=2 responsibilities", "status": "pass", "evidence": "main.go carries 0 of FILE-01..05's responsibilities; it is the command's run() wiring" },
+        { "id": "DOM-21", "name": "No constants redeclaration", "status": "n-a", "evidence": "main.go:72-79 adds no new type/const block, only extends a logrus.Fields{} literal" },
+        { "id": "DOM-26", "name": "No bare go statement", "status": "pass", "evidence": "grep covers main.go; no hits" }
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [],
+  "nonBlocking": []
+}

@@ -72,10 +72,11 @@ func run() error {
 	}).Info("topics ensured")
 	if len(t.Compact) > 0 {
 		logrus.WithFields(logrus.Fields{
-			"phase":  "alter",
-			"topics": len(t.Compact),
-			"policy": "compact",
-		}).Info("cleanup policy applied")
+			"phase":   "alter",
+			"topics":  len(t.Compact),
+			"policy":  "compact",
+			"configs": topics.CompactConfigNames(),
+		}).Info("compacted topic configuration applied")
 	}
 
 	if len(groupIDs) == 0 {

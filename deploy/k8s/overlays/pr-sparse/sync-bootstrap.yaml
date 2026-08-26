@@ -85,6 +85,36 @@ metadata:
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
     argocd.argoproj.io/sync-wave: "10"
 spec:
+  # Wall-clock bound on the whole hook, all `backoffLimit` retries combined.
+  #
+  # WHY this exists: an Argo Sync-hook Job carries the runtime finalizer
+  # `argocd.argoproj.io/hook-finalizer`, which only the application
+  # controller removes, and only when the owning operation completes or
+  # terminates. The operation's phase is in turn driven by this Job. If the
+  # Job never reaches a terminal condition, the operation stays `Running`,
+  # `resources-finalizer.argocd.argoproj.io` blocks on the undeletable Job,
+  # and the entire namespace teardown deadlocks — 89 objects stuck with the
+  # controller logging `N objects remaining for deletion` forever. Observed
+  # on PR #1459, 2026-08-26; recovery required a manual finalizer patch
+  # (see `docs/runbooks/ephemeral-pr-deployments.md` §9.4).
+  #
+  # A deadline breaks that cycle: the Job reaches terminal `Failed` even
+  # when it is already under `deletionTimestamp` and pinned by the
+  # finalizer, so the operation transitions and the controller reaps the
+  # hook. Measured directly on this cluster (k3s v1.35.5+k3s1), not assumed.
+  #
+  # WHY 900 and not the retry budget: derived from 30 days of observed
+  # bootstrap durations (n=104 successful runs — p50 68s, p95 162s, max
+  # 542s). 900s is 1.66x the slowest successful run ever recorded, leaving
+  # headroom for image pull and scheduling, which precede the first log
+  # line and so are not in those figures. Re-derive with the LogQL recipe
+  # in runbook §9.6 before changing it.
+  #
+  # WHY on `spec` and not `spec.template.spec`: the Job-level field bounds
+  # the aggregate lifetime across all `backoffLimit: 3` retries. The
+  # pod-level field bounds each attempt independently and would permit
+  # 4 x 900s of total hook lifetime, which defeats the purpose.
+  activeDeadlineSeconds: 900
   backoffLimit: 3
   template:
     spec:

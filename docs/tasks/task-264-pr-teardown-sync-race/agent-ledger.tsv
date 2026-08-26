@@ -1,0 +1,17 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-26T13:15:05Z	agent	Task 1+2	atlas-implementer	sonnet	-	-	-	-	DONE	f411da0	-	-	-	-
+2026-08-26T13:16:20Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	957b8d3	-	-	-	-
+2026-08-26T13:16:38Z	agent	Task 1+2	atlas-reviewer	sonnet	-	-	-	-	DONE	f411da0ad	APPROVED	no	-	-
+2026-08-26T13:17:55Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	957b8d3fc	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-26T13:18:17Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	640704af4	-	-	-	-
+2026-08-26T13:20:34Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	640704af4	APPROVED	no	-	-
+2026-08-26T13:20:34Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	56000
+2026-08-26T13:21:51Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-26T13:23:23Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	DONE	0e3d8ae	-	-	-	-
+2026-08-26T13:26:56Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DONE	0e3d8ae	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-26T13:26:56Z	agent	Task 6	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	79415ce	-	-	-	-
+2026-08-26T13:27:41Z	agent	Task 5 fix	atlas-implementer	sonnet	-	-	-	-	DONE	d2d7c59	-	-	-	-
+2026-08-26T13:28:41Z	agent	Task 6	atlas-reviewer	sonnet	-	-	-	-	DONE	79415ce	APPROVED	yes	-	-
+2026-08-26T13:29:48Z	agent	§9.3 fix	atlas-implementer	sonnet	-	-	-	-	DONE	6e453a3	-	-	-	-
+2026-08-26T13:31:54Z	agent	branch-end	atlas-verifier	haiku	-	-	-	-	PASS	6e453a3	-	-	-	-
+2026-08-26T13:32:37Z	agent	branch-end	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	6e453a3	APPROVED	no	-	-

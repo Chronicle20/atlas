@@ -1,9 +1,8 @@
 package disease
 
 import (
-	"testing"
-
 	"atlas-messages/kafka/message/buff"
+	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 )

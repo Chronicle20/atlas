@@ -2,6 +2,8 @@ package consumer
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -51,6 +53,78 @@ func ConfigPartitionReaderProducer(prp PartitionReaderProducer) ManagerConfig {
 	return func(m *Manager) {
 		m.prp = prp
 	}
+}
+
+// ErrTopicNotFound reports that the broker knows no partitions for the topic:
+// either UNKNOWN_TOPIC_OR_PARTITION, or a successful metadata response whose
+// topic entry carries zero partitions. It is a DEFINITE negative — every other
+// error is indeterminate (FR-2.5), because acting on a broker blip by leaving
+// a group is worse than the deafness this task fixes.
+var ErrTopicNotFound = errors.New("topic not found or has no partitions")
+
+// topicMetadataTimeout bounds a single partition-count lookup, and doubles as
+// the metadata client's own Timeout. 5s is the same order as kafka-go's
+// default PartitionWatchInterval; the lookup is off the message path, so the
+// worst case is a delayed join, never a stalled fetch.
+const topicMetadataTimeout = 5 * time.Second
+
+// PartitionCountProducer reports the current partition count for a topic.
+// Shaped as a producer function, like GroupProducer and
+// PartitionReaderProducer, so both the pre-join gate and the empty-assignment
+// classification can be scripted without a broker (FR-2.2). Group stays a pure
+// subset of *kafka.ConsumerGroup: the gate needs this lookup BEFORE a Group
+// exists at all.
+type PartitionCountProducer func(ctx context.Context, brokers []string, topic string) (int, error)
+
+//goland:noinspection GoUnusedExportedFunction
+func ConfigPartitionCountProducer(pcp PartitionCountProducer) ManagerConfig {
+	return func(m *Manager) {
+		m.pcp = pcp
+	}
+}
+
+// defaultPartitionCountProducer asks the cluster for one topic's metadata.
+//
+// kafka.Client.Metadata, NOT kafka.Conn.ReadPartitions: ReadPartitions sends
+// topicMetadataRequestV6{... AllowAutoTopicCreation: true} (kafka-go
+// conn.go:984-986), and a consumer must never create a topic as a side effect
+// of asking whether it exists. Client.Metadata builds metadataAPI.Request with
+// TopicNames only (kafka-go metadata.go:40-44) and returns the per-topic error
+// as a structured field rather than collapsing the response into one error —
+// which is what lets partitionCountFromMetadata separate "no such topic" from
+// "broker unreachable".
+func defaultPartitionCountProducer(ctx context.Context, brokers []string, topic string) (int, error) {
+	client := &kafka.Client{Addr: kafka.TCP(brokers...), Timeout: topicMetadataTimeout}
+	res, err := client.Metadata(ctx, &kafka.MetadataRequest{Topics: []string{topic}})
+	if err != nil {
+		return 0, err
+	}
+	return partitionCountFromMetadata(topic, res)
+}
+
+// partitionCountFromMetadata is the pure mapping half of
+// defaultPartitionCountProducer, split out so the FR-2.5 boundary is testable
+// without a broker.
+func partitionCountFromMetadata(topic string, res *kafka.MetadataResponse) (int, error) {
+	if res == nil {
+		return 0, ErrTopicNotFound
+	}
+	for _, t := range res.Topics {
+		if t.Name != topic {
+			continue
+		}
+		if t.Error != nil {
+			if errors.Is(t.Error, kafka.UnknownTopicOrPartition) {
+				return 0, ErrTopicNotFound
+			}
+			return 0, t.Error
+		}
+		if len(t.Partitions) == 0 {
+			return 0, ErrTopicNotFound
+		}
+		return len(t.Partitions), nil
+	}
+	return 0, ErrTopicNotFound
 }
 
 // defaultGroupProducer wraps kafka.NewConsumerGroup.

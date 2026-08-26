@@ -85,6 +85,7 @@ type Manager struct {
 	rp        ReaderProducer
 	gp        GroupProducer
 	prp       PartitionReaderProducer
+	pcp       PartitionCountProducer
 	engine    EngineName
 }
 
@@ -109,6 +110,7 @@ func GetManager(configurators ...ManagerConfig) *Manager {
 			},
 			gp:     defaultGroupProducer,
 			prp:    defaultPartitionReaderProducer,
+			pcp:    defaultPartitionCountProducer,
 			engine: resolveEngine(logrus.StandardLogger()),
 		}
 		for _, configurator := range configurators {
@@ -189,6 +191,7 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 			startOffset:            c.startOffset,
 			gp:                     m.gp,
 			prp:                    m.prp,
+			pcp:                    m.pcp,
 			engine:                 m.engine,
 			service:                os.Getenv("SERVICE_NAME"),
 		}
@@ -244,14 +247,18 @@ func (m *Manager) RemoveHandler(topic string, handlerId string) error {
 // lifecycle loop in start rebuilds the reader and rejoins the consumer
 // group without disturbing the surrounding process.
 type Consumer struct {
-	name          string
-	topic         string
-	groupId       string
-	brokers       []string
-	readerConfig  kafka.ReaderConfig
-	rp            ReaderProducer
-	gp            GroupProducer
-	prp           PartitionReaderProducer
+	name         string
+	topic        string
+	groupId      string
+	brokers      []string
+	readerConfig kafka.ReaderConfig
+	rp           ReaderProducer
+	gp           GroupProducer
+	prp          PartitionReaderProducer
+	// pcp answers "does this topic have partitions right now?". A nil pcp
+	// means gate disabled, classification indeterminate — which is what keeps
+	// every struct-literal Consumer in the test suite behaviourally unchanged.
+	pcp           PartitionCountProducer
 	handlers      map[string]handler.Handler
 	headerParsers []HeaderParser
 	engine        EngineName

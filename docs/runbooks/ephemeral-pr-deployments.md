@@ -281,9 +281,12 @@ The mechanism: an Argo hook Job carries the runtime finalizer
 only as part of completing or terminating the owning operation. The
 operation's phase is in turn driven by that Job. Neither can advance, so
 `resources-finalizer.argocd.argoproj.io` blocks on the undeletable Job and no
-other namespaced object is ever issued for deletion. On PR #1459 that was 89
-objects — 63 Services, 9 ConfigMaps, the Ingress, ServiceAccounts, Roles —
-stuck for 11 hours.
+other namespaced object is ever issued for deletion. On PR #1459 the
+controller log repeated `89 objects remaining for deletion`; the itemized
+breakdown showed 93 remaining namespaced objects — 63 Services, 9 ConfigMaps,
+5 Secrets, 4 ServiceAccounts, 3 Pods, 3 Roles, 3 RoleBindings, 2 Jobs, 1
+Ingress. The sync had been in flight for 24 minutes when the delete request
+landed, and it kept creating hook resources for 4 minutes after.
 
 #### First move, while `.operation` still exists
 
@@ -311,8 +314,7 @@ This is **not** equivalent to `terminate-op` and makes the wedge
 processes an operation when `app.Operation != nil`. After this patch nothing
 can ever transition the phase or reap the hook finalizer. This was attempted
 on PR #1459 on 2026-08-26; the Application then sat with `hasOp: false` and
-`opPhase: "Running"` for 11 hours, unrecoverable by any operation-level
-action.
+`opPhase: "Running"`, unrecoverable by any operation-level action.
 
 #### Recovery once `.operation` is gone
 

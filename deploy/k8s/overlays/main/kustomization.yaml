@@ -311,9 +311,9 @@ images:
   - name: ghcr.io/chronicle20/atlas-monster-book/atlas-monster-book
     newTag: main-6c956fe
   - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
-    newTag: main-6c956fe
+    newTag: main-b0459f7
   - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
-    newTag: main-6c956fe
+    newTag: main-b0459f7
   - name: ghcr.io/chronicle20/atlas-mounts/atlas-mounts
     newTag: main-6c956fe
   - name: ghcr.io/chronicle20/atlas-mts/atlas-mts

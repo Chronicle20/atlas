@@ -105,3 +105,7 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-19T21:56:22Z	agent	Fix C	atlas-implementer	sonnet	-	-	-	-	DONE	fc370ef31	-	-	-	-
 2026-08-19T21:56:22Z	agent	Fix D	atlas-implementer	sonnet	-	-	-	-	DONE	68e8f81c0	-	-	-	-
 2026-08-19T22:23:20Z	agent	Branch gate (final)	verify.sh	-	-	-	-	-	PASS	b469ab070	-	-	-	-
+2026-08-26T18:29:04Z	agent	bug-cash-shop-live-testing	atlas-implementer	sonnet	-	-	-	-	DONE	f64b454a3	-	-	-	-
+2026-08-26T18:29:05Z	agent	bug-cash-shop-live-testing	atlas-reviewer	sonnet	-	-	-	-	DONE	e6dffd8f6	APPROVED_WITH_FINDINGS	true	-	-
+2026-08-26T18:29:05Z	agent	bug-cash-shop-live-testing-underflow	atlas-implementer	sonnet	-	-	-	-	DONE	e6dffd8f6	-	-	-	-
+2026-08-26T18:29:09Z	agent	bug-cash-shop-live-testing gate	verify.sh	-	-	-	-	-	PASS	56108b790	-	-	-	-

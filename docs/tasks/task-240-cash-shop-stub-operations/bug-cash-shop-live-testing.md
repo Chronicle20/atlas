@@ -155,4 +155,26 @@ All four commands originate from `atlas-channel`'s `CashShopOperationHandleFunc`
 
 ## Outcome
 
-_Unresolved at time of writing. Record the fixing commit, the gate verdict, and the live re-test result here._
+Fixed on branch `task-240-cash-shop-stub-operations`.
+
+| commit | content |
+|---|---|
+| `f64b454a3` | Defect A (table-qualified upsert) + Defect B (inventory-slot type math, range guard before the wallet debit) |
+| `bcb403bd7` | Defect C (JSON:API envelope unwrap in `accounts.service.ts`) |
+| `6097885e7` | formatting attempt using bare `gofumpt` — **wrong tool**, superseded by `56108b790`; squash this out at PR time |
+| `e6dffd8f6` | uint32 underflow guard in the slot math (review finding, user-approved) |
+| `a41fd08cd` | report SHA fill-in |
+| `56108b790` | correct formatting via `tools/lint.sh` fix mode |
+
+**Review:** `review-bug-cash-shop-live-testing.md` — APPROVED_WITH_FINDINGS, 0 blocking, 1 non-blocking. The one finding (uint32 underflow at the `ci.ItemId() - 9110000` subtraction) was approved by the user and fixed in `e6dffd8f6`. The reviewer verified Defect A by reverting the fix locally and confirming the new test genuinely fails against the old expression, and hand-traced that Defect B's guard runs before `database.ExecuteTransaction` — i.e. before the wallet debit.
+
+**Gate:** `tools/verify.sh --quick --base bd7e2e11b` → **PASS** (exit 0) at `56108b790`. Checks run: go build/vet, go analyzer guards, skill/job id guard, scope guard, producer seam guard, env domain guard, lint & format guard (1 Go module + atlas-ui).
+
+Two earlier gate runs failed on the lint & format guard only. Cause: bare `gofumpt` is **not** the repo's formatting authority — `tools/lint.sh:184` runs `golangci-lint fmt -c .golangci.yml`, i.e. gofumpt **plus** goimports with `local-prefixes: github.com/Chronicle20/atlas`. Module-local `atlas-cashshop/*` imports do not match that prefix and are grouped differently by the two tools. Use `tools/lint.sh` (no flags = fix mode); do not verify Go formatting with `gofumpt -l`.
+
+### Still outstanding
+
+- **The flagless `tools/verify.sh` has NOT been run.** `--quick` skips the bake and `-race` and does not satisfy the "done means verified" bar. Run it before opening/updating the PR.
+- **No live re-test yet.** All six reported symptoms remain unconfirmed-fixed until re-tested in `atlas-pr-1426` against tenant `f3fc852d-555a-45b1-80d8-578ea3b9f401` on GMS 83.1, with the images rebuilt to include these commits. Re-test: gift, normal item, ring and package purchases (Defect A); the ETC slot-expansion item 9114000 / serial 50200095 (Defect B); the birthday dialog toast (Defect C).
+- The `UNKNOWN_ERROR` template-mapping gap under `## Not yet answered` is untouched and still needs client evidence.
+- `GET_PURCHASE_RECORD`'s in-game trigger remains unverified (see the Testing notes above).

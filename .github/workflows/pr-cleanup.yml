@@ -18,44 +18,29 @@ env:
   PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr-number }}
 
 jobs:
-  delete-images:
-    name: Delete per-PR ghcr image tags
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    steps:
-      - name: Checkout (for services.json)
-        uses: actions/checkout@v4
-
-      - name: Compute service list
-        id: svc
-        run: |
-          jq -c '[.services[] | select(.docker_image) | select(.type != "support-image") | .name]' \
-            < .github/config/services.json > /tmp/svcs.json
-          echo "list=$(cat /tmp/svcs.json)" >> $GITHUB_OUTPUT
-
-      - name: Delete tags
-        env:
-          GH_TOKEN: ${{ secrets.GHCR_TOKEN }}
-        run: |
-          set -euo pipefail
-          for svc in $(jq -r '.[]' /tmp/svcs.json); do
-            echo "Cleaning up $svc tags matching pr-${PR_NUMBER}-*"
-            # List versions separately from the delete loop so a 404 on the
-            # listing call (package never published — e.g. the first PR that
-            # adds a new service to services.json) cleanly skips the service
-            # instead of aborting under `set -euo pipefail`.
-            VIDS=$(gh api "/users/chronicle20/packages/container/${svc}%2F${svc}/versions" \
-                     --paginate \
-                     --jq '.[] | select(.metadata.container.tags[]? | startswith("pr-'"${PR_NUMBER}"'-")) | .id' \
-                     2>/dev/null) \
-              || { echo "  skip: package $svc not present on ghcr"; continue; }
-            for vid in $VIDS; do
-              gh api --method DELETE \
-                "/users/chronicle20/packages/container/${svc}%2F${svc}/versions/${vid}" \
-                || echo "  skip: $svc/$vid"
-            done
-          done
+  # Image-tag deletion intentionally NOT done here.
+  #
+  # Deleting the per-PR `pr-<N>-*` ghcr tags on PR close races the Argo CD
+  # teardown. Argo deletes the Application immediately on close, but an
+  # auto-sync already in flight keeps running — on PR #1459 it ran for four
+  # more minutes and kept creating hook resources. That sync's
+  # `atlas-pr-bootstrap` hook then pulls the tags this job just deleted and
+  # fails with `Failed to pull image
+  # "ghcr.io/chronicle20/atlas-data/atlas-data:pr-1459-99281705": ... not
+  # found`, hangs in `wait-ready`, and never reaches a terminal condition —
+  # which holds `argocd.argoproj.io/hook-finalizer` and deadlocks the whole
+  # namespace teardown. Reproduced 2026-08-26 on PR #1459.
+  #
+  # This job was also a pure duplicate. `cleanup.sh::do_drop_images`
+  # (`services/atlas-pr-bootstrap/scripts/cleanup.sh:465`, registered in
+  # the phase list at line 592) matches the same `pr-<N>-*` prefix over the
+  # same `.github/config/services.json`-derived service list, using the
+  # in-cluster `atlas-pr-cleanup-gh-token` PAT. It runs PostDelete — after
+  # the namespace is pruned — which is the only point at which no consumer
+  # of those tags can still exist.
+  #
+  # Tag lifetime is now coupled to PostDelete Job lifetime — see
+  # `docs/runbooks/ephemeral-pr-deployments.md` §9.4.
 
   # Branch deletion intentionally NOT done here.
   #
@@ -79,7 +64,6 @@ jobs:
   notify-argo:
     name: Notify Argo of PR close
     runs-on: ubuntu-latest
-    needs: [delete-images]
     steps:
       - name: Log notice
         run: |

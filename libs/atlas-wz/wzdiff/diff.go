@@ -3,6 +3,7 @@ package wzdiff
 import (
 	"fmt"
 	"sort"
+	"strings"
 )
 
 // Delta describes a single structural divergence between the "ours" and
@@ -69,25 +70,77 @@ func Diff(ours, reference []Node) []Delta {
 // not guaranteed to keep sibling names unique, so flatten guards against a
 // silent collision: the first occurrence of a given Kind:Name under a
 // parent keeps the plain "/<Kind>:<Name>" path, and every later occurrence
-// gets a "#N" suffix for its 2nd, 3rd, ... appearance. This never changes
-// the path of a non-colliding node (the common case, and the one the
-// evidence file's format is pinned to), and it makes a duplicate sibling
-// visible as its own Delta instead of being silently overwritten in the
-// map and dropped from the diff.
+// gets a "#N" suffix. This never changes the path of a non-colliding node
+// (the common case, and the one the evidence file's format is pinned to),
+// and it makes a duplicate sibling visible as its own Delta instead of
+// being silently overwritten in the map and dropped from the diff.
+//
+// Which member of a duplicate-name group gets the plain path and which
+// gets "#2", "#3", ... is content-scoped, not decode-order-scoped: members
+// are sorted by signature(n), a deterministic string derived from each
+// member's own subtree (see signature). Two sides that decode the same
+// duplicate-named siblings in different order therefore still assign the
+// same suffixes to the same content, so an identical subtree on both sides
+// never produces a spurious delta just because HaRepacker and this parser
+// happened to visit it in a different order.
 func flatten(nodes []Node, prefix string) map[string]string {
 	out := map[string]string{}
-	counts := map[string]int{}
+	groups := map[string][]Node{}
+	var bases []string
 	for _, n := range nodes {
 		base := prefix + "/" + n.Kind + ":" + n.Name
-		counts[base]++
-		path := base
-		if counts[base] > 1 {
-			path = fmt.Sprintf("%s#%d", base, counts[base])
+		if _, ok := groups[base]; !ok {
+			bases = append(bases, base)
 		}
-		out[path] = renderAttrs(n.Kind, n.Attrs)
-		for k, v := range flatten(n.Children, path) {
-			out[k] = v
+		groups[base] = append(groups[base], n)
+	}
+	for _, base := range bases {
+		members := groups[base]
+		if len(members) > 1 {
+			sort.SliceStable(members, func(i, j int) bool {
+				return signature(members[i]) < signature(members[j])
+			})
+		}
+		for i, n := range members {
+			path := base
+			if i > 0 {
+				path = fmt.Sprintf("%s#%d", base, i+1)
+			}
+			out[path] = renderAttrs(n.Kind, n.Attrs)
+			for k, v := range flatten(n.Children, path) {
+				out[k] = v
+			}
 		}
 	}
 	return out
+}
+
+// signature computes a deterministic, content-derived string for n's
+// subtree: n's own Kind, Name and rendered attrs, followed by the sorted
+// signatures of its children. Sorting the children's signatures (rather
+// than using their decode order) makes the result independent of
+// traversal order at every depth, so two subtrees that are structurally
+// and value-wise identical always produce the same signature regardless
+// of which order either side happened to decode their children in.
+func signature(n Node) string {
+	childSigs := make([]string, len(n.Children))
+	for i, c := range n.Children {
+		childSigs[i] = signature(c)
+	}
+	sort.Strings(childSigs)
+
+	var b strings.Builder
+	b.WriteString(n.Kind)
+	b.WriteByte(':')
+	b.WriteString(n.Name)
+	b.WriteByte('{')
+	b.WriteString(renderAttrs(n.Kind, n.Attrs))
+	b.WriteByte('}')
+	b.WriteByte('[')
+	for _, s := range childSigs {
+		b.WriteString(s)
+		b.WriteByte(';')
+	}
+	b.WriteByte(']')
+	return b.String()
 }

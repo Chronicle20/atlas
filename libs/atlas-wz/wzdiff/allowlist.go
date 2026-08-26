@@ -59,12 +59,12 @@ func LoadAllowlist(path string) ([]AllowEntry, error) {
 		if len(fields) != 4 {
 			return nil, fmt.Errorf("wzdiff: allowlist %s:%d: expected 4 tab-separated fields, got %d", path, lineNo, len(fields))
 		}
-		entry := AllowEntry{
+		entry := normalizeAllowEntry(AllowEntry{
 			Image:  fields[0],
 			Path:   fields[1],
 			OnlyIn: fields[2],
 			Reason: fields[3],
-		}
+		})
 		if err := validateAllowEntry(entry); err != nil {
 			return nil, fmt.Errorf("wzdiff: allowlist %s:%d: %w", path, lineNo, err)
 		}
@@ -74,6 +74,24 @@ func LoadAllowlist(path string) ([]AllowEntry, error) {
 		return nil, fmt.Errorf("wzdiff: read allowlist %s: %w", path, err)
 	}
 	return entries, nil
+}
+
+// normalizeAllowEntry trims surrounding whitespace on Image, Path and
+// OnlyIn, and strips a trailing "/" from Path. It runs before
+// validateAllowEntry, and its result -- not the raw parsed fields -- is
+// what gets validated and stored: a whitespace-padded Image/Path/OnlyIn
+// (e.g. " Reactor.img") or a Path with a trailing slash (e.g.
+// "/imgdir:0/", which becomes the prefix "/imgdir:0//" and matches
+// nothing via Allowed's HasPrefix check) would otherwise pass validation
+// but silently never match, a fail-closed footgun with no diagnostic.
+// Normalizing a bare "/" strips to "", which validateAllowEntry then
+// rejects as a blank path rather than letting it silently allowlist the
+// whole image.
+func normalizeAllowEntry(e AllowEntry) AllowEntry {
+	e.Image = strings.TrimSpace(e.Image)
+	e.Path = strings.TrimSuffix(strings.TrimSpace(e.Path), "/")
+	e.OnlyIn = strings.TrimSpace(e.OnlyIn)
+	return e
 }
 
 // validateAllowEntry rejects any entry whose fields could make Allowed

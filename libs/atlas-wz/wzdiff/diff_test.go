@@ -201,6 +201,38 @@ func TestDiff(t *testing.T) {
 		}
 	})
 
+	t.Run("duplicate sibling suffix assignment is content-scoped, not decode-order-scoped", func(t *testing.T) {
+		// Both sides carry the same two duplicate-named int:state siblings,
+		// but in different decode order. Under a decode-order-scoped suffix
+		// scheme, ours' first occurrence (value=1) pairs with reference's
+		// first occurrence (value=2) at the plain path, and the #2 suffix
+		// pairs the opposite way -- a spurious delta on data that actually
+		// matches on both sides. A content-scoped scheme pairs by subtree
+		// content instead, so this must diff to nothing.
+		ours := []Node{
+			{
+				Kind: "imgdir", Name: "0",
+				Children: []Node{
+					intNode("state", "1"),
+					intNode("state", "2"),
+				},
+			},
+		}
+		reference := []Node{
+			{
+				Kind: "imgdir", Name: "0",
+				Children: []Node{
+					intNode("state", "2"),
+					intNode("state", "1"),
+				},
+			},
+		}
+		deltas := Diff(ours, reference)
+		if len(deltas) != 0 {
+			t.Fatalf("deltas = %+v, want none (same duplicate-named siblings, different decode order)", deltas)
+		}
+	})
+
 	t.Run("ordering-insensitive", func(t *testing.T) {
 		ours := []Node{intNode("a", "1"), intNode("b", "2")}
 		reference := []Node{intNode("b", "2"), intNode("a", "1")}

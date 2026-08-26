@@ -107,6 +107,73 @@ func TestLoadAllowlistRejectsInvalidOnlyIn(t *testing.T) {
 	}
 }
 
+func TestLoadAllowlistNormalizesTrailingSlashOnPath(t *testing.T) {
+	// A trailing slash on Path used to pass validation but could never
+	// match: Allowed's prefix check becomes d.Path == "/imgdir:0/" ||
+	// strings.HasPrefix(d.Path, "/imgdir:0//"), and no real delta path ever
+	// has a double slash.
+	content := "2519002\t/imgdir:0/\treference\tsome reason\n"
+	path := filepath.Join(t.TempDir(), "allowlist.tsv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+
+	entries, err := LoadAllowlist(path)
+	if err != nil {
+		t.Fatalf("LoadAllowlist: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("len(entries) = %d, want 1", len(entries))
+	}
+	if entries[0].Path != "/imgdir:0" {
+		t.Errorf("entries[0].Path = %q, want %q", entries[0].Path, "/imgdir:0")
+	}
+	if !Allowed(entries, "2519002", Delta{Path: "/imgdir:0", OnlyIn: "reference"}) {
+		t.Error("Allowed = false, want true for the normalized path")
+	}
+}
+
+func TestLoadAllowlistNormalizesWhitespace(t *testing.T) {
+	content := " 2519002 \t /imgdir:0 \t reference \tsome reason\n"
+	path := filepath.Join(t.TempDir(), "allowlist.tsv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+
+	entries, err := LoadAllowlist(path)
+	if err != nil {
+		t.Fatalf("LoadAllowlist: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("len(entries) = %d, want 1", len(entries))
+	}
+	want := AllowEntry{Image: "2519002", Path: "/imgdir:0", OnlyIn: "reference", Reason: "some reason"}
+	if entries[0] != want {
+		t.Errorf("entries[0] = %+v, want %+v", entries[0], want)
+	}
+	// The normalization-then-Allowed round trip: a whitespace-padded entry
+	// now matches the delta it was written for.
+	if !Allowed(entries, "2519002", Delta{Path: "/imgdir:0", OnlyIn: "reference"}) {
+		t.Error("Allowed = false, want true for the normalized, whitespace-padded entry")
+	}
+}
+
+func TestLoadAllowlistRejectsBareSlashPath(t *testing.T) {
+	// "/" normalizes to "" (TrimSuffix strips the only "/"), and an empty
+	// Path must be rejected by the existing blank-path check rather than
+	// silently allowlisting every delta on the image.
+	content := "2519002\t/\treference\tsome reason\n"
+	path := filepath.Join(t.TempDir(), "allowlist.tsv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+
+	_, err := LoadAllowlist(path)
+	if err == nil {
+		t.Fatal("LoadAllowlist: want error for path \"/\", got nil")
+	}
+}
+
 func TestAllowed(t *testing.T) {
 	entry := AllowEntry{Image: "2519002", Path: "/imgdir:0", OnlyIn: "reference", Reason: "UOL resolved by HaRepacker"}
 	entries := []AllowEntry{entry}

@@ -405,14 +405,14 @@ Coordinates purchase flows: validates funds, determines compartment type from ch
 - Any other failure (commodity lookup, character lookup, wallet lookup, pet creation, asset creation) results in an ERROR event with code `UNKNOWN_ERROR`
 - Compartment type is derived from character job type: Explorer, Cygnus, or Legend
 - When the purchased item's classification is Pet, a pet is created via the Pet (REST Client) processor before the asset is created; the pet's name is resolved from the Pet Data (REST Client) processor, defaulting to `"Pet"` if that lookup fails; the created pet's ID is stored on the asset's `petId`
-- `PurchaseInventoryIncreaseByItem` resolves the target inventory type from the commodity's item ID and grants 4 slots; `PurchaseInventoryIncreaseByType` grants 8 slots for a fixed cost of 4000 currency
+- `PurchaseInventoryIncreaseByItem` resolves the target inventory type from the commodity's item ID and grants 4 slots; `PurchaseInventoryIncreaseByType` grants 4 slots for a fixed cost of 4000 currency
 - Character inventory capacity increase is capped at 96 slots; exceeding produces `ErrMaxSlots`
 
 ### Processors
 
 #### Processor
 - `Purchase`/`PurchaseAndEmit`: Validates balance, determines compartment, creates a pet if applicable, creates flattened asset directly, deducts currency, emits PURCHASE event
-- `PurchaseInventoryIncreaseByType`/`PurchaseInventoryIncreaseByTypeAndEmit`: Purchases inventory capacity increase by type (8 slots for 4000 currency)
+- `PurchaseInventoryIncreaseByType`/`PurchaseInventoryIncreaseByTypeAndEmit`: Purchases inventory capacity increase by type (4 slots for 4000 currency)
 - `PurchaseInventoryIncreaseByItem`/`PurchaseInventoryIncreaseByItemAndEmit`: Purchases inventory capacity increase using a commodity item (4 slots)
 - `PurchaseInventoryIncrease`: Core logic for inventory capacity increase with configurable cost and amount
 

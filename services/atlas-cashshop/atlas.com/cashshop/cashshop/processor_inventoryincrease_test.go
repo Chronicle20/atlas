@@ -29,6 +29,7 @@ import (
 	testlog "github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 )
 
@@ -145,4 +146,38 @@ func TestPurchaseInventoryIncreaseByItemRejectsItemBelowBaseOffset(t *testing.T)
 	errs := purchaseErrorEvents(t, events)
 	require.Len(t, errs, 1)
 	require.Equal(t, "UNKNOWN_ERROR", errs[0].Body.Error)
+}
+
+// TestPurchaseInventoryIncreaseByTypeGrantsFourSlots is a regression test for
+// Defect D (bug-cash-shop-live-testing-round-2.md): PurchaseInventoryIncreaseByTypeAndEmit
+// hard-coded amount 8, granting double the advertised +4 slots for the 4000 NX
+// by-type expansion. This asserts parity with the by-item path
+// (TestPurchaseInventoryIncreaseByItemComputesETCType), which has always
+// passed amount 4.
+func TestPurchaseInventoryIncreaseByTypeGrantsFourSlots(t *testing.T) {
+	db := purchaseTestDatabase(t)
+	tenantId := uuid.New()
+	accountId := uint32(500)
+	characterId := uint32(1000)
+
+	startPurchaseCharacterServer(t, characterId, accountId)
+	seedPurchaseWallet(t, db, tenantId, accountId, 96000)
+
+	ctx := databasetest.TenantContext(tenantId)
+	l, _ := testlog.NewNullLogger()
+
+	err := NewProcessor(l, ctx, db).PurchaseInventoryIncreaseByTypeAndEmit(characterId, 1, inventory.TypeValueUse)
+	require.NoError(t, err)
+
+	var w wallet.Entity
+	require.NoError(t, db.Where("tenant_id = ? AND account_id = ?", tenantId, accountId).First(&w).Error)
+	require.Equal(t, uint32(96000-4000), w.Credit, "wallet must be debited the 4000 by-type cost")
+
+	entries := purchaseOutboxEntries(t, db)
+	require.Len(t, entries, 1)
+	var ev cashshop.StatusEvent[cashshop.InventoryCapacityIncreasedBody]
+	require.NoError(t, json.Unmarshal(entries[0].MessageValue, &ev))
+	require.Equal(t, cashshop.StatusEventTypeInventoryCapacityIncreased, ev.Type)
+	require.Equal(t, uint32(4), ev.Body.Amount, "by-type must grant +4 slots, matching the by-item path and the v83 UI's advertised amount")
+	require.Equal(t, uint32(4), ev.Body.Capacity, "capacity moves by the same +4 as Amount from the stubbed character's empty compartment")
 }

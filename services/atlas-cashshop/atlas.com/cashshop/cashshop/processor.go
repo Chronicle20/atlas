@@ -354,7 +354,7 @@ func (p *ProcessorImpl) PurchaseInventoryIncreaseByItemAndEmit(characterId uint3
 func (p *ProcessorImpl) PurchaseInventoryIncreaseByTypeAndEmit(characterId uint32, currency uint32, inventoryType inventory.Type) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
-			return NewProcessor(p.l, p.ctx, tx).PurchaseInventoryIncrease(buf)(characterId, currency, inventoryType, 4000, 8)
+			return NewProcessor(p.l, p.ctx, tx).PurchaseInventoryIncrease(buf)(characterId, currency, inventoryType, 4000, 4)
 		})
 	})
 }

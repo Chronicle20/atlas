@@ -13,3 +13,4 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-26T19:33:10Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	ccbac99	-	-	-	-
 2026-08-26T19:33:30Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	b77baa5	APPROVED_WITH_FINDINGS	no	docs/tasks/task-267-kafka-consumer-missing-topic-recovery/reviews/task-6.md	-
 2026-08-26T19:38:07Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	ccbac99	APPROVED	no	docs/tasks/task-267-kafka-consumer-missing-topic-recovery/reviews/task-5.md	-
+2026-08-26T20:11:05Z	agent	Pre-PR	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	daf4655	APPROVED	no	docs/tasks/task-267-kafka-consumer-missing-topic-recovery/audit.md	-

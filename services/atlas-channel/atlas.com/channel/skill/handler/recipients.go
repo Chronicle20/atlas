@@ -26,6 +26,7 @@ type PartyRecipient struct {
 	maxHp uint16
 	mp    uint16
 	maxMp uint16
+	level byte
 }
 
 func (r PartyRecipient) Id() uint32    { return r.id }
@@ -35,6 +36,7 @@ func (r PartyRecipient) Hp() uint16    { return r.hp }
 func (r PartyRecipient) MaxHp() uint16 { return r.maxHp }
 func (r PartyRecipient) Mp() uint16    { return r.mp }
 func (r PartyRecipient) MaxMp() uint16 { return r.maxMp }
+func (r PartyRecipient) Level() byte   { return r.level }
 
 // PartyRecipientBuilder is the canonical constructor for PartyRecipient.
 type PartyRecipientBuilder struct {
@@ -50,6 +52,7 @@ func (b *PartyRecipientBuilder) SetHp(v uint16) *PartyRecipientBuilder    { b.r.
 func (b *PartyRecipientBuilder) SetMaxHp(v uint16) *PartyRecipientBuilder { b.r.maxHp = v; return b }
 func (b *PartyRecipientBuilder) SetMp(v uint16) *PartyRecipientBuilder    { b.r.mp = v; return b }
 func (b *PartyRecipientBuilder) SetMaxMp(v uint16) *PartyRecipientBuilder { b.r.maxMp = v; return b }
+func (b *PartyRecipientBuilder) SetLevel(v byte) *PartyRecipientBuilder   { b.r.level = v; return b }
 func (b *PartyRecipientBuilder) Build() PartyRecipient                    { return b.r }
 
 // loadCasterPartyFunc is the party-load seam tests can replace.
@@ -171,6 +174,7 @@ func SelectDeadInRangeMapPlayers(
 			SetY(mc.Y()).
 			SetHp(mc.Hp()).
 			SetMaxHp(mc.MaxHp()).
+			SetLevel(mc.Level()).
 			Build())
 	}
 	return out
@@ -218,6 +222,7 @@ func SelectAllCharactersInMap(l logrus.FieldLogger, ctx context.Context, f field
 			SetMaxHp(mc.MaxHp()).
 			SetMp(mc.Mp()).
 			SetMaxMp(mc.MaxMp()).
+			SetLevel(mc.Level()).
 			Build())
 	}
 	return out
@@ -298,6 +303,7 @@ func selectPartyMembers(
 			SetY(mc.Y()).
 			SetHp(mc.Hp()).
 			SetMaxHp(mc.MaxHp()).
+			SetLevel(mc.Level()).
 			Build())
 	}
 	return out

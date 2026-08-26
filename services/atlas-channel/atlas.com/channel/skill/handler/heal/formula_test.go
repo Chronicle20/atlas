@@ -58,33 +58,76 @@ func TestHealAmount_OverInt16ClampsToMax(t *testing.T) {
 	}
 }
 
-func TestHealXp_AllRecipientsFullHp_ReturnsZero(t *testing.T) {
+func TestHealXp_CasterExcludedFromSum(t *testing.T) {
+	// Only the caster in the recipient list: no non-caster contribution.
 	rs := []recipient{
-		{Hp: 1000, MaxHp: 1000},
-		{Hp: 800, MaxHp: 800},
+		{Hp: 500, MaxHp: 1000, Level: 70, IsCaster: true},
 	}
-	if got := HealXp(200, rs, 5); got != 0 {
-		t.Fatalf("HealXp full-hp = %d, want 0", got)
+	if got := HealXp(2880, rs, 70); got != 0 {
+		t.Fatalf("HealXp caster-only = %d, want 0", got)
 	}
 }
 
-func TestHealXp_AppliedHealAccumulates(t *testing.T) {
-	// per=200, recip 1 missing 150 → applied 150
-	// per=200, recip 2 missing 300 → applied 200
-	// total 350, /10 = 35, * skillLevel 5 = 175
+func TestHealXp_FullHpMemberYieldsZero(t *testing.T) {
 	rs := []recipient{
-		{Hp: 850, MaxHp: 1000},
-		{Hp: 500, MaxHp: 800},
+		{Hp: 1000, MaxHp: 1000, Level: 70},
 	}
-	if got := HealXp(200, rs, 5); got != 175 {
-		t.Fatalf("HealXp accumulate = %d, want 175", got)
+	if got := HealXp(2880, rs, 70); got != 0 {
+		t.Fatalf("HealXp full-hp member = %d, want 0", got)
 	}
 }
 
-func TestHealXp_SkillLevelZeroReturnsZero(t *testing.T) {
-	rs := []recipient{{Hp: 0, MaxHp: 1000}}
-	if got := HealXp(200, rs, 0); got != 0 {
-		t.Fatalf("HealXp skillLevel=0 = %d, want 0", got)
+func TestHealXp_OverhealClampedToMissingHp(t *testing.T) {
+	// perTarget 2880 far exceeds the 100 missing HP; only 100 counts.
+	// 100 * 70 / 70 / 15 = 6
+	rs := []recipient{
+		{Hp: 900, MaxHp: 1000, Level: 70},
+	}
+	if got := HealXp(2880, rs, 70); got != 6 {
+		t.Fatalf("HealXp overheal clamp = %d, want 6", got)
+	}
+}
+
+func TestHealXp_LoggedCastMatchesExpectedFormula(t *testing.T) {
+	// From the bug report: perTarget=2880, one party member, both level 70.
+	// 2880 * 70 / 70 / 15 = 192.
+	rs := []recipient{
+		{Hp: 0, MaxHp: 5000, Level: 70},
+	}
+	if got := HealXp(2880, rs, 70); got != 192 {
+		t.Fatalf("HealXp logged cast = %d, want 192", got)
+	}
+}
+
+func TestHealXp_LowerLevelTargetYieldsMoreThanHigherLevel(t *testing.T) {
+	low := []recipient{{Hp: 0, MaxHp: 1000, Level: 10}}
+	high := []recipient{{Hp: 0, MaxHp: 1000, Level: 100}}
+	gotLow := HealXp(500, low, 70)
+	gotHigh := HealXp(500, high, 70)
+	if gotLow <= gotHigh {
+		t.Fatalf("HealXp lower-level target = %d, want > higher-level target = %d", gotLow, gotHigh)
+	}
+}
+
+func TestHealXp_TwoRecipientsSummedIndependently(t *testing.T) {
+	// recip 1: applied 150, level 70 -> 150*70/70/15 = 10
+	// recip 2: applied 200, level 35 -> 200*70/35/15 = 26 (floor)
+	rs := []recipient{
+		{Hp: 850, MaxHp: 1000, Level: 70},
+		{Hp: 500, MaxHp: 800, Level: 35},
+	}
+	if got := HealXp(200, rs, 70); got != 36 {
+		t.Fatalf("HealXp two recipients summed = %d, want 36", got)
+	}
+}
+
+func TestHealXp_LevelZeroRecipientSkippedNoPanic(t *testing.T) {
+	rs := []recipient{
+		{Hp: 0, MaxHp: 1000, Level: 0},
+		{Hp: 0, MaxHp: 1000, Level: 70},
+	}
+	if got := HealXp(200, rs, 70); got != 13 {
+		t.Fatalf("HealXp level-0 recipient skipped = %d, want 13", got)
 	}
 }
 

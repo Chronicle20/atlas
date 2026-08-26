@@ -11,6 +11,7 @@ type recipient struct {
 	Y        int16
 	Hp       uint16
 	MaxHp    uint16
+	Level    byte
 	IsCaster bool
 }
 
@@ -91,18 +92,27 @@ func healDelta(perTarget int16, r recipient, zombified bool) int16 {
 }
 
 // HealXp computes the experience awarded to the caster from the heal
-// portion of the cast. Per recipient, the contribution is the amount
-// actually applied (see appliedPerRecipient); the sum is divided by 10
-// and multiplied by the skill level. Returns 0 on any pathological
-// negative result.
-func HealXp(perTarget int16, recipients []recipient, skillLevel byte) uint32 {
+// portion of the cast. Per recipient OTHER than the caster, the
+// contribution is:
+//
+//	healExp = floor(actualHeal * casterLevel / recipient.Level / 15)
+//
+// where actualHeal is the amount actually applied (see
+// appliedPerRecipient), so overheal never counts. Recipients with a
+// zero Level are skipped (guards the division; an unpopulated Level is
+// not a real game state). Returns 0 on any pathological negative
+// result.
+func HealXp(perTarget int16, recipients []recipient, casterLevel byte) uint32 {
 	var total int64
 	for _, r := range recipients {
-		total += int64(appliedPerRecipient(perTarget, r))
+		if r.IsCaster || r.Level == 0 {
+			continue
+		}
+		applied := int64(appliedPerRecipient(perTarget, r))
+		total += applied * int64(casterLevel) / int64(r.Level) / 15
 	}
-	xp := total / 10 * int64(skillLevel)
-	if xp < 0 {
+	if total < 0 {
 		return 0
 	}
-	return uint32(xp)
+	return uint32(total)
 }

@@ -123,8 +123,9 @@ func init() {
 //     appliedPerRecipient, then call character.ChangeHP with the
 //     clamped value. This prevents pushing Hp past MaxHp and tripping
 //     atlas-character's enforceBounds saturation logic.
-//  7. Compute and award XP from the same applied amounts (gated by
-//     OQ-1: skip when sole recipient and no AffectedMobIds).
+//  7. Compute and award XP from the same applied amounts, per non-caster
+//     recipient: floor(actualHeal * casterLevel / recipient.Level / 15).
+//     Skipped entirely on a negated (zombified) cast.
 //  8. Broadcast CharacterEffect to caster + CharacterEffectForeign to
 //     same-map sessions.
 //
@@ -169,6 +170,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				Y:        c.Y(),
 				Hp:       c.Hp(),
 				MaxHp:    effectiveMaxHpOrBase(stats.MaxHp, c.MaxHp()),
+				Level:    c.Level(),
 				IsCaster: true,
 			}
 			recipients := selectRecipients(caster, party)
@@ -211,11 +213,12 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				}
 			}
 
-			// XP gate: skip when sole recipient AND no undead targets in this cast.
-			// Also skipped entirely on a negated cast -- HealXp derives from the
-			// applied heal, and a zombified cast heals nobody (task-256 FR-15).
-			if !zombified && (len(recipients) != 1 || len(info.AffectedMobIds()) != 0) {
-				xp := HealXp(perTarget, recipients, info.SkillLevel())
+			// XP is skipped entirely on a negated cast -- HealXp derives from the
+			// applied heal, and a zombified cast heals nobody (task-256 FR-15). A
+			// solo cast (caster only, no party recipients) yields 0 from the
+			// formula itself, since HealXp excludes the caster.
+			if !zombified {
+				xp := HealXp(perTarget, recipients, c.Level())
 				if xp > 0 {
 					if xpErr := awardExperienceFunc(cp, f, characterId, []character2.ExperienceDistributions{{
 						ExperienceType: character2.ExperienceDistributionTypeWhite,

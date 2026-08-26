@@ -102,9 +102,9 @@ func installHealSeams(t *testing.T) (
 	}
 	selectPartyMembersFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, casterId uint32, casterX, casterY int16, e effect.Model, memberBitmap byte) []channelhandler.PartyRecipient {
 		return []channelhandler.PartyRecipient{
-			channelhandler.NewPartyRecipientBuilder().SetId(2).SetHp(50).SetMaxHp(1000).Build(),
-			channelhandler.NewPartyRecipientBuilder().SetId(3).SetHp(60).SetMaxHp(1000).Build(),
-			channelhandler.NewPartyRecipientBuilder().SetId(4).SetHp(0).SetMaxHp(1000).Build(),
+			channelhandler.NewPartyRecipientBuilder().SetId(2).SetHp(50).SetMaxHp(1000).SetLevel(30).Build(),
+			channelhandler.NewPartyRecipientBuilder().SetId(3).SetHp(60).SetMaxHp(1000).SetLevel(30).Build(),
+			channelhandler.NewPartyRecipientBuilder().SetId(4).SetHp(0).SetMaxHp(1000).SetLevel(30).Build(),
 		}
 	}
 	varianceFunc = func() float64 { return 1.0 }
@@ -172,8 +172,8 @@ func TestApply_NotZombified_HealsEveryRecipient(t *testing.T) {
 	if xp.distributions[0].ExperienceType != character2.ExperienceDistributionTypeWhite {
 		t.Errorf("ExperienceType = %v, want ExperienceDistributionTypeWhite", xp.distributions[0].ExperienceType)
 	}
-	if xp.distributions[0].Amount != 24 {
-		t.Errorf("Amount = %d, want 24", xp.distributions[0].Amount)
+	if xp.distributions[0].Amount != 12 {
+		t.Errorf("Amount = %d, want 12", xp.distributions[0].Amount)
 	}
 
 	if *announceCalls != 1 {

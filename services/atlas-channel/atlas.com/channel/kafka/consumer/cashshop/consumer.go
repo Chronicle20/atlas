@@ -368,6 +368,13 @@ func handleStatusEventLockerRebated(sc server.Model, wp writer.Producer) message
 // bound in the "operations" table of any GMS seed template, so announcing it
 // would resolve to the ResolveCode sentinel. The gifted asset is durable in
 // the recipient's locker either way; they see it on their next locker load.
+//
+// GIFT_SUCCESS must be followed by a CashQueryResult announce, in that
+// order: the v83 client's gift batch state machine
+// (CCashShop::SendGiftsPacket) only advances to its final notice
+// (SP_561/SP_562/SP_563) on CASH_QUERY_RESULT, and only resolves correctly
+// if the GIFT_SUCCESS that records the confirmation has already landed.
+// Mirrors handleStatusEventInventoryCapacityIncreased above.
 func handleStatusEventGiftPurchased(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.GiftPurchasedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.GiftPurchasedBody]) {
 		if e.Type != cashshop2.StatusEventTypeGiftPurchased {
@@ -379,8 +386,23 @@ func handleStatusEventGiftPurchased(sc server.Model, wp writer.Producer) message
 			return
 		}
 
-		op := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopGiftDoneBody(e.Body.RecipientName, int32(e.Body.TemplateId), e.Body.Quantity, int32(e.Body.Price)))
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			err := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopGiftDoneBody(e.Body.RecipientName, int32(e.Body.TemplateId), e.Body.Quantity, int32(e.Body.Price)))(s)
+			if err != nil {
+				return err
+			}
+			w, err := wallet.NewProcessor(l, ctx).GetByAccountId(s.AccountId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve cash shop wallet for character [%d].", s.CharacterId())
+				w = wallet.Model{}
+			}
+			err = session.Announce(l)(ctx)(wp)(cashpkt.CashQueryResultWriter)(cashpkt.NewCashQueryResult(w.Credit(), w.Points(), w.Prepaid()).Encode)(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce cash shop wallet to character [%d].", s.CharacterId())
+				return err
+			}
+			return nil
+		})
 	}
 }
 

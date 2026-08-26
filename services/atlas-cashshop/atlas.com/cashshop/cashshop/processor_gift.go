@@ -128,7 +128,7 @@ func (p *ProcessorImpl) GiftAndEmit(characterId uint32, transactionId uuid.UUID,
 				return reject("NOT_ENOUGH_CASH")
 			}
 			w = w.Purchase(walletCurrencyCredit, ci.Price())
-			_, err = walP.Update(buf)(sender.AccountId())(w.Credit())(w.Points())(w.Prepaid())
+			_, err = walP.UpdateWithTransaction(buf)(transactionId)(sender.AccountId())(w.Credit())(w.Points())(w.Prepaid())
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to debit sender [%d] wallet for gift.", characterId)
 				return err

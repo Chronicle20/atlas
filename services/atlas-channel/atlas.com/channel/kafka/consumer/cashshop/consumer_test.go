@@ -727,19 +727,24 @@ func (e *consumerEnv) decodeRebateDone(t *testing.T) cashpkt.RebateDone {
 	return m
 }
 
-// decodeGiftDone decodes the last announced CashShopOperation body as the
-// GIFT_SUCCESS arm.
+// decodeGiftDone decodes the announced CashShopOperation body as the
+// GIFT_SUCCESS arm. Searches by writer name rather than taking the last
+// announcement: GIFT_SUCCESS is followed by a CashQueryResult announce, so
+// it is not always the last packet on the wire.
 func (e *consumerEnv) decodeGiftDone(t *testing.T) cashpkt.GiftDone {
 	t.Helper()
-	a := e.lastAnnounced()
-	if a.writerName != cashpkt.CashShopOperationWriter {
-		t.Fatalf("last announced writer = %s, want %s", a.writerName, cashpkt.CashShopOperationWriter)
+	for _, a := range e.announced {
+		if a.writerName != cashpkt.CashShopOperationWriter {
+			continue
+		}
+		m := cashpkt.GiftDone{}
+		req := request.Request(a.body)
+		r := request.NewRequestReader(&req, 0)
+		m.Decode(e.logger, e.ctx)(&r, nil)
+		return m
 	}
-	m := cashpkt.GiftDone{}
-	req := request.Request(a.body)
-	r := request.NewRequestReader(&req, 0)
-	m.Decode(e.logger, e.ctx)(&r, nil)
-	return m
+	t.Fatal("no CashShopOperation packet was announced")
+	return cashpkt.GiftDone{}
 }
 
 // decodeBuyPackageDone decodes the last announced CashShopOperation body as
@@ -1387,6 +1392,12 @@ func TestLockerRebatedAnnouncesDoneWithCashIdAndAmount(t *testing.T) {
 // GIFT_PURCHASED producer/consumer seam: GiftPurchasedBody's
 // RecipientName/TemplateId/Quantity must land on GiftDone's
 // recipientName/itemId/quantity unchanged.
+// TestGiftPurchasedAnnouncesGiftDoneWithRecipientNameAndItem pins the client's
+// gift batch state machine ordering (CCashShop::SendGiftsPacket, v83 IDB
+// 0x46f940): GIFT_SUCCESS records the batch confirmation and must land
+// before CASH_QUERY_RESULT drives the batch to its final notice, or the
+// sender sees "The gifts could not be sent." (SP_562) instead of "All the
+// gifts have been sent..." (SP_561).
 func TestGiftPurchasedAnnouncesGiftDoneWithRecipientNameAndItem(t *testing.T) {
 	env := newConsumerEnv(t)
 
@@ -1403,8 +1414,10 @@ func TestGiftPurchasedAnnouncesGiftDoneWithRecipientNameAndItem(t *testing.T) {
 		},
 	})
 
-	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter}) {
-		t.Fatalf("announced %v, want exactly [%s]", got, cashpkt.CashShopOperationWriter)
+	// GIFT_SUCCESS first, then CASH_QUERY_RESULT: only this order resolves
+	// the client's gift batch to SP_561 rather than SP_562.
+	if got := env.announcedWriters(); !reflect.DeepEqual(got, []string{cashpkt.CashShopOperationWriter, cashpkt.CashQueryResultWriter}) {
+		t.Fatalf("announced %v, want exactly [%s, %s]", got, cashpkt.CashShopOperationWriter, cashpkt.CashQueryResultWriter)
 	}
 	body := env.decodeGiftDone(t)
 	if body.Mode() != env.modeFor(cashpkt.CashShopOperationGiftDone) {

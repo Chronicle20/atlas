@@ -1,0 +1,34 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-21T13:17:19Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	dispatched	33e4cc7	-	-	-	-
+2026-08-21T13:19:43Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	0ff80b1	-	-	-	-
+2026-08-21T13:19:49Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	dispatched	0ff80b1	-	-	-	-
+2026-08-21T13:19:52Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	dispatched	0ff80b1	-	-	-	-
+2026-08-21T13:20:52Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	0ff80b1	APPROVED	no	-	-
+2026-08-21T13:23:23Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE	08f8567	-	-	-	-
+2026-08-21T13:23:27Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	dispatched	08f8567	-	-	-	-
+2026-08-21T13:23:29Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	dispatched	08f8567	-	-	-	-
+2026-08-21T13:25:37Z	agent	Task 1	gate	-	-	-	-	-	ERROR	0ff80b1	-	-	-	-
+2026-08-21T13:26:39Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	08f8567	APPROVED	no	-	-
+2026-08-21T13:30:32Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	51c5242	-	-	-	-
+2026-08-21T13:30:34Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	dispatched	51c5242	-	-	-	-
+2026-08-21T13:30:37Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	dispatched	51c5242	-	-	-	-
+2026-08-21T13:33:56Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	51c5242	CHANGES_REQUIRED	yes	-	-
+2026-08-21T13:34:42Z	agent	Task 4	atlas-implementer	sonnet	-	-	-	-	DONE	9b9c0b9	-	-	-	-
+2026-08-21T13:34:44Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	dispatched	9b9c0b9	-	-	-	-
+2026-08-21T13:36:26Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	f5fa66c	-	-	-	-
+2026-08-21T13:36:33Z	agent	Task 3 fix1	atlas-reviewer	haiku	-	-	-	-	dispatched	f5fa66c	-	-	-	-
+2026-08-21T13:36:44Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	9b9c0b9	APPROVED	no	-	-
+2026-08-21T13:37:34Z	agent	Task 3 fix1	atlas-reviewer	haiku	-	-	-	-	DONE	f5fa66c	APPROVED	no	-	-
+2026-08-21T13:38:27Z	agent	Task 3	gate	-	-	-	-	-	FAIL	f5fa66c	-	-	-	-
+2026-08-21T13:43:19Z	agent	Task 3 fix2	gate	-	-	-	-	-	PASS	056e151	-	-	-	-
+2026-08-21T13:43:24Z	agent	Task 3 fix2	atlas-implementer	sonnet	-	-	-	-	DONE	056e151	-	-	-	-
+2026-08-21T13:44:34Z	agent	Task 3 fix2	atlas-reviewer	sonnet	-	-	-	-	DONE	056e151	APPROVED	no	-	-
+2026-08-21T13:44:38Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	60000
+2026-08-21T13:47:01Z	agent	Final review	plan-adherence-reviewer	sonnet	-	-	-	-	dispatched	20f4ed8	-	-	-	-
+2026-08-21T13:47:06Z	agent	Final review	backend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	20f4ed8	-	-	-	-
+2026-08-21T13:49:42Z	agent	Final review	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	20f4ed8	APPROVED	no	docs/tasks/task-259-mob-skill-aoe-targeting/audit.md	-
+2026-08-21T13:57:08Z	agent	Final review	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	20f4ed8	CHANGES_REQUIRED	yes	docs/tasks/task-259-mob-skill-aoe-targeting/backend-audit.md	-
+2026-08-21T13:57:08Z	agent	Audit fix	atlas-implementer	sonnet	-	-	-	-	dispatched	20f4ed8	-	-	-	-
+2026-08-21T14:02:47Z	agent	Audit fix	atlas-implementer	sonnet	-	-	-	-	DONE	1f90e30	-	-	-	-
+2026-08-21T14:02:48Z	agent	Audit fix	atlas-reviewer	sonnet	-	-	-	-	dispatched	1f90e30	-	-	-	-
+2026-08-21T14:04:39Z	agent	Audit fix	atlas-reviewer	sonnet	-	-	-	-	DONE	1f90e30	APPROVED	no	docs/tasks/task-259-mob-skill-aoe-targeting/review-audit-fix.md	-

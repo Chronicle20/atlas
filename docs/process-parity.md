@@ -259,6 +259,11 @@ than an intention.
    `docs/agent-dispatch.md` exemption does not apply — those repositories never
    used the `atlas-*` names, so they need no historical-cutoff note and only
    `docs/process-parity.md` is exempt there.
+
+   Verified 2026-08-26, before phases 2–4 began: a `git grep` and a full
+   working-tree `grep` for `atlas-(implementer|verifier|reviewer)` each returned
+   zero hits in all three repositories. The exemption is therefore genuinely
+   atlas-only, not an assumption.
 4. Each `.claude/settings.json` wires the same hook set at the same events,
    differing only where §4 says it may.
 5. Each `CLAUDE.md` carries the same eight section headings, with only the

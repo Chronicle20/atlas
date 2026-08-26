@@ -65,7 +65,7 @@ Use the Skill tool to invoke `superpowers:subagent-driven-development` (default)
 - Project conventions: `<worktree>/CLAUDE.md`
 - **Worktree absolute path** (`<worktree>`) for every dispatched implementer subagent. Subagent prompts MUST follow the cwd-discipline template from memory `feedback_subagent_worktree_cwd.md` — every Bash call prefixed with `cd <worktree> && ...`, post-commit branch verification, no destructive git ops, no `git add -A` / `git add .`.
 
-**Every implementer dispatch uses `subagent_type: atlas-implementer`** — not
+**Every implementer dispatch uses `subagent_type: task-implementer`** — not
 `general-purpose`. That agent carries the three Atlas contracts the generic
 implementer template lacks (tool-call cap with `PARTIAL` hand-back,
 verification scope, brief-first discovery). Its contracts override the
@@ -138,7 +138,7 @@ stays the single source of requirements, and a continuation dispatch inherits
 it. One inventory pass in the controller costs a fraction of the same
 discovery repeated inside a large implementer context.
 
-`atlas-implementer` reports `NEEDS_CONTEXT` on a brief with no `### Files`
+`task-implementer` reports `NEEDS_CONTEXT` on a brief with no `### Files`
 section rather than falling back to a repo sweep. If that comes back, this
 step was skipped — do it and re-dispatch.
 
@@ -159,7 +159,7 @@ establishing before its first edit.
 
 ### Step 4c — Verification runs outside the implementer
 
-`atlas-implementer` runs only module-local `go build ./... && go test ./...`.
+`task-implementer` runs only module-local `go build ./... && go test ./...`.
 It never runs `tools/verify.sh`, `tools/lint.sh`, `-race`, or docker bake —
 those in a 400k-token implementer context cost a large multiple of the same
 run in a clean 20k one, and their output is the biggest avoidable consumer of
@@ -200,8 +200,8 @@ After an implementer reports `DONE` / `DONE_WITH_CONCERNS`:
    then Step 4b's inventory for task N+1, then dispatch task N+1's implementer.
    The gate runs underneath all of it.
 
-   **The per-task review agent is `atlas-reviewer` (`model: sonnet`), never a
-   bare `general-purpose` dispatch.** `atlas-reviewer` carries both halves the
+   **The per-task review agent is `task-reviewer` (`model: sonnet`), never a
+   bare `general-purpose` dispatch.** `task-reviewer` carries both halves the
    contract needs — the durable artifact and the verdict-first return of
    [`docs/review-protocol.md`](../../docs/review-protocol.md).
 
@@ -245,13 +245,13 @@ The flagless `tools/verify.sh` still runs exactly once, at branch end, in
 `--quick --base` per task is the inner loop, not the gate — per CLAUDE.md only
 the flagless run counts as verified.
 
-You may dispatch `atlas-verifier` (`model: haiku`) instead of launching the
+You may dispatch `task-verifier` (`model: haiku`) instead of launching the
 gate yourself when you want the verdict summarized rather than reading the log.
 The concurrency rule is unchanged: dispatch it and move on, reconcile later.
 
 ### Step 4d — Handle `PARTIAL`
 
-`atlas-implementer` adds a fifth status to the plugin's four. `PARTIAL` means
+`task-implementer` adds a fifth status to the plugin's four. `PARTIAL` means
 the tool-call cap (120, warned at 100) was reached with work remaining: the
 implementer committed what works and handed back the remainder. **This is the
 designed outcome, not a failure — do not scold it, and do not re-dispatch the
@@ -264,11 +264,11 @@ On `PARTIAL`:
    or `-cont2` for a second — containing: the remaining work file by file
    (from the report), the `### Files` inventory for just those files, and
    the interfaces and decisions the first implementer recorded.
-3. Dispatch a **fresh** `atlas-implementer` with the continuation brief, the
+3. Dispatch a **fresh** `task-implementer` with the continuation brief, the
    same report file path (it is the persistent memory across the split), and
    one line of framing: "A prior implementer completed part of this task and
    hit the tool-call cap. Read the report file for what was done."
-4. The task review and `atlas-verifier` run once over the whole task range
+4. The task review and `task-verifier` run once over the whole task range
    (BASE from before the first dispatch through the final HEAD) — not once
    per segment.
 
@@ -364,12 +364,12 @@ unscoped run of the same agent. See the Sharding section in
 ## Important Rules
 
 - The worktree was created by `/spec-task`. NEVER create a new one here.
-- Implementers are `atlas-implementer`, never `general-purpose`.
-- Per-task reviewers are `atlas-reviewer`, never `general-purpose` (Step 4c).
+- Implementers are `task-implementer`, never `general-purpose`.
+- Per-task reviewers are `task-reviewer`, never `general-purpose` (Step 4c).
 - Never poll a backgrounded gate — `.claude/hooks/wait-loop-guard.sh` refuses it.
 - Never reverse-engineer the gate's selection from its source; ask
   `tools/verify.sh --facts` (Step 4c).
-- Never run `tools/verify.sh` inside an implementer — that is `atlas-verifier`'s job (Step 4c).
+- Never run `tools/verify.sh` inside an implementer — that is `task-verifier`'s job (Step 4c).
 - Never dispatch a brief with no `### Files` section (Step 4b).
 - Never carry the controller past ~150k tokens, or 4 completed plan tasks in one session — hand off to a fresh session via the ledger, unconditionally, regardless of tasks remaining (Step 4e).
 - Never start implementation outside the task worktree.

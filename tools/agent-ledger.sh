@@ -36,7 +36,7 @@
 #
 # Field flags (all optional except --unit and --agent-type):
 #   --unit <s>              plan task / review unit this agent served
-#   --agent-type <s>        atlas-implementer, atlas-reviewer, ...
+#   --agent-type <s>        task-implementer, task-reviewer, ...
 #   --model <s>             sonnet | haiku | opus
 #   --turns <n>             assistant turns
 #   --tool-calls <n>

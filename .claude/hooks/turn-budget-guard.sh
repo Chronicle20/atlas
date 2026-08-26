@@ -95,7 +95,7 @@ STOP NOW and hand back:
      (b) what remains, (c) the exact next step for the continuation agent.
 
 Writing your report file is still allowed. Reporting PARTIAL at the cap is the
-contracted, correct outcome — see .claude/agents/atlas-implementer.md — not a
+contracted, correct outcome — see .claude/agents/task-implementer.md — not a
 failure. The controller will dispatch a continuation with fresh context."
 
 jq -nc --arg r "$reason" '{

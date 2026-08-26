@@ -2,8 +2,10 @@ package reactor
 
 import (
 	"atlas-reactors/reactor/data"
+	"atlas-reactors/reactor/data/area"
 	"atlas-reactors/reactor/data/state"
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -385,7 +387,7 @@ func TestRegistry_TryClaimSpot(t *testing.T) {
 // newTestData returns a data.Model populated from the given state/timeout maps.
 // Uses data.Extract so the model mirrors what production code consumes from
 // atlas-data, including state.Model conversion.
-func newTestData(t *testing.T, stateInfo map[int8][]state.RestModel, timeoutInfo map[int8]int32, timeoutNextStateInfo map[int8]int8) data.Model {
+func newTestData(t *testing.T, stateInfo map[int8][]state.RestModel, timeoutInfo map[int8]int32, timeoutNextStateInfo map[int8]int8, touchAreaInfo map[int8]area.RestModel, activateByTouch bool) data.Model {
 	t.Helper()
 	if timeoutInfo == nil {
 		timeoutInfo = map[int8]int32{}
@@ -395,6 +397,8 @@ func newTestData(t *testing.T, stateInfo map[int8][]state.RestModel, timeoutInfo
 	}
 	m, err := data.Extract(data.RestModel{
 		Name:                 "test",
+		ActivateByTouch:      activateByTouch,
+		TouchAreaInfo:        touchAreaInfo,
 		StateInfo:            stateInfo,
 		TimeoutInfo:          timeoutInfo,
 		TimeoutNextStateInfo: timeoutNextStateInfo,
@@ -420,7 +424,7 @@ func TestHit_BreakableReactorDestroysOnTerminal(t *testing.T) {
 		map[int8][]state.RestModel{
 			0: {{Type: 0, NextState: 1, ActiveSkills: []uint32{}}},
 		},
-		nil, nil,
+		nil, nil, nil, false,
 	)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
@@ -461,7 +465,7 @@ func TestHit_ItemReactorPersistsAtTerminal(t *testing.T) {
 		map[int8][]state.RestModel{
 			0: {{Type: 100, NextState: 1, ActiveSkills: []uint32{}}},
 		},
-		nil, nil,
+		nil, nil, nil, false,
 	)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
@@ -498,7 +502,7 @@ func TestHit_SkillReactorPersistsAtTerminal(t *testing.T) {
 		map[int8][]state.RestModel{
 			0: {{Type: 5, NextState: 1, ActiveSkills: []uint32{}}},
 		},
-		nil, nil,
+		nil, nil, nil, false,
 	)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
@@ -578,6 +582,28 @@ func TestCooldown_ExpiresByTimestamp(t *testing.T) {
 	if GetRegistry().IsOnCooldown(te, mk, 9101000, 100, 200) {
 		t.Fatalf("expected cooldown expired after delay")
 	}
+}
+
+// TestRecordCooldown_ClampsAbsurdDelay verifies that a delay far in excess
+// of any legitimate reactor cooldown (e.g. the ~49.7 days produced by
+// wrapping a WZ reactorTime=-1 sentinel through uint32) is clamped to
+// maxCooldownDelay rather than locking the spot out for weeks.
+func TestRecordCooldown_ClampsAbsurdDelay(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant()
+	mk := NewMapKey(field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(610030400)).Build())
+
+	before := time.Now().UnixMilli()
+	GetRegistry().RecordCooldown(ten, mk, 6109014, -137, 495, 4294966296) // ~49.7 days, unclamped
+
+	v, err := GetRegistry().cooldowns.Get(context.Background(), ten, mk, posField(6109014, -137, 495))
+	assert.NoError(t, err)
+	expiry, err := strconv.ParseInt(v, 10, 64)
+	assert.NoError(t, err)
+
+	maxExpiry := before + int64(maxCooldownDelay) + 1000 // tolerate test execution slop
+	assert.LessOrEqual(t, expiry, maxExpiry, "expiry should be clamped to maxCooldownDelay, not the raw overflowed delay")
+	assert.True(t, GetRegistry().IsOnCooldown(ten, mk, 6109014, -137, 495))
 }
 
 // TestSpot_ClaimIsExclusivePerPosition verifies TryClaimSpot exclusivity and

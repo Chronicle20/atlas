@@ -67,6 +67,8 @@ func handleCommandFunc(l logrus.FieldLogger, db *gorm.DB) func(logrus.FieldLogge
 			handleHitCommand(l, ctx, db, command)
 		case CommandTypeTrigger:
 			handleTriggerCommand(l, ctx, db, command)
+		case CommandTypeTouch:
+			handleTouchCommand(l, ctx, db, command)
 		default:
 			l.Warnf("Unknown command type: %s", command.Type)
 		}
@@ -139,6 +141,43 @@ func handleTriggerCommand(l logrus.FieldLogger, ctx context.Context, db *gorm.DB
 	}
 
 	l.Debugf("Reactor trigger script [%s] result: matchedRule=%s, operations=%d",
+		command.Classification, result.MatchedRule, len(result.Operations))
+
+	// Execute operations if any
+	if len(result.Operations) > 0 {
+		executeOperations(l, ctx, command, characterId, result)
+	}
+}
+
+// handleTouchCommand handles a reactor touch command
+func handleTouchCommand(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, command commandEvent[interface{}]) {
+	l.Debugf("Received reactor touch command for reactor [%s] in map [%d]", command.Classification, command.MapId)
+
+	// Extract body data
+	body, ok := command.Body.(map[string]interface{})
+	if !ok {
+		l.Warnf("Invalid touch command body format")
+		return
+	}
+
+	characterId := uint32(0)
+	if v, ok := body["characterId"].(float64); ok {
+		characterId = uint32(v)
+	}
+
+	// Create processor with tenant context from Kafka message
+	processor := NewProcessor(l, ctx, db)
+
+	// Process the reactor touch script
+	result := processor.ProcessTouch(command.Classification, command.ReactorState, characterId)
+
+	if result.Error != nil {
+		l.WithError(result.Error).Errorf("Failed to process reactor touch script [%s] for character [%d]",
+			command.Classification, characterId)
+		return
+	}
+
+	l.Debugf("Reactor touch script [%s] result: matchedRule=%s, operations=%d",
 		command.Classification, result.MatchedRule, len(result.Operations))
 
 	// Execute operations if any

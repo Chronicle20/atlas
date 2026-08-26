@@ -349,7 +349,7 @@ func getReactors(exml xml.Node) []reactor.RestModel {
 		id := r.GetString("id", "")
 		x := int16(r.GetIntegerWithDefault("x", 0))
 		y := int16(r.GetIntegerWithDefault("y", 0))
-		reactorTime := uint32(r.GetIntegerWithDefault("reactorTime", 0))
+		reactorTime := r.GetIntegerWithDefault("reactorTime", 0)
 		name := r.GetString("name", "")
 		fd := byte(r.GetIntegerWithDefault("f", 0))
 
@@ -364,12 +364,29 @@ func getReactors(exml xml.Node) []reactor.RestModel {
 			Name:           name,
 			X:              x,
 			Y:              y,
-			Delay:          reactorTime * 1000,
+			Delay:          reactorDelayMillis(reactorTime),
 			Direction:      fd,
 		})
 		uid += 1
 	}
 	return results
+}
+
+// reactorDelayMillis converts a WZ "reactorTime" (seconds, signed) into the
+// millisecond delay stored on reactor.RestModel. WZ uses -1 (and, in
+// practice, any negative value) as the "does not auto-respawn" sentinel;
+// that must map to no cooldown (0), not wrap through uint32 into a ~49.7 day
+// delay. Large positive values are clamped so the multiply by 1000 cannot
+// overflow uint32 either.
+func reactorDelayMillis(reactorTime int32) uint32 {
+	if reactorTime <= 0 {
+		return 0
+	}
+	const maxSeconds = math.MaxUint32 / 1000
+	if reactorTime > maxSeconds {
+		reactorTime = maxSeconds
+	}
+	return uint32(reactorTime) * 1000
 }
 
 func getLife(t tenant.Model, exml xml.Node) ([]monster.RestModel, []npc.RestModel) {

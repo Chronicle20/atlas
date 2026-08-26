@@ -5,6 +5,7 @@ import (
 	npc2 "atlas-data/npc"
 	"atlas-data/xml"
 	"context"
+	"math"
 	"strconv"
 	"testing"
 
@@ -563,6 +564,76 @@ func TestReaderWithClock(t *testing.T) {
 	}
 	if len(rm.NPCs) != 2 {
 		t.Fatal("len(rm.NPCs) != 2")
+	}
+}
+
+const reactorTestXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="610030400.img">
+  <imgdir name="reactor">
+    <imgdir name="0"><string name="id" value="6109014"/><int name="x" value="-137"/><int name="y" value="495"/><int name="reactorTime" value="-1"/><string name="name" value=""/><int name="f" value="0"/></imgdir>
+    <imgdir name="1"><string name="id" value="6109027"/><int name="x" value="493"/><int name="y" value="437"/><int name="reactorTime" value="30"/><string name="name" value=""/><int name="f" value="1"/></imgdir>
+  </imgdir>
+</imgdir>
+`
+
+func TestGetReactorsNegativeReactorTimeYieldsNoDelay(t *testing.T) {
+	n, err := xml.FromByteArrayProvider([]byte(reactorTestXML))()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rs := getReactors(n)
+	if len(rs) != 2 {
+		t.Fatalf("len(rs) != 2, got %d", len(rs))
+	}
+
+	if rs[0].Classification != 6109014 {
+		t.Fatalf("rs[0].Classification != 6109014, got %d", rs[0].Classification)
+	}
+	if rs[0].Delay != 0 {
+		t.Fatalf("rs[0].Delay for reactorTime=-1 != 0, got %d", rs[0].Delay)
+	}
+}
+
+func TestGetReactorsPositiveReactorTimeYieldsDelayInMillis(t *testing.T) {
+	n, err := xml.FromByteArrayProvider([]byte(reactorTestXML))()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rs := getReactors(n)
+	if len(rs) != 2 {
+		t.Fatalf("len(rs) != 2, got %d", len(rs))
+	}
+
+	if rs[1].Classification != 6109027 {
+		t.Fatalf("rs[1].Classification != 6109027, got %d", rs[1].Classification)
+	}
+	if rs[1].Delay != 30000 {
+		t.Fatalf("rs[1].Delay for reactorTime=30 != 30000, got %d", rs[1].Delay)
+	}
+}
+
+func TestReactorDelayMillis(t *testing.T) {
+	tests := []struct {
+		name        string
+		reactorTime int32
+		want        uint32
+	}{
+		{"sentinel does not auto-respawn", -1, 0},
+		{"arbitrary negative", -5000, 0},
+		{"zero", 0, 0},
+		{"normal positive", 30, 30000},
+		{"large positive clamps instead of overflowing", math.MaxInt32, math.MaxUint32 / 1000 * 1000},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := reactorDelayMillis(tc.reactorTime); got != tc.want {
+				t.Fatalf("reactorDelayMillis(%d) = %d, want %d", tc.reactorTime, got, tc.want)
+			}
+		})
 	}
 }
 

@@ -19,6 +19,7 @@ type ProcessorMock struct {
 	DestroyInTenantFunc   func(envContext func(context.Context) context.Context, t tenant.Model) model.Operator[[]reactor.Model]
 	DestroyFunc           func() model.Operator[reactor.Model]
 	HitFunc               func(reactorId uint32, characterId uint32, skillId uint32) error
+	TouchFunc             func(reactorId uint32, characterId uint32, touching bool) error
 	TriggerFunc           func(r reactor.Model, characterId uint32)
 	TriggerAndDestroyFunc func(r reactor.Model, characterId uint32) error
 }
@@ -87,6 +88,13 @@ func (m *ProcessorMock) Destroy() model.Operator[reactor.Model] {
 func (m *ProcessorMock) Hit(reactorId uint32, characterId uint32, skillId uint32) error {
 	if m.HitFunc != nil {
 		return m.HitFunc(reactorId, characterId, skillId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) Touch(reactorId uint32, characterId uint32, touching bool) error {
+	if m.TouchFunc != nil {
+		return m.TouchFunc(reactorId, characterId, touching)
 	}
 	return nil
 }

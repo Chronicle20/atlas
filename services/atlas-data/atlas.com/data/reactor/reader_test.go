@@ -1,6 +1,7 @@
 package reactor
 
 import (
+	"atlas-data/point"
 	"atlas-data/xml"
 	"testing"
 
@@ -521,5 +522,116 @@ func TestReaderExtractsTimeoutNextState(t *testing.T) {
 	}
 	if _, present := rm.TimeoutNextStateInfo[1]; present {
 		t.Fatalf("TimeoutNextStateInfo[1] should be absent (state 1 has no type-101 event); got %+v", rm.TimeoutNextStateInfo[1])
+	}
+}
+
+// touchTestXML is reactor 2406000 verbatim from Reactor.wz, trimmed to the
+// state-level canvas name="0" nodes and event subtrees that this derivation
+// needs (the "hit" subdirectories are irrelevant here and only make the
+// fixture unreadable).
+const touchTestXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="2406000.img">
+  <imgdir name="info">
+    <int name="activateByTouch" value="1"/>
+  </imgdir>
+  <imgdir name="0">
+    <canvas name="0" width="115" height="45">
+      <vector name="origin" x="53" y="-24"/>
+    </canvas>
+    <imgdir name="event">
+      <imgdir name="0">
+        <int name="type" value="0"/>
+        <int name="state" value="1"/>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+  <imgdir name="1">
+    <canvas name="0" width="122" height="137">
+      <vector name="origin" x="56" y="68"/>
+    </canvas>
+    <imgdir name="event">
+      <imgdir name="0">
+        <int name="type" value="0"/>
+        <int name="state" value="2"/>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+  <imgdir name="2">
+    <canvas name="0" width="1" height="1">
+      <vector name="origin" x="0" y="0"/>
+    </canvas>
+  </imgdir>
+</imgdir>
+`
+
+var touchNodeProvider = func(path string, id uint32) model.Provider[xml.Node] {
+	return xml.FromByteArrayProvider([]byte(touchTestXML))
+}
+
+func TestReaderActivateByTouch(t *testing.T) {
+	tests := []struct {
+		name     string
+		provider func(path string, id uint32) model.Provider[xml.Node]
+		want     bool
+	}{
+		{name: "flag set", provider: touchNodeProvider, want: true},
+		{name: "flag absent", provider: fixedNodeProvider, want: false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			l, _ := test.NewNullLogger()
+			rm, err := Read(l)("", 0, tc.provider)()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rm.ActivateByTouch != tc.want {
+				t.Fatalf("ActivateByTouch = %v, want %v", rm.ActivateByTouch, tc.want)
+			}
+		})
+	}
+}
+
+func TestReaderTouchAreaInfo(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	rm, err := Read(l)("", 0, touchNodeProvider)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rm.TouchAreaInfo) != 3 {
+		t.Fatalf("len(rm.TouchAreaInfo) != 3, got %d", len(rm.TouchAreaInfo))
+	}
+
+	tests := []struct {
+		state  int8
+		wantTL point.RestModel
+		wantBR point.RestModel
+	}{
+		{state: 0, wantTL: point.RestModel{X: -53, Y: 24}, wantBR: point.RestModel{X: 62, Y: 69}},
+		{state: 1, wantTL: point.RestModel{X: -56, Y: -68}, wantBR: point.RestModel{X: 66, Y: 69}},
+		{state: 2, wantTL: point.RestModel{X: 0, Y: 0}, wantBR: point.RestModel{X: 1, Y: 1}},
+	}
+	for _, tc := range tests {
+		area, ok := rm.TouchAreaInfo[tc.state]
+		if !ok {
+			t.Fatalf("TouchAreaInfo[%d] missing", tc.state)
+		}
+		if area.TL != tc.wantTL {
+			t.Fatalf("TouchAreaInfo[%d].TL = %+v, want %+v", tc.state, area.TL, tc.wantTL)
+		}
+		if area.BR != tc.wantBR {
+			t.Fatalf("TouchAreaInfo[%d].BR = %+v, want %+v", tc.state, area.BR, tc.wantBR)
+		}
+	}
+}
+
+func TestReaderTouchAreaInfoNoCanvasContributesNoEntry(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	rm, err := Read(l)("", 0, timeOutCasingNodeProvider)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rm.TouchAreaInfo) != 0 {
+		t.Fatalf("len(rm.TouchAreaInfo) != 0 (neither state has a canvas), got %d: %+v", len(rm.TouchAreaInfo), rm.TouchAreaInfo)
 	}
 }

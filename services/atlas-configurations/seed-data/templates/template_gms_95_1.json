@@ -2244,6 +2244,15 @@
         ]
       },
       {
+        "opCode": "0xFA",
+        "validator": "LoggedInValidator",
+        "handler": "TouchReactorHandle",
+        "fname": "CReactorPool::FindTouchReactorAroundLocalUser",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xFF",
         "validator": "LoggedInValidator",
         "handler": "Snowball",

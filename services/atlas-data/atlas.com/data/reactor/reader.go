@@ -45,7 +45,9 @@ func Read(l logrus.FieldLogger) func(path string, id uint32, np xml.IdProvider) 
 		}
 		if info == nil {
 			m := RestModel{
-				Id: reactorId,
+				Id:              reactorId,
+				ActivateByTouch: false,
+				TouchAreaInfo:   map[int8]AreaRestModel{},
 				StateInfo: map[int8][]ReactorStateRestModel{
 					0: {{Type: 999, ReactorItem: nil, ActiveSkills: nil, NextState: 0}},
 				},
@@ -82,6 +84,8 @@ func Read(l logrus.FieldLogger) func(path string, id uint32, np xml.IdProvider) 
 		m := RestModel{
 			Id:                   reactorId,
 			Name:                 name,
+			ActivateByTouch:      loadArea,
+			TouchAreaInfo:        map[int8]AreaRestModel{},
 			StateInfo:            map[int8][]ReactorStateRestModel{},
 			TimeoutInfo:          map[int8]int32{},
 			TimeoutNextStateInfo: map[int8]int8{},
@@ -91,6 +95,25 @@ func Read(l logrus.FieldLogger) func(path string, id uint32, np xml.IdProvider) 
 		for rid != nil {
 			areaSet := false
 			sdl := make([]ReactorStateRestModel, 0)
+			for _, c := range rid.CanvasNodes {
+				if c.Name != "0" {
+					continue
+				}
+				w, err := strconv.Atoi(c.Width)
+				if err != nil {
+					break
+				}
+				h, err := strconv.Atoi(c.Height)
+				if err != nil {
+					break
+				}
+				ox, oy := c.GetPoint("origin", 0, 0)
+				m.TouchAreaInfo[i] = AreaRestModel{
+					TL: point.RestModel{X: int16(-ox), Y: int16(-oy)},
+					BR: point.RestModel{X: int16(int32(w) - ox), Y: int16(int32(h) - oy)},
+				}
+				break
+			}
 			ed, _ := rid.ChildByName("event")
 			if ed != nil {
 				timeout := ed.GetIntegerWithDefault("timeOut", -1)

@@ -1,7 +1,7 @@
 {
   "$schema": "./services.schema.json",
   "description": "Atlas monorepo service and library configuration for CI/CD",
-  "go_version": "1.25.5",
+  "go_version": "1.27.0",
   "node_version": "22",
   "docker_registry": "ghcr.io/chronicle20",
   "services": [

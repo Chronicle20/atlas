@@ -25,8 +25,8 @@ ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 
 case "$fp" in
     *.go)
-        # shellcheck source=../../tools/lint.versions
-        source "$ROOT/tools/lint.versions" 2>/dev/null || exit 0
+        # shellcheck source=../../tools/toolchain.versions
+        source "$ROOT/tools/toolchain.versions" 2>/dev/null || exit 0
         GOLANGCI="$ROOT/.cache/tools/bin/golangci-lint-${GOLANGCI_LINT_VERSION:-}"
         [ -x "$GOLANGCI" ] || exit 0
         # Format from the file's own module dir so gofumpt sees its go.mod.

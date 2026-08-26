@@ -434,6 +434,18 @@ else
     skip "service name guard (no deploy/k8s manifest changed)"
 fi
 
+# task-261: the repo pins its Go/Alpine/golangci-lint versions in ~110 places
+# that no format can cross-reference (go.mod and go.work directives, Dockerfile
+# ARG defaults, bake variables, workflow env). Before this guard, a partial
+# Renovate bump left the tree building against three different Go versions at
+# once with nothing failing. tools/toolchain.versions is the source of truth;
+# this asserts every pin site agrees with it.
+if touched '(^|/)go\.mod$|^go\.work$|^Dockerfile$|/Dockerfile$|^docker-bake\.hcl$|^\.github/|^tools/toolchain\.versions$|^tools/toolchain-pin-guard\.sh$|^README\.md$'; then
+    step "toolchain pin guard" ./tools/toolchain-pin-guard.sh
+else
+    skip "toolchain pin guard (no pin site changed)"
+fi
+
 if touched '^services/atlas-configurations/seed-data/templates/'; then
     step "template opcode order guard"       ./tools/template-opcode-order-guard.sh
     step "template duplicate binding guard"  ./tools/template-duplicate-binding-guard.sh

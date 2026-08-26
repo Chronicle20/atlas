@@ -185,6 +185,7 @@ func NewInteractionMiniGameSkip(mode byte, who byte) InteractionMiniGameSkip {
 }
 func (m InteractionMiniGameSkip) Operation() string { return CharacterInteractionWriter }
 func (m InteractionMiniGameSkip) String() string    { return fmt.Sprintf("minigame skip who [%d]", m.who) }
+
 func (m InteractionMiniGameSkip) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
@@ -409,7 +410,9 @@ type InteractionMiniGameCardSelectSecond struct {
 func NewInteractionMiniGameCardSelectSecond(mode byte, slot byte, firstSlot byte, resultType byte) InteractionMiniGameCardSelectSecond {
 	return InteractionMiniGameCardSelectSecond{mode: mode, slot: slot, firstSlot: firstSlot, resultType: resultType}
 }
+
 func (m InteractionMiniGameCardSelectSecond) Operation() string { return CharacterInteractionWriter }
+
 func (m InteractionMiniGameCardSelectSecond) String() string {
 	return fmt.Sprintf("minigame card select second slot [%d] firstSlot [%d] resultType [%d]", m.slot, m.firstSlot, m.resultType)
 }

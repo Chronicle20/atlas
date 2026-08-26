@@ -67,6 +67,7 @@ func (m CharacterViewAllCharacters) Code() byte                             { re
 func (m CharacterViewAllCharacters) WorldId() world.Id                      { return m.worldId }
 func (m CharacterViewAllCharacters) Characters() []model.CharacterListEntry { return m.characters }
 func (m CharacterViewAllCharacters) Operation() string                      { return CharacterViewAllWriter }
+
 func (m CharacterViewAllCharacters) String() string {
 	return fmt.Sprintf("code [%d], worldId [%d], characters [%d]", m.code, m.worldId, len(m.characters))
 }

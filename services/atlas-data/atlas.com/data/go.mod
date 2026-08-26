@@ -1,6 +1,6 @@
 module atlas-data
 
-go 1.26.0
+go 1.27.0
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0

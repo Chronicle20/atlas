@@ -1,6 +1,6 @@
 module github.com/Chronicle20/atlas/libs/atlas-wz
 
-go 1.25.5
+go 1.27.0
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0-20260522184656-55cd21714da6

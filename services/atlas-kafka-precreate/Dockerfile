@@ -6,8 +6,8 @@
 #
 # The runtime stage is scratch on purpose (NFR-9): no shell, no Kafka CLI,
 # no JRE. The only thing copied in beside the binary is the CA bundle.
-ARG GO_VERSION=1.26.0
-ARG ALPINE_VERSION=3.23
+ARG GO_VERSION=1.27.0
+ARG ALPINE_VERSION=3.24
 
 FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build
 WORKDIR /src

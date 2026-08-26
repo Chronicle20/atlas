@@ -252,6 +252,7 @@ func NewMemberExpelledErrorNotInGuild(mode byte) MemberExpelledErrorNotInGuild {
 }
 func (m MemberExpelledErrorNotInGuild) Operation() string { return GuildOperationWriter }
 func (m MemberExpelledErrorNotInGuild) String() string    { return fmt.Sprintf("mode [%d]", m.mode) }
+
 func (m MemberExpelledErrorNotInGuild) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }

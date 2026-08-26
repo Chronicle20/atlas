@@ -1,6 +1,6 @@
 module github.com/Chronicle20/atlas/libs/atlas-script-core
 
-go 1.24.4
+go 1.27.0
 
 require github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0
 

@@ -95,6 +95,18 @@
       "matchManagers": ["npm"],
       "matchUpdateTypes": ["major"],
       "automerge": false
+    },
+    {
+      "description": "task-261: Go toolchain bumps never auto-merge. The `go` directive is duplicated across ~110 pin sites (go.mod x103, go.work, Dockerfile ARGs, bake vars, CI env) that Renovate's gomod manager cannot all see, so a merged bump lands PARTIALLY and the tree builds against two Go versions at once — that is how the 1.24/1.25/1.26 spread this task collapses came to exist. MUST stay last in packageRules: the unfiltered gomod patch/minor rule above sets automerge:true and later rules win.",
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["go"],
+      "automerge": false
+    },
+    {
+      "description": "task-261: golang base-image bumps never auto-merge — same partial-landing reason as the `go` rule above. tools/toolchain-pin-guard.sh must pass before a Go/Alpine bump merges, and it cannot pass until every pin site moves together.",
+      "matchManagers": ["dockerfile"],
+      "matchPackageNames": ["golang"],
+      "automerge": false
     }
   ]
 }

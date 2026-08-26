@@ -58,8 +58,10 @@ func (e EquipableReferenceData) HasSpikes() bool          { return af.HasFlag(e.
 // is equip-class BY TYPE, so the bit is fixed rather than resolved. The setter
 // (SetKarmaUsed) already writes FlagKarmaEquip; before task-223 this getter read
 // FlagKarmaUse (0x02, the BUNDLE bit) and the pair never round-tripped.
-func (e EquipableReferenceData) IsKarmaUsed() bool         { return af.HasFlag(e.flag, af.FlagKarmaEquip) }
-func (e EquipableReferenceData) IsCold() bool              { return af.HasFlag(e.flag, af.FlagCold) }
+func (e EquipableReferenceData) IsKarmaUsed() bool { return af.HasFlag(e.flag, af.FlagKarmaEquip) }
+
+func (e EquipableReferenceData) IsCold() bool { return af.HasFlag(e.flag, af.FlagCold) }
+
 func (e EquipableReferenceData) CanBeTraded() bool         { return !af.HasFlag(e.flag, af.FlagUntradeable) }
 func (e EquipableReferenceData) GetLevelType() byte        { return e.levelType }
 func (e EquipableReferenceData) GetLevel() byte            { return e.level }
@@ -376,7 +378,8 @@ func (e CashEquipableReferenceData) GetJump() uint16          { return e.jump }
 func (e CashEquipableReferenceData) GetSlots() uint16         { return e.slots }
 func (e CashEquipableReferenceData) GetOwnerId() uint32       { return e.ownerId }
 func (e CashEquipableReferenceData) IsLocked() bool           { return af.HasFlag(e.flag, af.FlagLock) }
-func (e CashEquipableReferenceData) HasSpikes() bool          { return af.HasFlag(e.flag, af.FlagSpikes) }
+
+func (e CashEquipableReferenceData) HasSpikes() bool { return af.HasFlag(e.flag, af.FlagSpikes) }
 
 // See EquipableReferenceData.IsKarmaUsed: equip-class by type, so the bit is fixed.
 func (e CashEquipableReferenceData) IsKarmaUsed() bool { return af.HasFlag(e.flag, af.FlagKarmaEquip) }

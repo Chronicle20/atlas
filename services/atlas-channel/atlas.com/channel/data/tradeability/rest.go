@@ -38,8 +38,10 @@ type EquipmentRestModel struct {
 	Only           bool    `json:"only"`
 }
 
-func (r EquipmentRestModel) GetName() string                                   { return "statistics" }
-func (r EquipmentRestModel) GetID() string                                     { return strconv.FormatUint(uint64(r.Id), 10) }
+func (r EquipmentRestModel) GetName() string { return "statistics" }
+
+func (r EquipmentRestModel) GetID() string { return strconv.FormatUint(uint64(r.Id), 10) }
+
 func (r *EquipmentRestModel) SetID(s string) error                             { return setItemId(&r.Id, s) }
 func (r *EquipmentRestModel) SetToOneReferenceID(_ string, _ string) error     { return nil }
 func (r *EquipmentRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
@@ -54,8 +56,10 @@ type ConsumableRestModel struct {
 	Only           bool    `json:"only"`
 }
 
-func (r ConsumableRestModel) GetName() string                                   { return "consumables" }
-func (r ConsumableRestModel) GetID() string                                     { return strconv.FormatUint(uint64(r.Id), 10) }
+func (r ConsumableRestModel) GetName() string { return "consumables" }
+
+func (r ConsumableRestModel) GetID() string { return strconv.FormatUint(uint64(r.Id), 10) }
+
 func (r *ConsumableRestModel) SetID(s string) error                             { return setItemId(&r.Id, s) }
 func (r *ConsumableRestModel) SetToOneReferenceID(_ string, _ string) error     { return nil }
 func (r *ConsumableRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
@@ -70,8 +74,9 @@ type SetupRestModel struct {
 	Only           bool    `json:"only"`
 }
 
-func (r SetupRestModel) GetName() string                                   { return "setups" }
-func (r SetupRestModel) GetID() string                                     { return strconv.FormatUint(uint64(r.Id), 10) }
+func (r SetupRestModel) GetName() string { return "setups" }
+func (r SetupRestModel) GetID() string   { return strconv.FormatUint(uint64(r.Id), 10) }
+
 func (r *SetupRestModel) SetID(s string) error                             { return setItemId(&r.Id, s) }
 func (r *SetupRestModel) SetToOneReferenceID(_ string, _ string) error     { return nil }
 func (r *SetupRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
@@ -84,8 +89,9 @@ type EtcRestModel struct {
 	Only           bool    `json:"only"`
 }
 
-func (r EtcRestModel) GetName() string                                   { return "etcs" }
-func (r EtcRestModel) GetID() string                                     { return strconv.FormatUint(uint64(r.Id), 10) }
+func (r EtcRestModel) GetName() string { return "etcs" }
+func (r EtcRestModel) GetID() string   { return strconv.FormatUint(uint64(r.Id), 10) }
+
 func (r *EtcRestModel) SetID(s string) error                             { return setItemId(&r.Id, s) }
 func (r *EtcRestModel) SetToOneReferenceID(_ string, _ string) error     { return nil }
 func (r *EtcRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
@@ -98,8 +104,9 @@ type CashRestModel struct {
 	Only           bool    `json:"only"`
 }
 
-func (r CashRestModel) GetName() string                                   { return "cash_items" }
-func (r CashRestModel) GetID() string                                     { return strconv.FormatUint(uint64(r.Id), 10) }
+func (r CashRestModel) GetName() string { return "cash_items" }
+func (r CashRestModel) GetID() string   { return strconv.FormatUint(uint64(r.Id), 10) }
+
 func (r *CashRestModel) SetID(s string) error                             { return setItemId(&r.Id, s) }
 func (r *CashRestModel) SetToOneReferenceID(_ string, _ string) error     { return nil }
 func (r *CashRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }

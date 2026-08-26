@@ -5,6 +5,14 @@ handoff — for every dispatch in every session, including ad-hoc ones outside
 the four-phase workflow. `docs/superpowers-integration.md` owns *which*
 command, agent, or skill to reach for in a given situation.
 
+**Historical-name cutoff.** Task-266 renamed `atlas-implementer`,
+`atlas-verifier`, and `atlas-reviewer` to the generic `task-implementer`,
+`task-verifier`, and `task-reviewer` for cross-repository process parity
+(`docs/process-parity.md` §5.1). Artifacts under `docs/tasks/` from before that
+task use the old `atlas-*` names because those dispatches actually happened
+under them; they are historical records, not rewritten to assert a name that
+wasn't in use at the time.
+
 ---
 
 ## Model selection

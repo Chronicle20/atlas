@@ -246,7 +246,9 @@ than an intention.
    `tools/task-brief.sh`, and the flagless `tools/verify.sh` exits 0 in each.
 3. Each repository defines `task-implementer`, `task-verifier`, and
    `task-reviewer`, and no reference to `atlas-implementer`, `atlas-verifier`, or
-   `atlas-reviewer` remains anywhere.
+   `atlas-reviewer` remains on the live surface — `.claude/`, `CLAUDE.md`,
+   top-level `docs/*.md`, and `tools/`. Historical records under `docs/tasks/`
+   are exempt (see `docs/agent-dispatch.md` for the cutover).
 4. Each `.claude/settings.json` wires the same hook set at the same events,
    differing only where §4 says it may.
 5. Each `CLAUDE.md` carries the same eight section headings, with only the

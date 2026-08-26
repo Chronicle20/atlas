@@ -82,3 +82,4 @@ Load the owning document before acting in its area; it holds the mechanics this 
 | Adding a new service | [docs/adding-a-new-service.md](docs/adding-a-new-service.md) |
 | A wedged deploy or crash-loop | [docs/observability.md](docs/observability.md) |
 | Writing or changing a Go service | `backend-dev-guidelines` skill, `backend-guidelines-reviewer` agent |
+| A cross-repository process-parity question (`atlas`, `home-hub`, `Harbormaster`, `MyFleet`) | [docs/process-parity.md](docs/process-parity.md) |

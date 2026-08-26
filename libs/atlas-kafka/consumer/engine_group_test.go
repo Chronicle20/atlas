@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -459,6 +460,169 @@ func TestGateJoinsImmediatelyOnIndeterminateLookup(t *testing.T) {
 	}
 	if got := c.Snapshot().TopicMissingObservations; got != 0 {
 		t.Fatalf("TopicMissingObservations = %d after an indeterminate lookup, want 0", got)
+	}
+
+	cancel()
+	wg.Wait()
+}
+
+// TestEmptyAssignmentWarnsWhenTopicMissing is FR-2.3: an empty assignment
+// caused by a MISSING topic is not healthy-idle and must say so. It also pins
+// design §3.3's "return, don't continue": errTopicMissing is a deliberate
+// withdrawal, so it must not reach recordError or the Error log.
+func TestEmptyAssignmentWarnsWhenTopicMissing(t *testing.T) {
+	l, hook := silentLogger()
+
+	gen := newFakeGeneration(4, map[string][]kafka.PartitionAssignment{})
+	grp := newFakeGroup(gen)
+	counter := newFakePartitionCounter(counterResult{1, nil}, counterResult{0, ErrTopicNotFound})
+	c := newGroupConsumer("EVENT_TOPIC_TEST", grp)
+	c.pcp = counter.produce
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
+
+	waitFor(t, func() bool {
+		return hasLogContaining(hook, "because the topic does not exist or has no partitions")
+	}, "the empty assignment was never classified as a missing topic")
+
+	e := logEntryContaining(hook, "because the topic does not exist or has no partitions")
+	if e == nil || e.Level != logrus.WarnLevel {
+		t.Fatalf("missing-topic classification logged at %v, want WarnLevel", e)
+	}
+	if !strings.Contains(e.Message, "leaving the group until it appears") {
+		t.Fatalf("warn does not say the consumer is leaving the group: %q", e.Message)
+	}
+	if !strings.Contains(e.Message, "EVENT_TOPIC_TEST") || !strings.Contains(e.Message, "Test Service") {
+		t.Fatalf("warn must name the topic and the group: %q", e.Message)
+	}
+	if hasLogContaining(hook, "exited; rejoining after backoff") {
+		t.Fatal("errTopicMissing was treated as an error; it is a deliberate withdrawal")
+	}
+	if got := c.Snapshot().LastError; got != "" {
+		t.Fatalf("LastError = %q after a deliberate withdrawal, want empty", got)
+	}
+	if got := c.Snapshot().TopicMissingObservations; got < 1 {
+		t.Fatalf("TopicMissingObservations = %d, want >= 1", got)
+	}
+
+	cancel()
+	wg.Wait()
+}
+
+// TestEmptyAssignmentStaysHealthyIdleWhenPartitionsExist is FR-2.4 preserved
+// exactly: with 237 single-partition topics and replicas: 2, one member of
+// every group holds nothing permanently. It must stay debug, must not tick,
+// must not recreate, and must PARK in Next rather than rejoin.
+func TestEmptyAssignmentStaysHealthyIdleWhenPartitionsExist(t *testing.T) {
+	l, hook := silentLogger()
+	l.SetLevel(logrus.DebugLevel)
+
+	gen := newFakeGeneration(4, map[string][]kafka.PartitionAssignment{})
+	grp := newFakeGroup(gen)
+	counter := newFakePartitionCounter(counterResult{1, nil})
+	c := newGroupConsumer("EVENT_TOPIC_TEST", grp)
+	c.pcp = counter.produce
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
+
+	waitFor(t, func() bool { return c.Snapshot().GenerationID == 4 }, "generation was never observed")
+	waitFor(t, func() bool {
+		return hasLogContaining(hook, "holds no partition assignment in generation 4; healthy-idle.")
+	}, "the held-elsewhere path lost its healthy-idle debug line")
+
+	time.Sleep(300 * time.Millisecond)
+
+	s := c.Snapshot()
+	if s.RecreateCount != 0 {
+		t.Fatalf("RecreateCount = %d while healthy-idle, want 0", s.RecreateCount)
+	}
+	if s.IdleTicks != 0 {
+		t.Fatalf("IdleTicks = %d while healthy-idle, want 0", s.IdleTicks)
+	}
+	if s.TopicMissingObservations != 0 {
+		t.Fatalf("TopicMissingObservations = %d while the topic exists, want 0", s.TopicMissingObservations)
+	}
+	if hasLogContaining(hook, "because the topic does not exist or has no partitions") {
+		t.Fatal("a held-elsewhere assignment was misreported as a missing topic")
+	}
+	if n := grp.nextCalls(); n > 2 {
+		t.Fatalf("Next called %d times while parked; the healthy-idle branch rejoined instead of parking", n)
+	}
+
+	cancel()
+	wg.Wait()
+}
+
+// TestEmptyAssignmentIndeterminateLookupIsHealthyIdle is FR-2.5 at the
+// classification: a failed lookup falls through to today's behaviour, and in
+// particular does NOT leave the group.
+func TestEmptyAssignmentIndeterminateLookupIsHealthyIdle(t *testing.T) {
+	l, hook := silentLogger()
+	l.SetLevel(logrus.DebugLevel)
+
+	gen := newFakeGeneration(4, map[string][]kafka.PartitionAssignment{})
+	grp := newFakeGroup(gen)
+	counter := newFakePartitionCounter(counterResult{0, context.DeadlineExceeded})
+	c := newGroupConsumer("EVENT_TOPIC_TEST", grp)
+	c.pcp = counter.produce
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
+
+	waitFor(t, func() bool {
+		return hasLogContaining(hook, "holds no partition assignment in generation 4; healthy-idle.")
+	}, "an indeterminate lookup did not fall through to healthy-idle")
+
+	time.Sleep(300 * time.Millisecond)
+
+	if hasLogContaining(hook, "because the topic does not exist or has no partitions") {
+		t.Fatal("an indeterminate lookup was reported as a missing topic")
+	}
+	if got := c.Snapshot().TopicMissingObservations; got != 0 {
+		t.Fatalf("TopicMissingObservations = %d after an indeterminate lookup, want 0", got)
+	}
+	if n := grp.nextCalls(); n > 2 {
+		t.Fatalf("Next called %d times; an indeterminate lookup must park, not leave the group", n)
+	}
+
+	cancel()
+	wg.Wait()
+}
+
+// TestSteadyPartitionCountCausesNoRejoin: a steady partition count adds no
+// rejoin of OUR making. kafka-go's own partition watcher is upstream-owned and
+// broker-bound, so it is not under test here; what this pins is that the
+// classification's per-generation metadata read never turns into churn.
+func TestSteadyPartitionCountCausesNoRejoin(t *testing.T) {
+	l, _ := silentLogger()
+
+	rd := &scriptedPartitionReader{msgs: []kafka.Message{{Offset: 0, Value: []byte("m")}}}
+	gen := newFakeGeneration(6, map[string][]kafka.PartitionAssignment{
+		"EVENT_TOPIC_TEST": {{ID: 0, Offset: kafka.FirstOffset}},
+	})
+	grp := newFakeGroup(gen)
+	counter := newFakePartitionCounter(counterResult{1, nil})
+	c := newGroupConsumer("EVENT_TOPIC_TEST", grp)
+	c.pcp = counter.produce
+	c.prp = func(kafka.ReaderConfig, int64) KafkaReader { return rd }
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
+
+	waitFor(t, func() bool { return len(gen.commits()) > 0 }, "assigned partition never delivered")
+	time.Sleep(300 * time.Millisecond)
+
+	if got := c.Snapshot().RecreateCount; got != 0 {
+		t.Fatalf("RecreateCount = %d on a steady partition count, want 0", got)
+	}
+	if n := grp.nextCalls(); n > 2 {
+		t.Fatalf("Next called %d times on a steady partition count; the engine is rejoining", n)
 	}
 
 	cancel()

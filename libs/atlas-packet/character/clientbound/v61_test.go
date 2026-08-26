@@ -481,9 +481,9 @@ func TestCharacterDamageByteOutputV61MobAttackIndex(t *testing.T) {
 		0x01,                   // attackIdx 1 (mob attack index, not -1/0)
 		0xf4, 0x01, 0x00, 0x00, // damage 500 (Decode4)
 		0x04, 0x87, 0x01, 0x00, // monsterTemplateId 100100 (Decode4)
-		0x01, // left (Decode1)
-		0x00, // stance (Decode1)
-		0x00, // stanceRelated (Decode1)
+		0x01,                   // left (Decode1)
+		0x00,                   // stance (Decode1)
+		0x00,                   // stanceRelated (Decode1)
 		0xf4, 0x01, 0x00, 0x00, // damage repeated (Decode4)
 	}
 	if !bytes.Equal(got, want) {

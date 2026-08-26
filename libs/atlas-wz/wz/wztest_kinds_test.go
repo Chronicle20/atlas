@@ -1,6 +1,7 @@
 package wz
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -98,12 +99,12 @@ func TestBuilderEmitsAllPropertyKinds(t *testing.T) {
 	}
 }
 
-// TestBuilderFloatZeroWithoutMarker proves the writer's fixed 0x80 marker
-// byte round-trips a zero float correctly (the marker only matters for
-// distinguishing "reads as zero" from "reads the real value").
+// TestBuilderFloatZeroWithoutMarker exercises image.go's forced-zero branch
+// (propType 4, marker byte != 0x80): the parser must yield 0 having read
+// only the marker byte, with no float32 payload consumed.
 func TestBuilderFloatZeroWithoutMarker(t *testing.T) {
 	b := wztest.NewBuilder().SetVersion(83).SetEncryption(crypto.EncryptionGMS).
-		AddImage(wztest.Img("zero", wztest.Float("f", 0)))
+		AddImage(wztest.Img("zero", wztest.FloatNoMarker("f")))
 	path := writeFixture(t, b, "Zero.wz")
 
 	f, err := Open(logrus.StandardLogger(), path)
@@ -124,5 +125,56 @@ func TestBuilderFloatZeroWithoutMarker(t *testing.T) {
 	fp, ok := findProp(t, props, "f").(*property.FloatProperty)
 	if !ok || fp.Value() != 0 {
 		t.Fatalf("f prop = %#v, want 0", findProp(t, props, "f"))
+	}
+}
+
+// TestBuilderWzIntAndLongBoundaries pins the in-range (single signed byte)
+// vs out-of-range (0x80 marker + full width) branch selection for
+// writeWzInt and writeWzLong against reader.go's ReadWzInt/ReadWzLong,
+// which share the identical int8(b) == -128 marker check. KindInt and
+// KindLong both route through this split, so both are covered here rather
+// than duplicating the boundary table per kind.
+func TestBuilderWzIntAndLongBoundaries(t *testing.T) {
+	boundaries := []int64{-127, 0, 127, -128, 128}
+
+	var props []wztest.Prop
+	for _, v := range boundaries {
+		props = append(props,
+			wztest.Int(fmt.Sprintf("i%d", v), int32(v)),
+			wztest.Long(fmt.Sprintf("l%d", v), v),
+		)
+	}
+
+	b := wztest.NewBuilder().SetVersion(83).SetEncryption(crypto.EncryptionGMS).
+		AddImage(wztest.Img("bounds", props...))
+	path := writeFixture(t, b, "Bounds.wz")
+
+	f, err := Open(logrus.StandardLogger(), path)
+	if err != nil {
+		t.Fatalf("open fixture: %v", err)
+	}
+	defer f.Close()
+
+	imgs := f.Root().Images()
+	if len(imgs) != 1 {
+		t.Fatalf("images = %+v, want one image", imgs)
+	}
+	props2, err := imgs[0].Properties()
+	if err != nil {
+		t.Fatalf("properties: %v", err)
+	}
+
+	for _, v := range boundaries {
+		iName := fmt.Sprintf("i%d", v)
+		ip, ok := findProp(t, props2, iName).(*property.IntProperty)
+		if !ok || ip.Value() != int32(v) {
+			t.Fatalf("%s prop = %#v, want %d", iName, findProp(t, props2, iName), v)
+		}
+
+		lName := fmt.Sprintf("l%d", v)
+		lp, ok := findProp(t, props2, lName).(*property.LongProperty)
+		if !ok || lp.Value() != v {
+			t.Fatalf("%s prop = %#v, want %d", lName, findProp(t, props2, lName), v)
+		}
 	}
 }

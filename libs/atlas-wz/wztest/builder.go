@@ -28,6 +28,7 @@ const (
 	KindDouble
 	KindVector
 	KindConvex
+	KindFloatNoMarker
 )
 
 // Prop is one property inside an image.
@@ -73,6 +74,12 @@ func Long(name string, v int64) Prop { return Prop{Name: name, Kind: KindLong, L
 // Float builds a type-4 float32 property, always with the 0x80 marker byte
 // present so the value round-trips (a missing/other marker byte reads as 0).
 func Float(name string, v float32) Prop { return Prop{Name: name, Kind: KindFloat, Float: v} }
+
+// FloatNoMarker builds a type-4 float property whose marker byte is
+// deliberately NOT 0x80. image.go's forced-zero branch never reads a
+// float32 payload in that case, so no payload bytes follow the marker; the
+// parser is expected to yield 0 having consumed only the marker byte.
+func FloatNoMarker(name string) Prop { return Prop{Name: name, Kind: KindFloatNoMarker} }
 
 // Double builds a type-5 float64 property.
 func Double(name string, v float64) Prop { return Prop{Name: name, Kind: KindDouble, Double: v} }
@@ -223,6 +230,9 @@ func writePropList(buf *bytes.Buffer, props []Prop, key []byte) error {
 			buf.WriteByte(4)
 			buf.WriteByte(0x80) // marker byte; any other value reads back as 0
 			_ = binary.Write(buf, binary.LittleEndian, p.Float)
+		case KindFloatNoMarker:
+			buf.WriteByte(4)
+			buf.WriteByte(0x00) // not 0x80: parser forces 0, no payload bytes follow
 		case KindDouble:
 			buf.WriteByte(5)
 			_ = binary.Write(buf, binary.LittleEndian, p.Double)

@@ -11,7 +11,7 @@ type TraceEvent struct {
 	// Path is the property path from the image root, e.g. "/info/state".
 	Path string
 	// Kind discriminates what the event describes: "list", "stringblock",
-	// "prop", "sub", "extended", or "canvas".
+	// "prop", "sub", "extended", "canvas", or "uol".
 	Kind string
 	// Name is the property or tag name this event concerns.
 	Name string

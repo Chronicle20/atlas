@@ -20,6 +20,7 @@ const (
 	KindString
 	KindSub
 	KindCanvas
+	KindUOL
 )
 
 // Prop is one property inside an image.
@@ -27,7 +28,7 @@ type Prop struct {
 	Name     string
 	Kind     Kind
 	Int      int32
-	Str      string
+	Str      string // also carries the UOL target string for KindUOL
 	Canvas   []byte // raw payload; the builder prepends the 1-byte flag header
 	Children []Prop
 }
@@ -40,6 +41,12 @@ func Sub(name string, children ...Prop) Prop {
 
 func Canvas(name string, payload []byte) Prop {
 	return Prop{Name: name, Kind: KindCanvas, Canvas: payload}
+}
+
+// UOL builds an extended-type "UOL" property (a symlink-like reference to
+// another property path).
+func UOL(name, target string) Prop {
+	return Prop{Name: name, Kind: KindUOL, Str: target}
 }
 
 // Image is one .img entry. Enc overrides the file-level encryption for this
@@ -187,6 +194,18 @@ func writePropList(buf *bytes.Buffer, props []Prop, key []byte) error {
 			_ = binary.Write(&inner, binary.LittleEndian, int32(len(p.Canvas)+1))
 			inner.WriteByte(0xAB) // flag byte skipped by ReadCanvasData
 			inner.Write(p.Canvas)
+			buf.WriteByte(9)
+			_ = binary.Write(buf, binary.LittleEndian, int32(inner.Len()))
+			buf.Write(inner.Bytes())
+		case KindUOL:
+			var inner bytes.Buffer
+			if err := writeStringBlock(&inner, "UOL", key); err != nil {
+				return err
+			}
+			inner.WriteByte(0) // skipped byte
+			if err := writeStringBlock(&inner, p.Str, key); err != nil {
+				return err
+			}
 			buf.WriteByte(9)
 			_ = binary.Write(buf, binary.LittleEndian, int32(inner.Len()))
 			buf.Write(inner.Bytes())

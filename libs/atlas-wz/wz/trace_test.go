@@ -1,6 +1,8 @@
 package wz
 
 import (
+	"io"
+	"os"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -9,6 +11,41 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wztest"
 )
+
+// posCountingFile wraps a readSeekerAt and counts calls shaped exactly like
+// Reader.Pos() — Seek(0, io.SeekCurrent) — the file-level signature of every
+// f.Seek syscall Pos() performs. Used by
+// TestTraceNilHookCostsNoExtraPosCalls to prove the nil-hook path performs
+// no extra Pos() calls without a test-only field on the production Reader
+// type (task-262 M1-3).
+type posCountingFile struct {
+	readSeekerAt
+	posCalls int64
+}
+
+func (p *posCountingFile) Seek(offset int64, whence int) (int64, error) {
+	if offset == 0 && whence == io.SeekCurrent {
+		p.posCalls++
+	}
+	return p.readSeekerAt.Seek(offset, whence)
+}
+
+// openCounting opens path the same way Open does, but routes the reader
+// through a posCountingFile so the caller can read the resulting Pos() call
+// count.
+func openCounting(t *testing.T, path string) (*File, *posCountingFile) {
+	t.Helper()
+	osFile, err := os.Open(path)
+	if err != nil {
+		t.Fatalf("open fixture file: %v", err)
+	}
+	counting := &posCountingFile{readSeekerAt: osFile}
+	f, err := openWithReader(logrus.StandardLogger(), path, osFile, newReaderWithSeeker(counting))
+	if err != nil {
+		t.Fatalf("open fixture: %v", err)
+	}
+	return f, counting
+}
 
 func gmsFixtureBuilder() *wztest.Builder {
 	return wztest.NewBuilder().
@@ -64,7 +101,7 @@ func TestSetTraceEmitsNodeEvents(t *testing.T) {
 
 	var haveExtendedInfo, havePropState, havePropName, haveStringblock bool
 	var lastPropStart int64 = -1
-	var propOrderOK = true
+	propOrderOK := true
 	for _, ev := range events {
 		if ev.EndOff < ev.StartOff {
 			t.Fatalf("event %+v has EndOff < StartOff", ev)
@@ -107,14 +144,14 @@ func TestSetTraceEmitsNodeEvents(t *testing.T) {
 }
 
 // wantNoHookPosCalls is the exact number of Reader.Pos() calls (each one an
-// f.Seek syscall, see reader.go's posCalls counter) a fully correct parse of
+// f.Seek syscall, counted by posCountingFile) a fully correct parse of
 // gmsFixtureBuilder's image makes with no trace hook installed: the handful
 // of calls parsing genuinely needs regardless of tracing (e.g. computing a
 // type-9 sub-object's endPos for the recovery reseek), and none of the
 // trace-only position captures, which must all be gated behind
-// "hook != nil". Recompute by temporarily logging
-// f.reader.posCalls.Load() in a no-hook parse of this fixture if the fixture
-// or the parser's required Pos() calls change.
+// "hook != nil". Recompute by temporarily logging the posCountingFile's
+// posCalls in a no-hook parse of this fixture if the fixture or the
+// parser's required Pos() calls change.
 const wantNoHookPosCalls = 8
 
 // TestTraceNilHookCostsNoExtraPosCalls proves the nil-hook path performs
@@ -130,27 +167,21 @@ func TestTraceNilHookCostsNoExtraPosCalls(t *testing.T) {
 	builder := gmsFixtureBuilder()
 
 	pathNoHook := writeFixture(t, builder, "ItemNoHook.wz")
-	fNoHook, err := Open(logrus.StandardLogger(), pathNoHook)
-	if err != nil {
-		t.Fatalf("open fixture (no hook): %v", err)
-	}
+	fNoHook, countingNoHook := openCounting(t, pathNoHook)
 	defer fNoHook.Close()
 
 	imgsNoHook := fNoHook.Root().Directories()[0].Images()
 	if _, err := imgsNoHook[0].Properties(); err != nil {
 		t.Fatalf("properties (no hook): %v", err)
 	}
-	noHookCalls := fNoHook.reader.posCalls.Load()
+	noHookCalls := countingNoHook.posCalls
 
 	if noHookCalls != wantNoHookPosCalls {
 		t.Fatalf("nil-hook parse made %d Pos() calls, want exactly %d — a trace-only position capture is running unconditionally on the nil-hook path", noHookCalls, wantNoHookPosCalls)
 	}
 
 	pathHook := writeFixture(t, builder, "ItemHook.wz")
-	fHook, err := Open(logrus.StandardLogger(), pathHook)
-	if err != nil {
-		t.Fatalf("open fixture (hook): %v", err)
-	}
+	fHook, countingHook := openCounting(t, pathHook)
 	defer fHook.Close()
 
 	fHook.SetTrace(func(TraceEvent) {})
@@ -159,7 +190,7 @@ func TestTraceNilHookCostsNoExtraPosCalls(t *testing.T) {
 	if _, err := imgsHook[0].Properties(); err != nil {
 		t.Fatalf("properties (hook): %v", err)
 	}
-	hookCalls := fHook.reader.posCalls.Load()
+	hookCalls := countingHook.posCalls
 
 	if hookCalls <= noHookCalls {
 		t.Fatalf("hook-installed parse made %d Pos() calls, no-hook parse made %d — expected strictly more with a hook installed (otherwise this fixture can't distinguish the two paths)", hookCalls, noHookCalls)
@@ -242,5 +273,59 @@ func TestSetTraceOnSubFileDelegatesToParent(t *testing.T) {
 		if seen[key] > 1 {
 			t.Fatalf("event %+v emitted more than once — duplicated by delegation", ev)
 		}
+	}
+}
+
+// TestSetTraceEmitsUOLEvent proves the UOL extended-property branch emits
+// its own Kind: "uol" TraceEvent bracketing the bytes past the shared
+// Kind: "extended" tag event (the 1-byte skip plus the target string
+// block), so a divergence inside a UOL value is visible the same way it
+// already is for canvas and sub-object values (task-262 M1-2).
+func TestSetTraceEmitsUOLEvent(t *testing.T) {
+	builder := wztest.NewBuilder().
+		SetVersion(83).
+		SetEncryption(crypto.EncryptionGMS).
+		AddDir(wztest.Dir{
+			Name: "Item",
+			Images: []wztest.Image{
+				wztest.Img("0200",
+					wztest.Sub("info",
+						wztest.UOL("link", "../other/path"),
+					),
+				),
+			},
+		})
+	path := writeFixture(t, builder, "ItemUOL.wz")
+
+	f, err := Open(logrus.StandardLogger(), path)
+	if err != nil {
+		t.Fatalf("open fixture: %v", err)
+	}
+	defer f.Close()
+
+	var events []TraceEvent
+	f.SetTrace(func(ev TraceEvent) {
+		events = append(events, ev)
+	})
+
+	imgs := f.Root().Directories()[0].Images()
+	if _, err := imgs[0].Properties(); err != nil {
+		t.Fatalf("properties: %v", err)
+	}
+
+	var uolEvent *TraceEvent
+	for i, ev := range events {
+		if ev.Path == "/info/link" && ev.Kind == "uol" {
+			uolEvent = &events[i]
+		}
+	}
+	if uolEvent == nil {
+		t.Fatalf("no event with Path=/info/link Kind=uol in %+v", events)
+	}
+	if uolEvent.Detail != "../other/path" {
+		t.Errorf("uol event Detail = %q, want %q", uolEvent.Detail, "../other/path")
+	}
+	if uolEvent.EndOff <= uolEvent.StartOff {
+		t.Errorf("uol event has EndOff <= StartOff: %+v", uolEvent)
 	}
 }

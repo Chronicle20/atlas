@@ -443,12 +443,25 @@ func (wz *File) parseExtendedProperty(path, name string, imageOffset int64) (pro
 		return property.NewConvex(name, children), nil
 
 	case "UOL":
+		var uolStart int64
+		if hook != nil {
+			var perr error
+			uolStart, perr = r.Pos()
+			if perr != nil {
+				return nil, perr
+			}
+		}
 		if err := r.Skip(1); err != nil {
 			return nil, err
 		}
 		v, err := r.ReadWzStringBlock(imageOffset)
 		if err != nil {
 			return nil, err
+		}
+		if hook != nil {
+			if end, perr := r.Pos(); perr == nil {
+				hook(TraceEvent{Path: path, Kind: "uol", Name: name, StartOff: uolStart, EndOff: end, Detail: v})
+			}
 		}
 		return property.NewUOL(name, v), nil
 

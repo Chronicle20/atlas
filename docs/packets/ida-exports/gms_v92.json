@@ -13988,6 +13988,22 @@
       "direction": "serverbound",
       "notes": "task-241 Task 28, gms_v92 batch 6/8 (session 019cd393, GMS_v92_1_DEVM.exe.i64). DUEY_ACTION mode 7 (CLOSE). COutPacket(&pkt, 0x47) @0x68076c; Encode1(7) @0x68077f; no further bytes -- the mode byte itself is written by the shared Action wrapper (action.go), not ActionClose. Byte-identical shape to v83/v84/v87. Atlas struct: parcel/serverbound/action_parcel_id.go ActionClose.",
       "calls": []
+    },
+    "CMob::ApplyControl": {
+      "address": "0x636320",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2 - result >= 1000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "a2 - result >= 1000"
+        }
+      ]
     }
   }
 }

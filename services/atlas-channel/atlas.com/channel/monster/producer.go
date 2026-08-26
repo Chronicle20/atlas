@@ -188,6 +188,25 @@ func KillCommandProvider(f field.Model, monsterId uint32, characterId uint32) mo
 	return producer.SingleMessageProvider(key, value)
 }
 
+// SelfDestructCommandProvider asks atlas-monsters to detonate a monster.
+// Keyed on the monster id like every other monster command, so a contact
+// report lands on the same partition as the damage that preceded it.
+func SelfDestructCommandProvider(f field.Model, monsterId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(monsterId))
+	value := &monster2.Command[monster2.SelfDestructCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		MonsterId: monsterId,
+		Type:      monster2.CommandTypeSelfDestruct,
+		Body: monster2.SelfDestructCommandBody{
+			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // ClearAggroCommandProvider asks atlas-monsters to fully wipe the monster's
 // damage-aggro table. Keyed on the monster id like every other monster command,
 // so it is ordered against ForceControlCommandProvider for the same monster.
@@ -218,6 +237,47 @@ func ForceControlCommandProvider(f field.Model, monsterId uint32, characterId ui
 		Type:      monster2.CommandTypeForceControl,
 		Body: monster2.ForceControlCommandBody{
 			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// SetAggroCommandProvider asks atlas-monsters to grant auto-aggro on a
+// client AUTO_AGGRO claim.
+func SetAggroCommandProvider(f field.Model, monsterId uint32, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(monsterId))
+	value := &monster2.Command[monster2.SetAggroCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		MonsterId: monsterId,
+		Type:      monster2.CommandTypeSetAggro,
+		Body: monster2.SetAggroCommandBody{
+			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// BanishCommandProvider asks atlas-monsters to honor a client MOB_BANISH_PLAYER
+// request. Keyed on the character id rather than the monster id — unlike every
+// other monster command here — because the command is about a character's map
+// transition, and the ordering that matters is this character's banish requests
+// against each other. MonsterId is 0: the client supplies a template id, and
+// the envelope field means *unique* id everywhere else on this topic.
+func BanishCommandProvider(f field.Model, characterId uint32, monsterTemplateId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &monster2.Command[monster2.BanishCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		MonsterId: 0,
+		Type:      monster2.CommandTypeBanish,
+		Body: monster2.BanishCommandBody{
+			CharacterId:       characterId,
+			MonsterTemplateId: monsterTemplateId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

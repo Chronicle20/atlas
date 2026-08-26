@@ -1,0 +1,62 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-21T12:27:24Z	agent	Task 1	atlas-implementer	sonnet	-	-	-	-	DONE	01acd11e5	-	-	-	-
+2026-08-21T12:29:36Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	01acd11e5	APPROVED	no	-	-
+2026-08-21T12:30:41Z	agent	Task 2	atlas-implementer	sonnet	-	-	-	-	DONE	8fb8d7610	-	-	-	-
+2026-08-21T12:32:03Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	8fb8d7610	APPROVED	no	-	-
+2026-08-21T12:33:57Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE	6afdcec02	-	-	-	-
+2026-08-21T12:35:44Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	6afdcec02	APPROVED	no	-	-
+2026-08-21T12:50:27Z	agent	Task 4	packet-implementer	sonnet	-	-	-	-	DONE	9240147d7	-	-	-	-
+2026-08-21T12:53:26Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	9240147d7	APPROVED	no	-	-
+2026-08-21T12:56:24Z	agent	fix: SpliceExport note key	atlas-implementer	sonnet	-	-	-	-	DONE	de4c11421	-	-	-	-
+2026-08-21T13:01:33Z	agent	fix: SpliceExport note key	atlas-reviewer	sonnet	-	-	-	-	DONE	de4c11421	CHANGES_REQUIRED	yes	.superpowers/sdd/plan/fix-splice-note-review.md	-
+2026-08-21T13:05:51Z	agent	fix round 2: note+notes both	atlas-implementer	sonnet	-	-	-	-	DONE	29c26c3bc	-	-	-	-
+2026-08-21T13:07:57Z	agent	fix round 2: note+notes both	atlas-reviewer	sonnet	-	-	-	-	DONE	29c26c3bc	APPROVED	no	.superpowers/sdd/plan/fix-splice-note-round2-review.md	-
+2026-08-21T13:20:31Z	agent	Task 5	atlas-implementer	sonnet	-	-	-	-	DONE	2deb07abe	-	-	-	-
+2026-08-21T13:23:27Z	agent	Task 6	atlas-implementer	sonnet	-	-	-	-	DONE	5b5b26d	-	-	-	-
+2026-08-21T13:24:57Z	agent	Task 6	atlas-reviewer	sonnet	-	-	-	-	DONE	5b5b26d	APPROVED	no	.superpowers/sdd/plan/task-6-review.md	-
+2026-08-21T13:27:17Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DONE	2deb07abe	APPROVED_WITH_FINDINGS	yes	.superpowers/sdd/plan/task-5-review.md	-
+2026-08-21T13:32:44Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	5d5e8d0	-	-	-	-
+2026-08-21T13:35:38Z	agent	Task 7	atlas-reviewer	sonnet	-	-	-	-	DONE	5d5e8d0	APPROVED	no	.superpowers/sdd/plan/task-7-review.md	-
+2026-08-21T13:36:31Z	agent	Task 8	atlas-implementer	sonnet	-	-	-	-	DONE	727c001	-	-	-	-
+2026-08-21T13:39:23Z	agent	Task 8	atlas-reviewer	sonnet	-	-	-	-	DONE	727c00108	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T13:40:34Z	agent	Task 8	atlas-reviewer	sonnet	-	-	-	-	DONE	727c00108	APPROVED	no	.superpowers/sdd/plan/task-8-review.md	-
+2026-08-21T13:47:27Z	agent	Task 9	atlas-implementer	sonnet	-	-	-	-	DONE	bce73e0	-	-	-	-
+2026-08-21T13:48:52Z	agent	Gate 4	verify.sh	-	-	-	-	-	PASS	bce73e0	-	-	-	-
+2026-08-21T13:50:04Z	agent	Task 10	atlas-implementer	sonnet	-	-	-	-	DONE	59008e7	-	-	-	-
+2026-08-21T13:50:56Z	agent	Gate 5	verify.sh	-	-	-	-	-	PASS	59008e7	-	-	-	-
+2026-08-21T13:51:16Z	agent	Task 10	atlas-reviewer	sonnet	-	-	-	-	DONE	59008e7	APPROVED	no	.superpowers/sdd/plan/task-10-review.md	-
+2026-08-21T13:52:46Z	agent	Task 9	atlas-reviewer	sonnet	-	-	-	-	DONE	bce73e0	CHANGES_REQUIRED	yes	.superpowers/sdd/plan/task-9-review.md	-
+2026-08-21T13:54:27Z	agent	fix: Task 9 exact emit counts	atlas-implementer	sonnet	-	-	-	-	DONE	33ef8c431	-	-	-	-
+2026-08-21T13:55:13Z	agent	Task 11	atlas-implementer	sonnet	-	-	-	-	DONE	f7770ca68	-	-	-	-
+2026-08-21T13:55:15Z	handoff	after Task 11	-	-	-	-	-	-	-	-	-	-	-	75000
+2026-08-21T13:56:27Z	agent	Gate 6	verify.sh	-	-	-	-	-	PASS	f7770ca68	-	-	-	-
+2026-08-21T13:56:28Z	agent	Task 11	atlas-reviewer	sonnet	-	-	-	-	DONE	f7770ca68	APPROVED	no	.superpowers/sdd/plan/task-11-review.md	-
+2026-08-21T14:02:58Z	agent	Task 12	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	fdb7a41e3	-	-	-	-
+2026-08-21T14:04:13Z	agent	Gate 7	verify.sh	-	-	-	-	-	PASS	fdb7a41e3	-	-	-	-
+2026-08-21T14:05:07Z	agent	Task 12	atlas-reviewer	sonnet	-	-	-	-	DONE	fdb7a41e3	APPROVED_WITH_FINDINGS	yes	.superpowers/sdd/plan/task-12-review.md	-
+2026-08-21T14:09:06Z	agent	fix: boundary tests	atlas-implementer	sonnet	-	-	-	-	DONE	ac165f745	-	-	-	-
+2026-08-21T14:10:36Z	agent	fix: boundary tests	atlas-reviewer	sonnet	-	-	-	-	DONE	ac165f745	APPROVED	no	.superpowers/sdd/plan/fix-boundary-tests-review.md	-
+2026-08-21T14:13:26Z	agent	Task 13	atlas-implementer	sonnet	-	-	-	-	DONE	e757707f0	-	-	-	-
+2026-08-21T14:15:33Z	agent	Gate 8	verify.sh	-	-	-	-	-	PASS	e757707f0	-	-	-	-
+2026-08-21T16:09:00Z	agent	Task 13	atlas-reviewer	sonnet	-	-	-	-	ERROR	e757707f0	-	-	-	-
+2026-08-21T16:09:01Z	agent	Task 14	atlas-implementer	sonnet	-	-	-	-	ERROR	-	-	-	-	-
+2026-08-21T16:12:31Z	agent	Task 14	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	9658855	-	-	-	-
+2026-08-21T16:13:06Z	agent	Task 13	atlas-reviewer	sonnet	-	-	-	-	DONE	e757707f0	APPROVED_WITH_FINDINGS	no	.superpowers/sdd/plan/task-13-review.md	-
+2026-08-21T16:14:55Z	agent	Task 14	atlas-reviewer	sonnet	-	-	-	-	DONE	9658855	APPROVED_WITH_FINDINGS	yes	.superpowers/sdd/plan/task-14-review.md	-
+2026-08-21T16:16:14Z	agent	Task 15	atlas-implementer	sonnet	-	-	-	-	DONE	8b81109d4	-	-	-	-
+2026-08-21T16:16:30Z	agent	Gate 9	verify.sh	-	-	-	-	-	PASS	9658855	-	-	-	-
+2026-08-21T16:17:59Z	agent	Task 15	atlas-reviewer	sonnet	-	-	-	-	DONE	8b81109d4	APPROVED	no	.superpowers/sdd/plan/task-15-review.md	-
+2026-08-21T16:24:50Z	agent	fix: aggro announce seam	atlas-implementer	sonnet	-	-	-	-	DONE	b72b83c62	-	-	-	-
+2026-08-21T16:25:26Z	agent	Gate 10	verify.sh	-	-	-	-	-	PASS	b72b83c62	-	-	-	-
+2026-08-21T16:26:44Z	agent	fix: aggro announce seam	atlas-reviewer	sonnet	-	-	-	-	DONE	b72b83c62	APPROVED	no	.superpowers/sdd/plan/fix-aggro-announce-seam-review.md	-
+2026-08-21T17:01:58Z	agent	pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T17:02:00Z	agent	pre-PR review	backend-guidelines-reviewer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T17:02:01Z	agent	pre-PR review	packet-completeness-critic	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T17:07:54Z	agent	pre-PR review	plan-adherence-reviewer	sonnet	-	-	-	-	complete	b3606cdac	APPROVED	no	-	-
+2026-08-21T17:07:54Z	agent	pre-PR review	packet-completeness-critic	sonnet	-	-	-	-	complete	b3606cdac	CLEAN	yes	-	-
+2026-08-21T17:08:45Z	agent	pre-PR review	backend-guidelines-reviewer	sonnet	-	-	-	-	complete	b3606cdac	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T17:37:21Z	agent	corpus guard fix	atlas-implementer	sonnet	-	-	-	-	DONE	a6cad529a	-	-	-	-
+2026-08-21T17:39:28Z	agent	corpus guard fix	atlas-reviewer	sonnet	-	-	-	-	complete	a6cad529a	APPROVED	no	-	-
+2026-08-25T17:59:09Z	agent	bug-first-attack-always-false	atlas-implementer	sonnet	-	-	-	-	DONE	38d4b98b4	-	-	-	-
+2026-08-25T17:59:10Z	agent	bug-first-attack-always-false	atlas-reviewer	sonnet	-	-	-	-	DONE	38d4b98b4	APPROVED_WITH_FINDINGS	false	-	-
+2026-08-25T17:59:10Z	agent	bug-cool-damage-always-zero	atlas-implementer	sonnet	-	-	-	-	DONE	06159cb0b	-	-	-	-

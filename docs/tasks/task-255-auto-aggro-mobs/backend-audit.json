@@ -1,0 +1,97 @@
+{
+  "service": "atlas-channel, atlas-monsters, libs/atlas-packet",
+  "path": "services/atlas-channel, services/atlas-monsters, libs/atlas-packet",
+  "date": "2026-08-21",
+  "build": "pass",
+  "testsPassed": 3,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "libs/atlas-packet/monster/serverbound",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "libs/atlas-packet/monster/serverbound/auto_aggro.go:41-71 codec-only"},
+        {"id": "DOM-26", "name": "Every goroutine spawned via routine.Go", "status": "pass", "evidence": "no goroutine in file; tools/goroutine-guard.sh exit 0"}
+      ]
+    },
+    {
+      "name": "atlas-channel/monster",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "monster/processor.go:43"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "monster/processor.go:35 adds SetAggro; monster/mock/processor.go +8 lines adds ProcessorMock.SetAggro same diff"},
+        {"id": "DOM-30", "name": "AndEmit + message.Buffer for DB-backed writes", "status": "pass", "evidence": "monster/processor.go SetAggro -> producer.ProviderImpl directly; package has no DB write on any path (documented exception in patterns-kafka.md, atlas-chairs precedent)"},
+        {"id": "DOM-29", "name": "Cache reached via GetCache() singleton", "status": "pass", "evidence": "monster/auto_aggro_gate.go:56 GetAutoAggroGate() sync.Once singleton; monster/live_mirror.go:51 GetLiveMirror()"},
+        {"id": "DOM-31", "name": "Tenant travels in context only", "status": "pass", "evidence": "socket/handler/auto_aggro.go:51,62 tenant.MustFromContext(ctx); kafka/message/monster/kafka.go:133 SetAggroCommandBody carries only CharacterId"},
+        {"id": "DOM-26", "name": "Every goroutine via routine.Go or justified marker", "status": "pass", "evidence": "monster/auto_aggro_gate.go:60 and monster/live_mirror.go:55 carry //goroutine-guard:allow with justification; tools/goroutine-guard.sh exit 0"},
+        {"id": "DOM-21", "name": "No redeclared shared constant", "status": "pass", "evidence": "grep libs/atlas-constants for Aggro/FirstAttack/SetAggro returns no hits"},
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "auto_aggro_gate.go and producer.go each hold a single responsibility, no catch-all file"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "monster/auto_aggro_gate_test.go:21 tests := []struct{...} + t.Run"},
+        {"id": "DOM-24", "name": "Producer stub/no-op injected in tests reaching emit", "status": "pass", "evidence": "socket/handler/auto_aggro_test.go:85 overrides autoAggroEmitFn with a recording no-op"}
+      ]
+    },
+    {
+      "name": "atlas-channel/socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-13", "name": "No cross-domain orchestration in handler", "status": "pass", "evidence": "socket/handler/auto_aggro.go:35-69 only cheap local admission checks then single emit call"},
+        {"id": "DOM-12", "name": "No os.Getenv() in handler", "status": "pass", "evidence": "no os.Getenv in auto_aggro.go"},
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "auto_aggro.go is handler-dispatch only"}
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/consumer/monster",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-31", "name": "Tenant from context only", "status": "pass", "evidence": "consumer.go:143,197 tenant.MustFromContext(ctx); no tenant field added to any event body"},
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "consumer.go unchanged shape, additive lines only"}
+      ]
+    },
+    {
+      "name": "atlas-monsters/monster",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go fluent setter + validating Build()", "status": "pass", "evidence": "builder.go SetAggroRefreshedMs follows existing fluent pattern"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor, unchanged signature"},
+        {"id": "DOM-33", "name": "Interface change updates every mock", "status": "pass", "evidence": "no monster/mock directory exists in atlas-monsters implementing Processor; find confirms only information/consumable/drop/mobskill mocks, none implement monster.Processor"},
+        {"id": "DOM-30", "name": "AndEmit + message.Buffer for DB-backed writes", "status": "pass", "evidence": "processor.go:1878-1979 SetAggro writes via GetMonsterRegistry().SetAggro (Redis atomic Update, not GORM) then p.emit(...) directly at line 1955, matching every sibling command in the file; documented non-DB-state exception applies"},
+        {"id": "DOM-21", "name": "No redeclared shared constant", "status": "pass", "evidence": "monster/aggro.go AggroIdleThresholdMs/AggroDecayMultiplier/AggroDecayFloor/AutoAggroLeaseTtlMs; no equivalent found in libs/atlas-constants"},
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "aggro.go holds only decay/lease constants + IsAggroIdle; aggro_task.go holds only MonsterAggroDecayTask"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "set_aggro_test.go:20 TestSetAggro_Gates tests := []tc{...} + t.Run"},
+        {"id": "DOM-31", "name": "Tenant from context only", "status": "pass", "evidence": "SetAggro reads tenant via p.t processor field; setAggroCommandBody carries only CharacterId"}
+      ]
+    },
+    {
+      "name": "atlas-monsters/kafka/consumer/monster",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "handleSetAggroCommand added alongside sibling handle*Command functions; setAggroCommandBody added alongside sibling command bodies"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "n-a", "evidence": "kafka_test.go additions are single-scenario unmarshal/constant assertions matching every sibling TestXCommandBody_Decode; no branching logic to enumerate"}
+      ]
+    },
+    {
+      "name": "atlas-monsters/monster/information",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-02", "name": "Extract mapping complete", "status": "pass", "evidence": "rest.go:104 Extract maps firstAttack: rm.FirstAttack; RestModel.FirstAttack pre-existing at rest.go:35"},
+        {"id": "DOM-01", "name": "Builder fluent setter", "status": "pass", "evidence": "builder.go SetFirstAttack added following existing fluent pattern"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "rest_test.go TestExtractFirstAttack tests := []struct{...} + t.Run"},
+        {"id": "EXT-01..04", "name": "Cross-service client conventions", "status": "n-a", "evidence": "requests.go/cache.go/processor.go (the cross-service call sites) are untouched by this diff; only model.go/builder.go/rest.go field plumbing changed"}
+      ]
+    }
+  ],
+  "security": [
+    {"id": "SEC-01", "name": "Verified JWT parsing", "status": "n-a", "evidence": "no token/JWT code in any changed file"},
+    {"id": "SEC-02", "name": "Revocation reads validated claims", "status": "n-a", "evidence": "no claims/token handling touched"},
+    {"id": "SEC-03", "name": "Redirect target validation", "status": "n-a", "evidence": "no callback/redirect handler touched"},
+    {"id": "SEC-04", "name": "No hardcoded secrets", "status": "n-a", "evidence": "no secret-bearing code touched"}
+  ],
+  "notEvaluable": [
+    "EXT-02: httptest-backed integration test coverage for monster/information's DATA client (requests.go/cache.go) is untouched by this diff and was not read in full",
+    "SCAFFOLD-09: rule's own trigger (new service directory) is negative for this diff; not run",
+    "packet-audit registry/status.json cross-file consistency: out of scope for backend-dev-guidelines rule set"
+  ],
+  "blocking": [],
+  "nonBlocking": []
+}

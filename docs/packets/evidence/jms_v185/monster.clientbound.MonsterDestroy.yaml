@@ -6,3 +6,6 @@ ida:
     function: CMobPool::OnMobLeaveField
     address: "0x6f8a1f"
     decompile_sha256: 8190e5e15c034d9211e27e62b36044c0f300e29750b68a9546e721cb78cedc70
+verifies:
+    - libs/atlas-packet/monster/clientbound/destroy_test.go#TestMonsterDestroySwallowGate
+    - libs/atlas-packet/monster/clientbound/destroy_test.go#TestMonsterDestroyNonSwallowTypesAreFiveBytes

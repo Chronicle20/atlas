@@ -3,12 +3,15 @@ package information
 // ModelBuilder provides a minimal fluent interface for constructing Model
 // instances in tests. Only the fields tests need are settable.
 type ModelBuilder struct {
-	skills      []Skill
-	attacks     []AttackInfo
-	hpRecovery  uint32
-	mpRecovery  uint32
-	boss        bool
-	resistances map[string]string
+	skills          []Skill
+	attacks         []AttackInfo
+	selfDestruction SelfDestruction
+	hpRecovery      uint32
+	mpRecovery      uint32
+	boss            bool
+	firstAttack     bool
+	resistances     map[string]string
+	banish          Banish
 }
 
 // NewModelBuilder returns a new ModelBuilder with zero values.
@@ -46,12 +49,33 @@ func (b *ModelBuilder) SetBoss(boss bool) *ModelBuilder {
 	return b
 }
 
+// SetFirstAttack sets the aggressive-template flag on the builder. Used by
+// tests that drive the firstAttack gate in ProcessorImpl.SetAggro.
+func (b *ModelBuilder) SetFirstAttack(v bool) *ModelBuilder {
+	b.firstAttack = v
+	return b
+}
+
 // SetResistances sets the elemental resistance map on the builder. Keys are
 // element letters ("P", "I", "F", "S", "L"); value "1" means immune (per
 // Model.IsImmuneToElement). Used by tests that drive elemental-immunity
 // branches in ApplyStatusEffect.
 func (b *ModelBuilder) SetResistances(r map[string]string) *ModelBuilder {
 	b.resistances = r
+	return b
+}
+
+// SetBanish sets the banish node on the builder. Used by tests that drive the
+// banish paths in Banish and executeBanish.
+func (b *ModelBuilder) SetBanish(banish Banish) *ModelBuilder {
+	b.banish = banish
+	return b
+}
+
+// SetSelfDestruction sets the WZ selfDestruction block on the builder. Used by
+// tests driving the HP-threshold and timer detonation paths.
+func (b *ModelBuilder) SetSelfDestruction(sd SelfDestruction) *ModelBuilder {
+	b.selfDestruction = sd
 	return b
 }
 
@@ -66,11 +90,14 @@ func (b *ModelBuilder) Build() Model {
 		attacks = []AttackInfo{}
 	}
 	return Model{
-		skills:      skills,
-		attacks:     attacks,
-		hpRecovery:  b.hpRecovery,
-		mpRecovery:  b.mpRecovery,
-		boss:        b.boss,
-		resistances: b.resistances,
+		skills:          skills,
+		attacks:         attacks,
+		selfDestruction: b.selfDestruction,
+		hpRecovery:      b.hpRecovery,
+		mpRecovery:      b.mpRecovery,
+		boss:            b.boss,
+		firstAttack:     b.firstAttack,
+		resistances:     b.resistances,
+		banish:          b.banish,
 	}
 }

@@ -23,8 +23,11 @@ type ProcessorMock struct {
 	CancelStatusFunc           func(f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillClass string) error
 	DrainMpFunc                func(f field.Model, monsterId uint32, characterId uint32, skillId uint32, amount uint32) error
 	KillFunc                   func(f field.Model, monsterId uint32, characterId uint32) error
+	SelfDestructFunc           func(f field.Model, monsterId uint32, characterId uint32) error
 	ClearAggroFunc             func(f field.Model, monsterId uint32) error
 	ForceControlFunc           func(f field.Model, monsterId uint32, characterId uint32) error
+	SetAggroFunc               func(f field.Model, monsterId uint32, characterId uint32) error
+	BanishFunc                 func(f field.Model, characterId uint32, monsterTemplateId uint32) error
 }
 
 var _ monster.Processor = (*ProcessorMock)(nil)
@@ -134,6 +137,13 @@ func (m *ProcessorMock) Kill(f field.Model, monsterId uint32, characterId uint32
 	return nil
 }
 
+func (m *ProcessorMock) SelfDestruct(f field.Model, monsterId uint32, characterId uint32) error {
+	if m.SelfDestructFunc != nil {
+		return m.SelfDestructFunc(f, monsterId, characterId)
+	}
+	return nil
+}
+
 func (m *ProcessorMock) ClearAggro(f field.Model, monsterId uint32) error {
 	if m.ClearAggroFunc != nil {
 		return m.ClearAggroFunc(f, monsterId)
@@ -144,6 +154,20 @@ func (m *ProcessorMock) ClearAggro(f field.Model, monsterId uint32) error {
 func (m *ProcessorMock) ForceControl(f field.Model, monsterId uint32, characterId uint32) error {
 	if m.ForceControlFunc != nil {
 		return m.ForceControlFunc(f, monsterId, characterId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) SetAggro(f field.Model, monsterId uint32, characterId uint32) error {
+	if m.SetAggroFunc != nil {
+		return m.SetAggroFunc(f, monsterId, characterId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) Banish(f field.Model, characterId uint32, monsterTemplateId uint32) error {
+	if m.BanishFunc != nil {
+		return m.BanishFunc(f, characterId, monsterTemplateId)
 	}
 	return nil
 }

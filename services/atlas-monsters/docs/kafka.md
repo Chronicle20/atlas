@@ -361,6 +361,25 @@ Asks the processor to resolve a bridle (catch-item) capture attempt against a mo
 }
 ```
 
+#### BANISH
+
+Asks the processor to banish a character out of a field. Emitted by atlas-channel on a client MOB_BANISH_PLAYER request. monsterId is 0 — the client supplies a *template* id, carried in the body, and it is untrusted: the processor honors the command only when a monster of that template is alive in the character's field and the template has a non-zero WZ banish map.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "monsterId": 0,
+  "type": "BANISH",
+  "body": {
+    "characterId": 0,
+    "monsterTemplateId": 0
+  }
+}
+```
+
 ### COMMAND_TOPIC_MONSTER_MOVEMENT
 
 Monster movement commands.
@@ -891,7 +910,7 @@ Cancels all buffs from a character (dispel).
 
 ### COMMAND_TOPIC_PORTAL
 
-Portal/warp commands produced when monster banish skills target players.
+Portal/warp commands produced when a monster banish (skill 129 or a client MOB_BANISH_PLAYER request) ejects a player.
 
 **Message Type:**
 
@@ -908,7 +927,32 @@ Warps a character to a target map.
   "type": "WARP",
   "body": {
     "characterId": 0,
-    "targetMapId": 0
+    "targetMapId": 0,
+    "targetPortalName": "st00"
+  }
+}
+```
+
+### COMMAND_TOPIC_SYSTEM_MESSAGE
+
+System message commands produced when a banished character has a WZ banish message.
+
+**Message Type:**
+
+#### SEND_MESSAGE
+
+Announces text to a character's session.
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "channelId": 0,
+  "characterId": 0,
+  "type": "SEND_MESSAGE",
+  "body": {
+    "messageType": "PINK_TEXT",
+    "message": ""
   }
 }
 ```

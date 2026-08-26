@@ -1572,6 +1572,15 @@
         ]
       },
       {
+        "opCode": "0xB3",
+        "validator": "LoggedInValidator",
+        "handler": "AutoAggro",
+        "fname": "CMob::ApplyControl",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xB4",
         "validator": "LoggedInValidator",
         "handler": "MobDropPickupRequest",
@@ -3622,6 +3631,16 @@
         "opCode": "0xD1",
         "writer": "DestroyMonster",
         "fname": "CMobPool::OnMobLeaveField",
+        "options": {
+          "operations": {
+            "DISAPPEAR": 0,
+            "FADE_OUT": 1,
+            "BOMB": 2,
+            "DESTRUCT_BY_MISS": 3,
+            "SWALLOW": 4,
+            "SELF_DESTRUCT": 5
+          }
+        },
         "services": [
           "channel"
         ]

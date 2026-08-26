@@ -29,6 +29,9 @@ const (
 	CommandTypeCatch             = "CATCH"
 	CommandTypeClearAggro        = "CLEAR_AGGRO"
 	CommandTypeForceControl      = "FORCE_CONTROL"
+	CommandTypeSelfDestruct      = "SELF_DESTRUCT"
+	CommandTypeSetAggro          = "SET_AGGRO"
+	CommandTypeBanish            = "BANISH"
 
 	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
@@ -145,6 +148,20 @@ type killCommandBody struct {
 // message. characterId and itemId are both uint32 and both already appear with
 // that type in sibling bodies (damageCommandBody.CharacterId,
 // drainMpCommandBody.SkillId).
+// selfDestructCommandBody asks the processor to detonate a self-destructing
+// monster with the animation its WZ selfDestruction block specifies.
+// CharacterId is the character who reported the contact (MONSTER_BOMB), or 0
+// when there is none; the processor re-derives every predicate itself, so this
+// carries no animation and no reason discriminator — the animation must never
+// come from a client-influenceable field (task-253 design D7).
+//
+// CharacterId matches the field name and type used by damageCommandBody,
+// killCommandBody and forceControlCommandBody, so it introduces no unmarshal
+// collision on the shared command topic.
+type selfDestructCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
 type catchCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 	ItemId      uint32 `json:"itemId"`
@@ -162,6 +179,30 @@ type clearAggroCommandBody struct{}
 // atlas-channel's monster2.ForceControlCommandBody — edit both together.
 type forceControlCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
+}
+
+// setAggroCommandBody asks the processor to grant auto-aggro on a client
+// AUTO_AGGRO claim. characterId is the claimant; every gate is applied by the
+// processor, never by the channel. Mirrors atlas-channel's
+// monster2.SetAggroCommandBody — edit both together. `characterId uint32`
+// already appears with that name and type in sibling bodies, so it introduces
+// no unmarshal collision on this shared, fan-to-every-handler topic.
+type setAggroCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
+// banishCommandBody asks the processor to banish a character out of a field on
+// the strength of a client MOB_BANISH_PLAYER request. MonsterTemplateId is
+// client-supplied and untrusted — Banish revalidates it against live field
+// state before acting. Both fields are uint32: characterId already appears at
+// that name and type in sibling bodies and monsterTemplateId appears in none,
+// so neither can collide on this shared, fan-to-every-handler topic (see
+// killCommandBody's note). The envelope's monsterId is deliberately left 0 — it
+// means *unique* id everywhere else here. Mirrors atlas-channel's
+// monster2.BanishCommandBody — edit both together.
+type banishCommandBody struct {
+	CharacterId       uint32 `json:"characterId"`
+	MonsterTemplateId uint32 `json:"monsterTemplateId"`
 }
 
 // addPuppetCommand registers a player's puppet in a field so the monster

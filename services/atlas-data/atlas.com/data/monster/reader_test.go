@@ -40,6 +40,8 @@ const testXML = `
     <int name="noFlip" value="1"/>
     <int name="boss" value="1"/>
     <int name="firstAttack" value="1"/>
+    <int name="coolDamage" value="200"/>
+    <int name="coolDamageProb" value="10"/>
     <int name="publicReward" value="1"/>
     <int name="rareItemDropLevel" value="2"/>
     <imgdir name="skill">
@@ -1255,8 +1257,8 @@ func TestReader(t *testing.T) {
 	if rm.FixedStance != 5 {
 		t.Errorf("FixedStance mismatch: got %d, expected 5", rm.FixedStance)
 	}
-	if rm.FirstAttack != false {
-		t.Errorf("FirstAttack mismatch: got %t, expected false", rm.FirstAttack)
+	if rm.FirstAttack != true {
+		t.Errorf("FirstAttack mismatch: got %t, expected true", rm.FirstAttack)
 	}
 	if rm.DropPeriod != 0 {
 		t.Errorf("DropPeriod mismatch: got %d, expected 0", rm.DropPeriod)
@@ -1264,11 +1266,11 @@ func TestReader(t *testing.T) {
 	if rm.Banish != (banish{"", 0, ""}) {
 		t.Errorf("Banish mismatch: got %+v, expected %+v", rm.Banish, banish{"", 0, ""})
 	}
-	if rm.SelfDestruction != (selfDestruction{0, 0, 0}) {
-		t.Errorf("SelfDestruction mismatch: got %+v, expected %+v", rm.SelfDestruction, selfDestruction{0, 0, 0})
+	if rm.SelfDestruction != (selfDestruction{0, -1, -1}) {
+		t.Errorf("SelfDestruction mismatch: got %+v, expected %+v", rm.SelfDestruction, selfDestruction{0, -1, -1})
 	}
-	if rm.CoolDamage != (coolDamage{0, 0}) {
-		t.Errorf("CoolDamage mismatch: got %+v, expected %+v", rm.CoolDamage, coolDamage{0, 0})
+	if rm.CoolDamage != (coolDamage{200, 10}) {
+		t.Errorf("CoolDamage mismatch: got %+v, expected %+v", rm.CoolDamage, coolDamage{200, 10})
 	}
 	if rm.HpRecovery != 10000 {
 		t.Errorf("HpRecovery mismatch: got %d, expected 10000", rm.HpRecovery)
@@ -1493,5 +1495,152 @@ func TestReaderFixedDamage(t *testing.T) {
 	}
 	if rm2.FixedDamage != 0 {
 		t.Fatalf("FixedDamage=%d, want 0", rm2.FixedDamage)
+	}
+}
+
+func TestReaderFirstAttackAbsentDefaultsFalse(t *testing.T) {
+	tt := testTenant()
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), tt)
+
+	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(9300316), name: "FakeNoFirstAttack"})
+
+	body := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="9300316.img">
+  <imgdir name="info"><int name="maxHP" value="100"/></imgdir>
+</imgdir>`
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(body)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rm.FirstAttack != false {
+		t.Fatalf("FirstAttack=%t, want false", rm.FirstAttack)
+	}
+}
+
+func TestReaderCoolDamageAbsentDefaultsZero(t *testing.T) {
+	tt := testTenant()
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), tt)
+
+	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(9300317), name: "FakeNoCoolDamage"})
+
+	body := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="9300317.img">
+  <imgdir name="info"><int name="maxHP" value="100"/></imgdir>
+</imgdir>`
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(body)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rm.CoolDamage != (coolDamage{0, 0}) {
+		t.Fatalf("CoolDamage=%+v, want %+v", rm.CoolDamage, coolDamage{0, 0})
+	}
+}
+
+func TestReaderBanishPopulated(t *testing.T) {
+	tt := testTenant()
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), tt)
+
+	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(5090000), name: "Shade"})
+
+	body := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="5090000.img">
+  <imgdir name="info">
+    <int name="maxHP" value="100"/>
+    <imgdir name="ban">
+      <string name="banMsg" value="As the Pentacle swayed in the shadows, you were brought to the Subway Ticketing Booth."/>
+      <imgdir name="banMap">
+        <imgdir name="0">
+          <int name="field" value="103000100"/>
+          <string name="portal" value="sp"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(body)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := banish{
+		Message:    "As the Pentacle swayed in the shadows, you were brought to the Subway Ticketing Booth.",
+		MapId:      103000100,
+		PortalName: "sp",
+	}
+	if rm.Banish != want {
+		t.Fatalf("Banish=%+v, want %+v", rm.Banish, want)
+	}
+}
+
+// TestReaderBanishPortalTypo covers the `potal` WZ typo (three GMS 83.1
+// templates: 9500194, 9500303, 9500304) — reader.go must resolve
+// banMap/0/portal first, fall back to banMap/0/potal, and default to "sp"
+// only when neither is present.
+func TestReaderBanishPortalTypo(t *testing.T) {
+	tt := testTenant()
+	l, _ := test.NewNullLogger()
+
+	cases := []struct {
+		name       string
+		banMapBody string
+		want       string
+	}{
+		{
+			name: "portal wins when both spellings present",
+			banMapBody: `<imgdir name="0">
+          <int name="field" value="103000100"/>
+          <string name="portal" value="sp"/>
+          <string name="potal" value="out00"/>
+        </imgdir>`,
+			want: "sp",
+		},
+		{
+			name: "potal resolves when portal absent",
+			banMapBody: `<imgdir name="0">
+          <int name="field" value="103000100"/>
+          <string name="potal" value="out00"/>
+        </imgdir>`,
+			want: "out00",
+		},
+		{
+			name: "sp default when neither spelling present",
+			banMapBody: `<imgdir name="0">
+          <int name="field" value="103000100"/>
+        </imgdir>`,
+			want: "sp",
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ctx := tenant.WithContext(context.Background(), tt)
+			_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(9500194), name: "Portal Typo Mob"})
+
+			body := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="9500194.img">
+  <imgdir name="info">
+    <int name="maxHP" value="100"/>
+    <imgdir name="ban">
+      <string name="banMsg" value="test"/>
+      <imgdir name="banMap">
+        ` + c.banMapBody + `
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+			rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(body)))()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rm.Banish.PortalName != c.want {
+				t.Fatalf("PortalName=%q, want %q", rm.Banish.PortalName, c.want)
+			}
+		})
 	}
 }

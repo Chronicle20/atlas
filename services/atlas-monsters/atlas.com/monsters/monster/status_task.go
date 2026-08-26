@@ -101,6 +101,18 @@ func (t *StatusExpirationTask) processDoTTick(ten tenant.Model, ctx context.Cont
 
 	// Emit damaged event
 	_ = producer.ProviderImpl(t.l)(ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(ds.Monster, se.SourceCharacterId(), se.SourceCharacterId(), false, DamageSourceDamageOverTime, totalDamage, ds.Monster.DamageSummary()))
+
+	// FR-2.4: DoT never enters damageCore (it caps at currentHp-1 and cannot
+	// kill), but the self-destruct threshold is above zero, so a poison tick
+	// can still cross it. The kill-prevention cap above is untouched — poison
+	// still cannot reduce a mob to 0 HP; it can only trip a detonation
+	// (task-253 design §2.5).
+	if ma, ierr := resolveMonsterInformation(t.l, ctx, m.MonsterId()); ierr == nil {
+		sd := ma.SelfDestruction()
+		if sd.OnHpThreshold() && int64(ds.Monster.Hp()) <= int64(sd.Hp()) {
+			NewProcessor(t.l, ctx).SelfDestruct(m.UniqueId(), se.SourceCharacterId(), TriggerThreshold)
+		}
+	}
 }
 
 // calculatePoisonDamage reads the per-tick magnitude ApplyStatusEffect

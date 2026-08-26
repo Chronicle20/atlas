@@ -198,7 +198,7 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), destroyForSession(l)(ctx)(wp)(e.UniqueId))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), destroyForSession(l)(ctx)(wp)(e.UniqueId, destroyCodeFor(e.Body.DeathType)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
@@ -209,11 +209,23 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 	}
 }
 
-func destroyForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
-		return func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
-			return func(uniqueId uint32) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDestroyWriter)(monsterpkt.NewMonsterDestroy(uniqueId, monsterpkt.DestroyTypeFadeOut).Encode)
+// destroyCodeFor maps a KILLED/DESTROYED event's DeathType* semantic key onto
+// the DestroyMonster writer's operations-table key (DOM-25). The empty string
+// means "the producer did not set it" — an old atlas-monsters mid-rolling-
+// deploy — and renders as fade-out, byte-identical to the pre-task-253
+// hardcode (task-253 design D9).
+func destroyCodeFor(deathType string) writer.DestroyMonsterCode {
+	if deathType == "" {
+		return writer.DestroyMonsterFadeOut
+	}
+	return writer.DestroyMonsterCode(deathType)
+}
+
+func destroyForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32, code writer.DestroyMonsterCode) model2.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32, code writer.DestroyMonsterCode) model2.Operator[session.Model] {
+		return func(wp writer.Producer) func(uniqueId uint32, code writer.DestroyMonsterCode) model2.Operator[session.Model] {
+			return func(uniqueId uint32, code writer.DestroyMonsterCode) model2.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDestroyWriter)(writer.DestroyMonsterBody(uniqueId, code))
 			}
 		}
 	}
@@ -298,7 +310,7 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), killForSession(l)(ctx)(wp)(e.UniqueId))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), killForSession(l)(ctx)(wp)(e.UniqueId, destroyCodeFor(e.Body.DeathType)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to kill monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
@@ -307,11 +319,11 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 	}
 }
 
-func killForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
-		return func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
-			return func(uniqueId uint32) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDestroyWriter)(monsterpkt.NewMonsterDestroy(uniqueId, monsterpkt.DestroyTypeFadeOut).Encode)
+func killForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32, code writer.DestroyMonsterCode) model2.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32, code writer.DestroyMonsterCode) model2.Operator[session.Model] {
+		return func(wp writer.Producer) func(uniqueId uint32, code writer.DestroyMonsterCode) model2.Operator[session.Model] {
+			return func(uniqueId uint32, code writer.DestroyMonsterCode) model2.Operator[session.Model] {
+				return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDestroyWriter)(writer.DestroyMonsterBody(uniqueId, code))
 			}
 		}
 	}
@@ -328,6 +340,7 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 		}
 
 		monster.GetLiveMirror().UpdateAggro(tenant.MustFromContext(ctx), e.UniqueId, e.Body.ControllerHasAggro)
+		monster.GetLiveMirror().UpdateControl(tenant.MustFromContext(ctx), e.UniqueId, e.Body.ActorId)
 
 		// Prefer the authoritative model: the event envelope carries no status
 		// effects, and the Spawn/Control bodies both encode a temporary-stat
@@ -369,6 +382,7 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 
 		// No controller => no aggro (design §5.2).
 		monster.GetLiveMirror().UpdateAggro(tenant.MustFromContext(ctx), e.UniqueId, false)
+		monster.GetLiveMirror().UpdateControl(tenant.MustFromContext(ctx), e.UniqueId, 0)
 
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		m := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
@@ -392,12 +406,14 @@ func handleStatusEventAggroChanged(sc server.Model, wp writer.Producer) message.
 
 		monster.GetLiveMirror().UpdateAggro(tenant.MustFromContext(ctx), e.UniqueId, e.Body.ControllerHasAggro)
 
-		m, err := monster.NewProcessor(l, ctx).GetById(e.UniqueId)
+		m, err := monsterGetByIdFn(l, ctx, e.UniqueId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve monster [%d] for aggro change.", e.UniqueId)
 			return
 		}
-		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, e.Body.ControllerHasAggro))
+		sf := func(s session.Model) error {
+			return announceFn(l, ctx, wp, monsterpkt.MonsterControlWriter, writer.StartControlMonsterBody(m, e.Body.ControllerHasAggro), s)
+		}
 		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ControllerCharacterId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to refresh control state for monster [%d] for character [%d].", e.UniqueId, e.Body.ControllerCharacterId)

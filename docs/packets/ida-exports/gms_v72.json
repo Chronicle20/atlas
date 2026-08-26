@@ -20688,6 +20688,22 @@
           "guard": "(a3 / 10000 == 545 || a3 / 10000 == 239) && sub_4DBE16(200, 0) && !flag18 && !dword_A9F430"
         }
       ]
+    },
+    "CMob::ApplyControl": {
+      "address": "0x61d358",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a2 - result >= 1000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a2 - result >= 1000"
+        }
+      ]
     }
   }
 }

@@ -78,7 +78,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 			m.CoolDamage = getCoolDamage(node)
 			m.LoseItems = getLoseItems(node)
 			m.SelfDestruction = getSelfDestruction(node)
-			m.FirstAttack = getFirstAttack(node)
+			m.FirstAttack = node.GetIntegerWithDefault("firstAttack", 0) > 0
 			m.DropPeriod = uint32(node.GetIntegerWithDefault("dropItemPeriod", 0) * 10000)
 			hpBarBoss := getHPBarBoss(t, monsterId)
 			if hpBarBoss {
@@ -124,7 +124,19 @@ func getBanish(node *xml.Node) banish {
 	}
 	message := b.GetString("banMsg", "")
 	mapId := uint32(b.GetIntegerWithDefault("banMap/0/field", 0))
-	portal := b.GetString("banMap/0/portal", "sp")
+	// WZ carries a typo for three GMS 83.1 templates — 9500194, 9500303,
+	// 9500304 — whose banMap/0 portal child is spelled "potal" instead of
+	// "portal". Swept across all serialized WZ scopes (GMS 48/61/72/79/83/
+	// 84/87/92/95.1, JMS 185.1); those three ids are the only occurrences
+	// and no other spelling exists. `portal` still wins when both are
+	// present. Do not "clean this up" without re-sweeping the WZ data.
+	portal := b.GetString("banMap/0/portal", "")
+	if portal == "" {
+		portal = b.GetString("banMap/0/potal", "")
+	}
+	if portal == "" {
+		portal = "sp"
+	}
 	return banish{
 		Message:    message,
 		MapId:      mapId,
@@ -195,18 +207,15 @@ func getHPBarBoss(t tenant.Model, monsterId uint32) bool {
 	return g.Exists()
 }
 
-func getFirstAttack(node *xml.Node) bool {
-	c, err := node.ChildByName("firstAttack")
-	if err != nil {
-		return false
-	}
-	return math.Round(c.GetFloatWithDefault("firstAttack", 0)) > 0
-}
-
 func getSelfDestruction(node *xml.Node) selfDestruction {
 	c, err := node.ChildByName("selfDestruction")
 	if err != nil {
-		return selfDestruction{}
+		// Absent block. The -1 sentinels match the present-but-omitted-field
+		// defaults below, so every consumer has ONE shape to read: hp == -1 and
+		// removeAfter == -1 together mean "this monster does not self-destruct"
+		// (task-253 design D2). Returning the zero value here would make hp == 0
+		// — a legal threshold — for every ordinary monster in the game.
+		return selfDestruction{Action: 0, RemoveAfter: -1, Hp: -1}
 	}
 	action := byte(c.GetIntegerWithDefault("action", 0))
 	removeAfter := c.GetIntegerWithDefault("removeAfter", -1)
@@ -245,13 +254,10 @@ func getLoseItem(node xml.Node) loseItem {
 }
 
 func getCoolDamage(node *xml.Node) coolDamage {
-	c, err := node.ChildByName("coolDamage")
-	if err != nil {
-		return coolDamage{}
+	return coolDamage{
+		Damage:      uint32(node.GetIntegerWithDefault("coolDamage", 0)),
+		Probability: uint32(node.GetIntegerWithDefault("coolDamageProb", 0)),
 	}
-	damage := uint32(c.GetIntegerWithDefault("coolDamage", 0))
-	probability := uint32(c.GetIntegerWithDefault("coolDamageProb", 0))
-	return coolDamage{Damage: damage, Probability: probability}
 }
 
 // getAttacks parses attack{1,2,3}/info subnodes. If any attackN slot has an

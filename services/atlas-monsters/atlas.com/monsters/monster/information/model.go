@@ -1,21 +1,55 @@
 package information
 
 type Model struct {
-	hp             uint32
-	mp             uint32
-	boss           bool
-	undead         bool
-	friendly       bool
-	weaponAttack   uint32
-	dropPeriod     uint32
-	resistances    map[string]string
-	animationTimes map[string]uint32
-	skills         []Skill
-	revives        []uint32
-	banish         Banish
-	attacks        []AttackInfo
-	hpRecovery     uint32
-	mpRecovery     uint32
+	hp              uint32
+	mp              uint32
+	boss            bool
+	undead          bool
+	friendly        bool
+	firstAttack     bool
+	weaponAttack    uint32
+	dropPeriod      uint32
+	resistances     map[string]string
+	animationTimes  map[string]uint32
+	skills          []Skill
+	revives         []uint32
+	banish          Banish
+	attacks         []AttackInfo
+	selfDestruction SelfDestruction
+	hpRecovery      uint32
+	mpRecovery      uint32
+}
+
+// SelfDestruction is a monster's WZ `selfDestruction` block. Present is
+// carried explicitly because hp == -1 is BOTH "no HP threshold" and the
+// absent-block default (task-253 design §2.6): without it, a timer-driven
+// mob and an ordinary monster are indistinguishable.
+type SelfDestruction struct {
+	present     bool
+	action      byte
+	removeAfter int32
+	hp          int32
+}
+
+func NewSelfDestruction(present bool, action byte, removeAfter int32, hp int32) SelfDestruction {
+	return SelfDestruction{present: present, action: action, removeAfter: removeAfter, hp: hp}
+}
+
+func (s SelfDestruction) Present() bool      { return s.present }
+func (s SelfDestruction) Action() byte       { return s.action }
+func (s SelfDestruction) RemoveAfter() int32 { return s.removeAfter }
+func (s SelfDestruction) Hp() int32          { return s.hp }
+
+// OnHpThreshold reports the HP-driven mechanic: the mob detonates once its
+// post-damage HP falls to or below Hp().
+func (s SelfDestruction) OnHpThreshold() bool { return s.present && s.hp > -1 }
+
+// OnTimer reports the timer-driven mechanic: the mob detonates RemoveAfter
+// seconds after spawn, with no HP predicate.
+func (s SelfDestruction) OnTimer() bool { return s.present && s.hp <= -1 }
+
+func (m Model) SelfDestruction() SelfDestruction {
+	return m.selfDestruction
 }
 
 type Skill struct {
@@ -104,4 +138,11 @@ func (m Model) HpRecovery() uint32 {
 
 func (m Model) MpRecovery() uint32 {
 	return m.mpRecovery
+}
+
+// FirstAttack reports whether the template is aggressive — Mob/<id>.img/info/firstAttack.
+// This is the gate that separates a genuinely aggressive mob from one that
+// merely picks up drops: CMob::ApplyControl fires for bPickUpDrop templates too.
+func (m Model) FirstAttack() bool {
+	return m.firstAttack
 }

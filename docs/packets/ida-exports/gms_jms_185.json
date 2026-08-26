@@ -15469,6 +15469,22 @@
       "direction": "serverbound",
       "notes": "task-241 Task 28, jms_v185 batch 8/8 (session a977912e, MapleStory_dump_SCY.exe.i64). DUEY_ACTION mode 8 (CLOSE, jms_v185 shift from every GMS build's mode 7). COutPacket(&pkt,57) @0x7559dd; Encode1(8) @0x7559eb; no further bytes -- the mode byte itself is written by the shared Action wrapper (action.go), not ActionClose. Body-matches v83's CloseParcelDlg shape one mode later. Atlas struct: parcel/serverbound/action_parcel_id.go ActionClose.",
       "calls": []
+    },
+    "CMob::ApplyControl": {
+      "address": "0x6eba3c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "sub_6EBB7D(this->m_pTemplate"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "sub_6EBB7D(this->m_pTemplate"
+        }
+      ]
     }
   }
 }

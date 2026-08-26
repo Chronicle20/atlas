@@ -30,8 +30,11 @@ type Processor interface {
 	CancelStatus(f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillClass string) error
 	DrainMp(f field.Model, monsterId uint32, characterId uint32, skillId uint32, amount uint32) error
 	Kill(f field.Model, monsterId uint32, characterId uint32) error
+	SelfDestruct(f field.Model, monsterId uint32, characterId uint32) error
 	ClearAggro(f field.Model, monsterId uint32) error
 	ForceControl(f field.Model, monsterId uint32, characterId uint32) error
+	SetAggro(f field.Model, monsterId uint32, characterId uint32) error
+	Banish(f field.Model, characterId uint32, monsterTemplateId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -157,6 +160,12 @@ func (p *ProcessorImpl) Kill(f field.Model, monsterId uint32, characterId uint32
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(KillCommandProvider(f, monsterId, characterId))
 }
 
+// SelfDestruct asks atlas-monsters to detonate a monster.
+func (p *ProcessorImpl) SelfDestruct(f field.Model, monsterId uint32, characterId uint32) error {
+	p.l.Debugf("Requesting self-destruct of monster [%d] reported by character [%d].", monsterId, characterId)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(SelfDestructCommandProvider(f, monsterId, characterId))
+}
+
 // ClearAggro asks atlas-monsters to fully wipe the monster's damage-aggro
 // table. Orthogonal to ForceControl — either may be issued without the other.
 func (p *ProcessorImpl) ClearAggro(f field.Model, monsterId uint32) error {
@@ -169,4 +178,21 @@ func (p *ProcessorImpl) ClearAggro(f field.Model, monsterId uint32) error {
 func (p *ProcessorImpl) ForceControl(f field.Model, monsterId uint32, characterId uint32) error {
 	p.l.Debugf("Forcing control of monster [%d] to character [%d].", monsterId, characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(ForceControlCommandProvider(f, monsterId, characterId))
+}
+
+// SetAggro asks atlas-monsters to grant auto-aggro on a client AUTO_AGGRO
+// claim. The channel applies only cheap local admission checks; every
+// authoritative gate runs in atlas-monsters.
+func (p *ProcessorImpl) SetAggro(f field.Model, monsterId uint32, characterId uint32) error {
+	p.l.Debugf("Requesting auto-aggro of monster [%d] for character [%d].", monsterId, characterId)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(SetAggroCommandProvider(f, monsterId, characterId))
+}
+
+// Banish forwards a client MOB_BANISH_PLAYER request to atlas-monsters, which
+// owns live monster state and is the only service that can validate the
+// client-supplied template id against the field. The channel makes no banish
+// decision and resolves no monster data.
+func (p *ProcessorImpl) Banish(f field.Model, characterId uint32, monsterTemplateId uint32) error {
+	p.l.Debugf("Character [%d] requesting banish by monster template [%d].", characterId, monsterTemplateId)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(BanishCommandProvider(f, characterId, monsterTemplateId))
 }

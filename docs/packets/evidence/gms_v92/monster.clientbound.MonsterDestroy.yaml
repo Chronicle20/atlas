@@ -1,0 +1,11 @@
+packet: monster/clientbound/MonsterDestroy
+direction: clientbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CMobPool::OnMobLeaveField
+    address: "0x64bb90"
+    decompile_sha256: 6c4d91eeba7650eeb884af03b21cd359ac99ee8293030289671fb64f96a08340
+verifies:
+    - libs/atlas-packet/monster/clientbound/destroy_test.go#TestMonsterDestroySwallowGate
+    - libs/atlas-packet/monster/clientbound/destroy_test.go#TestMonsterDestroyNonSwallowTypesAreFiveBytes

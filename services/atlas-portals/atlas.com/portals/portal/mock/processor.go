@@ -17,6 +17,7 @@ type ProcessorMock struct {
 	WarpFunc                func(f field.Model, characterId uint32, targetMapId _map.Id)
 	EnterFunc               func(f field.Model, portalId uint32, characterId uint32)
 	WarpByIdFunc            func(f field.Model, characterId uint32, targetMapId _map.Id, portalId uint32)
+	WarpByNameFunc          func(f field.Model, characterId uint32, targetMapId _map.Id, name string)
 	WarpToPositionFunc      func(f field.Model, characterId uint32, targetMapId _map.Id, x int16, y int16)
 	WarpToPortalFunc        func(f field.Model, characterId uint32, targetMapId _map.Id, portalProvider model.Provider[uint32])
 }
@@ -73,6 +74,12 @@ func (m *ProcessorMock) Enter(f field.Model, portalId uint32, characterId uint32
 func (m *ProcessorMock) WarpById(f field.Model, characterId uint32, targetMapId _map.Id, portalId uint32) {
 	if m.WarpByIdFunc != nil {
 		m.WarpByIdFunc(f, characterId, targetMapId, portalId)
+	}
+}
+
+func (m *ProcessorMock) WarpByName(f field.Model, characterId uint32, targetMapId _map.Id, name string) {
+	if m.WarpByNameFunc != nil {
+		m.WarpByNameFunc(f, characterId, targetMapId, name)
 	}
 }
 

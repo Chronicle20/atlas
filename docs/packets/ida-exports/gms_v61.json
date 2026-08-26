@@ -19025,6 +19025,22 @@
           "guard": "v36 == (void *)999999999"
         }
       ]
+    },
+    "CMob::ApplyControl": {
+      "address": "0x5ccf1c",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a2 - result >= 1000"
+        },
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "result && a2 - result >= 1000"
+        }
+      ]
     }
   }
 }

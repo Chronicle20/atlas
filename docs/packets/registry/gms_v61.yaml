@@ -2664,6 +2664,14 @@
   ida:
     address: 6075050
   note: 'v61 send-site (0x5cb2aa, CMob controller): COutPacket(155)+Encode4(mobId)+Encode2+Encode1+Encode1+Encode4+Encode1+Encode4+CMovePath::Flush. Matches v72 MOVE_LIFE=178 (CMob::GenerateMovePath); Δ-23.'
+- op: AUTO_AGGRO
+  direction: serverbound
+  opcode: 156
+  fname: CMob::ApplyControl
+  provenance: ida-discovered
+  ida:
+    address: 6082332
+  note: 'task-255: the registry had NO AUTO_AGGRO entry for this version — the ops CSVs have no column before GMS v83, which is a CSV blind spot, not a client absence. CMob::ApplyControl @0x5ccf1c builds COutPacket(156) and encodes Encode4(fused mobId)+Encode4(proximity score). Adjacent to MOB_DROP_PICKUP_REQUEST=157.'
 - op: MOB_DROP_PICKUP_REQUEST
   direction: serverbound
   opcode: 157

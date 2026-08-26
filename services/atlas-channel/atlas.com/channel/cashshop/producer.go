@@ -186,6 +186,23 @@ func AcknowledgeGiftsCommandProvider(characterId uint32, accountId uint32, cashI
 	return producer.SingleMessageProvider(key, value)
 }
 
+// MarkGiftNoteSentCommandProvider marks cashId's gift-forward note as sent
+// (task-240 Defect I). Uses characterId only as the producer partitioning
+// key, mirroring every other command here -- the server-side effect is
+// entirely scoped by accountId + cashId.
+func MarkGiftNoteSentCommandProvider(characterId uint32, accountId uint32, cashId int64) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &cashshop.Command[cashshop.MarkGiftNoteSentCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeMarkGiftNoteSent,
+		Body: cashshop.MarkGiftNoteSentCommandBody{
+			AccountId: accountId,
+			CashId:    cashId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func RequestGiftPurchaseCommandProvider(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &cashshop.Command[cashshop.RequestGiftPurchaseCommandBody]{

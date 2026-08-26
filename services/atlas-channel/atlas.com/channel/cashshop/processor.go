@@ -34,6 +34,11 @@ type Processor interface {
 	// (task-240 Defect H) -- fired after a successful LOAD_GIFT_SUCCESS
 	// announce, never before, so a gift is presented exactly once.
 	AcknowledgeGifts(accountId uint32, characterId uint32, cashIds []int64) error
+	// MarkGiftNoteSent marks cashId's gift-forward note as sent (task-240
+	// Defect I) -- an independent flag from AcknowledgeGifts, fired after
+	// the note-send saga is created, gating a replayed NOTE_ACTION SEND
+	// from minting a second free note.
+	MarkGiftNoteSent(accountId uint32, characterId uint32, cashId int64) error
 	RequestGiftPurchase(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) error
 	RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error
 	RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error
@@ -248,6 +253,12 @@ func (p *ProcessorImpl) RequestLockerRebate(accountId uint32, characterId uint32
 func (p *ProcessorImpl) AcknowledgeGifts(accountId uint32, characterId uint32, cashIds []int64) error {
 	p.l.Debugf("Character [%d] acknowledging [%d] gift(s).", characterId, len(cashIds))
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(AcknowledgeGiftsCommandProvider(characterId, accountId, cashIds))
+}
+
+// MarkGiftNoteSent forwards MARK_GIFT_NOTE_SENT (task-240 Defect I).
+func (p *ProcessorImpl) MarkGiftNoteSent(accountId uint32, characterId uint32, cashId int64) error {
+	p.l.Debugf("Character [%d] marking gift note sent for cash item [%d].", characterId, cashId)
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(MarkGiftNoteSentCommandProvider(characterId, accountId, cashId))
 }
 
 // RequestGiftPurchase forwards a GIFT purchase request. TransactionId is

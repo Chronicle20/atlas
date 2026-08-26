@@ -15,6 +15,7 @@ type Model struct {
 	giftFrom         string
 	giftMessage      string
 	giftAcknowledged bool
+	giftNoteSent     bool
 }
 
 // Id returns the unique identifier of this asset
@@ -71,4 +72,12 @@ func (m Model) GiftMessage() string {
 // rationale.
 func (m Model) GiftAcknowledged() bool {
 	return m.giftAcknowledged
+}
+
+// GiftNoteSent reports whether the gift-forward note for this asset has
+// already been sent to the gifter (task-240 Defect I). This is a SECOND,
+// independent flag from GiftAcknowledged -- see atlas-cashshop's
+// asset.Entity.GiftNoteSent doc comment for the full rationale.
+func (m Model) GiftNoteSent() bool {
+	return m.giftNoteSent
 }

@@ -65,8 +65,27 @@ type Entity struct {
 	// (false) on every existing row, so a locker asset created before this
 	// field existed is treated as not-yet-presented, which is correct: it
 	// has never been announced under this flag's regime.
-	GiftAcknowledged bool           `gorm:"not null;default:false"`
-	DeletedAt        gorm.DeletedAt `gorm:"index"`
+	GiftAcknowledged bool `gorm:"not null;default:false"`
+	// GiftNoteSent records whether the gift-forward NOTE_ACTION SEND for
+	// this asset has already minted its free note to the gifter (task-240
+	// Defect I). This is a SECOND, independent flag from GiftAcknowledged --
+	// it answers "has its note been sent?", not "was this presented?", and
+	// it drains at a different moment: the note *send*, not the
+	// LOAD_GIFT_SUCCESS announce. By the time a legitimate note arrives,
+	// GiftAcknowledged has already been drained by the announce, so
+	// handleNoteGiftForward must gate on THIS flag, never on
+	// GiftAcknowledged. Without it, a modified client that re-emits
+	// giftFlag=1 for a gift it still holds could mint unlimited free notes.
+	// AutoMigrate lands the column default (false) on every existing row.
+	//
+	// Known limitation, not fixed here: the mark-sent command is
+	// asynchronous (a Kafka round trip), so two acknowledgement packets
+	// racing inside that window can both pass this gate before either
+	// write lands. This narrows the exposure from unbounded to a single
+	// race; closing it fully would need a synchronous write on the packet
+	// path, which no other cash-shop flow in this service does.
+	GiftNoteSent bool           `gorm:"not null;default:false"`
+	DeletedAt    gorm.DeletedAt `gorm:"index"`
 }
 
 func (e Entity) TableName() string {
@@ -88,5 +107,6 @@ func Make(e Entity) (Model, error) {
 		SetGiftFrom(e.GiftFrom).
 		SetGiftMessage(e.GiftMessage).
 		SetGiftAcknowledged(e.GiftAcknowledged).
+		SetGiftNoteSent(e.GiftNoteSent).
 		Build(), nil
 }

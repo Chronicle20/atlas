@@ -21,6 +21,7 @@ type modelBuilder struct {
 	giftFrom         string
 	giftMessage      string
 	giftAcknowledged bool
+	giftNoteSent     bool
 }
 
 // NewModelBuilder creates a new modelBuilder with required fields
@@ -41,6 +42,7 @@ func CloneModel(m Model) *modelBuilder {
 		giftFrom:         m.giftFrom,
 		giftMessage:      m.giftMessage,
 		giftAcknowledged: m.giftAcknowledged,
+		giftNoteSent:     m.giftNoteSent,
 	}
 }
 
@@ -81,6 +83,13 @@ func (b *modelBuilder) SetGiftAcknowledged(giftAcknowledged bool) *modelBuilder 
 	return b
 }
 
+// SetGiftNoteSent sets whether the gift-forward note for this asset has
+// already been sent to the gifter (task-240 Defect I).
+func (b *modelBuilder) SetGiftNoteSent(giftNoteSent bool) *modelBuilder {
+	b.giftNoteSent = giftNoteSent
+	return b
+}
+
 // Build creates a Model from this builder
 func (b *modelBuilder) Build() (Model, error) {
 	if b.id == 0 {
@@ -96,6 +105,7 @@ func (b *modelBuilder) Build() (Model, error) {
 		giftFrom:         b.giftFrom,
 		giftMessage:      b.giftMessage,
 		giftAcknowledged: b.giftAcknowledged,
+		giftNoteSent:     b.giftNoteSent,
 	}, nil
 }
 

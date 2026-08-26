@@ -106,3 +106,14 @@ func updateGiftAcknowledged(db *gorm.DB, compartmentId uuid.UUID, cashIds []int6
 		Where("compartment_id = ? AND cash_id IN ?", compartmentId, cashIds).
 		Update("gift_acknowledged", true).Error
 }
+
+// updateGiftNoteSent marks the asset in compartmentId whose CashId equals
+// cashId as having had its gift-forward note sent (task-240 Defect I).
+// Scoped by compartmentId as well as CashId, same rationale as
+// updateGiftAcknowledged. A cashId that does not resolve to any row in this
+// compartment updates nothing and is not an error.
+func updateGiftNoteSent(db *gorm.DB, compartmentId uuid.UUID, cashId int64) error {
+	return db.Model(&Entity{}).
+		Where("compartment_id = ? AND cash_id = ?", compartmentId, cashId).
+		Update("gift_note_sent", true).Error
+}

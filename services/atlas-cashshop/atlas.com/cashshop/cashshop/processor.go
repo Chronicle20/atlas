@@ -119,6 +119,7 @@ type Processor interface {
 	PurchaseEquipSlotAndEmit(characterId uint32, currency uint32, serialNumber uint32, transactionId uuid.UUID) error
 	CompleteEquipSlotExtension(characterId uint32, slotIndex int16, days uint16, transactionId uuid.UUID) error
 	AcknowledgeGiftsAndEmit(accountId uint32, cashIds []int64) error
+	MarkGiftNoteSentAndEmit(accountId uint32, cashId int64) error
 }
 
 type ProcessorImpl struct {

@@ -86,6 +86,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandAcknowledgeGifts(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandMarkGiftNoteSent(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -302,6 +305,22 @@ func handleCommandAcknowledgeGifts(db *gorm.DB) message.Handler[cashshop.Command
 		}
 		if err := cashshop3.NewProcessor(l, ctx, db).AcknowledgeGiftsAndEmit(c.Body.AccountId, c.Body.CashIds); err != nil {
 			l.WithError(err).Errorf("Unable to acknowledge gifts for account [%d].", c.Body.AccountId)
+		}
+	}
+}
+
+// handleCommandMarkGiftNoteSent consumes MARK_GIFT_NOTE_SENT (task-240
+// Defect I): MarkGiftNoteSentAndEmit marks the named asset's gift-forward
+// note as sent, in whichever of the requesting account's compartments holds
+// it. There is nothing client-facing to announce on either success or
+// failure, so a returned error is only logged for operators.
+func handleCommandMarkGiftNoteSent(db *gorm.DB) message.Handler[cashshop.Command[cashshop.MarkGiftNoteSentCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c cashshop.Command[cashshop.MarkGiftNoteSentCommandBody]) {
+		if c.Type != cashshop.CommandTypeMarkGiftNoteSent {
+			return
+		}
+		if err := cashshop3.NewProcessor(l, ctx, db).MarkGiftNoteSentAndEmit(c.Body.AccountId, c.Body.CashId); err != nil {
+			l.WithError(err).Errorf("Unable to mark gift note sent for account [%d].", c.Body.AccountId)
 		}
 	}
 }

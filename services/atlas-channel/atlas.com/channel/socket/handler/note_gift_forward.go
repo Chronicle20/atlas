@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/cashshop"
 	"atlas-channel/cashshop/inventory/compartment"
 	"atlas-channel/character"
 	"atlas-channel/saga"
@@ -52,15 +53,36 @@ func buildGiftForwardSaga(transactionId uuid.UUID, now time.Time, senderId uint3
 }
 
 // findGiftAsset locates the cash-shop asset the gift-forward NOTE_ACTION SEND
-// packet references by its cash-item serial number (GiftSN). Returns
-// (giftFrom, true) when found; ("", false) when not.
-func findGiftAsset(cp compartment.Model, giftSN uint64) (string, bool) {
+// packet references by its cash-item serial number (GiftSN). Returns the
+// asset's giftFrom and giftNoteSent (task-240 Defect I) when found, with
+// found == true; ("", false, false) when not.
+func findGiftAsset(cp compartment.Model, giftSN uint64) (giftFrom string, giftNoteSent bool, found bool) {
 	for _, as := range cp.Assets() {
 		if uint64(as.Item().CashId()) == giftSN {
-			return as.GiftFrom(), true
+			return as.GiftFrom(), as.GiftNoteSent(), true
 		}
 	}
-	return "", false
+	return "", false, false
+}
+
+// noteGiftForwardMarkSentFunc is a test seam for the MARK_GIFT_NOTE_SENT
+// command (precedent: noteGiftForwardSagaCreateFunc above).
+var noteGiftForwardMarkSentFunc = func(l logrus.FieldLogger, ctx context.Context, s session.Model, cashId int64) error {
+	return cashshop.NewProcessor(l, ctx).MarkGiftNoteSent(s.AccountId(), s.CharacterId(), cashId)
+}
+
+// noteGiftForwardCompartmentFunc is a test seam for the sender's cash-shop
+// compartment lookup (precedent: noteGiftForwardSagaCreateFunc above) -- lets
+// tests exercise the real gates in handleNoteGiftForward against a
+// builder-constructed compartment.Model, with no HTTP involved.
+var noteGiftForwardCompartmentFunc = func(l logrus.FieldLogger, ctx context.Context, accountId uint32) (compartment.Model, error) {
+	return compartment.NewProcessor(l, ctx).GetByAccountIdAndType(accountId, compartment.TypeExplorer)
+}
+
+// noteGiftForwardCharacterFunc is a test seam for gifter resolution
+// (precedent: noteGiftForwardSagaCreateFunc above).
+var noteGiftForwardCharacterFunc = func(l logrus.FieldLogger, ctx context.Context, name string) (character.Model, error) {
+	return character.NewProcessor(l, ctx).GetByName(name)
 }
 
 // handleNoteGiftForward implements the gift-forward branch of NOTE_ACTION
@@ -76,17 +98,27 @@ func findGiftAsset(cp compartment.Model, giftSN uint64) (string, bool) {
 // here announces anything to the client — the client has already shown
 // SP_2713 "The note has successfully been sent." unconditionally, before any
 // server reply, so there is no arm to answer on.
+//
+// A second gate, independent of the above, closes task-240 Defect I: the
+// asset's GiftNoteSent flag must not already be set. GiftAcknowledged is
+// deliberately NOT consulted here — it drains on the LOAD_GIFT_SUCCESS
+// announce, before this packet can ever arrive, so gating on it would reject
+// every legitimate note (see "### Interaction with Defect G" in the bug
+// writeup). Known limitation, not fixed here: MarkGiftNoteSent is an
+// asynchronous Kafka round trip, so two acknowledgement packets racing
+// inside that window can both pass this gate before either write lands.
+// This narrows the exposure from unbounded to a single race.
 func handleNoteGiftForward(l logrus.FieldLogger, ctx context.Context) func(s session.Model, sp *notesb.OperationSend) {
 	return func(s session.Model, sp *notesb.OperationSend) {
 		// TODO select correct compartment (cash_shop_entry.go:74 applies here
 		// identically).
-		cp, err := compartment.NewProcessor(l, ctx).GetByAccountIdAndType(s.AccountId(), compartment.TypeExplorer)
+		cp, err := noteGiftForwardCompartmentFunc(l, ctx, s.AccountId())
 		if err != nil {
 			l.WithError(err).Warnf("Character [%d] NOTE_ACTION SEND gift-forward: unable to load cash compartment. Not creating note.", s.CharacterId())
 			return
 		}
 
-		giftFrom, found := findGiftAsset(cp, sp.GiftSN())
+		giftFrom, giftNoteSent, found := findGiftAsset(cp, sp.GiftSN())
 		if !found {
 			l.Warnf("Character [%d] NOTE_ACTION SEND gift-forward: no cash-shop asset with SN [%d]. Not creating note.", s.CharacterId(), sp.GiftSN())
 			return
@@ -95,8 +127,12 @@ func handleNoteGiftForward(l logrus.FieldLogger, ctx context.Context) func(s ses
 			l.Warnf("Character [%d] NOTE_ACTION SEND gift-forward: asset SN [%d] giftFrom [%s] does not match toName [%s]. Not creating note.", s.CharacterId(), sp.GiftSN(), giftFrom, sp.ToName())
 			return
 		}
+		if giftNoteSent {
+			l.Warnf("Character [%d] NOTE_ACTION SEND gift-forward: asset SN [%d] has already had its note sent. Not creating a second note.", s.CharacterId(), sp.GiftSN())
+			return
+		}
 
-		gifter, err := character.NewProcessor(l, ctx).GetByName(sp.ToName())
+		gifter, err := noteGiftForwardCharacterFunc(l, ctx, sp.ToName())
 		if err != nil {
 			l.WithError(err).Warnf("Character [%d] NOTE_ACTION SEND gift-forward: unable to resolve gifter [%s]. Not creating note.", s.CharacterId(), sp.ToName())
 			return
@@ -105,6 +141,11 @@ func handleNoteGiftForward(l logrus.FieldLogger, ctx context.Context) func(s ses
 		sg := buildGiftForwardSaga(uuid.New(), time.Now(), s.CharacterId(), gifter.Id(), sp.Message())
 		if err = noteGiftForwardSagaCreateFunc(l, ctx, sg); err != nil {
 			l.WithError(err).Errorf("Character [%d] NOTE_ACTION SEND gift-forward: unable to create note_send saga.", s.CharacterId())
+			return
+		}
+
+		if err = noteGiftForwardMarkSentFunc(l, ctx, s, int64(sp.GiftSN())); err != nil {
+			l.WithError(err).Errorf("Character [%d] NOTE_ACTION SEND gift-forward: unable to mark gift note sent for SN [%d].", s.CharacterId(), sp.GiftSN())
 		}
 	}
 }

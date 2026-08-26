@@ -4,7 +4,9 @@ import (
 	"atlas-channel/cashshop/inventory/asset"
 	"atlas-channel/cashshop/inventory/compartment"
 	"atlas-channel/cashshop/item"
+	"atlas-channel/character"
 	"atlas-channel/saga"
+	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"net/http"
@@ -16,10 +18,12 @@ import (
 	"github.com/sirupsen/logrus"
 
 	notecb "github.com/Chronicle20/atlas/libs/atlas-packet/note/clientbound"
+	notesb "github.com/Chronicle20/atlas/libs/atlas-packet/note/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	swriter "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // TestBuildGiftForwardSaga pins the gift-forward saga's shape: exactly one
@@ -53,14 +57,15 @@ func TestBuildGiftForwardSaga(t *testing.T) {
 }
 
 // giftAsset builds a cash-shop compartment holding a single asset with the
-// given cashId/giftFrom, for findGiftAsset tests.
-func giftAsset(t *testing.T, cashId int64, giftFrom string) compartment.Model {
+// given cashId/giftFrom/giftNoteSent, for findGiftAsset and
+// handleNoteGiftForward tests.
+func giftAsset(t *testing.T, cashId int64, giftFrom string, giftNoteSent bool) compartment.Model {
 	t.Helper()
 	i, err := item.NewModelBuilder().SetId(1).SetCashId(cashId).SetTemplateId(5000).Build()
 	if err != nil {
 		t.Fatalf("item: %v", err)
 	}
-	a, err := asset.NewModelBuilder(1, uuid.New(), i).SetGiftFrom(giftFrom).Build()
+	a, err := asset.NewModelBuilder(1, uuid.New(), i).SetGiftFrom(giftFrom).SetGiftNoteSent(giftNoteSent).Build()
 	if err != nil {
 		t.Fatalf("asset: %v", err)
 	}
@@ -75,41 +80,149 @@ func giftAsset(t *testing.T, cashId int64, giftFrom string) compartment.Model {
 // forwarded GiftSN carries the sender name, which the caller then compares
 // against ToName.
 func TestFindGiftAsset_Matching(t *testing.T) {
-	cp := giftAsset(t, 10002321, "Gifter")
+	cp := giftAsset(t, 10002321, "Gifter", false)
 
-	giftFrom, found := findGiftAsset(cp, 10002321)
+	giftFrom, giftNoteSent, found := findGiftAsset(cp, 10002321)
 	if !found {
 		t.Fatal("expected asset to be found by GiftSN")
 	}
 	if giftFrom != "Gifter" {
 		t.Fatalf("giftFrom = %q, want %q", giftFrom, "Gifter")
 	}
+	if giftNoteSent {
+		t.Fatal("expected giftNoteSent = false for a fresh asset")
+	}
 }
 
 // TestFindGiftAsset_UnknownSN pins FR: a GiftSN the character does not hold
 // must not resolve to any giftFrom.
 func TestFindGiftAsset_UnknownSN(t *testing.T) {
-	cp := giftAsset(t, 10002321, "Gifter")
+	cp := giftAsset(t, 10002321, "Gifter", false)
 
-	_, found := findGiftAsset(cp, 99999999)
+	_, _, found := findGiftAsset(cp, 99999999)
 	if found {
 		t.Fatal("expected no asset to be found for an unowned GiftSN")
 	}
 }
 
-// TestFindGiftAsset_GiftFromMismatch pins the anti-tamper gate: the asset is
-// found, but its giftFrom differs from the client-supplied ToName -- the
-// caller (handleNoteGiftForward) must reject this, never create a note.
-func TestFindGiftAsset_GiftFromMismatch(t *testing.T) {
-	cp := giftAsset(t, 10002321, "ActualGifter")
+// withNoteGiftForwardSeams overrides the compartment/character/saga/mark-sent
+// test seams for the duration of the test, and returns recorders for whether
+// a saga was created and whether MarkGiftNoteSent was called.
+func withNoteGiftForwardSeams(t *testing.T, cp compartment.Model, gifterId uint32) (sagaCreated *bool, markSentCalled *bool) {
+	t.Helper()
+	sagaCreated = new(bool)
+	markSentCalled = new(bool)
 
-	giftFrom, found := findGiftAsset(cp, 10002321)
-	if !found {
-		t.Fatal("expected asset to be found by GiftSN")
+	origCompartment := noteGiftForwardCompartmentFunc
+	origCharacter := noteGiftForwardCharacterFunc
+	origSaga := noteGiftForwardSagaCreateFunc
+	origMarkSent := noteGiftForwardMarkSentFunc
+
+	noteGiftForwardCompartmentFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (compartment.Model, error) {
+		return cp, nil
 	}
-	if giftFrom == "SomeoneElse" {
-		t.Fatal("test setup error: giftFrom must differ from the tampered toName")
+	noteGiftForwardCharacterFunc = func(_ logrus.FieldLogger, _ context.Context, _ string) (character.Model, error) {
+		return character.Extract(character.RestModel{Id: gifterId})
 	}
+	noteGiftForwardSagaCreateFunc = func(_ logrus.FieldLogger, _ context.Context, _ saga.Saga) error {
+		*sagaCreated = true
+		return nil
+	}
+	noteGiftForwardMarkSentFunc = func(_ logrus.FieldLogger, _ context.Context, _ session.Model, _ int64) error {
+		*markSentCalled = true
+		return nil
+	}
+
+	t.Cleanup(func() {
+		noteGiftForwardCompartmentFunc = origCompartment
+		noteGiftForwardCharacterFunc = origCharacter
+		noteGiftForwardSagaCreateFunc = origSaga
+		noteGiftForwardMarkSentFunc = origMarkSent
+	})
+	return sagaCreated, markSentCalled
+}
+
+// TestHandleNoteGiftForward_GiftFromMismatch pins the anti-tamper gate for
+// real: handleNoteGiftForward must create no saga and mark nothing sent when
+// the asset's GiftFrom differs from the client-supplied ToName. Unlike the
+// prior version of this test, this one fails if the gate is removed from
+// handleNoteGiftForward.
+func TestHandleNoteGiftForward_GiftFromMismatch(t *testing.T) {
+	const characterId = uint32(778899)
+	cp := giftAsset(t, 10002321, "ActualGifter", false)
+	sagaCreated, markSentCalled := withNoteGiftForwardSeams(t, cp, 200)
+
+	s, _, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	handleNoteGiftForward(logrus.New(), context.Background())(s, notesbOperationSend(t, "SomeoneElse", "hi", 10002321))
+
+	if *sagaCreated {
+		t.Fatal("expected no saga to be created on a giftFrom/toName mismatch")
+	}
+	if *markSentCalled {
+		t.Fatal("expected no mark-sent call on a giftFrom/toName mismatch")
+	}
+}
+
+// TestHandleNoteGiftForward_AlreadySent pins task-240 Defect I's gate: an
+// asset whose GiftNoteSent is already true must not mint a second note, even
+// though it passes the ownership gate.
+func TestHandleNoteGiftForward_AlreadySent(t *testing.T) {
+	const characterId = uint32(778899)
+	cp := giftAsset(t, 10002321, "Gifter", true)
+	sagaCreated, markSentCalled := withNoteGiftForwardSeams(t, cp, 200)
+
+	s, _, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	handleNoteGiftForward(logrus.New(), context.Background())(s, notesbOperationSend(t, "Gifter", "hi", 10002321))
+
+	if *sagaCreated {
+		t.Fatal("expected no saga to be created when GiftNoteSent is already true")
+	}
+	if *markSentCalled {
+		t.Fatal("expected no mark-sent call when GiftNoteSent is already true")
+	}
+}
+
+// TestHandleNoteGiftForward_Success pins the happy path: a matching,
+// not-yet-sent gift asset creates exactly one saga and marks the note sent.
+func TestHandleNoteGiftForward_Success(t *testing.T) {
+	const characterId = uint32(778899)
+	cp := giftAsset(t, 10002321, "Gifter", false)
+	sagaCreated, markSentCalled := withNoteGiftForwardSeams(t, cp, 200)
+
+	s, _, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	handleNoteGiftForward(logrus.New(), context.Background())(s, notesbOperationSend(t, "Gifter", "hi", 10002321))
+
+	if !*sagaCreated {
+		t.Fatal("expected a saga to be created for a matching, unsent gift")
+	}
+	if !*markSentCalled {
+		t.Fatal("expected the gift's note to be marked sent")
+	}
+}
+
+// notesbOperationSend builds a NOTE_ACTION SEND OperationSend value by
+// decoding a v83 GMS giftFlag=1 wire packet through the real codec, for
+// handleNoteGiftForward unit tests.
+func notesbOperationSend(t *testing.T, toName string, message string, giftSN uint64) *notesb.OperationSend {
+	t.Helper()
+	ten := mustTenant(t, "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	req := noteActionSendPacket(t, toName, message, 1, giftSN)
+	req.ReadByte() // consume the op byte NoteOperationHandleFunc already dispatched on
+
+	sp := &notesb.OperationSend{}
+	sp.Decode(logrus.New(), ctx)(req, nil)
+	if sp.GiftSN() != giftSN {
+		t.Fatalf("test setup error: decoded giftSN %d != requested %d", sp.GiftSN(), giftSN)
+	}
+	return sp
 }
 
 // noteRecorder is a fake writer.Producer that records every announced writer
@@ -154,7 +267,7 @@ func noteDispatchOptions() map[string]interface{} {
 // noteActionSendPacket builds a v83 GMS NOTE_ACTION SEND wire packet: op(1)
 // + toName + message + giftFlag(1) + giftIndex(4) + giftSN(8) -- v83 is past
 // the v48 cutoff, so sendHasGiftDetails is true (operation_send.go).
-func noteActionSendPacket(t *testing.T, toName string, message string, giftFlag byte) *request.Reader {
+func noteActionSendPacket(t *testing.T, toName string, message string, giftFlag byte, giftSN uint64) *request.Reader {
 	t.Helper()
 	w := response.NewWriter(logrus.New())
 	w.WriteByte(0) // op: SEND
@@ -162,7 +275,7 @@ func noteActionSendPacket(t *testing.T, toName string, message string, giftFlag 
 	w.WriteAsciiString(message)
 	w.WriteByte(giftFlag)
 	w.WriteInt(uint32(0))
-	w.WriteLong(uint64(0))
+	w.WriteLong(giftSN)
 	req := request.Request(w.Bytes())
 	reader := request.NewRequestReader(&req, 0)
 	return &reader
@@ -186,7 +299,7 @@ func TestNoteActionSendGiftFlagZeroStillGatesOnNoteItem(t *testing.T) {
 	defer cleanup()
 
 	rec := &noteRecorder{}
-	NoteOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, noteActionSendPacket(t, "Gifter", "hi", 0), noteDispatchOptions())
+	NoteOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, noteActionSendPacket(t, "Gifter", "hi", 0, 0), noteDispatchOptions())
 
 	if len(rec.announced) != 1 {
 		t.Fatalf("announced %d packets, want 1", len(rec.announced))
@@ -224,7 +337,7 @@ func TestNoteActionSendGiftFlagOneDoesNotHitNoteItemGate(t *testing.T) {
 	defer cleanup()
 
 	rec := &noteRecorder{}
-	NoteOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, noteActionSendPacket(t, "Gifter", "hi", 1), noteDispatchOptions())
+	NoteOperationHandleFunc(logrus.New(), ctx, rec.producer())(s, noteActionSendPacket(t, "Gifter", "hi", 1, 0), noteDispatchOptions())
 
 	if len(rec.announced) != 0 {
 		t.Fatalf("announced %d packets, want 0 (gift-forward never announces)", len(rec.announced))

@@ -22,6 +22,7 @@ type Model struct {
 	giftFrom         string
 	giftMessage      string
 	giftAcknowledged bool
+	giftNoteSent     bool
 }
 
 func (m Model) Id() uint32 {
@@ -97,6 +98,14 @@ func (m Model) GiftAcknowledged() bool {
 	return m.giftAcknowledged
 }
 
+// GiftNoteSent reports whether the gift-forward note for this asset has
+// already been sent to the gifter (task-240 Defect I). See
+// Entity.GiftNoteSent's doc comment: this is a SECOND, independent flag from
+// GiftAcknowledged -- do not conflate the two.
+func (m Model) GiftNoteSent() bool {
+	return m.giftNoteSent
+}
+
 func Clone(m Model) *ModelBuilder {
 	return &ModelBuilder{
 		id:               m.id,
@@ -114,6 +123,7 @@ func Clone(m Model) *ModelBuilder {
 		giftFrom:         m.giftFrom,
 		giftMessage:      m.giftMessage,
 		giftAcknowledged: m.giftAcknowledged,
+		giftNoteSent:     m.giftNoteSent,
 	}
 }
 
@@ -133,6 +143,7 @@ type ModelBuilder struct {
 	giftFrom         string
 	giftMessage      string
 	giftAcknowledged bool
+	giftNoteSent     bool
 }
 
 func NewBuilder(compartmentId uuid.UUID, templateId uint32) *ModelBuilder {
@@ -219,6 +230,13 @@ func (b *ModelBuilder) SetGiftAcknowledged(giftAcknowledged bool) *ModelBuilder 
 	return b
 }
 
+// SetGiftNoteSent sets whether the gift-forward note for this asset has
+// already been sent to the gifter (task-240 Defect I).
+func (b *ModelBuilder) SetGiftNoteSent(giftNoteSent bool) *ModelBuilder {
+	b.giftNoteSent = giftNoteSent
+	return b
+}
+
 func (b *ModelBuilder) Build() Model {
 	return Model{
 		id:               b.id,
@@ -236,5 +254,6 @@ func (b *ModelBuilder) Build() Model {
 		giftFrom:         b.giftFrom,
 		giftMessage:      b.giftMessage,
 		giftAcknowledged: b.giftAcknowledged,
+		giftNoteSent:     b.giftNoteSent,
 	}
 }

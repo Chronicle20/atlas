@@ -23,6 +23,7 @@ const (
 	CommandTypeRequestRingPurchase                = "REQUEST_RING_PURCHASE"
 	CommandTypeRequestEquipSlotIncrease           = "REQUEST_EQUIP_SLOT_INCREASE"
 	CommandTypeAcknowledgeGifts                   = "ACKNOWLEDGE_GIFTS"
+	CommandTypeMarkGiftNoteSent                   = "MARK_GIFT_NOTE_SENT"
 
 	// CommandTypeExtendEquipSlot is an INTERNAL follow-up command, never sent
 	// by atlas-channel: PurchaseEquipSlotAndEmit (cashshop/equipslot.go)
@@ -201,6 +202,22 @@ type RequestEquipSlotIncreaseCommandBody struct {
 type AcknowledgeGiftsCommandBody struct {
 	AccountId uint32  `json:"accountId"`
 	CashIds   []int64 `json:"cashIds"`
+}
+
+// MarkGiftNoteSentCommandBody marks a single locker asset as having had its
+// gift-forward note sent (task-240 Defect I) -- an independent flag from
+// AcknowledgeGiftsCommandBody, set at note-send time rather than announce
+// time. AccountId scopes the update to the requesting account's own
+// compartments (mirrors AcknowledgeGiftsCommandBody). CashId is the CashId
+// (cash_assets' wire serial, NOT the row id) of the asset whose note was just
+// sent. A Kafka redelivery replays the same id and is naturally a no-op:
+// setting an already-true flag to true again has no observable effect, so
+// there is no separate idempotency ledger entry for this command.
+// Byte-identical JSON tags with atlas-channel's kafka/message/cashshop/kafka.go
+// copy of this shape.
+type MarkGiftNoteSentCommandBody struct {
+	AccountId uint32 `json:"accountId"`
+	CashId    int64  `json:"cashId"`
 }
 
 // ExtendEquipSlotCommandBody carries the already-resolved extension the

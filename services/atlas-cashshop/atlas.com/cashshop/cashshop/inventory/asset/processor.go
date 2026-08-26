@@ -40,6 +40,11 @@ type Processor interface {
 	// announce, not on the client's acknowledgement, per
 	// buildGiftListEntries' caller.
 	AcknowledgeGifts(compartmentId uuid.UUID, cashIds []int64) error
+	// MarkGiftNoteSent marks the asset in compartmentId whose CashId equals
+	// cashId as having had its gift-forward note sent (task-240 Defect I) --
+	// independent of AcknowledgeGifts, and gates handleNoteGiftForward
+	// against a replayed NOTE_ACTION SEND minting a second free note.
+	MarkGiftNoteSent(compartmentId uuid.UUID, cashId int64) error
 	Delete(mb *message.Buffer) func(id uint32) error
 	DeleteAndEmit(id uint32) error
 	Release(mb *message.Buffer) func(id uint32) error
@@ -258,6 +263,10 @@ func (p *ProcessorImpl) UpdateQuantity(id uint32, quantity uint32) error {
 
 func (p *ProcessorImpl) AcknowledgeGifts(compartmentId uuid.UUID, cashIds []int64) error {
 	return updateGiftAcknowledged(p.db.WithContext(p.ctx), compartmentId, cashIds)
+}
+
+func (p *ProcessorImpl) MarkGiftNoteSent(compartmentId uuid.UUID, cashId int64) error {
+	return updateGiftNoteSent(p.db.WithContext(p.ctx), compartmentId, cashId)
 }
 
 func (p *ProcessorImpl) Delete(_ *message.Buffer) func(id uint32) error {

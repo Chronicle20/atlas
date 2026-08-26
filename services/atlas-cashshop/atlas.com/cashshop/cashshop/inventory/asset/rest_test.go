@@ -208,6 +208,38 @@ func TestTransformExtractRoundTripGiftAcknowledged(t *testing.T) {
 	}
 }
 
+// TestTransformExtractRoundTripGiftNoteSent pins task-240 Defect I: the
+// gift-note-sent flag must survive a Transform -> Extract round trip, since
+// atlas-channel reads it off this REST model to gate a replayed gift-forward
+// NOTE_ACTION SEND from minting a second free note.
+func TestTransformExtractRoundTripGiftNoteSent(t *testing.T) {
+	compartmentId := uuid.New()
+	original := NewBuilder(compartmentId, 5000).
+		SetId(1).
+		SetCashId(1001).
+		SetQuantity(1).
+		SetGiftFrom("Sender1").
+		SetGiftMessage("Happy birthday!").
+		SetGiftNoteSent(true).
+		Build()
+
+	rm, err := Transform(original)
+	if err != nil {
+		t.Fatalf("Transform failed: %v", err)
+	}
+	if !rm.GiftNoteSent {
+		t.Errorf("RestModel.GiftNoteSent = false, want true")
+	}
+
+	result, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+	if result.GiftNoteSent() != original.GiftNoteSent() {
+		t.Errorf("GiftNoteSent mismatch after round-trip: expected %v, got %v", original.GiftNoteSent(), result.GiftNoteSent())
+	}
+}
+
 func TestRestModelGetName(t *testing.T) {
 	rm := RestModel{}
 	expected := "assets"

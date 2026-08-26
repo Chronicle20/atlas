@@ -21,6 +21,7 @@ type RestModel struct {
 	GiftFrom         string    `json:"giftFrom"`
 	GiftMessage      string    `json:"giftMessage"`
 	GiftAcknowledged bool      `json:"giftAcknowledged"`
+	GiftNoteSent     bool      `json:"giftNoteSent"`
 }
 
 func (r RestModel) GetName() string {
@@ -60,6 +61,7 @@ func Transform(a Model) (RestModel, error) {
 		GiftFrom:         a.GiftFrom(),
 		GiftMessage:      a.GiftMessage(),
 		GiftAcknowledged: a.GiftAcknowledged(),
+		GiftNoteSent:     a.GiftNoteSent(),
 	}, nil
 }
 
@@ -79,5 +81,6 @@ func Extract(rm RestModel) (Model, error) {
 		giftFrom:         rm.GiftFrom,
 		giftMessage:      rm.GiftMessage,
 		giftAcknowledged: rm.GiftAcknowledged,
+		giftNoteSent:     rm.GiftNoteSent,
 	}, nil
 }

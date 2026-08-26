@@ -112,6 +112,70 @@ func TestTransformExtractRoundTrip(t *testing.T) {
 	}
 }
 
+// TestTransformExtractRoundTripGift pins task-240 Defect F1/F2: the gift
+// sender and message must survive a Transform -> Extract round trip, since
+// atlas-channel projects the entry-burst locker items and the gift list
+// entirely from this REST model.
+func TestTransformExtractRoundTripGift(t *testing.T) {
+	compartmentId := uuid.New()
+	original := NewBuilder(compartmentId, 5000).
+		SetId(1).
+		SetCashId(1001).
+		SetQuantity(1).
+		SetGiftFrom("Sender1").
+		SetGiftMessage("Happy birthday!").
+		Build()
+
+	rm, err := Transform(original)
+	if err != nil {
+		t.Fatalf("Transform failed: %v", err)
+	}
+	if rm.GiftFrom != "Sender1" {
+		t.Errorf("RestModel.GiftFrom = %q, want %q", rm.GiftFrom, "Sender1")
+	}
+	if rm.GiftMessage != "Happy birthday!" {
+		t.Errorf("RestModel.GiftMessage = %q, want %q", rm.GiftMessage, "Happy birthday!")
+	}
+
+	result, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+	if result.GiftFrom() != original.GiftFrom() {
+		t.Errorf("GiftFrom mismatch after round-trip: expected %q, got %q", original.GiftFrom(), result.GiftFrom())
+	}
+	if result.GiftMessage() != original.GiftMessage() {
+		t.Errorf("GiftMessage mismatch after round-trip: expected %q, got %q", original.GiftMessage(), result.GiftMessage())
+	}
+}
+
+// TestTransformExtractRoundTripNonGift confirms a purchased (non-gift) asset
+// round-trips an empty sender/message rather than leaking a stale value.
+func TestTransformExtractRoundTripNonGift(t *testing.T) {
+	compartmentId := uuid.New()
+	original := NewBuilder(compartmentId, 5000).
+		SetId(1).
+		SetCashId(1001).
+		SetQuantity(1).
+		Build()
+
+	rm, err := Transform(original)
+	if err != nil {
+		t.Fatalf("Transform failed: %v", err)
+	}
+	if rm.GiftFrom != "" || rm.GiftMessage != "" {
+		t.Errorf("RestModel gift fields = (%q, %q), want empty for a non-gift asset", rm.GiftFrom, rm.GiftMessage)
+	}
+
+	result, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+	if result.GiftFrom() != "" || result.GiftMessage() != "" {
+		t.Errorf("Model gift fields = (%q, %q), want empty for a non-gift asset", result.GiftFrom(), result.GiftMessage())
+	}
+}
+
 func TestRestModelGetName(t *testing.T) {
 	rm := RestModel{}
 	expected := "assets"

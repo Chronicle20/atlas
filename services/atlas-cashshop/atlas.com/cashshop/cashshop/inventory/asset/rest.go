@@ -18,6 +18,8 @@ type RestModel struct {
 	PurchasedBy   uint32    `json:"purchasedBy"`
 	Expiration    time.Time `json:"expiration"`
 	CreatedAt     time.Time `json:"createdAt"`
+	GiftFrom      string    `json:"giftFrom"`
+	GiftMessage   string    `json:"giftMessage"`
 }
 
 func (r RestModel) GetName() string {
@@ -54,6 +56,8 @@ func Transform(a Model) (RestModel, error) {
 		PurchasedBy:   a.PurchasedBy(),
 		Expiration:    a.Expiration(),
 		CreatedAt:     a.CreatedAt(),
+		GiftFrom:      a.GiftFrom(),
+		GiftMessage:   a.GiftMessage(),
 	}, nil
 }
 
@@ -70,5 +74,7 @@ func Extract(rm RestModel) (Model, error) {
 		purchasedBy: rm.PurchasedBy,
 		expiration:  rm.Expiration,
 		createdAt:   rm.CreatedAt,
+		giftFrom:    rm.GiftFrom,
+		giftMessage: rm.GiftMessage,
 	}, nil
 }

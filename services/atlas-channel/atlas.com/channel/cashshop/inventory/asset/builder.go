@@ -18,6 +18,8 @@ type modelBuilder struct {
 	id            uint32
 	compartmentId uuid.UUID
 	item          item.Model
+	giftFrom      string
+	giftMessage   string
 }
 
 // NewModelBuilder creates a new modelBuilder with required fields
@@ -35,6 +37,8 @@ func CloneModel(m Model) *modelBuilder {
 		id:            m.id,
 		compartmentId: m.compartmentId,
 		item:          m.item,
+		giftFrom:      m.giftFrom,
+		giftMessage:   m.giftMessage,
 	}
 }
 
@@ -56,6 +60,18 @@ func (b *modelBuilder) SetItem(i item.Model) *modelBuilder {
 	return b
 }
 
+// SetGiftFrom sets the sender's character name for this gifted asset
+func (b *modelBuilder) SetGiftFrom(giftFrom string) *modelBuilder {
+	b.giftFrom = giftFrom
+	return b
+}
+
+// SetGiftMessage sets the sender's message for this gifted asset
+func (b *modelBuilder) SetGiftMessage(giftMessage string) *modelBuilder {
+	b.giftMessage = giftMessage
+	return b
+}
+
 // Build creates a Model from this builder
 func (b *modelBuilder) Build() (Model, error) {
 	if b.id == 0 {
@@ -68,6 +84,8 @@ func (b *modelBuilder) Build() (Model, error) {
 		id:            b.id,
 		compartmentId: b.compartmentId,
 		item:          b.item,
+		giftFrom:      b.giftFrom,
+		giftMessage:   b.giftMessage,
 	}, nil
 }
 

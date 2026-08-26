@@ -20,6 +20,8 @@ type RestModel struct {
 	Flag          uint16    `json:"flag"`
 	PurchasedBy   uint32    `json:"purchasedBy"`
 	Expiration    time.Time `json:"expiration"`
+	GiftFrom      string    `json:"giftFrom"`
+	GiftMessage   string    `json:"giftMessage"`
 }
 
 // GetName returns the resource name
@@ -87,6 +89,8 @@ func Transform(a Model) (RestModel, error) {
 		Flag:          a.Item().Flag(),
 		PurchasedBy:   a.Item().PurchasedBy(),
 		Expiration:    a.Item().Expiration(),
+		GiftFrom:      a.GiftFrom(),
+		GiftMessage:   a.GiftMessage(),
 	}, nil
 }
 
@@ -107,5 +111,7 @@ func Extract(rm RestModel) (Model, error) {
 		id:            rm.Id,
 		compartmentId: rm.CompartmentId,
 		item:          i,
+		giftFrom:      rm.GiftFrom,
+		giftMessage:   rm.GiftMessage,
 	}, nil
 }

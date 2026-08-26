@@ -12,6 +12,8 @@ type Model struct {
 	id            uint32
 	compartmentId uuid.UUID
 	item          item.Model
+	giftFrom      string
+	giftMessage   string
 }
 
 // Id returns the unique identifier of this asset
@@ -47,4 +49,16 @@ func (m Model) Quantity() uint32 {
 // Expiration returns the expiration time of the item
 func (m Model) Expiration() time.Time {
 	return m.item.Expiration()
+}
+
+// GiftFrom returns the sender's character name for a gifted asset; empty for
+// every other asset.
+func (m Model) GiftFrom() string {
+	return m.giftFrom
+}
+
+// GiftMessage returns the sender's message for a gifted asset; empty for
+// every other asset.
+func (m Model) GiftMessage() string {
+	return m.giftMessage
 }

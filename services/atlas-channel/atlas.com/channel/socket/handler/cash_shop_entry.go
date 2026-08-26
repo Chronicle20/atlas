@@ -4,6 +4,7 @@ import (
 	"atlas-channel/account"
 	"atlas-channel/buddylist"
 	"atlas-channel/cashshop"
+	"atlas-channel/cashshop/inventory/asset"
 	"atlas-channel/cashshop/inventory/compartment"
 	"atlas-channel/cashshop/wallet"
 	"atlas-channel/cashshop/wishlist"
@@ -16,10 +17,12 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	atlaspacket "github.com/Chronicle20/atlas/libs/atlas-packet"
 	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
 	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -90,13 +93,21 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 				TemplateId:  as.Item().TemplateId(),
 				CommodityId: as.CommodityId(),
 				Quantity:    int16(as.Item().Quantity()),
-				GiftFrom:    "",
+				GiftFrom:    as.GiftFrom(),
 				Expiration:  packetmodel.MsTime(as.Expiration()),
 			}
 		}
 		err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopCashInventoryBody(items, uint16(sd.Capacity), a.CharacterSlots()))(s)
 		if err != nil {
 			return
+		}
+
+		if loadGiftDoneConfigured(l, ctx) {
+			gifts := buildGiftListEntries(ccp.Assets())
+			err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopLoadGiftDoneBody(gifts))(s)
+			if err != nil {
+				return
+			}
 		}
 
 		wl, err := wishlist.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
@@ -131,4 +142,41 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		}
 		_ = session.NewProcessor(l, ctx).SetCashScene(s.SessionId(), session.CashSceneCashShop)
 	}
+}
+
+// buildGiftListEntries builds one cashcb.GiftListEntry per locker asset that
+// carries a sender (a gift received by this character), for the
+// LOAD_GIFT_SUCCESS announce. Assets with no sender (everything the
+// character bought for itself) are omitted.
+func buildGiftListEntries(assets []asset.Model) []cashcb.GiftListEntry {
+	var gifts []cashcb.GiftListEntry
+	for _, as := range assets {
+		if as.GiftFrom() == "" {
+			continue
+		}
+		gifts = append(gifts, cashcb.GiftListEntry{
+			SN:               as.Item().CashId(),
+			ItemId:           int32(as.Item().TemplateId()),
+			BuyCharacterName: as.GiftFrom(),
+			Text:             as.GiftMessage(),
+		})
+	}
+	return gifts
+}
+
+// loadGiftDoneConfigured reports whether this tenant's cash shop "operations"
+// code table binds LOAD_GIFT_SUCCESS. template_gms_12_1.json and
+// template_gms_48_1.json have a CashShopOperation writer but no
+// LOAD_GIFT_SUCCESS key (docs/packets/dispatchers/cash_shop_operation.yaml's
+// modes map starts at gms_v61); announcing unconditionally would fall
+// through ResolveCode's 99 sentinel and push a garbage mode at those
+// clients.
+func loadGiftDoneConfigured(l logrus.FieldLogger, ctx context.Context) bool {
+	t := tenant.MustFromContext(ctx)
+	opts, ok := writer.TenantWriterOptions(t.Id(), cashcb.CashShopOperationWriter)
+	if !ok {
+		l.Warnf("Writer options for [%s] missing; LOAD_GIFT_SUCCESS not resolvable.", cashcb.CashShopOperationWriter)
+		return false
+	}
+	return atlaspacket.CodeConfigured(opts, "operations", cashcb.CashShopOperationLoadGiftDone)
 }

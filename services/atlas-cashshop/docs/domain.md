@@ -164,10 +164,12 @@ Represents a cash shop item stored in a compartment. The asset model is flattene
 - `purchasedBy` (uint32): Character ID that purchased the item
 - `expiration` (time.Time): Item expiration time (zero time means permanent)
 - `createdAt` (time.Time): Timestamp of creation
+- `giftFrom` (string): Sender's character name for a GIFT purchase; empty for every other asset
+- `giftMessage` (string): Sender's message for a GIFT purchase; empty for every other asset
 
 #### ModelBuilder
 - Builder pattern via `NewBuilder(compartmentId, templateId)` and `Clone(model)`
-- Setters: `SetId`, `SetCompartmentId`, `SetCashId`, `SetTemplateId`, `SetCommodityId`, `SetQuantity`, `SetFlag`, `SetPetId`, `SetPurchasedBy`, `SetExpiration`, `SetCreatedAt`
+- Setters: `SetId`, `SetCompartmentId`, `SetCashId`, `SetTemplateId`, `SetCommodityId`, `SetQuantity`, `SetFlag`, `SetPetId`, `SetPurchasedBy`, `SetExpiration`, `SetCreatedAt`, `SetGiftFrom`, `SetGiftMessage`
 
 ### Invariants
 - Cash ID is unique within a tenant; generated randomly on creation or accepted from external source

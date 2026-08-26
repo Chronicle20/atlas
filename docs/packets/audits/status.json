@@ -1,16 +1,16 @@
 {
-  "toolSha": "97ddbc6c4d2efd0a82fdddd9fce5744dc4e025124999367f6a2ca388bce77c4d",
+  "toolSha": "590db87e44b5643626685ad2ad66bc34a3c3747c2e80c49c968897d95eb59d74",
   "exportHashes": {
-    "gms_v48": "f46a1c091a8f557a7a0a47c295bed12c56e0f70e23552726d1ca6586eadbf0dd",
-    "gms_v61": "6c974c037a17229958f04d245f414de004f5530852466818e48167a4172e7c70",
-    "gms_v72": "f22e6d780c0ca97b845d09876f2a4724b612189f9d9d353451be062bcb741c56",
-    "gms_v79": "efa7d503bee32a270bf80e0d437259e1b4e13e7d7bab2058427def64e781a2a3",
-    "gms_v83": "0b189c4b9d946ac3545fcc41c93833ada3d18063f0a92698ab18de17763ce6e6",
-    "gms_v84": "16832eea1aedc71e48c73e047e4fca66fef8d2bfdc1901f2b5f00ac1286c40ce",
-    "gms_v87": "63cf3b87a5006b35c15ad40ff40098e2b47f9e2294cccb0a214f3421fc901311",
-    "gms_v92": "9bfe486e327a30a5419d064f2a9b9f5aaebf74d095ef405f2814f2e2b04e4ae8",
-    "gms_v95": "fc0514ccf05ef04e3f96d978f362fde8b92269592da010d92f3e776424281e5e",
-    "jms_v185": "576eda436b95b42e99f3bb0a6343964695a5c0732b95beed1593bab25f78df3c"
+    "gms_v48": "b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6",
+    "gms_v61": "e5ed52e703a38e819822bb62b00aa252aad2946a0b97ae72b1cee1e8b8222f48",
+    "gms_v72": "0d3e12b8d5d6945bedf48664207eb78fabe45152f35aff3b2715de0173d31c1c",
+    "gms_v79": "67a49a67b9945e1eb2e4b473a4c7115a9cec7952588705b0ec91a10486759a99",
+    "gms_v83": "dd8bace2c2f0a1c106fbbdbd95c22491341d7fd34b6ce5ac07dfbd74ef8da439",
+    "gms_v84": "2bbc30efdc7355eaa7953cfbb459d09646a090a539a8ef79c5d10e8affb6ef11",
+    "gms_v87": "d887ec26b877e52c3f1c8336bd596495e96272ece8ec6ad311eb145c30570021",
+    "gms_v92": "393f8c0d7ff6b37ab8b5e2e58b89544163862d9713d31561adcb3af175d36b92",
+    "gms_v95": "b6fc063d0415b901ad50f6abba585872ffee35c66fa258caed70b860803fda12",
+    "jms_v185": "f0cacd78c4ffd65655028825fc7e5bfe3b7fe3889011631098486eb562a5686e"
   },
   "rows": [
     {
@@ -9200,6 +9200,63 @@
     },
     {
       "kind": "op",
+      "op": "DUEY_ACTION",
+      "packet": "parcel/serverbound/ParcelActionReceive",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CParcelDlg::CloseParcelDlg",
+        "CTabQuickSend::SendQuickDelivery",
+        "CTabReceive::DiscardParcel",
+        "CTabReceive::ReceiveParcel",
+        "CTabSend::SendParcel",
+        "CUIFadeYesNo::OnButtonClicked"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 64
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 63
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 65
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 65
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 68
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 71
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 70
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 57
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "EXPEDITION_RESULT",
       "direction": "clientbound",
       "tier1": false,
@@ -9532,68 +9589,6 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "DUEY_ACTION",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CParcelDlg::CloseParcelDlg",
-        "CTabQuickSend::SendQuickDelivery",
-        "CTabReceive::DiscardParcel",
-        "CTabReceive::ReceiveParcel",
-        "CTabSend::SendParcel",
-        "CUIFadeYesNo::OnButtonClicked"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 65
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 65
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 68
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 71
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 70
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 57
         }
       }
     },
@@ -12314,6 +12309,57 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 132
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "USE_INNER_PORTAL",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CUserLocal::TryRegisterTeleport"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 80
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 93
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 100
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 99
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 101
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 101
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 104
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 112
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 113
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 96
         }
       }
     },
@@ -17082,63 +17128,6 @@
     },
     {
       "kind": "op",
-      "op": "USE_INNER_PORTAL",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CUserLocal::TryRegisterTeleport"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 101
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 101
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 104
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 112
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 113
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 96
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "NPC_ITEM_USE_REQUEST",
       "packet": "inventory/serverbound/InventoryNpcItemUse",
       "direction": "serverbound",
@@ -20809,6 +20798,58 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "AUTO_AGGRO",
+      "packet": "monster/serverbound/MonsterAutoAggro",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CMob::ApplyControl"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "verified",
+          "opcode": 130
+        },
+        "gms_v61": {
+          "state": "verified",
+          "opcode": 156
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 179
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 181
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 189
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 194
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 201
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 221
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 228
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 195
         }
       }
     },
@@ -25440,8 +25481,7 @@
           "opcode": 253
         },
         "gms_v92": {
-          "state": "partial",
-          "note": "tier-1: needs byte-fixture test to verify",
+          "state": "verified",
           "opcode": 277
         },
         "gms_v95": {
@@ -29468,63 +29508,6 @@
     },
     {
       "kind": "op",
-      "op": "AUTO_AGGRO",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CMob::ApplyControl"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 189
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 189
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 201
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 221
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 228
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 195
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "HIT_BY_USER",
       "direction": "clientbound",
       "tier1": false,
@@ -30269,6 +30252,58 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 244
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "TOUCHING_REACTOR",
+      "packet": "reactor/serverbound/ReactorTouchingRequest",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CReactorPool::FindTouchReactorAroundLocalUser"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 196
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 198
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 206
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 212
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 219
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 243
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 250
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 217
         }
       }
     },
@@ -31714,63 +31749,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 296
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "TOUCHING_REACTOR",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CReactorPool::FindTouchReactorAroundLocalUser"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 206
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 206
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 219
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 243
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 250
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 217
         }
       }
     },
@@ -40755,6 +40733,7 @@
     {
       "kind": "op",
       "op": "PARCEL",
+      "packet": "parcel/clientbound/ParcelAlarmGeneric",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -40770,43 +40749,35 @@
           "opcode": -1
         },
         "gms_v72": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 288
         },
         "gms_v79": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 300
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 322
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 329
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 339
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 373
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 381
         },
         "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 352
         }
       }
@@ -44592,6 +44563,55 @@
         "jms_v185": {
           "state": "incomplete",
           "note": "no audit report",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "cash/serverbound/CashItemUseSongPlayer",
+      "tier1": true,
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "note": "disposition: version-absent (n-a, see _unimplemented.json)",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "note": "disposition: version-absent (n-a, see _unimplemented.json)",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
           "opcode": -1
         }
       }
@@ -54382,6 +54402,210 @@
         "gms_v92": {
           "state": "incomplete",
           "note": "tier-1 without fixture; verdict 🔍",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "parcel/serverbound/ParcelActionClose",
+      "tier1": false,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v92": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "parcel/serverbound/ParcelActionDiscard",
+      "tier1": false,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "parcel/serverbound/ParcelActionReceive",
+      "tier1": false,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "sub-struct",
+      "packet": "parcel/serverbound/ParcelActionSend",
+      "tier1": false,
+      "cells": {
+        "gms_v48": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": -1
+        },
+        "gms_v92": {
+          "state": "verified",
           "opcode": -1
         },
         "gms_v95": {

@@ -1422,9 +1422,13 @@ func TestGiftPurchasedAnnouncesGiftDoneWithRecipientNameAndItem(t *testing.T) {
 }
 
 // TestPackagePurchasedBuyForSelfProjectsAssetsIntoBuyPackageDone pins the
-// PACKAGE_PURCHASED producer/consumer seam for the buy-for-self path
-// (RecipientCharacterId == 0): each of Body.AssetIds must be resolved and
-// projected into BuyPackageDone's item list.
+// PACKAGE_PURCHASED producer/consumer seam for the buy-for-self path. Unlike
+// the COMMAND body, the STATUS body's RecipientCharacterId echoes the
+// buyer's own identity on a buy-for-self purchase and is never zero
+// (kafka/message/cashshop/kafka.go:372-375), so the fixture here sets it
+// equal to CharacterId -- exactly what atlas-cashshop actually emits (Defect
+// E, bug-cash-shop-live-testing-round-2.md). Each of Body.AssetIds must be
+// resolved and projected into BuyPackageDone's item list.
 func TestPackagePurchasedBuyForSelfProjectsAssetsIntoBuyPackageDone(t *testing.T) {
 	env := newConsumerEnv(t)
 	assetId := uint32(4242)
@@ -1439,8 +1443,8 @@ func TestPackagePurchasedBuyForSelfProjectsAssetsIntoBuyPackageDone(t *testing.T
 			AssetIds:             []uint32{assetId},
 			PackageTemplateId:    9000000,
 			Price:                5000,
-			RecipientCharacterId: 0,
-			RecipientName:        "",
+			RecipientCharacterId: testCharacterId,
+			RecipientName:        "Buyer",
 		},
 	})
 
@@ -1457,7 +1461,7 @@ func TestPackagePurchasedBuyForSelfProjectsAssetsIntoBuyPackageDone(t *testing.T
 }
 
 // TestPackagePurchasedGiftAnnouncesGiftPackageDone pins the PACKAGE_PURCHASED
-// gift path (RecipientCharacterId != 0): Body.RecipientName/PackageTemplateId
+// gift path (RecipientCharacterId != CharacterId): Body.RecipientName/PackageTemplateId
 // must land on GiftPackageDone's recipientName/packageId unchanged, and the
 // asset lookup used by the self path must not run.
 func TestPackagePurchasedGiftAnnouncesGiftPackageDone(t *testing.T) {

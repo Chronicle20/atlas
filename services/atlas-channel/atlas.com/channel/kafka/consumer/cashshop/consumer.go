@@ -385,10 +385,14 @@ func handleStatusEventGiftPurchased(sc server.Model, wp writer.Producer) message
 }
 
 // handleStatusEventPackagePurchased answers task 16's REQUEST_PACKAGE_PURCHASE
-// command, covering both BUY_PACKAGE and BUY_OTHER_PACKAGE (task 17):
-// PackagePurchasedBody.RecipientCharacterId discriminates the two exactly
-// like the command that requested it -- ZERO means buy-for-self
-// (BUY_PACKAGE_SUCCESS, mode 154), non-zero means gift
+// command, covering both BUY_PACKAGE and BUY_OTHER_PACKAGE (task 17). Unlike
+// the COMMAND body (where RecipientCharacterId == 0 means buy-for-self), the
+// STATUS body's RecipientCharacterId/RecipientName always echo a concrete
+// identity -- on a buy-for-self purchase they echo the buyer's own identity
+// (kafka/message/cashshop/kafka.go:372-375, PackagePurchasedBody's doc
+// comment), so RecipientCharacterId is never zero on this event. The correct
+// discriminator is therefore RecipientCharacterId != e.CharacterId: equal
+// means buy-for-self (BUY_PACKAGE_SUCCESS, mode 154), different means gift
 // (GIFT_PACKAGE_SUCCESS, mode 156, derivation.md D3b/§5). Both arms
 // announce to e.CharacterId (the buyer/sender, per
 // PackagePurchasedStatusEventProvider's convention -- mirroring
@@ -417,7 +421,7 @@ func handleStatusEventPackagePurchased(sc server.Model, wp writer.Producer) mess
 		}
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
-			if e.Body.RecipientCharacterId != 0 {
+			if e.Body.RecipientCharacterId != e.CharacterId {
 				err := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopGiftPackageDoneBody(e.Body.RecipientName, int32(e.Body.PackageTemplateId), 0, 0, int32(e.Body.Price)))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce package gift success to character [%d].", e.CharacterId)

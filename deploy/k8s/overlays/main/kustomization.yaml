@@ -246,7 +246,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
     newTag: main-32d55cb
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-32d55cb
+    newTag: main-d1791ee
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
     newTag: main-32d55cb
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
@@ -254,7 +254,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
     newTag: main-32d55cb
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
-    newTag: main-32d55cb
+    newTag: main-d1791ee
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
     newTag: main-062dd8e
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
@@ -290,7 +290,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-kites/atlas-kites
     newTag: main-32d55cb
   - name: ghcr.io/chronicle20/atlas-login/atlas-login
-    newTag: main-32d55cb
+    newTag: main-d1791ee
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
     newTag: main-32d55cb
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
@@ -300,7 +300,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
     newTag: main-32d55cb
   - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
-    newTag: main-32d55cb
+    newTag: main-d1791ee
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
     newTag: main-32d55cb
   - name: ghcr.io/chronicle20/atlas-mini-games/atlas-mini-games

@@ -8,6 +8,7 @@ import (
 
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
@@ -68,6 +69,48 @@ func TestHandleCreateFromPreset_InvalidPresetIdFormat(t *testing.T) {
 	rr := postPreset(t, body)
 	if rr.Code != http.StatusBadRequest {
 		t.Errorf("Expected status 400, got %d", rr.Code)
+	}
+}
+
+// TestHandleCreateFromPreset_LogsErrorWithPresetMessage covers FR-4.1/4.2/4.3:
+// the preset handler swallowed its error entirely, so a 500 from
+// /api/factory/characters/from-preset produced no server-side log at all. The
+// message must differ from the seed handler's so a log search separates them,
+// and the mapped status code must not change.
+func TestHandleCreateFromPreset_LogsErrorWithPresetMessage(t *testing.T) {
+	ctx, _ := createMockContext(t)
+	l, hook := test.NewNullLogger()
+	l.SetLevel(logrus.DebugLevel)
+	dep := server.NewHandlerDependency(l, ctx)
+	hc := server.NewHandlerContext(jsonapi.ServerInformation(stubServerInfo{}))
+
+	body := `{"data":{"type":"preset-create","attributes":{"presetId":"not-a-valid-uuid","accountId":1,"worldId":0,"name":"TestChar"}}}`
+	req := httptest.NewRequest(http.MethodPost, "/characters/from-preset", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/vnd.api+json")
+	rr := httptest.NewRecorder()
+	server.ParseInput[PresetCreateRestModel](&dep, &hc, handleCreateFromPreset)(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; categorizePresetError mapping must be unchanged", rr.Code)
+	}
+
+	var found *logrus.Entry
+	for _, e := range hook.AllEntries() {
+		if e.Message == "Error creating character from preset." {
+			found = e
+		}
+		if e.Message == "Error creating character from seed." {
+			t.Fatalf("preset handler logged the seed handler's message; FR-4.2 requires them to differ")
+		}
+	}
+	if found == nil {
+		t.Fatal("handleCreateFromPreset failed without logging anything")
+	}
+	if found.Level != logrus.ErrorLevel {
+		t.Fatalf("logged at %v, want ErrorLevel", found.Level)
+	}
+	if found.Data[logrus.ErrorKey] == nil {
+		t.Fatal("the error itself was not attached; use WithError(err)")
 	}
 }
 

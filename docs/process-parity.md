@@ -245,10 +245,20 @@ than an intention.
 2. Each repository has `tools/verify.sh`, `tools/task-numbers.sh`, and
    `tools/task-brief.sh`, and the flagless `tools/verify.sh` exits 0 in each.
 3. Each repository defines `task-implementer`, `task-verifier`, and
-   `task-reviewer`, and no reference to `atlas-implementer`, `atlas-verifier`, or
-   `atlas-reviewer` remains on the live surface — `.claude/`, `CLAUDE.md`,
-   top-level `docs/*.md`, and `tools/`. Historical records under `docs/tasks/`
-   are exempt (see `docs/agent-dispatch.md` for the cutover).
+   `task-reviewer`, and no *operative* reference to the old names survives. Two
+   categories of reference are exempt because their purpose is to name the old
+   names: historical records under `docs/tasks/`, and the documents that explain
+   the rename itself. Run:
+
+   ```sh
+   git grep -lE 'atlas-(implementer|verifier|reviewer)' -- . ':!docs/tasks' \
+     | grep -vxE 'docs/(agent-dispatch|process-parity)\.md'
+   ```
+
+   This must print nothing. In `home-hub`, `Harbormaster`, and `MyFleet` the
+   `docs/agent-dispatch.md` exemption does not apply — those repositories never
+   used the `atlas-*` names, so they need no historical-cutoff note and only
+   `docs/process-parity.md` is exempt there.
 4. Each `.claude/settings.json` wires the same hook set at the same events,
    differing only where §4 says it may.
 5. Each `CLAUDE.md` carries the same eight section headings, with only the

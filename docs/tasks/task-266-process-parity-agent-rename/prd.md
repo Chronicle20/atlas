@@ -183,8 +183,10 @@ three belong to phases 2–4 and none blocks this task:
 - [ ] Each renamed file's `name:` frontmatter matches its filename.
 - [ ] Each renamed file's behavioral contract is unchanged — budget, tool list,
       and protocol identical to the pre-rename version.
-- [ ] `git grep -lE 'atlas-(implementer|verifier|reviewer)'` returns only paths
-      under `docs/tasks/`.
+- [ ] The `docs/process-parity.md` §7 check 3 command prints nothing — that is,
+      the only surviving `atlas-*` agent references are historical records under
+      `docs/tasks/` plus the two documents that exist to explain the rename,
+      `docs/agent-dispatch.md` and `docs/process-parity.md`.
 - [ ] The seven portable hook files from `docs/process-parity.md` §3.1 contain no
       `atlas-` string.
 - [ ] `docs/process-parity.md` is committed, with §7 check 3 narrowed per §4.4.

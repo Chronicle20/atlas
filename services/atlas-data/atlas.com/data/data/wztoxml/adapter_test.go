@@ -167,4 +167,66 @@ func TestSerializeDirectoryCountsFailures(t *testing.T) {
 	if strings.Contains(logOutput, "price") {
 		t.Fatalf("log contains per-property detail, forbidden by the Observability NFR; log:\n%s", logOutput)
 	}
+	// The summary line must be logged at WARN when images failed, so
+	// operators cannot get used to seeing WARN on a healthy ingest.
+	for _, line := range lines {
+		if strings.Contains(line, "1 of 2 images failed to serialize") && !strings.Contains(line, "level=warning") {
+			t.Fatalf("summary line for a partial failure logged at wrong level, want warning; line:\n%s", line)
+		}
+	}
+}
+
+// TestSerializeDirectorySuccessLogsInfo builds an archive where every image
+// serializes cleanly and asserts the per-archive summary line is logged at
+// INFO, not WARN - a fully successful ingest must not emit a warning that
+// trains operators to ignore the log level.
+func TestSerializeDirectorySuccessLogsInfo(t *testing.T) {
+	b := wztest.NewBuilder().
+		SetVersion(83).
+		AddImage(wztest.Img("Good", wztest.Int("price", 50)))
+
+	data, err := b.Build()
+	if err != nil {
+		t.Fatalf("build fixture: %v", err)
+	}
+
+	path := filepath.Join(t.TempDir(), "Item.wz")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+
+	var buf bytes.Buffer
+	logger := logrus.New()
+	logger.SetOutput(&buf)
+	logger.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
+
+	f, err := wz.Open(logger, path)
+	if err != nil {
+		t.Fatalf("open fixture: %v", err)
+	}
+	defer f.Close()
+
+	outDir := t.TempDir()
+	if err := SerializeToDirectory(logger, f, outDir); err != nil {
+		t.Fatalf("SerializeToDirectory: %v", err)
+	}
+
+	logOutput := buf.String()
+	lines := strings.Split(strings.TrimRight(logOutput, "\n"), "\n")
+
+	var summaryLines int
+	for _, line := range lines {
+		if strings.Contains(line, "0 of 1 images failed to serialize") {
+			summaryLines++
+			if !strings.Contains(line, "level=info") {
+				t.Fatalf("summary line for a fully successful ingest logged at wrong level, want info; line:\n%s", line)
+			}
+			if strings.Contains(line, "level=warning") {
+				t.Fatalf("summary line for a fully successful ingest logged as warning; line:\n%s", line)
+			}
+		}
+	}
+	if summaryLines != 1 {
+		t.Fatalf("per-archive summary lines = %d, want 1; log:\n%s", summaryLines, logOutput)
+	}
 }

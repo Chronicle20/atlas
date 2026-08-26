@@ -39,7 +39,11 @@ func SerializeToDirectory(l logrus.FieldLogger, f *wz.File, outputDir string) er
 	if err != nil {
 		return err
 	}
-	l.Warnf("wz archive [%s]: %d of %d images failed to serialize", archiveName, failed, total)
+	if failed > 0 {
+		l.Warnf("wz archive [%s]: %d of %d images failed to serialize", archiveName, failed, total)
+	} else {
+		l.Infof("wz archive [%s]: %d of %d images failed to serialize", archiveName, failed, total)
+	}
 	return nil
 }
 

@@ -9,11 +9,12 @@ import (
 
 // Model represents a cash shop inventory asset
 type Model struct {
-	id            uint32
-	compartmentId uuid.UUID
-	item          item.Model
-	giftFrom      string
-	giftMessage   string
+	id               uint32
+	compartmentId    uuid.UUID
+	item             item.Model
+	giftFrom         string
+	giftMessage      string
+	giftAcknowledged bool
 }
 
 // Id returns the unique identifier of this asset
@@ -61,4 +62,13 @@ func (m Model) GiftFrom() string {
 // every other asset.
 func (m Model) GiftMessage() string {
 	return m.giftMessage
+}
+
+// GiftAcknowledged reports whether the gift list carrying this asset has
+// already been presented to the recipient via a LOAD_GIFT_SUCCESS announce
+// (task-240 Defect H). This is NOT "the recipient clicked OK" -- see
+// atlas-cashshop's asset.Entity.GiftAcknowledged doc comment for the full
+// rationale.
+func (m Model) GiftAcknowledged() bool {
+	return m.giftAcknowledged
 }

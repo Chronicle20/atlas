@@ -22,6 +22,7 @@ const (
 	CommandTypeRequestPackagePurchase             = "REQUEST_PACKAGE_PURCHASE"
 	CommandTypeRequestRingPurchase                = "REQUEST_RING_PURCHASE"
 	CommandTypeRequestEquipSlotIncrease           = "REQUEST_EQUIP_SLOT_INCREASE"
+	CommandTypeAcknowledgeGifts                   = "ACKNOWLEDGE_GIFTS"
 
 	// CommandTypeExtendEquipSlot is an INTERNAL follow-up command, never sent
 	// by atlas-channel: PurchaseEquipSlotAndEmit (cashshop/equipslot.go)
@@ -185,6 +186,21 @@ type RequestEquipSlotIncreaseCommandBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
 	Currency      uint32    `json:"currency"`
 	SerialNumber  uint32    `json:"serialNumber"`
+}
+
+// AcknowledgeGiftsCommandBody marks a set of locker assets as "gift list
+// presented" (task-240 Defect H) so buildGiftListEntries stops re-announcing
+// them on every cash shop entry. AccountId scopes the update to the
+// requesting account's own compartments (mirrors
+// RequestLockerRebateCommandBody). CashIds is the CashId list (cash_assets'
+// wire serial, NOT the row id) the channel just announced in a
+// LOAD_GIFT_SUCCESS burst. A Kafka redelivery replays the same ids and is
+// naturally a no-op: setting an already-true flag to true again has no
+// observable effect, so there is no separate idempotency ledger entry for
+// this command.
+type AcknowledgeGiftsCommandBody struct {
+	AccountId uint32  `json:"accountId"`
+	CashIds   []int64 `json:"cashIds"`
 }
 
 // ExtendEquipSlotCommandBody carries the already-resolved extension the

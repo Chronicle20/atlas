@@ -35,6 +35,11 @@ type Processor interface {
 	CreateWithCashId(mb *message.Buffer) func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
 	CreateWithCashIdAndEmit(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, currency uint32, quantity uint32, petId uint32, purchasedBy uint32) (Model, error)
 	UpdateQuantity(id uint32, quantity uint32) error
+	// AcknowledgeGifts marks every asset in compartmentId whose CashId
+	// appears in cashIds as presented (task-240 Defect H) -- draining on
+	// announce, not on the client's acknowledgement, per
+	// buildGiftListEntries' caller.
+	AcknowledgeGifts(compartmentId uuid.UUID, cashIds []int64) error
 	Delete(mb *message.Buffer) func(id uint32) error
 	DeleteAndEmit(id uint32) error
 	Release(mb *message.Buffer) func(id uint32) error
@@ -249,6 +254,10 @@ func (p *ProcessorImpl) CreateWithCashIdAndEmit(compartmentId uuid.UUID, cashId 
 
 func (p *ProcessorImpl) UpdateQuantity(id uint32, quantity uint32) error {
 	return updateQuantity(p.db.WithContext(p.ctx), id, quantity)
+}
+
+func (p *ProcessorImpl) AcknowledgeGifts(compartmentId uuid.UUID, cashIds []int64) error {
+	return updateGiftAcknowledged(p.db.WithContext(p.ctx), compartmentId, cashIds)
 }
 
 func (p *ProcessorImpl) Delete(_ *message.Buffer) func(id uint32) error {

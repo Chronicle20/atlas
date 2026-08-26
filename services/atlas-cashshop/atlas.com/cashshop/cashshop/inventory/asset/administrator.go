@@ -92,3 +92,17 @@ func deleteById(db *gorm.DB, id uint32) error {
 func updateQuantity(db *gorm.DB, id uint32, quantity uint32) error {
 	return db.Model(&Entity{}).Where("id = ?", id).Update("quantity", quantity).Error
 }
+
+// updateGiftAcknowledged marks every asset in compartmentId whose CashId
+// appears in cashIds as presented (task-240 Defect H). Scoped by
+// compartmentId as well as CashId so a caller cannot accidentally drain an
+// asset in a compartment it never resolved from the requesting account. A
+// nil/empty cashIds is a no-op, not an unbounded update.
+func updateGiftAcknowledged(db *gorm.DB, compartmentId uuid.UUID, cashIds []int64) error {
+	if len(cashIds) == 0 {
+		return nil
+	}
+	return db.Model(&Entity{}).
+		Where("compartment_id = ? AND cash_id IN ?", compartmentId, cashIds).
+		Update("gift_acknowledged", true).Error
+}

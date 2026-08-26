@@ -118,6 +118,7 @@ type Processor interface {
 	PurchaseRingAndEmit(characterId uint32, transactionId uuid.UUID, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error
 	PurchaseEquipSlotAndEmit(characterId uint32, currency uint32, serialNumber uint32, transactionId uuid.UUID) error
 	CompleteEquipSlotExtension(characterId uint32, slotIndex int16, days uint16, transactionId uuid.UUID) error
+	AcknowledgeGiftsAndEmit(accountId uint32, cashIds []int64) error
 }
 
 type ProcessorImpl struct {

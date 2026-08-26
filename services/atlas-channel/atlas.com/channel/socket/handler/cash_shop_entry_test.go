@@ -16,6 +16,11 @@ import (
 
 func newTestAsset(t *testing.T, cashId int64, templateId uint32, giftFrom string, giftMessage string) asset.Model {
 	t.Helper()
+	return newTestGiftAsset(t, cashId, templateId, giftFrom, giftMessage, false)
+}
+
+func newTestGiftAsset(t *testing.T, cashId int64, templateId uint32, giftFrom string, giftMessage string, giftAcknowledged bool) asset.Model {
+	t.Helper()
 	i, err := item.NewModelBuilder().SetId(1).SetCashId(cashId).SetTemplateId(templateId).Build()
 	if err != nil {
 		t.Fatalf("item build: %v", err)
@@ -27,6 +32,7 @@ func newTestAsset(t *testing.T, cashId int64, templateId uint32, giftFrom string
 	if giftMessage != "" {
 		b = b.SetGiftMessage(giftMessage)
 	}
+	b = b.SetGiftAcknowledged(giftAcknowledged)
 	m, err := b.Build()
 	if err != nil {
 		t.Fatalf("asset build: %v", err)
@@ -67,6 +73,24 @@ func TestBuildGiftListEntriesNoGifts(t *testing.T) {
 
 	if len(got) != 0 {
 		t.Fatalf("len(entries) = %d, want 0", len(got))
+	}
+}
+
+// TestBuildGiftListEntriesSkipsAcknowledged pins task-240 Defect H: a gift
+// asset already marked GiftAcknowledged has been presented in a prior cash
+// shop entry and must not be re-announced, while an unacknowledged gift
+// asset is still included.
+func TestBuildGiftListEntriesSkipsAcknowledged(t *testing.T) {
+	acknowledged := newTestGiftAsset(t, 5000001, 1032001, "Sender1", "Happy birthday!", true)
+	unacknowledged := newTestGiftAsset(t, 5000002, 1032002, "Sender2", "Congrats!", false)
+
+	got := buildGiftListEntries([]asset.Model{acknowledged, unacknowledged})
+
+	if len(got) != 1 {
+		t.Fatalf("len(entries) = %d, want 1 (only the unacknowledged gift)", len(got))
+	}
+	if got[0].SN != 5000002 {
+		t.Errorf("entries[0].SN = %d, want 5000002 (the unacknowledged gift)", got[0].SN)
 	}
 }
 

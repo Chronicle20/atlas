@@ -108,6 +108,22 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			if err != nil {
 				return
 			}
+
+			// Drain the "gift list presented" flag on exactly the cashIds
+			// just announced (task-240 Defect H): the client shows a modal
+			// for every entry sent and sends nothing on cancel, so the
+			// announce itself is the only trigger that fires exactly once
+			// per presentation. Skipped entirely when the list is empty --
+			// nothing to drain.
+			if len(gifts) > 0 {
+				cashIds := make([]int64, len(gifts))
+				for i, g := range gifts {
+					cashIds[i] = g.SN
+				}
+				if ackErr := cashshop.NewProcessor(l, ctx).AcknowledgeGifts(a.Id(), s.CharacterId(), cashIds); ackErr != nil {
+					l.WithError(ackErr).Errorf("Unable to acknowledge [%d] gift(s) for character [%d].", len(cashIds), s.CharacterId())
+				}
+			}
 		}
 
 		wl, err := wishlist.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
@@ -147,11 +163,14 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 // buildGiftListEntries builds one cashcb.GiftListEntry per locker asset that
 // carries a sender (a gift received by this character), for the
 // LOAD_GIFT_SUCCESS announce. Assets with no sender (everything the
-// character bought for itself) are omitted.
+// character bought for itself) are omitted, as is any asset already marked
+// GiftAcknowledged -- its gift list has already been presented in a prior
+// cash shop entry (task-240 Defect H), so re-announcing it would re-fire the
+// client's modal on every entry.
 func buildGiftListEntries(assets []asset.Model) []cashcb.GiftListEntry {
 	var gifts []cashcb.GiftListEntry
 	for _, as := range assets {
-		if as.GiftFrom() == "" {
+		if as.GiftFrom() == "" || as.GiftAcknowledged() {
 			continue
 		}
 		gifts = append(gifts, cashcb.GiftListEntry{

@@ -6,20 +6,21 @@ import (
 )
 
 type RestModel struct {
-	Id            uint32    `json:"-"`
-	CompartmentId string    `json:"compartmentId"`
-	CashId        int64     `json:"cashId,string"`
-	TemplateId    uint32    `json:"templateId"`
-	CommodityId   uint32    `json:"commodityId"`
-	Currency      uint32    `json:"currency"`
-	Quantity      uint32    `json:"quantity"`
-	Flag          uint16    `json:"flag"`
-	PetId         uint32    `json:"petId"`
-	PurchasedBy   uint32    `json:"purchasedBy"`
-	Expiration    time.Time `json:"expiration"`
-	CreatedAt     time.Time `json:"createdAt"`
-	GiftFrom      string    `json:"giftFrom"`
-	GiftMessage   string    `json:"giftMessage"`
+	Id               uint32    `json:"-"`
+	CompartmentId    string    `json:"compartmentId"`
+	CashId           int64     `json:"cashId,string"`
+	TemplateId       uint32    `json:"templateId"`
+	CommodityId      uint32    `json:"commodityId"`
+	Currency         uint32    `json:"currency"`
+	Quantity         uint32    `json:"quantity"`
+	Flag             uint16    `json:"flag"`
+	PetId            uint32    `json:"petId"`
+	PurchasedBy      uint32    `json:"purchasedBy"`
+	Expiration       time.Time `json:"expiration"`
+	CreatedAt        time.Time `json:"createdAt"`
+	GiftFrom         string    `json:"giftFrom"`
+	GiftMessage      string    `json:"giftMessage"`
+	GiftAcknowledged bool      `json:"giftAcknowledged"`
 }
 
 func (r RestModel) GetName() string {
@@ -44,37 +45,39 @@ func (r *RestModel) SetID(strId string) error {
 
 func Transform(a Model) (RestModel, error) {
 	return RestModel{
-		Id:            a.Id(),
-		CompartmentId: a.CompartmentId().String(),
-		CashId:        a.CashId(),
-		TemplateId:    a.TemplateId(),
-		CommodityId:   a.CommodityId(),
-		Currency:      a.Currency(),
-		Quantity:      a.Quantity(),
-		Flag:          a.Flag(),
-		PetId:         a.PetId(),
-		PurchasedBy:   a.PurchasedBy(),
-		Expiration:    a.Expiration(),
-		CreatedAt:     a.CreatedAt(),
-		GiftFrom:      a.GiftFrom(),
-		GiftMessage:   a.GiftMessage(),
+		Id:               a.Id(),
+		CompartmentId:    a.CompartmentId().String(),
+		CashId:           a.CashId(),
+		TemplateId:       a.TemplateId(),
+		CommodityId:      a.CommodityId(),
+		Currency:         a.Currency(),
+		Quantity:         a.Quantity(),
+		Flag:             a.Flag(),
+		PetId:            a.PetId(),
+		PurchasedBy:      a.PurchasedBy(),
+		Expiration:       a.Expiration(),
+		CreatedAt:        a.CreatedAt(),
+		GiftFrom:         a.GiftFrom(),
+		GiftMessage:      a.GiftMessage(),
+		GiftAcknowledged: a.GiftAcknowledged(),
 	}, nil
 }
 
 func Extract(rm RestModel) (Model, error) {
 	return Model{
-		id:          rm.Id,
-		cashId:      rm.CashId,
-		templateId:  rm.TemplateId,
-		commodityId: rm.CommodityId,
-		currency:    rm.Currency,
-		quantity:    rm.Quantity,
-		flag:        rm.Flag,
-		petId:       rm.PetId,
-		purchasedBy: rm.PurchasedBy,
-		expiration:  rm.Expiration,
-		createdAt:   rm.CreatedAt,
-		giftFrom:    rm.GiftFrom,
-		giftMessage: rm.GiftMessage,
+		id:               rm.Id,
+		cashId:           rm.CashId,
+		templateId:       rm.TemplateId,
+		commodityId:      rm.CommodityId,
+		currency:         rm.Currency,
+		quantity:         rm.Quantity,
+		flag:             rm.Flag,
+		petId:            rm.PetId,
+		purchasedBy:      rm.PurchasedBy,
+		expiration:       rm.Expiration,
+		createdAt:        rm.CreatedAt,
+		giftFrom:         rm.GiftFrom,
+		giftMessage:      rm.GiftMessage,
+		giftAcknowledged: rm.GiftAcknowledged,
 	}, nil
 }

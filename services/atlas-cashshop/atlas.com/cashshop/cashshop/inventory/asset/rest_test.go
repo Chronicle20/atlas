@@ -176,6 +176,38 @@ func TestTransformExtractRoundTripNonGift(t *testing.T) {
 	}
 }
 
+// TestTransformExtractRoundTripGiftAcknowledged pins task-240 Defect H: the
+// gift-presented flag must survive a Transform -> Extract round trip, since
+// atlas-channel reads it off this REST model to decide whether to re-announce
+// a gift.
+func TestTransformExtractRoundTripGiftAcknowledged(t *testing.T) {
+	compartmentId := uuid.New()
+	original := NewBuilder(compartmentId, 5000).
+		SetId(1).
+		SetCashId(1001).
+		SetQuantity(1).
+		SetGiftFrom("Sender1").
+		SetGiftMessage("Happy birthday!").
+		SetGiftAcknowledged(true).
+		Build()
+
+	rm, err := Transform(original)
+	if err != nil {
+		t.Fatalf("Transform failed: %v", err)
+	}
+	if !rm.GiftAcknowledged {
+		t.Errorf("RestModel.GiftAcknowledged = false, want true")
+	}
+
+	result, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+	if result.GiftAcknowledged() != original.GiftAcknowledged() {
+		t.Errorf("GiftAcknowledged mismatch after round-trip: expected %v, got %v", original.GiftAcknowledged(), result.GiftAcknowledged())
+	}
+}
+
 func TestRestModelGetName(t *testing.T) {
 	rm := RestModel{}
 	expected := "assets"

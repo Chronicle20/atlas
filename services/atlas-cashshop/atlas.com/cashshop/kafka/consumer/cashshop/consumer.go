@@ -83,6 +83,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandExtendEquipSlot(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandAcknowledgeGifts(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -283,6 +286,22 @@ func handleCommandExtendEquipSlot(db *gorm.DB) message.Handler[cashshop.Command[
 		// purchase failure (the charge already stands).
 		if err := cashshop3.NewProcessor(l, ctx, db).CompleteEquipSlotExtension(c.CharacterId, c.Body.SlotIndex, c.Body.Days, c.Body.TransactionId); err != nil {
 			l.WithError(err).Errorf("Equip slot extension for character [%d] (transaction [%s]) did not succeed.", c.CharacterId, c.Body.TransactionId)
+		}
+	}
+}
+
+// handleCommandAcknowledgeGifts consumes ACKNOWLEDGE_GIFTS (task-240 Defect
+// H): AcknowledgeGiftsAndEmit drains the "presented" flag on every named
+// asset in the requesting account's compartments. There is nothing
+// client-facing to announce on either success or failure, so a returned
+// error is only logged for operators.
+func handleCommandAcknowledgeGifts(db *gorm.DB) message.Handler[cashshop.Command[cashshop.AcknowledgeGiftsCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c cashshop.Command[cashshop.AcknowledgeGiftsCommandBody]) {
+		if c.Type != cashshop.CommandTypeAcknowledgeGifts {
+			return
+		}
+		if err := cashshop3.NewProcessor(l, ctx, db).AcknowledgeGiftsAndEmit(c.Body.AccountId, c.Body.CashIds); err != nil {
+			l.WithError(err).Errorf("Unable to acknowledge gifts for account [%d].", c.Body.AccountId)
 		}
 	}
 }

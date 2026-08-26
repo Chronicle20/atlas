@@ -54,8 +54,19 @@ type Entity struct {
 	// every other asset. Bounded at 73 characters -- the padded encode width
 	// of GiftListEntry.Text
 	// (libs/atlas-packet/cash/clientbound/shop_operation_result_gift.go:43).
-	GiftMessage string         `gorm:"size:73;not null;default:''"`
-	DeletedAt   gorm.DeletedAt `gorm:"index"`
+	GiftMessage string `gorm:"size:73;not null;default:''"`
+	// GiftAcknowledged records whether the gift list carrying this asset has
+	// already been PRESENTED to the recipient (a LOAD_GIFT_SUCCESS announce
+	// has fired for it) -- task-240 Defect H. This is NOT "the recipient
+	// clicked OK on the modal": the client sends nothing when the modal is
+	// cancelled, so the only trigger that fires exactly once per
+	// presentation is the announce itself, and this flag is drained at that
+	// point, not on acknowledgement. AutoMigrate lands the column default
+	// (false) on every existing row, so a locker asset created before this
+	// field existed is treated as not-yet-presented, which is correct: it
+	// has never been announced under this flag's regime.
+	GiftAcknowledged bool           `gorm:"not null;default:false"`
+	DeletedAt        gorm.DeletedAt `gorm:"index"`
 }
 
 func (e Entity) TableName() string {
@@ -76,5 +87,6 @@ func Make(e Entity) (Model, error) {
 		SetCreatedAt(e.CreatedAt).
 		SetGiftFrom(e.GiftFrom).
 		SetGiftMessage(e.GiftMessage).
+		SetGiftAcknowledged(e.GiftAcknowledged).
 		Build(), nil
 }

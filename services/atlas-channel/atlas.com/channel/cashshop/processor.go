@@ -30,6 +30,10 @@ type Processor interface {
 	MoveToCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte) error
 	OpenSurprise(accountId uint32, characterId uint32, cashId int64) error
 	RequestLockerRebate(accountId uint32, characterId uint32, cashId int64, transactionId uuid.UUID) error
+	// AcknowledgeGifts drains the "gift list presented" flag on cashIds
+	// (task-240 Defect H) -- fired after a successful LOAD_GIFT_SUCCESS
+	// announce, never before, so a gift is presented exactly once.
+	AcknowledgeGifts(accountId uint32, characterId uint32, cashIds []int64) error
 	RequestGiftPurchase(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) error
 	RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error
 	RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error
@@ -236,6 +240,14 @@ func (p *ProcessorImpl) OpenSurprise(accountId uint32, characterId uint32, cashI
 func (p *ProcessorImpl) RequestLockerRebate(accountId uint32, characterId uint32, cashId int64, transactionId uuid.UUID) error {
 	p.l.Debugf("Character [%d] requesting locker rebate for cash item [%d]. Transaction [%s].", characterId, cashId, transactionId)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestLockerRebateCommandProvider(characterId, transactionId, accountId, cashId))
+}
+
+// AcknowledgeGifts forwards ACKNOWLEDGE_GIFTS (task-240 Defect H). A nil/empty
+// cashIds would be a no-op on the receiving end anyway, but callers (see
+// cash_shop_entry.go) already skip the call in that case.
+func (p *ProcessorImpl) AcknowledgeGifts(accountId uint32, characterId uint32, cashIds []int64) error {
+	p.l.Debugf("Character [%d] acknowledging [%d] gift(s).", characterId, len(cashIds))
+	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(AcknowledgeGiftsCommandProvider(characterId, accountId, cashIds))
 }
 
 // RequestGiftPurchase forwards a GIFT purchase request. TransactionId is

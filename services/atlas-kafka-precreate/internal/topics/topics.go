@@ -1,8 +1,8 @@
 // Package topics is the part of the tool that talks to the cluster
 // controller: it creates the topic union in a single request, applies the
-// compacted cleanup policy, waits for the client's metadata cache to know
-// about every topic it just created, and reads end-of-log offsets — the one
-// primitive both group phases build their offset-seeding math on.
+// compacted topic configuration, waits for the client's metadata cache to
+// know about every topic it just created, and reads end-of-log offsets — the
+// one primitive both group phases build their offset-seeding math on.
 package topics
 
 import (
@@ -19,7 +19,105 @@ import (
 	"atlas.com/kafka-precreate/internal/kafkaops"
 )
 
-const compactCleanupPolicy = "compact"
+const (
+	compactCleanupPolicy = "compact"
+
+	// compactMaxCompactionLagMs bounds how long a record may sit
+	// uncompacted. This is the knob that makes cleanup.policy=compact mean
+	// anything: the cleaner never touches a partition's ACTIVE segment, so
+	// a topic whose segment never rolls is never cleaned no matter what its
+	// cleanup policy says. For a compacted topic the broker's effective
+	// roll deadline is min(segment.ms, max.compaction.lag.ms), so setting
+	// this to 10 minutes makes the segment roll ten minutes after its first
+	// record — and the roll is what hands the cleaner something to work on.
+	// Verified against apache/kafka:4.1.1 (design §2.2): a topic carrying
+	// only this config rolled and compacted 200 records over 3 keys down to
+	// 3, with no segment.ms set at all.
+	compactMaxCompactionLagMs = "600000"
+
+	// compactSegmentMs is the same 10-minute deadline expressed on the
+	// policy-independent knob. It is deliberately equal to
+	// compactMaxCompactionLagMs and is therefore redundant while the topic
+	// is compacted (the broker takes the min of the two). It is set anyway
+	// so the roll bound survives someone changing cleanup.policy, and so
+	// the roll cadence is legible from a --describe without knowing the
+	// min() rule. It is NOT the knob doing the work — deleting
+	// max.compaction.lag.ms and keeping this one would not be equivalent
+	// for a compacted topic.
+	compactSegmentMs = "600000"
+
+	// compactMinCleanableDirtyRatio lets the cleaner select a segment whose
+	// dirty fraction is small, rather than the 0.5 default. This one was
+	// not isolated by the live experiments (both ran at a dirty ratio near
+	// 1.0) and the forced-cleaning path max.compaction.lag.ms drives
+	// bypasses the ratio check anyway; it is cheap steady-state insurance,
+	// inert-but-harmless rather than load-bearing.
+	compactMinCleanableDirtyRatio = "0.01"
+)
+
+// compactTopicConfig is one (name, value) pair in the configuration every
+// compacted topic must carry. It exists so the CreateTopics and
+// IncrementalAlterConfigs request bodies are two projections of one
+// declaration: a config applied at creation but not at alter (or the
+// reverse) is precisely the defect this set was added to fix.
+//
+// It is a neutral local pair type rather than []kafka.ConfigEntry because
+// the alter direction needs a third field (ConfigOperation) that
+// kafka.ConfigEntry has no counterpart for — one of the two directions is a
+// projection either way, so the canonical declaration keeps kafka types out
+// of it and reads as policy.
+type compactTopicConfig struct {
+	name  string
+	value string
+}
+
+var compactTopicConfigs = []compactTopicConfig{
+	{name: "cleanup.policy", value: compactCleanupPolicy},
+	{name: "max.compaction.lag.ms", value: compactMaxCompactionLagMs},
+	{name: "segment.ms", value: compactSegmentMs},
+	{name: "min.cleanable.dirty.ratio", value: compactMinCleanableDirtyRatio},
+}
+
+// compactCreateEntries projects the declaration onto a CreateTopics
+// per-topic config body. It builds a fresh slice per call:
+// kafka.TopicConfig.ConfigEntries is a per-topic field kafka-go reads but
+// does not document as immutable, and sharing one backing array across N
+// resources would be a silent aliasing hazard for no measurable gain at
+// these sizes.
+func compactCreateEntries() []kafka.ConfigEntry {
+	entries := make([]kafka.ConfigEntry, len(compactTopicConfigs))
+	for i, cfg := range compactTopicConfigs {
+		entries[i] = kafka.ConfigEntry{ConfigName: cfg.name, ConfigValue: cfg.value}
+	}
+	return entries
+}
+
+// compactAlterConfigs projects the same declaration onto an
+// IncrementalAlterConfigs per-resource config body, set-only. Fresh slice
+// per call, for the reason on compactCreateEntries.
+func compactAlterConfigs() []kafka.IncrementalAlterConfigsRequestConfig {
+	configs := make([]kafka.IncrementalAlterConfigsRequestConfig, len(compactTopicConfigs))
+	for i, cfg := range compactTopicConfigs {
+		configs[i] = kafka.IncrementalAlterConfigsRequestConfig{
+			Name:            cfg.name,
+			Value:           cfg.value,
+			ConfigOperation: kafka.ConfigOperationSet,
+		}
+	}
+	return configs
+}
+
+// CompactConfigNames returns the names of the configs applied to every
+// compacted topic, in declaration order. It exists so the alter-phase log
+// line cannot drift from what was actually sent. Names only: the values are
+// four short numbers recoverable from a --describe.
+func CompactConfigNames() []string {
+	names := make([]string, len(compactTopicConfigs))
+	for i, cfg := range compactTopicConfigs {
+		names[i] = cfg.name
+	}
+	return names
+}
 
 // EnsureResult tallies what Ensure did: how many topics it created new, and
 // how many were already there.
@@ -56,9 +154,7 @@ func Ensure(ctx context.Context, c kafkaops.AdminClient, addr net.Addr, t discov
 			Topic:             name,
 			NumPartitions:     1,
 			ReplicationFactor: 1,
-			ConfigEntries: []kafka.ConfigEntry{
-				{ConfigName: "cleanup.policy", ConfigValue: compactCleanupPolicy},
-			},
+			ConfigEntries:     compactCreateEntries(),
 		})
 	}
 
@@ -98,30 +194,32 @@ func Ensure(ctx context.Context, c kafkaops.AdminClient, addr net.Addr, t discov
 	// part of this tool's policy is exactly the case FR-2.6 covers, and
 	// setting a config that is already set to the same value is a no-op on
 	// the broker.
+	//
+	// The set is now four configs, not one. cleanup.policy=compact on its
+	// own is inert: the cleaner never touches a partition's active
+	// segment, so a topic whose segment never rolls is never cleaned. The
+	// unconditional sweep is therefore also the repair path for topics
+	// created by an earlier version of this tool — applying the new roll
+	// bound makes their oversized active segment roll on the next append,
+	// and the cleaner collapses it on its next pass (design §2.3).
 	resources := make([]kafka.IncrementalAlterConfigsRequestResource, len(t.Compact))
 	for i, name := range t.Compact {
 		resources[i] = kafka.IncrementalAlterConfigsRequestResource{
 			ResourceType: kafka.ResourceTypeTopic,
 			ResourceName: name,
-			Configs: []kafka.IncrementalAlterConfigsRequestConfig{
-				{
-					Name:            "cleanup.policy",
-					Value:           compactCleanupPolicy,
-					ConfigOperation: kafka.ConfigOperationSet,
-				},
-			},
+			Configs:      compactAlterConfigs(),
 		}
 	}
 
 	alterResp, err := c.IncrementalAlterConfigs(ctx, &kafka.IncrementalAlterConfigsRequest{Addr: addr, Resources: resources})
 	if err != nil {
-		return EnsureResult{}, fmt.Errorf("setting cleanup.policy=compact: %w", err)
+		return EnsureResult{}, fmt.Errorf("applying compacted topic config: %w", err)
 	}
 
 	var alterFatal []error
 	for _, res := range alterResp.Resources {
 		if res.Error != nil {
-			alterFatal = append(alterFatal, fmt.Errorf("setting cleanup.policy=compact on topic %q: %w", res.ResourceName, res.Error))
+			alterFatal = append(alterFatal, fmt.Errorf("applying compacted topic config on topic %q: %w", res.ResourceName, res.Error))
 		}
 	}
 	if len(alterFatal) > 0 {

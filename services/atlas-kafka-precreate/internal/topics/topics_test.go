@@ -163,9 +163,19 @@ func TestEnsure_SingleCreateRequest(t *testing.T) {
 			t.Errorf("topic %s: expected ReplicationFactor 1, got %d", cfg.Topic, cfg.ReplicationFactor)
 		}
 		if _, isCompact := compactSet[cfg.Topic]; isCompact {
-			want := []kafka.ConfigEntry{{ConfigName: "cleanup.policy", ConfigValue: "compact"}}
-			if len(cfg.ConfigEntries) != len(want) || cfg.ConfigEntries[0] != want[0] {
-				t.Errorf("topic %s: expected ConfigEntries %v, got %v", cfg.Topic, want, cfg.ConfigEntries)
+			want := []kafka.ConfigEntry{
+				{ConfigName: "cleanup.policy", ConfigValue: "compact"},
+				{ConfigName: "max.compaction.lag.ms", ConfigValue: "600000"},
+				{ConfigName: "segment.ms", ConfigValue: "600000"},
+				{ConfigName: "min.cleanable.dirty.ratio", ConfigValue: "0.01"},
+			}
+			if len(cfg.ConfigEntries) != len(want) {
+				t.Fatalf("topic %s: expected %d ConfigEntries, got %d", cfg.Topic, len(want), len(cfg.ConfigEntries))
+			}
+			for i, w := range want {
+				if cfg.ConfigEntries[i] != w {
+					t.Errorf("topic %s entry %d: expected %+v, got %+v", cfg.Topic, i, w, cfg.ConfigEntries[i])
+				}
 			}
 		} else if len(cfg.ConfigEntries) != 0 {
 			t.Errorf("topic %s: expected no ConfigEntries, got %v", cfg.Topic, cfg.ConfigEntries)
@@ -312,16 +322,19 @@ func TestEnsure_AlterConfigs(t *testing.T) {
 		if res.ResourceType != kafka.ResourceTypeTopic {
 			t.Errorf("expected ResourceType kafka.ResourceTypeTopic, got %v", res.ResourceType)
 		}
-		if len(res.Configs) != 1 {
-			t.Fatalf("expected exactly 1 config, got %d", len(res.Configs))
+		wantConfigs := []kafka.IncrementalAlterConfigsRequestConfig{
+			{Name: "cleanup.policy", Value: "compact", ConfigOperation: kafka.ConfigOperationSet},
+			{Name: "max.compaction.lag.ms", Value: "600000", ConfigOperation: kafka.ConfigOperationSet},
+			{Name: "segment.ms", Value: "600000", ConfigOperation: kafka.ConfigOperationSet},
+			{Name: "min.cleanable.dirty.ratio", Value: "0.01", ConfigOperation: kafka.ConfigOperationSet},
 		}
-		want := kafka.IncrementalAlterConfigsRequestConfig{
-			Name:            "cleanup.policy",
-			Value:           "compact",
-			ConfigOperation: kafka.ConfigOperationSet,
+		if len(res.Configs) != len(wantConfigs) {
+			t.Fatalf("resource %q: expected %d configs, got %d", res.ResourceName, len(wantConfigs), len(res.Configs))
 		}
-		if res.Configs[0] != want {
-			t.Errorf("expected config %+v, got %+v", want, res.Configs[0])
+		for j, want := range wantConfigs {
+			if res.Configs[j] != want {
+				t.Errorf("resource %q config %d: expected %+v, got %+v", res.ResourceName, j, want, res.Configs[j])
+			}
 		}
 		if res.ResourceName == "p1" {
 			t.Errorf("expected p1 to not appear in alter resources")
@@ -368,6 +381,19 @@ func TestEnsure_AlterConfigs_ResourceError(t *testing.T) {
 	}
 	if !containsSubstring(err.Error(), "c2") {
 		t.Errorf("expected error message %q to contain %q", err.Error(), "c2")
+	}
+}
+
+func TestCompactConfigNames(t *testing.T) {
+	want := []string{"cleanup.policy", "max.compaction.lag.ms", "segment.ms", "min.cleanable.dirty.ratio"}
+	got := CompactConfigNames()
+	if len(got) != len(want) {
+		t.Fatalf("expected %d names, got %d: %v", len(want), len(got), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("name %d: expected %q, got %q", i, want[i], got[i])
+		}
 	}
 }
 

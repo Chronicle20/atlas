@@ -62,6 +62,7 @@ func NewStatusMessageDropPickUpInventoryFull(mode byte) StatusMessageDropPickUpI
 }
 
 func (m StatusMessageDropPickUpInventoryFull) Operation() string { return CharacterStatusMessageWriter }
+
 func (m StatusMessageDropPickUpInventoryFull) String() string {
 	return fmt.Sprintf("drop pick up inventory full, mode [%d]", m.mode)
 }

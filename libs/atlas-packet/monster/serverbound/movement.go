@@ -36,15 +36,17 @@ type MovementRequest struct {
 	tChaseDuration        uint32
 }
 
-func (m MovementRequest) UniqueId() uint32                             { return m.uniqueId }
-func (m MovementRequest) MoveId() int16                                { return m.moveId }
-func (m MovementRequest) DwFlag() byte                                 { return m.dwFlag }
-func (m MovementRequest) ActionAndDir() int8                           { return m.nActionAndDir }
-func (m MovementRequest) SkillData() uint32                            { return m.skillData }
-func (m MovementRequest) SkillId() int16                               { return int16(m.skillData & 0xFF) }
+func (m MovementRequest) UniqueId() uint32   { return m.uniqueId }
+func (m MovementRequest) MoveId() int16      { return m.moveId }
+func (m MovementRequest) DwFlag() byte       { return m.dwFlag }
+func (m MovementRequest) ActionAndDir() int8 { return m.nActionAndDir }
+func (m MovementRequest) SkillData() uint32  { return m.skillData }
+func (m MovementRequest) SkillId() int16     { return int16(m.skillData & 0xFF) }
+
 func (m MovementRequest) SkillLevel() int16                            { return int16(m.skillData >> 8 & 0xFF) }
 func (m MovementRequest) MonsterMoveStartResult() bool                 { return m.dwFlag > 0 }
 func (m MovementRequest) MultiTargetForBall() model.MultiTargetForBall { return m.multiTargetForBall }
+
 func (m MovementRequest) RandTimeForAreaAttack() model.RandTimeForAreaAttack {
 	return m.randTimeForAreaAttack
 }

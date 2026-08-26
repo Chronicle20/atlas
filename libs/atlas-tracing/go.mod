@@ -1,6 +1,6 @@
 module github.com/Chronicle20/atlas/libs/atlas-tracing
 
-go 1.25.5
+go 1.27.0
 
 require (
 	github.com/sirupsen/logrus v1.10.1

@@ -1,0 +1,134 @@
+{
+  "service": "task-261-go-1-27-migration (multi-service diff)",
+  "path": "855fef4d1..6d1979fd4 -- *.go",
+  "date": "2026-08-25",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "libs/atlas-packet/*",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client-interpreted wire values resolved from tenant table", "status": "pass", "evidence": "No literal/value change in any packet-codec hunk; only blank-line/realignment"},
+        {"id": "DOM-26", "name": "Every goroutine spawned via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0"},
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "n-a", "evidence": "No Processor/RestModel/entity/Builder/requests symbol present in touched packet files"}
+      ]
+    },
+    {
+      "name": "atlas-channel/data/tradeability",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "fail", "evidence": "services/atlas-channel/atlas.com/channel/data/tradeability/rest.go: no func Transform( found; only func extract[R...](rm R) (Model, error) at line 125"},
+        {"id": "DOM-18", "name": "RestModel implements GetName/GetID/SetID", "status": "pass", "evidence": "rest.go:41-47,59-65,77-82,92-97,107-112"},
+        {"id": "DOM-19", "name": "Flat request models", "status": "n-a", "evidence": "No CreateRequest/UpdateRequest defined"},
+        {"id": "DOM-31", "name": "Tenant/trace id never a REST-model field", "status": "pass", "evidence": "No tenantId/traceId field in rest.go"},
+        {"id": "FILE-02", "name": "RestModel/Transform-or-Extract/JSON:API methods in rest.go", "status": "pass", "evidence": "All present symbols in rest.go; Transform itself missing (see DOM-04)"},
+        {"id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "pass", "evidence": "requests.go:19-58"},
+        {"id": "EXT-01", "name": "SetToOneReferenceID/SetToManyReferenceIDs implemented", "status": "pass", "evidence": "rest.go:46-47 and equivalents"},
+        {"id": "EXT-04", "name": "Service URL via requests.RootUrl", "status": "pass", "evidence": "requests.go:19 requests.RootUrlFor(ctx, \"DATA\")"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "n-a", "evidence": "not evaluable from diff; requires untouched processor_test.go"},
+        {"id": "EXT-03", "name": "Only genuine 404 maps to not-found", "status": "n-a", "evidence": "not evaluable from diff; requires untouched processor.go"}
+      ]
+    },
+    {
+      "name": "atlas-inventory/data/tradeability",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "fail", "evidence": "services/atlas-inventory/atlas.com/inventory/data/tradeability/rest.go: no func Transform( found"},
+        {"id": "DOM-18", "name": "RestModel implements GetName/GetID/SetID", "status": "pass", "evidence": "rest.go:41-47,59-65,77-82,92-97,107-112"},
+        {"id": "FILE-02", "name": "Placement", "status": "pass", "evidence": "All present symbols in rest.go (Transform missing, see DOM-04)"},
+        {"id": "FILE-03", "name": "Cross-service request functions in requests.go", "status": "pass", "evidence": "mirrors channel copy"}
+      ]
+    },
+    {
+      "name": "atlas-channel/monsterbook",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "fail", "evidence": "services/atlas-channel/atlas.com/channel/monsterbook/rest.go: only func ExtractCard(...) line 102 and func Extract(...) line 107; no Transform"},
+        {"id": "DOM-18", "name": "RestModel implements GetName/GetID/SetID", "status": "pass", "evidence": "rest.go full read confirms present for CardRestModel and CollectionRestModel"},
+        {"id": "DOM-31", "name": "No tenant/trace field on RestModel", "status": "pass", "evidence": "No tenantId/traceId field in rest.go"}
+      ]
+    },
+    {
+      "name": "atlas-monster-book/data/consumable",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "fail", "evidence": "services/atlas-monster-book/atlas.com/monster-book/data/consumable/rest.go: only func Extract(rm RestModel) (Model, error) at line 41; no Transform"},
+        {"id": "DOM-18", "name": "RestModel implements GetName/GetID/SetID", "status": "pass", "evidence": "rest.go:31 SetID and surrounding block"},
+        {"id": "FILE-02", "name": "JSON:API reference methods in rest.go", "status": "pass", "evidence": "rest.go:31-33 comment + methods"}
+      ]
+    },
+    {
+      "name": "atlas-npc-conversations/conversation/recipe",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "pass", "evidence": "rest.go:56 func Transform(m Model) RestModel"},
+        {"id": "DOM-18", "name": "RestModel implements GetName/GetID/SetID", "status": "pass", "evidence": "rest.go:33-49, 81-95"},
+        {"id": "DOM-19", "name": "Flat request models", "status": "n-a", "evidence": "No CreateRequest/UpdateRequest defined"},
+        {"id": "DOM-31", "name": "Tenant id never caller-supplied REST field", "status": "pass", "evidence": "rest.go:101-104 tenantId is a function parameter used only to synthesize the response Id, not a settable field"},
+        {"id": "DOM-01,02,03,11,16", "name": "Domain structure", "status": "n-a", "evidence": "not evaluable from diff; entity.go, provider.go, administrator.go, processor.go, resource.go untouched by this diff"},
+        {"id": "FILE-01,04,06", "name": "File placement", "status": "n-a", "evidence": "not evaluable from diff; only rest.go touched (1-line blank insertion)"},
+        {"id": "SUB-01..04", "name": "Sub-domain rules", "status": "n-a", "evidence": "package has model.go, SUB family does not apply"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/data/consumable",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder(), fluent setters, validating Build()", "status": "fail", "evidence": "package directory has no builder.go; builder (RewardModelBuilderType, Build()) defined inside model.go:290-316, the file touched by this diff (blank lines only at :301,304,306,314)"},
+        {"id": "FILE-05", "name": "Builder in builder.go, Model in model.go", "status": "fail", "evidence": "same as DOM-01 — no builder.go file exists"}
+      ]
+    },
+    {
+      "name": "builder.go files touched by whitespace-only realignment (atlas-ban/report, atlas-channel/asset, atlas-consumables/asset, atlas-inventory/asset, atlas-login/inventory/compartment/asset, atlas-query-aggregator/asset, atlas-summons/summon)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "NewBuilder()/fluent setters/Build()", "status": "pass", "evidence": "each has func NewBuilder(...) and func (b *...) Build(...) — e.g. atlas-ban report/builder.go:26,51; atlas-channel asset/builder.go:119,244; atlas-summons summon/builder.go:36,81"}
+      ]
+    },
+    {
+      "name": "atlas-monster-book/collection",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "NewBuilder()/fluent setters/Build()", "status": "warn", "evidence": "builder.go:28 func NewModelBuilder() *ModelBuilder — constructor named NewModelBuilder, not NewBuilder; fluent setters and Build() (:62) present; pre-existing, only a blank line touched at :443"}
+      ]
+    },
+    {
+      "name": "atlas-cashshop/asset",
+      "type": "domain",
+      "checks": [
+        {"id": "FILE-05", "name": "Builder in builder.go", "status": "warn", "evidence": "no builder.go in package; reference_data.go (touched by this diff, whitespace-only) co-locates EquipableReferenceData/CashEquipableReferenceData models with their own *Builder types and NewEquipableReferenceDataBuilder()/Build(); pre-existing"},
+        {"id": "DOM-25", "name": "Wire literal handling", "status": "pass", "evidence": "reference_data.go hunks are whitespace-only; flag constants (af.FlagKarmaEquip etc.) unchanged"}
+      ]
+    },
+    {
+      "name": "test-file formatting hunks (atlas-channel/character, atlas-events/event/registry, atlas-rankings/tasks)",
+      "type": "support",
+      "checks": [
+        {"id": "n/a", "name": "Behavior-preservation of test hunks", "status": "pass", "evidence": "processor_test.go:189 removes redundant parens around a method-value expression (behavior identical, go test passes); registry_test.go:324 and recompute_test.go:498-505 are blank-line insertions only"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "n-a", "evidence": "diff adds no new test"},
+        {"id": "DOM-24", "name": "producer stub in emit-reaching tests", "status": "n-a", "evidence": "none of the three touched test files reach an emit path"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "EXT-02 (atlas-channel/inventory tradeability): httptest integration coverage requires untouched processor_test.go",
+    "EXT-03 (atlas-channel/inventory tradeability): 404-vs-5xx mapping requires untouched processor.go",
+    "DOM-30 (atlas-channel/monsterbook): atomic write/emit pairing requires untouched producer.go and processor.go",
+    "DOM-01/02/03/11/16, FILE-01/04/06, SUB-* (atlas-npc-conversations/recipe): full domain-structure audit requires untouched entity.go/provider.go/administrator.go/processor.go/resource.go",
+    "go test ./... not re-run for the full atlas-channel/atlas-events/atlas-login/atlas-rankings module trees beyond the packages containing touched files"
+  ],
+  "blocking": [
+    "DOM-04: services/atlas-channel/atlas.com/channel/data/tradeability/rest.go: no Transform(Model)(RestModel,error) function (pre-existing, not introduced by this diff)",
+    "DOM-04: services/atlas-inventory/atlas.com/inventory/data/tradeability/rest.go: same gap (pre-existing)",
+    "DOM-04: services/atlas-channel/atlas.com/channel/monsterbook/rest.go: same gap (pre-existing)",
+    "DOM-04: services/atlas-monster-book/atlas.com/monster-book/data/consumable/rest.go: same gap (pre-existing)",
+    "DOM-01/FILE-05: services/atlas-consumables/atlas.com/consumables/data/consumable/model.go: no builder.go in package; builder defined inside model.go (pre-existing)"
+  ],
+  "nonBlocking": [
+    "DOM-01: services/atlas-monster-book/atlas.com/monster-book/collection/builder.go:28 constructor named NewModelBuilder, not NewBuilder (pre-existing)",
+    "FILE-05: services/atlas-cashshop/atlas.com/cashshop/asset/reference_data.go co-locates reference-data builders with their models; no builder.go in package (pre-existing)"
+  ]
+}

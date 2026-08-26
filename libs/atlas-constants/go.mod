@@ -1,6 +1,6 @@
 module github.com/Chronicle20/atlas/libs/atlas-constants
 
-go 1.24.4
+go 1.27.0
 
 require github.com/google/uuid v1.6.0
 

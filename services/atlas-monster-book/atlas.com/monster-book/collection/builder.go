@@ -51,6 +51,7 @@ func (b *ModelBuilder) SetBookLevel(v uint16) *ModelBuilder         { b.bookLeve
 func (b *ModelBuilder) SetNormalCount(v uint16) *ModelBuilder       { b.normalCount = v; return b }
 func (b *ModelBuilder) SetSpecialCount(v uint16) *ModelBuilder      { b.specialCount = v; return b }
 func (b *ModelBuilder) SetExpBonusPercent(v uint16) *ModelBuilder   { b.expBonusPercent = v; return b }
+
 func (b *ModelBuilder) SetLastCoverEventId(v *uuid.UUID) *ModelBuilder {
 	b.lastCoverEventId = v
 	return b

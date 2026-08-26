@@ -57,10 +57,10 @@ func TestLocateAtlasFileDisambiguatesByPkg(t *testing.T) {
 		t.Run(tc.pkg+"/"+tc.name, func(t *testing.T) {
 			got, ok := locateAtlasFile(atlasRoot, tc.name, tc.pkg, tc.dir)
 			if !ok {
-				t.Fatalf("locateAtlasFile(%q,%q,%q) not found", tc.name, tc.pkg, tc.dir)
+				t.Fatalf("locateAtlasFile(%q,%q,%v) not found", tc.name, tc.pkg, tc.dir)
 			}
 			if !strings.Contains(got, tc.wantInfix) {
-				t.Errorf("locateAtlasFile(%q,%q,%q) = %q, want path containing %q", tc.name, tc.pkg, tc.dir, got, tc.wantInfix)
+				t.Errorf("locateAtlasFile(%q,%q,%v) = %q, want path containing %q", tc.name, tc.pkg, tc.dir, got, tc.wantInfix)
 			}
 		})
 	}

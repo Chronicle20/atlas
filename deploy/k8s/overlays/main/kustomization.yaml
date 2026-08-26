@@ -246,7 +246,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-5cbebec
+    newTag: main-123f001
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
     newTag: main-986993d
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
@@ -256,7 +256,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-5cbebec
+    newTag: main-123f001
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-dragons/atlas-dragons
@@ -310,7 +310,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
     newTag: main-5cbebec
   - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
-    newTag: main-5cbebec
+    newTag: main-123f001
   - name: ghcr.io/chronicle20/atlas-mounts/atlas-mounts
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-mts/atlas-mts
@@ -332,7 +332,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
     newTag: main-986993d
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
-    newTag: main-93db3e2
+    newTag: main-123f001
   - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
     newTag: main-93db3e2
   - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
@@ -368,6 +368,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-986993d
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-e36e545
+    newTag: main-c2465b0
 commonLabels:
   atlas.env: main

@@ -14,10 +14,15 @@
 # file (one to the mod-only block, one to the source block) AND adding
 # the lib name to the synthesized go.work `for L in ...` loop below.
 # That's it — no per-service edits.
-ARG GO_VERSION=1.26.0
-ARG ALPINE_VERSION=3.23
+ARG GO_VERSION=1.27.0
+ARG ALPINE_VERSION=3.24
 
 FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS build-env
+
+# Re-declare after FROM: a global ARG is not visible inside a build stage.
+# Consumed by the synthesized go.work below so the workspace directive can
+# never drift from the builder image (task-261).
+ARG GO_VERSION
 
 ARG SERVICE
 RUN test -n "${SERVICE}" || (echo "ERROR: build arg SERVICE is required (e.g., atlas-account)" >&2 && exit 1)
@@ -91,7 +96,11 @@ RUN MOD_DIR=$(ls -d services/${SERVICE}/atlas.com/*/ | head -1 | sed 's:/$::') \
     && test -n "$MOD_DIR" || (echo "ERROR: no module dir under services/${SERVICE}/atlas.com/" >&2 && exit 1) \
     && test -f "${MOD_DIR}/go.mod" || (echo "ERROR: ${MOD_DIR}/go.mod missing" >&2 && exit 1) \
     && { \
-         printf 'go 1.26.0\n\nuse (\n'; \
+         # task-261: NOT a pinned site — derived from ARG GO_VERSION above, so
+         # tools/toolchain-pin-guard.sh deliberately does not check this line.
+         # A literal here must be >= every member module's directive or the
+         # workspace fails to load and every go-service image build breaks.
+         printf 'go %s\n\nuse (\n' "${GO_VERSION}"; \
          for L in atlas-constants atlas-database atlas-env atlas-kafka atlas-lock atlas-model \
                   atlas-object-id atlas-opcodes atlas-outbox atlas-packet atlas-redis \
                   atlas-rest atlas-retry atlas-routine atlas-saga atlas-script-core \

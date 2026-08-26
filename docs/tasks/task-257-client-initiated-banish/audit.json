@@ -1,0 +1,115 @@
+{
+  "service": "atlas-channel, atlas-monsters, atlas-portals",
+  "path": "services/atlas-channel, services/atlas-monsters, services/atlas-portals",
+  "date": "2026-08-21",
+  "build": "pass",
+  "testsPassed": 1812,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-channel/kafka/message/monster",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/kafka/message/monster/kafka.go:23,127-140 — DTO-only Kafka envelope package"},
+        {"id": "DOM-21", "name": "No redeclaration of shared domain type", "status": "pass", "evidence": "kafka.go:36,42,70,85,105,124,138-139 — raw uint32 fields, consistent with sibling command bodies"}
+      ]
+    },
+    {
+      "name": "atlas-channel/monster",
+      "type": "domain",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface/impl in processor.go", "status": "pass", "evidence": "monster/processor.go:35,177-181"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "monster/processor.go:43"},
+        {"id": "DOM-01", "name": "builder.go validating Build()", "status": "n-a", "evidence": "builder.go untouched by diff; Banish constructs no new Model"},
+        {"id": "DOM-02", "name": "Model.ToEntity() in entity.go", "status": "n-a", "evidence": "package has no entity.go"},
+        {"id": "DOM-03", "name": "Make(Entity) in entity.go", "status": "n-a", "evidence": "package has no entity.go"},
+        {"id": "DOM-04", "name": "Transform(Model) in rest.go", "status": "n-a", "evidence": "rest.go untouched by diff; no new RestModel introduced"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "n-a", "evidence": "rest.go untouched by diff"},
+        {"id": "DOM-11", "name": "provider.go lazy evaluation", "status": "n-a", "evidence": "package has no provider.go"},
+        {"id": "DOM-16", "name": "administrator.go for writes", "status": "n-a", "evidence": "package performs no DB create/update/delete"},
+        {"id": "DOM-31", "name": "Tenant/trace travel in context only", "status": "pass", "evidence": "producer.go:225-245 — BanishCommandProvider carries only characterId/monsterTemplateId/field, no tenant field"},
+        {"id": "DOM-33", "name": "Mock updated with interface change", "status": "pass", "evidence": "monster/mock/processor.go:28,151-156"},
+        {"id": "DOM-20", "name": "Tests table-driven", "status": "fail", "evidence": "producer_banish_test.go:12 TestBanishCommandProviderShape, :47 TestBanishCommandKeysOnCharacter — single-scenario, no t.Run table"},
+        {"id": "DOM-24", "name": "Emit path stubbed in tests", "status": "n-a", "evidence": "producer_banish_test.go calls BanishCommandProvider(...)() directly — pure message builder, no producer.ProviderImpl/AndEmit reached"}
+      ]
+    },
+    {
+      "name": "atlas-channel/socket/handler",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "mob_banish_player.go — single handler function only"},
+        {"id": "DOM-25", "name": "No client wire byte literal", "status": "pass", "evidence": "mob_banish_player.go:20 — p.MobTemplateId() forwarded as domain uint32, not a resolved wire code"}
+      ]
+    },
+    {
+      "name": "atlas-monsters/kafka/consumer/monster",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "consumer.go:232-239 handleBanishCommand; kafka.go:168-180 banishCommandBody"},
+        {"id": "DOM-21", "name": "No redeclaration of shared domain type", "status": "pass", "evidence": "banishCommandBody fields are raw uint32, consistent with sibling bodies in kafka.go"}
+      ]
+    },
+    {
+      "name": "atlas-monsters/kafka/message/system_message",
+      "type": "support",
+      "checks": [
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "kafka.go:1-30 — DTO-only Kafka envelope package"},
+        {"id": "DOM-22", "name": "New libs module wiring", "status": "n-a", "evidence": "no libs/ module added"},
+        {"id": "DOM-23", "name": "Topic env var lifecycle", "status": "n-a", "evidence": "COMMAND_TOPIC_SYSTEM_MESSAGE already present in deploy/k8s/base/env-configmap.yaml:92 and all three overlay generators; reused, not added/renamed; diff touches no deploy/ file"}
+      ]
+    },
+    {
+      "name": "atlas-monsters/monster",
+      "type": "domain",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface/impl in processor.go", "status": "pass", "evidence": "processor.go:73 (interface), :1265-1279 (banishCharacter), :1284-1311 (Banish)"},
+        {"id": "FILE-producer-placement", "name": "Kafka message-creation providers", "status": "pass", "evidence": "warpCommandProvider/sendMessageProvider live in disease.go, the pre-existing feature-scoped provider file for this command family"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:108"},
+        {"id": "DOM-33", "name": "Mock updated with interface change", "status": "n-a", "evidence": "monster.Processor has no mock package anywhere in atlas-monsters — nothing to update"},
+        {"id": "DOM-31", "name": "Tenant/trace travel in context only", "status": "pass", "evidence": "BanishCommandBody/warpBody/SendMessageBody carry only domain ids and strings"},
+        {"id": "DOM-20", "name": "Tests table-driven", "status": "fail", "evidence": "banish_producer_test.go:18,48,70,103 and banish_test.go:104,150,186,228,260 are single-scenario, not table-driven; banish_test.go:31 TestBanish is correctly table-driven"},
+        {"id": "DOM-24", "name": "Emit path stubbed in tests", "status": "n-a", "evidence": "processor_test.go:236 newRecordingProcessorWithBodies injects a fake emitter closure — no real producer path reached"},
+        {"id": "DOM-10", "name": "GORM test setup calls RegisterTenantCallbacks", "status": "n-a", "evidence": "no test opens a GORM DB directly; Registry is in-memory"}
+      ]
+    },
+    {
+      "name": "atlas-monsters/monster/information",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go validating Build()", "status": "warn", "evidence": "builder.go:16 NewModelBuilder, :59-63 SetBanish present; Build() (:69-84) performs no invariant validation, but information.Model has no invalid field combination — flagged non-blocking"},
+        {"id": "FILE-01..06", "name": "File responsibilities", "status": "pass", "evidence": "builder.go carries only builder responsibility"}
+      ]
+    },
+    {
+      "name": "atlas-portals/portal",
+      "type": "domain",
+      "checks": [
+        {"id": "FILE-01", "name": "Processor interface/impl in processor.go", "status": "pass", "evidence": "processor.go:29 (interface), :142-154 (WarpByName)"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:39"},
+        {"id": "DOM-33", "name": "Mock updated with interface change", "status": "pass", "evidence": "portal/mock/processor.go:20,80-85"},
+        {"id": "DOM-31", "name": "Tenant/trace travel in context only", "status": "pass", "evidence": "kafka.go:39-44 warpBody.TargetPortalName carries only a portal name string"},
+        {"id": "DOM-01", "name": "builder.go validating Build()", "status": "n-a", "evidence": "builder.go untouched by diff"},
+        {"id": "DOM-02", "name": "Model.ToEntity() in entity.go", "status": "n-a", "evidence": "entity.go untouched by diff"},
+        {"id": "DOM-03", "name": "Make(Entity) in entity.go", "status": "n-a", "evidence": "entity.go untouched by diff"},
+        {"id": "DOM-04", "name": "Transform(Model) in rest.go", "status": "n-a", "evidence": "rest.go untouched by diff"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "n-a", "evidence": "rest.go untouched by diff"},
+        {"id": "DOM-11", "name": "provider.go lazy evaluation", "status": "n-a", "evidence": "provider.go untouched by diff"},
+        {"id": "DOM-16", "name": "administrator.go for writes", "status": "n-a", "evidence": "administrator.go untouched by diff"},
+        {"id": "DOM-20", "name": "Tests table-driven (warp_by_name_test.go)", "status": "fail", "evidence": "warp_by_name_test.go:94 TestWarpByName_Hit, :126 TestWarpByName_MissFallsBackToRandomSpawn — single-scenario"},
+        {"id": "DOM-20", "name": "Tests table-driven (consumer_test.go new addition)", "status": "pass", "evidence": "consumer_test.go:231 TestHandleWarpCommand_Precedence uses tests := []struct{...} + t.Run"},
+        {"id": "DOM-24", "name": "Emit path stubbed in tests", "status": "pass", "evidence": "portal/testmain_test.go:10-13 producertest.InstallNoop() governs the whole portal/portal_test binary"}
+      ]
+    }
+  ],
+  "notEvaluable": [],
+  "blocking": [
+    "DOM-20: services/atlas-channel/atlas.com/channel/monster/producer_banish_test.go:12,47 — TestBanishCommandProviderShape and TestBanishCommandKeysOnCharacter are single-scenario, not table-driven",
+    "DOM-20: services/atlas-monsters/atlas.com/monsters/monster/banish_producer_test.go:18,48,70,103 — four single-scenario test functions, not table-driven",
+    "DOM-20: services/atlas-monsters/atlas.com/monsters/monster/banish_test.go:104,150,186,228,260 — five single-scenario test functions, not table-driven",
+    "DOM-20: services/atlas-portals/atlas.com/portals/portal/warp_by_name_test.go:94,126 — TestWarpByName_Hit and TestWarpByName_MissFallsBackToRandomSpawn are single-scenario, not table-driven"
+  ],
+  "nonBlocking": [
+    "DOM-01: services/atlas-monsters/atlas.com/monsters/monster/information/builder.go:69-84 — Build() performs no invariant validation (no invalid state exists for this value object)"
+  ]
+}

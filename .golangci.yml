@@ -9,8 +9,22 @@ version: "2"
 linters:
   # The v2 `standard` default group: errcheck, govet, ineffassign,
   # staticcheck, unused. Membership is fixed by the version pin in
-  # tools/lint.versions.
+  # tools/toolchain.versions.
   default: standard
+  exclusions:
+    rules:
+      # task-261 burn-down (docs/TODO.md "Lint burn-down"): the gofumpt blank-
+      # line-before-multiline-func rule (go 1.27 / golangci-lint v2.13.1
+      # migration) reformatted the line below, which put it under
+      # --new-from-rev and surfaced this staticcheck QF1011 "could omit type"
+      # suggestion. Applying it would drop the explicit
+      # `func(character.Model) character.Model` annotation, which is this
+      # test's compile-time assertion that PartyDecorator has exactly that
+      # signature — a behavioral change (FR-5.3), not a mechanical one.
+      - path: services/atlas-channel/atlas\.com/channel/character/processor_test\.go
+        linters:
+          - staticcheck
+        text: "QF1011"
 
 formatters:
   enable:

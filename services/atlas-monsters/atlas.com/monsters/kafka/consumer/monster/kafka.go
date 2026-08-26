@@ -31,6 +31,7 @@ const (
 	CommandTypeForceControl      = "FORCE_CONTROL"
 	CommandTypeSelfDestruct      = "SELF_DESTRUCT"
 	CommandTypeSetAggro          = "SET_AGGRO"
+	CommandTypeBanish            = "BANISH"
 
 	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
@@ -188,6 +189,20 @@ type forceControlCommandBody struct {
 // no unmarshal collision on this shared, fan-to-every-handler topic.
 type setAggroCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
+}
+
+// banishCommandBody asks the processor to banish a character out of a field on
+// the strength of a client MOB_BANISH_PLAYER request. MonsterTemplateId is
+// client-supplied and untrusted — Banish revalidates it against live field
+// state before acting. Both fields are uint32: characterId already appears at
+// that name and type in sibling bodies and monsterTemplateId appears in none,
+// so neither can collide on this shared, fan-to-every-handler topic (see
+// killCommandBody's note). The envelope's monsterId is deliberately left 0 — it
+// means *unique* id everywhere else here. Mirrors atlas-channel's
+// monster2.BanishCommandBody — edit both together.
+type banishCommandBody struct {
+	CharacterId       uint32 `json:"characterId"`
+	MonsterTemplateId uint32 `json:"monsterTemplateId"`
 }
 
 // addPuppetCommand registers a player's puppet in a field so the monster

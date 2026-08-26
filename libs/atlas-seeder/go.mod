@@ -1,6 +1,6 @@
 module github.com/Chronicle20/atlas/libs/atlas-seeder
 
-go 1.25.5
+go 1.27.0
 
 replace github.com/Chronicle20/atlas/libs/atlas-model => ../atlas-model
 

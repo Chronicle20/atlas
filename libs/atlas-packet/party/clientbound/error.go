@@ -58,6 +58,7 @@ type BeginnerCannotCreate struct{ mode byte }
 func NewBeginnerCannotCreate(mode byte) BeginnerCannotCreate { return BeginnerCannotCreate{mode: mode} }
 func (m BeginnerCannotCreate) Operation() string             { return PartyOperationWriter }
 func (m BeginnerCannotCreate) String() string                { return fmt.Sprintf("mode [%d]", m.mode) }
+
 func (m BeginnerCannotCreate) Encode(l logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(map[string]interface{}) []byte { w.WriteByte(m.mode); return w.Bytes() }

@@ -86,6 +86,7 @@ func (r RestReindexResult) GetID() string                           { return r.I
 func (r *RestReindexResult) SetID(id string) error                  { r.Id = id; return nil }
 func (r RestReindexResult) GetReferences() []jsonapi.Reference      { return []jsonapi.Reference{} }
 func (r RestReindexResult) GetReferencedIDs() []jsonapi.ReferenceID { return []jsonapi.ReferenceID{} }
+
 func (r RestReindexResult) GetReferencedStructs() []jsonapi.MarshalIdentifier {
 	return []jsonapi.MarshalIdentifier{}
 }

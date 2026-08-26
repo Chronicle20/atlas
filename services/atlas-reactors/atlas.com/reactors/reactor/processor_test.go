@@ -5,6 +5,7 @@ import (
 	"atlas-reactors/reactor/data/area"
 	"atlas-reactors/reactor/data/state"
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -581,6 +582,28 @@ func TestCooldown_ExpiresByTimestamp(t *testing.T) {
 	if GetRegistry().IsOnCooldown(te, mk, 9101000, 100, 200) {
 		t.Fatalf("expected cooldown expired after delay")
 	}
+}
+
+// TestRecordCooldown_ClampsAbsurdDelay verifies that a delay far in excess
+// of any legitimate reactor cooldown (e.g. the ~49.7 days produced by
+// wrapping a WZ reactorTime=-1 sentinel through uint32) is clamped to
+// maxCooldownDelay rather than locking the spot out for weeks.
+func TestRecordCooldown_ClampsAbsurdDelay(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant()
+	mk := NewMapKey(field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(610030400)).Build())
+
+	before := time.Now().UnixMilli()
+	GetRegistry().RecordCooldown(ten, mk, 6109014, -137, 495, 4294966296) // ~49.7 days, unclamped
+
+	v, err := GetRegistry().cooldowns.Get(context.Background(), ten, mk, posField(6109014, -137, 495))
+	assert.NoError(t, err)
+	expiry, err := strconv.ParseInt(v, 10, 64)
+	assert.NoError(t, err)
+
+	maxExpiry := before + int64(maxCooldownDelay) + 1000 // tolerate test execution slop
+	assert.LessOrEqual(t, expiry, maxExpiry, "expiry should be clamped to maxCooldownDelay, not the raw overflowed delay")
+	assert.True(t, GetRegistry().IsOnCooldown(ten, mk, 6109014, -137, 495))
 }
 
 // TestSpot_ClaimIsExclusivePerPosition verifies TryClaimSpot exclusivity and

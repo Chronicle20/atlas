@@ -253,9 +253,19 @@ func (r *Registry) Remove(t tenant.Model, id uint32) {
 	_ = r.touches.DeleteKey(ctx, t, id)
 }
 
+// maxCooldownDelay is a defensive ceiling on the respawn delay recorded by
+// RecordCooldown. GMS reactor respawn timers are minutes, not days; this
+// guards against an upstream defect (e.g. an unsigned overflow of the WZ
+// "does not auto-respawn" sentinel) locking a map spot out for weeks. 24
+// hours comfortably exceeds any legitimate reactor cooldown.
+const maxCooldownDelay = uint32(24 * time.Hour / time.Millisecond)
+
 func (r *Registry) RecordCooldown(t tenant.Model, mk MapKey, classification uint32, x int16, y int16, delay uint32) {
 	if delay == 0 {
 		return
+	}
+	if delay > maxCooldownDelay {
+		delay = maxCooldownDelay
 	}
 	expiry := time.Now().Add(time.Millisecond * time.Duration(delay)).UnixMilli()
 	_ = r.cooldowns.Set(context.Background(), t, mk, posField(classification, x, y), strconv.FormatInt(expiry, 10))

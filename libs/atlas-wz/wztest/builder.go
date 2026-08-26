@@ -353,7 +353,7 @@ func writeExtendedContent(buf *bytes.Buffer, p Prop, key []byte, pool *stringPoo
 		writeWzInt(buf, p.W) // width
 		writeWzInt(buf, p.H) // height
 		writeWzInt(buf, 2)   // format
-		buf.WriteByte(0)   // format2
+		buf.WriteByte(0)     // format2
 		buf.Write([]byte{0, 0, 0, 0})
 		_ = binary.Write(buf, binary.LittleEndian, int32(len(p.Canvas)+1))
 		buf.WriteByte(0xAB) // flag byte skipped by ReadCanvasData

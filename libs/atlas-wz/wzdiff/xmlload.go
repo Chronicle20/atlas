@@ -20,7 +20,7 @@ func LoadImageXML(path string) ([]Node, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	dec := xml.NewDecoder(f)
 	root, err := decodeElement(dec, nil)

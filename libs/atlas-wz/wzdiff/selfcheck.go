@@ -101,23 +101,23 @@ func SelfCheck(l logrus.FieldLogger, archivePath string) (SelfCheckResult, error
 // and the two offsets that disagree, then one line per image that failed
 // to parse at all.
 func WriteSelfCheckReport(w io.Writer, r SelfCheckResult) {
-	fmt.Fprintf(w, "images: %d  sub-objects: %d  violations: %d  parse errors: %d\n",
+	_, _ = fmt.Fprintf(w, "images: %d  sub-objects: %d  violations: %d  parse errors: %d\n",
 		r.Images, r.SubObjects, len(r.Violations), len(r.ParseErrors))
 
 	if len(r.Violations) > 0 {
-		fmt.Fprintln(w, strings.Repeat("=", 70))
-		fmt.Fprintln(w, "size-accounting violations:")
+		_, _ = fmt.Fprintln(w, strings.Repeat("=", 70))
+		_, _ = fmt.Fprintln(w, "size-accounting violations:")
 		for _, v := range r.Violations {
-			fmt.Fprintf(w, "  %s %s (%s): declaredEnd=%d actualEnd=%d\n",
+			_, _ = fmt.Fprintf(w, "  %s %s (%s): declaredEnd=%d actualEnd=%d\n",
 				v.Image, v.Path, v.Name, v.DeclaredEnd, v.ActualEnd)
 		}
 	}
 
 	if len(r.ParseErrors) > 0 {
-		fmt.Fprintln(w, strings.Repeat("=", 70))
-		fmt.Fprintln(w, "images that failed to parse:")
+		_, _ = fmt.Fprintln(w, strings.Repeat("=", 70))
+		_, _ = fmt.Fprintln(w, "images that failed to parse:")
 		for _, pe := range r.ParseErrors {
-			fmt.Fprintf(w, "  %s: %v\n", pe.Image, pe.Err)
+			_, _ = fmt.Fprintf(w, "  %s: %v\n", pe.Image, pe.Err)
 		}
 	}
 }

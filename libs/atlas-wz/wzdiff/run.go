@@ -181,7 +181,7 @@ func Trace(l logrus.FieldLogger, archivePath, imageName string, w io.Writer) err
 	}
 
 	f.SetTrace(func(ev wz.TraceEvent) {
-		fmt.Fprintf(w, "%s kind=%s name=%s type=%d start=%d end=%d %s\n",
+		_, _ = fmt.Fprintf(w, "%s kind=%s name=%s type=%d start=%d end=%d %s\n",
 			ev.Path, ev.Kind, ev.Name, ev.Type, ev.StartOff, ev.EndOff, ev.Detail)
 	})
 
@@ -197,15 +197,15 @@ func Trace(l logrus.FieldLogger, archivePath, imageName string, w io.Writer) err
 // HaRepacker-only and ours-only deltas grouped separately, reference
 // before ours (matching Diff's own ordering convention).
 func WriteReport(w io.Writer, result Result) {
-	fmt.Fprintf(w, "local image count: %d  ours: %d\n", result.ImagesReference, result.ImagesOurs)
+	_, _ = fmt.Fprintf(w, "local image count: %d  ours: %d\n", result.ImagesReference, result.ImagesOurs)
 	if result.Allowed > 0 {
-		fmt.Fprintf(w, "allowlisted deltas dropped: %d\n", result.Allowed)
+		_, _ = fmt.Fprintf(w, "allowlisted deltas dropped: %d\n", result.Allowed)
 	}
 	if len(result.OnlyReference) > 0 {
-		fmt.Fprintf(w, "images only in HaRepacker dump: %v\n", result.OnlyReference)
+		_, _ = fmt.Fprintf(w, "images only in HaRepacker dump: %v\n", result.OnlyReference)
 	}
 	if len(result.OnlyOurs) > 0 {
-		fmt.Fprintf(w, "images only in our parse: %v\n", result.OnlyOurs)
+		_, _ = fmt.Fprintf(w, "images only in our parse: %v\n", result.OnlyOurs)
 	}
 
 	names := make([]string, 0, len(result.Divergent))
@@ -216,8 +216,8 @@ func WriteReport(w io.Writer, result Result) {
 
 	for _, name := range names {
 		deltas := result.Divergent[name]
-		fmt.Fprintln(w, strings.Repeat("=", 70))
-		fmt.Fprintln(w, name)
+		_, _ = fmt.Fprintln(w, strings.Repeat("=", 70))
+		_, _ = fmt.Fprintln(w, name)
 
 		var refOnly, oursOnly []Delta
 		for _, d := range deltas {
@@ -228,13 +228,13 @@ func WriteReport(w io.Writer, result Result) {
 			}
 		}
 
-		fmt.Fprintln(w, "  -- present in HaRepacker dump, ABSENT from our parse:")
+		_, _ = fmt.Fprintln(w, "  -- present in HaRepacker dump, ABSENT from our parse:")
 		for _, d := range refOnly {
-			fmt.Fprintln(w, d.String())
+			_, _ = fmt.Fprintln(w, d.String())
 		}
-		fmt.Fprintln(w, "  -- present in our parse, ABSENT from HaRepacker dump:")
+		_, _ = fmt.Fprintln(w, "  -- present in our parse, ABSENT from HaRepacker dump:")
 		for _, d := range oursOnly {
-			fmt.Fprintln(w, d.String())
+			_, _ = fmt.Fprintln(w, d.String())
 		}
 	}
 }

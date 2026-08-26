@@ -152,6 +152,55 @@ func TestDiff(t *testing.T) {
 		}
 	})
 
+	t.Run("duplicate sibling names are not silently collapsed", func(t *testing.T) {
+		// Two siblings share the same Kind:Name under one parent. Before the
+		// flatten fix, the second write into the path->attrs map silently
+		// overwrote the first, so one of the two int:state values (and its
+		// Delta) vanished with no diagnostic. Both must now surface.
+		ours := []Node{
+			{
+				Kind: "imgdir", Name: "0",
+				Children: []Node{
+					intNode("state", "1"),
+					intNode("state", "2"),
+				},
+			},
+		}
+		reference := []Node{}
+		deltas := Diff(ours, reference)
+		wantPaths := map[string]bool{
+			"/imgdir:0":             false,
+			"/imgdir:0/int:state":   false,
+			"/imgdir:0/int:state#2": false,
+		}
+		if len(deltas) != len(wantPaths) {
+			t.Fatalf("len(deltas) = %d, want %d: %+v", len(deltas), len(wantPaths), deltas)
+		}
+		attrsByPath := map[string]string{}
+		for _, d := range deltas {
+			if _, ok := wantPaths[d.Path]; !ok {
+				t.Errorf("unexpected delta path %q: %+v", d.Path, d)
+				continue
+			}
+			wantPaths[d.Path] = true
+			if d.OnlyIn != "ours" {
+				t.Errorf("delta %+v, want OnlyIn=ours", d)
+			}
+			attrsByPath[d.Path] = d.Attrs
+		}
+		for path, seen := range wantPaths {
+			if !seen {
+				t.Errorf("missing expected delta path %q", path)
+			}
+		}
+		if attrsByPath["/imgdir:0/int:state"] != "value=1" {
+			t.Errorf("attrs at /imgdir:0/int:state = %q, want value=1", attrsByPath["/imgdir:0/int:state"])
+		}
+		if attrsByPath["/imgdir:0/int:state#2"] != "value=2" {
+			t.Errorf("attrs at /imgdir:0/int:state#2 = %q, want value=2", attrsByPath["/imgdir:0/int:state#2"])
+		}
+	})
+
 	t.Run("ordering-insensitive", func(t *testing.T) {
 		ours := []Node{intNode("a", "1"), intNode("b", "2")}
 		reference := []Node{intNode("b", "2"), intNode("a", "1")}

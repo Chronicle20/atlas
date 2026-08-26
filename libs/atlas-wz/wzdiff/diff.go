@@ -1,6 +1,9 @@
 package wzdiff
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+)
 
 // Delta describes a single structural divergence between the "ours" and
 // "reference" trees at one path.
@@ -61,10 +64,26 @@ func Diff(ours, reference []Node) []Delta {
 }
 
 // flatten reduces a tree to a map of path -> rendered attrs.
+//
+// A path is normally unique per sibling group (Kind:Name), but WZ data is
+// not guaranteed to keep sibling names unique, so flatten guards against a
+// silent collision: the first occurrence of a given Kind:Name under a
+// parent keeps the plain "/<Kind>:<Name>" path, and every later occurrence
+// gets a "#N" suffix for its 2nd, 3rd, ... appearance. This never changes
+// the path of a non-colliding node (the common case, and the one the
+// evidence file's format is pinned to), and it makes a duplicate sibling
+// visible as its own Delta instead of being silently overwritten in the
+// map and dropped from the diff.
 func flatten(nodes []Node, prefix string) map[string]string {
 	out := map[string]string{}
+	counts := map[string]int{}
 	for _, n := range nodes {
-		path := prefix + "/" + n.Kind + ":" + n.Name
+		base := prefix + "/" + n.Kind + ":" + n.Name
+		counts[base]++
+		path := base
+		if counts[base] > 1 {
+			path = fmt.Sprintf("%s#%d", base, counts[base])
+		}
 		out[path] = renderAttrs(n.Kind, n.Attrs)
 		for k, v := range flatten(n.Children, path) {
 			out[k] = v

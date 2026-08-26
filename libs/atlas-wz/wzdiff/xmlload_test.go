@@ -79,3 +79,106 @@ func TestLoadImageXML(t *testing.T) {
 		t.Errorf("vector.Attrs = %+v, want x=49 y=121", vector.Attrs)
 	}
 }
+
+const scalarKindsXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="scalars.img">
+  <imgdir name="values">
+    <short name="s" value="1"/>
+    <long name="l" value="2"/>
+    <float name="f" value="1.5"/>
+    <double name="d" value="2.5"/>
+    <null name="n"/>
+    <sound name="snd" value="0"/>
+  </imgdir>
+</imgdir>
+`
+
+// TestLoadImageXML_ScalarElementKinds covers the scalar leaf Kinds
+// (short, long, float, double, null, sound) that decodeElement handles
+// generically alongside int/string. Kind and value=-bearing attrs must
+// come through untouched for each of them.
+func TestLoadImageXML_ScalarElementKinds(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "scalars.img.xml")
+	if err := os.WriteFile(path, []byte(scalarKindsXML), 0o644); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+
+	nodes, err := LoadImageXML(path)
+	if err != nil {
+		t.Fatalf("LoadImageXML: %v", err)
+	}
+	if len(nodes) != 1 || nodes[0].Kind != "imgdir" || nodes[0].Name != "values" {
+		t.Fatalf("nodes = %+v, want single imgdir:values", nodes)
+	}
+
+	children := nodes[0].Children
+	want := []struct {
+		kind, name, value string
+		hasValue          bool
+	}{
+		{"short", "s", "1", true},
+		{"long", "l", "2", true},
+		{"float", "f", "1.5", true},
+		{"double", "d", "2.5", true},
+		{"null", "n", "", false},
+		{"sound", "snd", "0", true},
+	}
+	if len(children) != len(want) {
+		t.Fatalf("len(children) = %d, want %d: %+v", len(children), len(want), children)
+	}
+	for i, w := range want {
+		c := children[i]
+		if c.Kind != w.kind || c.Name != w.name {
+			t.Errorf("children[%d] = %+v, want Kind=%q Name=%q", i, c, w.kind, w.name)
+		}
+		v, ok := c.Attrs["value"]
+		if ok != w.hasValue {
+			t.Errorf("children[%d] (%s:%s) Attrs[value] present = %v, want %v", i, w.kind, w.name, ok, w.hasValue)
+			continue
+		}
+		if w.hasValue && v != w.value {
+			t.Errorf("children[%d] (%s:%s) Attrs[value] = %q, want %q", i, w.kind, w.name, v, w.value)
+		}
+	}
+}
+
+const emptyElementXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="empty.img">
+  <imgdir name="container">
+    <null name="empty"/>
+  </imgdir>
+</imgdir>
+`
+
+// TestLoadImageXML_EmptyElement covers a self-closing element with no
+// attributes and no children, distinct from the sample's self-closing
+// <vector/>/<canvas/> which both carry attributes.
+func TestLoadImageXML_EmptyElement(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "empty.img.xml")
+	if err := os.WriteFile(path, []byte(emptyElementXML), 0o644); err != nil {
+		t.Fatalf("os.WriteFile: %v", err)
+	}
+
+	nodes, err := LoadImageXML(path)
+	if err != nil {
+		t.Fatalf("LoadImageXML: %v", err)
+	}
+	if len(nodes) != 1 || nodes[0].Kind != "imgdir" || nodes[0].Name != "container" {
+		t.Fatalf("nodes = %+v, want single imgdir:container", nodes)
+	}
+	if len(nodes[0].Children) != 1 {
+		t.Fatalf("len(container.Children) = %d, want 1", len(nodes[0].Children))
+	}
+	empty := nodes[0].Children[0]
+	if empty.Kind != "null" || empty.Name != "empty" {
+		t.Fatalf("Children[0] = %+v, want null:empty", empty)
+	}
+	if len(empty.Attrs) != 0 {
+		t.Errorf("empty.Attrs = %+v, want none", empty.Attrs)
+	}
+	if len(empty.Children) != 0 {
+		t.Errorf("empty.Children = %+v, want none", empty.Children)
+	}
+}

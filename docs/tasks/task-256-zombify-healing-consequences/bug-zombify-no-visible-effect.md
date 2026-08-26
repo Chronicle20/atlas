@@ -205,6 +205,16 @@ atlas-channel's buff consumer `buff.NewBuff` → `character_buff_give.go`'s
 positional signature for a swapped or dropped argument. The non-blocking finding
 is the outstanding `packet-verifier` fan-out below.
 
+> **CORRECTION (2026-08-26, after CI).** The paragraph below attributes the lint
+> failure to a "pre-existing golangci-lint toolchain mismatch" and treats the
+> 89-module spread as "conclusive evidence the failure is environmental." Both
+> readings are wrong. The branch is **59 commits behind `origin/main`**, where the
+> pin moved to `tools/toolchain.versions` at `v2.13.1`; the stale local `v2.12.2`
+> aborts before checking anything, so it failed on all 89 modules for the same
+> reason it would fail on any tree. CI caught a real `gofumpt` violation the local
+> guard could not see (`d6dbc74de`). **Rebase onto `main` before trusting any
+> local `verify.sh` result on this branch.**
+
 Gate: `tools/verify.sh --quick --base b9904f7f6` — fails on the same
 **pre-existing golangci-lint toolchain mismatch** already recorded against
 `bug-heal-party-xp-magnitude.md` and

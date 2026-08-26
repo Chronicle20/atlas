@@ -138,6 +138,18 @@ the selectors already load, so no new RPC was added. The OQ-1 gate in `heal.go`
 was removed as dead — with the caster excluded, a solo cast yields 0 from the
 formula itself. The `!zombified` skip is unchanged.
 
+> **CORRECTION (2026-08-26, after CI).** The gate paragraph below called the
+> lint failure a "pre-existing toolchain mismatch … environment-wide." That was
+> wrong. The real cause is that **this branch is 59 commits behind `origin/main`**,
+> where the pin was renamed from `tools/lint.versions` to
+> `tools/toolchain.versions` and bumped to `v2.13.1`. The stale local `v2.12.2`
+> aborts before checking anything, so the guard produced *no signal* — which I
+> read as a pass. CI, running v2.13.1, caught a real `gofumpt` violation that this
+> very commit introduced: `SetLevel` broke the alignment of the single-line
+> `PartyRecipientBuilder` block. Fixed by `d6dbc74de`. Lesson for the next
+> session: a guard that cannot run is not a green guard. **Rebase onto `main`
+> before trusting any local `verify.sh` result on this branch.**
+
 Gate: `tools/verify.sh --quick --base 8e5df4e27` — every applicable check passes
 (`go build/vet`, go analyzer guards, skill/job id, scope, producer seam, env
 domain) **except** the lint & format guard, which aborts on the same

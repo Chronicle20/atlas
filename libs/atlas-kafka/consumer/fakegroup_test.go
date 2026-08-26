@@ -240,3 +240,65 @@ func hasLogContaining(hook *test.Hook, sub string) bool {
 	}
 	return false
 }
+
+// counterResult is one scripted answer from a fakePartitionCounter.
+type counterResult struct {
+	count int
+	err   error
+}
+
+// fakePartitionCounter is a scriptable PartitionCountProducer. It pops queued
+// results in order and then repeats the last one forever, so a test can drive
+// "missing, then present" without listing every poll the backoff makes.
+type fakePartitionCounter struct {
+	mu    sync.Mutex
+	queue []counterResult
+	last  counterResult
+	calls int
+}
+
+func newFakePartitionCounter(results ...counterResult) *fakePartitionCounter {
+	f := &fakePartitionCounter{queue: append([]counterResult(nil), results...), last: counterResult{0, ErrTopicNotFound}}
+	if len(results) > 0 {
+		f.last = results[len(results)-1]
+	}
+	return f
+}
+
+// produce satisfies PartitionCountProducer.
+func (f *fakePartitionCounter) produce(_ context.Context, _ []string, _ string) (int, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.calls++
+	if len(f.queue) == 0 {
+		return f.last.count, f.last.err
+	}
+	r := f.queue[0]
+	f.queue = f.queue[1:]
+	return r.count, r.err
+}
+
+// set discards the remaining script and answers with (count, err) from now on.
+func (f *fakePartitionCounter) set(count int, err error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.queue = nil
+	f.last = counterResult{count, err}
+}
+
+func (f *fakePartitionCounter) callCount() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.calls
+}
+
+// logEntryContaining returns the first captured entry whose message contains
+// sub, or nil. Callers assert on entry.Level, which hasLogContaining cannot.
+func logEntryContaining(hook *test.Hook, sub string) *logrus.Entry {
+	for _, e := range hook.AllEntries() {
+		if strings.Contains(e.Message, sub) {
+			return e
+		}
+	}
+	return nil
+}

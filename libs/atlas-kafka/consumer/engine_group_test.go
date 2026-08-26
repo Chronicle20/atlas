@@ -278,3 +278,189 @@ func TestGroupCloseWaitsForPartitionGoroutine(t *testing.T) {
 		t.Fatal("engine finished without the handler having actually returned")
 	}
 }
+
+// TestGateDoesNotJoinUntilTopicExists is the core of the fix: a consumer whose
+// topic does not exist must stay a NON-MEMBER. A non-member cannot destabilise
+// the group, which is what keeps the two healthy members of the group working
+// (design §2.3).
+func TestGateDoesNotJoinUntilTopicExists(t *testing.T) {
+	l, hook := silentLogger()
+
+	var mu sync.Mutex
+	var gpCalls int
+	gen := newFakeGeneration(4, map[string][]kafka.PartitionAssignment{})
+	grp := newFakeGroup(gen)
+
+	counter := newFakePartitionCounter(counterResult{0, ErrTopicNotFound})
+	c := newGroupConsumer("EVENT_TOPIC_TEST", grp)
+	c.pcp = counter.produce
+	c.gp = func(kafka.ConsumerGroupConfig) (Group, error) {
+		mu.Lock()
+		gpCalls++
+		mu.Unlock()
+		return grp, nil
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
+
+	waitFor(t, func() bool { return counter.callCount() >= 1 }, "the gate never consulted the partition-count seam")
+	waitFor(t, func() bool { return hasLogContaining(hook, "does not exist or has no partitions") }, "the gate never warned about the missing topic")
+
+	mu.Lock()
+	joined := gpCalls
+	mu.Unlock()
+	if joined != 0 {
+		t.Fatalf("GroupProducer called %d times while the topic was missing, want 0", joined)
+	}
+	if got := c.Snapshot().TopicMissingObservations; got < 1 {
+		t.Fatalf("TopicMissingObservations = %d while waiting, want >= 1", got)
+	}
+
+	counter.set(1, nil)
+	waitFor(t, func() bool { return c.Snapshot().GenerationID == 4 }, "the consumer never joined after the topic appeared")
+
+	if e := logEntryContaining(hook, "does not exist or has no partitions"); e == nil || e.Level != logrus.WarnLevel {
+		t.Fatalf("missing-topic line logged at %v, want WarnLevel", e)
+	}
+
+	cancel()
+	wg.Wait()
+}
+
+// TestGroupEngineRecoversWhenTopicAppears is THE incident test: no pod
+// restart, no operator action — the consumer waits the topic out and then
+// consumes. Written against startGroupEngine (the whole engine), because
+// recovery now lives in the gate rather than in runGenerations.
+func TestGroupEngineRecoversWhenTopicAppears(t *testing.T) {
+	l, _ := silentLogger()
+
+	rd := &scriptedPartitionReader{msgs: []kafka.Message{{Offset: 0, Value: []byte("m")}}}
+	gen := newFakeGeneration(11, map[string][]kafka.PartitionAssignment{
+		"EVENT_TOPIC_TEST": {{ID: 0, Offset: kafka.FirstOffset}},
+	})
+	grp := newFakeGroup(gen)
+
+	counter := newFakePartitionCounter(counterResult{0, ErrTopicNotFound}, counterResult{1, nil})
+	c := newGroupConsumer("EVENT_TOPIC_TEST", grp)
+	c.pcp = counter.produce
+	c.prp = func(kafka.ReaderConfig, int64) KafkaReader { return rd }
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
+
+	waitFor(t, func() bool { return len(gen.commits()) > 0 }, "the consumer never consumed after the topic appeared")
+
+	s := c.Snapshot()
+	if s.GenerationID != 11 {
+		t.Fatalf("GenerationID = %d, want 11", s.GenerationID)
+	}
+	if len(s.AssignedPartitions) != 1 || s.AssignedPartitions[0] != 0 {
+		t.Fatalf("AssignedPartitions = %v, want [0]", s.AssignedPartitions)
+	}
+	if s.TopicMissingObservations != 1 {
+		t.Fatalf("TopicMissingObservations = %d, want exactly 1 (one distinct observation before recovery)", s.TopicMissingObservations)
+	}
+	if !s.LastAssignmentAt.After(s.LastTopicMissingAt) {
+		t.Fatal("LastAssignmentAt is not after LastTopicMissingAt; the supersession read would still say 'missing' after recovery")
+	}
+
+	cancel()
+	wg.Wait()
+}
+
+// TestGateExitsOnContextCancel: the gate runs after wg.Add(1), so a gate that
+// does not select on ctx.Done() hangs shutdown forever.
+func TestGateExitsOnContextCancel(t *testing.T) {
+	l, _ := silentLogger()
+
+	var mu sync.Mutex
+	var gpCalls int
+	grp := newFakeGroup()
+
+	counter := newFakePartitionCounter(counterResult{0, ErrTopicNotFound})
+	c := newGroupConsumer("EVENT_TOPIC_TEST", grp)
+	c.pcp = counter.produce
+	c.gp = func(kafka.ConsumerGroupConfig) (Group, error) {
+		mu.Lock()
+		gpCalls++
+		mu.Unlock()
+		return grp, nil
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
+
+	waitFor(t, func() bool { return counter.callCount() >= 1 }, "the gate never consulted the partition-count seam")
+	cancel()
+
+	done := make(chan struct{})
+	routine.Go(l, context.Background(), func(_ context.Context) {
+		wg.Wait()
+		close(done)
+	})
+	select {
+	case <-done:
+	case <-time.After(3 * time.Second):
+		t.Fatal("startGroupEngine never returned after cancel; the gate does not select on ctx.Done()")
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+	if gpCalls != 0 {
+		t.Fatalf("GroupProducer called %d times, want 0 — the gate must never join while the topic is missing", gpCalls)
+	}
+}
+
+// TestNilPartitionCountProducerSkipsGate pins the "nil seam is inert" default
+// that keeps every struct-literal Consumer in this suite unchanged.
+func TestNilPartitionCountProducerSkipsGate(t *testing.T) {
+	l, _ := silentLogger()
+
+	gen := newFakeGeneration(4, map[string][]kafka.PartitionAssignment{})
+	grp := newFakeGroup(gen)
+	c := newGroupConsumer("EVENT_TOPIC_TEST", grp)
+	if c.pcp != nil {
+		t.Fatal("newGroupConsumer must leave pcp nil; the inert default is what this test pins")
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
+
+	waitFor(t, func() bool { return c.Snapshot().GenerationID == 4 }, "a nil pcp blocked the join; the gate must be inert without a seam")
+
+	cancel()
+	wg.Wait()
+}
+
+// TestGateJoinsImmediatelyOnIndeterminateLookup is FR-2.5 at the gate: a
+// broker outage must not hold a consumer out of its group.
+func TestGateJoinsImmediatelyOnIndeterminateLookup(t *testing.T) {
+	l, hook := silentLogger()
+
+	gen := newFakeGeneration(4, map[string][]kafka.PartitionAssignment{})
+	grp := newFakeGroup(gen)
+	counter := newFakePartitionCounter(counterResult{0, context.DeadlineExceeded})
+	c := newGroupConsumer("EVENT_TOPIC_TEST", grp)
+	c.pcp = counter.produce
+
+	ctx, cancel := context.WithCancel(context.Background())
+	wg := &sync.WaitGroup{}
+	routine.Go(l, ctx, func(_ context.Context) { c.startGroupEngine(l, ctx, wg) })
+
+	waitFor(t, func() bool { return c.Snapshot().GenerationID == 4 }, "an indeterminate lookup held the consumer out of its group; FR-2.5 forbids it")
+
+	if hasLogContaining(hook, "does not exist or has no partitions") {
+		t.Fatal("an indeterminate lookup was reported as a missing topic")
+	}
+	if got := c.Snapshot().TopicMissingObservations; got != 0 {
+		t.Fatalf("TopicMissingObservations = %d after an indeterminate lookup, want 0", got)
+	}
+
+	cancel()
+	wg.Wait()
+}

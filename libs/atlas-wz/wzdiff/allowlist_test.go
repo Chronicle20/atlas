@@ -51,6 +51,62 @@ func TestLoadAllowlistMalformedLine(t *testing.T) {
 	}
 }
 
+func TestLoadAllowlistRejectsBlankImage(t *testing.T) {
+	content := "\t/imgdir:0\treference\tsome reason\n"
+	path := filepath.Join(t.TempDir(), "allowlist.tsv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+
+	_, err := LoadAllowlist(path)
+	if err == nil {
+		t.Fatal("LoadAllowlist: want error for blank image field, got nil")
+	}
+}
+
+func TestLoadAllowlistRejectsBlankPath(t *testing.T) {
+	// A blank Path is the dangerous case: Allowed's prefix check
+	// (d.Path == e.Path || strings.HasPrefix(d.Path, e.Path+"/")) would
+	// otherwise match every delta path on the image, since every path is a
+	// descendant of "" + "/".
+	content := "2519002\t\treference\tsome reason\n"
+	path := filepath.Join(t.TempDir(), "allowlist.tsv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+
+	_, err := LoadAllowlist(path)
+	if err == nil {
+		t.Fatal("LoadAllowlist: want error for blank path field, got nil")
+	}
+}
+
+func TestLoadAllowlistRejectsBlankOnlyIn(t *testing.T) {
+	content := "2519002\t/imgdir:0\t\tsome reason\n"
+	path := filepath.Join(t.TempDir(), "allowlist.tsv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+
+	_, err := LoadAllowlist(path)
+	if err == nil {
+		t.Fatal("LoadAllowlist: want error for blank onlyIn field, got nil")
+	}
+}
+
+func TestLoadAllowlistRejectsInvalidOnlyIn(t *testing.T) {
+	content := "2519002\t/imgdir:0\tboth\tsome reason\n"
+	path := filepath.Join(t.TempDir(), "allowlist.tsv")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("write allowlist: %v", err)
+	}
+
+	_, err := LoadAllowlist(path)
+	if err == nil {
+		t.Fatal("LoadAllowlist: want error for invalid onlyIn field, got nil")
+	}
+}
+
 func TestAllowed(t *testing.T) {
 	entry := AllowEntry{Image: "2519002", Path: "/imgdir:0", OnlyIn: "reference", Reason: "UOL resolved by HaRepacker"}
 	entries := []AllowEntry{entry}

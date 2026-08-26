@@ -24,6 +24,12 @@ type Result struct {
 	// right, tracked separately from any property-level Delta.
 	ImagesOurs      int
 	ImagesReference int
+	// OnlyOurs and OnlyReference are the sorted image names present on only
+	// one side. Equal counts (ImagesOurs == ImagesReference) do not imply
+	// equal sets, so callers that need "both sides enumerate the same
+	// images" must compare these, not just the counts.
+	OnlyOurs      []string
+	OnlyReference []string
 	// Divergent maps an image's HaRepacker file name (e.g.
 	// "2006000.img.xml") to the deltas Diff found for it, after any
 	// allowlisted deltas have been dropped. An image with no surviving
@@ -80,6 +86,8 @@ func Run(l logrus.FieldLogger, archivePath, referenceDir string, allow []AllowEn
 	if len(onlyOurs) > 0 {
 		l.Warnf("wzdiff: images only in our parse: %v", onlyOurs)
 	}
+	result.OnlyOurs = onlyOurs
+	result.OnlyReference = onlyRef
 
 	var shared []string
 	for name := range ours {
@@ -192,6 +200,12 @@ func WriteReport(w io.Writer, result Result) {
 	fmt.Fprintf(w, "local image count: %d  ours: %d\n", result.ImagesReference, result.ImagesOurs)
 	if result.Allowed > 0 {
 		fmt.Fprintf(w, "allowlisted deltas dropped: %d\n", result.Allowed)
+	}
+	if len(result.OnlyReference) > 0 {
+		fmt.Fprintf(w, "images only in HaRepacker dump: %v\n", result.OnlyReference)
+	}
+	if len(result.OnlyOurs) > 0 {
+		fmt.Fprintf(w, "images only in our parse: %v\n", result.OnlyOurs)
 	}
 
 	names := make([]string, 0, len(result.Divergent))

@@ -7,8 +7,9 @@
 //	wzdiff --archive <path.wz> --reference <harepacker-dump-dir> [--allowlist <file>] [--trace <image>]
 //
 // Exit 0 only when there are zero unallowlisted deltas and both sides
-// enumerate the same number of images; exit 1 otherwise, after printing a
-// report in evidence-wz-parse-divergence-reactor.txt's format.
+// enumerate the same set of images (not merely the same count); exit 1
+// otherwise, after printing a report in
+// evidence-wz-parse-divergence-reactor.txt's format.
 //
 // All comparison and formatting logic lives in the testable wzdiff
 // package; main is flag parsing and dispatch only.
@@ -71,7 +72,7 @@ func main() {
 
 	wzdiff.WriteReport(os.Stdout, result)
 
-	if len(result.Divergent) == 0 && result.ImagesOurs == result.ImagesReference {
+	if len(result.Divergent) == 0 && len(result.OnlyOurs) == 0 && len(result.OnlyReference) == 0 {
 		os.Exit(0)
 	}
 	os.Exit(1)

@@ -59,17 +59,45 @@ func LoadAllowlist(path string) ([]AllowEntry, error) {
 		if len(fields) != 4 {
 			return nil, fmt.Errorf("wzdiff: allowlist %s:%d: expected 4 tab-separated fields, got %d", path, lineNo, len(fields))
 		}
-		entries = append(entries, AllowEntry{
+		entry := AllowEntry{
 			Image:  fields[0],
 			Path:   fields[1],
 			OnlyIn: fields[2],
 			Reason: fields[3],
-		})
+		}
+		if err := validateAllowEntry(entry); err != nil {
+			return nil, fmt.Errorf("wzdiff: allowlist %s:%d: %w", path, lineNo, err)
+		}
+		entries = append(entries, entry)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("wzdiff: read allowlist %s: %w", path, err)
 	}
 	return entries, nil
+}
+
+// validateAllowEntry rejects any entry whose fields could make Allowed
+// over-match. Image and Path must be non-blank (a blank Path is a prefix
+// of every path, via Allowed's d.Path == e.Path || strings.HasPrefix(d.Path,
+// e.Path+"/") check, so it would silently allowlist every delta on the
+// image); OnlyIn must be one of Delta's two valid directions, never blank
+// or an unrecognized value that would otherwise just never match (masking
+// a typo instead of failing loudly).
+func validateAllowEntry(e AllowEntry) error {
+	if strings.TrimSpace(e.Image) == "" {
+		return fmt.Errorf("image field is blank")
+	}
+	if strings.TrimSpace(e.Path) == "" {
+		return fmt.Errorf("path field is blank")
+	}
+	switch e.OnlyIn {
+	case "reference", "ours":
+	case "":
+		return fmt.Errorf("onlyIn field is blank")
+	default:
+		return fmt.Errorf("onlyIn field %q is not \"reference\" or \"ours\"", e.OnlyIn)
+	}
+	return nil
 }
 
 // Allowed reports whether d, found on image, is covered by any entry in

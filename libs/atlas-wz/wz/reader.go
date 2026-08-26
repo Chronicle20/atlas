@@ -65,7 +65,18 @@ func (r *Reader) Seek(offset int64, whence int) (int64, error) {
 }
 
 // Skip advances the reader by n bytes.
+//
+// The n == 0 guard is not just a micro-optimization: without it, Skip(0)
+// issues Seek(0, io.SeekCurrent) against the underlying file — the exact
+// same call shape Pos() emits — which would make it indistinguishable from
+// a Pos() call to any counter keyed on that shape (as
+// TestTraceNilHookCostsNoExtraPosCalls' posCountingFile is, in
+// trace_test.go). Keep this guard even if no current Skip caller ever
+// passes 0 (task-262 fix round 1).
 func (r *Reader) Skip(n int64) error {
+	if n == 0 {
+		return nil
+	}
 	_, err := r.f.Seek(n, io.SeekCurrent)
 	return err
 }

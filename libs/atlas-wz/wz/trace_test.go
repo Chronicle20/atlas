@@ -23,6 +23,12 @@ type posCountingFile struct {
 	posCalls int64
 }
 
+// This counting is exact by construction, not by coincidence: Reader.Pos()
+// is the only Reader method that issues Seek(0, io.SeekCurrent) against the
+// underlying file. Reader.Skip(0) does NOT reach here — it short-circuits
+// on its own zero guard in reader.go before ever calling f.Seek — so this
+// wrapper cannot conflate a degenerate Skip(0) with a real Pos() call
+// (task-262 fix round 1).
 func (p *posCountingFile) Seek(offset int64, whence int) (int64, error) {
 	if offset == 0 && whence == io.SeekCurrent {
 		p.posCalls++
@@ -273,6 +279,26 @@ func TestSetTraceOnSubFileDelegatesToParent(t *testing.T) {
 		if seen[key] > 1 {
 			t.Fatalf("event %+v emitted more than once — duplicated by delegation", ev)
 		}
+	}
+}
+
+// TestSkipZeroPerformsNoSeek proves Skip(0) is a no-op that never reaches
+// the underlying file's Seek — the counterpart to Skip's zero guard in
+// reader.go. Without the guard, Skip(0) would issue Seek(0, io.SeekCurrent),
+// the exact same file-level call shape Pos() emits, making
+// TestTraceNilHookCostsNoExtraPosCalls' posCountingFile count Skip(0) calls
+// as if they were Pos() calls (task-262 fix round 1).
+func TestSkipZeroPerformsNoSeek(t *testing.T) {
+	path := writeFixture(t, gmsFixtureBuilder(), "ItemSkipZero.wz")
+	f, counting := openCounting(t, path)
+	defer f.Close()
+
+	before := counting.posCalls
+	if err := f.reader.Skip(0); err != nil {
+		t.Fatalf("Skip(0): %v", err)
+	}
+	if counting.posCalls != before {
+		t.Fatalf("Skip(0) changed posCalls from %d to %d — it must not reach the underlying Seek", before, counting.posCalls)
 	}
 }
 

@@ -1,0 +1,102 @@
+# EXAMPLE — owned by the sibling cluster-infra repo, NOT applied from this repo.
+# A cluster-wide SINGLETON CronJob (do not place under overlays/pr-cleanup,
+# which CI renders once per PR -> N copies). Reproduces `argocd app
+# terminate-op` for Applications that wedged mid-delete. See task-264
+# design.md §2.3 (Option D) and task-264-terminate-op.md in this folder.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: atlas-pr-terminate-stuck-ops
+  namespace: argocd
+spec:
+  # Every minute. The whole point is bounding wedge duration: folding this
+  # into atlas-pr-cleanup's hourly run would bound it at 60 minutes, which
+  # is worse than the 15-minute bound the bootstrap hook's
+  # activeDeadlineSeconds already gives. Minutely makes this the tighter of
+  # the two bounds, which is what defense in depth should look like. The
+  # predicate is false for every healthy Application, so a run costs one
+  # list and zero patches.
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 120
+      template:
+        spec:
+          restartPolicy: Never
+          # Reuses the existing PostDelete cleanup SA. NO NEW RBAC IS
+          # REQUIRED — see task-264-terminate-op.md for the live Role dump.
+          serviceAccountName: atlas-pr-cleanup
+          containers:
+            - name: terminate-stuck-ops
+              image: alpine/k8s:1.30.0
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+
+                  # Select Applications that are (a) marked for deletion,
+                  # (b) still reporting an in-flight operation, and
+                  # (c) still carrying an .operation spec.
+                  #
+                  # (c) is load-bearing. The Argo application controller
+                  # only processes an operation when `app.Operation != nil`.
+                  # An Application whose .operation has been cleared -- e.g.
+                  # by `kubectl patch -p '{"operation":null}'`, which an
+                  # operator attempted on PR #1459 -- is a zombie: its phase
+                  # can never transition again, and patching it to
+                  # "Terminating" produces another zombie rather than a
+                  # recovery. Log and skip those; they belong to the
+                  # Job-finalizer recipe in the atlas repo's
+                  # docs/runbooks/ephemeral-pr-deployments.md §9.4.
+                  apps=$(kubectl -n argocd get applications.argoproj.io -o json)
+
+                  echo "$apps" | jq -r '
+                    .items[]
+                    | select(.metadata.name | startswith("atlas-pr-"))
+                    | select(.metadata.deletionTimestamp != null)
+                    | select(.status.operationState.phase == "Running")
+                    | select(.operation == null)
+                    | "SKIP \(.metadata.name): deletionTimestamp set and phase=Running, but .operation is already cleared (zombie; needs the hook-Job finalizer patch, runbook §9.4)"
+                  '
+
+                  targets=$(echo "$apps" | jq -r '
+                    .items[]
+                    | select(.metadata.name | startswith("atlas-pr-"))
+                    | select(.metadata.deletionTimestamp != null)
+                    | select(.status.operationState.phase == "Running")
+                    | select(.operation != null)
+                    | .metadata.name
+                  ')
+
+                  if [ -z "$targets" ]; then
+                    echo "no stuck operations"
+                    exit 0
+                  fi
+
+                  for app in $targets; do
+                    echo "TERMINATE $app: patching status.operationState.phase -> Terminating"
+                    # NOTE: no --subresource=status. The Application CRD
+                    # declares no status subresource (verified live:
+                    # `.spec.versions[].subresources` is `{}`), so status is
+                    # writable by an ordinary patch on the main resource,
+                    # which the atlas-pr-cleanup Role already grants.
+                    #
+                    # .operation is deliberately left in place. That is the
+                    # difference between this and the operator error on PR
+                    # #1459: the controller, still processing because
+                    # Operation != nil, runs its termination path -- it
+                    # terminates the sync, reaps the hook resources and
+                    # their finalizers, sets the phase terminal, and clears
+                    # .operation itself.
+                    kubectl -n argocd patch applications.argoproj.io "$app" \
+                      --type=merge \
+                      -p '{"status":{"operationState":{"phase":"Terminating"}}}'
+                  done
+                  # The Application's own finalizers are never touched, so
+                  # post-delete-finalizer.argocd.argoproj.io[/cleanup] still
+                  # runs and PostDelete cleanup still reclaims DBs, topics,
+                  # groups, Redis keys, ghcr tags, DNS, and the bot branch.

@@ -186,6 +186,16 @@ here as instructed.
 
 ### `ap` / `sp` — the accumulated totals and the arithmetic
 
+**USER RULING (post-live-test correction — see the accompanying bug report,
+`bug-ap-sp-and-starting-equipment.md`): the client's own pre-submit preview is
+the contract, not the level-up-arithmetic model this subsection originally
+derived in isolation.** The corrected model below still uses the same
+level-up primitives (`computeOnLevelAddedAP`/`computeOnLevelAddedSP`), but
+adds the character-creation stat pool and the 1st-job-advancement SP grant
+that the original derivation omitted — both omissions were confirmed against
+a live client observation (DEX-20 class, ordinal 4/Pirate: client promised
+138 AP / 61 SP).
+
 **AP.** `computeOnLevelAddedAP(jobId, level)`
 (`services/atlas-character/atlas.com/character/character/processor.go:1685-1697`)
 returns a flat `5` for any non-Cygnus job — all five Maple Life classes are
@@ -195,35 +205,45 @@ through 29 level-ups (level 1→2, 2→3, … 29→30), each granting AP by this
 formula while already at the character's final job (Maple Life skips the
 Beginner phase entirely — the character is created already-advanced, so every
 level-up in this hypothetical history uses the advanced-job formula, not the
-Beginner one):
+Beginner one). **A real level-1 MapleStory character also starts with a
+25-point creation stat pool** (`Σstats = 25`, not `ResetStats`' `baseStat`
+floor of `4/4/4/4 = 16`) — the original derivation omitted this pool, which is
+exactly the 9-point shortfall (138 − 129) the live test exposed:
 
 ```
-total AP by level 30 = 29 × 5 = 145
+total AP pool by level 30 = 25 + 5 × 29 = 170
 ```
 
 **SP.** `computeOnLevelAddedSP(jobId, effectiveLevel)`
-(`processor.go:1702-1709`) returns `3` for any job that is not
-`job.IsBeginner` — none of the five Maple Life classes are Beginner-family
-(`job.IsBeginner` checks membership in `{BeginnerId, NoblesseId, LegendId,
-EvanId}`), so:
+(`processor.go:1741-1749`) returns `3` only for a job that is not
+`job.IsBeginner`. A real character is a Beginner (job id `0`) until its
+1st-job advancement at level 10, so the `3`-per-level rate only applies for
+levels 11→30 (20 level-ups), not from level 1 as the original derivation
+assumed. On top of that, Nexon/Cosmic's `changeJob` grants **`+1` SP at the
+moment of 1st-job advancement** (`Cosmic/src/main/java/client/Character.java:1154`,
+`int spGain = 1`) — Atlas's own `ChangeJob`
+(`services/atlas-character/atlas.com/character/character/processor.go:592-614`)
+does not grant this `+1` (a pre-existing divergence from Nexon/Cosmic, out of
+this task's scope — see the bug report's "Not yet answered" section), but the
+client's own preview promises it, and per user ruling the client's number is
+the contract:
 
 ```
-total SP by level 30 = 29 × 3 = 87
+total SP pool by level 30 = 1 (1st-job advancement grant) + 3 × 20 (level-ups 11→30) = 61
 ```
 
-**`ap` (unspent remainder) per class** = `145 − (job's minimum-AP spend)`, where
-the minimum-AP spend is `floor − 4` (the stat floor required for 1st-job
-advancement, minus the `baseStat` of `4` the game-neutral other three stats
-sit at — `ResetStats`, `processor.go:2178` — `rebalance_ap`'s own semantics:
-zero all four primary stats to `4`, then raise the one required stat to its
-floor, and the AP spent doing that redistribution is exactly `floor − 4`).
+**`ap` (unspent remainder) per class** = `170 − Σstats`, where `Σstats` is the
+class's four primary stats summed (the stat floor plus the three stats left
+at `baseStat = 4` — `ResetStats`, `processor.go:2178`).
 
-**`sp` per class** = `87` (the full accumulated total) for **every** class.
+**`sp` per class** = `61` (the full accumulated total) for **every** class.
 For ordinals 0/1 only, `nSP` (the player's 0..10 choice) is deducted from this
 pool **at creation time by the submit-handling code**, per §11 A4 — that
 deduction is a runtime computation on the player's wire value, not a content
 value Task 16 can pre-compute, so `sp` here is recorded as the pre-deduction
-total for all five classes.
+total for all five classes (`spendSPPool`,
+`services/atlas-character-factory/atlas.com/character-factory/factory/maple_life.go:137-146`,
+deducts from slot 0 of this 61 pool; 61 ≥ 10 so no underflow).
 
 ### Stat floors (minimum AP the 1st job requires)
 
@@ -251,15 +271,16 @@ from the NPC id.)
 ### `stats` — full per-class stat block
 
 `baseStat = 4` (`processor.go:2168`) for the three stats not raised; the
-fourth is raised to its floor. `ap` is `145 − spend`, restated from above.
+fourth is raised to its floor. `ap` is `170 − Σstats`, per the corrected
+model above.
 
-| ordinal | class | str | dex | int | luk | `ap` (unspent) |
-|---|---|---|---|---|---|---|
-| 0 | Warrior | **35** | 4 | 4 | 4 | `145 − 31 = 114` |
-| 1 | Magician | 4 | 4 | **20** | 4 | `145 − 16 = 129` |
-| 2 | Bowman | 4 | **25** | 4 | 4 | `145 − 21 = 124` |
-| 3 | Thief | 4 | **25** | 4 | 4 | `145 − 21 = 124` |
-| 4 | Pirate | 4 | **20** | 4 | 4 | `145 − 16 = 129` |
+| ordinal | class | str | dex | int | luk | Σstats | `ap` (unspent) |
+|---|---|---|---|---|---|---|---|
+| 0 | Warrior | **35** | 4 | 4 | 4 | 47 | `170 − 47 = 123` |
+| 1 | Magician | 4 | 4 | **20** | 4 | 32 | `170 − 32 = 138` |
+| 2 | Bowman | 4 | **25** | 4 | 4 | 37 | `170 − 37 = 133` |
+| 3 | Thief | 4 | **25** | 4 | 4 | 37 | `170 − 37 = 133` |
+| 4 | Pirate | 4 | **20** | 4 | 4 | 32 | `170 − 32 = 138` |
 
 ### `hp` / `mp` — USER RULING: midpoint of the interval, skill-excluded (§5 has the seeded values)
 
@@ -330,28 +351,49 @@ proxy.
 | 3 | Thief | `103000000` (Kerning City) | `libs/atlas-constants/map/constants.go:183` (`VictoriaRoadKerningCityId`); see §5 |
 | 4 | Pirate | `120000000` (Nautilus Harbor) | `libs/atlas-constants/map/constants.go:521` (`VictoriaRoadNautilusHarborId`); see §5 for why this node, not one of Nautilus's several interior sub-maps |
 
-### `equipment` — top / bottom / shoes / weapon, per gender
+### `equipment` — USER RULING: the HeavenMS/Cosmic per-class starting-equipment tables
 
-**Top/bottom/shoes: not per-class.** §1 established that
+**This subsection is superseded by the user's ruling in
+`bug-ap-sp-and-starting-equipment.md`.** The prior pass's derivation (below,
+retained for history) synthesized generic Beginner-creation apparel with the
+per-class weapon from job-advancement NPC data — a bridge across two
+separately-cited sources, not a single per-class table. The user has since
+ruled: **starting equipment follows the HeavenMS/Cosmic per-class tables**,
+awarding every listed piece (apparel and weapon) per ordinal and gender, with
+`useAverageStats: true` on every entry (consistent with the existing rows and
+with §5.2's Pirate two-weapon precedent).
+
+| ordinal | gender 0 (male) | gender 1 (female) |
+|---|---|---|
+| 0 Warrior | `1040021, 1060016, 1072039, 1302008, 1442001, 1422001, 1312005` | `1051010, 1072039, 1302008, 1442001, 1422001, 1312005` |
+| 1 Magician | `1050003, 1072075, 1372003, 1382017` | `1041041, 1061034, 1072075, 1372003, 1382017` |
+| 2 Bowman | `1040067, 1060056, 1072081, 1452005, 1462000` | `1041054, 1061050, 1072081, 1452005, 1462000` |
+| 3 Thief | `1040057, 1060043, 1072032, 1472008, 1332012` | `1041047, 1061043, 1072032, 1472008, 1332012` |
+| 4 Pirate | `1052107, 1072294, 1482004, 1492004` | `1052107, 1072294, 1482004, 1492004` |
+
+(Warrior female `1051010` and Magician male `1050003` and Pirate `1052107` are
+overalls, which is why those rows have no separate bottom. Pirate is not
+gender-split in the source table, so both gender rows get the same list.)
+
+**Prior derivation (superseded, retained for history).** §1 established that
 `Etc/MakeCharInfo.img/Info/CharMale`/`CharFemale` slots 4-7 are the generic
 Beginner-creation equipment option lists, shared by all classes (this is the
 same resource `characters.templates[]`'s `jobIndex: 0` — Beginner — entry
 already uses). No per-class top/bottom/shoes WZ resource was found this pass.
-Recorded value: **the first (index-0) option in each per-gender list**, matching
-the option that sits at the front of the client's own `ZArray<ASITEM>` before
-any "next/previous" UI interaction (`GetSelectedAL` reads element 0 — see
-`selected-al-derivation.md` Q1).
+Recorded value at that time: **the first (index-0) option in each per-gender
+list**, matching the option that sits at the front of the client's own
+`ZArray<ASITEM>` before any "next/previous" UI interaction (`GetSelectedAL`
+reads element 0 — see `selected-al-derivation.md` Q1):
 
 | gender | top | bottom | shoes |
 |---|---|---|---|
 | male | `1040002` | `1060002` | `1072001` |
 | female | `1041002` | `1061002` | `1072001` |
 
-**Weapon: per-class, resolved.** Sourced from the same job-advancement NPC
-scripts used for the stat floors above — each carries an `award_item`
-operation for the class-specific starter weapon immediately alongside its
-`change_job`, and `String.wz/Eqp.img.xml` names each item id, confirming it is
-the class's own beginner-tier weapon (not a generic item):
+Weapon (prior derivation): sourced from the same job-advancement NPC scripts
+used for the stat floors above — each carries an `award_item` operation for
+the class-specific starter weapon immediately alongside its `change_job`, and
+`String.wz/Eqp.img.xml` names each item id:
 
 | ordinal | class | weapon item id(s) | name (`String.wz/Eqp.img.xml`) |
 |---|---|---|---|
@@ -359,7 +401,7 @@ the class's own beginner-tier weapon (not a generic item):
 | 1 | Magician | `1372043` | "Beginner Magician's wand" |
 | 2 | Bowman | `1452051` | "Beginner Bowman's bow" |
 | 3 | Thief | `1332063` | "Beginner Thief's short sword" |
-| 4 | Pirate | **`1482000` and `1492000` — both, per USER RULING (§5)** | "Steel Knuckler" (`1482000`) and "Pistol" (`1492000`); both awarded by `npc-1090000.json` since 1st-job Pirate in this era has not yet branched into Brawler/Gunslinger |
+| 4 | Pirate | `1482000` and `1492000` — both, per USER RULING (§5) | "Steel Knuckler" (`1482000`) and "Pistol" (`1492000`); both awarded by `npc-1090000.json` since 1st-job Pirate in this era has not yet branched into Brawler/Gunslinger |
 
 Weapon ids are **not gendered** in this data (unlike faces/hairs/tops/bottoms) —
 the same weapon id(s) apply to both genders for a given class. The `mapleLife`

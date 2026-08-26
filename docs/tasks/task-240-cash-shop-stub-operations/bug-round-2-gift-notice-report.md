@@ -184,3 +184,139 @@ announced; MTS session unaffected either way), and re-run
 atlas-channel. At that point the live re-test (gift an item, confirm "All
 the gifts have been sent...") becomes meaningful — it is not yet, since
 step 2 is the piece that removes the racy early announce.
+
+## Round 2 — step 2
+
+Status: **DONE**. Implements the controller's ruling in
+`bug-round-2-gift-notice-step2-ruling.md`: an explicit ownership flag on the
+wallet `UPDATED` body, not a `TransactionId` heuristic — direction 2 above,
+but as a boolean marker rather than the design decision I flagged as open.
+The ruling's producer sweep (already recorded in that file) refutes the
+task-227 blocker this report raised: name-change/world-transfer go through
+the ordinary cash-shop purchase pipeline (`handleStatusEventPurchase`
+already self-announces `CashQueryResult`) and never touch
+`EVENT_TOPIC_WALLET_STATUS` at all, so they were never at risk from any
+skip rule on that topic.
+
+### What changed
+
+1. `services/atlas-cashshop/atlas.com/cashshop/kafka/message/wallet/kafka.go`
+   — added `SceneRefreshOwned bool` (`json:"sceneRefreshOwned,omitempty"`)
+   to `StatusEventUpdatedBody`, documented as: the originating operation's
+   own status handler announces the scene refresh, so a
+   `CashSceneCashShop` consumer must skip its own.
+2. `services/atlas-channel/atlas.com/channel/kafka/message/wallet/kafka.go`
+   — the identical field/tag/comment, keeping the duplicated contract in
+   step per repo convention.
+3. `services/atlas-cashshop/atlas.com/cashshop/kafka/producer/wallet/producer.go`
+   — added `UpdateStatusEventWithTransactionSceneRefreshOwnedProvider`, a
+   sibling of the existing `UpdateStatusEventWithTransactionProvider` with
+   `SceneRefreshOwned: true`. Did not add a bool parameter to the existing
+   provider (it's also called from `UpdateStatusEventProvider` and would
+   have forced every non-gift call site to pass `false`).
+4. `services/atlas-cashshop/atlas.com/cashshop/wallet/processor.go` — added
+   `UpdateWithTransactionSceneRefreshOwned` to the `Processor` interface and
+   `ProcessorImpl`, a sibling of `UpdateWithTransaction` that calls the new
+   provider. `AdjustCurrencyWithTransaction` / `UpdateAndEmitWithTransaction`
+   (the task-227/MTS/GM-award path) are untouched and keep emitting the
+   unflagged event.
+5. `services/atlas-cashshop/atlas.com/cashshop/cashshop/processor_gift.go`
+   step 5 — now calls `walP.UpdateWithTransactionSceneRefreshOwned(buf)(transactionId)(...)`
+   instead of `UpdateWithTransaction`, keeping the transaction tag from step
+   1 and adding the ownership flag.
+6. `services/atlas-channel/atlas.com/channel/kafka/consumer/wallet/consumer.go`
+   (`handleWalletUpdated`) — in the `CashSceneCashShop` arm only, `return
+   nil` when `e.Body.SceneRefreshOwned` is set, before the existing
+   `CashQueryResult` announce. `CashSceneMts` is untouched.
+
+No new domain type/constant was needed (`SceneRefreshOwned` is a `bool`
+field on an existing struct); `libs/atlas-constants/` has nothing
+comparable.
+
+### Tests
+
+Added `services/atlas-channel/atlas.com/channel/kafka/consumer/wallet/consumer_test.go`
+(no test file previously existed for this consumer). Four cases, matching
+the ruling's `## Verification`:
+
+- `TestHandleWalletUpdatedCashShopSceneRefreshOwnedSkipsAnnounce` —
+  `CashSceneCashShop` + `SceneRefreshOwned: true` → nothing announced.
+- `TestHandleWalletUpdatedCashShopSceneRefreshUnownedAnnounces` —
+  `CashSceneCashShop` + `SceneRefreshOwned: false` → `CashQueryResult`
+  announced.
+- `TestHandleWalletUpdatedNonNilTransactionIdWithoutFlagStillAnnounces` — a
+  non-Nil `TransactionId` with the flag unset still announces
+  `CashQueryResult`. This is the test the ruling calls out explicitly to
+  pin the rejection of the `TransactionId` heuristic.
+- `TestHandleWalletUpdatedMtsSceneUnaffectedBySceneRefreshOwned` —
+  `CashSceneMts` announces `MtsOperation2` regardless of the flag's value
+  (table over `true`/`false`).
+
+The existing `TestGiftPurchasedAnnouncesGiftDoneWithRecipientNameAndItem`
+(landed in `7addf1508`, unchanged by this task) still asserts
+`GIFT_PURCHASED` announces `CashShopOperationWriter` then
+`CashQueryResultWriter` in that order.
+
+### Commands run
+
+```
+cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./...
+```
+Result: `ok` for every package, including
+`ok  	atlas-channel/kafka/consumer/wallet	0.010s` and
+`ok  	atlas-channel/kafka/consumer/cashshop	(cached)`.
+
+```
+cd services/atlas-cashshop/atlas.com/cashshop && go build ./... && go test ./...
+```
+Result: `ok` for every package with tests, including
+`ok  	atlas-cashshop/kafka/producer/wallet	0.033s` and
+`ok  	atlas-cashshop/wallet	0.069s` (build clean, no failures).
+
+`gofmt -l` on every changed/added file: no output (all formatted).
+`tools/lint.sh` was not run — it is the controller/verifier's gate per
+Contract 2, not the implementer's.
+
+### Files changed (round 2 step 2)
+
+- `services/atlas-cashshop/atlas.com/cashshop/kafka/message/wallet/kafka.go`
+- `services/atlas-channel/atlas.com/channel/kafka/message/wallet/kafka.go`
+- `services/atlas-cashshop/atlas.com/cashshop/kafka/producer/wallet/producer.go`
+- `services/atlas-cashshop/atlas.com/cashshop/wallet/processor.go`
+- `services/atlas-cashshop/atlas.com/cashshop/cashshop/processor_gift.go`
+- `services/atlas-channel/atlas.com/channel/kafka/consumer/wallet/consumer.go`
+- `services/atlas-channel/atlas.com/channel/kafka/consumer/wallet/consumer_test.go` (new)
+- `docs/tasks/task-240-cash-shop-stub-operations/bug-round-2-gift-notice-step2-ruling.md`
+  (added to version control alongside the report; it was provided as an
+  input and documents the binding decision, mirroring how
+  `bug-round-2-gift-notice-brief.md` is already tracked)
+
+### Self-review
+
+- Matches the ruling's file inventory and naming guidance exactly; only
+  departure is a name (`SceneRefreshOwned`, the ruling's own suggestion) and
+  the exact provider/method names, which the ruling explicitly leaves to
+  implementer judgment.
+- Did not touch `AdjustCurrencyWithTransaction` / `UpdateAndEmitWithTransaction`
+  or any of their callers — the MTS/GM-award/saga-ingress producers the
+  ruling's sweep found keep their existing unflagged refresh with zero
+  behavior change, as required.
+- `CashSceneMts` arm in `handleWalletUpdated` is untouched (test asserts
+  this directly).
+- `Do not touch` from the original brief (GiftDone codec, GIFT_SUCCESS mode
+  table, seed templates) still respected — nothing in this diff touches
+  those.
+- Tree is clean aside from the pre-existing untracked
+  `bug-round-2-defect-f-report.md` / `review-bug-round-2*.md` files, left
+  alone as instructed.
+
+### Concerns
+
+None. The live-bug fix (steps 1–3 combined) is now complete: the gift's
+wallet debit is transaction-tagged and flagged owned (step 1 + step 2),
+`handleWalletUpdated` no longer races a second `CashQueryResult` in ahead of
+`GIFT_SUCCESS` (step 2), and `handleStatusEventGiftPurchased` announces the
+correct order itself (step 3). Live re-test (gift an item, confirm "All the
+gifts have been sent…") is now meaningful but was not run — this was a
+module-local implementation task, and the brief's live re-test bullet is
+outside the module-local verification contract.

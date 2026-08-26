@@ -14,13 +14,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-wz/wz"
-	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/property"
+	"github.com/Chronicle20/atlas/libs/atlas-wz/wz/wzxml"
 )
 
 // SerializeToDirectory serializes a parsed WZ file to HaRepacker-compatible XML
@@ -70,7 +68,7 @@ func SerializeImage(img *wz.Image, outputPath string) error {
 	}
 	e := stdxml.NewEncoder(f)
 	e.Indent("", "  ")
-	root := xmlElement{
+	root := wzxml.Element{
 		XMLName: stdxml.Name{Local: "imgdir"},
 		Name:    img.Name() + ".img",
 	}
@@ -78,86 +76,9 @@ func SerializeImage(img *wz.Image, outputPath string) error {
 	if err != nil {
 		return fmt.Errorf("wztoxml adapter: %s: %w", img.Name(), err)
 	}
-	root.Children = propertiesToElements(props)
+	root.Children = wzxml.PropertiesToElements(props)
 	if err := e.Encode(root); err != nil {
 		return fmt.Errorf("encode xml for [%s]: %w", img.Name(), err)
 	}
 	return nil
-}
-
-// xmlElement is a generic HaRepacker XML element.
-type xmlElement struct {
-	XMLName  stdxml.Name  `xml:""`
-	Name     string       `xml:"name,attr"`
-	Value    string       `xml:"value,attr,omitempty"`
-	Width    string       `xml:"width,attr,omitempty"`
-	Height   string       `xml:"height,attr,omitempty"`
-	X        string       `xml:"x,attr,omitempty"`
-	Y        string       `xml:"y,attr,omitempty"`
-	Children []xmlElement `xml:",any"`
-}
-
-func propertiesToElements(props []property.Property) []xmlElement {
-	if len(props) == 0 {
-		return nil
-	}
-	out := make([]xmlElement, 0, len(props))
-	for _, p := range props {
-		out = append(out, propertyToElement(p))
-	}
-	return out
-}
-
-func propertyToElement(p property.Property) xmlElement {
-	switch v := p.(type) {
-	case *property.NullProperty:
-		return xmlElement{XMLName: stdxml.Name{Local: "null"}, Name: v.Name()}
-	case *property.ShortProperty:
-		return xmlElement{XMLName: stdxml.Name{Local: "short"}, Name: v.Name(), Value: fmt.Sprintf("%d", v.Value())}
-	case *property.IntProperty:
-		return xmlElement{XMLName: stdxml.Name{Local: "int"}, Name: v.Name(), Value: fmt.Sprintf("%d", v.Value())}
-	case *property.LongProperty:
-		return xmlElement{XMLName: stdxml.Name{Local: "long"}, Name: v.Name(), Value: fmt.Sprintf("%d", v.Value())}
-	case *property.FloatProperty:
-		return xmlElement{XMLName: stdxml.Name{Local: "float"}, Name: v.Name(), Value: formatFloat(float64(v.Value()))}
-	case *property.DoubleProperty:
-		return xmlElement{XMLName: stdxml.Name{Local: "double"}, Name: v.Name(), Value: formatFloat(v.Value())}
-	case *property.StringProperty:
-		return xmlElement{XMLName: stdxml.Name{Local: "string"}, Name: v.Name(), Value: v.Value()}
-	case *property.SubProperty:
-		return xmlElement{XMLName: stdxml.Name{Local: "imgdir"}, Name: v.Name(), Children: propertiesToElements(v.Children())}
-	case *property.CanvasProperty:
-		return xmlElement{
-			XMLName:  stdxml.Name{Local: "canvas"},
-			Name:     v.Name(),
-			Width:    fmt.Sprintf("%d", v.Width()),
-			Height:   fmt.Sprintf("%d", v.Height()),
-			Children: propertiesToElements(v.Children()),
-		}
-	case *property.VectorProperty:
-		return xmlElement{
-			XMLName: stdxml.Name{Local: "vector"},
-			Name:    v.Name(),
-			X:       fmt.Sprintf("%d", v.X()),
-			Y:       fmt.Sprintf("%d", v.Y()),
-		}
-	case *property.ConvexProperty:
-		return xmlElement{XMLName: stdxml.Name{Local: "extended"}, Name: v.Name(), Children: propertiesToElements(v.Children())}
-	case *property.SoundProperty:
-		return xmlElement{XMLName: stdxml.Name{Local: "sound"}, Name: v.Name()}
-	case *property.UOLProperty:
-		return xmlElement{XMLName: stdxml.Name{Local: "uol"}, Name: v.Name(), Value: v.Value()}
-	default:
-		return xmlElement{XMLName: stdxml.Name{Local: "null"}, Name: p.Name()}
-	}
-}
-
-// formatFloat formats a float ensuring it always contains a decimal point.
-// MapleLib uses "0" -> "0.0", "1.5" stays "1.5".
-func formatFloat(v float64) string {
-	s := strconv.FormatFloat(v, 'f', -1, 64)
-	if !strings.Contains(s, ".") {
-		s += ".0"
-	}
-	return s
 }

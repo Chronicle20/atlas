@@ -163,10 +163,12 @@ kubectl get all,configmap,secret -n atlas-pr-<N>
 kubectl logs -n atlas-pr-<N> job/atlas-pr-bootstrap
 ```
 
-Loki query for env-scoped logs (`atlas.env=<token>`):
+Loki query for env-scoped logs. As established in §9.6, there is no
+`atlas_env` stream label — `atlas.env` lives inside the JSON payload, not
+in Loki's stream labels — so scope by `namespace` instead:
 
 ```logql
-{atlas_env="a3f7"} |= ""
+{namespace="atlas-pr-<N>"} |= ""
 ```
 
 ## §9.4 Recovery when teardown wedges

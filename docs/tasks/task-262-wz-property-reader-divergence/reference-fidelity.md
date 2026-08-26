@@ -73,6 +73,21 @@ mis-size it by exactly zero bytes 1136 times in a row to produce that. Every
 specific disputed node was then hand-decoded from the raw bytes (§ per-image
 below) and in every case the archive literally says what our parser reported.
 
+Task R2 later turned this hand-run into a repo-tool gate (`wzdiff
+--selfcheck`) and ran it at whole-archive scope, corroborating the finding at
+larger scale: across **all 419 images in `$WZ_ARCHIVE`**, not just the 19
+divergent ones above, the gate reports:
+
+```
+images: 419  sub-objects: 15428  violations: 0  parse errors: 0
+```
+
+15428 type-9 sub-objects traced, 0 size-accounting violations, 0 parse
+errors. The two figures — 1136 across the 19 divergent images, 15428 across
+the full 419-image archive — measure different scopes and are not expected
+to reconcile to the same number; both independently support the same
+conclusion, that our reader is byte-faithful to the archive.
+
 ### B. The reference dataset is a different, heavily customised WZ set
 
 `wzdiff` was run on three further WZ files from the *same* stock set against the

@@ -76,8 +76,11 @@ reader reading `$WZ_ARCHIVE` — the discrepancy is entirely between the
 customised WZ set" carries the equivalent finding for `Reactor.wz`,
 `Etc.wz`, and `Quest.wz`, plus the per-image byte adjudication (all 21 items
 `INPUT-MISMATCH`) that established our reader is byte-faithful to
-`$WZ_ARCHIVE` everywhere it was checked: 1136 type-9 sub-objects traced, 0
-instances of `actualEnd != endPos`. That adjudication is the authority for
+`$WZ_ARCHIVE` everywhere it was checked: 1136 type-9 sub-objects traced
+across the **19 divergent images**, 0 instances of `actualEnd != endPos`
+(Task R2's later whole-archive self-check corroborates this at 15428
+sub-objects, 0 violations, 0 parse errors across **all 419 images in
+`$WZ_ARCHIVE`**). That adjudication is the authority for
 "our reader is exonerated"; this document is the authority for "the dump is
 not this archive."
 

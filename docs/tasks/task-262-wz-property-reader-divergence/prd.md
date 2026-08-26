@@ -355,8 +355,10 @@ unreachable rather than temporarily unmet:
 - [ ] Parsing every image of a supplied `.wz` archive with the self-consistency gate
       reports **zero size-accounting violations** — every type-9 sub-object's declared
       end equals its actual end (`declaredSize`/`endPos`/`actualEnd` agree, the same
-      measurement `reference-fidelity.md` already took across 1136 sub-objects in
-      `Reactor.wz` with zero mismatches).
+      measurement `reference-fidelity.md` already took across 1136 sub-objects in the
+      **19 divergent images** with zero mismatches, and which Task R2's whole-archive
+      self-check corroborated at 15428 sub-objects across **all 419 images in
+      `$WZ_ARCHIVE`**, also zero mismatches).
 - [ ] The gate is a repo tool, runnable against any archive on disk, and exits
       non-zero on a size-accounting violation.
 - [ ] The gate is covered by synthetic `wztest` fixtures — a clean archive passes and a

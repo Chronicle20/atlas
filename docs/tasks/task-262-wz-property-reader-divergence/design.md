@@ -146,8 +146,11 @@ tree for every existing consumer. That is the wrong fix.
 > produced neither: all 21 items (19 divergent + 2 un-enumerated) came back a
 > third label, `INPUT-MISMATCH` — the dump was never exported from the supplied
 > archive at all (`provenance.md`). Byte adjudication (method 1 below) was
-> exactly what surfaced this: 1136 type-9 sub-objects traced across the 19
-> images with 0 instances of `actualEnd != endPos`, i.e. our reader is
+> exactly what surfaced this: 1136 type-9 sub-objects traced across the **19
+> divergent images** with 0 instances of `actualEnd != endPos` (Task R2's
+> later whole-archive self-check corroborates this at 15428 sub-objects, 0
+> violations, 0 parse errors across **all 419 images in `$WZ_ARCHIVE`**),
+> i.e. our reader is
 > byte-faithful to the archive everywhere it was checked, which is
 > incompatible with either of the two labels this section anticipated. The
 > gate mechanism (byte adjudication first, ordered above the other two

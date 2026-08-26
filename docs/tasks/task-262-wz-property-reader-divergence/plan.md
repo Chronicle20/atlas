@@ -1018,7 +1018,10 @@ Module root: `libs/atlas-wz`.
 **WITHDRAWN.** This task would change `Image.Properties()`'s production error surface
 (a new `ErrPropertyOverrun`) to catch a defect class that Task 5 found no live instance
 of in the one archive this task's evidence base covers — 1136/1136 type-9 sub-objects
-traced clean (`reference-fidelity.md`). Landing a new production error path with no
+traced clean across the **19 divergent images** (`reference-fidelity.md`); Task R2's
+later whole-archive self-check corroborates this at larger scope — 15428/15428 type-9
+sub-objects clean across **all 419 images in `$WZ_ARCHIVE`**, 0 violations, 0 parse
+errors. Landing a new production error path with no
 known real-world trigger, on the strength of one archive, is a larger and riskier change
 than this re-scoped task should make unilaterally. Task R2 (`plan.md`, below) delivers
 the equivalent detection **without** changing `Image.Properties()`'s behavior: it is a
@@ -1127,7 +1130,7 @@ Module roots: `libs/atlas-wz` **and** `services/atlas-data/atlas.com/data`.
 - Produces: `parseDirectory` returns the sub-directory error wrapped with the entry name; `wz.Open` (`libs/atlas-wz/wz/file.go:132`) consequently fails for archives that today open with a silently-missing subtree.
 - Consumes: nothing from earlier tasks.
 
-**Blast-radius note, already surveyed:** `parseDirectory` is reached only from `File.parseRoot` (`file.go:525-538`), itself called only from `Open` (`file.go:156`). Every non-test `wz.Open` call site already checks the error — `services/atlas-data/atlas.com/data/data/workers/runtime.go:144-148` and `:209-213`. No new error handling is needed at any `f.Root()` consumer (`libs/atlas-wz/charparts/extract.go:156`, `zmap.go:34`, `smap.go:32`, `mapimage/layers.go:142`, `index.go:33`, `icons/extract.go:43,116,161`, and the `atlas-data` workers). The behaviour change is entirely in whether `Open` itself now fails hard. Say this out loud in the PR description — it is an operator-visible change.
+**Blast-radius note, already surveyed:** `parseDirectory` is reached only from `File.parseRoot` (`file.go:525-538`), itself called only from `Open` (`file.go:156`). Every non-test `wz.Open` call site already checks the error — `services/atlas-data/atlas.com/data/data/workers/runtime.go:144-148` and `:209-213`, and `services/atlas-renders/atlas.com/renders/storage/wzcache.go:135` (confirmed safe by the Task 14 reviewer: it checks the error, removes the partial download, and never touches a partial file). No new error handling is needed at any `f.Root()` consumer (`libs/atlas-wz/charparts/extract.go:156`, `zmap.go:34`, `smap.go:32`, `mapimage/layers.go:142`, `index.go:33`, `icons/extract.go:43,116,161`, and the `atlas-data` workers). The behaviour change is entirely in whether `Open` itself now fails hard. Say this out loud in the PR description — it is an operator-visible change.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1257,7 +1260,7 @@ reference that needs no external dump at all: **the archive's own bytes**. Every
 type-9 sub-object declares its own byte length; if a decode ends anywhere other than
 where that declaration says it should, that is a defect, and today it is silently
 healed by the type-9 branch's unconditional recovery reseek (`wz/image.go:285-287`)
-and never surfaces. Task 5 already ran this check by hand across `Reactor.wz` and found
+and never surfaces. Task 5 already ran this check by hand across the **19 divergent images** and found
 1136/1136 sub-objects clean (`reference-fidelity.md`); this task turns it into a
 repo-tool gate — a new `wzdiff --selfcheck` mode built on the existing trace hook
 (Task 2), with `wztest`-fixture coverage (a clean archive passes; a sub-object with a

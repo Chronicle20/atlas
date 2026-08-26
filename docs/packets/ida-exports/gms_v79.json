@@ -8042,20 +8042,6 @@
       "direction": "clientbound",
       "calls": null
     },
-    "CPet::OnNameChanged": {
-      "address": "0x690f7f",
-      "direction": "",
-      "calls": [
-        {
-          "op": "DecodeStr",
-          "comment": ""
-        },
-        {
-          "op": "Decode1",
-          "comment": ""
-        }
-      ]
-    },
     "CPet::ParseCommand": {
       "address": "0x6914db",
       "direction": "serverbound",

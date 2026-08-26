@@ -4,12 +4,12 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `6f7346b7abd715116f989490b12d70544b616852a5f524babbd280eb1f7c3f20`
+Tool: `89f03b754c0aebb6d3c4368d7547a2568a9d7fcb4a16f61a5c6242554d707f43`
 
 - export gms_v48: `b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6`
 - export gms_v61: `e5ed52e703a38e819822bb62b00aa252aad2946a0b97ae72b1cee1e8b8222f48`
-- export gms_v72: `232e8e30183e8e53b4ad2abb32be4a99b50faf5d7c00e453ce8e90995f440f18`
-- export gms_v79: `c09df7a0a7764ddfcfbfe0629a23d82d8cb74deb1e7b104c0f5b32352d8073a6`
+- export gms_v72: `0d3e12b8d5d6945bedf48664207eb78fabe45152f35aff3b2715de0173d31c1c`
+- export gms_v79: `67a49a67b9945e1eb2e4b473a4c7115a9cec7952588705b0ec91a10486759a99`
 - export gms_v83: `b3613f0ee0c878fbd5397251d0e26830d66392b446fbab2a0a9156a4dcbf99c6`
 - export gms_v84: `2bbc30efdc7355eaa7953cfbb459d09646a090a539a8ef79c5d10e8affb6ef11`
 - export gms_v87: `1b0794ba0e1c3e43ec76dffafaace29578c829178ea8cfac5a11b13ca7a483b3`

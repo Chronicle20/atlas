@@ -256,7 +256,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
     newTag: main-32d55cb
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: main-32d55cb
+    newTag: main-062dd8e
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-32d55cb
   - name: ghcr.io/chronicle20/atlas-dragons/atlas-dragons
@@ -348,7 +348,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
     newTag: main-32d55cb
   - name: ghcr.io/chronicle20/atlas-renders/atlas-renders
-    newTag: main-32d55cb
+    newTag: main-062dd8e
   - name: ghcr.io/chronicle20/atlas-rps/atlas-rps
     newTag: main-32d55cb
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator

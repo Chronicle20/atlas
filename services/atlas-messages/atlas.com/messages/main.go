@@ -14,6 +14,7 @@ import (
 	"atlas-messages/command/monster"
 	party_quest "atlas-messages/command/party_quest"
 	commandpet "atlas-messages/command/pet"
+	"atlas-messages/command/reactor"
 	message2 "atlas-messages/kafka/consumer/message"
 	"os"
 
@@ -84,6 +85,7 @@ func main() {
 	command.Registry().Add(monster.MobStatusCommandProducer)
 	command.Registry().Add(monster.MobClearCommandProducer)
 	command.Registry().Add(monster.MobSpawnCommandProducer)
+	command.Registry().Add(reactor.ReactorDestroyAllCommandProducer)
 	command.Registry().Add(commandpet.AwardTamenessCommandProducer)
 	command.Registry().Add(disease.DiseaseCommandProducer)
 	command.Registry().Add(party_quest.PQRegisterCommandProducer)

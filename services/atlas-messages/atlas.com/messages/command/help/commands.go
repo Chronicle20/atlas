@@ -33,6 +33,7 @@ var commandSyntaxList = []string{
 	"@mob spawn <templateId> [count] - Spawn a monster at your position (count 1-20)",
 	"@mobstatus <skillId|skillName> [level] - Execute mob skill on all monsters in map",
 	"@mobclear [statusType] - Clear statuses from all monsters in map",
+	"@reactor destroy all - Destroy all reactors in the current map and clear their cooldowns",
 	"@disease <target> <diseaseType> [value] [duration] - Apply a disease effect",
 	"@pq register <questId> - Register for a party quest",
 	"@pq stage - Force-advance the current party quest stage",

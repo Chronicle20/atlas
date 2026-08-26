@@ -716,7 +716,7 @@ None.
 | op | STRANGE_DATA | serverbound |  | n-a |  |
 | op | SUE_CHARACTER | serverbound |  | n-a |  |
 | op | SUMMON_REMOVE | serverbound |  | n-a |  |
-| op | TOUCHING_REACTOR | serverbound |  | n-a |  |
+| op | TOUCHING_REACTOR | serverbound |  | n-a | task-249 Task 1: measured absent — 160 whole-binary "push 1; push opcode" hits, none inside or adjacent to the CReactorPool cluster [0x5a5390,0x5a5eb4]; OnPacket dispatches only opcodes 210/212/213, no touch arm |
 | op | TOUCH_MONSTER_ATTACK | serverbound |  | n-a |  |
 | op | TROCK_ADD_MAP | serverbound |  | n-a |  |
 | op | UI_OPEN_ITEM_USE_REQUEST | serverbound |  | n-a |  |

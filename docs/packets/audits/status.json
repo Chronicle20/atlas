@@ -1,16 +1,16 @@
 {
   "toolSha": "6f7346b7abd715116f989490b12d70544b616852a5f524babbd280eb1f7c3f20",
   "exportHashes": {
-    "gms_v48": "6b2efbf28f7aec4d3b21537b3716d4281147ef5ba3b0030827cb7fdc6f728eab",
-    "gms_v61": "94b771a2dd8c62b4ee5294da81b1898bcb8d1113a18a5c0925383d003ab46864",
-    "gms_v72": "89ea1a283d225a8983534d8b7e5d105fa2cab2763dec97e154cd266ad83a4553",
-    "gms_v79": "2dd9980bb70d27785007db137b491702de8baa31f6cac957d398f5e7d083d6f2",
-    "gms_v83": "eb64eb7d077219a7c4e4a58c581c480d91699b1169537cbb6f21666af034431d",
-    "gms_v84": "ceee39e582c112e6e9089d243c3b210b0b80eee0cab6012a8fe4af7ec9b7f165",
-    "gms_v87": "e40d0af492b99ba1e1f4e1f163d083821e0ce65ad7fb8a0e22f19ccfb530374d",
-    "gms_v92": "9c62beb41893d70949f8d1daa3bcd069bfdf1fd160fed99a39716768c600d915",
-    "gms_v95": "b9ee775376897dbb77e20bdfafcbe2ee6467f727ad5ccedf2474d53cc86c71ed",
-    "jms_v185": "4e89133489d5c8631bb19ca6e925e8bd53fff5e2ed7826f359f3c7f595687a2f"
+    "gms_v48": "b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6",
+    "gms_v61": "e5ed52e703a38e819822bb62b00aa252aad2946a0b97ae72b1cee1e8b8222f48",
+    "gms_v72": "232e8e30183e8e53b4ad2abb32be4a99b50faf5d7c00e453ce8e90995f440f18",
+    "gms_v79": "c09df7a0a7764ddfcfbfe0629a23d82d8cb74deb1e7b104c0f5b32352d8073a6",
+    "gms_v83": "b3613f0ee0c878fbd5397251d0e26830d66392b446fbab2a0a9156a4dcbf99c6",
+    "gms_v84": "2bbc30efdc7355eaa7953cfbb459d09646a090a539a8ef79c5d10e8affb6ef11",
+    "gms_v87": "1b0794ba0e1c3e43ec76dffafaace29578c829178ea8cfac5a11b13ca7a483b3",
+    "gms_v92": "8818b84b431779494ac9ad2403f065f741452432a2a17cd0bd02be532278d5ae",
+    "gms_v95": "509b7fd575172b651f28bb05ca88bada0129366ba8149cc193c4134491e2815f",
+    "jms_v185": "f0cacd78c4ffd65655028825fc7e5bfe3b7fe3889011631098486eb562a5686e"
   },
   "rows": [
     {
@@ -30257,6 +30257,58 @@
     },
     {
       "kind": "op",
+      "op": "TOUCHING_REACTOR",
+      "packet": "reactor/serverbound/ReactorTouchingRequest",
+      "direction": "serverbound",
+      "tier1": true,
+      "fnames": [
+        "CReactorPool::FindTouchReactorAroundLocalUser"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "verified",
+          "opcode": 196
+        },
+        "gms_v79": {
+          "state": "verified",
+          "opcode": 198
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 206
+        },
+        "gms_v84": {
+          "state": "verified",
+          "opcode": 212
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 219
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 243
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 250
+        },
+        "jms_v185": {
+          "state": "verified",
+          "opcode": 217
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "CANNOT_SPAWN_KITE",
       "packet": "field/clientbound/FieldKiteError",
       "direction": "clientbound",
@@ -31697,63 +31749,6 @@
         "jms_v185": {
           "state": "verified",
           "opcode": 296
-        }
-      }
-    },
-    {
-      "kind": "op",
-      "op": "TOUCHING_REACTOR",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CReactorPool::FindTouchReactorAroundLocalUser"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 206
-        },
-        "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 206
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 219
-        },
-        "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 243
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 250
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 217
         }
       }
     },

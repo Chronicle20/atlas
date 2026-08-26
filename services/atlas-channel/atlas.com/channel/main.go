@@ -1035,6 +1035,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[parcelsb.DueyActionHandle] = handler.DueyActionHandleFunc
 	handlerMap[rpssb.RPSActionHandle] = handler.RPSActionHandleFunc
 	handlerMap[reactorsb.ReactorHitHandle] = handler.ReactorHitHandleFunc
+	handlerMap[reactorsb.TouchReactorHandle] = handler.TouchReactorHandleFunc
 	handlerMap[socketsb.PongHandle] = handler.PongHandleFunc
 	handlerMap[charsb.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
 	handlerMap[charsb.CharacterSkillBookUseHandle] = handler.CharacterSkillBookUseHandleFunc

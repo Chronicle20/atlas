@@ -1,6 +1,7 @@
 package reactor
 
 import (
+	"atlas-reactors/character"
 	"atlas-reactors/reactor/data"
 	"atlas-reactors/reactor/data/state"
 	"context"
@@ -31,6 +32,7 @@ type Processor interface {
 	DestroyInTenant(envContext func(context.Context) context.Context, t tenant.Model) model.Operator[[]Model]
 	Destroy() model.Operator[Model]
 	Hit(reactorId uint32, characterId uint32, skillId uint32) error
+	Touch(reactorId uint32, characterId uint32, touching bool) error
 	Trigger(r Model, characterId uint32)
 	TriggerAndDestroy(r Model, characterId uint32) error
 }
@@ -48,6 +50,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 var _ Processor = (*ProcessorImpl)(nil)
+
+// characterProcessor is the seam tests use to stand in for the atlas-character
+// REST read. Production resolves the real client.
+var characterProcessor = func(l logrus.FieldLogger, ctx context.Context) character.Processor {
+	return character.NewProcessor(l, ctx)
+}
 
 func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
 	t := tenant.MustFromContext(p.ctx)
@@ -163,7 +171,6 @@ func (p *ProcessorImpl) Destroy() model.Operator[Model] {
 }
 
 func (p *ProcessorImpl) Hit(reactorId uint32, characterId uint32, skillId uint32) error {
-	t := tenant.MustFromContext(p.ctx)
 	r, err := p.GetById(reactorId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get reactor [%d] for hit.", reactorId)
@@ -188,20 +195,92 @@ func (p *ProcessorImpl) Hit(reactorId uint32, characterId uint32, skillId uint32
 		return p.TriggerAndDestroy(r, characterId)
 	}
 
-	var nextState int8 = -1
-	var matchedEventType int32 = 0
-	for _, event := range stateEvents {
-		if len(event.ActiveSkills()) == 0 || containsSkill(event.ActiveSkills(), skillId) {
-			nextState = event.NextState()
-			matchedEventType = event.Type()
-			break
-		}
-	}
+	nextState, matchedEventType := selectNextState(stateEvents, skillId)
 
 	if nextState == -1 {
 		p.l.Debugf("Reactor [%d] reached terminal state. Triggering and destroying.", reactorId)
 		return p.TriggerAndDestroy(r, characterId)
 	}
+
+	return p.advance(r, characterId, nextState, matchedEventType)
+}
+
+// Touch handles a TOUCHING_REACTOR command. On leave (touching == false), it
+// releases the character's touch latch. On enter, it runs the rejection
+// ladder (design §6.1) before advancing state.
+func (p *ProcessorImpl) Touch(reactorId uint32, characterId uint32, touching bool) error {
+	t := tenant.MustFromContext(p.ctx)
+	if !touching {
+		GetRegistry().ClearTouch(t, reactorId, characterId)
+		p.l.Debugf("Character [%d] left touch area of reactor [%d].", characterId, reactorId)
+		return nil
+	}
+
+	r, err := p.GetById(reactorId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to get reactor [%d] for touch.", reactorId)
+		return err
+	}
+
+	if !r.Data().ActivateByTouch() {
+		p.l.Debugf("Reactor [%d] is not touch-activated. Ignoring touch from character [%d].", reactorId, characterId)
+		return nil
+	}
+
+	a, ok := r.Data().TouchArea(r.State())
+	if !ok {
+		p.l.Debugf("Reactor [%d] has no touch area defined for state [%d]. Ignoring touch from character [%d].", reactorId, r.State(), characterId)
+		return nil
+	}
+
+	cx, cy, err := characterProcessor(p.l, p.ctx).Position(characterId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to get position of character [%d] for touch of reactor [%d].", characterId, reactorId)
+		return nil
+	}
+
+	if cx < r.X()+a.TL().X() || cx > r.X()+a.BR().X() ||
+		cy < r.Y()+a.TL().Y() || cy > r.Y()+a.BR().Y() {
+		p.l.Debugf("Character [%d] at (%d,%d) is outside touch area of reactor [%d]. Ignoring.", characterId, cx, cy, reactorId)
+		return nil
+	}
+
+	if !GetRegistry().TryLatchTouch(t, reactorId, characterId) {
+		p.l.Debugf("Character [%d] already latched to reactor [%d]. Ignoring duplicate touch.", characterId, reactorId)
+		return nil
+	}
+
+	cancelStateTimeout(reactorId)
+
+	err = producer.ProviderImpl(p.l)(p.ctx)(EnvCommandReactorActionsTopic)(touchActionsCommandProvider(r, characterId))
+	if err != nil {
+		p.l.WithError(err).Warnf("Failed to emit TOUCH command to reactor-actions for reactor [%d].", reactorId)
+	}
+
+	stateEvents, ok := r.Data().StateInfo()[r.State()]
+	if !ok || len(stateEvents) == 0 {
+		p.l.Debugf("No state events for reactor [%d] state [%d] on touch. No-op.", reactorId, r.State())
+		return nil
+	}
+	return p.advance(r, characterId, stateEvents[0].NextState(), stateEvents[0].Type())
+}
+
+// selectNextState applies the hit path's skill-gating predicate to a state's
+// events. Returns (-1, 0) when no event matches. Touch does NOT use this --
+// see Touch's own selection (FR-16).
+func selectNextState(stateEvents []state.Model, skillId uint32) (int8, int32) {
+	for _, event := range stateEvents {
+		if len(event.ActiveSkills()) == 0 || containsSkill(event.ActiveSkills(), skillId) {
+			return event.NextState(), event.Type()
+		}
+	}
+	return -1, 0
+}
+
+func (p *ProcessorImpl) advance(r Model, characterId uint32, nextState int8, matchedEventType int32) error {
+	t := tenant.MustFromContext(p.ctx)
+	reactorId := r.Id()
+	stateInfo := r.Data().StateInfo()
 
 	_, hasNextState := stateInfo[nextState]
 	if !hasNextState {

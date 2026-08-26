@@ -11,6 +11,7 @@ type ProcessorMock struct {
 	InMapModelProviderFunc func(f field.Model) model.Provider[[]reactor.Model]
 	ForEachInMapFunc       func(f field.Model, o model.Operator[reactor.Model]) error
 	HitFunc                func(f field.Model, reactorId uint32, characterId uint32, stance uint16, skillId uint32) error
+	TouchFunc              func(f field.Model, reactorId uint32, characterId uint32, touching bool) error
 }
 
 var _ reactor.Processor = (*ProcessorMock)(nil)
@@ -32,6 +33,13 @@ func (m *ProcessorMock) ForEachInMap(f field.Model, o model.Operator[reactor.Mod
 func (m *ProcessorMock) Hit(f field.Model, reactorId uint32, characterId uint32, stance uint16, skillId uint32) error {
 	if m.HitFunc != nil {
 		return m.HitFunc(f, reactorId, characterId, stance, skillId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) Touch(f field.Model, reactorId uint32, characterId uint32, touching bool) error {
+	if m.TouchFunc != nil {
+		return m.TouchFunc(f, reactorId, characterId, touching)
 	}
 	return nil
 }

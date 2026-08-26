@@ -6,16 +6,16 @@
 
 Tool: `6f7346b7abd715116f989490b12d70544b616852a5f524babbd280eb1f7c3f20`
 
-- export gms_v48: `6b2efbf28f7aec4d3b21537b3716d4281147ef5ba3b0030827cb7fdc6f728eab`
-- export gms_v61: `94b771a2dd8c62b4ee5294da81b1898bcb8d1113a18a5c0925383d003ab46864`
-- export gms_v72: `89ea1a283d225a8983534d8b7e5d105fa2cab2763dec97e154cd266ad83a4553`
-- export gms_v79: `2dd9980bb70d27785007db137b491702de8baa31f6cac957d398f5e7d083d6f2`
-- export gms_v83: `eb64eb7d077219a7c4e4a58c581c480d91699b1169537cbb6f21666af034431d`
-- export gms_v84: `ceee39e582c112e6e9089d243c3b210b0b80eee0cab6012a8fe4af7ec9b7f165`
-- export gms_v87: `e40d0af492b99ba1e1f4e1f163d083821e0ce65ad7fb8a0e22f19ccfb530374d`
-- export gms_v92: `9c62beb41893d70949f8d1daa3bcd069bfdf1fd160fed99a39716768c600d915`
-- export gms_v95: `b9ee775376897dbb77e20bdfafcbe2ee6467f727ad5ccedf2474d53cc86c71ed`
-- export jms_v185: `4e89133489d5c8631bb19ca6e925e8bd53fff5e2ed7826f359f3c7f595687a2f`
+- export gms_v48: `b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6`
+- export gms_v61: `e5ed52e703a38e819822bb62b00aa252aad2946a0b97ae72b1cee1e8b8222f48`
+- export gms_v72: `232e8e30183e8e53b4ad2abb32be4a99b50faf5d7c00e453ce8e90995f440f18`
+- export gms_v79: `c09df7a0a7764ddfcfbfe0629a23d82d8cb74deb1e7b104c0f5b32352d8073a6`
+- export gms_v83: `b3613f0ee0c878fbd5397251d0e26830d66392b446fbab2a0a9156a4dcbf99c6`
+- export gms_v84: `2bbc30efdc7355eaa7953cfbb459d09646a090a539a8ef79c5d10e8affb6ef11`
+- export gms_v87: `1b0794ba0e1c3e43ec76dffafaace29578c829178ea8cfac5a11b13ca7a483b3`
+- export gms_v92: `8818b84b431779494ac9ad2403f065f741452432a2a17cd0bd02be532278d5ae`
+- export gms_v95: `509b7fd575172b651f28bb05ca88bada0129366ba8149cc193c4134491e2815f`
+- export jms_v185: `f0cacd78c4ffd65655028825fc7e5bfe3b7fe3889011631098486eb562a5686e`
 
 ## Clientbound
 
@@ -748,6 +748,7 @@ Tool: `6f7346b7abd715116f989490b12d70544b616852a5f524babbd280eb1f7c3f20`
 | DRAGON_BALL_BOX_REQUEST | CWvsContext::SendDragonBallBoxRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C1 | ❌ | 0x0C4 | ❌ |  | ⬜ |
 | DRAGON_BALL_SUMMON_REQUEST | CWvsContext::SendDragonBallSummonRequest |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C2 | ❌ | 0x0C5 | ❌ |  | ⬜ |
 | CHECK_CASH | CCashShop::TrySendQueryCashRequest | cash/serverbound/CashCheckWallet (T1) |  | ⬜ | 0x0C3 | ✅ | 0x0DA | ✅ | 0x0DC | ✅ | 0x0E4 | ✅ | 0x0EA | ✅ | 0x0F1 | ✅ | 0x10B | ❌ | 0x112 | ✅ | 0x0F4 | ✅ |
+| TOUCHING_REACTOR | CReactorPool::FindTouchReactorAroundLocalUser | reactor/serverbound/ReactorTouchingRequest (T1) |  | ⬜ |  | ⬜ | 0x0C4 | ✅ | 0x0C6 | ✅ | 0x0CE | ✅ | 0x0D4 | ✅ | 0x0DB | ✅ | 0x0F3 | ✅ | 0x0FA | ✅ | 0x0D9 | ✅ |
 | NPC_SPECIAL_ACTION | CNpc::RequestSpecialAction |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C6 | ❌ | 0x0CC | ❌ | 0x0D3 | ❌ | 0x0EB | ❌ | 0x0F2 | ❌ | 0x0D1 | ❌ |
 | UNNAMED_R344 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C7 | ❌ |  | ⬜ | 0x0D4 | ❌ | 0x0EC | ❌ | 0x0F3 | ❌ | 0x0D2 | ❌ |
 | MOB_SKILL_DELAY_END | CMob::Update | character/serverbound/CharacterMonsterDamageFriendly (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C8 | ✅ | 0x0CF | ✅ | 0x0E3 | ❌ | 0x0EA | ✅ | 0x0C9 | ✅ |
@@ -756,7 +757,6 @@ Tool: `6f7346b7abd715116f989490b12d70544b616852a5f524babbd280eb1f7c3f20`
 | UNNAMED_R348 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0CB | ❌ |  | ⬜ | 0x0D8 | ❌ | 0x0F0 | ❌ | 0x0F7 | ❌ | 0x0D6 | ❌ |
 | MATCH_TABLE | CField::SendChatMsgSlash | field/serverbound/FieldAdminChat (T1) |  | ⬜ |  | ⬜ | 0x0CC | ✅ | 0x0CE | ✅ | 0x0D6 | ✅ | 0x0DC | ✅ | 0x0E3 | ✅ | 0x0FB | ❌ | 0x102 | ✅ | 0x0E1 | ✅ |
 | UNNAMED_R349 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0CC | ❌ |  | ⬜ | 0x0D9 | ❌ | 0x0F1 | ❌ | 0x0F8 | ❌ | 0x0D7 | ❌ |
-| TOUCHING_REACTOR | CReactorPool::FindTouchReactorAroundLocalUser |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0CE | ❌ | 0x0CE | ❌ | 0x0DB | ❌ | 0x0F3 | ❌ | 0x0FA | ❌ | 0x0D9 | ❌ |
 | PLAYER_MAP_TRANSFER | CUserLocal::ResetNLCPQ |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0CF | ❌ | 0x0CF | ❌ | 0x0DC | ❌ | 0x0F4 | ❌ | 0x0FB | ❌ | 0x0DA | ❌ |
 | SUMMON_REMOVE | CSummoned::SendRemove |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D0 | ❌ | 0x0D3 | ❌ | 0x0B6 | ❌ |
 | UNNAMED_R355 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0D0 | ❌ |  | ⬜ | 0x0DD | ❌ | 0x0F5 | ❌ | 0x0FC | ❌ | 0x0DB | ❌ |
@@ -1063,14 +1063,14 @@ Tool: `6f7346b7abd715116f989490b12d70544b616852a5f524babbd280eb1f7c3f20`
 |---------|----|----|----|----|----|----|-----------|
 | v48 | 214 | 0 | 19 | 198 | 594 | 0 | 49.7% |
 | v61 | 280 | 0 | 56 | 232 | 457 | 0 | 49.3% |
-| v72 | 304 | 0 | 69 | 241 | 411 | 0 | 49.5% |
-| v79 | 350 | 0 | 68 | 237 | 370 | 0 | 53.4% |
-| v83 | 476 | 0 | 0 | 321 | 228 | 0 | 59.7% |
-| v84 | 450 | 0 | 0 | 328 | 247 | 0 | 57.8% |
-| v87 | 484 | 0 | 0 | 351 | 190 | 0 | 58.0% |
-| v92 | 61 | 0 | 147 | 676 | 141 | 0 | 6.9% |
-| v95 | 509 | 0 | 0 | 410 | 106 | 0 | 55.4% |
-| JMS185 | 450 | 0 | 0 | 378 | 197 | 0 | 54.3% |
+| v72 | 305 | 0 | 69 | 241 | 410 | 0 | 49.6% |
+| v79 | 351 | 0 | 68 | 237 | 369 | 0 | 53.5% |
+| v83 | 477 | 0 | 0 | 320 | 228 | 0 | 59.8% |
+| v84 | 451 | 0 | 0 | 327 | 247 | 0 | 58.0% |
+| v87 | 485 | 0 | 0 | 350 | 190 | 0 | 58.1% |
+| v92 | 62 | 0 | 147 | 675 | 141 | 0 | 7.0% |
+| v95 | 510 | 0 | 0 | 409 | 106 | 0 | 55.5% |
+| JMS185 | 451 | 0 | 0 | 377 | 197 | 0 | 54.5% |
 
 ## Conflicts
 

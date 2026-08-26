@@ -11,6 +11,7 @@ type ReactorScript struct {
 	description string
 	hitRules    []Rule
 	actRules    []Rule
+	touchRules  []Rule
 }
 
 // ReactorId returns the reactor script identifier (classification ID)
@@ -31,6 +32,11 @@ func (s ReactorScript) HitRules() []Rule {
 // ActRules returns the rules evaluated when reactor triggers (reaches final state)
 func (s ReactorScript) ActRules() []Rule {
 	return s.actRules
+}
+
+// TouchRules returns the rules evaluated when reactor is touched
+func (s ReactorScript) TouchRules() []Rule {
+	return s.touchRules
 }
 
 // Rule represents a single rule with conditions and operations

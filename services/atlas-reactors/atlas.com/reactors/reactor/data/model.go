@@ -1,6 +1,7 @@
 package data
 
 import (
+	"atlas-reactors/reactor/data/area"
 	"atlas-reactors/reactor/data/point"
 	"atlas-reactors/reactor/data/state"
 )
@@ -9,6 +10,8 @@ type Model struct {
 	name                 string
 	tl                   point.Model
 	br                   point.Model
+	activateByTouch      bool
+	touchAreaInfo        map[int8]area.Model
 	stateInfo            map[int8][]state.Model
 	timeoutInfo          map[int8]int32
 	timeoutNextStateInfo map[int8]int8
@@ -28,6 +31,21 @@ func (m Model) TL() point.Model {
 
 func (m Model) BR() point.Model {
 	return m.br
+}
+
+func (m Model) ActivateByTouch() bool {
+	return m.activateByTouch
+}
+
+// TouchArea returns the touch-detection rectangle configured for the given
+// state, and false if the state has no touch canvas. An absent key is not
+// the same as a zero-value area.
+func (m Model) TouchArea(state int8) (area.Model, bool) {
+	if m.touchAreaInfo == nil {
+		return area.Model{}, false
+	}
+	v, ok := m.touchAreaInfo[state]
+	return v, ok
 }
 
 // Timeout returns the per-state timeout in milliseconds, or -1 if this state

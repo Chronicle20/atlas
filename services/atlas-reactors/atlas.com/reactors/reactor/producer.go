@@ -116,6 +116,28 @@ func triggerActionsCommandProvider(r Model, characterId uint32) model.Provider[[
 	return producer.SingleMessageProvider(key, value)
 }
 
+// touchActionsCommandProvider creates a TOUCH command for atlas-reactor-actions
+func touchActionsCommandProvider(r Model, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(r.Id()))
+	value := &reactorActionsCommand[touchActionsBody]{
+		WorldId:        r.WorldId(),
+		ChannelId:      r.ChannelId(),
+		MapId:          r.MapId(),
+		Instance:       r.Instance(),
+		ReactorId:      r.Id(),
+		Classification: formatClassification(r.Classification()),
+		ReactorName:    r.Name(),
+		ReactorState:   r.State(),
+		X:              r.X(),
+		Y:              r.Y(),
+		Type:           CommandTypeActionsTouch,
+		Body: touchActionsBody{
+			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // formatClassification converts the classification uint32 to a string for script lookup
 func formatClassification(classification uint32) string {
 	return fmt.Sprintf("%d", classification)

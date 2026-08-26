@@ -1738,6 +1738,15 @@
         ]
       },
       {
+        "opCode": "0xF3",
+        "validator": "LoggedInValidator",
+        "handler": "TouchReactorHandle",
+        "fname": "CReactorPool::FindTouchReactorAroundLocalUser",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0xFF",
         "validator": "LoggedInValidator",
         "handler": "MonsterCarnival",

@@ -21,6 +21,7 @@ type RestModel struct {
 	Description string          `json:"description,omitempty"`
 	HitRules    []RestRuleModel `json:"hitRules"`
 	ActRules    []RestRuleModel `json:"actRules"`
+	TouchRules  []RestRuleModel `json:"touchRules"`
 }
 
 // RestRuleModel represents a rule in REST format
@@ -109,11 +110,18 @@ func Transform(m ReactorScript) (RestModel, error) {
 		restActRules = append(restActRules, restRule)
 	}
 
+	restTouchRules := make([]RestRuleModel, 0, len(m.TouchRules()))
+	for _, rule := range m.TouchRules() {
+		restRule := transformRule(rule)
+		restTouchRules = append(restTouchRules, restRule)
+	}
+
 	return RestModel{
 		ReactorId:   m.ReactorId(),
 		Description: m.Description(),
 		HitRules:    restHitRules,
 		ActRules:    restActRules,
+		TouchRules:  restTouchRules,
 	}, nil
 }
 
@@ -169,6 +177,14 @@ func Extract(r RestModel) (ReactorScript, error) {
 			return ReactorScript{}, err
 		}
 		builder.AddActRule(rule)
+	}
+
+	for _, restRule := range r.TouchRules {
+		rule, err := extractRule(restRule)
+		if err != nil {
+			return ReactorScript{}, err
+		}
+		builder.AddTouchRule(rule)
 	}
 
 	return builder.Build(), nil

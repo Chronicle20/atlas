@@ -15,6 +15,13 @@ import (
 // serial_number) unique index -- Count = Count + 1, LastAt = now() -- so two
 // concurrent inserts for the same purchase cannot both land as separate rows.
 func Record(db *gorm.DB, tenantId uuid.UUID, accountId uint32, serialNumber uint32) error {
+	return recordTx(db, tenantId, accountId, serialNumber).Error
+}
+
+// recordTx performs the upsert and returns the resulting *gorm.DB so tests
+// can inspect the generated statement (e.g. via db.ToSQL) without
+// duplicating the clause construction.
+func recordTx(db *gorm.DB, tenantId uuid.UUID, accountId uint32, serialNumber uint32) *gorm.DB {
 	now := time.Now()
 	e := entity{
 		Id:           uuid.New(),
@@ -32,8 +39,8 @@ func Record(db *gorm.DB, tenantId uuid.UUID, accountId uint32, serialNumber uint
 			{Name: "serial_number"},
 		},
 		DoUpdates: clause.Assignments(map[string]interface{}{
-			"count":   gorm.Expr("count + 1"),
+			"count":   gorm.Expr(e.TableName() + ".count + 1"),
 			"last_at": now,
 		}),
-	}).Create(&e).Error
+	}).Create(&e)
 }

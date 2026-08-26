@@ -37,6 +37,7 @@ var (
 	ErrInsufficientFunds    = errors.New("insufficient funds")
 	ErrMaxSlots             = errors.New("max slots")
 	ErrAssetAlreadyReserved = errors.New("asset already reserved")
+	ErrInvalidInventoryType = errors.New("invalid inventory type")
 )
 
 // errPurchaseRejected is an internal sentinel used to abort the Purchase
@@ -88,6 +89,19 @@ func effectivePurchaseCurrency(currency uint32) uint32 {
 	default:
 		return walletCurrencyPrepaid
 	}
+}
+
+// isValidInventoryType reports whether t is one of the known inventory
+// compartment types (inventory.Types). Used to guard against a computed
+// (rather than wire-provided) inventory type that does not correspond to a
+// real compartment -- see PurchaseInventoryIncreaseByItemAndEmit.
+func isValidInventoryType(t inventory.Type) bool {
+	for _, v := range inventory.Types {
+		if v == t {
+			return true
+		}
+	}
+	return false
 }
 
 type Processor interface {
@@ -315,7 +329,7 @@ func (p *ProcessorImpl) PurchaseInventoryIncreaseByItemAndEmit(characterId uint3
 	if err != nil {
 		return err
 	}
-	inventoryType := inventory.Type(ci.ItemId() - 9110000/1000)
+	inventoryType := inventory.Type((ci.ItemId() - 9110000) / 1000)
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return message.Emit(outbox.EmitProvider(p.l, p.ctx, tx))(func(buf *message.Buffer) error {
 			return NewProcessor(p.l, p.ctx, tx).PurchaseInventoryIncrease(buf)(characterId, currency, inventoryType, ci.Price(), 4)
@@ -334,6 +348,12 @@ func (p *ProcessorImpl) PurchaseInventoryIncreaseByTypeAndEmit(characterId uint3
 func (p *ProcessorImpl) PurchaseInventoryIncrease(mb *message.Buffer) func(characterId uint32, currency uint32, inventoryType inventory.Type, cost uint32, amount uint32) error {
 	return func(characterId uint32, currency uint32, inventoryType inventory.Type, cost uint32, amount uint32) error {
 		newCapacity := uint32(0)
+
+		if !isValidInventoryType(inventoryType) {
+			p.l.Errorf("Character [%d] attempted to purchase inventory increase for invalid inventory type [%d]. Rejecting without debiting wallet.", characterId, inventoryType)
+			_ = producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvEventTopicStatus)(cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR", uuid.Nil))
+			return ErrInvalidInventoryType
+		}
 
 		p.l.Debugf("Character [%d] attempting to purchase inventory [%d] increase using currency [%d]. Cost is [%d].", characterId, inventoryType, currency, cost)
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {

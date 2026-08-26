@@ -1,6 +1,7 @@
 package purchaserecord
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -99,4 +100,25 @@ func TestRecordUpsertsAndCounts(t *testing.T) {
 			t.Fatalf("count = %d, want 0", count)
 		}
 	})
+}
+
+// TestRecordConflictUpdateIsTableQualified is a regression test for the
+// Postgres "column reference \"count\" is ambiguous" (SQLSTATE 42702)
+// defect: inside ON CONFLICT ... DO UPDATE, an unqualified column on the
+// right-hand side of SET resolves against both the target table and the
+// EXCLUDED pseudo-relation. sqlite does not enforce this, so it cannot
+// catch a regression by executing the statement -- only by inspecting the
+// generated SQL directly.
+func TestRecordConflictUpdateIsTableQualified(t *testing.T) {
+	db := testDatabase(t)
+	sql := db.ToSQL(func(tx *gorm.DB) *gorm.DB {
+		return recordTx(tx, uuid.New(), 42, 10000)
+	})
+
+	if !strings.Contains(sql, "cash_purchase_records.count + 1") {
+		t.Fatalf("expected ON CONFLICT DO UPDATE to table-qualify count, got SQL: %s", sql)
+	}
+	if strings.Contains(sql, "SET \"count\"=count + 1") {
+		t.Fatalf("DO UPDATE SET right-hand side is unqualified, got SQL: %s", sql)
+	}
 }

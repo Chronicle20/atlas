@@ -138,9 +138,18 @@ func (i *Image) parseWithKey(key []byte) error {
 	if _, err := r.Seek(i.dataOffset, io.SeekStart); err != nil {
 		return err
 	}
+	tagStart, err := r.Pos()
+	if err != nil {
+		return err
+	}
 	tag, err := r.ReadWzStringBlock(i.dataOffset)
 	if err != nil {
 		return fmt.Errorf("unable to read image tag: %w", err)
+	}
+	if hook := i.wzFile.traceHook(); hook != nil {
+		if tagEnd, perr := r.Pos(); perr == nil {
+			hook(TraceEvent{Path: "", Kind: "stringblock", Name: "", StartOff: tagStart, EndOff: tagEnd, Detail: tag})
+		}
 	}
 	if tag != "Property" {
 		return fmt.Errorf("%w: %s (expected Property)", errBadImageTag, tag)
@@ -148,7 +157,7 @@ func (i *Image) parseWithKey(key []byte) error {
 	if err := r.Skip(2); err != nil {
 		return err
 	}
-	props, err := i.wzFile.parsePropertyList(i.dataOffset)
+	props, err := i.wzFile.parsePropertyList("", i.dataOffset)
 	if err != nil {
 		return err
 	}
@@ -165,8 +174,14 @@ func (i *Image) parseWithKey(key []byte) error {
 // this from outside that path without first acquiring the lock — the
 // underlying wz.reader is shared across all Image instances backed by
 // the same *File and is not safe to Seek concurrently.
-func (wz *File) parsePropertyList(imageOffset int64) ([]property.Property, error) {
+func (wz *File) parsePropertyList(path string, imageOffset int64) ([]property.Property, error) {
 	r := wz.reader
+	hook := wz.traceHook()
+
+	listStart, err := r.Pos()
+	if err != nil {
+		return nil, err
+	}
 
 	count, err := r.ReadWzInt()
 	if err != nil {
@@ -175,9 +190,18 @@ func (wz *File) parsePropertyList(imageOffset int64) ([]property.Property, error
 
 	props := make([]property.Property, 0, count)
 	for j := int32(0); j < count; j++ {
+		nameStart, err := r.Pos()
+		if err != nil {
+			return nil, err
+		}
 		name, err := r.ReadWzStringBlock(imageOffset)
 		if err != nil {
 			return nil, err
+		}
+		if hook != nil {
+			if nameEnd, perr := r.Pos(); perr == nil {
+				hook(TraceEvent{Path: path, Kind: "stringblock", Name: name, StartOff: nameStart, EndOff: nameEnd, Detail: name})
+			}
 		}
 
 		propType, err := r.ReadByte()
@@ -185,7 +209,8 @@ func (wz *File) parsePropertyList(imageOffset int64) ([]property.Property, error
 			return nil, err
 		}
 
-		prop, err := wz.parsePropertyValue(name, propType, imageOffset)
+		childPath := path + "/" + name
+		prop, err := wz.parsePropertyValue(childPath, name, propType, imageOffset)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing property [%s] type %d: %w", name, propType, err)
 		}
@@ -194,16 +219,31 @@ func (wz *File) parsePropertyList(imageOffset int64) ([]property.Property, error
 		}
 	}
 
+	if hook != nil {
+		if listEnd, perr := r.Pos(); perr == nil {
+			hook(TraceEvent{Path: path, Kind: "list", StartOff: listStart, EndOff: listEnd, Detail: fmt.Sprintf("count=%d", count)})
+		}
+	}
+
 	return props, nil
 }
 
 // parsePropertyValue parses a single property value based on its type tag.
-func (wz *File) parsePropertyValue(name string, propType byte, imageOffset int64) (property.Property, error) {
+// path is the property's full path from the image root (e.g. "/info/state"),
+// used only for trace emission.
+func (wz *File) parsePropertyValue(path, name string, propType byte, imageOffset int64) (property.Property, error) {
 	r := wz.reader
+	hook := wz.traceHook()
+
+	start, err := r.Pos()
+	if err != nil {
+		return nil, err
+	}
 
 	switch propType {
 	case 0:
 		// Null
+		emitPropTrace(hook, r, path, name, propType, start)
 		return property.NewNull(name), nil
 
 	case 2, 11:
@@ -212,6 +252,7 @@ func (wz *File) parsePropertyValue(name string, propType byte, imageOffset int64
 		if err != nil {
 			return nil, err
 		}
+		emitPropTrace(hook, r, path, name, propType, start)
 		return property.NewShort(name, v), nil
 
 	case 3, 19:
@@ -220,6 +261,7 @@ func (wz *File) parsePropertyValue(name string, propType byte, imageOffset int64
 		if err != nil {
 			return nil, err
 		}
+		emitPropTrace(hook, r, path, name, propType, start)
 		return property.NewInt(name, v), nil
 
 	case 20:
@@ -228,6 +270,7 @@ func (wz *File) parsePropertyValue(name string, propType byte, imageOffset int64
 		if err != nil {
 			return nil, err
 		}
+		emitPropTrace(hook, r, path, name, propType, start)
 		return property.NewLong(name, v), nil
 
 	case 4:
@@ -241,8 +284,10 @@ func (wz *File) parsePropertyValue(name string, propType byte, imageOffset int64
 			if err != nil {
 				return nil, err
 			}
+			emitPropTrace(hook, r, path, name, propType, start)
 			return property.NewFloat(name, v), nil
 		}
+		emitPropTrace(hook, r, path, name, propType, start)
 		return property.NewFloat(name, 0), nil
 
 	case 5:
@@ -251,6 +296,7 @@ func (wz *File) parsePropertyValue(name string, propType byte, imageOffset int64
 		if err != nil {
 			return nil, err
 		}
+		emitPropTrace(hook, r, path, name, propType, start)
 		return property.NewDouble(name, v), nil
 
 	case 8:
@@ -259,6 +305,7 @@ func (wz *File) parsePropertyValue(name string, propType byte, imageOffset int64
 		if err != nil {
 			return nil, err
 		}
+		emitPropTrace(hook, r, path, name, propType, start)
 		return property.NewString(name, v), nil
 
 	case 9:
@@ -274,11 +321,31 @@ func (wz *File) parsePropertyValue(name string, propType byte, imageOffset int64
 		}
 		endPos := pos + int64(size)
 
-		prop, err := wz.parseExtendedProperty(name, imageOffset)
+		prop, err := wz.parseExtendedProperty(path, name, imageOffset)
 		if err != nil {
 			// Skip to end of sub-object on error
 			_, _ = r.Seek(endPos, io.SeekStart)
 			return nil, err
+		}
+
+		// actualEnd is captured immediately before the recovery reseek
+		// below — the whole point of this event is to make an over- or
+		// under-read visible before it gets silently healed by the reseek
+		// to endPos (task-262).
+		actualEnd, perr := r.Pos()
+		if perr != nil {
+			return nil, perr
+		}
+		if hook != nil {
+			hook(TraceEvent{
+				Path:     path,
+				Kind:     "sub",
+				Name:     name,
+				Type:     propType,
+				StartOff: start,
+				EndOff:   actualEnd,
+				Detail:   fmt.Sprintf("declaredSize=%d endPos=%d actualEnd=%d", size, endPos, actualEnd),
+			})
 		}
 
 		// Ensure we're at the correct position after parsing
@@ -293,13 +360,24 @@ func (wz *File) parsePropertyValue(name string, propType byte, imageOffset int64
 	}
 }
 
-// parseExtendedProperty parses an extended (type 9) sub-object.
-func (wz *File) parseExtendedProperty(name string, imageOffset int64) (property.Property, error) {
+// parseExtendedProperty parses an extended (type 9) sub-object. path is the
+// property's full path from the image root, used only for trace emission.
+func (wz *File) parseExtendedProperty(path, name string, imageOffset int64) (property.Property, error) {
 	r := wz.reader
+	hook := wz.traceHook()
 
+	start, err := r.Pos()
+	if err != nil {
+		return nil, err
+	}
 	tag, err := r.ReadWzStringBlock(imageOffset)
 	if err != nil {
 		return nil, err
+	}
+	if hook != nil {
+		if end, perr := r.Pos(); perr == nil {
+			hook(TraceEvent{Path: path, Kind: "extended", Name: name, StartOff: start, EndOff: end, Detail: tag})
+		}
 	}
 
 	switch tag {
@@ -307,14 +385,14 @@ func (wz *File) parseExtendedProperty(name string, imageOffset int64) (property.
 		if err := r.Skip(2); err != nil {
 			return nil, err
 		}
-		children, err := wz.parsePropertyList(imageOffset)
+		children, err := wz.parsePropertyList(path, imageOffset)
 		if err != nil {
 			return nil, err
 		}
 		return property.NewSub(name, children), nil
 
 	case "Canvas":
-		return wz.parseCanvasProperty(name, imageOffset)
+		return wz.parseCanvasProperty(path, name, imageOffset)
 
 	case "Shape2D#Vector2D":
 		x, err := r.ReadWzInt()
@@ -334,7 +412,8 @@ func (wz *File) parseExtendedProperty(name string, imageOffset int64) (property.
 		}
 		children := make([]property.Property, 0, count)
 		for k := int32(0); k < count; k++ {
-			child, err := wz.parseExtendedProperty(fmt.Sprintf("%d", k), imageOffset)
+			childName := fmt.Sprintf("%d", k)
+			child, err := wz.parseExtendedProperty(path+"/"+childName, childName, imageOffset)
 			if err != nil {
 				return nil, err
 			}
@@ -360,9 +439,16 @@ func (wz *File) parseExtendedProperty(name string, imageOffset int64) (property.
 	}
 }
 
-// parseCanvasProperty parses a canvas (image) property.
-func (wz *File) parseCanvasProperty(name string, imageOffset int64) (property.Property, error) {
+// parseCanvasProperty parses a canvas (image) property. path is the
+// property's full path from the image root, used only for trace emission.
+func (wz *File) parseCanvasProperty(path, name string, imageOffset int64) (property.Property, error) {
 	r := wz.reader
+	hook := wz.traceHook()
+
+	canvasStart, err := r.Pos()
+	if err != nil {
+		return nil, err
+	}
 
 	// Skip 1 byte
 	if err := r.Skip(1); err != nil {
@@ -380,7 +466,7 @@ func (wz *File) parseCanvasProperty(name string, imageOffset int64) (property.Pr
 		if err := r.Skip(2); err != nil {
 			return nil, err
 		}
-		children, err = wz.parsePropertyList(imageOffset)
+		children, err = wz.parsePropertyList(path, imageOffset)
 		if err != nil {
 			return nil, err
 		}
@@ -427,6 +513,19 @@ func (wz *File) parseCanvasProperty(name string, imageOffset int64) (property.Pr
 	// Skip past the canvas data
 	if err := r.Skip(int64(dataSize)); err != nil {
 		return nil, err
+	}
+
+	if hook != nil {
+		if end, perr := r.Pos(); perr == nil {
+			hook(TraceEvent{
+				Path:     path,
+				Kind:     "canvas",
+				Name:     name,
+				StartOff: canvasStart,
+				EndOff:   end,
+				Detail:   fmt.Sprintf("w=%d h=%d format=%d dataOffset=%d dataSize=%d hasProperty=%d", width, height, pixelFormat, dataOffset, dataSize, hasProperty),
+			})
+		}
 	}
 
 	return property.NewCanvas(name, int(width), int(height), pixelFormat, dataOffset, dataSize, children), nil

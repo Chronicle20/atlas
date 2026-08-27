@@ -1,16 +1,16 @@
 package snapshot
 
 import (
-	"context"
-
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
 	"atlas-channel/inventory"
+	"context"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 // Fetch seams: the exact per-component REST providers today's decorator

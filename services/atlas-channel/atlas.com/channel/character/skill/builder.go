@@ -39,6 +39,7 @@ func (b *modelBuilder) SetExpiration(v time.Time) *modelBuilder {
 	b.expiration = v
 	return b
 }
+
 func (b *modelBuilder) SetCooldownExpiresAt(v time.Time) *modelBuilder {
 	b.cooldownExpiresAt = v
 	return b

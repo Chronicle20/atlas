@@ -78,13 +78,15 @@ func TestForCharacter_WritesLastPosition(t *testing.T) {
 		},
 	}
 
-	if err := p.ForCharacter(f, 42, mv); err != nil {
+	const characterId = 4242
+
+	if err := p.ForCharacter(f, characterId, mv); err != nil {
 		t.Fatalf("ForCharacter returned error: %v", err)
 	}
 
 	deadline := time.Now().Add(time.Second)
 	for {
-		got, ok := position.GetRegistry().Lookup(tm, 42)
+		got, ok := position.GetRegistry().Lookup(tm, characterId)
 		if ok {
 			if got.X != 150 || got.Y != 250 {
 				t.Fatalf("got position %+v, want {150 250}", got)

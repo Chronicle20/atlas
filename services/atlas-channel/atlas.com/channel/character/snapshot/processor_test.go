@@ -1,18 +1,18 @@
 package snapshot
 
 import (
-	"context"
-	"errors"
-	"testing"
-
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
 	"atlas-channel/inventory"
+	"context"
+	"errors"
+	"testing"
+
+	"github.com/sirupsen/logrus"
 
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 )
 
 type fetchCounts struct{ core, inv, skills, buffs int }

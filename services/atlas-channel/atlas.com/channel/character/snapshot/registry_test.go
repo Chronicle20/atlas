@@ -1,22 +1,22 @@
 package snapshot
 
 import (
-	"sync"
-	"testing"
-	"time"
-
 	"atlas-channel/asset"
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
 	"atlas-channel/compartment"
 	"atlas-channel/inventory"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
 
 	invconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 )
 
 // newTestRegistry bypasses the singleton for test isolation.

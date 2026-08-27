@@ -165,6 +165,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
@@ -175,7 +177,6 @@ import (
 	socket2 "github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (

@@ -9,20 +9,20 @@
 package snapshot
 
 import (
-	"sync"
-
 	"atlas-channel/asset"
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
 	"atlas-channel/compartment"
 	"atlas-channel/inventory"
+	"sync"
+
+	"github.com/google/uuid"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 )
 
 type entry struct {
@@ -135,7 +135,7 @@ func (r *Registry) entryLocked(t tenant.Model, characterId uint32, create bool) 
 func (r *Registry) ComposedIfValid(t tenant.Model, characterId uint32) (character.Model, bool) {
 	r.mu.RLock()
 	e := r.entryLocked(t, characterId, false)
-	if e == nil || !(e.coreValid && e.skillsValid && e.invValid && e.buffsValid) {
+	if e == nil || !e.coreValid || !e.skillsValid || !e.invValid || !e.buffsValid {
 		r.mu.RUnlock()
 		return character.Model{}, false
 	}
@@ -149,7 +149,7 @@ func (r *Registry) ComposedIfValid(t tenant.Model, characterId uint32) (characte
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	e = r.entryLocked(t, characterId, false)
-	if e == nil || !(e.coreValid && e.skillsValid && e.invValid && e.buffsValid) {
+	if e == nil || !e.coreValid || !e.skillsValid || !e.invValid || !e.buffsValid {
 		return character.Model{}, false
 	}
 	if !e.composedValid {

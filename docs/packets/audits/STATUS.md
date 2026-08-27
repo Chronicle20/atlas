@@ -328,7 +328,7 @@ Tool: `143fa15bf55ee24dd789dd47b07533a2d1155e3cad691ec9515febfe4639685f`
 | SHOW_PQ_REWARD | CUser::OnShowPQReward |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C2 | ❌ |  | ⬜ |
 | SHOW_RECOVERY_UPGRADE_COUNT_EFFECT | CUser::ShowRecoverUpgradeCountEffect |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0C2 | ❌ | 0x0C5 | ❌ |  | ⬜ |
 | CANNOT_SPAWN_KITE | CMessageBoxPool::OnCreateFailed | field/clientbound/FieldKiteError (T1) | 0x0C5 | ✅ | 0x0CF | 🟡ᶠ | 0x0F0 | 🟡ᶠ | 0x0F8 | 🟡ᶠ | 0x10E | ✅ | 0x10E | ✅ | 0x11F | ✅ | 0x13D | 🟡ᶠ | 0x145 | ✅ | 0x123 | ✅ |
-| NPC_ACTION | CNpc::OnMove | npc/clientbound/NpcAction (T1) |  | ⬜ | 0x0C5 | ✅ | 0x0E6 | ✅ | 0x0EE | ✅ | 0x104 | ❌ | 0x10B | ❌ | 0x115 | ❌ | 0x132 | ❌ | 0x13A | ❌ | 0x119 | ❌ |
+| NPC_ACTION | CNpc::OnMove | npc/clientbound/NpcAction (T1) |  | ⬜ | 0x0C5 | ✅ | 0x0E6 | ✅ | 0x0EE | ✅ | 0x104 | ❌ | 0x10B | ❌ | 0x115 | ❌ | 0x132 | ❌ | 0x13A | ✅ | 0x119 | ❌ |
 | SPAWN_KITE | CMessageBoxPool::OnMessageBoxEnterField | field/clientbound/FieldKiteSpawn (T1) | 0x0C6 | ✅ | 0x0D0 | 🟡ᶠ | 0x0F1 | 🟡ᶠ | 0x0F9 | 🟡ᶠ | 0x10F | ✅ | 0x10F | ✅ | 0x120 | ✅ | 0x13E | 🟡ᶠ | 0x146 | ✅ | 0x124 | ✅ |
 | UPDATE_LIMITED_INFO | CNpc::OnUpdateLimitedInfo |  |  | ⬜ | 0x0C6 | ❌ | 0x0E7 | ❌ | 0x0EF | ❌ | 0x105 | ❌ | 0x10C | ❌ | 0x116 | ❌ | 0x133 | ❌ | 0x13B | ❌ |  | ⬜ |
 | MAKER_RESULT | CUserLocal::OnMakerResult |  |  | ⬜ |  | ⬜ | 0x0C7 | ❌ | 0x0CB | ❌ | 0x0D9 | ❌ | 0x0DD | ❌ | 0x0E6 | ❌ | 0x0FA | ❌ | 0x0F8 | ❌ | 0x0E2 | ❌ |
@@ -1071,7 +1071,7 @@ Tool: `143fa15bf55ee24dd789dd47b07533a2d1155e3cad691ec9515febfe4639685f`
 | v84 | 451 | 0 | 0 | 326 | 250 | 0 | 58.0% |
 | v87 | 488 | 0 | 0 | 348 | 191 | 0 | 58.4% |
 | v92 | 65 | 0 | 147 | 674 | 141 | 0 | 7.3% |
-| v95 | 519 | 0 | 0 | 400 | 108 | 0 | 56.5% |
+| v95 | 520 | 0 | 0 | 399 | 108 | 0 | 56.6% |
 | JMS185 | 451 | 0 | 0 | 378 | 198 | 0 | 54.4% |
 
 ## Conflicts

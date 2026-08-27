@@ -1,6 +1,8 @@
 package ring
 
 import (
+	"atlas-channel/asset"
+	"atlas-channel/equipment"
 	"context"
 	"errors"
 	"fmt"
@@ -14,8 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 
-	"atlas-channel/asset"
-	"atlas-channel/equipment"
 	eqslot "atlas-channel/equipment/slot"
 
 	slot2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"

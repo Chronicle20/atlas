@@ -17,21 +17,22 @@ import (
 // FIVE in-scope cells: gms_v83, gms_v84, gms_v87, gms_v92, gms_v95 —
 // CUICharacterSaleDlg exists on gms_v84 too; an earlier pass's
 // VERSION-ABSENT finding was wrong and has been retracted
-// (derivation.md §2.0-CORRECTION, supersedes §5.5's four-cell framing). The
-// byte-fixture list below (mleFixtureVersions) still enumerates the original
-// four cells pending its own gms_v84 evidence/fixture pass (packet-verifier
-// work, not this pass); gms_v84's wire framing is nonetheless exercised
-// generically by TestMapleLifeErrorRoundTrip via pt.Variants, which already
-// includes GMS v84.
+// (derivation.md §2.0-CORRECTION, supersedes §5.5's four-cell framing).
+// gms_v84's own byte fixture (mleFixtureVersions) and marker were added by
+// the gms_v84 verification pass (task-246 packet-verifier); gms_v84's wire
+// framing was already exercised generically by TestMapleLifeErrorRoundTrip
+// via pt.Variants beforehand.
 //
 // The `ida=` address on each marker is that version's RECEIVER, decompiled
-// this pass: gms_v83 @0x7d77b0, gms_v87 @0x82e252, gms_v92 @0x7564f0,
-// gms_v95 @0x777fc0 — identical decode order and branch SHAPE on all four:
-// Decode1(nType) then Decode4(nParam), exact-equality switch on nType
-// (derivation.md §5.5).
+// this pass: gms_v83 @0x7d77b0, gms_v84 @0x7fda6f, gms_v87 @0x82e252,
+// gms_v92 @0x7564f0, gms_v95 @0x777fc0 — identical decode order and branch
+// SHAPE on all five: Decode1(nType) then Decode4(nParam), exact-equality
+// switch on nType (derivation.md §5.5; gms_v84 confirmed in
+// bug-maple-life-v84-registration.md "Positive derivation").
 // ---------------------------------------------------------------------------
 
 // packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeError version=gms_v83 ida=0x7d77b0
+// packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeError version=gms_v84 ida=0x7fda6f
 // packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeError version=gms_v87 ida=0x82e252
 // packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeError version=gms_v92 ida=0x7564f0
 // packet-audit:verify packet=maplelife/clientbound/MaplelifeMapleLifeError version=gms_v95 ida=0x777fc0
@@ -72,7 +73,7 @@ func TestMapleLifeErrorOperation(t *testing.T) {
 //
 // Field order: derivation.md §5 (Decode1 nType; Decode4 nParam). The body is
 // IDENTICAL SHAPE on every in-scope version, so the fixtures are deliberately
-// the same bytes for all four — that sameness IS the derived claim. Only the
+// the same bytes for all five — that sameness IS the derived claim. Only the
 // per-version nType LITERAL for a given semantic arm differs (exercised in
 // TestMapleLifeErrorCodesAreConfigResolved, not here — these fixtures pin
 // the wire framing for one representative nType/nParam pair per arm).
@@ -84,9 +85,10 @@ type mleFixtureVersion struct {
 	minor uint16
 }
 
-// The four in-scope cells this row claims.
+// The five in-scope cells this row claims.
 var mleFixtureVersions = []mleFixtureVersion{
 	{"gms_v83", 83, 1},
+	{"gms_v84", 84, 1},
 	{"gms_v87", 87, 1},
 	{"gms_v92", 92, 1},
 	{"gms_v95", 95, 1},

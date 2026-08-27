@@ -29751,6 +29751,21 @@
           "comment": "nResult @0x7fd975"
         }
       ]
+    },
+    "CUICharacterSaleDlg::OnCreateNewCharacterResult": {
+      "address": "0x7fda6f",
+      "direction": "clientbound",
+      "_note": "MAPLELIFE_ERROR opcode 360 (0x168), read off CUICharacterSaleDlg::OnPacket_recv_0x167_0x168@0x7fd845. Decode1(nType)@0x7fda94 then Decode4(nParam)@0x7fda9c: 52 -> success (GetString(5053) notice) if nParam==0, else GetString(5757) formatted unknown-error notice; 54 -> GetString(5051) name-taken notice; any other nType -> GetString(5757) formatted unknown-error notice, matching gms_83_1's SUCCESS:52/NAME_TAKEN_AT_SUBMIT:54/UNKNOWN_ERROR:255 table.",
+      "calls": [
+        {
+          "op": "Decode1",
+          "comment": "nType @0x7fda94"
+        },
+        {
+          "op": "Decode4",
+          "comment": "nParam @0x7fda9c"
+        }
+      ]
     }
   }
 }

@@ -411,3 +411,210 @@ explicit comparison (`v5 == 2`, `v5 == 27`, `v5 != 12`, `v5 != 23`) in
 ## Unresolved (Task 10)
 
 None.
+
+## Task 11 (W3d) — the movement `types` array for four v95 writers
+
+`options.types` is an index-addressed `[]{Name, Type}` array
+(`libs/atlas-packet/model/movement.go:384-405`,
+`resolveMovementPathAttr` — the attribute byte indexes the array directly).
+It carried **no** array at all on the four v95 writers below, so every
+fragment resolved `NOT_FOUND`/`DEFAULT` — v95 movement was misparsing.
+
+### Handlers, and confirmation they share one table
+
+Database `ecc757f4` (`GMS_v95.0_U_DEVM.exe`, confirmed via `server_health`,
+`idb_path` ends `IDBs_v9\GMS\v95_0\GMS_v95.0_U_DEVM.exe.i64`, imagebase
+`0x400000` — same session used throughout this task doc).
+
+| Writer | fname | v95 address | decompiled |
+|---|---|---|---|
+| `CharacterMovement` | `CUserRemote::OnMove` | `0x948a80` | 1-line thunk: `CMovePath::OnMovePacket(&m_pInterface[142], iPacket, 0)` @`0x948a97` |
+| `MoveMonster` | `CMob::OnMove` | `0x6521e0` | tail call `CMovePath::OnMovePacket(&pvc->m_path, iPacket, 0)` @`0x652620` |
+| `PetMovement` | `CPet::OnMove` | `0x69fb60` | `CMovePath::OnMovePacket(&m_pInterface[142], iPacket, 0)` @`0x69fb7a` (or the `0x244`-offset fallback @`0x69fb90` when `m_pInterface` is null — same callee) |
+| `NPCAction` | `CNpc::OnMove` | `0x678060` | `CMovePath::OnMovePacket(&v41[145], v3, 0)` @`0x6785df`, gated on `this->m_pTemplate->bMove` |
+
+**All four resolve to the single shared `CMovePath::OnMovePacket`
+@`0x6683f0`**, which calls `CMovePath::Decode` @`0x667920` (switch
+@`0x6679ce`, element-type byte read @`0x6679b8`) — the one `CVecCtrl`/
+`CMovePath` attribute switch. So the four handlers share **one** 37-entry
+array, not four distinct ones (controller ruling item 1's alternative branch
+does not apply here).
+
+### The array was already independently derived and shipped for the mirror direction
+
+Before re-deriving from IDA, `template_gms_95_1.json` was checked for an
+existing v95 movement `types` table, because `model.Movement` is a single
+shared codec used by both directions (encode for the clientbound writers in
+this task; decode for the serverbound `CharacterMoveHandle`/
+`MonsterMovementHandle`/`PetMovementHandle`/`SummonMoveHandle`/
+`NPCActionHandle` handlers already present in the same template) — both
+directions are governed by the identical client-side `CMovePath::Encode`/
+`CMovePath::Decode` switch pair, so one table is correct for both.
+
+`CharacterMoveHandle` (opCode `0x2C`, `fname: CVecCtrlUser::EndUpdateActive`,
+`template_gms_95_1.json:308-468`) already carries a 37-entry `options.types`
+array, added by task-191
+(`docs/tasks/task-191-v92-v95-movement-types/movement-types-derivation.md`
+§3.1, commit `0412e7ffb4`, "task-191: v92/v95 movement types, v88+ header,
+and a permanent movement-types guard"). That derivation cites
+`CMovePath::Encode` @`0x666e20` (switch @`0x666f45`) and `CMovePath::Decode`
+@`0x667920` (switch @`0x6679ce`) — the exact same `Decode` address this
+task's four handlers thunk to.
+
+This task independently re-decompiled `CMovePath::Decode` @`0x667920` (see
+below) rather than trusting the citation blind, and the re-derivation
+produced the identical 37-entry array with no divergence. The array below is
+therefore the SAME array already shipped for `CharacterMoveHandle` /
+`MonsterMovementHandle` / `PetMovementHandle` / `SummonMoveHandle` /
+`NPCActionHandle`, applied to the four clientbound writers this task's brief
+names. `libs/atlas-packet/test/movement_types.go`'s `MovementTypesV95()`
+returns this same array so both the serverbound-handler side (template only)
+and the clientbound-writer side (template + Go fixtures) stay pinned to one
+literal.
+
+### Independent re-derivation of `CMovePath::Decode` @`0x667920`
+
+Decompiled in full (`decompile addr=0x667920`). The element-type byte is
+read at `0x6679b8` and switched on at `0x6679ce`:
+
+| Group | Decode arm (first wire-touching instruction per field) | Cases |
+|---|---|---|
+| NORMAL | x `0x6679de`, y `0x6679e9`, vx `0x6679f4`, vy `0x6679ff`, fh `0x667a03`; `if (nAttr == 12)` `0x667a17` → fhFallStart `0x667a20`; xOffset `0x667a2d`, yOffset `0x667a36` | 0, 5, 0xC, 0xE, 0x23, 0x24 |
+| JUMP | vx `0x667ae8`, vy `0x667afa` (via shared `LABEL_16`; x/y set to the running prior values, fh left `0`) | 1, 2, 0xD, 0x10, 0x12, 0x1F, 0x20, 0x21, 0x22 |
+| TELEPORT | x `0x667b2b`, y `0x667b36`, fh `0x667b3a` (vx/vy forced `0`) | 3, 4, 6, 7, 8, 0xA |
+| STAT_CHANGE | bStat (int8) `0x667bb4`, then `goto LABEL_10` `0x667bde` — **skips** the shared `bMoveAction`/`tElapse` trailer (`0x667a3a`/`0x667a4b`) | 9 |
+| START_FALL_DOWN | vx `0x667b73`, vy `0x667b7e`, fhFallStart `0x667b87` (x/y = running prior values, fh `0`) | 0xB |
+| FLYING_BLOCK | x `0x667b99`, y `0x667ba2`, then shared `LABEL_16` vx/vy (fh left `0`) | 0x11 |
+| DEFAULT | explicit no-read arm @`0x667b0d` for `0x14`-`0x1E` (copies the running prior x/y/vx/vy, no packet read); bare `default: break` for `0xF`/`0x13` (also no packet read) | 0xF, 0x13, 0x14-0x1E |
+
+Every case value except `9` also reads the shared trailer `bMoveAction`
+(int8, `0x667a3a`) + `tElapse` (int16, `0x667a4b`) after the switch. Highest
+case is `0x24` (36) → array length **37**. This is a byte-for-byte match
+against `libs/atlas-packet/model/movement.go`'s six element kinds:
+`NormalElement` (x,y,vx,vy,fh[,fhFallStart if Name=="FALL_DOWN"][,xOffset,
+yOffset on GMS v87+]), `JumpElement` (vx,vy), `TeleportElement` (x,y,fh),
+`StatChangeElement` (bStat only, no trailer), `StartFallDownElement`
+(vx,vy,fhFallStart), `FlyingBlockElement` (x,y,vx,vy), and the bare
+`Element` fallback (no extra fields) used when `Type` is `DEFAULT` or absent
+from the switch — including index 12's `nAttr == 12` special case, which
+matches `NormalElement.Decode`'s own `Name == "FALL_DOWN"` check exactly.
+
+### Naming policy
+
+The v95 IDB carries no string/enum labels for individual `nAttr` values (no
+symbol table entry resolves them; `type_query` for `CMovePath::ELEM`-adjacent
+enums returned no match), so per "never invent a name," every index gets
+`Name: "UNKNOWN"` **except**:
+
+- index 0 = `NORMAL` — the pre-existing, version-invariant convention already
+  used by `normalTypesOptions()` (`libs/atlas-packet/character/clientbound/
+  movement_test.go`) for every client version v61 through v95; not invented
+  by this task.
+- index 12 = `FALL_DOWN` — functionally required: `NormalElement.Decode`
+  checks `isMovementName(..., "FALL_DOWN")` to decide whether to read
+  `FhFallStart`, and this is the ONLY index where the client's own switch
+  special-cases the read (`if (nAttr == 12)` @`0x667a17`/`0x667a20`), so the
+  Name and the IDA arm agree independently.
+- index 9 = `STAT_CHANGE`, index 11 = `START_FALL_DOWN`, index 17 =
+  `FLYING_BLOCK` — each is the ONLY index carrying its `Type`, so the Name
+  restates the Type rather than inventing a distinct label (matching the
+  existing `CharacterMoveHandle` table's naming choice for the same
+  single-index groups).
+
+No v83 index was copied (v83's `CharacterMovement` table at
+`template_gms_83_1.json:3656-3749` is a 23-entry vocabulary reference only,
+per the brief) — no name or index position from it was reused. Group *sizes*
+happening to differ between v83 (23 entries) and v95 (37 entries) confirms
+they are genuinely different tables, not a renumbering of the same one.
+
+### 3.1 v95 per-index table (indices 0-36)
+
+| # | `Name` | `Type` | field sequence | cite |
+|---|---|---|---|---|
+| 0 | `NORMAL` | `NORMAL` | x,y,vx,vy,fh,xOffset,yOffset | `0x6679de` |
+| 1 | `UNKNOWN` | `JUMP` | vx,vy | `0x667ae8` |
+| 2 | `UNKNOWN` | `JUMP` | vx,vy | `0x667ae8` |
+| 3 | `UNKNOWN` | `TELEPORT` | x,y,fh | `0x667b2b` |
+| 4 | `UNKNOWN` | `TELEPORT` | x,y,fh | `0x667b2b` |
+| 5 | `UNKNOWN` | `NORMAL` | x,y,vx,vy,fh,xOffset,yOffset | `0x6679de` |
+| 6 | `UNKNOWN` | `TELEPORT` | x,y,fh | `0x667b2b` |
+| 7 | `UNKNOWN` | `TELEPORT` | x,y,fh | `0x667b2b` |
+| 8 | `UNKNOWN` | `TELEPORT` | x,y,fh | `0x667b2b` |
+| 9 | `STAT_CHANGE` | `STAT_CHANGE` | bStat (int8), no trailer | `0x667bb4` |
+| 10 | `UNKNOWN` | `TELEPORT` | x,y,fh | `0x667b2b` |
+| 11 | `START_FALL_DOWN` | `START_FALL_DOWN` | vx,vy,fhFallStart | `0x667b73` |
+| 12 | `FALL_DOWN` | `NORMAL` | x,y,vx,vy,fh,**fhFallStart**,xOffset,yOffset | `0x667a17`/`0x667a20` |
+| 13 | `UNKNOWN` | `JUMP` | vx,vy | `0x667ae8` |
+| 14 | `UNKNOWN` | `NORMAL` | x,y,vx,vy,fh,xOffset,yOffset | `0x6679de` |
+| 15 | `UNKNOWN` | `DEFAULT` | (none) | `0x6679ce` default |
+| 16 | `UNKNOWN` | `JUMP` | vx,vy | `0x667ae8` |
+| 17 | `FLYING_BLOCK` | `FLYING_BLOCK` | x,y,vx,vy | `0x667b99` |
+| 18 | `UNKNOWN` | `JUMP` | vx,vy | `0x667ae8` |
+| 19 | `UNKNOWN` | `DEFAULT` | (none) | `0x6679ce` default |
+| 20 | `UNKNOWN` | `DEFAULT` | (none, copies prior) | `0x667b0d` |
+| 21 | `UNKNOWN` | `DEFAULT` | (none, copies prior) | `0x667b0d` |
+| 22 | `UNKNOWN` | `DEFAULT` | (none, copies prior) | `0x667b0d` |
+| 23 | `UNKNOWN` | `DEFAULT` | (none, copies prior) | `0x667b0d` |
+| 24 | `UNKNOWN` | `DEFAULT` | (none, copies prior) | `0x667b0d` |
+| 25 | `UNKNOWN` | `DEFAULT` | (none, copies prior) | `0x667b0d` |
+| 26 | `UNKNOWN` | `DEFAULT` | (none, copies prior) | `0x667b0d` |
+| 27 | `UNKNOWN` | `DEFAULT` | (none, copies prior) | `0x667b0d` |
+| 28 | `UNKNOWN` | `DEFAULT` | (none, copies prior) | `0x667b0d` |
+| 29 | `UNKNOWN` | `DEFAULT` | (none, copies prior) | `0x667b0d` |
+| 30 | `UNKNOWN` | `DEFAULT` | (none, copies prior) | `0x667b0d` |
+| 31 | `UNKNOWN` | `JUMP` | vx,vy | `0x667ae8` |
+| 32 | `UNKNOWN` | `JUMP` | vx,vy | `0x667ae8` |
+| 33 | `UNKNOWN` | `JUMP` | vx,vy | `0x667ae8` |
+| 34 | `UNKNOWN` | `JUMP` | vx,vy | `0x667ae8` |
+| 35 | `UNKNOWN` | `NORMAL` | x,y,vx,vy,fh,xOffset,yOffset | `0x6679de` |
+| 36 | `UNKNOWN` | `NORMAL` | x,y,vx,vy,fh,xOffset,yOffset | `0x6679de` |
+
+Group totals: NORMAL 6, JUMP 9, TELEPORT 6, STAT_CHANGE 1, START_FALL_DOWN 1,
+FLYING_BLOCK 1, DEFAULT 13 = 37.
+
+### What changed
+
+`services/atlas-configurations/seed-data/templates/template_gms_95_1.json`:
+inserted the identical 37-entry `options.types` array (between `fname` and
+`services`, no `validator` on writer entries) into the four writer entries
+named in the brief — `PetMovement` (`0xC9`), `CharacterMovement` (`0xD2`),
+`MoveMonster` (`0x11F`), `NPCAction` (`0x13A`) — all located by `writer`/
+`fname`/`opCode`, not by line number (every previously-quoted line number in
+the brief was stale, as flagged). No existing binding was touched; no
+binding was added (opCode/writer/fname/services all unchanged) — only an
+`options` key was inserted into each of the four existing entries.
+
+`libs/atlas-packet/test/movement_types.go` (new): exports
+`MovementTypesV95()`, the single shared-source copy of this array, per Step
+3 of the brief.
+
+`libs/atlas-packet/character/clientbound/movement_test.go`: `
+normalTypesOptions()` now returns `pt.MovementTypesV95()` instead of the
+one-entry `{"Name":"NORMAL","Type":"NORMAL"}` stub. Added
+`TestCharacterMovementHighestIndexResolves`, asserting an element with
+`ElemType: 36` (the array's highest index) round-trips as `*model.
+NormalElement` with the NORMAL field set intact (X/Y/Vx/Vy/Fh/XOffset/
+YOffset), not the `NOT_FOUND`/`DEFAULT` bare-`Element` fallback.
+
+`libs/atlas-packet/monster/clientbound/movement_test.go` and
+`libs/atlas-packet/pet/clientbound/movement_test.go`: `
+TestMonsterMovementRoundTrip`/`TestMonsterMovementRoundTripWithSkill`/
+`TestPetMovementRoundTrip` now pass a one-NORMAL-element `model.Movement`
+(index 0, version-invariant) plus `test.MovementTypesV95()` as options,
+instead of an empty `model.Movement{}` with `nil` options — the previous
+form never exercised a `types` table lookup at all (no elements to iterate).
+Added `TestMonsterMovementHighestIndexResolves` and
+`TestPetMovementHighestIndexResolves`, the same highest-index assertion as
+the character package.
+
+No existing v95 byte-golden expectation
+(`TestCharacterMovementByteOutput`/`TestMonsterMovementBytesV79`/
+`TestMonsterMovementBytesV72`/`TestPetMovementBytesV72`/
+`TestPetMovementBytesV79`) changed — all pass unmodified with the real
+table; none of those tests decode/encode a movement element, so feeding the
+real `types` table changed no golden byte (Step 3's stop condition did not
+trigger).
+
+## Unresolved (Task 11)
+
+None.

@@ -8,6 +8,8 @@ import {
 } from "@/components/DetailActionBarContext";
 import { ConfigExportButton } from "@/components/features/config/ConfigExportButton";
 import { TemplateReseedButton } from "@/components/features/templates/TemplateReseedButton";
+import { useTemplate } from "@/lib/hooks/api/useTemplates";
+import { supportsMapleLife } from "@/components/features/characters/maple-life/mapleLifeSupport";
 
 interface TemplateDetailLayoutProps {
   children: ReactNode;
@@ -15,6 +17,9 @@ interface TemplateDetailLayoutProps {
 
 export function TemplateDetailLayout({ children }: TemplateDetailLayoutProps) {
   const { id } = useParams();
+  // Shares the React Query cache with TemplatesMapleLifePage, so this adds
+  // no extra request beyond what the page already issues.
+  const templateQuery = useTemplate(String(id ?? ""));
   const sidebarNavItems = [
     { title: "Global Properties", href: `/templates/${id}/properties` },
     {
@@ -22,7 +27,14 @@ export function TemplateDetailLayout({ children }: TemplateDetailLayoutProps) {
       href: `/templates/${id}/character/templates`,
     },
     { title: "Character Presets", href: `/templates/${id}/character/presets` },
-    { title: "Maple Life", href: `/templates/${id}/character/maple-life` },
+    ...(supportsMapleLife(templateQuery.data?.attributes.socket)
+      ? [
+          {
+            title: "Maple Life",
+            href: `/templates/${id}/character/maple-life`,
+          },
+        ]
+      : []),
     { title: "Socket Handlers", href: `/templates/${id}/handlers` },
     { title: "Socket Writers", href: `/templates/${id}/writers` },
     { title: "Worlds", href: `/templates/${id}/worlds` },

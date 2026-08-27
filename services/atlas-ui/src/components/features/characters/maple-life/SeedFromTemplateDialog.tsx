@@ -65,8 +65,8 @@ export function SeedFromTemplateDialog({
           region: t.attributes.region,
           majorVersion: t.attributes.majorVersion,
           minorVersion: t.attributes.minorVersion,
-          lookCount: mapleLife?.looks.length ?? 0,
-          classCount: mapleLife?.classes.length ?? 0,
+          lookCount: mapleLife?.looks?.length ?? 0,
+          classCount: mapleLife?.classes?.length ?? 0,
           eligible: !isEmptyConfig(mapleLife),
           mapleLife,
         };

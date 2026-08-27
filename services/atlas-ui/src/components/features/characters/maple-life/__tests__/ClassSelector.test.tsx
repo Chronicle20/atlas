@@ -115,39 +115,6 @@ describe("ClassSelector", () => {
     expect(screen.getByRole("tab", { name: /0 · 100/ })).toBeInTheDocument();
   });
 
-  it("badges ordinals 0 and 1 as derived", () => {
-    render(
-      <ClassSelector
-        ordinal={0}
-        gender={0}
-        drafts={buildDrafts()}
-        jobNameById={null}
-        onSelect={vi.fn()}
-      />,
-    );
-    const ordinalList = screen.getByRole("tablist", { name: "Class ordinal" });
-    const tabs = within(ordinalList).getAllByRole("tab");
-    expect(within(tabs[0]!).getByText("derived")).toBeInTheDocument();
-    expect(within(tabs[1]!).getByText("derived")).toBeInTheDocument();
-  });
-
-  it("badges ordinals 2, 3 and 4 as unconfirmed", () => {
-    render(
-      <ClassSelector
-        ordinal={0}
-        gender={0}
-        drafts={buildDrafts()}
-        jobNameById={null}
-        onSelect={vi.fn()}
-      />,
-    );
-    const ordinalList = screen.getByRole("tablist", { name: "Class ordinal" });
-    const tabs = within(ordinalList).getAllByRole("tab");
-    expect(within(tabs[2]!).getByText("unconfirmed")).toBeInTheDocument();
-    expect(within(tabs[3]!).getByText("unconfirmed")).toBeInTheDocument();
-    expect(within(tabs[4]!).getByText("unconfirmed")).toBeInTheDocument();
-  });
-
   it("marks an absent row", () => {
     render(
       <ClassSelector

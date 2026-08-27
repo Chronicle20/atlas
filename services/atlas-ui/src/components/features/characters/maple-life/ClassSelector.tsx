@@ -1,5 +1,4 @@
 import { useRef, type KeyboardEvent } from "react";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { draftIndex, type MapleLifeClassDraft } from "./mapleLifeEditorState";
 
@@ -119,7 +118,6 @@ export function ClassSelector({
           const draft = drafts[draftIndex(ord, gender)];
           const jobId = draft?.jobId ?? 0;
           const jobLabel = jobNameById?.get(jobId) ?? String(jobId);
-          const badgeText = ord < 2 ? "derived" : "unconfirmed";
           return (
             <button
               key={ord}
@@ -142,7 +140,6 @@ export function ClassSelector({
                   not configured
                 </span>
               )}
-              <Badge variant="secondary">{badgeText}</Badge>
             </button>
           );
         })}

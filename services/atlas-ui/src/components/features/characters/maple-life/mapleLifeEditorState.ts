@@ -147,7 +147,7 @@ function buildDrafts(
   const drafts: MapleLifeClassDraft[] = [];
   for (let ordinal = 0; ordinal < ORDINAL_COUNT; ordinal++) {
     for (let gender = 0; gender < GENDER_COUNT; gender++) {
-      const found = config?.classes.find(
+      const found = config?.classes?.find(
         (c) => c.ordinal === ordinal && c.gender === gender,
       );
       drafts.push(
@@ -178,7 +178,7 @@ function buildDrafts(
 function buildLooks(config: MapleLifeConfig | undefined): MapleLifeLookDraft[] {
   const looks: MapleLifeLookDraft[] = [];
   for (let gender = 0; gender < GENDER_COUNT; gender++) {
-    const found = config?.looks.find((l) => l.gender === gender);
+    const found = config?.looks?.find((l) => l.gender === gender);
     looks.push(
       found
         ? {
@@ -311,7 +311,7 @@ export function isDirty(state: MapleLifeEditorState): boolean {
 }
 
 export function isEmptyConfig(config: MapleLifeConfig | undefined): boolean {
-  return config === undefined || config.classes.length === 0;
+  return config === undefined || (config.classes?.length ?? 0) === 0;
 }
 
 export function mapleLifeReducer(

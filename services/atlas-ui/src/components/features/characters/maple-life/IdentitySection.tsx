@@ -38,11 +38,8 @@ function FieldErrors({ messages }: { messages: string[] | undefined }) {
 }
 
 /**
- * Identity fields for the selected (ordinal, gender) class row, plus the
- * provenance notice for that ordinal (FR-5.1..5.5, FR-11.8). Ordinals 0 and 1
- * are derived from the client's own step-skip; ordinals 2-4 are not derived
- * from the client and carry a persistent, non-dismissible warning — the job
- * field stays fully editable either way.
+ * Identity fields for the selected (ordinal, gender) class row. The job
+ * field is fully editable for every ordinal.
  */
 export function IdentitySection({
   draft,
@@ -52,7 +49,6 @@ export function IdentitySection({
   errors,
 }: IdentitySectionProps) {
   const [levelInput, setLevelInput] = useSyncedNumberInput(draft.level);
-  const isDerived = draft.ordinal === 0 || draft.ordinal === 1;
 
   return (
     <section className="space-y-3">
@@ -126,20 +122,6 @@ export function IdentitySection({
           <FieldErrors messages={errors?.["mapId"]} />
         </div>
       </div>
-      {isDerived ? (
-        <p className="text-xs text-muted-foreground">
-          Derived from the client&apos;s own step-skip (task-246 design.md §A6).
-        </p>
-      ) : (
-        <div
-          role="note"
-          className="rounded-md border border-warning bg-warning/10 p-2 text-xs text-warning-foreground"
-        >
-          The ordinal→job order for 2/3/4 is not derived from the client
-          (task-246 design.md §A6). Pin it against a live channel log before
-          trusting it.
-        </div>
-      )}
     </section>
   );
 }

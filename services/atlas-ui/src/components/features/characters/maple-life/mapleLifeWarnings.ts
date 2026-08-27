@@ -7,8 +7,6 @@ export const SP_SKILL_LABELS: Record<number, string> = {
 };
 
 export const WARN = {
-  unconfirmedOrdinal:
-    "The ordinal→job order for 2/3/4 is not derived from the client (task-246 design.md §A6). Pin it against a live channel log before trusting it.",
   unknownSpSkill:
     "This skill id has no coded prerequisite in factory/maple_life.go prerequisiteFor, so no prerequisite will be granted for it. The value is preserved as loaded.",
   absentRow:
@@ -30,9 +28,6 @@ export function mapleLifeWarnings(
     if (!draft.present) {
       warnings.push({ path: rowPath, message: WARN.absentRow });
       continue;
-    }
-    if (draft.ordinal >= 2) {
-      warnings.push({ path: rowPath, message: WARN.unconfirmedOrdinal });
     }
     if (
       draft.spSkillId !== undefined &&

@@ -5,6 +5,7 @@ import {
   MapleLifeEditor,
   type MapleLifeEditorAdapter,
 } from "@/components/features/characters/maple-life/MapleLifeEditor";
+import { supportsMapleLife } from "@/components/features/characters/maple-life/mapleLifeSupport";
 import { useTemplate, useUpdateTemplate } from "@/lib/hooks/api/useTemplates";
 
 export function TemplatesMapleLifePage() {
@@ -12,6 +13,21 @@ export function TemplatesMapleLifePage() {
   const templateQuery = useTemplate(String(id ?? ""));
   const updateTemplate = useUpdateTemplate();
   const template = templateQuery.data;
+
+  if (
+    !templateQuery.isLoading &&
+    !templateQuery.error &&
+    template &&
+    !supportsMapleLife(template.attributes.socket)
+  ) {
+    return (
+      <TemplateDetailLayout>
+        <p className="text-sm text-muted-foreground">
+          This client version has no Maple Life dialog.
+        </p>
+      </TemplateDetailLayout>
+    );
+  }
 
   const adapter: MapleLifeEditorAdapter = {
     mapleLife: template?.attributes.mapleLife,

@@ -136,6 +136,30 @@ describe("mapleLifeReducer", () => {
     expect(s.loaded).toBe(true);
   });
 
+  it("load tolerates null looks/classes (the shape the API sends for an unconfigured version)", () => {
+    // services/atlas-configurations/tenants/rest.go and templates/rest.go
+    // always emit a `mapleLife` object; a version with no block still
+    // carries `{"looks":null,"classes":null}`, cast through the wire shape
+    // here since MapleLifeConfig's TS type says non-null arrays.
+    const nullConfig = {
+      looks: null,
+      classes: null,
+    } as unknown as MapleLifeConfig;
+    expect(() =>
+      mapleLifeReducer(initialMapleLifeState(), {
+        type: "load",
+        config: nullConfig,
+      }),
+    ).not.toThrow();
+    const s = mapleLifeReducer(initialMapleLifeState(), {
+      type: "load",
+      config: nullConfig,
+    });
+    expect(s.drafts).toHaveLength(10);
+    expect(s.drafts.every((d) => d.present === false)).toBe(true);
+    expect(isEmptyConfig(nullConfig)).toBe(true);
+  });
+
   it("load marks look presence per gender", () => {
     const s = mapleLifeReducer(initialMapleLifeState(), {
       type: "load",

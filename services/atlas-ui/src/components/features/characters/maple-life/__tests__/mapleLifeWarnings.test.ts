@@ -34,30 +34,6 @@ function load(config: MapleLifeConfig | undefined) {
 }
 
 describe("warningMap", () => {
-  it("warns on every present ordinal >= 2", () => {
-    const s = load({
-      looks: [],
-      classes: [
-        classRow({ ordinal: 1, gender: 0 }),
-        classRow({ ordinal: 2, gender: 0 }),
-        classRow({ ordinal: 4, gender: 0 }),
-      ],
-    });
-    const map = warningMap(s);
-    expect(map.get("classes.2.0")).toContain(WARN.unconfirmedOrdinal);
-    expect(map.get("classes.4.0")).toContain(WARN.unconfirmedOrdinal);
-    expect(map.get("classes.1.0")).toBeUndefined();
-  });
-
-  it("does not warn about an unconfirmed ordinal that is absent", () => {
-    const s = load({
-      looks: [],
-      classes: [classRow({ ordinal: 0, gender: 0 })],
-    });
-    const messages = [...warningMap(s).values()].flat();
-    expect(messages).not.toContain(WARN.unconfirmedOrdinal);
-  });
-
   it("warns on an spSkillId outside the two known ids", () => {
     const s = load({
       looks: [],
@@ -100,6 +76,6 @@ describe("warningMap", () => {
     });
     const messages = warningMap(s).get("classes.2.0") ?? [];
     expect(messages).not.toContain(WARN.absentRow);
-    expect(messages).toContain(WARN.unconfirmedOrdinal);
+    expect(messages).toEqual([]);
   });
 });

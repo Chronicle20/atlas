@@ -5,6 +5,7 @@ import {
   MapleLifeEditor,
   type MapleLifeEditorAdapter,
 } from "@/components/features/characters/maple-life/MapleLifeEditor";
+import { supportsMapleLife } from "@/components/features/characters/maple-life/mapleLifeSupport";
 import {
   useTenantConfiguration,
   useUpdateTenantConfiguration,
@@ -15,6 +16,21 @@ export function TenantsMapleLifePage() {
   const tenantQuery = useTenantConfiguration(id ?? "");
   const updateTenantConfig = useUpdateTenantConfiguration();
   const tenant = tenantQuery.data;
+
+  if (
+    !tenantQuery.isLoading &&
+    !tenantQuery.error &&
+    tenant &&
+    !supportsMapleLife(tenant.attributes.socket)
+  ) {
+    return (
+      <TenantDetailLayout>
+        <p className="text-sm text-muted-foreground">
+          This client version has no Maple Life dialog.
+        </p>
+      </TenantDetailLayout>
+    );
+  }
 
   const adapter: MapleLifeEditorAdapter = {
     mapleLife: tenant?.attributes.mapleLife,

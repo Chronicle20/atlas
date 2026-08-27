@@ -48,39 +48,7 @@ const readyJobs = {
 };
 
 describe("IdentitySection", () => {
-  it("shows the derived note for ordinals 0 and 1", () => {
-    render(
-      <IdentitySection
-        draft={buildDraft({ ordinal: 1 })}
-        jobs={readyJobs}
-        onSetIdentity={vi.fn()}
-        onSetLevel={vi.fn()}
-      />,
-    );
-    expect(
-      screen.getByText(/derived from the client's own step-skip/i),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("note")).not.toBeInTheDocument();
-  });
-
-  it("shows a persistent unconfirmed notice for ordinal 2", () => {
-    render(
-      <IdentitySection
-        draft={buildDraft({ ordinal: 2 })}
-        jobs={readyJobs}
-        onSetIdentity={vi.fn()}
-        onSetLevel={vi.fn()}
-      />,
-    );
-    const note = screen.getByRole("note");
-    expect(note).toHaveTextContent(/not derived from the client/i);
-    expect(note).toHaveTextContent(/§A6/);
-    expect(
-      screen.queryByRole("button", { name: /dismiss/i }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("the job field stays editable under the unconfirmed notice", () => {
+  it("the job field stays editable for ordinal 2", () => {
     render(
       <IdentitySection
         draft={buildDraft({ ordinal: 2 })}
@@ -90,6 +58,7 @@ describe("IdentitySection", () => {
       />,
     );
     expect(screen.getByRole("combobox", { name: /job/i })).not.toBeDisabled();
+    expect(screen.queryByRole("note")).not.toBeInTheDocument();
   });
 
   it("reports pending job names distinctly from an empty list", () => {

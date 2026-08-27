@@ -7,6 +7,8 @@ import {
   DetailActionBarProvider,
 } from "@/components/DetailActionBarContext";
 import { ConfigExportButton } from "@/components/features/config/ConfigExportButton";
+import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
+import { supportsMapleLife } from "@/components/features/characters/maple-life/mapleLifeSupport";
 
 interface TenantDetailLayoutProps {
   children: ReactNode;
@@ -14,6 +16,9 @@ interface TenantDetailLayoutProps {
 
 export function TenantDetailLayout({ children }: TenantDetailLayoutProps) {
   const { id } = useParams();
+  // Shares the React Query cache with TenantsMapleLifePage, so this adds no
+  // extra request beyond what the page already issues.
+  const tenantQuery = useTenantConfiguration(id ?? "");
   const sidebarNavItems = [
     { title: "Global Properties", href: `/tenants/${id}/properties` },
     {
@@ -21,7 +26,9 @@ export function TenantDetailLayout({ children }: TenantDetailLayoutProps) {
       href: `/tenants/${id}/character/templates`,
     },
     { title: "Character Presets", href: `/tenants/${id}/character/presets` },
-    { title: "Maple Life", href: `/tenants/${id}/character/maple-life` },
+    ...(supportsMapleLife(tenantQuery.data?.attributes.socket)
+      ? [{ title: "Maple Life", href: `/tenants/${id}/character/maple-life` }]
+      : []),
     { title: "Socket Handlers", href: `/tenants/${id}/handlers` },
     { title: "Socket Writers", href: `/tenants/${id}/writers` },
     { title: "Worlds", href: `/tenants/${id}/worlds` },

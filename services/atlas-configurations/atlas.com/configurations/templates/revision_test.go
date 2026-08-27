@@ -77,6 +77,30 @@ func TestRevisionIsStableLowercaseHex(t *testing.T) {
 	}
 }
 
+// Environment is server-owned (set from Entity.Environment by Make, never
+// present in a shipped seed file) and must not enter the hash. Without this,
+// any deployment with a non-empty ATLAS_ENVIRONMENT (atlas-main, pr-*) would
+// see SeedDrift = true for every template, permanently.
+func TestRevisionIgnoresEnvironment(t *testing.T) {
+	base := createTestRestModel("GMS", 83, 1)
+
+	for _, env := range []string{"", "main", "pr-123"} {
+		m := base
+		m.Environment = env
+		r, err := Revision(m)
+		if err != nil {
+			t.Fatalf("Revision(environment=%q): %v", env, err)
+		}
+		want, err := Revision(base)
+		if err != nil {
+			t.Fatalf("Revision(base): %v", err)
+		}
+		if r != want {
+			t.Errorf("Revision(environment=%q) = %q, want %q (same as base)", env, r, want)
+		}
+	}
+}
+
 // Two templates that differ in content must not collide.
 func TestRevisionDiffersOnContentChange(t *testing.T) {
 	a := createTestRestModel("GMS", 83, 1)

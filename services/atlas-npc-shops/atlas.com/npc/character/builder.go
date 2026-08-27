@@ -113,6 +113,9 @@ func (b *Builder) SetGachaponExperience(v uint32) *Builder {
 }
 func (b *Builder) SetSpawnPoint(v uint32) *Builder         { b.spawnPoint = v; return b }
 func (b *Builder) SetGm(v int) *Builder                    { b.gm = v; return b }
+func (b *Builder) SetX(v int16) *Builder                   { b.x = v; return b }
+func (b *Builder) SetY(v int16) *Builder                   { b.y = v; return b }
+func (b *Builder) SetStance(v byte) *Builder               { b.stance = v; return b }
 func (b *Builder) SetMeso(v uint32) *Builder               { b.meso = v; return b }
 func (b *Builder) SetInventory(v inventory.Model) *Builder { b.inventory = v; return b }
 func (b *Builder) SetSkills(v []skill.Model) *Builder      { b.skills = v; return b }

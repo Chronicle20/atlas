@@ -205,8 +205,8 @@ func (m Model) GachaponExperience() uint32 {
 	return m.gachaponExperience
 }
 
-func (m Model) SpawnPoint() byte {
-	return 0
+func (m Model) SpawnPoint() uint32 {
+	return m.spawnPoint
 }
 
 func (m Model) AccountId() uint32 {

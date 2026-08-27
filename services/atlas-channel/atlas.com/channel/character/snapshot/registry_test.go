@@ -405,3 +405,10 @@ func TestRegistry_ConcurrentAccess(t *testing.T) {
 }
 
 func timeNowForTest() time.Time { return time.Now() }
+
+// resetRegistryForTest swaps the singleton for a fresh registry.
+func resetRegistryForTest(t *testing.T) {
+	t.Helper()
+	registryOnce.Do(func() {})
+	registry = &Registry{perTenant: map[uuid.UUID]map[uint32]*entry{}}
+}

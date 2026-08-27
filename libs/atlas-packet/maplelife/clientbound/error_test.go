@@ -14,9 +14,15 @@ import (
 // ---------------------------------------------------------------------------
 // MAPLELIFE_ERROR (clientbound) — CUICharacterSaleDlg::OnCreateNewCharacterResult.
 //
-// FOUR in-scope cells: gms_v83, gms_v87, gms_v92, gms_v95. gms_v84 is
-// VERSION-ABSENT — no CUICharacterSaleDlg code path exists on that binary
-// (derivation.md §5.5, independently re-confirmed) — no marker, no fixture.
+// FIVE in-scope cells: gms_v83, gms_v84, gms_v87, gms_v92, gms_v95 —
+// CUICharacterSaleDlg exists on gms_v84 too; an earlier pass's
+// VERSION-ABSENT finding was wrong and has been retracted
+// (derivation.md §2.0-CORRECTION, supersedes §5.5's four-cell framing). The
+// byte-fixture list below (mleFixtureVersions) still enumerates the original
+// four cells pending its own gms_v84 evidence/fixture pass (packet-verifier
+// work, not this pass); gms_v84's wire framing is nonetheless exercised
+// generically by TestMapleLifeErrorRoundTrip via pt.Variants, which already
+// includes GMS v84.
 //
 // The `ida=` address on each marker is that version's RECEIVER, decompiled
 // this pass: gms_v83 @0x7d77b0, gms_v87 @0x82e252, gms_v92 @0x7564f0,

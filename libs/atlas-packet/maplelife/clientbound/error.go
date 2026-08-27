@@ -65,9 +65,10 @@ const (
 // client's SendCreateNewCharacter submit for a Maple Life (Cash/0543)
 // character-slot purchase.
 //
-// Body, IDENTICAL SHAPE on every in-scope version — gms_v83, gms_v87, gms_v92,
-// gms_v95 (derivation.md §5.5; gms_v84 is VERSION-ABSENT — no
-// CUICharacterSaleDlg code path exists on that binary):
+// Body, IDENTICAL SHAPE on every in-scope version — gms_v83, gms_v84, gms_v87,
+// gms_v92, gms_v95 (derivation.md §5.5 and §2.0-CORRECTION; gms_v84 registers
+// this op too — CUICharacterSaleDlg exists on that binary and was mis-flagged
+// VERSION-ABSENT by an earlier, retracted pass):
 //
 //	Decode1  nType   // arm selector; per-version literal, tenant-template config (DOM-25)
 //	Decode4  nParam  // diagnostic value, formatted into the UNKNOWN_ERROR string only
@@ -79,7 +80,7 @@ const (
 //
 // Receiver addresses (derivation.md §5.1-§5.4, decompiled this pass):
 // gms_v83 0x7d77b0, gms_v87 0x82e252, gms_v92 0x7564f0, gms_v95 0x777fc0.
-// gms_v84: VERSION-ABSENT.
+// gms_v84 0x7fda6f (derivation.md §2.0-CORRECTION).
 //
 // Derivation: docs/tasks/task-246-maple-life-character-creation/derivation.md §5.
 // packet-audit:fname CUICharacterSaleDlg::OnCreateNewCharacterResult

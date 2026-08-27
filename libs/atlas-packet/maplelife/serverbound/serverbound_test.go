@@ -15,9 +15,15 @@ import (
 // CheckName — CUICharacterSaleDlg::SendCheckDuplicateIDPacket, the Maple
 // Life duplicate-name probe.
 //
-// FOUR in-scope cells: gms_v83, gms_v87, gms_v92, gms_v95. gms_v84 is
-// VERSION-ABSENT — no CUICharacterSaleDlg code path exists on that binary
-// (derivation.md §2.0/§6.1) — no marker, no fixture.
+// FIVE in-scope cells: gms_v83, gms_v84, gms_v87, gms_v92, gms_v95 —
+// CUICharacterSaleDlg exists on gms_v84 too, at its own opcode 263 (0x107);
+// an earlier pass's VERSION-ABSENT finding was wrong and has been retracted
+// (derivation.md §2.0-CORRECTION, supersedes §6.1's four-cell framing). The
+// byte-fixture list below still enumerates the original four cells pending
+// its own gms_v84 evidence/fixture pass (packet-verifier work, not this
+// pass); gms_v84's wire framing is nonetheless exercised generically by
+// TestMapleLifeCheckNameRoundTrip via pt.Variants, which already includes
+// GMS v84.
 //
 // The `ida=` address on each marker is that version's SENDER, decompiled
 // this pass: gms_v83 @0x7d75ab, gms_v87 @0x82e04d, gms_v92 @0x756250

@@ -9,7 +9,7 @@
     "gms_v84": "2bbc30efdc7355eaa7953cfbb459d09646a090a539a8ef79c5d10e8affb6ef11",
     "gms_v87": "d887ec26b877e52c3f1c8336bd596495e96272ece8ec6ad311eb145c30570021",
     "gms_v92": "393f8c0d7ff6b37ab8b5e2e58b89544163862d9713d31561adcb3af175d36b92",
-    "gms_v95": "34927d21db733c26a030fea2922da7f7585761385688210944ed8a9d2b07b2ee",
+    "gms_v95": "240cffdcba013ddf3663ba73733fd8ea0d98743c2a9068a909640ff2d9ced983",
     "jms_v185": "f0cacd78c4ffd65655028825fc7e5bfe3b7fe3889011631098486eb562a5686e"
   },
   "rows": [
@@ -3028,8 +3028,8 @@
           "note": "no audit report"
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report"
+          "state": "n-a",
+          "opcode": -1
         },
         "jms_v185": {
           "state": "incomplete",
@@ -3843,8 +3843,7 @@
           "opcode": 29
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 27
         },
         "jms_v185": {
@@ -4165,8 +4164,7 @@
           "opcode": 43
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 41
         },
         "jms_v185": {
@@ -4565,8 +4563,7 @@
           "opcode": 45
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 43
         },
         "jms_v185": {
@@ -6628,8 +6625,7 @@
           "opcode": 64
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 63
         },
         "jms_v185": {
@@ -7383,8 +7379,7 @@
           "opcode": 68
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 67
         },
         "jms_v185": {
@@ -13827,7 +13822,7 @@
         },
         "gms_v95": {
           "state": "verified",
-          "opcode": 98
+          "opcode": 99
         },
         "jms_v185": {
           "state": "verified",
@@ -14449,8 +14444,7 @@
           "opcode": 137
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 140
         },
         "jms_v185": {
@@ -15020,8 +15014,7 @@
           "opcode": 111
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 112
         },
         "jms_v185": {
@@ -30408,8 +30401,7 @@
           "opcode": 306
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "tier-1 without fixture; verdict 🔍",
+          "state": "verified",
           "opcode": 314
         },
         "jms_v185": {
@@ -35352,10 +35344,12 @@
     {
       "kind": "op",
       "op": "NPC_TALK",
+      "packet": "npc/clientbound/NpcNpcConversation",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
-        "CScriptMan::OnPacket"
+        "CScriptMan::OnPacket",
+        "CScriptMan::OnScriptMessage"
       ],
       "cells": {
         "gms_v48": {
@@ -35398,8 +35392,7 @@
           "opcode": 355
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 363
         },
         "jms_v185": {
@@ -53767,8 +53760,7 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": -1
         },
         "jms_v185": {

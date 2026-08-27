@@ -1,0 +1,24 @@
+packet: npc/clientbound/NpcAction
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CNpc::OnMove
+    address: "0x678060"
+    decompile_sha256: 346e657108a6fe5fe7c685f3eadac0b36d77151ce4c06437288f43dbd61d1201
+verifies:
+    - libs/atlas-packet/npc/clientbound/action_test.go#TestNpcActionByteOutputV95
+notes: |
+    Animation-arm fixture only (task-146 §Task 15 scope decision). Live
+    decompile of CNpcPool::OnNpcPacket@0x679260 confirms case 314 (0x13A)
+    Decode4(npcId) -> CNpc::OnMove@0x678060, which reads Decode1(action) +
+    Decode1(nChatIdx), then (only when this->m_pTemplate->bMove is set — a
+    static per-template client flag, not a packet field)
+    CMovePath::OnMovePacket@0x6785df. Task 11 already established
+    CMovePath::OnMovePacket@0x6683f0 as the single shared v95 movepath
+    decode used by all four OnMove handlers (CUserRemote/CMob/CPet/CNpc), so
+    the movement arm needs no separate table derivation here; it is deferred
+    because the gate is template-static, not wire-visible, and the existing
+    v61/v72/v79 legacy tests cover only the animation arm the same way. The
+    animation wire is byte-identical to the verified v72/v79 read order:
+    int(objectId — dispatcher prefix) + byte(unk) + byte(unk2) = 6 bytes.

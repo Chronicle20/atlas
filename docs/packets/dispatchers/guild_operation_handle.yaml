@@ -1,0 +1,50 @@
+# GuildOperationHandle — serverbound GUILD_OPERATION mode table (gms_v95 only).
+#
+# SOURCE OF TRUTH for this handler's options.operations map.
+#
+# gms_v95 ONLY. Declaring another version here would make `packet-audit
+# operations` rewrite that version's hand-authored table with an un-derived
+# carry-over — exactly the v83->v95 drift this task exists to catch, and a
+# violation of "no non-v95 template is modified". Backfilling IDA-derived
+# columns for v83/v84/v87/v92/jms_v185 is filed as a follow-up.
+#
+# ALL-OR-NOTHING: expectedTable reports every template key absent from this
+# file as EXTRA once a version has at least one declared key, so gms_v95 must
+# be enumerated COMPLETELY. Per-arm addresses: v95-option-tables.md.
+#
+# The client has no single GUILD_OPERATION builder: each send site builds its
+# own COutPacket(&pkt, 0x95) and writes its own leading Encode1(mode).
+# Enumerated by an exhaustive find_bytes search for the COutPacket opcode-149
+# push (68 95 00 00 00) across the whole image — 24 hits, 10 real send
+# sites, the rest unrelated UI constants / whisper helpers / the clientbound
+# receiver — so the table is complete BY CONSTRUCTION.
+#
+# JOIN(6) is not a CField:: method: it is CUIFadeYesNo::OnButtonClicked
+# case 8 (m_nType==8, the guild-invite accept dialog), which builds
+# COutPacket(&pkt, 149); Encode1(&pkt, 6u) directly in the switch. fname
+# below is kept as the existing template/registry primary
+# (CUIFadeYesNo::OnButtonClicked, per template_gms_95_1.json's current
+# GuildOperationHandle entry), not reassigned per-arm.
+#
+# AGREEMENT_RESPONSE is mode 32 here vs v83's 30 — a genuine per-version
+# value shift, verified directly from
+# CField::SendCreateGuildAgreeMsg(CField*, unsigned __int8 bAgree):
+# COutPacket(&pkt, 149); Encode1(&pkt, 0x20u); Encode1(&pkt, bAgree).
+
+handler: GuildOperationHandle
+validator: LoggedInValidator
+services: [channel]
+fname: CUIFadeYesNo::OnButtonClicked
+op: GUILD_OPERATION
+direction: serverbound
+operations:
+  - { key: REQUEST_CREATE,     modes: { gms_v95: 2 } }
+  - { key: INVITE,              modes: { gms_v95: 5 } }
+  - { key: JOIN,                modes: { gms_v95: 6 } }
+  - { key: WITHDRAW,            modes: { gms_v95: 7 } }
+  - { key: KICK,                modes: { gms_v95: 8 } }
+  - { key: SET_TITLE_NAMES,     modes: { gms_v95: 13 } }
+  - { key: SET_MEMBER_TITLE,    modes: { gms_v95: 14 } }
+  - { key: SET_EMBLEM,          modes: { gms_v95: 15 } }
+  - { key: SET_NOTICE,          modes: { gms_v95: 16 } }
+  - { key: AGREEMENT_RESPONSE,  modes: { gms_v95: 32 } }

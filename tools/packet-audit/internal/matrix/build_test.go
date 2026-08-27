@@ -137,44 +137,60 @@ func TestAskSlideMenuEscapesNpcTalkMoreConsumption(t *testing.T) {
 		return in
 	}
 
-	t.Run("verified sibling escapes", func(t *testing.T) {
-		in := newInputs()
-		in.Reports["gms_v95"] = map[string]LoadedReport{"NpcAskSlideMenuConversationDetail": report}
-		in.Markers[EvKey{pkt, "gms_v95"}] = MarkerStatus{Found: true, Address: "0x6dbe50"}
-		in.Evidence[EvKey{pkt, "gms_v95"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0x6dbe50"}
+	tests := []struct {
+		name      string
+		setup     func(in *Inputs)
+		wantState State
+		wantNote  string
+		checkOp   bool
+		wantOp    int
+	}{
+		{
+			name: "verified sibling escapes",
+			setup: func(in *Inputs) {
+				in.Reports["gms_v95"] = map[string]LoadedReport{"NpcAskSlideMenuConversationDetail": report}
+				in.Markers[EvKey{pkt, "gms_v95"}] = MarkerStatus{Found: true, Address: "0x6dbe50"}
+				in.Evidence[EvKey{pkt, "gms_v95"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0x6dbe50"}
+			},
+			wantState: StateVerified,
+			wantNote:  "",
+			checkOp:   true,
+			wantOp:    -1,
+		},
+		{
+			name: "unverified sibling stays suppressed",
+			setup: func(in *Inputs) {
+				in.Reports["gms_v95"] = map[string]LoadedReport{"NpcAskSlideMenuConversationDetail": report}
+				// No marker, no evidence: gradeSubStructCell cannot reach
+				// StateVerified, so the protectedWriters bypass must not fire.
+			},
+			wantState: StateIncomplete,
+			wantNote:  "no audit report",
+		},
+		{
+			name: "stale evidence stays suppressed",
+			setup: func(in *Inputs) {
+				in.Reports["gms_v95"] = map[string]LoadedReport{"NpcAskSlideMenuConversationDetail": report}
+				in.Markers[EvKey{pkt, "gms_v95"}] = MarkerStatus{Found: true, Address: "0x6dbe50"}
+				in.Evidence[EvKey{pkt, "gms_v95"}] = EvidenceStatus{Exists: true, Fresh: false}
+			},
+			wantState: StateIncomplete,
+			wantNote:  "no audit report",
+		},
+	}
 
-		m := Build(in, versionKeys)
-		c := subCell(t, m, pkt, "gms_v95")
-		if c.State != StateVerified || c.Note != "" || c.Opcode != -1 {
-			t.Fatalf("gms_v95 cell = %v (%q, opcode=%d); want StateVerified, \"\", -1", c.State.Name(), c.Note, c.Opcode)
-		}
-	})
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			in := newInputs()
+			tc.setup(&in)
 
-	t.Run("unverified sibling stays suppressed", func(t *testing.T) {
-		in := newInputs()
-		in.Reports["gms_v95"] = map[string]LoadedReport{"NpcAskSlideMenuConversationDetail": report}
-		// No marker, no evidence: gradeSubStructCell cannot reach StateVerified,
-		// so the protectedWriters bypass must not fire.
-
-		m := Build(in, versionKeys)
-		c := subCell(t, m, pkt, "gms_v95")
-		if c.State != StateIncomplete || c.Note != "no audit report" {
-			t.Fatalf("gms_v95 cell = %v (%q); want StateIncomplete, \"no audit report\"", c.State.Name(), c.Note)
-		}
-	})
-
-	t.Run("stale evidence stays suppressed", func(t *testing.T) {
-		in := newInputs()
-		in.Reports["gms_v95"] = map[string]LoadedReport{"NpcAskSlideMenuConversationDetail": report}
-		in.Markers[EvKey{pkt, "gms_v95"}] = MarkerStatus{Found: true, Address: "0x6dbe50"}
-		in.Evidence[EvKey{pkt, "gms_v95"}] = EvidenceStatus{Exists: true, Fresh: false}
-
-		m := Build(in, versionKeys)
-		c := subCell(t, m, pkt, "gms_v95")
-		if c.State != StateIncomplete || c.Note != "no audit report" {
-			t.Fatalf("gms_v95 cell = %v (%q); want StateIncomplete, \"no audit report\"", c.State.Name(), c.Note)
-		}
-	})
+			m := Build(in, versionKeys)
+			c := subCell(t, m, pkt, "gms_v95")
+			if c.State != tc.wantState || c.Note != tc.wantNote || (tc.checkOp && c.Opcode != tc.wantOp) {
+				t.Fatalf("gms_v95 cell = %v (%q, opcode=%d); want %v, %q", c.State.Name(), c.Note, c.Opcode, tc.wantState.Name(), tc.wantNote)
+			}
+		})
+	}
 }
 
 // TestGmsV95FnamePromotionEscapesSubStructConsumption pins the four

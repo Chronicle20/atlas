@@ -51,6 +51,12 @@ Retrieves a monster by its unique ID.
           "damage": 250
         }
       ],
+      "experienceEntries": [
+        {
+          "characterId": 12345,
+          "damage": 250
+        }
+      ],
       "statusEffects": [
         {
           "sourceSkillId": 0,
@@ -128,6 +134,7 @@ Retrieves all monsters in a map instance, sorted by ascending uniqueId, paginate
         "maxMp": 100,
         "mp": 100,
         "damageEntries": [],
+        "experienceEntries": [],
         "statusEffects": [],
         "nextEligibleRepickAtMs": 0
       }

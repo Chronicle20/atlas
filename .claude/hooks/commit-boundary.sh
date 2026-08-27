@@ -103,7 +103,7 @@ session's total, for work that was fully resumable from the ledger.
      found, what it means, what the next step is). Reasoning that survives only
      in this conversation does not survive the handoff.
   2. Dispatch the next unit to a fresh agent with an explicit brief
-     (atlas-implementer + atlas-verifier for code work; tools/task-brief.sh
+     (task-implementer + task-verifier for code work; tools/task-brief.sh
      generates the brief — do not assemble one by hand out of plan.md).
   3. If the next unit is genuinely controller-shaped, say so plainly and let
      the user decide whether to /clear."
@@ -123,7 +123,7 @@ Handing off means DELEGATING, not clearing — you cannot /clear yourself:
      was found, what it means, what the next step is). Reasoning that survives
      only in this conversation does not survive the handoff.
   2. Dispatch the next unit to a fresh agent with an explicit brief
-     (atlas-implementer + atlas-verifier for code work; tools/task-brief.sh
+     (task-implementer + task-verifier for code work; tools/task-brief.sh
      generates the brief — do not assemble one by hand out of plan.md).
   3. Only if the next unit is genuinely controller-shaped, say so and let the
      user decide whether to /clear.

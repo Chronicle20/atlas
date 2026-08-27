@@ -1,6 +1,8 @@
 package factory
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -8,6 +10,7 @@ import (
 
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus/hooks/test"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
@@ -71,6 +74,48 @@ func TestHandleCreateFromPreset_InvalidPresetIdFormat(t *testing.T) {
 	}
 }
 
+// TestHandleCreateFromPreset_LogsErrorWithPresetMessage covers FR-4.1/4.2/4.3:
+// the preset handler swallowed its error entirely, so a 500 from
+// /api/factory/characters/from-preset produced no server-side log at all. The
+// message must differ from the seed handler's so a log search separates them,
+// and the mapped status code must not change.
+func TestHandleCreateFromPreset_LogsErrorWithPresetMessage(t *testing.T) {
+	ctx, _ := createMockContext(t)
+	l, hook := test.NewNullLogger()
+	l.SetLevel(logrus.DebugLevel)
+	dep := server.NewHandlerDependency(l, ctx)
+	hc := server.NewHandlerContext(jsonapi.ServerInformation(stubServerInfo{}))
+
+	body := `{"data":{"type":"preset-create","attributes":{"presetId":"not-a-valid-uuid","accountId":1,"worldId":0,"name":"TestChar"}}}`
+	req := httptest.NewRequest(http.MethodPost, "/characters/from-preset", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/vnd.api+json")
+	rr := httptest.NewRecorder()
+	server.ParseInput[PresetCreateRestModel](&dep, &hc, handleCreateFromPreset)(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400; categorizePresetError mapping must be unchanged", rr.Code)
+	}
+
+	var found *logrus.Entry
+	for _, e := range hook.AllEntries() {
+		if e.Message == "Error creating character from preset." {
+			found = e
+		}
+		if e.Message == "Error creating character from seed." {
+			t.Fatalf("preset handler logged the seed handler's message; FR-4.2 requires them to differ")
+		}
+	}
+	if found == nil {
+		t.Fatal("handleCreateFromPreset failed without logging anything")
+	}
+	if found.Level != logrus.ErrorLevel {
+		t.Fatalf("logged at %v, want ErrorLevel", found.Level)
+	}
+	if found.Data[logrus.ErrorKey] == nil {
+		t.Fatal("the error itself was not attached; use WithError(err)")
+	}
+}
+
 func TestCategorizePresetError(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -97,5 +142,79 @@ func TestCategorizePresetError(t *testing.T) {
 				t.Errorf("categorizePresetError(%v) = %d, want %d", tt.err, got, tt.wantStatus)
 			}
 		})
+	}
+}
+
+func TestCategorizeMapleLifeError(t *testing.T) {
+	tests := []struct {
+		name       string
+		err        error
+		wantStatus int
+	}{
+		{"ErrClassOrdinalUnknown", ErrClassOrdinalUnknown, http.StatusBadRequest},
+		{"ErrLookInvalid", ErrLookInvalid, http.StatusBadRequest},
+		{"ErrSPInvalid", ErrSPInvalid, http.StatusBadRequest},
+		{"NameInvalidError", &NameInvalidError{Reason: "blocked"}, http.StatusBadRequest},
+		{"ErrPresetValidation", ErrPresetValidation, http.StatusBadRequest},
+		{"ErrNameDuplicate", ErrNameDuplicate, http.StatusConflict},
+		{"ErrAtlasDataUnreachable", ErrAtlasDataUnreachable, http.StatusBadGateway},
+		{"ErrMapleLifeNotConfigured", ErrMapleLifeNotConfigured, http.StatusInternalServerError},
+		{"unknown error", errors.New("boom"), http.StatusInternalServerError},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := categorizeMapleLifeError(tt.err)
+			if got != tt.wantStatus {
+				t.Errorf("categorizeMapleLifeError(%v) = %d, want %d", tt.err, got, tt.wantStatus)
+			}
+		})
+	}
+}
+
+// fakeMapleLifeProcessor is a Processor test double whose CreateMapleLife
+// returns a fixed transaction id without reaching real HTTP clients.
+type fakeMapleLifeProcessor struct {
+	transactionId string
+}
+
+func (f fakeMapleLifeProcessor) Create(ctx context.Context, input RestModel) (string, error) {
+	return "", errors.New("not implemented")
+}
+
+func (f fakeMapleLifeProcessor) CreateFromPreset(ctx context.Context, in PresetCreateRestModel) (string, error) {
+	return "", errors.New("not implemented")
+}
+
+func (f fakeMapleLifeProcessor) CreateMapleLife(ctx context.Context, in MapleLifeCreateRestModel) (string, error) {
+	return f.transactionId, nil
+}
+
+// postMapleLife issues a POST to the handleCreateMapleLife input handler, going through
+// ParseInput so JSON:API unmarshalling happens exactly as in production. The handler
+// under test is built via newMapleLifeHandler with a fake Processor factory, avoiding
+// the real HTTP clients NewProcessor wires up.
+func postMapleLife(t *testing.T, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	d, c := newTestDeps(t)
+	handler := newMapleLifeHandler(func(l logrus.FieldLogger) Processor {
+		return fakeMapleLifeProcessor{transactionId: "tx-1"}
+	})
+	req := httptest.NewRequest(http.MethodPost, "/factory/characters/maple-life", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/vnd.api+json")
+	rr := httptest.NewRecorder()
+	server.ParseInput[MapleLifeCreateRestModel](d, c, handler)(rr, req)
+	return rr
+}
+
+func TestMapleLifeRouteReturnsAcceptedWithTransactionId(t *testing.T) {
+	body := `{"data":{"type":"maple-life-create","attributes":{"accountId":1,"worldId":0,"name":"Hero","classOrdinal":0,"gender":0,"face":20000,"hair":30030,"hairColor":2,"skinColor":1,"sp":5}}}`
+	rr := postMapleLife(t, body)
+
+	if rr.Code != http.StatusAccepted {
+		t.Fatalf("Expected status 202, got %d, body: %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), `"transactionId":"tx-1"`) {
+		t.Errorf("Expected body to carry transactionId \"tx-1\", got: %s", rr.Body.String())
 	}
 }

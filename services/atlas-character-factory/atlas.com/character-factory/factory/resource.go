@@ -16,6 +16,7 @@ import (
 const (
 	CreateCharacter  = "create_character"
 	CreateFromPreset = "create_from_preset"
+	CreateMapleLife  = "create_maple_life"
 )
 
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
@@ -29,6 +30,7 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 		// Body is JSON:API encoded: {"data":{"type":"preset-create","attributes":{...}}}.
 		fr := router.PathPrefix("/factory/characters").Subrouter()
 		fr.HandleFunc("/from-preset", rest.RegisterInputHandler[PresetCreateRestModel](l)(si)(CreateFromPreset, handleCreateFromPreset)).Methods(http.MethodPost)
+		fr.HandleFunc("/maple-life", rest.RegisterInputHandler[MapleLifeCreateRestModel](l)(si)(CreateMapleLife, handleCreateMapleLife)).Methods(http.MethodPost)
 	}
 }
 
@@ -52,6 +54,58 @@ func categorizePresetError(err error) int {
 	}
 }
 
+func categorizeMapleLifeError(err error) int {
+	var nie *NameInvalidError
+	switch {
+	case errors.Is(err, ErrClassOrdinalUnknown):
+		return http.StatusBadRequest
+	case errors.Is(err, ErrLookInvalid):
+		return http.StatusBadRequest
+	case errors.Is(err, ErrSPInvalid):
+		return http.StatusBadRequest
+	case errors.As(err, &nie):
+		return http.StatusBadRequest
+	case errors.Is(err, ErrPresetValidation):
+		return http.StatusBadRequest
+	case errors.Is(err, ErrNameDuplicate):
+		return http.StatusConflict
+	case errors.Is(err, ErrAtlasDataUnreachable):
+		return http.StatusBadGateway
+	case errors.Is(err, ErrMapleLifeNotConfigured):
+		return http.StatusInternalServerError
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
+// handleCreateMapleLife handles POST /factory/characters/maple-life.
+// The request body must be JSON:API encoded with type "maple-life-create".
+func handleCreateMapleLife(d *rest.HandlerDependency, c *rest.HandlerContext, in MapleLifeCreateRestModel) http.HandlerFunc {
+	return newMapleLifeHandler(NewProcessor)(d, c, in)
+}
+
+// newMapleLifeHandler builds the handleCreateMapleLife handler around a Processor
+// factory. Production wiring always passes NewProcessor (see handleCreateMapleLife
+// above); tests inject a factory that returns a fake Processor, avoiding the real
+// HTTP clients NewProcessor wires up without resorting to package-level mutable state.
+func newMapleLifeHandler(newProcessor func(logrus.FieldLogger) Processor) func(d *rest.HandlerDependency, c *rest.HandlerContext, in MapleLifeCreateRestModel) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext, in MapleLifeCreateRestModel) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			processor := newProcessor(d.Logger())
+			transactionId, err := processor.CreateMapleLife(d.Context(), in)
+			if err != nil {
+				statusCode := categorizeMapleLifeError(err)
+				w.WriteHeader(statusCode)
+				return
+			}
+
+			response := CreateCharacterResponse{TransactionId: transactionId}
+			w.WriteHeader(http.StatusAccepted)
+			server.MarshalResponse[CreateCharacterResponse](d.Logger())(w)(c.ServerInformation())(map[string][]string{})(response)
+		}
+	}
+}
+
 // handleCreateFromPreset handles POST /characters/from-preset.
 // The request body must be JSON:API encoded with type "preset-create".
 func handleCreateFromPreset(d *rest.HandlerDependency, c *rest.HandlerContext, in PresetCreateRestModel) http.HandlerFunc {
@@ -59,6 +113,7 @@ func handleCreateFromPreset(d *rest.HandlerDependency, c *rest.HandlerContext, i
 		processor := NewProcessor(d.Logger())
 		transactionId, err := processor.CreateFromPreset(d.Context(), in)
 		if err != nil {
+			d.Logger().WithError(err).Error("Error creating character from preset.")
 			statusCode := categorizePresetError(err)
 			w.WriteHeader(statusCode)
 			return

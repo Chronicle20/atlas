@@ -31,7 +31,6 @@ function transformAccount(data: Account): Account {
       loggedIn: Number(data.attributes.loggedIn),
       lastLogin: Number(data.attributes.lastLogin),
       gender: Number(data.attributes.gender),
-      characterSlots: Number(data.attributes.characterSlots),
       pinAttempts: Number(data.attributes.pinAttempts),
       picAttempts: Number(data.attributes.picAttempts),
       birthDate: Number(data.attributes.birthDate ?? 0),
@@ -180,27 +179,30 @@ export const accountsService = {
     return api.delete(`${BASE_PATH}/${accountId}`, options);
   },
 
+  /**
+   * Account-count stats for a tenant (total / logged-in). Character-slot
+   * totals used to be included here for free, because `characterSlots` was
+   * a flat attribute already present on every fetched Account. Slots are
+   * now a world-scoped sub-resource (`accounts/{id}/worlds/{worldId}/character-slots`,
+   * task-246), so a tenant-wide slot total would mean issuing
+   * accounts.length * worlds.length additional requests from a function
+   * that already drains every account for the tenant — and the resulting
+   * number would sum caps across unrelated worlds, which isn't a
+   * meaningful single statistic. No page renders a slot total today,
+   * so it is dropped rather than computed wrong or left NaN; a per-world
+   * breakdown belongs on a per-world view (see CharactersPanel/
+   * WorldCharactersSection), not this account-count summary.
+   */
   async getAccountStats(options?: ServiceOptions): Promise<{
     total: number;
     loggedIn: number;
-    totalCharacterSlots: number;
-    averageCharacterSlots: number;
   }> {
     const accounts = await accountsService.getAllAccounts(options);
     const total = accounts.length;
     const loggedIn = accounts.filter(
       (acc) => acc.attributes.loggedIn > 0,
     ).length;
-    const totalCharacterSlots = accounts.reduce(
-      (sum, acc) => sum + acc.attributes.characterSlots,
-      0,
-    );
-    return {
-      total,
-      loggedIn,
-      totalCharacterSlots,
-      averageCharacterSlots: total > 0 ? totalCharacterSlots / total : 0,
-    };
+    return { total, loggedIn };
   },
 
   async createAccount(

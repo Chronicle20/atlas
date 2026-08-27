@@ -45,6 +45,7 @@ func (e *NameInvalidError) Error() string { return "invalid name: " + e.Reason }
 type Processor interface {
 	Create(ctx context.Context, input RestModel) (string, error)
 	CreateFromPreset(ctx context.Context, in PresetCreateRestModel) (string, error)
+	CreateMapleLife(ctx context.Context, in MapleLifeCreateRestModel) (string, error)
 }
 
 // ProcessorImpl implements the Processor interface
@@ -345,6 +346,161 @@ func (p *ProcessorImpl) CreateFromPreset(ctx context.Context, in PresetCreateRes
 	return transactionId.String(), nil
 }
 
+// CreateMapleLife resolves the tenant's Maple Life class table, validates the
+// player's look and SP choices against it, and builds the same
+// CharacterCreation saga CreateFromPreset does -- by projecting the resolved
+// class plus the player's choices onto a preset.RestModel and handing it to
+// buildPresetCharacterCreationSaga. The eleven characters.Templates rules
+// (findCreationTemplate and friends) never apply to this path: Maple Life's
+// own class table is the only source of truth (design.md §11 A5).
+func (p *ProcessorImpl) CreateMapleLife(ctx context.Context, in MapleLifeCreateRestModel) (string, error) {
+	pr, skillsById, err := p.resolveMapleLifePreset(ctx, in)
+	if err != nil {
+		return "", err
+	}
+
+	presetIn := PresetCreateRestModel{
+		AccountId: in.AccountId,
+		WorldId:   in.WorldId,
+		Name:      in.Name,
+	}
+
+	transactionId := uuid.New()
+	sg := buildPresetCharacterCreationSaga(transactionId, presetIn, pr, skillsById)
+	if err := saga.NewProcessor(p.l, ctx).Create(sg); err != nil {
+		p.l.WithError(err).Errorf("Unable to emit maple life character creation saga for character [%s].", in.Name)
+		return "", err
+	}
+	return transactionId.String(), nil
+}
+
+// resolveMapleLifePreset runs every validation step against the tenant's
+// Maple Life configuration and projects the result onto a preset.RestModel,
+// stopping short of building or emitting the saga. Split out from
+// CreateMapleLife so the conversion is directly testable against
+// buildPresetCharacterCreationSaga without a Kafka round-trip.
+func (p *ProcessorImpl) resolveMapleLifePreset(ctx context.Context, in MapleLifeCreateRestModel) (preset.RestModel, map[uint32]data.SkillInfo, error) {
+	t := tenant.MustFromContext(ctx)
+	tc, err := configuration.GetTenantConfig(t.Id())
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to find maple life configuration.")
+		return preset.RestModel{}, nil, err
+	}
+	ml := tc.MapleLife
+	if len(ml.Classes) == 0 {
+		return preset.RestModel{}, nil, ErrMapleLifeNotConfigured
+	}
+
+	if !validGender(in.Gender) {
+		return preset.RestModel{}, nil, ErrLookInvalid
+	}
+
+	entry, entryFound := findMapleLifeClass(ml.Classes, in.ClassOrdinal, in.Gender)
+	if !entryFound {
+		return preset.RestModel{}, nil, ErrClassOrdinalUnknown
+	}
+
+	look, lookFound := findMapleLifeLook(ml.Looks, in.Gender)
+	if !lookFound {
+		return preset.RestModel{}, nil, ErrMapleLifeNotConfigured
+	}
+
+	if !validOption(look.Faces, in.Face) {
+		p.l.Errorf("Chosen face [%d] is not offered for maple life class [%d].", in.Face, in.ClassOrdinal)
+		return preset.RestModel{}, nil, ErrLookInvalid
+	}
+	if !validOption(look.Hairs, in.Hair) {
+		p.l.Errorf("Chosen hair [%d] is not offered for maple life class [%d].", in.Hair, in.ClassOrdinal)
+		return preset.RestModel{}, nil, ErrLookInvalid
+	}
+	if !validOption(look.HairColors, in.HairColor) {
+		p.l.Errorf("Chosen hair color [%d] is not offered for maple life class [%d].", in.HairColor, in.ClassOrdinal)
+		return preset.RestModel{}, nil, ErrLookInvalid
+	}
+	if !validOption(look.SkinColors, uint32(in.SkinColor)) {
+		p.l.Errorf("Chosen skin color [%d] is not offered for maple life class [%d].", in.SkinColor, in.ClassOrdinal)
+		return preset.RestModel{}, nil, ErrLookInvalid
+	}
+
+	if entry.SpSkillId == 0 {
+		if in.SP != 0 {
+			return preset.RestModel{}, nil, ErrSPInvalid
+		}
+	} else {
+		pool, ok := parseSPPool(entry.SP)
+		needed := int(in.SP)
+		if _, hasPrereq := prerequisiteFor(entry.SpSkillId); hasPrereq && in.SP > 0 {
+			needed += 5
+		}
+		if !ok || len(pool) == 0 || in.SP > 10 || needed > pool[0] {
+			return preset.RestModel{}, nil, ErrSPInvalid
+		}
+	}
+
+	nv, err := p.nameClient.Check(ctx, in.Name, in.WorldId)
+	if err != nil {
+		return preset.RestModel{}, nil, err
+	}
+	if !nv.Valid {
+		if nv.Reason == "duplicate" {
+			return preset.RestModel{}, nil, ErrNameDuplicate
+		}
+		return preset.RestModel{}, nil, &NameInvalidError{Reason: nv.Reason, Detail: nv.Detail}
+	}
+
+	// Re-validate equipment + inventory against atlas-data, exactly as
+	// CreateFromPreset does for an admin-authored preset -- a Maple Life
+	// class entry is configuration data too, and can go stale the same way.
+	seenSlots := map[uint32]bool{}
+	for _, eq := range entry.Equipment {
+		info, err := p.dataClient.GetItemById(ctx, eq.TemplateId)
+		if err != nil {
+			return preset.RestModel{}, nil, fmt.Errorf("%w: equipment %d", ErrPresetValidation, eq.TemplateId)
+		}
+		if !info.Equipable {
+			return preset.RestModel{}, nil, fmt.Errorf("%w: not equippable: %d", ErrPresetValidation, eq.TemplateId)
+		}
+		bucket := eq.TemplateId / 10000
+		if seenSlots[bucket] {
+			return preset.RestModel{}, nil, fmt.Errorf("%w: equipment slot collision: %d", ErrPresetValidation, eq.TemplateId)
+		}
+		seenSlots[bucket] = true
+	}
+	for _, inv := range entry.Inventory {
+		if _, err := p.dataClient.GetItemById(ctx, inv.TemplateId); err != nil {
+			return preset.RestModel{}, nil, fmt.Errorf("%w: inventory %d", ErrPresetValidation, inv.TemplateId)
+		}
+	}
+
+	// Only ordinals with a spSkillId ever consult atlas-data for the skill
+	// -- ordinals 2/3/4 offer no SP step and never reach here with SP > 0.
+	skillsById := map[uint32]data.SkillInfo{}
+	var effectX int16
+	if entry.SpSkillId != 0 {
+		got, err := p.dataClient.GetSkillsByIds(ctx, []uint32{entry.SpSkillId})
+		if err != nil {
+			return preset.RestModel{}, nil, ErrAtlasDataUnreachable
+		}
+		for _, sk := range got {
+			skillsById[sk.Id] = sk
+		}
+		info, ok := skillsById[entry.SpSkillId]
+		if !ok {
+			return preset.RestModel{}, nil, fmt.Errorf("%w: skill not found: %d", ErrPresetValidation, entry.SpSkillId)
+		}
+		if in.SP > 0 {
+			x, ok := info.EffectXAt(in.SP)
+			if !ok {
+				return preset.RestModel{}, nil, fmt.Errorf("%w: sp skill %d has no effect at level %d", ErrPresetValidation, entry.SpSkillId, in.SP)
+			}
+			effectX = x
+		}
+	}
+
+	pr := toPreset(entry, in, effectX)
+	return pr, skillsById, nil
+}
+
 // presetSagaBaseTimeout and presetSagaPerStepTimeout define the step-count-scaled
 // timeout for preset character creation. The orchestrator processes saga steps
 // serially over Kafka, so the timeout budget grows with the number of steps.
@@ -392,6 +548,8 @@ func buildPresetCharacterCreationSaga(
 		MapId:        _map.Id(a.MapId),
 		Gm:           a.Gm,
 		Meso:         a.Meso,
+		AP:           a.AP,
+		SP:           a.SP,
 	})
 
 	// Step 2: Await inventory-compartment creation. See buildCharacterCreationSaga

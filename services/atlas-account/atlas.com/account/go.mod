@@ -3,6 +3,7 @@ module atlas-account
 go 1.27.0
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-database v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0

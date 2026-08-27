@@ -23,5 +23,4 @@ export interface AccountAttributes {
   tos: boolean;
   language: string;
   country: string;
-  characterSlots: number;
 }

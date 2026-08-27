@@ -1160,6 +1160,15 @@ type CharacterCreatePayload struct {
 	MapId        _map.Id  `json:"mapId"`  // Starting map ID for the character
 	Gm           int      `json:"gm,omitempty"`
 	Meso         uint32   `json:"meso,omitempty"`
+	// AP is the unspent ability points the character starts with. Zero
+	// (omitted) reproduces the pre-amendment behaviour for every existing
+	// producer -- atlas-login's seed path and the admin preset path both
+	// leave it unset.
+	AP uint16 `json:"ap,omitempty"`
+	// SP is the unspent skill-point pool as atlas-character persists it:
+	// a ten-slot comma-separated list (character/entity.go:58). Empty
+	// (omitted) means "use the service's own default".
+	SP string `json:"sp,omitempty"`
 }
 
 // AwaitCharacterCreatedPayload represents the payload required to await character creation completion.

@@ -61,6 +61,11 @@ const (
 	// Duey parcel-delivery saga types (task-241)
 	ParcelSend    = sharedsaga.ParcelSend
 	ParcelReceive = sharedsaga.ParcelReceive
+
+	// MapleLifeUse is the classification-543 flow (task-246): create the
+	// character first, then destroy the cash item once the seed saga reports
+	// CREATED.
+	MapleLifeUse = sharedsaga.MapleLifeUse
 )
 
 // Status constants

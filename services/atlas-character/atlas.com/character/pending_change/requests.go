@@ -47,17 +47,23 @@ func worldStatus(l logrus.FieldLogger, ctx context.Context, worldId world.Id) (b
 
 func accountBaseUrl() string { return requests.RootUrl("ACCOUNTS") }
 
-func requestAccount(accountId uint32) requests.Request[accountRestModel] {
-	return requests.GetRequest[accountRestModel](fmt.Sprintf(accountBaseUrl()+"accounts/%d", accountId))
+// requestCharacterSlots reads the per-(account, world) character-slot count
+// from atlas-account's world-scoped sub-resource, replacing the flat,
+// always-4 accounts/{accountId} `characterSlots` attribute that was removed
+// (task-246 bug-b-type-must-add-a-slot.md).
+func requestCharacterSlots(accountId uint32, worldId world.Id) requests.Request[characterSlotRestModel] {
+	return requests.GetRequest[characterSlotRestModel](fmt.Sprintf(accountBaseUrl()+"accounts/%d/worlds/%d/character-slots", accountId, worldId))
 }
 
-// accountSlots implements gateDeps.accountSlots.
-func accountSlots(l logrus.FieldLogger, ctx context.Context, accountId uint32) (int16, error) {
-	rm, err := requestAccount(accountId)(l, ctx)
+// accountSlots implements gateDeps.accountSlots. worldId is the destination
+// world: the cap and the local character count (character.GetForAccountInWorld)
+// must read the same world, or gate 4 compares two different worlds' state.
+func accountSlots(l logrus.FieldLogger, ctx context.Context, accountId uint32, worldId world.Id) (int16, error) {
+	rm, err := requestCharacterSlots(accountId, worldId)(l, ctx)
 	if err != nil {
 		return 0, err
 	}
-	return rm.CharacterSlots, nil
+	return rm.Slots, nil
 }
 
 // --- Gate 6: atlas-ban -----------------------------------------------

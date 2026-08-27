@@ -77,6 +77,12 @@ const (
 	// the sender on discard/expiry).
 	ParcelSend    Type = "parcel_send"
 	ParcelReceive Type = "parcel_receive"
+
+	// MapleLifeUse is the classification-543 flow: create the character through
+	// atlas-character-factory FIRST, then destroy the cash item once the seed
+	// saga reports CREATED. One step, so there is nothing to reverse-walk — the
+	// item survives every failure by construction (task-246 design §5.4).
+	MapleLifeUse Type = "maple_life_use"
 )
 
 // Status represents the status of a saga step

@@ -109,3 +109,33 @@ func (b *Builder) Build() (Model, error) {
 		updatedAt:   b.updatedAt,
 	}, nil
 }
+
+// CharacterSlotBuilder builds a CharacterSlotModel.
+type CharacterSlotBuilder struct {
+	tenantId  uuid.UUID
+	accountId uint32
+	worldId   byte
+	slots     int16
+}
+
+func NewCharacterSlotBuilder(tenantId uuid.UUID, accountId uint32, worldId byte) *CharacterSlotBuilder {
+	return &CharacterSlotBuilder{
+		tenantId:  tenantId,
+		accountId: accountId,
+		worldId:   worldId,
+	}
+}
+
+func (b *CharacterSlotBuilder) SetSlots(slots int16) *CharacterSlotBuilder {
+	b.slots = slots
+	return b
+}
+
+func (b *CharacterSlotBuilder) Build() CharacterSlotModel {
+	return CharacterSlotModel{
+		tenantId:  b.tenantId,
+		accountId: b.accountId,
+		worldId:   b.worldId,
+		slots:     b.slots,
+	}
+}

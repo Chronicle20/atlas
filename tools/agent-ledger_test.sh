@@ -37,7 +37,7 @@ assert_eq "path resolves inside the task folder" \
 
 # --- append -----------------------------------------------------------------
 
-$L append 300 --unit "Task 1" --agent-type atlas-implementer --model sonnet \
+$L append 300 --unit "Task 1" --agent-type task-implementer --model sonnet \
   --turns 41 --tool-calls 88 --return-bytes 1145 --status DONE --commit abc1234 >/dev/null
 assert_eq "ledger created" "0" "$([ -f "$ledger" ] && echo 0 || echo 1)"
 assert_has "header written once" "agent_type" "$(head -1 "$ledger")"
@@ -45,7 +45,7 @@ assert_eq "one data row" "1" "$(($(wc -l < "$ledger") - 1))"
 
 row="$(sed -n '2p' "$ledger")"
 assert_has "row carries the unit"    "Task 1"            "$row"
-assert_has "row carries the type"    "atlas-implementer" "$row"
+assert_has "row carries the type"    "task-implementer" "$row"
 assert_has "row carries the commit"  "abc1234"           "$row"
 
 # --- unknown fields stay '-' ------------------------------------------------
@@ -54,17 +54,17 @@ assert_has "row carries the commit"  "abc1234"           "$row"
 
 assert_eq "unmeasured fields are '-', not 0" "-" "$(printf '%s' "$row" | cut -f8)"
 assert_eq "verdict absent on an implementer row" "-" "$(printf '%s' "$row" | cut -f12)"
-$L append 300 --unit "Task 2" --agent-type atlas-implementer --turns "" >/dev/null
+$L append 300 --unit "Task 2" --agent-type task-implementer --turns "" >/dev/null
 assert_eq "an explicitly empty value is also '-'" "-" "$(sed -n '3p' "$ledger" | cut -f6)"
 
 # --- reviewer rows ----------------------------------------------------------
 
-$L append 300 --unit "Task 1" --agent-type atlas-reviewer --model sonnet \
+$L append 300 --unit "Task 1" --agent-type task-reviewer --model sonnet \
   --return-bytes 420 --verdict APPROVED --caused-fix no \
   --artifact docs/tasks/task-300-ledger/reviews/task-1.md >/dev/null
-$L append 300 --unit "Task 2" --agent-type atlas-reviewer --model sonnet \
+$L append 300 --unit "Task 2" --agent-type task-reviewer --model sonnet \
   --return-bytes 780 --verdict CHANGES_REQUIRED --caused-fix yes >/dev/null
-$L append 300 --unit "Task 3" --agent-type atlas-reviewer --model sonnet \
+$L append 300 --unit "Task 3" --agent-type task-reviewer --model sonnet \
   --return-bytes 610 --verdict APPROVED_WITH_FINDINGS --caused-fix no >/dev/null
 
 # --- handoff rows -----------------------------------------------------------
@@ -76,7 +76,7 @@ assert_eq "a handoff row needs no agent type" "0" "$?"
 
 sum="$($L summary 300)"
 assert_has "summary counts agents"            "agents=5"                    "$sum"
-assert_has "summary breaks down by type"      "atlas-reviewer: n=3"         "$sum"
+assert_has "summary breaks down by type"      "task-reviewer: n=3"         "$sum"
 assert_has "summary reports median return"    "median_return_bytes=610"     "$sum"
 assert_has "summary counts verdicts"          "CHANGES_REQUIRED=1"          "$sum"
 assert_has "summary counts approvals"         "APPROVED=1"                  "$sum"
@@ -86,12 +86,12 @@ assert_has "summary reports handoff context"  "median_context_tokens=152000" "$s
 
 # The implementer's median return must not be polluted by the reviewer rows —
 # that separation is the entire before/after signal both audits asked for.
-assert_has "implementer median is its own" "atlas-implementer: n=2" "$sum"
+assert_has "implementer median is its own" "task-implementer: n=2" "$sum"
 
 # --- input hygiene ----------------------------------------------------------
 
 before="$(($(wc -l < "$ledger") - 1))"
-$L append 300 --unit "Task 5" --agent-type atlas-implementer \
+$L append 300 --unit "Task 5" --agent-type task-implementer \
   --status "DONE
 with a newline	and a tab" >/dev/null
 assert_eq "an embedded newline/tab adds exactly one row" "$((before + 1))" \
@@ -103,7 +103,7 @@ assert_eq "so the row still has 15 columns" "15" \
 
 # --- usage ------------------------------------------------------------------
 
-$L append 300 --agent-type atlas-implementer >/dev/null 2>&1
+$L append 300 --agent-type task-implementer >/dev/null 2>&1
 assert_eq "missing --unit is a usage error" "2" "$?"
 $L append 300 --unit x >/dev/null 2>&1
 assert_eq "missing --agent-type on an agent row is a usage error" "2" "$?"

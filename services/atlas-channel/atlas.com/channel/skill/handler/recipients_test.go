@@ -69,7 +69,7 @@ func mkPartyMember(id uint32, online bool, ch channel.Id, mapId _map.Id) party.M
 }
 
 func mkMemberChar(id uint32, hp uint16) character.Model {
-	return character.NewModelBuilder().SetId(id).SetHp(hp).SetMaxHp(1000).MustBuild()
+	return character.NewModelBuilder().SetId(id).SetHp(hp).SetMaxHp(1000).SetLevel(70).MustBuild()
 }
 
 func recipientIds(rs []PartyRecipient) []uint32 {
@@ -133,6 +133,31 @@ func TestSelectPartyMembersInMap_AppliesMapWideWithoutRectangle(t *testing.T) {
 	got := recipientIds(SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b11000))
 	if want := []uint32{testMemberA, testMemberB}; !eqIds(got, want) {
 		t.Fatalf("got %v, want %v", got, want)
+	}
+}
+
+// TestSelectPartyMembersInMap_PopulatesLevel is a regression guard for
+// bug-heal-party-xp-magnitude: HealXp needs each recipient's character
+// level, so the selector must populate it from the loaded character.Model.
+func TestSelectPartyMembersInMap_PopulatesLevel(t *testing.T) {
+	a := mkPartyMember(testMemberA, true, channel.Id(0), _map.Id(40000))
+	b := mkPartyMember(testMemberB, true, channel.Id(0), _map.Id(40000))
+	installPartySeams(t, threePersonParty(a, b), nil,
+		map[uint32]struct{}{testMemberA: {}, testMemberB: {}},
+		map[uint32]character.Model{
+			testMemberA: mkMemberChar(testMemberA, 500),
+			testMemberB: mkMemberChar(testMemberB, 500),
+		},
+	)
+
+	got := SelectPartyMembersInMap(testLogger(), context.Background(), mkField(), testCasterId, 0b11000)
+	if len(got) != 2 {
+		t.Fatalf("got %d recipients, want 2", len(got))
+	}
+	for _, r := range got {
+		if r.Level() != 70 {
+			t.Errorf("recipient %d Level() = %d, want 70", r.Id(), r.Level())
+		}
 	}
 }
 
@@ -276,7 +301,7 @@ func installMapSeams(t *testing.T, inMap map[uint32]struct{}, players map[uint32
 }
 
 func mkPlayerCharAt(id uint32, hp uint16, x, y int16) character.Model {
-	return character.NewModelBuilder().SetId(id).SetHp(hp).SetMaxHp(1000).SetX(x).SetY(y).MustBuild()
+	return character.NewModelBuilder().SetId(id).SetHp(hp).SetMaxHp(1000).SetX(x).SetY(y).SetLevel(70).MustBuild()
 }
 
 func rectEffect(t *testing.T) effect.Model {
@@ -347,6 +372,9 @@ func TestSelectDeadInRangeMapPlayers_AllDeadRegardlessOfParty(t *testing.T) {
 	got := SelectDeadInRangeMapPlayers(testLogger(), context.Background(), mkField(), caster, 0, 0, rectEffect(t))
 	if !eqIds(recipientIds(got), []uint32{2}) {
 		t.Fatalf("got %v, want [2]", recipientIds(got))
+	}
+	if len(got) != 1 || got[0].Level() != 70 {
+		t.Fatalf("got %+v, want one recipient with Level() = 70", got)
 	}
 }
 

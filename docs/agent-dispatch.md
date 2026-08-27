@@ -5,6 +5,14 @@ handoff — for every dispatch in every session, including ad-hoc ones outside
 the four-phase workflow. `docs/superpowers-integration.md` owns *which*
 command, agent, or skill to reach for in a given situation.
 
+**Historical-name cutoff.** Task-266 renamed `atlas-implementer`,
+`atlas-verifier`, and `atlas-reviewer` to the generic `task-implementer`,
+`task-verifier`, and `task-reviewer` for cross-repository process parity
+(`docs/process-parity.md` §5.1). Artifacts under `docs/tasks/` from before that
+task use the old `atlas-*` names because those dispatches actually happened
+under them; they are historical records, not rewritten to assert a name that
+wasn't in use at the time.
+
 ---
 
 ## Model selection
@@ -22,8 +30,8 @@ prompt does not — that is the hole this rule closes.
 |---|---|---|
 | Review, verify, audit, re-review, whole-branch review | **`sonnet`** — always | No exceptions. Reviewing is reading against a checklist; Opus buys nothing and these run long |
 | Scan, inventory, doc sweep, file-finding | `haiku` | |
-| Run the verification gate (`atlas-verifier`) | `haiku` | Frontmatter pin; it runs one command and quotes the output |
-| Implement a plan task (`atlas-implementer`) | `sonnet` | Default; frontmatter pin |
+| Run the verification gate (`task-verifier`) | `haiku` | Frontmatter pin; it runs one command and quotes the output |
+| Implement a plan task (`task-implementer`) | `sonnet` | Default; frontmatter pin |
 | Implement a packet codec (`packet-implementer`) or dispatcher family (`dispatcher-family-implementer`) | `sonnet` | Frontmatter pin; both also carry the 120-call PARTIAL budget |
 | Implement a plan task tagged `model: opus` in plan.md | `opus` | Opt-in only — see below; pass `model: opus` on the dispatch to override the frontmatter |
 
@@ -43,7 +51,7 @@ Never use Fable for background or review workflows.
 
 The implementer budget is **120 tool calls, warned at 100**, counted by
 `.claude/hooks/turn-budget.sh` and contracted in
-`.claude/agents/atlas-implementer.md`, `.claude/agents/packet-implementer.md`,
+`.claude/agents/task-implementer.md`, `.claude/agents/packet-implementer.md`,
 and `.claude/agents/dispatcher-family-implementer.md`. At the cap the
 implementer commits what works and reports `PARTIAL`; the controller
 dispatches a continuation. The number is changed in the counting hook only.
@@ -68,7 +76,7 @@ docker bake — a `--quick` run inside a 400k-token implementer costs a large
 multiple of the same run in a clean 20k one, and its output is the biggest
 avoidable consumer of an implementer's window. Implementers run module-local
 `go build ./... && go test ./...` and nothing more; the repo gate belongs to
-`atlas-verifier`, in its own clean context.
+`task-verifier`, in its own clean context.
 
 For the concurrency procedure that runs that gate against the rest of the
 plan — launch, keep going, reconcile, at most one gate in flight — see

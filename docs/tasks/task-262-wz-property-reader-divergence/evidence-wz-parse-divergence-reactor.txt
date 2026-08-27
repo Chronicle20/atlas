@@ -1,0 +1,773 @@
+local image count: 421  ours: 419
+images only in HaRepacker dump: ['9400300.img.xml', '9400301.img.xml']
+images only in our parse: []
+
+======================================================================
+2006000.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0/imgdir:event | 
+      /imgdir:0/imgdir:event/imgdir:0 | 
+      /imgdir:0/imgdir:event/imgdir:0/int:1 | value=20
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:type | value=100
+      /imgdir:0/imgdir:event/imgdir:0/string:0 | value=4001063
+      /imgdir:0/imgdir:event/imgdir:0/vector:lt | x=-100 y=-100
+      /imgdir:0/imgdir:event/imgdir:0/vector:rb | x=100 y=100
+  -- present in our parse, ABSENT from HaRepacker dump:
+======================================================================
+2006001.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0/imgdir:event | 
+      /imgdir:0/imgdir:event/imgdir:0 | 
+      /imgdir:0/imgdir:event/imgdir:0/int:0 | value=4001055
+      /imgdir:0/imgdir:event/imgdir:0/int:1 | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:type | value=100
+      /imgdir:0/imgdir:event/imgdir:0/vector:lt | x=-48 y=-48
+      /imgdir:0/imgdir:event/imgdir:0/vector:rb | x=47 y=48
+      /imgdir:1/canvas:0 | height=1 width=1
+      /imgdir:1/canvas:0/vector:origin | x=0 y=0
+  -- present in our parse, ABSENT from HaRepacker dump:
+      /imgdir:1/uol:0 | value=../0/0
+      /imgdir:1/uol:hit | value=../0/hit
+      /imgdir:2 | 
+      /imgdir:2/uol:0 | value=../0/0
+      /imgdir:2/uol:hit | value=../0/hit
+      /imgdir:3 | 
+      /imgdir:3/uol:0 | value=../0/0
+      /imgdir:3/uol:hit | value=../0/hit
+      /imgdir:4 | 
+      /imgdir:4/uol:0 | value=../0/0
+      /imgdir:4/uol:hit | value=../0/hit
+      /imgdir:5 | 
+      /imgdir:5/uol:0 | value=../0/0
+      /imgdir:5/uol:hit | value=../0/hit
+      /imgdir:6 | 
+      /imgdir:6/imgdir:event | 
+      /imgdir:6/imgdir:event/imgdir:0 | 
+      /imgdir:6/imgdir:event/imgdir:0/int:0 | value=4001055
+      /imgdir:6/imgdir:event/imgdir:0/int:1 | value=1
+      /imgdir:6/imgdir:event/imgdir:0/int:state | value=7
+      /imgdir:6/imgdir:event/imgdir:0/int:type | value=100
+      /imgdir:6/imgdir:event/imgdir:0/vector:lt | x=-48 y=-48
+      /imgdir:6/imgdir:event/imgdir:0/vector:rb | x=47 y=48
+      /imgdir:6/imgdir:hit | 
+      /imgdir:6/imgdir:hit/canvas:0 | height=67 width=67
+      /imgdir:6/imgdir:hit/canvas:0/int:a0 | value=0
+      /imgdir:6/imgdir:hit/canvas:0/int:a1 | value=0
+      /imgdir:6/imgdir:hit/canvas:0/int:delay | value=300
+      /imgdir:6/imgdir:hit/canvas:0/int:z | value=-2
+      /imgdir:6/imgdir:hit/canvas:0/vector:origin | x=33 y=33
+      /imgdir:6/uol:0 | value=../0/0
+      /imgdir:7 | 
+      /imgdir:7/canvas:0 | height=1 width=1
+      /imgdir:7/canvas:0/vector:origin | x=0 y=0
+======================================================================
+2406000.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0/imgdir:event | 
+      /imgdir:0/imgdir:event/imgdir:0 | 
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:type | value=6
+      /imgdir:info/int:activateByTouch | value=1
+  -- present in our parse, ABSENT from HaRepacker dump:
+======================================================================
+2408001.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:1/int:repeat | value=1
+  -- present in our parse, ABSENT from HaRepacker dump:
+      /imgdir:1/int:rpeat | value=1
+======================================================================
+2502002.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=0
+      /imgdir:0/imgdir:event/imgdir:1/int:2 | value=1
+      /imgdir:0/imgdir:event/imgdir:1/int:state | value=0
+  -- present in our parse, ABSENT from HaRepacker dump:
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=1
+      /imgdir:0/imgdir:event/imgdir:1/int:state | value=1
+======================================================================
+2519000.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:1/canvas:0 | height=121 width=100
+      /imgdir:1/canvas:0/vector:origin | x=49 y=121
+  -- present in our parse, ABSENT from HaRepacker dump:
+      /imgdir:1/canvas:0 | height=1 width=1
+      /imgdir:1/canvas:0/vector:origin | x=0 y=0
+======================================================================
+2519001.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:1/canvas:0 | height=124 width=92
+      /imgdir:1/canvas:0/vector:origin | x=47 y=124
+  -- present in our parse, ABSENT from HaRepacker dump:
+      /imgdir:1/canvas:0 | height=1 width=1
+      /imgdir:1/canvas:0/vector:origin | x=0 y=0
+======================================================================
+2519002.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0 | 
+      /imgdir:0/canvas:0 | height=121 width=100
+      /imgdir:0/canvas:0/int:z | value=0
+      /imgdir:0/canvas:0/vector:origin | x=49 y=121
+      /imgdir:0/imgdir:event | 
+      /imgdir:0/imgdir:event/imgdir:0 | 
+      /imgdir:0/imgdir:event/imgdir:0/int:1 | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:type | value=100
+      /imgdir:0/imgdir:event/imgdir:0/string:0 | value=4001117
+      /imgdir:0/imgdir:event/imgdir:0/vector:lt | x=-27 y=-21
+      /imgdir:0/imgdir:event/imgdir:0/vector:rb | x=31 y=7
+      /imgdir:0/imgdir:hit | 
+      /imgdir:0/imgdir:hit/canvas:0 | height=121 width=100
+      /imgdir:0/imgdir:hit/canvas:0/int:delay | value=130
+      /imgdir:0/imgdir:hit/canvas:0/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:0/vector:origin | x=49 y=121
+      /imgdir:0/imgdir:hit/canvas:1 | height=121 width=100
+      /imgdir:0/imgdir:hit/canvas:1/int:delay | value=130
+      /imgdir:0/imgdir:hit/canvas:1/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:1/vector:origin | x=49 y=121
+      /imgdir:0/imgdir:hit/canvas:2 | height=121 width=100
+      /imgdir:0/imgdir:hit/canvas:2/int:delay | value=130
+      /imgdir:0/imgdir:hit/canvas:2/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:2/vector:origin | x=49 y=121
+      /imgdir:0/imgdir:hit/canvas:3 | height=121 width=100
+      /imgdir:0/imgdir:hit/canvas:3/int:delay | value=130
+      /imgdir:0/imgdir:hit/canvas:3/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:3/vector:origin | x=49 y=121
+      /imgdir:0/imgdir:hit/canvas:4 | height=121 width=100
+      /imgdir:0/imgdir:hit/canvas:4/int:delay | value=130
+      /imgdir:0/imgdir:hit/canvas:4/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:4/vector:origin | x=49 y=121
+      /imgdir:0/imgdir:hit/canvas:5 | height=121 width=100
+      /imgdir:0/imgdir:hit/canvas:5/int:delay | value=130
+      /imgdir:0/imgdir:hit/canvas:5/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:5/vector:origin | x=49 y=121
+      /imgdir:0/imgdir:hit/canvas:6 | height=121 width=100
+      /imgdir:0/imgdir:hit/canvas:6/int:delay | value=130
+      /imgdir:0/imgdir:hit/canvas:6/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:6/vector:origin | x=49 y=121
+      /imgdir:0/imgdir:hit/canvas:7 | height=121 width=100
+      /imgdir:0/imgdir:hit/canvas:7/int:delay | value=130
+      /imgdir:0/imgdir:hit/canvas:7/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:7/vector:origin | x=49 y=121
+      /imgdir:0/imgdir:hit/canvas:8 | height=121 width=100
+      /imgdir:0/imgdir:hit/canvas:8/int:delay | value=130
+      /imgdir:0/imgdir:hit/canvas:8/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:8/vector:origin | x=49 y=121
+      /imgdir:1 | 
+      /imgdir:1/canvas:0 | height=121 width=100
+      /imgdir:1/canvas:0/vector:origin | x=49 y=121
+  -- present in our parse, ABSENT from HaRepacker dump:
+      /imgdir:info/string:link | value=2519000
+======================================================================
+2519003.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0 | 
+      /imgdir:0/canvas:0 | height=124 width=92
+      /imgdir:0/canvas:0/int:z | value=0
+      /imgdir:0/canvas:0/vector:origin | x=47 y=124
+      /imgdir:0/imgdir:event | 
+      /imgdir:0/imgdir:event/imgdir:0 | 
+      /imgdir:0/imgdir:event/imgdir:0/int:1 | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:type | value=100
+      /imgdir:0/imgdir:event/imgdir:0/string:0 | value=4001117
+      /imgdir:0/imgdir:event/imgdir:0/vector:lt | x=-27 y=-21
+      /imgdir:0/imgdir:event/imgdir:0/vector:rb | x=31 y=7
+      /imgdir:0/imgdir:hit | 
+      /imgdir:0/imgdir:hit/canvas:0 | height=124 width=92
+      /imgdir:0/imgdir:hit/canvas:0/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:0/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:0/vector:origin | x=47 y=124
+      /imgdir:0/imgdir:hit/canvas:1 | height=124 width=92
+      /imgdir:0/imgdir:hit/canvas:1/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:1/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:1/vector:origin | x=47 y=124
+      /imgdir:0/imgdir:hit/canvas:2 | height=124 width=92
+      /imgdir:0/imgdir:hit/canvas:2/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:2/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:2/vector:origin | x=47 y=124
+      /imgdir:0/imgdir:hit/canvas:3 | height=124 width=92
+      /imgdir:0/imgdir:hit/canvas:3/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:3/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:3/vector:origin | x=47 y=124
+      /imgdir:0/imgdir:hit/canvas:4 | height=124 width=92
+      /imgdir:0/imgdir:hit/canvas:4/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:4/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:4/vector:origin | x=47 y=124
+      /imgdir:0/imgdir:hit/canvas:5 | height=124 width=92
+      /imgdir:0/imgdir:hit/canvas:5/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:5/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:5/vector:origin | x=47 y=124
+      /imgdir:0/imgdir:hit/canvas:6 | height=124 width=92
+      /imgdir:0/imgdir:hit/canvas:6/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:6/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:6/vector:origin | x=47 y=124
+      /imgdir:0/imgdir:hit/canvas:7 | height=124 width=92
+      /imgdir:0/imgdir:hit/canvas:7/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:7/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:7/vector:origin | x=47 y=124
+      /imgdir:0/imgdir:hit/canvas:8 | height=124 width=92
+      /imgdir:0/imgdir:hit/canvas:8/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:8/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:8/vector:origin | x=47 y=124
+      /imgdir:1 | 
+      /imgdir:1/canvas:0 | height=124 width=92
+      /imgdir:1/canvas:0/vector:origin | x=47 y=124
+  -- present in our parse, ABSENT from HaRepacker dump:
+      /imgdir:info/string:link | value=2519001
+======================================================================
+2618000.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:6/imgdir:hit/uol:0 | value=../0
+      /imgdir:6/imgdir:hit/uol:1 | value=../1
+      /imgdir:7/canvas:0 | height=145 width=72
+      /imgdir:7/canvas:0/int:delay | value=150
+      /imgdir:7/canvas:1 | height=143 width=75
+      /imgdir:7/canvas:1/int:delay | value=150
+      /imgdir:7/canvas:1/int:z | value=0
+      /imgdir:7/canvas:1/vector:origin | x=33 y=80
+      /imgdir:7/imgdir:event/imgdir:0/int:0 | value=4001074
+      /imgdir:7/imgdir:event/imgdir:0/int:1 | value=1
+      /imgdir:7/imgdir:event/imgdir:0/int:state | value=8
+      /imgdir:7/imgdir:event/imgdir:0/int:type | value=101
+      /imgdir:7/imgdir:event/imgdir:1 | 
+      /imgdir:7/imgdir:event/imgdir:1/int:state | value=8
+      /imgdir:7/imgdir:event/imgdir:1/int:type | value=101
+      /imgdir:7/imgdir:event/int:timeOut | value=150
+      /imgdir:7/imgdir:hit/canvas:0 | height=145 width=72
+      /imgdir:7/imgdir:hit/canvas:0/int:delay | value=150
+      /imgdir:7/imgdir:hit/canvas:0/int:z | value=0
+      /imgdir:7/imgdir:hit/canvas:0/vector:origin | x=33 y=80
+      /imgdir:7/imgdir:hit/canvas:1 | height=143 width=75
+      /imgdir:7/imgdir:hit/canvas:1/int:delay | value=150
+      /imgdir:7/imgdir:hit/canvas:1/int:z | value=0
+      /imgdir:7/imgdir:hit/canvas:1/vector:origin | x=33 y=80
+      /imgdir:7/imgdir:hit/canvas:2 | height=144 width=72
+      /imgdir:7/imgdir:hit/canvas:2/int:delay | value=150
+      /imgdir:7/imgdir:hit/canvas:2/int:z | value=0
+      /imgdir:7/imgdir:hit/canvas:2/vector:origin | x=33 y=80
+      /imgdir:7/imgdir:hit/canvas:3 | height=140 width=74
+      /imgdir:7/imgdir:hit/canvas:3/int:delay | value=150
+      /imgdir:7/imgdir:hit/canvas:3/int:z | value=0
+      /imgdir:7/imgdir:hit/canvas:3/vector:origin | x=33 y=80
+      /imgdir:7/imgdir:hit/canvas:4 | height=139 width=72
+      /imgdir:7/imgdir:hit/canvas:4/int:delay | value=150
+      /imgdir:7/imgdir:hit/canvas:4/int:z | value=0
+      /imgdir:7/imgdir:hit/canvas:4/vector:origin | x=33 y=80
+      /imgdir:7/imgdir:hit/canvas:5 | height=126 width=67
+      /imgdir:7/imgdir:hit/canvas:5/int:delay | value=150
+      /imgdir:7/imgdir:hit/canvas:5/int:z | value=0
+      /imgdir:7/imgdir:hit/canvas:5/vector:origin | x=33 y=80
+      /imgdir:7/imgdir:hit/canvas:6 | height=81 width=67
+      /imgdir:7/imgdir:hit/canvas:6/int:delay | value=150
+      /imgdir:7/imgdir:hit/canvas:6/int:z | value=0
+      /imgdir:7/imgdir:hit/canvas:6/vector:origin | x=33 y=80
+      /imgdir:8 | 
+      /imgdir:8/canvas:0 | height=81 width=67
+      /imgdir:8/canvas:0/int:delay | value=150
+      /imgdir:8/canvas:0/int:z | value=0
+      /imgdir:8/canvas:0/vector:origin | x=33 y=80
+      /imgdir:8/imgdir:event | 
+      /imgdir:8/imgdir:event/imgdir:0 | 
+      /imgdir:8/imgdir:event/imgdir:0/int:state | value=8
+      /imgdir:8/imgdir:event/imgdir:0/int:type | value=101
+  -- present in our parse, ABSENT from HaRepacker dump:
+      /imgdir:6/imgdir:hit/canvas:0 | height=145 width=72
+      /imgdir:6/imgdir:hit/canvas:0/int:delay | value=150
+      /imgdir:6/imgdir:hit/canvas:0/int:z | value=0
+      /imgdir:6/imgdir:hit/canvas:0/vector:origin | x=33 y=80
+      /imgdir:6/imgdir:hit/canvas:1 | height=143 width=75
+      /imgdir:6/imgdir:hit/canvas:1/int:delay | value=150
+      /imgdir:6/imgdir:hit/canvas:1/int:z | value=0
+      /imgdir:6/imgdir:hit/canvas:1/vector:origin | x=33 y=80
+      /imgdir:6/imgdir:hit/canvas:2 | height=144 width=72
+      /imgdir:6/imgdir:hit/canvas:2/int:delay | value=150
+      /imgdir:6/imgdir:hit/canvas:2/int:z | value=0
+      /imgdir:6/imgdir:hit/canvas:2/vector:origin | x=33 y=80
+      /imgdir:6/imgdir:hit/canvas:3 | height=140 width=74
+      /imgdir:6/imgdir:hit/canvas:3/int:delay | value=150
+      /imgdir:6/imgdir:hit/canvas:3/int:z | value=0
+      /imgdir:6/imgdir:hit/canvas:3/vector:origin | x=33 y=80
+      /imgdir:6/imgdir:hit/canvas:4 | height=139 width=72
+      /imgdir:6/imgdir:hit/canvas:4/int:delay | value=150
+      /imgdir:6/imgdir:hit/canvas:4/int:z | value=0
+      /imgdir:6/imgdir:hit/canvas:4/vector:origin | x=33 y=80
+      /imgdir:6/imgdir:hit/canvas:5 | height=126 width=67
+      /imgdir:6/imgdir:hit/canvas:5/int:delay | value=150
+      /imgdir:6/imgdir:hit/canvas:5/int:z | value=0
+      /imgdir:6/imgdir:hit/canvas:5/vector:origin | x=33 y=80
+      /imgdir:6/imgdir:hit/canvas:6 | height=81 width=67
+      /imgdir:6/imgdir:hit/canvas:6/int:delay | value=150
+      /imgdir:6/imgdir:hit/canvas:6/int:z | value=0
+      /imgdir:6/imgdir:hit/canvas:6/vector:origin | x=33 y=80
+      /imgdir:7/canvas:0 | height=81 width=67
+      /imgdir:7/canvas:0/int:delay | value=50000
+      /imgdir:7/imgdir:event/imgdir:0/int:0 | value=1002140
+      /imgdir:7/imgdir:event/imgdir:0/int:state | value=0
+      /imgdir:7/imgdir:event/imgdir:0/int:type | value=100
+      /imgdir:7/imgdir:hit/uol:0 | value=../0
+======================================================================
+2618003.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0/imgdir:event | 
+      /imgdir:0/imgdir:event/imgdir:0 | 
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:type | value=101
+  -- present in our parse, ABSENT from HaRepacker dump:
+======================================================================
+2618004.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0/imgdir:event | 
+      /imgdir:0/imgdir:event/imgdir:0 | 
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:type | value=101
+  -- present in our parse, ABSENT from HaRepacker dump:
+======================================================================
+2618005.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0/imgdir:event | 
+      /imgdir:0/imgdir:event/imgdir:0 | 
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:type | value=7
+  -- present in our parse, ABSENT from HaRepacker dump:
+======================================================================
+2618006.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0/imgdir:event | 
+      /imgdir:0/imgdir:event/imgdir:0 | 
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:type | value=101
+      /imgdir:0/imgdir:hit | 
+      /imgdir:0/imgdir:hit/canvas:0 | height=29 width=116
+      /imgdir:0/imgdir:hit/canvas:0/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:0/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:0/vector:origin | x=63 y=25
+      /imgdir:0/imgdir:hit/canvas:1 | height=53 width=166
+      /imgdir:0/imgdir:hit/canvas:1/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:1/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:1/vector:origin | x=85 y=46
+      /imgdir:0/imgdir:hit/canvas:10 | height=201 width=194
+      /imgdir:0/imgdir:hit/canvas:10/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:10/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:10/vector:origin | x=99 y=192
+      /imgdir:0/imgdir:hit/canvas:11 | height=212 width=196
+      /imgdir:0/imgdir:hit/canvas:11/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:11/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:11/vector:origin | x=100 y=203
+      /imgdir:0/imgdir:hit/canvas:12 | height=212 width=196
+      /imgdir:0/imgdir:hit/canvas:12/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:12/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:12/vector:origin | x=100 y=212
+      /imgdir:0/imgdir:hit/canvas:13 | height=212 width=196
+      /imgdir:0/imgdir:hit/canvas:13/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:13/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:13/vector:origin | x=100 y=212
+      /imgdir:0/imgdir:hit/canvas:14 | height=212 width=196
+      /imgdir:0/imgdir:hit/canvas:14/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:14/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:14/vector:origin | x=100 y=212
+      /imgdir:0/imgdir:hit/canvas:15 | height=212 width=196
+      /imgdir:0/imgdir:hit/canvas:15/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:15/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:15/vector:origin | x=100 y=212
+      /imgdir:0/imgdir:hit/canvas:16 | height=212 width=196
+      /imgdir:0/imgdir:hit/canvas:16/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:16/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:16/vector:origin | x=100 y=212
+      /imgdir:0/imgdir:hit/canvas:17 | height=212 width=196
+      /imgdir:0/imgdir:hit/canvas:17/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:17/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:17/vector:origin | x=100 y=212
+      /imgdir:0/imgdir:hit/canvas:18 | height=216 width=196
+      /imgdir:0/imgdir:hit/canvas:18/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:18/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:18/vector:origin | x=100 y=216
+      /imgdir:0/imgdir:hit/canvas:19 | height=217 width=196
+      /imgdir:0/imgdir:hit/canvas:19/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:19/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:19/vector:origin | x=100 y=217
+      /imgdir:0/imgdir:hit/canvas:2 | height=81 width=168
+      /imgdir:0/imgdir:hit/canvas:2/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:2/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:2/vector:origin | x=87 y=73
+      /imgdir:0/imgdir:hit/canvas:20 | height=216 width=196
+      /imgdir:0/imgdir:hit/canvas:20/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:20/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:20/vector:origin | x=100 y=216
+      /imgdir:0/imgdir:hit/canvas:21 | height=216 width=196
+      /imgdir:0/imgdir:hit/canvas:21/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:21/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:21/vector:origin | x=100 y=216
+      /imgdir:0/imgdir:hit/canvas:22 | height=217 width=196
+      /imgdir:0/imgdir:hit/canvas:22/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:22/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:22/vector:origin | x=100 y=217
+      /imgdir:0/imgdir:hit/canvas:23 | height=213 width=196
+      /imgdir:0/imgdir:hit/canvas:23/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:23/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:23/vector:origin | x=100 y=213
+      /imgdir:0/imgdir:hit/canvas:24 | height=217 width=196
+      /imgdir:0/imgdir:hit/canvas:24/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:24/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:24/vector:origin | x=100 y=217
+      /imgdir:0/imgdir:hit/canvas:25 | height=216 width=196
+      /imgdir:0/imgdir:hit/canvas:25/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:25/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:25/vector:origin | x=100 y=216
+      /imgdir:0/imgdir:hit/canvas:26 | height=217 width=196
+      /imgdir:0/imgdir:hit/canvas:26/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:26/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:26/vector:origin | x=100 y=217
+      /imgdir:0/imgdir:hit/canvas:27 | height=213 width=196
+      /imgdir:0/imgdir:hit/canvas:27/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:27/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:27/vector:origin | x=100 y=213
+      /imgdir:0/imgdir:hit/canvas:28 | height=217 width=196
+      /imgdir:0/imgdir:hit/canvas:28/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:28/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:28/vector:origin | x=100 y=217
+      /imgdir:0/imgdir:hit/canvas:29 | height=216 width=196
+      /imgdir:0/imgdir:hit/canvas:29/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:29/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:29/vector:origin | x=100 y=216
+      /imgdir:0/imgdir:hit/canvas:3 | height=97 width=171
+      /imgdir:0/imgdir:hit/canvas:3/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:3/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:3/vector:origin | x=90 y=88
+      /imgdir:0/imgdir:hit/canvas:30 | height=217 width=196
+      /imgdir:0/imgdir:hit/canvas:30/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:30/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:30/vector:origin | x=100 y=217
+      /imgdir:0/imgdir:hit/canvas:31 | height=213 width=196
+      /imgdir:0/imgdir:hit/canvas:31/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:31/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:31/vector:origin | x=100 y=213
+      /imgdir:0/imgdir:hit/canvas:32 | height=217 width=196
+      /imgdir:0/imgdir:hit/canvas:32/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:32/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:32/vector:origin | x=100 y=217
+      /imgdir:0/imgdir:hit/canvas:4 | height=112 width=171
+      /imgdir:0/imgdir:hit/canvas:4/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:4/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:4/vector:origin | x=90 y=103
+      /imgdir:0/imgdir:hit/canvas:5 | height=126 width=171
+      /imgdir:0/imgdir:hit/canvas:5/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:5/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:5/vector:origin | x=90 y=117
+      /imgdir:0/imgdir:hit/canvas:6 | height=141 width=171
+      /imgdir:0/imgdir:hit/canvas:6/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:6/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:6/vector:origin | x=90 y=132
+      /imgdir:0/imgdir:hit/canvas:7 | height=156 width=171
+      /imgdir:0/imgdir:hit/canvas:7/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:7/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:7/vector:origin | x=90 y=147
+      /imgdir:0/imgdir:hit/canvas:8 | height=171 width=181
+      /imgdir:0/imgdir:hit/canvas:8/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:8/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:8/vector:origin | x=90 y=162
+      /imgdir:0/imgdir:hit/canvas:9 | height=186 width=184
+      /imgdir:0/imgdir:hit/canvas:9/int:delay | value=100
+      /imgdir:0/imgdir:hit/canvas:9/int:z | value=0
+      /imgdir:0/imgdir:hit/canvas:9/vector:origin | x=90 y=177
+      /imgdir:1/canvas:0 | height=216 width=196
+      /imgdir:1/canvas:0/int:delay | value=100
+      /imgdir:1/canvas:0/vector:origin | x=100 y=216
+      /imgdir:1/canvas:1 | height=217 width=196
+      /imgdir:1/canvas:1/int:delay | value=100
+      /imgdir:1/canvas:1/int:z | value=0
+      /imgdir:1/canvas:1/vector:origin | x=100 y=217
+      /imgdir:1/canvas:10 | height=213 width=196
+      /imgdir:1/canvas:10/int:delay | value=100
+      /imgdir:1/canvas:10/int:z | value=0
+      /imgdir:1/canvas:10/vector:origin | x=100 y=213
+      /imgdir:1/canvas:11 | height=217 width=196
+      /imgdir:1/canvas:11/int:delay | value=100
+      /imgdir:1/canvas:11/int:z | value=0
+      /imgdir:1/canvas:11/vector:origin | x=100 y=217
+      /imgdir:1/canvas:2 | height=213 width=196
+      /imgdir:1/canvas:2/int:delay | value=100
+      /imgdir:1/canvas:2/int:z | value=0
+      /imgdir:1/canvas:2/vector:origin | x=100 y=213
+      /imgdir:1/canvas:3 | height=217 width=196
+      /imgdir:1/canvas:3/int:delay | value=100
+      /imgdir:1/canvas:3/int:z | value=0
+      /imgdir:1/canvas:3/vector:origin | x=100 y=217
+      /imgdir:1/canvas:4 | height=216 width=196
+      /imgdir:1/canvas:4/int:delay | value=100
+      /imgdir:1/canvas:4/int:z | value=0
+      /imgdir:1/canvas:4/vector:origin | x=100 y=216
+      /imgdir:1/canvas:5 | height=217 width=196
+      /imgdir:1/canvas:5/int:delay | value=100
+      /imgdir:1/canvas:5/int:z | value=0
+      /imgdir:1/canvas:5/vector:origin | x=100 y=217
+      /imgdir:1/canvas:6 | height=213 width=196
+      /imgdir:1/canvas:6/int:delay | value=100
+      /imgdir:1/canvas:6/int:z | value=0
+      /imgdir:1/canvas:6/vector:origin | x=100 y=213
+      /imgdir:1/canvas:7 | height=217 width=196
+      /imgdir:1/canvas:7/int:delay | value=100
+      /imgdir:1/canvas:7/int:z | value=0
+      /imgdir:1/canvas:7/vector:origin | x=100 y=217
+      /imgdir:1/canvas:8 | height=216 width=196
+      /imgdir:1/canvas:8/int:delay | value=100
+      /imgdir:1/canvas:8/int:z | value=0
+      /imgdir:1/canvas:8/vector:origin | x=100 y=216
+      /imgdir:1/canvas:9 | height=217 width=196
+      /imgdir:1/canvas:9/int:delay | value=100
+      /imgdir:1/canvas:9/int:z | value=0
+      /imgdir:1/canvas:9/vector:origin | x=100 y=217
+      /imgdir:1/int:repeat | value=1
+  -- present in our parse, ABSENT from HaRepacker dump:
+      /imgdir:0/canvas:0/int:a0 | value=0
+      /imgdir:1/canvas:0 | height=1 width=1
+      /imgdir:1/canvas:0/int:delay | value=120
+      /imgdir:1/canvas:0/vector:origin | x=0 y=0
+      /imgdir:2 | 
+      /imgdir:2/canvas:0 | height=1 width=1
+      /imgdir:2/canvas:0/int:delay | value=120
+      /imgdir:2/canvas:0/int:z | value=0
+      /imgdir:2/canvas:0/vector:origin | x=0 y=0
+      /imgdir:2/imgdir:hit | 
+      /imgdir:2/imgdir:hit/canvas:0 | height=29 width=116
+      /imgdir:2/imgdir:hit/canvas:0/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:0/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:0/vector:origin | x=63 y=25
+      /imgdir:2/imgdir:hit/canvas:1 | height=53 width=166
+      /imgdir:2/imgdir:hit/canvas:1/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:1/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:1/vector:origin | x=85 y=46
+      /imgdir:2/imgdir:hit/canvas:10 | height=201 width=194
+      /imgdir:2/imgdir:hit/canvas:10/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:10/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:10/vector:origin | x=99 y=192
+      /imgdir:2/imgdir:hit/canvas:11 | height=212 width=196
+      /imgdir:2/imgdir:hit/canvas:11/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:11/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:11/vector:origin | x=100 y=203
+      /imgdir:2/imgdir:hit/canvas:12 | height=212 width=196
+      /imgdir:2/imgdir:hit/canvas:12/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:12/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:12/vector:origin | x=100 y=212
+      /imgdir:2/imgdir:hit/canvas:13 | height=212 width=196
+      /imgdir:2/imgdir:hit/canvas:13/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:13/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:13/vector:origin | x=100 y=212
+      /imgdir:2/imgdir:hit/canvas:14 | height=212 width=196
+      /imgdir:2/imgdir:hit/canvas:14/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:14/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:14/vector:origin | x=100 y=212
+      /imgdir:2/imgdir:hit/canvas:15 | height=212 width=196
+      /imgdir:2/imgdir:hit/canvas:15/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:15/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:15/vector:origin | x=100 y=212
+      /imgdir:2/imgdir:hit/canvas:16 | height=212 width=196
+      /imgdir:2/imgdir:hit/canvas:16/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:16/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:16/vector:origin | x=100 y=212
+      /imgdir:2/imgdir:hit/canvas:17 | height=212 width=196
+      /imgdir:2/imgdir:hit/canvas:17/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:17/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:17/vector:origin | x=100 y=212
+      /imgdir:2/imgdir:hit/canvas:18 | height=216 width=196
+      /imgdir:2/imgdir:hit/canvas:18/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:18/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:18/vector:origin | x=100 y=216
+      /imgdir:2/imgdir:hit/canvas:19 | height=217 width=196
+      /imgdir:2/imgdir:hit/canvas:19/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:19/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:19/vector:origin | x=100 y=217
+      /imgdir:2/imgdir:hit/canvas:2 | height=81 width=168
+      /imgdir:2/imgdir:hit/canvas:2/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:2/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:2/vector:origin | x=87 y=73
+      /imgdir:2/imgdir:hit/canvas:20 | height=216 width=196
+      /imgdir:2/imgdir:hit/canvas:20/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:20/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:20/vector:origin | x=100 y=216
+      /imgdir:2/imgdir:hit/canvas:21 | height=216 width=196
+      /imgdir:2/imgdir:hit/canvas:21/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:21/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:21/vector:origin | x=100 y=216
+      /imgdir:2/imgdir:hit/canvas:22 | height=217 width=196
+      /imgdir:2/imgdir:hit/canvas:22/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:22/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:22/vector:origin | x=100 y=217
+      /imgdir:2/imgdir:hit/canvas:23 | height=213 width=196
+      /imgdir:2/imgdir:hit/canvas:23/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:23/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:23/vector:origin | x=100 y=213
+      /imgdir:2/imgdir:hit/canvas:24 | height=217 width=196
+      /imgdir:2/imgdir:hit/canvas:24/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:24/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:24/vector:origin | x=100 y=217
+      /imgdir:2/imgdir:hit/canvas:25 | height=216 width=196
+      /imgdir:2/imgdir:hit/canvas:25/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:25/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:25/vector:origin | x=100 y=216
+      /imgdir:2/imgdir:hit/canvas:26 | height=217 width=196
+      /imgdir:2/imgdir:hit/canvas:26/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:26/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:26/vector:origin | x=100 y=217
+      /imgdir:2/imgdir:hit/canvas:27 | height=213 width=196
+      /imgdir:2/imgdir:hit/canvas:27/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:27/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:27/vector:origin | x=100 y=213
+      /imgdir:2/imgdir:hit/canvas:28 | height=217 width=196
+      /imgdir:2/imgdir:hit/canvas:28/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:28/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:28/vector:origin | x=100 y=217
+      /imgdir:2/imgdir:hit/canvas:29 | height=216 width=196
+      /imgdir:2/imgdir:hit/canvas:29/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:29/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:29/vector:origin | x=100 y=216
+      /imgdir:2/imgdir:hit/canvas:3 | height=97 width=171
+      /imgdir:2/imgdir:hit/canvas:3/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:3/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:3/vector:origin | x=90 y=88
+      /imgdir:2/imgdir:hit/canvas:30 | height=217 width=196
+      /imgdir:2/imgdir:hit/canvas:30/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:30/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:30/vector:origin | x=100 y=217
+      /imgdir:2/imgdir:hit/canvas:31 | height=213 width=196
+      /imgdir:2/imgdir:hit/canvas:31/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:31/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:31/vector:origin | x=100 y=213
+      /imgdir:2/imgdir:hit/canvas:32 | height=217 width=196
+      /imgdir:2/imgdir:hit/canvas:32/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:32/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:32/vector:origin | x=100 y=217
+      /imgdir:2/imgdir:hit/canvas:4 | height=112 width=171
+      /imgdir:2/imgdir:hit/canvas:4/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:4/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:4/vector:origin | x=90 y=103
+      /imgdir:2/imgdir:hit/canvas:5 | height=126 width=171
+      /imgdir:2/imgdir:hit/canvas:5/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:5/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:5/vector:origin | x=90 y=117
+      /imgdir:2/imgdir:hit/canvas:6 | height=141 width=171
+      /imgdir:2/imgdir:hit/canvas:6/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:6/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:6/vector:origin | x=90 y=132
+      /imgdir:2/imgdir:hit/canvas:7 | height=156 width=171
+      /imgdir:2/imgdir:hit/canvas:7/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:7/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:7/vector:origin | x=90 y=147
+      /imgdir:2/imgdir:hit/canvas:8 | height=171 width=181
+      /imgdir:2/imgdir:hit/canvas:8/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:8/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:8/vector:origin | x=90 y=162
+      /imgdir:2/imgdir:hit/canvas:9 | height=186 width=184
+      /imgdir:2/imgdir:hit/canvas:9/int:delay | value=100
+      /imgdir:2/imgdir:hit/canvas:9/int:z | value=0
+      /imgdir:2/imgdir:hit/canvas:9/vector:origin | x=90 y=177
+      /imgdir:3 | 
+      /imgdir:3/canvas:0 | height=216 width=196
+      /imgdir:3/canvas:0/int:delay | value=100
+      /imgdir:3/canvas:0/int:z | value=0
+      /imgdir:3/canvas:0/vector:origin | x=100 y=216
+      /imgdir:3/canvas:1 | height=217 width=196
+      /imgdir:3/canvas:1/int:delay | value=100
+      /imgdir:3/canvas:1/int:z | value=0
+      /imgdir:3/canvas:1/vector:origin | x=100 y=217
+      /imgdir:3/canvas:10 | height=213 width=196
+      /imgdir:3/canvas:10/int:delay | value=100
+      /imgdir:3/canvas:10/int:z | value=0
+      /imgdir:3/canvas:10/vector:origin | x=100 y=213
+      /imgdir:3/canvas:11 | height=217 width=196
+      /imgdir:3/canvas:11/int:delay | value=100
+      /imgdir:3/canvas:11/int:z | value=0
+      /imgdir:3/canvas:11/vector:origin | x=100 y=217
+      /imgdir:3/canvas:2 | height=213 width=196
+      /imgdir:3/canvas:2/int:delay | value=100
+      /imgdir:3/canvas:2/int:z | value=0
+      /imgdir:3/canvas:2/vector:origin | x=100 y=213
+      /imgdir:3/canvas:3 | height=217 width=196
+      /imgdir:3/canvas:3/int:delay | value=100
+      /imgdir:3/canvas:3/int:z | value=0
+      /imgdir:3/canvas:3/vector:origin | x=100 y=217
+      /imgdir:3/canvas:4 | height=216 width=196
+      /imgdir:3/canvas:4/int:delay | value=100
+      /imgdir:3/canvas:4/int:z | value=0
+      /imgdir:3/canvas:4/vector:origin | x=100 y=216
+      /imgdir:3/canvas:5 | height=217 width=196
+      /imgdir:3/canvas:5/int:delay | value=100
+      /imgdir:3/canvas:5/int:z | value=0
+      /imgdir:3/canvas:5/vector:origin | x=100 y=217
+      /imgdir:3/canvas:6 | height=213 width=196
+      /imgdir:3/canvas:6/int:delay | value=100
+      /imgdir:3/canvas:6/int:z | value=0
+      /imgdir:3/canvas:6/vector:origin | x=100 y=213
+      /imgdir:3/canvas:7 | height=217 width=196
+      /imgdir:3/canvas:7/int:delay | value=100
+      /imgdir:3/canvas:7/int:z | value=0
+      /imgdir:3/canvas:7/vector:origin | x=100 y=217
+      /imgdir:3/canvas:8 | height=216 width=196
+      /imgdir:3/canvas:8/int:delay | value=100
+      /imgdir:3/canvas:8/int:z | value=0
+      /imgdir:3/canvas:8/vector:origin | x=100 y=216
+      /imgdir:3/canvas:9 | height=217 width=196
+      /imgdir:3/canvas:9/int:delay | value=100
+      /imgdir:3/canvas:9/int:z | value=0
+      /imgdir:3/canvas:9/vector:origin | x=100 y=217
+      /imgdir:3/int:repeat | value=1
+======================================================================
+2618007.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0/imgdir:event | 
+      /imgdir:0/imgdir:event/imgdir:0 | 
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:type | value=101
+  -- present in our parse, ABSENT from HaRepacker dump:
+======================================================================
+3002000.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+  -- present in our parse, ABSENT from HaRepacker dump:
+      /imgdir:1/imgdir:event | 
+      /imgdir:1/imgdir:event/imgdir:0 | 
+      /imgdir:1/imgdir:event/imgdir:0/int:state | value=0
+      /imgdir:1/imgdir:event/imgdir:0/int:type | value=101
+      /imgdir:1/imgdir:event/int:timeOut | value=2000
+======================================================================
+9202005.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:5/imgdir:event | 
+      /imgdir:5/imgdir:event/imgdir:0 | 
+      /imgdir:5/imgdir:event/imgdir:0/int:state | value=5
+      /imgdir:5/imgdir:event/imgdir:0/int:type | value=0
+      /imgdir:5/imgdir:hit | 
+  -- present in our parse, ABSENT from HaRepacker dump:
+======================================================================
+9208003.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0/imgdir:event | 
+      /imgdir:0/imgdir:event/imgdir:0 | 
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=0
+      /imgdir:0/imgdir:event/imgdir:0/int:type | value=0
+  -- present in our parse, ABSENT from HaRepacker dump:
+======================================================================
+9208004.img.xml
+  -- present in HaRepacker dump, ABSENT from our parse:
+      /imgdir:0/imgdir:event | 
+      /imgdir:0/imgdir:event/imgdir:0 | 
+      /imgdir:0/imgdir:event/imgdir:0/int:state | value=1
+      /imgdir:0/imgdir:event/imgdir:0/int:type | value=0
+      /imgdir:0/imgdir:hit | 
+      /imgdir:1/imgdir:event | 
+      /imgdir:1/imgdir:event/imgdir:0 | 
+      /imgdir:1/imgdir:event/imgdir:0/int:state | value=2
+      /imgdir:1/imgdir:event/imgdir:0/int:type | value=0
+      /imgdir:1/imgdir:hit | 
+      /imgdir:2/imgdir:event | 
+      /imgdir:2/imgdir:event/imgdir:0 | 
+      /imgdir:2/imgdir:event/imgdir:0/int:state | value=3
+      /imgdir:2/imgdir:event/imgdir:0/int:type | value=0
+      /imgdir:2/imgdir:hit | 
+      /imgdir:3/imgdir:event | 
+      /imgdir:3/imgdir:event/imgdir:0 | 
+      /imgdir:3/imgdir:event/imgdir:0/int:state | value=4
+      /imgdir:3/imgdir:event/imgdir:0/int:type | value=0
+      /imgdir:4/canvas:0/vector:origin | x=115 y=222
+  -- present in our parse, ABSENT from HaRepacker dump:
+      /imgdir:4/canvas:0/vector:origin | x=0 y=0

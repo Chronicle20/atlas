@@ -53,7 +53,7 @@ artifacts land in the right place.
 
 ### Phase 4 context budget
 
-`atlas-implementer` replaces `general-purpose` for every Phase 4
+`task-implementer` replaces `general-purpose` for every Phase 4
 implementation dispatch. Its contracts override the plugin's
 `implementer-prompt.md` where they disagree.
 
@@ -68,7 +68,7 @@ Invoke `superpowers:requesting-code-review` after completing a logical chunk of 
 - `plan-adherence-reviewer` — checks every task in `plan.md` was implemented; cites file:line evidence
 - `backend-guidelines-reviewer` — adversarial Go audit against the applicable families in `.claude/skills/backend-dev-guidelines/resources/audit-checklist.md` (DOM-*, FILE-*, SUB-*, EXT-*, SCAFFOLD-*, SEC-*)
 - `frontend-guidelines-reviewer` — adversarial TS/React audit (FE-* checks)
-- `atlas-reviewer` — per-unit / ad-hoc correctness review of one commit range against its brief. This is the named home for what used to ride bare `general-purpose`; use it rather than dispatching `general-purpose` with a review prompt.
+- `task-reviewer` — per-unit / ad-hoc correctness review of one commit range against its brief. This is the named home for what used to ride bare `general-purpose`; use it rather than dispatching `general-purpose` with a review prompt.
 
 For ad-hoc one-off checks, invoke any agent directly by name without the orchestration skill.
 

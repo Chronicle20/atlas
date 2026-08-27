@@ -1009,10 +1009,13 @@ func TestCTSEnergyChargeRoundTrip(t *testing.T) {
 }
 
 // TestCTSDashSpeedStaysZeroed is the negative half of the ENERGY_CHARGE fix:
-// the other twoStateDynamic members (DASH_SPEED, DASH_JUMP, UNDEAD) keep the
-// zeroed block, because no evidence was gathered for what their clients read
-// and this task must not make an unverified wire change to a verified cell
-// (design.md §1.1).
+// the remaining twoStateDynamic member (DASH_SPEED; DASH_JUMP shares the same
+// treatment) keeps the zeroed block, because no evidence was gathered for
+// what its client reads and this task must not make an unverified wire
+// change to a verified cell (design.md §1.1). UNDEAD moved to a populated
+// block — see TestCTSUndeadPopulatedBlock — on the IDA evidence in
+// bug-zombify-no-visible-effect.md (CUser::UpdateAffectedSkillList
+// @0x93e344).
 func TestCTSDashSpeedStaysZeroed(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
@@ -1026,6 +1029,46 @@ func TestCTSDashSpeedStaysZeroed(t *testing.T) {
 		if block[i] != 0x00 {
 			t.Fatalf("DASH_SPEED base block must stay zeroed; got % x", block)
 		}
+	}
+}
+
+// TestCTSUndeadPopulatedBlock is the UNDEAD half of the zombify fix
+// (bug-zombify-no-visible-effect.md). CUser::UpdateAffectedSkillList
+// @0x93e344 keys the client's zombify animation off this block's rOption,
+// via sub_672293 (@0x672293, this+4); TemporaryStatBase<long>::
+// DecodeForClient @0x793ef2 confirms rOption is the second int32 in wire
+// order. rOption carries the mob-skill composite id | (level << 16), the
+// same convention MobSkillReasonForeignValueWriter (:306-329) writes for
+// every other disease -- not the disease amount.
+func TestCTSUndeadPopulatedBlock(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 83, 1)
+	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
+	input := NewCharacterTemporaryStat()
+	// Mob skill 133 (Undead) level 5, amount=1.
+	input.AddStat(nil)(tn)(string(character.TemporaryStatTypeUndead), 133, 1, 5, time.Time{})
+
+	got := input.Encode(nil, ctx)(nil)
+
+	// nOption=1 then rOption=(133 | 5<<16)=327813 as consecutive LE int32s.
+	head := []byte{0x01, 0x00, 0x00, 0x00, 0x85, 0x00, 0x05, 0x00}
+	if !bytes.Contains(got, head) {
+		t.Fatalf("populated UNDEAD head (nOption=1,rOption=327813) missing; got % x", got)
+	}
+}
+
+// TestCTSUndeadRoundTrip guards encode/decode symmetry: the decoder is
+// shape-only, so a populated block must still be consumed byte-for-byte.
+func TestCTSUndeadRoundTrip(t *testing.T) {
+	for _, v := range []struct {
+		region string
+		major  uint16
+	}{{"GMS", 83}, {"GMS", 95}, {"JMS", 185}} {
+		ctx := pt.CreateContext(v.region, v.major, 1)
+		tn, _ := tenant.Create([16]byte{}, v.region, v.major, 1)
+		input := NewCharacterTemporaryStat()
+		input.AddStat(nil)(tn)(string(character.TemporaryStatTypeUndead), 133, 1, 5, time.Time{})
+		output := NewCharacterTemporaryStat()
+		pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 	}
 }
 

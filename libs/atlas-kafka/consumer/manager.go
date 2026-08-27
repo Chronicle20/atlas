@@ -85,6 +85,7 @@ type Manager struct {
 	rp        ReaderProducer
 	gp        GroupProducer
 	prp       PartitionReaderProducer
+	pcp       PartitionCountProducer
 	engine    EngineName
 }
 
@@ -109,6 +110,7 @@ func GetManager(configurators ...ManagerConfig) *Manager {
 			},
 			gp:     defaultGroupProducer,
 			prp:    defaultPartitionReaderProducer,
+			pcp:    defaultPartitionCountProducer,
 			engine: resolveEngine(logrus.StandardLogger()),
 		}
 		for _, configurator := range configurators {
@@ -189,6 +191,7 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 			startOffset:            c.startOffset,
 			gp:                     m.gp,
 			prp:                    m.prp,
+			pcp:                    m.pcp,
 			engine:                 m.engine,
 			service:                os.Getenv("SERVICE_NAME"),
 		}
@@ -244,14 +247,18 @@ func (m *Manager) RemoveHandler(topic string, handlerId string) error {
 // lifecycle loop in start rebuilds the reader and rejoins the consumer
 // group without disturbing the surrounding process.
 type Consumer struct {
-	name          string
-	topic         string
-	groupId       string
-	brokers       []string
-	readerConfig  kafka.ReaderConfig
-	rp            ReaderProducer
-	gp            GroupProducer
-	prp           PartitionReaderProducer
+	name         string
+	topic        string
+	groupId      string
+	brokers      []string
+	readerConfig kafka.ReaderConfig
+	rp           ReaderProducer
+	gp           GroupProducer
+	prp          PartitionReaderProducer
+	// pcp answers "does this topic have partitions right now?". A nil pcp
+	// means gate disabled, classification indeterminate — which is what keeps
+	// every struct-literal Consumer in the test suite behaviourally unchanged.
+	pcp           PartitionCountProducer
 	handlers      map[string]handler.Handler
 	headerParsers []HeaderParser
 	engine        EngineName
@@ -272,6 +279,15 @@ type Consumer struct {
 	lastErrorAt   time.Time
 	lastError     string
 	recreateCount int
+
+	// topicMissingObservations counts DISTINCT observations that this
+	// consumer's topic does not exist or has no partitions — the pre-join
+	// gate's warn and the empty-assignment classification, not every poll.
+	// Monotonic: it is SUPERSEDED by a later assignment, never cleared
+	// (FR-3.3), because after the pod recovers this counter plus
+	// lastTopicMissingAt is the only surviving evidence of the outage.
+	topicMissingObservations int
+	lastTopicMissingAt       time.Time
 
 	// Watchdog counters live per assigned partition. The legacy engine has
 	// no partition of its own and uses the legacyPartition key, so its
@@ -302,6 +318,11 @@ type Consumer struct {
 // engine, which never sees a partition id of its own. Real partition ids are
 // non-negative, so -1 can never collide.
 const legacyPartition = -1
+
+// topicMissingWarnInterval throttles the pre-join gate's repeated warn. A
+// ten-minute topic outage produces ten warns per consumer instead of six
+// hundred; the per-poll line stays at Debug.
+const topicMissingWarnInterval = 1 * time.Minute
 
 // partitionState holds the liveness-watchdog counters for one partition. A
 // scalar would let a healthy partition's resets mask a sibling partition's
@@ -397,6 +418,12 @@ type Snapshot struct {
 	AssignedPartitions []int
 	GenerationID       int32
 	LastAssignmentAt   time.Time
+	// TopicMissingObservations counts distinct observations that this
+	// consumer's topic does not exist or has no partitions. It is monotonic:
+	// a consumer is CURRENTLY healthy iff AssignedPartitions is non-empty, or
+	// LastAssignmentAt is after LastTopicMissingAt.
+	TopicMissingObservations int
+	LastTopicMissingAt       time.Time
 	// Engine is the consumer implementation this consumer is running:
 	// "consumergroup" or "reader". During a staged rollout both run in one
 	// cluster, so this is how an operator tells them apart.
@@ -441,32 +468,34 @@ func (c *Consumer) Snapshot() Snapshot {
 	}
 
 	return Snapshot{
-		Name:                c.name,
-		Topic:               c.topic,
-		GroupID:             c.groupId,
-		Brokers:             append([]string(nil), c.brokers...),
-		AliveSince:          c.aliveSince,
-		LastFetchAt:         lastFetchAt,
-		LastErrorAt:         c.lastErrorAt,
-		LastError:           c.lastError,
-		RecreateCount:       c.recreateCount,
-		HandlerCount:        len(c.handlers),
-		LastTimeoutAt:       lastTimeoutAt,
-		ConsecutiveTimeouts: consecutive,
-		IdleTicks:           idleTicks,
-		LastIdleTickAt:      lastIdleTickAt,
-		NoProgressTicks:     noProgressTicks,
-		LastNoProgressAt:    lastNoProgressAt,
-		AssignedPartitions:  append([]int{}, c.assignedPartitions...),
-		GenerationID:        c.generationID,
-		LastAssignmentAt:    c.lastAssignmentAt,
-		Engine:              string(c.engine),
-		TimeToFirstFetch:    c.timeToFirstFetch,
-		LastFetchDuration:   c.lastFetchDuration,
-		MaxFetchDuration:    c.maxFetchDuration,
-		LastHandlerDuration: c.lastHandlerDuration,
-		MaxHandlerDuration:  c.maxHandlerDuration,
-		TotalBackoff:        c.totalBackoff,
+		Name:                     c.name,
+		Topic:                    c.topic,
+		GroupID:                  c.groupId,
+		Brokers:                  append([]string(nil), c.brokers...),
+		AliveSince:               c.aliveSince,
+		LastFetchAt:              lastFetchAt,
+		LastErrorAt:              c.lastErrorAt,
+		LastError:                c.lastError,
+		RecreateCount:            c.recreateCount,
+		HandlerCount:             len(c.handlers),
+		LastTimeoutAt:            lastTimeoutAt,
+		ConsecutiveTimeouts:      consecutive,
+		IdleTicks:                idleTicks,
+		LastIdleTickAt:           lastIdleTickAt,
+		NoProgressTicks:          noProgressTicks,
+		LastNoProgressAt:         lastNoProgressAt,
+		AssignedPartitions:       append([]int{}, c.assignedPartitions...),
+		GenerationID:             c.generationID,
+		LastAssignmentAt:         c.lastAssignmentAt,
+		TopicMissingObservations: c.topicMissingObservations,
+		LastTopicMissingAt:       c.lastTopicMissingAt,
+		Engine:                   string(c.engine),
+		TimeToFirstFetch:         c.timeToFirstFetch,
+		LastFetchDuration:        c.lastFetchDuration,
+		MaxFetchDuration:         c.maxFetchDuration,
+		LastHandlerDuration:      c.lastHandlerDuration,
+		MaxHandlerDuration:       c.maxHandlerDuration,
+		TotalBackoff:             c.totalBackoff,
 	}
 }
 
@@ -510,6 +539,16 @@ func (c *Consumer) recordIdleTick(partition int) {
 	st.idleTicks++
 	st.lastIdleTickAt = time.Now()
 	st.consecutiveTimeouts = 0
+}
+
+// recordTopicMissing marks one observation that the topic does not exist or
+// has no partitions. Mirrors recordIdleTick: increment, stamp, touch nothing
+// else — this is not an error state, it is a wait state.
+func (c *Consumer) recordTopicMissing() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.topicMissingObservations++
+	c.lastTopicMissingAt = time.Now()
 }
 
 // recordNoProgressTick marks one deadline expiration with zero reader

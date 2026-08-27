@@ -40,11 +40,11 @@ type morphCouponPlan struct {
 // morphRandom is deliberately not consulted: no item in Item.wz/Cash/0530.img.xml
 // carries one in any inspected corpus, so the weighted selector in morph.go stays
 // unwired on this path.
-func computeMorphCouponPlan(ci cash.Model) morphCouponPlan {
+func computeMorphCouponPlan(ci cash.Model, zombified bool) morphCouponPlan {
 	plan := morphCouponPlan{statups: make([]stat.Model, 0, 1)}
 
 	if val, ok := ci.GetSpec(cash.SpecTypeHp); ok && val > 0 {
-		plan.hp = int16(val)
+		plan.hp = halveIfZombified(int16(val), zombified)
 	}
 	if val, ok := ci.GetSpec(cash.SpecTypeMorph); ok && val > 0 {
 		plan.statups = append(plan.statups, stat.Model{Type: ts.TemporaryStatTypeMorph, Amount: val})
@@ -106,11 +106,17 @@ func consumeMorphCoupon(l logrus.FieldLogger, ctx context.Context, d morphCoupon
 	}
 	f, ci := ff.Get(), fi.Get()
 
-	plan := computeMorphCouponPlan(ci)
-
 	if err := d.compartment.ConsumeItem(characterId, inventory2.TypeValueCash, transactionId, slot); err != nil {
 		return d.onError(err)
 	}
+
+	// The zombify read is deliberately NOT in the pre-commit group. That group's
+	// contract is "every FALLIBLE read before the commit, so a data failure
+	// returns the paid cash item". Per FR-3 this read's failure mode is a logged
+	// false, never an abort -- putting it in the group would either add a new way
+	// to bounce a paid coupon or sit there ignoring its own error. (task-256 D4)
+	zombified := resolveZombified(l, d.buff, characterId)
+	plan := computeMorphCouponPlan(ci, zombified)
 
 	if plan.hp > 0 {
 		if err := d.character.ChangeHP(f, characterId, plan.hp); err != nil {
@@ -126,7 +132,10 @@ func consumeMorphCoupon(l logrus.FieldLogger, ctx context.Context, d morphCoupon
 		}
 	}
 
-	if plan.hp == 0 && len(plan.statups) == 0 {
+	// Gated on !zombified: under zombify a heal that truncated to zero (e.g.
+	// hp: 1 halved to 0) would otherwise trip this warning and misdiagnose a
+	// healthy tenant's cash WZ ingest as broken. (task-256)
+	if plan.hp == 0 && len(plan.statups) == 0 && !zombified {
 		l.Warnf("Character [%d] consumed transformation coupon [%d] but its cash data carries neither a morph nor an hp spec; the tenant's cash WZ likely predates the spec/morph and spec/hp parse.", characterId, itemId)
 	}
 	return nil

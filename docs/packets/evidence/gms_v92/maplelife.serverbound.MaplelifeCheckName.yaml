@@ -1,0 +1,13 @@
+packet: maplelife/serverbound/MaplelifeCheckName
+direction: serverbound
+version: gms_v92
+category: TIER1-FIXTURE
+ida:
+    function: CUICharacterSaleDlg::SendCheckDuplicateIDPacket
+    address: "0x756250"
+    decompile_sha256: cc9ce2f7d6f7b1b2ab72b5cae80239040969dba3e572fa681fb15f26376d44b4
+verifies:
+    - libs/atlas-packet/maplelife/serverbound/serverbound_test.go#TestMapleLifeCheckNameRoundTrip
+    - libs/atlas-packet/maplelife/serverbound/serverbound_test.go#TestMapleLifeCheckNameOperation
+    - libs/atlas-packet/maplelife/serverbound/serverbound_test.go#TestMapleLifeCheckNameByteFixture
+    - libs/atlas-packet/maplelife/serverbound/serverbound_test.go#TestMapleLifeCheckNameV83Bytes

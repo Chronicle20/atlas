@@ -1399,13 +1399,31 @@ func (m *CharacterTemporaryStat) getBaseTemporaryStats(t tenant.Model) []packet.
 			// where this[364] is the block's first int32 (task-216
 			// design.md §1.1). rOption carries the source skill id, matching
 			// every other populated two-state block.
-			//
-			// The group's other dynamic members (DASH_SPEED, DASH_JUMP,
-			// UNDEAD) keep the zeroed block deliberately: no evidence was
-			// gathered for what their clients read, and their matrix cells
-			// are already verified against the zeros.
 			if bs.name == character.TemporaryStatTypeEnergyCharge {
 				list = append(list, NewCharacterTemporaryStatBaseWithOptions(true, s.Value(), s.SourceId(), narrow)) // 15 (14 on GMS v61)
+				continue
+			}
+			// UNDEAD: CUser::UpdateAffectedSkillList @0x93e344 keys the
+			// zombify animation (self and observers) off this block's
+			// rOption alone, via sub_672293 (@0x672293, returns this+4) --
+			// TemporaryStatBase<long>::DecodeForClient @0x793ef2 confirms
+			// rOption is the block's second int32. ShowAffectedSkillAni
+			// splits that key back into id | (level << 16) to index the
+			// MobSkill table, the same composite
+			// MobSkillReasonForeignValueWriter (:306-329) writes for every
+			// other disease -- not the disease amount.
+			// CWvsContext::OnTemporaryStatSet @0xa202be additionally treats
+			// a negative VIEWELEM reason as the disease-icon marker; whether
+			// DecodeForLocal negates this reason for the Undead slot is
+			// unconfirmed (see bug-zombify-no-visible-effect.md "Not yet
+			// answered").
+			//
+			// DASH_SPEED / DASH_JUMP keep the zeroed block deliberately: no
+			// evidence was gathered for what their clients read, and their
+			// matrix cells are already verified against the zeros.
+			if bs.name == character.TemporaryStatTypeUndead {
+				composite := s.SourceId() | (int32(s.Level()) << 16)
+				list = append(list, NewCharacterTemporaryStatBaseWithOptions(true, s.Value(), composite, narrow)) // 15 (14 on GMS v61)
 				continue
 			}
 			list = append(list, NewCharacterTemporaryStatBase(true, narrow)) // dynamic, 15 (14 on GMS v61)

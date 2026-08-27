@@ -3,6 +3,7 @@ package mock
 import (
 	"atlas-login/account"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -23,6 +24,15 @@ type MockProcessor struct {
 	UpdateGenderFunc        func(id uint32, gender byte) error
 	RecordPinAttemptFunc    func(id uint32, success bool, ipAddress string, hwid string) (int, bool, error)
 	RecordPicAttemptFunc    func(id uint32, success bool, ipAddress string, hwid string) (int, bool, error)
+	GetCharacterSlotsFunc   func(accountId uint32, worldId world.Id) (int16, error)
+}
+
+// GetCharacterSlots implements account.Processor
+func (m *MockProcessor) GetCharacterSlots(accountId uint32, worldId world.Id) (int16, error) {
+	if m.GetCharacterSlotsFunc != nil {
+		return m.GetCharacterSlotsFunc(accountId, worldId)
+	}
+	return 4, nil
 }
 
 // ForAccountByName implements account.Processor

@@ -1,21 +1,24 @@
 package account
 
+// Model no longer carries a flat characterSlots field: slots are
+// per-(account, world), not per-account (task-246
+// bug-b-type-must-add-a-slot.md). Callers that need a slot count now call
+// Processor.GetCharacterSlots(accountId, worldId) instead of Model.CharacterSlots().
 type Model struct {
-	id             uint32
-	name           string
-	password       string
-	pin            string
-	pic            string
-	pinAttempts    int
-	picAttempts    int
-	loggedIn       int
-	lastLogin      uint64
-	gender         byte
-	banned         bool
-	tos            bool
-	language       string
-	country        string
-	characterSlots int16
+	id          uint32
+	name        string
+	password    string
+	pin         string
+	pic         string
+	pinAttempts int
+	picAttempts int
+	loggedIn    int
+	lastLogin   uint64
+	gender      byte
+	banned      bool
+	tos         bool
+	language    string
+	country     string
 }
 
 func (a Model) Id() uint32 {
@@ -32,10 +35,6 @@ func (a Model) Gender() byte {
 
 func (a Model) PIC() string {
 	return a.pic
-}
-
-func (a Model) CharacterSlots() int16 {
-	return a.characterSlots
 }
 
 func (a Model) LoggedIn() int {
@@ -56,21 +55,20 @@ func (a Model) PicAttempts() int {
 
 // Builder is used to construct a Model instance
 type Builder struct {
-	id             uint32
-	name           string
-	password       string
-	pin            string
-	pic            string
-	pinAttempts    int
-	picAttempts    int
-	loggedIn       int
-	lastLogin      uint64
-	gender         byte
-	banned         bool
-	tos            bool
-	language       string
-	country        string
-	characterSlots int16
+	id          uint32
+	name        string
+	password    string
+	pin         string
+	pic         string
+	pinAttempts int
+	picAttempts int
+	loggedIn    int
+	lastLogin   uint64
+	gender      byte
+	banned      bool
+	tos         bool
+	language    string
+	country     string
 }
 
 // NewBuilder creates a new Builder instance
@@ -162,30 +160,23 @@ func (b *Builder) SetCountry(country string) *Builder {
 	return b
 }
 
-// SetCharacterSlots sets the characterSlots field
-func (b *Builder) SetCharacterSlots(characterSlots int16) *Builder {
-	b.characterSlots = characterSlots
-	return b
-}
-
 // Build creates a new Model instance with the Builder's values
 func (b *Builder) Build() Model {
 	return Model{
-		id:             b.id,
-		name:           b.name,
-		password:       b.password,
-		pin:            b.pin,
-		pic:            b.pic,
-		pinAttempts:    b.pinAttempts,
-		picAttempts:    b.picAttempts,
-		loggedIn:       b.loggedIn,
-		lastLogin:      b.lastLogin,
-		gender:         b.gender,
-		banned:         b.banned,
-		tos:            b.tos,
-		language:       b.language,
-		country:        b.country,
-		characterSlots: b.characterSlots,
+		id:          b.id,
+		name:        b.name,
+		password:    b.password,
+		pin:         b.pin,
+		pic:         b.pic,
+		pinAttempts: b.pinAttempts,
+		picAttempts: b.picAttempts,
+		loggedIn:    b.loggedIn,
+		lastLogin:   b.lastLogin,
+		gender:      b.gender,
+		banned:      b.banned,
+		tos:         b.tos,
+		language:    b.language,
+		country:     b.country,
 	}
 }
 
@@ -205,6 +196,5 @@ func (m Model) ToBuilder() *Builder {
 		SetBanned(m.banned).
 		SetTos(m.tos).
 		SetLanguage(m.language).
-		SetCountry(m.country).
-		SetCharacterSlots(m.characterSlots)
+		SetCountry(m.country)
 }

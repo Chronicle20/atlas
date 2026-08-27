@@ -19,7 +19,7 @@ lines change what the controller does next; the reasoning belongs on disk, where
 it stays readable without being re-billed.
 
 Implementer and verifier returns are already the right shape and are explicitly
-**not** changed by this document — `atlas-verifier`'s 478–1,546 B return is the
+**not** changed by this document — `task-verifier`'s 478–1,546 B return is the
 reference. Reviewers are the outlier this contract exists to fix.
 
 ---

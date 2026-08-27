@@ -15,6 +15,24 @@ type SkillInfo struct {
 	Id       uint32
 	Name     string
 	MaxLevel uint8
+	// EffectX is the per-level HP/MP gain bonus (level 1..N, index 0 ==
+	// level 1), sourced from atlas-data's skill effect resource -- see
+	// SkillEffectRestModel.
+	EffectX []int16
+}
+
+// EffectXAt returns the skill's effect X value at the given level, mirroring
+// atlas-character's data/skill.Processor.GetEffect: level 0 (unlearned) is
+// always 0, and an out-of-range level yields ok=false rather than a panic.
+func (s SkillInfo) EffectXAt(level byte) (int16, bool) {
+	if level == 0 {
+		return 0, true
+	}
+	idx := int(level) - 1
+	if idx < 0 || idx >= len(s.EffectX) {
+		return 0, false
+	}
+	return s.EffectX[idx], true
 }
 
 type ItemInfo struct {
@@ -47,7 +65,11 @@ func (c *ProcessorImpl) GetSkillsByIds(ctx context.Context, ids []uint32) ([]Ski
 	}
 	out := make([]SkillInfo, 0, len(rms))
 	for _, rm := range rms {
-		out = append(out, SkillInfo{Id: rm.Id, Name: rm.Name, MaxLevel: rm.MaxLevel})
+		effectX := make([]int16, 0, len(rm.Effects))
+		for _, e := range rm.Effects {
+			effectX = append(effectX, e.X)
+		}
+		out = append(out, SkillInfo{Id: rm.Id, Name: rm.Name, MaxLevel: rm.MaxLevel, EffectX: effectX})
 	}
 	return out, nil
 }

@@ -24,11 +24,13 @@ type gateDeps struct {
 	// worldStatus reports whether destinationWorldId exists (found) and, if
 	// so, whether it has reached atlas-world's StatusFull capacity (full).
 	worldStatus func(l logrus.FieldLogger, ctx context.Context, worldId world.Id) (found bool, full bool, err error)
-	// accountSlots is the account's configured character-slot cap
-	// (atlas-account's characterSlots). The count of characters the account
-	// already holds in the destination world is a LOCAL lookup
-	// (character.GetForAccountInWorld) and is not part of this seam.
-	accountSlots func(l logrus.FieldLogger, ctx context.Context, accountId uint32) (slots int16, err error)
+	// accountSlots is the account's configured character-slot cap for the
+	// given world (atlas-account's per-(account, world) character-slots
+	// sub-resource). The count of characters the account already holds in
+	// that same world is a LOCAL lookup (character.GetForAccountInWorld) and
+	// is not part of this seam. worldId must be the destination world, so
+	// the remote cap and the local count are read for the same world.
+	accountSlots func(l logrus.FieldLogger, ctx context.Context, accountId uint32, worldId world.Id) (slots int16, err error)
 	// banned reports atlas-ban's account-scoped ban check.
 	banned func(l logrus.FieldLogger, ctx context.Context, accountId uint32) (bool, error)
 	// guildTitle reports the character's title in whichever guild it belongs
@@ -279,7 +281,7 @@ func (p *ProcessorImpl) checkWorldStatus(c character.Model, destinationWorldId w
 // checkCharacterSlot is gate 4 (destination-DEPENDENT), BUY-time only. The
 // cap is remote (atlas-account); the count already held is local.
 func (p *ProcessorImpl) checkCharacterSlot(c character.Model, destinationWorldId world.Id) (string, bool, error) {
-	slots, err := p.gates.accountSlots(p.l, p.ctx, c.AccountId())
+	slots, err := p.gates.accountSlots(p.l, p.ctx, c.AccountId(), destinationWorldId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to check character slots for account [%d] transferring character [%d].", c.AccountId(), c.Id())
 		return "", false, err

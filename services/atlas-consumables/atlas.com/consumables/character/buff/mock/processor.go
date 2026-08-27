@@ -9,9 +9,10 @@ import (
 )
 
 type ProcessorMock struct {
-	ApplyFunc         func(f field.Model, fromId uint32, sourceId int32, level byte, duration int32, statups []stat.Model) model.Operator[uint32]
-	CancelFunc        func(f field.Model, characterId uint32, sourceId int32) error
-	CancelByTypesFunc func(f field.Model, characterId uint32, types []string) error
+	ApplyFunc            func(f field.Model, fromId uint32, sourceId int32, level byte, duration int32, statups []stat.Model) model.Operator[uint32]
+	CancelFunc           func(f field.Model, characterId uint32, sourceId int32) error
+	CancelByTypesFunc    func(f field.Model, characterId uint32, types []string) error
+	GetByCharacterIdFunc func(characterId uint32) ([]buff.Model, error)
 }
 
 var _ buff.Processor = (*ProcessorMock)(nil)
@@ -37,4 +38,11 @@ func (m *ProcessorMock) CancelByTypes(f field.Model, characterId uint32, types [
 		return m.CancelByTypesFunc(f, characterId, types)
 	}
 	return nil
+}
+
+func (m *ProcessorMock) GetByCharacterId(characterId uint32) ([]buff.Model, error) {
+	if m.GetByCharacterIdFunc != nil {
+		return m.GetByCharacterIdFunc(characterId)
+	}
+	return nil, nil
 }

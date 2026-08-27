@@ -93,7 +93,7 @@ not.
 ### 3. Delegate the fix to a fresh agent
 
 ```text
-subagent_type: atlas-implementer
+subagent_type: task-implementer
 model: sonnet
 brief: docs/tasks/<task>/bug-<slug>.md
 ```
@@ -107,7 +107,7 @@ fix agent starts near 36k instead of inheriting your 300k.
 
 ### 4. Verify in a clean context
 
-`atlas-verifier` (`model: haiku`) for the gate. `atlas-reviewer` (`model:
+`task-verifier` (`model: haiku`) for the gate. `task-reviewer` (`model:
 sonnet`) if the fix crosses a service boundary or touches a contract — the gate
 cannot see a seam defect.
 
@@ -117,7 +117,7 @@ Launch the gate backgrounded and keep going; do not poll it.
 ### 5. Ledger it
 
 ```sh
-tools/agent-ledger.sh append <task> --unit "bug-<slug>" --agent-type atlas-implementer \
+tools/agent-ledger.sh append <task> --unit "bug-<slug>" --agent-type task-implementer \
   --model sonnet --status <status> --commit <sha>
 ```
 

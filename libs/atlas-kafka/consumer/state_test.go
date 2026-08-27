@@ -149,3 +149,52 @@ func TestRecordersAreKeyedByPartition(t *testing.T) {
 		t.Fatalf("Snapshot.ConsecutiveTimeouts = %d, want max 2", got)
 	}
 }
+
+// TestRecordTopicMissingCountsAndStamps pins FR-3.1/FR-3.3: the pair is a
+// monotonic counter plus a timestamp, mirroring idleTicks/lastIdleTickAt.
+func TestRecordTopicMissingCountsAndStamps(t *testing.T) {
+	c := newTestConsumer()
+
+	if s := c.Snapshot(); s.TopicMissingObservations != 0 || !s.LastTopicMissingAt.IsZero() {
+		t.Fatalf("fresh consumer: observations = %d, lastAt = %v, want 0 and zero time", s.TopicMissingObservations, s.LastTopicMissingAt)
+	}
+
+	c.recordTopicMissing()
+	s := c.Snapshot()
+	if s.TopicMissingObservations != 1 {
+		t.Fatalf("TopicMissingObservations = %d, want 1", s.TopicMissingObservations)
+	}
+	if s.LastTopicMissingAt.IsZero() {
+		t.Fatal("LastTopicMissingAt is zero after an observation")
+	}
+
+	c.recordTopicMissing()
+	c.recordTopicMissing()
+	if got := c.Snapshot().TopicMissingObservations; got != 3 {
+		t.Fatalf("TopicMissingObservations = %d after three observations, want 3", got)
+	}
+}
+
+// TestSnapshotTopicMissingSupersededByAssignment pins the FR-3.3 supersession
+// rule: the counter is NOT cleared on recovery — it is the post-mortem signal
+// this incident lacked. "Currently healthy" is read as lastAssignmentAt being
+// after lastTopicMissingAt.
+func TestSnapshotTopicMissingSupersededByAssignment(t *testing.T) {
+	c := newTestConsumer()
+	c.recordTopicMissing()
+	c.recordTopicMissing()
+
+	time.Sleep(2 * time.Millisecond)
+	c.onAssignment(7, []int{0})
+
+	s := c.Snapshot()
+	if s.TopicMissingObservations != 2 {
+		t.Fatalf("TopicMissingObservations = %d after recovery, want the history preserved (2)", s.TopicMissingObservations)
+	}
+	if !s.LastAssignmentAt.After(s.LastTopicMissingAt) {
+		t.Fatalf("LastAssignmentAt (%v) is not after LastTopicMissingAt (%v); the supersession read breaks", s.LastAssignmentAt, s.LastTopicMissingAt)
+	}
+	if len(s.AssignedPartitions) != 1 || s.AssignedPartitions[0] != 0 {
+		t.Fatalf("AssignedPartitions = %v, want [0]", s.AssignedPartitions)
+	}
+}

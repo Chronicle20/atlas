@@ -52,7 +52,16 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			return
 		}
 
-		err = session.Announce(l)(ctx)(wp)(charpkt.CharacterListWriter)(writer.CharacterListBody(cs, p.WorldId(), 0, a.PIC(), int16(1), a.CharacterSlots()))(s)
+		// Per-(account, world) slot count (task-246
+		// bug-b-type-must-add-a-slot.md), replacing the flat, always-4
+		// account.Model.CharacterSlots() this handler used to read.
+		characterSlots, err := account.NewProcessor(l, ctx).GetCharacterSlots(s.AccountId(), w.Id())
+		if err != nil {
+			l.WithError(err).Errorf("Cannot retrieve character slots for account [%d] in world [%d]", s.AccountId(), w.Id())
+			return
+		}
+
+		err = session.Announce(l)(ctx)(wp)(charpkt.CharacterListWriter)(writer.CharacterListBody(cs, p.WorldId(), 0, a.PIC(), int16(1), characterSlots))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show character list")
 		}

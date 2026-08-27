@@ -1,0 +1,124 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-21T11:43:27Z	agent	Task 1	packet-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T11:58:37Z	agent	Task 1	packet-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	98efc7f0d	-	-	-	-
+2026-08-21T12:01:48Z	agent	Task 1	atlas-reviewer	sonnet	-	-	-	-	DONE	98efc7f0d	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T12:16:39Z	agent	Task 2	packet-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	2f2e5d8c7	-	-	-	-
+2026-08-21T12:19:38Z	agent	Task 2	atlas-reviewer	sonnet	-	-	-	-	DONE	2f2e5d8c7	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T12:25:41Z	agent	Task 3	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	a4f9a4172	-	-	-	-
+2026-08-21T12:29:14Z	agent	Task 3	atlas-reviewer	sonnet	-	-	-	-	DONE	a4f9a4172	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-21T12:43:26Z	agent	Task 4	packet-implementer	sonnet	-	-	-	-	PARTIAL	3d3e0455f	-	-	-	-
+2026-08-21T12:47:28Z	agent	Task 4 cont	packet-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T12:54:20Z	agent	Task 4 cont	packet-implementer	sonnet	-	-	-	-	DONE	100e06719	-	-	-	-
+2026-08-21T12:54:21Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	dispatched	100e06719	-	-	-	-
+2026-08-21T12:54:23Z	agent	Task 5	packet-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:07:39Z	agent	Task 4	atlas-reviewer	sonnet	-	-	-	-	DONE	100e06719	CHANGES_REQUIRED	yes	docs/tasks/task-246-maple-life-character-creation/review-task-4.md	-
+2026-08-21T13:19:54Z	agent	Task 5	packet-implementer	sonnet	-	-	-	-	DONE	a79ead298	-	-	-	-
+2026-08-21T13:19:56Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	dispatched	a79ead298	-	-	-	-
+2026-08-21T13:19:58Z	agent	Task 6	packet-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:27:33Z	agent	Task 5	atlas-reviewer	sonnet	-	-	-	-	DONE	a79ead298	APPROVED_WITH_FINDINGS	yes	docs/tasks/task-246-maple-life-character-creation/review-task-5.md	-
+2026-08-21T13:48:03Z	agent	Task 6	packet-implementer	sonnet	-	-	-	-	PARTIAL	afd295074	-	-	-	-
+2026-08-21T13:48:06Z	agent	Task 6 cont	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T13:55:00Z	agent	Task 4	verify.sh	-	-	-	-	-	PASS	100e06719	-	-	-	-
+2026-08-21T14:07:18Z	agent	Task 6 cont	atlas-implementer	sonnet	-	-	-	-	DONE	ddef3d665	-	-	-	-
+2026-08-21T14:07:19Z	agent	Task 6	atlas-reviewer	sonnet	-	-	-	-	dispatched	ddef3d665	-	-	-	-
+2026-08-21T14:07:19Z	handoff	after Task 6	-	-	-	-	-	-	-	-	-	-	-	110000
+2026-08-21T14:10:08Z	agent	Task 6	atlas-reviewer	sonnet	-	-	-	-	DONE	ddef3d665	APPROVED_WITH_FINDINGS	no	docs/tasks/task-246-maple-life-character-creation/review-task-6.md	-
+2026-08-21T14:12:31Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	dispatched	ddef3d665	-	-	-	-
+2026-08-21T16:17:44Z	agent	Task 7	atlas-implementer	sonnet	-	-	-	-	done	5f427eb3d	-	-	-	-
+2026-08-21T16:17:44Z	agent	Task 7	atlas-reviewer	sonnet	-	-	-	-	dispatched	5f427eb3d	-	-	-	-
+2026-08-21T16:17:44Z	agent	Task 8	atlas-implementer	sonnet	-	-	-	-	dispatched	5f427eb3d	-	-	-	-
+2026-08-21T16:18:58Z	agent	Task 7	atlas-reviewer	sonnet	-	-	-	-	done	5f427eb3d	APPROVED	no	-	-
+2026-08-21T16:21:41Z	agent	Task 8	atlas-implementer	sonnet	-	-	-	-	done	dac10b874	-	-	-	-
+2026-08-21T16:21:48Z	agent	Task 8	atlas-reviewer	sonnet	-	-	-	-	dispatched	dac10b874	-	-	-	-
+2026-08-21T16:21:54Z	agent	Task 9	atlas-implementer	sonnet	-	-	-	-	dispatched	dac10b874	-	-	-	-
+2026-08-21T16:23:07Z	agent	Task 8	atlas-reviewer	sonnet	-	-	-	-	done	dac10b874	APPROVED	no	-	-
+2026-08-21T16:27:09Z	agent	Task 9	atlas-implementer	sonnet	-	-	-	-	done	ad1557fb9	-	-	-	-
+2026-08-21T16:27:09Z	agent	Task 9	atlas-reviewer	sonnet	-	-	-	-	dispatched	ad1557fb9	-	-	-	-
+2026-08-21T16:27:10Z	agent	Task 10	atlas-implementer	sonnet	-	-	-	-	dispatched	ad1557fb9	-	-	-	-
+2026-08-21T16:27:58Z	agent	Task 9	atlas-reviewer	sonnet	-	-	-	-	done	ad1557fb9	APPROVED	no	-	-
+2026-08-21T16:29:41Z	agent	Task 10	atlas-implementer	sonnet	-	-	-	-	done	b9581c6	-	-	-	-
+2026-08-21T16:29:41Z	agent	Task 10	atlas-reviewer	sonnet	-	-	-	-	dispatched	b9581c6	-	-	-	-
+2026-08-21T16:33:46Z	agent	Task 10	atlas-reviewer	sonnet	-	-	-	-	done	b9581c6	APPROVED	no	-	-
+2026-08-21T16:33:47Z	handoff	after Task 10	-	-	-	-	-	-	-	-	-	-	-	62000
+2026-08-21T17:02:51Z	agent	Task 11	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T17:14:14Z	agent	Task 11	atlas-implementer	sonnet	-	-	-	-	DONE	e2d87afd9	-	-	-	-
+2026-08-21T17:15:31Z	agent	Task 11	atlas-verifier	-	-	-	-	-	FAIL	e2d87afd9	-	-	-	-
+2026-08-21T17:22:50Z	agent	Task 11	atlas-reviewer	sonnet	-	-	-	-	DONE	e2d87afd9	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-21T17:25:56Z	agent	Task 11	atlas-implementer	sonnet	-	-	-	-	DONE	e3a8953a2	-	-	-	-
+2026-08-21T17:25:58Z	agent	Task 12	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T17:26:51Z	agent	Task 11	atlas-verifier	-	-	-	-	-	PASS	e3a8953a2	-	-	-	-
+2026-08-21T17:50:12Z	agent	Task 12	atlas-implementer	sonnet	-	-	-	-	DONE	6673126	-	-	-	-
+2026-08-21T17:50:13Z	agent	Task 12	atlas-verifier	-	-	-	-	-	PASS	6673126	-	-	-	-
+2026-08-21T17:50:53Z	agent	Task 12	atlas-reviewer	sonnet	-	-	-	-	DONE	6673126	APPROVED	no	-	-
+2026-08-21T17:50:54Z	agent	Task 13	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-21T18:05:32Z	agent	Task 13	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	50c79fadf	-	-	-	-
+2026-08-21T18:05:32Z	agent	Task 13	atlas-verifier	-	-	-	-	-	PASS	50c79fadf	-	-	-	-
+2026-08-21T18:08:18Z	agent	Task 13	atlas-reviewer	sonnet	-	-	-	-	DONE	50c79fadf	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T18:08:18Z	handoff	after Task 13	-	-	-	-	-	-	-	-	-	-	-	145000
+2026-08-21T20:17:00Z	agent	Task 16	packet-implementer	sonnet	-	-	-	-	dispatched	0ef41c109	-	-	-	-
+2026-08-21T20:31:50Z	agent	Task 16	packet-implementer	sonnet	-	-	-	-	DONE	677b62c51	-	-	-	-
+2026-08-21T20:31:50Z	agent	Task 16	atlas-reviewer	sonnet	-	-	-	-	dispatched	677b62c51	-	-	-	-
+2026-08-21T20:31:51Z	agent	Task 17	atlas-implementer	sonnet	-	-	-	-	dispatched	677b62c51	-	-	-	-
+2026-08-21T20:40:45Z	agent	Task 16	atlas-reviewer	sonnet	-	-	-	-	DONE	677b62c51	APPROVED_WITH_FINDINGS	yes	docs/tasks/task-246-maple-life-character-creation/review-task-16.md	-
+2026-08-21T20:40:45Z	agent	Task 17	atlas-implementer	sonnet	-	-	-	-	DONE	2f7faecf7	-	-	-	-
+2026-08-21T20:40:45Z	agent	Task 17	atlas-reviewer	sonnet	-	-	-	-	dispatched	2f7faecf7	-	-	-	-
+2026-08-21T20:40:46Z	agent	Task 16 cont	atlas-implementer	sonnet	-	-	-	-	dispatched	2f7faecf7	-	-	-	-
+2026-08-21T20:41:20Z	agent	Task 17	atlas-reviewer	sonnet	-	-	-	-	DONE	2f7faecf7	APPROVED_WITH_FINDINGS	no	docs/tasks/task-246-maple-life-character-creation/review-task-17.md	-
+2026-08-21T20:48:22Z	agent	Task 16 cont	atlas-implementer	sonnet	-	-	-	-	DONE	2ba40b634	-	-	-	-
+2026-08-21T20:48:22Z	agent	Task 17	verify.sh	-	-	-	-	-	PASS	2f7faecf7	-	-	-	-
+2026-08-21T20:48:22Z	agent	Task 16 cont	atlas-reviewer	sonnet	-	-	-	-	dispatched	2ba40b634	-	-	-	-
+2026-08-21T20:48:23Z	agent	Task 18	atlas-implementer	sonnet	-	-	-	-	dispatched	2ba40b634	-	-	-	-
+2026-08-21T20:52:17Z	agent	Task 16 cont	atlas-reviewer	sonnet	-	-	-	-	DONE	2ba40b634	APPROVED_WITH_FINDINGS	no	docs/tasks/task-246-maple-life-character-creation/review-task-16-cont.md	-
+2026-08-21T20:53:51Z	agent	Task 18	atlas-implementer	sonnet	-	-	-	-	DONE	27d3b3d	-	-	-	-
+2026-08-21T20:53:51Z	agent	Task 18	atlas-reviewer	sonnet	-	-	-	-	dispatched	27d3b3d	-	-	-	-
+2026-08-21T20:55:20Z	agent	Task 18	atlas-reviewer	sonnet	-	-	-	-	DONE	27d3b3d	APPROVED	no	docs/tasks/task-246-maple-life-character-creation/review-task-18.md	-
+2026-08-21T20:55:20Z	agent	Task 18	verify.sh	-	-	-	-	-	PASS	27d3b3d	-	-	-	-
+2026-08-21T20:55:21Z	handoff	after Task 18	-	-	-	-	-	-	-	-	-	-	-	135000
+2026-08-21T21:03:41Z	agent	Task 19	atlas-implementer	sonnet	-	-	-	-	DONE	f43e442	-	-	-	-
+2026-08-21T21:04:22Z	agent	Task 19	atlas-verifier	-	-	-	-	-	PASS	f43e442	-	-	-	-
+2026-08-21T21:05:56Z	agent	Task 19	atlas-reviewer	sonnet	-	-	-	-	DONE	f43e442	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T21:08:08Z	agent	Task 20	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	a7d6d0b80	-	-	-	-
+2026-08-21T21:08:16Z	agent	Task 20	atlas-verifier	-	-	-	-	-	PASS	a7d6d0b80	-	-	-	-
+2026-08-21T21:08:56Z	agent	corpus-test fix	atlas-implementer	sonnet	-	-	-	-	DONE	39c2f17eb	-	-	-	-
+2026-08-21T21:09:42Z	agent	Task 20	atlas-reviewer	sonnet	-	-	-	-	DONE	a7d6d0b80	APPROVED	no	-	-
+2026-08-21T21:13:16Z	agent	Task 21	atlas-implementer	sonnet	-	-	-	-	DONE	22a3e88	-	-	-	-
+2026-08-21T21:13:16Z	agent	Task 21	atlas-verifier	-	-	-	-	-	PASS	22a3e88	-	-	-	-
+2026-08-21T21:13:16Z	agent	Task 21	atlas-reviewer	sonnet	-	-	-	-	DONE	22a3e88	APPROVED	no	-	-
+2026-08-21T21:24:30Z	agent	Task 22	atlas-implementer	sonnet	-	-	-	-	DONE	8eda3ee6b	-	-	-	-
+2026-08-21T21:24:53Z	agent	Task 22	atlas-verifier	-	-	-	-	-	PASS	8eda3ee6b	-	-	-	-
+2026-08-21T21:24:53Z	handoff	after Task 22	-	-	-	-	-	-	-	-	-	-	-	85000
+2026-08-21T21:27:29Z	agent	Task 22	atlas-reviewer	sonnet	-	-	-	-	DONE	8eda3ee6b	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T21:33:34Z	agent	Task 23	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	646946970	-	-	-	-
+2026-08-21T21:34:01Z	agent	Task 23	atlas-verifier	-	-	-	-	-	PASS	646946970	-	-	-	-
+2026-08-21T21:36:27Z	agent	Task 24	atlas-implementer	sonnet	-	-	-	-	DONE	6880ad6	-	-	-	-
+2026-08-21T21:37:10Z	agent	Task 24	atlas-verifier	-	-	-	-	-	PASS	6880ad6c2	-	-	-	-
+2026-08-21T21:38:37Z	agent	Task 24	atlas-reviewer	sonnet	-	-	-	-	DONE	6880ad6c2	APPROVED	no	-	-
+2026-08-21T21:41:02Z	agent	Task 23	atlas-reviewer	sonnet	-	-	-	-	DONE	646946970	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-21T21:45:19Z	agent	Task 25	atlas-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	6bd233780	-	-	-	-
+2026-08-21T21:45:56Z	agent	Task 25	atlas-verifier	-	-	-	-	-	PASS	6bd233780	-	-	-	-
+2026-08-21T21:48:37Z	agent	Task 25	atlas-reviewer	sonnet	-	-	-	-	DONE	6bd233780	APPROVED	no	-	-
+2026-08-21T21:51:53Z	agent	cleanup (task-22/23 findings)	atlas-implementer	sonnet	-	-	-	-	DONE	7b2196004	-	-	-	-
+2026-08-21T21:52:22Z	agent	cleanup (task-22/23 findings)	atlas-verifier	-	-	-	-	-	PASS	7b2196004	-	-	-	-
+2026-08-21T21:56:15Z	agent	cleanup (task-22/23 findings)	atlas-reviewer	sonnet	-	-	-	-	DONE	7b2196004	APPROVED	no	-	-
+2026-08-21T22:00:19Z	agent	Task 26	atlas-implementer	sonnet	-	-	-	-	BLOCKED	-	-	-	-	-
+2026-08-22T00:43:09Z	agent	Task 26 v84 recheck	packet-verifier	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-22T00:43:09Z	agent	Task 26 USE_MAPLELIFE v95	packet-verifier	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-22T00:45:01Z	agent	Task 26 v84 RESULT recheck	packet-verifier	sonnet	-	-	-	-	VERSION-ABSENT confirmed, no commit	-	-	-	-	-
+2026-08-22T00:45:02Z	agent	Task 26 v84 ERROR recheck	packet-verifier	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-22T00:47:14Z	agent	Task 26 USE_MAPLELIFE v95	packet-verifier	sonnet	-	-	-	-	BLOCKED - wrong op/codec pairing, confirmed correct	-	-	-	-	-
+2026-08-22T00:49:20Z	agent	Task 26 v84 ERROR recheck	packet-verifier	sonnet	-	-	-	-	VERSION-ABSENT confirmed, no commit	-	-	-	-	-
+2026-08-22T00:49:20Z	agent	Task 27 registry correction	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-22T00:54:25Z	agent	Task 27 registry correction	atlas-implementer	sonnet	-	-	-	-	DONE	77b302206	-	-	-	-
+2026-08-22T00:54:25Z	agent	Task 27 review	atlas-reviewer	sonnet	-	-	-	-	complete	77b302206	APPROVED	no	-	-
+2026-08-22T01:19:06Z	agent	Plan adherence 1-13	plan-adherence-reviewer	sonnet	-	-	-	-	complete	-	APPROVED	no	-	-
+2026-08-22T01:23:18Z	agent	Plan adherence 14-27	plan-adherence-reviewer	sonnet	-	-	-	-	complete	-	APPROVED	no	-	-
+2026-08-22T01:25:45Z	agent	Backend audit channel+libs	backend-guidelines-reviewer	sonnet	-	-	-	-	complete	-	CHANGES_REQUIRED	yes	-	-
+2026-08-22T01:25:45Z	agent	Task 28 EXT-01 fix	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-22T01:27:13Z	agent	Task 28 EXT-01 fix	atlas-implementer	sonnet	-	-	-	-	DONE	78d7dd4db	-	-	-	-
+2026-08-22T01:28:56Z	agent	Backend audit factory+saga	backend-guidelines-reviewer	sonnet	-	-	-	-	complete	-	CHANGES_REQUIRED	yes	-	-
+2026-08-22T01:28:56Z	agent	Task 29 FILE-* refactor	atlas-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-22T01:31:05Z	agent	Task 29 FILE-* refactor	atlas-implementer	sonnet	-	-	-	-	DONE	9087c4dfc	-	-	-	-
+2026-08-22T01:35:35Z	agent	Final gate	verify.sh	-	-	-	-	-	PASS	9087c4dfc	-	-	-	-
+2026-08-26T23:02:13Z	agent	bug-ap-sp-and-starting-equipment	task-implementer	sonnet	-	-	-	-	DONE	47dc7bf00	-	-	-	-
+2026-08-26T23:02:13Z	agent	bug-ap-sp-and-starting-equipment	task-reviewer	sonnet	-	-	-	-	DONE	47dc7bf00	APPROVED	no	-	-
+2026-08-27T10:29:15Z	agent	bug-maple-life-seed-never-reaches-live-db	none	none	-	-	-	-	DONE	34dc30449	-	-	-	-

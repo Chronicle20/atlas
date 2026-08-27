@@ -116,3 +116,24 @@ func TestBuilderDefaults(t *testing.T) {
 		t.Errorf("Default TOS should be false, got %v", m.TOS())
 	}
 }
+
+func TestCharacterSlotBuilder(t *testing.T) {
+	tenantId := uuid.New()
+
+	m := NewCharacterSlotBuilder(tenantId, 7, 1).
+		SetSlots(5).
+		Build()
+
+	if m.TenantId() != tenantId {
+		t.Errorf("TenantId mismatch. Expected %v, got %v", tenantId, m.TenantId())
+	}
+	if m.AccountId() != 7 {
+		t.Errorf("AccountId mismatch. Expected 7, got %v", m.AccountId())
+	}
+	if m.WorldId() != 1 {
+		t.Errorf("WorldId mismatch. Expected 1, got %v", m.WorldId())
+	}
+	if m.Slots() != 5 {
+		t.Errorf("Slots mismatch. Expected 5, got %v", m.Slots())
+	}
+}

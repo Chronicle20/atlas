@@ -52,7 +52,7 @@ rediscover what you just found, at its own context depth.
 ## Step 4 — Dispatch a fresh implementer
 
 ```text
-subagent_type: atlas-implementer
+subagent_type: task-implementer
 model: sonnet
 ```
 
@@ -71,18 +71,18 @@ Launch the gate for the fix range and **keep going** — do not poll it:
 tools/verify.sh --quick --base <last-gated-commit> > "$CLAUDE_JOB_DIR/tmp/gate-<slug>.log" 2>&1
 ```
 
-with `run_in_background: true`, or dispatch `atlas-verifier` (`model: haiku`)
+with `run_in_background: true`, or dispatch `task-verifier` (`model: haiku`)
 for a summarized verdict.
 
 If the fix crosses a service boundary or changes a contract, also dispatch
-`atlas-reviewer` (`model: sonnet`) against the fix range with the bug file as
+`task-reviewer` (`model: sonnet`) against the fix range with the bug file as
 the requirement — the gate cannot see a seam defect.
 
 ## Step 6 — Ledger and reconcile
 
 ```sh
 tools/agent-ledger.sh append <task> --unit "bug-<slug>" \
-  --agent-type atlas-implementer --model sonnet --status <status> --commit <sha>
+  --agent-type task-implementer --model sonnet --status <status> --commit <sha>
 ```
 
 Add a reviewer row with `--verdict` and `--caused-fix` if one ran.

@@ -20,6 +20,15 @@ const (
 	KindString
 	KindSub
 	KindCanvas
+	KindUOL
+	KindNull
+	KindShort
+	KindLong
+	KindFloat
+	KindDouble
+	KindVector
+	KindConvex
+	KindFloatNoMarker
 )
 
 // Prop is one property inside an image.
@@ -27,9 +36,15 @@ type Prop struct {
 	Name     string
 	Kind     Kind
 	Int      int32
-	Str      string
+	Str      string // also carries the UOL target string for KindUOL
 	Canvas   []byte // raw payload; the builder prepends the 1-byte flag header
-	Children []Prop
+	Children []Prop // also carries the Convex children for KindConvex
+	Short    int16
+	Long     int64
+	Float    float32
+	Double   float64
+	X, Y     int32 // Vector coordinates
+	W, H     int32 // Canvas dimensions
 }
 
 func Int(name string, v int32) Prop { return Prop{Name: name, Kind: KindInt, Int: v} }
@@ -38,8 +53,55 @@ func Sub(name string, children ...Prop) Prop {
 	return Prop{Name: name, Kind: KindSub, Children: children}
 }
 
+// Canvas builds a 1x1, childless canvas property (the historical fixture
+// shape). Equivalent to CanvasWith(name, 1, 1, payload).
 func Canvas(name string, payload []byte) Prop {
-	return Prop{Name: name, Kind: KindCanvas, Canvas: payload}
+	return CanvasWith(name, 1, 1, payload)
+}
+
+// CanvasWith builds a canvas property with real dimensions and, optionally,
+// child properties (e.g. "origin" Vector, "z"/"delay" Int) read back via
+// parseCanvasProperty's hasProperty>0 path.
+func CanvasWith(name string, w, h int32, payload []byte, children ...Prop) Prop {
+	return Prop{Name: name, Kind: KindCanvas, Canvas: payload, W: w, H: h, Children: children}
+}
+
+// UOL builds an extended-type "UOL" property (a symlink-like reference to
+// another property path).
+func UOL(name, target string) Prop {
+	return Prop{Name: name, Kind: KindUOL, Str: target}
+}
+
+// Null builds a type-0 property with no payload.
+func Null(name string) Prop { return Prop{Name: name, Kind: KindNull} }
+
+// Short builds a type-2 int16 property.
+func Short(name string, v int16) Prop { return Prop{Name: name, Kind: KindShort, Short: v} }
+
+// Long builds a type-20 WzLong property.
+func Long(name string, v int64) Prop { return Prop{Name: name, Kind: KindLong, Long: v} }
+
+// Float builds a type-4 float32 property, always with the 0x80 marker byte
+// present so the value round-trips (a missing/other marker byte reads as 0).
+func Float(name string, v float32) Prop { return Prop{Name: name, Kind: KindFloat, Float: v} }
+
+// FloatNoMarker builds a type-4 float property whose marker byte is
+// deliberately NOT 0x80. image.go's forced-zero branch never reads a
+// float32 payload in that case, so no payload bytes follow the marker; the
+// parser is expected to yield 0 having consumed only the marker byte.
+func FloatNoMarker(name string) Prop { return Prop{Name: name, Kind: KindFloatNoMarker} }
+
+// Double builds a type-5 float64 property.
+func Double(name string, v float64) Prop { return Prop{Name: name, Kind: KindDouble, Double: v} }
+
+// Vector builds an extended-type "Shape2D#Vector2D" property.
+func Vector(name string, x, y int32) Prop { return Prop{Name: name, Kind: KindVector, X: x, Y: y} }
+
+// Convex builds an extended-type "Shape2D#Convex2D" property whose children
+// are written bare (no property-name string block, no length prefix), since
+// parseExtendedProperty is re-entered directly for each child.
+func Convex(name string, children ...Prop) Prop {
+	return Prop{Name: name, Kind: KindConvex, Children: children}
 }
 
 // Image is one .img entry. Enc overrides the file-level encryption for this
@@ -70,6 +132,7 @@ type Builder struct {
 	enc          crypto.EncryptionType
 	root         Dir
 	rawFirstName []byte
+	stringDedup  bool
 }
 
 func NewBuilder() *Builder {
@@ -78,6 +141,15 @@ func NewBuilder() *Builder {
 
 func (b *Builder) SetVersion(v int) *Builder                        { b.version = v; return b }
 func (b *Builder) SetEncryption(enc crypto.EncryptionType) *Builder { b.enc = enc; return b }
+
+// SetStringDedup toggles offset-referenced string blocks (tag 0x01 for
+// repeated property names, tag 0x1B for repeated extended-type tag strings
+// such as "Property"/"Canvas"/"UOL"/"Shape2D#Vector2D"/"Shape2D#Convex2D")
+// for the string pool real client-produced archives use, exercising
+// Reader.ReadWzStringBlock's offset-seek path. Default off: every existing
+// fixture is built with plain inline (tag 0x73) string blocks and its bytes
+// must not change.
+func (b *Builder) SetStringDedup(on bool) *Builder { b.stringDedup = on; return b }
 
 // SetRawRootEntryName writes raw verbatim as the on-disk name bytes of the
 // FIRST root entry (no mask/key encoding). Used to construct archives whose
@@ -114,6 +186,17 @@ func writeWzInt(buf *bytes.Buffer, v int32) {
 	_ = binary.Write(buf, binary.LittleEndian, v)
 }
 
+// writeWzLong mirrors Reader.ReadWzLong: an in-range value is a single
+// signed byte, otherwise byte 0x80 (int8 -128) then a full int64.
+func writeWzLong(buf *bytes.Buffer, v int64) {
+	if v >= -127 && v <= 127 {
+		buf.WriteByte(byte(int8(v)))
+		return
+	}
+	buf.WriteByte(0x80)
+	_ = binary.Write(buf, binary.LittleEndian, v)
+}
+
 // writeWzString emits an ASCII WZ string: int8(-len) tag, then each byte
 // XOR'd with the incrementing 0xAA mask and the key. Mirrors
 // Reader.readWzASCIIStringInline exactly.
@@ -139,54 +222,96 @@ func writeWzString(buf *bytes.Buffer, s string, key []byte) error {
 }
 
 // writeStringBlock emits the 0x73 inline-string block form read by
-// Reader.ReadWzStringBlock.
+// Reader.ReadWzStringBlock. Always inline: used for content strings (String
+// property values, UOL targets) that this builder never deduplicates.
 func writeStringBlock(buf *bytes.Buffer, s string, key []byte) error {
 	buf.WriteByte(0x73)
 	return writeWzString(buf, s, key)
 }
 
-func writePropList(buf *bytes.Buffer, props []Prop, key []byte) error {
+// stringPool tracks, per image, the absolute (image-relative, i.e. relative
+// to the image's own dataOffset) byte position of each string's first
+// inline occurrence, so later occurrences can be written as tag-0x01/0x1B
+// offset references instead of duplicating the string bytes. A nil pool
+// means dedup is off (Builder.stringDedup false, the default): every call
+// site below falls back to writeStringBlock's unconditional inline form,
+// so existing fixtures stay byte-identical.
+type stringPool struct {
+	seen map[string]int
+}
+
+// writeStringBlockDedup emits a WZ string block that participates in the
+// per-image string pool when pool is non-nil: the first occurrence of s
+// within the image is written inline (tag 0x73) and its position recorded;
+// later occurrences are written as an offset reference using dedupTag
+// (conventionally 0x01 for property names, 0x1B for extended-type tag
+// strings — Reader.ReadWzStringBlock resolves both identically).
+//
+// base is the absolute image-relative byte offset that buf.Len()==0
+// corresponds to. writeExtendedContent's type-9 wrapping builds its body in
+// a separate bytes.Buffer (to compute the int32 length prefix before it is
+// known how long the body is) which is later copied verbatim into the
+// parent buffer; base lets positions recorded while building that separate
+// buffer still land in the flattened image's coordinate space, which is
+// what the offset field the reader seeks by is relative to.
+func writeStringBlockDedup(buf *bytes.Buffer, s string, key []byte, pool *stringPool, base int, dedupTag byte) error {
+	if pool != nil {
+		if pos, ok := pool.seen[s]; ok {
+			buf.WriteByte(dedupTag)
+			_ = binary.Write(buf, binary.LittleEndian, int32(pos))
+			return nil
+		}
+	}
+	buf.WriteByte(0x73)
+	if pool != nil {
+		pool.seen[s] = base + buf.Len()
+	}
+	return writeWzString(buf, s, key)
+}
+
+func writePropList(buf *bytes.Buffer, props []Prop, key []byte, pool *stringPool, base int) error {
 	writeWzInt(buf, int32(len(props)))
 	for _, p := range props {
-		if err := writeStringBlock(buf, p.Name, key); err != nil {
+		if err := writeStringBlockDedup(buf, p.Name, key, pool, base, 0x01); err != nil {
 			return err
 		}
 		switch p.Kind {
+		case KindNull:
+			buf.WriteByte(0)
+		case KindShort:
+			buf.WriteByte(2)
+			_ = binary.Write(buf, binary.LittleEndian, p.Short)
 		case KindInt:
 			buf.WriteByte(3)
 			writeWzInt(buf, p.Int)
+		case KindLong:
+			buf.WriteByte(20)
+			writeWzLong(buf, p.Long)
+		case KindFloat:
+			buf.WriteByte(4)
+			buf.WriteByte(0x80) // marker byte; any other value reads back as 0
+			_ = binary.Write(buf, binary.LittleEndian, p.Float)
+		case KindFloatNoMarker:
+			buf.WriteByte(4)
+			buf.WriteByte(0x00) // not 0x80: parser forces 0, no payload bytes follow
+		case KindDouble:
+			buf.WriteByte(5)
+			_ = binary.Write(buf, binary.LittleEndian, p.Double)
 		case KindString:
 			buf.WriteByte(8)
 			if err := writeStringBlock(buf, p.Str, key); err != nil {
 				return err
 			}
-		case KindSub:
+		case KindSub, KindCanvas, KindUOL, KindVector, KindConvex:
+			// inner's bytes land in buf right after the type byte (1) and
+			// int32 length prefix (4) written below; innerBase lets pool
+			// positions recorded while building inner still resolve in the
+			// image's own flattened coordinate space.
+			innerBase := base + buf.Len() + 1 + 4
 			var inner bytes.Buffer
-			if err := writeStringBlock(&inner, "Property", key); err != nil {
+			if err := writeExtendedContent(&inner, p, key, pool, innerBase); err != nil {
 				return err
 			}
-			inner.Write([]byte{0, 0})
-			if err := writePropList(&inner, p.Children, key); err != nil {
-				return err
-			}
-			buf.WriteByte(9)
-			_ = binary.Write(buf, binary.LittleEndian, int32(inner.Len()))
-			buf.Write(inner.Bytes())
-		case KindCanvas:
-			var inner bytes.Buffer
-			if err := writeStringBlock(&inner, "Canvas", key); err != nil {
-				return err
-			}
-			inner.WriteByte(0)    // skipped byte
-			inner.WriteByte(0)    // hasProperty = 0
-			writeWzInt(&inner, 1) // width
-			writeWzInt(&inner, 1) // height
-			writeWzInt(&inner, 2) // format
-			inner.WriteByte(0)    // format2
-			inner.Write([]byte{0, 0, 0, 0})
-			_ = binary.Write(&inner, binary.LittleEndian, int32(len(p.Canvas)+1))
-			inner.WriteByte(0xAB) // flag byte skipped by ReadCanvasData
-			inner.Write(p.Canvas)
 			buf.WriteByte(9)
 			_ = binary.Write(buf, binary.LittleEndian, int32(inner.Len()))
 			buf.Write(inner.Bytes())
@@ -197,18 +322,93 @@ func writePropList(buf *bytes.Buffer, props []Prop, key []byte) error {
 	return nil
 }
 
-// buildImage serializes one image block with its effective key.
+// writeExtendedContent writes the tag-plus-payload body of a type-9 extended
+// property, without the outer type byte and int32 length prefix. Used both
+// for the wrapped top-level case (writePropList) and for Convex children,
+// which parseExtendedProperty re-enters bare with no wrapping at all
+// (image.go: parseExtendedProperty is called directly, never through
+// parsePropertyValue's type-9 case).
+func writeExtendedContent(buf *bytes.Buffer, p Prop, key []byte, pool *stringPool, base int) error {
+	switch p.Kind {
+	case KindSub:
+		if err := writeStringBlockDedup(buf, "Property", key, pool, base, 0x1B); err != nil {
+			return err
+		}
+		buf.Write([]byte{0, 0})
+		return writePropList(buf, p.Children, key, pool, base)
+	case KindCanvas:
+		if err := writeStringBlockDedup(buf, "Canvas", key, pool, base, 0x1B); err != nil {
+			return err
+		}
+		buf.WriteByte(0) // skipped byte
+		if len(p.Children) > 0 {
+			buf.WriteByte(1) // hasProperty = 1
+			buf.Write([]byte{0, 0})
+			if err := writePropList(buf, p.Children, key, pool, base); err != nil {
+				return err
+			}
+		} else {
+			buf.WriteByte(0) // hasProperty = 0
+		}
+		writeWzInt(buf, p.W) // width
+		writeWzInt(buf, p.H) // height
+		writeWzInt(buf, 2)   // format
+		buf.WriteByte(0)     // format2
+		buf.Write([]byte{0, 0, 0, 0})
+		_ = binary.Write(buf, binary.LittleEndian, int32(len(p.Canvas)+1))
+		buf.WriteByte(0xAB) // flag byte skipped by ReadCanvasData
+		buf.Write(p.Canvas)
+		return nil
+	case KindUOL:
+		if err := writeStringBlockDedup(buf, "UOL", key, pool, base, 0x1B); err != nil {
+			return err
+		}
+		buf.WriteByte(0) // skipped byte
+		return writeStringBlock(buf, p.Str, key)
+	case KindVector:
+		if err := writeStringBlockDedup(buf, "Shape2D#Vector2D", key, pool, base, 0x1B); err != nil {
+			return err
+		}
+		writeWzInt(buf, p.X)
+		writeWzInt(buf, p.Y)
+		return nil
+	case KindConvex:
+		if err := writeStringBlockDedup(buf, "Shape2D#Convex2D", key, pool, base, 0x1B); err != nil {
+			return err
+		}
+		writeWzInt(buf, int32(len(p.Children)))
+		for _, c := range p.Children {
+			if err := writeExtendedContent(buf, c, key, pool, base); err != nil {
+				return err
+			}
+		}
+		return nil
+	default:
+		return fmt.Errorf("wztest: kind %d is not an extended property type", p.Kind)
+	}
+}
+
+// buildImage serializes one image block with its effective key. When
+// b.stringDedup is on, a fresh per-image stringPool is threaded through so
+// repeated property names and extended-type tags are written as
+// offset-referenced string blocks; positions are recorded relative to the
+// image's own start (base 0), matching what every ReadWzStringBlock call
+// site in image.go passes as fileStart (the image's dataOffset).
 func (b *Builder) buildImage(img Image) (chunk, error) {
 	key := keyBytes(b.enc)
 	if img.Enc != nil {
 		key = keyBytes(*img.Enc)
 	}
+	var pool *stringPool
+	if b.stringDedup {
+		pool = &stringPool{seen: make(map[string]int)}
+	}
 	var buf bytes.Buffer
-	if err := writeStringBlock(&buf, "Property", key); err != nil {
+	if err := writeStringBlockDedup(&buf, "Property", key, pool, 0, 0x1B); err != nil {
 		return chunk{}, err
 	}
 	buf.Write([]byte{0, 0})
-	if err := writePropList(&buf, img.Props, key); err != nil {
+	if err := writePropList(&buf, img.Props, key, pool, 0); err != nil {
 		return chunk{}, err
 	}
 	return chunk{data: buf.Bytes()}, nil

@@ -10,7 +10,7 @@
 #
 #     turn N     sed -n '/verify.sh summary/,$p' gate-27.log    (read the gate)
 #     turn N+1   cat >> progress.md <<'EOF' Task 27: ...        (write the ledger)
-#     turn N+2   Agent -> atlas-implementer  Task 28            (dispatch next)
+#     turn N+2   Agent -> task-implementer  Task 28            (dispatch next)
 #
 # 130 of the 588 calls were that middle one — pure bookkeeping, 2-byte results,
 # each its own turn. Every turn re-reads the whole context, so at the 150-220k

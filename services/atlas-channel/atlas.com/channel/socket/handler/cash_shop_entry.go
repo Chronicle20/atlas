@@ -97,7 +97,18 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 				Expiration:  packetmodel.MsTime(as.Expiration()),
 			}
 		}
-		err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopCashInventoryBody(items, uint16(sd.Capacity), a.CharacterSlots()))(s)
+		// Slots are per-(account, world), not the account-scoped flat field
+		// this handler used to read off a (task-246
+		// bug-b-type-must-add-a-slot.md); fetch the count for this session's
+		// world.
+		characterSlots, err := account.NewProcessor(l, ctx).GetCharacterSlots(s.AccountId(), s.WorldId())
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve character slots for account [%d] in world [%d].", s.AccountId(), s.WorldId())
+			_ = session.NewProcessor(l, ctx).Destroy(s)
+			return
+		}
+
+		err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopCashInventoryBody(items, uint16(sd.Capacity), characterSlots))(s)
 		if err != nil {
 			return
 		}

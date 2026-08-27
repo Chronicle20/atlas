@@ -19,7 +19,7 @@ func mapTestLogger() logrus.FieldLogger {
 
 func mkFullChar(id uint32, hp, maxHp, mp, maxMp uint16) character.Model {
 	return character.NewModelBuilder().
-		SetId(id).SetHp(hp).SetMaxHp(maxHp).SetMp(mp).SetMaxMp(maxMp).MustBuild()
+		SetId(id).SetHp(hp).SetMaxHp(maxHp).SetMp(mp).SetMaxMp(maxMp).SetLevel(70).MustBuild()
 }
 
 func TestSelectAllCharactersInMap(t *testing.T) {
@@ -59,6 +59,9 @@ func TestSelectAllCharactersInMap(t *testing.T) {
 				t.Errorf("recipient 1 snapshot = hp %d/%d mp %d/%d, want 100/500 20/200",
 					r.Hp(), r.MaxHp(), r.Mp(), r.MaxMp())
 			}
+		}
+		if r.Level() != 70 {
+			t.Errorf("recipient %d Level() = %d, want 70", r.Id(), r.Level())
 		}
 	}
 }

@@ -14,6 +14,7 @@ const (
 	Update           = AccountsResource + "/%d"
 	PinAttempts      = AccountsResource + "/%d/pin-attempts"
 	PicAttempts      = AccountsResource + "/%d/pic-attempts"
+	CharacterSlots   = AccountsResource + "/%d/worlds/%d/character-slots"
 )
 
 func getBaseRequest(ctx context.Context) (string, error) {
@@ -61,4 +62,16 @@ func requestRecordPicAttempt(ctx context.Context, accountId uint32, success bool
 		return requests.ErrorRequest[PicAttemptOutputRestModel](err)
 	}
 	return requests.PostRequest[PicAttemptOutputRestModel](fmt.Sprintf(root+PicAttempts, accountId), input)
+}
+
+// requestCharacterSlots reads the per-(account, world) character-slot count
+// from atlas-account's world-scoped sub-resource (task-246
+// bug-b-type-must-add-a-slot.md), replacing the flat, always-4
+// RestModel.CharacterSlots this account fetched before.
+func requestCharacterSlots(ctx context.Context, accountId uint32, worldId byte) requests.Request[CharacterSlotRestModel] {
+	root, err := getBaseRequest(ctx)
+	if err != nil {
+		return requests.ErrorRequest[CharacterSlotRestModel](err)
+	}
+	return requests.GetRequest[CharacterSlotRestModel](fmt.Sprintf(root+CharacterSlots, accountId, worldId))
 }

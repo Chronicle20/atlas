@@ -20,7 +20,7 @@ func passingGateDeps() gateDeps {
 		worldStatus: func(_ logrus.FieldLogger, _ context.Context, _ world.Id) (bool, bool, error) {
 			return true, false, nil
 		},
-		accountSlots: func(_ logrus.FieldLogger, _ context.Context, _ uint32) (int16, error) {
+		accountSlots: func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id) (int16, error) {
 			return 99, nil
 		},
 		banned: func(_ logrus.FieldLogger, _ context.Context, _ uint32) (bool, error) {
@@ -126,7 +126,7 @@ func TestEligibilityGate4NoCharacterSlot(t *testing.T) {
 	// which is exactly the accountId this test's fixture character carries.
 
 	deps := passingGateDeps()
-	deps.accountSlots = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (int16, error) {
+	deps.accountSlots = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id) (int16, error) {
 		return 1, nil
 	}
 	p := NewProcessor(l, ctx, db).(*ProcessorImpl).withTransferEligibilityGates(deps).(*ProcessorImpl)
@@ -135,6 +135,44 @@ func TestEligibilityGate4NoCharacterSlot(t *testing.T) {
 	reason, ok := p.evaluateTransferEligibility(c, world.Id(1))
 	if ok || reason != "no_character_slot" {
 		t.Fatalf("got ok=%v reason=%s, want no_character_slot", ok, reason)
+	}
+}
+
+// TestEligibilityGate4ReadsDestinationWorldSlotsAndAllowsBelowCap proves the
+// regression this fix closes: gate 4 must read the SLOT cap for the same
+// world it counts EXISTING characters in (the destination world), not some
+// other world. accountSlots is stubbed to assert the worldId it receives is
+// exactly destinationWorldId, and returns a cap that is genuinely above the
+// one character already seeded there -- a below-cap transfer must be
+// ALLOWED, not rejected.
+func TestEligibilityGate4ReadsDestinationWorldSlotsAndAllowsBelowCap(t *testing.T) {
+	db := newProcessorTestDB(t)
+	l, ctx := testLogger(t), testContext(t)
+	destinationWorldId := world.Id(1)
+	seedCharacter(t, db, "Existing", destinationWorldId)
+
+	deps := passingGateDeps()
+	var gotAccountId uint32
+	var gotWorldId world.Id
+	deps.accountSlots = func(_ logrus.FieldLogger, _ context.Context, accountId uint32, worldId world.Id) (int16, error) {
+		gotAccountId = accountId
+		gotWorldId = worldId
+		// Two slots for the destination world: one already held (seeded
+		// above) plus room for the transferring character.
+		return 2, nil
+	}
+	p := NewProcessor(l, ctx, db).(*ProcessorImpl).withTransferEligibilityGates(deps).(*ProcessorImpl)
+
+	c := buildCharacter(1, 1000, world.Id(0), "Foxtrot", 0)
+	reason, ok := p.evaluateTransferEligibility(c, destinationWorldId)
+	if !ok || reason != "" {
+		t.Fatalf("got ok=%v reason=%s, want eligible (below cap)", ok, reason)
+	}
+	if gotAccountId != c.AccountId() {
+		t.Fatalf("accountSlots called with accountId=%d, want %d", gotAccountId, c.AccountId())
+	}
+	if gotWorldId != destinationWorldId {
+		t.Fatalf("accountSlots called with worldId=%d, want destinationWorldId=%d", gotWorldId, destinationWorldId)
 	}
 }
 
@@ -287,7 +325,7 @@ func TestEligibilityOrderingShortCircuitsBeforeAnyRemoteCall(t *testing.T) {
 		worldStatus: func(logrus.FieldLogger, context.Context, world.Id) (bool, bool, error) {
 			panic("gate 3 (worldStatus) must not be called when gate 1 already rejected")
 		},
-		accountSlots: func(logrus.FieldLogger, context.Context, uint32) (int16, error) {
+		accountSlots: func(logrus.FieldLogger, context.Context, uint32, world.Id) (int16, error) {
 			panic("gate 4 (accountSlots) must not be called when gate 1 already rejected")
 		},
 		banned: func(logrus.FieldLogger, context.Context, uint32) (bool, error) {
@@ -348,7 +386,7 @@ func TestEligibilityGateErrorsReportCheckUnavailable(t *testing.T) {
 		{
 			name: "Gate4AccountSlots",
 			mutate: func(deps *gateDeps) {
-				deps.accountSlots = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (int16, error) {
+				deps.accountSlots = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id) (int16, error) {
 					return 0, depErr
 				}
 			},

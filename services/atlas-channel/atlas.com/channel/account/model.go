@@ -1,20 +1,23 @@
 package account
 
+// Model no longer carries a flat characterSlots field: slots are
+// per-(account, world), not per-account (task-246
+// bug-b-type-must-add-a-slot.md). Callers that need a slot count now call
+// Processor.GetCharacterSlots(accountId, worldId) instead of Model.CharacterSlots().
 type Model struct {
-	id             uint32
-	name           string
-	password       string
-	pin            string
-	pic            string
-	birthDate      uint32
-	loggedIn       int
-	lastLogin      uint64
-	gender         byte
-	banned         bool
-	tos            bool
-	language       string
-	country        string
-	characterSlots int16
+	id        uint32
+	name      string
+	password  string
+	pin       string
+	pic       string
+	birthDate uint32
+	loggedIn  int
+	lastLogin uint64
+	gender    byte
+	banned    bool
+	tos       bool
+	language  string
+	country   string
 }
 
 func (a Model) Id() uint32 {
@@ -37,10 +40,6 @@ func (a Model) BirthDate() uint32 {
 	return a.birthDate
 }
 
-func (a Model) CharacterSlots() int16 {
-	return a.characterSlots
-}
-
 func (a Model) LoggedIn() int {
 	return a.loggedIn
 }
@@ -50,20 +49,19 @@ func (a Model) PIN() string {
 }
 
 type builder struct {
-	id             uint32
-	name           string
-	password       string
-	pin            string
-	pic            string
-	birthDate      uint32
-	loggedIn       int
-	lastLogin      uint64
-	gender         byte
-	banned         bool
-	tos            bool
-	language       string
-	country        string
-	characterSlots int16
+	id        uint32
+	name      string
+	password  string
+	pin       string
+	pic       string
+	birthDate uint32
+	loggedIn  int
+	lastLogin uint64
+	gender    byte
+	banned    bool
+	tos       bool
+	language  string
+	country   string
 }
 
 func NewBuilder() *builder {
@@ -135,26 +133,20 @@ func (a *builder) SetCountry(country string) *builder {
 	return a
 }
 
-func (a *builder) SetCharacterSlots(characterSlots int16) *builder {
-	a.characterSlots = characterSlots
-	return a
-}
-
 func (a *builder) Build() Model {
 	return Model{
-		id:             a.id,
-		name:           a.name,
-		password:       a.password,
-		pin:            a.pin,
-		pic:            a.pic,
-		birthDate:      a.birthDate,
-		loggedIn:       a.loggedIn,
-		lastLogin:      a.lastLogin,
-		gender:         a.gender,
-		banned:         a.banned,
-		tos:            a.tos,
-		language:       a.language,
-		country:        a.country,
-		characterSlots: a.characterSlots,
+		id:        a.id,
+		name:      a.name,
+		password:  a.password,
+		pin:       a.pin,
+		pic:       a.pic,
+		birthDate: a.birthDate,
+		loggedIn:  a.loggedIn,
+		lastLogin: a.lastLogin,
+		gender:    a.gender,
+		banned:    a.banned,
+		tos:       a.tos,
+		language:  a.language,
+		country:   a.country,
 	}
 }

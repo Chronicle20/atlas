@@ -10,11 +10,11 @@ Tool: `477b448d0d6cbafb10a81c270fb039c051d7bde9a003a92c369eff0a25968a14`
 - export gms_v61: `e5ed52e703a38e819822bb62b00aa252aad2946a0b97ae72b1cee1e8b8222f48`
 - export gms_v72: `0d3e12b8d5d6945bedf48664207eb78fabe45152f35aff3b2715de0173d31c1c`
 - export gms_v79: `67a49a67b9945e1eb2e4b473a4c7115a9cec7952588705b0ec91a10486759a99`
-- export gms_v83: `b3613f0ee0c878fbd5397251d0e26830d66392b446fbab2a0a9156a4dcbf99c6`
+- export gms_v83: `dd8bace2c2f0a1c106fbbdbd95c22491341d7fd34b6ce5ac07dfbd74ef8da439`
 - export gms_v84: `2bbc30efdc7355eaa7953cfbb459d09646a090a539a8ef79c5d10e8affb6ef11`
-- export gms_v87: `1b0794ba0e1c3e43ec76dffafaace29578c829178ea8cfac5a11b13ca7a483b3`
-- export gms_v92: `8818b84b431779494ac9ad2403f065f741452432a2a17cd0bd02be532278d5ae`
-- export gms_v95: `7fd1a66abd9888903bded950100d8ce77be18e72086138a73f56875b00940523`
+- export gms_v87: `d887ec26b877e52c3f1c8336bd596495e96272ece8ec6ad311eb145c30570021`
+- export gms_v92: `393f8c0d7ff6b37ab8b5e2e58b89544163862d9713d31561adcb3af175d36b92`
+- export gms_v95: `34927d21db733c26a030fea2922da7f7585761385688210944ed8a9d2b07b2ee`
 - export jms_v185: `f0cacd78c4ffd65655028825fc7e5bfe3b7fe3889011631098486eb562a5686e`
 
 ## Clientbound
@@ -486,9 +486,9 @@ Tool: `477b448d0d6cbafb10a81c270fb039c051d7bde9a003a92c369eff0a25968a14`
 | TIP_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15B | ❌ |
 | OPEN_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15C | ❌ |
 | ARIANT_SCORE | CField_Witchtower::OnPacket; CField_Witchtower::OnScoreUpdate | field/clientbound/FieldAriantScore (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ | 0x166 | ✅ |  | ⬜ |
-| MAPLELIFE_RESULT | CUICharacterSaleDlg::OnCheckDuplicatedIDResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ | 0x15D | ❌ | 0x172 | ❌ | 0x194 | ❌ | 0x19D | ❌ |  | ⬜ |
+| MAPLELIFE_RESULT | CUICharacterSaleDlg::OnCheckDuplicatedIDResult | maplelife/clientbound/MaplelifeMapleLifeResult |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ✅ |  | ⬜ | 0x172 | ✅ | 0x194 | ✅ | 0x19D | ✅ |  | ⬜ |
 | SHOOT_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15D | ❌ |
-| MAPLELIFE_ERROR | CUICharacterSaleDlg::OnCreateNewCharacterResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15E | ❌ | 0x15E | ❌ | 0x173 | ❌ | 0x195 | ❌ | 0x19E | ❌ |  | ⬜ |
+| MAPLELIFE_ERROR | CUICharacterSaleDlg::OnCreateNewCharacterResult | maplelife/clientbound/MaplelifeMapleLifeError |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15E | ✅ |  | ⬜ | 0x173 | ✅ | 0x195 | ✅ | 0x19E | ✅ |  | ⬜ |
 | SOMETHING_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15E | ❌ |
 | UPDATE_BEANS |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x15F | ❌ |
 | ONE_A_DAY | CCashShop::OnOneADay |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x161 | ❌ | 0x183 | ❌ | 0x18B | ❌ |  | ⬜ |
@@ -808,12 +808,13 @@ Tool: `477b448d0d6cbafb10a81c270fb039c051d7bde9a003a92c369eff0a25968a14`
 | UNNAMED_R405 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F8 | ❌ | 0x0F8 | ❌ | 0x106 | ❌ | 0x120 | ❌ | 0x127 | ❌ | 0x109 | ❌ |
 | UNNAMED_R392 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x0F9 | ❌ | 0x113 | ❌ | 0x11A | ❌ | 0x0FC | ❌ |
 | ITEM_UPGRADE_UPDATE | CUIItemUpgrade::Update | field/serverbound/FieldItemUpgradeUpdate (T1) |  | ⬜ |  | ⬜ |  | ⬜ | 0x0FA | ✅ | 0x104 | ✅ | 0x10B | ✅ | 0x112 | ✅ | 0x12C | ❌ | 0x128 | ✅ | 0x114 | ❌ |
+| MAPLELIFE_CHECK_NAME | CUICharacterSaleDlg::SendCheckDuplicateIDPacket | maplelife/serverbound/MaplelifeCheckName |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x100 | ✅ |  | ⬜ | 0x10E | ✅ | 0x12D | ✅ | 0x137 | ✅ |  | ⬜ |
 | FOOTHOLD_INFO | CField::OnRequestFootHoldInfo | field/serverbound/FieldRequestFootholdInfo (T1) |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x107 | ❌ | 0x10E | ✅ | 0x0ED | ✅ |
 | UNNAMED_R378 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x109 | ❌ | 0x110 | ❌ | 0x0F1 | ❌ |
 | UNNAMED_R379 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10A | ❌ | 0x111 | ❌ | 0x0F2 | ❌ |
 | UNNAMED_R419 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10C | ❌ |  | ⬜ | 0x135 | ❌ | 0x10D | ❌ |
 | UNNAMED_R420 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10D | ❌ |  | ⬜ | 0x136 | ❌ | 0x10E | ❌ |
-| JMS_SLASH_COMMAND | CUICharacterSaleDlg::SendCheckDuplicateIDPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10E | ❌ |  | ⬜ | 0x137 | ❌ | 0x10F | ❌ |
+| JMS_SLASH_COMMAND | CUICharacterSaleDlg::SendCheckDuplicateIDPacket |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10F | ❌ |
 | UNNAMED_R422 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x10F | ❌ |  | ⬜ | 0x138 | ❌ | 0x110 | ❌ |
 | ON_LOGOUT_GIFT | CUILogoutGift::OnButtonClicked |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x114 | ❌ |  | ⬜ | 0x139 | ❌ | 0x116 | ❌ |
 | UNNAMED_R407 |  |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x129 | ❌ |  | ⬜ |
@@ -1062,16 +1063,16 @@ Tool: `477b448d0d6cbafb10a81c270fb039c051d7bde9a003a92c369eff0a25968a14`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 214 | 0 | 19 | 199 | 594 | 0 | 49.5% |
-| v61 | 280 | 0 | 56 | 233 | 457 | 0 | 49.2% |
-| v72 | 305 | 0 | 69 | 242 | 410 | 0 | 49.5% |
-| v79 | 351 | 0 | 68 | 238 | 369 | 0 | 53.4% |
-| v83 | 477 | 0 | 0 | 321 | 228 | 0 | 59.8% |
-| v84 | 451 | 0 | 0 | 328 | 247 | 0 | 57.9% |
-| v87 | 485 | 0 | 0 | 351 | 190 | 0 | 58.0% |
-| v92 | 62 | 0 | 147 | 676 | 141 | 0 | 7.0% |
-| v95 | 511 | 0 | 0 | 409 | 106 | 0 | 55.5% |
-| JMS185 | 451 | 0 | 0 | 378 | 197 | 0 | 54.4% |
+| v48 | 214 | 0 | 19 | 199 | 595 | 0 | 49.5% |
+| v61 | 280 | 0 | 56 | 233 | 458 | 0 | 49.2% |
+| v72 | 305 | 0 | 69 | 242 | 411 | 0 | 49.5% |
+| v79 | 351 | 0 | 68 | 238 | 370 | 0 | 53.4% |
+| v83 | 480 | 0 | 0 | 319 | 228 | 0 | 60.1% |
+| v84 | 451 | 0 | 0 | 326 | 250 | 0 | 58.0% |
+| v87 | 488 | 0 | 0 | 348 | 191 | 0 | 58.4% |
+| v92 | 65 | 0 | 147 | 674 | 141 | 0 | 7.3% |
+| v95 | 514 | 0 | 0 | 406 | 107 | 0 | 55.9% |
+| JMS185 | 451 | 0 | 0 | 378 | 198 | 0 | 54.4% |
 
 ## Conflicts
 

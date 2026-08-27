@@ -30,7 +30,6 @@ function makeAccount(id: string, name: string): Account {
       tos: true,
       language: "en",
       country: "US",
-      characterSlots: 6,
       birthDate: 0,
     },
   };

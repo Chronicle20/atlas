@@ -119,7 +119,7 @@ func (wz *File) parseDirectory(name string) (*Directory, error) {
 				return nil
 			})
 			if err != nil {
-				wz.l.WithError(err).Warnf("Unable to parse sub-directory [%s].", entryName)
+				return nil, fmt.Errorf("parse sub-directory [%s]: %w", entryName, err)
 			}
 		} else {
 			// Image entry: defer parsing (lazy load)

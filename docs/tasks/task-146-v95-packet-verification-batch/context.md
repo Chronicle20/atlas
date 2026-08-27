@@ -156,29 +156,34 @@ LOGIN_AUTH` cb resolved to `n-a` (Task 4, genuinely absent — proof in
 `npc/clientbound/NpcAskSlideMenuConversationDetail` was promoted by a
 grading-allowlist fix, not new codec work (Task 5).
 
-### Known regression: four sub-struct rows demoted `verified -> incomplete`
+### Fixed regression: four sub-struct rows demoted `verified -> incomplete`
 
 Side effect of Task 2's fname promotions, first surfaced and deferred by the
-Task 2 reviewer, confirmed here by direct `status.json` diff. When a promoted
-op row's registry primary `fname` changes, `findReport` (which joins by
-primary fname only, `grade.go:282-292`) can no longer find the report the OLD
-fname's sub-struct row depended on, so the sub-struct's own cell regrades to
-`incomplete / "no audit report"` even though nothing about the underlying
-codec changed. Confirmed regressed on `gms_v95`, all `verified -> incomplete`:
+Task 2 reviewer, confirmed by direct `status.json` diff, and fixed in a
+post-plan fix round. Sub-struct rows are NOT graded through `findReport`
+(that path, `grade.go:282-292`, serves op rows only); they are graded through
+`Build`'s `usedWriters`/`protectedWriters` logic (`build.go:322-353`,
+`458-486`). Each promoted op fname now equals `baseFName(IDAName)` of one of
+these four sub-structs' own reports, so the op row's `worstCandidateCell`
+consumed that sub-struct's writer as a used candidate, and the sub-struct was
+skipped (gap-filled to `incomplete / "no audit report"`) instead of grading
+from its own evidence — even though nothing about the underlying codec
+changed. Confirmed regressed on `gms_v95`, all `verified -> incomplete`:
 
 - `field/serverbound/FieldChange` (sibling of the promoted `CHANGE_MAP` sb)
 - `npc/clientbound/NpcNpcConversation` (sibling of the promoted `NPC_TALK` cb)
 - `npc/serverbound/NpcStartConversation` (sibling of the promoted `NPC_TALK` sb)
 - `portal/serverbound/PortalScript` (sibling of the promoted `CHANGE_MAP_SPECIAL` sb)
 
-This is `matrix --check`-clean (the tool has no rule requiring a sub-struct
-row to track its parent op row's promotion) and does not affect any PRD §4.2
-cell — each is a distinct row from the op cell that was the task's actual
-target. It is real committed drift, not a fabricated finding, and it needs a
-follow-up task (re-pin each sub-struct's own evidence/report against the
-NEW primary fname) before those four rows can be trusted again. Filed here
-because it was never a task target in this plan and no other document
-records it as a branch-wide fact.
+Fixed by adding four version-scoped `legacyConsumedSiblingWriters` entries in
+`tools/packet-audit/internal/matrix/build.go`, following the precedent Task 5
+established for `NPC_TALK_MORE`/`NpcAskSlideMenuConversationDetail`: each
+entry is keyed by `versionScopedOpKey(op, dir, "gms_v95")` so only the gms_v95
+collision is un-suppressed, and each sub-struct escapes consumption only when
+its own pinned evidence independently grades `verified` — not a
+force-promote. `status.json` diff confirms exactly these four cells moved
+`incomplete -> verified` on `gms_v95` and no other cell changed on any
+version. `matrix --check` is clean at the fixed HEAD.
 
 ### Open item for final pre-PR triage: T13's spliced IDA-export guard
 
@@ -197,12 +202,14 @@ for the same defect by its reviewer and is clean — `calls: null`.
 
 - **Task 2**: the first implementation attempt's report predicted the four
   promoted ops' sibling sub-struct rows would "re-subsume cleanly into
-  verified"; they instead land `incomplete / no audit report` — correct per
-  `tools/packet-audit/internal/matrix/build.go:293-300` but the prediction
-  was never reconciled in the report. (This is the same underlying mechanism
-  as the "known regression" section above — recorded twice here because the
-  Task 2 review flagged it as a doc-completeness gap independently of the
-  later mechanical status.json diff that confirmed it.)
+  verified"; they instead landed `incomplete / no audit report` at the time
+  — correct per the `usedWriters`/`protectedWriters` op-row consumption path
+  in `build.go`, not the prediction, though the prediction was never
+  reconciled in the report. (This is the same underlying mechanism as the
+  "fixed regression" section above — recorded twice here because the Task 2
+  review flagged it as a doc-completeness gap independently of the later
+  mechanical status.json diff that confirmed it; the four cells are now
+  fixed back to `verified` by the post-plan fix round.)
 - **Task 4**: `login-auth-resolution.md`'s "mandatory sibling cross-check"
   searched only `func_query filter=*SPW*` and never cited the send-side
   siblings already present in the same registry file

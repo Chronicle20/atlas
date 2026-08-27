@@ -157,6 +157,38 @@ describe("Route Configuration", () => {
       expect(character!.nonNavigable).toBe(true);
     });
 
+    it("resolves the tenant Maple Life trail", () => {
+      const breadcrumbs = getBreadcrumbsFromRoute(
+        "/tenants/abc-123/character/maple-life",
+        testCtx,
+      );
+      expect(breadcrumbs.map((b) => b.label)).toEqual([
+        "Home",
+        "Tenants",
+        "Tenant Details",
+        "Character",
+        "Maple Life",
+      ]);
+      const character = breadcrumbs.find((b) => b.label === "Character");
+      expect(character!.nonNavigable).toBe(true);
+    });
+
+    it("resolves the template Maple Life trail", () => {
+      const breadcrumbs = getBreadcrumbsFromRoute(
+        "/templates/abc-123/character/maple-life",
+        testCtx,
+      );
+      expect(breadcrumbs.map((b) => b.label)).toEqual([
+        "Home",
+        "Templates",
+        "Template Details",
+        "Character",
+        "Maple Life",
+      ]);
+      const character = breadcrumbs.find((b) => b.label === "Character");
+      expect(character!.nonNavigable).toBe(true);
+    });
+
     // A job crumb must stay static: there is no "job" entity resolver, so
     // flagging it dynamic made useBreadcrumbs overwrite the resolved job name
     // with the "Unknown" fallback.
@@ -314,6 +346,15 @@ describe("Route Configuration", () => {
       expect(ROUTE_PATTERNS.TENANTS).toBe("/tenants");
       expect(ROUTE_PATTERNS.TENANT_DETAIL).toBe("/tenants/[id]");
       expect(ROUTE_PATTERNS.TENANT_PROPERTIES).toBe("/tenants/[id]/properties");
+    });
+
+    it("exposes both route constants", () => {
+      expect(ROUTE_PATTERNS.TENANT_CHARACTER_MAPLE_LIFE).toBe(
+        "/tenants/[id]/character/maple-life",
+      );
+      expect(ROUTE_PATTERNS.TEMPLATE_CHARACTER_MAPLE_LIFE).toBe(
+        "/templates/[id]/character/maple-life",
+      );
     });
   });
 

@@ -22,6 +22,7 @@ export function TemplateDetailLayout({ children }: TemplateDetailLayoutProps) {
       href: `/templates/${id}/character/templates`,
     },
     { title: "Character Presets", href: `/templates/${id}/character/presets` },
+    { title: "Maple Life", href: `/templates/${id}/character/maple-life` },
     { title: "Socket Handlers", href: `/templates/${id}/handlers` },
     { title: "Socket Writers", href: `/templates/${id}/writers` },
     { title: "Worlds", href: `/templates/${id}/worlds` },

@@ -21,6 +21,7 @@ export function TenantDetailLayout({ children }: TenantDetailLayoutProps) {
       href: `/tenants/${id}/character/templates`,
     },
     { title: "Character Presets", href: `/tenants/${id}/character/presets` },
+    { title: "Maple Life", href: `/tenants/${id}/character/maple-life` },
     { title: "Socket Handlers", href: `/tenants/${id}/handlers` },
     { title: "Socket Writers", href: `/tenants/${id}/writers` },
     { title: "Worlds", href: `/tenants/${id}/worlds` },

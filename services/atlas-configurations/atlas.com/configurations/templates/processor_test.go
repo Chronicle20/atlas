@@ -765,6 +765,58 @@ func TestReseedRestoresShippedContent(t *testing.T) {
 	}
 }
 
+// Regression for the seedDrift-never-clears bug: on a deployment with a
+// non-empty Entity.Environment (e.g. atlas-main's ATLAS_ENVIRONMENT=main),
+// a row whose stored bytes are byte-identical to the shipped seed must still
+// report SeedDrift = false. Every other test in this file runs under
+// context.Background(), whose caller Environment is "" - the same value the
+// shipped seed file implicitly carries - so this is the one case that
+// actually exercises Revision's Environment exclusion end to end: Make
+// stamps a non-empty Environment onto the RestModel it returns, and the view
+// must still agree with the shipped revision.
+func TestReseedClearsDriftUnderNonEmptyEnvironment(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	catalog := LoadCatalog(l, seedTemplatesDir())
+
+	entry, ok := catalog.Lookup("GMS", 83, 1)
+	if !ok {
+		t.Fatalf("GMS 83.1 missing from the seed corpus")
+	}
+
+	mainP := NewProcessor(l, envContext(t, "main"), db).WithCatalog(catalog)
+	id, err := mainP.Create(entry.Model)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	before, err := mainP.ViewByIdProvider(id)()
+	if err != nil {
+		t.Fatalf("ViewByIdProvider (before): %v", err)
+	}
+	if before.SeedDrift {
+		t.Fatalf("SeedDrift = true immediately after seeding from the shipped file (stored %q, shipped %q)", before.StoredRevision, before.ShippedRevision)
+	}
+	if before.StoredRevision != entry.Revision {
+		t.Fatalf("StoredRevision = %q, want %q", before.StoredRevision, entry.Revision)
+	}
+
+	if err := mainP.ReseedById(id); err != nil {
+		t.Fatalf("ReseedById: %v", err)
+	}
+
+	after, err := mainP.ViewByIdProvider(id)()
+	if err != nil {
+		t.Fatalf("ViewByIdProvider (after): %v", err)
+	}
+	if after.SeedDrift {
+		t.Errorf("SeedDrift = true after ReseedById under a non-empty environment (stored %q, shipped %q)", after.StoredRevision, after.ShippedRevision)
+	}
+	if after.StoredRevision != entry.Revision {
+		t.Errorf("StoredRevision = %q, want %q", after.StoredRevision, entry.Revision)
+	}
+}
+
 // FR-3.7: re-seeding an undrifted template succeeds and leaves the row
 // byte-identical.
 func TestReseedIsIdempotent(t *testing.T) {

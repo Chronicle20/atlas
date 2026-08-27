@@ -181,18 +181,22 @@ func (r *worldRestModel) SetID(id string) error                            { r.I
 func (r *worldRestModel) SetToOneReferenceID(_, _ string) error            { return nil }
 func (r *worldRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
-// accountRestModel is the minimal projection of atlas-account's GET
-// /accounts/{accountId}
-// (services/atlas-account/atlas.com/account/account/resource.go:35,
-// rest.go:23). No relationships block.
-type accountRestModel struct {
-	Id             string `json:"-"`
-	CharacterSlots int16  `json:"characterSlots"`
+// characterSlotRestModel is the minimal projection of atlas-account's GET
+// /accounts/{accountId}/worlds/{worldId}/character-slots
+// (services/atlas-account/atlas.com/account/account/rest.go,
+// CharacterSlotRestModel), the world-scoped sub-resource that replaced the
+// flat, always-4 `characterSlots` attribute the old accounts/{accountId}
+// response carried (task-246 bug-b-type-must-add-a-slot.md). Mirrors
+// atlas-login's and atlas-channel's CharacterSlotRestModel byte for byte.
+type characterSlotRestModel struct {
+	Id      string   `json:"-"`
+	WorldId world.Id `json:"worldId"`
+	Slots   int16    `json:"slots"`
 }
 
-func (r accountRestModel) GetName() string        { return "accounts" }
-func (r accountRestModel) GetID() string          { return r.Id }
-func (r *accountRestModel) SetID(id string) error { r.Id = id; return nil }
+func (r characterSlotRestModel) GetName() string        { return "character-slots" }
+func (r characterSlotRestModel) GetID() string          { return r.Id }
+func (r *characterSlotRestModel) SetID(id string) error { r.Id = id; return nil }
 
 // banCheckRestModel is the minimal projection of atlas-ban's GET
 // /bans/check?accountId={id}

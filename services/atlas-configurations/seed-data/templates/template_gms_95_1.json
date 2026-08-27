@@ -1134,7 +1134,16 @@
         "fname": "CField::SendCreateNewPartyMsg",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "operations": {
+            "CREATE": 1,
+            "LEAVE": 2,
+            "INVITE": 4,
+            "EXPEL": 5,
+            "CHANGE_LEADER": 6
+          }
+        }
       },
       {
         "opCode": "0x92",
@@ -1152,7 +1161,21 @@
         "fname": "CUIFadeYesNo::OnButtonClicked",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "operations": {
+            "REQUEST_CREATE": 2,
+            "INVITE": 5,
+            "JOIN": 6,
+            "WITHDRAW": 7,
+            "KICK": 8,
+            "SET_TITLE_NAMES": 13,
+            "SET_MEMBER_TITLE": 14,
+            "SET_EMBLEM": 15,
+            "SET_NOTICE": 16,
+            "AGREEMENT_RESPONSE": 32
+          }
+        }
       },
       {
         "opCode": "0x96",
@@ -1188,7 +1211,15 @@
         "fname": "CField::SendDeleteFriendMsg",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "operations": {
+            "RELOAD": 0,
+            "ADD": 1,
+            "ACCEPT": 2,
+            "DELETE": 3
+          }
+        }
       },
       {
         "opCode": "0x9A",

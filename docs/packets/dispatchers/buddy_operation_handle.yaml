@@ -1,0 +1,36 @@
+# BuddyOperationHandle — serverbound BUDDY_OPERATION mode table (gms_v95 only).
+#
+# SOURCE OF TRUTH for this handler's options.operations map.
+#
+# gms_v95 ONLY. Declaring another version here would make `packet-audit
+# operations` rewrite that version's hand-authored table with an un-derived
+# carry-over — exactly the v83->v95 drift this task exists to catch, and a
+# violation of "no non-v95 template is modified". Backfilling IDA-derived
+# columns for v83/v84/v87/v92/jms_v185 is filed as a follow-up.
+#
+# ALL-OR-NOTHING: expectedTable reports every template key absent from this
+# file as EXTRA once a version has at least one declared key, so gms_v95 must
+# be enumerated COMPLETELY. Per-arm addresses: v95-option-tables.md.
+#
+# The client has no single BUDDY_OPERATION builder: each send site builds its
+# own COutPacket(&pkt, 0x99) and writes its own leading Encode1(mode).
+# Enumerated by an exhaustive find_bytes search for the COutPacket opcode-153
+# push (68 99 00 00 00) across the whole image — 25 hits, 4 real send sites;
+# 2 more (0xb8795a, 0xbabffd) resolve to no owning function at all
+# (lookup_funcs: fn null — incidental byte match, not code) and the rest are
+# unrelated UI constants — so the table is complete BY CONSTRUCTION.
+#
+# All 4 modes (RELOAD=0, ADD=1, ACCEPT=2, DELETE=3) match v83
+# (template_gms_83_1.json) exactly.
+
+handler: BuddyOperationHandle
+validator: LoggedInValidator
+services: [channel]
+fname: CField::SendDeleteFriendMsg
+op: BUDDY_OPERATION
+direction: serverbound
+operations:
+  - { key: RELOAD, modes: { gms_v95: 0 } }
+  - { key: ADD,     modes: { gms_v95: 1 } }
+  - { key: ACCEPT,  modes: { gms_v95: 2 } }
+  - { key: DELETE,  modes: { gms_v95: 3 } }

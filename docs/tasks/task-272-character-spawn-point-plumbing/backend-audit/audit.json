@@ -1,0 +1,125 @@
+{
+  "service": "task-272-character-spawn-point-plumbing (multi-service)",
+  "path": "services/atlas-cashshop, services/atlas-channel, services/atlas-consumables, services/atlas-login, services/atlas-messages, services/atlas-npc-shops, services/atlas-pets, services/atlas-query-aggregator",
+  "date": "2026-08-27",
+  "build": "pass",
+  "testsPassed": 8,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-cashshop/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform(Model)(RestModel,error) defined in rest.go", "status": "pass", "evidence": "services/atlas-cashshop/atlas.com/cashshop/character/rest.go:93"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "n-a", "evidence": "no resource.go / list handler in package"},
+        {"id": "DOM-18", "name": "RestModel implements JSON:API interface", "status": "pass", "evidence": "rest.go:47,51,55"},
+        {"id": "DOM-21", "name": "No redeclaration of shared atlas-constants type", "status": "n-a", "evidence": "no new type declared; no SpawnPoint/PortalId type exists in libs/atlas-constants"},
+        {"id": "DOM-31", "name": "No tenant/trace in RestModel", "status": "pass", "evidence": "rest.go:40 SpawnPoint uint32 is character data"},
+        {"id": "FILE-01..06", "name": "File responsibility placement", "status": "pass", "evidence": "model.go:211 accessor; rest.go:155 Extract mapping; no catch-all file"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "rest_test.go:55-57 single-value assertion appended to existing test; nothing to tabulate"},
+        {"id": "EXT-01", "name": "Target RestModel implements SetToOneReferenceID/SetToManyReferenceIDs", "status": "pass", "evidence": "rest.go:78,82"},
+        {"id": "EXT-04", "name": "Service URL via requests.RootUrl(For)", "status": "pass", "evidence": "requests.go:24 requests.RootUrlFor(ctx, \"CHARACTERS\")"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "n-a", "evidence": "not evaluable from diff — requests.go untouched"},
+        {"id": "EXT-03", "name": "404-vs-5xx error mapping", "status": "n-a", "evidence": "not evaluable from diff — requests.go untouched"}
+      ]
+    },
+    {
+      "name": "atlas-channel/character + socket/writer",
+      "type": "domain + support",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform in rest.go", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/character/rest.go:89"},
+        {"id": "FILE-01..06", "name": "File responsibility placement", "status": "pass", "evidence": "model.go:240 accessor; rest.go:152 Extract mapping"},
+        {"id": "DOM-25", "name": "Client-interpreted wire values resolved from tenant table", "status": "n-a", "evidence": "socket/writer/character_data.go:47 byte(c.SpawnPoint()) narrows raw positional data, not a dispatcher mode/sub-op/message/fail-reason code"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "socket/writer/character_data_test.go TestBuildCharacterData_SpawnPoint uses tests:=[]struct{...}+t.Run"},
+        {"id": "DOM-31", "name": "No tenant/trace in RestModel", "status": "pass", "evidence": "rest.go:38"},
+        {"id": "EXT-01", "name": "Target RestModel reference setters", "status": "pass", "evidence": "rest.go:77,81"},
+        {"id": "EXT-04", "name": "RootUrlFor, not hardcoded DNS", "status": "pass", "evidence": "requests.go:20"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform in rest.go", "status": "pass", "evidence": "rest.go:132 (pre-existing, untouched)"},
+        {"id": "FILE-01..06", "name": "File responsibility placement", "status": "pass", "evidence": "model.go:213 accessor only touched; rest.go already had spawnPoint plumbing at rest.go:124,158 before this diff"},
+        {"id": "DOM-20", "name": "Table-driven test", "status": "pass", "evidence": "rest_test.go:48-51 single direct-literal assertion (275) appended to existing test"},
+        {"id": "DOM-31", "name": "No tenant/trace in RestModel", "status": "pass", "evidence": "rest.go:38"}
+      ]
+    },
+    {
+      "name": "atlas-login/character + socket/writer",
+      "type": "domain + support",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go validating Build()", "status": "n-a", "evidence": "not evaluable from diff — builder.go not touched; SetSpawnPoint confirmed pre-existing via targeted lookup only"},
+        {"id": "DOM-04", "name": "Transform in rest.go", "status": "pass", "evidence": "rest.go:97"},
+        {"id": "FILE-01..06", "name": "File responsibility placement", "status": "pass", "evidence": "model.go:222 accessor; rest.go:156 SetSpawnPoint(m.SpawnPoint). added to builder chain"},
+        {"id": "DOM-25", "name": "Client-interpreted wire values", "status": "n-a", "evidence": "socket/writer/character_list.go:56 byte(c.SpawnPoint()) is raw-data narrowing, not a lookup-table code"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "new socket/writer/character_list_test.go TestToCharacterListEntry_SpawnPoint uses tests:=[]struct{...}+t.Run"},
+        {"id": "DOM-31", "name": "No tenant/trace in RestModel", "status": "pass", "evidence": "rest.go:38"}
+      ]
+    },
+    {
+      "name": "atlas-messages/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform in rest.go", "status": "pass", "evidence": "rest.go:102 (pre-existing, untouched)"},
+        {"id": "FILE-01..06", "name": "File responsibility placement", "status": "pass", "evidence": "model.go:205 accessor only touched; rest.go already had spawnPoint plumbing at rest.go:129,163 before this diff"},
+        {"id": "DOM-20", "name": "Table-driven test", "status": "pass", "evidence": "rest_test.go:413-417 single direct-literal assertion appended to existing test"},
+        {"id": "DOM-31", "name": "No tenant/trace in RestModel", "status": "pass", "evidence": "rest.go:38"}
+      ]
+    },
+    {
+      "name": "atlas-npc-shops/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go validating Build()", "status": "fail", "evidence": "builder.go:123-158 — Build() performs no invariant validation, bare struct literal copy; file directly modified by this diff (3 new setters at builder.go:116-118); no documented exception found"},
+        {"id": "DOM-04", "name": "Transform in rest.go", "status": "pass", "evidence": "rest.go:99"},
+        {"id": "FILE-01..06", "name": "File responsibility placement", "status": "pass", "evidence": "model.go:208 accessor; rest.go:163-165 Extract adds x/y/stance; builder.go:116-118 new setters; no catch-all file"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "rest_test.go:52-65 and :87-119 are single-case assertions, not tests:=[]struct{...}+t.Run — non-blocking, nothing to tabulate"},
+        {"id": "DOM-31", "name": "No tenant/trace in RestModel", "status": "pass", "evidence": "rest.go:38"},
+        {"id": "EXT-01", "name": "Target RestModel reference setters", "status": "pass", "evidence": "rest.go:86,90"},
+        {"id": "EXT-04", "name": "RootUrlFor, not hardcoded DNS", "status": "pass", "evidence": "requests.go:17"}
+      ]
+    },
+    {
+      "name": "atlas-pets/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform in rest.go", "status": "pass", "evidence": "rest.go:107"},
+        {"id": "FILE-01..06", "name": "File responsibility placement", "status": "pass", "evidence": "model.go:207 accessor; rest.go:103 Extract adds spawnPoint; rest.go:113 Transform adds SpawnPoint — this service needed both legs"},
+        {"id": "DOM-20", "name": "Table-driven test", "status": "pass", "evidence": "rest_test.go:35-46 TestExtract_SpawnPoint is single-case, nothing to tabulate"},
+        {"id": "DOM-31", "name": "No tenant/trace in RestModel", "status": "pass", "evidence": "rest.go:38"}
+      ]
+    },
+    {
+      "name": "atlas-query-aggregator/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform in rest.go", "status": "pass", "evidence": "rest.go:92"},
+        {"id": "FILE-01..06", "name": "File responsibility placement", "status": "pass", "evidence": "model.go:224 accessor; rest.go:128 drops redundant uint32(...) cast, preserving full uint32 fidelity on the JSON:API re-serve path"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "new rest_test.go TestExtract_SpawnPoint / TestTransform_SpawnPointPreservesUint32, each single-case but correctly asserting no wire-byte narrowing on this path"},
+        {"id": "DOM-31", "name": "No tenant/trace in RestModel", "status": "pass", "evidence": "rest.go:39"}
+      ]
+    },
+    {
+      "name": "cross-cutting",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "No redeclaration of shared atlas-constants type", "status": "n-a", "evidence": "grep -rniE 'spawnpoint|portal' libs/atlas-constants/ returns no SpawnPoint/PortalId type; diff declares no new type; RestModel.SpawnPoint is uint32 consistently across all 8 services' rest.go"},
+        {"id": "DOM-26", "name": "Goroutines via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh exit 0 against all changed non-test .go files"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "EXT-02: httptest-backed integration test for the cross-service GET call — requests.go untouched by this diff in all 8 packages",
+    "EXT-03: 404-vs-5xx error mapping on the cross-service client — requests.go untouched",
+    "DOM-01: validating Build() for atlas-cashshop, atlas-channel, atlas-consumables, atlas-login, atlas-messages, atlas-pets, atlas-query-aggregator builder.go — not touched by this diff, not surveyed"
+  ],
+  "blocking": [
+    "DOM-01: services/atlas-npc-shops/atlas.com/npc/character/builder.go:123-158 — Build() performs no invariant validation despite the file being directly modified by this diff"
+  ],
+  "nonBlocking": [
+    "DOM-20: single-case tests in atlas-cashshop, atlas-consumables, atlas-messages, atlas-npc-shops, atlas-pets not table-driven — non-blocking, each case has nothing to tabulate"
+  ]
+}

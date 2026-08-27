@@ -1195,7 +1195,7 @@
         "opCode": "0x92",
         "validator": "LoggedInValidator",
         "handler": "PartyInviteRejectHandle",
-        "fname": "CWvsContext::OnPartyResult",
+        "fname": "CFadeWnd::SendCloseMessage",
         "services": [
           "channel"
         ]

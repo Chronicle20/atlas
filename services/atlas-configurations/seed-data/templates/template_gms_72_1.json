@@ -2725,7 +2725,8 @@
       },
       {
         "opCode": "0x4E",
-        "writer": "ImitatedNPCData"
+        "writer": "ImitatedNPCData",
+        "fname": "sub_902E83"
       },
       {
         "opCode": "0x4F",
@@ -3885,7 +3886,8 @@
       },
       {
         "opCode": "0xE4",
-        "writer": "RemoveNPC"
+        "writer": "RemoveNPC",
+        "fname": "CNpcPool::OnNpcLeaveField"
       },
       {
         "opCode": "0xE5",

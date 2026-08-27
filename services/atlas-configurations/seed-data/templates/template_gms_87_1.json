@@ -2874,7 +2874,8 @@
       },
       {
         "opCode": "0x53",
-        "writer": "ImitatedNPCData"
+        "writer": "ImitatedNPCData",
+        "fname": "CWvsContext::OnImitatedNPCData"
       },
       {
         "opCode": "0x55",
@@ -4097,7 +4098,8 @@
       },
       {
         "opCode": "0x113",
-        "writer": "RemoveNPC"
+        "writer": "RemoveNPC",
+        "fname": "CNpcPool::OnNpcLeaveField"
       },
       {
         "opCode": "0x114",

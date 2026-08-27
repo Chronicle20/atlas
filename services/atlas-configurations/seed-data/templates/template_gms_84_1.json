@@ -3030,7 +3030,8 @@
       },
       {
         "opCode": "0x53",
-        "writer": "ImitatedNPCData"
+        "writer": "ImitatedNPCData",
+        "fname": "CNpcPool::OnNpcImitateData"
       },
       {
         "opCode": "0x55",
@@ -4361,7 +4362,8 @@
       },
       {
         "opCode": "0x109",
-        "writer": "RemoveNPC"
+        "writer": "RemoveNPC",
+        "fname": "CNpcPool::OnNpcLeaveField"
       },
       {
         "opCode": "0x10A",

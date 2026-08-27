@@ -115,4 +115,4 @@ None. Module-local build and tests are clean.
 
 ## Commit
 
-Committed on `task-269-ring-pair-behavior` (see final message for SHA).
+`67d31d6bc` — "fix(atlas-channel): resolve ring purchase currency from option on GMS>=83" on `task-269-ring-pair-behavior`.

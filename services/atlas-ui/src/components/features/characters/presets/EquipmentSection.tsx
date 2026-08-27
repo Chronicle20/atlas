@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { CharacterPresetEquipmentEntry } from "@/types/models/template";
+import type { EquipmentEntry } from "@/types/models/template";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -13,7 +13,7 @@ import { ItemSearchCombobox } from "../templates/ItemSearchCombobox";
 import type { SearchPoolKey } from "@/lib/items/poolSearchConfig";
 
 interface EquipmentSectionProps {
-  equipment: CharacterPresetEquipmentEntry[];
+  equipment: EquipmentEntry[];
   onAdd: (templateId: number) => void;
   onRemove: (index: number) => void;
   onSetAvg: (index: number, value: boolean) => void;

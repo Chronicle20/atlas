@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import type { CharacterPresetInventoryEntry } from "@/types/models/template";
+import type { InventoryEntry } from "@/types/models/template";
 import { Input } from "@/components/ui/input";
 import { ItemRow } from "../templates/ItemRow";
 import { ItemSearchCombobox } from "../templates/ItemSearchCombobox";
 
 interface InventorySectionProps {
-  inventory: CharacterPresetInventoryEntry[];
+  inventory: InventoryEntry[];
   onAdd: (templateId: number) => void;
   onRemove: (index: number) => void;
   onSetQty: (index: number, value: number) => void;

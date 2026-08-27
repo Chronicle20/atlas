@@ -29,12 +29,12 @@ export interface CharacterPresetStatBlock {
   mp: number;
 }
 
-export interface CharacterPresetEquipmentEntry {
+export interface EquipmentEntry {
   templateId: number;
   useAverageStats: boolean;
 }
 
-export interface CharacterPresetInventoryEntry {
+export interface InventoryEntry {
   templateId: number;
   quantity: number;
 }
@@ -60,14 +60,53 @@ export interface CharacterPresetAttributes {
   gm: number;
   stats: CharacterPresetStatBlock;
   defaultName: string;
-  equipment: CharacterPresetEquipmentEntry[];
-  inventory: CharacterPresetInventoryEntry[];
+  equipment: EquipmentEntry[];
+  inventory: InventoryEntry[];
   skills: CharacterPresetSkillEntry[];
 }
 
 export interface CharacterPreset {
   id?: string;
   attributes: CharacterPresetAttributes;
+}
+
+export interface MapleLifeLookOptions {
+  gender: number;
+  faces: number[];
+  hairs: number[];
+  hairColors: number[];
+  skinColors: number[];
+}
+
+export interface MapleLifeStatBlock {
+  str: number;
+  dex: number;
+  int: number;
+  luk: number;
+  hp: number;
+  mp: number;
+}
+
+export interface MapleLifeClassEntry {
+  ordinal: number;
+  gender: number;
+  jobId: number;
+  level: number;
+  mapId: number;
+  stats: MapleLifeStatBlock;
+  ap: number;
+  /** Ten-book pool string, e.g. "61,0,0,0,0,0,0,0,0,0". */
+  sp: string;
+  /** Go `json:"spSkillId,omitempty"` — an absent key means "no SP step". */
+  spSkillId?: number;
+  meso: number;
+  equipment: EquipmentEntry[];
+  inventory: InventoryEntry[];
+}
+
+export interface MapleLifeConfig {
+  looks: MapleLifeLookOptions[];
+  classes: MapleLifeClassEntry[];
 }
 
 export interface TemplateAttributes {
@@ -121,6 +160,7 @@ export interface TemplateAttributes {
       boxTemplateIds?: number[];
     };
   };
+  mapleLife?: MapleLifeConfig;
 }
 
 export interface Template {

@@ -18,7 +18,38 @@ vi.mock("@/lib/api/client", () => ({
 }));
 
 import { templatesService } from "@/services/api/templates.service";
-import type { TemplateAttributes } from "@/types/models/template";
+import type {
+  MapleLifeConfig,
+  TemplateAttributes,
+} from "@/types/models/template";
+
+const SEED_ML: MapleLifeConfig = {
+  looks: [
+    {
+      gender: 0,
+      faces: [20000, 20001, 20002],
+      hairs: [30030, 30020, 30000],
+      hairColors: [0, 7, 3, 2],
+      skinColors: [0, 1, 2, 3],
+    },
+  ],
+  classes: [
+    {
+      ordinal: 0,
+      gender: 0,
+      jobId: 100,
+      level: 30,
+      mapId: 102000000,
+      stats: { str: 35, dex: 4, int: 4, luk: 4, hp: 804, mp: 150 },
+      ap: 123,
+      sp: "61,0,0,0,0,0,0,0,0,0",
+      spSkillId: 1000001,
+      meso: 100000,
+      equipment: [{ templateId: 1040021, useAverageStats: true }],
+      inventory: [{ templateId: 2000002, quantity: 100 }],
+    },
+  ],
+};
 
 function fullAttributes(): TemplateAttributes {
   return {
@@ -81,6 +112,20 @@ describe("templatesService.update", () => {
     ).rejects.toThrow(/validation failed/i);
     expect(patch).not.toHaveBeenCalled();
     expect(put).not.toHaveBeenCalled();
+  });
+
+  it("preserves mapleLife across a characters-only update", async () => {
+    const attrs = { ...fullAttributes(), mapleLife: SEED_ML };
+
+    await templatesService.update("t1", {
+      ...attrs,
+      characters: { templates: [], presets: [] },
+    });
+
+    const body = patch.mock.calls[0]![1] as {
+      data: { attributes: TemplateAttributes };
+    };
+    expect(body.data.attributes.mapleLife).toEqual(SEED_ML);
   });
 });
 

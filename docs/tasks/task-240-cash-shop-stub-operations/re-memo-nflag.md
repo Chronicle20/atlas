@@ -3,11 +3,16 @@
 Task: task-240-cash-shop-stub-operations
 Question asked: is there a flag in the clientbound note write that gates a
 "you'll receive fame" style notice?
-Answer: **yes, `nFlag == 1` gates an extra rendered block** — but the block's
-text is NOT yet resolved. See "Unresolved" below before acting on this.
+Answer: **yes — `nFlag == 1` renders exactly the gift + fame notice.** The two
+strings are now decoded out of the v83 in-binary StringPool:
 
-IDBs read: GMS v83 (`MapleStory_dump.exe.i64`) and GMS v95.0
-(`GMS_v95.0_U_DEVM.exe.i64`).
+- `"<memo sender> has received a gift."`
+- `"<local character name>'s fame has gone up +1."`
+
+See "Resolved" below for the decode and the per-version sweep.
+
+IDBs read: GMS v48, v61, v72, v79, v83 (`MapleStory_dump.exe.i64`), v84.1, v87,
+v92.1, v95.0 (`GMS_v95.0_U_DEVM.exe.i64`), and JMS v185.
 
 ## The wire field
 
@@ -112,35 +117,87 @@ sets `Flag: 0` on the gift-forward note, so this block never renders for a
 cash-shop gift thank-you note. `buildNoteSendSaga` (`note_send.go`) also sends 0.
 Atlas never emits `nFlag == 1` anywhere.
 
-## Unresolved — do not act on this without closing it
+## Resolved — the strings, decoded from the v83 pool
 
-The **text** of string-pool entries 3399 and 3400 is not established, so what
-the extra block actually *says* is unknown. It was not possible to read them
-reliably:
+Closed by decoding the v83 (target-version) StringPool rather than v95's. The
+v95 attempt failed on index→pointer arithmetic; v83's pool is a simple
+pointer table and decodes cleanly.
 
-- `StringPool::GetString` (v95 `0x746750`) decodes lazily from
-  `StringPool::ms_aString` (`0xc5a878`) with a 16-byte key at
-  `StringPool::ms_aKey` (`0xb98830`), rotated left by a per-string seed
-  (`rotatel<unsigned char>`, `0x746270`) and XORed
-  (`Decode<char>`, `0x746520`, with the `enc == key → plain = key` quirk that
-  avoids embedding NULs).
-- Reimplementing that decode and indexing `ms_aString[3399]` / `[3400]`
-  yields **WZ resource paths** — `"Letter"`, `"Mark.img/Mark/%s/%08d/%d"`,
-  and neighbours like `"/BackGround/%08d/%d"`, `"Info/BtDelete"` — not UI
-  sentences. The per-string seed also did not sit at a consistent offset
-  across the blobs that were checked. Both signs point at the index→pointer
-  arithmetic being off by some amount, so **these decoded values must not be
-  quoted as the memo strings.**
+### v83 decode mechanics (all addresses from `MapleStory_dump.exe.i64`)
 
-Consequently: it is confirmed that `nFlag == 1` shows an extra
-sender-name-plus-text / character-name-plus-text block, and it is NOT confirmed
-that the block is a fame notice. Setting `Flag: 1` on gift-forward notes is a
-plausible next step but would be a guess until the strings are read.
+| Symbol | Address | Role |
+|---|---|---|
+| `StringPool::GetBSTR` | `0x406292` | public entry; index is the `StringPoolStrings` ordinal |
+| `StringPool::GetString` (private) | `0x79e993` | lazy decode + cache |
+| `off_BDC9D4` | `0xBDC9D4` | `ms_aString` — flat `char*` table, `[idx]` at `0xBDC9D4 + 4*idx` |
+| `dword_B001EC` | `0xB001EC` | 16-byte key `d6 de 75 86 46 64 a3 71 e8 e6 7b d3 33 30 e7 2e` |
+| `dword_B001FC` | `0xB001FC` | key length = `16` |
+| `sub_79EBF3` | `0x79EBF3` | rotate-left the key by the seed: byte-rotate `(seed>>3) % 16`, then bit-rotate `seed & 7` |
+| `sub_79E7E8` | `0x79E7E8` | keystream byte `= rotatedKey[i % 16]` |
+| `sub_79ECDE` | `0x79ECDE` | XOR loop |
 
-Ways to close it, cheapest first:
+Blob layout is `[seed:u8][encoded chars…][NUL]`. The XOR loop is
+`k = rotatedKey[i % 16]; plain = (enc == k) ? k : enc ^ k` — the `enc == k`
+case is what keeps NULs out of the encoded blob.
 
-1. Read the memo strings out of the client's `String.wz` / `UI.wz`
-   (`UI.wz/UIWindow.img/Memo`) rather than the in-binary obfuscated pool.
-2. Fix the `ms_aString` base/stride and re-decode 3399 / 3400.
-3. Set `Flag: 1` on a gift note on a live client and read the rendered block
-   directly — decisive, and cheap if a test client is already up.
+### The two entries
+
+| idx | blob addr | seed | decoded |
+|---|---|---|---|
+| 3366 | `0xB18108` | `0x84` | `has received a gift.` |
+| 3367 | `0xB180EC` | `0x85` | `'s fame has gone up +1.` |
+
+(20 and 23 bytes — matching the blob lengths exactly. Neighbouring indices
+decode to English UI text as well, so the table base is right.)
+
+### How they are assembled — v83 `sub_64B1A5` (DrawMemo, `0x64B1A5`)
+
+```c
+v47 = *(a3 + 6);            // MEMO.nFlag  (CMemoListDlg::MEMO + 0x18)
+if ( v47 > 0 && v47 <= 2 )  // nFlag == 1 or 2
+{
+    v108 = MEMO.bsSender          + StringPool::GetBSTR(3366);   // line 1
+    v109 = CWvsContext.name       + StringPool::GetBSTR(3367);   // line 2
+    ... DrawTextA(v108) ...
+    if ( *(a3 + 6) == 1 )
+        ... DrawTextA(v109) ...                                  // line 2 only on nFlag == 1
+}
+```
+
+The line-2 subject is confirmed to be the **local character's name**, not a
+guess: v61 reads the same field as `*(g_pWvsContext + 0x2098)`, and
+`CWvsContext::GetCharacterName` (v61 `0x484B82`) is literally
+`mov eax, [ecx+2098h]`.
+
+Line 1 renders `"<sender> has received a gift."` with no inserted space — which
+is exactly why the clientbound wire writes `senderName + " "`
+(`libs/atlas-packet/note/entry.go:26`). Line 2 renders
+`"<my name>'s fame has gone up +1."`.
+
+So `nFlag` is: `1` = gift delivered **and** gifter famed +1; `2` = gift
+delivered, no fame; `3` (or `2` on v48/v61) = wedding invitation.
+
+### Per-version sweep (all 10 templates that have an IDB)
+
+Probe: the `MEMO.nFlag` (`+0x18`) tests inside each build's DrawMemo.
+
+| Template | DrawMemo | wedding arm | gift-block guard | fame-line guard |
+|---|---|---|---|---|
+| gms_v48 | `sub_53555E` | `[esi+18h] == 2` `0x535868` | `[edi+18h]; dec eax; jnz` `0x535A58` | same test (both strings in one block) |
+| gms_v61 | `sub_5ADC52` | `a3[6] != 2` | `a3[6] == 1` | same test (both strings in one block) |
+| gms_v72 | `sub_5FBB91` | `[esi+18h] == 3` `0x5FBE97` | `[ecx+18h]` `0x5FC091` | `[eax+18h] == 1` `0x5FC360` |
+| gms_v79 | `sub_61A680` | `0x61A986` | `0x61AB80` | `0x61AE4F` |
+| gms_v83 | `sub_64B1A5` | `!= 3` | `>0 && <=2` | `== 1` |
+| gms_v84 | `sub_660DEE` | `0x6610F4` | `0x6612EE` | `0x6615BD` |
+| gms_v87 | `sub_684F9C` | `0x6852A2` | `0x68549C` | (same +0x7CF offset) |
+| gms_v92 | `sub_6185A0` | `[edx+18h] == 3` `0x618A5E` | `dec eax; cmp eax,1; ja` `0x618DC0` | `[edx+18h] == 1` `0x61922B` |
+| gms_v95 | `CMemoListDlg::DrawMemo` `0x6247B0` | `!= 3` | `== 1` block | `== 1` |
+| jms_v185 | `sub_6C3446` | `[esi+18h] == 3` `0x6C374C` | `0x6C3946` | `[eax+18h] == 1` `0x6C3C15` |
+
+v48 and v61 collapse the two lines into a single `nFlag == 1` block (no
+`nFlag == 2` "gift without fame" variant) and use `2` for the wedding arm —
+the same enum renumber `discardSpecialFlag` already models. Every other build
+matches v83 exactly.
+
+**Not checked:** `gms_v12` — there is no v12 IDB in `IDBs_v9`. The cash-shop
+gift flow is not exercised on that template.

@@ -42,10 +42,14 @@ func buildGiftForwardSaga(transactionId uuid.UUID, now time.Time, senderId uint3
 					SenderId:   senderId,
 					ReceiverId: receiverId,
 					Message:    message,
-					// Flag 0 = plain note; see note_send.go's buildNoteSendSaga
-					// comment for why non-zero flags are reserved for other
-					// memo render templates.
-					Flag: 0,
+					// Flag 1: the client's gift-received + fame-gained memo
+					// block (CMemoListDlg::DrawMemo, v83 sub_64B1A5@0x64b1a5) --
+					// StringPool 3366 "<sender> has received a gift." and 3367
+					// "<reader>'s fame has gone up +1.". 1, not 2 (gift-only,
+					// no fame line), because Atlas really does award the +1
+					// here via buildGiftFameSaga below. See re-memo-nflag.md
+					// (§"Resolved") for the full decode and per-version sweep.
+					Flag: 1,
 					// GiftNote: this note's fame was already settled at
 					// acceptance time (buildGiftFameSaga awards the gifter
 					// +1). Suppresses the sender-fame award atlas-notes would

@@ -44,12 +44,15 @@ func buildNoteSendSaga(transactionId uuid.UUID, now time.Time, senderId uint32, 
 					SenderId:   senderId,
 					ReceiverId: receiverId,
 					Message:    message,
-					// Flag 0 = plain note. The client's memo renderer
-					// (CMemoListDlg draw callback, v83 sub_64B1A5@0x64b1a5)
-					// treats flag 1/2 as reward notices (StringPool 3366/3367,
-					// the "gained fame" line formatted with the reader's own
-					// name) and flag 3 as a gift item-link. A player note must
-					// be 0 so it displays as sender + message only.
+					// Flag 0 = plain note -- sender + message only, no extra
+					// block. The client's memo renderer (CMemoListDlg::DrawMemo,
+					// v83 sub_64B1A5@0x64b1a5) reserves 1 for the gift-delivered
+					// + fame-gained notice (StringPool 3366/3367, note_gift_forward.go),
+					// 2 for gift-delivered without the fame line, and 3 for a
+					// wedding invitation (discardSpecialFlag). A player-typed
+					// note is none of those, so it must stay 0. See
+					// re-memo-nflag.md (§"Resolved") for the full decode and
+					// per-version sweep.
 					Flag: 0,
 				},
 				CreatedAt: now,

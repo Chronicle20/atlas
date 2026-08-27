@@ -31,7 +31,8 @@ import (
 
 // TestBuildGiftForwardSaga pins the gift-forward saga's shape: exactly one
 // step (no destroy step -- the note is paid for by the gift purchase, not a
-// Note item), CreateNote with Flag 0.
+// Note item), CreateNote with Flag 1 (the client's gift-delivered +
+// fame-gained memo block; see re-memo-nflag.md).
 func TestBuildGiftForwardSaga(t *testing.T) {
 	txn := uuid.New()
 	now := time.Now()
@@ -54,7 +55,7 @@ func TestBuildGiftForwardSaga(t *testing.T) {
 	if !ok {
 		t.Fatalf("step payload type: %T", s.Steps[0].Payload)
 	}
-	if np.SenderId != 200 || np.ReceiverId != 100 || np.Message != "thanks!" || np.Flag != 0 {
+	if np.SenderId != 200 || np.ReceiverId != 100 || np.Message != "thanks!" || np.Flag != 1 {
 		t.Errorf("create-note payload mismatch: %+v", np)
 	}
 	if !np.GiftNote {

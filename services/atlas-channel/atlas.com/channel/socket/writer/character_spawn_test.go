@@ -56,7 +56,7 @@ func seedRingCache(t *testing.T, ctx context.Context, characterId uint32, cashId
 func equippedRing1(cashId int64) func(c character.Model) character.Model {
 	return func(c character.Model) character.Model {
 		eq := equipment.NewModel()
-		a := asset.NewModelBuilder(1, uuid.New(), 1112001).SetCashId(cashId).MustBuild()
+		a := asset.NewBuilderWithId(1, uuid.New(), 1112001).SetCashId(cashId).MustBuild()
 		eq.Set(slot2.Type("ring1"), eqslot.Model{Position: -12, CashEquipable: &a})
 		return character.CloneModel(c).SetEquipment(eq).MustBuild()
 	}
@@ -73,7 +73,7 @@ func TestCharacterSpawnBodyCarriesRings(t *testing.T) {
 		const cashId = int64(1111)
 		seedRingCache(t, ctx, characterId, cashId)
 
-		c := character.NewModelBuilder().SetId(characterId).SetSp("0").MustBuild()
+		c := character.NewBuilder().SetId(characterId).SetSp("0").MustBuild()
 		c = equippedRing1(cashId)(c)
 
 		withRing := CharacterSpawnBody(c, nil, guild.Model{}, true)
@@ -83,7 +83,7 @@ func TestCharacterSpawnBodyCarriesRings(t *testing.T) {
 		// gotWithRing is that this character id's ring cache was never
 		// seeded, so GetRingSet returns an empty RingSet. Isolates the
 		// RingSet contribution from the avatar's cash-equip visual bytes.
-		cUncached := character.NewModelBuilder().SetId(characterId + 1).SetSp("0").MustBuild()
+		cUncached := character.NewBuilder().SetId(characterId + 1).SetSp("0").MustBuild()
 		cUncached = equippedRing1(cashId)(cUncached)
 		empty := CharacterSpawnBody(cUncached, nil, guild.Model{}, true)
 		gotEmpty := pt.Encode(t, ctx, empty, nil)
@@ -107,7 +107,7 @@ func TestCharacterSpawnBodyCarriesRings(t *testing.T) {
 		ctx := pt.CreateContext("GMS", 83, 1)
 		const characterId = uint32(200)
 
-		c := character.NewModelBuilder().SetId(characterId).SetSp("0").MustBuild()
+		c := character.NewBuilder().SetId(characterId).SetSp("0").MustBuild()
 		enc := CharacterSpawnBody(c, nil, guild.Model{}, true)
 		got := pt.Encode(t, ctx, enc, nil)
 

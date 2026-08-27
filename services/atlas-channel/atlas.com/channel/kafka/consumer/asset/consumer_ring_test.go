@@ -69,7 +69,7 @@ func TestUpdateAppearanceResolvesRingsOnce(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tn)
 	l := logrus.New()
 
-	c := character.NewModelBuilder().SetId(1).SetSp("0").MustBuild()
+	c := character.NewBuilder().SetId(1).SetSp("0").MustBuild()
 
 	op := updateAppearance(l)(ctx)(alwaysErrorProducer)(c)
 

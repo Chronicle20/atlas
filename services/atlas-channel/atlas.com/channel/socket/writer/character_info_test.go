@@ -42,7 +42,7 @@ func TestCharacterInfoBody_CoverIsMobId(t *testing.T) {
 // the Marriage arm is always nil, so no marriage half cached is the only
 // reachable state, and the flag byte must always encode 0x00.
 func TestCharacterInfoBodySetsMarriageFlag(t *testing.T) {
-	c := character.NewModelBuilder().
+	c := character.NewBuilder().
 		SetId(1).
 		SetSp("0").
 		SetMonsterBook(monsterbook.NewModel(monsterbook.Collection{}, nil)).

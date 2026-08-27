@@ -35,7 +35,7 @@ func newRingTestContext(t *testing.T) (context.Context, uuid.UUID) {
 
 func mustCashAsset(t *testing.T, cashId int64) asset.Model {
 	t.Helper()
-	return asset.NewModelBuilder(1, uuid.New(), 1112001).SetCashId(cashId).MustBuild()
+	return asset.NewBuilderWithId(1, uuid.New(), 1112001).SetCashId(cashId).MustBuild()
 }
 
 // positionOf looks up the real slot position for a slot type name from

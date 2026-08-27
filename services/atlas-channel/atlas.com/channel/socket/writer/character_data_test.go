@@ -87,7 +87,7 @@ func TestBuildCharacterData_Rings(t *testing.T) {
 		t.Fatalf("Populate: %v", err)
 	}
 
-	c := character.NewModelBuilder().
+	c := character.NewBuilder().
 		SetId(characterId).
 		SetSp("0").
 		MustBuild()

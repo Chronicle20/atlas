@@ -1895,8 +1895,18 @@
 - op: NPC_TALK
   direction: clientbound
   opcode: 363
-  fname: CScriptMan::OnPacket
-  provenance: csv-import
+  fname: CScriptMan::OnScriptMessage
+  fname_alts:
+    - CScriptMan::OnPacket
+  provenance: manual
+  note: >-
+    task-146: primary fname promoted from the csv-import name
+    CScriptMan::OnPacket (absent from
+    docs/packets/ida-exports/gms_v95.json) to the export-resident,
+    report-backed handler CScriptMan::OnScriptMessage@0x6de0f0, reached
+    from the nType==363 dispatch arm of CScriptMan::OnPacket@0x6de360.
+    findReport joins by primary fname only (grade.go:282-292). The CSV
+    name is retained as an alt. Evidence: fname-promotions.md.
 - op: OPEN_NPC_SHOP
   direction: clientbound
   opcode: 364
@@ -2378,11 +2388,18 @@
 - op: CHANGE_MAP
   direction: serverbound
   opcode: 41
-  fname: CCashShop::SendTransferFieldPacket
+  fname: CField::SendTransferFieldRequest
   fname_alts:
-    - CField::SendTransferFieldRequest
+    - CCashShop::SendTransferFieldPacket
     - CITC::SendTransferFieldPacket
-  provenance: csv-import
+  provenance: manual
+  note: >-
+    task-146: primary fname promoted from the csv-import name
+    CCashShop::SendTransferFieldPacket (absent from
+    docs/packets/ida-exports/gms_v95.json) to the export-resident,
+    report-backed sender CField::SendTransferFieldRequest@0x5345c0.
+    findReport joins by primary fname only (grade.go:282-292). The CSV
+    names are retained as alts. Evidence: fname-promotions.md.
 - op: CHANGE_CHANNEL
   direction: serverbound
   opcode: 42
@@ -2507,10 +2524,17 @@
 - op: NPC_TALK
   direction: serverbound
   opcode: 63
-  fname: CNpc::ShowQuestList
+  fname: CUserLocal::TalkToNpc
   fname_alts:
-    - CUserLocal::TalkToNpc
-  provenance: csv-import
+    - CNpc::ShowQuestList
+  provenance: manual
+  note: >-
+    task-146: primary fname promoted from the csv-import name
+    CNpc::ShowQuestList (absent from docs/packets/ida-exports/gms_v95.json)
+    to the export-resident, report-backed sender
+    CUserLocal::TalkToNpc@0x9321f0. findReport joins by primary fname only
+    (grade.go:282-292). The CSV name is retained as an alt. Evidence:
+    fname-promotions.md.
 - op: REMOTE_STORE
   direction: serverbound
   opcode: 64
@@ -2828,10 +2852,17 @@
 - op: CHANGE_MAP_SPECIAL
   direction: serverbound
   opcode: 112
-  fname: CUserLocal::HandleUpKeyDown
+  fname: CUserLocal::CheckPortal_Collision
   fname_alts:
-    - CUserLocal::CheckPortal_Collision
-  provenance: csv-import
+    - CUserLocal::HandleUpKeyDown
+  provenance: manual
+  note: >-
+    task-146: primary fname promoted from the csv-import name
+    CUserLocal::HandleUpKeyDown (absent from
+    docs/packets/ida-exports/gms_v95.json) to the export-resident,
+    report-backed sender CUserLocal::CheckPortal_Collision@0x919a10.
+    findReport joins by primary fname only (grade.go:282-292). The CSV
+    name is retained as an alt. Evidence: fname-promotions.md.
 - op: USE_INNER_PORTAL
   direction: serverbound
   opcode: 113

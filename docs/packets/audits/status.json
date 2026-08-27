@@ -4165,8 +4165,7 @@
           "opcode": 43
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 41
         },
         "jms_v185": {
@@ -6628,8 +6627,7 @@
           "opcode": 64
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 63
         },
         "jms_v185": {
@@ -15021,8 +15019,7 @@
           "opcode": 111
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 112
         },
         "jms_v185": {
@@ -35354,10 +35351,12 @@
     {
       "kind": "op",
       "op": "NPC_TALK",
+      "packet": "npc/clientbound/NpcNpcConversation",
       "direction": "clientbound",
-      "tier1": false,
+      "tier1": true,
       "fnames": [
-        "CScriptMan::OnPacket"
+        "CScriptMan::OnPacket",
+        "CScriptMan::OnScriptMessage"
       ],
       "cells": {
         "gms_v48": {
@@ -35400,8 +35399,7 @@
           "opcode": 355
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 363
         },
         "jms_v185": {
@@ -48516,7 +48514,8 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": -1
         },
         "jms_v185": {
@@ -53965,7 +53964,8 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": -1
         },
         "jms_v185": {
@@ -54461,7 +54461,8 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": -1
         },
         "jms_v185": {
@@ -55038,7 +55039,8 @@
           "opcode": -1
         },
         "gms_v95": {
-          "state": "verified",
+          "state": "incomplete",
+          "note": "no audit report",
           "opcode": -1
         },
         "jms_v185": {

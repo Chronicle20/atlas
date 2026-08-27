@@ -5,6 +5,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { MemoryRouter, useLocation } from "react-router-dom";
 
 import type { MapleLifeConfig } from "@/types/models/template";
+import { MSG } from "@/lib/schemas/maple-life.schema";
 import {
   MapleLifeEditor,
   type MapleLifeEditorAdapter,
@@ -137,6 +138,49 @@ const BROKEN_SP_CONFIG: MapleLifeConfig = {
       sp: "0,0,0,0,0,0,0,0,0,0",
       spSkillId: 1000001,
       meso: 0,
+      equipment: [],
+      inventory: [],
+    },
+  ],
+};
+
+// Sparse projection fixture (task-271 task-11 finding): two rows at
+// NON-CONTIGUOUS ordinals, so the projected array index (0, 1) diverges from
+// the second row's ordinal (3). Row 0 (ordinal 0, gender 0) is valid; row 1
+// (ordinal 3, gender 1) carries an unparseable `sp` string, which trips
+// MSG.spNotTenBooks at schema path "classes.1.sp" (projected index 1) --
+// this must re-key onto grid cell "classes.3.1" (the row's OWN ordinal/
+// gender), not onto grid cell "classes.1.1" (the projected array index
+// paired with the row's gender), which is what an index-based re-key would
+// produce. Ordinal 1/gender 1 is a third, empty, unrelated grid slot used to
+// prove the error does NOT leak onto a slot that merely shares the
+// projected index.
+const SPARSE_BROKEN_CONFIG: MapleLifeConfig = {
+  looks: [SEED.looks[0]!, SEED.looks[1]!],
+  classes: [
+    {
+      ordinal: 0,
+      gender: 0,
+      jobId: 100,
+      level: 30,
+      mapId: 102000000,
+      stats: { str: 35, dex: 4, int: 4, luk: 4, hp: 804, mp: 150 },
+      ap: 123,
+      sp: "61,0,0,0,0,0,0,0,0,0",
+      meso: 100000,
+      equipment: [],
+      inventory: [],
+    },
+    {
+      ordinal: 3,
+      gender: 1,
+      jobId: 400,
+      level: 30,
+      mapId: 103000000,
+      stats: { str: 4, dex: 25, int: 4, luk: 20, hp: 520, mp: 130 },
+      ap: 121,
+      sp: "1,2",
+      meso: 100000,
       equipment: [],
       inventory: [],
     },
@@ -361,6 +405,30 @@ describe("MapleLifeEditor", () => {
     expect(
       screen.getByRole("button", { name: /Add the ten class rows/i }),
     ).toBeInTheDocument();
+  });
+
+  it("routes a schema error onto its own ordinal, not the projected array index (sparse projection)", async () => {
+    const user = userEvent.setup();
+    renderAt("/", buildAdapter({ mapleLife: SPARSE_BROKEN_CONFIG }));
+
+    await user.click(screen.getByRole("tab", { name: /female/i }));
+
+    // Broken row lives at ordinal 3 (projected array index 1, since ordinal
+    // 0's row is projected index 0) -- the error must surface here.
+    await user.click(screen.getByRole("tab", { name: /^3 ·/ }));
+    expect(screen.getByText(MSG.spNotTenBooks)).toBeInTheDocument();
+
+    // Ordinal 1/gender 1 is an unconfigured, unrelated grid slot that only
+    // happens to share the broken row's PROJECTED index (1). An index-keyed
+    // (rather than ordinal/gender-keyed) re-key would misroute the error
+    // here; it must not appear.
+    await user.click(screen.getByRole("tab", { name: /^1 ·/ }));
+    expect(screen.queryByText(MSG.spNotTenBooks)).toBeNull();
+
+    // The valid row (ordinal 0, gender 0, projected index 0) stays clean too.
+    await user.click(screen.getByRole("tab", { name: /^male$/i }));
+    await user.click(screen.getByRole("tab", { name: /^0 ·/ }));
+    expect(screen.queryByText(MSG.spNotTenBooks)).toBeNull();
   });
 
   it("adding the ten rows marks the page dirty", async () => {

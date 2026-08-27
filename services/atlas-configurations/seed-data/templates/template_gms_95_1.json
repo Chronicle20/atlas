@@ -198,7 +198,7 @@
       {
         "opCode": "0x19",
         "validator": "NoOpValidator",
-        "handler": "NoOpHandler",
+        "handler": "PongHandle",
         "fname": "CClientSocket::OnAliveReq",
         "services": [
           "login",
@@ -279,10 +279,28 @@
         ]
       },
       {
+        "opCode": "0x29",
+        "validator": "LoggedInValidator",
+        "handler": "MapChangeHandle",
+        "fname": "CField::SendTransferFieldRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x2A",
         "validator": "LoggedInValidator",
         "handler": "ChannelChangeHandle",
         "fname": "CField::SendTransferChannelRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x2B",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopEntryHandle",
+        "fname": "CWvsContext::SendMigrateToShopRequest",
         "services": [
           "channel"
         ]
@@ -566,6 +584,15 @@
         ]
       },
       {
+        "opCode": "0x3F",
+        "validator": "LoggedInValidator",
+        "handler": "NPCStartConversationHandle",
+        "fname": "CUserLocal::TalkToNpc",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x41",
         "validator": "LoggedInValidator",
         "handler": "NPCContinueConversationHandle",
@@ -809,6 +836,15 @@
         ]
       },
       {
+        "opCode": "0x63",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterAutoDistributeApHandle",
+        "fname": "CWvsContext::SendAbilityUpRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x64",
         "validator": "LoggedInValidator",
         "handler": "CharacterHealOverTimeHandle",
@@ -894,6 +930,15 @@
         "validator": "LoggedInValidator",
         "handler": "CancelDebuffHandle",
         "fname": "CWvsContext::CheckTemporaryStatDuration",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x70",
+        "validator": "LoggedInValidator",
+        "handler": "PortalScriptHandle",
+        "fname": "CUserLocal::CheckPortal_Collision",
         "services": [
           "channel"
         ]
@@ -989,6 +1034,15 @@
         ]
       },
       {
+        "opCode": "0x8C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMultiChatHandle",
+        "fname": "CUIStatusBar::SendGroupMessage",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x8D",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatWhisperHandle",
@@ -1078,6 +1132,15 @@
         "validator": "LoggedInValidator",
         "handler": "PartyOperationHandle",
         "fname": "CField::SendCreateNewPartyMsg",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x92",
+        "validator": "LoggedInValidator",
+        "handler": "PartyInviteRejectHandle",
+        "fname": "CWvsContext::OnPartyResult",
         "services": [
           "channel"
         ]
@@ -2704,6 +2767,14 @@
         "opCode": "0x19",
         "writer": "ServerListRecommendations",
         "fname": "CLogin::OnRecommendWorldMessage",
+        "services": [
+          "login"
+        ]
+      },
+      {
+        "opCode": "0x1B",
+        "writer": "PicResult",
+        "fname": "CLogin::OnCheckSPWResult",
         "services": [
           "login"
         ]
@@ -4622,6 +4693,14 @@
         "opCode": "0x16A",
         "writer": "ZakumShrine",
         "fname": "CField::OnZakumTimer",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x16B",
+        "writer": "NPCConversation",
+        "fname": "CScriptMan::OnScriptMessage",
         "services": [
           "channel"
         ]

@@ -275,9 +275,10 @@ func TestCharacterAppearanceUpdateByteOutputV95(t *testing.T) {
 //
 // As in v83/v84, the marriage if/else has no trailing unconditional Decode4 in
 // jms. Atlas writes flags=1 (look-only); the ring block wire for JMS carries
-// the extra per-arm entry-count int (model.RingSet.EncodeField, isJMS branch),
-// which runAppearanceUpdateCases builds via the production codec rather than
-// re-transcribing here.
+// the extra per-arm entry-count int (model.RingSet.EncodeField, isJMS
+// branch), which runAppearanceUpdateCases builds from the ringPopulatedJMSHex
+// / ringEmptyHex captured literals above, not by calling the production
+// codec on the want side (task-269 Task 14 retires that tautology).
 //
 // AvatarLook::Decode (jms @0x51517e):
 //

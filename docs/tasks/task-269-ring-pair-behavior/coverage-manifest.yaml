@@ -1,0 +1,177 @@
+# coverage-manifest — task-269 ring-pair-behavior
+#
+# Written by Task 15 (this branch's wrap-up task), per
+# docs/packets/PROCESS.md's coverage-manifest schema, so
+# packet-completeness-critic can diff this against the branch's actual git +
+# matrix delta at review time. Declares every op x version this BRANCH
+# adds/changes coverage for in libs/atlas-packet, plus the residual and
+# out-of-scope items a reader would otherwise expect to see addressed.
+
+ops:
+  # character/clientbound/CharacterSpawn (Task 1 derivation, Tasks 2/5/6
+  # codec/tests) — SPAWN_PLAYER / CUserPool::OnUserEnterField. Carries the
+  # RingSet field block (couple/friendship pair arms + marriage triple) at
+  # the same wire position across every target version; no version gate on
+  # the arm shape itself (design.md §2 OQ-1).
+  - character/clientbound/CharacterSpawn
+
+  # character/clientbound/CharacterInfo (Task 2 codec/tests) — CHAR_INFO /
+  # CWvsContext::OnCharacterInfo. Carries the RingRecords history block
+  # (CoupleRecord/FriendRecord/MarriageRecord arrays), gated off entirely on
+  # the legacy GMS<=28 boundary (see fields: below).
+  - character/clientbound/CharacterInfo
+
+  # character/clientbound/CharacterAppearanceUpdate (Tasks 6/13/14) —
+  # UPDATE_CHAR_LOOK / CUserRemote::OnAvatarModified ("Site C"). Task 6
+  # corrected the frame (four trailing bytes removed vs. the pre-task
+  # encoder) so the ring block reads at the right wire position; Task 13/14
+  # re-pinned evidence and retired the both-sides EncodeField tautology in
+  # the byte-fixture tests. This is the op that makes ring state update
+  # live within a map on equip/unequip (kafka/consumer/asset/consumer.go,
+  # ringProcessorFn / GetRingSet), not just at spawn.
+  - character/clientbound/CharacterAppearanceUpdate
+
+  # character/CharacterData (Task 3 derivation, Tasks 4/5/6/10/11 codec/
+  # tests) — the opaque per-character data span carried inside
+  # field/clientbound/FieldSetField (SET_FIELD / CStage::OnSetField). Not
+  # its own status.json op row (see out_of_scope: below); carries the same
+  # RingRecords history block as CharacterInfo.
+  - character/CharacterData
+
+versions:
+  # CharacterSpawn (STATUS.md row SPAWN_PLAYER, character/clientbound/
+  # CharacterSpawn (T1)): all ten columns ✅ — gms_v48, gms_v61, gms_v72,
+  # gms_v79, gms_v83, gms_v84, gms_v87, gms_v92, gms_v95, jms_v185. No n-a
+  # dispositions; the ring block is present and identical in shape at every
+  # target version (design.md §2 OQ-1, ring.go EncodeField doc comment).
+  - character/clientbound/CharacterSpawn: [gms_v48, gms_v61, gms_v72, gms_v79, gms_v83, gms_v84, gms_v87, gms_v92, gms_v95, jms_v185]
+
+  # CharacterInfo (STATUS.md row CHAR_INFO, character/clientbound/
+  # CharacterInfo (T1)): all ten columns ✅, same list as CharacterSpawn.
+  - character/clientbound/CharacterInfo: [gms_v48, gms_v61, gms_v72, gms_v79, gms_v83, gms_v84, gms_v87, gms_v92, gms_v95, jms_v185]
+
+  # CharacterAppearanceUpdate (STATUS.md row UPDATE_CHAR_LOOK, character/
+  # clientbound/CharacterAppearanceUpdate (T1)): nine dispositions —
+  # gms_v48 is ⬜ n-a (the op does not carry a ring block pre-Task-6 frame
+  # shape at that version boundary; task-14 report's eight-marker sweep
+  # confirms gms_v48 was never in the target-version scope for this op),
+  # then gms_v61 through jms_v185 verified ✅ (eight versions: v61, v72,
+  # v79, v83, v84, v87, v95, jms_v185). gms_v92 is DELIBERATELY EXCLUDED
+  # from this branch's target-version scope — STATUS.md shows it ❌
+  # (incomplete), a pre-existing gap outside this task's eight-version
+  # coverage (task-14 report: "outside this task's eight-version scope —
+  # not one of the target versions, unchanged before/after").
+  - character/clientbound/CharacterAppearanceUpdate: [gms_v48 (n-a), gms_v61, gms_v72, gms_v79, gms_v83, gms_v84, gms_v87, gms_v95, jms_v185]
+
+  # CharacterData (opaque span inside STATUS.md row SET_FIELD, field/
+  # clientbound/FieldSetField (T1)): same nine-version disposition as
+  # CharacterAppearanceUpdate — gms_v48 ⬜ n-a, gms_v61..jms_v185 ✅
+  # (eight versions), gms_v92 excluded (STATUS.md ❌, pre-existing,
+  # outside this branch's scope).
+  - character/CharacterData: [gms_v48 (n-a), gms_v61, gms_v72, gms_v79, gms_v83, gms_v84, gms_v87, gms_v95, jms_v185]
+
+fields:
+  - "character/clientbound/CharacterSpawn, character/clientbound/CharacterAppearanceUpdate: RingSet field block (libs/atlas-packet/model/ring.go EncodeField/DecodeField) — couple-pair arm [flag byte; if 1: (JMS only) entry-count Int=1, own SN Int64, partner SN Int64, item template id Int], friendship-pair arm (identical shape), then marriage arm [flag byte; if 1: subject's own character id Int, partner character id Int, wedding ring item template id Int]. All-nil RingSet writes exactly three zero flag bytes, byte-identical to the pre-task encoder (PRD FR-9). No version gate inside the block itself; the only branch is GMS-vs-JMS (JMS adds the per-arm entry-count int, always 1). PairRing's trailing field is the ring's item TEMPLATE id (nItemID), not a pair character id — design.md §3.1's original naming is refuted (ring-field-derivation.md verdict)."
+  - "character/clientbound/CharacterInfo, character/CharacterData: RingRecords history block (model/ring.go CoupleRecord/FriendRecord/MarriageRecord) — CoupleRecord (33 bytes/0x21): pairCharacterId Int(4) + pairCharacterName char[13] (writeRecordName: truncated to 12 bytes + at least one zero pad byte, never the full-width WritePaddedString) + ownSN Int64(8) + pairSN Int64(8). FriendRecord (37 bytes/0x25): CoupleRecord shape + friendItemId Int(4). MarriageRecord (48 bytes/0x30): marriageNo Int(4) + groomId Int(4) + brideId Int(4) + status Short(2) + groomItemId Int(4) + brideItemId Int(4) + groomName char[13] + brideName char[13]. Gated off entirely (all three record arrays empty) on the legacy boundary character/clientbound/info.go: `t.Region()==\"GMS\" && t.MajorVersion()>28 && t.MajorVersion()<61` (Ruling 17/A3 below — this EXCLUDES v28 itself, so v28 has no substitute test at that exact boundary; v48 was substituted as the nearest covered legacy-gate version)."
+
+out_of_scope:
+  # field/clientbound/FieldSetField itself — only its opaque CharacterData
+  # span moves (the record block Task 3/4 pinned); the surrounding
+  # FieldSetField frame (map id, portal, spawn point, foothold, etc.) is
+  # untouched by this branch. Task 14's own SET_FIELD row confirmation
+  # (task-14-report.md) shows the row's disposition unchanged before/after.
+  - field/clientbound/FieldSetField
+
+  # Wedding/spouse-chat ops — PRD §2's non-goals. This branch touches the
+  # ring DATA carried by spawn/info/appearance-update/data, never the
+  # wedding ceremony flow, invitation packets, or spouse-chat channel
+  # itself.
+  - wedding/serverbound/*
+  - wedding/clientbound/*
+  - spouse-chat/*
+
+  # Ruling 4 — a wrong-comment defect in four checked-in IDA exports,
+  # discovered during Task 1's derivation. gms_v83.json's and gms_v87.json's
+  # and gms_v95.json's CUserRemote::OnAvatarModified entries misname the
+  # trailing 4-byte couple/friendship field as dwPairCharacterId /
+  # dwFriendCharacterId; it is actually nItemID (the ring item template id
+  # — see fields: above). gms_jms_185.json's CUserRemote::OnAvatarModified
+  # entry at the same address makes the SAME wrong claim ("pair
+  # characterId (per entry)" / "friendship pair characterId (per entry)"),
+  # even though that same export's OWN CUserRemote::Init entry states the
+  # correct name ("couple-ring itemId (per entry)"). Plan Task 1 Step 6
+  # forbids hand-editing a checked-in export; fixing this requires an
+  # IDB-comment change plus a `packet-audit export` regeneration, which is
+  # out of this branch's scope. Addresses:
+  #   - gms_v83.json  @0x98367e  (CUserRemote::OnAvatarModified)
+  #   - gms_v87.json  @0xa090f4  (CUserRemote::OnAvatarModified)
+  #   - gms_v95.json  @0x954110 (CUserRemote::OnAvatarModified)
+  #   - gms_jms_185.json @0xa57221 (CUserRemote::OnAvatarModified)
+  - ida-export-comment-defect: [gms_v83.json@0x98367e, gms_v87.json@0xa090f4, gms_v95.json@0x954110, gms_jms_185.json@0xa57221]
+
+  # Ruling 36 — a PRE-EXISTING defect from PR #971 / commit 3d77511d0,
+  # predating this branch, discovered incidentally in Task 14's re-pin
+  # sweep. gms_v48's CharacterSpawn packet-audit:verify marker
+  # (libs/atlas-packet/character/clientbound/spawn_test.go:100) and its
+  # evidence record (docs/packets/evidence/gms_v48/
+  # character.clientbound.CharacterSpawn.yaml) cite the UNNAMED
+  # `sub_6BBC17` rather than the export's own named handler
+  # `CUserPool::OnUserEnterField` (@0x6b277b). `sub_6BBC17` was confirmed
+  # to be a CALLEE reached from that handler, so the v48 ✅ disposition
+  # itself is not bogus — only the ida function-name citation is wrong.
+  # The test file's doc comment additionally attributes the marker to
+  # `CUserRemote::Init`, a name that does not exist anywhere in the v48
+  # export. Not fixed here — recorded as a pre-existing citation defect,
+  # not a task-269 regression.
+  - ida-citation-defect: [gms_v48/spawn_test.go:100, docs/packets/evidence/gms_v48/character.clientbound.CharacterSpawn.yaml]
+
+residual:
+  # Seven ring-record fields whose semantics beyond "type-only" IDA
+  # evidence are unverified (ring-field-derivation.md §"What would settle
+  # this"): couple/friend dwPairCharacterID (that the value really is a
+  # character id, not merely typed as one), friend dwFriendItemID (that
+  # the value really is a ring item template id), marriage dwMarriageNo,
+  # usStatus, nBrideItemID, sGroomName, sBrideName. All are populated by
+  # this branch's codec per the "nothing reads it back on the exported
+  # sites" evidence gathered in Task 1/3's derivation, but none has a
+  # live-capture or reference-implementation cross-check. Declared as an
+  # accepted residual, not re-investigated by Task 15.
+
+  # Ruling 17 / A3 — FR-8's intended v28 boundary is untested. character/
+  # clientbound/info.go's legacy record-block gate is
+  # `t.Region()=="GMS" && t.MajorVersion()>28 && t.MajorVersion()<61`,
+  # which EXCLUDES v28 itself (the gate only fires strictly above 28), so
+  # no test at the branch exercises the exact v28 edge; gms_v48 was
+  # substituted throughout this branch's legacy-gate tests as the nearest
+  # covered version inside the gated range.
+
+  # PRD FR-12 residual (Task 15 Step 2, recorded in
+  # services/atlas-channel/docs/kafka.md, EVENT_TOPIC_ASSET_STATUS
+  # section): Site C (CharacterAppearanceUpdate) is now live, so ring
+  # state updates within a map on equip/unequip. The remaining residual
+  # case — a ring purchased by a partner already standing on your map —
+  # resolves when that partner equips it (their own subsequent EQUIP
+  # command re-derives RingSet from the RING_PURCHASED-invalidated cache
+  # and broadcasts), not from the purchase event alone; RING_PURCHASED
+  # itself only invalidates both halves' ring caches
+  # (kafka/consumer/cashshop/consumer.go handleStatusEventRingPurchased).
+
+  # Task 3 — the CoupleRecord/FriendRecord/MarriageRecord name fields'
+  # 12-byte (recordNameWidth-1) truncation boundary is not independently
+  # byte-pinned at the exact 13-byte input edge; writeRecordName truncates
+  # by BYTE, not RUNE (pre-existing behavior for any non-ASCII name,
+  # unrelated to this branch).
+
+  # Task 9 — libs/atlas-packet/*/model.go:73,80,88 doc comments cite
+  # atlas-cashshop line ranges that were never independently re-verified
+  # against atlas-cashshop's current source by this branch (cosmetic).
+
+  # Task 12 — kafka/consumer/session/consumer.go:217's Populate wiring
+  # (ring cache population on character load) has no dedicated test;
+  # accepted, matching that file's documented practicality boundary for
+  # processStateReturn's other side effects.
+
+# Not residual (retired on this branch, do not carry forward):
+# Tasks 5/6's EncodeField-on-both-sides tautology and Task 11's no_ring
+# determinism-only assertion were both retired by Task 13/Task 14, each
+# confirmed by reviewer fault injection.

@@ -19,6 +19,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { templatesService } from "@/services/api/templates.service";
+import { socketKeys } from "@/lib/hooks/api/socketKeys";
 import type { PagedResult } from "@/services/api/pagination";
 import type { Template, TemplateAttributes } from "@/types/models/template";
 import type {
@@ -155,6 +156,10 @@ export function useCreateTemplate(): UseMutationResult<
       // Invalidate and refetch template lists
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
 
+      // Invalidate the Packet Matrix's sparse read so the new template's
+      // routes appear without a hard reload
+      queryClient.invalidateQueries({ queryKey: socketKeys.all });
+
       // Add the new template to the cache
       queryClient.setQueryData(
         templateKeys.detail(newTemplate.id),
@@ -242,6 +247,10 @@ export function useUpdateTemplate(): UseMutationResult<
       });
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
 
+      // Invalidate the Packet Matrix's sparse read - this hook writes the
+      // whole attribute document, socket included
+      queryClient.invalidateQueries({ queryKey: socketKeys.all });
+
       // Invalidate filtered queries if the updated fields might affect them
       if (data) {
         queryClient.invalidateQueries({
@@ -280,6 +289,9 @@ export function usePatchTemplate(): UseMutationResult<
 
       // Invalidate lists to reflect changes
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+
+      // Invalidate the Packet Matrix's sparse read - PATCH may touch socket
+      queryClient.invalidateQueries({ queryKey: socketKeys.all });
     },
     onError: (error) => {
       console.error("Failed to patch template:", error);
@@ -326,6 +338,9 @@ export function useDeleteTemplate(): UseMutationResult<
     onSettled: () => {
       // Invalidate template lists
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+
+      // Invalidate the Packet Matrix's sparse read for the deleted template
+      queryClient.invalidateQueries({ queryKey: socketKeys.all });
     },
   });
 }
@@ -335,8 +350,10 @@ export function useDeleteTemplate(): UseMutationResult<
  *
  * Invalidates on SUCCESS only (FR-5.6): a failed re-seed changed nothing
  * server-side, so refetching would only churn. The detail query is invalidated
- * so the open page re-reads, and the lists query so the drift badge clears
- * without a manual reload.
+ * so the open page re-reads, the lists query so the drift badge clears, and
+ * the Packet Matrix's sparse read (socketKeys.all) so the grid picks up the
+ * reseeded routes too - none of these clear without this invalidation, reload
+ * or not.
  */
 export function useReseedTemplate(): UseMutationResult<
   void,
@@ -350,6 +367,7 @@ export function useReseedTemplate(): UseMutationResult<
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: templateKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: socketKeys.all });
     },
   });
 }
@@ -374,6 +392,9 @@ export function useCreateTemplatesBatch(): UseMutationResult<
     onSuccess: (result) => {
       // Invalidate template lists
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+
+      // Invalidate the Packet Matrix's sparse read for the new templates
+      queryClient.invalidateQueries({ queryKey: socketKeys.all });
 
       // Add successful templates to individual caches
       result.successes.forEach((template) => {
@@ -410,6 +431,9 @@ export function useUpdateTemplatesBatch(): UseMutationResult<
 
       // Invalidate lists
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+
+      // Invalidate the Packet Matrix's sparse read for the updated templates
+      queryClient.invalidateQueries({ queryKey: socketKeys.all });
     },
     onError: (error) => {
       console.error("Failed to update templates batch:", error);
@@ -464,6 +488,9 @@ export function useDeleteTemplatesBatch(): UseMutationResult<
     onSettled: () => {
       // Invalidate template lists
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+
+      // Invalidate the Packet Matrix's sparse read for the deleted templates
+      queryClient.invalidateQueries({ queryKey: socketKeys.all });
     },
   });
 }

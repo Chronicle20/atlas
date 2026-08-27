@@ -24,21 +24,12 @@ import { fromTemplate, fromTenantConfig } from "@/lib/socket/normalize";
 import type { SocketObject } from "@/lib/socket/model";
 import type { SocketConfig } from "@/types/models/socket";
 
-/**
- * Query keys for the SPARSE socket reads.
- *
- * These deliberately do NOT reuse templateKeys.detail / tenantKeys.configDetail.
- * A sparse document that reached a mutation's attribute spread would silently
- * erase characters, worlds and cashShop (see tenantsService.updateTenantConfiguration
- * and templatesService.update, both of which write the whole document), so the
- * two live under separate keys and the sparse one is never a write input -
- * useSocketMutation below never reads from socketKeys.* at all.
- */
-export const socketKeys = {
-  all: ["socket"] as const,
-  matrix: () => [...socketKeys.all, "matrix", "templates"] as const,
-  tenantMatrix: () => [...socketKeys.all, "matrix", "tenants"] as const,
-};
+// Re-exported so existing importers of useSocketObjects.ts keep working.
+// Defined in its own module - see socketKeys.ts - because useTemplates.ts and
+// useTenants.ts need it too, and both are already imported above; importing
+// socketKeys back from here would close an import cycle.
+import { socketKeys } from "@/lib/hooks/api/socketKeys";
+export { socketKeys };
 
 /** Sparse Template read for the grid. Never pass this query's data to useSocketMutation. */
 export function useSocketMatrixTemplates(): UseQueryResult<

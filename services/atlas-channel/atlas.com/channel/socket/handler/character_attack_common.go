@@ -1,26 +1,27 @@
 package handler
 
 import (
-	"context"
-	"errors"
-	"math"
-	"math/rand"
-
 	"atlas-channel/battleship"
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
 	"atlas-channel/character/snapshot"
-	skill2 "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/data/skill/effect/statup"
 	"atlas-channel/drop"
 	"atlas-channel/effective_stats"
-	_map "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/session"
 	"atlas-channel/skill/handler"
 	"atlas-channel/socket/writer"
+	"context"
+	"errors"
+	"math"
+	"math/rand"
+
+	skill2 "atlas-channel/data/skill"
+
+	_map "atlas-channel/map"
 
 	"github.com/sirupsen/logrus"
 

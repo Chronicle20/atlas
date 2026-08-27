@@ -1,14 +1,13 @@
 package handler
 
 import (
+	"atlas-channel/data/skill/effect"
+	"atlas-channel/effective_stats"
+	"atlas-channel/monster"
 	"errors"
 	"math"
 	"testing"
 	"time"
-
-	"atlas-channel/data/skill/effect"
-	"atlas-channel/effective_stats"
-	"atlas-channel/monster"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

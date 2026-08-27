@@ -1,13 +1,6 @@
 package handler
 
 import (
-	"bytes"
-	"context"
-	"errors"
-	"io"
-	"testing"
-	"time"
-
 	"atlas-channel/asset"
 	"atlas-channel/character"
 	"atlas-channel/character/skill"
@@ -16,6 +9,12 @@ import (
 	"atlas-channel/inventory"
 	"atlas-channel/monster"
 	"atlas-channel/socket/writer"
+	"bytes"
+	"context"
+	"errors"
+	"io"
+	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

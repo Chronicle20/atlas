@@ -326,3 +326,88 @@ No arm was guessed: every key/value pair above traces to a `switch` case in
 ## Unresolved (Task 9)
 
 None.
+
+## Task 10: `failedReasonCodes` for `AuthPermanentBan` / `AuthTemporaryBan`
+
+`CLogin::OnCheckPasswordResult` (`?OnCheckPasswordResult@CLogin@@IAEXAAVCInPacket@@@Z`,
+`0x5dc600`, database `ecc757f4`) is the single client-side handler for all
+three `LOGIN_STATUS` writer arms — `AuthLoginFailed`, `AuthPermanentBan`,
+`AuthTemporaryBan` — dispatched by the `LOGIN_STATUS` op (`0x00`) that Atlas
+splits into three named writers. The function decodes the reason byte first,
+unconditionally, before branching:
+
+```
+v5 = CInPacket::Decode1(iPacket);      /* 0x5dc66f — the reason code, shared by all three writer arms */
+nNumOfCharacter = v5;                  /* 0x5dc674 */
+sMsg._m_pStr[500] = CInPacket::Decode1(iPacket); /* 0x5dc681 — second field, unrelated to reason */
+CInPacket::Decode4(iPacket);            /* 0x5dc687 — unrelated */
+```
+
+`v5 == 2` (`BANNED`) is the one value that takes the "ban" branch (decodes an
+8-byte unblock-date buffer via `CInPacket::DecodeBuffer(iPacket, &dtUnblockDate, 8u)`
+at `0x5dc6b8`, then formats a permanent- or temporary-ban message depending on
+whether the decoded date falls beyond `Util::FTAddDay(now, 1080)`). This
+confirms `AuthPermanentBan` and `AuthTemporaryBan` are both driven by the same
+reason byte (`BANNED = 2`) as `AuthLoginFailed`, differentiated purely by
+what follows in the packet body — exactly the v83 pattern, where
+`AuthPermanentBan` and `AuthLoginFailed` already carry an identical
+`failedReasonCodes` block.
+
+For every other value, execution falls to `LABEL_42` (`0x5dcb1b`) and a
+`switch ( v5 )` that enumerates the remaining reason codes:
+
+```
+case -1: case 6: case 8: case 9:  -> StringPool id 15
+case 2: case 3:                    -> StringPool id 16
+case 4:                            -> StringPool id 3
+case 5:                            -> StringPool id 20
+case 7:  CLogin::GotoTitle(...)    -> StringPool id 17
+case 10:                           -> StringPool id 19
+case 11:                           -> StringPool id 14
+case 13:                           -> StringPool id 21
+case 14:  CLoginUtilDlg::YesNo2(27) popup, no CLoginUtilDlg::Error call
+case 15:  CLoginUtilDlg::YesNo2(26) popup, no CLoginUtilDlg::Error call
+case 16: case 21:                  -> StringPool id 33
+case 17:                           -> StringPool id 27
+case 25:                           -> StringPool id 40
+default: break
+```
+
+(`v5 == 27` is handled even earlier, at `0x5dcb25`, before the `goto
+LABEL_42`, with its own `CUtilDlg::YesNo`/`CUtilDlg::Notice` dialog pair —
+StringPool ids `0x12F5`/`0x12E7`.)
+
+After the switch, `if ( v5 && v5 != 12 && v5 != 23 ) return;` — so `v5 == 23`
+is a recognized value that intentionally falls through to further UI-reset
+code without an explicit `case`, and `v5 == 0` (falsy) does the same (the
+"no error" / success path — not a failure reason).
+
+**Cross-check against the value SET already in the v95 `AuthLoginFailed`
+block** (its 19 keys: `BANNED=2, DELETED_OR_BLOCKED=3, INCORRECT_PASSWORD=4,
+NOT_REGISTERED=5, SYSTEM_ERROR_1=6, ALREADY_LOGGED_IN=7, SYSTEM_ERROR_2=8,
+SYSTEM_ERROR_3=9, TOO_MANY_CONNECTIONS=10, AGE_LIMIT=11,
+UNABLE_TO_LOG_ON_AS_MASTER_AT_IP=13, WRONG_GATEWAY=14, PROCESSING_REQUEST=15,
+ACCOUNT_VERIFICATION_NEEDED=16, WRONG_PERSONAL_INFORMATION=17,
+ACCOUNT_VERIFICATION_NEEDED_2=21, LICENSE_AGREEMENT=23,
+MAPLE_EUROPE_NOTICE=25, FULL_CLIENT_NOTICE=27`): the switch's recognized
+value set is `{2,3,4,5,6,7,8,9,10,11,13,14,15,16,17,21,25}` (17 values) plus
+the pre-switch special-case `27`, plus the fall-through-without-`case`
+value `23` — 19 values total, an exact 1:1 match against the 19 existing
+keys. **No disagreement, and no new key.** The lone switch label not covered
+by an existing key is `-1` (grouped with `6, 8, 9`); `CInPacket::Decode1`
+returns a byte, so `-1` cannot be produced by a real wire value from Atlas —
+it reads as a sentinel/default-initialization catch-all in the client, not a
+distinct reason code Atlas would ever write, so it is not added as a key.
+
+Per the brief, the identical `failedReasonCodes` block already present on
+v95 `AuthLoginFailed` was inserted verbatim into both `AuthPermanentBan` and
+`AuthTemporaryBan` (`template_gms_95_1.json`), matching the v83 precedent
+where `AuthPermanentBan` and `AuthLoginFailed` already share the same block.
+
+No arm was guessed: every value above traces to a `case` label or an
+explicit comparison (`v5 == 2`, `v5 == 27`, `v5 != 12`, `v5 != 23`) in
+`decompile 0x5dc600`.
+
+## Unresolved (Task 10)
+
+None.

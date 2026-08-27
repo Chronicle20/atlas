@@ -146,7 +146,34 @@ every note update path and is out of this bug's scope.
 
 ## Resolution
 
-- Fix commit: see `docs/tasks/task-240-cash-shop-stub-operations/bug-gift-note-discard-fame-report.md`
-- Gate: module-local `go build`/`go test` green in all four touched modules (libs/atlas-saga, atlas-channel, atlas-saga-orchestrator, atlas-notes); repo-wide `tools/verify.sh` pending controller dispatch.
-- Review: pending
-- Live re-test: pending (not reproduced live, per "Reproduced" above)
+- Fix commit: `d5281504e` — "fix(notes): suppress sender fame on discard of
+  gift-originated notes". Report: `bug-gift-note-discard-fame-report.md`.
+  Follow-up `bce9b22a0` — "fix(atlas-notes): strengthen gift-note mixed-batch
+  fame test with distinct sender ids"; report:
+  `bug-gift-note-discard-fame-testgap-report.md`.
+- Gate: `tools/verify.sh --quick --base 8ada25e79` exited **0** — 98 checks
+  green, including go build/vet across all 91 modules (the `libs/atlas-saga`
+  change fans out repo-wide), go analyzer guards, skill/job id guard, scope
+  guard, producer seam guard, operator cancel path guard, env domain guard, and
+  the lint & format guard over 91 modules. The run's own closing line: "All
+  checks passed, but docker bake was skipped — not a pre-PR pass."
+  **A flagless `tools/verify.sh` still has to exit 0 before this branch is
+  called done** — `--quick` skips the bake and `-race`.
+- Review: `review-bug-gift-note-discard-fame.md` — **APPROVED_WITH_FINDINGS**,
+  0 blocking. The reviewer hand-traced `GiftNote` across all 25 changed files
+  and confirmed: JSON tag parity on both sides of every Kafka hop (a mismatch
+  here would fail *open*, i.e. fame still awarded); the `buildFameAwardSaga`
+  skip fires for gift notes and does not suppress ordinary ones, including in a
+  mixed batch; backward compatibility — `omitempty` on a `false` bool plus the
+  AutoMigrate zero-value means an in-flight command or a pre-existing row
+  decodes to `false` and keeps today's behavior; `note_send.go`'s ordinary
+  player-note path is untouched.
+  - Its one non-blocking finding — both notes in the mixed-batch test shared a
+    sender id, so the surviving payload's `CharacterId` could not distinguish a
+    correct skip from an inverted one — is closed by `bce9b22a0`, which gives
+    them distinct ids and was confirmed to fail when the skip condition is
+    inverted and pass when it is correct.
+- Live re-test: **not done** (no live cluster access from this session). The
+  end-to-end confirmation — gift a cash item, accept it, discard the resulting
+  thank-you note as the gifter, observe that the gift recipient's fame does
+  **not** change while the gifter's earlier +1 stands — has not been run.

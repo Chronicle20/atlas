@@ -140,7 +140,13 @@ change — `award_fame` is an existing, consumed action.
 
 ## Not yet answered
 
-1. **Reverse fame on discard.** The generic atlas-notes mechanic still fames a
+1. ~~**Reverse fame on discard.**~~ **RESOLVED** — the reporter ruled: "In this
+   case, the note sender should not receive a fame. only the giftee." Fixed in
+   `d5281504e` via a server-only `GiftNote` field threaded from
+   `buildGiftForwardSaga` to atlas-notes' `buildFameAwardSaga`. See
+   `bug-gift-note-discard-fame.md`. Original text follows.
+
+   The generic atlas-notes mechanic still fames a
    note's sender when the owner discards it, so the gifter deleting the
    thank-you note will fame the gift recipient. Making gift-forward notes
    exempt would require a gift marker on the note (atlas-notes `Model`/entity

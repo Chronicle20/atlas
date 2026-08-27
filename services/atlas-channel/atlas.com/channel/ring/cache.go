@@ -1,13 +1,12 @@
 package ring
 
 import (
+	"atlas-channel/listener"
 	"sync"
 
 	"github.com/google/uuid"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-
-	"atlas-channel/listener"
 )
 
 // cacheEntry is the set of ring pair halves owned by one character,

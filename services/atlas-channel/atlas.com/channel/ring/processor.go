@@ -1,6 +1,7 @@
 package ring
 
 import (
+	"atlas-channel/equipment"
 	"context"
 
 	"github.com/sirupsen/logrus"
@@ -11,8 +12,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-
-	"atlas-channel/equipment"
 )
 
 // ringSlotPositions are the four couple/friendship ring sub-slots

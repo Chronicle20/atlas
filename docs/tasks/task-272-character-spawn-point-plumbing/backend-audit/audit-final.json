@@ -1,0 +1,43 @@
+{
+  "service": "task-272-character-spawn-point-plumbing (multi-service)",
+  "path": "services/atlas-cashshop, atlas-channel, atlas-character, atlas-consumables, atlas-dragons, atlas-login, atlas-messages, atlas-npc-shops, atlas-pets, atlas-query-aggregator",
+  "date": "2026-08-27",
+  "build": "pass",
+  "testsPassed": null,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "character (all ten services)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go has NewBuilder(), fluent setters, validating Build()", "status": "pass", "evidence": "services/atlas-character/atlas.com/character/character/builder.go:65-68 (Builder), :352-355 (modelBuilder derived invariant); services/atlas-cashshop/.../builder.go:123; services/atlas-consumables/.../builder.go:127; services/atlas-dragons/.../builder.go:28; services/atlas-login/.../builder.go:96; services/atlas-messages/.../builder.go:119; services/atlas-npc-shops/.../builder.go:126; services/atlas-pets/.../builder.go:121; services/atlas-query-aggregator/.../builder.go:136"},
+        {"id": "DOM-01-callsites", "name": "Every Build() call site propagates or handles the error", "status": "pass", "evidence": "services/atlas-character/atlas.com/character/character/provider.go:59-88; rest.go:127-158; kafka/consumer/character/consumer.go:373-399; character/processor.go:277-289; services/atlas-login/atlas.com/login/character/processor.go:104-155,89-98"},
+        {"id": "DOM-02", "name": "Model.ToEntity() in entity.go", "status": "n-a", "evidence": "no character package in scope has entity.go"},
+        {"id": "DOM-03", "name": "Make(Entity) in entity.go", "status": "n-a", "evidence": "same as DOM-02"},
+        {"id": "DOM-04", "name": "Transform(Model) (RestModel, error) in rest.go", "status": "pass", "evidence": "services/atlas-pets/atlas.com/pets/character/rest.go:108-115"},
+        {"id": "DOM-05", "name": "TransformSlice in rest.go, no inline loops in resource.go", "status": "n-a", "evidence": "no resource.go touched in this range"},
+        {"id": "DOM-06", "name": "Processor constructor takes logrus.FieldLogger", "status": "pass", "evidence": "services/atlas-query-aggregator/atlas.com/query-aggregator/character/processor.go:27"},
+        {"id": "DOM-11", "name": "Providers evaluate lazily", "status": "pass", "evidence": "services/atlas-character/atlas.com/character/character/provider.go:59-88 still database.Query-backed; only Build() error binding added"},
+        {"id": "DOM-17", "name": "Domain errors map to HTTP status", "status": "n-a", "evidence": "no resource.go touched"},
+        {"id": "DOM-18", "name": "REST models implement JSON:API interface", "status": "pass", "evidence": "services/atlas-pets/atlas.com/pets/character/rest.go:20-40 unchanged except added SpawnPoint field"},
+        {"id": "DOM-19", "name": "Request models are flat", "status": "pass", "evidence": "no nested Data/Type/Attributes introduced; only spawnPoint field added"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/socket/writer/character_data_test.go:58-85; services/atlas-login/atlas.com/login/socket/writer/character_list_test.go:19-45; single-assertion builder_test.go invariant tests (e.g. services/atlas-cashshop/atlas.com/cashshop/character/builder_test.go:8-13) match testing-guide.md:21-27's own canonical non-table example"},
+        {"id": "DOM-21", "name": "No redeclaration of a shared domain type", "status": "n-a", "evidence": "diff adds only spawnPoint uint32 fields, no new type or const block"},
+        {"id": "DOM-24", "name": "Producer stub installed for tests reaching an emit path", "status": "warn", "evidence": "services/atlas-cashshop/atlas.com/cashshop/coupon/{concurrency_test.go,processor_test.go}, services/atlas-dragons/atlas.com/dragons/dragon/processor_test.go, services/atlas-pets/atlas.com/pets/pet/processor_test.go reach AndEmit/producer.ProviderImpl; wiring outside changed hunks, unchanged from round 2"},
+        {"id": "DOM-25", "name": "Client wire codes resolved from tenant table", "status": "n-a", "evidence": "services/atlas-channel/atlas.com/channel/socket/writer/character_data.go:47 and services/atlas-login/atlas.com/login/socket/writer/character_list.go:53-54 cast a data value (portal index), not a dispatcher/sub-op/fail-reason code"},
+        {"id": "DOM-27", "name": "503 not bare 500 on transient DB errors", "status": "n-a", "evidence": "no resource.go touched, no http.StatusInternalServerError write in range"},
+        {"id": "DOM-28", "name": "Fallible enrichment/decorator paths degrade loudly", "status": "pass", "evidence": "services/atlas-cashshop/atlas.com/cashshop/character/processor.go:50-58; services/atlas-npc-shops/atlas.com/npc/character/processor.go:72-80; services/atlas-query-aggregator/atlas.com/query-aggregator/character/processor.go:48-66; services/atlas-messages/atlas.com/messages/character/model.go:237-243; services/atlas-login/atlas.com/login/character/processor.go:183-195; services/atlas-character/atlas.com/character/character/processor.go:277-289; services/atlas-consumables/atlas.com/consumables/character/model.go:275-310 and services/atlas-pets/atlas.com/pets/character/model.go:254-262 pass under controller ruling #1 (comment-only, not a remote-fetch fallback)"},
+        {"id": "DOM-33", "name": "Interface change updates every mock in the same diff", "status": "pass", "evidence": "services/atlas-query-aggregator/atlas.com/query-aggregator/character/mock/processor.go:19-21"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-24: producer-stub wiring in atlas-cashshop/coupon, atlas-dragons/dragon, atlas-pets/pet test packages lives outside the changed hunks in this range (unchanged carry-forward from round 2)",
+    "DOM-28 (library contract): libs/atlas-model's model.ErrDecorator/degrade.Observe signature at services/atlas-login/atlas.com/login/character/processor.go:183-195 not re-read against library source this round"
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "DOM-24: services/atlas-cashshop/atlas.com/cashshop/coupon, services/atlas-dragons/atlas.com/dragons/dragon, services/atlas-pets/atlas.com/pets/pet test packages reach an emit path; producer-stub wiring not re-verified this round"
+  ]
+}

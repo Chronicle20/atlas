@@ -51,6 +51,16 @@ type Processor interface {
 	// FRIENDSHIP.
 	GetRingSet(characterId uint32, eq equipment.Model) packetmodel.RingSet
 
+	// GetRingRecords returns the couple/friendship ring record block for
+	// characterId (CharacterData's site A, Task 3), joined from the same
+	// cached ring pair halves as GetRingSet. Unlike GetRingSet's
+	// currently-equipped selection, this is a history view: every ACTIVE
+	// half the character owns is listed, whether or not it is currently
+	// equipped in a ring sub-slot. It never issues a REST call, for the
+	// same reason as GetRingSet. The Marriage arm is always empty: see
+	// GetRingSet's doc comment.
+	GetRingRecords(characterId uint32) packetmodel.RingRecords
+
 	// Invalidate drops the cached ring pair halves for characterId. It does
 	// not refetch; the next Populate call repopulates.
 	Invalidate(characterId uint32)
@@ -109,6 +119,38 @@ func (p *ProcessorImpl) GetRingSet(characterId uint32, eq equipment.Model) packe
 		Couple:     selectPair(e.halves, TypeCouple, eq),
 		Friendship: selectPair(e.halves, TypeFriendship, eq),
 	}
+}
+
+func (p *ProcessorImpl) GetRingRecords(characterId uint32) packetmodel.RingRecords {
+	t := tenant.MustFromContext(p.ctx)
+	e, ok := getRingCache().lookup(t.Id(), characterId)
+	if !ok {
+		p.l.Debugf("No cached ring pairs for character [%d]; encoding empty ring records.", characterId)
+		return packetmodel.RingRecords{}
+	}
+
+	var rr packetmodel.RingRecords
+	for _, h := range e.halves {
+		if h.State() != StateActive {
+			continue
+		}
+		cr := packetmodel.CoupleRecord{
+			PairCharacterId:   h.PartnerCharacterId(),
+			PairCharacterName: h.PartnerName(),
+			OwnSN:             h.CashId(),
+			PairSN:            h.PartnerCashId(),
+		}
+		switch h.Type() {
+		case TypeCouple:
+			rr.Couple = append(rr.Couple, cr)
+		case TypeFriendship:
+			rr.Friend = append(rr.Friend, packetmodel.FriendRecord{
+				CoupleRecord: cr,
+				FriendItemId: h.ItemTemplateId(),
+			})
+		}
+	}
+	return rr
 }
 
 // selectPair applies GetRingSet's selection rule (see its doc comment) for

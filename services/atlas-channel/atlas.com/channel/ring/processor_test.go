@@ -19,6 +19,7 @@ import (
 	eqslot "atlas-channel/equipment/slot"
 
 	slot2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -299,6 +300,62 @@ func TestGetRingSet(t *testing.T) {
 		rs := p.GetRingSet(characterId, eq)
 		if rs.Couple != nil || rs.Friendship != nil || rs.Marriage != nil {
 			t.Fatalf("GetRingSet() = %+v after upstream failure, want empty RingSet (no panic, no error)", rs)
+		}
+	})
+}
+
+// TestGetRingRecords covers Task 11's history-view accessor: every ACTIVE
+// half is listed regardless of equipment, BROKEN/EXPIRED halves are dropped,
+// and a cache miss returns an empty RingRecords rather than issuing a REST
+// call.
+func TestGetRingRecords(t *testing.T) {
+	const characterId = uint32(100)
+
+	t.Run("cache miss returns empty records", func(t *testing.T) {
+		resetRingCache()
+		t.Cleanup(resetRingCache)
+		ctx, _ := newRingTestContext(t)
+		p := NewProcessor(logrus.New(), ctx)
+
+		rr := p.GetRingRecords(characterId)
+
+		if len(rr.Couple) != 0 || len(rr.Friend) != 0 || len(rr.Marriage) != 0 {
+			t.Fatalf("GetRingRecords() = %+v on cache miss, want empty RingRecords", rr)
+		}
+	})
+
+	t.Run("lists every ACTIVE half, unequipped included, broken excluded", func(t *testing.T) {
+		resetRingCache()
+		t.Cleanup(resetRingCache)
+		ctx, _ := newRingTestContext(t)
+		p := NewProcessor(logrus.New(), ctx)
+		populate(t, p, characterId, []Model{coupleActive, friendshipActive, coupleBroken})
+
+		rr := p.GetRingRecords(characterId)
+
+		if len(rr.Couple) != 1 {
+			t.Fatalf("Couple records = %+v, want exactly 1 (coupleActive; coupleBroken must be excluded)", rr.Couple)
+		}
+		got := rr.Couple[0]
+		want := packetmodel.CoupleRecord{
+			PairCharacterId:   coupleActive.PartnerCharacterId(),
+			PairCharacterName: coupleActive.PartnerName(),
+			OwnSN:             coupleActive.CashId(),
+			PairSN:            coupleActive.PartnerCashId(),
+		}
+		if got != want {
+			t.Errorf("Couple[0] = %+v, want %+v", got, want)
+		}
+
+		if len(rr.Friend) != 1 {
+			t.Fatalf("Friend records = %+v, want exactly 1 (friendshipActive)", rr.Friend)
+		}
+		if rr.Friend[0].FriendItemId != friendshipActive.ItemTemplateId() {
+			t.Errorf("Friend[0].FriendItemId = %d, want %d", rr.Friend[0].FriendItemId, friendshipActive.ItemTemplateId())
+		}
+
+		if len(rr.Marriage) != 0 {
+			t.Errorf("Marriage records = %+v, want empty (marriage-ring acquisition is a PRD non-goal)", rr.Marriage)
 		}
 	})
 }

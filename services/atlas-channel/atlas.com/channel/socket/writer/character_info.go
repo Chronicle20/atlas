@@ -4,6 +4,7 @@ import (
 	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
 	"atlas-channel/guild"
+	"atlas-channel/ring"
 	"context"
 
 	"github.com/sirupsen/logrus"
@@ -51,6 +52,7 @@ func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model, mo
 			}
 
 			mb := c.MonsterBook()
+			rings := ring.NewProcessor(l, ctx).GetRingSet(c.Id(), c.Equipment())
 			return charpkt.NewCharacterInfo(
 				c.Id(), c.Level(), uint16(c.JobId()), c.Fame(), guildName,
 				pets, wishListSNs, medalId, charpkt.MonsterBookInfo{
@@ -61,7 +63,7 @@ func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model, mo
 					Cover:        uint32(mb.CoverMonsterId()),
 				},
 				mount,
-				false,
+				rings.Marriage != nil,
 			).Encode(l, ctx)(options)
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/guild"
+	"atlas-channel/ring"
 	"atlas-channel/socket/model"
 	"context"
 
@@ -57,10 +58,11 @@ func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enter
 				}
 			}
 
+			rings := ring.NewProcessor(l, ctx).GetRingSet(c.Id(), c.Equipment())
 			return charpkt.NewCharacterSpawn(
 				c.Id(), c.Level(), c.Name(), ge, cts, uint16(c.JobId()), ava,
 				pets, enteringField, c.X(), c.Y(), c.Stance(), c.Fh(),
-				packetmodel.RingSet{},
+				rings,
 			).Encode(l, ctx)(options)
 		}
 	}

@@ -6,7 +6,6 @@ import (
 	"atlas-channel/character/equipslot"
 	"atlas-channel/character/teleportrock"
 	"atlas-channel/monsterbook"
-	"context"
 	"testing"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestBuildCharacterData_MonsterBook(t *testing.T) {
@@ -28,7 +28,7 @@ func TestBuildCharacterData_MonsterBook(t *testing.T) {
 		SetMonsterBook(monsterbook.NewModel(col, cards)).
 		MustBuild()
 
-	cd := BuildCharacterData(logrus.New(), context.Background(), c, buddylist.Model{}, _map.Id(0), teleportrock.Model{})
+	cd := BuildCharacterData(logrus.New(), pt.CreateContext("GMS", 83, 1), c, buddylist.Model{}, _map.Id(0), teleportrock.Model{})
 
 	if cd.MonsterBook.CoverCardId != item.Id(2380001) {
 		t.Errorf("cover = %d, want 2380001", cd.MonsterBook.CoverCardId)
@@ -46,7 +46,7 @@ func TestBuildCharacterData_TeleportMaps(t *testing.T) {
 		SetSp("0").
 		MustBuild()
 	trm := teleportrock.NewModel([]_map.Id{100000000}, []_map.Id{104040000, 220000000})
-	cd := BuildCharacterData(logrus.New(), context.Background(), c, buddylist.Model{}, _map.Id(0), trm)
+	cd := BuildCharacterData(logrus.New(), pt.CreateContext("GMS", 83, 1), c, buddylist.Model{}, _map.Id(0), trm)
 	if len(cd.TeleportMaps) != 1 || cd.TeleportMaps[0] != 100000000 {
 		t.Fatalf("teleport maps: %v", cd.TeleportMaps)
 	}

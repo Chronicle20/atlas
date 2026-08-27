@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -18,6 +19,7 @@ import (
 type Processor interface {
 	CreatePair(db *gorm.DB, ringType Type, a Half, b Half) (uuid.UUID, error)
 	GetByCharacterId(characterId uint32) ([]Model, error)
+	GetByCharacterIdPaged(characterId uint32, page model.Page) (model.Paged[Model], error)
 	GetById(id uuid.UUID) (Model, error)
 }
 
@@ -67,41 +69,78 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 		return nil, err
 	}
 
-	astP := asset.NewProcessor(p.l, p.ctx, p.db)
 	enriched := make([]Model, 0, len(halves))
 	for _, half := range halves {
-		b := half.Builder()
-
-		if a, err := astP.GetById(half.AssetId()); err == nil {
-			b.SetCashId(a.CashId())
-		}
-
-		siblings, err := GetByPairId(db, p.t.Id(), half.PairId())
-		if err == nil {
-			for _, sibling := range siblings {
-				if sibling.Id() == half.Id() {
-					continue
-				}
-				if sa, err := astP.GetById(sibling.AssetId()); err == nil {
-					b.SetPartnerCashId(sa.CashId())
-				}
-				break
-			}
-		}
-
-		if partner, err := p.chaP.GetById()(half.PartnerCharacterId()); err == nil {
-			b.SetPartnerName(partner.Name())
-		}
-
-		m, err := b.Build()
-		if err != nil {
-			return nil, err
-		}
-		enriched = append(enriched, m)
+		enriched = append(enriched, p.enrich(half))
 	}
 	return enriched, nil
 }
 
+// GetByCharacterIdPaged is GetByCharacterId's paged counterpart, backing
+// GET /rings?filter[characterId]=. Paging happens at the database (via
+// byCharacterIdPagedProvider) so only the requested page's rows are
+// enriched, not the character's full holding.
+func (p *ProcessorImpl) GetByCharacterIdPaged(characterId uint32, page model.Page) (model.Paged[Model], error) {
+	db := p.db.WithContext(p.ctx)
+	pe, err := byCharacterIdPagedProvider(p.t, characterId, page)(db)()
+	if err != nil {
+		return model.Paged[Model]{}, err
+	}
+
+	items := make([]Model, 0, len(pe.Items))
+	for _, e := range pe.Items {
+		half, err := Make(e)
+		if err != nil {
+			return model.Paged[Model]{}, err
+		}
+		items = append(items, p.enrich(half))
+	}
+	return model.Paged[Model]{Items: items, Total: pe.Total, Page: pe.Page}, nil
+}
+
 func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {
-	return GetById(p.db.WithContext(p.ctx), p.t.Id(), id)
+	half, err := GetById(p.db.WithContext(p.ctx), p.t.Id(), id)
+	if err != nil {
+		return Model{}, err
+	}
+	return p.enrich(half), nil
+}
+
+// enrich resolves half's CashId, PartnerCashId, and PartnerName at read
+// time (design.md §5: computed, never stored on Entity). Every resolution
+// -- this half's own asset, the sibling half, the partner's name -- fails
+// soft to the zero value: a lookup failure here must not turn into an
+// error for a caller that only wants the pair rows (PRD FR-5's
+// channel-side fallback is downstream of this and depends on that).
+func (p *ProcessorImpl) enrich(half Model) Model {
+	db := p.db.WithContext(p.ctx)
+	astP := asset.NewProcessor(p.l, p.ctx, p.db)
+	b := half.Builder()
+
+	if a, err := astP.GetById(half.AssetId()); err == nil {
+		b.SetCashId(a.CashId())
+	}
+
+	siblings, err := GetByPairId(db, p.t.Id(), half.PairId())
+	if err == nil {
+		for _, sibling := range siblings {
+			if sibling.Id() == half.Id() {
+				continue
+			}
+			if sa, err := astP.GetById(sibling.AssetId()); err == nil {
+				b.SetPartnerCashId(sa.CashId())
+			}
+			break
+		}
+	}
+
+	if partner, err := p.chaP.GetById()(half.PartnerCharacterId()); err == nil {
+		b.SetPartnerName(partner.Name())
+	}
+
+	m, err := b.Build()
+	if err != nil {
+		return half
+	}
+	return m
 }

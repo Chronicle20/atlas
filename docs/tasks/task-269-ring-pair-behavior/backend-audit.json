@@ -1,0 +1,162 @@
+{
+  "service": "multi (atlas-cashshop, atlas-channel, atlas-character, atlas-configurations, atlas-data)",
+  "path": "services/{atlas-cashshop,atlas-channel,atlas-character,atlas-configurations,atlas-data}; libs/{atlas-constants,atlas-packet}",
+  "date": "2026-08-27",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "atlas-cashshop/ring",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder()/Build()", "status": "pass", "evidence": "ring/builder.go:27,131"},
+        {"id": "DOM-02", "name": "Model.ToEntity() in entity.go", "status": "pass", "evidence": "ring/entity.go:58"},
+        {"id": "DOM-03", "name": "Make(Entity) in entity.go", "status": "pass", "evidence": "ring/entity.go:39"},
+        {"id": "DOM-04", "name": "Transform(Model) in rest.go", "status": "pass", "evidence": "ring/rest.go:52"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handlers", "status": "fail", "evidence": "ring/resource.go:67 uses model.SliceMap(Transform) inline; no TransformSlice defined in ring/rest.go"},
+        {"id": "DOM-11", "name": "Providers lazy via database.Query/SliceQuery shape", "status": "pass", "evidence": "ring/provider.go:13-44 lazy curried EntityProvider, no eager FixedProvider wrap"},
+        {"id": "DOM-16", "name": "Writes in administrator.go", "status": "pass", "evidence": "ring/administrator.go:25 CreatePair"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "ring/processor.go:39"},
+        {"id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "ring/resource.go:59,85"},
+        {"id": "DOM-08", "name": "POST/PATCH via RegisterInputHandler[T]", "status": "n-a", "evidence": "GET-only routes; no write route in this package"},
+        {"id": "DOM-09", "name": "Every Transform( call site checks error", "status": "pass", "evidence": "ring/resource.go:67-72,104-109"},
+        {"id": "DOM-17", "name": "Domain errors map to correct HTTP status", "status": "pass", "evidence": "ring/resource.go:95-98 maps gorm.ErrRecordNotFound to 404"},
+        {"id": "DOM-18", "name": "RestModel implements JSON:API interface", "status": "pass", "evidence": "ring/rest.go:31-50"},
+        {"id": "DOM-21", "name": "No redeclared libs/atlas-constants type", "status": "pass", "evidence": "ring/model.go:8-9 documents the check against ClassificationRing"},
+        {"id": "DOM-27", "name": "503-vs-500 via WriteErrorResponse", "status": "pass", "evidence": "ring/resource.go:63,70,100,107"},
+        {"id": "DOM-30", "name": "Write+emit atomic via AndEmit/message.Buffer", "status": "pass", "evidence": "cashshop/processor_ring.go:83-84,207"},
+        {"id": "DOM-31", "name": "No tenant field on RestModel/request", "status": "pass", "evidence": "ring/rest.go has no TenantId field"},
+        {"id": "FILE-06", "name": "No catch-all file", "status": "pass", "evidence": "one responsibility per file across builder/entity/model/administrator/provider/processor/resource/rest"}
+      ]
+    },
+    {
+      "name": "atlas-cashshop/purchaserecord",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic not in handler", "status": "pass", "evidence": "purchaserecord/resource.go:33 delegates to NewProcessor(...).Get"},
+        {"id": "SUB-02", "name": "Writes via administrator, no db.Create in resource.go", "status": "pass", "evidence": "resource.go is GET-only"},
+        {"id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "pass", "evidence": "none found"},
+        {"id": "DOM-04", "name": "Transform(Model) in rest.go", "status": "n-a", "evidence": "package has no Model type; RestModel built directly from a primitive uint32 in resource.go:40-44"},
+        {"id": "DOM-31", "name": "No tenant field on RestModel", "status": "pass", "evidence": "purchaserecord/rest.go has none"}
+      ]
+    },
+    {
+      "name": "atlas-channel/ring",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists with NewBuilder()/Build()", "status": "fail", "evidence": "model.go:31-42 defines Model but no builder.go exists; Model built via raw struct literal in rest.go:68-79 Extract. Sibling cashshop/inventory/asset/builder.go (same diff) does this correctly."},
+        {"id": "DOM-04", "name": "Transform(Model) in rest.go", "status": "fail", "evidence": "rest.go:51 defines only Extract, no Transform. Sibling cashshop/inventory/asset/rest.go:81,97 defines both."},
+        {"id": "DOM-05", "name": "TransformSlice", "status": "n-a", "evidence": "no resource.go / list handler in package to evaluate against"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:82"},
+        {"id": "DOM-21", "name": "No redeclared libs/atlas-constants type", "status": "pass", "evidence": "model.go:5-9 documents the check"},
+        {"id": "DOM-28", "name": "Fallible remote-fetch enrichment degrades loudly via degrade.Observe", "status": "fail", "evidence": "processor.go:107-111 Populate's fetch-failure branch only Warnf's, never calls degrade.Observe; contrast socket/writer/character_data.go:131 in the same diff"},
+        {"id": "DOM-29", "name": "Cache is application-scoped singleton via accessor", "status": "pass", "evidence": "cache.go:22,26-38 sync.RWMutex, sync.Once, getRingCache()"},
+        {"id": "DOM-31", "name": "Tenant only via context", "status": "pass", "evidence": "rest.go has no tenant field; processor.go:102,117,122,135 tenant.MustFromContext(p.ctx)"},
+        {"id": "EXT-01", "name": "SetToOneReferenceID/SetToManyReferenceIDs", "status": "pass", "evidence": "rest.go:42,45"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "pass", "evidence": "processor_test.go (509 lines)"},
+        {"id": "EXT-03", "name": "Only genuine 404 maps to not-found", "status": "pass", "evidence": "processor.go:107-111 propagates upstream error verbatim"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "requests.go:15"},
+        {"id": "DOM-31-cache", "name": "Tenant eviction wired at session/tenant teardown", "status": "pass", "evidence": "main.go:307 EvictTenant; session/processor.go:430,498-502 clearRingsOnDestroy"}
+      ]
+    },
+    {
+      "name": "atlas-channel/cashshop/purchaserecord",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go exists", "status": "fail", "evidence": "model.go:3-19 defines Model but no builder.go in package"},
+        {"id": "DOM-04", "name": "Transform(Model) in rest.go", "status": "fail", "evidence": "rest.go defines only Extract at :36, no Transform"},
+        {"id": "EXT-01", "name": "SetToOneReferenceID/SetToManyReferenceIDs", "status": "pass", "evidence": "rest.go:31,34"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "requests.go:15"},
+        {"id": "DOM-31", "name": "No tenant on RestModel", "status": "pass", "evidence": "rest.go has none"}
+      ]
+    },
+    {
+      "name": "atlas-channel/character/equipslot",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-04", "name": "Transform present", "status": "pass", "evidence": "rest.go:40 identity Transform"},
+        {"id": "DOM-06", "name": "Processor ctor takes logrus.FieldLogger", "status": "pass", "evidence": "processor.go:24"},
+        {"id": "EXT-01", "name": "SetToOneReferenceID/SetToManyReferenceIDs", "status": "pass", "evidence": "rest.go:32,35"},
+        {"id": "EXT-02", "name": "httptest-backed integration test", "status": "pass", "evidence": "processor_test.go:24-55"},
+        {"id": "EXT-04", "name": "URL via requests.RootUrlFor", "status": "pass", "evidence": "requests.go:15"}
+      ]
+    },
+    {
+      "name": "atlas-character/equipslot",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-01", "name": "builder.go", "status": "pass", "evidence": "builder.go:18,47"},
+        {"id": "DOM-02", "name": "Model.ToEntity()", "status": "pass", "evidence": "entity.go:55"},
+        {"id": "DOM-03", "name": "Make(Entity)", "status": "pass", "evidence": "entity.go:35"},
+        {"id": "DOM-04", "name": "Transform(Model)", "status": "pass", "evidence": "rest.go:32"},
+        {"id": "DOM-05", "name": "TransformSlice used by list handler", "status": "pass", "evidence": "rest.go:43, resource.go:40"},
+        {"id": "DOM-08", "name": "POST via RegisterInputHandler[T]", "status": "pass", "evidence": "resource.go:26"},
+        {"id": "DOM-11", "name": "Lazy database.SliceQuery provider", "status": "pass", "evidence": "provider.go:18"},
+        {"id": "DOM-16", "name": "Writes in administrator.go", "status": "pass", "evidence": "administrator.go:24"},
+        {"id": "DOM-19", "name": "Flat request model", "status": "pass", "evidence": "rest.go:64-69 ExtendInputRestModel"},
+        {"id": "DOM-31", "name": "No tenant on RestModel", "status": "pass", "evidence": "rest.go has none"}
+      ]
+    },
+    {
+      "name": "atlas-data/cashpackage",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Business logic in processor", "status": "pass", "evidence": "resource.go:32,60"},
+        {"id": "SUB-02", "name": "No db.Create/Save in resource.go", "status": "pass", "evidence": "writes go through document.Storage.Add in processor.go:57"},
+        {"id": "SUB-04", "name": "No manual JSON parsing in resource.go", "status": "pass", "evidence": "none found"},
+        {"id": "DOM-29", "name": "Registry as application-scoped singleton", "status": "pass", "evidence": "registry.go:13-18"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet/model/ring.go",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-25", "name": "Client-interpreted bytes resolved from tenant table", "status": "n-a", "evidence": "flag bytes and entry counts are structural framing (bCouple/bFriendship/bMarriage), version-gated inline by region/majorVersion, not dispatcher mode/sub-op/message/fail-reason codes"}
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/consumer/cashshop",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-31", "name": "Tenant checked before acting on event", "status": "pass", "evidence": "consumer.go:514-517 t.Is(sc.Tenant())"},
+        {"id": "DOM-24", "name": "Producer stub for tests reaching an emit path", "status": "n-a", "evidence": "ring handlers only announce to session socket; no AndEmit/message.Emit/producer.Produce call site in this file"}
+      ]
+    },
+    {
+      "name": "atlas-cashshop/cashshop (processor_ring.go)",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-30", "name": "Write+emit atomic via outbox", "status": "pass", "evidence": "processor_ring.go:83-84,207"},
+        {"id": "DOM-31", "name": "Tenant derived from ctx, not exposed", "status": "pass", "evidence": "processor_ring.go:201 p.t.Id(); processor.go:145 tenant.MustFromContext(ctx)"},
+        {"id": "DOM-33", "name": "Mocks updated for wallet.Processor interface addition", "status": "n-a", "evidence": "no mock of wallet.Processor exists anywhere in the service"}
+      ]
+    },
+    {
+      "name": "all touched services",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-26", "name": "Every goroutine via routine.Go", "status": "pass", "evidence": "tools/goroutine-guard.sh run against atlas-channel, atlas-cashshop, atlas-character, atlas-data, atlas-configurations; exit 0"}
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-20: did not read every one of ~30 changed _test.go files line-by-line to confirm table-driven shape on each",
+    "DOM-25: did not independently re-verify the cited IDA addresses in ring.go against a binary; taken as evidence the derivation process was followed",
+    "atlas-cashshop kafka/producer/cashshop/producer.go and kafka/message/cashshop/kafka.go (206-line diff): only call sites reviewed, not full field-by-field body",
+    "atlas-cashshop/main.go, atlas-character/main.go, atlas-data/main.go wiring diffs: not read; build passing is corroborating but not conclusive",
+    "services/atlas-configurations/atlas.com/configurations/socket/corpus_test.go (4-line diff): not read",
+    "services/atlas-data/atlas.com/data/data/processor.go and data/workers/commodity.go (4-5 line diffs): not read",
+    "libs/atlas-packet/model/ring_test.go (428 lines): package tests pass but full JMS/GMS version-matrix enumeration not independently confirmed"
+  ],
+  "blocking": [
+    "DOM-01: services/atlas-channel/atlas.com/channel/ring/ has model.go but no builder.go",
+    "DOM-01: services/atlas-channel/atlas.com/channel/cashshop/purchaserecord/ has model.go but no builder.go",
+    "DOM-04: services/atlas-channel/atlas.com/channel/ring/rest.go defines no Transform(Model)(RestModel,error)",
+    "DOM-04: services/atlas-channel/atlas.com/channel/cashshop/purchaserecord/rest.go defines no Transform(Model)(RestModel,error)",
+    "DOM-05: services/atlas-cashshop/atlas.com/cashshop/ring/resource.go:67 inlines model.SliceMap(Transform) instead of calling a TransformSlice defined in rest.go",
+    "DOM-28: services/atlas-channel/atlas.com/channel/ring/processor.go:107-111 Populate's fetch-failure path never calls degrade.Observe"
+  ],
+  "nonBlocking": []
+}

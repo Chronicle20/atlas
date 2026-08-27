@@ -1,0 +1,66 @@
+ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	status	commit	verdict	caused_fix	artifact	context_tokens
+2026-08-26T22:57:36Z	agent	Task 1	general-purpose	opus	-	-	-	-	DONE	c134a7fc9	-	-	-	-
+2026-08-26T22:59:47Z	agent	Task 1	task-reviewer	sonnet	-	-	-	-	DONE	c134a7fc9	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-26T23:04:45Z	agent	Task 2	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	3a2cd247a	-	-	-	-
+2026-08-26T23:07:31Z	agent	Task 2	task-reviewer	sonnet	-	-	-	-	DONE	3a2cd247a	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-26T23:09:39Z	agent	Task 3	task-implementer	sonnet	-	-	-	-	BLOCKED	-	-	-	-	-
+2026-08-26T23:17:54Z	agent	Task 3a	general-purpose	opus	-	-	-	-	DONE_WITH_CONCERNS	961fb763d	-	-	-	-
+2026-08-26T23:23:05Z	agent	Task 3b	task-implementer	sonnet	-	-	-	-	DONE	720bee275	-	-	-	-
+2026-08-26T23:25:37Z	agent	Task 3	task-reviewer	sonnet	-	-	-	-	DONE	720bee275	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-26T23:31:43Z	agent	Task 4	task-implementer	sonnet	-	-	-	-	DONE	a5f8ac146	-	-	-	-
+2026-08-26T23:36:02Z	agent	Task 4	task-reviewer	sonnet	-	-	-	-	DONE	a5f8ac146	APPROVED	no	-	-
+2026-08-26T23:36:03Z	handoff	after Task 4	-	-	-	-	-	-	-	-	-	-	-	88000
+2026-08-26T23:37:43Z	agent	fix: gofumpt	task-implementer	haiku	-	-	-	-	DONE	eddb64bb2	-	-	-	-
+2026-08-27T10:19:24Z	agent	Task 5	task-implementer	sonnet	-	-	-	-	DONE	940fd0ae4	-	-	-	-
+2026-08-27T10:21:06Z	agent	Task 5	task-reviewer	sonnet	-	-	-	-	DONE	940fd0ae4	APPROVED	no	-	-
+2026-08-27T10:24:44Z	agent	Task 6	task-implementer	sonnet	-	-	-	-	DONE	3c4d49bcc	-	-	-	-
+2026-08-27T10:26:46Z	agent	Task 7	task-implementer	sonnet	-	-	-	-	DONE	60f87d269	-	-	-	-
+2026-08-27T10:31:31Z	agent	Task 6	task-reviewer	sonnet	-	-	-	-	DONE	3c4d49bcc	CHANGES_REQUIRED	yes	-	-
+2026-08-27T10:32:09Z	agent	Task 7	task-reviewer	sonnet	-	-	-	-	DONE	60f87d269	CHANGES_REQUIRED	yes	-	-
+2026-08-27T10:32:34Z	agent	Task 8	task-implementer	sonnet	-	-	-	-	DONE	02b6eeb81	-	-	-	-
+2026-08-27T10:36:04Z	agent	Task 7 fix 1	task-implementer	haiku	-	-	-	-	DONE	cc49a9fb8	-	-	-	-
+2026-08-27T10:36:28Z	agent	Task 6 fix 1	task-implementer	sonnet	-	-	-	-	DONE	00dc42a52	-	-	-	-
+2026-08-27T10:37:07Z	agent	Task 7 fix 1	task-reviewer	haiku	-	-	-	-	DONE	cc49a9fb8	ADDRESSED	no	-	-
+2026-08-27T10:37:55Z	agent	Task 8	task-reviewer	sonnet	-	-	-	-	DONE	02b6eeb81	CHANGES_REQUIRED	yes	-	-
+2026-08-27T10:39:08Z	agent	Task 6 fix 1	task-reviewer	sonnet	-	-	-	-	DONE	00dc42a52	ADDRESSED	no	-	-
+2026-08-27T10:42:35Z	agent	Task 8 fix 1	task-implementer	sonnet	-	-	-	-	DONE	f8c5f9d42	-	-	-	-
+2026-08-27T10:44:45Z	agent	Task 8 fix 1	task-reviewer	sonnet	-	-	-	-	DONE	f8c5f9d42	APPROVED	no	-	-
+2026-08-27T10:44:45Z	handoff	after Task 8	-	-	-	-	-	-	-	-	-	-	-	95000
+2026-08-27T11:02:00Z	agent	Gate c134a7fc9..f8c5f9d42	verify.sh	-	-	-	-	-	FAIL	f8c5f9d42	-	-	-	-
+2026-08-27T11:03:14Z	agent	Gate fix gofumpt-2	task-implementer	sonnet	-	-	-	-	DONE	411f368a8	-	-	-	-
+2026-08-27T11:07:19Z	agent	Task 9	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	41cb9b35c	-	-	-	-
+2026-08-27T11:12:40Z	agent	Task 9	task-reviewer	sonnet	-	-	-	-	DONE	41cb9b35c	APPROVED	no	-	-
+2026-08-27T11:20:44Z	agent	Gate c134a7fc9..41cb9b35c	verify.sh	-	-	-	-	-	FAIL	41cb9b35c	-	-	-	-
+2026-08-27T11:31:27Z	agent	Task 10	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	08c042550	-	-	-	-
+2026-08-27T11:35:17Z	agent	Task 10	task-reviewer	sonnet	-	-	-	-	DONE	08c042550	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-27T11:44:31Z	agent	Gate c134a7fc9..08c042550	verify.sh	-	-	-	-	-	FAIL	08c042550	-	-	-	-
+2026-08-27T11:49:41Z	agent	Gate fix gofumpt-3	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	bbb3ad91d	-	-	-	-
+2026-08-27T12:09:06Z	agent	Task 11	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	9f65d8ac0	-	-	-	-
+2026-08-27T12:12:24Z	agent	Task 11	task-reviewer	sonnet	-	-	-	-	DONE	9f65d8ac0	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-27T12:41:36Z	agent	Task 12	task-implementer	sonnet	-	-	-	-	DONE	efd355942	-	-	-	-
+2026-08-27T12:43:20Z	agent	Gate 9f65d8ac0..efd355942	verify.sh	-	-	-	-	-	PASS	efd355942	-	-	-	-
+2026-08-27T12:50:30Z	agent	Task 12	task-reviewer	sonnet	-	-	-	-	DONE	efd355942	CHANGES_REQUIRED	yes	-	-
+2026-08-27T14:23:50Z	agent	Task 15	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-27T14:31:21Z	agent	Task 15	task-implementer	sonnet	-	-	-	-	DONE_WITH_CONCERNS	ef896ed71	-	-	-	-
+2026-08-27T14:38:49Z	agent	Task 15	task-reviewer	sonnet	-	-	-	-	DONE	ef896ed71	CHANGES_REQUIRED	yes	-	-
+2026-08-27T15:16:54Z	agent	Task 15 fix 1	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-27T15:16:54Z	agent	Gate 9df12f9d0..ef896ed71 (flagless)	verify.sh	-	-	-	-	-	PASS	ef896ed71	-	-	-	-
+2026-08-27T15:20:52Z	agent	Task 15 fix 1	task-implementer	sonnet	-	-	-	-	DONE	ac3c8bde5	-	-	-	-
+2026-08-27T15:23:32Z	agent	Task 15 fix 1	task-reviewer	sonnet	-	-	-	-	DONE	ac3c8bde5	ADDRESSED	yes	-	-
+2026-08-27T15:23:32Z	agent	Task 15 fix 2	task-implementer	haiku	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-27T15:24:15Z	agent	Task 15 fix 2	task-implementer	haiku	-	-	-	-	DONE	e5f7cf0	-	-	-	-
+2026-08-27T15:27:04Z	agent	Pre-PR tasks 1-8	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	e5f7cf0	APPROVED_WITH_FINDINGS	yes	-	-
+2026-08-27T15:28:01Z	agent	Pre-PR frontend	frontend-guidelines-reviewer	sonnet	-	-	-	-	DONE	e5f7cf0	APPROVED_WITH_FINDINGS	no	-	-
+2026-08-27T15:28:48Z	agent	Pre-PR packet completeness	packet-completeness-critic	sonnet	-	-	-	-	DONE	e5f7cf0	1-unclaimed-inherited	no	-	-
+2026-08-27T15:29:21Z	agent	Pre-PR tasks 9-15	plan-adherence-reviewer	sonnet	-	-	-	-	DONE	e5f7cf0	APPROVED	no	-	-
+2026-08-27T15:42:57Z	agent	Pre-PR backend	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	e5f7cf0	CHANGES_REQUIRED	yes	-	-
+2026-08-27T15:50:00Z	agent	Backend fix 1	task-implementer	sonnet	-	-	-	-	DONE	79449bea0	-	-	-	-
+2026-08-27T15:55:06Z	agent	Backend fix 1	backend-guidelines-reviewer	sonnet	-	-	-	-	DONE	79449bea0	ADDRESSED	no	-	-
+2026-08-27T16:13:13Z	handoff	PR #1524	-	-	-	-	-	-	DONE	f38deac86	-	-	-	-
+2026-08-27T18:22:28Z	agent	bug-ring-purchase-wrong-currency	task-implementer	sonnet	-	-	-	-	DONE	67d31d6bc	-	-	-	-
+2026-08-27T18:25:43Z	agent	bug-package-purchase-wrong-currency	task-implementer	sonnet	-	-	-	-	DONE	d228fea7a	-	-	-	-
+2026-08-27T18:34:06Z	agent	bug-package-purchase-wrong-currency	task-reviewer	sonnet	-	-	-	-	DONE	d228fea7a	APPROVED_WITH_FINDINGS	true	-	-
+2026-08-27T19:41:10Z	agent	Gate rebase onto d248daae1 (flagless)	verify.sh	-	-	-	-	-	PASS	8c2e2cfa4	-	-	-	-
+2026-08-27T20:10:49Z	agent	bug-rings-route-missing-from-ingress	task-implementer	sonnet	-	-	-	-	DONE	1721d8d25	-	-	-	-
+2026-08-27T22:08:56Z	agent	bug-ring-cash-id-resolves-to-zero	task-implementer	sonnet	-	-	-	-	DONE	0f1f8872b	-	-	-	-
+2026-08-27T22:08:56Z	agent	bug-ring-cash-id-resolves-to-zero	task-reviewer	sonnet	-	-	-	-	DONE	0f1f8872b	APPROVED_WITH_FINDINGS	true	-	-

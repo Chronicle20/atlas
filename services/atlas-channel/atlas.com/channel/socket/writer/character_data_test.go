@@ -6,14 +6,19 @@ import (
 	"atlas-channel/character/equipslot"
 	"atlas-channel/character/teleportrock"
 	"atlas-channel/monsterbook"
-	"context"
+	"atlas-channel/ring"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestBuildCharacterData_MonsterBook(t *testing.T) {
@@ -28,7 +33,7 @@ func TestBuildCharacterData_MonsterBook(t *testing.T) {
 		SetMonsterBook(monsterbook.NewModel(col, cards)).
 		MustBuild()
 
-	cd := BuildCharacterData(logrus.New(), context.Background(), c, buddylist.Model{}, _map.Id(0), teleportrock.Model{})
+	cd := BuildCharacterData(logrus.New(), pt.CreateContext("GMS", 83, 1), c, buddylist.Model{}, _map.Id(0), teleportrock.Model{})
 
 	if cd.MonsterBook.CoverCardId != item.Id(2380001) {
 		t.Errorf("cover = %d, want 2380001", cd.MonsterBook.CoverCardId)
@@ -46,7 +51,7 @@ func TestBuildCharacterData_TeleportMaps(t *testing.T) {
 		SetSp("0").
 		MustBuild()
 	trm := teleportrock.NewModel([]_map.Id{100000000}, []_map.Id{104040000, 220000000})
-	cd := BuildCharacterData(logrus.New(), context.Background(), c, buddylist.Model{}, _map.Id(0), trm)
+	cd := BuildCharacterData(logrus.New(), pt.CreateContext("GMS", 83, 1), c, buddylist.Model{}, _map.Id(0), trm)
 	if len(cd.TeleportMaps) != 1 || cd.TeleportMaps[0] != 100000000 {
 		t.Fatalf("teleport maps: %v", cd.TeleportMaps)
 	}
@@ -77,12 +82,61 @@ func TestBuildCharacterData_SpawnPoint(t *testing.T) {
 				SetSpawnPoint(tt.set).
 				MustBuild()
 
-			cd := BuildCharacterData(logrus.New(), context.Background(), c, buddylist.Model{}, _map.Id(0), teleportrock.Model{})
+			cd := BuildCharacterData(logrus.New(), pt.CreateContext("GMS", 83, 1), c, buddylist.Model{}, _map.Id(0), teleportrock.Model{})
 
 			if cd.Stats.SpawnPoint != tt.want {
 				t.Errorf("Stats.SpawnPoint = %d, want %d", cd.Stats.SpawnPoint, tt.want)
 			}
 		})
+	}
+}
+
+// TestBuildCharacterData_Rings covers the RECORD block call site
+// (cd.Rings = ring.NewProcessor(l, ctx).GetRingRecords(c.Id())) at the
+// writer level -- carried from Task 11's review (non-blocking). Only
+// ring.GetRingRecords was covered in isolation before; nothing seeded the
+// ring cache and asserted on cd.Rings itself, so a swap of this call site
+// for GetRingSet's AVATAR-block shape would have passed the whole suite.
+// The seeded half's PartnerName must survive into cd.Rings.Couple.
+func TestBuildCharacterData_Rings(t *testing.T) {
+	const characterId = uint32(99)
+	const cashId = int64(1111)
+	const partnerCashId = int64(2222)
+	const partnerCharacterId = uint32(200)
+	const partnerName = "Partner"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = fmt.Fprintf(w, `{"data":[{"id":"%s","type":"rings","attributes":{"pairId":"%s","characterId":%d,"partnerCharacterId":%d,"assetId":1,"itemTemplateId":1112001,"ringType":"COUPLE","state":"ACTIVE","cashId":%d,"partnerCashId":%d,"partnerName":%q}}],"meta":{"total":1,"page":{"number":1,"size":250,"last":1}}}`,
+			uuid.New(), uuid.New(), characterId, partnerCharacterId, cashId, partnerCashId, partnerName)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("CASHSHOP_SERVICE_URL", srv.URL+"/")
+
+	ctx := pt.CreateContext("GMS", 83, 1)
+	if err := ring.NewProcessor(logrus.New(), ctx).Populate(characterId); err != nil {
+		t.Fatalf("Populate: %v", err)
+	}
+
+	c := character.NewBuilder().
+		SetId(characterId).
+		SetSp("0").
+		MustBuild()
+
+	cd := BuildCharacterData(logrus.New(), ctx, c, buddylist.Model{}, _map.Id(0), teleportrock.Model{})
+
+	if len(cd.Rings.Couple) != 1 {
+		t.Fatalf("cd.Rings.Couple = %+v, want exactly 1 seeded half", cd.Rings.Couple)
+	}
+	got := cd.Rings.Couple[0]
+	if got.PairCharacterName != partnerName {
+		t.Errorf("PairCharacterName = %q, want the seeded partnerName %q", got.PairCharacterName, partnerName)
+	}
+	if got.PairCharacterId != partnerCharacterId {
+		t.Errorf("PairCharacterId = %d, want %d", got.PairCharacterId, partnerCharacterId)
+	}
+	if got.OwnSN != cashId || got.PairSN != partnerCashId {
+		t.Errorf("OwnSN/PairSN = %d/%d, want %d/%d", got.OwnSN, got.PairSN, cashId, partnerCashId)
 	}
 }
 

@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Maple Life config UI — option mockups</title>
+<style>
+/* Theme values lifted from services/atlas-ui/src/index.css (.dark block, :180-221)
+   so these mockups read against the real Nord-ish palette rather than a guess. */
+:root {
+  --background: 220 16% 22%;
+  --foreground: 210 20% 98%;
+  --card: 220 16% 22%;
+  --muted: 215 27.9% 16.9%;
+  --muted-foreground: 217.9 10.6% 64.9%;
+  --accent: 215 27.9% 16.9%;
+  --border: 215 27.9% 16.9%;
+  --input: 215 27.9% 16.9%;
+  --primary: 210 20% 98%;
+  --primary-foreground: 220.9 39.3% 11%;
+  --destructive: 0 62.8% 30.6%;
+  --warning: 38 92% 50%;
+  --warning-foreground: 48 96% 77%;
+  --radius: 0.5rem;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font: 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+h1, h2, h3, h4 { margin: 0; font-weight: 600; }
+button { font: inherit; color: inherit; }
+code, .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; }
+
+/* ---------- chrome: the option switcher that wraps all three mockups ---------- */
+.switcher {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 12px 20px;
+  background: hsl(220 16% 16%);
+  border-bottom: 1px solid hsl(var(--border));
+}
+.switcher h1 { font-size: 14px; letter-spacing: .01em; }
+.switcher .sub { font-size: 12px; color: hsl(var(--muted-foreground)); }
+.seg {
+  display: inline-flex; gap: 2px; padding: 3px;
+  background: hsl(var(--muted)); border-radius: var(--radius);
+}
+.seg button {
+  border: 0; background: transparent; cursor: pointer;
+  padding: 6px 14px; border-radius: calc(var(--radius) - 3px);
+  font-size: 13px; color: hsl(var(--muted-foreground)); white-space: nowrap;
+}
+.seg button[aria-selected="true"] {
+  background: hsl(var(--background)); color: hsl(var(--foreground));
+  box-shadow: 0 1px 2px rgb(0 0 0 / .35);
+}
+.stage { padding: 20px; }
+.note {
+  max-width: 1400px; margin: 0 auto 16px;
+  border: 1px solid hsl(var(--border)); border-left: 3px solid hsl(var(--warning));
+  border-radius: var(--radius); padding: 10px 14px;
+  background: hsl(215 27.9% 16.9% / .55); font-size: 13px;
+  color: hsl(var(--muted-foreground));
+}
+.note b { color: hsl(var(--foreground)); font-weight: 600; }
+
+/* ---------- shared app shell (mirrors TenantDetailLayout's nav rail) ---------- */
+.shell {
+  max-width: 1400px; margin: 0 auto;
+  display: grid; grid-template-columns: 210px 1fr;
+  gap: 20px; align-items: start;
+}
+.railwrap { position: sticky; top: 76px; }
+.crumbs { font-size: 12px; color: hsl(var(--muted-foreground)); margin-bottom: 10px; }
+.crumbs .sep { opacity: .5; margin: 0 6px; }
+.rail { display: flex; flex-direction: column; gap: 2px; }
+.rail a {
+  display: block; padding: 7px 10px; border-radius: var(--radius);
+  color: hsl(var(--muted-foreground)); text-decoration: none; font-size: 13px;
+}
+.rail a:hover { background: hsl(var(--accent)); }
+.rail a.active { background: hsl(var(--accent)); color: hsl(var(--foreground)); font-weight: 500; }
+.rail a.new::after {
+  content: "new"; float: right; font-size: 10px; text-transform: uppercase;
+  letter-spacing: .06em; color: hsl(var(--warning)); font-weight: 600;
+}
+
+.pagehead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.pagehead h2 { font-size: 20px; }
+.pagehead p { margin: 4px 0 0; font-size: 13px; color: hsl(var(--muted-foreground)); max-width: 62ch; }
+
+.card {
+  border: 1px solid hsl(var(--border)); border-radius: var(--radius);
+  background: hsl(var(--card)); padding: 16px; margin-bottom: 14px;
+}
+.card > header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.card > header h3 { font-size: 14px; }
+.hint { font-size: 12px; color: hsl(var(--muted-foreground)); }
+.warn { font-size: 12px; color: hsl(var(--warning-foreground)); display: inline-flex; align-items: center; gap: 5px; }
+.warn::before { content: "▲"; font-size: 9px; color: hsl(var(--warning)); }
+
+.btn {
+  border: 1px solid hsl(var(--border)); background: transparent; cursor: pointer;
+  border-radius: var(--radius); padding: 6px 12px; font-size: 13px;
+}
+.btn:hover { background: hsl(var(--accent)); }
+.btn.primary { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: transparent; font-weight: 500; }
+.btn.sm { padding: 4px 9px; font-size: 12px; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 12px; color: hsl(var(--muted-foreground)); }
+.field .ctl {
+  border: 1px solid hsl(var(--input)); border-radius: calc(var(--radius) - 2px);
+  background: hsl(220 16% 19%); padding: 7px 10px; font-size: 13px; min-height: 34px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.field .ctl.disabled { opacity: .45; }
+.field .ctl .chev { color: hsl(var(--muted-foreground)); font-size: 10px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.grid6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+
+/* appearance thumbs — stand-ins for AppearanceThumb's rendered sprite */
+.thumbs { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
+.thumb {
+  width: 72px; border: 1px solid hsl(var(--border)); border-radius: var(--radius);
+  background: hsl(220 16% 19%); padding: 6px; text-align: center; cursor: pointer;
+  position: relative;
+}
+.thumb.selected { border-color: hsl(var(--foreground)); box-shadow: 0 0 0 1px hsl(var(--foreground)); }
+.thumb .sprite {
+  height: 52px; border-radius: 4px; margin-bottom: 5px;
+  background:
+    radial-gradient(circle at 50% 32%, hsl(var(--sprite-h, 30) 45% 62%) 0 34%, transparent 35%),
+    linear-gradient(hsl(220 12% 30%), hsl(220 12% 24%));
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.thumb .sprite span { font-size: 9px; color: hsl(var(--muted-foreground)); padding-bottom: 3px; }
+.thumb .id { font-size: 10px; color: hsl(var(--muted-foreground)); }
+.thumb .x {
+  position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; line-height: 14px;
+  border-radius: 999px; background: hsl(var(--muted)); border: 1px solid hsl(var(--border));
+  font-size: 10px; color: hsl(var(--muted-foreground));
+}
+.thumb.add { display: flex; align-items: center; justify-content: center; height: 84px; font-size: 20px; color: hsl(var(--muted-foreground)); }
+.swatch { width: 44px; }
+.swatch .sprite { height: 30px; }
+
+/* item rows — stand-in for ItemRow / StartingKitSection */
+.itemrow {
+  display: flex; align-items: center; gap: 10px; padding: 7px 9px;
+  border: 1px solid hsl(var(--border)); border-radius: calc(var(--radius) - 2px);
+  background: hsl(220 16% 19%); margin-bottom: 6px;
+}
+.itemrow .icon { width: 26px; height: 26px; border-radius: 4px; background: hsl(220 12% 30%); flex: none; }
+.itemrow .name { flex: 1; font-size: 13px; }
+.itemrow .name small { display: block; color: hsl(var(--muted-foreground)); font-size: 11px; }
+.itemrow .qty { font-size: 12px; color: hsl(var(--muted-foreground)); }
+.chk { font-size: 12px; color: hsl(var(--muted-foreground)); display: inline-flex; align-items: center; gap: 5px; }
+.chk i { width: 13px; height: 13px; border: 1px solid hsl(var(--border)); border-radius: 3px; display: inline-block; }
+.chk.on i { background: hsl(var(--primary)); border-color: transparent; }
+
+/* preview column */
+.preview {
+  border: 1px solid hsl(var(--border)); border-radius: var(--radius);
+  background: hsl(var(--card)); padding: 16px; position: sticky; top: 76px;
+}
+.preview .stagebox {
+  height: 190px; border-radius: var(--radius); margin-bottom: 12px;
+  background: linear-gradient(hsl(220 14% 26%), hsl(220 16% 20%));
+  display: flex; align-items: center; justify-content: center;
+}
+.avatar { width: 74px; height: 118px; position: relative; }
+.avatar .head { position: absolute; left: 17px; top: 6px; width: 40px; height: 40px; border-radius: 999px; background: hsl(var(--skin, 28) 42% 76%); }
+.avatar .hair { position: absolute; left: 13px; top: 0; width: 48px; height: 26px; border-radius: 24px 24px 6px 6px; background: hsl(var(--hair, 20) 55% 40%); }
+.avatar .body { position: absolute; left: 20px; top: 44px; width: 34px; height: 44px; border-radius: 8px; background: hsl(var(--top, 210) 40% 46%); }
+.avatar .legs { position: absolute; left: 22px; top: 86px; width: 30px; height: 26px; border-radius: 5px; background: hsl(220 18% 34%); }
+.kv { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; border-bottom: 1px dashed hsl(var(--border)); }
+.kv:last-child { border-bottom: 0; }
+.kv span:first-child { color: hsl(var(--muted-foreground)); }
+
+/* action bar — stand-in for useRegisterDetailActionBar's save bar */
+.actionbar {
+  position: sticky; bottom: 0; margin-top: 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px; border: 1px solid hsl(var(--border)); border-radius: var(--radius);
+  background: hsl(220 16% 18%);
+}
+.dirty { font-size: 12px; color: hsl(var(--warning-foreground)); }
+
+/* option B: preset library column */
+.libgrid { display: grid; grid-template-columns: 250px 1fr; gap: 16px; align-items: start; }
+.lib { border: 1px solid hsl(var(--border)); border-radius: var(--radius); background: hsl(var(--card)); padding: 10px; }
+.lib .row {
+  padding: 8px 10px; border-radius: calc(var(--radius) - 2px); cursor: pointer; font-size: 13px;
+  display: flex; justify-content: space-between; gap: 8px; align-items: center;
+}
+.lib .row:hover { background: hsl(var(--accent)); }
+.lib .row.active { background: hsl(var(--accent)); font-weight: 500; }
+.lib .row small { color: hsl(var(--muted-foreground)); font-size: 11px; font-weight: 400; }
+.lib .group { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: hsl(var(--muted-foreground)); padding: 10px 10px 4px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid hsl(var(--border)); margin-bottom: 14px; }
+.tabs button {
+  border: 0; background: transparent; cursor: pointer; padding: 8px 14px; font-size: 13px;
+  color: hsl(var(--muted-foreground)); border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tabs button[aria-selected="true"] { color: hsl(var(--foreground)); border-bottom-color: hsl(var(--foreground)); }
+
+/* option C: raw table form */
+table.raw { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.raw th {
+  text-align: left; font-weight: 500; font-size: 11px; text-transform: uppercase;
+  letter-spacing: .05em; color: hsl(var(--muted-foreground));
+  padding: 6px 8px; border-bottom: 1px solid hsl(var(--border)); white-space: nowrap;
+}
+table.raw td { padding: 4px 8px; border-bottom: 1px solid hsl(215 27.9% 16.9% / .6); }
+table.raw input {
+  width: 100%; min-width: 58px; background: hsl(220 16% 19%); color: inherit;
+  border: 1px solid hsl(var(--input)); border-radius: 4px; padding: 4px 6px; font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+}
+table.raw input.bad { border-color: hsl(0 62% 52%); }
+table.raw input:disabled { opacity: .4; }
+table.raw td.err { color: hsl(0 70% 70%); font-size: 11px; }
+.rowerr { font-size: 11px; color: hsl(0 70% 70%); padding: 2px 8px 8px; }
+
+.badge {
+  display: inline-block; font-size: 10px; letter-spacing: .04em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 999px; border: 1px solid hsl(var(--border));
+  color: hsl(var(--muted-foreground));
+}
+.badge.derived { border-color: hsl(160 40% 40%); color: hsl(160 45% 68%); }
+.badge.unconfirmed { border-color: hsl(38 60% 45%); color: hsl(var(--warning-foreground)); }
+
+.tradeoffs { max-width: 1400px; margin: 18px auto 0; font-size: 13px; }
+.tradeoffs h4 { font-size: 13px; margin-bottom: 6px; }
+.tradeoffs ul { margin: 0; padding-left: 18px; color: hsl(var(--muted-foreground)); }
+.tradeoffs .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <div>
+    <h1>Maple Life configuration — UI options</h1>
+    <div class="sub">Live data: <code class="mono">seed-data/templates/template_gms_95_1.json → mapleLife</code></div>
+  </div>
+  <div class="seg" role="tablist" id="optSwitch">
+    <button role="tab" data-opt="A" aria-selected="true">Option A — dedicated sub-page</button>
+    <button role="tab" data-opt="B" aria-selected="false">Option B — tab in Character Presets</button>
+    <button role="tab" data-opt="C" aria-selected="false">Option C — schema-driven panel</button>
+  </div>
+  <div class="seg" role="group" id="ctxSwitch" title="Both surfaces exist for templates and tenants today">
+    <button data-ctx="tenant" aria-selected="true">Tenant</button>
+    <button data-ctx="template" aria-selected="false">Template</button>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="note" id="optNote"></div>
+
+  <!-- ============================ OPTION A ============================ -->
+  <div class="shell" id="optA">
+    <div class="railwrap">
+      <div class="crumbs" id="crumbA"></div>
+      <nav class="rail" id="railA"></nav>
+    </div>
+    <main>
+      <div class="pagehead">
+        <div>
+          <h2>Maple Life</h2>
+          <p>The server-side authority table for the in-game character-creation dialog
+             (<code class="mono">Cash/0543</code>). The client draws its own carousel from WZ;
+             everything here is validated against the player's submission.</p>
+        </div>
+        <div class="seg" id="genderA">
+          <button data-g="0" aria-selected="true">Male</button>
+          <button data-g="1" aria-selected="false">Female</button>
+        </div>
+      </div>
+
+      <div class="seg" id="ordA" style="margin-bottom:14px"></div>
+
+      <div style="display:grid;grid-template-columns:1fr 250px;gap:16px;align-items:start">
+        <div>
+          <section class="card">
+            <header>
+              <h3>Identity</h3>
+              <span class="hint">ordinal → job is <em>data</em>, not code</span>
+              <span id="ordBadgeA"></span>
+            </header>
+            <div class="grid3">
+              <div class="field"><label>Job</label><div class="ctl"><span id="a_job"></span><span class="chev">▾</span></div></div>
+              <div class="field"><label>Level</label><div class="ctl"><span id="a_level"></span></div></div>
+              <div class="field"><label>Spawn map</label><div class="ctl"><span id="a_map"></span><span class="chev">▾</span></div></div>
+            </div>
+            <div class="hint" style="margin-top:10px" id="a_ordwarn"></div>
+          </section>
+
+          <section class="card">
+            <header>
+              <h3>Appearance pool</h3>
+              <span class="hint">per gender · the player picks one of each</span>
+            </header>
+            <div id="a_looks"></div>
+          </section>
+
+          <section class="card">
+            <header><h3>Progression</h3><span class="hint">stats are the skill-excluded midpoint</span></header>
+            <div class="grid6">
+              <div class="field"><label>STR</label><div class="ctl"><span id="a_str"></span></div></div>
+              <div class="field"><label>DEX</label><div class="ctl"><span id="a_dex"></span></div></div>
+              <div class="field"><label>INT</label><div class="ctl"><span id="a_int"></span></div></div>
+              <div class="field"><label>LUK</label><div class="ctl"><span id="a_luk"></span></div></div>
+              <div class="field"><label>HP</label><div class="ctl"><span id="a_hp"></span></div></div>
+              <div class="field"><label>MP</label><div class="ctl"><span id="a_mp"></span></div></div>
+            </div>
+            <div class="grid3" style="margin-top:12px">
+              <div class="field"><label>Unspent AP</label><div class="ctl"><span id="a_ap"></span></div></div>
+              <div class="field"><label>SP pool (10 books)</label><div class="ctl mono" style="font-size:12px"><span id="a_sp"></span></div></div>
+              <div class="field"><label>Meso</label><div class="ctl"><span id="a_meso"></span></div></div>
+            </div>
+          </section>
+
+          <section class="card">
+            <header>
+              <h3>SP skill offer</h3>
+              <span class="hint">the dialog's step 4 — client skips it for ordinal ≥ 2</span>
+            </header>
+            <div class="grid2">
+              <div class="field"><label>Skill offered at creation</label>
+                <div class="ctl" id="a_spctl"><span id="a_spskill"></span><span class="chev">▾</span></div>
+              </div>
+              <div class="field"><label>Player may invest</label><div class="ctl" id="a_spinv"><span id="a_sprange"></span></div></div>
+            </div>
+            <div style="margin-top:10px" id="a_spnote"></div>
+          </section>
+
+          <section class="card">
+            <header><h3>Starting kit</h3><span class="hint">seeded onto the new character</span></header>
+            <div class="grid2">
+              <div>
+                <div class="hint" style="margin-bottom:6px">Equipment</div>
+                <div id="a_equip"></div>
+                <button class="btn sm">+ Add equipment</button>
+              </div>
+              <div>
+                <div class="hint" style="margin-bottom:6px">Inventory</div>
+                <div id="a_inv"></div>
+                <button class="btn sm">+ Add item</button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="preview">
+          <h3 style="font-size:13px;margin-bottom:10px">Preview</h3>
+          <div class="stagebox">
+            <div class="avatar" id="a_avatar"><i class="hair"></i><i class="head"></i><i class="body"></i><i class="legs"></i></div>
+          </div>
+          <div class="kv"><span>Class</span><b id="a_pv_class"></b></div>
+          <div class="kv"><span>Face</span><b class="mono" id="a_pv_face"></b></div>
+          <div class="kv"><span>Hair</span><b class="mono" id="a_pv_hair"></b></div>
+          <div class="kv"><span>Hair colour</span><b class="mono" id="a_pv_hc"></b></div>
+          <div class="kv"><span>Skin</span><b class="mono" id="a_pv_skin"></b></div>
+          <div class="kv"><span>Combos offered</span><b id="a_pv_combos"></b></div>
+        </aside>
+      </div>
+
+      <div class="actionbar">
+        <span class="dirty">Unsaved changes to 1 class row</span>
+        <span style="display:flex;gap:8px"><button class="btn">Discard</button><button class="btn primary">Save</button></span>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================ OPTION B ============================ -->
+  <div class="shell hidden" id="optB">
+    <div class="railwrap">
+      <div class="crumbs" id="crumbB"></div>
+      <nav class="rail" id="railB"></nav>
+    </div>
+    <main>
+      <div class="pagehead">
+        <div>
+          <h2>Character Presets</h2>
+          <p>Maple Life classes ride the existing preset editor as a fourth tab: a class row is
+             a preset plus two extra fields (<code class="mono">ordinal</code>,
+             <code class="mono">spSkillId</code>).</p>
+        </div>
+      </div>
+
+      <div class="tabs" id="tabsB">
+        <button aria-selected="false">Presets</button>
+        <button aria-selected="true">Maple Life classes</button>
+      </div>
+
+      <section class="card">
+        <header><h3>Appearance pools</h3><span class="hint">no preset analogue — lives above the library</span></header>
+        <div class="grid2" id="b_looks"></div>
+      </section>
+
+      <div class="libgrid">
+        <div class="lib" id="b_lib"></div>
+        <div>
+          <section class="card">
+            <header><h3>Identity</h3><span id="b_ordBadge"></span></header>
+            <div class="grid3">
+              <div class="field"><label>Ordinal</label><div class="ctl"><span id="b_ord"></span></div></div>
+              <div class="field"><label>Job</label><div class="ctl"><span id="b_job"></span><span class="chev">▾</span></div></div>
+              <div class="field"><label>Gender</label><div class="ctl"><span id="b_gender"></span></div></div>
+            </div>
+          </section>
+          <section class="card">
+            <header><h3>Base stats</h3><span class="hint">shared with the preset editor</span></header>
+            <div class="grid6">
+              <div class="field"><label>STR</label><div class="ctl"><span id="b_str"></span></div></div>
+              <div class="field"><label>DEX</label><div class="ctl"><span id="b_dex"></span></div></div>
+              <div class="field"><label>INT</label><div class="ctl"><span id="b_int"></span></div></div>
+              <div class="field"><label>LUK</label><div class="ctl"><span id="b_luk"></span></div></div>
+              <div class="field"><label>HP</label><div class="ctl"><span id="b_hp"></span></div></div>
+              <div class="field"><label>MP</label><div class="ctl"><span id="b_mp"></span></div></div>
+            </div>
+          </section>
+          <section class="card">
+            <header><h3>Spawn &amp; progression</h3></header>
+            <div class="grid3">
+              <div class="field"><label>Level</label><div class="ctl"><span id="b_level"></span></div></div>
+              <div class="field"><label>Map</label><div class="ctl"><span id="b_map"></span><span class="chev">▾</span></div></div>
+              <div class="field"><label>Meso</label><div class="ctl"><span id="b_meso"></span></div></div>
+            </div>
+          </section>
+          <section class="card">
+            <header><h3>Skills</h3><span class="hint">preset section, repurposed</span></header>
+            <div class="grid2">
+              <div class="field"><label>SP skill (Maple Life only)</label><div class="ctl" id="b_spctl"><span id="b_spskill"></span><span class="chev">▾</span></div></div>
+              <div class="field"><label>SP pool</label><div class="ctl mono" style="font-size:12px"><span id="b_sp"></span></div></div>
+            </div>
+            <div style="margin-top:10px" id="b_spnote"></div>
+          </section>
+          <section class="card">
+            <header><h3>Equipment &amp; inventory</h3></header>
+            <div class="grid2">
+              <div id="b_equip"></div>
+              <div id="b_inv"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="actionbar">
+        <span class="dirty">Unsaved changes · saves to <code class="mono">mapleLife</code>, not <code class="mono">characters.presets</code></span>
+        <span style="display:flex;gap:8px"><button class="btn">Discard</button><button class="btn primary">Save</button></span>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============================ OPTION C ============================ -->
+  <div class="shell hidden" id="optC">
+    <div class="railwrap">
+      <div class="crumbs" id="crumbC"></div>
+      <nav class="rail" id="railC"></nav>
+    </div>
+    <main>
+      <div class="pagehead">
+        <div>
+          <h2>Maple Life</h2>
+          <p>Schema-driven form over the raw config block. Every domain rule from the factory's
+             validator is enforced inline; nothing is resolved to a name, icon, or sprite.
+             <b>Try typing an invalid value</b> — e.g. a hair colour of 12, or an SP skill on ordinal 3.</p>
+        </div>
+      </div>
+
+      <section class="card">
+        <header><h3><code class="mono">looks[]</code></h3><span class="hint">2 rows · one per gender</span></header>
+        <table class="raw" id="c_looks"></table>
+      </section>
+
+      <section class="card">
+        <header><h3><code class="mono">classes[]</code></h3><span class="hint">10 rows · keyed (ordinal, gender)</span></header>
+        <div style="overflow-x:auto"><table class="raw" id="c_classes"></table></div>
+        <div id="c_errs" style="margin-top:8px"></div>
+        <button class="btn sm" style="margin-top:10px">+ Add row</button>
+      </section>
+
+      <div class="actionbar">
+        <span class="dirty" id="c_status">No changes</span>
+        <span style="display:flex;gap:8px"><button class="btn">Discard</button><button class="btn primary">Save</button></span>
+      </div>
+    </main>
+  </div>
+
+  <div class="tradeoffs" id="tradeoffs"></div>
+</div>
+
+<script>
+const SEED = {"looks":[{"gender":0,"faces":[20000,20001,20002],"hairs":[30030,30020,30000],"hairColors":[0,7,3,2],"skinColors":[0,1,2,3]},{"gender":1,"faces":[21000,21001,21002],"hairs":[31000,31040,31050],"hairColors":[0,7,3,2],"skinColors":[0,1,2,3]}],"classes":[{"ordinal":0,"gender":0,"jobId":100,"level":30,"mapId":102000000,"stats":{"str":35,"dex":4,"int":4,"luk":4,"hp":804,"mp":150},"ap":123,"sp":"61,0,0,0,0,0,0,0,0,0","spSkillId":1000001,"meso":100000,"equipment":[{"templateId":1040021,"useAverageStats":true},{"templateId":1060016,"useAverageStats":true},{"templateId":1072039,"useAverageStats":true},{"templateId":1302008,"useAverageStats":true},{"templateId":1442001,"useAverageStats":true},{"templateId":1422001,"useAverageStats":true},{"templateId":1312005,"useAverageStats":true}],"inventory":[{"templateId":2000002,"quantity":100},{"templateId":2000006,"quantity":100},{"templateId":3010000,"quantity":1}]},{"ordinal":0,"gender":1,"jobId":100,"level":30,"mapId":102000000,"stats":{"str":35,"dex":4,"int":4,"luk":4,"hp":804,"mp":150},"ap":123,"sp":"61,0,0,0,0,0,0,0,0,0","spSkillId":1000001,"meso":100000,"equipment":[{"templateId":1051010,"useAverageStats":true},{"templateId":1072039,"useAverageStats":true},{"templateId":1302008,"useAverageStats":true},{"templateId":1442001,"useAverageStats":true},{"templateId":1422001,"useAverageStats":true},{"templateId":1312005,"useAverageStats":true}],"inventory":[{"templateId":2000002,"quantity":100},{"templateId":2000006,"quantity":100},{"templateId":3010000,"quantity":1}]},{"ordinal":1,"gender":0,"jobId":200,"level":30,"mapId":101000000,"stats":{"str":4,"dex":4,"int":20,"luk":4,"hp":398,"mp":672},"ap":138,"sp":"61,0,0,0,0,0,0,0,0,0","spSkillId":2000001,"meso":100000,"equipment":[{"templateId":1050003,"useAverageStats":true},{"templateId":1072075,"useAverageStats":true},{"templateId":1372003,"useAverageStats":true},{"templateId":1382017,"useAverageStats":true}],"inventory":[{"templateId":2000002,"quantity":100},{"templateId":2000006,"quantity":100},{"templateId":3010000,"quantity":1}]},{"ordinal":1,"gender":1,"jobId":200,"level":30,"mapId":101000000,"stats":{"str":4,"dex":4,"int":20,"luk":4,"hp":398,"mp":672},"ap":138,"sp":"61,0,0,0,0,0,0,0,0,0","spSkillId":2000001,"meso":100000,"equipment":[{"templateId":1041041,"useAverageStats":true},{"templateId":1061034,"useAverageStats":true},{"templateId":1072075,"useAverageStats":true},{"templateId":1372003,"useAverageStats":true},{"templateId":1382017,"useAverageStats":true}],"inventory":[{"templateId":2000002,"quantity":100},{"templateId":2000006,"quantity":100},{"templateId":3010000,"quantity":1}]},{"ordinal":2,"gender":0,"jobId":300,"level":30,"mapId":100000000,"stats":{"str":4,"dex":25,"int":4,"luk":4,"hp":688,"mp":440},"ap":133,"sp":"61,0,0,0,0,0,0,0,0,0","meso":100000,"equipment":[{"templateId":1040067,"useAverageStats":true},{"templateId":1060056,"useAverageStats":true},{"templateId":1072081,"useAverageStats":true},{"templateId":1452005,"useAverageStats":true},{"templateId":1462000,"useAverageStats":true}],"inventory":[{"templateId":2000002,"quantity":100},{"templateId":2000006,"quantity":100},{"templateId":3010000,"quantity":1}]},{"ordinal":2,"gender":1,"jobId":300,"level":30,"mapId":100000000,"stats":{"str":4,"dex":25,"int":4,"luk":4,"hp":688,"mp":440},"ap":133,"sp":"61,0,0,0,0,0,0,0,0,0","meso":100000,"equipment":[{"templateId":1041054,"useAverageStats":true},{"templateId":1061050,"useAverageStats":true},{"templateId":1072081,"useAverageStats":true},{"templateId":1452005,"useAverageStats":true},{"templateId":1462000,"useAverageStats":true}],"inventory":[{"templateId":2000002,"quantity":100},{"templateId":2000006,"quantity":100},{"templateId":3010000,"quantity":1}]},{"ordinal":3,"gender":0,"jobId":400,"level":30,"mapId":103000000,"stats":{"str":4,"dex":25,"int":4,"luk":4,"hp":688,"mp":440},"ap":133,"sp":"61,0,0,0,0,0,0,0,0,0","meso":100000,"equipment":[{"templateId":1040057,"useAverageStats":true},{"templateId":1060043,"useAverageStats":true},{"templateId":1072032,"useAverageStats":true},{"templateId":1472008,"useAverageStats":true},{"templateId":1332012,"useAverageStats":true}],"inventory":[{"templateId":2000002,"quantity":100},{"templateId":2000006,"quantity":100},{"templateId":3010000,"quantity":1},{"templateId":2070000,"quantity":500}]},{"ordinal":3,"gender":1,"jobId":400,"level":30,"mapId":103000000,"stats":{"str":4,"dex":25,"int":4,"luk":4,"hp":688,"mp":440},"ap":133,"sp":"61,0,0,0,0,0,0,0,0,0","meso":100000,"equipment":[{"templateId":1041047,"useAverageStats":true},{"templateId":1061043,"useAverageStats":true},{"templateId":1072032,"useAverageStats":true},{"templateId":1472008,"useAverageStats":true},{"templateId":1332012,"useAverageStats":true}],"inventory":[{"templateId":2000002,"quantity":100},{"templateId":2000006,"quantity":100},{"templateId":3010000,"quantity":1},{"templateId":2070000,"quantity":500}]},{"ordinal":4,"gender":0,"jobId":500,"level":30,"mapId":120000000,"stats":{"str":4,"dex":20,"int":4,"luk":4,"hp":775,"mp":599},"ap":138,"sp":"61,0,0,0,0,0,0,0,0,0","meso":100000,"equipment":[{"templateId":1052107,"useAverageStats":true},{"templateId":1072294,"useAverageStats":true},{"templateId":1482004,"useAverageStats":true},{"templateId":1492004,"useAverageStats":true}],"inventory":[{"templateId":2000002,"quantity":100},{"templateId":2000006,"quantity":100},{"templateId":3010000,"quantity":1},{"templateId":2330000,"quantity":800}]},{"ordinal":4,"gender":1,"jobId":500,"level":30,"mapId":120000000,"stats":{"str":4,"dex":20,"int":4,"luk":4,"hp":775,"mp":599},"ap":138,"sp":"61,0,0,0,0,0,0,0,0,0","meso":100000,"equipment":[{"templateId":1052107,"useAverageStats":true},{"templateId":1072294,"useAverageStats":true},{"templateId":1482004,"useAverageStats":true},{"templateId":1492004,"useAverageStats":true}],"inventory":[{"templateId":2000002,"quantity":100},{"templateId":2000006,"quantity":100},{"templateId":3010000,"quantity":1},{"templateId":2330000,"quantity":800}]}]};
+
+/* Job names come from the seeded jobId, not from the ordinal — the ordinal→job
+   mapping is exactly what is configurable (design.md §A6). */
+const JOB_NAMES = { 100: "Warrior", 200: "Magician", 300: "Bowman", 400: "Thief", 500: "Pirate" };
+/* Ordinals 0 and 1 are derived from the client's own step-skip; 2/3/4 are not. */
+const DERIVED_ORDINALS = new Set([0, 1]);
+/* The only two spSkillIds with a coded prerequisite (factory/maple_life.go:33-42). */
+const SP_SKILLS = {
+  1000001: { name: "Improved Max HP Increase", prereq: "Improved HP Recovery (lv5)" },
+  2000001: { name: "Improved Max MP Increase", prereq: "Improved MP Recovery (lv5)" },
+};
+const MAPS = { 102000000: "Perion", 101000000: "Ellinia", 100000000: "Henesys", 103000000: "Kerning City", 120000000: "Nautilus" };
+/* Item names are illustrative labels for the mockup only — the real editor resolves
+   them through the existing ItemSearchCombobox / atlas-data lookup. */
+const ITEM_NAMES = {
+  1040021:"Bronze Chainmail",1060016:"Bronze Chain Skirt",1072039:"Yellow Snowshoes",
+  1302008:"Pico Pico Hammer",1442001:"Fireman's Axe",1422001:"Steel Mace",1312005:"Silver Deputy Star",
+  1050018:"Chainmail",1051010:"Sylph Manteau",1082002:"Work Gloves",1002140:"Metal Gear",
+  2000002:"Orange Potion",2000006:"Red Potion",3010000:"Wooden Chair",2000003:"White Potion",
+  2000004:"Blue Potion",2070005:"Steely Throwing-Knives",1332025:"Wooden Dagger",
+  1452001:"Red Hunter's Bow",1462000:"Wooden Crossbow",1472000:"Steel Dagger",1482000:"Knuckle",
+  1492000:"Gun",2330000:"Bullet",1372005:"Metal Wand",1382009:"Wooden Staff",
+};
+const itemName = id => ITEM_NAMES[id] || "Item " + id;
+
+const state = { opt: "A", ctx: "tenant", gender: 0, ordinal: 0, bIndex: 0, picks: { face: 0, hair: 0, hairColor: 0, skinColor: 0 } };
+
+const looksFor = g => SEED.looks.find(l => l.gender === g) || { faces: [], hairs: [], hairColors: [], skinColors: [] };
+const classFor = (o, g) => SEED.classes.find(c => c.ordinal === o && c.gender === g);
+const ordinals = [...new Set(SEED.classes.map(c => c.ordinal))].sort((a, b) => a - b);
+const jobOf = o => { const c = SEED.classes.find(x => x.ordinal === o); return c ? (JOB_NAMES[c.jobId] || ("Job " + c.jobId)) : "?"; };
+const el = id => document.getElementById(id);
+
+/* ---------- chrome ---------- */
+const NOTES = {
+  A: "<b>Option A</b> — a dedicated <code class='mono'>/character/maple-life</code> sub-page beside Character Templates and Character Presets. Gender toggle on top (both <code class='mono'>looks</code> and <code class='mono'>classes</code> are gender-split), then a 5-way ordinal segmented control, then the reused appearance / starting-kit sections and a live preview.",
+  B: "<b>Option B</b> — no new page. <code class='mono'>classes[]</code> is preset-shaped, so it becomes a second tab inside the existing Character Presets editor and reuses IdentitySection / BaseStatsSection / SkillsSection / EquipmentSection verbatim. <code class='mono'>looks[]</code> has no preset analogue and gets its own panel above the library.",
+  C: "<b>Option C</b> — one schema-driven page: raw array-of-object tables with inline Zod validation for every domain rule. Fastest to build, but no item names, no sprites, no map picker. The red cells below are live validation.",
+};
+function railItems() {
+  const base = state.ctx === "tenant" ? "/tenants/:id" : "/templates/:id";
+  const items = [
+    ["Properties", base + "/properties"],
+    ["Worlds", base + "/worlds"],
+    ["Handlers", base + "/handlers"],
+    ["Writers", base + "/writers"],
+    ["Character Templates", base + "/character/templates"],
+    ["Character Presets", base + "/character/presets"],
+  ];
+  if (state.ctx === "tenant") items.push(["MTS Config", base + "/mts-config"]);
+  return items;
+}
+function renderRails() {
+  const label = state.ctx === "tenant" ? "Tenants" : "Templates";
+  ["A", "B", "C"].forEach(k => {
+    const rail = el("rail" + k), crumb = el("crumb" + k);
+    const items = railItems();
+    let activeName, extra = "";
+    if (k === "B") {
+      activeName = "Character Presets";
+    } else {
+      activeName = "Maple Life";
+      extra = `<a href="#" class="active new">Maple Life</a>`;
+    }
+    rail.innerHTML = items.map(([n, h]) =>
+      `<a href="#" class="${n === activeName ? "active" : ""}">${n}</a>`).join("") + extra;
+    crumb.innerHTML = `${label}<span class="sep">/</span>GMS 95.1<span class="sep">/</span>` +
+      (k === "B" ? "Character Presets" : "Character") + `<span class="sep">/</span><b>${k === "B" ? "Maple Life classes" : "Maple Life"}</b>`;
+  });
+}
+document.getElementById("optSwitch").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.opt = b.dataset.opt;
+  [...e.currentTarget.children].forEach(c => c.setAttribute("aria-selected", String(c === b)));
+  ["A", "B", "C"].forEach(k => el("opt" + k).classList.toggle("hidden", k !== state.opt));
+  el("optNote").innerHTML = NOTES[state.opt];
+  renderTradeoffs();
+});
+document.getElementById("ctxSwitch").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.ctx = b.dataset.ctx;
+  [...e.currentTarget.children].forEach(c => c.setAttribute("aria-selected", String(c === b)));
+  renderRails();
+});
+
+/* ---------- option A ---------- */
+const HAIR_HUE = { 0: 20, 7: 275, 3: 45, 2: 5 };
+const SKIN_HUE = { 0: 28, 1: 22, 2: 18, 3: 35 };
+
+function thumb(kind, id, selected, idx) {
+  const hue = kind === "hairColors" ? (HAIR_HUE[id] ?? 20) : kind === "skinColors" ? (SKIN_HUE[id] ?? 28) : 210;
+  const cls = (kind === "hairColors" || kind === "skinColors") ? "thumb swatch" : "thumb";
+  return `<div class="${cls} ${selected ? "selected" : ""}" data-kind="${kind}" data-idx="${idx}" style="--sprite-h:${hue}">
+    <span class="x">×</span>
+    <div class="sprite"><span>${kind === "faces" ? "face" : kind === "hairs" ? "hair" : ""}</span></div>
+    <div class="id mono">${id}</div>
+  </div>`;
+}
+const POOL_META = [
+  ["faces", "Faces", "full item id (2000x / 2100x)"],
+  ["hairs", "Hairs", "style id, normalized (v/10)*10"],
+  ["hairColors", "Hair colours", "bare digit 0–9"],
+  ["skinColors", "Skin tones", "bare byte ordinal"],
+];
+const PICK_KEY = { faces: "face", hairs: "hair", hairColors: "hairColor", skinColors: "skinColor" };
+
+function renderA() {
+  const look = looksFor(state.gender);
+  const cls = classFor(state.ordinal, state.gender);
+
+  el("ordA").innerHTML = ordinals.map(o =>
+    `<button data-o="${o}" aria-selected="${o === state.ordinal}">${o} · ${jobOf(o)}</button>`).join("");
+
+  el("ordBadgeA").innerHTML = DERIVED_ORDINALS.has(state.ordinal)
+    ? `<span class="badge derived">derived from client</span>`
+    : `<span class="badge unconfirmed">order unconfirmed</span>`;
+  el("a_ordwarn").innerHTML = DERIVED_ORDINALS.has(state.ordinal)
+    ? `<span class="hint">Ordinal ${state.ordinal} is pinned by the client's own step-skip for <code class="mono">m_nCurrentClass &lt; 2</code>.</span>`
+    : `<span class="warn">Ordinal ${state.ordinal}'s job is not derived from the client. Confirm against a live channel log before shipping — a wrong order is a data fix, not a code change.</span>`;
+
+  if (!cls) return;
+  el("a_job").textContent = (JOB_NAMES[cls.jobId] || cls.jobId) + " (" + cls.jobId + ")";
+  el("a_level").textContent = cls.level;
+  el("a_map").textContent = (MAPS[cls.mapId] || "Map") + " (" + cls.mapId + ")";
+  ["str", "dex", "int", "luk", "hp", "mp"].forEach(s => el("a_" + s).textContent = cls.stats[s]);
+  el("a_ap").textContent = cls.ap;
+  el("a_sp").textContent = cls.sp;
+  el("a_meso").textContent = cls.meso.toLocaleString();
+
+  // clamp picks into range for this gender
+  POOL_META.forEach(([k]) => {
+    const key = PICK_KEY[k];
+    if (state.picks[key] >= look[k].length) state.picks[key] = 0;
+  });
+
+  el("a_looks").innerHTML = POOL_META.map(([k, title, domain]) => `
+    <section style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:7px">
+        <h4 style="font-size:13px">${title}</h4>
+        <span class="hint">${look[k].length} options · ${domain}</span>
+        ${look[k].length === 0 ? '<span class="warn">creation will fail while this pool is empty</span>' : ""}
+      </div>
+      <div class="thumbs">
+        ${look[k].map((id, i) => thumb(k, id, state.picks[PICK_KEY[k]] === i, i)).join("")}
+        <div class="thumb add">+</div>
+      </div>
+    </section>`).join("");
+
+  const sp = SP_SKILLS[cls.spSkillId];
+  const offers = cls.spSkillId !== 0 && cls.spSkillId !== undefined;
+  el("a_spctl").classList.toggle("disabled", !offers);
+  el("a_spinv").classList.toggle("disabled", !offers);
+  el("a_spskill").textContent = offers ? `${sp ? sp.name : "Skill " + cls.spSkillId} (${cls.spSkillId})` : "None — client skips this step";
+  const pool0 = parseInt(cls.sp.split(",")[0], 10);
+  el("a_sprange").textContent = offers ? `0 – ${Math.min(10, pool0 - 5)} levels` : "—";
+  el("a_spnote").innerHTML = offers
+    ? `<span class="hint">Grants <b>${sp ? sp.prereq : "no coded prerequisite"}</b> automatically. The player's chosen level plus 5 for the prerequisite is deducted from book 0 of the SP pool (currently ${pool0}), so the cap is ${Math.min(10, pool0 - 5)}.</span>`
+      + (sp ? "" : `<br><span class="warn">This skill id has no coded prerequisite — nothing will be granted alongside it.</span>`)
+    : `<span class="hint">Disabled because the client never renders step 4 for <code class="mono">m_nCurrentClass ≥ 2</code>. A value set here would be unreachable, and a player submitting <code class="mono">sp ≠ 0</code> is rejected outright.</span>`;
+
+  el("a_equip").innerHTML = cls.equipment.map(e => `
+    <div class="itemrow"><div class="icon"></div>
+      <div class="name">${itemName(e.templateId)}<small class="mono">${e.templateId}</small></div>
+      <span class="chk ${e.useAverageStats ? "on" : ""}"><i></i>avg stats</span>
+      <span class="qty">×</span></div>`).join("");
+  el("a_inv").innerHTML = cls.inventory.map(e => `
+    <div class="itemrow"><div class="icon"></div>
+      <div class="name">${itemName(e.templateId)}<small class="mono">${e.templateId}</small></div>
+      <span class="qty">×${e.quantity}</span><span class="qty">×</span></div>`).join("");
+
+  const face = look.faces[state.picks.face], hair = look.hairs[state.picks.hair];
+  const hc = look.hairColors[state.picks.hairColor], sk = look.skinColors[state.picks.skinColor];
+  const av = el("a_avatar");
+  av.style.setProperty("--hair", HAIR_HUE[hc] ?? 20);
+  av.style.setProperty("--skin", SKIN_HUE[sk] ?? 28);
+  av.style.setProperty("--top", state.ordinal * 55 + 200);
+  el("a_pv_class").textContent = (JOB_NAMES[cls.jobId] || cls.jobId) + " · " + (state.gender === 0 ? "male" : "female");
+  el("a_pv_face").textContent = face;
+  el("a_pv_hair").textContent = hair + " + " + hc + " → " + (hair + hc);
+  el("a_pv_hc").textContent = hc;
+  el("a_pv_skin").textContent = sk;
+  el("a_pv_combos").textContent =
+    (look.faces.length * look.hairs.length * look.hairColors.length * look.skinColors.length).toLocaleString();
+}
+el("genderA").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.gender = +b.dataset.g;
+  [...e.currentTarget.children].forEach(c => c.setAttribute("aria-selected", String(c === b)));
+  renderA();
+});
+el("ordA").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.ordinal = +b.dataset.o; renderA();
+});
+el("a_looks").addEventListener("click", e => {
+  const t = e.target.closest(".thumb"); if (!t || t.classList.contains("add")) return;
+  state.picks[PICK_KEY[t.dataset.kind]] = +t.dataset.idx; renderA();
+});
+
+/* ---------- option B ---------- */
+function renderB() {
+  const rows = SEED.classes;
+  let html = "";
+  ordinals.forEach(o => {
+    html += `<div class="group">${o} · ${jobOf(o)}${DERIVED_ORDINALS.has(o) ? "" : " ⚠"}</div>`;
+    rows.forEach((c, i) => {
+      if (c.ordinal !== o) return;
+      html += `<div class="row ${i === state.bIndex ? "active" : ""}" data-i="${i}">
+        <span>${c.gender === 0 ? "Male" : "Female"}<small>lv ${c.level} · ${c.equipment.length} equips</small></span>
+        <small class="mono">${c.jobId}</small></div>`;
+    });
+  });
+  el("b_lib").innerHTML = html;
+
+  el("b_looks").innerHTML = SEED.looks.map(l => `
+    <div>
+      <div class="hint" style="margin-bottom:6px">${l.gender === 0 ? "Male" : "Female"} pools</div>
+      ${POOL_META.map(([k, title]) => `
+        <div class="itemrow"><div class="name">${title}<small class="mono">${l[k].join(", ")}</small></div>
+        <span class="qty">${l[k].length}</span></div>`).join("")}
+    </div>`).join("");
+
+  const c = SEED.classes[state.bIndex];
+  el("b_ordBadge").innerHTML = DERIVED_ORDINALS.has(c.ordinal)
+    ? `<span class="badge derived">derived</span>` : `<span class="badge unconfirmed">order unconfirmed</span>`;
+  el("b_ord").textContent = c.ordinal;
+  el("b_job").textContent = (JOB_NAMES[c.jobId] || c.jobId) + " (" + c.jobId + ")";
+  el("b_gender").textContent = c.gender === 0 ? "Male (0)" : "Female (1)";
+  ["str", "dex", "int", "luk", "hp", "mp"].forEach(s => el("b_" + s).textContent = c.stats[s]);
+  el("b_level").textContent = c.level;
+  el("b_map").textContent = (MAPS[c.mapId] || "Map") + " (" + c.mapId + ")";
+  el("b_meso").textContent = c.meso.toLocaleString();
+  const offers = !!c.spSkillId;
+  el("b_spctl").classList.toggle("disabled", !offers);
+  el("b_spskill").textContent = offers ? (SP_SKILLS[c.spSkillId]?.name || c.spSkillId) : "None (ordinal ≥ 2)";
+  el("b_sp").textContent = c.sp;
+  el("b_spnote").innerHTML = `<span class="warn">This section is the preset editor's Skills list, but it means something different here:
+    a preset grants a fixed skill list, while Maple Life offers <em>one</em> skill the player levels themselves.</span>`;
+  el("b_equip").innerHTML = `<div class="hint" style="margin-bottom:6px">Equipment</div>` + c.equipment.map(e =>
+    `<div class="itemrow"><div class="icon"></div><div class="name">${itemName(e.templateId)}<small class="mono">${e.templateId}</small></div>
+     <span class="chk ${e.useAverageStats ? "on" : ""}"><i></i>avg</span></div>`).join("");
+  el("b_inv").innerHTML = `<div class="hint" style="margin-bottom:6px">Inventory</div>` + c.inventory.map(e =>
+    `<div class="itemrow"><div class="icon"></div><div class="name">${itemName(e.templateId)}<small class="mono">${e.templateId}</small></div>
+     <span class="qty">×${e.quantity}</span></div>`).join("");
+}
+el("b_lib").addEventListener("click", e => {
+  const r = e.target.closest(".row"); if (!r) return;
+  state.bIndex = +r.dataset.i; renderB();
+});
+el("tabsB").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  [...e.currentTarget.children].forEach(c => c.setAttribute("aria-selected", String(c === b)));
+});
+
+/* ---------- option C ---------- */
+/* Validation mirrors atlas-character-factory/factory/processor.go:388-437 and
+   the value domains derived in design.md §A3. */
+function validateClass(c) {
+  const errs = [];
+  if (!(c.ordinal >= 0 && c.ordinal <= 4)) errs.push(["ordinal", "ordinal must be 0–4 (client cycles % 5)"]);
+  if (c.gender !== 0 && c.gender !== 1) errs.push(["gender", "gender must be 0 or 1"]);
+  if (c.spSkillId && c.ordinal >= 2) errs.push(["spSkillId", "ordinal ≥ 2 never renders the SP step — this value is unreachable"]);
+  if (c.spSkillId && !SP_SKILLS[c.spSkillId]) errs.push(["spSkillId", "no coded prerequisite for this skill id"]);
+  const pool = String(c.sp).split(",").map(n => parseInt(n, 10));
+  if (pool.length !== 10 || pool.some(Number.isNaN)) errs.push(["sp", "SP pool must be 10 comma-separated integers"]);
+  else if (c.spSkillId && pool[0] < 6) errs.push(["sp", "book 0 must cover the chosen level plus 5 for the prerequisite"]);
+  return errs;
+}
+function validateLook(l) {
+  const errs = [];
+  if (l.hairs.some(h => h % 10 !== 0)) errs.push(["hairs", "hair style ids are normalized (v/10)*10 — must end in 0"]);
+  if (l.hairColors.some(h => h < 0 || h > 9)) errs.push(["hairColors", "hair colour is a bare digit 0–9"]);
+  if (l.skinColors.some(s => s < 0 || s > 255)) errs.push(["skinColors", "skin is a byte ordinal"]);
+  ["faces", "hairs", "hairColors", "skinColors"].forEach(k => {
+    if (l[k].length === 0) errs.push([k, "empty pool — every creation for this gender will be rejected"]);
+  });
+  return errs;
+}
+const working = JSON.parse(JSON.stringify(SEED));
+function renderC() {
+  el("c_looks").innerHTML =
+    `<tr><th>gender</th><th>faces</th><th>hairs</th><th>hairColors</th><th>skinColors</th></tr>` +
+    working.looks.map((l, i) => {
+      const errs = Object.fromEntries(validateLook(l));
+      const cell = k => `<td><input data-t="look" data-i="${i}" data-k="${k}" value="${l[k].join(",")}" class="${errs[k] ? "bad" : ""}" title="${errs[k] || ""}"></td>`;
+      return `<tr><td class="mono">${l.gender}</td>${cell("faces")}${cell("hairs")}${cell("hairColors")}${cell("skinColors")}</tr>` +
+        (Object.keys(errs).length ? `<tr><td colspan="5" class="rowerr">${Object.values(errs).join(" · ")}</td></tr>` : "");
+    }).join("");
+
+  el("c_classes").innerHTML =
+    `<tr><th>ord</th><th>gen</th><th>jobId</th><th>lvl</th><th>mapId</th>
+     <th>str</th><th>dex</th><th>int</th><th>luk</th><th>hp</th><th>mp</th>
+     <th>ap</th><th>sp</th><th>spSkillId</th><th>meso</th><th>equip</th><th>inv</th></tr>` +
+    working.classes.map((c, i) => {
+      const errs = Object.fromEntries(validateClass(c));
+      const inp = (k, v, dis) => `<td><input data-t="class" data-i="${i}" data-k="${k}" value="${v}" ${dis ? "disabled" : ""} class="${errs[k] ? "bad" : ""}" title="${errs[k] || ""}"></td>`;
+      return `<tr>
+        ${inp("ordinal", c.ordinal)}${inp("gender", c.gender)}${inp("jobId", c.jobId)}${inp("level", c.level)}${inp("mapId", c.mapId)}
+        ${["str", "dex", "int", "luk", "hp", "mp"].map(s => inp("stats." + s, c.stats[s])).join("")}
+        ${inp("ap", c.ap)}${inp("sp", c.sp)}${inp("spSkillId", c.spSkillId || 0, c.ordinal >= 2)}${inp("meso", c.meso)}
+        <td class="mono">${c.equipment.length} ▾</td><td class="mono">${c.inventory.length} ▾</td></tr>` +
+        (Object.keys(errs).length ? `<tr><td colspan="17" class="rowerr">${Object.values(errs).join(" · ")}</td></tr>` : "");
+    }).join("");
+
+  const total = working.classes.reduce((n, c) => n + validateClass(c).length, 0) +
+    working.looks.reduce((n, l) => n + validateLook(l).length, 0);
+  el("c_status").textContent = total === 0 ? "Valid · no changes" : total + " validation error(s) — save disabled";
+  el("c_status").style.color = total === 0 ? "" : "hsl(0 70% 70%)";
+}
+el("optC").addEventListener("input", e => {
+  const inp = e.target.closest("input"); if (!inp) return;
+  const { t, i, k } = inp.dataset;
+  if (t === "look") working.looks[i][k] = inp.value.split(",").map(s => parseInt(s.trim(), 10)).filter(n => !Number.isNaN(n));
+  else if (k.startsWith("stats.")) working.classes[i].stats[k.slice(6)] = parseInt(inp.value, 10) || 0;
+  else if (k === "sp") working.classes[i].sp = inp.value;
+  else working.classes[i][k] = parseInt(inp.value, 10) || 0;
+  const active = document.activeElement.dataset;
+  renderC();
+  const restored = el("optC").querySelector(`input[data-t="${active.t}"][data-i="${active.i}"][data-k="${active.k}"]`);
+  if (restored) { restored.focus(); restored.setSelectionRange(restored.value.length, restored.value.length); }
+});
+
+/* ---------- tradeoff footnote ---------- */
+const TRADEOFFS = {
+  A: {
+    for: ["Lands where an operator already looks — same rail, same save bar, same deep-link pattern as Character Templates.",
+         "Appearance and starting-kit sections drop in from the templates editor with a data swap.",
+         "Room to surface the three semantics an operator cannot infer: unconfirmed ordinals, inert spSkillId, off-list look values.",
+         "The preview makes an allow-list mismatch visible instead of a runtime rejection."],
+    against: ["A genuinely new editor: reducer, dirty projection and the SP-pool arithmetic are not shared with either sibling.",
+             "Most code of the three options."],
+  },
+  B: {
+    for: ["Smallest diff by a wide margin — IdentitySection, BaseStatsSection, SkillsSection, EquipmentSection and InventorySection are reused as-is.",
+         "classes[] really is preset-shaped: jobId, level, mapId, stats, ap, sp, meso, equipment, inventory."],
+    against: ["Two save targets in one editor: characters.presets and mapleLife.",
+             "Conflates operator-applied presets with a player-driven, client-ordinal-keyed table.",
+             "The Skills section means something different here (one player-levelled offer, not a fixed grant).",
+             "looks[] still needs a bespoke panel, so the reuse is not total anyway."],
+  },
+  C: {
+    for: ["Fastest to ship; cheapest to keep in sync if the config block grows a field.",
+         "Every domain rule is visible at once, which is good for auditing a whole tenant quickly.",
+         "No dependency on item/map/skill name resolution."],
+    against: ["Editing 1442001 with no name or icon is exactly the friction the preset and template editors were built to remove.",
+             "No preview, so an allow-list that diverges from the client's WZ stays invisible until a player is rejected.",
+             "Materially worse than the sibling pages it sits next to — an inconsistency operators will feel."],
+  },
+};
+function renderTradeoffs() {
+  const t = TRADEOFFS[state.opt];
+  el("tradeoffs").innerHTML = `<div class="cols">
+    <div><h4>Arguments for</h4><ul>${t.for.map(x => `<li>${x}</li>`).join("")}</ul></div>
+    <div><h4>Arguments against</h4><ul>${t.against.map(x => `<li>${x}</li>`).join("")}</ul></div>
+  </div>`;
+}
+
+renderRails(); renderA(); renderB(); renderC(); renderTradeoffs();
+el("optNote").innerHTML = NOTES.A;
+</script>
+</body>
+</html>

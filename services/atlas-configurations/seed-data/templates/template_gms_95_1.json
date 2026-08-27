@@ -198,7 +198,7 @@
       {
         "opCode": "0x19",
         "validator": "NoOpValidator",
-        "handler": "NoOpHandler",
+        "handler": "PongHandle",
         "fname": "CClientSocket::OnAliveReq",
         "services": [
           "login",
@@ -279,10 +279,28 @@
         ]
       },
       {
+        "opCode": "0x29",
+        "validator": "LoggedInValidator",
+        "handler": "MapChangeHandle",
+        "fname": "CField::SendTransferFieldRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x2A",
         "validator": "LoggedInValidator",
         "handler": "ChannelChangeHandle",
         "fname": "CField::SendTransferChannelRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x2B",
+        "validator": "LoggedInValidator",
+        "handler": "CashShopEntryHandle",
+        "fname": "CWvsContext::SendMigrateToShopRequest",
         "services": [
           "channel"
         ]
@@ -566,10 +584,38 @@
         ]
       },
       {
+        "opCode": "0x3F",
+        "validator": "LoggedInValidator",
+        "handler": "NPCStartConversationHandle",
+        "fname": "CUserLocal::TalkToNpc",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x41",
         "validator": "LoggedInValidator",
         "handler": "NPCContinueConversationHandle",
         "fname": "CScriptMan::OnAskSlideMenu",
+        "options": {
+          "messageType": {
+            "SAY": 0,
+            "SAY_IMAGE": 1,
+            "ASK_YES_NO": 2,
+            "ASK_TEXT": 3,
+            "ASK_NUMBER": 4,
+            "ASK_MENU": 5,
+            "ASK_QUIZ": 6,
+            "ASK_SPEED_QUIZ": 7,
+            "ASK_AVATAR": 8,
+            "ASK_MEMBER_SHOP_AVATAR": 9,
+            "ASK_PET": 10,
+            "ASK_PET_ALL": 11,
+            "ASK_YES_NO_QUEST": 13,
+            "ASK_BOX_TEXT": 14,
+            "ASK_SLIDE_MENU": 15
+          }
+        },
         "services": [
           "channel"
         ]
@@ -585,6 +631,24 @@
             "SELL": 1,
             "RECHARGE": 2,
             "LEAVE": 3
+          }
+        },
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x43",
+        "validator": "LoggedInValidator",
+        "handler": "StorageOperationHandle",
+        "fname": "CTrunkDlg::SetRet",
+        "options": {
+          "operations": {
+            "RETRIEVE_ASSET": 4,
+            "STORE_ASSET": 5,
+            "ARRANGE_ASSET": 6,
+            "MESO": 7,
+            "CLOSE": 8
           }
         },
         "services": [
@@ -809,6 +873,15 @@
         ]
       },
       {
+        "opCode": "0x63",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterAutoDistributeApHandle",
+        "fname": "CWvsContext::SendAbilityUpRequest",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x64",
         "validator": "LoggedInValidator",
         "handler": "CharacterHealOverTimeHandle",
@@ -894,6 +967,15 @@
         "validator": "LoggedInValidator",
         "handler": "CancelDebuffHandle",
         "fname": "CWvsContext::CheckTemporaryStatDuration",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x70",
+        "validator": "LoggedInValidator",
+        "handler": "PortalScriptHandle",
+        "fname": "CUserLocal::CheckPortal_Collision",
         "services": [
           "channel"
         ]
@@ -989,6 +1071,15 @@
         ]
       },
       {
+        "opCode": "0x8C",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterMultiChatHandle",
+        "fname": "CUIStatusBar::SendGroupMessage",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x8D",
         "validator": "LoggedInValidator",
         "handler": "CharacterChatWhisperHandle",
@@ -1013,7 +1104,16 @@
         "fname": "CFadeWnd::SendCloseMessage",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "operations": {
+            "ANSWER_INVITE": 0,
+            "CLOSE": 2,
+            "INVITE": 3,
+            "DECLINE_INVITE": 5,
+            "CHAT": 6
+          }
+        }
       },
       {
         "opCode": "0x90",
@@ -1080,6 +1180,24 @@
         "fname": "CField::SendCreateNewPartyMsg",
         "services": [
           "channel"
+        ],
+        "options": {
+          "operations": {
+            "CREATE": 1,
+            "LEAVE": 2,
+            "INVITE": 4,
+            "EXPEL": 5,
+            "CHANGE_LEADER": 6
+          }
+        }
+      },
+      {
+        "opCode": "0x92",
+        "validator": "LoggedInValidator",
+        "handler": "PartyInviteRejectHandle",
+        "fname": "CFadeWnd::SendCloseMessage",
+        "services": [
+          "channel"
         ]
       },
       {
@@ -1089,7 +1207,21 @@
         "fname": "CUIFadeYesNo::OnButtonClicked",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "operations": {
+            "REQUEST_CREATE": 2,
+            "INVITE": 5,
+            "JOIN": 6,
+            "WITHDRAW": 7,
+            "KICK": 8,
+            "SET_TITLE_NAMES": 13,
+            "SET_MEMBER_TITLE": 14,
+            "SET_EMBLEM": 15,
+            "SET_NOTICE": 16,
+            "AGREEMENT_RESPONSE": 32
+          }
+        }
       },
       {
         "opCode": "0x96",
@@ -1125,7 +1257,15 @@
         "fname": "CField::SendDeleteFriendMsg",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "operations": {
+            "RELOAD": 0,
+            "ADD": 1,
+            "ACCEPT": 2,
+            "DELETE": 3
+          }
+        }
       },
       {
         "opCode": "0x9A",
@@ -1223,7 +1363,17 @@
         "fname": "CUIGuildBBS::SendLoadListRequest",
         "services": [
           "channel"
-        ]
+        ],
+        "options": {
+          "operations": {
+            "CREATE_OR_EDIT_THREAD": 0,
+            "DELETE_THREAD": 1,
+            "LIST_THREADS": 2,
+            "DISPLAY_THREAD": 3,
+            "REPLY_THREAD": 4,
+            "DELETE_REPLY": 5
+          }
+        }
       },
       {
         "opCode": "0xB4",
@@ -2477,6 +2627,29 @@
         "opCode": "0x00",
         "writer": "AuthPermanentBan",
         "fname": "CLogin::OnCheckPasswordResult",
+        "options": {
+          "failedReasonCodes": {
+            "BANNED": 2,
+            "DELETED_OR_BLOCKED": 3,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED": 5,
+            "SYSTEM_ERROR_1": 6,
+            "ALREADY_LOGGED_IN": 7,
+            "SYSTEM_ERROR_2": 8,
+            "SYSTEM_ERROR_3": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "AGE_LIMIT": 11,
+            "UNABLE_TO_LOG_ON_AS_MASTER_AT_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "PROCESSING_REQUEST": 15,
+            "ACCOUNT_VERIFICATION_NEEDED": 16,
+            "WRONG_PERSONAL_INFORMATION": 17,
+            "ACCOUNT_VERIFICATION_NEEDED_2": 21,
+            "LICENSE_AGREEMENT": 23,
+            "MAPLE_EUROPE_NOTICE": 25,
+            "FULL_CLIENT_NOTICE": 27
+          }
+        },
         "services": [
           "login"
         ]
@@ -2493,6 +2666,29 @@
         "opCode": "0x00",
         "writer": "AuthTemporaryBan",
         "fname": "CLogin::OnCheckPasswordResult",
+        "options": {
+          "failedReasonCodes": {
+            "BANNED": 2,
+            "DELETED_OR_BLOCKED": 3,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED": 5,
+            "SYSTEM_ERROR_1": 6,
+            "ALREADY_LOGGED_IN": 7,
+            "SYSTEM_ERROR_2": 8,
+            "SYSTEM_ERROR_3": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "AGE_LIMIT": 11,
+            "UNABLE_TO_LOG_ON_AS_MASTER_AT_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "PROCESSING_REQUEST": 15,
+            "ACCOUNT_VERIFICATION_NEEDED": 16,
+            "WRONG_PERSONAL_INFORMATION": 17,
+            "ACCOUNT_VERIFICATION_NEEDED_2": 21,
+            "LICENSE_AGREEMENT": 23,
+            "MAPLE_EUROPE_NOTICE": 25,
+            "FULL_CLIENT_NOTICE": 27
+          }
+        },
         "services": [
           "login"
         ]
@@ -2704,6 +2900,14 @@
         "opCode": "0x19",
         "writer": "ServerListRecommendations",
         "fname": "CLogin::OnRecommendWorldMessage",
+        "services": [
+          "login"
+        ]
+      },
+      {
+        "opCode": "0x1B",
+        "writer": "PicResult",
+        "fname": "CLogin::OnCheckSPWResult",
         "services": [
           "login"
         ]
@@ -3677,6 +3881,158 @@
         "opCode": "0xC9",
         "writer": "PetMovement",
         "fname": "CPet::OnMove",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            }
+          ]
+        },
         "services": [
           "channel"
         ]
@@ -3741,6 +4097,158 @@
         "opCode": "0xD2",
         "writer": "CharacterMovement",
         "fname": "CUserRemote::OnMove",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            }
+          ]
+        },
         "services": [
           "channel"
         ]
@@ -4128,6 +4636,158 @@
         "opCode": "0x11F",
         "writer": "MoveMonster",
         "fname": "CMob::OnMove",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            }
+          ]
+        },
         "services": [
           "channel"
         ]
@@ -4318,6 +4978,158 @@
         "opCode": "0x13A",
         "writer": "NPCAction",
         "fname": "CNpc::OnMove",
+        "options": {
+          "types": [
+            {
+              "Name": "NORMAL",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "STAT_CHANGE",
+              "Type": "STAT_CHANGE"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "TELEPORT"
+            },
+            {
+              "Name": "START_FALL_DOWN",
+              "Type": "START_FALL_DOWN"
+            },
+            {
+              "Name": "FALL_DOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "FLYING_BLOCK",
+              "Type": "FLYING_BLOCK"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "DEFAULT"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "JUMP"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            },
+            {
+              "Name": "UNKNOWN",
+              "Type": "NORMAL"
+            }
+          ]
+        },
         "services": [
           "channel"
         ]
@@ -4622,6 +5434,33 @@
         "opCode": "0x16A",
         "writer": "ZakumShrine",
         "fname": "CField::OnZakumTimer",
+        "services": [
+          "channel"
+        ]
+      },
+      {
+        "opCode": "0x16B",
+        "writer": "NPCConversation",
+        "fname": "CScriptMan::OnScriptMessage",
+        "options": {
+          "messageType": {
+            "SAY": 0,
+            "SAY_IMAGE": 1,
+            "ASK_YES_NO": 2,
+            "ASK_TEXT": 3,
+            "ASK_NUMBER": 4,
+            "ASK_MENU": 5,
+            "ASK_QUIZ": 6,
+            "ASK_SPEED_QUIZ": 7,
+            "ASK_AVATAR": 8,
+            "ASK_MEMBER_SHOP_AVATAR": 9,
+            "ASK_PET": 10,
+            "ASK_PET_ALL": 11,
+            "ASK_YES_NO_QUEST": 13,
+            "ASK_BOX_TEXT": 14,
+            "ASK_SLIDE_MENU": 15
+          }
+        },
         "services": [
           "channel"
         ]

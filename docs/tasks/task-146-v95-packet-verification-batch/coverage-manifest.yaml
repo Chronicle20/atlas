@@ -1,0 +1,157 @@
+# coverage-manifest — task-146 gms_v95 packet verification batch
+#
+# Written by Task 17 (final task, after every implementation task landed).
+# Declares every op x version whose coverage this BRANCH changed, per
+# docs/packets/PROCESS.md's coverage-manifest schema, so
+# packet-completeness-critic can diff this against the branch's actual git +
+# matrix delta at review time.
+#
+# Derived mechanically from `git diff --stat 43975545a..HEAD` over
+# libs/atlas-packet, docs/packets/, tools/packet-audit, and
+# services/atlas-configurations/seed-data/templates/template_gms_95_1.json,
+# then cross-checked cell-by-cell against `git diff 43975545a..HEAD --
+# docs/packets/audits/status.json`. Every entry below corresponds to an
+# actual observed diff, not a transcription of the plan's intended scope —
+# the plan's own PRD deviations (see context.md) mean the two are not
+# identical.
+
+ops:
+  # --- promoted to verified on gms_v95 (byte-fixture + evidence + report) ---
+
+  # CHECK_SPW_RESULT clientbound (login/clientbound/LoginPicResult, opcode
+  # 27). Task 12. incomplete -> verified. Fixture:
+  # libs/atlas-packet/login/clientbound/pic_result_test.go. Evidence:
+  # docs/packets/evidence/gms_v95/login.clientbound.LoginPicResult.yaml.
+  # Registry primary fname CLogin::OnCheckSPWResult is absent from the
+  # committed IDA export (re-harvest forbidden, playbook §10); linked
+  # directly to its codec via `packet:` (Task 3) rather than a report.
+  - CHECK_SPW_RESULT
+
+  # MULTI_CHAT serverbound (chat/serverbound/ChatMulti, opcode 140). Task 13.
+  # incomplete -> verified. Fixture: libs/atlas-packet/chat/serverbound/
+  # multi_test.go. Evidence: docs/packets/evidence/gms_v95/
+  # chat.serverbound.ChatMulti.yaml. Adds a v95 boundary gate in
+  # docs/packets/gates.yaml (leading Encode4(updateTime), GMS>=95; gms_v92
+  # side left `partial` — no v92 byte-fixture exists yet, not fabricated to
+  # close the gate). Registry primary fname CUIStatusBar::SendGroupMessage
+  # is absent from the committed export; linked via `packet:` (Task 3).
+  - MULTI_CHAT
+
+  # ENTER_CASHSHOP serverbound (cash/serverbound/CashShopEntry, opcode 43).
+  # Task 14. incomplete -> verified. Fixture: libs/atlas-packet/cash/
+  # serverbound/shop_entry_test.go. Evidence: docs/packets/evidence/gms_v95/
+  # cash.serverbound.CashShopEntry.yaml. Registry primary fname
+  # CWvsContext::SendMigrateToShopRequest is absent from the committed
+  # export; linked via `packet:` (Task 3).
+  - ENTER_CASHSHOP
+
+  # NPC_ACTION clientbound (npc/clientbound/NpcAction, opcode 314). Task 15.
+  # incomplete (tier-1, no fixture) -> verified. Fixture:
+  # libs/atlas-packet/npc/clientbound/action_test.go. Evidence:
+  # docs/packets/evidence/gms_v95/npc.clientbound.NpcAction.yaml. Already
+  # linked pre-branch — only the fixture/evidence/report were missing.
+  - NPC_ACTION
+
+  # --- promoted to verified on gms_v95 via fname promotion + template routing ---
+
+  # CHANGE_MAP serverbound (field/serverbound/FieldChange, opcode 41). Task 2
+  # (fname promotion csv-import CCashShop::SendTransferFieldPacket ->
+  # export-resident CField::SendTransferFieldRequest@0x5345c0, primary
+  # demoted to fname_alts) + Task 6 (template route added at opCode 0x29,
+  # handler MapChangeHandle). incomplete -> verified.
+  - CHANGE_MAP
+
+  # NPC_TALK serverbound (npc/serverbound/NpcStartConversation, opcode 63).
+  # Task 2 (fname promotion csv-import CNpc::ShowQuestList -> export-resident
+  # CUserLocal::TalkToNpc@0x9321f0) + Task 6 (route at 0x3F,
+  # NPCStartConversationHandle). incomplete -> verified.
+  - NPC_TALK
+
+  # NPC_TALK clientbound (packet field newly added: npc/clientbound/
+  # NpcNpcConversation, opcode 363, tier1 promoted false->true). Task 2
+  # (fname promotion csv-import CScriptMan::OnPacket -> export-resident,
+  # report-backed CScriptMan::OnScriptMessage@0x6de0f0, reached from the
+  # nType==363 arm of CScriptMan::OnPacket@0x6de360). incomplete -> verified.
+  # NOTE: NPC_TALK appears twice in this manifest — once per direction
+  # (serverbound above, clientbound here); status.json carries them as two
+  # distinct op rows keyed by (op, direction).
+  - NPC_TALK  # clientbound direction — see note above
+
+  # CHANGE_MAP_SPECIAL serverbound (portal/serverbound/PortalScript, opcode
+  # 112). Task 2 (fname promotion csv-import CUserLocal::HandleUpKeyDown ->
+  # export-resident CUserLocal::CheckPortal_Collision@0x919a10) + Task 6
+  # (route at 0x70, PortalScriptHandle). incomplete -> verified.
+  - CHANGE_MAP_SPECIAL
+
+  # STORAGE serverbound (storage/serverbound/StorageOperation, opcode 67).
+  # Task 3 (packet: link — registry primary fname CTrunkDlg::SetRet is
+  # absent from the committed export, re-harvest forbidden) + Task 6 (route
+  # at 0x43, StorageOperationHandle) + Task 8 (options.operations table:
+  # RETRIEVE_ASSET/STORE_ASSET/ARRANGE_ASSET/MESO/CLOSE). incomplete ->
+  # verified.
+  - STORAGE
+
+  # --- opcode correction only (state was already verified) ---
+
+  # AUTO_DISTRIBUTE_AP serverbound (character/serverbound/AutoDistributeAp).
+  # Task 1. opcode corrected 98 -> 99 (98 belongs to the sibling
+  # DISTRIBUTE_AP op; IDB confirms COutPacket(&oPacket, 99) at the
+  # SendAbilityUpRequest#AutoDistributeAp build site, 0x9f63b0). State stays
+  # `verified` on gms_v95 across the correction — this is a value fix, not a
+  # coverage promotion. Template route corrected in lockstep (Task 6, opCode
+  # 0x63, CharacterAutoDistributeApHandle).
+  - AUTO_DISTRIBUTE_AP
+
+  # --- resolved n-a (proven genuinely absent, not merely unverified) ---
+
+  # LOGIN_AUTH clientbound. Task 4. incomplete -> n-a. The v95
+  # CLogin::OnPacket dispatch switch was fully enumerated (see
+  # login-auth-resolution.md); every case maps 1:1 onto an already-registered
+  # op or a different dispatcher (CHECK_CRC_RESULT). The csv-import seed's
+  # intended target (OnEnableSPWResult, case 21) is already correctly
+  # recorded under HACKSHIELD_REQUEST. The unresolved `opcode: 0 / fname: ""`
+  # seed was deleted from docs/packets/registry/gms_v95.yaml (Absent per
+  # opregistry.go Applicability -> graded n-a, no replacement entry needed).
+  - LOGIN_AUTH
+
+  # login/clientbound/ServerLoad (Task 16). Not a status.json op row (no
+  # registry op named for it — a candidate `_unimplemented.json` entry keyed
+  # by packet path). Positive-absence proof: CLogin::OnPacket@0x5df940 is the
+  # exhaustive clientbound login dispatch switch and no arm decodes a
+  # load-percentage/gauge state; recorded in
+  # docs/packets/audits/gms_v95/_unimplemented.json.
+  - login/clientbound/ServerLoad
+
+sub_structs:
+  # NpcAskSlideMenuConversationDetail (npc/clientbound). Task 5. incomplete
+  # -> verified on gms_v95. tools/packet-audit/internal/matrix/build.go
+  # gained versionScopedOpKey/siblingWritersFor so NPC_TALK_MORE serverbound
+  # stops swallowing this sub-struct's WriterName into its own op row on
+  # gms_v95 ONLY (the same fname collision recurs unscoped on
+  # gms_v83/84/87/92/jms_v185 — deliberately left alone, out of scope). The
+  # sub-struct already carried its own marker/evidence/report; this was a
+  # grading-allowlist fix, not new codec/fixture work.
+  - npc/clientbound/NpcAskSlideMenuConversationDetail
+
+versions:
+  - gms_v95
+  # No other version's registry, ida-exports, evidence, status.json cell, or
+  # atlas-packet codec changed in this branch — confirmed by `git diff
+  # --name-only 43975545a..HEAD` containing exactly one per-version template
+  # (services/atlas-configurations/seed-data/templates/template_gms_95_1.json)
+  # and no other docs/packets/registry/*.yaml or docs/packets/evidence/*
+  # path outside gms_v95.
+
+fields:
+  - "docs/packets/registry/gms_v95.yaml: LOGIN_AUTH clientbound seed deleted (Task 4); four primary fnames promoted from csv-import names absent from the committed export to export-resident, report-backed names, each demoting the csv name to fname_alts (Task 2: CHANGE_MAP, NPC_TALK sb, NPC_TALK cb, CHANGE_MAP_SPECIAL); four ops linked to their codec directly via a new `packet:` key because their registry primary fname is absent from the export and re-harvesting is forbidden by playbook §10 (Task 3: CHECK_SPW_RESULT cb, ENTER_CASHSHOP sb, STORAGE sb, MULTI_CHAT sb); AUTO_DISTRIBUTE_AP opcode corrected 98->99 with an `ida.address` field added (Task 1)."
+  - "services/atlas-configurations/seed-data/templates/template_gms_95_1.json: 8 new handler routes (opCode 0x29 MapChangeHandle, 0x2B CashShopEntryHandle, 0x3F NPCStartConversationHandle, 0x43 StorageOperationHandle, 0x63 CharacterAutoDistributeApHandle [opcode-corrected], 0x70 PortalScriptHandle, 0x8C CharacterMultiChatHandle, 0x92 PartyInviteRejectHandle [IDB-confirmed routed, not dropped — CWvsContext::OnPartyResult@0xa10ab0 builds the decline path at opcode 146]) and 3 new writer entries (0x16B NPCConversation with a messageType options table, 0x1B PicResult, 0x8F CashShopOpen) — Task 6. One existing handler at 0x19 renamed NoOpHandler -> PongHandle (same fname CClientSocket::OnAliveReq; a naming correction bundled into Task 6's same commit, not a new route). Six existing handlers gained `options.operations`/`options.messageType` tables from six new hand-maintained dispatcher docs (Tasks 7-9): 0x41 NPCContinueConversationHandle (messageType, 15 entries, paired with the new 0x16B writer), 0x8F MessengerOperationHandle, 0x91 PartyOperationHandle, 0x95 GuildOperationHandle, 0x99 BuddyOperationHandle, 0xB3 GuildBBSHandle (all options.operations), plus the new 0x43 StorageOperationHandle route's own options.operations table. 0x00 AuthTemporaryBan gained an options.failedReasonCodes table (Task 9/10, 19 entries). Four movement writers (0xC9 PetMovement, 0xD2 CharacterMovement, 0x11F MoveMonster, 0x13A NPCAction) gained an identical 36-entry options.types table, IDA-derived once and pinned by fixtures across libs/atlas-packet/{character,monster,pet}/clientbound/movement_test.go, libs/atlas-packet/npc/clientbound/action_test.go, and the new shared libs/atlas-packet/test/movement_types.go helper (Task 11)."
+  - "tools/packet-audit/internal/matrix/build.go: versionScopedOpKey/siblingWritersFor added (Task 5) so the legacyConsumedSiblingWriters allowlist can scope an entry to a single version instead of every version sharing the same fname collision. New entry: NPC_TALK_MORE serverbound x gms_v95 only -> NpcAskSlideMenuConversationDetail. Post-plan fix round: four more version-scoped entries added (CHANGE_MAP sb, NPC_TALK cb, NPC_TALK sb, CHANGE_MAP_SPECIAL sb, all gms_v95 only) to un-regress the four sub-structs Task 2's fname promotions had silently consumed via the usedWriters/protectedWriters op-row path (NOT a findReport lookup failure — findReport only grades op rows; sub-struct rows are graded through Build's worstCandidateCell/protectedWriters logic, and each promoted op fname now equals baseFName(IDAName) of one of these four sub-structs' own reports). See context.md \"known regressions\" for the corrected mechanism writeup."
+  - "docs/packets/gates.yaml: one new boundary-gate entry for chat/serverbound/ChatMulti (v95 leading Encode4(updateTime), GMS>=95), gms_v92 side left `partial` (Task 13)."
+
+out_of_scope:
+  # Explicitly named in the plan/context.md as deferred, not silently
+  # dropped. Listed so the critic does not mistake "adjacent, same
+  # dispatcher family" for this branch having verified them.
+  - PET_AUTO_POT/gms_v83..jms_v185       # unrelated to this branch; cited here only to disclaim it — not touched.
+  - gms_v87/gms_v92/jms_v185 options gap # PRD follow-up, filed separately per plan.md "Follow-ups".
+  - docs/packets/registry/gms_v92.yaml   # carries the identical unresolved LOGIN_AUTH `opcode: 0/fname: ""` seed; left untouched (Task 4 scope was gms_v95 only).

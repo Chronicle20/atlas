@@ -20,6 +20,19 @@ func byCharacterIdProvider(tenantId uuid.UUID, characterId uint32) database.Enti
 	}
 }
 
+// byPairIdProvider returns every row sharing pairId -- normally both halves
+// of the pair, occasionally one (a partial pair predating FR-RING-4, or a
+// row from another tenant excluded by the tenant_id scope).
+func byPairIdProvider(tenantId uuid.UUID, pairId uuid.UUID) database.EntityProvider[[]Entity] {
+	return func(db *gorm.DB) model.Provider[[]Entity] {
+		return func() ([]Entity, error) {
+			var entities []Entity
+			result := db.Where("tenant_id = ? AND pair_id = ?", tenantId, pairId).Find(&entities)
+			return entities, result.Error
+		}
+	}
+}
+
 func byIdProvider(tenantId uuid.UUID, id uuid.UUID) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		return func() (Entity, error) {
@@ -44,6 +57,11 @@ func GetById(db *gorm.DB, tenantId uuid.UUID, id uuid.UUID) (Model, error) {
 		return Model{}, err
 	}
 	return Make(e)
+}
+
+// GetByPairId returns every row sharing pairId -- see byPairIdProvider.
+func GetByPairId(db *gorm.DB, tenantId uuid.UUID, pairId uuid.UUID) ([]Model, error) {
+	return model.SliceMap(Make)(byPairIdProvider(tenantId, pairId)(db))(model.ParallelMap())()
 }
 
 // byCharacterIdPagedProvider pages every ring half a character holds, for

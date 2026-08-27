@@ -23,6 +23,9 @@ type RestModel struct {
 	RingType           string    `json:"ringType"`
 	State              string    `json:"state"`
 	CreatedAt          time.Time `json:"createdAt"`
+	CashId             int64     `json:"cashId"`
+	PartnerCashId      int64     `json:"partnerCashId"`
+	PartnerName        string    `json:"partnerName"`
 }
 
 func (r RestModel) GetName() string {
@@ -57,5 +60,22 @@ func Transform(m Model) (RestModel, error) {
 		RingType:           string(m.Type()),
 		State:              string(m.State()),
 		CreatedAt:          m.CreatedAt(),
+		CashId:             m.CashId(),
+		PartnerCashId:      m.PartnerCashId(),
+		PartnerName:        m.PartnerName(),
 	}, nil
+}
+
+// TransformSlice maps a slice of domain Models to their REST projections.
+// Returns the first transform error encountered, if any.
+func TransformSlice(ms []Model) ([]RestModel, error) {
+	out := make([]RestModel, 0, len(ms))
+	for _, m := range ms {
+		rm, err := Transform(m)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, rm)
+	}
+	return out, nil
 }

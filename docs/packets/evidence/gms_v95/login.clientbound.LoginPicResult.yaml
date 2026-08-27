@@ -1,0 +1,18 @@
+packet: login/clientbound/LoginPicResult
+direction: clientbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CLogin::OnCheckSPWResult
+    address: "0x5d23f0"
+    decompile_sha256: d742872a16bc7f7357d11a3cf338cb1fe8b2ee4b61d5399d387a5716def97dbb
+verifies:
+    - libs/atlas-packet/login/clientbound/pic_result_test.go#TestPicResultByteOutputV95
+notes: |
+    Tier-0 cell (VERIFYING_A_PACKET.md §7 exception): CLogin::OnCheckSPWResult
+    is absent from the committed gms_v95 export, so no audit report resolves and
+    none can be generated without a live harvest. Per design §2.3, this record is
+    pinned deliberately — the no-report promotion path (grade.go:198-222) requires
+    marker + fresh evidence regardless of tier, so without this record the cell
+    cannot promote at all. The freshness liability (this record degrades to stale
+    on the next export refresh) is accepted knowingly.

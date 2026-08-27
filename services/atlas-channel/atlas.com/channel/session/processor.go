@@ -6,6 +6,7 @@ import (
 	"atlas-channel/character/combo"
 	session2 "atlas-channel/kafka/message/session"
 	"atlas-channel/position"
+	"atlas-channel/ring"
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
@@ -421,6 +422,13 @@ func (p *ProcessorImpl) Destroy(s Model) error {
 	// timeout, and channel change all funnel here (task-250 design.md).
 	clearLastPositionOnDestroy(p.ctx, s.CharacterId())
 
+	// The cached ring pair halves cannot outlive the character's presence on
+	// the channel: logout, disconnect, timeout, and channel change all
+	// funnel here (PRD FR-4, docs/tasks/task-269-ring-pair-behavior/
+	// prd.md:93-95). The next login/channel-enter's Populate call
+	// (task-269 task 12) repopulates it.
+	clearRingsOnDestroy(p.l, p.ctx, s.CharacterId())
+
 	// Emit logout and destroyed events BEFORE closing the socket so a
 	// crash-safe ordering exists: a downstream consumer that sees the
 	// destroyed event can no longer race with the socket-close path
@@ -474,6 +482,22 @@ func clearAranComboOnDestroy(ctx context.Context, characterId uint32) {
 func clearLastPositionOnDestroy(ctx context.Context, characterId uint32) {
 	if characterId != 0 {
 		position.GetRegistry().Clear(tenant.MustFromContext(ctx), characterId)
+	}
+}
+
+// clearRingsOnDestroy drops the cached ring pair halves for a destroyed
+// session's character (PRD FR-4): logout, disconnect, timeout, and channel
+// change all funnel through Destroy. This is the only invalidation path
+// for map/channel transfer -- an intra-channel map transfer must NOT drop
+// the entry, since FR-4's leading clause scopes the cache to the
+// character's presence on the channel and doing so per map change would
+// defeat Task 12's Populate call site (login/channel-enter, once per
+// presence) and reintroduce a per-map-change refetch. Extracted from
+// Destroy so this invariant is unit testable without exercising Destroy's
+// Kafka emit path, mirroring clearAranComboOnDestroy.
+func clearRingsOnDestroy(l logrus.FieldLogger, ctx context.Context, characterId uint32) {
+	if characterId != 0 {
+		ring.NewProcessor(l, ctx).Invalidate(characterId)
 	}
 }
 

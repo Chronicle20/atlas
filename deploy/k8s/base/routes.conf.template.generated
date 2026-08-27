@@ -177,6 +177,15 @@ location ~ ^/api/coupon-redemptions(/.*)?$ {
   proxy_pass http://$u$request_uri;
 }
 
+# atlas-cashshop also owns the ring pairing surface (task-269), registered at
+# the router root rather than under `/cash-shop`. Without this block requests
+# fall through to the `location /` atlas-ui catch-all and the UI gets the
+# SPA's index.html back instead of JSON.
+location ~ ^/api/rings(/.*)?$ {
+  set $u "atlas-cashshop.${NS_ATLAS_CASHSHOP}.svc.cluster.local:8080";
+  proxy_pass http://$u$request_uri;
+}
+
 location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/drops(/.*)?$ {
   set $u "atlas-drops.${NS_ATLAS_DROPS}.svc.cluster.local:8080";
   proxy_pass http://$u$request_uri;

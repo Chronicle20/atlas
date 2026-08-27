@@ -188,9 +188,9 @@ func (p *ProcessorImpl) PurchaseRingAndEmit(characterId uint32, transactionId uu
 			// both rows in a single batched db.Create -- the statement lands
 			// or neither half does, so this cannot leave a pair row for only
 			// one of the two assets created above.
-			pairId, err := ring.NewProcessor(p.l, p.ctx, tx).CreatePair(tx, rt,
-				ring.Half{CharacterId: characterId, AssetId: buyerAsset.Id(), ItemTemplateId: ci.ItemId()},
-				ring.Half{CharacterId: partnerCharacterId, AssetId: partnerAsset.Id(), ItemTemplateId: ci.ItemId()},
+			pairId, err := ring.NewProcessor(p.l, p.ctx, tx, p.chaP).CreatePair(tx, rt,
+				ring.Half{CharacterId: characterId, AssetId: buyerAsset.Id(), CashId: buyerAsset.CashId(), ItemTemplateId: ci.ItemId()},
+				ring.Half{CharacterId: partnerCharacterId, AssetId: partnerAsset.Id(), CashId: partnerAsset.CashId(), ItemTemplateId: ci.ItemId()},
 			)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to record ring pair for character [%d] and partner [%d].", characterId, partnerCharacterId)

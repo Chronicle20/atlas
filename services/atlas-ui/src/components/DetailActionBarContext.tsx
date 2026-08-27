@@ -21,6 +21,9 @@ export interface DetailActionBarConfig {
   isSaving: boolean;
   onSave: () => void;
   onDiscard: () => void;
+  /** Count of blocking validation errors. > 0 disables Save and is reported
+   *  in the bar. Omitted means "no validation gate". */
+  blockingIssues?: number | undefined;
 }
 
 interface DetailActionBarContextValue {
@@ -65,6 +68,7 @@ export function useRegisterDetailActionBar(
   const present = config !== null;
   const dirty = config?.dirty ?? false;
   const isSaving = config?.isSaving ?? false;
+  const blockingIssues = config?.blockingIssues;
 
   useEffect(() => {
     if (!register) return;
@@ -75,11 +79,12 @@ export function useRegisterDetailActionBar(
     register({
       dirty,
       isSaving,
+      blockingIssues,
       onSave: () => latest.current?.onSave(),
       onDiscard: () => latest.current?.onDiscard(),
     });
     return () => register(null);
-  }, [register, present, dirty, isSaving]);
+  }, [register, present, dirty, isSaving, blockingIssues]);
 }
 
 /**
@@ -94,6 +99,7 @@ export function DetailActionBar() {
     <SaveBar
       dirty={config.dirty}
       isSaving={config.isSaving}
+      blockingIssues={config.blockingIssues}
       onSave={config.onSave}
       onDiscard={config.onDiscard}
     />

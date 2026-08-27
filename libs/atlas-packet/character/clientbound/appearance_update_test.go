@@ -2,11 +2,150 @@ package clientbound
 
 import (
 	"bytes"
+	"context"
+	"encoding/hex"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+// baseFrameHex is the fixed prefix every CharacterAppearanceUpdate frame
+// shares regardless of version or ring content: characterId(4) + flags(1) +
+// the fixture avatar block (AvatarLook::Decode's own byte layout is pinned
+// independently by avatar_test.go, unchanged by this task). Transcribed once
+// (verified byte-for-byte against a passing Encode() call) so the "empty" and
+// "populated" cases below pin a known-good baseline rather than deriving it
+// from the same production code path they are testing — the precedent set by
+// spawn_test.go's "couple populated" case, which pins its whole-frame `empty`
+// fixture as a hex literal and only derives the ring span under test.
+const baseFrameHex = "7856341201010214000000011e000000ffff00000000000000000000000000000000"
+
+// ringEmptyHex is the RingSet{} (all arms nil) wire shape: three zero flag
+// bytes (couple, friendship, marriage). Identical for GMS and JMS — the JMS
+// per-arm entry-count int (model/ring.go EncodeField) is only written when
+// an arm is populated, never as a zero count on a nil arm.
+const ringEmptyHex = "000000"
+
+// ringPopulatedGMSHex is the RingSet wire shape on GMS for the fixture
+// couple pair shared with model/ring_test.go and spawn_test.go's "couple
+// populated" case (OwnSN=0x1122334455667788, PartnerSN=0x99AABBCCDDEEFF00,
+// ItemId=0x00001234): couple flag(1)=1, OwnSN(8, little-endian WriteInt64),
+// PartnerSN(8, little-endian), ItemId(4, little-endian WriteInt) = 21 bytes,
+// then friendship flag(1)=0 and marriage flag(1)=0.
+const ringPopulatedGMSHex = "01" + "8877665544332211" + "00ffeeddccbbaa99" + "34120000" + "00" + "00"
+
+// ringPopulatedJMSHex is the same fixture couple pair on JMS: couple
+// flag(1)=1, entry-count(4, little-endian WriteInt)=1, OwnSN(8), PartnerSN(8),
+// ItemId(4) = 25 bytes, then friendship flag(1)=0 and marriage flag(1)=0
+// (model/ring.go EncodeField's isJMS branch).
+const ringPopulatedJMSHex = "01" + "01000000" + "8877665544332211" + "00ffeeddccbbaa99" + "34120000" + "00" + "00"
+
+// mustHex decodes a hex literal, failing the test on a malformed constant.
+func mustHex(t *testing.T, s string) []byte {
+	t.Helper()
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		t.Fatalf("hex decode %q: %v", s, err)
+	}
+	return b
+}
+
+// runAppearanceUpdateCases exercises the empty and populated ring cases for a
+// given tenant context. The expected bytes are captured literals (base
+// frame + ring block + version-gated trailing int), independently derived
+// from the client's read order rather than built by calling the production
+// model.RingSet.EncodeField on the want side — that both-sides pattern would
+// only prove the encode site wires the shared ring codec, not that the
+// codec's own byte layout is correct (task-269 Task 14 retires the
+// tautology inherited from spawn_test.go's "couple populated" precedent).
+func runAppearanceUpdateCases(t *testing.T, ctx context.Context) {
+	t.Helper()
+	tn := tenant.MustFromContext(ctx)
+	isJMS := tn.Region() == "JMS"
+
+	avatar := model.NewAvatar(
+		1,     // gender
+		2,     // skinColor
+		0x14,  // face
+		false, // mega -> WriteBool(!mega)=WriteBool(true)=0x01
+		0x1E,  // hair
+		nil,   // equipment (-> just 0xFF terminator)
+		nil,   // maskedEquipment (-> just 0xFF terminator)
+		nil,   // pets (-> 3x WriteInt(0))
+	)
+
+	base := mustHex(t, baseFrameHex)
+
+	// hasTrailing mirrors the production gate (hasTrailingCompletedSetItemId
+	// in appearance_update.go): true only for gms_v87/gms_v95, where the
+	// client reads nCompletedSetItemID unconditionally after the marriage
+	// arm (gms_v87.json @0xa090f4, trailing Decode4 @0xa092d5; gms_v95.json
+	// @0x954110, trailing Decode4 @0x9542ec). False for gms_v83, gms_v84,
+	// gms_v79, and jms_v185, none of which read a trailing int there.
+	hasTrailing := hasTrailingCompletedSetItemId(tn)
+
+	t.Run("empty", func(t *testing.T) {
+		rings := model.RingSet{}
+		input := NewCharacterAppearanceUpdate(0x12345678, avatar, rings)
+		got := input.Encode(nil, ctx)(nil)
+
+		want := append([]byte{}, base...)
+		want = append(want, mustHex(t, ringEmptyHex)...)
+		if hasTrailing {
+			want = append(want, 0x00, 0x00, 0x00, 0x00) // nCompletedSetItemID (gms_v87/v95 only)
+		}
+
+		if !bytes.Equal(got, want) {
+			t.Errorf("empty-ring bytes:\n got %x\nwant %x", got, want)
+		}
+
+		// The frame correction: the pre-task encoder wrote an unconditional
+		// trailing WriteInt(0) "completed set item id" on every version. That
+		// is correct only for gms_v87/gms_v95 (see hasTrailing above); every
+		// other version now omits it (design.md §3.2's "one int long" defect,
+		// scoped to the versions the client actually doesn't read it on).
+		// Assert the delta explicitly — computed independently of `got` —
+		// rather than leaving it implied by the byte-equality check above:
+		// base frame + 3 empty ring flags + the trailing int(4), included
+		// only when hasTrailing.
+		wantLen := len(base) + 3
+		if hasTrailing {
+			wantLen += 4
+		}
+		if len(got) != wantLen {
+			t.Fatalf("empty-ring length: got %d want %d", len(got), wantLen)
+		}
+	})
+
+	t.Run("populated", func(t *testing.T) {
+		// fixture shared with Task 2 (model/ring_test.go) and Task 5's
+		// spawn-wiring test (spawn_test.go "couple populated" case).
+		fixturePartnerSNU := uint64(0x99AABBCCDDEEFF00)
+		fixturePartnerSN := int64(fixturePartnerSNU)
+		couple := &model.PairRing{OwnSN: 0x1122334455667788, PartnerSN: fixturePartnerSN, ItemId: 0x00001234}
+		rings := model.RingSet{Couple: couple}
+
+		input := NewCharacterAppearanceUpdate(0x12345678, avatar, rings)
+		got := input.Encode(nil, ctx)(nil)
+
+		ringHex := ringPopulatedGMSHex
+		if isJMS {
+			ringHex = ringPopulatedJMSHex
+		}
+
+		want := append([]byte{}, base...)
+		want = append(want, mustHex(t, ringHex)...)
+		if hasTrailing {
+			want = append(want, 0x00, 0x00, 0x00, 0x00) // nCompletedSetItemID (gms_v87/v95 only)
+		}
+
+		if !bytes.Equal(got, want) {
+			t.Errorf("populated-ring bytes:\n got %x\nwant %x", got, want)
+		}
+	})
+}
 
 // CharacterAppearanceUpdate byte-fixture.
 //
@@ -18,11 +157,12 @@ import (
 //	friendMarker   = Decode1         // 0 => no buffer; else DecodeBuffer(16)+Decode4 /*0x983778*/
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0x9837c5*/
 //
-// Atlas always writes flags=1 (look-only), so only the &1 branch fires. The three
-// ring markers are written as 0 (no following buffers). The trailing WriteInt(0)
-// "completed set item id" is NOT read by the client when marriageMarker==0 (the
-// else branch zeroes the slots and reads nothing) — it is benign trailing slack,
-// the existing codec shape, version-independent.
+// Atlas always writes flags=1 (look-only), so only the &1 branch fires. The
+// marriage if/else has no trailing unconditional Decode4 at v83 (the else
+// branch zeroes the slots and reads nothing) — the pre-task encoder's
+// trailing WriteInt(0) "completed set item id" was benign, unread slack here
+// (design.md §3.2's "one int long" defect); the encoder no longer writes one
+// at v83.
 //
 // AvatarLook::Decode (v83 @0x4e749a):
 //
@@ -37,46 +177,7 @@ import (
 func TestCharacterAppearanceUpdateByteOutput(t *testing.T) {
 	v83 := pt.Variants[1] // GMS v83
 	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)
-
-	// Empty equipment/masked maps + nil pets keep the avatar block deterministic
-	// (the encoder ranges over maps, whose iteration order is unstable otherwise).
-	avatar := model.NewAvatar(
-		1,     // gender
-		2,     // skinColor
-		0x14,  // face
-		false, // mega -> WriteBool(!mega)=WriteBool(true)=0x01
-		0x1E,  // hair
-		nil,   // equipment (-> just 0xFF terminator)
-		nil,   // maskedEquipment (-> just 0xFF terminator)
-		nil,   // pets (-> 3x WriteInt(0))
-	)
-	input := NewCharacterAppearanceUpdate(0x12345678, avatar)
-	got := input.Encode(nil, ctx)(nil)
-
-	want := []byte{
-		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0x983697 dispatch*/
-		0x01, // flags = 1 (look-only)                  /*0x983697*/
-		// --- AvatarLook block (flags & 1) ---                            /*0x9836a3*/
-		0x01,                   // gender (Decode1)                       /*0x4e74ad*/
-		0x02,                   // skinColor (Decode1)                    /*0x4e74ba*/
-		0x14, 0x00, 0x00, 0x00, // face (Decode4)                         /*0x4e74ce*/
-		0x01,                   // !mega -> WriteBool(true) (Decode1)     /*0x4e74ea*/
-		0x1e, 0x00, 0x00, 0x00, // hair (Decode4)                         /*0x4e74f6*/
-		0xff,                   // equipment terminator                   /*0x4e74ff*/
-		0xff,                   // masked-equipment terminator            /*0x4e7536*/
-		0x00, 0x00, 0x00, 0x00, // cash weapon (Decode4)                  /*0x4e7572*/
-		0x00, 0x00, 0x00, 0x00, // pet 0 (DecodeBuffer 12 = 3x Decode4)   /*0x4e7585*/
-		0x00, 0x00, 0x00, 0x00, // pet 1
-		0x00, 0x00, 0x00, 0x00, // pet 2
-		// --- ring markers ---
-		0x00,                   // crush ring marker (Decode1)            /*0x98372b*/
-		0x00,                   // friendship ring marker (Decode1)       /*0x983778*/
-		0x00,                   // marriage ring marker (Decode1)         /*0x9837c5*/
-		0x00, 0x00, 0x00, 0x00, // completed set item id (trailing slack; unread when marriage==0)
-	}
-	if !bytes.Equal(got, want) {
-		t.Errorf("appearance-update bytes:\n got %x\nwant %x", got, want)
-	}
+	runAppearanceUpdateCases(t, ctx)
 }
 
 // CharacterAppearanceUpdate v84 byte-fixture.
@@ -90,52 +191,12 @@ func TestCharacterAppearanceUpdateByteOutput(t *testing.T) {
 //	friendMarker   = Decode1         // 0 => no buffer; else 2xDecodeBuffer(8)+Decode4 /*0x9c3b16*/
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0x9c3b63*/
 //
-// Atlas always writes flags=1 (look-only); the three ring markers are written as 0.
-// The trailing WriteInt(0) is unread by the client when marriageMarker==0 (the else
-// branch @0x9c3ba8 zeroes the slots and reads nothing) — benign trailing slack.
-//
-// The wire bytes mirror the v83 fixture exactly.
+// Atlas always writes flags=1 (look-only); the marriage if/else has no
+// trailing unconditional Decode4 at v84, as at v83.
 func TestCharacterAppearanceUpdateByteOutputV84(t *testing.T) {
 	v84 := pt.Variants[5] // GMS v84
 	ctx := pt.CreateContext(v84.Region, v84.MajorVersion, v84.MinorVersion)
-
-	avatar := model.NewAvatar(
-		1,     // gender
-		2,     // skinColor
-		0x14,  // face
-		false, // mega -> WriteBool(!mega)=WriteBool(true)=0x01
-		0x1E,  // hair
-		nil,   // equipment (-> just 0xFF terminator)
-		nil,   // maskedEquipment (-> just 0xFF terminator)
-		nil,   // pets (-> 3x WriteInt(0))
-	)
-	input := NewCharacterAppearanceUpdate(0x12345678, avatar)
-	got := input.Encode(nil, ctx)(nil)
-
-	want := []byte{
-		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0x9c3a1c dispatch*/
-		0x01, // flags = 1 (look-only)                  /*0x9c3a35*/
-		// --- AvatarLook block (flags & 1) ---                            /*0x9c3a41*/
-		0x01,                   // gender (Decode1)                       /*0x4ef96b*/
-		0x02,                   // skinColor (Decode1)                    /*0x4ef978*/
-		0x14, 0x00, 0x00, 0x00, // face (Decode4)                         /*0x4ef98c*/
-		0x01,                   // !mega -> WriteBool(true) (Decode1)     /*0x4ef9a8*/
-		0x1e, 0x00, 0x00, 0x00, // hair (Decode4)                         /*0x4ef9b4*/
-		0xff,                   // equipment terminator                   /*0x4ef9bd*/
-		0xff,                   // masked-equipment terminator            /*0x4ef9f4*/
-		0x00, 0x00, 0x00, 0x00, // cash weapon (Decode4)                  /*0x4efa30*/
-		0x00, 0x00, 0x00, 0x00, // pet 0 (DecodeBuffer 12 = 3x Decode4)   /*0x4efa43*/
-		0x00, 0x00, 0x00, 0x00, // pet 1
-		0x00, 0x00, 0x00, 0x00, // pet 2
-		// --- ring markers ---
-		0x00,                   // crush ring marker (Decode1)            /*0x9c3ac9*/
-		0x00,                   // friendship ring marker (Decode1)       /*0x9c3b16*/
-		0x00,                   // marriage ring marker (Decode1)         /*0x9c3b63*/
-		0x00, 0x00, 0x00, 0x00, // completed set item id (trailing slack; unread when marriage==0)
-	}
-	if !bytes.Equal(got, want) {
-		t.Errorf("appearance-update v84 bytes:\n got %x\nwant %x", got, want)
-	}
+	runAppearanceUpdateCases(t, ctx)
 }
 
 // CharacterAppearanceUpdate v87 byte-fixture.
@@ -151,11 +212,12 @@ func TestCharacterAppearanceUpdateByteOutputV84(t *testing.T) {
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0xa0923b*/
 //	completedSet   = Decode4         // read UNCONDITIONALLY in v87 (this[1456]) /*0xa092d5*/
 //
-// Unlike the v83/v84 comment ("trailing int unread when marriage==0"), v87 reads
-// the trailing Decode4 (completed-set-item id) unconditionally — it sits AFTER the
-// marriage if/else, not inside it. Atlas writes flags=1 (look-only) and the three
-// ring markers as 0, so the wire bytes are still byte-identical to v83/v84; only
-// the client's read-disposition of the final int differs (now consumed, not slack).
+// Unlike v83/v84 (trailing int is unread slack when marriage==0), v87 reads
+// the trailing Decode4 (completed-set-item id) unconditionally — it sits
+// AFTER the marriage if/else, not inside it. Atlas writes flags=1 (look-only)
+// and the ring block per RingSet, then writes the trailing WriteInt(0) to
+// match this unconditional read (hasTrailingCompletedSetItemId gate:
+// IsRegion("GMS") && MajorAtLeast(87)).
 //
 // AvatarLook::Decode (v87 @0x508277):
 //
@@ -165,44 +227,7 @@ func TestCharacterAppearanceUpdateByteOutputV84(t *testing.T) {
 func TestCharacterAppearanceUpdateByteOutputV87(t *testing.T) {
 	v87 := pt.Variants[2] // GMS v87
 	ctx := pt.CreateContext(v87.Region, v87.MajorVersion, v87.MinorVersion)
-
-	avatar := model.NewAvatar(
-		1,     // gender
-		2,     // skinColor
-		0x14,  // face
-		false, // mega -> WriteBool(!mega)=WriteBool(true)=0x01
-		0x1E,  // hair
-		nil,   // equipment (-> just 0xFF terminator)
-		nil,   // maskedEquipment (-> just 0xFF terminator)
-		nil,   // pets (-> 3x WriteInt(0))
-	)
-	input := NewCharacterAppearanceUpdate(0x12345678, avatar)
-	got := input.Encode(nil, ctx)(nil)
-
-	want := []byte{
-		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0xa090f4 dispatch*/
-		0x01, // flags = 1 (look-only)                  /*0xa0910d*/
-		// --- AvatarLook block (flags & 1) ---                            /*0xa09119*/
-		0x01,                   // gender (Decode1)                       /*0x50828a*/
-		0x02,                   // skinColor (Decode1)                    /*0x508297*/
-		0x14, 0x00, 0x00, 0x00, // face (Decode4)                         /*0x5082ab*/
-		0x01,                   // !mega -> WriteBool(true) (Decode1)     /*0x5082c7*/
-		0x1e, 0x00, 0x00, 0x00, // hair (Decode4)                         /*0x5082d3*/
-		0xff,                   // equipment terminator                   /*0x5082dc*/
-		0xff,                   // masked-equipment terminator            /*0x508313*/
-		0x00, 0x00, 0x00, 0x00, // cash weapon (Decode4)                  /*0x50834f*/
-		0x00, 0x00, 0x00, 0x00, // pet 0 (DecodeBuffer 12 = 3x Decode4)   /*0x50835d*/
-		0x00, 0x00, 0x00, 0x00, // pet 1
-		0x00, 0x00, 0x00, 0x00, // pet 2
-		// --- ring markers ---
-		0x00,                   // crush ring marker (Decode1)            /*0xa091a1*/
-		0x00,                   // friendship ring marker (Decode1)       /*0xa091ee*/
-		0x00,                   // marriage ring marker (Decode1)         /*0xa0923b*/
-		0x00, 0x00, 0x00, 0x00, // completed set item id (Decode4, read unconditionally) /*0xa092d5*/
-	}
-	if !bytes.Equal(got, want) {
-		t.Errorf("appearance-update v87 bytes:\n got %x\nwant %x", got, want)
-	}
+	runAppearanceUpdateCases(t, ctx)
 }
 
 // CharacterAppearanceUpdate v95 byte-fixture.
@@ -218,10 +243,11 @@ func TestCharacterAppearanceUpdateByteOutputV87(t *testing.T) {
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0x954251*/
 //	completedSet   = Decode4         // read UNCONDITIONALLY in v95 (m_nCompletedSetItemID) /*0x9542ec*/
 //
-// The read order is byte-identical to v83/v84/v87: flags, AvatarLook, three ring
-// markers, then the trailing completed-set int (consumed unconditionally at v95 as
-// at v87, @0x9542ec). Atlas writes flags=1 (look-only) and the three ring markers
-// as 0, so the wire bytes are unchanged from the v87 fixture.
+// The read order is byte-identical to v87: flags, AvatarLook, three ring
+// markers, then the trailing completed-set int consumed unconditionally
+// (@0x9542ec), same as at v87 (@0xa092d5). Atlas writes the matching trailing
+// WriteInt(0) here too (hasTrailingCompletedSetItemId gate: IsRegion("GMS")
+// && MajorAtLeast(87)).
 //
 // AvatarLook::Decode (v95 @0x4f2c00):
 //
@@ -231,44 +257,7 @@ func TestCharacterAppearanceUpdateByteOutputV87(t *testing.T) {
 func TestCharacterAppearanceUpdateByteOutputV95(t *testing.T) {
 	v95 := pt.Variants[3] // GMS v95
 	ctx := pt.CreateContext(v95.Region, v95.MajorVersion, v95.MinorVersion)
-
-	avatar := model.NewAvatar(
-		1,     // gender
-		2,     // skinColor
-		0x14,  // face
-		false, // mega -> WriteBool(!mega)=WriteBool(true)=0x01
-		0x1E,  // hair
-		nil,   // equipment (-> just 0xFF terminator)
-		nil,   // maskedEquipment (-> just 0xFF terminator)
-		nil,   // pets (-> 3x WriteInt(0))
-	)
-	input := NewCharacterAppearanceUpdate(0x12345678, avatar)
-	got := input.Encode(nil, ctx)(nil)
-
-	want := []byte{
-		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0x954110 dispatch*/
-		0x01, // flags = 1 (look-only)                  /*0x954122*/
-		// --- AvatarLook block (flags & 1) ---                            /*0x954131*/
-		0x01,                   // gender (Decode1)                       /*0x4f2c13*/
-		0x02,                   // skinColor (Decode1)                    /*0x4f2c20*/
-		0x14, 0x00, 0x00, 0x00, // face (Decode4)                         /*0x4f2c33*/
-		0x01,                   // !mega -> WriteBool(true) (Decode1)     /*0x4f2c53*/
-		0x1e, 0x00, 0x00, 0x00, // hair (Decode4)                         /*0x4f2c61*/
-		0xff,                   // equipment terminator                   /*0x4f2c6d*/
-		0xff,                   // masked-equipment terminator            /*0x4f2cb3*/
-		0x00, 0x00, 0x00, 0x00, // cash weapon (Decode4)                  /*0x4f2cf6*/
-		0x00, 0x00, 0x00, 0x00, // pet 0 (DecodeBuffer 12 = 3x Decode4)   /*0x4f2d04*/
-		0x00, 0x00, 0x00, 0x00, // pet 1
-		0x00, 0x00, 0x00, 0x00, // pet 2
-		// --- ring markers ---
-		0x00,                   // crush ring marker (Decode1)            /*0x9541b7*/
-		0x00,                   // friendship ring marker (Decode1)       /*0x954202*/
-		0x00,                   // marriage ring marker (Decode1)         /*0x954251*/
-		0x00, 0x00, 0x00, 0x00, // completed set item id (Decode4, read unconditionally) /*0x9542ec*/
-	}
-	if !bytes.Equal(got, want) {
-		t.Errorf("appearance-update v95 bytes:\n got %x\nwant %x", got, want)
-	}
+	runAppearanceUpdateCases(t, ctx)
 }
 
 // CharacterAppearanceUpdate jms byte-fixture.
@@ -284,11 +273,12 @@ func TestCharacterAppearanceUpdateByteOutputV95(t *testing.T) {
 //	friendMarker   = Decode1         // 0 => no buffer; else Decode4 count loop  /*0xa5733b*/
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros           /*0xa573af*/
 //
-// As in v83/v84, the marriage if/else has NO trailing unconditional Decode4 in jms
-// (the else branch @0xa573e1 zeroes the slots and reads nothing). Atlas always writes
-// flags=1 (look-only) and the three ring markers as 0, so the trailing WriteInt(0)
-// "completed set item id" is benign trailing slack (unread when marriage==0). The
-// jms wire matches the GMS-shaped codec — no per-version delta.
+// As in v83/v84, the marriage if/else has no trailing unconditional Decode4 in
+// jms. Atlas writes flags=1 (look-only); the ring block wire for JMS carries
+// the extra per-arm entry-count int (model.RingSet.EncodeField, isJMS
+// branch), which runAppearanceUpdateCases builds from the ringPopulatedJMSHex
+// / ringEmptyHex captured literals above, not by calling the production
+// codec on the want side (task-269 Task 14 retires that tautology).
 //
 // AvatarLook::Decode (jms @0x51517e):
 //
@@ -301,44 +291,7 @@ func TestCharacterAppearanceUpdateByteOutputV95(t *testing.T) {
 func TestCharacterAppearanceUpdateByteOutputJMS(t *testing.T) {
 	jms := pt.Variants[4] // JMS v185
 	ctx := pt.CreateContext(jms.Region, jms.MajorVersion, jms.MinorVersion)
-
-	avatar := model.NewAvatar(
-		1,     // gender
-		2,     // skinColor
-		0x14,  // face
-		false, // mega -> WriteBool(!mega)=WriteBool(true)=0x01
-		0x1E,  // hair
-		nil,   // equipment (-> just 0xFF terminator)
-		nil,   // maskedEquipment (-> just 0xFF terminator)
-		nil,   // pets (-> 3x WriteInt(0))
-	)
-	input := NewCharacterAppearanceUpdate(0x12345678, avatar)
-	got := input.Encode(nil, ctx)(nil)
-
-	want := []byte{
-		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0xa57221 dispatch*/
-		0x01, // flags = 1 (look-only)                  /*0xa57230*/
-		// --- AvatarLook block (flags & 1) ---                            /*0xa57246*/
-		0x01,                   // gender (Decode1)                       /*0x51518a*/
-		0x02,                   // skinColor (Decode1)                    /*0x515194*/
-		0x14, 0x00, 0x00, 0x00, // face (Decode4)                         /*0x5151a1*/
-		0x01,                   // !mega -> WriteBool(true) (Decode1)     /*0x5151ce*/
-		0x1e, 0x00, 0x00, 0x00, // hair (Decode4)                         /*0x5151d5*/
-		0xff,                   // equipment terminator                   /*0x5151de*/
-		0xff,                   // masked-equipment terminator            /*0x515215*/
-		0x00, 0x00, 0x00, 0x00, // cash weapon (Decode4)                  /*0x515251*/
-		0x00, 0x00, 0x00, 0x00, // pet 0 (DecodeBuffer 12 = 3x Decode4)   /*0x515264*/
-		0x00, 0x00, 0x00, 0x00, // pet 1
-		0x00, 0x00, 0x00, 0x00, // pet 2
-		// --- ring markers ---
-		0x00,                   // crush ring marker (Decode1)            /*0xa572ca*/
-		0x00,                   // friendship ring marker (Decode1)       /*0xa5733b*/
-		0x00,                   // marriage ring marker (Decode1)         /*0xa573af*/
-		0x00, 0x00, 0x00, 0x00, // completed set item id (trailing slack; unread when marriage==0)
-	}
-	if !bytes.Equal(got, want) {
-		t.Errorf("appearance-update jms bytes:\n got %x\nwant %x", got, want)
-	}
+	runAppearanceUpdateCases(t, ctx)
 }
 
 // CharacterAppearanceUpdate v79 byte-fixture.
@@ -353,10 +306,9 @@ func TestCharacterAppearanceUpdateByteOutputJMS(t *testing.T) {
 //	friendMarker   = Decode1         // 0 => no buffer; else 2xDecodeBuffer(8)+Decode4 /*0x8d991e*/
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0x8d996b*/
 //
-// As in v83/v84/jms, the marriage if/else has NO trailing unconditional Decode4 in v79
-// (the else branch @0x8d99b0 zeroes the slots and reads nothing). Atlas always writes
-// flags=1 (look-only) and the three ring markers as 0, so the trailing WriteInt(0)
-// "completed set item id" is benign trailing slack. The wire is byte-identical to v83.
+// As in v83/v84/jms, the marriage if/else has no trailing unconditional
+// Decode4 in v79. Atlas writes flags=1 (look-only) and the ring block per
+// RingSet.
 //
 // AvatarLook::Decode (v79 @0x4db6dd):
 //
@@ -368,51 +320,14 @@ func TestCharacterAppearanceUpdateByteOutputJMS(t *testing.T) {
 // packet-audit:verify packet=character/clientbound/CharacterAppearanceUpdate version=gms_v79 ida=0x8d9824
 func TestCharacterAppearanceUpdateByteOutputV79(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 79, 1)
-
-	avatar := model.NewAvatar(
-		1,     // gender
-		2,     // skinColor
-		0x14,  // face
-		false, // mega -> WriteBool(!mega)=WriteBool(true)=0x01
-		0x1E,  // hair
-		nil,   // equipment (-> just 0xFF terminator)
-		nil,   // maskedEquipment (-> just 0xFF terminator)
-		nil,   // pets (-> 3x WriteInt(0))
-	)
-	input := NewCharacterAppearanceUpdate(0x12345678, avatar)
-	got := input.Encode(nil, ctx)(nil)
-
-	want := []byte{
-		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0x8d9824 dispatch*/
-		0x01, // flags = 1 (look-only)                  /*0x8d983d*/
-		// --- AvatarLook block (flags & 1) ---                            /*0x8d9849*/
-		0x01,                   // gender (Decode1)                       /*0x4db6f0*/
-		0x02,                   // skinColor (Decode1)                    /*0x4db6fd*/
-		0x14, 0x00, 0x00, 0x00, // face (Decode4)                         /*0x4db711*/
-		0x01,                   // !mega -> WriteBool(true) (Decode1)     /*0x4db72d*/
-		0x1e, 0x00, 0x00, 0x00, // hair (Decode4)                         /*0x4db739*/
-		0xff,                   // equipment terminator                   /*0x4db742*/
-		0xff,                   // masked-equipment terminator            /*0x4db779*/
-		0x00, 0x00, 0x00, 0x00, // cash weapon (Decode4)                  /*0x4db7b5*/
-		0x00, 0x00, 0x00, 0x00, // pet 0 (DecodeBuffer 12 = 3x Decode4)   /*0x4db7c8*/
-		0x00, 0x00, 0x00, 0x00, // pet 1
-		0x00, 0x00, 0x00, 0x00, // pet 2
-		// --- ring markers ---
-		0x00,                   // crush ring marker (Decode1)            /*0x8d98d1*/
-		0x00,                   // friendship ring marker (Decode1)       /*0x8d991e*/
-		0x00,                   // marriage ring marker (Decode1)         /*0x8d996b*/
-		0x00, 0x00, 0x00, 0x00, // completed set item id (trailing slack; unread when marriage==0)
-	}
-	if !bytes.Equal(got, want) {
-		t.Errorf("appearance-update v79 bytes:\n got %x\nwant %x", got, want)
-	}
+	runAppearanceUpdateCases(t, ctx)
 }
 
 func TestCharacterAppearanceUpdateRoundTrip(t *testing.T) {
 	v83 := pt.Variants[1]
 	ctx := pt.CreateContext(v83.Region, v83.MajorVersion, v83.MinorVersion)
 	avatar := model.NewAvatar(1, 2, 0x14, false, 0x1E, nil, nil, nil)
-	input := NewCharacterAppearanceUpdate(0x12345678, avatar)
+	input := NewCharacterAppearanceUpdate(0x12345678, avatar, model.RingSet{})
 	output := CharacterAppearanceUpdate{}
 	pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 	if output.CharacterId() != input.CharacterId() {

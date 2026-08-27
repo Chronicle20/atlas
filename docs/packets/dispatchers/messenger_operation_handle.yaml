@@ -1,0 +1,50 @@
+# MessengerOperationHandle — serverbound MESSENGER mode table (gms_v95 only).
+#
+# SOURCE OF TRUTH for this handler's options.operations map.
+#
+# gms_v95 ONLY. Declaring another version here would make `packet-audit
+# operations` rewrite that version's hand-authored table with an un-derived
+# carry-over — exactly the v83->v95 drift this task exists to catch, and a
+# violation of "no non-v95 template is modified". Backfilling IDA-derived
+# columns for v83/v84/v87/v92/jms_v185 is filed as a follow-up.
+#
+# ALL-OR-NOTHING: expectedTable reports every template key absent from this
+# file as EXTRA once a version has at least one declared key, so gms_v95 must
+# be enumerated COMPLETELY. Per-arm addresses: v95-option-tables.md.
+#
+# The client has no single MESSENGER builder: each CUIMessenger:: (and one
+# CFadeWnd::) method builds its own COutPacket(&pkt, 0x8F) and writes its own
+# leading Encode1(mode). Enumerated by an exhaustive find_bytes search for the
+# COutPacket opcode-143 push (68 8F 00 00 00) across the whole image — 17
+# hits, 7 real send-site functions (8 of the 17 hits, CUIMessenger::Update
+# builds two of them), the rest unrelated UI Draw/OnCreate/OnMouseButton
+# constants plus one StringPool string-id constant (CField::SendChatMsgSlash,
+# `push 8Fh ; nIdx` into StringPool::GetString, not a COutPacket build) — so
+# the table is complete BY CONSTRUCTION.
+#
+# All 5 keys match v83 (template_gms_83_1.json) exactly: ANSWER_INVITE=0,
+# CLOSE=2, INVITE=3, DECLINE_INVITE=5, CHAT=6. No mode-value drift. v83 has
+# no CREATE key either — CREATE is a handler-side sub-branch of
+# ANSWER_INVITE(0) when MessengerId()==0, not a distinct wire mode.
+#
+# DECLINE_INVITE(5) is sent by two functions: CFadeWnd::SendCloseMessage
+# (this->m_nType == 0, the user declining an invite dialog) and
+# CUIMessenger::OnInvite (server-pushed invite auto-declined client-side on
+# self-invite or blacklist match) — both write Encode1(&pkt, 5u).
+#
+# CHAT(6) is sent by three call sites: CUIMessenger::Update (two branches,
+# input-state toggling on Enter) and CUIMessenger::ProcessChat (typed message
+# submit) — all three write Encode1(&pkt, 6u).
+
+handler: MessengerOperationHandle
+validator: LoggedInValidator
+services: [channel]
+fname: CFadeWnd::SendCloseMessage
+op: MESSENGER
+direction: serverbound
+operations:
+  - { key: ANSWER_INVITE,  modes: { gms_v95: 0 } }
+  - { key: CLOSE,          modes: { gms_v95: 2 } }
+  - { key: INVITE,         modes: { gms_v95: 3 } }
+  - { key: DECLINE_INVITE, modes: { gms_v95: 5 } }
+  - { key: CHAT,           modes: { gms_v95: 6 } }

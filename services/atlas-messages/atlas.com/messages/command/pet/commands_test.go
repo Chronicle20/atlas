@@ -11,17 +11,21 @@ import (
 )
 
 // createTestCharacter creates a character model for testing.
-func createTestCharacter(id uint32, name string, isGm bool) character.Model {
+func createTestCharacter(t *testing.T, id uint32, name string, isGm bool) character.Model {
 	gm := 0
 	if isGm {
 		gm = 1
 	}
-	return character.NewBuilder().
+	m, err := character.NewBuilder().
 		SetId(id).
 		SetName(name).
 		SetGm(gm).
 		SetAccountId(100).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build test character: %v", err)
+	}
+	return m
 }
 
 // TestAwardTamenessCommand_MatchesAndGmGated verifies that a GM issuing
@@ -66,7 +70,7 @@ func TestAwardTamenessCommand_MatchesAndGmGated(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm)
+			char := createTestCharacter(t, 12345, "TestPlayer", tc.isGm)
 
 			producer := AwardTamenessCommandProducer(logger)
 			executor, found := producer(ctx)(f, char, tc.message)

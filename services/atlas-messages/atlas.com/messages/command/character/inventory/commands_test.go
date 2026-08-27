@@ -12,17 +12,21 @@ import (
 )
 
 // createTestCharacter creates a character model for testing
-func createTestCharacter(id uint32, name string, isGm bool) character.Model {
+func createTestCharacter(t *testing.T, id uint32, name string, isGm bool) character.Model {
 	gm := 0
 	if isGm {
 		gm = 1
 	}
-	return character.NewBuilder().
+	m, err := character.NewBuilder().
 		SetId(id).
 		SetName(name).
 		SetGm(gm).
 		SetAccountId(100).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build test character: %v", err)
+	}
+	return m
 }
 
 // TestAwardItemCommandProducer_RegexPatterns tests the item command regex patterns
@@ -161,7 +165,7 @@ func TestAwardItemCommandProducer_GmCheck(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			char := createTestCharacter(12345, "TestPlayer", tc.isGm)
+			char := createTestCharacter(t, 12345, "TestPlayer", tc.isGm)
 			f := field.NewBuilder(1, 1, 100000000).Build()
 
 			producer := AwardItemCommandProducer(logger)
@@ -184,7 +188,7 @@ func TestAwardItemCommandProducer_GmCheck(t *testing.T) {
 func TestAwardItemCommandProducer_NoMatchReturnsNil(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx := context.Background()
-	gmChar := createTestCharacter(12345, "TestGM", true)
+	gmChar := createTestCharacter(t, 12345, "TestGM", true)
 	f := field.NewBuilder(1, 1, 100000000).Build()
 
 	testCases := []struct {

@@ -235,5 +235,9 @@ func (m Model) Skills() []skill.Model {
 }
 
 func (m Model) SetSkills(ms []skill.Model) Model {
-	return Clone(m).SetSkills(ms).Build()
+	nm, err := Clone(m).SetSkills(ms).Build()
+	if err != nil {
+		return m
+	}
+	return nm
 }

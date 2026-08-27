@@ -74,6 +74,7 @@ func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 	}
 	nm, err := m.SetInventory(i)
 	if err != nil {
+		p.l.WithError(err).Errorf("Unable to set inventory for character [%d].", m.Id())
 		return m
 	}
 	return nm

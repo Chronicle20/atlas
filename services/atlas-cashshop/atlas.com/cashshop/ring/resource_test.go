@@ -9,6 +9,7 @@
 package ring_test
 
 import (
+	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/ring"
 	"bytes"
 	"encoding/json"
@@ -16,6 +17,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -41,7 +43,7 @@ var _ jsonapi.ServerInformation = &testServerInformation{}
 // router, mirroring coupon_test.newEnv.
 func newEnv(t *testing.T) (*httptest.Server, *gorm.DB, tenant.Model) {
 	t.Helper()
-	db := databasetest.NewInMemoryTenantDB(t, ring.Migration)
+	db := databasetest.NewInMemoryTenantDB(t, ring.Migration, asset.Migration)
 
 	l, _ := test.NewNullLogger()
 	l.SetLevel(logrus.ErrorLevel)
@@ -81,6 +83,57 @@ func decodeDoc(t *testing.T, body []byte) jsonapi.Document {
 	var doc jsonapi.Document
 	require.NoError(t, json.Unmarshal(body, &doc))
 	return doc
+}
+
+// attr reads one named attribute out of a jsonapi.Data's raw Attributes,
+// mirroring coupon/resource_test.go's attr helper.
+func attr(t *testing.T, obj jsonapi.Data, name string) interface{} {
+	t.Helper()
+	var m map[string]interface{}
+	require.NoError(t, json.Unmarshal(obj.Attributes, &m))
+	return m[name]
+}
+
+// seedAsset inserts a cashshop locker asset row directly, mirroring
+// processor_test.go's seedAsset -- this is what GetById/GetByCharacterId's
+// CashId/PartnerCashId enrichment resolves against.
+func seedAsset(t *testing.T, db *gorm.DB, tenantId uuid.UUID, id uint32, cashId int64) {
+	t.Helper()
+	e := asset.Entity{
+		Id:            id,
+		TenantId:      tenantId,
+		CompartmentId: uuid.New(),
+		CashId:        cashId,
+		TemplateId:    1112800,
+		Quantity:      1,
+		PurchasedBy:   1,
+		Expiration:    time.Now(),
+		CreatedAt:     time.Now(),
+	}
+	require.NoError(t, db.Create(&e).Error)
+}
+
+// startCharacterServer serves GET /api/characters/{id} for the given name
+// fixtures, mirroring processor_test.go's startCharacterServer -- this is
+// what PartnerName's enrichment resolves against.
+func startCharacterServer(t *testing.T, names map[uint32]string) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var id uint32
+		if _, err := fmt.Sscanf(r.URL.Path, "/api/characters/%d", &id); err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		name, ok := names[id]
+		if !ok {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = fmt.Fprintf(w, `{"data":{"type":"characters","id":"%d","attributes":{"accountId":1,"jobId":0,"name":"%s"}}}`, id, name)
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/api/")
 }
 
 // seedPair inserts one pair directly via ring.CreatePair, bypassing the
@@ -140,5 +193,59 @@ func TestAnotherTenantCannotReadTheseRings(t *testing.T) {
 	t.Run("the owner's ring is untouched", func(t *testing.T) {
 		resp, out := do(t, srv, owner, http.MethodGet, "/rings/"+ringId.String())
 		require.Equal(t, http.StatusOK, resp.StatusCode, string(out))
+	})
+}
+
+// TestGetRingsAndGetRingCarryEnrichedFields is Ruling 22's fix: both
+// GET /rings?filter[characterId]= and GET /rings/{ringId} must route
+// through the enriched ring.ProcessorImpl (cashId/partnerCashId/
+// partnerName), not the raw byCharacterIdPagedProvider/GetById this
+// resource used to call directly, which returned zero values for all
+// three. This asserts the fields all the way through the real router and
+// the JSON:API payload -- a unit test on the processor alone does not
+// close the finding, since the defect was precisely that the handler
+// bypassed the processor.
+func TestGetRingsAndGetRingCarryEnrichedFields(t *testing.T) {
+	srv, db, owner := newEnv(t)
+	startCharacterServer(t, map[uint32]string{42: "Buyer", 77: "Partner"})
+
+	const buyerCharacterId, partnerCharacterId = uint32(42), uint32(77)
+	_, err := ring.CreatePair(db, owner.Id(), ring.TypeFriendship,
+		ring.Half{CharacterId: buyerCharacterId, AssetId: 2001, ItemTemplateId: 1112800},
+		ring.Half{CharacterId: partnerCharacterId, AssetId: 2002, ItemTemplateId: 1112800},
+	)
+	require.NoError(t, err)
+	seedAsset(t, db, owner.Id(), 2001, 9001)
+	seedAsset(t, db, owner.Id(), 2002, 9002)
+
+	rows, err := ring.GetByCharacterId(db, owner.Id(), buyerCharacterId)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	ringId := rows[0].Id()
+
+	t.Run("GET /rings?filter[characterId]= carries cashId/partnerCashId/partnerName", func(t *testing.T) {
+		resp, out := do(t, srv, owner, http.MethodGet, fmt.Sprintf("/rings?filter[characterId]=%d", buyerCharacterId))
+		require.Equal(t, http.StatusOK, resp.StatusCode, string(out))
+		doc := decodeDoc(t, out)
+		require.NotNil(t, doc.Data)
+		require.Len(t, doc.Data.DataArray, 1)
+
+		obj := doc.Data.DataArray[0]
+		assert.EqualValues(t, 9001, attr(t, obj, "cashId"))
+		assert.EqualValues(t, 9002, attr(t, obj, "partnerCashId"))
+		assert.Equal(t, "Partner", attr(t, obj, "partnerName"))
+	})
+
+	t.Run("GET /rings/{ringId} carries cashId/partnerCashId/partnerName", func(t *testing.T) {
+		resp, out := do(t, srv, owner, http.MethodGet, "/rings/"+ringId.String())
+		require.Equal(t, http.StatusOK, resp.StatusCode, string(out))
+		doc := decodeDoc(t, out)
+		require.NotNil(t, doc.Data)
+		require.NotNil(t, doc.Data.DataObject)
+
+		obj := *doc.Data.DataObject
+		assert.EqualValues(t, 9001, attr(t, obj, "cashId"))
+		assert.EqualValues(t, 9002, attr(t, obj, "partnerCashId"))
+		assert.Equal(t, "Partner", attr(t, obj, "partnerName"))
 	})
 }

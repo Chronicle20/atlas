@@ -58,3 +58,37 @@ func TestResolvePurchaseCurrency(t *testing.T) {
 		})
 	}
 }
+
+// TestResolveOptionCurrency verifies the option->currency mapping shared by
+// every BUY arm whose wire body carries option -- the ring arms
+// (BUY_COUPLE/BUY_FRIENDSHIP) and the package arm (BUY_PACKAGE). On GMS >=
+// 83, isPoints/currency never arrive on the wire for these arms -- the
+// user's confirmation-dialog payment-method choice lives entirely in option
+// (docs/tasks/task-240-cash-shop-stub-operations/derivation.md §6, D4a):
+// 1 = NX Credit, 2 = Maple Point, 4 = NX Prepaid, mapping onto wallet.Model's
+// currency codes 1/2/3. option == 0 falls back to resolvePurchaseCurrency.
+func TestResolveOptionCurrency(t *testing.T) {
+	tests := []struct {
+		name         string
+		option       uint32
+		isPoints     bool
+		currency     uint32
+		wantCurrency uint32
+	}{
+		{name: "option 1 -> NX Credit (wallet 1)", option: 1, isPoints: false, currency: 0, wantCurrency: 1},
+		{name: "option 2 -> Maple Point (wallet 2)", option: 2, isPoints: false, currency: 0, wantCurrency: 2},
+		{name: "option 4 -> NX Prepaid (wallet 3)", option: 4, isPoints: false, currency: 0, wantCurrency: 3},
+		{name: "option 0, isPoints true -> falls back to MaplePoints (2)", option: 0, isPoints: true, currency: 0, wantCurrency: 2},
+		{name: "option 0, legacy non-zero currency -> passthrough", option: 0, isPoints: false, currency: 5, wantCurrency: 5},
+		{name: "unexpected option value -> falls back to resolvePurchaseCurrency", option: 3, isPoints: false, currency: 0, wantCurrency: 0},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			resolved := resolveOptionCurrency(tc.option, tc.isPoints, tc.currency)
+			if resolved != tc.wantCurrency {
+				t.Fatalf("resolveOptionCurrency(%d, %v, %d) = %d, want %d", tc.option, tc.isPoints, tc.currency, resolved, tc.wantCurrency)
+			}
+		})
+	}
+}

@@ -118,6 +118,7 @@ type CharacterData struct {
 	// decoding strips the padding.
 	TeleportMaps    []_map.Id
 	VipTeleportMaps []_map.Id
+	Rings           model.RingRecords
 }
 
 func (m CharacterData) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
@@ -762,20 +763,16 @@ func (m *CharacterData) decodeMiniGame(r *request.Reader) {
 	_ = r.ReadUint16()
 }
 
+// encodeRings/decodeRings delegate to model.RingRecords, which owns the
+// version gate ((GMS>28) || JMS) verbatim from the pre-task stub. A zero-
+// valued Rings field produces byte-identical output to the pre-task
+// WriteShort(0)x3 / WriteShort(0)x1 stub (PRD FR-9).
 func (m *CharacterData) encodeRings(w *response.Writer, t tenant.Model) {
-	w.WriteShort(0) // crush rings
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
-		w.WriteShort(0) // friendship rings
-		w.WriteShort(0) // partner
-	}
+	m.Rings.EncodeRecords(w, t)
 }
 
 func (m *CharacterData) decodeRings(r *request.Reader, t tenant.Model) {
-	_ = r.ReadUint16() // crush rings
-	if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
-		_ = r.ReadUint16() // friendship rings
-		_ = r.ReadUint16() // partner
-	}
+	m.Rings.DecodeRecords(r, t)
 }
 
 func (m *CharacterData) encodeTeleports(w *response.Writer, t tenant.Model) {

@@ -43,16 +43,19 @@ type CharacterSpawn struct {
 	y             int16
 	stance        byte
 	fh            int16
+	rings         model.RingSet
 }
 
 func NewCharacterSpawn(characterId uint32, level byte, name string, guild GuildEmblem,
 	cts *model.CharacterTemporaryStat, jobId uint16, avatar model.Avatar,
 	pets []SpawnPet, enteringField bool, x int16, y int16, stance byte, fh int16,
+	rings model.RingSet,
 ) CharacterSpawn {
 	return CharacterSpawn{
 		characterId: characterId, level: level, name: name, guild: guild,
 		cts: cts, jobId: jobId, avatar: avatar, pets: pets,
 		enteringField: enteringField, x: x, y: y, stance: stance, fh: fh,
+		rings: rings,
 	}
 }
 
@@ -171,9 +174,7 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 		w.WriteInt(0)  // mount tiredness
 		w.WriteByte(0) // mini room
 		w.WriteByte(0) // ad board
-		w.WriteByte(0) // couple ring
-		w.WriteByte(0) // friendship ring
-		w.WriteByte(0) // marriage ring
+		m.rings.EncodeField(w, t)
 
 		if t.Region() == "GMS" && t.MajorVersion() >= 61 && t.MajorVersion() < 95 {
 			// v48 (sub_6BBC17) has no new-year-card flag between marriage and the
@@ -217,6 +218,7 @@ func (m CharacterSpawn) X() int16                           { return m.x }
 func (m CharacterSpawn) Y() int16                           { return m.y }
 func (m CharacterSpawn) Stance() byte                       { return m.stance }
 func (m CharacterSpawn) Fh() int16                          { return m.fh }
+func (m CharacterSpawn) Rings() model.RingSet               { return m.rings }
 
 func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
@@ -289,9 +291,7 @@ func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(
 		_ = r.ReadUint32() // mount tiredness
 		_ = r.ReadByte()   // mini room
 		_ = r.ReadByte()   // ad board
-		_ = r.ReadByte()   // couple ring
-		_ = r.ReadByte()   // friendship ring
-		_ = r.ReadByte()   // marriage ring
+		m.rings.DecodeField(r, t)
 
 		if t.Region() == "GMS" && t.MajorVersion() >= 61 && t.MajorVersion() < 95 {
 			_ = r.ReadByte() // new year card (absent pre-v61)

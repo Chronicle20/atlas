@@ -91,16 +91,18 @@ func announceRingFailure(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 // deliberately UNIMPLEMENTED here -- no data source on this wire or in the
 // resolved partner/sender records lets this handler detect that condition.
 //
-// option (ShopOperationBuyCouple.Option/ShopOperationBuyFriendship.Option)
-// is deliberately NOT read here, mirroring handleBuyPackage's D4a treatment
-// (derivation.md §6, cash_shop_package.go): it carries the user's actual
-// payment-method choice (1 = NX Credit, 2 = Maple Point, 4 = NX Prepaid) but
-// isPoints/currency already resolve the outgoing currency through
-// resolvePurchaseCurrency the same way every other BUY arm does, and mapping
-// option's bitmask onto that resolution is unvalidated and out of scope for
-// this task -- it is not unused/spare, only not yet wired.
-func handleRingPurchase(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, ringType string, isPoints bool, currency uint32, spw string, birthday uint32, serialNumber uint32, name string, message string) {
-	return func(s session.Model, ringType string, isPoints bool, currency uint32, spw string, birthday uint32, serialNumber uint32, name string, message string) {
+// option (ShopOperationBuyCouple.Option/ShopOperationBuyFriendship.Option) IS
+// read here, the same D4a treatment handleBuyPackage now applies
+// (derivation.md §6, cash_shop_package.go): on GMS >= 83 these two arms
+// carry the user's confirmation-dialog payment-method choice (1 = NX
+// Credit, 2 = Maple Point, 4 = NX Prepaid) only in option -- isPoints/
+// currency stay false/0 on that wire shape, so without option every ring
+// purchase silently debited the prepaid bucket regardless of what the
+// player selected (bug-ring-purchase-wrong-currency.md). option is threaded
+// straight through to cashshop.Processor.RequestRingPurchase, which
+// resolves the final wallet currency via resolveOptionCurrency.
+func handleRingPurchase(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, ringType string, isPoints bool, currency uint32, option uint32, spw string, birthday uint32, serialNumber uint32, name string, message string) {
+	return func(s session.Model, ringType string, isPoints bool, currency uint32, option uint32, spw string, birthday uint32, serialNumber uint32, name string, message string) {
 		if cErr := verifySecondaryCredential(l, ctx)(s, spw, birthday); cErr != nil {
 			if errors.Is(cErr, ErrCredentialMismatch) {
 				announceRingFailure(l, ctx, wp)(s, ringType, giftRejectionReason(cErr))
@@ -139,7 +141,7 @@ func handleRingPurchase(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 		}
 
 		transactionId := uuid.New()
-		if err := cashshop.NewProcessor(l, ctx).RequestRingPurchase(s.CharacterId(), transactionId, isPoints, currency, serialNumber, partner.Id(), sender.Name(), message, ringType); err != nil {
+		if err := cashshop.NewProcessor(l, ctx).RequestRingPurchase(s.CharacterId(), transactionId, isPoints, currency, option, serialNumber, partner.Id(), sender.Name(), message, ringType); err != nil {
 			l.WithError(err).Errorf("Unable to request ring purchase for character [%d] partner [%d].", s.CharacterId(), partner.Id())
 		}
 	}
@@ -149,7 +151,7 @@ func handleRingPurchase(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 // handleRingPurchase with ringType "COUPLE".
 func handleBuyCouple(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, sp *cashsb.ShopOperationBuyCouple) {
 	return func(s session.Model, sp *cashsb.ShopOperationBuyCouple) {
-		handleRingPurchase(l, ctx, wp)(s, ringTypeForOperation(CashShopOperationBuyCouple), sp.IsPoints(), sp.Currency(), sp.SPW(), sp.Birthday(), sp.SerialNumber(), sp.Name(), sp.Message())
+		handleRingPurchase(l, ctx, wp)(s, ringTypeForOperation(CashShopOperationBuyCouple), sp.IsPoints(), sp.Currency(), sp.Option(), sp.SPW(), sp.Birthday(), sp.SerialNumber(), sp.Name(), sp.Message())
 	}
 }
 
@@ -160,6 +162,6 @@ func handleBuyCouple(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 // decoded but never read by this handler, exactly like option above.
 func handleBuyFriendship(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, sp *cashsb.ShopOperationBuyFriendship) {
 	return func(s session.Model, sp *cashsb.ShopOperationBuyFriendship) {
-		handleRingPurchase(l, ctx, wp)(s, ringTypeForOperation(CashShopOperationBuyFriendship), sp.IsPoints(), sp.Currency(), sp.SPW(), sp.Birthday(), sp.SerialNumber(), sp.Name(), sp.Message())
+		handleRingPurchase(l, ctx, wp)(s, ringTypeForOperation(CashShopOperationBuyFriendship), sp.IsPoints(), sp.Currency(), sp.Option(), sp.SPW(), sp.Birthday(), sp.SerialNumber(), sp.Name(), sp.Message())
 	}
 }

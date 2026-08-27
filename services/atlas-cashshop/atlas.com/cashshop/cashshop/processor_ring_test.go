@@ -165,6 +165,14 @@ func TestPurchaseRing(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, partnerRings, 1)
 		require.Equal(t, buyerRings[0].PairId(), partnerRings[0].PairId(), "both halves must share one pair id")
+		// docs/tasks/task-269-ring-pair-behavior/bug-ring-cash-id-resolves-to-zero.md:
+		// each half must persist its own asset's CashId at purchase time, not
+		// leave it to be resolved later off AssetId (which stops resolving
+		// once the ring leaves the locker).
+		require.NotZero(t, buyerRings[0].CashId(), "buyer half must persist a non-zero CashId at purchase")
+		require.NotZero(t, partnerRings[0].CashId(), "partner half must persist a non-zero CashId at purchase")
+		require.Equal(t, buyerCcm.Assets()[0].CashId(), buyerRings[0].CashId(), "persisted CashId must match the buyer's own asset")
+		require.Equal(t, partnerCcm.Assets()[0].CashId(), partnerRings[0].CashId(), "persisted CashId must match the partner's own asset")
 
 		w, err := wallet.NewProcessor(l, ctx, db).GetByAccountId(buyerAccountId)
 		require.NoError(t, err)

@@ -13,6 +13,7 @@ import (
 	"atlas-channel/macro"
 	"atlas-channel/maps/location"
 	"atlas-channel/note"
+	"atlas-channel/ring"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	model2 "atlas-channel/socket/model"
@@ -206,6 +207,18 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						l.WithError(err).Errorf("Unable to locate buddylist [%d] attempting to login.", params.CharacterId)
 						return sp.Destroy(s)
 					}
+
+					// Populate the couple/friendship ring cache once, here,
+					// at the character-load path (task-269 task 12): this is
+					// the single point every login AND channel-enter session
+					// bootstrap runs through, so BuildCharacterData's and
+					// CharacterSpawnBody's cache-only ring getters (PRD §8)
+					// have data before their first encode without
+					// re-fetching on every later map change, cash-shop open,
+					// or ITC entry -- none of which call Populate again.
+					// Fail-soft: Populate itself never returns an error (a
+					// cashshop outage just leaves the cache empty).
+					_ = ring.NewProcessor(l, ctx).Populate(c.Id())
 
 					s = sp.SetAccountId(s.SessionId(), c.AccountId())
 					s = sp.SetCharacterId(s.SessionId(), c.Id())

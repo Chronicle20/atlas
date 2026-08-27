@@ -73,6 +73,7 @@ import (
 	monsterDomain "atlas-channel/monster"
 	monsterinfo "atlas-channel/monster/information"
 	controllernpc "atlas-channel/npc/controller"
+	"atlas-channel/ring"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	_ "atlas-channel/skill/handler/registrations"
@@ -307,6 +308,7 @@ func main() {
 		monsterDomain.GetLiveMirror().EvictTenant(tid)
 		monsterDomain.GetAutoAggroGate().EvictTenant(tid)
 		monsterinfo.EvictTenant(tid)
+		ring.EvictTenant(tid)
 		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
 			inbox.EvictTenant(tid)
 		}

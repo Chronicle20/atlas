@@ -6,6 +6,7 @@ import (
 	"atlas-channel/character/equipslot"
 	"atlas-channel/character/teleportrock"
 	"atlas-channel/quest"
+	"atlas-channel/ring"
 	model2 "atlas-channel/socket/model"
 	"context"
 	"time"
@@ -53,6 +54,10 @@ func BuildCharacterData(l logrus.FieldLogger, ctx context.Context, c character.M
 	// Saved teleport-rock lists (FR-15/16). Codec pads to 5/10 with EmptyMapId.
 	cd.TeleportMaps = trm.Regular()
 	cd.VipTeleportMaps = trm.Vip()
+
+	// Couple/friendship ring record block (site A). Cache-only: population
+	// happens once at character load (PRD §8), not here.
+	cd.Rings = ring.NewProcessor(l, ctx).GetRingRecords(c.Id())
 
 	// Pet IDs
 	for i, p := range c.Pets() {

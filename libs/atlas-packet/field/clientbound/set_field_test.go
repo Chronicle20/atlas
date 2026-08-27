@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
@@ -297,6 +298,78 @@ func TestSetFieldRoundTrip(t *testing.T) {
 			}
 			if output.CharacterData().Meso != cd.Meso {
 				t.Errorf("meso: got %v, want %v", output.CharacterData().Meso, cd.Meso)
+			}
+		})
+	}
+}
+
+// TestSetFieldRoundTripPopulatedRings exercises CharacterData's ring
+// records (model.RingRecords) in the populated state, beside
+// TestSetFieldRoundTrip's empty-Rings default. Per the §5 opaque caveat,
+// CharacterData carries no per-field decompile citation of its own — the
+// ring records live inside that opaque span, verified here via the shared
+// production codec (model.RingRecords.EncodeRecords/DecodeRecords) rather
+// than a per-field decompile line. It round-trips through every tenant
+// variant to confirm the couple/friend/marriage record arms decode back
+// byte-for-byte on both the legacy (GMS<=28: couple arm only) and modern
+// (GMS>28 or JMS: all three arms) gates in data.go's encodeRings/decodeRings.
+func TestSetFieldRoundTripPopulatedRings(t *testing.T) {
+	fixturePartnerSNU := uint64(0x99AABBCCDDEEFF00)
+	fixturePartnerSN := int64(fixturePartnerSNU)
+
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			cd := charpkt.CharacterData{
+				Stats: charpkt.CharacterStats{
+					Id: 1000, Name: "TestChar", Gender: 0, SkinColor: 1,
+					Face: 20000, Hair: 30000,
+					Level: 50, JobId: 312, Str: 100, Dex: 50, Int: 30, Luk: 20,
+					Hp: 5000, MaxHp: 5000, Mp: 3000, MaxMp: 3000,
+					Ap: 5, Sp: 3, Exp: 50000, Fame: 10,
+					MapId: 100000000, SpawnPoint: 0,
+				},
+				BuddyCapacity: 20,
+				Meso:          100000,
+				Inventory: charpkt.InventoryData{
+					EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
+					EtcCapacity: 24, CashCapacity: 24,
+					EquipSlotExtExpire: 94354848000000000,
+				},
+				Rings: model.RingRecords{
+					Couple: []model.CoupleRecord{
+						{PairCharacterId: 2000, PairCharacterName: "Partner", OwnSN: 0x1122334455667788, PairSN: fixturePartnerSN},
+					},
+					Friend: []model.FriendRecord{
+						{CoupleRecord: model.CoupleRecord{PairCharacterId: 3000, PairCharacterName: "Buddy", OwnSN: 0x0102030405060708, PairSN: 0x1112131415161718}, FriendItemId: 0x00004321},
+					},
+					Marriage: []model.MarriageRecord{
+						{MarriageNo: 1, GroomId: 4000, BrideId: 4001, Status: 2, GroomItemId: 0x00001111, BrideItemId: 0x00002222, GroomName: "Groom", BrideName: "Bride"},
+					},
+				},
+			}
+			input := NewSetField(channel.Id(1), cd)
+			output := SetField{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+
+			gotRings := output.CharacterData().Rings
+			if len(gotRings.Couple) != 1 || gotRings.Couple[0] != cd.Rings.Couple[0] {
+				t.Errorf("couple record: got %+v want %+v", gotRings.Couple, cd.Rings.Couple)
+			}
+
+			legacyGMS := v.Region == "GMS" && v.MajorVersion <= 28
+			if legacyGMS {
+				if len(gotRings.Friend) != 0 || len(gotRings.Marriage) != 0 {
+					t.Errorf("legacy GMS<=28 must omit friend/marriage arms, got friend=%+v marriage=%+v", gotRings.Friend, gotRings.Marriage)
+				}
+				return
+			}
+
+			if len(gotRings.Friend) != 1 || gotRings.Friend[0] != cd.Rings.Friend[0] {
+				t.Errorf("friend record: got %+v want %+v", gotRings.Friend, cd.Rings.Friend)
+			}
+			if len(gotRings.Marriage) != 1 || gotRings.Marriage[0] != cd.Rings.Marriage[0] {
+				t.Errorf("marriage record: got %+v want %+v", gotRings.Marriage, cd.Rings.Marriage)
 			}
 		})
 	}

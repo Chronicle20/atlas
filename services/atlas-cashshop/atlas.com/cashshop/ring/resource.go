@@ -1,6 +1,7 @@
 package ring
 
 import (
+	"atlas-cashshop/character"
 	"atlas-cashshop/rest"
 	"errors"
 	"net/http"
@@ -15,7 +16,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	restserver "github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // InitResource registers the two READ-ONLY routes PRD §5.4 leaves open:
@@ -56,15 +56,15 @@ func handleGetRings(db *gorm.DB) rest.GetHandler {
 				return
 			}
 
-			t := tenant.MustFromContext(d.Context())
-			ep := byCharacterIdPagedProvider(t, uint32(parsed), page)(db.WithContext(d.Context()))
-			paged, err := model.MapPaged(Make)(ep)(model.ParallelMap())()
+			chaP := character.NewProcessor(d.Logger(), d.Context())
+			p := NewProcessor(d.Logger(), d.Context(), db, chaP)
+			paged, err := p.GetByCharacterIdPaged(uint32(parsed), page)
 			if err != nil {
 				restserver.WriteErrorResponse(d.Logger())(w)(err)
 				return
 			}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+			res, err := TransformSlice(paged.Items)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				restserver.WriteErrorResponse(d.Logger())(w)(err)
@@ -82,8 +82,9 @@ func handleGetRing(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return restserver.ParseUUIDId(d.Logger(), "ringId", func(ringId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				t := tenant.MustFromContext(d.Context())
-				m, err := GetById(db.WithContext(d.Context()), t.Id(), ringId)
+				chaP := character.NewProcessor(d.Logger(), d.Context())
+				p := NewProcessor(d.Logger(), d.Context(), db, chaP)
+				m, err := p.GetById(ringId)
 				// A ring belonging to another tenant resolves to
 				// gorm.ErrRecordNotFound (GetById scopes on tenant_id), the
 				// same as a genuinely unknown id -- mirrors

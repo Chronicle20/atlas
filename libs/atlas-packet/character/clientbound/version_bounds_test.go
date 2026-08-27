@@ -24,7 +24,7 @@ func TestCharacterSpawnVersionBoundary(t *testing.T) {
 	avatar := testSpawnAvatar()
 	cts := model.NewCharacterTemporaryStat()
 	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
-	m := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 312, avatar, nil, false, 100, 200, 3, 0)
+	m := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 312, avatar, nil, false, 100, 200, 3, 0, model.RingSet{})
 	encode := func(major uint16) []byte {
 		ctx := pt.CreateContext("GMS", major, 1)
 		return pt.Encode(t, ctx, m.Encode, nil)
@@ -51,7 +51,7 @@ func TestCharacterInfoVersionBoundary(t *testing.T) {
 	pets := []InfoPet{
 		{Slot: 0, TemplateId: 5000001, Name: "Kitty", Level: 10, Closeness: 100, Fullness: 50},
 	}
-	m := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{50200004}, 1142007, MonsterBookInfo{}, MountInfo{})
+	m := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{50200004}, 1142007, MonsterBookInfo{}, MountInfo{}, false)
 	encode := func(major uint16) []byte {
 		ctx := pt.CreateContext("GMS", major, 1)
 		return pt.Encode(t, ctx, m.Encode, nil)

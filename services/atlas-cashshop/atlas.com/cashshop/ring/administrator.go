@@ -9,8 +9,14 @@ import (
 
 // Half is one side of a pair before it has a pair id.
 type Half struct {
-	CharacterId    uint32
-	AssetId        uint32
+	CharacterId uint32
+	AssetId     uint32
+	// CashId is this half's own asset's cash id at purchase time (the
+	// caller reads it off the asset.Model returned by astP.Create /
+	// CreateGift). Persisted on Entity so enrich (processor.go) does not
+	// need to re-resolve it once the ring leaves the locker -- see
+	// docs/tasks/task-269-ring-pair-behavior/bug-ring-cash-id-resolves-to-zero.md.
+	CashId         int64
 	ItemTemplateId uint32
 }
 
@@ -31,6 +37,7 @@ func CreatePair(db *gorm.DB, tenantId uuid.UUID, ringType Type, a Half, b Half) 
 		SetCharacterId(a.CharacterId).
 		SetPartnerCharacterId(b.CharacterId).
 		SetAssetId(a.AssetId).
+		SetCashId(a.CashId).
 		SetItemTemplateId(a.ItemTemplateId).
 		SetType(ringType).
 		SetState(StateActive).
@@ -45,6 +52,7 @@ func CreatePair(db *gorm.DB, tenantId uuid.UUID, ringType Type, a Half, b Half) 
 		SetCharacterId(b.CharacterId).
 		SetPartnerCharacterId(a.CharacterId).
 		SetAssetId(b.AssetId).
+		SetCashId(b.CashId).
 		SetItemTemplateId(b.ItemTemplateId).
 		SetType(ringType).
 		SetState(StateActive).

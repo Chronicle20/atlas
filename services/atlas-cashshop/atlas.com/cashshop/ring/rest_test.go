@@ -22,6 +22,9 @@ func TestTransform(t *testing.T) {
 		ringType:           TypeFriendship,
 		state:              StateActive,
 		createdAt:          createdAt,
+		cashId:             int64(9007199254740993),
+		partnerCashId:      int64(-1),
+		partnerName:        "PartnerChar",
 	}
 
 	rm, err := Transform(m)
@@ -54,6 +57,41 @@ func TestTransform(t *testing.T) {
 	}
 	if !rm.CreatedAt.Equal(createdAt) {
 		t.Errorf("CreatedAt = %v, want %v", rm.CreatedAt, createdAt)
+	}
+	if rm.CashId != 9007199254740993 {
+		t.Errorf("CashId = %d, want 9007199254740993", rm.CashId)
+	}
+	if rm.PartnerCashId != -1 {
+		t.Errorf("PartnerCashId = %d, want -1", rm.PartnerCashId)
+	}
+	if rm.PartnerName != "PartnerChar" {
+		t.Errorf("PartnerName = %s, want PartnerChar", rm.PartnerName)
+	}
+}
+
+func TestTransformSlice(t *testing.T) {
+	m1 := Model{id: uuid.New(), pairId: uuid.New(), characterId: 1, ringType: TypeCouple, state: StateActive}
+	m2 := Model{id: uuid.New(), pairId: uuid.New(), characterId: 2, ringType: TypeFriendship, state: StateActive}
+
+	rms, err := TransformSlice([]Model{m1, m2})
+	if err != nil {
+		t.Fatalf("TransformSlice: %v", err)
+	}
+	if len(rms) != 2 {
+		t.Fatalf("len(rms) = %d, want 2", len(rms))
+	}
+	if rms[0].CharacterId != 1 || rms[1].CharacterId != 2 {
+		t.Errorf("rms = %+v, want CharacterId 1 then 2", rms)
+	}
+}
+
+func TestTransformSliceEmpty(t *testing.T) {
+	rms, err := TransformSlice(nil)
+	if err != nil {
+		t.Fatalf("TransformSlice: %v", err)
+	}
+	if len(rms) != 0 {
+		t.Errorf("len(rms) = %d, want 0", len(rms))
 	}
 }
 

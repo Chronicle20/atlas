@@ -34,3 +34,26 @@ func TestCharacterInfoBody_CoverIsMobId(t *testing.T) {
 		t.Errorf("Character-Info cover = %d, want 100100 (mob id, NOT card id 2380000)", out.MonsterBookCover())
 	}
 }
+
+// TestCharacterInfoBodySetsMarriageFlag pins Task 11's wiring of the ring
+// processor's Marriage arm into CharacterInfoBody's hasMarriageRing flag
+// (character_info.go, replacing the Task-7 hardcoded false). Marriage-ring
+// acquisition is a PRD non-goal (ring.Processor.GetRingSet's doc comment):
+// the Marriage arm is always nil, so no marriage half cached is the only
+// reachable state, and the flag byte must always encode 0x00.
+func TestCharacterInfoBodySetsMarriageFlag(t *testing.T) {
+	c := character.NewBuilder().
+		SetId(1).
+		SetSp("0").
+		SetMonsterBook(monsterbook.NewModel(monsterbook.Collection{}, nil)).
+		MustBuild()
+
+	enc := CharacterInfoBody(c, guild.Model{}, nil, charcb.MountInfo{})
+	out := charcb.CharacterInfo{}
+	ctx := pt.CreateContext("GMS", 83, 1)
+	pt.RoundTrip(t, ctx, enc, out.Decode, nil)
+
+	if out.HasMarriageRing() {
+		t.Errorf("HasMarriageRing() = true, want false (Marriage arm is always nil)")
+	}
+}

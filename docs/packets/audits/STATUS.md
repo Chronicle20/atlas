@@ -83,7 +83,7 @@ Tool: `b8d1364d56eb63803a6a2a83255442bf34c87a3f7e66050d6521890ff216b0c5`
 | SUE_CHARACTER_RESULT | CWvsContext::OnSueCharacterResult |  | 0x02C | ❌ | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ✅ | 0x037 | ✅ | 0x037 | ✅ | 0x037 | ✅ | 0x038 | ✅ | 0x037 | ✅ |  | ⬜ |
 | IDA_0X02E | sub_71CE62 |  | 0x02E | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | IDA_0X02F | sub_71CE49 |  | 0x02F | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
-| CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x031 | ✅ | 0x03A | ✅ | 0x03A | ✅ | 0x03A | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03E | ❌ | 0x03D | ✅ | 0x035 | ✅ |
+| CHAR_INFO | CWvsContext::OnCharacterInfo | character/clientbound/CharacterInfo (T1) | 0x031 | ✅ | 0x03A | ✅ | 0x03A | ✅ | 0x03A | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03D | ✅ | 0x03E | ✅ | 0x03D | ✅ | 0x035 | ✅ |
 | GATHER_ITEM_RESULT | CWvsContext::OnGatherItemResult | inventory/clientbound/InventoryCompartmentMerge (T1) |  | ⬜ | 0x031 | 🟡ᶠ | 0x031 | 🟡ᶠ | 0x031 | 🟡ᶠ | 0x034 | ✅ | 0x034 | ✅ | 0x034 | ✅ | 0x035 | 🟡ᶠ | 0x034 | ✅ | 0x031 | ✅ |
 | PARTY_OPERATION | CWvsContext::OnPartyResult | party/clientbound/PartyAlreadyJoined1 (T1) | 0x032 | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03B | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03E | ✅ | 0x03F | ❌ | 0x03E | ✅ | 0x036 | ✅ |
 | SORT_ITEM_RESULT | CWvsContext::OnSortItemResult | inventory/clientbound/InventoryCompartmentSort (T1) |  | ⬜ | 0x032 | 🟡ᶠ | 0x032 | 🟡ᶠ | 0x032 | 🟡ᶠ | 0x035 | ✅ | 0x035 | ✅ | 0x035 | ✅ | 0x036 | 🟡ᶠ | 0x035 | ✅ | 0x032 | ✅ |
@@ -194,7 +194,7 @@ Tool: `b8d1364d56eb63803a6a2a83255442bf34c87a3f7e66050d6521890ff216b0c5`
 | NOTIFY_LEVELUP | CWvsContext::OnNotifyLevelUp; sub_90D651 |  |  | ⬜ |  | ⬜ | 0x062 | ❌ | 0x063 | ❌ | 0x069 | ❌ | 0x06C | ❌ | 0x06C | ❌ | 0x06E | ❌ | 0x06D | ❌ | 0x070 | ❌ |
 | STOP_CLOCK | CField::OnDestroyClock; sub_4C6AEF | field/clientbound/FieldStopClock (T1) | 0x062 | ✅ | 0x075 | 🟡ᶠ | 0x08E | 🟡ᶠ | 0x092 | 🟡ᶠ | 0x09A | ✅ | 0x09D | ✅ | 0x0A2 | ✅ | 0x0A9 | 🟡ᶠ | 0x0AA | ✅ | 0x096 | ✅ |
 | NOTIFY_MARRIAGE | CWvsContext::OnNotifyWedding; sub_90D65D |  |  | ⬜ |  | ⬜ | 0x063 | ❌ | 0x064 | ❌ | 0x06A | ❌ | 0x06D | ❌ | 0x06D | ❌ | 0x06F | ❌ | 0x06E | ❌ | 0x071 | ❌ |
-| SPAWN_PLAYER | CUserPool::OnUserEnterField; sub_6B277B | character/clientbound/CharacterSpawn (T1) | 0x064 | ✅ | 0x078 | ✅ | 0x091 | ✅ | 0x095 | ✅ | 0x0A0 | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x0B1 | ❌ | 0x0B3 | ✅ | 0x09E | ✅ |
+| SPAWN_PLAYER | CUserPool::OnUserEnterField; sub_6B277B | character/clientbound/CharacterSpawn (T1) | 0x064 | ✅ | 0x078 | ✅ | 0x091 | ✅ | 0x095 | ✅ | 0x0A0 | ✅ | 0x0A3 | ✅ | 0x0AB | ✅ | 0x0B1 | ✅ | 0x0B3 | ✅ | 0x09E | ✅ |
 | NOTIFY_JOB_CHANGE | CWvsContext::OnNotifyJobChange |  |  | ⬜ |  | ⬜ |  | ⬜ | 0x065 | ❌ | 0x06B | ❌ | 0x06E | ❌ | 0x06E | ❌ | 0x070 | ❌ | 0x06F | ❌ | 0x072 | ❌ |
 | REMOVE_PLAYER_FROM_MAP | CUserPool::OnUserLeaveField; sub_6B2976 | character/clientbound/CharacterDespawn (T1) | 0x065 | ✅ | 0x079 | 🟡ᶠ | 0x092 | 🟡ᶠ | 0x096 | 🟡ᶠ | 0x0A1 | ✅ | 0x0A4 | ✅ | 0x0AC | ✅ | 0x0B2 | 🟡ᶠ | 0x0B4 | ✅ | 0x09F | ✅ |
 | FIELD_OBSTACLE_ONOFF_LIST | CField::OnFieldObstacleOnOffStatus | field/clientbound/FieldFieldObstacleOnOffList (T1) |  | ⬜ | 0x069 | ❌ | 0x080 | 🟡ᶠ | 0x084 | 🟡ᶠ | 0x08C | ✅ | 0x08F | ✅ | 0x094 | ✅ | 0x09B | 🟡ᶠ | 0x09C | ✅ | 0x089 | ✅ |
@@ -1070,7 +1070,7 @@ Tool: `b8d1364d56eb63803a6a2a83255442bf34c87a3f7e66050d6521890ff216b0c5`
 | v83 | 480 | 0 | 0 | 319 | 228 | 0 | 60.1% |
 | v84 | 451 | 0 | 0 | 326 | 250 | 0 | 58.0% |
 | v87 | 488 | 0 | 0 | 348 | 191 | 0 | 58.4% |
-| v92 | 65 | 0 | 147 | 674 | 141 | 0 | 7.3% |
+| v92 | 67 | 0 | 147 | 672 | 141 | 0 | 7.6% |
 | v95 | 524 | 0 | 0 | 395 | 108 | 0 | 57.0% |
 | JMS185 | 451 | 0 | 0 | 378 | 198 | 0 | 54.4% |
 

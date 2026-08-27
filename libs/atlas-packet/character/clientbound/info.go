@@ -48,25 +48,27 @@ type MountInfo struct {
 }
 
 type CharacterInfo struct {
-	characterId uint32
-	level       byte
-	jobId       uint16
-	fame        int16
-	guildName   string
-	pets        []InfoPet
-	wishList    []uint32
-	medalId     uint32
-	monsterBook MonsterBookInfo
-	mount       MountInfo
+	characterId     uint32
+	level           byte
+	jobId           uint16
+	fame            int16
+	guildName       string
+	pets            []InfoPet
+	wishList        []uint32
+	medalId         uint32
+	monsterBook     MonsterBookInfo
+	mount           MountInfo
+	hasMarriageRing bool
 }
 
 func NewCharacterInfo(characterId uint32, level byte, jobId uint16, fame int16, guildName string,
 	pets []InfoPet, wishList []uint32, medalId uint32, monsterBook MonsterBookInfo, mount MountInfo,
+	hasMarriageRing bool,
 ) CharacterInfo {
 	return CharacterInfo{
 		characterId: characterId, level: level, jobId: jobId, fame: fame,
 		guildName: guildName, pets: pets, wishList: wishList, medalId: medalId,
-		monsterBook: monsterBook, mount: mount,
+		monsterBook: monsterBook, mount: mount, hasMarriageRing: hasMarriageRing,
 	}
 }
 
@@ -128,7 +130,7 @@ func (m CharacterInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 		w.WriteByte(m.level)
 		w.WriteShort(m.jobId)
 		w.WriteInt16(m.fame)
-		w.WriteBool(false) // marriage ring
+		w.WriteBool(m.hasMarriageRing) // marriage ring
 		w.WriteAsciiString(m.guildName)
 		w.WriteAsciiString("") // alliance name
 		w.WriteByte(0)         // medal info
@@ -208,6 +210,7 @@ func (m CharacterInfo) MedalId() uint32              { return m.medalId }
 func (m CharacterInfo) MonsterBook() MonsterBookInfo { return m.monsterBook }
 func (m CharacterInfo) MonsterBookCover() uint32     { return m.monsterBook.Cover }
 func (m CharacterInfo) Mount() MountInfo             { return m.mount }
+func (m CharacterInfo) HasMarriageRing() bool        { return m.hasMarriageRing }
 
 func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
@@ -250,7 +253,7 @@ func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r
 		m.level = r.ReadByte()
 		m.jobId = r.ReadUint16()
 		m.fame = r.ReadInt16()
-		_ = r.ReadBool() // marriage ring
+		m.hasMarriageRing = r.ReadBool() // marriage ring
 		m.guildName = r.ReadAsciiString()
 		_ = r.ReadAsciiString() // alliance name
 		_ = r.ReadByte()        // medal info

@@ -3,6 +3,7 @@ package clientbound
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -11,12 +12,21 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// baseFrameHex is the fixed prefix every CharacterAppearanceUpdate frame
+// shares regardless of version or ring content: characterId(4) + flags(1) +
+// the fixture avatar block (AvatarLook::Decode's own byte layout is pinned
+// independently by avatar_test.go, unchanged by this task). Transcribed once
+// (verified byte-for-byte against a passing Encode() call) so the "empty" and
+// "populated" cases below pin a known-good baseline rather than deriving it
+// from the same production code path they are testing — the precedent set by
+// spawn_test.go's "couple populated" case, which pins its whole-frame `empty`
+// fixture as a hex literal and only derives the ring span under test.
+const baseFrameHex = "7856341201010214000000011e000000ffff00000000000000000000000000000000"
+
 // runAppearanceUpdateCases exercises the empty and populated ring cases for a
-// given tenant context. The avatar block is version-independent (AvatarLook::
-// Decode's own byte layout is pinned by avatar_test.go, unchanged by this
-// task), so it is built from the production avatar.Encode rather than
-// re-transcribed here; only the frame shape this task changes — flags byte,
-// no trailing completed-set int, and the ring block — is asserted directly.
+// given tenant context. Only the frame shape this task changes — the ring
+// block and the version-gated trailing completed-set int — is derived from
+// production codec calls; the rest of the frame is the pinned baseFrameHex.
 //
 // The ring block itself is built via model.RingSet.EncodeField, matching the
 // precedent already established by spawn_test.go's "couple populated" case:
@@ -37,7 +47,19 @@ func runAppearanceUpdateCases(t *testing.T, ctx context.Context) {
 		nil,   // maskedEquipment (-> just 0xFF terminator)
 		nil,   // pets (-> 3x WriteInt(0))
 	)
-	avatarBytes := avatar.Encode(nil, ctx)(nil)
+
+	base, err := hex.DecodeString(baseFrameHex)
+	if err != nil {
+		t.Fatalf("baseFrameHex: %v", err)
+	}
+
+	// hasTrailing mirrors the production gate (hasTrailingCompletedSetItemId
+	// in appearance_update.go): true only for gms_v87/gms_v95, where the
+	// client reads nCompletedSetItemID unconditionally after the marriage
+	// arm (gms_v87.json @0xa090f4, trailing Decode4 @0xa092d5; gms_v95.json
+	// @0x954110, trailing Decode4 @0x9542ec). False for gms_v83, gms_v84,
+	// gms_v79, and jms_v185, none of which read a trailing int there.
+	hasTrailing := hasTrailingCompletedSetItemId(tn)
 
 	t.Run("empty", func(t *testing.T) {
 		rings := model.RingSet{}
@@ -45,26 +67,32 @@ func runAppearanceUpdateCases(t *testing.T, ctx context.Context) {
 		got := input.Encode(nil, ctx)(nil)
 
 		w := response.NewWriter(nil)
-		w.WriteInt(0x12345678)
-		w.WriteByte(1) // flags = 1 (avatarLook only)
-		w.WriteByteArray(avatarBytes)
+		w.WriteByteArray(base)
 		rings.EncodeField(w, tn)
+		if hasTrailing {
+			w.WriteInt(0) // nCompletedSetItemID (gms_v87/v95 only)
+		}
 		want := w.Bytes()
 
 		if !bytes.Equal(got, want) {
 			t.Errorf("empty-ring bytes:\n got %x\nwant %x", got, want)
 		}
 
-		// The frame correction: the pre-task encoder additionally wrote a
-		// trailing WriteInt(0) "completed set item id" that no export shows
-		// the client reading on any version (design.md §3.2's "one int long"
-		// defect). Assert the delta explicitly — computed independently of
-		// `got` — rather than leaving it implied by the byte-equality check
-		// above: characterId(4) + flags(1) + avatar + 3 empty ring flags +
-		// the removed trailing int(4).
-		preTaskLen := 4 + 1 + len(avatarBytes) + 3 + 4
-		if len(got) != preTaskLen-4 {
-			t.Fatalf("empty-ring length: got %d want %d (pre-task %d minus 4)", len(got), preTaskLen-4, preTaskLen)
+		// The frame correction: the pre-task encoder wrote an unconditional
+		// trailing WriteInt(0) "completed set item id" on every version. That
+		// is correct only for gms_v87/gms_v95 (see hasTrailing above); every
+		// other version now omits it (design.md §3.2's "one int long" defect,
+		// scoped to the versions the client actually doesn't read it on).
+		// Assert the delta explicitly — computed independently of `got` —
+		// rather than leaving it implied by the byte-equality check above:
+		// base frame + 3 empty ring flags + the trailing int(4), included
+		// only when hasTrailing.
+		wantLen := len(base) + 3
+		if hasTrailing {
+			wantLen += 4
+		}
+		if len(got) != wantLen {
+			t.Fatalf("empty-ring length: got %d want %d", len(got), wantLen)
 		}
 	})
 
@@ -80,10 +108,11 @@ func runAppearanceUpdateCases(t *testing.T, ctx context.Context) {
 		got := input.Encode(nil, ctx)(nil)
 
 		w := response.NewWriter(nil)
-		w.WriteInt(0x12345678)
-		w.WriteByte(1) // flags = 1 (avatarLook only)
-		w.WriteByteArray(avatarBytes)
+		w.WriteByteArray(base)
 		rings.EncodeField(w, tn)
+		if hasTrailing {
+			w.WriteInt(0) // nCompletedSetItemID (gms_v87/v95 only)
+		}
 		want := w.Bytes()
 
 		if !bytes.Equal(got, want) {
@@ -102,9 +131,12 @@ func runAppearanceUpdateCases(t *testing.T, ctx context.Context) {
 //	friendMarker   = Decode1         // 0 => no buffer; else DecodeBuffer(16)+Decode4 /*0x983778*/
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0x9837c5*/
 //
-// Atlas always writes flags=1 (look-only), so only the &1 branch fires. There
-// is no trailing Decode4 read by the client on this or any exported version
-// (design.md §3.2's "one int long" defect); the encoder no longer writes one.
+// Atlas always writes flags=1 (look-only), so only the &1 branch fires. The
+// marriage if/else has no trailing unconditional Decode4 at v83 (the else
+// branch zeroes the slots and reads nothing) — the pre-task encoder's
+// trailing WriteInt(0) "completed set item id" was benign, unread slack here
+// (design.md §3.2's "one int long" defect); the encoder no longer writes one
+// at v83.
 //
 // AvatarLook::Decode (v83 @0x4e749a):
 //
@@ -133,8 +165,8 @@ func TestCharacterAppearanceUpdateByteOutput(t *testing.T) {
 //	friendMarker   = Decode1         // 0 => no buffer; else 2xDecodeBuffer(8)+Decode4 /*0x9c3b16*/
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0x9c3b63*/
 //
-// Atlas always writes flags=1 (look-only); there is no trailing Decode4 read
-// by the client, at v84 as at v83.
+// Atlas always writes flags=1 (look-only); the marriage if/else has no
+// trailing unconditional Decode4 at v84, as at v83.
 func TestCharacterAppearanceUpdateByteOutputV84(t *testing.T) {
 	v84 := pt.Variants[5] // GMS v84
 	ctx := pt.CreateContext(v84.Region, v84.MajorVersion, v84.MinorVersion)
@@ -152,11 +184,14 @@ func TestCharacterAppearanceUpdateByteOutputV84(t *testing.T) {
 //	crushMarker    = Decode1         // 0 => no buffer; else 2xDecodeBuffer(8)+Decode4 /*0xa091a1*/
 //	friendMarker   = Decode1         // 0 => no buffer; else 2xDecodeBuffer(8)+Decode4 /*0xa091ee*/
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0xa0923b*/
+//	completedSet   = Decode4         // read UNCONDITIONALLY in v87 (this[1456]) /*0xa092d5*/
 //
-// Atlas writes flags=1 (look-only) and the three ring markers per RingSet, so
-// only the &1 branch and the ring block are exercised. There is no trailing
-// Decode4 read after the marriage arm in any exported version (design.md
-// §3.2's "one int long" defect); the encoder no longer writes one.
+// Unlike v83/v84 (trailing int is unread slack when marriage==0), v87 reads
+// the trailing Decode4 (completed-set-item id) unconditionally — it sits
+// AFTER the marriage if/else, not inside it. Atlas writes flags=1 (look-only)
+// and the ring block per RingSet, then writes the trailing WriteInt(0) to
+// match this unconditional read (hasTrailingCompletedSetItemId gate:
+// IsRegion("GMS") && MajorAtLeast(87)).
 //
 // AvatarLook::Decode (v87 @0x508277):
 //
@@ -180,10 +215,13 @@ func TestCharacterAppearanceUpdateByteOutputV87(t *testing.T) {
 //	crushMarker    = Decode1         // 0 => no buffer; else 2xDecodeBuffer(8)+Decode4 /*0x9541b7*/
 //	friendMarker   = Decode1         // 0 => no buffer; else 2xDecodeBuffer(8)+Decode4 /*0x954202*/
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0x954251*/
+//	completedSet   = Decode4         // read UNCONDITIONALLY in v95 (m_nCompletedSetItemID) /*0x9542ec*/
 //
-// The read order is byte-identical to v83/v84/v87 for the frame Atlas
-// exercises: flags, AvatarLook, three ring markers. There is no trailing
-// Decode4 read after the marriage arm.
+// The read order is byte-identical to v87: flags, AvatarLook, three ring
+// markers, then the trailing completed-set int consumed unconditionally
+// (@0x9542ec), same as at v87 (@0xa092d5). Atlas writes the matching trailing
+// WriteInt(0) here too (hasTrailingCompletedSetItemId gate: IsRegion("GMS")
+// && MajorAtLeast(87)).
 //
 // AvatarLook::Decode (v95 @0x4f2c00):
 //

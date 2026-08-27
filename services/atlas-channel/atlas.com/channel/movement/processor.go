@@ -1,20 +1,22 @@
 package movement
 
 import (
-	"context"
-
 	"atlas-channel/character/snapshot"
-	dmap "atlas-channel/data/map"
 	"atlas-channel/data/npc"
-	movement2 "atlas-channel/kafka/message/movement"
-	_map2 "atlas-channel/map"
 	"atlas-channel/monster"
-	monsterinfo "atlas-channel/monster/information"
-	controllernpc "atlas-channel/npc/controller"
 	"atlas-channel/pet"
 	"atlas-channel/position"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
+	"context"
+
+	dmap "atlas-channel/data/map"
+
+	movement2 "atlas-channel/kafka/message/movement"
+	_map2 "atlas-channel/map"
+
+	monsterinfo "atlas-channel/monster/information"
+	controllernpc "atlas-channel/npc/controller"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"

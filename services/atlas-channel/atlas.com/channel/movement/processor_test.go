@@ -1,16 +1,16 @@
 package movement
 
 import (
+	"atlas-channel/character/snapshot"
+	"atlas-channel/monster"
+	"atlas-channel/monster/information"
 	"context"
 	"encoding/json"
 	"errors"
 	"testing"
 	"time"
 
-	"atlas-channel/character/snapshot"
 	movement2 "atlas-channel/kafka/message/movement"
-	"atlas-channel/monster"
-	"atlas-channel/monster/information"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"

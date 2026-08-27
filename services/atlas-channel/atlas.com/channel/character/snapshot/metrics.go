@@ -41,6 +41,14 @@ var (
 		},
 		[]string{"tenant", "component", "kind"},
 	)
+
+	snapshotDivergenceTotal = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "atlas_channel_char_snapshot_divergence_total",
+			Help: "Shadow-verification divergences between snapshot and REST projection, by tenant and component.",
+		},
+		[]string{"tenant", "component"},
+	)
 )
 
 func recordRead(t tenant.Model, component, outcome string) {
@@ -49,4 +57,8 @@ func recordRead(t tenant.Model, component, outcome string) {
 
 func recordUpdate(t tenant.Model, component, kind string) {
 	snapshotUpdatesTotal.WithLabelValues(t.Id().String(), component, kind).Inc()
+}
+
+func recordDivergence(t tenant.Model, component string) {
+	snapshotDivergenceTotal.WithLabelValues(t.Id().String(), component).Inc()
 }

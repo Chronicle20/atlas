@@ -58,10 +58,17 @@ func (p *Processor) Get(characterId uint32) (character.Model, error) {
 		recordRead(p.t, componentCore, outcomeHit)
 		recordRead(p.t, componentSkills, outcomeHit)
 		recordRead(p.t, componentInventory, outcomeHit)
+		p.maybeShadow(characterId, m, nil)
 		return m, nil
 	}
 
 	v := r.View(p.t, characterId)
+	// A "full hit" here means every component that composes the served
+	// model was already valid — no REST fallback ran below. This is the
+	// slow-path equivalent of the ComposedIfValid fast return above; it
+	// fires the sample even before the composed-model cache (which also
+	// gates on buffsValid, an orthogonal component) has been warmed.
+	fullHit := v.CoreValid && v.InvValid && v.SkillsValid
 
 	core := v.Core
 	if v.CoreValid {
@@ -139,6 +146,9 @@ func (p *Processor) Get(characterId uint32) (character.Model, error) {
 	}
 	if skillsOk {
 		m = m.SetSkills(skills)
+	}
+	if fullHit {
+		p.maybeShadow(characterId, m, nil)
 	}
 	return m, nil
 }

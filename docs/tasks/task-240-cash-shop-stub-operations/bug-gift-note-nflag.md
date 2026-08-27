@@ -109,4 +109,42 @@ is already suppressed for this note by the existing `GiftNote: true`.
 
 ## Resolution
 
-_(to be filled in by the fix: commit sha, gate verdict, live re-test status)_
+- **Fixed by `76a7ab60e`** — `fix(atlas-channel): set nFlag=1 on cash-shop gift
+  acknowledgement notes`. Touches exactly the three files in the `## Fix`
+  inventory, plus this file and `re-memo-nflag.md`.
+
+- **Review:** `review-bug-gift-note-nflag.md` — **APPROVED_WITH_FINDINGS**,
+  0 blocking, 1 non-blocking. The reviewer hand-traced `Flag` across the seam
+  (channel saga payload → saga-orchestrator `CreateNote` → atlas-notes
+  `Model.Flag()` → note status event → clientbound `NoteEntry.Flag`) and found
+  no hop that clamps, drops, or hard-codes it. It confirmed the regression pin
+  genuinely fails on `906439e31` and passes after, that `discardSpecialFlag`
+  (`operation_discard.go:22-27`, returns only 2 or 3) is unaffected for
+  `flag == 1`, and that the `GiftNote` sender-fame suppression
+  (`services/atlas-notes/atlas.com/notes/note/processor.go:340`) is untouched.
+
+  The non-blocking finding is a **structural test gap, not a defect introduced
+  by this commit**: no single automated test connects `buildGiftForwardSaga`'s
+  `Flag: 1` to the terminal `NoteEntry.Encode` wire byte for the gift path.
+  `note_gift_forward_test.go:57` pins the saga-payload end and
+  `libs/atlas-packet/note/clientbound/display_test.go:20,41-42` pins the codec
+  end; the two intervening services are covered by the manual trace only.
+  Deliberately left open — closing it means a cross-service integration test,
+  which is wider than this fix.
+
+- **Gate:** flagless `tools/verify.sh` over the whole branch — **exit 0**,
+  `All checks passed.` 91 Go modules built/vetted/tested with `-race`, all
+  analyzer and template guards green, lint & format green over both the Go
+  modules and atlas-ui, atlas-ui tests + build green.
+  One caveat worth recording: the log line is
+  `− docker buildx bake (no go.mod touched)` — the bake was skipped by the
+  script's own no-go.mod-change condition, not by a `--quick` flag. This was a
+  genuinely flagless run; the bake simply had nothing to do.
+
+- **Live re-test: NOT yet performed.** The `nFlag == 1` render is established
+  from the client binaries (string decode + a sweep of all ten templates with
+  an IDB — see `re-memo-nflag.md`), but no one has yet gifted an item on a
+  running client and read the resulting memo. Until that happens this is
+  fixed-in-principle. The two lines to look for are:
+  `"<recipient> has received a gift."` and
+  `"<gifter>'s fame has gone up +1."`

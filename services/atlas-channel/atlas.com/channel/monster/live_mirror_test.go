@@ -198,6 +198,33 @@ func TestLiveMirror_ConcurrentAccess(t *testing.T) {
 	wg.Wait()
 }
 
+func TestLiveEntryFromModel_MapsPosition(t *testing.T) {
+	f := testField()
+	mo, err := NewModelBuilder(7, f, 100100).SetX(123).SetY(-45).Build()
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	e := LiveEntryFromModel(mo)
+	if e.X != 123 || e.Y != -45 {
+		t.Fatalf("position not mapped: %d/%d", e.X, e.Y)
+	}
+}
+
+func TestLiveMirror_UpdatePosition(t *testing.T) {
+	m := newTestLiveMirror()
+	tm := newTestTenant(t)
+	m.UpdatePosition(tm, 7, 5, 6) // absent: must not create
+	if _, ok := m.Lookup(tm, 7); ok {
+		t.Fatalf("UpdatePosition must never create an entry")
+	}
+	m.Put(tm, 7, LiveEntry{Field: testField(), MonsterId: 100100, Mp: 9})
+	m.UpdatePosition(tm, 7, 5, 6)
+	got, _ := m.Lookup(tm, 7)
+	if got.X != 5 || got.Y != 6 || got.Mp != 9 {
+		t.Fatalf("position update mismatch: %+v", got)
+	}
+}
+
 func TestLiveEntryFromModel_MapsAllFields(t *testing.T) {
 	f := testField()
 	mo, err := NewModelBuilder(7, f, 100100).

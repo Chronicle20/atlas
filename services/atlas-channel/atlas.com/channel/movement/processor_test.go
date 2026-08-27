@@ -1,15 +1,16 @@
 package movement
 
 import (
-	"atlas-channel/character/snapshot"
-	movement2 "atlas-channel/kafka/message/movement"
-	"atlas-channel/monster"
-	"atlas-channel/monster/information"
 	"context"
 	"encoding/json"
 	"errors"
 	"testing"
 	"time"
+
+	"atlas-channel/character/snapshot"
+	movement2 "atlas-channel/kafka/message/movement"
+	"atlas-channel/monster"
+	"atlas-channel/monster/information"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -254,4 +255,23 @@ func TestForCharacter_NoEntryNoCreate(t *testing.T) {
 		t.Fatalf("position feed must never create snapshot entries")
 	}
 	drainMovementCommand(t, 9002)
+}
+
+func TestForMonster_FeedsMirrorPosition(t *testing.T) {
+	// ForMonster's ack goroutine reads the process-wide skill inbox
+	// singleton; init it here since this package has no production
+	// bootstrap (main.go does this at startup) and no prior test in this
+	// package exercises ForMonster.
+	monster.InitNextSkillInbox()
+	p, tm := newMovementTestProcessor(t)
+	f := movementTestField()
+	monster.GetLiveMirror().Put(tm, 8101, monster.LiveEntry{Field: f, MonsterId: 100100, Mp: 3})
+
+	mv := model.Movement{StartX: 44, StartY: -55}
+	_ = p.ForMonster(f, 1, 8101, 0, false, 0, 0, 0, model.MultiTargetForBall{}, model.RandTimeForAreaAttack{}, mv)
+
+	got, ok := monster.GetLiveMirror().Lookup(tm, 8101)
+	if !ok || got.X != 44 || got.Y != -55 {
+		t.Fatalf("mirror position not fed: %+v ok=%v", got, ok)
+	}
 }

@@ -18,6 +18,9 @@ type Builder struct {
 	ringType           Type
 	state              State
 	createdAt          time.Time
+	cashId             int64
+	partnerCashId      int64
+	partnerName        string
 }
 
 // NewBuilder creates a new Builder.
@@ -83,6 +86,47 @@ func (b *Builder) SetCreatedAt(createdAt time.Time) *Builder {
 	return b
 }
 
+// SetCashId sets this half's own locker asset's cash id. Computed at read
+// time (design.md §5), never stored on Entity.
+func (b *Builder) SetCashId(cashId int64) *Builder {
+	b.cashId = cashId
+	return b
+}
+
+// SetPartnerCashId sets the sibling half's cash id.
+func (b *Builder) SetPartnerCashId(partnerCashId int64) *Builder {
+	b.partnerCashId = partnerCashId
+	return b
+}
+
+// SetPartnerName sets the resolved partner character name.
+func (b *Builder) SetPartnerName(partnerName string) *Builder {
+	b.partnerName = partnerName
+	return b
+}
+
+// Builder returns a Builder pre-populated with m's current fields, so a
+// read-time enrichment step (processor.go's GetByCharacterId, setting the
+// computed cashId/partnerCashId/partnerName) can add fields without losing
+// what Make already populated from Entity, and without widening Entity
+// itself (design.md §5).
+func (m Model) Builder() *Builder {
+	return &Builder{
+		id:                 m.id,
+		pairId:             m.pairId,
+		characterId:        m.characterId,
+		partnerCharacterId: m.partnerCharacterId,
+		assetId:            m.assetId,
+		itemTemplateId:     m.itemTemplateId,
+		ringType:           m.ringType,
+		state:              m.state,
+		createdAt:          m.createdAt,
+		cashId:             m.cashId,
+		partnerCashId:      m.partnerCashId,
+		partnerName:        m.partnerName,
+	}
+}
+
 // Build validates and constructs the Model.
 func (b *Builder) Build() (Model, error) {
 	if err := b.validate(); err != nil {
@@ -98,6 +142,9 @@ func (b *Builder) Build() (Model, error) {
 		ringType:           b.ringType,
 		state:              b.state,
 		createdAt:          b.createdAt,
+		cashId:             b.cashId,
+		partnerCashId:      b.partnerCashId,
+		partnerName:        b.partnerName,
 	}, nil
 }
 

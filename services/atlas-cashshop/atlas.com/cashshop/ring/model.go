@@ -37,6 +37,9 @@ type Model struct {
 	ringType           Type
 	state              State
 	createdAt          time.Time
+	cashId             int64
+	partnerCashId      int64
+	partnerName        string
 }
 
 func (m Model) Id() uuid.UUID {
@@ -73,4 +76,26 @@ func (m Model) State() State {
 
 func (m Model) CreatedAt() time.Time {
 	return m.createdAt
+}
+
+// CashId is this half's own locker asset's cash id -- the identifier that
+// survives compartment.Release and is what the wire needs (design.md §2
+// OQ-1: GW_ItemSlotBase::liSN). It is computed at read time by looking up
+// AssetId in cashshop/inventory/asset, never stored on Entity (design.md
+// §5 rejects a stored column).
+func (m Model) CashId() int64 {
+	return m.cashId
+}
+
+// PartnerCashId is the sibling half's CashId, resolved by PairId. Zero when
+// the sibling row is missing or its asset cannot be resolved -- this field
+// fails soft, never errors (PRD FR-5's channel-side fallback depends on it).
+func (m Model) PartnerCashId() int64 {
+	return m.partnerCashId
+}
+
+// PartnerName is PartnerCharacterId's resolved character name. Empty when
+// the character service is unavailable -- fails soft, never errors.
+func (m Model) PartnerName() string {
+	return m.partnerName
 }

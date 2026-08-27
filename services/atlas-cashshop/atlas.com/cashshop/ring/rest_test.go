@@ -22,6 +22,9 @@ func TestTransform(t *testing.T) {
 		ringType:           TypeFriendship,
 		state:              StateActive,
 		createdAt:          createdAt,
+		cashId:             int64(9007199254740993),
+		partnerCashId:      int64(-1),
+		partnerName:        "PartnerChar",
 	}
 
 	rm, err := Transform(m)
@@ -54,6 +57,15 @@ func TestTransform(t *testing.T) {
 	}
 	if !rm.CreatedAt.Equal(createdAt) {
 		t.Errorf("CreatedAt = %v, want %v", rm.CreatedAt, createdAt)
+	}
+	if rm.CashId != 9007199254740993 {
+		t.Errorf("CashId = %d, want 9007199254740993", rm.CashId)
+	}
+	if rm.PartnerCashId != -1 {
+		t.Errorf("PartnerCashId = %d, want -1", rm.PartnerCashId)
+	}
+	if rm.PartnerName != "PartnerChar" {
+		t.Errorf("PartnerName = %s, want PartnerChar", rm.PartnerName)
 	}
 }
 

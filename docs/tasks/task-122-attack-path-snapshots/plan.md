@@ -43,7 +43,7 @@
 - Consumes: task-120's landed code (`monster/live_mirror.go`, `monster/metrics.go`, `monster/information/cache.go`, `/api/metrics` mount in `main.go`).
 - Produces: a confirmed API inventory that Tasks 2–12 rely on verbatim: `monster.GetLiveMirror()`, `(*LiveMirror).Lookup(t tenant.Model, uniqueId uint32) (LiveEntry, bool)`, `Put`, `Remove`, `EvictTenant`, `monster.LiveEntryFromModel(mo Model) LiveEntry`, `monster.RecordMirrorFallback(t tenant.Model, success bool)`, `LiveEntry{Field, MonsterId, Mp, MaxMp, ControllerHasAggro, LastWrite}`, prometheus dep + `promhttp` mount.
 
-- [ ] **Step 1: Verify task-120 is merged and rebase**
+- [x] **Step 1: Verify task-120 is merged and rebase**
 
 ```bash
 cd .worktrees/task-122-attack-path-snapshots   # worktree root (repo-relative)
@@ -60,27 +60,27 @@ ls services/atlas-channel/atlas.com/channel/monster/live_mirror.go \
 ```
 Expected: all three files exist after rebase. Resolve any rebase conflicts (docs-only conflicts expected at worst).
 
-- [ ] **Step 2: Reconcile the mirror API against this plan**
+- [x] **Step 2: Reconcile the mirror API against this plan**
 
 Read `services/atlas-channel/atlas.com/channel/monster/live_mirror.go` as landed and confirm each name in the Interfaces block above exists with the same signature. Also confirm in `services/atlas-channel/atlas.com/channel/main.go`: the `listener.RegisterEvictor` block calls `monsterDomain.GetLiveMirror().EvictTenant(tid)`, and an `AddRouteInitializer(restserver.MountHandler("/metrics", promhttp.Handler()))` line exists (endpoint `/api/metrics`). If any name/signature differs, update the affected steps in Tasks 10–11 of this plan file (and note the delta in context.md) BEFORE executing them — do not guess mid-task.
 
-- [ ] **Step 3: VERIFY (design §10.2) — inventory REST does not net out reservations**
+- [x] **Step 3: VERIFY (design §10.2) — inventory REST does not net out reservations**
 
 Read the atlas-inventory REST read path: `services/atlas-inventory/atlas.com/inventory/inventory/` (rest.go/resource.go/processor.go — follow `GET /characters/{id}/inventory`). Confirm asset quantities returned are the raw asset rows, not quantity-minus-reservations. Record the answer with file:line in event-coverage.md §4 (replace the VERIFY-AT-EXECUTION marker). If reservations ARE netted out: reservation events must join the inventory component — add `RESERVED`/`RESERVATION_CANCELLED` → `InvalidateInventory` handlers to Task 7 and note the change in context.md.
 
-- [ ] **Step 4: VERIFY (design §10.3) — Values key convention**
+- [x] **Step 4: VERIFY (design §10.3) — Values key convention**
 
 Confirm at `services/atlas-character/atlas.com/character/character/processor.go:905,1408,1623,1867` that the populated `values` maps use the snake_case keys listed in Global Constraints (`"luck"`, `"max_hp"`, `"max_mp"`, `"intelligence"`, `"strength"`, `"dexterity"` are the ones in evidence today). Record confirmation in context.md.
 
-- [ ] **Step 5: VERIFY (design §10.4) — MAP_CHANGED UseTargetPosition=false path**
+- [x] **Step 5: VERIFY (design §10.4) — MAP_CHANGED UseTargetPosition=false path**
 
 Re-read `services/atlas-channel/atlas.com/channel/kafka/message/character/kafka.go:114-127` (`StatusEventMapChangedBody`) and confirm `UseTargetPosition/TargetX/TargetY` fields. This plan's Task 5 invalidates BOTH position and core on `UseTargetPosition=false` so the next attack's core refetch carries fresh REST X/Y (reflect-before-first-move falls back to exactly today's source). Record in event-coverage.md §2 that the disposition is implemented as position-invalidate + core-invalidate.
 
-- [ ] **Step 6: Escalate the RequestReserve finding (design §10.5)**
+- [x] **Step 6: Escalate the RequestReserve finding (design §10.5)** (finding retracted, not escalated as written: re-confirmed at execution time that `RequestReserve` was already fixed by task-205 on `main` before task-122 began — `compartment/processor.go:810-853` loops over every request, not just the first; see context.md "Task 1 findings" Step 6)
 
 Confirm `services/atlas-inventory/atlas.com/inventory/compartment/processor.go:767` still returns inside its request loop. Add one line to context.md under "Escalations for owner": "`RequestReserve` processes only the first batched reserve request (`compartment/processor.go:767`) — candidate pre-existing atlas-inventory bug, NOT addressed by task-122 (not snapshot-relevant; reservations are registry-only)." Do not fix it in this task.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add docs/tasks/task-122-attack-path-snapshots/context.md docs/tasks/task-122-attack-path-snapshots/event-coverage.md
@@ -113,7 +113,7 @@ git commit -m "docs(task-122): task-120 reconciliation + execution-time audit ve
   - `character` builder: `SetX(v int16)`, `SetY(v int16)`
   - `character/skill` builder: `skill.NewModelBuilder(id skillconst.Id) *modelBuilder` with `SetLevel/SetMasterLevel/SetExpiration/SetCooldownExpiresAt/Build/MustBuild`, and `skill.Clone(m Model) *modelBuilder`
 
-- [ ] **Step 1: Add the trivial builder enablers**
+- [x] **Step 1: Add the trivial builder enablers**
 
 In `services/atlas-channel/atlas.com/channel/character/builder.go`, next to `SetMeso` (line ~138), add:
 
@@ -187,7 +187,7 @@ func (b *modelBuilder) MustBuild() Model {
 }
 ```
 
-- [ ] **Step 2: Write the failing registry tests**
+- [x] **Step 2: Write the failing registry tests**
 
 Create `services/atlas-channel/atlas.com/channel/character/snapshot/registry_test.go`:
 
@@ -605,12 +605,12 @@ func timeNowForTest() time.Time { return time.Now() }
 ```
 (add `"time"` to the test imports).
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./character/snapshot/ -v`
 Expected: FAIL to compile — `Registry`, `entry`, `ComponentView` undefined (and `SetX` undefined if Step 1 skipped).
 
-- [ ] **Step 4: Implement metrics.go**
+- [x] **Step 4: Implement metrics.go**
 
 Create `services/atlas-channel/atlas.com/channel/character/snapshot/metrics.go`:
 
@@ -668,7 +668,7 @@ func recordUpdate(t tenant.Model, component, kind string) {
 }
 ```
 
-- [ ] **Step 5: Implement registry.go**
+- [x] **Step 5: Implement registry.go**
 
 Create `services/atlas-channel/atlas.com/channel/character/snapshot/registry.go`:
 
@@ -1357,12 +1357,12 @@ func (r *Registry) EvictTenant(tid uuid.UUID) {
 
 Add `"github.com/Chronicle20/atlas/libs/atlas-constants/job"` to the imports (used by `applyStat`'s `stat.TypeJob` case).
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test -race ./character/snapshot/ ./character/... -v`
 Expected: PASS — all new registry tests plus all pre-existing character-package tests.
 
-- [ ] **Step 7: Build, vet, commit**
+- [x] **Step 7: Build, vet, commit**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go build ./... && go vet ./...`
 Expected: clean.
@@ -1393,7 +1393,7 @@ git commit -m "feat(task-122): session-scoped character snapshot registry with g
   - `(*Processor).GetBuffs(characterId uint32) ([]buff.Model, error)` and `(*Processor).BuffsProvider(characterId uint32) model.Provider[[]buff.Model]`
   - Package-level fetch seams (test-swappable): `coreFetchFn`, `inventoryFetchFn`, `skillsFetchFn`, `buffsFetchFn` — each `func(l logrus.FieldLogger, ctx context.Context, characterId uint32) (T, error)`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-channel/atlas.com/channel/character/snapshot/processor_test.go`:
 
@@ -1657,12 +1657,12 @@ func resetRegistryForTest(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./character/snapshot/ -run TestProcessor -v`
 Expected: FAIL to compile — `Processor`, `coreFetchFn` undefined.
 
-- [ ] **Step 3: Implement processor.go**
+- [x] **Step 3: Implement processor.go** (landed with a deliberate, documented deviation from this step's literal code block: core fallback failure still errors, but inventory/skills fallback failure now degrades to a partial model instead of erroring — commit `844a59b72`, matching the real pre-existing `character.ProcessorImpl` decorator behavior; confirmed correct by the plan-adherence audit)
 
 Create `services/atlas-channel/atlas.com/channel/character/snapshot/processor.go`:
 
@@ -1834,12 +1834,12 @@ func filterActive(bs []buff.Model) []buff.Model {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test -race ./character/snapshot/ -v`
 Expected: PASS.
 
-- [ ] **Step 5: Build, vet, commit**
+- [x] **Step 5: Build, vet, commit**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go build ./... && go vet ./...`
 Expected: clean.
@@ -1865,7 +1865,7 @@ git commit -m "feat(task-122): snapshot read API with per-component REST fallbac
 - Consumes (Task 2): `snapshot.GetRegistry()`, `Evict`, `EvictTenant`, `SetPosition`, `View`.
 - Produces: no new API — behavioral guarantees: snapshot evicted inside `session.Destroy` itself (design §11 — not a parallel code path), position fed synchronously before the movement Kafka emit (FR-2.5).
 
-- [ ] **Step 1: Write the failing movement test**
+- [x] **Step 1: Write the failing movement test**
 
 Append to `services/atlas-channel/atlas.com/channel/movement/processor_test.go` (this file exists post-task-120 with `newMovementTestTenant`/`newMovementTestProcessor`/`movementTestField` helpers — reuse them; add imports `atlas-channel/character/snapshot` and `github.com/Chronicle20/atlas/libs/atlas-packet/model` as needed):
 
@@ -1910,12 +1910,12 @@ NOTE: `TestForCharacter_FeedsSnapshotPositionSynchronously` asserts the position
 
 NOTE: the goroutines inside `ForCharacter` will attempt map/producer calls that fail fast in tests and only log — the assertion is on the synchronous `SetPosition`, which runs before either goroutine is spawned.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./movement/ -run TestForCharacter -v`
 Expected: FAIL — position not fed (PosValid false).
 
-- [ ] **Step 3: Implement the movement feed**
+- [x] **Step 3: Implement the movement feed**
 
 In `services/atlas-channel/atlas.com/channel/movement/processor.go`, replace `ForCharacter` (lines 46-65) with:
 
@@ -1953,7 +1953,7 @@ func (p *Processor) ForCharacter(f field.Model, characterId uint32, movement mod
 
 Add import `"atlas-channel/character/snapshot"`. Behavioral invariant: the emitted Kafka command is byte-identical (same fold, same producer call); the broadcast goroutine is untouched; the only change is the fold moving out of the goroutine (it was already computed per packet).
 
-- [ ] **Step 4: Wire eviction**
+- [x] **Step 4: Wire eviction**
 
 In `services/atlas-channel/atlas.com/channel/session/processor.go`, inside `Destroy` (line 330), immediately after `getRegistry().Remove(p.t.Id(), s.SessionId())` (line 332), add:
 
@@ -1974,12 +1974,12 @@ In `services/atlas-channel/atlas.com/channel/main.go`, in the `listener.Register
 
 Add import `snapshot "atlas-channel/character/snapshot"`.
 
-- [ ] **Step 5: Run tests, build, vet**
+- [x] **Step 5: Run tests, build, vet**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test -race ./movement/ ./session/ ./character/snapshot/ && go build ./... && go vet ./...`
 Expected: PASS / clean. (session package has existing tests; the Destroy addition must not break them.)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/session/processor.go \
@@ -2002,7 +2002,7 @@ git commit -m "feat(task-122): snapshot lifecycle eviction and synchronous movem
 - Consumes (existing): event bodies in `kafka/message/character/kafka.go` (`StatusEventStatChangedBody.Values`, `LevelChangedStatusEventBody.Current`, `ExperienceChangedStatusEventBody.Current`, `StatusEventMapChangedBody.UseTargetPosition/TargetX/TargetY`), registration pattern `consumer.go:47-88`.
 - Produces: four new handler funcs registered in `InitHandlers`: `handleSnapshotStatChanged`, `handleSnapshotLevelChanged`, `handleSnapshotExperienceChanged`, `handleSnapshotMapChanged`. Existing handlers untouched (FR-3.3). No new MESO/FAME handlers: every meso/fame mutation site also emits STAT_CHANGED(Meso|Fame) (verified `atlas-character character/processor.go:751,768,796,813`), which this task routes through `ApplyStatChanged` (nil Values → invalidate today; rich after Task 13).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-channel/atlas.com/channel/kafka/consumer/character/consumer_test.go`:
 
@@ -2181,12 +2181,12 @@ func TestSnapshotHandlers_IgnoreOtherWorlds(t *testing.T) {
 
 NOTE: check `server.Register`'s actual signature in `server/` (the monster consumer tests use `server.Register(tm, ch, "127.0.0.1", 8484)` — reuse exactly that form) and `channel.NewModel(0, 1)` argument types (`world.Id`, `channel.Id` are both `byte`-backed). Adjust literals to compile; do not change the assertions.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./kafka/consumer/character/ -v`
 Expected: FAIL to compile — `handleSnapshotStatChanged` undefined.
 
-- [ ] **Step 3: Implement the handlers**
+- [x] **Step 3: Implement the handlers**
 
 In `services/atlas-channel/atlas.com/channel/kafka/consumer/character/consumer.go`:
 
@@ -2289,12 +2289,12 @@ func handleSnapshotMapChanged(sc server.Model, _ writer.Producer) message.Handle
 					handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test -race ./kafka/consumer/character/ -v`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/consumer/character/consumer.go \
@@ -2316,7 +2316,7 @@ git commit -m "feat(task-122): project character status events into the snapshot
 - Consumes (existing): `StatusEventCreatedBody/UpdatedBody{Level, MasterLevel, Expiration}` (`kafka/message/skill/kafka.go:36-46`), envelope `SkillId` (`kafka.go:31`).
 - Produces: `handleSnapshotSkillCreated`, `handleSnapshotSkillUpdated`, `handleSnapshotSkillDeleted` registered in `InitHandlers`; message constants `skill2.StatusEventTypeDeleted = "DELETED"`, `skill2.StatusEventDeletedBody struct{}`.
 
-- [ ] **Step 1: Add the DELETED message definitions**
+- [x] **Step 1: Add the DELETED message definitions**
 
 In `services/atlas-channel/atlas.com/channel/kafka/message/skill/kafka.go`, extend the status-event const block:
 
@@ -2333,7 +2333,7 @@ type StatusEventDeletedBody struct {
 
 VERIFY against the producer: `services/atlas-skills/atlas.com/skills/skill/producer.go` (emission at `skill/processor.go:284` per event-coverage §3) — confirm the event `Type` string is `"DELETED"` and the body carries no fields the handler needs. If the body has fields, mirror them (unused fields may be omitted; the handler needs only the envelope `CharacterId`/`SkillId`).
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Create `services/atlas-channel/atlas.com/channel/kafka/consumer/skill/consumer_test.go`:
 
@@ -2427,12 +2427,12 @@ func TestHandleSnapshotSkillDeleted_Removes(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./kafka/consumer/skill/ -v`
 Expected: FAIL to compile — `handleSnapshotSkillCreated` undefined.
 
-- [ ] **Step 4: Implement the handlers**
+- [x] **Step 4: Implement the handlers**
 
 In `services/atlas-channel/atlas.com/channel/kafka/consumer/skill/consumer.go`, add imports `skillmodel "atlas-channel/character/skill"`, `"atlas-channel/character/snapshot"`, `skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"`, then append:
 
@@ -2492,7 +2492,7 @@ func handleSnapshotSkillDeleted(sc server.Model, _ writer.Producer) message.Hand
 
 Register all three in `InitHandlers` after the existing four registrations (same `rf(...)` + `handles = append(...)` pattern as Task 5 Step 3.3, one block per handler).
 
-- [ ] **Step 5: Run tests, build, vet, commit**
+- [x] **Step 5: Run tests, build, vet, commit**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test -race ./kafka/consumer/skill/ && go build ./... && go vet ./...`
 Expected: PASS / clean.
@@ -2519,7 +2519,7 @@ git commit -m "feat(task-122): project skill status events (incl. DELETED) into 
 - Consumes (existing): asset envelope `{CharacterId, CompartmentId, AssetId, TemplateId, Slot}` (`kafka/message/asset/kafka.go:21-29`); rich bodies CREATED/UPDATED/ACCEPTED (`kafka.go:31,65,111`); `QUANTITY_CHANGED.Quantity` (`kafka.go:106`); the existing full-asset builder `buildAssetFromCreatedBody` (`kafka/consumer/asset/consumer.go:119`) and its UPDATED/ACCEPTED siblings (locate by grep `NewModelBuilder(e.AssetId` in that file — reuse, do not duplicate); compartment event constants (`kafka/message/compartment/kafka.go:112-118`).
 - Produces: asset handlers `handleSnapshotAssetCreated/Updated/Accepted/QuantityChanged/Moved/Deleted/Released/Expired`; compartment handlers `handleSnapshotCompartmentChanged` (one handler covering CREATED/DELETED/CAPACITY_CHANGED via three registrations OR three thin handlers — implement as three thin handlers to match the one-handler-per-body-type pattern) plus `handleSnapshotMergeComplete`, `handleSnapshotSortComplete`. RESERVED/RESERVATION_CANCELLED intentionally have no snapshot handlers (REST parity — Task 1 Step 3 verified).
 
-- [ ] **Step 1: Write the failing asset tests**
+- [x] **Step 1: Write the failing asset tests**
 
 Append to `services/atlas-channel/atlas.com/channel/kafka/consumer/asset/consumer_test.go` (add the imports it needs: `context`, `atlas-channel/asset`, `atlas-channel/character/snapshot`, `atlas-channel/compartment`, `atlas-channel/inventory`, `atlas-channel/server`, `invconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"`, `"github.com/Chronicle20/atlas/libs/atlas-constants/channel"`, `tenant`, `uuid`, `logrus`, `testing`):
 
@@ -2647,7 +2647,7 @@ func TestHandleSnapshotAssetReleasedAndExpired_Invalidate(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Write the failing compartment tests**
+- [x] **Step 2: Write the failing compartment tests**
 
 Create (or append to, if it exists) `services/atlas-channel/atlas.com/channel/kafka/consumer/compartment/consumer_test.go` with the same tenant/server helper pattern as Step 1 (fresh helpers in this package), then:
 
@@ -2710,12 +2710,12 @@ func TestHandleSnapshotCompartmentEvents_Invalidate(t *testing.T) {
 
 (Define `seedTestInventory` in this package's test file — same body as the asset package's `seedInventory`; the two packages cannot share unexported test helpers and CLAUDE.md forbids `*_testhelpers.go`. Match the compartment message import alias to the package's existing convention — check the top of `kafka/consumer/compartment/consumer.go`.)
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./kafka/consumer/asset/ ./kafka/consumer/compartment/ -v`
 Expected: FAIL to compile — snapshot handlers undefined.
 
-- [ ] **Step 4: Implement the asset handlers**
+- [x] **Step 4: Implement the asset handlers**
 
 In `services/atlas-channel/atlas.com/channel/kafka/consumer/asset/consumer.go`, add imports `"atlas-channel/character/snapshot"`, `tenant` (if not present), then append (locate the existing UPDATED/ACCEPTED full-asset builder funcs next to `buildAssetFromCreatedBody:119` and reuse them — they exist for the packet handlers; if the ACCEPTED handler builds inline, extract its builder into `buildAssetFromAcceptedBody` rather than duplicating):
 
@@ -2833,7 +2833,7 @@ func handleSnapshotAssetExpired(sc server.Model, _ writer.Producer) message.Hand
 
 Register all eight in the asset `InitHandlers` (same pattern as Task 5). If `buildAssetFromUpdatedBody`/`buildAssetFromAcceptedBody` do not already exist as named funcs, extract them from the existing UPDATED/ACCEPTED packet handlers in the same file (pure refactor — the packet handlers then call the extracted funcs; behavior unchanged).
 
-- [ ] **Step 5: Implement the compartment handlers**
+- [x] **Step 5: Implement the compartment handlers**
 
 In `services/atlas-channel/atlas.com/channel/kafka/consumer/compartment/consumer.go`, add imports (`atlas-channel/character/snapshot`, tenant), then append five thin handlers, all with the body pattern:
 
@@ -2858,7 +2858,7 @@ func handleSnapshotCompartmentCreated(sc server.Model, _ writer.Producer) messag
 
 Do NOT add handlers for `RESERVED`/`RESERVATION_CANCELLED` (REST parity, Task 1 Step 3) unless Task 1 found reservations netted out — in that case both invalidate.
 
-- [ ] **Step 6: Run tests, build, vet, commit**
+- [x] **Step 6: Run tests, build, vet, commit**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test -race ./kafka/consumer/asset/ ./kafka/consumer/compartment/ && go build ./... && go vet ./...`
 Expected: PASS / clean.
@@ -2882,7 +2882,7 @@ git commit -m "feat(task-122): project asset and compartment events into the sna
 - Consumes (existing): `AppliedStatusEventBody`/`ExpiredStatusEventBody` (`kafka/message/buff/kafka.go:58-75`) — both carry `SourceId, Level, Duration, Changes, CreatedAt, ExpiresAt` (rich).
 - Produces: `handleSnapshotBuffApplied`, `handleSnapshotBuffExpired` registered in `InitHandlers`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-channel/atlas.com/channel/kafka/consumer/buff/consumer_test.go` (fresh tenant/server helpers as in Task 6):
 
@@ -2963,12 +2963,12 @@ func TestHandleSnapshotBuffAppliedAndExpired(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./kafka/consumer/buff/ -v`
 Expected: FAIL to compile.
 
-- [ ] **Step 3: Implement the handlers**
+- [x] **Step 3: Implement the handlers**
 
 In `services/atlas-channel/atlas.com/channel/kafka/consumer/buff/consumer.go` append (imports: `"atlas-channel/character/snapshot"`; `buff`/`stat` already imported):
 
@@ -3009,7 +3009,7 @@ func handleSnapshotBuffExpired(sc server.Model, _ writer.Producer) message.Handl
 
 Register both in `InitHandlers` after the existing two registrations.
 
-- [ ] **Step 4: Run tests, build, vet, commit**
+- [x] **Step 4: Run tests, build, vet, commit**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test -race ./kafka/consumer/buff/ && go build ./... && go vet ./...`
 Expected: PASS / clean.
@@ -3039,7 +3039,7 @@ git commit -m "feat(task-122): project buff applied/expired events into the snap
   - Test seam `upstreamFn func(l logrus.FieldLogger, ctx context.Context, skillId uint32) (Model, error)`.
 - Semantics (task-060, re-expressed in-process per task-120 §5.4): positive TTL 5m / negative 30s; negative caching ONLY for `errors.Is(err, requests.ErrNotFound)`; transient errors never cached; negative hits synthesize `fmt.Errorf("skill %d not found: %w", id, requests.ErrNotFound)`; lazy expiry on read; no sweeper; no singleflight (concurrent same-key misses may duplicate the fetch — accepted, task-060 precedent). Env: `SKILL_DATA_CACHE_ENABLED`/`SKILL_DATA_CACHE_TTL`/`SKILL_DATA_CACHE_NEGATIVE_TTL` per Global Constraints.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-channel/atlas.com/channel/data/skill/cache_test.go` — port the task-120 monster-info cache test suite (`monster/information/cache_test.go`, present after Task 1's rebase) to this package: same cases, renamed env vars/types. Required cases:
 
@@ -3065,12 +3065,12 @@ Create `services/atlas-channel/atlas.com/channel/data/skill/cache_test.go` — p
 
 Write each of these as real test functions (the task-120 file is the concrete template — same reset helper pattern: `resetSkillCache()` zeroing `skillCacheOnce`/`skillCachePtr`, `t.Cleanup(resetSkillCache)` in every test, `t.Setenv` for env cases).
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./data/skill/ -v`
 Expected: FAIL to compile — `upstreamFn`, `getSkillCache` undefined.
 
-- [ ] **Step 3: Implement metrics.go and cache.go**
+- [x] **Step 3: Implement metrics.go and cache.go**
 
 Create `services/atlas-channel/atlas.com/channel/data/skill/metrics.go`:
 
@@ -3299,12 +3299,12 @@ In `services/atlas-channel/atlas.com/channel/main.go`, in the evictor block, add
 		dataskill.EvictTenant(tid)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test -race ./data/skill/... && go build ./... && go vet ./...`
 Expected: PASS / clean. NOTE: every existing caller of `GetById`/`GetEffect` now reads through the cache — run the full handler/writer test suites too: `go test -race ./socket/...`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/data/skill/ \
@@ -3326,7 +3326,7 @@ git commit -m "feat(task-122): in-process TTL cache for atlas-data skill templat
 - Consumes: task-120's `LiveEntry`/`LiveMirror`/`LiveEntryFromModel` as reconciled in Task 1; monster `Model.X()/Y()` (`monster/model.go`).
 - Produces (used by Task 11): `LiveEntry.X int16`, `LiveEntry.Y int16`; `(*LiveMirror).UpdatePosition(t tenant.Model, uniqueId uint32, x, y int16)` (update-only); `LiveEntryFromModel` maps X/Y.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `services/atlas-channel/atlas.com/channel/monster/live_mirror_test.go`:
 
@@ -3361,12 +3361,12 @@ func TestLiveMirror_UpdatePosition(t *testing.T) {
 
 NOTE: `SetX`/`SetY` on the monster model builder — check `monster/builder.go`; if the setters do not exist, add them (one-liners next to `SetMp`, same pattern as Task 2 Step 1's character additions; the Model already carries x/y if `monster/model.go` exposes `X()`/`Y()` — it does, the attack reflect path reads them today via REST).
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./monster/ -run 'TestLiveEntryFromModel_MapsPosition|TestLiveMirror_UpdatePosition' -v`
 Expected: FAIL to compile — `X`/`UpdatePosition` undefined.
 
-- [ ] **Step 3: Extend the mirror**
+- [x] **Step 3: Extend the mirror**
 
 In `services/atlas-channel/atlas.com/channel/monster/live_mirror.go`:
 
@@ -3404,7 +3404,7 @@ func (m *LiveMirror) UpdatePosition(t tenant.Model, uniqueId uint32, x, y int16)
 }
 ```
 
-- [ ] **Step 4: Feed the mirror from the monster movement fold**
+- [x] **Step 4: Feed the mirror from the monster movement fold**
 
 In `services/atlas-channel/atlas.com/channel/movement/processor.go`, inside `ForMonster`, at the point where the movement summary `ms` is computed for the Kafka command (post-task-120 shape — the fold at ~line 167 of the pre-task-120 file), add immediately after the successful fold:
 
@@ -3434,7 +3434,7 @@ func TestForMonster_FeedsMirrorPosition(t *testing.T) {
 
 NOTE: `ForMonster`'s signature and early body are task-120's; adapt the call literals to the landed signature (Task 1 reconciliation). The ack/inbox/snap/emit logic is untouched.
 
-- [ ] **Step 5: Run tests, build, vet, commit**
+- [x] **Step 5: Run tests, build, vet, commit**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test -race ./monster/ ./movement/ && go build ./... && go vet ./...`
 Expected: PASS / clean.
@@ -3466,7 +3466,7 @@ git commit -m "feat(task-122): extend live-monster mirror with locally-fed X/Y"
   - Package seam `attackMonsterByIdFn = func(l logrus.FieldLogger, ctx context.Context, uniqueId uint32) (monster.Model, error)` (REST fallback for the memoized resolver)
   - `ProjectileProcessorImpl.buffs func(characterId uint32) ([]buff.Model, error)` field replacing `bp buff.Processor`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go` (reuse this file's existing fixture helpers for `AttackInfo`/`DamageInfo`/deps — read them first; add snapshot/monster imports):
 
@@ -3570,7 +3570,7 @@ func TestSnapshotStalenessWindow_SkillLevelChangesBetweenAttacks(t *testing.T) {
 
 Also update the EXISTING tests that construct `damageInfoEntryDeps` (in `character_attack_common_test.go` and `character_attack_mp_eater_test.go`): `getMonster` fakes now return `monster.LiveEntry{MonsterId: ..., X: ..., Y: ..., Mp: ..., MaxMp: ...}` instead of `monster.Model`. Keep every assertion identical — the reflected-damage math, bounds checks, and MP-Eater behavior are pinned by those assertions (FR-4.6 for the LiveEntry retype).
 
-- [ ] **Step 2: Write the failing wire-equivalence test (FR-7.2)**
+- [x] **Step 2: Write the failing wire-equivalence test (FR-7.2)**
 
 Append to `character_attack_common_test.go`:
 
@@ -3618,12 +3618,12 @@ func TestWriterEquivalence_SnapshotComposedModel(t *testing.T) {
 
 NOTE: the writer's mastery path performs skill-data lookups through the Task 9 cache; in this test both encodes run under identical cache/upstream conditions (no HTTP server → transient error → identical `startingMastery` fallback both times), so byte-equality holds regardless. Prefer an `ai` fixture with `SkillId=0` so the mastery/skill-data path short-circuits entirely while inventory-derived bullet data still encodes.
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./socket/handler/ -run 'TestProcessAttack_MonsterResolveDeduped|TestBuildMonsterResolver|TestSnapshotStalenessWindow|TestWriterEquivalence' -v`
 Expected: FAIL to compile — `buildMonsterResolver`, `attackMonsterByIdFn` undefined; deps type mismatch.
 
-- [ ] **Step 4: Implement the attack-path swap**
+- [x] **Step 4: Implement the attack-path swap** (two disclosed, reviewed deviations: (1) `drainTryHeal`/`pickPocketTryProc`/`mortalBlowDeps` remain REST-backed per controller ruling R7 — monster HP mirroring was ruled out of this plan's sizing, recorded in `task-11-review.md`; (2) projectile buffs are served via a `loadBuffs` closure parameter rather than a `ProjectileProcessorImpl` struct field — functionally equivalent, buffs still served from the snapshot)
 
 In `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`:
 
@@ -3729,14 +3729,14 @@ The broadcast loop, projectile Emit, and everything else stays byte-for-byte (FR
 
 5. In `character_attack_projectile.go`: replace the `bp buff.Processor` field with `buffs func(characterId uint32) ([]buff.Model, error)`; in `NewProjectileProcessor` set `buffs: snapshot.NewProcessor(l, ctx).GetBuffs`; in `Plan` replace `p.bp.GetByCharacterId(c.Id())` with `p.buffs(c.Id())` — the fail-open "assume no buffs" branch is unchanged (FR-4.4 verdict: buffs join the snapshot; venom stays REST-memoized — `loadVenomStats` untouched).
 
-- [ ] **Step 5: Update the existing seam-based tests and run everything**
+- [x] **Step 5: Update the existing seam-based tests and run everything**
 
 Update `damageInfoEntryDeps` fakes and `mpEaterTryProc` call sites in the three existing test files to the `LiveEntry` shapes (assertions unchanged). Then:
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test -race ./socket/... ./character/snapshot/ && go build ./... && go vet ./...`
 Expected: PASS / clean — including every pre-existing attack test (reflect math, MP-Eater gating, cost gate, projectile planning).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/
@@ -3757,7 +3757,7 @@ git commit -m "feat(task-122): serve the attack path from snapshot, live mirror,
 - Consumes: Task 3's fetch seams (shadow fetches REST equivalents through the same seams — tests stay HTTP-free).
 - Produces: `CHAR_SNAPSHOT_SHADOW_SAMPLE_RATE` behavior — on a sampled full-hit `Get`, an async bounded goroutine fetches the REST projection and compares the attack-relevant projection, logging Warn + incrementing `atlas_channel_char_snapshot_divergence_total{tenant, component}` per diverging component. Default 0 = off (production); enabled in staging soaks. Position tolerance: ±100 px (chosen constant — position naturally drifts between fold and projection; anything beyond a screen-quadrant indicates real divergence).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `services/atlas-channel/atlas.com/channel/character/snapshot/shadow_test.go`:
 
@@ -3862,12 +3862,12 @@ func waitForShadowDrain(t *testing.T) {
 var _ = inventory.Model{} // keep import if unused by edits above
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test ./character/snapshot/ -run TestShadow -v`
 Expected: FAIL to compile — `resetShadowForTest`, `compareProjection`, `shadowInFlight` undefined.
 
-- [ ] **Step 3: Implement shadow.go**
+- [x] **Step 3: Implement shadow.go** (this step's own prose above, "compareProjection treats nil-vs-nil as equal," restates controller ruling R9 — CONFIRMED WRONG AS WRITTEN: `servedBuffs` is `nil` at both `maybeShadow` call sites while `shadowCompare` fetches real REST buffs, so a literal nil-vs-nil compare would false-flag `componentBuffs` for every genuinely buffed character. Landed code instead gates with `if snapBuffs != nil` and skips the buffs component with a visible Debug field when unset — confirmed correct by `task-12-review.md`)
 
 Add to `metrics.go`:
 
@@ -4120,7 +4120,7 @@ Hook the sampler in `processor.go`: in `Get`'s fast path, immediately before `re
 
 and in `GetBuffs`' hit path, before returning: `p.maybeShadow(characterId, character.Model{}, filterActive(v.Buffs))` is NOT wired — buffs are compared as part of the Get sample only when a served set is available; keep the single hook in `Get` and pass `nil` (compareProjection treats nil-vs-nil as equal; the buff comparison meaningfully engages only when a future caller passes served buffs). Simplicity over coverage here: the projectile gate's correctness is already covered by the FR-7 unit tests; shadow's primary target is core/inventory/skills/position drift.
 
-- [ ] **Step 4: Run tests, build, vet, commit**
+- [x] **Step 4: Run tests, build, vet, commit**
 
 Run (from `services/atlas-channel/atlas.com/channel`): `go test -race ./character/snapshot/ && go build ./... && go vet ./...`
 Expected: PASS / clean.
@@ -4172,7 +4172,7 @@ git commit -m "feat(task-122): env-gated shadow verification with divergence met
 
 Line numbers WILL drift as edits land — locate each site by the surrounding function name, not the number. After editing, `grep -n "statChangedProvider" character/processor.go` and assert: zero remaining sites pass `nil` with a non-empty `Updates` slice.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `services/atlas-character/atlas.com/character/character/stat_values_test.go`. Use the package's existing DB-backed harness (`testDatabase(t)` in `provider_test.go:20`; follow `kafka_integration_test.go` for the message-capture pattern — read both files first and reuse their setup idioms exactly). Drive at minimum these flows end-to-end and decode the captured STAT_CHANGED events:
 
@@ -4196,16 +4196,16 @@ Create `services/atlas-character/atlas.com/character/character/stat_values_test.
 
 Write the real test functions per that outline (the capture mechanism — producer seam or message.Buffer inspection — must be copied from `kafka_integration_test.go`'s working pattern; do not invent a new harness). Include a `statKeyFor(stat.Type) string` helper local to the test mirroring the channel-side key table.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run (from `services/atlas-character/atlas.com/character`): `go test ./character/ -run TestStatChanged_Values -v`
 Expected: FAIL — Values nil on the driven flows.
 
-- [ ] **Step 3: Edit every site per the inventory table**
+- [x] **Step 3: Edit every site per the inventory table** (the table's job-change-growth row (line 1623) restates controller ruling R10 — CONFIRMED WRONG AS WRITTEN: the landed code already carried `max_hp`/`max_mp` at that site, so R10's premise was stale; the implementer instead added the genuinely-missing `available_ap`/`available_sp`/`hp`/`mp` keys there. All 24 non-empty-`Updates` call sites confirmed populated and matching atlas-channel's `statValueKeys` table exactly per the plan-adherence audit)
 
 Mechanical rule per site: build/extend the `map[string]interface{}` with the absolute post-mutation values named in the table, hoisting tx-closure locals where noted. Do not alter `Updates` slices, event ordering, or any other emission.
 
-- [ ] **Step 4: Run the full module suite**
+- [x] **Step 4: Run the full module suite**
 
 Run (from `services/atlas-character/atlas.com/character`): `go test -race ./... && go build ./... && go vet ./...`
 Expected: PASS / clean (existing producer/processor tests must not regress — `Values` is additive).
@@ -4215,7 +4215,7 @@ grep -n "statChangedProvider" character/processor.go
 ```
 Expected: every call site passes a values map or has a provably-empty `Updates` slice (826/830/892 only).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add services/atlas-character/atlas.com/character/character/processor.go \
@@ -4230,7 +4230,7 @@ git commit -m "feat(task-122): populate absolute Values on every STAT_CHANGED em
 **Files:**
 - Modify: `docs/tasks/task-122-attack-path-snapshots/context.md` (final state notes)
 
-- [ ] **Step 1: Full test/vet/build in both modules**
+- [x] **Step 1: Full test/vet/build in both modules** (Task 14's own implementer ran module-local `go build`/`go vet`/`go test` only, per its dispatch contract — no `-race`. The `-race` run is covered by the repo-wide flagless `tools/verify.sh`, confirmed green at HEAD `74d07bbbf` and again at `e4ee83ffe` after the later DOM-20 conversion)
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test -race ./... && go vet ./... && go build ./...
@@ -4238,7 +4238,7 @@ cd ../../../atlas-character/atlas.com/character && go test -race ./... && go vet
 ```
 Expected: all clean. Fix anything that isn't before proceeding.
 
-- [ ] **Step 2: Docker bake (mandatory — go.mod-touching services)**
+- [x] **Step 2: Docker bake (mandatory — go.mod-touching services)** (not run by Task 14's own implementer — deferred to the repo-wide flagless `tools/verify.sh`, per its dispatch contract; that run is what counts as verified per CLAUDE.md and passed at HEAD `74d07bbbf` and again at `e4ee83ffe`)
 
 From the worktree root:
 
@@ -4247,7 +4247,7 @@ docker buildx bake atlas-channel atlas-character
 ```
 Expected: both images build. (atlas-channel's go.mod gained the prometheus dep via task-120; bake regardless — CLAUDE.md requires it for every service whose module was touched.)
 
-- [ ] **Step 3: redis-key-guard**
+- [x] **Step 3: redis-key-guard**
 
 From the worktree root:
 
@@ -4256,7 +4256,7 @@ tools/redis-key-guard.sh
 ```
 Expected: clean (all new state is in-process; no new go-redis usage).
 
-- [ ] **Step 4: Zero-REST assertion sweep**
+- [ ] **Step 4: Zero-REST assertion sweep** (left unchecked: this step's literal "Expected: no matches" is false — one of its own three greps, `mp.GetById` against `character_attack_common.go`, matches line 1221 (beacon `monsterExists`). Controller ruling R11 required a real sweep instead of the three hard-coded greps; it held against landed code and disclosed FOUR reachable REST reads by design — beacon `monsterExists` (`:1221`), venom `effective_stats.GetByCharacterId` (`:1027`), `AVAILABLE_SP` always-invalidate (`registry.go:246-265`), and a new find, Energy Charge's rejection-only `energyReannounceAuthoritative` REST read (`character_attack_energy_charge.go:198`) — all listed with rationale in context.md's "R11 — real zero-REST sweep" section, none a defect owed to task-122. "Zero-REST attack path" is not literally true; do not check this box as written)
 
 ```bash
 grep -n "GetById(cp.InventoryDecorator" services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go
@@ -4265,7 +4265,7 @@ grep -rn "mp.GetById" services/atlas-channel/atlas.com/channel/socket/handler/ch
 ```
 Expected: no matches (each read now routes through snapshot/mirror/cache). The venom `effective_stats.NewProcessor(...).GetByCharacterId` read at `character_attack_common.go:332` REMAINS by design (event-coverage §6 verdict) — confirm it is still the per-swing memoized lazy fetch.
 
-- [ ] **Step 5: Update context.md and commit**
+- [x] **Step 5: Update context.md and commit**
 
 Append to context.md: final component→handler map (which consumer file maintains which snapshot component), the metric names as wired, env-var defaults, and any deltas discovered during execution (task-120 API drift, VERIFY outcomes). Commit:
 
@@ -4274,7 +4274,7 @@ git add docs/tasks/task-122-attack-path-snapshots/context.md
 git commit -m "docs(task-122): execution notes and verification results"
 ```
 
-- [ ] **Step 6: Code review**
+- [x] **Step 6: Code review**
 
 Per CLAUDE.md, run `superpowers:requesting-code-review` before any PR (plan-adherence + backend-guidelines reviewers). Not optional.
 

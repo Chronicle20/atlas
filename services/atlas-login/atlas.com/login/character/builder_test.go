@@ -7,6 +7,16 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 )
 
+// TestBuilder_Build_MissingId asserts the identity invariant Build()
+// enforces: a Builder with no id set fails rather than silently producing a
+// zero-value character.
+func TestBuilder_Build_MissingId(t *testing.T) {
+	_, err := character.NewBuilder().Build()
+	if err == nil {
+		t.Fatal("Build() error = nil, want error for missing id")
+	}
+}
+
 func TestBuilder_Build(t *testing.T) {
 	m, err := character.NewBuilder().
 		SetId(1000).

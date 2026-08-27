@@ -8,7 +8,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
-	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -23,19 +22,48 @@ import (
 // fixture as a hex literal and only derives the ring span under test.
 const baseFrameHex = "7856341201010214000000011e000000ffff00000000000000000000000000000000"
 
+// ringEmptyHex is the RingSet{} (all arms nil) wire shape: three zero flag
+// bytes (couple, friendship, marriage). Identical for GMS and JMS — the JMS
+// per-arm entry-count int (model/ring.go EncodeField) is only written when
+// an arm is populated, never as a zero count on a nil arm.
+const ringEmptyHex = "000000"
+
+// ringPopulatedGMSHex is the RingSet wire shape on GMS for the fixture
+// couple pair shared with model/ring_test.go and spawn_test.go's "couple
+// populated" case (OwnSN=0x1122334455667788, PartnerSN=0x99AABBCCDDEEFF00,
+// ItemId=0x00001234): couple flag(1)=1, OwnSN(8, little-endian WriteInt64),
+// PartnerSN(8, little-endian), ItemId(4, little-endian WriteInt) = 21 bytes,
+// then friendship flag(1)=0 and marriage flag(1)=0.
+const ringPopulatedGMSHex = "01" + "8877665544332211" + "00ffeeddccbbaa99" + "34120000" + "00" + "00"
+
+// ringPopulatedJMSHex is the same fixture couple pair on JMS: couple
+// flag(1)=1, entry-count(4, little-endian WriteInt)=1, OwnSN(8), PartnerSN(8),
+// ItemId(4) = 25 bytes, then friendship flag(1)=0 and marriage flag(1)=0
+// (model/ring.go EncodeField's isJMS branch).
+const ringPopulatedJMSHex = "01" + "01000000" + "8877665544332211" + "00ffeeddccbbaa99" + "34120000" + "00" + "00"
+
+// mustHex decodes a hex literal, failing the test on a malformed constant.
+func mustHex(t *testing.T, s string) []byte {
+	t.Helper()
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		t.Fatalf("hex decode %q: %v", s, err)
+	}
+	return b
+}
+
 // runAppearanceUpdateCases exercises the empty and populated ring cases for a
-// given tenant context. Only the frame shape this task changes — the ring
-// block and the version-gated trailing completed-set int — is derived from
-// production codec calls; the rest of the frame is the pinned baseFrameHex.
-//
-// The ring block itself is built via model.RingSet.EncodeField, matching the
-// precedent already established by spawn_test.go's "couple populated" case:
-// this proves CharacterAppearanceUpdate wires the shared ring codec (Task
-// 2/3, tested in its own right in model/ring_test.go), not that the codec's
-// byte layout is correct in isolation.
+// given tenant context. The expected bytes are captured literals (base
+// frame + ring block + version-gated trailing int), independently derived
+// from the client's read order rather than built by calling the production
+// model.RingSet.EncodeField on the want side — that both-sides pattern would
+// only prove the encode site wires the shared ring codec, not that the
+// codec's own byte layout is correct (task-269 Task 14 retires the
+// tautology inherited from spawn_test.go's "couple populated" precedent).
 func runAppearanceUpdateCases(t *testing.T, ctx context.Context) {
 	t.Helper()
 	tn := tenant.MustFromContext(ctx)
+	isJMS := tn.Region() == "JMS"
 
 	avatar := model.NewAvatar(
 		1,     // gender
@@ -48,10 +76,7 @@ func runAppearanceUpdateCases(t *testing.T, ctx context.Context) {
 		nil,   // pets (-> 3x WriteInt(0))
 	)
 
-	base, err := hex.DecodeString(baseFrameHex)
-	if err != nil {
-		t.Fatalf("baseFrameHex: %v", err)
-	}
+	base := mustHex(t, baseFrameHex)
 
 	// hasTrailing mirrors the production gate (hasTrailingCompletedSetItemId
 	// in appearance_update.go): true only for gms_v87/gms_v95, where the
@@ -66,13 +91,11 @@ func runAppearanceUpdateCases(t *testing.T, ctx context.Context) {
 		input := NewCharacterAppearanceUpdate(0x12345678, avatar, rings)
 		got := input.Encode(nil, ctx)(nil)
 
-		w := response.NewWriter(nil)
-		w.WriteByteArray(base)
-		rings.EncodeField(w, tn)
+		want := append([]byte{}, base...)
+		want = append(want, mustHex(t, ringEmptyHex)...)
 		if hasTrailing {
-			w.WriteInt(0) // nCompletedSetItemID (gms_v87/v95 only)
+			want = append(want, 0x00, 0x00, 0x00, 0x00) // nCompletedSetItemID (gms_v87/v95 only)
 		}
-		want := w.Bytes()
 
 		if !bytes.Equal(got, want) {
 			t.Errorf("empty-ring bytes:\n got %x\nwant %x", got, want)
@@ -107,13 +130,16 @@ func runAppearanceUpdateCases(t *testing.T, ctx context.Context) {
 		input := NewCharacterAppearanceUpdate(0x12345678, avatar, rings)
 		got := input.Encode(nil, ctx)(nil)
 
-		w := response.NewWriter(nil)
-		w.WriteByteArray(base)
-		rings.EncodeField(w, tn)
-		if hasTrailing {
-			w.WriteInt(0) // nCompletedSetItemID (gms_v87/v95 only)
+		ringHex := ringPopulatedGMSHex
+		if isJMS {
+			ringHex = ringPopulatedJMSHex
 		}
-		want := w.Bytes()
+
+		want := append([]byte{}, base...)
+		want = append(want, mustHex(t, ringHex)...)
+		if hasTrailing {
+			want = append(want, 0x00, 0x00, 0x00, 0x00) // nCompletedSetItemID (gms_v87/v95 only)
+		}
 
 		if !bytes.Equal(got, want) {
 			t.Errorf("populated-ring bytes:\n got %x\nwant %x", got, want)

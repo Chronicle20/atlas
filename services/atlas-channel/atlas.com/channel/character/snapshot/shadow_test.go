@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,11 +34,12 @@ func TestShadow_SamplesAndCountsDivergence(t *testing.T) {
 	resetRegistryForTest(t)
 	resetShadowForTest(t)
 	t.Setenv("CHAR_SNAPSHOT_SHADOW_SAMPLE_RATE", "1.0")
-	p, _ := newTestProcessor(t)
+	p, tm := newTestProcessor(t)
 	counts := installFetchSeams(t, 7)
 	if _, err := p.Get(7); err != nil {
 		t.Fatalf("populate: %v", err)
 	}
+	divergenceBefore := testutil.ToFloat64(snapshotDivergenceTotal.WithLabelValues(tm.Id().String(), componentCore))
 
 	// Make the REST projection diverge on level.
 	var diverged atomic.Int32
@@ -56,6 +58,10 @@ func TestShadow_SamplesAndCountsDivergence(t *testing.T) {
 		t.Fatalf("rate=1.0 must shadow-fetch on a full hit")
 	}
 	_ = counts
+	divergenceAfter := testutil.ToFloat64(snapshotDivergenceTotal.WithLabelValues(tm.Id().String(), componentCore))
+	if divergenceAfter-divergenceBefore != 1 {
+		t.Fatalf("shadow divergence must record the core component once: before=%v after=%v", divergenceBefore, divergenceAfter)
+	}
 	// Divergence is observable via compareProjection directly:
 	inv, _, _ := testInventory(t, 7)
 	snapM := testCore(t, 7).SetInventory(inv).SetSkills(nil)
@@ -78,6 +84,12 @@ func TestCompareProjection_PositionToleranceBanded(t *testing.T) {
 	c := character.CloneModel(testCore(t, 7)).SetX(testCore(t, 7).X() + 500).MustBuild().SetInventory(inv).SetSkills(nil)
 	if div := compareProjection(a, c, nil, nil); len(div) != 1 || div[0] != componentPosition {
 		t.Fatalf("out-of-band position must diverge: %v", div)
+	}
+	// Exact boundary: dx == positionToleranceBand is within the band
+	// (shadow.go compares with strict > / <), so it must not diverge.
+	d := character.CloneModel(testCore(t, 7)).SetX(testCore(t, 7).X() + positionToleranceBand).MustBuild().SetInventory(inv).SetSkills(nil)
+	if div := compareProjection(a, d, nil, nil); len(div) != 0 {
+		t.Fatalf("dx exactly at positionToleranceBand must not diverge: %v", div)
 	}
 }
 

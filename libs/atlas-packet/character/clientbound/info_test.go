@@ -208,6 +208,44 @@ func TestCharacterInfoV79Golden(t *testing.T) {
 	}
 }
 
+// TestCharacterInfoV92Golden pins the full gms_v92 CharacterInfo wire against
+// CWvsContext::OnCharacterInfo @0x9daa40. v92's gates (MajorVersion<=87 for
+// monster-book, MajorVersion>61 for medal, MajorAtLeast(87) for chair) all
+// resolve identically to v95 (info.go:178,190,194), so the wire is
+// byte-identical to v95 -- cross-checked below against a live v95 encode of
+// the same fixture, not merely asserted.
+// packet-audit:verify packet=character/clientbound/CharacterInfo version=gms_v92 ida=0x9daa40
+func TestCharacterInfoV92Golden(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 92, 1)
+	pets := []InfoPet{{Slot: 0, TemplateId: 5000000, Name: "Kitty", Level: 15, Closeness: 200, Fullness: 80}}
+	mount := MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}
+	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, MonsterBookInfo{}, mount, false)
+
+	got := in.Encode(nil, ctx)(nil)
+	want, _ := hex.DecodeString("393000003264000a00000900546573744775696c6400000001404b4c0005004b697474790fc80050000000000000000107000000d20400002a00000002104a0f00114a0f00f76c1100000000000000")
+	if !bytes.Equal(got, want) {
+		t.Errorf("v92 CharacterInfo wire (len got=%d want=%d):\n got %x\nwant %x", len(got), len(want), got, want)
+	}
+	v95 := in.Encode(nil, pt.CreateContext("GMS", 95, 1))(nil)
+	if !bytes.Equal(got, v95) {
+		t.Errorf("v92 CharacterInfo must equal v95:\n v92 %x\n v95 %x", got, v95)
+	}
+
+	// Marriage-ring bool (site D) round-trips on the v92 arm too: flipping
+	// the flag changes exactly the one marriage-flag byte at offset 9.
+	inFalse := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", nil, nil, 0, MonsterBookInfo{}, MountInfo{}, false)
+	inTrue := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", nil, nil, 0, MonsterBookInfo{}, MountInfo{}, true)
+	gotFalse := inFalse.Encode(nil, ctx)(nil)
+	gotTrue := inTrue.Encode(nil, ctx)(nil)
+	const marriageOffset = 9
+	if gotFalse[marriageOffset] != 0x00 || gotTrue[marriageOffset] != 0x01 {
+		t.Fatalf("v92 marriage-flag bytes: false=%#x true=%#x", gotFalse[marriageOffset], gotTrue[marriageOffset])
+	}
+	if len(gotFalse) != len(gotTrue) {
+		t.Fatalf("v92 marriage flag must not change length: false=%d true=%d", len(gotFalse), len(gotTrue))
+	}
+}
+
 // TestCharacterInfoV48Golden pins the full gms_v48 CharacterInfo wire.
 //
 // Client read order — CWvsContext::OnCharacterInfo (GMS_v48_1_DEVM.exe, port 13337

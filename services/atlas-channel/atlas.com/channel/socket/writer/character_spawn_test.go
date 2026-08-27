@@ -9,6 +9,7 @@ import (
 	"atlas-channel/ring"
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -98,6 +99,11 @@ func TestCharacterSpawnBodyCarriesRings(t *testing.T) {
 	})
 
 	t.Run("no ring", func(t *testing.T) {
+		// FR-9 guard (task-13 addendum A2): compare against a captured
+		// baseline byte string, not a second live encode of the same input.
+		// An encode-vs-encode comparison is a tautology -- it cannot catch a
+		// regression that changes the empty-ring path, because both sides
+		// would change together.
 		ctx := pt.CreateContext("GMS", 83, 1)
 		const characterId = uint32(200)
 
@@ -105,12 +111,12 @@ func TestCharacterSpawnBodyCarriesRings(t *testing.T) {
 		enc := CharacterSpawnBody(c, nil, guild.Model{}, true)
 		got := pt.Encode(t, ctx, enc, nil)
 
-		c2 := character.NewModelBuilder().SetId(characterId).SetSp("0").MustBuild()
-		enc2 := CharacterSpawnBody(c2, nil, guild.Model{}, true)
-		got2 := pt.Encode(t, ctx, enc2, nil)
-
-		if !bytes.Equal(got, got2) {
-			t.Fatalf("cache-miss encode is not deterministic: %x vs %x", got, got2)
+		want, err := hex.DecodeString("c8000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000ffff000000000000000000000000000000000000000000000000000000000000d6ff0600000000010000000000000000000000000000000000000000")
+		if err != nil {
+			t.Fatalf("decode fixture: %v", err)
+		}
+		if !bytes.Equal(got, want) {
+			t.Fatalf("cache-miss encode changed:\n got %x\nwant %x", got, want)
 		}
 	})
 }

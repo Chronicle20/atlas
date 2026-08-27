@@ -13,6 +13,7 @@ type Builder struct {
 	message     string
 	timestamp   time.Time
 	flag        byte
+	giftNote    bool
 }
 
 // NewBuilder creates a new Builder
@@ -58,6 +59,13 @@ func (b *Builder) SetFlag(flag byte) *Builder {
 	return b
 }
 
+// SetGiftNote sets whether this note originated from a cash-shop gift
+// acknowledgement.
+func (b *Builder) SetGiftNote(giftNote bool) *Builder {
+	b.giftNote = giftNote
+	return b
+}
+
 // Build creates a new Model with the builder's values
 func (b *Builder) Build() (Model, error) {
 	if err := b.validate(); err != nil {
@@ -70,6 +78,7 @@ func (b *Builder) Build() (Model, error) {
 		message:     b.message,
 		timestamp:   b.timestamp,
 		flag:        b.flag,
+		giftNote:    b.giftNote,
 	}, nil
 }
 

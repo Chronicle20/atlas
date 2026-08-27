@@ -11,7 +11,7 @@ import (
 
 func TestCreateNoteCommandProvider(t *testing.T) {
 	txn := uuid.New()
-	msgs, err := CreateNoteCommandProvider(txn, 200, 100, "hello", 1)()
+	msgs, err := CreateNoteCommandProvider(txn, 200, 100, "hello", 1, true)()
 	if err != nil {
 		t.Fatalf("provider: %v", err)
 	}
@@ -31,7 +31,7 @@ func TestCreateNoteCommandProvider(t *testing.T) {
 	if c.CharacterId != 200 {
 		t.Errorf("characterId (receiver): got %d, want 200", c.CharacterId)
 	}
-	if c.Body.SenderId != 100 || c.Body.Message != "hello" || c.Body.Flag != 1 {
+	if c.Body.SenderId != 100 || c.Body.Message != "hello" || c.Body.Flag != 1 || !c.Body.GiftNote {
 		t.Errorf("body mismatch: %+v", c.Body)
 	}
 }

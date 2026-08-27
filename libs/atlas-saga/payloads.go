@@ -1382,6 +1382,11 @@ type CreateNotePayload struct {
 	ReceiverId uint32 `json:"receiverId"` // Character receiving the note
 	Message    string `json:"message"`    // Note message text
 	Flag       byte   `json:"flag"`       // Memo flag/type; 0 = plain note (player sends). Non-zero selects reward/gift render templates client-side.
+	// GiftNote records that this note originated from a cash-shop gift
+	// acknowledgement; its fame was settled at acceptance time. It suppresses
+	// the sender fame award on discard, so a single gift never fames both
+	// directions.
+	GiftNote bool `json:"giftNote,omitempty"`
 }
 
 // AssetSnapshot captures one inventory asset at decode time (item megaphone,

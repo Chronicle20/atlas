@@ -85,7 +85,7 @@ func TestDiscardAndEmit_FameAwardNotFiredWhenDiscardFails(t *testing.T) {
 	senderId := uint32(2)
 
 	mb := message.NewBuffer()
-	n1, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 1")(0)
+	n1, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 1")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 1: %v", err)
 	}
@@ -122,11 +122,11 @@ func TestDiscardAndEmit_FameAwardFiresAfterSuccess(t *testing.T) {
 	senderId := uint32(2)
 
 	mb := message.NewBuffer()
-	n1, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 1")(0)
+	n1, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 1")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 1: %v", err)
 	}
-	n2, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 2")(0)
+	n2, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("Note 2")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create note 2: %v", err)
 	}
@@ -147,5 +147,48 @@ func TestDiscardAndEmit_FameAwardFiresAfterSuccess(t *testing.T) {
 	}
 	if notes.Total != 0 {
 		t.Fatalf("Expected 0 notes remaining, got %d", notes.Total)
+	}
+}
+
+// TestDiscardAndEmit_GiftNoteSuppressesFameInMixedBatch proves the task-240 follow-up fix: a
+// gift-originated note produces NO fame-award saga on discard, while an ordinary note discarded in
+// the SAME batch still does. A mixed batch is the case that catches a misplaced `continue` — a bug
+// that skips the wrong note, or skips both, would not be caught by a single-note test.
+func TestDiscardAndEmit_GiftNoteSuppressesFameInMixedBatch(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	te := fameAwardTestTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := fameAwardTestDatabase(t)
+	fakeSaga := &fakeSagaProcessor{}
+	p := newFameAwardTestProcessor(l, ctx, db, fakeSaga)
+
+	characterId := uint32(1)
+	senderId := uint32(2)
+
+	mb := message.NewBuffer()
+	giftNote, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("thanks for the gift!")(0)(true)
+	if err != nil {
+		t.Fatalf("Failed to create gift note: %v", err)
+	}
+	ordinaryNote, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("hi")(0)(false)
+	if err != nil {
+		t.Fatalf("Failed to create ordinary note: %v", err)
+	}
+
+	ch := channel.NewModel(0, 0)
+	err = p.DiscardAndEmit(ch, characterId, []uint32{giftNote.Id(), ordinaryNote.Id()})
+	if err != nil {
+		t.Fatalf("Failed to discard notes: %v", err)
+	}
+
+	if len(fakeSaga.calls) != 1 {
+		t.Fatalf("Expected exactly 1 fame-award saga command (ordinary note only), got %d", len(fakeSaga.calls))
+	}
+	p1, ok := fakeSaga.calls[0].Steps[0].Payload.(saga.AwardFamePayload)
+	if !ok {
+		t.Fatalf("step payload type: %T", fakeSaga.calls[0].Steps[0].Payload)
+	}
+	if p1.CharacterId != senderId {
+		t.Errorf("fame award characterId: got %d, want %d (sender of the ordinary note)", p1.CharacterId, senderId)
 	}
 }

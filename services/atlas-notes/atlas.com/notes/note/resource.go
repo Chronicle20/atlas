@@ -149,7 +149,7 @@ func CreateNoteHandler(d *rest.HandlerDependency, c *rest.HandlerContext, i Rest
 			return
 		}
 
-		m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(uuid.Nil, im.CharacterId(), im.SenderId(), im.Message(), im.Flag())
+		m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(uuid.Nil, im.CharacterId(), im.SenderId(), im.Message(), im.Flag(), false)
 		if err != nil {
 			d.Logger().WithError(err).Errorln("Error creating note")
 			server.WriteErrorResponse(d.Logger())(w)(err)

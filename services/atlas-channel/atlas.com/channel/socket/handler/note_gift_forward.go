@@ -46,6 +46,11 @@ func buildGiftForwardSaga(transactionId uuid.UUID, now time.Time, senderId uint3
 					// comment for why non-zero flags are reserved for other
 					// memo render templates.
 					Flag: 0,
+					// GiftNote: this note's fame was already settled at
+					// acceptance time (buildGiftFameSaga awards the gifter
+					// +1). Suppresses the sender-fame award atlas-notes would
+					// otherwise apply when the gifter discards the note.
+					GiftNote: true,
 				},
 				CreatedAt: now,
 				UpdatedAt: now,

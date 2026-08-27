@@ -3787,7 +3787,7 @@ func (h *HandlerImpl) handleCreateNote(s Saga, st Step[any]) error {
 		"receiver_id":    payload.ReceiverId,
 	}).Debug("Requesting note creation.")
 
-	err := h.noteP.CreateNote(s.TransactionId(), payload.ReceiverId, payload.SenderId, payload.Message, payload.Flag)
+	err := h.noteP.CreateNote(s.TransactionId(), payload.ReceiverId, payload.SenderId, payload.Message, payload.Flag, payload.GiftNote)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to request note creation.")
 		return err

@@ -57,6 +57,9 @@ func TestBuildGiftForwardSaga(t *testing.T) {
 	if np.SenderId != 200 || np.ReceiverId != 100 || np.Message != "thanks!" || np.Flag != 0 {
 		t.Errorf("create-note payload mismatch: %+v", np)
 	}
+	if !np.GiftNote {
+		t.Errorf("create-note payload: GiftNote = false, want true (fame already settled at acceptance)")
+	}
 }
 
 // giftAsset builds a cash-shop compartment holding a single asset with the

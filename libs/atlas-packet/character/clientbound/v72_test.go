@@ -269,10 +269,10 @@ func TestStatusMessageCashItemExpireByteOutputV72(t *testing.T) {
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0x88ca78*/
 //
 // As in v79/v83/jms, the marriage if/else has NO trailing unconditional Decode4
-// (the else branch @0x88cabd zeroes the slots and reads nothing). Atlas always
-// writes flags=1 (look-only) + three ring markers as 0, so the trailing
-// WriteInt(0) "completed set item id" is benign trailing slack. Byte-identical
-// to the v79 fixture.
+// (the else branch @0x88cabd zeroes the slots and reads nothing). Atlas writes
+// flags=1 (look-only) + three ring markers as 0, with no trailing int
+// (task-269 Task 6 frame correction — no export shows the client reading one).
+// Byte-identical to the v79 fixture.
 //
 // packet-audit:verify packet=character/clientbound/CharacterAppearanceUpdate version=gms_v72 ida=0x88c934
 func TestCharacterAppearanceUpdateByteOutputV72(t *testing.T) {
@@ -285,7 +285,7 @@ func TestCharacterAppearanceUpdateByteOutputV72(t *testing.T) {
 		0x1E,  // hair
 		nil, nil, nil,
 	)
-	got := NewCharacterAppearanceUpdate(0x12345678, avatar).Encode(nil, ctx)(nil)
+	got := NewCharacterAppearanceUpdate(0x12345678, avatar, model.RingSet{}).Encode(nil, ctx)(nil)
 
 	want := []byte{
 		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*0x88c934 dispatch*/
@@ -303,10 +303,11 @@ func TestCharacterAppearanceUpdateByteOutputV72(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // pet 1
 		0x00, 0x00, 0x00, 0x00, // pet 2
 		// --- ring markers ---
-		0x00,                   // couple marker (Decode1)                /*0x88c9de*/
-		0x00,                   // friend marker (Decode1)                /*0x88ca2b*/
-		0x00,                   // marriage marker (Decode1)              /*0x88ca78*/
-		0x00, 0x00, 0x00, 0x00, // completed set item id (trailing slack; unread when marriage==0)
+		0x00, // couple marker (Decode1)                /*0x88c9de*/
+		0x00, // friend marker (Decode1)                /*0x88ca2b*/
+		0x00, // marriage marker (Decode1)              /*0x88ca78*/
+		// no trailing completed-set int: no export shows the client reading
+		// one (task-269 Task 6 frame correction).
 	}
 	if !bytes.Equal(got, want) {
 		t.Errorf("v72 CharacterAppearanceUpdate wire:\n got %x\nwant %x", got, want)

@@ -252,8 +252,9 @@ func TestStatusMessageCashItemExpireByteOutputV61(t *testing.T) {
 //	marriageMarker = Decode1         // != 0 => 3x Decode4; else zeros          /*0x7cbec7*/
 //
 // As in v72: the marriage if/else has NO trailing unconditional Decode4. Atlas
-// always writes flags=1 (look-only) + three ring markers as 0, so the trailing
-// WriteInt(0) is benign trailing slack. Byte-identical to the v72 fixture.
+// writes flags=1 (look-only) + three ring markers as 0, with no trailing int
+// (task-269 Task 6 frame correction — no export shows the client reading one).
+// Byte-identical to the v72 fixture.
 //
 // packet-audit:verify packet=character/clientbound/CharacterAppearanceUpdate version=gms_v61 ida=0x7cbd86
 func TestCharacterAppearanceUpdateByteOutputV61(t *testing.T) {
@@ -266,7 +267,7 @@ func TestCharacterAppearanceUpdateByteOutputV61(t *testing.T) {
 		0x1E,  // hair
 		nil, nil, nil,
 	)
-	got := NewCharacterAppearanceUpdate(0x12345678, avatar).Encode(nil, ctx)(nil)
+	got := NewCharacterAppearanceUpdate(0x12345678, avatar, model.RingSet{}).Encode(nil, ctx)(nil)
 
 	want := []byte{
 		0x78, 0x56, 0x34, 0x12, // characterId (WriteInt)                 /*dispatch*/
@@ -284,10 +285,11 @@ func TestCharacterAppearanceUpdateByteOutputV61(t *testing.T) {
 		0x00, 0x00, 0x00, 0x00, // pet 1
 		0x00, 0x00, 0x00, 0x00, // pet 2
 		// --- ring markers ---
-		0x00,                   // couple marker (Decode1)                /*0x7cbe2d*/
-		0x00,                   // friend marker (Decode1)                /*0x7cbe7a*/
-		0x00,                   // marriage marker (Decode1)              /*0x7cbec7*/
-		0x00, 0x00, 0x00, 0x00, // completed set item id (trailing slack; unread when marriage==0)
+		0x00, // couple marker (Decode1)                /*0x7cbe2d*/
+		0x00, // friend marker (Decode1)                /*0x7cbe7a*/
+		0x00, // marriage marker (Decode1)              /*0x7cbec7*/
+		// no trailing completed-set int: no export shows the client reading
+		// one (task-269 Task 6 frame correction).
 	}
 	if !bytes.Equal(got, want) {
 		t.Errorf("v61 CharacterAppearanceUpdate wire:\n got %x\nwant %x", got, want)

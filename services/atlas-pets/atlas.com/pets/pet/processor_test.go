@@ -189,6 +189,7 @@ func TestProcessor_DeleteOnRemove(t *testing.T) {
 	cp.GetByIdFn = func(...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
 			return character.NewBuilder().
+				SetId(characterId).
 				SetInventory(inventory.NewBuilder(characterId).
 					SetCash(compartment.NewBuilder(uuid.New(), characterId, inventory2.TypeValueCash, 24).
 						AddAsset(asset.NewBuilder(uuid.Nil, templateId).
@@ -198,7 +199,7 @@ func TestProcessor_DeleteOnRemove(t *testing.T) {
 							Build()).
 						Build()).
 					Build()).
-				Build(), nil
+				Build()
 		}
 	}
 	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithCharacterProcessor(cp))
@@ -375,7 +376,7 @@ func TestProcessor_SpawnSingleLead(t *testing.T) {
 	cp := &cm.Processor{}
 	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
-			return character.NewBuilder().SetX(50).SetY(95).Build(), nil
+			return character.NewBuilder().SetId(7000000).SetX(50).SetY(95).Build()
 		}
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
@@ -420,9 +421,10 @@ func TestProcessor_SpawnMigrateLead(t *testing.T) {
 	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
 			return character.NewBuilder().
+				SetId(7000000).
 				SetX(50).
 				SetY(95).
-				Build(), nil
+				Build()
 		}
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
@@ -478,7 +480,7 @@ func TestProcessor_SpawnMissingMulti(t *testing.T) {
 	cp := &cm.Processor{}
 	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
-			return character.NewBuilder().SetX(50).SetY(95).Build(), nil
+			return character.NewBuilder().SetId(7000000).SetX(50).SetY(95).Build()
 		}
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
@@ -516,7 +518,7 @@ func TestProcessor_SpawnNonLead(t *testing.T) {
 	cp := &cm.Processor{}
 	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
-			return character.NewBuilder().SetX(50).SetY(95).Build(), nil
+			return character.NewBuilder().SetId(7000000).SetX(50).SetY(95).Build()
 		}
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
@@ -1444,10 +1446,11 @@ func characterMockOwningCash(characterId uint32, templateId uint32) *cm.Processo
 					Build())
 			}
 			return character.NewBuilder().
+				SetId(characterId).
 				SetInventory(inventory.NewBuilder(characterId).
 					SetCash(cb.Build()).
 					Build()).
-				Build(), nil
+				Build()
 		}
 	}
 	return cp
@@ -1598,7 +1601,7 @@ func TestEvolveSummonedRefreshesAppearance(t *testing.T) {
 	cp := &cm.Processor{}
 	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
-			return character.NewBuilder().SetX(50).SetY(95).Build(), nil
+			return character.NewBuilder().SetId(7000000).SetX(50).SetY(95).Build()
 		}
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)

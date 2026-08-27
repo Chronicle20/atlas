@@ -251,5 +251,15 @@ func (m Model) SetInventory(i inventory.Model) Model {
 		SetEtc(i.ETC()).
 		SetCash(i.Cash())
 
-	return Clone(m).SetInventory(ib.Build()).Build()
+	nm, err := Clone(m).SetInventory(ib.Build()).Build()
+	if err != nil {
+		// Build() only fails when id == 0. m is an already-loaded character
+		// (its id was validated when it was built), so Clone(m) always
+		// carries a non-zero id and this branch is unreachable in practice.
+		// SetInventory's signature cannot propagate an error (it backs the
+		// InventoryDecorator, which must satisfy model.Decorator[Model]), so
+		// fall back to the unmodified model rather than a zero-value one.
+		return m
+	}
+	return nm
 }

@@ -1,19 +1,31 @@
 package handler
 
 import (
-	"atlas-channel/monster"
+	"bytes"
+	"context"
 	"errors"
 	"io"
 	"testing"
 	"time"
 
+	"atlas-channel/asset"
+	"atlas-channel/character"
+	"atlas-channel/character/skill"
+	"atlas-channel/character/snapshot"
+	"atlas-channel/compartment"
+	"atlas-channel/inventory"
+	"atlas-channel/monster"
+	"atlas-channel/socket/writer"
+
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	invconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
@@ -438,5 +450,203 @@ func TestBeaconTryApply(t *testing.T) {
 		if c.kind == "apply" {
 			t.Fatal("apply must not run after cancel failure")
 		}
+	}
+}
+
+// newHandlerTestInventory builds a minimal inventory (one consumable asset)
+// for handler-package fixtures, matching the shape of the snapshot
+// package's own testInventory helper (character/snapshot/registry_test.go).
+func newHandlerTestInventory(t *testing.T, characterId uint32) (inventory.Model, uuid.UUID, asset.Model) {
+	t.Helper()
+	compId := uuid.New()
+	a := asset.NewModelBuilder(9001, compId, 2060000).SetSlot(2).SetQuantity(400).MustBuild()
+	comp := compartment.NewBuilder(compId, characterId, invconst.TypeValueUse, 96).AddAsset(a).MustBuild()
+	inv := inventory.NewBuilder(characterId).
+		SetEquipable(compartment.NewBuilder(uuid.New(), characterId, invconst.TypeValueEquip, 96).MustBuild()).
+		SetConsumable(comp).
+		SetSetup(compartment.NewBuilder(uuid.New(), characterId, invconst.TypeValueSetup, 96).MustBuild()).
+		SetEtc(compartment.NewBuilder(uuid.New(), characterId, invconst.TypeValueETC, 96).MustBuild()).
+		SetCash(compartment.NewBuilder(uuid.New(), characterId, invconst.TypeValueCash, 96).MustBuild()).
+		MustBuild()
+	return inv, compId, a
+}
+
+// newRangedAttackInfoFixture builds a minimal ranged AttackInfo with one
+// damage entry and SkillId=0, so the writer's mastery/skill-data lookup
+// short-circuits (no owned skill match) while inventory-derived bullet data
+// still runs through preComputeAttackValues.
+func newRangedAttackInfoFixture(t *testing.T) packetmodel.AttackInfo {
+	t.Helper()
+	ai := packetmodel.NewAttackInfo(packetmodel.AttackTypeRanged)
+	ai.AddDamageInfo(*packetmodel.NewDamageInfo(1).SetMonsterId(9001).SetDamages([]uint32{100}))
+	return *ai
+}
+
+// FR-7.3: one monster resolve per damaged monster serves BOTH the reflect
+// check and MP Eater, mirror hit or not.
+func TestProcessAttack_MonsterResolveDeduped(t *testing.T) {
+	// Drive processDamageInfoEntry twice for the same monster through deps
+	// whose getMonster counts calls; then assert the memoized resolver
+	// (buildMonsterResolver) collapses them.
+	tm := testTenant(t)
+	calls := 0
+	prev := attackMonsterByIdFn
+	attackMonsterByIdFn = func(_ logrus.FieldLogger, _ context.Context, uniqueId uint32) (monster.Model, error) {
+		calls++
+		f := field.NewBuilder(0, 1, 100000000).Build()
+		return monster.NewModelBuilder(uniqueId, f, 100100).SetMp(50).SetMaxMp(80).SetX(10).SetY(20).Build()
+	}
+	defer func() { attackMonsterByIdFn = prev }()
+
+	ctx := tenant.WithContext(context.Background(), tm)
+	resolve := buildMonsterResolver(logrus.New(), ctx, tm)
+
+	e1, err := resolve(4001)
+	if err != nil {
+		t.Fatalf("first resolve: %v", err)
+	}
+	if _, err = resolve(4001); err != nil {
+		t.Fatalf("second resolve: %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("resolver must memoize per swing: %d REST calls", calls)
+	}
+	if e1.Mp != 50 || e1.MaxMp != 80 || e1.X != 10 || e1.Y != 20 {
+		t.Fatalf("entry mismatch: %+v", e1)
+	}
+	// The fallback must have backfilled the mirror for the NEXT swing.
+	if got, ok := monster.GetLiveMirror().Lookup(tm, 4001); !ok || got.Mp != 50 {
+		t.Fatalf("fallback must backfill mirror: %+v ok=%v", got, ok)
+	}
+}
+
+func TestBuildMonsterResolver_MirrorHitZeroRest(t *testing.T) {
+	tm := testTenant(t)
+	f := field.NewBuilder(0, 1, 100000000).Build()
+	monster.GetLiveMirror().Put(tm, 4002, monster.LiveEntry{Field: f, MonsterId: 100100, Mp: 7, MaxMp: 9, X: 1, Y: 2})
+
+	prev := attackMonsterByIdFn
+	attackMonsterByIdFn = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (monster.Model, error) {
+		t.Fatalf("mirror hit must not call REST")
+		return monster.Model{}, nil
+	}
+	defer func() { attackMonsterByIdFn = prev }()
+
+	ctx := tenant.WithContext(context.Background(), tm)
+	resolve := buildMonsterResolver(logrus.New(), ctx, tm)
+	e, err := resolve(4002)
+	if err != nil || e.Mp != 7 || e.X != 1 {
+		t.Fatalf("mirror entry mismatch: %+v err=%v", e, err)
+	}
+}
+
+// TestBuildMonsterModelResolver_Memoizes pins R7: the full-Model resolver
+// (drainTryHeal / pickPocketTryProc / mortalBlowDeps) is NOT backed by the
+// mirror (it does not carry Hp/MaxHp), but it IS memoized per swing — two
+// resolves for the same monster must still collapse to one REST call.
+func TestBuildMonsterModelResolver_Memoizes(t *testing.T) {
+	tm := testTenant(t)
+	calls := 0
+	prev := attackMonsterByIdFn
+	attackMonsterByIdFn = func(_ logrus.FieldLogger, _ context.Context, uniqueId uint32) (monster.Model, error) {
+		calls++
+		f := field.NewBuilder(0, 1, 100000000).Build()
+		return monster.NewModelBuilder(uniqueId, f, 100100).SetHp(10).SetMaxHp(100).Build()
+	}
+	defer func() { attackMonsterByIdFn = prev }()
+
+	ctx := tenant.WithContext(context.Background(), tm)
+	resolve := buildMonsterModelResolver(logrus.New(), ctx, tm)
+
+	mo1, err := resolve(5001)
+	if err != nil {
+		t.Fatalf("first resolve: %v", err)
+	}
+	if _, err = resolve(5001); err != nil {
+		t.Fatalf("second resolve: %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("resolver must memoize per swing: %d REST calls", calls)
+	}
+	if mo1.Hp() != 10 || mo1.MaxHp() != 100 {
+		t.Fatalf("model mismatch: hp=%d maxHp=%d", mo1.Hp(), mo1.MaxHp())
+	}
+}
+
+// FR-7.4 staleness window: a skill UPDATED event between two snapshot reads
+// is reflected in the second read.
+func TestSnapshotStalenessWindow_SkillLevelChangesBetweenAttacks(t *testing.T) {
+	tm := testTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+
+	v := snapshot.GetRegistry().View(tm, 91)
+	core := character.NewModelBuilder().SetId(91).SetLevel(120).MustBuild()
+	_ = snapshot.GetRegistry().BackfillCore(tm, 91, core, v.CoreGen)
+	_ = snapshot.GetRegistry().BackfillSkills(tm, 91, []skill.Model{
+		skill.NewModelBuilder(skill3.Id(3121004)).SetLevel(10).MustBuild(),
+	}, v.SkillsGen)
+	inv, _, _ := newHandlerTestInventory(t, 91) // package-local inventory fixture (same shape as snapshot tests)
+	_ = snapshot.GetRegistry().BackfillInventory(tm, 91, inv, v.InvGen)
+	_ = snapshot.GetRegistry().BackfillBuffs(tm, 91, nil, v.BuffsGen)
+
+	sp := snapshot.NewProcessor(logrus.New(), ctx)
+	m1, err := sp.Get(91)
+	if err != nil {
+		t.Fatalf("first read: %v", err)
+	}
+	if s, _ := m1.SkillById(skill3.Id(3121004)); s.Level() != 10 {
+		t.Fatalf("first read level: %d", s.Level())
+	}
+
+	// Event lands between attacks.
+	snapshot.GetRegistry().UpsertSkill(tm, 91,
+		skill.NewModelBuilder(skill3.Id(3121004)).SetLevel(11).MustBuild())
+
+	m2, err := sp.Get(91)
+	if err != nil {
+		t.Fatalf("second read: %v", err)
+	}
+	if s, _ := m2.SkillById(skill3.Id(3121004)); s.Level() != 11 {
+		t.Fatalf("second attack must see the new level: %d", s.Level())
+	}
+}
+
+// FR-4.6/FR-7.2: for the same logical state, the snapshot-composed model
+// and the decorator-built model produce byte-identical broadcast bodies.
+func TestWriterEquivalence_SnapshotComposedModel(t *testing.T) {
+	tm := testTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+
+	inv, _, _ := newHandlerTestInventory(t, 92)
+	skills := []skill.Model{skill.NewModelBuilder(skill3.Id(3121004)).SetLevel(10).MustBuild()}
+	base := character.NewModelBuilder().SetId(92).SetLevel(120).SetJobId(322).SetX(5).SetY(-5).MustBuild()
+
+	// Path A: today's decorator order (GetById -> InventoryDecorator -> SkillModelDecorator).
+	want := base.SetInventory(inv).SetSkills(skills)
+
+	// Path B: snapshot composition.
+	v := snapshot.GetRegistry().View(tm, 92)
+	_ = snapshot.GetRegistry().BackfillCore(tm, 92, base, v.CoreGen)
+	_ = snapshot.GetRegistry().BackfillSkills(tm, 92, skills, v.SkillsGen)
+	_ = snapshot.GetRegistry().BackfillInventory(tm, 92, inv, v.InvGen)
+	_ = snapshot.GetRegistry().BackfillBuffs(tm, 92, nil, v.BuffsGen)
+	got, err := snapshot.NewProcessor(logrus.New(), ctx).Get(92)
+	if err != nil {
+		t.Fatalf("snapshot get: %v", err)
+	}
+
+	ai := newRangedAttackInfoFixture(t) // reuse/extend the package's existing AttackInfo fixture
+
+	// packet.Encode = func(l, ctx) func(options map[string]interface{}) []byte
+	// (libs/atlas-socket/packet/encoder.go:9). Use the packet-test context
+	// helper the writer tests use (socket/writer/character_info_test.go:31,
+	// pt "github.com/Chronicle20/atlas/libs/atlas-packet/test").
+	ptCtx := pt.CreateContext("GMS", 83, 1)
+	lb := logrus.New()
+	opts := map[string]interface{}{}
+	wantBytes := writer.CharacterAttackRangedBody(want, ai)(lb, ptCtx)(opts)
+	gotBytes := writer.CharacterAttackRangedBody(got, ai)(lb, ptCtx)(opts)
+	if !bytes.Equal(wantBytes, gotBytes) {
+		t.Fatalf("broadcast bytes diverge:\nwant %x\ngot  %x", wantBytes, gotBytes)
 	}
 }

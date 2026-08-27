@@ -1,13 +1,14 @@
 package handler
 
 import (
-	"atlas-channel/data/skill/effect"
-	"atlas-channel/effective_stats"
-	"atlas-channel/monster"
 	"errors"
 	"math"
 	"testing"
 	"time"
+
+	"atlas-channel/data/skill/effect"
+	"atlas-channel/effective_stats"
+	"atlas-channel/monster"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -237,7 +238,7 @@ func mbEntryDeps(onDamageApplied func(di packetmodel.DamageInfo, totalDamage uin
 		getReflect: func(tenant.Model, uint32, string) (monster.ReflectInfo, bool) {
 			return monster.ReflectInfo{}, false
 		},
-		getMonster: func(uint32) (monster.Model, error) { return monster.Model{}, nil },
+		getMonster: func(uint32) (monster.LiveEntry, error) { return monster.LiveEntry{}, nil },
 		applyDamage: func(field.Model, uint32, uint32, []uint32, byte) error {
 			return nil
 		},
@@ -312,8 +313,8 @@ func TestProcessDamageInfoEntry_ReflectedEntrySkipsOnDamageApplied(t *testing.T)
 			ExpiresAt: time.Now().Add(time.Minute),
 		}, true
 	}
-	deps.getMonster = func(uint32) (monster.Model, error) {
-		return mbMonster(t, 42, 500, 1000), nil
+	deps.getMonster = func(uint32) (monster.LiveEntry, error) {
+		return monster.LiveEntryFromModel(mbMonster(t, 42, 500, 1000)), nil
 	}
 
 	di := *packetmodel.NewDamageInfo(1).SetMonsterId(42).SetDamages([]uint32{100})

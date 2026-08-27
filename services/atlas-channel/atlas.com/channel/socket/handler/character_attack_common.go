@@ -1,10 +1,16 @@
 package handler
 
 import (
+	"context"
+	"errors"
+	"math"
+	"math/rand"
+
 	"atlas-channel/battleship"
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
+	"atlas-channel/character/snapshot"
 	skill2 "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/data/skill/effect/statup"
@@ -15,10 +21,6 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/skill/handler"
 	"atlas-channel/socket/writer"
-	"context"
-	"errors"
-	"math"
-	"math/rand"
 
 	"github.com/sirupsen/logrus"
 
@@ -98,12 +100,71 @@ func isDrainSkill(id skill3.Id) bool {
 	return false
 }
 
+// attackMonsterByIdFn is the REST-fallback seam for the per-swing monster
+// resolvers below (precedent: monsterByIdFn in movement).
+var attackMonsterByIdFn = func(l logrus.FieldLogger, ctx context.Context, uniqueId uint32) (monster.Model, error) {
+	return monster.NewProcessor(l, ctx).GetById(uniqueId)
+}
+
+// buildMonsterResolver returns a per-swing memoized monster resolve backed
+// by the live mirror with REST fallback + backfill (FR-4.2): one resolve
+// per damaged monster serves both the reflect check and MP Eater. Not
+// goroutine-safe — processAttack runs single-goroutine per packet.
+func buildMonsterResolver(l logrus.FieldLogger, ctx context.Context, t tenant.Model) func(monsterId uint32) (monster.LiveEntry, error) {
+	resolved := make(map[uint32]monster.LiveEntry)
+	return func(monsterId uint32) (monster.LiveEntry, error) {
+		if e, ok := resolved[monsterId]; ok {
+			return e, nil
+		}
+		e, ok := monster.GetLiveMirror().Lookup(t, monsterId)
+		if !ok {
+			l.Debugf("Live mirror miss for monster [%d] on attack path; falling back to REST.", monsterId)
+			mo, err := attackMonsterByIdFn(l, ctx, monsterId)
+			if err != nil {
+				monster.RecordMirrorFallback(t, false)
+				return monster.LiveEntry{}, err
+			}
+			monster.RecordMirrorFallback(t, true)
+			e = monster.LiveEntryFromModel(mo)
+			monster.GetLiveMirror().Put(t, monsterId, e)
+		}
+		resolved[monsterId] = e
+		return e, nil
+	}
+}
+
+// buildMonsterModelResolver returns a per-swing memoized full-monster.Model
+// resolver for the three passives that need Hp/MaxHp (drainTryHeal,
+// pickPocketTryProc, mortalBlowDeps) — fields the live mirror does not
+// carry (R7: mirroring monster HP is out of scope, it mutates on every
+// hit and is a far larger change than this plan sized). Every resolve is
+// therefore a REST call, but memoization still collapses the up-to-three
+// passive reads for one damaged monster into at most one REST call per
+// swing, counted via RecordMirrorFallback like the mirror-backed resolver
+// above.
+func buildMonsterModelResolver(l logrus.FieldLogger, ctx context.Context, t tenant.Model) func(monsterId uint32) (monster.Model, error) {
+	resolved := make(map[uint32]monster.Model)
+	return func(monsterId uint32) (monster.Model, error) {
+		if mo, ok := resolved[monsterId]; ok {
+			return mo, nil
+		}
+		mo, err := attackMonsterByIdFn(l, ctx, monsterId)
+		if err != nil {
+			monster.RecordMirrorFallback(t, false)
+			return monster.Model{}, err
+		}
+		monster.RecordMirrorFallback(t, true)
+		resolved[monsterId] = mo
+		return mo, nil
+	}
+}
+
 // damageInfoEntryDeps groups the per-attack closures and lookups that
 // processDamageInfoEntry needs. Wrapping them keeps the helper signature
 // readable and lets tests construct fakes with a single struct.
 type damageInfoEntryDeps struct {
 	getReflect        func(t tenant.Model, monsterId uint32, kind string) (monster.ReflectInfo, bool)
-	getMonster        func(monsterId uint32) (monster.Model, error)
+	getMonster        func(monsterId uint32) (monster.LiveEntry, error)
 	applyDamage       func(f field.Model, monsterId, characterId uint32, damages []uint32, attackType byte) error
 	emitReflectDamage func(f field.Model, uniqueId, templateId, characterId uint32, reflectDamage uint32, reflectType string) error
 	applyStatus       func(f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error
@@ -164,10 +225,10 @@ func processDamageInfoEntry(
 				for _, d := range damages {
 					entry = append(entry, int32(d))
 				}
-				r, within := computeReflect(entry, info, casterX, casterY, mon.X(), mon.Y())
+				r, within := computeReflect(entry, info, casterX, casterY, mon.X, mon.Y)
 				if within {
 					l.Debugf("reflect: char [%d] hit monster [%d] for %d reflected damage.", casterId, di.MonsterId(), r)
-					if eErr := deps.emitReflectDamage(f, di.MonsterId(), mon.MonsterId(), casterId, uint32(r), info.Kind); eErr != nil {
+					if eErr := deps.emitReflectDamage(f, di.MonsterId(), mon.MonsterId, casterId, uint32(r), info.Kind); eErr != nil {
 						l.WithError(eErr).Errorf("Unable to emit DAMAGE_REFLECTED for monster [%d] / character [%d].", di.MonsterId(), casterId)
 					}
 					reflected = true
@@ -542,6 +603,7 @@ func mpEaterTryProc(
 	l logrus.FieldLogger,
 	ctx context.Context,
 	mp monster.Processor,
+	getMonster func(uint32) (monster.LiveEntry, error),
 	c character.Model,
 	monsterId uint32,
 	f field.Model,
@@ -572,12 +634,12 @@ func mpEaterTryProc(
 		return
 	}
 
-	mon, err := mp.GetById(monsterId)
+	mon, err := getMonster(monsterId)
 	if err != nil {
 		l.WithError(err).Debugf("MP Eater: monster [%d] snapshot fetch failed.", monsterId)
 		return
 	}
-	if mon.MaxMp() == 0 || mon.Mp() == 0 {
+	if mon.MaxMp == 0 || mon.Mp == 0 {
 		return
 	}
 
@@ -585,13 +647,13 @@ func mpEaterTryProc(
 		return
 	}
 
-	amount := mpEaterAbsorbAmount(mon.MaxMp(), eaterEffect.X())
+	amount := mpEaterAbsorbAmount(mon.MaxMp, eaterEffect.X())
 	if amount == 0 {
 		return
 	}
 
 	l.Debugf("MP Eater proc: caster=[%d] skill=[%d] monster=[%d] amount=[%d] (monster MaxMp=%d Mp=%d).",
-		characterId, eaterId, monsterId, amount, mon.MaxMp(), mon.Mp())
+		characterId, eaterId, monsterId, amount, mon.MaxMp, mon.Mp)
 
 	if err := mp.DrainMp(f, monsterId, characterId, uint32(eaterId), amount); err != nil {
 		l.WithError(err).Errorf("MP Eater: DRAIN_MP emit failed for monster [%d] caster [%d].", monsterId, characterId)
@@ -809,8 +871,8 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 		return func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 			return func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					cp := character.NewProcessor(l, ctx)
-					c, err := cp.GetById(cp.InventoryDecorator, cp.SkillModelDecorator)(s.CharacterId())
+					sp := snapshot.NewProcessor(l, ctx)
+					c, err := sp.Get(s.CharacterId())
 					if err != nil {
 						return err
 					}
@@ -829,6 +891,12 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					var sk skill.Model
 					var se effect.Model
 					var explodedMesoDropIds []uint32
+
+					// cp is only used for ChangeHP/ChangeMP command emission
+					// below (cost gate, Sacrifice, Combo Drain) — every
+					// character READ on this path now goes through sp (the
+					// snapshot).
+					cp := character.NewProcessor(l, ctx)
 
 					if ai.SkillId() > 0 {
 						// Process skill
@@ -925,7 +993,7 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// failure is cached as "no buffs active" for every
 					// consumer and never aborts the attack. Mirrors
 					// loadEffectiveStats below.
-					loadBuffs := newAttackBuffLoader(l, buff.NewProcessor(l, ctx).GetByCharacterId)
+					loadBuffs := newAttackBuffLoader(l, sp.GetBuffs)
 
 					// Compute projectile consumption plan before broadcasting so planner
 					// errors surface before visible side effects. Emission happens post-broadcast.
@@ -935,6 +1003,15 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					mp := monster.NewProcessor(l, ctx)
 					mirror := monster.GetStatusMirror()
 					attackKind := attackKindFromAttackType(ai.AttackType())
+
+					// Per-swing memoized monster resolvers (FR-4.2/R7): the
+					// live-mirror-backed resolver serves the reflect check and
+					// MP Eater (Mp/MaxMp/X/Y only); the full-model resolver
+					// serves the three passives that need Hp/MaxHp, which the
+					// mirror deliberately does not carry. Both collapse N
+					// per-swing reads into at most one per damaged monster.
+					getMonster := buildMonsterResolver(l, ctx, t)
+					getMonsterModel := buildMonsterModelResolver(l, ctx, t)
 
 					// Lazy effective-stats fetch: needed when a damage entry
 					// produces a VENOM apply and by drain-family heals.
@@ -970,7 +1047,7 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 
 					deps := damageInfoEntryDeps{
 						getReflect:         mirror.GetReflect,
-						getMonster:         mp.GetById,
+						getMonster:         getMonster,
 						applyDamage:        mp.Damage,
 						emitReflectDamage:  mp.EmitDamageReflected,
 						applyStatus:        mp.ApplyStatus,
@@ -981,20 +1058,20 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						// unaffected.
 						onDamageApplied: func(di packetmodel.DamageInfo, totalDamage uint32) {
 							if ai.AttackType() == packetmodel.AttackTypeMagic && ai.SkillId() > 0 {
-								mpEaterTryProc(l, ctx, mp, c, di.MonsterId(), s.Field(), s.CharacterId())
+								mpEaterTryProc(l, ctx, mp, getMonster, c, di.MonsterId(), s.Field(), s.CharacterId())
 							}
 							if ai.SkillId() > 0 && isDrainSkill(skill3.Id(ai.SkillId())) {
-								drainTryHeal(l, mp.GetById, cp.ChangeHP, loadEffectiveStats, se.X(), ai.SkillId(), di.MonsterId(), totalDamage, s.Field(), s.CharacterId())
+								drainTryHeal(l, getMonsterModel, cp.ChangeHP, loadEffectiveStats, se.X(), ai.SkillId(), di.MonsterId(), totalDamage, s.Field(), s.CharacterId())
 							}
 							if ppState.enabled {
-								pickPocketTryProc(l, mp.GetById, dp.SpawnMeso, ppState, di, s.Field(), s.CharacterId())
+								pickPocketTryProc(l, getMonsterModel, dp.SpawnMeso, ppState, di, s.Field(), s.CharacterId())
 							}
 							// Mortal Blow proc: per-monster, ranged attacks tagged with the
 							// Ranger/Sniper Mortal Blow skill id only. Ownership was enforced
 							// upstream (unowned skill ids destroy the session). Failures swallowed (FR-5).
 							if isMortalBlowAttack(ai.AttackType(), ai.SkillId()) {
 								mortalBlowTryProc(l, mortalBlowDeps{
-									getMonster: mp.GetById,
+									getMonster: getMonsterModel,
 									emitKill:   mp.Kill,
 									roll:       func() int { return rand.Intn(100) + 1 },
 								}, se, di.MonsterId(), s.Field(), s.CharacterId(), ai.SkillId())

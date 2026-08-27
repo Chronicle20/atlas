@@ -1,12 +1,13 @@
 package handler
 
 import (
-	"atlas-channel/data/skill/effect"
-	"atlas-channel/effective_stats"
-	"atlas-channel/monster"
 	"errors"
 	"io"
 	"testing"
+
+	"atlas-channel/data/skill/effect"
+	"atlas-channel/effective_stats"
+	"atlas-channel/monster"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -176,8 +177,9 @@ func TestOnDamageApplied_NotCalledForReflectedEntry(t *testing.T) {
 				MaxDamage: 9999,
 			}, true
 		},
-		getMonster: func(monsterId uint32) (monster.Model, error) {
-			return monster.NewModelBuilder(monsterId, f, 100100).Build()
+		getMonster: func(monsterId uint32) (monster.LiveEntry, error) {
+			mo, err := monster.NewModelBuilder(monsterId, f, 100100).Build()
+			return monster.LiveEntryFromModel(mo), err
 		},
 		applyDamage: func(_ field.Model, _, _ uint32, _ []uint32, _ byte) error {
 			damaged = true

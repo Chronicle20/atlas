@@ -14,7 +14,7 @@ Tool: `143fa15bf55ee24dd789dd47b07533a2d1155e3cad691ec9515febfe4639685f`
 - export gms_v84: `2bbc30efdc7355eaa7953cfbb459d09646a090a539a8ef79c5d10e8affb6ef11`
 - export gms_v87: `d887ec26b877e52c3f1c8336bd596495e96272ece8ec6ad311eb145c30570021`
 - export gms_v92: `393f8c0d7ff6b37ab8b5e2e58b89544163862d9713d31561adcb3af175d36b92`
-- export gms_v95: `34927d21db733c26a030fea2922da7f7585761385688210944ed8a9d2b07b2ee`
+- export gms_v95: `e93549d3243d53ec33df242eaed27aea6762b5c2261f3c6251797efa6a312506`
 - export jms_v185: `f0cacd78c4ffd65655028825fc7e5bfe3b7fe3889011631098486eb562a5686e`
 
 ## Clientbound
@@ -59,7 +59,7 @@ Tool: `143fa15bf55ee24dd789dd47b07533a2d1155e3cad691ec9515febfe4639685f`
 | LAST_CONNECTED_WORLD | CLogin::OnLatestConnectedWorld | login/clientbound/SelectWorld |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01A | ✅ | 0x01A | ✅ | 0x01A | ✅ | 0x01A | 🟡ᵈ | 0x018 | ✅ | 0x016 | ✅ |
 | RECOMMENDED_WORLD_MESSAGE | CLogin::OnRecommendWorldMessage | login/clientbound/ServerListRecommendations |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01B | ✅ | 0x01B | ✅ | 0x01B | ✅ | 0x01B | 🟡ᵈ | 0x019 | ✅ | 0x017 | ✅ |
 | STAT_CHANGED | CWvsContext::OnStatChanged | stat/clientbound/Changed (T1) | 0x01B | ✅ | 0x01C | ✅ | 0x01C | ✅ | 0x01C | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x01F | ✅ | 0x020 | ❌ | 0x01E | ✅ | 0x01D | ✅ |
-| CHECK_SPW_RESULT | CLogin::OnCheckSPWResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01C | ❌ | 0x01C | ❌ | 0x01C | ❌ | 0x01D | ❌ | 0x01B | ❌ |  | ⬜ |
+| CHECK_SPW_RESULT | CLogin::OnCheckSPWResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01C | ❌ | 0x01C | ❌ | 0x01C | ❌ | 0x01D | ❌ | 0x01B | ✅ |  | ⬜ |
 | GIVE_BUFF | CWvsContext::OnTemporaryStatSet | character/clientbound/BuffGive (T1) | 0x01C | ✅ | 0x01D | ✅ | 0x01D | ✅ | 0x01D | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x020 | ✅ | 0x021 | ❌ | 0x01F | ✅ | 0x01E | ✅ |
 | IDA_0X01C | CLogin::OnExtraCharInfoResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x01C | ❌ |  | ⬜ |  | ⬜ |
 | CANCEL_BUFF | CWvsContext::OnTemporaryStatReset | character/clientbound/BuffCancel (T1) | 0x01D | ✅ | 0x01E | ✅ | 0x01E | ✅ | 0x01E | ✅ | 0x021 | ✅ | 0x021 | ✅ | 0x021 | ✅ | 0x022 | ❌ | 0x020 | ✅ | 0x01F | ✅ |
@@ -1071,7 +1071,7 @@ Tool: `143fa15bf55ee24dd789dd47b07533a2d1155e3cad691ec9515febfe4639685f`
 | v84 | 451 | 0 | 0 | 326 | 250 | 0 | 58.0% |
 | v87 | 488 | 0 | 0 | 348 | 191 | 0 | 58.4% |
 | v92 | 65 | 0 | 147 | 674 | 141 | 0 | 7.3% |
-| v95 | 516 | 0 | 0 | 403 | 108 | 0 | 56.1% |
+| v95 | 517 | 0 | 0 | 402 | 108 | 0 | 56.3% |
 | JMS185 | 451 | 0 | 0 | 378 | 198 | 0 | 54.4% |
 
 ## Conflicts

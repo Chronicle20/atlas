@@ -87,6 +87,74 @@ func TestMultiByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestMultiByteOutputV95 pins the gms_v95 MULTI_CHAT (op 0x8C/140) serverbound wire.
+//
+// IDA-verified send-site (GMS_v95.0_U_DEVM.exe, session ecc757f4) —
+// CUIStatusBar::SendGroupMessage @0x87f7f0 (mangled
+// ?SendGroupMessage@CUIStatusBar@@IAEXJABV?$ZXString@D@@@Z; absent from the
+// committed export prior to this task, spliced in per playbook §10), send
+// block at LABEL_24:
+//
+//	COutPacket::COutPacket(&oPacket, 140)  @0x87fbff → opcode 140 (matches registry).
+//	get_update_time()                       @0x87fc09
+//	COutPacket::Encode4(update_time)        @0x87fc13 → v95-only leading updateTime.
+//	COutPacket::Encode1(nChatTarget)        @0x87fc21 → chatType byte.
+//	COutPacket::Encode1(nMemberCnt)         @0x87fc2f → recipient count.
+//	for i in 0..nMemberCnt: Encode4(memberId[i]) @0x87fc44 → recipient ids (uint32 LE each).
+//	COutPacket::EncodeStr(sText)            @0x87fcb2 → chatText string.
+//
+// v95 is GMS>=95 so there IS a leading get_update_time (the v95 prefix); this
+// matches multi.go's hasUpdateTime gate (GMS && major>=95) exactly — no wire
+// fix needed. WriteInt = uint32-LE; WriteAsciiString = uint16-LE length +
+// ASCII bytes (golden "hi" = 02 00 68 69, confirmed against
+// libs/atlas-socket/response.Writer.WriteAsciiString's ShiftJIS-passthrough
+// ASCII path).
+//
+// packet-audit:verify packet=chat/serverbound/ChatMulti version=gms_v95 ida=0x87f7f0
+func TestMultiByteOutputV95(t *testing.T) {
+	input := Multi{updateTime: 0x11223344, chatType: 1, recipients: []uint32{1000, 2000}, chatText: "hi"}
+	expected := []byte{
+		0x44, 0x33, 0x22, 0x11,
+		0x01,
+		0x02,
+		0xE8, 0x03, 0x00, 0x00,
+		0xD0, 0x07, 0x00, 0x00,
+		0x02, 0x00, 0x68, 0x69,
+	}
+	if len(expected) != 18 {
+		t.Fatalf("test fixture bug: expected length %d, want 18", len(expected))
+	}
+
+	t.Run("GMS v95", func(t *testing.T) {
+		ctx := pt.CreateContext("GMS", 95, 1)
+		actual := pt.Encode(t, ctx, input.Encode, nil)
+		if !bytes.Equal(actual, expected) {
+			t.Errorf("v95 multi golden mismatch: got %v want %v", actual, expected)
+		}
+		if len(actual) != len(expected) {
+			t.Errorf("v95 multi golden length: got %d want %d", len(actual), len(expected))
+		}
+	})
+
+	// GMS v92 (pt.Variants[11]) is below the >=95 gate: same fixture minus the
+	// leading 4-byte updateTime — this pins the gate boundary itself.
+	t.Run("GMS v92", func(t *testing.T) {
+		v := pt.Variants[11]
+		if v.Name != "GMS v92" {
+			t.Fatalf("pt.Variants[11] = %q, want \"GMS v92\"", v.Name)
+		}
+		ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+		actual := pt.Encode(t, ctx, input.Encode, nil)
+		expectedV92 := expected[4:]
+		if !bytes.Equal(actual, expectedV92) {
+			t.Errorf("v92 multi golden mismatch: got %v want %v", actual, expectedV92)
+		}
+		if len(actual) != len(expectedV92) {
+			t.Errorf("v92 multi golden length: got %d want %d", len(actual), len(expectedV92))
+		}
+	})
+}
+
 func TestMultiRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

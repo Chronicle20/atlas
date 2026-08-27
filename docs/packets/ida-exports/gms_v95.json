@@ -12171,6 +12171,32 @@
         }
       ]
     },
+    "CUIStatusBar::SendGroupMessage": {
+      "address": "0x87f7f0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Decode4",
+          "comment": "",
+          "guard": "nChatTarget == 4 \u0026\u0026 nMemberCnt"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "nChatTarget == 4 \u0026\u0026 nMemberCnt"
+        },
+        {
+          "op": "Decode1",
+          "comment": "",
+          "guard": "nChatTarget == 4 \u0026\u0026 nMemberCnt"
+        },
+        {
+          "op": "DecodeStr",
+          "comment": "",
+          "guard": "nChatTarget == 4 \u0026\u0026 nMemberCnt"
+        }
+      ]
+    },
     "CUIVega::OnVegaResult": {
       "address": "0x7bf7b0",
       "direction": "clientbound",

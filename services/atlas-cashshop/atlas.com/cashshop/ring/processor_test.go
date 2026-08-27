@@ -175,6 +175,44 @@ func TestGetByCharacterIdEnrichesCashIdAndPartnerName(t *testing.T) {
 		}
 	})
 
+	t.Run("locker asset gone, persisted CashId resolves", func(t *testing.T) {
+		// Reproduces the bug: once a ring leaves the locker and is
+		// equipped, its cash_rings.AssetId no longer resolves to a live
+		// asset row (the 404 in
+		// docs/tasks/task-269-ring-pair-behavior/bug-ring-cash-id-resolves-to-zero.md).
+		// enrich must still return a non-zero CashId/PartnerCashId because
+		// CreatePair persisted them on Entity -- no asset seeded here at
+		// all, so a fallback-only implementation would return 0 for both.
+		db, tm := ringAssetDatabase(t)
+		startCharacterServer(t, map[uint32]string{42: "Buyer", 77: "Partner"})
+
+		_, err := CreatePair(db, tm.Id(), TypeFriendship,
+			Half{CharacterId: 42, AssetId: 2001, CashId: 9001, ItemTemplateId: 1112800},
+			Half{CharacterId: 77, AssetId: 2002, CashId: 9002, ItemTemplateId: 1112800},
+		)
+		if err != nil {
+			t.Fatalf("CreatePair: %v", err)
+		}
+		// Deliberately no seedAsset calls: both locker asset rows are gone,
+		// as they would be after equip.
+
+		p := newRingProcessor(db, tm)
+
+		buyerRows, err := p.GetByCharacterId(42)
+		if err != nil {
+			t.Fatalf("GetByCharacterId(42): %v", err)
+		}
+		if len(buyerRows) != 1 {
+			t.Fatalf("GetByCharacterId(42) = %d rows, want 1", len(buyerRows))
+		}
+		if buyerRows[0].CashId() != 9001 {
+			t.Errorf("buyer CashId = %d, want 9001 (persisted, not asset lookup)", buyerRows[0].CashId())
+		}
+		if buyerRows[0].PartnerCashId() != 9002 {
+			t.Errorf("buyer PartnerCashId = %d, want 9002 (persisted, not asset lookup)", buyerRows[0].PartnerCashId())
+		}
+	})
+
 	t.Run("character service unavailable", func(t *testing.T) {
 		db, tm := ringAssetDatabase(t)
 		// Start and immediately close a server: the URL is well-formed but

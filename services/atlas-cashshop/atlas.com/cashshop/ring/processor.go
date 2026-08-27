@@ -107,18 +107,27 @@ func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {
 }
 
 // enrich resolves half's CashId, PartnerCashId, and PartnerName at read
-// time (design.md §5: computed, never stored on Entity). Every resolution
-// -- this half's own asset, the sibling half, the partner's name -- fails
-// soft to the zero value: a lookup failure here must not turn into an
-// error for a caller that only wants the pair rows (PRD FR-5's
-// channel-side fallback is downstream of this and depends on that).
+// time. CashId and PartnerCashId prefer the value persisted on Entity at
+// purchase time (Half.CashId, carried through Make); the AssetId lookup is
+// only a fallback for rows written before that column existed, where the
+// stored value is 0. Once a ring leaves the locker and is equipped, its
+// locker AssetId no longer resolves, so falling back unconditionally would
+// leave every equipped ring's ids at 0 -- see
+// docs/tasks/task-269-ring-pair-behavior/bug-ring-cash-id-resolves-to-zero.md.
+// Every resolution -- this half's own asset, the sibling half, the
+// partner's name -- fails soft to the zero value: a lookup failure here
+// must not turn into an error for a caller that only wants the pair rows
+// (PRD FR-5's channel-side fallback is downstream of this and depends on
+// that).
 func (p *ProcessorImpl) enrich(half Model) Model {
 	db := p.db.WithContext(p.ctx)
 	astP := asset.NewProcessor(p.l, p.ctx, p.db)
 	b := half.Builder()
 
-	if a, err := astP.GetById(half.AssetId()); err == nil {
-		b.SetCashId(a.CashId())
+	if half.CashId() == 0 {
+		if a, err := astP.GetById(half.AssetId()); err == nil {
+			b.SetCashId(a.CashId())
+		}
 	}
 
 	siblings, err := GetByPairId(db, p.t.Id(), half.PairId())
@@ -127,7 +136,9 @@ func (p *ProcessorImpl) enrich(half Model) Model {
 			if sibling.Id() == half.Id() {
 				continue
 			}
-			if sa, err := astP.GetById(sibling.AssetId()); err == nil {
+			if sibling.CashId() != 0 {
+				b.SetPartnerCashId(sibling.CashId())
+			} else if sa, err := astP.GetById(sibling.AssetId()); err == nil {
 				b.SetPartnerCashId(sa.CashId())
 			}
 			break

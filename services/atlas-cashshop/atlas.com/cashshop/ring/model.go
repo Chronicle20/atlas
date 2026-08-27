@@ -78,11 +78,13 @@ func (m Model) CreatedAt() time.Time {
 	return m.createdAt
 }
 
-// CashId is this half's own locker asset's cash id -- the identifier that
-// survives compartment.Release and is what the wire needs (design.md §2
-// OQ-1: GW_ItemSlotBase::liSN). It is computed at read time by looking up
-// AssetId in cashshop/inventory/asset, never stored on Entity (design.md
-// §5 rejects a stored column).
+// CashId is this half's own asset's cash id -- the identifier that survives
+// compartment.Release and equipping (unlike AssetId, the locker asset id,
+// which stops resolving once the ring leaves the locker) and is what the
+// wire needs (design.md §2 OQ-1: GW_ItemSlotBase::liSN). Persisted on Entity
+// at purchase time; enrich (processor.go) falls back to looking up AssetId
+// in cashshop/inventory/asset only for rows written before this column
+// existed, where the stored value is 0.
 func (m Model) CashId() int64 {
 	return m.cashId
 }

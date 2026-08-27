@@ -21,7 +21,7 @@ func tl() logrus.FieldLogger {
 }
 
 func superGm(id uint32) character.Model {
-	return character.NewModelBuilder().SetId(id).SetLevel(200).SetJobId(job.SuperGmId).MustBuild()
+	return character.NewBuilder().SetId(id).SetLevel(200).SetJobId(job.SuperGmId).MustBuild()
 }
 
 type hideCapture struct {
@@ -53,7 +53,7 @@ func deps(caster character.Model, hidden bool, c *hideCapture) hideDeps {
 func info() packetmodel.SkillUsageInfo { return packetmodel.SkillUsageInfo{} } // SkillLevel() -> 0 is fine
 
 func TestNonSuperGmRejected(t *testing.T) {
-	nonGm := character.NewModelBuilder().SetId(1).SetJobId(job.Id(100)).MustBuild()
+	nonGm := character.NewBuilder().SetId(1).SetJobId(job.Id(100)).MustBuild()
 	var c hideCapture
 	_ = applyHide(tl(), field.NewBuilder(0, 0, 1).Build(), 1, info(), deps(nonGm, false, &c))
 	if c.applied+c.cancelled+c.despawned+c.spawned != 0 {

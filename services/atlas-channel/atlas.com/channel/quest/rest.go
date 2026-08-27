@@ -45,6 +45,30 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// Transform converts the domain Model into the wire RestModel.
+func Transform(m Model) (RestModel, error) {
+	ps := make([]ProgressRestModel, 0, len(m.progress))
+	for _, p := range m.progress {
+		ps = append(ps, ProgressRestModel{
+			InfoNumber: p.InfoNumber(),
+			Progress:   p.Progress(),
+		})
+	}
+
+	return RestModel{
+		Id:             m.id,
+		CharacterId:    m.characterId,
+		QuestId:        m.questId,
+		State:          m.state,
+		StartedAt:      m.startedAt,
+		CompletedAt:    m.completedAt,
+		ExpirationTime: m.expirationTime,
+		CompletedCount: m.completedCount,
+		ForfeitCount:   m.forfeitCount,
+		Progress:       ps,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	ps := make([]Progress, 0, len(rm.Progress))
 	for _, p := range rm.Progress {

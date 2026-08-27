@@ -30,6 +30,20 @@ func (r *RestModel) SetID(id string) error {
 	return nil
 }
 
+// Transform converts the domain Model into its RestModel representation.
+func Transform(m Model) RestModel {
+	return RestModel{
+		Id:          strconv.Itoa(int(m.id)),
+		Name:        m.name,
+		Target:      m.target,
+		Type:        m.portalType,
+		X:           m.x,
+		Y:           m.y,
+		TargetMapId: m.targetMapId,
+		ScriptName:  m.scriptName,
+	}
+}
+
 func Extract(rm RestModel) (Model, error) {
 	id, err := strconv.Atoi(rm.Id)
 	if err != nil {

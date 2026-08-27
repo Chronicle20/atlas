@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := commodities.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := commodities.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -17,7 +17,7 @@ func TestNewModelBuilder(t *testing.T) {
 
 func TestBuild_AllFieldsSet(t *testing.T) {
 	id := uuid.New()
-	model, err := commodities.NewModelBuilder().
+	model, err := commodities.NewBuilder().
 		SetId(id).
 		SetTemplateId(1000).
 		SetMesoPrice(500).
@@ -65,7 +65,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := commodities.NewModelBuilder().
+	_, err := commodities.NewBuilder().
 		SetTemplateId(1000).
 		SetMesoPrice(500).
 		Build()
@@ -76,7 +76,7 @@ func TestBuild_MissingId(t *testing.T) {
 }
 
 func TestBuild_ZeroId(t *testing.T) {
-	_, err := commodities.NewModelBuilder().
+	_, err := commodities.NewBuilder().
 		SetId(uuid.Nil).
 		SetTemplateId(1000).
 		Build()
@@ -88,7 +88,7 @@ func TestBuild_ZeroId(t *testing.T) {
 
 func TestCloneModel(t *testing.T) {
 	id := uuid.New()
-	original, err := commodities.NewModelBuilder().
+	original, err := commodities.NewBuilder().
 		SetId(id).
 		SetTemplateId(1000).
 		SetMesoPrice(500).
@@ -130,7 +130,7 @@ func TestMustBuild_Success(t *testing.T) {
 	}()
 
 	id := uuid.New()
-	model := commodities.NewModelBuilder().
+	model := commodities.NewBuilder().
 		SetId(id).
 		SetTemplateId(1000).
 		MustBuild()
@@ -147,14 +147,14 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	commodities.NewModelBuilder().
+	commodities.NewBuilder().
 		SetTemplateId(1000).
 		MustBuild() // Missing ID, should panic
 }
 
 func TestBuilderFluentChaining(t *testing.T) {
 	id := uuid.New()
-	model, err := commodities.NewModelBuilder().
+	model, err := commodities.NewBuilder().
 		SetId(id).
 		SetTemplateId(1000).
 		SetMesoPrice(500).

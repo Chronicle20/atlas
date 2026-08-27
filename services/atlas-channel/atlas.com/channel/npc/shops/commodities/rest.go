@@ -55,7 +55,7 @@ func Extract(rm RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	return NewModelBuilder().
+	return NewBuilder().
 		SetId(id).
 		SetTemplateId(rm.TemplateId).
 		SetMesoPrice(rm.MesoPrice).

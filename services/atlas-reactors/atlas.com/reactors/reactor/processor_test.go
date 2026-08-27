@@ -49,7 +49,7 @@ func setupTestContext(t tenant.Model) context.Context {
 // createTestReactor creates a reactor directly in the registry for testing
 func createTestReactor(t tenant.Model, worldId world.Id, channelId channel.Id, mapId _map.Id, classification uint32, name string) Model {
 	f := field.NewBuilder(worldId, channelId, mapId).Build()
-	builder := NewModelBuilder(t, f, classification, name).
+	builder := NewBuilder(t, f, classification, name).
 		SetState(0).
 		SetPosition(100, 200).
 		SetDelay(0).
@@ -222,7 +222,7 @@ func TestRegistry_Create(t *testing.T) {
 	ten := setupTestTenant()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000)).Build()
-	builder := NewModelBuilder(ten, f, 2000000, "test-reactor").
+	builder := NewBuilder(ten, f, 2000000, "test-reactor").
 		SetState(1).
 		SetPosition(150, 250).
 		SetDelay(100).
@@ -428,7 +428,7 @@ func TestHit_BreakableReactorDestroysOnTerminal(t *testing.T) {
 	)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-	builder := NewModelBuilder(ten, f, 2001, "reactor-2001").
+	builder := NewBuilder(ten, f, 2001, "reactor-2001").
 		SetState(0).SetPosition(231, 253).SetDelay(5000).SetDirection(0).SetData(d)
 	created, err := GetRegistry().Create(ten, builder)
 	if err != nil {
@@ -469,7 +469,7 @@ func TestHit_ItemReactorPersistsAtTerminal(t *testing.T) {
 	)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-	builder := NewModelBuilder(ten, f, 9108000, "moonflower").
+	builder := NewBuilder(ten, f, 9108000, "moonflower").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
 	created, _ := GetRegistry().Create(ten, builder)
 
@@ -506,7 +506,7 @@ func TestHit_SkillReactorPersistsAtTerminal(t *testing.T) {
 	)
 
 	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
-	builder := NewModelBuilder(ten, f, 6109013, "gpq-skill-reactor").
+	builder := NewBuilder(ten, f, 6109013, "gpq-skill-reactor").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
 	created, _ := GetRegistry().Create(ten, builder)
 

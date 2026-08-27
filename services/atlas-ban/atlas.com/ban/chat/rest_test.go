@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -67,5 +68,26 @@ func TestRecentInvolving_UnmarshalsRelationships(t *testing.T) {
 	m := ms[0]
 	if m.SenderId() != 7 || m.SenderName() != "Alice" || m.ChatType() != "GENERAL" || m.Text() != "hello" {
 		t.Errorf("unexpected model: %+v", m)
+	}
+}
+
+func TestTransformRoundTrip(t *testing.T) {
+	m := Model{
+		timestamp:  11,
+		senderId:   22,
+		senderName: "field3",
+		chatType:   "field4",
+		text:       "field5",
+	}
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("transform: %v", err)
+	}
+	got, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip lost data:\n got %+v\nwant %+v", got, m)
 	}
 }

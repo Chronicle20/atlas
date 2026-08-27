@@ -61,6 +61,18 @@ func ExtractPortal(rm PortalRestModel) (Portal, error) {
 	}, nil
 }
 
+// TransformPortal converts a Portal into its PortalRestModel wire representation.
+func TransformPortal(p Portal) (PortalRestModel, error) {
+	return PortalRestModel{
+		Id:          strconv.Itoa(int(p.id)),
+		Name:        p.name,
+		Type:        p.portalType,
+		X:           p.x,
+		Y:           p.y,
+		TargetMapId: p.targetMapId,
+	}, nil
+}
+
 // RestModel mirrors the subset of atlas-data's map wire format that atlas-doors
 // needs (returnMapId, forcedReturnMapId, town, fieldLimit, portals).
 type RestModel struct {
@@ -152,4 +164,24 @@ func Extract(rm RestModel) (Model, error) {
 		SetFieldLimit(rm.FieldLimit).
 		SetPortals(portals).
 		Build(), nil
+}
+
+// Transform converts a Model (with portals) into a RestModel.
+func Transform(m Model) (RestModel, error) {
+	portals := make([]PortalRestModel, 0, len(m.portals))
+	for _, p := range m.portals {
+		prm, err := TransformPortal(p)
+		if err != nil {
+			return RestModel{}, err
+		}
+		portals = append(portals, prm)
+	}
+	return RestModel{
+		Id:                m.id,
+		ReturnMapId:       m.returnMapId,
+		ForcedReturnMapId: m.forcedReturnMapId,
+		Town:              m.town,
+		FieldLimit:        m.fieldLimit,
+		Portals:           portals,
+	}, nil
 }

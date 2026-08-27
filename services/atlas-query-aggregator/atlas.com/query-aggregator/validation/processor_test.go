@@ -224,7 +224,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 			setupMock: func(m *mock.ProcessorImpl) {
 				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 					return func(characterId uint32) (character.Model, error) {
-						return character.NewModelBuilder().
+						return character.NewBuilder().
 							SetId(123).
 							SetJobId(100).
 							SetMeso(10000).
@@ -249,7 +249,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 			setupMock: func(m *mock.ProcessorImpl) {
 				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 					return func(characterId uint32) (character.Model, error) {
-						return character.NewModelBuilder().
+						return character.NewBuilder().
 							SetId(123).
 							SetJobId(100).
 							SetMeso(10000).
@@ -289,7 +289,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 			setupMock: func(m *mock.ProcessorImpl) {
 				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 					return func(characterId uint32) (character.Model, error) {
-						return character.NewModelBuilder().Build(), nil
+						return character.NewBuilder().Build(), nil
 					}
 				}
 			},
@@ -310,7 +310,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 					if len(decorators) > 0 {
 						return func(characterId uint32) (character.Model, error) {
 							// Create a basic character
-							char := character.NewModelBuilder().
+							char := character.NewBuilder().
 								SetId(characterId).
 								Build()
 
@@ -321,7 +321,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 
 					// Otherwise return a basic character
 					return func(characterId uint32) (character.Model, error) {
-						return character.NewModelBuilder().
+						return character.NewBuilder().
 							SetId(characterId).
 							Build(), nil
 					}
@@ -330,7 +330,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 				// Mock the InventoryDecorator to add inventory with items
 				m.InventoryDecoratorFunc = func(m character.Model) character.Model {
 					// Create a test inventory with items
-					return character.NewModelBuilder().
+					return character.NewBuilder().
 						SetId(m.Id()).
 						SetInventory(createTestInventory(m.Id())).
 						Build()
@@ -352,7 +352,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 					if len(decorators) > 0 {
 						return func(characterId uint32) (character.Model, error) {
 							// Create a basic character
-							char := character.NewModelBuilder().
+							char := character.NewBuilder().
 								SetId(characterId).
 								Build()
 
@@ -366,7 +366,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 
 					// Otherwise return a basic character
 					return func(characterId uint32) (character.Model, error) {
-						return character.NewModelBuilder().
+						return character.NewBuilder().
 							SetId(characterId).
 							Build(), nil
 					}
@@ -376,7 +376,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 				m.GuildDecoratorFunc = func(m character.Model) character.Model {
 					// Create a test guild with the character as leader
 					testGuild := createTestGuild(1, m.Id())
-					return character.NewModelBuilder().
+					return character.NewBuilder().
 						SetId(m.Id()).
 						SetGuild(testGuild).
 						Build()
@@ -398,7 +398,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 					if len(decorators) > 0 {
 						return func(characterId uint32) (character.Model, error) {
 							// Create a basic character
-							char := character.NewModelBuilder().
+							char := character.NewBuilder().
 								SetId(characterId).
 								Build()
 
@@ -412,7 +412,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 
 					// Otherwise return a basic character
 					return func(characterId uint32) (character.Model, error) {
-						return character.NewModelBuilder().
+						return character.NewBuilder().
 							SetId(characterId).
 							Build(), nil
 					}
@@ -422,7 +422,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 				m.GuildDecoratorFunc = func(m character.Model) character.Model {
 					// Create a guild with a different leader
 					testGuild := createTestGuild(1, m.Id()+1)
-					return character.NewModelBuilder().
+					return character.NewBuilder().
 						SetId(m.Id()).
 						SetGuild(testGuild).
 						Build()
@@ -521,7 +521,7 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 			setupCharacterMock: func(m *mock.ProcessorImpl) {
 				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 					return func(characterId uint32) (character.Model, error) {
-						return character.NewModelBuilder().SetId(characterId).Build(), nil
+						return character.NewBuilder().SetId(characterId).Build(), nil
 					}
 				}
 			},
@@ -555,7 +555,7 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 			setupCharacterMock: func(m *mock.ProcessorImpl) {
 				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 					return func(characterId uint32) (character.Model, error) {
-						return character.NewModelBuilder().SetId(characterId).Build(), nil
+						return character.NewBuilder().SetId(characterId).Build(), nil
 					}
 				}
 			},
@@ -587,7 +587,7 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 			setupCharacterMock: func(m *mock.ProcessorImpl) {
 				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 					return func(characterId uint32) (character.Model, error) {
-						return character.NewModelBuilder().SetId(characterId).Build(), nil
+						return character.NewBuilder().SetId(characterId).Build(), nil
 					}
 				}
 			},
@@ -616,7 +616,7 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 			setupCharacterMock: func(m *mock.ProcessorImpl) {
 				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 					return func(characterId uint32) (character.Model, error) {
-						return character.NewModelBuilder().SetId(characterId).Build(), nil
+						return character.NewBuilder().SetId(characterId).Build(), nil
 					}
 				}
 			},
@@ -685,7 +685,7 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 								}
 
 								// Create a quest model
-								questModel := quest.NewModelBuilder().
+								questModel := quest.NewBuilder().
 									SetId(condition.ReferenceId).
 									SetStatus(questStatus).
 									Build()
@@ -706,7 +706,7 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 						}
 
 						// Create a marriage model
-						return marriage.NewModelBuilder().
+						return marriage.NewBuilder().
 							SetCharacterId(characterId).
 							SetHasUnclaimedGifts(hasGifts).
 							Build(), nil

@@ -229,7 +229,7 @@ func (s stubCharacterProcessor) InventoryDecorator(m character.Model) character.
 // compartment.TypeExplorer — the type seedCompartment writes.
 func testCharacter(t *testing.T) character.Model {
 	t.Helper()
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(testCharacterId).
 		SetAccountId(testAccountId).
 		SetJobId(job.Id(100)).

@@ -1498,7 +1498,7 @@ func TestExtendAssetExpirationRejectsOverCap(t *testing.T) {
 	ap := asset.NewProcessor(l, ctx, db)
 	cpMock := &cashmock.ProcessorMock{
 		GetByIdFunc: func(itemId uint32) (cash.Model, error) {
-			return cash.NewModelBuilder(itemId).SetAddTime(604800).SetMaxDays(30).Build(), nil
+			return cash.NewBuilder(itemId).SetAddTime(604800).SetMaxDays(30).Build(), nil
 		},
 	}
 	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap).WithCashProcessor(cpMock)
@@ -1545,7 +1545,7 @@ func TestExtendAssetExpirationHonorsInBoundsRequest(t *testing.T) {
 	ap := asset.NewProcessor(l, ctx, db)
 	cpMock := &cashmock.ProcessorMock{
 		GetByIdFunc: func(itemId uint32) (cash.Model, error) {
-			return cash.NewModelBuilder(itemId).SetAddTime(604800).SetMaxDays(30).Build(), nil
+			return cash.NewBuilder(itemId).SetAddTime(604800).SetMaxDays(30).Build(), nil
 		},
 	}
 	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap).WithCashProcessor(cpMock)
@@ -1595,7 +1595,7 @@ func TestExtendAssetExpirationRejectsZeroMaxDays(t *testing.T) {
 	ap := asset.NewProcessor(l, ctx, db)
 	cpMock := &cashmock.ProcessorMock{
 		GetByIdFunc: func(itemId uint32) (cash.Model, error) {
-			return cash.NewModelBuilder(itemId).SetAddTime(604800).SetMaxDays(0).Build(), nil
+			return cash.NewBuilder(itemId).SetAddTime(604800).SetMaxDays(0).Build(), nil
 		},
 	}
 	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap).WithCashProcessor(cpMock)

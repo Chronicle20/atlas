@@ -355,7 +355,7 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			degrade.Observe(l, "channel.monster.control_grant_fetch", e.UniqueId, err)
 			l.WithError(err).Warnf("Unable to retrieve monster [%d] for control grant; falling back to the event envelope.", e.UniqueId)
 			f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-			m = monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
+			m = monster.NewBuilder(e.UniqueId, f, e.MonsterId).
 				SetControlCharacterId(e.Body.ActorId).
 				SetX(e.Body.X).SetY(e.Body.Y).
 				SetStance(e.Body.Stance).
@@ -385,7 +385,7 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 		monster.GetLiveMirror().UpdateControl(tenant.MustFromContext(ctx), e.UniqueId, 0)
 
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-		m := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
+		m := monster.NewBuilder(e.UniqueId, f, e.MonsterId).
 			MustBuild()
 		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StopControlMonsterBody(m))
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, sf)

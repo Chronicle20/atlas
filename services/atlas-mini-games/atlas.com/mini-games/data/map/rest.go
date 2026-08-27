@@ -50,3 +50,10 @@ func Extract(rm RestModel) (Model, error) {
 		fieldLimit: rm.FieldLimit,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:         m.id,
+		FieldLimit: m.fieldLimit,
+	}, nil
+}

@@ -31,6 +31,13 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Regular: m.regular,
+		Vip:     m.vip,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return NewModel(rm.Regular, rm.Vip), nil
 }

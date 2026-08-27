@@ -11,3 +11,10 @@ func Extract(rm RestModel) (Model, error) {
 		amount:   rm.Amount,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Type:   m.buffType,
+		Amount: m.amount,
+	}, nil
+}

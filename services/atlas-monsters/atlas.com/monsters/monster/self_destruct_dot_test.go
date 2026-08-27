@@ -36,7 +36,7 @@ func setupDoTTickTest(t *testing.T, sd information.SelfDestruction) (context.Con
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().SetSelfDestruction(sd).Build(), nil
+		return information.NewBuilder().SetSelfDestruction(sd).Build(), nil
 	}
 	t.Cleanup(func() { testInformationLookup = prevHook })
 

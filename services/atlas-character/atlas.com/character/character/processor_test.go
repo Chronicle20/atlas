@@ -68,7 +68,7 @@ func testLogger() logrus.FieldLogger {
 func TestCreateSunny(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Atlas").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("Atlas").SetLevel(1).SetExperience(0).Build()
 
 	c, err := character.NewProcessor(testLogger(), tctx, testDatabase(t)).Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -94,7 +94,7 @@ func TestCreateSunny(t *testing.T) {
 func TestCreateCharacterPersistsApAndSp(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("ApSpTest").SetLevel(1).
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("ApSpTest").SetLevel(1).
 		SetAp(12).SetSp("3,0,0,0,0,0,0,0,0,0").Build()
 
 	c, err := character.NewProcessor(testLogger(), tctx, testDatabase(t)).Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
@@ -122,7 +122,7 @@ func TestCreateCharacterPersistsApAndSp(t *testing.T) {
 func TestCreateCharacterDefaultsApAndSp(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("ApSpDefault").SetLevel(1).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("ApSpDefault").SetLevel(1).Build()
 
 	c, err := character.NewProcessor(testLogger(), tctx, testDatabase(t)).Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -152,7 +152,7 @@ func TestCreateCharacterDefaultsApAndSp(t *testing.T) {
 func TestGetByIdWithZeroCharacter(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	// Create a character
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("ZeroTest").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("ZeroTest").SetLevel(1).SetExperience(0).Build()
 	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
 	created, err := cp.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -175,7 +175,7 @@ func TestGetByIdWithZeroCharacter(t *testing.T) {
 func TestGetByIdWithNonZeroCharacter(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	// Create a character
-	input := character.NewModelBuilder().SetAccountId(2000).SetWorldId(0).SetName("NonZeroTest").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(2000).SetWorldId(0).SetName("NonZeroTest").SetLevel(1).SetExperience(0).Build()
 	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
 	created, err := cp.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -199,7 +199,7 @@ func TestCreateAndEmitWithInvalidName(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
 	// Test with invalid name - too short
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Ab").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("Ab").SetLevel(1).SetExperience(0).Build()
 
 	processor := character.NewProcessor(testLogger(), tctx, testDatabase(t))
 	_, err := processor.CreateAndEmit(uuid.New(), input, _map.Id(0))
@@ -210,7 +210,7 @@ func TestCreateAndEmitWithInvalidName(t *testing.T) {
 	}
 
 	// Test with invalid name - contains invalid characters
-	input2 := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Test@Name!").SetLevel(1).SetExperience(0).Build()
+	input2 := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("Test@Name!").SetLevel(1).SetExperience(0).Build()
 
 	_, err2 := processor.CreateAndEmit(uuid.New(), input2, _map.Id(0))
 
@@ -220,7 +220,7 @@ func TestCreateAndEmitWithInvalidName(t *testing.T) {
 	}
 
 	// Test with invalid name - too long
-	input3 := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("ThisNameIsTooLong").SetLevel(1).SetExperience(0).Build()
+	input3 := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("ThisNameIsTooLong").SetLevel(1).SetExperience(0).Build()
 
 	_, err3 := processor.CreateAndEmit(uuid.New(), input3, _map.Id(0))
 
@@ -235,7 +235,7 @@ func TestCreateAndEmitWithDuplicateName(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first using the same pattern as working tests
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestDupe").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestDupe").SetLevel(1).SetExperience(0).Build()
 
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	_, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
@@ -244,7 +244,7 @@ func TestCreateAndEmitWithDuplicateName(t *testing.T) {
 	}
 
 	// Try to create another character with the same name using CreateAndEmit
-	input2 := character.NewModelBuilder().SetAccountId(2000).SetWorldId(0).SetName("TestDupe").SetLevel(1).SetExperience(0).Build()
+	input2 := character.NewEmptyBuilder().SetAccountId(2000).SetWorldId(0).SetName("TestDupe").SetLevel(1).SetExperience(0).Build()
 
 	_, err2 := processor.CreateAndEmit(uuid.New(), input2, _map.Id(0))
 
@@ -258,7 +258,7 @@ func TestCreateAndEmitWithInvalidLevel(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
 	// Test with invalid level - too low (0)
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestLevel0").SetLevel(0).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestLevel0").SetLevel(0).SetExperience(0).Build()
 
 	processor := character.NewProcessor(testLogger(), tctx, testDatabase(t))
 	_, err := processor.CreateAndEmit(uuid.New(), input, _map.Id(0))
@@ -269,7 +269,7 @@ func TestCreateAndEmitWithInvalidLevel(t *testing.T) {
 	}
 
 	// Test with invalid level - too high (201)
-	input2 := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestLevel201").SetLevel(201).SetExperience(0).Build()
+	input2 := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestLevel201").SetLevel(201).SetExperience(0).Build()
 
 	_, err2 := processor.CreateAndEmit(uuid.New(), input2, _map.Id(0))
 
@@ -284,7 +284,7 @@ func TestUpdateValidNameChange(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("OriginalName").SetLevel(10).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("OriginalName").SetLevel(10).SetExperience(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -318,7 +318,7 @@ func TestUpdateValidHairChange(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("HairTest").SetLevel(10).SetHair(30000).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("HairTest").SetLevel(10).SetHair(30000).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -352,7 +352,7 @@ func TestUpdateValidFaceChange(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("FaceTest").SetLevel(10).SetFace(20000).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("FaceTest").SetLevel(10).SetFace(20000).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -386,7 +386,7 @@ func TestUpdateValidGenderChange(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("GenderTest").SetLevel(10).SetGender(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("GenderTest").SetLevel(10).SetGender(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -420,7 +420,7 @@ func TestUpdateValidSkinColorChange(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("SkinTest").SetLevel(10).SetSkinColor(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("SkinTest").SetLevel(10).SetSkinColor(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -454,7 +454,7 @@ func TestUpdateMultipleFields(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("MultiTest").
@@ -513,7 +513,7 @@ func TestUpdateInvalidName(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("OriginalName").SetLevel(10).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("OriginalName").SetLevel(10).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -547,8 +547,8 @@ func TestUpdateDuplicateName(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create two characters first
-	input1 := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("FirstChar").SetLevel(10).Build()
-	input2 := character.NewModelBuilder().SetAccountId(2000).SetWorldId(0).SetName("SecondChar").SetLevel(10).Build()
+	input1 := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("FirstChar").SetLevel(10).Build()
+	input2 := character.NewEmptyBuilder().SetAccountId(2000).SetWorldId(0).SetName("SecondChar").SetLevel(10).Build()
 
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	_, err := processor.Create(message.NewBuffer())(uuid.New(), input1, _map.Id(0))
@@ -578,7 +578,7 @@ func TestUpdateInvalidHair(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("HairTest").SetLevel(10).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("HairTest").SetLevel(10).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -602,7 +602,7 @@ func TestUpdateInvalidFace(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("FaceTest").SetLevel(10).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("FaceTest").SetLevel(10).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -626,7 +626,7 @@ func TestUpdateInvalidGender(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("GenderTest").SetLevel(10).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("GenderTest").SetLevel(10).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -650,7 +650,7 @@ func TestUpdateInvalidSkinColor(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("SkinTest").SetLevel(10).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("SkinTest").SetLevel(10).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -674,7 +674,7 @@ func TestUpdateNoChanges(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("NoChangeTest").SetLevel(10).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("NoChangeTest").SetLevel(10).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -724,7 +724,7 @@ func TestUpdatePreservesUnchangedValues(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character with specific values
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("PreserveTest").
@@ -814,7 +814,7 @@ func TestDeleteForSagaCompensation_Existing(t *testing.T) {
 	db := testDatabase(t)
 	cp := character.NewProcessor(testLogger(), tctx, db)
 
-	input := character.NewModelBuilder().SetAccountId(7001).SetWorldId(0).SetName("DeleteMe").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(7001).SetWorldId(0).SetName("DeleteMe").SetLevel(1).SetExperience(0).Build()
 	buf := message.NewBuffer()
 	created, err := cp.Create(buf)(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -854,7 +854,7 @@ func TestRebalanceAP_PersistsAndEmits(t *testing.T) {
 	proc := character.NewProcessor(testLogger(), tctx, db)
 
 	// Seed a level-10 beginner with vanilla v83 auto-allocated stats.
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).SetWorldId(0).SetName("PirateRef").
 		SetLevel(10).SetStrength(53).SetDexterity(9).SetIntelligence(4).SetLuck(4).SetAp(0).
 		Build()
@@ -894,7 +894,7 @@ func TestRebalanceAP_ErrorDoesNotMutate(t *testing.T) {
 	db := testDatabase(t)
 	proc := character.NewProcessor(testLogger(), tctx, db)
 
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).SetWorldId(0).SetName("LowAP").
 		SetLevel(1).SetStrength(4).SetDexterity(4).SetIntelligence(4).SetLuck(4).SetAp(0).
 		Build()

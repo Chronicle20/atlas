@@ -34,3 +34,19 @@ func (r *RestModel) SetID(strId string) error {
 	r.Id = uint32(id)
 	return nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:         m.id,
+		Price:      m.price,
+		SlotMax:    m.slotMax,
+		RecoveryHP: m.recoveryHP,
+		TradeBlock: m.tradeBlock,
+		NotSale:    m.notSale,
+		ReqLevel:   m.reqLevel,
+		DistanceX:  m.distanceX,
+		DistanceY:  m.distanceY,
+		MaxDiff:    m.maxDiff,
+		Direction:  m.direction,
+	}, nil
+}

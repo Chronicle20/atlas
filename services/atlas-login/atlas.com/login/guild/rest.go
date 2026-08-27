@@ -42,6 +42,18 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	members, err := model.SliceMap(member.Transform)(model.FixedProvider(m.members))()()
+	if err != nil {
+		return RestModel{}, err
+	}
+	return RestModel{
+		Id:       m.id,
+		LeaderId: m.leaderId,
+		Members:  members,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	members, err := model.SliceMap(member.Extract)(model.FixedProvider(rm.Members))()()
 	if err != nil {

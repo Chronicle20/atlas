@@ -112,7 +112,7 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		d := drop.NewModelBuilder().
+		d := drop.NewBuilder().
 			SetId(e.DropId).
 			SetItem(e.Body.ItemId, e.Body.Quantity).
 			SetMeso(e.Body.Meso).

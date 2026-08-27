@@ -49,6 +49,10 @@ func (r EquipmentRestModel) fields() (bool, int32, bool) {
 	return r.TradeBlock, r.TradeAvailable, r.Only
 }
 
+func (r *EquipmentRestModel) setFields(tb bool, ta int32, o bool) {
+	r.TradeBlock, r.TradeAvailable, r.Only = tb, ta, o
+}
+
 type ConsumableRestModel struct {
 	Id             item.Id `json:"-"`
 	TradeBlock     bool    `json:"tradeBlock"`
@@ -67,6 +71,10 @@ func (r ConsumableRestModel) fields() (bool, int32, bool) {
 	return r.TradeBlock, r.TradeAvailable, r.Only
 }
 
+func (r *ConsumableRestModel) setFields(tb bool, ta int32, o bool) {
+	r.TradeBlock, r.TradeAvailable, r.Only = tb, ta, o
+}
+
 type SetupRestModel struct {
 	Id             item.Id `json:"-"`
 	TradeBlock     bool    `json:"tradeBlock"`
@@ -81,6 +89,10 @@ func (r *SetupRestModel) SetID(s string) error                             { ret
 func (r *SetupRestModel) SetToOneReferenceID(_ string, _ string) error     { return nil }
 func (r *SetupRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 func (r SetupRestModel) fields() (bool, int32, bool)                       { return r.TradeBlock, r.TradeAvailable, r.Only }
+
+func (r *SetupRestModel) setFields(tb bool, ta int32, o bool) {
+	r.TradeBlock, r.TradeAvailable, r.Only = tb, ta, o
+}
 
 type EtcRestModel struct {
 	Id             item.Id `json:"-"`
@@ -97,6 +109,10 @@ func (r *EtcRestModel) SetToOneReferenceID(_ string, _ string) error     { retur
 func (r *EtcRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 func (r EtcRestModel) fields() (bool, int32, bool)                       { return r.TradeBlock, r.TradeAvailable, r.Only }
 
+func (r *EtcRestModel) setFields(tb bool, ta int32, o bool) {
+	r.TradeBlock, r.TradeAvailable, r.Only = tb, ta, o
+}
+
 type CashRestModel struct {
 	Id             item.Id `json:"-"`
 	TradeBlock     bool    `json:"tradeBlock"`
@@ -112,6 +128,10 @@ func (r *CashRestModel) SetToOneReferenceID(_ string, _ string) error     { retu
 func (r *CashRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 func (r CashRestModel) fields() (bool, int32, bool)                       { return r.TradeBlock, r.TradeAvailable, r.Only }
 
+func (r *CashRestModel) setFields(tb bool, ta int32, o bool) {
+	r.TradeBlock, r.TradeAvailable, r.Only = tb, ta, o
+}
+
 func setItemId(target *item.Id, strId string) error {
 	id, err := strconv.ParseUint(strId, 10, 32)
 	if err != nil {
@@ -125,4 +145,36 @@ func setItemId(target *item.Id, strId string) error {
 func extract[R interface{ fields() (bool, int32, bool) }](rm R) (Model, error) {
 	tb, ta, only := rm.fields()
 	return Model{tradeBlock: tb, tradeAvailable: ta, only: only}, nil
+}
+
+// transform is the shared Transform for all five wire models, the inverse of
+// extract. PR is the pointer type of R so transform can populate a zero-value
+// R without a per-type composite literal.
+func transform[R any, PR interface {
+	*R
+	setFields(bool, int32, bool)
+}](m Model) R {
+	var r R
+	PR(&r).setFields(m.tradeBlock, m.tradeAvailable, m.only)
+	return r
+}
+
+func TransformEquipment(m Model) (EquipmentRestModel, error) {
+	return transform[EquipmentRestModel](m), nil
+}
+
+func TransformConsumable(m Model) (ConsumableRestModel, error) {
+	return transform[ConsumableRestModel](m), nil
+}
+
+func TransformSetup(m Model) (SetupRestModel, error) {
+	return transform[SetupRestModel](m), nil
+}
+
+func TransformEtc(m Model) (EtcRestModel, error) {
+	return transform[EtcRestModel](m), nil
+}
+
+func TransformCash(m Model) (CashRestModel, error) {
+	return transform[CashRestModel](m), nil
 }

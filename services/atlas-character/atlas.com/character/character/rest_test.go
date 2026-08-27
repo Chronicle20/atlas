@@ -50,7 +50,7 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	rc := setupTestRedis(t)
 	character.InitTemporalRegistry(rc)
 
-	im := character.NewModelBuilder().
+	im := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("Atlas").
@@ -99,7 +99,7 @@ func TestTransformExtractGmField(t *testing.T) {
 	rc := setupTestRedis(t)
 	character.InitTemporalRegistry(rc)
 
-	im := character.NewModelBuilder().
+	im := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("TestChar").

@@ -211,7 +211,7 @@ func testCharacter(t *testing.T, etcAssets []asset.Model, useCapacity uint32, us
 		SetCompartment(etcComp).
 		SetCompartment(useComp).
 		Build()
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(testCharacterId).
 		SetInventory(inv).
 		Build()

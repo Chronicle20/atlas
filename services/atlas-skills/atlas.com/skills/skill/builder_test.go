@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := skill.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := skill.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -18,7 +18,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 	expiration := time.Now().Add(24 * time.Hour)
 	cooldown := time.Now().Add(30 * time.Second)
 
-	model, err := skill.NewModelBuilder().
+	model, err := skill.NewBuilder().
 		SetId(1001001).
 		SetLevel(10).
 		SetMasterLevel(20).
@@ -46,7 +46,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := skill.NewModelBuilder().
+	_, err := skill.NewBuilder().
 		SetLevel(5).
 		Build()
 
@@ -56,7 +56,7 @@ func TestBuild_MissingId(t *testing.T) {
 }
 
 func TestBuild_Success(t *testing.T) {
-	model, err := skill.NewModelBuilder().
+	model, err := skill.NewBuilder().
 		SetId(1001001).
 		SetLevel(5).
 		Build()
@@ -71,7 +71,7 @@ func TestBuild_Success(t *testing.T) {
 func TestCloneModel(t *testing.T) {
 	expiration := time.Now().Add(24 * time.Hour)
 
-	original, err := skill.NewModelBuilder().
+	original, err := skill.NewBuilder().
 		SetId(1001001).
 		SetLevel(10).
 		SetMasterLevel(20).
@@ -111,7 +111,7 @@ func TestCloneModel(t *testing.T) {
 func TestSetCooldownExpiresAt(t *testing.T) {
 	cooldown := time.Now().Add(60 * time.Second)
 
-	model, err := skill.NewModelBuilder().
+	model, err := skill.NewBuilder().
 		SetId(1001001).
 		SetCooldownExpiresAt(cooldown).
 		Build()
@@ -126,7 +126,7 @@ func TestSetCooldownExpiresAt(t *testing.T) {
 func TestBuilderFluentChaining(t *testing.T) {
 	expiration := time.Now().Add(24 * time.Hour)
 
-	model, err := skill.NewModelBuilder().
+	model, err := skill.NewBuilder().
 		SetId(2001001).
 		SetLevel(1).
 		SetMasterLevel(30).

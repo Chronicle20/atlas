@@ -1,7 +1,7 @@
 package consumable
 
 // Model is the immutable catch-item view. Construct it from REST via Extract or
-// in tests via NewModelBuilder.
+// in tests via NewBuilder.
 type Model struct {
 	id            uint32
 	create        uint32

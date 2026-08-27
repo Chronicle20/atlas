@@ -36,6 +36,28 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	buddies := make([]buddy.RestModel, 0, len(m.buddies))
+	for _, b := range m.buddies {
+		buddies = append(buddies, buddy.RestModel{
+			CharacterId:   b.CharacterId(),
+			Group:         b.Group(),
+			CharacterName: b.Name(),
+			ChannelId:     b.ChannelId(),
+			InShop:        b.InShop(),
+			Pending:       b.Pending(),
+		})
+	}
+
+	return RestModel{
+		Id:          m.id,
+		TenantId:    m.tenantId,
+		CharacterId: m.characterId,
+		Capacity:    m.capacity,
+		Buddies:     buddies,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	buddies := make([]buddy.Model, 0)
 	for _, rb := range rm.Buddies {

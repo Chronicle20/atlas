@@ -81,7 +81,7 @@ func TestGetDropsInMapPaginates(t *testing.T) {
 	reg := drop.GetRegistry()
 	var ids []uint32
 	for i := 0; i < 3; i++ {
-		mb := drop.NewModelBuilder(ten, f).
+		mb := drop.NewBuilder(ten, f).
 			SetItem(1000000, 1).
 			SetPosition(100, 200).
 			SetOwner(12345, 0).

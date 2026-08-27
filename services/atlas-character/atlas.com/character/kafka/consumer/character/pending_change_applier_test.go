@@ -78,7 +78,7 @@ func applierTestContext(t *testing.T) context.Context {
 func seedApplierCharacter(t *testing.T, db *gorm.DB, name string, worldId world.Id) uint32 {
 	t.Helper()
 	l, ctx := applierTestLogger(t), applierTestContext(t)
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(worldId).
 		SetName(name).

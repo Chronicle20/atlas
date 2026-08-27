@@ -31,7 +31,7 @@ func TestProcessorImpl_GetById_Success(t *testing.T) {
 	mockProcessor := &mock.ProcessorImpl{
 		GetByIdFunc: func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 			return func(characterId uint32) (character.Model, error) {
-				m := character.NewModelBuilder().
+				m := character.NewBuilder().
 					SetId(characterId).
 					SetName("TestCharacter").
 					SetLevel(50).
@@ -87,7 +87,7 @@ func TestProcessorImpl_GetById_WithDecorators(t *testing.T) {
 	mockProcessor := &mock.ProcessorImpl{
 		GetByIdFunc: func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {
 			return func(characterId uint32) (character.Model, error) {
-				m := character.NewModelBuilder().
+				m := character.NewBuilder().
 					SetId(characterId).
 					SetLevel(50).
 					Build()
@@ -122,7 +122,7 @@ func TestProcessorImpl_InventoryDecorator(t *testing.T) {
 		},
 	}
 
-	inputModel := character.NewModelBuilder().SetId(123).Build()
+	inputModel := character.NewBuilder().SetId(123).Build()
 	result := mockProcessor.InventoryDecorator(inputModel)
 
 	if result.Id() != 123 {
@@ -139,7 +139,7 @@ func TestProcessorImpl_GuildDecorator(t *testing.T) {
 		},
 	}
 
-	inputModel := character.NewModelBuilder().SetId(123).Build()
+	inputModel := character.NewBuilder().SetId(123).Build()
 	result := mockProcessor.GuildDecorator(inputModel)
 
 	if result.Guild().Id() != 1 {
@@ -165,7 +165,7 @@ func TestProcessorImpl_DefaultBehavior(t *testing.T) {
 	}
 
 	// Test default InventoryDecorator returns input unchanged
-	inputModel := character.NewModelBuilder().SetId(456).Build()
+	inputModel := character.NewBuilder().SetId(456).Build()
 	decorated := mockProcessor.InventoryDecorator(inputModel)
 	if decorated.Id() != 456 {
 		t.Errorf("Expected InventoryDecorator to return input unchanged, got Id=%d", decorated.Id())

@@ -55,6 +55,28 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// Transform converts a domain Model into its RestModel. Spec (a
+// map[SpecType]int32) and PetSkills (a []string) are copied entry by entry
+// / element by element rather than aliased, so mutating the RestModel cannot
+// mutate the Model's backing map or slice.
+func Transform(m Model) (RestModel, error) {
+	spec := make(map[SpecType]int32, len(m.spec))
+	for k, v := range m.spec {
+		spec[k] = v
+	}
+
+	petSkills := make([]string, len(m.petSkills))
+	copy(petSkills, m.petSkills)
+
+	return RestModel{
+		Id:          m.id,
+		SlotMax:     m.slotMax,
+		Spec:        spec,
+		PetSkills:   petSkills,
+		PetSkillAdd: m.petSkillAdd,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:          rm.Id,

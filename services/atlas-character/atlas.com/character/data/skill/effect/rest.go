@@ -126,6 +126,71 @@ func Extract(rm RestModel) (Model, error) {
 	}, nil
 }
 
+// Transform is the inverse of Extract: it converts the domain Model back into
+// the RestModel representation. CardStats is never populated — Extract never
+// reads it either (rest.go:64), so there is no Model field to render it from.
+func Transform(m Model) (RestModel, error) {
+	su, err := model.SliceMap(statup.Transform)(model.FixedProvider(m.statups))()()
+	if err != nil {
+		return RestModel{}, err
+	}
+
+	return RestModel{
+		WeaponAttack:         m.weaponAttack,
+		MagicAttack:          m.magicAttack,
+		WeaponDefense:        m.weaponDefense,
+		MagicDefense:         m.magicDefense,
+		Accuracy:             m.accuracy,
+		Avoidability:         m.avoidability,
+		Speed:                m.speed,
+		Jump:                 m.jump,
+		Hp:                   m.hp,
+		Mp:                   m.mp,
+		HPR:                  m.hpr,
+		MPR:                  m.mpr,
+		MHPRRate:             m.mhprRate,
+		MMPRRate:             m.mmprRate,
+		MobSkill:             m.mobSkill,
+		MobSkillLevel:        m.mobSkillLevel,
+		MHPR:                 m.mhpR,
+		MMPR:                 m.mmpR,
+		HPConsume:            m.hpCon,
+		MPConsume:            m.mpCon,
+		Duration:             m.duration,
+		Target:               m.target,
+		Barrier:              m.barrier,
+		Mob:                  m.mob,
+		OverTime:             m.overtime,
+		RepeatEffect:         m.repeatEffect,
+		MoveTo:               m.moveTo,
+		CP:                   m.cp,
+		NuffSkill:            m.nuffSkill,
+		Skill:                m.skill,
+		X:                    m.x,
+		Y:                    m.y,
+		MobCount:             m.mobCount,
+		MoneyConsume:         m.moneyCon,
+		Cooldown:             m.cooldown,
+		MorphId:              m.morphId,
+		Ghost:                m.ghost,
+		Fatigue:              m.fatigue,
+		Berserk:              m.berserk,
+		Booster:              m.booster,
+		Prop:                 m.prop,
+		ItemConsume:          m.itemCon,
+		ItemConsumeAmount:    m.itemConNo,
+		Damage:               m.damage,
+		AttackCount:          m.attackCount,
+		FixDamage:            m.fixDamage,
+		BulletCount:          m.bulletCount,
+		BulletConsume:        m.bulletConsume,
+		MapProtection:        m.mapProtection,
+		CureAbnormalStatuses: m.cureAbnormalStatuses,
+		Statups:              su,
+		MonsterStatus:        m.monsterStatus,
+	}, nil
+}
+
 type cardItemUp struct {
 	ItemCode    uint32 `json:"itemCode"`
 	Probability uint32 `json:"probability"`

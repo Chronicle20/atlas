@@ -48,7 +48,7 @@ func TestStorageWithAssetsMarshalUnmarshal(t *testing.T) {
 		Build()
 
 	// Create a storage model with the asset
-	storageModel := storage.NewModelBuilder().
+	storageModel := storage.NewBuilder().
 		SetId(storageId).
 		SetWorldId(0).
 		SetAccountId(1).
@@ -126,7 +126,7 @@ func TestStorageEmptyAssetsMarshalUnmarshal(t *testing.T) {
 	storageId := uuid.New()
 
 	// Create a storage model without assets
-	storageModel := storage.NewModelBuilder().
+	storageModel := storage.NewBuilder().
 		SetId(storageId).
 		SetWorldId(1).
 		SetAccountId(2).
@@ -201,7 +201,7 @@ func TestStorageMultipleAssetsMarshalUnmarshal(t *testing.T) {
 		Build()
 
 	// Create a storage model with multiple assets
-	storageModel := storage.NewModelBuilder().
+	storageModel := storage.NewBuilder().
 		SetId(storageId).
 		SetWorldId(0).
 		SetAccountId(1).

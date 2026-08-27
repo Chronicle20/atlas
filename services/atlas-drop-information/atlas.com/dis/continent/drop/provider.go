@@ -20,7 +20,7 @@ func getAll() database.EntityProvider[[]entity] {
 }
 
 func modelFromEntity(m entity) (Model, error) {
-	return NewContinentDropBuilder(m.TenantId, m.ID).
+	return NewBuilder(m.TenantId, m.ID).
 		SetContinentId(m.ContinentId).
 		SetItemId(m.ItemId).
 		SetMinimumQuantity(m.MinimumQuantity).

@@ -129,7 +129,7 @@ func TestSelectDiseaseTargets(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sd := mobskill.NewModelBuilder().
+			sd := mobskill.NewBuilder().
 				SetBoundingBox(-50, -30, 50, 30).
 				SetCount(tt.count).
 				Build()
@@ -156,7 +156,7 @@ func TestSelectDiseaseTargets(t *testing.T) {
 }
 
 func TestSelectDiseaseTargets_IsDeterministic(t *testing.T) {
-	sd := mobskill.NewModelBuilder().
+	sd := mobskill.NewBuilder().
 		SetBoundingBox(-50, -30, 50, 30).
 		SetCount(2).
 		Build()

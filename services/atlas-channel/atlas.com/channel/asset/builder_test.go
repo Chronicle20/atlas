@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := asset.NewModelBuilder(1, uuid.New(), 1000)
+func TestNewBuilderWithId(t *testing.T) {
+	builder := asset.NewBuilderWithId(1, uuid.New(), 1000)
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -20,7 +20,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 	compartmentId := uuid.New()
 	expiration := time.Now().Add(24 * time.Hour)
 
-	m, err := asset.NewModelBuilder(1, compartmentId, 1302000).
+	m, err := asset.NewBuilderWithId(1, compartmentId, 1302000).
 		SetSlot(5).
 		SetExpiration(expiration).
 		SetStrength(10).
@@ -53,7 +53,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := asset.NewModelBuilder(0, uuid.New(), 1000).
+	_, err := asset.NewBuilderWithId(0, uuid.New(), 1000).
 		Build()
 
 	if !errors.Is(err, asset.ErrInvalidId) {
@@ -68,7 +68,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	m := asset.NewModelBuilder(1, uuid.New(), 1000).MustBuild()
+	m := asset.NewBuilderWithId(1, uuid.New(), 1000).MustBuild()
 
 	if m.Id() != 1 {
 		t.Errorf("model.Id() = %d, want 1", m.Id())
@@ -82,11 +82,11 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	asset.NewModelBuilder(0, uuid.New(), 1000).MustBuild()
+	asset.NewBuilderWithId(0, uuid.New(), 1000).MustBuild()
 }
 
 func TestCloneModel(t *testing.T) {
-	original, _ := asset.NewModelBuilder(1, uuid.New(), 1302000).
+	original, _ := asset.NewBuilderWithId(1, uuid.New(), 1302000).
 		SetSlot(5).
 		Build()
 
@@ -142,7 +142,7 @@ func TestBuilderWithDifferentInventoryTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m, err := asset.NewModelBuilder(1, uuid.New(), tt.templateId).Build()
+			m, err := asset.NewBuilderWithId(1, uuid.New(), tt.templateId).Build()
 			if err != nil {
 				t.Errorf("Build() with %s unexpected error: %v", tt.name, err)
 			}
@@ -154,17 +154,17 @@ func TestBuilderWithDifferentInventoryTypes(t *testing.T) {
 }
 
 func TestTypeChecks(t *testing.T) {
-	equipable := asset.NewModelBuilder(1, uuid.New(), 1302000).MustBuild()
+	equipable := asset.NewBuilderWithId(1, uuid.New(), 1302000).MustBuild()
 	if !equipable.IsEquipment() {
 		t.Error("Expected IsEquipment() to return true for equip templateId")
 	}
 
-	consumable := asset.NewModelBuilder(2, uuid.New(), 2000000).MustBuild()
+	consumable := asset.NewBuilderWithId(2, uuid.New(), 2000000).MustBuild()
 	if !consumable.IsConsumable() {
 		t.Error("Expected IsConsumable() to return true for consumable templateId")
 	}
 
-	setup := asset.NewModelBuilder(3, uuid.New(), 3000000).MustBuild()
+	setup := asset.NewBuilderWithId(3, uuid.New(), 3000000).MustBuild()
 	if !setup.IsSetup() {
 		t.Error("Expected IsSetup() to return true for setup templateId")
 	}
@@ -180,7 +180,7 @@ func TestNewBuilderAlias(t *testing.T) {
 
 // Clone alias test for backward compatibility
 func TestCloneAlias(t *testing.T) {
-	original := asset.NewModelBuilder(1, uuid.New(), 1302000).MustBuild()
+	original := asset.NewBuilderWithId(1, uuid.New(), 1302000).MustBuild()
 
 	cloned := asset.Clone(original).SetSlot(10).MustBuild()
 
@@ -190,7 +190,7 @@ func TestCloneAlias(t *testing.T) {
 }
 
 func TestPetModel(t *testing.T) {
-	m := asset.NewModelBuilder(1, uuid.New(), 5000000).
+	m := asset.NewBuilderWithId(1, uuid.New(), 5000000).
 		SetPetId(42).
 		SetPetName("Fluffy").
 		SetPetLevel(15).
@@ -224,7 +224,7 @@ func TestPetModel(t *testing.T) {
 }
 
 func TestChannelAssetOwner(t *testing.T) {
-	m := asset.NewModelBuilder(1, uuid.New(), 1302000).SetOwner("Tumi").MustBuild()
+	m := asset.NewBuilderWithId(1, uuid.New(), 1302000).SetOwner("Tumi").MustBuild()
 	if m.Owner() != "Tumi" {
 		t.Fatalf("Owner() = %q", m.Owner())
 	}
@@ -235,7 +235,7 @@ func TestChannelAssetOwner(t *testing.T) {
 
 func TestQuantityBehavior(t *testing.T) {
 	// Stackable items have explicit quantity
-	consumable := asset.NewModelBuilder(1, uuid.New(), 2000000).
+	consumable := asset.NewBuilderWithId(1, uuid.New(), 2000000).
 		SetQuantity(50).
 		MustBuild()
 	if consumable.Quantity() != 50 {
@@ -246,7 +246,7 @@ func TestQuantityBehavior(t *testing.T) {
 	}
 
 	// Equipment has implicit quantity of 1
-	equip := asset.NewModelBuilder(2, uuid.New(), 1302000).MustBuild()
+	equip := asset.NewBuilderWithId(2, uuid.New(), 1302000).MustBuild()
 	if equip.Quantity() != 1 {
 		t.Errorf("equip.Quantity() = %d, want 1", equip.Quantity())
 	}

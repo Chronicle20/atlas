@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := configuration.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := configuration.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -21,7 +21,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 	tenantId := uuid.New()
 	resourceData := json.RawMessage(`{"data": {"id": "test-1", "name": "Test Route"}}`)
 
-	model, err := configuration.NewModelBuilder().
+	model, err := configuration.NewBuilder().
 		SetID(id).
 		SetTenantId(tenantId).
 		SetResourceName("routes").
@@ -45,7 +45,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingTenantId(t *testing.T) {
-	_, err := configuration.NewModelBuilder().
+	_, err := configuration.NewBuilder().
 		SetResourceName("routes").
 		SetResourceData(json.RawMessage(`{}`)).
 		Build()
@@ -56,7 +56,7 @@ func TestBuild_MissingTenantId(t *testing.T) {
 }
 
 func TestBuild_MissingResourceName(t *testing.T) {
-	_, err := configuration.NewModelBuilder().
+	_, err := configuration.NewBuilder().
 		SetTenantId(uuid.New()).
 		SetResourceData(json.RawMessage(`{}`)).
 		Build()
@@ -68,7 +68,7 @@ func TestBuild_MissingResourceName(t *testing.T) {
 
 func TestBuild_Success(t *testing.T) {
 	tenantId := uuid.New()
-	model, err := configuration.NewModelBuilder().
+	model, err := configuration.NewBuilder().
 		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(json.RawMessage(`{"data": []}`)).
@@ -87,7 +87,7 @@ func TestBuild_Success(t *testing.T) {
 
 func TestCloneModel(t *testing.T) {
 	tenantId := uuid.New()
-	original, err := configuration.NewModelBuilder().
+	original, err := configuration.NewBuilder().
 		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(json.RawMessage(`{"data": []}`)).
@@ -124,7 +124,7 @@ func TestBuilderFluentChaining(t *testing.T) {
 	tenantId := uuid.New()
 	resourceData := json.RawMessage(`{"data": {"id": "test-1"}}`)
 
-	model, err := configuration.NewModelBuilder().
+	model, err := configuration.NewBuilder().
 		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(resourceData).
@@ -142,7 +142,7 @@ func TestBuilderFluentChaining(t *testing.T) {
 
 func TestModelString(t *testing.T) {
 	tenantId := uuid.New()
-	model, err := configuration.NewModelBuilder().
+	model, err := configuration.NewBuilder().
 		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(json.RawMessage(`{}`)).

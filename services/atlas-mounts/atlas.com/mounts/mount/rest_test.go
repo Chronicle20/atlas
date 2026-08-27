@@ -18,7 +18,7 @@ func TestTransformAllFields(t *testing.T) {
 	mountId := uuid.New()
 	tick := time.Date(2026, time.June, 12, 10, 0, 0, 0, time.UTC)
 
-	m, err := NewModelBuilder(tenantId, 12345, mountId).
+	m, err := NewBuilder(tenantId, 12345, mountId).
 		SetLevel(7).
 		SetExp(420).
 		SetTiredness(33).
@@ -60,7 +60,7 @@ func TestTransformAllFields(t *testing.T) {
 }
 
 func TestTransformNilTick(t *testing.T) {
-	m, err := NewModelBuilder(uuid.New(), 1, uuid.New()).Build()
+	m, err := NewBuilder(uuid.New(), 1, uuid.New()).Build()
 	if err != nil {
 		t.Fatalf("building model: %v", err)
 	}

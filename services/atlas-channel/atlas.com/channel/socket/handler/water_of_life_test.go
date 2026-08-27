@@ -11,7 +11,7 @@ import (
 
 func buildPet(t *testing.T, id uint32, expiration time.Time) pet.Model {
 	t.Helper()
-	m, err := pet.NewModelBuilder(id, 0, 5000000, "Pet").SetExpiration(expiration).Build()
+	m, err := pet.NewBuilder(id, 0, 5000000, "Pet").SetExpiration(expiration).Build()
 	if err != nil {
 		t.Fatalf("failed to build pet [%d]: %v", id, err)
 	}

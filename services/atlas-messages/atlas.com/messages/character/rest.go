@@ -95,6 +95,45 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 	return nil
 }
 
+// Transform converts a Model to its RestModel wire shape. Stance has no
+// backing field on Model -- Model.Stance() is a hardcoded stub that always
+// returns 0, so the literal 0 here mirrors that behavior rather than
+// inventing a value or calling the getter on the Model parameter.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:                 m.id,
+		AccountId:          m.accountId,
+		WorldId:            m.worldId,
+		Name:               m.name,
+		Level:              m.level,
+		Experience:         m.experience,
+		GachaponExperience: m.gachaponExperience,
+		Strength:           m.strength,
+		Dexterity:          m.dexterity,
+		Intelligence:       m.intelligence,
+		Luck:               m.luck,
+		Hp:                 m.hp,
+		MaxHp:              m.maxHp,
+		Mp:                 m.mp,
+		MaxMp:              m.maxMp,
+		Meso:               m.meso,
+		HpMpUsed:           m.hpMpUsed,
+		JobId:              m.jobId,
+		SkinColor:          m.skinColor,
+		Gender:             m.gender,
+		Fame:               m.fame,
+		Hair:               m.hair,
+		Face:               m.face,
+		Ap:                 m.ap,
+		Sp:                 m.sp,
+		SpawnPoint:         m.spawnPoint,
+		Gm:                 m.gm,
+		X:                  m.x,
+		Y:                  m.y,
+		Stance:             0,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:                 rm.Id,

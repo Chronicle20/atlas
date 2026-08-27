@@ -31,9 +31,9 @@ func createTestTenant(t *testing.T) tenant.Model {
 	return ten
 }
 
-func createTestBuilder(ten tenant.Model, worldId world.Id, channelId channel.Id, mapId _map.Id) *ModelBuilder {
+func createTestBuilder(ten tenant.Model, worldId world.Id, channelId channel.Id, mapId _map.Id) *Builder {
 	f := field.NewBuilder(worldId, channelId, mapId).Build()
-	return NewModelBuilder(ten, f).
+	return NewBuilder(ten, f).
 		SetItem(1000000, 1).
 		SetPosition(100, 200).
 		SetOwner(12345, 0).
@@ -41,7 +41,7 @@ func createTestBuilder(ten tenant.Model, worldId world.Id, channelId channel.Id,
 		SetType(0)
 }
 
-func mustCreateDrop(t *testing.T, r *DropRegistry, mb *ModelBuilder) Model {
+func mustCreateDrop(t *testing.T, r *DropRegistry, mb *Builder) Model {
 	drop, err := r.CreateDrop(mb)
 	if err != nil {
 		t.Fatalf("Failed to create drop: %v", err)
@@ -505,7 +505,7 @@ func TestConcurrentReserveDrop(t *testing.T) {
 
 	// Use FFA drop (owner=0) so ownership validation allows all characters to attempt reservation
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 1).
 		SetPosition(100, 200).
 		SetOwner(0, 0).

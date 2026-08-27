@@ -154,7 +154,7 @@ func TestSendMessageProviderShape(t *testing.T) {
 	}
 }
 
-func TestModelBuilderSetBanish(t *testing.T) {
+func TestBuilderSetBanish(t *testing.T) {
 	tests := []struct {
 		name   string
 		banish information.Banish
@@ -167,7 +167,7 @@ func TestModelBuilderSetBanish(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			m := information.NewModelBuilder().SetBanish(tc.banish).Build()
+			m := information.NewBuilder().SetBanish(tc.banish).Build()
 			if m.Banish() != tc.banish {
 				t.Errorf("Banish()=%+v, want %+v", m.Banish(), tc.banish)
 			}

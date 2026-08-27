@@ -177,7 +177,7 @@ func TestOnDamageApplied_NotCalledForReflectedEntry(t *testing.T) {
 			}, true
 		},
 		getMonster: func(monsterId uint32) (monster.Model, error) {
-			return monster.NewModelBuilder(monsterId, f, 100100).Build()
+			return monster.NewBuilder(monsterId, f, 100100).Build()
 		},
 		applyDamage: func(_ field.Model, _, _ uint32, _ []uint32, _ byte) error {
 			damaged = true
@@ -211,7 +211,7 @@ func TestDrainTryHeal_EmitsCappedHeal(t *testing.T) {
 	drainTryHeal(
 		discardLogger(),
 		func(monsterId uint32) (monster.Model, error) {
-			return monster.NewModelBuilder(monsterId, f, 100100).SetMaxHp(6000).Build()
+			return monster.NewBuilder(monsterId, f, 100100).SetMaxHp(6000).Build()
 		},
 		func(_ field.Model, characterId uint32, amount int16) error {
 			calls = append(calls, changeHPCall{characterId, amount})
@@ -258,7 +258,7 @@ func TestDrainTryHeal_ZeroEffectiveStats_SkipsHeal(t *testing.T) {
 	drainTryHeal(
 		discardLogger(),
 		func(monsterId uint32) (monster.Model, error) {
-			return monster.NewModelBuilder(monsterId, f, 100100).SetMaxHp(6000).Build()
+			return monster.NewBuilder(monsterId, f, 100100).SetMaxHp(6000).Build()
 		},
 		func(_ field.Model, _ uint32, _ int16) error { called = true; return nil },
 		func() effective_stats.RestModel { return effective_stats.RestModel{} },
@@ -280,7 +280,7 @@ func TestDrainTryHeal_EmitErrorSwallowed(t *testing.T) {
 	drainTryHeal(
 		discardLogger(),
 		func(monsterId uint32) (monster.Model, error) {
-			return monster.NewModelBuilder(monsterId, f, 100100).SetMaxHp(6000).Build()
+			return monster.NewBuilder(monsterId, f, 100100).SetMaxHp(6000).Build()
 		},
 		func(_ field.Model, _ uint32, _ int16) error {
 			changeHPCalls++
@@ -306,7 +306,7 @@ func TestDrainTryHeal_PerMonsterCaps(t *testing.T) {
 		drainTryHeal(
 			discardLogger(),
 			func(id uint32) (monster.Model, error) {
-				return monster.NewModelBuilder(id, f, 100100).SetMaxHp(maxHpByMonster[id]).Build()
+				return monster.NewBuilder(id, f, 100100).SetMaxHp(maxHpByMonster[id]).Build()
 			},
 			func(_ field.Model, characterId uint32, amount int16) error {
 				calls = append(calls, changeHPCall{characterId, amount})

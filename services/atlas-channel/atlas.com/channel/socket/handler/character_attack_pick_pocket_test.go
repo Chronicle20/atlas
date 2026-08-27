@@ -289,7 +289,7 @@ type ppSpawnCall struct {
 func TestPickPocketTryProc_PropOneEmitsPerDamageLine(t *testing.T) {
 	f := testField(_map.Id(100000000))
 	di := packetmodel.NewDamageInfo(3).SetMonsterId(700020).SetDamages([]uint32{0, 10000, 2000000})
-	mon := monster.NewModelBuilder(700020, f, 100100).SetX(100).SetY(-30).MustBuild()
+	mon := monster.NewBuilder(700020, f, 100100).SetX(100).SetY(-30).MustBuild()
 
 	var calls []ppSpawnCall
 	getMonster := func(monsterId uint32) (monster.Model, error) {
@@ -333,7 +333,7 @@ func TestPickPocketTryProc_PropOneEmitsPerDamageLine(t *testing.T) {
 func TestPickPocketTryProc_PropZeroEmitsNothing(t *testing.T) {
 	f := testField(_map.Id(100000000))
 	di := packetmodel.NewDamageInfo(2).SetMonsterId(700021).SetDamages([]uint32{100, 200})
-	mon := monster.NewModelBuilder(700021, f, 100100).SetX(0).SetY(0).MustBuild()
+	mon := monster.NewBuilder(700021, f, 100100).SetX(0).SetY(0).MustBuild()
 
 	emitted := 0
 	getMonster := func(_ uint32) (monster.Model, error) { return mon, nil }
@@ -385,7 +385,7 @@ func TestPickPocketTryProc_MonsterFetchErrorSkipsMonster(t *testing.T) {
 func TestPickPocketTryProc_EmitErrorContinuesRemainingLines(t *testing.T) {
 	f := testField(_map.Id(100000000))
 	di := packetmodel.NewDamageInfo(3).SetMonsterId(700024).SetDamages([]uint32{100, 200, 300})
-	mon := monster.NewModelBuilder(700024, f, 100100).SetX(0).SetY(0).MustBuild()
+	mon := monster.NewBuilder(700024, f, 100100).SetX(0).SetY(0).MustBuild()
 
 	attempts := 0
 	getMonster := func(_ uint32) (monster.Model, error) { return mon, nil }

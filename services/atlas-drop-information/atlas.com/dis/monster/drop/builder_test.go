@@ -6,11 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestNewMonsterDropBuilder(t *testing.T) {
+func TestNewBuilder(t *testing.T) {
 	tenantId := uuid.New()
 	id := uint32(123)
 
-	builder := NewMonsterDropBuilder(tenantId, id)
+	builder := NewBuilder(tenantId, id)
 
 	if builder == nil {
 		t.Fatal("Expected builder to be non-nil")
@@ -30,10 +30,10 @@ func TestNewMonsterDropBuilder(t *testing.T) {
 	}
 }
 
-func TestMonsterDropBuilderFluentAPI(t *testing.T) {
+func TestBuilderFluentAPI(t *testing.T) {
 	tenantId := uuid.New()
 
-	model, err := NewMonsterDropBuilder(tenantId, 0).
+	model, err := NewBuilder(tenantId, 0).
 		SetMonsterId(100100).
 		SetItemId(2000000).
 		SetMinimumQuantity(1).
@@ -70,10 +70,10 @@ func TestMonsterDropBuilderFluentAPI(t *testing.T) {
 	}
 }
 
-func TestMonsterDropBuilderDefaults(t *testing.T) {
+func TestBuilderDefaults(t *testing.T) {
 	tenantId := uuid.New()
 
-	model, err := NewMonsterDropBuilder(tenantId, 0).Build()
+	model, err := NewBuilder(tenantId, 0).Build()
 	if err != nil {
 		t.Fatalf("Build() returned unexpected error: %v", err)
 	}
@@ -104,16 +104,16 @@ func TestMonsterDropBuilderDefaults(t *testing.T) {
 	}
 }
 
-func TestMonsterDropBuilderValidation_NilTenantId(t *testing.T) {
-	_, err := NewMonsterDropBuilder(uuid.Nil, 0).Build()
+func TestBuilderValidation_NilTenantId(t *testing.T) {
+	_, err := NewBuilder(uuid.Nil, 0).Build()
 	if err == nil {
 		t.Error("Expected error for nil tenantId, got nil")
 	}
 }
 
-func TestMonsterDropBuilderChaining(t *testing.T) {
+func TestBuilderChaining(t *testing.T) {
 	tenantId := uuid.New()
-	builder := NewMonsterDropBuilder(tenantId, 0)
+	builder := NewBuilder(tenantId, 0)
 
 	// Test that each setter returns the builder for chaining
 	result := builder.SetMonsterId(100)

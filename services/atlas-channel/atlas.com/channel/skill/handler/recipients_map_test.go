@@ -18,7 +18,7 @@ func mapTestLogger() logrus.FieldLogger {
 }
 
 func mkFullChar(id uint32, hp, maxHp, mp, maxMp uint16) character.Model {
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(id).SetHp(hp).SetMaxHp(maxHp).SetMp(mp).SetMaxMp(maxMp).SetLevel(70).MustBuild()
 }
 

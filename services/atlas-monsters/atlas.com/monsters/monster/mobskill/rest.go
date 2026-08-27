@@ -43,6 +43,34 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// Transform converts a Model to its RestModel wire shape. Summons is copied
+// into a freshly allocated slice rather than aliased, so mutating the
+// RestModel's Summons cannot reach back into the Model's backing array.
+func Transform(m Model) (RestModel, error) {
+	summons := make([]uint32, len(m.summons))
+	copy(summons, m.summons)
+
+	return RestModel{
+		SkillId:      m.skillId,
+		Level:        m.level,
+		MpCon:        m.mpCon,
+		Duration:     m.duration,
+		Hp:           m.hp,
+		X:            m.x,
+		Y:            m.y,
+		Prop:         m.prop,
+		Interval:     m.interval,
+		Count:        m.count,
+		Limit:        m.limit,
+		LtX:          m.ltX,
+		LtY:          m.ltY,
+		RbX:          m.rbX,
+		RbY:          m.rbY,
+		SummonEffect: m.summonEffect,
+		Summons:      summons,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		skillId:      rm.SkillId,

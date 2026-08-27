@@ -56,6 +56,21 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	spec := make(map[SpecType]int32, len(m.spec))
+	for k, v := range m.spec {
+		spec[k] = v
+	}
+
+	return RestModel{
+		Id:          m.id,
+		Spec:        spec,
+		Npc:         m.npc,
+		Script:      m.script,
+		RunOnPickup: m.runOnPickup,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:          rm.Id,

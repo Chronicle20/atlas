@@ -70,3 +70,10 @@ func Extract(rm RestModel) (Model, error) {
 		level: rm.Level,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:    m.id,
+		Level: m.level,
+	}, nil
+}

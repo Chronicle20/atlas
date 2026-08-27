@@ -11,7 +11,7 @@ import (
 
 var ErrMissingId = errors.New("compartment id is required")
 
-type modelBuilder struct {
+type builder struct {
 	id            uuid.UUID
 	characterId   uint32
 	inventoryType inventory.Type
@@ -19,9 +19,9 @@ type modelBuilder struct {
 	assets        []asset.Model
 }
 
-// NewModelBuilder creates a new builder instance with required fields
-func NewModelBuilder(id uuid.UUID, characterId uint32, it inventory.Type, capacity uint32) *modelBuilder {
-	return &modelBuilder{
+// NewBuilder creates a new builder instance with required fields
+func NewBuilder(id uuid.UUID, characterId uint32, it inventory.Type, capacity uint32) *builder {
+	return &builder{
 		id:            id,
 		characterId:   characterId,
 		inventoryType: it,
@@ -30,14 +30,9 @@ func NewModelBuilder(id uuid.UUID, characterId uint32, it inventory.Type, capaci
 	}
 }
 
-// NewBuilder is an alias for NewModelBuilder for backward compatibility
-func NewBuilder(id uuid.UUID, characterId uint32, it inventory.Type, capacity uint32) *modelBuilder {
-	return NewModelBuilder(id, characterId, it, capacity)
-}
-
 // CloneModel creates a builder initialized with the Model's values
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		id:            m.id,
 		characterId:   m.characterId,
 		inventoryType: m.inventoryType,
@@ -47,25 +42,25 @@ func CloneModel(m Model) *modelBuilder {
 }
 
 // SetCapacity sets the capacity field
-func (b *modelBuilder) SetCapacity(capacity uint32) *modelBuilder {
+func (b *builder) SetCapacity(capacity uint32) *builder {
 	b.capacity = capacity
 	return b
 }
 
 // AddAsset appends an asset to the assets slice
-func (b *modelBuilder) AddAsset(a asset.Model) *modelBuilder {
+func (b *builder) AddAsset(a asset.Model) *builder {
 	b.assets = append(b.assets, a)
 	return b
 }
 
 // SetAssets replaces the assets slice
-func (b *modelBuilder) SetAssets(as []asset.Model) *modelBuilder {
+func (b *builder) SetAssets(as []asset.Model) *builder {
 	b.assets = as
 	return b
 }
 
 // Build creates a new Model instance with validation
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	if b.id == uuid.Nil {
 		return Model{}, ErrMissingId
 	}
@@ -79,7 +74,7 @@ func (b *modelBuilder) Build() (Model, error) {
 }
 
 // MustBuild creates a new Model instance, panicking on validation error
-func (b *modelBuilder) MustBuild() Model {
+func (b *builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic(err)

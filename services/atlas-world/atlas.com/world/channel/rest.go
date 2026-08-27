@@ -56,7 +56,7 @@ func Transform(m Model) (RestModel, error) {
 
 // Extract converts a RestModel to a Model using the Builder pattern
 func Extract(r RestModel) (Model, error) {
-	return NewModelBuilder().
+	return NewBuilder().
 		SetId(r.Id).
 		SetWorldId(r.WorldId).
 		SetChannelId(r.ChannelId).

@@ -31,3 +31,16 @@ func (r *RestModel) SetID(strId string) error {
 	r.Id = uint32(id)
 	return nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:       m.id,
+		ItemId:   m.itemId,
+		Count:    m.count,
+		Price:    m.price,
+		Period:   m.period,
+		Priority: m.priority,
+		Gender:   m.gender,
+		OnSale:   m.onSale,
+	}, nil
+}

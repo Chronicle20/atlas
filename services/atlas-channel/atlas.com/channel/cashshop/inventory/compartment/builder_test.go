@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestNewModelBuilder(t *testing.T) {
+func TestNewBuilder(t *testing.T) {
 	id := uuid.New()
-	builder := compartment.NewModelBuilder(id, 100, compartment.TypeExplorer, 50)
+	builder := compartment.NewBuilder(id, 100, compartment.TypeExplorer, 50)
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -20,10 +20,10 @@ func TestNewModelBuilder(t *testing.T) {
 
 func TestBuild_AllFieldsSet(t *testing.T) {
 	id := uuid.New()
-	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
-	testAsset := asset.NewModelBuilder(1, id, testItem).MustBuild()
+	testItem := item.NewBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
+	testAsset := asset.NewBuilder(1, id, testItem).MustBuild()
 
-	model, err := compartment.NewModelBuilder(id, 100, compartment.TypeExplorer, 50).
+	model, err := compartment.NewBuilder(id, 100, compartment.TypeExplorer, 50).
 		AddAsset(testAsset).
 		Build()
 	if err != nil {
@@ -47,7 +47,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingId(t *testing.T) {
-	_, err := compartment.NewModelBuilder(uuid.Nil, 100, compartment.TypeExplorer, 50).Build()
+	_, err := compartment.NewBuilder(uuid.Nil, 100, compartment.TypeExplorer, 50).Build()
 
 	if !errors.Is(err, compartment.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
@@ -56,7 +56,7 @@ func TestBuild_MissingId(t *testing.T) {
 
 func TestBuild_MissingAccountId(t *testing.T) {
 	id := uuid.New()
-	_, err := compartment.NewModelBuilder(id, 0, compartment.TypeExplorer, 50).Build()
+	_, err := compartment.NewBuilder(id, 0, compartment.TypeExplorer, 50).Build()
 
 	if !errors.Is(err, compartment.ErrInvalidAccountId) {
 		t.Errorf("Build() error = %v, want ErrInvalidAccountId", err)
@@ -65,10 +65,10 @@ func TestBuild_MissingAccountId(t *testing.T) {
 
 func TestCloneModel(t *testing.T) {
 	id := uuid.New()
-	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
-	testAsset := asset.NewModelBuilder(1, id, testItem).MustBuild()
+	testItem := item.NewBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
+	testAsset := asset.NewBuilder(1, id, testItem).MustBuild()
 
-	original, err := compartment.NewModelBuilder(id, 100, compartment.TypeExplorer, 50).
+	original, err := compartment.NewBuilder(id, 100, compartment.TypeExplorer, 50).
 		AddAsset(testAsset).
 		Build()
 	if err != nil {
@@ -107,7 +107,7 @@ func TestMustBuild_Success(t *testing.T) {
 	}()
 
 	id := uuid.New()
-	model := compartment.NewModelBuilder(id, 100, compartment.TypeExplorer, 50).MustBuild()
+	model := compartment.NewBuilder(id, 100, compartment.TypeExplorer, 50).MustBuild()
 
 	if model.Id() != id {
 		t.Errorf("model.Id() = %v, want %v", model.Id(), id)
@@ -121,17 +121,17 @@ func TestMustBuild_Panics(t *testing.T) {
 		}
 	}()
 
-	compartment.NewModelBuilder(uuid.Nil, 100, compartment.TypeExplorer, 50).MustBuild() // Missing ID, should panic
+	compartment.NewBuilder(uuid.Nil, 100, compartment.TypeExplorer, 50).MustBuild() // Missing ID, should panic
 }
 
 func TestAddAsset(t *testing.T) {
 	id := uuid.New()
-	testItem1 := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
-	testAsset1 := asset.NewModelBuilder(1, id, testItem1).MustBuild()
-	testItem2 := item.NewModelBuilder().SetId(2).SetTemplateId(5000001).MustBuild()
-	testAsset2 := asset.NewModelBuilder(2, id, testItem2).MustBuild()
+	testItem1 := item.NewBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
+	testAsset1 := asset.NewBuilder(1, id, testItem1).MustBuild()
+	testItem2 := item.NewBuilder().SetId(2).SetTemplateId(5000001).MustBuild()
+	testAsset2 := asset.NewBuilder(2, id, testItem2).MustBuild()
 
-	model, err := compartment.NewModelBuilder(id, 100, compartment.TypeExplorer, 50).
+	model, err := compartment.NewBuilder(id, 100, compartment.TypeExplorer, 50).
 		AddAsset(testAsset1).
 		AddAsset(testAsset2).
 		Build()
@@ -145,10 +145,10 @@ func TestAddAsset(t *testing.T) {
 
 func TestSetAssets(t *testing.T) {
 	id := uuid.New()
-	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
-	testAsset := asset.NewModelBuilder(1, id, testItem).MustBuild()
+	testItem := item.NewBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
+	testAsset := asset.NewBuilder(1, id, testItem).MustBuild()
 
-	model, err := compartment.NewModelBuilder(id, 100, compartment.TypeExplorer, 50).
+	model, err := compartment.NewBuilder(id, 100, compartment.TypeExplorer, 50).
 		SetAssets([]asset.Model{testAsset}).
 		Build()
 	if err != nil {

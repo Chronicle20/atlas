@@ -7,7 +7,7 @@ import (
 
 var ErrInvalidId = errors.New("drop id must be greater than 0")
 
-type modelBuilder struct {
+type builder struct {
 	id           uint32
 	itemId       uint32
 	equipmentId  uint32
@@ -25,16 +25,16 @@ type modelBuilder struct {
 	playerDrop   bool
 }
 
-// NewModelBuilder creates a new builder instance
-func NewModelBuilder() *modelBuilder {
-	return &modelBuilder{
+// NewBuilder creates a new builder instance
+func NewBuilder() *builder {
+	return &builder{
 		dropTime: time.Now(),
 	}
 }
 
 // CloneModel creates a builder initialized with the Model's values
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		id:           m.id,
 		itemId:       m.itemId,
 		equipmentId:  m.equipmentId,
@@ -53,63 +53,63 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-// CloneModelBuilder is an alias for CloneModel for backward compatibility
-func CloneModelBuilder(m Model) *modelBuilder {
+// CloneBuilder is an alias for CloneModel for backward compatibility
+func CloneBuilder(m Model) *builder {
 	return CloneModel(m)
 }
 
-func (b *modelBuilder) SetId(id uint32) *modelBuilder {
+func (b *builder) SetId(id uint32) *builder {
 	b.id = id
 	return b
 }
 
-func (b *modelBuilder) SetItem(itemId uint32, quantity uint32) *modelBuilder {
+func (b *builder) SetItem(itemId uint32, quantity uint32) *builder {
 	b.itemId = itemId
 	b.quantity = quantity
 	return b
 }
 
-func (b *modelBuilder) SetMeso(meso uint32) *modelBuilder {
+func (b *builder) SetMeso(meso uint32) *builder {
 	b.meso = meso
 	return b
 }
 
-func (b *modelBuilder) SetType(dropType byte) *modelBuilder {
+func (b *builder) SetType(dropType byte) *builder {
 	b.dropType = dropType
 	return b
 }
 
-func (b *modelBuilder) SetEquipmentId(equipmentId uint32) *modelBuilder {
+func (b *builder) SetEquipmentId(equipmentId uint32) *builder {
 	b.equipmentId = equipmentId
 	return b
 }
 
-func (b *modelBuilder) SetPosition(x int16, y int16) *modelBuilder {
+func (b *builder) SetPosition(x int16, y int16) *builder {
 	b.x = x
 	b.y = y
 	return b
 }
 
-func (b *modelBuilder) SetOwner(id uint32, partyId uint32) *modelBuilder {
+func (b *builder) SetOwner(id uint32, partyId uint32) *builder {
 	b.ownerId = id
 	b.ownerPartyId = partyId
 	return b
 }
 
-func (b *modelBuilder) SetDropper(id uint32, x int16, y int16) *modelBuilder {
+func (b *builder) SetDropper(id uint32, x int16, y int16) *builder {
 	b.dropperId = id
 	b.dropperX = x
 	b.dropperY = y
 	return b
 }
 
-func (b *modelBuilder) SetPlayerDrop(is bool) *modelBuilder {
+func (b *builder) SetPlayerDrop(is bool) *builder {
 	b.playerDrop = is
 	return b
 }
 
 // Clone sets the builder's fields from the given model (for chaining)
-func (b *modelBuilder) Clone(m Model) *modelBuilder {
+func (b *builder) Clone(m Model) *builder {
 	b.id = m.Id()
 	b.itemId = m.ItemId()
 	b.equipmentId = m.EquipmentId()
@@ -129,7 +129,7 @@ func (b *modelBuilder) Clone(m Model) *modelBuilder {
 }
 
 // Build creates a new Model instance with validation
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	if b.id == 0 {
 		return Model{}, ErrInvalidId
 	}
@@ -153,7 +153,7 @@ func (b *modelBuilder) Build() (Model, error) {
 }
 
 // MustBuild creates a new Model instance, panicking on validation error
-func (b *modelBuilder) MustBuild() Model {
+func (b *builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic(err)

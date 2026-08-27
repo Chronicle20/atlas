@@ -25,7 +25,7 @@ func TestAddListingCommandProvider_PopulatesItemFields(t *testing.T) {
 
 	// An equip-type asset (helmet, item id 1002140) resolved from the
 	// character's equip compartment slot.
-	a := asset.NewModelBuilder(777, compartmentId, 1002140).
+	a := asset.NewBuilderWithId(777, compartmentId, 1002140).
 		SetSlot(3).
 		SetExpiration(expiration).
 		SetStrength(5).
@@ -76,7 +76,7 @@ func TestAddListingCommandProvider_StackableItemType(t *testing.T) {
 	shopId := uuid.New()
 	compartmentId := uuid.New()
 
-	a := asset.NewModelBuilder(900, compartmentId, 2000000).
+	a := asset.NewBuilderWithId(900, compartmentId, 2000000).
 		SetSlot(1).
 		SetQuantity(50).
 		MustBuild()

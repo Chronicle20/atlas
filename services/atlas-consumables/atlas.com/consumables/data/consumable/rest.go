@@ -89,6 +89,86 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	rewards := make([]RewardRestModel, 0, len(m.rewards))
+	for _, r := range m.rewards {
+		rr, err := TransformReward(r)
+		if err != nil {
+			return RestModel{}, err
+		}
+		rewards = append(rewards, rr)
+	}
+
+	summons := make([]Summon, 0, len(m.monsterSummons))
+	for _, s := range m.monsterSummons {
+		summons = append(summons, Summon{
+			TemplateId:  s.templateId,
+			Probability: s.probability,
+		})
+	}
+
+	return RestModel{
+		Id:              m.id,
+		TradeBlock:      m.tradeBlock,
+		Price:           m.price,
+		UnitPrice:       m.unitPrice,
+		SlotMax:         m.slotMax,
+		TimeLimited:     m.timeLimited,
+		NotSale:         m.notSale,
+		ReqLevel:        m.reqLevel,
+		Quest:           m.quest,
+		Only:            m.only,
+		ConsumeOnPickup: m.consumeOnPickup,
+		Success:         m.success,
+		Cursed:          m.cursed,
+		Create:          m.create,
+		MasterLevel:     m.masterLevel,
+		ReqSkillLevel:   m.reqSkillLevel,
+		TradeAvailable:  m.tradeAvailable,
+		NoCancelMouse:   m.noCancelMouse,
+		Pquest:          m.pquest,
+		Left:            m.left,
+		Right:           m.right,
+		Top:             m.top,
+		Bottom:          m.bottom,
+		BridleMsgType:   m.bridleMsgType,
+		BridleProp:      m.bridleProp,
+		BridlePropChg:   m.bridlePropChg,
+		UseDelay:        m.useDelay,
+		DelayMsg:        m.delayMsg,
+		IncFatigue:      m.incFatigue,
+		Npc:             m.npc,
+		Script:          m.script,
+		RunOnPickup:     m.runOnPickup,
+		MonsterBook:     m.monsterBook,
+		MonsterId:       m.monsterId,
+		BigSize:         m.bigSize,
+		TargetBlock:     m.tragetBlock,
+		Effect:          m.effect,
+		MonsterHP:       m.monsterHp,
+		WorldMsg:        m.worldMsg,
+		IncreasePDD:     m.incPDD,
+		IncreaseMDD:     m.incMDD,
+		IncreaseACC:     m.incACC,
+		IncreaseMHP:     m.incMHP,
+		IncreaseMMP:     m.incMMP,
+		IncreasePAD:     m.incPAD,
+		IncreaseMAD:     m.incMAD,
+		IncreaseJump:    m.incJump,
+		IncreaseEVA:     m.incEVA,
+		IncreaseLUK:     m.incLUK,
+		IncreaseDEX:     m.incDEX,
+		IncreaseINT:     m.incINT,
+		IncreaseSTR:     m.incSTR,
+		IncreaseSpeed:   m.incSpeed,
+		Spec:            m.spec,
+		MonsterSummons:  summons,
+		Morphs:          m.morphs,
+		Skills:          m.skills,
+		Rewards:         rewards,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	rs, err := model.SliceMap(ExtractReward)(model.FixedProvider(rm.Rewards))(model.ParallelMap())()
 	if err != nil {
@@ -173,6 +253,17 @@ type RewardRestModel struct {
 	Effect   string `json:"effect"`
 	WorldMsg string `json:"worldMsg"`
 	Period   int32  `json:"period"`
+}
+
+func TransformReward(m RewardModel) (RewardRestModel, error) {
+	return RewardRestModel{
+		ItemId:   m.itemId,
+		Count:    m.count,
+		Prob:     m.prob,
+		Effect:   m.effect,
+		WorldMsg: m.worldMsg,
+		Period:   m.period,
+	}, nil
 }
 
 func ExtractReward(rm RewardRestModel) (RewardModel, error) {

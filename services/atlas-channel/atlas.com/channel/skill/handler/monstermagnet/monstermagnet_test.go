@@ -79,7 +79,7 @@ func stubs(t *testing.T, rectIds []uint32, casterErr, rectErr error, rectCalls *
 		// stance defaults to 0 (facing right); the character builder has no
 		// SetStance, and MagnetRegion's left-facing branch is covered by
 		// TestMagnetRegionFacingLeftMirrors in skill/handler.
-		return character.NewModelBuilder().SetId(characterId).SetX(1000).SetY(500).MustBuild(), nil
+		return character.NewBuilder().SetId(characterId).SetX(1000).SetY(500).MustBuild(), nil
 	}
 	rectQueryFunc = func(l logrus.FieldLogger, ctx context.Context, f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]monster.Model, error) {
 		if rectCalls != nil {
@@ -90,10 +90,10 @@ func stubs(t *testing.T, rectIds []uint32, casterErr, rectErr error, rectCalls *
 		}
 		mobs := make([]monster.Model, 0, len(rectIds))
 		for _, id := range rectIds {
-			// monster.NewModelBuilder takes (uniqueId, field, monsterId).
-			m, berr := monster.NewModelBuilder(id, testField(), 9000000).Build()
+			// monster.NewBuilder takes (uniqueId, field, monsterId).
+			m, berr := monster.NewBuilder(id, testField(), 9000000).Build()
 			if berr != nil {
-				t.Fatalf("monster.NewModelBuilder(%d): %v", id, berr)
+				t.Fatalf("monster.NewBuilder(%d): %v", id, berr)
 			}
 			mobs = append(mobs, m)
 		}

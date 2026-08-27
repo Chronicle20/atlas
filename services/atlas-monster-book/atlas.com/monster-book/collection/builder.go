@@ -11,7 +11,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 )
 
-type ModelBuilder struct {
+type Builder struct {
 	tenantId         uuid.UUID
 	characterId      character.Id
 	coverCardId      item.Id
@@ -25,10 +25,10 @@ type ModelBuilder struct {
 	updatedAt        time.Time
 }
 
-func NewModelBuilder() *ModelBuilder { return &ModelBuilder{} }
+func NewBuilder() *Builder { return &Builder{} }
 
-func CloneModelBuilder(m Model) *ModelBuilder {
-	return &ModelBuilder{
+func CloneBuilder(m Model) *Builder {
+	return &Builder{
 		tenantId:         m.tenantId,
 		characterId:      m.characterId,
 		coverCardId:      m.coverCardId,
@@ -43,23 +43,23 @@ func CloneModelBuilder(m Model) *ModelBuilder {
 	}
 }
 
-func (b *ModelBuilder) SetTenantId(v uuid.UUID) *ModelBuilder       { b.tenantId = v; return b }
-func (b *ModelBuilder) SetCharacterId(v character.Id) *ModelBuilder { b.characterId = v; return b }
-func (b *ModelBuilder) SetCoverCardId(v item.Id) *ModelBuilder      { b.coverCardId = v; return b }
-func (b *ModelBuilder) SetCoverMobId(v monster.Id) *ModelBuilder    { b.coverMobId = v; return b }
-func (b *ModelBuilder) SetBookLevel(v uint16) *ModelBuilder         { b.bookLevel = v; return b }
-func (b *ModelBuilder) SetNormalCount(v uint16) *ModelBuilder       { b.normalCount = v; return b }
-func (b *ModelBuilder) SetSpecialCount(v uint16) *ModelBuilder      { b.specialCount = v; return b }
-func (b *ModelBuilder) SetExpBonusPercent(v uint16) *ModelBuilder   { b.expBonusPercent = v; return b }
+func (b *Builder) SetTenantId(v uuid.UUID) *Builder       { b.tenantId = v; return b }
+func (b *Builder) SetCharacterId(v character.Id) *Builder { b.characterId = v; return b }
+func (b *Builder) SetCoverCardId(v item.Id) *Builder      { b.coverCardId = v; return b }
+func (b *Builder) SetCoverMobId(v monster.Id) *Builder    { b.coverMobId = v; return b }
+func (b *Builder) SetBookLevel(v uint16) *Builder         { b.bookLevel = v; return b }
+func (b *Builder) SetNormalCount(v uint16) *Builder       { b.normalCount = v; return b }
+func (b *Builder) SetSpecialCount(v uint16) *Builder      { b.specialCount = v; return b }
+func (b *Builder) SetExpBonusPercent(v uint16) *Builder   { b.expBonusPercent = v; return b }
 
-func (b *ModelBuilder) SetLastCoverEventId(v *uuid.UUID) *ModelBuilder {
+func (b *Builder) SetLastCoverEventId(v *uuid.UUID) *Builder {
 	b.lastCoverEventId = v
 	return b
 }
-func (b *ModelBuilder) SetCreatedAt(v time.Time) *ModelBuilder { b.createdAt = v; return b }
-func (b *ModelBuilder) SetUpdatedAt(v time.Time) *ModelBuilder { b.updatedAt = v; return b }
+func (b *Builder) SetCreatedAt(v time.Time) *Builder { b.createdAt = v; return b }
+func (b *Builder) SetUpdatedAt(v time.Time) *Builder { b.updatedAt = v; return b }
 
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if b.characterId == 0 {
 		return Model{}, errors.New("characterId is required")
 	}
@@ -78,7 +78,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 	}, nil
 }
 
-func (b *ModelBuilder) MustBuild() Model {
+func (b *Builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic("MustBuild: " + err.Error())
@@ -88,7 +88,7 @@ func (b *ModelBuilder) MustBuild() Model {
 
 // Make is the entity → Model adapter used by EntityProvider.
 func Make(e entity) (Model, error) {
-	return NewModelBuilder().
+	return NewBuilder().
 		SetTenantId(e.TenantId).
 		SetCharacterId(character.Id(e.CharacterId)).
 		SetCoverCardId(item.Id(e.CoverCardId)).

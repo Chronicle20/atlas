@@ -12,7 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-type Change func(b *asset.ModelBuilder)
+type Change func(b *asset.Builder)
 
 func modifyEquipmentProvider(characterId uint32, transactionId uuid.UUID, a asset.Model) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(a.Id()))

@@ -8,7 +8,7 @@ import (
 
 // Model is an immutable representation of a character's mount progression.
 //
-// Construct via NewModelBuilder / Clone; mutate via the builder's setters and
+// Construct via NewBuilder / Clone; mutate via the builder's setters and
 // Build(). Fields are private with read-only getters to preserve immutability.
 type Model struct {
 	tenantId            uuid.UUID

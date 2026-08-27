@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -106,5 +107,27 @@ func TestToMtsItemProcessStatus(t *testing.T) {
 func TestResource(t *testing.T) {
 	if Resource != "characters/%d/mts/transactions" {
 		t.Errorf("Resource = %q, want characters/%%d/mts/transactions", Resource)
+	}
+}
+
+func TestTransformRoundTrip(t *testing.T) {
+	m := Model{
+		id:         "field1",
+		itemId:     22,
+		quantity:   33,
+		totalPrice: 44,
+		kind:       "field5",
+		createdAt:  time.Unix(1700000006, 0).UTC(),
+	}
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("transform: %v", err)
+	}
+	got, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip lost data:\n got %+v\nwant %+v", got, m)
 	}
 }

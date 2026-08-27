@@ -7,7 +7,7 @@ import (
 
 var ErrInvalidId = errors.New("note id must be greater than 0")
 
-type modelBuilder struct {
+type builder struct {
 	id          uint32
 	characterId uint32
 	senderId    uint32
@@ -16,19 +16,15 @@ type modelBuilder struct {
 	flag        byte
 }
 
-func NewModelBuilder() *modelBuilder {
-	return &modelBuilder{
+// NewBuilder creates a new builder instance
+func NewBuilder() *builder {
+	return &builder{
 		timestamp: time.Now(),
 	}
 }
 
-// NewBuilder is an alias for NewModelBuilder for backward compatibility
-func NewBuilder() *modelBuilder {
-	return NewModelBuilder()
-}
-
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		id:          m.id,
 		characterId: m.characterId,
 		senderId:    m.senderId,
@@ -38,37 +34,37 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-func (b *modelBuilder) SetId(id uint32) *modelBuilder {
+func (b *builder) SetId(id uint32) *builder {
 	b.id = id
 	return b
 }
 
-func (b *modelBuilder) SetCharacterId(characterId uint32) *modelBuilder {
+func (b *builder) SetCharacterId(characterId uint32) *builder {
 	b.characterId = characterId
 	return b
 }
 
-func (b *modelBuilder) SetSenderId(senderId uint32) *modelBuilder {
+func (b *builder) SetSenderId(senderId uint32) *builder {
 	b.senderId = senderId
 	return b
 }
 
-func (b *modelBuilder) SetMessage(message string) *modelBuilder {
+func (b *builder) SetMessage(message string) *builder {
 	b.message = message
 	return b
 }
 
-func (b *modelBuilder) SetTimestamp(timestamp time.Time) *modelBuilder {
+func (b *builder) SetTimestamp(timestamp time.Time) *builder {
 	b.timestamp = timestamp
 	return b
 }
 
-func (b *modelBuilder) SetFlag(flag byte) *modelBuilder {
+func (b *builder) SetFlag(flag byte) *builder {
 	b.flag = flag
 	return b
 }
 
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	if b.id == 0 {
 		return Model{}, ErrInvalidId
 	}
@@ -82,7 +78,7 @@ func (b *modelBuilder) Build() (Model, error) {
 	}, nil
 }
 
-func (b *modelBuilder) MustBuild() Model {
+func (b *builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic(err)

@@ -45,3 +45,9 @@ func Extract(rm RestModel) (Model, error) {
 		seats: rm.Seats,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Seats: m.seats,
+	}, nil
+}

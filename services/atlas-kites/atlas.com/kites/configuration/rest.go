@@ -59,3 +59,15 @@ func Extract(r RestModel) Model {
 	}
 	return m
 }
+
+// Transform converts the domain Model back into its RestModel
+// representation. It is the inverse of Extract for any Model whose knobs are
+// already non-zero; Extract's zero-fold behavior is a read-side default and
+// has nothing for Transform to reproduce (D1/DOM-04).
+func Transform(m Model) RestModel {
+	return RestModel{
+		MaxPerMap:          m.maxPerMap,
+		MaxMessageLength:   m.maxMessageLength,
+		BlockedMapPrefixes: m.blockedMapPrefixes,
+	}
+}

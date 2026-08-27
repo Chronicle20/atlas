@@ -20,7 +20,7 @@ func createTestCharacter(id uint32, name string, isGm bool, mapId _map.Id) (char
 	if isGm {
 		gm = 1
 	}
-	c := character.NewModelBuilder().
+	c := character.NewBuilder().
 		SetId(id).
 		SetName(name).
 		SetGm(gm).

@@ -95,7 +95,7 @@ func TestCondition_Evaluate(t *testing.T) {
 		Build()
 
 	// Create a test character with inventory
-	character := character.NewModelBuilder().
+	character := character.NewBuilder().
 		SetId(123).
 		SetJobId(100).
 		SetMeso(10000).
@@ -978,7 +978,7 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 		Build()
 
 	// Create a test character
-	character := character.NewModelBuilder().
+	character := character.NewBuilder().
 		SetId(123).
 		SetJobId(100).
 		SetMeso(10000).
@@ -992,28 +992,28 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 		Build()
 
 	// Create test quest models
-	questStarted := quest.NewModelBuilder().
+	questStarted := quest.NewBuilder().
 		SetId(1001).
 		SetStatus(quest.STARTED).
 		SetProgress("step1", 5).
 		SetProgress("step2", 10).
 		Build()
 
-	questCompleted := quest.NewModelBuilder().
+	questCompleted := quest.NewBuilder().
 		SetId(1002).
 		SetStatus(quest.COMPLETED).
 		SetProgress("final", 100).
 		Build()
 
 	// Create test marriage model with unclaimed gifts
-	marriageWithGifts := marriage.NewModelBuilder().
+	marriageWithGifts := marriage.NewBuilder().
 		SetCharacterId(123).
 		SetHasUnclaimedGifts(true).
 		SetUnclaimedGiftCount(3).
 		Build()
 
 	// Create test marriage model without gifts
-	marriageNoGifts := marriage.NewModelBuilder().
+	marriageNoGifts := marriage.NewBuilder().
 		SetCharacterId(123).
 		SetHasUnclaimedGifts(false).
 		SetUnclaimedGiftCount(0).
@@ -1301,25 +1301,25 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 
 func TestValidationContext(t *testing.T) {
 	// Create test character
-	character := character.NewModelBuilder().
+	character := character.NewBuilder().
 		SetId(123).
 		SetLevel(25).
 		Build()
 
 	// Create test quest models
-	quest1 := quest.NewModelBuilder().
+	quest1 := quest.NewBuilder().
 		SetId(1001).
 		SetStatus(quest.STARTED).
 		SetProgress("step1", 5).
 		Build()
 
-	quest2 := quest.NewModelBuilder().
+	quest2 := quest.NewBuilder().
 		SetId(1002).
 		SetStatus(quest.COMPLETED).
 		Build()
 
 	// Create test marriage model
-	marriage := marriage.NewModelBuilder().
+	marriage := marriage.NewBuilder().
 		SetCharacterId(123).
 		SetHasUnclaimedGifts(true).
 		Build()
@@ -1411,25 +1411,25 @@ func TestValidationContext(t *testing.T) {
 
 func TestValidationContextBuilder(t *testing.T) {
 	// Create test character
-	character := character.NewModelBuilder().
+	character := character.NewBuilder().
 		SetId(123).
 		SetLevel(25).
 		Build()
 
 	// Create test quest models
-	quest1 := quest.NewModelBuilder().
+	quest1 := quest.NewBuilder().
 		SetId(1001).
 		SetStatus(quest.STARTED).
 		SetProgress("step1", 5).
 		Build()
 
-	quest2 := quest.NewModelBuilder().
+	quest2 := quest.NewBuilder().
 		SetId(1002).
 		SetStatus(quest.COMPLETED).
 		Build()
 
 	// Create test marriage model
-	marriage := marriage.NewModelBuilder().
+	marriage := marriage.NewBuilder().
 		SetCharacterId(123).
 		SetHasUnclaimedGifts(true).
 		SetUnclaimedGiftCount(2).
@@ -1562,7 +1562,7 @@ func TestCondition_Evaluate_WithGuild(t *testing.T) {
 	guildModel, _ := guild.Extract(guildRestModel)
 
 	// Create a test character with guild
-	character := character.NewModelBuilder().
+	character := character.NewBuilder().
 		SetId(123).
 		SetInventory(inventoryModel).
 		SetGuild(guildModel).
@@ -1654,7 +1654,7 @@ func TestCondition_Evaluate_WithGuild(t *testing.T) {
 // TestCondition_ErrorHandling tests error scenarios for missing/invalid data
 func TestCondition_ErrorHandling(t *testing.T) {
 	// Create minimal test character for error cases
-	character := character.NewModelBuilder().
+	character := character.NewBuilder().
 		SetId(123).
 		SetLevel(25).
 		SetJobId(100).
@@ -1905,7 +1905,7 @@ func TestConditionBuilder_ErrorHandling(t *testing.T) {
 // TestConditionWithContext_ErrorHandling tests error scenarios with validation context
 func TestConditionWithContext_ErrorHandling(t *testing.T) {
 	// Create minimal test character
-	character := character.NewModelBuilder().
+	character := character.NewBuilder().
 		SetId(123).
 		SetLevel(25).
 		Build()
@@ -2017,7 +2017,7 @@ func TestConditionWithContext_ErrorHandling(t *testing.T) {
 // TestValidationContext_ErrorHandling tests error scenarios with validation context creation
 func TestValidationContext_ErrorHandling(t *testing.T) {
 	// Create minimal test character
-	character := character.NewModelBuilder().
+	character := character.NewBuilder().
 		SetId(123).
 		SetLevel(25).
 		Build()
@@ -2060,7 +2060,7 @@ func TestValidationContext_ErrorHandling(t *testing.T) {
 // it via the configured operator/value, mirroring the QuestStatusCondition
 // pattern but with a REST-driven processor instead of a pre-loaded map.
 func TestCondition_MonsterBookCount(t *testing.T) {
-	char := character.NewModelBuilder().SetId(123).SetLevel(25).Build()
+	char := character.NewBuilder().SetId(123).SetLevel(25).Build()
 
 	tests := []struct {
 		name         string
@@ -2217,7 +2217,7 @@ func TestCondition_MonsterBookCount(t *testing.T) {
 // of one of the listed template ids must have closeness >= the configured
 // value. The condition reads spawned-pet detail from the ValidationContext.
 func TestEvaluate_PetTameness(t *testing.T) {
-	char := character.NewModelBuilder().SetId(123).Build()
+	char := character.NewBuilder().SetId(123).Build()
 	ctx := NewValidationContextBuilder(char).
 		SetSpawnedPets([]SpawnedPet{{TemplateId: 5000029, Closeness: 1700}}).
 		Build()

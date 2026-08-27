@@ -14,7 +14,7 @@ func TestFindFirstByClassification(t *testing.T) {
 	cid := uuid.New()
 
 	mustAsset := func(id uint32, templateId uint32, slot int16) asset.Model {
-		a, err := asset.NewModelBuilder(id, cid, templateId).SetSlot(slot).SetQuantity(1).Build()
+		a, err := asset.NewBuilderWithId(id, cid, templateId).SetSlot(slot).SetQuantity(1).Build()
 		if err != nil {
 			t.Fatalf("asset build: %v", err)
 		}
@@ -46,7 +46,7 @@ func TestFindFirstByClassification(t *testing.T) {
 
 func qtyAsset(t *testing.T, slot int16, templateId uint32, qty uint32) asset.Model {
 	t.Helper()
-	a, err := asset.NewModelBuilder(uint32(slot), uuid.New(), templateId).SetSlot(slot).SetQuantity(qty).Build()
+	a, err := asset.NewBuilderWithId(uint32(slot), uuid.New(), templateId).SetSlot(slot).SetQuantity(qty).Build()
 	if err != nil {
 		t.Fatalf("asset build: %v", err)
 	}

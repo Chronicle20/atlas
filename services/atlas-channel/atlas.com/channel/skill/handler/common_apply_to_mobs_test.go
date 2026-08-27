@@ -106,11 +106,11 @@ func mkField() field.Model {
 }
 
 func mkMob(uniqueId uint32) monster.Model {
-	return monster.NewModelBuilder(uniqueId, mkField(), 9300018).MustBuild()
+	return monster.NewBuilder(uniqueId, mkField(), 9300018).MustBuild()
 }
 
 func mkCaster(id uint32) character.Model {
-	return character.NewModelBuilder().SetId(id).MustBuild()
+	return character.NewBuilder().SetId(id).MustBuild()
 }
 
 // mkInfo builds a SkillUsageInfo with the given skill id, level, and affected

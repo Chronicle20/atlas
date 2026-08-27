@@ -45,3 +45,16 @@ func Extract(m RestModel) (Model, error) {
 		rx1:      m.RX1,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:       m.id,
+		Template: m.template,
+		X:        m.x,
+		CY:       m.cy,
+		F:        m.f,
+		FH:       m.fh,
+		RX0:      m.rx0,
+		RX1:      m.rx1,
+	}, nil
+}

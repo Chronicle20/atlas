@@ -75,6 +75,64 @@ func (r *RestModel) SetID(idStr string) error {
 func (r *RestModel) SetToOneReferenceID(_, _ string) error            { return nil }
 func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
+// Transform converts a domain Model into its RestModel. EndsAt is a
+// *time.Time on both sides; a nil source means the listing has no expiry (a
+// fixed-price sale rather than an auction), so nil propagates through
+// unchanged. When non-nil, the pointed-to value is copied into a new pointer
+// so the RestModel cannot mutate the Model's time.Time via a shared pointer.
+func Transform(m Model) (RestModel, error) {
+	var endsAt *time.Time
+	if m.endsAt != nil {
+		v := *m.endsAt
+		endsAt = &v
+	}
+
+	return RestModel{
+		Id:            m.id,
+		WorldId:       byte(m.worldId),
+		ItcSn:         m.itcSn,
+		SellerId:      m.sellerId,
+		SellerName:    m.sellerName,
+		SaleType:      m.saleType,
+		State:         m.state,
+		TemplateId:    m.templateId,
+		Quantity:      m.quantity,
+		Strength:      m.strength,
+		Dexterity:     m.dexterity,
+		Intelligence:  m.intelligence,
+		Luck:          m.luck,
+		HP:            m.hp,
+		MP:            m.mp,
+		WeaponAttack:  m.weaponAttack,
+		MagicAttack:   m.magicAttack,
+		WeaponDefense: m.weaponDefense,
+		MagicDefense:  m.magicDefense,
+		Accuracy:      m.accuracy,
+		Avoidability:  m.avoidability,
+		Hands:         m.hands,
+		Speed:         m.speed,
+		Jump:          m.jump,
+		Slots:         m.slots,
+		Level:         m.level,
+		ItemLevel:     m.itemLevel,
+		ItemExp:       m.itemExp,
+		RingId:        m.ringId,
+		ViciousCount:  m.viciousCount,
+		Flags:         m.flags,
+		Owner:         m.owner,
+		ListValue:     m.listValue,
+		BuyNowPrice:   m.buyNowPrice,
+		Category:      m.category,
+		SubCategory:   m.subCategory,
+		ContractFee:   m.contractFee,
+		CurrentBid:    m.currentBid,
+		HighBidderId:  m.highBidderId,
+		MinIncrement:  m.minIncrement,
+		BidCount:      m.bidCount,
+		EndsAt:        endsAt,
+	}, nil
+}
+
 func Extract(r RestModel) (Model, error) {
 	return Model{
 		id:            r.Id,

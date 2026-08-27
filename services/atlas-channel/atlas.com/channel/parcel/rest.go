@@ -82,6 +82,32 @@ func (r *RestModel) SetToOneReferenceID(_, _ string) error { return nil }
 
 func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
+// Transform converts the domain Model into the wire RestModel.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:                 m.id.String(),
+		WorldId:            byte(m.worldId),
+		SenderId:           m.senderId,
+		SenderAccountId:    m.senderAccountId,
+		SenderName:         m.senderName,
+		RecipientId:        m.recipientId,
+		RecipientAccountId: m.recipientAccountId,
+		Message:            m.message,
+		MesoAmount:         m.mesoAmount,
+		FeePaid:            m.feePaid,
+		ItemId:             m.itemId,
+		ItemType:           m.itemType,
+		Quantity:           m.quantity,
+		Status:             m.status,
+		Quick:              m.quick,
+		Returned:           m.returned,
+		CreatedAt:          m.createdAt,
+		ReceivableAt:       m.receivableAt,
+		ExpiresAt:          m.expiresAt,
+		LastNotified:       m.lastNotified,
+	}, nil
+}
+
 // Extract builds a Model from the wire RestModel.
 func Extract(rm RestModel) (Model, error) {
 	id, err := uuid.Parse(rm.Id)

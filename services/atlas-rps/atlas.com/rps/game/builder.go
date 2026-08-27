@@ -11,8 +11,8 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
-// ModelBuilder provides a fluent API for constructing game.Model instances.
-type ModelBuilder struct {
+// Builder provides a fluent API for constructing game.Model instances.
+type Builder struct {
 	tenant      tenant.Model
 	characterId uint32
 	worldId     world.Id
@@ -25,17 +25,17 @@ type ModelBuilder struct {
 	updatedAt   time.Time
 }
 
-// NewModelBuilder creates a new ModelBuilder with required tenant, seeding createdAt.
-func NewModelBuilder(t tenant.Model) *ModelBuilder {
-	return &ModelBuilder{
+// NewBuilder creates a new Builder with required tenant, seeding createdAt.
+func NewBuilder(t tenant.Model) *Builder {
+	return &Builder{
 		tenant:    t,
 		createdAt: time.Now(),
 	}
 }
 
-// CloneModelBuilder creates a new ModelBuilder initialized from an existing Model.
-func CloneModelBuilder(m Model) *ModelBuilder {
-	return &ModelBuilder{
+// CloneBuilder creates a new Builder initialized from an existing Model.
+func CloneBuilder(m Model) *Builder {
+	return &Builder{
 		tenant:      m.Tenant(),
 		characterId: m.CharacterId(),
 		worldId:     m.WorldId(),
@@ -50,61 +50,61 @@ func CloneModelBuilder(m Model) *ModelBuilder {
 }
 
 // SetCharacterId sets the character ID.
-func (b *ModelBuilder) SetCharacterId(characterId uint32) *ModelBuilder {
+func (b *Builder) SetCharacterId(characterId uint32) *Builder {
 	b.characterId = characterId
 	return b
 }
 
 // SetWorldId sets the world ID.
-func (b *ModelBuilder) SetWorldId(worldId world.Id) *ModelBuilder {
+func (b *Builder) SetWorldId(worldId world.Id) *Builder {
 	b.worldId = worldId
 	return b
 }
 
 // SetChannelId sets the channel ID.
-func (b *ModelBuilder) SetChannelId(channelId channel.Id) *ModelBuilder {
+func (b *Builder) SetChannelId(channelId channel.Id) *Builder {
 	b.channelId = channelId
 	return b
 }
 
 // SetNpcId sets the NPC ID.
-func (b *ModelBuilder) SetNpcId(npcId uint32) *ModelBuilder {
+func (b *Builder) SetNpcId(npcId uint32) *Builder {
 	b.npcId = npcId
 	return b
 }
 
 // SetRung sets the ladder rung.
-func (b *ModelBuilder) SetRung(rung int) *ModelBuilder {
+func (b *Builder) SetRung(rung int) *Builder {
 	b.rung = rung
 	return b
 }
 
 // SetStatus sets the session status.
-func (b *ModelBuilder) SetStatus(status Status) *ModelBuilder {
+func (b *Builder) SetStatus(status Status) *Builder {
 	b.status = status
 	return b
 }
 
 // SetLastThrow sets the last recorded throw.
-func (b *ModelBuilder) SetLastThrow(lastThrow Throw) *ModelBuilder {
+func (b *Builder) SetLastThrow(lastThrow Throw) *Builder {
 	b.lastThrow = lastThrow
 	return b
 }
 
 // SetCreatedAt sets the created-at timestamp.
-func (b *ModelBuilder) SetCreatedAt(createdAt time.Time) *ModelBuilder {
+func (b *Builder) SetCreatedAt(createdAt time.Time) *Builder {
 	b.createdAt = createdAt
 	return b
 }
 
 // SetUpdatedAt sets the updated-at timestamp.
-func (b *ModelBuilder) SetUpdatedAt(updatedAt time.Time) *ModelBuilder {
+func (b *Builder) SetUpdatedAt(updatedAt time.Time) *Builder {
 	b.updatedAt = updatedAt
 	return b
 }
 
 // Build validates and constructs the Model. Returns an error if validation fails.
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if b.tenant.Id() == uuid.Nil {
 		return Model{}, errors.New("tenant is required")
 	}
@@ -128,7 +128,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 
 // MustBuild builds the model and panics if validation fails.
 // Use this only when building from a known-valid source (e.g., cloning an existing model).
-func (b *ModelBuilder) MustBuild() Model {
+func (b *Builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic("MustBuild failed: " + err.Error())
@@ -137,51 +137,51 @@ func (b *ModelBuilder) MustBuild() Model {
 }
 
 // Tenant returns the tenant from the builder.
-func (b *ModelBuilder) Tenant() tenant.Model {
+func (b *Builder) Tenant() tenant.Model {
 	return b.tenant
 }
 
 // CharacterId returns the characterId from the builder.
-func (b *ModelBuilder) CharacterId() uint32 {
+func (b *Builder) CharacterId() uint32 {
 	return b.characterId
 }
 
 // WorldId returns the worldId from the builder.
-func (b *ModelBuilder) WorldId() world.Id {
+func (b *Builder) WorldId() world.Id {
 	return b.worldId
 }
 
 // ChannelId returns the channelId from the builder.
-func (b *ModelBuilder) ChannelId() channel.Id {
+func (b *Builder) ChannelId() channel.Id {
 	return b.channelId
 }
 
 // NpcId returns the npcId from the builder.
-func (b *ModelBuilder) NpcId() uint32 {
+func (b *Builder) NpcId() uint32 {
 	return b.npcId
 }
 
 // Rung returns the rung from the builder.
-func (b *ModelBuilder) Rung() int {
+func (b *Builder) Rung() int {
 	return b.rung
 }
 
 // Status returns the status from the builder.
-func (b *ModelBuilder) Status() Status {
+func (b *Builder) Status() Status {
 	return b.status
 }
 
 // LastThrow returns the lastThrow from the builder.
-func (b *ModelBuilder) LastThrow() Throw {
+func (b *Builder) LastThrow() Throw {
 	return b.lastThrow
 }
 
 // CreatedAt returns the createdAt from the builder.
-func (b *ModelBuilder) CreatedAt() time.Time {
+func (b *Builder) CreatedAt() time.Time {
 	return b.createdAt
 }
 
 // UpdatedAt returns the updatedAt from the builder.
-func (b *ModelBuilder) UpdatedAt() time.Time {
+func (b *Builder) UpdatedAt() time.Time {
 	return b.updatedAt
 }

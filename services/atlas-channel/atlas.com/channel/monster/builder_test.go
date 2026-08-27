@@ -10,9 +10,9 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
-func TestNewModelBuilder(t *testing.T) {
+func TestNewBuilder(t *testing.T) {
 	f := field.NewBuilder(0, 0, 100000).Build()
-	builder := monster.NewModelBuilder(1, f, 100100)
+	builder := monster.NewBuilder(1, f, 100100)
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -20,7 +20,7 @@ func TestNewModelBuilder(t *testing.T) {
 
 func TestBuild_AllFieldsSet(t *testing.T) {
 	f := field.NewBuilder(0, 1, 100000).Build()
-	model, err := monster.NewModelBuilder(1, f, 100100).
+	model, err := monster.NewBuilder(1, f, 100100).
 		SetMaxHp(1000).
 		SetX(100).
 		SetY(200).
@@ -44,7 +44,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 
 func TestBuild_MissingUniqueId(t *testing.T) {
 	f := field.NewBuilder(0, 0, 100000).Build()
-	_, err := monster.NewModelBuilder(0, f, 100100).
+	_, err := monster.NewBuilder(0, f, 100100).
 		Build()
 
 	if !errors.Is(err, monster.ErrInvalidUniqueId) {
@@ -60,7 +60,7 @@ func TestMustBuild_Success(t *testing.T) {
 	}()
 
 	f := field.NewBuilder(0, 0, 100000).Build()
-	model := monster.NewModelBuilder(1, f, 100100).MustBuild()
+	model := monster.NewBuilder(1, f, 100100).MustBuild()
 
 	if model.UniqueId() != 1 {
 		t.Errorf("model.UniqueId() = %d, want 1", model.UniqueId())
@@ -75,12 +75,12 @@ func TestMustBuild_Panics(t *testing.T) {
 	}()
 
 	f := field.NewBuilder(0, 0, 100000).Build()
-	monster.NewModelBuilder(0, f, 100100).MustBuild() // Zero unique ID, should panic
+	monster.NewBuilder(0, f, 100100).MustBuild() // Zero unique ID, should panic
 }
 
 func TestCloneModel(t *testing.T) {
 	f := field.NewBuilder(0, 1, 100000).Build()
-	original, _ := monster.NewModelBuilder(1, f, 100100).
+	original, _ := monster.NewBuilder(1, f, 100100).
 		SetMaxHp(1000).
 		SetX(100).
 		Build()
@@ -103,9 +103,9 @@ func TestCloneModel(t *testing.T) {
 	}
 }
 
-func TestModelBuilder_SetMaxMp(t *testing.T) {
+func TestBuilder_SetMaxMp(t *testing.T) {
 	f := field.NewBuilder(1, 1, 100000000).SetInstance(uuid.Nil).Build()
-	m, err := monster.NewModelBuilder(42, f, 9300000).SetMaxMp(500).SetMp(200).Build()
+	m, err := monster.NewBuilder(42, f, 9300000).SetMaxMp(500).SetMp(200).Build()
 	if err != nil {
 		t.Fatalf("Build() returned error: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestModelBuilder_SetMaxMp(t *testing.T) {
 
 func TestCloneModel_PreservesMaxMp(t *testing.T) {
 	f := field.NewBuilder(1, 1, 100000000).SetInstance(uuid.Nil).Build()
-	original, err := monster.NewModelBuilder(42, f, 9300000).SetMaxMp(500).Build()
+	original, err := monster.NewBuilder(42, f, 9300000).SetMaxMp(500).Build()
 	if err != nil {
 		t.Fatalf("Build() returned error: %v", err)
 	}

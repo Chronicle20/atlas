@@ -37,3 +37,12 @@ func Extract(rm RestModel) (Model, error) {
 		createdAt: rm.CreatedAt,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:        m.id,
+		PosterId:  m.posterId,
+		Message:   m.message,
+		CreatedAt: m.createdAt,
+	}, nil
+}

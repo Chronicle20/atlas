@@ -10,8 +10,8 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := route.NewModelBuilder("TestRoute")
+func TestNewBuilder(t *testing.T) {
+	builder := route.NewBuilder("TestRoute")
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -19,7 +19,7 @@ func TestNewModelBuilder(t *testing.T) {
 
 func TestBuild_AllFieldsSet(t *testing.T) {
 	id := uuid.New()
-	model, err := route.NewModelBuilder("TestRoute").
+	model, err := route.NewBuilder("TestRoute").
 		SetId(id).
 		SetStartMapId(_map.Id(100000000)).
 		SetStagingMapId(_map.Id(100000001)).
@@ -47,14 +47,14 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	model := route.NewModelBuilder("TestRoute").MustBuild()
+	model := route.NewBuilder("TestRoute").MustBuild()
 	if model.Name() != "TestRoute" {
 		t.Errorf("model.Name() = %s, want TestRoute", model.Name())
 	}
 }
 
 func TestCloneModel(t *testing.T) {
-	original := route.NewModelBuilder("TestRoute").
+	original := route.NewBuilder("TestRoute").
 		SetStartMapId(_map.Id(100000000)).
 		MustBuild()
 

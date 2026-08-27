@@ -200,7 +200,7 @@ func (r *Registry) GetInField(t tenant.Model, f field.Model) []Model {
 	return result
 }
 
-func (r *Registry) Create(t tenant.Model, b *ModelBuilder) (Model, error) {
+func (r *Registry) Create(t tenant.Model, b *Builder) (Model, error) {
 	ctx := context.Background()
 	id, err := r.allocator.Allocate(ctx, t)
 	if err != nil {
@@ -221,7 +221,7 @@ func (r *Registry) Create(t tenant.Model, b *ModelBuilder) (Model, error) {
 	return m, nil
 }
 
-func (r *Registry) Update(t tenant.Model, id uint32, modifier func(*ModelBuilder)) (Model, error) {
+func (r *Registry) Update(t tenant.Model, id uint32, modifier func(*Builder)) (Model, error) {
 	m, ok := r.load(t, id)
 	if !ok {
 		return Model{}, errors.New("unable to locate reactor")

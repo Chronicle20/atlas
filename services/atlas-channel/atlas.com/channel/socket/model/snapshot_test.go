@@ -18,7 +18,7 @@ import (
 
 func TestAssetSnapshotRoundTrip_Equip(t *testing.T) {
 	expiration := time.Now().Add(24 * time.Hour).Truncate(time.Second)
-	a, err := asset.NewModelBuilder(1, uuid.New(), 1302000).
+	a, err := asset.NewBuilderWithId(1, uuid.New(), 1302000).
 		SetSlot(5).
 		SetExpiration(expiration).
 		SetStrength(10).
@@ -128,7 +128,7 @@ func TestAssetSnapshotRoundTrip_Equip(t *testing.T) {
 }
 
 func TestAssetSnapshotRoundTrip_CashEquip(t *testing.T) {
-	a, err := asset.NewModelBuilder(1, uuid.New(), 1302000).
+	a, err := asset.NewBuilderWithId(1, uuid.New(), 1302000).
 		SetSlot(3).
 		SetCashId(123456789).
 		Build()
@@ -149,7 +149,7 @@ func TestAssetSnapshotRoundTrip_CashEquip(t *testing.T) {
 
 func TestAssetSnapshotRoundTrip_Stackable(t *testing.T) {
 	expiration := time.Now().Add(48 * time.Hour).Truncate(time.Second)
-	a, err := asset.NewModelBuilder(2, uuid.New(), 2000000).
+	a, err := asset.NewBuilderWithId(2, uuid.New(), 2000000).
 		SetSlot(1).
 		SetExpiration(expiration).
 		SetQuantity(99).
@@ -195,7 +195,7 @@ func TestAssetSnapshotRoundTrip_Stackable(t *testing.T) {
 
 func TestAssetSnapshotRoundTrip_Pet(t *testing.T) {
 	expiration := time.Now().Add(72 * time.Hour).Truncate(time.Second)
-	a, err := asset.NewModelBuilder(3, uuid.New(), 5000000).
+	a, err := asset.NewBuilderWithId(3, uuid.New(), 5000000).
 		SetSlot(0).
 		SetExpiration(expiration).
 		SetPetId(777).
@@ -246,17 +246,17 @@ func buildTestEquipment(t *testing.T) equipment.Model {
 	t.Helper()
 	eq := equipment.NewModel()
 
-	weapon := asset.NewModelBuilder(10, uuid.New(), 1302001).MustBuild()
+	weapon := asset.NewBuilderWithId(10, uuid.New(), 1302001).MustBuild()
 	eq.Set("weapon", equipmentslot.Model{Position: -11, Equipable: &weapon})
 
-	hat := asset.NewModelBuilder(11, uuid.New(), 1002001).MustBuild()
+	hat := asset.NewBuilderWithId(11, uuid.New(), 1002001).MustBuild()
 	eq.Set("hat", equipmentslot.Model{Position: -1, Equipable: &hat})
 
 	// A masked cash equip: the CashEquipable renders as the equipped look and
 	// the underlying Equipable renders separately into MaskedEquips, mirroring
 	// NewFromCharacter (avatar.go:14-32).
-	cashTop := asset.NewModelBuilder(12, uuid.New(), 1052001).SetCashId(55).MustBuild()
-	realTop := asset.NewModelBuilder(13, uuid.New(), 1052002).MustBuild()
+	cashTop := asset.NewBuilderWithId(12, uuid.New(), 1052001).SetCashId(55).MustBuild()
+	realTop := asset.NewBuilderWithId(13, uuid.New(), 1052002).MustBuild()
 	eq.Set("top", equipmentslot.Model{Position: -5, Equipable: &realTop, CashEquipable: &cashTop})
 
 	return eq
@@ -265,11 +265,11 @@ func buildTestEquipment(t *testing.T) equipment.Model {
 func TestAvatarSnapshotRoundTrip(t *testing.T) {
 	eq := buildTestEquipment(t)
 	pets := []pet.Model{
-		pet.NewModelBuilder(1, 0, 5000028, "Kitty").SetSlot(0).MustBuild(),
-		pet.NewModelBuilder(2, 0, 5000029, "Puppy").SetSlot(1).MustBuild(),
+		pet.NewBuilder(1, 0, 5000028, "Kitty").SetSlot(0).MustBuild(),
+		pet.NewBuilder(2, 0, 5000029, "Puppy").SetSlot(1).MustBuild(),
 	}
 
-	c, err := character.NewModelBuilder().
+	c, err := character.NewBuilder().
 		SetId(1).
 		SetGender(1).
 		SetSkinColor(3).

@@ -43,3 +43,10 @@ func Extract(rm RestModel) (Model, error) {
 		onUserEnter:      rm.OnUserEnter,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		OnFirstUserEnter: m.onFirstUserEnter,
+		OnUserEnter:      m.onUserEnter,
+	}, nil
+}

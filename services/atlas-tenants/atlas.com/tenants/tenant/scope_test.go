@@ -28,7 +28,7 @@ import (
 // this package.
 func seedTenantWithEnvironment(t *testing.T, db *gorm.DB, environment string) tenant.Model {
 	t.Helper()
-	m, err := tenant.NewModelBuilder().
+	m, err := tenant.NewBuilder().
 		SetName("Test Tenant " + environment).
 		SetRegion("GMS").
 		SetMajorVersion(83).

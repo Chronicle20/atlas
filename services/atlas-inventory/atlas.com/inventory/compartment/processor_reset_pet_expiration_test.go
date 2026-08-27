@@ -64,7 +64,7 @@ func resetPetExpirationFixture(t *testing.T, characterId uint32, db *gorm.DB, ct
 func lifeCashMock(life uint32) cash.Processor {
 	return &cashmock.ProcessorMock{
 		GetByIdFunc: func(itemId uint32) (cash.Model, error) {
-			return cash.NewModelBuilder(itemId).SetLife(life).Build(), nil
+			return cash.NewBuilder(itemId).SetLife(life).Build(), nil
 		},
 	}
 }

@@ -11,8 +11,8 @@ import (
 
 var ErrInvalidId = errors.New("asset id must be greater than 0")
 
-func Clone(m Model) *ModelBuilder {
-	return &ModelBuilder{
+func Clone(m Model) *Builder {
+	return &Builder{
 		id:              m.id,
 		compartmentId:   m.compartmentId,
 		slot:            m.slot,
@@ -61,11 +61,11 @@ func Clone(m Model) *ModelBuilder {
 }
 
 // CloneModel is an alias for Clone for backward compatibility
-func CloneModel(m Model) *ModelBuilder {
+func CloneModel(m Model) *Builder {
 	return Clone(m)
 }
 
-type ModelBuilder struct {
+type Builder struct {
 	id            uint32
 	compartmentId uuid.UUID
 	slot          int16
@@ -116,50 +116,50 @@ type ModelBuilder struct {
 	petSerialNumber uint64
 }
 
-func NewBuilder(compartmentId uuid.UUID, templateId uint32) *ModelBuilder {
-	return &ModelBuilder{
+func NewBuilder(compartmentId uuid.UUID, templateId uint32) *Builder {
+	return &Builder{
 		compartmentId: compartmentId,
 		templateId:    templateId,
 	}
 }
 
-// NewModelBuilder creates a new builder with an explicit ID
-func NewModelBuilder(id uint32, compartmentId uuid.UUID, templateId uint32) *ModelBuilder {
-	return &ModelBuilder{
+// NewBuilderWithId creates a new builder with an explicit ID
+func NewBuilderWithId(id uint32, compartmentId uuid.UUID, templateId uint32) *Builder {
+	return &Builder{
 		id:            id,
 		compartmentId: compartmentId,
 		templateId:    templateId,
 	}
 }
 
-func (b *ModelBuilder) SetId(id uint32) *ModelBuilder               { b.id = id; return b }
-func (b *ModelBuilder) SetCompartmentId(id uuid.UUID) *ModelBuilder { b.compartmentId = id; return b }
-func (b *ModelBuilder) SetSlot(slot int16) *ModelBuilder            { b.slot = slot; return b }
-func (b *ModelBuilder) SetTemplateId(id uint32) *ModelBuilder       { b.templateId = id; return b }
-func (b *ModelBuilder) SetExpiration(e time.Time) *ModelBuilder     { b.expiration = e; return b }
-func (b *ModelBuilder) SetCreatedAt(t time.Time) *ModelBuilder      { b.createdAt = t; return b }
-func (b *ModelBuilder) SetQuantity(q uint32) *ModelBuilder          { b.quantity = q; return b }
-func (b *ModelBuilder) SetOwnerId(id uint32) *ModelBuilder          { b.ownerId = id; return b }
-func (b *ModelBuilder) SetOwner(owner string) *ModelBuilder         { b.owner = owner; return b }
-func (b *ModelBuilder) SetFlag(f uint16) *ModelBuilder              { b.flag = f; return b }
-func (b *ModelBuilder) SetRechargeable(r uint64) *ModelBuilder      { b.rechargeable = r; return b }
-func (b *ModelBuilder) SetStrength(v uint16) *ModelBuilder          { b.strength = v; return b }
-func (b *ModelBuilder) SetDexterity(v uint16) *ModelBuilder         { b.dexterity = v; return b }
-func (b *ModelBuilder) SetIntelligence(v uint16) *ModelBuilder      { b.intelligence = v; return b }
-func (b *ModelBuilder) SetLuck(v uint16) *ModelBuilder              { b.luck = v; return b }
-func (b *ModelBuilder) SetHp(v uint16) *ModelBuilder                { b.hp = v; return b }
-func (b *ModelBuilder) SetMp(v uint16) *ModelBuilder                { b.mp = v; return b }
-func (b *ModelBuilder) SetWeaponAttack(v uint16) *ModelBuilder      { b.weaponAttack = v; return b }
-func (b *ModelBuilder) SetMagicAttack(v uint16) *ModelBuilder       { b.magicAttack = v; return b }
-func (b *ModelBuilder) SetWeaponDefense(v uint16) *ModelBuilder     { b.weaponDefense = v; return b }
-func (b *ModelBuilder) SetMagicDefense(v uint16) *ModelBuilder      { b.magicDefense = v; return b }
-func (b *ModelBuilder) SetAccuracy(v uint16) *ModelBuilder          { b.accuracy = v; return b }
-func (b *ModelBuilder) SetAvoidability(v uint16) *ModelBuilder      { b.avoidability = v; return b }
-func (b *ModelBuilder) SetHands(v uint16) *ModelBuilder             { b.hands = v; return b }
-func (b *ModelBuilder) SetSpeed(v uint16) *ModelBuilder             { b.speed = v; return b }
-func (b *ModelBuilder) SetJump(v uint16) *ModelBuilder              { b.jump = v; return b }
-func (b *ModelBuilder) SetSlots(v uint16) *ModelBuilder             { b.slots = v; return b }
-func (b *ModelBuilder) SetLocked(v bool) *ModelBuilder {
+func (b *Builder) SetId(id uint32) *Builder               { b.id = id; return b }
+func (b *Builder) SetCompartmentId(id uuid.UUID) *Builder { b.compartmentId = id; return b }
+func (b *Builder) SetSlot(slot int16) *Builder            { b.slot = slot; return b }
+func (b *Builder) SetTemplateId(id uint32) *Builder       { b.templateId = id; return b }
+func (b *Builder) SetExpiration(e time.Time) *Builder     { b.expiration = e; return b }
+func (b *Builder) SetCreatedAt(t time.Time) *Builder      { b.createdAt = t; return b }
+func (b *Builder) SetQuantity(q uint32) *Builder          { b.quantity = q; return b }
+func (b *Builder) SetOwnerId(id uint32) *Builder          { b.ownerId = id; return b }
+func (b *Builder) SetOwner(owner string) *Builder         { b.owner = owner; return b }
+func (b *Builder) SetFlag(f uint16) *Builder              { b.flag = f; return b }
+func (b *Builder) SetRechargeable(r uint64) *Builder      { b.rechargeable = r; return b }
+func (b *Builder) SetStrength(v uint16) *Builder          { b.strength = v; return b }
+func (b *Builder) SetDexterity(v uint16) *Builder         { b.dexterity = v; return b }
+func (b *Builder) SetIntelligence(v uint16) *Builder      { b.intelligence = v; return b }
+func (b *Builder) SetLuck(v uint16) *Builder              { b.luck = v; return b }
+func (b *Builder) SetHp(v uint16) *Builder                { b.hp = v; return b }
+func (b *Builder) SetMp(v uint16) *Builder                { b.mp = v; return b }
+func (b *Builder) SetWeaponAttack(v uint16) *Builder      { b.weaponAttack = v; return b }
+func (b *Builder) SetMagicAttack(v uint16) *Builder       { b.magicAttack = v; return b }
+func (b *Builder) SetWeaponDefense(v uint16) *Builder     { b.weaponDefense = v; return b }
+func (b *Builder) SetMagicDefense(v uint16) *Builder      { b.magicDefense = v; return b }
+func (b *Builder) SetAccuracy(v uint16) *Builder          { b.accuracy = v; return b }
+func (b *Builder) SetAvoidability(v uint16) *Builder      { b.avoidability = v; return b }
+func (b *Builder) SetHands(v uint16) *Builder             { b.hands = v; return b }
+func (b *Builder) SetSpeed(v uint16) *Builder             { b.speed = v; return b }
+func (b *Builder) SetJump(v uint16) *Builder              { b.jump = v; return b }
+func (b *Builder) SetSlots(v uint16) *Builder             { b.slots = v; return b }
+func (b *Builder) SetLocked(v bool) *Builder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagLock)
 	} else {
@@ -168,7 +168,7 @@ func (b *ModelBuilder) SetLocked(v bool) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetSpikes(v bool) *ModelBuilder {
+func (b *Builder) SetSpikes(v bool) *Builder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagSpikes)
 	} else {
@@ -180,7 +180,7 @@ func (b *ModelBuilder) SetSpikes(v bool) *ModelBuilder {
 // SetKarmaUsed sets or clears the slot-class-correct karma bit, touching NO
 // other bit. On an equip the bundle karma bit (0x02) is FlagSpikes, so a
 // hand-picked constant here would render spikes on every karma'd equip.
-func (b *ModelBuilder) SetKarmaUsed(v bool) *ModelBuilder {
+func (b *Builder) SetKarmaUsed(v bool) *Builder {
 	f, ok := af.KarmaFlagFor(b.templateId)
 	if !ok {
 		return b
@@ -193,7 +193,7 @@ func (b *ModelBuilder) SetKarmaUsed(v bool) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetCold(v bool) *ModelBuilder {
+func (b *Builder) SetCold(v bool) *Builder {
 	if v {
 		b.flag = af.SetFlag(b.flag, af.FlagCold)
 	} else {
@@ -202,7 +202,7 @@ func (b *ModelBuilder) SetCold(v bool) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetCanBeTraded(v bool) *ModelBuilder {
+func (b *Builder) SetCanBeTraded(v bool) *Builder {
 	if v {
 		b.flag = af.ClearFlag(b.flag, af.FlagUntradeable)
 	} else {
@@ -211,37 +211,37 @@ func (b *ModelBuilder) SetCanBeTraded(v bool) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) AddFlag(f af.Flag) *ModelBuilder {
+func (b *Builder) AddFlag(f af.Flag) *Builder {
 	b.flag = af.SetFlag(b.flag, f)
 	return b
 }
 
-func (b *ModelBuilder) RemoveFlag(f af.Flag) *ModelBuilder {
+func (b *Builder) RemoveFlag(f af.Flag) *Builder {
 	b.flag = af.ClearFlag(b.flag, f)
 	return b
 }
-func (b *ModelBuilder) SetLevelType(v byte) *ModelBuilder        { b.levelType = v; return b }
-func (b *ModelBuilder) SetLevel(v byte) *ModelBuilder            { b.level = v; return b }
-func (b *ModelBuilder) SetExperience(v uint32) *ModelBuilder     { b.experience = v; return b }
-func (b *ModelBuilder) SetHammersApplied(v uint32) *ModelBuilder { b.hammersApplied = v; return b }
+func (b *Builder) SetLevelType(v byte) *Builder        { b.levelType = v; return b }
+func (b *Builder) SetLevel(v byte) *Builder            { b.level = v; return b }
+func (b *Builder) SetExperience(v uint32) *Builder     { b.experience = v; return b }
+func (b *Builder) SetHammersApplied(v uint32) *Builder { b.hammersApplied = v; return b }
 
-func (b *ModelBuilder) SetEquippedSince(t *time.Time) *ModelBuilder { b.equippedSince = t; return b }
-func (b *ModelBuilder) SetCashId(v int64) *ModelBuilder             { b.cashId = v; return b }
-func (b *ModelBuilder) SetCommodityId(v uint32) *ModelBuilder       { b.commodityId = v; return b }
-func (b *ModelBuilder) SetPurchaseBy(v uint32) *ModelBuilder        { b.purchaseBy = v; return b }
-func (b *ModelBuilder) SetPetId(v uint32) *ModelBuilder             { b.petId = v; return b }
-func (b *ModelBuilder) SetPetName(v string) *ModelBuilder           { b.petName = v; return b }
-func (b *ModelBuilder) SetPetLevel(v byte) *ModelBuilder            { b.petLevel = v; return b }
-func (b *ModelBuilder) SetPetFlag(v uint16) *ModelBuilder           { b.petFlag = v; return b }
-func (b *ModelBuilder) SetCloseness(v uint16) *ModelBuilder         { b.closeness = v; return b }
-func (b *ModelBuilder) SetFullness(v byte) *ModelBuilder            { b.fullness = v; return b }
-func (b *ModelBuilder) SetPetSlot(v int8) *ModelBuilder             { b.petSlot = v; return b }
+func (b *Builder) SetEquippedSince(t *time.Time) *Builder { b.equippedSince = t; return b }
+func (b *Builder) SetCashId(v int64) *Builder             { b.cashId = v; return b }
+func (b *Builder) SetCommodityId(v uint32) *Builder       { b.commodityId = v; return b }
+func (b *Builder) SetPurchaseBy(v uint32) *Builder        { b.purchaseBy = v; return b }
+func (b *Builder) SetPetId(v uint32) *Builder             { b.petId = v; return b }
+func (b *Builder) SetPetName(v string) *Builder           { b.petName = v; return b }
+func (b *Builder) SetPetLevel(v byte) *Builder            { b.petLevel = v; return b }
+func (b *Builder) SetPetFlag(v uint16) *Builder           { b.petFlag = v; return b }
+func (b *Builder) SetCloseness(v uint16) *Builder         { b.closeness = v; return b }
+func (b *Builder) SetFullness(v byte) *Builder            { b.fullness = v; return b }
+func (b *Builder) SetPetSlot(v int8) *Builder             { b.petSlot = v; return b }
 
-func (b *ModelBuilder) SetPetDeadDate(t time.Time) *ModelBuilder { b.petDeadDate = t; return b }
+func (b *Builder) SetPetDeadDate(t time.Time) *Builder { b.petDeadDate = t; return b }
 
-func (b *ModelBuilder) SetPetSerialNumber(v uint64) *ModelBuilder { b.petSerialNumber = v; return b }
+func (b *Builder) SetPetSerialNumber(v uint64) *Builder { b.petSerialNumber = v; return b }
 
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if b.id == 0 {
 		return Model{}, ErrInvalidId
 	}
@@ -293,7 +293,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 	}, nil
 }
 
-func (b *ModelBuilder) MustBuild() Model {
+func (b *Builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic(err)

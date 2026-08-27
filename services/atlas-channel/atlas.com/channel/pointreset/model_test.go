@@ -33,7 +33,7 @@ func mustSkill(id uint32, level byte, masterLevel byte) charskill.Model {
 // starting point for the AP-transfer matrix: every primary stat and pool is
 // mid-range so only the field under test trips a rule.
 func baseCharacter() character.Model {
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(1).
 		SetJobId(job.HeroId).
 		SetLevel(200).
@@ -54,7 +54,7 @@ func baseCharacter() character.Model {
 // (CrusaderArmorCrash level 10, FighterSwordMastery level 10) — real
 // in-tree SP-reset partners for a Hero per job.Is's branch arithmetic.
 func heroCharacter() character.Model {
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(1).
 		SetJobId(job.HeroId).
 		SetLevel(200).
@@ -71,7 +71,7 @@ func heroCharacter() character.Model {
 // probes where the character's own job line (not Hero's) must match the
 // probe skills' derived job.
 func jobLineCharacter(jobId job.Id, skills []charskill.Model) character.Model {
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(1).
 		SetJobId(jobId).
 		SetLevel(200).

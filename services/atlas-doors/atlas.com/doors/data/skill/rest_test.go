@@ -5,6 +5,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -132,5 +133,36 @@ func TestGetEffectDurationSentinel(t *testing.T) {
 
 	if m.Effects()[0].Duration() != -1 {
 		t.Errorf("expected -1 sentinel, got %d", m.Effects()[0].Duration())
+	}
+}
+
+// TestTransformRoundTrip verifies Transform is the faithful inverse of
+// Extract: Extract(Transform(m)) reproduces m.
+func TestTransformRoundTrip(t *testing.T) {
+	rm := RestModel{
+		Id: 2311003,
+		Effects: []effect.RestModel{
+			{Duration: 30000, MPConsume: 10, ItemConsume: 4006000},
+			{Duration: 60000, MPConsume: 20, ItemConsume: 4006001},
+		},
+	}
+
+	m, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+
+	rm2, err := Transform(m)
+	if err != nil {
+		t.Fatalf("Transform failed: %v", err)
+	}
+
+	m2, err := Extract(rm2)
+	if err != nil {
+		t.Fatalf("Extract (round trip) failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(m2, m) {
+		t.Errorf("round trip mismatch. want %+v, got %+v", m, m2)
 	}
 }

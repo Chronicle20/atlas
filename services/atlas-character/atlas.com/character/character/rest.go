@@ -126,7 +126,7 @@ func transformWithTemporal(m Model, td temporalData) RestModel {
 // mapped onto the Model here — the create path reads input.MapId separately and
 // passes it to CreateAndEmit (atlas-maps owns location state, task-087).
 func Extract(m RestModel) (Model, error) {
-	return NewModelBuilder().
+	return NewEmptyBuilder().
 		SetId(m.Id).
 		SetAccountId(m.AccountId).
 		SetWorldId(m.WorldId).

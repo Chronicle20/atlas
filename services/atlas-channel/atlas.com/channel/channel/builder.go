@@ -12,7 +12,7 @@ import (
 
 var ErrInvalidId = errors.New("channel id must not be nil")
 
-type modelBuilder struct {
+type builder struct {
 	id              uuid.UUID
 	worldId         world.Id
 	channelId       channel.Id
@@ -23,19 +23,15 @@ type modelBuilder struct {
 	createdAt       time.Time
 }
 
-func NewModelBuilder() *modelBuilder {
-	return &modelBuilder{
+// NewBuilder creates a new builder instance
+func NewBuilder() *builder {
+	return &builder{
 		createdAt: time.Now(),
 	}
 }
 
-// NewBuilder is an alias for NewModelBuilder for backward compatibility
-func NewBuilder() *modelBuilder {
-	return NewModelBuilder()
-}
-
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		id:              m.id,
 		worldId:         m.worldId,
 		channelId:       m.channelId,
@@ -47,47 +43,47 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-func (b *modelBuilder) SetId(id uuid.UUID) *modelBuilder {
+func (b *builder) SetId(id uuid.UUID) *builder {
 	b.id = id
 	return b
 }
 
-func (b *modelBuilder) SetWorldId(worldId world.Id) *modelBuilder {
+func (b *builder) SetWorldId(worldId world.Id) *builder {
 	b.worldId = worldId
 	return b
 }
 
-func (b *modelBuilder) SetChannelId(channelId channel.Id) *modelBuilder {
+func (b *builder) SetChannelId(channelId channel.Id) *builder {
 	b.channelId = channelId
 	return b
 }
 
-func (b *modelBuilder) SetIpAddress(ipAddress string) *modelBuilder {
+func (b *builder) SetIpAddress(ipAddress string) *builder {
 	b.ipAddress = ipAddress
 	return b
 }
 
-func (b *modelBuilder) SetPort(port int) *modelBuilder {
+func (b *builder) SetPort(port int) *builder {
 	b.port = port
 	return b
 }
 
-func (b *modelBuilder) SetCreatedAt(createdAt time.Time) *modelBuilder {
+func (b *builder) SetCreatedAt(createdAt time.Time) *builder {
 	b.createdAt = createdAt
 	return b
 }
 
-func (b *modelBuilder) SetCurrentCapacity(currentCapacity uint32) *modelBuilder {
+func (b *builder) SetCurrentCapacity(currentCapacity uint32) *builder {
 	b.currentCapacity = currentCapacity
 	return b
 }
 
-func (b *modelBuilder) SetMaxCapacity(maxCapacity uint32) *modelBuilder {
+func (b *builder) SetMaxCapacity(maxCapacity uint32) *builder {
 	b.maxCapacity = maxCapacity
 	return b
 }
 
-func (b *modelBuilder) Build() (Model, error) {
+func (b *builder) Build() (Model, error) {
 	if b.id == uuid.Nil {
 		return Model{}, ErrInvalidId
 	}
@@ -103,7 +99,7 @@ func (b *modelBuilder) Build() (Model, error) {
 	}, nil
 }
 
-func (b *modelBuilder) MustBuild() Model {
+func (b *builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic(err)

@@ -368,7 +368,7 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 		// atlas-maps on the CREATED status event so atlas-maps can seed
 		// character_locations before the first LOGIN. atlas-maps owns the
 		// row; atlas-character only forwards the spawn map on the wire.
-		model := character.NewModelBuilder().
+		model := character.NewEmptyBuilder().
 			SetAccountId(c.Body.AccountId).
 			SetWorldId(c.Body.WorldId).
 			SetName(c.Body.Name).

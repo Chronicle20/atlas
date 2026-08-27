@@ -7,12 +7,12 @@ import (
 
 func mesoDrop(t *testing.T, id uint32, meso uint32) drop.Model {
 	t.Helper()
-	return drop.NewModelBuilder().SetId(id).SetMeso(meso).MustBuild()
+	return drop.NewBuilder().SetId(id).SetMeso(meso).MustBuild()
 }
 
 func itemDrop(t *testing.T, id uint32) drop.Model {
 	t.Helper()
-	return drop.NewModelBuilder().SetId(id).SetItem(2000000, 1).MustBuild()
+	return drop.NewBuilder().SetId(id).SetItem(2000000, 1).MustBuild()
 }
 
 func TestValidateMesoExplosion(t *testing.T) {

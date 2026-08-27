@@ -220,7 +220,7 @@ func TestGetDiseaseTargets(t *testing.T) {
 			p := tt.build(&positionCalls)
 
 			m := Clone(Model{}).SetX(100).SetY(200).SetControlCharacterId(tt.controlCharacterId).Build()
-			builder := mobskill.NewModelBuilder().SetCount(tt.count)
+			builder := mobskill.NewBuilder().SetCount(tt.count)
 			if tt.useBoundingBox {
 				builder = builder.SetBoundingBox(-50, -30, 50, 30)
 			}

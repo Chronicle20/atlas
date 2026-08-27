@@ -47,3 +47,10 @@ func Extract(rm RestModel) (Model, error) {
 		recoveryMP: rm.RecoveryMP,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		RecoveryHP: m.recoveryHP,
+		RecoveryMP: m.recoveryMP,
+	}, nil
+}

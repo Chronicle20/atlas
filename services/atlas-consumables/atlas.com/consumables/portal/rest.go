@@ -47,3 +47,18 @@ func Extract(rm RestModel) (Model, error) {
 		scriptName:  rm.ScriptName,
 	}, nil
 }
+
+// Transform is the inverse of Extract: it converts the domain Model back into
+// the RestModel representation, rendering Id as its string form.
+func Transform(m Model) RestModel {
+	return RestModel{
+		Id:          strconv.Itoa(int(m.id)),
+		Name:        m.name,
+		Target:      m.target,
+		Type:        m.portalType,
+		X:           m.x,
+		Y:           m.y,
+		TargetMapId: m.targetMapId,
+		ScriptName:  m.scriptName,
+	}
+}

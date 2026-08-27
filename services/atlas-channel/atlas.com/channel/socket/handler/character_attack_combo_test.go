@@ -121,7 +121,7 @@ func comboTestSkill(t *testing.T, id skill3.Id, level byte) skill.Model {
 
 func comboTestCharacter(t *testing.T, skills ...skill.Model) character.Model {
 	t.Helper()
-	return character.NewModelBuilder().SetId(1).SetSkills(skills).MustBuild()
+	return character.NewBuilder().SetId(1).SetSkills(skills).MustBuild()
 }
 
 func comboTestAttack(skillId uint32, hits int) packetmodel.AttackInfo {

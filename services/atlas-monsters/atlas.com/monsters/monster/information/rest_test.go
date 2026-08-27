@@ -1,6 +1,9 @@
 package information
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestExtract_PopulatesAttacks(t *testing.T) {
 	rm := RestModel{
@@ -65,11 +68,52 @@ func TestExtractFirstAttack(t *testing.T) {
 	}
 }
 
-func TestModelBuilderSetFirstAttack(t *testing.T) {
-	if got := NewModelBuilder().SetFirstAttack(true).Build().FirstAttack(); got != true {
+// TestTransformRoundTrip asserts Extract(Transform(m)) reproduces every
+// field Extract populates. Model is built as a literal (not via Builder)
+// because Builder is intentionally a minimal test-fixture subset (per
+// builder.go's doc comment) that omits hp, mp, undead, friendly,
+// weaponAttack, dropPeriod, animationTimes, and revives.
+func TestTransformRoundTrip(t *testing.T) {
+	m := Model{
+		hp:              1000,
+		mp:              500,
+		boss:            true,
+		undead:          true,
+		friendly:        true,
+		firstAttack:     true,
+		weaponAttack:    200,
+		dropPeriod:      30,
+		resistances:     map[string]string{"P": "1", "I": "3"},
+		animationTimes:  map[string]uint32{"die1": 1000, "hit1": 500},
+		skills:          []Skill{{Id: 120, Level: 5}, {Id: 121, Level: 3}},
+		revives:         []uint32{5100005, 5100006},
+		banish:          Banish{Message: "begone", MapId: 100000000, PortalName: "sp"},
+		attacks:         []AttackInfo{{Pos: 2, ConMP: 5, AttackAfter: 1500}},
+		selfDestruction: NewSelfDestruction(true, 1, 2000, 1500),
+		hpRecovery:      20,
+		mpRecovery:      5,
+	}
+
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("Transform failed: %v", err)
+	}
+
+	got, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip mismatch. Expected %+v, got %+v", m, got)
+	}
+}
+
+func TestBuilderSetFirstAttack(t *testing.T) {
+	if got := NewBuilder().SetFirstAttack(true).Build().FirstAttack(); got != true {
 		t.Fatalf("SetFirstAttack(true).Build().FirstAttack() = %v, want true", got)
 	}
-	if got := NewModelBuilder().Build().FirstAttack(); got != false {
+	if got := NewBuilder().Build().FirstAttack(); got != false {
 		t.Fatalf("Build().FirstAttack() zero value = %v, want false", got)
 	}
 }

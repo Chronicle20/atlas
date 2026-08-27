@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-func TestNewModelBuilder(t *testing.T) {
-	builder := tenant.NewModelBuilder()
+func TestNewBuilder(t *testing.T) {
+	builder := tenant.NewBuilder()
 	if builder == nil {
 		t.Fatal("Expected builder to be initialized")
 	}
@@ -18,7 +18,7 @@ func TestNewModelBuilder(t *testing.T) {
 func TestBuild_AllFieldsSet(t *testing.T) {
 	id := uuid.New()
 
-	model, err := tenant.NewModelBuilder().
+	model, err := tenant.NewBuilder().
 		SetId(id).
 		SetName("Test Tenant").
 		SetRegion("GMS").
@@ -46,7 +46,7 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 }
 
 func TestBuild_MissingName(t *testing.T) {
-	_, err := tenant.NewModelBuilder().
+	_, err := tenant.NewBuilder().
 		SetRegion("GMS").
 		SetMajorVersion(83).
 		SetMinorVersion(1).
@@ -58,7 +58,7 @@ func TestBuild_MissingName(t *testing.T) {
 }
 
 func TestBuild_MissingRegion(t *testing.T) {
-	_, err := tenant.NewModelBuilder().
+	_, err := tenant.NewBuilder().
 		SetName("Test Tenant").
 		SetMajorVersion(83).
 		SetMinorVersion(1).
@@ -70,7 +70,7 @@ func TestBuild_MissingRegion(t *testing.T) {
 }
 
 func TestBuild_Success(t *testing.T) {
-	model, err := tenant.NewModelBuilder().
+	model, err := tenant.NewBuilder().
 		SetName("Test Tenant").
 		SetRegion("GMS").
 		SetMajorVersion(83).
@@ -89,7 +89,7 @@ func TestBuild_Success(t *testing.T) {
 }
 
 func TestCloneModel(t *testing.T) {
-	original, err := tenant.NewModelBuilder().
+	original, err := tenant.NewBuilder().
 		SetName("Original Tenant").
 		SetRegion("GMS").
 		SetMajorVersion(83).
@@ -127,7 +127,7 @@ func TestCloneModel(t *testing.T) {
 }
 
 func TestBuilderFluentChaining(t *testing.T) {
-	model, err := tenant.NewModelBuilder().
+	model, err := tenant.NewBuilder().
 		SetName("Fluent Tenant").
 		SetRegion("EMS").
 		SetMajorVersion(90).
@@ -151,7 +151,7 @@ func TestBuilderFluentChaining(t *testing.T) {
 }
 
 func TestModelString(t *testing.T) {
-	model, err := tenant.NewModelBuilder().
+	model, err := tenant.NewBuilder().
 		SetName("Test Tenant").
 		SetRegion("GMS").
 		SetMajorVersion(83).

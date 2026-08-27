@@ -66,7 +66,7 @@ var _ Processor = (*ProcessorImpl)(nil)
 // Create creates a new tenant
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
 	return func(name string, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
-		m, err := NewModelBuilder().
+		m, err := NewBuilder().
 			SetName(name).
 			SetRegion(region).
 			SetMajorVersion(majorVersion).

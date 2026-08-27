@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type modelBuilder struct {
+type builder struct {
 	tenantId    uuid.UUID
 	id          uint32
 	characterId uint32
@@ -19,14 +19,14 @@ type modelBuilder struct {
 	progress    []progress.Model
 }
 
-func NewModelBuilder() *modelBuilder {
-	return &modelBuilder{
+func NewBuilder() *builder {
+	return &builder{
 		progress: make([]progress.Model, 0),
 	}
 }
 
-func CloneModel(m Model) *modelBuilder {
-	return &modelBuilder{
+func CloneModel(m Model) *builder {
+	return &builder{
 		tenantId:    m.tenantId,
 		id:          m.id,
 		characterId: m.characterId,
@@ -38,47 +38,47 @@ func CloneModel(m Model) *modelBuilder {
 	}
 }
 
-func (b *modelBuilder) SetTenantId(tenantId uuid.UUID) *modelBuilder {
+func (b *builder) SetTenantId(tenantId uuid.UUID) *builder {
 	b.tenantId = tenantId
 	return b
 }
 
-func (b *modelBuilder) SetId(id uint32) *modelBuilder {
+func (b *builder) SetId(id uint32) *builder {
 	b.id = id
 	return b
 }
 
-func (b *modelBuilder) SetCharacterId(characterId uint32) *modelBuilder {
+func (b *builder) SetCharacterId(characterId uint32) *builder {
 	b.characterId = characterId
 	return b
 }
 
-func (b *modelBuilder) SetQuestId(questId uint32) *modelBuilder {
+func (b *builder) SetQuestId(questId uint32) *builder {
 	b.questId = questId
 	return b
 }
 
-func (b *modelBuilder) SetState(state State) *modelBuilder {
+func (b *builder) SetState(state State) *builder {
 	b.state = state
 	return b
 }
 
-func (b *modelBuilder) SetStartedAt(startedAt time.Time) *modelBuilder {
+func (b *builder) SetStartedAt(startedAt time.Time) *builder {
 	b.startedAt = startedAt
 	return b
 }
 
-func (b *modelBuilder) SetCompletedAt(completedAt time.Time) *modelBuilder {
+func (b *builder) SetCompletedAt(completedAt time.Time) *builder {
 	b.completedAt = completedAt
 	return b
 }
 
-func (b *modelBuilder) SetProgress(progress []progress.Model) *modelBuilder {
+func (b *builder) SetProgress(progress []progress.Model) *builder {
 	b.progress = progress
 	return b
 }
 
-func (b *modelBuilder) Build() Model {
+func (b *builder) Build() Model {
 	return Model{
 		tenantId:    b.tenantId,
 		id:          b.id,
@@ -93,7 +93,7 @@ func (b *modelBuilder) Build() Model {
 
 // BuildWithValidation returns the built Model with validation, returning an error if required fields are missing.
 // This is the recommended method for new code.
-func (b *modelBuilder) BuildWithValidation() (Model, error) {
+func (b *builder) BuildWithValidation() (Model, error) {
 	if b.tenantId == uuid.Nil {
 		return Model{}, ErrMissingTenantId
 	}

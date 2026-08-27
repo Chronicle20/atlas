@@ -92,7 +92,7 @@ func testTenantModel(t *testing.T, region string, major uint16) tenant.Model {
 
 func testCharacter(t *testing.T, jobId job.Id, mp uint16, meso uint32, skills []skill2.Model) character.Model {
 	t.Helper()
-	c, err := character.NewModelBuilder().
+	c, err := character.NewBuilder().
 		SetId(42).
 		SetJobId(jobId).
 		SetHp(1000).SetMaxHp(2000).
@@ -271,7 +271,7 @@ func TestProcessDamageTakenPowerGuardReflects(t *testing.T) {
 	tm := testTenantModel(t, "GMS", 83)
 	em := &emissions{}
 	buffs := []buff.Model{activeBuff(charconst.TemporaryStatTypePowerGuard, 30)}
-	mob, err := monster.NewModelBuilder(42, damageTestField(), 200100).SetHp(50000).SetMaxHp(100000).Build()
+	mob, err := monster.NewBuilder(42, damageTestField(), 200100).SetHp(50000).SetMaxHp(100000).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,7 +392,7 @@ func TestProcessDamageTakenManaReflectionEmitsReflect(t *testing.T) {
 	tm := testTenantModel(t, "GMS", 83)
 	em := &emissions{}
 	buffs := []buff.Model{activeBuff(charconst.TemporaryStatTypeManaReflection, 100)}
-	mob, err := monster.NewModelBuilder(42, damageTestField(), 200100).SetHp(50000).SetMaxHp(100000).Build()
+	mob, err := monster.NewBuilder(42, damageTestField(), 200100).SetHp(50000).SetMaxHp(100000).Build()
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -2,6 +2,7 @@ package account
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 )
 
@@ -29,5 +30,40 @@ func TestExtractBirthDate(t *testing.T) {
 	}
 	if m.BirthDate() != 19940203 {
 		t.Errorf("Model.BirthDate mismatch after Extract. Expected 19940203, got %v", m.BirthDate())
+	}
+}
+
+// TestTransformRoundTrip confirms Transform is the faithful inverse of
+// Extract: every field Extract reads from RestModel survives a
+// Transform -> Extract round trip.
+func TestTransformRoundTrip(t *testing.T) {
+	m := NewBuilder().
+		SetId(456).
+		SetName("testuser").
+		SetPassword("pw123").
+		SetPin("1234").
+		SetPic("5678").
+		SetBirthDate(19940203).
+		SetLoggedIn(1).
+		SetLastLogin(999).
+		SetGender(2).
+		SetBanned(true).
+		SetTos(true).
+		SetLanguage("en").
+		SetCountry("us").
+		Build()
+
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("Transform failed: %v", err)
+	}
+
+	m2, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract failed: %v", err)
+	}
+
+	if !reflect.DeepEqual(m, m2) {
+		t.Errorf("round trip mismatch. Expected %+v, got %+v", m, m2)
 	}
 }

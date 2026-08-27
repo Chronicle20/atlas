@@ -30,3 +30,10 @@ func Extract(rm RestModel) (Model, error) {
 		message: rm.Message,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:      m.id,
+		Message: m.message,
+	}, nil
+}

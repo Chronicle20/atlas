@@ -50,7 +50,7 @@ func requestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
 
 func seedContinentDrop(t *testing.T, db *gorm.DB, tenantId uuid.UUID, id uint32, continentId int32, itemId uint32) {
 	t.Helper()
-	m, err := drop.NewContinentDropBuilder(tenantId, id).
+	m, err := drop.NewBuilder(tenantId, id).
 		SetContinentId(continentId).
 		SetItemId(itemId).
 		SetMinimumQuantity(1).

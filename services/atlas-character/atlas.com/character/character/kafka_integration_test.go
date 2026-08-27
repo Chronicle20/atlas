@@ -59,7 +59,7 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 			return
 		}
 
-		model := character.NewModelBuilder().
+		model := character.NewEmptyBuilder().
 			SetAccountId(c.Body.AccountId).
 			SetWorldId(c.Body.WorldId).
 			SetName(c.Body.Name).
@@ -196,7 +196,7 @@ func TestKafkaCreateCharacterIntegrationWithInvalidName(t *testing.T) {
 			return
 		}
 
-		model := character.NewModelBuilder().
+		model := character.NewEmptyBuilder().
 			SetAccountId(c.Body.AccountId).
 			SetWorldId(c.Body.WorldId).
 			SetName(c.Body.Name).
@@ -241,7 +241,7 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 	logger := testLogger()
 
 	// Create first character using regular processor
-	input := character.NewModelBuilder().
+	input := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("DupeTest").
@@ -288,7 +288,7 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 			return
 		}
 
-		model := character.NewModelBuilder().
+		model := character.NewEmptyBuilder().
 			SetAccountId(c.Body.AccountId).
 			SetWorldId(c.Body.WorldId).
 			SetName(c.Body.Name).
@@ -415,7 +415,7 @@ func TestKafkaCreateCharacterIntegrationWithErrorEventEmission(t *testing.T) {
 					return
 				}
 
-				model := character.NewModelBuilder().
+				model := character.NewEmptyBuilder().
 					SetAccountId(c.Body.AccountId).
 					SetWorldId(c.Body.WorldId).
 					SetName(c.Body.Name).

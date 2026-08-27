@@ -226,7 +226,7 @@ func (p *ProcessorImpl) Start(mb *message.Buffer, characterId uint32, worldId wo
 	// the player's perspective they are opening a fresh game.
 	GetRegistry().Remove(p.ctx, characterId)
 
-	m, err := NewModelBuilder(p.t).
+	m, err := NewBuilder(p.t).
 		SetCharacterId(characterId).
 		SetWorldId(worldId).
 		SetChannelId(channelId).
@@ -281,7 +281,7 @@ func (p *ProcessorImpl) Begin(mb *message.Buffer, characterId uint32) (Model, er
 		return Model{}, ErrInvalidStatus
 	}
 
-	updated, err := CloneModelBuilder(m).SetStatus(StatusAwaitingSelect).Build()
+	updated, err := CloneBuilder(m).SetStatus(StatusAwaitingSelect).Build()
 	if err != nil {
 		return Model{}, err
 	}
@@ -335,7 +335,7 @@ func (p *ProcessorImpl) Select(mb *message.Buffer, characterId uint32, throw Thr
 		newRung := m.Rung() + 1
 		prize, prizeOk := ladder.PrizeAt(newRung)
 
-		updated, err := CloneModelBuilder(m).
+		updated, err := CloneBuilder(m).
 			SetRung(newRung).
 			SetStatus(StatusAwaitingDecision).
 			SetLastThrow(throw).
@@ -351,7 +351,7 @@ func (p *ProcessorImpl) Select(mb *message.Buffer, characterId uint32, throw Thr
 		return updated, nil
 
 	case OutcomeTie:
-		updated, err := CloneModelBuilder(m).
+		updated, err := CloneBuilder(m).
 			SetStatus(StatusAwaitingSelect).
 			SetLastThrow(throw).
 			Build()
@@ -389,7 +389,7 @@ func (p *ProcessorImpl) Select(mb *message.Buffer, characterId uint32, throw Thr
 		// that leaves the loss screen - Exit (-> Collect) or Retry - which is
 		// the earliest point the server knows the client has shown the result.
 		// See submitConsolation.
-		updated, err := CloneModelBuilder(m).SetStatus(StatusEnded).SetLastThrow(throw).Build()
+		updated, err := CloneBuilder(m).SetStatus(StatusEnded).SetLastThrow(throw).Build()
 		if err != nil {
 			return Model{}, err
 		}
@@ -441,7 +441,7 @@ func (p *ProcessorImpl) Continue(mb *message.Buffer, characterId uint32) (Model,
 		return p.Collect(mb, characterId)
 	}
 
-	updated, err := CloneModelBuilder(m).SetStatus(StatusAwaitingSelect).Build()
+	updated, err := CloneBuilder(m).SetStatus(StatusAwaitingSelect).Build()
 	if err != nil {
 		return Model{}, err
 	}
@@ -545,7 +545,7 @@ func (p *ProcessorImpl) Retry(mb *message.Buffer, characterId uint32) (Model, er
 	// fee is now charged, so the restart proceeds regardless). Rung-0 only.
 	p.submitConsolation(m)
 
-	updated, err := CloneModelBuilder(m).SetRung(0).SetStatus(StatusAwaitingSelect).Build()
+	updated, err := CloneBuilder(m).SetRung(0).SetStatus(StatusAwaitingSelect).Build()
 	if err != nil {
 		return Model{}, err
 	}
@@ -607,7 +607,7 @@ func (p *ProcessorImpl) Collect(mb *message.Buffer, characterId uint32) (Model, 
 			return Model{}, err
 		}
 
-		return CloneModelBuilder(m).SetStatus(StatusEnded).Build()
+		return CloneBuilder(m).SetStatus(StatusEnded).Build()
 	}
 
 	ladder, err := p.ladderProvider()
@@ -632,7 +632,7 @@ func (p *ProcessorImpl) Collect(mb *message.Buffer, characterId uint32) (Model, 
 		return Model{}, err
 	}
 
-	return CloneModelBuilder(m).SetStatus(StatusEnded).Build()
+	return CloneBuilder(m).SetStatus(StatusEnded).Build()
 }
 
 // buildPayoutSaga constructs the payout saga for a resolved prize: an
@@ -722,7 +722,7 @@ func (p *ProcessorImpl) Quit(mb *message.Buffer, characterId uint32) (Model, err
 		return Model{}, err
 	}
 
-	return CloneModelBuilder(m).SetStatus(StatusEnded).Build()
+	return CloneBuilder(m).SetStatus(StatusEnded).Build()
 }
 
 // QuitAndEmit ends the session with no payout and emits its buffered events.
@@ -752,7 +752,7 @@ func (p *ProcessorImpl) Dispose(mb *message.Buffer, characterId uint32) (Model, 
 		return Model{}, err
 	}
 
-	return CloneModelBuilder(m).SetStatus(StatusEnded).Build()
+	return CloneBuilder(m).SetStatus(StatusEnded).Build()
 }
 
 // DisposeAndEmit disposes of the session (if any) on disconnect and emits

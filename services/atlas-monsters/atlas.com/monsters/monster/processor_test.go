@@ -888,7 +888,7 @@ func TestExecuteStatBuff_ReflectStatus_PopulatesReflectMetadata(t *testing.T) {
 
 	skillId := byte(monster2.SkillTypePhysicalCounter) // 143
 	skillLevel := byte(1)
-	sd := mobskill.NewModelBuilder().
+	sd := mobskill.NewBuilder().
 		SetSkillId(uint16(skillId)).
 		SetLevel(uint16(skillLevel)).
 		SetDuration(60_000). // 60s in ms
@@ -1008,7 +1008,7 @@ func TestExecuteStatBuff_PhysicalImmune_CancelsActiveMagicImmune(t *testing.T) {
 	// Apply: WEAPON_ATTACK_IMMUNE (skill type 140 = PhysicalImmune).
 	skillId := byte(monster2.SkillTypePhysicalImmune)
 	skillLevel := byte(1)
-	sd := mobskill.NewModelBuilder().
+	sd := mobskill.NewBuilder().
 		SetSkillId(uint16(skillId)).
 		SetLevel(uint16(skillLevel)).
 		SetDuration(60_000). // 60s in ms
@@ -1064,7 +1064,7 @@ func TestExecuteStatBuff_MagicImmune_CancelsActivePhysicalImmune(t *testing.T) {
 
 	skillId := byte(monster2.SkillTypeMagicImmune)
 	skillLevel := byte(1)
-	sd := mobskill.NewModelBuilder().
+	sd := mobskill.NewBuilder().
 		SetSkillId(uint16(skillId)).
 		SetLevel(uint16(skillLevel)).
 		SetDuration(60_000). // 60s in ms
@@ -1110,7 +1110,7 @@ func TestExecuteStatBuff_PhysicalImmune_NoMagicImmune_DoesNotCancel(t *testing.T
 
 	skillId := byte(monster2.SkillTypePhysicalImmune)
 	skillLevel := byte(1)
-	sd := mobskill.NewModelBuilder().
+	sd := mobskill.NewBuilder().
 		SetSkillId(uint16(skillId)).
 		SetLevel(uint16(skillLevel)).
 		SetDuration(60_000). // 60s in ms
@@ -1174,7 +1174,7 @@ func TestBuildMistCreateBody(t *testing.T) {
 	f := field.NewBuilder(world.Id(7), channel.Id(2), _map.Id(100020000)).SetInstance(instance).Build()
 	m := r.CreateMonster(ctx, ten, f, uint32(8800002), 300, 400, 0, 5, 0, 1000, 200, "", "")
 
-	sd := mobskill.NewModelBuilder().
+	sd := mobskill.NewBuilder().
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
 		SetLevel(5).
 		SetX(80).
@@ -1240,7 +1240,7 @@ func TestBuildMistCreateBody_DurationCap(t *testing.T) {
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 100, 50, "", "")
 
-	sd := mobskill.NewModelBuilder().
+	sd := mobskill.NewBuilder().
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
 		SetLevel(1).
 		SetX(80).
@@ -1267,7 +1267,7 @@ func TestBuildMistCreateBody_UnderCapIsNotClamped(t *testing.T) {
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100020000)).SetInstance(uuid.New()).Build()
 	m := r.CreateMonster(ctx, ten, f, uint32(8800002), 300, 400, 0, 5, 0, 1000, 200, "", "")
 
-	sd := mobskill.NewModelBuilder().
+	sd := mobskill.NewBuilder().
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
 		SetLevel(5).
 		SetX(80).
@@ -1298,7 +1298,7 @@ func TestExecuteMist_ProducesMistCreateCommand(t *testing.T) {
 	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 300, 400, 0, 5, 0, 100, 50, "", "")
 
-	sd := mobskill.NewModelBuilder().
+	sd := mobskill.NewBuilder().
 		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
 		SetLevel(5).
 		SetX(80).
@@ -1593,7 +1593,7 @@ func TestUseBasicAttack_HappyPath_DeductsMpAndRegistersCooldown(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().
+		return information.NewBuilder().
 			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 5, AttackAfter: 1500}}).
 			Build(), nil
 	}
@@ -1638,7 +1638,7 @@ func TestUseBasicAttack_OnCooldown_Skips(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().
+		return information.NewBuilder().
 			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 5, AttackAfter: 1500}}).
 			Build(), nil
 	}
@@ -1675,7 +1675,7 @@ func TestUseBasicAttack_InsufficientMp_Skips(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().
+		return information.NewBuilder().
 			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 50, AttackAfter: 1500}}).
 			Build(), nil
 	}
@@ -1713,7 +1713,7 @@ func TestUseBasicAttack_NoAttackInfo_Skips(t *testing.T) {
 	prevHook := testInformationLookup
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
 		// Beetle: no attacks at all.
-		return information.NewModelBuilder().Build(), nil
+		return information.NewBuilder().Build(), nil
 	}
 	defer func() { testInformationLookup = prevHook }()
 
@@ -1746,7 +1746,7 @@ func TestUseBasicAttack_ZeroConMpAndZeroAttackAfter_NoOp(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().
+		return information.NewBuilder().
 			SetAttacks([]information.AttackInfo{{Pos: 1, ConMP: 0, AttackAfter: 0}}).
 			Build(), nil
 	}
@@ -1783,7 +1783,7 @@ func TestUseBasicAttack_DeadMonster_Skips(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().
+		return information.NewBuilder().
 			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 5, AttackAfter: 1500}}).
 			Build(), nil
 	}
@@ -1830,7 +1830,7 @@ func TestApplyStatusEffect_Doom_BypassesElementalImmunity(t *testing.T) {
 	// fall through the existing POISON/FREEZE gates.
 	resistances := map[string]string{"P": "1", "I": "1", "F": "1", "S": "1", "L": "1"}
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().
+		return information.NewBuilder().
 			SetBoss(false).
 			SetResistances(resistances).
 			Build(), nil
@@ -1870,7 +1870,7 @@ func TestApplyStatusEffect_Doom_RejectedOnBoss(t *testing.T) {
 	m := r.CreateMonster(ctx, ten, f, 8800000, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().
+		return information.NewBuilder().
 			SetBoss(true).
 			Build(), nil
 	}
@@ -1909,7 +1909,7 @@ func TestApplyStatusEffect_Doom_ReapplyReplacesExisting(t *testing.T) {
 	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 0, 0, 1000, 50, "", "")
 
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().Build(), nil
+		return information.NewBuilder().Build(), nil
 	}
 	t.Cleanup(func() { testInformationLookup = nil })
 
@@ -2102,7 +2102,7 @@ func TestUseBasicAttack_Deduct_EmitsMpChanged(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().
+		return information.NewBuilder().
 			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 5, AttackAfter: 1500}}).
 			Build(), nil
 	}
@@ -2152,7 +2152,7 @@ func TestUseBasicAttack_NoDeduct_NoMpChanged(t *testing.T) {
 
 	prevHook := testInformationLookup
 	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().
+		return information.NewBuilder().
 			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 0, AttackAfter: 0}}).
 			Build(), nil
 	}
@@ -2191,7 +2191,7 @@ func TestUseSkill_Deduct_EmitsMpChanged(t *testing.T) {
 	// no targets the executor is a no-op, isolating the deduct+emit.
 	prevSkill := testMobSkillLookup
 	testMobSkillLookup = func(skillId uint16, level uint16) (mobskill.Model, error) {
-		return mobskill.NewModelBuilder().
+		return mobskill.NewBuilder().
 			SetSkillId(skillId).
 			SetLevel(level).
 			SetMpCon(10).
@@ -2254,7 +2254,7 @@ func TestUseSkill_ZeroMpCon_NoMpChanged(t *testing.T) {
 
 	prevSkill := testMobSkillLookup
 	testMobSkillLookup = func(skillId uint16, level uint16) (mobskill.Model, error) {
-		return mobskill.NewModelBuilder().SetSkillId(skillId).SetLevel(level).Build(), nil
+		return mobskill.NewBuilder().SetSkillId(skillId).SetLevel(level).Build(), nil
 	}
 	defer func() { testMobSkillLookup = prevSkill }()
 

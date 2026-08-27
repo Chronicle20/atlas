@@ -56,3 +56,10 @@ func (r *DropPositionRestModel) SetID(strId string) error {
 	r.Id = uint32(id)
 	return nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		X: m.x,
+		Y: m.y,
+	}, nil
+}

@@ -1,6 +1,7 @@
 package configuration
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -83,5 +84,27 @@ func TestWireDocumentFoldsIntoTheDomainModel(t *testing.T) {
 	tax, delivered := Tax(m, 100_000_000)
 	if tax != 6_000_000 || delivered != 94_000_000 {
 		t.Errorf("Tax(100000000) under the wire table: got tax %d delivered %d, want 6000000/94000000", tax, delivered)
+	}
+}
+
+// TestTransformRoundTrip pins that Extract(Transform(m)) reproduces m for a
+// Model whose knobs are all non-default and non-zero, so Extract's
+// zero-folding on MaxStagedItems/AttestationTimeoutSeconds never triggers.
+func TestTransformRoundTrip(t *testing.T) {
+	m := Model{
+		taxEnabled: false,
+		taxTiers: []Tier{
+			{Threshold: 50_000_000, Rate: 0.05},
+			{Threshold: 10_000, Rate: 0.01},
+		},
+		maxStagedItems:     7,
+		minTradeLevel:      15,
+		attestationTimeout: 3 * time.Second,
+	}
+
+	got := Extract(Transform(m))
+
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip mismatch. Expected %+v, got %+v", m, got)
 	}
 }

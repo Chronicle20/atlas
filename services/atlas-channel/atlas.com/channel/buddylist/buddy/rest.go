@@ -30,6 +30,17 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		CharacterId:   m.characterId,
+		Group:         m.group,
+		CharacterName: m.characterName,
+		ChannelId:     m.channelId,
+		InShop:        m.inShop,
+		Pending:       m.pending,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		characterId:   rm.CharacterId,

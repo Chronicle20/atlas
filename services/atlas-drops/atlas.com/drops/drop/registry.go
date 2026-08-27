@@ -101,7 +101,7 @@ func (d *DropRegistry) loadEntry(t tenant.Model, id uint32) (dropEntry, bool) {
 	return entry, true
 }
 
-func (d *DropRegistry) CreateDrop(mb *ModelBuilder) (Model, error) {
+func (d *DropRegistry) CreateDrop(mb *Builder) (Model, error) {
 	t := mb.Tenant()
 	ctx := context.Background()
 

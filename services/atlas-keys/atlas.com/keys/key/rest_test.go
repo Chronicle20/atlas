@@ -39,7 +39,7 @@ func TestRestModel_SetID_InvalidInput(t *testing.T) {
 }
 
 func TestTransform(t *testing.T) {
-	m, _ := NewModelBuilder().
+	m, _ := NewBuilder().
 		SetCharacterId(12345).
 		SetKey(65).
 		SetType(6).

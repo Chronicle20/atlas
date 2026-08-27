@@ -86,6 +86,40 @@ func (r *RestModel) SetID(idStr string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	skills := make([]skill, 0, len(m.skills))
+	for _, s := range m.skills {
+		skills = append(skills, skill(s))
+	}
+	attacks := make([]AttackInfoRestModel, 0, len(m.attacks))
+	for _, a := range m.attacks {
+		attacks = append(attacks, AttackInfoRestModel(a))
+	}
+	return RestModel{
+		Hp:             m.hp,
+		Mp:             m.mp,
+		Boss:           m.boss,
+		Undead:         m.undead,
+		Friendly:       m.friendly,
+		FirstAttack:    m.firstAttack,
+		WeaponAttack:   m.weaponAttack,
+		DropPeriod:     m.dropPeriod,
+		Resistances:    m.resistances,
+		AnimationTimes: m.animationTimes,
+		Skills:         skills,
+		Attacks:        attacks,
+		Revives:        m.revives,
+		Banish:         banish{Message: m.banish.Message, MapId: m.banish.MapId, PortalName: m.banish.PortalName},
+		SelfDestruction: selfDestruction{
+			Action:      m.selfDestruction.action,
+			RemoveAfter: m.selfDestruction.removeAfter,
+			Hp:          m.selfDestruction.hp,
+		},
+		HpRecovery: m.hpRecovery,
+		MpRecovery: m.mpRecovery,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	skills := make([]Skill, 0, len(rm.Skills))
 	for _, s := range rm.Skills {

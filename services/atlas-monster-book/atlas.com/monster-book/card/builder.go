@@ -11,7 +11,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
-type ModelBuilder struct {
+type Builder struct {
 	tenantId        uuid.UUID
 	characterId     character.Id
 	cardId          item.Id
@@ -21,17 +21,17 @@ type ModelBuilder struct {
 	updatedAt       time.Time
 }
 
-func NewModelBuilder() *ModelBuilder { return &ModelBuilder{} }
+func NewBuilder() *Builder { return &Builder{} }
 
-func (b *ModelBuilder) SetTenantId(v uuid.UUID) *ModelBuilder        { b.tenantId = v; return b }
-func (b *ModelBuilder) SetCharacterId(v character.Id) *ModelBuilder  { b.characterId = v; return b }
-func (b *ModelBuilder) SetCardId(v item.Id) *ModelBuilder            { b.cardId = v; return b }
-func (b *ModelBuilder) SetLevel(v uint8) *ModelBuilder               { b.level = v; return b }
-func (b *ModelBuilder) SetLastEventId(v *uuid.UUID) *ModelBuilder    { b.lastEventId = v; return b }
-func (b *ModelBuilder) SetFirstAcquiredAt(v time.Time) *ModelBuilder { b.firstAcquiredAt = v; return b }
-func (b *ModelBuilder) SetUpdatedAt(v time.Time) *ModelBuilder       { b.updatedAt = v; return b }
+func (b *Builder) SetTenantId(v uuid.UUID) *Builder        { b.tenantId = v; return b }
+func (b *Builder) SetCharacterId(v character.Id) *Builder  { b.characterId = v; return b }
+func (b *Builder) SetCardId(v item.Id) *Builder            { b.cardId = v; return b }
+func (b *Builder) SetLevel(v uint8) *Builder               { b.level = v; return b }
+func (b *Builder) SetLastEventId(v *uuid.UUID) *Builder    { b.lastEventId = v; return b }
+func (b *Builder) SetFirstAcquiredAt(v time.Time) *Builder { b.firstAcquiredAt = v; return b }
+func (b *Builder) SetUpdatedAt(v time.Time) *Builder       { b.updatedAt = v; return b }
 
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if b.characterId == 0 {
 		return Model{}, errors.New("characterId is required")
 	}
@@ -53,7 +53,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 	}, nil
 }
 
-func (b *ModelBuilder) MustBuild() Model {
+func (b *Builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic("MustBuild: " + err.Error())
@@ -62,7 +62,7 @@ func (b *ModelBuilder) MustBuild() Model {
 }
 
 func Make(e entity) (Model, error) {
-	return NewModelBuilder().
+	return NewBuilder().
 		SetTenantId(e.TenantId).
 		SetCharacterId(character.Id(e.CharacterId)).
 		SetCardId(item.Id(e.CardId)).

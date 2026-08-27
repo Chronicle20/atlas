@@ -27,7 +27,7 @@ func TestSweepTask_Run_AppliesEnvContext(t *testing.T) {
 	now := time.Now()
 	game.GetRegistry().SetNowFunc(func() time.Time { return now })
 
-	m := game.NewModelBuilder(ten).
+	m := game.NewBuilder(ten).
 		SetCharacterId(characterId).
 		SetWorldId(0).
 		SetChannelId(1).

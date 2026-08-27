@@ -26,7 +26,7 @@ func (e Entity) TableName() string {
 }
 
 func Make(e Entity) (Model, error) {
-	return NewModelBuilder(e.TenantId, e.CharacterId, e.Id).
+	return NewBuilder(e.TenantId, e.CharacterId, e.Id).
 		SetLevel(e.Level).
 		SetExp(e.Exp).
 		SetTiredness(e.Tiredness).

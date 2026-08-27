@@ -49,7 +49,7 @@ func requestWithTenant(method, url string, tenantId uuid.UUID) *http.Request {
 
 func seedMonsterDrop(t *testing.T, db *gorm.DB, tenantId uuid.UUID, id uint32, monsterId uint32, itemId uint32) {
 	t.Helper()
-	m, err := NewMonsterDropBuilder(tenantId, id).
+	m, err := NewBuilder(tenantId, id).
 		SetMonsterId(monsterId).
 		SetItemId(itemId).
 		SetMinimumQuantity(1).

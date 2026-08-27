@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -100,5 +101,23 @@ func TestGetById_NotFound(t *testing.T) {
 	}
 	if !errors.Is(err, requests.ErrNotFound) {
 		t.Fatalf("expected requests.ErrNotFound, got %T: %v", err, err)
+	}
+}
+
+func TestTransformRoundTrip(t *testing.T) {
+	m := Model{
+		monsterBook: true,
+		monsterId:   100100,
+	}
+	rm, err := Transform(m)
+	if err != nil {
+		t.Fatalf("transform: %v", err)
+	}
+	got, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if !reflect.DeepEqual(got, m) {
+		t.Errorf("round trip lost data:\n got %+v\nwant %+v", got, m)
 	}
 }

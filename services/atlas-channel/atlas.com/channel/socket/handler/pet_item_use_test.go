@@ -46,8 +46,8 @@ func TestEvaluateAutoPot(t *testing.T) {
 // path — resolveSpawnedPet is only ever called when the wire petId was
 // absent (petId == 0), and the petId-bearing path never calls it.
 func TestResolveSpawnedPet(t *testing.T) {
-	spawned := pet.NewModelBuilder(1, 1234567890, 5000000, "Fluffy").SetOwnerID(1).SetSlot(0).MustBuild()
-	despawned := pet.NewModelBuilder(2, 1234567891, 5000000, "Rex").SetOwnerID(1).SetSlot(-1).MustBuild()
+	spawned := pet.NewBuilder(1, 1234567890, 5000000, "Fluffy").SetOwnerID(1).SetSlot(0).MustBuild()
+	despawned := pet.NewBuilder(2, 1234567891, 5000000, "Rex").SetOwnerID(1).SetSlot(-1).MustBuild()
 
 	cases := []struct {
 		name       string

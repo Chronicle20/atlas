@@ -36,6 +36,24 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+func Transform(m Model) (RestModel, error) {
+	rs, err := model.SliceMap(reply.Transform)(model.FixedProvider(m.replies))()()
+	if err != nil {
+		return RestModel{}, err
+	}
+
+	return RestModel{
+		Id:         m.id,
+		PosterId:   m.posterId,
+		Title:      m.title,
+		Message:    m.message,
+		EmoticonId: m.emoticonId,
+		Notice:     m.notice,
+		Replies:    rs,
+		CreatedAt:  m.createdAt,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	rs, err := model.SliceMap(reply.Extract)(model.FixedProvider(rm.Replies))()()
 	if err != nil {

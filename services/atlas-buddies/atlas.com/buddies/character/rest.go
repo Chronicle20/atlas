@@ -72,3 +72,11 @@ func Extract(rm RestModel) (Model, error) {
 		gm:   rm.Gm,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:   m.id,
+		Name: m.name,
+		Gm:   m.gm,
+	}, nil
+}

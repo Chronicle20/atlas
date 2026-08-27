@@ -26,3 +26,12 @@ func Extract(rm RestModel) (Model, error) {
 		tiredness:   rm.Tiredness,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		CharacterId: m.characterId,
+		Level:       m.level,
+		Exp:         m.exp,
+		Tiredness:   m.tiredness,
+	}, nil
+}

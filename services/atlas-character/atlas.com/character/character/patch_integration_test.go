@@ -23,7 +23,7 @@ func TestPatchCharacterIntegration(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -107,7 +107,7 @@ func TestPatchCharacterPartialUpdate(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("PartialUpd").
@@ -179,7 +179,7 @@ func TestPatchCharacterWithInvalidName(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -236,7 +236,7 @@ func TestPatchCharacterWithInvalidHair(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -321,7 +321,7 @@ func TestPatchCharacterWithInvalidGender(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -378,7 +378,7 @@ func TestPatchCharacterWithNoUpdates(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -447,7 +447,7 @@ func TestPatchCharacterWithDuplicateName(t *testing.T) {
 	logger := testLogger()
 
 	// Create first character
-	firstCharacter := character.NewModelBuilder().
+	firstCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("ExistingName").
@@ -466,7 +466,7 @@ func TestPatchCharacterWithDuplicateName(t *testing.T) {
 		Build()
 
 	// Create second character
-	secondCharacter := character.NewModelBuilder().
+	secondCharacter := character.NewEmptyBuilder().
 		SetAccountId(1001).
 		SetWorldId(world.Id(0)).
 		SetName("SecondName").
@@ -530,7 +530,7 @@ func TestPatchCharacterWithInvalidFace(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -587,7 +587,7 @@ func TestPatchCharacterWithInvalidSkinColor(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -644,7 +644,7 @@ func TestPatchCharacterWithInvalidNameTooShort(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -701,7 +701,7 @@ func TestPatchCharacterWithInvalidNameSpecialCharacters(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("TestChar").
@@ -758,7 +758,7 @@ func TestNameChangedEventEmission(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -871,7 +871,7 @@ func TestHairChangedEventEmission(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -984,7 +984,7 @@ func TestFaceChangedEventEmission(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -1097,7 +1097,7 @@ func TestGenderChangedEventEmission(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -1210,7 +1210,7 @@ func TestSkinColorChangedEventEmission(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -1323,7 +1323,7 @@ func TestGmChangedEventEmission(t *testing.T) {
 	logger := testLogger()
 
 	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").
@@ -1437,7 +1437,7 @@ func TestGmDemotionEventEmission(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("DemoteMe").
@@ -1504,7 +1504,7 @@ func TestGmAbsentMeansNoChange(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("StayGm").
@@ -1569,7 +1569,7 @@ func TestChangeWorldToWorldZeroEmitsWorldChanged(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(3)).
 		SetName("OriginalName").
@@ -1617,7 +1617,7 @@ func TestChangeWorldEmitsExactlyOneWorldChangedWithNewWorldRouting(t *testing.T)
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(3)).
 		SetName("OriginalName").
@@ -1696,7 +1696,7 @@ func TestChangeWorldSameValueIsANoOpAndEmitsNoEvent(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), tenantModel)
 	logger := testLogger()
 
-	originalCharacter := character.NewModelBuilder().
+	originalCharacter := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(world.Id(0)).
 		SetName("OriginalName").

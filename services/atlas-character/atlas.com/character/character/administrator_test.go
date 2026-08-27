@@ -16,7 +16,7 @@ func TestSetName(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
 	// Create a test character
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("OldName").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("OldName").SetLevel(1).SetExperience(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -57,7 +57,7 @@ func TestSetHair(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
 	// Create a test character
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("HairTest").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("HairTest").SetLevel(1).SetExperience(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -98,7 +98,7 @@ func TestSetFace(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
 	// Create a test character
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("FaceTest").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("FaceTest").SetLevel(1).SetExperience(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -139,7 +139,7 @@ func TestSetGender(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
 	// Create a test character
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("GenderTest").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("GenderTest").SetLevel(1).SetExperience(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -180,7 +180,7 @@ func TestSetSkinColor(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
 	// Create a test character
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("SkinTest").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("SkinTest").SetLevel(1).SetExperience(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -221,7 +221,7 @@ func TestSetGm(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
 	// Create a test character
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("GmTest").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("GmTest").SetLevel(1).SetExperience(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -262,7 +262,7 @@ func TestMultipleEntityUpdateFunctions(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 
 	// Create a test character
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("MultiTest").SetLevel(1).SetExperience(0).Build()
+	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("MultiTest").SetLevel(1).SetExperience(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {

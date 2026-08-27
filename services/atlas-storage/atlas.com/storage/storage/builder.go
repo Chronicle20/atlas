@@ -9,8 +9,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
-// ModelBuilder for constructing Model instances
-type ModelBuilder struct {
+// Builder for constructing Model instances
+type Builder struct {
 	id        uuid.UUID
 	worldId   world.Id
 	accountId uint32
@@ -19,44 +19,44 @@ type ModelBuilder struct {
 	assets    []asset.Model
 }
 
-func NewModelBuilder() *ModelBuilder {
-	return &ModelBuilder{
+func NewBuilder() *Builder {
+	return &Builder{
 		capacity: 4, // Default capacity
 		assets:   make([]asset.Model, 0),
 	}
 }
 
-func (b *ModelBuilder) SetId(id uuid.UUID) *ModelBuilder {
+func (b *Builder) SetId(id uuid.UUID) *Builder {
 	b.id = id
 	return b
 }
 
-func (b *ModelBuilder) SetWorldId(worldId world.Id) *ModelBuilder {
+func (b *Builder) SetWorldId(worldId world.Id) *Builder {
 	b.worldId = worldId
 	return b
 }
 
-func (b *ModelBuilder) SetAccountId(accountId uint32) *ModelBuilder {
+func (b *Builder) SetAccountId(accountId uint32) *Builder {
 	b.accountId = accountId
 	return b
 }
 
-func (b *ModelBuilder) SetCapacity(capacity uint32) *ModelBuilder {
+func (b *Builder) SetCapacity(capacity uint32) *Builder {
 	b.capacity = capacity
 	return b
 }
 
-func (b *ModelBuilder) SetMesos(mesos uint32) *ModelBuilder {
+func (b *Builder) SetMesos(mesos uint32) *Builder {
 	b.mesos = mesos
 	return b
 }
 
-func (b *ModelBuilder) SetAssets(assets []asset.Model) *ModelBuilder {
+func (b *Builder) SetAssets(assets []asset.Model) *Builder {
 	b.assets = assets
 	return b
 }
 
-func (b *ModelBuilder) validate() error {
+func (b *Builder) validate() error {
 	if b.id == uuid.Nil {
 		return errors.New("storage id is required")
 	}
@@ -69,7 +69,7 @@ func (b *ModelBuilder) validate() error {
 	return nil
 }
 
-func (b *ModelBuilder) Build() (Model, error) {
+func (b *Builder) Build() (Model, error) {
 	if err := b.validate(); err != nil {
 		return Model{}, err
 	}
@@ -85,7 +85,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 
 // MustBuild builds the model, panicking on validation error.
 // Use only for trusted internal data (e.g., from database entities).
-func (b *ModelBuilder) MustBuild() Model {
+func (b *Builder) MustBuild() Model {
 	m, err := b.Build()
 	if err != nil {
 		panic(err)
@@ -94,8 +94,8 @@ func (b *ModelBuilder) MustBuild() Model {
 }
 
 // Clone creates a copy of the Model with modifications
-func Clone(m Model) *ModelBuilder {
-	return &ModelBuilder{
+func Clone(m Model) *Builder {
+	return &Builder{
 		id:        m.id,
 		worldId:   m.worldId,
 		accountId: m.accountId,

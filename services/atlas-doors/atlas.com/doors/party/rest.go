@@ -112,6 +112,20 @@ func Extract(rm RestModel) (Model, error) {
 	}, nil
 }
 
+// Transform converts a Model into a RestModel. Member order is preserved
+// (join order, leader at index 0). It is the inverse of Extract.
+func Transform(m Model) (RestModel, error) {
+	members := make([]MemberRestModel, 0, len(m.members))
+	for _, id := range m.members {
+		members = append(members, MemberRestModel{Id: id})
+	}
+	return RestModel{
+		Id:       m.id,
+		LeaderId: m.leaderId,
+		Members:  members,
+	}, nil
+}
+
 // MemberRestModel is the minimal member resource needed by atlas-doors. Only
 // the Id field is used; we preserve the full JSON:API resource shape so that
 // SetReferencedStructs can be satisfied by the api2go unmarshaller.

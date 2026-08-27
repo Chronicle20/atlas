@@ -64,7 +64,7 @@ func TestProcessor_SpawnForCharacter_CreatesDropAndBuffersMessage(t *testing.T) 
 	buf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10).
 		SetPosition(100, 200).
 		SetOwner(12345, 0).
@@ -108,7 +108,7 @@ func TestProcessor_Reserve_SuccessfulReservation(t *testing.T) {
 	spawnBuf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10).
 		SetPosition(100, 200)
 
@@ -143,7 +143,7 @@ func TestProcessor_Reserve_FailedReservation_BuffersFailureMessage(t *testing.T)
 	spawnBuf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10)
 
 	drop, _ := p.SpawnForCharacter(spawnBuf)(mb)
@@ -173,7 +173,7 @@ func TestProcessor_CancelReservation_BuffersMessage(t *testing.T) {
 	spawnBuf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10)
 
 	drop, _ := p.SpawnForCharacter(spawnBuf)(mb)
@@ -209,7 +209,7 @@ func TestProcessor_Gather_RemovesDropAndBuffersMessage(t *testing.T) {
 	spawnBuf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10)
 
 	drop, _ := p.SpawnForCharacter(spawnBuf)(mb)
@@ -247,7 +247,7 @@ func TestProcessor_Expire_RemovesDropAndBuffersMessage(t *testing.T) {
 	spawnBuf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10)
 
 	drop, _ := p.SpawnForCharacter(spawnBuf)(mb)
@@ -278,7 +278,7 @@ func TestProcessor_GetById_ReturnsCorrectDrop(t *testing.T) {
 	buf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10)
 
 	created, _ := p.SpawnForCharacter(buf)(mb)
@@ -319,9 +319,9 @@ func TestProcessor_GetForMap_ReturnsFilteredDrops(t *testing.T) {
 
 	f1 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
 	f2 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(200000000)).Build()
-	mb1 := NewModelBuilder(ten, f1).SetItem(1000001, 10)
-	mb2 := NewModelBuilder(ten, f1).SetItem(1000002, 20)
-	mb3 := NewModelBuilder(ten, f2).SetItem(1000003, 30)
+	mb1 := NewBuilder(ten, f1).SetItem(1000001, 10)
+	mb2 := NewBuilder(ten, f1).SetItem(1000002, 20)
+	mb3 := NewBuilder(ten, f2).SetItem(1000003, 30)
 
 	drop1, _ := p.SpawnForCharacter(buf)(mb1)
 	drop2, _ := p.SpawnForCharacter(buf)(mb2)
@@ -355,7 +355,7 @@ func TestProcessor_ByIdProvider_WorksWithModelProvider(t *testing.T) {
 	buf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).SetItem(1000000, 10)
+	mb := NewBuilder(ten, f).SetItem(1000000, 10)
 	created, _ := p.SpawnForCharacter(buf)(mb)
 
 	provider := p.ByIdProvider(created.Id())
@@ -378,8 +378,8 @@ func TestProcessor_ForMapProvider_WorksWithSliceProvider(t *testing.T) {
 	buf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb1 := NewModelBuilder(ten, f).SetItem(1000001, 10)
-	mb2 := NewModelBuilder(ten, f).SetItem(1000002, 20)
+	mb1 := NewBuilder(ten, f).SetItem(1000001, 10)
+	mb2 := NewBuilder(ten, f).SetItem(1000002, 20)
 
 	p.SpawnForCharacter(buf)(mb1)
 	p.SpawnForCharacter(buf)(mb2)
@@ -406,9 +406,9 @@ func TestAllProvider_ReturnsAllDrops(t *testing.T) {
 	f1 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
 	f2 := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(200000000)).Build()
 	f3 := field.NewBuilder(world.Id(2), channel.Id(1), _map.Id(300000000)).Build()
-	mb1 := NewModelBuilder(ten, f1).SetItem(1000001, 10)
-	mb2 := NewModelBuilder(ten, f2).SetItem(1000002, 20)
-	mb3 := NewModelBuilder(ten, f3).SetItem(1000003, 30)
+	mb1 := NewBuilder(ten, f1).SetItem(1000001, 10)
+	mb2 := NewBuilder(ten, f2).SetItem(1000002, 20)
+	mb3 := NewBuilder(ten, f3).SetItem(1000003, 30)
 
 	p.SpawnForCharacter(buf)(mb1)
 	p.SpawnForCharacter(buf)(mb2)
@@ -433,7 +433,7 @@ func TestProcessor_Reserve_WithPetSlot(t *testing.T) {
 	spawnBuf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).SetItem(1000000, 10)
+	mb := NewBuilder(ten, f).SetItem(1000000, 10)
 	drop, _ := p.SpawnForCharacter(spawnBuf)(mb)
 
 	reserveBuf := message.NewBuffer()
@@ -459,7 +459,7 @@ func TestProcessor_MultipleOperationsSequence(t *testing.T) {
 
 	spawnBuf := message.NewBuffer()
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).SetItem(1000000, 10)
+	mb := NewBuilder(ten, f).SetItem(1000000, 10)
 	drop, _ := p.SpawnForCharacter(spawnBuf)(mb)
 
 	found, err := p.GetById(drop.Id())
@@ -510,7 +510,7 @@ func TestCreatedEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
 	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).Build()
-	m, _ := NewModelBuilder(ten, f).
+	m, _ := NewBuilder(ten, f).
 		SetId(12345).
 		SetTransactionId(uuid.New()).
 		SetItem(1000000, 10).
@@ -552,7 +552,7 @@ func TestPickedUpEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
 	f := field.NewBuilder(1, 2, 100000000).Build()
-	d, _ := NewModelBuilder(ten, f).
+	d, _ := NewBuilder(ten, f).
 		SetId(12345).
 		SetItem(1000000, 10).
 		SetPetSlot(-1).
@@ -572,7 +572,7 @@ func TestReservedEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
 	f := field.NewBuilder(1, 2, 100000000).Build()
-	d, _ := NewModelBuilder(ten, f).
+	d, _ := NewBuilder(ten, f).
 		SetId(12345).
 		SetItem(1000000, 10).
 		SetOwner(99999, 0).
@@ -632,7 +632,7 @@ func TestProcessor_Expire_NonExistentDrop(t *testing.T) {
 
 	// Create a model that references a non-existent drop in registry
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	m, _ := NewModelBuilder(ten, f).
+	m, _ := NewBuilder(ten, f).
 		SetId(999999).
 		SetStatus(StatusAvailable).
 		Build()
@@ -717,7 +717,7 @@ func TestProcessor_Gather_WithMesoDrop(t *testing.T) {
 
 	// Create a meso drop
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetMeso(1000).
 		SetType(3)
 
@@ -788,7 +788,7 @@ func TestProcessor_Gather_WithItemDrop(t *testing.T) {
 	spawnBuf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(2000000, 5).
 		SetType(1).
 		SetOwner(12345, 67890)
@@ -819,7 +819,7 @@ func TestProcessor_Reserve_OwnerCanReserve(t *testing.T) {
 	spawnBuf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10).
 		SetOwner(12345, 0)
 
@@ -843,7 +843,7 @@ func TestProcessor_Reserve_NonOwnerRejectedDuringWindow(t *testing.T) {
 	spawnBuf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10).
 		SetOwner(12345, 0)
 
@@ -867,7 +867,7 @@ func TestProcessor_Reserve_PartyMemberCanReserve(t *testing.T) {
 	spawnBuf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10).
 		SetOwner(12345, 500)
 
@@ -891,7 +891,7 @@ func TestProcessor_Reserve_FFAAfterTimeout(t *testing.T) {
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
 	// Manually create a drop with dropTime in the past
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10).
 		SetOwner(12345, 0)
 	mb.dropTime = mb.dropTime.Add(-OwnershipDuration - 1)
@@ -916,7 +916,7 @@ func TestProcessor_Reserve_PlayerDropIsFFA(t *testing.T) {
 	spawnBuf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10).
 		SetOwner(12345, 0).
 		SetPlayerDrop(true)
@@ -941,7 +941,7 @@ func TestProcessor_Reserve_FriendlyMobDropIsFFA(t *testing.T) {
 	spawnBuf := message.NewBuffer()
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-	mb := NewModelBuilder(ten, f).
+	mb := NewBuilder(ten, f).
 		SetItem(1000000, 10).
 		SetOwner(0, 0)
 
@@ -971,8 +971,8 @@ func TestProcessor_GetForMap_FiltersInstancesCorrectly(t *testing.T) {
 	f1 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).SetInstance(instance1).Build()
 	f2 := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).SetInstance(instance2).Build()
 
-	mb1 := NewModelBuilder(ten, f1).SetItem(1000001, 10)
-	mb2 := NewModelBuilder(ten, f2).SetItem(1000002, 20)
+	mb1 := NewBuilder(ten, f1).SetItem(1000001, 10)
+	mb2 := NewBuilder(ten, f2).SetItem(1000002, 20)
 
 	drop1, _ := p.SpawnForCharacter(buf)(mb1)
 	_, _ = p.SpawnForCharacter(buf)(mb2)
@@ -1025,7 +1025,7 @@ func TestProcessor_Reserve_MesoSplit(t *testing.T) {
 				spawnBuf := message.NewBuffer()
 
 				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-				mb := NewModelBuilder(ten, f).SetMeso(100)
+				mb := NewBuilder(ten, f).SetMeso(100)
 				d, _ := p.SpawnForCharacter(spawnBuf)(mb)
 
 				members := []party.MemberModel{
@@ -1092,7 +1092,7 @@ func TestProcessor_Reserve_MesoSplit(t *testing.T) {
 
 				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
 				otherMap := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(200000000)).Build()
-				mb := NewModelBuilder(ten, f).SetMeso(100)
+				mb := NewBuilder(ten, f).SetMeso(100)
 				d, _ := p.SpawnForCharacter(spawnBuf)(mb)
 
 				members := []party.MemberModel{
@@ -1133,7 +1133,7 @@ func TestProcessor_Reserve_MesoSplit(t *testing.T) {
 				spawnBuf := message.NewBuffer()
 
 				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-				mb := NewModelBuilder(ten, f).SetItem(1000000, 10)
+				mb := NewBuilder(ten, f).SetItem(1000000, 10)
 				d, _ := p.SpawnForCharacter(spawnBuf)(mb)
 
 				calls := 0
@@ -1173,7 +1173,7 @@ func TestProcessor_Reserve_MesoSplit(t *testing.T) {
 				spawnBuf := message.NewBuffer()
 
 				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-				mb := NewModelBuilder(ten, f).SetMeso(100)
+				mb := NewBuilder(ten, f).SetMeso(100)
 				d, _ := p.SpawnForCharacter(spawnBuf)(mb)
 
 				pm := &partymock.ProcessorMock{
@@ -1209,7 +1209,7 @@ func TestProcessor_Reserve_MesoSplit(t *testing.T) {
 				spawnBuf := message.NewBuffer()
 
 				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-				mb := NewModelBuilder(ten, f).SetMeso(100)
+				mb := NewBuilder(ten, f).SetMeso(100)
 				d, _ := p.SpawnForCharacter(spawnBuf)(mb)
 
 				calls := 0
@@ -1250,7 +1250,7 @@ func TestProcessor_Reserve_MesoSplit(t *testing.T) {
 				spawnBuf := message.NewBuffer()
 
 				f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
-				mb := NewModelBuilder(ten, f).SetMeso(2)
+				mb := NewBuilder(ten, f).SetMeso(2)
 				d, _ := p.SpawnForCharacter(spawnBuf)(mb)
 
 				members := []party.MemberModel{

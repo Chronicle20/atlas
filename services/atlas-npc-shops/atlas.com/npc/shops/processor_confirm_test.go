@@ -109,7 +109,7 @@ func confirmTestCharacter(t *testing.T, meso uint32, comps ...compartment.Model)
 	for _, c := range comps {
 		ib = ib.SetCompartment(c)
 	}
-	return character.NewModelBuilder().
+	return character.NewBuilder().
 		SetId(testCharacterId).
 		SetMeso(meso).
 		SetInventory(ib.Build()).

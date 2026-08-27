@@ -21,3 +21,15 @@ func Extract(rm RestModel) (Model, error) {
 		allianceTitle: rm.AllianceTitle,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		CharacterId:   m.characterId,
+		Name:          m.name,
+		JobId:         m.jobId,
+		Level:         m.level,
+		Title:         m.title,
+		Online:        m.online,
+		AllianceTitle: m.allianceTitle,
+	}, nil
+}

@@ -67,7 +67,7 @@ func TestBanish(t *testing.T) {
 				r.CreateMonster(ctx, ten, f, banishTemplateId, 0, 0, 0, 5, 0, 5000, 100, "", "")
 			},
 			lookp: func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetBanish(information.Banish{MapId: 0}).Build(), nil
+				return information.NewBuilder().SetBanish(information.Banish{MapId: 0}).Build(), nil
 			},
 		},
 	}
@@ -121,7 +121,7 @@ func TestBanish_PortalNamePresent(t *testing.T) {
 
 			prevHook := testInformationLookup
 			testInformationLookup = func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetBanish(tc.banish).Build(), nil
+				return information.NewBuilder().SetBanish(tc.banish).Build(), nil
 			}
 			defer func() { testInformationLookup = prevHook }()
 
@@ -181,7 +181,7 @@ func TestBanish_PortalNameAbsent(t *testing.T) {
 
 			prevHook := testInformationLookup
 			testInformationLookup = func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetBanish(tc.banish).Build(), nil
+				return information.NewBuilder().SetBanish(tc.banish).Build(), nil
 			}
 			defer func() { testInformationLookup = prevHook }()
 
@@ -231,7 +231,7 @@ func TestBanish_MessagePresent(t *testing.T) {
 
 			prevHook := testInformationLookup
 			testInformationLookup = func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetBanish(tc.banish).Build(), nil
+				return information.NewBuilder().SetBanish(tc.banish).Build(), nil
 			}
 			defer func() { testInformationLookup = prevHook }()
 
@@ -287,7 +287,7 @@ func TestBanish_MessageAbsent(t *testing.T) {
 
 			prevHook := testInformationLookup
 			testInformationLookup = func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetBanish(tc.banish).Build(), nil
+				return information.NewBuilder().SetBanish(tc.banish).Build(), nil
 			}
 			defer func() { testInformationLookup = prevHook }()
 
@@ -344,11 +344,11 @@ func TestExecuteBanish_ConvergesOnSharedExecutor(t *testing.T) {
 
 			prevHook := testInformationLookup
 			testInformationLookup = func(_ uint32) (information.Model, error) {
-				return information.NewModelBuilder().SetBanish(tc.banish).Build(), nil
+				return information.NewBuilder().SetBanish(tc.banish).Build(), nil
 			}
 			defer func() { testInformationLookup = prevHook }()
 
-			sd := mobskill.NewModelBuilder().
+			sd := mobskill.NewBuilder().
 				SetSkillId(uint16(monster2.SkillTypeBanish)).
 				SetLevel(1).
 				Build()

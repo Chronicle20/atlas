@@ -71,7 +71,7 @@ func newPoisonTestProcessor(t *testing.T, hp uint32) (*ProcessorImpl, tenant.Mod
 	// the immunity gates pass and the test does not attempt a REST call.
 	prevHook := testInformationLookup
 	testInformationLookup = func(_ uint32) (information.Model, error) {
-		return information.NewModelBuilder().Build(), nil
+		return information.NewBuilder().Build(), nil
 	}
 	t.Cleanup(func() { testInformationLookup = prevHook })
 

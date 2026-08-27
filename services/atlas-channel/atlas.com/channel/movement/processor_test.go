@@ -132,7 +132,7 @@ func TestResolveLiveMonster_MissFallsBackOnceAndBackfills(t *testing.T) {
 	prev := monsterByIdFn
 	monsterByIdFn = func(_ logrus.FieldLogger, _ context.Context, objectId uint32) (monster.Model, error) {
 		calls++
-		return monster.NewModelBuilder(objectId, f, 100100).
+		return monster.NewBuilder(objectId, f, 100100).
 			SetMp(70).
 			SetMaxMp(90).
 			SetControllerHasAggro(true).

@@ -8,8 +8,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
-func Clone(m Model) *ModelBuilder {
-	return &ModelBuilder{
+func Clone(m Model) *Builder {
+	return &Builder{
 		id:            m.id,
 		characterId:   m.characterId,
 		inventoryType: m.inventoryType,
@@ -18,7 +18,7 @@ func Clone(m Model) *ModelBuilder {
 	}
 }
 
-type ModelBuilder struct {
+type Builder struct {
 	id            uuid.UUID
 	characterId   uint32
 	inventoryType inventory.Type
@@ -26,8 +26,8 @@ type ModelBuilder struct {
 	assets        []asset.Model
 }
 
-func NewBuilder(id uuid.UUID, characterId uint32, it inventory.Type, capacity uint32) *ModelBuilder {
-	return &ModelBuilder{
+func NewBuilder(id uuid.UUID, characterId uint32, it inventory.Type, capacity uint32) *Builder {
+	return &Builder{
 		id:            id,
 		characterId:   characterId,
 		inventoryType: it,
@@ -36,22 +36,22 @@ func NewBuilder(id uuid.UUID, characterId uint32, it inventory.Type, capacity ui
 	}
 }
 
-func (b *ModelBuilder) SetCapacity(capacity uint32) *ModelBuilder {
+func (b *Builder) SetCapacity(capacity uint32) *Builder {
 	b.capacity = capacity
 	return b
 }
 
-func (b *ModelBuilder) AddAsset(a asset.Model) *ModelBuilder {
+func (b *Builder) AddAsset(a asset.Model) *Builder {
 	b.assets = append(b.assets, a)
 	return b
 }
 
-func (b *ModelBuilder) SetAssets(as []asset.Model) *ModelBuilder {
+func (b *Builder) SetAssets(as []asset.Model) *Builder {
 	b.assets = as
 	return b
 }
 
-func (b *ModelBuilder) Build() Model {
+func (b *Builder) Build() Model {
 	return Model{
 		id:            b.id,
 		characterId:   b.characterId,

@@ -128,21 +128,6 @@ func (fm FamilyMember) CanReceiveRep(amount uint32) bool {
 	return fm.dailyRep+amount <= 5000
 }
 
-// Builder forward declaration - implementation in builder.go
-type Builder struct {
-	id          uint32
-	characterId uint32
-	tenantId    uuid.UUID
-	seniorId    *uint32
-	juniorIds   []uint32
-	rep         uint32
-	dailyRep    uint32
-	level       uint16
-	world       world.Id
-	createdAt   time.Time
-	updatedAt   time.Time
-}
-
 // Builder returns a new builder for modification
 func (fm FamilyMember) Builder() *Builder {
 	return &Builder{

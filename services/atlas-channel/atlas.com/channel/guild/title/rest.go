@@ -11,3 +11,10 @@ func Extract(rm RestModel) (Model, error) {
 		index: rm.Index,
 	}, nil
 }
+
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Name:  m.name,
+		Index: m.index,
+	}, nil
+}

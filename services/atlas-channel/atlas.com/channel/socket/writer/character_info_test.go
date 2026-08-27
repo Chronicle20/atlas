@@ -19,7 +19,7 @@ func TestCharacterInfoBody_CoverIsMobId(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Extract: %v", err)
 	}
-	c := character.NewModelBuilder().
+	c := character.NewBuilder().
 		SetId(1).
 		SetSp("0").
 		SetMonsterBook(monsterbook.NewModel(col, nil)).

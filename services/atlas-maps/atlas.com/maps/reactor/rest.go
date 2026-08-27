@@ -45,6 +45,26 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
+// Transform converts the domain Model back into its RestModel
+// representation. UpdateTime has no RestModel field and is not emitted (D1).
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:             m.id,
+		WorldId:        m.f.WorldId(),
+		ChannelId:      m.f.ChannelId(),
+		MapId:          m.f.MapId(),
+		Instance:       m.f.Instance(),
+		Classification: m.classification,
+		Name:           m.name,
+		State:          m.state,
+		EventState:     m.eventState,
+		X:              m.x,
+		Y:              m.y,
+		Delay:          m.delay,
+		Direction:      m.direction,
+	}, nil
+}
+
 func Extract(rm RestModel) (Model, error) {
 	return Model{
 		id:             rm.Id,

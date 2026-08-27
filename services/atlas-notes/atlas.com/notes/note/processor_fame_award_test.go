@@ -154,6 +154,11 @@ func TestDiscardAndEmit_FameAwardFiresAfterSuccess(t *testing.T) {
 // gift-originated note produces NO fame-award saga on discard, while an ordinary note discarded in
 // the SAME batch still does. A mixed batch is the case that catches a misplaced `continue` — a bug
 // that skips the wrong note, or skips both, would not be caught by a single-note test.
+//
+// The gift note and the ordinary note use DISTINCT sender ids so the surviving payload's
+// CharacterId can only match the ordinary note's sender if the skip is applied to the correct
+// note; an inverted skip (e.g. `if !m.GiftNote()`) or a note-identity mixup would surface the gift
+// note's sender instead and fail this assertion.
 func TestDiscardAndEmit_GiftNoteSuppressesFameInMixedBatch(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	te := fameAwardTestTenant()
@@ -163,14 +168,15 @@ func TestDiscardAndEmit_GiftNoteSuppressesFameInMixedBatch(t *testing.T) {
 	p := newFameAwardTestProcessor(l, ctx, db, fakeSaga)
 
 	characterId := uint32(1)
-	senderId := uint32(2)
+	giftSenderId := uint32(2)
+	ordinarySenderId := uint32(3)
 
 	mb := message.NewBuffer()
-	giftNote, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("thanks for the gift!")(0)(true)
+	giftNote, err := p.Create(mb)(uuid.Nil)(characterId)(giftSenderId)("thanks for the gift!")(0)(true)
 	if err != nil {
 		t.Fatalf("Failed to create gift note: %v", err)
 	}
-	ordinaryNote, err := p.Create(mb)(uuid.Nil)(characterId)(senderId)("hi")(0)(false)
+	ordinaryNote, err := p.Create(mb)(uuid.Nil)(characterId)(ordinarySenderId)("hi")(0)(false)
 	if err != nil {
 		t.Fatalf("Failed to create ordinary note: %v", err)
 	}
@@ -188,7 +194,7 @@ func TestDiscardAndEmit_GiftNoteSuppressesFameInMixedBatch(t *testing.T) {
 	if !ok {
 		t.Fatalf("step payload type: %T", fakeSaga.calls[0].Steps[0].Payload)
 	}
-	if p1.CharacterId != senderId {
-		t.Errorf("fame award characterId: got %d, want %d (sender of the ordinary note)", p1.CharacterId, senderId)
+	if p1.CharacterId != ordinarySenderId {
+		t.Errorf("fame award characterId: got %d, want %d (sender of the ordinary note, not %d the gift note's sender)", p1.CharacterId, ordinarySenderId, giftSenderId)
 	}
 }

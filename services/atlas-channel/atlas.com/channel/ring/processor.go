@@ -69,7 +69,13 @@ type Processor interface {
 	// atlas-cashshop and caches it. This is the fail-soft REST entry point
 	// (PRD FR-5): a cashshop outage degrades to no cached halves --
 	// GetRingSet then returns an empty RingSet -- rather than failing
-	// character spawn.
+	// character spawn. Populate is idempotent while the character stays
+	// cached: a call that finds an existing entry (however it got there --
+	// including an earlier zero-halves population) returns immediately
+	// without issuing a REST call, so a caller on the character-load path
+	// (login/channel-enter) may call it once per load without worrying
+	// about a duplicate delivery double-fetching. Invalidate clears the
+	// entry so the next Populate call actually re-fetches.
 	Populate(characterId uint32) error
 }
 
@@ -93,12 +99,16 @@ var upstreamFn = func(l logrus.FieldLogger, ctx context.Context, characterId uin
 }
 
 func (p *ProcessorImpl) Populate(characterId uint32) error {
+	t := tenant.MustFromContext(p.ctx)
+	if _, ok := getRingCache().lookup(t.Id(), characterId); ok {
+		return nil
+	}
+
 	halves, err := upstreamFn(p.l, p.ctx, characterId)
 	if err != nil {
 		p.l.WithError(err).Warnf("Unable to retrieve ring pairs for character [%d]; ring set will be empty until population succeeds.", characterId)
 		return nil
 	}
-	t := tenant.MustFromContext(p.ctx)
 	getRingCache().put(t.Id(), characterId, cacheEntry{halves: halves})
 	return nil
 }

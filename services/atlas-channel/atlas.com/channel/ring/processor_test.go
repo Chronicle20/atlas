@@ -409,6 +409,75 @@ func TestPopulateDecodesRealJSONAPIDocument(t *testing.T) {
 	}
 }
 
+// TestRingCachePopulatedOnCharacterLoad proves Populate's idempotency
+// guard (task-269 task 12): the character-load path may call Populate once
+// per load without worrying about a duplicate delivery re-fetching -- a
+// second Populate call for the same character while its cache entry is
+// still present must not issue a second GET /rings.
+func TestRingCachePopulatedOnCharacterLoad(t *testing.T) {
+	resetRingCache()
+	t.Cleanup(resetRingCache)
+
+	const characterId = uint32(100)
+	calls := 0
+	ctx, _ := newRingTestContext(t)
+	p := NewProcessor(logrus.New(), ctx)
+
+	withUpstreamFn(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) ([]Model, error) {
+		calls++
+		return []Model{coupleActive}, nil
+	})
+
+	if err := p.Populate(characterId); err != nil {
+		t.Fatalf("Populate (first load): %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("upstream calls after first Populate = %d, want 1", calls)
+	}
+
+	// Second load in the same presence -- must not re-fetch.
+	if err := p.Populate(characterId); err != nil {
+		t.Fatalf("Populate (second load): %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("upstream calls after second Populate = %d, want 1 (no re-fetch while still cached)", calls)
+	}
+
+	eq := equipment.NewModel()
+	equipCash(t, eq, "ring1", coupleActive.CashId())
+	rs := p.GetRingSet(characterId, eq)
+	if rs.Couple == nil {
+		t.Fatal("Couple = nil after two Populate calls, want the cached half")
+	}
+}
+
+// TestProcessorInvalidate proves Processor.Invalidate threads the tenant id
+// from its own context through to the underlying cache -- carried from Task
+// 10's review (non-blocking): only ringCache.invalidate was tested before,
+// leaving a mis-threaded tenant id in Processor.Invalidate uncaught even
+// though this task's whole invalidation path (RING_PURCHASED) runs through
+// it.
+func TestProcessorInvalidate(t *testing.T) {
+	resetRingCache()
+	t.Cleanup(resetRingCache)
+
+	const characterId = uint32(100)
+	ctx, tid := newRingTestContext(t)
+	p := NewProcessor(logrus.New(), ctx)
+	populate(t, p, characterId, []Model{coupleActive})
+
+	// Sanity: the entry actually landed under this test's own tenant.
+	if _, ok := getRingCache().lookup(tid, characterId); !ok {
+		t.Fatalf("setup: expected character [%d] cached under tenant [%s]", characterId, tid)
+	}
+
+	p.Invalidate(characterId)
+
+	if _, ok := getRingCache().lookup(tid, characterId); ok {
+		t.Fatalf("lookup(tid, %d) = true after Processor.Invalidate, want false", characterId)
+	}
+}
+
 // TestPopulateFailsSoftOnCashshopOutage proves PRD FR-5: a cashshop outage
 // (here, a closed httptest.Server) degrades to an empty RingSet -- Populate
 // never propagates the failure to break character spawn.

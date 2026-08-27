@@ -1,12 +1,9 @@
 package ring
 
 import (
-	"atlas-channel/listener"
 	"sync"
 
 	"github.com/google/uuid"
-
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // cacheEntry is the set of ring pair halves owned by one character,
@@ -75,20 +72,14 @@ func (c *ringCache) invalidate(tid uuid.UUID, characterId uint32) {
 	delete(tenantMap, characterId)
 }
 
-// EvictTenant drops every cached ring entry for the tenant. Registered with
-// listener.RegisterEvictor in this package's init() below.
+// EvictTenant drops every cached ring entry for the tenant. Registered from
+// main.go's central tenant-eviction closure (task-269 task 12, Ruling 27),
+// alongside every other tenant-scoped cache in the service -- not from this
+// package's own init(), so main.go stays the single audit point for
+// tenant-scoped cache eviction.
 func EvictTenant(tid uuid.UUID) {
 	c := getRingCache()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.perTenant, tid)
-}
-
-// init registers EvictTenant so a tenant's ring cache is dropped once its
-// last listener drains, per listener/evict.go:22-23 ("Safe to call from
-// init() of any package that holds tenant-scoped state").
-func init() {
-	listener.RegisterEvictor(func(t tenant.Model) {
-		EvictTenant(t.Id())
-	})
 }

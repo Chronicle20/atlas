@@ -2,6 +2,7 @@ package cashshop
 
 import (
 	"atlas-channel/pendingchange"
+	"atlas-channel/ring"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -12,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -465,6 +467,9 @@ type consumerEnv struct {
 	wp          writer.Producer
 	announced   []announcement
 	assets      map[string]string
+	rings       map[uint32]string
+	ringFetches map[uint32]int
+	characters  map[string]uint32
 	walletDoc   string
 	compartment uuid.UUID
 }
@@ -486,6 +491,9 @@ func newConsumerEnv(t *testing.T) *consumerEnv {
 		ctx:         tenant.WithContext(context.Background(), tm),
 		tenant:      tm,
 		assets:      make(map[string]string),
+		rings:       make(map[uint32]string),
+		ringFetches: make(map[uint32]int),
+		characters:  make(map[string]uint32),
 		compartment: uuid.New(),
 	}
 	env.walletDoc = walletDoc(1000, 2000, 3000)
@@ -500,11 +508,31 @@ func newConsumerEnv(t *testing.T) *consumerEnv {
 			_, _ = w.Write([]byte(doc))
 			return
 		}
+		if strings.HasSuffix(r.URL.Path, "/rings") {
+			cid, _ := strconv.Atoi(r.URL.Query().Get("filter[characterId]"))
+			env.ringFetches[uint32(cid)]++
+			if doc, ok := env.rings[uint32(cid)]; ok {
+				_, _ = w.Write([]byte(doc))
+			} else {
+				_, _ = w.Write([]byte(emptyRingsListDoc()))
+			}
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/characters") {
+			name := r.URL.Query().Get("name")
+			if id, ok := env.characters[name]; ok {
+				_, _ = w.Write([]byte(characterByNameDoc(id, name)))
+			} else {
+				_, _ = w.Write([]byte(`{"data":[]}`))
+			}
+			return
+		}
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte(`{"errors":[{"status":"404","title":"Not Found"}]}`))
 	}))
 	t.Cleanup(srv.Close)
 	t.Setenv("CASHSHOP_SERVICE_URL", srv.URL+"/")
+	t.Setenv("CHARACTERS_SERVICE_URL", srv.URL+"/")
 
 	env.sc = server.NewProcessor(l, context.Background()).Register(tm, channelconst.NewModel(0, 0), "127.0.0.1", 8484)
 
@@ -541,10 +569,72 @@ func (e *consumerEnv) capturingProducer() writer.Producer {
 	}
 }
 
+// addSession registers an additional live session for characterId on this
+// env's tenant/channel -- used to give a ring-purchase partner "a live
+// session on this channel" the way handleStatusEventRingPurchased's own
+// session correlation would see them.
+func (e *consumerEnv) addSession(characterId uint32, accountId uint32) {
+	e.t.Helper()
+	sessionId := uuid.New()
+	s := session.NewSession(sessionId, e.tenant, 0, discardConn{})
+	session.AddSessionToRegistry(e.tenant.Id(), s)
+	sp := session.NewProcessor(e.logger, e.ctx)
+	_ = sp.SetAccountId(sessionId, accountId)
+	_ = sp.SetCharacterId(sessionId, characterId)
+}
+
 func (e *consumerEnv) seedAsset(compartmentId uuid.UUID, assetId uint32) {
 	e.t.Helper()
 	path := fmt.Sprintf("/accounts/%d/cash-shop/inventory/compartments/%s/assets/%d", testAccountId, compartmentId.String(), assetId)
 	e.assets[path] = assetDoc(assetId, compartmentId)
+}
+
+// emptyRingsListDoc is the atlas-cashshop GET /rings response for a
+// character with no ring halves (ring/rest.go's RestModel/Extract shape,
+// mirrored from ring/processor_test.go's ringsDoc).
+func emptyRingsListDoc() string {
+	return `{"data":[],"meta":{"total":0,"page":{"number":1,"size":250,"last":1}}}`
+}
+
+// ringsListDoc is a one-half GET /rings response for characterId, mirroring
+// ring/processor_test.go's ringsDoc.
+func ringsListDoc(characterId uint32, cashId int64) string {
+	return fmt.Sprintf(
+		`{"data":[{"id":"%s","type":"rings","attributes":{"pairId":"%s","characterId":%d,"partnerCharacterId":0,"assetId":1,"itemTemplateId":1112001,"ringType":"COUPLE","state":"ACTIVE","cashId":%d,"partnerCashId":0,"partnerName":"Partner"}}],"meta":{"total":1,"page":{"number":1,"size":250,"last":1}}}`,
+		uuid.New(), uuid.New(), characterId, cashId,
+	)
+}
+
+// characterByNameDoc is the atlas-character GET /characters?name= list
+// response resolving name to id (character/rest.go's RestModel shape).
+func characterByNameDoc(id uint32, name string) string {
+	return fmt.Sprintf(`{"data":[{"type":"characters","id":"%d","attributes":{"name":%q,"accountId":1,"worldId":0}}]}`, id, name)
+}
+
+// seedRingCache populates characterId's ring cache through the real
+// Processor.Populate entry point (not a direct cache write) -- the ring
+// cache is private to the ring package, so this test drives it exactly the
+// way production code would.
+func (e *consumerEnv) seedRingCache(characterId uint32, cashId int64) {
+	e.t.Helper()
+	e.rings[characterId] = ringsListDoc(characterId, cashId)
+	if err := ring.NewProcessor(e.logger, e.ctx).Populate(characterId); err != nil {
+		e.t.Fatalf("seedRingCache: Populate(%d): %v", characterId, err)
+	}
+}
+
+// ringCacheEmpty reports whether characterId's cached ring halves are gone --
+// observed by re-Populate-ing (idempotent: a no-op if still cached, per
+// ring.Processor.Populate's doc comment) and checking whether the upstream
+// GET /rings fixture was hit again, tracked via e.ringFetches. Avoids
+// reaching into the ring package's private cache map.
+func (e *consumerEnv) ringCacheEmpty(characterId uint32) bool {
+	e.t.Helper()
+	before := e.ringFetches[characterId]
+	if err := ring.NewProcessor(e.logger, e.ctx).Populate(characterId); err != nil {
+		e.t.Fatalf("ringCacheEmpty: Populate(%d): %v", characterId, err)
+	}
+	return e.ringFetches[characterId] > before
 }
 
 func (e *consumerEnv) announcedWriters() []string {
@@ -1584,4 +1674,91 @@ func TestRingPurchasedFriendshipAnnouncesFriendshipDone(t *testing.T) {
 	if body.ItemId() != 1122000 {
 		t.Errorf("itemId = %d, want the event's TemplateId 1122000", body.ItemId())
 	}
+}
+
+// TestRingPurchasedInvalidatesCache pins task-269 task 12's invalidation
+// path. RingPurchasedBody carries no cashId for either half and no partner
+// character id, so the cache is dropped rather than patched -- the buyer's
+// entry always, and the partner's entry when Body.PartnerName resolves to a
+// known character.
+func TestRingPurchasedInvalidatesCache(t *testing.T) {
+	const buyerId = uint32(100)
+	const partnerId = uint32(200)
+	const buyerCashId = int64(1111)
+	const partnerCashId = int64(2222)
+
+	newEvent := func() cashshop2.StatusEvent[cashshop2.RingPurchasedBody] {
+		return cashshop2.StatusEvent[cashshop2.RingPurchasedBody]{
+			CharacterId: buyerId,
+			Type:        cashshop2.StatusEventTypeRingPurchased,
+			Body: cashshop2.RingPurchasedBody{
+				TransactionId: uuid.New(),
+				CompartmentId: uuid.New(),
+				AssetId:       9999,
+				PartnerName:   "Partner",
+				TemplateId:    1112000,
+				Quantity:      1,
+				RingType:      cashshop2.RingTypeCouple,
+				PairId:        uuid.New(),
+			},
+		}
+	}
+
+	t.Run("buyer invalidated", func(t *testing.T) {
+		env := newConsumerEnv(t)
+		env.seedRingCache(buyerId, buyerCashId)
+
+		handleStatusEventRingPurchased(env.sc, env.wp)(env.logger, env.ctx, newEvent())
+
+		if !env.ringCacheEmpty(buyerId) {
+			t.Fatal("buyer's ring cache entry survived RING_PURCHASED, want it gone")
+		}
+	})
+
+	t.Run("partner invalidated when present", func(t *testing.T) {
+		env := newConsumerEnv(t)
+		env.seedRingCache(buyerId, buyerCashId)
+		env.seedRingCache(partnerId, partnerCashId)
+		env.characters["Partner"] = partnerId
+		env.addSession(partnerId, 4343)
+
+		handleStatusEventRingPurchased(env.sc, env.wp)(env.logger, env.ctx, newEvent())
+
+		if !env.ringCacheEmpty(buyerId) {
+			t.Fatal("buyer's ring cache entry survived RING_PURCHASED, want it gone")
+		}
+		if !env.ringCacheEmpty(partnerId) {
+			t.Fatal("partner's ring cache entry survived RING_PURCHASED, want it gone")
+		}
+	})
+
+	t.Run("partner absent is not an error", func(t *testing.T) {
+		env := newConsumerEnv(t)
+		env.seedRingCache(buyerId, buyerCashId)
+		// No env.characters["Partner"] entry -- GetByName resolves to
+		// atlasmodel.ErrEmptySlice, the "unknown partner" case.
+
+		handleStatusEventRingPurchased(env.sc, env.wp)(env.logger, env.ctx, newEvent())
+
+		if !env.ringCacheEmpty(buyerId) {
+			t.Fatal("buyer's ring cache entry survived RING_PURCHASED, want it gone")
+		}
+	})
+
+	t.Run("wrong tenant untouched", func(t *testing.T) {
+		env := newConsumerEnv(t)
+		env.seedRingCache(buyerId, buyerCashId)
+
+		otherTenant, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+		if err != nil {
+			t.Fatalf("tenant: %v", err)
+		}
+		otherCtx := tenant.WithContext(context.Background(), otherTenant)
+
+		handleStatusEventRingPurchased(env.sc, env.wp)(env.logger, otherCtx, newEvent())
+
+		if env.ringCacheEmpty(buyerId) {
+			t.Fatal("tenant A's ring cache entry was dropped by a tenant B event, want it untouched")
+		}
+	})
 }

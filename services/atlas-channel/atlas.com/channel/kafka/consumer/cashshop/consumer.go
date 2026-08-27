@@ -3,10 +3,12 @@ package cashshop
 import (
 	"atlas-channel/cashshop/inventory/asset"
 	"atlas-channel/cashshop/wallet"
+	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
 	cashshop2 "atlas-channel/kafka/message/cashshop"
 	"atlas-channel/listener"
 	"atlas-channel/pendingchange"
+	"atlas-channel/ring"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -493,6 +495,16 @@ func handleStatusEventPackagePurchased(sc server.Model, wp writer.Producer) mess
 // The partner's own half is not announced here -- there is no live session
 // correlation for it on this event (see OQ-R1: the distinct-halves
 // rejection branch is unimplemented for the same reason).
+//
+// Both halves' ring caches are invalidated (task-269 task 12) rather than
+// patched: RingPurchasedBody carries no cashId for either half and no
+// partner character id (its own doc comment), so there is nothing to patch
+// the cache entry with -- the next Populate call (character load) re-fetches
+// the real halves. The buyer is invalidated by e.CharacterId directly. The
+// partner is resolved from Body.PartnerName the same way handleRingPurchase
+// resolves a purchase-time partner (cash_shop_ring.go); an unresolvable
+// name (partner deleted, transient atlas-character outage) fails soft --
+// the buyer's own invalidation and announcement still happen.
 func handleStatusEventRingPurchased(sc server.Model, wp writer.Producer) message.Handler[cashshop2.StatusEvent[cashshop2.RingPurchasedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e cashshop2.StatusEvent[cashshop2.RingPurchasedBody]) {
 		if e.Type != cashshop2.StatusEventTypeRingPurchased {
@@ -502,6 +514,14 @@ func handleStatusEventRingPurchased(sc server.Model, wp writer.Producer) message
 		t := tenant.MustFromContext(ctx)
 		if !t.Is(sc.Tenant()) {
 			return
+		}
+
+		ring.NewProcessor(l, ctx).Invalidate(e.CharacterId)
+
+		if partner, perr := character.NewProcessor(l, ctx).GetByName(e.Body.PartnerName); perr == nil {
+			ring.NewProcessor(l, ctx).Invalidate(partner.Id())
+		} else {
+			l.WithError(perr).Debugf("Unable to resolve ring purchase partner [%s] for character [%d]; partner's ring cache left untouched.", e.Body.PartnerName, e.CharacterId)
 		}
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {

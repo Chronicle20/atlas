@@ -235,7 +235,11 @@ in full above.
 
 ### Still owed
 
-- The stale-comment sweep in `libs/atlas-packet/maplelife/` (finding 1).
+- ~~The stale-comment sweep in `libs/atlas-packet/maplelife/` (finding 1).~~
+  **Done** — `2dfc1373f` (task-implementer, sonnet, DONE), report `27095e6ca`.
+  Comments-only diff, confirmed every changed line is a `//` comment; no struct,
+  logic, gate, or assertion changed. `go build ./...` and `go test ./...` clean
+  across `libs/atlas-packet`. Reviewer finding 1 is closed.
 - Evidence records `docs/packets/evidence/gms_v84/maplelife.*.yaml` and
   promotion of the three gms_v84 matrix cells — `packet-verifier` work, one
   cell per agent, deliberately excluded from this fix.

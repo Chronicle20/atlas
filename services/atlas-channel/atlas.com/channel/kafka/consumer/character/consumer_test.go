@@ -1,19 +1,21 @@
 package character
 
 import (
+	"atlas-channel/character/snapshot"
+	"atlas-channel/server"
 	"context"
 	"testing"
 
 	character3 "atlas-channel/character"
-	"atlas-channel/character/snapshot"
+
 	character2 "atlas-channel/kafka/message/character"
-	"atlas-channel/server"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 func newTestTenant(t *testing.T) tenant.Model {

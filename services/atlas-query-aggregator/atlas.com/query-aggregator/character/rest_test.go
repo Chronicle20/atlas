@@ -26,11 +26,14 @@ func TestExtract_SpawnPoint(t *testing.T) {
 // over the wire, so the value must NOT be narrowed to a byte here; 300 is
 // above the byte ceiling precisely so a reintroduced cast fails loudly.
 func TestTransform_SpawnPointPreservesUint32(t *testing.T) {
-	m := NewBuilder().
+	m, err := NewBuilder().
 		SetId(1).
 		SetSp("0").
 		SetSpawnPoint(300).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	rm, err := Transform(m)
 	if err != nil {

@@ -273,7 +273,7 @@ func (m Model) VanquisherKills() uint32 {
 	return m.vanquisherKills
 }
 
-func (m Model) SetInventory(i inventory.Model) Model {
+func (m Model) SetInventory(i inventory.Model) (Model, error) {
 	eq := equipment.NewModel()
 	ec := compartment.NewBuilder(i.Equipable().Id(), m.Id(), i.Equipable().Type(), i.Equipable().Capacity())
 	for _, a := range i.Equipable().Assets() {
@@ -318,6 +318,6 @@ func (m Model) SetInventory(i inventory.Model) Model {
 	return Clone(m).SetInventory(ib.Build()).SetEquipment(eq).Build()
 }
 
-func (m Model) SetGuild(g guild.Model) Model {
+func (m Model) SetGuild(g guild.Model) (Model, error) {
 	return Clone(m).SetGuild(g).Build()
 }

@@ -48,7 +48,11 @@ func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 	if err != nil {
 		return m
 	}
-	return m.SetInventory(i)
+	updated, err := m.SetInventory(i)
+	if err != nil {
+		return m
+	}
+	return updated
 }
 
 func (p *ProcessorImpl) GuildDecorator(m Model) Model {
@@ -56,5 +60,9 @@ func (p *ProcessorImpl) GuildDecorator(m Model) Model {
 	if err != nil {
 		return m
 	}
-	return m.SetGuild(g)
+	updated, err := m.SetGuild(g)
+	if err != nil {
+		return m
+	}
+	return updated
 }

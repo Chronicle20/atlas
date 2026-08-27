@@ -4,6 +4,7 @@ import (
 	"atlas-query-aggregator/equipment"
 	"atlas-query-aggregator/guild"
 	"atlas-query-aggregator/inventory"
+	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -130,7 +131,10 @@ func (b *Builder) SetEquipment(v equipment.Model) *Builder { b.equipment = v; re
 func (b *Builder) SetInventory(v inventory.Model) *Builder { b.inventory = v; return b }
 func (b *Builder) SetGuild(v guild.Model) *Builder         { b.guild = v; return b }
 
-func (b *Builder) Build() Model {
+func (b *Builder) Build() (Model, error) {
+	if b.id == 0 {
+		return Model{}, errors.New("id is required")
+	}
 	return Model{
 		id:                 b.id,
 		accountId:          b.accountId,
@@ -168,5 +172,5 @@ func (b *Builder) Build() Model {
 		equipment:          b.equipment,
 		inventory:          b.inventory,
 		guild:              b.guild,
-	}
+	}, nil
 }

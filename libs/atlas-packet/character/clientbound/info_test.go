@@ -27,7 +27,7 @@ func TestCharacterInfo_MountRoundTrip(t *testing.T) {
 	}{{"GMS", 83, 1}, {"GMS", 87, 1}, {"GMS", 95, 1}, {"JMS", 185, 1}} {
 		ctx := pt.CreateContext(v.region, v.maj, v.min)
 		in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, MonsterBookInfo{},
-			MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42})
+			MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}, false)
 		out := CharacterInfo{}
 		pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
 		if got := out.Mount(); got != (MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}) {
@@ -40,7 +40,7 @@ func TestCharacterInfoEncode(t *testing.T) {
 	pets := []InfoPet{
 		{Slot: 0, TemplateId: 5000001, Name: "Kitty", Level: 10, Closeness: 100, Fullness: 50},
 	}
-	input := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{50200004}, 1142007, MonsterBookInfo{}, MountInfo{})
+	input := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{50200004}, 1142007, MonsterBookInfo{}, MountInfo{}, false)
 	l, _ := testlog.NewNullLogger()
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
@@ -62,7 +62,7 @@ func TestCharacterInfoRoundTrip(t *testing.T) {
 				{Slot: 1, TemplateId: 5000001, Name: "MiniCat", Level: 10, Closeness: 100, Fullness: 50},
 			}
 			wishList := []uint32{1002000, 1002001, 1002002}
-			input := NewCharacterInfo(100, 70, 312, 50, "TestGuild", pets, wishList, 1142000, MonsterBookInfo{}, MountInfo{})
+			input := NewCharacterInfo(100, 70, 312, 50, "TestGuild", pets, wishList, 1142000, MonsterBookInfo{}, MountInfo{}, false)
 			output := CharacterInfo{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.CharacterId() != input.CharacterId() {
@@ -118,7 +118,7 @@ func TestCharacterInfoRoundTrip(t *testing.T) {
 func TestCharacterInfo_MonsterBookCover(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	want := MonsterBookInfo{Level: 5, NormalCards: 10, SpecialCards: 3, TotalCards: 13, Cover: 2380001}
-	in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, want, MountInfo{})
+	in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, want, MountInfo{}, false)
 	out := CharacterInfo{}
 	pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
 	if out.MonsterBook() != want {
@@ -132,7 +132,7 @@ func TestCharacterInfo_MonsterBookCover(t *testing.T) {
 func TestCharacterInfo_CoverCarriesArbitraryValue(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 83, 1)
 	want := MonsterBookInfo{Level: 1, NormalCards: 0, SpecialCards: 0, TotalCards: 0, Cover: 100100}
-	in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, want, MountInfo{})
+	in := NewCharacterInfo(1, 10, 100, 0, "", nil, nil, 0, want, MountInfo{}, false)
 	out := CharacterInfo{}
 	pt.RoundTrip(t, ctx, in.Encode, out.Decode, nil)
 	if out.MonsterBookCover() != 100100 {
@@ -158,7 +158,7 @@ func TestCharacterInfoJMSGolden(t *testing.T) {
 	pets := []InfoPet{{Slot: 0, TemplateId: 5000000, Name: "Kitty", Level: 15, Closeness: 200, Fullness: 80}}
 	mb := MonsterBookInfo{Level: 5, NormalCards: 10, SpecialCards: 3, TotalCards: 13, Cover: 2380001}
 	mount := MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}
-	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, mb, mount)
+	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, mb, mount, false)
 
 	got := in.Encode(nil, ctx)(nil)
 	want, _ := hex.DecodeString(
@@ -192,7 +192,7 @@ func TestCharacterInfoV79Golden(t *testing.T) {
 	pets := []InfoPet{{Slot: 0, TemplateId: 5000000, Name: "Kitty", Level: 15, Closeness: 200, Fullness: 80}}
 	mb := MonsterBookInfo{Level: 5, NormalCards: 10, SpecialCards: 3, TotalCards: 13, Cover: 2380001}
 	mount := MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}
-	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, mb, mount)
+	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, mb, mount, false)
 
 	got := in.Encode(nil, ctx)(nil)
 	// == jms golden without the jms-only trailing 4-byte int.
@@ -231,7 +231,7 @@ func TestCharacterInfoV48Golden(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 48, 1)
 	pets := []InfoPet{{Slot: 0, TemplateId: 5000000, Name: "Kitty", Level: 15, Closeness: 200, Fullness: 80}}
 	mount := MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}
-	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, MonsterBookInfo{}, mount)
+	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, MonsterBookInfo{}, mount, false)
 
 	got := in.Encode(nil, ctx)(nil)
 	want := []byte{
@@ -261,11 +261,108 @@ func TestCharacterInfoV48Golden(t *testing.T) {
 	}
 }
 
+// TestCharacterInfoMarriageFlag drives the marriage-ring bool (site D) through
+// NewCharacterInfo's hasMarriageRing parameter. FR-8 guard: the legacy GMS v28
+// arm (no marriage bool on the wire at all) must stay byte-identical regardless
+// of the flag's value. OQ-3 guard: on the modern arm, flipping the flag must
+// change exactly the one marriage-flag byte — v83 @0xa2370b, v87 @0xabb181, v95
+// @0xa05750, jms @0xb0aa6e all read sCommunity (guildName) unconditionally next
+// with no partner block, so a populated marriage arm here would desynchronise
+// the stream.
+func TestCharacterInfoMarriageFlag(t *testing.T) {
+	t.Run("false, modern", func(t *testing.T) {
+		ctx := pt.CreateContext("GMS", 83, 1)
+		in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", nil, nil, 0, MonsterBookInfo{}, MountInfo{}, false)
+		got := in.Encode(nil, ctx)(nil)
+		want, _ := hex.DecodeString("393000003264000a00000900546573744775696c640000000000000000000000000000000000000000000000000000000000000000")
+		if !bytes.Equal(got, want) {
+			t.Errorf("false marriage flag wire:\n got %x\nwant %x", got, want)
+		}
+	})
+
+	t.Run("true, modern", func(t *testing.T) {
+		ctx := pt.CreateContext("GMS", 83, 1)
+		inFalse := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", nil, nil, 0, MonsterBookInfo{}, MountInfo{}, false)
+		inTrue := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", nil, nil, 0, MonsterBookInfo{}, MountInfo{}, true)
+		gotFalse := inFalse.Encode(nil, ctx)(nil)
+		gotTrue := inTrue.Encode(nil, ctx)(nil)
+
+		if len(gotTrue) != len(gotFalse) {
+			t.Fatalf("true/false length mismatch: got %d want %d", len(gotTrue), len(gotFalse))
+		}
+		// marriage-flag offset: charId(4) + level(1) + jobId(2) + fame(2) = 9.
+		const marriageOffset = 9
+		if gotFalse[marriageOffset] != 0x00 {
+			t.Fatalf("false marriage-flag byte: got %#x want 0x00", gotFalse[marriageOffset])
+		}
+		if gotTrue[marriageOffset] != 0x01 {
+			t.Errorf("true marriage-flag byte: got %#x want 0x01", gotTrue[marriageOffset])
+		}
+		diffs := 0
+		for i := range gotTrue {
+			if gotTrue[i] != gotFalse[i] {
+				diffs++
+			}
+		}
+		if diffs != 1 {
+			t.Errorf("true vs false must differ in exactly one byte, got %d differing bytes", diffs)
+		}
+		// The guild-name length-prefixed string follows immediately after the
+		// marriage byte in both cases — no partner block was inserted.
+		wantGuildPrefix, _ := hex.DecodeString("0900546573744775696c64") // len(9) + "TestGuild"
+		got := gotTrue[marriageOffset+1 : marriageOffset+1+len(wantGuildPrefix)]
+		if !bytes.Equal(got, wantGuildPrefix) {
+			t.Errorf("guildName must follow the marriage byte directly:\n got %x\nwant %x", got, wantGuildPrefix)
+		}
+	})
+
+	t.Run("legacy arm untouched", func(t *testing.T) {
+		// The legacy arm (GMS v29..v60, gate `MajorVersion() > 28 && < 61`,
+		// info.go:90) has no marriage bool at all — v61 is the first client
+		// to add it (info.go comment, IDA @0x8455ed). GMS v28 itself is
+		// EXCLUDED from this gate (28 is not > 28) and falls through to the
+		// modern arm, so it is not a legacy-arm example; GMS v48 (already
+		// pinned byte-for-byte by TestCharacterInfoV48Golden) is the correct
+		// FR-8 fixture — same input, hasMarriageRing=true this time, must
+		// produce the byte-identical legacy wire.
+		ctx := pt.CreateContext("GMS", 48, 1)
+		pets := []InfoPet{{Slot: 0, TemplateId: 5000000, Name: "Kitty", Level: 15, Closeness: 200, Fullness: 80}}
+		mount := MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}
+		in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, MonsterBookInfo{}, mount, true)
+		got := in.Encode(nil, ctx)(nil)
+		wantV48 := []byte{
+			0x39, 0x30, 0x00, 0x00,
+			0x32,
+			0x64, 0x00,
+			0x0a, 0x00,
+			0x09, 0x00, 'T', 'e', 's', 't', 'G', 'u', 'i', 'l', 'd',
+			0x01,
+			0x40, 0x4b, 0x4c, 0x00,
+			0x05, 0x00, 'K', 'i', 't', 't', 'y',
+			0x0f,
+			0xc8, 0x00,
+			0x50,
+			0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00,
+			0x01,
+			0x07, 0x00, 0x00, 0x00,
+			0xd2, 0x04, 0x00, 0x00,
+			0x2a, 0x00, 0x00, 0x00,
+			0x02,
+			0x10, 0x4a, 0x0f, 0x00,
+			0x11, 0x4a, 0x0f, 0x00,
+		}
+		if !bytes.Equal(got, wantV48) {
+			t.Errorf("gms v48 (legacy arm) wire must be untouched by hasMarriageRing:\n got %x\nwant %x", got, wantV48)
+		}
+	})
+}
+
 func TestCharacterInfoEmptyRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := NewCharacterInfo(200, 30, 100, 0, "", nil, nil, 0, MonsterBookInfo{}, MountInfo{})
+			input := NewCharacterInfo(200, 30, 100, 0, "", nil, nil, 0, MonsterBookInfo{}, MountInfo{}, false)
 			output := CharacterInfo{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if len(output.Pets()) != 0 {

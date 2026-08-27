@@ -321,7 +321,7 @@ func TestCharacterInfoByteOutputV61(t *testing.T) {
 	pets := []InfoPet{{Slot: 0, TemplateId: 5000000, Name: "Kitty", Level: 15, Closeness: 200, Fullness: 80}}
 	mb := MonsterBookInfo{Level: 5, NormalCards: 10, SpecialCards: 3, TotalCards: 13, Cover: 2380001}
 	mount := MountInfo{Active: true, Level: 7, Exp: 1234, Tiredness: 42}
-	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, mb, mount)
+	in := NewCharacterInfo(12345, 50, 100, 10, "TestGuild", pets, []uint32{1002000, 1002001}, 1142007, mb, mount, false)
 
 	got := in.Encode(nil, ctx)(nil)
 	// == v72 golden (v72_test.go TestCharacterInfoByteOutputV72) MINUS the trailing
@@ -582,7 +582,7 @@ func TestCharacterSpawnByteOutputV61(t *testing.T) {
 	ctx := pt.CreateContext("GMS", 61, 1)
 	guild := GuildEmblem{Name: "TestGuild", LogoBackground: 1, LogoBackgroundColor: 2, Logo: 3, LogoColor: 4}
 	cts := model.NewCharacterTemporaryStat()
-	in := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 100, model.Avatar{}, nil, false, 100, 200, 3, 0)
+	in := NewCharacterSpawn(12345, 50, "TestChar", guild, cts, 100, model.Avatar{}, nil, false, 100, 200, 3, 0, model.RingSet{})
 	got := in.Encode(nil, ctx)(nil)
 
 	// Prefix through the guild emblem — proves NO level byte follows charId.

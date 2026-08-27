@@ -175,6 +175,36 @@ func siblingWritersFor(op string, dir opregistry.Direction, vk string) map[strin
 // verifiable the same way) and v92 (no marker found at all) to whichever
 // task next verifies them per-version — mirroring exactly the deferral
 // discipline NOTE_ACTION's own history records above for NoteOperationSend.
+// gms_v95 fname-promotion regression (task-146 Task 2 fix, this pass):
+// Task 2 promoted four csv-import op fnames to their export-resident,
+// report-backed handlers (docs/packets/registry/gms_v95.yaml, "task-146:
+// primary fname promoted..." notes). Each promoted fname now equals
+// baseFName(IDAName) of a separately-reported, separately-fixtured
+// sub-struct that happens to share the SAME writer function on gms_v95
+// only -- so the op row's worstCandidateCell consumes that sub-struct's
+// writer as a used candidate and the sub-struct pass skips it (or gap-fills
+// it) instead of grading it from its own evidence, exactly the same
+// collision class NPC_TALK_MORE/NpcAskSlideMenuConversationDetail hit
+// above. All four have pinned TIER1 evidence, byte-fixture markers, and an
+// audit report (Verdict Match, FlatInvalid false) on gms_v95 already:
+//   - CHANGE_MAP/serverbound: primary fname CField::SendTransferFieldRequest
+//     is FieldChange's own IDAName (change_test.go:158).
+//   - NPC_TALK/clientbound: primary fname CScriptMan::OnScriptMessage is
+//     NpcNpcConversation's own IDAName (conversation_test.go:64).
+//   - NPC_TALK/serverbound: primary fname CUserLocal::TalkToNpc is
+//     NpcStartConversation's own IDAName (start_conversation_test.go:12).
+//   - CHANGE_MAP_SPECIAL/serverbound: primary fname
+//     CUserLocal::CheckPortal_Collision is PortalScript's own IDAName
+//     (script_test.go:11).
+//
+// Scoped to gms_v95 only, per versionScopedOpKey: the CSV-import fnames
+// these promotions replaced (CCashShop::SendTransferFieldPacket /
+// CITC::SendTransferFieldPacket, CScriptMan::OnPacket, CNpc::ShowQuestList,
+// CUserLocal::HandleUpKeyDown) did not collide with these writers, so the
+// same four sub-structs graded independently pre-promotion and on every
+// other version; an unscoped entry would risk un-suppressing the same
+// fname collisions wherever they recur on gms_v83/v84/v87/jms_v185, which
+// have not been individually verified for this defect.
 var legacyConsumedSiblingWriters = map[string]map[string]bool{
 	opKey("NOTE_ACTION", opregistry.DirServerbound): {
 		"NoteOperationDiscard": true,
@@ -185,6 +215,18 @@ var legacyConsumedSiblingWriters = map[string]map[string]bool{
 	},
 	versionScopedOpKey("NPC_TALK_MORE", opregistry.DirServerbound, "gms_v95"): {
 		"NpcAskSlideMenuConversationDetail": true,
+	},
+	versionScopedOpKey("CHANGE_MAP", opregistry.DirServerbound, "gms_v95"): {
+		"FieldChange": true,
+	},
+	versionScopedOpKey("NPC_TALK", opregistry.DirClientbound, "gms_v95"): {
+		"NpcNpcConversation": true,
+	},
+	versionScopedOpKey("NPC_TALK", opregistry.DirServerbound, "gms_v95"): {
+		"NpcStartConversation": true,
+	},
+	versionScopedOpKey("CHANGE_MAP_SPECIAL", opregistry.DirServerbound, "gms_v95"): {
+		"PortalScript": true,
 	},
 }
 

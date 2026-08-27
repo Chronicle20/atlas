@@ -100,3 +100,24 @@ on the `Model` returned by `astP.Create` / `CreateGift` at purchase time.
 - **Do not change `selectPair`.** Its comparison is correct; it was being fed
   zeros. If the two ids turn out to differ after this fix, that is a separate
   bug with its own file.
+
+## Resolution
+
+- **Fixed by:** `0f1f8872b` — "fix(cash-shop): persist ring half CashId so pairs
+  resolve after equip". atlas-cashshop only; `atlas-channel` untouched
+  (`git diff d8b0ec8d1..HEAD -- services/atlas-channel` is empty).
+- **Gate:** `tools/verify.sh --quick --base d8b0ec8d1` → exit 0 (build/vet on
+  atlas-cashshop, analyzer guards, scope guard, producer seam guard, env domain
+  guard, lint & format all green).
+- **Seam review:** APPROVED_WITH_FINDINGS, 0 blocking, 1 non-blocking (a stale
+  commit hash in the fix report, corrected in this commit). Artifact:
+  `review-ring-cash-id-fix.md`. The reviewer traced all five seam checks by hand,
+  including that `ring/rest.go` already carried `CashId`/`PartnerCashId` out to
+  the channel so no transformer change was needed.
+- **Live re-test:** NOT YET CONFIRMED. Requires a redeploy AND a **fresh ring
+  purchase** — existing rows keep `cash_id = 0` and cannot be backfilled.
+- **Still open:** the end-to-end numeric equality of the cashshop-persisted
+  `cashId` and the channel-side equipped asset's `CashId()` is a deliberate
+  deferral, not a silent gap. Confirm it on the re-test by comparing
+  `GET /api/rings` `cashId` against the equipped asset's `cashId` for the same
+  character before calling this fixed.

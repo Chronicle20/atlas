@@ -147,4 +147,4 @@ reformatting.
 
 ## Commit
 
-`2fd87f4a4` — fix(cash-shop): persist ring half CashId so pairs resolve after equip
+`0f1f8872b` — fix(cash-shop): persist ring half CashId so pairs resolve after equip

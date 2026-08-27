@@ -2735,10 +2735,20 @@
   provenance: csv-import
 - op: AUTO_DISTRIBUTE_AP
   direction: serverbound
-  opcode: 98
+  opcode: 99
   fname: CWvsContext::SendAbilityUpRequest
   provenance: manual
-  note: 'serverbound opcode IDB-verified from COutPacket send-site (task-085)'
+  ida:
+    address: 0x9f63b0
+  note: >-
+    task-146: opcode corrected 98 -> 99. The prior manual entry (task-085)
+    claimed 98, which is DISTRIBUTE_AP's opcode. Live GMS v95.0_U_DEVM read:
+    SendAbilityUpRequest#AutoDistributeAp @0x9f63b0 builds
+    COutPacket(&oPacket, 99) @0x9f6535 (Encode4 update_time, Encode4 nValue,
+    then a loop of Encode4 dwStatFlag / Encode4 nValue pairs);
+    #DistributeAp @0x9f61c0 builds COutPacket(&oPacket, 98) @0x9f6330
+    (Encode4 update_time, Encode4 dwFlag). Matches the v83 split
+    (0x57 / 0x58).
 - op: HEAL_OVER_TIME
   direction: serverbound
   opcode: 100

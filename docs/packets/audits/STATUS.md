@@ -1017,7 +1017,7 @@ Tool: `5de1e5130d5ab98dd1ed9198b7b320d8425c50b38203bb32e4019f8855921732`
 | npc/clientbound/NpcAskPetAllConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskPetConversationDetail (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskQuizConversationDetail (T1) |  |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
-| npc/clientbound/NpcAskSlideMenuConversationDetail (T1) |  |  | ⬜ |  | ❌ |  | ❌ |  | ⬜ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |
+| npc/clientbound/NpcAskSlideMenuConversationDetail (T1) |  |  | ⬜ |  | ❌ |  | ❌ |  | ⬜ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
 | npc/clientbound/NpcAskSpeedQuizConversationDetail (T1) |  |  | ⬜ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskTextConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | npc/clientbound/NpcAskYesNoConversationDetail (T1) |  |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -1071,7 +1071,7 @@ Tool: `5de1e5130d5ab98dd1ed9198b7b320d8425c50b38203bb32e4019f8855921732`
 | v84 | 451 | 0 | 0 | 326 | 250 | 0 | 58.0% |
 | v87 | 488 | 0 | 0 | 348 | 191 | 0 | 58.4% |
 | v92 | 65 | 0 | 147 | 674 | 141 | 0 | 7.3% |
-| v95 | 515 | 0 | 0 | 404 | 108 | 0 | 56.0% |
+| v95 | 516 | 0 | 0 | 403 | 108 | 0 | 56.1% |
 | JMS185 | 451 | 0 | 0 | 378 | 198 | 0 | 54.4% |
 
 ## Conflicts

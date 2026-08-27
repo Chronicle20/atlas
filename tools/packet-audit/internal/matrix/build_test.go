@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/diff"
+	"github.com/Chronicle20/atlas/tools/packet-audit/internal/opregistry"
 )
 
 // subCell finds a sub-struct row by packet id and returns its cell for vk.
@@ -94,4 +95,83 @@ func TestResolveUnimplemented(t *testing.T) {
 	if len(got) != 2 {
 		t.Errorf("resolved set size = %d; want 2 (%v)", len(got), got)
 	}
+}
+
+// TestAskSlideMenuEscapesNpcTalkMoreConsumption pins the
+// legacyConsumedSiblingWriters entry for NPC_TALK_MORE/serverbound: on
+// gms_v95 the op's registry primary fname (CScriptMan::OnAskSlideMenu) is
+// exactly baseFName of NpcAskSlideMenuConversationDetail's own IDAName
+// (CScriptMan::OnAskSlideMenu#AskSlideMenu), so the op row would otherwise
+// consume and suppress the sibling. The protectedWriters gate must only let
+// it escape when its OWN evidence independently reaches StateVerified —
+// never as a force-promote.
+//
+// gms_v83 carries a second, independent registry entry for the same op with
+// a DIFFERENT fname (not matching the sibling's IDAName), so its own report
+// is never consumed there; this is what creates the sub-struct row at all
+// and lets the gms_v95 column exercise the gap-fill path in cases 2 and 3.
+func TestAskSlideMenuEscapesNpcTalkMoreConsumption(t *testing.T) {
+	const pkt = "npc/clientbound/NpcAskSlideMenuConversationDetail"
+	versionKeys := []string{"gms_v83", "gms_v95"}
+
+	report := LoadedReport{
+		WriterName: "NpcAskSlideMenuConversationDetail",
+		IDAName:    "CScriptMan::OnAskSlideMenu#AskSlideMenu",
+		AtlasFile:  "libs/atlas-packet/npc/clientbound/conversation.go",
+		Verdict:    diff.VerdictMatch,
+	}
+
+	newInputs := func() Inputs {
+		in := baseInputs()
+		in.Registry.Versions["gms_v95"] = vfWith(t, opregistry.Entry{
+			Op: "NPC_TALK_MORE", Direction: opregistry.DirServerbound, Opcode: 0x41,
+			FName: "CScriptMan::OnAskSlideMenu", Provenance: "ida-discovered",
+		})
+		in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
+			Op: "NPC_TALK_MORE", Direction: opregistry.DirServerbound, Opcode: 0x41,
+			FName: "CScriptMan::OnUnrelatedTalkMoreV83", Provenance: "ida-discovered",
+		})
+		in.Reports["gms_v83"] = map[string]LoadedReport{"NpcAskSlideMenuConversationDetail": report}
+		in.Tier1[pkt] = true
+		return in
+	}
+
+	t.Run("verified sibling escapes", func(t *testing.T) {
+		in := newInputs()
+		in.Reports["gms_v95"] = map[string]LoadedReport{"NpcAskSlideMenuConversationDetail": report}
+		in.Markers[EvKey{pkt, "gms_v95"}] = MarkerStatus{Found: true, Address: "0x6dbe50"}
+		in.Evidence[EvKey{pkt, "gms_v95"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0x6dbe50"}
+
+		m := Build(in, versionKeys)
+		c := subCell(t, m, pkt, "gms_v95")
+		if c.State != StateVerified || c.Note != "" || c.Opcode != -1 {
+			t.Fatalf("gms_v95 cell = %v (%q, opcode=%d); want StateVerified, \"\", -1", c.State.Name(), c.Note, c.Opcode)
+		}
+	})
+
+	t.Run("unverified sibling stays suppressed", func(t *testing.T) {
+		in := newInputs()
+		in.Reports["gms_v95"] = map[string]LoadedReport{"NpcAskSlideMenuConversationDetail": report}
+		// No marker, no evidence: gradeSubStructCell cannot reach StateVerified,
+		// so the protectedWriters bypass must not fire.
+
+		m := Build(in, versionKeys)
+		c := subCell(t, m, pkt, "gms_v95")
+		if c.State != StateIncomplete || c.Note != "no audit report" {
+			t.Fatalf("gms_v95 cell = %v (%q); want StateIncomplete, \"no audit report\"", c.State.Name(), c.Note)
+		}
+	})
+
+	t.Run("stale evidence stays suppressed", func(t *testing.T) {
+		in := newInputs()
+		in.Reports["gms_v95"] = map[string]LoadedReport{"NpcAskSlideMenuConversationDetail": report}
+		in.Markers[EvKey{pkt, "gms_v95"}] = MarkerStatus{Found: true, Address: "0x6dbe50"}
+		in.Evidence[EvKey{pkt, "gms_v95"}] = EvidenceStatus{Exists: true, Fresh: false}
+
+		m := Build(in, versionKeys)
+		c := subCell(t, m, pkt, "gms_v95")
+		if c.State != StateIncomplete || c.Note != "no audit report" {
+			t.Fatalf("gms_v95 cell = %v (%q); want StateIncomplete, \"no audit report\"", c.State.Name(), c.Note)
+		}
+	})
 }

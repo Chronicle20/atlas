@@ -35,12 +35,53 @@ func opKey(op string, dir opregistry.Direction) string {
 	return op + "|" + string(dir)
 }
 
+// versionScopedOpKey builds the (op, direction, version) map key used by
+// legacyConsumedSiblingWriters entries that must apply to a SINGLE version
+// only, because the same fname collision recurs on other versions where the
+// sibling has not yet been per-cell verified (see the NPC_TALK_MORE entry
+// below).
+func versionScopedOpKey(op string, dir opregistry.Direction, vk string) string {
+	return opKey(op, dir) + "|" + vk
+}
+
+// siblingWritersFor resolves the sibling WriterNames that escape op-row
+// consumption for (op, dir) in version vk: the union of the op-wide entry
+// (applies to every version — NOTE_ACTION and USE_CASH_ITEM below) and any
+// version-scoped entry keyed by versionScopedOpKey (applies to exactly the
+// named version, leaving the same collision on every other version alone).
+func siblingWritersFor(op string, dir opregistry.Direction, vk string) map[string]bool {
+	global := legacyConsumedSiblingWriters[opKey(op, dir)]
+	scoped := legacyConsumedSiblingWriters[versionScopedOpKey(op, dir, vk)]
+	if len(global) == 0 {
+		return scoped
+	}
+	if len(scoped) == 0 {
+		return global
+	}
+	out := make(map[string]bool, len(global)+len(scoped))
+	for wn := range global {
+		out[wn] = true
+	}
+	for wn := range scoped {
+		out[wn] = true
+	}
+	return out
+}
+
 // legacyConsumedSiblingWriters is an explicit, narrowly-scoped allowlist of
 // (op, direction) -> the specific sibling WriterName(s) that get swallowed by
 // the op row in a SUBSET of versions rather than graded independently
 // everywhere (task-137 legacy NOTE_ACTION fix, see
 // docs/tasks/task-137-note-item-consumption/design.md and
 // .superpowers/sdd/task-17-legacy-diagnosis.md).
+//
+// Keys are built with either opKey(op, dir) — applies to every version where
+// the fname collision recurs (NOTE_ACTION and USE_CASH_ITEM below, both
+// per-cell-verified on every version they touch) — or versionScopedOpKey(op,
+// dir, vk) — applies to exactly one named version, for a per-cell-verified
+// sibling whose SAME collision also recurs on other versions that have not
+// yet been individually verified (NPC_TALK_MORE below). siblingWritersFor
+// resolves both forms for a given version.
 //
 // NOTE_ACTION/serverbound: on gms_v48/v61/v72/v79 the op's registry primary
 // `fname` is CMemoListDlg::SetRet, which is ALSO the exact IDAName of the
@@ -108,6 +149,32 @@ func opKey(op string, dir opregistry.Direction) string {
 // CashItemUseMapleTV, CashItemUseMegaphone, CashItemUseTripleMegaphone)
 // are NOT added here: fixing their v72/v79 cells is out of scope for
 // task-252 and is left for whichever task next verifies them per-version.
+// NPC_TALK_MORE/serverbound: on gms_v95 the op's registry primary `fname` is
+// CScriptMan::OnAskSlideMenu (docs/packets/registry/gms_v95.yaml:2549-2554),
+// which is exactly baseFName("CScriptMan::OnAskSlideMenu#AskSlideMenu") —
+// the clientbound detail writer NpcAskSlideMenuConversationDetail's own
+// IDAName — so the op row consumes it and the sub-struct pass skips it there.
+// The sibling NpcSayImageConversationDetail escapes this same op row only
+// because CScriptMan::OnSayImage is listed as an fname_alt rather than the
+// primary; it is unaffected by this entry. NpcAskSlideMenuConversationDetail
+// carries its own marker (conversation_test.go:25, ida=0x6dbe50), pinned
+// evidence (docs/packets/evidence/gms_v95/npc.clientbound.NpcAskSlideMenuConversationDetail.yaml),
+// and audit report on gms_v95. Per the protectedWriters gate in Build,
+// listing it here only lets it escape the automatic skip WHEN its own
+// gradeSubStructCell independently reaches StateVerified — it is not a
+// force-promote.
+//
+// Version-scoped, unlike NOTE_ACTION and USE_CASH_ITEM above: the SAME
+// primary-fname collision (CScriptMan::OnAskSlideMenu) recurs verbatim in
+// the registry on gms_v83/84/87/92/jms_v185 too, and conversation_test.go
+// carries markers for the sibling on v83 (line 23), v87 (24), v84 (87), and
+// jms_v185 (200) as well — an op-wide (non-scoped) entry would therefore
+// have un-suppressed all five of those cells in the same pass this task
+// scoped to v95 alone. Scoping this entry to gms_v95 only, via
+// versionScopedOpKey, defers v83/84/87/jms_v185 (each independently
+// verifiable the same way) and v92 (no marker found at all) to whichever
+// task next verifies them per-version — mirroring exactly the deferral
+// discipline NOTE_ACTION's own history records above for NoteOperationSend.
 var legacyConsumedSiblingWriters = map[string]map[string]bool{
 	opKey("NOTE_ACTION", opregistry.DirServerbound): {
 		"NoteOperationDiscard": true,
@@ -115,6 +182,9 @@ var legacyConsumedSiblingWriters = map[string]map[string]bool{
 	},
 	opKey("USE_CASH_ITEM", opregistry.DirServerbound): {
 		"CashItemUseSongPlayer": true,
+	},
+	versionScopedOpKey("NPC_TALK_MORE", opregistry.DirServerbound, "gms_v95"): {
+		"NpcAskSlideMenuConversationDetail": true,
 	},
 }
 
@@ -165,7 +235,6 @@ func Build(in Inputs, versionKeys []string) Matrix {
 	var rows []MatrixRow
 	for _, od := range in.Registry.AllOps() {
 		row := MatrixRow{Kind: RowOp, Op: od.Op, Direction: od.Dir, Cells: map[string]Cell{}}
-		siblingWriters := legacyConsumedSiblingWriters[opKey(od.Op, od.Dir)]
 
 		// Pre-compute which versions have this op PRESENT and ROUTED by that
 		// version's own opcode. This is the per-packet routing set used to
@@ -219,6 +288,7 @@ func Build(in Inputs, versionKeys []string) Matrix {
 					break
 				}
 			}
+			siblingWriters := siblingWritersFor(od.Op, od.Dir, vk)
 			cell := worstCandidateCell(in, fnameWriters, ref, vk, usedWriters, protectedWriters, siblingWriters, routedElsewhere, presentFnames[vk])
 			// Set the per-version opcode on the cell: the registry opcode from
 			// this specific version if the op is present there, else -1.

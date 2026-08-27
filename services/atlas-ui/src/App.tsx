@@ -223,6 +223,11 @@ const TemplatesCharacterPresetsPage = lazyWithReload(() =>
     default: m.TemplatesCharacterPresetsPage,
   })),
 );
+const TemplatesMapleLifePage = lazyWithReload(() =>
+  import("@/pages/TemplatesMapleLifePage").then((m) => ({
+    default: m.TemplatesMapleLifePage,
+  })),
+);
 const TenantsPage = lazyWithReload(() =>
   import("@/pages/TenantsPage").then((m) => ({ default: m.TenantsPage })),
 );
@@ -259,6 +264,11 @@ const TenantsCharacterTemplatesPage = lazyWithReload(() =>
 const TenantsCharacterPresetsPage = lazyWithReload(() =>
   import("@/pages/TenantsCharacterPresetsPage").then((m) => ({
     default: m.TenantsCharacterPresetsPage,
+  })),
+);
+const TenantsMapleLifePage = lazyWithReload(() =>
+  import("@/pages/TenantsMapleLifePage").then((m) => ({
+    default: m.TenantsMapleLifePage,
   })),
 );
 const TenantsMtsConfigPage = lazyWithReload(() =>
@@ -419,6 +429,10 @@ export function App() {
                       path="/templates/:id/character/presets"
                       element={<TemplatesCharacterPresetsPage />}
                     />
+                    <Route
+                      path="/templates/:id/character/maple-life"
+                      element={<TemplatesMapleLifePage />}
+                    />
                     <Route path="/tenants" element={<TenantsPage />} />
                     <Route
                       path="/packet-matrix"
@@ -448,6 +462,10 @@ export function App() {
                     <Route
                       path="/tenants/:id/character/presets"
                       element={<TenantsCharacterPresetsPage />}
+                    />
+                    <Route
+                      path="/tenants/:id/character/maple-life"
+                      element={<TenantsMapleLifePage />}
                     />
                     <Route
                       path="/tenants/:id/mts-config"

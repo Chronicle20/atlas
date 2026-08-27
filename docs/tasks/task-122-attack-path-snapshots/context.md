@@ -133,8 +133,9 @@ path — none create an entry for a character with none (per the update-only inv
 ### Delta resolved since Task 1
 
 Task 1 flagged that `/api/metrics` did not exist on `main.go` at execution start (delta,
-line 79 above). It is now mounted: `main.go:369-370` — `SetBasePath("/api/")` +
-`AddRouteInitializer(restserver.MountHandler("/metrics", promhttp.Handler()))`, landed
+line 79 above). It is now mounted: `SetBasePath("/api/")` at `main.go:367` +
+`AddRouteInitializer(restserver.MountHandler("/metrics", promhttp.Handler()))` at
+`main.go:370`, landed
 by an earlier task in this plan (task-2/task-9 metrics work). The endpoint exists exactly
 as this plan's Interfaces block originally assumed; the Task 1 delta note is now stale
 and superseded by this confirmation.

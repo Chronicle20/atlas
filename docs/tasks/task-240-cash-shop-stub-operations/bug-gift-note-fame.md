@@ -156,7 +156,36 @@ change — `award_fame` is an existing, consumed action.
 
 ## Resolution
 
-- Fix commit: see `bug-gift-note-fame-report.md`
-- Gate: module-local `go build ./...` and `go test ./...` in
-  `services/atlas-channel/atlas.com/channel` pass
-- Live re-test: _pending_ (no live cluster access; see "Not yet answered" #3)
+- Fix commit: `175879987` — "fix(atlas-channel): award fame to gifter on
+  cash-shop gift acceptance". Report: `bug-gift-note-fame-report.md`.
+- Gate: `tools/verify.sh --quick --base c84a8b26a` exited **0**. Passing blocks:
+  go build/vet (services/atlas-channel/atlas.com/channel), go analyzer guards,
+  skill/job id guard, scope guard, producer seam guard, operator cancel path
+  guard, env domain guard, lint & format guard (1 module). The run's own closing
+  line: "All checks passed, but docker bake was skipped — not a pre-PR pass."
+  **A flagless `tools/verify.sh` still has to exit 0 before this branch is
+  called done** — `--quick` skips the bake and `-race`.
+- Review: `review-bug-gift-note-fame.md` — **APPROVED_WITH_FINDINGS**, 0
+  blocking. Verified the cross-service seam: the emitted `AwardFamePayload`
+  matches atlas-saga-orchestrator's `handleAwardFame` consumer field-for-field
+  and type-for-type; dispatch and event-acceptance are action-keyed rather than
+  saga-type-keyed, so the standalone `InventoryTransaction` saga cannot misfire
+  compensation onto the sibling `note_send` saga (independent records,
+  independent transaction ids); all four reject gates return before either saga
+  is built; the fame-create failure path does not return early, so
+  `MarkGiftNoteSent`'s one-shot ordering is preserved.
+  - One non-blocking finding: the unknown-SN and compartment-error reject paths
+    were not given the zero-saga assertions this file's inventory item 3 asks
+    for. Not a functional defect (both paths `return` before any saga is built).
+    Closed by a follow-up commit; see `bug-gift-note-fame-testgap-report.md`.
+  - One item the reviewer marked not-evaluable: whether atlas-character's
+    `AwardFameAndEmit` actually emits the `EventKindCharacterStatChanged` the
+    orchestrator's event-acceptance map expects for `AwardFame`. atlas-character
+    is outside this commit's diff and outside atlas-channel's module; it is
+    treated as already-proven by atlas-notes' discard-fame saga, which uses the
+    same action in production. **Unverified here** — worth confirming on the
+    live re-test.
+- Live re-test: **not done** (no live cluster access from this session). The
+  end-to-end confirmation — gift a cash item, accept it on the recipient,
+  observe the gifter's fame increment by 1 — has not been run. See "Not yet
+  answered" #3.

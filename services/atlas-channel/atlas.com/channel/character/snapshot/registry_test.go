@@ -81,63 +81,103 @@ func populate(t *testing.T, r *Registry, tm tenant.Model, characterId uint32) Co
 }
 
 func TestRegistry_MutatorsNoOpWhenEntryAbsent(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	r.SetLevel(tm, 7, 31)
-	r.InvalidateCore(tm, 7)
-	r.SetPosition(tm, 7, 1, 2)
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	if len(r.perTenant) != 0 {
-		t.Fatalf("mutators must never create entries")
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"mutators never create an entry", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			r.SetLevel(tm, 7, 31)
+			r.InvalidateCore(tm, 7)
+			r.SetPosition(tm, 7, 1, 2)
+			r.mu.RLock()
+			defer r.mu.RUnlock()
+			if len(r.perTenant) != 0 {
+				t.Fatalf("mutators must never create entries")
+			}
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_ViewCreatesAllInvalidEntryAndBackfillValidates(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	v := populate(t, r, tm, 7)
-	if !v.CoreValid || !v.SkillsValid || !v.InvValid || !v.BuffsValid {
-		t.Fatalf("all components must be valid after backfill: %+v", v)
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"view creates all-invalid entry, backfill validates", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			v := populate(t, r, tm, 7)
+			if !v.CoreValid || !v.SkillsValid || !v.InvValid || !v.BuffsValid {
+				t.Fatalf("all components must be valid after backfill: %+v", v)
+			}
+			if v.PosValid {
+				t.Fatalf("position starts invalid until fed by movement")
+			}
+		}},
 	}
-	if v.PosValid {
-		t.Fatalf("position starts invalid until fed by movement")
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_StaleBackfillDiscarded(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	v := r.View(tm, 7)
-	// A concurrent invalidation (any mutation) bumps the gen…
-	r.InvalidateCore(tm, 7)
-	// …so the in-flight backfill recorded at v.CoreGen must be discarded.
-	if r.BackfillCore(tm, 7, testCore(t, 7), v.CoreGen) {
-		t.Fatalf("stale backfill must be discarded after a concurrent mutation")
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"concurrent mutation discards a stale backfill", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			v := r.View(tm, 7)
+			// A concurrent invalidation (any mutation) bumps the gen…
+			r.InvalidateCore(tm, 7)
+			// …so the in-flight backfill recorded at v.CoreGen must be discarded.
+			if r.BackfillCore(tm, 7, testCore(t, 7), v.CoreGen) {
+				t.Fatalf("stale backfill must be discarded after a concurrent mutation")
+			}
+			after := r.View(tm, 7)
+			if after.CoreValid {
+				t.Fatalf("discarded backfill must leave the component invalid")
+			}
+		}},
 	}
-	after := r.View(tm, 7)
-	if after.CoreValid {
-		t.Fatalf("discarded backfill must leave the component invalid")
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_ApplyStatChanged_CompleteValuesAppliesInPlace(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	populate(t, r, tm, 7)
-	// JSON round-trip delivers float64.
-	r.ApplyStatChanged(tm, 7, []stat.Type{stat.TypeMp}, map[string]interface{}{"mp": float64(463)})
-	v := r.View(tm, 7)
-	if !v.CoreValid {
-		t.Fatalf("complete values must not invalidate")
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"complete values apply in place and redelivery is idempotent", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			populate(t, r, tm, 7)
+			// JSON round-trip delivers float64.
+			r.ApplyStatChanged(tm, 7, []stat.Type{stat.TypeMp}, map[string]interface{}{"mp": float64(463)})
+			v := r.View(tm, 7)
+			if !v.CoreValid {
+				t.Fatalf("complete values must not invalidate")
+			}
+			if v.Core.Mp() != 463 {
+				t.Fatalf("mp not applied: %d", v.Core.Mp())
+			}
+			// Redelivery is idempotent (absolute value).
+			r.ApplyStatChanged(tm, 7, []stat.Type{stat.TypeMp}, map[string]interface{}{"mp": float64(463)})
+			if got := r.View(tm, 7); got.Core.Mp() != 463 {
+				t.Fatalf("redelivery corrupted mp: %d", got.Core.Mp())
+			}
+		}},
 	}
-	if v.Core.Mp() != 463 {
-		t.Fatalf("mp not applied: %d", v.Core.Mp())
-	}
-	// Redelivery is idempotent (absolute value).
-	r.ApplyStatChanged(tm, 7, []stat.Type{stat.TypeMp}, map[string]interface{}{"mp": float64(463)})
-	if got := r.View(tm, 7); got.Core.Mp() != 463 {
-		t.Fatalf("redelivery corrupted mp: %d", got.Core.Mp())
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
@@ -166,242 +206,362 @@ func TestRegistry_ApplyStatChanged_MissingOrUnappliableValueInvalidates(t *testi
 }
 
 func TestRegistry_ApplyStatChanged_EmptyUpdatesIsNoOp(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	before := populate(t, r, tm, 7)
-	r.ApplyStatChanged(tm, 7, []stat.Type{}, nil)
-	after := r.View(tm, 7)
-	if !after.CoreValid || after.CoreGen != before.CoreGen {
-		t.Fatalf("empty updates must not mutate: before=%+v after=%+v", before, after)
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"empty updates is a no-op", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			before := populate(t, r, tm, 7)
+			r.ApplyStatChanged(tm, 7, []stat.Type{}, nil)
+			after := r.View(tm, 7)
+			if !after.CoreValid || after.CoreGen != before.CoreGen {
+				t.Fatalf("empty updates must not mutate: before=%+v after=%+v", before, after)
+			}
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_ApplyStatChanged_PetSnIsSkipped(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	populate(t, r, tm, 7)
-	r.ApplyStatChanged(tm, 7, []stat.Type{stat.TypePetSn1}, nil)
-	if v := r.View(tm, 7); !v.CoreValid {
-		t.Fatalf("PET_SN updates are not core fields and must be skipped, not invalidate")
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"PET_SN updates are skipped, not invalidating", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			populate(t, r, tm, 7)
+			r.ApplyStatChanged(tm, 7, []stat.Type{stat.TypePetSn1}, nil)
+			if v := r.View(tm, 7); !v.CoreValid {
+				t.Fatalf("PET_SN updates are not core fields and must be skipped, not invalidate")
+			}
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_SetLevelAndExperience_ApplyWhenValid(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	populate(t, r, tm, 7)
-	r.SetLevel(tm, 7, 31)
-	r.SetExperience(tm, 7, 123456)
-	v := r.View(tm, 7)
-	if v.Core.Level() != 31 || v.Core.Experience() != 123456 {
-		t.Fatalf("level/exp not applied: %d/%d", v.Core.Level(), v.Core.Experience())
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"level and experience apply when valid", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			populate(t, r, tm, 7)
+			r.SetLevel(tm, 7, 31)
+			r.SetExperience(tm, 7, 123456)
+			v := r.View(tm, 7)
+			if v.Core.Level() != 31 || v.Core.Experience() != 123456 {
+				t.Fatalf("level/exp not applied: %d/%d", v.Core.Level(), v.Core.Experience())
+			}
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_InPlaceUpdateOnInvalidComponentOnlyBumpsGen(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	populate(t, r, tm, 7)
-	r.InvalidateCore(tm, 7)
-	g := r.View(tm, 7).CoreGen
-	r.SetLevel(tm, 7, 99)
-	v := r.View(tm, 7)
-	if v.CoreValid {
-		t.Fatalf("in-place update must not validate a stale component")
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"in-place update on invalid component only bumps gen", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			populate(t, r, tm, 7)
+			r.InvalidateCore(tm, 7)
+			g := r.View(tm, 7).CoreGen
+			r.SetLevel(tm, 7, 99)
+			v := r.View(tm, 7)
+			if v.CoreValid {
+				t.Fatalf("in-place update must not validate a stale component")
+			}
+			if v.CoreGen == g {
+				t.Fatalf("in-place update on invalid component must still bump gen (kills in-flight backfill)")
+			}
+		}},
 	}
-	if v.CoreGen == g {
-		t.Fatalf("in-place update on invalid component must still bump gen (kills in-flight backfill)")
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_SkillUpsertRemoveAndCooldownPreserved(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	populate(t, r, tm, 7)
-	up := skill.NewModelBuilder(skillconst.Id(3121004)).SetLevel(20).SetMasterLevel(30).MustBuild()
-	r.UpsertSkill(tm, 7, up)
-	v := r.View(tm, 7)
-	if len(v.Skills) != 1 || v.Skills[0].Level() != 20 || v.Skills[0].MasterLevel() != 30 {
-		t.Fatalf("upsert mismatch: %+v", v.Skills)
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"skill upsert, insert, and remove preserve level/master level", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			populate(t, r, tm, 7)
+			up := skill.NewModelBuilder(skillconst.Id(3121004)).SetLevel(20).SetMasterLevel(30).MustBuild()
+			r.UpsertSkill(tm, 7, up)
+			v := r.View(tm, 7)
+			if len(v.Skills) != 1 || v.Skills[0].Level() != 20 || v.Skills[0].MasterLevel() != 30 {
+				t.Fatalf("upsert mismatch: %+v", v.Skills)
+			}
+			newSkill := skill.NewModelBuilder(skillconst.Id(3121002)).SetLevel(1).MustBuild()
+			r.UpsertSkill(tm, 7, newSkill)
+			if v = r.View(tm, 7); len(v.Skills) != 2 {
+				t.Fatalf("insert mismatch: %+v", v.Skills)
+			}
+			r.RemoveSkill(tm, 7, skillconst.Id(3121004))
+			if v = r.View(tm, 7); len(v.Skills) != 1 || v.Skills[0].Id() != skillconst.Id(3121002) {
+				t.Fatalf("remove mismatch: %+v", v.Skills)
+			}
+		}},
 	}
-	newSkill := skill.NewModelBuilder(skillconst.Id(3121002)).SetLevel(1).MustBuild()
-	r.UpsertSkill(tm, 7, newSkill)
-	if v = r.View(tm, 7); len(v.Skills) != 2 {
-		t.Fatalf("insert mismatch: %+v", v.Skills)
-	}
-	r.RemoveSkill(tm, 7, skillconst.Id(3121004))
-	if v = r.View(tm, 7); len(v.Skills) != 1 || v.Skills[0].Id() != skillconst.Id(3121002) {
-		t.Fatalf("remove mismatch: %+v", v.Skills)
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_AssetLifecycle(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	v := populate(t, r, tm, 7)
-	compId := v.Inv.Consumable().Id()
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"asset quantity, slot, upsert, unknown-compartment invalidation, and delete", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			v := populate(t, r, tm, 7)
+			compId := v.Inv.Consumable().Id()
 
-	// Quantity absolute (idempotent).
-	r.SetAssetQuantity(tm, 7, 9001, 380)
-	r.SetAssetQuantity(tm, 7, 9001, 380)
-	got := r.View(tm, 7)
-	a, ok := got.Inv.Consumable().FindById(9001)
-	if !ok || a.Quantity() != 380 {
-		t.Fatalf("quantity not applied: %+v ok=%v", a, ok)
-	}
+			// Quantity absolute (idempotent).
+			r.SetAssetQuantity(tm, 7, 9001, 380)
+			r.SetAssetQuantity(tm, 7, 9001, 380)
+			got := r.View(tm, 7)
+			a, ok := got.Inv.Consumable().FindById(9001)
+			if !ok || a.Quantity() != 380 {
+				t.Fatalf("quantity not applied: %+v ok=%v", a, ok)
+			}
 
-	// Slot absolute by AssetId.
-	r.SetAssetSlot(tm, 7, 9001, 5)
-	got = r.View(tm, 7)
-	a, _ = got.Inv.Consumable().FindById(9001)
-	if a.Slot() != 5 {
-		t.Fatalf("slot not applied: %d", a.Slot())
-	}
+			// Slot absolute by AssetId.
+			r.SetAssetSlot(tm, 7, 9001, 5)
+			got = r.View(tm, 7)
+			a, _ = got.Inv.Consumable().FindById(9001)
+			if a.Slot() != 5 {
+				t.Fatalf("slot not applied: %d", a.Slot())
+			}
 
-	// Upsert (full replace by AssetId) + insert of a new asset.
-	repl := asset.NewModelBuilder(9001, compId, 2061000).SetSlot(5).SetQuantity(111).MustBuild()
-	r.UpsertAsset(tm, 7, compId, repl)
-	ins := asset.NewModelBuilder(9002, compId, 2060001).SetSlot(6).SetQuantity(200).MustBuild()
-	r.UpsertAsset(tm, 7, compId, ins)
-	got = r.View(tm, 7)
-	if len(got.Inv.Consumable().Assets()) != 2 {
-		t.Fatalf("expected 2 assets: %+v", got.Inv.Consumable().Assets())
-	}
-	a, _ = got.Inv.Consumable().FindById(9001)
-	if a.TemplateId() != 2061000 || a.Quantity() != 111 {
-		t.Fatalf("upsert replace mismatch: %+v", a)
-	}
+			// Upsert (full replace by AssetId) + insert of a new asset.
+			repl := asset.NewModelBuilder(9001, compId, 2061000).SetSlot(5).SetQuantity(111).MustBuild()
+			r.UpsertAsset(tm, 7, compId, repl)
+			ins := asset.NewModelBuilder(9002, compId, 2060001).SetSlot(6).SetQuantity(200).MustBuild()
+			r.UpsertAsset(tm, 7, compId, ins)
+			got = r.View(tm, 7)
+			if len(got.Inv.Consumable().Assets()) != 2 {
+				t.Fatalf("expected 2 assets: %+v", got.Inv.Consumable().Assets())
+			}
+			a, _ = got.Inv.Consumable().FindById(9001)
+			if a.TemplateId() != 2061000 || a.Quantity() != 111 {
+				t.Fatalf("upsert replace mismatch: %+v", a)
+			}
 
-	// Upsert into an unknown compartment invalidates instead of guessing.
-	r.UpsertAsset(tm, 7, uuid.New(), ins)
-	if got = r.View(tm, 7); got.InvValid {
-		t.Fatalf("unknown compartment must invalidate inventory")
-	}
+			// Upsert into an unknown compartment invalidates instead of guessing.
+			r.UpsertAsset(tm, 7, uuid.New(), ins)
+			if got = r.View(tm, 7); got.InvValid {
+				t.Fatalf("unknown compartment must invalidate inventory")
+			}
 
-	// Refill, then delete.
-	inv2, _, _ := testInventory(t, 7)
-	if !r.BackfillInventory(tm, 7, inv2, got.InvGen) {
-		t.Fatalf("re-backfill rejected")
+			// Refill, then delete.
+			inv2, _, _ := testInventory(t, 7)
+			if !r.BackfillInventory(tm, 7, inv2, got.InvGen) {
+				t.Fatalf("re-backfill rejected")
+			}
+			r.RemoveAsset(tm, 7, 9001)
+			got = r.View(tm, 7)
+			if _, ok = got.Inv.Consumable().FindById(9001); ok {
+				t.Fatalf("delete must remove the asset")
+			}
+		}},
 	}
-	r.RemoveAsset(tm, 7, 9001)
-	got = r.View(tm, 7)
-	if _, ok = got.Inv.Consumable().FindById(9001); ok {
-		t.Fatalf("delete must remove the asset")
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_AssetMutationDoesNotAliasPriorReads(t *testing.T) {
-	// A composed/read model handed out earlier must not observe later
-	// mutations (value-copy semantics; guards the shared-map/slice hazard in
-	// inventory.CloneModel / compartment.CloneModel).
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	populate(t, r, tm, 7)
-	before := r.View(tm, 7)
-	beforeQty := before.Inv.Consumable().Assets()[0].Quantity()
-	r.SetAssetQuantity(tm, 7, 9001, 42)
-	if got := before.Inv.Consumable().Assets()[0].Quantity(); got != beforeQty {
-		t.Fatalf("prior read mutated in place: %d -> %d", beforeQty, got)
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		// A composed/read model handed out earlier must not observe later
+		// mutations (value-copy semantics; guards the shared-map/slice hazard in
+		// inventory.CloneModel / compartment.CloneModel).
+		{"prior read is not aliased by a later mutation", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			populate(t, r, tm, 7)
+			before := r.View(tm, 7)
+			beforeQty := before.Inv.Consumable().Assets()[0].Quantity()
+			r.SetAssetQuantity(tm, 7, 9001, 42)
+			if got := before.Inv.Consumable().Assets()[0].Quantity(); got != beforeQty {
+				t.Fatalf("prior read mutated in place: %d -> %d", beforeQty, got)
+			}
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_BuffUpsertRemoveBySourceId(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	populate(t, r, tm, 7)
-	b := buff.NewBuff(3111004, 20, 60_000, nil, timeNowForTest(), timeNowForTest().Add(60_000_000_000), false)
-	r.UpsertBuff(tm, 7, b)
-	r.UpsertBuff(tm, 7, b) // redelivery: replace, not duplicate
-	v := r.View(tm, 7)
-	if len(v.Buffs) != 1 {
-		t.Fatalf("upsert must replace by sourceId: %+v", v.Buffs)
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"buff upsert replaces by sourceId, remove drops it", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			populate(t, r, tm, 7)
+			b := buff.NewBuff(3111004, 20, 60_000, nil, timeNowForTest(), timeNowForTest().Add(60_000_000_000), false)
+			r.UpsertBuff(tm, 7, b)
+			r.UpsertBuff(tm, 7, b) // redelivery: replace, not duplicate
+			v := r.View(tm, 7)
+			if len(v.Buffs) != 1 {
+				t.Fatalf("upsert must replace by sourceId: %+v", v.Buffs)
+			}
+			r.RemoveBuff(tm, 7, 3111004)
+			if v = r.View(tm, 7); len(v.Buffs) != 0 {
+				t.Fatalf("remove mismatch: %+v", v.Buffs)
+			}
+		}},
 	}
-	r.RemoveBuff(tm, 7, 3111004)
-	if v = r.View(tm, 7); len(v.Buffs) != 0 {
-		t.Fatalf("remove mismatch: %+v", v.Buffs)
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_PositionOverlayAndComposedCache(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	populate(t, r, tm, 7)
-	if _, ok := r.ComposedIfValid(tm, 7); !ok {
-		t.Fatalf("all-valid entry must compose")
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"position overlay composes, falls back to core X/Y when invalidated", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			populate(t, r, tm, 7)
+			if _, ok := r.ComposedIfValid(tm, 7); !ok {
+				t.Fatalf("all-valid entry must compose")
+			}
+			r.SetPosition(tm, 7, 333, -444)
+			m, ok := r.ComposedIfValid(tm, 7)
+			if !ok {
+				t.Fatalf("compose after position update")
+			}
+			if m.X() != 333 || m.Y() != -444 {
+				t.Fatalf("position overlay not applied: %d/%d", m.X(), m.Y())
+			}
+			// Composition preserves the decorated shape: inventory + skills present.
+			if len(m.Skills()) != 1 || len(m.Inventory().Consumable().Assets()) != 1 {
+				t.Fatalf("composed model missing decorations")
+			}
+			r.InvalidatePosition(tm, 7)
+			m, ok = r.ComposedIfValid(tm, 7)
+			if !ok {
+				t.Fatalf("pos-invalid entry still composes from core X/Y")
+			}
+			if m.X() != 100 || m.Y() != -50 {
+				t.Fatalf("expected core REST X/Y when position invalid: %d/%d", m.X(), m.Y())
+			}
+		}},
 	}
-	r.SetPosition(tm, 7, 333, -444)
-	m, ok := r.ComposedIfValid(tm, 7)
-	if !ok {
-		t.Fatalf("compose after position update")
-	}
-	if m.X() != 333 || m.Y() != -444 {
-		t.Fatalf("position overlay not applied: %d/%d", m.X(), m.Y())
-	}
-	// Composition preserves the decorated shape: inventory + skills present.
-	if len(m.Skills()) != 1 || len(m.Inventory().Consumable().Assets()) != 1 {
-		t.Fatalf("composed model missing decorations")
-	}
-	r.InvalidatePosition(tm, 7)
-	m, ok = r.ComposedIfValid(tm, 7)
-	if !ok {
-		t.Fatalf("pos-invalid entry still composes from core X/Y")
-	}
-	if m.X() != 100 || m.Y() != -50 {
-		t.Fatalf("expected core REST X/Y when position invalid: %d/%d", m.X(), m.Y())
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_ComposedNotServedWhenComponentInvalid(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	populate(t, r, tm, 7)
-	r.InvalidateInventory(tm, 7)
-	if _, ok := r.ComposedIfValid(tm, 7); ok {
-		t.Fatalf("must not serve composed model over an invalid component")
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"composed model is not served over an invalid component", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			populate(t, r, tm, 7)
+			r.InvalidateInventory(tm, 7)
+			if _, ok := r.ComposedIfValid(tm, 7); ok {
+				t.Fatalf("must not serve composed model over an invalid component")
+			}
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_EvictAndTenantIsolation(t *testing.T) {
-	r := newTestRegistry()
-	t1 := newTestTenant(t)
-	t2 := newTestTenant(t)
-	populate(t, r, t1, 7)
-	populate(t, r, t2, 7)
-	r.Evict(t1, 7)
-	if _, ok := r.ComposedIfValid(t1, 7); ok {
-		t.Fatalf("evicted entry must be gone")
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"evict drops one tenant's entry, leaves the other, tenant-evict drops all", func(t *testing.T) {
+			r := newTestRegistry()
+			t1 := newTestTenant(t)
+			t2 := newTestTenant(t)
+			populate(t, r, t1, 7)
+			populate(t, r, t2, 7)
+			r.Evict(t1, 7)
+			if _, ok := r.ComposedIfValid(t1, 7); ok {
+				t.Fatalf("evicted entry must be gone")
+			}
+			if _, ok := r.ComposedIfValid(t2, 7); !ok {
+				t.Fatalf("t2 must survive t1 evict")
+			}
+			r.EvictTenant(t2.Id())
+			if _, ok := r.ComposedIfValid(t2, 7); ok {
+				t.Fatalf("tenant evict must drop entries")
+			}
+		}},
 	}
-	if _, ok := r.ComposedIfValid(t2, 7); !ok {
-		t.Fatalf("t2 must survive t1 evict")
-	}
-	r.EvictTenant(t2.Id())
-	if _, ok := r.ComposedIfValid(t2, 7); ok {
-		t.Fatalf("tenant evict must drop entries")
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
 	}
 }
 
 func TestRegistry_ConcurrentAccess(t *testing.T) {
-	r := newTestRegistry()
-	tm := newTestTenant(t)
-	var wg sync.WaitGroup
-	for i := 0; i < 8; i++ {
-		wg.Add(1)
-		go func(n int) {
-			defer wg.Done()
-			for j := 0; j < 200; j++ {
-				id := uint32(j%5 + 1)
-				v := r.View(tm, id)
-				_ = r.BackfillCore(tm, id, testCore(t, id), v.CoreGen)
-				r.ApplyStatChanged(tm, id, []stat.Type{stat.TypeMp}, map[string]interface{}{"mp": float64(j)})
-				r.SetPosition(tm, id, int16(j), int16(-j))
-				_, _ = r.ComposedIfValid(tm, id)
-				if j%50 == 0 {
-					r.Evict(tm, id)
-				}
+	tests := []struct {
+		name string
+		fn   func(t *testing.T)
+	}{
+		{"concurrent readers/writers do not race", func(t *testing.T) {
+			r := newTestRegistry()
+			tm := newTestTenant(t)
+			var wg sync.WaitGroup
+			for i := 0; i < 8; i++ {
+				wg.Add(1)
+				go func(n int) {
+					defer wg.Done()
+					for j := 0; j < 200; j++ {
+						id := uint32(j%5 + 1)
+						v := r.View(tm, id)
+						_ = r.BackfillCore(tm, id, testCore(t, id), v.CoreGen)
+						r.ApplyStatChanged(tm, id, []stat.Type{stat.TypeMp}, map[string]interface{}{"mp": float64(j)})
+						r.SetPosition(tm, id, int16(j), int16(-j))
+						_, _ = r.ComposedIfValid(tm, id)
+						if j%50 == 0 {
+							r.Evict(tm, id)
+						}
+					}
+				}(i)
 			}
-		}(i)
+			wg.Wait()
+		}},
 	}
-	wg.Wait()
+	for _, tt := range tests {
+		t.Run(tt.name, tt.fn)
+	}
 }
 
 func timeNowForTest() time.Time { return time.Now() }

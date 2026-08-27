@@ -1,134 +1,147 @@
 # bug: JMS 185.1 client crashes on entering a channel
 
-Status: **root cause NOT established.** This file records what is confirmed and
-what is ruled out. Do not dispatch a fix agent against it until the "Blocking"
-section is answered.
+Status: **crash mechanism proven; the specific malformed field is not yet
+identified.** The next unit is a field-by-field verification of
+`CharacterData` for JMS 185 (see `## Next unit`).
 
 ## Reproduced
 
-Yes — captured live in `atlas-main`, pod `atlas-channel-75c9d7b679-msgpq`.
+Yes — captured live in `atlas-main`, pod `atlas-channel-75c9d7b679-msgpq`,
+image `ghcr.io/chronicle20/atlas-channel/atlas-channel:main-051617c`.
 
 - Tenant `abedf3b4-1d7c-4b3b-bc52-70f62ab09418`, region `JMS`, `ms.version 185.1`
-- World 0, channel 0, character 40, map 10000, instance `00000000-…-0000`
-- Deployed overlay: `de7a1a6` (main `903537fe8`)
+- World 0, channel 0, character 40 ("Chronicle", level 1), map 10000, instance `00000000-…-0000`
 - Session `827ab027-33cb-4896-a67a-e57c554298c3`
+- Last known good: "days ago", exact build unknown (user).
 
-Timeline (from pod logs):
+Timeline (pod logs):
 
 | time (UTC) | event |
 |---|---|
 | 23:13:11.330 | client connected |
 | 23:13:11.343 | `CharacterLoggedInHandle` characterId 40 |
-| 23:13:11.514 | `GET /api/rings?filter[characterId]=40` (new in `60d999251`) |
+| 23:13:11.514 | `GET /api/rings?filter[characterId]=40` |
 | 23:13:11.573 | `Writing SetField for character [40]` |
-| 23:13:11.597 | `SpawnForSelf: character [40] in map [10000]`; map NPC/mob/etc. fan-out |
+| 23:13:11.597 | `SpawnForSelf: character [40] in map [10000]`; enter-field fan-out |
 | 23:13:12.719 | client → server op `0xEA` (unhandled) |
 | 23:13:12.729 | client → server op `0xDA` (unhandled) |
-| 23:13:42.734 | session idle, server PING (no further client traffic) |
+| 23:13:42.734 | idle, server PING; no further client traffic |
 | 23:15:05.495 | connection ended |
-
-The client transmits twice after the enter-field burst and then goes completely
-silent — consistent with the crash landing ~1.1 s after `SetField`.
 
 ## Observed
 
-Client access violation at `0x44F5E2`.
-
-`0x44F5E2` is inside `sub_44F5DF` (JMS185 IDB `MapleStory_dump_SCY.exe.i64`,
-session `a977912e`), a generic hash-map lookup:
+Client access violation at `0x44F5E2`. Call stack (x32dbg, JMS185 IDB session
+`a977912e`, `MapleStory_dump_SCY.exe.i64`):
 
 ```
-44f5df  push esi
-44f5e0  mov  esi, ecx
-44f5e2  cmp  dword ptr [esi+4], 0      <-- faults
-...
-44f5f9  div  dword ptr [esi+8]
+CWvsApp::WindowProc            0xae23b3
+CClientSocket::OnRead          0x4b125c
+CClientSocket::ManipulatePacket 0x4b1717
+CClientSocket::ProcessPacket   0x4b17eb
+CField::OnPacket               0x56e721   (ret 0x56e985)
+CNpcPool::OnPacket             0x720430   (ret 0x7204a4)
+  -> CNpcPool::OnNpcEnterField 0x72068f   (call at 0x72049f)
+     -> sub_44F5DF             0x44f5df   AV at 0x44f5e2
 ```
 
-The faulting instruction is the **first dereference of the map object**, so the
-map/pool pointer itself is invalid — this is a null/garbage `this`, not a
-mis-decoded packet body.
+## Root cause mechanism (proven)
 
-`xrefs_to 0x44f5df` (13, complete) — every caller is a pool lookup:
+`CField::OnPacket` does **not** own the pools. It routes by opcode range to
+*global singletons*:
 
-- `CMobPool::GetMob` @0x448819, `CMobPool::OnMobLeaveField` @0x6f8a1f, `sub_6F76D6`
-- `CEmployeePool::OnEmployee{EnterField,LeaveField,MiniRoomBalloon}` @0x542a71/0x542b0e/0x542b6c, `sub_5428F7`
-- `CNpcPool::{SetLocalNpc,SetRemoteNpc,GetNpc,OnNpcEnterField,OnNpcLeaveField}`
-  @0x720242 / 0x7202ea / 0x720623 / **0x72068f** / 0x720724
+```
+0x56e957  mov ecx, dword_CD5698   ; CMobPool       (0x0FD..0x115)
+0x56e979  mov ecx, dword_CD7590   ; CNpcPool       (0x116..0x11D)
+0x56e99b  mov ecx, dword_CD749C   ; CEmployeePool  (0x11E..0x120)
+```
 
-`CNpcPool::OnNpcEnterField` @0x72068f calls it as `sub_44F5DF(this + 1, …)`, so
-the user's read that `OnNpcEnterField` is a plausible ancestor is consistent.
+`dword_CD7590` is written in exactly two places:
 
-## Expected
+- `sub_71FED9` @0x71FEF2 — CNpcPool constructor, `dword_CD7590 = this`
+- `sub_71FF65` @0x71FFB8 — CNpcPool destructor, `dword_CD7590 = 0`
 
-Client enters map 10000, spawns NPCs, and stays connected.
+`sub_44F5DF` faults on its **first** dereference of that pointer
+(`0x44f5e2 cmp dword ptr [esi+4], 0`), so at crash time `dword_CD7590` is null.
+
+**Therefore: opcode `0x116` (SpawnNPC) reached `CNpcPool::OnPacket` while no
+CNpcPool existed** — the field was constructed far enough to install
+`CField::OnPacket` as the stage handler, then torn down (or never finished
+building its pools) before the enter-field burst was processed. The NPC packet
+is the victim, not the cause; the failure is in the SetField / enter-field
+sequence.
+
+Opcode routing is correct and is not the fault: `template_jms_185_1.json` has
+`SetField 0x7B`, `SpawnMonster 0xFD`, `SpawnNPC 0x116`,
+`SpawnNPCRequestController 0x118` — all inside the client's expected ranges
+(`CClientSocket::ProcessPacket` @0x4b1887 sends `0x1B..0x7A` to `CWvsContext`
+and everything else to the stage; `CField::OnPacket` ranges above).
 
 ## Ruled out (with evidence)
 
-1. **NpcSpawn body shape is correct for JMS 185.**
-   `CNpc::Init` @0x716da2 reads, in order:
-   `Decode2` @0x716dd6 (x), `Decode2` @0x716de4 (cy), `Decode1` @0x716e0c (f),
-   `Decode2` @0x716e1c (fh), `Decode2` @0x716e3c (rx0), `Decode2` @0x716e4a (rx1),
-   `Decode1` @0x716edf (bEnabled) — 7 reads after the two `Decode4`s in
-   `OnNpcEnterField`. That is exactly what
+1. **NpcSpawn body shape is correct for JMS 185.** `CNpc::Init` @0x716da2 reads
+   `Decode2` @0x716dd6, `Decode2` @0x716de4, `Decode1` @0x716e0c,
+   `Decode2` @0x716e1c, `Decode2` @0x716e3c, `Decode2` @0x716e4a,
+   `Decode1` @0x716edf — exactly what
    `libs/atlas-packet/npc/clientbound/spawn.go` writes for a JMS tenant
-   (`hasEnabledFlag` returns `true` for non-GMS). No field mismatch.
-   Note this also corrects `docs/packets/audits/jms_v185/NpcSpawn.json`, which
-   records the body as an "opaque npc position/appearance block".
+   (`hasEnabledFlag` → `true`). This also corrects
+   `docs/packets/audits/jms_v185/NpcSpawn.json`, which records the body as an
+   "opaque npc position/appearance block".
 
-2. **The crash signature is not a body-decode error.** A wrong NpcSpawn body
-   would misalign or throw inside `CInPacket`, not fault on the pool pointer's
-   first dereference.
+2. **The SetField *frame* is correct for JMS 185.** `CStage::OnSetField`
+   @0x7eea69 reads, in order: `CClientOptMan::DecodeOpt` @0x7eea92,
+   `Decode4` @0x7eeaa6 (channel), `Decode1` @0x7eeab6, `Decode4` @0x7eeac1,
+   `Decode1` @0x7eeae4 (sNotifierMessage), `Decode1` @0x7eeaf1
+   (bCharacterData), `Decode2` @0x7eeb08 (nNotifierCheck, gates a DecodeStr
+   list), then — when bCharacterData — `Decode4` ×3 @0x7eebac/0x7eebb6/0x7eebcb
+   (seeds), `CharacterData::Decode` @0x7eebf4,
+   `CWvsContext::OnSetLogoutGiftConfig` @0x7eebfc, and finally
+   `CInPacket::DecodeBuffer(p, 8)` @0x7eed25. That is field-for-field the JMS
+   branch of `libs/atlas-packet/field/clientbound/set_field.go`.
 
-3. **Rings (`60d999251`, the most recent shared-codec change) did not alter the
-   bytes for this character.** `GET /api/rings?filter[characterId]=40` returns
-   `"data":[], "total":0`, and `model.RingRecords.EncodeRecords` with all three
-   slices empty emits the identical `WriteShort(0)` ×3 that the pre-task
-   `CharacterData.encodeRings` stub emitted
-   (`libs/atlas-packet/model/ring.go:255-270`). `RingSet.EncodeField` with all
-   arms nil likewise emits three zero bytes on JMS as on GMS. CharacterData /
-   SetField is byte-identical to pre-rings for character 40.
+3. **Rings (`60d999251`) changed no bytes for this character.**
+   `GET /api/rings?filter[characterId]=40` → `"data":[], "total":0`; empty
+   `model.RingRecords.EncodeRecords` emits the same `WriteShort(0)` ×3 as the
+   pre-task stub (`libs/atlas-packet/model/ring.go:255-270`), and an all-nil
+   `RingSet.EncodeField` emits three zero bytes on JMS as on GMS.
 
-4. **`845a5c992` (gms_v95 verification batch) touched nothing JMS-facing.**
-   Its only non-test source change is `libs/atlas-packet/test/movement_types.go`;
-   `template_jms_185_1.json` is untouched.
+4. **spawnPoint plumbing (`051617c5e`, the deployed image) changed no bytes for
+   this character.** It replaced `character.Model.SpawnPoint()`'s hardcoded `0`
+   with the real field, narrowed via `byte(...)` in
+   `services/atlas-channel/…/socket/writer/character_data.go:48`.
+   `GET /api/characters/40` reports `spawnPoint = 0`, so the emitted byte is
+   unchanged. (Still worth re-checking if the character's location-scoped
+   spawn point differs from the base resource's.)
 
-5. **task-251 (player NPCs) is not merged** — branch only; the NPC writer path
-   on `main` has not changed recently.
+5. **`845a5c992` (gms_v95 verification batch)** touched no JMS template and no
+   shared codec — its only non-test source change is
+   `libs/atlas-packet/test/movement_types.go`.
 
-## Leading hypothesis (unconfirmed)
+6. **task-251 (player NPCs) is unmerged** — branch only.
 
-The client is dispatching a field-scoped pool packet while `CField` / the pool
-is not constructed, i.e. the failure is **upstream of the NPC packet**, in
-whatever the client did (or failed to do) with the enter-field burst. Two
-sub-hypotheses, neither yet tested:
+## Next unit
 
-- (H1) A packet in the enter-field burst is malformed for JMS 185, the client
-  swallows the decode exception, leaves the field half-built, and the next
-  pool-scoped packet faults on the null pool.
-- (H2) An opcode in `template_jms_185_1.json` routes a packet the client maps
-  into the pool range before the field exists.
+Verify **`CharacterData` × jms_v185** field-by-field: decompile
+`CharacterData::Decode` @0x5137af in IDB session `a977912e` and walk it against
+`libs/atlas-packet/character/data.go` on the JMS branch of every version gate.
+The SetField frame around it is confirmed correct (§2 above), so any surviving
+desync is inside this blob — or inside
+`CWvsContext::OnSetLogoutGiftConfig` @0xae81c0, which `set_field.go` assumes
+reads exactly four `Decode4`s and which has **not** been checked on JMS 185.
 
-## Blocking — needs the user
-
-1. **When did this last work?** Which deployed overlay / date was the last good
-   JMS 185.1 channel enter? The candidate range on `main` is only three deploys
-   wide (`845a5c9` → `60d9992` → `de7a1a6`); a wider "last known good" opens it
-   up considerably and changes which diff to bisect.
-2. **A wire capture of the enter-field burst** (or the client-side crash
-   dialog's full text / call stack). Without the bytes, H1 vs H2 cannot be
-   separated, and neither the writer list nor the opcode table can be checked
-   against what the client actually received.
+Also unchecked: whether `CClientOptMan::DecodeOpt` @0x4ae41d consumes exactly
+the two bytes `set_field.go` writes when the leading short is 0.
 
 ## Fix
 
-Not yet determinable. File inventory will be filled in once the root cause is
-established.
+Not yet determinable — the specific field is unidentified. File inventory to be
+filled in once the desync is located.
 
 ## Not yet answered
 
-- Which of the ~30 writers in the enter-field burst is the one the client chokes
-  on (if H1).
-- Whether ops `0xEA` / `0xDA` (client → server, currently unhandled on JMS 185)
-  are a normal post-load pair or a symptom.
-- Whether the crash is reachable on other client versions or is JMS-185-only.
+- Which `CharacterData` field diverges on JMS 185 (or whether the divergence is
+  in the logout-gift block / DecodeOpt instead).
+- Whether ops `0xEA` / `0xDA` (client → server, unhandled on JMS 185) are a
+  normal post-load pair or a symptom.
+- Exact last-known-good build. User reports "days ago"; the deployed image at
+  crash time was `main-051617c`.
+- Whether the same crash is reachable on other client versions.

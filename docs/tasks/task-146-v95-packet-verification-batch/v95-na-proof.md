@@ -195,10 +195,14 @@ arm that could receive one if the server sent it anyway.
 (not by a failed name search — by exhausting `CLogin`'s clientbound dispatch
 switch and cross-checking the one structurally adjacent sibling that *is*
 present). Recorded in `docs/packets/audits/gms_v95/_unimplemented.json` as a
-`{packet, reason}` entry with `packet: "login/clientbound/LoginServerLoad"`
-(confirmed against `qualifiedWriterName("login", "ServerLoad")` in
-`tools/packet-audit/cmd/run.go`) and a `reason` summarizing the three anchors
-above with their addresses.
+`{packet, reason}` entry with `packet: "login/clientbound/ServerLoad"`
+(login candidates in `tools/packet-audit/cmd/run.go` always carry an empty
+`pkg`, so `qualifiedWriterName("", "ServerLoad")` returns the bare struct
+name `ServerLoad` rather than a `Login`-prefixed name; corroborated by
+sibling gms_v95 reports for other bare-pkg login candidates —
+`ServerStatus.json`, `AfterLogin.json`, `ServerIP.json` — which all carry
+`WriterName` equal to the unprefixed struct name) and a `reason` summarizing
+the three anchors above with their addresses.
 
 ---
 

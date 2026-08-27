@@ -115,5 +115,184 @@ All seven CI gates were verified exit 0 at the branch point; the two standing
 
 ## As-built
 
-_To be filled in by Task 17 with the actual outcome, including any deviation
-from the plan — notably whether `PartyInviteRejectHandle` was routed._
+Written by Task 17 after all 17 plan tasks landed, from `progress.md`, the
+per-task reports, and a direct `git diff 43975545a..HEAD` sweep (the branch's
+starting point before Task 1). Full derivation lives in
+`docs/tasks/task-146-v95-packet-verification-batch/coverage-manifest.yaml`.
+
+### Execution order
+
+Actual order was 6, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 — Tasks
+1–5 (independent, any order) were resequenced by the controller so Task 6's
+template routes existed before the later verification tasks needed them, and
+Task 1 (the AP opcode fix) landed as part of the same commit range as Task 6.
+All landed commits are `11cfdd31b..ac0a624c6` on top of base `43975545a`.
+
+### `PartyInviteRejectHandle` — routed, not dropped
+
+Design flagged this as conditional (PRD §4.1 required routing it; the plan
+made it conditional on an IDB confirmation because `DENY_PARTY_REQUEST` is
+`n-a` on v95). Task 6 confirmed it IS live: `CWvsContext::OnPartyResult`
+(`0xa10ab0`) builds `COutPacket(&oPacket, 146)` on the decline path, so
+`PartyInviteRejectHandle` was routed at opCode `0x92`, IDB-confirmed. No
+deviation occurred — the conditional resolved to "route it."
+
+### Four full coverage-matrix verifications (Tasks 12–15)
+
+All on `gms_v95`, all `incomplete -> verified`:
+
+- `CHECK_SPW_RESULT` clientbound (`login/clientbound/LoginPicResult`), Task 12, 30eaffea3
+- `MULTI_CHAT` serverbound (`chat/serverbound/ChatMulti`), Task 13, 5895eb521
+- `ENTER_CASHSHOP` serverbound (`cash/serverbound/CashShopEntry`), Task 14, 06205b96d
+- `NPC_ACTION` clientbound (`npc/clientbound/NpcAction`), Task 15, aa038b1e7
+
+Plus four more promoted by Tasks 2/3/6 (fname promotion + template routing,
+no new fixture needed because the codec already existed): `CHANGE_MAP` sb,
+`NPC_TALK` sb, `NPC_TALK` cb, `CHANGE_MAP_SPECIAL` sb, `STORAGE` sb (five,
+not four — see coverage-manifest.yaml for the full per-op reasoning). `
+LOGIN_AUTH` cb resolved to `n-a` (Task 4, genuinely absent — proof in
+`login-auth-resolution.md`). `AUTO_DISTRIBUTE_AP` sb had its opcode corrected
+98 -> 99 without a state change (Task 1). The sub-struct
+`npc/clientbound/NpcAskSlideMenuConversationDetail` was promoted by a
+grading-allowlist fix, not new codec work (Task 5).
+
+### Known regression: four sub-struct rows demoted `verified -> incomplete`
+
+Side effect of Task 2's fname promotions, first surfaced and deferred by the
+Task 2 reviewer, confirmed here by direct `status.json` diff. When a promoted
+op row's registry primary `fname` changes, `findReport` (which joins by
+primary fname only, `grade.go:282-292`) can no longer find the report the OLD
+fname's sub-struct row depended on, so the sub-struct's own cell regrades to
+`incomplete / "no audit report"` even though nothing about the underlying
+codec changed. Confirmed regressed on `gms_v95`, all `verified -> incomplete`:
+
+- `field/serverbound/FieldChange` (sibling of the promoted `CHANGE_MAP` sb)
+- `npc/clientbound/NpcNpcConversation` (sibling of the promoted `NPC_TALK` cb)
+- `npc/serverbound/NpcStartConversation` (sibling of the promoted `NPC_TALK` sb)
+- `portal/serverbound/PortalScript` (sibling of the promoted `CHANGE_MAP_SPECIAL` sb)
+
+This is `matrix --check`-clean (the tool has no rule requiring a sub-struct
+row to track its parent op row's promotion) and does not affect any PRD §4.2
+cell — each is a distinct row from the op cell that was the task's actual
+target. It is real committed drift, not a fabricated finding, and it needs a
+follow-up task (re-pin each sub-struct's own evidence/report against the
+NEW primary fname) before those four rows can be trusted again. Filed here
+because it was never a task target in this plan and no other document
+records it as a branch-wide fact.
+
+### Open item for final pre-PR triage: T13's spliced IDA-export guard
+
+`docs/packets/ida-exports/gms_v95.json`'s spliced entry for
+`CUIStatusBar::SendGroupMessage` (added by Task 13) carries a `calls` array
+whose 4 elements all bear an identical, unexplained guard
+`nChatTarget == 4 && nMemberCnt`, and omits the recipient loop's unguarded
+`Encode4`. The Task 13 reviewer traced this to the harvester/parser, not an
+implementer fabrication, and confirmed by grep that no gate reads `idasrc`
+export data for grading — inert for Task 13's verified claim, but it is
+committed shared ground truth a future chat-domain task could be misled by.
+Task 14's own splice (`CWvsContext::SendMigrateToShopRequest`) was checked
+for the same defect by its reviewer and is clean — `calls: null`.
+
+### Two older deferred doc-completeness minors (non-blocking, documentation only)
+
+- **Task 2**: the first implementation attempt's report predicted the four
+  promoted ops' sibling sub-struct rows would "re-subsume cleanly into
+  verified"; they instead land `incomplete / no audit report` — correct per
+  `tools/packet-audit/internal/matrix/build.go:293-300` but the prediction
+  was never reconciled in the report. (This is the same underlying mechanism
+  as the "known regression" section above — recorded twice here because the
+  Task 2 review flagged it as a doc-completeness gap independently of the
+  later mechanical status.json diff that confirmed it.)
+- **Task 4**: `login-auth-resolution.md`'s "mandatory sibling cross-check"
+  searched only `func_query filter=*SPW*` and never cited the send-side
+  siblings already present in the same registry file
+  (`docs/packets/registry/gms_v95.yaml:2311` `REGISTER_PIC`, `:2316`
+  `CHAR_SELECT_WITH_PIC`, `:2326` `VIEW_ALL_WITH_PIC`). Outcome-neutral — the
+  reviewer located them independently and the primary evidence (the
+  exhaustive, address-cited `CLogin::OnPacket` switch enumeration) already
+  rules out a missed `LOGIN_AUTH` arm regardless.
+
+### `plan.md` carries a known-wrong derivation — deliberately left uncorrected
+
+`docs/tasks/task-146-v95-packet-verification-batch/plan.md` lines ~1728 and
+~1734 assert `qualifiedWriterName("login", "ServerLoad") = LoginServerLoad`.
+This is WRONG: `run.go`'s login candidates always carry an empty `pkg`
+(`pkg: "login"` appears in none of the 27 enumerated pkg literals), so
+`qualifiedWriterName("", "ServerLoad")` short-circuits on `pkg == ""` and
+returns the bare name `ServerLoad` — confirmed by the sibling gms_v95 reports
+for other bare-pkg login candidates (`ServerStatus.json`, `AfterLogin.json`,
+`ServerIP.json`), which all carry a `WriterName` equal to the unprefixed
+struct name. This wrong derivation caused a Task 16 blocking review finding
+(`_unimplemented.json` originally recorded `login/clientbound/LoginServerLoad`,
+fixed to `login/clientbound/ServerLoad` in commit `ac0a624c6`). `plan.md` is a
+historical phase artifact and is deliberately NOT being rewritten to correct
+it — recorded here so a future reader of `plan.md` is not misled by those two
+lines.
+
+### Standing pattern: a brief can be wrong about mechanics, not just values
+
+Four instances on this branch, each a brief asserting a derivation the
+implementer then propagated without re-running it:
+
+1. **Task 12** — the brief treated evidence `category` as an open field; it
+   is a closed enum, caught before commit.
+2. **Task 13** — the brief's cited line numbers in `multi.go` were stale
+   after earlier tasks landed; the implementer located the site by content.
+3. **Task 14** — the brief's Step 5 `git add` list omitted
+   `docs/packets/ida-exports/gms_v95.json`, though the brief's own `### Files`
+   section required it; the implementer followed the Files inventory instead.
+4. **Task 16** — the brief supplied the wrong `qualifiedWriterName` derivation
+   above; the implementer read and propagated it rather than re-executing
+   `run.go`'s actual `pkg == "" -> return name` short-circuit. This is the
+   only one of the four that reached a blocking review finding, precisely
+   because the other three were caught by re-deriving rather than trusting
+   the brief's stated mechanics.
+
+Forward-looking lesson for future plans in this repo: a brief-supplied
+DERIVATION (a qualified name, a computed opcode, a closed-enum check) must be
+re-executed against the actual tool/source at implementation time, not
+accepted on the brief's authority — the brief is a lead, not ground truth,
+exactly as CLAUDE.md's evidence-and-grounding section already states for
+remembered facts generally.
+
+### Gate sweep (Step 2)
+
+Each run standalone from the worktree root unless noted:
+
+- `cd tools/packet-audit && go test ./...` — `FAIL` in package `cmd` only:
+  `TestSeedFName_RealTemplatesInsertionCoverage`, the standing known-unrelated
+  failure (confirmed unrelated to this branch's diff by the Task 5 reviewer's
+  reverse-apply check). All other `tools/packet-audit` packages pass.
+- `go run ./tools/packet-audit fname-doc --check` — exit 0
+  ("271 structs without an audit report carry no fname").
+- `go run ./tools/packet-audit operations --check` — exit 0
+  ("0 absent-writer note(s)").
+- `go run ./tools/packet-audit dispatcher-lint` — exit 0 ("clean").
+- `go run ./tools/packet-audit doc-freshness --check` — exit 0.
+- `go run ./tools/packet-audit gate-check --check` — exit 0
+  ("21 gate(s) have verified byte-fixtures ... 1 partial-by-design" — the new
+  Task 13 `ChatMulti` v92/v95 boundary gate).
+- `go run ./tools/packet-audit matrix --check` — exit 0, only the two
+  standing expected notes (`CASHSHOP_CASH_ITEM_GACHAPON_RESULT × gms_v79`,
+  `USE_TELEPORT_ROCK × gms_v48`).
+- `tools/verify.sh` (flagless) — see Task 17's report for the exit code.
+
+### Acceptance criteria (Step 3) — confirmed mechanically against `status.json`
+
+- All nine PRD §4.2 cells read `verified` on `gms_v95`: `ENTER_CASHSHOP` sb,
+  `MULTI_CHAT` sb, `CHANGE_MAP` sb, `NPC_TALK` sb, `CHANGE_MAP_SPECIAL` sb,
+  `STORAGE` sb, `NPC_TALK` cb, `CHECK_SPW_RESULT` cb, `NPC_ACTION` cb.
+- None of the PRD §4.4 cells changed state (17 cells checked directly against
+  the pre-branch `status.json`, all identical).
+- No non-v95 template file appears in `git diff --name-only
+  43975545a..HEAD` — the only template changed is
+  `template_gms_95_1.json`.
+- All twelve PRD §4.3 entries carry a populated `options` block in the
+  current template.
+- W1: `CharacterAutoDistributeApHandle` routes at `0x63` (not `0x62`),
+  confirmed directly in the current template.
+
+No deviation found beyond the two already discussed above
+(`PartyInviteRejectHandle` routed as expected; the four sub-struct
+regressions, which are a side effect of Task 2, not a Step 3 acceptance-check
+failure).

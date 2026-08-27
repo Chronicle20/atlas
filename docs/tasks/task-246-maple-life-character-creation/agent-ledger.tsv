@@ -121,3 +121,4 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-22T01:35:35Z	agent	Final gate	verify.sh	-	-	-	-	-	PASS	9087c4dfc	-	-	-	-
 2026-08-26T23:02:13Z	agent	bug-ap-sp-and-starting-equipment	task-implementer	sonnet	-	-	-	-	DONE	47dc7bf00	-	-	-	-
 2026-08-26T23:02:13Z	agent	bug-ap-sp-and-starting-equipment	task-reviewer	sonnet	-	-	-	-	DONE	47dc7bf00	APPROVED	no	-	-
+2026-08-27T10:29:15Z	agent	bug-maple-life-seed-never-reaches-live-db	none	none	-	-	-	-	DONE	34dc30449	-	-	-	-

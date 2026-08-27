@@ -131,6 +131,45 @@ session. No commit fixes this — the code was never wrong.**
 61 SP before spending, HeavenMS starting kit) and ideally a Bowman or Thief
 (expect 133) on `atlas-pr-1466`.
 
+### Follow-on incident: the tenant PATCH wedged login (caused, then repaired)
+
+**My step 3 broke login in `atlas-pr-1466`.** Recorded in full because it is a
+live landmine for anyone else who PATCHes a tenant in a PR namespace.
+
+- The tenant row's `environment` column was already `'main'` (task-232's
+  backfill), but that value had never been broadcast: the namespace's
+  `EVENT_TOPIC_CONFIGURATION_TENANT_STATUS` topic was empty, so no consumer's
+  registry knew tenant `947e7bf0…` at all. `env.Reconcile`
+  (`libs/atlas-env/tenants.go:59-66`) returns the header env for an unknown
+  tenant, i.e. `""` — legacy — and every message was processed.
+- The PATCH published a tenant-status event carrying
+  `"environment":"main"`. Every consumer's `MapRegistry.ApplyTenant` then
+  mapped the tenant to `main`, so every subsequent message was stamped `main`.
+- This namespace is a **legacy deployment**: `atlas-env` configmap sets
+  `ATLAS_ENVIRONMENT=` (empty) and its `environments` table has **0 rows**.
+  So `decide()` (`libs/atlas-kafka/consumer/gate.go:79`) hit
+  `!r.IsActive("main")` → `gateDropUnresolvable`.
+- Symptom: the client hangs after `[LoginHandle] read [name [Atlas]…]`.
+  `atlas-login` produced the `COMMAND_TOPIC_ACCOUNT_SESSION` command and
+  `atlas-account` logged, once, at `10:36:05.793Z`:
+  `"Dropping message: environment is unresolvable. No deployment will process
+  it."` with `"environment":"main"`, `"reason":"not_active"`.
+
+**Repair** (this session): `UPDATE tenants SET environment='' WHERE
+id='947e7bf0…'` on `postgres.home/atlas-configurations-bf3d`, then a no-op
+tenant PATCH to republish. `RestModel.Environment` is server-owned and
+read-only (`tenants/rest.go:26-31`), so REST alone cannot clear it — the
+column edit is unavoidable. `atlas-account` consumed the new event at
+`10:40:52.880Z`; no drop has occurred since, and the `mapleLife` block is
+still the corrected one (`ap 123 / sp "61,0,…"`).
+
+**Generalisation:** in any legacy namespace (`ATLAS_ENVIRONMENT=` empty, no
+`environments` rows) whose tenant row carries a non-empty `environment`, the
+first tenant PATCH — or the first drain of a freshly precreated
+tenant-status topic — silently drops all Kafka traffic for that tenant. The
+column and the deployment disagree; the disagreement is dormant until
+something publishes. Unrelated to task-246; worth raising against task-232.
+
 **Open for the PR:** `atlas-main` will be in exactly this state after merge —
 its template rows already exist, so the seeder will skip them and no tenant
 will ever receive a `mapleLife` block. Steps 1–3 above are the deploy

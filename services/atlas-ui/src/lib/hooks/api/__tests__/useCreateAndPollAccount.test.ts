@@ -18,7 +18,6 @@ const accountFixture = (id: string, name: string) =>
       gender: 0,
       loggedIn: 0,
       lastLogin: 0,
-      characterSlots: 3,
       pinAttempts: 0,
       picAttempts: 0,
       tos: false,

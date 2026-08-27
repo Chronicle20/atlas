@@ -94,6 +94,7 @@ const (
 	RemoteNpcUse          = sharedsaga.RemoteNpcUse
 	ParcelSend            = sharedsaga.ParcelSend
 	ParcelReceive         = sharedsaga.ParcelReceive
+	MapleLifeUse          = sharedsaga.MapleLifeUse
 
 	// Status constants
 	Pending   = sharedsaga.Pending

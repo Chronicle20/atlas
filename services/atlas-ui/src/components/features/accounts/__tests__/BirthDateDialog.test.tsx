@@ -39,7 +39,6 @@ const account = (birthDate: number): Account =>
       tos: true,
       language: "en",
       country: "US",
-      characterSlots: 3,
       birthDate,
     },
   }) as Account;

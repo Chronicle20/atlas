@@ -14,10 +14,19 @@ import (
 
 type EntityUpdateFunction func() ([]string, func(e *entity))
 
-func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, maxHP uint16, maxMP uint16, jobId job.Id, gender byte, hair uint32, face uint32, skinColor byte, gm int, meso uint32) (Model, error) {
+func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, maxHP uint16, maxMP uint16, jobId job.Id, gender byte, hair uint32, face uint32, skinColor byte, gm int, meso uint32, ap uint16, sp string) (Model, error) {
 	// MapId / Instance columns have been dropped from the entity
 	// (task-055 Phase 5). atlas-maps now owns character location state and
 	// is seeded via the CreateCharacter command pipeline.
+
+	// A caller that supplies no pool gets ten zeroes. The separator is a
+	// bare comma: Model.SPs() splits on "," and Atoi's each element, so the
+	// spaced form this previously wrote made every element after the first
+	// unparseable and truncated the pool to one entry.
+	if sp == "" {
+		sp = "0,0,0,0,0,0,0,0,0,0"
+	}
+
 	e := &entity{
 		TenantId:     tenantId,
 		AccountId:    accountId,
@@ -37,7 +46,8 @@ func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id,
 		Gender:       gender,
 		Hair:         hair,
 		Face:         face,
-		SP:           "0, 0, 0, 0, 0, 0, 0, 0, 0, 0",
+		SP:           sp,
+		AP:           ap,
 		GM:           gm,
 		Meso:         meso,
 	}

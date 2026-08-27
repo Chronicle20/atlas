@@ -109,3 +109,28 @@ func ParseAccountId(l logrus.FieldLogger, next AccountIdHandler) http.HandlerFun
 		next(uint32(value))(w, r)
 	}
 }
+
+// AccountIdAndWorldIdHandler is the world-scoped counterpart of
+// AccountIdHandler, for the character-slots sub-resource
+// (accounts/{accountId}/worlds/{worldId}/character-slots, task-246
+// bug-b-type-must-add-a-slot.md).
+type AccountIdAndWorldIdHandler func(accountId uint32, worldId byte) http.HandlerFunc
+
+func ParseAccountIdAndWorldId(l logrus.FieldLogger, next AccountIdAndWorldIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		accountId, err := strconv.Atoi(vars["accountId"])
+		if err != nil {
+			l.WithError(err).Errorln("Error parsing accountId as uint32")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		worldId, err := strconv.Atoi(vars["worldId"])
+		if err != nil {
+			l.WithError(err).Errorln("Error parsing worldId as byte")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(accountId), byte(worldId))(w, r)
+	}
+}

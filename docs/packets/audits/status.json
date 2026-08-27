@@ -1,15 +1,15 @@
 {
-  "toolSha": "89f03b754c0aebb6d3c4368d7547a2568a9d7fcb4a16f61a5c6242554d707f43",
+  "toolSha": "590db87e44b5643626685ad2ad66bc34a3c3747c2e80c49c968897d95eb59d74",
   "exportHashes": {
     "gms_v48": "b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6",
     "gms_v61": "e5ed52e703a38e819822bb62b00aa252aad2946a0b97ae72b1cee1e8b8222f48",
     "gms_v72": "0d3e12b8d5d6945bedf48664207eb78fabe45152f35aff3b2715de0173d31c1c",
     "gms_v79": "67a49a67b9945e1eb2e4b473a4c7115a9cec7952588705b0ec91a10486759a99",
-    "gms_v83": "b3613f0ee0c878fbd5397251d0e26830d66392b446fbab2a0a9156a4dcbf99c6",
+    "gms_v83": "dd8bace2c2f0a1c106fbbdbd95c22491341d7fd34b6ce5ac07dfbd74ef8da439",
     "gms_v84": "2bbc30efdc7355eaa7953cfbb459d09646a090a539a8ef79c5d10e8affb6ef11",
-    "gms_v87": "1b0794ba0e1c3e43ec76dffafaace29578c829178ea8cfac5a11b13ca7a483b3",
-    "gms_v92": "8818b84b431779494ac9ad2403f065f741452432a2a17cd0bd02be532278d5ae",
-    "gms_v95": "509b7fd575172b651f28bb05ca88bada0129366ba8149cc193c4134491e2815f",
+    "gms_v87": "d887ec26b877e52c3f1c8336bd596495e96272ece8ec6ad311eb145c30570021",
+    "gms_v92": "393f8c0d7ff6b37ab8b5e2e58b89544163862d9713d31561adcb3af175d36b92",
+    "gms_v95": "b6fc063d0415b901ad50f6abba585872ffee35c66fa258caed70b860803fda12",
     "jms_v185": "f0cacd78c4ffd65655028825fc7e5bfe3b7fe3889011631098486eb562a5686e"
   },
   "rows": [
@@ -37798,6 +37798,58 @@
     },
     {
       "kind": "op",
+      "op": "MAPLELIFE_CHECK_NAME",
+      "packet": "maplelife/serverbound/MaplelifeCheckName",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CUICharacterSaleDlg::SendCheckDuplicateIDPacket"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "verified",
+          "opcode": 256
+        },
+        "gms_v84": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "verified",
+          "opcode": 270
+        },
+        "gms_v92": {
+          "state": "verified",
+          "opcode": 301
+        },
+        "gms_v95": {
+          "state": "verified",
+          "opcode": 311
+        },
+        "jms_v185": {
+          "state": "n-a",
+          "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
       "op": "CASHSHOP_CHECK_NAME_CHANGE",
       "packet": "cash/clientbound/CashCheckNameChange",
       "direction": "clientbound",
@@ -39512,60 +39564,6 @@
     },
     {
       "kind": "op",
-      "op": "JMS_SLASH_COMMAND",
-      "direction": "serverbound",
-      "tier1": false,
-      "fnames": [
-        "CUICharacterSaleDlg::SendCheckDuplicateIDPacket"
-      ],
-      "cells": {
-        "gms_v48": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v61": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v72": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v79": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v83": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v84": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 270
-        },
-        "gms_v92": {
-          "state": "n-a",
-          "opcode": -1
-        },
-        "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 311
-        },
-        "jms_v185": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 271
-        }
-      }
-    },
-    {
-      "kind": "op",
       "op": "MONSTER_CARNIVAL_SUMMON",
       "packet": "monster/carnival/clientbound/MonsterCarnivalMessage",
       "direction": "clientbound",
@@ -39668,6 +39666,58 @@
         "jms_v185": {
           "state": "n-a",
           "opcode": -1
+        }
+      }
+    },
+    {
+      "kind": "op",
+      "op": "JMS_SLASH_COMMAND",
+      "direction": "serverbound",
+      "tier1": false,
+      "fnames": [
+        "CUICharacterSaleDlg::SendCheckDuplicateIDPacket"
+      ],
+      "cells": {
+        "gms_v48": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v61": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v72": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v79": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v83": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v84": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v87": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v92": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "gms_v95": {
+          "state": "n-a",
+          "opcode": -1
+        },
+        "jms_v185": {
+          "state": "incomplete",
+          "note": "no audit report",
+          "opcode": 271
         }
       }
     },
@@ -42934,6 +42984,7 @@
     {
       "kind": "op",
       "op": "MAPLELIFE_RESULT",
+      "packet": "maplelife/clientbound/MaplelifeMapleLifeResult",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -42957,28 +43008,23 @@
           "opcode": -1
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 349
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 349
+          "state": "n-a",
+          "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 370
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 404
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 413
         },
         "jms_v185": {
@@ -43039,6 +43085,7 @@
     {
       "kind": "op",
       "op": "MAPLELIFE_ERROR",
+      "packet": "maplelife/clientbound/MaplelifeMapleLifeError",
       "direction": "clientbound",
       "tier1": false,
       "fnames": [
@@ -43062,28 +43109,23 @@
           "opcode": -1
         },
         "gms_v83": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 350
         },
         "gms_v84": {
-          "state": "incomplete",
-          "note": "no audit report",
-          "opcode": 350
+          "state": "n-a",
+          "opcode": -1
         },
         "gms_v87": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 371
         },
         "gms_v92": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 405
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 414
         },
         "jms_v185": {

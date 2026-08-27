@@ -51,7 +51,6 @@ const mockAccount: Account = {
     tos: true,
     language: "en",
     country: "US",
-    characterSlots: 6,
     birthDate: 0,
   },
 };
@@ -72,7 +71,6 @@ const mockAccounts: Account[] = [
       tos: true,
       language: "en",
       country: "US",
-      characterSlots: 3,
       birthDate: 0,
     },
   },
@@ -81,8 +79,6 @@ const mockAccounts: Account[] = [
 const mockStats = {
   total: 2,
   loggedIn: 1,
-  totalCharacterSlots: 9,
-  averageCharacterSlots: 4.5,
 };
 
 // Test wrapper component

@@ -118,3 +118,65 @@ func TestCaughtUp_EmptyPartitionTriviallyCaughtUp(t *testing.T) {
 	c.SetEndOffsets("T", map[int]int64{0: 0})
 	require.True(t, c.CaughtUpNow())
 }
+
+func TestProjectionDecodesMapleLife(t *testing.T) {
+	s := projection.NewState()
+
+	t.Run("block present", func(t *testing.T) {
+		tid := uuid.New()
+		cfgBts, err := json.Marshal(map[string]any{
+			"region": "GMS",
+			"mapleLife": map[string]any{
+				"looks": []map[string]any{
+					{
+						"gender":     0,
+						"faces":      []uint32{20000},
+						"hairs":      []uint32{30000},
+						"hairColors": []uint32{0},
+						"skinColors": []uint32{0},
+					},
+				},
+				"classes": []map[string]any{
+					{
+						"ordinal":   0,
+						"gender":    0,
+						"jobId":     100,
+						"level":     10,
+						"mapId":     10000,
+						"stats":     map[string]any{"str": 4, "dex": 4, "int": 4, "luk": 4, "hp": 50, "mp": 5},
+						"ap":        0,
+						"sp":        "0,0,0,0,0,0,0,0,0,0",
+						"spSkillId": 1000001,
+						"meso":      0,
+						"equipment": []map[string]any{},
+						"inventory": []map[string]any{},
+					},
+				},
+			},
+		})
+		require.NoError(t, err)
+
+		require.NoError(t, s.ApplyTenant(projection.TenantEnvelope{
+			SchemaVersion: 1, Id: tid.String(), Config: cfgBts,
+		}))
+
+		snap := s.Snapshot()
+		require.Len(t, snap[tid].MapleLife.Classes, 1)
+		require.Equal(t, uint32(100), snap[tid].MapleLife.Classes[0].JobId)
+		require.Equal(t, uint32(1000001), snap[tid].MapleLife.Classes[0].SpSkillId)
+		require.Equal(t, []uint32{20000}, snap[tid].MapleLife.Looks[0].Faces)
+	})
+
+	t.Run("block absent", func(t *testing.T) {
+		tid := uuid.New()
+		cfgBts, err := json.Marshal(map[string]any{"region": "GMS"})
+		require.NoError(t, err)
+
+		require.NoError(t, s.ApplyTenant(projection.TenantEnvelope{
+			SchemaVersion: 1, Id: tid.String(), Config: cfgBts,
+		}))
+
+		snap := s.Snapshot()
+		require.Empty(t, snap[tid].MapleLife.Classes)
+	})
+}

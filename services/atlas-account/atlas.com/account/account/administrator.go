@@ -121,6 +121,30 @@ func updatePicAttempts(picAttempts int) EntityUpdateFunction {
 	}
 }
 
+func createCharacterSlot(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId byte, slots int16) (CharacterSlotEntity, error) {
+	e := &CharacterSlotEntity{
+		TenantId:  tenantId,
+		AccountId: accountId,
+		WorldId:   worldId,
+		Slots:     slots,
+	}
+	err := db.Create(e).Error
+	if err != nil {
+		return CharacterSlotEntity{}, err
+	}
+	return *e, nil
+}
+
+func updateCharacterSlots(db *gorm.DB, id uint32, slots int16) error {
+	return db.Model(&CharacterSlotEntity{ID: id}).Update("slots", slots).Error
+}
+
+func MakeCharacterSlot(e CharacterSlotEntity) (CharacterSlotModel, error) {
+	return NewCharacterSlotBuilder(e.TenantId, e.AccountId, e.WorldId).
+		SetSlots(e.Slots).
+		Build(), nil
+}
+
 func Make(a Entity) (Model, error) {
 	return NewBuilder(a.TenantId, a.Name).
 		SetId(a.ID).

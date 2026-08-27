@@ -19,6 +19,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
+	character "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -39,6 +40,12 @@ const (
 var (
 	ErrAccountNotFound = errors.New("account not found")
 	ErrAccountLoggedIn = errors.New("account is currently logged in")
+	// ErrCharacterSlotCapReached is returned by IncrementCharacterSlots when
+	// the (account, world) pair is already at MaxCharacterSlots. The 12 cap
+	// is enforced here, not only at the caller (task-246
+	// bug-b-type-must-add-a-slot.md F1) -- an increment past it is an error,
+	// never a clamp.
+	ErrCharacterSlotCapReached = errors.New("character slot cap reached")
 )
 
 type Processor interface {
@@ -65,6 +72,8 @@ type Processor interface {
 	RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
 	RecordPicAttemptAndEmit(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
 	RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
+	GetCharacterSlots(accountId uint32, worldId byte) (CharacterSlotModel, error)
+	IncrementCharacterSlots(accountId uint32, worldId byte) (CharacterSlotModel, error)
 }
 
 type ProcessorImpl struct {
@@ -649,4 +658,53 @@ func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint
 
 func checkLoginAttempts(sessionId uuid.UUID) byte {
 	return 0
+}
+
+// GetCharacterSlots returns the character-slot count for one (account,
+// world) pair, defaulting to character.DefaultCharacterSlotsPerWorld when no
+// row has ever been written for it (task-246
+// bug-b-type-must-add-a-slot.md F1).
+func (p *ProcessorImpl) GetCharacterSlots(accountId uint32, worldId byte) (CharacterSlotModel, error) {
+	e, err := characterSlotEntityByAccountAndWorld(accountId, worldId)(p.db.WithContext(p.ctx))()
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return NewCharacterSlotBuilder(p.t.Id(), accountId, worldId).
+				SetSlots(character.DefaultCharacterSlotsPerWorld).
+				Build(), nil
+		}
+		return CharacterSlotModel{}, err
+	}
+	return MakeCharacterSlot(e)
+}
+
+// IncrementCharacterSlots adds one slot to an (account, world) pair,
+// creating its row on first use. The 12 cap
+// (character.MaxCharacterSlotsPerWorld) is enforced here -- an increment
+// past it returns ErrCharacterSlotCapReached rather than clamping.
+func (p *ProcessorImpl) IncrementCharacterSlots(accountId uint32, worldId byte) (CharacterSlotModel, error) {
+	e, err := characterSlotEntityByAccountAndWorld(accountId, worldId)(p.db.WithContext(p.ctx))()
+	notFound := errors.Is(err, gorm.ErrRecordNotFound)
+	if err != nil && !notFound {
+		return CharacterSlotModel{}, err
+	}
+
+	current := character.DefaultCharacterSlotsPerWorld
+	if !notFound {
+		current = e.Slots
+	}
+	if current >= character.MaxCharacterSlotsPerWorld {
+		return NewCharacterSlotBuilder(p.t.Id(), accountId, worldId).SetSlots(current).Build(), ErrCharacterSlotCapReached
+	}
+	next := current + 1
+
+	if notFound {
+		e, err = createCharacterSlot(p.db.WithContext(p.ctx), p.t.Id(), accountId, worldId, next)
+	} else {
+		err = updateCharacterSlots(p.db.WithContext(p.ctx), e.ID, next)
+		e.Slots = next
+	}
+	if err != nil {
+		return CharacterSlotModel{}, err
+	}
+	return MakeCharacterSlot(e)
 }

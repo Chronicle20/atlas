@@ -170,8 +170,6 @@ export function useAccountStats(
   {
     total: number;
     loggedIn: number;
-    totalCharacterSlots: number;
-    averageCharacterSlots: number;
   },
   Error
 > {

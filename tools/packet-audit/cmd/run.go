@@ -2769,6 +2769,61 @@ func candidatesFromFName(fname string) []candidate {
 	// (docs/tasks/task-227-cash-name-change-world-transfer/derivation.md §2.3, §4.4, §5).
 	case "CCashShop::OnCheckDuplicatedIDResult":
 		return []candidate{{name: "CheckNameChange", dir: csvpkg.DirClientbound, pkg: "cash"}}
+	// Clientbound MAPLELIFE_RESULT (task-246): the CUICharacterSaleDlg
+	// (Maple Life character-creation naming dialog) duplicate-name answer.
+	// Distinct dialog/fname/opcode from the cash-shop CCashShop::
+	// OnCheckDuplicatedIDResult sibling above; struct is MapleLifeResult
+	// (libs/atlas-packet/maplelife/clientbound/result.go). Body is DecodeStr
+	// (name, echoed back) + Decode1 (nResult, SIGNED: >0 taken, ==0
+	// available, <0 unknown error) on every in-scope version (gms_v83/v87/
+	// v92/v95); no field/width/order divergence across those versions
+	// (docs/tasks/task-246-maple-life-character-creation/derivation.md §4).
+	case "CUICharacterSaleDlg::OnCheckDuplicatedIDResult":
+		return []candidate{{name: "MapleLifeResult", dir: csvpkg.DirClientbound, pkg: "maplelife"}}
+	// Clientbound MAPLELIFE_ERROR (task-246): the create-character result
+	// receiver for the same Maple Life naming dialog — renders the terminal
+	// SUCCESS / NAME_TAKEN_AT_SUBMIT / UNKNOWN_ERROR(param) outcome of
+	// SendCreateNewCharacter, including the success arm (design §5.4; this op
+	// is not a failure-only channel). Struct is MapleLifeError
+	// (libs/atlas-packet/maplelife/clientbound/error.go). Body is Decode1
+	// (nType) + Decode4 (nParam) on every in-scope version (gms_v83/v87/v92/
+	// v95); the nType literal per arm shifts per-version (tenant-template
+	// config, DOM-25), field shape does not
+	// (docs/tasks/task-246-maple-life-character-creation/derivation.md §5).
+	case "CUICharacterSaleDlg::OnCreateNewCharacterResult":
+		return []candidate{{name: "MapleLifeError", dir: csvpkg.DirClientbound, pkg: "maplelife"}}
+	// Serverbound USE_CASH_ITEM 543 sub-body (task-246): the
+	// character-creation ("Maple Life", Cash/0543 05431000/05432000)
+	// slot-purchase submit — CUICharacterSaleDlg::SendCreateNewCharacter.
+	// Struct is ItemUseMapleLife (libs/atlas-packet/cash/serverbound/
+	// item_use_maple_life.go); carries only the fields AFTER the shared
+	// ItemUse header's nPOS/nItemID pair, same convention as the other
+	// item_use_*.go sub-bodies. Deliberately NOT linked here: the header
+	// prefix composition (prefixName: "ItemUse") needs guardFromIf to
+	// resolve `if UpdateTimeFirst(t) { ... }` (a call to a package-level
+	// bool helper) to a real version predicate; the resolver's current
+	// AST-to-string reparse can't compile a bare call, so it always
+	// evaluates true and FlattenWithRegistry keeps the leading update_time
+	// write unconditionally, misaligning the composed header against
+	// gms_v83's export (no leading write). A prior attempt at extending the
+	// resolver to inline single-statement bool helpers land-tested clean on
+	// this cell but changed report content for unrelated already-audited
+	// packets that use the same shape (e.g. chat/serverbound Whisper's
+	// whisperHasUpdateTime, cash/serverbound shop_operation_buy*'s
+	// legacyGMS/buyOmitsCurrency) — see the packet-audit tooling-defects
+	// entry in docs/TODO.md. The codec and its tests
+	// (item_use_maple_life.go / _test.go) stand on their own, unlinked from
+	// the matrix, same state every sibling item_use_*.go sub-body is in.
+	// Serverbound MAPLELIFE_CHECK_NAME (task-246): the Maple Life
+	// duplicate-name probe — CUICharacterSaleDlg::SendCheckDuplicateIDPacket.
+	// Struct is CheckName (libs/atlas-packet/maplelife/serverbound/
+	// check_name.go). Body is a single EncodeStr(sCharName) on every
+	// in-scope version (gms_v83/v87/v92/v95); each version has its OWN
+	// dedicated opcode (256/270/301/311) — no CHECK_CHAR_NAME(21) collision
+	// on any of them, unlike the cash-shop rename probe
+	// (docs/tasks/task-246-maple-life-character-creation/derivation.md §6).
+	case "CUICharacterSaleDlg::SendCheckDuplicateIDPacket":
+		return []candidate{{name: "CheckName", dir: csvpkg.DirServerbound, pkg: "maplelife"}}
 	// Clientbound CASHSHOP_CHECK_TRANSFER_WORLD_POSSIBLE_RESULT (task-227): the
 	// server's answer to the WORLD_TRANSFER request above. Routed by
 	// CCashShop::OnPacket as its own case, NOT by the OnCashItemResult mode

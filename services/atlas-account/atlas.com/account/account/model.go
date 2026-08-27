@@ -77,3 +77,28 @@ func (a Model) Gender() byte {
 func LoggedIn(m Model) bool {
 	return m.state != StateNotLoggedIn
 }
+
+// CharacterSlotModel is the per-(tenant, account, world) character-slot
+// count (task-246 bug-b-type-must-add-a-slot.md).
+type CharacterSlotModel struct {
+	tenantId  uuid.UUID
+	accountId uint32
+	worldId   byte
+	slots     int16
+}
+
+func (m CharacterSlotModel) TenantId() uuid.UUID {
+	return m.tenantId
+}
+
+func (m CharacterSlotModel) AccountId() uint32 {
+	return m.accountId
+}
+
+func (m CharacterSlotModel) WorldId() byte {
+	return m.worldId
+}
+
+func (m CharacterSlotModel) Slots() int16 {
+	return m.slots
+}

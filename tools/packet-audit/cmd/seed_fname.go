@@ -40,7 +40,8 @@ var seedFNameVersions = []struct {
 
 var knownTopLevelKeys = map[string]bool{
 	"region": true, "majorVersion": true, "minorVersion": true, "usesPin": true,
-	"socket": true, "characters": true, "npcs": true, "worlds": true, "cashShop": true,
+	"socket": true, "characters": true, "npcs": true, "worlds": true,
+	"mapleLife": true, "cashShop": true,
 }
 
 var knownSocketKeys = map[string]bool{
@@ -77,6 +78,7 @@ type seedDoc struct {
 	Characters   json.RawMessage `json:"characters,omitempty"`
 	NPCs         json.RawMessage `json:"npcs,omitempty"`
 	Worlds       json.RawMessage `json:"worlds,omitempty"`
+	MapleLife    json.RawMessage `json:"mapleLife,omitempty"`
 	CashShop     json.RawMessage `json:"cashShop,omitempty"`
 }
 

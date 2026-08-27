@@ -19,7 +19,6 @@ func TestBuilder_Build(t *testing.T) {
 		SetTos(true).
 		SetLanguage("en").
 		SetCountry("US").
-		SetCharacterSlots(6).
 		Build()
 
 	if m.Id() != 123 {
@@ -40,9 +39,6 @@ func TestBuilder_Build(t *testing.T) {
 	if m.Gender() != 1 {
 		t.Errorf("Gender() = %d, want 1", m.Gender())
 	}
-	if m.CharacterSlots() != 6 {
-		t.Errorf("CharacterSlots() = %d, want 6", m.CharacterSlots())
-	}
 }
 
 func TestModel_ToBuilder(t *testing.T) {
@@ -52,7 +48,6 @@ func TestModel_ToBuilder(t *testing.T) {
 		SetPin("1234").
 		SetPic("pic123").
 		SetGender(1).
-		SetCharacterSlots(6).
 		Build()
 
 	// Clone and modify pin
@@ -82,9 +77,6 @@ func TestModel_ToBuilder(t *testing.T) {
 	}
 	if cloned.Gender() != 1 {
 		t.Errorf("Cloned Gender() = %d, want 1", cloned.Gender())
-	}
-	if cloned.CharacterSlots() != 6 {
-		t.Errorf("Cloned CharacterSlots() = %d, want 6", cloned.CharacterSlots())
 	}
 }
 
@@ -154,8 +146,5 @@ func TestNewBuilder_DefaultValues(t *testing.T) {
 	}
 	if m.Gender() != 0 {
 		t.Errorf("Default Gender() = %d, want 0", m.Gender())
-	}
-	if m.CharacterSlots() != 0 {
-		t.Errorf("Default CharacterSlots() = %d, want 0", m.CharacterSlots())
 	}
 }

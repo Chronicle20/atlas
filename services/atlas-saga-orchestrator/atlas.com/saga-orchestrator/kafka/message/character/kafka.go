@@ -203,6 +203,8 @@ type CreateCharacterCommandBody struct {
 	MapId        _map.Id  `json:"mapId"`
 	Gm           int      `json:"gm,omitempty"`
 	Meso         uint32   `json:"meso,omitempty"`
+	AP           uint16   `json:"ap,omitempty"`
+	SP           string   `json:"sp,omitempty"`
 }
 
 const (

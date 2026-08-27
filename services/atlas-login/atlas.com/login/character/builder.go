@@ -4,6 +4,7 @@ import (
 	"atlas-login/equipment"
 	"atlas-login/inventory"
 	"atlas-login/pet"
+	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -90,7 +91,10 @@ func (b *Builder) SetRankMove(v int32) *Builder            { b.rankMove = v; ret
 func (b *Builder) SetJobRank(v uint32) *Builder            { b.jobRank = v; return b }
 func (b *Builder) SetJobRankMove(v int32) *Builder         { b.jobRankMove = v; return b }
 
-func (b *Builder) Build() Model {
+func (b *Builder) Build() (Model, error) {
+	if b.id == 0 {
+		return Model{}, errors.New("id is required")
+	}
 	return Model{
 		id:                 b.id,
 		accountId:          b.accountId,
@@ -126,5 +130,5 @@ func (b *Builder) Build() Model {
 		rankMove:           b.rankMove,
 		jobRank:            b.jobRank,
 		jobRankMove:        b.jobRankMove,
-	}
+	}, nil
 }

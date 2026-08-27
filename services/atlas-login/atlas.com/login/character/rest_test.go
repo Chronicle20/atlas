@@ -15,7 +15,7 @@ import (
 // docs/tasks/task-263-backend-guideline-conformance/handwork-notes.md.
 // spawnPoint DOES survive as of task-272 and is asserted below.
 func TestTransformRoundTrip(t *testing.T) {
-	m := NewBuilder().
+	m, err := NewBuilder().
 		SetId(1).
 		SetAccountId(2).
 		SetWorldId(world.Id(3)).
@@ -44,6 +44,9 @@ func TestTransformRoundTrip(t *testing.T) {
 		SetSpawnPoint(25).
 		SetGm(24).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	rm, err := Transform(m)
 	if err != nil {

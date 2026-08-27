@@ -32,11 +32,14 @@ func TestToCharacterListEntry_SpawnPoint(t *testing.T) {
 			ctx := pt.CreateContext("GMS", 83, 1)
 			l, _ := testlog.NewNullLogger()
 
-			c := character.NewBuilder().
+			c, err := character.NewBuilder().
 				SetId(99).
 				SetSp("0").
 				SetSpawnPoint(tt.set).
 				Build()
+			if err != nil {
+				t.Fatalf("Build failed: %v", err)
+			}
 
 			entry := toCharacterListEntry(l, ctx, c, false)
 

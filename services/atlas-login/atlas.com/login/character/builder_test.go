@@ -8,7 +8,7 @@ import (
 )
 
 func TestBuilder_Build(t *testing.T) {
-	m := character.NewBuilder().
+	m, err := character.NewBuilder().
 		SetId(1000).
 		SetAccountId(100).
 		SetWorldId(1).
@@ -33,6 +33,9 @@ func TestBuilder_Build(t *testing.T) {
 		SetFame(10).
 		SetMeso(1000000).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	if m.Id() != 1000 {
 		t.Errorf("Id() = %d, want 1000", m.Id())
@@ -82,7 +85,7 @@ func TestBuilder_Build(t *testing.T) {
 }
 
 func TestModel_ToBuilder(t *testing.T) {
-	original := character.NewBuilder().
+	original, err := character.NewBuilder().
 		SetId(1000).
 		SetAccountId(100).
 		SetWorldId(1).
@@ -92,12 +95,18 @@ func TestModel_ToBuilder(t *testing.T) {
 		SetHp(1000).
 		SetMaxHp(1500).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	// Clone and modify level
-	cloned := original.ToBuilder().
+	cloned, err := original.ToBuilder().
 		SetLevel(51).
 		SetHp(1100).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	// Original should be unchanged
 	if original.Level() != 50 {
@@ -128,11 +137,11 @@ func TestModel_ToBuilder(t *testing.T) {
 }
 
 func TestNewBuilder_DefaultValues(t *testing.T) {
-	m := character.NewBuilder().Build()
-
-	if m.Id() != 0 {
-		t.Errorf("Default Id() = %d, want 0", m.Id())
+	m, err := character.NewBuilder().SetId(1).Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
 	}
+
 	if m.Name() != "" {
 		t.Errorf("Default Name() = %s, want ''", m.Name())
 	}
@@ -146,18 +155,26 @@ func TestNewBuilder_DefaultValues(t *testing.T) {
 
 func TestCharacter_Gm(t *testing.T) {
 	// GM character
-	gm := character.NewBuilder().
+	gm, err := character.NewBuilder().
+		SetId(1).
 		SetGm(1).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	if !gm.Gm() {
 		t.Error("Character with Gm=1 should be Gm()")
 	}
 
 	// Non-GM character
-	normal := character.NewBuilder().
+	normal, err := character.NewBuilder().
+		SetId(2).
 		SetGm(0).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	if normal.Gm() {
 		t.Error("Character with Gm=0 should not be Gm()")
@@ -179,7 +196,10 @@ func TestCharacter_HasSPTable(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		m := character.NewBuilder().SetJobId(tc.jobId).Build()
+		m, err := character.NewBuilder().SetId(1).SetJobId(tc.jobId).Build()
+		if err != nil {
+			t.Fatalf("Build failed: %v", err)
+		}
 		if m.HasSPTable() != tc.expected {
 			t.Errorf("JobId %d: HasSPTable() = %v, want %v", tc.jobId, m.HasSPTable(), tc.expected)
 		}

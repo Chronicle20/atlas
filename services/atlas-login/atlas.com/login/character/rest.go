@@ -155,5 +155,5 @@ func Extract(m RestModel) (Model, error) {
 		SetSp(m.Sp).
 		SetSpawnPoint(m.SpawnPoint).
 		SetGm(m.Gm).
-		Build(), nil
+		Build()
 }

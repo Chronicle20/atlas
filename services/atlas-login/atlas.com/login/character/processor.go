@@ -95,7 +95,7 @@ func (p *ProcessorImpl) GetForWorld(decorators ...model.Decorator[Model]) func(a
 		if err != nil {
 			return cs, err
 		}
-		return p.decorateRankings(cs), nil
+		return p.decorateRankings(cs)
 	}
 }
 
@@ -104,9 +104,9 @@ func (p *ProcessorImpl) GetForWorld(decorators ...model.Decorator[Model]) func(a
 // rank fields on any error, timeout, or missing entry so the character
 // select screen always renders. This must never turn a successful
 // character-list fetch into a failure.
-func (p *ProcessorImpl) decorateRankings(cs []Model) []Model {
+func (p *ProcessorImpl) decorateRankings(cs []Model) ([]Model, error) {
 	if len(cs) == 0 {
-		return cs
+		return cs, nil
 	}
 	ids := make([]uint32, len(cs))
 	for i, c := range cs {
@@ -120,7 +120,7 @@ func (p *ProcessorImpl) decorateRankings(cs []Model) []Model {
 		// is no single entity to attribute the failure to; entityId=0
 		// signals a list-wide degradation rather than a specific character.
 		degrade.Observe(p.l, "login.character.rankings", 0, err)
-		return cs
+		return cs, nil
 	}
 	return MergeRankings(cs, rs)
 }
@@ -128,7 +128,7 @@ func (p *ProcessorImpl) decorateRankings(cs []Model) []Model {
 // MergeRankings rebuilds each character with its ranking values merged in;
 // characters without a corresponding ranking entry keep zero-valued rank
 // fields. Exported for tests.
-func MergeRankings(cs []Model, rs []ranking.Model) []Model {
+func MergeRankings(cs []Model, rs []ranking.Model) ([]Model, error) {
 	byId := make(map[uint32]ranking.Model, len(rs))
 	for _, r := range rs {
 		byId[r.CharacterId()] = r
@@ -140,14 +140,18 @@ func MergeRankings(cs []Model, rs []ranking.Model) []Model {
 			out[i] = c
 			continue
 		}
-		out[i] = c.ToBuilder().
+		m, err := c.ToBuilder().
 			SetRank(r.Rank()).
 			SetRankMove(r.RankMove()).
 			SetJobRank(r.JobRank()).
 			SetJobRankMove(r.JobRankMove()).
 			Build()
+		if err != nil {
+			return nil, err
+		}
+		out[i] = m
 	}
-	return out
+	return out, nil
 }
 
 func (p *ProcessorImpl) ByNameProvider(decorators ...model.Decorator[Model]) func(name string) model.Provider[[]Model] {
@@ -183,7 +187,7 @@ func (p *ProcessorImpl) InventoryDecorator() model.Decorator[Model] {
 			if err != nil {
 				return m, err
 			}
-			return m.SetInventory(i), nil
+			return m.SetInventory(i)
 		},
 		func(m Model, err error) {
 			degrade.Observe(p.l, "login.character.inventory", m.Id(), err)

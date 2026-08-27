@@ -152,6 +152,7 @@ func Extract(m RestModel) (Model, error) {
 		face:               m.Face,
 		ap:                 m.Ap,
 		sp:                 m.Sp,
+		spawnPoint:         m.SpawnPoint,
 		gm:                 m.Gm,
 		x:                  m.X,
 		y:                  m.Y,

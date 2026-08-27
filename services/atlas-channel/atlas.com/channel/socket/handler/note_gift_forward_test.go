@@ -17,6 +17,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	notecb "github.com/Chronicle20/atlas/libs/atlas-packet/note/clientbound"
 	notesb "github.com/Chronicle20/atlas/libs/atlas-packet/note/serverbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
@@ -106,11 +108,11 @@ func TestFindGiftAsset_UnknownSN(t *testing.T) {
 }
 
 // withNoteGiftForwardSeams overrides the compartment/character/saga/mark-sent
-// test seams for the duration of the test, and returns recorders for whether
-// a saga was created and whether MarkGiftNoteSent was called.
-func withNoteGiftForwardSeams(t *testing.T, cp compartment.Model, gifterId uint32) (sagaCreated *bool, markSentCalled *bool) {
+// test seams for the duration of the test, and returns recorders for every
+// saga created (in call order) and whether MarkGiftNoteSent was called.
+func withNoteGiftForwardSeams(t *testing.T, cp compartment.Model, gifterId uint32) (sagasCreated *[]saga.Saga, markSentCalled *bool) {
 	t.Helper()
-	sagaCreated = new(bool)
+	sagasCreated = new([]saga.Saga)
 	markSentCalled = new(bool)
 
 	origCompartment := noteGiftForwardCompartmentFunc
@@ -124,8 +126,8 @@ func withNoteGiftForwardSeams(t *testing.T, cp compartment.Model, gifterId uint3
 	noteGiftForwardCharacterFunc = func(_ logrus.FieldLogger, _ context.Context, _ string) (character.Model, error) {
 		return character.Extract(character.RestModel{Id: gifterId})
 	}
-	noteGiftForwardSagaCreateFunc = func(_ logrus.FieldLogger, _ context.Context, _ saga.Saga) error {
-		*sagaCreated = true
+	noteGiftForwardSagaCreateFunc = func(_ logrus.FieldLogger, _ context.Context, s saga.Saga) error {
+		*sagasCreated = append(*sagasCreated, s)
 		return nil
 	}
 	noteGiftForwardMarkSentFunc = func(_ logrus.FieldLogger, _ context.Context, _ session.Model, _ int64) error {
@@ -139,7 +141,7 @@ func withNoteGiftForwardSeams(t *testing.T, cp compartment.Model, gifterId uint3
 		noteGiftForwardSagaCreateFunc = origSaga
 		noteGiftForwardMarkSentFunc = origMarkSent
 	})
-	return sagaCreated, markSentCalled
+	return sagasCreated, markSentCalled
 }
 
 // TestHandleNoteGiftForward_GiftFromMismatch pins the anti-tamper gate for
@@ -150,15 +152,15 @@ func withNoteGiftForwardSeams(t *testing.T, cp compartment.Model, gifterId uint3
 func TestHandleNoteGiftForward_GiftFromMismatch(t *testing.T) {
 	const characterId = uint32(778899)
 	cp := giftAsset(t, 10002321, "ActualGifter", false)
-	sagaCreated, markSentCalled := withNoteGiftForwardSeams(t, cp, 200)
+	sagasCreated, markSentCalled := withNoteGiftForwardSeams(t, cp, 200)
 
 	s, _, cleanup := newCashItemUseTestSession(t, characterId)
 	defer cleanup()
 
 	handleNoteGiftForward(logrus.New(), context.Background())(s, notesbOperationSend(t, "SomeoneElse", "hi", 10002321))
 
-	if *sagaCreated {
-		t.Fatal("expected no saga to be created on a giftFrom/toName mismatch")
+	if len(*sagasCreated) != 0 {
+		t.Fatalf("expected no saga to be created on a giftFrom/toName mismatch, got %d", len(*sagasCreated))
 	}
 	if *markSentCalled {
 		t.Fatal("expected no mark-sent call on a giftFrom/toName mismatch")
@@ -171,15 +173,15 @@ func TestHandleNoteGiftForward_GiftFromMismatch(t *testing.T) {
 func TestHandleNoteGiftForward_AlreadySent(t *testing.T) {
 	const characterId = uint32(778899)
 	cp := giftAsset(t, 10002321, "Gifter", true)
-	sagaCreated, markSentCalled := withNoteGiftForwardSeams(t, cp, 200)
+	sagasCreated, markSentCalled := withNoteGiftForwardSeams(t, cp, 200)
 
 	s, _, cleanup := newCashItemUseTestSession(t, characterId)
 	defer cleanup()
 
 	handleNoteGiftForward(logrus.New(), context.Background())(s, notesbOperationSend(t, "Gifter", "hi", 10002321))
 
-	if *sagaCreated {
-		t.Fatal("expected no saga to be created when GiftNoteSent is already true")
+	if len(*sagasCreated) != 0 {
+		t.Fatalf("expected no saga to be created when GiftNoteSent is already true, got %d", len(*sagasCreated))
 	}
 	if *markSentCalled {
 		t.Fatal("expected no mark-sent call when GiftNoteSent is already true")
@@ -187,22 +189,95 @@ func TestHandleNoteGiftForward_AlreadySent(t *testing.T) {
 }
 
 // TestHandleNoteGiftForward_Success pins the happy path: a matching,
-// not-yet-sent gift asset creates exactly one saga and marks the note sent.
+// not-yet-sent gift asset creates exactly two sagas -- the note_send saga,
+// then the award_fame saga targeting the gifter -- and marks the note sent.
 func TestHandleNoteGiftForward_Success(t *testing.T) {
 	const characterId = uint32(778899)
+	const gifterId = uint32(200)
 	cp := giftAsset(t, 10002321, "Gifter", false)
-	sagaCreated, markSentCalled := withNoteGiftForwardSeams(t, cp, 200)
+	sagasCreated, markSentCalled := withNoteGiftForwardSeams(t, cp, gifterId)
 
 	s, _, cleanup := newCashItemUseTestSession(t, characterId)
 	defer cleanup()
 
 	handleNoteGiftForward(logrus.New(), context.Background())(s, notesbOperationSend(t, "Gifter", "hi", 10002321))
 
-	if !*sagaCreated {
-		t.Fatal("expected a saga to be created for a matching, unsent gift")
+	if len(*sagasCreated) != 2 {
+		t.Fatalf("expected 2 sagas to be created for a matching, unsent gift, got %d", len(*sagasCreated))
+	}
+	if (*sagasCreated)[0].SagaType != saga.NoteSend {
+		t.Errorf("first saga type: got %s, want %s", (*sagasCreated)[0].SagaType, saga.NoteSend)
+	}
+
+	fameSaga := (*sagasCreated)[1]
+	if fameSaga.SagaType != saga.InventoryTransaction {
+		t.Errorf("second saga type: got %s, want %s", fameSaga.SagaType, saga.InventoryTransaction)
+	}
+	if len(fameSaga.Steps) != 1 || fameSaga.Steps[0].Action != saga.AwardFame {
+		t.Fatalf("second saga steps: got %+v, want one award_fame step", fameSaga.Steps)
+	}
+	fp, ok := fameSaga.Steps[0].Payload.(saga.AwardFamePayload)
+	if !ok {
+		t.Fatalf("fame step payload type: %T", fameSaga.Steps[0].Payload)
+	}
+	if fp.CharacterId != gifterId || fp.Amount != 1 || fp.WorldId != s.WorldId() || fp.ChannelId != s.ChannelId() {
+		t.Errorf("fame payload mismatch: %+v", fp)
+	}
+
+	if !*markSentCalled {
+		t.Fatal("expected the gift's note to be marked sent")
+	}
+}
+
+// TestHandleNoteGiftForward_SelfGift pins that a self-gift (gifter id equals
+// the session's characterId) creates the note saga but skips the fame award
+// -- mirroring atlas-notes' self-note skip.
+func TestHandleNoteGiftForward_SelfGift(t *testing.T) {
+	const characterId = uint32(778899)
+	cp := giftAsset(t, 10002321, "Gifter", false)
+	sagasCreated, markSentCalled := withNoteGiftForwardSeams(t, cp, characterId)
+
+	s, _, cleanup := newCashItemUseTestSession(t, characterId)
+	defer cleanup()
+
+	handleNoteGiftForward(logrus.New(), context.Background())(s, notesbOperationSend(t, "Gifter", "hi", 10002321))
+
+	if len(*sagasCreated) != 1 {
+		t.Fatalf("expected 1 saga (note only, no fame) for a self-gift, got %d", len(*sagasCreated))
+	}
+	if (*sagasCreated)[0].SagaType != saga.NoteSend {
+		t.Errorf("saga type: got %s, want %s", (*sagasCreated)[0].SagaType, saga.NoteSend)
 	}
 	if !*markSentCalled {
 		t.Fatal("expected the gift's note to be marked sent")
+	}
+}
+
+// TestBuildGiftFameSaga pins the fame-award saga's shape: exactly one
+// award_fame step targeting the gifter, amount 1.
+func TestBuildGiftFameSaga(t *testing.T) {
+	txn := uuid.New()
+	now := time.Now()
+	sg := buildGiftFameSaga(txn, now, 200, world.Id(0), channel.Id(0))
+
+	if sg.TransactionId != txn {
+		t.Errorf("transactionId: got %s, want %s", sg.TransactionId, txn)
+	}
+	if sg.SagaType != saga.InventoryTransaction {
+		t.Errorf("sagaType: got %s, want %s", sg.SagaType, saga.InventoryTransaction)
+	}
+	if len(sg.Steps) != 1 {
+		t.Fatalf("steps: got %d, want 1", len(sg.Steps))
+	}
+	if sg.Steps[0].Action != saga.AwardFame {
+		t.Errorf("step action: got %s, want %s", sg.Steps[0].Action, saga.AwardFame)
+	}
+	fp, ok := sg.Steps[0].Payload.(saga.AwardFamePayload)
+	if !ok {
+		t.Fatalf("step payload type: %T", sg.Steps[0].Payload)
+	}
+	if fp.CharacterId != 200 || fp.Amount != 1 {
+		t.Errorf("fame payload mismatch: %+v", fp)
 	}
 }
 

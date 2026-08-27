@@ -34,6 +34,7 @@ type (
 	IncubatorResultPayload       = sharedsaga.IncubatorResultPayload
 	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
 	CreateNotePayload            = sharedsaga.CreateNotePayload
+	AwardFamePayload             = sharedsaga.AwardFamePayload
 	RevivePetPayload             = sharedsaga.RevivePetPayload
 	RenamePetPayload             = sharedsaga.RenamePetPayload
 
@@ -133,6 +134,7 @@ const (
 	EmitMegaphone         = sharedsaga.EmitMegaphone
 	EnqueueWorldBroadcast = sharedsaga.EnqueueWorldBroadcast
 	CreateNote            = sharedsaga.CreateNote
+	AwardFame             = sharedsaga.AwardFame
 	RenamePet             = sharedsaga.RenamePet
 	OpenNpcShop           = sharedsaga.OpenNpcShop
 	RevivePet             = sharedsaga.RevivePet

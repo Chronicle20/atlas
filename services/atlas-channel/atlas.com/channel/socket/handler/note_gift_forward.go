@@ -12,6 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	notesb "github.com/Chronicle20/atlas/libs/atlas-packet/note/serverbound"
 )
 
@@ -44,6 +46,41 @@ func buildGiftForwardSaga(transactionId uuid.UUID, now time.Time, senderId uint3
 					// comment for why non-zero flags are reserved for other
 					// memo render templates.
 					Flag: 0,
+				},
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+		},
+	}
+}
+
+// buildGiftFameSaga assembles a single-step award_fame saga that fames the
+// gifter by +1 when their gift is acknowledged. This is deliberately a
+// separate InventoryTransaction saga from the note_send saga
+// (buildGiftForwardSaga), not a second step on it: compensateNoteSend
+// terminates the whole saga on any step failure and emits a
+// StatusEventTypeFailed carrying the sender's characterId, which the channel
+// turns into a MEMO_RESULT SEND_ERROR announce. The client has already shown
+// SP_2713 "The note has successfully been sent." unconditionally before any
+// server reply, so a fame failure must not be able to drag the note saga
+// into that error path. A standalone InventoryTransaction saga carrying one
+// award_fame step is the established precedent for exactly this — see
+// atlas-notes' buildFameAwardSaga (note/processor.go).
+func buildGiftFameSaga(transactionId uuid.UUID, now time.Time, gifterId uint32, worldId world.Id, channelId channel.Id) saga.Saga {
+	return saga.Saga{
+		TransactionId: transactionId,
+		SagaType:      saga.InventoryTransaction,
+		InitiatedBy:   "NOTE_ACTION_GIFT_FORWARD_FAME",
+		Steps: []saga.Step{
+			{
+				StepId: "award_fame",
+				Status: saga.Pending,
+				Action: saga.AwardFame,
+				Payload: saga.AwardFamePayload{
+					CharacterId: gifterId,
+					WorldId:     worldId,
+					ChannelId:   channelId,
+					Amount:      1,
 				},
 				CreatedAt: now,
 				UpdatedAt: now,
@@ -142,6 +179,15 @@ func handleNoteGiftForward(l logrus.FieldLogger, ctx context.Context) func(s ses
 		if err = noteGiftForwardSagaCreateFunc(l, ctx, sg); err != nil {
 			l.WithError(err).Errorf("Character [%d] NOTE_ACTION SEND gift-forward: unable to create note_send saga.", s.CharacterId())
 			return
+		}
+
+		if gifter.Id() == s.CharacterId() {
+			l.Debugf("Character [%d] NOTE_ACTION SEND gift-forward: self-gift, skipping fame award.", s.CharacterId())
+		} else {
+			fg := buildGiftFameSaga(uuid.New(), time.Now(), gifter.Id(), s.WorldId(), s.ChannelId())
+			if err = noteGiftForwardSagaCreateFunc(l, ctx, fg); err != nil {
+				l.WithError(err).Errorf("Character [%d] NOTE_ACTION SEND gift-forward: unable to create award_fame saga for gifter [%d].", s.CharacterId(), gifter.Id())
+			}
 		}
 
 		if err = noteGiftForwardMarkSentFunc(l, ctx, s, int64(sp.GiftSN())); err != nil {

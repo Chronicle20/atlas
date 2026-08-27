@@ -53,6 +53,13 @@ func TestTransformRoundTrip(t *testing.T) {
 		t.Fatalf("Extract failed: %v", err)
 	}
 
+	// spawnPoint is the field task-272 fixes. The DeepEqual round-trip below
+	// cannot see a dropped field -- it is zero on both sides -- so assert the
+	// decoded value against the RestModel literal directly.
+	if got := m.SpawnPoint(); got != 11 {
+		t.Errorf("SpawnPoint() = %d, want 11", got)
+	}
+
 	rm2, err := Transform(m)
 	if err != nil {
 		t.Fatalf("Transform failed: %v", err)

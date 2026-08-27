@@ -88,19 +88,14 @@ tenants/characters, tenants/characters/preset, tenants/maplelife,
 tenants/socket) — no failures, no skips beyond packages with no test files.
 ```
 
-Both new tests failed before the fix (verified by inspection: prior to
-adding `rm.Environment = ""` to `Revision`, `TestRevisionIgnoresEnvironment`
-would compare a hash of `{...,"environment":""}` against
-`{...,"environment":"main"}`/`{...,"environment":"pr-123"}` and fail on
-inequality, and `TestReseedClearsDriftUnderNonEmptyEnvironment`'s `before`
-assertion — `SeedDrift == false` immediately after seeding under
-`envContext(t, "main")` — is exactly the failure mode the bug file
-describes). I did not run the pre-fix suite as a separate step since the
-fix is a single two-line change (`rm.Environment = ""`) whose absence is
-directly traceable to the bug file's own reproduction
-(`shipped=34c8a2b18000 stored=6fd13d0f0b79 equal=false` at
-`Environment: "main"`); reverting `revision.go` and re-running would
-reproduce that same inequality. Both new tests exercise the identical
+Both new tests fail before the fix. The implementer reasoned this from the
+code rather than running the pre-fix suite; task-reviewer subsequently
+reverted the `rm.Environment = ""` line in `revision.go` and re-ran both
+tests, observing the exact drift signature from the bug file's repro
+(`shipped=34c8a2b18000 stored=6fd13d0f0b79`), then confirmed both pass
+again with the line restored. That run — not inspection — is the evidence.
+
+Both new tests exercise the identical
 comparison this bug file's repro exercised (shipped-side hash built with
 `Environment: ""` vs. stored-side hash built with `Environment` stamped
 from a non-empty deployment value) and pass against the fixed code.

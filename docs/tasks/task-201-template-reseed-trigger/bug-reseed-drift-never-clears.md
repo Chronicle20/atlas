@@ -114,4 +114,31 @@ contract and the stored document shape), and do **not** change
 
 ## Outcome
 
-_(to be filled in: fix commit, gate verdict, live re-test on atlas-main)_
+Fixed by `3c1bd1e93` — "fix(atlas-configurations): exclude server-owned
+Environment from template Revision hash". `Revision` now clears
+`rm.Environment` alongside `rm.Id`, and its doc comment states the general
+contract: only client-authored content is hashed.
+
+Regression coverage:
+- `TestRevisionIgnoresEnvironment` (`revision_test.go`) — hash invariant under
+  `""` / `"main"` / `"pr-123"`.
+- `TestReseedClearsDriftUnderNonEmptyEnvironment` (`processor_test.go:787`) —
+  end-to-end over the real re-seed path at `envContext(t, "main")`, which is
+  the `Environment: ""` blind spot that let the bug ship.
+
+Gates:
+- `tools/verify.sh --base 92cb7e4dd` (flagless) — **exit 0**, all checks passed.
+- `task-reviewer` — **APPROVED_WITH_FINDINGS**, 0 blocking. It reverted the fix
+  line and re-ran both new tests, observing the bug's exact drift signature
+  (`shipped=34c8a2b18000 stored=6fd13d0f0b79`) before restoring it, and
+  confirmed by sweep of `rest.go` / `Make` / the nested sub-model packages that
+  `Id` and `Environment` are the only server-owned fields on `RestModel`, so the
+  exclusion list is complete. Artifact:
+  `review-bug-reseed-drift-never-clears.md`. The single non-blocking finding
+  (report overstated its own evidence) was corrected in the report.
+
+Not yet confirmed: **live re-test on atlas-main.** The badge should clear on any
+template whose stored content already matches its shipped file as soon as the
+image carrying `3c1bd1e93` is deployed — no re-seed needed, because drift is
+computed on read. Templates that were genuinely edited will keep showing drift,
+correctly, until reset.

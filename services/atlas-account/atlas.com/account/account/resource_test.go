@@ -167,7 +167,7 @@ func TestCharacterSlotsResource(t *testing.T) {
 		req := requestWithTenant(http.MethodGet, url, tenantId)
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
 			return resp.StatusCode, 0
 		}
@@ -186,7 +186,7 @@ func TestCharacterSlotsResource(t *testing.T) {
 		req := requestWithTenant(http.MethodPost, url, tenantId)
 		resp, err := (&http.Client{}).Do(req)
 		require.NoError(t, err)
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		if resp.StatusCode != http.StatusOK {
 			return resp.StatusCode, 0
 		}

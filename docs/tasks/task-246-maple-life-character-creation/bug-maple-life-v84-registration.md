@@ -202,5 +202,48 @@ All paths relative to the worktree root.
 
 ## Resolution
 
-_Unresolved at time of writing. Record the fixing commit, the gate verdict, and
-whether live testing confirmed it, before closing._
+Fixed on branch `task-246-bug-maple-life-v84-registration`.
+
+| item | outcome |
+|---|---|
+| diagnosis | `2a34e5e69` |
+| fix | `7f1dc0a43` (task-implementer, sonnet, DONE) |
+| implementer report | `2e8ca1bc4` |
+| gate | `tools/verify.sh --quick --base 903537fe8` → **PASS**, exit 0 (6 changed paths, 1 Go module; build/vet, analyzer, scope, producer-seam, template opcode-order, duplicate-binding, lint/format all green) |
+| review | `task-reviewer` (sonnet) → **APPROVED_WITH_FINDINGS**, 0 blocking, 2 non-blocking — `review-bug-maple-life-v84-registration.md` |
+| live test | **NOT performed.** No v84.1 client has exercised the dialog against a patched tenant. |
+
+The gate is `--quick`, which skips the bake and `-race`; per CLAUDE.md that does
+not count as the flagless gate. A full `tools/verify.sh` is still owed before
+this branch opens a PR.
+
+Reviewer's non-blocking findings:
+
+1. **Stale comments** in `libs/atlas-packet/maplelife/` still assert gms_v84 is
+   VERSION-ABSENT / out-of-scope — `clientbound/error.go:69,82`,
+   `clientbound/result.go:61,73`, `serverbound/check_name.go:28`, and the
+   "FOUR in-scope cells" comments in the three `*_test.go` files. There is no
+   version gate to correct (correctly verified and left unchanged), but the
+   prose now contradicts this commit range. Tracked below.
+2. This `## Resolution` section was unfilled — closed by this edit.
+
+Reviewer could not evaluate the IDA-session claims (the `0x7fd845` dispatcher
+decompile, the swapped `CField` symbols) from repo state alone; it checked
+internal consistency only. That is expected — the raw disassembly lives in
+session `46c2a2eb`, not in the repo, which is why the derivation is written out
+in full above.
+
+### Still owed
+
+- The stale-comment sweep in `libs/atlas-packet/maplelife/` (finding 1).
+- Evidence records `docs/packets/evidence/gms_v84/maplelife.*.yaml` and
+  promotion of the three gms_v84 matrix cells — `packet-verifier` work, one
+  cell per agent, deliberately excluded from this fix.
+- A flagless `tools/verify.sh` run.
+- Live re-test on a v84.1 client.
+- jms_v185 remains unresolved as a *derivation* question; separately, its three
+  Maple Life definitions were marked `socket.unsupported` in
+  `template_jms_185_1.json` on branch `jms-185-maple-life-unsupported`
+  (`8b56e4d51`, gate PASS) so the packet-matrix UI renders them n/a rather than
+  "nobody has looked yet". That marking records an audited absence; it does not
+  close §6.3's open question about what jms opcode 271 actually is.

@@ -244,7 +244,7 @@ func (m Model) WorldId() world.Id {
 	return m.worldId
 }
 
-func (m Model) SetInventory(i inventory.Model) Model {
+func (m Model) SetInventory(i inventory.Model) (Model, error) {
 	eq := equipment.NewModel()
 	ec := compartment.NewBuilder(i.Equipable().Id(), m.Id(), i.Equipable().Type(), i.Equipable().Capacity())
 	for _, a := range i.Equipable().Assets() {

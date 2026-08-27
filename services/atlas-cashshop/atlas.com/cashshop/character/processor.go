@@ -50,7 +50,11 @@ func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 	if err != nil {
 		return m
 	}
-	return m.SetInventory(i)
+	updated, err := m.SetInventory(i)
+	if err != nil {
+		return m
+	}
+	return updated
 }
 
 // ExtendEquipSlot extends the character's equip-slot extension via

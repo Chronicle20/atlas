@@ -321,3 +321,319 @@ $ cd services/atlas-login/atlas.com/login && go build ./... && go test ./...
   so the 409 path is defense-in-depth atlas-channel does not need to
   interpret specially — a generic `err != nil` on the increment call is
   logged and swallowed either way, per the agreed ordering.
+
+## Round 3 — atlas-character seam
+
+Round 3 agent: task-implementer (sonnet). Fixed the review's blocking
+finding #1 (`reviews/bug-b-type-must-add-a-slot.md`, item 1): the
+`pending_change` package's `checkCharacterSlot` (world-transfer gate 4) was
+still reading the removed flat `accounts/{accountId}` `characterSlots`
+attribute, always unmarshalling to 0 and rejecting every world transfer with
+`no_character_slot`.
+
+### Fix
+
+- `pending_change/rest.go`: removed `accountRestModel` (the stale flat
+  `characterSlots` projection of `GET accounts/{accountId}`); added
+  `characterSlotRestModel` (`{worldId world.Id, slots int16}` via
+  `json:"worldId"`/`json:"slots"`), the projection of the new per-world
+  sub-resource. Matches atlas-login's and atlas-channel's
+  `CharacterSlotRestModel` shape.
+- `pending_change/requests.go`: replaced `requestAccount`/`accountSlots`
+  (which hit `GET accounts/{accountId}`) with `requestCharacterSlots(accountId,
+  worldId)` → `GET accounts/{accountId}/worlds/{worldId}/character-slots`, and
+  `accountSlots(l, ctx, accountId, worldId world.Id) (int16, error)` reading
+  `rm.Slots`. Same route/response shape round 1 and round 2 already shipped
+  for atlas-login and atlas-channel — no redesign.
+- `pending_change/processor_eligibility.go`: `gateDeps.accountSlots` signature
+  now takes `worldId world.Id`; `productionGateDeps` wiring unchanged (same
+  function name, new signature). `checkCharacterSlot` now calls
+  `p.gates.accountSlots(p.l, p.ctx, c.AccountId(), destinationWorldId)` —
+  the same `destinationWorldId` already used for
+  `character.GetForAccountInWorld()`, so the remote cap and the local count
+  are read for the same world.
+- `pending_change/processor_eligibility_test.go`: updated every
+  `accountSlots` stub (`passingGateDeps`, the gate-4 test, the ordering
+  short-circuit panic stub, the error-injection table) to the new
+  4-argument signature. Added
+  `TestEligibilityGate4ReadsDestinationWorldSlotsAndAllowsBelowCap`: seeds
+  one existing character in `destinationWorldId`, stubs `accountSlots` to
+  capture the `accountId`/`worldId` it was called with and return a cap of
+  2 (room for one more), and asserts the transfer is **eligible**
+  (`ok == true`, `reason == ""`) and that the stub was called with
+  `c.AccountId()` and `destinationWorldId` specifically — not the account's
+  home world or any other value. This is the "new behavior" assertion the
+  review required: a below-cap transfer against the destination world's
+  slot count is allowed, not just that the old shape still compiles.
+
+### Sweep for other readers of the removed attribute
+
+```
+$ grep -rn "characterSlots\|CharacterSlots\|accountRestModel\|character-slots" --include="*.go" .
+```
+(run from `services/atlas-character/atlas.com/character`) — the only hits
+after the fix are the new `characterSlotRestModel`/`requestCharacterSlots`
+names and their doc comments; no other reader of the old flat attribute
+exists in this module.
+
+### Build/test evidence
+
+```
+$ cd services/atlas-character/atlas.com/character && go build ./... && go vet ./... && go test ./...
+```
+`go build ./...` → clean, no output. `go vet ./...` → clean, no output.
+`go test ./...` → every package `ok`, including
+`ok  	atlas-character/pending_change	209.865s` (no `FAIL` anywhere in the
+run; exit code 0).
+
+### Self-review notes
+
+- No TODOs/stubs/placeholders. Followed the existing per-remote-gate
+  function pattern in `requests.go` (one narrow REST client per gate) rather
+  than inventing a new shape.
+- `world.Id` (`type Id byte`, confirmed via `go doc`) used for the wire
+  field consistent with this file's existing `world` import, matching
+  atlas-login's `byte`-typed field at the JSON level (both marshal/unmarshal
+  identically as a small integer).
+- Did not touch atlas-ui, atlas-account, atlas-login, or atlas-channel —
+  out of this unit's scope per the dispatch brief; the review's finding #2
+  (atlas-ui `characterSlots` display) belongs to a separate unit.
+- Committed on branch `task-246-maple-life-character-creation`, on top of
+  round 2's `f32efa66d`: `62733da76` — "fix(atlas-character): read
+  destination-world character-slot cap for gate 4". Branch and worktree
+  root verified after commit (the assigned
+  `.worktrees/task-246-maple-life-character-creation` worktree). Tree clean
+  of this unit's changes after commit (only an unrelated, pre-existing
+  `agent-ledger.tsv` modification and an untracked
+  `reviews/task-246-maple-life-character-creation` path remained, neither
+  touched by this round).
+
+## Round 4 — lint fix + atlas-ui per-world panel
+
+Round 4 agent: task-implementer (sonnet). Two independent units: (1) an
+`errcheck` lint fix in atlas-account's F1 test, from the repo gate; (2)
+atlas-ui's `characterSlots` readers, broken since the flat attribute was
+removed in round 1.
+
+### Unit 1 — errcheck fix (atlas-account)
+
+`account/resource_test.go`'s two `getSlots`/`postIncrement` closures used
+bare `defer resp.Body.Close()`, which `golangci-lint`'s `errcheck` linter
+flags (unchecked error return). Grepped the repo for the existing idiom
+(`defer func() { _ = resp.Body.Close() }()`, used throughout
+`atlas-reward-pools`, `atlas-ban`, `atlas-cashshop`, etc.) and matched it —
+did not invent a new pattern.
+
+Verified with the pinned linter (`golangci-lint v2.13.1`, installed fresh
+via `go install .../golangci-lint/v2/cmd/golangci-lint@v2.13.1` since the
+pre-existing local binary was v2.12.2 and refused to load the v1.27
+`.golangci.yml`), scoped with `--new-from-rev` against the branch's
+merge-base with `origin/main` (`b0459f791`), matching how `tools/lint.sh`
+itself gates new code — not a bare full-tree run, which surfaces pre-existing
+unrelated findings elsewhere in the module that are not this unit's to fix:
+
+```
+$ golangci-lint run --allow-parallel-runners -c .golangci.yml \
+    --new-from-rev b0459f791d9031990f96575ade08d8aab07b1ffb ./...
+0 issues.
+```
+
+`go build ./... && go test ./...` from the module root: all packages `ok`,
+including `ok atlas-account/account 1.543s`.
+
+Committed alone: `912307b7d` — "fix(atlas-account): check resp.Body.Close
+error in resource_test.go".
+
+### Unit 2 — atlas-ui per-world characters panel
+
+**Break confirmed before editing:** `AccountAttributes.characterSlots`,
+`transformAccount`'s `Number(data.attributes.characterSlots)`, the dashboard
+stats' `totalCharacterSlots`/`averageCharacterSlots`, and
+`CharactersPanel`'s `account.attributes.characterSlots` all read an
+attribute atlas-account no longer serializes on `GET accounts/{accountId}`
+(round 1 removed it in favor of the world-scoped sub-resource) — each of
+these was reading `undefined` and computing `NaN`.
+
+**New plumbing, following the existing `wallet.service.ts`/`useWallet.ts`
+single-nested-sub-resource pattern (the closest existing precedent for a
+`GET accounts/{accountId}/worlds/{worldId}/...`-shaped resource):**
+
+- `src/types/models/character-slots.ts` (new) — `CharacterSlots` /
+  `CharacterSlotsAttributes` (`{worldId: number, slots: number}`), mirroring
+  atlas-account's `CharacterSlotRestModel` wire shape
+  (`{"worldId": byte, "slots": int16}`) byte-for-byte at the JSON level.
+- `src/services/api/character-slots.service.ts` (new) —
+  `characterSlotsService.getCharacterSlots(accountId, worldId, options)` →
+  `api.getOne<CharacterSlots>("/api/accounts/{accountId}/worlds/{worldId}/character-slots", options)`,
+  with a `transformCharacterSlots` coercing `worldId`/`slots` to `Number`
+  (same defensive-coercion pattern as `accounts.service.ts#transformAccount`).
+- `src/lib/hooks/api/useCharacterSlots.ts` (new) — `useCharacterSlots(tenant,
+  accountId, worldId, options)`, a plain `useQuery` (no mutation — nothing in
+  atlas-ui increments slots; that's the in-game B-Type coupon flow, round
+  2/3's territory), keyed by `characterSlotsKeys.detail(tenant, accountId,
+  worldId)`, `enabled: !!tenant?.id && !!accountId`, matching `useWallet`'s
+  shape.
+
+**Grouping-by-world, per the user ruling (one section per world, each with
+its own slot count and its own characters — no summed total):**
+
+- `src/components/features/accounts/WorldCharactersSection.tsx` (new) — one
+  world's slice of the panel. Calls `useCharacterSlots(tenant, account.id,
+  worldId)` itself (so the "call one hook per array element" problem is
+  solved by making each world its own component instance, not by calling a
+  variable number of hooks inside `CharactersPanel`). Renders that world's
+  name + a `{filled}/{slots} slots` line, the filled/empty tile grid (reusing
+  the existing `FilledSlotTile`/`EmptySlotTile`), and an over-capacity hint —
+  all scoped to that world's own character count and slot count. A
+  `LOADING_SKELETON_TILE_COUNT = 4` constant is a UI-only skeleton-grid
+  placeholder while `useCharacterSlots` is in flight; it carries no game-rule
+  meaning and is not a re-literal of the backend's
+  `character.DefaultCharacterSlotsPerWorld` (that constant is
+  atlas-account's, not atlas-ui's, to know).
+- `src/components/features/accounts/CharactersPanel.tsx` (rewritten) — no
+  longer reads `account.attributes.characterSlots` or filters characters by
+  `accountId` alone across all worlds. Instead: filters characters by
+  `accountId` once (`accountCharacters`, still correct — a character has
+  exactly one `worldId`), then renders one `<WorldCharactersSection>` per
+  entry in `tenantConfigQuery.data?.attributes?.worlds` (index = `worldId`,
+  the same indexing `FilledSlotTile` already relies on for `worldName`
+  lookup), passing each section only the characters whose `worldId` matches
+  that section's world. The shared `ApplyPresetDialog` (which already has
+  its own per-request world picker, defaulting to world 0) is left
+  untouched — out of this unit's named file inventory, and changing its
+  default-world behavior per clicked tile was not requested.
+
+**Dashboard aggregate decision (`accounts.service.ts#getAccountStats` /
+`useAccounts.ts#useAccountStats`):** dropped `totalCharacterSlots` and
+`averageCharacterSlots` entirely rather than attempting to recompute them.
+Reasoning, written into the source as a doc comment on `getAccountStats`:
+`characterSlots` used to be free because it was already inlined on every
+fetched `Account`; slots are now a separate per-(account, world)
+sub-resource, so producing a tenant-wide total would mean issuing
+`accounts.length * worlds.length` additional network calls from a function
+that *already* drains every account for the tenant (`getAllAccounts`) — and
+the resulting number would sum unrelated per-world caps into one figure that
+isn't a meaningful single statistic. Confirmed by grep
+(`grep -rln "getAccountStats\|totalCharacterSlots\|averageCharacterSlots" src`)
+that no page currently renders either field — `useAccountStats` is exported
+but has zero call sites outside its own hook file and its test — so this is
+a genuine no-op removal, not a silent UI regression. A per-world breakdown
+belongs on the per-world view this unit just built
+(`CharactersPanel`/`WorldCharactersSection`), not a single tenant-wide
+scalar.
+
+### Test suites updated (compile-only fixes vs. new-behavior assertions)
+
+Compile-only fixes — dropped the now-nonexistent `characterSlots` field
+from mock `Account` fixtures, no behavioral assertions changed:
+`components/features/accounts/__tests__/BirthDateDialog.test.tsx`,
+`lib/hooks/api/__tests__/useAccountByName.test.tsx`,
+`lib/hooks/api/__tests__/useAccounts.test.tsx` (also dropped
+`totalCharacterSlots`/`averageCharacterSlots` from `mockStats`),
+`lib/hooks/api/__tests__/useCreateAndPollAccount.test.ts`,
+`pages/__tests__/AccountsPage.test.tsx`,
+`services/api/__tests__/accounts.service.test.ts`,
+`tests/integration/services/services.integration.test.ts` (this file is a
+pre-existing orphan — excluded from both `tsconfig.app.json`'s `include:
+["src"]` and Vitest's `include: ["src/**/*.test.{ts,tsx}"]`, and already
+used `jest.mock`/stale service signatures unrelated to this change; fixed the
+named `characterSlots` literals for correctness since the brief named the
+path, but did not attempt a full rewrite of its pre-existing staleness —
+out of scope).
+
+New-behavior assertion —
+`components/features/accounts/__tests__/CharactersPanel.test.tsx` rewritten:
+added a `useCharacterSlotsMock` (mocking the new per-world hook, keyed by
+the `worldId` argument it's called with) alongside the existing
+`useCharactersMock`/`useTenantConfigurationMock`. All five pre-existing
+cases updated to source slots from the mocked per-world hook instead of
+`account.attributes.characterSlots`. Added one new test,
+`"groups characters by world: each world shows only its own slot count and
+its own characters, not a summed total"`, which is the load-bearing
+assertion for the user's grouping ruling: two worlds (Scania: 3 slots/1
+character, Bera: 2 slots/2 characters — exactly at capacity), asserts (via
+`within(section)`) that each world's `FilledSlotTile` names, empty-tile
+count, and `{filled}/{slots} slots` text are scoped to that world only —
+specifically that Bera being *at* capacity (2/2) does **not** trigger the
+over-capacity hint that a naive summed-across-worlds check (5 slots total, 3
+characters total) would have hidden, and that neither section's slot count
+equals the sum of both (3+2=5). This is the case that would fail under the
+old "one flat total" reading and passes under the per-world grouping this
+unit implemented.
+
+### Build/lint/test evidence (foreground, read — not assumed)
+
+```
+$ cd services/atlas-ui && npm run build
+```
+`tsc -b && vite build` → clean, no type errors (test files included, per
+`tsconfig.app.json`'s strict include). Vite build succeeded (`✓ built in
+5.79s`); the only output was Rolldown's pre-existing "chunk >500kB" size
+warning, unrelated to this change.
+
+```
+$ npm run test
+```
+`Test Files  259 passed (259)`, `Tests  2132 passed (2132)`. The single
+stderr line (`Not implemented: navigation to another Document`) is a
+pre-existing jsdom console note from an unrelated test, not a failure.
+
+Also ran the specific touched suites in isolation first, before the full
+sweep, to read their output directly:
+```
+$ npx vitest run src/components/features/accounts src/services/api/__tests__/accounts.service.test.ts \
+    src/lib/hooks/api/__tests__/useAccounts.test.tsx src/lib/hooks/api/__tests__/useAccountByName.test.tsx \
+    src/lib/hooks/api/__tests__/useCreateAndPollAccount.test.ts src/pages/__tests__/AccountsPage.test.tsx
+Test Files  10 passed (10)
+     Tests  65 passed (65)
+```
+
+```
+$ npm run lint
+```
+`9 problems (0 errors, 9 warnings)` — confirmed by grep
+(`npm run lint 2>&1 | grep -i "CharactersPanel\|WorldCharactersSection\|character-slots\|useCharacterSlots\|accounts.service"`
+→ no matches, exit 1) that none of the 9 pre-existing `react-hooks` warnings
+touch any file this unit changed; all are in unrelated coupon/reward-pool/
+tenant dialogs and two pre-existing `exhaustive-deps` warnings in
+`AccountsPage.tsx`/`QuestsPage.tsx`.
+
+```
+$ npx prettier --check <every file this unit touched>
+Prettier: All files formatted correctly
+```
+
+### Round 4 self-review notes
+
+- No TODOs/stubs/placeholders. Builder-pattern equivalent (no
+  `*_testhelpers.go` — this is atlas-ui, but the same "no ad hoc test-only
+  constructor sprawl" spirit is followed: test fixtures are plain object
+  literals matching the existing file's own style, no new helper module).
+- `character.MaxCharacterSlotsPerWorld`/`DefaultCharacterSlotsPerWorld`
+  (`libs/atlas-constants/character`) were **not** re-literalled into
+  atlas-ui — the `LOADING_SKELETON_TILE_COUNT = 4` constant in
+  `WorldCharactersSection.tsx` is explicitly documented as a UI-only
+  placeholder with no game-rule meaning, not a copy of the backend default.
+- Deliberate scope trim: did not add dedicated unit tests for
+  `character-slots.service.ts` or `useCharacterSlots.ts` in isolation — the
+  brief's inventory named only the *existing* suites to update, and the
+  closest existing precedent (`wallet.service.ts`/`useWallet.ts`, the
+  pattern this unit copied) has no dedicated test file of its own either.
+  Both are exercised indirectly through `CharactersPanel`/
+  `WorldCharactersSection`'s mocked-hook test coverage. Flagged here for a
+  reviewer to rule on if direct coverage is wanted.
+- Deliberate scope trim: `ApplyPresetDialog` was not touched to pre-select
+  the clicked tile's world (its own form's world picker still defaults to
+  world 0 regardless of which world's empty tile was clicked). Not named in
+  the brief's file inventory; flagged as a UX follow-up, not a defect in
+  this unit's stated scope.
+- Verified in the foreground per the brief's instruction — no backgrounded
+  build/test/lint calls, every command's real output was read before this
+  report was written.
+
+### Commits
+
+- `912307b7d` — "fix(atlas-account): check resp.Body.Close error in
+  resource_test.go" (Unit 1, alone).
+- Unit 2 commit follows immediately after this report is written (see final
+  status line for its SHA).

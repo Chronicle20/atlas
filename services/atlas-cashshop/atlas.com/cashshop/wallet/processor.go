@@ -29,6 +29,11 @@ type Processor interface {
 	UpdateAndEmit(accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error)
 	UpdateWithTransaction(mb *message.Buffer) func(transactionId uuid.UUID) func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error)
 	UpdateAndEmitWithTransaction(transactionId uuid.UUID, accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error)
+	// UpdateWithTransactionSceneRefreshOwned is UpdateWithTransaction with the
+	// wallet UPDATED event's SceneRefreshOwned flag set, for callers -- currently
+	// only the cash-shop gift flow -- whose own status handler announces the
+	// scene refresh itself, in the order the client requires.
+	UpdateWithTransactionSceneRefreshOwned(mb *message.Buffer) func(transactionId uuid.UUID) func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error)
 	AdjustCurrency(accountId uint32, currencyType uint32, amount int32) (Model, error)
 	AdjustCurrencyWithTransaction(transactionId uuid.UUID, accountId uint32, currencyType uint32, amount int32) (Model, error)
 	Delete(mb *message.Buffer) func(accountId uint32) error
@@ -148,6 +153,28 @@ func (p *ProcessorImpl) UpdateWithTransaction(mb *message.Buffer) func(transacti
 						}
 
 						_ = mb.Put(wallet.EnvEventTopicStatus, wallet2.UpdateStatusEventWithTransactionProvider(accountId, credit, points, prepaid, transactionId))
+						return c, err
+					}
+				}
+			}
+		}
+	}
+}
+
+func (p *ProcessorImpl) UpdateWithTransactionSceneRefreshOwned(mb *message.Buffer) func(transactionId uuid.UUID) func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error) {
+	return func(transactionId uuid.UUID) func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error) {
+		return func(accountId uint32) func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error) {
+			return func(credit uint32) func(points uint32) func(prepaid uint32) (Model, error) {
+				return func(points uint32) func(prepaid uint32) (Model, error) {
+					return func(prepaid uint32) (Model, error) {
+						p.l.Debugf("Updating wallet information for account [%d] with transaction [%s] (scene refresh owned by originating operation). Credit [%d], Points [%d], and Prepaid [%d].", accountId, transactionId.String(), credit, points, prepaid)
+						c, err := updateEntity(p.db.WithContext(p.ctx), accountId, credit, points, prepaid)
+						if err != nil {
+							p.l.WithError(err).Errorf("Could not update wallet information for account [%d].", accountId)
+							return Model{}, err
+						}
+
+						_ = mb.Put(wallet.EnvEventTopicStatus, wallet2.UpdateStatusEventWithTransactionSceneRefreshOwnedProvider(accountId, credit, points, prepaid, transactionId))
 						return c, err
 					}
 				}

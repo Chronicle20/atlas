@@ -1,6 +1,7 @@
 package workers
 
 import (
+	"atlas-data/cashpackage"
 	"atlas-data/commodity"
 	"context"
 	"fmt"
@@ -37,6 +38,10 @@ func (Commodity) Run(ctx context.Context, l logrus.FieldLogger, db *gorm.DB, mc 
 	commodityPath := filepath.Join(root, "Etc.wz", "Commodity.img.xml")
 	if err := commodity.NewProcessor(l, ctx, db).RegisterCommodity(commodityPath); err != nil {
 		return fmt.Errorf("register commodities: %w", err)
+	}
+	cashPackagePath := filepath.Join(root, "Etc.wz", "CashPackage.img.xml")
+	if err := cashpackage.NewProcessor(l, ctx, db).RegisterCashPackage(cashPackagePath); err != nil {
+		l.WithError(err).Warnf("Unable to register cash packages; tenant WZ dump may lack CashPackage.img.xml.")
 	}
 	return nil
 }

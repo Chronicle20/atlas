@@ -376,7 +376,9 @@ When `type` has a non-empty value, returns a single compartment:
         "petId": 0,
         "purchasedBy": 67890,
         "expiration": "2025-06-01T00:00:00Z",
-        "createdAt": "2025-05-01T00:00:00Z"
+        "createdAt": "2025-05-01T00:00:00Z",
+        "giftFrom": "",
+        "giftMessage": ""
       }
     }
   ]
@@ -426,7 +428,9 @@ JSON:API resource type: `assets`
       "petId": 0,
       "purchasedBy": 67890,
       "expiration": "2025-06-01T00:00:00Z",
-      "createdAt": "2025-05-01T00:00:00Z"
+      "createdAt": "2025-05-01T00:00:00Z",
+      "giftFrom": "",
+      "giftMessage": ""
     }
   }
 }
@@ -469,7 +473,9 @@ JSON:API resource type: `assets`
       "petId": 0,
       "purchasedBy": 67890,
       "expiration": "2025-06-01T00:00:00Z",
-      "createdAt": "2025-05-01T00:00:00Z"
+      "createdAt": "2025-05-01T00:00:00Z",
+      "giftFrom": "",
+      "giftMessage": ""
     }
   }
 }

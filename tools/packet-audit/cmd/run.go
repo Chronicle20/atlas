@@ -3013,6 +3013,8 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ShopOperationBuyNormal", dir: csvpkg.DirServerbound, pkg: "cash"}}
 	case "CCashShop::OnBuyPackage":
 		return []candidate{{name: "ShopOperationBuyPackage", dir: csvpkg.DirServerbound, pkg: "cash"}}
+	case "CCashShop::OnGiftPackage":
+		return []candidate{{name: "ShopOperationBuyOtherPackage", dir: csvpkg.DirServerbound, pkg: "cash"}}
 	case "CCashShop::OnBuyCouple":
 		return []candidate{{name: "ShopOperationBuyCouple", dir: csvpkg.DirServerbound, pkg: "cash"}}
 	case "CCashShop::OnBuyFriendship":

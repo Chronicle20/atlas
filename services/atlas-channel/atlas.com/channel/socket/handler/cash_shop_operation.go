@@ -2,9 +2,11 @@ package handler
 
 import (
 	"atlas-channel/cashshop"
+	"atlas-channel/cashshop/purchaserecord"
 	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
 	"atlas-channel/data/commodity"
+	messageCashShop "atlas-channel/kafka/message/cashshop"
 	"atlas-channel/pendingchange"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -55,13 +57,13 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuy) {
 			sp := &cashsb.ShopOperationBuy{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			_ = cashshop.NewProcessor(l, ctx).RequestPurchase(s.CharacterId(), sp.SerialNumber(), sp.IsPoints(), sp.Currency(), sp.Zero(), uuid.Nil)
+			_ = cashshop.NewProcessor(l, ctx).RequestPurchase(s.CharacterId(), sp.SerialNumber(), sp.IsPoints(), sp.Currency(), sp.Zero(), uuid.Nil, "")
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationGift) {
 			sp := &cashsb.ShopOperationGift{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] gifting [%d] to [%s] with message [%s]. birthday [%d]", s.CharacterId(), sp.SerialNumber(), sp.Name(), sp.Message(), sp.Birthday())
+			handleGift(l, ctx, wp)(s, sp)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationSetWishlist) {
@@ -127,8 +129,13 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationEnableEquipSlot) {
 			sp := &cashsb.ShopOperationEnableEquipSlot{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			pt := cashshop.GetPointType(sp.PointType())
-			l.Infof("Character [%d] enabling equip slot? via item [%d] using [%s].", s.CharacterId(), sp.SerialNumber(), pt)
+			// TransactionId is minted here per click (design §8, mirroring
+			// every other paid arm in this handler): a Kafka redelivery
+			// replays one id while a genuine second click legitimately
+			// charges twice.
+			if err = cashshop.NewProcessor(l, ctx).RequestEquipSlotIncrease(s.CharacterId(), uuid.New(), sp.PointType(), 0, sp.SerialNumber()); err != nil {
+				l.WithError(err).Errorf("Unable to request equip slot increase for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationMoveFromCashInventory) {
@@ -152,42 +159,111 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyNormal) {
 			sp := &cashsb.ShopOperationBuyNormal{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] purchasing [%d].", s.CharacterId(), sp.SerialNumber())
+			// ShopOperationBuyNormal carries no isPoints/currency on the v83+
+			// wire -- the whole body is a bare serialNumber (shop_operation_buy_normal.go:23-28)
+			// -- so, exactly like BUY_NAME_CHANGE (handleBuyNameChange above),
+			// the purchase is requested with isPoints=false, currency=0: there
+			// is nothing else to charge with. The transactionId is minted here
+			// per click (design §8): a Kafka redelivery replays one id while a
+			// genuine second click legitimately charges twice.
+			if err = cashshop.NewProcessor(l, ctx).RequestPurchase(s.CharacterId(), sp.SerialNumber(), false, 0, 0, uuid.New(), messageCashShop.ErrorOperationBuyNormal); err != nil {
+				l.WithError(err).Errorf("Unable to request BUY_NORMAL purchase for character [%d] serial number [%d].", s.CharacterId(), sp.SerialNumber())
+			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationRebateLockerItem) {
 			sp := &cashsb.ShopOperationRebateLockerItem{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] using rebate [%d]. birthday [%d]", s.CharacterId(), sp.Unk(), sp.Birthday())
+			if cErr := verifySecondaryCredential(l, ctx)(s, sp.SPW(), sp.Birthday()); cErr != nil {
+				if errors.Is(cErr, ErrCredentialMismatch) {
+					if aErr := session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopRebateFailedBody("INVALID_BIRTHDAY"))(s); aErr != nil {
+						l.WithError(aErr).Errorf("Unable to announce rebate credential failure for character [%d].", s.CharacterId())
+					}
+					return
+				}
+				l.WithError(cErr).Errorf("Unable to verify secondary credential for character [%d] requesting locker rebate.", s.CharacterId())
+				return
+			}
+			cashId := int64(sp.Unk())
+			transactionId := uuid.New()
+			if err = cashshop.NewProcessor(l, ctx).RequestLockerRebate(s.AccountId(), s.CharacterId(), cashId, transactionId); err != nil {
+				l.WithError(err).Errorf("Unable to request locker rebate for character [%d] cash item [%d].", s.CharacterId(), cashId)
+			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyCouple) {
 			sp := &cashsb.ShopOperationBuyCouple{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] purchasing [%d] for [%s] with message [%s]. Option [%d], birthday [%d]", s.CharacterId(), sp.SerialNumber(), sp.Name(), sp.Message(), sp.Option(), sp.Birthday())
+			handleBuyCouple(l, ctx, wp)(s, sp)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyPackage) {
 			sp := &cashsb.ShopOperationBuyPackage{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			pt := cashshop.GetPointType(sp.PointType())
-			l.Infof("Character [%d] purchasing [%d] with [%s]. Option [%d]", s.CharacterId(), sp.SerialNumber(), pt, sp.Option())
+			handleBuyPackage(l, ctx, wp)(s, sp)
+			return
+		}
+		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyOtherPackage) {
+			sp := &cashsb.ShopOperationBuyOtherPackage{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			handleBuyOtherPackage(l, ctx, wp)(s, sp)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationApplyWishlist) {
-			l.Infof("Character [%d] requesting to apply wishlist.", s.CharacterId())
+			// APPLY_WISHLIST (mode 33/35) carries no bytes after the mode byte
+			// (derivation.md D2a: RESOLVED, empty body). The reply arm is
+			// inferred (derivation.md D2b: RESOLVED but flagged INFERENTIAL,
+			// reached via request-in-flight-latch analysis rather than a
+			// client correlation table) to be UPDATE_WISHLIST (mode 98), the
+			// same arm SET_WISHLIST already answers with.
+			// The failure arm must pair with the latch-clearing UPDATE_WISHLIST
+			// success arm above (derivation.md D2b evidence 1): SET_WISH_FAILED
+			// (mode 99, CCashShop::OnCashItemResSetWishFailed) clears the
+			// client's request-in-flight latch; LOAD_WISH_FAILED does not, and
+			// answering with it would leave the client wedged. This corrects
+			// the brief's Step 5 instruction, which named LOAD_WISH_FAILED in
+			// conflict with the derivation it itself cites.
+			wl, err := wishlist.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve wishlist for character [%d].", s.CharacterId())
+				err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopSetWishFailedBody("unknown_error"))(s)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce wishlist load failure for character [%d].", s.CharacterId())
+				}
+				return
+			}
+			sns := make([]uint32, len(wl))
+			for i, w := range wl {
+				sns[i] = w.SerialNumber()
+			}
+			err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopWishListUpdateBody(sns))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce wishlist for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyFriendship) {
 			sp := &cashsb.ShopOperationBuyFriendship{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] purchasing [%d] for [%s] with message [%s]. Option [%d], birthday [%d]", s.CharacterId(), sp.SerialNumber(), sp.Name(), sp.Message(), sp.Option(), sp.Birthday())
+			handleBuyFriendship(l, ctx, wp)(s, sp)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationGetPurchaseRecord) {
 			sp := &cashsb.ShopOperationGetPurchaseRecord{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Infof("Character [%d] requesting purchase record for [%d].", s.CharacterId(), sp.SerialNumber())
+			m, err := purchaserecord.NewProcessor(l, ctx).GetForAccount(s.AccountId(), sp.SerialNumber())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve purchase record for account [%d] serial [%d].", s.AccountId(), sp.SerialNumber())
+				err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopPurchaseRecordFailedBody("unknown_error"))(s)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce purchase record failure for character [%d].", s.CharacterId())
+				}
+				return
+			}
+			err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopPurchaseRecordDoneBody(int32(sp.SerialNumber()), purchaseRecordFlag(m.Count())))(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce purchase record for character [%d].", s.CharacterId())
+			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyNameChange) {
@@ -283,7 +359,7 @@ func handleBuyNameChange(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			announceCashShopRejection(l, ctx, wp)(s, "Unable to process your name change request.")
 			return
 		}
-		if err := cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId); err != nil {
+		if err := cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId, ""); err != nil {
 			l.WithError(err).Errorf("Unable to request purchase for character [%d] serial number [%d] transaction [%s]; pending name change record [%s] may be orphaned.", characterId, sp.SerialNumber(), transactionId, rm.Id)
 		}
 	}
@@ -335,7 +411,7 @@ func handleBuyWorldTransfer(l logrus.FieldLogger, ctx context.Context, wp writer
 			announceTransferWorldFailure(l, ctx, wp)(s, "unknown_error")
 			return
 		}
-		if err := cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId); err != nil {
+		if err := cashshop.NewProcessor(l, ctx).RequestPurchase(characterId, sp.SerialNumber(), false, 0, 0, transactionId, ""); err != nil {
 			l.WithError(err).Errorf("Unable to request purchase for character [%d] serial number [%d] transaction [%s]; pending world transfer record [%s] may be orphaned.", characterId, sp.SerialNumber(), transactionId, rm.Id)
 		}
 
@@ -389,6 +465,16 @@ func warnIfStrandingStorage(l logrus.FieldLogger, ctx context.Context, wp writer
 	if err := session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessagePopUpBody(msg))(s); err != nil {
 		l.WithError(err).Errorf("Unable to write storage-stranding warning for character [%d].", s.CharacterId())
 	}
+}
+
+// purchaseRecordFlag maps a purchase count onto the wire's single
+// purchased byte (PurchaseRecordDone.purchased, compared !=0 -> bool by the
+// client): any count > 0 is "purchased", never a literal count.
+func purchaseRecordFlag(count uint32) byte {
+	if count > 0 {
+		return 1
+	}
+	return 0
 }
 
 // announceCashShopRejection is the FR-5.1 pink-text fallback for arms with

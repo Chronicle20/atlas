@@ -20,8 +20,8 @@ import (
 
 type Processor interface {
 	WithTransaction(tx *gorm.DB) Processor
-	Create(mb *message.Buffer) func(transactionId uuid.UUID) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error)
-	CreateAndEmit(transactionId uuid.UUID, characterId uint32, senderId uint32, msg string, flag byte) (Model, error)
+	Create(mb *message.Buffer) func(transactionId uuid.UUID) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) func(giftNote bool) (Model, error)
+	CreateAndEmit(transactionId uuid.UUID, characterId uint32, senderId uint32, msg string, flag byte, giftNote bool) (Model, error)
 	Update(mb *message.Buffer) func(id uint32) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error)
 	UpdateAndEmit(id uint32, characterId uint32, senderId uint32, msg string, flag byte) (Model, error)
 	Delete(mb *message.Buffer) func(id uint32) error
@@ -76,31 +76,34 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 var _ Processor = (*ProcessorImpl)(nil)
 
 // Create creates a new note. transactionId is uuid.Nil for non-saga creations.
-func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
-	return func(transactionId uuid.UUID) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
-		return func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
-			return func(senderId uint32) func(msg string) func(flag byte) (Model, error) {
-				return func(msg string) func(flag byte) (Model, error) {
-					return func(flag byte) (Model, error) {
-						m, err := NewBuilder().
-							SetCharacterId(characterId).
-							SetSenderId(senderId).
-							SetMessage(msg).
-							SetFlag(flag).
-							Build()
-						if err != nil {
-							return Model{}, err
-						}
+func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) func(giftNote bool) (Model, error) {
+	return func(transactionId uuid.UUID) func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) func(giftNote bool) (Model, error) {
+		return func(characterId uint32) func(senderId uint32) func(msg string) func(flag byte) func(giftNote bool) (Model, error) {
+			return func(senderId uint32) func(msg string) func(flag byte) func(giftNote bool) (Model, error) {
+				return func(msg string) func(flag byte) func(giftNote bool) (Model, error) {
+					return func(flag byte) func(giftNote bool) (Model, error) {
+						return func(giftNote bool) (Model, error) {
+							m, err := NewBuilder().
+								SetCharacterId(characterId).
+								SetSenderId(senderId).
+								SetMessage(msg).
+								SetFlag(flag).
+								SetGiftNote(giftNote).
+								Build()
+							if err != nil {
+								return Model{}, err
+							}
 
-						m, err = createNote(p.db.WithContext(p.ctx), p.t.Id(), m)
-						if err != nil {
-							return Model{}, err
+							m, err = createNote(p.db.WithContext(p.ctx), p.t.Id(), m)
+							if err != nil {
+								return Model{}, err
+							}
+							err = mb.Put(note.EnvEventTopicNoteStatus, CreateNoteStatusEventProvider(transactionId, m.CharacterId(), m.Id(), m.SenderId(), m.Message(), m.Flag(), m.Timestamp()))
+							if err != nil {
+								return Model{}, err
+							}
+							return m, nil
 						}
-						err = mb.Put(note.EnvEventTopicNoteStatus, CreateNoteStatusEventProvider(transactionId, m.CharacterId(), m.Id(), m.SenderId(), m.Message(), m.Flag(), m.Timestamp()))
-						if err != nil {
-							return Model{}, err
-						}
-						return m, nil
 					}
 				}
 			}
@@ -110,12 +113,12 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID)
 
 // CreateAndEmit creates a new note and emits a status event. transactionId is
 // uuid.Nil for non-saga creations (REST).
-func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, characterId uint32, senderId uint32, msg string, flag byte) (Model, error) {
+func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, characterId uint32, senderId uint32, msg string, flag byte, giftNote bool) (Model, error) {
 	var result Model
 	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		var err error
 		tp := p.WithTransaction(tx)
-		result, err = message.EmitWithResult[Model, byte](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(model.Flip(model.Flip(tp.Create)(transactionId))(characterId))(senderId))(msg))(flag)
+		result, err = message.EmitWithResult[Model, bool](outbox.EmitProvider(p.l, p.ctx, tx))(model.Flip(model.Flip(model.Flip(model.Flip(model.Flip(tp.Create)(transactionId))(characterId))(senderId))(msg))(flag))(giftNote)
 		return err
 	})
 	return result, txErr
@@ -306,7 +309,7 @@ func (p *ProcessorImpl) Discard(mb *message.Buffer) func(ch channel.Model) func(
 					}
 
 					// Build (but do not fire) the fame-award saga for the note sender
-					if pa, ok := p.buildFameAwardSaga(ch, characterId, m.SenderId(), noteId); ok {
+					if pa, ok := p.buildFameAwardSaga(ch, characterId, m); ok {
 						pending = append(pending, pa)
 					}
 				}
@@ -317,10 +320,14 @@ func (p *ProcessorImpl) Discard(mb *message.Buffer) func(ch channel.Model) func(
 }
 
 // buildFameAwardSaga builds (without firing) the saga to award +1 fame to a note sender. It returns
-// ok=false when the award should be skipped (system note or self-note). This is a pure builder with
-// no side effects, so it is safe to call from inside a transaction closure; firing it is a separate
-// step performed by fireFameAwardSaga.
-func (p *ProcessorImpl) buildFameAwardSaga(ch channel.Model, recipientId uint32, senderId uint32, noteId uint32) (pendingFameAward, bool) {
+// ok=false when the award should be skipped (system note, self-note, or a gift-originated note whose
+// fame was already settled at acceptance time). This is a pure builder with no side effects, so it is
+// safe to call from inside a transaction closure; firing it is a separate step performed by
+// fireFameAwardSaga.
+func (p *ProcessorImpl) buildFameAwardSaga(ch channel.Model, recipientId uint32, m Model) (pendingFameAward, bool) {
+	senderId := m.SenderId()
+	noteId := m.Id()
+
 	// Skip if sender is 0 (system note) or sender is the same as recipient (self-note)
 	if senderId == 0 {
 		p.l.Debugf("Skipping fame award for note [%d]: system note (senderId=0)", noteId)
@@ -328,6 +335,10 @@ func (p *ProcessorImpl) buildFameAwardSaga(ch channel.Model, recipientId uint32,
 	}
 	if senderId == recipientId {
 		p.l.Debugf("Skipping fame award for note [%d]: self-note (senderId=%d equals recipientId)", noteId, senderId)
+		return pendingFameAward{}, false
+	}
+	if m.GiftNote() {
+		p.l.Debugf("Skipping fame award for note [%d]: gift note (fame already settled at gift acceptance)", noteId)
 		return pendingFameAward{}, false
 	}
 

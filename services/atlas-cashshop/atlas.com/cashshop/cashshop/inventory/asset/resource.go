@@ -97,7 +97,10 @@ func handleCreateAsset(db *gorm.DB) rest.InputHandler[RestModel] {
 				return
 			}
 
-			m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(im.CompartmentId(), im.TemplateId(), im.CommodityId(), im.Quantity(), im.PetId(), im.PurchasedBy())
+			// currency is 0 (the default bucket, C2/C3): this generic REST
+			// create endpoint has no purchase context to attribute a wallet
+			// bucket to.
+			m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(im.CompartmentId(), im.TemplateId(), im.CommodityId(), 0, im.Quantity(), im.PetId(), im.PurchasedBy())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating asset.")
 				server.WriteErrorResponse(d.Logger())(w)(err)

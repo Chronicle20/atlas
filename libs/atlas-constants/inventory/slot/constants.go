@@ -66,6 +66,7 @@ var Slots = []Slot{
 	{Type: "petItemIgnore", Position: -46},
 	{Type: "pet2ItemIgnore", Position: -47},
 	{Type: "pet3ItemIgnore", Position: -48},
+	{Type: "pendant2", Position: -59},
 }
 
 var (

@@ -3,9 +3,14 @@ package writer
 import (
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
+	"atlas-channel/character/equipslot"
 	"atlas-channel/character/teleportrock"
 	"atlas-channel/monsterbook"
+	"context"
 	"testing"
+	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -23,7 +28,7 @@ func TestBuildCharacterData_MonsterBook(t *testing.T) {
 		SetMonsterBook(monsterbook.NewModel(col, cards)).
 		MustBuild()
 
-	cd := BuildCharacterData(c, buddylist.Model{}, _map.Id(0), teleportrock.Model{})
+	cd := BuildCharacterData(logrus.New(), context.Background(), c, buddylist.Model{}, _map.Id(0), teleportrock.Model{})
 
 	if cd.MonsterBook.CoverCardId != item.Id(2380001) {
 		t.Errorf("cover = %d, want 2380001", cd.MonsterBook.CoverCardId)
@@ -41,11 +46,42 @@ func TestBuildCharacterData_TeleportMaps(t *testing.T) {
 		SetSp("0").
 		MustBuild()
 	trm := teleportrock.NewModel([]_map.Id{100000000}, []_map.Id{104040000, 220000000})
-	cd := BuildCharacterData(c, buddylist.Model{}, _map.Id(0), trm)
+	cd := BuildCharacterData(logrus.New(), context.Background(), c, buddylist.Model{}, _map.Id(0), trm)
 	if len(cd.TeleportMaps) != 1 || cd.TeleportMaps[0] != 100000000 {
 		t.Fatalf("teleport maps: %v", cd.TeleportMaps)
 	}
 	if len(cd.VipTeleportMaps) != 2 {
 		t.Fatalf("vip maps: %v", cd.VipTeleportMaps)
+	}
+}
+
+// TestEquipSlotExtExpireFor_NoActiveExtension pins R3: a character with no
+// active equip-slot extension keeps the ZeroTime sentinel, not an error.
+func TestEquipSlotExtExpireFor_NoActiveExtension(t *testing.T) {
+	if got := equipSlotExtExpireFor(nil); got != ZeroTime {
+		t.Errorf("equipSlotExtExpireFor(nil) = %d, want ZeroTime %d", got, ZeroTime)
+	}
+	if got := equipSlotExtExpireFor([]equipslot.RestModel{}); got != ZeroTime {
+		t.Errorf("equipSlotExtExpireFor([]) = %d, want ZeroTime %d", got, ZeroTime)
+	}
+}
+
+// TestEquipSlotExtExpireFor_ActiveExtension pins R4's derived FILETIME
+// conversion against a hand-computed value for a fixed UTC instant --
+// 2024-01-01T00:00:00Z, Unix 1704067200 -- so a wrong conversion (e.g. a
+// units mismatch or the wrong epoch constant) fails loudly instead of
+// silently rendering a wrong expiry on the client.
+func TestEquipSlotExtExpireFor_ActiveExtension(t *testing.T) {
+	expiresAt := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	exts := []equipslot.RestModel{{CharacterId: 99, SlotIndex: -59, ExpiresAt: expiresAt}}
+
+	got := equipSlotExtExpireFor(exts)
+
+	const want int64 = 133485408000000000 // 1704067200 * 10_000_000 + 116444736000000000
+	if got != want {
+		t.Fatalf("equipSlotExtExpireFor = %d, want %d", got, want)
+	}
+	if got == ZeroTime {
+		t.Fatalf("equipSlotExtExpireFor regressed to the ZeroTime sentinel for an active extension")
 	}
 }

@@ -198,3 +198,133 @@ func TestHandleOpenSurpriseIgnoresOtherCommandTypes(t *testing.T) {
 
 	require.Empty(t, outboxEntries(t, db), "wrong-type command must not invoke the processor")
 }
+
+// TestHandleAcknowledgeGiftsInvokesProcessor dispatches an ACKNOWLEDGE_GIFTS
+// command and asserts the named asset's GiftAcknowledged flag flips to true
+// (task-240 Defect H) while an unrelated asset in the same compartment is
+// left untouched.
+func TestHandleAcknowledgeGiftsInvokesProcessor(t *testing.T) {
+	db := testDatabase(t)
+	tenantId := uuid.New()
+	accountId := uint32(500)
+	characterId := uint32(1000)
+	giftedCashId := int64(9001)
+	otherCashId := int64(9002)
+
+	startCharacterServer(t, characterId, accountId, 0)
+	compartmentId := seedCompartment(t, db, tenantId, accountId, compartment.TypeExplorer, 55)
+	giftedId := seedAsset(t, db, tenantId, compartmentId, giftedCashId, 1032001, 1)
+	otherId := seedAsset(t, db, tenantId, compartmentId, otherCashId, 1032002, 1)
+
+	ctx := databasetest.TenantContext(tenantId)
+	l, _ := testlog.NewNullLogger()
+
+	handleCommandAcknowledgeGifts(db)(l, ctx, cashshop.Command[cashshop.AcknowledgeGiftsCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeAcknowledgeGifts,
+		Body: cashshop.AcknowledgeGiftsCommandBody{
+			AccountId: accountId,
+			CashIds:   []int64{giftedCashId},
+		},
+	})
+
+	var gifted, other asset.Entity
+	require.NoError(t, db.First(&gifted, giftedId).Error)
+	require.NoError(t, db.First(&other, otherId).Error)
+	require.True(t, gifted.GiftAcknowledged, "named cashId must be acknowledged")
+	require.False(t, other.GiftAcknowledged, "unrelated cashId must be untouched")
+}
+
+// TestHandleAcknowledgeGiftsIgnoresOtherCommandTypes proves the type guard.
+func TestHandleAcknowledgeGiftsIgnoresOtherCommandTypes(t *testing.T) {
+	db := testDatabase(t)
+	tenantId := uuid.New()
+	accountId := uint32(500)
+	characterId := uint32(1000)
+	cashId := int64(9003)
+
+	startCharacterServer(t, characterId, accountId, 0)
+	compartmentId := seedCompartment(t, db, tenantId, accountId, compartment.TypeExplorer, 55)
+	assetId := seedAsset(t, db, tenantId, compartmentId, cashId, 1032001, 1)
+
+	ctx := databasetest.TenantContext(tenantId)
+	l, _ := testlog.NewNullLogger()
+
+	handleCommandAcknowledgeGifts(db)(l, ctx, cashshop.Command[cashshop.AcknowledgeGiftsCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestPurchase,
+		Body: cashshop.AcknowledgeGiftsCommandBody{
+			AccountId: accountId,
+			CashIds:   []int64{cashId},
+		},
+	})
+
+	var a asset.Entity
+	require.NoError(t, db.First(&a, assetId).Error)
+	require.False(t, a.GiftAcknowledged, "wrong-type command must not touch the asset")
+}
+
+// TestHandleMarkGiftNoteSentInvokesProcessor dispatches a MARK_GIFT_NOTE_SENT
+// command and asserts the named asset's GiftNoteSent flag flips to true
+// (task-240 Defect I) while an unrelated asset in the same compartment is
+// left untouched.
+func TestHandleMarkGiftNoteSentInvokesProcessor(t *testing.T) {
+	db := testDatabase(t)
+	tenantId := uuid.New()
+	accountId := uint32(500)
+	characterId := uint32(1000)
+	giftedCashId := int64(9101)
+	otherCashId := int64(9102)
+
+	startCharacterServer(t, characterId, accountId, 0)
+	compartmentId := seedCompartment(t, db, tenantId, accountId, compartment.TypeExplorer, 55)
+	giftedId := seedAsset(t, db, tenantId, compartmentId, giftedCashId, 1032001, 1)
+	otherId := seedAsset(t, db, tenantId, compartmentId, otherCashId, 1032002, 1)
+
+	ctx := databasetest.TenantContext(tenantId)
+	l, _ := testlog.NewNullLogger()
+
+	handleCommandMarkGiftNoteSent(db)(l, ctx, cashshop.Command[cashshop.MarkGiftNoteSentCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeMarkGiftNoteSent,
+		Body: cashshop.MarkGiftNoteSentCommandBody{
+			AccountId: accountId,
+			CashId:    giftedCashId,
+		},
+	})
+
+	var gifted, other asset.Entity
+	require.NoError(t, db.First(&gifted, giftedId).Error)
+	require.NoError(t, db.First(&other, otherId).Error)
+	require.True(t, gifted.GiftNoteSent, "named cashId must have its note marked sent")
+	require.False(t, other.GiftNoteSent, "unrelated cashId must be untouched")
+}
+
+// TestHandleMarkGiftNoteSentIgnoresOtherCommandTypes proves the type guard.
+func TestHandleMarkGiftNoteSentIgnoresOtherCommandTypes(t *testing.T) {
+	db := testDatabase(t)
+	tenantId := uuid.New()
+	accountId := uint32(500)
+	characterId := uint32(1000)
+	cashId := int64(9103)
+
+	startCharacterServer(t, characterId, accountId, 0)
+	compartmentId := seedCompartment(t, db, tenantId, accountId, compartment.TypeExplorer, 55)
+	assetId := seedAsset(t, db, tenantId, compartmentId, cashId, 1032001, 1)
+
+	ctx := databasetest.TenantContext(tenantId)
+	l, _ := testlog.NewNullLogger()
+
+	handleCommandMarkGiftNoteSent(db)(l, ctx, cashshop.Command[cashshop.MarkGiftNoteSentCommandBody]{
+		CharacterId: characterId,
+		Type:        cashshop.CommandTypeRequestPurchase,
+		Body: cashshop.MarkGiftNoteSentCommandBody{
+			AccountId: accountId,
+			CashId:    cashId,
+		},
+	})
+
+	var a asset.Entity
+	require.NoError(t, db.First(&a, assetId).Error)
+	require.False(t, a.GiftNoteSent, "wrong-type command must not touch the asset")
+}

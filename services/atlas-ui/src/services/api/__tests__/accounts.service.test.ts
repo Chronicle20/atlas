@@ -1,11 +1,13 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const getMock = vi.fn();
+const patchMock = vi.fn();
 vi.mock("@/lib/api/client", () => ({
   api: {
     get: (...args: unknown[]) => getMock(...args),
     getList: vi.fn(),
     getOne: vi.fn(),
+    patch: (...args: unknown[]) => patchMock(...args),
     delete: vi.fn(),
   },
 }));
@@ -83,5 +85,34 @@ describe("accountsService.getAllAccounts", () => {
 
     expect(result.map((a) => a.attributes.name)).toEqual(["alpha", "zeta"]);
     expect(getMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+// Regression test for bug-cash-shop-live-testing.md Defect C:
+// api.patch returns the raw JSON:API envelope ({data:{...}}), not the
+// unwrapped resource -- unlike api.getOne. updateAccountBirthDate must
+// unwrap `.data` before handing the result to transformAccount, or
+// transformAccount's first field access throws
+// "cannot read properties of undefined (reading 'loggedIn')" even though
+// the PATCH itself succeeded.
+describe("accountsService.updateAccountBirthDate", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("resolves against a mocked JSON:API envelope response", async () => {
+    const account = makeAccount("1", "alpha");
+    patchMock.mockResolvedValue({
+      data: {
+        ...makeAccount("1", "alpha"),
+        attributes: { ...account.attributes, birthDate: 19900101 },
+      },
+    });
+
+    const result = await accountsService.updateAccountBirthDate(
+      account,
+      19900101,
+    );
+
+    expect(result.attributes.birthDate).toBe(19900101);
+    expect(result.attributes.loggedIn).toBe(0);
   });
 });

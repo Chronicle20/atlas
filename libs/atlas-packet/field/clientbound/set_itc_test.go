@@ -54,7 +54,7 @@ func mtsTestCharacterData() charpkt.CharacterData {
 		Inventory: charpkt.InventoryData{
 			EquipCapacity: 24, UseCapacity: 24, SetupCapacity: 24,
 			EtcCapacity: 24, CashCapacity: 24,
-			Timestamp: 94354848000000000,
+			EquipSlotExtExpire: 94354848000000000,
 		},
 	}
 }

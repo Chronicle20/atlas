@@ -4,7 +4,7 @@
 > ✅ verified · 🧩 family (mode-prefix dispatcher; sub-arms unverified) · 🟡 partial · ❌ incomplete · ⬜ n-a · 🟥 conflict
 > Partial (🟡) sub-glyphs: 🟡ᶠ tier-1 needs byte-fixture · 🟡ᵈ tool-pass diff-only (no byte-test) · 🟡ᵖ evidence-pinned deferral
 
-Tool: `590db87e44b5643626685ad2ad66bc34a3c3747c2e80c49c968897d95eb59d74`
+Tool: `5de1e5130d5ab98dd1ed9198b7b320d8425c50b38203bb32e4019f8855921732`
 
 - export gms_v48: `b6557ebbf5eb2b9a83106289c05fe1dc0ad10d3d6bfbf4df4d3218d5bba723a6`
 - export gms_v61: `e5ed52e703a38e819822bb62b00aa252aad2946a0b97ae72b1cee1e8b8222f48`
@@ -14,7 +14,7 @@ Tool: `590db87e44b5643626685ad2ad66bc34a3c3747c2e80c49c968897d95eb59d74`
 - export gms_v84: `2bbc30efdc7355eaa7953cfbb459d09646a090a539a8ef79c5d10e8affb6ef11`
 - export gms_v87: `d887ec26b877e52c3f1c8336bd596495e96272ece8ec6ad311eb145c30570021`
 - export gms_v92: `393f8c0d7ff6b37ab8b5e2e58b89544163862d9713d31561adcb3af175d36b92`
-- export gms_v95: `b6fc063d0415b901ad50f6abba585872ffee35c66fa258caed70b860803fda12`
+- export gms_v95: `34927d21db733c26a030fea2922da7f7585761385688210944ed8a9d2b07b2ee`
 - export jms_v185: `f0cacd78c4ffd65655028825fc7e5bfe3b7fe3889011631098486eb562a5686e`
 
 ## Clientbound
@@ -853,6 +853,7 @@ Tool: `590db87e44b5643626685ad2ad66bc34a3c3747c2e80c49c968897d95eb59d74`
 | cash/serverbound/CashShopOperationBuyFriendship (T1) |  |  | 🟡ᶠ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyNameChange (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashShopOperationBuyNormal (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
+| cash/serverbound/CashShopOperationBuyOtherPackage (T1) |  |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ❌ |
 | cash/serverbound/CashShopOperationBuyPackage (T1) |  |  | 🟡ᶠ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationBuyWorldTransfer (T1) |  |  | ✅ |  | ❌ |  | ❌ |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
 | cash/serverbound/CashShopOperationEnableEquipSlot (T1) |  |  | ❌ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ✅ |  | ❌ |  | ✅ |  | ✅ |
@@ -1062,16 +1063,16 @@ Tool: `590db87e44b5643626685ad2ad66bc34a3c3747c2e80c49c968897d95eb59d74`
 
 | Version | ✅ | 🧩 | 🟡 | ❌ | ⬜ | 🟥 | verified% |
 |---------|----|----|----|----|----|----|-----------|
-| v48 | 214 | 0 | 19 | 198 | 595 | 0 | 49.7% |
-| v61 | 280 | 0 | 56 | 232 | 458 | 0 | 49.3% |
-| v72 | 305 | 0 | 69 | 241 | 411 | 0 | 49.6% |
-| v79 | 351 | 0 | 68 | 237 | 370 | 0 | 53.5% |
-| v83 | 480 | 0 | 0 | 318 | 228 | 0 | 60.2% |
-| v84 | 451 | 0 | 0 | 325 | 250 | 0 | 58.1% |
-| v87 | 488 | 0 | 0 | 347 | 191 | 0 | 58.4% |
-| v92 | 65 | 0 | 147 | 673 | 141 | 0 | 7.3% |
-| v95 | 513 | 0 | 0 | 406 | 107 | 0 | 55.8% |
-| JMS185 | 451 | 0 | 0 | 377 | 198 | 0 | 54.5% |
+| v48 | 214 | 0 | 19 | 199 | 595 | 0 | 49.5% |
+| v61 | 280 | 0 | 56 | 233 | 458 | 0 | 49.2% |
+| v72 | 305 | 0 | 69 | 242 | 411 | 0 | 49.5% |
+| v79 | 351 | 0 | 68 | 238 | 370 | 0 | 53.4% |
+| v83 | 480 | 0 | 0 | 319 | 228 | 0 | 60.1% |
+| v84 | 451 | 0 | 0 | 326 | 250 | 0 | 58.0% |
+| v87 | 488 | 0 | 0 | 348 | 191 | 0 | 58.4% |
+| v92 | 65 | 0 | 147 | 674 | 141 | 0 | 7.3% |
+| v95 | 514 | 0 | 0 | 406 | 107 | 0 | 55.9% |
+| JMS185 | 451 | 0 | 0 | 378 | 198 | 0 | 54.4% |
 
 ## Conflicts
 

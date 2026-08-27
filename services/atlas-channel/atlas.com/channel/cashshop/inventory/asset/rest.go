@@ -11,15 +11,19 @@ import (
 
 // RestModel represents a cash shop inventory asset for REST API
 type RestModel struct {
-	Id            uint32    `json:"-"`
-	CompartmentId uuid.UUID `json:"compartmentId"`
-	CashId        int64     `json:"cashId,string"`
-	TemplateId    uint32    `json:"templateId"`
-	CommodityId   uint32    `json:"commodityId"`
-	Quantity      uint32    `json:"quantity"`
-	Flag          uint16    `json:"flag"`
-	PurchasedBy   uint32    `json:"purchasedBy"`
-	Expiration    time.Time `json:"expiration"`
+	Id               uint32    `json:"-"`
+	CompartmentId    uuid.UUID `json:"compartmentId"`
+	CashId           int64     `json:"cashId,string"`
+	TemplateId       uint32    `json:"templateId"`
+	CommodityId      uint32    `json:"commodityId"`
+	Quantity         uint32    `json:"quantity"`
+	Flag             uint16    `json:"flag"`
+	PurchasedBy      uint32    `json:"purchasedBy"`
+	Expiration       time.Time `json:"expiration"`
+	GiftFrom         string    `json:"giftFrom"`
+	GiftMessage      string    `json:"giftMessage"`
+	GiftAcknowledged bool      `json:"giftAcknowledged"`
+	GiftNoteSent     bool      `json:"giftNoteSent"`
 }
 
 // GetName returns the resource name
@@ -78,15 +82,19 @@ func (r *RestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) e
 // Transform converts an asset.Model to a RestModel
 func Transform(a Model) (RestModel, error) {
 	return RestModel{
-		Id:            a.Id(),
-		CompartmentId: a.CompartmentId(),
-		CashId:        a.Item().CashId(),
-		TemplateId:    a.Item().TemplateId(),
-		CommodityId:   a.Item().CommodityId(),
-		Quantity:      a.Item().Quantity(),
-		Flag:          a.Item().Flag(),
-		PurchasedBy:   a.Item().PurchasedBy(),
-		Expiration:    a.Item().Expiration(),
+		Id:               a.Id(),
+		CompartmentId:    a.CompartmentId(),
+		CashId:           a.Item().CashId(),
+		TemplateId:       a.Item().TemplateId(),
+		CommodityId:      a.Item().CommodityId(),
+		Quantity:         a.Item().Quantity(),
+		Flag:             a.Item().Flag(),
+		PurchasedBy:      a.Item().PurchasedBy(),
+		Expiration:       a.Item().Expiration(),
+		GiftFrom:         a.GiftFrom(),
+		GiftMessage:      a.GiftMessage(),
+		GiftAcknowledged: a.GiftAcknowledged(),
+		GiftNoteSent:     a.GiftNoteSent(),
 	}, nil
 }
 
@@ -104,8 +112,12 @@ func Extract(rm RestModel) (Model, error) {
 		return Model{}, err
 	}
 	return Model{
-		id:            rm.Id,
-		compartmentId: rm.CompartmentId,
-		item:          i,
+		id:               rm.Id,
+		compartmentId:    rm.CompartmentId,
+		item:             i,
+		giftFrom:         rm.GiftFrom,
+		giftMessage:      rm.GiftMessage,
+		giftAcknowledged: rm.GiftAcknowledged,
+		giftNoteSent:     rm.GiftNoteSent,
 	}, nil
 }

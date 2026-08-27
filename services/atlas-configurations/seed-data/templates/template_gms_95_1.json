@@ -3340,6 +3340,14 @@
         ]
       },
       {
+        "opCode": "0x8F",
+        "writer": "CashShopOpen",
+        "fname": "CStage::OnSetCashShop",
+        "services": [
+          "channel"
+        ]
+      },
+      {
         "opCode": "0x93",
         "writer": "BlockedMap",
         "fname": "CField::OnTransferFieldReqIgnored",

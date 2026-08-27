@@ -34,6 +34,9 @@ type CommandCreateBody struct {
 	SenderId uint32 `json:"senderId"`
 	Message  string `json:"message"`
 	Flag     byte   `json:"flag"`
+	// GiftNote records that this note originated from a cash-shop gift
+	// acknowledgement; its fame was settled at acceptance time.
+	GiftNote bool `json:"giftNote,omitempty"`
 }
 
 // StatusEvent mirrors atlas-notes' note status event envelope.

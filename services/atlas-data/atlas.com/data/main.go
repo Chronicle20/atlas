@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-data/baseline"
 	"atlas-data/cash"
+	"atlas-data/cashpackage"
 	"atlas-data/characters/templates"
 	"atlas-data/commodity"
 	"atlas-data/consumable"
@@ -190,6 +191,7 @@ func main() {
 		AddRouteInitializer(consumable.InitResource(db)(GetServer())).
 		AddRouteInitializer(cash.InitResource(db)(GetServer())).
 		AddRouteInitializer(commodity.InitResource(db)(GetServer())).
+		AddRouteInitializer(cashpackage.InitResource(db)(GetServer())).
 		AddRouteInitializer(etc.InitResource(db)(GetServer())).
 		AddRouteInitializer(item.InitStringResource(db)(GetServer())).
 		AddRouteInitializer(setup.InitResource(db)(GetServer())).

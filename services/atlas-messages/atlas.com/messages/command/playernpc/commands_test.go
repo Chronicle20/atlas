@@ -16,12 +16,17 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
-func testCharacter(isGm bool) character.Model {
+func testCharacter(t *testing.T, isGm bool) character.Model {
+	t.Helper()
 	gm := 0
 	if isGm {
 		gm = 1
 	}
-	return character.NewBuilder().SetId(1).SetGm(gm).SetX(100).SetY(200).Build()
+	c, err := character.NewBuilder().SetId(1).SetGm(gm).SetX(100).SetY(200).Build()
+	if err != nil {
+		t.Fatalf("Build() err = %v", err)
+	}
+	return c
 }
 
 // TestPlayerNpcCommands is the plan.md Task 21 test table.
@@ -31,22 +36,25 @@ func TestPlayerNpcCommands(t *testing.T) {
 	f := field.NewBuilder(1, 2, 102000004).Build()
 
 	t.Run("deploy matches", func(t *testing.T) {
-		executor, found := DeployCommandProducer(logger)(ctx)(f, testCharacter(true), "@playernpc add Hero")
+		executor, found := DeployCommandProducer(logger)(ctx)(f, testCharacter(t, true), "@playernpc add Hero")
 		if !found || executor == nil {
 			t.Fatalf("found = %v, executor = %v, want true, non-nil", found, executor)
 		}
 	})
 
 	t.Run("deploy, non-GM", func(t *testing.T) {
-		executor, found := DeployCommandProducer(logger)(ctx)(f, testCharacter(false), "@playernpc add Hero")
+		executor, found := DeployCommandProducer(logger)(ctx)(f, testCharacter(t, false), "@playernpc add Hero")
 		if found || executor != nil {
 			t.Fatalf("found = %v, executor = %v, want false, nil", found, executor)
 		}
 	})
 
 	t.Run("deploy emits", func(t *testing.T) {
-		c := testCharacter(true)
-		target := character.NewBuilder().SetId(42).SetName("Hero").Build()
+		c := testCharacter(t, true)
+		target, err := character.NewBuilder().SetId(42).SetName("Hero").Build()
+		if err != nil {
+			t.Fatalf("Build() err = %v", err)
+		}
 
 		var published msg.Command[msg.CommandDeployBody]
 		var publishCalled bool
@@ -107,8 +115,11 @@ func TestPlayerNpcCommands(t *testing.T) {
 	})
 
 	t.Run("remove all", func(t *testing.T) {
-		c := testCharacter(true)
-		target := character.NewBuilder().SetId(42).SetName("Hero").Build()
+		c := testCharacter(t, true)
+		target, err := character.NewBuilder().SetId(42).SetName("Hero").Build()
+		if err != nil {
+			t.Fatalf("Build() err = %v", err)
+		}
 
 		var published msg.Command[msg.CommandRemoveBody]
 		lookup := func(name string) (character.Model, error) { return target, nil }
@@ -136,8 +147,11 @@ func TestPlayerNpcCommands(t *testing.T) {
 	})
 
 	t.Run("remove map-scoped", func(t *testing.T) {
-		c := testCharacter(true)
-		target := character.NewBuilder().SetId(42).SetName("Hero").Build()
+		c := testCharacter(t, true)
+		target, err := character.NewBuilder().SetId(42).SetName("Hero").Build()
+		if err != nil {
+			t.Fatalf("Build() err = %v", err)
+		}
 		mapId := f.MapId()
 
 		var published msg.Command[msg.CommandRemoveBody]
@@ -170,7 +184,7 @@ func TestPlayerNpcCommands(t *testing.T) {
 		publish := func(p model.Provider[[]kafka.Message]) error { publishCalled = true; return nil }
 		pink := func(text string) error { pinkTexts = append(pinkTexts, text); return nil }
 
-		c := testCharacter(true)
+		c := testCharacter(t, true)
 		if err := deployWithDeps(f, c, "Nobody", lookup, publish, pink); err != nil {
 			t.Fatalf("deployWithDeps err = %v", err)
 		}
@@ -186,21 +200,24 @@ func TestPlayerNpcCommands(t *testing.T) {
 	})
 
 	t.Run("non-matching text", func(t *testing.T) {
-		executor, found := DeployCommandProducer(logger)(ctx)(f, testCharacter(true), "@playernpcs add Hero")
+		executor, found := DeployCommandProducer(logger)(ctx)(f, testCharacter(t, true), "@playernpcs add Hero")
 		if found || executor != nil {
 			t.Fatalf("found = %v, executor = %v, want false, nil", found, executor)
 		}
 	})
 
 	t.Run("failure reported back", func(t *testing.T) {
-		target := character.NewBuilder().SetId(42).SetName("Hero").Build()
+		target, err := character.NewBuilder().SetId(42).SetName("Hero").Build()
+		if err != nil {
+			t.Fatalf("Build() err = %v", err)
+		}
 		var pinkTexts []string
 
 		lookup := func(name string) (character.Model, error) { return target, nil }
 		publish := func(p model.Provider[[]kafka.Message]) error { return errors.New("pool_exhausted") }
 		pink := func(text string) error { pinkTexts = append(pinkTexts, text); return nil }
 
-		c := testCharacter(true)
+		c := testCharacter(t, true)
 		if err := deployWithDeps(f, c, "Hero", lookup, publish, pink); err != nil {
 			t.Fatalf("deployWithDeps err = %v", err)
 		}
@@ -231,7 +248,7 @@ func TestRemoveCommandProducer_Gate(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			executor, found := RemoveCommandProducer(logger)(ctx)(f, testCharacter(tc.isGm), tc.message)
+			executor, found := RemoveCommandProducer(logger)(ctx)(f, testCharacter(t, tc.isGm), tc.message)
 			if found != tc.expectFound {
 				t.Fatalf("found = %v, want %v", found, tc.expectFound)
 			}

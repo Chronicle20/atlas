@@ -1,20 +1,22 @@
 package skill
 
 import (
+	"atlas-channel/character/snapshot"
+	"atlas-channel/server"
 	"context"
 	"testing"
 	"time"
 
 	skillmodel "atlas-channel/character/skill"
-	"atlas-channel/character/snapshot"
+
 	skill2 "atlas-channel/kafka/message/skill"
-	"atlas-channel/server"
+
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
 )
 
 func newTestTenant(t *testing.T) tenant.Model {

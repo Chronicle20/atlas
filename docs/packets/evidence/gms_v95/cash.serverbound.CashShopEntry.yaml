@@ -1,0 +1,33 @@
+packet: cash/serverbound/CashShopEntry
+direction: serverbound
+version: gms_v95
+category: TIER1-FIXTURE
+ida:
+    function: CWvsContext::SendMigrateToShopRequest
+    address: "0x9dc280"
+    decompile_sha256: e71f5956b095b9af5a7358a863800ddb6ad402fb472df3ac27b3f8d3c161a5ee
+verifies:
+    - libs/atlas-packet/cash/serverbound/shop_entry_test.go#TestShopEntryByteOutputV95
+notes: |
+    Deliberate tier-0 evidence pin (task-146 §0/C2, the second and last of the
+    plan's two): the primary fname CWvsContext::SendMigrateToShopRequest was
+    absent from the committed gms_v95 export (no report resolves for it, and
+    none can be generated without a harvest). Resolved via the same
+    find-then-name-then-splice sequence as Task 13's CHECK_SPW_RESULT/
+    MULTI_CHAT precedent: located by opcode-43 (0x2B) byte signature (`6A 2B`)
+    binary-wide (not scoped to an assumed region — see the v48 teleport-rock
+    failure this rule exists to avoid), resolved to the named function
+    ?SendMigrateToShopRequest@CWvsContext@@QAEXH@Z@0x9dc280, and surgically
+    spliced into gms_v95.json per playbook §10 (one entry added, zero existing
+    entries changed, verified via a functions-map diff against HEAD: added=
+    {CWvsContext::SendMigrateToShopRequest}, removed={}, changed=[], head keys
+    836, work keys 837). Live decompile confirms the send block is NOT the
+    bodiless ENTER_MTS shape (CWvsContext::SendMigrateToITCRequest per
+    tools/packet-audit/cmd/run.go): after the guest/migrating/throttle/
+    anti-macro/quiz guards pass, it does COutPacket::COutPacket(&oPacket, 43),
+    update_time = get_update_time(), COutPacket::Encode4(&oPacket,
+    update_time), CClientSocket::SendPacket(...) — a single leading
+    Encode4(update_time) field, matching atlas cash/serverbound/shop_entry.go
+    ShopEntry.Encode (updateTime uint32, WriteInt) exactly. No wire fix
+    needed. The spliced entry's `calls` field is null (no spurious guard to
+    reconcile against the decompile trace, unlike Task 13's finding).

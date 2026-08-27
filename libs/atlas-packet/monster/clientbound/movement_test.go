@@ -4,9 +4,29 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
+
+// movingElement is a single NORMAL element (index 0 of test.MovementTypesV95,
+// which is NORMAL/NORMAL for every client version — see
+// character/clientbound/movement_test.go's normalTypesOptions), so the round
+// trip below exercises model.Movement's element loop under the real v95
+// `types` table instead of an empty, element-less Movement.
+func movingElement() model.Movement {
+	return model.Movement{
+		StartX: 100,
+		StartY: 200,
+		Elements: []model.MovementCodec{
+			&model.NormalElement{Element: model.Element{
+				ElemType: 0, X: 110, Y: 210, Vx: 5, Vy: -3, Fh: 1,
+				BMoveAction: 7, TElapse: 50,
+			}},
+		},
+	}
+}
 
 // packet-audit:verify packet=monster/clientbound/MonsterMovement version=gms_v83 ida=0x66be61
 // packet-audit:verify packet=monster/clientbound/MonsterMovement version=gms_v87 ida=0x6a6cb3
@@ -16,9 +36,9 @@ import (
 func TestMonsterMovementRoundTrip(t *testing.T) {
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
-			input := NewMonsterMovement(5001, false, true, false, 0, 0, 0, model.MultiTargetForBall{}, model.RandTimeForAreaAttack{}, model.Movement{})
+			input := NewMonsterMovement(5001, false, true, false, 0, 0, 0, model.MultiTargetForBall{}, model.RandTimeForAreaAttack{}, movingElement())
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
+			test.RoundTrip(t, ctx, input.Encode, input.Decode, test.MovementTypesV95())
 		})
 	}
 }
@@ -26,11 +46,49 @@ func TestMonsterMovementRoundTrip(t *testing.T) {
 func TestMonsterMovementRoundTripWithSkill(t *testing.T) {
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
-			input := NewMonsterMovement(5001, true, true, true, 1, 100, 5, model.MultiTargetForBall{}, model.RandTimeForAreaAttack{}, model.Movement{})
+			input := NewMonsterMovement(5001, true, true, true, 1, 100, 5, model.MultiTargetForBall{}, model.RandTimeForAreaAttack{}, movingElement())
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
+			test.RoundTrip(t, ctx, input.Encode, input.Decode, test.MovementTypesV95())
 		})
 	}
+}
+
+// TestMonsterMovementHighestIndexResolves pins index 36 — the highest index
+// in test.MovementTypesV95() — to its real resolved shape (NORMAL) rather
+// than the NOT_FOUND/DEFAULT fallback model.resolveMovementPathAttr returns
+// for an attribute byte outside the table. This is the coupling task-146
+// Task 11 added as a substitute for a `types` CI gate: an off-by-one or
+// truncated array desyncs the array from the client's real 37-entry table
+// (index 36 = NORMAL, v95-option-tables.md), so decode falls back to a bare
+// model.Element (no NORMAL fields, no XOffset/YOffset), and this test's
+// round-trip and type assertion both fail.
+func TestMonsterMovementHighestIndexResolves(t *testing.T) {
+	ctx := test.CreateContext("GMS", 95, 1)
+	mv := model.Movement{
+		StartX: 100,
+		StartY: 200,
+		Elements: []model.MovementCodec{
+			&model.NormalElement{Element: model.Element{
+				ElemType: 36, X: 110, Y: 210, Vx: 5, Vy: -3, Fh: 1,
+				XOffset: 2, YOffset: -2, BMoveAction: 7, TElapse: 50,
+			}},
+		},
+	}
+	input := NewMonsterMovement(5001, false, true, false, 0, 0, 0, model.MultiTargetForBall{}, model.RandTimeForAreaAttack{}, mv)
+
+	var out Movement
+	test.RoundTrip(t, ctx, input.Encode, out.Decode, test.MovementTypesV95())
+
+	require.Len(t, out.movement.Elements, 1)
+	elem, ok := out.movement.Elements[0].(*model.NormalElement)
+	require.True(t, ok, "index 36 must resolve to NORMAL (NormalElement), not the DEFAULT fallback")
+	require.Equal(t, int16(110), elem.X)
+	require.Equal(t, int16(210), elem.Y)
+	require.Equal(t, int16(5), elem.Vx)
+	require.Equal(t, int16(-3), elem.Vy)
+	require.Equal(t, int16(1), elem.Fh)
+	require.Equal(t, int16(2), elem.XOffset)
+	require.Equal(t, int16(-2), elem.YOffset)
 }
 
 // TestMonsterMovementBytesV79 pins the exact wire bytes against the v79 client

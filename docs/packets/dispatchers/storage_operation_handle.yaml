@@ -1,0 +1,59 @@
+# StorageOperationHandle — serverbound STORAGE mode table (gms_v95 only).
+#
+# SOURCE OF TRUTH for this handler's tenant-template registration AND its
+# options.operations map. Unlike the other two docs in this batch,
+# StorageOperationHandle is NOT routed in template_gms_95_1.json today — it
+# also declares `opcodes:`, so `packet-audit operations` CREATES the template
+# entry (operations.go addEntry/insertSorted), landing it at 0x43 in
+# ascending opCode order.
+#
+# gms_v95 ONLY for the mode table (see the standing note in
+# party_operation_handle.yaml — same rationale). The opCode itself is also
+# gms_v95-only here since that is the one template missing the entry.
+#
+# ALL-OR-NOTHING: expectedTable reports every template key absent from this
+# file as EXTRA once a version has at least one declared key, so gms_v95 must
+# be enumerated COMPLETELY. Per-arm addresses: v95-option-tables.md.
+#
+# The client has no single STORAGE builder: each CTrunkDlg:: method builds
+# its own COutPacket(&pkt, 0x43) and writes its own leading Encode1(mode).
+# Opcode 0x43 (67) < 0x80, so the compiler always emits the 2-byte
+# sign-extend push form (6A 43), not the 5-byte 68-immediate form used by the
+# other two docs in this batch (68 43 00 00 00 → 0 hits, confirming this).
+# find_bytes "6A 43" → 54 hits; filtered to real COutPacket build sites by
+# requiring the "lea this,[esp+...]" opcode byte (0x8D) three bytes after the
+# match — the codegen idiom this build always uses between `push 43h` and
+# `call COutPacket::COutPacket` — verified first against the three
+# brief-named send sites' disassembly. This reduced 54 candidates to exactly
+# 6 real CTrunkDlg:: send/close sites; the other 48 resolve to unrelated UI
+# constants or non-code data (spot-checked via lookup_funcs) — so the table
+# is complete BY CONSTRUCTION.
+#
+# MESO(7) is sent by two functions: CTrunkDlg::SendGetMoneyRequest (withdraw)
+# and CTrunkDlg::SendPutMoneyRequest (deposit, encodes the negated amount) —
+# both write Encode1(&pkt, 7u), matching the Go handler's single MESO key
+# covering both directions via signed amount.
+#
+# All 5 keys match v83/v84 (template_gms_83_1.json / template_gms_84_1.json)
+# exactly: RETRIEVE_ASSET=4, STORE_ASSET=5, ARRANGE_ASSET=6, MESO=7, CLOSE=8.
+# No mode-value drift.
+#
+# Note the deliberate asymmetry with Task 3: the registry keeps
+# `fname: CTrunkDlg::SetRet` (it is the CSV's name for the op and other
+# versions key on it) and reaches its codec through `packet:`; this
+# dispatcher doc's `fname:` mirrors the registry primary.
+
+handler: StorageOperationHandle
+validator: LoggedInValidator
+services: [channel]
+fname: CTrunkDlg::SetRet
+op: STORAGE
+direction: serverbound
+opcodes:
+  gms_v95: "0x43"
+operations:
+  - { key: RETRIEVE_ASSET, modes: { gms_v95: 4 } }
+  - { key: STORE_ASSET,    modes: { gms_v95: 5 } }
+  - { key: ARRANGE_ASSET,  modes: { gms_v95: 6 } }
+  - { key: MESO,           modes: { gms_v95: 7 } }
+  - { key: CLOSE,          modes: { gms_v95: 8 } }

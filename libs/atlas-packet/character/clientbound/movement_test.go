@@ -28,15 +28,15 @@ import (
 // pins the non-opaque characterId prefix exactly and asserts the trailing blob
 // equals model.Movement.Encode verbatim, plus a clean round-trip.
 //
-// normalTypesOptions returns a move-action "types" table whose index 0 is the
-// NORMAL action, so model.Movement.Decode classifies an ElemType-0 element as a
-// NormalElement (matching the encode shape) instead of a bare stub.
+// normalTypesOptions returns the real IDB-derived v95 movement "types" table
+// (pt.MovementTypesV95, libs/atlas-packet/test/movement_types.go), whose
+// index 0 is the NORMAL action, so model.Movement.Decode classifies an
+// ElemType-0 element as a NormalElement (matching the encode shape) instead
+// of a bare stub. Reading it from the shared helper — rather than a local
+// stub — means a template edit that desyncs the array from the real client
+// fails this package's tests too.
 func normalTypesOptions() map[string]interface{} {
-	return map[string]interface{}{
-		"types": []interface{}{
-			map[string]interface{}{"Name": "NORMAL", "Type": "NORMAL"},
-		},
-	}
+	return pt.MovementTypesV95()
 }
 
 // packet-audit:verify packet=character/clientbound/CharacterMovement version=gms_v72 ida=0x87c1f8
@@ -137,4 +137,43 @@ func TestCharacterMovementByteOutputV61(t *testing.T) {
 	out := CharacterMovement{}
 	pt.RoundTrip(t, ctx, in.Encode, out.Decode, opts)
 	require.Equal(t, in.CharacterId(), out.CharacterId(), "characterId round-trip")
+}
+
+// TestCharacterMovementHighestIndexResolves pins index 36 — the highest index
+// in pt.MovementTypesV95() — to its real resolved shape (NORMAL) rather than
+// the NOT_FOUND/DEFAULT fallback model.resolveMovementPathAttr returns for an
+// attribute byte outside the table. This is the coupling task-146 Task 11
+// added as a substitute for a `types` CI gate: an off-by-one or truncated
+// array desyncs the array from the client's real 37-entry table (index 36 =
+// NORMAL, v95-option-tables.md), so decode falls back to a bare model.Element
+// (no NORMAL fields, no XOffset/YOffset), and this test's round-trip and type
+// assertion both fail.
+func TestCharacterMovementHighestIndexResolves(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 95, 1)
+	opts := normalTypesOptions()
+	mv := model.Movement{
+		StartX: 100,
+		StartY: 200,
+		Elements: []model.MovementCodec{
+			&model.NormalElement{Element: model.Element{
+				ElemType: 36, X: 110, Y: 210, Vx: 5, Vy: -3, Fh: 1,
+				XOffset: 2, YOffset: -2, BMoveAction: 7, TElapse: 50,
+			}},
+		},
+	}
+	in := NewCharacterMovement(0x01020304, mv)
+
+	out := CharacterMovement{}
+	pt.RoundTrip(t, ctx, in.Encode, out.Decode, opts)
+
+	require.Len(t, out.Movement().Elements, 1)
+	elem, ok := out.Movement().Elements[0].(*model.NormalElement)
+	require.True(t, ok, "index 36 must resolve to NORMAL (NormalElement), not the DEFAULT fallback")
+	require.Equal(t, int16(110), elem.X)
+	require.Equal(t, int16(210), elem.Y)
+	require.Equal(t, int16(5), elem.Vx)
+	require.Equal(t, int16(-3), elem.Vy)
+	require.Equal(t, int16(1), elem.Fh)
+	require.Equal(t, int16(2), elem.XOffset)
+	require.Equal(t, int16(-2), elem.YOffset)
 }

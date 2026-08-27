@@ -10,6 +10,7 @@ import (
 
 	slot2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/degrade"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -106,7 +107,11 @@ func (p *ProcessorImpl) Populate(characterId uint32) error {
 
 	halves, err := upstreamFn(p.l, p.ctx, characterId)
 	if err != nil {
-		p.l.WithError(err).Warnf("Unable to retrieve ring pairs for character [%d]; ring set will be empty until population succeeds.", characterId)
+		// Fail-soft (PRD FR-5): a cashshop outage must never block character
+		// spawn, but the resulting empty ring cache is a real degradation
+		// and must be observed, mirroring character_data.go's equip-slot-ext
+		// fail-open.
+		degrade.Observe(p.l, "channel.ring.populate", characterId, err)
 		return nil
 	}
 	getRingCache().put(t.Id(), characterId, cacheEntry{halves: halves})

@@ -69,6 +69,32 @@ func TestTransform(t *testing.T) {
 	}
 }
 
+func TestTransformSlice(t *testing.T) {
+	m1 := Model{id: uuid.New(), pairId: uuid.New(), characterId: 1, ringType: TypeCouple, state: StateActive}
+	m2 := Model{id: uuid.New(), pairId: uuid.New(), characterId: 2, ringType: TypeFriendship, state: StateActive}
+
+	rms, err := TransformSlice([]Model{m1, m2})
+	if err != nil {
+		t.Fatalf("TransformSlice: %v", err)
+	}
+	if len(rms) != 2 {
+		t.Fatalf("len(rms) = %d, want 2", len(rms))
+	}
+	if rms[0].CharacterId != 1 || rms[1].CharacterId != 2 {
+		t.Errorf("rms = %+v, want CharacterId 1 then 2", rms)
+	}
+}
+
+func TestTransformSliceEmpty(t *testing.T) {
+	rms, err := TransformSlice(nil)
+	if err != nil {
+		t.Fatalf("TransformSlice: %v", err)
+	}
+	if len(rms) != 0 {
+		t.Errorf("len(rms) = %d, want 0", len(rms))
+	}
+}
+
 func TestRestModelGetName(t *testing.T) {
 	rm := RestModel{}
 	if rm.GetName() != "rings" {

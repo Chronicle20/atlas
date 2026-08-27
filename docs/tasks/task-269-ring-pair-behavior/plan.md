@@ -541,8 +541,13 @@ Expected: FAIL — length mismatch on every version (4 bytes long).
   `tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"` import — this file
   has no tenant plumbing today and `EncodeField` requires it
 - replace the three `WriteByte(0)` at lines 36-38 with `m.rings.EncodeField(w, t)`
-- delete `w.WriteInt(0) // completed set item id` (line 39) and its `Decode`
-  mirror `_ = r.ReadUint32()` (line 54)
+- gate `w.WriteInt(0) // completed set item id` (line 39) and its `Decode`
+  mirror `_ = r.ReadUint32()` (line 54) behind `hasTrailingCompletedSetItemId(t)`
+  (`t.IsRegion("GMS") && t.MajorAtLeast(87)`), not an unconditional delete: a
+  post-review IDA finding showed the client reads a trailing, unconditional
+  `nCompletedSetItemID` int after the marriage arm at gms_v87
+  (`0xa090f4`) and gms_v95 (`0x954110`), but not at gms_v83/v84, gms_v79, or
+  jms_v185 — see `appearance_update.go:44-51,74-83`
 - add a comment above the flags byte recording that `WriteByte(1)` is
   `bit0=avatarLook` only, citing `gms_v83.json` @0x98367e, so it is not
   mistaken for a mode enum again

@@ -64,7 +64,7 @@ func handleGetRings(db *gorm.DB) rest.GetHandler {
 				return
 			}
 
-			res, err := model.SliceMap(Transform)(model.FixedProvider(paged.Items))(model.ParallelMap())()
+			res, err := TransformSlice(paged.Items)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				restserver.WriteErrorResponse(d.Logger())(w)(err)

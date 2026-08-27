@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 
@@ -480,7 +481,9 @@ func TestProcessorInvalidate(t *testing.T) {
 
 // TestPopulateFailsSoftOnCashshopOutage proves PRD FR-5: a cashshop outage
 // (here, a closed httptest.Server) degrades to an empty RingSet -- Populate
-// never propagates the failure to break character spawn.
+// never propagates the failure to break character spawn. It also asserts the
+// degradation is observed (DOM-28): a silent empty ring cache would give no
+// signal that a cashshop outage just happened.
 func TestPopulateFailsSoftOnCashshopOutage(t *testing.T) {
 	resetRingCache()
 	t.Cleanup(resetRingCache)
@@ -494,10 +497,22 @@ func TestPopulateFailsSoftOnCashshopOutage(t *testing.T) {
 	t.Setenv("CASHSHOP_SERVICE_URL", srv.URL+"/api/")
 
 	ctx, _ := newRingTestContext(t)
-	p := NewProcessor(logrus.New(), ctx)
+	logger, hook := testlog.NewNullLogger()
+	const component = "channel.ring.populate"
+	before := degradedTotalValue(t, component)
+	p := NewProcessor(logger, ctx)
 
 	if err := p.Populate(characterId); err != nil {
 		t.Fatalf("Populate() = %v, want nil (fail-soft on a cashshop outage)", err)
+	}
+
+	after := degradedTotalValue(t, component)
+	if after-before != 1 {
+		t.Fatalf("atlas_enrichment_degraded_total{component=%q} delta = %v, want 1", component, after-before)
+	}
+	entry := hook.LastEntry()
+	if entry == nil || entry.Level != logrus.WarnLevel {
+		t.Fatalf("expected a Warn log entry for the degraded populate, got %+v", entry)
 	}
 
 	eq := equipment.NewModel()
@@ -506,4 +521,30 @@ func TestPopulateFailsSoftOnCashshopOutage(t *testing.T) {
 	if rs.Couple != nil || rs.Friendship != nil || rs.Marriage != nil {
 		t.Fatalf("GetRingSet() = %+v after a cashshop outage, want empty RingSet", rs)
 	}
+}
+
+// degradedTotalValue reads the current value of
+// atlas_enrichment_degraded_total{component=component} off the default
+// registry. degrade.Observe registers its counter via promauto against the
+// default registerer and does not export it, so this reads the same way an
+// external scrape would rather than reaching into the degrade package.
+func degradedTotalValue(t *testing.T, component string) float64 {
+	t.Helper()
+	families, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		t.Fatalf("gather metrics: %v", err)
+	}
+	for _, mf := range families {
+		if mf.GetName() != "atlas_enrichment_degraded_total" {
+			continue
+		}
+		for _, m := range mf.GetMetric() {
+			for _, lp := range m.GetLabel() {
+				if lp.GetName() == "component" && lp.GetValue() == component {
+					return m.GetCounter().GetValue()
+				}
+			}
+		}
+	}
+	return 0
 }

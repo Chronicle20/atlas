@@ -33,10 +33,18 @@ func (r *RestModel) SetToOneReferenceID(_ string, _ string) error { return nil }
 // SetToManyReferenceIDs satisfies the api2go UnmarshalToManyRelations interface.
 func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
-func Extract(rm RestModel) (Model, error) {
-	return Model{
-		serialNumber: rm.SerialNumber,
-		purchased:    rm.Purchased,
-		count:        rm.Count,
+// Transform converts a purchaserecord.Model back to its RestModel wire shape.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		SerialNumber: m.SerialNumber(),
+		Purchased:    m.Purchased(),
+		Count:        m.Count(),
 	}, nil
+}
+
+func Extract(rm RestModel) (Model, error) {
+	return NewModelBuilder(rm.SerialNumber).
+		SetPurchased(rm.Purchased).
+		SetCount(rm.Count).
+		Build()
 }

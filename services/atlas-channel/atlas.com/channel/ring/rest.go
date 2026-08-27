@@ -10,7 +10,8 @@ import (
 // GET /rings route (task-269 task 8). Read-only: the producing RestModel
 // (atlas-cashshop/ring/rest.go) has only a Transform, no Extract, so this
 // package writes its own decode side rather than reusing a symmetric
-// function.
+// function. Transform is nonetheless defined here (DOM-04) for callers that
+// need to re-encode a cached Model back to the wire shape.
 type RestModel struct {
 	Id                 string `json:"-"`
 	PairId             string `json:"pairId"`
@@ -44,6 +45,22 @@ func (r *RestModel) SetToOneReferenceID(_ string, _ string) error { return nil }
 // SetToManyReferenceIDs satisfies the api2go UnmarshalToManyRelations interface.
 func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
 
+// Transform converts a ring.Model back to its RestModel wire shape.
+func Transform(m Model) (RestModel, error) {
+	return RestModel{
+		Id:                 m.Id().String(),
+		PairId:             m.PairId().String(),
+		CharacterId:        m.CharacterId(),
+		PartnerCharacterId: m.PartnerCharacterId(),
+		ItemTemplateId:     m.ItemTemplateId(),
+		RingType:           string(m.Type()),
+		State:              string(m.State()),
+		CashId:             m.CashId(),
+		PartnerCashId:      m.PartnerCashId(),
+		PartnerName:        m.PartnerName(),
+	}, nil
+}
+
 // Extract converts the wire RestModel into a Model, rejecting anything the
 // wire representation cannot faithfully carry: an unparseable id/pairId, or
 // an unrecognised RingType/State. Defaulting either silently would fabricate
@@ -65,18 +82,16 @@ func Extract(rm RestModel) (Model, error) {
 	if err != nil {
 		return Model{}, err
 	}
-	return Model{
-		id:                 id,
-		pairId:             pairId,
-		characterId:        rm.CharacterId,
-		partnerCharacterId: rm.PartnerCharacterId,
-		itemTemplateId:     rm.ItemTemplateId,
-		ringType:           t,
-		state:              s,
-		cashId:             rm.CashId,
-		partnerCashId:      rm.PartnerCashId,
-		partnerName:        rm.PartnerName,
-	}, nil
+	return NewModelBuilder(id, pairId).
+		SetCharacterId(rm.CharacterId).
+		SetPartnerCharacterId(rm.PartnerCharacterId).
+		SetItemTemplateId(rm.ItemTemplateId).
+		SetType(t).
+		SetState(s).
+		SetCashId(rm.CashId).
+		SetPartnerCashId(rm.PartnerCashId).
+		SetPartnerName(rm.PartnerName).
+		Build()
 }
 
 func parseType(s string) (Type, error) {

@@ -159,4 +159,18 @@ Worktree: `.worktrees/task-271-maple-life-config-ui`. All paths under
 
 ## Resolution
 
-_(to be filled in: fix commit, gate verdict, live re-test)_
+- **Fixed by** `dc8b47630` — "fix(atlas-ui): hide Maple Life on unsupported
+  versions, drop derivation status". Frontend only; no Go change.
+- **Gate:** `tools/verify.sh --quick --base 3e0fd6fbc` exit 0 (lint & format
+  guard, atlas-ui). 148 vitest tests pass across the maple-life and
+  detail-layout suites.
+- **Review:** `task-reviewer` APPROVED, 0 blocking / 0 non-blocking —
+  `reviews/bug-unsupported-version-review.md`. Confirmed the predicate keys off
+  the handler implementation name (never an opcode or a version cutoff), that
+  the null-array guard is present at all four sites and holds independently of
+  the nav change, and that no derivation-status code remains.
+- **Live re-test: NOT DONE.** The `atlas-pr-1534` namespace still has no running
+  `atlas-configurations` pod. Re-test in the browser once it is up: a
+  gms_84_1 / jms_185_1 tenant and template must show no "Maple Life" sidebar
+  entry, and the direct URL must render the unsupported notice rather than
+  throwing.

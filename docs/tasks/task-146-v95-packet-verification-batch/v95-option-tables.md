@@ -89,7 +89,7 @@ All 10 v83 GUILD_OPERATION keys (REQUEST_CREATE, INVITE, JOIN, WITHDRAW,
 KICK, SET_TITLE_NAMES, SET_MEMBER_TITLE, SET_EMBLEM, SET_NOTICE,
 AGREEMENT_RESPONSE) are accounted for on v95; the table is complete.
 
-## BUDDY_OPERATION — opCode 0x99 (153), handler `BuddyOperationHandle`
+## BUDDYLIST_MODIFY — opCode 0x99 (153), handler `BuddyOperationHandle`
 
 `find_bytes "68 99 00 00 00"` → 25 hits. 4 resolve to real send sites; 2
 (`0xb8795a`, `0xbabffd`) resolve to no owning function at all
@@ -104,7 +104,7 @@ functions where 0x99 is an unrelated constant.
 | 2 | ACCEPT | `CField::SendAcceptFriendMsg` | 0x52f340 | 0x52f340 |
 | 3 | DELETE | `CField::SendDeleteFriendMsg` | 0x52f219 | 0x52f219 |
 
-All 4 v83 BUDDY_OPERATION keys (RELOAD, ADD, ACCEPT, DELETE) are accounted
+All 4 v83 BUDDYLIST_MODIFY keys (RELOAD, ADD, ACCEPT, DELETE) are accounted
 for on v95 with identical mode values to v83; the table is complete.
 
 ## Unresolved (Task 7)

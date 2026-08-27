@@ -1,4 +1,4 @@
-# BuddyOperationHandle — serverbound BUDDY_OPERATION mode table (gms_v95 only).
+# BuddyOperationHandle — serverbound BUDDYLIST_MODIFY mode table (gms_v95 only).
 #
 # SOURCE OF TRUTH for this handler's options.operations map.
 #
@@ -12,7 +12,7 @@
 # file as EXTRA once a version has at least one declared key, so gms_v95 must
 # be enumerated COMPLETELY. Per-arm addresses: v95-option-tables.md.
 #
-# The client has no single BUDDY_OPERATION builder: each send site builds its
+# The client has no single BUDDYLIST_MODIFY builder: each send site builds its
 # own COutPacket(&pkt, 0x99) and writes its own leading Encode1(mode).
 # Enumerated by an exhaustive find_bytes search for the COutPacket opcode-153
 # push (68 99 00 00 00) across the whole image — 25 hits, 4 real send sites;
@@ -27,7 +27,7 @@ handler: BuddyOperationHandle
 validator: LoggedInValidator
 services: [channel]
 fname: CField::SendDeleteFriendMsg
-op: BUDDY_OPERATION
+op: BUDDYLIST_MODIFY
 direction: serverbound
 operations:
   - { key: RELOAD, modes: { gms_v95: 0 } }

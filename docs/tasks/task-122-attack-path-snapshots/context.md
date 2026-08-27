@@ -93,3 +93,136 @@ As landed, `services/atlas-inventory/atlas.com/inventory/compartment/processor.g
 ## Verification gate (Task 14)
 
 `go test -race ./... && go vet ./... && go build ./...` in `services/atlas-channel/atlas.com/channel` AND `services/atlas-character/atlas.com/character`; `docker buildx bake atlas-channel atlas-character` from the worktree root; `tools/redis-key-guard.sh`; zero-REST grep sweep (no `GetById(cp.InventoryDecorator`, no `bp.GetByCharacterId` in handlers, no `mp.GetById` in the attack file); code review via `superpowers:requesting-code-review` before PR.
+
+## Task 14 execution notes (final)
+
+**Scope note on Task 14 itself:** per its dispatch contract, this implementer runs
+module-local `go build`/`go vet`/`go test` only (no `-race`, no `docker buildx bake`,
+no `tools/verify.sh`) — the flagless repo-wide gate (including `-race` and the bake)
+runs separately, once, at branch end, in its own context. `tools/redis-key-guard.sh`
+was run (fast, task-scoped) and is clean. Code review is dispatched by the controller
+against this diff, not run by this implementer.
+
+### Component → maintaining consumer-handler map
+
+| Snapshot component | Registry mutator(s) | Consumer file / handler(s) |
+|---|---|---|
+| Core (`character.Model` fields) | `ApplyStatChanged`, `SetLevel`, `SetExperience` | `kafka/consumer/character/consumer.go`: `handleSnapshotStatChanged` (:556), `handleSnapshotLevelChanged` (:569), `handleSnapshotExperienceChanged` (:582) |
+| Position overlay | `SetPosition`/invalidate via `handleSnapshotMapChanged` | `kafka/consumer/character/consumer.go`: `handleSnapshotMapChanged` (:600) — also fed synchronously from `movement.ForCharacter` (position feed, not a Kafka consumer) |
+| Skills | `UpsertSkill`, `RemoveSkill` | `kafka/consumer/skill/consumer.go`: `handleSnapshotSkillCreated` (:200), `handleSnapshotSkillUpdated` (:213), `handleSnapshotSkillDeleted` (:229) |
+| Inventory (assets) | `UpsertAsset`, `SetAssetQuantity`, `SetAssetSlot`, `RemoveAsset`, `InvalidateInventory` | `kafka/consumer/asset/consumer.go`: `handleSnapshotAssetCreated` (:618), `handleSnapshotAssetUpdated` (:631), `handleSnapshotAssetAccepted` (:644), `handleSnapshotAssetQuantityChanged` (:657), `handleSnapshotAssetMoved` (:673), `handleSnapshotAssetDeleted` (:686), `handleSnapshotAssetReleased` (:700, invalidate), `handleSnapshotAssetExpired` (:713, invalidate) |
+| Inventory (compartment) | `InvalidateInventory` | `kafka/consumer/compartment/consumer.go`: `handleSnapshotCompartmentCreated` (:212), `handleSnapshotCompartmentDeleted` (:225), `handleSnapshotCompartmentCapacityChanged` (:238), `handleSnapshotMergeComplete` (:251), `handleSnapshotSortComplete` (:264) — all invalidate-only, no in-place apply |
+| Buffs | `UpsertBuff`, `RemoveBuff` | `kafka/consumer/buff/consumer.go`: `handleSnapshotBuffApplied` (:636), `handleSnapshotBuffExpired` (:657) |
+
+All mutators route through the registry's existing `entryLocked(..., false)` (update-only)
+path — none create an entry for a character with none (per the update-only invariant).
+
+### Metric names as wired (confirmed against source, matches earlier plan text exactly)
+
+- `atlas_channel_char_snapshot_reads_total{tenant,component,outcome}` — `character/snapshot/metrics.go:29-35`
+- `atlas_channel_char_snapshot_updates_total{tenant,component,kind}` — `character/snapshot/metrics.go:37-43`
+- `atlas_channel_char_snapshot_divergence_total{tenant,component}` — `character/snapshot/metrics.go:45-51`
+- `atlas_channel_skill_data_cache_total{tenant,outcome}` — `data/skill/metrics.go:10-16`
+
+### Env vars as wired (confirmed against source)
+
+- `SKILL_DATA_CACHE_ENABLED` (`data/skill/cache.go:31`), `SKILL_DATA_CACHE_TTL` (`:32`),
+  `SKILL_DATA_CACHE_NEGATIVE_TTL` (`:33`) — defaults as documented above (line 48).
+- `CHAR_SNAPSHOT_SHADOW_SAMPLE_RATE` (`character/snapshot/shadow.go:28`), default 0 (disabled).
+
+### Delta resolved since Task 1
+
+Task 1 flagged that `/api/metrics` did not exist on `main.go` at execution start (delta,
+line 79 above). It is now mounted: `main.go:369-370` — `SetBasePath("/api/")` +
+`AddRouteInitializer(restserver.MountHandler("/metrics", promhttp.Handler()))`, landed
+by an earlier task in this plan (task-2/task-9 metrics work). The endpoint exists exactly
+as this plan's Interfaces block originally assumed; the Task 1 delta note is now stale
+and superseded by this confirmation.
+
+### R11 — real zero-REST sweep (not three hard-coded greps)
+
+**Controller-ruling check (per this brief's own warning about R9/R10):** R11's premise —
+that the plan's original zero-REST gate was a spot-check (three literal greps: `cp.InventoryDecorator`,
+`bp.GetByCharacterId`, `mp.GetById`) rather than a real sweep — **holds against landed code**.
+A literal-variable grep is fragile: it would silently miss a raw REST read with a differently
+named receiver variable. Confirmed live example below (finding 4).
+
+**Method:** grepped every `<pkg>.NewProcessor(l, ctx).<Method>(...)` call reachable from all
+attack-path files (every `socket/handler/character_attack_*.go` and `socket/writer/character_attack_*.go`,
+handler + writer, all files, not just `character_attack_common.go`), then classified each call
+by tracing its receiver back to either (a) the snapshot (`sp`/`snapshot.NewProcessor`), (b) an
+in-process cache/mirror seam built by this plan (`data/skill` TTL cache, `monster.LiveMirror`
+resolver, `battleship.RideMirror`), or (c) a genuine unmitigated REST call on the attack path.
+
+Full grep (all attack-path handler+writer files):
+```
+socket/handler/character_attack_common.go:107   monster.NewProcessor(l, ctx).GetById(uniqueId)              -> REST fallback seam behind buildMonsterResolver's mirror-miss path (FR-4.2); memoized per damaged monster, not per-swing
+socket/handler/character_attack_common.go:629   skill2.NewProcessor(l, ctx).GetEffect(...)                  -> skill2 = atlas-channel/data/skill (TTL cache), not raw REST
+socket/handler/character_attack_common.go:908   session.NewProcessor(l, ctx).Destroy(s)                     -> lifecycle mutation, not a read
+socket/handler/character_attack_common.go:943   skill2.NewProcessor(l, ctx).GetEffect(...)                  -> cached (see above)
+socket/handler/character_attack_common.go:955   drop.NewProcessor(l, ctx).InMapModelProvider(...)           -> drop domain, outside task-122's read-set (design.md §2)
+socket/handler/character_attack_common.go:1027  effective_stats.NewProcessor(l, ctx).GetByCharacterId(...)  -> KNOWN EXCEPTION 2 (below)
+socket/handler/character_attack_common.go:1044  skill2.NewProcessor(l, ctx).GetEffect                       -> cached (see above)
+socket/handler/character_attack_common.go:1091  _map.NewProcessor(l, ctx).ForOtherSessionsInMap(...)        -> map domain, outside read-set
+socket/handler/character_attack_common.go:1134  drop.NewProcessor(l, ctx).ConsumeAll(...)                   -> drop domain, outside read-set (mutation)
+socket/handler/character_attack_common.go:1154  skill2.NewProcessor(l, ctx).GetEffect                       -> cached (see above)
+socket/handler/character_attack_common.go:1221  mp.GetById(monsterId)  [mp = monster.NewProcessor(l,ctx)]   -> KNOWN EXCEPTION 1 (below)
+socket/handler/character_attack_common.go:1265  battleship.NewProcessor(l, ctx).IsRiding(...)                -> backed by battleship.RideMirror (in-process), not REST; battleship domain outside read-set regardless
+socket/handler/character_attack_combo.go:150    skill2.NewProcessor(l, ctx).GetEffect                       -> cached (see above)
+socket/handler/character_attack_energy_charge.go:198  buff.NewProcessor(l, ctx).GetByCharacterId(...)        -> FINDING 4, new (below)
+socket/writer/character_attack_common.go:249    skill3.NewProcessor(l, ctx).GetById(...)  [skill3 = atlas-channel/data/skill in this file] -> cached (see above)
+```
+`cp := character.NewProcessor(l, ctx)` at `character_attack_common.go:900` is present but its
+only use on this path is command emission (`ChangeHP`/`ChangeMP`) for the cost gate, Sacrifice,
+and Combo Drain — never a read; confirmed by the in-code comment at `:896-899` and by grep
+(`cp\.` has no `GetById`/`Get` read call anywhere in the file).
+
+**Sweep result — three REST reads remain on the attack path, one already known, one is a stat
+that always degrades to invalidate, and one is a NEW finding this real sweep surfaces that the
+original three-literal grep would have missed:**
+
+1. **beacon `monsterExists`** (`socket/handler/character_attack_common.go:1221`, was plan-cited
+   as `:1220` — one-line drift): `mp.GetById(monsterId)` inside `beaconTryApply`'s closure.
+   Uncounted, unmemoized, on the Homing Beacon cast path. Disclosed exception from Task 11's
+   review — not a defect, not this task's to fix.
+2. **venom `effective_stats.GetByCharacterId`** (`:1027`, was plan-cited as `:332` — drifted,
+   confirmed same call by symbol): per-swing memoized (`loadEffectiveStats`/`effectiveStatsLoaded`
+   closure at `:1019-1030`) lazy REST fetch. Disclosed by design (event-coverage.md §6: no event
+   exists for effective stats) — not a defect, not this task's to fix.
+3. **`AVAILABLE_SP` missing from `statValueKeys`** (`character/snapshot/registry.go:246-265`,
+   confirmed: the map has 18 entries — skin, face, hair, level, job, strength, dexterity,
+   intelligence, luck, hp, max_hp, mp, max_mp, available_ap, experience, fame, meso,
+   gachapon_experience — and no `available_sp`/`TypeAvailableSP` key). A STAT_CHANGED carrying
+   only `AVAILABLE_SP` falls through the `known` check at `:338-343` and always invalidates core
+   (never applies in place), forcing the next `Get` to re-fetch over REST. Disclosed by Task 13's
+   review — the AP/SP-distribution path is not the per-swing attack path, so not a defect, not
+   this task's to fix.
+4. **NEW — Energy Charge's `energyReannounceAuthoritative`** (`socket/handler/character_attack_energy_charge.go:198`):
+   `buff.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())`, a raw un-cached, un-mirrored buff
+   REST read. This is exactly the class of miss a `grep "bp.GetByCharacterId"` literal sweep
+   would evade — the receiver here is named `bs`, not `bp`. Assessed and **not a defect for this
+   task**: the function's own doc comment (`:194-196`) states "This is the ONE REST call the gate
+   is allowed, and only on a rejection — the permitted path stays I/O-free," i.e. it is pre-existing,
+   deliberate design from the Energy Charge feature (a different, prior task's scope, not task-122's
+   attack-path snapshot work), it fires only on a REJECTED Energy Blast cast (not on every accepted
+   swing), and Energy Charge/buff state is not one of the five components (core, skills, inventory,
+   buffs, position) task-122's design targeted for the per-swing damage path — buffs ARE snapshotted
+   elsewhere on the attack path (`newAttackBuffLoader`/`sp.GetBuffs` at `:1003`), just not by this
+   one rare rejection-path re-announce. Listed here, not silently whitelisted, per R11.
+
+**Conclusion: "zero-REST attack path" is not literally true.** Four REST reads remain reachable
+from attack-path code by disclosed, reasoned exception (two per-swing-memoized/lazy, one
+always-invalidating stat, one rare rejection-only re-announce outside this task's five-component
+scope). None of the four are defects introduced by, or owed to, task-122; each is called out here
+by name rather than swept under a narrowed grep.
+
+### Verification results (this task)
+
+- `go build ./...`, `go vet ./...`, `go test ./...` — `services/atlas-channel/atlas.com/channel`:
+  clean (build/vet: no output; test: every package `ok` or `no test files`, zero non-`ok` lines).
+- `go build ./...`, `go vet ./...`, `go test ./...` — `services/atlas-character/atlas.com/character`:
+  clean (same criteria).
+- `tools/redis-key-guard.sh`: clean (`rediskeyguard: 68 module(s), 8 parallel`, no FAIL line).
+- `-race` and `docker buildx bake atlas-channel atlas-character` were intentionally **not** run
+  by this implementer — they belong to the repo-wide `tools/verify.sh` flagless gate, run once
+  separately at branch end, per this task's dispatch contract and the controller's explicit note.

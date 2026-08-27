@@ -50,7 +50,7 @@ Tool: `5de1e5130d5ab98dd1ed9198b7b320d8425c50b38203bb32e4019f8855921732`
 | HACKSHIELD_REQUEST | CLogin::OnEnableSPWResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x015 | ❌ | 0x015 | ❌ | 0x015 | ❌ | 0x017 | ❌ | 0x015 | ❌ |  | ⬜ |
 | IDA_0X015 | sub_465378; sub_4747E2 |  | 0x015 | ❌ | 0x015 | ❌ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |
 | RELOG_RESPONSE | CLogin::OnSelectWorldResult; sub_502E3A; sub_5CBD40; sub_5FB83D; sub_633496 |  | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ | 0x016 | ❌ |  | ⬜ |
-| LOGIN_AUTH | CLogin::LoginAuth; CLogin::OnEnableSPWResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x017 | ❌ | 0x017 | ❌ | 0x017 | ❌ | 0x000 | ❌ | 0x000 | ❌ | 0x018 | ❌ |
+| LOGIN_AUTH | CLogin::LoginAuth; CLogin::OnEnableSPWResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x017 | ❌ | 0x017 | ❌ | 0x017 | ❌ | 0x000 | ❌ |  | ⬜ | 0x018 | ❌ |
 | CHECK_CRC_RESULT | CClientSocket::OnCheckCrcResult |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x019 | ❌ | 0x019 | ❌ | 0x019 | ❌ | 0x019 | ❌ | 0x017 | ❌ | 0x00D | ❌ |
 | IDA_0X019 | sub_66F0D7 |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x019 | ❌ |
 | INVENTORY_OPERATION | CWvsContext::OnInventoryOperation | inventory/clientbound/InventoryAdd (T1) | 0x019 | ✅ | 0x01A | ✅ | 0x01A | ✅ | 0x01A | ✅ | 0x01D | ✅ | 0x01D | ❌ | 0x01D | ❌ | 0x01E | ❌ | 0x01C | ✅ | 0x01B | ❌ |
@@ -1071,7 +1071,7 @@ Tool: `5de1e5130d5ab98dd1ed9198b7b320d8425c50b38203bb32e4019f8855921732`
 | v84 | 451 | 0 | 0 | 326 | 250 | 0 | 58.0% |
 | v87 | 488 | 0 | 0 | 348 | 191 | 0 | 58.4% |
 | v92 | 65 | 0 | 147 | 674 | 141 | 0 | 7.3% |
-| v95 | 515 | 0 | 0 | 405 | 107 | 0 | 56.0% |
+| v95 | 515 | 0 | 0 | 404 | 108 | 0 | 56.0% |
 | JMS185 | 451 | 0 | 0 | 378 | 198 | 0 | 54.4% |
 
 ## Conflicts

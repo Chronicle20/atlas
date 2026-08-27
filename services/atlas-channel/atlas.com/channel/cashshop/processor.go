@@ -41,7 +41,7 @@ type Processor interface {
 	MarkGiftNoteSent(accountId uint32, characterId uint32, cashId int64) error
 	RequestGiftPurchase(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) error
 	RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error
-	RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error
+	RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, option uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error
 	RequestEquipSlotIncrease(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32) error
 }
 
@@ -135,6 +135,38 @@ func resolvePurchaseCurrency(isPoints bool, currency uint32) uint32 {
 		return walletCurrencyMaplePoints
 	}
 	return currency
+}
+
+// resolveRingPurchaseCurrency maps the ring arms' (BUY_COUPLE/BUY_FRIENDSHIP)
+// confirmation-dialog "option" bitmask onto the wallet currency code.
+//
+// On GMS >= 83, CCashShop::OnBuyFriendship/OnBuyCouple do not put
+// isPoints/currency on the wire; the user's payment-method selection lives
+// entirely in option, constrained by CConfirmPurchaseDlg::Confirm to exactly
+// one of 1 = NX Credit, 2 = Maple Point, 4 = NX Prepaid
+// (docs/tasks/task-240-cash-shop-stub-operations/derivation.md §6, D4a).
+// Those map to wallet.Model.Balance's currency codes 1 (credit), 2 (points),
+// 3 (prepaid) respectively.
+//
+// option == 0 falls back to resolvePurchaseCurrency(isPoints, currency): a
+// legacy GMS < 83 wire carries a real currency int, and JMS carries neither
+// signal and keeps today's prepaid behavior.
+func resolveRingPurchaseCurrency(option uint32, isPoints bool, currency uint32) uint32 {
+	const (
+		walletCurrencyCredit  = uint32(1)
+		walletCurrencyPoints  = uint32(2)
+		walletCurrencyPrepaid = uint32(3)
+	)
+	switch option {
+	case 1:
+		return walletCurrencyCredit
+	case 2:
+		return walletCurrencyPoints
+	case 4:
+		return walletCurrencyPrepaid
+	default:
+		return resolvePurchaseCurrency(isPoints, currency)
+	}
 }
 
 func (p *ProcessorImpl) MoveFromCashInventory(accountId uint32, characterId uint32, serialNumber uint64, inventoryType byte, _ int16) error {
@@ -302,10 +334,12 @@ func (p *ProcessorImpl) RequestPackagePurchase(characterId uint32, transactionId
 // (once per click, mirroring RequestGiftPurchase/RequestPackagePurchase's
 // idempotency pattern) so a Kafka redelivery replays this id and is
 // rejected by atlas-cashshop's ring ledger while a genuine second click
-// gets a fresh one. isPoints/currency go through resolvePurchaseCurrency
-// exactly like RequestPurchase/RequestPackagePurchase above.
-func (p *ProcessorImpl) RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error {
-	currency = resolvePurchaseCurrency(isPoints, currency)
+// gets a fresh one. currency is resolved through resolveRingPurchaseCurrency
+// (option, then isPoints/currency fallback) rather than the plain
+// resolvePurchaseCurrency every other BUY arm uses -- see that function's
+// doc comment for why the ring arms need option.
+func (p *ProcessorImpl) RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, option uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error {
+	currency = resolveRingPurchaseCurrency(option, isPoints, currency)
 	p.l.Debugf("Character [%d] purchasing ring serial [%d] with currency [%d] for partner [%d]. Transaction [%s].", characterId, serialNumber, currency, partnerCharacterId, transactionId)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestRingPurchaseCommandProvider(characterId, transactionId, currency, serialNumber, partnerCharacterId, senderName, message, ringType))
 }

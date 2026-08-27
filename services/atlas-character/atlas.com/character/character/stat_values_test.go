@@ -221,209 +221,204 @@ func assertValuesCompleteForUpdates(t *testing.T, updates []stat.Type, values ma
 // each captured STAT_CHANGED and requires, for every u in Updates,
 // statKeyFor(u) present in Values and numerically equal to the post-mutation
 // column re-read from the DB.
-
-func TestStatChanged_ValuesCompleteOnHotPaths_ChangeMP(t *testing.T) {
-	// The attack-path-critical site: every per-swing MP deduction must carry
-	// an absolute mp so atlas-channel's snapshot can apply in place instead
-	// of invalidating and refetching.
-	_, p, id := newStatValuesFixture(t, entity{
-		AccountId: 1000, Name: "ChangeMP", Level: 10, MaxMp: 100, Mp: 50,
-	})
-
-	mb := message.NewBuffer()
-	txId := uuid.New()
-	require.NoError(t, p.ChangeMP(mb)(txId, channel.NewModel(0, 1), id, 20))
-
-	evt := decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeMp))
-
-	c, err := p.GetById()(id)
-	require.NoError(t, err)
-	require.Equal(t, uint16(70), c.Mp())
-	assertValuesCompleteForUpdates(t, evt.Body.Updates, evt.Body.Values, c)
-}
-
-func TestStatChanged_ValuesCompleteOnHotPaths_ChangeHP(t *testing.T) {
-	_, p, id := newStatValuesFixture(t, entity{
-		AccountId: 1000, Name: "ChangeHP", Level: 10, MaxHp: 100, Hp: 50,
-	})
-
-	mb := message.NewBuffer()
-	txId := uuid.New()
-	require.NoError(t, p.ChangeHP(mb)(txId, channel.NewModel(0, 1), id, 20))
-
-	evt := decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeHp))
-
-	c, err := p.GetById()(id)
-	require.NoError(t, err)
-	require.Equal(t, uint16(70), c.Hp())
-	assertValuesCompleteForUpdates(t, evt.Body.Updates, evt.Body.Values, c)
-}
-
-func TestStatChanged_ValuesCompleteOnHotPaths_AwardExperience(t *testing.T) {
-	_, p, id := newStatValuesFixture(t, entity{
-		AccountId: 1000, Name: "AwardExp", Level: 1, Experience: 0,
-	})
-
-	mb := message.NewBuffer()
-	txId := uuid.New()
-	require.NoError(t, p.AwardExperience(mb)(txId, id, channel.NewModel(0, 1), []ExperienceModel{NewExperienceModel("WHITE", 1, 0)}, false))
-
-	evt := decodeStatChangedFromBuffer(t, mb)
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeExperience))
-
-	c, err := p.GetById()(id)
-	require.NoError(t, err)
-	require.Equal(t, uint32(1), c.Experience())
-	assertValuesCompleteForUpdates(t, evt.Body.Updates, evt.Body.Values, c)
-}
-
-func TestStatChanged_ValuesCompleteOnHotPaths_AwardLevel(t *testing.T) {
-	_, p, id := newStatValuesFixture(t, entity{
-		AccountId: 1000, Name: "AwardLvl", Level: 5,
-	})
-
-	mb := message.NewBuffer()
-	txId := uuid.New()
-	require.NoError(t, p.AwardLevel(mb)(txId, id, channel.NewModel(0, 1), 1))
-
-	evt := decodeStatChangedFromBuffer(t, mb)
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeLevel))
-
-	c, err := p.GetById()(id)
-	require.NoError(t, err)
-	require.Equal(t, byte(6), c.Level())
-	assertValuesCompleteForUpdates(t, evt.Body.Updates, evt.Body.Values, c)
-}
-
-func TestStatChanged_ValuesCompleteOnHotPaths_RequestChangeMeso(t *testing.T) {
-	db, p, id := newStatValuesFixture(t, entity{
-		AccountId: 1000, Name: "Meso1", Meso: 100,
-	})
-
-	txId := uuid.New()
-	require.NoError(t, p.RequestChangeMeso(txId, id, 50, 0, "SYSTEM", false))
-
-	evt := decodeStatChangedFromOutbox(t, db)
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeMeso))
-
-	c, err := p.GetById()(id)
-	require.NoError(t, err)
-	require.Equal(t, uint32(150), c.Meso())
-	assertValuesCompleteForUpdates(t, evt.Body.Updates, evt.Body.Values, c)
-}
-
-// -- controller ruling R10: the four "extend an existing map" sites --
 //
-// These four are where a missing key silently degrades to invalidate-and-
-// refetch instead of an outright bug, so they need the same coverage as the
-// greenfield sites above.
+// Each row drives one processor call site and re-asserts everything the
+// pre-conversion single-purpose test did: the specific stat.Type(s) that
+// must appear in Updates, the specific post-mutation column value(s), and —
+// via assertValuesCompleteForUpdates — that every key in Updates has a
+// matching, numerically-correct entry in Values. The last four rows are
+// controller ruling R10's "extend an existing map" sites, where a missing
+// key silently degrades to invalidate-and-refetch instead of an outright
+// bug, so they carry the same coverage as the greenfield rows above them.
+func TestStatChanged_ValuesCompleteOnHotPaths(t *testing.T) {
+	tests := []struct {
+		name string
+		// entity seeds newStatValuesFixture.
+		entity entity
+		// run drives the processor call under test and returns the decoded
+		// STAT_CHANGED event, using whichever decode path (direct buffer,
+		// buffer-with-siblings, or outbox) the original test used.
+		run func(t *testing.T, db *gorm.DB, p Processor, id uint32) character2.StatusEvent[character2.StatusEventStatChangedBody]
+		// requiredUpdates are the stat.Types the original test asserted
+		// were present in evt.Body.Updates via containsStat.
+		requiredUpdates []stat.Type
+		// checkModel re-asserts the original test's specific post-mutation
+		// column value(s), if any.
+		checkModel func(t *testing.T, c Model)
+	}{
+		{
+			// The attack-path-critical site: every per-swing MP deduction
+			// must carry an absolute mp so atlas-channel's snapshot can
+			// apply in place instead of invalidating and refetching.
+			name:   "ChangeMP",
+			entity: entity{AccountId: 1000, Name: "ChangeMP", Level: 10, MaxMp: 100, Mp: 50},
+			run: func(t *testing.T, db *gorm.DB, p Processor, id uint32) character2.StatusEvent[character2.StatusEventStatChangedBody] {
+				mb := message.NewBuffer()
+				txId := uuid.New()
+				require.NoError(t, p.ChangeMP(mb)(txId, channel.NewModel(0, 1), id, 20))
+				return decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
+			},
+			requiredUpdates: []stat.Type{stat.TypeMp},
+			checkModel: func(t *testing.T, c Model) {
+				require.Equal(t, uint16(70), c.Mp())
+			},
+		},
+		{
+			name:   "ChangeHP",
+			entity: entity{AccountId: 1000, Name: "ChangeHP", Level: 10, MaxHp: 100, Hp: 50},
+			run: func(t *testing.T, db *gorm.DB, p Processor, id uint32) character2.StatusEvent[character2.StatusEventStatChangedBody] {
+				mb := message.NewBuffer()
+				txId := uuid.New()
+				require.NoError(t, p.ChangeHP(mb)(txId, channel.NewModel(0, 1), id, 20))
+				return decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
+			},
+			requiredUpdates: []stat.Type{stat.TypeHp},
+			checkModel: func(t *testing.T, c Model) {
+				require.Equal(t, uint16(70), c.Hp())
+			},
+		},
+		{
+			name:   "AwardExperience",
+			entity: entity{AccountId: 1000, Name: "AwardExp", Level: 1, Experience: 0},
+			run: func(t *testing.T, db *gorm.DB, p Processor, id uint32) character2.StatusEvent[character2.StatusEventStatChangedBody] {
+				mb := message.NewBuffer()
+				txId := uuid.New()
+				require.NoError(t, p.AwardExperience(mb)(txId, id, channel.NewModel(0, 1), []ExperienceModel{NewExperienceModel("WHITE", 1, 0)}, false))
+				return decodeStatChangedFromBuffer(t, mb)
+			},
+			requiredUpdates: []stat.Type{stat.TypeExperience},
+			checkModel: func(t *testing.T, c Model) {
+				require.Equal(t, uint32(1), c.Experience())
+			},
+		},
+		{
+			name:   "AwardLevel",
+			entity: entity{AccountId: 1000, Name: "AwardLvl", Level: 5},
+			run: func(t *testing.T, db *gorm.DB, p Processor, id uint32) character2.StatusEvent[character2.StatusEventStatChangedBody] {
+				mb := message.NewBuffer()
+				txId := uuid.New()
+				require.NoError(t, p.AwardLevel(mb)(txId, id, channel.NewModel(0, 1), 1))
+				return decodeStatChangedFromBuffer(t, mb)
+			},
+			requiredUpdates: []stat.Type{stat.TypeLevel},
+			checkModel: func(t *testing.T, c Model) {
+				require.Equal(t, byte(6), c.Level())
+			},
+		},
+		{
+			name:   "RequestChangeMeso",
+			entity: entity{AccountId: 1000, Name: "Meso1", Meso: 100},
+			run: func(t *testing.T, db *gorm.DB, p Processor, id uint32) character2.StatusEvent[character2.StatusEventStatChangedBody] {
+				txId := uuid.New()
+				require.NoError(t, p.RequestChangeMeso(txId, id, 50, 0, "SYSTEM", false))
+				return decodeStatChangedFromOutbox(t, db)
+			},
+			requiredUpdates: []stat.Type{stat.TypeMeso},
+			checkModel: func(t *testing.T, c Model) {
+				require.Equal(t, uint32(150), c.Meso())
+			},
+		},
+		{
+			// controller ruling R10, site 1 of 4: the four "extend an
+			// existing map" sites, where a missing key silently degrades
+			// to invalidate-and-refetch instead of an outright bug.
+			name:   "APDistributeSuccess",
+			entity: entity{AccountId: 1000, Name: "APDist", Strength: 10, AP: 10},
+			run: func(t *testing.T, db *gorm.DB, p Processor, id uint32) character2.StatusEvent[character2.StatusEventStatChangedBody] {
+				txId := uuid.New()
+				require.NoError(t, p.RequestDistributeAp(txId, id, []Distribution{
+					{Ability: CommandDistributeApAbilityStrength, Amount: 5},
+				}))
+				return decodeStatChangedFromOutbox(t, db)
+			},
+			requiredUpdates: []stat.Type{stat.TypeStrength, stat.TypeAvailableAP},
+			checkModel: func(t *testing.T, c Model) {
+				require.Equal(t, uint16(15), c.Strength())
+				require.Equal(t, uint16(5), c.AP())
+			},
+		},
+		{
+			// JobId 0 (Beginner) + Level 15 keeps the level-up past the
+			// beginner auto-STR/DEX threshold (<11) so AvailableAP is the
+			// branch exercised, and avoids the improving-HP/MP skill
+			// lookups that only fire for the combat job branches.
+			name: "LevelUpGrowth",
+			entity: entity{
+				AccountId: 1000, Name: "LevelUp", Level: 15, JobId: job.Id(0),
+				MaxHp: 100, Hp: 100, MaxMp: 50, Mp: 50, AP: 0,
+			},
+			run: func(t *testing.T, db *gorm.DB, p Processor, id uint32) character2.StatusEvent[character2.StatusEventStatChangedBody] {
+				mb := message.NewBuffer()
+				txId := uuid.New()
+				require.NoError(t, p.ProcessLevelChange(mb)(txId, channel.NewModel(0, 1), id, 1))
+				return decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
+			},
+			requiredUpdates: []stat.Type{
+				stat.TypeAvailableAP, stat.TypeAvailableSP,
+				stat.TypeHp, stat.TypeMaxHp, stat.TypeMp, stat.TypeMaxMp,
+			},
+		},
+		{
+			name: "JobChangeGrowth",
+			entity: entity{
+				AccountId: 1000, Name: "JobChange", Level: 10, JobId: job.Id(0),
+				MaxHp: 100, Hp: 100, MaxMp: 50, Mp: 50, AP: 0,
+			},
+			run: func(t *testing.T, db *gorm.DB, p Processor, id uint32) character2.StatusEvent[character2.StatusEventStatChangedBody] {
+				mb := message.NewBuffer()
+				txId := uuid.New()
+				require.NoError(t, p.ProcessJobChange(mb)(txId, channel.NewModel(0, 1), id, job.Id(100)))
+				return decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
+			},
+			requiredUpdates: []stat.Type{
+				stat.TypeAvailableAP, stat.TypeAvailableSP,
+				stat.TypeHp, stat.TypeMaxHp, stat.TypeMp, stat.TypeMaxMp,
+			},
+		},
+		{
+			name:   "ResetStats",
+			entity: entity{AccountId: 1000, Name: "ResetStats", Strength: 10, Dexterity: 8, Intelligence: 6, Luck: 5, AP: 0},
+			run: func(t *testing.T, db *gorm.DB, p Processor, id uint32) character2.StatusEvent[character2.StatusEventStatChangedBody] {
+				mb := message.NewBuffer()
+				txId := uuid.New()
+				require.NoError(t, p.ResetStats(mb)(txId, id, channel.NewModel(0, 1)))
+				return decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
+			},
+			requiredUpdates: []stat.Type{stat.TypeAvailableAP},
+			checkModel: func(t *testing.T, c Model) {
+				require.Equal(t, uint16(4), c.Strength())
+			},
+		},
+		{
+			name:   "RebalanceAP",
+			entity: entity{AccountId: 1000, Name: "Rebalance", Strength: 10, Dexterity: 5, Intelligence: 4, Luck: 4, AP: 0},
+			run: func(t *testing.T, db *gorm.DB, p Processor, id uint32) character2.StatusEvent[character2.StatusEventStatChangedBody] {
+				mb := message.NewBuffer()
+				txId := uuid.New()
+				require.NoError(t, p.RebalanceAP(mb)(txId, id, channel.NewModel(0, 1), []RebalanceTarget{
+					{Stat: "strength", Floor: 10},
+				}))
+				return decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
+			},
+			requiredUpdates: []stat.Type{stat.TypeAvailableAP},
+		},
+	}
 
-func TestStatChanged_ValuesCompleteOnHotPaths_APDistributeSuccess(t *testing.T) {
-	db, p, id := newStatValuesFixture(t, entity{
-		AccountId: 1000, Name: "APDist", Strength: 10, AP: 10,
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, p, id := newStatValuesFixture(t, tt.entity)
 
-	txId := uuid.New()
-	require.NoError(t, p.RequestDistributeAp(txId, id, []Distribution{
-		{Ability: CommandDistributeApAbilityStrength, Amount: 5},
-	}))
+			evt := tt.run(t, db, p, id)
+			for _, u := range tt.requiredUpdates {
+				require.True(t, containsStat(evt.Body.Updates, u), "expected Updates to contain %v", u)
+			}
 
-	evt := decodeStatChangedFromOutbox(t, db)
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeStrength))
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeAvailableAP))
-
-	c, err := p.GetById()(id)
-	require.NoError(t, err)
-	require.Equal(t, uint16(15), c.Strength())
-	require.Equal(t, uint16(5), c.AP())
-	assertValuesCompleteForUpdates(t, evt.Body.Updates, evt.Body.Values, c)
-}
-
-func TestStatChanged_ValuesCompleteOnHotPaths_LevelUpGrowth(t *testing.T) {
-	// JobId 0 (Beginner) + Level 15 keeps the level-up past the beginner
-	// auto-STR/DEX threshold (<11) so AvailableAP is the branch exercised,
-	// and avoids the improving-HP/MP skill lookups that only fire for the
-	// combat job branches.
-	_, p, id := newStatValuesFixture(t, entity{
-		AccountId: 1000, Name: "LevelUp", Level: 15, JobId: job.Id(0),
-		MaxHp: 100, Hp: 100, MaxMp: 50, Mp: 50, AP: 0,
-	})
-
-	mb := message.NewBuffer()
-	txId := uuid.New()
-	require.NoError(t, p.ProcessLevelChange(mb)(txId, channel.NewModel(0, 1), id, 1))
-
-	evt := decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeAvailableAP))
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeAvailableSP))
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeHp))
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeMaxHp))
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeMp))
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeMaxMp))
-
-	c, err := p.GetById()(id)
-	require.NoError(t, err)
-	assertValuesCompleteForUpdates(t, evt.Body.Updates, evt.Body.Values, c)
-}
-
-func TestStatChanged_ValuesCompleteOnHotPaths_JobChangeGrowth(t *testing.T) {
-	_, p, id := newStatValuesFixture(t, entity{
-		AccountId: 1000, Name: "JobChange", Level: 10, JobId: job.Id(0),
-		MaxHp: 100, Hp: 100, MaxMp: 50, Mp: 50, AP: 0,
-	})
-
-	mb := message.NewBuffer()
-	txId := uuid.New()
-	require.NoError(t, p.ProcessJobChange(mb)(txId, channel.NewModel(0, 1), id, job.Id(100)))
-
-	evt := decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeAvailableAP))
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeAvailableSP))
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeHp))
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeMaxHp))
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeMp))
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeMaxMp))
-
-	c, err := p.GetById()(id)
-	require.NoError(t, err)
-	assertValuesCompleteForUpdates(t, evt.Body.Updates, evt.Body.Values, c)
-}
-
-func TestStatChanged_ValuesCompleteOnHotPaths_ResetStats(t *testing.T) {
-	_, p, id := newStatValuesFixture(t, entity{
-		AccountId: 1000, Name: "ResetStats", Strength: 10, Dexterity: 8, Intelligence: 6, Luck: 5, AP: 0,
-	})
-
-	mb := message.NewBuffer()
-	txId := uuid.New()
-	require.NoError(t, p.ResetStats(mb)(txId, id, channel.NewModel(0, 1)))
-
-	evt := decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeAvailableAP))
-
-	c, err := p.GetById()(id)
-	require.NoError(t, err)
-	require.Equal(t, uint16(4), c.Strength())
-	assertValuesCompleteForUpdates(t, evt.Body.Updates, evt.Body.Values, c)
-}
-
-func TestStatChanged_ValuesCompleteOnHotPaths_RebalanceAP(t *testing.T) {
-	_, p, id := newStatValuesFixture(t, entity{
-		AccountId: 1000, Name: "Rebalance", Strength: 10, Dexterity: 5, Intelligence: 4, Luck: 4, AP: 0,
-	})
-
-	mb := message.NewBuffer()
-	txId := uuid.New()
-	require.NoError(t, p.RebalanceAP(mb)(txId, id, channel.NewModel(0, 1), []RebalanceTarget{
-		{Stat: "strength", Floor: 10},
-	}))
-
-	evt := decodeStatusEvent[character2.StatusEventStatChangedBody](t, mb)
-	require.True(t, containsStat(evt.Body.Updates, stat.TypeAvailableAP))
-
-	c, err := p.GetById()(id)
-	require.NoError(t, err)
-	assertValuesCompleteForUpdates(t, evt.Body.Updates, evt.Body.Values, c)
+			c, err := p.GetById()(id)
+			require.NoError(t, err)
+			if tt.checkModel != nil {
+				tt.checkModel(t, c)
+			}
+			assertValuesCompleteForUpdates(t, evt.Body.Updates, evt.Body.Values, c)
+		})
+	}
 }

@@ -493,6 +493,47 @@ func TestCharacterDamageByteOutputV72(t *testing.T) {
 	}
 }
 
+// TestCharacterDamageByteOutputV72MobAttackIndex covers the boundary fixed in
+// docs/tasks/task-268-character-damage-attack-index/
+// bug-character-damage-attack-index-truncation.md: the guard is
+// `nAttackIdx > -2`, which is true for every mob attack index (>= 1), not
+// only the -1/0 physical/magic sentinels. Same instruction addresses as
+// TestCharacterDamageByteOutputV72 — only the input attackIdx differs.
+func TestCharacterDamageByteOutputV72MobAttackIndex(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := NewCharacterDamage(1234, model.DamageType(1), 500, 100100, true).Encode(nil, ctx)(nil)
+	want := []byte{
+		0xd2, 0x04, 0x00, 0x00, // characterId 1234 (dispatcher Decode4)
+		0x01,                   // attackIdx 1 (mob attack index, not -1/0)
+		0xf4, 0x01, 0x00, 0x00, // damage 500 (Decode4)
+		0x04, 0x87, 0x01, 0x00, // monsterTemplateId 100100 (Decode4)
+		0x01,                   // left (Decode1)
+		0x00,                   // stance (Decode1)
+		0x00,                   // stanceRelated (Decode1)
+		0xf4, 0x01, 0x00, 0x00, // damage repeated (Decode4)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 CharacterDamage mob-attack-index wire:\n got %x\nwant %x", got, want)
+	}
+}
+
+// TestCharacterDamageByteOutputV72CounterOmitsBlock covers the other side of
+// the same boundary: DamageTypeCounter (-2) must still omit the block, since
+// the guard is strictly `> -2`.
+func TestCharacterDamageByteOutputV72CounterOmitsBlock(t *testing.T) {
+	ctx := pt.CreateContext("GMS", 72, 1)
+	got := NewCharacterDamage(1234, model.DamageTypeCounter, 500, 100100, true).Encode(nil, ctx)(nil)
+	want := []byte{
+		0xd2, 0x04, 0x00, 0x00, // characterId 1234 (dispatcher Decode4)
+		0xfe,                   // attackIdx -2 (DamageTypeCounter; block omitted)
+		0xf4, 0x01, 0x00, 0x00, // damage 500 (Decode4)
+		0xf4, 0x01, 0x00, 0x00, // damage repeated (Decode4)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("v72 CharacterDamage counter wire:\n got %x\nwant %x", got, want)
+	}
+}
+
 // CharacterExpression v72 byte-fixture — FACIAL_EXPRESSION, op 175.
 //
 // Read inline in CUserPool::OnUserRemotePacket case 175 @0x87c0c6: v6 = Decode4,

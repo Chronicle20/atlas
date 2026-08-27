@@ -49,7 +49,7 @@ func (m CharacterDamage) Encode(l logrus.FieldLogger, ctx context.Context) func(
 		w.WriteInt(m.characterId)
 		w.WriteByte(byte(m.attackIdx))
 		w.WriteInt32(m.damage)
-		if m.attackIdx == model.DamageTypePhysical || m.attackIdx == model.DamageTypeMagic {
+		if m.attackIdx >= model.DamageTypePhysical {
 			w.WriteInt(m.monsterTemplateId)
 			w.WriteBool(m.left)
 			w.WriteBool(false) // stance
@@ -72,7 +72,7 @@ func (m *CharacterDamage) Decode(l logrus.FieldLogger, ctx context.Context) func
 		m.characterId = r.ReadUint32()
 		m.attackIdx = model.DamageType(r.ReadInt8())
 		m.damage = r.ReadInt32()
-		if m.attackIdx == model.DamageTypePhysical || m.attackIdx == model.DamageTypeMagic {
+		if m.attackIdx >= model.DamageTypePhysical {
 			m.monsterTemplateId = r.ReadUint32()
 			m.left = r.ReadBool()
 			_ = r.ReadBool() // stance

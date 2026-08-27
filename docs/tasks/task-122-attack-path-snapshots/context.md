@@ -65,7 +65,30 @@ snake_case per stat type: `skin face hair level job strength dexterity intellige
 
 ## Escalations for owner
 
-- `RequestReserve` processes only the first batched reserve request (atlas-inventory `compartment/processor.go:767`) — candidate pre-existing atlas-inventory bug, NOT addressed by task-122 (reservations are registry-only and excluded from the snapshot).
+- ~~`RequestReserve` processes only the first batched reserve request (atlas-inventory `compartment/processor.go:767`)~~ — **superseded, see "Task 1 findings" below.** Re-confirmed at execution time: this was fixed by task-205 (already on `main`) before task-122 execution began. No live bug; nothing to escalate.
+
+## Task 1 findings (task-120 reconciliation + execution-time audit)
+
+**Gate:** task-120 is landed. `git log --grep "task-120"` finds nothing — the commit was squashed under a different subject — so file presence plus API reconciliation is the authoritative check, not the grep. Confirmed present on `origin/main` (this branch's merge base, `2537d8a6a`): `services/atlas-channel/atlas.com/channel/monster/live_mirror.go`, `metrics.go`, `information/cache.go`.
+
+**API reconciliation (Step 2) — matches, with one delta:**
+- `monster.GetLiveMirror()` (`live_mirror.go:51`), `(*LiveMirror).Lookup(t tenant.Model, uniqueId uint32) (LiveEntry, bool)` (`:82`), `Put(t tenant.Model, uniqueId uint32, e LiveEntry)` (`:100`), `Remove(t tenant.Model, uniqueId uint32)` (`:172`), `EvictTenant(tid uuid.UUID)` (`:184`), `monster.LiveEntryFromModel(mo Model) LiveEntry` (`:70`), `monster.RecordMirrorFallback(t tenant.Model, success bool)` (`monster/metrics.go:46`) — all confirmed exact-signature matches.
+- `LiveEntry{Field, MonsterId, Mp, MaxMp, ControllerHasAggro, LastWrite}` — all six listed fields present (`live_mirror.go:24-32`), plus one additional field not listed in the Interfaces block: `ControlCharacterId uint32` (`:30`) — additive, not a conflict.
+- `main.go:303-313` `listener.RegisterEvictor` block confirmed calling `monsterDomain.GetLiveMirror().EvictTenant(tid)` (`:307`).
+- prometheus dep confirmed: `github.com/prometheus/client_golang v1.24.1` (`services/atlas-channel/atlas.com/channel/go.mod:20`), used by `monster/metrics.go` via `promauto` for `mirrorHitsTotal`/`mirrorMissesTotal`/`mirrorFallbackTotal`.
+- **DELTA (needs a plan.md ruling — not made here):** no `promhttp` mount exists in `main.go`. `grep -in "metrics"` across the full 1092-line file returns zero matches; the only `AddRouteInitializer` calls present are `/debug/consumers` (`:363`) and `/readyz` (`:364`). There is no `/api/metrics` endpoint on this branch, contrary to this plan's Interfaces block, context.md line 49 ("Endpoint: `/api/metrics` ... task-120 brings the mount"), and event-coverage.md §8. Any Task 10-11 step that assumes the endpoint already exists needs either its own `promhttp.Handler()` mount or a corrected assumption — controller to rule.
+
+**Step 3 (design §10.2) — inventory REST does not net out reservations, confirmed:**
+Read path: `services/atlas-inventory/atlas.com/inventory/inventory/resource.go:31` `handleGetInventory` → `inventory/processor.go:60` `GetByCharacterId` → `inventory/processor.go:64-70` `ByCharacterIdProvider` (folds `compartment.Processor.ByCharacterIdProvider`) → `compartment/processor.go:215-221` `ByCharacterIdProvider` → `compartment/processor.go:243-249` `DecorateAsset` → `p.assetProcessor.GetByCompartmentId(m.Id())`. No call to `GetReservationRegistry()`/`GetReservedQuantity` exists anywhere on this path — every call site of those two functions is a mutation path (`compartment/processor.go:559,641,642,750,831,835,912`). No change to Task 7 required.
+
+**Step 4 (design §10.3) — Values key convention, confirmed:**
+The brief's cited line numbers (905,1408,1623,1867) have drifted; located by string search instead. `services/atlas-character/atlas.com/character/character/processor.go` populates the exact snake_case keys already documented above (line 40 of this file) at multiple sites: `values["strength"]`/`values["dexterity"]`/`values["intelligence"]`/`values["luck"]`/`values["max_hp"]`/`values["max_mp"]` at `:1080,1086,1092,1098,1109,1120` (AP-distribute path); literal-map form `"max_hp"`/`"max_mp"`/`"intelligence"` at `:1704-1706` and `:1963-1965` (RESET_STATS/REBALANCE_AP); `"strength"`/`"dexterity"`/`"intelligence"`/`"luck"` at `:2250-2253` and `:2304-2307` (level-up growth). All confirmed snake_case, matching this file's Values key convention exactly.
+
+**Step 5 (design §10.4) — MAP_CHANGED UseTargetPosition=false, confirmed:**
+`StatusEventMapChangedBody` at `services/atlas-channel/atlas.com/channel/kafka/message/character/kafka.go:131-143` (drifted from the design's cited 114-127) carries `UseTargetPosition bool`, `TargetX int16`, `TargetY int16`. Disposition confirmed unchanged: position-invalidate + core-invalidate on `UseTargetPosition=false` (already stated above, line 15 of this file); recorded in event-coverage.md §2.
+
+**Step 6 (design §10.5) — RequestReserve escalation, STALE, corrected (no fix applied — nothing to fix):**
+As landed, `services/atlas-inventory/atlas.com/inventory/compartment/processor.go:810-853` (`RequestReserve`) iterates over *every* entry in `reservationRequests` (loop body `:822-844`), calling `GetReservedQuantity`, `AddReservation`, and `mb.Put(...ReservedEventStatusProvider...)` per request — it does not return after the first. An in-code comment at `:839-840` reads: "Emit per request. Before task-205 this was `return mb.Put(...)`, which silently dropped every request after the first." The bug this plan's Step 6 asked to escalate was already fixed by task-205 (landed on `main` ahead of task-122) before this task ran. The "Escalations for owner" section above has been struck through and corrected rather than left as a false escalation; event-coverage.md §4 and its disposition-table row 8 are corrected the same way.
 
 ## Verification gate (Task 14)
 

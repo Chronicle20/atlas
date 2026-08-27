@@ -3,6 +3,8 @@
 Status: design-phase audit, v1
 Method: source reading of owning-service producers and atlas-channel consumers. Every claim cites file:line. Items marked **VERIFY-AT-EXECUTION** must be re-confirmed against the code as it stands when `/execute-task` runs (this audit was performed while task-120/121 were unmerged).
 
+**Task 1 resolution (execution-time audit, see context.md "Task 1 findings"):** all VERIFY-AT-EXECUTION markers below have been re-confirmed against the code as landed on this branch (base `2537d8a6a`). Markers are resolved in place; see §2, §4, §8, and the disposition table rows 6 and 8.
+
 Component verdict legend (FR-2.2): **Covered** (rich event, update in place) / **Covered-but-thin** (invalidate-and-refetch) / **Gap** (no observable event → FR-2.4 disposition required).
 
 Consumer-side note that applies to every component: all atlas-channel consumers use `SetStartOffset(kafka.LastOffset)` — there is no historical replay, so a snapshot registry starts empty at pod boot and MUST be seeded by REST (lazy populate), never by events alone. Event handlers must never *create* snapshot entries (task-120 discipline: update-only, no-op when entry absent).
@@ -62,6 +64,8 @@ Snapshot handling: STAT_CHANGED with complete `Values` → update in place (idem
 
 Source position **locally**: the same movement-fold summary that atlas-channel already computes writes the snapshot's position component synchronously (before the Kafka emit). This is strictly fresher than the REST projection — zero hops instead of three. Supplemented by MAP_CHANGED (`TargetX/TargetY` when `UseTargetPosition`; otherwise position is marked invalid until the first movement packet or a REST fallback). REST fallback (base character GET, which reads the temporal registry) covers reads before first movement on a map. This meets FR-2.5's bar ("no worse than today's async projection") with margin.
 
+**VERIFY-AT-EXECUTION resolved (Task 1, design §10.4):** `StatusEventMapChangedBody` (`services/atlas-channel/atlas.com/channel/kafka/message/character/kafka.go:131-143`, drifted from the design's cited 114-127) carries `UseTargetPosition bool`, `TargetX int16`, `TargetY int16` exactly as designed. Confirmed disposition on `UseTargetPosition=false`: **position-invalidate + core-invalidate** (Task 5), so the next attack's core refetch carries fresh REST X/Y — reflect-before-first-move falls back to exactly today's source.
+
 Secondary gap (accepted): atlas-maps' forced-return on LOGOUT persists a different map with no MAP_CHANGED (`atlas-maps/.../consumer/character/consumer.go:110-127`, Set at `:125`) — irrelevant here because the snapshot is evicted with the session at logout.
 
 ---
@@ -111,8 +115,8 @@ Consumer side (atlas-channel `kafka/consumer/asset/consumer.go`, defs `kafka/mes
 In place: asset CREATED/UPDATED/ACCEPTED (full replace by AssetId), QUANTITY_CHANGED (absolute), MOVED (set slot absolute), DELETED (remove). Invalidate inventory component: RELEASED, EXPIRED, compartment DELETED/CAPACITY_CHANGED, MERGE_COMPLETE/SORT_COMPLETE (bulk rearrangements — invalidation is simpler and safer than replaying N MOVEDs against a possibly-mid-sequence registry).
 
 Noted risks, with dispositions:
-- **Reservations are registry-only in atlas-inventory and not reflected in asset rows.** VERIFY-AT-EXECUTION: whether `GET /characters/{id}/inventory` nets out reservations. Expected: it does not — in which case the snapshot ignoring RESERVED/RESERVATION_CANCELLED is exact REST parity (the attack planner sees the same quantities it sees today).
-- **`RequestReserve` returns inside its request loop** (`processor.go:767`) — only the first batched reserve is processed or emitted. UNVERIFIED whether any caller batches >1. Not snapshot-relevant (reservations excluded), but flagged for the owner as an atlas-inventory bug candidate.
+- **Reservations are registry-only in atlas-inventory and not reflected in asset rows.** **VERIFY-AT-EXECUTION resolved (Task 1, design §10.2):** `GET /characters/{id}/inventory` does **not** net out reservations. Read path traced: `resource.go:31` `handleGetInventory` → `inventory/processor.go:60` `GetByCharacterId` → `inventory/processor.go:64-70` `ByCharacterIdProvider` (folds `compartment.Processor.ByCharacterIdProvider`) → `compartment/processor.go:215-221` `ByCharacterIdProvider` → `compartment/processor.go:243-249` `DecorateAsset` → `p.assetProcessor.GetByCompartmentId(m.Id())` (raw asset rows straight from the DB). No call to `GetReservationRegistry()`/`GetReservedQuantity` exists anywhere on this path — the only call sites are the mutation paths (Move/Merge/Drop/RequestReserve/CancelReservation at `compartment/processor.go:559,641,642,750,831,835,912`). Confirmed: the snapshot ignoring RESERVED/RESERVATION_CANCELLED is exact REST parity (the attack planner sees the same quantities it sees today) — no change to Task 7.
+- **`RequestReserve` loop — STALE, already fixed.** **VERIFY-AT-EXECUTION resolved (Task 1, design §10.5):** as landed, `compartment/processor.go:810-853` iterates over *all* `reservationRequests` (loop body `:822-844`), calling `GetReservedQuantity`, `AddReservation`, and `mb.Put(...ReservedEventStatusProvider...)` per request. An in-code comment at `processor.go:839-840` reads: "Emit per request. Before task-205 this was `return mb.Put(...)`, which silently dropped every request after the first." The single-request bug this row previously described was fixed by task-205 (already on `main`) before task-122's execution began. There is no live bug to escalate; see context.md "Task 1 findings" for the correction to the "Escalations for owner" section.
 - CONSUME emits no RESERVATION_CANCELLED (quantity events are the release signal) — irrelevant to the snapshot for the same reason.
 
 ---
@@ -156,7 +160,9 @@ Immutable game data per tenant version. No events exist or are needed. Verdict: 
 
 ## 8. Monster (reflect X/Y + template id; MP Eater Mp/MaxMp)
 
-Deferred to task-120's live-monster mirror (design §5.1-5.3 in that task's worktree) with one in-scope extension (task-122 PRD FR-5.1): `LiveEntry` gains `X, Y int16`, seeded from the monster CREATED handler's already-fetched model, updated synchronously from atlas-channel's local monster-movement fold (the same local-write pattern as §2), backfilled by the REST fallback `Put`. Monster event coverage itself was audited by task-120 and is not re-audited here. VERIFY-AT-EXECUTION: reconcile with task-120's landed shape (it was unimplemented when this audit was written).
+Deferred to task-120's live-monster mirror (design §5.1-5.3 in that task's worktree) with one in-scope extension (task-122 PRD FR-5.1): `LiveEntry` gains `X, Y int16`, seeded from the monster CREATED handler's already-fetched model, updated synchronously from atlas-channel's local monster-movement fold (the same local-write pattern as §2), backfilled by the REST fallback `Put`. Monster event coverage itself was audited by task-120 and is not re-audited here.
+
+**VERIFY-AT-EXECUTION resolved (Task 1, FR-5.2):** task-120 is landed on this branch's base (`services/atlas-channel/atlas.com/channel/monster/live_mirror.go`, `metrics.go`, `information/cache.go` all present). API reconciled against the Interfaces block — see context.md "Task 1 findings" for the full name-by-name confirmation and the one delta found (no `/api/metrics` promhttp mount exists in `main.go` as landed).
 
 ---
 
@@ -169,6 +175,6 @@ Deferred to task-120's live-monster mirror (design §5.1-5.3 in that task's work
 | 3 | Skill bulk-delete on char-DELETED, no events | Neutralized by session-scoped eviction | accepted (no change) |
 | 4 | Effective stats: no event | Component stays on REST (existing memoization) | FR-2.4(b) |
 | 5 | atlas-buffs restart drops buffs silently | Self-expiry via event `ExpiresAt` bounds divergence; documented | accepted residual |
-| 6 | Reservations invisible in asset rows | Snapshot ignores reservation events = REST parity (VERIFY-AT-EXECUTION) | accepted (parity) |
+| 6 | Reservations invisible in asset rows | Snapshot ignores reservation events = REST parity — **confirmed Task 1**: inventory REST read path never queries the reservation registry | accepted (parity) |
 | 7 | atlas-maps forced-return map on LOGOUT, no MAP_CHANGED | Snapshot evicted at logout | accepted (no change) |
-| 8 | `RequestReserve` processes only first batched request | Not snapshot-relevant; flagged to owner as candidate atlas-inventory bug | escalate separately |
+| 8 | `RequestReserve` processed only first batched request | **Superseded — Task 1**: fixed by task-205 before task-122 execution; loop now processes/emits every batched request (`compartment/processor.go:822-844`). No live bug; nothing to escalate. | resolved (stale finding) |

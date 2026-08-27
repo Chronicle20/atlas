@@ -9,6 +9,8 @@ package ring
 // failure must not turn into an error, since PRD FR-5's channel-side
 // fallback is downstream of this.
 import (
+	"atlas-cashshop/cashshop/inventory/asset"
+	"atlas-cashshop/character"
 	"context"
 	"fmt"
 	"net/http"
@@ -19,9 +21,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/gorm"
-
-	"atlas-cashshop/cashshop/inventory/asset"
-	"atlas-cashshop/character"
 
 	databasetest "github.com/Chronicle20/atlas/libs/atlas-database/databasetest"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"

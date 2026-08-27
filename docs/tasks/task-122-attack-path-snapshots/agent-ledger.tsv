@@ -69,3 +69,7 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-27T19:21:13Z	agent	Task 12 fix 1	task-implementer	sonnet	-	-	-	-	DONE	79a36cbe2	-	-	-	-
 2026-08-27T19:21:13Z	handoff	after Task 13	-	-	-	-	-	-	-	-	-	-	-	90000
 2026-08-27T19:24:35Z	agent	Gate 11	verify.sh	-	-	-	-	-	FAIL	79a36cbe2	-	-	-	-
+2026-08-27T21:50:38Z	agent	Task 15 (teleport snapshot fix)	task-implementer	sonnet	-	-	-	-	dispatched	-	-	-	-	-
+2026-08-27T21:52:15Z	agent	Task 15 (teleport snapshot fix)	task-implementer	sonnet	-	-	-	-	DONE	1c5431d40	-	-	-	-
+2026-08-27T21:52:15Z	agent	Task 15 (teleport snapshot fix)	task-reviewer	sonnet	-	-	-	-	dispatched	1c5431d40	-	-	-	-
+2026-08-27T21:54:22Z	agent	Task 15 (teleport snapshot fix)	task-reviewer	sonnet	-	-	-	-	complete	1c5431d40	APPROVED	no	-	-

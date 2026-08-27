@@ -40,7 +40,7 @@ type Processor interface {
 	// from minting a second free note.
 	MarkGiftNoteSent(accountId uint32, characterId uint32, cashId int64) error
 	RequestGiftPurchase(characterId uint32, transactionId uuid.UUID, serialNumber uint32, recipientCharacterId uint32, senderName string, message string) error
-	RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error
+	RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, option uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error
 	RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, option uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error
 	RequestEquipSlotIncrease(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32) error
 }
@@ -137,13 +137,16 @@ func resolvePurchaseCurrency(isPoints bool, currency uint32) uint32 {
 	return currency
 }
 
-// resolveRingPurchaseCurrency maps the ring arms' (BUY_COUPLE/BUY_FRIENDSHIP)
-// confirmation-dialog "option" bitmask onto the wallet currency code.
+// resolveOptionCurrency maps a BUY arm's confirmation-dialog "option"
+// bitmask onto the wallet currency code. It is shared by every arm whose
+// wire body carries option -- the ring arms (BUY_COUPLE/BUY_FRIENDSHIP) and
+// the package arm (BUY_PACKAGE) -- since the mapping is a property of
+// dwOption itself, not of any one arm.
 //
-// On GMS >= 83, CCashShop::OnBuyFriendship/OnBuyCouple do not put
-// isPoints/currency on the wire; the user's payment-method selection lives
-// entirely in option, constrained by CConfirmPurchaseDlg::Confirm to exactly
-// one of 1 = NX Credit, 2 = Maple Point, 4 = NX Prepaid
+// On GMS >= 83, CCashShop::OnBuyFriendship/OnBuyCouple/OnBuyPackage do not
+// put isPoints/currency on the wire; the user's payment-method selection
+// lives entirely in option, constrained by CConfirmPurchaseDlg::Confirm to
+// exactly one of 1 = NX Credit, 2 = Maple Point, 4 = NX Prepaid
 // (docs/tasks/task-240-cash-shop-stub-operations/derivation.md §6, D4a).
 // Those map to wallet.Model.Balance's currency codes 1 (credit), 2 (points),
 // 3 (prepaid) respectively.
@@ -151,7 +154,7 @@ func resolvePurchaseCurrency(isPoints bool, currency uint32) uint32 {
 // option == 0 falls back to resolvePurchaseCurrency(isPoints, currency): a
 // legacy GMS < 83 wire carries a real currency int, and JMS carries neither
 // signal and keeps today's prepaid behavior.
-func resolveRingPurchaseCurrency(option uint32, isPoints bool, currency uint32) uint32 {
+func resolveOptionCurrency(option uint32, isPoints bool, currency uint32) uint32 {
 	const (
 		walletCurrencyCredit  = uint32(1)
 		walletCurrencyPoints  = uint32(2)
@@ -313,17 +316,19 @@ func (p *ProcessorImpl) RequestGiftPurchase(characterId uint32, transactionId uu
 // non-zero means gift (BUY_OTHER_PACKAGE, mode 31/33) -- the same single
 // command shape task 16 built on the atlas-cashshop side.
 //
-// isPoints/currency go through resolvePurchaseCurrency exactly like
-// RequestPurchase above -- the same helper, the same call shape. For
-// BUY_PACKAGE (handleBuyPackage), that resolution is load-bearing: it maps
-// the wire's pointType bool onto a currency code. For BUY_OTHER_PACKAGE
-// (handleBuyOtherPackage), the caller always passes isPoints=false with an
-// already-final currency (walletCurrencyPrepaid, 3), so
-// resolvePurchaseCurrency's only branch (isPoints && currency==0) can never
-// fire and the call is an inert passthrough -- see handleBuyOtherPackage's
-// own doc comment for why that caller does not depend on this resolution.
-func (p *ProcessorImpl) RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error {
-	currency = resolvePurchaseCurrency(isPoints, currency)
+// currency is resolved through resolveOptionCurrency (option, then
+// isPoints/currency fallback), the same helper the ring arms use -- see that
+// function's doc comment for why option is load-bearing here. For
+// BUY_PACKAGE (handleBuyPackage), option carries the confirmation dialog's
+// actual payment-method selection. For BUY_OTHER_PACKAGE
+// (handleBuyOtherPackage), the caller always passes option=0, isPoints=false
+// with an already-final currency (walletCurrencyPrepaid, 3), so
+// resolveOptionCurrency falls through to resolvePurchaseCurrency and its
+// only branch (isPoints && currency==0) can never fire -- the call is an
+// inert passthrough. See handleBuyOtherPackage's own doc comment for why
+// that caller does not depend on this resolution.
+func (p *ProcessorImpl) RequestPackagePurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, option uint32, serialNumber uint32, recipientCharacterId uint32, senderName string) error {
+	currency = resolveOptionCurrency(option, isPoints, currency)
 	p.l.Debugf("Character [%d] purchasing package serial [%d] with currency [%d] for recipient [%d]. Transaction [%s].", characterId, serialNumber, currency, recipientCharacterId, transactionId)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestPackagePurchaseCommandProvider(characterId, transactionId, currency, serialNumber, recipientCharacterId, senderName))
 }
@@ -334,12 +339,12 @@ func (p *ProcessorImpl) RequestPackagePurchase(characterId uint32, transactionId
 // (once per click, mirroring RequestGiftPurchase/RequestPackagePurchase's
 // idempotency pattern) so a Kafka redelivery replays this id and is
 // rejected by atlas-cashshop's ring ledger while a genuine second click
-// gets a fresh one. currency is resolved through resolveRingPurchaseCurrency
+// gets a fresh one. currency is resolved through resolveOptionCurrency
 // (option, then isPoints/currency fallback) rather than the plain
-// resolvePurchaseCurrency every other BUY arm uses -- see that function's
-// doc comment for why the ring arms need option.
+// resolvePurchaseCurrency every other non-option BUY arm uses -- see that
+// function's doc comment for why the ring arms need option.
 func (p *ProcessorImpl) RequestRingPurchase(characterId uint32, transactionId uuid.UUID, isPoints bool, currency uint32, option uint32, serialNumber uint32, partnerCharacterId uint32, senderName string, message string, ringType string) error {
-	currency = resolveRingPurchaseCurrency(option, isPoints, currency)
+	currency = resolveOptionCurrency(option, isPoints, currency)
 	p.l.Debugf("Character [%d] purchasing ring serial [%d] with currency [%d] for partner [%d]. Transaction [%s].", characterId, serialNumber, currency, partnerCharacterId, transactionId)
 	return producer.ProviderImpl(p.l)(p.ctx)(cashshop.EnvCommandTopic)(RequestRingPurchaseCommandProvider(characterId, transactionId, currency, serialNumber, partnerCharacterId, senderName, message, ringType))
 }

@@ -92,15 +92,15 @@ func announceRingFailure(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 // resolved partner/sender records lets this handler detect that condition.
 //
 // option (ShopOperationBuyCouple.Option/ShopOperationBuyFriendship.Option) IS
-// read here, unlike handleBuyPackage's D4a treatment (derivation.md §6,
-// cash_shop_package.go): on GMS >= 83 these two arms carry the user's
-// confirmation-dialog payment-method choice (1 = NX Credit, 2 = Maple Point,
-// 4 = NX Prepaid) only in option -- isPoints/currency stay false/0 on that
-// wire shape, so without option every ring purchase silently debited the
-// prepaid bucket regardless of what the player selected
-// (bug-ring-purchase-wrong-currency.md). option is threaded straight through
-// to cashshop.Processor.RequestRingPurchase, which resolves the final wallet
-// currency via resolveRingPurchaseCurrency.
+// read here, the same D4a treatment handleBuyPackage now applies
+// (derivation.md §6, cash_shop_package.go): on GMS >= 83 these two arms
+// carry the user's confirmation-dialog payment-method choice (1 = NX
+// Credit, 2 = Maple Point, 4 = NX Prepaid) only in option -- isPoints/
+// currency stay false/0 on that wire shape, so without option every ring
+// purchase silently debited the prepaid bucket regardless of what the
+// player selected (bug-ring-purchase-wrong-currency.md). option is threaded
+// straight through to cashshop.Processor.RequestRingPurchase, which
+// resolves the final wallet currency via resolveOptionCurrency.
 func handleRingPurchase(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, ringType string, isPoints bool, currency uint32, option uint32, spw string, birthday uint32, serialNumber uint32, name string, message string) {
 	return func(s session.Model, ringType string, isPoints bool, currency uint32, option uint32, spw string, birthday uint32, serialNumber uint32, name string, message string) {
 		if cErr := verifySecondaryCredential(l, ctx)(s, spw, birthday); cErr != nil {

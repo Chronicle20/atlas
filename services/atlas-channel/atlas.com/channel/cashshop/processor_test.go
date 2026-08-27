@@ -59,14 +59,15 @@ func TestResolvePurchaseCurrency(t *testing.T) {
 	}
 }
 
-// TestResolveRingPurchaseCurrency verifies the option->currency mapping applied
-// by RequestRingPurchase for the ring arms (BUY_COUPLE/BUY_FRIENDSHIP). On GMS
-// >= 83, isPoints/currency never arrive on the wire for these two arms -- the
+// TestResolveOptionCurrency verifies the option->currency mapping shared by
+// every BUY arm whose wire body carries option -- the ring arms
+// (BUY_COUPLE/BUY_FRIENDSHIP) and the package arm (BUY_PACKAGE). On GMS >=
+// 83, isPoints/currency never arrive on the wire for these arms -- the
 // user's confirmation-dialog payment-method choice lives entirely in option
 // (docs/tasks/task-240-cash-shop-stub-operations/derivation.md §6, D4a):
 // 1 = NX Credit, 2 = Maple Point, 4 = NX Prepaid, mapping onto wallet.Model's
 // currency codes 1/2/3. option == 0 falls back to resolvePurchaseCurrency.
-func TestResolveRingPurchaseCurrency(t *testing.T) {
+func TestResolveOptionCurrency(t *testing.T) {
 	tests := []struct {
 		name         string
 		option       uint32
@@ -84,9 +85,9 @@ func TestResolveRingPurchaseCurrency(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			resolved := resolveRingPurchaseCurrency(tc.option, tc.isPoints, tc.currency)
+			resolved := resolveOptionCurrency(tc.option, tc.isPoints, tc.currency)
 			if resolved != tc.wantCurrency {
-				t.Fatalf("resolveRingPurchaseCurrency(%d, %v, %d) = %d, want %d", tc.option, tc.isPoints, tc.currency, resolved, tc.wantCurrency)
+				t.Fatalf("resolveOptionCurrency(%d, %v, %d) = %d, want %d", tc.option, tc.isPoints, tc.currency, resolved, tc.wantCurrency)
 			}
 		})
 	}

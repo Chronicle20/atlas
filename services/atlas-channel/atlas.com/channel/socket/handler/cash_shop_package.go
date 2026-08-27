@@ -66,25 +66,21 @@ func announceGiftPackageFailure(l logrus.FieldLogger, ctx context.Context, wp wr
 // FAILED answer here for a producer error (only logged), matching
 // handleGift's RequestGiftPurchase call.
 //
-// ShopOperationBuyPackage's body carries pointType bool + a legacy option
-// uint32 + serialNumber (shop_operation_buy_package.go:61) -- there is no
-// currency int on the wire. RequestPackagePurchase resolves the outgoing
-// currency the same way the generic BUY arm's RequestPurchase does:
-// resolvePurchaseCurrency(isPoints, currency) (cashshop/processor.go), so
-// this call passes sp.PointType() as isPoints and the literal 0 as currency
-// -- there is no raw currency to forward. option carries the user's actual
-// payment-method choice (derivation.md D4a, §6: 1 = NX Credit, 2 = Maple
-// Point, 4 = NX Prepaid) and is currently unconsumed server-side --
-// pointType alone collapses NX Credit and NX Prepaid into the same bit, so
-// passing sp.Option() through here (in place of the literal 0) would change
-// the resolved currency's meaning underneath resolvePurchaseCurrency's
-// non-zero passthrough without validating it first; that mapping is
-// unvalidated and out of scope for this task. option is deliberately NOT
-// read here for that reason -- it is not unused/spare, only not yet wired.
+// ShopOperationBuyPackage's body carries pointType bool + option uint32 +
+// serialNumber (shop_operation_buy_package.go:61) -- there is no currency
+// int on the wire. RequestPackagePurchase resolves the outgoing currency
+// through resolveOptionCurrency(option, isPoints, currency)
+// (cashshop/processor.go), the same helper the ring arms use: option
+// carries the confirmation dialog's actual payment-method choice
+// (derivation.md D4a, §6: 1 = NX Credit, 2 = Maple Point, 4 = NX Prepaid),
+// and pointType alone would collapse NX Credit and NX Prepaid onto the same
+// bit. This call passes sp.Option() so that mapping is applied, with
+// sp.PointType() and the literal 0 currency as the legacy fallback for a
+// wire that carries neither signal.
 func handleBuyPackage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, sp *cashsb.ShopOperationBuyPackage) {
 	return func(s session.Model, sp *cashsb.ShopOperationBuyPackage) {
 		transactionId := uuid.New()
-		if err := cashshop.NewProcessor(l, ctx).RequestPackagePurchase(s.CharacterId(), transactionId, sp.PointType(), 0, sp.SerialNumber(), 0, ""); err != nil {
+		if err := cashshop.NewProcessor(l, ctx).RequestPackagePurchase(s.CharacterId(), transactionId, sp.PointType(), 0, sp.Option(), sp.SerialNumber(), 0, ""); err != nil {
 			l.WithError(err).Errorf("Unable to request package purchase for character [%d] serial number [%d].", s.CharacterId(), sp.SerialNumber())
 		}
 	}
@@ -107,12 +103,12 @@ func handleBuyPackage(l logrus.FieldLogger, ctx context.Context, wp writer.Produ
 // uses PIC-based verification (credentialMatches ignores it), which is the
 // only mode this wire body was ever observed under (GMS v95.0).
 //
-// The commodity's currency is NOT resolved through resolvePurchaseCurrency
-// at all: D3a's closing paragraph pins CCashShop::OnGiftPackage to NX
-// Prepaid only (dwOption = 4 is never encoded), so there is no
-// isPoints/option signal on this wire to resolve in the first place --
-// walletCurrencyPrepaid (3) is passed straight through as a hardcoded
-// constant, not a value resolvePurchaseCurrency computed.
+// The commodity's currency is NOT resolved through resolveOptionCurrency at
+// all: D3a's closing paragraph pins CCashShop::OnGiftPackage to NX Prepaid
+// only (dwOption = 4 is never encoded), so there is no isPoints/option
+// signal on this wire to resolve in the first place -- walletCurrencyPrepaid
+// (3) is passed straight through as a hardcoded constant, with option=0 and
+// isPoints=false so resolveOptionCurrency's fallback is an inert passthrough.
 func handleBuyOtherPackage(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, sp *cashsb.ShopOperationBuyOtherPackage) {
 	return func(s session.Model, sp *cashsb.ShopOperationBuyOtherPackage) {
 		if cErr := verifySecondaryCredential(l, ctx)(s, sp.SPW(), 0); cErr != nil {
@@ -149,7 +145,7 @@ func handleBuyOtherPackage(l logrus.FieldLogger, ctx context.Context, wp writer.
 		}
 
 		transactionId := uuid.New()
-		if err := cashshop.NewProcessor(l, ctx).RequestPackagePurchase(s.CharacterId(), transactionId, false, walletCurrencyPrepaid, sp.SerialNumber(), recipient.Id(), sender.Name()); err != nil {
+		if err := cashshop.NewProcessor(l, ctx).RequestPackagePurchase(s.CharacterId(), transactionId, false, walletCurrencyPrepaid, 0, sp.SerialNumber(), recipient.Id(), sender.Name()); err != nil {
 			l.WithError(err).Errorf("Unable to request package gift purchase for character [%d] recipient [%d].", s.CharacterId(), recipient.Id())
 		}
 	}

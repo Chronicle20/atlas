@@ -149,7 +149,12 @@
   direction: clientbound
   opcode: 27
   fname: CLogin::OnCheckSPWResult
-  provenance: csv-import
+  packet: login/clientbound/LoginPicResult
+  provenance: manual
+  note: >-
+    task-146 Task 3: primary fname CLogin::OnCheckSPWResult is absent from the
+    committed IDA export and re-harvesting it is forbidden (playbook §10);
+    linked directly to its codec via packet: instead of a report.
 - op: INVENTORY_OPERATION
   direction: clientbound
   opcode: 28
@@ -2409,7 +2414,13 @@
   direction: serverbound
   opcode: 43
   fname: CWvsContext::SendMigrateToShopRequest
-  provenance: csv-import
+  packet: cash/serverbound/CashShopEntry
+  provenance: manual
+  note: >-
+    task-146 Task 3: primary fname CWvsContext::SendMigrateToShopRequest is
+    absent from the committed IDA export and re-harvesting it is forbidden
+    (playbook §10); linked directly to its codec via packet: instead of a
+    report.
 - op: MOVE_PLAYER
   direction: serverbound
   opcode: 44
@@ -2579,7 +2590,12 @@
     - CTrunkDlg::SendGetMoneyRequest
     - CTrunkDlg::SendPutMoneyRequest
     - CTrunkDlg::SendGetItemRequest
-  provenance: csv-import
+  packet: storage/serverbound/StorageOperation
+  provenance: manual
+  note: >-
+    task-146 Task 3: primary fname CTrunkDlg::SetRet is absent from the
+    committed IDA export and re-harvesting it is forbidden (playbook §10);
+    linked directly to its codec via packet: instead of a report.
 - op: HIRED_MERCHANT_REQUEST
   direction: serverbound
   opcode: 68
@@ -3029,7 +3045,13 @@
   direction: serverbound
   opcode: 140
   fname: CUIStatusBar::SendGroupMessage
-  provenance: csv-import
+  packet: chat/serverbound/ChatMulti
+  provenance: manual
+  note: >-
+    task-146 Task 3: primary fname CUIStatusBar::SendGroupMessage is absent
+    from the committed IDA export and re-harvesting it is forbidden
+    (playbook §10); linked directly to its codec via packet: instead of a
+    report.
 - op: WHISPER
   direction: serverbound
   opcode: 141

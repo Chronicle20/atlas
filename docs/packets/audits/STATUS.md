@@ -572,7 +572,7 @@ Tool: `5de1e5130d5ab98dd1ed9198b7b320d8425c50b38203bb32e4019f8855921732`
 | NPC_SHOP | CShopDlg::SendBuyRequest; CShopDlg::SendPacket; CShopDlg::SendRechargeRequest; CShopDlg::SendSellRequest; CShopDlg::SetRet; sub_5B4B82; sub_5B7422; sub_5B7693; sub_6744D9; sub_6D68A3 |  | 0x030 | ❌ | 0x03C | ❌ | 0x03C | ❌ | 0x03B | ❌ | 0x03D | ❌ | 0x03D | ❌ | 0x040 | ✅ | 0x043 | ✅ | 0x042 | ✅ | 0x035 | ❌ |
 | MOVING_SHOOT_ATTACK_PREPARE | CUserLocal::TryDoingSmoothingMovingShootAttackPrepare |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x033 | ❌ |  | ⬜ |
 | MOB_BANISH_PLAYER | CUserLocal::SendBanMapByMobRequest | character/serverbound/CharacterMobBanishPlayer (T1) |  | ⬜ | 0x034 | 🟡ᶠ | 0x037 | 🟡ᶠ | 0x036 | 🟡ᶠ | 0x038 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03E | ❌ | 0x03D | ✅ | 0x030 | ✅ |
-| STORAGE | CTrunkDlg::SendGetItemRequest; CTrunkDlg::SendGetMoneyRequest; CTrunkDlg::SendPacket; CTrunkDlg::SendPutItemRequest; CTrunkDlg::SendPutMoneyRequest; CTrunkDlg::SendSortItemRequest; CTrunkDlg::SetRet; sub_57E987; sub_5832D1; sub_603341; sub_73B5B6 |  | 0x034 | ❌ | 0x03D | ❌ | 0x03D | ❌ | 0x03C | ❌ | 0x03E | ❌ | 0x03E | ❌ | 0x041 | ❌ | 0x044 | ❌ | 0x043 | ❌ | 0x036 | ❌ |
+| STORAGE | CTrunkDlg::SendGetItemRequest; CTrunkDlg::SendGetMoneyRequest; CTrunkDlg::SendPacket; CTrunkDlg::SendPutItemRequest; CTrunkDlg::SendPutMoneyRequest; CTrunkDlg::SendSortItemRequest; CTrunkDlg::SetRet; sub_57E987; sub_5832D1; sub_603341; sub_73B5B6 |  | 0x034 | ❌ | 0x03D | ❌ | 0x03D | ❌ | 0x03C | ❌ | 0x03E | ❌ | 0x03E | ❌ | 0x041 | ❌ | 0x044 | ❌ | 0x043 | ✅ | 0x036 | ❌ |
 | USE_DEATHITEM | CUserLocal::RequestUpgradeTombEffect | character/serverbound/UseDeathItem (T1) |  | ⬜ |  | ⬜ | 0x034 | ✅ | 0x033 | ✅ | 0x035 | ✅ | 0x035 | ✅ | 0x038 | ✅ | 0x03B | ✅ | 0x03A | ✅ | 0x02D | ✅ |
 | USE_ITEMEFFECT | CWvsContext::SendActiveEffectItemChange |  |  | ⬜ |  | ⬜ |  | ⬜ |  | ⬜ | 0x034 | ❌ | 0x034 | ❌ | 0x037 | ❌ | 0x03A | ❌ | 0x039 | ❌ | 0x02C | ❌ |
 | MONSTER_BOOK_COVER | CUserLocal::SetMonsterBookCover | character/serverbound/monsterbook/CharacterCover (T1) |  | ⬜ | 0x035 | ✅ | 0x038 | ✅ | 0x037 | ✅ | 0x039 | ✅ | 0x039 | ✅ | 0x03C | ✅ | 0x03F | ❌ | 0x03E | ✅ | 0x031 | ✅ |
@@ -1071,7 +1071,7 @@ Tool: `5de1e5130d5ab98dd1ed9198b7b320d8425c50b38203bb32e4019f8855921732`
 | v84 | 451 | 0 | 0 | 326 | 250 | 0 | 58.0% |
 | v87 | 488 | 0 | 0 | 348 | 191 | 0 | 58.4% |
 | v92 | 65 | 0 | 147 | 674 | 141 | 0 | 7.3% |
-| v95 | 514 | 0 | 0 | 406 | 107 | 0 | 55.9% |
+| v95 | 515 | 0 | 0 | 405 | 107 | 0 | 56.0% |
 | JMS185 | 451 | 0 | 0 | 378 | 198 | 0 | 54.4% |
 
 ## Conflicts

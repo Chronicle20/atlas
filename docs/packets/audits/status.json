@@ -7382,8 +7382,7 @@
           "opcode": 68
         },
         "gms_v95": {
-          "state": "incomplete",
-          "note": "no audit report",
+          "state": "verified",
           "opcode": 67
         },
         "jms_v185": {

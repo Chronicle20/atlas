@@ -130,7 +130,10 @@ func TestHandleGeneralCapturesLine(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	ctx := testTenantContext(t)
-	alice := character.NewBuilder().SetId(1).SetName("Alice").SetWorldId(0).Build()
+	alice, err := character.NewBuilder().SetId(1).SetName("Alice").SetWorldId(0).Build()
+	if err != nil {
+		t.Fatalf("failed to build test character: %v", err)
+	}
 	cp := &stubCharacterProcessor{byId: map[uint32]character.Model{1: alice}}
 	p := NewProcessorWithClients(l, ctx, cp)
 	f := field.NewBuilder(0, 1, 100000000).Build()
@@ -234,7 +237,10 @@ func TestSlashCommandShortCircuitsBeforeCapture(t *testing.T) {
 
 	l, _ := test.NewNullLogger()
 	ctx := testTenantContext(t)
-	alice := character.NewBuilder().SetId(1).SetName("Alice").SetWorldId(0).Build()
+	alice, err := character.NewBuilder().SetId(1).SetName("Alice").SetWorldId(0).Build()
+	if err != nil {
+		t.Fatalf("failed to build test character: %v", err)
+	}
 	cp := &stubCharacterProcessor{byId: map[uint32]character.Model{1: alice}}
 	p := NewProcessorWithClients(l, ctx, cp)
 	f := field.NewBuilder(0, 1, 100000000).Build()

@@ -78,13 +78,16 @@ func applierTestContext(t *testing.T) context.Context {
 func seedApplierCharacter(t *testing.T, db *gorm.DB, name string, worldId world.Id) uint32 {
 	t.Helper()
 	l, ctx := applierTestLogger(t), applierTestContext(t)
-	input := character.NewEmptyBuilder().
+	input, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(worldId).
 		SetName(name).
 		SetLevel(1).
 		SetExperience(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character %s: %v", name, err)
+	}
 	c, err := character.NewProcessor(l, ctx, db).
 		Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {

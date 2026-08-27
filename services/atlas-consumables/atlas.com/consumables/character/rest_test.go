@@ -45,6 +45,13 @@ func TestTransformRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
+	// 275 is above the byte ceiling on purpose: it fails both against the
+	// hardcoded stub this task removes and against any narrowing reintroduced
+	// inside the accessor. Narrowing belongs at the wire, and this service has
+	// no wire path.
+	if got.SpawnPoint() != 275 {
+		t.Errorf("SpawnPoint() = %d, want 275", got.SpawnPoint())
+	}
 	if !reflect.DeepEqual(got, m) {
 		t.Errorf("round trip lost data:\n got %+v\nwant %+v", got, m)
 	}

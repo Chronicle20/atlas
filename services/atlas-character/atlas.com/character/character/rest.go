@@ -154,7 +154,7 @@ func Extract(m RestModel) (Model, error) {
 		SetSp(m.Sp).
 		SetSpawnPoint(m.SpawnPoint).
 		SetGm(derefOrZero(m.Gm)).
-		Build(), nil
+		Build()
 }
 
 func derefOrZero(v *int) int {

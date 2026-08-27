@@ -160,5 +160,8 @@ func Extract(rm RestModel) (Model, error) {
 		spawnPoint:         rm.SpawnPoint,
 		gm:                 rm.Gm,
 		meso:               rm.Meso,
+		x:                  rm.X,
+		y:                  rm.Y,
+		stance:             rm.Stance,
 	}, nil
 }

@@ -20,7 +20,7 @@ func TestProcessor_SpawnExpiredPast(t *testing.T) {
 	cp := &cm.Processor{}
 	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
-			return character.NewBuilder().SetX(50).SetY(95).Build(), nil
+			return character.NewBuilder().SetId(7000000).SetX(50).SetY(95).Build()
 		}
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
@@ -57,7 +57,7 @@ func TestProcessor_SpawnExpiredFuture(t *testing.T) {
 	cp := &cm.Processor{}
 	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
-			return character.NewBuilder().SetX(50).SetY(95).Build(), nil
+			return character.NewBuilder().SetId(7000000).SetX(50).SetY(95).Build()
 		}
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)
@@ -94,7 +94,7 @@ func TestProcessor_SpawnExpiredZero(t *testing.T) {
 	cp := &cm.Processor{}
 	cp.GetByIdFn = func(m ...model.Decorator[character.Model]) func(uint32) (character.Model, error) {
 		return func(uint32) (character.Model, error) {
-			return character.NewBuilder().SetX(50).SetY(95).Build(), nil
+			return character.NewBuilder().SetId(7000000).SetX(50).SetY(95).Build()
 		}
 	}
 	mfh := position.NewModel(99, 0, 95, 100, 95)

@@ -40,7 +40,7 @@ func TestTransformRoundTrip(t *testing.T) {
 		Face:               20000,
 		Ap:                 5,
 		Sp:                 "0,0,0,0",
-		SpawnPoint:         0,
+		SpawnPoint:         11,
 		Gm:                 0,
 		X:                  100,
 		Y:                  200,
@@ -50,6 +50,13 @@ func TestTransformRoundTrip(t *testing.T) {
 	m, err := Extract(rm)
 	if err != nil {
 		t.Fatalf("Extract failed: %v", err)
+	}
+
+	// A zero-valued spawnPoint fixture passes against the hardcoded stub this
+	// task removes, and the DeepEqual round-trip below cannot see a dropped
+	// field. Assert the decoded value against the RestModel literal directly.
+	if got := m.SpawnPoint(); got != 11 {
+		t.Errorf("SpawnPoint() = %d, want 11", got)
 	}
 
 	rm2, err := Transform(m)

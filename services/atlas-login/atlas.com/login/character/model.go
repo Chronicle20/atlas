@@ -219,8 +219,8 @@ func (m Model) GachaponExperience() uint32 {
 	return m.gachaponExperience
 }
 
-func (m Model) SpawnPoint() byte {
-	return 0
+func (m Model) SpawnPoint() uint32 {
+	return m.spawnPoint
 }
 
 func (m Model) Equipment() equipment.Model {
@@ -239,7 +239,7 @@ func (m Model) AccountId() uint32 {
 	return m.accountId
 }
 
-func (m Model) SetInventory(i inventory.Model) Model {
+func (m Model) SetInventory(i inventory.Model) (Model, error) {
 	eq := equipment.NewModel()
 	ec := compartment.NewBuilder(i.Equipable().Id(), m.Id(), i.Equipable().Type(), i.Equipable().Capacity())
 	for _, a := range i.Equipable().Assets() {

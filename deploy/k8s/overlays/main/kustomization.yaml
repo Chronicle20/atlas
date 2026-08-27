@@ -245,27 +245,27 @@ images:
   - name: ghcr.io/chronicle20/atlas-buffs/atlas-buffs
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-cashshop/atlas-cashshop
-    newTag: main-60d9992
+    newTag: main-051617c
   - name: ghcr.io/chronicle20/atlas-chairs/atlas-chairs
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: main-60d9992
+    newTag: main-051617c
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
-    newTag: main-b284bce
+    newTag: main-051617c
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
     newTag: main-845a5c9
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
-    newTag: main-b284bce
+    newTag: main-051617c
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-doors/atlas-doors
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-dragons/atlas-dragons
-    newTag: main-b284bce
+    newTag: main-051617c
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops
@@ -295,7 +295,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-kites/atlas-kites
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-login/atlas-login
-    newTag: main-60d9992
+    newTag: main-051617c
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
@@ -305,7 +305,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
-    newTag: main-b284bce
+    newTag: main-051617c
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-mini-games/atlas-mini-games
@@ -325,7 +325,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops
-    newTag: main-b284bce
+    newTag: main-051617c
   - name: ghcr.io/chronicle20/atlas-parcel/atlas-parcel
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-parties/atlas-parties
@@ -333,7 +333,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-pets/atlas-pets
-    newTag: main-b284bce
+    newTag: main-051617c
   - name: ghcr.io/chronicle20/atlas-player-npcs/atlas-player-npcs
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
@@ -343,7 +343,7 @@ images:
   - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
     newTag: main-32d55cb
   - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
-    newTag: main-b284bce
+    newTag: main-051617c
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-rankings/atlas-rankings
@@ -375,6 +375,6 @@ images:
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
     newTag: main-b284bce
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
-    newTag: main-99fcbfe
+    newTag: main-032c489
 commonLabels:
   atlas.env: main

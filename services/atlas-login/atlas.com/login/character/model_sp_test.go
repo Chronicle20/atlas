@@ -13,7 +13,10 @@ import (
 // 2218 — panicking with "index out of range [9] with length 1" and aborting the
 // character-list encode before anything is sent.
 func TestSpParsesSpaceSeparatedTable(t *testing.T) {
-	m := NewBuilder().SetJobId(2218).SetSp("0, 0, 0, 0, 0, 0, 0, 0, 0, 0").Build()
+	m, err := NewBuilder().SetId(1).SetJobId(2218).SetSp("0, 0, 0, 0, 0, 0, 0, 0, 0, 0").Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	if got := len(m.Sp()); got != 10 {
 		t.Fatalf("Sp() length: got %d, want 10", got)
@@ -21,7 +24,10 @@ func TestSpParsesSpaceSeparatedTable(t *testing.T) {
 }
 
 func TestSpParsesValuesInOrder(t *testing.T) {
-	m := NewBuilder().SetJobId(2218).SetSp("1, 2, 3, 4, 5, 6, 7, 8, 9, 10").Build()
+	m, err := NewBuilder().SetId(1).SetJobId(2218).SetSp("1, 2, 3, 4, 5, 6, 7, 8, 9, 10").Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	want := []uint16{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	got := m.Sp()
@@ -49,7 +55,10 @@ func TestRemainingSpPerSkillBook(t *testing.T) {
 		{2214, 6},  // Evan 5th growth — book 5
 		{2218, 10}, // Evan 9th growth — book 9
 	} {
-		m := NewBuilder().SetJobId(c.jobId).SetSp(sp).Build()
+		m, err := NewBuilder().SetId(1).SetJobId(c.jobId).SetSp(sp).Build()
+		if err != nil {
+			t.Fatalf("Build failed: %v", err)
+		}
 		if got := m.RemainingSp(); got != c.want {
 			t.Errorf("job %d: RemainingSp() = %d, want %d", c.jobId, got, c.want)
 		}
@@ -60,7 +69,10 @@ func TestRemainingSpPerSkillBook(t *testing.T) {
 // encode path, where a panic drops the whole packet.
 func TestRemainingSpShortTableDoesNotPanic(t *testing.T) {
 	for _, sp := range []string{"", "0", "5", "1, 2, 3"} {
-		m := NewBuilder().SetJobId(2218).SetSp(sp).Build()
+		m, err := NewBuilder().SetId(1).SetJobId(2218).SetSp(sp).Build()
+		if err != nil {
+			t.Fatalf("Build failed: %v", err)
+		}
 		if got := m.RemainingSp(); got != 0 {
 			t.Errorf("sp %q: RemainingSp() = %d, want 0", sp, got)
 		}

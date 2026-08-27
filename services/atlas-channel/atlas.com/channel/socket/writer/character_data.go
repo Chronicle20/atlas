@@ -45,7 +45,7 @@ func BuildCharacterData(l logrus.FieldLogger, ctx context.Context, c character.M
 			Fame:       c.Fame(),
 			GachaExp:   c.GachaponExperience(),
 			MapId:      uint32(mapId),
-			SpawnPoint: c.SpawnPoint(),
+			SpawnPoint: byte(c.SpawnPoint()),
 		},
 		BuddyCapacity: bl.Capacity(),
 		Meso:          c.Meso(),

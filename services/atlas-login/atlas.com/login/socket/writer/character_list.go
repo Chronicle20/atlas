@@ -53,7 +53,7 @@ func toCharacterListEntry(l logrus.FieldLogger, ctx context.Context, c character
 		c.Hp(), c.MaxHp(), c.Mp(), c.MaxMp(),
 		c.Ap(), c.HasSPTable(), c.RemainingSp(),
 		c.Experience(), c.Fame(), c.GachaponExperience(),
-		uint32(mapId), c.SpawnPoint(),
+		uint32(mapId), byte(c.SpawnPoint()),
 	)
 
 	avatar := socketmodel.NewFromCharacter(c, false)

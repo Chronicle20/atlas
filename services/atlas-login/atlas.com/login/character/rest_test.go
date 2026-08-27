@@ -9,12 +9,13 @@ import (
 
 // TestTransformRoundTrip asserts Extract(Transform(m)) reproduces every
 // field Extract actually populates. Extract's builder chain never calls
-// SetSpawnPoint, SetPets, SetEquipment, SetInventory, SetRank, SetRankMove,
-// SetJobRank, or SetJobRankMove, so those Model fields do not survive a
-// round trip regardless of what Transform emits; see
+// SetPets, SetEquipment, SetInventory, SetRank, SetRankMove, SetJobRank,
+// or SetJobRankMove, so those Model fields do not survive a round trip
+// regardless of what Transform emits; see
 // docs/tasks/task-263-backend-guideline-conformance/handwork-notes.md.
+// spawnPoint DOES survive as of task-272 and is asserted below.
 func TestTransformRoundTrip(t *testing.T) {
-	m := NewBuilder().
+	m, err := NewBuilder().
 		SetId(1).
 		SetAccountId(2).
 		SetWorldId(world.Id(3)).
@@ -40,8 +41,12 @@ func TestTransformRoundTrip(t *testing.T) {
 		SetFace(22).
 		SetAp(23).
 		SetSp("1,2,3").
+		SetSpawnPoint(25).
 		SetGm(24).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	rm, err := Transform(m)
 	if err != nil {
@@ -51,6 +56,13 @@ func TestTransformRoundTrip(t *testing.T) {
 	got, err := Extract(rm)
 	if err != nil {
 		t.Fatalf("Extract failed: %v", err)
+	}
+
+	if got.SpawnPoint() != 25 {
+		t.Errorf("SpawnPoint() = %d, want 25", got.SpawnPoint())
+	}
+	if got.spawnPoint != m.spawnPoint {
+		t.Errorf("spawnPoint mismatch. Expected %v, got %v", m.spawnPoint, got.spawnPoint)
 	}
 
 	if got.id != m.id {

@@ -114,7 +114,7 @@ func TestCondition_Evaluate(t *testing.T) {
 		Build()
 
 	// Create a test character with inventory
-	character := character.NewBuilder().
+	character, err := character.NewBuilder().
 		SetId(123).
 		SetJobId(100).
 		SetMeso(10000).
@@ -130,6 +130,9 @@ func TestCondition_Evaluate(t *testing.T) {
 		SetLuck(15).
 		SetInventory(inventoryModel).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 
 	// MapCondition resolves the character's map via an atlas-maps location
 	// lookup; stub it to report map 2000 for character 123.
@@ -997,7 +1000,7 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 		Build()
 
 	// Create a test character
-	character := character.NewBuilder().
+	character, err := character.NewBuilder().
 		SetId(123).
 		SetJobId(100).
 		SetMeso(10000).
@@ -1009,6 +1012,9 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 		SetVanquisherKills(7).
 		SetInventory(inventoryModel).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 
 	// Create test quest models
 	questStarted := quest.NewBuilder().
@@ -1320,10 +1326,13 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 
 func TestValidationContext(t *testing.T) {
 	// Create test character
-	character := character.NewBuilder().
+	character, err := character.NewBuilder().
 		SetId(123).
 		SetLevel(25).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 
 	// Create test quest models
 	quest1 := quest.NewBuilder().
@@ -1430,10 +1439,13 @@ func TestValidationContext(t *testing.T) {
 
 func TestValidationContextBuilder(t *testing.T) {
 	// Create test character
-	character := character.NewBuilder().
+	character, err := character.NewBuilder().
 		SetId(123).
 		SetLevel(25).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 
 	// Create test quest models
 	quest1 := quest.NewBuilder().
@@ -1581,11 +1593,14 @@ func TestCondition_Evaluate_WithGuild(t *testing.T) {
 	guildModel, _ := guild.Extract(guildRestModel)
 
 	// Create a test character with guild
-	character := character.NewBuilder().
+	character, err := character.NewBuilder().
 		SetId(123).
 		SetInventory(inventoryModel).
 		SetGuild(guildModel).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 
 	tests := []struct {
 		name         string
@@ -1673,11 +1688,14 @@ func TestCondition_Evaluate_WithGuild(t *testing.T) {
 // TestCondition_ErrorHandling tests error scenarios for missing/invalid data
 func TestCondition_ErrorHandling(t *testing.T) {
 	// Create minimal test character for error cases
-	character := character.NewBuilder().
+	character, err := character.NewBuilder().
 		SetId(123).
 		SetLevel(25).
 		SetJobId(100).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 
 	tests := []struct {
 		name         string
@@ -1924,10 +1942,13 @@ func TestConditionBuilder_ErrorHandling(t *testing.T) {
 // TestConditionWithContext_ErrorHandling tests error scenarios with validation context
 func TestConditionWithContext_ErrorHandling(t *testing.T) {
 	// Create minimal test character
-	character := character.NewBuilder().
+	character, err := character.NewBuilder().
 		SetId(123).
 		SetLevel(25).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 
 	// Create empty validation context (no quests, no marriage data)
 	emptyContext := NewValidationContext(character)
@@ -2036,10 +2057,13 @@ func TestConditionWithContext_ErrorHandling(t *testing.T) {
 // TestValidationContext_ErrorHandling tests error scenarios with validation context creation
 func TestValidationContext_ErrorHandling(t *testing.T) {
 	// Create minimal test character
-	character := character.NewBuilder().
+	character, err := character.NewBuilder().
 		SetId(123).
 		SetLevel(25).
 		Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 
 	t.Run("Empty validation context", func(t *testing.T) {
 		ctx := NewValidationContext(character)
@@ -2079,7 +2103,10 @@ func TestValidationContext_ErrorHandling(t *testing.T) {
 // it via the configured operator/value, mirroring the QuestStatusCondition
 // pattern but with a REST-driven processor instead of a pre-loaded map.
 func TestCondition_MonsterBookCount(t *testing.T) {
-	char := character.NewBuilder().SetId(123).SetLevel(25).Build()
+	char, err := character.NewBuilder().SetId(123).SetLevel(25).Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 
 	tests := []struct {
 		name         string
@@ -2236,7 +2263,10 @@ func TestCondition_MonsterBookCount(t *testing.T) {
 // of one of the listed template ids must have closeness >= the configured
 // value. The condition reads spawned-pet detail from the ValidationContext.
 func TestEvaluate_PetTameness(t *testing.T) {
-	char := character.NewBuilder().SetId(123).Build()
+	char, err := character.NewBuilder().SetId(123).Build()
+	if err != nil {
+		t.Fatalf("failed to build character: %v", err)
+	}
 	ctx := NewValidationContextBuilder(char).
 		SetSpawnedPets([]SpawnedPet{{TemplateId: 5000029, Closeness: 1700}}).
 		Build()

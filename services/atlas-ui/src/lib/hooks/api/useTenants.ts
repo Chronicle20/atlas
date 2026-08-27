@@ -22,6 +22,7 @@ import {
   type TenantConfig,
   type TenantConfigAttributes,
 } from "@/services/api/tenants.service";
+import { socketKeys } from "@/lib/hooks/api/socketKeys";
 import type { ServiceOptions, QueryOptions } from "@/lib/api/query-params";
 
 // Query keys for consistent cache management
@@ -266,6 +267,10 @@ export function useCreateTenantConfiguration(): UseMutationResult<
       // Invalidate and refetch configuration lists
       queryClient.invalidateQueries({ queryKey: tenantKeys.configLists() });
 
+      // Invalidate the Packet Matrix's sparse tenant read - this hook writes
+      // the whole attribute document, socket included
+      queryClient.invalidateQueries({ queryKey: socketKeys.all });
+
       // Add the new configuration to the cache
       queryClient.setQueryData(
         tenantKeys.configDetail(newConfig.id),
@@ -330,6 +335,10 @@ export function useUpdateTenantConfiguration(): UseMutationResult<
         queryKey: tenantKeys.configDetail(variables.tenant.id),
       });
       queryClient.invalidateQueries({ queryKey: tenantKeys.configLists() });
+
+      // Invalidate the Packet Matrix's sparse tenant read - the update may
+      // have touched socket
+      queryClient.invalidateQueries({ queryKey: socketKeys.all });
     },
   });
 }

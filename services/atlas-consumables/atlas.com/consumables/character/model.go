@@ -210,8 +210,8 @@ func (m Model) GachaponExperience() uint32 {
 	return m.gachaponExperience
 }
 
-func (m Model) SpawnPoint() byte {
-	return 0
+func (m Model) SpawnPoint() uint32 {
+	return m.spawnPoint
 }
 
 func (m Model) Equipment() equipment.Model {
@@ -289,9 +289,23 @@ func (m Model) SetInventory(i inventory.Model) Model {
 		SetEtc(i.ETC()).
 		SetCash(i.Cash())
 
-	return Clone(m).SetInventory(ib.Build()).SetEquipment(eq).Build()
+	nm, err := Clone(m).SetInventory(ib.Build()).SetEquipment(eq).Build()
+	if err != nil {
+		// Unreachable in practice: Clone(m) carries forward m.id, which the
+		// Builder already validated as non-zero when m was constructed. This
+		// method's signature is fixed by its use as a model.Decorator[Model],
+		// so any failure degrades to a no-op rather than propagating.
+		return m
+	}
+	return nm
 }
 
 func (m Model) SetPets(ms []pet.Model) Model {
-	return Clone(m).SetPets(ms).Build()
+	nm, err := Clone(m).SetPets(ms).Build()
+	if err != nil {
+		// Unreachable in practice: Clone(m) carries forward m.id, which the
+		// Builder already validated as non-zero when m was constructed.
+		return m
+	}
+	return nm
 }

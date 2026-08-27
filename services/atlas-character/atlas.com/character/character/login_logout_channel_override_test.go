@@ -59,7 +59,10 @@ func TestLogin_OverridesStaleChannelId(t *testing.T) {
 	t.Setenv("MAPS_SERVICE_URL", srv.URL+"/")
 
 	// Seed a character so processor.ByIdProvider resolves.
-	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("LoginCh").SetLevel(1).Build()
+	input, err := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("LoginCh").SetLevel(1).Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
@@ -113,7 +116,10 @@ func TestLogout_OverridesStaleChannelId(t *testing.T) {
 	defer srv.Close()
 	t.Setenv("MAPS_SERVICE_URL", srv.URL+"/")
 
-	input := character.NewEmptyBuilder().SetAccountId(1001).SetWorldId(0).SetName("LogoutCh").SetLevel(1).Build()
+	input, err := character.NewEmptyBuilder().SetAccountId(1001).SetWorldId(0).SetName("LogoutCh").SetLevel(1).Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {

@@ -90,7 +90,7 @@ func TestTransformRoundTrip(t *testing.T) {
 // x/y/stance, and only the setters were missing, so a Model with non-zero
 // positional values could not be originated through the sanctioned path.
 func TestTransform_PositionalFieldsFromBuilder(t *testing.T) {
-	m := NewBuilder().
+	m, err := NewBuilder().
 		SetId(1).
 		SetSp("0").
 		SetSpawnPoint(11).
@@ -98,6 +98,9 @@ func TestTransform_PositionalFieldsFromBuilder(t *testing.T) {
 		SetY(12).
 		SetStance(14).
 		Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 
 	rm, err := Transform(m)
 	if err != nil {

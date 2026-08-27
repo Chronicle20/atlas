@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type {
+  LookDimension,
   MapleLifeClassDraft,
   MapleLifeLookDraft,
   PreviewPicks,
@@ -12,6 +13,7 @@ import {
   combinationCount,
   composeHair,
 } from "@/components/features/characters/maple-life/mapleLifeLoadout";
+import type { CharacterLoadout } from "@/services/api/characterRender.service";
 
 function draft(
   overrides: Partial<MapleLifeClassDraft> = {},
@@ -125,50 +127,81 @@ describe("buildMapleLifeLoadout", () => {
   });
 });
 
+interface VariantDimensionCase {
+  dimension: LookDimension;
+  field: keyof CharacterLoadout;
+  look: MapleLifeLookDraft;
+  picks: PreviewPicks;
+  candidateId: number;
+  expectedValue: number;
+}
+
+const VARIANT_DIMENSION_CASES: VariantDimensionCase[] = [
+  {
+    dimension: "faces",
+    field: "face",
+    look: look(),
+    picks: picks(),
+    candidateId: 21000,
+    expectedValue: 21000,
+  },
+  {
+    dimension: "hairs",
+    field: "hair",
+    look: look({ hairColors: [0, 7] }),
+    picks: picks({ hairColorIdx: 1 }),
+    candidateId: 30020,
+    expectedValue: composeHair(30020, 7),
+  },
+  {
+    dimension: "hairColors",
+    field: "hair",
+    look: look({ hairs: [30030] }),
+    picks: picks({ hairIdx: 0 }),
+    candidateId: 3,
+    expectedValue: composeHair(30030, 3),
+  },
+  {
+    dimension: "skinColors",
+    field: "skin",
+    look: look(),
+    picks: picks(),
+    candidateId: 2,
+    expectedValue: 2,
+  },
+];
+
 describe("buildMapleLifeVariantLoadout", () => {
-  it("faces substitutes the candidate", () => {
-    const loadout = buildMapleLifeVariantLoadout(
-      draft(),
-      look(),
-      picks(),
-      "faces",
-      21000,
-    );
-    expect(loadout.face).toBe(21000);
-  });
+  it.each(VARIANT_DIMENSION_CASES)(
+    "$dimension substitutes the candidate on $field and preserves every other field from buildMapleLifeLoadout",
+    ({
+      dimension,
+      field,
+      look: lookDraft,
+      picks: pickSet,
+      candidateId,
+      expectedValue,
+    }) => {
+      const classDraft = draft();
+      const base = buildMapleLifeLoadout(classDraft, lookDraft, pickSet);
+      const variant = buildMapleLifeVariantLoadout(
+        classDraft,
+        lookDraft,
+        pickSet,
+        dimension,
+        candidateId,
+      );
 
-  it("hairs composes the candidate with the picked colour", () => {
-    const loadout = buildMapleLifeVariantLoadout(
-      draft(),
-      look({ hairColors: [0, 7] }),
-      picks({ hairColorIdx: 1 }),
-      "hairs",
-      30020,
-    );
-    expect(loadout.hair).toBe(30027);
-  });
+      expect(variant[field]).toBe(expectedValue);
 
-  it("hairColors composes the picked style with the candidate", () => {
-    const loadout = buildMapleLifeVariantLoadout(
-      draft(),
-      look({ hairs: [30030] }),
-      picks({ hairIdx: 0 }),
-      "hairColors",
-      3,
-    );
-    expect(loadout.hair).toBe(30033);
-  });
-
-  it("skinColors substitutes the candidate", () => {
-    const loadout = buildMapleLifeVariantLoadout(
-      draft(),
-      look(),
-      picks(),
-      "skinColors",
-      2,
-    );
-    expect(loadout.skin).toBe(2);
-  });
+      const otherFields = (
+        Object.keys(base) as (keyof CharacterLoadout)[]
+      ).filter((key) => key !== field);
+      for (const key of otherFields) {
+        expect(variant[key]).toEqual(base[key]);
+      }
+    },
+  );
 });
 
 describe("combinationCount", () => {

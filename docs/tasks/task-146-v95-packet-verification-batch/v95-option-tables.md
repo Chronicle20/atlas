@@ -230,3 +230,99 @@ None. Every candidate byte match was either attributed to a named,
 IDA-decompiled send site or excluded with a stated reason (unrelated UI
 constant, StringPool string-id constant, or non-code byte sequence). No arm
 was guessed.
+
+---
+
+# Task 9 — `messageType` for `NPCContinueConversationHandle` (0x41) / `NPCConversation` (0x16B)
+
+Same IDB (`ecc757f4`, `GMS_v95.0_U_DEVM.exe`, `server_health` confirms
+`idb_path` ends `IDBs_v9\GMS\v95_0\GMS_v95.0_U_DEVM.exe.i64`, `imagebase
+0x400000`). Unlike Tasks 7/8, this dispatch is a genuine server-parsed
+`switch (nMsgType)` inside the receiving handler, not a client-constructed
+mode byte — so it was read directly from `decompile 0x6de0f0`
+(`CScriptMan::OnScriptMessage`, the `fname` both template entries already
+carry) rather than reconstructed via `find_bytes`.
+
+## Method
+
+`decompile 0x6de0f0` on `CScriptMan::OnScriptMessage` (GMS v95). The function
+reads `Decode1` (speakerTypeId), `Decode4` (speakerTemplateId), `Decode1`
+(`nMsgType`), `Decode1` (param), then `switch (nMsgType)`, dispatching each
+arm to a named `CScriptMan::OnXxx` handler:
+
+```
+case 0:  CScriptMan::OnSay
+case 1:  CScriptMan::OnSayImage
+case 2:  CScriptMan::OnAskYesNo(..., 0, 0)
+case 3:  CScriptMan::OnAskText
+case 4:  CScriptMan::OnAskNumber
+case 5:  CScriptMan::OnAskMenu
+case 6:  CScriptMan::OnAskQuiz       -> thunk to CWvsContext::OnInitialQuiz @0x9ffad0
+case 7:  CScriptMan::OnAskSpeedQuiz  -> thunk to CWvsContext::OnInitialSpeedQuiz @0x9f1d50
+case 8:  CScriptMan::OnAskAvatar          @0x6dcff0
+case 9:  CScriptMan::OnAskMembershopAvatar
+case 10: CScriptMan::OnAskPet             @0x6dd6e0
+case 11: CScriptMan::OnAskPetAll          @0x6ddbe0
+case 13: CScriptMan::OnAskYesNo(..., 0, 1)  (same helper as case 2, quest-flavor arg=1)
+case 14: CScriptMan::OnAskBoxText         @0x6dc9c0
+case 15: CScriptMan::OnAskSlideMenu       @0x6dbe50
+default (incl. 12): m_bProcMessage=0, no dispatch — no case 12 arm exists
+```
+
+`OnAskQuiz`/`OnAskSpeedQuiz` are one-line thunks (`decompile 0x6dbaf0` /
+`0x6dbb10`) that immediately call `CWvsContext::OnInitialQuiz@0x9ffad0` /
+`OnInitialSpeedQuiz@0x9f1d50` — the exact addresses the pre-existing
+`gms_v95` fixture markers in `conversation_test.go` cite for `AskQuiz`/
+`AskSpeedQuiz`, confirming the case-6/case-7 arms are those detail structs.
+All thirteen other `gms_v95 ida=` markers listed in the brief (`AskAvatar
+0x6dcff0`, `AskBoxText 0x6dc9c0`, `AskMenu 0x6dce00` — cross-checked via the
+switch's callee refs list which resolves `OnAskMenu` to `0x6dce00` —,
+`AskNumber 0x6dcc00`, `AskPetAll 0x6ddbe0`, `AskPet 0x6dd6e0`, `AskSlideMenu
+0x6dbe50`, `AskText 0x6dc790`, `AskYesNo 0x6dc5a0`, `Say 0x6dc110`, `SayImage
+0x6dc310`) match the switch's own callee addresses exactly. No detail struct
+is fixtured against an arm other than the one that selects it.
+
+## v95 `messageType` table
+
+| value | Atlas key | dispatch target |
+|---|---|---|
+| 0 | SAY | `CScriptMan::OnSay` @0x6dc110 |
+| 1 | SAY_IMAGE | `CScriptMan::OnSayImage` @0x6dc310 |
+| 2 | ASK_YES_NO | `CScriptMan::OnAskYesNo` @0x6dc5a0 |
+| 3 | ASK_TEXT | `CScriptMan::OnAskText` @0x6dc790 |
+| 4 | ASK_NUMBER | `CScriptMan::OnAskNumber` @0x6dcc00 |
+| 5 | ASK_MENU | `CScriptMan::OnAskMenu` @0x6dce00 |
+| 6 | ASK_QUIZ | `CScriptMan::OnAskQuiz` (thunk) -> `CWvsContext::OnInitialQuiz` @0x9ffad0 |
+| 7 | ASK_SPEED_QUIZ | `CScriptMan::OnAskSpeedQuiz` (thunk) -> `CWvsContext::OnInitialSpeedQuiz` @0x9f1d50 |
+| 8 | ASK_AVATAR | `CScriptMan::OnAskAvatar` @0x6dcff0 |
+| 9 | ASK_MEMBER_SHOP_AVATAR | `CScriptMan::OnAskMembershopAvatar` |
+| 10 | ASK_PET | `CScriptMan::OnAskPet` @0x6dd6e0 |
+| 11 | ASK_PET_ALL | `CScriptMan::OnAskPetAll` @0x6ddbe0 |
+| (12) | *(no arm — falls to default)* | n/a |
+| 13 | ASK_YES_NO_QUEST | `CScriptMan::OnAskYesNo` @0x6dc5a0 (quest-flag arg = 1) |
+| 14 | ASK_BOX_TEXT | `CScriptMan::OnAskBoxText` @0x6dc9c0 |
+| 15 | ASK_SLIDE_MENU | `CScriptMan::OnAskSlideMenu` @0x6dbe50 |
+
+## Findings vs. v83
+
+`template_gms_83_1.json`'s 14-key `messageType` block has **no `SAY_IMAGE`
+key** and values `SAY=0, ASK_YES_NO=1, ASK_TEXT=2, ASK_NUMBER=3, ASK_MENU=4,
+ASK_QUIZ=5, ASK_SPEED_QUIZ=6, ASK_AVATAR=7, ASK_MEMBER_SHOP_AVATAR=8,
+ASK_PET=9, ASK_PET_ALL=10, ASK_YES_NO_QUEST=12, ASK_BOX_TEXT=13,
+ASK_SLIDE_MENU=14` (gap at value 11, skipped exactly like v95's gap at 12).
+
+v95 inserts a real `SAY_IMAGE` arm (case 1, `CScriptMan::OnSayImage`
+@0x6dc110 area) that v83's key set lacks, shifting every subsequent value up
+by exactly one relative to v83 while preserving the same internal gap
+(v83 skips value 11; v95 skips value 12 — one position later, consistent
+with the uniform +1 shift). Per brief instruction ("add" an arm v83 lacks),
+`SAY_IMAGE: 1` is added to both v95 `options.messageType` blocks. All 14 v83
+keys are otherwise present in v95, each with a v83-value+1 wire value — none
+happens to equal its v83 value, so there is no accidental-copy risk to flag.
+
+No arm was guessed: every key/value pair above traces to a `switch` case in
+`decompile 0x6de0f0` or a thunk one hop from it.
+
+## Unresolved (Task 9)
+
+None.

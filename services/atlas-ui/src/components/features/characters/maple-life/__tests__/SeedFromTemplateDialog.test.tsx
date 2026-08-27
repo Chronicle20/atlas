@@ -79,7 +79,7 @@ function setup(
   onSeed = vi.fn(),
   onOpenChange = vi.fn(),
 ) {
-  useTemplates.mockReturnValue({ data });
+  useTemplates.mockReturnValue({ data, isLoading: false, isError: false });
   render(
     <SeedFromTemplateDialog
       open
@@ -94,6 +94,51 @@ function setup(
 describe("SeedFromTemplateDialog", () => {
   beforeEach(() => {
     useTemplates.mockReset();
+  });
+
+  it("an in-flight fetch shows a loading state, not the empty-state copy", () => {
+    useTemplates.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    });
+    render(
+      <SeedFromTemplateDialog
+        open
+        onOpenChange={vi.fn()}
+        seedFrom={seedFrom}
+        onSeed={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByText(
+        /No template of this region and version carries a Maple Life block/,
+      ),
+    ).not.toBeInTheDocument();
+  });
+
+  it("a failed fetch surfaces an error, not the empty-state copy", () => {
+    useTemplates.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    });
+    render(
+      <SeedFromTemplateDialog
+        open
+        onOpenChange={vi.fn()}
+        seedFrom={seedFrom}
+        onSeed={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/Failed to load templates/i)).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        /No template of this region and version carries a Maple Life block/,
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it("zero matches states it plainly and offers no action", () => {

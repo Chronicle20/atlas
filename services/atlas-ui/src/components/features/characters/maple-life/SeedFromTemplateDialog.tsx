@@ -7,6 +7,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import { useTemplates } from "@/lib/hooks/api/useTemplates";
 import type { MapleLifeConfig } from "@/types/models/template";
 import { isEmptyConfig } from "./mapleLifeEditorState";
@@ -46,7 +48,7 @@ export function SeedFromTemplateDialog({
   seedFrom,
   onSeed,
 }: SeedFromTemplateDialogProps) {
-  const { data: templates } = useTemplates();
+  const { data: templates, isLoading, isError } = useTemplates();
 
   const candidates = useMemo<SeedCandidate[]>(() => {
     return (templates ?? [])
@@ -99,44 +101,60 @@ export function SeedFromTemplateDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {eligible.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            No template of this region and version carries a Maple Life block.
-          </p>
-        )}
+        {isLoading ? (
+          <div className="space-y-2 py-2">
+            <Skeleton className="h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        ) : isError ? (
+          <ErrorDisplay error="Failed to load templates." />
+        ) : (
+          <>
+            {eligible.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No template of this region and version carries a Maple Life
+                block.
+              </p>
+            )}
 
-        {singleEligible && (
-          <Button onClick={() => handleSeed(singleEligible)}>
-            Seed from {singleEligible.id}
-          </Button>
-        )}
+            {singleEligible && (
+              <Button onClick={() => handleSeed(singleEligible)}>
+                Seed from {singleEligible.id}
+              </Button>
+            )}
 
-        {eligible.length > 1 && (
-          <ul className="flex flex-col gap-2">
-            {eligible.map((candidate) => (
-              <li key={candidate.id}>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => handleSeed(candidate)}
-                >
-                  {candidate.id} — {candidate.region} v{candidate.majorVersion}.
-                  {candidate.minorVersion} — {candidate.classCount} classes ·{" "}
-                  {candidate.lookCount} looks
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
+            {eligible.length > 1 && (
+              <ul className="flex flex-col gap-2">
+                {eligible.map((candidate) => (
+                  <li key={candidate.id}>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => handleSeed(candidate)}
+                    >
+                      {candidate.id} — {candidate.region} v
+                      {candidate.majorVersion}.{candidate.minorVersion} —{" "}
+                      {candidate.classCount} classes · {candidate.lookCount}{" "}
+                      looks
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
 
-        {ineligible.length > 0 && (
-          <ul className="flex flex-col gap-1">
-            {ineligible.map((candidate) => (
-              <li key={candidate.id} className="text-sm text-muted-foreground">
-                {candidate.id} — no Maple Life block on this template
-              </li>
-            ))}
-          </ul>
+            {ineligible.length > 0 && (
+              <ul className="flex flex-col gap-1">
+                {ineligible.map((candidate) => (
+                  <li
+                    key={candidate.id}
+                    className="text-sm text-muted-foreground"
+                  >
+                    {candidate.id} — no Maple Life block on this template
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </DialogContent>
     </Dialog>

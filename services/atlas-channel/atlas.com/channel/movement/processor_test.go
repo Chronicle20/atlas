@@ -241,8 +241,15 @@ func TestForCharacter_NoEntryNoCreate(t *testing.T) {
 	if err := p.ForCharacter(f, 9002, model.Movement{StartX: 1, StartY: 2}); err != nil {
 		t.Fatalf("ForCharacter: %v", err)
 	}
-	// 9002 was never Viewed/populated — the feed must not create an entry.
-	// View creates, so check via ComposedIfValid which does not.
+	// 9002 was never Viewed/populated. View returns an existing entry
+	// unchanged rather than resetting it: if the feed wrongly created an
+	// entry it would carry the fed position with PosValid true; if the feed
+	// correctly created nothing, View creates a fresh empty entry here with
+	// PosValid false.
+	got := snapshot.GetRegistry().View(tm, 9002)
+	if got.PosValid {
+		t.Fatalf("position feed must never create snapshot entries, got %+v", got)
+	}
 	if _, ok := snapshot.GetRegistry().ComposedIfValid(tm, 9002); ok {
 		t.Fatalf("position feed must never create snapshot entries")
 	}

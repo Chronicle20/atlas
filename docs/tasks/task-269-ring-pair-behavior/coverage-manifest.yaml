@@ -24,7 +24,7 @@
 #     computes `decompile_sha256` over the canonical JSON of the cited IDA
 #     EXPORT's function entry (`file.Functions[fname]`) — the decompiled
 #     source recorded by IDA, not Atlas's Go encoder output.
-#   - tools/packet-audit/internal/matrix/evidence_input.go:29-30 calls
+#   - tools/packet-audit/internal/matrix/evidence_input.go:30 calls
 #     `evidence.FunctionHash(exp, r.IDA.Function)` against the on-disk export
 #     and compares it to the pinned `decompile_sha256` — again, export vs.
 #     export, never touching libs/atlas-packet's encoder code.

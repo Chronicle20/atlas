@@ -5,6 +5,7 @@ import (
 	"atlas-channel/battleship"
 	channel3 "atlas-channel/channel"
 	"atlas-channel/character/combo"
+	snapshot "atlas-channel/character/snapshot"
 	"atlas-channel/configuration/projection"
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/asset"
@@ -174,6 +175,7 @@ import (
 	socket2 "github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -305,6 +307,7 @@ func main() {
 		account.GetRegistry().EvictTenant(tid)
 		monsterDomain.GetStatusMirror().EvictTenant(tid)
 		monsterDomain.GetLiveMirror().EvictTenant(tid)
+		snapshot.GetRegistry().EvictTenant(tid)
 		monsterDomain.GetAutoAggroGate().EvictTenant(tid)
 		monsterinfo.EvictTenant(tid)
 		if inbox := monsterDomain.GetNextSkillInbox(); inbox != nil {
@@ -361,6 +364,7 @@ func main() {
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(restserver.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		AddRouteInitializer(restserver.MountHandler("/metrics", promhttp.Handler())).
 		AddRouteInitializer(restserver.MountReadiness("/readyz", rt.Ready)).
 		Run()
 

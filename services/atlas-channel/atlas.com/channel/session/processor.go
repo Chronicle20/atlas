@@ -4,6 +4,7 @@ import (
 	"atlas-channel/account/session"
 	"atlas-channel/battleship"
 	"atlas-channel/character/combo"
+	"atlas-channel/character/snapshot"
 	session2 "atlas-channel/kafka/message/session"
 	"atlas-channel/position"
 	"atlas-channel/socket/writer"
@@ -408,6 +409,11 @@ func (p *ProcessorImpl) DestroyById(sessionId uuid.UUID) {
 func (p *ProcessorImpl) Destroy(s Model) error {
 	p.l.WithField("session", s.SessionId().String()).Debugf("Destroying session.")
 	getRegistry().Remove(p.t.Id(), s.SessionId())
+
+	// The session-scoped character snapshot dies with the session (task-122
+	// FR-3.2): logout, disconnect, and channel change all funnel here.
+	// CharacterId can be 0 for pre-login sessions; Evict no-ops then.
+	snapshot.GetRegistry().Evict(p.t, s.CharacterId())
 
 	// Battleship ride state cannot outlive the session: logout, disconnect,
 	// timeout, and channel change all funnel here (FR-5.1).

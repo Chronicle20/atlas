@@ -1,18 +1,49 @@
 package movement
 
 import (
+	"atlas-channel/character/snapshot"
+	movement2 "atlas-channel/kafka/message/movement"
 	"atlas-channel/monster"
 	"atlas-channel/monster/information"
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
+
+// drainMovementCommand blocks until ForCharacter's async producer goroutine
+// has emitted its command for characterId, so the test returns only after
+// that goroutine has finished. sharedCapture (testmain_test.go) is a single
+// package-wide singleton, so a still-in-flight goroutine from one test can
+// otherwise race a later test's sharedCapture.Reset()/Messages() calls
+// (documented on TestTeleportCharacter_EmitsFhZeroOnWire).
+func drainMovementCommand(t *testing.T, characterId uint32) {
+	t.Helper()
+	deadline := time.Now().Add(time.Second)
+	for {
+		for _, msg := range sharedCapture.Messages(movement2.EnvCommandCharacterMovement) {
+			var cmd movement2.Command[any]
+			if err := json.Unmarshal(msg.Value, &cmd); err != nil {
+				continue
+			}
+			if cmd.ObjectId == uint64(characterId) {
+				return
+			}
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for movement command for character [%d]", characterId)
+		}
+		time.Sleep(time.Millisecond)
+	}
+}
 
 func TestNarrowSkill_HappyPath(t *testing.T) {
 	id, lvl, ok := narrowSkillBytes(100, 2)
@@ -179,4 +210,41 @@ func TestResolveLiveMonster_FallbackError_Propagates(t *testing.T) {
 	if _, ok := monster.GetLiveMirror().Lookup(tm, 8003); ok {
 		t.Fatalf("failed fallback must not backfill the mirror")
 	}
+}
+
+func TestForCharacter_FeedsSnapshotPositionSynchronously(t *testing.T) {
+	p, tm := newMovementTestProcessor(t)
+	f := movementTestField()
+
+	// Entry must exist (events/feeds never create entries): simulate the
+	// lazy populate by creating the entry, then validate core via backfill
+	// so the position lands on a live entry.
+	v := snapshot.GetRegistry().View(tm, 9001)
+	_ = v
+
+	mv := model.Movement{StartX: 10, StartY: 20}
+	// No elements: the fold returns the start position.
+	if err := p.ForCharacter(f, 9001, mv); err != nil {
+		t.Fatalf("ForCharacter: %v", err)
+	}
+
+	got := snapshot.GetRegistry().View(tm, 9001)
+	if !got.PosValid || got.PosX != 10 || got.PosY != 20 {
+		t.Fatalf("position must be fed synchronously before ForCharacter returns: %+v", got)
+	}
+	drainMovementCommand(t, 9001)
+}
+
+func TestForCharacter_NoEntryNoCreate(t *testing.T) {
+	p, tm := newMovementTestProcessor(t)
+	f := movementTestField()
+	if err := p.ForCharacter(f, 9002, model.Movement{StartX: 1, StartY: 2}); err != nil {
+		t.Fatalf("ForCharacter: %v", err)
+	}
+	// 9002 was never Viewed/populated — the feed must not create an entry.
+	// View creates, so check via ComposedIfValid which does not.
+	if _, ok := snapshot.GetRegistry().ComposedIfValid(tm, 9002); ok {
+		t.Fatalf("position feed must never create snapshot entries")
+	}
+	drainMovementCommand(t, 9002)
 }

@@ -1,6 +1,7 @@
 package movement
 
 import (
+	"atlas-channel/character/snapshot"
 	dmap "atlas-channel/data/map"
 	"atlas-channel/data/npc"
 	movement2 "atlas-channel/kafka/message/movement"
@@ -70,6 +71,16 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 var _ Processor = (*ProcessorImpl)(nil)
 
 func (p *ProcessorImpl) ForCharacter(f field.Model, characterId uint32, movement model.Movement) error {
+	// Fold the packet to its final position synchronously and feed the
+	// character snapshot BEFORE anything else observes this packet: this is
+	// the same fold the Kafka command carries, minus the Kafka->Redis->REST
+	// round-trip — the freshest position this pod can know (task-122
+	// FR-2.5). Update-only: characters without a snapshot entry no-op.
+	ms, foldErr := model2.Fold(model2.FixedProvider(movement.Elements), summaryProvider(movement.StartX, movement.StartY, 0), folder)()
+	if foldErr == nil {
+		snapshot.GetRegistry().SetPosition(p.t, characterId, ms.X, ms.Y)
+	}
+
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		op := session.Announce(p.l)(p.ctx)(p.wp)(charpkt.CharacterMovementWriter)(charpkt.NewCharacterMovement(characterId, movement).Encode)
 		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
@@ -78,12 +89,11 @@ func (p *ProcessorImpl) ForCharacter(f field.Model, characterId uint32, movement
 		}
 	})
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
-		ms, err := model2.Fold(model2.FixedProvider(movement.Elements), summaryProvider(movement.StartX, movement.StartY, 0), folder)()
-		if err != nil {
+		if foldErr != nil {
 			return
 		}
 		position.GetRegistry().Put(p.t, characterId, position.Position{X: ms.X, Y: ms.Y})
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
+		err := producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}

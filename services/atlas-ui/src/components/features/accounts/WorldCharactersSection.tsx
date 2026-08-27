@@ -1,4 +1,5 @@
 // services/atlas-ui/src/components/features/accounts/WorldCharactersSection.tsx
+import { useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorDisplay } from "@/components/common";
 import { useCharacterSlots } from "@/lib/hooks/api/useCharacterSlots";
@@ -7,6 +8,7 @@ import type { Tenant } from "@/types/models/tenant";
 import type { Character } from "@/types/models/character";
 import type { TenantConfigAttributes } from "@/services/api";
 import { cn } from "@/lib/utils";
+import { getWorldIconUrl } from "@/lib/utils/asset-url";
 import { FilledSlotTile } from "./FilledSlotTile";
 import { EmptySlotTile } from "./EmptySlotTile";
 import { tileFrameClasses } from "./tile-frame";
@@ -19,7 +21,6 @@ interface WorldCharactersSectionProps {
   account: Account;
   worldId: number;
   worldName: string;
-  worlds: TenantConfigAttributes["worlds"];
   characters: Character[];
   charactersLoading: boolean;
   charactersError: Error | null;
@@ -40,7 +41,6 @@ export function WorldCharactersSection({
   account,
   worldId,
   worldName,
-  worlds,
   characters,
   charactersLoading,
   charactersError,
@@ -49,6 +49,21 @@ export function WorldCharactersSection({
   onAddClick,
 }: WorldCharactersSectionProps) {
   const slotsQuery = useCharacterSlots(tenant, account.id, worldId);
+  const [iconLoadFailed, setIconLoadFailed] = useState(false);
+
+  const worldIconUrl =
+    !iconLoadFailed &&
+    tenant.attributes.region &&
+    typeof tenant.attributes.majorVersion === "number" &&
+    typeof tenant.attributes.minorVersion === "number"
+      ? getWorldIconUrl(
+          tenant.id,
+          tenant.attributes.region,
+          tenant.attributes.majorVersion,
+          tenant.attributes.minorVersion,
+          worldId,
+        )
+      : "";
 
   const loading = charactersLoading || slotsQuery.isLoading;
   const slots = slotsQuery.data?.attributes.slots ?? 0;
@@ -83,12 +98,7 @@ export function WorldCharactersSection({
         )}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {characters.map((c) => (
-            <FilledSlotTile
-              key={c.id}
-              character={c}
-              tenant={tenant}
-              worlds={worlds}
-            />
+            <FilledSlotTile key={c.id} character={c} tenant={tenant} />
           ))}
           {Array.from({ length: emptyCount }).map((_, i) => (
             <EmptySlotTile
@@ -111,7 +121,17 @@ export function WorldCharactersSection({
 
   return (
     <section>
-      <h3 className="text-sm font-semibold mb-2">
+      <h3 className="flex items-center gap-1 text-sm font-semibold mb-2">
+        {worldIconUrl && (
+          <img
+            src={worldIconUrl}
+            width={16}
+            height={16}
+            alt=""
+            loading="lazy"
+            onError={() => setIconLoadFailed(true)}
+          />
+        )}
         {worldName || `World ${worldId}`}
         {!loading && !slotsQuery.error && (
           <span className="ml-2 text-xs font-normal text-muted-foreground">

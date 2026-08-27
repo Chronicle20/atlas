@@ -31,6 +31,11 @@ vi.mock("@/lib/hooks/api/useTenants", () => ({
   useTenantConfiguration: (...a: unknown[]) => useTenantConfigurationMock(...a),
 }));
 
+const useServicesMock = vi.fn();
+vi.mock("@/lib/hooks/api/useServices", () => ({
+  useServices: (...a: unknown[]) => useServicesMock(...a),
+}));
+
 // worldId -> slot count returned by the per-world hook. Tests set this
 // before rendering so each world's WorldCharactersSection can be given a
 // distinct slot count (proving the panel groups by world instead of
@@ -116,6 +121,26 @@ function renderPanel() {
   );
 }
 
+// Channel-service configuration backing "world existence." Covers worlds 0
+// and 1 for tenant t1 by default so existing tests (which only exercise
+// world 0 or both 0/1) keep seeing their worlds rendered.
+const channelServicesWithWorlds = (worldIds: number[]) => [
+  {
+    id: "svc1",
+    attributes: {
+      type: "channel-service",
+      tasks: [],
+      tenants: [
+        {
+          id: "t1",
+          ipAddress: "127.0.0.1",
+          worlds: worldIds.map((id) => ({ id, channels: [] })),
+        },
+      ],
+    },
+  },
+];
+
 describe("CharactersPanel", () => {
   beforeEach(() => {
     slotsByWorld = {};
@@ -129,6 +154,11 @@ describe("CharactersPanel", () => {
         },
       },
       isLoading: false,
+    });
+    useServicesMock.mockReturnValue({
+      data: channelServicesWithWorlds([0, 1]),
+      isLoading: false,
+      error: null,
     });
   });
 
@@ -282,5 +312,101 @@ describe("CharactersPanel", () => {
     // reports its own count independently.
     expect(within(scaniaSection).getByText(/1\/3 slots/)).toBeInTheDocument();
     expect(within(beraSection).getByText(/2\/2 slots/)).toBeInTheDocument();
+  });
+
+  it("does not render a tenant-config world that has no matching channel-service entry", () => {
+    useTenantConfigurationMock.mockReturnValue({
+      data: {
+        attributes: {
+          characters: {
+            presets: [{ id: "p1", attributes: { name: "Warrior" } }],
+          },
+          worlds: twoWorldConfig,
+        },
+      },
+      isLoading: false,
+    });
+    // Only world 0 (Scania) exists in the channel service; world 1 (Bera) is
+    // configured in tenant config but not deployed anywhere.
+    useServicesMock.mockReturnValue({
+      data: channelServicesWithWorlds([0]),
+      isLoading: false,
+      error: null,
+    });
+    slotsByWorld = { 0: 3 };
+    useCharactersMock.mockReturnValue({
+      data: [character("20", 1, 0, "ScaniaHero")],
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    });
+    renderPanel();
+
+    expect(screen.getByText("Scania")).toBeInTheDocument();
+    expect(screen.queryByText("Bera")).toBeNull();
+  });
+
+  it("shows an error when the channel-service configuration query fails, instead of silently showing zero worlds", () => {
+    useServicesMock.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: new Error("services down"),
+    });
+    slotsByWorld = { 0: 3 };
+    useCharactersMock.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    });
+    renderPanel();
+
+    expect(screen.queryByText("Scania")).toBeNull();
+    expect(screen.getByText(/services down/i)).toBeInTheDocument();
+  });
+
+  it("shows loading skeletons while the channel-service configuration is loading", () => {
+    useServicesMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    });
+    slotsByWorld = { 0: 3 };
+    useCharactersMock.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    });
+    const { container } = renderPanel();
+
+    expect(screen.queryByText("Scania")).toBeNull();
+    expect(container.querySelectorAll(".animate-pulse").length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  it("shows a distinct empty message when the tenant has no channel-service worlds configured at all", () => {
+    useServicesMock.mockReturnValue({
+      data: channelServicesWithWorlds([]),
+      isLoading: false,
+      error: null,
+    });
+    slotsByWorld = { 0: 3 };
+    useCharactersMock.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isFetching: false,
+      error: null,
+    });
+    renderPanel();
+
+    expect(screen.queryByText("Scania")).toBeNull();
+    expect(
+      screen.getByText(/no worlds are configured in the channel services/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/^no worlds are configured for this tenant\.$/i),
+    ).toBeNull();
   });
 });

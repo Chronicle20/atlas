@@ -43,3 +43,4 @@ ts	kind	unit	agent_type	model	turns	tool_calls	tool_result_bytes	return_bytes	st
 2026-08-27T21:57:32Z	agent	fix: seed dialog states	task-implementer	sonnet	-	-	-	-	dispatched	b9c859bc9	-	-	-	-
 2026-08-27T22:02:08Z	agent	fix: seed dialog states	task-implementer	sonnet	-	-	-	-	DONE	926f9ce71	-	-	-	-
 2026-08-27T22:02:08Z	agent	fix: seed dialog states	task-reviewer	sonnet	-	-	-	-	DONE	926f9ce71	APPROVED	no	-	-
+2026-08-27T22:03:39Z	agent	PR	controller	opus	-	-	-	-	DONE	92ec74d09	-	-	-	-

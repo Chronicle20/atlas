@@ -1,8 +1,9 @@
 # bug: JMS 185.1 client crashes on entering a channel
 
-Status: **crash mechanism proven; the specific malformed field is not yet
-identified.** The next unit is a field-by-field verification of
-`CharacterData` for JMS 185 (see `## Next unit`).
+Status: **crash mechanism proven; the SetField payload is exonerated; the
+specific trigger is not yet identified.** CharacterData × jms_v185 was swept
+field-by-field and is clean (see §7 under "Ruled out"). Suspicion has moved to
+the enter-field burst (see `## Next unit`).
 
 ## Reproduced
 
@@ -83,9 +84,10 @@ and everything else to the stage; `CField::OnPacket` ranges above).
    `Decode2` @0x716e1c, `Decode2` @0x716e3c, `Decode2` @0x716e4a,
    `Decode1` @0x716edf — exactly what
    `libs/atlas-packet/npc/clientbound/spawn.go` writes for a JMS tenant
-   (`hasEnabledFlag` → `true`). This also corrects
-   `docs/packets/audits/jms_v185/NpcSpawn.json`, which records the body as an
-   "opaque npc position/appearance block".
+   (`hasEnabledFlag` → `true`). `docs/packets/audits/jms_v185/NpcSpawn.json`
+   used to record the body as an "opaque npc position/appearance block"; the
+   export entry and the report have since been expanded to the seven per-field
+   reads (see §7).
 
 2. **The SetField *frame* is correct for JMS 185.** `CStage::OnSetField`
    @0x7eea69 reads, in order: `CClientOptMan::DecodeOpt` @0x7eea92,
@@ -118,18 +120,28 @@ and everything else to the stage; `CField::OnPacket` ranges above).
 
 6. **task-251 (player NPCs) is unmerged** — branch only.
 
+7. **`CharacterData` is correct for JMS 185** (this character's shape, swept
+   field-by-field against `CharacterData::Decode` @0x5137af with
+   `bBackwardUpdate = 0`). So are the two neighbours that were unchecked:
+   `CClientOptMan::DecodeOpt` @0x4ae41d consumes exactly the two bytes
+   `set_field.go` writes when the leading short is 0, and
+   `CWvsContext::OnSetLogoutGiftConfig` @0xae81c0 reads exactly four
+   `Decode4`s. Full derivation, plus two *latent* JMS divergences that this
+   character cannot reach (Dual-Blade master level; the extended-SP arm for JMS
+   jobs 3xxx/22xx/2001), in
+   [`characterdata-jms185-verification.md`](characterdata-jms185-verification.md).
+
 ## Next unit
 
-Verify **`CharacterData` × jms_v185** field-by-field: decompile
-`CharacterData::Decode` @0x5137af in IDB session `a977912e` and walk it against
-`libs/atlas-packet/character/data.go` on the JMS branch of every version gate.
-The SetField frame around it is confirmed correct (§2 above), so any surviving
-desync is inside this blob — or inside
-`CWvsContext::OnSetLogoutGiftConfig` @0xae81c0, which `set_field.go` assumes
-reads exactly four `Decode4`s and which has **not** been checked on JMS 185.
+The SetField payload is exonerated end to end. The remaining candidates are in
+the **enter-field burst** that follows (`SpawnForSelf` fan-out at 23:13:11.597),
+not in SetField:
 
-Also unchecked: whether `CClientOptMan::DecodeOpt` @0x4ae41d consumes exactly
-the two bytes `set_field.go` writes when the leading short is 0.
+- a packet in the burst routed to `CField::OnPacket` *before* `set_stage`
+  @0x7eed4e finishes constructing the field and its pools;
+- another op in the burst whose body desyncs the stream, so the field is torn
+  down between the stage swap and the `0x116` delivery;
+- the unhandled client → server ops `0xEA` / `0xDA` at 23:13:12.7.
 
 ## Fix
 
@@ -138,8 +150,9 @@ filled in once the desync is located.
 
 ## Not yet answered
 
-- Which `CharacterData` field diverges on JMS 185 (or whether the divergence is
-  in the logout-gift block / DecodeOpt instead).
+- Which packet in the enter-field burst reaches `CField::OnPacket` before the
+  field's pools exist (CharacterData, DecodeOpt and the logout-gift block are
+  all now ruled out).
 - Whether ops `0xEA` / `0xDA` (client → server, unhandled on JMS 185) are a
   normal post-load pair or a symptom.
 - Exact last-known-good build. User reports "days ago"; the deployed image at

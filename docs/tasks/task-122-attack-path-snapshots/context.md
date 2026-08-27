@@ -177,9 +177,9 @@ only use on this path is command emission (`ChangeHP`/`ChangeMP`) for the cost g
 and Combo Drain — never a read; confirmed by the in-code comment at `:896-899` and by grep
 (`cp\.` has no `GetById`/`Get` read call anywhere in the file).
 
-**Sweep result — three REST reads remain on the attack path, one already known, one is a stat
-that always degrades to invalidate, and one is a NEW finding this real sweep surfaces that the
-original three-literal grep would have missed:**
+**Sweep result — four REST-adjacent findings on the attack path: two disclosed per-swing REST
+reads, one stat that always degrades to invalidate-and-refetch, and one NEW finding this real
+sweep surfaces that the plan's original three-literal grep would have missed:**
 
 1. **beacon `monsterExists`** (`socket/handler/character_attack_common.go:1221`, was plan-cited
    as `:1220` — one-line drift): `mp.GetById(monsterId)` inside `beaconTryApply`'s closure.

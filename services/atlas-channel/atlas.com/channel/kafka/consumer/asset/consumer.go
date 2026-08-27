@@ -32,9 +32,9 @@ import (
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	invpkt "github.com/Chronicle20/atlas/libs/atlas-packet/inventory"
 	invcb "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/clientbound"
-	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	messengerpkt "github.com/Chronicle20/atlas/libs/atlas-packet/messenger"
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )

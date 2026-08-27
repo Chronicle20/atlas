@@ -6,6 +6,7 @@ import {
 } from "@/lib/api/query-params";
 import type { ApiSingleResponse } from "@/types/api/responses";
 import type { SocketConfig } from "@/types/models/socket";
+import type { MapleLifeConfig } from "@/types/models/template";
 
 const BASIC_PATH = "/api/tenants";
 const CONFIG_PATH = "/api/configurations/tenants";
@@ -129,6 +130,7 @@ interface TenantConfigAttributes {
       boxTemplateIds?: number[];
     };
   };
+  mapleLife?: MapleLifeConfig;
 }
 
 interface TenantConfig {

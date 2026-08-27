@@ -1,6 +1,7 @@
 package matrix
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/diff"
@@ -174,4 +175,119 @@ func TestAskSlideMenuEscapesNpcTalkMoreConsumption(t *testing.T) {
 			t.Fatalf("gms_v95 cell = %v (%q); want StateIncomplete, \"no audit report\"", c.State.Name(), c.Note)
 		}
 	})
+}
+
+// TestGmsV95FnamePromotionEscapesSubStructConsumption pins the four
+// versionScopedOpKey(..., "gms_v95") legacyConsumedSiblingWriters entries
+// added for task-146's fname-promotion regression fix (CHANGE_MAP/serverbound
+// FieldChange, NPC_TALK/clientbound NpcNpcConversation, NPC_TALK/serverbound
+// NpcStartConversation, CHANGE_MAP_SPECIAL/serverbound PortalScript): each
+// promoted op's registry primary fname now equals baseFName of the sibling
+// sub-struct's own IDAName, so the op row's worstCandidateCell consumes the
+// sibling as a used candidate. The entries must let each sibling escape and
+// grade from its own evidence ONLY on gms_v95 — the version each entry is
+// scoped to.
+//
+// The load-bearing case is the negative one: the SAME fname collision is
+// constructed here on gms_v83 (a version the fix's entries do NOT name), with
+// an equally-verified report, marker, and evidence. If versionScopedOpKey's
+// version key were dropped (an unscoped, op-wide entry, or one copy-pasted to
+// the wrong version), this gms_v83 case would also escape consumption and
+// flip from suppressed to verified — exactly the regression the review found
+// task 5's precedent (NPC_TALK_MORE) already guarded against, and which the
+// build.go comment for this fix records was measured to actually occur on
+// gms_v83/v84/v87/jms_v185 for these four op fnames.
+func TestGmsV95FnamePromotionEscapesSubStructConsumption(t *testing.T) {
+	cases := []struct {
+		name    string
+		op      string
+		dir     opregistry.Direction
+		writer  string
+		idaName string
+		pkt     string
+	}{
+		{
+			name:    "FieldChange",
+			op:      "CHANGE_MAP",
+			dir:     opregistry.DirServerbound,
+			writer:  "FieldChange",
+			idaName: "CField::SendTransferFieldRequest",
+			pkt:     "field/serverbound/FieldChange",
+		},
+		{
+			name:    "NpcNpcConversation",
+			op:      "NPC_TALK",
+			dir:     opregistry.DirClientbound,
+			writer:  "NpcNpcConversation",
+			idaName: "CScriptMan::OnScriptMessage",
+			pkt:     "npc/clientbound/NpcNpcConversation",
+		},
+		{
+			name:    "NpcStartConversation",
+			op:      "NPC_TALK",
+			dir:     opregistry.DirServerbound,
+			writer:  "NpcStartConversation",
+			idaName: "CUserLocal::TalkToNpc",
+			pkt:     "npc/serverbound/NpcStartConversation",
+		},
+		{
+			name:    "PortalScript",
+			op:      "CHANGE_MAP_SPECIAL",
+			dir:     opregistry.DirServerbound,
+			writer:  "PortalScript",
+			idaName: "CUserLocal::CheckPortal_Collision",
+			pkt:     "portal/serverbound/PortalScript",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			versionKeys := []string{"gms_v83", "gms_v95"}
+
+			report := LoadedReport{
+				WriterName: tc.writer,
+				IDAName:    tc.idaName,
+				AtlasFile:  "libs/atlas-packet/" + tc.pkt[:strings.LastIndex(tc.pkt, "/")] + "/x.go",
+				Verdict:    diff.VerdictMatch,
+			}
+
+			newInputs := func() Inputs {
+				in := baseInputs()
+				// Same fname collision constructed on BOTH versions: the op's
+				// registry primary fname equals tc.idaName (== tc.writer's own
+				// IDAName) on both, so the sibling is consumed by the op row
+				// on both unless a scoped entry lets it escape.
+				in.Registry.Versions["gms_v95"] = vfWith(t, opregistry.Entry{
+					Op: tc.op, Direction: tc.dir, Opcode: 0x50, FName: tc.idaName, Provenance: "ida-discovered",
+				})
+				in.Registry.Versions["gms_v83"] = vfWith(t, opregistry.Entry{
+					Op: tc.op, Direction: tc.dir, Opcode: 0x50, FName: tc.idaName, Provenance: "ida-discovered",
+				})
+				in.Reports["gms_v95"] = map[string]LoadedReport{tc.writer: report}
+				in.Reports["gms_v83"] = map[string]LoadedReport{tc.writer: report}
+				in.Tier1[tc.pkt] = true
+				// Fully verified evidence on BOTH versions: if the negative
+				// case fails, it fails because of the entry's scoping, not
+				// because gms_v83's own evidence is weaker.
+				in.Markers[EvKey{tc.pkt, "gms_v95"}] = MarkerStatus{Found: true, Address: "0x1000"}
+				in.Evidence[EvKey{tc.pkt, "gms_v95"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0x1000"}
+				in.Markers[EvKey{tc.pkt, "gms_v83"}] = MarkerStatus{Found: true, Address: "0x1000"}
+				in.Evidence[EvKey{tc.pkt, "gms_v83"}] = EvidenceStatus{Exists: true, Fresh: true, Address: "0x1000"}
+				return in
+			}
+
+			in := newInputs()
+			m := Build(in, versionKeys)
+
+			v95 := subCell(t, m, tc.pkt, "gms_v95")
+			if v95.State != StateVerified || v95.Note != "" || v95.Opcode != -1 {
+				t.Fatalf("gms_v95 cell = %v (%q, opcode=%d); want StateVerified, \"\", -1 (entry should let %s escape consumption)", v95.State.Name(), v95.Note, v95.Opcode, tc.writer)
+			}
+
+			v83 := subCell(t, m, tc.pkt, "gms_v83")
+			if v83.State != StateIncomplete || v83.Note != "no audit report" {
+				t.Fatalf("gms_v83 cell = %v (%q); want StateIncomplete, \"no audit report\" (the gms_v95-scoped entry must NOT apply to gms_v83's identical collision)", v83.State.Name(), v83.Note)
+			}
+		})
+	}
 }

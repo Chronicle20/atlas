@@ -162,8 +162,9 @@ Side effect of Task 2's fname promotions, first surfaced and deferred by the
 Task 2 reviewer, confirmed by direct `status.json` diff, and fixed in a
 post-plan fix round. Sub-struct rows are NOT graded through `findReport`
 (that path, `grade.go:282-292`, serves op rows only); they are graded through
-`Build`'s `usedWriters`/`protectedWriters` logic (`build.go:322-353`,
-`458-486`). Each promoted op fname now equals `baseFName(IDAName)` of one of
+`Build`'s `usedWriters`/`protectedWriters` logic (the sub-struct skip/protect
+gate, `build.go:363-395`, and `worstCandidateCell`'s `used[vk][wn]` /
+`protected[vk][wn]` assignment, `build.go:514-516`). Each promoted op fname now equals `baseFName(IDAName)` of one of
 these four sub-structs' own reports, so the op row's `worstCandidateCell`
 consumed that sub-struct's writer as a used candidate, and the sub-struct was
 skipped (gap-filled to `incomplete / "no audit report"`) instead of grading

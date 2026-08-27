@@ -410,6 +410,13 @@ func TestTransformRoundTrip(t *testing.T) {
 		t.Fatalf("Extract failed: %v", err)
 	}
 
+	// The DeepEqual round-trip below cannot see a masked accessor: Extract
+	// decodes spawnPoint correctly here, and it is the accessor that lies.
+	// Assert the decoded value against the RestModel literal directly.
+	if got := m.SpawnPoint(); got != 11 {
+		t.Errorf("SpawnPoint() = %d, want 11", got)
+	}
+
 	rm2, err := Transform(m)
 	if err != nil {
 		t.Fatalf("Transform failed: %v", err)

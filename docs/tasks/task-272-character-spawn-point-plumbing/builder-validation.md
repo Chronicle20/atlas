@@ -110,28 +110,89 @@ since these nine commits — the last flagless PASS was at `61e5e4b94`, before
 them. Re-running it is the next step, followed by re-dispatching
 `backend-guidelines-reviewer` to confirm the DOM-01 finding is cleared.
 
-### Open item the next session must not lose
+## Fix round 2: `modelBuilder.Build()` now validates too
 
-`services/atlas-character/atlas.com/character/character/builder.go` contains
-**two** builders:
+The backend-audit round-2 review (`backend-audit/audit-round2.md`) judged the
+open item below a real DOM-01 gap. The controller ruled: fix it on this
+branch. This section is that fix and closes the open item.
 
-- `Builder` (`NewBuilder(cfg, accountId, worldId, name, ...)`, line 101) — now
-  validating. It has **zero call sites** anywhere in the module, which is why
-  the signature change compiled with no caller churn.
-- `modelBuilder` (`NewEmptyBuilder()` line 174, `CloneModel()` line 178) — the
-  builder actually used, by ~40 sites including `character/processor.go:282`.
-  Its `Build()` is still non-validating and was deliberately left alone.
+### Derivation: enumerating every legitimate construction site
 
-Leaving it is a judgment call, not an oversight: `NewEmptyBuilder()` is used to
-hydrate partial models in tests that legitimately set no name — e.g.
-`character/hp_mp_gain_test.go:55` sets only `jobId` and `skills` — so a
-`name != ""` guard there would reject valid input. Applying the identity
-invariant to `modelBuilder` would need a different invariant than the creation
-path uses, and that is a design question, not a mechanical fix.
+`modelBuilder` (`NewEmptyBuilder()` / `CloneModel()`) hydrates PARTIAL
+models across ~95 call sites: DB row hydration (`character/provider.go`),
+REST `Extract` (`character/rest.go`), kafka CREATE_CHARACTER
+(`kafka/consumer/character/consumer.go`), a skill-decorator rebuild
+(`character/processor.go:SkillModelDecorator`), and roughly twenty test
+files' fixtures.
 
-**If the re-run of `backend-guidelines-reviewer` raises DOM-01 against
-`modelBuilder`, that is a real finding and needs a ruling — do not treat it as
-already-answered by this document.**
+The creation path's invariant (`Builder`: `accountId != 0` AND `name != ""`)
+is too strong here — swept across every site:
+
+- Every **production** site (`modelFromEntity`, `Extract`, the kafka create
+  handler, `CloneModel`-based rebuilds) sets `accountId` and `name`
+  together, non-zero/non-empty.
+- But `character/hp_mp_gain_test.go`'s `buildCharacter` helper sets **only**
+  `jobId` and `skills` — no `accountId`, no `name` — to build a fixture for
+  `resolveHPMPGainParams`, which never reads either field. Not a
+  deliberately-invalid-model test; a legitimate partial.
+- `character/model_test.go`'s `TestBuildPreservesHpMpUsed` sets **only**
+  `name` and `hpMpUsed`, with `accountId` left at zero.
+
+So neither `accountId != 0` nor `name != ""` alone survives every site.
+What every site — production and test — agrees on, without exception: **no
+site ever sets `accountId` to a real value while leaving `name` empty.**
+Every production construction sets both together; every test that omits one
+omits both (or omits `accountId` while `name` is present, which the
+implication also allows).
+
+### The derived invariant
+
+```go
+if c.accountId != 0 && c.name == "" {
+    return Model{}, errors.New("name is required when accountId is set")
+}
+```
+
+This is not vacuous — it rejects a real defect (a model claiming ownership
+of an account with no name) — but it is deliberately weaker than `Builder`'s
+identity invariant: `accountId == 0` is always accepted regardless of
+`name`, because partial-hydration fixtures legitimately need that.
+
+No test in the ~95-site sweep constructs a model this invariant rejects; no
+test was edited to conform to the invariant (per the brief's rule, that
+would have been evidence the invariant was too strong). One new test,
+`character/model_test.go:TestBuildErrorsWhenAccountIdSetWithoutName`, pins
+the invariant negatively; `TestBuildSucceedsWithAccountIdAndName` and
+`TestBuildSucceedsWithNeitherAccountIdNorName` pin the two accepted shapes.
+
+### Call-site handling
+
+- `character/provider.go:modelFromEntity` and `character/rest.go:Extract`
+  already returned `(Model, error)` — just bound the builder's error instead
+  of discarding it.
+- `character/processor.go:SkillModelDecorator` is a
+  `model.Decorator[Model]` (`func(Model) Model`) — the controller ruling
+  documented above for decorator call sites applies unchanged: log via
+  `p.l.WithError(err).Errorf(...)` and fall back to the original `m`. The
+  error is unreachable in practice (the input `m` already carries a real
+  `accountId`+`name` pair; `CloneModel` only adds skills), and the fallback
+  comment says so.
+- `kafka/consumer/character/consumer.go:handleCreateCharacter` is a
+  `message.Handler` (no error return). On a `Build()` error it logs with
+  full saga correlation fields and returns without calling `CreateAndEmit`
+  — the same "log and stop" shape the file already used for
+  `CreateAndEmit`'s own error.
+- All ~20 test files: bound the error and `t.Fatalf` on it (test helpers
+  that don't already take `*testing.T` were given one — `hp_mp_gain_test.go`
+  `buildCharacter`, `pending_change/processor_eligibility_test.go`
+  `buildCharacter`).
+
+### Status
+
+`modelBuilder.Build()` is now `(Model, error)`, every call site updated, and
+`go build ./... && go test ./...` is clean in
+`services/atlas-character/atlas.com/character`. Both `character/builder.go`
+builders now validate. The open item is closed.
 
 ### Also unchanged, deliberately
 

@@ -22,7 +22,10 @@ func outboxTestDb(t *testing.T) *gorm.DB {
 }
 
 func createTestCharacter(t *testing.T, ctx context.Context, db *gorm.DB, meso uint32) character.Model {
-	input := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("Atlas").SetLevel(1).SetExperience(0).Build()
+	input, err := character.NewEmptyBuilder().SetAccountId(1000).SetWorldId(0).SetName("Atlas").SetLevel(1).SetExperience(0).Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 	c, err := character.NewProcessor(testLogger(), ctx, db).Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	require.NoError(t, err)
 	if meso > 0 {

@@ -21,12 +21,15 @@ func TestNameChangedEventViaUpdate(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewEmptyBuilder().
+	input, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("OriginalName").
 		SetLevel(10).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -91,13 +94,16 @@ func TestHairChangedEventViaUpdate(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewEmptyBuilder().
+	input, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("HairTest").
 		SetLevel(10).
 		SetHair(30000).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -149,13 +155,16 @@ func TestFaceChangedEventViaUpdate(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewEmptyBuilder().
+	input, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("FaceTest").
 		SetLevel(10).
 		SetFace(20000).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -207,13 +216,16 @@ func TestGenderChangedEventViaUpdate(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewEmptyBuilder().
+	input, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("GenderTest").
 		SetLevel(10).
 		SetGender(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -265,13 +277,16 @@ func TestSkinColorChangedEventViaUpdate(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewEmptyBuilder().
+	input, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("SkinTest").
 		SetLevel(10).
 		SetSkinColor(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -323,13 +338,16 @@ func TestGmChangedEventViaUpdate(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewEmptyBuilder().
+	input, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("GmTest").
 		SetLevel(10).
 		SetGm(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -381,7 +399,7 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewEmptyBuilder().
+	input, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("MultiTest").
@@ -392,6 +410,9 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 		SetSkinColor(0).
 		SetGm(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
@@ -459,12 +480,15 @@ func TestProducerFunctionsHandleEmptyStringValues(t *testing.T) {
 	db := testDatabase(t)
 
 	// Create a character first
-	input := character.NewEmptyBuilder().
+	input, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("OriginalName").
 		SetLevel(10).
 		Build()
+	if err != nil {
+		t.Fatalf("build character: %v", err)
+	}
 	processor := character.NewProcessor(testLogger(), tctx, db)
 	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {

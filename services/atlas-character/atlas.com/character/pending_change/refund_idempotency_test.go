@@ -55,13 +55,16 @@ func newProcessorTestDB(t *testing.T) *gorm.DB {
 // production sees.
 func seedCharacter(t *testing.T, db *gorm.DB, name string, worldId world.Id) uint32 {
 	t.Helper()
-	input := character.NewEmptyBuilder().
+	input, err := character.NewEmptyBuilder().
 		SetAccountId(1000).
 		SetWorldId(worldId).
 		SetName(name).
 		SetLevel(1).
 		SetExperience(0).
 		Build()
+	if err != nil {
+		t.Fatalf("build character %s: %v", name, err)
+	}
 	c, err := character.NewProcessor(testLogger(t), testContext(t), db).
 		Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {

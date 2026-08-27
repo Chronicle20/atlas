@@ -338,7 +338,21 @@ func (c *modelBuilder) SetMeso(meso uint32) *modelBuilder {
 	return c
 }
 
-func (c *modelBuilder) Build() Model {
+// Build enforces the reconstruction invariant: a model tied to a real
+// account (accountId != 0) must carry a name. modelBuilder hydrates PARTIAL
+// models across ~95 call sites -- DB rows, REST Extract, kafka create
+// commands, decorator rebuilds, and test fixtures that legitimately set
+// only a handful of fields (character/hp_mp_gain_test.go builds a model
+// with only jobId and skills). The creation-path invariant used by Builder
+// (accountId != 0 AND name != "") would reject those legitimate partials, so
+// this is the strongest invariant that survives every construction site:
+// every site that sets a real accountId also sets a name; the ones that
+// leave accountId at zero legitimately leave name blank too. See
+// docs/tasks/task-272-character-spawn-point-plumbing/builder-validation.md.
+func (c *modelBuilder) Build() (Model, error) {
+	if c.accountId != 0 && c.name == "" {
+		return Model{}, errors.New("name is required when accountId is set")
+	}
 	return Model{
 		id:                 c.id,
 		accountId:          c.accountId,
@@ -368,7 +382,7 @@ func (c *modelBuilder) Build() Model {
 		meso:               c.meso,
 		hpMpUsed:           c.hpMpUsed,
 		skills:             c.skills,
-	}
+	}, nil
 }
 
 func (c *modelBuilder) SetHpMpUsed(used int) *modelBuilder {

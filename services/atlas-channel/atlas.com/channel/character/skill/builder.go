@@ -22,6 +22,11 @@ func NewModelBuilder(id skillconst.Id) *modelBuilder {
 	return &modelBuilder{id: id}
 }
 
+// NewBuilder is an alias for NewModelBuilder for backward compatibility
+func NewBuilder(id skillconst.Id) *modelBuilder {
+	return NewModelBuilder(id)
+}
+
 // Clone creates a builder initialized with the Model's values
 func Clone(m Model) *modelBuilder {
 	return &modelBuilder{

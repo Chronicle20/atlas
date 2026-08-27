@@ -32,6 +32,7 @@ import (
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	invpkt "github.com/Chronicle20/atlas/libs/atlas-packet/inventory"
 	invcb "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/clientbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	messengerpkt "github.com/Chronicle20/atlas/libs/atlas-packet/messenger"
 	messengercb "github.com/Chronicle20/atlas/libs/atlas-packet/messenger/clientbound"
 	routine "github.com/Chronicle20/atlas/libs/atlas-routine"
@@ -416,7 +417,7 @@ func updateAppearance(l logrus.FieldLogger) func(ctx context.Context) func(wp wr
 		return func(wp writer.Producer) func(c character.Model) model.Operator[session.Model] {
 			return func(c character.Model) model.Operator[session.Model] {
 				ava := model2.NewFromCharacter(c, false)
-				return session.Announce(l)(ctx)(wp)(charcb.CharacterAppearanceUpdateWriter)(charcb.NewCharacterAppearanceUpdate(c.Id(), ava).Encode)
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterAppearanceUpdateWriter)(charcb.NewCharacterAppearanceUpdate(c.Id(), ava, packetmodel.RingSet{}).Encode)
 			}
 		}
 	}

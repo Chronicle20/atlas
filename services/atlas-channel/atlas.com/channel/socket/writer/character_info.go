@@ -61,6 +61,7 @@ func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model, mo
 					Cover:        uint32(mb.CoverMonsterId()),
 				},
 				mount,
+				false,
 			).Encode(l, ctx)(options)
 		}
 	}

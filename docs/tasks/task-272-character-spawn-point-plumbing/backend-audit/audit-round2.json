@@ -1,0 +1,122 @@
+{
+  "service": "task-272-character-spawn-point-plumbing (multi-service builder-validation sweep)",
+  "path": "services/atlas-cashshop|atlas-character|atlas-consumables|atlas-dragons|atlas-login|atlas-messages|atlas-npc-shops|atlas-pets|atlas-query-aggregator",
+  "range": "61e5e4b94..HEAD",
+  "date": "2026-08-27",
+  "build": "pass",
+  "testsPassed": 9,
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "character (all nine services)",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "DOM-01",
+          "name": "builder.go exists with NewBuilder(), fluent setters, and a validating Build()",
+          "status": "pass",
+          "evidence": "services/atlas-npc-shops/atlas.com/npc/character/builder.go:124 (id==0 -> error) clears the prior blocking finding; same shape confirmed at atlas-cashshop/builder.go:121, atlas-consumables/builder.go:125, atlas-dragons/builder.go:26, atlas-login/builder.go:94, atlas-messages/builder.go:117, atlas-pets/builder.go:119, atlas-query-aggregator/builder.go:134, atlas-character/character/builder.go:63-68"
+        },
+        {
+          "id": "DOM-01",
+          "name": "same, modelBuilder in atlas-character",
+          "status": "fail",
+          "evidence": "services/atlas-character/atlas.com/character/character/builder.go:340-341 modelBuilder.Build() Model is still non-validating; confirmed unchanged by this diff. Recorded as a genuine finding, not settled by builder-validation.md, per audit brief instruction. Non-blocking / deferred design question."
+        },
+        {
+          "id": "DOM-02",
+          "name": "Model.ToEntity() in entity.go",
+          "status": "n-a",
+          "evidence": "no entity.go in any of the nine character packages"
+        },
+        {
+          "id": "DOM-03",
+          "name": "Make(Entity) (Model, error) in entity.go",
+          "status": "n-a",
+          "evidence": "no entity.go in any of the nine character packages"
+        },
+        {
+          "id": "DOM-09",
+          "name": "Every Transform( call site checks its error",
+          "status": "n-a",
+          "evidence": "no resource.go in the diff's file list"
+        },
+        {
+          "id": "DOM-11",
+          "name": "Providers evaluate lazily via database.Query/SliceQuery",
+          "status": "n-a",
+          "evidence": "no provider.go in any of the nine character packages; these use requests.Provider/SliceProvider, not DB-backed providers"
+        },
+        {
+          "id": "DOM-28",
+          "name": "Fallible decorator paths degrade loudly, never bare if err != nil { return m }",
+          "status": "fail",
+          "evidence": "services/atlas-cashshop/atlas.com/cashshop/character/processor.go:50-56 InventoryDecorator swallows Build() error with p.l in scope (processor.go:22) but never logs"
+        },
+        {
+          "id": "DOM-28",
+          "name": "same",
+          "status": "fail",
+          "evidence": "services/atlas-npc-shops/atlas.com/npc/character/processor.go:72-79 InventoryDecorator swallows Build() error with p.l in scope (processor.go:26) but never logs"
+        },
+        {
+          "id": "DOM-28",
+          "name": "same",
+          "status": "fail",
+          "evidence": "services/atlas-query-aggregator/atlas.com/query-aggregator/character/processor.go:48-56 (InventoryDecorator) and :58-66 (GuildDecorator) swallow Build() error with p.l in scope (processor.go:21) but never log"
+        },
+        {
+          "id": "DOM-28",
+          "name": "same",
+          "status": "fail",
+          "evidence": "services/atlas-messages/atlas.com/messages/character/model.go:237-243 SetSkills swallows Build() error with no logger in scope and no explanatory comment, unlike consumables/pets siblings"
+        },
+        {
+          "id": "DOM-28",
+          "name": "same",
+          "status": "warn",
+          "evidence": "services/atlas-consumables/atlas.com/consumables/character/model.go:275-278,303-310 and services/atlas-pets/atlas.com/pets/character/model.go:254-262 -- no logger in scope, but carry an explanatory 'unreachable in practice' comment satisfying the task's own ruling; tension with DOM-28's literal 'regardless of justification' text noted"
+        },
+        {
+          "id": "DOM-28",
+          "name": "same",
+          "status": "pass",
+          "evidence": "services/atlas-login/atlas.com/login/character/processor.go:183-195 InventoryDecorator() uses model.ErrDecorator + degrade.Observe(p.l, \"login.character.inventory\", m.Id(), err); pre-existing, unmodified body, only call-site signature adapted at line 187"
+        },
+        {
+          "id": "call-site-rule",
+          "name": "Every .Build() call site propagates or is a documented decorator exception (builder-validation.md)",
+          "status": "pass",
+          "evidence": "grep across diff for '_, _ :=' / ', _ =' near Build() returns empty in every changed file; direct propagation confirmed at services/atlas-dragons/atlas.com/dragons/character/rest.go:31, services/atlas-cashshop/atlas.com/cashshop/character/model.go:304, services/atlas-npc-shops/atlas.com/npc/character/model.go:251,255, services/atlas-query-aggregator/atlas.com/query-aggregator/character/model.go:318,322; tests use t.Fatalf/assert.NoError/require.NoError e.g. services/atlas-login/atlas.com/login/character/builder_test.go:11-13"
+        }
+      ]
+    },
+    {
+      "name": "atlas-character/character (scope-fence check)",
+      "type": "domain",
+      "checks": [
+        {
+          "id": "scope-fence",
+          "name": "Sweep touches only builder.go in atlas-character",
+          "status": "pass",
+          "evidence": "git diff --stat 61e5e4b94..HEAD -- services/atlas-character/ returns exactly one file, character/builder.go, +10/-2"
+        }
+      ]
+    }
+  ],
+  "notEvaluable": [
+    "DOM-24: producertest stub wiring in services/atlas-cashshop/atlas.com/cashshop/coupon/{concurrency_test.go,processor_test.go}, services/atlas-dragons/atlas.com/dragons/dragon/processor_test.go, services/atlas-pets/atlas.com/pets/pet/processor_test.go -- diff edits Build() call sites inside emit-reaching packages but the producer-stub wiring itself is outside the changed hunks",
+    "libs/atlas-model ErrDecorator/degrade.Observe contract at services/atlas-login/atlas.com/login/character/processor.go:183-195 was not re-read against library source this round; inferred correct from passing build/test only"
+  ],
+  "blocking": [
+    "DOM-28: services/atlas-cashshop/atlas.com/cashshop/character/processor.go:50-56 -- InventoryDecorator swallows Build() error with logger in scope, never logs",
+    "DOM-28: services/atlas-npc-shops/atlas.com/npc/character/processor.go:72-79 -- InventoryDecorator swallows Build() error with logger in scope, never logs",
+    "DOM-28: services/atlas-query-aggregator/atlas.com/query-aggregator/character/processor.go:48-66 -- InventoryDecorator and GuildDecorator swallow Build() error with logger in scope, never log",
+    "DOM-28: services/atlas-messages/atlas.com/messages/character/model.go:237-243 -- SetSkills swallows Build() error with no logger in scope and no explanatory comment"
+  ],
+  "nonBlocking": [
+    "DOM-01: services/atlas-character/atlas.com/character/character/builder.go:340-341 -- modelBuilder.Build() remains non-validating; deferred design question, not accepted as settled",
+    "DOM-28: services/atlas-consumables/atlas.com/consumables/character/model.go:275-310, services/atlas-pets/atlas.com/pets/character/model.go:254-262 -- comment-only fallback; documentation tension between task ruling and DOM-28 literal text flagged for controller"
+  ]
+}

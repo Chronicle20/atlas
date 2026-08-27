@@ -100,7 +100,11 @@ func newTestProcessorWithMiniredis(t *testing.T, cs *stubCharacters) (*Processor
 // Builder added in Step 2 — no test-only constructor, no *_testhelpers.go.
 func buildCharacter(t *testing.T, id uint32, jobId job.Id, x, y int16) character.Model {
 	t.Helper()
-	return character.NewBuilder(id).SetJobId(jobId).SetX(x).SetY(y).Build()
+	c, err := character.NewBuilder(id).SetJobId(jobId).SetX(x).SetY(y).Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	return c
 }
 
 func TestCreateIsANoOpForANonDragonJob(t *testing.T) {
@@ -211,7 +215,10 @@ func TestMoveUpdatesPositionAndEmits(t *testing.T) {
 // first move and keep it zeroed forever, so every late-entering player would
 // see the wrong spawn stance from spawnDragonForSession.
 func TestMoveDoesNotClobberAPreviouslySetStance(t *testing.T) {
-	c := character.NewBuilder(42).SetJobId(2214).SetX(0).SetY(0).SetStance(7).Build()
+	c, err := character.NewBuilder(42).SetJobId(2214).SetX(0).SetY(0).SetStance(7).Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
 	cs := &stubCharacters{m: c}
 	p, ten, ctx, _ := newTestProcessor(t, cs)
 	if err := p.Create(testField(), 42); err != nil {

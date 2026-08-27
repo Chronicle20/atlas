@@ -3,6 +3,7 @@ package asset
 import (
 	"atlas-channel/asset"
 	"atlas-channel/character"
+	"atlas-channel/character/snapshot"
 	consumer2 "atlas-channel/kafka/consumer"
 	asset2 "atlas-channel/kafka/message/asset"
 	"atlas-channel/listener"
@@ -89,6 +90,46 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				}
 				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
 				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetExpiredEvent(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotAssetCreated(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotAssetUpdated(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotAssetAccepted(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotAssetQuantityChanged(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotAssetMoved(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotAssetDeleted(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotAssetReleased(sc, wp))))
+				if err != nil {
+					return nil, err
+				}
+				handles = append(handles, listener.HandlerHandle{Topic: t, Id: id})
+				id, err = rf(t, message.AdaptHandler(message.PersistentConfig(handleSnapshotAssetExpired(sc, wp))))
 				if err != nil {
 					return nil, err
 				}
@@ -569,5 +610,115 @@ func handleAssetExpiredEvent(sc server.Model, wp writer.Producer) message.Handle
 			}
 			return nil
 		})
+	}
+}
+
+// --- task-122 snapshot maintenance (additive) ---
+
+func handleSnapshotAssetCreated(sc server.Model, _ writer.Producer) message.Handler[asset2.StatusEvent[asset2.CreatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.CreatedStatusEventBody]) {
+		if e.Type != asset2.StatusEventTypeCreated {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().UpsertAsset(t, e.CharacterId, e.CompartmentId, buildAssetFromCreatedBody(e))
+	}
+}
+
+func handleSnapshotAssetUpdated(sc server.Model, _ writer.Producer) message.Handler[asset2.StatusEvent[asset2.UpdatedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.UpdatedStatusEventBody]) {
+		if e.Type != asset2.StatusEventTypeUpdated {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().UpsertAsset(t, e.CharacterId, e.CompartmentId, buildAssetFromUpdatedBody(e))
+	}
+}
+
+func handleSnapshotAssetAccepted(sc server.Model, _ writer.Producer) message.Handler[asset2.StatusEvent[asset2.AcceptedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.AcceptedStatusEventBody]) {
+		if e.Type != asset2.StatusEventTypeAccepted {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().UpsertAsset(t, e.CharacterId, e.CompartmentId, buildAssetFromAcceptedBody(e))
+	}
+}
+
+func handleSnapshotAssetQuantityChanged(sc server.Model, _ writer.Producer) message.Handler[asset2.StatusEvent[asset2.QuantityChangedEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.QuantityChangedEventBody]) {
+		if e.Type != asset2.StatusEventTypeQuantityChanged {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().SetAssetQuantity(t, e.CharacterId, e.AssetId, e.Body.Quantity)
+	}
+}
+
+// handleSnapshotAssetMoved sets the slot ABSOLUTE by AssetId (idempotent):
+// each leg of a swap arrives as its own MOVED with the new slot in the
+// envelope (event-coverage.md §4).
+func handleSnapshotAssetMoved(sc server.Model, _ writer.Producer) message.Handler[asset2.StatusEvent[asset2.MovedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.MovedStatusEventBody]) {
+		if e.Type != asset2.StatusEventTypeMoved {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().SetAssetSlot(t, e.CharacterId, e.AssetId, e.Slot)
+	}
+}
+
+func handleSnapshotAssetDeleted(sc server.Model, _ writer.Producer) message.Handler[asset2.StatusEvent[asset2.DeletedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.DeletedStatusEventBody]) {
+		if e.Type != asset2.StatusEventTypeDeleted {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().RemoveAsset(t, e.CharacterId, e.AssetId)
+	}
+}
+
+// RELEASED/EXPIRED are thin (no replacement asset payload): invalidate.
+func handleSnapshotAssetReleased(sc server.Model, _ writer.Producer) message.Handler[asset2.StatusEvent[asset2.ReleasedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.ReleasedStatusEventBody]) {
+		if e.Type != asset2.StatusEventTypeReleased {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().InvalidateInventory(t, e.CharacterId)
+	}
+}
+
+func handleSnapshotAssetExpired(sc server.Model, _ writer.Producer) message.Handler[asset2.StatusEvent[asset2.ExpiredStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.ExpiredStatusEventBody]) {
+		if e.Type != asset2.StatusEventTypeExpired {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+		snapshot.GetRegistry().InvalidateInventory(t, e.CharacterId)
 	}
 }

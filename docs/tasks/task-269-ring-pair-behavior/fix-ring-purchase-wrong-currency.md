@@ -2,6 +2,16 @@
 
 Task: task-269-ring-pair-behavior · Branch: `task-269-ring-pair-behavior`
 
+> **Superseded naming (`d228fea7a`).** Everything below describes commit
+> `67d31d6bc` as it landed. The follow-up BUY_PACKAGE fix
+> (`bug-package-purchase-wrong-currency.md`, commit `d228fea7a`) reused this
+> resolver for a second arm and renamed it accordingly: read
+> `resolveRingPurchaseCurrency` as **`resolveOptionCurrency`** and
+> `TestResolveRingPurchaseCurrency` as **`TestResolveOptionCurrency`**
+> throughout this file. The mapping and the behavior are unchanged; only the
+> identifiers moved. The captured test transcript below is the verbatim output
+> of the run at `67d31d6bc` and is deliberately left as-recorded.
+
 ## Summary
 
 Fixed BUY_COUPLE / BUY_FRIENDSHIP so the wallet currency debited on a ring

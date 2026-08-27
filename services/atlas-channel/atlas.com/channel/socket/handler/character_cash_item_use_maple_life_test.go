@@ -88,7 +88,7 @@ func installMapleLifeCreateObservationSeams(t *testing.T) *bool {
 	called := false
 
 	origSlots := accountSlotsFunc
-	accountSlotsFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (int16, error) {
+	accountSlotsFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id) (int16, error) {
 		return 10, nil
 	}
 	t.Cleanup(func() { accountSlotsFunc = origSlots })

@@ -17,6 +17,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -35,7 +36,7 @@ const (
 	mapleLifeCreateTestAccountId   = uint32(7)
 	mapleLifeCreateTestCharacterId = uint32(42)
 	mapleLifeCreateTestWorldId     = world.Id(1)
-	mapleLifeCreateTestItemId      = item.Id(5431000) // ClassificationCharacterCreation (543)
+	mapleLifeCreateTestItemId      = item.MapleLifeATypeId // ClassificationCharacterCreation (543)
 	mapleLifeCreateTestSlot        = slot.Position(-3)
 )
 
@@ -118,8 +119,19 @@ type mapleLifeCreateEnv struct {
 		slot        int16
 	}
 
-	accountSlots   int16
-	accountSlotErr error
+	accountSlots     int16
+	accountSlotErr   error
+	accountSlotCalls []struct {
+		accountId uint32
+		worldId   world.Id
+	}
+
+	incrementSlotsResult int16
+	incrementSlotsErr    error
+	incrementSlotsCalls  []struct {
+		accountId uint32
+		worldId   world.Id
+	}
 
 	charactersInWorld    int
 	charactersInWorldErr error
@@ -198,10 +210,24 @@ func newMapleLifeCreateEnv(t *testing.T) *mapleLifeCreateEnv {
 	t.Cleanup(func() { cashItemInSlotFunc = origSlot })
 
 	origAccountSlots := accountSlotsFunc
-	accountSlotsFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (int16, error) {
+	accountSlotsFunc = func(_ logrus.FieldLogger, _ context.Context, accountId uint32, worldId world.Id) (int16, error) {
+		env.accountSlotCalls = append(env.accountSlotCalls, struct {
+			accountId uint32
+			worldId   world.Id
+		}{accountId: accountId, worldId: worldId})
 		return env.accountSlots, env.accountSlotErr
 	}
 	t.Cleanup(func() { accountSlotsFunc = origAccountSlots })
+
+	origIncrementSlots := incrementAccountSlotsFunc
+	incrementAccountSlotsFunc = func(_ logrus.FieldLogger, _ context.Context, accountId uint32, worldId world.Id) (int16, error) {
+		env.incrementSlotsCalls = append(env.incrementSlotsCalls, struct {
+			accountId uint32
+			worldId   world.Id
+		}{accountId: accountId, worldId: worldId})
+		return env.incrementSlotsResult, env.incrementSlotsErr
+	}
+	t.Cleanup(func() { incrementAccountSlotsFunc = origIncrementSlots })
 
 	origCharsInWorld := charactersInWorldFunc
 	charactersInWorldFunc = func(_ logrus.FieldLogger, _ context.Context, _ uint32, _ world.Id) ([]character2.Model, error) {
@@ -286,7 +312,16 @@ func mapleLifeSubmitSubWith(p mapleLifeSubmitParams) cashsb.ItemUseMapleLife {
 
 func (e *mapleLifeCreateEnv) dispatch(sub cashsb.ItemUseMapleLife) {
 	e.t.Helper()
-	handleMapleLifeCreate(e.l, e.ctx, e.wp)(e.s, mapleLifeCreateTestItemId, mapleLifeCreateTestSlot, sub)
+	e.dispatchItem(mapleLifeCreateTestItemId, sub)
+}
+
+// dispatchItem is dispatch's general form for the B-Type coverage below,
+// which must submit a different itemId than the suite's A-Type default.
+// Callers are responsible for setting env.slotTemplateId to match, so gate
+// 2's ownership re-check (templateId == itemId) still passes.
+func (e *mapleLifeCreateEnv) dispatchItem(itemId item.Id, sub cashsb.ItemUseMapleLife) {
+	e.t.Helper()
+	handleMapleLifeCreate(e.l, e.ctx, e.wp)(e.s, itemId, mapleLifeCreateTestSlot, sub)
 }
 
 // lastArm decodes the MAPLELIFE_ERROR body the handler wrote (nType, nParam)
@@ -398,6 +433,109 @@ func TestMapleLifeCreateSlotLimitBoundary(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestMapleLifeCreateBTypeBelowCapIncrementsSlots covers gate 3's B-Type arm
+// (bug-b-type-must-add-a-slot.md): B-Type is gated on slots, not on
+// character count -- charactersInWorld is left at its zero-value default, so
+// if the handler mistakenly ran the A-Type len(chars)>=slots check instead,
+// this would still pass and hide the defect. The cap check and increment
+// both use the SLOT count, never the character count.
+func TestMapleLifeCreateBTypeBelowCapIncrementsSlots(t *testing.T) {
+	e := newMapleLifeCreateEnv(t)
+	e.slotTemplateId = uint32(item.MapleLifeBTypeId)
+	e.accountSlots = character.MaxCharacterSlotsPerWorld - 1
+	e.charactersInWorld = 999 // must be ignored: B-Type never reads character count
+
+	e.dispatchItem(item.MapleLifeBTypeId, mapleLifeSubmitSub("Chronicle"))
+
+	if len(e.mapleLifeCalls) != 1 {
+		t.Fatalf("createMapleLifeFunc calls = %d, want 1", len(e.mapleLifeCalls))
+	}
+	if len(e.incrementSlotsCalls) != 1 {
+		t.Fatalf("incrementAccountSlotsFunc calls = %d, want 1", len(e.incrementSlotsCalls))
+	}
+	c := e.incrementSlotsCalls[0]
+	if c.accountId != e.s.AccountId() {
+		t.Errorf("incrementAccountSlotsFunc accountId = %d, want session's %d", c.accountId, e.s.AccountId())
+	}
+	if c.worldId != e.s.WorldId() {
+		t.Errorf("incrementAccountSlotsFunc worldId = %d, want session's %d", c.worldId, e.s.WorldId())
+	}
+}
+
+// TestMapleLifeCreateBTypeAtCapIsRejected covers gate 3's B-Type cap arm: at
+// the 12-per-world cap, B-Type is rejected and never reaches the factory or
+// the increment call, even though charactersInWorld is left well below any
+// character-count limit -- proving the cap check reads SLOTS, not the
+// character count.
+func TestMapleLifeCreateBTypeAtCapIsRejected(t *testing.T) {
+	e := newMapleLifeCreateEnv(t)
+	e.slotTemplateId = uint32(item.MapleLifeBTypeId)
+	e.accountSlots = character.MaxCharacterSlotsPerWorld
+	e.charactersInWorld = 0
+
+	e.dispatchItem(item.MapleLifeBTypeId, mapleLifeSubmitSub("Chronicle"))
+
+	if len(e.mapleLifeCalls) != 0 {
+		t.Fatalf("createMapleLifeFunc calls = %d, want 0", len(e.mapleLifeCalls))
+	}
+	if len(e.incrementSlotsCalls) != 0 {
+		t.Fatalf("incrementAccountSlotsFunc calls = %d, want 0", len(e.incrementSlotsCalls))
+	}
+	got, ok := e.lastArm()
+	if !ok || got != mapleLifeCreateByteUnknown {
+		t.Errorf("arm = %#x, ok=%v, want the slot-limit arm %#x", got, ok, mapleLifeCreateByteUnknown)
+	}
+}
+
+// TestMapleLifeCreateBTypeFactoryFailureDoesNotIncrement covers the F4
+// ordering decision: the increment happens only AFTER a successful factory
+// call, so a factory failure must leave the slot count unincremented -- no
+// compensating rollback is needed because nothing was written yet.
+func TestMapleLifeCreateBTypeFactoryFailureDoesNotIncrement(t *testing.T) {
+	e := newMapleLifeCreateEnv(t)
+	e.slotTemplateId = uint32(item.MapleLifeBTypeId)
+	e.accountSlots = character.MaxCharacterSlotsPerWorld - 1
+	e.mapleLifeTransactionId = ""
+	e.mapleLifeErr = errors.New("unknown error")
+
+	e.dispatchItem(item.MapleLifeBTypeId, mapleLifeSubmitSub("Chronicle"))
+
+	if len(e.mapleLifeCalls) != 1 {
+		t.Fatalf("createMapleLifeFunc calls = %d, want 1", len(e.mapleLifeCalls))
+	}
+	if len(e.incrementSlotsCalls) != 0 {
+		t.Fatalf("incrementAccountSlotsFunc calls = %d, want 0 after a factory failure", len(e.incrementSlotsCalls))
+	}
+	got, ok := e.lastArm()
+	if !ok || got != mapleLifeCreateByteUnknown {
+		t.Errorf("arm = %#x, ok=%v, want %#x", got, ok, mapleLifeCreateByteUnknown)
+	}
+}
+
+// TestMapleLifeCreateRejectsUnroutedItemId covers gate 3's default arm: any
+// itemId other than A-Type/B-Type reaching this handler is a routing defect
+// (item.GetClassification(itemId) == ClassificationCharacterCreation is the
+// only test that should ever route a packet here, and it currently covers
+// exactly these two ids), and must fail closed rather than pick a default.
+func TestMapleLifeCreateRejectsUnroutedItemId(t *testing.T) {
+	e := newMapleLifeCreateEnv(t)
+	unrouted := item.Id(5433000)
+	e.slotTemplateId = uint32(unrouted)
+
+	e.dispatchItem(unrouted, mapleLifeSubmitSub("Chronicle"))
+
+	if len(e.mapleLifeCalls) != 0 {
+		t.Fatalf("createMapleLifeFunc calls = %d, want 0", len(e.mapleLifeCalls))
+	}
+	if len(e.incrementSlotsCalls) != 0 {
+		t.Fatalf("incrementAccountSlotsFunc calls = %d, want 0", len(e.incrementSlotsCalls))
+	}
+	got, ok := e.lastArm()
+	if !ok || got != mapleLifeCreateByteUnknown {
+		t.Errorf("arm = %#x, ok=%v, want %#x", got, ok, mapleLifeCreateByteUnknown)
 	}
 }
 

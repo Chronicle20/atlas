@@ -2,21 +2,24 @@ package account
 
 import "strconv"
 
+// RestModel no longer carries a flat CharacterSlots attribute: slots are
+// per-(account, world), not per-account (task-246
+// bug-b-type-must-add-a-slot.md). Callers that need a slot count now fetch
+// CharacterSlotRestModel from the world-scoped sub-resource below instead.
 type RestModel struct {
-	Id             string `json:"id"`
-	Name           string `json:"name"`
-	Password       string `json:"password"`
-	Pin            string `json:"pin"`
-	Pic            string `json:"pic"`
-	BirthDate      uint32 `json:"birthDate"`
-	LoggedIn       byte   `json:"loggedIn"`
-	LastLogin      uint64 `json:"lastLogin"`
-	Gender         byte   `json:"gender"`
-	Banned         bool   `json:"banned"`
-	TOS            bool   `json:"tos"`
-	Language       string `json:"language"`
-	Country        string `json:"country"`
-	CharacterSlots int16  `json:"characterSlots"`
+	Id        string `json:"id"`
+	Name      string `json:"name"`
+	Password  string `json:"password"`
+	Pin       string `json:"pin"`
+	Pic       string `json:"pic"`
+	BirthDate uint32 `json:"birthDate"`
+	LoggedIn  byte   `json:"loggedIn"`
+	LastLogin uint64 `json:"lastLogin"`
+	Gender    byte   `json:"gender"`
+	Banned    bool   `json:"banned"`
+	TOS       bool   `json:"tos"`
+	Language  string `json:"language"`
+	Country   string `json:"country"`
 }
 
 func (r RestModel) GetName() string {
@@ -29,6 +32,31 @@ func (r RestModel) GetID() string {
 
 func (r *RestModel) SetID(id string) error {
 	r.Id = id
+	return nil
+}
+
+// CharacterSlotRestModel mirrors atlas-account's own CharacterSlotRestModel
+// (services/atlas-account/atlas.com/account/account/rest.go) and
+// atlas-login's copy (services/atlas-login/atlas.com/login/account/rest.go),
+// the request/response body of
+// accounts/{accountId}/worlds/{worldId}/character-slots. It is used both as
+// the GET response and as the (ignored) POST increment body.
+type CharacterSlotRestModel struct {
+	Id      string `json:"-"`
+	WorldId byte   `json:"worldId"`
+	Slots   int16  `json:"slots"`
+}
+
+func (r CharacterSlotRestModel) GetName() string {
+	return "character-slots"
+}
+
+func (r CharacterSlotRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *CharacterSlotRestModel) SetID(idStr string) error {
+	r.Id = idStr
 	return nil
 }
 
@@ -96,7 +124,6 @@ func Extract(body RestModel) (Model, error) {
 		SetTos(body.TOS).
 		SetLanguage(body.Language).
 		SetCountry(body.Country).
-		SetCharacterSlots(body.CharacterSlots).
 		Build()
 	return m, nil
 }

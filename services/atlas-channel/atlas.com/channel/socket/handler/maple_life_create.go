@@ -13,6 +13,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -25,13 +26,20 @@ import (
 // accountSlotsFunc is the test seam for the slot-limit gate's account lookup
 // (package-var injection precedent: cashItemInSlotFunc in
 // character_cash_item_use.go). Tests substitute this rather than requiring a
-// live REST round trip to atlas-account.
-var accountSlotsFunc = func(l logrus.FieldLogger, ctx context.Context, accountId uint32) (int16, error) {
-	a, err := account.NewProcessor(l, ctx).GetById(accountId)
-	if err != nil {
-		return 0, err
-	}
-	return a.CharacterSlots(), nil
+// live REST round trip to atlas-account. Slots are per-(account, world), not
+// per-account (task-246 bug-b-type-must-add-a-slot.md).
+var accountSlotsFunc = func(l logrus.FieldLogger, ctx context.Context, accountId uint32, worldId world.Id) (int16, error) {
+	return account.NewProcessor(l, ctx).GetCharacterSlots(accountId, worldId)
+}
+
+// incrementAccountSlotsFunc is the test seam for Maple Life (B-Type)'s
+// bundled Extra Character Slot coupon: using B-Type adds a slot rather than
+// merely consuming one (task-246 bug-b-type-must-add-a-slot.md). Called only
+// on the factory-success path, after the 12-cap check in gate 3 has already
+// passed on the pre-increment count -- no rollback is needed because nothing
+// is written before the factory call succeeds.
+var incrementAccountSlotsFunc = func(l logrus.FieldLogger, ctx context.Context, accountId uint32, worldId world.Id) (int16, error) {
+	return account.NewProcessor(l, ctx).IncrementCharacterSlots(accountId, worldId)
 }
 
 // charactersInWorldFunc is the test seam for the slot-limit gate's character
@@ -135,19 +143,40 @@ func handleMapleLifeCreate(l logrus.FieldLogger, ctx context.Context, wp writer.
 			return
 		}
 
-		// Gate 3 -- slot limit.
-		slots, err := accountSlotsFunc(l, ctx, accountId)
+		// Gate 3 -- slot limit. Maple Life A-Type (5431000) and B-Type
+		// (5432000) are NOT the same product
+		// (bug-b-type-must-add-a-slot.md): item.GetClassification(itemId) ==
+		// ClassificationCharacterCreation routes both ids into this handler,
+		// but only A-Type is rejected at the current slot count like every
+		// other creation flow. B-Type's package bundles an Extra Character
+		// Slot coupon, so it is instead rejected only at the 12-per-world
+		// hard cap; using it successfully ADDS a slot (below, on the
+		// factory-success path) rather than merely consuming one. Any other
+		// itemId reaching this handler is a routing defect -- fail closed
+		// rather than pick a default.
+		slots, err := accountSlotsFunc(l, ctx, accountId, worldId)
 		if err != nil {
-			fail("Unable to resolve character slots for account [%d]: %v.", accountId, err)
+			fail("Unable to resolve character slots for account [%d] in world [%d]: %v.", accountId, worldId, err)
 			return
 		}
-		chars, err := charactersInWorldFunc(l, ctx, accountId, worldId)
-		if err != nil {
-			fail("Unable to resolve existing characters for account [%d] in world [%d]: %v.", accountId, worldId, err)
-			return
-		}
-		if len(chars) >= int(slots) {
-			fail("Account [%d] attempted Maple Life creation in world [%d] with [%d] of [%d] slots already used.", accountId, worldId, len(chars), slots)
+		switch itemId {
+		case item.MapleLifeATypeId:
+			chars, err := charactersInWorldFunc(l, ctx, accountId, worldId)
+			if err != nil {
+				fail("Unable to resolve existing characters for account [%d] in world [%d]: %v.", accountId, worldId, err)
+				return
+			}
+			if len(chars) >= int(slots) {
+				fail("Account [%d] attempted Maple Life (A-Type) creation in world [%d] with [%d] of [%d] slots already used.", accountId, worldId, len(chars), slots)
+				return
+			}
+		case item.MapleLifeBTypeId:
+			if slots >= character.MaxCharacterSlotsPerWorld {
+				fail("Account [%d] attempted Maple Life (B-Type) creation in world [%d] with [%d] of [%d] character slots already full.", accountId, worldId, slots, character.MaxCharacterSlotsPerWorld)
+				return
+			}
+		default:
+			fail("Character [%d] submitted Maple Life creation for item [%d], which is neither the A-Type nor B-Type coupon; routing defect.", s.CharacterId(), itemId)
 			return
 		}
 
@@ -209,6 +238,19 @@ func handleMapleLifeCreate(l logrus.FieldLogger, ctx context.Context, wp writer.
 				l.WithError(announceErr).Errorf("Unable to write Maple Life error for account [%d].", accountId)
 			}
 			return
+		}
+
+		// B-Type's bundled Extra Character Slot coupon is only spent now
+		// that the factory call has succeeded: incrementing before the
+		// factory call would need a compensating rollback on failure, while
+		// incrementing after needs none (bug-b-type-must-add-a-slot.md).
+		// A failure here is logged, not treated as saga-worthy: the
+		// character now exists even though its bundled slot did not
+		// persist, and that residual risk is accepted rather than compensated.
+		if itemId == item.MapleLifeBTypeId {
+			if _, incErr := incrementAccountSlotsFunc(l, ctx, accountId, worldId); incErr != nil {
+				l.WithError(incErr).Warnf("Account [%d]'s Maple Life (B-Type) character was created in world [%d], but its bundled character slot could not be persisted.", accountId, worldId)
+			}
 		}
 
 		// Success: write nothing to the client -- the outcome arrives later

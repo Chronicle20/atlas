@@ -358,6 +358,9 @@ describe("dirty / discard / savedOk", () => {
     s = mapleLifeReducer(s, { type: "seedFromTemplate", config: SEED });
     s = mapleLifeReducer(s, { type: "select", ordinal: 0, gender: 0 });
     s = mapleLifeReducer(s, { type: "addEquipment", templateId: 1302000 });
+    expect(projectForSave(s).classes[0]?.equipment).toHaveLength(
+      originalLength + 1,
+    );
     expect(SEED.classes[0]!.equipment).toHaveLength(originalLength);
   });
 });

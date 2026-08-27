@@ -26,6 +26,22 @@ func findMapleLifeClass(classes []maplelife.ClassEntry, ordinal uint32, gender b
 	return maplelife.ClassEntry{}, false
 }
 
+// prerequisiteFor returns the level-5 recovery skill the client requires as
+// a prerequisite of spSkillId, per bug-sp-skill-prerequisite.md's ruling
+// that this mapping lives in code rather than seed data. A class whose
+// SpSkillId has no known prerequisite returns ok == false; nothing is
+// invented for it.
+func prerequisiteFor(spSkillId uint32) (uint32, bool) {
+	switch spSkillId {
+	case uint32(skill.WarriorImprovedMaxHpIncreaseId):
+		return uint32(skill.WarriorImprovedHpRecoveryId), true
+	case uint32(skill.MagicianImprovedMaxMpIncreaseId):
+		return uint32(skill.MagicianImprovedMpRecoveryId), true
+	default:
+		return 0, false
+	}
+}
+
 func findMapleLifeLook(looks []maplelife.LookOptions, gender byte) (maplelife.LookOptions, bool) {
 	for _, l := range looks {
 		if l.Gender == gender {
@@ -61,8 +77,14 @@ func toPreset(e maplelife.ClassEntry, in MapleLifeCreateRestModel, effectX int16
 	}
 
 	var skills []preset.SkillEntry
+	spCost := 0
 	if e.SpSkillId != 0 && in.SP > 0 {
-		skills = []preset.SkillEntry{{SkillId: e.SpSkillId, Level: in.SP}}
+		spCost = int(in.SP)
+		if prereqSkillId, ok := prerequisiteFor(e.SpSkillId); ok {
+			skills = append(skills, preset.SkillEntry{SkillId: prereqSkillId, Level: 5})
+			spCost += 5
+		}
+		skills = append(skills, preset.SkillEntry{SkillId: e.SpSkillId, Level: in.SP})
 	}
 
 	// maple-life-content.md §5.3(b): the seeded Stats.Hp/Mp is the
@@ -83,7 +105,7 @@ func toPreset(e maplelife.ClassEntry, in MapleLifeCreateRestModel, effectX int16
 		}
 	}
 
-	remainingSP := spendSPPool(e.SP, in.SP)
+	remainingSP := spendSPPool(e.SP, spCost)
 
 	return preset.RestModel{
 		Attributes: preset.Attributes{
@@ -133,13 +155,16 @@ func parseSPPool(sp string) ([]int, bool) {
 // spendSPPool spends nSP out of slot 0 of the ten-book SP string, leaving the
 // other nine books untouched, and re-encodes it in the same form. An
 // unparseable pool (should not happen -- entry.SP is validated seed data)
-// passes through unchanged rather than panicking.
-func spendSPPool(sp string, nSP byte) string {
+// passes through unchanged rather than panicking. nSP is an int rather than
+// the request's own byte SP field because a granted prerequisite adds 5 on
+// top of it (factory/processor.go's guard keeps that total honest against
+// the pool before this ever runs).
+func spendSPPool(sp string, nSP int) string {
 	pool, ok := parseSPPool(sp)
 	if !ok || len(pool) == 0 {
 		return sp
 	}
-	pool[0] -= int(nSP)
+	pool[0] -= nSP
 	parts := make([]string, len(pool))
 	for i, v := range pool {
 		parts[i] = strconv.Itoa(v)

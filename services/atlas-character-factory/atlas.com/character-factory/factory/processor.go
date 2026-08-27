@@ -428,7 +428,11 @@ func (p *ProcessorImpl) resolveMapleLifePreset(ctx context.Context, in MapleLife
 		}
 	} else {
 		pool, ok := parseSPPool(entry.SP)
-		if !ok || len(pool) == 0 || in.SP > 10 || int(in.SP) > pool[0] {
+		needed := int(in.SP)
+		if _, hasPrereq := prerequisiteFor(entry.SpSkillId); hasPrereq && in.SP > 0 {
+			needed += 5
+		}
+		if !ok || len(pool) == 0 || in.SP > 10 || needed > pool[0] {
 			return preset.RestModel{}, nil, ErrSPInvalid
 		}
 	}

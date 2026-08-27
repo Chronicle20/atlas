@@ -51,7 +51,7 @@ func mapleLifeTenantConfig(tenantId uuid.UUID) tenant.RestModel {
 					Ordinal: 0, Gender: 0, JobId: 100, Level: 30, MapId: 104000000,
 					Stats:     maplelife.StatBlock{Str: 35, Dex: 4, Int: 4, Luk: 4, Hp: 600, Mp: 100},
 					AP:        110,
-					SP:        "9,0,0,0,0,0,0,0,0,0",
+					SP:        "61,0,0,0,0,0,0,0,0,0",
 					SpSkillId: 1000001,
 					Meso:      100000,
 					Equipment: []maplelife.EquipmentEntry{{TemplateId: 1040002}},
@@ -61,7 +61,7 @@ func mapleLifeTenantConfig(tenantId uuid.UUID) tenant.RestModel {
 					Ordinal: 1, Gender: 0, JobId: 200, Level: 30, MapId: 101000000,
 					Stats:     maplelife.StatBlock{Str: 4, Dex: 4, Int: 35, Luk: 4, Hp: 200, Mp: 300},
 					AP:        110,
-					SP:        "7,0,0,0,0,0,0,0,0,0",
+					SP:        "61,0,0,0,0,0,0,0,0,0",
 					SpSkillId: 2000001,
 					Meso:      100000,
 					Equipment: []maplelife.EquipmentEntry{{TemplateId: 1042002}},
@@ -79,6 +79,17 @@ func mapleLifeTenantConfig(tenantId uuid.UUID) tenant.RestModel {
 			},
 		},
 	}
+}
+
+// mapleLifeSmallPoolConfig is mapleLifeTenantConfig with the Warrior's pool
+// shrunk so that in.SP (still within the hard 0-10 cap) plus its granted
+// prerequisite's 5 exceeds what's available -- exercising the
+// prerequisite-aware half of the processor.go guard, distinct from the
+// guard's separate "in.SP > 10" cap.
+func mapleLifeSmallPoolConfig() *tenant.RestModel {
+	c := mapleLifeTenantConfig(uuid.Nil) // Id overwritten by mapleLifeCtx
+	c.MapleLife.Classes[0].SP = "8,0,0,0,0,0,0,0,0,0"
+	return &c
 }
 
 func mapleLifeItems() map[uint32]data.ItemInfo {
@@ -200,10 +211,18 @@ func TestCreateMapleLife(t *testing.T) {
 			wantErr: ErrSPInvalid,
 		},
 		{
-			name: "sp above the pool",
+			name:    "sp above the pool once the prerequisite's 5 is reserved",
+			request: mapleLifeBaseRequest, // SP=5, needs 5+5=10 out of an 8-pool
+			nc:      validNameClient(),
+			dc:      &dmock.ProcessorMock{Items: mapleLifeItems(), Skills: mapleLifeSkills()},
+			cfg:     mapleLifeSmallPoolConfig(),
+			wantErr: ErrSPInvalid,
+		},
+		{
+			name: "sp above the hard cap of 10",
 			request: func() MapleLifeCreateRestModel {
 				r := mapleLifeBaseRequest()
-				r.SP = 10
+				r.SP = 11
 				return r
 			},
 			nc:      validNameClient(),
@@ -348,19 +367,19 @@ func TestCreateMapleLifeSagaPayload(t *testing.T) {
 
 	var payload saga.CharacterCreatePayload
 	found := false
-	var createSkillCount int
-	var createSkillId uint32
-	var createSkillLevel byte
+	type createdSkill struct {
+		SkillId uint32
+		Level   byte
+	}
+	var createdSkills []createdSkill
 	for _, st := range sg.Steps {
 		if st.Action == saga.CreateCharacter {
 			payload = st.Payload.(saga.CharacterCreatePayload)
 			found = true
 		}
 		if st.Action == saga.CreateSkill {
-			createSkillCount++
 			p := st.Payload.(saga.CreateSkillPayload)
-			createSkillId = p.SkillId
-			createSkillLevel = p.Level
+			createdSkills = append(createdSkills, createdSkill{SkillId: p.SkillId, Level: p.Level})
 		}
 	}
 	if !found {
@@ -391,8 +410,8 @@ func TestCreateMapleLifeSagaPayload(t *testing.T) {
 	if payload.AP != 110 {
 		t.Errorf("AP: expected 110, got %d", payload.AP)
 	}
-	if payload.SP != "4,0,0,0,0,0,0,0,0,0" {
-		t.Errorf("SP: expected pool minus 5 spent, got %q", payload.SP)
+	if payload.SP != "51,0,0,0,0,0,0,0,0,0" {
+		t.Errorf("SP: expected pool minus 5 spent minus the 5-SP prerequisite, got %q", payload.SP)
 	}
 
 	// Warrior HP: seeded 600 + 29*4*5 = 1180; MP unchanged at 100.
@@ -403,14 +422,14 @@ func TestCreateMapleLifeSagaPayload(t *testing.T) {
 		t.Errorf("Mp: expected unchanged 100, got %d", payload.Mp)
 	}
 
-	if createSkillCount != 1 {
-		t.Fatalf("expected exactly one CreateSkill step, got %d", createSkillCount)
+	if len(createdSkills) != 2 {
+		t.Fatalf("expected exactly two CreateSkill steps (prerequisite + chosen skill), got %d: %+v", len(createdSkills), createdSkills)
 	}
-	if createSkillId != 1000001 {
-		t.Errorf("CreateSkill SkillId: expected 1000001, got %d", createSkillId)
+	if createdSkills[0] != (createdSkill{SkillId: 1000000, Level: 5}) {
+		t.Errorf("CreateSkill[0]: expected prerequisite {1000000, 5}, got %+v", createdSkills[0])
 	}
-	if createSkillLevel != 5 {
-		t.Errorf("CreateSkill Level: expected 5, got %d", createSkillLevel)
+	if createdSkills[1] != (createdSkill{SkillId: 1000001, Level: 5}) {
+		t.Errorf("CreateSkill[1]: expected chosen skill {1000001, 5}, got %+v", createdSkills[1])
 	}
 }
 
@@ -441,11 +460,103 @@ func TestCreateMapleLifeSagaPayload_SPZero(t *testing.T) {
 	if !found {
 		t.Fatalf("expected a CreateCharacter step")
 	}
-	if payload.SP != "9,0,0,0,0,0,0,0,0,0" {
+	if payload.SP != "61,0,0,0,0,0,0,0,0,0" {
 		t.Errorf("SP: expected pool unchanged, got %q", payload.SP)
 	}
 	if payload.Hp != 600 {
 		t.Errorf("Hp: expected fixture value 600 exactly (no adjustment), got %d", payload.Hp)
+	}
+}
+
+// TestCreateMapleLifeSagaPayload_WarriorPartialSP asserts
+// bug-sp-skill-prerequisite.md's Expected table for a partial SP investment:
+// picking 4 into Improved MaxHP Increase (1000001) grants both it AND level 5
+// of its prerequisite Improved HP Recovery (1000000), spending in.SP + 5.
+func TestCreateMapleLifeSagaPayload_WarriorPartialSP(t *testing.T) {
+	dc := &dmock.ProcessorMock{Items: mapleLifeItems(), Skills: mapleLifeSkills()}
+	ctx := mapleLifeCtx(t, nil)
+	pi := &ProcessorImpl{l: logrus.StandardLogger(), presetClient: &confmock.FakePresetClient{}, nameClient: validNameClient(), dataClient: dc}
+
+	req := mapleLifeBaseRequest()
+	req.SP = 4
+	pr, skillsById, err := pi.resolveMapleLifePreset(ctx, req)
+	if err != nil {
+		t.Fatalf("resolveMapleLifePreset: %v", err)
+	}
+	sg := buildPresetCharacterCreationSaga(uuid.New(), PresetCreateRestModel{AccountId: req.AccountId, WorldId: req.WorldId, Name: req.Name}, pr, skillsById)
+
+	var payload saga.CharacterCreatePayload
+	type createdSkill struct {
+		SkillId uint32
+		Level   byte
+	}
+	var createdSkills []createdSkill
+	for _, st := range sg.Steps {
+		if st.Action == saga.CreateCharacter {
+			payload = st.Payload.(saga.CharacterCreatePayload)
+		}
+		if st.Action == saga.CreateSkill {
+			p := st.Payload.(saga.CreateSkillPayload)
+			createdSkills = append(createdSkills, createdSkill{SkillId: p.SkillId, Level: p.Level})
+		}
+	}
+	if len(createdSkills) != 2 {
+		t.Fatalf("expected exactly two CreateSkill steps, got %d: %+v", len(createdSkills), createdSkills)
+	}
+	if createdSkills[0] != (createdSkill{SkillId: 1000000, Level: 5}) {
+		t.Errorf("CreateSkill[0]: expected prerequisite {1000000, 5}, got %+v", createdSkills[0])
+	}
+	if createdSkills[1] != (createdSkill{SkillId: 1000001, Level: 4}) {
+		t.Errorf("CreateSkill[1]: expected chosen skill {1000001, 4}, got %+v", createdSkills[1])
+	}
+	if payload.SP != "52,0,0,0,0,0,0,0,0,0" {
+		t.Errorf("SP: expected pool minus 4 spent minus the 5-SP prerequisite, got %q", payload.SP)
+	}
+}
+
+// TestCreateMapleLifeSagaPayload_MagicianFullSP mirrors
+// TestCreateMapleLifeSagaPayload_WarriorPartialSP for the Magician side of
+// the same rule at the maximum in.SP of 10.
+func TestCreateMapleLifeSagaPayload_MagicianFullSP(t *testing.T) {
+	dc := &dmock.ProcessorMock{Items: mapleLifeItems(), Skills: mapleLifeSkills()}
+	ctx := mapleLifeCtx(t, nil)
+	pi := &ProcessorImpl{l: logrus.StandardLogger(), presetClient: &confmock.FakePresetClient{}, nameClient: validNameClient(), dataClient: dc}
+
+	req := mapleLifeBaseRequest()
+	req.ClassOrdinal = 1
+	req.SP = 10
+	pr, skillsById, err := pi.resolveMapleLifePreset(ctx, req)
+	if err != nil {
+		t.Fatalf("resolveMapleLifePreset: %v", err)
+	}
+	sg := buildPresetCharacterCreationSaga(uuid.New(), PresetCreateRestModel{AccountId: req.AccountId, WorldId: req.WorldId, Name: req.Name}, pr, skillsById)
+
+	var payload saga.CharacterCreatePayload
+	type createdSkill struct {
+		SkillId uint32
+		Level   byte
+	}
+	var createdSkills []createdSkill
+	for _, st := range sg.Steps {
+		if st.Action == saga.CreateCharacter {
+			payload = st.Payload.(saga.CharacterCreatePayload)
+		}
+		if st.Action == saga.CreateSkill {
+			p := st.Payload.(saga.CreateSkillPayload)
+			createdSkills = append(createdSkills, createdSkill{SkillId: p.SkillId, Level: p.Level})
+		}
+	}
+	if len(createdSkills) != 2 {
+		t.Fatalf("expected exactly two CreateSkill steps, got %d: %+v", len(createdSkills), createdSkills)
+	}
+	if createdSkills[0] != (createdSkill{SkillId: 2000000, Level: 5}) {
+		t.Errorf("CreateSkill[0]: expected prerequisite {2000000, 5}, got %+v", createdSkills[0])
+	}
+	if createdSkills[1] != (createdSkill{SkillId: 2000001, Level: 10}) {
+		t.Errorf("CreateSkill[1]: expected chosen skill {2000001, 10}, got %+v", createdSkills[1])
+	}
+	if payload.SP != "46,0,0,0,0,0,0,0,0,0" {
+		t.Errorf("SP: expected pool minus 10 spent minus the 5-SP prerequisite, got %q", payload.SP)
 	}
 }
 

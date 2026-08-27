@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-character/skill"
+	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -59,7 +60,14 @@ func (b *Builder) SetGm(gm int) *Builder {
 	return b
 }
 
-func (b *Builder) Build() Model {
+func (b *Builder) Build() (Model, error) {
+	if b.accountId == 0 {
+		return Model{}, errors.New("accountId is required")
+	}
+	if b.name == "" {
+		return Model{}, errors.New("name is required")
+	}
+
 	return Model{
 		accountId:          b.accountId,
 		worldId:            b.worldId,
@@ -87,7 +95,7 @@ func (b *Builder) Build() Model {
 		sp:                 "",
 		spawnPoint:         0,
 		gm:                 b.gm,
-	}
+	}, nil
 }
 
 func NewBuilder(c BuilderConfiguration, accountId uint32, worldId world.Id, name string, skinColor byte, gender byte, hair uint32, face uint32) *Builder {

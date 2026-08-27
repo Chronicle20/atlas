@@ -106,6 +106,13 @@ func (p *ProcessorImpl) ForCharacter(f field.Model, characterId uint32, movement
 
 // TeleportCharacter is documented on the Processor interface.
 func (p *ProcessorImpl) TeleportCharacter(f field.Model, characterId uint32, x int16, y int16) error {
+	// Feed the character snapshot BEFORE anything else observes this
+	// teleport, mirroring ForCharacter's synchronous feed: the freshest
+	// position this pod can know (task-122 FR-2.5). x/y are already the
+	// final position, so there is no fold here. Update-only: characters
+	// without a snapshot entry no-op.
+	snapshot.GetRegistry().SetPosition(p.t, characterId, x, y)
+
 	position.GetRegistry().Put(p.t, characterId, position.Position{X: x, Y: y})
 	routine.Go(p.l, p.ctx, func(_ context.Context) {
 		err := producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, x, y, 0, 0))

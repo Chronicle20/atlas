@@ -1,6 +1,7 @@
 package movement
 
 import (
+	"atlas-channel/character/snapshot"
 	movement2 "atlas-channel/kafka/message/movement"
 	"atlas-channel/position"
 	"atlas-channel/socket/writer"
@@ -173,6 +174,54 @@ func TestTeleportAndForCharacterPosition(t *testing.T) {
 						t.Fatalf("timed out waiting for TeleportCharacter to emit the movement command")
 					}
 					time.Sleep(time.Millisecond)
+				}
+			},
+		},
+		{
+			// TeleportCharacter_FeedsSnapshotPositionSynchronously proves
+			// TeleportCharacter feeds the character snapshot registry with
+			// the teleport destination when an entry already exists, so the
+			// attack path never serves a stale pre-teleport position
+			// (task-122 post-plan fix).
+			name: "TeleportCharacter_FeedsSnapshotPositionSynchronously",
+			run: func(t *testing.T) {
+				p, tm := newMovementTestProcessor(t)
+				f := movementTestField()
+
+				// Entry must exist (feeds never create entries): simulate
+				// the lazy populate by viewing it once first.
+				_ = snapshot.GetRegistry().View(tm, 9101)
+
+				if err := p.TeleportCharacter(f, 9101, 300, -50); err != nil {
+					t.Fatalf("TeleportCharacter returned error: %v", err)
+				}
+
+				got := snapshot.GetRegistry().View(tm, 9101)
+				if !got.PosValid || got.PosX != 300 || got.PosY != -50 {
+					t.Fatalf("position must be fed synchronously by TeleportCharacter: %+v", got)
+				}
+			},
+		},
+		{
+			// TeleportCharacter_NoEntryNoCreate proves TeleportCharacter
+			// never creates a snapshot entry for a character that does not
+			// already have one -- the snapshot feed is update-only
+			// everywhere on this branch (task-122).
+			name: "TeleportCharacter_NoEntryNoCreate",
+			run: func(t *testing.T) {
+				p, tm := newMovementTestProcessor(t)
+				f := movementTestField()
+
+				if err := p.TeleportCharacter(f, 9102, 300, -50); err != nil {
+					t.Fatalf("TeleportCharacter returned error: %v", err)
+				}
+
+				got := snapshot.GetRegistry().View(tm, 9102)
+				if got.PosValid {
+					t.Fatalf("TeleportCharacter must never create snapshot entries, got %+v", got)
+				}
+				if _, ok := snapshot.GetRegistry().ComposedIfValid(tm, 9102); ok {
+					t.Fatalf("TeleportCharacter must never create snapshot entries")
 				}
 			},
 		},
